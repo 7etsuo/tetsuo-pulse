@@ -1023,6 +1023,20 @@ accept_init_socket (T newsocket, SocketBase_T base, Arena_T arena, int newfd,
   base->localaddr = NULL;
   base->localport = 0;
 
+  /* Initialize per-socket statistics for accepted connection */
+  base->stats.create_time_ms = Socket_get_monotonic_ms ();
+  base->stats.connect_time_ms = 0;
+  base->stats.last_recv_time_ms = 0;
+  base->stats.last_send_time_ms = 0;
+  base->stats.bytes_sent = 0;
+  base->stats.bytes_received = 0;
+  base->stats.packets_sent = 0;
+  base->stats.packets_received = 0;
+  base->stats.send_errors = 0;
+  base->stats.recv_errors = 0;
+  base->stats.rtt_us = -1;
+  base->stats.rtt_var_us = -1;
+
 #if SOCKET_HAS_TLS
   socket_init_tls_fields (newsocket);
 #endif

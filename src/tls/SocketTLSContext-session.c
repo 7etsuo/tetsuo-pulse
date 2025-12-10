@@ -186,13 +186,12 @@ SocketTLSContext_enable_session_cache (T ctx, size_t max_sessions,
 
   long sess_timeout = timeout_seconds > 0 ? timeout_seconds
                                           : SOCKET_TLS_SESSION_TIMEOUT_DEFAULT;
-  const long MAX_SESSION_TIMEOUT = 2592000L; /* 30 days in seconds */
-  if (sess_timeout > MAX_SESSION_TIMEOUT)
+  if (sess_timeout > SOCKET_TLS_SESSION_MAX_TIMEOUT)
     {
       RAISE_CTX_ERROR_FMT (
           SocketTLS_Failed,
           "Session timeout %ld seconds exceeds maximum allowed %ld",
-          sess_timeout, MAX_SESSION_TIMEOUT);
+          sess_timeout, SOCKET_TLS_SESSION_MAX_TIMEOUT);
     }
   SSL_CTX_set_timeout (ctx->ssl_ctx, sess_timeout);
   ctx->session_cache_enabled = 1;

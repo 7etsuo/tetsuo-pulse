@@ -21,31 +21,20 @@
 #include "http/SocketHPACK-private.h"
 #include "http/SocketHPACK.h"
 
+/* Module exception for this translation unit (required for SOCKET_RAISE_MSG) */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketHPACK);
 
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "HPACK"
 
 /* ============================================================================
- * Internal Constants
- * ============================================================================
- */
-
-/* Use constants from SocketHPACK-private.h:
- * HPACK_AVERAGE_DYNAMIC_ENTRY_SIZE
- * HPACK_MIN_DYNAMIC_TABLE_CAPACITY
- */
-
-/* ============================================================================
  * Static Table (RFC 7541 Appendix A)
  *
  * Index 1-61. Entry sizes include 32-byte overhead per RFC 7541 Section 4.1.
- * Table is sorted by name for binary search, but indexed 1-based.
  * ============================================================================
  */
 
 /* clang-format off */
-/* Static table entries: { name, value, name_len, value_len } */
 const HPACK_StaticEntry hpack_static_table[SOCKETHPACK_STATIC_TABLE_SIZE] = {
   /* Index 1: :authority */
   { ":authority", "", 10, 0 },
@@ -173,83 +162,52 @@ const HPACK_StaticEntry hpack_static_table[SOCKETHPACK_STATIC_TABLE_SIZE] = {
 /* clang-format on */
 
 /* ============================================================================
- * Internal Helper Functions
+ * Internal Helper Functions (Static)
  * ============================================================================
  */
 
 /**
- * hpack_strcasecmp - Case-insensitive string comparison with explicit lengths
- * @a: First string
- * @a_len: Length of first string
- * @b: Second string
- * @b_len: Length of second string
+ * hpack_validate_table - Validate table pointer for accessor functions
+ * @table: Table to validate
+ * @func: Function name for logging
  *
- * Compares two strings case-insensitively (ASCII only, suitable for HTTP
- * headers which are restricted to ASCII). Does not require null-termination.
+ * Logs debug message if table is NULL. Used by accessor functions to avoid
+ * raising exceptions for read-only operations.
  *
- * Returns: <0 if a<b, 0 if a==b, >0 if a>b
- * Thread-safe: Yes (no global state)
+ * Returns: 1 if valid, 0 if NULL
+ * Thread-safe: Yes
  */
 static int
-hpack_strcasecmp (const char *a, size_t a_len, const char *b, size_t b_len)
+hpack_validate_table (const SocketHPACK_Table_T table, const char *func)
 {
-  size_t min_len = (a_len < b_len ? a_len : b_len);
-
-  int cmp = strncasecmp (a, b, min_len);
-  if (cmp != 0)
-    return cmp;
-
-  /* Prefixes match up to min_len; compare full lengths for lexicographical
-   * order */
-  return (a_len < b_len) ? -1 : (a_len > b_len ? 1 : 0);
-}
-
-/**
- * hpack_match_entry - Check if entry matches name and optionally value
- * @entry_name: Entry header name
- * @entry_name_len: Entry name length
- * @entry_value: Entry header value
- * @entry_value_len: Entry value length
- * @name: Search name
- * @name_len: Search name length
- * @value: Search value (NULL to match name only)
- * @value_len: Search value length
- *
- * Checks if an entry matches the given name (case-insensitive, ASCII) and
- * optionally the value (case-sensitive binary compare). Used internally by
- * static and dynamic table search functions to find exact or name-only
- * matches.
- *
- * Returns: 1 for exact match (name+value), 0 for name-only match, -1 for no
- * match Thread-safe: Yes (no global state)
- */
-static int
-hpack_match_entry (const char *entry_name, size_t entry_name_len,
-                   const char *entry_value, size_t entry_value_len,
-                   const char *name, size_t name_len, const char *value,
-                   size_t value_len)
-{
-  /* Check name match (case-insensitive for HTTP headers) */
-  if (entry_name_len != name_len)
-    return -1;
-
-  if (hpack_strcasecmp (entry_name, entry_name_len, name, name_len) != 0)
-    return -1;
-
-  /* Name matches - check value if provided */
-  if (value != NULL && entry_value_len == value_len
-      && (value_len == 0 || memcmp (entry_value, value, value_len) == 0))
+  if (table == NULL)
     {
-      return 1; /* Exact match */
+      SOCKET_LOG_DEBUG_MSG ("SocketHPACK %s: NULL table pointer", func);
+      return 0;
     }
-
-  return 0; /* Name-only match */
+  return 1;
 }
 
-/* ============================================================================
- * Common Validation Helpers
- * ============================================================================
+/**
+ * hpack_validate_table_strict - Validate table pointer for mutator functions
+ * @table: Table to validate
+ * @func: Function name for logging
+ *
+ * Logs ERROR and returns appropriate error for mutating operations.
+ *
+ * Returns: HPACK_OK if valid, HPACK_ERROR if NULL
+ * Thread-safe: Yes
  */
+static SocketHPACK_Result
+hpack_validate_table_strict (const SocketHPACK_Table_T table, const char *func)
+{
+  if (table == NULL)
+    {
+      SOCKET_LOG_ERROR_MSG ("SocketHPACK %s: NULL table pointer", func);
+      return HPACK_ERROR;
+    }
+  return HPACK_OK;
+}
 
 /**
  * hpack_validate_search_params - Validate name parameters for search functions
@@ -257,6 +215,7 @@ hpack_match_entry (const char *entry_name, size_t entry_name_len,
  * @name_len: Name length
  *
  * Logs debug message and returns 0 if invalid.
+ *
  * Returns: 1 if valid, 0 if invalid
  * Thread-safe: Yes
  */
@@ -282,7 +241,7 @@ hpack_validate_search_params (const char *name, size_t name_len)
  * @max_idx: Maximum valid index
  * @func: Function name for logging
  *
- * Returns: HPACK_OK if valid, appropriate error otherwise
+ * Returns: HPACK_OK if valid, HPACK_ERROR_INVALID_INDEX otherwise
  * Thread-safe: Yes
  */
 static SocketHPACK_Result
@@ -318,27 +277,150 @@ hpack_validate_header_ptr (SocketHPACK_Header *header, const char *func)
   return HPACK_OK;
 }
 
-/* ============================================================================
- * Dynamic Table Helper Functions
- * ============================================================================
+/**
+ * hpack_strcasecmp - Case-insensitive string comparison with explicit lengths
+ * @a: First string
+ * @a_len: Length of first string
+ * @b: Second string
+ * @b_len: Length of second string
+ *
+ * Compares two strings case-insensitively (ASCII only, suitable for HTTP
+ * headers which are restricted to ASCII). Does not require null-termination.
+ *
+ * Returns: <0 if a<b, 0 if a==b, >0 if a>b
+ * Thread-safe: Yes
  */
+static int
+hpack_strcasecmp (const char *a, size_t a_len, const char *b, size_t b_len)
+{
+  size_t min_len = (a_len < b_len) ? a_len : b_len;
+  int cmp = strncasecmp (a, b, min_len);
 
-/* Forward declarations */
-static void hpack_table_clear (SocketHPACK_Table_T table);
-static SocketHPACK_Result hpack_duplicate_header_strings (
-    Arena_T arena, const char *name, size_t name_len, const char *value,
-    size_t value_len, char **name_out, char **value_out);
+  if (cmp != 0)
+    return cmp;
+
+  /* Prefixes match up to min_len; compare full lengths */
+  if (a_len < b_len)
+    return -1;
+  if (a_len > b_len)
+    return 1;
+  return 0;
+}
+
+/**
+ * hpack_match_entry - Check if entry matches name and optionally value
+ * @entry_name: Entry header name
+ * @entry_name_len: Entry name length
+ * @entry_value: Entry header value
+ * @entry_value_len: Entry value length
+ * @name: Search name
+ * @name_len: Search name length
+ * @value: Search value (NULL to match name only)
+ * @value_len: Search value length
+ *
+ * Checks if an entry matches the given name (case-insensitive for HTTP headers)
+ * and optionally the value (case-sensitive binary compare).
+ *
+ * Returns: 1 for exact match (name+value), 0 for name-only match, -1 for no
+ * match Thread-safe: Yes
+ */
+static int
+hpack_match_entry (const char *entry_name, size_t entry_name_len,
+                   const char *entry_value, size_t entry_value_len,
+                   const char *name, size_t name_len, const char *value,
+                   size_t value_len)
+{
+  /* Check name match (case-insensitive for HTTP headers) */
+  if (entry_name_len != name_len)
+    return -1;
+
+  if (hpack_strcasecmp (entry_name, entry_name_len, name, name_len) != 0)
+    return -1;
+
+  /* Name matches - check value if provided */
+  if (value != NULL && entry_value_len == value_len
+      && (value_len == 0 || memcmp (entry_value, value, value_len) == 0))
+    {
+      return 1; /* Exact match */
+    }
+
+  return 0; /* Name-only match */
+}
+
+/**
+ * hpack_arena_alloc_dup - Allocate and duplicate a string from arena
+ * @arena: Arena for allocation
+ * @src: Source string (may be NULL if len == 0)
+ * @len: String length
+ * @what: Description for error logging ("name" or "value")
+ *
+ * Returns: Null-terminated copy, or NULL on allocation failure
+ * Thread-safe: Yes (if arena is)
+ */
+static char *
+hpack_arena_alloc_dup (Arena_T arena, const char *src, size_t len,
+                       const char *what)
+{
+  char *dup = ALLOC (arena, len + 1);
+
+  if (dup == NULL)
+    {
+      SOCKET_LOG_ERROR_MSG (
+          "SocketHPACK: failed to allocate header %s copy (length=%zu)", what,
+          len);
+      return NULL;
+    }
+
+  if (len > 0)
+    memcpy (dup, src, len);
+  dup[len] = '\0';
+
+  return dup;
+}
+
+/**
+ * hpack_duplicate_header_strings - Duplicate name/value strings from arena
+ * @arena: Arena for allocation
+ * @name: Source name
+ * @name_len: Name length
+ * @value: Source value
+ * @value_len: Value length
+ * @name_out: Output name pointer
+ * @value_out: Output value pointer
+ *
+ * Returns: HPACK_OK or HPACK_ERROR
+ * Thread-safe: Yes (if arena is)
+ */
+static SocketHPACK_Result
+hpack_duplicate_header_strings (Arena_T arena, const char *name,
+                                size_t name_len, const char *value,
+                                size_t value_len, char **name_out,
+                                char **value_out)
+{
+  assert (arena != NULL);
+  assert (name_out != NULL);
+  assert (value_out != NULL);
+
+  *name_out = hpack_arena_alloc_dup (arena, name, name_len, "name");
+  if (*name_out == NULL)
+    return HPACK_ERROR;
+
+  *value_out = hpack_arena_alloc_dup (arena, value, value_len, "value");
+  if (*value_out == NULL)
+    return HPACK_ERROR;
+
+  return HPACK_OK;
+}
 
 /**
  * hpack_dynamic_initial_capacity - Calculate initial circular buffer capacity
  * @max_size: Maximum table size in bytes
  *
  * Estimates number of entries based on average entry size, clamps to minimum,
- * and rounds up to power-of-2 for efficient circular buffer operations using
- * bitmask modulo.
+ * and rounds up to power-of-2 for efficient circular buffer operations.
  *
  * Returns: Initial capacity (>= HPACK_MIN_DYNAMIC_TABLE_CAPACITY, power of 2)
- * Thread-safe: Yes (no state)
+ * Thread-safe: Yes
  */
 static size_t
 hpack_dynamic_initial_capacity (size_t max_size)
@@ -356,31 +438,21 @@ hpack_dynamic_initial_capacity (size_t max_size)
 }
 
 /**
- * hpack_table_prepare_insertion - Prepare dynamic table for new entry
- * insertion
- * @table: Dynamic table instance
- * @entry_size: Proposed new entry size (name + value + overhead)
+ * hpack_table_clear - Clear all entries from table without deallocating
+ * @table: Dynamic table to clear
  *
- * If entry_size exceeds max_size, clears the entire table.
- * Otherwise, evicts oldest entries from the head until sufficient space is
- * available.
+ * Resets head, tail, count, and size to zero. Memory remains arena-allocated.
  *
- * Returns: HPACK_OK (always succeeds, table may be cleared or entries evicted)
- * Thread-safe: No (modifies table state)
+ * Thread-safe: No
  */
-static SocketHPACK_Result
-hpack_table_prepare_insertion (SocketHPACK_Table_T table, size_t entry_size)
+static void
+hpack_table_clear (SocketHPACK_Table_T table)
 {
   assert (table != NULL);
-
-  if (entry_size > table->max_size)
-    {
-      hpack_table_clear (table);
-      return HPACK_OK;
-    }
-
-  hpack_table_evict (table, entry_size);
-  return HPACK_OK;
+  table->head = 0;
+  table->tail = 0;
+  table->count = 0;
+  table->size = 0;
 }
 
 /**
@@ -390,25 +462,23 @@ hpack_table_prepare_insertion (SocketHPACK_Table_T table, size_t entry_size)
  * @name_len: Name length
  * @value: Source header value
  * @value_len: Value length
- * @entry: Output entry structure to initialize
- *
- * Duplicates name and value strings into arena-allocated memory
- * (null-terminated). Logs error and returns HPACK_ERROR on allocation failure.
+ * @entry: Output entry structure
  *
  * Returns: HPACK_OK on success, HPACK_ERROR on allocation failure
- * Thread-safe: Yes (if arena is thread-safe)
- * Note: Entry strings owned by arena; valid until arena dispose.
+ * Thread-safe: Yes (if arena is)
  */
 static SocketHPACK_Result
 hpack_dynamic_entry_init (Arena_T arena, const char *name, size_t name_len,
                           const char *value, size_t value_len,
                           HPACK_DynamicEntry *entry)
 {
+  SocketHPACK_Result res;
+
   assert (arena != NULL);
   assert (entry != NULL);
 
-  SocketHPACK_Result res = hpack_duplicate_header_strings (
-      arena, name, name_len, value, value_len, &entry->name, &entry->value);
+  res = hpack_duplicate_header_strings (arena, name, name_len, value,
+                                        value_len, &entry->name, &entry->value);
   if (res != HPACK_OK)
     {
       SOCKET_LOG_ERROR_MSG ("SocketHPACK: hpack_dynamic_entry_init failed - "
@@ -423,6 +493,55 @@ hpack_dynamic_entry_init (Arena_T arena, const char *name, size_t name_len,
   return HPACK_OK;
 }
 
+/**
+ * hpack_table_prepare_insertion - Prepare table for new entry insertion
+ * @table: Dynamic table instance
+ * @entry_size: Proposed new entry size (name + value + overhead)
+ *
+ * If entry_size exceeds max_size, clears the entire table.
+ * Otherwise, evicts oldest entries until sufficient space is available.
+ *
+ * Thread-safe: No
+ */
+static void
+hpack_table_prepare_insertion (SocketHPACK_Table_T table, size_t entry_size)
+{
+  assert (table != NULL);
+
+  if (entry_size > table->max_size)
+    {
+      hpack_table_clear (table);
+      return;
+    }
+
+  hpack_table_evict (table, entry_size);
+}
+
+/* ============================================================================
+ * Dynamic Table Eviction (Extern for use by other HPACK files)
+ * ============================================================================
+ */
+
+size_t
+hpack_table_evict (SocketHPACK_Table_T table, size_t required_space)
+{
+  size_t evicted = 0;
+
+  while (table->count > 0 && table->size + required_space > table->max_size)
+    {
+      /* Evict from head (oldest entry) */
+      HPACK_DynamicEntry *entry = &table->entries[table->head];
+      size_t entry_size = hpack_entry_size (entry->name_len, entry->value_len);
+
+      table->size -= entry_size;
+      table->head = (table->head + 1) & (table->capacity - 1);
+      table->count--;
+      evicted++;
+    }
+
+  return evicted;
+}
+
 /* ============================================================================
  * Static Table Lookup Functions
  * ============================================================================
@@ -431,8 +550,11 @@ hpack_dynamic_entry_init (Arena_T arena, const char *name, size_t name_len,
 SocketHPACK_Result
 SocketHPACK_static_get (size_t index, SocketHPACK_Header *header)
 {
-  SocketHPACK_Result res = hpack_validate_index (
-      index, SOCKETHPACK_STATIC_TABLE_SIZE, "static_get");
+  const HPACK_StaticEntry *entry;
+  SocketHPACK_Result res;
+
+  res = hpack_validate_index (index, SOCKETHPACK_STATIC_TABLE_SIZE,
+                              "static_get");
   if (res != HPACK_OK)
     return res;
 
@@ -440,7 +562,7 @@ SocketHPACK_static_get (size_t index, SocketHPACK_Header *header)
   if (res != HPACK_OK)
     return res;
 
-  const HPACK_StaticEntry *entry = &hpack_static_table[index - 1];
+  entry = &hpack_static_table[index - 1];
   header->name = entry->name;
   header->name_len = entry->name_len;
   header->value = entry->value;
@@ -463,10 +585,10 @@ SocketHPACK_static_find (const char *name, size_t name_len, const char *value,
   for (size_t i = 0; i < SOCKETHPACK_STATIC_TABLE_SIZE; i++)
     {
       const HPACK_StaticEntry *entry = &hpack_static_table[i];
-
-      int match = hpack_match_entry (entry->name, entry->name_len,
-                                     entry->value, entry->value_len, name,
-                                     name_len, value, value_len);
+      int match
+          = hpack_match_entry (entry->name, entry->name_len, entry->value,
+                               entry->value_len, name, name_len, value,
+                               value_len);
 
       if (match == 1)
         return (int)(i + 1); /* Exact match - return positive index */
@@ -500,7 +622,6 @@ SocketHPACK_Table_new (size_t max_size, Arena_T arena)
     SOCKET_RAISE_MSG (SocketHPACK, SocketHPACK_Error,
                       "failed to allocate SocketHPACK_Table structure");
 
-  /* Estimate initial capacity based on max_size and average entry size */
   initial_capacity = hpack_dynamic_initial_capacity (max_size);
 
   table->entries
@@ -535,113 +656,38 @@ SocketHPACK_Table_free (SocketHPACK_Table_T *table)
 size_t
 SocketHPACK_Table_size (SocketHPACK_Table_T table)
 {
-  if (table == NULL)
-    {
-      SOCKET_LOG_DEBUG_MSG (
-          "SocketHPACK Table_size: NULL table - returning 0");
-      return 0;
-    }
+  if (!hpack_validate_table (table, "Table_size"))
+    return 0;
   return table->size;
 }
 
 size_t
 SocketHPACK_Table_count (SocketHPACK_Table_T table)
 {
-  if (table == NULL)
-    {
-      SOCKET_LOG_DEBUG_MSG (
-          "SocketHPACK Table_count: NULL table - returning 0");
-      return 0;
-    }
+  if (!hpack_validate_table (table, "Table_count"))
+    return 0;
   return table->count;
 }
 
 size_t
 SocketHPACK_Table_max_size (SocketHPACK_Table_T table)
 {
-  if (table == NULL)
-    {
-      SOCKET_LOG_DEBUG_MSG (
-          "SocketHPACK Table_max_size: NULL table - returning 0");
-      return 0;
-    }
+  if (!hpack_validate_table (table, "Table_max_size"))
+    return 0;
   return table->max_size;
 }
 
-/**
- * hpack_table_evict - Evict oldest entries to make room for new entry
- * @table: Dynamic table
- * @required_space: Space needed for new entry (bytes, including overhead)
- *
- * Evicts entries from the head (oldest) of the circular buffer until there
- * is sufficient space for a new entry. Per RFC 7541 Section 4.4, entries
- * are evicted in FIFO order.
- *
- * Returns: Number of entries evicted
- * Thread-safe: No (caller must synchronize if needed)
- *
- * Note: This function is declared extern in SocketHPACK-private.h for use
- * by other HPACK implementation files.
- */
-size_t
-hpack_table_evict (SocketHPACK_Table_T table, size_t required_space)
-{
-  size_t evicted = 0;
-
-  while (table->count > 0 && table->size + required_space > table->max_size)
-    {
-      /* Evict from head (oldest entry) */
-      HPACK_DynamicEntry *entry = &table->entries[table->head];
-      size_t entry_size = hpack_entry_size (entry->name_len, entry->value_len);
-
-      table->size -= entry_size;
-      table->head = (table->head + 1) & (table->capacity - 1);
-      table->count--;
-      evicted++;
-    }
-
-  return evicted;
-}
-
-static void
-hpack_table_clear (SocketHPACK_Table_T table)
-{
-  assert (table != NULL);
-  table->head = 0;
-  table->tail = 0;
-  table->count = 0;
-  table->size = 0;
-}
-
-/**
- * SocketHPACK_Table_set_max_size - Update maximum dynamic table size
- * @table: Dynamic table
- * @max_size: New maximum size in bytes
- *
- * Updates max_size and evicts entries if current size exceeds new limit.
- * If max_size == 0, clears the table entirely.
- * Clamped to SOCKETHPACK_MAX_TABLE_SIZE.
- *
- * Returns: void
- * Thread-safe: No (caller must synchronize)
- */
 void
 SocketHPACK_Table_set_max_size (SocketHPACK_Table_T table, size_t max_size)
 {
-  size_t orig_max = max_size;
-
-  if (table == NULL)
-    {
-      SOCKET_LOG_ERROR_MSG (
-          "SocketHPACK Table_set_max_size: NULL table pointer");
-      return;
-    }
+  if (!hpack_validate_table (table, "Table_set_max_size"))
+    return;
 
   if (max_size > SOCKETHPACK_MAX_TABLE_SIZE)
     {
       SOCKET_LOG_WARN_MSG (
           "SocketHPACK Table_set_max_size: clamping max_size from %zu to %zu",
-          orig_max, SOCKETHPACK_MAX_TABLE_SIZE);
+          max_size, SOCKETHPACK_MAX_TABLE_SIZE);
       max_size = SOCKETHPACK_MAX_TABLE_SIZE;
     }
 
@@ -660,15 +706,13 @@ SocketHPACK_Table_get (SocketHPACK_Table_T table, size_t index,
 {
   size_t actual_index;
   HPACK_DynamicEntry *entry;
+  SocketHPACK_Result res;
 
-  if (table == NULL)
-    {
-      SOCKET_LOG_ERROR_MSG ("SocketHPACK Table_get: NULL table pointer");
-      return HPACK_ERROR;
-    }
+  res = hpack_validate_table_strict (table, "Table_get");
+  if (res != HPACK_OK)
+    return res;
 
-  SocketHPACK_Result res
-      = hpack_validate_index (index, table->count, "Table_get");
+  res = hpack_validate_index (index, table->count, "Table_get");
   if (res != HPACK_OK)
     return res;
 
@@ -676,8 +720,7 @@ SocketHPACK_Table_get (SocketHPACK_Table_T table, size_t index,
   if (res != HPACK_OK)
     return res;
 
-  /* Index 1 = most recent (tail - 1) */
-  /* Index n = oldest (head) */
+  /* Index 1 = most recent (tail - 1), Index n = oldest (head) */
   actual_index = (table->tail - index) & (table->capacity - 1);
   entry = &table->entries[actual_index];
 
@@ -690,64 +733,6 @@ SocketHPACK_Table_get (SocketHPACK_Table_T table, size_t index,
   return HPACK_OK;
 }
 
-/**
- * hpack_duplicate_header_strings - Allocate and duplicate header name/value
- * strings from arena
- * @arena: Arena for allocation
- * @name: Source name (may be NULL if name_len == 0)
- * @name_len: Length of name
- * @value: Source value (may be NULL if value_len == 0)
- * @value_len: Length of value
- * @name_out: Output allocated name copy (null-terminated)
- * @value_out: Output allocated value copy (null-terminated)
- *
- * Duplicates strings with null-termination for safe usage.
- * On allocation failure, returns HPACK_ERROR (partial alloc not cleaned as
- * arena-managed).
- *
- * Returns: HPACK_OK or HPACK_ERROR
- * Thread-safe: Yes (if arena is)
- * Note: Strings owned by caller? No, arena lifetime.
- */
-static char *
-hpack_arena_alloc_dup (Arena_T arena, const char *src, size_t len,
-                       const char *what)
-{
-  char *dup = ALLOC (arena, len + 1);
-  if (dup == NULL)
-    {
-      SOCKET_LOG_ERROR_MSG (
-          "SocketHPACK: failed to allocate header %s copy (length=%zu)", what,
-          len);
-      return NULL;
-    }
-  if (len > 0)
-    memcpy (dup, src, len);
-  dup[len] = '\0';
-  return dup;
-}
-
-static SocketHPACK_Result
-hpack_duplicate_header_strings (Arena_T arena, const char *name,
-                                size_t name_len, const char *value,
-                                size_t value_len, char **name_out,
-                                char **value_out)
-{
-  assert (arena != NULL);
-  assert (name_out != NULL);
-  assert (value_out != NULL);
-
-  *name_out = hpack_arena_alloc_dup (arena, name, name_len, "name");
-  if (*name_out == NULL)
-    return HPACK_ERROR;
-
-  *value_out = hpack_arena_alloc_dup (arena, value, value_len, "value");
-  if (*value_out == NULL)
-    return HPACK_ERROR;
-
-  return HPACK_OK;
-}
-
 SocketHPACK_Result
 SocketHPACK_Table_add (SocketHPACK_Table_T table, const char *name,
                        size_t name_len, const char *value, size_t value_len)
@@ -756,11 +741,9 @@ SocketHPACK_Table_add (SocketHPACK_Table_T table, const char *name,
   HPACK_DynamicEntry *entry_ptr;
   SocketHPACK_Result res;
 
-  if (table == NULL)
-    {
-      SOCKET_LOG_ERROR_MSG ("SocketHPACK Table_add: NULL table pointer");
-      return HPACK_ERROR;
-    }
+  res = hpack_validate_table_strict (table, "Table_add");
+  if (res != HPACK_OK)
+    return res;
 
   if ((name == NULL && name_len != 0) || (value == NULL && value_len != 0))
     {
@@ -770,10 +753,7 @@ SocketHPACK_Table_add (SocketHPACK_Table_T table, const char *name,
     }
 
   entry_size = hpack_entry_size (name_len, value_len);
-
-  res = hpack_table_prepare_insertion (table, entry_size);
-  if (res != HPACK_OK)
-    return res;
+  hpack_table_prepare_insertion (table, entry_size);
 
   entry_ptr = &table->entries[table->tail];
 
@@ -789,32 +769,14 @@ SocketHPACK_Table_add (SocketHPACK_Table_T table, const char *name,
   return HPACK_OK;
 }
 
-/**
- * SocketHPACK_Table_find - Find entry in dynamic table
- * @table: Dynamic table
- * @name: Header name to search for
- * @name_len: Name length
- * @value: Header value (NULL to match name only)
- * @value_len: Value length
- *
- * Searches for an entry in the dynamic table. The search starts from the
- * most recently added entry (index 1) to older entries.
- *
- * Returns: Positive index (1-based) for exact match, negative index if only
- *          name matches, 0 if not found
- * Thread-safe: No
- */
 int
 SocketHPACK_Table_find (SocketHPACK_Table_T table, const char *name,
                         size_t name_len, const char *value, size_t value_len)
 {
   int name_match = 0;
 
-  if (table == NULL)
-    {
-      SOCKET_LOG_DEBUG_MSG ("SocketHPACK Table_find: NULL table pointer");
-      return 0;
-    }
+  if (!hpack_validate_table (table, "Table_find"))
+    return 0;
 
   if (!hpack_validate_search_params (name, name_len))
     return 0;
@@ -823,10 +785,10 @@ SocketHPACK_Table_find (SocketHPACK_Table_T table, const char *name,
     {
       size_t actual_index = (table->tail - 1 - i) & (table->capacity - 1);
       HPACK_DynamicEntry *entry = &table->entries[actual_index];
-
-      int match = hpack_match_entry (entry->name, entry->name_len,
-                                     entry->value, entry->value_len, name,
-                                     name_len, value, value_len);
+      int match
+          = hpack_match_entry (entry->name, entry->name_len, entry->value,
+                               entry->value_len, name, name_len, value,
+                               value_len);
 
       if (match == 1)
         return (int)(i + 1); /* Exact match - return positive index */

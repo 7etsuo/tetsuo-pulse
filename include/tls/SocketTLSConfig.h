@@ -588,6 +588,18 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
 #endif
 
 /**
+ * @brief Maximum TLS session timeout in seconds (30 days)
+ * @ingroup tls_config
+ *
+ * Maximum allowed value for TLS session cache timeout. 30 days provides
+ * generous upper limit while preventing unreasonable values that could
+ * cause security issues with stale session resumption.
+ */
+#ifndef SOCKET_TLS_SESSION_MAX_TIMEOUT
+#define SOCKET_TLS_SESSION_MAX_TIMEOUT 2592000L /* 30 days in seconds */
+#endif
+
+/**
  * @brief Maximum OCSP response size
  * @ingroup tls_config
  *
@@ -692,6 +704,18 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
 #ifndef SOCKET_TLS_CRL_MAX_REFRESH_INTERVAL
 #define SOCKET_TLS_CRL_MAX_REFRESH_INTERVAL                                   \
   (365LL * 24 * 3600) /* Max 1 year in seconds */
+#endif
+
+/**
+ * @brief Maximum certificate file size for pin extraction
+ * @ingroup tls_config
+ *
+ * Maximum size allowed for certificate files when extracting SPKI hashes
+ * for certificate pinning. 1MB is generous for certificates (typical ~2KB)
+ * while preventing memory exhaustion attacks from malicious files.
+ */
+#ifndef SOCKET_TLS_MAX_CERT_FILE_SIZE
+#define SOCKET_TLS_MAX_CERT_FILE_SIZE (1024 * 1024) /* Max 1MB for cert files */
 #endif
 
 /**

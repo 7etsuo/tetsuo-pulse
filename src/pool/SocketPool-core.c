@@ -718,8 +718,8 @@ update_connection_socket (Connection_T conn, SocketReconnect_T conn_r)
   if (new_socket && new_socket != conn->socket)
     {
       conn->socket = new_socket;
-      conn->last_activity = time (NULL);
-      SocketLog_emitf (SOCKET_LOG_INFO, "SocketPool",
+      conn->last_activity = safe_time ();
+      SocketLog_emitf (SOCKET_LOG_INFO, SOCKET_LOG_COMPONENT,
                        "Connection reconnected successfully");
     }
 }
@@ -1188,7 +1188,7 @@ SocketPool_get_stats (T pool, SocketPool_Stats *stats)
   assert (stats);
 
   now_ms = Socket_get_monotonic_ms ();
-  now = time (NULL);
+  now = safe_time ();
 
   pthread_mutex_lock (&pool->mutex);
 
@@ -1328,18 +1328,11 @@ SocketPool_shrink (T pool)
 
   pthread_mutex_lock (&pool->mutex);
 
-  /* Count free slots in free list */
+  /* Count free slots and clear their buffers in single pass */
   curr = pool->free_list;
   while (curr)
     {
       released++;
-      curr = curr->free_next;
-    }
-
-  /* Clear buffers in free slots to reduce memory footprint */
-  curr = pool->free_list;
-  while (curr)
-    {
       if (curr->inbuf)
         SocketBuf_clear (curr->inbuf);
       if (curr->outbuf)

@@ -22,7 +22,6 @@
 #include "core/SocketConfig.h"
 #include "core/SocketCrypto.h"
 #include "core/SocketIPTracker.h"
-#include "core/SocketSecurity.h"
 #include "core/SocketUtil.h"
 #include <arpa/inet.h>
 #include <assert.h>

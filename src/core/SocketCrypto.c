@@ -11,16 +11,9 @@
  */
 
 #include "core/SocketCrypto.h"
+#include "core/SocketSecurity.h"
 #include "core/SocketUtil.h"
 
-#if SOCKET_HAS_TLS
-#include <openssl/evp.h>
-#include <openssl/hmac.h>
-#include <openssl/rand.h>
-#include <openssl/ssl.h>
-#endif
-
-#include "core/SocketSecurity.h"
 #include <assert.h>
 #include <errno.h>
 #include <limits.h>
@@ -34,6 +27,7 @@
 #include <openssl/sha.h>
 #else
 #include <fcntl.h>
+#include <pthread.h>
 #include <unistd.h>
 #endif
 
@@ -107,15 +101,14 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketCrypto);
   while (0)
 
 /**
- * SOCKET_CRYPTO_RAISE_COMPUTE_FAILED - Raise computation failure with
- * function-specific message
- * @name: Prefix name (e.g., "SHA-1")
+ * SOCKET_CRYPTO_RAISE_FAILED - Raise computation failure with algorithm name
+ * @name: Algorithm name string (e.g., "SHA-1")
  *
  * Thread-safe: Yes
  */
-#define SOCKET_CRYPTO_RAISE_COMPUTE_FAILED(name)                              \
+#define SOCKET_CRYPTO_RAISE_FAILED(name)                                      \
   SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,                        \
-                    name " computation failed")
+                    "%s computation failed", name)
 
 /* Use SOCKET_RAISE_MSG directly for clarity where macros not applicable */
 
@@ -129,264 +122,27 @@ static const char base64_alphabet[]
     = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 /* Base64 decoding table: maps ASCII to 6-bit value, 255 = invalid */
+/* clang-format off */
 static const unsigned char base64_decode_table[256] = {
-  /* 0x00-0x0F */ 255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  /* 0x10-0x1F */ 255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  /* 0x20-0x2F */ 255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  62,
-  255,
-  62,
-  255,
-  63,
-  /* 0x30-0x3F '0'-'9' */ 52,
-  53,
-  54,
-  55,
-  56,
-  57,
-  58,
-  59,
-  60,
-  61,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  /* 0x40-0x4F '@','A'-'O' */ 255,
-  0,
-  1,
-  2,
-  3,
-  4,
-  5,
-  6,
-  7,
-  8,
-  9,
-  10,
-  11,
-  12,
-  13,
-  14,
-  /* 0x50-0x5F 'P'-'Z','['-'_' */ 15,
-  16,
-  17,
-  18,
-  19,
-  20,
-  21,
-  22,
-  23,
-  24,
-  25,
-  255,
-  255,
-  255,
-  255,
-  63,
-  /* 0x60-0x6F '`','a'-'o' */ 255,
-  26,
-  27,
-  28,
-  29,
-  30,
-  31,
-  32,
-  33,
-  34,
-  35,
-  36,
-  37,
-  38,
-  39,
-  40,
-  /* 0x70-0x7F 'p'-'z',... */ 41,
-  42,
-  43,
-  44,
-  45,
-  46,
-  47,
-  48,
-  49,
-  50,
-  51,
-  255,
-  255,
-  255,
-  255,
-  255,
-  /* 0x80-0xFF */ 255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255
+  /* 0x00-0x0F */ 255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
+  /* 0x10-0x1F */ 255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
+  /* 0x20-0x2F */ 255,255,255,255,255,255,255,255,255,255,255, 62,255, 62,255, 63,
+  /* 0x30-0x3F */  52, 53, 54, 55, 56, 57, 58, 59, 60, 61,255,255,255,255,255,255,
+  /* 0x40-0x4F */ 255,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
+  /* 0x50-0x5F */  15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,255,255,255,255, 63,
+  /* 0x60-0x6F */ 255, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+  /* 0x70-0x7F */  41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51,255,255,255,255,255,
+  /* 0x80-0xFF - high ASCII all invalid */
+  255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
+  255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
+  255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
+  255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
+  255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
+  255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
+  255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
+  255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255
 };
+/* clang-format on */
 
 /* Hex encoding alphabets */
 static const char hex_lower[] = "0123456789abcdef";
@@ -401,30 +157,36 @@ void
 SocketCrypto_sha1 (const void *input, size_t input_len,
                    unsigned char output[SOCKET_CRYPTO_SHA1_SIZE])
 {
-  (void) output;  /* Unused in stub implementation; suppress warning */
   assert (output);
 
   SOCKET_CRYPTO_CHECK_INPUT (input, input_len, "SHA-1");
-  /* Empty input is valid for hashing - check only if size exceeds max */
   if (input_len > 0 && !SOCKET_SECURITY_VALID_SIZE (input_len))
-    {
-      SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,
-                        "SHA-1: input too large: %zu > %zu", (size_t)input_len,
-                        (size_t)SOCKET_SECURITY_MAX_ALLOCATION);
-    }
+    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,
+                      "SHA-1: input too large: %zu > %zu", (size_t)input_len,
+                      (size_t)SOCKET_SECURITY_MAX_ALLOCATION);
 
 #if SOCKET_HAS_TLS
-  EVP_MD_CTX *ctx = EVP_MD_CTX_new ();
-  if (!ctx || EVP_DigestInit_ex (ctx, EVP_sha1 (), NULL) != 1
-      || EVP_DigestUpdate (ctx, input, input_len) != 1
-      || EVP_DigestFinal_ex (ctx, output, NULL) != 1)
-    {
-      if (ctx)
-        EVP_MD_CTX_free (ctx);
-      SOCKET_CRYPTO_RAISE_COMPUTE_FAILED ("SHA-1");
-    }
-  EVP_MD_CTX_free (ctx);
+  EVP_MD_CTX *ctx = NULL;
+  TRY
+  {
+    ctx = EVP_MD_CTX_new ();
+    if (!ctx)
+      SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,
+                        "SHA-1: Failed to create context");
+
+    if (EVP_DigestInit_ex (ctx, EVP_sha1 (), NULL) != 1
+        || EVP_DigestUpdate (ctx, input, input_len) != 1
+        || EVP_DigestFinal_ex (ctx, output, NULL) != 1)
+      SOCKET_CRYPTO_RAISE_FAILED ("SHA-1");
+  }
+  FINALLY
+  {
+    if (ctx)
+      EVP_MD_CTX_free (ctx);
+  }
+  END_TRY;
 #else
+  (void)output;
   SOCKET_CRYPTO_REQUIRE_TLS;
 #endif
 }
@@ -433,31 +195,36 @@ void
 SocketCrypto_sha256 (const void *input, size_t input_len,
                      unsigned char output[SOCKET_CRYPTO_SHA256_SIZE])
 {
-  (void) output;  /* Unused in stub implementation; suppress warning */
   assert (output);
 
   SOCKET_CRYPTO_CHECK_INPUT (input, input_len, "SHA-256");
-  /* Empty input is valid for hashing - check only if size exceeds max */
   if (input_len > 0 && !SOCKET_SECURITY_VALID_SIZE (input_len))
-    {
-      SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,
-                        "SHA-256: input too large: %zu > %zu",
-                        (size_t)input_len,
-                        (size_t)SOCKET_SECURITY_MAX_ALLOCATION);
-    }
+    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,
+                      "SHA-256: input too large: %zu > %zu", (size_t)input_len,
+                      (size_t)SOCKET_SECURITY_MAX_ALLOCATION);
 
 #if SOCKET_HAS_TLS
-  EVP_MD_CTX *ctx = EVP_MD_CTX_new ();
-  if (!ctx || EVP_DigestInit_ex (ctx, EVP_sha256 (), NULL) != 1
-      || EVP_DigestUpdate (ctx, input, input_len) != 1
-      || EVP_DigestFinal_ex (ctx, output, NULL) != 1)
-    {
-      if (ctx)
-        EVP_MD_CTX_free (ctx);
-      SOCKET_CRYPTO_RAISE_COMPUTE_FAILED ("SHA-256");
-    }
-  EVP_MD_CTX_free (ctx);
+  EVP_MD_CTX *ctx = NULL;
+  TRY
+  {
+    ctx = EVP_MD_CTX_new ();
+    if (!ctx)
+      SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,
+                        "SHA-256: Failed to create context");
+
+    if (EVP_DigestInit_ex (ctx, EVP_sha256 (), NULL) != 1
+        || EVP_DigestUpdate (ctx, input, input_len) != 1
+        || EVP_DigestFinal_ex (ctx, output, NULL) != 1)
+      SOCKET_CRYPTO_RAISE_FAILED ("SHA-256");
+  }
+  FINALLY
+  {
+    if (ctx)
+      EVP_MD_CTX_free (ctx);
+  }
+  END_TRY;
 #else
+  (void)output;
   SOCKET_CRYPTO_REQUIRE_TLS;
 #endif
 }
@@ -466,17 +233,13 @@ void
 SocketCrypto_md5 (const void *input, size_t input_len,
                   unsigned char output[SOCKET_CRYPTO_MD5_SIZE])
 {
-  (void) output;  /* Unused in stub implementation; suppress warning */
   assert (output);
 
   SOCKET_CRYPTO_CHECK_INPUT (input, input_len, "MD5");
-  /* Empty input is valid for hashing - check only if size exceeds max */
   if (input_len > 0 && !SOCKET_SECURITY_VALID_SIZE (input_len))
-    {
-      SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,
-                        "MD5: input too large: %zu > %zu", (size_t)input_len,
-                        (size_t)SOCKET_SECURITY_MAX_ALLOCATION);
-    }
+    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,
+                      "MD5: input too large: %zu > %zu", (size_t)input_len,
+                      (size_t)SOCKET_SECURITY_MAX_ALLOCATION);
 
 #if SOCKET_HAS_TLS
   EVP_MD_CTX *ctx = NULL;
@@ -490,7 +253,7 @@ SocketCrypto_md5 (const void *input, size_t input_len,
     if (EVP_DigestInit_ex (ctx, EVP_md5 (), NULL) != 1
         || EVP_DigestUpdate (ctx, input, input_len) != 1
         || EVP_DigestFinal_ex (ctx, output, NULL) != 1)
-      SOCKET_CRYPTO_RAISE_COMPUTE_FAILED ("MD5");
+      SOCKET_CRYPTO_RAISE_FAILED ("MD5");
   }
   FINALLY
   {
@@ -499,6 +262,7 @@ SocketCrypto_md5 (const void *input, size_t input_len,
   }
   END_TRY;
 #else
+  (void)output;
   SOCKET_CRYPTO_REQUIRE_TLS;
 #endif
 }
@@ -549,7 +313,7 @@ SocketCrypto_hmac_sha256 (const void *key, size_t key_len, const void *data,
               data_len, output, &hmac_len);
 
   if (!result || hmac_len != SOCKET_CRYPTO_SHA256_SIZE)
-    SOCKET_CRYPTO_RAISE_COMPUTE_FAILED ("HMAC-SHA256");
+    SOCKET_CRYPTO_RAISE_FAILED ("HMAC-SHA256");
 #else
   (void)output;
   SOCKET_CRYPTO_REQUIRE_TLS;
@@ -1033,8 +797,6 @@ SocketCrypto_hex_decode (const char *input, size_t input_len,
  */
 
 #if !SOCKET_HAS_TLS
-#include <pthread.h>
-
 static pthread_mutex_t urand_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int urand_fd = -1;
 #endif

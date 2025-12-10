@@ -816,11 +816,17 @@ SocketBuf_readline (T buf, char *line, size_t max_len)
 
   if (nl_pos2) {
     line_bytes = nl_pos2 - temp;
+    /* Strip trailing \r if present (handle \r\n line endings) */
+    if (line_bytes > 0 && temp[line_bytes - 1] == '\r')
+      line_bytes--;
     memcpy(line, temp, line_bytes);
     line[line_bytes] = '\0';
   } else {
     /* No newline found, return what we have */
     line_bytes = bytes_read;
+    /* Strip trailing \r if present */
+    if (line_bytes > 0 && temp[line_bytes - 1] == '\r')
+      line_bytes--;
     memcpy(line, temp, line_bytes);
     line[line_bytes] = '\0';
   }

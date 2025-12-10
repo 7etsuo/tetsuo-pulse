@@ -26,23 +26,6 @@
 #include "pool/SocketPool-private.h"
 /* SocketUtil.h included via SocketPool-private.h */
 
-/* ============================================================================
- * Drain Constants
- * ============================================================================
- */
-
-/** Minimum backoff for drain_wait polling (milliseconds) */
-#define SOCKET_POOL_SOCKET_POOL_DRAIN_BACKOFF_MIN_MS 1
-
-/** Maximum backoff for drain_wait polling (milliseconds) */
-#define SOCKET_POOL_SOCKET_POOL_DRAIN_BACKOFF_MAX_MS 100
-
-/** Backoff multiplier for drain_wait polling */
-#define SOCKET_POOL_SOCKET_POOL_DRAIN_BACKOFF_MULTIPLIER 2
-
-/** Infinite timeout sentinel for input */
-#define SOCKET_POOL_SOCKET_POOL_DRAIN_TIMEOUT_INFINITE (-1)
-
 /* Override default log component (SocketUtil.h sets "Socket") */
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "SocketPool"
@@ -50,7 +33,7 @@
 #define T SocketPool_T
 
 /* ============================================================================
- * Constants
+ * Drain Constants
  * ============================================================================
  */
 
@@ -65,6 +48,9 @@
 
 /** Infinite timeout sentinel */
 #define SOCKET_POOL_DRAIN_TIMEOUT_INFINITE (-1)
+
+/** Nanoseconds per millisecond (for nanosleep conversion) */
+#define NSEC_PER_MSEC 1000000L
 
 /* ============================================================================
  * Internal Helpers
@@ -216,8 +202,9 @@ close_collected_connections (T pool, Socket_T *sockets, size_t count)
       if (sock)
         {
           shutdown_socket_gracefully (sock);
-          SocketPool_remove (pool, sockets[i]);
-          Socket_free (&sockets[i]);
+          SocketPool_remove (pool, sock);
+          Socket_free (&sock);
+          sockets[i] = NULL;
         }
     }
 }
@@ -414,17 +401,19 @@ SocketPool_drain (T pool, int timeout_ms)
 {
   int64_t now_ms;
   size_t current_count;
+  SocketPool_State current_state;
 
   assert (pool);
 
   pthread_mutex_lock (&pool->mutex);
 
   /* Only transition from RUNNING */
-  if (load_pool_state (pool) != POOL_STATE_RUNNING)
+  current_state = load_pool_state (pool);
+  if (current_state != POOL_STATE_RUNNING)
     {
       SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
                        "Pool drain called but state is %d (not RUNNING)",
-                       (int)load_pool_state (pool));
+                       (int)current_state);
       pthread_mutex_unlock (&pool->mutex);
       return;
     }
@@ -622,7 +611,7 @@ SocketPool_drain_wait (T pool, int timeout_ms)
     {
       /* Sleep with exponential backoff */
       ts.tv_sec = backoff_ms / 1000;
-      ts.tv_nsec = (backoff_ms % 1000) * 1000000L;
+      ts.tv_nsec = (backoff_ms % 1000) * NSEC_PER_MSEC;
       nanosleep (&ts, NULL);
 
       /* Increase backoff up to max */

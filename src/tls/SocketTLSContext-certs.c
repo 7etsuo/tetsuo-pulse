@@ -14,22 +14,60 @@
 #if SOCKET_HAS_TLS
 
 #include "tls/SocketTLS-private.h"
+#include "core/SocketSecurity.h"
 #include <assert.h>
 #include <errno.h>
-#include <openssl/evp.h> /* For i2d_PrivateKey in secure free */
+#include <stdarg.h>
+#include <openssl/evp.h>
 #include <openssl/pem.h>
-#include <openssl/x509v3.h> /* For X509_check_host in SNI validation */
-#include <stdio.h>
+#include <openssl/x509v3.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h> /* strcasecmp for RFC 6066 case-insensitive SNI matching */
+#include <strings.h>
 
 #define T SocketTLSContext_T
 
 /* ============================================================================
- * Certificate Management
+ * Internal Error Helpers
  * ============================================================================
  */
+
+/**
+ * ctx_raise_error_fmt - Raise TLS exception with formatted message
+ * @fmt: Format string
+ * @...: Format arguments
+ *
+ * Raises: SocketTLS_Failed with formatted error message
+ */
+static void
+ctx_raise_error_fmt (const char *fmt, ...)
+{
+  char buf[SOCKET_TLS_ERROR_BUFSIZE];
+  va_list args;
+  va_start (args, fmt);
+  vsnprintf (buf, sizeof (buf), fmt, args);
+  va_end (args);
+  ctx_raise_openssl_error (buf);
+}
+
+/* ============================================================================
+ * Path Validation
+ * ============================================================================
+ */
+
+/**
+ * validate_file_path_or_raise - Validate file path and raise on failure
+ * @path: File path to validate
+ * @desc: Description for error message (e.g., "certificate", "private key")
+ *
+ * Raises: SocketTLS_Failed on invalid path
+ */
+static void
+validate_file_path_or_raise (const char *path, const char *desc)
+{
+  if (!tls_validate_file_path (path))
+    ctx_raise_error_fmt ("Invalid %s file path '%s'", desc, path);
+}
 
 /**
  * validate_cert_key_paths - Validate certificate and key file paths
@@ -41,21 +79,14 @@
 static void
 validate_cert_key_paths (const char *cert_file, const char *key_file)
 {
-  if (!tls_validate_file_path (cert_file))
-    {
-      char buf[SOCKET_TLS_ERROR_BUFSIZE];
-      snprintf (buf, sizeof (buf), "Invalid certificate file path '%s'",
-                cert_file);
-      ctx_raise_openssl_error (buf);
-    }
-  if (!tls_validate_file_path (key_file))
-    {
-      char buf[SOCKET_TLS_ERROR_BUFSIZE];
-      snprintf (buf, sizeof (buf), "Invalid private key file path '%s'",
-                key_file);
-      ctx_raise_openssl_error (buf);
-    }
+  validate_file_path_or_raise (cert_file, "certificate");
+  validate_file_path_or_raise (key_file, "private key");
 }
+
+/* ============================================================================
+ * Certificate Management
+ * ============================================================================
+ */
 
 void
 SocketTLSContext_load_certificate (T ctx, const char *cert_file,
@@ -70,20 +101,14 @@ SocketTLSContext_load_certificate (T ctx, const char *cert_file,
 
   if (SSL_CTX_use_certificate_file (ctx->ssl_ctx, cert_file, SSL_FILETYPE_PEM)
       != 1)
-    {
-      ctx_raise_openssl_error ("Failed to load certificate file");
-    }
+    ctx_raise_openssl_error ("Failed to load certificate file");
 
   if (SSL_CTX_use_PrivateKey_file (ctx->ssl_ctx, key_file, SSL_FILETYPE_PEM)
       != 1)
-    {
-      ctx_raise_openssl_error ("Failed to load private key file");
-    }
+    ctx_raise_openssl_error ("Failed to load private key file");
 
   if (SSL_CTX_check_private_key (ctx->ssl_ctx) != 1)
-    {
-      ctx_raise_openssl_error ("Private key does not match certificate");
-    }
+    ctx_raise_openssl_error ("Private key does not match certificate");
 }
 
 void
@@ -93,19 +118,12 @@ SocketTLSContext_load_ca (T ctx, const char *ca_file)
   assert (ctx->ssl_ctx);
   assert (ca_file);
 
-  if (!tls_validate_file_path (ca_file))
-    {
-      char buf[SOCKET_TLS_ERROR_BUFSIZE];
-      snprintf (buf, sizeof (buf), "Invalid CA file path '%s'", ca_file);
-      ctx_raise_openssl_error (buf);
-    }
+  validate_file_path_or_raise (ca_file, "CA");
 
   if (SSL_CTX_load_verify_locations (ctx->ssl_ctx, ca_file, NULL) != 1)
     {
       if (SSL_CTX_load_verify_locations (ctx->ssl_ctx, NULL, ca_file) != 1)
-        {
-          ctx_raise_openssl_error ("Failed to load CA certificates");
-        }
+        ctx_raise_openssl_error ("Failed to load CA certificates");
     }
 }
 
@@ -117,13 +135,13 @@ SocketTLSContext_load_ca (T ctx, const char *ca_file)
 /**
  * apply_sni_cert - Apply certificate and key to SSL connection
  * @ssl: SSL connection object
- * @cert: X509 certificate to apply
+ * @chain: Certificate chain (leaf at index 0)
  * @pkey: Private key to apply
  *
  * Returns: SSL_TLSEXT_ERR_OK on success, SSL_TLSEXT_ERR_NOACK on failure
  */
 static int
-apply_sni_cert (SSL *ssl, STACK_OF (X509) * chain, EVP_PKEY *pkey)
+apply_sni_cert (SSL *ssl, const STACK_OF (X509) * chain, EVP_PKEY *pkey)
 {
   if (!chain || sk_X509_num (chain) == 0 || !pkey)
     return SSL_TLSEXT_ERR_NOACK;
@@ -139,18 +157,11 @@ apply_sni_cert (SSL *ssl, STACK_OF (X509) * chain, EVP_PKEY *pkey)
   if (SSL_check_private_key (ssl) != 1)
     return SSL_TLSEXT_ERR_NOACK;
 
-  /* Add intermediate certificates from chain (indices 1+), retaining refs with
-   * add1 */
   for (int i = 1; i < sk_X509_num (chain); ++i)
     {
       X509 *inter = sk_X509_value (chain, i);
       if (inter && SSL_add1_chain_cert (ssl, inter) != 1)
-        {
-          /* Failure to add intermediate; client may still validate if has it
-             cached, but log and continue? For strict, could cleanup and return
-             error. Here, return NOACK to fallback to default cert. */
-          return SSL_TLSEXT_ERR_NOACK;
-        }
+        return SSL_TLSEXT_ERR_NOACK;
     }
 
   return SSL_TLSEXT_ERR_OK;
@@ -162,10 +173,6 @@ apply_sni_cert (SSL *ssl, STACK_OF (X509) * chain, EVP_PKEY *pkey)
  * @hostname: Hostname to match (case-insensitive per RFC 6066)
  *
  * Returns: Index of matching certificate, or -1 if not found
- *
- * Note: Uses O(n) linear scan. Sufficient for typical SNI certificate
- * counts (< 100). For high-volume virtual hosting, consider hash table.
- * Per RFC 6066 Section 3, hostnames are DNS names which are case-insensitive.
  */
 static int
 find_sni_cert_index (const T ctx, const char *hostname)
@@ -210,74 +217,20 @@ sni_callback (SSL *ssl, int *ad, void *arg)
  * ============================================================================
  */
 
-#include "core/SocketCrypto.h" /* For secure_clear if needed */
-#include "core/SocketSecurity.h"
-
 /**
- * sni_alloc_new_arrays - Allocate new SNI arrays with given capacity
- * @cap: New capacity
- * @hostnames: Output hostname array pointer
- * @cert_files: Output cert_files array pointer
- * @key_files: Output key_files array pointer
- * @certs: Output certs array pointer
- * @pkeys: Output pkeys array pointer
+ * sni_realloc_array - Safely reallocate a single SNI array
+ * @ptr: Pointer to array pointer
+ * @new_size: New size in bytes
  *
- * Returns: 1 on success (all allocated), 0 on failure (none changed)
+ * Returns: 1 on success, 0 on failure (original pointer unchanged)
  */
 static int
-sni_alloc_new_arrays (size_t cap, char ***hostnames, char ***cert_files,
-                      char ***key_files, STACK_OF (X509) * **chains,
-                      EVP_PKEY ***pkeys)
+sni_realloc_array (void **ptr, size_t new_size)
 {
-  struct
-  {
-    void **orig;
-    void *newp;
-  } arrays[5] = { { (void **)*hostnames, NULL },
-                  { (void **)*cert_files, NULL },
-                  { (void **)*key_files, NULL },
-                  { (void **)*chains, NULL },
-                  { (void **)*pkeys, NULL } };
-
-  size_t alloc_size;
-  if (!SocketSecurity_check_multiply (cap, sizeof (void *), &alloc_size)
-      || !SocketSecurity_check_size (alloc_size))
-    {
-      return 0; /* Overflow or too large - fail allocation */
-    }
-  size_t size = alloc_size;
-
-  int success = 1;
-  for (int i = 0; i < 5; ++i)
-    {
-      arrays[i].newp = realloc (arrays[i].orig, size);
-      if (!arrays[i].newp)
-        {
-          success = 0;
-          break;
-        }
-    }
-
-  if (!success)
-    {
-      for (int i = 0; i < 5; ++i)
-        {
-          void *newp = arrays[i].newp;
-          if (newp && newp != arrays[i].orig)
-            {
-              free (newp);
-            }
-        }
-      return 0;
-    }
-
-  /* Assign back */
-  *hostnames = (char **)arrays[0].newp;
-  *cert_files = (char **)arrays[1].newp;
-  *key_files = (char **)arrays[2].newp;
-  *chains = (STACK_OF (X509) **)arrays[3].newp;
-  *pkeys = (EVP_PKEY **)arrays[4].newp;
-
+  void *new_ptr = realloc (*ptr, new_size);
+  if (!new_ptr)
+    return 0;
+  *ptr = new_ptr;
   return 1;
 }
 
@@ -295,14 +248,18 @@ expand_sni_capacity (T ctx)
                        ? SOCKET_TLS_SNI_INITIAL_CAPACITY
                        : ctx->sni_certs.capacity * 2;
 
-  int ok = sni_alloc_new_arrays (
-      new_cap, &ctx->sni_certs.hostnames, &ctx->sni_certs.cert_files,
-      &ctx->sni_certs.key_files, &ctx->sni_certs.chains,
-      &ctx->sni_certs.pkeys);
-  if (!ok)
-    {
-      ctx_raise_openssl_error ("Failed to allocate SNI certificate arrays");
-    }
+  size_t alloc_size;
+  if (!SocketSecurity_check_multiply (new_cap, sizeof (void *), &alloc_size)
+      || !SocketSecurity_check_size (alloc_size))
+    ctx_raise_openssl_error ("SNI capacity overflow");
+
+  /* Reallocate each array - on failure, originals are preserved */
+  if (!sni_realloc_array ((void **)&ctx->sni_certs.hostnames, alloc_size)
+      || !sni_realloc_array ((void **)&ctx->sni_certs.cert_files, alloc_size)
+      || !sni_realloc_array ((void **)&ctx->sni_certs.key_files, alloc_size)
+      || !sni_realloc_array ((void **)&ctx->sni_certs.chains, alloc_size)
+      || !sni_realloc_array ((void **)&ctx->sni_certs.pkeys, alloc_size))
+    ctx_raise_openssl_error ("Failed to allocate SNI certificate arrays");
 
   ctx->sni_certs.capacity = new_cap;
 }
@@ -324,41 +281,27 @@ static char *
 validate_and_copy_hostname (T ctx, const char *hostname)
 {
   if (!tls_validate_hostname (hostname))
-    {
-      char buf[SOCKET_TLS_ERROR_BUFSIZE];
-      snprintf (buf, sizeof (buf),
-                "Invalid SNI hostname '%s': invalid format or length",
-                hostname);
-      ctx_raise_openssl_error (buf);
-    }
+    ctx_raise_error_fmt ("Invalid SNI hostname '%s': invalid format or length",
+                         hostname);
 
-  return ctx_arena_strdup (ctx, hostname,
-                           "Failed to allocate hostname buffer");
+  return ctx_arena_strdup (ctx, hostname, "Failed to allocate hostname buffer");
 }
 
 /**
- * store_sni_hostname - Store hostname in SNI array
+ * store_sni_metadata - Store hostname and paths in SNI arrays
  * @ctx: Context
  * @hostname: Hostname to store (NULL for default)
- */
-static void
-store_sni_hostname (T ctx, const char *hostname)
-{
-  size_t idx = ctx->sni_certs.count;
-  ctx->sni_certs.hostnames[idx]
-      = hostname ? validate_and_copy_hostname (ctx, hostname) : NULL;
-}
-
-/**
- * store_sni_paths - Store cert/key paths in SNI arrays
- * @ctx: Context
  * @cert_file: Certificate file path
  * @key_file: Key file path
  */
 static void
-store_sni_paths (T ctx, const char *cert_file, const char *key_file)
+store_sni_metadata (T ctx, const char *hostname, const char *cert_file,
+                    const char *key_file)
 {
   size_t idx = ctx->sni_certs.count;
+
+  ctx->sni_certs.hostnames[idx]
+      = hostname ? validate_and_copy_hostname (ctx, hostname) : NULL;
 
   ctx->sni_certs.cert_files[idx] = ctx_arena_strdup (
       ctx, cert_file, "Failed to allocate certificate path buffer");
@@ -368,31 +311,22 @@ store_sni_paths (T ctx, const char *cert_file, const char *key_file)
 }
 
 /**
- * open_pem_file - Open a PEM file for reading
- * @path: File path
- * @error_msg: Error message on failure
+ * check_pem_file_size - Validate PEM file size against security limits
+ * @fp: Open file pointer (will be reset to beginning)
+ * @path: File path for error messages
+ * @obj_type: Object type for error messages
  *
- * Returns: FILE pointer
- * Raises: SocketTLS_Failed if file cannot be opened
+ * Raises: SocketTLS_Failed if file too large or seek fails
  */
-static FILE *
-open_pem_file (const char *path, const char *obj_type)
+static void
+check_pem_file_size (FILE *fp, const char *path, const char *obj_type)
 {
-  FILE *fp = fopen (path, "r");
-  if (!fp)
-    {
-      char temp_buf[SOCKET_TLS_ERROR_BUFSIZE];
-      snprintf (temp_buf, sizeof (temp_buf), "Cannot open %s file '%s': %s",
-                obj_type, path, strerror (errno));
-      ctx_raise_openssl_error (temp_buf);
-    }
-
-  /* Check file size to prevent DoS from oversized PEM files */
   if (fseek (fp, 0, SEEK_END) != 0)
     {
       fclose (fp);
       ctx_raise_openssl_error ("Cannot seek in PEM file");
     }
+
   long fsize = ftell (fp);
   if (fseek (fp, 0, SEEK_SET) != 0 || fsize == -1)
     {
@@ -400,62 +334,41 @@ open_pem_file (const char *path, const char *obj_type)
       ctx_raise_openssl_error ("Cannot determine PEM file size");
     }
 
-  size_t max_file_size
-      = SocketSecurity_get_max_allocation ()
-        / 16; /* Conservative limit ~1-16MB depending on config */
+  size_t max_file_size = SocketSecurity_get_max_allocation () / 16;
   if ((size_t)fsize > max_file_size)
     {
       fclose (fp);
-      char temp_buf[SOCKET_TLS_ERROR_BUFSIZE];
-      snprintf (temp_buf, sizeof (temp_buf),
-                "%s file '%s' too large: %ld bytes (max %zu)", obj_type, path,
-                fsize, max_file_size);
-      ctx_raise_openssl_error (temp_buf);
+      ctx_raise_error_fmt ("%s file '%s' too large: %ld bytes (max %zu)",
+                           obj_type, path, fsize, max_file_size);
     }
+}
 
+/**
+ * open_pem_file - Open a PEM file for reading with size validation
+ * @path: File path
+ * @obj_type: Object type for error messages
+ *
+ * Returns: FILE pointer
+ * Raises: SocketTLS_Failed if file cannot be opened or is too large
+ */
+static FILE *
+open_pem_file (const char *path, const char *obj_type)
+{
+  FILE *fp = fopen (path, "r");
+  if (!fp)
+    ctx_raise_error_fmt ("Cannot open %s file '%s': %s", obj_type, path,
+                         strerror (errno));
+
+  check_pem_file_size (fp, path, obj_type);
   return fp;
 }
 
 /**
- * load_pem_object - Generic PEM object loader from file
- * @path: File path to PEM
- * @obj_type: Object type string for error messages ("certificate", "private
- * key")
- * @reader: PEM reader function (e.g., PEM_read_X509 or PEM_read_PrivateKey)
- *
- * Loads a PEM-encoded object using the provided reader function.
- * Handles file open, read, close, and error raising consistently.
- *
- * Returns: Loaded object (caller casts to X509* or EVP_PKEY*)
- * Raises: SocketTLS_Failed on file open or parse failure
- * Thread-safe: No
- */
-static void *
-load_pem_object (const char *path, const char *obj_type,
-                 void *(*reader) (FILE *, void *, void *, void *))
-{
-  FILE *fp = open_pem_file (path, obj_type);
-
-  void *obj = reader (fp, NULL, NULL, NULL);
-  fclose (fp);
-
-  if (!obj)
-    {
-      char errbuf[SOCKET_TLS_ERROR_BUFSIZE];
-      snprintf (errbuf, sizeof (errbuf), "Failed to parse %s PEM", obj_type);
-      ctx_raise_openssl_error (errbuf);
-    }
-
-  return obj;
-}
-
-/**
- * load_cert_from_file - Load X509 certificate from PEM file
+ * load_chain_from_file - Load X509 certificate chain from PEM file
  * @cert_file: Certificate file path
  *
- * Returns: Loaded X509 certificate
+ * Returns: Loaded certificate chain (caller owns)
  * Raises: SocketTLS_Failed on file or parse error
- * Thread-safe: No
  */
 static STACK_OF (X509) * load_chain_from_file (const char *cert_file)
 {
@@ -468,9 +381,6 @@ static STACK_OF (X509) * load_chain_from_file (const char *cert_file)
       ctx_raise_openssl_error ("Failed to allocate certificate chain stack");
     }
 
-  /* Use volatile to prevent clobbering by longjmp in exception handlers.
-   * GCC warns that cert may be clobbered by calls to ctx_raise_openssl_error
-   * which uses longjmp internally. */
   X509 *volatile cert = NULL;
   int num_certs = 0;
 
@@ -479,7 +389,7 @@ static STACK_OF (X509) * load_chain_from_file (const char *cert_file)
       if (sk_X509_push (chain, (X509 *)cert) > 0)
         num_certs++;
       else
-        X509_free ((X509 *)cert); /* Push failed, free it */
+        X509_free ((X509 *)cert);
       cert = NULL;
     }
 
@@ -488,16 +398,10 @@ static STACK_OF (X509) * load_chain_from_file (const char *cert_file)
   if (num_certs == 0)
     {
       sk_X509_free (chain);
-      /* No certificates read - this is a real error */
       ctx_raise_openssl_error ("No certificates found in certificate file");
     }
 
-  /* Clear the OpenSSL error queue after successful reading.
-   * PEM_read_X509 returns NULL and sets PEM_R_NO_START_LINE error
-   * when reaching EOF, which is expected behavior, not an error.
-   * Only treat as error if we failed to read any certificates. */
   ERR_clear_error ();
-
   return chain;
 }
 
@@ -505,23 +409,53 @@ static STACK_OF (X509) * load_chain_from_file (const char *cert_file)
  * load_pkey_from_file - Load private key from PEM file
  * @key_file: Key file path
  *
- * Returns: Loaded EVP_PKEY
+ * Returns: Loaded EVP_PKEY (caller owns)
  * Raises: SocketTLS_Failed on file or parse error
- * Thread-safe: No
  */
 static EVP_PKEY *
 load_pkey_from_file (const char *key_file)
 {
-  return (EVP_PKEY *)load_pem_object (
-      key_file, "private key",
-      (void *(*)(FILE *, void *, void *, void *))PEM_read_PrivateKey);
+  FILE *fp = open_pem_file (key_file, "private key");
+  EVP_PKEY *pkey = PEM_read_PrivateKey (fp, NULL, NULL, NULL);
+  fclose (fp);
+
+  if (!pkey)
+    ctx_raise_openssl_error ("Failed to parse private key PEM");
+
+  return pkey;
+}
+
+/**
+ * verify_keypair_match - Verify certificate and key match
+ * @chain: Certificate chain (leaf at index 0)
+ * @pkey: Private key
+ *
+ * Raises: SocketTLS_Failed if key doesn't match or chain is empty
+ */
+static void
+verify_keypair_match (STACK_OF (X509) * chain, EVP_PKEY *pkey)
+{
+  if (sk_X509_num (chain) == 0)
+    {
+      sk_X509_free (chain);
+      tls_secure_free_pkey (pkey);
+      ctx_raise_openssl_error ("Empty certificate chain");
+    }
+
+  X509 *leaf = sk_X509_value (chain, 0);
+  if (X509_check_private_key (leaf, pkey) != 1)
+    {
+      sk_X509_pop_free (chain, X509_free);
+      tls_secure_free_pkey (pkey);
+      ctx_raise_openssl_error ("Private key does not match leaf certificate");
+    }
 }
 
 /**
  * load_and_verify_keypair - Load cert/key and verify they match
  * @cert_file: Certificate file path
  * @key_file: Key file path
- * @cert_out: Output certificate pointer
+ * @chain_out: Output certificate chain pointer
  * @pkey_out: Output private key pointer
  *
  * Raises: SocketTLS_Failed on any load or validation error
@@ -539,37 +473,10 @@ load_and_verify_keypair (const char *cert_file, const char *key_file,
   RERAISE;
   END_TRY;
 
-  if (sk_X509_num (chain) == 0)
-    {
-      sk_X509_free (chain);
-      tls_secure_free_pkey (pkey);
-      ctx_raise_openssl_error ("Empty certificate chain");
-    }
-
-  X509 *leaf = sk_X509_value (chain, 0);
-  if (X509_check_private_key (leaf, pkey) != 1)
-    {
-      sk_X509_pop_free (chain, X509_free);
-      tls_secure_free_pkey (pkey);
-      ctx_raise_openssl_error ("Private key does not match leaf certificate");
-    }
+  verify_keypair_match (chain, pkey);
 
   *chain_out = chain;
   *pkey_out = pkey;
-}
-
-/**
- * store_sni_objects - Store loaded cert/key in SNI arrays
- * @ctx: Context
- * @cert: Loaded certificate
- * @pkey: Loaded private key
- */
-static void
-store_sni_chain_and_pkey (T ctx, size_t idx, STACK_OF (X509) * chain,
-                          EVP_PKEY *pkey)
-{
-  ctx->sni_certs.chains[idx] = chain;
-  ctx->sni_certs.pkeys[idx] = pkey;
 }
 
 /* ============================================================================
@@ -587,10 +494,8 @@ static void
 validate_server_context (const T ctx)
 {
   if (!ctx->is_server)
-    {
-      ctx_raise_openssl_error (
-          "SNI certificates only supported for server contexts");
-    }
+    ctx_raise_openssl_error (
+        "SNI certificates only supported for server contexts");
 }
 
 /**
@@ -603,9 +508,7 @@ static void
 validate_sni_count (const T ctx)
 {
   if (ctx->sni_certs.count >= SOCKET_TLS_MAX_SNI_CERTS)
-    {
-      ctx_raise_openssl_error ("Too many SNI certificates");
-    }
+    ctx_raise_openssl_error ("Too many SNI certificates");
 }
 
 /**
@@ -616,18 +519,13 @@ static void
 ensure_sni_capacity (T ctx)
 {
   if (ctx->sni_certs.count >= ctx->sni_certs.capacity)
-    {
-      expand_sni_capacity (ctx);
-    }
+    expand_sni_capacity (ctx);
 }
 
 /**
  * register_sni_callback_if_needed - Register SNI callback when appropriate
  * @ctx: Context to configure
  * @hostname: Hostname that was added (NULL if default)
- *
- * Registers the SNI callback if we have multiple certificates or
- * if the certificate has a specific hostname (not the default).
  */
 static void
 register_sni_callback_if_needed (T ctx, const char *hostname)
@@ -640,17 +538,28 @@ register_sni_callback_if_needed (T ctx, const char *hostname)
 }
 
 /**
- * set_default_certificate - Apply default certificate to context
- * @ctx: Context
- * @cert_file: Certificate file path
- * @key_file: Key file path
+ * validate_hostname_matches_cert - Verify hostname matches certificate CN/SAN
+ * @chain: Certificate chain
+ * @pkey: Private key (freed on error)
+ * @hostname: Hostname to verify
  *
- * Called when hostname is NULL to set the default certificate.
+ * Raises: SocketTLS_Failed if hostname doesn't match certificate
  */
 static void
-set_default_certificate (T ctx, const char *cert_file, const char *key_file)
+validate_hostname_matches_cert (STACK_OF (X509) * chain, EVP_PKEY *pkey,
+                                const char *hostname)
 {
-  SocketTLSContext_load_certificate (ctx, cert_file, key_file);
+  X509 *leaf = sk_X509_value (chain, 0);
+  int match = X509_check_host (leaf, hostname, 0, 0, NULL);
+
+  if (match != 1)
+    {
+      sk_X509_pop_free (chain, X509_free);
+      tls_secure_free_pkey (pkey);
+      const char *reason = (match == 0) ? "certificate subject mismatch"
+                                        : "hostname validation error";
+      ctx_raise_error_fmt ("SNI %s for hostname '%s'", reason, hostname);
+    }
 }
 
 /* ============================================================================
@@ -660,18 +569,12 @@ set_default_certificate (T ctx, const char *cert_file, const char *key_file)
 
 /**
  * validate_and_prepare_sni_slot - Validate inputs and prepare SNI metadata
- * slot
  * @ctx: TLS context
  * @hostname: SNI hostname (NULL for default certificate)
  * @cert_file: Path to certificate PEM file
  * @key_file: Path to private key PEM file
  *
- * Validates context, file paths, hostname (if provided), count limits, and
- * capacity. Stores hostname and file paths in the next available slot
- * (ctx->sni_certs.count). Does not load certificates/keys or increment count.
- *
  * Raises: SocketTLS_Failed on any validation or allocation failure
- * Thread-safe: No
  */
 static void
 validate_and_prepare_sni_slot (T ctx, const char *hostname,
@@ -681,8 +584,7 @@ validate_and_prepare_sni_slot (T ctx, const char *hostname,
   validate_server_context (ctx);
   validate_sni_count (ctx);
   ensure_sni_capacity (ctx);
-  store_sni_hostname (ctx, hostname);
-  store_sni_paths (ctx, cert_file, key_file);
+  store_sni_metadata (ctx, hostname, cert_file, key_file);
 }
 
 /**
@@ -692,13 +594,7 @@ validate_and_prepare_sni_slot (T ctx, const char *hostname,
  * @cert_file: Certificate file path
  * @key_file: Private key file path
  *
- * Loads and verifies certificate/key pair, stores objects in current slot,
- * sets default certificate on context if no hostname, increments count,
- * and registers SNI callback if needed.
- * Assumes slot prepared (metadata stored) by validate_and_prepare_sni_slot.
- *
  * Raises: SocketTLS_Failed on load, verification, or default set failure
- * Thread-safe: No
  */
 static void
 load_and_commit_sni_entry (T ctx, const char *hostname, const char *cert_file,
@@ -708,30 +604,15 @@ load_and_commit_sni_entry (T ctx, const char *hostname, const char *cert_file,
   EVP_PKEY *pkey = NULL;
   load_and_verify_keypair (cert_file, key_file, &chain, &pkey);
 
-  if (hostname != NULL)
-    {
-      X509 *leaf = sk_X509_value (chain, 0);
-      int match = X509_check_host (leaf, hostname, 0, 0, NULL);
-      if (match != 1)
-        {
-          sk_X509_pop_free (chain, X509_free);
-          tls_secure_free_pkey (pkey);
-          char buf[SOCKET_TLS_ERROR_BUFSIZE];
-          const char *reason = (match == 0) ? "certificate subject mismatch"
-                                            : "hostname validation error";
-          snprintf (buf, sizeof (buf), "SNI %s for hostname '%s'", reason,
-                    hostname);
-          ctx_raise_openssl_error (buf);
-        }
-    }
+  if (hostname)
+    validate_hostname_matches_cert (chain, pkey, hostname);
 
-  store_sni_chain_and_pkey (ctx, ctx->sni_certs.count, chain, pkey);
+  size_t idx = ctx->sni_certs.count;
+  ctx->sni_certs.chains[idx] = chain;
+  ctx->sni_certs.pkeys[idx] = pkey;
 
-  /* Set as default if no hostname specified */
   if (!hostname)
-    {
-      set_default_certificate (ctx, cert_file, key_file);
-    }
+    SocketTLSContext_load_certificate (ctx, cert_file, key_file);
 
   ctx->sni_certs.count++;
   register_sni_callback_if_needed (ctx, hostname);

@@ -636,11 +636,17 @@ extern int httpclient_receive_response (HTTPPoolEntry *conn,
 #define HTTPCLIENT_DIGEST_TOKEN_STALE "stale"
 #define HTTPCLIENT_DIGEST_TOKEN_STALE_LEN 5
 
-/* Digest prefixes and lengths */
+/* Auth prefixes and lengths */
 #define HTTPCLIENT_DIGEST_PREFIX "Digest "
 #define HTTPCLIENT_DIGEST_PREFIX_LEN 7
-#define HTTPCLIENT_DIGEST_BASIC_PREFIX "Basic "
-#define HTTPCLIENT_DIGEST_BASIC_PREFIX_LEN 6
+#define HTTPCLIENT_BASIC_PREFIX "Basic "
+#define HTTPCLIENT_BASIC_PREFIX_LEN 6
+#define HTTPCLIENT_BEARER_PREFIX "Bearer "
+#define HTTPCLIENT_BEARER_PREFIX_LEN 7
+
+/* Legacy alias for backward compatibility */
+#define HTTPCLIENT_DIGEST_BASIC_PREFIX HTTPCLIENT_BASIC_PREFIX
+#define HTTPCLIENT_DIGEST_BASIC_PREFIX_LEN HTTPCLIENT_BASIC_PREFIX_LEN
 
 /* Hex digest size (max of MD5/SHA256) */
 #define HTTPCLIENT_DIGEST_HEX_SIZE (SOCKET_CRYPTO_SHA256_SIZE * 2 + 1)

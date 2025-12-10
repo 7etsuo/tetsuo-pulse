@@ -31,10 +31,12 @@
 
 #define T SocketPool_T
 
-/* Forward declarations */
+/* Forward declarations - grouped at top for clarity */
 static void release_connection_resources (T pool, Connection_T conn,
                                           Socket_T socket);
 static void SocketPool_connections_release_buffers (Connection_T conn);
+static void remove_known_connection (T pool, Connection_T conn,
+                                     Socket_T socket);
 
 /* ============================================================================
  * Free List Management
@@ -47,9 +49,6 @@ static void SocketPool_connections_release_buffers (Connection_T conn);
  * @param pool Pool instance.
  * @return Free slot or NULL if none available.
  * @threadsafe Call with mutex held.
- *
- * @see find_free_slot() for public interface.
- * @see return_to_free_list() for adding slots back.
  */
 Connection_T
 find_free_slot (const T pool)
@@ -63,11 +62,6 @@ find_free_slot (const T pool)
  * @param pool Pool instance.
  * @return Non-zero if pool is at maximum capacity.
  * @threadsafe Call with mutex held.
- *
- * Fast check to determine if pool has reached its maximum connection limit.
- *
- * @see SocketPool_count() for current connection count.
- * @see SocketPool_resize() for changing pool capacity.
  */
 int
 check_pool_full (const T pool)
@@ -81,11 +75,6 @@ check_pool_full (const T pool)
  * @param pool Pool instance.
  * @param conn Connection to remove from free list.
  * @threadsafe Call with mutex held.
- *
- * Updates free list pointers when a slot becomes active.
- *
- * @see return_to_free_list() for reverse operation.
- * @see find_free_slot() for finding available slots.
  */
 void
 remove_from_free_list (T pool, Connection_T conn)
@@ -99,11 +88,6 @@ remove_from_free_list (T pool, Connection_T conn)
  * @param pool Pool instance.
  * @param conn Connection to return to free list.
  * @threadsafe Call with mutex held.
- *
- * Updates free list pointers when a slot becomes inactive.
- *
- * @see remove_from_free_list() for reverse operation.
- * @see SocketPool_remove() for connection removal.
  */
 void
 return_to_free_list (T pool, Connection_T conn)
@@ -113,53 +97,11 @@ return_to_free_list (T pool, Connection_T conn)
 }
 
 /**
- * @brief Check if connection has both buffers allocated.
- * @ingroup connection_mgmt
- * @param conn Connection to check.
- * @return Non-zero if both input and output buffers exist.
- * @threadsafe Call with mutex held.
- *
- * @see SocketPool_connections_alloc_buffers() for buffer allocation.
- * @see Connection_inbuf() and Connection_outbuf() for buffer access.
- */
-static int
-buffers_already_allocated (const Connection_T conn)
-{
-  return conn->inbuf && conn->outbuf;
-}
-
-/**
- * @brief Allocate buffers for connection if needed.
- * @ingroup connection_mgmt
- * @param pool Pool instance.
- * @param conn Connection requiring buffers.
- * @return 0 on success, -1 on allocation failure.
- * @threadsafe Call with mutex held.
- *
- * @see SocketPool_connections_alloc_buffers() for buffer allocation.
- * @see SocketPool_new() for initial buffer setup.
- */
-static int
-allocate_connection_buffers (T pool, Connection_T conn)
-{
-  if (buffers_already_allocated (conn))
-    {
-      /* Reuse existing buffers - just clear them securely */
-      SocketPool_connections_release_buffers (conn);
-      return 0;
-    }
-
-  return SocketPool_connections_alloc_buffers (pool->arena, pool->bufsize,
-                                               conn);
-}
-
-/**
  * @brief Prepare a free slot for use.
- * @pool Pool instance
- * @conn Slot to prepare
- *
- * Returns: 0 on success, -1 on failure
- * Thread-safe: Call with mutex held
+ * @param pool Pool instance.
+ * @param conn Slot to prepare.
+ * @return 0 on success, -1 on failure.
+ * @threadsafe Call with mutex held.
  */
 int
 prepare_free_slot (T pool, Connection_T conn)
@@ -167,19 +109,18 @@ prepare_free_slot (T pool, Connection_T conn)
   remove_from_free_list (pool, conn);
 
   /* Reuse existing buffers if available, otherwise allocate new ones */
-  if (!conn->inbuf || !conn->outbuf)
+  if (conn->inbuf && conn->outbuf)
     {
-      if (SocketPool_connections_alloc_buffers (pool->arena, pool->bufsize, conn) != 0)
-        {
-          return_to_free_list (pool, conn);
-          return -1;
-        }
-    }
-  else
-    {
-      /* Clear existing buffers for reuse */
       SocketBuf_secureclear (conn->inbuf);
       SocketBuf_secureclear (conn->outbuf);
+      return 0;
+    }
+
+  if (SocketPool_connections_alloc_buffers (pool->arena, pool->bufsize, conn)
+      != 0)
+    {
+      return_to_free_list (pool, conn);
+      return -1;
     }
 
   return 0;
@@ -192,10 +133,9 @@ prepare_free_slot (T pool, Connection_T conn)
 
 /**
  * @brief Update activity timestamp.
- * @conn Connection to update
- * @now Current time
- *
- * Thread-safe: Call with mutex held
+ * @param conn Connection to update.
+ * @param now Current time.
+ * @threadsafe Call with mutex held.
  */
 void
 update_existing_slot (Connection_T conn, time_t now)
@@ -205,9 +145,8 @@ update_existing_slot (Connection_T conn, time_t now)
 
 /**
  * @brief Increment active connection count.
- * @pool Pool instance
- *
- * Thread-safe: Call with mutex held
+ * @param pool Pool instance.
+ * @threadsafe Call with mutex held.
  */
 void
 increment_pool_count (T pool)
@@ -217,9 +156,8 @@ increment_pool_count (T pool)
 
 /**
  * @brief Decrement active connection count.
- * @pool Pool instance
- *
- * Thread-safe: Call with mutex held
+ * @param pool Pool instance.
+ * @threadsafe Call with mutex held.
  */
 void
 decrement_pool_count (T pool)
@@ -227,13 +165,36 @@ decrement_pool_count (T pool)
   pool->count--;
 }
 
+#if SOCKET_HAS_TLS
+/**
+ * @brief Clear TLS session if socket changed.
+ * @param conn Connection to check.
+ * @param new_fd New socket file descriptor.
+ * @threadsafe Call with mutex held.
+ */
+static void
+clear_stale_tls_session (Connection_T conn, int new_fd)
+{
+  /* Clear TLS session only if this is a different socket (security).
+   * Same socket re-added: preserve session for resumption. */
+  if (conn->last_socket_fd != new_fd || conn->last_socket_fd < 0)
+    {
+      if (conn->tls_session)
+        {
+          SSL_SESSION_free (conn->tls_session);
+          conn->tls_session = NULL;
+        }
+    }
+  conn->last_socket_fd = new_fd;
+}
+#endif
+
 /**
  * @brief Initialize connection with socket.
- * @conn Connection to initialize
- * @socket Socket to associate
- * @now Current time
- *
- * Thread-safe: Call with mutex held
+ * @param conn Connection to initialize.
+ * @param socket Socket to associate.
+ * @param now Current time.
+ * @threadsafe Call with mutex held.
  */
 void
 initialize_connection (Connection_T conn, Socket_T socket, time_t now)
@@ -244,20 +205,7 @@ initialize_connection (Connection_T conn, Socket_T socket, time_t now)
   conn->created_at = now;
   conn->active = 1;
 #if SOCKET_HAS_TLS
-  {
-    int new_fd = socket ? Socket_fd (socket) : -1;
-    /* Clear TLS session only if this is a different socket (security).
-     * Same socket re-added: preserve session for resumption. */
-    if (conn->last_socket_fd != new_fd || conn->last_socket_fd < 0)
-      {
-        if (conn->tls_session)
-          {
-            SSL_SESSION_free (conn->tls_session);
-            conn->tls_session = NULL;
-          }
-      }
-    conn->last_socket_fd = new_fd;
-  }
+  clear_stale_tls_session (conn, socket ? Socket_fd (socket) : -1);
   conn->tls_ctx = NULL;
   conn->tls_handshake_complete = 0;
 #endif
@@ -336,18 +284,17 @@ SocketPool_connections_reset_slot (Connection_T conn)
 #if SOCKET_HAS_TLS
 /**
  * @brief Check if TLS session has expired.
- * @sess Session to check
- * @now Current time
- *
- * Returns: Non-zero if session is expired
- * Thread-safe: Yes - uses OpenSSL thread-safe accessors
+ * @param sess Session to check.
+ * @param now Current time.
+ * @return Non-zero if session is expired.
+ * @threadsafe Yes - uses OpenSSL thread-safe accessors.
  *
  * Security: Uses subtraction instead of addition to avoid integer overflow
  * when session timestamp or timeout has extreme values. If current time is
  * before session time (clock went backwards), session is considered valid.
  */
 static int
-session_is_expired (SSL_SESSION *sess, time_t now)
+session_is_expired (const SSL_SESSION *sess, time_t now)
 {
   time_t sess_time;
   long sess_timeout;
@@ -633,32 +580,25 @@ add_unlocked (T pool, Socket_T socket, time_t now)
 
 /**
  * @brief Add socket to pool.
- * @pool Pool instance
- * @socket Socket to add
+ * @param pool Pool instance.
+ * @param socket Socket to add.
+ * @return Connection or NULL if pool is full.
+ * @throws SocketPool_Failed on NULL parameters.
+ * @threadsafe Yes - uses internal mutex.
  *
- * Returns: Connection or NULL if pool is full
- * Thread-safe: Yes - uses internal mutex
- *
- * Note: Pool full check is performed under mutex to prevent race conditions.
+ * Pool full check is performed under mutex to prevent race conditions.
  */
 Connection_T
 SocketPool_add (T pool, Socket_T socket)
 {
-  Connection_T conn;
-  time_t now;
-
   if (!pool || !socket)
-    {
-      RAISE_POOL_MSG (SocketPool_Failed,
-                      "Invalid NULL pool or socket in SocketPool_add");
-    }
-  assert (pool);
-  assert (socket);
+    RAISE_POOL_MSG (SocketPool_Failed,
+                    "Invalid NULL pool or socket in SocketPool_add");
 
-  now = safe_time ();
+  time_t now = safe_time ();
 
   pthread_mutex_lock (&pool->mutex);
-  conn = add_unlocked (pool, socket, now);
+  Connection_T conn = add_unlocked (pool, socket, now);
   pthread_mutex_unlock (&pool->mutex);
 
   return conn;
@@ -699,29 +639,19 @@ get_unlocked (T pool, Socket_T socket, time_t now)
  * @ingroup connection_mgmt
  * @param pool Pool instance (mutex held).
  * @param conn Connection to validate.
- * @return 1 if connection is valid (or no callback set), 0 if invalid.
+ * @return 1 if connection is valid (or no callback set), 0 if invalid and
+ * removed.
  * @threadsafe Call with mutex held.
  *
  * Executes the validation callback with temporary mutex release to avoid
- * deadlock. Re-acquires mutex and re-validates connection state.
- *
- * @see SocketPool_set_validation_callback() for setting callback.
- * @see SocketPool_ValidationCallback for callback signature.
- * @see SocketPool_get() for when validation occurs.
+ * deadlock. Re-acquires mutex and re-validates connection state. Removes
+ * connection internally if invalid.
  */
-static void remove_known_connection (T pool, Connection_T conn,
-                                     Socket_T socket);
-
 static int
 run_validation_callback_unlocked (T pool, Connection_T conn)
 {
-  SocketPool_ValidationCallback cb;
-  void *cb_data;
-  int valid;
-  Connection_T current_conn;
-
-  cb = pool->validation_cb;
-  cb_data = pool->validation_cb_data;
+  SocketPool_ValidationCallback cb = pool->validation_cb;
+  void *cb_data = pool->validation_cb_data;
 
   if (!cb)
     return 1; /* No callback = always valid */
@@ -730,21 +660,18 @@ run_validation_callback_unlocked (T pool, Connection_T conn)
    * Re-acquire to safely remove if invalid. Races handled by re-validation. */
   pthread_mutex_unlock (&pool->mutex);
 
-  valid = cb (conn, cb_data);
+  int valid = cb (conn, cb_data);
 
   pthread_mutex_lock (&pool->mutex);
 
   /* Re-validate: Check if connection still exists and matches */
-  current_conn = find_slot (pool, Connection_socket (conn));
+  Connection_T current_conn = find_slot (pool, Connection_socket (conn));
   if (!current_conn || current_conn != conn)
     {
       /* Already removed by another thread - assume handled */
       if (!valid)
-        {
-          SocketLog_emitf (
-              SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-              "Validation invalid but connection already removed");
-        }
+        SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                         "Validation invalid but connection already removed");
       return 1; /* Treat as valid (gone) */
     }
 
@@ -753,60 +680,42 @@ run_validation_callback_unlocked (T pool, Connection_T conn)
 
   /* Still invalid and present - remove it */
   pool->stats_validation_failures++;
-  SocketLog_emitf (
-      SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-      "Connection validation callback returned invalid - removing");
+  SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                   "Connection validation callback returned invalid - "
+                   "removing");
   remove_known_connection (pool, conn, conn->socket);
   return 0;
 }
 
 /**
  * @brief Look up connection by socket.
- * @pool Pool instance
- * @socket Socket to find
- *
- * Returns: Connection or NULL if not found or validation failed
- * Thread-safe: Yes - uses internal mutex
+ * @param pool Pool instance.
+ * @param socket Socket to find.
+ * @return Connection or NULL if not found or validation failed.
+ * @threadsafe Yes - uses internal mutex.
  *
  * If a validation callback is set, it is called before returning the
  * connection. If the callback returns 0, the connection is removed
  * from the pool and NULL is returned.
  */
-static void remove_known_connection (T pool, Connection_T conn,
-                                     Socket_T socket);
-
 Connection_T
 SocketPool_get (T pool, Socket_T socket)
 {
-  Connection_T conn;
-  time_t now;
-
   if (!pool || !socket)
-    {
-      RAISE_POOL_MSG (SocketPool_Failed,
-                      "Invalid NULL pool or socket in SocketPool_get");
-    }
-  assert (pool);
-  assert (socket);
+    RAISE_POOL_MSG (SocketPool_Failed,
+                    "Invalid NULL pool or socket in SocketPool_get");
 
-  now = safe_time ();
+  time_t now = safe_time ();
 
   pthread_mutex_lock (&pool->mutex);
-  conn = get_unlocked (pool, socket, now);
+  Connection_T conn = get_unlocked (pool, socket, now);
 
-  /* Run validation callback if connection found (now handles removal
-   * internally) */
+  /* Run validation callback if connection found */
   if (conn)
     {
       if (!run_validation_callback_unlocked (pool, conn))
         {
-          /* Callback indicated invalid; re-check and remove if still present
-           */
-          conn = find_slot (pool, socket);
-          if (conn)
-            {
-              remove_known_connection (pool, conn, socket);
-            }
+          /* Callback returned invalid and already removed connection */
           pthread_mutex_unlock (&pool->mutex);
           return NULL;
         }
@@ -816,7 +725,6 @@ SocketPool_get (T pool, Socket_T socket)
     }
 
   pthread_mutex_unlock (&pool->mutex);
-
   return conn;
 }
 
@@ -918,10 +826,10 @@ remove_unlocked (T pool, Socket_T socket)
 
 /**
  * @brief Remove socket from pool.
- * @pool Pool instance
- * @socket Socket to remove
- *
- * Thread-safe: Yes - uses internal mutex
+ * @param pool Pool instance.
+ * @param socket Socket to remove.
+ * @throws SocketPool_Failed on NULL parameters.
+ * @threadsafe Yes - uses internal mutex.
  *
  * Handles TLS session save, IP tracking release, buffer clearing,
  * and returns slot to free list.
@@ -930,13 +838,8 @@ void
 SocketPool_remove (T pool, Socket_T socket)
 {
   if (!pool || !socket)
-    {
-      RAISE_POOL_MSG (SocketPool_Failed,
-                      "Invalid NULL pool or socket in SocketPool_remove");
-      return;
-    }
-  assert (pool);
-  assert (socket);
+    RAISE_POOL_MSG (SocketPool_Failed,
+                    "Invalid NULL pool or socket in SocketPool_remove");
 
   pthread_mutex_lock (&pool->mutex);
   remove_unlocked (pool, socket);
@@ -1081,11 +984,10 @@ close_collected_sockets (T pool, size_t close_count)
 
 /**
  * @brief Remove idle connections.
- * @pool Pool instance
- * @idle_timeout Seconds idle before removal (0 = remove all)
- *
- * Thread-safe: Yes
- * Performance: O(n) scan of all connection slots
+ * @param pool Pool instance.
+ * @param idle_timeout Seconds idle before removal (0 = remove all).
+ * @threadsafe Yes.
+ * @complexity O(n) scan of all connection slots.
  *
  * Collects idle sockets under mutex, then closes them outside mutex
  * to avoid deadlock with socket operations.
@@ -1093,22 +995,17 @@ close_collected_sockets (T pool, size_t close_count)
 void
 SocketPool_cleanup (T pool, time_t idle_timeout)
 {
-  time_t now;
-  size_t close_count;
-
   if (!pool || !pool->cleanup_buffer)
     {
       SOCKET_LOG_ERROR_MSG (
           "Invalid pool or missing cleanup_buffer in SocketPool_cleanup");
       return;
     }
-  assert (pool);
-  assert (pool->cleanup_buffer);
 
-  now = safe_time ();
+  time_t now = safe_time ();
 
   pthread_mutex_lock (&pool->mutex);
-  close_count = collect_idle_sockets (pool, idle_timeout, now);
+  size_t close_count = collect_idle_sockets (pool, idle_timeout, now);
   pthread_mutex_unlock (&pool->mutex);
 
   close_collected_sockets (pool, close_count);
@@ -1260,12 +1157,11 @@ check_socket_error (int fd)
 
 /**
  * @brief Check basic socket health (error and connected state).
- * @conn Connection to check
+ * @param conn Connection to check.
+ * @return POOL_CONN_HEALTHY if healthy, else specific error code.
+ * @threadsafe Yes.
  *
  * Performs SO_ERROR check and connection validity check.
- *
- * Returns: POOL_CONN_HEALTHY if healthy, else specific error code
- * Thread-safe: Yes
  */
 static SocketPool_ConnHealth
 check_socket_health (const Connection_T conn)
@@ -1273,11 +1169,11 @@ check_socket_health (const Connection_T conn)
   if (!conn->active || !conn->socket)
     return POOL_CONN_DISCONNECTED;
 
-  int fd = Socket_fd (conn->socket);
+  const int fd = Socket_fd (conn->socket);
   if (fd < 0)
     return POOL_CONN_DISCONNECTED;
 
-  int error = check_socket_error (fd);
+  const int error = check_socket_error (fd);
   if (error != 0)
     {
       SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
@@ -1293,26 +1189,37 @@ check_socket_health (const Connection_T conn)
 }
 
 /**
+ * @brief Check if connection is stale (exceeded idle timeout).
+ * @param pool Pool instance (mutex held).
+ * @param conn Connection to check.
+ * @param now Current time.
+ * @return Non-zero if connection is stale.
+ * @threadsafe Call with mutex held.
+ */
+static int
+check_connection_staleness (T pool, Connection_T conn, time_t now)
+{
+  time_t idle_timeout = pool->idle_timeout_sec;
+  if (idle_timeout <= 0)
+    return 0;
+
+  return is_timed_out (now, conn->last_activity, idle_timeout);
+}
+
+/**
  * @brief Check health of a connection.
- * @pool Pool instance
- * @conn Connection to check
- *
- * Returns: Health status of the connection
- * Thread-safe: Yes
+ * @param pool Pool instance.
+ * @param conn Connection to check.
+ * @return Health status of the connection.
+ * @throws SocketPool_Failed on NULL parameters.
+ * @threadsafe Yes.
  */
 SocketPool_ConnHealth
 SocketPool_check_connection (T pool, Connection_T conn)
 {
-  time_t idle_timeout;
-
   if (!pool || !conn)
-    {
-      RAISE_POOL_MSG (
-          SocketPool_Failed,
-          "Invalid NULL pool or conn in SocketPool_check_connection");
-    }
-  assert (pool);
-  assert (conn);
+    RAISE_POOL_MSG (SocketPool_Failed,
+                    "Invalid NULL pool or conn in SocketPool_check_connection");
 
   SocketPool_ConnHealth res = check_socket_health (conn);
   if (res != POOL_CONN_HEALTHY)
@@ -1321,20 +1228,13 @@ SocketPool_check_connection (T pool, Connection_T conn)
   /* Check for staleness */
   pthread_mutex_lock (&pool->mutex);
   pool->stats_health_checks++;
-  idle_timeout = pool->idle_timeout_sec;
-  time_t check_now = safe_time ();
-  int is_stale
-      = (idle_timeout > 0
-         && is_timed_out (check_now, conn->last_activity, idle_timeout));
+  time_t now = safe_time ();
+  int is_stale = check_connection_staleness (pool, conn, now);
   if (is_stale)
-    {
-      pool->stats_health_failures++;
-      pthread_mutex_unlock (&pool->mutex);
-      return POOL_CONN_STALE;
-    }
+    pool->stats_health_failures++;
   pthread_mutex_unlock (&pool->mutex);
 
-  return POOL_CONN_HEALTHY;
+  return is_stale ? POOL_CONN_STALE : POOL_CONN_HEALTHY;
 }
 
 #undef T

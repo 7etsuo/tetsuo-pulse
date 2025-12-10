@@ -1062,4 +1062,21 @@ struct SocketHTTPServer
  * @see SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS constant.
  */
 
+/* ============================================================================
+ * Connection Helper Functions (implemented in SocketHTTPServer-connections.c)
+ * ============================================================================
+ */
+
+/**
+ * @brief Send an HTTP error response.
+ * @param server HTTP server instance
+ * @param conn Connection to send error on
+ * @param status_code HTTP status code (e.g., 400, 404, 500)
+ * @param reason Reason phrase for the status
+ */
+void connection_send_error (SocketHTTPServer_T server,
+                            ServerConnection *conn,
+                            int status_code,
+                            const char *reason);
+
 #endif /* SOCKETHTTPSERVER_PRIVATE_INCLUDED */

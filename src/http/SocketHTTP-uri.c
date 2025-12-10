@@ -21,7 +21,42 @@
  * ============================================================================
  */
 
+/* Note: DetailedException unused in this file - errors return codes instead */
+/* Suppress warning for unused thread-local variable on GCC only */
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
+#endif
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP);
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
+
+/* ============================================================================
+ * URI Component Length Limits (RFC 3986 + Security)
+ * ============================================================================
+ */
+
+/** Maximum userinfo length to prevent abuse (user:password format) */
+#define URI_MAX_USERINFO_LEN 128
+
+/** Maximum host length per DNS standards (RFC 1035) */
+#define URI_MAX_HOST_LEN 255
+
+/** Maximum path length for typical HTTP requests */
+#define URI_MAX_PATH_LEN 4096
+
+/** Maximum query string length */
+#define URI_MAX_QUERY_LEN 8192
+
+/** Maximum fragment length */
+#define URI_MAX_FRAGMENT_LEN 8192
+
+/** Maximum port number (16-bit unsigned) */
+#define URI_MAX_PORT 65535
+
+/** Buffer size for port string serialization (":65535\0") */
+#define URI_PORT_BUFSIZE 8
 
 /* ============================================================================
  * Constants for Media Type Parsing
@@ -91,20 +126,24 @@ is_control_char (char c)
  */
 
 /**
- * arena_strdup_n - Allocate and copy string into arena
+ * uri_arena_copy - Copy substring into arena (for non-null-terminated sources)
  * @arena: Memory arena
- * @str: Source string
- * @len: String length
+ * @src: Source string (may not be null-terminated)
+ * @len: Exact number of bytes to copy
  *
- * Returns: Null-terminated copy, or NULL on allocation failure
+ * Unlike socket_util_arena_strndup() which uses strlen(), this function
+ * copies exactly 'len' bytes, making it suitable for substring extraction
+ * from URI parsing where source is pointer-delimited, not null-terminated.
+ *
+ * Returns: Null-terminated copy in arena, or NULL on allocation failure
  */
-static char *
-arena_strdup_n (Arena_T arena, const char *str, size_t len)
+static inline char *
+uri_arena_copy (Arena_T arena, const char *src, size_t len)
 {
   char *copy = ALLOC (arena, len + 1);
   if (!copy)
     return NULL;
-  memmove (copy, str, len);
+  memcpy (copy, src, len);
   copy[len] = '\0';
   return copy;
 }
@@ -143,7 +182,7 @@ uri_alloc_component (Arena_T arena, const char *start, const char *end,
     return URI_PARSE_OK;
 
   size_t len = (size_t)(end - start);
-  char *copy = arena_strdup_n (arena, start, len);
+  char *copy = uri_arena_copy (arena, start, len);
   if (!copy)
     return URI_PARSE_ERROR;
 
@@ -591,7 +630,7 @@ uri_parse_port (const char *start, const char *end, int *port_out)
       if (!isdigit ((unsigned char)*pp))
         return URI_PARSE_INVALID_PORT;
       port = port * 10 + (*pp - '0');
-      if (port > 65535)
+      if (port > URI_MAX_PORT)
         return URI_PARSE_INVALID_PORT;
     }
 
@@ -620,7 +659,7 @@ uri_alloc_all_components (const URIParseContext *ctx, SocketHTTP_URI *result,
       && ctx->scheme_end > ctx->scheme_start)
     {
       size_t slen = (size_t)(ctx->scheme_end - ctx->scheme_start);
-      char *s = arena_strdup_n (arena, ctx->scheme_start, slen);
+      char *s = uri_arena_copy (arena, ctx->scheme_start, slen);
       if (!s)
         return URI_PARSE_ERROR;
       scheme_to_lower (s, slen);
@@ -632,7 +671,7 @@ uri_alloc_all_components (const URIParseContext *ctx, SocketHTTP_URI *result,
   if (ctx->userinfo_start && ctx->userinfo_end > ctx->userinfo_start)
     {
       size_t ulen = (size_t)(ctx->userinfo_end - ctx->userinfo_start);
-      if (ulen > 128)
+      if (ulen > URI_MAX_USERINFO_LEN)
         return URI_PARSE_TOO_LONG;
     }
   r = uri_alloc_component (arena, ctx->userinfo_start, ctx->userinfo_end,
@@ -652,7 +691,7 @@ uri_alloc_all_components (const URIParseContext *ctx, SocketHTTP_URI *result,
   if (ctx->host_start && ctx->host_end > ctx->host_start)
     {
       size_t hlen = (size_t)(ctx->host_end - ctx->host_start);
-      if (hlen > 255)
+      if (hlen > URI_MAX_HOST_LEN)
         return URI_PARSE_TOO_LONG;
     }
   r = uri_alloc_component (arena, ctx->host_start, ctx->host_end,
@@ -679,7 +718,7 @@ uri_alloc_all_components (const URIParseContext *ctx, SocketHTTP_URI *result,
     {
       const char *path_end = ctx->path_end ? ctx->path_end : end;
       size_t path_len_calc = (size_t)(path_end - ctx->path_start);
-      if (path_len_calc > 4096)
+      if (path_len_calc > URI_MAX_PATH_LEN)
         return URI_PARSE_TOO_LONG;
       r = uri_alloc_component (arena, ctx->path_start, path_end, &result->path,
                                &result->path_len);
@@ -696,7 +735,7 @@ uri_alloc_all_components (const URIParseContext *ctx, SocketHTTP_URI *result,
     }
   else
     {
-      char *path = arena_strdup_n (arena, "", 0);
+      char *path = uri_arena_copy (arena, "", 0);
       if (!path)
         return URI_PARSE_ERROR;
       result->path = path;
@@ -708,7 +747,7 @@ uri_alloc_all_components (const URIParseContext *ctx, SocketHTTP_URI *result,
     {
       const char *query_end = ctx->query_end ? ctx->query_end : end;
       size_t query_len_calc = (size_t)(query_end - ctx->query_start);
-      if (query_len_calc > 8192)
+      if (query_len_calc > URI_MAX_QUERY_LEN)
         return URI_PARSE_TOO_LONG;
       r = uri_alloc_component (arena, ctx->query_start, query_end,
                                &result->query, &result->query_len);
@@ -729,7 +768,7 @@ uri_alloc_all_components (const URIParseContext *ctx, SocketHTTP_URI *result,
     {
       const char *fragment_end = ctx->fragment_end ? ctx->fragment_end : end;
       size_t frag_len_calc = (size_t)(fragment_end - ctx->fragment_start);
-      if (frag_len_calc > 8192)
+      if (frag_len_calc > URI_MAX_FRAGMENT_LEN)
         return URI_PARSE_TOO_LONG;
       r = uri_alloc_component (arena, ctx->fragment_start, fragment_end,
                                &result->fragment, &result->fragment_len);
@@ -980,7 +1019,7 @@ SocketHTTP_URI_build (const SocketHTTP_URI *uri, char *output,
 
       if (uri->port >= 0)
         {
-          char port_buf[8];
+          char port_buf[URI_PORT_BUFSIZE];
           int port_len
               = snprintf (port_buf, sizeof (port_buf), ":%d", uri->port);
           if (port_len > 0 && (size_t)port_len < sizeof (port_buf))
@@ -1033,6 +1072,24 @@ is_token_char (unsigned char c)
          || c == '&' || c == '\'' || c == '*' || c == '+' || c == '-'
          || c == '.' || c == '^' || c == '_' || c == '`' || c == '|'
          || c == '~';
+}
+
+/**
+ * validate_token_span - Validate entire span consists of HTTP token chars
+ * @start: Start of span
+ * @len: Length of span
+ *
+ * Returns: 1 if all characters are valid tokens, 0 otherwise
+ */
+static inline int
+validate_token_span (const char *start, size_t len)
+{
+  for (size_t i = 0; i < len; i++)
+    {
+      if (!is_token_char ((unsigned char)start[i]))
+        return 0;
+    }
+  return 1;
 }
 
 /* ============================================================================
@@ -1411,17 +1468,13 @@ mediatype_parse_type_subtype (const char *p, const char *end,
 
   size_t type_len = (size_t)(p - type_start);
 
-  // Validate type is valid token characters (RFC 7230)
-  for (const char *tp = type_start; tp < type_start + type_len; tp++)
-    {
-      if (!is_token_char ((unsigned char)*tp))
-        return NULL;
-    }
-  char *type = ALLOC (arena, type_len + 1);
+  /* Validate type is valid token characters (RFC 7230) */
+  if (!validate_token_span (type_start, type_len))
+    return NULL;
+
+  char *type = uri_arena_copy (arena, type_start, type_len);
   if (!type)
     return NULL;
-  memcpy (type, type_start, type_len);
-  type[type_len] = '\0';
   result->type = type;
   result->type_len = type_len;
 
@@ -1435,17 +1488,13 @@ mediatype_parse_type_subtype (const char *p, const char *end,
 
   size_t subtype_len = (size_t)(p - subtype_start);
 
-  // Validate subtype is valid token characters (RFC 7230)
-  for (const char *sp = subtype_start; sp < subtype_start + subtype_len; sp++)
-    {
-      if (!is_token_char ((unsigned char)*sp))
-        return NULL;
-    }
-  char *subtype = ALLOC (arena, subtype_len + 1);
+  /* Validate subtype is valid token characters (RFC 7230) */
+  if (!validate_token_span (subtype_start, subtype_len))
+    return NULL;
+
+  char *subtype = uri_arena_copy (arena, subtype_start, subtype_len);
   if (!subtype)
     return NULL;
-  memcpy (subtype, subtype_start, subtype_len);
-  subtype[subtype_len] = '\0';
   result->subtype = subtype;
   result->subtype_len = subtype_len;
 
@@ -1482,12 +1531,9 @@ mediatype_parse_parameter (const char *p, const char *end,
   if (param_len == 0)
     return NULL; /* Empty parameter name */
 
-  // Validate parameter name is valid token characters (RFC 7230)
-  for (const char *pp = param_start; pp < param_start + param_len; pp++)
-    {
-      if (!is_token_char ((unsigned char)*pp))
-        return NULL; /* Invalid character in parameter name */
-    }
+  /* Validate parameter name is valid token characters (RFC 7230) */
+  if (!validate_token_span (param_start, param_len))
+    return NULL; /* Invalid character in parameter name */
 
   p++;
 
@@ -1511,23 +1557,18 @@ mediatype_parse_parameter (const char *p, const char *end,
       if (value_len == 0)
         return NULL; /* Empty unquoted value */
 
-      // Validate unquoted parameter value is valid token characters (RFC 7230)
-      for (const char *vp = value_start; vp < value_start + value_len; vp++)
-        {
-          if (!is_token_char ((unsigned char)*vp))
-            return NULL; /* Invalid character in parameter value */
-        }
+      /* Validate unquoted parameter value is valid token characters (RFC 7230) */
+      if (!validate_token_span (value_start, value_len))
+        return NULL; /* Invalid character in parameter value */
     }
 
   /* Check for known parameters */
   if (param_len == MEDIATYPE_CHARSET_LEN
       && strncasecmp (param_start, "charset", MEDIATYPE_CHARSET_LEN) == 0)
     {
-      char *cs = ALLOC (arena, value_len + 1);
+      char *cs = uri_arena_copy (arena, value_start, value_len);
       if (cs)
         {
-          memcpy (cs, value_start, value_len);
-          cs[value_len] = '\0';
           result->charset = cs;
           result->charset_len = value_len;
         }
@@ -1536,11 +1577,9 @@ mediatype_parse_parameter (const char *p, const char *end,
            && strncasecmp (param_start, "boundary", MEDIATYPE_BOUNDARY_LEN)
                   == 0)
     {
-      char *bd = ALLOC (arena, value_len + 1);
+      char *bd = uri_arena_copy (arena, value_start, value_len);
       if (bd)
         {
-          memcpy (bd, value_start, value_len);
-          bd[value_len] = '\0';
           result->boundary = bd;
           result->boundary_len = value_len;
         }
@@ -1715,12 +1754,9 @@ accept_parse_single (const char *p, const char *end,
     }
 
   size_t vlen = (size_t)(value_end - value_start);
-  char *v = ALLOC (arena, vlen + 1);
+  char *v = uri_arena_copy (arena, value_start, vlen);
   if (!v)
     return p;
-
-  memcpy (v, value_start, vlen);
-  v[vlen] = '\0';
 
   result->value = v;
   result->value_len = vlen;

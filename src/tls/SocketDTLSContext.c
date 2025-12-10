@@ -2,6 +2,7 @@
  * SocketDTLSContext.c - DTLS Context Management Implementation
  *
  * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
  *
  * Implements DTLS context lifecycle, certificate loading, cookie exchange
  * configuration, and session management using OpenSSL.
@@ -75,27 +76,16 @@ init_exdata_index (void)
 }
 
 /**
- * ctx_raise_openssl_error_dtls - Raise DTLS exception with OpenSSL error
+ * raise_openssl_error - Format OpenSSL error and raise DTLS exception
  * @context: Context description for error message
+ *
+ * Uses dtls_format_openssl_error() from private header to format error,
+ * then raises SocketDTLS_Failed exception with the formatted message.
  */
 static void
-ctx_raise_openssl_error_dtls (const char *context)
+raise_openssl_error (const char *context)
 {
-  unsigned long err = ERR_get_error ();
-  char err_str[SOCKET_DTLS_OPENSSL_ERRSTR_BUFSIZE];
-
-  if (err != 0)
-    {
-      ERR_error_string_n (err, err_str, sizeof (err_str));
-      snprintf (dtls_context_error_buf, SOCKET_DTLS_ERROR_BUFSIZE, "%s: %s",
-                context, err_str);
-    }
-  else
-    {
-      snprintf (dtls_context_error_buf, SOCKET_DTLS_ERROR_BUFSIZE,
-                "%s: Unknown error", context);
-    }
-  ERR_clear_error (); /* Clear remaining OpenSSL error queue */
+  dtls_format_openssl_error (context);
   RAISE_DTLS_CTX_ERROR (SocketDTLS_Failed);
 }
 
@@ -109,14 +99,14 @@ apply_dtls_defaults (SSL_CTX *ssl_ctx, int is_server)
 {
   /* Set DTLS 1.2 minimum/maximum versions */
   if (SSL_CTX_set_min_proto_version (ssl_ctx, SOCKET_DTLS_MIN_VERSION) != 1)
-    ctx_raise_openssl_error_dtls ("Failed to set minimum DTLS version");
+    raise_openssl_error ("Failed to set minimum DTLS version");
 
   if (SSL_CTX_set_max_proto_version (ssl_ctx, SOCKET_DTLS_MAX_VERSION) != 1)
-    ctx_raise_openssl_error_dtls ("Failed to set maximum DTLS version");
+    raise_openssl_error ("Failed to set maximum DTLS version");
 
   /* Set modern cipher suites */
   if (SSL_CTX_set_cipher_list (ssl_ctx, SOCKET_DTLS_CIPHERSUITES) != 1)
-    ctx_raise_openssl_error_dtls ("Failed to set DTLS cipher list");
+    raise_openssl_error ("Failed to set DTLS cipher list");
 
   /* Disable session tickets by default (enable explicitly if needed) */
   SSL_CTX_set_options (ssl_ctx, SSL_OP_NO_TICKET);
@@ -137,15 +127,8 @@ apply_dtls_defaults (SSL_CTX *ssl_ctx, int is_server)
   /* Set verification depth */
   SSL_CTX_set_verify_depth (ssl_ctx, SOCKET_DTLS_MAX_CERT_CHAIN_DEPTH);
 
-  /* For servers, set session cache mode */
-  if (is_server)
-    {
-      SSL_CTX_set_session_cache_mode (ssl_ctx, SSL_SESS_CACHE_SERVER);
-    }
-  else
-    {
-      SSL_CTX_set_session_cache_mode (ssl_ctx, SSL_SESS_CACHE_CLIENT);
-    }
+  /* Note: Session cache mode is configured via SocketDTLSContext_enable_session_cache() */
+  (void)is_server;
 }
 
 /**
@@ -234,11 +217,11 @@ SocketDTLSContext_new_server (const char *cert_file, const char *key_file,
   /* Create DTLS server method context */
   const SSL_METHOD *method = DTLS_server_method ();
   if (!method)
-    ctx_raise_openssl_error_dtls ("Failed to get DTLS server method");
+    raise_openssl_error ("Failed to get DTLS server method");
 
   SSL_CTX *ssl_ctx = SSL_CTX_new (method);
   if (!ssl_ctx)
-    ctx_raise_openssl_error_dtls ("Failed to create DTLS server context");
+    raise_openssl_error ("Failed to create DTLS server context");
 
   apply_dtls_defaults (ssl_ctx, 1);
 
@@ -270,11 +253,11 @@ SocketDTLSContext_new_client (const char *ca_file)
   /* Create DTLS client method context */
   const SSL_METHOD *method = DTLS_client_method ();
   if (!method)
-    ctx_raise_openssl_error_dtls ("Failed to get DTLS client method");
+    raise_openssl_error ("Failed to get DTLS client method");
 
   SSL_CTX *ssl_ctx = SSL_CTX_new (method);
   if (!ssl_ctx)
-    ctx_raise_openssl_error_dtls ("Failed to create DTLS client context");
+    raise_openssl_error ("Failed to create DTLS client context");
 
   apply_dtls_defaults (ssl_ctx, 0);
 
@@ -341,9 +324,17 @@ SocketDTLSContext_free (T *ctx_p)
  * ============================================================================
  */
 
-static void
-dtls_reject_if_invalid_file (const char *path, size_t max_size,
-                             const char *desc)
+/**
+ * open_and_stat_file - Securely open file and retrieve stat info
+ * @path: File path to open
+ * @desc: Description for error messages
+ * @st: Output stat structure
+ *
+ * Opens file with O_NOFOLLOW to reject symlinks, performs fstat.
+ * Returns fd on success, raises exception on failure.
+ */
+static int
+open_and_stat_file (const char *path, const char *desc, struct stat *st)
 {
   int fd = open (path, O_RDONLY | O_NOFOLLOW);
   if (fd == -1)
@@ -351,15 +342,10 @@ dtls_reject_if_invalid_file (const char *path, size_t max_size,
       int saved_errno = errno;
       DTLS_ERROR_FMT ("Cannot safely open %s '%s': %s", desc, path,
                       strerror (saved_errno));
-      if (saved_errno == ELOOP)
-        SOCKET_RAISE_FMT (SocketDTLSContext, SocketDTLS_Failed, "%s",
-                          dtls_context_error_buf);
-      else
-        RAISE_DTLS_CTX_ERROR (SocketDTLS_Failed);
+      RAISE_DTLS_CTX_ERROR (SocketDTLS_Failed);
     }
 
-  struct stat st;
-  if (fstat (fd, &st) != 0)
+  if (fstat (fd, st) != 0)
     {
       int saved_errno = errno;
       close (fd);
@@ -367,6 +353,22 @@ dtls_reject_if_invalid_file (const char *path, size_t max_size,
                       strerror (saved_errno));
       RAISE_DTLS_CTX_ERROR (SocketDTLS_Failed);
     }
+
+  return fd;
+}
+
+/**
+ * dtls_reject_if_invalid_file - Validate file is regular and within size limit
+ * @path: File path
+ * @max_size: Maximum allowed file size
+ * @desc: Description for error messages
+ */
+static void
+dtls_reject_if_invalid_file (const char *path, size_t max_size,
+                             const char *desc)
+{
+  struct stat st;
+  int fd = open_and_stat_file (path, desc, &st);
 
   if (!S_ISREG (st.st_mode))
     {
@@ -409,16 +411,16 @@ SocketDTLSContext_load_certificate (T ctx, const char *cert_file,
 
   /* Load certificate */
   if (SSL_CTX_use_certificate_chain_file (ctx->ssl_ctx, cert_file) != 1)
-    ctx_raise_openssl_error_dtls ("Failed to load certificate");
+    raise_openssl_error ("Failed to load certificate");
 
   /* Load private key */
   if (SSL_CTX_use_PrivateKey_file (ctx->ssl_ctx, key_file, SSL_FILETYPE_PEM)
       != 1)
-    ctx_raise_openssl_error_dtls ("Failed to load private key");
+    raise_openssl_error ("Failed to load private key");
 
   /* Verify key matches certificate */
   if (SSL_CTX_check_private_key (ctx->ssl_ctx) != 1)
-    ctx_raise_openssl_error_dtls ("Certificate and private key mismatch");
+    raise_openssl_error ("Certificate and private key mismatch");
 }
 
 void
@@ -430,31 +432,11 @@ SocketDTLSContext_load_ca (T ctx, const char *ca_file)
   if (!dtls_validate_file_path (ca_file))
     RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed, "Invalid CA path");
 
-  /* Secure open: reject symlinks (O_NOFOLLOW), validate type and size */
-  int fd = open (ca_file, O_RDONLY | O_NOFOLLOW);
-  if (fd == -1)
-    {
-      int saved_errno = errno;
-      DTLS_ERROR_FMT ("Cannot safely open CA path '%s': %s", ca_file,
-                      strerror (saved_errno));
-      if (saved_errno == ELOOP)
-        SOCKET_RAISE_FMT (SocketDTLSContext, SocketDTLS_Failed, "%s",
-                          dtls_context_error_buf);
-      else
-        RAISE_DTLS_CTX_ERROR (SocketDTLS_Failed);
-    }
-
+  /* Open and stat with security checks (rejects symlinks) */
   struct stat st;
-  if (fstat (fd, &st) != 0)
-    {
-      int saved_errno = errno;
-      close (fd);
-      DTLS_ERROR_FMT ("fstat failed for CA path '%s': %s", ca_file,
-                      strerror (saved_errno));
-      RAISE_DTLS_CTX_ERROR (SocketDTLS_Failed);
-    }
+  int fd = open_and_stat_file (ca_file, "CA path", &st);
 
-  /* Validate type and size (atomic with open) */
+  /* Validate type: must be regular file or directory */
   if (!S_ISREG (st.st_mode) && !S_ISDIR (st.st_mode))
     {
       close (fd);
@@ -462,6 +444,8 @@ SocketDTLSContext_load_ca (T ctx, const char *ca_file)
           SocketDTLS_Failed,
           "CA path '%s' must be a regular file or directory", ca_file);
     }
+
+  /* Validate size for regular files */
   if (S_ISREG (st.st_mode))
     {
       size_t file_size = (size_t)st.st_size;
@@ -476,20 +460,13 @@ SocketDTLSContext_load_ca (T ctx, const char *ca_file)
 
   close (fd);
 
-  /* Load based on validated type (small race possible after close, but
-   * minimized) */
-  int result;
-  if (S_ISDIR (st.st_mode))
-    {
-      result = SSL_CTX_load_verify_locations (ctx->ssl_ctx, NULL, ca_file);
-    }
-  else
-    {
-      result = SSL_CTX_load_verify_locations (ctx->ssl_ctx, ca_file, NULL);
-    }
+  /* Load based on validated type */
+  int result = S_ISDIR (st.st_mode)
+                   ? SSL_CTX_load_verify_locations (ctx->ssl_ctx, NULL, ca_file)
+                   : SSL_CTX_load_verify_locations (ctx->ssl_ctx, ca_file, NULL);
 
   if (result != 1)
-    ctx_raise_openssl_error_dtls ("Failed to load CA certificates");
+    raise_openssl_error ("Failed to load CA certificates");
 }
 
 void
@@ -629,7 +606,7 @@ SocketDTLSContext_set_min_protocol (T ctx, int version)
   assert (ctx);
 
   if (SSL_CTX_set_min_proto_version (ctx->ssl_ctx, version) != 1)
-    ctx_raise_openssl_error_dtls ("Failed to set minimum DTLS version");
+    raise_openssl_error ("Failed to set minimum DTLS version");
 }
 
 void
@@ -638,7 +615,7 @@ SocketDTLSContext_set_max_protocol (T ctx, int version)
   assert (ctx);
 
   if (SSL_CTX_set_max_proto_version (ctx->ssl_ctx, version) != 1)
-    ctx_raise_openssl_error_dtls ("Failed to set maximum DTLS version");
+    raise_openssl_error ("Failed to set maximum DTLS version");
 }
 
 void
@@ -649,7 +626,7 @@ SocketDTLSContext_set_cipher_list (T ctx, const char *ciphers)
   const char *cipher_list = ciphers ? ciphers : SOCKET_DTLS_CIPHERSUITES;
 
   if (SSL_CTX_set_cipher_list (ctx->ssl_ctx, cipher_list) != 1)
-    ctx_raise_openssl_error_dtls ("Failed to set DTLS cipher list");
+    raise_openssl_error ("Failed to set DTLS cipher list");
 }
 
 /* ============================================================================
@@ -784,7 +761,7 @@ SocketDTLSContext_set_alpn_protos (T ctx, const char **protos, size_t count)
 
       if (SSL_CTX_set_alpn_protos (ctx->ssl_ctx, wire, (unsigned int)wire_len)
           != 0)
-        ctx_raise_openssl_error_dtls ("Failed to set ALPN protocols");
+        raise_openssl_error ("Failed to set ALPN protocols");
     }
 }
 

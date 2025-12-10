@@ -133,6 +133,36 @@ static int execute_request_internal (SocketHTTPClient_T client,
                                      int redirect_count, int auth_retry_count);
 
 /* ============================================================================
+ * Internal: Common Helper Macros and Functions
+ * ============================================================================
+ */
+
+/**
+ * get_effective_auth - Get effective auth (request override or client default)
+ * @client: HTTP client
+ * @req: Request with optional auth override
+ *
+ * Returns: Auth to use, or NULL if none configured
+ */
+static inline SocketHTTPClient_Auth *
+get_effective_auth (SocketHTTPClient_T client, SocketHTTPClient_Request_T req)
+{
+  return req->auth != NULL ? req->auth : client->default_auth;
+}
+
+/**
+ * get_path_or_root - Get URI path or "/" if not set
+ * @uri: URI to extract path from
+ *
+ * Returns: Path string, never NULL
+ */
+static inline const char *
+get_path_or_root (const SocketHTTP_URI *uri)
+{
+  return uri->path != NULL ? uri->path : "/";
+}
+
+/* ============================================================================
  * Configuration Defaults
  * ============================================================================
  */
@@ -412,7 +442,7 @@ build_http1_request (SocketHTTPClient_Request_T req,
   http_req->method = req->method;
   http_req->version = HTTP_VERSION_1_1;
   http_req->authority = req->uri.host;
-  http_req->path = req->uri.path ? req->uri.path : "/";
+  http_req->path = get_path_or_root (&req->uri);
   http_req->scheme = req->uri.scheme;
   http_req->headers = req->headers;
   http_req->has_body = (req->body != NULL && req->body_len > 0);
@@ -501,98 +531,122 @@ typedef struct
 } HTTP1BodyAccumulator;
 
 /**
+ * check_body_size_limit - Check if adding len bytes would exceed limit
+ * @acc: Body accumulator
+ * @len: Bytes to add
+ * @potential_size: Output total size if allowed
+ *
+ * Returns: 0 if OK, -2 if limit exceeded
+ */
+static int
+check_body_size_limit (HTTP1BodyAccumulator *acc, size_t len,
+                       size_t *potential_size)
+{
+  if (!SocketSecurity_check_add (acc->total_body, len, potential_size)
+      || (acc->max_size > 0 && *potential_size > acc->max_size))
+    {
+      SocketMetrics_counter_inc (SOCKET_CTR_LIMIT_RESPONSE_SIZE_EXCEEDED);
+      return -2;
+    }
+  return 0;
+}
+
+/**
+ * calculate_new_capacity - Calculate new buffer capacity for growth
+ * @acc: Body accumulator
+ * @needed_size: Minimum required size
+ *
+ * Returns: New capacity, or 0 on overflow
+ */
+static size_t
+calculate_new_capacity (HTTP1BodyAccumulator *acc, size_t needed_size)
+{
+  size_t base_cap
+      = acc->body_capacity == 0 ? HTTPCLIENT_BODY_CHUNK_SIZE : acc->body_capacity;
+  size_t new_cap = SocketSecurity_safe_multiply (base_cap, 2);
+
+  if (new_cap == 0)
+    return 0;
+
+  /* Exponential growth until sufficient */
+  for (int i = 0; i < 32 && new_cap < needed_size; i++)
+    {
+      size_t temp = SocketSecurity_safe_multiply (new_cap, 2);
+      if (temp == 0)
+        return 0;
+      new_cap = temp;
+    }
+
+  /* Clamp to max_size */
+  if (acc->max_size > 0 && new_cap > acc->max_size)
+    new_cap = acc->max_size;
+
+  return new_cap;
+}
+
+/**
+ * grow_body_buffer - Grow accumulator buffer if needed
+ * @acc: Body accumulator
+ * @needed_size: Minimum required size
+ *
+ * Returns: 0 on success, -1 on allocation failure
+ */
+static int
+grow_body_buffer (HTTP1BodyAccumulator *acc, size_t needed_size)
+{
+  size_t new_cap;
+  char *new_buf;
+
+  if (needed_size <= acc->body_capacity)
+    return 0;
+
+  new_cap = calculate_new_capacity (acc, needed_size);
+  if (new_cap == 0)
+    return -1;
+
+  new_buf = Arena_alloc (acc->arena, new_cap, __FILE__, __LINE__);
+  if (new_buf == NULL)
+    return -1;
+
+  if (acc->body_buf != NULL)
+    memcpy (new_buf, acc->body_buf, acc->total_body);
+
+  acc->body_buf = new_buf;
+  acc->body_capacity = new_cap;
+  return 0;
+}
+
+/**
  * accumulate_body_chunk - Accumulate body data into buffer
  * @acc: Body accumulator
  * @data: Data to accumulate
  * @len: Data length
  *
- * Returns: 0 on success, -1 on memory allocation failure, -2 on size limit
- * exceeded
+ * Returns: 0 on success, -1 on memory failure, -2 on size limit exceeded
  */
 static int
 accumulate_body_chunk (HTTP1BodyAccumulator *acc, const char *data, size_t len)
 {
+  size_t needed_size;
+  int result;
+
   assert (acc != NULL);
 
   if (len == 0)
     return 0;
 
-  /* Check max response size limit with overflow protection */
-  {
-    size_t potential_size;
-    if (!SocketSecurity_check_add (acc->total_body, len, &potential_size)
-        || (acc->max_size > 0 && potential_size > acc->max_size))
-      {
-        SocketMetrics_counter_inc (SOCKET_CTR_LIMIT_RESPONSE_SIZE_EXCEEDED);
-        return -2; /* Overflow or size limit exceeded */
-      }
-  }
+  /* Check size limit */
+  result = check_body_size_limit (acc, len, &needed_size);
+  if (result != 0)
+    return result;
 
-  /* Grow buffer if needed with overflow protection */
-  {
-    size_t needed_size;
-    if (!SocketSecurity_check_add (acc->total_body, len, &needed_size)
-        || needed_size > acc->body_capacity)
-      {
-        size_t base_cap = acc->body_capacity == 0 ? HTTPCLIENT_BODY_CHUNK_SIZE
-                                                  : acc->body_capacity;
-        size_t new_cap = SocketSecurity_safe_multiply (base_cap, 2);
-        if (new_cap == 0)
-          {
-            return -1; /* Overflow in growth */
-          }
+  /* Grow buffer if needed */
+  if (grow_body_buffer (acc, needed_size) != 0)
+    return -1;
 
-        /* Exponential growth until sufficient (with safe checks) */
-        size_t iter_limit = 32; /* Prevent infinite loop on overflow */
-        while (iter_limit-- > 0)
-          {
-            size_t cmp_size;
-            if (SocketSecurity_check_add (acc->total_body, len, &cmp_size)
-                && new_cap >= cmp_size)
-              {
-                break;
-              }
-            size_t temp_cap = SocketSecurity_safe_multiply (new_cap, 2);
-            if (temp_cap == 0)
-              {
-                return -1; /* Cannot grow further safely */
-              }
-            new_cap = temp_cap;
-          }
-
-        /* Clamp to max_size to avoid over-allocation */
-        if (acc->max_size > 0 && new_cap > acc->max_size)
-          {
-            new_cap = acc->max_size;
-          }
-
-        char *new_buf = Arena_alloc (acc->arena, new_cap, __FILE__, __LINE__);
-        if (new_buf == NULL)
-          {
-            return -1;
-          }
-
-        if (acc->body_buf != NULL)
-          {
-            memcpy (new_buf, acc->body_buf, acc->total_body);
-          }
-
-        acc->body_buf = new_buf;
-        acc->body_capacity = new_cap;
-      }
-  }
-
-  {
-    size_t old_total = acc->total_body;
-    memcpy (acc->body_buf + old_total, data, len);
-    size_t new_total;
-    if (!SocketSecurity_check_add (old_total, len, &new_total))
-      {
-        /* Should not happen after earlier checks, but defensive */
-        return -1;
-      }
-    acc->total_body = new_total;
-  }
+  /* Append data */
+  memcpy (acc->body_buf + acc->total_body, data, len);
+  acc->total_body = needed_size;
 
   return 0;
 }
@@ -989,7 +1043,7 @@ add_initial_auth_header (SocketHTTPClient_T client,
   SocketHTTPClient_Auth *auth;
   char auth_header[HTTPCLIENT_AUTH_HEADER_SIZE];
 
-  auth = req->auth != NULL ? req->auth : client->default_auth;
+  auth = get_effective_auth (client, req);
   if (auth == NULL)
     return;
 
@@ -1074,15 +1128,12 @@ static void
 build_digest_auth_uri (SocketHTTPClient_Request_T req, char *uri_str,
                        size_t uri_size)
 {
+  const char *path = get_path_or_root (&req->uri);
+
   if (req->uri.query != NULL && req->uri.query[0] != '\0')
-    {
-      snprintf (uri_str, uri_size, "%s?%s",
-                req->uri.path ? req->uri.path : "/", req->uri.query);
-    }
+    snprintf (uri_str, uri_size, "%s?%s", path, req->uri.query);
   else
-    {
-      snprintf (uri_str, uri_size, "%s", req->uri.path ? req->uri.path : "/");
-    }
+    snprintf (uri_str, uri_size, "%s", path);
 }
 
 /**
@@ -1107,7 +1158,7 @@ try_digest_auth_retry (SocketHTTPClient_Request_T req,
   char nc_value[HTTPCLIENT_DIGEST_NC_SIZE];
   char uri_str[HTTPCLIENT_URI_BUFFER_SIZE];
 
-  auth = req->auth != NULL ? req->auth : client->default_auth;
+  auth = get_effective_auth (client, req);
   if (auth == NULL || auth->type != HTTP_AUTH_DIGEST)
     return 0;
 
@@ -1149,7 +1200,7 @@ try_basic_auth_retry (SocketHTTPClient_Request_T req,
   SocketHTTPClient_Auth *auth;
   int already_sent;
 
-  auth = req->auth != NULL ? req->auth : client->default_auth;
+  auth = get_effective_auth (client, req);
   if (auth == NULL || auth->type != HTTP_AUTH_BASIC)
     return 0;
 
@@ -1202,7 +1253,7 @@ handle_401_auth_retry (SocketHTTPClient_T client,
   if (auth_retry_count >= HTTPCLIENT_MAX_AUTH_RETRIES)
     return 1; /* Max retries reached */
 
-  auth = req->auth != NULL ? req->auth : client->default_auth;
+  auth = get_effective_auth (client, req);
   if (auth == NULL)
     return 1; /* No credentials */
 
@@ -1537,8 +1588,61 @@ execute_request_internal (SocketHTTPClient_T client,
  * ============================================================================
  */
 
-int
-SocketHTTPClient_get (SocketHTTPClient_T client, const char *url,
+/* ============================================================================
+ * Internal: Simple Request Helper
+ * ============================================================================
+ */
+
+/**
+ * execute_simple_request - Execute request without body
+ * @client: HTTP client
+ * @method: HTTP method
+ * @url: Request URL
+ * @response: Output response
+ *
+ * Returns: 0 on success, -1 on error
+ *
+ * Common implementation for GET, HEAD, DELETE.
+ */
+static int
+execute_simple_request (SocketHTTPClient_T client, SocketHTTP_Method method,
+                        const char *url, SocketHTTPClient_Response *response)
+{
+  SocketHTTPClient_Request_T req;
+  int result;
+
+  assert (client != NULL);
+  assert (url != NULL);
+  assert (response != NULL);
+
+  req = SocketHTTPClient_Request_new (client, method, url);
+  if (req == NULL)
+    return -1;
+
+  result = SocketHTTPClient_Request_execute (req, response);
+  SocketHTTPClient_Request_free (&req);
+
+  return result;
+}
+
+/**
+ * execute_body_request - Execute request with body
+ * @client: HTTP client
+ * @method: HTTP method
+ * @url: Request URL
+ * @content_type: Content-Type header (may be NULL)
+ * @body: Request body (may be NULL)
+ * @body_len: Body length
+ * @response: Output response
+ *
+ * Returns: 0 on success, -1 on error
+ *
+ * Common implementation for POST, PUT.
+ */
+static int
+execute_body_request (SocketHTTPClient_T client, SocketHTTP_Method method,
+                      const char *url, const char *content_type,
+                      const void *body, size_t body_len,
                       SocketHTTPClient_Response *response)
 {
   SocketHTTPClient_Request_T req;
@@ -1548,9 +1652,15 @@ SocketHTTPClient_get (SocketHTTPClient_T client, const char *url,
   assert (url != NULL);
   assert (response != NULL);
 
-  req = SocketHTTPClient_Request_new (client, HTTP_METHOD_GET, url);
+  req = SocketHTTPClient_Request_new (client, method, url);
   if (req == NULL)
     return -1;
+
+  if (content_type != NULL)
+    SocketHTTPClient_Request_header (req, "Content-Type", content_type);
+
+  if (body != NULL && body_len > 0)
+    SocketHTTPClient_Request_body (req, body, body_len);
 
   result = SocketHTTPClient_Request_execute (req, response);
   SocketHTTPClient_Request_free (&req);
@@ -1559,24 +1669,17 @@ SocketHTTPClient_get (SocketHTTPClient_T client, const char *url,
 }
 
 int
+SocketHTTPClient_get (SocketHTTPClient_T client, const char *url,
+                      SocketHTTPClient_Response *response)
+{
+  return execute_simple_request (client, HTTP_METHOD_GET, url, response);
+}
+
+int
 SocketHTTPClient_head (SocketHTTPClient_T client, const char *url,
                        SocketHTTPClient_Response *response)
 {
-  SocketHTTPClient_Request_T req;
-  int result;
-
-  assert (client != NULL);
-  assert (url != NULL);
-  assert (response != NULL);
-
-  req = SocketHTTPClient_Request_new (client, HTTP_METHOD_HEAD, url);
-  if (req == NULL)
-    return -1;
-
-  result = SocketHTTPClient_Request_execute (req, response);
-  SocketHTTPClient_Request_free (&req);
-
-  return result;
+  return execute_simple_request (client, HTTP_METHOD_HEAD, url, response);
 }
 
 int
@@ -1584,27 +1687,8 @@ SocketHTTPClient_post (SocketHTTPClient_T client, const char *url,
                        const char *content_type, const void *body,
                        size_t body_len, SocketHTTPClient_Response *response)
 {
-  SocketHTTPClient_Request_T req;
-  int result;
-
-  assert (client != NULL);
-  assert (url != NULL);
-  assert (response != NULL);
-
-  req = SocketHTTPClient_Request_new (client, HTTP_METHOD_POST, url);
-  if (req == NULL)
-    return -1;
-
-  if (content_type != NULL)
-    SocketHTTPClient_Request_header (req, "Content-Type", content_type);
-
-  if (body != NULL && body_len > 0)
-    SocketHTTPClient_Request_body (req, body, body_len);
-
-  result = SocketHTTPClient_Request_execute (req, response);
-  SocketHTTPClient_Request_free (&req);
-
-  return result;
+  return execute_body_request (client, HTTP_METHOD_POST, url, content_type,
+                               body, body_len, response);
 }
 
 int
@@ -1612,48 +1696,15 @@ SocketHTTPClient_put (SocketHTTPClient_T client, const char *url,
                       const char *content_type, const void *body,
                       size_t body_len, SocketHTTPClient_Response *response)
 {
-  SocketHTTPClient_Request_T req;
-  int result;
-
-  assert (client != NULL);
-  assert (url != NULL);
-  assert (response != NULL);
-
-  req = SocketHTTPClient_Request_new (client, HTTP_METHOD_PUT, url);
-  if (req == NULL)
-    return -1;
-
-  if (content_type != NULL)
-    SocketHTTPClient_Request_header (req, "Content-Type", content_type);
-
-  if (body != NULL && body_len > 0)
-    SocketHTTPClient_Request_body (req, body, body_len);
-
-  result = SocketHTTPClient_Request_execute (req, response);
-  SocketHTTPClient_Request_free (&req);
-
-  return result;
+  return execute_body_request (client, HTTP_METHOD_PUT, url, content_type,
+                               body, body_len, response);
 }
 
 int
 SocketHTTPClient_delete (SocketHTTPClient_T client, const char *url,
                          SocketHTTPClient_Response *response)
 {
-  SocketHTTPClient_Request_T req;
-  int result;
-
-  assert (client != NULL);
-  assert (url != NULL);
-  assert (response != NULL);
-
-  req = SocketHTTPClient_Request_new (client, HTTP_METHOD_DELETE, url);
-  if (req == NULL)
-    return -1;
-
-  result = SocketHTTPClient_Request_execute (req, response);
-  SocketHTTPClient_Request_free (&req);
-
-  return result;
+  return execute_simple_request (client, HTTP_METHOD_DELETE, url, response);
 }
 
 void
@@ -2255,20 +2306,19 @@ SocketHTTPClient_error_string (SocketHTTPClient_Error error)
  * event loops. Requests are queued and processed during process() calls.
  */
 
-SocketHTTPClient_AsyncRequest_T
-SocketHTTPClient_get_async (SocketHTTPClient_T client, const char *url,
-                            SocketHTTPClient_Callback callback, void *userdata)
+/**
+ * submit_request_async - Common async request submission
+ * @req: Request to submit (freed on failure)
+ * @callback: Completion callback
+ * @userdata: User data for callback
+ *
+ * Returns: Async request handle, or NULL on failure
+ */
+static SocketHTTPClient_AsyncRequest_T
+submit_request_async (SocketHTTPClient_Request_T req,
+                      SocketHTTPClient_Callback callback, void *userdata)
 {
-  SocketHTTPClient_Request_T req;
   SocketHTTPClient_AsyncRequest_T async_req;
-
-  assert (client != NULL);
-  assert (url != NULL);
-  assert (callback != NULL);
-
-  req = SocketHTTPClient_Request_new (client, HTTP_METHOD_GET, url);
-  if (req == NULL)
-    return NULL;
 
   async_req = SocketHTTPClient_Request_async (req, callback, userdata);
   if (async_req == NULL)
@@ -2281,6 +2331,23 @@ SocketHTTPClient_get_async (SocketHTTPClient_T client, const char *url,
 }
 
 SocketHTTPClient_AsyncRequest_T
+SocketHTTPClient_get_async (SocketHTTPClient_T client, const char *url,
+                            SocketHTTPClient_Callback callback, void *userdata)
+{
+  SocketHTTPClient_Request_T req;
+
+  assert (client != NULL);
+  assert (url != NULL);
+  assert (callback != NULL);
+
+  req = SocketHTTPClient_Request_new (client, HTTP_METHOD_GET, url);
+  if (req == NULL)
+    return NULL;
+
+  return submit_request_async (req, callback, userdata);
+}
+
+SocketHTTPClient_AsyncRequest_T
 SocketHTTPClient_post_async (SocketHTTPClient_T client, const char *url,
                              const char *content_type, const void *body,
                              size_t body_len,
@@ -2288,7 +2355,6 @@ SocketHTTPClient_post_async (SocketHTTPClient_T client, const char *url,
                              void *userdata)
 {
   SocketHTTPClient_Request_T req;
-  SocketHTTPClient_AsyncRequest_T async_req;
 
   assert (client != NULL);
   assert (url != NULL);
@@ -2304,14 +2370,7 @@ SocketHTTPClient_post_async (SocketHTTPClient_T client, const char *url,
   if (body != NULL && body_len > 0)
     SocketHTTPClient_Request_body (req, body, body_len);
 
-  async_req = SocketHTTPClient_Request_async (req, callback, userdata);
-  if (async_req == NULL)
-    {
-      SocketHTTPClient_Request_free (&req);
-      return NULL;
-    }
-
-  return async_req;
+  return submit_request_async (req, callback, userdata);
 }
 
 SocketHTTPClient_AsyncRequest_T
@@ -2400,58 +2459,104 @@ SocketHTTPClient_process (SocketHTTPClient_T client, int timeout_ms)
 #include <sys/stat.h>
 #include <unistd.h>
 
+/* ============================================================================
+ * Internal: File I/O Helpers
+ * ============================================================================
+ */
+
+/**
+ * write_all_eintr - Write all data to fd with EINTR retry
+ * @fd: File descriptor
+ * @buf: Data buffer
+ * @len: Data length
+ *
+ * Returns: 0 on success, -1 on error
+ */
+static int
+write_all_eintr (int fd, const void *buf, size_t len)
+{
+  const char *data = buf;
+  size_t remaining = len;
+
+  while (remaining > 0)
+    {
+      ssize_t n = write (fd, data, remaining);
+      if (n <= 0)
+        {
+          if (n < 0 && errno == EINTR)
+            continue;
+          return -1;
+        }
+      data += n;
+      remaining -= (size_t)n;
+    }
+  return 0;
+}
+
+/**
+ * read_all_eintr - Read all data from fd with EINTR retry
+ * @fd: File descriptor
+ * @buf: Output buffer
+ * @len: Expected length
+ *
+ * Returns: 0 on success, -1 on error
+ */
+static int
+read_all_eintr (int fd, void *buf, size_t len)
+{
+  char *data = buf;
+  size_t remaining = len;
+
+  while (remaining > 0)
+    {
+      ssize_t n = read (fd, data, remaining);
+      if (n <= 0)
+        {
+          if (n < 0 && errno == EINTR)
+            continue;
+          return -1;
+        }
+      data += n;
+      remaining -= (size_t)n;
+    }
+  return 0;
+}
+
 int
 SocketHTTPClient_download (SocketHTTPClient_T client, const char *url,
                            const char *filepath)
 {
   SocketHTTPClient_Response response = { 0 };
   int fd = -1;
-  int result = -1;
+  int result;
 
   assert (client != NULL);
   assert (url != NULL);
   assert (filepath != NULL);
 
-  /* Perform GET request */
   if (SocketHTTPClient_get (client, url, &response) != 0)
     return -1;
 
-  /* Check for success status */
   if (response.status_code < 200 || response.status_code >= 300)
     {
       SocketHTTPClient_Response_free (&response);
       return -1;
     }
 
-  /* Open file for writing */
   fd = open (filepath, O_WRONLY | O_CREAT | O_TRUNC, 0644);
   if (fd < 0)
     {
       SocketHTTPClient_Response_free (&response);
-      return -2; /* File error */
-    }
-
-  /* Write body to file */
-  if (response.body && response.body_len > 0)
-    {
-      ssize_t written = 0;
-      while ((size_t)written < response.body_len)
-        {
-          ssize_t n
-              = write (fd, response.body + written, response.body_len - written);
-          if (n <= 0)
-            {
-              if (n < 0 && errno == EINTR)
-                continue;
-              close (fd);
-              SocketHTTPClient_Response_free (&response);
-              return -2;
-            }
-          written += n;
-        }
+      return -2;
     }
 
   result = 0;
+  if (response.body != NULL && response.body_len > 0)
+    {
+      if (write_all_eintr (fd, response.body, response.body_len) != 0)
+        result = -2;
+    }
+
   close (fd);
   SocketHTTPClient_Response_free (&response);
   return result;
@@ -2465,13 +2570,12 @@ SocketHTTPClient_upload (SocketHTTPClient_T client, const char *url,
   struct stat st;
   int fd = -1;
   char *buffer = NULL;
-  int result = -2;
+  int result;
 
   assert (client != NULL);
   assert (url != NULL);
   assert (filepath != NULL);
 
-  /* Open and stat file */
   fd = open (filepath, O_RDONLY);
   if (fd < 0)
     return -2;
@@ -2482,33 +2586,23 @@ SocketHTTPClient_upload (SocketHTTPClient_T client, const char *url,
       return -2;
     }
 
-  /* Read file into memory */
-  buffer = malloc (st.st_size);
-  if (!buffer)
+  buffer = malloc ((size_t)st.st_size);
+  if (buffer == NULL)
     {
       close (fd);
       return -2;
     }
 
-  ssize_t total_read = 0;
-  while (total_read < st.st_size)
+  if (read_all_eintr (fd, buffer, (size_t)st.st_size) != 0)
     {
-      ssize_t n = read (fd, buffer + total_read, st.st_size - total_read);
-      if (n <= 0)
-        {
-          if (n < 0 && errno == EINTR)
-            continue;
-          free (buffer);
-          close (fd);
-          return -2;
-        }
-      total_read += n;
+      free (buffer);
+      close (fd);
+      return -2;
     }
   close (fd);
 
-  /* Perform PUT request */
   if (SocketHTTPClient_put (client, url, "application/octet-stream", buffer,
-                            st.st_size, &response)
+                            (size_t)st.st_size, &response)
       != 0)
     {
       free (buffer);
@@ -2521,13 +2615,56 @@ SocketHTTPClient_upload (SocketHTTPClient_T client, const char *url,
   return result;
 }
 
+/**
+ * is_json_content_type - Check if Content-Type is JSON
+ * @headers: Response headers
+ *
+ * Returns: 1 if JSON, 0 otherwise
+ */
+static int
+is_json_content_type (SocketHTTP_Headers_T headers)
+{
+  const char *content_type = SocketHTTP_Headers_get (headers, "Content-Type");
+  return content_type == NULL
+         || strstr (content_type, "application/json") != NULL;
+}
+
+/**
+ * copy_response_body - Copy response body to output buffer
+ * @response: Response with body
+ * @out: Output buffer pointer (caller must free)
+ * @out_len: Output length
+ *
+ * Returns: 0 on success, -1 on allocation failure
+ */
+static int
+copy_response_body (const SocketHTTPClient_Response *response, char **out,
+                    size_t *out_len)
+{
+  if (response->body == NULL || response->body_len == 0)
+    {
+      *out = NULL;
+      *out_len = 0;
+      return 0;
+    }
+
+  *out = malloc (response->body_len + 1);
+  if (*out == NULL)
+    return -1;
+
+  memcpy (*out, response->body, response->body_len);
+  (*out)[response->body_len] = '\0';
+  *out_len = response->body_len;
+  return 0;
+}
+
 int
 SocketHTTPClient_json_get (SocketHTTPClient_T client, const char *url,
                            char **json_out, size_t *json_len)
 {
-  SocketHTTPClient_Request_T req = NULL;
+  SocketHTTPClient_Request_T req;
   SocketHTTPClient_Response response = { 0 };
-  int status = -1;
+  int status;
 
   assert (client != NULL);
   assert (url != NULL);
@@ -2537,9 +2674,8 @@ SocketHTTPClient_json_get (SocketHTTPClient_T client, const char *url,
   *json_out = NULL;
   *json_len = 0;
 
-  /* Build GET request with JSON accept header */
   req = SocketHTTPClient_Request_new (client, HTTP_METHOD_GET, url);
-  if (!req)
+  if (req == NULL)
     return -1;
 
   SocketHTTPClient_Request_header (req, "Accept", "application/json");
@@ -2553,27 +2689,13 @@ SocketHTTPClient_json_get (SocketHTTPClient_T client, const char *url,
   SocketHTTPClient_Request_free (&req);
   status = response.status_code;
 
-  /* Check content type */
-  const char *content_type = SocketHTTP_Headers_get (response.headers,
-                                                     "Content-Type");
-  if (content_type && strstr (content_type, "application/json") == NULL)
+  if (!is_json_content_type (response.headers))
     {
       SocketHTTPClient_Response_free (&response);
-      return -2; /* Content-type mismatch */
+      return -2;
     }
 
-  /* Copy body to output */
-  if (response.body && response.body_len > 0)
-    {
-      *json_out = malloc (response.body_len + 1);
-      if (*json_out)
-        {
-          memcpy (*json_out, response.body, response.body_len);
-          (*json_out)[response.body_len] = '\0';
-          *json_len = response.body_len;
-        }
-    }
-
+  copy_response_body (&response, json_out, json_len);
   SocketHTTPClient_Response_free (&response);
   return status;
 }
@@ -2583,9 +2705,9 @@ SocketHTTPClient_json_post (SocketHTTPClient_T client, const char *url,
                             const char *json_body, char **json_out,
                             size_t *json_len)
 {
-  SocketHTTPClient_Request_T req = NULL;
+  SocketHTTPClient_Request_T req;
   SocketHTTPClient_Response response = { 0 };
-  int status = -1;
+  int status;
 
   assert (client != NULL);
   assert (url != NULL);
@@ -2596,9 +2718,8 @@ SocketHTTPClient_json_post (SocketHTTPClient_T client, const char *url,
   *json_out = NULL;
   *json_len = 0;
 
-  /* Build POST request with JSON headers */
   req = SocketHTTPClient_Request_new (client, HTTP_METHOD_POST, url);
-  if (!req)
+  if (req == NULL)
     return -1;
 
   SocketHTTPClient_Request_header (req, "Content-Type", "application/json");
@@ -2614,25 +2735,14 @@ SocketHTTPClient_json_post (SocketHTTPClient_T client, const char *url,
   SocketHTTPClient_Request_free (&req);
   status = response.status_code;
 
-  /* Check content type if we have a body */
-  if (response.body && response.body_len > 0)
+  if (response.body != NULL && response.body_len > 0)
     {
-      const char *content_type = SocketHTTP_Headers_get (response.headers,
-                                                         "Content-Type");
-      if (content_type && strstr (content_type, "application/json") == NULL)
+      if (!is_json_content_type (response.headers))
         {
           SocketHTTPClient_Response_free (&response);
-          return -2; /* Content-type mismatch */
+          return -2;
         }
-
-      /* Copy body to output */
-      *json_out = malloc (response.body_len + 1);
-      if (*json_out)
-        {
-          memcpy (*json_out, response.body, response.body_len);
-          (*json_out)[response.body_len] = '\0';
-          *json_len = response.body_len;
-        }
+      copy_response_body (&response, json_out, json_len);
     }
 
   SocketHTTPClient_Response_free (&response);

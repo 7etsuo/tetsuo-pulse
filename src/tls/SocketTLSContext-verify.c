@@ -92,7 +92,8 @@ needs_internal_callback (T ctx)
  * apply_verify_settings - Apply verification mode and callback to context
  * @ctx: TLS context
  *
- * Consolidates SSL_CTX_set_verify call.
+ * Consolidates SSL_CTX_set_verify call. Clears OpenSSL error queue first
+ * for clean error state.
  */
 static void
 apply_verify_settings (T ctx)
@@ -102,6 +103,7 @@ apply_verify_settings (T ctx)
                          ? (SSL_verify_cb)internal_verify_callback
                          : NULL;
 
+  ERR_clear_error ();
   SSL_CTX_set_verify (ctx->ssl_ctx, openssl_mode, cb);
 }
 
@@ -127,14 +129,34 @@ static int
 check_single_cert_pin (T ctx, X509 *cert)
 {
   unsigned char hash[SOCKET_TLS_PIN_HASH_LEN];
+  int result;
 
   if (tls_pinning_extract_spki_hash (cert, hash) != 0)
     return 0;
 
   pthread_mutex_lock (&ctx->pinning.lock);
-  int res = tls_pinning_find (ctx->pinning.pins, ctx->pinning.count, hash);
+  result = tls_pinning_find (ctx->pinning.pins, ctx->pinning.count, hash);
   pthread_mutex_unlock (&ctx->pinning.lock);
-  return res;
+
+  return result;
+}
+
+/**
+ * get_pin_enforcement - Thread-safe read of enforcement mode
+ * @ctx: TLS context
+ *
+ * Returns: 1 if enforce mode, 0 if warn-only
+ */
+static int
+get_pin_enforcement (T ctx)
+{
+  int enforce;
+
+  pthread_mutex_lock (&ctx->pinning.lock);
+  enforce = ctx->pinning.enforce;
+  pthread_mutex_unlock (&ctx->pinning.lock);
+
+  return enforce;
 }
 
 /**
@@ -147,10 +169,7 @@ check_single_cert_pin (T ctx, X509 *cert)
 static int
 handle_pin_mismatch (T ctx, X509_STORE_CTX *x509_ctx)
 {
-  pthread_mutex_lock (&ctx->pinning.lock);
-  int enforce = ctx->pinning.enforce;
-  pthread_mutex_unlock (&ctx->pinning.lock);
-  if (enforce)
+  if (get_pin_enforcement (ctx))
     {
       X509_STORE_CTX_set_error (x509_ctx, X509_V_ERR_APPLICATION_VERIFICATION);
       return 0;
@@ -177,6 +196,24 @@ check_current_cert_pin (T ctx, X509_STORE_CTX *x509_ctx)
 }
 
 /**
+ * get_pin_count_locked - Thread-safe read of pin count
+ * @ctx: TLS context
+ *
+ * Returns: Number of configured pins
+ */
+static size_t
+get_pin_count_locked (T ctx)
+{
+  size_t count;
+
+  pthread_mutex_lock (&ctx->pinning.lock);
+  count = ctx->pinning.count;
+  pthread_mutex_unlock (&ctx->pinning.lock);
+
+  return count;
+}
+
+/**
  * check_certificate_pins - Verify certificate chain against pins
  * @ctx: TLS context with pins configured
  * @x509_ctx: Certificate store context
@@ -187,19 +224,16 @@ static int
 check_certificate_pins (T ctx, X509_STORE_CTX *x509_ctx)
 {
   STACK_OF (X509) * chain;
+  int match;
+  int allocated = 0;
 
   assert (ctx);
 
-  pthread_mutex_lock (&ctx->pinning.lock);
-  if (ctx->pinning.count == 0)
-    {
-      pthread_mutex_unlock (&ctx->pinning.lock);
-      return 1; /* No pins configured - pass */
-    }
-  pthread_mutex_unlock (&ctx->pinning.lock);
+  /* Early exit if no pins configured - avoid unnecessary locking */
+  if (get_pin_count_locked (ctx) == 0)
+    return 1;
 
   chain = X509_STORE_CTX_get0_chain (x509_ctx);
-  int allocated = 0;
   if (!chain)
     {
       chain = X509_STORE_CTX_get1_chain (x509_ctx);
@@ -208,11 +242,10 @@ check_certificate_pins (T ctx, X509_STORE_CTX *x509_ctx)
       allocated = 1;
     }
 
-  int match = tls_pinning_check_chain (ctx, chain);
+  match = tls_pinning_check_chain (ctx, chain);
+
   if (allocated)
-    {
-      sk_X509_pop_free (chain, X509_free);
-    }
+    sk_X509_pop_free (chain, X509_free);
 
   if (match)
     return 1;
@@ -306,6 +339,7 @@ internal_verify_callback (int pre_ok, X509_STORE_CTX *x509_ctx)
 {
   Socket_T sock;
   T ctx;
+  int result;
 
   if (!get_verify_context (x509_ctx, &sock, &ctx))
     return pre_ok;
@@ -313,7 +347,7 @@ internal_verify_callback (int pre_ok, X509_STORE_CTX *x509_ctx)
   /* Step 1: Call user callback if set */
   if (ctx->verify_callback)
     {
-      int result = invoke_user_callback (ctx, pre_ok, x509_ctx, sock);
+      result = invoke_user_callback (ctx, pre_ok, x509_ctx, sock);
       if (!result)
         return 0;
       pre_ok = result;
@@ -346,7 +380,6 @@ SocketTLSContext_set_verify_mode (T ctx, TLSVerifyMode mode)
   assert (ctx->ssl_ctx);
 
   ctx->verify_mode = mode;
-  ERR_clear_error ();
   apply_verify_settings (ctx);
 }
 
@@ -367,12 +400,80 @@ SocketTLSContext_set_verify_callback (T ctx, SocketTLSVerifyCallback callback,
  * ============================================================================
  */
 
+/**
+ * validate_crl_file_size - Check CRL file size against limits
+ * @path: CRL file path
+ * @st: stat structure for the file
+ *
+ * Raises: SocketTLS_Failed if file too large or invalid
+ */
+static void
+validate_crl_file_size (const char *path, const struct stat *st)
+{
+  size_t file_size;
+
+  if (st->st_size < 0)
+    RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
+                         "CRL file '%s' has invalid size: %ld bytes", path,
+                         (long)st->st_size);
+
+  file_size = (size_t)st->st_size;
+  if (file_size > SOCKET_TLS_MAX_CRL_SIZE
+      || !SocketSecurity_check_size (file_size))
+    RAISE_CTX_ERROR_FMT (
+        SocketTLS_Failed,
+        "CRL file '%s' too large: %ld bytes (max %u)", path,
+        (long)st->st_size, SOCKET_TLS_MAX_CRL_SIZE);
+}
+
+/**
+ * validate_crl_directory - Check CRL directory for DoS limits
+ * @path: CRL directory path
+ *
+ * Raises: SocketTLS_Failed if too many files or cannot open
+ */
+static void
+validate_crl_directory (const char *path)
+{
+  DIR *dirp;
+  struct dirent *de;
+  int file_count = 0;
+
+  dirp = opendir (path);
+  if (!dirp)
+    RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
+                         "Cannot open CRL directory '%s': %s", path,
+                         Socket_safe_strerror (errno));
+
+  while ((de = readdir (dirp)) != NULL)
+    {
+      if (de->d_type == DT_REG)
+        {
+          file_count++;
+          if (file_count > SOCKET_TLS_MAX_CRL_FILES_IN_DIR)
+            {
+              closedir (dirp);
+              RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
+                                   "CRL directory '%s' has too many "
+                                   "files (%d > max %d): potential DoS",
+                                   path, file_count,
+                                   SOCKET_TLS_MAX_CRL_FILES_IN_DIR);
+            }
+        }
+    }
+  closedir (dirp);
+
+  if (file_count == 0)
+    SOCKET_LOG_WARN_MSG ("CRL directory '%s' contains no regular files", path);
+}
+
 void
 SocketTLSContext_load_crl (T ctx, const char *crl_path)
 {
   X509_STORE *store;
   struct stat st;
   int ret;
+  int is_directory;
 
   assert (ctx);
   assert (ctx->ssl_ctx);
@@ -392,53 +493,16 @@ SocketTLSContext_load_crl (T ctx, const char *crl_path)
       RAISE_CTX_ERROR_FMT (SocketTLS_Failed, "Invalid CRL path '%s': %s",
                            crl_path, Socket_safe_strerror (errno));
 
+    is_directory = S_ISDIR (st.st_mode);
+
     /* Security check: prevent DoS from oversized CRL files or directories */
-    if (!S_ISDIR (st.st_mode))
-      {
-        size_t file_size = (size_t)st.st_size;
-        if (st.st_size < 0 || file_size > SOCKET_TLS_MAX_CRL_SIZE
-            || !SocketSecurity_check_size (file_size))
-          RAISE_CTX_ERROR_FMT (
-              SocketTLS_Failed,
-              "CRL file '%s' too large or invalid size: %ld bytes (max %u)",
-              crl_path, (long)st.st_size, SOCKET_TLS_MAX_CRL_SIZE);
-      }
-    else /* Directory CRL load */
-      {
-        DIR *dirp = opendir (crl_path);
-        if (!dirp)
-          RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
-                               "Cannot open CRL directory '%s': %s", crl_path,
-                               Socket_safe_strerror (errno));
+    if (is_directory)
+      validate_crl_directory (crl_path);
+    else
+      validate_crl_file_size (crl_path, &st);
 
-        struct dirent *de;
-        int file_count = 0;
-        while ((de = readdir (dirp)) != NULL)
-          {
-            if (de->d_type
-                == DT_REG) /* Count regular files (potential CRLs) */
-              {
-                file_count++;
-                if (file_count > SOCKET_TLS_MAX_CRL_FILES_IN_DIR)
-                  {
-                    closedir (dirp);
-                    RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
-                                         "CRL directory '%s' has too many "
-                                         "files (%d > max %d): potential DoS",
-                                         crl_path, file_count,
-                                         SOCKET_TLS_MAX_CRL_FILES_IN_DIR);
-                  }
-              }
-          }
-        closedir (dirp);
-        if (file_count == 0)
-          SOCKET_LOG_WARN_MSG ("CRL directory '%s' contains no regular files",
-                               crl_path);
-      }
-
-    ret = S_ISDIR (st.st_mode)
-              ? X509_STORE_load_locations (store, NULL, crl_path)
-              : X509_STORE_load_locations (store, crl_path, NULL);
+    ret = is_directory ? X509_STORE_load_locations (store, NULL, crl_path)
+                       : X509_STORE_load_locations (store, crl_path, NULL);
 
     if (ret != 1)
       ctx_raise_openssl_error ("Failed to load CRL");
@@ -477,6 +541,7 @@ apply_min_proto_fallback (T ctx, int version)
 {
 #if defined(SSL_OP_NO_SSLv2) && defined(SSL_OP_NO_SSLv3)
   long options = SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3;
+  long current;
 
   if (version > TLS1_VERSION)
     options |= SSL_OP_NO_TLSv1;
@@ -485,7 +550,7 @@ apply_min_proto_fallback (T ctx, int version)
   if (version > TLS1_2_VERSION)
     options |= SSL_OP_NO_TLSv1_2;
 
-  long current = SSL_CTX_set_options (ctx->ssl_ctx, options);
+  current = SSL_CTX_set_options (ctx->ssl_ctx, options);
   if (!(current & options))
     ctx_raise_openssl_error ("Failed to set minimum TLS protocol version");
 #else
@@ -545,9 +610,13 @@ SocketTLSContext_set_cipher_list (T ctx, const char *ciphers)
 static int
 encode_ocsp_response (OCSP_RESPONSE *resp, unsigned char **out_der)
 {
+  int len;
+
   *out_der = NULL;
-  int len = i2d_OCSP_RESPONSE (resp, out_der);
-  return (len > 0 && *out_der) ? len : 0;
+  len = i2d_OCSP_RESPONSE (resp, out_der);
+
+  /* i2d returns negative on error; positive on success with allocation */
+  return (len > 0) ? len : 0;
 }
 
 /**
@@ -565,10 +634,11 @@ status_cb_wrapper (SSL *ssl, void *arg)
   unsigned char *der = NULL;
   OCSP_RESPONSE *resp;
   int len;
+  T ctx;
 
   TLS_UNUSED (arg);
 
-  T ctx = tls_context_get_from_ssl (ssl);
+  ctx = tls_context_get_from_ssl (ssl);
   if (!ctx || !ctx->ocsp_gen_cb)
     return SSL_TLSEXT_ERR_NOACK;
 
@@ -579,13 +649,8 @@ status_cb_wrapper (SSL *ssl, void *arg)
   len = encode_ocsp_response (resp, &der);
   OCSP_RESPONSE_free (resp);
 
-  if (len == 0)
-    {
-      if (der)
-        OPENSSL_free (der);
-      return SSL_TLSEXT_ERR_NOACK;
-    }
-  else if (len > SOCKET_TLS_MAX_OCSP_RESPONSE_LEN)
+  /* Combined check: encoding failed OR response too large */
+  if (len == 0 || len > SOCKET_TLS_MAX_OCSP_RESPONSE_LEN)
     {
       if (der)
         OPENSSL_free (der);
@@ -692,6 +757,7 @@ static int
 get_ocsp_response_bytes (SSL *ssl, const unsigned char **resp_bytes)
 {
   int len = SSL_get_tlsext_status_ocsp_resp (ssl, resp_bytes);
+
   return (len > 0 && *resp_bytes) ? len : 0;
 }
 
@@ -719,7 +785,8 @@ SocketTLS_get_ocsp_status (Socket_T socket)
   const unsigned char *resp_bytes;
   const unsigned char *p;
   OCSP_RESPONSE *resp;
-  int resp_len, status, result;
+  int resp_len;
+  int status;
   SSL *ssl;
 
   if (!validate_socket_for_ocsp (socket))
@@ -727,7 +794,9 @@ SocketTLS_get_ocsp_status (Socket_T socket)
 
   ssl = (SSL *)socket->tls_ssl;
   resp_len = get_ocsp_response_bytes (ssl, &resp_bytes);
-  if (resp_len <= 0 || resp_len > SOCKET_TLS_MAX_OCSP_RESPONSE_LEN)
+
+  /* No response or response exceeds limit */
+  if (resp_len == 0 || resp_len > SOCKET_TLS_MAX_OCSP_RESPONSE_LEN)
     return 0;
 
   p = resp_bytes;
@@ -742,9 +811,10 @@ SocketTLS_get_ocsp_status (Socket_T socket)
       return status;
     }
 
-  result = validate_ocsp_basic_response (resp);
+  status = validate_ocsp_basic_response (resp);
   OCSP_RESPONSE_free (resp);
-  return result;
+
+  return status;
 }
 
 /* ============================================================================

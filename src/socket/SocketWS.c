@@ -63,7 +63,8 @@ const Except_T SocketWS_ProtocolError
 const Except_T SocketWS_Closed
     = { &SocketWS_Closed, "WebSocket connection closed" };
 
-/* Thread-local exception - defined via macro in private header */
+/* Thread-local exception for detailed error messages */
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketWS);
 
 /* ============================================================================
  * Configuration Defaults

@@ -40,7 +40,7 @@
  * Fixed prime number (31) providing good distribution for typical HTTP header
  * counts (10-30). Balances low collision rate with minimal memory overhead.
  *
- * @see sockethttp_hash_name() for the hashing function used.
+ * @see socket_util_hash_djb2_ci_len() for the hashing function used.
  * @threadsafe Yes - compile-time constant.
  * @see SocketHTTP_Headers::buckets for the hash table implementation.
  */
@@ -63,7 +63,7 @@
  * functions only.
  * @see SocketHTTP_Headers_T for the containing collection.
  * @see sockethttp_name_equal() for case-insensitive name matching.
- * @see sockethttp_hash_name() for hash computation.
+ * @see socket_util_hash_djb2_ci_len() for hash computation.
  */
 typedef struct HeaderEntry
 {
@@ -96,8 +96,8 @@ typedef struct HeaderEntry
  * functions.
  * @see SocketHTTP_Headers_T public opaque type.
  * @see HeaderEntry for individual header nodes.
- * @see sockethttp_hash_name() and sockethttp_name_equal() for internal lookup
- * logic.
+ * @see socket_util_hash_djb2_ci_len() and sockethttp_name_equal() for internal
+ * lookup logic.
  */
 struct SocketHTTP_Headers
 {
@@ -119,25 +119,6 @@ struct SocketHTTP_Headers
  */
 
 /**
- * @brief Hash HTTP header name for case-insensitive bucket lookup.
- * @internal
- * @ingroup http
- * @param name Pointer to null-terminated or length-bounded header name bytes.
- * @param len Exact byte length of name (excluding null if present).
- * @return Computed hash modulo SOCKETHTTP_HEADER_BUCKETS (0-30).
- * @threadsafe Yes - pure function, no side effects or shared state.
- *
- * Implements case-insensitive DJB2 hash variant: folds input to lowercase
- * during hashing for consistent header name bucketing per RFC 9110.
- * Designed for low collision rate with typical HTTP headers.
- *
- * @see SOCKETHTTP_HEADER_BUCKETS for table size.
- * @see sockethttp_name_equal() companion for equality checks.
- * @see SocketHTTP_Headers_get() for usage in public API.
- */
-static inline unsigned sockethttp_hash_name (const char *name, size_t len);
-
-/**
  * @brief Perform case-insensitive comparison of HTTP header names.
  * @internal
  * @ingroup http
@@ -153,7 +134,7 @@ static inline unsigned sockethttp_hash_name (const char *name, size_t len);
  * Used in hash table lookup collision resolution.
  *
  * @note Does not validate input as tokens; assumes pre-validated names.
- * @see sockethttp_hash_name() for complementary hashing.
+ * @see socket_util_hash_djb2_ci_len() for complementary hashing.
  * @see strncasecmp(3) for implementation details.
  * @see SocketHTTP_Headers_get() and SocketHTTP_Headers_has() for usage.
  */

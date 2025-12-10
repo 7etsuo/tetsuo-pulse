@@ -2,6 +2,7 @@
  * SocketTLS.c - TLS Socket Integration
  *
  * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
  *
  * Implements TLS/SSL integration for sockets using OpenSSL. Provides:
  * - Transparent encryption/decryption via wrapper functions
@@ -16,22 +17,34 @@
 
 #if SOCKET_HAS_TLS
 
+#include <assert.h>
+#include <errno.h>
+#include <limits.h>
+#include <openssl/bn.h>
+#include <openssl/ocsp.h>
+#include <stdint.h>
+#include <string.h>
+#include <time.h>
+
 #include "core/SocketCrypto.h"
 #include "core/SocketUtil.h"
 #include "poll/SocketPoll.h"
 #include "tls/SocketTLS-private.h"
 #include "tls/SocketTLSContext.h"
-#include <assert.h>
-#include <errno.h>
-#include <limits.h>
-#include <openssl/bn.h>
-#include <openssl/evp.h>
-#include <openssl/ocsp.h>
-#include <openssl/x509.h>
-#include <openssl/x509_vfy.h>
-#include <stdint.h>
-#include <string.h>
-#include <time.h>
+
+/* ============================================================================
+ * Internal Constants
+ * ============================================================================
+ */
+
+/**
+ * @brief Small poll capacity for single-FD handshake polling.
+ * @ingroup security
+ *
+ * Used internally by do_handshake_poll() for temporary SocketPoll instances.
+ * 16 events is more than sufficient for single-socket handshake operations.
+ */
+#define TLS_HANDSHAKE_POLL_CAPACITY 16
 
 #define T SocketTLS_T
 
@@ -446,16 +459,16 @@ do_handshake_poll (Socket_T socket, unsigned events, int timeout_ms)
 
   TRY
   {
-    poll = SocketPoll_new (16); /* Small capacity for single FD poll */
+    poll = SocketPoll_new (TLS_HANDSHAKE_POLL_CAPACITY);
     if (!poll)
       RAISE_TLS_ERROR_MSG (SocketTLS_HandshakeFailed,
                            "Failed to create temporary poll instance");
 
     SocketPoll_add (poll, socket, events, NULL);
 
-    SocketEvent_T evs[16];
-    SocketEvent_T *events = evs;
-    rc = SocketPoll_wait (poll, &events, timeout_ms);
+    SocketEvent_T evs[TLS_HANDSHAKE_POLL_CAPACITY];
+    SocketEvent_T *events_out = evs;
+    rc = SocketPoll_wait (poll, &events_out, timeout_ms);
     if (rc < 0)
       {
         if (errno == EINTR)
@@ -975,18 +988,15 @@ SocketTLS_get_peer_cert_info (Socket_T socket, SocketTLS_CertInfo *info)
         }
     }
 
-  /* SHA256 fingerprint */
+  /* SHA256 fingerprint using SocketCrypto_hex_encode for safety */
   unsigned char md[EVP_MAX_MD_SIZE];
   unsigned int md_len = 0;
   if (X509_digest (cert, EVP_sha256 (), md, &md_len))
     {
-      char *p = info->fingerprint;
-      for (unsigned int i = 0; i < md_len && i < 32; i++)
-        {
-          sprintf (p, "%02X", md[i]);
-          p += 2;
-        }
-      *p = '\0';
+      /* Limit to SHA256 size (32 bytes = 64 hex chars) */
+      size_t hash_len = (md_len > 32) ? 32 : md_len;
+      SocketCrypto_hex_encode (md, hash_len, info->fingerprint,
+                               sizeof (info->fingerprint));
     }
 
   X509_free (cert);

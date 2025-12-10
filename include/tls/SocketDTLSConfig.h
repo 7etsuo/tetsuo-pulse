@@ -333,6 +333,11 @@
 #define SOCKET_DTLS_MAX_PATH_LEN 4096
 #endif
 
+/* Peer resolution cache TTL in milliseconds */
+#ifndef SOCKET_DTLS_PEER_CACHE_TTL_MS
+#define SOCKET_DTLS_PEER_CACHE_TTL_MS 30000
+#endif
+
 /* ============================================================================
  * File Size Limits (DoS Protection)
  * ============================================================================

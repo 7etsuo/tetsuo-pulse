@@ -30,27 +30,26 @@
 #include <time.h>
 
 /* ============================================================================
- * LCG Random Number Generator Constants (Numerical Recipes)
+ * Constants
  * ============================================================================
  */
 
-/* Linear Congruential Generator parameters from Numerical Recipes
- * Formula: next = (state * MULTIPLIER + INCREMENT) mod MODULUS
- * These are well-tested constants providing good statistical properties */
-#define RETRY_LCG_MULTIPLIER 1103515245u
-#define RETRY_LCG_INCREMENT 12345u
-#define RETRY_LCG_MODULUS_MASK 0x7fffffffu /* 2^31 - 1 for 31-bit result */
-#define RETRY_LCG_DIVISOR 0x80000000u      /* 2^31 for normalization */
-
-/* Minimum delay to avoid zero/negative delays after jitter */
+/** Minimum delay to avoid zero/negative delays after jitter */
 #define RETRY_MIN_DELAY_MS 1.0
 
-/* Policy validation limits */
+/** Policy validation: maximum allowed multiplier */
 #define SOCKET_RETRY_MAX_MULTIPLIER 16.0
+
+/** Policy validation: maximum delay value in milliseconds (1 hour) */
 #define SOCKET_RETRY_MAX_DELAY_VALUE_MS 3600000
 
-/* Time conversion constants */
+/** Maximum exponent to prevent CPU DoS from excessive loop iterations */
+#define RETRY_MAX_EXPONENT 1000
+
+/** Time conversion: milliseconds per second */
 #define MILLISECONDS_PER_SECOND 1000
+
+/** Time conversion: nanoseconds per millisecond */
 #define NANOSECONDS_PER_MILLISECOND 1000000L
 
 #define T SocketRetry_T
@@ -74,74 +73,50 @@ struct T
 {
   SocketRetry_Policy policy; /**< Current retry policy */
   SocketRetry_Stats stats;   /**< Statistics from last execution */
-  unsigned int random_state; /**< Random state for jitter */
+  unsigned int random_state; /**< Random state for jitter (xorshift32) */
 };
 
 /* ============================================================================
  * Random Number Generation (for jitter)
  * ============================================================================
- */
-
-/**
- * retry_random_seed - Initialize random state
  *
- * Returns: Seed value based on time and address
- * Thread-safe: Yes
+ * Uses SocketCrypto_random_bytes() as primary source with xorshift32 PRNG
+ * fallback. Matches pattern from SocketReconnect-private.h for consistency.
  */
-static unsigned int
-retry_random_seed (void)
-{
-  struct timespec ts;
-
-  if (clock_gettime (CLOCK_MONOTONIC, &ts) == 0)
-    return (unsigned int)(ts.tv_sec ^ ts.tv_nsec);
-
-  return (unsigned int)time (NULL);
-}
-
-/**
- * better_random_seed - Generate improved seed using crypto random if available
- *
- * Returns: High-entropy seed value
- * Thread-safe: Yes
- */
-static unsigned int
-better_random_seed (void)
-{
-  unsigned int seed = retry_random_seed ();
-
-  uint8_t bytes[sizeof (unsigned int)];
-  if (SocketSecurity_has_tls ()
-      && SocketCrypto_random_bytes (bytes, sizeof (bytes)) == 0)
-    {
-      unsigned int crypto_seed;
-      memcpy (&crypto_seed, bytes, sizeof (crypto_seed));
-      seed ^= crypto_seed;
-    }
-
-  return seed;
-}
 
 /**
  * retry_random_double - Generate random double in [0, 1)
- * @state: Random state (modified)
+ * @state: Random state for fallback PRNG (modified on fallback path)
  *
  * Returns: Random value in [0, 1)
- * Thread-safe: No (modifies state)
+ * Thread-safe: Yes (crypto path is reentrant, fallback uses instance state)
  *
- * Uses Linear Congruential Generator for reproducibility and speed.
- * Parameters from Numerical Recipes provide good statistical properties.
+ * Primary: SocketCrypto_random_bytes() for cryptographic randomness
+ * Fallback: xorshift32 PRNG for performance when crypto unavailable
  */
 static double
 retry_random_double (unsigned int *state)
 {
-  *state = (*state * RETRY_LCG_MULTIPLIER + RETRY_LCG_INCREMENT)
-           & RETRY_LCG_MODULUS_MASK;
-  return (double)*state / (double)RETRY_LCG_DIVISOR;
+  unsigned int value;
+
+  /* Try cryptographic random first */
+  if (SocketSecurity_has_tls ()
+      && SocketCrypto_random_bytes (&value, sizeof (value)) == 0)
+    return (double)value / (double)0xFFFFFFFFU;
+
+  /* Fallback: xorshift32 PRNG */
+  if (*state == 0)
+    *state = (unsigned int)Socket_get_monotonic_ms ();
+
+  *state ^= *state << 13;
+  *state ^= *state >> 17;
+  *state ^= *state << 5;
+
+  return (double)*state / (double)0xFFFFFFFFU;
 }
 
 /* ============================================================================
- * Policy Defaults
+ * Policy Defaults and Validation
  * ============================================================================
  */
 
@@ -229,7 +204,7 @@ power_double (double base, int exp)
     return 0.0;
 
   /* Cap exponent to prevent CPU DoS from excessive loop iterations */
-  if (exp > 1000)
+  if (exp > RETRY_MAX_EXPONENT)
     {
       if (base > 1.0)
         return INFINITY;
@@ -252,8 +227,7 @@ power_double (double base, int exp)
 }
 
 /**
- * exponential_backoff - Compute exponential backoff delay before capping and
- * jitter
+ * exponential_backoff - Compute exponential backoff delay before jitter
  * @policy: Policy containing backoff parameters
  * @attempt: Current attempt number (1-based)
  *
@@ -269,8 +243,7 @@ exponential_backoff (const SocketRetry_Policy *policy, int attempt)
   if (attempt < 1)
     return 0.0;
 
-  /* Compute multiplier^(attempt-1) iteratively for performance and precision
-   */
+  /* Compute multiplier^(attempt-1) iteratively for precision */
   multiplier_pow = power_double (policy->multiplier, attempt - 1);
 
   /* Exponential backoff: initial * multiplier^(attempt-1) */
@@ -321,17 +294,13 @@ apply_jitter_to_delay (double base_delay, const SocketRetry_Policy *policy,
 /**
  * clamp_final_delay - Clamp delay to valid range
  * @delay: Delay to clamp
- * @policy: Policy for max_delay reference (unused in clamp but for
- * consistency)
  *
  * Returns: Clamped delay in ms (double, safe for int cast)
  * Thread-safe: Yes
  */
 static double
-clamp_final_delay (double delay, const SocketRetry_Policy *policy)
+clamp_final_delay (double delay)
 {
-  (void)policy; /* Unused, but signature matches for consistency */
-
   /* Ensure positive delay after jitter */
   if (delay < RETRY_MIN_DELAY_MS)
     delay = RETRY_MIN_DELAY_MS;
@@ -360,7 +329,7 @@ calculate_backoff_delay (const SocketRetry_Policy *policy, int attempt,
 
   delay = exponential_backoff (policy, attempt);
   delay = apply_jitter_to_delay (delay, policy, random_state);
-  delay = clamp_final_delay (delay, policy);
+  delay = clamp_final_delay (delay);
 
   return (int)delay;
 }
@@ -378,17 +347,16 @@ calculate_backoff_delay (const SocketRetry_Policy *policy, int attempt,
 int
 SocketRetry_calculate_delay (const SocketRetry_Policy *policy, int attempt)
 {
-  unsigned int state;
+  unsigned int state = 0;
 
   if (policy == NULL || attempt < 1 || !validate_policy (policy))
     {
       SOCKET_LOG_WARN_MSG ("Invalid parameters for calculate_delay "
                            "(policy=%p, attempt=%d), returning 0",
-                           policy, attempt);
+                           (const void *)policy, attempt);
       return 0;
     }
 
-  state = better_random_seed ();
   return calculate_backoff_delay (policy, attempt, &state);
 }
 
@@ -432,36 +400,28 @@ retry_sleep_ms (int ms)
  */
 
 /**
- * init_retry_policy - Initialize retry policy (internal helper)
- * @retry: Retry context to initialize
- * @provided_policy: Provided policy or NULL for defaults
+ * init_random_state - Initialize random state for jitter
  *
- * Returns: 1 on success, 0 on invalid policy (caller must free retry)
- * Thread-safe: No
- *
- * Sets policy and random state. Validates provided policy if given.
+ * Returns: Initial random state value
+ * Thread-safe: Yes
  */
-static int
-init_retry_policy (T retry, const SocketRetry_Policy *provided_policy)
+static unsigned int
+init_random_state (void)
 {
-  SocketRetry_Policy policy_copy;
+  unsigned int seed = 0;
+  uint8_t bytes[sizeof (unsigned int)];
 
-  if (provided_policy != NULL)
+  /* Try crypto random for high entropy */
+  if (SocketSecurity_has_tls ()
+      && SocketCrypto_random_bytes (bytes, sizeof (bytes)) == 0)
     {
-      if (!validate_policy (provided_policy))
-        return 0; /* Invalid policy */
-
-      policy_copy = *provided_policy;
-    }
-  else
-    {
-      SocketRetry_policy_defaults (&policy_copy);
+      memcpy (&seed, bytes, sizeof (seed));
+      return seed;
     }
 
-  retry->policy = policy_copy;
-  retry->random_state = better_random_seed ();
-
-  return 1;
+  /* Fallback to monotonic time */
+  seed = (unsigned int)Socket_get_monotonic_ms ();
+  return seed;
 }
 
 /**
@@ -477,18 +437,29 @@ SocketRetry_new (const SocketRetry_Policy *policy)
 {
   T retry;
 
-  /* Use calloc for zero-initialization of stats and other fields */
+  /* Use calloc for zero-initialization of stats */
   retry = calloc (1, sizeof (*retry));
   if (retry == NULL)
     SOCKET_RAISE_MSG (SocketRetry, SocketRetry_Failed,
                       "Failed to allocate retry context");
 
-  if (!init_retry_policy (retry, policy))
+  /* Initialize policy */
+  if (policy != NULL)
     {
-      free (retry);
-      SOCKET_RAISE_MSG (SocketRetry, SocketRetry_Failed,
-                        "Invalid retry policy parameters");
+      if (!validate_policy (policy))
+        {
+          free (retry);
+          SOCKET_RAISE_MSG (SocketRetry, SocketRetry_Failed,
+                            "Invalid retry policy parameters");
+        }
+      retry->policy = *policy;
     }
+  else
+    {
+      SocketRetry_policy_defaults (&retry->policy);
+    }
+
+  retry->random_state = init_random_state ();
 
   return retry;
 }
@@ -511,6 +482,18 @@ SocketRetry_free (T *retry)
  * Retry Execution Helpers
  * ============================================================================
  */
+
+/**
+ * reset_retry_stats - Reset statistics for new execution
+ * @retry: Retry context
+ *
+ * Thread-safe: No
+ */
+static void
+reset_retry_stats (T retry)
+{
+  memset (&retry->stats, 0, sizeof (retry->stats));
+}
 
 /**
  * should_continue_retry - Check if retry should continue after failure
@@ -564,23 +547,6 @@ apply_backoff_delay (T retry, int attempt)
   retry_sleep_ms (delay_ms);
 }
 
-/* ============================================================================
- * Retry Execution
- * ============================================================================
- */
-
-/**
- * reset_retry_stats - Reset statistics for new execution
- * @retry: Retry context
- *
- * Thread-safe: No
- */
-static void
-reset_retry_stats (T retry)
-{
-  memset (&retry->stats, 0, sizeof (retry->stats));
-}
-
 /**
  * perform_single_attempt - Perform single retry attempt and log result
  * @retry: Retry context
@@ -616,6 +582,11 @@ perform_single_attempt (T retry, SocketRetry_Operation operation,
 
   return result;
 }
+
+/* ============================================================================
+ * Retry Execution
+ * ============================================================================
+ */
 
 /**
  * SocketRetry_execute - Execute operation with retries
@@ -703,9 +674,9 @@ SocketRetry_reset (T retry)
 {
   assert (retry != NULL);
 
-  memset (&retry->stats, 0, sizeof (retry->stats));
+  reset_retry_stats (retry);
   /* Preserve policy and re-seed random state with better entropy */
-  retry->random_state = better_random_seed ();
+  retry->random_state = init_random_state ();
 }
 
 /**

@@ -195,8 +195,15 @@ static const SocketErrorMapping error_mappings[] = {
   { EPERM, SOCKET_ERROR_UNKNOWN, SOCKET_ERROR_CATEGORY_APPLICATION, 0 },
 };
 
+/** Number of entries in error_mappings table */
 #define NUM_ERROR_MAPPINGS                                                    \
   (sizeof (error_mappings) / sizeof (error_mappings[0]))
+
+/** Number of entries in category names table (defined below) */
+#define NUM_ERROR_CATEGORIES 6
+
+/** Number of entries in log level names table (defined below) */
+#define NUM_LOG_LEVELS 6
 
 /**
  * socket_find_error_mapping - Find error mapping entry for given errno
@@ -204,9 +211,10 @@ static const SocketErrorMapping error_mappings[] = {
  *
  * Returns: Pointer to mapping entry if found, NULL otherwise
  * Thread-safe: Yes (pure function, const data)
+ * Complexity: O(n) linear scan of ~30 entries - acceptable for small table
  */
 static const SocketErrorMapping *
-socket_find_error_mapping (int err)
+socket_find_error_mapping (const int err)
 {
   for (size_t i = 0; i < NUM_ERROR_MAPPINGS; i++)
     {
@@ -335,10 +343,7 @@ static const char *const socket_error_category_names[] = {
   "NETWORK", "PROTOCOL", "APPLICATION", "TIMEOUT", "RESOURCE", "UNKNOWN"
 };
 
-/* Number of error categories for bounds checking */
-#define SOCKET_ERROR_CATEGORY_COUNT                                           \
-  (sizeof (socket_error_category_names)                                       \
-   / sizeof (socket_error_category_names[0]))
+/* Uses NUM_ERROR_CATEGORIES defined above for bounds checking */
 
 /**
  * SocketError_categorize_errno - Categorize errno using centralized table
@@ -367,7 +372,7 @@ SocketError_categorize_errno (int err)
 const char *
 SocketError_category_name (SocketErrorCategory category)
 {
-  if (category < 0 || (size_t)category >= SOCKET_ERROR_CATEGORY_COUNT)
+  if (category < 0 || (size_t)category >= NUM_ERROR_CATEGORIES)
     return "UNKNOWN";
   return socket_error_category_names[category];
 }
@@ -406,9 +411,7 @@ static void *socketlog_structured_userdata = NULL;
 static const char *const default_level_names[]
     = { "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL" };
 
-/* Number of log levels for bounds checking */
-#define SOCKET_LOG_LEVEL_COUNT                                                \
-  (sizeof (default_level_names) / sizeof (default_level_names[0]))
+/* Uses NUM_LOG_LEVELS defined in error mapping section for bounds checking */
 
 /* Timestamp formatting constants - defined in SocketConfig.h */
 
@@ -533,7 +536,7 @@ SocketLog_getcallback (void **userdata)
 const char *
 SocketLog_levelname (SocketLogLevel level)
 {
-  if (level < 0 || (size_t)level >= SOCKET_LOG_LEVEL_COUNT)
+  if (level < 0 || (size_t)level >= NUM_LOG_LEVELS)
     return "UNKNOWN";
   return default_level_names[level];
 }
@@ -672,17 +675,16 @@ SocketLog_emitf (SocketLogLevel level, const char *component, const char *fmt,
  * Thread-safe: Yes
  *
  * Appends "..." to indicate message was truncated.
+ * Uses memcpy for efficiency instead of character-by-character assignment.
  */
 static void
 socketlog_apply_truncation (char *buffer, size_t bufsize)
 {
-  if (bufsize >= SOCKET_LOG_TRUNCATION_SUFFIX_LEN)
+  if (bufsize >= SOCKET_LOG_TRUNCATION_SUFFIX_LEN + 1)
     {
-      size_t start = bufsize - SOCKET_LOG_TRUNCATION_SUFFIX_LEN;
-      buffer[start] = '.';
-      buffer[start + 1] = '.';
-      buffer[start + 2] = '.';
-      buffer[bufsize - 1] = '\0';
+      size_t start = bufsize - SOCKET_LOG_TRUNCATION_SUFFIX_LEN - 1;
+      memcpy (buffer + start, SOCKET_LOG_TRUNCATION_SUFFIX,
+              SOCKET_LOG_TRUNCATION_SUFFIX_LEN + 1);
     }
 }
 
@@ -1073,9 +1075,9 @@ static const char *const socketmetrics_legacy_names[SOCKET_METRIC_COUNT]
  * @metric: Metric to validate
  *
  * Returns: 1 if valid, 0 otherwise
- * Thread-safe: Yes (pure function)
+ * Thread-safe: Yes (pure function, no shared state)
  */
-static int
+static inline int
 socketmetrics_legacy_is_valid (const SocketMetric metric)
 {
   return metric >= 0 && metric < SOCKET_METRIC_COUNT;
@@ -1257,14 +1259,14 @@ socketevent_dispatch (const SocketEventRecord *event)
 
 /**
  * socketevent_find_handler_unlocked - Find handler in array (mutex held)
- * @callback: Callback to find
- * @userdata: User data to match
+ * @callback: Callback to find (must not be NULL)
+ * @userdata: User data to match (may be NULL)
  *
  * Returns: Index of handler if found, -1 otherwise
  * Thread-safe: No (caller must hold socketevent_mutex)
  */
 static ssize_t
-socketevent_find_handler_unlocked (SocketEventCallback callback,
+socketevent_find_handler_unlocked (const SocketEventCallback callback,
                                    const void *userdata)
 {
   size_t i;

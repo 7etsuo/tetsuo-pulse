@@ -21,6 +21,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <pthread.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h> /* for getpid in hash seed fallback */
@@ -42,7 +43,6 @@
 #if SOCKET_HAS_TLS
 #include "socket/Socket-private.h"
 #include "socket/SocketIO.h"
-#include "tls/SocketTLS.h"
 #endif
 
 #define T SocketPoll_T
@@ -64,38 +64,26 @@ static void cleanup_poll_partial (T poll);
 /* ==================== Allocation Helpers ==================== */
 
 /**
- * ALLOC_ENTRY - Generic arena allocation with exception handling
- * Eliminates duplicate allocation helpers for SocketData and FdSocketEntry.
- */
-#define ALLOC_ENTRY(poll, type, errmsg)                                        \
-  ({                                                                           \
-    type *volatile _entry = NULL;                                              \
-    size_t _sz = sizeof (type);                                                \
-    if (!SocketSecurity_check_size (_sz)) {                                    \
-      SOCKET_ERROR_MSG (errmsg ": size exceeds security limit");               \
-      RAISE_POLL_ERROR (SocketPoll_Failed);                                    \
-    }                                                                          \
-    TRY                                                                        \
-    _entry = CALLOC ((poll)->arena, 1, sizeof (type));                         \
-    EXCEPT (Arena_Failed)                                                      \
-    {                                                                          \
-      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": " errmsg);                            \
-      RAISE_POLL_ERROR (SocketPoll_Failed);                                    \
-    }                                                                          \
-    END_TRY;                                                                   \
-    _entry;                                                                    \
-  })
-
-/**
  * allocate_socket_data_entry - Allocate socket data entry from arena
  * @poll: Poll instance
  * Returns: Allocated entry
  * Raises: SocketPoll_Failed on allocation failure
  */
-static inline SocketData *
+static SocketData *
 allocate_socket_data_entry (T poll)
 {
-  return ALLOC_ENTRY (poll, SocketData, "Cannot allocate socket data mapping");
+  SocketData *volatile entry = NULL;
+
+  TRY
+  entry = CALLOC (poll->arena, 1, sizeof (SocketData));
+  EXCEPT (Arena_Failed)
+  {
+    SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate socket data mapping");
+    RAISE_POLL_ERROR (SocketPoll_Failed);
+  }
+  END_TRY;
+
+  return (SocketData *)entry;
 }
 
 /**
@@ -104,11 +92,21 @@ allocate_socket_data_entry (T poll)
  * Returns: Allocated entry
  * Raises: SocketPoll_Failed on allocation failure
  */
-static inline FdSocketEntry *
+static FdSocketEntry *
 allocate_fd_socket_entry (T poll)
 {
-  return ALLOC_ENTRY (poll, FdSocketEntry,
-                      "Cannot allocate fd to socket mapping");
+  FdSocketEntry *volatile entry = NULL;
+
+  TRY
+  entry = CALLOC (poll->arena, 1, sizeof (FdSocketEntry));
+  EXCEPT (Arena_Failed)
+  {
+    SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate fd to socket mapping");
+    RAISE_POLL_ERROR (SocketPoll_Failed);
+  }
+  END_TRY;
+
+  return (FdSocketEntry *)entry;
 }
 
 /**
@@ -483,6 +481,26 @@ initialize_poll_async (T poll)
   END_TRY;
 }
 
+/**
+ * initialize_poll_hash_seed - Initialize hash seed for collision resistance
+ * @poll: Poll instance
+ *
+ * Attempts to use cryptographic random bytes for the seed.
+ * Falls back to monotonic time XOR'd with PID if crypto unavailable.
+ * Uses fixed 0 if all else fails (logs warning).
+ */
+static void
+initialize_poll_hash_seed (T poll)
+{
+  /* Try cryptographic random first */
+  if (SocketCrypto_random_bytes (&poll->hash_seed, sizeof (unsigned)) == 0)
+    return;
+
+  /* Fallback: monotonic time XOR'd with PID */
+  poll->hash_seed
+      = (unsigned)Socket_get_monotonic_ms () ^ (unsigned)getpid ();
+}
+
 /* ==================== Combined FD Lookup (Optimized) ==================== */
 
 /**
@@ -711,22 +729,7 @@ SocketPoll_new (int maxevents)
     allocate_poll_event_arrays ((T)poll, maxevents);
     /* Note: Hash tables already zeroed by calloc in allocate_poll_structure */
     initialize_poll_mutex ((T)poll);
-
-    /* Initialize hash seed for collision resistance */
-    TRY
-      {
-        if (SocketCrypto_random_bytes (&((T)poll)->hash_seed, sizeof (unsigned)) < 0)
-          {
-            ((T)poll)->hash_seed = (unsigned) Socket_get_monotonic_ms () ^ (unsigned) getpid ();
-          }
-      }
-    EXCEPT (SocketCrypto_Failed)
-      {
-        ((T)poll)->hash_seed = 0U;  /* Fixed fallback */
-        SOCKET_LOG_WARN_MSG ("SocketCrypto failed for hash seed; using fixed value");
-      }
-    END_TRY;
-
+    initialize_poll_hash_seed ((T)poll);
     initialize_poll_timer_heap ((T)poll);
     initialize_poll_async ((T)poll);
   }
@@ -1320,20 +1323,23 @@ void
 SocketPoll_modify_events (T poll, Socket_T socket, unsigned add_events,
                           unsigned remove_events)
 {
-  void *user_data;
   unsigned new_events;
   int fd;
+  unsigned hash;
 
   assert (poll);
   assert (socket);
 
   fd = Socket_fd (socket);
+  hash = poll_fd_hash (poll, fd);
 
   pthread_mutex_lock (&poll->mutex);
 
-  /* Check if socket is registered */
-  user_data = socket_data_lookup_unlocked (poll, socket);
-  if (!user_data && !find_socket_data_entry (poll, poll_fd_hash (poll, fd), socket))
+  /* Check if socket is registered - use find_socket_data_entry directly
+   * since we don't need the user data, just verification of registration.
+   * This avoids the redundant lookup that socket_data_lookup_unlocked
+   * would perform. */
+  if (!find_socket_data_entry (poll, hash, socket))
     {
       pthread_mutex_unlock (&poll->mutex);
       SOCKET_ERROR_FMT ("Socket fd=%d not registered in poll", fd);

@@ -2,6 +2,7 @@
  * SocketUTF8.c - UTF-8 Validation Implementation
  *
  * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
  *
  * Implements DFA-based UTF-8 validation using the Hoehrmann algorithm,
  * which provides O(n) time complexity with O(1) space complexity.
@@ -35,17 +36,54 @@ const Except_T SocketUTF8_Failed
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketUTF8);
 
 /* ============================================================================
+ * DFA State Constants (must be defined before tables that reference them)
+ * ============================================================================
+ */
+
+/** DFA state: Valid complete sequence (accept state) */
+#define UTF8_STATE_ACCEPT 0
+
+/** DFA state: Invalid sequence (reject/sink state) */
+#define UTF8_STATE_REJECT 1
+
+/** DFA state: Expecting 1 continuation byte (2-byte sequence) */
+#define UTF8_STATE_2BYTE_EXPECT 2
+
+/** DFA state: After E0, expect A0-BF then continuation (avoid overlong) */
+#define UTF8_STATE_E0_SPECIAL 3
+
+/** DFA state: Expecting 2 continuation bytes (3-byte mid-sequence) */
+#define UTF8_STATE_3BYTE_EXPECT 4
+
+/** DFA state: After ED, expect 80-9F then continuation (avoid surrogates) */
+#define UTF8_STATE_ED_SPECIAL 5
+
+/** DFA state: After F0, expect 90-BF then 2 continuations (avoid overlong) */
+#define UTF8_STATE_F0_SPECIAL 6
+
+/** DFA state: Expecting 3 continuation bytes (4-byte sequence) */
+#define UTF8_STATE_4BYTE_EXPECT 7
+
+/** DFA state: After F4, expect 80-8F then 2 continuations (avoid >U+10FFFF) */
+#define UTF8_STATE_F4_SPECIAL 8
+
+/** Number of character classes in the DFA (byte classification) */
+#define UTF8_NUM_CHAR_CLASSES 12
+
+/** Number of states in the DFA */
+#define UTF8_NUM_DFA_STATES 9
+
+/* ============================================================================
  * Hoehrmann DFA Tables
  * ============================================================================
  *
  * The DFA uses two tables:
  * 1. utf8_class[256]: Maps each byte to a character class (0-11)
- * 2. utf8_state[UTF8_NUM_DFA_STATES * UTF8_NUM_CHAR_CLASSES]: State
- * transitions
+ * 2. utf8_state[UTF8_NUM_DFA_STATES * UTF8_NUM_CHAR_CLASSES]: State transitions
  *
  * States (UTF8_NUM_DFA_STATES = 9):
- *   0 = UTF8_DFA_ACCEPT (valid complete sequence)
- *   1 = UTF8_DFA_REJECT (invalid sequence)
+ *   0 = UTF8_STATE_ACCEPT (valid complete sequence)
+ *   1 = UTF8_STATE_REJECT (invalid sequence)
  *   2-8 = intermediate states (expecting continuation bytes)
  *
  * Character classes (UTF8_NUM_CHAR_CLASSES = 12):
@@ -62,18 +100,6 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketUTF8);
  *  10: F1..F3 (4-byte start)
  *  11: F4     (4-byte start, special: next must be 80..8F)
  */
-
-/** DFA accept state alias (valid complete sequence) */
-#define UTF8_DFA_ACCEPT UTF8_STATE_ACCEPT
-
-/** DFA reject state alias (invalid sequence) */
-#define UTF8_DFA_REJECT UTF8_STATE_REJECT
-
-/** Number of character classes in the DFA (byte classification) */
-#define UTF8_NUM_CHAR_CLASSES 12
-
-/** Number of states in the DFA */
-#define UTF8_NUM_DFA_STATES 9
 
 /* clang-format off */
 
@@ -160,25 +186,6 @@ static const uint8_t utf8_state_bytes[] = {
   4, /* UTF8_STATE_4BYTE_EXPECT: 4-byte total */
   4, /* UTF8_STATE_F4_SPECIAL: 4-byte total (after F4) */
 };
-
-/* ============================================================================
- * DFA State Constants
- * ============================================================================
- */
-
-/**
- * DFA state identifiers for readability
- */
-#define UTF8_STATE_ACCEPT 0
-#define UTF8_STATE_REJECT 1
-#define UTF8_STATE_2BYTE_EXPECT 2 /* Expecting 1 continuation */
-#define UTF8_STATE_E0_SPECIAL 3   /* After E0, expect A0-BF then cont */
-#define UTF8_STATE_3BYTE_EXPECT 4 /* Expecting 2 continuations (3-byte mid)   \
-                                   */
-#define UTF8_STATE_ED_SPECIAL 5   /* After ED, expect 80-9F then cont */
-#define UTF8_STATE_F0_SPECIAL 6   /* After F0, expect 90-BF then 2 cont */
-#define UTF8_STATE_4BYTE_EXPECT 7 /* Expecting 3 continuations */
-#define UTF8_STATE_F4_SPECIAL 8   /* After F4, expect 80-8F then 2 cont */
 
 /* ============================================================================
  * Result String Table
@@ -605,35 +612,30 @@ SocketUTF8_encode (uint32_t codepoint, unsigned char *output)
     case 1:
       output[0] = (unsigned char)codepoint;
       break;
-
     case 2:
       output[0] = (unsigned char)(UTF8_2BYTE_START
                                   | ((codepoint >> 6) & UTF8_2BYTE_LEAD_MASK));
       output[1] = (unsigned char)(UTF8_CONTINUATION_START
                                   | (codepoint & UTF8_CONTINUATION_MASK_VAL));
       break;
-
     case 3:
-      output[0]
-          = (unsigned char)(UTF8_3BYTE_START
-                            | ((codepoint >> 12) & UTF8_3BYTE_LEAD_MASK));
-      output[1]
-          = (unsigned char)(UTF8_CONTINUATION_START
-                            | ((codepoint >> 6) & UTF8_CONTINUATION_MASK_VAL));
+      output[0] = (unsigned char)(UTF8_3BYTE_START
+                                  | ((codepoint >> 12) & UTF8_3BYTE_LEAD_MASK));
+      output[1] = (unsigned char)(UTF8_CONTINUATION_START
+                                  | ((codepoint >> 6)
+                                     & UTF8_CONTINUATION_MASK_VAL));
       output[2] = (unsigned char)(UTF8_CONTINUATION_START
                                   | (codepoint & UTF8_CONTINUATION_MASK_VAL));
       break;
-
     case 4:
-      output[0]
-          = (unsigned char)(UTF8_4BYTE_START
-                            | ((codepoint >> 18) & UTF8_4BYTE_LEAD_MASK));
+      output[0] = (unsigned char)(UTF8_4BYTE_START
+                                  | ((codepoint >> 18) & UTF8_4BYTE_LEAD_MASK));
       output[1] = (unsigned char)(UTF8_CONTINUATION_START
                                   | ((codepoint >> 12)
                                      & UTF8_CONTINUATION_MASK_VAL));
-      output[2]
-          = (unsigned char)(UTF8_CONTINUATION_START
-                            | ((codepoint >> 6) & UTF8_CONTINUATION_MASK_VAL));
+      output[2] = (unsigned char)(UTF8_CONTINUATION_START
+                                  | ((codepoint >> 6)
+                                     & UTF8_CONTINUATION_MASK_VAL));
       output[3] = (unsigned char)(UTF8_CONTINUATION_START
                                   | (codepoint & UTF8_CONTINUATION_MASK_VAL));
       break;
@@ -644,9 +646,9 @@ SocketUTF8_encode (uint32_t codepoint, unsigned char *output)
 
 /**
  * decode_2byte - Decode a 2-byte UTF-8 sequence
- * @data: Pointer to 2-byte sequence
- * @codepoint: Output codepoint
- * @consumed: Output bytes consumed
+ * @data: Pointer to 2-byte sequence (caller ensures 2 bytes available)
+ * @codepoint: Output codepoint (set on success only)
+ * @consumed: Output bytes consumed (may be NULL)
  *
  * Returns: UTF8_VALID on success, error code on failure
  */
@@ -654,12 +656,14 @@ static SocketUTF8_Result
 decode_2byte (const unsigned char *data, uint32_t *codepoint, size_t *consumed)
 {
   uint32_t cp;
+  size_t bytes_used = 2;
+  SocketUTF8_Result result;
 
   if (!is_continuation_byte (data[1]))
     {
-      if (consumed)
-        *consumed = 1;
-      return UTF8_INVALID;
+      bytes_used = 1;
+      result = UTF8_INVALID;
+      goto done;
     }
 
   cp = ((uint32_t)(data[0] & UTF8_2BYTE_LEAD_MASK) << 6)
@@ -667,22 +671,24 @@ decode_2byte (const unsigned char *data, uint32_t *codepoint, size_t *consumed)
 
   if (cp < (SOCKET_UTF8_1BYTE_MAX + 1u))
     {
-      if (consumed)
-        *consumed = 2;
-      return UTF8_OVERLONG;
+      result = UTF8_OVERLONG;
+      goto done;
     }
 
   *codepoint = cp;
+  result = UTF8_VALID;
+
+done:
   if (consumed)
-    *consumed = 2;
-  return UTF8_VALID;
+    *consumed = bytes_used;
+  return result;
 }
 
 /**
  * decode_3byte - Decode a 3-byte UTF-8 sequence
- * @data: Pointer to 3-byte sequence
- * @codepoint: Output codepoint
- * @consumed: Output bytes consumed
+ * @data: Pointer to 3-byte sequence (caller ensures 3 bytes available)
+ * @codepoint: Output codepoint (set on success only)
+ * @consumed: Output bytes consumed (may be NULL)
  *
  * Returns: UTF8_VALID on success, error code on failure
  */
@@ -691,12 +697,14 @@ decode_3byte (const unsigned char *data, uint32_t *codepoint, size_t *consumed)
 {
   uint32_t cp;
   int fail_idx;
+  size_t bytes_used = 3;
+  SocketUTF8_Result result;
 
   if (!validate_continuations (data, 2, &fail_idx))
     {
-      if (consumed)
-        *consumed = (size_t)fail_idx;
-      return UTF8_INVALID;
+      bytes_used = (size_t)fail_idx;
+      result = UTF8_INVALID;
+      goto done;
     }
 
   cp = ((uint32_t)(data[0] & UTF8_3BYTE_LEAD_MASK) << 12)
@@ -705,29 +713,30 @@ decode_3byte (const unsigned char *data, uint32_t *codepoint, size_t *consumed)
 
   if (cp < (SOCKET_UTF8_2BYTE_MAX + 1u))
     {
-      if (consumed)
-        *consumed = 3;
-      return UTF8_OVERLONG;
+      result = UTF8_OVERLONG;
+      goto done;
     }
 
   if (cp >= SOCKET_UTF8_SURROGATE_MIN && cp <= SOCKET_UTF8_SURROGATE_MAX)
     {
-      if (consumed)
-        *consumed = 3;
-      return UTF8_SURROGATE;
+      result = UTF8_SURROGATE;
+      goto done;
     }
 
   *codepoint = cp;
+  result = UTF8_VALID;
+
+done:
   if (consumed)
-    *consumed = 3;
-  return UTF8_VALID;
+    *consumed = bytes_used;
+  return result;
 }
 
 /**
  * decode_4byte - Decode a 4-byte UTF-8 sequence
- * @data: Pointer to 4-byte sequence
- * @codepoint: Output codepoint
- * @consumed: Output bytes consumed
+ * @data: Pointer to 4-byte sequence (caller ensures 4 bytes available)
+ * @codepoint: Output codepoint (set on success only)
+ * @consumed: Output bytes consumed (may be NULL)
  *
  * Returns: UTF8_VALID on success, error code on failure
  */
@@ -736,12 +745,14 @@ decode_4byte (const unsigned char *data, uint32_t *codepoint, size_t *consumed)
 {
   uint32_t cp;
   int fail_idx;
+  size_t bytes_used = 4;
+  SocketUTF8_Result result;
 
   if (!validate_continuations (data, 3, &fail_idx))
     {
-      if (consumed)
-        *consumed = (size_t)fail_idx;
-      return UTF8_INVALID;
+      bytes_used = (size_t)fail_idx;
+      result = UTF8_INVALID;
+      goto done;
     }
 
   cp = ((uint32_t)(data[0] & UTF8_4BYTE_LEAD_MASK) << 18)
@@ -751,22 +762,23 @@ decode_4byte (const unsigned char *data, uint32_t *codepoint, size_t *consumed)
 
   if (cp < SOCKET_UTF8_4BYTE_MIN)
     {
-      if (consumed)
-        *consumed = 4;
-      return UTF8_OVERLONG;
+      result = UTF8_OVERLONG;
+      goto done;
     }
 
   if (cp > SOCKET_UTF8_MAX_CODEPOINT)
     {
-      if (consumed)
-        *consumed = 4;
-      return UTF8_TOO_LARGE;
+      result = UTF8_TOO_LARGE;
+      goto done;
     }
 
   *codepoint = cp;
+  result = UTF8_VALID;
+
+done:
   if (consumed)
-    *consumed = 4;
-  return UTF8_VALID;
+    *consumed = bytes_used;
+  return result;
 }
 
 SocketUTF8_Result

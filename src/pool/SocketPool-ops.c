@@ -8,6 +8,7 @@
  * - Pre-warming, buffer configuration, iteration
  * - Batch connection acceptance
  * - Async DNS connection preparation
+ * - SYN flood protection integration
  */
 
 #include <assert.h>
@@ -30,7 +31,99 @@
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "SocketPool"
 
+/**
+ * Default batch size for SocketPool_foreach iteration.
+ * Balances lock contention vs iteration overhead.
+ */
+#ifndef SOCKET_POOL_FOREACH_BATCH_SIZE
+#define SOCKET_POOL_FOREACH_BATCH_SIZE 100
+#endif
+
 #define T SocketPool_T
+
+/* Forward declarations for internal functions used by helpers */
+static int consume_rate_and_track_ip (T pool, const char *client_ip);
+
+/* ============================================================================
+ * Internal Helper Functions
+ * ============================================================================
+ */
+
+/**
+ * close_socket_safe - Close and remove socket with error handling
+ * @pool: Pool instance
+ * @socket: Pointer to socket to close (set to NULL on success)
+ * @context: Context string for log message (e.g., "Resize", "Cleanup")
+ *
+ * Thread-safe: Called outside pool lock
+ * Handles errors gracefully - logs at DEBUG level and continues.
+ *
+ * Used by both resize and cleanup operations to avoid code duplication.
+ */
+static void
+close_socket_safe (T pool, Socket_T *socket, const char *context)
+{
+  TRY
+  {
+    SocketPool_remove (pool, *socket);
+    Socket_free (socket);
+  }
+  ELSE
+  {
+    /* Ignore SocketPool_Failed or Socket_Failed during cleanup -
+     * socket may already be removed or closed */
+    SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                     "%s: socket close/remove failed (may be stale)", context);
+  }
+  END_TRY;
+}
+
+/**
+ * handle_syn_consume_failure - Handle rate/IP consumption failure for SYN
+ * @protect: SYN protection instance
+ * @client_ip: Client IP address for failure report
+ * @client: Pointer to client socket (freed and set to NULL)
+ *
+ * Thread-safe: Yes
+ * Consolidates the repeated pattern of reporting failure and freeing socket.
+ */
+static void
+handle_syn_consume_failure (SocketSYNProtect_T protect, const char *client_ip,
+                            Socket_T *client)
+{
+  SocketSYNProtect_report_failure (protect, client_ip, ECONNREFUSED);
+  Socket_free (client);
+}
+
+/**
+ * try_consume_and_report - Consume rate token, track IP, and report outcome
+ * @pool: Pool instance
+ * @protect: SYN protection instance
+ * @client_ip: Client IP address
+ * @report_success: If non-zero, report success to SYN protect on success
+ *
+ * Returns: 1 on success (rate/IP allowed), 0 on failure (limit exceeded)
+ * Thread-safe: Yes - calls thread-safe consume_rate_and_track_ip
+ *
+ * Consolidates the two-phase check pattern used in SYN protection:
+ * 1. Pre-accept: check limits (no token consumption)
+ * 2. Post-accept: consume token and track IP (this function)
+ */
+static int
+try_consume_and_report (T pool, SocketSYNProtect_T protect,
+                        const char *client_ip, int report_success)
+{
+  if (!consume_rate_and_track_ip (pool, client_ip))
+    {
+      SocketSYNProtect_report_failure (protect, client_ip, ECONNREFUSED);
+      return 0;
+    }
+
+  if (report_success)
+    SocketSYNProtect_report_success (protect, client_ip);
+
+  return 1;
+}
 
 /* ============================================================================
  * Pool Resize Operations
@@ -51,10 +144,12 @@ collect_excess_connections (T pool, size_t new_maxconns,
                             Socket_T *excess_sockets)
 {
   size_t excess_count = 0;
-  size_t target = pool->count - new_maxconns;
+  size_t target;
 
   if (pool->count <= new_maxconns)
     return 0;
+
+  target = pool->count - new_maxconns;
 
   for (size_t i = 0; i < pool->maxconns && excess_count < target; i++)
     {
@@ -105,18 +200,18 @@ realloc_connections_array (T pool, size_t new_maxconns)
 /**
  * rehash_active_connections - Rebuild hash table after array realloc
  * @pool: Pool instance
- * @new_maxconns: New array size (limit scan)
+ * @valid_count: Number of valid slots to scan (min of old/new size)
  *
  * Thread-safe: Call with mutex held
  * Clears hash_table and re-inserts all active connections.
  */
 static void
-rehash_active_connections (T pool, size_t new_maxconns)
+rehash_active_connections (T pool, size_t valid_count)
 {
   memset (pool->hash_table, 0,
           sizeof (pool->hash_table[0]) * SOCKET_HASH_SIZE);
 
-  for (size_t i = 0; i < new_maxconns; i++)
+  for (size_t i = 0; i < valid_count; i++)
     {
       Connection_T conn = &pool->connections[i];
       if (conn->active && conn->socket)
@@ -176,32 +271,6 @@ initialize_new_slots (T pool, size_t old_maxconns, size_t new_maxconns)
 }
 
 /**
- * close_single_excess_socket - Close and remove single excess socket
- * @pool: Pool instance
- * @socket: Socket to close
- *
- * Thread-safe: Called outside lock
- * Handles errors gracefully - logs and continues on failure.
- */
-static void
-close_single_excess_socket (T pool, Socket_T *socket)
-{
-  TRY
-  {
-    SocketPool_remove (pool, *socket);
-    Socket_free (socket);
-  }
-  ELSE
-  {
-    /* Ignore SocketPool_Failed or Socket_Failed during resize cleanup -
-     * socket may already be removed or closed */
-    SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                     "Resize: socket close/remove failed (may be stale)");
-  }
-  END_TRY;
-}
-
-/**
  * close_excess_sockets - Close and remove excess sockets
  * @pool: Pool instance
  * @excess_sockets: Array of sockets to close
@@ -213,12 +282,12 @@ close_single_excess_socket (T pool, Socket_T *socket)
 static void
 close_excess_sockets (T pool, Socket_T *excess_sockets, size_t excess_count)
 {
-  /* volatile prevents clobbering when close_single_excess_socket is inlined */
+  /* volatile prevents clobbering when close_socket_safe may use setjmp */
   volatile size_t i;
   for (i = 0; i < excess_count; i++)
     {
       if (excess_sockets[i])
-        close_single_excess_socket (pool, &excess_sockets[i]);
+        close_socket_safe (pool, &excess_sockets[i], "Resize");
     }
 }
 
@@ -240,13 +309,14 @@ allocate_excess_buffer (size_t excess_count)
  * @new_maxconns: New capacity
  *
  * Thread-safe: Releases and reacquires mutex as needed
- * Returns: 0 on success, raises exception on failure
+ * Raises: SocketPool_Failed on allocation failure
  */
 static void
 handle_shrink_excess (T pool, size_t new_maxconns)
 {
   size_t excess_count;
   Socket_T *excess_sockets;
+  size_t collected;
 
   excess_count = pool->count > new_maxconns ? (pool->count - new_maxconns) : 0;
 
@@ -261,8 +331,7 @@ handle_shrink_excess (T pool, size_t new_maxconns)
                       SOCKET_ENOMEM ": Cannot allocate excess buffer");
     }
 
-  size_t collected
-      = collect_excess_connections (pool, new_maxconns, excess_sockets);
+  collected = collect_excess_connections (pool, new_maxconns, excess_sockets);
   assert (collected == excess_count);
   (void)collected; /* Suppress warning when NDEBUG disables assert */
 
@@ -286,6 +355,7 @@ void
 SocketPool_resize (T pool, size_t new_maxconns)
 {
   size_t old_maxconns;
+  size_t valid_count;
   SocketPool_ResizeCallback cb = NULL;
   void *cb_data = NULL;
 
@@ -315,8 +385,9 @@ SocketPool_resize (T pool, size_t new_maxconns)
   /* Rehash only valid slots: min of old and new size.
    * When growing, new slots are uninitialized until initialize_new_slots.
    * When shrinking, array was truncated to new_maxconns. */
-  rehash_active_connections (pool, old_maxconns < new_maxconns ? old_maxconns
-                                                               : new_maxconns);
+  valid_count
+      = old_maxconns < new_maxconns ? old_maxconns : new_maxconns;
+  rehash_active_connections (pool, valid_count);
 
   if (new_maxconns > old_maxconns)
     initialize_new_slots (pool, old_maxconns, new_maxconns);
@@ -358,17 +429,17 @@ SocketPool_prewarm (T pool, int percentage)
 {
   size_t prewarm_count;
   size_t allocated = 0;
+  size_t tmp;
 
   assert (pool);
   assert (percentage >= 0 && percentage <= 100);
 
   pthread_mutex_lock (&pool->mutex);
 
-  size_t tmp;
   if (!SocketSecurity_check_multiply (pool->maxconns, (size_t)percentage, &tmp)
       || tmp / SOCKET_PERCENTAGE_DIVISOR > pool->maxconns - pool->count)
     {
-      prewarm_count = 0; // Safe fallback
+      prewarm_count = 0; /* Safe fallback */
       SOCKET_LOG_WARN_MSG (
           "Prewarm calculation overflow or exceeds available slots; skipping");
     }
@@ -444,32 +515,39 @@ SocketPool_count (T pool)
  * @arg: User data for callback
  *
  * Calls func for each active connection.
- * Thread-safe: Yes - holds mutex during iteration
+ * Thread-safe: Yes - holds mutex during iteration with periodic yielding
  * Performance: O(n) where n is maxconns
  * Warning: Callback must not modify pool structure
+ *
+ * Note: Yields lock every SOCKET_POOL_FOREACH_BATCH_SIZE iterations to
+ * reduce contention on large pools.
  */
 void
 SocketPool_foreach (T pool, void (*func) (Connection_T, void *), void *arg)
 {
+  size_t end;
+
   assert (pool);
   assert (func);
 
   pthread_mutex_lock (&pool->mutex);
 
-  const size_t batch_size = 100; // Tune for performance vs contention
-  for (size_t i = 0; i < pool->maxconns; i += batch_size)
+  for (size_t i = 0; i < pool->maxconns; i += SOCKET_POOL_FOREACH_BATCH_SIZE)
     {
-      size_t end = (i + batch_size < pool->maxconns) ? i + batch_size
-                                                     : pool->maxconns;
+      end = (i + SOCKET_POOL_FOREACH_BATCH_SIZE < pool->maxconns)
+                ? i + SOCKET_POOL_FOREACH_BATCH_SIZE
+                : pool->maxconns;
+
       for (size_t j = i; j < end; ++j)
         {
           if (pool->connections[j].active)
             func (&pool->connections[j], arg);
         }
+
       if (end < pool->maxconns)
         {
           pthread_mutex_unlock (&pool->mutex);
-          pthread_mutex_lock (&pool->mutex); // Yield lock briefly
+          pthread_mutex_lock (&pool->mutex); /* Yield lock briefly */
         }
     }
 
@@ -544,9 +622,7 @@ SocketPool_filter (T pool, SocketPool_Predicate predicate, void *userdata,
       if (pool->connections[i].active)
         {
           if (predicate (&pool->connections[i], userdata))
-            {
-              results[found++] = &pool->connections[i];
-            }
+            results[found++] = &pool->connections[i];
         }
     }
 
@@ -572,6 +648,7 @@ static int
 accept_connection_direct (int server_fd)
 {
   int newfd;
+  int flags;
 
 #if SOCKET_HAS_ACCEPT4 && defined(SOCK_NONBLOCK)
   newfd = accept4 (server_fd, NULL, NULL, SOCK_CLOEXEC | SOCK_NONBLOCK);
@@ -591,11 +668,11 @@ accept_connection_direct (int server_fd)
       return -1;
     }
 
-  int flags = fcntl (newfd, F_GETFL, 0);
+  flags = fcntl (newfd, F_GETFL, 0);
   if (flags >= 0)
-    {
-      fcntl (newfd, F_SETFL, flags | O_NONBLOCK);
-    }
+    fcntl (newfd, F_SETFL, flags | O_NONBLOCK);
+#else
+  (void)flags; /* Suppress unused warning when accept4 is available */
 #endif
 
   return newfd;
@@ -606,6 +683,7 @@ accept_connection_direct (int server_fd)
  * @pool: Pool instance
  * @server: Server socket
  * @max_accepts: Maximum to accept
+ * @accepted_capacity: Capacity of accepted array
  * @accepted: Output array
  *
  * Returns: 1 if valid, 0 if invalid
@@ -630,6 +708,7 @@ validate_batch_params (T pool, Socket_T server, int max_accepts,
                         accepted_capacity, max_accepts);
       return 0;
     }
+
   return 1;
 }
 
@@ -644,9 +723,11 @@ static int
 get_available_slots (T pool)
 {
   int available;
+
   pthread_mutex_lock (&pool->mutex);
   available = (int)(pool->maxconns - pool->count);
   pthread_mutex_unlock (&pool->mutex);
+
   return available > 0 ? available : 0;
 }
 
@@ -660,6 +741,7 @@ static Socket_T
 wrap_fd_as_socket (int newfd)
 {
   volatile Socket_T sock = NULL;
+
   TRY { sock = Socket_new_from_fd (newfd); }
   EXCEPT (Socket_Failed)
   {
@@ -667,6 +749,7 @@ wrap_fd_as_socket (int newfd)
     return NULL;
   }
   END_TRY;
+
   return sock;
 }
 
@@ -701,7 +784,10 @@ try_add_socket_to_pool (T pool, Socket_T *sock)
 static int
 accept_one_connection (T pool, int server_fd, Socket_T *accepted, int count)
 {
-  int newfd = accept_connection_direct (server_fd);
+  int newfd;
+  Socket_T sock;
+
+  newfd = accept_connection_direct (server_fd);
   if (newfd < 0)
     {
       if (errno != EAGAIN && errno != EWOULDBLOCK)
@@ -709,7 +795,7 @@ accept_one_connection (T pool, int server_fd, Socket_T *accepted, int count)
       return 0;
     }
 
-  Socket_T sock = wrap_fd_as_socket (newfd);
+  sock = wrap_fd_as_socket (newfd);
   if (!sock)
     return -1;
 
@@ -741,15 +827,15 @@ accept_one_connection (T pool, int server_fd, Socket_T *accepted, int count)
  */
 int
 SocketPool_accept_batch (T pool, Socket_T server, int max_accepts,
-                         size_t accepted_capacity, /* unused yet */
-                         Socket_T *accepted)
+                         size_t accepted_capacity, Socket_T *accepted)
 {
-  (void)accepted_capacity;
   int count = 0;
   int limit;
+  int server_fd;
+  int result;
 
-  if (!validate_batch_params (pool, server, max_accepts, max_accepts,
-                              accepted)) // Use max_accepts as min capacity
+  if (!validate_batch_params (pool, server, max_accepts, accepted_capacity,
+                              accepted))
     return 0;
 
   limit = get_available_slots (pool);
@@ -759,11 +845,11 @@ SocketPool_accept_batch (T pool, Socket_T server, int max_accepts,
   if (max_accepts < limit)
     limit = max_accepts;
 
-  int server_fd = Socket_fd (server);
+  server_fd = Socket_fd (server);
+
   for (int i = 0; i < limit; i++)
     {
-      int result
-          = accept_one_connection (pool, server_fd, &accepted[count], count);
+      result = accept_one_connection (pool, server_fd, &accepted[count], count);
       if (result <= 0)
         break;
       count++;
@@ -1018,6 +1104,9 @@ async_connect_dns_callback (Request_T req, struct addrinfo *result,
   volatile Connection_T conn = NULL;
   volatile int callback_error = error;
 
+  /* Copy error parameter to volatile local to prevent clobbering by longjmp */
+  (void)error;
+
   (void)req; /* Unused parameter */
 
   if (error != 0 || result == NULL)
@@ -1212,27 +1301,20 @@ SocketPool_get_syn_protection (T pool)
  * @protect: Protection instance (for config)
  *
  * Blocks briefly for throttled connections to slow down attack rate.
+ * Uses sched_yield() to minimize CPU waste during delay.
  */
 static void
 apply_syn_throttle (SocketSYN_Action action, SocketSYNProtect_T protect)
 {
+  int64_t target;
+
   if (action != SYN_ACTION_THROTTLE || protect == NULL)
     return;
 
-  /* Get config for throttle delay - use default if not accessible */
-  int delay_ms = SOCKET_SYN_DEFAULT_THROTTLE_DELAY_MS;
-
-  if (delay_ms > 0)
-    {
-      int64_t start = Socket_get_monotonic_ms ();
-      int64_t target = start + delay_ms;
-      while (Socket_get_monotonic_ms () < target)
-        {
-          // Minimal busy loop; could add sched_yield() or usleep(1) for less
-          // CPU
-          sched_yield (); // Yield to other threads
-        }
-    }
+  /* Apply throttle delay using default config value */
+  target = Socket_get_monotonic_ms () + SOCKET_SYN_DEFAULT_THROTTLE_DELAY_MS;
+  while (Socket_get_monotonic_ms () < target)
+    sched_yield ();
 }
 
 /**
@@ -1272,6 +1354,12 @@ apply_syn_challenge (Socket_T socket, SocketSYN_Action action,
  *
  * Security: Checks limits BEFORE accepting to prevent TOCTOU race where
  * connections are accepted then immediately closed, wasting resources.
+ *
+ * This is Phase 1 of the two-phase rate check pattern:
+ * - Phase 1 (this function): Pre-accept check - does NOT consume token
+ * - Phase 2 (consume_rate_and_track_ip): Post-accept consume token + track IP
+ *
+ * @see consume_rate_and_track_ip() for Phase 2
  */
 static int
 check_pre_accept_limits (T pool, SocketSYNProtect_T *protect_out)
@@ -1310,6 +1398,13 @@ check_pre_accept_limits (T pool, SocketSYNProtect_T *protect_out)
  *
  * Returns: 1 if successful, 0 if rate/IP limit exceeded
  * Thread-safe: Yes - acquires pool mutex
+ *
+ * This is Phase 2 of the two-phase rate check pattern:
+ * - Phase 1 (check_pre_accept_limits): Pre-accept check - does NOT consume
+ * token
+ * - Phase 2 (this function): Post-accept consume token + track IP
+ *
+ * @see check_pre_accept_limits() for Phase 1
  */
 static int
 consume_rate_and_track_ip (T pool, const char *client_ip)
@@ -1359,10 +1454,10 @@ consume_rate_and_track_ip (T pool, const char *client_ip)
  * TOCTOU race conditions where attackers could exhaust server resources.
  *
  * Flow:
- * 1. Check rate limits and pool state (pre-accept check)
+ * 1. Check rate limits and pool state (pre-accept check - Phase 1)
  * 2. Accept connection
  * 3. Check SYN protection for the specific client IP
- * 4. Consume rate token and track IP (post-accept confirmation)
+ * 4. Consume rate token and track IP (post-accept confirmation - Phase 2)
  * 5. Apply throttle/challenge actions as needed
  */
 Socket_T
@@ -1420,35 +1515,29 @@ SocketPool_accept_protected (T pool, Socket_T server,
   switch (action)
     {
     case SYN_ACTION_ALLOW:
-      /* Consume rate token and track IP (atomic check) */
-      if (!consume_rate_and_track_ip (pool, client_ip))
+      if (!try_consume_and_report (pool, protect, client_ip, 1))
         {
-          SocketSYNProtect_report_failure (protect, client_ip, ECONNREFUSED);
-          Socket_free (&client);
+          handle_syn_consume_failure (protect, client_ip, &client);
           return NULL;
         }
-      SocketSYNProtect_report_success (protect, client_ip);
       break;
 
     case SYN_ACTION_THROTTLE:
       /* Apply throttle delay, then allow */
       apply_syn_throttle (action, protect);
-      if (!consume_rate_and_track_ip (pool, client_ip))
+      if (!try_consume_and_report (pool, protect, client_ip, 1))
         {
-          SocketSYNProtect_report_failure (protect, client_ip, ECONNREFUSED);
-          Socket_free (&client);
+          handle_syn_consume_failure (protect, client_ip, &client);
           return NULL;
         }
-      SocketSYNProtect_report_success (protect, client_ip);
       break;
 
     case SYN_ACTION_CHALLENGE:
       /* Apply TCP_DEFER_ACCEPT challenge */
       apply_syn_challenge (client, action, protect);
-      if (!consume_rate_and_track_ip (pool, client_ip))
+      if (!try_consume_and_report (pool, protect, client_ip, 0))
         {
-          SocketSYNProtect_report_failure (protect, client_ip, ECONNREFUSED);
-          Socket_free (&client);
+          handle_syn_consume_failure (protect, client_ip, &client);
           return NULL;
         }
       /* Report success only after challenge - caller should verify data
@@ -1457,8 +1546,7 @@ SocketPool_accept_protected (T pool, Socket_T server,
 
     case SYN_ACTION_BLOCK:
       /* Reject connection immediately */
-      SocketSYNProtect_report_failure (protect, client_ip, ECONNREFUSED);
-      Socket_free (&client);
+      handle_syn_consume_failure (protect, client_ip, &client);
       return NULL;
     }
 

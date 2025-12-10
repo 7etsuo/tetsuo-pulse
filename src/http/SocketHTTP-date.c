@@ -45,7 +45,6 @@
 #include <time.h>
 
 #include "core/SocketUtil.h"
-#include "http/SocketHTTP-private.h"
 #include "http/SocketHTTP.h"
 
 #undef SOCKET_LOG_COMPONENT
@@ -56,8 +55,8 @@
  * ============================================================================
  */
 
-/** Length of short day names (Sun, Mon, etc.) */
-#define SHORT_DAY_LEN 3
+/** Length of short names (3-char abbreviations for both days and months) */
+#define SHORT_NAME_LEN 3
 
 /** Length of "GMT" string */
 #define GMT_LEN 3
@@ -234,7 +233,7 @@ parse_day_short (const char *s)
 {
   for (int i = 0; i < 7; i++)
     {
-      if (strncasecmp (s, day_names_short[i], SHORT_DAY_LEN) == 0)
+      if (strncasecmp (s, day_names_short[i], SHORT_NAME_LEN) == 0)
         return i;
     }
   return -1;
@@ -282,8 +281,7 @@ parse_month (const char *s)
 {
   for (int i = 0; month_table[i].name != NULL; i++)
     {
-      if (strncasecmp (s, month_table[i].name, SHORT_DAY_LEN)
-          == 0) /* SHORT_DAY_LEN == 3 */
+      if (strncasecmp (s, month_table[i].name, SHORT_NAME_LEN) == 0)
         return month_table[i].month;
     }
   return -1;
@@ -388,11 +386,11 @@ expect_char (const char **p, const char *end, char expected)
  * Returns: Number of characters skipped (0 or more)
  * Thread-safe: Yes
  */
-static int
+static size_t
 skip_whitespace (const char *s, size_t max)
 {
-  int n = 0;
-  while ((size_t)n < max && (s[n] == ' ' || s[n] == '\t'))
+  size_t n = 0;
+  while (n < max && (s[n] == ' ' || s[n] == '\t'))
     n++;
   return n;
 }
@@ -470,10 +468,12 @@ parse_time_hms (const char **p, const char *end, DateParts *parts)
  * ============================================================================
  */
 
-/** Mutex for TZ fallback (unused on platforms with timegm; silences warning)
+/**
+ * Mutex for thread-safe TZ environment manipulation in fallback path.
+ * Marked unused to silence warnings on platforms with native timegm().
  */
 static pthread_mutex_t tz_mutex __attribute__ ((unused))
-= PTHREAD_MUTEX_INITIALIZER;
+    = PTHREAD_MUTEX_INITIALIZER;
 
 /**
  * tm_to_time_t - Convert broken-down UTC time (struct tm) to time_t epoch
@@ -566,7 +566,7 @@ find_comma (const char *s, const char *end)
 {
   while (s < end && *s != ',')
     ++s;
-  return (s < end && *s == ',') ? s : NULL;
+  return (s < end) ? s : NULL;
 }
 
 /**
@@ -597,12 +597,12 @@ parse_imf_date_part (const char **p, const char *end, DateParts *parts)
     return -1;
 
   /* Parse month MMM */
-  if (*p + SHORT_DAY_LEN > end)
+  if (*p + SHORT_NAME_LEN > end)
     return -1;
   parts->month = parse_month (*p);
   if (parts->month < 0)
     return -1;
-  *p += SHORT_DAY_LEN;
+  *p += SHORT_NAME_LEN;
 
   if (expect_char (p, end, ' ') < 0)
     return -1;
@@ -642,7 +642,7 @@ parse_imf_fixdate (const char *s, size_t len, time_t *out)
 
   const char *end = s + len;
   const char *comma_pos = find_comma (s, end);
-  if (!comma_pos || comma_pos - s != SHORT_DAY_LEN)
+  if (!comma_pos || comma_pos - s != SHORT_NAME_LEN)
     return -1;
 
   /* Validate short day name */
@@ -701,12 +701,12 @@ parse_rfc850_date_part (const char **p, const char *end, DateParts *parts)
     return -1;
 
   /* Parse month MMM */
-  if (*p + SHORT_DAY_LEN > end)
+  if (*p + SHORT_NAME_LEN > end)
     return -1;
   parts->month = parse_month (*p);
   if (parts->month < 0)
     return -1;
-  *p += SHORT_DAY_LEN;
+  *p += SHORT_NAME_LEN;
 
   if (expect_char (p, end, '-') < 0)
     return -1;
@@ -795,22 +795,22 @@ static int
 parse_asctime_day_month (const char **p, const char *end, DateParts *parts)
 {
   /* Parse short day name (exactly 3 chars) */
-  if (*p + SHORT_DAY_LEN > end)
+  if (*p + SHORT_NAME_LEN > end)
     return -1;
   if (parse_day_short (*p) < 0)
     return -1;
-  *p += SHORT_DAY_LEN;
+  *p += SHORT_NAME_LEN;
 
   if (expect_char (p, end, ' ') < 0)
     return -1;
 
   /* Parse month MMM */
-  if (*p + SHORT_DAY_LEN > end)
+  if (*p + SHORT_NAME_LEN > end)
     return -1;
   parts->month = parse_month (*p);
   if (parts->month < 0)
     return -1;
-  *p += SHORT_DAY_LEN;
+  *p += SHORT_NAME_LEN;
 
   if (expect_char (p, end, ' ') < 0)
     return -1;
@@ -835,7 +835,7 @@ parse_asctime (const char *s, size_t len, time_t *out)
 
   /* Skip additional whitespace before day (asctime pads single-digit with
    * spaces) */
-  int ws = skip_whitespace (p, (size_t)(end - p));
+  size_t ws = skip_whitespace (p, (size_t)(end - p));
   p += ws;
 
   /* Parse day (1 or 2 digits) */
@@ -891,7 +891,7 @@ parse_asctime (const char *s, size_t len, time_t *out)
 static int
 is_imf_fixdate (const char *s, size_t len)
 {
-  return (len >= IMF_FIXDATE_MIN_LEN && s[SHORT_DAY_LEN] == ',');
+  return (len >= IMF_FIXDATE_MIN_LEN && s[SHORT_NAME_LEN] == ',');
 }
 
 /**
@@ -936,7 +936,7 @@ is_rfc850 (const char *s, size_t len)
 static int
 is_asctime (const char *s, size_t len)
 {
-  return (len >= ASCTIME_MIN_LEN && s[SHORT_DAY_LEN] == ' ');
+  return (len >= ASCTIME_MIN_LEN && s[SHORT_NAME_LEN] == ' ');
 }
 
 /* ============================================================================
@@ -976,7 +976,7 @@ SocketHTTP_date_parse (const char *date_str, size_t len, time_t *time_out)
     len = strlen (date_str);
 
   /* Skip leading whitespace (SP / HTAB) */
-  int skipped = skip_whitespace (date_str, len);
+  size_t skipped = skip_whitespace (date_str, len);
   date_str += skipped;
   len -= skipped;
 

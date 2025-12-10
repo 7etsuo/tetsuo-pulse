@@ -28,13 +28,18 @@
 
 #define T SocketPool_T
 
-/* Common mutex operations to reduce code duplication */
+/* ============================================================================
+ * Common Mutex Operations
+ * ============================================================================
+ */
+
 #define POOL_LOCK(p)                                                          \
   do                                                                          \
     {                                                                         \
       pthread_mutex_lock (&(p)->mutex);                                       \
     }                                                                         \
   while (0)
+
 #define POOL_UNLOCK(p)                                                        \
   do                                                                          \
     {                                                                         \
@@ -50,21 +55,30 @@
 /** Tokens consumed per connection attempt for rate limiting */
 #define RATELIMIT_TOKENS_PER_ACCEPT 1
 
+/** Maximum rate limit value (connections per second) */
+#define MAX_RATE_LIMIT_PER_SEC 1000000
+
+/** Maximum allowed burst multiplier relative to rate */
+#define MAX_BURST_MULTIPLIER 100
+
+/** Maximum connections per IP allowed (security limit) */
+#define MAX_CONNECTIONS_PER_IP 10000
+
 /* ============================================================================
  * Static Helper Functions - IP Address Validation
  * ============================================================================
  */
 
 /**
- * @brief Check if IP is valid for tracking.
- * @ingroup connection_mgmt
- * @param ip IP address string (may be NULL).
- * @return 1 if IP is valid (non-NULL and non-empty), 0 otherwise.
+ * is_valid_ip_for_tracking - Check if IP is valid for tracking
+ * @ip: IP address string (may be NULL)
+ *
+ * Returns: 1 if IP is valid (non-NULL and non-empty), 0 otherwise
  *
  * Centralizes the IP validation pattern used throughout this module.
  *
- * @see SocketPool_track_ip() for usage.
- * @see SocketPool_release_ip() for releasing tracked IPs.
+ * @see SocketPool_track_ip() for usage
+ * @see SocketPool_release_ip() for releasing tracked IPs
  */
 static int
 is_valid_ip_for_tracking (const char *ip)
@@ -73,23 +87,64 @@ is_valid_ip_for_tracking (const char *ip)
 }
 
 /* ============================================================================
+ * Static Helper Functions - Rate Limit Checks
+ * ============================================================================
+ */
+
+/**
+ * rate_limit_allows - Check if connection rate limit allows operation
+ * @pool: Connection pool (mutex must be held)
+ *
+ * Returns: 1 if rate limit allows, 0 if rate limited
+ *
+ * Checks if tokens are available without consuming them.
+ * Must be called with pool mutex held.
+ */
+static int
+rate_limit_allows (const T pool)
+{
+  return !pool->conn_limiter
+         || SocketRateLimit_available (pool->conn_limiter) > 0;
+}
+
+/**
+ * ip_limit_allows - Check if per-IP limit allows connection
+ * @pool: Connection pool (mutex must be held)
+ * @client_ip: Client IP address (may be NULL)
+ *
+ * Returns: 1 if IP limit allows, 0 if IP limit reached
+ *
+ * If IP is invalid or tracker disabled, always allows.
+ * Must be called with pool mutex held.
+ */
+static int
+ip_limit_allows (const T pool, const char *client_ip)
+{
+  if (!pool->ip_tracker || !is_valid_ip_for_tracking (client_ip))
+    return 1;
+
+  return SocketIPTracker_count (pool->ip_tracker, client_ip)
+         < SocketIPTracker_getmax (pool->ip_tracker);
+}
+
+/* ============================================================================
  * Static Helper Functions - Generic IP Tracker Operations
  * ============================================================================
  */
 
 /**
- * @brief Perform void operation on IP tracker under lock.
- * @ingroup connection_mgmt
- * @param pool Connection pool.
- * @param ip IP address.
- * @param op Operation to perform if tracker exists and IP valid.
+ * locked_ip_op_void - Perform void operation on IP tracker under lock
+ * @pool: Connection pool
+ * @ip: IP address
+ * @op: Operation to perform if tracker exists and IP valid
  *
  * Performs the operation atomically under pool mutex.
  * Skips if IP invalid or no tracker.
- * @threadsafe Yes.
  *
- * @see SocketPool_track_ip() for track operation.
- * @see SocketPool_release_ip() for release operation.
+ * @threadsafe Yes
+ *
+ * @see SocketPool_track_ip() for track operation
+ * @see SocketPool_release_ip() for release operation
  */
 static void
 locked_ip_op_void (T pool, const char *ip,
@@ -114,21 +169,25 @@ locked_ip_op_void (T pool, const char *ip,
  *                      0 for query ops like count)
  *
  * Returns: Operation result or no_tracker_retval
- * Thread-safe: Yes
+ *
+ * @threadsafe Yes
  */
 static int
 locked_ip_op_int (T pool, const char *ip,
                   int (*op) (SocketIPTracker_T, const char *),
                   int no_tracker_retval)
 {
+  int res;
+
   if (!is_valid_ip_for_tracking (ip))
     return no_tracker_retval;
 
   POOL_LOCK (pool);
-  int res = no_tracker_retval;
+  res = no_tracker_retval;
   if (pool->ip_tracker)
     res = op (pool->ip_tracker, ip);
   POOL_UNLOCK (pool);
+
   return res;
 }
 
@@ -192,14 +251,32 @@ configure_ip_tracker (T pool, int max_conns)
 }
 
 /* ============================================================================
- * Static Helper Functions - Rate Limit Checks
+ * Static Helper Functions - Pool State Checks
  * ============================================================================
  */
 
-/* ============================================================================
- * Static Helper Functions - Accept Operations
- * ============================================================================
+/**
+ * check_pool_accepting - Check if pool is accepting connections
+ * @pool: Connection pool
+ *
+ * Returns: 1 if accepting (state == RUNNING), 0 if draining or stopped
+ *
+ * Acquires and releases pool mutex internally for atomic state check.
+ *
+ * @threadsafe Yes
  */
+static int
+check_pool_accepting (T pool)
+{
+  int accepting;
+
+  POOL_LOCK (pool);
+  accepting = atomic_load_explicit (&pool->state, memory_order_acquire)
+              == POOL_STATE_RUNNING;
+  POOL_UNLOCK (pool);
+
+  return accepting;
+}
 
 /* ============================================================================
  * Connection Rate Limiting - Public API
@@ -212,12 +289,14 @@ configure_ip_tracker (T pool, int max_conns)
  * @conns_per_sec: Connections per second (0 or negative to disable)
  * @burst: Burst capacity (defaults to rate if <= 0)
  *
- * Thread-safe: Yes - acquires pool mutex
+ * @threadsafe Yes - acquires pool mutex
  */
 void
 SocketPool_setconnrate (T pool, int conns_per_sec, int burst)
 {
   int config_ok;
+  int safe_burst;
+  size_t max_burst_check;
 
   assert (pool);
 
@@ -230,19 +309,19 @@ SocketPool_setconnrate (T pool, int conns_per_sec, int burst)
       return;
     }
 
-  int safe_burst = (burst <= 0) ? conns_per_sec : burst;
+  safe_burst = (burst <= 0) ? conns_per_sec : burst;
 
   /* Validate parameters to prevent resource exhaustion */
-  size_t max_burst_check;
-  if (conns_per_sec > 1000000
-      || !SocketSecurity_check_multiply ((size_t)conns_per_sec, 100,
-                                         &max_burst_check)
+  if (conns_per_sec > MAX_RATE_LIMIT_PER_SEC
+      || !SocketSecurity_check_multiply ((size_t)conns_per_sec,
+                                         MAX_BURST_MULTIPLIER, &max_burst_check)
       || (size_t)safe_burst > max_burst_check || safe_burst <= 0)
     {
       RAISE_POOL_MSG (SocketPool_Failed,
-                      "Invalid connection rate: rate=%d burst=%d (max 1M/sec, "
-                      "burst <=100x rate)",
-                      conns_per_sec, safe_burst);
+                      "Invalid connection rate: rate=%d burst=%d (max %d/sec, "
+                      "burst <=%dx rate)",
+                      conns_per_sec, safe_burst, MAX_RATE_LIMIT_PER_SEC,
+                      MAX_BURST_MULTIPLIER);
     }
 
   POOL_LOCK (pool);
@@ -260,17 +339,21 @@ SocketPool_setconnrate (T pool, int conns_per_sec, int burst)
  * @pool: Connection pool
  *
  * Returns: Connections per second rate, or 0 if disabled
- * Thread-safe: Yes - acquires pool mutex
+ *
+ * @threadsafe Yes - acquires pool mutex
  */
 int
 SocketPool_getconnrate (T pool)
 {
+  size_t raw_rate;
+  int rate;
+
   assert (pool);
 
   POOL_LOCK (pool);
-  size_t raw_rate
+  raw_rate
       = pool->conn_limiter ? SocketRateLimit_get_rate (pool->conn_limiter) : 0;
-  int rate = (raw_rate > (size_t)INT_MAX) ? INT_MAX : (int)raw_rate;
+  rate = (raw_rate > (size_t)INT_MAX) ? INT_MAX : (int)raw_rate;
   POOL_UNLOCK (pool);
 
   return rate;
@@ -286,7 +369,7 @@ SocketPool_getconnrate (T pool)
  * @pool: Connection pool
  * @max_conns: Maximum connections per IP (0 or negative to disable)
  *
- * Thread-safe: Yes - acquires pool mutex
+ * @threadsafe Yes - acquires pool mutex
  */
 void
 SocketPool_setmaxperip (T pool, int max_conns)
@@ -305,10 +388,11 @@ SocketPool_setmaxperip (T pool, int max_conns)
     }
 
   /* Validate parameters to prevent resource exhaustion */
-  if (max_conns < 1 || max_conns > 10000)
+  if (max_conns > MAX_CONNECTIONS_PER_IP)
     {
       RAISE_POOL_MSG (SocketPool_Failed,
-                      "Invalid max per IP: %d (range 1-10000)", max_conns);
+                      "Invalid max per IP: %d (range 1-%d)", max_conns,
+                      MAX_CONNECTIONS_PER_IP);
     }
 
   POOL_LOCK (pool);
@@ -324,15 +408,18 @@ SocketPool_setmaxperip (T pool, int max_conns)
  * @pool: Connection pool
  *
  * Returns: Maximum connections per IP, or 0 if disabled
- * Thread-safe: Yes - acquires pool mutex
+ *
+ * @threadsafe Yes - acquires pool mutex
  */
 int
 SocketPool_getmaxperip (T pool)
 {
+  int max;
+
   assert (pool);
 
   POOL_LOCK (pool);
-  int max = pool->ip_tracker ? SocketIPTracker_getmax (pool->ip_tracker) : 0;
+  max = pool->ip_tracker ? SocketIPTracker_getmax (pool->ip_tracker) : 0;
   POOL_UNLOCK (pool);
 
   return max;
@@ -349,14 +436,18 @@ SocketPool_getmaxperip (T pool)
  * @client_ip: Client IP address (may be NULL)
  *
  * Returns: 1 if allowed, 0 if draining/stopped, rate limited, or IP limit
- * reached Thread-safe: Yes - acquires pool mutex
+ *          reached
  *
  * Does NOT consume rate tokens - use for pre-check only.
  * Returns 0 immediately if pool is draining or stopped.
+ *
+ * @threadsafe Yes - acquires pool mutex
  */
 int
 SocketPool_accept_allowed (T pool, const char *client_ip)
 {
+  int allowed;
+
   assert (pool);
 
   POOL_LOCK (pool);
@@ -369,32 +460,11 @@ SocketPool_accept_allowed (T pool, const char *client_ip)
       return 0;
     }
 
-  int allowed = (!pool->conn_limiter
-                 || SocketRateLimit_available (pool->conn_limiter) > 0)
-                && (!pool->ip_tracker || !is_valid_ip_for_tracking (client_ip)
-                    || (SocketIPTracker_count (pool->ip_tracker, client_ip)
-                        < SocketIPTracker_getmax (pool->ip_tracker)));
+  allowed = rate_limit_allows (pool) && ip_limit_allows (pool, client_ip);
+
   POOL_UNLOCK (pool);
 
   return allowed;
-}
-
-/**
- * check_pool_accepting - Check if pool is accepting connections (with mutex)
- * @pool: Connection pool
- *
- * Returns: 1 if accepting, 0 if draining or stopped
- * Thread-safe: Yes - acquires pool mutex
- */
-static int
-check_pool_accepting (T pool)
-{
-  POOL_LOCK (pool);
-  int accepting = atomic_load_explicit (&pool->state, memory_order_acquire)
-                  == POOL_STATE_RUNNING;
-  POOL_UNLOCK (pool);
-
-  return accepting;
 }
 
 /**
@@ -403,7 +473,7 @@ check_pool_accepting (T pool)
  * @server: Server socket to accept from
  *
  * Returns: Accepted socket, or NULL if draining/stopped, rate limited, or
- * accept failed Thread-safe: Yes - acquires pool mutex for rate checks
+ *          accept failed
  *
  * Returns NULL immediately if pool is draining or stopped.
  * Consumes a rate token before attempting accept. If accept fails,
@@ -414,17 +484,20 @@ check_pool_accepting (T pool)
  * Socket_accept. If the subsequent SocketPool_add(pool, client) fails (e.g.,
  * pool full or state changed to draining), the caller MUST call:
  *   - SocketPool_release_ip(pool, Socket_getpeeraddr(client)) to decrement the
- * IP count
+ *     IP count
  *   - Socket_free(&client) to close the socket and prevent FD/memory leaks.
  * Failure to do so leads to permanent per-IP connection bans and resource
  * exhaustion (DoS vulnerability). See examples and SocketPool.h for proper
  * error handling.
+ *
+ * @threadsafe Yes - acquires pool mutex for rate checks
  */
 Socket_T
 SocketPool_accept_limited (T pool, Socket_T server)
 {
   Socket_T client;
   const char *client_ip;
+  int rate_ok;
 
   assert (pool);
   assert (server);
@@ -434,15 +507,14 @@ SocketPool_accept_limited (T pool, Socket_T server)
     return NULL;
 
   /* Check and consume rate token */
-  {
-    POOL_LOCK (pool);
-    int rate_ok = !pool->conn_limiter
-                  || SocketRateLimit_try_acquire (pool->conn_limiter,
-                                                  RATELIMIT_TOKENS_PER_ACCEPT);
-    POOL_UNLOCK (pool);
-    if (!rate_ok)
-      return NULL;
-  }
+  POOL_LOCK (pool);
+  rate_ok = !pool->conn_limiter
+            || SocketRateLimit_try_acquire (pool->conn_limiter,
+                                            RATELIMIT_TOKENS_PER_ACCEPT);
+  POOL_UNLOCK (pool);
+
+  if (!rate_ok)
+    return NULL;
 
   /* Accept the connection */
   client = Socket_accept (server);
@@ -465,13 +537,15 @@ SocketPool_accept_limited (T pool, Socket_T server)
  * Manual IP Tracking - Public API
  * ============================================================================
  */
+
 /**
  * SocketPool_track_ip - Manually track IP for per-IP limiting
  * @pool: Connection pool
  * @ip: IP address to track (NULL or empty always allowed)
  *
  * Returns: 1 if tracked successfully, 0 if IP limit reached
- * Thread-safe: Yes - acquires pool mutex
+ *
+ * @threadsafe Yes - acquires pool mutex
  */
 int
 SocketPool_track_ip (T pool, const char *ip)
@@ -486,7 +560,7 @@ SocketPool_track_ip (T pool, const char *ip)
  * @pool: Connection pool
  * @ip: IP address to release (NULL or empty is no-op)
  *
- * Thread-safe: Yes - acquires pool mutex
+ * @threadsafe Yes - acquires pool mutex
  */
 void
 SocketPool_release_ip (T pool, const char *ip)
@@ -502,7 +576,8 @@ SocketPool_release_ip (T pool, const char *ip)
  * @ip: IP address to query (NULL or empty returns 0)
  *
  * Returns: Current connection count for the IP
- * Thread-safe: Yes - acquires pool mutex
+ *
+ * @threadsafe Yes - acquires pool mutex
  */
 int
 SocketPool_ip_count (T pool, const char *ip)

@@ -605,8 +605,6 @@ SocketHTTP1_Parser_reset (SocketHTTP1_Parser_T parser)
   parser->total_trailer_size = 0;
   parser->line_length = 0;
   parser->header_line_length = 0;
-  parser->header_line_length = 0;
-  parser->header_line_length = 0;
 
   /* Reset body tracking */
   reset_body_tracking (parser);
@@ -762,25 +760,11 @@ http1_extract_token_bounds (const char *start, const char **end)
 }
 
 /**
- * http1_token_equal_ci - Case-insensitive token comparison
- * @token: Token from header value
- * @token_len: Token length
- * @target: Target token to match
- * @target_len: Target length
- *
- * Returns: 1 if equal (case-insensitive), 0 otherwise
- */
-static int
-http1_token_equal_ci (const char *token, size_t token_len, const char *target,
-                      size_t target_len)
-{
-  return sockethttp_name_equal (token, token_len, target, target_len);
-}
-
-/**
  * http1_contains_token - Check if value contains token (comma-separated)
  * @value: Header value string
  * @token: Token to search for
+ *
+ * Uses sockethttp_name_equal for case-insensitive token comparison.
  *
  * Returns: 1 if found, 0 otherwise
  */
@@ -801,7 +785,7 @@ http1_contains_token (const char *value, const char *token)
       const char *tok_end;
       size_t tok_len = http1_extract_token_bounds (p, &tok_end);
 
-      if (http1_token_equal_ci (p, tok_len, token, tlen))
+      if (sockethttp_name_equal (p, tok_len, token, tlen))
         return 1;
 
       p = tok_end;
@@ -1494,20 +1478,40 @@ calculate_next_body_state (SocketHTTP1_Parser_T parser,
  */
 
 /**
- * parse_headers_loop - Inner DFA loop for header parsing
- * @parser: Parser instance
- * @data: Input data
- * @len: Input length
- * @consumed: Bytes consumed output
- * @state_table: State transition table
- * @action_table: Action table
+ * in_header_state - Check if parser is in header parsing states
+ * @state: Current internal state
  *
- * Processes bytes using DFA tables until body state or end.
- * Updates parser state and internal_state.
- *
- * Returns: HTTP1_INCOMPLETE if more data needed, HTTP1_OK if headers/body
- * ready or error. On error, sets parser->error and *consumed.
+ * Returns: 1 if in header states, 0 otherwise
  */
+static inline int
+in_header_state (HTTP1_InternalState state)
+{
+  return state >= HTTP1_PS_HEADER_START && state <= HTTP1_PS_HEADERS_END_LF;
+}
+
+/**
+ * handle_body_state_exit - Handle exit when entering body/terminal states
+ * @parser: Parser instance
+ * @state: Current state
+ * @consumed_bytes: Bytes consumed to set
+ *
+ * Sets parser internal state and returns appropriate result.
+ * Returns: HTTP1_OK for body/complete states, parser->error for error state
+ */
+static inline SocketHTTP1_Result
+handle_body_state_exit (SocketHTTP1_Parser_T parser, HTTP1_InternalState state,
+                        size_t consumed_bytes, size_t *consumed)
+{
+  parser->internal_state = state;
+  *consumed = consumed_bytes;
+  if (state == HTTP1_PS_COMPLETE)
+    return HTTP1_OK;
+  if (state == HTTP1_PS_ERROR)
+    return parser->error;
+  /* Body states handled by read_body function */
+  return HTTP1_OK;
+}
+
 /**
  * handle_dfa_action - Execute DFA action for current byte
  * @parser: Parser instance
@@ -1625,16 +1629,8 @@ parse_headers_loop (SocketHTTP1_Parser_T parser, const char *data, size_t len,
 
       /* Handle body/trailer states outside the table-driven loop */
       if (state >= HTTP1_PS_BODY_IDENTITY)
-        {
-          parser->internal_state = state;
-          *consumed = (size_t)(p - data);
-          if (state == HTTP1_PS_COMPLETE)
-            return HTTP1_OK;
-          if (state == HTTP1_PS_ERROR)
-            return parser->error;
-          /* Body states handled by read_body function */
-          return HTTP1_OK;
-        }
+        return handle_body_state_exit (parser, state, (size_t)(p - data),
+                                       consumed);
 
       /* Table lookups - the core of the optimization */
       next_state = (HTTP1_InternalState)state_table[state][cc];
@@ -1656,18 +1652,11 @@ parse_headers_loop (SocketHTTP1_Parser_T parser, const char *data, size_t len,
       /* Update state and counters */
       state = next_state;
       parser->line_length++;
-      if (state >= HTTP1_PS_HEADER_START && state <= HTTP1_PS_HEADERS_END_LF)
+      if (in_header_state (state))
         parser->header_line_length++;
 
-      /* Check line length limit */
-      if (state >= HTTP1_PS_HEADER_START && state <= HTTP1_PS_HEADERS_END_LF
-          && parser->header_line_length > parser->config.max_header_line)
-        {
-          set_error (parser, HTTP1_ERROR_HEADER_TOO_LARGE);
-          *consumed = (size_t)(p - data);
-          return parser->error;
-        }
-      if (state >= HTTP1_PS_HEADER_START && state <= HTTP1_PS_HEADERS_END_LF
+      /* Check line length limits */
+      if (in_header_state (state)
           && parser->header_line_length > parser->config.max_header_line)
         {
           set_error (parser, HTTP1_ERROR_HEADER_TOO_LARGE);
@@ -1687,23 +1676,15 @@ parse_headers_loop (SocketHTTP1_Parser_T parser, const char *data, size_t len,
         {
           parser->line_length = 0;
           parser->header_line_length = 0;
-          parser->header_line_length = 0;
           parser->state = HTTP1_STATE_HEADERS;
         }
 
       p++;
 
+      /* Handle transition to body/complete/error states */
       if (state >= HTTP1_PS_BODY_IDENTITY)
-        {
-          parser->internal_state = state;
-          *consumed = (size_t)(p - data);
-          if (state == HTTP1_PS_COMPLETE)
-            return HTTP1_OK;
-          if (state == HTTP1_PS_ERROR)
-            return parser->error;
-          /* Body states handled by read_body function */
-          return HTTP1_OK;
-        }
+        return handle_body_state_exit (parser, state, (size_t)(p - data),
+                                       consumed);
     }
 
   parser->internal_state = state;

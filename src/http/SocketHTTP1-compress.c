@@ -128,7 +128,7 @@ struct SocketHTTP1_Encoder
 };
 
 /* ============================================================================
- * Static Helper Functions
+ * Static Helper Functions - Common Utilities
  * ============================================================================
  */
 
@@ -151,8 +151,137 @@ is_supported_coding (SocketHTTP_Coding coding)
     return 1;
 #endif
 
+  (void)coding;
   return 0;
 }
+
+/**
+ * check_buffer_limits - Validate buffer sizes for zlib/brotli operations
+ * @input_len: Input buffer length
+ * @output_len: Output buffer length
+ *
+ * zlib uses uInt (typically 32-bit), so we must check against UINT_MAX.
+ *
+ * Returns: 1 if sizes are valid, 0 if too large
+ */
+static int
+check_buffer_limits (size_t input_len, size_t output_len)
+{
+  return (input_len <= UINT_MAX && output_len <= UINT_MAX);
+}
+
+/**
+ * check_decode_output_limits - Validate output against decompression limits
+ * @total: Current total decompressed bytes
+ * @output_len: Proposed output buffer size
+ * @max_size: Maximum allowed decompressed size (SIZE_MAX = unlimited)
+ *
+ * Checks for potential overflow and limit violations BEFORE decoding.
+ *
+ * Returns: HTTP1_OK if safe, HTTP1_ERROR or HTTP1_ERROR_BODY_TOO_LARGE on error
+ */
+static SocketHTTP1_Result
+check_decode_output_limits (size_t total, size_t output_len, size_t max_size)
+{
+  size_t potential;
+
+  if (output_len == 0)
+    return HTTP1_OK;
+
+  if (!SocketSecurity_check_size (output_len))
+    return HTTP1_ERROR;
+
+  potential = total + output_len;
+  if (potential < total)
+    return HTTP1_ERROR_BODY_TOO_LARGE; /* Overflow */
+
+  if (max_size != SIZE_MAX && potential > max_size)
+    return HTTP1_ERROR_BODY_TOO_LARGE;
+
+  return HTTP1_OK;
+}
+
+/**
+ * update_decode_total - Update total and check limit after decode
+ * @total: Pointer to total decompressed counter
+ * @written: Bytes just written
+ * @max_size: Maximum allowed decompressed size (SIZE_MAX = unlimited)
+ *
+ * Returns: HTTP1_OK if within limits, HTTP1_ERROR_BODY_TOO_LARGE if exceeded
+ */
+static SocketHTTP1_Result
+update_decode_total (size_t *total, size_t written, size_t max_size)
+{
+  *total += written;
+  if (max_size != SIZE_MAX && *total > max_size)
+    return HTTP1_ERROR_BODY_TOO_LARGE;
+  return HTTP1_OK;
+}
+
+/**
+ * check_encode_output_limits - Validate output against encoding limits
+ * @total: Current total encoded bytes
+ * @output_len: Proposed output buffer size
+ * @max_size: Maximum allowed encoded size (SIZE_MAX = unlimited)
+ *
+ * Returns: 1 if safe, 0 on limit violation or overflow
+ */
+static int
+check_encode_output_limits (size_t total, size_t output_len, size_t max_size)
+{
+  size_t potential;
+
+  if (output_len == 0)
+    return 1;
+
+  if (!SocketSecurity_check_size (output_len))
+    return 0;
+
+  potential = total + output_len;
+  if (potential < total)
+    return 0; /* Overflow */
+
+  if (max_size != SIZE_MAX && potential > max_size)
+    return 0;
+
+  return 1;
+}
+
+/**
+ * update_encode_total - Update total and check limit after encode
+ * @total: Pointer to total encoded counter
+ * @produced: Bytes just produced
+ * @max_size: Maximum allowed encoded size (SIZE_MAX = unlimited)
+ *
+ * Returns: 1 if within limits, 0 if exceeded
+ */
+static int
+update_encode_total (size_t *total, size_t produced, size_t max_size)
+{
+  *total += produced;
+  if (max_size != SIZE_MAX && *total > max_size)
+    return 0;
+  return 1;
+}
+
+/**
+ * get_effective_max_size - Get effective max decompressed size from config
+ * @cfg: Configuration (may be NULL)
+ *
+ * Returns: max_decompressed_size from config, or SIZE_MAX if 0/NULL
+ */
+static size_t
+get_effective_max_size (const SocketHTTP1_Config *cfg)
+{
+  if (cfg == NULL || cfg->max_decompressed_size == 0)
+    return SIZE_MAX;
+  return cfg->max_decompressed_size;
+}
+
+/* ============================================================================
+ * Static Helper Functions - zlib
+ * ============================================================================
+ */
 
 #ifdef SOCKETHTTP1_HAS_ZLIB
 
@@ -190,38 +319,6 @@ map_compress_level_to_zlib (SocketHTTP1_CompressLevel level)
 }
 
 /**
- * zlib_set_input - Set zlib stream input buffer
- * @s: z_stream pointer
- * @input: Input buffer pointer
- * @avail_in: Number of input bytes available
- *
- * Sets next_in and avail_in safely.
- * Thread-safe: No (modifies stream)
- */
-static void
-zlib_set_input (z_stream *s, Bytef *input, uInt avail_in)
-{
-  s->next_in = input;
-  s->avail_in = avail_in;
-}
-
-/**
- * zlib_set_output - Set zlib stream output buffer
- * @s: z_stream pointer
- * @output: Output buffer pointer
- * @avail_out: Output buffer space available
- *
- * Sets next_out and avail_out safely.
- * Thread-safe: No (modifies stream)
- */
-static void
-zlib_set_output (z_stream *s, Bytef *output, uInt avail_out)
-{
-  s->next_out = output;
-  s->avail_out = avail_out;
-}
-
-/**
  * init_zlib_decoder - Initialize zlib inflate stream
  * @decoder: Decoder instance
  *
@@ -230,9 +327,7 @@ zlib_set_output (z_stream *s, Bytef *output, uInt avail_out)
 static int
 init_zlib_decoder (SocketHTTP1_Decoder_T decoder)
 {
-  int window_bits;
-
-  window_bits = get_zlib_window_bits (decoder->coding);
+  int window_bits = get_zlib_window_bits (decoder->coding);
 
   if (inflateInit2 (&decoder->state.zlib, window_bits) != Z_OK)
     return 0;
@@ -250,11 +345,8 @@ init_zlib_decoder (SocketHTTP1_Decoder_T decoder)
 static int
 init_zlib_encoder (SocketHTTP1_Encoder_T encoder)
 {
-  int zlib_level;
-  int window_bits;
-
-  zlib_level = map_compress_level_to_zlib (encoder->level);
-  window_bits = get_zlib_window_bits (encoder->coding);
+  int zlib_level = map_compress_level_to_zlib (encoder->level);
+  int window_bits = get_zlib_window_bits (encoder->coding);
 
   if (deflateInit2 (&encoder->state.zlib, zlib_level, Z_DEFLATED, window_bits,
                     ZLIB_MEM_LEVEL_DEFAULT, Z_DEFAULT_STRATEGY)
@@ -303,14 +395,17 @@ decode_zlib (SocketHTTP1_Decoder_T decoder, const unsigned char *input,
              size_t output_len, size_t *written)
 {
   int ret;
+  z_stream *s = &decoder->state.zlib;
 
-  zlib_set_input (&decoder->state.zlib, (Bytef *)input, (uInt)input_len);
-  zlib_set_output (&decoder->state.zlib, output, (uInt)output_len);
+  s->next_in = (Bytef *)input;
+  s->avail_in = (uInt)input_len;
+  s->next_out = output;
+  s->avail_out = (uInt)output_len;
 
-  ret = inflate (&decoder->state.zlib, Z_NO_FLUSH);
+  ret = inflate (s, Z_NO_FLUSH);
 
-  *consumed = input_len - decoder->state.zlib.avail_in;
-  *written = output_len - decoder->state.zlib.avail_out;
+  *consumed = input_len - s->avail_in;
+  *written = output_len - s->avail_out;
 
   if (ret == Z_STREAM_END)
     {
@@ -338,14 +433,16 @@ finish_zlib_decode (SocketHTTP1_Decoder_T decoder, unsigned char *output,
                     size_t output_len, size_t *written)
 {
   int ret;
+  z_stream *s = &decoder->state.zlib;
 
-  decoder->state.zlib.next_in = NULL;
-  decoder->state.zlib.avail_in = 0;
-  zlib_set_output (&decoder->state.zlib, output, (uInt)output_len);
+  s->next_in = NULL;
+  s->avail_in = 0;
+  s->next_out = output;
+  s->avail_out = (uInt)output_len;
 
-  ret = inflate (&decoder->state.zlib, Z_FINISH);
+  ret = inflate (s, Z_FINISH);
 
-  *written = output_len - decoder->state.zlib.avail_out;
+  *written = output_len - s->avail_out;
 
   if (ret == Z_STREAM_END)
     {
@@ -366,7 +463,7 @@ finish_zlib_decode (SocketHTTP1_Decoder_T decoder, unsigned char *output,
  * @input_len: Input length
  * @output: Output buffer
  * @output_len: Buffer size
- * @flush: Flush mode
+ * @flush: Flush mode (1 = sync flush, 0 = no flush)
  *
  * Returns: Bytes written, or -1 on error
  */
@@ -376,17 +473,18 @@ encode_zlib (SocketHTTP1_Encoder_T encoder, const unsigned char *input,
              int flush)
 {
   int ret;
-  int zlib_flush;
+  int zlib_flush = flush ? Z_SYNC_FLUSH : Z_NO_FLUSH;
+  z_stream *s = &encoder->state.zlib;
 
-  zlib_flush = flush ? Z_SYNC_FLUSH : Z_NO_FLUSH;
+  s->next_in = (Bytef *)input;
+  s->avail_in = (uInt)input_len;
+  s->next_out = output;
+  s->avail_out = (uInt)output_len;
 
-  zlib_set_input (&encoder->state.zlib, (Bytef *)input, (uInt)input_len);
-  zlib_set_output (&encoder->state.zlib, output, (uInt)output_len);
-
-  ret = deflate (&encoder->state.zlib, zlib_flush);
+  ret = deflate (s, zlib_flush);
 
   if (ret == Z_OK || ret == Z_BUF_ERROR)
-    return (ssize_t)(output_len - encoder->state.zlib.avail_out);
+    return (ssize_t)(output_len - s->avail_out);
 
   return -1;
 }
@@ -405,14 +503,16 @@ finish_zlib_encode (SocketHTTP1_Encoder_T encoder, unsigned char *output,
 {
   int ret;
   size_t produced;
+  z_stream *s = &encoder->state.zlib;
 
-  encoder->state.zlib.next_in = NULL;
-  encoder->state.zlib.avail_in = 0;
-  zlib_set_output (&encoder->state.zlib, output, (uInt)output_len);
+  s->next_in = NULL;
+  s->avail_in = 0;
+  s->next_out = output;
+  s->avail_out = (uInt)output_len;
 
-  ret = deflate (&encoder->state.zlib, Z_FINISH);
+  ret = deflate (s, Z_FINISH);
 
-  produced = output_len - encoder->state.zlib.avail_out;
+  produced = output_len - s->avail_out;
 
   if (ret == Z_STREAM_END)
     {
@@ -427,6 +527,11 @@ finish_zlib_encode (SocketHTTP1_Encoder_T encoder, unsigned char *output,
 }
 
 #endif /* SOCKETHTTP1_HAS_ZLIB */
+
+/* ============================================================================
+ * Static Helper Functions - Brotli
+ * ============================================================================
+ */
 
 #ifdef SOCKETHTTP1_HAS_BROTLI
 
@@ -476,13 +581,12 @@ init_brotli_decoder (SocketHTTP1_Decoder_T decoder)
 static int
 init_brotli_encoder (SocketHTTP1_Encoder_T encoder)
 {
-  int quality;
+  int quality = map_compress_level_to_brotli (encoder->level);
 
   encoder->state.brotli = BrotliEncoderCreateInstance (NULL, NULL, NULL);
   if (!encoder->state.brotli)
     return 0;
 
-  quality = map_compress_level_to_brotli (encoder->level);
   BrotliEncoderSetParameter (encoder->state.brotli, BROTLI_PARAM_QUALITY,
                              (uint32_t)quality);
 
@@ -530,15 +634,10 @@ decode_brotli (SocketHTTP1_Decoder_T decoder, const unsigned char *input,
                size_t output_len, size_t *written)
 {
   BrotliDecoderResult ret;
-  size_t avail_in;
-  size_t avail_out;
-  const uint8_t *next_in;
-  uint8_t *next_out;
-
-  avail_in = input_len;
-  avail_out = output_len;
-  next_in = input;
-  next_out = output_len > 0 ? (uint8_t *)output : NULL;
+  size_t avail_in = input_len;
+  size_t avail_out = output_len;
+  const uint8_t *next_in = input;
+  uint8_t *next_out = output_len > 0 ? (uint8_t *)output : NULL;
 
   ret = BrotliDecoderDecompressStream (decoder->state.brotli, &avail_in,
                                        &next_in, &avail_out, &next_out, NULL);
@@ -560,17 +659,13 @@ decode_brotli (SocketHTTP1_Decoder_T decoder, const unsigned char *input,
 }
 
 /**
- * finish_brotli_decode - Finish Brotli decoding after all input processed
+ * finish_brotli_decode - Finish Brotli decoding
  * @decoder: Decoder instance
- * @output: Output buffer for any remaining decompressed data
+ * @output: Output buffer for remaining data
  * @output_len: Output buffer size
- * @written: Output - bytes written to output buffer
+ * @written: Output - bytes written
  *
- * Calls BrotliDecoderDecompressStream with zero input to drain final output.
- * May return HTTP1_INCOMPLETE if more output space needed (call again).
- *
- * Returns: HTTP1_OK on stream complete, HTTP1_INCOMPLETE if needs more output,
- *          HTTP1_ERROR on decode error
+ * Returns: HTTP1_OK, HTTP1_INCOMPLETE, or HTTP1_ERROR
  */
 static SocketHTTP1_Result
 finish_brotli_decode (SocketHTTP1_Decoder_T decoder, unsigned char *output,
@@ -581,17 +676,21 @@ finish_brotli_decode (SocketHTTP1_Decoder_T decoder, unsigned char *output,
   size_t avail_out = output_len;
   const uint8_t *next_in = NULL;
   uint8_t *next_out = output_len > 0 ? output : NULL;
+
   ret = BrotliDecoderDecompressStream (decoder->state.brotli, &avail_in,
                                        &next_in, &avail_out, &next_out, NULL);
   *written = output_len - avail_out;
+
   if (ret == BROTLI_DECODER_RESULT_SUCCESS)
     {
       decoder->finished = 1;
       return HTTP1_OK;
     }
+
   if (ret == BROTLI_DECODER_RESULT_NEEDS_MORE_INPUT
       || ret == BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT)
     return HTTP1_INCOMPLETE;
+
   return HTTP1_ERROR;
 }
 
@@ -602,7 +701,7 @@ finish_brotli_decode (SocketHTTP1_Decoder_T decoder, unsigned char *output,
  * @input_len: Input length
  * @output: Output buffer
  * @output_len: Buffer size
- * @flush: Flush mode
+ * @flush: Flush mode (1 = flush, 0 = process)
  *
  * Returns: Bytes written, or -1 on error
  */
@@ -611,17 +710,12 @@ encode_brotli (SocketHTTP1_Encoder_T encoder, const unsigned char *input,
                size_t input_len, unsigned char *output, size_t output_len,
                int flush)
 {
-  size_t avail_in;
-  size_t avail_out;
-  const uint8_t *next_in;
-  uint8_t *next_out;
-  BrotliEncoderOperation op;
-
-  avail_in = input_len;
-  avail_out = output_len;
-  next_in = input;
-  next_out = output_len > 0 ? (uint8_t *)output : NULL;
-  op = flush ? BROTLI_OPERATION_FLUSH : BROTLI_OPERATION_PROCESS;
+  size_t avail_in = input_len;
+  size_t avail_out = output_len;
+  const uint8_t *next_in = input;
+  uint8_t *next_out = output_len > 0 ? (uint8_t *)output : NULL;
+  BrotliEncoderOperation op
+      = flush ? BROTLI_OPERATION_FLUSH : BROTLI_OPERATION_PROCESS;
 
   if (!BrotliEncoderCompressStream (encoder->state.brotli, op, &avail_in,
                                     &next_in, &avail_out, &next_out, NULL))
@@ -642,15 +736,10 @@ static ssize_t
 finish_brotli_encode (SocketHTTP1_Encoder_T encoder, unsigned char *output,
                       size_t output_len)
 {
-  size_t avail_in;
-  size_t avail_out;
-  const uint8_t *next_in;
-  uint8_t *next_out;
-
-  avail_in = 0;
-  avail_out = output_len;
-  next_in = NULL;
-  next_out = output_len > 0 ? (uint8_t *)output : NULL;
+  size_t avail_in = 0;
+  size_t avail_out = output_len;
+  const uint8_t *next_in = NULL;
+  uint8_t *next_out = output_len > 0 ? (uint8_t *)output : NULL;
 
   if (!BrotliEncoderCompressStream (encoder->state.brotli,
                                     BROTLI_OPERATION_FINISH, &avail_in,
@@ -666,6 +755,264 @@ finish_brotli_encode (SocketHTTP1_Encoder_T encoder, unsigned char *output,
 #endif /* SOCKETHTTP1_HAS_BROTLI */
 
 /* ============================================================================
+ * Decoder Dispatch Helpers
+ * ============================================================================
+ */
+
+/**
+ * init_decoder_backend - Initialize decoder for specific coding
+ * @decoder: Decoder instance with coding already set
+ *
+ * Returns: 1 on success, 0 on failure
+ */
+static int
+init_decoder_backend (SocketHTTP1_Decoder_T decoder)
+{
+  switch (decoder->coding)
+    {
+#ifdef SOCKETHTTP1_HAS_ZLIB
+    case HTTP_CODING_GZIP:
+    case HTTP_CODING_DEFLATE:
+      return init_zlib_decoder (decoder);
+#endif
+
+#ifdef SOCKETHTTP1_HAS_BROTLI
+    case HTTP_CODING_BR:
+      return init_brotli_decoder (decoder);
+#endif
+
+    default:
+      return 0;
+    }
+}
+
+/**
+ * cleanup_decoder_backend - Clean up decoder backend resources
+ * @decoder: Decoder instance
+ */
+static void
+cleanup_decoder_backend (SocketHTTP1_Decoder_T decoder)
+{
+  if (!decoder->initialized)
+    return;
+
+  switch (decoder->coding)
+    {
+#ifdef SOCKETHTTP1_HAS_ZLIB
+    case HTTP_CODING_GZIP:
+    case HTTP_CODING_DEFLATE:
+      cleanup_zlib_decoder (decoder);
+      break;
+#endif
+
+#ifdef SOCKETHTTP1_HAS_BROTLI
+    case HTTP_CODING_BR:
+      cleanup_brotli_decoder (decoder);
+      break;
+#endif
+
+    default:
+      break;
+    }
+}
+
+/**
+ * dispatch_decode - Dispatch decode operation to appropriate backend
+ * @decoder: Decoder instance
+ * @input: Input buffer
+ * @input_len: Input length
+ * @consumed: Output - bytes consumed
+ * @output: Output buffer
+ * @output_len: Output buffer size
+ * @written: Output - bytes written
+ *
+ * Returns: HTTP1_OK, HTTP1_INCOMPLETE, or HTTP1_ERROR
+ */
+static SocketHTTP1_Result
+dispatch_decode (SocketHTTP1_Decoder_T decoder, const unsigned char *input,
+                 size_t input_len, size_t *consumed, unsigned char *output,
+                 size_t output_len, size_t *written)
+{
+  switch (decoder->coding)
+    {
+#ifdef SOCKETHTTP1_HAS_ZLIB
+    case HTTP_CODING_GZIP:
+    case HTTP_CODING_DEFLATE:
+      return decode_zlib (decoder, input, input_len, consumed, output,
+                          output_len, written);
+#endif
+
+#ifdef SOCKETHTTP1_HAS_BROTLI
+    case HTTP_CODING_BR:
+      return decode_brotli (decoder, input, input_len, consumed, output,
+                            output_len, written);
+#endif
+
+    default:
+      return HTTP1_ERROR;
+    }
+}
+
+/**
+ * dispatch_decode_finish - Dispatch finish operation to appropriate backend
+ * @decoder: Decoder instance
+ * @output: Output buffer
+ * @output_len: Buffer size
+ * @written: Output - bytes written
+ *
+ * Returns: HTTP1_OK, HTTP1_INCOMPLETE, or HTTP1_ERROR
+ */
+static SocketHTTP1_Result
+dispatch_decode_finish (SocketHTTP1_Decoder_T decoder, unsigned char *output,
+                        size_t output_len, size_t *written)
+{
+  switch (decoder->coding)
+    {
+#ifdef SOCKETHTTP1_HAS_ZLIB
+    case HTTP_CODING_GZIP:
+    case HTTP_CODING_DEFLATE:
+      return finish_zlib_decode (decoder, output, output_len, written);
+#endif
+
+#ifdef SOCKETHTTP1_HAS_BROTLI
+    case HTTP_CODING_BR:
+      return finish_brotli_decode (decoder, output, output_len, written);
+#endif
+
+    default:
+      return HTTP1_ERROR;
+    }
+}
+
+/* ============================================================================
+ * Encoder Dispatch Helpers
+ * ============================================================================
+ */
+
+/**
+ * init_encoder_backend - Initialize encoder for specific coding
+ * @encoder: Encoder instance with coding already set
+ *
+ * Returns: 1 on success, 0 on failure
+ */
+static int
+init_encoder_backend (SocketHTTP1_Encoder_T encoder)
+{
+  switch (encoder->coding)
+    {
+#ifdef SOCKETHTTP1_HAS_ZLIB
+    case HTTP_CODING_GZIP:
+    case HTTP_CODING_DEFLATE:
+      return init_zlib_encoder (encoder);
+#endif
+
+#ifdef SOCKETHTTP1_HAS_BROTLI
+    case HTTP_CODING_BR:
+      return init_brotli_encoder (encoder);
+#endif
+
+    default:
+      return 0;
+    }
+}
+
+/**
+ * cleanup_encoder_backend - Clean up encoder backend resources
+ * @encoder: Encoder instance
+ */
+static void
+cleanup_encoder_backend (SocketHTTP1_Encoder_T encoder)
+{
+  if (!encoder->initialized)
+    return;
+
+  switch (encoder->coding)
+    {
+#ifdef SOCKETHTTP1_HAS_ZLIB
+    case HTTP_CODING_GZIP:
+    case HTTP_CODING_DEFLATE:
+      cleanup_zlib_encoder (encoder);
+      break;
+#endif
+
+#ifdef SOCKETHTTP1_HAS_BROTLI
+    case HTTP_CODING_BR:
+      cleanup_brotli_encoder (encoder);
+      break;
+#endif
+
+    default:
+      break;
+    }
+}
+
+/**
+ * dispatch_encode - Dispatch encode operation to appropriate backend
+ * @encoder: Encoder instance
+ * @input: Input buffer
+ * @input_len: Input length
+ * @output: Output buffer
+ * @output_len: Buffer size
+ * @flush: Flush mode
+ *
+ * Returns: Bytes written, or -1 on error
+ */
+static ssize_t
+dispatch_encode (SocketHTTP1_Encoder_T encoder, const unsigned char *input,
+                 size_t input_len, unsigned char *output, size_t output_len,
+                 int flush)
+{
+  switch (encoder->coding)
+    {
+#ifdef SOCKETHTTP1_HAS_ZLIB
+    case HTTP_CODING_GZIP:
+    case HTTP_CODING_DEFLATE:
+      return encode_zlib (encoder, input, input_len, output, output_len,
+                          flush);
+#endif
+
+#ifdef SOCKETHTTP1_HAS_BROTLI
+    case HTTP_CODING_BR:
+      return encode_brotli (encoder, input, input_len, output, output_len,
+                            flush);
+#endif
+
+    default:
+      return -1;
+    }
+}
+
+/**
+ * dispatch_encode_finish - Dispatch finish operation to appropriate backend
+ * @encoder: Encoder instance
+ * @output: Output buffer
+ * @output_len: Buffer size
+ *
+ * Returns: Bytes written, or -1 on error
+ */
+static ssize_t
+dispatch_encode_finish (SocketHTTP1_Encoder_T encoder, unsigned char *output,
+                        size_t output_len)
+{
+  switch (encoder->coding)
+    {
+#ifdef SOCKETHTTP1_HAS_ZLIB
+    case HTTP_CODING_GZIP:
+    case HTTP_CODING_DEFLATE:
+      return finish_zlib_encode (encoder, output, output_len);
+#endif
+
+#ifdef SOCKETHTTP1_HAS_BROTLI
+    case HTTP_CODING_BR:
+      return finish_brotli_encode (encoder, output, output_len);
+#endif
+
+    default:
+      return -1;
+    }
+}
+
+/* ============================================================================
  * Decoder Implementation
  * ============================================================================
  */
@@ -677,15 +1024,6 @@ SocketHTTP1_Decoder_new (SocketHTTP_Coding coding,
   SocketHTTP1_Decoder_T decoder;
 
   assert (arena);
-  (void)cfg; // May be NULL
-
-  const SocketHTTP1_Config *effective_cfg = cfg;
-  if (effective_cfg == NULL)
-    {
-      SocketHTTP1_Config tmp_cfg;
-      SocketHTTP1_config_defaults (&tmp_cfg);
-      effective_cfg = &tmp_cfg;
-    }
 
   if (!is_supported_coding (coding))
     return NULL;
@@ -696,33 +1034,10 @@ SocketHTTP1_Decoder_new (SocketHTTP_Coding coding,
 
   decoder->coding = coding;
   decoder->arena = arena;
-  decoder->max_decompressed_size = effective_cfg->max_decompressed_size;
-  if (decoder->max_decompressed_size == 0)
-    {
-      decoder->max_decompressed_size = SIZE_MAX;
-    }
-  decoder->total_decompressed = 0;
+  decoder->max_decompressed_size = get_effective_max_size (cfg);
 
-  switch (coding)
-    {
-#ifdef SOCKETHTTP1_HAS_ZLIB
-    case HTTP_CODING_GZIP:
-    case HTTP_CODING_DEFLATE:
-      if (!init_zlib_decoder (decoder))
-        return NULL;
-      break;
-#endif
-
-#ifdef SOCKETHTTP1_HAS_BROTLI
-    case HTTP_CODING_BR:
-      if (!init_brotli_decoder (decoder))
-        return NULL;
-      break;
-#endif
-
-    default:
-      return NULL;
-    }
+  if (!init_decoder_backend (decoder))
+    return NULL;
 
   return decoder;
 }
@@ -730,34 +1045,10 @@ SocketHTTP1_Decoder_new (SocketHTTP_Coding coding,
 void
 SocketHTTP1_Decoder_free (SocketHTTP1_Decoder_T *decoder)
 {
-  SocketHTTP1_Decoder_T d;
-
   if (!decoder || !*decoder)
     return;
 
-  d = *decoder;
-
-  if (d->initialized)
-    {
-      switch (d->coding)
-        {
-#ifdef SOCKETHTTP1_HAS_ZLIB
-        case HTTP_CODING_GZIP:
-        case HTTP_CODING_DEFLATE:
-          cleanup_zlib_decoder (d);
-          break;
-#endif
-
-#ifdef SOCKETHTTP1_HAS_BROTLI
-        case HTTP_CODING_BR:
-          cleanup_brotli_decoder (d);
-          break;
-#endif
-
-        default:
-          break;
-        }
-    }
+  cleanup_decoder_backend (*decoder);
 
   /* Arena handles memory */
   *decoder = NULL;
@@ -769,6 +1060,9 @@ SocketHTTP1_Decoder_decode (SocketHTTP1_Decoder_T decoder,
                             size_t *consumed, unsigned char *output,
                             size_t output_len, size_t *written)
 {
+  SocketHTTP1_Result res;
+  SocketHTTP1_Result limit_res;
+
   assert (decoder);
   assert (input || input_len == 0);
   assert (consumed);
@@ -781,66 +1075,27 @@ SocketHTTP1_Decoder_decode (SocketHTTP1_Decoder_T decoder,
   if (decoder->finished)
     return HTTP1_OK;
 
-  if (input_len > UINT_MAX || output_len > UINT_MAX)
-    {
-      return HTTP1_ERROR;
-    }
+  if (!check_buffer_limits (input_len, output_len))
+    return HTTP1_ERROR;
 
-  // Decompression security checks
-  if (output_len > 0)
-    {
-      if (!SocketSecurity_check_size (output_len))
-        {
-          return HTTP1_ERROR;
-        }
-      size_t potential = decoder->total_decompressed + output_len;
-      if (potential < decoder->total_decompressed || // overflow detected
-          (decoder->max_decompressed_size != (size_t)-1
-           && potential > decoder->max_decompressed_size))
-        {
-          return HTTP1_ERROR_BODY_TOO_LARGE;
-        }
-    }
+  limit_res = check_decode_output_limits (decoder->total_decompressed,
+                                          output_len,
+                                          decoder->max_decompressed_size);
+  if (limit_res != HTTP1_OK)
+    return limit_res;
 
   if (!decoder->initialized)
     return HTTP1_ERROR;
 
-  switch (decoder->coding)
-    {
-#ifdef SOCKETHTTP1_HAS_ZLIB
-    case HTTP_CODING_GZIP:
-    case HTTP_CODING_DEFLATE:
-      {
-        SocketHTTP1_Result res = decode_zlib (
-            decoder, input, input_len, consumed, output, output_len, written);
-        decoder->total_decompressed += *written;
-        if (decoder->max_decompressed_size != (size_t)-1
-            && decoder->total_decompressed > decoder->max_decompressed_size)
-          {
-            return HTTP1_ERROR_BODY_TOO_LARGE;
-          }
-        return res;
-      }
-#endif
+  res = dispatch_decode (decoder, input, input_len, consumed, output,
+                         output_len, written);
 
-#ifdef SOCKETHTTP1_HAS_BROTLI
-    case HTTP_CODING_BR:
-      {
-        SocketHTTP1_Result res = decode_brotli (
-            decoder, input, input_len, consumed, output, output_len, written);
-        decoder->total_decompressed += *written;
-        if (decoder->max_decompressed_size != (size_t)-1
-            && decoder->total_decompressed > decoder->max_decompressed_size)
-          {
-            return HTTP1_ERROR_BODY_TOO_LARGE;
-          }
-        return res;
-      }
-#endif
+  limit_res = update_decode_total (&decoder->total_decompressed, *written,
+                                   decoder->max_decompressed_size);
+  if (limit_res != HTTP1_OK)
+    return limit_res;
 
-    default:
-      return HTTP1_ERROR;
-    }
+  return res;
 }
 
 SocketHTTP1_Result
@@ -848,6 +1103,9 @@ SocketHTTP1_Decoder_finish (SocketHTTP1_Decoder_T decoder,
                             unsigned char *output, size_t output_len,
                             size_t *written)
 {
+  SocketHTTP1_Result res;
+  SocketHTTP1_Result limit_res;
+
   assert (decoder);
   assert (output || output_len == 0);
   assert (written);
@@ -860,61 +1118,23 @@ SocketHTTP1_Decoder_finish (SocketHTTP1_Decoder_T decoder,
   if (output_len > UINT_MAX)
     return HTTP1_ERROR;
 
-  // Decompression security checks (finish)
-  if (output_len > 0)
-    {
-      if (!SocketSecurity_check_size (output_len))
-        {
-          return HTTP1_ERROR;
-        }
-      size_t potential = decoder->total_decompressed + output_len;
-      if (potential < decoder->total_decompressed || // overflow
-          (decoder->max_decompressed_size != (size_t)-1
-           && potential > decoder->max_decompressed_size))
-        {
-          return HTTP1_ERROR_BODY_TOO_LARGE;
-        }
-    }
+  limit_res = check_decode_output_limits (decoder->total_decompressed,
+                                          output_len,
+                                          decoder->max_decompressed_size);
+  if (limit_res != HTTP1_OK)
+    return limit_res;
 
   if (!decoder->initialized)
     return HTTP1_ERROR;
 
-  switch (decoder->coding)
-    {
-#ifdef SOCKETHTTP1_HAS_ZLIB
-    case HTTP_CODING_GZIP:
-    case HTTP_CODING_DEFLATE:
-      {
-        SocketHTTP1_Result res
-            = finish_zlib_decode (decoder, output, output_len, written);
-        decoder->total_decompressed += *written;
-        if (decoder->max_decompressed_size != (size_t)-1
-            && decoder->total_decompressed > decoder->max_decompressed_size)
-          {
-            return HTTP1_ERROR_BODY_TOO_LARGE;
-          }
-        return res;
-      }
-#endif
+  res = dispatch_decode_finish (decoder, output, output_len, written);
 
-#ifdef SOCKETHTTP1_HAS_BROTLI
-    case HTTP_CODING_BR:
-      {
-        SocketHTTP1_Result res
-            = finish_brotli_decode (decoder, output, output_len, written);
-        decoder->total_decompressed += *written;
-        if (decoder->max_decompressed_size != (size_t)-1
-            && decoder->total_decompressed > decoder->max_decompressed_size)
-          {
-            return HTTP1_ERROR_BODY_TOO_LARGE;
-          }
-        return res;
-      }
-#endif
+  limit_res = update_decode_total (&decoder->total_decompressed, *written,
+                                   decoder->max_decompressed_size);
+  if (limit_res != HTTP1_OK)
+    return limit_res;
 
-    default:
-      return HTTP1_ERROR;
-    }
+  return res;
 }
 
 /* ============================================================================
@@ -930,15 +1150,6 @@ SocketHTTP1_Encoder_new (SocketHTTP_Coding coding,
   SocketHTTP1_Encoder_T encoder;
 
   assert (arena);
-  (void)cfg; // May be NULL, uses defaults internally
-
-  const SocketHTTP1_Config *effective_cfg = cfg;
-  if (effective_cfg == NULL)
-    {
-      SocketHTTP1_Config tmp_cfg;
-      SocketHTTP1_config_defaults (&tmp_cfg);
-      effective_cfg = &tmp_cfg;
-    }
 
   if (!is_supported_coding (coding))
     return NULL;
@@ -950,33 +1161,10 @@ SocketHTTP1_Encoder_new (SocketHTTP_Coding coding,
   encoder->coding = coding;
   encoder->arena = arena;
   encoder->level = level;
-  encoder->max_encoded_size = effective_cfg->max_decompressed_size;
-  if (encoder->max_encoded_size == 0)
-    {
-      encoder->max_encoded_size = SIZE_MAX;
-    }
-  encoder->total_encoded = 0;
+  encoder->max_encoded_size = get_effective_max_size (cfg);
 
-  switch (coding)
-    {
-#ifdef SOCKETHTTP1_HAS_ZLIB
-    case HTTP_CODING_GZIP:
-    case HTTP_CODING_DEFLATE:
-      if (!init_zlib_encoder (encoder))
-        return NULL;
-      break;
-#endif
-
-#ifdef SOCKETHTTP1_HAS_BROTLI
-    case HTTP_CODING_BR:
-      if (!init_brotli_encoder (encoder))
-        return NULL;
-      break;
-#endif
-
-    default:
-      return NULL;
-    }
+  if (!init_encoder_backend (encoder))
+    return NULL;
 
   return encoder;
 }
@@ -984,34 +1172,10 @@ SocketHTTP1_Encoder_new (SocketHTTP_Coding coding,
 void
 SocketHTTP1_Encoder_free (SocketHTTP1_Encoder_T *encoder)
 {
-  SocketHTTP1_Encoder_T e;
-
   if (!encoder || !*encoder)
     return;
 
-  e = *encoder;
-
-  if (e->initialized)
-    {
-      switch (e->coding)
-        {
-#ifdef SOCKETHTTP1_HAS_ZLIB
-        case HTTP_CODING_GZIP:
-        case HTTP_CODING_DEFLATE:
-          cleanup_zlib_encoder (e);
-          break;
-#endif
-
-#ifdef SOCKETHTTP1_HAS_BROTLI
-        case HTTP_CODING_BR:
-          cleanup_brotli_encoder (e);
-          break;
-#endif
-
-        default:
-          break;
-        }
-    }
+  cleanup_encoder_backend (*encoder);
 
   *encoder = NULL;
 }
@@ -1022,6 +1186,8 @@ SocketHTTP1_Encoder_encode (SocketHTTP1_Encoder_T encoder,
                             unsigned char *output, size_t output_len,
                             int flush)
 {
+  ssize_t res;
+
   assert (encoder);
   assert (input || input_len == 0);
   assert (output || output_len == 0);
@@ -1029,76 +1195,34 @@ SocketHTTP1_Encoder_encode (SocketHTTP1_Encoder_T encoder,
   if (encoder->finished)
     return 0;
 
-  if (input_len > UINT_MAX || output_len > UINT_MAX)
+  if (!check_buffer_limits (input_len, output_len))
     return -1;
 
-  // Encoding security checks
-  if (output_len > 0)
-    {
-      if (!SocketSecurity_check_size (output_len))
-        {
-          return -1;
-        }
-      size_t potential = encoder->total_encoded + output_len;
-      if (potential < encoder->total_encoded
-          || (encoder->max_encoded_size != (size_t)-1
-              && potential > encoder->max_encoded_size))
-        {
-          return -1;
-        }
-    }
+  if (!check_encode_output_limits (encoder->total_encoded, output_len,
+                                   encoder->max_encoded_size))
+    return -1;
 
   if (!encoder->initialized)
     return -1;
 
-  switch (encoder->coding)
+  res = dispatch_encode (encoder, input, input_len, output, output_len, flush);
+
+  if (res > 0)
     {
-#ifdef SOCKETHTTP1_HAS_ZLIB
-    case HTTP_CODING_GZIP:
-    case HTTP_CODING_DEFLATE:
-      {
-        ssize_t res = encode_zlib (encoder, input, input_len, output,
-                                   output_len, flush);
-        if (res > 0)
-          {
-            encoder->total_encoded += (size_t)res;
-            if (encoder->max_encoded_size != (size_t)-1
-                && encoder->total_encoded > encoder->max_encoded_size)
-              {
-                return -1;
-              }
-          }
-        return res;
-      }
-#endif
-
-#ifdef SOCKETHTTP1_HAS_BROTLI
-    case HTTP_CODING_BR:
-      {
-        ssize_t res = encode_brotli (encoder, input, input_len, output,
-                                     output_len, flush);
-        if (res > 0)
-          {
-            encoder->total_encoded += (size_t)res;
-            if (encoder->max_encoded_size != (size_t)-1
-                && encoder->total_encoded > encoder->max_encoded_size)
-              {
-                return -1;
-              }
-          }
-        return res;
-      }
-#endif
-
-    default:
-      return -1;
+      if (!update_encode_total (&encoder->total_encoded, (size_t)res,
+                                encoder->max_encoded_size))
+        return -1;
     }
+
+  return res;
 }
 
 ssize_t
 SocketHTTP1_Encoder_finish (SocketHTTP1_Encoder_T encoder,
                             unsigned char *output, size_t output_len)
 {
+  ssize_t res;
+
   assert (encoder);
   assert (output || output_len == 0);
 
@@ -1108,70 +1232,26 @@ SocketHTTP1_Encoder_finish (SocketHTTP1_Encoder_T encoder,
   if (output_len > UINT_MAX)
     return -1;
 
-  // Encoding security checks (finish)
-  if (output_len > 0)
-    {
-      if (!SocketSecurity_check_size (output_len))
-        {
-          return -1;
-        }
-      size_t potential = encoder->total_encoded + output_len;
-      if (potential < encoder->total_encoded
-          || (encoder->max_encoded_size != (size_t)-1
-              && potential > encoder->max_encoded_size))
-        {
-          return -1;
-        }
-    }
+  if (!check_encode_output_limits (encoder->total_encoded, output_len,
+                                   encoder->max_encoded_size))
+    return -1;
 
   if (!encoder->initialized)
     return -1;
 
-  switch (encoder->coding)
+  res = dispatch_encode_finish (encoder, output, output_len);
+
+  if (res > 0)
     {
-#ifdef SOCKETHTTP1_HAS_ZLIB
-    case HTTP_CODING_GZIP:
-    case HTTP_CODING_DEFLATE:
-      {
-        ssize_t res = finish_zlib_encode (encoder, output, output_len);
-        if (res > 0)
-          {
-            encoder->total_encoded += (size_t)res;
-            if (encoder->max_encoded_size != (size_t)-1
-                && encoder->total_encoded > encoder->max_encoded_size)
-              {
-                return -1;
-              }
-          }
-        return res;
-      }
-#endif
-
-#ifdef SOCKETHTTP1_HAS_BROTLI
-    case HTTP_CODING_BR:
-      {
-        ssize_t res = finish_brotli_encode (encoder, output, output_len);
-        if (res > 0)
-          {
-            encoder->total_encoded += (size_t)res;
-            if (encoder->max_encoded_size != (size_t)-1
-                && encoder->total_encoded > encoder->max_encoded_size)
-              {
-                return -1;
-              }
-          }
-        return res;
-      }
-#endif
-
-    default:
-      return -1;
+      if (!update_encode_total (&encoder->total_encoded, (size_t)res,
+                                encoder->max_encoded_size))
+        return -1;
     }
+
+  return res;
 }
 
 #else /* !SOCKETHTTP1_HAS_COMPRESSION */
-
-/* Stub implementations when compression is disabled */
 
 /* Empty file when compression not enabled */
 

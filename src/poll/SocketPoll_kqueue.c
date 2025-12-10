@@ -246,11 +246,11 @@ backend_wait (PollBackend_T backend, int timeout_ms)
 
   assert (backend);
 
-  /* Convert milliseconds to timespec */
+  /* Convert milliseconds to timespec using defined constant */
   if (timeout_ms >= 0)
     {
-      ts.tv_sec = timeout_ms / 1000;
-      ts.tv_nsec = (timeout_ms % 1000) * 1000000L;
+      ts.tv_sec = timeout_ms / SOCKET_MS_PER_SECOND;
+      ts.tv_nsec = (timeout_ms % SOCKET_MS_PER_SECOND) * SOCKET_NS_PER_MS;
       timeout_ptr = &ts;
     }
   /* If timeout_ms is -1, timeout_ptr stays NULL (infinite wait) */
@@ -261,8 +261,6 @@ backend_wait (PollBackend_T backend, int timeout_ms)
   if (nev < 0)
     {
       backend->last_nev = 0;
-      memset (backend->events, 0,
-              (size_t)backend->maxevents * sizeof (struct kevent));
       /* kevent was interrupted by signal - return 0 to allow retry */
       if (errno == EINTR)
         return 0;
@@ -270,11 +268,6 @@ backend_wait (PollBackend_T backend, int timeout_ms)
     }
 
   backend->last_nev = nev;
-  if (backend->last_nev == 0)
-    {
-      memset (backend->events, 0,
-              (size_t)backend->maxevents * sizeof (struct kevent));
-    }
   return nev;
 }
 
@@ -308,7 +301,8 @@ backend_get_event (const PollBackend_T backend, int index, int *fd_out,
   assert (fd_out);
   assert (events_out);
 
-  if (index < 0 || index >= backend->last_nev || index >= backend->maxevents)
+  /* last_nev is always <= maxevents (kevent return bounded by maxevents) */
+  if (index < 0 || index >= backend->last_nev)
     return -1;
 
   kev = &backend->events[index];

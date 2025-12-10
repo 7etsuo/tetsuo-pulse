@@ -19,7 +19,6 @@
 
 #if SOCKET_HAS_TLS
 
-#include <ctype.h>
 #include <pthread.h>
 #include <string.h>
 
@@ -1111,6 +1110,30 @@ extern __thread Except_T SocketDTLSContext_DetailedException;
  * @see SocketUtil.h for general utility macros.
  */
 #define DTLS_UNUSED(x) (void)(x)
+
+/**
+ * @brief Validate DTLS enabled and retrieve SSL object, raising on failure.
+ * @ingroup security
+ *
+ * Combined validation macro that checks DTLS is enabled and retrieves the SSL
+ * object pointer. Raises the specified exception with a descriptive message if
+ * either check fails. Returns the SSL* for immediate use.
+ *
+ * @param[in] socket The socket to validate
+ * @param[in] exception Exception type to raise on failure
+ *
+ * @return SSL* pointer if validation passes
+ * @threadsafe No - modifies thread-local error buffer
+ */
+#define REQUIRE_DTLS_SSL(socket, exception)                                   \
+  ({                                                                          \
+    if (!(socket)->dtls_enabled)                                              \
+      RAISE_DTLS_ERROR_MSG (exception, "DTLS not enabled on socket");         \
+    SSL *_ssl = dtls_socket_get_ssl (socket);                                 \
+    if (!_ssl)                                                                \
+      RAISE_DTLS_ERROR_MSG (exception, "SSL object not available");           \
+    _ssl;                                                                     \
+  })
 
 /* ============================================================================
  * Cookie Exchange Internal Functions

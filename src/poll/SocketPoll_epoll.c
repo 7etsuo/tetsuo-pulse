@@ -14,7 +14,6 @@
 
 #include <assert.h>
 #include <errno.h>
-#include <stdlib.h>
 #include <sys/epoll.h>
 
 #include "core/Arena.h"
@@ -245,6 +244,10 @@ backend_del (PollBackend_T backend, int fd)
  *
  * Blocks until events are ready or timeout expires. Returns 0 if
  * interrupted by signal (EINTR) for seamless signal handling.
+ *
+ * Note: No memset of events array is needed because backend_get_event()
+ * bounds-checks via last_nev, preventing access to stale data.
+ *
  * Thread-safe: No (epoll_wait not thread-safe)
  */
 int
@@ -260,19 +263,12 @@ backend_wait (PollBackend_T backend, int timeout_ms)
   if (nev < 0)
     {
       backend->last_nev = 0;
-      memset (backend->events, 0,
-              (size_t)backend->maxevents * sizeof (struct epoll_event));
       if (errno == EINTR)
         return 0;
       return -1;
     }
 
   backend->last_nev = nev;
-  if (backend->last_nev == 0)
-    {
-      memset (backend->events, 0,
-              (size_t)backend->maxevents * sizeof (struct epoll_event));
-    }
   return nev;
 }
 

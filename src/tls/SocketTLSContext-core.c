@@ -33,6 +33,37 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLSContext);
 int tls_context_exdata_idx = -1;
 static pthread_once_t exdata_init_once = PTHREAD_ONCE_INIT;
 
+/* ============================================================================
+ * Internal Helper Macros
+ * ============================================================================
+ */
+
+/**
+ * SSL_CTX_CONFIGURE - Configure SSL_CTX with automatic cleanup on failure
+ * @ssl_ctx: OpenSSL SSL_CTX to configure
+ * @call: OpenSSL configuration call that returns 1 on success
+ * @error_msg: Error message for exception
+ *
+ * Executes the OpenSSL configuration call, checks for success (return == 1),
+ * and on failure: frees the SSL_CTX, formats OpenSSL error, and raises
+ * SocketTLS_Failed. Reduces repetitive error handling in TLS configuration.
+ */
+#define SSL_CTX_CONFIGURE(ssl_ctx, call, error_msg)                           \
+  do                                                                          \
+    {                                                                         \
+      if ((call) != 1)                                                        \
+        {                                                                     \
+          SSL_CTX_free (ssl_ctx);                                             \
+          ctx_raise_openssl_error (error_msg);                                \
+        }                                                                     \
+    }                                                                         \
+  while (0)
+
+/* ============================================================================
+ * One-Time Initialization
+ * ============================================================================
+ */
+
 /**
  * init_exdata_idx - One-time initialization of ex_data index
  *
@@ -71,8 +102,7 @@ raise_system_error (const char *context)
  *
  * Reads the first error from OpenSSL's error queue, formats it into
  * the thread-local error buffer, and raises SocketTLS_Failed.
- * Clears the entire error queue to prevent stale errors from affecting
- * subsequent operations or leaking information.
+ * Clears the entire error queue to prevent stale errors.
  */
 void
 ctx_raise_openssl_error (const char *context)
@@ -91,15 +121,12 @@ ctx_raise_openssl_error (const char *context)
                         context);
     }
 
-  /* Clear remaining errors to prevent stale error information from
-   * affecting subsequent operations or leaking to callers */
   ERR_clear_error ();
-
   RAISE_CTX_ERROR (SocketTLS_Failed);
 }
 
 /* ============================================================================
- * Context Initialization Helpers
+ * Structure Initialization Helpers
  * ============================================================================
  */
 
@@ -143,13 +170,11 @@ static void
 init_stats_mutex (T ctx)
 {
   if (pthread_mutex_init (&ctx->stats_mutex, NULL) != 0)
-    {
-      raise_system_error ("Failed to initialize stats mutex");
-    }
+    raise_system_error ("Failed to initialize stats mutex");
 }
 
 /**
- * init_crl_mutex - Initialize CRL mutex
+ * init_crl_mutex - Initialize recursive CRL mutex
  * @ctx: Context to initialize mutex for
  *
  * Raises: SocketTLS_Failed on mutex init failure
@@ -158,22 +183,29 @@ static void
 init_crl_mutex (T ctx)
 {
   pthread_mutexattr_t attr;
+
   if (pthread_mutexattr_init (&attr) != 0)
-    {
-      ctx_raise_openssl_error ("Failed to initialize CRL mutex attr");
-    }
+    ctx_raise_openssl_error ("Failed to initialize CRL mutex attr");
+
   if (pthread_mutexattr_settype (&attr, PTHREAD_MUTEX_RECURSIVE) != 0)
     {
       pthread_mutexattr_destroy (&attr);
       ctx_raise_openssl_error ("Failed to set recursive mutex type");
     }
+
   if (pthread_mutex_init (&ctx->crl_mutex, &attr) != 0)
     {
       pthread_mutexattr_destroy (&attr);
       ctx_raise_openssl_error ("Failed to initialize CRL mutex");
     }
+
   pthread_mutexattr_destroy (&attr);
 }
+
+/* ============================================================================
+ * SSL_CTX Configuration
+ * ============================================================================
+ */
 
 /**
  * configure_tls13_only - Apply TLS1.3-only security settings
@@ -187,40 +219,34 @@ init_crl_mutex (T ctx)
 static void
 configure_tls13_only (SSL_CTX *ssl_ctx)
 {
-  if (SSL_CTX_set_min_proto_version (ssl_ctx, SOCKET_TLS_MIN_VERSION) != 1)
-    {
-      SSL_CTX_free (ssl_ctx);
-      ctx_raise_openssl_error ("Failed to set TLS1.3 min version");
-    }
+  SSL_CTX_CONFIGURE (ssl_ctx,
+                     SSL_CTX_set_min_proto_version (ssl_ctx,
+                                                    SOCKET_TLS_MIN_VERSION),
+                     "Failed to set TLS1.3 min version");
 
-  if (SSL_CTX_set_max_proto_version (ssl_ctx, SOCKET_TLS_MAX_VERSION) != 1)
-    {
-      SSL_CTX_free (ssl_ctx);
-      ctx_raise_openssl_error ("Failed to enforce TLS1.3 max version");
-    }
+  SSL_CTX_CONFIGURE (ssl_ctx,
+                     SSL_CTX_set_max_proto_version (ssl_ctx,
+                                                    SOCKET_TLS_MAX_VERSION),
+                     "Failed to enforce TLS1.3 max version");
 
-  if (SSL_CTX_set_ciphersuites (ssl_ctx, SOCKET_TLS13_CIPHERSUITES) != 1)
-    {
-      SSL_CTX_free (ssl_ctx);
-      ctx_raise_openssl_error ("Failed to set secure ciphersuites");
-    }
+  SSL_CTX_CONFIGURE (ssl_ctx,
+                     SSL_CTX_set_ciphersuites (ssl_ctx,
+                                               SOCKET_TLS13_CIPHERSUITES),
+                     "Failed to set secure ciphersuites");
 
-  /* Disable TLS renegotiation to prevent:
-   * - CVE-2009-3555 (prefix injection attack)
-   * - Triple Handshake Attack
-   * - DoS via repeated renegotiation
-   *
-   * Note: TLS 1.3 doesn't support renegotiation at all, but this also
-   * protects if TLS 1.2 is ever re-enabled via set_min_protocol. */
-
-  /* Additional security options:
-   * - Prefer server cipher order (for servers; ignored on clients)
-   * - Disable compression (defensive against CRIME-like attacks, redundant for
-   * TLS1.3) */
+  /* Security options:
+   * - NO_RENEGOTIATION: Prevents CVE-2009-3555, Triple Handshake, DoS
+   * - CIPHER_SERVER_PREFERENCE: Server chooses cipher (for servers)
+   * - NO_COMPRESSION: Defensive against CRIME-like attacks */
   SSL_CTX_set_options (ssl_ctx, SSL_OP_NO_RENEGOTIATION
                                     | SSL_OP_CIPHER_SERVER_PREFERENCE
                                     | SSL_OP_NO_COMPRESSION);
 }
+
+/* ============================================================================
+ * Context Allocation
+ * ============================================================================
+ */
 
 /**
  * alloc_context_struct - Allocate and zero-initialize context structure
@@ -255,7 +281,7 @@ alloc_context_struct (SSL_CTX *ssl_ctx)
  * @ctx: Context to register
  *
  * Uses pthread_once for thread-safe one-time initialization of the
- * global ex_data index, preventing race conditions during first use.
+ * global ex_data index.
  */
 static void
 register_exdata (T ctx)
@@ -265,7 +291,24 @@ register_exdata (T ctx)
 }
 
 /**
- * alloc_and_init_ctx - Create and initialize TLS context
+ * init_context_fields - Initialize context fields after allocation
+ * @ctx: Context to initialize
+ * @is_server: 1 for server, 0 for client
+ */
+static void
+init_context_fields (T ctx, int is_server)
+{
+  ctx->is_server = !!is_server;
+  ctx->session_cache_size = SOCKET_TLS_SESSION_CACHE_SIZE;
+  init_stats_mutex (ctx);
+  init_crl_mutex (ctx);
+  init_sni_certs (&ctx->sni_certs);
+  init_alpn (&ctx->alpn);
+  tls_pinning_init (&ctx->pinning);
+}
+
+/**
+ * ctx_alloc_and_init - Create and initialize TLS context
  * @method: OpenSSL method (server or client)
  * @is_server: 1 for server, 0 for client
  *
@@ -277,9 +320,7 @@ ctx_alloc_and_init (const SSL_METHOD *method, int is_server)
 {
   SSL_CTX *ssl_ctx = SSL_CTX_new (method);
   if (!ssl_ctx)
-    {
-      ctx_raise_openssl_error ("Failed to create SSL_CTX");
-    }
+    ctx_raise_openssl_error ("Failed to create SSL_CTX");
 
   configure_tls13_only (ssl_ctx);
 
@@ -287,14 +328,7 @@ ctx_alloc_and_init (const SSL_METHOD *method, int is_server)
   ctx->ssl_ctx = ssl_ctx;
 
   register_exdata (ctx);
-
-  ctx->is_server = !!is_server;
-  ctx->session_cache_size = SOCKET_TLS_SESSION_CACHE_SIZE;
-  init_stats_mutex (ctx);
-  init_crl_mutex (ctx);
-  init_sni_certs (&ctx->sni_certs);
-  init_alpn (&ctx->alpn);
-  tls_pinning_init (&ctx->pinning);
+  init_context_fields (ctx, is_server);
 
   return ctx;
 }
@@ -305,7 +339,7 @@ ctx_alloc_and_init (const SSL_METHOD *method, int is_server)
  */
 
 /**
- * free_sni_arrays - Free SNI certificate arrays
+ * free_sni_arrays - Free SNI certificate path arrays
  * @ctx: Context with SNI data to free
  */
 static void
@@ -314,6 +348,17 @@ free_sni_arrays (T ctx)
   free (ctx->sni_certs.hostnames);
   free (ctx->sni_certs.cert_files);
   free (ctx->sni_certs.key_files);
+}
+
+/**
+ * free_sni_chain - Free a single SNI certificate chain
+ * @chain: X509 chain stack to free (may be NULL)
+ */
+static void
+free_sni_chain (STACK_OF (X509) * chain)
+{
+  if (chain)
+    sk_X509_pop_free (chain, X509_free);
 }
 
 /**
@@ -326,12 +371,10 @@ free_sni_objects (T ctx)
   if (ctx->sni_certs.chains)
     {
       for (size_t i = 0; i < ctx->sni_certs.count; ++i)
-        {
-          if (ctx->sni_certs.chains[i])
-            sk_X509_pop_free (ctx->sni_certs.chains[i], X509_free);
-        }
+        free_sni_chain (ctx->sni_certs.chains[i]);
       free (ctx->sni_certs.chains);
     }
+
   if (ctx->sni_certs.pkeys)
     {
       for (size_t i = 0; i < ctx->sni_certs.count; ++i)
@@ -341,6 +384,37 @@ free_sni_objects (T ctx)
         }
       free (ctx->sni_certs.pkeys);
     }
+}
+
+/**
+ * secure_clear_sensitive_data - Clear sensitive context data
+ * @ctx: Context with sensitive data to clear
+ *
+ * Securely wipes session ticket keys and pinning data.
+ */
+static void
+secure_clear_sensitive_data (T ctx)
+{
+  OPENSSL_cleanse (ctx->ticket_key, SOCKET_TLS_TICKET_KEY_LEN);
+  ctx->tickets_enabled = 0;
+
+  if (ctx->pinning.pins && ctx->pinning.count > 0)
+    {
+      SocketCrypto_secure_clear (ctx->pinning.pins,
+                                 ctx->pinning.count * sizeof (TLSCertPin));
+    }
+  pthread_mutex_destroy (&ctx->pinning.lock);
+}
+
+/**
+ * destroy_context_mutexes - Destroy context mutex resources
+ * @ctx: Context with mutexes to destroy
+ */
+static void
+destroy_context_mutexes (T ctx)
+{
+  pthread_mutex_destroy (&ctx->stats_mutex);
+  pthread_mutex_destroy (&ctx->crl_mutex);
 }
 
 /* ============================================================================
@@ -366,29 +440,157 @@ tls_context_get_from_ssl (const SSL *ssl)
 }
 
 /* ============================================================================
+ * Client Context CA Loading Helpers
+ * ============================================================================
+ */
+
+/**
+ * try_load_user_ca - Attempt to load user-provided CA file
+ * @ctx: Client context
+ * @ca_file: Path to CA file
+ *
+ * Returns: 1 if CA loaded successfully, 0 on failure
+ */
+static int
+try_load_user_ca (T ctx, const char *ca_file)
+{
+  TRY
+  {
+    SocketTLSContext_load_ca (ctx, ca_file);
+    SOCKET_LOG_INFO_MSG ("Loaded user-provided CA '%s' for client context %p",
+                         ca_file, (void *)ctx);
+    return 1;
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    SOCKET_LOG_WARN_MSG ("Failed to load user-provided CA '%s' for client "
+                         "context %p - attempting system CA fallback",
+                         ca_file, (void *)ctx);
+  }
+  END_TRY;
+  return 0;
+}
+
+/**
+ * try_load_system_ca - Attempt to load system default CAs
+ * @ctx: Client context
+ *
+ * Returns: 1 if system CAs loaded, 0 on failure
+ */
+static int
+try_load_system_ca (T ctx)
+{
+  if (SSL_CTX_set_default_verify_paths (ctx->ssl_ctx) == 1)
+    {
+      SOCKET_LOG_INFO_MSG (
+          "Loaded system default CAs as fallback for client context %p",
+          (void *)ctx);
+      return 1;
+    }
+  return 0;
+}
+
+/**
+ * handle_no_trusted_ca - Handle case when no CA could be loaded
+ * @ctx: Client context (freed on error)
+ * @user_ca_provided: 1 if user provided a CA file
+ */
+static void
+handle_no_trusted_ca (T *ctx_ptr, int user_ca_provided)
+{
+  if (user_ca_provided)
+    {
+      SocketTLSContext_free (ctx_ptr);
+      ctx_raise_openssl_error (
+          "Both user CA and system fallback failed - cannot establish "
+          "trusted verification");
+    }
+  else
+    {
+      SOCKET_LOG_WARN_MSG (
+          "Client context %p created with no trusted CAs (user CA "
+          "absent and system unavailable) - peer verification enabled "
+          "but handshakes will likely fail (high MITM risk!)",
+          (void *)*ctx_ptr);
+    }
+}
+
+/* ============================================================================
+ * Custom Protocol Configuration
+ * ============================================================================
+ */
+
+/**
+ * apply_custom_protocol_config - Apply custom protocol version limits
+ * @ctx: Context to configure
+ * @config: Custom configuration
+ *
+ * Applies min/max protocol versions from config if different from defaults.
+ */
+static void
+apply_custom_protocol_config (T ctx, const SocketTLSConfig_T *config)
+{
+  if (config->min_version != SOCKET_TLS_MIN_VERSION)
+    SocketTLSContext_set_min_protocol (ctx, config->min_version);
+
+  if (config->max_version != SOCKET_TLS_MAX_VERSION)
+    SocketTLSContext_set_max_protocol (ctx, config->max_version);
+}
+
+/* ============================================================================
  * Public Context Lifecycle API
  * ============================================================================
  */
 
 T
+SocketTLSContext_new (const SocketTLSConfig_T *config)
+{
+  SocketTLSConfig_T default_config;
+  SocketTLSConfig_T local_config;
+  T ctx;
+
+  /* Copy config to local to avoid clobber warning with TRY/setjmp */
+  if (config)
+    local_config = *config;
+  else
+    {
+      SocketTLS_config_defaults (&default_config);
+      local_config = default_config;
+    }
+
+  ctx = ctx_alloc_and_init (TLS_client_method (), 0);
+
+  TRY { apply_custom_protocol_config (ctx, &local_config); }
+  EXCEPT (SocketTLS_Failed)
+  {
+    SocketTLSContext_free (&ctx);
+    RERAISE;
+  }
+  END_TRY;
+
+  return ctx;
+}
+
+T
 SocketTLSContext_new_server (const char *cert_file, const char *key_file,
                              const char *ca_file)
 {
-  T ctx;
-
   assert (cert_file);
   assert (key_file);
 
-  ctx = ctx_alloc_and_init (TLS_server_method (), 1);
+  T ctx = ctx_alloc_and_init (TLS_server_method (), 1);
 
-  TRY SocketTLSContext_load_certificate (ctx, cert_file, key_file);
-  if (ca_file)
-    {
+  TRY
+  {
+    SocketTLSContext_load_certificate (ctx, cert_file, key_file);
+    if (ca_file)
       SocketTLSContext_load_ca (ctx, ca_file);
-    }
+  }
   EXCEPT (SocketTLS_Failed)
-  SocketTLSContext_free (&ctx);
-  RERAISE;
+  {
+    SocketTLSContext_free (&ctx);
+    RERAISE;
+  }
   END_TRY;
 
   return ctx;
@@ -398,63 +600,18 @@ T
 SocketTLSContext_new_client (const char *ca_file)
 {
   T ctx = ctx_alloc_and_init (TLS_client_method (), 0);
+  int has_trusted_ca = 0;
 
-  /* Default to peer verification for security; attempt user CA then fallback
-   * to system defaults if possible */
   SocketTLSContext_set_verify_mode (ctx, TLS_VERIFY_PEER);
 
-  bool has_trusted_ca = false;
   if (ca_file)
-    {
-      TRY
-      {
-        SocketTLSContext_load_ca (ctx, ca_file);
-        has_trusted_ca = true;
-        SOCKET_LOG_INFO_MSG (
-            "Loaded user-provided CA '%s' for client context %p", ca_file,
-            (void *)ctx);
-      }
-      EXCEPT (SocketTLS_Failed)
-      {
-        SOCKET_LOG_WARN_MSG ("Failed to load user-provided CA '%s' for client "
-                             "context %p - attempting system CA fallback",
-                             ca_file, (void *)ctx);
-      }
-      END_TRY;
-    }
+    has_trusted_ca = try_load_user_ca (ctx, ca_file);
 
-  /* Fallback to system default CAs if no user CA successfully loaded */
   if (!has_trusted_ca)
-    {
-      if (SSL_CTX_set_default_verify_paths (ctx->ssl_ctx) == 1)
-        {
-          has_trusted_ca = true;
-          SOCKET_LOG_INFO_MSG (
-              "Loaded system default CAs as fallback for client context %p",
-              (void *)ctx);
-        }
-      else
-        {
-          if (ca_file)
-            {
-              /* User provided CA but both failed - treat as config error */
-              SocketTLSContext_free (&ctx);
-              ctx_raise_openssl_error (
-                  "Both user CA and system fallback failed - cannot establish "
-                  "trusted verification");
-            }
-          else
-            {
-              /* No user CA and no system - warn but proceed (app
-               * responsibility) */
-              SOCKET_LOG_WARN_MSG (
-                  "Client context %p created with no trusted CAs (user CA "
-                  "absent and system unavailable) - peer verification enabled "
-                  "but handshakes will likely fail (high MITM risk!)",
-                  (void *)ctx);
-            }
-        }
-    }
+    has_trusted_ca = try_load_system_ca (ctx);
+
+  if (!has_trusted_ca)
+    handle_no_trusted_ca (&ctx, ca_file != NULL);
 
   return ctx;
 }
@@ -464,43 +621,28 @@ SocketTLSContext_free (T *ctx)
 {
   assert (ctx);
 
-  if (*ctx)
+  if (!*ctx)
+    return;
+
+  T c = *ctx;
+
+  if (c->ssl_ctx)
     {
-      T c = *ctx;
-
-      if (c->ssl_ctx)
-        {
-          SSL_CTX_free (c->ssl_ctx);
-          c->ssl_ctx = NULL;
-        }
-
-      /* Securely clear session ticket key material before freeing.
-       * Always clear regardless of tickets_enabled flag for defense in depth.
-       */
-      OPENSSL_cleanse (c->ticket_key, SOCKET_TLS_TICKET_KEY_LEN);
-      c->tickets_enabled = 0;
-
-      /* Securely clear pinning data before freeing */
-      if (c->pinning.pins && c->pinning.count > 0)
-        {
-          SocketCrypto_secure_clear (c->pinning.pins,
-                                     c->pinning.count * sizeof (TLSCertPin));
-        }
-      pthread_mutex_destroy (&c->pinning.lock);
-
-      if (c->arena)
-        {
-          Arena_dispose (&c->arena);
-        }
-
-      free_sni_arrays (c);
-      free_sni_objects (c);
-
-      pthread_mutex_destroy (&c->stats_mutex);
-      pthread_mutex_destroy (&c->crl_mutex);
-      free (c);
-      *ctx = NULL;
+      SSL_CTX_free (c->ssl_ctx);
+      c->ssl_ctx = NULL;
     }
+
+  secure_clear_sensitive_data (c);
+
+  if (c->arena)
+    Arena_dispose (&c->arena);
+
+  free_sni_arrays (c);
+  free_sni_objects (c);
+  destroy_context_mutexes (c);
+
+  free (c);
+  *ctx = NULL;
 }
 
 void *

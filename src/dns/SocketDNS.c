@@ -1523,6 +1523,44 @@ cache_lookup (struct SocketDNS_T *dns, const char *hostname)
 }
 
 /**
+ * cache_allocate_entry - Allocate and initialize cache entry structure
+ * @dns: DNS resolver instance
+ * @hostname: Hostname key to copy
+ * @result: addrinfo to copy (ownership retained by caller)
+ *
+ * Returns: Initialized entry or NULL on allocation failure
+ * Thread-safe: Must hold mutex (for arena access)
+ */
+static struct SocketDNS_CacheEntry *
+cache_allocate_entry (struct SocketDNS_T *dns, const char *hostname,
+                      struct addrinfo *result)
+{
+  struct SocketDNS_CacheEntry *entry;
+  int64_t now_ms;
+
+  entry = Arena_alloc (dns->arena, sizeof (*entry), __FILE__, __LINE__);
+  if (!entry)
+    return NULL;
+
+  entry->hostname = socket_util_arena_strdup (dns->arena, hostname);
+  if (!entry->hostname)
+    return NULL;
+
+  entry->result = SocketCommon_copy_addrinfo (result);
+  if (!entry->result)
+    return NULL;
+
+  now_ms = Socket_get_monotonic_ms ();
+  entry->insert_time_ms = now_ms;
+  entry->last_access_ms = now_ms;
+  entry->hash_next = NULL;
+  entry->lru_prev = NULL;
+  entry->lru_next = NULL;
+
+  return entry;
+}
+
+/**
  * cache_insert - Insert result into cache
  * @dns: DNS resolver instance
  * @hostname: Hostname key
@@ -1536,45 +1574,21 @@ cache_insert (struct SocketDNS_T *dns, const char *hostname,
 {
   struct SocketDNS_CacheEntry *entry;
   unsigned hash;
-  size_t hostname_len;
-  int64_t now_ms;
 
   if (dns->cache_max_entries == 0 || !result)
-    return; /* Cache disabled or no result */
+    return;
 
-  /* Evict if at capacity */
   while (dns->cache_size >= dns->cache_max_entries)
     cache_evict_oldest (dns);
 
-  /* Allocate entry from arena */
-  entry = Arena_alloc (dns->arena, sizeof (*entry), __FILE__, __LINE__);
+  entry = cache_allocate_entry (dns, hostname, result);
   if (!entry)
     return;
 
-  hostname_len = strlen (hostname);
-  entry->hostname
-      = Arena_alloc (dns->arena, hostname_len + 1, __FILE__, __LINE__);
-  if (!entry->hostname)
-    return;
-
-  strcpy (entry->hostname, hostname);
-  entry->result = SocketCommon_copy_addrinfo (result);
-  if (!entry->result)
-    return;
-
-  now_ms = Socket_get_monotonic_ms ();
-  entry->insert_time_ms = now_ms;
-  entry->last_access_ms = now_ms;
-  entry->hash_next = NULL;
-  entry->lru_prev = NULL;
-  entry->lru_next = NULL;
-
-  /* Insert into hash table */
   hash = cache_hash_function (hostname);
   entry->hash_next = dns->cache_hash[hash];
   dns->cache_hash[hash] = entry;
 
-  /* Insert into LRU list */
   cache_lru_insert_front (dns, entry);
 
   dns->cache_size++;

@@ -19,11 +19,7 @@
 
 #include <assert.h>
 #include <inttypes.h>
-
 #include <string.h>
-
-SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP2);
-#include "core/SocketConfig.h"
 
 /* ============================================================================
  * Module Log Component
@@ -203,11 +199,14 @@ init_stream_fields (SocketHTTP2_Stream_T stream, const SocketHTTP2_Conn_T conn,
  * add_stream_to_hash - Add stream to connection's hash table
  * @conn: Connection
  * @stream: Stream to add
+ *
+ * Uses seeded hash for security (prevents hash collision DoS).
  */
 static void
 add_stream_to_hash (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream)
 {
-  unsigned idx = socket_util_hash_uint (stream->id, HTTP2_STREAM_HASH_SIZE);
+  unsigned idx = socket_util_hash_uint_seeded (stream->id, HTTP2_STREAM_HASH_SIZE,
+                                               conn->hash_seed);
   stream->hash_next = conn->streams[idx];
   conn->streams[idx] = stream;
   conn->stream_count++;
@@ -217,11 +216,14 @@ add_stream_to_hash (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream)
  * remove_stream_from_hash - Remove stream from hash table
  * @conn: Connection
  * @stream: Stream to remove
+ *
+ * Uses seeded hash matching add_stream_to_hash for consistency.
  */
 static void
 remove_stream_from_hash (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream)
 {
-  unsigned idx = socket_util_hash_uint (stream->id, HTTP2_STREAM_HASH_SIZE);
+  unsigned idx = socket_util_hash_uint_seeded (stream->id, HTTP2_STREAM_HASH_SIZE,
+                                               conn->hash_seed);
   SocketHTTP2_Stream_T *prev = &conn->streams[idx];
 
   while (*prev)
@@ -241,6 +243,21 @@ remove_stream_from_hash (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream)
  * ============================================================================
  */
 
+/**
+ * get_initiated_count - Get pointer to appropriate initiated stream count
+ * @conn: Connection
+ * @is_local: True if locally initiated stream
+ *
+ * Returns pointer to server_initiated_count for local streams,
+ * client_initiated_count for peer-initiated streams.
+ */
+static inline uint32_t *
+get_initiated_count (SocketHTTP2_Conn_T conn, int is_local)
+{
+  return is_local ? &conn->server_initiated_count
+                  : &conn->client_initiated_count;
+}
+
 SocketHTTP2_Stream_T
 http2_stream_create (SocketHTTP2_Conn_T conn, uint32_t stream_id,
                      int is_local_initiated)
@@ -259,8 +276,7 @@ http2_stream_create (SocketHTTP2_Conn_T conn, uint32_t stream_id,
     }
 
   /* Enforce correct concurrent limits based on initiator */
-  uint32_t *open_count = is_local_initiated ? &conn->server_initiated_count
-                                            : &conn->client_initiated_count;
+  uint32_t *open_count = get_initiated_count (conn, is_local_initiated);
   uint32_t limit
       = is_local_initiated
             ? conn->peer_settings[SETTINGS_IDX_MAX_CONCURRENT_STREAMS]
@@ -299,11 +315,7 @@ http2_stream_create (SocketHTTP2_Conn_T conn, uint32_t stream_id,
     }
 
   add_stream_to_hash (conn, stream);
-
-  /* Update initiated count */
-  uint32_t *count = stream->is_local_initiated ? &conn->server_initiated_count
-                                               : &conn->client_initiated_count;
-  (*count)++;
+  (*get_initiated_count (conn, stream->is_local_initiated))++;
 
   return stream;
 }
@@ -315,10 +327,8 @@ http2_stream_destroy (SocketHTTP2_Stream_T stream)
     return;
 
   SocketHTTP2_Conn_T conn = stream->conn;
+  uint32_t *count = get_initiated_count (conn, stream->is_local_initiated);
 
-  /* Update initiated count before remove */
-  uint32_t *count = stream->is_local_initiated ? &conn->server_initiated_count
-                                               : &conn->client_initiated_count;
   if (*count > 0)
     (*count)--; /* Defensive >0 */
 
@@ -748,17 +758,6 @@ SocketHTTP2_Stream_set_userdata (SocketHTTP2_Stream_T stream, void *userdata)
  * ============================================================================
  */
 
-/**
- * serialize_window_update_payload - Serialize WINDOW_UPDATE payload
- * @increment: Window increment
- * @payload: Output buffer (4 bytes)
- */
-static void
-serialize_window_update_payload (uint32_t increment, unsigned char *payload)
-{
-  http2_serialize_31bit_uint (increment, payload);
-}
-
 int
 SocketHTTP2_Stream_window_update (SocketHTTP2_Stream_T stream,
                                   uint32_t increment)
@@ -769,7 +768,7 @@ SocketHTTP2_Stream_window_update (SocketHTTP2_Stream_T stream,
   assert (stream);
   assert (increment > 0 && increment <= HTTP2_MAX_STREAM_ID);
 
-  serialize_window_update_payload (increment, payload);
+  http2_serialize_31bit_uint (increment, payload);
 
   header.length = HTTP2_WINDOW_UPDATE_PAYLOAD_SIZE;
   header.type = HTTP2_FRAME_WINDOW_UPDATE;
@@ -860,15 +859,13 @@ http2_decode_headers (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
       return -1;
     }
 
+  /* header_count <= HTTP2_MAX_DECODED_HEADERS guaranteed by decoder limit */
+  assert (header_count <= HTTP2_MAX_DECODED_HEADERS);
+
   /* Store decoded headers based on whether this is initial headers or trailers
    */
   if (!stream->headers_received)
     {
-      if (header_count > HTTP2_MAX_DECODED_HEADERS)
-        {
-          http2_send_connection_error (conn, HTTP2_COMPRESSION_ERROR);
-          return -1;
-        }
       memcpy (stream->headers, decoded_headers,
               header_count * sizeof (SocketHPACK_Header));
       stream->header_count = header_count;
@@ -876,11 +873,6 @@ http2_decode_headers (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
     }
   else
     {
-      if (header_count > HTTP2_MAX_DECODED_HEADERS)
-        {
-          http2_send_connection_error (conn, HTTP2_COMPRESSION_ERROR);
-          return -1;
-        }
       memcpy (stream->trailers, decoded_headers,
               header_count * sizeof (SocketHPACK_Header));
       stream->trailer_count = header_count;
@@ -1494,30 +1486,6 @@ SocketHTTP2_Stream_recv_trailers (SocketHTTP2_Stream_T stream,
  * ============================================================================
  */
 
-/**
- * serialize_promised_stream_id - Serialize promised stream ID
- * @promised_id: Stream ID
- * @payload: Output buffer (4 bytes)
- */
-static void
-serialize_promised_stream_id (uint32_t promised_id, unsigned char *payload)
-{
-  http2_serialize_31bit_uint (promised_id, payload);
-}
-
-/**
- * parse_promised_stream_id - Parse promised stream ID from payload
- * @payload: Input buffer
- * @offset: Offset into payload
- *
- * Returns: Stream ID
- */
-static uint32_t
-parse_promised_stream_id (const unsigned char *payload, size_t offset)
-{
-  return http2_deserialize_31bit_uint (payload, offset);
-}
-
 SocketHTTP2_Stream_T
 SocketHTTP2_Stream_push_promise (SocketHTTP2_Stream_T stream,
                                  const SocketHPACK_Header *request_headers,
@@ -1559,7 +1527,7 @@ SocketHTTP2_Stream_push_promise (SocketHTTP2_Stream_T stream,
       return NULL;
     }
 
-  serialize_promised_stream_id (promised_id, payload);
+  http2_serialize_31bit_uint (promised_id, payload);
 
   header_block_len = http2_encode_headers (
       conn, request_headers, header_count,
@@ -1973,26 +1941,14 @@ http2_process_continuation (SocketHTTP2_Conn_T conn,
   if (header->flags & HTTP2_FLAG_END_HEADERS)
     {
       conn->expecting_continuation = 0;
-      conn->continuation_frame_count = 0; /* Reset for next header block */
-      /* Process the complete header block */
-      return process_complete_header_block (conn, stream, stream->header_block,
-                                            stream->header_block_len);
       conn->continuation_stream_id = 0;
+      conn->continuation_frame_count = 0; /* Reset for next header block */
 
-      if (http2_decode_headers (conn, stream, stream->header_block,
-                                stream->header_block_len)
-          < 0)
-        return -1;
-
+      int result = process_complete_header_block (conn, stream,
+                                                  stream->header_block,
+                                                  stream->header_block_len);
       clear_pending_header_block (stream);
-
-      emit_header_event (conn, stream);
-
-      if (stream->pending_end_stream)
-        {
-          stream->end_stream_received = 1;
-          stream->pending_end_stream = 0;
-        }
+      return result;
     }
 
   return 0;
@@ -2056,7 +2012,7 @@ extract_push_promise_payload (const SocketHTTP2_FrameHeader *header,
   if (header->length < offset + HTTP2_PUSH_PROMISE_ID_SIZE + pad_len)
     return -1;
 
-  *promised_id = parse_promised_stream_id (payload, offset);
+  *promised_id = http2_deserialize_31bit_uint (payload, offset);
   offset += HTTP2_PUSH_PROMISE_ID_SIZE;
 
   if ((*promised_id & 1) != 0)

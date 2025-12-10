@@ -27,8 +27,6 @@
 
 #include <assert.h>
 
-SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPClient);
-
 /* Module exception - required for RAISE_HTTPCLIENT_ERROR macro */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPClient);
 
@@ -49,6 +47,17 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPClient);
 #define HTTPS_DEFAULT_PORT 443
 #endif
 
+/**
+ * @brief Maximum hash chain length before raising collision attack error.
+ *
+ * Security limit to prevent DoS via hash collision attacks.
+ * If a hash chain exceeds this length during traversal, the operation
+ * fails with an exception indicating possible attack.
+ */
+#ifndef POOL_MAX_HASH_CHAIN_LEN
+#define POOL_MAX_HASH_CHAIN_LEN 1024
+#endif
+
 /* ============================================================================
  * Pool Configuration
  * ============================================================================
@@ -63,6 +72,9 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPClient);
  * Internal Helper Functions
  * ============================================================================
  */
+
+/* Forward declarations */
+static void pool_entry_remove_and_recycle (HTTPPool *pool, HTTPPoolEntry *entry);
 
 /**
  * pool_time - Get monotonic time in seconds
@@ -129,6 +141,31 @@ pool_hash_add (HTTPPool *pool, HTTPPoolEntry *entry)
 }
 
 /**
+ * raise_chain_too_long - Raise exception for hash chain length exceeded
+ * @chain_len: Current chain length
+ * @context: Description of operation for error message
+ * @host: Host being accessed (may be NULL)
+ * @port: Port being accessed
+ *
+ * Raises SocketHTTPClient_Failed with detailed collision attack message.
+ */
+static void
+raise_chain_too_long (size_t chain_len, const char *context, const char *host,
+                      int port)
+{
+  if (host != NULL)
+    SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed,
+                      "Hash chain too long (%zu >= %d) %s for %s:%d - "
+                      "possible collision attack",
+                      chain_len, POOL_MAX_HASH_CHAIN_LEN, context, host, port);
+  else
+    SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed,
+                      "Hash chain too long (%zu >= %d) %s - "
+                      "possible collision attack",
+                      chain_len, POOL_MAX_HASH_CHAIN_LEN, context);
+}
+
+/**
  * pool_hash_remove - Remove entry from hash table
  * @pool: Connection pool
  * @entry: Entry to remove
@@ -142,9 +179,8 @@ pool_hash_remove (HTTPPool *pool, HTTPPoolEntry *entry)
       = httpclient_host_hash (entry->host, entry->port, pool->hash_size);
 
   size_t chain_len = 0;
-  const size_t max_chain = 1024;
   HTTPPoolEntry **pp = &pool->hash_table[hash];
-  while (*pp != NULL && chain_len < max_chain)
+  while (*pp != NULL && chain_len < POOL_MAX_HASH_CHAIN_LEN)
     {
       ++chain_len;
       if (*pp == entry)
@@ -155,13 +191,9 @@ pool_hash_remove (HTTPPool *pool, HTTPPoolEntry *entry)
         }
       pp = &(*pp)->hash_next;
     }
-  if (chain_len >= max_chain)
-    {
-      SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed,
-                        "Hash chain too long (%zu >= %zu) during removal - "
-                        "possible collision attack",
-                        chain_len, max_chain);
-    }
+  if (chain_len >= POOL_MAX_HASH_CHAIN_LEN)
+    raise_chain_too_long (chain_len, "during removal", entry->host,
+                          entry->port);
 }
 
 /**
@@ -298,24 +330,18 @@ pool_count_for_host (HTTPPool *pool, const char *host, int port, int is_secure)
 {
   size_t count = 0;
   size_t chain_len = 0;
-  const size_t max_chain = 1024; /* Adjustable limit */
   unsigned hash = httpclient_host_hash (host, port, pool->hash_size);
 
   HTTPPoolEntry *entry = pool->hash_table[hash];
-  while (entry != NULL && chain_len < max_chain)
+  while (entry != NULL && chain_len < POOL_MAX_HASH_CHAIN_LEN)
     {
       ++chain_len;
       if (host_port_secure_match (entry, host, port, is_secure))
         count++;
       entry = entry->hash_next;
     }
-  if (chain_len >= max_chain)
-    {
-      SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed,
-                        "Hash chain too long (%zu >= %zu) in pool count for "
-                        "%s:%d - possible collision attack",
-                        chain_len, max_chain, host, port);
-    }
+  if (chain_len >= POOL_MAX_HASH_CHAIN_LEN)
+    raise_chain_too_long (chain_len, "in pool count", host, port);
 
   return count;
 }
@@ -428,9 +454,8 @@ httpclient_pool_get (HTTPPool *pool, const char *host, int port, int is_secure)
 
   /* Find an available connection, with chain length limit to prevent DoS */
   size_t chain_len = 0;
-  const size_t max_chain = 1024; /* Adjustable limit */
   entry = pool->hash_table[hash];
-  while (entry != NULL && chain_len < max_chain)
+  while (entry != NULL && chain_len < POOL_MAX_HASH_CHAIN_LEN)
     {
       ++chain_len;
       if (host_port_secure_match (entry, host, port, is_secure)
@@ -444,13 +469,8 @@ httpclient_pool_get (HTTPPool *pool, const char *host, int port, int is_secure)
         }
       entry = entry->hash_next;
     }
-  if (chain_len >= max_chain)
-    {
-      SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed,
-                        "Hash chain too long (%zu >= %zu) in pool lookup for "
-                        "%s:%d - possible collision attack",
-                        chain_len, max_chain, host, port);
-    }
+  if (chain_len >= POOL_MAX_HASH_CHAIN_LEN)
+    raise_chain_too_long (chain_len, "in pool lookup", host, port);
 
   pthread_mutex_unlock (&pool->mutex);
   return 0;
@@ -475,29 +495,22 @@ httpclient_pool_close (HTTPPool *pool, HTTPPoolEntry *entry)
   assert (entry != NULL);
 
   pthread_mutex_lock (&pool->mutex);
-
-  pool_hash_remove (pool, entry);
-  pool_list_remove (pool, entry);
-  pool_entry_close (entry);
-
-  /* Add to free list for reuse */
-  entry->next = pool->free_entries;
-  pool->free_entries = entry;
-  pool->current_count--;
-
+  pool_entry_remove_and_recycle (pool, entry);
   pthread_mutex_unlock (&pool->mutex);
 }
 
 /**
- * close_idle_entry - Close an idle entry and add to free list
+ * pool_entry_remove_and_recycle - Remove entry from pool and add to free list
  * @pool: Connection pool (mutex held)
- * @entry: Entry to close
+ * @entry: Entry to remove
  *
- * Helper for httpclient_pool_cleanup_idle. Removes from hash/list,
- * closes resources, and adds to free list.
+ * Removes entry from hash table and all-connections list, closes resources,
+ * decrements count, and adds to free list for reuse. Caller must hold mutex.
+ *
+ * Thread-safe: No (caller must hold pool->mutex)
  */
 static void
-close_idle_entry (HTTPPool *pool, HTTPPoolEntry *entry)
+pool_entry_remove_and_recycle (HTTPPool *pool, HTTPPoolEntry *entry)
 {
   pool_hash_remove (pool, entry);
   pool_list_remove (pool, entry);
@@ -531,7 +544,7 @@ httpclient_pool_cleanup_idle (HTTPPool *pool)
 
       if (!entry->in_use && !entry->closed
           && (now - entry->last_used) >= idle_threshold)
-        close_idle_entry (pool, entry);
+        pool_entry_remove_and_recycle (pool, entry);
 
       entry = next;
     }
@@ -607,9 +620,23 @@ init_http1_entry_fields (HTTPPoolEntry *entry, Socket_T socket,
 }
 
 /**
+ * recycle_entry_on_failure - Return entry to free list on allocation failure
+ * @pool: Connection pool
+ * @entry: Entry to recycle
+ *
+ * Helper to add entry back to free list when allocation fails.
+ */
+static void
+recycle_entry_on_failure (HTTPPool *pool, HTTPPoolEntry *entry)
+{
+  entry->next = pool->free_entries;
+  pool->free_entries = entry;
+}
+
+/**
  * create_http1_connection - Create new HTTP/1.1 pool entry
  * @pool: Connection pool
- * @socket: Connected socket
+ * @socket: Connected socket (ownership transferred)
  * @host: Target hostname
  * @port: Target port
  * @is_secure: 1 for HTTPS, 0 for HTTP
@@ -617,39 +644,46 @@ init_http1_entry_fields (HTTPPoolEntry *entry, Socket_T socket,
  * Returns: New pool entry, or NULL on failure
  *
  * Allocates entry, copies host, creates parser/buffers, adds to pool.
+ * On failure, socket is NOT freed - caller retains ownership.
  */
 static HTTPPoolEntry *
 create_http1_connection (HTTPPool *pool, Socket_T socket, const char *host,
                          int port, int is_secure)
 {
+  /* Variables must be volatile to survive longjmp in TRY/EXCEPT */
   HTTPPoolEntry *volatile entry = NULL;
+  volatile int stage = 0; /* Track progress for cleanup */
 
-  TRY { entry = pool_entry_alloc (pool); }
-  EXCEPT (Arena_Failed) { return NULL; }
-  END_TRY;
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wclobbered"
+#endif
 
   TRY
   {
+    entry = pool_entry_alloc (pool);
+    stage = 1;
+
     init_http1_entry_fields ((HTTPPoolEntry *)entry, socket, host, port,
                              is_secure, pool);
+    stage = 2;
+
+    create_http1_entry_resources ((HTTPPoolEntry *)entry);
+    stage = 3;
   }
   EXCEPT (Arena_Failed)
   {
-    ((HTTPPoolEntry *)entry)->next = pool->free_entries;
-    pool->free_entries = (HTTPPoolEntry *)entry;
+    if (stage >= 2)
+      Socket_free (&((HTTPPoolEntry *)entry)->proto.h1.socket);
+    if (stage >= 1 && entry != NULL)
+      recycle_entry_on_failure (pool, (HTTPPoolEntry *)entry);
     return NULL;
   }
   END_TRY;
 
-  TRY { create_http1_entry_resources ((HTTPPoolEntry *)entry); }
-  EXCEPT (Arena_Failed)
-  {
-    Socket_free (&((HTTPPoolEntry *)entry)->proto.h1.socket);
-    ((HTTPPoolEntry *)entry)->next = pool->free_entries;
-    pool->free_entries = (HTTPPoolEntry *)entry;
-    return NULL;
-  }
-  END_TRY;
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
   pool_hash_add (pool, (HTTPPoolEntry *)entry);
   pool_list_add (pool, (HTTPPoolEntry *)entry);
@@ -708,36 +742,41 @@ check_connection_limits (SocketHTTPClient_T client, const char *host, int port,
  * @port: Target port
  * @is_secure: 1 for HTTPS, 0 for HTTP
  *
- * Returns: Pool entry if found, NULL otherwise
+ * Returns: Pool entry if reusable connection found, NULL otherwise
  *
- * First tries direct lookup, then checks limits and cleans idle if needed.
+ * Attempts to find a reusable cached connection. If none found and limits
+ * are hit, cleans up idle connections and rechecks. Returns NULL in both
+ * "create new" and "limits exceeded" cases - caller checks last_error.
  */
 static HTTPPoolEntry *
 pool_try_get_connection (SocketHTTPClient_T client, const char *host, int port,
                          int is_secure)
 {
   HTTPPoolEntry *entry;
-  if (client->pool == NULL)
-    return 0;
 
-  /* Try direct lookup first */
+  if (client->pool == NULL)
+    return NULL;
+
+  /* Try direct lookup for reusable connection */
   entry = httpclient_pool_get (client->pool, host, port, is_secure);
   if (entry != NULL)
     return entry;
 
-  /* Check if can create new connection */
+  /* No cached connection - check if we can create new */
   if (check_connection_limits (client, host, port, is_secure))
-    return 0; /* Limits allow, proceed to create */
+    return NULL; /* Limits allow - caller should create new connection */
 
-  /* Limits hit, clean idle and recheck */
+  /* Limits exceeded - try cleanup and recheck */
   httpclient_pool_cleanup_idle (client->pool);
 
-  /* After cleanup, recheck limits */
-  if (!check_connection_limits (client, host, port, is_secure))
-    return 0; /* Still hit limits after cleanup, fail */
+  /* After cleanup, a slot may have opened */
+  entry = httpclient_pool_get (client->pool, host, port, is_secure);
+  if (entry != NULL)
+    return entry;
 
-  /* Limits now allow, try get again (unlikely but possible) */
-  return httpclient_pool_get (client->pool, host, port, is_secure);
+  /* Final limit check - sets last_error if still exceeded */
+  check_connection_limits (client, host, port, is_secure);
+  return NULL;
 }
 
 /**
@@ -1054,17 +1093,14 @@ httpclient_connect (SocketHTTPClient_T client, const SocketHTTP_URI *uri)
   port = SocketHTTP_URI_get_port (uri, is_secure ? HTTPS_DEFAULT_PORT
                                                  : HTTP_DEFAULT_PORT);
 
-  /* Try to get existing connection from pool */
+  /* Try to get existing connection from pool (also checks limits) */
   entry = pool_try_get_connection (client, uri->host, port, is_secure);
   if (entry != NULL)
     return entry;
 
-  /* Check connection limits before creating new connection */
-  if (client->pool != NULL
-      && !check_connection_limits (client, uri->host, port, is_secure))
-    {
-      return 0;
-    }
+  /* pool_try_get_connection returns NULL if limits exceeded after cleanup */
+  if (client->pool != NULL && client->last_error == HTTPCLIENT_ERROR_LIMIT_EXCEEDED)
+    return NULL;
 
   /* Establish new TCP connection */
   socket = establish_tcp_connection (client, uri->host, port);

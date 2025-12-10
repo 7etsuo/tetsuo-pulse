@@ -694,8 +694,9 @@ typedef struct SocketWS *SocketWS_T;
  * @see docs/ERROR_HANDLING.md for patterns.
  */
 
-/* Declare module-specific exception using centralized macros */
-SOCKET_DECLARE_MODULE_EXCEPTION (SocketWS);
+/* Module exception declaration moved to SocketWS.c to avoid unused variable
+ * warnings when this header is included by other modules (e.g., SocketSecurity)
+ */
 
 /* Macro to raise exception with detailed error message */
 #define RAISE_WS_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketWS, e)

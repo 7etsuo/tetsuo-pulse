@@ -22,9 +22,8 @@
 #include <assert.h>
 #include <inttypes.h>
 #include <limits.h>
+#include <poll.h>
 #include <string.h>
-
-SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP2);
 
 const Except_T SocketHTTP2 = { NULL, "HTTP/2" };
 
@@ -51,6 +50,40 @@ const Except_T SocketHTTP2_FlowControlError
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP2);
 
 #define RAISE_HTTP2_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketHTTP2, e)
+
+/* ============================================================================
+ * Rate Limiting Helper
+ * ============================================================================
+ */
+
+/**
+ * check_rate_limit - Check and update sliding window rate limit
+ * @count: Pointer to current count in window
+ * @window_start_ms: Pointer to window start timestamp
+ * @now_ms: Current monotonic time
+ * @window_duration_ms: Duration of rate limit window
+ * @max_count: Maximum allowed count per window
+ *
+ * Updates the sliding window counter. Returns 1 if rate limit exceeded,
+ * 0 if within limits. Automatically resets window when expired.
+ *
+ * Thread-safe: No - caller must ensure exclusive access
+ */
+static int
+check_rate_limit (uint32_t *count, int64_t *window_start_ms, int64_t now_ms,
+                  int64_t window_duration_ms, uint32_t max_count)
+{
+  /* Reset window if expired */
+  if (now_ms - *window_start_ms > window_duration_ms)
+    {
+      *window_start_ms = now_ms;
+      *count = 0;
+    }
+
+  /* Increment and check limit */
+  (*count)++;
+  return *count > max_count;
+}
 
 /* ============================================================================
  * Configuration Constants
@@ -411,6 +444,47 @@ init_connection_components (SocketHTTP2_Conn_T conn,
 #pragma GCC diagnostic ignored "-Wclobbered"
 #endif
 
+/**
+ * generate_hash_seed - Generate random seed for stream hash table
+ * @conn: Connection to initialize seed for
+ *
+ * Returns: 0 on success, -1 on failure
+ */
+static int
+generate_hash_seed (SocketHTTP2_Conn_T conn)
+{
+  unsigned char seed_bytes[sizeof (uint32_t)];
+  ssize_t rv = SocketCrypto_random_bytes (seed_bytes, sizeof (seed_bytes));
+  if (rv != (ssize_t)sizeof (seed_bytes))
+    return -1;
+
+  memcpy (&conn->hash_seed, seed_bytes, sizeof (conn->hash_seed));
+  return 0;
+}
+
+/**
+ * init_rate_limiters - Initialize stream rate limiters
+ * @conn: Connection to initialize
+ * @cfg: Configuration with rate parameters
+ *
+ * Returns: 0 on success, -1 on failure
+ */
+static int
+init_rate_limiters (SocketHTTP2_Conn_T conn, const SocketHTTP2_Config *cfg)
+{
+  conn->stream_open_rate_limit = SocketRateLimit_new (
+      conn->arena, cfg->max_stream_open_rate, cfg->max_stream_open_burst);
+  if (!conn->stream_open_rate_limit)
+    return -1;
+
+  conn->stream_close_rate_limit = SocketRateLimit_new (
+      conn->arena, cfg->max_stream_close_rate, cfg->max_stream_close_burst);
+  if (!conn->stream_close_rate_limit)
+    return -1;
+
+  return 0;
+}
+
 SocketHTTP2_Conn_T
 SocketHTTP2_Conn_new (Socket_T socket, const SocketHTTP2_Config *config,
                       Arena_T arena)
@@ -448,47 +522,16 @@ SocketHTTP2_Conn_new (Socket_T socket, const SocketHTTP2_Config *config,
     init_peer_settings (conn);
     init_flow_control (conn, cfg);
 
-    /* Initialize security features */
-    uint32_t seed;
-    volatile uint32_t vseed = 0;
-    TRY
-    {
-      unsigned char seed_bytes[sizeof (uint32_t)];
-      ssize_t rv = SocketCrypto_random_bytes (seed_bytes, sizeof (seed_bytes));
-      if (rv != (ssize_t)sizeof (seed_bytes))
-        {
-          RAISE (SocketHTTP2_Failed);
-        }
-      uint32_t temp;
-      memcpy (&temp, seed_bytes, sizeof (temp));
-      vseed = temp;
-    }
-    EXCEPT (SocketHTTP2)
-    {
-      SocketHTTP2_Conn_free (&conn);
-      RERAISE;
-    }
-    END_TRY;
-    conn->hash_seed = vseed;
+    /* Initialize security features - hash seed for stream table */
+    if (generate_hash_seed (conn) < 0)
+      RAISE (SocketHTTP2_Failed);
 
+    /* Initialize rate limiters */
     conn->client_initiated_count = 0;
     conn->server_initiated_count = 0;
 
-    conn->stream_open_rate_limit = SocketRateLimit_new (
-        conn->arena, cfg->max_stream_open_rate, cfg->max_stream_open_burst);
-    if (!conn->stream_open_rate_limit)
-      {
-        SocketHTTP2_Conn_free (&conn);
-        RAISE (SocketHTTP2_Failed);
-      }
-    conn->stream_close_rate_limit = SocketRateLimit_new (
-        conn->arena, cfg->max_stream_close_rate, cfg->max_stream_close_burst);
-    if (!conn->stream_close_rate_limit)
-      {
-        SocketRateLimit_free (&conn->stream_open_rate_limit);
-        SocketHTTP2_Conn_free (&conn);
-        RAISE (SocketHTTP2_Failed);
-      }
+    if (init_rate_limiters (conn, cfg) < 0)
+      RAISE (SocketHTTP2_Failed);
 
     /* Initialize internal components (buffers, HPACK, streams) */
     init_connection_components (conn, cfg);
@@ -501,7 +544,7 @@ SocketHTTP2_Conn_new (Socket_T socket, const SocketHTTP2_Config *config,
     conn->ping_timeout_ms = cfg->ping_timeout_ms;
     conn->idle_timeout_ms = cfg->idle_timeout_ms;
   }
-  EXCEPT (SocketHTTP2_ProtocolError)
+  EXCEPT (SocketHTTP2)
   {
     SocketHTTP2_Conn_free (&conn);
     RERAISE;
@@ -963,8 +1006,6 @@ SocketHTTP2_Conn_window_update (SocketHTTP2_Conn_T conn, uint32_t increment)
  * ============================================================================
  */
 
-/* Removed unused frame processing helpers: read_frame_header,
- * has_complete_frame, validate_and_respond_to_invalid_frame */
 /**
  * read_socket_to_buffer - Read data from socket into receive buffer
  * @conn: Connection
@@ -1366,18 +1407,12 @@ http2_process_settings (SocketHTTP2_Conn_T conn,
       return 0;
     }
 
-  int64_t now_ms = Socket_get_monotonic_ms ();
-
   /* Rate limit non-ACK SETTINGS frames to prevent flood attacks */
-  if (now_ms - conn->settings_window_start_ms
-      > SOCKETHTTP2_SETTINGS_RATE_WINDOW_MS)
-    {
-      conn->settings_window_start_ms = now_ms;
-      conn->settings_count_in_window = 0;
-    }
-
-  conn->settings_count_in_window++;
-  if (conn->settings_count_in_window > SOCKETHTTP2_SETTINGS_RATE_LIMIT)
+  int64_t now_ms = Socket_get_monotonic_ms ();
+  if (check_rate_limit (&conn->settings_count_in_window,
+                        &conn->settings_window_start_ms, now_ms,
+                        SOCKETHTTP2_SETTINGS_RATE_WINDOW_MS,
+                        SOCKETHTTP2_SETTINGS_RATE_LIMIT))
     {
       SOCKET_LOG_WARN_MSG ("HTTP/2 SETTINGS rate limit exceeded "
                            "(%" PRIu32 " in %" PRId64 "ms), "
@@ -1411,17 +1446,12 @@ http2_process_ping (SocketHTTP2_Conn_T conn,
                     const SocketHTTP2_FrameHeader *header,
                     const unsigned char *payload)
 {
-  int64_t now_ms = Socket_get_monotonic_ms ();
-
   /* Rate limit PING frames to prevent flood attacks */
-  if (now_ms - conn->ping_window_start_ms > SOCKETHTTP2_PING_RATE_WINDOW_MS)
-    {
-      conn->ping_window_start_ms = now_ms;
-      conn->ping_count_in_window = 0;
-    }
-
-  conn->ping_count_in_window++;
-  if (conn->ping_count_in_window > SOCKETHTTP2_PING_RATE_LIMIT)
+  int64_t now_ms = Socket_get_monotonic_ms ();
+  if (check_rate_limit (&conn->ping_count_in_window,
+                        &conn->ping_window_start_ms, now_ms,
+                        SOCKETHTTP2_PING_RATE_WINDOW_MS,
+                        SOCKETHTTP2_PING_RATE_LIMIT))
     {
       SOCKET_LOG_WARN_MSG ("HTTP/2 PING rate limit exceeded "
                            "(%" PRIu32 " in %" PRId64 "ms), "
@@ -1432,7 +1462,7 @@ http2_process_ping (SocketHTTP2_Conn_T conn,
       return -1;
     }
 
-  /* PING ACK */
+  /* PING ACK - verify opaque data matches our pending request */
   if (header->flags & HTTP2_FLAG_ACK)
     {
       if (conn->ping_pending
@@ -1445,11 +1475,10 @@ http2_process_ping (SocketHTTP2_Conn_T conn,
     }
 
   /* Echo PING with ACK flag */
-  SocketHTTP2_FrameHeader response;
-  response.length = HTTP2_PING_PAYLOAD_SIZE;
-  response.type = HTTP2_FRAME_PING;
-  response.flags = HTTP2_FLAG_ACK;
-  response.stream_id = 0;
+  SocketHTTP2_FrameHeader response = { .length = HTTP2_PING_PAYLOAD_SIZE,
+                                       .type = HTTP2_FRAME_PING,
+                                       .flags = HTTP2_FLAG_ACK,
+                                       .stream_id = 0 };
 
   return http2_frame_send (conn, &response, payload, HTTP2_PING_PAYLOAD_SIZE);
 }
@@ -1581,20 +1610,12 @@ http2_process_rst_stream (SocketHTTP2_Conn_T conn,
                           const unsigned char *payload)
 {
   uint32_t error_code = read_u32_be (payload);
-  int64_t now_ms = Socket_get_monotonic_ms ();
 
   /* CVE-2023-44487: Rate limit RST_STREAM frames to prevent Rapid Reset DoS */
-
-  /* Reset window if expired */
-  if (now_ms - conn->rst_window_start_ms > SOCKETHTTP2_RST_RATE_WINDOW_MS)
-    {
-      conn->rst_window_start_ms = now_ms;
-      conn->rst_count_in_window = 0;
-    }
-
-  /* Increment count and check limit */
-  conn->rst_count_in_window++;
-  if (conn->rst_count_in_window > SOCKETHTTP2_RST_RATE_LIMIT)
+  int64_t now_ms = Socket_get_monotonic_ms ();
+  if (check_rate_limit (&conn->rst_count_in_window, &conn->rst_window_start_ms,
+                        now_ms, SOCKETHTTP2_RST_RATE_WINDOW_MS,
+                        SOCKETHTTP2_RST_RATE_LIMIT))
     {
       SOCKET_LOG_WARN_MSG ("HTTP/2 RST_STREAM rate limit exceeded "
                            "(%" PRIu32 " in %" PRId64 "ms), "
@@ -1702,8 +1723,6 @@ SocketHTTP2_Conn_upgrade_server (Socket_T socket,
  * Extended PING and Stream Management
  * ============================================================================
  */
-
-#include <poll.h>
 
 int
 SocketHTTP2_Conn_ping_wait (SocketHTTP2_Conn_T conn, int timeout_ms)

@@ -2,44 +2,25 @@
  * SocketHTTPServer.c - HTTP Server Implementation
  *
  * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
  *
  * Production-ready HTTP server with:
  * - Non-blocking I/O with SocketPoll integration
  * - Keep-alive connection handling
- * - Request body streaming for large uploads
- * - Response body streaming (chunked transfer encoding)
- * - HTTP/2 server push support
+ * - Request/response body streaming
  * - Rate limiting per endpoint
  * - Per-client connection limiting
  * - Request validation middleware
- * - Granular timeout enforcement
  * - Graceful shutdown (drain)
- * - Enhanced statistics with latency tracking
  *
- * Leverages:
+ * Leverages existing modules (no duplication):
  * - SocketHTTP for headers, methods, status codes
  * - SocketHTTP1 for HTTP/1.1 parsing/serialization
  * - SocketRateLimit for rate limiting
  * - SocketIPTracker for per-client limits
  * - SocketPoll for event loop
- * - Socket for networking
+ * - SocketMetrics for statistics
  */
-
-#include "core/Arena.h"
-#include "core/SocketIPTracker.h"
-#include "core/SocketMetrics.h"
-#include "core/SocketRateLimit.h"
-#include "core/SocketUtil.h"
-#include "http/SocketHTTP.h"
-#include "http/SocketHTTP1.h"
-SOCKET_DECLARE_MODULE_EXCEPTION (HTTPServer);
-
-#include "http/SocketHTTPServer-private.h"
-#include "http/SocketHTTPServer.h"
-#include "poll/SocketPoll.h"
-#include "socket/Socket.h"
-#include "socket/SocketBuf.h"
-#include "socket/SocketWS.h" /* For WebSocket upgrade detection */
 
 #include <arpa/inet.h>
 #include <assert.h>
@@ -48,39 +29,25 @@ SOCKET_DECLARE_MODULE_EXCEPTION (HTTPServer);
 #include <stdlib.h>
 #include <string.h>
 
-/* Forward declarations */
-ServerConnection *connection_new (SocketHTTPServer_T server, Socket_T socket);
-
-/* ============================================================================
- * Server Configuration
- * ============================================================================
- * Server constants are defined in SocketHTTPServer.h with compile-time
- * override support (#ifndef guards). Reference:
- *   - HTTPSERVER_IO_BUFFER_SIZE (8192) - I/O buffer per connection
- *   - HTTPSERVER_MAX_CLIENTS_PER_ACCEPT (10) - clients per accept loop
- *   - HTTPSERVER_CHUNK_BUFFER_SIZE (16384) - streaming chunk buffer
- *   - HTTPSERVER_MAX_RATE_LIMIT_ENDPOINTS (64) - rate limit entries
- *   - HTTPSERVER_LATENCY_SAMPLES (1000) - latency tracking samples
- */
-
-/* ============================================================================
- * Centralized Exception Infrastructure
- * ============================================================================
- *
- * REFACTOR: Uses centralized exception handling from SocketUtil.h instead
- * of module-specific thread-local buffers. Benefits:
- * - Single thread-local error buffer (socket_error_buf) for all modules
- * - Consistent error formatting with SOCKET_ERROR_FMT/MSG macros
- * - Thread-safe exception raising via SOCKET_RAISE_MODULE_ERROR
- * - Automatic logging integration via SocketLog_emit
- */
+#include "core/Arena.h"
+#include "core/SocketIPTracker.h"
+#include "core/SocketMetrics.h"
+#include "core/SocketRateLimit.h"
+#include "core/SocketUtil.h"
+#include "http/SocketHTTP.h"
+#include "http/SocketHTTP1.h"
+#include "http/SocketHTTPServer-private.h"
+#include "http/SocketHTTPServer.h"
+#include "poll/SocketPoll.h"
+#include "socket/Socket.h"
+#include "socket/SocketBuf.h"
+#include "socket/SocketWS.h"
 
 /* Override log component for this module */
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "HTTPServer"
 
-/* Declare thread-local exception for this module */
-SOCKET_DECLARE_MODULE_EXCEPTION (HTTPServer);
+/* Module exception declared once in private header - no duplicate needed */
 
 /* ============================================================================
  * Exception Definitions
@@ -94,71 +61,23 @@ const Except_T SocketHTTPServer_BindFailed
 const Except_T SocketHTTPServer_ProtocolError
     = { &SocketHTTPServer_ProtocolError, "HTTP protocol error" };
 
-/* ============================================================================
- * Error Handling Macros (Centralized)
- * ============================================================================
- *
- * These delegate to centralized macros from SocketUtil.h for consistency.
- * Uses socket_error_buf (thread-local, 256 bytes) for error messages.
- */
-
-#define HTTPSERVER_ERROR_FMT(fmt, ...) SOCKET_ERROR_FMT (fmt, ##__VA_ARGS__)
-#define HTTPSERVER_ERROR_MSG(fmt, ...) SOCKET_ERROR_MSG (fmt, ##__VA_ARGS__)
-
-/**
- * RAISE_HTTPSERVER_ERROR - Raise exception with detailed error message
- *
- * Creates a thread-local copy of the exception with reason from
- * socket_error_buf. Thread-safe: prevents race conditions.
- */
-#define RAISE_HTTPSERVER_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketHTTPServer, e)
-
-/* STATS macros moved to SocketHTTPServer-private.h for shared use in split
- * files */
-
-/* RateLimitEntry defined in SocketHTTPServer-private.h */
-
-/* ServerConnState and ServerConnection defined in SocketHTTPServer-private.h
- */
-
-/* SocketHTTPServer_Request internal struct defined in
- * SocketHTTPServer-private.h */
-
-/* LatencyTracker defined in SocketHTTPServer-private.h */
-
-/* SocketHTTPServer internal struct defined in SocketHTTPServer-private.h */
+/* Error macros defined in SocketHTTPServer-private.h for shared use */
 
 /* ============================================================================
- * Internal Helper Functions - Time
+ * Internal Helper Functions
  * ============================================================================
  */
 
-/**
- * REFACTOR: Uses Socket_get_monotonic_ms() from SocketUtil.h instead of
- * direct clock_gettime() call. Centralizes monotonic time access.
- */
-/* server_time_ms removed - duplicate with SocketHTTPServer-connections.c; use
- * Socket_get_monotonic_ms() directly */
-
-/* Latency functions removed - use
- * SocketMetrics_histogram_observe(SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS,
- * ms) and queries instead See cross-file notes for updates in connections.c
- * and private.h */
+/* Forward declaration for connection management (impl in connections.c) */
+ServerConnection *connection_new (SocketHTTPServer_T server, Socket_T socket);
 
 /**
- *  - Record request latency if timing available
+ * find_rate_limiter - Find most specific rate limiter for path
  * @server: HTTP server
- * @request_start_ms: Request start timestamp (0 if not set)
+ * @path: Request path (NULL returns global limiter)
  *
- * REFACTOR: Extracted from connection_send_response and
- * SocketHTTPServer_Request_end_stream to eliminate duplication.
+ * Returns: Rate limiter for path prefix, or global limiter, or NULL
  */
-
-/* ============================================================================
- * Internal Helper Functions - Rate Limiting
- * ============================================================================
- */
-
 static SocketRateLimit_T
 find_rate_limiter (SocketHTTPServer_T server, const char *path)
 {
@@ -186,21 +105,6 @@ find_rate_limiter (SocketHTTPServer_T server, const char *path)
     return best->limiter;
   return server->global_rate_limiter;
 }
-
-/* ============================================================================
- * Internal Helper Functions - Connection
- * ============================================================================
- */
-
-/* Connection functions moved to SocketHTTPServer-connections.c */
-
-/* connection_set_client_addr removed - duplicate with
- * SocketHTTPServer-connections.c */
-
-/* connection_create_parser removed - duplicate with
- * SocketHTTPServer-connections.c; impl without TRY for simplicity */
-
-/* connection_finish_request implemented in SocketHTTPServer-connections.c */
 
 /* ============================================================================
  * Configuration Defaults
@@ -1606,7 +1510,7 @@ SocketHTTPServer_add_static_dir (SocketHTTPServer_T server, const char *prefix,
   if (stat (directory, &st) < 0 || !S_ISDIR (st.st_mode))
     {
       SOCKET_ERROR_FMT ("Static directory not accessible: %s", directory);
-      SOCKET_RAISE_MODULE_ERROR (HTTPServer, SocketHTTPServer_Failed);
+      RAISE_HTTPSERVER_ERROR (SocketHTTPServer_Failed);
       return -1;
     }
 

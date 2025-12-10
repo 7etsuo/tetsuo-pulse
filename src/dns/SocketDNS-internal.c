@@ -57,6 +57,7 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketDNS);
 /**
  * initialize_mutex - Initialize mutex for DNS resolver
  * @dns: DNS resolver instance
+ *
  * Raises: SocketDNS_Failed on initialization failure
  */
 void
@@ -73,6 +74,7 @@ initialize_mutex (struct SocketDNS_T *dns)
 /**
  * initialize_queue_condition - Initialize queue condition variable
  * @dns: DNS resolver instance
+ *
  * Raises: SocketDNS_Failed on initialization failure
  */
 void
@@ -81,15 +83,15 @@ initialize_queue_condition (struct SocketDNS_T *dns)
   if (pthread_cond_init (&dns->queue_cond, NULL) != 0)
     {
       cleanup_on_init_failure (dns, DNS_CLEAN_MUTEX);
-      SOCKET_RAISE_MSG (
-          SocketDNS, SocketDNS_Failed,
-          "Failed to initialize DNS resolver condition variable");
+      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+                        "Failed to initialize DNS resolver queue condition");
     }
 }
 
 /**
  * initialize_result_condition - Initialize result condition variable
  * @dns: DNS resolver instance
+ *
  * Raises: SocketDNS_Failed on initialization failure
  */
 void
@@ -98,9 +100,8 @@ initialize_result_condition (struct SocketDNS_T *dns)
   if (pthread_cond_init (&dns->result_cond, NULL) != 0)
     {
       cleanup_on_init_failure (dns, DNS_CLEAN_CONDS);
-      SOCKET_RAISE_MSG (
-          SocketDNS, SocketDNS_Failed,
-          "Failed to initialize DNS resolver result condition variable");
+      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+                        "Failed to initialize DNS resolver result condition");
     }
 }
 
@@ -215,36 +216,25 @@ allocate_dns_resolver (void)
 /**
  * initialize_dns_fields - Set default field values for DNS resolver
  * @dns: DNS resolver instance
- * Initializes configuration fields to default values.
+ *
+ * Initializes configuration fields to non-zero default values.
  * Note: dns was allocated with calloc, so zero/NULL fields are already set.
- * Only non-zero defaults need explicit initialization.
+ * Only non-zero defaults need explicit initialization here.
  */
 void
 initialize_dns_fields (struct SocketDNS_T *dns)
 {
+  /* Thread pool configuration */
   dns->num_workers = SOCKET_DNS_THREAD_COUNT;
   dns->max_pending = SOCKET_DNS_MAX_PENDING;
   dns->request_timeout_ms = SOCKET_DEFAULT_DNS_TIMEOUT_MS;
-  /* shutdown, queue_head/tail/size already 0/NULL from calloc */
 
-  /* Cache configuration defaults */
+  /* Cache configuration - only non-zero defaults */
   dns->cache_max_entries = SOCKET_DNS_DEFAULT_CACHE_MAX_ENTRIES;
   dns->cache_ttl_seconds = SOCKET_DNS_DEFAULT_CACHE_TTL_SECONDS;
-  dns->cache_size = 0;
-  dns->cache_hits = 0;
-  dns->cache_misses = 0;
-  dns->cache_evictions = 0;
-  dns->cache_insertions = 0;
-  dns->cache_lru_head = NULL;
-  dns->cache_lru_tail = NULL;
-  /* cache_hash[] already zeroed from calloc */
 
-  /* DNS configuration defaults */
-  dns->prefer_ipv6 = 1; /* Default: prefer IPv6 per RFC 6724 */
-  dns->custom_nameservers = NULL;
-  dns->nameserver_count = 0;
-  dns->search_domains = NULL;
-  dns->search_domain_count = 0;
+  /* DNS preferences */
+  dns->prefer_ipv6 = 1; /* Prefer IPv6 per RFC 6724 */
 }
 
 /**
@@ -407,21 +397,19 @@ cleanup_mutex_cond (struct SocketDNS_T *dns)
 /**
  * cleanup_pipe - Close pipe file descriptors
  * @dns: DNS resolver instance
- * Safely closes both pipe file descriptors.
+ *
+ * Safely closes both pipe file descriptors and marks them invalid.
  */
 void
 cleanup_pipe (struct SocketDNS_T *dns)
 {
-  /* Close pipe file descriptors and mark as invalid */
-  if (dns->pipefd[0] >= 0)
+  for (int i = 0; i < 2; i++)
     {
-      SAFE_CLOSE (dns->pipefd[0]);
-      dns->pipefd[0] = -1;
-    }
-  if (dns->pipefd[1] >= 0)
-    {
-      SAFE_CLOSE (dns->pipefd[1]);
-      dns->pipefd[1] = -1;
+      if (dns->pipefd[i] >= 0)
+        {
+          SAFE_CLOSE (dns->pipefd[i]);
+          dns->pipefd[i] = -1;
+        }
     }
 }
 
@@ -495,21 +483,20 @@ drain_completion_pipe (struct SocketDNS_T *dns)
 }
 
 /**
- * free_request_list - Free all requests in a list
- * @head: Head of request list
- * @use_hash_next: If true, traverse via hash_next; else via queue_next
- * Frees getaddrinfo results for all requests in list.
+ * free_queue_request_results - Free addrinfo results for queue-linked requests
+ * @head: Head of queue-linked request list
+ *
+ * Traverses via queue_next, freeing getaddrinfo results.
  * Request structures themselves are in Arena, so not freed here.
  */
-void
-free_request_list (Request_T head, int use_hash_next)
+static void
+free_queue_request_results (Request_T head)
 {
   Request_T curr = head;
-  Request_T next;
 
   while (curr)
     {
-      next = use_hash_next ? curr->hash_next : curr->queue_next;
+      Request_T next = curr->queue_next;
       if (curr->result)
         {
           SocketCommon_free_addrinfo (curr->result);
@@ -520,43 +507,45 @@ free_request_list (Request_T head, int use_hash_next)
 }
 
 /**
- * free_queued_requests - Free all requests in the request queue
- * @d: DNS resolver instance
- * Thread-safe: Must be called with mutex locked
- * Frees all requests currently in the processing queue.
+ * free_hash_request_results - Free addrinfo results for hash-linked requests
+ * @head: Head of hash-linked request list
+ *
+ * Traverses via hash_next, freeing getaddrinfo results.
+ * Request structures themselves are in Arena, so not freed here.
  */
-void
-free_queued_requests (T d)
+static void
+free_hash_request_results (Request_T head)
 {
-  free_request_list (d->queue_head, 0);
-}
+  Request_T curr = head;
 
-/**
- * free_hash_table_requests - Free all requests in hash table
- * @d: DNS resolver instance
- * Thread-safe: Must be called with mutex locked
- * Frees all requests currently registered in the hash table.
- */
-void
-free_hash_table_requests (T d)
-{
-  for (int i = 0; i < SOCKET_DNS_REQUEST_HASH_SIZE; i++)
+  while (curr)
     {
-      free_request_list (d->request_hash[i], 1);
+      Request_T next = curr->hash_next;
+      if (curr->result)
+        {
+          SocketCommon_free_addrinfo (curr->result);
+          curr->result = NULL;
+        }
+      curr = next;
     }
 }
 
 /**
  * free_all_requests - Free all pending requests
  * @d: DNS resolver instance
- * Thread-safe: Must be called with mutex locked
- * Frees all requests from both queue and hash table.
+ *
+ * Thread-safe: Must be called with mutex locked.
+ * Frees getaddrinfo results from both queue and hash table.
  */
 void
 free_all_requests (T d)
 {
-  free_queued_requests (d);
-  free_hash_table_requests (d);
+  /* Free queue-linked requests */
+  free_queue_request_results (d->queue_head);
+
+  /* Free hash-linked requests */
+  for (int i = 0; i < SOCKET_DNS_REQUEST_HASH_SIZE; i++)
+    free_hash_request_results (d->request_hash[i]);
 }
 
 /**
@@ -939,33 +928,32 @@ calculate_elapsed_ms (const struct timespec *start, const struct timespec *end)
 {
   long long sec_delta = (long long)end->tv_sec - (long long)start->tv_sec;
   long long nsec_delta = (long long)end->tv_nsec - (long long)start->tv_nsec;
+  size_t sec_delta_u;
+  size_t sec_ms_u;
+  long long sec_ms;
+  long long nsec_ms;
 
+  /* Clock error - monotonic should not decrease */
   if (sec_delta < 0)
-    {
-      // Clock error (monotonic should not decrease)
-      return 0LL;
-    }
+    return 0LL;
 
+  /* Handle nanosecond borrow */
   if (nsec_delta < 0)
     {
       sec_delta--;
       nsec_delta += SOCKET_NS_PER_SECOND;
     }
 
-  size_t sec_delta_u = (size_t)sec_delta;
-  size_t sec_ms_u;
+  /* Safe overflow check for sec * 1000 */
+  sec_delta_u = (size_t)sec_delta;
   if (!SocketSecurity_check_multiply (sec_delta_u,
                                       (size_t)SOCKET_MS_PER_SECOND, &sec_ms_u))
-    {
-      // Overflow: treat as very long elapsed time
-      return LLONG_MAX;
-    }
-  long long sec_ms = (long long)sec_ms_u;
+    return LLONG_MAX; /* Overflow: treat as very long elapsed */
 
-  long long nsec_ms = nsec_delta / (long long)SOCKET_NS_PER_MS;
-  long long elapsed_ms = sec_ms + nsec_ms;
+  sec_ms = (long long)sec_ms_u;
+  nsec_ms = nsec_delta / (long long)SOCKET_NS_PER_MS;
 
-  return elapsed_ms;
+  return sec_ms + nsec_ms;
 }
 
 /**
@@ -994,8 +982,12 @@ request_timed_out (const struct SocketDNS_T *dns,
   clock_gettime (CLOCK_MONOTONIC, &now);
 
   long long elapsed_ms = calculate_elapsed_ms (&req->submit_time, &now);
-  return (elapsed_ms == LLONG_MAX || elapsed_ms >= (long long)timeout_ms) ? 1
-                                                                          : 0;
+
+  /* Overflow or timeout exceeded */
+  if (elapsed_ms == LLONG_MAX || elapsed_ms >= (long long)timeout_ms)
+    return 1;
+
+  return 0;
 }
 
 /**
@@ -1061,11 +1053,11 @@ initialize_addrinfo_hints (struct addrinfo *hints)
 /**
  * dequeue_request - Dequeue next request from queue
  * @dns: DNS resolver instance
+ *
  * Returns: Next request or NULL if queue empty
  * Thread-safe: Must be called with mutex locked
  *
- * Reuses remove_from_queue_head() for queue manipulation to avoid
- * code duplication. Sets request state to REQ_PROCESSING.
+ * Pops the head request and transitions it to REQ_PROCESSING state.
  */
 Request_T
 dequeue_request (struct SocketDNS_T *dns)
@@ -1076,8 +1068,14 @@ dequeue_request (struct SocketDNS_T *dns)
     return NULL;
 
   req = dns->queue_head;
-  remove_from_queue_head (dns, req);
+
+  /* Pop from queue head */
+  dns->queue_head = req->queue_next;
+  if (!dns->queue_head)
+    dns->queue_tail = NULL;
   dns->queue_size--;
+
+  /* Prepare for processing */
   req->queue_next = NULL;
   req->state = REQ_PROCESSING;
 
@@ -1183,10 +1181,8 @@ perform_dns_resolution (const struct SocketDNS_Request_T *req,
  *
  * Thread-safe: Must be called with mutex locked
  *
- * Error handling: If result is NULL and error is non-zero, the provided error
- * is preserved (e.g., EAI_AGAIN for timeouts). Only sets EAI_MEMORY if result
- * is NULL and error is 0 (indicating an actual allocation failure during
- * copy).
+ * Error handling: Preserves non-zero error codes (e.g., EAI_AGAIN for timeout).
+ * Sets EAI_MEMORY only if copy fails with no prior error.
  */
 static void
 copy_and_store_result (struct SocketDNS_Request_T *req,
@@ -1195,14 +1191,16 @@ copy_and_store_result (struct SocketDNS_Request_T *req,
   req->state = REQ_COMPLETE;
   req->result = SocketCommon_copy_addrinfo (result);
 
-  /* Preserve non-zero error codes (e.g., EAI_AGAIN for timeout).
-   * Only set EAI_MEMORY if copy failed with no prior error. */
-  if (req->result)
+  /* Determine final error code:
+   * - Use provided error if non-zero (timeout, DNS failure, etc.)
+   * - Use EAI_MEMORY if copy failed and no prior error
+   * - Use 0 if copy succeeded and no error */
+  if (error != 0)
     req->error = error;
-  else if (error != 0)
-    req->error = error; /* Preserve original error (timeout, etc.) */
+  else if (!req->result && result)
+    req->error = EAI_MEMORY;
   else
-    req->error = EAI_MEMORY; /* Copy failed with no prior error */
+    req->error = 0;
 
   if (result)
     freeaddrinfo (result);

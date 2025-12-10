@@ -45,31 +45,33 @@
 /**
  * http2_process_priority - Process PRIORITY frame (deprecated)
  * @conn: HTTP/2 connection context (unused - kept for dispatch API
- * consistency)
- * @header: Frame header (provides stream ID and confirms PRIORITY type)
+ *        consistency)
+ * @header: Frame header (provides stream ID for logging)
  * @payload: Frame payload (ignored per RFC 9113)
  *
- * Returns: 0 on success (frame ignored)
- * Raises: None - any validation errors raised earlier in frame parser
- * Thread-safe: Yes - thread-safe logging; no changes to connection state
+ * Returns: 0 (always succeeds - frame is ignored)
+ * Raises: None - validation errors raised earlier in frame parser
+ * Thread-safe: Yes - thread-safe logging; no state modification
  *
- * Per RFC 9113 Section 5.3.2: PRIORITY frames deprecated - endpoints MAY
- * ignore them. Logs frame receipt for debugging non-compliant peers. No
- * parsing or state changes performed.
+ * Per RFC 9113 Section 5.3.2: PRIORITY frames are deprecated. Endpoints
+ * SHOULD NOT send them, and MAY ignore them. This implementation ignores
+ * them with debug logging for monitoring non-compliant peers.
  *
- * Prior validation in frame parser ensures: stream ID > 0, payload len == 5.
+ * Prior validation in frame parser ensures: stream ID > 0, length == 5.
+ *
+ * @ingroup http2_private
  */
 int
 http2_process_priority (SocketHTTP2_Conn_T conn,
                         const SocketHTTP2_FrameHeader *header,
                         const unsigned char *payload)
 {
-  SOCKET_LOG_DEBUG_MSG ("Ignoring deprecated HTTP/2 PRIORITY frame on stream "
-                        "%u (payload len=%u)",
-                        header->stream_id, (unsigned)header->length);
-
-  (void)conn; /* Unused parameter for API consistency */
+  /* Suppress unused parameter warnings - parameters kept for API consistency */
+  (void)conn;
   (void)payload;
+
+  SOCKET_LOG_DEBUG_MSG ("Ignoring deprecated PRIORITY frame: stream=%u len=%u",
+                        header->stream_id, (unsigned)header->length);
 
   return 0;
 }

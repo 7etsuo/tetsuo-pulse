@@ -21,9 +21,9 @@
 #include "http/SocketHTTP2-private.h"
 #include "http/SocketHTTP2.h"
 
+#include "core/SocketSecurity.h"
 #include "core/SocketUtil.h"
 
-#include "core/SocketSecurity.h"
 #include <assert.h>
 #include <stdint.h>
 
@@ -34,14 +34,6 @@
 
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "HTTP2-flow"
-
-/* ============================================================================
- * Constants (RFC 9113 Section 5.2)
- * ============================================================================
- */
-
-/* Maximum window size (2^31 - 1) per RFC 9113 Section 5.2.1 */
-#define HTTP2_MAX_WINDOW_SIZE 0x7FFFFFFF
 
 /* ============================================================================
  * Static Helper Functions
@@ -84,7 +76,7 @@ flow_consume_window (int32_t *window, size_t bytes)
  * @window: Pointer to window value (int32_t)
  * @increment: Amount to add (from WINDOW_UPDATE frame)
  *
- * Returns: 0 on success, -1 if would overflow HTTP2_MAX_WINDOW_SIZE
+ * Returns: 0 on success, -1 if would overflow SOCKETHTTP2_MAX_WINDOW_SIZE
  * Thread-safe: No - modifies window directly
  *
  * Uses 64-bit arithmetic to detect overflow before applying update.
@@ -109,11 +101,11 @@ flow_update_window (int32_t *window, uint32_t increment)
   size_t new_value;
   if (!SocketSecurity_check_add ((size_t)*window, (size_t)increment,
                                  &new_value)
-      || new_value > (size_t)HTTP2_MAX_WINDOW_SIZE)
+      || new_value > (size_t)SOCKETHTTP2_MAX_WINDOW_SIZE)
     {
       SOCKET_LOG_WARN_MSG (
-          "Flow window update overflow or invalid: current %u + %u > max %u",
-          (unsigned)*window, increment, HTTP2_MAX_WINDOW_SIZE);
+          "Flow window overflow: current %u + %u > max %u",
+          (unsigned)*window, increment, SOCKETHTTP2_MAX_WINDOW_SIZE);
       return -1;
     }
 
@@ -258,8 +250,8 @@ http2_flow_consume_recv (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
  * synchronize access
  *
  * Called when sending WINDOW_UPDATE frame to peer (increasing our capacity to
- * receive). Overflow beyond HTTP2_MAX_WINDOW_SIZE is a flow control error per
- * RFC 9113. Logs warning on error.
+ * receive). Overflow beyond SOCKETHTTP2_MAX_WINDOW_SIZE (2^31-1) is a flow
+ * control error per RFC 9113 Section 5.2.1. Logs warning on error.
  */
 int
 http2_flow_update_recv (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
@@ -305,8 +297,8 @@ http2_flow_consume_send (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
  * synchronize access
  *
  * Called when WINDOW_UPDATE frame received from peer (increasing our capacity
- * to send). Overflow beyond HTTP2_MAX_WINDOW_SIZE is a flow control error per
- * RFC 9113. Logs warning on error.
+ * to send). Overflow beyond SOCKETHTTP2_MAX_WINDOW_SIZE (2^31-1) is a flow
+ * control error per RFC 9113 Section 5.2.1. Logs warning on error.
  */
 int
 http2_flow_update_send (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
@@ -366,7 +358,7 @@ http2_flow_available_send (const SocketHTTP2_Conn_T conn,
  * Per RFC 9113 Section 6.5.2: Adjusts window for SETTINGS_INITIAL_WINDOW_SIZE
  * change.
  * - Negative window after adjustment -> FLOW_CONTROL_ERROR
- * - Window > HTTP2_MAX_WINDOW_SIZE -> error (defense against invalid settings)
+ * - Window > SOCKETHTTP2_MAX_WINDOW_SIZE -> error (defense against invalid settings)
  * - Logs warning on error.
  * - Handles delta == 0 as no-op.
  */
@@ -386,11 +378,11 @@ http2_flow_adjust_window (int32_t *window, int32_t delta)
       return -1;
     }
 
-  if (new_value > HTTP2_MAX_WINDOW_SIZE)
+  if (new_value > SOCKETHTTP2_MAX_WINDOW_SIZE)
     {
       SOCKET_LOG_WARN_MSG (
           "Flow window adjustment overflow: current %ld + %ld > max %u",
-          (long)*window, (long)delta, HTTP2_MAX_WINDOW_SIZE);
+          (long)*window, (long)delta, SOCKETHTTP2_MAX_WINDOW_SIZE);
       return -1;
     }
 

@@ -2,34 +2,18 @@
  * SocketHTTP-headers.c - HTTP Header Collection
  *
  * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
  *
  * Implements HTTP header collection with O(1) average case
  * case-insensitive lookup using hash table with separate chaining.
  */
 
+#include <string.h>
+
+#include "core/SocketSecurity.h"
 #include "core/SocketUtil.h"
 #include "http/SocketHTTP-private.h"
 #include "http/SocketHTTP.h"
-
-#include "core/SocketSecurity.h"
-#include <string.h>
-
-/* ============================================================================
- * Module-Specific Error Handling
- * ============================================================================
- */
-
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-variable"
-#endif
-SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP);
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-/* Note: DetailedException unused in this file as no exceptions raised here */
-
-#define RAISE_HTTP_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketHTTP, e)
 
 /* ============================================================================
  * Constants
@@ -41,11 +25,6 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP);
 
 /** Maximum chain length per bucket to prevent hash collision DoS attacks */
 #define SOCKETHTTP_MAX_CHAIN_LEN 10
-
-/* ============================================================================
- * Internal Helper Functions - String Operations
- * ============================================================================
- */
 
 /* ============================================================================
  * Internal Helper Functions - Hash Table Operations
@@ -91,10 +70,9 @@ find_entry (SocketHTTP_Headers_T headers, const char *name, size_t name_len)
  * add_to_bucket - Add entry to hash bucket
  * @headers: Header collection
  * @entry: Entry to add
+ *
+ * Returns: 0 on success, -1 if bucket chain too long (DoS protection)
  */
-/** Maximum chain length per bucket to prevent hash collision DoS attacks */
-#define SOCKETHTTP_MAX_CHAIN_LEN 10
-
 static int
 add_to_bucket (SocketHTTP_Headers_T headers, HeaderEntry *entry)
 {
@@ -257,21 +235,6 @@ extract_token_bounds (const char *start, const char **end)
   return (size_t)(p - start);
 }
 
-/**
- * token_equal_ci - Case-insensitive token comparison
- * @token: Token from header value
- * @token_len: Token length
- * @target: Target token to match
- * @target_len: Target length
- *
- * Returns: 1 if equal (case-insensitive), 0 otherwise
- */
-static int
-token_equal_ci (const char *token, size_t token_len, const char *target,
-                size_t target_len)
-{
-  return sockethttp_name_equal (token, token_len, target, target_len);
-}
 
 /* ============================================================================
  * Internal Helper Functions - Header Entry Allocation
@@ -599,7 +562,7 @@ SocketHTTP_Headers_contains (SocketHTTP_Headers_T headers, const char *name,
       const char *end;
       size_t len = extract_token_bounds (p, &end);
 
-      if (token_equal_ci (p, len, token, token_len))
+      if (sockethttp_name_equal (p, len, token, token_len))
         return 1;
 
       p = end;
