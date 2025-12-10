@@ -514,17 +514,42 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
 /* ============================================================================
  * TLS Timeout Configuration
  * ============================================================================
+ *
+ * Timeout values are carefully chosen to balance security against DoS attacks
+ * (slowloris, connection exhaustion) while accommodating real-world network
+ * conditions (high latency, packet loss, OCSP/CRL validation time).
+ *
+ * All timeouts can be overridden by defining them before including this header.
  */
 
 /**
  * @brief Default TLS handshake timeout in milliseconds
  * @ingroup tls_config
  *
- * Maximum time allowed for TLS handshake completion. 30 seconds provides
- * reasonable security (prevents slowloris-style attacks) while allowing
- * for network latency and certificate validation time.
+ * Maximum time allowed for TLS handshake completion: 30 seconds (30000ms).
  *
- * Override before including this header to customize for your environment.
+ * ## Rationale for 30 Seconds
+ *
+ * - **Network latency**: Accommodates high-latency links (satellite, mobile)
+ *   with 500ms+ RTT requiring 4-6 round trips for TLS 1.3 handshake
+ * - **OCSP/CRL validation**: Server-side OCSP fetching can add 2-5 seconds
+ * - **Certificate chain**: Deep chains (5+ certs) increase validation time
+ * - **DoS protection**: Short enough to limit slowloris-style attacks
+ * - **Industry standard**: Matches nginx/Apache default SSL timeouts
+ *
+ * ## Override Examples
+ *
+ * @code{.c}
+ * // Faster for internal/low-latency networks (10 seconds)
+ * #define SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS 10000
+ *
+ * // Longer for high-latency satellite links (60 seconds)
+ * #define SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS 60000
+ * @endcode
+ *
+ * @warning Values below 5 seconds may cause failures on congested networks.
+ * @see SocketTLS_handshake_loop() uses this for non-blocking handshakes.
+ * @see SocketTLS_handshake_auto() uses socket's configured timeout or this.
  */
 #ifndef SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS
 #define SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS 30000 /* 30 seconds */
@@ -534,9 +559,28 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
  * @brief Default TLS shutdown timeout in milliseconds
  * @ingroup tls_config
  *
- * Maximum time to wait for graceful TLS connection shutdown. Shorter than
- * handshake timeout since shutdown should complete quickly. 5 seconds
- * prevents hanging on non-responsive peers.
+ * Maximum time to wait for graceful TLS connection shutdown: 5 seconds (5000ms).
+ *
+ * ## Rationale for 5 Seconds
+ *
+ * - **Quick teardown**: Shutdown is simpler than handshake (single close_notify)
+ * - **Resource release**: Allows timely connection slot recycling
+ * - **Peer responsiveness**: Unresponsive peers shouldn't block cleanup
+ * - **Protocol compliance**: Enough time for close_notify exchange
+ * - **Graceful degradation**: After timeout, socket closes without close_notify
+ *
+ * ## Override Examples
+ *
+ * @code{.c}
+ * // Faster shutdown for high-traffic servers (2 seconds)
+ * #define SOCKET_TLS_DEFAULT_SHUTDOWN_TIMEOUT_MS 2000
+ *
+ * // More patient for unreliable networks (10 seconds)
+ * #define SOCKET_TLS_DEFAULT_SHUTDOWN_TIMEOUT_MS 10000
+ * @endcode
+ *
+ * @see SocketTLS_shutdown() uses this for bidirectional shutdown.
+ * @see SocketTLS_shutdown_send() for half-close without waiting.
  */
 #ifndef SOCKET_TLS_DEFAULT_SHUTDOWN_TIMEOUT_MS
 #define SOCKET_TLS_DEFAULT_SHUTDOWN_TIMEOUT_MS 5000 /* 5 seconds */
@@ -546,22 +590,59 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
  * @brief TLS handshake poll interval for non-blocking operations
  * @ingroup tls_config
  *
- * Polling interval used by SocketTLS_handshake_loop() for event-driven
- * handshake completion. 100ms balances responsiveness with CPU usage.
- * Smaller values increase responsiveness but consume more CPU.
+ * Polling interval used by SocketTLS_handshake_loop(): 100ms.
+ *
+ * ## Rationale for 100ms
+ *
+ * - **Responsiveness**: Sub-second response to handshake progress
+ * - **CPU efficiency**: Avoids busy-waiting (100ms sleep between polls)
+ * - **Network granularity**: Matches typical TCP RTT range (50-200ms)
+ * - **Event loop friendly**: Compatible with most event loop timers
+ *
+ * ## Override Examples
+ *
+ * @code{.c}
+ * // Low latency (25ms) for interactive applications
+ * #define SOCKET_TLS_POLL_INTERVAL_MS 25
+ *
+ * // CPU efficient (500ms) for resource-constrained systems
+ * #define SOCKET_TLS_POLL_INTERVAL_MS 500
+ * @endcode
+ *
+ * @note For true async, use SocketPoll with SocketTLS_handshake() directly.
+ * @see SocketTLS_handshake_loop_ex() for runtime-configurable interval.
  */
 #ifndef SOCKET_TLS_POLL_INTERVAL_MS
 #define SOCKET_TLS_POLL_INTERVAL_MS 100 /* 100ms polling interval */
 #endif
 
+/* ============================================================================
+ * Buffer and Size Limits
+ * ============================================================================
+ *
+ * These limits are carefully chosen to:
+ * 1. Comply with TLS protocol specifications (RFC 8446)
+ * 2. Prevent memory exhaustion and DoS attacks
+ * 3. Support common deployment scenarios
+ * 4. Maintain compatibility with major TLS implementations
+ */
+
 /**
  * @brief TLS read/write buffer size
  * @ingroup tls_config
  *
- * Buffer size for TLS record I/O operations. Set to maximum TLS record
- * size (16384 bytes) to ensure complete records can be processed in
- * single operations. Larger buffers don't provide benefit since TLS
- * records cannot exceed this size.
+ * Buffer size for TLS record I/O operations: 16384 bytes (16KB).
+ *
+ * ## Rationale for 16KB
+ *
+ * - **RFC 8446 Section 5.1**: Maximum TLS 1.3 record payload is 16384 bytes
+ * - **Optimal I/O**: Complete records processed in single operations
+ * - **Memory efficiency**: No benefit from larger buffers (TLS max)
+ * - **Fragmentation**: Avoids TLS record fragmentation overhead
+ * - **Compatibility**: Matches OpenSSL default record size
+ *
+ * @note This is the maximum *plaintext* size; ciphertext adds ~40 bytes overhead.
+ * @see RFC 8446 Section 5.1 "Record Layer" for TLS 1.3 limits.
  */
 #ifndef SOCKET_TLS_BUFFER_SIZE
 #define SOCKET_TLS_BUFFER_SIZE 16384 /* 16KB - TLS record max */
@@ -571,9 +652,26 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
  * @brief Maximum certificate chain depth for verification
  * @ingroup tls_config
  *
- * Maximum depth of certificate chains accepted during verification.
- * Prevents excessive memory usage from maliciously long chains.
- * 10 levels allows for typical commercial CA hierarchies.
+ * Maximum depth of certificate chains accepted during verification: 10 levels.
+ *
+ * ## Rationale for 10 Levels
+ *
+ * - **Typical chains**: Most PKI: Root → Intermediate → Leaf (depth 2-3)
+ * - **Enterprise PKI**: Multi-tier CA hierarchies may use 4-5 levels
+ * - **DoS protection**: Prevents stack exhaustion from malicious chains
+ * - **Industry practice**: OpenSSL default is 100; 10 is more conservative
+ * - **Memory safety**: Each level adds ~4KB for certificate parsing
+ *
+ * ## Example Chain Depths
+ *
+ * | Scenario                     | Typical Depth |
+ * |------------------------------|---------------|
+ * | Let's Encrypt               | 2             |
+ * | Commercial CAs (DigiCert)   | 2-3           |
+ * | Enterprise multi-tier PKI   | 3-5           |
+ * | Government/Military PKI     | 4-7           |
+ *
+ * @see SSL_CTX_set_verify_depth() for OpenSSL configuration.
  */
 #ifndef SOCKET_TLS_MAX_CERT_CHAIN_DEPTH
 #define SOCKET_TLS_MAX_CERT_CHAIN_DEPTH 10
@@ -583,9 +681,16 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
  * @brief Maximum ALPN protocol name length
  * @ingroup tls_config
  *
- * Maximum length for individual ALPN protocol names in bytes.
- * Conforms to RFC 7301 Section 3.2 protocol identifier limits.
- * 255 bytes provides ample space for protocol names.
+ * Maximum length for individual ALPN protocol names: 255 bytes.
+ *
+ * ## Rationale for 255 Bytes
+ *
+ * - **RFC 7301 Section 3.1**: Protocol identifier is 1-255 octets
+ * - **Practical values**: "h2" (2), "http/1.1" (8), "grpc" (4)
+ * - **Future proof**: Allows long protocol identifiers if needed
+ * - **Memory bounded**: Prevents allocation attacks
+ *
+ * @see RFC 7301 "Transport Layer Security (TLS) ALPN Extension".
  */
 #ifndef SOCKET_TLS_MAX_ALPN_LEN
 #define SOCKET_TLS_MAX_ALPN_LEN 255
@@ -595,9 +700,16 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
  * @brief Maximum total bytes for ALPN protocol list
  * @ingroup tls_config
  *
- * Maximum total size of ALPN protocol list to prevent DoS attacks
- * during parsing. Limits memory allocation and processing time.
- * 1024 bytes allows reasonable number of protocols.
+ * Maximum total size of ALPN protocol list: 1024 bytes.
+ *
+ * ## Rationale for 1024 Bytes
+ *
+ * - **DoS protection**: Prevents memory exhaustion during parsing
+ * - **Practical limit**: ~100 short protocols or ~4 max-length protocols
+ * - **TLS extension limit**: ClientHello extensions have size constraints
+ * - **Common usage**: Most deployments use 2-5 protocols
+ *
+ * @note Each protocol has 1-byte length prefix in wire format.
  */
 #ifndef SOCKET_TLS_MAX_ALPN_TOTAL_BYTES
 #define SOCKET_TLS_MAX_ALPN_TOTAL_BYTES 1024
@@ -607,9 +719,17 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
  * @brief SNI hostname length limit
  * @ingroup tls_config
  *
- * Maximum length for Server Name Indication hostnames.
- * Conforms to DNS hostname limits (253 chars) with padding.
- * Prevents buffer overflow in SNI processing.
+ * Maximum length for Server Name Indication hostnames: 255 bytes.
+ *
+ * ## Rationale for 255 Bytes
+ *
+ * - **RFC 1035**: DNS labels max 63 chars, total hostname max 253 chars
+ * - **RFC 6066 Section 3**: SNI hostname is DNS hostname format
+ * - **Buffer safety**: 255 provides margin for null terminator + alignment
+ * - **Attack prevention**: Limits buffer overflow in SNI processing
+ *
+ * @see RFC 6066 "TLS Extensions: SNI" for specification.
+ * @see tls_validate_hostname() for SNI validation rules.
  */
 #ifndef SOCKET_TLS_MAX_SNI_LEN
 #define SOCKET_TLS_MAX_SNI_LEN 255
@@ -619,10 +739,22 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
  * @brief TLS session cache size (number of cached sessions)
  * @ingroup tls_config
  *
- * Maximum number of TLS sessions to cache for resumption.
- * Larger caches improve performance for frequent reconnections
- * but consume more memory. 1000 sessions is reasonable for
- * moderate-traffic servers.
+ * Maximum number of TLS sessions to cache for resumption: 1000 sessions.
+ *
+ * ## Rationale for 1000 Sessions
+ *
+ * - **Moderate traffic**: Handles ~1000 unique clients with resumption
+ * - **Memory usage**: ~500KB-2MB depending on session data size
+ * - **LRU eviction**: OpenSSL automatically evicts oldest sessions
+ * - **Tunable**: Increase for high-traffic servers, decrease for memory limits
+ *
+ * ## Memory Estimate
+ *
+ * Each session: ~500-2000 bytes (varies by TLS version, extensions)
+ * 1000 sessions × 1KB avg ≈ 1MB memory footprint
+ *
+ * @see SocketTLSContext_enable_session_cache() for configuration.
+ * @see SocketTLSContext_set_session_cache_size() for runtime adjustment.
  */
 #ifndef SOCKET_TLS_SESSION_CACHE_SIZE
 #define SOCKET_TLS_SESSION_CACHE_SIZE 1000
@@ -632,9 +764,17 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
  * @brief TLS error buffer size for detailed error messages
  * @ingroup tls_config
  *
- * Buffer size for thread-local error messages used in exception handling.
- * Must accommodate detailed OpenSSL error strings and context information.
- * 512 bytes provides ample space for comprehensive error reporting.
+ * Buffer size for thread-local error messages: 512 bytes.
+ *
+ * ## Rationale for 512 Bytes
+ *
+ * - **Error detail**: Accommodates OpenSSL error strings (~120 chars) plus context
+ * - **Stack allocation**: Safe for stack-allocated buffers
+ * - **Formatting room**: Space for errno, file paths, and custom messages
+ * - **Truncation safe**: Errors truncated gracefully if exceeded
+ *
+ * @see tls_error_buf thread-local buffer declaration.
+ * @see SOCKET_ERROR_MSG() for error formatting macros.
  */
 #ifndef SOCKET_TLS_ERROR_BUFSIZE
 #define SOCKET_TLS_ERROR_BUFSIZE 512
@@ -644,21 +784,44 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
  * @brief OpenSSL error string buffer size for temporary formatting
  * @ingroup tls_config
  *
- * Temporary buffer for formatting individual OpenSSL error strings.
- * Used during error queue processing. 256 bytes accommodates typical
- * OpenSSL error message lengths with room for formatting.
+ * Temporary buffer for formatting individual OpenSSL error strings: 256 bytes.
+ *
+ * ## Rationale for 256 Bytes
+ *
+ * - **OpenSSL format**: ERR_error_string_n() output is ~120 chars typical
+ * - **Safety margin**: Accommodates longest possible OpenSSL error strings
+ * - **Stack friendly**: Safe for temporary stack allocation
+ * - **Industry standard**: Matches OpenSSL documentation recommendations
+ *
+ * @see ERR_error_string_n() for OpenSSL error formatting.
  */
 #ifndef SOCKET_TLS_OPENSSL_ERRSTR_BUFSIZE
 #define SOCKET_TLS_OPENSSL_ERRSTR_BUFSIZE 256
 #endif
 
+/* ============================================================================
+ * Security Limits
+ * ============================================================================
+ *
+ * These security limits prevent resource exhaustion, memory attacks, and DoS
+ * while supporting legitimate enterprise deployments. All limits are enforced
+ * at runtime with appropriate error handling.
+ */
+
 /**
  * @brief Maximum number of SNI certificates per context
  * @ingroup tls_config
  *
- * Maximum number of certificate/key pairs that can be configured
- * for Server Name Indication (SNI) virtual hosting. 100 certificates
- * supports large-scale virtual hosting deployments.
+ * Maximum number of certificate/key pairs for SNI virtual hosting: 100.
+ *
+ * ## Rationale for 100 Certificates
+ *
+ * - **Virtual hosting**: Supports 100 distinct domains per server
+ * - **Memory bounded**: ~100MB max with typical cert chains
+ * - **Lookup efficiency**: Linear scan acceptable at this scale
+ * - **Enterprise scale**: Exceeding 100 suggests load balancer/CDN
+ *
+ * @see SocketTLSContext_add_certificate() for SNI configuration.
  */
 #ifndef SOCKET_TLS_MAX_SNI_CERTS
 #define SOCKET_TLS_MAX_SNI_CERTS 100
@@ -668,9 +831,10 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
  * @brief Initial SNI certificate array capacity
  * @ingroup tls_config
  *
- * Starting capacity for SNI certificate array. Array doubles in size
- * when capacity is exceeded. 4 provides reasonable starting point
- * with minimal memory overhead.
+ * Starting capacity for SNI certificate array: 4 slots.
+ *
+ * Array doubles in size when capacity is exceeded (4→8→16→...).
+ * Initial value of 4 minimizes memory for small deployments.
  */
 #ifndef SOCKET_TLS_SNI_INITIAL_CAPACITY
 #define SOCKET_TLS_SNI_INITIAL_CAPACITY 4
@@ -680,9 +844,16 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
  * @brief Maximum number of ALPN protocols per context
  * @ingroup tls_config
  *
- * Maximum number of Application-Layer Protocol Negotiation (ALPN)
- * protocols that can be advertised. 16 protocols covers all
- * typical use cases (HTTP/1.1, HTTP/2, WebSocket, etc.).
+ * Maximum ALPN protocols that can be advertised: 16 protocols.
+ *
+ * ## Rationale for 16 Protocols
+ *
+ * - **Common protocols**: h2, http/1.1, grpc, mqtt, etc. rarely exceed 5
+ * - **Future proof**: Room for emerging protocols
+ * - **Memory bounded**: 16 × 255 bytes max = 4KB worst case
+ * - **TLS extension fit**: Keeps ClientHello within typical limits
+ *
+ * @see SocketTLSContext_set_alpn_protos() for ALPN configuration.
  */
 #ifndef SOCKET_TLS_MAX_ALPN_PROTOCOLS
 #define SOCKET_TLS_MAX_ALPN_PROTOCOLS 16
@@ -692,10 +863,22 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
  * @brief Session ticket encryption key length
  * @ingroup tls_config
  *
- * Length of the key used for encrypting TLS session tickets.
- * OpenSSL uses 80 bytes: 16 bytes for name, 32 bytes AES key,
- * 32 bytes HMAC key. This provides strong encryption for
- * stateless session resumption.
+ * Length of TLS session ticket encryption key: 80 bytes.
+ *
+ * ## Rationale for 80 Bytes (OpenSSL Standard)
+ *
+ * OpenSSL session ticket key structure:
+ * - 16 bytes: Key name (identifies which key encrypted ticket)
+ * - 32 bytes: AES-256 encryption key
+ * - 32 bytes: HMAC-SHA256 authentication key
+ *
+ * This provides:
+ * - **256-bit encryption**: AES-256 for ticket confidentiality
+ * - **256-bit authentication**: HMAC-SHA256 for integrity
+ * - **Key identification**: Enables key rotation without breaking sessions
+ *
+ * @see SocketTLSContext_enable_session_tickets() for ticket configuration.
+ * @see SocketTLSContext_rotate_session_ticket_key() for key rotation.
  */
 #ifndef SOCKET_TLS_TICKET_KEY_LEN
 #define SOCKET_TLS_TICKET_KEY_LEN 80
@@ -705,9 +888,16 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
  * @brief Default TLS session cache timeout in seconds
  * @ingroup tls_config
  *
- * Default lifetime for cached TLS sessions. 300 seconds (5 minutes)
- * balances security (prevents stale sessions) with performance
- * (allows reasonable session reuse window).
+ * Default lifetime for cached TLS sessions: 300 seconds (5 minutes).
+ *
+ * ## Rationale for 5 Minutes
+ *
+ * - **Security**: Limits window for session ticket theft exploitation
+ * - **Performance**: Allows session resumption for typical user sessions
+ * - **Memory**: Bounded cache growth with LRU eviction
+ * - **PCI-DSS**: Compliant with session management requirements
+ *
+ * @see SocketTLSContext_enable_session_cache() for cache configuration.
  */
 #ifndef SOCKET_TLS_SESSION_TIMEOUT_DEFAULT
 #define SOCKET_TLS_SESSION_TIMEOUT_DEFAULT 300L
@@ -717,9 +907,14 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
  * @brief Maximum TLS session timeout in seconds (30 days)
  * @ingroup tls_config
  *
- * Maximum allowed value for TLS session cache timeout. 30 days provides
- * generous upper limit while preventing unreasonable values that could
- * cause security issues with stale session resumption.
+ * Maximum allowed session cache timeout: 30 days (2,592,000 seconds).
+ *
+ * ## Rationale for 30 Days
+ *
+ * - **Upper bound**: Prevents configuration errors with years-long sessions
+ * - **Mobile apps**: Long sessions for intermittent connectivity patterns
+ * - **Security tradeoff**: Longer sessions increase breach window
+ * - **Recommendation**: Use shorter timeouts (hours) in production
  */
 #ifndef SOCKET_TLS_SESSION_MAX_TIMEOUT
 #define SOCKET_TLS_SESSION_MAX_TIMEOUT 2592000L /* 30 days in seconds */
@@ -729,9 +924,17 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
  * @brief Maximum OCSP response size
  * @ingroup tls_config
  *
- * Maximum size for Online Certificate Status Protocol (OCSP) responses.
- * 64KB accommodates large OCSP responses while preventing memory exhaustion.
- * Typical responses are much smaller (< 4KB) but this provides safety margin.
+ * Maximum size for OCSP responses: 64KB (65,536 bytes).
+ *
+ * ## Rationale for 64KB
+ *
+ * - **Typical size**: OCSP responses are 1-4KB for single certificates
+ * - **Multi-status**: Large responses for multiple certificates possible
+ * - **DoS protection**: Prevents memory exhaustion from malicious responses
+ * - **Practical limit**: No legitimate OCSP response approaches 64KB
+ *
+ * @see SocketTLSContext_set_ocsp_response() for static OCSP configuration.
+ * @see SocketTLS_get_ocsp_response_status() for client-side verification.
  */
 #ifndef SOCKET_TLS_MAX_OCSP_RESPONSE_LEN
 #define SOCKET_TLS_MAX_OCSP_RESPONSE_LEN (64 * 1024)
@@ -741,9 +944,16 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
  * @brief Maximum file path length for certificates/keys
  * @ingroup tls_config
  *
- * Maximum length for certificate and key file paths.
- * 4096 bytes accommodates long paths in complex directory structures
- * while preventing buffer overflow in path processing.
+ * Maximum length for certificate and key file paths: 4096 bytes.
+ *
+ * ## Rationale for 4096 Bytes
+ *
+ * - **PATH_MAX**: Matches POSIX PATH_MAX on most systems
+ * - **Deep directories**: Accommodates enterprise directory structures
+ * - **Buffer safety**: Stack-safe allocation size
+ * - **Attack prevention**: Limits path traversal attack surface
+ *
+ * @see tls_validate_file_path() for path security validation.
  */
 #ifndef SOCKET_TLS_MAX_PATH_LEN
 #define SOCKET_TLS_MAX_PATH_LEN 4096
@@ -753,123 +963,178 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
  * @brief Maximum DNS label length per RFC 1035
  * @ingroup tls_config
  *
- * Maximum length for individual DNS hostname labels.
- * RFC 1035 specifies 63 characters maximum for DNS labels.
- * Enforced during hostname validation for security.
+ * Maximum length for individual DNS hostname labels: 63 characters.
+ *
+ * ## Rationale for 63 Characters
+ *
+ * - **RFC 1035 Section 2.3.4**: DNS label limit is 63 octets
+ * - **Wire format**: Labels prefixed with length byte (max 63)
+ * - **Universal standard**: All DNS implementations enforce this
+ *
+ * @see tls_validate_hostname() for SNI hostname validation.
  */
 #ifndef SOCKET_TLS_MAX_LABEL_LEN
 #define SOCKET_TLS_MAX_LABEL_LEN 63
 #endif
 
-/**
- * @brief Certificate pinning configuration
- * @ingroup tls_config
+/* ============================================================================
+ * Certificate Pinning Limits
+ * ============================================================================
  */
 
 /**
  * @brief Maximum number of certificate pins per context
  * @ingroup tls_config
  *
- * Maximum number of Subject Public Key Info (SPKI) SHA256 pins
- * that can be configured per TLS context. 32 pins supports
- * complex pinning policies for enterprise deployments.
+ * Maximum SPKI SHA256 pins per TLS context: 32 pins.
+ *
+ * ## Rationale for 32 Pins
+ *
+ * - **OWASP guidance**: Primary + 2-3 backup pins recommended
+ * - **Key rotation**: Room for transitional pins during rotation
+ * - **Enterprise PKI**: Multi-CA environments may need more
+ * - **Constant-time**: Linear scan at 32 pins is negligible
+ * - **Memory**: 32 × 32 bytes = 1KB storage
+ *
+ * @see SocketTLSContext_add_pin() for adding certificate pins.
  */
 #ifndef SOCKET_TLS_MAX_PINS
-#define SOCKET_TLS_MAX_PINS 32 /* Max pinned certificates per context */
+#define SOCKET_TLS_MAX_PINS 32
 #endif
 
 /**
  * @brief Certificate pin hash length (SHA256)
  * @ingroup tls_config
  *
- * Length of SHA256 hash used for certificate pinning.
- * SHA256 produces 32-byte (256-bit) hashes for strong collision
- * resistance and security.
+ * Length of SHA256 hash for certificate pinning: 32 bytes (256 bits).
+ *
+ * ## Rationale for SHA256 (32 bytes)
+ *
+ * - **Collision resistance**: 2^128 security level (post-quantum adequate)
+ * - **HPKP standard**: RFC 7469 specifies SHA-256 for key pins
+ * - **Widely supported**: All TLS libraries support SHA256
+ * - **Compact**: Efficient storage and comparison
+ *
+ * @see SocketTLSContext_add_pin_hex() for hex-encoded pin input.
  */
 #ifndef SOCKET_TLS_PIN_HASH_LEN
-#define SOCKET_TLS_PIN_HASH_LEN 32 /* SHA256 = 32 bytes */
+#define SOCKET_TLS_PIN_HASH_LEN 32
 #endif
 
 /**
  * @brief Initial certificate pin array capacity
  * @ingroup tls_config
  *
- * Starting capacity for pin array. Array doubles when capacity
- * is exceeded. 4 provides reasonable starting point for most
- * applications that use 1-2 pins.
+ * Starting capacity for pin array: 4 pins.
+ *
+ * Array doubles when capacity exceeded. 4 matches typical deployment
+ * (1 primary + 1-3 backups) with minimal initial allocation.
  */
 #ifndef SOCKET_TLS_PIN_INITIAL_CAPACITY
-#define SOCKET_TLS_PIN_INITIAL_CAPACITY 4 /* Initial pin array capacity */
+#define SOCKET_TLS_PIN_INITIAL_CAPACITY 4
 #endif
 
-/**
- * @brief CRL auto-refresh configuration
- * @ingroup tls_config
+/* ============================================================================
+ * CRL Auto-Refresh Limits
+ * ============================================================================
  */
 
 /**
  * @brief Minimum CRL refresh interval in seconds
  * @ingroup tls_config
  *
- * Minimum time between CRL refresh attempts. 60 seconds prevents
- * excessive refresh attempts that could overwhelm CRL distribution
- * points or cause performance issues.
+ * Minimum time between CRL refresh attempts: 60 seconds (1 minute).
+ *
+ * ## Rationale for 60 Seconds
+ *
+ * - **DoS prevention**: Limits refresh request rate to CDP servers
+ * - **Network efficiency**: Avoids unnecessary bandwidth usage
+ * - **Reasonable minimum**: CRLs rarely update more than hourly
+ * - **Manual refresh**: Still allows on-demand refresh via reload_crl()
+ *
+ * @see SocketTLSContext_set_crl_auto_refresh() for auto-refresh setup.
  */
 #ifndef SOCKET_TLS_CRL_MIN_REFRESH_INTERVAL
-#define SOCKET_TLS_CRL_MIN_REFRESH_INTERVAL 60 /* Minimum 60 seconds */
+#define SOCKET_TLS_CRL_MIN_REFRESH_INTERVAL 60
 #endif
 
 /**
  * @brief Maximum CRL refresh interval in seconds
  * @ingroup tls_config
  *
- * Maximum time between CRL refresh attempts. 1 year (365*24*3600 seconds)
- * ensures CRLs don't become stale even with very long intervals.
- * Applications should use shorter intervals for better security.
+ * Maximum time between CRL refresh attempts: 1 year (31,536,000 seconds).
+ *
+ * ## Rationale for 1 Year
+ *
+ * - **Upper bound**: Prevents configuration errors with decade intervals
+ * - **CRL validity**: Typical CRLs have nextUpdate within 7-30 days
+ * - **Security**: Longer intervals increase revocation blindness window
+ * - **Recommendation**: Use hours/days intervals for production security
+ *
+ * @warning CRL refresh intervals exceeding 30 days may miss revocations.
  */
 #ifndef SOCKET_TLS_CRL_MAX_REFRESH_INTERVAL
 #define SOCKET_TLS_CRL_MAX_REFRESH_INTERVAL                                   \
-  (365LL * 24 * 3600) /* Max 1 year in seconds */
+  (365LL * 24 * 3600) /* 1 year in seconds */
 #endif
 
 /**
  * @brief Maximum certificate file size for pin extraction
  * @ingroup tls_config
  *
- * Maximum size allowed for certificate files when extracting SPKI hashes
- * for certificate pinning. 1MB is generous for certificates (typical ~2KB)
- * while preventing memory exhaustion attacks from malicious files.
+ * Maximum size for certificate files: 1MB (1,048,576 bytes).
+ *
+ * ## Rationale for 1MB
+ *
+ * - **Typical certs**: X.509 certificates are 1-4KB
+ * - **Certificate bundles**: CA bundles may be 100-500KB
+ * - **DoS protection**: Prevents memory exhaustion from large files
+ * - **Generous margin**: No legitimate cert file approaches 1MB
+ *
+ * @see SocketTLSContext_add_pin_from_cert() for pin extraction.
  */
 #ifndef SOCKET_TLS_MAX_CERT_FILE_SIZE
-#define SOCKET_TLS_MAX_CERT_FILE_SIZE (1024 * 1024) /* Max 1MB for cert files */
+#define SOCKET_TLS_MAX_CERT_FILE_SIZE (1024 * 1024)
 #endif
 
 /**
  * @brief Maximum CRL file size
  * @ingroup tls_config
  *
- * Maximum size allowed for Certificate Revocation List (CRL) files.
- * 10MB accommodates large CRLs from major CAs while preventing
- * memory exhaustion attacks. Also limits number of CRL files
- * in directories to prevent exhaustion.
+ * Maximum size for CRL files: 10MB (10,485,760 bytes).
+ *
+ * ## Rationale for 10MB
+ *
+ * - **Large CA CRLs**: Major CAs (DigiCert, VeriSign) have multi-MB CRLs
+ * - **Revocation scale**: CAs with millions of certs have large CRLs
+ * - **DoS protection**: Prevents excessive memory allocation
+ * - **Practical limit**: Very few CRLs exceed 10MB
+ *
+ * @see SocketTLSContext_load_crl() for CRL loading.
  */
 #ifndef SOCKET_TLS_MAX_CRL_SIZE
-#define SOCKET_TLS_MAX_CRL_SIZE                                               \
-  (10 * 1024 * 1024) /* Max 10MB for CRL files                                \
-                      */
-#define SOCKET_TLS_MAX_CRL_FILES_IN_DIR                                       \
-  1000 /* Max CRL files in directory to prevent exhaustion */
+#define SOCKET_TLS_MAX_CRL_SIZE (10 * 1024 * 1024)
+/**
+ * @brief Maximum CRL files in directory
+ * @ingroup tls_config
+ *
+ * Maximum number of CRL files to load from a directory: 1000 files.
+ * Prevents directory exhaustion attacks and excessive memory usage.
+ */
+#define SOCKET_TLS_MAX_CRL_FILES_IN_DIR 1000
 #endif
 
 /**
  * @brief Maximum CRL path length
  * @ingroup tls_config
  *
- * Maximum length for CRL file paths. Same as certificate paths
- * for consistency. 4096 bytes accommodates complex directory structures.
+ * Maximum length for CRL file paths: 4096 bytes.
+ * Matches SOCKET_TLS_MAX_PATH_LEN for consistency.
+ *
+ * @see validate_crl_path_security() for CRL path validation.
  */
 #ifndef SOCKET_TLS_CRL_MAX_PATH_LEN
-#define SOCKET_TLS_CRL_MAX_PATH_LEN 4096 /* Max CRL path length */
+#define SOCKET_TLS_CRL_MAX_PATH_LEN 4096
 #endif
 
 #else /* SOCKET_HAS_TLS not defined */

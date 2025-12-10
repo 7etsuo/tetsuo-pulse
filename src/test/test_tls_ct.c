@@ -16,6 +16,7 @@
 
 #include "core/Arena.h"
 #include "core/Except.h"
+#include "core/SocketUtil.h" /* For SOCKET_LOG_WARN_MSG */
 #include "test/Test.h"
 
 #if SOCKET_HAS_TLS
