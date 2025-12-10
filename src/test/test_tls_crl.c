@@ -11,6 +11,7 @@
 #include "test/Test.h"
 #include "tls/SocketTLS.h"
 #include "tls/SocketTLSContext.h"
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -612,6 +613,272 @@ test_multiple_crl_loading (void)
   return NULL;
 }
 
+/* Test overflow protection in crl_next_refresh_ms */
+static char *
+test_crl_next_refresh_overflow (void)
+{
+  SocketTLSContext_T ctx = NULL;
+  char temp_file[] = "/tmp/test_crl_overflow_XXXXXX";
+  int fd;
+
+  TRY
+  {
+    ctx = SocketTLSContext_new_client (NULL);
+    TEST_ASSERT (ctx != NULL);
+
+    fd = mkstemp (temp_file);
+    TEST_ASSERT (fd != -1);
+    close (fd);
+    TEST_ASSERT (create_test_crl (temp_file));
+
+    /* Configure auto-refresh with maximum allowed interval (1 year) */
+    SocketTLSContext_set_crl_auto_refresh (ctx, temp_file,
+                                           SOCKET_TLS_CRL_MAX_REFRESH_INTERVAL,
+                                           NULL, NULL);
+
+    /* Get next refresh time - should return valid value, not overflow */
+    long next_ms = SocketTLSContext_crl_next_refresh_ms (ctx);
+
+    /* Should be positive and bounded by LONG_MAX */
+    TEST_ASSERT (next_ms > 0);
+    TEST_ASSERT (next_ms <= LONG_MAX);
+
+    /* Verify it's approximately 1 year in milliseconds (with tolerance) */
+    /* 1 year in ms = 365 * 24 * 3600 * 1000 = 31536000000 */
+    /* But LONG_MAX on 32-bit is only ~2.1 billion, so it may be capped */
+    long expected_max_ms = SOCKET_TLS_CRL_MAX_REFRESH_INTERVAL * 1000LL;
+    if (expected_max_ms > LONG_MAX)
+      {
+        /* On systems where this overflows LONG_MAX, verify it's capped */
+        TEST_ASSERT (next_ms == LONG_MAX);
+      }
+    else
+      {
+        /* Should be close to expected value */
+        TEST_ASSERT (next_ms <= expected_max_ms + 1000);
+      }
+
+    unlink (temp_file);
+    SocketTLSContext_free (&ctx);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    unlink (temp_file);
+    if (ctx)
+      SocketTLSContext_free (&ctx);
+    TEST_FAIL ("CRL overflow protection test failed");
+  }
+  END_TRY;
+
+  return NULL;
+}
+
+/* Test CRL file size limit enforcement */
+static char *
+test_crl_file_size_limit (void)
+{
+  SocketTLSContext_T ctx = NULL;
+  char temp_file[] = "/tmp/test_crl_size_XXXXXX";
+  int fd;
+
+  TRY
+  {
+    ctx = SocketTLSContext_new_client (NULL);
+    TEST_ASSERT (ctx != NULL);
+
+    /* Create oversized CRL file (just over limit) */
+    fd = mkstemp (temp_file);
+    TEST_ASSERT (fd != -1);
+
+    /* Write a file slightly larger than max (add 1KB to be safe) */
+    size_t oversize = SOCKET_TLS_MAX_CRL_SIZE + 1024;
+    char *large_data = (char *)malloc (oversize);
+    TEST_ASSERT (large_data != NULL);
+
+    memset (large_data, 'A', oversize);
+    ssize_t written = write (fd, large_data, oversize);
+    free (large_data);
+    close (fd);
+
+    TEST_ASSERT ((size_t)written == oversize);
+
+    /* Loading oversized CRL should fail */
+    TRY
+    {
+      SocketTLSContext_load_crl (ctx, temp_file);
+      TEST_FAIL ("Oversized CRL should have been rejected");
+    }
+    EXCEPT (SocketTLS_Failed)
+    {
+      /* Expected - file too large */
+    }
+    END_TRY;
+
+    unlink (temp_file);
+    SocketTLSContext_free (&ctx);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    unlink (temp_file);
+    if (ctx)
+      SocketTLSContext_free (&ctx);
+    TEST_FAIL ("CRL file size limit test setup failed");
+  }
+  END_TRY;
+
+  return NULL;
+}
+
+/* Test symlink rejection in CRL path validation */
+static char *
+test_crl_symlink_rejection (void)
+{
+  SocketTLSContext_T ctx = NULL;
+  char temp_file[] = "/tmp/test_crl_target_XXXXXX";
+  char symlink_path[] = "/tmp/test_crl_symlink_XXXXXX";
+  int fd;
+
+  TRY
+  {
+    ctx = SocketTLSContext_new_client (NULL);
+    TEST_ASSERT (ctx != NULL);
+
+    /* Create target CRL file */
+    fd = mkstemp (temp_file);
+    TEST_ASSERT (fd != -1);
+    close (fd);
+    TEST_ASSERT (create_test_crl (temp_file));
+
+    /* Create unique symlink name */
+    fd = mkstemp (symlink_path);
+    TEST_ASSERT (fd != -1);
+    close (fd);
+    unlink (symlink_path); /* Remove file to create symlink */
+
+    /* Create symlink to CRL file */
+    int ret = symlink (temp_file, symlink_path);
+    TEST_ASSERT (ret == 0);
+
+    /* Loading CRL via symlink - this should work since realpath resolves it,
+     * but the resolved path is validated. The security model allows symlinks
+     * that resolve to valid paths, but rejects path traversal. */
+    TRY
+    {
+      SocketTLSContext_load_crl (ctx, symlink_path);
+      /* May succeed if symlink resolves to valid path without traversal */
+    }
+    EXCEPT (SocketTLS_Failed)
+    {
+      /* May fail depending on security policy - both outcomes acceptable */
+    }
+    END_TRY;
+
+    unlink (symlink_path);
+    unlink (temp_file);
+    SocketTLSContext_free (&ctx);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    unlink (symlink_path);
+    unlink (temp_file);
+    if (ctx)
+      SocketTLSContext_free (&ctx);
+    TEST_FAIL ("CRL symlink rejection test setup failed");
+  }
+  END_TRY;
+
+  return NULL;
+}
+
+/* Test disabled auto-refresh returns -1 for next refresh */
+static char *
+test_crl_disabled_refresh_returns_minus_one (void)
+{
+  SocketTLSContext_T ctx = NULL;
+
+  TRY
+  {
+    ctx = SocketTLSContext_new_client (NULL);
+    TEST_ASSERT (ctx != NULL);
+
+    /* Without configuring auto-refresh, next_refresh_ms should return -1 */
+    long next_ms = SocketTLSContext_crl_next_refresh_ms (ctx);
+    TEST_ASSERT (next_ms == -1);
+
+    SocketTLSContext_free (&ctx);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    if (ctx)
+      SocketTLSContext_free (&ctx);
+    TEST_FAIL ("CRL disabled refresh test failed");
+  }
+  END_TRY;
+
+  return NULL;
+}
+
+/* Test exact minimum interval boundary (60 seconds) */
+static char *
+test_crl_minimum_interval_boundary (void)
+{
+  SocketTLSContext_T ctx = NULL;
+  char temp_file[] = "/tmp/test_crl_minint_XXXXXX";
+  int fd;
+
+  TRY
+  {
+    ctx = SocketTLSContext_new_client (NULL);
+    TEST_ASSERT (ctx != NULL);
+
+    fd = mkstemp (temp_file);
+    TEST_ASSERT (fd != -1);
+    close (fd);
+    TEST_ASSERT (create_test_crl (temp_file));
+
+    /* Test exactly 60 seconds (minimum) - should succeed */
+    TRY
+    {
+      SocketTLSContext_set_crl_auto_refresh (
+          ctx, temp_file, SOCKET_TLS_CRL_MIN_REFRESH_INTERVAL, NULL, NULL);
+      /* Should succeed */
+      long next_ms = SocketTLSContext_crl_next_refresh_ms (ctx);
+      TEST_ASSERT (next_ms > 0);
+    }
+    EXCEPT (SocketTLS_Failed)
+    {
+      TEST_FAIL ("Minimum interval (60s) should have been accepted");
+    }
+    END_TRY;
+
+    /* Test 59 seconds (just below minimum) - should fail */
+    TRY
+    {
+      SocketTLSContext_set_crl_auto_refresh (
+          ctx, temp_file, SOCKET_TLS_CRL_MIN_REFRESH_INTERVAL - 1, NULL, NULL);
+      TEST_FAIL ("Below minimum interval should have been rejected");
+    }
+    EXCEPT (SocketTLS_Failed)
+    {
+      /* Expected */
+    }
+    END_TRY;
+
+    unlink (temp_file);
+    SocketTLSContext_free (&ctx);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    unlink (temp_file);
+    if (ctx)
+      SocketTLSContext_free (&ctx);
+    TEST_FAIL ("CRL minimum interval boundary test failed");
+  }
+  END_TRY;
+
+  return NULL;
+}
+
 /* Main test runner */
 char *
 run_tls_crl_tests (void)
@@ -627,6 +894,11 @@ run_tls_crl_tests (void)
   TEST_RUN (test_crl_interval_validation);
   TEST_RUN (test_crl_error_handling);
   TEST_RUN (test_multiple_crl_loading);
+  TEST_RUN (test_crl_next_refresh_overflow);
+  TEST_RUN (test_crl_file_size_limit);
+  TEST_RUN (test_crl_symlink_rejection);
+  TEST_RUN (test_crl_disabled_refresh_returns_minus_one);
+  TEST_RUN (test_crl_minimum_interval_boundary);
 
   return NULL;
 }

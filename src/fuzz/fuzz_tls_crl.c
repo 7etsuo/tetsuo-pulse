@@ -55,6 +55,9 @@ enum CrlOp
   CRL_OP_CHECK_REFRESH,
   CRL_OP_GET_NEXT_REFRESH,
   CRL_OP_LOAD_MULTIPLE,
+  CRL_OP_LOAD_OVERSIZED,
+  CRL_OP_LOAD_SYMLINK,
+  CRL_OP_INTERVAL_BOUNDARY,
   CRL_OP_COUNT
 };
 
@@ -249,6 +252,82 @@ fuzz_crl_operations (SocketTLSContext_T ctx, const uint8_t *data, size_t size)
             op_size -= chunk_size;
           }
         break;
+
+      case CRL_OP_LOAD_OVERSIZED:
+        /* Test file size limit enforcement - should fail gracefully */
+        {
+          char template[] = "/tmp/fuzz_crl_big_XXXXXX";
+          int fd = mkstemp (template);
+          if (fd != -1)
+            {
+              /* Write just over the limit to test rejection */
+              size_t oversize = SOCKET_TLS_MAX_CRL_SIZE + 1;
+              void *zeros = calloc (1, 4096); /* Write in chunks */
+              if (zeros)
+                {
+                  for (size_t written = 0;
+                       written < oversize && written < SOCKET_TLS_MAX_CRL_SIZE + 4096;
+                       written += 4096)
+                    {
+                      write (fd, zeros, 4096);
+                    }
+                  free (zeros);
+                }
+              close (fd);
+              temp_path = strdup (template);
+              if (temp_path)
+                {
+                  SocketTLSContext_load_crl (ctx, temp_path);
+                }
+            }
+        }
+        break;
+
+      case CRL_OP_LOAD_SYMLINK:
+        /* Test symlink handling - create symlink to CRL file */
+        if (op_size > 0)
+          {
+            char target[] = "/tmp/fuzz_crl_target_XXXXXX";
+            char link_path[] = "/tmp/fuzz_crl_link_XXXXXX";
+            int fd = mkstemp (target);
+            if (fd != -1)
+              {
+                write (fd, op_data, op_size);
+                close (fd);
+
+                int ld = mkstemp (link_path);
+                if (ld != -1)
+                  {
+                    close (ld);
+                    unlink (link_path);
+                    if (symlink (target, link_path) == 0)
+                      {
+                        SocketTLSContext_load_crl (ctx, link_path);
+                        unlink (link_path);
+                      }
+                  }
+                unlink (target);
+              }
+          }
+        break;
+
+      case CRL_OP_INTERVAL_BOUNDARY:
+        /* Test interval boundary conditions */
+        if (op_size >= 1)
+          {
+            temp_path = create_temp_crl_file (op_data, op_size);
+            if (temp_path)
+              {
+                /* Test various interval values */
+                long intervals[]
+                    = {0,   -1,  59, 60, 61, 3600, SOCKET_TLS_CRL_MAX_REFRESH_INTERVAL,
+                       SOCKET_TLS_CRL_MAX_REFRESH_INTERVAL + 1, LONG_MAX};
+                size_t idx = op_data[0] % (sizeof (intervals) / sizeof (intervals[0]));
+                SocketTLSContext_set_crl_auto_refresh (ctx, temp_path, intervals[idx],
+                                                       mock_crl_callback, NULL);
+              }
+          }
+        break;
       }
   }
   EXCEPT (SocketTLS_Failed)
@@ -281,7 +360,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       {
         /* Fallback to custom config context */
         SocketTLSConfig_T config;
-        SocketTLSConfig_defaults (&config);
+        SocketTLS_config_defaults (&config);
         ctx = SocketTLSContext_new (&config);
       }
 

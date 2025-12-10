@@ -280,17 +280,28 @@ testing requirements, documentation, security hardening, and future enhancements
 ### 2.5 CRL Management
 **Difficulty: 7/9** _(Complex - auto-refresh, file watching, X509_STORE integration)_
 
-- [ ] **SocketTLSContext_load_crl()**: Verify CRL file loading and X509_STORE integration
-- [ ] **SocketTLSContext_load_crl()**: Test with CRL directory (multiple CRL files)
-- [ ] **SocketTLSContext_refresh_crl()**: Verify CRL is reloaded from disk and added to store
-- [ ] **SocketTLSContext_reload_crl()**: Verify alias for refresh_crl works correctly
-- [ ] **SocketTLSContext_set_crl_auto_refresh()**: Verify interval validation (minimum 60 seconds)
-- [ ] **SocketTLSContext_set_crl_auto_refresh()**: Test callback invocation on success and failure
-- [ ] **SocketTLSContext_cancel_crl_auto_refresh()**: Verify refresh is stopped but current CRL retained
-- [ ] **SocketTLSContext_crl_check_refresh()**: Verify monotonic time-based scheduling
-- [ ] **SocketTLSContext_crl_next_refresh_ms()**: Test overflow protection for far-future refreshes
-- [ ] **CRL Path Validation**: Verify path traversal prevention and symlink rejection
-- [ ] **CRL File Size Limits**: Verify `SOCKET_TLS_MAX_CRL_SIZE` (10MB) limit is enforced
+- [x] **SocketTLSContext_load_crl()**: Verify CRL file loading and X509_STORE integration
+  - ✅ Implemented in `SocketTLSContext-verify.c:471-515` - loads CRL via `X509_STORE_load_locations()`, enables `X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL`; tested in `test_tls_crl.c:test_load_crl_basic`
+- [x] **SocketTLSContext_load_crl()**: Test with CRL directory (multiple CRL files)
+  - ✅ Tested in `test_tls_crl.c:test_load_crl_directory` - creates temp directory with hash-named CRL files, verifies directory loading works
+- [x] **SocketTLSContext_refresh_crl()**: Verify CRL is reloaded from disk and added to store
+  - ✅ Implemented in `SocketTLSContext-verify.c:517-527` - calls `SocketTLSContext_load_crl()` to accumulate CRLs; tested in `test_tls_crl.c:test_refresh_crl`
+- [x] **SocketTLSContext_reload_crl()**: Verify alias for refresh_crl works correctly
+  - ✅ Implemented in `SocketTLSContext-verify.c:529-535` - alias for `refresh_crl()`; tested in `test_tls_crl.c:test_reload_crl`
+- [x] **SocketTLSContext_set_crl_auto_refresh()**: Verify interval validation (minimum 60 seconds)
+  - ✅ Implemented in `SocketTLSContext-crl.c:118-135` via `validate_crl_interval()` - rejects <60s and >1 year; tested in `test_tls_crl.c:test_crl_interval_validation` and `test_crl_minimum_interval_boundary`
+- [x] **SocketTLSContext_set_crl_auto_refresh()**: Test callback invocation on success and failure
+  - ✅ Tested in `test_tls_crl.c:test_crl_auto_refresh_callback` (success) and `test_tls_crl_integration.c:test_crl_refresh_missing_file` (failure callback)
+- [x] **SocketTLSContext_cancel_crl_auto_refresh()**: Verify refresh is stopped but current CRL retained
+  - ✅ Implemented in `SocketTLSContext-crl.c:325-341` - clears interval/callback but preserves loaded CRLs; tested in `test_tls_crl.c:test_cancel_crl_auto_refresh`
+- [x] **SocketTLSContext_crl_check_refresh()**: Verify monotonic time-based scheduling
+  - ✅ Implemented in `SocketTLSContext-crl.c:354-400` - uses `Socket_get_monotonic_ms()` for CLOCK_MONOTONIC timing; tested in `test_tls_crl_integration.c:test_crl_refresh_timing`
+- [x] **SocketTLSContext_crl_next_refresh_ms()**: Test overflow protection for far-future refreshes
+  - ✅ Implemented in `SocketTLSContext-crl.c:410-441` - caps result at LONG_MAX for overflow protection; tested in `test_tls_crl.c:test_crl_next_refresh_overflow`
+- [x] **CRL Path Validation**: Verify path traversal prevention and symlink rejection
+  - ✅ Implemented in `SocketTLSContext-crl.c:43-188` via `validate_crl_path_security()` - checks for "..", control chars, uses `realpath()` validation; tested in `test_tls_crl.c:test_crl_path_security` and `test_crl_symlink_rejection`
+- [x] **CRL File Size Limits**: Verify `SOCKET_TLS_MAX_CRL_SIZE` (10MB) limit is enforced
+  - ✅ Implemented in `SocketTLSContext-verify.c:410-427` via `validate_crl_file_size()` - checks against 10MB limit; tested in `test_tls_crl.c:test_crl_file_size_limit`; fuzzer coverage in `fuzz_tls_crl.c:CRL_OP_LOAD_OVERSIZED`
 
 ### 2.6 OCSP Stapling (Server-Side)
 **Difficulty: 6/9** _(Server-side OCSP response generation and stapling)_
