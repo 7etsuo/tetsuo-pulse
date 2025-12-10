@@ -2053,6 +2053,27 @@ cmake --build build
 ./scripts/run_fuzz_parallel.sh
 ```
 
+### Test Coverage
+
+The library includes comprehensive test coverage:
+
+- **47 unit tests** covering all major functionality
+- **Fuzzing harnesses** for protocol parsing and buffer operations
+- **Integration tests** for end-to-end functionality
+- **Stress tests** for connection pools and high-load scenarios
+
+New features added in recent enhancements include:
+- High-level convenience functions for TCP/Unix socket setup
+- Socket statistics and metrics collection
+- Connection pool management and health monitoring
+- DNS caching and configuration
+- I/O timeout variants and advanced operations
+- TLS session management and certificate inspection
+- HTTP client/server with JSON support and WebSocket upgrades
+- Buffer compaction, scatter-gather I/O, and line reading
+- Async I/O batch operations and backend selection
+- Event system introspection and timer control
+
 ### Sanitizers
 
 All tests pass with:

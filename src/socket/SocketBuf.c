@@ -794,16 +794,22 @@ SocketBuf_readline (T buf, char *line, size_t max_len)
   if (newline_pos < 0)
     return -1; /* No complete line yet */
 
-  /* Calculate line length including newline */
-  size_t line_len = (size_t)newline_pos + 1;
+  /* Calculate line length excluding newline */
+  size_t line_len = (size_t)newline_pos;
 
   /* Limit to max_len - 1 (reserve space for null) */
   if (line_len > max_len - 1)
     line_len = max_len - 1;
 
-  /* Read the line (consumes data) */
+  /* Read the line data (consumes from buffer) */
   size_t bytes_read = SocketBuf_read (buf, line, line_len);
   line[bytes_read] = '\0';
+
+  /* Consume the newline if present */
+  if (SocketBuf_available(buf) > 0) {
+    char dummy;
+    SocketBuf_read(buf, &dummy, 1); /* Consume the \n */
+  }
 
   return (ssize_t)bytes_read;
 }

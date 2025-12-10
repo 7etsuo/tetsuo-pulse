@@ -243,10 +243,10 @@
 ## Testing & Validation
 
 ### Test Coverage
-- [ ] Add fuzz tests for new functions
-- [ ] Add integration tests for convenience functions
-- [ ] Add stress tests for pool operations
-- [ ] Add tests for all error paths
+- [x] Add fuzz tests for new functions
+- [x] Add integration tests for convenience functions
+- [x] Add stress tests for pool operations
+- [x] Add tests for all error paths
 
 ### Benchmarks
 - [ ] Benchmark convenience functions vs manual calls

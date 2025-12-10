@@ -828,11 +828,11 @@ socket_async_submit (T async, Socket_T socket, enum AsyncRequestType type,
   unsigned request_id;
 
   /* Validate parameters */
-  if (!async || !socket || !cb || len == 0 || !SOCKET_VALID_BUFFER_SIZE (len))
+  if (!async || !socket || !cb || len == 0)
     {
       errno = EINVAL;
       SOCKET_ERROR_FMT (
-          "Invalid parameters or buffer size %zu for async submit", len);
+          "Invalid parameters for async submit");
       RAISE_MODULE_ERROR (SocketAsync_Failed);
     }
   if (type == REQ_SEND && !send_buf)

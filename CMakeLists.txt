@@ -503,6 +503,7 @@ target_include_directories(test_framework PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
 # Test source files (core - always built)
 set(TEST_SOURCES
+    test_new_features
     test_arena
     test_except
     test_socketerror
@@ -569,8 +570,8 @@ add_custom_target(build_tests ALL DEPENDS ${TEST_SOURCES})
 
 # Print test configuration
 message(STATUS "Test Suite Configuration:")
-message(STATUS "  Test files: 23")
-message(STATUS "  Total tests: 340+")
+message(STATUS "  Test files: 24")
+message(STATUS "  Total tests: 400+")
 message(STATUS "  Run with: make test (or ctest)")
 
 # Documentation generation (Doxygen)
