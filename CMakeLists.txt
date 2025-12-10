@@ -773,6 +773,7 @@ if(ENABLE_FUZZING)
             fuzz_tls_verify
             fuzz_tls_sni
             fuzz_tls_io
+            fuzz_tls_ocsp
             fuzz_cert_pinning
             # DTLS fuzz harnesses
             fuzz_dtls_context

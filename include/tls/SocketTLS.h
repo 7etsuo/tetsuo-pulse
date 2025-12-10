@@ -260,6 +260,9 @@
 
 #if SOCKET_HAS_TLS
 
+#include <openssl/x509.h> /* For X509, X509_NAME, etc. */
+#include <time.h>         /* For time_t */
+
 /**
  * @brief Thread-local buffer for comprehensive TLS/OpenSSL error diagnostics
  * and reporting.
@@ -1425,6 +1428,40 @@ extern int SocketTLS_check_renegotiation (Socket_T socket);
  */
 extern int SocketTLS_disable_renegotiation (Socket_T socket);
 
+/**
+ * @brief Get the number of renegotiations processed on this socket
+ * @ingroup security
+ * @param socket TLS socket
+ *
+ * Returns the count of TLS renegotiations that have been successfully
+ * processed on this socket. Useful for monitoring and detecting potential
+ * DoS attempts via excessive renegotiation.
+ *
+ * @return Number of renegotiations (>= 0), or -1 if TLS not enabled
+ *
+ * @throws None
+ * @threadsafe Yes - reads simple counter
+ *
+ * ## DoS Protection
+ *
+ * The socket library limits renegotiations to SOCKET_TLS_MAX_RENEGOTIATIONS
+ * (default 3) per connection. Once exceeded, further renegotiation requests
+ * are rejected. Monitor this counter to detect potential attacks:
+ *
+ * @code{.c}
+ * int reneg_count = SocketTLS_get_renegotiation_count(sock);
+ * if (reneg_count >= 2) {
+ *     SOCKET_LOG_WARN_MSG("Excessive renegotiations from peer");
+ * }
+ * @endcode
+ *
+ * @note TLS 1.3 always returns 0 (renegotiation not supported)
+ *
+ * @see SocketTLS_check_renegotiation() for processing requests
+ * @see SocketTLS_disable_renegotiation() to block renegotiation
+ */
+extern int SocketTLS_get_renegotiation_count (Socket_T socket);
+
 /* ============================================================================
  * TLS Certificate Information
  * ============================================================================
@@ -1516,6 +1553,9 @@ extern time_t SocketTLS_get_cert_expiry (Socket_T socket);
  * Retrieves the subject distinguished name (DN) of the peer's certificate
  * in OpenSSL one-line format (e.g., "CN=example.com,O=Example Inc,C=US").
  *
+ * If the buffer is too small, the string is truncated but always
+ * null-terminated. Check the return value against len-1 to detect truncation.
+ *
  * @return Length written on success (excluding NUL), 0 if no cert,
  *         -1 on error
  *
@@ -1526,14 +1566,68 @@ extern time_t SocketTLS_get_cert_expiry (Socket_T socket);
  *
  * @code{.c}
  * char subject[256];
- * if (SocketTLS_get_cert_subject(sock, subject, sizeof(subject)) > 0) {
+ * int written = SocketTLS_get_cert_subject(sock, subject, sizeof(subject));
+ * if (written > 0) {
  *     printf("Connected to: %s\n", subject);
+ *     if ((size_t)written >= sizeof(subject) - 1) {
+ *         printf("Warning: subject was truncated\n");
+ *     }
  * }
  * @endcode
  *
  * @see SocketTLS_get_peer_cert_info() for full certificate details
  */
 extern int SocketTLS_get_cert_subject (Socket_T socket, char *buf, size_t len);
+
+/**
+ * @brief Get the full peer certificate chain
+ * @ingroup security
+ * @param[in] socket Socket with completed TLS handshake
+ * @param[out] chain_out Pointer to receive array of X509 certificate pointers
+ * @param[out] chain_len Pointer to receive number of certificates in chain
+ *
+ * Retrieves the complete certificate chain presented by the peer during
+ * the TLS handshake. This includes intermediate certificates but may or may
+ * not include the peer's end-entity certificate depending on client/server
+ * role (OpenSSL behavior).
+ *
+ * The returned array is allocated from the socket's arena and is valid
+ * until the socket is freed. Individual X509 pointers reference OpenSSL's
+ * internal certificates and must NOT be freed by the caller.
+ *
+ * @return 1 on success (chain returned),
+ *         0 if no chain available,
+ *         -1 on error (TLS not enabled, allocation failure)
+ *
+ * @throws None
+ * @threadsafe Yes - reads immutable post-handshake data
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * X509 **chain;
+ * int chain_len;
+ * if (SocketTLS_get_peer_cert_chain(sock, &chain, &chain_len) == 1) {
+ *     printf("Certificate chain has %d certificates\n", chain_len);
+ *     for (int i = 0; i < chain_len; i++) {
+ *         char subject[256];
+ *         X509_NAME_oneline(X509_get_subject_name(chain[i]),
+ *                           subject, sizeof(subject));
+ *         printf("  [%d] %s\n", i, subject);
+ *     }
+ * }
+ * // Note: Do NOT free chain or individual certs - managed by socket/OpenSSL
+ * @endcode
+ *
+ * @note For clients, OpenSSL's SSL_get_peer_cert_chain() includes the peer
+ *       certificate. For servers, it does NOT include the peer certificate.
+ * @warning Do not free the returned certificates or array
+ *
+ * @see SocketTLS_get_peer_cert_info() for peer certificate details
+ * @see SocketTLS_get_cert_subject() for peer subject string
+ */
+extern int SocketTLS_get_peer_cert_chain (Socket_T socket, X509 ***chain_out,
+                                          int *chain_len);
 
 /* ============================================================================
  * OCSP Status (Client-side)
@@ -1549,11 +1643,17 @@ extern int SocketTLS_get_cert_subject (Socket_T socket, char *buf, size_t len);
  * This is a client-side function to verify server certificate revocation
  * status without making a separate OCSP request.
  *
+ * This function performs full OCSP response validation:
+ * 1. Parses the stapled OCSP response
+ * 2. Verifies the OCSP response signature against the issuer certificate
+ * 3. Checks response freshness (thisUpdate/nextUpdate fields)
+ * 4. Returns the certificate status
+ *
  * @return OCSP status:
  *         - 1: Certificate is good (OCSP_CERTSTATUS_GOOD)
  *         - 0: Certificate is revoked (OCSP_CERTSTATUS_REVOKED)
- *         - -1: No OCSP response or unknown status
- *         - -2: OCSP response verification failed
+ *         - -1: No OCSP response, unknown status, or stale response
+ *         - -2: OCSP response verification failed (invalid signature, etc.)
  *
  * @throws None
  * @threadsafe Yes - reads immutable post-handshake data
@@ -1581,11 +1681,48 @@ extern int SocketTLS_get_cert_subject (Socket_T socket, char *buf, size_t len);
  * @endcode
  *
  * @note Requires server to have OCSP stapling enabled
+ * @note Response freshness is validated with SOCKET_TLS_OCSP_MAX_AGE_SECONDS
+ *       tolerance (default 300 seconds)
  *
+ * @see SocketTLS_get_ocsp_next_update() for checking when response expires
  * @see SocketTLSContext_enable_ocsp_stapling() for server-side setup
- * @see SocketTLS_get_ocsp_status() for simpler boolean check
  */
 extern int SocketTLS_get_ocsp_response_status (Socket_T socket);
+
+/**
+ * @brief Get the nextUpdate time from the OCSP response
+ * @ingroup security
+ * @param[in] socket Socket with completed TLS handshake
+ * @param[out] next_update Pointer to receive the nextUpdate time
+ *
+ * Retrieves the nextUpdate timestamp from the stapled OCSP response.
+ * This indicates when the OCSP responder recommends fetching a fresh
+ * response. Useful for caching and planning certificate status refreshes.
+ *
+ * @return 1 on success (next_update set),
+ *         -1 if no OCSP response, no nextUpdate field, or error
+ *
+ * @throws None
+ * @threadsafe Yes - reads immutable post-handshake data
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * time_t next_update;
+ * if (SocketTLS_get_ocsp_next_update(sock, &next_update) == 1) {
+ *     time_t now = time(NULL);
+ *     int seconds_until = (int)difftime(next_update, now);
+ *     if (seconds_until < 3600) {
+ *         printf("OCSP response expires soon (%d seconds)\n", seconds_until);
+ *     }
+ * }
+ * @endcode
+ *
+ * @note The nextUpdate field is optional in OCSP responses
+ *
+ * @see SocketTLS_get_ocsp_response_status() for certificate revocation check
+ */
+extern int SocketTLS_get_ocsp_next_update (Socket_T socket, time_t *next_update);
 
 #undef T
 

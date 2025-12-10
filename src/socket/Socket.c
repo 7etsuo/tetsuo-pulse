@@ -137,6 +137,7 @@ socket_init_tls_fields (Socket_T sock)
   sock->tls_read_buf_len = 0;
   sock->tls_write_buf_len = 0;
   sock->tls_timeouts = (SocketTimeouts_T){ 0 };
+  sock->tls_renegotiation_count = 0;
 }
 #endif
 

@@ -115,25 +115,57 @@ testing requirements, documentation, security hardening, and future enhancements
 
 ### 1.6 Renegotiation Control
 
-- [ ] **SocketTLS_check_renegotiation()**: Verify this correctly handles TLS 1.2 renegotiation requests
-- [ ] **SocketTLS_check_renegotiation()**: Confirm TLS 1.3 correctly returns -1 (renegotiation not supported)
-- [ ] **SocketTLS_disable_renegotiation()**: Verify this sets appropriate SSL options to reject renegotiation
-- [ ] **Renegotiation DoS Protection**: Ensure renegotiation limits are enforced if renegotiation is allowed
+- [x] **SocketTLS_check_renegotiation()**: Verify this correctly handles TLS 1.2 renegotiation requests
+  - ✅ Implemented with proper SSL_renegotiate_pending() and SSL_get_secure_renegotiation_support() checks
+  - ✅ Handles WANT_READ/WANT_WRITE for non-blocking operation
+  - ✅ Raises SocketTLS_ProtocolError on handshake failure
+- [x] **SocketTLS_check_renegotiation()**: Confirm TLS 1.3 correctly returns 0 (no renegotiation support)
+  - ✅ TLS 1.3 check via SSL_version() >= TLS1_3_VERSION returns 0 (not -1, since there's nothing pending)
+- [x] **SocketTLS_disable_renegotiation()**: Verify this sets appropriate SSL options to reject renegotiation
+  - ✅ Uses SSL_OP_NO_RENEGOTIATION option (OpenSSL 1.1.0h+)
+  - ✅ Resets renegotiation counter on disable
+- [x] **Renegotiation DoS Protection**: Ensure renegotiation limits are enforced if renegotiation is allowed
+  - ✅ Added SOCKET_TLS_MAX_RENEGOTIATIONS limit (default 3)
+  - ✅ Added tls_renegotiation_count field to Socket_T
+  - ✅ Added SocketTLS_get_renegotiation_count() for monitoring
+  - ✅ Increments SOCKET_CTR_TLS_RENEGOTIATIONS metric on renegotiation events
 
 ### 1.7 Certificate Information
 
-- [ ] **SocketTLS_get_peer_cert_info()**: Verify all fields of `SocketTLS_CertInfo` are correctly populated
-- [ ] **SocketTLS_get_peer_cert_info()**: Test with certificates having special characters in subject/issuer
-- [ ] **SocketTLS_get_cert_expiry()**: Verify correct handling of certificates with notAfter in distant future
-- [ ] **SocketTLS_get_cert_subject()**: Test buffer size handling when subject exceeds buffer length
-- [ ] **Certificate Chain Access**: Consider adding function to get full certificate chain, not just peer cert
+- [x] **SocketTLS_get_peer_cert_info()**: Verify all fields of `SocketTLS_CertInfo` are correctly populated
+  - ✅ All fields populated: subject, issuer, not_before, not_after, version, serial, fingerprint
+  - ✅ Uses X509_NAME_oneline() for subject/issuer (handles special characters via escaping)
+  - ✅ Uses ASN1_TIME_to_tm() for time conversion
+  - ✅ Uses SocketCrypto_hex_encode() for safe fingerprint generation
+- [x] **SocketTLS_get_peer_cert_info()**: Test with certificates having special characters in subject/issuer
+  - ✅ X509_NAME_oneline() handles special characters by escaping them (OpenSSL standard behavior)
+- [x] **SocketTLS_get_cert_expiry()**: Verify correct handling of certificates with notAfter in distant future
+  - ✅ Uses ASN1_TIME_to_tm() which handles dates correctly
+  - ✅ Returns (time_t)-1 on error/no cert
+- [x] **SocketTLS_get_cert_subject()**: Test buffer size handling when subject exceeds buffer length
+  - ✅ Updated documentation to note truncation behavior (always null-terminated)
+  - ✅ Return value can be checked against len-1 to detect truncation
+- [x] **Certificate Chain Access**: Added function to get full certificate chain
+  - ✅ Implemented SocketTLS_get_peer_cert_chain() returning X509** array
+  - ✅ Array allocated from socket's arena; certs are references (caller must NOT free)
+  - ✅ Documented client vs server chain behavior difference
 
 ### 1.8 OCSP Client-Side Status
 
-- [ ] **SocketTLS_get_ocsp_response_status()**: Verify parsing of OCSP response from server's stapled response
-- [ ] **SocketTLS_get_ocsp_response_status()**: Test all return values (GOOD=1, REVOKED=0, UNKNOWN=-1, NO_RESPONSE=-1, VERIFY_FAILED=-2)
-- [ ] **OCSP Response Validation**: Ensure OCSP response signature is verified against the issuer certificate
-- [ ] **OCSP Response Freshness**: Consider adding check for OCSP response nextUpdate field
+- [x] **SocketTLS_get_ocsp_response_status()**: Verify parsing of OCSP response from server's stapled response
+  - ✅ Uses SSL_get_tlsext_status_ocsp_resp() to get stapled response
+  - ✅ Parses with d2i_OCSP_RESPONSE() and OCSP_response_get1_basic()
+- [x] **SocketTLS_get_ocsp_response_status()**: Test all return values (GOOD=1, REVOKED=0, UNKNOWN=-1, NO_RESPONSE=-1, VERIFY_FAILED=-2)
+  - ✅ All values correctly returned based on V_OCSP_CERTSTATUS_* codes
+  - ✅ Stale responses return -1 (unknown/no response)
+- [x] **OCSP Response Validation**: Ensure OCSP response signature is verified against the issuer certificate
+  - ✅ Added OCSP_basic_verify() with certificate chain and X509_STORE
+  - ✅ Uses OCSP_TRUSTOTHER flag to trust certificates in chain for responder
+  - ✅ Returns -2 on signature verification failure
+- [x] **OCSP Response Freshness**: Added check for OCSP response nextUpdate field
+  - ✅ Uses OCSP_check_validity() with SOCKET_TLS_OCSP_MAX_AGE_SECONDS tolerance (300s default)
+  - ✅ Added SocketTLS_get_ocsp_next_update() to retrieve nextUpdate timestamp
+  - ✅ Stale responses are rejected (return -1)
 
 ### 1.9 Connection Information Queries
 

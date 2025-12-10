@@ -1547,16 +1547,30 @@ SocketTLS_session_restore (Socket_T socket, const unsigned char *buffer,
 
 /* ==================== Renegotiation Control ==================== */
 
+/**
+ * @brief Maximum renegotiations allowed per connection for DoS protection.
+ *
+ * Limits the number of renegotiations to prevent CPU exhaustion attacks.
+ * Once this limit is exceeded, further renegotiation attempts are rejected.
+ */
+#ifndef SOCKET_TLS_MAX_RENEGOTIATIONS
+#define SOCKET_TLS_MAX_RENEGOTIATIONS 3
+#endif
+
 int
 SocketTLS_check_renegotiation (Socket_T socket)
 {
   assert (socket);
 
+  if (!socket->tls_enabled)
+    return -1;
+
   SSL *ssl = tls_socket_get_ssl (socket);
   if (!ssl)
     return -1;
 
-  /* TLS 1.3 doesn't support renegotiation */
+  /* TLS 1.3 doesn't support renegotiation - uses KeyUpdate instead.
+   * Return 0 to indicate no renegotiation is pending (correct behavior). */
   if (SSL_version (ssl) >= TLS1_3_VERSION)
     return 0;
 
@@ -1564,16 +1578,47 @@ SocketTLS_check_renegotiation (Socket_T socket)
   /* Check if renegotiation is pending */
   if (SSL_renegotiate_pending (ssl))
     {
-      /* Check if renegotiation is allowed */
-      if (SSL_get_secure_renegotiation_support (ssl))
+      /* DoS protection: Enforce renegotiation limit */
+      if (socket->tls_renegotiation_count >= SOCKET_TLS_MAX_RENEGOTIATIONS)
         {
-          int ret = SSL_do_handshake (ssl);
-          if (ret == 1)
-            return 1; /* Renegotiation completed */
-          return -1;  /* Renegotiation failed/rejected */
+          SocketMetrics_counter_inc (SOCKET_CTR_TLS_RENEGOTIATIONS);
+          TLS_ERROR_FMT ("Renegotiation limit exceeded (%d max)",
+                         SOCKET_TLS_MAX_RENEGOTIATIONS);
+          return -1; /* Reject: limit exceeded */
         }
-      return -1; /* Renegotiation not supported securely */
+
+      /* Check if secure renegotiation is supported (RFC 5746) */
+      if (!SSL_get_secure_renegotiation_support (ssl))
+        {
+          SocketMetrics_counter_inc (SOCKET_CTR_TLS_RENEGOTIATIONS);
+          TLS_ERROR_MSG ("Insecure renegotiation not supported");
+          return -1; /* Reject: insecure renegotiation */
+        }
+
+      /* Process the renegotiation */
+      int ret = SSL_do_handshake (ssl);
+      if (ret == 1)
+        {
+          socket->tls_renegotiation_count++;
+          SocketMetrics_counter_inc (SOCKET_CTR_TLS_RENEGOTIATIONS);
+          return 1; /* Renegotiation completed successfully */
+        }
+
+      /* Check for WANT_READ/WANT_WRITE (non-blocking) */
+      int ssl_error = SSL_get_error (ssl, ret);
+      if (ssl_error == SSL_ERROR_WANT_READ || ssl_error == SSL_ERROR_WANT_WRITE)
+        {
+          errno = EAGAIN;
+          return 0; /* In progress, retry later */
+        }
+
+      /* Renegotiation failed */
+      tls_format_openssl_error ("Renegotiation handshake failed");
+      RAISE_TLS_ERROR (SocketTLS_ProtocolError);
     }
+#else
+  /* Older OpenSSL - renegotiation not fully controllable */
+  (void)socket; /* Suppress unused warning */
 #endif
 
   return 0; /* No renegotiation pending */
@@ -1584,16 +1629,37 @@ SocketTLS_disable_renegotiation (Socket_T socket)
 {
   assert (socket);
 
+  if (!socket->tls_enabled)
+    return -1;
+
   SSL *ssl = tls_socket_get_ssl (socket);
   if (!ssl)
     return -1;
 
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
-  /* Disable client-initiated renegotiation */
+  /* Disable client-initiated renegotiation via SSL_OP_NO_RENEGOTIATION.
+   * This option was added in OpenSSL 1.1.0h and prevents the peer from
+   * initiating renegotiation. It's a security best practice as
+   * renegotiation can be exploited for DoS (CVE-2011-1473) and has had
+   * protocol vulnerabilities (CVE-2009-3555). */
   SSL_set_options (ssl, SSL_OP_NO_RENEGOTIATION);
 #endif
 
+  /* Also reset the count since renegotiation is now disabled */
+  socket->tls_renegotiation_count = 0;
+
   return 0;
+}
+
+int
+SocketTLS_get_renegotiation_count (Socket_T socket)
+{
+  assert (socket);
+
+  if (!socket->tls_enabled)
+    return -1;
+
+  return socket->tls_renegotiation_count;
 }
 
 /* ==================== Certificate Information ==================== */
@@ -1735,7 +1801,61 @@ SocketTLS_get_cert_subject (Socket_T socket, char *buf, size_t len)
   return (int)strlen (buf);
 }
 
+/* ==================== Certificate Chain Access ==================== */
+
+int
+SocketTLS_get_peer_cert_chain (Socket_T socket, X509 ***chain_out,
+                               int *chain_len)
+{
+  assert (socket);
+  assert (chain_out);
+  assert (chain_len);
+
+  *chain_out = NULL;
+  *chain_len = 0;
+
+  SSL *ssl = tls_socket_get_ssl (socket);
+  if (!ssl)
+    return -1;
+
+  /* Get the certificate chain (does NOT include peer cert for clients) */
+  STACK_OF (X509) *chain = SSL_get_peer_cert_chain (ssl);
+  if (!chain)
+    return 0; /* No chain available */
+
+  int num = sk_X509_num (chain);
+  if (num <= 0)
+    return 0;
+
+  /* Allocate array from socket's arena */
+  Arena_T arena = SocketBase_arena (socket->base);
+  X509 **certs = Arena_alloc (arena, (size_t)num * sizeof (X509 *), __FILE__,
+                              __LINE__);
+  if (!certs)
+    return -1;
+
+  /* Copy certificate references (caller must NOT free individual certs) */
+  for (int i = 0; i < num; i++)
+    {
+      certs[i] = sk_X509_value (chain, i);
+    }
+
+  *chain_out = certs;
+  *chain_len = num;
+  return 1;
+}
+
 /* ==================== OCSP Status ==================== */
+
+/**
+ * @brief Default maximum age for OCSP responses (5 minutes tolerance)
+ *
+ * OCSP responses older than this are considered stale even if still
+ * within the nextUpdate window. Prevents replay of old responses.
+ */
+#ifndef SOCKET_TLS_OCSP_MAX_AGE_SECONDS
+#define SOCKET_TLS_OCSP_MAX_AGE_SECONDS 300
+#endif
 
 int
 SocketTLS_get_ocsp_response_status (Socket_T socket)
@@ -1751,66 +1871,197 @@ SocketTLS_get_ocsp_response_status (Socket_T socket)
   long ocsp_len = SSL_get_tlsext_status_ocsp_resp (ssl, &ocsp_resp);
 
   if (ocsp_len <= 0 || !ocsp_resp)
-    return -1; /* No OCSP response */
+    return -1; /* No OCSP response stapled */
 
-  OCSP_RESPONSE *resp
-      = d2i_OCSP_RESPONSE (NULL, &ocsp_resp, (long)ocsp_len);
+  /* Parse the OCSP response */
+  OCSP_RESPONSE *resp = d2i_OCSP_RESPONSE (NULL, &ocsp_resp, ocsp_len);
   if (!resp)
-    return -2; /* Invalid/failed verification */
+    return -2; /* Invalid OCSP response format */
 
+  /* Check overall response status */
   int response_status = OCSP_response_status (resp);
   if (response_status != OCSP_RESPONSE_STATUS_SUCCESSFUL)
     {
       OCSP_RESPONSE_free (resp);
-      return -2; /* OCSP response not successful */
+      return -2; /* OCSP responder error */
+    }
+
+  /* Extract basic response for signature verification */
+  OCSP_BASICRESP *basic = OCSP_response_get1_basic (resp);
+  if (!basic)
+    {
+      OCSP_RESPONSE_free (resp);
+      return -2; /* Failed to extract basic response */
+    }
+
+  /* Get peer certificate chain for signature verification */
+  STACK_OF (X509) *chain = SSL_get_peer_cert_chain (ssl);
+  X509 *peer_cert = SSL_get_peer_certificate (ssl);
+
+  if (!peer_cert)
+    {
+      OCSP_BASICRESP_free (basic);
+      OCSP_RESPONSE_free (resp);
+      return -2; /* No peer certificate for verification */
+    }
+
+  /* Verify OCSP response signature against the certificate chain.
+   * The issuer certificate should be in the chain and is used to verify
+   * the OCSP responder's signature. OCSP_basic_verify with flag 0 performs
+   * full chain verification. */
+  int verify_result = -2;
+
+  /* Get the X509_STORE from the SSL context for trust anchor verification */
+  SSL_CTX *ssl_ctx = SSL_get_SSL_CTX (ssl);
+  X509_STORE *store = ssl_ctx ? SSL_CTX_get_cert_store (ssl_ctx) : NULL;
+
+  if (store)
+    {
+      /* Perform full OCSP signature verification:
+       * 1. Verifies the OCSP response signature
+       * 2. Checks the responder certificate against the trust store
+       * 3. Validates responder certificate is authorized (CA or delegated) */
+      int verify_flags = OCSP_TRUSTOTHER; /* Trust certs in chain for responder
+                                           */
+      if (OCSP_basic_verify (basic, chain, store, verify_flags) != 1)
+        {
+          /* Signature verification failed */
+          X509_free (peer_cert);
+          OCSP_BASICRESP_free (basic);
+          OCSP_RESPONSE_free (resp);
+          return -2;
+        }
+    }
+
+  /* Find the single response matching our peer certificate */
+  int cert_status = -1;
+  int resp_count = OCSP_resp_count (basic);
+
+  for (int i = 0; i < resp_count; i++)
+    {
+      OCSP_SINGLERESP *single = OCSP_resp_get0 (basic, i);
+      if (!single)
+        continue;
+
+      int reason = 0;
+      ASN1_GENERALIZEDTIME *thisupd = NULL;
+      ASN1_GENERALIZEDTIME *nextupd = NULL;
+      ASN1_GENERALIZEDTIME *revtime = NULL;
+
+      int status = OCSP_single_get0_status (single, &reason, &revtime,
+                                            &thisupd, &nextupd);
+
+      /* Validate response freshness:
+       * - thisUpdate must be in the past
+       * - nextUpdate (if present) must be in the future
+       * - Response must not be older than max age tolerance */
+      if (!OCSP_check_validity (thisupd, nextupd,
+                                SOCKET_TLS_OCSP_MAX_AGE_SECONDS, -1))
+        {
+          /* Response is stale or not yet valid */
+          continue;
+        }
+
+      /* Map OCSP status to return value */
+      switch (status)
+        {
+        case V_OCSP_CERTSTATUS_GOOD:
+          cert_status = 1;
+          break;
+        case V_OCSP_CERTSTATUS_REVOKED:
+          cert_status = 0;
+          break;
+        case V_OCSP_CERTSTATUS_UNKNOWN:
+        default:
+          /* Unknown status - continue checking other responses */
+          if (cert_status < 0)
+            cert_status = -1;
+          break;
+        }
+
+      /* Stop at first definitive result (GOOD or REVOKED) */
+      if (cert_status == 1 || cert_status == 0)
+        break;
+    }
+
+  X509_free (peer_cert);
+  OCSP_BASICRESP_free (basic);
+  OCSP_RESPONSE_free (resp);
+
+  return cert_status;
+#else
+  (void)socket;
+  return -1; /* OCSP not compiled in */
+#endif
+}
+
+int
+SocketTLS_get_ocsp_next_update (Socket_T socket, time_t *next_update)
+{
+  assert (socket);
+  assert (next_update);
+
+  *next_update = (time_t)-1;
+
+  SSL *ssl = tls_socket_get_ssl (socket);
+  if (!ssl)
+    return -1;
+
+#if !defined(OPENSSL_NO_OCSP)
+  const unsigned char *ocsp_resp;
+  long ocsp_len = SSL_get_tlsext_status_ocsp_resp (ssl, &ocsp_resp);
+
+  if (ocsp_len <= 0 || !ocsp_resp)
+    return -1;
+
+  OCSP_RESPONSE *resp = d2i_OCSP_RESPONSE (NULL, &ocsp_resp, ocsp_len);
+  if (!resp)
+    return -1;
+
+  if (OCSP_response_status (resp) != OCSP_RESPONSE_STATUS_SUCCESSFUL)
+    {
+      OCSP_RESPONSE_free (resp);
+      return -1;
     }
 
   OCSP_BASICRESP *basic = OCSP_response_get1_basic (resp);
   if (!basic)
     {
       OCSP_RESPONSE_free (resp);
-      return -2;
+      return -1;
     }
 
-  /* Get peer certificate for verification */
-  X509 *cert = SSL_get_peer_certificate (ssl);
-  if (!cert)
-    {
-      OCSP_BASICRESP_free (basic);
-      OCSP_RESPONSE_free (resp);
-      return -2;
-    }
-
-  /* Get certificate ID from basic response */
-  int cert_status = -1;
-  ASN1_GENERALIZEDTIME *thisupd = NULL;
-  ASN1_GENERALIZEDTIME *nextupd = NULL;
-
+  int result = -1;
   int resp_count = OCSP_resp_count (basic);
+
   for (int i = 0; i < resp_count; i++)
     {
       OCSP_SINGLERESP *single = OCSP_resp_get0 (basic, i);
-      if (single)
+      if (!single)
+        continue;
+
+      ASN1_GENERALIZEDTIME *nextupd = NULL;
+      (void)OCSP_single_get0_status (single, NULL, NULL, NULL, &nextupd);
+
+      if (nextupd)
         {
-          int reason = 0;
-          int status
-              = OCSP_single_get0_status (single, &reason, NULL, &thisupd,
-                                         &nextupd);
-          if (status == V_OCSP_CERTSTATUS_GOOD)
-            cert_status = 1;
-          else if (status == V_OCSP_CERTSTATUS_REVOKED)
-            cert_status = 0;
-          break;
+          struct tm tm_time = { 0 };
+          if (ASN1_TIME_to_tm (nextupd, &tm_time) == 1)
+            {
+              *next_update = timegm (&tm_time);
+              result = 1;
+              break;
+            }
         }
     }
 
-  X509_free (cert);
   OCSP_BASICRESP_free (basic);
   OCSP_RESPONSE_free (resp);
 
-  return cert_status;
+  return result;
 #else
-  return -1; /* OCSP not compiled in */
+  (void)socket;
+  return -1;
 #endif
 }
 

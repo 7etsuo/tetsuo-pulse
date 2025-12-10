@@ -590,6 +590,12 @@ struct Socket_T
                      * -1=infinite.
                      * @private @see Socket_timeouts_set_extended() for config
                      * @see core/SocketConfig.h for defaults and structure. */
+  int tls_renegotiation_count; /**< Counter for TLS renegotiation events on
+                                * this socket. Used for DoS protection - reject
+                                * if exceeds SOCKET_TLS_MAX_RENEGOTIATIONS.
+                                * Reset on disable. TLS 1.3 always 0 (no reneg).
+                                * @private @see SocketTLS_check_renegotiation()
+                                */
 #endif
 };
 
