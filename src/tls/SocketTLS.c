@@ -779,57 +779,225 @@ SocketTLS_shutdown (Socket_T socket)
  * ============================================================================
  */
 
+/**
+ * SocketTLS_send - Send data over a TLS-encrypted connection
+ * @socket: Socket with completed TLS handshake
+ * @buf: Buffer containing data to send
+ * @len: Number of bytes to send
+ *
+ * Sends data using SSL_write() with proper partial write handling when
+ * SSL_MODE_ENABLE_PARTIAL_WRITE is enabled. For non-blocking sockets,
+ * returns 0 with errno=EAGAIN when the operation would block.
+ *
+ * ## Partial Write Handling
+ *
+ * With SSL_MODE_ENABLE_PARTIAL_WRITE (enabled by default), SSL_write() may
+ * return a value less than len. The caller should retry with the remaining
+ * data. This differs from blocking mode where SSL_write() waits until all
+ * bytes are sent or an error occurs.
+ *
+ * ## Zero-Length Operations
+ *
+ * Sending zero bytes returns 0 immediately without invoking SSL_write().
+ * This prevents undefined behavior in OpenSSL and provides consistent
+ * semantics with POSIX send().
+ *
+ * ## Large Buffer Handling
+ *
+ * Buffers larger than INT_MAX are capped to INT_MAX per call since OpenSSL
+ * uses int for lengths. Caller should loop to send all data if needed.
+ *
+ * Returns: Number of bytes sent (may be < len with partial writes),
+ *          0 if would block (errno=EAGAIN)
+ * Raises: SocketTLS_Failed on TLS error
+ * Thread-safe: No - operates on per-connection SSL state
+ */
 ssize_t
 SocketTLS_send (Socket_T socket, const void *buf, size_t len)
 {
   assert (socket);
-  assert (buf);
-  assert (len > 0);
+  assert (buf || len == 0);
+
+  /* Handle zero-length send: return 0 immediately (POSIX semantics) */
+  if (len == 0)
+    return 0;
 
   SSL *ssl = VALIDATE_TLS_IO_READY (socket, SocketTLS_Failed);
-  /* Cap length to INT_MAX to prevent truncation on 64-bit systems */
+
+  /* Cap length to INT_MAX to prevent truncation on 64-bit systems.
+   * SSL_write uses int for length, so we must stay within INT_MAX. */
   int write_len = (len > (size_t)INT_MAX) ? INT_MAX : (int)len;
   int result = SSL_write (ssl, buf, write_len);
 
   if (result > 0)
-    return (ssize_t)result;
-
-  TLSHandshakeState state = tls_handle_ssl_error (socket, ssl, result);
-  if (state == TLS_HANDSHAKE_ERROR)
     {
-      tls_format_openssl_error ("TLS send failed");
+      /* Partial write success: SSL_MODE_ENABLE_PARTIAL_WRITE allows
+       * result < write_len. Caller should loop for remaining data. */
+      return (ssize_t)result;
+    }
+
+  /* result <= 0: Check SSL_get_error for specific error condition */
+  int ssl_error = SSL_get_error (ssl, result);
+
+  switch (ssl_error)
+    {
+    case SSL_ERROR_WANT_READ:
+    case SSL_ERROR_WANT_WRITE:
+      /* Non-blocking: would block, set errno and return 0.
+       * Caller should poll for readiness and retry. */
+      errno = EAGAIN;
+      return 0;
+
+    case SSL_ERROR_ZERO_RETURN:
+      /* Peer sent close_notify - connection closing cleanly.
+       * For send, this typically shouldn't happen, but handle it. */
+      RAISE (Socket_Closed);
+
+    case SSL_ERROR_SYSCALL:
+      /* System call error. errno already set by the underlying call.
+       * If errno is 0, the peer closed unexpectedly. */
+      if (errno == 0)
+        errno = ECONNRESET;
+      tls_format_openssl_error ("TLS send failed (syscall)");
+      RAISE_TLS_ERROR (SocketTLS_Failed);
+
+    case SSL_ERROR_SSL:
+      /* Protocol error - fatal TLS failure */
+      errno = EPROTO;
+      tls_format_openssl_error ("TLS send failed (protocol)");
+      RAISE_TLS_ERROR (SocketTLS_Failed);
+
+    default:
+      /* Unknown error */
+      errno = EIO;
+      tls_format_openssl_error ("TLS send failed (unknown)");
       RAISE_TLS_ERROR (SocketTLS_Failed);
     }
-  errno = EAGAIN;
-  return 0;
+
+  /* Unreachable - all cases either return or raise */
+  return -1;
 }
 
+/**
+ * SocketTLS_recv - Receive data from a TLS-encrypted connection
+ * @socket: Socket with completed TLS handshake
+ * @buf: Buffer to receive data into
+ * @len: Maximum bytes to receive
+ *
+ * Receives data using SSL_read() with proper handling of all error cases.
+ * Distinguishes between clean peer shutdown (SSL_ERROR_ZERO_RETURN) and
+ * abrupt connection close (SSL_ERROR_SYSCALL with EOF).
+ *
+ * ## Shutdown Handling
+ *
+ * - **Clean shutdown (SSL_ERROR_ZERO_RETURN)**: Peer sent close_notify alert.
+ *   This raises Socket_Closed to indicate graceful connection termination.
+ *   The TLS session ended properly without data loss.
+ *
+ * - **Abrupt close (SSL_ERROR_SYSCALL with errno=0)**: Connection reset or
+ *   closed without close_notify. This also raises Socket_Closed but with
+ *   errno=ECONNRESET to indicate potential data truncation.
+ *
+ * ## Non-blocking Operation
+ *
+ * For non-blocking sockets, returns 0 with errno=EAGAIN when the operation
+ * would block. Caller should poll for POLL_READ and retry.
+ *
+ * ## Zero-Length Operations
+ *
+ * Receiving into a zero-length buffer returns 0 immediately without invoking
+ * SSL_read(). This prevents undefined behavior and matches POSIX recv().
+ *
+ * ## Large Buffer Handling
+ *
+ * Buffers larger than INT_MAX are capped to INT_MAX per call since OpenSSL
+ * uses int for lengths. This is typically not an issue since TLS records
+ * are limited to 16KB.
+ *
+ * Returns: Number of bytes received (> 0 on success),
+ *          0 if would block (errno=EAGAIN)
+ * Raises: Socket_Closed on clean shutdown or peer disconnect,
+ *         SocketTLS_Failed on TLS protocol error
+ * Thread-safe: No - operates on per-connection SSL state
+ */
 ssize_t
 SocketTLS_recv (Socket_T socket, void *buf, size_t len)
 {
   assert (socket);
-  assert (buf);
-  assert (len > 0);
+  assert (buf || len == 0);
+
+  /* Handle zero-length recv: return 0 immediately (POSIX semantics) */
+  if (len == 0)
+    return 0;
 
   SSL *ssl = VALIDATE_TLS_IO_READY (socket, SocketTLS_Failed);
-  /* Cap length to INT_MAX to prevent truncation on 64-bit systems */
+
+  /* Cap length to INT_MAX to prevent truncation on 64-bit systems.
+   * SSL_read uses int for length, so we must stay within INT_MAX. */
   int read_len = (len > (size_t)INT_MAX) ? INT_MAX : (int)len;
   int result = SSL_read (ssl, buf, read_len);
 
   if (result > 0)
     return (ssize_t)result;
 
-  if (result == 0)
-    RAISE (Socket_Closed); /* longjmp - does not return */
+  /* result <= 0: Must call SSL_get_error to determine the actual error.
+   * Note: SSL_read returning 0 does NOT always mean clean shutdown;
+   * SSL_get_error must be consulted for the definitive error code. */
+  int ssl_error = SSL_get_error (ssl, result);
 
-  TLSHandshakeState state = tls_handle_ssl_error (socket, ssl, result);
-  if (state == TLS_HANDSHAKE_ERROR)
+  switch (ssl_error)
     {
-      tls_format_openssl_error ("TLS recv failed");
+    case SSL_ERROR_ZERO_RETURN:
+      /* Clean shutdown: peer sent close_notify alert.
+       * This is a graceful connection termination - no data lost.
+       * Set errno to 0 to indicate clean shutdown, then raise. */
+      errno = 0;
+      RAISE (Socket_Closed);
+
+    case SSL_ERROR_WANT_READ:
+    case SSL_ERROR_WANT_WRITE:
+      /* Non-blocking: would block, set errno and return 0.
+       * Note: WANT_WRITE can occur during renegotiation even on recv.
+       * Caller should poll for appropriate events and retry. */
+      errno = EAGAIN;
+      return 0;
+
+    case SSL_ERROR_SYSCALL:
+      /* System call error - check errno for details.
+       * errno = 0 with result = 0: Unexpected EOF (peer closed abruptly).
+       * This differs from SSL_ERROR_ZERO_RETURN which is a clean shutdown.
+       *
+       * Per OpenSSL docs: "Some I/O error occurred. The retrying may be
+       * possible but the caller must ensure that the error wasn't fatal."
+       * With errno = 0 and result = 0, it means unexpected EOF. */
+      if (result == 0 && errno == 0)
+        {
+          /* Abrupt close: peer disconnected without close_notify.
+           * This could indicate a truncation attack or network failure.
+           * Set ECONNRESET to distinguish from clean shutdown. */
+          errno = ECONNRESET;
+          RAISE (Socket_Closed);
+        }
+      /* Other syscall error - errno is already set appropriately */
+      tls_format_openssl_error ("TLS recv failed (syscall)");
+      RAISE_TLS_ERROR (SocketTLS_Failed);
+
+    case SSL_ERROR_SSL:
+      /* Protocol error - fatal TLS failure (e.g., bad record MAC,
+       * decompression failure, handshake failure during renegotiation). */
+      errno = EPROTO;
+      tls_format_openssl_error ("TLS recv failed (protocol)");
+      RAISE_TLS_ERROR (SocketTLS_Failed);
+
+    default:
+      /* Unknown error type - should not happen with current OpenSSL */
+      errno = EIO;
+      tls_format_openssl_error ("TLS recv failed (unknown)");
       RAISE_TLS_ERROR (SocketTLS_Failed);
     }
-  errno = EAGAIN;
-  return 0;
+
+  /* Unreachable - all cases either return or raise */
+  return -1;
 }
 
 /* ============================================================================

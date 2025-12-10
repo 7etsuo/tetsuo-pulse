@@ -894,39 +894,115 @@ extern void SocketTLS_shutdown (Socket_T socket);
 /**
  * @brief Send data over TLS-encrypted connection
  * @ingroup security
- * @param socket The socket instance with completed TLS handshake
- * @param buf Buffer containing data to send
- * @param len Number of bytes to send from buf
+ * @param[in] socket The socket instance with completed TLS handshake
+ * @param[in] buf Buffer containing data to send
+ * @param[in] len Number of bytes to send from buf (0 returns immediately)
  *
- * Sends data using SSL_write(). For non-blocking sockets, returns 0 and sets
- * errno=EAGAIN if the operation would block. Handshake must be complete before
- * calling.
+ * Sends data using SSL_write() with proper partial write handling when
+ * SSL_MODE_ENABLE_PARTIAL_WRITE is enabled (default). For non-blocking sockets,
+ * returns 0 and sets errno=EAGAIN if the operation would block.
  *
- * @return Number of bytes sent, or 0 if would block
- * @throws SocketTLS_Failed on TLS errors, Socket_Closed if connection closed
+ * ## Partial Write Behavior
+ *
+ * With SSL_MODE_ENABLE_PARTIAL_WRITE (enabled by default), the function may
+ * return a value less than `len`. The caller must loop to send remaining data:
+ *
+ * @code{.c}
+ * size_t sent = 0;
+ * while (sent < len) {
+ *     ssize_t n = SocketTLS_send(sock, buf + sent, len - sent);
+ *     if (n == 0) {
+ *         // Would block - poll for POLL_WRITE and retry
+ *         poll_for_write(sock);
+ *         continue;
+ *     }
+ *     sent += n;
+ * }
+ * @endcode
+ *
+ * ## Zero-Length Operations
+ *
+ * Sending zero bytes (len=0) returns 0 immediately without invoking SSL_write.
+ * This matches POSIX send() semantics.
+ *
+ * ## Large Buffer Handling
+ *
+ * Buffers larger than INT_MAX are capped to INT_MAX per call since OpenSSL
+ * uses int for lengths. Caller should loop for complete transmission.
+ *
+ * @return Number of bytes sent (may be < len with partial writes),
+ *         0 if would block (errno=EAGAIN for non-blocking sockets)
+ *
+ * @throws SocketTLS_Failed on TLS protocol errors or SSL_ERROR_SSL
+ * @throws Socket_Closed if peer sent close_notify during send
+ *
  * @threadsafe No - modifies SSL buffers and state
  *
- * Note: Does not perform partial sends; application must loop if needed.
+ * @see SocketTLS_recv() for receiving data
+ * @see Socket_sendall() for fully blocking send semantics
  */
 extern ssize_t SocketTLS_send (Socket_T socket, const void *buf, size_t len);
 
 /**
  * @brief Receive data from TLS-encrypted connection
  * @ingroup security
- * @param socket The socket instance with completed TLS handshake
- * @param buf Buffer to receive data into
- * @param len Maximum number of bytes to receive
+ * @param[in] socket The socket instance with completed TLS handshake
+ * @param[out] buf Buffer to receive data into
+ * @param[in] len Maximum number of bytes to receive (0 returns immediately)
  *
- * Receives data using SSL_read(). For non-blocking sockets, returns 0 and sets
- * errno=EAGAIN if would block. Returns 0 and raises Socket_Closed on clean
- * peer shutdown.
+ * Receives data using SSL_read() with proper handling of all shutdown cases.
+ * Distinguishes between clean peer shutdown and abrupt connection close.
  *
- * @return Number of bytes received, or 0 if would block or EOF
- * @throws SocketTLS_Failed on TLS errors, Socket_Closed on clean shutdown
+ * ## Shutdown Handling
+ *
+ * - **Clean shutdown (SSL_ERROR_ZERO_RETURN)**: Peer sent close_notify alert.
+ *   Raises Socket_Closed with errno=0. This is graceful termination.
+ *
+ * - **Abrupt close (SSL_ERROR_SYSCALL with EOF)**: Peer closed without sending
+ *   close_notify. Raises Socket_Closed with errno=ECONNRESET. This may indicate
+ *   data truncation or network failure.
+ *
+ * Callers can distinguish these cases by checking errno after catching
+ * Socket_Closed:
+ *
+ * @code{.c}
+ * TRY {
+ *     n = SocketTLS_recv(sock, buf, sizeof(buf));
+ * } EXCEPT(Socket_Closed) {
+ *     if (errno == 0) {
+ *         // Clean shutdown - peer sent close_notify
+ *     } else if (errno == ECONNRESET) {
+ *         // Abrupt close - possible truncation attack
+ *     }
+ * } END_TRY;
+ * @endcode
+ *
+ * ## Non-blocking Behavior
+ *
+ * For non-blocking sockets, returns 0 with errno=EAGAIN when the operation
+ * would block. Note that WANT_WRITE can occur during renegotiation.
+ *
+ * ## Zero-Length Operations
+ *
+ * Receiving with len=0 returns 0 immediately without invoking SSL_read.
+ * This matches POSIX recv() semantics.
+ *
+ * ## Large Buffer Handling
+ *
+ * Buffers larger than INT_MAX are capped to INT_MAX per call. This is typically
+ * not an issue since TLS records are limited to 16KB.
+ *
+ * @return Number of bytes received (> 0 on success),
+ *         0 if would block (errno=EAGAIN for non-blocking sockets)
+ *
+ * @throws Socket_Closed on clean shutdown (errno=0) or abrupt close
+ * (errno=ECONNRESET)
+ * @throws SocketTLS_Failed on TLS protocol errors (errno=EPROTO)
+ *
  * @threadsafe No - modifies SSL buffers and state
  *
- * Note: Application must handle partial reads by looping until desired amount
- * received.
+ * @see SocketTLS_send() for sending data
+ * @see Socket_recvall() for fully blocking recv semantics
  */
 extern ssize_t SocketTLS_recv (Socket_T socket, void *buf, size_t len);
 
