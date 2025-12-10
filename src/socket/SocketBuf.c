@@ -789,29 +789,43 @@ SocketBuf_readline (T buf, char *line, size_t max_len)
   if (max_len == 0)
     return -1;
 
-  /* Search for newline */
-  ssize_t newline_pos = SocketBuf_find (buf, "\n", 1);
-  if (newline_pos < 0)
+  /* Check if there's a complete line by trying to find newline */
+  ssize_t nl_pos = SocketBuf_find (buf, "\n", 1);
+  if (nl_pos < 0)
     return -1; /* No complete line yet */
 
   /* Calculate line length excluding newline */
-  size_t line_len = (size_t)newline_pos;
+  size_t line_len = (size_t)nl_pos;
 
   /* Limit to max_len - 1 (reserve space for null) */
   if (line_len > max_len - 1)
     line_len = max_len - 1;
 
-  /* Read the line data (consumes from buffer) */
-  size_t bytes_read = SocketBuf_read (buf, line, line_len);
-  line[bytes_read] = '\0';
-
-  /* Consume the newline if present */
-  if (SocketBuf_available(buf) > 0) {
-    char dummy;
-    SocketBuf_read(buf, &dummy, 1); /* Consume the \n */
+  /* Read the line data and newline together */
+  size_t total_to_read = line_len + 1; /* Include newline */
+  if (total_to_read > max_len) {
+    total_to_read = max_len;
   }
 
-  return (ssize_t)bytes_read;
+  char temp[max_len + 1];
+  size_t bytes_read = SocketBuf_read(buf, temp, total_to_read);
+
+  /* Find newline in what we read */
+  char *nl_pos2 = memchr(temp, '\n', bytes_read);
+  size_t line_bytes = 0;
+
+  if (nl_pos2) {
+    line_bytes = nl_pos2 - temp;
+    memcpy(line, temp, line_bytes);
+    line[line_bytes] = '\0';
+  } else {
+    /* No newline found, return what we have */
+    line_bytes = bytes_read;
+    memcpy(line, temp, line_bytes);
+    line[line_bytes] = '\0';
+  }
+
+  return (ssize_t)line_bytes;
 }
 
 /* ==================== Scatter-Gather I/O ==================== */

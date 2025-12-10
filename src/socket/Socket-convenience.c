@@ -61,7 +61,7 @@ Socket_listen_tcp (const char *host, int port, int backlog)
 {
   T server = NULL;
 
-  assert (port > 0 && port <= SOCKET_MAX_PORT);
+  assert (port >= 0 && port <= SOCKET_MAX_PORT);
   assert (backlog > 0);
 
   TRY
