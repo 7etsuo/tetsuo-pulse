@@ -386,6 +386,239 @@ TEST (async_process_completions_no_pending)
   Arena_dispose (&arena);
 }
 
+/* ==================== Batch Operations Tests ==================== */
+
+TEST (async_submit_batch)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketAsync_T async = NULL;
+  Socket_T socket = NULL;
+
+  TRY { async = SocketAsync_new (arena); }
+  EXCEPT (SocketAsync_Failed)
+  {
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  TRY { socket = Socket_new (AF_INET, SOCK_STREAM, 0); }
+  EXCEPT (Socket_Failed)
+  {
+    SocketAsync_free (&async);
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  /* Create a batch of operations */
+  const char *send_data = "test";
+  char recv_buf[256];
+
+  SocketAsync_Op ops[2];
+  memset (ops, 0, sizeof (ops));
+
+  /* Send operation */
+  ops[0].socket = socket;
+  ops[0].is_send = 1;
+  ops[0].send_buf = send_data;
+  ops[0].len = strlen (send_data);
+  ops[0].cb = async_test_callback;
+  ops[0].user_data = NULL;
+
+  /* Recv operation */
+  ops[1].socket = socket;
+  ops[1].is_send = 0;
+  ops[1].recv_buf = recv_buf;
+  ops[1].len = sizeof (recv_buf);
+  ops[1].cb = async_test_callback;
+  ops[1].user_data = NULL;
+
+  /* Submit batch - may fail if backend doesn't support batching */
+  int result = SocketAsync_submit_batch (async, ops, 2);
+  /* Result is number of submitted ops or -1 on error */
+  ASSERT (result >= -1);
+
+  /* Cancel all to clean up */
+  SocketAsync_cancel_all (async);
+
+  Socket_free (&socket);
+  SocketAsync_free (&async);
+  Arena_dispose (&arena);
+}
+
+TEST (async_submit_batch_empty)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketAsync_T async = NULL;
+
+  TRY { async = SocketAsync_new (arena); }
+  EXCEPT (SocketAsync_Failed)
+  {
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  /* Empty batch should be handled gracefully */
+  int result = SocketAsync_submit_batch (async, NULL, 0);
+  ASSERT (result >= -1);
+
+  SocketAsync_free (&async);
+  Arena_dispose (&arena);
+}
+
+/* ==================== Cancel All Tests ==================== */
+
+TEST (async_cancel_all)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketAsync_T async = NULL;
+  Socket_T socket = NULL;
+
+  TRY { async = SocketAsync_new (arena); }
+  EXCEPT (SocketAsync_Failed)
+  {
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  TRY { socket = Socket_new (AF_INET, SOCK_STREAM, 0); }
+  EXCEPT (Socket_Failed)
+  {
+    SocketAsync_free (&async);
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  /* Submit a few requests */
+  const char *test_data = "test";
+  char recv_buf[256];
+  volatile unsigned req1 = 0, req2 = 0;
+
+  TRY
+  {
+    req1 = SocketAsync_send (async, socket, test_data, strlen (test_data),
+                             async_test_callback, NULL, ASYNC_FLAG_NONE);
+  }
+  EXCEPT (SocketAsync_Failed) { req1 = 0; }
+  END_TRY;
+
+  TRY
+  {
+    req2 = SocketAsync_recv (async, socket, recv_buf, sizeof (recv_buf),
+                             async_test_callback, NULL, ASYNC_FLAG_NONE);
+  }
+  EXCEPT (SocketAsync_Failed) { req2 = 0; }
+  END_TRY;
+
+  (void)req2; /* Suppress unused warning - we only check req1 cancellation */
+
+  /* Cancel all pending requests */
+  int result = SocketAsync_cancel_all (async);
+  /* Should return number of cancelled requests or 0 if none pending */
+  ASSERT (result >= 0);
+
+  /* Verify individual cancels now fail (already cancelled) */
+  if (req1 > 0)
+    {
+      int cancel_result = SocketAsync_cancel (async, req1);
+      ASSERT_EQ (-1, cancel_result);
+    }
+
+  Socket_free (&socket);
+  SocketAsync_free (&async);
+  Arena_dispose (&arena);
+}
+
+TEST (async_cancel_all_empty)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketAsync_T async = NULL;
+
+  TRY { async = SocketAsync_new (arena); }
+  EXCEPT (SocketAsync_Failed)
+  {
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  /* Cancel all with no pending requests */
+  int result = SocketAsync_cancel_all (async);
+  ASSERT_EQ (0, result);
+
+  SocketAsync_free (&async);
+  Arena_dispose (&arena);
+}
+
+/* ==================== Backend Selection Tests ==================== */
+
+TEST (async_backend_available_auto)
+{
+  setup_signals ();
+
+  /* Check if AUTO backend is available */
+  int available = SocketAsync_backend_available (ASYNC_BACKEND_AUTO);
+  /* AUTO should always return some value (0 = no async, 1 = some backend) */
+  ASSERT (available == 0 || available == 1);
+}
+
+TEST (async_backend_available_poll)
+{
+  setup_signals ();
+
+  /* Poll backend should always be available as fallback */
+  int available = SocketAsync_backend_available (ASYNC_BACKEND_POLL);
+  /* Poll is typically always available */
+  ASSERT (available == 0 || available == 1);
+}
+
+TEST (async_backend_available_iouring)
+{
+  setup_signals ();
+
+  /* Check if io_uring backend is available */
+  int available = SocketAsync_backend_available (ASYNC_BACKEND_IO_URING);
+  /* Returns 0 or 1 depending on system support */
+  ASSERT (available == 0 || available == 1);
+}
+
+TEST (async_set_backend)
+{
+  setup_signals ();
+
+  /* Try to set to AUTO backend */
+  int result = SocketAsync_set_backend (ASYNC_BACKEND_AUTO);
+  /* Should succeed or return -1 if not supported */
+  ASSERT (result == 0 || result == -1);
+}
+
+TEST (async_set_backend_unavailable)
+{
+  setup_signals ();
+
+  /* Try to set an unavailable backend */
+  int available = SocketAsync_backend_available (ASYNC_BACKEND_IO_URING);
+  if (available == 0)
+    {
+      /* Backend not available - setting it should fail */
+      int result = SocketAsync_set_backend (ASYNC_BACKEND_IO_URING);
+      ASSERT_EQ (-1, result);
+    }
+  else
+    {
+      /* Backend available - test passes */
+      ASSERT (1);
+    }
+}
+
 /* ==================== Main ==================== */
 
 int

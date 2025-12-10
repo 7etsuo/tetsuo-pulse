@@ -560,6 +560,9 @@ set(TEST_SOURCES
     test_multi_protocol_integration
     test_socketretry
     test_socketio
+    test_timer
+    test_metrics
+    test_httpserver
 )
 
 # TLS tests (only built when TLS is enabled)

@@ -117,6 +117,88 @@ TEST (security_ws_limits_query)
   ASSERT (max_message >= max_frame); /* Message limit >= frame limit */
 }
 
+TEST (security_arena_limits_query)
+{
+  size_t max_alloc;
+
+  SocketSecurity_get_arena_limits (&max_alloc);
+
+  ASSERT (max_alloc > 0);
+  /* Arena limit should be <= global max allocation */
+  ASSERT (max_alloc <= SOCKET_SECURITY_MAX_ALLOCATION);
+}
+
+TEST (security_hpack_limits_query)
+{
+  size_t max_table;
+
+  SocketSecurity_get_hpack_limits (&max_table);
+
+  ASSERT (max_table > 0);
+  /* HPACK table size should be reasonable (not > 1MB typically) */
+  ASSERT (max_table <= 1024 * 1024);
+}
+
+TEST (security_check_size_edge_cases)
+{
+  /* SIZE_MAX / 2 is the upper bound for overflow protection */
+  ASSERT (!SocketSecurity_check_size (SIZE_MAX / 2 + 1));
+
+  /* Just under max allocation should be valid */
+  ASSERT (SocketSecurity_check_size (SOCKET_SECURITY_MAX_ALLOCATION - 1));
+
+  /* Exactly at max allocation should be valid */
+  ASSERT (SocketSecurity_check_size (SOCKET_SECURITY_MAX_ALLOCATION));
+}
+
+TEST (security_get_max_allocation)
+{
+  size_t max_alloc = SocketSecurity_get_max_allocation ();
+
+  ASSERT (max_alloc > 0);
+  ASSERT_EQ (SOCKET_SECURITY_MAX_ALLOCATION, max_alloc);
+}
+
+TEST (security_http_limits_partial_query)
+{
+  /* Test with NULL pointers - should not crash */
+  size_t max_uri;
+  SocketSecurity_get_http_limits (&max_uri, NULL, NULL, NULL);
+  ASSERT (max_uri > 0);
+
+  size_t max_body;
+  SocketSecurity_get_http_limits (NULL, NULL, NULL, &max_body);
+  ASSERT (max_body > 0);
+}
+
+TEST (security_ws_limits_partial_query)
+{
+  /* Test with NULL pointers - should not crash */
+  size_t max_frame;
+  SocketSecurity_get_ws_limits (&max_frame, NULL);
+  ASSERT (max_frame > 0);
+
+  size_t max_message;
+  SocketSecurity_get_ws_limits (NULL, &max_message);
+  ASSERT (max_message > 0);
+}
+
+TEST (security_arena_limits_null_safe)
+{
+  /* Test with NULL pointer - should not crash */
+  SocketSecurity_get_arena_limits (NULL);
+  /* If we got here, it handled NULL safely */
+  ASSERT (1);
+}
+
+TEST (security_hpack_limits_null_safe)
+{
+  /* Test with NULL pointer - should not crash */
+  SocketSecurity_get_hpack_limits (NULL);
+  /* If we got here, it handled NULL safely */
+  ASSERT (1);
+}
+
 /* ============================================================================
  * Integer Overflow Protection Tests
  * ============================================================================

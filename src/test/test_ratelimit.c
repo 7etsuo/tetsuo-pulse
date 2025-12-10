@@ -457,6 +457,184 @@ TEST (iptracker_setmax)
   Arena_dispose (&arena);
 }
 
+/* Test setmaxunique - limit on total unique IPs tracked */
+TEST (iptracker_setmaxunique)
+{
+  Arena_T arena = Arena_new ();
+  SocketIPTracker_T tracker;
+
+  TRY tracker = SocketIPTracker_new (arena, 100);
+
+  /* Default max unique should be some large value */
+  size_t initial_max = SocketIPTracker_getmaxunique (tracker);
+  ASSERT (initial_max > 0);
+
+  /* Set a specific limit */
+  SocketIPTracker_setmaxunique (tracker, 5);
+  ASSERT_EQ (5, SocketIPTracker_getmaxunique (tracker));
+
+  /* Reset to unlimited */
+  SocketIPTracker_setmaxunique (tracker, 0);
+  ASSERT_EQ (0, SocketIPTracker_getmaxunique (tracker));
+  EXCEPT (SocketIPTracker_Failed)
+  Arena_dispose (&arena);
+  ASSERT (0);
+  END_TRY;
+
+  Arena_dispose (&arena);
+}
+
+/* Test getmaxunique retrieval */
+TEST (iptracker_getmaxunique)
+{
+  Arena_T arena = Arena_new ();
+  SocketIPTracker_T tracker;
+
+  TRY tracker = SocketIPTracker_new (arena, 10);
+
+  /* Set known value */
+  SocketIPTracker_setmaxunique (tracker, 1000);
+  ASSERT_EQ (1000, SocketIPTracker_getmaxunique (tracker));
+
+  /* Change and verify */
+  SocketIPTracker_setmaxunique (tracker, 500);
+  ASSERT_EQ (500, SocketIPTracker_getmaxunique (tracker));
+  EXCEPT (SocketIPTracker_Failed)
+  Arena_dispose (&arena);
+  ASSERT (0);
+  END_TRY;
+
+  Arena_dispose (&arena);
+}
+
+/* Test max unique IPs exceeded scenario */
+TEST (iptracker_max_unique_exceeded)
+{
+  Arena_T arena = Arena_new ();
+  SocketIPTracker_T tracker;
+  int result;
+
+  TRY tracker = SocketIPTracker_new (arena, 100);
+
+  /* Set a low unique IP limit */
+  SocketIPTracker_setmaxunique (tracker, 3);
+
+  /* Track 3 unique IPs - should succeed */
+  result = SocketIPTracker_track (tracker, "1.1.1.1");
+  ASSERT_EQ (1, result);
+
+  result = SocketIPTracker_track (tracker, "2.2.2.2");
+  ASSERT_EQ (1, result);
+
+  result = SocketIPTracker_track (tracker, "3.3.3.3");
+  ASSERT_EQ (1, result);
+
+  ASSERT_EQ (3, SocketIPTracker_unique_ips (tracker));
+
+  /* 4th unique IP should be rejected */
+  result = SocketIPTracker_track (tracker, "4.4.4.4");
+  ASSERT_EQ (0, result);
+
+  /* But tracking existing IP should still work */
+  result = SocketIPTracker_track (tracker, "1.1.1.1");
+  ASSERT_EQ (1, result);
+  EXCEPT (SocketIPTracker_Failed)
+  Arena_dispose (&arena);
+  ASSERT (0);
+  END_TRY;
+
+  Arena_dispose (&arena);
+}
+
+/* Test invalid IP address handling */
+TEST (iptracker_invalid_ip_rejected)
+{
+  Arena_T arena = Arena_new ();
+  SocketIPTracker_T tracker;
+  int result;
+
+  TRY
+  tracker = SocketIPTracker_new (arena, 10);
+
+  /* Empty string - returns 1 (allow) as silent no-op per implementation */
+  result = SocketIPTracker_track (tracker, "");
+  ASSERT_EQ (1, result);
+
+  /* NULL pointer - returns 1 (allow) as silent no-op per implementation */
+  result = SocketIPTracker_track (tracker, NULL);
+  ASSERT_EQ (1, result);
+
+  /* Invalid format - properly rejected with 0 */
+  result = SocketIPTracker_track (tracker, "not-an-ip");
+  ASSERT_EQ (0, result);
+
+  /* Invalid IPv4 - properly rejected with 0 */
+  result = SocketIPTracker_track (tracker, "999.999.999.999");
+  ASSERT_EQ (0, result);
+
+  /* Should have no entries (empty/NULL don't create entries, invalid rejected)
+   */
+  ASSERT_EQ (0, SocketIPTracker_unique_ips (tracker));
+  EXCEPT (SocketIPTracker_Failed)
+  Arena_dispose (&arena);
+  ASSERT (0);
+  END_TRY;
+
+  Arena_dispose (&arena);
+}
+
+/* Test tracking same IP multiple times */
+TEST (iptracker_track_same_ip_multiple)
+{
+  Arena_T arena = Arena_new ();
+  SocketIPTracker_T tracker;
+  int result;
+
+  TRY tracker = SocketIPTracker_new (arena, 10);
+
+  /* Track same IP 5 times */
+  for (int i = 0; i < 5; i++)
+    {
+      result = SocketIPTracker_track (tracker, "192.168.50.50");
+      ASSERT_EQ (1, result);
+    }
+
+  /* Should count as 1 unique IP with 5 connections */
+  ASSERT_EQ (1, SocketIPTracker_unique_ips (tracker));
+  ASSERT_EQ (5, SocketIPTracker_count (tracker, "192.168.50.50"));
+  ASSERT_EQ (5, SocketIPTracker_total (tracker));
+  EXCEPT (SocketIPTracker_Failed)
+  Arena_dispose (&arena);
+  ASSERT (0);
+  END_TRY;
+
+  Arena_dispose (&arena);
+}
+
+/* Test release on non-tracked IP */
+TEST (iptracker_release_nonexistent)
+{
+  Arena_T arena = Arena_new ();
+  SocketIPTracker_T tracker;
+
+  TRY tracker = SocketIPTracker_new (arena, 10);
+
+  /* Release non-existent IP - should not crash */
+  SocketIPTracker_release (tracker, "9.9.9.9");
+  SocketIPTracker_release (tracker, NULL);
+  SocketIPTracker_release (tracker, "");
+
+  /* Stats should be unchanged */
+  ASSERT_EQ (0, SocketIPTracker_unique_ips (tracker));
+  ASSERT_EQ (0, SocketIPTracker_total (tracker));
+  EXCEPT (SocketIPTracker_Failed)
+  Arena_dispose (&arena);
+  ASSERT (0);
+  END_TRY;
+
+  Arena_dispose (&arena);
+}
+
 /* ============================================================================
  * SocketPool Rate Limiting Tests
  * ============================================================================
