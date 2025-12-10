@@ -1090,6 +1090,63 @@ extern void SocketTLSContext_set_max_protocol (T ctx, int version);
  */
 extern void SocketTLSContext_set_cipher_list (T ctx, const char *ciphers);
 
+/**
+ * @brief Validate cipher string without applying it.
+ * @ingroup security
+ * @param[in] ciphers Cipher list string in OpenSSL format
+ *
+ * Validates that the cipher string is syntactically correct and contains
+ * at least one valid cipher. This allows pre-validation of cipher strings
+ * before calling SocketTLSContext_set_cipher_list() to avoid exceptions.
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * const char *custom_ciphers = "ECDHE+AESGCM:!aNULL";
+ * if (SocketTLSContext_validate_cipher_list(custom_ciphers)) {
+ *     SocketTLSContext_set_cipher_list(ctx, custom_ciphers);
+ * } else {
+ *     fprintf(stderr, "Invalid cipher string\n");
+ * }
+ * @endcode
+ *
+ * @return 1 if valid cipher string, 0 if invalid or empty
+ * @throws None
+ * @threadsafe Yes (creates temporary SSL_CTX)
+ * @complexity O(n) where n is length of cipher string
+ */
+extern int SocketTLSContext_validate_cipher_list (const char *ciphers);
+
+/**
+ * @brief Set TLS 1.3 ciphersuites.
+ * @ingroup security
+ * @param[in] ctx The TLS context instance
+ * @param ciphersuites TLS 1.3 ciphersuite string, or NULL for defaults
+ *
+ * Configures TLS 1.3 specific ciphersuites. These are separate from TLS 1.2
+ * cipher lists and use a different format. Defaults to SOCKET_TLS13_CIPHERSUITES
+ * if NULL (TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256).
+ *
+ * @return void
+ * @throws SocketTLS_Failed if invalid ciphersuite string
+ * @threadsafe Yes (mutex protected)
+ */
+extern void SocketTLSContext_set_ciphersuites (T ctx, const char *ciphersuites);
+
+/**
+ * @brief Validate TLS 1.3 ciphersuite string without applying it.
+ * @ingroup security
+ * @param[in] ciphersuites TLS 1.3 ciphersuite string
+ *
+ * Validates that the ciphersuite string is syntactically correct and contains
+ * at least one valid TLS 1.3 ciphersuite.
+ *
+ * @return 1 if valid ciphersuite string, 0 if invalid or empty
+ * @throws None
+ * @threadsafe Yes (creates temporary SSL_CTX)
+ */
+extern int SocketTLSContext_validate_ciphersuites (const char *ciphersuites);
+
 /* ALPN support */
 /**
  * @brief Advertise ALPN protocols.
