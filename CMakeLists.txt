@@ -766,7 +766,8 @@ if(ENABLE_FUZZING)
     # TLS fuzz harnesses (require SOCKET_HAS_TLS)
     if(SOCKET_HAS_TLS)
         list(APPEND FUZZ_SOURCES
-            fuzz_tls_alpn
+            fuzz_tls_alpn       # ALPN Protocol Negotiation (Section 2.10)
+            fuzz_tls_cipher     # Cipher Suite Configuration (Section 2.9)
             fuzz_tls_session
             fuzz_tls_shutdown
             fuzz_tls_certs

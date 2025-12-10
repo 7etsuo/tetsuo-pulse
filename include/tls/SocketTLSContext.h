@@ -1203,6 +1203,58 @@ extern void SocketTLSContext_set_alpn_callback (T ctx,
                                                 void *user_data);
 
 /* Session management */
+
+/**
+ * @brief Set session ID context for session isolation.
+ * @ingroup security
+ * @param[in] ctx The TLS context instance (server only)
+ * @param[in] context Session ID context bytes (e.g., application name or hash)
+ * @param context_len Length of context (1-32 bytes, SSL_MAX_SID_CTX_LENGTH)
+ *
+ * Sets the session ID context used by OpenSSL to differentiate sessions between
+ * different server applications or virtual hosts. Sessions created with one
+ * context will not be reused when a client connects to a server with a different
+ * context. This prevents session confusion attacks and ensures proper session
+ * isolation in multi-tenant or virtual hosting environments.
+ *
+ * ## When to Use
+ *
+ * - **Multi-tenant servers**: Different tenants get different session contexts
+ * - **Virtual hosting**: Each virtual host should have a unique context
+ * - **Load balancing**: Clustered servers sharing session caches need consistent contexts
+ * - **Application isolation**: Multiple applications sharing SSL_CTX need separation
+ *
+ * ## Context Selection
+ *
+ * For simple applications: Use a fixed unique string (e.g., "myapp-v1")
+ * For virtual hosts: Use hostname or derived hash (e.g., SHA256(hostname)[0:16])
+ * For clusters: Combine application ID with cluster identifier
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * SocketTLSContext_T ctx = SocketTLSContext_new_server("cert.pem", "key.pem", NULL);
+ *
+ * // Simple fixed context for single-application server
+ * const char *app_id = "myapp-production-v1";
+ * SocketTLSContext_set_session_id_context(ctx,
+ *     (const unsigned char *)app_id, strlen(app_id));
+ *
+ * // Enable session cache after setting context
+ * SocketTLSContext_enable_session_cache(ctx, 1000, 300);
+ * @endcode
+ *
+ * @return void
+ * @throws SocketTLS_Failed if context is NULL, context_len is 0 or >32, or OpenSSL fails
+ * @threadsafe No - call before sharing context across threads
+ *
+ * @see SocketTLSContext_enable_session_cache() to enable caching
+ * @see SSL_CTX_set_session_id_context() OpenSSL function (underlying implementation)
+ * @see RFC 5246 Section 7.4.1.2 for TLS session identifier semantics
+ */
+extern void SocketTLSContext_set_session_id_context (
+    T ctx, const unsigned char *context, size_t context_len);
+
 /**
  * @brief Enable session caching.
  * @ingroup security

@@ -341,33 +341,78 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] **SocketTLSContext_set_max_protocol()**: Verify setting works correctly
 - [ ] **Version Override Warning**: Log warning if min_version < TLS1_3_VERSION (insecure configuration)
 
-### 2.9 Cipher Suite Configuration — *depends on 2.1, 3.2*
+### 2.9 Cipher Suite Configuration — *depends on 2.1, 3.2* ✅ COMPLETE
 **Difficulty: 4/9** _(Cipher string parsing and validation)_
 
-- [ ] **SocketTLSContext_set_cipher_list()**: Verify cipher string parsing and validation
-- [ ] **SocketTLSContext_set_cipher_list()**: Test with NULL (should use secure defaults)
-- [ ] **TLS 1.3 Ciphersuites**: Verify `SOCKET_TLS13_CIPHERSUITES` default is applied via `SSL_CTX_set_ciphersuites()`
-- [ ] **Cipher Validation**: Consider adding function to validate cipher string before applying
+- [x] **SocketTLSContext_set_cipher_list()**: Verify cipher string parsing and validation ✅
+  - Implemented in `SocketTLSContext-verify.c` with SSL_CTX_set_cipher_list()
+  - Uses `SOCKET_TLS_LEGACY_CIPHER_LIST` as default for TLS < 1.3
+- [x] **SocketTLSContext_set_cipher_list()**: Test with NULL (should use secure defaults) ✅
+  - NULL defaults to `SOCKET_TLS_LEGACY_CIPHER_LIST` = "HIGH:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!SRP:!CAMELLIA"
+- [x] **TLS 1.3 Ciphersuites**: Verify `SOCKET_TLS13_CIPHERSUITES` default is applied via `SSL_CTX_set_ciphersuites()` ✅
+  - Applied in `configure_tls13_only()` in SocketTLSContext-core.c
+  - Added `SocketTLSContext_set_ciphersuites()` for runtime TLS 1.3 suite configuration
+- [x] **Cipher Validation**: Added function to validate cipher string before applying ✅
+  - Added `SocketTLSContext_validate_cipher_list()` - validates TLS 1.2 cipher strings
+  - Added `SocketTLSContext_validate_ciphersuites()` - validates TLS 1.3 ciphersuite strings
+  - Both create temporary SSL_CTX for validation to catch OpenSSL parsing errors
+  - Added `fuzz_tls_cipher.c` fuzzer for comprehensive cipher string testing
 
-### 2.10 ALPN Protocol Negotiation — *depends on 2.1, 3.4*
+### 2.10 ALPN Protocol Negotiation — *depends on 2.1, 3.4* ✅ COMPLETE
 **Difficulty: 5/9** _(Wire format encoding, callback integration)_
 
-- [ ] **SocketTLSContext_set_alpn_protos()**: Verify wire format encoding (length-prefixed)
-- [ ] **SocketTLSContext_set_alpn_protos()**: Test protocol name validation (1-255 bytes, printable ASCII)
-- [ ] **SocketTLSContext_set_alpn_protos()**: Verify `SOCKET_TLS_MAX_ALPN_PROTOCOLS` (16) limit
-- [ ] **SocketTLSContext_set_alpn_callback()**: Verify custom selection callback works correctly
-- [ ] **SocketTLSAlpnCallback**: Test callback return value validation (must match offered protocol)
-- [ ] **ALPN Temp Buffer**: Verify `tls_cleanup_alpn_temp()` prevents use-after-free in callbacks
+- [x] **SocketTLSContext_set_alpn_protos()**: Verify wire format encoding (length-prefixed) ✅
+  - Implemented in `SocketTLSContext-alpn.c` with `build_wire_format()`
+  - Wire format: [len1][proto1][len2][proto2]... per RFC 7301
+- [x] **SocketTLSContext_set_alpn_protos()**: Test protocol name validation (1-255 bytes, printable ASCII) ✅
+  - `validate_alpn_protocol_chars()` checks 0x21-0x7E range per RFC 7301 Section 3.2
+  - Length checked via `limits.tls_max_alpn_len` (SOCKET_TLS_MAX_ALPN_LEN = 255)
+- [x] **SocketTLSContext_set_alpn_protos()**: Verify `SOCKET_TLS_MAX_ALPN_PROTOCOLS` (16) limit ✅
+  - `validate_alpn_count()` checks against runtime security limits
+  - Enforced in both parsing and building
+- [x] **SocketTLSContext_set_alpn_callback()**: Verify custom selection callback works correctly ✅
+  - `alpn_select_cb()` invokes user callback with parsed/validated client protocols
+  - Validates returned protocol against client list
+- [x] **SocketTLSAlpnCallback**: Test callback return value validation (must match offered protocol) ✅
+  - `validate_selected_protocol()` ensures selection:
+    - Has valid length (1 to SOCKET_TLS_MAX_ALPN_LEN)
+    - Exists in client's offered list
+    - Contains only RFC 7301 compliant characters
+- [x] **ALPN Temp Buffer**: Verify `tls_cleanup_alpn_temp()` prevents use-after-free in callbacks ✅
+  - `tls_get_alpn_ex_idx()` lazily allocates ex_data index
+  - Selected protocol copied to malloc'd buffer, stored in SSL ex_data
+  - `tls_cleanup_alpn_temp()` frees buffer before SSL_free
+  - Enhanced `fuzz_tls_alpn.c` with comprehensive callback and edge case testing
 
-### 2.11 Session Cache Management — *depends on 2.1, 3.4*
+### 2.11 Session Cache Management — *depends on 2.1, 3.4* ✅ COMPLETE
 **Difficulty: 5/9** _(Cache mode, size limits, thread-safe stats)_
 
-- [ ] **SocketTLSContext_enable_session_cache()**: Verify server/client mode selection
-- [ ] **SocketTLSContext_enable_session_cache()**: Test max_sessions and timeout_seconds parameters
-- [ ] **SocketTLSContext_set_session_cache_size()**: Verify limit is applied
-- [ ] **SocketTLSContext_get_cache_stats()**: Verify hits/misses/stores counters are accurate
-- [ ] **Session Cache Thread Safety**: Verify stats_mutex protects counter updates
-- [ ] **Session ID Context**: Consider adding `SSL_CTX_set_session_id_context()` for proper server session matching
+- [x] **SocketTLSContext_enable_session_cache()**: Verify server/client mode selection ✅
+  - Implemented in `SocketTLSContext-session.c`
+  - Uses `ctx->is_server ? SSL_SESS_CACHE_SERVER : SSL_SESS_CACHE_CLIENT`
+  - Installs `new_session_cb` and `info_callback` for statistics tracking
+- [x] **SocketTLSContext_enable_session_cache()**: Test max_sessions and timeout_seconds parameters ✅
+  - Validates against `SocketSecurity_get_limits()` for security limits
+  - Validates timeout against `SOCKET_TLS_SESSION_MAX_TIMEOUT` (30 days)
+  - Uses `SOCKET_TLS_SESSION_TIMEOUT_DEFAULT` (300s) when timeout <= 0
+- [x] **SocketTLSContext_set_session_cache_size()**: Verify limit is applied ✅
+  - Calls `SSL_CTX_sess_set_cache_size()` with size validation
+  - Stores in `ctx->session_cache_size` for tracking
+  - Validates against security limits and LONG_MAX
+- [x] **SocketTLSContext_get_cache_stats()**: Verify hits/misses/stores counters are accurate ✅
+  - Thread-safe via `stats_mutex` protection
+  - `cache_hits` incremented in `info_callback` when `SSL_session_reused()` returns true
+  - `cache_misses` incremented for non-resumed handshakes
+  - `cache_stores` incremented in `new_session_cb` for new sessions
+- [x] **Session Cache Thread Safety**: Verify stats_mutex protects counter updates ✅
+  - `pthread_mutex_t stats_mutex` in `struct SocketTLSContext_T`
+  - All counter reads/writes protected by mutex lock/unlock
+- [x] **Session ID Context**: Added `SocketTLSContext_set_session_id_context()` ✅
+  - New function for setting `SSL_CTX_set_session_id_context()`
+  - Validates context length (1-32 bytes per `SSL_MAX_SID_CTX_LENGTH`)
+  - Critical for multi-tenant servers, virtual hosting, and session isolation
+  - Full test coverage in `test_tls_phase4.c`
+  - Fuzzing coverage in `fuzz_tls_session.c`
 
 ### 2.12 Session Tickets — *depends on 2.1, 2.11, 3.5*
 **Difficulty: 6/9** _(Key validation, secure storage, rotation)_

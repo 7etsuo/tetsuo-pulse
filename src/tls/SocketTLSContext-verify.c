@@ -603,6 +603,77 @@ SocketTLSContext_set_cipher_list (T ctx, const char *ciphers)
     ctx_raise_openssl_error ("Failed to set cipher list");
 }
 
+int
+SocketTLSContext_validate_cipher_list (const char *ciphers)
+{
+  SSL_CTX *tmp_ctx;
+  int result;
+
+  if (!ciphers || !*ciphers)
+    return 0;
+
+  /* Create temporary context for validation */
+  tmp_ctx = SSL_CTX_new (TLS_method ());
+  if (!tmp_ctx)
+    {
+      ERR_clear_error ();
+      return 0;
+    }
+
+  /* Try to set the cipher list - returns 1 on success, 0 on failure */
+  result = SSL_CTX_set_cipher_list (tmp_ctx, ciphers);
+
+  /* Clean up temporary context */
+  SSL_CTX_free (tmp_ctx);
+  ERR_clear_error ();
+
+  return result == 1 ? 1 : 0;
+}
+
+void
+SocketTLSContext_set_ciphersuites (T ctx, const char *ciphersuites)
+{
+  const char *list;
+
+  assert (ctx);
+  assert (ctx->ssl_ctx);
+
+  list = ciphersuites ? ciphersuites : SOCKET_TLS13_CIPHERSUITES;
+
+  if (SSL_CTX_set_ciphersuites (ctx->ssl_ctx, list) != 1)
+    ctx_raise_openssl_error ("Failed to set TLS 1.3 ciphersuites");
+}
+
+int
+SocketTLSContext_validate_ciphersuites (const char *ciphersuites)
+{
+  SSL_CTX *tmp_ctx;
+  int result;
+
+  if (!ciphersuites || !*ciphersuites)
+    return 0;
+
+  /* Create temporary context for validation */
+  tmp_ctx = SSL_CTX_new (TLS_method ());
+  if (!tmp_ctx)
+    {
+      ERR_clear_error ();
+      return 0;
+    }
+
+  /* Set TLS 1.3 as minimum to ensure ciphersuites are validated */
+  SSL_CTX_set_min_proto_version (tmp_ctx, TLS1_3_VERSION);
+
+  /* Try to set the ciphersuites - returns 1 on success, 0 on failure */
+  result = SSL_CTX_set_ciphersuites (tmp_ctx, ciphersuites);
+
+  /* Clean up temporary context */
+  SSL_CTX_free (tmp_ctx);
+  ERR_clear_error ();
+
+  return result == 1 ? 1 : 0;
+}
+
 /* ============================================================================
  * OCSP Stapling Server-Side
  * ============================================================================
