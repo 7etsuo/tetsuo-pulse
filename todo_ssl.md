@@ -28,6 +28,7 @@ testing requirements, documentation, security hardening, and future enhancements
 **Files:** `include/tls/SocketTLS.h`, `src/tls/SocketTLS.c`
 
 ### 1.1 TLS Enable/Disable Operations
+**Difficulty: 3/9** _(Completed - verification of existing implementation)_
 
 - [x] **SocketTLS_enable()**: Verify that enabling TLS on an already-TLS-enabled socket raises `SocketTLS_Failed` with a clear error message indicating the socket is already secured
   - ✅ Implemented in `validate_tls_enable_preconditions()` at `SocketTLS.c:200-201` - raises "TLS already enabled on socket"
@@ -39,6 +40,7 @@ testing requirements, documentation, security hardening, and future enhancements
   - ✅ Handled by "TLS already enabled" check - attempting to enable with different context raises `SocketTLS_Failed`
 
 ### 1.2 TLS Handshake State Machine
+**Difficulty: 5/9** _(Completed - state machine with edge cases)_
 
 - [x] **SocketTLS_handshake()**: Verify all `TLSHandshakeState` transitions are correctly handled, especially edge cases like `TLS_HANDSHAKE_WANT_READ` followed by socket close
   - ✅ Verified in `tls_handle_ssl_error()` at `SocketTLS.c:261-311` - `SSL_ERROR_SYSCALL` with `errno == 0` (unexpected EOF after WANT_READ) correctly sets `errno = ECONNRESET` and returns `TLS_HANDSHAKE_ERROR`
@@ -58,6 +60,7 @@ testing requirements, documentation, security hardening, and future enhancements
   - ✅ Implemented in `handshake_loop_internal()` at `SocketTLS.c:661-668` - error message now includes: "TLS handshake timeout after %lld ms (timeout: %d ms)"
 
 ### 1.3 TLS I/O Operations
+**Difficulty: 4/9** _(Completed - I/O handling with partial writes)_
 
 - [x] **SocketTLS_send()**: Verify partial write handling when `SSL_MODE_ENABLE_PARTIAL_WRITE` is set
   - ✅ Verified: SSL_MODE_ENABLE_PARTIAL_WRITE enabled in `create_ssl_object()`. Function returns bytes written, caller must loop for remaining data. Documented in header with example code.
@@ -75,6 +78,7 @@ testing requirements, documentation, security hardening, and future enhancements
   - ✅ Implemented: len=0 returns 0 immediately without invoking SSL_write/read. Matches POSIX semantics. Documented in header.
 
 ### 1.4 TLS Shutdown
+**Difficulty: 5/9** _(Completed - bidirectional shutdown with polling)_
 
 - [x] **SocketTLS_shutdown()**: Verify bidirectional close_notify alert handling in non-blocking mode
   - ✅ Implemented dedicated `shutdown_handle_ssl_error()` that properly handles WANT_READ/WANT_WRITE via polling
@@ -94,6 +98,7 @@ testing requirements, documentation, security hardening, and future enhancements
   - ✅ Returns 0 with errno=EAGAIN if would block on non-blocking sockets
 
 ### 1.5 Session Management
+**Difficulty: 5/9** _(Completed - TLS 1.3 session handling)_
 
 - [x] **SocketTLS_session_save()**: Verify session serialization works correctly for TLS 1.3 sessions
   - ✅ Added comprehensive TLS 1.3 documentation: sessions delivered via NewSessionTicket AFTER handshake
@@ -114,6 +119,7 @@ testing requirements, documentation, security hardening, and future enhancements
   - ✅ Added TLS 1.3 PSK resumption documentation
 
 ### 1.6 Renegotiation Control
+**Difficulty: 4/9** _(Completed - DoS protection for TLS 1.2)_
 
 - [x] **SocketTLS_check_renegotiation()**: Verify this correctly handles TLS 1.2 renegotiation requests
   - ✅ Implemented with proper SSL_renegotiate_pending() and SSL_get_secure_renegotiation_support() checks
@@ -131,6 +137,7 @@ testing requirements, documentation, security hardening, and future enhancements
   - ✅ Increments SOCKET_CTR_TLS_RENEGOTIATIONS metric on renegotiation events
 
 ### 1.7 Certificate Information
+**Difficulty: 4/9** _(Completed - X509 parsing and extraction)_
 
 - [x] **SocketTLS_get_peer_cert_info()**: Verify all fields of `SocketTLS_CertInfo` are correctly populated
   - ✅ All fields populated: subject, issuer, not_before, not_after, version, serial, fingerprint
@@ -151,6 +158,7 @@ testing requirements, documentation, security hardening, and future enhancements
   - ✅ Documented client vs server chain behavior difference
 
 ### 1.8 OCSP Client-Side Status
+**Difficulty: 6/9** _(Completed - OCSP response parsing and verification)_
 
 - [x] **SocketTLS_get_ocsp_response_status()**: Verify parsing of OCSP response from server's stapled response
   - ✅ Uses SSL_get_tlsext_status_ocsp_resp() to get stapled response
@@ -168,6 +176,7 @@ testing requirements, documentation, security hardening, and future enhancements
   - ✅ Stale responses are rejected (return -1)
 
 ### 1.9 Connection Information Queries
+**Difficulty: 3/9** _(Completed - simple accessor functions)_
 
 - [x] **SocketTLS_get_cipher()**: Verify correct cipher name returned for all TLS 1.3 cipher suites
   - ✅ Implementation verified at `SocketTLS.c:1199-1210` - uses `SSL_get_current_cipher()` and `SSL_CIPHER_get_name()`
@@ -205,6 +214,7 @@ testing requirements, documentation, security hardening, and future enhancements
 **Files:** `include/tls/SocketTLSContext.h`, `src/tls/SocketTLSContext-*.c`
 
 ### 2.1 Context Creation and Destruction
+**Difficulty: 4/9** _(Mostly complete - ref counting deferred)_
 
 - [x] **SocketTLSContext_new_server()**: Verify TLS 1.3-only enforcement via `SSL_CTX_set_min/max_proto_version()`
   - ✅ Implemented in `configure_tls13_only()` at `SocketTLSContext-core.c:219-248` - sets min/max to `SOCKET_TLS_MIN_VERSION`/`SOCKET_TLS_MAX_VERSION` (TLS1_3_VERSION)
@@ -224,6 +234,7 @@ testing requirements, documentation, security hardening, and future enhancements
   - ⏳ Deferred: Not critical for current release; contexts should be created per-thread or protected by application-level synchronization
 
 ### 2.2 Certificate and Key Loading
+**Difficulty: 5/9** _(Completed - PEM parsing, chain handling)_
 
 - [x] **SocketTLSContext_load_certificate()**: Verify PEM format validation and error messages
   - ✅ Uses OpenSSL's `SSL_CTX_use_certificate_file()` at `SocketTLSContext-certs.c:102-104` - OpenSSL validates PEM format; raises `ctx_raise_openssl_error()` on failure
@@ -239,6 +250,7 @@ testing requirements, documentation, security hardening, and future enhancements
   - ✅ Documented in `load_pkey_from_file()` at `SocketTLSContext-certs.c:415-445` - passphrase callback is NULL; error message updated to indicate encrypted keys not supported
 
 ### 2.3 CA Loading and Verification
+**Difficulty: 4/9** _(Completed - OpenSSL verify integration)_
 
 - [x] **SocketTLSContext_load_ca()**: Verify both file and directory modes work (hashed directory names)
   - ✅ Implemented at `SocketTLSContext-certs.c:114-128` - tries file mode first via `SSL_CTX_load_verify_locations(ca_file, NULL)`, then directory mode via `(NULL, ca_file)`
@@ -254,13 +266,19 @@ testing requirements, documentation, security hardening, and future enhancements
   - ✅ Implemented in `try_load_system_ca()` at `SocketTLSContext-core.c:480-491` - uses `SSL_CTX_set_default_verify_paths()` as fallback
 
 ### 2.4 Custom Verification Callbacks
+**Difficulty: 6/9** _(Callback design, thread safety, exception handling)_
 
-- [ ] **SocketTLSContext_set_verify_callback()**: Verify callback receives correct parameters (preverify_ok, x509_ctx, tls_ctx, socket, user_data)
-- [ ] **SocketTLSContext_set_verify_callback()**: Test callback returning 0 (reject) stops handshake
-- [ ] **Callback Thread Safety**: Document that callbacks may be called from multiple threads if context is shared
-- [ ] **Callback Exception Handling**: Verify exceptions in callbacks are properly caught and converted to handshake failures
+- [x] **SocketTLSContext_set_verify_callback()**: Verify callback receives correct parameters (preverify_ok, x509_ctx, tls_ctx, socket, user_data)
+  - ✅ Implemented in `invoke_user_callback()` at `SocketTLSContext-verify.c:274-298` - callback receives all parameters correctly via `internal_verify_callback()` wrapper at lines 338-365
+- [x] **SocketTLSContext_set_verify_callback()**: Test callback returning 0 (reject) stops handshake
+  - ✅ Implemented in `invoke_user_callback()` at `SocketTLSContext-verify.c:281-297` - return 0 sets `X509_V_ERR_APPLICATION_VERIFICATION` and fails verification; tested in `test_tls_phase4.c:verify_callback_api` and `test_tls_integration.c:tls_verify_callback_integration`
+- [x] **Callback Thread Safety**: Document that callbacks may be called from multiple threads if context is shared
+  - ✅ Documented in `SocketTLSContext.h` - extensive thread safety documentation added to `SocketTLSVerifyCallback` typedef (lines 383-450) and `SocketTLSContext_set_verify_callback()` (lines 470-530)
+- [x] **Callback Exception Handling**: Verify exceptions in callbacks are properly caught and converted to handshake failures
+  - ✅ Implemented in `invoke_user_callback()` at `SocketTLSContext-verify.c:279-297` - uses TRY/EXCEPT to catch `SocketTLS_Failed` and ELSE block for all other exceptions, sets `X509_V_ERR_APPLICATION_VERIFICATION`; tested in `test_tls_phase4.c:tls_verify_callback_exception` and `tls_verify_callback_generic_exception`
 
 ### 2.5 CRL Management
+**Difficulty: 7/9** _(Complex - auto-refresh, file watching, X509_STORE integration)_
 
 - [ ] **SocketTLSContext_load_crl()**: Verify CRL file loading and X509_STORE integration
 - [ ] **SocketTLSContext_load_crl()**: Test with CRL directory (multiple CRL files)
@@ -275,6 +293,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] **CRL File Size Limits**: Verify `SOCKET_TLS_MAX_CRL_SIZE` (10MB) limit is enforced
 
 ### 2.6 OCSP Stapling (Server-Side)
+**Difficulty: 6/9** _(Server-side OCSP response generation and stapling)_
 
 - [ ] **SocketTLSContext_set_ocsp_response()**: Verify static OCSP response is stapled in handshakes
 - [ ] **SocketTLSContext_set_ocsp_response()**: Test with invalid/malformed OCSP response (should reject)
@@ -285,6 +304,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] **OCSP Response Size Limits**: Verify `SOCKET_TLS_MAX_OCSP_RESPONSE_LEN` (64KB) limit
 
 ### 2.7 Custom Certificate Lookup
+**Difficulty: 5/9** _(Callback for HSM/database cert retrieval)_
 
 - [ ] **SocketTLSContext_set_cert_lookup_callback()**: Verify callback is invoked during verification
 - [ ] **SocketTLSCertLookupCallback**: Document X509 ownership (caller takes ownership of returned cert)
@@ -292,6 +312,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] **Database Integration**: Document use case for loading certificates from database storage
 
 ### 2.8 Protocol Version Configuration
+**Difficulty: 3/9** _(Simple config with validation)_
 
 - [ ] **SocketTLSContext_set_min_protocol()**: Verify TLS 1.3 enforcement (default should be TLS1_3_VERSION)
 - [ ] **SocketTLSContext_set_min_protocol()**: Test fallback to options-based version control for older OpenSSL
@@ -299,6 +320,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] **Version Override Warning**: Log warning if min_version < TLS1_3_VERSION (insecure configuration)
 
 ### 2.9 Cipher Suite Configuration
+**Difficulty: 4/9** _(Cipher string parsing and validation)_
 
 - [ ] **SocketTLSContext_set_cipher_list()**: Verify cipher string parsing and validation
 - [ ] **SocketTLSContext_set_cipher_list()**: Test with NULL (should use secure defaults)
@@ -306,6 +328,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] **Cipher Validation**: Consider adding function to validate cipher string before applying
 
 ### 2.10 ALPN Protocol Negotiation
+**Difficulty: 5/9** _(Wire format encoding, callback integration)_
 
 - [ ] **SocketTLSContext_set_alpn_protos()**: Verify wire format encoding (length-prefixed)
 - [ ] **SocketTLSContext_set_alpn_protos()**: Test protocol name validation (1-255 bytes, printable ASCII)
@@ -315,6 +338,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] **ALPN Temp Buffer**: Verify `tls_cleanup_alpn_temp()` prevents use-after-free in callbacks
 
 ### 2.11 Session Cache Management
+**Difficulty: 5/9** _(Cache mode, size limits, thread-safe stats)_
 
 - [ ] **SocketTLSContext_enable_session_cache()**: Verify server/client mode selection
 - [ ] **SocketTLSContext_enable_session_cache()**: Test max_sessions and timeout_seconds parameters
@@ -324,6 +348,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] **Session ID Context**: Consider adding `SSL_CTX_set_session_id_context()` for proper server session matching
 
 ### 2.12 Session Tickets
+**Difficulty: 6/9** _(Key validation, secure storage, rotation)_
 
 - [ ] **SocketTLSContext_enable_session_tickets()**: Verify key length validation (must be 80 bytes)
 - [ ] **SocketTLSContext_enable_session_tickets()**: Test ticket encryption/decryption with provided key
@@ -331,6 +356,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] **Ticket Key Secure Storage**: Verify key is securely stored and cleared on context free
 
 ### 2.13 Certificate Pinning (SPKI SHA256)
+**Difficulty: 7/9** _(Security-critical: timing attacks, chain traversal, constant-time compare)_
 
 - [ ] **SocketTLSContext_add_pin()**: Verify 32-byte binary hash is correctly stored
 - [ ] **SocketTLSContext_add_pin_hex()**: Verify 64-character hex parsing and "sha256//" prefix handling
@@ -349,6 +375,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] **SocketTLS_PinVerifyFailed**: Verify exception is raised on pin mismatch in strict mode
 
 ### 2.14 Certificate Transparency (RFC 6962)
+**Difficulty: 6/9** _(CT log integration, OpenSSL CT API)_
 
 - [ ] **SocketTLSContext_enable_ct()**: Verify CT is enabled via `SSL_CTX_enable_ct()`
 - [ ] **SocketTLSContext_enable_ct()**: Test strict vs permissive mode behavior
@@ -365,24 +392,28 @@ testing requirements, documentation, security hardening, and future enhancements
 **File:** `include/tls/SocketTLSConfig.h`
 
 ### 3.1 Protocol Version Constants
+**Difficulty: 2/9** _(Config verification and documentation)_
 
 - [ ] **SOCKET_TLS_MIN_VERSION**: Verify set to `TLS1_3_VERSION` for security
 - [ ] **SOCKET_TLS_MAX_VERSION**: Verify set to `TLS1_3_VERSION` (strict TLS 1.3-only)
 - [ ] **Override Documentation**: Document how to override for legacy compatibility (not recommended)
 
 ### 3.2 Cipher Suite Defaults
+**Difficulty: 3/9** _(Cipher priority rationale and testing)_
 
 - [ ] **SOCKET_TLS13_CIPHERSUITES**: Verify default includes AES-256-GCM, ChaCha20-Poly1305, AES-128-GCM in that order
 - [ ] **Cipher Priority Order**: Document rationale for cipher ordering (AES-256 for max security, ChaCha20 for mobile)
 - [ ] **Override Documentation**: Document how to customize ciphers for specific environments
 
 ### 3.3 Timeout Configuration
+**Difficulty: 2/9** _(Simple constant verification)_
 
 - [ ] **SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS**: Verify 30 seconds default is appropriate
 - [ ] **SOCKET_TLS_DEFAULT_SHUTDOWN_TIMEOUT_MS**: Verify 5 seconds default for shutdown
 - [ ] **SOCKET_TLS_POLL_INTERVAL_MS**: Verify 100ms polling interval for non-blocking operations
 
 ### 3.4 Buffer and Size Limits
+**Difficulty: 2/9** _(Limit verification and documentation)_
 
 - [ ] **SOCKET_TLS_BUFFER_SIZE**: Verify 16384 bytes (TLS max record size)
 - [ ] **SOCKET_TLS_MAX_CERT_CHAIN_DEPTH**: Verify 10 levels for chain validation
@@ -394,6 +425,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] **SOCKET_TLS_OPENSSL_ERRSTR_BUFSIZE**: Verify 256 bytes for OpenSSL error strings
 
 ### 3.5 Security Limits
+**Difficulty: 2/9** _(Limit verification and enforcement testing)_
 
 - [ ] **SOCKET_TLS_MAX_SNI_CERTS**: Verify 100 certificate limit for SNI
 - [ ] **SOCKET_TLS_MAX_PINS**: Verify 32 pin limit for certificate pinning
@@ -411,6 +443,7 @@ testing requirements, documentation, security hardening, and future enhancements
 **Files:** `include/tls/SocketDTLS.h`, `src/tls/SocketDTLS.c`
 
 ### 4.1 DTLS Enable and Configuration
+**Difficulty: 5/9** _(DTLS-specific setup, peer management)_
 
 - [ ] **SocketDTLS_enable()**: Verify DTLS is enabled on datagram sockets correctly
 - [ ] **SocketDTLS_enable()**: Test that context ownership is transferred to socket
@@ -420,6 +453,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] **SocketDTLS_get_mtu()**: Verify current effective MTU is returned
 
 ### 4.2 DTLS Handshake
+**Difficulty: 6/9** _(Cookie exchange, retransmission, state machine)_
 
 - [ ] **SocketDTLS_handshake()**: Verify all `DTLSHandshakeState` transitions including `DTLS_HANDSHAKE_COOKIE_EXCHANGE`
 - [ ] **SocketDTLS_handshake()**: Test non-blocking behavior with WANT_READ/WANT_WRITE
@@ -429,6 +463,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] **Handshake Retransmission**: Verify OpenSSL handles DTLS retransmission internally
 
 ### 4.3 DTLS I/O Operations
+**Difficulty: 5/9** _(Message-oriented semantics, fragmentation)_
 
 - [ ] **SocketDTLS_send()**: Verify message-oriented semantics (one send = one datagram)
 - [ ] **SocketDTLS_send()**: Test large payload fragmentation by DTLS layer
@@ -438,6 +473,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] **SocketDTLS_recvfrom()**: Verify sender address is correctly populated
 
 ### 4.4 DTLS Connection Information
+**Difficulty: 3/9** _(Simple accessor functions)_
 
 - [ ] **SocketDTLS_get_cipher()**: Verify cipher name returned for DTLS connections
 - [ ] **SocketDTLS_get_version()**: Verify "DTLSv1.2" or "DTLSv1.3" string returned
@@ -446,6 +482,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] **SocketDTLS_get_alpn_selected()**: Verify ALPN negotiation result
 
 ### 4.5 DTLS Shutdown
+**Difficulty: 4/9** _(Best-effort over UDP)_
 
 - [ ] **SocketDTLS_shutdown()**: Verify close_notify alert sending
 - [ ] **SocketDTLS_shutdown()**: Note that DTLS shutdown is best-effort (UDP unreliable)
@@ -453,6 +490,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] **Graceful Shutdown Loop**: Test non-blocking shutdown completion pattern
 
 ### 4.6 DTLS State Queries
+**Difficulty: 2/9** _(Simple boolean queries)_
 
 - [ ] **SocketDTLS_is_enabled()**: Verify DTLS enable state query
 - [ ] **SocketDTLS_is_handshake_done()**: Verify handshake completion query
@@ -465,6 +503,7 @@ testing requirements, documentation, security hardening, and future enhancements
 **Files:** `include/tls/SocketDTLSContext.h`, `src/tls/SocketDTLSContext.c`
 
 ### 5.1 Context Creation and Destruction
+**Difficulty: 4/9** _(DTLS context with DTLS 1.2 enforcement)_
 
 - [ ] **SocketDTLSContext_new_server()**: Verify DTLS 1.2 minimum enforcement
 - [ ] **SocketDTLSContext_new_server()**: Test certificate and key loading
@@ -472,12 +511,14 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] **SocketDTLSContext_free()**: Verify all resources freed including cookie secrets
 
 ### 5.2 Certificate Management
+**Difficulty: 4/9** _(Reuses TLS patterns)_
 
 - [ ] **SocketDTLSContext_load_certificate()**: Verify cert/key loading and validation
 - [ ] **SocketDTLSContext_load_ca()**: Verify CA loading (file and directory modes)
 - [ ] **SocketDTLSContext_set_verify_mode()**: Verify correct mapping to SSL_VERIFY_* flags
 
 ### 5.3 Cookie Exchange (DoS Protection)
+**Difficulty: 7/9** _(Security-critical: HMAC, timestamps, secret rotation)_
 
 - [ ] **SocketDTLSContext_enable_cookie_exchange()**: Verify cookie callbacks are installed
 - [ ] **SocketDTLSContext_enable_cookie_exchange()**: Verify automatic secret key generation
@@ -490,32 +531,38 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] **Cookie Secret Rotation**: Verify old cookies are invalid after rotation
 
 ### 5.4 MTU Configuration
+**Difficulty: 3/9** _(Range validation)_
 
 - [ ] **SocketDTLSContext_set_mtu()**: Verify MTU range validation (576-9000)
 - [ ] **SocketDTLSContext_set_mtu()**: Verify default MTU (1400 bytes) is appropriate
 - [ ] **SocketDTLSContext_get_mtu()**: Verify current MTU is returned
 
 ### 5.5 Protocol Configuration
+**Difficulty: 3/9** _(Similar to TLS config)_
 
 - [ ] **SocketDTLSContext_set_min_protocol()**: Verify DTLS 1.2 minimum enforcement
 - [ ] **SocketDTLSContext_set_max_protocol()**: Verify max version setting (DTLS 1.3 if available)
 - [ ] **SocketDTLSContext_set_cipher_list()**: Verify cipher string parsing
 
 ### 5.6 ALPN Support
+**Difficulty: 3/9** _(Reuses TLS ALPN logic)_
 
 - [ ] **SocketDTLSContext_set_alpn_protos()**: Verify protocol list encoding and validation
 - [ ] **ALPN Selection Callback**: Verify server-side ALPN selection works
 
 ### 5.7 Session Management
+**Difficulty: 4/9** _(Reuses TLS session patterns)_
 
 - [ ] **SocketDTLSContext_enable_session_cache()**: Verify cache enabling for server/client
 - [ ] **SocketDTLSContext_get_cache_stats()**: Verify hits/misses/stores counters
 
 ### 5.8 Timeout Configuration
+**Difficulty: 3/9** _(Retransmission timer config)_
 
 - [ ] **SocketDTLSContext_set_timeout()**: Verify initial and max retransmission timeout settings
 
 ### 5.9 Internal Functions
+**Difficulty: 2/9** _(Simple internal accessors)_
 
 - [ ] **SocketDTLSContext_get_ssl_ctx()**: Verify internal accessor returns correct SSL_CTX*
 - [ ] **SocketDTLSContext_is_server()**: Verify server mode detection
@@ -527,15 +574,18 @@ testing requirements, documentation, security hardening, and future enhancements
 **File:** `include/tls/SocketDTLSConfig.h`
 
 ### 6.1 Protocol Version Constants
+**Difficulty: 2/9** _(Config verification)_
 
 - [ ] **SOCKET_DTLS_MIN_VERSION**: Verify set to `DTLS1_2_VERSION`
 - [ ] **SOCKET_DTLS_MAX_VERSION**: Verify set to `DTLS1_3_VERSION` if available, else `DTLS1_2_VERSION`
 
 ### 6.2 Cipher Suites
+**Difficulty: 2/9** _(Config verification)_
 
 - [ ] **SOCKET_DTLS_CIPHERSUITES**: Verify modern ECDHE + AEAD suites are default
 
 ### 6.3 MTU Settings
+**Difficulty: 2/9** _(Constant verification and documentation)_
 
 - [ ] **SOCKET_DTLS_DEFAULT_MTU**: Verify 1400 bytes default (conservative for tunnels)
 - [ ] **SOCKET_DTLS_MIN_MTU**: Verify 576 bytes minimum (IPv4 minimum reassembly)
@@ -545,6 +595,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] **SOCKET_DTLS_MAX_PAYLOAD**: Verify calculation (MTU - overhead - headers)
 
 ### 6.4 Cookie Protection Parameters
+**Difficulty: 2/9** _(Security constant verification)_
 
 - [ ] **SOCKET_DTLS_COOKIE_LEN**: Verify 32 bytes (HMAC-SHA256 truncated)
 - [ ] **SOCKET_DTLS_COOKIE_SECRET_LEN**: Verify 32 bytes for HMAC key
@@ -552,6 +603,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] **SOCKET_DTLS_MAX_PENDING_COOKIES**: Verify 1000 concurrent exchanges limit
 
 ### 6.5 Timeout Configuration
+**Difficulty: 2/9** _(DTLS timing constants)_
 
 - [ ] **SOCKET_DTLS_INITIAL_TIMEOUT_MS**: Verify 1000ms initial retransmission timeout
 - [ ] **SOCKET_DTLS_MAX_TIMEOUT_MS**: Verify 60000ms maximum timeout
@@ -559,6 +611,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] **SOCKET_DTLS_MAX_RETRANSMITS**: Verify 12 retransmissions maximum
 
 ### 6.6 Session and Limits
+**Difficulty: 2/9** _(Limit constant verification)_
 
 - [ ] **SOCKET_DTLS_SESSION_CACHE_SIZE**: Verify 1000 sessions default
 - [ ] **SOCKET_DTLS_SESSION_TIMEOUT_DEFAULT**: Verify 300 seconds (5 minutes)
@@ -570,6 +623,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] **SOCKET_DTLS_MAX_FILE_SIZE**: Verify 1MB limit for cert/key files
 
 ### 6.7 Validation Macros
+**Difficulty: 2/9** _(Simple macro verification)_
 
 - [ ] **SOCKET_DTLS_VALID_MTU()**: Verify range check macro works correctly
 - [ ] **SOCKET_DTLS_VALID_TIMEOUT()**: Verify timeout validation macro
@@ -581,6 +635,7 @@ testing requirements, documentation, security hardening, and future enhancements
 **File:** `include/tls/SocketSSL-internal.h`
 
 ### 7.1 File Path Validation
+**Difficulty: 5/9** _(Security-critical: path traversal, symlink attacks)_
 
 - [ ] **ssl_validate_file_path()**: Verify path traversal detection (/../, \..\ patterns)
 - [ ] **ssl_validate_file_path()**: Verify symlink rejection via lstat()
@@ -589,12 +644,14 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] **Path Security**: Test with various attack patterns (encoded traversal, null bytes)
 
 ### 7.2 OpenSSL Error Formatting
+**Difficulty: 3/9** _(ERR_get_error handling)_
 
 - [ ] **ssl_format_openssl_error_to_buf()**: Verify ERR_get_error() and ERR_error_string_n() usage
 - [ ] **ssl_format_openssl_error_to_buf()**: Verify ERR_clear_error() is called after formatting
 - [ ] **Error Buffer Sizes**: Verify `SOCKET_SSL_OPENSSL_ERRSTR_BUFSIZE` (256) is sufficient
 
 ### 7.3 Utility Macros
+**Difficulty: 1/9** _(Simple macro)_
 
 - [ ] **SOCKET_SSL_UNUSED()**: Verify unused parameter suppression macro
 
@@ -603,6 +660,7 @@ testing requirements, documentation, security hardening, and future enhancements
 ## 8. Testing Requirements
 
 ### 8.1 Unit Tests
+**Difficulty: 5/9** _(Comprehensive test coverage)_
 
 - [ ] **test_tls_enable_disable.c**: Test TLS enable/disable lifecycle
 - [ ] **test_tls_handshake.c**: Test all handshake states and transitions
@@ -618,6 +676,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] **test_dtls_mtu.c**: Test MTU configuration and fragmentation
 
 ### 8.2 Integration Tests
+**Difficulty: 6/9** _(End-to-end client-server testing)_
 
 - [ ] **test_tls_integration.c**: End-to-end TLS client-server communication
 - [ ] **test_dtls_integration.c**: End-to-end DTLS client-server communication
@@ -627,6 +686,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] **test_tls_pool.c**: TLS with connection pooling
 
 ### 8.3 Fuzzing Harnesses
+**Difficulty: 7/9** _(Fuzzer setup, corpus generation, crash triage)_
 
 - [ ] **fuzz_tls_handshake.c**: Fuzz TLS handshake message parsing
 - [ ] **fuzz_tls_records.c**: Fuzz TLS record layer processing
@@ -637,6 +697,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] **fuzz_pin_hex_parsing.c**: Fuzz hex-encoded pin parsing
 
 ### 8.4 Edge Cases and Error Paths
+**Difficulty: 6/9** _(Tricky failure scenarios, packet simulation)_
 
 - [ ] Test TLS on already-closed socket
 - [ ] Test TLS handshake timeout handling
@@ -648,6 +709,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] Test DTLS cookie with IP address change (should fail)
 
 ### 8.5 Security Tests
+**Difficulty: 7/9** _(Attack simulation, bypass detection)_
 
 - [ ] Test rejection of TLS 1.2 and earlier (downgrade attack prevention)
 - [ ] Test rejection of weak cipher suites
@@ -661,6 +723,7 @@ testing requirements, documentation, security hardening, and future enhancements
 ## 9. Documentation
 
 ### 9.1 API Documentation
+**Difficulty: 3/9** _(Doxygen completeness audit)_
 
 - [ ] Verify all public functions have Doxygen comments with @brief, @param, @return, @throws
 - [ ] Verify all public types have Doxygen documentation
@@ -668,6 +731,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] Add @ingroup tags for proper module grouping
 
 ### 9.2 Usage Examples
+**Difficulty: 4/9** _(Working code examples with error handling)_
 
 - [ ] Add complete TLS client example in header documentation
 - [ ] Add complete TLS server example in header documentation
@@ -678,6 +742,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] Add DTLS server with cookie protection example
 
 ### 9.3 Security Guides
+**Difficulty: 4/9** _(Security best practices documentation)_
 
 - [ ] Document TLS 1.3-only enforcement rationale
 - [ ] Document cipher suite selection rationale
@@ -693,6 +758,7 @@ testing requirements, documentation, security hardening, and future enhancements
 ## 10. Security Hardening
 
 ### 10.1 Key Material Handling
+**Difficulty: 6/9** _(Security-critical: secure clearing, mlock consideration)_
 
 - [ ] Verify all private key memory is zeroed via `OPENSSL_cleanse()` or `SocketCrypto_secure_clear()`
 - [ ] Verify session ticket keys are securely cleared on context destruction
@@ -702,12 +768,14 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] Consider using `mlock()` for highly sensitive key material to prevent swapping
 
 ### 10.2 Thread-Local Error Handling
+**Difficulty: 4/9** _(Audit thread-local patterns)_
 
 - [ ] Verify all modules use `SOCKET_DECLARE_MODULE_EXCEPTION()` for thread-local exceptions
 - [ ] Verify error buffers are not shared across threads
 - [ ] Verify OpenSSL error queue is cleared after each operation
 
 ### 10.3 Input Validation
+**Difficulty: 5/9** _(Comprehensive validation audit)_
 
 - [ ] Verify all file paths are validated via `ssl_validate_file_path()`
 - [ ] Verify all hostnames are validated via `tls_validate_hostname()`
@@ -716,12 +784,14 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] Verify all CRL files are size-limited
 
 ### 10.4 Timing Attack Prevention
+**Difficulty: 7/9** _(Subtle: constant-time ops, early exit analysis)_
 
 - [ ] Verify certificate pin comparison uses `SocketCrypto_secure_compare()` (constant-time)
 - [ ] Verify HMAC comparison in cookie verification is constant-time
 - [ ] Consider timing-safe early exit patterns in verification callbacks
 
 ### 10.5 Memory Safety
+**Difficulty: 5/9** _(Sanitizer validation, leak detection)_
 
 - [ ] Verify all Arena allocations are checked for NULL
 - [ ] Verify all OpenSSL object creations are checked for NULL
@@ -730,6 +800,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] Run with MemorySanitizer to detect uninitialized reads
 
 ### 10.6 Threat Model Coverage
+**Difficulty: 4/9** _(Documentation of security guarantees)_
 
 - [ ] Document protection against MITM attacks (certificate verification, pinning)
 - [ ] Document protection against downgrade attacks (TLS 1.3-only, no renegotiation)
@@ -742,6 +813,7 @@ testing requirements, documentation, security hardening, and future enhancements
 ## 11. Performance Optimizations
 
 ### 11.1 kTLS (Kernel TLS) Offload
+**Difficulty: 9/9** _(Kernel integration, cipher key extraction, fallback handling)_
 
 - [ ] **Priority: HIGH** - Implement kTLS support for massive performance improvement
 - [ ] Add `SocketTLS_enable_ktls()` function to enable kernel TLS offload
@@ -754,6 +826,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] Document kernel version requirements (Linux 4.13+ for TLS_TX, 4.17+ for TLS_RX)
 
 ### 11.2 Session Resumption Optimization
+**Difficulty: 6/9** _(0-RTT, ticket rotation, cache sharding)_
 
 - [ ] Verify TLS 1.3 0-RTT support (early data) is properly configured
 - [ ] Add session ticket rotation support for server scalability
@@ -761,6 +834,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] Consider external session cache (Redis, memcached) for distributed systems
 
 ### 11.3 Connection Optimization
+**Difficulty: 5/9** _(TCP tuning, profiling)_
 
 - [ ] Verify TCP_NODELAY is set for TLS handshake responsiveness
 - [ ] Consider TCP_QUICKACK during handshake for reduced latency
@@ -768,6 +842,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] Profile and optimize hot paths in TLS I/O
 
 ### 11.4 Memory Optimization
+**Difficulty: 5/9** _(Profiling, buffer pooling)_
 
 - [ ] Verify Arena-based allocation reduces malloc overhead
 - [ ] Consider buffer pooling for high-connection-count servers
@@ -775,6 +850,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] Optimize certificate chain storage in SNI maps
 
 ### 11.5 Zero-Copy Optimization
+**Difficulty: 7/9** _(SSL_sendfile, MSG_ZEROCOPY, kernel integration)_
 
 - [ ] Investigate `SSL_sendfile()` for kernel sendfile with TLS (OpenSSL 3.0+)
 - [ ] Consider MSG_ZEROCOPY integration with kTLS
@@ -785,6 +861,7 @@ testing requirements, documentation, security hardening, and future enhancements
 ## 12. Future Enhancements
 
 ### 12.1 DTLS 1.3 Support
+**Difficulty: 7/9** _(Depends on OpenSSL, new protocol features)_
 
 - [ ] Monitor OpenSSL 3.2+ for DTLS 1.3 support
 - [ ] Update `SOCKET_DTLS_MAX_VERSION` when DTLS 1.3 is available
@@ -792,6 +869,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] Document DTLS 1.3 benefits (improved security, reduced handshake RTT)
 
 ### 12.2 Post-Quantum Cryptography Readiness
+**Difficulty: 8/9** _(Research-level, evolving standards)_
 
 - [ ] Monitor OpenSSL for post-quantum key exchange support (e.g., Kyber, Dilithium)
 - [ ] Plan API for hybrid key exchange configuration
@@ -799,6 +877,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] Document migration path for PQ readiness
 
 ### 12.3 Additional Protocol Features
+**Difficulty: 7/9** _(0-RTT, ECH, QUIC integration)_
 
 - [ ] Consider adding TLS 1.3 KeyUpdate support for long-lived connections
 - [ ] Consider adding TLS 1.3 early data (0-RTT) API
@@ -806,6 +885,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] Consider adding QUIC integration (shared TLS 1.3 handshake)
 
 ### 12.4 Enhanced Observability
+**Difficulty: 5/9** _(Metrics, tracing hooks)_
 
 - [ ] Add TLS-specific metrics (handshake latency, session reuse rate)
 - [ ] Add DTLS-specific metrics (retransmission count, cookie failures)
@@ -813,6 +893,7 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] Consider integration with OpenTelemetry for TLS spans
 
 ### 12.5 Additional Security Features
+**Difficulty: 7/9** _(DANE, CAA, CT log submission)_
 
 - [ ] Consider adding certificate revocation via OCSP Must-Staple
 - [ ] Consider adding CAA (Certificate Authority Authorization) checking

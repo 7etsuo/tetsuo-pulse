@@ -771,6 +771,7 @@ if(ENABLE_FUZZING)
             fuzz_tls_shutdown
             fuzz_tls_certs
             fuzz_tls_verify
+            fuzz_tls_verify_callback  # Custom Verification Callbacks (Section 2.4)
             fuzz_tls_sni
             fuzz_tls_io
             fuzz_tls_ocsp

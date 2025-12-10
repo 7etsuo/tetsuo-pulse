@@ -137,6 +137,271 @@ raising_verify_cb (int pre_ok, X509_STORE_CTX *ctx, SocketTLSContext_T tls_ctx,
   return 1;                 /* Unreachable */
 }
 
+/* ============================================================================
+ * Verify Callback Parameter Validation Tests (todo_ssl.md 2.4)
+ * ============================================================================
+ */
+
+/**
+ * Structure to capture callback parameters for verification.
+ * Used to test that verify callback receives correct parameters.
+ */
+typedef struct
+{
+  volatile int callback_invoked;
+  volatile int preverify_ok_received;
+  volatile int has_x509_ctx;
+  volatile int has_tls_ctx;
+  volatile int has_socket;
+  volatile int has_user_data;
+  volatile const void *user_data_value;
+  volatile int socket_fd; /* Captured socket fd for verification */
+} VerifyCallbackCapture;
+
+/**
+ * param_capture_verify_cb - Callback that captures all parameters for testing.
+ *
+ * Tests todo_ssl.md 2.4 item 1: "Verify callback receives correct parameters
+ * (preverify_ok, x509_ctx, tls_ctx, socket, user_data)"
+ */
+static int
+param_capture_verify_cb (int pre_ok, X509_STORE_CTX *x509_ctx,
+                         SocketTLSContext_T tls_ctx, Socket_T sock,
+                         void *user_data)
+{
+  VerifyCallbackCapture *cap = (VerifyCallbackCapture *)user_data;
+  if (cap)
+    {
+      cap->callback_invoked = 1;
+      cap->preverify_ok_received = pre_ok;
+      cap->has_x509_ctx = (x509_ctx != NULL);
+      cap->has_tls_ctx = (tls_ctx != NULL);
+      cap->has_socket = (sock != NULL);
+      cap->has_user_data = (user_data != NULL);
+      cap->user_data_value = user_data;
+      if (sock)
+        cap->socket_fd = Socket_fd (sock);
+    }
+
+  /* Override preverify result: accept connection for test purposes */
+  if (x509_ctx)
+    X509_STORE_CTX_set_error (x509_ctx, X509_V_OK);
+  return 1;
+}
+
+/**
+ * Test: Verify callback receives all correct parameters.
+ *
+ * Tests todo_ssl.md 2.4 item 1:
+ * "SocketTLSContext_set_verify_callback(): Verify callback receives correct
+ * parameters (preverify_ok, x509_ctx, tls_ctx, socket, user_data)"
+ */
+TEST (tls_verify_callback_params)
+{
+  const char *cert_file = "test_verify_params.crt";
+  const char *key_file = "test_verify_params.key";
+  if (generate_test_certs (cert_file, key_file) != 0)
+    return;
+
+  Arena_T arena = Arena_new ();
+  SocketTLSContext_T server_ctx = NULL;
+  SocketTLSContext_T client_ctx = NULL;
+  Socket_T client_sock = NULL;
+  Socket_T server_sock = NULL;
+  int sv[2];
+
+  /* Capture structure to verify parameters */
+  VerifyCallbackCapture capture = { 0 };
+
+  TRY
+  {
+    server_ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+    client_ctx = SocketTLSContext_new_client (NULL);
+
+    /* Set callback that captures all parameters */
+    SocketTLSContext_set_verify_callback (client_ctx, param_capture_verify_cb,
+                                          &capture);
+    SocketTLSContext_set_verify_mode (client_ctx, TLS_VERIFY_PEER);
+
+    ASSERT_EQ (socketpair (AF_UNIX, SOCK_STREAM, 0, sv), 0);
+    server_sock = Socket_new_from_fd (sv[0]);
+    client_sock = Socket_new_from_fd (sv[1]);
+
+    SocketTLS_enable (server_sock, server_ctx);
+    SocketTLS_enable (client_sock, client_ctx);
+
+    Socket_setnonblocking (server_sock);
+    Socket_setnonblocking (client_sock);
+
+    /* Get expected socket fd before handshake */
+    int expected_client_fd = Socket_fd (client_sock);
+
+    /* Handshake loop */
+    volatile TLSHandshakeState client_state = TLS_HANDSHAKE_IN_PROGRESS;
+    volatile TLSHandshakeState server_state = TLS_HANDSHAKE_IN_PROGRESS;
+    volatile int loops = 0;
+
+    while ((client_state != TLS_HANDSHAKE_COMPLETE
+            && client_state != TLS_HANDSHAKE_ERROR)
+           && loops < 100)
+      {
+        if (client_state != TLS_HANDSHAKE_COMPLETE
+            && client_state != TLS_HANDSHAKE_ERROR)
+          client_state = SocketTLS_handshake (client_sock);
+        if (server_state != TLS_HANDSHAKE_COMPLETE
+            && server_state != TLS_HANDSHAKE_ERROR)
+          server_state = SocketTLS_handshake (server_sock);
+        loops++;
+        usleep (1000);
+      }
+
+    /* Verify handshake completed */
+    ASSERT_EQ (client_state, TLS_HANDSHAKE_COMPLETE);
+    ASSERT_EQ (server_state, TLS_HANDSHAKE_COMPLETE);
+
+    /* Verify callback was invoked and received correct parameters */
+    ASSERT_EQ (capture.callback_invoked, 1);
+    ASSERT (capture.has_x509_ctx); /* Must have X509_STORE_CTX */
+    ASSERT (capture.has_tls_ctx);  /* Must have TLS context */
+    ASSERT (capture.has_socket);   /* Must have socket */
+    ASSERT (capture.has_user_data);
+    ASSERT_EQ ((const void *)capture.user_data_value, (const void *)&capture);
+    ASSERT_EQ (capture.socket_fd, expected_client_fd);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    /* May fail if cert gen failed - just skip */
+  }
+  FINALLY
+  {
+    if (client_sock)
+      Socket_free (&client_sock);
+    if (server_sock)
+      Socket_free (&server_sock);
+    if (client_ctx)
+      SocketTLSContext_free (&client_ctx);
+    if (server_ctx)
+      SocketTLSContext_free (&server_ctx);
+    remove_test_certs (cert_file, key_file);
+    Arena_dispose (&arena);
+  }
+  END_TRY;
+}
+
+/**
+ * reject_verify_cb - Callback that always rejects (returns 0).
+ *
+ * Tests todo_ssl.md 2.4 item 2: "Test callback returning 0 (reject) stops
+ * handshake"
+ */
+static int
+reject_verify_cb (int pre_ok, X509_STORE_CTX *x509_ctx,
+                  SocketTLSContext_T tls_ctx, Socket_T sock, void *user_data)
+{
+  (void)pre_ok;
+  (void)tls_ctx;
+  (void)sock;
+  (void)user_data;
+
+  /* Explicitly set error and reject */
+  if (x509_ctx)
+    X509_STORE_CTX_set_error (x509_ctx, X509_V_ERR_APPLICATION_VERIFICATION);
+  return 0; /* REJECT - this should stop the handshake */
+}
+
+/**
+ * Test: Verify callback returning 0 stops the handshake.
+ *
+ * Tests todo_ssl.md 2.4 item 2:
+ * "SocketTLSContext_set_verify_callback(): Test callback returning 0 (reject)
+ * stops handshake"
+ */
+TEST (tls_verify_callback_reject)
+{
+  const char *cert_file = "test_verify_reject.crt";
+  const char *key_file = "test_verify_reject.key";
+  if (generate_test_certs (cert_file, key_file) != 0)
+    return;
+
+  Arena_T arena = Arena_new ();
+  SocketTLSContext_T server_ctx = NULL;
+  SocketTLSContext_T client_ctx = NULL;
+  Socket_T client_sock = NULL;
+  Socket_T server_sock = NULL;
+  int sv[2];
+
+  TRY
+  {
+    server_ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+    client_ctx = SocketTLSContext_new_client (NULL);
+
+    /* Set callback that always rejects */
+    SocketTLSContext_set_verify_callback (client_ctx, reject_verify_cb, NULL);
+    SocketTLSContext_set_verify_mode (client_ctx, TLS_VERIFY_PEER);
+
+    ASSERT_EQ (socketpair (AF_UNIX, SOCK_STREAM, 0, sv), 0);
+    server_sock = Socket_new_from_fd (sv[0]);
+    client_sock = Socket_new_from_fd (sv[1]);
+
+    SocketTLS_enable (server_sock, server_ctx);
+    SocketTLS_enable (client_sock, client_ctx);
+
+    Socket_setnonblocking (server_sock);
+    Socket_setnonblocking (client_sock);
+
+    /* Handshake loop */
+    volatile TLSHandshakeState client_state = TLS_HANDSHAKE_IN_PROGRESS;
+    volatile TLSHandshakeState server_state = TLS_HANDSHAKE_IN_PROGRESS;
+    volatile int loops = 0;
+    volatile int handshake_failed = 0;
+
+    TRY
+    {
+      while ((client_state != TLS_HANDSHAKE_COMPLETE
+              && client_state != TLS_HANDSHAKE_ERROR)
+             && loops < 100)
+        {
+          if (client_state != TLS_HANDSHAKE_COMPLETE
+              && client_state != TLS_HANDSHAKE_ERROR)
+            client_state = SocketTLS_handshake (client_sock);
+          if (server_state != TLS_HANDSHAKE_COMPLETE
+              && server_state != TLS_HANDSHAKE_ERROR)
+            server_state = SocketTLS_handshake (server_sock);
+          loops++;
+          usleep (1000);
+        }
+    }
+    EXCEPT (SocketTLS_HandshakeFailed) { handshake_failed = 1; }
+    END_TRY;
+
+    /* The handshake must have failed or ended in ERROR state */
+    ASSERT (handshake_failed || client_state == TLS_HANDSHAKE_ERROR);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    /* May fail if cert gen failed - just skip */
+  }
+  FINALLY
+  {
+    if (client_sock)
+      Socket_free (&client_sock);
+    if (server_sock)
+      Socket_free (&server_sock);
+    if (client_ctx)
+      SocketTLSContext_free (&client_ctx);
+    if (server_ctx)
+      SocketTLSContext_free (&server_ctx);
+    remove_test_certs (cert_file, key_file);
+    Arena_dispose (&arena);
+  }
+  END_TRY;
+}
+
+/* ============================================================================
+ * End of Verify Callback Parameter Tests
+ * ============================================================================
+ */
+
 TEST (verify_callback_api)
 {
   Arena_T arena = Arena_new ();

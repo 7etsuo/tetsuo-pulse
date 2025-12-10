@@ -396,6 +396,57 @@ extern void SocketTLSContext_set_verify_mode (T ctx, TLSVerifyMode mode);
  * Called during TLS verification to allow custom logic (e.g., pinning, policy
  * checks). Return 1 to accept/continue verification, 0 to fail (aborts
  * handshake). Can raise exceptions for detailed errors.
+ *
+ * ## Thread Safety
+ *
+ * **IMPORTANT**: If the same TLS context is shared across multiple threads
+ * (e.g., for connection pooling or multi-threaded servers), this callback
+ * may be invoked concurrently from multiple threads during parallel TLS
+ * handshakes. The callback implementation MUST be thread-safe:
+ *
+ * - Avoid modifying shared state without synchronization
+ * - Use thread-local storage or mutexes for shared data
+ * - The tls_ctx and user_data pointers are shared across all invocations
+ * - The x509_ctx and socket are per-connection and safe to use without locking
+ *
+ * If the callback raises an exception (any Except_T), it is caught by the
+ * library and converted to a handshake failure with
+ * X509_V_ERR_APPLICATION_VERIFICATION.
+ *
+ * ## Return Value Behavior
+ *
+ * - Return 1: Continue verification (OpenSSL will proceed to next check)
+ * - Return 0: Abort handshake immediately (SocketTLS_HandshakeFailed raised)
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * int my_verify_callback(int preverify_ok, X509_STORE_CTX *x509_ctx,
+ *                        SocketTLSContext_T tls_ctx, Socket_T socket,
+ *                        void *user_data) {
+ *     // Thread-safe: only reads from user_data, no shared writes
+ *     const char *expected_cn = (const char *)user_data;
+ *
+ *     if (!preverify_ok) {
+ *         // OpenSSL pre-verification failed - get error details
+ *         int err = X509_STORE_CTX_get_error(x509_ctx);
+ *         printf("Pre-verify failed: %s\n", X509_verify_cert_error_string(err));
+ *         return 0; // Reject - will abort handshake
+ *     }
+ *
+ *     // Custom check: verify CN matches expected value
+ *     X509 *cert = X509_STORE_CTX_get_current_cert(x509_ctx);
+ *     // ... perform custom validation ...
+ *
+ *     return 1; // Accept - continue verification
+ * }
+ * @endcode
+ *
+ * @threadsafe Conditional - callback MUST be thread-safe if context is shared
+ *             across threads
+ *
+ * @see SocketTLSContext_set_verify_callback() to register this callback
+ * @see SocketTLSContext_set_verify_mode() for base verification policy
  */
 typedef int (*SocketTLSVerifyCallback) (int preverify_ok,
                                         X509_STORE_CTX *x509_ctx, T tls_ctx,
@@ -426,23 +477,75 @@ extern void SocketTLSContext_free (T *ctx_p);
  * @brief Register custom verification callback.
  * @ingroup security
  * @param[in] ctx The TLS context instance
- * @param callback User callback function (NULL to disable custom and use
+ * @param[in] callback User callback function (NULL to disable custom and use
  * default)
- * @param user_data Opaque data passed to callback (lifetime managed by caller)
+ * @param[in] user_data Opaque data passed to callback (lifetime managed by
+ * caller)
  *
- * Sets a custom verification callback, overriding default OpenSSL behavior
- * while respecting current verify_mode. The wrapper ensures thread-safety and
- * error propagation via exceptions.
+ * Sets a custom verification callback that is invoked during the TLS handshake
+ * for each certificate in the peer's chain. The callback receives all necessary
+ * context: the OpenSSL pre-verification result, X509 store context, the library
+ * TLS context, the socket being verified, and user-provided data.
+ *
+ * ## Callback Behavior
+ *
+ * - **Return 0**: Immediately aborts the handshake with
+ * SocketTLS_HandshakeFailed
+ * - **Return 1**: Continues verification (OpenSSL proceeds to next certificate)
+ *
+ * ## Exception Handling
+ *
+ * If the callback raises any exception (SocketTLS_Failed or any other Except_T),
+ * it is automatically caught by the library wrapper and converted to a handshake
+ * failure. The X509 error is set to X509_V_ERR_APPLICATION_VERIFICATION and
+ * handshake is aborted. This prevents undefined behavior from uncaught exceptions
+ * propagating through OpenSSL's C code.
+ *
+ * ## Thread Safety
+ *
+ * **IMPORTANT**: The callback itself MUST be thread-safe if the TLS context is
+ * shared across multiple threads (common for server contexts or connection
+ * pools). Callbacks may be invoked concurrently from different threads during
+ * parallel TLS handshakes. See SocketTLSVerifyCallback documentation for
+ * details.
+ *
+ * Call this function during context setup, before sharing the context across
+ * threads.
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * // Thread-safe callback that rejects expired certificates strictly
+ * int strict_expiry_callback(int preverify_ok, X509_STORE_CTX *x509_ctx,
+ *                            SocketTLSContext_T tls_ctx, Socket_T socket,
+ *                            void *user_data) {
+ *     (void)tls_ctx; (void)socket; (void)user_data;
+ *
+ *     if (!preverify_ok) {
+ *         int err = X509_STORE_CTX_get_error(x509_ctx);
+ *         if (err == X509_V_ERR_CERT_HAS_EXPIRED) {
+ *             // Log and reject expired certs even if OpenSSL would allow
+ *             return 0; // Abort handshake
+ *         }
+ *     }
+ *     return preverify_ok; // Otherwise use OpenSSL's decision
+ * }
+ *
+ * // Setup
+ * SocketTLSContext_T ctx = SocketTLSContext_new_client("ca-bundle.pem");
+ * SocketTLSContext_set_verify_callback(ctx, strict_expiry_callback, NULL);
+ * @endcode
  *
  * @return void
  * @throws SocketTLS_Failed if OpenSSL configuration fails
- * @threadsafe Yes (mutex protected) - modifies shared context; call before
- * sharing
+ * @threadsafe Yes - modifies shared context; call before sharing context
+ *             across threads
  *
- * @see SocketTLSVerifyCallback for the callback function signature and usage.
+ * @see SocketTLSVerifyCallback for callback signature, thread safety, and
+ * examples
  * @see SocketTLSContext_set_verify_mode() for configuring base verification
- * policy.
- * @see @ref security for other TLS verification features like CRL and OCSP.
+ * policy
+ * @see @ref security for other TLS verification features like CRL and OCSP
  */
 extern void
 SocketTLSContext_set_verify_callback (T ctx, SocketTLSVerifyCallback callback,
