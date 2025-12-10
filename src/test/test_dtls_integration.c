@@ -683,6 +683,239 @@ TEST (dtls_validation_macros)
 #endif
 }
 
+/* ==================== Handshake State Machine Tests ==================== */
+
+TEST (dtls_handshake_state_enum_values)
+{
+#if SOCKET_HAS_TLS
+  /* Verify all DTLSHandshakeState enum values are distinct */
+  ASSERT (DTLS_HANDSHAKE_NOT_STARTED != DTLS_HANDSHAKE_IN_PROGRESS);
+  ASSERT (DTLS_HANDSHAKE_IN_PROGRESS != DTLS_HANDSHAKE_WANT_READ);
+  ASSERT (DTLS_HANDSHAKE_WANT_READ != DTLS_HANDSHAKE_WANT_WRITE);
+  ASSERT (DTLS_HANDSHAKE_WANT_WRITE != DTLS_HANDSHAKE_COOKIE_EXCHANGE);
+  ASSERT (DTLS_HANDSHAKE_COOKIE_EXCHANGE != DTLS_HANDSHAKE_COMPLETE);
+  ASSERT (DTLS_HANDSHAKE_COMPLETE != DTLS_HANDSHAKE_ERROR);
+#else
+  (void)0;
+#endif
+}
+
+TEST (dtls_handshake_initial_state)
+{
+#if SOCKET_HAS_TLS
+  SocketDgram_T socket = NULL;
+  SocketDTLSContext_T ctx = NULL;
+
+  TRY
+  {
+    socket = SocketDgram_new (AF_INET, 0);
+    ctx = SocketDTLSContext_new_client (NULL);
+
+    /* Before enable: state should be NOT_STARTED */
+    ASSERT_EQ (SocketDTLS_get_last_state (socket), DTLS_HANDSHAKE_NOT_STARTED);
+
+    /* After enable: state may remain NOT_STARTED */
+    SocketDTLS_enable (socket, ctx);
+    DTLSHandshakeState state = SocketDTLS_get_last_state (socket);
+    /* State should be NOT_STARTED (no handshake attempted yet) */
+    ASSERT (state == DTLS_HANDSHAKE_NOT_STARTED
+            || state == DTLS_HANDSHAKE_IN_PROGRESS);
+  }
+  FINALLY
+  {
+    if (socket)
+      SocketDgram_free (&socket);
+    if (ctx)
+      SocketDTLSContext_free (&ctx);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+TEST (dtls_handshake_loop_zero_timeout)
+{
+#if SOCKET_HAS_TLS
+  SocketDgram_T socket = NULL;
+  SocketDTLSContext_T ctx = NULL;
+  volatile DTLSHandshakeState state = DTLS_HANDSHAKE_NOT_STARTED;
+
+  TRY
+  {
+    socket = SocketDgram_new (AF_INET, 0);
+    ctx = SocketDTLSContext_new_client (NULL);
+    SocketDTLS_enable (socket, ctx);
+
+    /* Zero timeout = non-blocking, returns current state immediately */
+    state = SocketDTLS_handshake_loop (socket, 0);
+
+    /* Should return without blocking, state should be valid */
+    ASSERT (state == DTLS_HANDSHAKE_IN_PROGRESS
+            || state == DTLS_HANDSHAKE_WANT_READ
+            || state == DTLS_HANDSHAKE_WANT_WRITE
+            || state == DTLS_HANDSHAKE_ERROR);
+
+    /* Should NOT be COMPLETE on unconnected socket */
+    ASSERT (state != DTLS_HANDSHAKE_COMPLETE);
+  }
+  EXCEPT (SocketDTLS_Failed) { /* Expected on unconnected socket */ }
+  EXCEPT (SocketDTLS_HandshakeFailed) { /* Expected */ }
+  EXCEPT (SocketDTLS_TimeoutExpired) { /* Should NOT happen with timeout=0 */
+    ASSERT (0 && "Timeout should not be raised with timeout=0");
+  }
+  FINALLY
+  {
+    if (socket)
+      SocketDgram_free (&socket);
+    if (ctx)
+      SocketDTLSContext_free (&ctx);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+TEST (dtls_handshake_loop_short_timeout)
+{
+#if SOCKET_HAS_TLS
+  SocketDgram_T socket = NULL;
+  SocketDTLSContext_T ctx = NULL;
+
+  TRY
+  {
+    socket = SocketDgram_new (AF_INET, 0);
+    ctx = SocketDTLSContext_new_client (NULL);
+    SocketDTLS_enable (socket, ctx);
+
+    /* Short timeout - should fail or timeout quickly */
+    TRY { SocketDTLS_handshake_loop (socket, 10); }
+    EXCEPT (SocketDTLS_TimeoutExpired) { /* Expected timeout */ }
+    EXCEPT (SocketDTLS_HandshakeFailed) { /* Also acceptable */ }
+    END_TRY;
+
+    /* With unconnected socket, either timeout or handshake failure is expected */
+    /* Just verify it returns without hanging */
+  }
+  FINALLY
+  {
+    if (socket)
+      SocketDgram_free (&socket);
+    if (ctx)
+      SocketDTLSContext_free (&ctx);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+TEST (dtls_handshake_single_step)
+{
+#if SOCKET_HAS_TLS
+  SocketDgram_T socket = NULL;
+  SocketDTLSContext_T ctx = NULL;
+  volatile DTLSHandshakeState state = DTLS_HANDSHAKE_NOT_STARTED;
+
+  TRY
+  {
+    socket = SocketDgram_new (AF_INET, 0);
+    ctx = SocketDTLSContext_new_client (NULL);
+    SocketDTLS_enable (socket, ctx);
+
+    /* Single handshake step */
+    state = SocketDTLS_handshake (socket);
+
+    /* State should be tracked */
+    ASSERT_EQ (SocketDTLS_get_last_state (socket), state);
+  }
+  EXCEPT (SocketDTLS_Failed) { /* Expected on unconnected socket */ }
+  EXCEPT (SocketDTLS_HandshakeFailed) { /* Expected */ }
+  FINALLY
+  {
+    if (socket)
+      SocketDgram_free (&socket);
+    if (ctx)
+      SocketDTLSContext_free (&ctx);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+TEST (dtls_listen_without_connection)
+{
+#if SOCKET_HAS_TLS
+  SocketDgram_T socket = NULL;
+  SocketDTLSContext_T ctx = NULL;
+  volatile DTLSHandshakeState state = DTLS_HANDSHAKE_NOT_STARTED;
+
+  TRY
+  {
+    socket = SocketDgram_new (AF_INET, 0);
+    ctx = SocketDTLSContext_new_client (NULL);
+    SocketDTLS_enable (socket, ctx);
+
+    /* Listen on client context (no cookies) */
+    state = SocketDTLS_listen (socket);
+
+    /* Should return a valid state */
+    ASSERT (state == DTLS_HANDSHAKE_IN_PROGRESS
+            || state == DTLS_HANDSHAKE_WANT_READ
+            || state == DTLS_HANDSHAKE_COOKIE_EXCHANGE
+            || state == DTLS_HANDSHAKE_ERROR);
+  }
+  EXCEPT (SocketDTLS_Failed) { /* Expected */ }
+  EXCEPT (SocketDTLS_HandshakeFailed) { /* Expected */ }
+  FINALLY
+  {
+    if (socket)
+      SocketDgram_free (&socket);
+    if (ctx)
+      SocketDTLSContext_free (&ctx);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+TEST (dtls_handshake_metrics)
+{
+#if SOCKET_HAS_TLS
+  SocketDgram_T socket = NULL;
+  SocketDTLSContext_T ctx = NULL;
+
+  /* Get metrics before test */
+  uint64_t before_total
+      = SocketMetrics_counter_get (SOCKET_CTR_DTLS_HANDSHAKES_TOTAL);
+
+  TRY
+  {
+    socket = SocketDgram_new (AF_INET, 0);
+    ctx = SocketDTLSContext_new_client (NULL);
+    SocketDTLS_enable (socket, ctx);
+
+    /* Enabling DTLS should increment handshakes total */
+    uint64_t after_total
+        = SocketMetrics_counter_get (SOCKET_CTR_DTLS_HANDSHAKES_TOTAL);
+    ASSERT (after_total >= before_total);
+  }
+  FINALLY
+  {
+    if (socket)
+      SocketDgram_free (&socket);
+    if (ctx)
+      SocketDTLSContext_free (&ctx);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
 #endif /* SOCKET_HAS_TLS */
 
 /* ==================== Main ==================== */

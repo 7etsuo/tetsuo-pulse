@@ -39,8 +39,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 #else
 
 /* Fuzz state */
-static volatile Arena_T fuzz_arena = NULL;
-static volatile SocketTLSContext_T fuzz_ctx = NULL;
+static Arena_T fuzz_arena = NULL;
+static SocketTLSContext_T fuzz_ctx = NULL;
 
 /* Max input sizes to prevent OOM */
 #define FUZZ_MAX_PATH 256
@@ -116,7 +116,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         fuzz_ctx = NULL;
       }
   }
-  EXCEPT (AnyException) { /* Swallow for fuzzer; coverage from exceptions */ }
+  EXCEPT (SocketTLS_Failed) { /* Expected on invalid config */ }
+  ELSE { /* Swallow any other exception for fuzzer */ }
   END_TRY;
 
   return 0;

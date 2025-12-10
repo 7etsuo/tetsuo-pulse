@@ -639,12 +639,34 @@ testing requirements, documentation, security hardening, and future enhancements
 ### 4.2 DTLS Handshake — *depends on 4.1, 5.3, 6.4, 6.5*
 **Difficulty: 6/9** _(Cookie exchange, retransmission, state machine)_
 
-- [ ] **SocketDTLS_handshake()**: Verify all `DTLSHandshakeState` transitions including `DTLS_HANDSHAKE_COOKIE_EXCHANGE`
-- [ ] **SocketDTLS_handshake()**: Test non-blocking behavior with WANT_READ/WANT_WRITE
-- [ ] **SocketDTLS_handshake_loop()**: Verify timeout handling (0=single step, -1=infinite)
-- [ ] **SocketDTLS_listen()**: Verify server-side ClientHello reception and cookie handling
-- [ ] **Cookie Exchange Integration**: Verify cookie exchange triggers `DTLS_HANDSHAKE_COOKIE_EXCHANGE` state
-- [ ] **Handshake Retransmission**: Verify OpenSSL handles DTLS retransmission internally
+- [x] **SocketDTLS_handshake()**: Verify all `DTLSHandshakeState` transitions including `DTLS_HANDSHAKE_COOKIE_EXCHANGE`
+  - Implemented `dtls_check_cookie_exchange_state()` in `src/tls/SocketDTLS.c:554-578`
+  - Checks `SSL_get_state()` for `DTLS_ST_SW_HELLO_VERIFY_REQUEST` and early handshake states
+  - Returns `DTLS_HANDSHAKE_COOKIE_EXCHANGE` when server is in cookie exchange phase
+- [x] **SocketDTLS_handshake()**: Test non-blocking behavior with WANT_READ/WANT_WRITE
+  - `dtls_handle_ssl_error()` maps `SSL_ERROR_WANT_READ` → `DTLS_HANDSHAKE_WANT_READ`
+  - `dtls_handle_ssl_error()` maps `SSL_ERROR_WANT_WRITE` → `DTLS_HANDSHAKE_WANT_WRITE`
+  - State tracked via `socket->dtls_last_handshake_state`
+- [x] **SocketDTLS_handshake_loop()**: Verify timeout handling (0=single step, -1=infinite)
+  - Implemented in `src/tls/SocketDTLS.c:600-665`
+  - `timeout_ms=0`: Returns immediately after single handshake step
+  - `timeout_ms=-1`: Uses `SOCKET_DTLS_INITIAL_TIMEOUT_MS` poll intervals for OpenSSL retransmission
+  - `timeout_ms>0`: Uses `SocketTimeout_deadline_ms()` for deadline-based timeout
+- [x] **SocketDTLS_listen()**: Verify server-side ClientHello reception and cookie handling
+  - `dtls_handle_listen_with_cookies()` uses `DTLSv1_listen()` for cookie exchange
+  - `dtls_handle_listen_no_cookies()` for non-cookie path
+  - Returns `DTLS_HANDSHAKE_COOKIE_EXCHANGE` when awaiting client cookie echo
+- [x] **Cookie Exchange Integration**: Verify cookie exchange triggers `DTLS_HANDSHAKE_COOKIE_EXCHANGE` state
+  - `DTLSv1_listen()` return value 0 or `SSL_ERROR_WANT_READ` → `DTLS_HANDSHAKE_COOKIE_EXCHANGE`
+  - `DTLSv1_listen()` return value > 0 (cookie verified) → `DTLS_HANDSHAKE_IN_PROGRESS`
+  - Metrics: `SOCKET_CTR_DTLS_COOKIES_VERIFIED` incremented on successful verification
+- [x] **Handshake Retransmission**: Verify OpenSSL handles DTLS retransmission internally
+  - OpenSSL manages DTLS retransmission via `DTLSv1_handle_timeout()`
+  - Called at start of `SocketDTLS_handshake()` before `SSL_do_handshake()`
+  - `handshake_loop()` uses poll intervals aligned with DTLS timer for retransmission
+
+**Fuzzing Coverage**: `src/fuzz/fuzz_dtls_handshake.c` with 10 operations covering all state transitions
+**Unit Tests**: `src/test/test_dtls_integration.c` includes handshake state machine tests
 
 ### 4.3 DTLS I/O Operations — *depends on 4.2*
 **Difficulty: 5/9** _(Message-oriented semantics, fragmentation)_

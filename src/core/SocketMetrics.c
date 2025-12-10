@@ -163,7 +163,8 @@ static const char *const counter_names[SOCKET_COUNTER_METRIC_COUNT] = {
   "tls_cert_verify_failures", "tls_renegotiations", "tls_pinning_failures",
   "tls_ct_verification_failures", "tls_crl_check_failures",
   /* DTLS */
-  "dtls_handshakes_total", "dtls_handshakes_failed", "dtls_cookies_generated",
+  "dtls_handshakes_total", "dtls_handshakes_complete", "dtls_handshakes_failed",
+  "dtls_cookies_generated", "dtls_cookies_verified",
   "dtls_cookie_verification_failures", "dtls_replay_packets_detected",
   "dtls_fragment_failures",
   /* DNS */
@@ -210,9 +211,10 @@ static const char *const counter_help[SOCKET_COUNTER_METRIC_COUNT] = {
   "TLS Certificate Transparency verification failures",
   "TLS CRL/OCSP revocation check failures",
   /* DTLS */
-  "Total DTLS handshakes attempted", "Failed DTLS handshakes",
+  "Total DTLS handshakes initiated", "Completed DTLS handshakes",
+  "Failed DTLS handshakes",
   "DTLS hello cookies generated for SYN protection",
-  "Invalid or expired DTLS cookies",
+  "DTLS cookies verified successfully", "Invalid or expired DTLS cookies",
   "DTLS packets rejected due to replay detection",
   "DTLS fragmented message reassembly failures",
   /* DNS */

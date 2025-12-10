@@ -380,9 +380,11 @@ typedef enum SocketCounterMetric
   SOCKET_CTR_TLS_CRL_CHECK_FAILURES, /**< CRL/OCSP revocation check failures */
 
   /* DTLS Counters */
-  SOCKET_CTR_DTLS_HANDSHAKES_TOTAL,             /**< Total DTLS handshakes */
-  SOCKET_CTR_DTLS_HANDSHAKES_FAILED,            /**< Failed DTLS handshakes */
-  SOCKET_CTR_DTLS_COOKIES_GENERATED,            /**< DTLS cookies generated */
+  SOCKET_CTR_DTLS_HANDSHAKES_TOTAL,    /**< Total DTLS handshakes initiated */
+  SOCKET_CTR_DTLS_HANDSHAKES_COMPLETE, /**< Completed DTLS handshakes */
+  SOCKET_CTR_DTLS_HANDSHAKES_FAILED,   /**< Failed DTLS handshakes */
+  SOCKET_CTR_DTLS_COOKIES_GENERATED,   /**< DTLS cookies generated */
+  SOCKET_CTR_DTLS_COOKIES_VERIFIED,    /**< DTLS cookies verified successfully */
   SOCKET_CTR_DTLS_COOKIE_VERIFICATION_FAILURES, /**< Invalid DTLS cookies */
   SOCKET_CTR_DTLS_REPLAY_PACKETS_DETECTED, /**< DTLS replay protection triggers
                                             */

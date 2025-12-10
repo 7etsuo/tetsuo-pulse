@@ -538,6 +538,42 @@ SocketDTLS_set_mtu (SocketDgram_T socket, size_t mtu)
  * ============================================================================
  */
 
+/**
+ * dtls_check_cookie_exchange_state - Check if SSL is in cookie exchange
+ * @ssl: SSL object
+ *
+ * Determines if the DTLS server is currently in the cookie exchange phase
+ * by checking the OpenSSL internal state. During cookie exchange, the server
+ * has sent HelloVerifyRequest and is waiting for client's cookie response.
+ *
+ * Returns: 1 if in cookie exchange state, 0 otherwise
+ */
+static int
+dtls_check_cookie_exchange_state (SSL *ssl)
+{
+  if (!ssl)
+    return 0;
+
+  /* Check if we're on server side and in early handshake state */
+  if (!SSL_is_server (ssl))
+    return 0;
+
+  /* During cookie exchange, SSL_in_init() is true and we haven't received
+   * a valid ClientHello with cookie yet. The OSSL_HANDSHAKE_STATE tells us
+   * if we're waiting for client response after sending HelloVerifyRequest. */
+  OSSL_HANDSHAKE_STATE hs_state = SSL_get_state (ssl);
+
+  /* DTLS_ST_SW_HELLO_VERIFY_REQUEST means we just sent HelloVerifyRequest */
+  /* TLS_ST_BEFORE with SSL_in_init means we're in early handshake state */
+  if (hs_state == DTLS_ST_SW_HELLO_VERIFY_REQUEST
+      || (hs_state == TLS_ST_BEFORE && SSL_in_init (ssl)))
+    {
+      return 1;
+    }
+
+  return 0;
+}
+
 DTLSHandshakeState
 SocketDTLS_handshake (SocketDgram_T socket)
 {
@@ -553,8 +589,9 @@ SocketDTLS_handshake (SocketDgram_T socket)
     RAISE_DTLS_ERROR_MSG (SocketDTLS_HandshakeFailed,
                           "SSL object not available");
 
-  /* Handle DTLS timer */
-  if (DTLSv1_handle_timeout (ssl) < 0)
+  /* Handle DTLS timer - OpenSSL handles retransmission internally */
+  int timeout_result = DTLSv1_handle_timeout (ssl);
+  if (timeout_result < 0)
     {
       dtls_format_openssl_error ("DTLS timeout handling failed");
       socket->dtls_last_handshake_state = DTLS_HANDSHAKE_ERROR;
@@ -566,10 +603,22 @@ SocketDTLS_handshake (SocketDgram_T socket)
     {
       socket->dtls_handshake_done = 1;
       socket->dtls_last_handshake_state = DTLS_HANDSHAKE_COMPLETE;
+      SocketMetrics_counter_inc (SOCKET_CTR_DTLS_HANDSHAKES_COMPLETE);
       return DTLS_HANDSHAKE_COMPLETE;
     }
 
   DTLSHandshakeState state = dtls_handle_ssl_error (socket, ssl, result);
+
+  /* Check for cookie exchange state on server side */
+  if (state == DTLS_HANDSHAKE_WANT_READ || state == DTLS_HANDSHAKE_IN_PROGRESS)
+    {
+      if (dtls_check_cookie_exchange_state (ssl))
+        {
+          socket->dtls_last_handshake_state = DTLS_HANDSHAKE_COOKIE_EXCHANGE;
+          return DTLS_HANDSHAKE_COOKIE_EXCHANGE;
+        }
+    }
+
   if (state == DTLS_HANDSHAKE_ERROR)
     {
       dtls_format_openssl_error ("DTLS handshake failed");
@@ -596,11 +645,24 @@ SocketDTLS_handshake_loop (SocketDgram_T socket, int timeout_ms)
   pfd.fd = fd;
   pfd.events = POLLIN | POLLOUT;
 
-  int64_t deadline_ms
-      = (timeout_ms > 0) ? SocketTimeout_deadline_ms (timeout_ms) : 0LL;
+  /* Handle timeout modes:
+   * timeout_ms == 0: Single non-blocking step
+   * timeout_ms == -1: Infinite wait (no timeout)
+   * timeout_ms > 0: Wait up to timeout_ms milliseconds
+   */
+  const int infinite_timeout = (timeout_ms < 0);
+  int64_t deadline_ms = 0LL;
 
-  while (timeout_ms == 0 || !SocketTimeout_expired (deadline_ms))
+  if (timeout_ms > 0)
+    deadline_ms = SocketTimeout_deadline_ms (timeout_ms);
+
+  for (;;)
     {
+      /* Check timeout expiration (skip for infinite/zero timeout) */
+      if (!infinite_timeout && timeout_ms > 0
+          && SocketTimeout_expired (deadline_ms))
+        break;
+
       DTLSHandshakeState state = SocketDTLS_handshake (socket);
 
       switch (state)
@@ -619,16 +681,34 @@ SocketDTLS_handshake_loop (SocketDgram_T socket, int timeout_ms)
           pfd.events = POLLOUT;
           break;
 
+        case DTLS_HANDSHAKE_COOKIE_EXCHANGE:
+          /* Server waiting for client cookie response */
+          pfd.events = POLLIN;
+          break;
+
         default:
           pfd.events = POLLIN | POLLOUT;
           break;
         }
 
+      /* timeout_ms == 0: Single non-blocking step, return current state */
       if (timeout_ms == 0)
-        return state; /* Non-blocking, return current state */
+        return state;
 
-      int poll_tmo = SocketTimeout_poll_timeout (
-          -1, deadline_ms); /* -1: compute from deadline */
+      /* Calculate poll timeout based on deadline or infinite wait */
+      int poll_tmo;
+      if (infinite_timeout)
+        {
+          /* Infinite wait: Use default DTLS timeout for timer handling */
+          poll_tmo = SOCKET_DTLS_INITIAL_TIMEOUT_MS;
+        }
+      else
+        {
+          /* Compute remaining time from deadline */
+          poll_tmo = SocketTimeout_poll_timeout (-1, deadline_ms);
+          if (poll_tmo <= 0)
+            break; /* Timeout expired */
+        }
 
       int rc = poll (&pfd, 1, poll_tmo);
       if (rc < 0)
@@ -640,7 +720,7 @@ SocketDTLS_handshake_loop (SocketDgram_T socket, int timeout_ms)
         }
     }
 
-  /* Timeout expired */
+  /* Timeout expired (only reached for finite positive timeout) */
   DTLS_ERROR_MSG ("DTLS handshake timeout");
   socket->dtls_last_handshake_state = DTLS_HANDSHAKE_ERROR;
   RAISE_DTLS_ERROR (SocketDTLS_TimeoutExpired);
@@ -653,7 +733,19 @@ SocketDTLS_handshake_loop (SocketDgram_T socket, int timeout_ms)
  * @socket: Socket instance
  * @ssl: SSL object
  *
- * Returns: Handshake state after listen attempt
+ * Handles the server-side DTLS listen operation with cookie exchange enabled.
+ * DTLSv1_listen() performs stateless cookie verification:
+ *
+ * Returns:
+ *   - DTLS_HANDSHAKE_COOKIE_EXCHANGE: Cookie sent, waiting for client response
+ *   - DTLS_HANDSHAKE_IN_PROGRESS: Cookie verified, proceed to full handshake
+ *   - DTLS_HANDSHAKE_WANT_READ: No data available (non-blocking)
+ *   - DTLS_HANDSHAKE_ERROR: Fatal error during listen
+ *
+ * Note: DTLSv1_listen() return values:
+ *   0: No ClientHello or HelloVerifyRequest sent, try again
+ *   1: Cookie verified, ready for SSL_accept/handshake
+ *  <0: Fatal error
  */
 static DTLSHandshakeState
 dtls_handle_listen_with_cookies (SocketDgram_T socket, SSL *ssl)
@@ -664,26 +756,70 @@ dtls_handle_listen_with_cookies (SocketDgram_T socket, SSL *ssl)
                           "Failed to allocate client address");
 
   int listen_result = DTLSv1_listen (ssl, client_addr);
+
   if (listen_result < 0)
     {
+      int ssl_error = SSL_get_error (ssl, listen_result);
+
+      /* Check if it's a retriable error (non-blocking) */
+      if (ssl_error == SSL_ERROR_WANT_READ)
+        {
+          BIO_ADDR_free (client_addr);
+          socket->dtls_last_handshake_state = DTLS_HANDSHAKE_COOKIE_EXCHANGE;
+          return DTLS_HANDSHAKE_COOKIE_EXCHANGE;
+        }
+
+      if (ssl_error == SSL_ERROR_WANT_WRITE)
+        {
+          BIO_ADDR_free (client_addr);
+          socket->dtls_last_handshake_state = DTLS_HANDSHAKE_WANT_WRITE;
+          return DTLS_HANDSHAKE_WANT_WRITE;
+        }
+
+      /* Fatal error */
       dtls_format_openssl_error ("DTLS listen failed");
       BIO_ADDR_free (client_addr);
+      socket->dtls_last_handshake_state = DTLS_HANDSHAKE_ERROR;
       return DTLS_HANDSHAKE_ERROR;
     }
 
   if (listen_result == 0)
     {
-      socket->dtls_last_handshake_state = DTLS_HANDSHAKE_WANT_READ;
+      /* HelloVerifyRequest sent or waiting for data - cookie exchange phase */
+      socket->dtls_last_handshake_state = DTLS_HANDSHAKE_COOKIE_EXCHANGE;
       BIO_ADDR_free (client_addr);
-      return DTLS_HANDSHAKE_WANT_READ;
+      return DTLS_HANDSHAKE_COOKIE_EXCHANGE;
     }
 
-  /* listen_result > 0: cookie verified, set peer for subsequent ops */
+  /* listen_result > 0: Cookie verified successfully!
+   * Set peer address for subsequent handshake operations */
   BIO *bio = SSL_get_rbio (ssl);
   if (bio)
     BIO_dgram_set_peer (bio, client_addr);
 
   BIO_ADDR_free (client_addr);
+  socket->dtls_last_handshake_state = DTLS_HANDSHAKE_IN_PROGRESS;
+  SocketMetrics_counter_inc (SOCKET_CTR_DTLS_COOKIES_VERIFIED);
+  return DTLS_HANDSHAKE_IN_PROGRESS;
+}
+
+/**
+ * dtls_handle_listen_no_cookies - Process listen without cookie exchange
+ * @socket: Socket instance
+ * @ssl: SSL object
+ *
+ * For servers without cookie exchange, just check for incoming ClientHello.
+ *
+ * Returns: Handshake state
+ */
+static DTLSHandshakeState
+dtls_handle_listen_no_cookies (SocketDgram_T socket, SSL *ssl)
+{
+  DTLS_UNUSED (ssl);
+
+  /* Without cookies, we skip DTLSv1_listen and go straight to handshake.
+   * Just mark as in progress and let SocketDTLS_handshake() handle it. */
+  socket->dtls_last_handshake_state = DTLS_HANDSHAKE_IN_PROGRESS;
   return DTLS_HANDSHAKE_IN_PROGRESS;
 }
 
@@ -695,15 +831,11 @@ SocketDTLS_listen (SocketDgram_T socket)
   SSL *ssl = REQUIRE_DTLS_SSL (socket, SocketDTLS_Failed);
 
   SocketDTLSContext_T ctx_local = (SocketDTLSContext_T)socket->dtls_ctx;
-  if (ctx_local && SocketDTLSContext_has_cookie_exchange (ctx_local))
-    {
-      DTLSHandshakeState state = dtls_handle_listen_with_cookies (socket, ssl);
-      if (state != DTLS_HANDSHAKE_IN_PROGRESS)
-        return state;
-    }
 
-  socket->dtls_last_handshake_state = DTLS_HANDSHAKE_IN_PROGRESS;
-  return DTLS_HANDSHAKE_IN_PROGRESS;
+  if (ctx_local && SocketDTLSContext_has_cookie_exchange (ctx_local))
+    return dtls_handle_listen_with_cookies (socket, ssl);
+
+  return dtls_handle_listen_no_cookies (socket, ssl);
 }
 
 /* ============================================================================
