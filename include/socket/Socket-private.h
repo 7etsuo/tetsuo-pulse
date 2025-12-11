@@ -627,6 +627,12 @@ struct Socket_T
                            * and kernel accepted RX offload.
                            * Check with BIO_get_ktls_recv().
                            * @private */
+  int tls_key_update_count; /**< Counter for TLS 1.3 KeyUpdate operations on
+                             * this socket. Used for monitoring key rotation
+                             * frequency on long-lived connections. Increments
+                             * on each successful SSL_key_update() call.
+                             * Only applicable to TLS 1.3 connections.
+                             * @private @see SocketTLS_request_key_update() */
 #endif
 };
 

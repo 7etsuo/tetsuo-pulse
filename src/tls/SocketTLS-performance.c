@@ -491,6 +491,126 @@ SocketTLS_get_early_data_status (Socket_T socket)
 }
 
 /* ============================================================================
+ * TLS 1.3 KeyUpdate Support
+ * ============================================================================
+ *
+ * TLS 1.3 replaces renegotiation with KeyUpdate, a lightweight mechanism to
+ * rotate encryption keys without a full handshake. This provides forward
+ * secrecy for long-lived connections by periodically generating new keys.
+ *
+ * KeyUpdate is useful for:
+ * - Long-lived database connections
+ * - VPN tunnels
+ * - Persistent WebSocket connections
+ * - Any connection open for hours/days
+ *
+ * Unlike renegotiation:
+ * - KeyUpdate is much lighter (no full handshake)
+ * - Cannot change certificates or cipher suites
+ * - Only rotates symmetric keys derived from the master secret
+ * - Both directions can be updated independently
+ */
+
+/**
+ * SocketTLS_request_key_update - Request TLS 1.3 key rotation
+ * @socket: Socket with completed TLS 1.3 handshake
+ * @request_peer_update: If 1, request peer to also update their keys
+ *
+ * Initiates a TLS 1.3 KeyUpdate to rotate encryption keys. This provides
+ * forward secrecy for long-lived connections by periodically generating
+ * new keys derived from the current traffic secrets.
+ *
+ * The update_type parameter controls whether the peer should also rotate:
+ * - 0 (SSL_KEY_UPDATE_NOT_REQUESTED): Only update local keys
+ * - 1 (SSL_KEY_UPDATE_REQUESTED): Request peer to also update
+ *
+ * This function queues the KeyUpdate message; actual key rotation happens
+ * on the next I/O operation (send/recv). For immediate effect, call
+ * SocketTLS_send() or perform a read after this call.
+ *
+ * Returns: 1 on success (KeyUpdate queued),
+ *          0 if not applicable (not TLS 1.3 or handshake not done),
+ *          -1 on error
+ *
+ * Raises: SocketTLS_Failed on OpenSSL error
+ *
+ * @threadsafe No - modifies SSL state
+ */
+int
+SocketTLS_request_key_update (Socket_T socket, int request_peer_update)
+{
+  assert (socket);
+
+  if (!socket->tls_enabled || !socket->tls_handshake_done)
+    {
+      errno = EINVAL;
+      return 0;
+    }
+
+  SSL *ssl = tls_socket_get_ssl (socket);
+  if (!ssl)
+    {
+      errno = EINVAL;
+      return -1;
+    }
+
+  /* KeyUpdate is TLS 1.3 only */
+  if (SSL_version (ssl) < TLS1_3_VERSION)
+    {
+      SOCKET_LOG_DEBUG_MSG ("KeyUpdate not available for TLS version 0x%x "
+                            "(requires TLS 1.3) on fd=%d",
+                            SSL_version (ssl), SocketBase_fd (socket->base));
+      errno = ENOTSUP;
+      return 0;
+    }
+
+  /* Determine update type */
+  int update_type = request_peer_update ? SSL_KEY_UPDATE_REQUESTED
+                                        : SSL_KEY_UPDATE_NOT_REQUESTED;
+
+  /* Queue the KeyUpdate message */
+  if (SSL_key_update (ssl, update_type) != 1)
+    {
+      tls_format_openssl_error ("SSL_key_update failed");
+      RAISE_TLS_ERROR (SocketTLS_Failed);
+    }
+
+  /* Increment counter */
+  socket->tls_key_update_count++;
+  SocketMetrics_counter_inc (SOCKET_CTR_TLS_KEY_UPDATES);
+
+  SOCKET_LOG_DEBUG_MSG ("KeyUpdate %s queued for fd=%d (total updates: %d)",
+                        request_peer_update ? "with peer request" : "local only",
+                        SocketBase_fd (socket->base),
+                        socket->tls_key_update_count);
+
+  return 1;
+}
+
+/**
+ * SocketTLS_get_key_update_count - Get number of KeyUpdates performed
+ * @socket: Socket with TLS enabled
+ *
+ * Returns the number of KeyUpdate operations successfully performed on
+ * this connection. Useful for monitoring key rotation frequency on
+ * long-lived connections.
+ *
+ * Returns: Number of KeyUpdates, or 0 if TLS not enabled
+ *
+ * @threadsafe Yes - reads atomic counter
+ */
+int
+SocketTLS_get_key_update_count (Socket_T socket)
+{
+  assert (socket);
+
+  if (!socket->tls_enabled)
+    return 0;
+
+  return socket->tls_key_update_count;
+}
+
+/* ============================================================================
  * Session Cache Sharding for Multi-Threaded Servers
  * ============================================================================
  *

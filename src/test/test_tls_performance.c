@@ -5,6 +5,7 @@
  *
  * Tests:
  * - TLS 1.3 0-RTT early data support
+ * - TLS 1.3 KeyUpdate for key rotation
  * - TCP handshake optimization functions
  * - Session cache sharding
  * - TLS buffer pooling
@@ -392,6 +393,125 @@ TEST (context_early_data_config)
       SocketTLSContext_free (&server_ctx);
     if (client_ctx)
       SocketTLSContext_free (&client_ctx);
+  }
+  END_TRY;
+}
+
+/* ============================================================================
+ * TLS 1.3 KeyUpdate Tests
+ * ============================================================================
+ */
+
+/**
+ * Test KeyUpdate on non-TLS socket (should fail gracefully)
+ */
+TEST (key_update_non_tls_socket)
+{
+  Socket_T sock = NULL;
+
+  TRY
+  {
+    sock = Socket_new (AF_INET, SOCK_STREAM, 0);
+    ASSERT_NOT_NULL (sock);
+
+    /* Should return 0 since TLS is not enabled */
+    int ret = SocketTLS_request_key_update (sock, 1);
+    ASSERT_EQ (0, ret);
+    ASSERT_EQ (EINVAL, errno);
+
+    /* Count should be 0 */
+    ASSERT_EQ (0, SocketTLS_get_key_update_count (sock));
+
+    printf ("    KeyUpdate correctly fails for non-TLS socket\n");
+  }
+  FINALLY
+  {
+    if (sock)
+      Socket_free (&sock);
+  }
+  END_TRY;
+}
+
+/**
+ * Test KeyUpdate count initialization
+ */
+TEST (key_update_count_init)
+{
+  Socket_T sock = NULL;
+  SocketTLSContext_T ctx = NULL;
+
+  TRY
+  {
+    sock = Socket_new (AF_INET, SOCK_STREAM, 0);
+    ASSERT_NOT_NULL (sock);
+
+    ctx = SocketTLSContext_new_client (NULL);
+    ASSERT_NOT_NULL (ctx);
+
+    SocketTLS_enable (sock, ctx);
+
+    /* Count should start at 0 */
+    ASSERT_EQ (0, SocketTLS_get_key_update_count (sock));
+
+    printf ("    KeyUpdate count initialization test passed\n");
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    printf ("    [SKIP] TLS context creation failed\n");
+  }
+  FINALLY
+  {
+    if (sock)
+      {
+        SocketTLS_disable (sock);
+        Socket_free (&sock);
+      }
+    if (ctx)
+      SocketTLSContext_free (&ctx);
+  }
+  END_TRY;
+}
+
+/**
+ * Test KeyUpdate before handshake (should return 0)
+ */
+TEST (key_update_before_handshake)
+{
+  Socket_T sock = NULL;
+  SocketTLSContext_T ctx = NULL;
+
+  TRY
+  {
+    sock = Socket_new (AF_INET, SOCK_STREAM, 0);
+    ASSERT_NOT_NULL (sock);
+
+    ctx = SocketTLSContext_new_client (NULL);
+    ASSERT_NOT_NULL (ctx);
+
+    SocketTLS_enable (sock, ctx);
+
+    /* KeyUpdate should return 0 since handshake not done */
+    int ret = SocketTLS_request_key_update (sock, 1);
+    ASSERT_EQ (0, ret);
+
+    /* Count should still be 0 */
+    ASSERT_EQ (0, SocketTLS_get_key_update_count (sock));
+
+    printf ("    KeyUpdate before handshake test passed\n");
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    printf ("    [SKIP] TLS context creation failed\n");
+  }
+  FINALLY
+  {
+    if (sock)
+      {
+        SocketTLS_disable (sock);
+        Socket_free (&sock);
+      }
+    if (ctx)
+      SocketTLSContext_free (&ctx);
   }
   END_TRY;
 }

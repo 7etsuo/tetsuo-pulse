@@ -2255,6 +2255,96 @@ extern int SocketTLS_read_early_data (Socket_T socket, void *buf, size_t len,
 extern SocketTLS_EarlyDataStatus SocketTLS_get_early_data_status (Socket_T socket);
 
 /* ============================================================================
+ * TLS 1.3 KeyUpdate Support
+ * ============================================================================
+ *
+ * TLS 1.3 replaces renegotiation with KeyUpdate, a lightweight mechanism to
+ * rotate encryption keys without a full handshake. This provides forward
+ * secrecy for long-lived connections.
+ *
+ * ## Use Cases
+ *
+ * - Long-lived database connections
+ * - VPN tunnels
+ * - Persistent WebSocket connections
+ * - Any connection open for hours/days
+ *
+ * ## Comparison to Renegotiation
+ *
+ * | Aspect | KeyUpdate (TLS 1.3) | Renegotiation (TLS 1.2) |
+ * |--------|---------------------|-------------------------|
+ * | Overhead | Very light | Full handshake |
+ * | Cert change | No | Yes |
+ * | Cipher change | No | Yes |
+ * | Security | Forward secrecy | Vulnerable to attacks |
+ *
+ * ## Recommended Usage
+ *
+ * For connections lasting hours or processing large data volumes, call
+ * SocketTLS_request_key_update() periodically (e.g., every hour or every
+ * 1GB of data transferred) to maintain forward secrecy.
+ */
+
+/**
+ * @brief Request TLS 1.3 key rotation
+ * @ingroup security
+ * @param[in] socket Socket with completed TLS 1.3 handshake
+ * @param[in] request_peer_update If 1, request peer to also update their keys
+ *
+ * Initiates a TLS 1.3 KeyUpdate to rotate encryption keys. This provides
+ * forward secrecy for long-lived connections by generating new keys
+ * derived from the current traffic secrets.
+ *
+ * The update is queued and executes on the next I/O operation. For
+ * immediate effect, perform a send or recv after calling this function.
+ *
+ * @return 1 on success (KeyUpdate queued),
+ *         0 if not applicable (not TLS 1.3, or handshake not done),
+ *         -1 on error
+ *
+ * @throws SocketTLS_Failed on OpenSSL error
+ * @threadsafe No - modifies SSL state
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Rotate keys every hour on long-lived connection
+ * if (time(NULL) - last_key_update > 3600) {
+ *     int ret = SocketTLS_request_key_update(sock, 1);
+ *     if (ret == 1) {
+ *         printf("KeyUpdate #%d queued\n",
+ *                SocketTLS_get_key_update_count(sock));
+ *         last_key_update = time(NULL);
+ *     }
+ * }
+ * @endcode
+ *
+ * @note Only available for TLS 1.3 connections
+ * @note KeyUpdate cannot change certificates or cipher suites
+ *
+ * @see SocketTLS_get_key_update_count() for monitoring
+ * @see SocketTLS_check_renegotiation() for TLS 1.2 key changes
+ */
+extern int SocketTLS_request_key_update (Socket_T socket, int request_peer_update);
+
+/**
+ * @brief Get number of KeyUpdate operations performed
+ * @ingroup security
+ * @param[in] socket Socket with TLS enabled
+ *
+ * Returns the count of successful KeyUpdate operations on this connection.
+ * Useful for monitoring key rotation frequency on long-lived connections.
+ *
+ * @return Number of KeyUpdates performed, or 0 if TLS not enabled
+ *
+ * @throws None
+ * @threadsafe Yes - reads counter
+ *
+ * @see SocketTLS_request_key_update() to initiate key rotation
+ */
+extern int SocketTLS_get_key_update_count (Socket_T socket);
+
+/* ============================================================================
  * Session Cache Optimization
  * ============================================================================
  */
