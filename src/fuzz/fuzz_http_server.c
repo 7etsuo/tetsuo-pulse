@@ -308,11 +308,11 @@ test_websocket_upgrade (Arena_T arena, const uint8_t *data, size_t size)
   memcpy (fuzzed_key, data, key_len);
   fuzzed_key[key_len] = '\0';
 
-  /* Make it printable for base64-like key */
+  /* Make it printable for base64-like key - cast to unsigned to prevent negative result */
   for (size_t i = 0; i < key_len; i++)
     {
       if (fuzzed_key[i] < 32 || fuzzed_key[i] > 126)
-        fuzzed_key[i] = 'A' + (fuzzed_key[i] % 26);
+        fuzzed_key[i] = 'A' + ((unsigned char)fuzzed_key[i] % 26);
     }
 
   int len = snprintf (request_buf, sizeof (request_buf),
@@ -378,10 +378,10 @@ test_h2c_upgrade (Arena_T arena, const uint8_t *data, size_t size)
   memcpy (fuzzed_settings, data, settings_len);
   fuzzed_settings[settings_len] = '\0';
 
-  /* Make it base64-like */
+  /* Make it base64-like - cast to unsigned to prevent negative index */
   for (size_t i = 0; i < settings_len; i++)
     {
-      fuzzed_settings[i] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"[fuzzed_settings[i] % 64];
+      fuzzed_settings[i] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"[(unsigned char)fuzzed_settings[i] % 64];
     }
 
   int len = snprintf (request_buf, sizeof (request_buf),

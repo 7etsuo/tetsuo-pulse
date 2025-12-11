@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['uriparserstate_0',['URIParserState',['../group__http.html#ga18f37238f317f3d8c35e7b5540883ca6',1,'SocketHTTP-private.h']]]
+  ['tlshandshakestate_0',['TLSHandshakeState',['../group__security.html#gad092160c037d01929df1bb8d5b75b43c',1,'SocketTLS.h']]],
+  ['tlsverifymode_1',['TLSVerifyMode',['../group__security.html#gac32c3958835b92ff683ae15f78448694',1,'SocketTLS.h']]]
 ];

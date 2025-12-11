@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['requeststate_0',['RequestState',['../group__dns.html#gabbf149223655194c14baa78907cb2dab',1,'SocketDNS-private.h']]]
+  ['ocspmuststaplemode_0',['OCSPMustStapleMode',['../group__security.html#gab3f510c22ca4f217e6ff2baa9baef66c',1,'SocketTLSContext.h']]]
 ];

@@ -21,7 +21,7 @@
 <g id="clust1" class="cluster">
 <title>clusterdir_d44c64559bbebec7f509842c48db8b23</title>
 <g id="a_clust1"><a xlink:href="dir_d44c64559bbebec7f509842c48db8b23.html" target="_top" xlink:title="include">
-<polygon fill="#daf8ff" stroke="#404040" stroke-dasharray="5,2" points="8,-8 8,-117 124,-117 124,-8 8,-8"/>
+<polygon fill="#daedff" stroke="#404040" stroke-dasharray="5,2" points="8,-8 8,-117 124,-117 124,-8 8,-8"/>
 <text text-anchor="middle" x="66" y="-105" font-family="Helvetica,sans-Serif" font-size="10.00">include</text>
 </a>
 </g>
@@ -30,7 +30,7 @@
 <g id="node1" class="node">
 <title>dir_3d69f64eaf81436fe2b22361382717e5</title>
 <g id="a_node1"><a xlink:href="dir_3d69f64eaf81436fe2b22361382717e5.html" target="_top" xlink:title="core">
-<polygon fill="#acf1fe" stroke="#404040" points="51.5,-35 16.5,-35 16.5,-16 51.5,-16 51.5,-35"/>
+<polygon fill="#acd6fe" stroke="#404040" points="51.5,-35 16.5,-35 16.5,-16 51.5,-16 51.5,-35"/>
 <text text-anchor="middle" x="34" y="-23" font-family="Helvetica,sans-Serif" font-size="10.00">core</text>
 </a>
 </g>
@@ -39,7 +39,7 @@
 <g id="node2" class="node">
 <title>dir_472464c21f3697a4351aeeea96351180</title>
 <g id="a_node2"><a xlink:href="dir_472464c21f3697a4351aeeea96351180.html" target="_top" xlink:title="socket">
-<polygon fill="#acf1fe" stroke="#404040" points="116,-35 70,-35 70,-16 116,-16 116,-35"/>
+<polygon fill="#acd6fe" stroke="#404040" points="116,-35 70,-35 70,-16 116,-16 116,-35"/>
 <text text-anchor="middle" x="93" y="-23" font-family="Helvetica,sans-Serif" font-size="10.00">socket</text>
 </a>
 </g>
@@ -48,7 +48,7 @@
 <g id="node3" class="node">
 <title>dir_7dabddce885c25837fb5300c364e90af</title>
 <g id="a_node3"><a xlink:href="dir_7dabddce885c25837fb5300c364e90af.html" target="_top" xlink:title="tls">
-<polygon fill="#daf8ff" stroke="#404040" stroke-width="2" points="77.5,-90 48.5,-90 48.5,-71 77.5,-71 77.5,-90"/>
+<polygon fill="#daedff" stroke="#404040" stroke-width="2" points="77.5,-90 48.5,-90 48.5,-71 77.5,-71 77.5,-90"/>
 <text text-anchor="middle" x="63" y="-78" font-family="Helvetica,sans-Serif" font-size="10.00">tls</text>
 </a>
 </g>

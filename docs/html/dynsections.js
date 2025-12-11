@@ -123,8 +123,8 @@ function toggleInherit(id)
 
 var opened=true;
 // in case HTML_COLORSTYLE is LIGHT or DARK the vars will be replaced, so we write them out explicitly and use double quotes
-var plusImg  = [ "url('plusd.svg')",  "url('../../plusd.svg')" ];
-var minusImg = [ "url('minusd.svg')", "url('../../minusd.svg')" ];
+var plusImg  = [ "url('plus.svg')",  "url('../../plus.svg')" ];
+var minusImg = [ "url('minus.svg')", "url('../../minus.svg')" ];
 
 // toggle all folding blocks
 function codefold_toggle_all(relPath) {

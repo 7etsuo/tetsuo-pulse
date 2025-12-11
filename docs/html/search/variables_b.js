@@ -41,11 +41,12 @@ var searchData=
   ['localaddr_38',['localaddr',['../group__core__io.html#a73fdf506fac941d50b3be36d3d39c473',1,'SocketBase_T']]],
   ['localport_39',['localport',['../group__core__io.html#a13259affe210915e55bf525ecf16e27d',1,'SocketBase_T']]],
   ['lock_40',['lock',['../group__security.html#acf7678eaad52c77fb0db5ce024e073c2',1,'TLSContextPinning']]],
-  ['lost_41',['lost',['../group__core__io.html#a4ac7f0e4f542c893a338b803f1329d87',1,'SocketTCPInfo']]],
-  ['lp_42',['lp',['../unionalign.html#a29dae4b4cadb165fc2b69d8a997327d3',1,'align']]],
-  ['lru_5fevictions_43',['lru_evictions',['../group__security.html#a0e134430eac30ed54777c52221adec76',1,'SocketSYNProtect_Stats']]],
-  ['lru_5fhead_44',['lru_head',['../group__security.html#a49dca188d614c3e2a8ff64052b6149a9',1,'SocketSYNProtect_T']]],
-  ['lru_5fnext_45',['lru_next',['../group__security.html#aa0407a11365fa3ee52c7c6dfd4e1feab',1,'SocketSYN_IPEntry::lru_next'],['../group__dns.html#afd50b3f49a48cb75f1701e077dbb6ba5',1,'SocketDNS_CacheEntry::lru_next']]],
-  ['lru_5fprev_46',['lru_prev',['../group__security.html#a1c94cc50fd14ab524c775100f8ee3eea',1,'SocketSYN_IPEntry::lru_prev'],['../group__dns.html#a3fa811806204bac45715df62674e5058',1,'SocketDNS_CacheEntry::lru_prev']]],
-  ['lru_5ftail_47',['lru_tail',['../group__security.html#a3d9b707a9091714a9958862c904fb8db',1,'SocketSYNProtect_T']]]
+  ['lookup_5fcount_41',['lookup_count',['../tls__advanced_8c.html#a05866693048ea764aa90b1675bd73a52',1,'CertLookupContext']]],
+  ['lost_42',['lost',['../group__core__io.html#a4ac7f0e4f542c893a338b803f1329d87',1,'SocketTCPInfo']]],
+  ['lp_43',['lp',['../unionalign.html#a29dae4b4cadb165fc2b69d8a997327d3',1,'align']]],
+  ['lru_5fevictions_44',['lru_evictions',['../group__security.html#a0e134430eac30ed54777c52221adec76',1,'SocketSYNProtect_Stats']]],
+  ['lru_5fhead_45',['lru_head',['../group__security.html#a49dca188d614c3e2a8ff64052b6149a9',1,'SocketSYNProtect_T']]],
+  ['lru_5fnext_46',['lru_next',['../group__security.html#aa0407a11365fa3ee52c7c6dfd4e1feab',1,'SocketSYN_IPEntry::lru_next'],['../group__dns.html#afd50b3f49a48cb75f1701e077dbb6ba5',1,'SocketDNS_CacheEntry::lru_next']]],
+  ['lru_5fprev_47',['lru_prev',['../group__security.html#a1c94cc50fd14ab524c775100f8ee3eea',1,'SocketSYN_IPEntry::lru_prev'],['../group__dns.html#a3fa811806204bac45715df62674e5058',1,'SocketDNS_CacheEntry::lru_prev']]],
+  ['lru_5ftail_48',['lru_tail',['../group__security.html#a3d9b707a9091714a9958862c904fb8db',1,'SocketSYNProtect_T']]]
 ];

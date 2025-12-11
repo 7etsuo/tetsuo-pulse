@@ -3,6 +3,7 @@ var annotated_dup =
     [ "align", "unionalign.html", "unionalign" ],
     [ "AsyncConnectContext_T", "group__connection__mgmt.html#structAsyncConnectContext", "group__connection__mgmt_structAsyncConnectContext" ],
     [ "AsyncRequest", "structAsyncRequest.html", "structAsyncRequest" ],
+    [ "CertLookupContext", "tls__advanced_8c.html#structCertLookupContext", "tls__advanced_8c_structCertLookupContext" ],
     [ "Connection_T", "group__connection__mgmt.html#structConnection", "group__connection__mgmt_structConnection" ],
     [ "CookieEntry", "group__http.html#structCookieEntry", "group__http_structCookieEntry" ],
     [ "DTLSContextALPN", "group__security.html#structDTLSContextALPN", "group__security_structDTLSContextALPN" ],

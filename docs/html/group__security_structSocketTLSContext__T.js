@@ -19,6 +19,7 @@ var group__security_structSocketTLSContext__T =
     [ "ocsp_gen_arg", "group__security.html#ad00eb732fc9e503af47d836a3a4e6b17", null ],
     [ "ocsp_gen_cb", "group__security.html#a8d222e0141ba4b99c2c2e28c91d3dbf6", null ],
     [ "ocsp_len", "group__security.html#ab9ec849aa0736e2f79850fad56a2d2ec", null ],
+    [ "ocsp_must_staple_mode", "group__security.html#af888c32198eba356032fe2040277e5f3", null ],
     [ "ocsp_response", "group__security.html#a630aee611e49676a8d0b298c6826c59d", null ],
     [ "ocsp_stapling_enabled", "group__security.html#ac5716fd96d7766922f004cdcaa9e79a8", null ],
     [ "pinning", "group__security.html#af5dd311b657be470be563a68d04a2e38", null ],

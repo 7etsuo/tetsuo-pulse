@@ -1,11 +1,29 @@
-# Socket Library {#mainpage}
+# {#mainpage}
 
-A modern C library for building high-performance networked applications. Production-ready with comprehensive support for TCP, UDP, Unix domain sockets, and TLS 1.3 security.
+@htmlonly
+<script>
+// Hide the redundant title on main page - banner has the branding
+document.addEventListener('DOMContentLoaded', function() {
+    var title = document.querySelector('.headertitle');
+    if (title) title.style.display = 'none';
+});
+</script>
+<div style="text-align: center; margin: 0;">
+<img src="banner.png" alt="Tetsuo Pulse - High-Performance C Network Library" 
+     style="max-width: 100%; height: auto; display: block; margin: 0 auto;
+            -webkit-mask-image: linear-gradient(to right, transparent 0%, black 2%, black 98%, transparent 100%),
+                                linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%);
+            -webkit-mask-composite: source-in;
+            mask-image: linear-gradient(to right, transparent 0%, black 2%, black 98%, transparent 100%),
+                        linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%);
+            mask-composite: intersect;">
+</div>
+<p style="text-align: center; font-size: 1.15em; color: var(--page-foreground-color); margin: 1em 0 1.5em 0; max-width: 800px; margin-left: auto; margin-right: auto;">
+A modern C library for building production-ready networked applications with comprehensive support for TCP, UDP, Unix domain sockets, and TLS 1.3 security.
+</p>
+@endhtmlonly
 
-**Version:** 1.0.0
-**Last Updated:** December 9, 2025
-
----
+@note **Version 1.0.0** | C11 | POSIX | MIT License
 
 ## Features
 
@@ -29,8 +47,6 @@ A modern C library for building high-performance networked applications. Product
 - **Arena Allocation** — Memory-safe with automatic cleanup
 - **Advanced Metrics** — Comprehensive observability with Prometheus/StatsD export
 
----
-
 ## Quick Start
 
 ```bash
@@ -38,8 +54,6 @@ cmake -S . -B build
 cmake --build build -j
 ctest --test-dir build
 ```
-
----
 
 ## Examples
 
@@ -87,8 +101,6 @@ int main(void)
 }
 ```
 
----
-
 ### TCP Client
 
 Connect to a server, send data, and receive a response.
@@ -130,7 +142,6 @@ int main(void)
 }
 ```
 
----
 
 ### Event-Driven Server (Non-Blocking)
 
@@ -195,7 +206,6 @@ int main(void)
 }
 ```
 
----
 
 ### UDP Echo Server
 
@@ -236,7 +246,6 @@ int main(void)
 }
 ```
 
----
 
 ### UDP Client
 
@@ -277,7 +286,6 @@ int main(void)
 }
 ```
 
----
 
 ### TLS Client (Secure Connection)
 
@@ -345,7 +353,6 @@ int main(void)
 }
 ```
 
----
 
 ### Unix Domain Socket Server
 
@@ -397,7 +404,6 @@ int main(void)
 }
 ```
 
----
 
 ### Happy Eyeballs (Fast Dual-Stack)
 
@@ -440,7 +446,6 @@ int main(void)
 }
 ```
 
----
 
 ### Auto-Reconnecting Client
 
@@ -508,7 +513,6 @@ int main(void)
 }
 ```
 
----
 
 ### Connection Pool with Buffers
 
@@ -579,7 +583,6 @@ int main(void)
 }
 ```
 
----
 
 ### Async DNS Resolution
 
@@ -630,7 +633,6 @@ int main(void)
 }
 ```
 
----
 
 ### Zero-Copy File Transfer
 
@@ -683,7 +685,6 @@ int main(int argc, char *argv[])
 }
 ```
 
----
 
 ### Scatter/Gather I/O
 
@@ -732,7 +733,6 @@ int main(void)
 }
 ```
 
----
 
 ### Advanced TCP Options
 
@@ -781,7 +781,6 @@ int main(void)
 }
 ```
 
----
 
 ## Header Files
 
@@ -799,7 +798,6 @@ int main(void)
 | [Arena.h](Arena_8h.html) | Memory management |
 | [Except.h](Except_8h.html) | Exception handling |
 
----
 
 ## Error Handling
 
@@ -830,7 +828,6 @@ END_TRY;
 | `SocketTLS_HandshakeFailed` | TLS handshake failure |
 | `SocketTLS_VerifyFailed` | Certificate verification failed |
 
----
 
 ## Platform Support
 
@@ -842,7 +839,6 @@ END_TRY;
 
 **Requirements:** POSIX-compliant system, C11 compiler, pthread support.
 
----
 
 ## Documentation
 

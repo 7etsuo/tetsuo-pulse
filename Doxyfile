@@ -9,10 +9,10 @@
 # Project Metadata
 #---------------------------------------------------------------------------
 
-PROJECT_NAME           = "Socket Library"
+PROJECT_NAME           = "Tetsuo Pulse"
 PROJECT_NUMBER         = "1.0.0"
-PROJECT_BRIEF          = "High-performance, exception-driven socket toolkit for POSIX systems"
-PROJECT_LOGO           = 
+PROJECT_BRIEF          = "High-performance networking from Tetsuo"
+PROJECT_LOGO           = docs/logo.png
 OUTPUT_DIRECTORY       = docs
 CREATE_SUBDIRS         = NO
 OUTPUT_LANGUAGE        = English
@@ -211,27 +211,30 @@ IGNORE_PREFIX          = Socket_ \
                          Connection_
 
 #---------------------------------------------------------------------------
-# HTML Output - Modern, Stunning Design
+# HTML Output - Doxygen Awesome Theme
 #---------------------------------------------------------------------------
 
 GENERATE_HTML          = YES
 HTML_OUTPUT            = html
 HTML_FILE_EXTENSION    = .html
 
-# Custom header and footer for branding
-HTML_HEADER            = docs/header.html
+# Use Doxygen Awesome theme (no custom header/footer needed)
+HTML_HEADER            =
 HTML_FOOTER            = docs/footer.html
+HTML_STYLESHEET        =
 
-# Custom stylesheet
-HTML_STYLESHEET        = 
-HTML_EXTRA_STYLESHEET  = docs/socket-theme.css
+# Doxygen Awesome with sidebar-only layout and dark mode toggle
+HTML_EXTRA_STYLESHEET  = docs/doxygen-awesome.css \
+                         docs/doxygen-awesome-sidebar-only.css \
+                         docs/doxygen-awesome-sidebar-only-darkmode-toggle.css \
+                         docs/socket-brand.css
 
-# Extra files to include
-HTML_EXTRA_FILES       = docs/socket-theme.css
+# Extra files - banner image for main page
+HTML_EXTRA_FILES       = docs/banner.png
 
-# Color scheme (fallback if CSS doesn't load)
-HTML_COLORSTYLE        = DARK
-HTML_COLORSTYLE_HUE    = 190
+# Color scheme - LIGHT required for Doxygen Awesome (it handles dark mode itself)
+HTML_COLORSTYLE        = LIGHT
+HTML_COLORSTYLE_HUE    = 209
 HTML_COLORSTYLE_SAT    = 255
 HTML_COLORSTYLE_GAMMA  = 113
 HTML_DYNAMIC_MENUS     = YES
@@ -240,11 +243,11 @@ HTML_DYNAMIC_SECTIONS  = YES
 # Index settings
 HTML_INDEX_NUM_ENTRIES = 100
 
-# Tree view navigation
+# Tree view navigation - required for sidebar-only layout
 GENERATE_TREEVIEW      = YES
 DISABLE_INDEX          = NO
-FULL_SIDEBAR           = YES
-TREEVIEW_WIDTH         = 320
+FULL_SIDEBAR           = NO
+TREEVIEW_WIDTH         = 335
 
 # Enhanced features
 ENUM_VALUES_PER_LINE   = 1

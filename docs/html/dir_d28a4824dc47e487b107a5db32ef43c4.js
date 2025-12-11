@@ -10,6 +10,7 @@ var dir_d28a4824dc47e487b107a5db32ef43c4 =
     [ "proxy_connect.c", "proxy__connect_8c.html", "proxy__connect_8c" ],
     [ "tcp_echo_client.c", "tcp__echo__client_8c.html", "tcp__echo__client_8c" ],
     [ "tcp_echo_server.c", "tcp__echo__server_8c.html", "tcp__echo__server_8c" ],
+    [ "tls_advanced.c", "tls__advanced_8c.html", "tls__advanced_8c" ],
     [ "tls_client.c", "tls__client_8c.html", "tls__client_8c" ],
     [ "udp_echo_client.c", "udp__echo__client_8c.html", "udp__echo__client_8c" ],
     [ "udp_echo_server.c", "udp__echo__server_8c.html", "udp__echo__server_8c" ],

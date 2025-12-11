@@ -744,10 +744,15 @@ test_full_session (Arena_T arena, const uint8_t *data, size_t size)
 
         case 3: /* DATA (small) */
           {
+            /* Limit data_len to available bytes after offset 3 */
+            size_t max_data = (size > 3) ? (size - 3) : 0;
             size_t data_len = (size > 20) ? (data[2] % 100) : 10;
-            offset += build_data_frame (session_buf + offset,
-                                        sizeof (session_buf) - offset, stream_id,
-                                        data + 3, data_len, 0);
+            if (data_len > max_data)
+              data_len = max_data;
+            if (data_len > 0)
+              offset += build_data_frame (session_buf + offset,
+                                          sizeof (session_buf) - offset, stream_id,
+                                          data + 3, data_len, 0);
           }
           break;
 

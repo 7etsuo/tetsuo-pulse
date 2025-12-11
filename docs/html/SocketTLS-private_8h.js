@@ -17,6 +17,7 @@ var SocketTLS_private_8h =
     [ "ctx_arena_alloc", "group__security.html#ga9acf6c44e3887d6570aa5a3750a2b802", null ],
     [ "ctx_arena_strdup", "group__security.html#gac1dcd2082d3c29e557a920685766c44c", null ],
     [ "ctx_raise_openssl_error", "group__security.html#ga88ff84e8a0b38713099d838de6404163", null ],
+    [ "ktls_on_handshake_complete", "group__security.html#gafb3181e1a8ecdb210fb63cff61f6664d", null ],
     [ "tls_cleanup_alpn_temp", "group__security.html#ga5521981e692a3cdd4176000e2282398f", null ],
     [ "tls_context_get_from_ssl", "group__security.html#gaafa8d212678f77cf8c99a4e4914b6d97", null ],
     [ "tls_context_get_from_ssl_ctx", "group__security.html#gacc208c7e1bc1f93a93e8db60903527fa", null ],

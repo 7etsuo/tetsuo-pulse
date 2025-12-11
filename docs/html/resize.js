@@ -48,7 +48,7 @@ function initResizable()
         }
       }
     }
-    return 320;
+    return 335;
   }
 
   function writeSetting(cookie, val)
@@ -115,7 +115,7 @@ function initResizable()
     }
     else {
       var width = readSetting('width');
-      newWidth = (width>320 && width<$(window).width()) ? width : 320;
+      newWidth = (width>335 && width<$(window).width()) ? width : 335;
     }
     restoreWidth(newWidth);
     var sidenavWidth = $(sidenav).outerWidth();

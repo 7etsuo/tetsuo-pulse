@@ -1,5 +1,6 @@
 var SocketTLSConfig_8h =
 [
+    [ "SOCKET_HAS_CT_SUPPORT", "group__tls__config.html#ga0d9e41c3465b67deb752ec4774fc694c", null ],
     [ "SOCKET_TLS13_CIPHERSUITES", "group__tls__config.html#ga8c3a6a178964eee6129e588f6f18861b", null ],
     [ "SOCKET_TLS_BUFFER_SIZE", "group__tls__config.html#ga21c94d7068bbee12788fb1af5b90a393", null ],
     [ "SOCKET_TLS_CRL_MAX_PATH_LEN", "group__tls__config.html#ga362c108e58b5204fa5141920db407ed0", null ],
@@ -8,6 +9,11 @@ var SocketTLSConfig_8h =
     [ "SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS", "group__tls__config.html#ga261f36b20bf9986a7f09fa9ed31b793e", null ],
     [ "SOCKET_TLS_DEFAULT_SHUTDOWN_TIMEOUT_MS", "group__tls__config.html#gab30f8121a683dd31fff11c10934b1137", null ],
     [ "SOCKET_TLS_ERROR_BUFSIZE", "group__tls__config.html#gaa6df1c1fb5a0bcfe9a77b4dbb037c77f", null ],
+    [ "SOCKET_TLS_KTLS_ENABLED", "group__tls__config.html#ga1959fbf963b7ebfb8abd3483f06e5a51", null ],
+    [ "SOCKET_TLS_KTLS_MIN_KERNEL_CHACHA", "group__tls__config.html#gaa9d22df0c8a7690fd1788edd44f52a0c", null ],
+    [ "SOCKET_TLS_KTLS_MIN_KERNEL_RX", "group__tls__config.html#ga0e3b8608e00eea3f57be798a6ea9a1d1", null ],
+    [ "SOCKET_TLS_KTLS_MIN_KERNEL_TX", "group__tls__config.html#ga3d61cc9177e6a7c2d5be52616df711df", null ],
+    [ "SOCKET_TLS_KTLS_SENDFILE_BUFSIZE", "group__tls__config.html#gad57b854b385bc10b89b47db5cdec495f", null ],
     [ "SOCKET_TLS_MAX_ALPN_LEN", "group__tls__config.html#gaccea5587344f8cc4d28f5d862dc2fa96", null ],
     [ "SOCKET_TLS_MAX_ALPN_PROTOCOLS", "group__tls__config.html#ga31c8aa5bed2b0db51e53847e6b6bc22c", null ],
     [ "SOCKET_TLS_MAX_ALPN_TOTAL_BYTES", "group__tls__config.html#gaa52cffca1d260f855e90946554827278", null ],

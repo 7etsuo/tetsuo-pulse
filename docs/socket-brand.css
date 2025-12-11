@@ -1,0 +1,36 @@
+/**
+ * Pulse Brand Styling
+ * Overlay for Doxygen Awesome theme
+ */
+
+/* Primary brand color + fix header height for larger logo */
+html {
+    --primary-color: #3b82f6;
+    --primary-dark-color: #2563eb;
+    --primary-light-color: #60a5fa;
+    --top-height: 180px;  /* Increased to fit larger logo */
+}
+
+/* Make logo larger - override Doxygen Awesome default */
+#projectlogo img {
+    max-height: 100px;
+    height: 100px;
+    width: auto;
+}
+
+
+/* Dark mode adjustments */
+html.dark-mode {
+    --primary-color: #60a5fa;
+    --primary-dark-color: #3b82f6;
+    --primary-light-color: #93c5fd;
+}
+
+@media (prefers-color-scheme: dark) {
+    html:not(.light-mode) {
+        --primary-color: #60a5fa;
+        --primary-dark-color: #3b82f6;
+        --primary-light-color: #93c5fd;
+    }
+}
+

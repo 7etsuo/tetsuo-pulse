@@ -23,6 +23,13 @@ var group__reconnect__private =
       [ "socket", "group__reconnect__private.html#a8a5a023250774eb20e665286b9f1126c", null ],
       [ "state", "group__reconnect__private.html#a2ce9284086f2282054019a446b65f720", null ],
       [ "state_start_time_ms", "group__reconnect__private.html#a0f4e3c63a4b32a25fa04cd59ff2cb119", null ],
+      [ "tls_ctx", "group__reconnect__private.html#afdf5d8464a39d02623eed54d9821b578", null ],
+      [ "tls_handshake_started", "group__reconnect__private.html#a0d667711eccfa1277ec0cd5ca14640ee", null ],
+      [ "tls_handshake_state", "group__reconnect__private.html#a38f1bb1afc303abdcad29e94d6ef83b1", null ],
+      [ "tls_hostname", "group__reconnect__private.html#a9e63c900de003b9cca6b0c28fe4b5dae", null ],
+      [ "tls_session_data", "group__reconnect__private.html#aa1075cf1fbbf80ab405cf7248653da2a", null ],
+      [ "tls_session_data_len", "group__reconnect__private.html#a31fa9400b92fb9dfd48dc39c0dc5dd56", null ],
+      [ "tls_session_resumption_enabled", "group__reconnect__private.html#aa234319d18939dae9f2e0d14560c76ea", null ],
       [ "total_attempts", "group__reconnect__private.html#a93f6f4ab97532b4b9db422a1f19b882d", null ],
       [ "total_successes", "group__reconnect__private.html#acde4740d8c3de915c4185a0dcd967f35", null ],
       [ "userdata", "group__reconnect__private.html#a31140778b660ef58bf93500821501979", null ]
