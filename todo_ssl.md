@@ -1418,7 +1418,7 @@ All DTLS configuration constants verified and documented with comprehensive fuzz
 ### 12.5 Additional Security Features — *depends on 2.5, 2.6, 2.14 complete*
 **Difficulty: 7/9** _(DANE, CAA, CT log submission)_
 
-- [ ] Consider adding certificate revocation via OCSP Must-Staple
+- [x] Consider adding certificate revocation via OCSP Must-Staple (COMPLETED: Implemented OCSPMustStapleMode enum with DISABLED/AUTO/ALWAYS modes, SocketTLSContext_set_ocsp_must_staple(), SocketTLSContext_get_ocsp_must_staple(), SocketTLSContext_cert_has_must_staple() for RFC 7633 compliance)
 - [ ] Consider adding CAA (Certificate Authority Authorization) checking
 - [ ] Consider adding DANE (DNS-Based Authentication) support
 - [ ] Consider adding CT log submission for server-issued certificates

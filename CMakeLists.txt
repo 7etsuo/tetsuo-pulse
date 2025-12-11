@@ -572,6 +572,7 @@ if(SOCKET_HAS_TLS)
     list(APPEND TEST_SOURCES
         test_tls_ct
         test_tls_integration
+        test_tls_ocsp
         test_tls_phase4
         test_tls_pinning
         test_tls_performance

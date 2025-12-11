@@ -682,6 +682,10 @@ struct T
 
   /* OCSP Stapling Client Mode */
   int ocsp_stapling_enabled; /**< 1 if client requests OCSP stapling */
+  int ocsp_must_staple_mode; /**< OCSP Must-Staple enforcement:
+                                  0 = disabled (default)
+                                  1 = auto-detect from certificate extension
+                                  2 = always require OCSP stapling */
 
   /* Custom Certificate Store Lookup */
   void *cert_lookup_callback;  /**< SocketTLSCertLookupCallback (cast) */

@@ -307,6 +307,159 @@ TEST (ocsp_gen_callback_null_clears)
   END_TRY;
 }
 
+/* ==================== OCSP Must-Staple Tests (RFC 7633) ==================== */
+
+TEST (ocsp_must_staple_disabled_by_default)
+{
+  SocketTLSContext_T ctx = NULL;
+
+  TRY
+  {
+    ctx = SocketTLSContext_new_client (NULL);
+    ASSERT_NOT_NULL (ctx);
+
+    /* Must-staple should be disabled by default */
+    OCSPMustStapleMode mode = SocketTLSContext_get_ocsp_must_staple (ctx);
+    ASSERT_EQ (mode, OCSP_MUST_STAPLE_DISABLED);
+  }
+  FINALLY
+  {
+    if (ctx)
+      SocketTLSContext_free (&ctx);
+  }
+  END_TRY;
+}
+
+TEST (ocsp_must_staple_set_auto)
+{
+  SocketTLSContext_T ctx = NULL;
+
+  TRY
+  {
+    ctx = SocketTLSContext_new_client (NULL);
+    ASSERT_NOT_NULL (ctx);
+
+    /* Set to auto-detect mode */
+    SocketTLSContext_set_ocsp_must_staple (ctx, OCSP_MUST_STAPLE_AUTO);
+
+    /* Verify setting */
+    OCSPMustStapleMode mode = SocketTLSContext_get_ocsp_must_staple (ctx);
+    ASSERT_EQ (mode, OCSP_MUST_STAPLE_AUTO);
+
+    /* OCSP stapling should be auto-enabled */
+    ASSERT_EQ (SocketTLSContext_ocsp_stapling_enabled (ctx), 1);
+  }
+  FINALLY
+  {
+    if (ctx)
+      SocketTLSContext_free (&ctx);
+  }
+  END_TRY;
+}
+
+TEST (ocsp_must_staple_set_always)
+{
+  SocketTLSContext_T ctx = NULL;
+
+  TRY
+  {
+    ctx = SocketTLSContext_new_client (NULL);
+    ASSERT_NOT_NULL (ctx);
+
+    /* Set to always-require mode */
+    SocketTLSContext_set_ocsp_must_staple (ctx, OCSP_MUST_STAPLE_ALWAYS);
+
+    /* Verify setting */
+    OCSPMustStapleMode mode = SocketTLSContext_get_ocsp_must_staple (ctx);
+    ASSERT_EQ (mode, OCSP_MUST_STAPLE_ALWAYS);
+
+    /* OCSP stapling should be auto-enabled */
+    ASSERT_EQ (SocketTLSContext_ocsp_stapling_enabled (ctx), 1);
+  }
+  FINALLY
+  {
+    if (ctx)
+      SocketTLSContext_free (&ctx);
+  }
+  END_TRY;
+}
+
+TEST (ocsp_must_staple_server_rejects)
+{
+  const char *cert_file = "test_must_staple.crt";
+  const char *key_file = "test_must_staple.key";
+  SocketTLSContext_T ctx = NULL;
+  volatile int exception_raised = 0;
+
+  if (generate_test_certs (cert_file, key_file) != 0)
+    return;
+
+  TRY
+  {
+    ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+    ASSERT_NOT_NULL (ctx);
+
+    /* Must-staple is client-only; server should reject */
+    SocketTLSContext_set_ocsp_must_staple (ctx, OCSP_MUST_STAPLE_AUTO);
+    ASSERT (0); /* Should not reach here */
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    exception_raised = 1;
+  }
+  FINALLY
+  {
+    if (ctx)
+      SocketTLSContext_free (&ctx);
+    remove_test_certs (cert_file, key_file);
+  }
+  END_TRY;
+
+  ASSERT_EQ (exception_raised, 1);
+}
+
+TEST (ocsp_must_staple_detect_null_cert)
+{
+  /* Should handle NULL gracefully, returning 0 */
+  int result = SocketTLSContext_cert_has_must_staple (NULL);
+  ASSERT_EQ (result, 0);
+}
+
+TEST (ocsp_must_staple_mode_transitions)
+{
+  SocketTLSContext_T ctx = NULL;
+
+  TRY
+  {
+    ctx = SocketTLSContext_new_client (NULL);
+    ASSERT_NOT_NULL (ctx);
+
+    /* Test transitioning between modes */
+    SocketTLSContext_set_ocsp_must_staple (ctx, OCSP_MUST_STAPLE_DISABLED);
+    ASSERT_EQ (SocketTLSContext_get_ocsp_must_staple (ctx),
+               OCSP_MUST_STAPLE_DISABLED);
+
+    SocketTLSContext_set_ocsp_must_staple (ctx, OCSP_MUST_STAPLE_AUTO);
+    ASSERT_EQ (SocketTLSContext_get_ocsp_must_staple (ctx),
+               OCSP_MUST_STAPLE_AUTO);
+
+    SocketTLSContext_set_ocsp_must_staple (ctx, OCSP_MUST_STAPLE_ALWAYS);
+    ASSERT_EQ (SocketTLSContext_get_ocsp_must_staple (ctx),
+               OCSP_MUST_STAPLE_ALWAYS);
+
+    /* Transition back to disabled */
+    SocketTLSContext_set_ocsp_must_staple (ctx, OCSP_MUST_STAPLE_DISABLED);
+    ASSERT_EQ (SocketTLSContext_get_ocsp_must_staple (ctx),
+               OCSP_MUST_STAPLE_DISABLED);
+  }
+  FINALLY
+  {
+    if (ctx)
+      SocketTLSContext_free (&ctx);
+  }
+  END_TRY;
+}
+
 /* ==================== Edge Cases ==================== */
 
 TEST (ocsp_response_empty)
@@ -341,6 +494,7 @@ TEST (ocsp_large_response)
   const char *cert_file = "test_ocsp_large.crt";
   const char *key_file = "test_ocsp_large.key";
   SocketTLSContext_T ctx = NULL;
+  unsigned char *large_response = NULL;
 
   if (generate_test_certs (cert_file, key_file) != 0)
     return;
@@ -352,16 +506,16 @@ TEST (ocsp_large_response)
 
     /* Large response within limits */
     size_t response_size = 32 * 1024; /* 32KB */
-    unsigned char *large_response = malloc (response_size);
+    large_response = malloc (response_size);
     ASSERT_NOT_NULL (large_response);
 
     memset (large_response, 0x42, response_size);
     SocketTLSContext_set_ocsp_response (ctx, large_response, response_size);
-
-    free (large_response);
   }
   FINALLY
   {
+    if (large_response)
+      free (large_response);
     if (ctx)
       SocketTLSContext_free (&ctx);
     remove_test_certs (cert_file, key_file);

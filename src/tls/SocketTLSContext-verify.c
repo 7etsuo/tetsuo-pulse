@@ -85,7 +85,8 @@ verify_mode_to_openssl (TLSVerifyMode mode)
 static int
 needs_internal_callback (T ctx)
 {
-  return ctx->verify_callback != NULL || ctx->pinning.count > 0;
+  return ctx->verify_callback != NULL || ctx->pinning.count > 0
+         || ctx->ocsp_must_staple_mode != OCSP_MUST_STAPLE_DISABLED;
 }
 
 /**
@@ -327,6 +328,98 @@ get_verify_context (X509_STORE_CTX *x509_ctx, Socket_T *out_sock, T *out_ctx)
   return *out_ctx != NULL;
 }
 
+/* ============================================================================
+ * OCSP Must-Staple Verification Helpers
+ * ============================================================================
+ */
+
+/**
+ * check_ocsp_must_staple - Verify OCSP stapling requirements
+ * @ctx: TLS context with must-staple config
+ * @sock: Socket being verified
+ * @cert: Peer certificate (depth 0)
+ *
+ * Checks if OCSP Must-Staple requirements are satisfied:
+ * - If mode is DISABLED, always returns 1 (pass)
+ * - If mode is AUTO, checks cert for must-staple extension
+ * - If mode is ALWAYS or cert has must-staple, requires valid OCSP response
+ *
+ * Returns: 1 if requirements satisfied, 0 if failed
+ */
+static int
+check_ocsp_must_staple (T ctx, Socket_T sock, X509 *cert)
+{
+  int must_require_ocsp = 0;
+  SSL *ssl;
+  const unsigned char *ocsp_resp = NULL;
+  long ocsp_len;
+
+  /* Check if must-staple enforcement is enabled */
+  if (ctx->ocsp_must_staple_mode == OCSP_MUST_STAPLE_DISABLED)
+    return 1; /* Disabled - pass */
+
+  if (ctx->ocsp_must_staple_mode == OCSP_MUST_STAPLE_ALWAYS)
+    {
+      must_require_ocsp = 1;
+    }
+  else if (ctx->ocsp_must_staple_mode == OCSP_MUST_STAPLE_AUTO)
+    {
+      /* Check if certificate has must-staple extension */
+      must_require_ocsp = SocketTLSContext_cert_has_must_staple (cert);
+    }
+
+  if (!must_require_ocsp)
+    return 1; /* No OCSP requirement - pass */
+
+  /* OCSP stapling is required - check for valid response */
+  ssl = (SSL *)sock->tls_ssl;
+  if (!ssl)
+    {
+      SOCKET_LOG_ERROR_MSG ("OCSP Must-Staple: SSL object not available");
+      return 0;
+    }
+
+  ocsp_len = SSL_get_tlsext_status_ocsp_resp (ssl, &ocsp_resp);
+
+  if (ocsp_len <= 0 || !ocsp_resp)
+    {
+      SOCKET_LOG_ERROR_MSG (
+          "OCSP Must-Staple: Certificate requires OCSP stapling but no "
+          "response was provided by the server");
+      return 0; /* No OCSP response - fail */
+    }
+
+  /* Validate the OCSP response
+   * Note: Full validation (signature, freshness) is done by
+   * SocketTLS_get_ocsp_response_status() post-handshake.
+   * Here we do basic format validation. */
+  {
+    const unsigned char *p = ocsp_resp;
+    OCSP_RESPONSE *resp = d2i_OCSP_RESPONSE (NULL, &p, ocsp_len);
+
+    if (!resp)
+      {
+        SOCKET_LOG_ERROR_MSG (
+            "OCSP Must-Staple: Invalid OCSP response format");
+        return 0;
+      }
+
+    int status = OCSP_response_status (resp);
+    OCSP_RESPONSE_free (resp);
+
+    if (status != OCSP_RESPONSE_STATUS_SUCCESSFUL)
+      {
+        SOCKET_LOG_ERROR_MSG (
+            "OCSP Must-Staple: OCSP response status not successful: %d",
+            status);
+        return 0;
+      }
+  }
+
+  SOCKET_LOG_DEBUG_MSG ("OCSP Must-Staple: Valid OCSP response present");
+  return 1; /* OCSP requirement satisfied */
+}
+
 /**
  * internal_verify_callback - OpenSSL verification wrapper
  * @pre_ok: OpenSSL pre-verification result
@@ -340,6 +433,7 @@ internal_verify_callback (int pre_ok, X509_STORE_CTX *x509_ctx)
   Socket_T sock;
   T ctx;
   int result;
+  int depth;
 
   if (!get_verify_context (x509_ctx, &sock, &ctx))
     return pre_ok;
@@ -353,12 +447,25 @@ internal_verify_callback (int pre_ok, X509_STORE_CTX *x509_ctx)
       pre_ok = result;
     }
 
+  depth = X509_STORE_CTX_get_error_depth (x509_ctx);
+
   /* Step 2: Check certificate pins at chain end (depth 0) */
   if (ctx->pinning.count > 0)
     {
-      int depth = X509_STORE_CTX_get_error_depth (x509_ctx);
       if (depth == 0 && !check_certificate_pins (ctx, x509_ctx))
         return 0;
+    }
+
+  /* Step 3: Check OCSP Must-Staple at chain end (depth 0) */
+  if (depth == 0 && ctx->ocsp_must_staple_mode != OCSP_MUST_STAPLE_DISABLED)
+    {
+      X509 *cert = X509_STORE_CTX_get_current_cert (x509_ctx);
+      if (!check_ocsp_must_staple (ctx, sock, cert))
+        {
+          X509_STORE_CTX_set_error (x509_ctx,
+                                    X509_V_ERR_APPLICATION_VERIFICATION);
+          return 0;
+        }
     }
 
   return pre_ok;
@@ -949,6 +1056,165 @@ SocketTLS_get_ocsp_status (Socket_T socket)
   OCSP_RESPONSE_free (resp);
 
   return status;
+}
+
+/* ============================================================================
+ * OCSP Must-Staple Detection and Enforcement (RFC 7633)
+ * ============================================================================
+ *
+ * OCSP Must-Staple is indicated by the id-pe-tlsfeature extension
+ * (OID 1.3.6.1.5.5.7.1.24) containing the status_request (5) value.
+ *
+ * The extension format per RFC 7633 Section 4:
+ * TLS Feature ::= SEQUENCE OF INTEGER
+ * Where INTEGER value 5 = status_request (OCSP stapling)
+ */
+
+/* OID for id-pe-tlsfeature: 1.3.6.1.5.5.7.1.24
+ * status_request value per RFC 6066 / RFC 7633 */
+#define OCSP_MUST_STAPLE_STATUS_REQUEST 5
+
+/**
+ * find_tlsfeature_extension - Find TLS Feature extension by OID
+ * @cert: X509 certificate to search
+ *
+ * Returns: Extension index, or -1 if not found
+ */
+static int
+find_tlsfeature_extension (const X509 *cert)
+{
+  int idx = -1;
+
+  /* Try by NID first (OpenSSL 1.1.0+ defines NID_tlsfeature) */
+#ifdef NID_tlsfeature
+  idx = X509_get_ext_by_NID ((X509 *)cert, NID_tlsfeature, -1);
+  if (idx >= 0)
+    return idx;
+#endif
+
+  /* Fallback: search by OID string for older OpenSSL or if NID lookup failed */
+  {
+    ASN1_OBJECT *obj = OBJ_txt2obj ("1.3.6.1.5.5.7.1.24", 1);
+    if (obj)
+      {
+        idx = X509_get_ext_by_OBJ ((X509 *)cert, obj, -1);
+        ASN1_OBJECT_free (obj);
+      }
+  }
+
+  return idx;
+}
+
+/**
+ * SocketTLSContext_cert_has_must_staple - Check certificate for OCSP Must-Staple extension
+ * @cert: X509 certificate to examine
+ *
+ * Checks for id-pe-tlsfeature extension containing status_request (5).
+ *
+ * Returns: 1 if must-staple is present, 0 otherwise
+ */
+int
+SocketTLSContext_cert_has_must_staple (const X509 *cert)
+{
+  int idx = -1;
+  ASN1_OCTET_STRING *ext_data;
+  const unsigned char *p;
+  long ext_len;
+
+  if (!cert)
+    return 0;
+
+  /* Find the TLS Feature extension (id-pe-tlsfeature) */
+  idx = find_tlsfeature_extension (cert);
+
+  if (idx < 0)
+    return 0; /* Extension not present */
+
+  X509_EXTENSION *ext = X509_get_ext ((X509 *)cert, idx);
+  if (!ext)
+    return 0;
+
+  /* Get extension data */
+  ext_data = X509_EXTENSION_get_data (ext);
+  if (!ext_data)
+    return 0;
+
+  p = ASN1_STRING_get0_data (ext_data);
+  ext_len = ASN1_STRING_length (ext_data);
+
+  if (!p || ext_len <= 0)
+    return 0;
+
+  /* Parse the SEQUENCE OF INTEGER looking for value 5 (status_request) */
+  {
+    const unsigned char *end = p + ext_len;
+    long seq_len;
+    int tag, xclass;
+
+    /* Expect SEQUENCE */
+    if (ASN1_get_object (&p, &seq_len, &tag, &xclass, ext_len) != 0)
+      return 0;
+
+    if (tag != V_ASN1_SEQUENCE)
+      return 0;
+
+    end = p + seq_len;
+
+    /* Iterate through integers in sequence */
+    while (p < end)
+      {
+        ASN1_INTEGER *aint = NULL;
+        long value;
+
+        aint = d2i_ASN1_INTEGER (NULL, &p, end - p);
+        if (!aint)
+          break;
+
+        value = ASN1_INTEGER_get (aint);
+        ASN1_INTEGER_free (aint);
+
+        /* status_request = 5 per RFC 6066 / RFC 7633 */
+        if (value == OCSP_MUST_STAPLE_STATUS_REQUEST)
+          return 1; /* Must-staple found */
+      }
+  }
+
+  return 0; /* status_request (5) not found in extension */
+}
+
+void
+SocketTLSContext_set_ocsp_must_staple (T ctx, OCSPMustStapleMode mode)
+{
+  assert (ctx);
+  assert (ctx->ssl_ctx);
+
+  if (ctx->is_server)
+    RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
+                         "OCSP Must-Staple is for client contexts only");
+
+  if (mode < OCSP_MUST_STAPLE_DISABLED || mode > OCSP_MUST_STAPLE_ALWAYS)
+    RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
+                         "Invalid OCSP Must-Staple mode: %d", mode);
+
+  ctx->ocsp_must_staple_mode = mode;
+
+  /* Auto-enable OCSP stapling request when must-staple is enabled */
+  if (mode != OCSP_MUST_STAPLE_DISABLED && !ctx->ocsp_stapling_enabled)
+    {
+      SOCKET_LOG_INFO_MSG ("Enabling OCSP stapling request (required for "
+                           "Must-Staple enforcement)");
+      SocketTLSContext_enable_ocsp_stapling (ctx);
+    }
+
+  /* Update verify settings to install/remove internal callback */
+  apply_verify_settings (ctx);
+}
+
+OCSPMustStapleMode
+SocketTLSContext_get_ocsp_must_staple (T ctx)
+{
+  assert (ctx);
+  return (OCSPMustStapleMode)ctx->ocsp_must_staple_mode;
 }
 
 /* ============================================================================

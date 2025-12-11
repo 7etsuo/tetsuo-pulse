@@ -864,6 +864,139 @@ extern void SocketTLSContext_enable_ocsp_stapling (T ctx);
 extern int SocketTLSContext_ocsp_stapling_enabled (T ctx);
 
 /* ============================================================================
+ * OCSP Must-Staple Support (RFC 7633)
+ * ============================================================================
+ *
+ * OCSP Must-Staple is a certificate extension (id-pe-tlsfeature, OID
+ * 1.3.6.1.5.5.7.1.24) that indicates the certificate MUST be accompanied
+ * by a valid OCSP stapled response. If a certificate has this extension
+ * and no valid OCSP response is provided, the connection should be rejected.
+ *
+ * This provides stronger revocation checking by making OCSP stapling
+ * mandatory rather than optional, preventing downgrade attacks where an
+ * attacker strips the OCSP response.
+ *
+ * Usage:
+ *   // Enable auto-detection (check cert for must-staple extension)
+ *   SocketTLSContext_set_ocsp_must_staple(ctx, OCSP_MUST_STAPLE_AUTO);
+ *
+ *   // Always require OCSP stapling (regardless of cert extension)
+ *   SocketTLSContext_set_ocsp_must_staple(ctx, OCSP_MUST_STAPLE_ALWAYS);
+ *
+ *   // Disable must-staple checking (default)
+ *   SocketTLSContext_set_ocsp_must_staple(ctx, OCSP_MUST_STAPLE_DISABLED);
+ *
+ * Thread safety: Configuration is NOT thread-safe - perform before sharing.
+ */
+
+/**
+ * @brief OCSP Must-Staple enforcement mode enumeration.
+ * @ingroup security
+ *
+ * Controls how OCSP Must-Staple (RFC 7633) is enforced during TLS handshake.
+ * Must-Staple is a certificate extension indicating that an OCSP response
+ * MUST be stapled to the certificate.
+ */
+typedef enum
+{
+  OCSP_MUST_STAPLE_DISABLED
+  = 0, /**< Ignore must-staple extension (default, legacy behavior) */
+  OCSP_MUST_STAPLE_AUTO
+  = 1, /**< Check certificate for must-staple extension; enforce if present */
+  OCSP_MUST_STAPLE_ALWAYS
+  = 2 /**< Always require valid OCSP stapled response, regardless of cert */
+} OCSPMustStapleMode;
+
+/**
+ * @brief Set OCSP Must-Staple enforcement mode.
+ * @ingroup security
+ * @param[in] ctx The TLS context instance (client only)
+ * @param mode Enforcement mode (disabled, auto-detect, or always)
+ *
+ * Configures how OCSP Must-Staple (RFC 7633) is enforced. When enabled,
+ * certificates with the id-pe-tlsfeature extension containing status_request
+ * will require a valid OCSP stapled response during handshake.
+ *
+ * ## Modes
+ *
+ * - **OCSP_MUST_STAPLE_DISABLED**: Default. Ignore must-staple extension.
+ *   OCSP stapling is optional even if certificate has the extension.
+ *
+ * - **OCSP_MUST_STAPLE_AUTO**: Check each server certificate for the
+ *   must-staple extension. If present, require a valid OCSP response.
+ *   If extension is absent, OCSP stapling remains optional.
+ *
+ * - **OCSP_MUST_STAPLE_ALWAYS**: Always require a valid OCSP stapled response
+ *   regardless of whether the certificate has the must-staple extension.
+ *   Use for strict security policies.
+ *
+ * ## Security Considerations
+ *
+ * Must-staple prevents downgrade attacks where an attacker strips the OCSP
+ * response from the TLS handshake. With must-staple enforcement, such attacks
+ * will cause connection failure rather than silent degradation.
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * SocketTLSContext_T ctx = SocketTLSContext_new_client("ca-bundle.pem");
+ *
+ * // Enable auto-detection: respect certificate's must-staple extension
+ * SocketTLSContext_set_ocsp_must_staple(ctx, OCSP_MUST_STAPLE_AUTO);
+ *
+ * // Also enable OCSP stapling request so server knows to staple
+ * SocketTLSContext_enable_ocsp_stapling(ctx);
+ *
+ * // Connect and handshake
+ * SocketTLS_enable(sock, ctx);
+ * SocketTLS_handshake_auto(sock); // Fails if must-staple cert has no OCSP
+ * @endcode
+ *
+ * @return void
+ * @throws SocketTLS_Failed if called on server context or invalid mode
+ * @threadsafe No - call before sharing context across threads
+ *
+ * @note Automatically enables OCSP stapling request if not already enabled
+ * @note Requires server to support OCSP stapling; many CAs issue must-staple certs
+ *
+ * @see SocketTLSContext_enable_ocsp_stapling() to request stapled responses
+ * @see SocketTLS_get_ocsp_response_status() to check stapled response status
+ * @see SocketTLSContext_get_ocsp_must_staple() to query current mode
+ * @see RFC 7633 "X.509v3 TLS Feature Extension" for specification
+ */
+extern void SocketTLSContext_set_ocsp_must_staple (T ctx,
+                                                   OCSPMustStapleMode mode);
+
+/**
+ * @brief Get current OCSP Must-Staple enforcement mode.
+ * @ingroup security
+ * @param[in] ctx The TLS context instance
+ *
+ * @return Current OCSPMustStapleMode setting
+ * @throws None
+ * @threadsafe Yes (read-only)
+ */
+extern OCSPMustStapleMode SocketTLSContext_get_ocsp_must_staple (T ctx);
+
+/**
+ * @brief Check if certificate has OCSP Must-Staple extension.
+ * @ingroup security
+ * @param[in] cert X509 certificate to check
+ *
+ * Examines the certificate for the id-pe-tlsfeature extension (OID
+ * 1.3.6.1.5.5.7.1.24) containing the status_request (5) value, which
+ * indicates OCSP Must-Staple per RFC 7633.
+ *
+ * @return 1 if certificate has must-staple extension, 0 otherwise
+ * @throws None
+ * @threadsafe Yes (read-only)
+ *
+ * @see SocketTLSContext_set_ocsp_must_staple() for enforcement configuration
+ * @see RFC 7633 Section 4.1 for extension format
+ */
+extern int SocketTLSContext_cert_has_must_staple (const X509 *cert);
+
+/* ============================================================================
  * Custom Certificate Store Callback
  * ============================================================================
  *

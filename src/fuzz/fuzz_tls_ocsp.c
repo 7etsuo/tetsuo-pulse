@@ -43,6 +43,8 @@ enum OcspOp
   OCSP_EXTRACT_STATUS,
   OCSP_SET_STATIC_RESPONSE,
   OCSP_ENABLE_STAPLING,
+  OCSP_MUST_STAPLE_CONFIG,
+  OCSP_MUST_STAPLE_DETECT,
   OCSP_OP_COUNT
 };
 
@@ -327,6 +329,99 @@ fuzz_enable_ocsp_stapling (const uint8_t *data, size_t size)
 }
 
 /**
+ * fuzz_must_staple_config - Test OCSP Must-Staple configuration APIs
+ * @data: Fuzz data to control mode selection
+ * @size: Data size
+ *
+ * Tests SocketTLSContext_set_ocsp_must_staple() with various modes
+ * and verifies getter returns correct value.
+ *
+ * Returns: 1 on success, 0 on error
+ */
+static int
+fuzz_must_staple_config (const uint8_t *data, size_t size)
+{
+  SocketTLSContext_T ctx = NULL;
+  int result = 0;
+
+  if (size < 1)
+    return 0;
+
+  TRY
+  {
+    /* Create client context */
+    ctx = SocketTLSContext_new_client (NULL);
+    if (!ctx)
+      return 0;
+
+    /* Test each mode based on fuzz data */
+    OCSPMustStapleMode mode = data[0] % 3; /* 0, 1, or 2 */
+
+    SocketTLSContext_set_ocsp_must_staple (ctx, mode);
+
+    /* Verify getter returns the same mode */
+    OCSPMustStapleMode got = SocketTLSContext_get_ocsp_must_staple (ctx);
+    result = (got == mode) ? 1 : 0;
+
+    /* Verify OCSP stapling is enabled when must-staple is not disabled */
+    if (mode != OCSP_MUST_STAPLE_DISABLED)
+      {
+        result = result && SocketTLSContext_ocsp_stapling_enabled (ctx);
+      }
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    result = 0;
+  }
+  ELSE
+  {
+    result = 0;
+  }
+  END_TRY;
+
+  if (ctx)
+    SocketTLSContext_free (&ctx);
+
+  return result;
+}
+
+/**
+ * fuzz_must_staple_detect - Test certificate must-staple extension detection
+ * @data: Fuzz data to use as DER-encoded certificate
+ * @size: Data size
+ *
+ * Tests SocketTLSContext_cert_has_must_staple() with fuzzed certificate data.
+ * Should handle malformed certificates gracefully without crashing.
+ *
+ * Returns: Result of must-staple detection (1 if found, 0 otherwise)
+ */
+static int
+fuzz_must_staple_detect (const uint8_t *data, size_t size)
+{
+  X509 *cert = NULL;
+  int result = 0;
+
+  if (size > INT_MAX || size < 10)
+    return 0;
+
+  /* Try to parse fuzz data as DER-encoded certificate */
+  const unsigned char *p = data;
+  cert = d2i_X509 (NULL, &p, (long)size);
+
+  if (cert)
+    {
+      /* Test must-staple detection on parsed certificate */
+      result = SocketTLSContext_cert_has_must_staple (cert);
+      X509_free (cert);
+    }
+
+  /* Also test with NULL (should return 0, not crash) */
+  (void)SocketTLSContext_cert_has_must_staple (NULL);
+
+  return result;
+}
+
+/**
  * LLVMFuzzerTestOneInput - libFuzzer entry point
  *
  * Input format:
@@ -373,6 +468,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
     case OCSP_ENABLE_STAPLING:
       fuzz_enable_ocsp_stapling (ocsp_data, ocsp_size);
+      break;
+
+    case OCSP_MUST_STAPLE_CONFIG:
+      fuzz_must_staple_config (ocsp_data, ocsp_size);
+      break;
+
+    case OCSP_MUST_STAPLE_DETECT:
+      fuzz_must_staple_detect (ocsp_data, ocsp_size);
       break;
     }
 
