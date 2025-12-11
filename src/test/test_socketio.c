@@ -43,6 +43,7 @@ static int
 create_socket_pair (Socket_T *client, Socket_T *server_accepted)
 {
   Socket_T server = NULL;
+  volatile int result = -1;
   int port;
 
   TRY
@@ -61,20 +62,23 @@ create_socket_pair (Socket_T *client, Socket_T *server_accepted)
       {
         Socket_free (client);
         Socket_free (&server);
-        return -1;
+        result = -1;
       }
-
-    Socket_free (&server);
-    return 0;
+    else
+      {
+        Socket_free (&server);
+        result = 0;
+      }
   }
   EXCEPT (Socket_Failed)
   {
     if (server)
       Socket_free (&server);
-    return -1;
+    result = -1;
   }
   END_TRY;
-  return -1;
+
+  return result;
 }
 
 static void

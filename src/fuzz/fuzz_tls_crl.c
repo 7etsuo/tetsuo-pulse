@@ -160,7 +160,9 @@ fuzz_crl_operations (SocketTLSContext_T ctx, const uint8_t *data, size_t size)
   const uint8_t *op_data = data + 1;
   size_t op_size = size - 1;
 
-  char *temp_path = NULL;
+  /* Must be volatile since modified in TRY block and used in FINALLY after
+   * potential longjmp */
+  char *volatile temp_path = NULL;
 
   TRY
   {
@@ -245,7 +247,7 @@ fuzz_crl_operations (SocketTLSContext_T ctx, const uint8_t *data, size_t size)
             if (temp_path)
               {
                 SocketTLSContext_load_crl (ctx, temp_path);
-                cleanup_temp_path (temp_path);
+                cleanup_temp_path ((char *)temp_path);
                 temp_path = NULL;
               }
             op_data += chunk_size;
@@ -334,9 +336,14 @@ fuzz_crl_operations (SocketTLSContext_T ctx, const uint8_t *data, size_t size)
   {
     /* Expected - CRL operations may fail with fuzzer data */
   }
+  FINALLY
+  {
+    /* Guarantee cleanup regardless of exception path.
+     * Cast away volatile since cleanup_temp_path doesn't modify the pointer
+     * value in a way that matters for control flow. */
+    cleanup_temp_path ((char *)temp_path);
+  }
   END_TRY;
-
-  cleanup_temp_path (temp_path);
 }
 
 /* Main fuzzing entry point */

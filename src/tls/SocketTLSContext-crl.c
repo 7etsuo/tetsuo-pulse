@@ -316,10 +316,7 @@ SocketTLSContext_crl_check_refresh (T ctx)
 {
   assert (ctx);
 
-#if defined(__GNUC__) && !defined(__clang__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wclobbered"
-#endif
+  volatile int result = 0;
 
   TRY
   {
@@ -327,37 +324,42 @@ SocketTLSContext_crl_check_refresh (T ctx)
 
     /* Not configured or disabled */
     if (ctx->crl_refresh_interval <= 0 || !ctx->crl_refresh_path)
-      return 0;
+      {
+        result = 0;
+      }
+    else
+      {
+        int64_t now_ms = Socket_get_monotonic_ms ();
 
-    int64_t now_ms = Socket_get_monotonic_ms ();
+        /* Not due yet */
+        if (now_ms < ctx->crl_next_refresh_ms)
+          {
+            result = 0;
+          }
+        else
+          {
+            /* Attempt refresh */
+            int success = try_load_crl (ctx, ctx->crl_refresh_path);
 
-    /* Not due yet */
-    if (now_ms < ctx->crl_next_refresh_ms)
-      return 0;
+            /* Schedule next refresh */
+            ctx->crl_next_refresh_ms
+                = now_ms + (ctx->crl_refresh_interval * 1000LL);
 
-    /* Attempt refresh */
-    int success = try_load_crl (ctx, ctx->crl_refresh_path);
+            /* Notify callback */
+            notify_crl_callback (ctx, ctx->crl_refresh_path, success);
 
-    /* Schedule next refresh */
-    ctx->crl_next_refresh_ms = now_ms + (ctx->crl_refresh_interval * 1000LL);
-
-    /* Notify callback */
-    notify_crl_callback (ctx, ctx->crl_refresh_path, success);
-
-    return 1;
+            result = 1;
+          }
+      }
   }
   EXCEPT (SocketTLS_Failed)
   {
-    return 0;
+    result = 0;
   }
   FINALLY { CRL_UNLOCK (ctx); }
   END_TRY;
 
-#if defined(__GNUC__) && !defined(__clang__)
-#pragma GCC diagnostic pop
-#endif
-
-  return 0; /* Unreachable - needed for compiler */
+  return result;
 }
 
 /**
@@ -373,32 +375,37 @@ SocketTLSContext_crl_next_refresh_ms (T ctx)
 {
   assert (ctx);
 
+  volatile long result = -1;
+
   TRY
   {
     CRL_LOCK (ctx);
 
     if (ctx->crl_refresh_interval <= 0)
-      return -1;
+      {
+        result = -1;
+      }
+    else
+      {
+        int64_t now_ms = Socket_get_monotonic_ms ();
+        int64_t remaining_ms = ctx->crl_next_refresh_ms - now_ms;
 
-    int64_t now_ms = Socket_get_monotonic_ms ();
-    int64_t remaining_ms = ctx->crl_next_refresh_ms - now_ms;
-
-    if (remaining_ms <= 0)
-      return 0;
-
-    if (remaining_ms > LONG_MAX)
-      return LONG_MAX;
-
-    return (long)remaining_ms;
+        if (remaining_ms <= 0)
+          result = 0;
+        else if (remaining_ms > LONG_MAX)
+          result = LONG_MAX;
+        else
+          result = (long)remaining_ms;
+      }
   }
   EXCEPT (SocketTLS_Failed)
   {
-    return -1;
+    result = -1;
   }
   FINALLY { CRL_UNLOCK (ctx); }
   END_TRY;
 
-  return -1; /* Unreachable - needed for compiler */
+  return result;
 }
 
 #undef T

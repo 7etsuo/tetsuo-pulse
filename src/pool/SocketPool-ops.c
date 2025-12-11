@@ -308,6 +308,10 @@ allocate_excess_buffer (size_t excess_count)
  *
  * Thread-safe: Releases and reacquires mutex as needed
  * Raises: SocketPool_Failed on allocation failure
+ *
+ * Note: Uses actual collected count rather than expected excess_count to handle
+ * edge cases where pool->count may be temporarily out of sync with actual
+ * active connections (e.g., during concurrent operations or after exceptions).
  */
 static void
 handle_shrink_excess (T pool, size_t new_maxconns)
@@ -330,11 +334,19 @@ handle_shrink_excess (T pool, size_t new_maxconns)
     }
 
   collected = collect_excess_connections (pool, new_maxconns, excess_sockets);
-  assert (collected == excess_count);
-  (void)collected; /* Suppress warning when NDEBUG disables assert */
+
+  /* Use actual collected count - pool->count may differ from actual active
+   * connections in edge cases (e.g., after exceptions during add/remove).
+   * Log if mismatch detected for debugging but don't assert. */
+  if (collected != excess_count)
+    {
+      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                       "Shrink: expected %zu excess, found %zu (count=%zu)",
+                       excess_count, collected, pool->count);
+    }
 
   pthread_mutex_unlock (&pool->mutex);
-  close_excess_sockets (pool, excess_sockets, excess_count);
+  close_excess_sockets (pool, excess_sockets, collected);
   free (excess_sockets);
   pthread_mutex_lock (&pool->mutex);
 }

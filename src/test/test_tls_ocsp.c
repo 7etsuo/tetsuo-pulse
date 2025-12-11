@@ -114,6 +114,7 @@ TEST (ocsp_set_response_server)
   const char *cert_file = "test_ocsp_server.crt";
   const char *key_file = "test_ocsp_server.key";
   SocketTLSContext_T ctx = NULL;
+  volatile int exception_raised = 0;
 
   if (generate_test_certs (cert_file, key_file) != 0)
     return;
@@ -123,12 +124,18 @@ TEST (ocsp_set_response_server)
     ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
     ASSERT_NOT_NULL (ctx);
 
-    /* Set a dummy OCSP response (in real use, this would be a valid DER
-     * response) */
+    /* Set a dummy OCSP response - this should fail validation because
+     * dummy data is not valid DER format. This tests that validation works. */
     unsigned char dummy_response[64];
     memset (dummy_response, 0x42, 64);
 
     SocketTLSContext_set_ocsp_response (ctx, dummy_response, 64);
+    ASSERT (0); /* Should not reach here - validation should fail */
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    /* Expected: dummy response fails DER validation */
+    exception_raised = 1;
   }
   FINALLY
   {
@@ -137,6 +144,8 @@ TEST (ocsp_set_response_server)
     remove_test_certs (cert_file, key_file);
   }
   END_TRY;
+
+  ASSERT_EQ (exception_raised, 1);
 }
 
 TEST (ocsp_set_response_null_clears)
@@ -144,6 +153,7 @@ TEST (ocsp_set_response_null_clears)
   const char *cert_file = "test_ocsp_null.crt";
   const char *key_file = "test_ocsp_null.key";
   SocketTLSContext_T ctx = NULL;
+  volatile int null_exception = 0;
 
   if (generate_test_certs (cert_file, key_file) != 0)
     return;
@@ -153,13 +163,16 @@ TEST (ocsp_set_response_null_clears)
     ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
     ASSERT_NOT_NULL (ctx);
 
-    /* Set response then clear */
-    unsigned char response[64];
-    memset (response, 0x42, 64);
-    SocketTLSContext_set_ocsp_response (ctx, response, 64);
-
-    /* Clear by setting NULL */
+    /* Attempting to set NULL response should raise an exception.
+     * OCSP responses must be valid DER format; clearing is implicit on
+     * context destruction. This tests the validation behavior. */
     SocketTLSContext_set_ocsp_response (ctx, NULL, 0);
+    ASSERT (0); /* Should not reach here */
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    /* Expected: NULL/zero-length is rejected */
+    null_exception = 1;
   }
   FINALLY
   {
@@ -168,6 +181,8 @@ TEST (ocsp_set_response_null_clears)
     remove_test_certs (cert_file, key_file);
   }
   END_TRY;
+
+  ASSERT_EQ (null_exception, 1);
 }
 
 /* ==================== OCSP Status Query Tests ==================== */
@@ -467,6 +482,7 @@ TEST (ocsp_response_empty)
   const char *cert_file = "test_ocsp_empty.crt";
   const char *key_file = "test_ocsp_empty.key";
   SocketTLSContext_T ctx = NULL;
+  volatile int exception_raised = 0;
 
   if (generate_test_certs (cert_file, key_file) != 0)
     return;
@@ -476,9 +492,16 @@ TEST (ocsp_response_empty)
     ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
     ASSERT_NOT_NULL (ctx);
 
-    /* Empty response should be treated as clearing */
-    unsigned char empty[1] = {0};
+    /* Empty response (len=0) should raise an exception.
+     * OCSP responses must have valid content. */
+    unsigned char empty[1] = { 0 };
     SocketTLSContext_set_ocsp_response (ctx, empty, 0);
+    ASSERT (0); /* Should not reach here */
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    /* Expected: zero-length is rejected */
+    exception_raised = 1;
   }
   FINALLY
   {
@@ -487,6 +510,8 @@ TEST (ocsp_response_empty)
     remove_test_certs (cert_file, key_file);
   }
   END_TRY;
+
+  ASSERT_EQ (exception_raised, 1);
 }
 
 TEST (ocsp_large_response)
@@ -495,6 +520,7 @@ TEST (ocsp_large_response)
   const char *key_file = "test_ocsp_large.key";
   SocketTLSContext_T ctx = NULL;
   unsigned char *large_response = NULL;
+  volatile int exception_raised = 0;
 
   if (generate_test_certs (cert_file, key_file) != 0)
     return;
@@ -504,13 +530,20 @@ TEST (ocsp_large_response)
     ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
     ASSERT_NOT_NULL (ctx);
 
-    /* Large response within limits */
+    /* Large response within limits, but dummy data fails DER validation.
+     * This tests that format validation is applied to large responses too. */
     size_t response_size = 32 * 1024; /* 32KB */
     large_response = malloc (response_size);
     ASSERT_NOT_NULL (large_response);
 
     memset (large_response, 0x42, response_size);
     SocketTLSContext_set_ocsp_response (ctx, large_response, response_size);
+    ASSERT (0); /* Should not reach here - validation should fail */
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    /* Expected: dummy response fails DER validation */
+    exception_raised = 1;
   }
   FINALLY
   {
@@ -521,6 +554,8 @@ TEST (ocsp_large_response)
     remove_test_certs (cert_file, key_file);
   }
   END_TRY;
+
+  ASSERT_EQ (exception_raised, 1);
 }
 
 #endif /* SOCKET_HAS_TLS */

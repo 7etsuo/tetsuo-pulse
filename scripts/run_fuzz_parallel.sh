@@ -44,6 +44,9 @@ TARGETS_CORE=(
     fuzz_iptracker
     fuzz_synprotect
     fuzz_pool_dos
+    fuzz_metrics
+    fuzz_security
+    fuzz_new_features
 )
 
 TARGETS_CRYPTO=(
@@ -87,8 +90,25 @@ TARGETS_TLS=(
     fuzz_tls_sni
     fuzz_tls_verify
     fuzz_tls_ct
-    fuzz_tls_context  # TLS Context Management (Section 2.1-2.3)
+    fuzz_tls_context
     fuzz_cert_pinning
+    fuzz_tls_handshake
+    fuzz_tls_shutdown
+    fuzz_tls_records
+    fuzz_tls_config
+    fuzz_tls_cipher
+    fuzz_tls_crl
+    fuzz_tls_error
+    fuzz_tls_ocsp
+    fuzz_tls_ktls
+    fuzz_tls_key_update
+    fuzz_tls_protocol_version
+    fuzz_tls_buffer_pool
+    fuzz_tls_cert_lookup
+    fuzz_tls_verify_callback
+    fuzz_ssl_path_validation
+    fuzz_certificate_parsing
+    fuzz_pin_hex_parsing
 )
 
 TARGETS_DTLS=(
@@ -96,6 +116,8 @@ TARGETS_DTLS=(
     fuzz_dtls_cookie
     fuzz_dtls_handshake
     fuzz_dtls_io
+    fuzz_dtls_config
+    fuzz_dtls_enable_config
 )
 
 TARGETS_PROXY=(
@@ -124,6 +146,7 @@ TARGETS_HTTP=(
     fuzz_http_content_type
     fuzz_http_smuggling
     fuzz_http_client
+    fuzz_http_server
 )
 
 TARGETS_HTTP1=(
@@ -148,6 +171,7 @@ TARGETS_HTTP2=(
     fuzz_http2_frames_full
     fuzz_http2_headers
     fuzz_http2_settings
+    fuzz_http2_connection
 )
 
 # Build target list from selected groups
@@ -237,19 +261,19 @@ show_usage() {
     echo "  -h          Show this help"
     echo ""
     echo "Fuzzer Groups:"
-    echo "  core   - Arena, exception, timer, rate limit, IP tracker, SYN protect, pool DoS"
+    echo "  core   - Arena, exception, timer, rate limit, IP tracker, SYN protect, pool DoS, metrics, security"
     echo "  crypto - Base64, hex encoding/decoding"
     echo "  utf8   - UTF-8 validation (one-shot and incremental)"
     echo "  socket - Socket buffer, I/O, poll, pool, dgram, Unix path"
     echo "  dns    - IP/CIDR parsing, DNS validation/injection, connect, Happy Eyeballs"
-    echo "  tls    - TLS ALPN, session, certs, I/O, SNI, verify, CT, cert pinning"
-    echo "  dtls   - DTLS context, cookie, handshake, I/O"
+    echo "  tls    - TLS ALPN, session, certs, I/O, SNI, verify, CT, pinning, handshake, CRL, OCSP, kTLS, etc."
+    echo "  dtls   - DTLS context, cookie, handshake, I/O, config"
     echo "  proxy  - Proxy URL, HTTP proxy, SOCKS4, SOCKS5"
     echo "  ws     - WebSocket frame, frames, handshake, deflate"
-    echo "  http   - URI, date, core, headers, cookies, auth, content-type, smuggling, client"
+    echo "  http   - URI, date, core, headers, cookies, auth, content-type, smuggling, client, server"
     echo "  http1  - HTTP/1.1 request, response, chunked, headers, serialize, compression"
     echo "  hpack  - HPACK encode/decode, Huffman, integer coding"
-    echo "  http2  - HTTP/2 frames, frames_full, headers, settings"
+    echo "  http2  - HTTP/2 frames, frames_full, headers, settings, connection"
     echo ""
     echo "Examples:"
     echo "  $0                    # Default: all groups, 2 jobs/target"

@@ -15,6 +15,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -3544,12 +3545,15 @@ TEST (tls_ktls_integration)
   {
     if (client)
       {
-        SocketTLS_shutdown (client);
+        /* Use SocketTLS_disable for best-effort cleanup without exceptions.
+         * SocketTLS_shutdown can timeout and raise exceptions which would
+         * prevent subsequent cleanup in the FINALLY block. */
+        SocketTLS_disable (client);
         Socket_free (&client);
       }
     if (server)
       {
-        SocketTLS_shutdown (server);
+        SocketTLS_disable (server);
         Socket_free (&server);
       }
     if (client_ctx)
@@ -3567,6 +3571,9 @@ TEST (tls_ktls_integration)
 int
 main (void)
 {
+  /* Ignore SIGPIPE - required for socket tests that may write to closed peers */
+  signal (SIGPIPE, SIG_IGN);
+
   Test_run_all ();
   return Test_get_failures () > 0 ? 1 : 0;
 }

@@ -480,39 +480,43 @@ cookie_jar_find_entry (SocketHTTPClient_CookieJar_T jar, const char *domain,
 SocketHTTPClient_CookieJar_T
 SocketHTTPClient_CookieJar_new (void)
 {
-  SocketHTTPClient_CookieJar_T jar = NULL;
-  Arena_T arena = NULL;
+  volatile SocketHTTPClient_CookieJar_T jar = NULL;
+  volatile Arena_T arena = NULL;
 
-  TRY arena = Arena_new ();
-  if (arena == NULL)
-    RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
+  TRY
+  {
+    arena = Arena_new ();
+    if (arena == NULL)
+      RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
 
-  jar = Arena_calloc (arena, 1, sizeof (*jar), __FILE__, __LINE__);
-  if (jar == NULL)
-    RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
+    jar = Arena_calloc ((Arena_T)arena, 1, sizeof (*jar), __FILE__, __LINE__);
+    if (jar == NULL)
+      RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
 
-  jar->arena = arena;
-  jar->hash_size = HTTPCLIENT_COOKIE_HASH_SIZE;
-  jar->max_cookies = HTTPCLIENT_MAX_COOKIES;
-  SocketCrypto_random_bytes ((unsigned char *)&jar->hash_seed,
-                             sizeof (jar->hash_seed));
+    jar->arena = (Arena_T)arena;
+    jar->hash_size = HTTPCLIENT_COOKIE_HASH_SIZE;
+    jar->max_cookies = HTTPCLIENT_MAX_COOKIES;
+    SocketCrypto_random_bytes ((unsigned char *)&jar->hash_seed,
+                               sizeof (jar->hash_seed));
 
-  jar->hash_table = Arena_calloc (arena, HTTPCLIENT_COOKIE_HASH_SIZE,
-                                  sizeof (CookieEntry *), __FILE__, __LINE__);
-  if (jar->hash_table == NULL)
-    RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
+    jar->hash_table = Arena_calloc ((Arena_T)arena, HTTPCLIENT_COOKIE_HASH_SIZE,
+                                    sizeof (CookieEntry *), __FILE__, __LINE__);
+    if (jar->hash_table == NULL)
+      RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
 
-  if (pthread_mutex_init (&jar->mutex, NULL) != 0)
-    RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
-
-  return jar;
+    if (pthread_mutex_init (&jar->mutex, NULL) != 0)
+      RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
+  }
   EXCEPT (SocketHTTPClient_Failed)
-  HTTPCLIENT_ERROR_MSG ("Failed to create cookie jar");
-  if (arena != NULL)
-    Arena_dispose (&arena);
+  {
+    HTTPCLIENT_ERROR_MSG ("Failed to create cookie jar");
+    if (arena != NULL)
+      Arena_dispose ((Arena_T *)&arena);
+    jar = NULL;
+  }
   END_TRY;
 
-  return NULL;
+  return jar;
 }
 
 void
@@ -553,53 +557,58 @@ SocketHTTPClient_CookieJar_set (SocketHTTPClient_CookieJar_T jar,
 
   pthread_mutex_lock (&jar->mutex);
 
-  TRY effective_path = cookie->path ? cookie->path : "/";
-  hash = cookie_hash (cookie->domain, effective_path, cookie->name,
-                      jar->hash_size, jar->hash_seed);
+  TRY
+  {
+    effective_path = cookie->path ? cookie->path : "/";
+    hash = cookie_hash (cookie->domain, effective_path, cookie->name,
+                        jar->hash_size, jar->hash_seed);
 
-  entry = cookie_jar_find_entry (jar, cookie->domain, effective_path,
-                                 cookie->name);
+    entry = cookie_jar_find_entry (jar, cookie->domain, effective_path,
+                                   cookie->name);
 
-  if (entry != NULL)
-    {
-      cookie_entry_update_value_flags (entry, cookie, jar->arena);
-    }
-  else
-    {
-      if (jar->count >= jar->max_cookies)
-        {
-          SocketHTTPClient_CookieJar_clear_expired (jar);
-          if (jar->count >= jar->max_cookies)
-            {
-              evict_oldest_cookie (jar);
-              if (jar->count >= jar->max_cookies)
-                {
-                  SocketLog_emitf (
-                      SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-                      "Cookie jar at max capacity (%zu), rejecting new cookie",
-                      jar->max_cookies);
-                  result = -1;
-                  goto unlock;
-                }
-            }
-        }
+    if (entry != NULL)
+      {
+        cookie_entry_update_value_flags (entry, cookie, jar->arena);
+      }
+    else
+      {
+        if (jar->count >= jar->max_cookies)
+          {
+            SocketHTTPClient_CookieJar_clear_expired (jar);
+            if (jar->count >= jar->max_cookies)
+              {
+                evict_oldest_cookie (jar);
+                if (jar->count >= jar->max_cookies)
+                  {
+                    SocketLog_emitf (
+                        SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                        "Cookie jar at max capacity (%zu), rejecting new cookie",
+                        jar->max_cookies);
+                    result = -1;
+                    goto unlock;
+                  }
+              }
+          }
 
-      entry
-          = Arena_calloc (jar->arena, 1, sizeof (*entry), __FILE__, __LINE__);
-      if (entry == NULL)
-        RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
+        entry
+            = Arena_calloc (jar->arena, 1, sizeof (*entry), __FILE__, __LINE__);
+        if (entry == NULL)
+          RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
 
-      cookie_entry_init_full (entry, cookie, effective_path, jar->arena);
-      entry->created = time (NULL);
+        cookie_entry_init_full (entry, cookie, effective_path, jar->arena);
+        entry->created = time (NULL);
 
-      entry->next = jar->hash_table[hash];
-      jar->hash_table[hash] = entry;
-      if (!SocketSecurity_check_add (jar->count, 1, &jar->count))
-        jar->count++;
-    }
+        entry->next = jar->hash_table[hash];
+        jar->hash_table[hash] = entry;
+        if (!SocketSecurity_check_add (jar->count, 1, &jar->count))
+          jar->count++;
+      }
+  }
   EXCEPT (SocketHTTPClient_Failed)
-  result = -1;
-  HTTPCLIENT_ERROR_MSG ("Failed to set cookie");
+  {
+    result = -1;
+    HTTPCLIENT_ERROR_MSG ("Failed to set cookie");
+  }
   END_TRY;
 
 unlock:

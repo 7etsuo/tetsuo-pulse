@@ -170,7 +170,10 @@
  *     SOCKET_LOG_ERROR_MSG("TLS failed: %s", tls_error_buf);
  *     // Cleanup
  * } FINALLY {
- *     SocketTLS_shutdown(sock);
+ *     // Use SocketTLS_disable() in FINALLY blocks - it's best-effort and
+ *     // won't throw exceptions that could prevent subsequent cleanup.
+ *     // Use SocketTLS_shutdown() only when you need strict verification.
+ *     SocketTLS_disable(sock);
  *     Socket_close(sock);
  *     SocketTLSContext_free(&ctx);
  * } END_TRY;
@@ -234,8 +237,9 @@
  *
  * @note Thread-safe for concurrent use on different sockets; avoid sharing
  * contexts without refcounting
- * @warning Incomplete shutdown may leak session state or allow truncation;
- * always SocketTLS_shutdown()
+ * @warning Incomplete shutdown may leak session state or allow truncation.
+ * Use SocketTLS_shutdown() when strict shutdown verification is needed, or
+ * SocketTLS_disable() for best-effort cleanup in FINALLY blocks.
  * @warning Non-blocking mode requires proper event loop; blocking calls may
  * deadlock
  * @complexity
@@ -504,7 +508,7 @@ extern const Except_T SocketTLS_ShutdownFailed;
  *     case TLS_HANDSHAKE_ERROR:
  *         // Failure: log details, cleanup
  *         SOCKET_LOG_ERROR_MSG("TLS handshake failed: %s", tls_error_buf);
- *         SocketTLS_shutdown(sock);
+ *         SocketTLS_disable(sock);  // Best-effort cleanup
  *         Socket_close(sock);
  *         break;
  *

@@ -580,7 +580,7 @@ start_tls_handshake (T conn)
 static int
 perform_tls_handshake_step (T conn)
 {
-  TLSHandshakeState state;
+  volatile TLSHandshakeState state = TLS_HANDSHAKE_NOT_STARTED;
 
   TRY { state = SocketTLS_handshake (conn->socket); }
   EXCEPT (SocketTLS_HandshakeFailed)
