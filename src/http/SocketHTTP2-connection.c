@@ -454,8 +454,9 @@ static int
 generate_hash_seed (SocketHTTP2_Conn_T conn)
 {
   unsigned char seed_bytes[sizeof (uint32_t)];
+  /* SocketCrypto_random_bytes returns 0 on success, -1 on failure */
   ssize_t rv = SocketCrypto_random_bytes (seed_bytes, sizeof (seed_bytes));
-  if (rv != (ssize_t)sizeof (seed_bytes))
+  if (rv != 0)
     return -1;
 
   memcpy (&conn->hash_seed, seed_bytes, sizeof (conn->hash_seed));
