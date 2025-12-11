@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/logo.png" alt="Socket Library Logo" width="120">
+</p>
+
 # Socket Library
 
 High-performance, exception-driven socket toolkit for POSIX systems. Provides a clean, modern C API for TCP, UDP, Unix domain sockets, HTTP/1.1, HTTP/2, WebSocket, and TLS/DTLS with comprehensive error handling, zero-copy I/O, and cross-platform event polling.
@@ -8,8 +12,8 @@ High-performance, exception-driven socket toolkit for POSIX systems. Provides a 
 - **TCP Stream Sockets** - Full-featured TCP client/server with scatter/gather I/O
 - **UDP Datagram Sockets** - Connectionless and connected modes with multicast/broadcast
 - **Unix Domain Sockets** - IPC sockets with peer credential support and file descriptor passing
-- **TLS 1.3 Support** - Modern TLS with SNI, ALPN, session resumption, CRL/OCSP, certificate pinning, Certificate Transparency (CT)
-- **DTLS 1.2+ Support** - Secure UDP with cookie exchange for DoS protection
+- **TLS 1.3 Support** - Modern TLS with SNI, ALPN, session resumption, CRL/OCSP, certificate pinning, Certificate Transparency (CT), kTLS offload, 0-RTT early data, KeyUpdate
+- **DTLS 1.2+ Support** - Secure UDP with cookie exchange for DoS protection, session caching, ALPN
 
 ### HTTP Protocol Stack
 - **HTTP/1.1** - Table-driven DFA parser (RFC 9112), chunked encoding, request smuggling prevention
@@ -1579,6 +1583,201 @@ if (SocketTLSContext_ct_enabled(ctx)) {
 }
 ```
 
+### OCSP Must-Staple (RFC 7633)
+
+```c
+#include "tls/SocketTLSContext.h"
+
+/* Create client context with must-staple enforcement */
+SocketTLSContext_T ctx = SocketTLSContext_new_client("ca-bundle.pem");
+
+/* Auto-detection: respect certificate's must-staple extension */
+SocketTLSContext_set_ocsp_must_staple(ctx, OCSP_MUST_STAPLE_AUTO);
+
+/* Or always require OCSP stapling for strict security policies */
+SocketTLSContext_set_ocsp_must_staple(ctx, OCSP_MUST_STAPLE_ALWAYS);
+
+/* Query current mode */
+OCSPMustStapleMode mode = SocketTLSContext_get_ocsp_must_staple(ctx);
+
+/* Connect and handshake - fails if must-staple cert has no OCSP response */
+SocketTLS_enable(sock, ctx);
+SocketTLS_handshake_auto(sock);
+```
+
+### kTLS (Kernel TLS) Offload
+
+kTLS offloads TLS encryption/decryption to the Linux kernel for improved performance.
+
+```c
+#include "tls/SocketTLS.h"
+
+/* Check if kTLS is available on this system */
+if (SocketTLS_ktls_available()) {
+    printf("kTLS available - optimal async I/O\n");
+}
+
+/* Enable kTLS before handshake */
+SocketTLS_enable(sock, ctx);
+SocketTLS_enable_ktls(sock);  /* Request kTLS offload */
+SocketTLS_handshake_auto(sock);
+
+/* Check if offload is active after handshake */
+if (SocketTLS_is_ktls_tx_active(sock)) {
+    printf("TX offload active\n");
+}
+if (SocketTLS_is_ktls_rx_active(sock)) {
+    printf("RX offload active\n");
+}
+
+/* Zero-copy file transfer with kTLS (uses SSL_sendfile internally) */
+int file_fd = open("largefile.bin", O_RDONLY);
+off_t offset = 0;
+ssize_t sent = SocketTLS_sendfile(sock, file_fd, offset, file_size);
+close(file_fd);
+```
+
+**kTLS Requirements:**
+| Feature | Requirement |
+|---------|-------------|
+| TX offload | Linux 4.13+, OpenSSL 3.0+ with enable-ktls |
+| RX offload | Linux 4.17+ |
+| ChaCha20 | Linux 5.11+ |
+| Ciphers | AES-GCM-128/256, ChaCha20-Poly1305 |
+
+### TLS 1.3 0-RTT Early Data
+
+```c
+#include "tls/SocketTLS.h"
+#include "tls/SocketTLSContext.h"
+
+/* Server: Enable 0-RTT early data reception */
+SocketTLSContext_T srv_ctx = SocketTLSContext_new_server("cert.pem", "key.pem", NULL);
+SocketTLSContext_enable_early_data(srv_ctx, 16384);  /* Max 16KB early data */
+
+/* Client: Send early data during handshake */
+SocketTLS_enable(sock, ctx);
+SocketTLS_set_hostname(sock, "example.com");
+
+/* Write early data (before handshake completes) */
+size_t written = 0;
+int ret = SocketTLS_write_early_data(sock, "GET / HTTP/1.1\r\n\r\n", 18, &written);
+if (ret == 1) {
+    printf("Sent %zu bytes as early data\n", written);
+}
+
+/* Complete handshake */
+SocketTLS_handshake_auto(sock);
+
+/* Check if early data was accepted */
+SocketTLS_EarlyDataStatus status = SocketTLS_get_early_data_status(sock);
+if (status == SOCKET_EARLY_DATA_REJECTED) {
+    /* Server rejected - resend via normal I/O */
+    SocketTLS_send(sock, "GET / HTTP/1.1\r\n\r\n", 18);
+}
+
+/* Server: Read early data during handshake */
+unsigned char early_buf[4096];
+size_t readbytes = 0;
+ret = SocketTLS_read_early_data(srv_sock, early_buf, sizeof(early_buf), &readbytes);
+```
+
+**Security Warning:** 0-RTT is NOT replay-protected. Only use for idempotent operations.
+
+### TLS 1.3 KeyUpdate (Key Rotation)
+
+```c
+#include "tls/SocketTLS.h"
+
+/* For long-lived connections, rotate keys periodically for forward secrecy */
+
+/* Request key update (local only) */
+int ret = SocketTLS_request_key_update(sock, 0);
+
+/* Request key update and ask peer to also rotate */
+ret = SocketTLS_request_key_update(sock, 1);
+
+/* Monitor key rotations performed */
+int count = SocketTLS_get_key_update_count(sock);
+printf("Key rotations: %d\n", count);
+```
+
+**Recommended Usage:**
+- Database connections open for hours/days
+- VPN tunnels
+- Persistent WebSocket connections
+- Rotate every hour or every 1GB of data transferred
+
+### TLS Performance Optimizations
+
+```c
+#include "tls/SocketTLS.h"
+#include "tls/SocketTLSContext.h"
+
+/* TCP handshake optimization - apply before TLS handshake */
+SocketTLS_optimize_handshake(sock);  /* Sets TCP_NODELAY + TCP_QUICKACK */
+
+/* After bulk transfer, optionally restore defaults */
+SocketTLS_restore_tcp_defaults(sock);  /* Re-enables Nagle */
+
+/* Session cache sharding for multi-threaded servers */
+SocketTLSContext_create_sharded_cache(ctx, 
+    8,      /* Number of shards (match thread count) */
+    1000,   /* Sessions per shard */
+    300);   /* Timeout in seconds */
+
+/* Get aggregate statistics from sharded cache */
+size_t total_hits, total_misses, total_stores;
+SocketTLSContext_get_sharded_stats(ctx, &total_hits, &total_misses, &total_stores);
+
+/* TLS buffer pool for high-connection scenarios */
+Arena_T arena = Arena_new();
+TLSBufferPool_T pool = TLSBufferPool_new(16384, 100, arena);  /* 16KB buffers, 100 count */
+
+/* Acquire buffer for connection */
+void *buf = TLSBufferPool_acquire(pool);
+/* ... use buffer for TLS I/O ... */
+TLSBufferPool_release(pool, buf);
+
+/* Check pool statistics */
+size_t total, in_use, available;
+TLSBufferPool_stats(pool, &total, &in_use, &available);
+
+TLSBufferPool_free(&pool);
+Arena_dispose(&arena);
+```
+
+### CRL Auto-Refresh
+
+```c
+#include "tls/SocketTLSContext.h"
+
+/* Callback for refresh notifications */
+void crl_refresh_callback(SocketTLSContext_T ctx, const char *path, 
+                          int success, void *data) {
+    if (!success) {
+        fprintf(stderr, "CRL refresh failed for %s\n", path);
+    }
+}
+
+/* Configure automatic CRL refresh (minimum 60 seconds) */
+SocketTLSContext_set_crl_auto_refresh(ctx, "/path/to/crl.pem",
+    3600,  /* Refresh every hour */
+    crl_refresh_callback, NULL);
+
+/* In event loop: check if refresh is due */
+while (running) {
+    /* ... process events ... */
+    SocketTLSContext_crl_check_refresh(ctx);
+    
+    /* Get time until next refresh for poll timeout optimization */
+    int64_t next_ms = SocketTLSContext_crl_next_refresh_ms(ctx);
+}
+
+/* Cancel auto-refresh (retains currently loaded CRL) */
+SocketTLSContext_cancel_crl_auto_refresh(ctx);
+```
+
 ### Zero-Copy File Transfer
 
 ```c
@@ -1854,8 +2053,10 @@ include/
 ├── tls/           # Security layer
 │   ├── SocketTLS.h      # TLS operations
 │   ├── SocketTLSContext.h # TLS context management
+│   ├── SocketTLSConfig.h # TLS configuration constants
 │   ├── SocketDTLS.h     # DTLS operations
-│   └── SocketDTLSContext.h # DTLS context management
+│   ├── SocketDTLSContext.h # DTLS context management
+│   └── SocketDTLSConfig.h # DTLS configuration constants
 └── http/          # HTTP protocol stack
     ├── SocketHTTP.h     # HTTP core (RFC 9110)
     ├── SocketHTTP1.h    # HTTP/1.1 (RFC 9112)
@@ -1899,10 +2100,13 @@ include/
 | SocketReconnect | NOT thread-safe | One instance per thread |
 | SocketProxy | NOT thread-safe | One instance per thread |
 | SocketWS | NOT thread-safe | One instance per thread |
+| SocketSYNProtect | Thread-safe | Internal mutex for state changes |
 | HTTP/2 connections | NOT thread-safe | One instance per thread |
 | HTTP client | Thread-safe | Request instances are NOT |
 | HTTP server | NOT thread-safe | One instance per thread |
-| TLS/DTLS contexts | Thread-safe | Read-only after setup |
+| TLS/DTLS contexts | Thread-safe | Read-only after setup; session cache mutex protected |
+| TLS/DTLS sockets | Per-socket | One thread per TLS socket |
+| TLSBufferPool | Thread-safe | Internal mutex |
 
 ## Signal Handling
 
@@ -2029,21 +2233,23 @@ The library includes comprehensive tests in `src/test/`:
 | Connection | `test_happy_eyeballs.c`, `test_reconnect.c`, `test_proxy.c`, `test_proxy_integration.c` |
 | HTTP | `test_http_core.c`, `test_http1_parser.c`, `test_hpack.c`, `test_http2.c`, `test_http_client.c`, `test_http_integration.c`, `test_http2_integration.c` |
 | WebSocket | `test_websocket.c`, `test_ws_integration.c` |
-| TLS/DTLS | `test_tls_integration.c`, `test_tls_phase4.c`, `test_tls_pinning.c`, `test_dtls_integration.c` |
+| TLS/DTLS | `test_tls_integration.c`, `test_tls_phase4.c`, `test_tls_pinning.c`, `test_tls_crl.c`, `test_tls_ct.c`, `test_dtls_integration.c`, `test_dtls_cookie.c` |
 | Security | `test_synprotect.c`, `test_security.c`, `test_signals.c` |
 | Integration | `test_integration.c`, `test_async.c`, `test_threadsafety.c`, `test_coverage.c` |
 
 ### Fuzz Testing
 
-61+ fuzz harnesses in `src/fuzz/` covering:
-- New features comprehensive testing
-- HTTP/1.1 parser
-- HTTP/2 frame parsing
-- HPACK encoder/decoder
-- WebSocket framing
-- URI parsing
+65+ fuzz harnesses in `src/fuzz/` covering:
+- HTTP/1.1 parser and request smuggling prevention
+- HTTP/2 frame parsing and HPACK encoding
+- WebSocket framing and permessage-deflate
+- URI parsing and validation
 - UTF-8 validation
-- TLS handshake
+- TLS/DTLS handshake and I/O operations
+- TLS session tickets, ALPN, SNI, CRL management
+- DTLS cookie generation and verification
+- Certificate pinning and parsing
+- Path validation and security checks
 
 ```bash
 # Build with fuzzing
@@ -2070,6 +2276,12 @@ New features added in recent enhancements include:
 - DNS caching and configuration
 - I/O timeout variants and advanced operations
 - TLS session management and certificate inspection
+- TLS performance optimizations (kTLS, 0-RTT, KeyUpdate, session sharding)
+- OCSP stapling with Must-Staple support (RFC 7633)
+- Certificate Transparency validation (RFC 6962)
+- CRL auto-refresh with configurable intervals
+- Certificate pinning with constant-time verification
+- DTLS cookie exchange for DoS protection
 - HTTP client/server with JSON support and WebSocket upgrades
 - Buffer compaction, scatter-gather I/O, and line reading
 - Async I/O batch operations and backend selection
@@ -2140,6 +2352,7 @@ GitHub Actions pipeline (`.github/workflows/ci.yml`):
 - `SocketDTLS_VerifyFailed` - DTLS certificate verification failure
 - `SocketDTLS_CookieFailed` - DTLS cookie exchange failure
 - `SocketDTLS_TimeoutExpired` - DTLS handshake timeout
+- `SocketDTLS_ShutdownFailed` - DTLS shutdown failure
 
 ### HTTP Exceptions
 - `SocketHTTP_ParseError` - HTTP parsing error
