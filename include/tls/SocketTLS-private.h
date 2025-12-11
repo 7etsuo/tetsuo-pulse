@@ -1050,6 +1050,25 @@ extern int tls_pinning_check_chain (SocketTLSContext_T ctx,
 extern int tls_pinning_find (const TLSCertPin *pins, size_t count,
                              const unsigned char *hash);
 
+/* ============================================================================
+ * kTLS Internal Functions
+ * ============================================================================
+ */
+
+/**
+ * @brief Called after TLS handshake completion to update kTLS offload status.
+ * @ingroup security
+ * @param socket Socket with completed TLS handshake
+ *
+ * Updates the socket's tls_ktls_tx_active and tls_ktls_rx_active flags
+ * by querying OpenSSL's BIO layer for actual kTLS activation status.
+ * Should be called from SocketTLS_handshake() after successful completion.
+ *
+ * @threadsafe No - modifies socket state
+ * @see SocketTLS_enable_ktls() for enabling kTLS before handshake
+ */
+extern void ktls_on_handshake_complete (Socket_T socket);
+
 #undef T
 
 #endif /* SOCKET_HAS_TLS */

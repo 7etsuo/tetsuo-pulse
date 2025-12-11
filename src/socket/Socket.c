@@ -138,6 +138,11 @@ socket_init_tls_fields (Socket_T sock)
   sock->tls_write_buf_len = 0;
   sock->tls_timeouts = (SocketTimeouts_T){ 0 };
   sock->tls_renegotiation_count = 0;
+
+  /* kTLS offload state */
+  sock->tls_ktls_enabled = 0;
+  sock->tls_ktls_tx_active = 0;
+  sock->tls_ktls_rx_active = 0;
 }
 #endif
 

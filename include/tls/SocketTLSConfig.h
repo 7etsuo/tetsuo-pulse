@@ -1035,6 +1035,118 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
 #endif
 
 /* ============================================================================
+ * Kernel TLS (kTLS) Configuration
+ * ============================================================================
+ *
+ * kTLS offloads TLS record encryption/decryption to the Linux kernel,
+ * improving performance for high-throughput applications. These constants
+ * control kTLS behavior and detection.
+ *
+ * Requirements:
+ * - OpenSSL 3.0+ compiled with `enable-ktls` (not OPENSSL_NO_KTLS)
+ * - Linux 4.13+ for TX offload, 4.17+ for RX offload
+ * - Kernel CONFIG_TLS=y or CONFIG_TLS=m (tls module loaded)
+ * - Supported cipher: AES-GCM-128/256 or ChaCha20-Poly1305 (5.11+)
+ */
+
+/**
+ * @brief Default kTLS enablement policy
+ * @ingroup tls_config
+ *
+ * Controls whether kTLS is attempted by default when available: 1 = yes.
+ *
+ * ## Rationale for Default Enable
+ *
+ * - **Performance**: kTLS provides 10-30% TLS overhead reduction
+ * - **Transparent**: Falls back gracefully to userspace if unavailable
+ * - **Security**: Same cryptographic guarantees as userspace TLS
+ * - **Industry trend**: Major servers (nginx, haproxy) default to kTLS
+ *
+ * ## Override Examples
+ *
+ * @code{.c}
+ * // Disable kTLS by default (explicit opt-in required)
+ * #define SOCKET_TLS_KTLS_ENABLED 0
+ * #include "SocketTLSConfig.h"
+ * @endcode
+ *
+ * @note Individual sockets can still enable/disable via SocketTLS_enable_ktls()
+ * @see SocketTLS_enable_ktls() for per-socket control
+ */
+#ifndef SOCKET_TLS_KTLS_ENABLED
+#define SOCKET_TLS_KTLS_ENABLED 1
+#endif
+
+/**
+ * @brief Minimum Linux kernel version for kTLS TX offload
+ * @ingroup tls_config
+ *
+ * Linux kernel 4.13 introduced TLS_TX socket option for transmit offload.
+ * Format: KERNEL_VERSION(major, minor, patch) = (major << 16) + (minor << 8) +
+ * patch
+ *
+ * Value: 0x040D00 = KERNEL_VERSION(4, 13, 0)
+ *
+ * @note RX offload requires 4.17+ (SOCKET_TLS_KTLS_MIN_KERNEL_RX)
+ * @see https://www.kernel.org/doc/html/latest/networking/tls.html
+ */
+#ifndef SOCKET_TLS_KTLS_MIN_KERNEL_TX
+#define SOCKET_TLS_KTLS_MIN_KERNEL_TX 0x040D00 /* 4.13.0 */
+#endif
+
+/**
+ * @brief Minimum Linux kernel version for kTLS RX offload
+ * @ingroup tls_config
+ *
+ * Linux kernel 4.17 added TLS_RX socket option for receive offload.
+ * Earlier kernels only support TX offload.
+ *
+ * Value: 0x041100 = KERNEL_VERSION(4, 17, 0)
+ *
+ * @note TX offload available from 4.13+ (SOCKET_TLS_KTLS_MIN_KERNEL_TX)
+ */
+#ifndef SOCKET_TLS_KTLS_MIN_KERNEL_RX
+#define SOCKET_TLS_KTLS_MIN_KERNEL_RX 0x041100 /* 4.17.0 */
+#endif
+
+/**
+ * @brief Minimum Linux kernel version for ChaCha20-Poly1305 kTLS
+ * @ingroup tls_config
+ *
+ * Linux kernel 5.11 added kTLS support for ChaCha20-Poly1305 cipher.
+ * Earlier kernels only support AES-GCM variants.
+ *
+ * Value: 0x050B00 = KERNEL_VERSION(5, 11, 0)
+ *
+ * @note AES-GCM-128/256 available from 4.13+
+ */
+#ifndef SOCKET_TLS_KTLS_MIN_KERNEL_CHACHA
+#define SOCKET_TLS_KTLS_MIN_KERNEL_CHACHA 0x050B00 /* 5.11.0 */
+#endif
+
+/**
+ * @brief kTLS sendfile buffer size for fallback mode
+ * @ingroup tls_config
+ *
+ * Buffer size for SocketTLS_sendfile() when kTLS is not active: 64KB.
+ *
+ * When kTLS TX offload is active, SSL_sendfile() provides true zero-copy.
+ * When not active, we fall back to read+send with this buffer size.
+ *
+ * ## Rationale for 64KB
+ *
+ * - **Multiple TLS records**: 64KB = 4 × 16KB TLS records
+ * - **Disk I/O alignment**: Good alignment for filesystem block sizes
+ * - **Memory reasonable**: Stack-safe temporary allocation
+ * - **Throughput**: Large enough for efficient bulk transfer
+ *
+ * @see SocketTLS_sendfile() for file transfer API
+ */
+#ifndef SOCKET_TLS_KTLS_SENDFILE_BUFSIZE
+#define SOCKET_TLS_KTLS_SENDFILE_BUFSIZE (64 * 1024)
+#endif
+
+/* ============================================================================
  * CRL Auto-Refresh Limits
  * ============================================================================
  */

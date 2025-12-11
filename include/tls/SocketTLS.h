@@ -1724,6 +1724,308 @@ extern int SocketTLS_get_ocsp_response_status (Socket_T socket);
  */
 extern int SocketTLS_get_ocsp_next_update (Socket_T socket, time_t *next_update);
 
+/* ============================================================================
+ * Kernel TLS (kTLS) Offload Support
+ * ============================================================================
+ *
+ * kTLS offloads TLS record encryption/decryption to the Linux kernel,
+ * reducing context switches and improving performance for high-throughput
+ * applications. When kTLS is active, SSL_write/SSL_read continue to work
+ * normally - OpenSSL handles the kernel offload internally through its
+ * BIO layer.
+ *
+ * ## Kernel Requirements
+ *
+ * | Feature | Minimum Kernel | Notes |
+ * |---------|----------------|-------|
+ * | TLS_TX (transmit offload) | Linux 4.13+ | send() uses kernel crypto |
+ * | TLS_RX (receive offload) | Linux 4.17+ | recv() uses kernel crypto |
+ * | ChaCha20-Poly1305 | Linux 5.11+ | In addition to AES-GCM |
+ * | CONFIG_TLS | Required | Kernel TLS module |
+ *
+ * ## OpenSSL Requirements
+ *
+ * - OpenSSL 3.0+ compiled with `enable-ktls` option
+ * - Check with: `openssl version -a | grep KTLS`
+ * - At runtime: `#ifndef OPENSSL_NO_KTLS`
+ *
+ * ## Supported Cipher Suites
+ *
+ * | Cipher | kTLS Support | Notes |
+ * |--------|--------------|-------|
+ * | TLS_AES_128_GCM_SHA256 | Yes | Most widely supported |
+ * | TLS_AES_256_GCM_SHA384 | Yes | Highest security |
+ * | TLS_CHACHA20_POLY1305_SHA256 | Linux 5.11+ | ARM-friendly |
+ *
+ * ## Performance Characteristics
+ *
+ * - **Reduced syscalls**: Single syscall vs user/kernel copies per record
+ * - **Zero-copy sendfile**: SSL_sendfile() for file transfers when TX active
+ * - **CPU savings**: 10-30% reduction in TLS overhead on supported hardware
+ * - **Best for**: High-throughput bulk transfers (file serving, streaming)
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * // Check system support first
+ * if (SocketTLS_ktls_available()) {
+ *     printf("kTLS is available on this system\n");
+ * }
+ *
+ * // Enable kTLS before handshake
+ * Socket_T sock = Socket_new(AF_INET, SOCK_STREAM, 0);
+ * Socket_connect(sock, "example.com", 443);
+ *
+ * SocketTLSContext_T ctx = SocketTLSContext_new_client(NULL);
+ * SocketTLS_enable(sock, ctx);
+ * SocketTLS_enable_ktls(sock);  // Request kTLS offload
+ * SocketTLS_set_hostname(sock, "example.com");
+ *
+ * // Handshake - kTLS activated automatically if possible
+ * SocketTLS_handshake_auto(sock);
+ *
+ * // Check what was activated
+ * if (SocketTLS_is_ktls_tx_active(sock)) {
+ *     printf("TX offload active - using kernel encryption\n");
+ * }
+ * if (SocketTLS_is_ktls_rx_active(sock)) {
+ *     printf("RX offload active - using kernel decryption\n");
+ * }
+ *
+ * // I/O works normally - OpenSSL uses kernel internally
+ * SocketTLS_send(sock, data, len);
+ * SocketTLS_recv(sock, buf, sizeof(buf));
+ *
+ * // Zero-copy file transfer when TX offload active
+ * if (SocketTLS_is_ktls_tx_active(sock)) {
+ *     SocketTLS_sendfile(sock, file_fd, 0, file_size);
+ * }
+ * @endcode
+ *
+ * @note kTLS is opportunistic - falls back to userspace if unavailable
+ * @warning kTLS does not support TLS renegotiation (TLS 1.2 only)
+ * @warning kTLS may not work with all OpenSSL features (e.g., custom BIOs)
+ */
+
+/**
+ * @brief Check if kTLS support is available on this system
+ * @ingroup security
+ *
+ * Performs compile-time and runtime checks to determine if kTLS can
+ * potentially be used. Checks include:
+ * - OpenSSL compiled with kTLS support (not OPENSSL_NO_KTLS)
+ * - Linux kernel with TLS module available
+ * - Socket can be configured for TLS ULP
+ *
+ * This is a quick check that doesn't require an active TLS connection.
+ * Even if this returns 1, actual kTLS activation depends on the
+ * negotiated cipher suite and socket configuration.
+ *
+ * @return 1 if kTLS is potentially available,
+ *         0 if kTLS is definitely not available
+ *
+ * @throws None
+ * @threadsafe Yes - pure function with no side effects
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * if (SocketTLS_ktls_available()) {
+ *     printf("kTLS available - enabling for new connections\n");
+ *     config.use_ktls = 1;
+ * } else {
+ *     printf("kTLS not available - using userspace TLS\n");
+ * }
+ * @endcode
+ *
+ * @see SocketTLS_enable_ktls() to request kTLS for a socket
+ * @see SocketTLS_is_ktls_tx_active() to check actual activation
+ */
+extern int SocketTLS_ktls_available (void);
+
+/**
+ * @brief Enable kTLS offload for a TLS-enabled socket
+ * @ingroup security
+ * @param[in] socket Socket with TLS enabled but before handshake
+ *
+ * Requests kernel TLS offload for this socket. The actual offload
+ * activation occurs during the TLS handshake if all conditions are met:
+ * - OpenSSL 3.0+ with kTLS support
+ * - Compatible Linux kernel (4.13+ for TX, 4.17+ for RX)
+ * - Supported cipher suite negotiated (AES-GCM or ChaCha20-Poly1305)
+ *
+ * This function sets SSL_OP_ENABLE_KTLS on the SSL object. OpenSSL
+ * then handles all kernel interaction automatically during handshake.
+ *
+ * ## Call Timing
+ *
+ * MUST be called in this order:
+ * 1. SocketTLS_enable(sock, ctx)
+ * 2. **SocketTLS_enable_ktls(sock)** <- HERE
+ * 3. SocketTLS_set_hostname(sock, hostname)  // if client
+ * 4. SocketTLS_handshake*()
+ *
+ * Calling after handshake has no effect.
+ *
+ * ## Graceful Fallback
+ *
+ * If kTLS cannot be activated (unsupported kernel, cipher, etc.),
+ * the handshake proceeds normally with userspace TLS. No exception
+ * is raised. Use SocketTLS_is_ktls_tx_active() after handshake to
+ * verify activation.
+ *
+ * @return void
+ *
+ * @throws SocketTLS_Failed if TLS not enabled on socket
+ * @threadsafe No - modifies SSL object state
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * SocketTLS_enable(sock, ctx);
+ * SocketTLS_enable_ktls(sock);  // Request kTLS
+ * SocketTLS_handshake_auto(sock);
+ *
+ * // Check activation after handshake
+ * if (SocketTLS_is_ktls_tx_active(sock)) {
+ *     printf("Using kernel TLS for encryption\n");
+ * }
+ * @endcode
+ *
+ * @see SocketTLS_ktls_available() to check system support first
+ * @see SocketTLS_is_ktls_tx_active() / SocketTLS_is_ktls_rx_active()
+ */
+extern void SocketTLS_enable_ktls (Socket_T socket);
+
+/**
+ * @brief Check if kTLS TX (transmit) offload is active
+ * @ingroup security
+ * @param[in] socket Socket with completed TLS handshake
+ *
+ * After a successful TLS handshake with kTLS enabled, checks if the
+ * kernel is handling encryption for outbound data. When TX offload
+ * is active:
+ * - SSL_write() internally uses kernel crypto
+ * - SSL_sendfile() is available for zero-copy file transfer
+ * - Performance is improved for bulk data transmission
+ *
+ * @return 1 if TX offload is active,
+ *         0 if using userspace TLS or kTLS not enabled,
+ *         -1 if TLS not enabled or handshake not complete
+ *
+ * @throws None
+ * @threadsafe Yes - reads immutable post-handshake state
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * if (SocketTLS_is_ktls_tx_active(sock)) {
+ *     // Use zero-copy sendfile for large file transfers
+ *     SocketTLS_sendfile(sock, file_fd, offset, size);
+ * } else {
+ *     // Fall back to regular send
+ *     SocketTLS_send(sock, buffer, size);
+ * }
+ * @endcode
+ *
+ * @see SocketTLS_enable_ktls() to enable kTLS before handshake
+ * @see SocketTLS_is_ktls_rx_active() for receive offload status
+ * @see SocketTLS_sendfile() for zero-copy file transfer
+ */
+extern int SocketTLS_is_ktls_tx_active (Socket_T socket);
+
+/**
+ * @brief Check if kTLS RX (receive) offload is active
+ * @ingroup security
+ * @param[in] socket Socket with completed TLS handshake
+ *
+ * After a successful TLS handshake with kTLS enabled, checks if the
+ * kernel is handling decryption for inbound data. When RX offload
+ * is active:
+ * - SSL_read() internally uses kernel crypto
+ * - Performance is improved for bulk data reception
+ *
+ * Note: RX offload requires Linux 4.17+ while TX requires only 4.13+.
+ * It's possible for TX to be active but RX not on older kernels.
+ *
+ * @return 1 if RX offload is active,
+ *         0 if using userspace TLS or kTLS not enabled,
+ *         -1 if TLS not enabled or handshake not complete
+ *
+ * @throws None
+ * @threadsafe Yes - reads immutable post-handshake state
+ *
+ * @see SocketTLS_enable_ktls() to enable kTLS before handshake
+ * @see SocketTLS_is_ktls_tx_active() for transmit offload status
+ */
+extern int SocketTLS_is_ktls_rx_active (Socket_T socket);
+
+/**
+ * @brief Send file data over TLS using zero-copy when kTLS TX is active
+ * @ingroup security
+ * @param[in] socket Socket with completed TLS handshake
+ * @param[in] file_fd File descriptor to read from
+ * @param[in] offset Starting offset in file (0 for beginning)
+ * @param[in] size Number of bytes to send
+ *
+ * Efficiently sends file data over a TLS connection. When kTLS TX offload
+ * is active, this uses SSL_sendfile() for true zero-copy transmission -
+ * data goes directly from page cache to network without user/kernel copies.
+ *
+ * When kTLS is not active, falls back to regular read+send operations.
+ *
+ * ## Zero-Copy Behavior (kTLS Active)
+ *
+ * - Data transferred directly from kernel page cache to network
+ * - No user-space buffering or memory copies
+ * - Optimal for serving static files (web servers, file transfer)
+ * - File should not be modified during transmission
+ *
+ * ## Fallback Behavior (kTLS Not Active)
+ *
+ * - Uses internal buffer to read from file and send via SSL_write
+ * - Still works correctly, just without zero-copy optimization
+ *
+ * @return Number of bytes sent on success (may be < size for partial),
+ *         0 if would block (non-blocking socket),
+ *         -1 on error
+ *
+ * @throws SocketTLS_Failed on TLS protocol errors
+ * @throws Socket_Closed if connection closed during transfer
+ * @threadsafe No - modifies SSL state
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * int fd = open("large_file.bin", O_RDONLY);
+ * struct stat st;
+ * fstat(fd, &st);
+ *
+ * // Send entire file
+ * off_t offset = 0;
+ * size_t remaining = st.st_size;
+ * while (remaining > 0) {
+ *     ssize_t sent = SocketTLS_sendfile(sock, fd, offset, remaining);
+ *     if (sent > 0) {
+ *         offset += sent;
+ *         remaining -= sent;
+ *     } else if (sent == 0) {
+ *         // Would block - poll and retry
+ *         poll_for_write(sock);
+ *     }
+ * }
+ * close(fd);
+ * @endcode
+ *
+ * @warning Do not modify the file during transmission (undefined behavior)
+ * @note Returns partial count if file read/send is interrupted
+ *
+ * @see SocketTLS_is_ktls_tx_active() to check if zero-copy is available
+ * @see SocketTLS_send() for sending buffer data
+ */
+extern ssize_t SocketTLS_sendfile (Socket_T socket, int file_fd, off_t offset,
+                                   size_t size);
+
 #undef T
 
 /** @} */ /* end of security group */

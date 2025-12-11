@@ -596,6 +596,37 @@ struct Socket_T
                                 * Reset on disable. TLS 1.3 always 0 (no reneg).
                                 * @private @see SocketTLS_check_renegotiation()
                                 */
+
+  /**
+   * @brief kTLS (Kernel TLS) offload state fields.
+   * @private
+   * @details Tracks kTLS activation and offload status for TX/RX paths.
+   * kTLS offloads TLS record encryption/decryption to the Linux kernel,
+   * reducing context switches and improving performance. Requires:
+   * - Linux 4.13+ kernel with CONFIG_TLS=y
+   * - OpenSSL 3.0+ compiled with enable-ktls
+   * - Compatible cipher (AES-GCM-128/256, ChaCha20-Poly1305)
+   *
+   * When kTLS is active, SSL_write/SSL_read continue to work normally -
+   * OpenSSL handles the kernel offload internally through its BIO layer.
+   *
+   * @see SocketTLS_enable_ktls() for activation
+   * @see SocketTLS_is_ktls_tx_active() / SocketTLS_is_ktls_rx_active() for status
+   */
+  int tls_ktls_enabled; /**< kTLS offload requested by user (1=yes, 0=no).
+                         * Set by SocketTLS_enable_ktls(); actual activation
+                         * depends on kernel/OpenSSL support and cipher.
+                         * @private */
+  int tls_ktls_tx_active; /**< kTLS TX (transmit) offload currently active.
+                           * Set after successful handshake if kTLS enabled
+                           * and kernel accepted TX offload.
+                           * Check with BIO_get_ktls_send().
+                           * @private */
+  int tls_ktls_rx_active; /**< kTLS RX (receive) offload currently active.
+                           * Set after successful handshake if kTLS enabled
+                           * and kernel accepted RX offload.
+                           * Check with BIO_get_ktls_recv().
+                           * @private */
 #endif
 };
 

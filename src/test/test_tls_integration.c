@@ -3154,10 +3154,10 @@ TEST (tls_get_verify_result_codes)
     ASSERT_EQ (result, (long)X509_V_ERR_INVALID_CALL);
 
     /* Complete handshake (may fail due to self-signed cert) */
-    TLSHandshakeState client_state = TLS_HANDSHAKE_IN_PROGRESS;
-    TLSHandshakeState server_state = TLS_HANDSHAKE_IN_PROGRESS;
-    int loops = 0;
-    int handshake_failed = 0;
+    volatile TLSHandshakeState client_state = TLS_HANDSHAKE_IN_PROGRESS;
+    volatile TLSHandshakeState server_state = TLS_HANDSHAKE_IN_PROGRESS;
+    volatile int loops = 0;
+    volatile int handshake_failed = 0;
 
     while ((client_state != TLS_HANDSHAKE_COMPLETE
             && client_state != TLS_HANDSHAKE_ERROR)
@@ -3265,9 +3265,9 @@ TEST (tls_get_verify_error_string_buffer)
     SocketTLS_enable (server, server_ctx);
 
     /* Complete handshake (expected to fail with self-signed cert) */
-    TLSHandshakeState client_state = TLS_HANDSHAKE_IN_PROGRESS;
-    TLSHandshakeState server_state = TLS_HANDSHAKE_IN_PROGRESS;
-    int loops = 0;
+    volatile TLSHandshakeState client_state = TLS_HANDSHAKE_IN_PROGRESS;
+    volatile TLSHandshakeState server_state = TLS_HANDSHAKE_IN_PROGRESS;
+    volatile int loops = 0;
 
     while ((client_state != TLS_HANDSHAKE_COMPLETE
             && client_state != TLS_HANDSHAKE_ERROR)
@@ -3415,6 +3415,143 @@ TEST (tls_get_verify_error_string_buffer)
       Socket_free (&client);
     if (server)
       Socket_free (&server);
+    if (client_ctx)
+      SocketTLSContext_free (&client_ctx);
+    if (server_ctx)
+      SocketTLSContext_free (&server_ctx);
+    remove_test_certs (cert_file, key_file);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+/* ==================== kTLS Integration Test ==================== */
+
+/**
+ * Test kTLS offload with full handshake and I/O operations.
+ * Verifies that kTLS enable/disable works correctly in an integration context.
+ */
+TEST (tls_ktls_integration)
+{
+#if SOCKET_HAS_TLS
+  const char *cert_file = "test_ktls_integration.crt";
+  const char *key_file = "test_ktls_integration.key";
+  Socket_T client = NULL, server = NULL;
+  SocketTLSContext_T client_ctx = NULL, server_ctx = NULL;
+
+  if (generate_test_certs (cert_file, key_file) != 0)
+    return;
+
+  TRY
+  {
+    /* Check kTLS availability first */
+    int ktls_available = SocketTLS_ktls_available ();
+    printf ("  kTLS available: %s\n", ktls_available ? "YES" : "NO");
+
+    /* Create socket pair */
+    SocketPair_new (SOCK_STREAM, &client, &server);
+    Socket_setnonblocking (client);
+    Socket_setnonblocking (server);
+
+    /* Create contexts */
+    server_ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+    client_ctx = SocketTLSContext_new_client (NULL);
+    SocketTLSContext_set_verify_mode (client_ctx, TLS_VERIFY_NONE);
+
+    /* Enable TLS */
+    SocketTLS_enable (server, server_ctx);
+    SocketTLS_enable (client, client_ctx);
+
+    /* Enable kTLS on both sides */
+    SocketTLS_enable_ktls (server);
+    SocketTLS_enable_ktls (client);
+
+    /* Status should be -1 before handshake */
+    ASSERT_EQ (SocketTLS_is_ktls_tx_active (client), -1);
+    ASSERT_EQ (SocketTLS_is_ktls_rx_active (server), -1);
+
+    /* Complete handshake */
+    volatile TLSHandshakeState client_state = TLS_HANDSHAKE_IN_PROGRESS;
+    volatile TLSHandshakeState server_state = TLS_HANDSHAKE_IN_PROGRESS;
+    volatile int loops = 0;
+
+    while ((client_state != TLS_HANDSHAKE_COMPLETE)
+           && (server_state != TLS_HANDSHAKE_COMPLETE) && loops < 1000)
+      {
+        if (client_state != TLS_HANDSHAKE_COMPLETE)
+          client_state = SocketTLS_handshake (client);
+        if (server_state != TLS_HANDSHAKE_COMPLETE)
+          server_state = SocketTLS_handshake (server);
+        loops++;
+        usleep (1000);
+      }
+
+    ASSERT_EQ (client_state, TLS_HANDSHAKE_COMPLETE);
+    ASSERT_EQ (server_state, TLS_HANDSHAKE_COMPLETE);
+
+    /* After handshake, status should be 0 or 1 (not -1) */
+    int client_tx = SocketTLS_is_ktls_tx_active (client);
+    int client_rx = SocketTLS_is_ktls_rx_active (client);
+    int server_tx = SocketTLS_is_ktls_tx_active (server);
+    int server_rx = SocketTLS_is_ktls_rx_active (server);
+
+    ASSERT_TRUE (client_tx == 0 || client_tx == 1);
+    ASSERT_TRUE (client_rx == 0 || client_rx == 1);
+    ASSERT_TRUE (server_tx == 0 || server_tx == 1);
+    ASSERT_TRUE (server_rx == 0 || server_rx == 1);
+
+    printf ("  kTLS active - client TX:%d RX:%d, server TX:%d RX:%d\n",
+            client_tx, client_rx, server_tx, server_rx);
+
+    /* Test bidirectional I/O with kTLS (or fallback) */
+    const char *msg1 = "Hello from client with kTLS!";
+    const char *msg2 = "Hello from server with kTLS!";
+    char buf[256];
+
+    /* Client -> Server */
+    ssize_t sent = SocketTLS_send (client, msg1, strlen (msg1));
+    ASSERT_TRUE (sent > 0);
+
+    ssize_t recv_total = 0;
+    for (int i = 0; i < 50 && recv_total <= 0; i++)
+      {
+        recv_total = SocketTLS_recv (server, buf, sizeof (buf) - 1);
+        if (recv_total == 0 && errno == EAGAIN)
+          usleep (1000);
+      }
+    ASSERT_TRUE (recv_total > 0);
+    buf[recv_total] = '\0';
+    ASSERT_STREQ (buf, msg1);
+
+    /* Server -> Client */
+    sent = SocketTLS_send (server, msg2, strlen (msg2));
+    ASSERT_TRUE (sent > 0);
+
+    recv_total = 0;
+    for (int i = 0; i < 50 && recv_total <= 0; i++)
+      {
+        recv_total = SocketTLS_recv (client, buf, sizeof (buf) - 1);
+        if (recv_total == 0 && errno == EAGAIN)
+          usleep (1000);
+      }
+    ASSERT_TRUE (recv_total > 0);
+    buf[recv_total] = '\0';
+    ASSERT_STREQ (buf, msg2);
+  }
+  FINALLY
+  {
+    if (client)
+      {
+        SocketTLS_shutdown (client);
+        Socket_free (&client);
+      }
+    if (server)
+      {
+        SocketTLS_shutdown (server);
+        Socket_free (&server);
+      }
     if (client_ctx)
       SocketTLSContext_free (&client_ctx);
     if (server_ctx)

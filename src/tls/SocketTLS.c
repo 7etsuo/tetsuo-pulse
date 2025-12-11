@@ -413,6 +413,10 @@ SocketTLS_handshake (Socket_T socket)
       socket->tls_handshake_done = 1;
       socket->tls_last_handshake_state = TLS_HANDSHAKE_COMPLETE;
       SocketMetrics_counter_inc (SOCKET_CTR_TLS_HANDSHAKES_TOTAL);
+
+      /* Update kTLS offload status after successful handshake */
+      ktls_on_handshake_complete (socket);
+
       return TLS_HANDSHAKE_COMPLETE;
     }
 
@@ -957,6 +961,7 @@ SocketTLS_shutdown_send (Socket_T socket)
       /* Protocol error */
       tls_format_openssl_error ("TLS shutdown_send protocol error");
       RAISE_TLS_ERROR (SocketTLS_ShutdownFailed);
+      __builtin_unreachable (); /* RAISE never returns */
 
     default:
       /* Unknown or zero return - treat as success */
@@ -1043,6 +1048,7 @@ SocketTLS_send (Socket_T socket, const void *buf, size_t len)
       /* Peer sent close_notify - connection closing cleanly.
        * For send, this typically shouldn't happen, but handle it. */
       RAISE (Socket_Closed);
+      __builtin_unreachable (); /* RAISE never returns */
 
     case SSL_ERROR_SYSCALL:
       /* System call error. errno already set by the underlying call.
@@ -1051,12 +1057,14 @@ SocketTLS_send (Socket_T socket, const void *buf, size_t len)
         errno = ECONNRESET;
       tls_format_openssl_error ("TLS send failed (syscall)");
       RAISE_TLS_ERROR (SocketTLS_Failed);
+      __builtin_unreachable (); /* RAISE never returns */
 
     case SSL_ERROR_SSL:
       /* Protocol error - fatal TLS failure */
       errno = EPROTO;
       tls_format_openssl_error ("TLS send failed (protocol)");
       RAISE_TLS_ERROR (SocketTLS_Failed);
+      __builtin_unreachable (); /* RAISE never returns */
 
     default:
       /* Unknown error */
@@ -1144,6 +1152,7 @@ SocketTLS_recv (Socket_T socket, void *buf, size_t len)
        * Set errno to 0 to indicate clean shutdown, then raise. */
       errno = 0;
       RAISE (Socket_Closed);
+      __builtin_unreachable (); /* RAISE never returns */
 
     case SSL_ERROR_WANT_READ:
     case SSL_ERROR_WANT_WRITE:
@@ -1168,10 +1177,12 @@ SocketTLS_recv (Socket_T socket, void *buf, size_t len)
            * Set ECONNRESET to distinguish from clean shutdown. */
           errno = ECONNRESET;
           RAISE (Socket_Closed);
+          __builtin_unreachable (); /* RAISE never returns */
         }
       /* Other syscall error - errno is already set appropriately */
       tls_format_openssl_error ("TLS recv failed (syscall)");
       RAISE_TLS_ERROR (SocketTLS_Failed);
+      __builtin_unreachable (); /* RAISE never returns */
 
     case SSL_ERROR_SSL:
       /* Protocol error - fatal TLS failure (e.g., bad record MAC,
@@ -1179,6 +1190,7 @@ SocketTLS_recv (Socket_T socket, void *buf, size_t len)
       errno = EPROTO;
       tls_format_openssl_error ("TLS recv failed (protocol)");
       RAISE_TLS_ERROR (SocketTLS_Failed);
+      __builtin_unreachable (); /* RAISE never returns */
 
     default:
       /* Unknown error type - should not happen with current OpenSSL */
