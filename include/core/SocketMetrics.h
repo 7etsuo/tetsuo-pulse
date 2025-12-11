@@ -378,6 +378,8 @@ typedef enum SocketCounterMetric
   SOCKET_CTR_TLS_CT_VERIFICATION_FAILURES, /**< Certificate Transparency
                                               failures */
   SOCKET_CTR_TLS_CRL_CHECK_FAILURES, /**< CRL/OCSP revocation check failures */
+  SOCKET_CTR_TLS_EARLY_DATA_SENT,    /**< TLS 1.3 0-RTT early data sent */
+  SOCKET_CTR_TLS_EARLY_DATA_RECV,    /**< TLS 1.3 0-RTT early data received */
 
   /* DTLS Counters */
   SOCKET_CTR_DTLS_HANDSHAKES_TOTAL,    /**< Total DTLS handshakes initiated */

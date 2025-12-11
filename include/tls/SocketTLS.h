@@ -2026,6 +2026,352 @@ extern int SocketTLS_is_ktls_rx_active (Socket_T socket);
 extern ssize_t SocketTLS_sendfile (Socket_T socket, int file_fd, off_t offset,
                                    size_t size);
 
+/* ============================================================================
+ * TLS Performance Optimizations
+ * ============================================================================
+ *
+ * These functions provide performance optimizations for TLS connections:
+ * - TCP tuning for handshake latency reduction
+ * - TLS 1.3 0-RTT early data support
+ * - Session cache sharding for multi-threaded servers
+ * - Buffer pooling for high-connection scenarios
+ */
+
+/**
+ * @brief Optimize TCP settings for faster TLS handshake
+ * @ingroup security
+ * @param[in] socket Socket with TLS enabled but before handshake
+ *
+ * Applies TCP-level optimizations to reduce handshake latency:
+ * 1. TCP_NODELAY: Disable Nagle's algorithm for immediate sends
+ * 2. TCP_QUICKACK (Linux): Disable delayed ACKs during handshake
+ *
+ * These optimizations are beneficial for high-latency connections where
+ * the TLS handshake RTT is significant. Call after SocketTLS_enable()
+ * but before SocketTLS_handshake().
+ *
+ * @return 0 on success, -1 on error (TLS not enabled, invalid socket)
+ *
+ * @throws None
+ * @threadsafe No - modifies socket options
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * SocketTLS_enable(sock, ctx);
+ * SocketTLS_optimize_handshake(sock);  // Apply TCP optimizations
+ * SocketTLS_set_hostname(sock, "example.com");
+ * SocketTLS_handshake_auto(sock);
+ * @endcode
+ *
+ * @see SocketTLS_restore_tcp_defaults() to revert for bulk transfers
+ */
+extern int SocketTLS_optimize_handshake (Socket_T socket);
+
+/**
+ * @brief Restore TCP settings after handshake for bulk transfers
+ * @ingroup security
+ * @param[in] socket Socket with completed TLS handshake
+ *
+ * Restores TCP settings to favor bulk data transfer efficiency:
+ * - Re-enables Nagle's algorithm (TCP_NODELAY=0)
+ *
+ * Most applications keep TCP_NODELAY enabled throughout the connection.
+ * Call this only if your application does bulk transfers and wants
+ * Nagle's algorithm re-enabled for improved throughput.
+ *
+ * @return 0 on success, -1 on error
+ *
+ * @throws None
+ * @threadsafe No - modifies socket options
+ *
+ * @see SocketTLS_optimize_handshake() to apply handshake optimizations
+ */
+extern int SocketTLS_restore_tcp_defaults (Socket_T socket);
+
+/* ============================================================================
+ * TLS 1.3 0-RTT Early Data Support
+ * ============================================================================
+ *
+ * 0-RTT (Zero Round Trip Time) allows sending data in the first handshake
+ * flight, reducing latency by one RTT. Available in TLS 1.3 with session
+ * resumption.
+ *
+ * ## Security Warning
+ *
+ * Early data is NOT replay-protected by the TLS protocol. Applications MUST:
+ * - Only use early data for idempotent operations (GET, not POST)
+ * - Implement application-level replay detection
+ * - Never include sensitive state-changing operations
+ *
+ * ## Recommended Use Cases
+ * - HTTP GET requests
+ * - DNS queries
+ * - Heartbeat/ping messages
+ *
+ * ## NOT Recommended For
+ * - POST requests that modify state
+ * - Financial transactions
+ * - Any non-idempotent operation
+ */
+
+/**
+ * @brief Early data status codes for TLS 1.3 0-RTT
+ * @ingroup security
+ */
+typedef enum
+{
+  SOCKET_EARLY_DATA_NOT_SENT = 0, /**< No early data was sent */
+  SOCKET_EARLY_DATA_ACCEPTED = 1, /**< Server accepted early data */
+  SOCKET_EARLY_DATA_REJECTED = 2  /**< Server rejected early data (resend needed) */
+} SocketTLS_EarlyDataStatus;
+
+/**
+ * @brief Enable TLS 1.3 0-RTT early data on context
+ * @ingroup security
+ * @param[in] ctx TLS context
+ * @param[in] max_early_data Maximum early data size (0 = default 16KB)
+ *
+ * Enables TLS 1.3 early data (0-RTT) on the context:
+ * - For servers: Sets maximum early data to accept
+ * - For clients: Enables sending early data on session resumption
+ *
+ * @throws SocketTLS_Failed on configuration error
+ * @threadsafe No - call before sharing context
+ *
+ * @warning Early data is vulnerable to replay attacks. Only use for
+ *          idempotent operations.
+ *
+ * @see SocketTLS_write_early_data() to send early data (client)
+ * @see SocketTLS_read_early_data() to receive early data (server)
+ */
+extern void SocketTLSContext_enable_early_data (SocketTLSContext_T ctx,
+                                                uint32_t max_early_data);
+
+/**
+ * @brief Disable TLS 1.3 0-RTT early data
+ * @ingroup security
+ * @param[in] ctx TLS context
+ *
+ * Disables 0-RTT early data support. Call this if replay protection
+ * cannot be implemented at the application level.
+ *
+ * @threadsafe No - call before sharing context
+ */
+extern void SocketTLSContext_disable_early_data (SocketTLSContext_T ctx);
+
+/**
+ * @brief Send early data during TLS 1.3 handshake (client)
+ * @ingroup security
+ * @param[in] socket Socket with TLS enabled, during handshake
+ * @param[in] buf Data buffer to send
+ * @param[in] len Length of data
+ * @param[out] written Bytes actually written
+ *
+ * Sends application data during the initial handshake flight (0-RTT).
+ * Only works when:
+ * 1. TLS 1.3 is negotiated
+ * 2. Session resumption is being attempted
+ * 3. Server accepts early data
+ *
+ * @return 1 on success (data written),
+ *         0 if early data not accepted (retry with normal send),
+ *         -1 on error
+ *
+ * @throws SocketTLS_Failed on TLS protocol error
+ * @threadsafe No - modifies SSL state
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Client with session resumption
+ * SocketTLS_enable(sock, ctx);
+ * SocketTLS_session_restore(sock, session_data, session_len);
+ *
+ * // Try to send early data during handshake
+ * size_t written;
+ * const char *req = "GET / HTTP/1.1\r\nHost: example.com\r\n\r\n";
+ * int ret = SocketTLS_write_early_data(sock, req, strlen(req), &written);
+ *
+ * // Complete handshake
+ * SocketTLS_handshake_auto(sock);
+ *
+ * // Check if early data was accepted
+ * if (SocketTLS_get_early_data_status(sock) == SOCKET_EARLY_DATA_REJECTED) {
+ *     // Resend via normal channel
+ *     SocketTLS_send(sock, req, strlen(req));
+ * }
+ * @endcode
+ *
+ * @warning Early data is NOT replay-protected. Only send idempotent operations.
+ */
+extern int SocketTLS_write_early_data (Socket_T socket, const void *buf,
+                                       size_t len, size_t *written);
+
+/**
+ * @brief Receive early data during TLS 1.3 handshake (server)
+ * @ingroup security
+ * @param[in] socket Socket with TLS enabled (server-side), during handshake
+ * @param[out] buf Buffer to receive data
+ * @param[in] len Buffer size
+ * @param[out] readbytes Bytes actually read
+ *
+ * Reads application data sent by client in initial handshake flight (0-RTT).
+ * Only works when:
+ * 1. This is a server socket
+ * 2. TLS 1.3 is negotiated
+ * 3. Client sent early data with session resumption
+ *
+ * @return 1 on success (data read),
+ *         0 if no early data available,
+ *         -1 on error
+ *
+ * @throws SocketTLS_Failed on TLS protocol error
+ * @threadsafe No - modifies SSL state
+ *
+ * @warning Early data is NOT replay-protected. Server MUST implement
+ *          application-level replay protection.
+ */
+extern int SocketTLS_read_early_data (Socket_T socket, void *buf, size_t len,
+                                      size_t *readbytes);
+
+/**
+ * @brief Check early data status after handshake
+ * @ingroup security
+ * @param[in] socket Socket with completed TLS handshake
+ *
+ * Returns the status of early data after handshake completion.
+ *
+ * For clients: Check if early data needs to be retransmitted.
+ * For servers: Check if early data was received.
+ *
+ * @return Early data status code
+ *
+ * @throws None
+ * @threadsafe Yes - reads immutable post-handshake state
+ *
+ * @see SocketTLS_EarlyDataStatus for status values
+ */
+extern SocketTLS_EarlyDataStatus SocketTLS_get_early_data_status (Socket_T socket);
+
+/* ============================================================================
+ * Session Cache Optimization
+ * ============================================================================
+ */
+
+/**
+ * @brief Create sharded session cache for multi-threaded servers
+ * @ingroup security
+ * @param[in] ctx TLS context
+ * @param[in] num_shards Number of cache shards (rounded to power of 2, max 256)
+ * @param[in] sessions_per_shard Maximum sessions per shard
+ * @param[in] timeout_seconds Session timeout
+ *
+ * Creates a sharded session cache for improved concurrency. Each shard
+ * has independent locking, reducing contention in multi-threaded servers.
+ *
+ * @throws SocketTLS_Failed on configuration error
+ * @threadsafe No - call before sharing context
+ *
+ * @see SocketTLSContext_get_sharded_stats() for aggregate statistics
+ */
+extern void SocketTLSContext_create_sharded_cache (SocketTLSContext_T ctx,
+                                                   size_t num_shards,
+                                                   size_t sessions_per_shard,
+                                                   long timeout_seconds);
+
+/**
+ * @brief Get aggregate statistics from sharded session cache
+ * @ingroup security
+ * @param[in] ctx TLS context
+ * @param[out] total_hits Total cache hits (may be NULL)
+ * @param[out] total_misses Total cache misses (may be NULL)
+ * @param[out] total_stores Total sessions stored (may be NULL)
+ *
+ * @threadsafe Yes - uses per-shard locking
+ */
+extern void SocketTLSContext_get_sharded_stats (SocketTLSContext_T ctx,
+                                                size_t *total_hits,
+                                                size_t *total_misses,
+                                                size_t *total_stores);
+
+/* ============================================================================
+ * TLS Buffer Pool for High-Connection Scenarios
+ * ============================================================================
+ *
+ * Pre-allocated buffer pool for servers with thousands of concurrent TLS
+ * connections. Reduces allocation overhead and memory fragmentation.
+ */
+
+/**
+ * @brief Opaque TLS buffer pool type
+ * @ingroup security
+ */
+typedef struct TLSBufferPool *TLSBufferPool_T;
+
+/**
+ * @brief Create a TLS buffer pool
+ * @ingroup security
+ * @param[in] buffer_size Size of each buffer (typically SOCKET_TLS_BUFFER_SIZE)
+ * @param[in] num_buffers Number of pre-allocated buffers
+ * @param[in] arena Memory arena (NULL to create internal arena)
+ *
+ * Creates a pool of reusable TLS buffers to reduce per-connection
+ * allocation overhead.
+ *
+ * @return New buffer pool, or NULL on error
+ *
+ * @threadsafe Yes - fully thread-safe once created
+ */
+extern TLSBufferPool_T TLSBufferPool_new (size_t buffer_size, size_t num_buffers,
+                                          Arena_T arena);
+
+/**
+ * @brief Acquire a buffer from the pool
+ * @ingroup security
+ * @param[in] pool Buffer pool
+ *
+ * @return Buffer pointer, or NULL if pool exhausted
+ *
+ * @threadsafe Yes
+ */
+extern void *TLSBufferPool_acquire (TLSBufferPool_T pool);
+
+/**
+ * @brief Release a buffer back to the pool
+ * @ingroup security
+ * @param[in] pool Buffer pool
+ * @param[in] buffer Buffer to release (must be from this pool)
+ *
+ * Buffer is NOT cleared; use SocketCrypto_secure_clear() first if it
+ * contained sensitive data.
+ *
+ * @threadsafe Yes
+ */
+extern void TLSBufferPool_release (TLSBufferPool_T pool, void *buffer);
+
+/**
+ * @brief Get pool statistics
+ * @ingroup security
+ * @param[in] pool Buffer pool
+ * @param[out] total Total buffers (may be NULL)
+ * @param[out] in_use Buffers currently allocated (may be NULL)
+ * @param[out] available Available buffers (may be NULL)
+ *
+ * @threadsafe Yes
+ */
+extern void TLSBufferPool_stats (TLSBufferPool_T pool, size_t *total,
+                                 size_t *in_use, size_t *available);
+
+/**
+ * @brief Destroy a buffer pool
+ * @ingroup security
+ * @param[in,out] pool Pointer to pool (set to NULL on success)
+ *
+ * @threadsafe No - ensure all buffers are released first
+ */
+extern void TLSBufferPool_free (TLSBufferPool_T *pool);
+
 #undef T
 
 /** @} */ /* end of security group */

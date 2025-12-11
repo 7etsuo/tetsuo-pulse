@@ -29,6 +29,9 @@
 #include "tls/SocketTLS-private.h"
 #include "tls/SocketTLSConfig.h"
 
+/* Thread-local exception for this translation unit */
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLS);
+
 /* Linux kTLS headers - only available on Linux with kTLS support */
 #ifdef __linux__
 #include <linux/version.h>

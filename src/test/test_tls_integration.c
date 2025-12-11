@@ -3497,10 +3497,10 @@ TEST (tls_ktls_integration)
     int server_tx = SocketTLS_is_ktls_tx_active (server);
     int server_rx = SocketTLS_is_ktls_rx_active (server);
 
-    ASSERT_TRUE (client_tx == 0 || client_tx == 1);
-    ASSERT_TRUE (client_rx == 0 || client_rx == 1);
-    ASSERT_TRUE (server_tx == 0 || server_tx == 1);
-    ASSERT_TRUE (server_rx == 0 || server_rx == 1);
+    ASSERT (client_tx == 0 || client_tx == 1);
+    ASSERT (client_rx == 0 || client_rx == 1);
+    ASSERT (server_tx == 0 || server_tx == 1);
+    ASSERT (server_rx == 0 || server_rx == 1);
 
     printf ("  kTLS active - client TX:%d RX:%d, server TX:%d RX:%d\n",
             client_tx, client_rx, server_tx, server_rx);
@@ -3512,7 +3512,7 @@ TEST (tls_ktls_integration)
 
     /* Client -> Server */
     ssize_t sent = SocketTLS_send (client, msg1, strlen (msg1));
-    ASSERT_TRUE (sent > 0);
+    ASSERT (sent > 0);
 
     ssize_t recv_total = 0;
     for (int i = 0; i < 50 && recv_total <= 0; i++)
@@ -3521,13 +3521,13 @@ TEST (tls_ktls_integration)
         if (recv_total == 0 && errno == EAGAIN)
           usleep (1000);
       }
-    ASSERT_TRUE (recv_total > 0);
+    ASSERT (recv_total > 0);
     buf[recv_total] = '\0';
-    ASSERT_STREQ (buf, msg1);
+    ASSERT (strcmp (buf, msg1) == 0);
 
     /* Server -> Client */
     sent = SocketTLS_send (server, msg2, strlen (msg2));
-    ASSERT_TRUE (sent > 0);
+    ASSERT (sent > 0);
 
     recv_total = 0;
     for (int i = 0; i < 50 && recv_total <= 0; i++)
@@ -3536,9 +3536,9 @@ TEST (tls_ktls_integration)
         if (recv_total == 0 && errno == EAGAIN)
           usleep (1000);
       }
-    ASSERT_TRUE (recv_total > 0);
+    ASSERT (recv_total > 0);
     buf[recv_total] = '\0';
-    ASSERT_STREQ (buf, msg2);
+    ASSERT (strcmp (buf, msg2) == 0);
   }
   FINALLY
   {

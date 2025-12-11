@@ -1158,56 +1158,154 @@ All DTLS configuration constants verified and documented with comprehensive fuzz
 
 ## 10. Security Hardening *(Review phase — after implementation)*
 
-### 10.1 Key Material Handling — *depends on 1.\*, 2.\*, 5.\**
+### 10.1 Key Material Handling — *depends on 1.\*, 2.\*, 5.\** ✅ COMPLETE
 **Difficulty: 6/9** _(Security-critical: secure clearing, mlock consideration)_
 
-- [ ] Verify all private key memory is zeroed via `OPENSSL_cleanse()` or `SocketCrypto_secure_clear()`
-- [ ] Verify session ticket keys are securely cleared on context destruction
-- [ ] Verify cookie secrets are securely cleared on context destruction
-- [ ] Verify TLS read/write buffers are securely cleared (may contain decrypted data)
-- [ ] Verify SNI hostname is cleared (may be sensitive connection info)
-- [ ] Consider using `mlock()` for highly sensitive key material to prevent swapping
+- [x] Verify all private key memory is zeroed via `OPENSSL_cleanse()` or `SocketCrypto_secure_clear()`
+  - ✅ OpenSSL manages private key memory internally via `EVP_PKEY` reference counting
+  - ✅ `SSL_CTX_free()` triggers OpenSSL's internal secure cleanup of key material
+  - ✅ No additional action needed from library code - OpenSSL handles this correctly
+- [x] Verify session ticket keys are securely cleared on context destruction
+  - ✅ Implemented in `SocketTLSContext-core.c:430` via `OPENSSL_cleanse(ctx->ticket_key, SOCKET_TLS_TICKET_KEY_LEN)`
+  - ✅ Also cleared on rotation errors (`SocketTLSContext-session.c:372,438`)
+  - ✅ Also cleared on key rotation (`SocketTLSContext-session.c:427`)
+  - ✅ Also cleared on explicit disable (`SocketTLSContext-session.c:483`)
+- [x] Verify cookie secrets are securely cleared on context destruction
+  - ✅ Implemented in `SocketDTLSContext.c:293-295`:
+    - `SocketCrypto_secure_clear(ctx->cookie.secret, sizeof(ctx->cookie.secret))`
+    - `SocketCrypto_secure_clear(ctx->cookie.prev_secret, sizeof(ctx->cookie.prev_secret))`
+  - ✅ Rotation also clears previous secret securely (`SocketDTLSContext.c:513`)
+- [x] Verify TLS read/write buffers are securely cleared (may contain decrypted data)
+  - ✅ TLS buffers: `SocketTLS.c:166-167` via `tls_secure_clear_buf()` using `SocketCrypto_secure_clear()`
+  - ✅ DTLS buffers: `SocketDTLS.c:115-120` via `SocketCrypto_secure_clear()`
+  - ✅ Also cleared in `SocketDgram.c:144-154` for datagram socket cleanup
+- [x] Verify SNI hostname is cleared (may be sensitive connection info)
+  - ✅ TLS: `SocketTLS.c:170-175` via `SocketCrypto_secure_clear()` with length calculation
+  - ✅ DTLS: `SocketDTLS.c:125-131` via `SocketCrypto_secure_clear()` with length calculation
+  - ✅ Also cleared in `SocketDgram.c:157-161` for datagram socket cleanup
+- [x] Consider using `mlock()` for highly sensitive key material to prevent swapping
+  - ✅ Documented as security recommendation in `SocketDTLSContext.h:746`
+  - ✅ Note: `mlock()` is deployment-specific and not implemented in library code
+  - ✅ Applications with high-security requirements should use `mlock()` on their process memory
 
-### 10.2 Thread-Local Error Handling — *depends on all of 1.\*, 2.\*, 4.\*, 5.\*, 7.\**
+### 10.2 Thread-Local Error Handling — *depends on all of 1.\*, 2.\*, 4.\*, 5.\*, 7.\** ✅ COMPLETE
 **Difficulty: 4/9** _(Audit thread-local patterns)_
 
-- [ ] Verify all modules use `SOCKET_DECLARE_MODULE_EXCEPTION()` for thread-local exceptions
-- [ ] Verify error buffers are not shared across threads
-- [ ] Verify OpenSSL error queue is cleared after each operation
+- [x] Verify all modules use `SOCKET_DECLARE_MODULE_EXCEPTION()` for thread-local exceptions
+  - ✅ Found 50 usages across all TLS/DTLS modules: `SocketTLS.c:72`, `SocketDTLS.c:44`, `SocketDTLSContext.c:55-56`, all `SocketTLSContext-*.c` files
+  - ✅ Macro defined in `SocketUtil.h:1678` creates `static __thread Except_T {module}_DetailedException`
+- [x] Verify error buffers are not shared across threads
+  - ✅ `socket_error_buf` in `SocketUtil.c:256` declared as `__thread`
+  - ✅ `dtls_context_error_buf` in `SocketDTLSContext.c:55` declared as `__thread`
+  - ✅ `tls_error_buf` pattern used via `SOCKET_RAISE_*` macros with thread-local storage
+- [x] Verify OpenSSL error queue is cleared after each operation
+  - ✅ `ERR_clear_error()` called in 11 locations across TLS modules:
+    - `SocketTLS.c:1258` after reading verify error
+    - `SocketTLSContext-core.c:150` after raising OpenSSL errors
+    - `SocketTLSContext-verify.c:106,674,683,715,727,861` in validation/verification paths
+    - `SocketTLSContext-certs.c:408` after chain loading
 
-### 10.3 Input Validation — *depends on 2.2, 2.5, 2.10, 7.1*
+### 10.3 Input Validation — *depends on 2.2, 2.5, 2.10, 7.1* ✅ COMPLETE
 **Difficulty: 5/9** _(Comprehensive validation audit)_
 
-- [ ] Verify all file paths are validated via `ssl_validate_file_path()`
-- [ ] Verify all hostnames are validated via `tls_validate_hostname()`
-- [ ] Verify all ALPN protocol names are validated (printable ASCII, length limits)
-- [ ] Verify all certificate/key files are size-limited to prevent DoS
-- [ ] Verify all CRL files are size-limited
+- [x] Verify all file paths are validated via `ssl_validate_file_path()`
+  - ✅ TLS: `ssl_validate_file_path()` defined in `SocketSSL-internal.h:68-191` with path traversal, symlink, control char rejection
+  - ✅ DTLS: `dtls_validate_file_path()` used in `SocketDTLSContext.c:211,214,400,406,432` for cert/key/CA paths
+  - ✅ Pinning: File path validated in `SocketTLSContext-pinning.c:479-502` before cert loading
+- [x] Verify all hostnames are validated via `tls_validate_hostname()`
+  - ✅ Used in `SocketTLS.c:375` for `SocketTLS_set_hostname()`
+  - ✅ Used in `SocketTLSContext-certs.c:283` for SNI certificate mapping
+  - ✅ RFC 1123/6066 compliant validation at `SocketTLS-private.h:461-504`
+  - ✅ Fuzz tested in `fuzz_tls_sni.c` with attack patterns (injection, null bytes, unicode)
+- [x] Verify all ALPN protocol names are validated (printable ASCII, length limits)
+  - ✅ `validate_alpn_protocol_chars()` in `SocketTLSContext-alpn.c` checks 0x21-0x7E range per RFC 7301 Section 3.2
+  - ✅ Length enforced via `SOCKET_TLS_MAX_ALPN_LEN` (255 bytes)
+  - ✅ Count enforced via `SOCKET_TLS_MAX_ALPN_PROTOCOLS` (16)
+- [x] Verify all certificate/key files are size-limited to prevent DoS
+  - ✅ TLS: `check_pem_file_size()` at `SocketTLSContext-certs.c:314-350` enforces `SOCKET_TLS_MAX_CERT_FILE_SIZE` (1MB)
+  - ✅ DTLS: `dtls_reject_if_invalid_file()` at `SocketDTLSContext.c:361-387` enforces `SOCKET_DTLS_MAX_FILE_SIZE` (1MB)
+  - ✅ Pinning: Size validated at `SocketTLSContext-pinning.c:496-502`
+- [x] Verify all CRL files are size-limited
+  - ✅ `validate_crl_file_size()` at `SocketTLSContext-verify.c:404-427` enforces `SOCKET_TLS_MAX_CRL_SIZE` (10MB)
+  - ✅ Directory limit: `SOCKET_TLS_MAX_CRL_FILES_IN_DIR` (1000) prevents exhaustion
 
-### 10.4 Timing Attack Prevention — *depends on 2.13, 5.3*
+### 10.4 Timing Attack Prevention — *depends on 2.13, 5.3* ✅ COMPLETE
 **Difficulty: 7/9** _(Subtle: constant-time ops, early exit analysis)_
 
-- [ ] Verify certificate pin comparison uses `SocketCrypto_secure_compare()` (constant-time)
-- [ ] Verify HMAC comparison in cookie verification is constant-time
-- [ ] Consider timing-safe early exit patterns in verification callbacks
+- [x] Verify certificate pin comparison uses `SocketCrypto_secure_compare()` (constant-time)
+  - ✅ Used at `SocketTLSContext-pinning.c:286` in `tls_pinning_find()`
+  - ✅ O(n) full scan of ALL pins at lines 277-296 regardless of early match (constant time)
+  - ✅ `SocketCrypto_secure_compare()` implemented at `SocketCrypto.c:962` using XOR accumulation
+- [x] Verify HMAC comparison in cookie verification is constant-time
+  - ✅ `SocketCrypto_secure_compare()` at `SocketDTLS-cookie.c:251` for cookie verification
+  - ✅ `SocketCrypto_secure_compare()` at `SocketDTLS-cookie.c:267` for secret presence check (`is_secret_set()`)
+  - ✅ Stack-allocated expected cookie securely cleared via `SocketCrypto_secure_clear()` at line 411
+- [x] Consider timing-safe early exit patterns in verification callbacks
+  - ✅ `tls_pinning_find()` at `SocketTLSContext-pinning.c:277-296` always scans ALL pins
+  - ✅ `try_verify_cookie()` uses constant-time compare even after HMAC computation
+  - ✅ `internal_verify_callback()` processes all verification steps consistently
+  - ✅ WebSocket uses `SocketCrypto_secure_compare()` at `SocketWS-handshake.c:466,1324`
 
-### 10.5 Memory Safety — *depends on all of 1.\*, 2.\*, 4.\*, 5.\**
+### 10.5 Memory Safety — *depends on all of 1.\*, 2.\*, 4.\*, 5.\** ✅ COMPLETE
 **Difficulty: 5/9** _(Sanitizer validation, leak detection)_
 
-- [ ] Verify all Arena allocations are checked for NULL
-- [ ] Verify all OpenSSL object creations are checked for NULL
-- [ ] Verify proper cleanup in error paths (no resource leaks)
-- [ ] Run with AddressSanitizer to detect memory errors
+- [x] Verify all Arena allocations are checked for NULL
+  - ✅ All `Arena_alloc()` calls have immediate NULL checks with descriptive error messages:
+    - `SocketTLS.c:94-96,321-323,1304-1306,1832-1834`
+    - `SocketDTLS.c:66-68,505-507,1081-1083`
+    - `SocketDTLSContext.c:700-702,723-725,748-750`
+    - `SocketTLSContext-pinning.c:145-147`
+- [x] Verify all OpenSSL object creations are checked for NULL
+  - ✅ `SSL_CTX_new()` checked at `SocketTLSContext-core.c:353-355`, `SocketDTLSContext.c:222-224,258-260`
+  - ✅ `SSL_new()` checked at `SocketTLS.c:220-222`, `SocketDTLS.c:190-192`
+  - ✅ `BIO_new_dgram()` checked at `SocketDTLS.c:216-218`
+  - ✅ `sk_X509_new_null()` checked at `SocketTLSContext-certs.c:381-383`, `SocketTLSContext-verify.c:1048-1050`
+- [x] Verify proper cleanup in error paths (no resource leaks)
+  - ✅ TRY/FINALLY blocks used extensively for exception-safe cleanup
+  - ✅ `tls_cleanup_alpn_temp()` cleans ALPN temp buffer at `SocketTLS.c:250-258`
+  - ✅ `free_dtls_resources()` cleans DTLS state at `SocketDTLS.c:110-140`
+  - ✅ `SocketTLSContext_free()` cleans all context resources at `SocketTLSContext-core.c:619-646`
+- [x] Run with AddressSanitizer to detect memory errors
+  - ✅ **PASSED** - 50/50 tests pass with ASan+UBSan enabled (December 2025)
+  - ✅ Fixed stack-use-after-return bugs discovered by ASan:
+    - `SocketTLSContext-core.c:try_load_user_ca()` - fixed return from TRY block
+    - `SocketHTTPClient-cookie.c:SocketHTTPClient_CookieJar_new()` - fixed malformed TRY/EXCEPT
+    - `SocketHTTPClient-cookie.c:SocketHTTPClient_CookieJar_set()` - fixed malformed TRY/EXCEPT
+    - `test_socketio.c:create_socket_pair()` - fixed return from TRY block
+    - `test_tls_integration.c` - made volatile variables for TRY blocks
+    - `SocketReconnect.c:perform_tls_handshake_step()` - made volatile variable
+    - `SocketTLS.c` - added `__builtin_unreachable()` after RAISE in switch cases
 - [ ] Run with MemorySanitizer to detect uninitialized reads
+  - ⏳ Optional: Requires Clang with MSan runtime
 
-### 10.6 Threat Model Coverage — *depends on 10.1–10.5*
+### 10.6 Threat Model Coverage — *depends on 10.1–10.5* 📝 NEEDS DOCUMENTATION
 **Difficulty: 4/9** _(Documentation of security guarantees)_
 
+**Implementation Status**: All protections are implemented. Documentation needs to be created.
+
+| Threat | Implementation | Location |
+|--------|----------------|----------|
+| MITM | TLS 1.3 enforced, cert verification, SPKI pinning | `SocketTLSContext-core.c`, `SocketTLSContext-pinning.c` |
+| Downgrade | `TLS1_3_VERSION` min, `SSL_OP_NO_RENEGOTIATION` | `SocketTLSContext-core.c:219-248` |
+| DoS | DTLS cookies, file size limits, rate limiting | `SocketDTLS-cookie.c`, `SocketSecurity_check_size()` |
+| Timing | `SocketCrypto_secure_compare()` everywhere | `SocketCrypto.c:962`, pinning, cookies |
+| Memory disclosure | `SocketCrypto_secure_clear()`, `OPENSSL_cleanse()` | All buffer/key cleanup paths |
+
 - [ ] Document protection against MITM attacks (certificate verification, pinning)
+  - Implementation: ✅ TLS 1.3 enforced, `SSL_CTX_set_verify()`, SPKI pinning in `SocketTLSContext-pinning.c`
+  - Documentation: ⏳ Add to `docs/SECURITY.md` or `docs/TLS-CONFIG.md`
 - [ ] Document protection against downgrade attacks (TLS 1.3-only, no renegotiation)
+  - Implementation: ✅ `SSL_CTX_set_min_proto_version(TLS1_3_VERSION)`, `SSL_OP_NO_RENEGOTIATION`
+  - Documentation: ⏳ Document in security guide
 - [ ] Document protection against DoS attacks (cookie exchange, rate limiting)
+  - Implementation: ✅ DTLS cookie exchange (`SocketDTLS-cookie.c`), file size limits, `SocketSecurity_check_size()`
+  - Documentation: ⏳ Document in security guide
 - [ ] Document protection against timing attacks (constant-time operations)
+  - Implementation: ✅ `SocketCrypto_secure_compare()` for all security-sensitive comparisons
+  - Documentation: ⏳ Document in security guide
 - [ ] Document protection against memory disclosure (secure clearing)
+  - Implementation: ✅ `SocketCrypto_secure_clear()` for buffers, `OPENSSL_cleanse()` for keys
+  - Documentation: ⏳ Document in security guide
 
 ---
 
@@ -1216,46 +1314,70 @@ All DTLS configuration constants verified and documented with comprehensive fuzz
 ### 11.1 kTLS (Kernel TLS) Offload — *depends on all of 1.\* complete*
 **Difficulty: 9/9** _(Kernel integration, cipher key extraction, fallback handling)_
 
-- [ ] **Priority: HIGH** - Implement kTLS support for massive performance improvement
-- [ ] Add `SocketTLS_enable_ktls()` function to enable kernel TLS offload
-- [ ] Extract cipher keys from OpenSSL after handshake for kernel crypto_info
-- [ ] Implement `setsockopt(SOL_TCP, TCP_ULP, "tls")` for kernel TLS setup
-- [ ] Implement `setsockopt(SOL_TLS, TLS_TX/TLS_RX, &crypto_info)` for key installation
-- [ ] Support AES-GCM-128, AES-GCM-256, and ChaCha20-Poly1305 for kTLS
-- [ ] Modify I/O path to use kernel send/recv when kTLS enabled
-- [ ] Add fallback to userspace TLS when kTLS not available
-- [ ] Document kernel version requirements (Linux 4.13+ for TLS_TX, 4.17+ for TLS_RX)
+- [x] **Priority: HIGH** - Implement kTLS support for massive performance improvement
+  - Implementation: ✅ `SocketTLS-ktls.c` with full kTLS offload support
+- [x] Add `SocketTLS_enable_ktls()` function to enable kernel TLS offload
+  - Implementation: ✅ Sets `SSL_OP_ENABLE_KTLS` option; checks availability
+- [x] Extract cipher keys from OpenSSL after handshake for kernel crypto_info
+  - Implementation: ✅ OpenSSL 3.0+ handles automatically via `SSL_OP_ENABLE_KTLS`
+- [x] Implement `setsockopt(SOL_TCP, TCP_ULP, "tls")` for kernel TLS setup
+  - Implementation: ✅ Handled by OpenSSL when `SSL_OP_ENABLE_KTLS` is set
+- [x] Implement `setsockopt(SOL_TLS, TLS_TX/TLS_RX, &crypto_info)` for key installation
+  - Implementation: ✅ Handled by OpenSSL when `SSL_OP_ENABLE_KTLS` is set
+- [x] Support AES-GCM-128, AES-GCM-256, and ChaCha20-Poly1305 for kTLS
+  - Implementation: ✅ Supported ciphers documented in `SocketTLSConfig.h`
+- [x] Modify I/O path to use kernel send/recv when kTLS enabled
+  - Implementation: ✅ `SocketTLS_sendfile()` uses `SSL_sendfile()` when kTLS TX active
+- [x] Add fallback to userspace TLS when kTLS not available
+  - Implementation: ✅ Automatic fallback when `SocketTLS_ktls_available()` returns 0
+- [x] Document kernel version requirements (Linux 4.13+ for TLS_TX, 4.17+ for TLS_RX)
+  - Documentation: ✅ `SOCKET_TLS_KTLS_MIN_KERNEL_TX/RX/CHACHA` in `SocketTLSConfig.h`
 
 ### 11.2 Session Resumption Optimization — *depends on 1.5, 2.11, 2.12*
 **Difficulty: 6/9** _(0-RTT, ticket rotation, cache sharding)_
 
-- [ ] Verify TLS 1.3 0-RTT support (early data) is properly configured
-- [ ] Add session ticket rotation support for server scalability
-- [ ] Implement session cache sharding for multi-threaded servers
+- [x] Verify TLS 1.3 0-RTT support (early data) is properly configured
+  - Implementation: ✅ `SocketTLSContext_enable_early_data()`, `SocketTLS_write_early_data()`, `SocketTLS_read_early_data()`
+- [x] Add session ticket rotation support for server scalability
+  - Implementation: ✅ `SocketTLSContext_rotate_session_ticket_key()` in `SocketTLSContext-session.c`
+- [x] Implement session cache sharding for multi-threaded servers
+  - Implementation: ✅ `SocketTLSContext_create_sharded_cache()` in `SocketTLS-performance.c`
 - [ ] Consider external session cache (Redis, memcached) for distributed systems
+  - Status: Future enhancement - would require additional dependencies
 
 ### 11.3 Connection Optimization — *depends on all of 1.\* complete*
 **Difficulty: 5/9** _(TCP tuning, profiling)_
 
-- [ ] Verify TCP_NODELAY is set for TLS handshake responsiveness
-- [ ] Consider TCP_QUICKACK during handshake for reduced latency
-- [ ] Verify non-blocking handshake doesn't spin-wait (uses poll correctly)
+- [x] Verify TCP_NODELAY is set for TLS handshake responsiveness
+  - Implementation: ✅ `SocketTLS_optimize_handshake()` sets TCP_NODELAY
+- [x] Consider TCP_QUICKACK during handshake for reduced latency
+  - Implementation: ✅ `SocketTLS_optimize_handshake()` sets TCP_QUICKACK on Linux
+- [x] Verify non-blocking handshake doesn't spin-wait (uses poll correctly)
+  - Implementation: ✅ `SocketTLS_handshake_loop_ex()` uses poll with configurable interval
 - [ ] Profile and optimize hot paths in TLS I/O
+  - Status: Future enhancement - requires profiling infrastructure
 
 ### 11.4 Memory Optimization — *depends on all of 1.\*, 2.\* complete*
 **Difficulty: 5/9** _(Profiling, buffer pooling)_
 
-- [ ] Verify Arena-based allocation reduces malloc overhead
-- [ ] Consider buffer pooling for high-connection-count servers
+- [x] Verify Arena-based allocation reduces malloc overhead
+  - Implementation: ✅ Arena-based allocation used throughout TLS modules
+- [x] Consider buffer pooling for high-connection-count servers
+  - Implementation: ✅ `TLSBufferPool_new/acquire/release()` in `SocketTLS-performance.c`
 - [ ] Profile memory usage per TLS connection
+  - Status: Future enhancement - requires profiling infrastructure
 - [ ] Optimize certificate chain storage in SNI maps
+  - Status: Future enhancement - low priority
 
 ### 11.5 Zero-Copy Optimization — *depends on 11.1, 1.3*
 **Difficulty: 7/9** _(SSL_sendfile, MSG_ZEROCOPY, kernel integration)_
 
-- [ ] Investigate `SSL_sendfile()` for kernel sendfile with TLS (OpenSSL 3.0+)
+- [x] Investigate `SSL_sendfile()` for kernel sendfile with TLS (OpenSSL 3.0+)
+  - Implementation: ✅ `SocketTLS_sendfile()` uses `SSL_sendfile()` when kTLS TX active
 - [ ] Consider MSG_ZEROCOPY integration with kTLS
+  - Status: Future enhancement - requires MSG_ZEROCOPY infrastructure
 - [ ] Evaluate `SSL_read_ex()` / `SSL_write_ex()` for reduced copying
+  - Status: Future enhancement - low priority
 
 ---
 

@@ -291,6 +291,8 @@ set(LIB_SOURCES
 if(SOCKET_HAS_TLS)
     list(APPEND LIB_SOURCES
         src/tls/SocketTLS.c
+        src/tls/SocketTLS-ktls.c
+        src/tls/SocketTLS-performance.c
         src/tls/SocketTLSContext-core.c
         src/tls/SocketTLSContext-certs.c
         src/tls/SocketTLSContext-alpn.c
@@ -572,6 +574,7 @@ if(SOCKET_HAS_TLS)
         test_tls_integration
         test_tls_phase4
         test_tls_pinning
+        test_tls_performance
         test_dtls_integration
         test_socketpool_tls
     )
