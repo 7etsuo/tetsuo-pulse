@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * fuzz_http1_compression.c - Comprehensive fuzzing harness for HTTP/1.1 compression
  *

@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * @file SocketHTTP-private.h
  * @brief Internal HTTP core structures and helper functions.

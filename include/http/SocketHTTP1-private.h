@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * @file SocketHTTP1-private.h
  * @brief Internal HTTP/1.1 parser structures and DFA state machine.

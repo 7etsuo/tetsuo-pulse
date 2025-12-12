@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * SocketHTTP2-priority.c - HTTP/2 Priority Frame Handling (Deprecated)
  *

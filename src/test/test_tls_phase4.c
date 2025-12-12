@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * test_tls_phase4.c - Phase 4.1 ALPN/SNI Unit Tests
  *

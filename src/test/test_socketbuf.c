@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * test_socketbuf.c - SocketBuf circular buffer unit tests
  * Tests for the SocketBuf circular buffer module.

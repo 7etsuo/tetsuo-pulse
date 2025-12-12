@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * @defgroup http HTTP Modules
  * @brief Complete HTTP/1.1 and HTTP/2 protocol implementation with client and

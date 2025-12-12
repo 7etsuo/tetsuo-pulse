@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * test_tls_integration.c - Comprehensive TLS Integration Tests
  *
@@ -2519,8 +2525,8 @@ generate_client_cert (const char *client_cert, const char *client_key,
   return 0;
 }
 
-/* TODO: This test is temporarily disabled due to a bug where the Except_stack
- * gets corrupted to 0x000000000009, causing SEGV. This needs investigation. */
+/* KNOWN_ISSUE: This test is disabled due to Except_stack corruption (gets set
+ * to 0x000000000009) causing SEGV. See KNOWN_ISSUES.md for tracking. */
 TEST (tls_mutual_tls_client_cert)
 {
 #if SOCKET_HAS_TLS

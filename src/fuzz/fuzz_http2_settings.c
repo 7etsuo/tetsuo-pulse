@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * fuzz_http2_settings.c - Enterprise-grade HTTP/2 SETTINGS frame fuzzer
  *

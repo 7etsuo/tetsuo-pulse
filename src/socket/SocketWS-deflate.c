@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * SocketWS-deflate.c - WebSocket Compression Extension (RFC 7692)
  *
@@ -550,8 +556,6 @@ decompress_loop (SocketWS_T ws, z_stream *strm, unsigned char **buf,
 int
 ws_compression_init (SocketWS_T ws)
 {
-  (void)SocketWS_DetailedException; /* Suppress unused module exception warning
-                                     */
   int ret;
   int deflate_bits;
   int inflate_bits;

@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * @file SocketProxy.h
  * @brief Proxy tunneling module for HTTP CONNECT and SOCKS protocols.

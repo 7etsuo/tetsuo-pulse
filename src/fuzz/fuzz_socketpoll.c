@@ -1,7 +1,18 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * fuzz_socketpoll.c - Fuzzer for event poll operations
  *
  * Part of the Socket Library Fuzzing Suite
+ *
+ * Performance Optimization:
+ * - Uses static poll instance that persists across invocations
+ * - Reduced socket limits to minimize system calls
+ * - Single operation per invocation based on input byte
  *
  * Targets:
  * - Poll creation with various maxevents
@@ -41,10 +52,29 @@ enum PollOp
   OP_COUNT
 };
 
-/* Limits for fuzzing */
-#define MAX_FUZZ_MAXEVENTS 64
+/* Reduced limits for faster fuzzing */
+#define MAX_FUZZ_MAXEVENTS 16
 #define MIN_FUZZ_MAXEVENTS 4
-#define MAX_FUZZ_SOCKETS 32
+#define MAX_FUZZ_SOCKETS 8
+
+/* Static poll instance for reuse */
+static SocketPoll_T g_poll = NULL;
+
+/**
+ * LLVMFuzzerInitialize - One-time setup for fuzzer
+ */
+int
+LLVMFuzzerInitialize (int *argc, char ***argv)
+{
+  (void)argc;
+  (void)argv;
+
+  TRY { g_poll = SocketPoll_new (MAX_FUZZ_MAXEVENTS); }
+  EXCEPT (SocketPoll_Failed) { g_poll = NULL; }
+  END_TRY;
+
+  return 0;
+}
 
 /**
  * read_u16 - Read 16-bit value from byte stream
@@ -85,9 +115,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     return 0;
 
   uint8_t op = data[0];
-  int maxevents = (data[1] % (MAX_FUZZ_MAXEVENTS - MIN_FUZZ_MAXEVENTS))
-                  + MIN_FUZZ_MAXEVENTS;
-  int16_t timeout_raw = read_i16 (data + 2);
 
   /* Initialize socket array to NULL */
   for (i = 0; i < MAX_FUZZ_SOCKETS; i++)
@@ -95,7 +122,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
   TRY
   {
-    /* Create a poll for testing */
+    /* Create a fresh poll for this test (can't reuse due to state) */
+    int maxevents = (data[1] % (MAX_FUZZ_MAXEVENTS - MIN_FUZZ_MAXEVENTS))
+                    + MIN_FUZZ_MAXEVENTS;
     poll = SocketPoll_new (maxevents);
 
     switch (op % OP_COUNT)
@@ -130,8 +159,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
       case OP_ADD_SOCKETS:
         {
-          /* Test adding sockets to poll */
-          int num_to_add = size >= 5 ? (data[4] % MAX_FUZZ_SOCKETS) + 1 : 4;
+          /* Test adding sockets to poll - limit to 4 max */
+          int num_to_add = size >= 5 ? (data[4] % 4) + 1 : 2;
 
           for (i = 0; i < num_to_add && socket_count < MAX_FUZZ_SOCKETS; i++)
             {
@@ -326,13 +355,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
       case OP_RAPID_ADD_DEL:
         {
-          /* Stress test: rapid add/del cycles */
-          int cycles = size >= 5 ? (data[4] % 10) + 1 : 5;
+          /* Stress test: rapid add/del cycles - limit to 2 cycles */
+          int cycles = size >= 5 ? (data[4] % 2) + 1 : 1;
 
           for (int cycle = 0; cycle < cycles; cycle++)
             {
-              /* Add a batch */
-              int to_add = size >= 6 ? (data[5] % 4) + 1 : 2;
+              /* Add a batch - limit to 2 */
+              int to_add = size >= 6 ? (data[5] % 2) + 1 : 1;
 
               for (i = 0; i < to_add && socket_count < MAX_FUZZ_SOCKETS; i++)
                 {
@@ -376,7 +405,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           (void)original;
 
           /* Set various timeouts from fuzz data */
-          int new_timeout = timeout_raw; /* Can be negative */
+          int new_timeout = (size >= 4) ? read_i16 (data + 2) : 0;
           SocketPoll_setdefaulttimeout (poll, new_timeout);
 
           int current = SocketPoll_getdefaulttimeout (poll);

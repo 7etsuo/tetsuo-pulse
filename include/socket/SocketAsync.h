@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * @defgroup async_io Async I/O Modules
  * @brief Asynchronous I/O and dual-stack connection racing for scalable,

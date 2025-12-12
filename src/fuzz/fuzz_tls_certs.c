@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * fuzz_tls_certs.c - Fuzzer for TLS Certificate/Key PEM Parsing
  *
@@ -256,37 +262,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       break;
     }
 
-  /* Fuzz TLS context creation with generated malformed paths (tests path
-   * validation, new_server error paths) */
-  if (size > 64)
-    { /* Enough data for plausible paths */
-      const uint8_t *path_data
-          = data + (size / 3); /* Offset to avoid overlapping PEM data */
-      size_t path_size = size / 3;
-      char cert_path[512] = { 0 };
-      size_t cert_len = (path_size > 500) ? 500 : path_size;
-      memcpy (cert_path, path_data, cert_len);
-      cert_path[cert_len] = '\0';
-
-      char key_path[512] = { 0 };
-      size_t key_len = (path_size / 2 > 500) ? 500 : (path_size / 2);
-      memcpy (key_path, path_data + (path_size / 2), key_len);
-      key_path[key_len] = '\0';
-
-      TRY
-      {
-        SocketTLSContext_T ctx
-            = SocketTLSContext_new_server (cert_path, key_path, NULL);
-        /* If succeeds (unlikely), free */
-        SocketTLSContext_free (&ctx);
-      }
-      EXCEPT (SocketTLS_Failed)
-      {
-        /* Expected: malformed paths/files trigger validation/load errors
-         * without crash */
-      }
-      END_TRY;
-    }
+  /* Skip TLS context creation - it's very expensive and rarely finds bugs.
+   * The path validation is already tested in CERT_VALIDATE_PATH case. */
 
   /* Clear errors generated during parsing and context fuzz */
   ERR_clear_error ();

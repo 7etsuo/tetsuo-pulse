@@ -155,9 +155,11 @@ option(ENABLE_HTTP_COMPRESSION "Enable HTTP gzip/deflate/brotli compression" OFF
 set(SOCKETHTTP1_HAS_COMPRESSION OFF)
 set(HTTP_COMPRESSION_LIBS "")
 
+# Always search for zlib (needed for WebSocket permessage-deflate even without HTTP compression)
+find_package(ZLIB QUIET)
+
 if(ENABLE_HTTP_COMPRESSION)
-    # Find zlib (gzip/deflate)
-    find_package(ZLIB QUIET)
+    # Use zlib for HTTP compression if found (already searched above)
     if(ZLIB_FOUND)
         add_definitions(-DSOCKETHTTP1_HAS_ZLIB)
         list(APPEND HTTP_COMPRESSION_LIBS ZLIB::ZLIB)
@@ -334,16 +336,24 @@ if(SOCKET_HAS_TLS AND OpenSSL_FOUND)
     target_include_directories(socket_objects PRIVATE ${OPENSSL_INCLUDE_DIR})
 endif()
 
-# For fuzzing, build an instrumented static library instead of instrumenting objects
+# For fuzzing, build a SEPARATE instrumented object library
+# CRITICAL: Objects must be compiled with -fsanitize flags for coverage instrumentation
 if(ENABLE_FUZZING)
-    # Create instrumented version of the library for fuzzers
-    add_library(socket_fuzz STATIC $<TARGET_OBJECTS:socket_objects>)
-    set_target_properties(socket_fuzz PROPERTIES OUTPUT_NAME socket_fuzz)
-    target_compile_options(socket_fuzz PRIVATE
+    # Create instrumented OBJECT library (recompiles sources with fuzzer flags)
+    add_library(socket_fuzz_objects OBJECT ${LIB_SOURCES})
+    target_include_directories(socket_fuzz_objects PRIVATE ${CMAKE_SOURCE_DIR}/include)
+    target_compile_options(socket_fuzz_objects PRIVATE
         -fsanitize=fuzzer-no-link,address,undefined
         -fno-omit-frame-pointer
         -g
     )
+    if(SOCKET_HAS_TLS AND OpenSSL_FOUND)
+        target_include_directories(socket_fuzz_objects PRIVATE ${OPENSSL_INCLUDE_DIR})
+    endif()
+
+    # Create static library from instrumented objects
+    add_library(socket_fuzz STATIC $<TARGET_OBJECTS:socket_fuzz_objects>)
+    set_target_properties(socket_fuzz PROPERTIES OUTPUT_NAME socket_fuzz)
     target_link_options(socket_fuzz PRIVATE
         -fsanitize=fuzzer-no-link,address,undefined
     )
@@ -352,7 +362,7 @@ if(ENABLE_FUZZING)
     else()
         target_link_libraries(socket_fuzz pthread m ${LIBURING_LIBRARIES} ${HTTP_COMPRESSION_LIBS})
     endif()
-    message(STATUS "Instrumented fuzzing library created")
+    message(STATUS "Instrumented fuzzing library created (with coverage)")
 endif()
 
 # Static library
@@ -821,6 +831,15 @@ if(ENABLE_FUZZING)
             )
             
             target_include_directories(${fuzz_name} PRIVATE ${CMAKE_SOURCE_DIR}/include)
+            
+            # Pass through necessary compile definitions to fuzzer targets
+            if(ZLIB_FOUND)
+                target_compile_definitions(${fuzz_name} PRIVATE SOCKETWS_HAS_DEFLATE)
+            endif()
+            if(SOCKET_HAS_TLS)
+                target_compile_definitions(${fuzz_name} PRIVATE SOCKET_HAS_TLS=1)
+                target_include_directories(${fuzz_name} PRIVATE ${OPENSSL_INCLUDE_DIR})
+            endif()
             
             message(STATUS "  Fuzzer: ${fuzz_name}")
         else()

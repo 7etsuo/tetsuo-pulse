@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * @defgroup http2 HTTP/2 Protocol Implementation
  * @brief HTTP/2 (RFC 9113) support with framing, streams, flow control, and

@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * SocketHTTP-date.c - HTTP Date Parsing and Formatting (RFC 9110
  * Section 5.6.7)

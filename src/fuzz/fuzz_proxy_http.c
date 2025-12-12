@@ -1,7 +1,16 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * fuzz_proxy_http.c - Fuzzing harness for HTTP CONNECT response parsing
  *
  * Part of the Socket Library
+ *
+ * Performance Optimization:
+ * - Uses static arena with Arena_clear() for reuse
  *
  * Fuzzes HTTP CONNECT response parsing:
  * - Uses SocketHTTP1_Parser_T internally
@@ -17,24 +26,39 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* Static arena for reuse across invocations */
+static Arena_T g_arena = NULL;
+
+int
+LLVMFuzzerInitialize (int *argc, char ***argv)
+{
+  (void)argc;
+  (void)argv;
+  g_arena = Arena_new ();
+  return 0;
+}
+
 int
 LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 {
   struct SocketProxy_Conn_T conn;
-  Arena_T arena = NULL;
 
   /* Skip empty input */
   if (size == 0)
     return 0;
 
-  /* Create arena for HTTP parser */
-  arena = Arena_new ();
-  if (!arena)
-    return 0;
+  /* Ensure arena exists and clear for reuse */
+  if (!g_arena)
+    {
+      g_arena = Arena_new ();
+      if (!g_arena)
+        return 0;
+    }
+  Arena_clear (g_arena);
 
   /* Initialize connection structure */
   memset (&conn, 0, sizeof (conn));
-  conn.arena = arena;
+  conn.arena = g_arena;
   conn.http_parser = NULL;
 
   /* Copy fuzzed data into receive buffer */
@@ -55,12 +79,11 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       proxy_http_status_to_result (status);
     }
 
-  /* Cleanup */
+  /* Cleanup parser but keep arena for reuse */
   if (conn.http_parser)
     {
       SocketHTTP1_Parser_free (&conn.http_parser);
     }
-  Arena_dispose (&arena);
 
   return 0;
 }

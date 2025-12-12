@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * SocketTLS-performance.c - TLS Performance Optimizations
  *
@@ -437,6 +443,8 @@ SocketTLS_read_early_data (Socket_T socket, void *buf, size_t len,
         tls_format_openssl_error ("Early data read failed");
         RAISE_TLS_ERROR (SocketTLS_Failed);
       }
+      /* NOTREACHED - RAISE_TLS_ERROR never returns */
+      break;
 
     default:
       errno = EIO;

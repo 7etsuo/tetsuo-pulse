@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * test_threadsafety.c - Thread safety and concurrency stress tests
  * Industry-standard concurrency testing for the socket library.

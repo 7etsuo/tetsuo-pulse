@@ -2,6 +2,12 @@
   <img src="docs/logo.png" alt="Socket Library Logo" width="120">
 </p>
 
+<p align="center">
+  <a href="https://github.com/7etsuo/tetsuo-socket/actions/workflows/ci.yml"><img src="https://github.com/7etsuo/tetsuo-socket/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+  <a href="https://codecov.io/gh/7etsuo/tetsuo-socket"><img src="https://codecov.io/gh/7etsuo/tetsuo-socket/branch/main/graph/badge.svg" alt="Coverage"></a>
+</p>
+
 # Socket Library
 
 High-performance, exception-driven socket toolkit for POSIX systems. Provides a clean, modern C API for TCP, UDP, Unix domain sockets, HTTP/1.1, HTTP/2, WebSocket, and TLS/DTLS with comprehensive error handling, zero-copy I/O, and cross-platform event polling.

@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * test_socketpoll.c - Comprehensive SocketPoll unit tests
  * Industry-standard test coverage for SocketPoll event polling module.
@@ -249,7 +255,8 @@ TEST (socketpoll_wait_read_event)
   END_TRY;
 }
 
-#if 0 /* Disabled on macOS M1 due to ARM64 longjmp segfault */
+#if 0 /* KNOWN_ISSUE: Disabled on macOS ARM64 - setjmp/longjmp segfault in
+       * exception handling. See KNOWN_ISSUES.md for details. Works on Linux. */
 
 TEST(socketpoll_wait_write_event)
 {
@@ -387,7 +394,8 @@ TEST (socketpoll_wait_empty_poll)
   SocketPoll_free (&poll);
 }
 
-#if 0 /* Disabled on macOS M1 due to ARM64 longjmp segfault */
+#if 0 /* KNOWN_ISSUE: Disabled on macOS ARM64 - setjmp/longjmp segfault in
+       * exception handling. See KNOWN_ISSUES.md for details. Works on Linux. */
 
 TEST(socketpoll_wait_negative_timeout)
 {
@@ -566,8 +574,8 @@ TEST (socketpoll_data_ready_event)
   END_TRY;
 }
 
-#if 0 /* Temporarily disabled - exception frame corruption after completion   \
-       */
+#if 0 /* KNOWN_ISSUE: Exception frame corruption after poll completion.
+       * See KNOWN_ISSUES.md for details and tracking. */
 TEST(socketpoll_multiple_ready_sockets)
 {
     setup_signals();
@@ -613,7 +621,8 @@ TEST(socketpoll_multiple_ready_sockets)
 
 /* ==================== Event Loop Simulation Tests ==================== */
 
-#if 0 /* Disabled on macOS M1 due to ARM64 longjmp segfault */
+#if 0 /* KNOWN_ISSUE: Disabled on macOS ARM64 - setjmp/longjmp segfault in
+       * exception handling. See KNOWN_ISSUES.md for details. Works on Linux. */
 
 TEST(socketpoll_event_loop_simulation)
 {
@@ -717,7 +726,8 @@ TEST (socketpoll_rapid_add_remove)
 
 /* ==================== Thread Safety Tests ==================== */
 
-#if 0 /* Disabled on ARM64 due to longjmp issues */
+#if 0 /* KNOWN_ISSUE: Disabled on macOS ARM64 - setjmp/longjmp thread safety
+       * issues. See KNOWN_ISSUES.md for details. Works on Linux. */
 
 static void *thread_poll_operations(void *arg)
 {
@@ -875,7 +885,8 @@ TEST (socketpoll_add_duplicate_socket)
   ASSERT (caught);
 }
 
-#if 0 /* Disabled on macOS M1 due to ARM64 longjmp segfault */
+#if 0 /* KNOWN_ISSUE: Disabled on macOS ARM64 - setjmp/longjmp segfault in
+       * exception handling. See KNOWN_ISSUES.md for details. Works on Linux. */
 
 TEST(socketpoll_wait_zero_timeout)
 {
@@ -931,7 +942,8 @@ TEST (socketpoll_data_association_persistence)
   Socket_free (&socket);
 }
 
-#if 0 /* Disabled on macOS M1 due to segfault */
+#if 0 /* KNOWN_ISSUE: Disabled on macOS ARM64 - segfault during event type
+       * handling. See KNOWN_ISSUES.md for details. Works on Linux. */
 
 TEST(socketpoll_multiple_event_types)
 {

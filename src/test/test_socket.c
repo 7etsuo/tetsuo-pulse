@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * test_socket.c - Comprehensive Socket unit tests
  * Industry-standard test coverage for Socket module.
@@ -2469,7 +2475,8 @@ TEST (socket_concurrent_creation)
 
 /* ==================== Async DNS Integration Tests ==================== */
 
-#if 0 /* DNS test disabled - hangs on SocketDNS_check() */
+#if 0 /* KNOWN_ISSUE: Hangs on SocketDNS_check() - thread synchronization issue.
+       * See KNOWN_ISSUES.md for details and tracking. */
 TEST(socket_bind_async_basic)
 {
     setup_signals();
@@ -2496,7 +2503,8 @@ TEST(socket_bind_async_basic)
 }
 #endif
 
-#if 0 /* DNS tests disabled - hang on SocketDNS_check() */
+#if 0 /* KNOWN_ISSUE: Hangs on SocketDNS_check() - thread synchronization issue.
+       * See KNOWN_ISSUES.md for details and tracking. */
 TEST(socket_bind_async_wildcard)
                 {
     setup_signals();

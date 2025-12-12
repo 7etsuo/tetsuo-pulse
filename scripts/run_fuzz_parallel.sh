@@ -378,10 +378,15 @@ for target in "${AVAILABLE_TARGETS[@]}"; do
     log_info "$target ($corpus_name): $count seed inputs"
 done
 
-# Create output directories
-FINDINGS_DIR="$(pwd)/fuzz_findings_$(date +%Y%m%d_%H%M%S)"
+# Create output directories - use ramdisk if -r flag was set to protect SSD
+if [[ $USE_RAMDISK -eq 1 ]]; then
+    FINDINGS_DIR="/mnt/fuzz_corpus/findings_$(date +%Y%m%d_%H%M%S)"
+    log_info "Findings on ramdisk (SSD protection): $FINDINGS_DIR"
+else
+    FINDINGS_DIR="$(pwd)/fuzz_findings_$(date +%Y%m%d_%H%M%S)"
+    log_info "Findings will be saved to: $FINDINGS_DIR"
+fi
 mkdir -p "$FINDINGS_DIR"
-log_info "Findings will be saved to: $FINDINGS_DIR"
 
 # Start fuzzers
 log_section "Starting Fuzzers"
@@ -417,6 +422,8 @@ for target in "${AVAILABLE_TARGETS[@]}"; do
         -artifact_prefix="$FINDINGS_DIR/${target}_" \
         -print_final_stats=1 \
         -rss_limit_mb=4096 \
+        -report_slow_units=9999999 \
+        -timeout=120 \
         > "$log_file" 2>&1 &
     
     PIDS+=($!)
@@ -428,8 +435,9 @@ echo "  Monitor progress: tail -f $FINDINGS_DIR/*.log"
 echo "  Stop early:       Ctrl+C"
 echo ""
 
+
 # Wait for all fuzzers
-wait
+wait "${PIDS[@]}"
 
 # Summary
 log_section "Fuzzing Complete"
@@ -494,4 +502,17 @@ ls -1 "$FINDINGS_DIR"/*oom* 2>/dev/null || echo "  None found"
 echo ""
 echo "All artifacts:"
 ls -1 "$FINDINGS_DIR"/* 2>/dev/null | grep -v "\.log$" | head -20 || echo "  None found"
+
+# Ramdisk warning
+if [[ $USE_RAMDISK -eq 1 ]]; then
+    echo ""
+    log_warn "RAMDISK MODE: Findings are in $FINDINGS_DIR"
+    log_warn "Copy any important crashes before unmounting ramdisk!"
+    CRASH_COUNT=$(ls -1 "$FINDINGS_DIR"/*crash* 2>/dev/null | wc -l)
+    if [[ $CRASH_COUNT -gt 0 ]]; then
+        echo ""
+        log_error "CRASHES FOUND! Copy them now:"
+        echo "  cp $FINDINGS_DIR/*crash* /path/to/save/"
+    fi
+fi
 

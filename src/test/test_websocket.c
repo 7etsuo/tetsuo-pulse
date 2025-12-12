@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * test_websocket.c - WebSocket Protocol Tests (RFC 6455)
  *
@@ -644,8 +650,6 @@ test_websocket_accept_computation (void)
 static void
 test_ws_compression_roundtrip (void)
 {
-  (void)SocketWS_DetailedException; /* Suppress unused module exception warning
-                                     */
   TEST_START ("ws_compression_roundtrip");
 
   Arena_T arena = Arena_new ();

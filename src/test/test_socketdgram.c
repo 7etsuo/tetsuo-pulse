@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * test_socketdgram.c - Comprehensive SocketDgram unit tests
  * Industry-standard test coverage for SocketDgram UDP module.

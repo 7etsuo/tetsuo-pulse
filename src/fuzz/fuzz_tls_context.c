@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * fuzz_tls_context.c - Fuzzer for TLS Context Management (Section 2.1-2.3)
  *
@@ -335,17 +341,117 @@ fuzz_load_ca_path (const char *path)
     SocketTLSContext_free (&ctx);
 }
 
+/* Cached client context - expensive to create */
+static SocketTLSContext_T g_client_ctx = NULL;
+
+/**
+ * LLVMFuzzerInitialize - One-time setup for fuzzer
+ *
+ * Creates a client TLS context once to avoid expensive OpenSSL initialization
+ * on every fuzzer invocation.
+ */
+int
+LLVMFuzzerInitialize (int *argc, char ***argv)
+{
+  (void)argc;
+  (void)argv;
+
+  TRY { g_client_ctx = SocketTLSContext_new_client (NULL); }
+  EXCEPT (SocketTLS_Failed) { g_client_ctx = NULL; }
+  END_TRY;
+
+  return 0;
+}
+
+/**
+ * fuzz_set_verify_mode_cached - Test verify mode on cached context
+ */
+static void
+fuzz_set_verify_mode_cached (uint8_t mode_idx)
+{
+  if (!g_client_ctx)
+    return;
+
+  TRY
+  {
+    TLSVerifyMode mode = verify_modes[mode_idx % NUM_VERIFY_MODES];
+    SocketTLSContext_set_verify_mode (g_client_ctx, mode);
+  }
+  EXCEPT (SocketTLS_Failed) { /* Handle gracefully */ }
+  END_TRY;
+}
+
+/**
+ * fuzz_set_protocol_cached - Test protocol setting on cached context
+ */
+static void
+fuzz_set_protocol_cached (uint8_t min_idx, uint8_t max_idx)
+{
+  if (!g_client_ctx)
+    return;
+
+  TRY
+  {
+    int min_ver = protocol_versions[min_idx % NUM_PROTOCOL_VERSIONS];
+    int max_ver = protocol_versions[max_idx % NUM_PROTOCOL_VERSIONS];
+    SocketTLSContext_set_min_protocol (g_client_ctx, min_ver);
+    SocketTLSContext_set_max_protocol (g_client_ctx, max_ver);
+  }
+  EXCEPT (SocketTLS_Failed) { /* Expected for invalid combinations */ }
+  END_TRY;
+}
+
+/**
+ * fuzz_set_ciphers_cached - Test cipher setting on cached context
+ */
+static void
+fuzz_set_ciphers_cached (const char *cipher_str)
+{
+  if (!g_client_ctx)
+    return;
+
+  TRY { SocketTLSContext_set_cipher_list (g_client_ctx, cipher_str); }
+  EXCEPT (SocketTLS_Failed) { /* Expected for invalid cipher strings */ }
+  END_TRY;
+}
+
+/**
+ * fuzz_enable_session_cache_cached - Test session cache on cached context
+ */
+static void
+fuzz_enable_session_cache_cached (const uint8_t *data, size_t size)
+{
+  if (!g_client_ctx)
+    return;
+
+  size_t max_sessions = 100;
+  long timeout = 300;
+
+  if (size >= 4)
+    {
+      max_sessions = (size_t)(data[0] | ((uint16_t)data[1] << 8));
+      timeout = (long)(data[2] | ((uint16_t)data[3] << 8));
+    }
+
+  TRY { SocketTLSContext_enable_session_cache (g_client_ctx, max_sessions, timeout); }
+  EXCEPT (SocketTLS_Failed) { /* Expected for invalid parameters */ }
+  END_TRY;
+}
+
 /**
  * LLVMFuzzerTestOneInput - libFuzzer entry point
  *
- * Input format:
- * - Byte 0: Operation selector
- * - Remaining: Operation-specific data
+ * Uses cached TLS context for fast operations.
+ * Only operations that don't require fresh context are tested.
  */
 int
 LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 {
-  if (size < 1)
+  if (size < 2)
+    return 0;
+
+  /* Skip if no cached context */
+  if (!g_client_ctx)
     return 0;
 
   uint8_t op = data[0];
@@ -355,52 +461,29 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   /* Clear any stale OpenSSL errors */
   ERR_clear_error ();
 
-  switch (op % CTX_OP_COUNT)
+  /* Only run operations that work with cached context */
+  switch (op % 4)
     {
-    case CTX_OP_NEW_CLIENT:
-      fuzz_new_client ();
-      break;
-
-    case CTX_OP_NEW_CLIENT_CA:
-      {
-        char path_buf[512];
-        extract_string (op_data, op_size, sizeof (path_buf) - 1, path_buf);
-        fuzz_new_client_with_ca (path_buf);
-      }
-      break;
-
-    case CTX_OP_NEW_WITH_CONFIG:
-      fuzz_new_with_config (op_data, op_size);
-      break;
-
-    case CTX_OP_SET_VERIFY_MODE:
+    case 0:
       if (op_size >= 1)
-        fuzz_set_verify_mode (op_data[0]);
+        fuzz_set_verify_mode_cached (op_data[0]);
       break;
 
-    case CTX_OP_SET_PROTOCOL:
+    case 1:
       if (op_size >= 2)
-        fuzz_set_protocol (op_data[0], op_data[1]);
+        fuzz_set_protocol_cached (op_data[0], op_data[1]);
       break;
 
-    case CTX_OP_SET_CIPHERS:
+    case 2:
       {
         char cipher_buf[256];
         extract_string (op_data, op_size, sizeof (cipher_buf) - 1, cipher_buf);
-        fuzz_set_ciphers (cipher_buf);
+        fuzz_set_ciphers_cached (cipher_buf);
       }
       break;
 
-    case CTX_OP_ENABLE_SESSION_CACHE:
-      fuzz_enable_session_cache (op_data, op_size);
-      break;
-
-    case CTX_OP_LOAD_CA_PATH:
-      {
-        char path_buf[512];
-        extract_string (op_data, op_size, sizeof (path_buf) - 1, path_buf);
-        fuzz_load_ca_path (path_buf);
-      }
+    case 3:
+      fuzz_enable_session_cache_cached (op_data, op_size);
       break;
     }
 

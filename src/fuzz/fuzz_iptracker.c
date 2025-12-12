@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * fuzz_iptracker.c - Fuzzer for SocketIPTracker hash table
  *
@@ -171,6 +177,21 @@ execute_op (SocketIPTracker_T tracker, uint8_t op, const uint8_t *args,
     }
 }
 
+/* Static arena for reuse across invocations */
+static Arena_T g_arena = NULL;
+
+/**
+ * LLVMFuzzerInitialize - One-time setup for fuzzer
+ */
+int
+LLVMFuzzerInitialize (int *argc, char ***argv)
+{
+  (void)argc;
+  (void)argv;
+  g_arena = Arena_new ();
+  return 0;
+}
+
 /**
  * LLVMFuzzerTestOneInput - libFuzzer entry point
  *
@@ -181,12 +202,22 @@ execute_op (SocketIPTracker_T tracker, uint8_t op, const uint8_t *args,
 int
 LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 {
-  Arena_T arena = NULL;
   SocketIPTracker_T tracker = NULL;
 
   /* Need at least config + one operation */
   if (size < 2)
     return 0;
+
+  /* Check arena is initialized */
+  if (!g_arena)
+    {
+      g_arena = Arena_new ();
+      if (!g_arena)
+        return 0;
+    }
+
+  /* Clear arena for reuse */
+  Arena_clear (g_arena);
 
   /* Parse initial configuration */
   int max_per_ip = data[0]; /* 0-255 (0 = unlimited) */
@@ -196,20 +227,16 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
   TRY
   {
-    arena = Arena_new ();
-    if (!arena)
+    tracker = SocketIPTracker_new (g_arena, max_per_ip);
+    if (!tracker)
       return 0;
 
-    tracker = SocketIPTracker_new (arena, max_per_ip);
-    if (!tracker)
-      {
-        Arena_dispose (&arena);
-        return 0;
-      }
-
-    /* Execute operation sequence */
+    /* Execute operation sequence - limit iterations for speed */
     size_t i = 0;
-    while (i < stream_len)
+    int iterations = 0;
+    const int max_iterations = 20;
+
+    while (i < stream_len && iterations < max_iterations)
       {
         uint8_t op = stream[i++];
         const uint8_t *args = stream + i;
@@ -222,21 +249,17 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         if (op % IP_OP_COUNT <= IP_COUNT)
           consume = 4; /* IP operations need 4 bytes */
         i += consume;
+        iterations++;
       }
 
     /* Final state verification */
     (void)SocketIPTracker_total (tracker);
     (void)SocketIPTracker_unique_ips (tracker);
+
+    SocketIPTracker_free (&tracker);
   }
   EXCEPT (Arena_Failed) { /* Memory allocation failure */ }
   EXCEPT (SocketIPTracker_Failed) { /* IP tracker operation failure */ }
-  FINALLY
-  {
-    if (tracker)
-      SocketIPTracker_free (&tracker);
-    if (arena)
-      Arena_dispose (&arena);
-  }
   END_TRY;
 
   return 0;

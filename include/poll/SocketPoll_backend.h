@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 #ifndef SOCKETPOLL_BACKEND_INCLUDED
 #define SOCKETPOLL_BACKEND_INCLUDED
 

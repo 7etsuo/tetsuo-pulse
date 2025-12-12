@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * fuzz_dtls_cookie.c - Fuzzer for DTLS cookie operations
  *
@@ -56,6 +62,10 @@ static char g_cert_path[64];
 static char g_key_path[64];
 static int g_certs_ready = 0;
 
+/* Cached contexts for reuse */
+static SocketDTLSContext_T g_server_ctx = NULL;
+static SocketDTLSContext_T g_client_ctx = NULL;
+
 /**
  * Write embedded certs to temp files (once at startup)
  *
@@ -102,11 +112,29 @@ setup_test_certs (void)
 __attribute__ ((destructor)) static void
 cleanup_test_certs (void)
 {
+  if (g_server_ctx)
+    SocketDTLSContext_free (&g_server_ctx);
+  if (g_client_ctx)
+    SocketDTLSContext_free (&g_client_ctx);
   if (g_certs_ready)
     {
       unlink (g_cert_path);
       unlink (g_key_path);
     }
+}
+
+int
+LLVMFuzzerInitialize (int *argc, char ***argv)
+{
+  (void)argc;
+  (void)argv;
+
+  /* Create cached client context */
+  TRY { g_client_ctx = SocketDTLSContext_new_client (NULL); }
+  EXCEPT (SocketDTLS_Failed) { g_client_ctx = NULL; }
+  END_TRY;
+
+  return 0;
 }
 
 /* Operation types - Section 5.3 Tests */

@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 #ifndef SOCKETTIMER_PRIVATE_INCLUDED
 #define SOCKETTIMER_PRIVATE_INCLUDED
 

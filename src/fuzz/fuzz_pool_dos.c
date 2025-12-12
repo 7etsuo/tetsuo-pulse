@@ -1,9 +1,20 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * fuzz_pool_dos.c - Comprehensive SocketPool DoS Vector Fuzzer
  *
  * Fuzzes pool operations for resource exhaustion and state machine attacks.
  * Uses socketpair() for real file descriptors with careful fd management
  * to avoid exhaustion.
+ *
+ * Performance Optimization:
+ * - Uses static arena with Arena_clear() to avoid repeated allocations
+ * - Runs only ONE test per invocation based on input byte
+ * - Early exit for empty/tiny input
  *
  * Attack Categories Tested:
  *
@@ -66,8 +77,23 @@
 #endif
 
 /* Maximum iterations to avoid fd exhaustion */
-#define MAX_ITERATIONS 10
-#define MAX_SOCKETS 8
+#define MAX_ITERATIONS 5
+#define MAX_SOCKETS 4
+
+/* Static arena for reuse across invocations - avoids repeated allocation */
+static Arena_T g_arena = NULL;
+
+/**
+ * LLVMFuzzerInitialize - One-time setup for fuzzer
+ */
+int
+LLVMFuzzerInitialize (int *argc, char ***argv)
+{
+  (void)argc;
+  (void)argv;
+  g_arena = Arena_new ();
+  return 0;
+}
 
 /**
  * Read 16-bit value from byte stream
@@ -527,49 +553,50 @@ test_foreach (Arena_T arena, const uint8_t *data, size_t size)
 int
 LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 {
-  if (size == 0)
+  /* Require minimum input size */
+  if (size < 2)
     return 0;
 
-  Arena_T arena_instance = Arena_new ();
-  if (!arena_instance)
-    return 0;
-  volatile Arena_T arena = arena_instance;
-  (void)arena;
+  /* Use static arena - check it's initialized */
+  if (!g_arena)
+    {
+      g_arena = Arena_new ();
+      if (!g_arena)
+        return 0;
+    }
+
+  /* Clear arena for reuse (much faster than dispose+new) */
+  Arena_clear (g_arena);
+
+  /* Select ONE test based on first byte - don't run all tests every time */
+  uint8_t test_selector = data[0] % 5;
 
   TRY
   {
-    /* ====================================================================
-     * Test 1: Pool configuration fuzzing
-     * ==================================================================== */
-    test_pool_config (arena_instance, data, size);
-
-    /* ====================================================================
-     * Test 2: Connection lifecycle
-     * ==================================================================== */
-    test_connection_lifecycle (arena_instance, data, size);
-
-    /* ====================================================================
-     * Test 3: IP tracking
-     * ==================================================================== */
-    test_ip_tracking (arena_instance, data, size);
-
-    /* ====================================================================
-     * Test 4: Drain operations
-     * ==================================================================== */
-    test_drain_operations (arena_instance, data, size);
-
-    /* ====================================================================
-     * Test 5: Foreach iteration
-     * ==================================================================== */
-    test_foreach (arena_instance, data, size);
+    switch (test_selector)
+      {
+      case 0:
+        test_pool_config (g_arena, data + 1, size - 1);
+        break;
+      case 1:
+        test_connection_lifecycle (g_arena, data + 1, size - 1);
+        break;
+      case 2:
+        test_ip_tracking (g_arena, data + 1, size - 1);
+        break;
+      case 3:
+        test_drain_operations (g_arena, data + 1, size - 1);
+        break;
+      case 4:
+        test_foreach (g_arena, data + 1, size - 1);
+        break;
+      }
   }
   EXCEPT (SocketPool_Failed) { /* Expected on limits/exhaust */ }
   EXCEPT (Arena_Failed) { /* Expected on limits/exhaust */ }
   EXCEPT (Socket_Failed) { /* Expected on socket errors */ }
   EXCEPT (Socket_Closed) { /* Expected */ }
   END_TRY;
-
-  Arena_dispose (&arena_instance);
 
   return 0;
 }

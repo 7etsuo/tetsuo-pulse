@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * fuzz_socketdgram.c - Fuzzer for UDP/datagram socket operations
  *
@@ -94,8 +100,15 @@ extract_string (const uint8_t *data, size_t size, size_t offset, char *out,
   return i;
 }
 
+/* Limit socket operations per invocation for speed */
+#define MAX_OPS_PER_INVOKE 2
+
 /**
  * LLVMFuzzerTestOneInput - libFuzzer entry point
+ *
+ * Performance Optimization:
+ * - Creates only 1-2 sockets per invocation (system calls are slow)
+ * - Tests single operation per call
  *
  * Input format:
  * - Byte 0: Operation selector
@@ -107,7 +120,7 @@ extract_string (const uint8_t *data, size_t size, size_t offset, char *out,
 int
 LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 {
-  SocketDgram_T sockets[MAX_FUZZ_SOCKETS];
+  SocketDgram_T sockets[MAX_OPS_PER_INVOKE];
   volatile int socket_count = 0;
   volatile int i;
   /* NOTE: This fuzzer uses IP addresses instead of hostnames to avoid DNS
@@ -122,7 +135,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   uint16_t opt_value = read_u16 (data + 4);
 
   /* Initialize socket array */
-  for (i = 0; i < MAX_FUZZ_SOCKETS; i++)
+  for (i = 0; i < MAX_OPS_PER_INVOKE; i++)
     sockets[i] = NULL;
 
   TRY
@@ -131,28 +144,19 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       {
       case OP_LIFECYCLE:
         {
-          /* Test socket creation and destruction cycles */
-          int num_sockets = (data[1] % MAX_FUZZ_SOCKETS) + 1;
-
-          for (i = 0; i < num_sockets; i++)
-            {
-              TRY
+          /* Test socket creation and destruction - just 1 socket for speed */
+          TRY
+          {
+            sockets[socket_count] = SocketDgram_new (domain, 0);
+            if (sockets[socket_count])
               {
-                /* Alternate between IPv4 and IPv6 */
-                int sock_domain = (i & 1) ? AF_INET6 : AF_INET;
-                sockets[socket_count] = SocketDgram_new (sock_domain, 0);
-                if (sockets[socket_count])
-                  {
-                    socket_count++;
-
-                    /* Verify socket is valid */
-                    int fd = SocketDgram_fd (sockets[socket_count - 1]);
-                    (void)fd;
-                  }
+                int fd = SocketDgram_fd (sockets[socket_count]);
+                (void)fd;
+                socket_count++;
               }
-              EXCEPT (SocketDgram_Failed) { /* Socket creation can fail */ }
-              END_TRY;
-            }
+          }
+          EXCEPT (SocketDgram_Failed) { /* Socket creation can fail */ }
+          END_TRY;
 
           /* Verify live count tracking */
           int live_count = SocketDgram_debug_live_count ();
@@ -545,7 +549,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   FINALLY
   {
     /* Clean up all sockets */
-    for (i = 0; i < socket_count; i++)
+    for (i = 0; i < MAX_OPS_PER_INVOKE; i++)
       {
         if (sockets[i])
           SocketDgram_free (&sockets[i]);

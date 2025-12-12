@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * test_socketpool_tls.c - Unit tests for SocketPool TLS integration
  * Verifies that TLS fields in Connection structure are properly managed.

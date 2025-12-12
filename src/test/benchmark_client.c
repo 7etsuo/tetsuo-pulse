@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /* cppcheck-suppress-file knownConditionTrueFalse ; volatile flag for signals */
 
 #include <assert.h>

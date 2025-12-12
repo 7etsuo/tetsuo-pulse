@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * test_socketpool.c - Comprehensive SocketPool unit tests
  * Industry-standard test coverage for SocketPool connection pool module.
@@ -570,7 +576,8 @@ TEST (socketpool_reuse_after_remove)
 
 /* ==================== Buffer Integration Tests ==================== */
 
-#if 0 /* Temporarily disabled - segfault in exception handling */
+#if 0 /* KNOWN_ISSUE: Exception handling segfault during buffer operations.
+       * See KNOWN_ISSUES.md for details and tracking. */
 TEST(socketpool_connection_buffer_operations)
 {
     setup_signals();
@@ -658,7 +665,8 @@ TEST (socketpool_add_remove_cycle)
 
 /* ==================== Thread Safety Tests ==================== */
 
-#if 0 /* Disabled - realloc() invalid pointer bug */
+#if 0 /* KNOWN_ISSUE: realloc() invalid pointer during concurrent pool
+       * operations. See KNOWN_ISSUES.md for details and tracking. */
 static void *thread_add_remove_connections(void *arg)
 {
     SocketPool_T pool = (SocketPool_T)arg;
@@ -2115,7 +2123,8 @@ TEST (socketpool_connect_async_success)
  * The core functionality is tested by socketpool_connect_async_connect_failure
  * which uses localhost and fails immediately with ECONNREFUSED.
  */
-#if 0
+#if 0 /* KNOWN_ISSUE: DNS resolution timing issues with localhost connection
+       * failures. See KNOWN_ISSUES.md for details and tracking. */
 TEST (socketpool_connect_async_dns_failure)
 {
   setup_signals ();

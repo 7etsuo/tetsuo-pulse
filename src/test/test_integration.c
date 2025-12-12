@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * test_integration.c - Comprehensive integration tests
  * Industry-standard integration testing for the socket library.
@@ -2324,7 +2330,8 @@ TEST (integration_full_stack_tcp_server)
 
 /* ==================== Multi-threaded Server Test ==================== */
 
-#if 0 /* Disabled on macOS - threading issues */
+#if 0 /* KNOWN_ISSUE: Disabled on macOS - threading issues with exception stack.
+       * See KNOWN_ISSUES.md for details and tracking. */
 
 static volatile int server_running;
 static int server_port;
@@ -2600,7 +2607,8 @@ TEST (integration_rapid_connect_disconnect)
 
 /* ==================== Async I/O Integration Tests ==================== */
 
-#if 0 /* Disabled on macOS - async I/O backend not implemented */
+#if 0 /* KNOWN_ISSUE: Async I/O backend not implemented for macOS.
+       * See KNOWN_ISSUES.md for details and tracking. */
 
 TEST(integration_async_availability)
 {

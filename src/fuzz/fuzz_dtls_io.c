@@ -1,5 +1,14 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * fuzz_dtls_io.c - Fuzzer for SocketDTLS I/O operations
+ *
+ * Performance Optimization:
+ * - Caches DTLS context in static variable
  *
  * Tests DTLS socket I/O operations:
  * - DTLS enable on socket
@@ -37,6 +46,22 @@ ignore_sigpipe (void)
 #pragma GCC diagnostic ignored "-Wclobbered"
 #endif
 
+/* Cached DTLS client context */
+static SocketDTLSContext_T g_client_ctx = NULL;
+
+int
+LLVMFuzzerInitialize (int *argc, char ***argv)
+{
+  (void)argc;
+  (void)argv;
+
+  TRY { g_client_ctx = SocketDTLSContext_new_client (NULL); }
+  EXCEPT (SocketDTLS_Failed) { g_client_ctx = NULL; }
+  END_TRY;
+
+  return 0;
+}
+
 /* Operation types */
 typedef enum
 {
@@ -61,9 +86,11 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   if (size < 2)
     return 0;
 
+  if (!g_client_ctx)
+    return 0;
+
   volatile uint8_t op = get_op (data, size);
   SocketDgram_T socket = NULL;
-  SocketDTLSContext_T ctx = NULL;
   char send_buf[256];
 
   /* Initialize send buffer with fuzz data */
@@ -77,16 +104,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       {
       case OP_ENABLE_DTLS:
         socket = SocketDgram_new (AF_INET, 0);
-        ctx = SocketDTLSContext_new_client (NULL);
-        SocketDTLS_enable (socket, ctx);
+        SocketDTLS_enable (socket, g_client_ctx);
         if (SocketDTLS_is_enabled (socket) != 1)
           abort ();
         break;
 
       case OP_SET_MTU:
         socket = SocketDgram_new (AF_INET, 0);
-        ctx = SocketDTLSContext_new_client (NULL);
-        SocketDTLS_enable (socket, ctx);
+        SocketDTLS_enable (socket, g_client_ctx);
         if (size > 2)
           {
             size_t mtu = (data[1] << 8) | data[2];
@@ -96,9 +121,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
       case OP_INFO_QUERIES:
         socket = SocketDgram_new (AF_INET, 0);
-        ctx = SocketDTLSContext_new_client (NULL);
-        SocketDTLS_enable (socket, ctx);
-        /* These should return NULL/0 before handshake */
+        SocketDTLS_enable (socket, g_client_ctx);
         (void)SocketDTLS_get_cipher (socket);
         (void)SocketDTLS_get_version (socket);
         (void)SocketDTLS_get_alpn_selected (socket);
@@ -108,8 +131,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
       case OP_STATE_QUERIES:
         socket = SocketDgram_new (AF_INET, 0);
-        ctx = SocketDTLSContext_new_client (NULL);
-        SocketDTLS_enable (socket, ctx);
+        SocketDTLS_enable (socket, g_client_ctx);
         (void)SocketDTLS_is_enabled (socket);
         (void)SocketDTLS_is_handshake_done (socket);
         (void)SocketDTLS_is_shutdown (socket);
@@ -117,25 +139,20 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         break;
 
       case OP_HANDSHAKE:
-        /* Handshake on unconnected socket will fail */
         socket = SocketDgram_new (AF_INET, 0);
-        ctx = SocketDTLSContext_new_client (NULL);
-        SocketDTLS_enable (socket, ctx);
+        SocketDTLS_enable (socket, g_client_ctx);
         SocketDTLS_handshake (socket);
         break;
 
       case OP_SEND_RECV:
-        /* Send/recv on unconnected socket will fail */
         socket = SocketDgram_new (AF_INET, 0);
-        ctx = SocketDTLSContext_new_client (NULL);
-        SocketDTLS_enable (socket, ctx);
+        SocketDTLS_enable (socket, g_client_ctx);
         SocketDTLS_send (socket, send_buf, 64);
         break;
 
       case OP_SHUTDOWN:
         socket = SocketDgram_new (AF_INET, 0);
-        ctx = SocketDTLSContext_new_client (NULL);
-        SocketDTLS_enable (socket, ctx);
+        SocketDTLS_enable (socket, g_client_ctx);
         SocketDTLS_shutdown (socket);
         break;
 
@@ -154,11 +171,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   ELSE {}
   END_TRY;
 
-  /* Cleanup */
+  /* Cleanup - only socket, context is cached */
   if (socket)
     SocketDgram_free (&socket);
-  if (ctx)
-    SocketDTLSContext_free (&ctx);
 
   return 0;
 }

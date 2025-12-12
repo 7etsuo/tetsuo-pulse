@@ -201,7 +201,7 @@ SOCKET_RAISE_FMT(Socket, Socket_Failed, "bind to %s:%d failed", host, port);
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/tetsuo-socket.git
+git clone https://github.com/7etsuo/tetsuo-socket.git
 cd tetsuo-socket
 
 # Create build directory
@@ -317,7 +317,7 @@ cd build
 
 ```bash
 # Fork the repo on GitHub, then:
-git clone https://github.com/YOUR_USERNAME/tetsuo-socket.git
+git clone https://github.com/YOUR_FORK/tetsuo-socket.git
 cd tetsuo-socket
 git checkout -b feature/your-feature-name
 ```

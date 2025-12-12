@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 #ifndef SOCKETDGRAM_PRIVATE_H_INCLUDED
 #define SOCKETDGRAM_PRIVATE_H_INCLUDED
 

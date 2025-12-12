@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 // libevent echo server
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>

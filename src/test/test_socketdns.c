@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * @file test_socketdns.c
  * @ingroup dns
@@ -597,7 +603,8 @@ TEST (socketdns_concurrent_resolutions)
   SocketDNS_free (&dns);
 }
 
-#if 0 /* Temporarily disabled - segfault in exception frame handling */
+#if 0 /* KNOWN_ISSUE: Exception frame handling segfault in DNS worker threads.
+       * See KNOWN_ISSUES.md for details and tracking. */
 static void *thread_check_completions(void *arg)
 {
     SocketDNS_T dns = (SocketDNS_T)arg;
@@ -674,7 +681,8 @@ TEST (socketdns_concurrent_cancel)
 
 /* ==================== Thread Pool Tests ==================== */
 
-#if 0 /* Temporarily disabled - segfault in exception frame handling */
+#if 0 /* KNOWN_ISSUE: Exception frame handling segfault in DNS worker threads.
+       * See KNOWN_ISSUES.md for details and tracking. */
 TEST(socketdns_thread_pool_processes_requests)
 {
     SocketDNS_T dns = SocketDNS_new();

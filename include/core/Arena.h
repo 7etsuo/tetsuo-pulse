@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
 /**
  * @defgroup foundation Core Foundation Modules
  * @brief Base infrastructure for memory management, exception handling, and
