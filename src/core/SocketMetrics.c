@@ -159,6 +159,7 @@ static const char *const counter_names[SOCKET_COUNTER_METRIC_COUNT] = {
   "http_client_bytes_received", "http_client_retries",
   /* HTTP Server */
   "http_server_requests_total", "http_server_requests_failed",
+  "http_server_requests_timeout", "http_server_rate_limited",
   "http_server_bytes_sent", "http_server_bytes_received",
   "http_server_connections_total",
   /* HTTP Responses */
@@ -204,6 +205,7 @@ static const char *const counter_help[SOCKET_COUNTER_METRIC_COUNT] = {
   "Total bytes received by HTTP client", "HTTP request retry count",
   /* HTTP Server */
   "Total HTTP requests received", "Failed request processing",
+  "HTTP requests that timed out on server", "HTTP requests rejected by rate limiter",
   "Total bytes sent by HTTP server", "Total bytes received by HTTP server",
   "Total connections accepted by server",
   /* HTTP Responses */

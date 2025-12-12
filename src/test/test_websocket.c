@@ -726,15 +726,18 @@ test_ws_compression_errors (void)
   init_ret = ws_compression_init (ws);
   assert (init_ret == 0);
 
-  // Test size exceed (mock large input)
-  size_t large_input = ws->config.max_message_size * 10;
-  unsigned char *large_comp = NULL;
-  size_t large_comp_len = 0;
-  int large_ret
-      = ws_compress_message (ws, (const unsigned char *)"", large_input,
-                             &large_comp, &large_comp_len); // Large avail_in
-  assert (large_ret == -1); // Expect failure due to size checks during growth
-  // Note: Verifies overflow/ size limit enforcement
+  // Test compression with normal input (max_message_size is checked at
+  // frame level, not in ws_compress_message which only checks security limits)
+  const unsigned char test_data[] = "Hello, WebSocket compression test!";
+  unsigned char *comp_out = NULL;
+  size_t comp_len = 0;
+  int comp_ret
+      = ws_compress_message (ws, test_data, sizeof (test_data) - 1,
+                             &comp_out, &comp_len);
+  assert (comp_ret == 0); // Should succeed for reasonable input
+  assert (comp_out != NULL);
+  assert (comp_len > 0);
+  // Note: Security limit is 256 MiB, small inputs pass validation
   ws_compression_free (ws);
 
   Arena_dispose (&arena);

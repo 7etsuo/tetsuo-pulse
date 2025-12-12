@@ -423,6 +423,17 @@ typedef struct
                               * @see SocketWS_Config for all WebSocket options.
                               * @see SocketHTTPServer_Request_upgrade_websocket()
                               */
+
+  /* Per-Server Metrics */
+  int per_server_metrics; /**< @brief Enable per-server metrics tracking
+                           * (default: 0). When enabled, SocketHTTPServer_stats()
+                           * returns metrics for this server instance only,
+                           * rather than global aggregates. Global metrics remain
+                           * available via SocketMetrics_* functions.
+                           * @note Enabling this adds memory overhead for
+                           * per-instance counters (~100 bytes per server).
+                           * @see SocketHTTPServer_stats()
+                           */
 } SocketHTTPServer_Config;
 
 /* ============================================================================

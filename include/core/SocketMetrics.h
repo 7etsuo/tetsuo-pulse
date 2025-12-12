@@ -362,6 +362,8 @@ typedef enum SocketCounterMetric
   /* HTTP Server Counters */
   SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL,    /**< Total requests received */
   SOCKET_CTR_HTTP_SERVER_REQUESTS_FAILED,   /**< Failed request processing */
+  SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT,  /**< Requests timed out */
+  SOCKET_CTR_HTTP_SERVER_RATE_LIMITED,      /**< Requests rejected by rate limit */
   SOCKET_CTR_HTTP_SERVER_BYTES_SENT,        /**< Total bytes sent */
   SOCKET_CTR_HTTP_SERVER_BYTES_RECEIVED,    /**< Total bytes received */
   SOCKET_CTR_HTTP_SERVER_CONNECTIONS_TOTAL, /**< Total connections accepted */

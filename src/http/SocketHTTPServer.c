@@ -32,6 +32,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <pthread.h>
+#include <stdatomic.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -67,7 +68,16 @@ const Except_T SocketHTTPServer_BindFailed
 const Except_T SocketHTTPServer_ProtocolError
     = { &SocketHTTPServer_ProtocolError, "HTTP protocol error" };
 
-/* Error macros defined in SocketHTTPServer-private.h for shared use */
+/* ============================================================================
+ * Per-Server Metrics Helpers
+ * ============================================================================
+ *
+ * These macros update both global SocketMetrics and per-server instance metrics
+ * when per_server_metrics is enabled. Global metrics are always updated for
+ * aggregation; per-server metrics provide instance-specific views.
+ */
+
+/* Metrics macros defined in SocketHTTPServer-private.h for shared use */
 
 /* ============================================================================
  * Internal Helper Functions
@@ -156,6 +166,9 @@ SocketHTTPServer_config_defaults (SocketHTTPServer_Config *config)
   /* WebSocket configuration - set server role by default */
   SocketWS_config_defaults (&config->ws_config);
   config->ws_config.role = WS_ROLE_SERVER;
+
+  /* Per-server metrics disabled by default (use global metrics) */
+  config->per_server_metrics = 0;
 }
 
 /* ============================================================================
@@ -484,8 +497,8 @@ server_check_rate_limit (SocketHTTPServer_T server, ServerConnection *conn)
       = find_rate_limiter (server, conn->request ? conn->request->path : NULL);
   if (limiter != NULL && !SocketRateLimit_try_acquire (limiter, 1))
     {
-      SocketMetrics_counter_inc (
-          SOCKET_CTR_HTTP_SERVER_REQUESTS_FAILED); /* Rate limited -> failed */
+      SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_SERVER_RATE_LIMITED,
+                          rate_limited);
       connection_send_error (server, conn, 429, "Too Many Requests");
       return 0;
     }
@@ -556,18 +569,24 @@ server_run_validator_early (SocketHTTPServer_T server, ServerConnection *conn)
 }
 
 /**
- * server_invoke_handler - Invoke request handler and update stats
+ * server_invoke_handler - Invoke middleware chain and request handler
  * @server: HTTP server
  * @conn: Connection with parsed request
  *
- * Returns: 1 if handler was invoked, 0 if no handler or request
+ * Executes middleware chain in order of addition. If any middleware returns
+ * non-zero, the chain stops and the request is considered handled.
+ * If all middleware returns 0 (continue), the main handler is invoked.
+ *
+ * Returns: 1 if handler/middleware was invoked, 0 if no handler or request
  */
 static int
 server_invoke_handler (SocketHTTPServer_T server, ServerConnection *conn)
 {
   struct SocketHTTPServer_Request req_ctx;
+  MiddlewareEntry *mw;
+  int result;
 
-  if (server->handler == NULL || conn->request == NULL)
+  if (conn->request == NULL)
     return 0;
 
   req_ctx.server = server;
@@ -577,10 +596,29 @@ server_invoke_handler (SocketHTTPServer_T server, ServerConnection *conn)
 
   conn->response_status = 200;
 
-  server->handler (&req_ctx, server->handler_userdata);
+  /* Execute middleware chain in order */
+  for (mw = server->middleware_chain; mw != NULL; mw = mw->next)
+    {
+      result = mw->func (&req_ctx, mw->userdata);
+      if (result != 0)
+        {
+          /* Middleware handled the request - stop chain */
+          SOCKET_LOG_DEBUG_MSG ("Middleware handled request, stopping chain");
+          SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL,
+                              requests_total);
+          return 1;
+        }
+    }
 
-  /* Update request counter via SocketMetrics */
-  SocketMetrics_counter_inc (SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL);
+  /* All middleware passed, invoke main handler */
+  if (server->handler != NULL)
+    {
+      server->handler (&req_ctx, server->handler_userdata);
+    }
+
+  /* Update request counter (global + per-server) */
+  SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL,
+                      requests_total);
 
   return 1;
 }
@@ -633,7 +671,8 @@ server_try_static_file (SocketHTTPServer_T server, ServerConnection *conn)
   if (result == 1)
     {
       /* File was served (or 304/416 sent) */
-      SocketMetrics_counter_inc (SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL);
+      SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL,
+                          requests_total);
       return 1;
     }
 
@@ -929,9 +968,8 @@ server_check_connection_timeout (SocketHTTPServer_T server,
   if (conn->state == CONN_STATE_READING_REQUEST
       && idle_ms > server->config.keepalive_timeout_ms)
     {
-      SocketMetrics_counter_inc (
-          SOCKET_CTR_HTTP_SERVER_REQUESTS_FAILED); /* Timeout -> failed request
-                                                    */
+      SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT,
+                          requests_timeout);
       connection_close (server, conn);
       return 1;
     }
@@ -941,9 +979,8 @@ server_check_connection_timeout (SocketHTTPServer_T server,
       && (now - conn->request_start_ms)
              > server->config.request_read_timeout_ms)
     {
-      SocketMetrics_counter_inc (
-          SOCKET_CTR_HTTP_SERVER_REQUESTS_FAILED); /* Timeout -> failed request
-                                                    */
+      SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT,
+                          requests_timeout);
       connection_close (server, conn);
       return 1;
     }
@@ -954,9 +991,8 @@ server_check_connection_timeout (SocketHTTPServer_T server,
       && (now - conn->response_start_ms)
              > server->config.response_write_timeout_ms)
     {
-      SocketMetrics_counter_inc (
-          SOCKET_CTR_HTTP_SERVER_REQUESTS_FAILED); /* Timeout -> failed request
-                                                    */
+      SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT,
+                          requests_timeout);
       connection_close (server, conn);
       return 1;
     }
@@ -1678,28 +1714,56 @@ SocketHTTPServer_stats (SocketHTTPServer_T server,
 {
   assert (server != NULL);
   assert (stats != NULL);
-  (void)server; /* Used only in assert; silence unused parameter warning */
 
   memset (stats, 0, sizeof (*stats));
 
-  /* Query centralized metrics - no lock needed, metrics thread-safe */
-  stats->active_connections = (size_t)SocketMetrics_gauge_get (
-      SOCKET_GAU_HTTP_SERVER_ACTIVE_CONNECTIONS);
-  stats->total_connections
-      = SocketMetrics_counter_get (SOCKET_CTR_HTTP_SERVER_CONNECTIONS_TOTAL);
-  stats->total_requests
-      = SocketMetrics_counter_get (SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL);
-  stats->total_bytes_sent
-      = SocketMetrics_counter_get (SOCKET_CTR_HTTP_SERVER_BYTES_SENT);
-  stats->total_bytes_received
-      = SocketMetrics_counter_get (SOCKET_CTR_HTTP_SERVER_BYTES_RECEIVED);
-  stats->errors_4xx
-      = SocketMetrics_counter_get (SOCKET_CTR_HTTP_RESPONSES_4XX);
-  stats->errors_5xx
-      = SocketMetrics_counter_get (SOCKET_CTR_HTTP_RESPONSES_5XX);
-  stats->connections_rejected = SocketMetrics_counter_get (
-      SOCKET_CTR_LIMIT_CONNECTIONS_EXCEEDED); /* Or custom if tracked */
-  /* timeouts, rate_limited: use custom or map to failed counters */
+  /* Use per-server metrics when enabled, otherwise global metrics */
+  if (server->config.per_server_metrics)
+    {
+      /* Per-server instance metrics - atomic reads */
+      stats->active_connections
+          = (size_t)atomic_load (&server->instance_metrics.active_connections);
+      stats->total_connections
+          = atomic_load (&server->instance_metrics.connections_total);
+      stats->connections_rejected
+          = atomic_load (&server->instance_metrics.connections_rejected);
+      stats->total_requests
+          = atomic_load (&server->instance_metrics.requests_total);
+      stats->total_bytes_sent
+          = atomic_load (&server->instance_metrics.bytes_sent);
+      stats->total_bytes_received
+          = atomic_load (&server->instance_metrics.bytes_received);
+      stats->errors_4xx = atomic_load (&server->instance_metrics.errors_4xx);
+      stats->errors_5xx = atomic_load (&server->instance_metrics.errors_5xx);
+      stats->timeouts
+          = atomic_load (&server->instance_metrics.requests_timeout);
+      stats->rate_limited
+          = atomic_load (&server->instance_metrics.rate_limited);
+    }
+  else
+    {
+      /* Global metrics - thread-safe via SocketMetrics */
+      stats->active_connections = (size_t)SocketMetrics_gauge_get (
+          SOCKET_GAU_HTTP_SERVER_ACTIVE_CONNECTIONS);
+      stats->total_connections
+          = SocketMetrics_counter_get (SOCKET_CTR_HTTP_SERVER_CONNECTIONS_TOTAL);
+      stats->total_requests
+          = SocketMetrics_counter_get (SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL);
+      stats->total_bytes_sent
+          = SocketMetrics_counter_get (SOCKET_CTR_HTTP_SERVER_BYTES_SENT);
+      stats->total_bytes_received
+          = SocketMetrics_counter_get (SOCKET_CTR_HTTP_SERVER_BYTES_RECEIVED);
+      stats->errors_4xx
+          = SocketMetrics_counter_get (SOCKET_CTR_HTTP_RESPONSES_4XX);
+      stats->errors_5xx
+          = SocketMetrics_counter_get (SOCKET_CTR_HTTP_RESPONSES_5XX);
+      stats->connections_rejected
+          = SocketMetrics_counter_get (SOCKET_CTR_LIMIT_CONNECTIONS_EXCEEDED);
+      stats->timeouts
+          = SocketMetrics_counter_get (SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT);
+      stats->rate_limited
+          = SocketMetrics_counter_get (SOCKET_CTR_HTTP_SERVER_RATE_LIMITED);
+    }
 
   /* RPS approximation: delta requests / delta time using per-server tracking
    */
@@ -1732,21 +1796,38 @@ SocketHTTPServer_stats (SocketHTTPServer_T server,
   stats->p50_request_time_us = (int64_t)(snap.p50 * 1000);
   stats->p95_request_time_us = (int64_t)(snap.p95 * 1000);
   stats->p99_request_time_us = (int64_t)(snap.p99 * 1000);
-  /* Note: p999 if needed from snap.p999 */
-
-  /* TODO: Update SocketHTTPServer_Stats struct if fields removed/mapped */
 }
 
 void
 SocketHTTPServer_stats_reset (SocketHTTPServer_T server)
 {
-  (void)server; /* Currently no server-specific reset; use global */
+  assert (server != NULL);
 
-  /* Reset centralized metrics - affects all modules */
+  /* Reset per-server RPS tracking */
+  pthread_mutex_lock (&server->stats_mutex);
+  server->stats_prev_requests = 0;
+  server->stats_prev_time_ms = 0;
+  pthread_mutex_unlock (&server->stats_mutex);
+
+  /* Reset per-server instance metrics if enabled */
+  if (server->config.per_server_metrics)
+    {
+      /* Preserve active_connections (current gauge), reset cumulative counters
+       */
+      atomic_store (&server->instance_metrics.connections_total, 0);
+      atomic_store (&server->instance_metrics.connections_rejected, 0);
+      atomic_store (&server->instance_metrics.requests_total, 0);
+      atomic_store (&server->instance_metrics.requests_timeout, 0);
+      atomic_store (&server->instance_metrics.rate_limited, 0);
+      atomic_store (&server->instance_metrics.bytes_sent, 0);
+      atomic_store (&server->instance_metrics.bytes_received, 0);
+      atomic_store (&server->instance_metrics.errors_4xx, 0);
+      atomic_store (&server->instance_metrics.errors_5xx, 0);
+      /* Note: active_connections not reset - reflects live state */
+    }
+
+  /* Reset centralized metrics - affects all modules using global metrics */
   SocketMetrics_reset ();
-
-  /* TODO: If per-server metrics needed, add server param to metrics or
-   * per-instance tracking */
 }
 
 /* ============================================================================
@@ -2397,19 +2478,41 @@ SocketHTTPServer_add_middleware (SocketHTTPServer_T server,
                                  SocketHTTPServer_Middleware middleware,
                                  void *userdata)
 {
+  MiddlewareEntry *entry;
+  MiddlewareEntry *tail;
+
   assert (server != NULL);
   assert (middleware != NULL);
 
-  /* Store middleware in server's middleware chain */
-  /* This is a stub - full implementation would maintain a list of
-   * middleware callbacks */
-  (void)userdata;
+  /* Allocate middleware entry from server arena */
+  entry = Arena_alloc (server->arena, sizeof (*entry), __FILE__, __LINE__);
+  if (entry == NULL)
+    {
+      HTTPSERVER_ERROR_MSG ("Failed to allocate middleware entry");
+      return -1;
+    }
 
-  /* TODO: Full implementation would:
-   * 1. Add middleware to linked list/array
-   * 2. In process loop, call each middleware in order before handler
-   * 3. Stop chain if middleware returns non-zero
-   */
+  entry->func = middleware;
+  entry->userdata = userdata;
+  entry->next = NULL;
+
+  /* Append to end of chain to preserve order of addition */
+  if (server->middleware_chain == NULL)
+    {
+      server->middleware_chain = entry;
+    }
+  else
+    {
+      /* Find tail of chain */
+      tail = server->middleware_chain;
+      while (tail->next != NULL)
+        {
+          tail = tail->next;
+        }
+      tail->next = entry;
+    }
+
+  SOCKET_LOG_DEBUG_MSG ("Added middleware to chain");
 
   return 0;
 }
@@ -2421,15 +2524,9 @@ SocketHTTPServer_set_error_handler (SocketHTTPServer_T server,
 {
   assert (server != NULL);
 
-  /* Store error handler in server configuration */
-  /* This is a stub - full implementation would invoke this handler
-   * for all server-generated error responses */
-  (void)handler;
-  (void)userdata;
+  server->error_handler = handler;
+  server->error_handler_userdata = userdata;
 
-  /* TODO: Full implementation would:
-   * 1. Store handler and userdata in server struct
-   * 2. Call handler from error response generation code
-   * 3. Fall back to default if handler is NULL
-   */
+  SOCKET_LOG_DEBUG_MSG ("Custom error handler %s",
+                        handler != NULL ? "registered" : "cleared");
 }

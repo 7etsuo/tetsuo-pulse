@@ -47,10 +47,110 @@
 #include "http/SocketHTTP1.h"
 #include "socket/SocketBuf.h"
 #include <pthread.h>
+#include <stdatomic.h>
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPServer);
 
 /* Internal types */
+
+/**
+ * @brief Per-server metrics counters for instance-specific tracking.
+ * @ingroup http
+ * @internal
+ *
+ * When per_server_metrics is enabled, these counters track metrics for a
+ * specific server instance. Global metrics are still updated for aggregation.
+ * All counters are atomic for thread safety.
+ */
+typedef struct SocketHTTPServer_InstanceMetrics
+{
+  _Atomic uint64_t connections_total;    /**< Connections accepted */
+  _Atomic uint64_t connections_rejected; /**< Connections rejected */
+  _Atomic int64_t active_connections;    /**< Current active connections */
+  _Atomic uint64_t requests_total;       /**< Requests processed */
+  _Atomic uint64_t requests_timeout;     /**< Timed out requests */
+  _Atomic uint64_t rate_limited;         /**< Rate-limited requests */
+  _Atomic uint64_t bytes_sent;           /**< Bytes sent */
+  _Atomic uint64_t bytes_received;       /**< Bytes received */
+  _Atomic uint64_t errors_4xx;           /**< 4xx errors */
+  _Atomic uint64_t errors_5xx;           /**< 5xx errors */
+} SocketHTTPServer_InstanceMetrics;
+
+/**
+ * @defgroup http_server_instance_metrics Per-Server Metrics Macros
+ * @ingroup http
+ * @internal
+ * @brief Macros for combined global + per-server metrics updates.
+ *
+ * These macros update both global SocketMetrics and per-server instance
+ * metrics in a single call. The per-server update is conditional on
+ * config.per_server_metrics being enabled.
+ *
+ * @{
+ */
+
+/**
+ * @brief Increment a counter for both global and per-server
+ * @param server Server instance
+ * @param global_metric Global SocketCounterMetric enum value
+ * @param instance_field Field name in instance_metrics struct
+ */
+#define SERVER_METRICS_INC(server, global_metric, instance_field)              \
+  do                                                                           \
+    {                                                                          \
+      SocketMetrics_counter_inc (global_metric);                               \
+      if ((server)->config.per_server_metrics)                                 \
+        atomic_fetch_add (&(server)->instance_metrics.instance_field, 1);      \
+    }                                                                          \
+  while (0)
+
+/**
+ * @brief Add value to counter for both global and per-server
+ * @param server Server instance
+ * @param global_metric Global SocketCounterMetric enum value
+ * @param instance_field Field name in instance_metrics struct
+ * @param value Value to add
+ */
+#define SERVER_METRICS_ADD(server, global_metric, instance_field, value)       \
+  do                                                                           \
+    {                                                                          \
+      SocketMetrics_counter_add ((global_metric), (value));                    \
+      if ((server)->config.per_server_metrics)                                 \
+        atomic_fetch_add (&(server)->instance_metrics.instance_field, (value));\
+    }                                                                          \
+  while (0)
+
+/**
+ * @brief Increment a gauge for both global and per-server
+ * @param server Server instance
+ * @param global_metric Global SocketGaugeMetric enum value
+ * @param instance_field Field name in instance_metrics struct
+ */
+#define SERVER_GAUGE_INC(server, global_metric, instance_field)                \
+  do                                                                           \
+    {                                                                          \
+      SocketMetrics_gauge_inc (global_metric);                                 \
+      if ((server)->config.per_server_metrics)                                 \
+        atomic_fetch_add (&(server)->instance_metrics.instance_field, 1);      \
+    }                                                                          \
+  while (0)
+
+/**
+ * @brief Decrement a gauge for both global and per-server
+ * @param server Server instance
+ * @param global_metric Global SocketGaugeMetric enum value
+ * @param instance_field Field name in instance_metrics struct
+ */
+#define SERVER_GAUGE_DEC(server, global_metric, instance_field)                \
+  do                                                                           \
+    {                                                                          \
+      SocketMetrics_gauge_dec (global_metric);                                 \
+      if ((server)->config.per_server_metrics)                                 \
+        atomic_fetch_sub (&(server)->instance_metrics.instance_field, 1);      \
+    }                                                                          \
+  while (0)
+
+/** @} */ /* http_server_instance_metrics */
 
 /**
  * @brief Linked list entry for per-path rate limiters.
@@ -90,6 +190,30 @@ typedef struct StaticRoute
   size_t resolved_dir_len;   /**< Length of resolved directory path */
   struct StaticRoute *next;  /**< Next route in linked list */
 } StaticRoute;
+
+/**
+ * @brief Linked list entry for middleware chain.
+ * @ingroup http
+ * @internal
+ *
+ * Middleware functions are executed in order of addition, before the main
+ * request handler. Each middleware can inspect/modify the request, set response
+ * headers, or short-circuit by returning non-zero (indicating the request has
+ * been handled).
+ *
+ * Middleware return values:
+ * - 0: Continue to next middleware/handler
+ * - Non-zero: Stop chain, request is considered handled
+ *
+ * @see SocketHTTPServer_add_middleware() for adding middleware.
+ * @see SocketHTTPServer_Middleware for callback signature.
+ */
+typedef struct MiddlewareEntry
+{
+  SocketHTTPServer_Middleware func; /**< Middleware callback function */
+  void *userdata;                   /**< User data passed to callback */
+  struct MiddlewareEntry *next;     /**< Next middleware in chain */
+} MiddlewareEntry;
 
 /**
  * @brief Internal states tracking the processing pipeline of a server
@@ -275,6 +399,11 @@ struct SocketHTTPServer
   void *validator_userdata;
   SocketHTTPServer_DrainCallback drain_callback;
   void *drain_callback_userdata;
+  SocketHTTPServer_ErrorHandler error_handler;
+  void *error_handler_userdata;
+
+  /* Middleware chain */
+  MiddlewareEntry *middleware_chain;
 
   /* Connections */
   ServerConnection *connections;
@@ -301,13 +430,14 @@ struct SocketHTTPServer
   int64_t stats_prev_time_ms;
   pthread_mutex_t stats_mutex; /* Protect RPS calc if multi-threaded */
 
-  /* Statistics moved to SocketMetrics_* (counters, gauges, histograms)
-   * Query via SocketMetrics_get() or specific functions in stats API */
+  /* Per-server metrics (optional, enabled via config.per_server_metrics)
+   * When enabled, these track instance-specific metrics in addition to global.
+   * When disabled (default), metrics only go to global SocketMetrics. */
+  SocketHTTPServer_InstanceMetrics instance_metrics;
 
-  /* Latency tracking moved to SocketMetrics
-   * (SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS) */
-
-  /* No custom mutex - SocketMetrics handles thread safety internally */
+  /* Statistics also available via SocketMetrics_* (counters, gauges,
+   * histograms) for aggregated cross-server stats. Query via
+   * SocketMetrics_get() or specific functions in stats API. */
 
   int running;
   Arena_T arena;

@@ -74,8 +74,6 @@ connection_read (SocketHTTPServer_T server, ServerConnection *conn)
   volatile ssize_t n = 0;
   volatile int closed = 0;
 
-  (void)server;
-
   TRY
   {
     n = Socket_recv (conn->socket, buf, sizeof (buf));
@@ -98,7 +96,8 @@ connection_read (SocketHTTPServer_T server, ServerConnection *conn)
     }
 
   conn->last_activity_ms = Socket_get_monotonic_ms ();
-  SocketMetrics_counter_add (SOCKET_CTR_HTTP_SERVER_BYTES_RECEIVED, (size_t)n);
+  SERVER_METRICS_ADD (server, SOCKET_CTR_HTTP_SERVER_BYTES_RECEIVED,
+                      bytes_received, (uint64_t)n);
   SocketBuf_write (conn->inbuf, buf, (size_t)n);
 
   return (int)n;
@@ -106,7 +105,7 @@ connection_read (SocketHTTPServer_T server, ServerConnection *conn)
 
 /**
  * connection_send_data - Send data over connection socket
- * @server: HTTP server (unused, kept for API consistency)
+ * @server: HTTP server (for per-server metrics)
  * @conn: Connection to send on
  * @data: Data buffer to send
  * @len: Length of data
@@ -119,8 +118,6 @@ connection_send_data (SocketHTTPServer_T server, ServerConnection *conn,
 {
   volatile int closed = 0;
   volatile ssize_t sent = 0;
-
-  (void)server;
 
   TRY
   {
@@ -140,7 +137,8 @@ connection_send_data (SocketHTTPServer_T server, ServerConnection *conn,
     }
 
   conn->last_activity_ms = Socket_get_monotonic_ms ();
-  SocketMetrics_counter_add (SOCKET_CTR_HTTP_SERVER_BYTES_SENT, (size_t)sent);
+  SERVER_METRICS_ADD (server, SOCKET_CTR_HTTP_SERVER_BYTES_SENT, bytes_sent,
+                      (uint64_t)sent);
   return 0;
 }
 
@@ -549,9 +547,13 @@ connection_send_response (SocketHTTPServer_T server, ServerConnection *conn)
 
   /* Track error metrics */
   if (conn->response_status >= 400 && conn->response_status < 500)
-    SocketMetrics_counter_inc (SOCKET_CTR_HTTP_RESPONSES_4XX);
+    {
+      SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_RESPONSES_4XX, errors_4xx);
+    }
   else if (conn->response_status >= 500)
-    SocketMetrics_counter_inc (SOCKET_CTR_HTTP_RESPONSES_5XX);
+    {
+      SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_RESPONSES_5XX, errors_5xx);
+    }
 
   /* Set Content-Length for non-streaming responses */
   if (conn->response_body_len > 0 && !conn->response_streaming)
@@ -587,6 +589,11 @@ connection_send_response (SocketHTTPServer_T server, ServerConnection *conn)
  * @conn: Connection to send error on
  * @status: HTTP status code
  * @body: Optional error message body
+ *
+ * If a custom error handler is registered via SocketHTTPServer_set_error_handler(),
+ * it will be invoked to allow custom error page generation. The handler can set
+ * response headers and body, then call SocketHTTPServer_Request_finish().
+ * If no custom handler is set, a default text/plain response is sent.
  */
 void
 connection_send_error (SocketHTTPServer_T server, ServerConnection *conn,
@@ -594,6 +601,21 @@ connection_send_error (SocketHTTPServer_T server, ServerConnection *conn,
 {
   conn->response_status = status;
 
+  /* If a custom error handler is registered, invoke it */
+  if (server->error_handler != NULL)
+    {
+      struct SocketHTTPServer_Request req_ctx;
+      req_ctx.server = server;
+      req_ctx.conn = conn;
+      req_ctx.arena = conn->arena;
+      req_ctx.start_time_ms = conn->request_start_ms;
+
+      /* Handler is responsible for setting headers, body, and calling finish */
+      server->error_handler (&req_ctx, status, server->error_handler_userdata);
+      return;
+    }
+
+  /* Default error response: plain text with status message */
   if (body != NULL)
     {
       size_t len = strlen (body);
@@ -715,7 +737,8 @@ connection_add_to_server (SocketHTTPServer_T server, ServerConnection *conn)
     {
       if (!SocketIPTracker_track (server->ip_tracker, conn->client_addr))
         {
-          SocketMetrics_counter_inc (SOCKET_CTR_LIMIT_CONNECTIONS_EXCEEDED);
+          SERVER_METRICS_INC (server, SOCKET_CTR_LIMIT_CONNECTIONS_EXCEEDED,
+                              connections_rejected);
           return -1;
         }
     }
@@ -726,8 +749,11 @@ connection_add_to_server (SocketHTTPServer_T server, ServerConnection *conn)
     server->connections->prev = conn;
   server->connections = conn;
 
-  SocketMetrics_gauge_inc (SOCKET_GAU_HTTP_SERVER_ACTIVE_CONNECTIONS);
-  SocketMetrics_counter_inc (SOCKET_CTR_HTTP_SERVER_CONNECTIONS_TOTAL);
+  /* Update global + per-server metrics */
+  SERVER_GAUGE_INC (server, SOCKET_GAU_HTTP_SERVER_ACTIVE_CONNECTIONS,
+                    active_connections);
+  SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_SERVER_CONNECTIONS_TOTAL,
+                      connections_total);
 
   return 0;
 }
@@ -819,7 +845,9 @@ connection_close (SocketHTTPServer_T server, ServerConnection *conn)
   if (conn->next != NULL)
     conn->next->prev = conn->prev;
 
-  SocketMetrics_gauge_dec (SOCKET_GAU_HTTP_SERVER_ACTIVE_CONNECTIONS);
+  /* Update global + per-server metrics */
+  SERVER_GAUGE_DEC (server, SOCKET_GAU_HTTP_SERVER_ACTIVE_CONNECTIONS,
+                    active_connections);
 
   /* Free arena */
   if (conn->arena != NULL)

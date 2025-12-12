@@ -748,18 +748,13 @@ TEST (httpserver_body_streaming_callback)
     int result = SocketHTTPServer_start (server);
     ASSERT_EQ (0, result);
 
-    /* Get the listening port */
-    int port = SocketHTTPServer_fd (server);
-    ASSERT (port >= 0);
-
-    /* Get actual port from socket */
-    int actual_port = Socket_getlocalport (
-        (Socket_T)(intptr_t)SocketHTTPServer_fd (server));
-    /* Note: SocketHTTPServer_fd returns fd not Socket_T, so we need different
-     * approach */
+    /* Get the listening fd */
+    int fd = SocketHTTPServer_fd (server);
+    ASSERT (fd >= 0);
 
     /* For now, just verify the server starts and streaming is set up */
     /* A full integration test would require connecting a client */
+    /* Note: SocketHTTPServer_fd returns fd (int), not Socket_T */
     ASSERT_NOT_NULL (server);
   }
   FINALLY
