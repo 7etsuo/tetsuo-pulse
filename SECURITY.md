@@ -54,36 +54,109 @@ When reporting a vulnerability, please include:
 When using this library, we recommend:
 
 ### TLS Configuration
-- Use TLS 1.3 (default in this library)
-- Enable certificate verification in production
-- Use certificate pinning for sensitive applications
-- Regularly update CA certificates
+- Use TLS 1.3 (default in this library - enforced via `SOCKET_TLS_MIN_VERSION`)
+- Enable certificate verification in production (`TLS_VERIFY_PEER`)
+- Use certificate pinning for sensitive applications (`SocketTLSContext_add_pin*()`)
+- Regularly update CA certificates and CRLs (`SocketTLSContext_load_crl()`, `SocketTLSContext_set_crl_auto_refresh()`)
+- Enable Certificate Transparency verification (`SocketTLSContext_enable_ct()`)
+- Enable OCSP Must-Staple for maximum revocation checking (`SocketTLSContext_set_ocsp_must_staple()`)
+
+### DTLS Configuration
+- Use DTLS 1.2+ (enforced via `SOCKET_DTLS_MIN_VERSION`)
+- Enable cookie exchange for DoS protection (`SocketDTLSContext_enable_cookie_exchange()`)
+- Rotate cookie secrets periodically (`SocketDTLSContext_rotate_cookie_secret()`)
+- Configure appropriate MTU for network conditions (`SocketDTLSContext_set_mtu()`)
 
 ### Input Validation
 - Validate all user input before passing to socket functions
-- Use async DNS for untrusted hostnames to avoid blocking
+- Use async DNS for untrusted hostnames to avoid blocking (`SocketDNS_resolve()`)
 - Set appropriate timeouts for all operations
+- Validate file paths for certificate/key loading to prevent path traversal
 
 ### Memory Safety
 - Use `SocketBuf_secureclear()` for buffers containing sensitive data
+- Use `SocketCrypto_secure_clear()` for cryptographic material
 - Properly dispose of arenas to prevent memory leaks
 - Handle exceptions appropriately with TRY/EXCEPT/FINALLY
 
 ### Network Security
-- Enable SYN flood protection for public-facing servers
-- Configure appropriate rate limits
+- Enable SYN flood protection for public-facing servers (`SocketSYNProtect_new()`)
+- Configure appropriate rate limits (`SocketRateLimit_new()`, `SocketPool_setconnrate()`)
 - Use connection pooling with proper cleanup
+- Enable kTLS offload for high-performance scenarios (`SocketTLS_enable_ktls()`)
+
+### Forward Secrecy
+- Use TLS 1.3 KeyUpdate for long-lived connections (`SocketTLS_request_key_update()`)
+- Rotate session ticket keys periodically (`SocketTLSContext_rotate_session_ticket_key()`)
 
 ## Security Features
 
-This library includes several security features:
+This library includes comprehensive security features:
 
-- **TLS 1.3 Enforcement**: Secure by default TLS configuration
-- **Certificate Pinning**: SPKI SHA256 pinning support
-- **OCSP Stapling**: Real-time certificate revocation checking
-- **SYN Flood Protection**: Built-in DDoS mitigation
-- **Secure Memory Clearing**: Sensitive data wiping
-- **Integer Overflow Protection**: Safe arithmetic throughout
+### TLS/DTLS Security (Complete December 2025)
+- **TLS 1.3 Enforcement**: Secure by default - TLS 1.3-only mode with fallback support
+- **DTLS 1.2+ Support**: Secure datagram transport with DoS protection
+- **Certificate Pinning**: SPKI SHA256 pinning with constant-time comparison (`SocketCrypto_secure_compare()`)
+- **Certificate Transparency**: RFC 6962 SCT verification (permissive/strict modes)
+- **OCSP Stapling**: Server-side static/dynamic and client-side verification
+- **OCSP Must-Staple**: RFC 7633 enforcement (DISABLED/AUTO/ALWAYS modes)
+- **CRL Management**: Manual loading and auto-refresh with path security validation
+- **Custom Verification Callbacks**: Application-specific certificate validation
+- **Custom Certificate Lookup**: HSM/PKCS#11 and database integration support
+- **Session Resumption**: TLS 1.3 PSK and session ticket support with secure key rotation
+- **ALPN Protocol Negotiation**: RFC 7301 compliant with validation
+- **SNI Support**: Virtual hosting with per-hostname certificates
+- **kTLS Offload**: Kernel TLS for high-performance encryption (Linux 4.13+)
+- **0-RTT Early Data**: TLS 1.3 early data with replay protection warnings
+- **TLS 1.3 KeyUpdate**: Forward secrecy key rotation for long-lived connections
+- **Renegotiation Control**: DoS protection with configurable limits (TLS 1.2)
 
-For detailed security documentation, see [docs/SECURITY.md](docs/SECURITY.md).
+### DTLS-Specific Security
+- **Cookie Exchange**: RFC 6347 DoS protection with HMAC-SHA256 cookies
+- **Cookie Secret Rotation**: Automatic grace period for pending handshakes
+- **Retransmission Handling**: OpenSSL-managed DTLS retransmission
+- **MTU Configuration**: Configurable MTU with bounds validation (576-9000 bytes)
+
+### Memory Security
+- **Secure Memory Clearing**: `SocketCrypto_secure_clear()` prevents compiler optimization
+- **Key Material Protection**: `OPENSSL_cleanse()` for ticket keys, cookie secrets
+- **Buffer Security**: `SocketBuf_secureclear()` for sensitive network data
+- **SNI Hostname Clearing**: Secure erasure of connection metadata
+- **Arena-Based Allocation**: Lifecycle management prevents leaks
+
+### Timing Attack Prevention
+- **Constant-Time Comparison**: `SocketCrypto_secure_compare()` for all security tokens
+- **Certificate Pin Verification**: O(n) full scan regardless of match position
+- **Cookie Verification**: Constant-time HMAC comparison
+
+### Input Validation
+- **Path Traversal Prevention**: Rejects "..", control characters, symlinks
+- **File Size Limits**: DoS protection for cert/key/CRL files
+- **Hostname Validation**: RFC 1123/6066 compliant validation
+- **ALPN Validation**: RFC 7301 printable ASCII enforcement
+
+### DoS Protection
+- **SYN Flood Protection**: IP reputation tracking with sliding window
+- **DTLS Cookie Exchange**: Prevents UDP amplification attacks
+- **Rate Limiting**: Token bucket with configurable burst
+- **Connection Limits**: Per-IP tracking with automatic cleanup
+- **CRL Refresh Intervals**: Minimum 60 seconds prevents refresh storms
+- **Renegotiation Limits**: Maximum 3 per connection (TLS 1.2)
+
+### Integer Overflow Protection
+- Safe arithmetic throughout with SIZE_MAX/2 checks
+- Buffer size validation via `SOCKET_VALID_BUFFER_SIZE`
+
+## Threat Model Coverage
+
+| Threat | Protection | Implementation |
+|--------|------------|----------------|
+| MITM | TLS 1.3 + cert verification + SPKI pinning | `SocketTLSContext-pinning.c` |
+| Downgrade | TLS1.3_VERSION min + SSL_OP_NO_RENEGOTIATION | `SocketTLSContext-core.c` |
+| DoS | DTLS cookies, file limits, rate limiting | `SocketDTLS-cookie.c`, `SocketSYNProtect.c` |
+| Timing | `SocketCrypto_secure_compare()` everywhere | `SocketCrypto.c`, pinning, cookies |
+| Memory Disclosure | `SocketCrypto_secure_clear()`, `OPENSSL_cleanse()` | All buffer/key cleanup paths |
+| Replay | 0-RTT warnings, session freshness checks | `SocketTLSContext-session.c` |
+
+For detailed security documentation, see [docs/SECURITY.md](docs/SECURITY.md) and [docs/TLS-CONFIG.md](docs/TLS-CONFIG.md).
 

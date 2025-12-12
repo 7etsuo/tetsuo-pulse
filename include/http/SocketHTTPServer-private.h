@@ -71,6 +71,27 @@ typedef struct RateLimitEntry
 } RateLimitEntry;
 
 /**
+ * @brief Linked list entry for static file serving routes.
+ * @ingroup http
+ * @internal
+ *
+ * Maps URL path prefixes to filesystem directories for serving static files.
+ * Supports security features like path traversal prevention, MIME type
+ * detection, conditional requests (If-Modified-Since), and range requests.
+ *
+ * @see SocketHTTPServer_add_static_dir() for adding static routes.
+ */
+typedef struct StaticRoute
+{
+  char *prefix;              /**< URL prefix to match (e.g., "/static") */
+  char *directory;           /**< Filesystem directory to serve from */
+  size_t prefix_len;         /**< Cached length of prefix for fast matching */
+  char *resolved_directory;  /**< realpath() resolved directory for security */
+  size_t resolved_dir_len;   /**< Length of resolved directory path */
+  struct StaticRoute *next;  /**< Next route in linked list */
+} StaticRoute;
+
+/**
  * @brief Internal states tracking the processing pipeline of a server
  * connection.
  * @ingroup http
@@ -136,11 +157,13 @@ typedef struct ServerConnection
 
   /* Request data */
   const SocketHTTP_Request *request;
-  void *body;
+  void *body;           /* For Content-Length mode: fixed-size arena alloc */
+  SocketBuf_T body_buf; /* For chunked/until-close: growable buffer */
   size_t body_len;
   size_t body_capacity;
   SocketHTTP1_BodyMode body_mode; /* Body transfer mode for processing */
   size_t body_received;
+  int body_uses_buf; /* 1 if using body_buf (chunked), 0 if using body ptr */
 
   /* Request body streaming */
   SocketHTTPServer_BodyCallback body_callback;
@@ -260,6 +283,9 @@ struct SocketHTTPServer
   /* Rate limiting */
   RateLimitEntry *rate_limiters;
   SocketRateLimit_T global_rate_limiter;
+
+  /* Static file serving */
+  StaticRoute *static_routes;
 
   /* Per-client limiting */
   SocketIPTracker_T ip_tracker;
@@ -1084,5 +1110,76 @@ void connection_send_error (SocketHTTPServer_T server,
                             ServerConnection *conn,
                             int status_code,
                             const char *reason);
+
+/**
+ * @brief Send data over connection socket.
+ * @param server HTTP server instance
+ * @param conn Connection to send on
+ * @param data Data buffer to send
+ * @param len Length of data
+ * @return 0 on success, -1 on error
+ */
+int connection_send_data (SocketHTTPServer_T server,
+                          ServerConnection *conn,
+                          const void *data,
+                          size_t len);
+
+/**
+ * @brief Serialize and send HTTP response.
+ * @param server HTTP server instance
+ * @param conn Connection with response data set
+ */
+void connection_send_response (SocketHTTPServer_T server,
+                               ServerConnection *conn);
+
+/**
+ * @brief Complete request processing and handle keep-alive.
+ * @param server HTTP server instance
+ * @param conn Connection to finish
+ */
+void connection_finish_request (SocketHTTPServer_T server,
+                                ServerConnection *conn);
+
+/**
+ * @brief Read data from connection socket into buffer.
+ * @param server HTTP server instance
+ * @param conn Connection to read from
+ * @return >0 bytes read, 0 on would-block, -1 on error/close
+ */
+int connection_read (SocketHTTPServer_T server, ServerConnection *conn);
+
+/**
+ * @brief Parse incoming HTTP request.
+ * @param server HTTP server instance
+ * @param conn Connection with data in inbuf
+ * @return 0 need more data, 1 request ready, -1 error
+ */
+int connection_parse_request (SocketHTTPServer_T server, ServerConnection *conn);
+
+/**
+ * @brief Close and cleanup connection.
+ * @param server HTTP server instance
+ * @param conn Connection to close
+ */
+void connection_close (SocketHTTPServer_T server, ServerConnection *conn);
+
+/* ============================================================================
+ * Early Validator Support (implemented in SocketHTTPServer.c)
+ * ============================================================================
+ */
+
+/**
+ * @brief Run validator callback early (after headers parsed, before body read).
+ * @param server HTTP server instance
+ * @param conn Connection with parsed headers
+ *
+ * This allows the validator to set up body streaming mode before body buffering
+ * begins. The validator can call SocketHTTPServer_Request_body_stream() to
+ * enable streaming.
+ *
+ * Returns: 1 if allowed (continue with request), 0 if rejected (error sent)
+ */
+int server_run_validator_early (SocketHTTPServer_T server,
+                                ServerConnection *conn);
 
 #endif /* SOCKETHTTPSERVER_PRIVATE_INCLUDED */

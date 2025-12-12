@@ -67,8 +67,8 @@
 typedef struct SocketTLSContext_T *SocketTLSContext_T;
 #endif
 
-/* Forward declaration for WebSocket */
-typedef struct SocketWS *SocketWS_T;
+/* WebSocket support - full include needed for SocketWS_Config in server config */
+#include "socket/SocketWS.h"
 
 /* ============================================================================
  * Configuration Constants
@@ -231,6 +231,15 @@ typedef struct SocketWS *SocketWS_T;
 /** Chunk buffer size for streaming responses (bytes) */
 #ifndef HTTPSERVER_CHUNK_BUFFER_SIZE
 #define HTTPSERVER_CHUNK_BUFFER_SIZE 16384
+#endif
+
+/**
+ * Initial buffer size for chunked/until-close request bodies (bytes)
+ * BEHAVIOR: Buffer starts at this size and grows dynamically up to max_body_size.
+ * Avoids pre-allocating full max_body_size (10MB) for small chunked uploads.
+ */
+#ifndef HTTPSERVER_CHUNKED_BODY_INITIAL_SIZE
+#define HTTPSERVER_CHUNKED_BODY_INITIAL_SIZE 8192
 #endif
 
 /** Max rate limit endpoints */
@@ -401,6 +410,19 @@ typedef struct
                                    * streams. For HTTP/1.1, typically 1 but
                                    * affects pipelining if enabled.
                                    */
+
+  /* WebSocket Configuration */
+  SocketWS_Config ws_config; /**< @brief WebSocket upgrade configuration.
+                              * Controls subprotocol negotiation, compression,
+                              * frame limits, and keepalive for upgraded
+                              * connections. Role is set to WS_ROLE_SERVER
+                              * automatically. Configure subprotocols via
+                              * ws_config.subprotocols (NULL-terminated array)
+                              * and compression via
+                              * ws_config.enable_permessage_deflate.
+                              * @see SocketWS_Config for all WebSocket options.
+                              * @see SocketHTTPServer_Request_upgrade_websocket()
+                              */
 } SocketHTTPServer_Config;
 
 /* ============================================================================

@@ -1367,20 +1367,22 @@ proxy_process_connecting (struct SocketProxy_Conn_T *conn)
 #if SOCKET_HAS_TLS
       if (conn->type == SOCKET_PROXY_HTTPS)
         {
-          SocketTLSConfig_T tls_cfg;
-          SocketTLS_config_defaults (&tls_cfg);
-          /* Harden TLS config for proxy connection */
-          tls_cfg.min_version = SOCKET_TLS_MIN_VERSION; /* TLS1.3 only */
-          tls_cfg.max_version = SOCKET_TLS_MAX_VERSION;
-          /* Add other hardening: ciphers, verify peer, etc. from cursorrules
-           */
-
           if (conn->tls_ctx == NULL)
             {
               TRY
               {
-                conn->tls_ctx = SocketTLSContext_new (
-                    &tls_cfg); /* No arena param per current API */
+                /* Create hardened client TLS context with system CA
+                 * verification. SocketTLSContext_new_client(NULL) provides:
+                 * - Certificate verification (TLS_VERIFY_PEER)
+                 * - System CA loading via SSL_CTX_set_default_verify_paths()
+                 * - TLS 1.3-only enforcement via secure defaults
+                 * - Modern cipher suites (ECDHE + AES-GCM/ChaCha20-Poly1305) */
+                conn->tls_ctx = SocketTLSContext_new_client (NULL);
+
+                /* Set ALPN for HTTP CONNECT proxy (http/1.1 required) */
+                const char *alpn_protos[] = { "http/1.1" };
+                SocketTLSContext_set_alpn_protos (conn->tls_ctx, alpn_protos,
+                                                  1);
               }
               EXCEPT (SocketTLS_Failed)
               {
@@ -1391,7 +1393,6 @@ proxy_process_connecting (struct SocketProxy_Conn_T *conn)
               }
               END_TRY;
             }
-          /* Use provided ctx if set, apply config if func exists */
 
           /* Set SNI for proxy hostname */
           SocketTLS_set_hostname (conn->socket, conn->proxy_host);
@@ -1860,29 +1861,21 @@ SocketProxy_tunnel (Socket_T socket, const SocketProxy_Config *proxy,
 #if SOCKET_HAS_TLS
   if (conn->type == SOCKET_PROXY_HTTPS)
     {
-      SocketTLSConfig_T tls_cfg;
-      SocketTLS_config_defaults (&tls_cfg);
-      /* Harden for proxy TLS */
-      tls_cfg.min_version = TLS_VERSION_1_3;
-      tls_cfg.max_version = TLS_VERSION_1_3;
-      /* TODO: add more hardening from SocketTLSConfig rules (ciphers, verify,
-       * etc.) */
-
       if (conn->tls_ctx == NULL)
         {
-          if (arena == NULL)
-            {
-              PROXY_ERROR_MSG ("Arena required for auto-creating TLS context "
-                               "in HTTPS proxy");
-              if (!was_nonblocking)
-                proxy_clear_nonblocking (fd);
-              return PROXY_ERROR_PROTOCOL;
-            }
           TRY
           {
-            conn->tls_ctx = SocketTLSContext_new (
-                &tls_cfg); /* Matches current header (no arena; use default
-                              alloc if needed) */
+            /* Create hardened client TLS context with system CA verification.
+             * SocketTLSContext_new_client(NULL) provides:
+             * - Certificate verification (TLS_VERIFY_PEER)
+             * - System CA loading via SSL_CTX_set_default_verify_paths()
+             * - TLS 1.3-only enforcement via secure defaults
+             * - Modern cipher suites (ECDHE + AES-GCM/ChaCha20-Poly1305) */
+            conn->tls_ctx = SocketTLSContext_new_client (NULL);
+
+            /* Set ALPN for HTTP CONNECT proxy (http/1.1 required) */
+            const char *alpn_protos[] = { "http/1.1" };
+            SocketTLSContext_set_alpn_protos (conn->tls_ctx, alpn_protos, 1);
           }
           EXCEPT (SocketTLS_Failed)
           {
