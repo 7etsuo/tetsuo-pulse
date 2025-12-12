@@ -16,7 +16,6 @@
 
 #include <arpa/inet.h>
 #include <pthread.h>
-#include <signal.h>
 #include <stdatomic.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -3187,6 +3186,86 @@ always_invalid_cb (Connection_T conn, void *data)
   return 0; /* Invalid */
 }
 
+typedef struct SocketPoolValidationThreadCtx
+{
+  SocketPool_T pool;
+  Socket_T socket;
+  atomic_int stop;
+  atomic_int thread_error;
+  atomic_int cb_calls;
+  atomic_int get_calls;
+  atomic_int remove_add_cycles;
+} SocketPoolValidationThreadCtx;
+
+/* Slow validation callback to widen race window for concurrent remove/add. */
+static int
+slow_validation_cb (Connection_T conn, void *data)
+{
+  SocketPoolValidationThreadCtx *ctx = (SocketPoolValidationThreadCtx *)data;
+  Socket_T s;
+
+  atomic_fetch_add_explicit (&ctx->cb_calls, 1, memory_order_relaxed);
+
+  /* Touch connection->socket early. Another thread may remove/reset while
+   * we are sleeping. This must not crash. */
+  s = Connection_socket (conn);
+  (void)s;
+
+  /* Keep short: we only need to widen the window, not stall tests. */
+  usleep (1000);
+  return 1;
+}
+
+static void *
+thread_validation_getter (void *arg)
+{
+  SocketPoolValidationThreadCtx *ctx = (SocketPoolValidationThreadCtx *)arg;
+
+  TRY
+  {
+    for (int i = 0; i < 1000; i++)
+      {
+        Connection_T conn = SocketPool_get (ctx->pool, ctx->socket);
+        (void)conn;
+        atomic_fetch_add_explicit (&ctx->get_calls, 1, memory_order_relaxed);
+        usleep (50);
+      }
+  }
+  EXCEPT (SocketPool_Failed)
+  {
+    atomic_store_explicit (&ctx->thread_error, 1, memory_order_relaxed);
+  }
+  END_TRY;
+
+  atomic_store_explicit (&ctx->stop, 1, memory_order_release);
+  return NULL;
+}
+
+static void *
+thread_validation_remove_add (void *arg)
+{
+  SocketPoolValidationThreadCtx *ctx = (SocketPoolValidationThreadCtx *)arg;
+
+  TRY
+  {
+    while (!atomic_load_explicit (&ctx->stop, memory_order_acquire))
+      {
+        SocketPool_remove (ctx->pool, ctx->socket);
+        (void)SocketPool_add (ctx->pool, ctx->socket);
+        atomic_fetch_add_explicit (&ctx->remove_add_cycles, 1,
+                                  memory_order_relaxed);
+        usleep (50);
+      }
+  }
+  EXCEPT (SocketPool_Failed)
+  {
+    atomic_store_explicit (&ctx->thread_error, 1, memory_order_relaxed);
+  }
+  END_TRY;
+
+  return NULL;
+}
+
 TEST (socketpool_validation_callback)
 {
   Arena_T arena = Arena_new ();
@@ -3216,11 +3295,73 @@ TEST (socketpool_validation_callback)
 /* Test for callback deadlock avoidance - multi-threaded */
 TEST (socketpool_validation_callback_threaded)
 {
-  /* TODO: More advanced test with threads simulating slow cb and concurrent
-   * ops. Verify no deadlock, proper removal under race. Use pthreads to
-   * add/remove while get calls cb.
-   */
-  ASSERT (1); /* Placeholder - implement full test */
+  Arena_T arena = NULL;
+  SocketPool_T pool = NULL;
+  Socket_T sock = NULL;
+
+  pthread_t t_get;
+  pthread_t t_mutate;
+
+  SocketPoolValidationThreadCtx ctx;
+  memset (&ctx, 0, sizeof (ctx));
+
+  TRY
+  {
+    arena = Arena_new ();
+    ASSERT_NOT_NULL (arena);
+
+    pool = SocketPool_new (arena, 4, 1024);
+    ASSERT_NOT_NULL (pool);
+
+    sock = Socket_new (AF_INET, SOCK_STREAM, 0);
+    ASSERT_NOT_NULL (sock);
+
+    ctx.pool = pool;
+    ctx.socket = sock;
+
+    SocketPool_set_validation_callback (pool, slow_validation_cb, &ctx);
+
+    /* Ensure socket is present before starting. */
+    ASSERT_NOT_NULL (SocketPool_add (pool, sock));
+
+    ASSERT_EQ (0, pthread_create (&t_get, NULL, thread_validation_getter, &ctx));
+    ASSERT_EQ (0,
+               pthread_create (&t_mutate, NULL, thread_validation_remove_add,
+                               &ctx));
+
+    ASSERT_EQ (0, pthread_join (t_get, NULL));
+    ASSERT_EQ (0, pthread_join (t_mutate, NULL));
+
+    ASSERT_EQ (0, atomic_load_explicit (&ctx.thread_error, memory_order_relaxed));
+    ASSERT (atomic_load_explicit (&ctx.cb_calls, memory_order_relaxed) > 0);
+    ASSERT (atomic_load_explicit (&ctx.get_calls, memory_order_relaxed) > 0);
+    ASSERT (atomic_load_explicit (&ctx.remove_add_cycles, memory_order_relaxed)
+            > 0);
+
+    /* Post-condition: re-add and ensure pool can still return it. */
+    (void)SocketPool_add (pool, sock);
+    ASSERT_NOT_NULL (SocketPool_get (pool, sock));
+  }
+  EXCEPT (Test_Failed)
+  {
+    RERAISE;
+  }
+  EXCEPT (SocketPool_Failed)
+  {
+    ASSERT (0);
+  }
+  FINALLY
+  {
+    if (pool && sock)
+      SocketPool_remove (pool, sock);
+    if (sock)
+      Socket_free (&sock);
+    if (pool)
+      SocketPool_free (&pool);
+    if (arena)
+      Arena_dispose (&arena);
+  }
+  END_TRY;
 }
 
 int

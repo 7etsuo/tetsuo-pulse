@@ -790,7 +790,6 @@ extern void SocketMetrics_get (SocketMetrics_Snapshot *snapshot);
  * @threadsafe Yes
  *
  * Resets all counters to 0, gauges to 0, and clears histogram data.
- * Equivalent to the required SocketMetrics_reset() from TODO.
  */
 extern void SocketMetrics_reset (void);
 

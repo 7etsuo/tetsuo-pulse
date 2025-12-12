@@ -179,9 +179,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           }
       }
   }
-  EXCEPT (SocketHTTP1_CompressionError)
+  EXCEPT (SocketHTTP1_ParseError)
   {
       /* Expected on malformed compressed data */
+  }
+  EXCEPT (SocketHTTP1_SerializeError)
+  {
+      /* Expected on encoding/serialization errors */
   }
   EXCEPT (Arena_Failed)
   {

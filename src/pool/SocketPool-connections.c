@@ -662,9 +662,15 @@ run_validation_callback_unlocked (T pool, Connection_T conn)
 {
   SocketPool_ValidationCallback cb = pool->validation_cb;
   void *cb_data = pool->validation_cb_data;
+  Socket_T socket;
 
   if (!cb)
     return 1; /* No callback = always valid */
+
+  /* Save socket identity while mutex is held. The connection may be removed
+   * concurrently while the callback runs (mutex temporarily released), and
+   * removal resets conn->socket to NULL. */
+  socket = Connection_socket (conn);
 
   /* Temporarily release mutex for callback to avoid deadlock/long holds.
    * Re-acquire to safely remove if invalid. Races handled by re-validation. */
@@ -675,7 +681,7 @@ run_validation_callback_unlocked (T pool, Connection_T conn)
   pthread_mutex_lock (&pool->mutex);
 
   /* Re-validate: Check if connection still exists and matches */
-  Connection_T current_conn = find_slot (pool, Connection_socket (conn));
+  Connection_T current_conn = find_slot (pool, socket);
   if (!current_conn || current_conn != conn)
     {
       /* Already removed by another thread - assume handled */

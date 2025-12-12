@@ -158,18 +158,17 @@ set(HTTP_COMPRESSION_LIBS "")
 # Always search for zlib (needed for WebSocket permessage-deflate even without HTTP compression)
 find_package(ZLIB QUIET)
 
-# WebSocket deflate requires zlib (independent of HTTP compression)
+# WebSocket deflate requires zlib - we'll set this after HTTP compression logic
+# to avoid linking zlib twice when both WS deflate and HTTP compression use it
 set(WS_DEFLATE_LIBS "")
-if(ZLIB_FOUND)
-    set(WS_DEFLATE_LIBS ZLIB::ZLIB)
-endif()
 
 if(ENABLE_HTTP_COMPRESSION)
-    # Use zlib for HTTP compression if found (already searched above)
+    # Use zlib for HTTP compression if found
     if(ZLIB_FOUND)
         add_definitions(-DSOCKETHTTP1_HAS_ZLIB)
         list(APPEND HTTP_COMPRESSION_LIBS ZLIB::ZLIB)
         message(STATUS "zlib found - gzip/deflate compression enabled")
+        # zlib already in HTTP_COMPRESSION_LIBS, no need to duplicate in WS_DEFLATE_LIBS
     else()
         message(STATUS "zlib not found - gzip/deflate compression disabled")
     endif()
@@ -197,6 +196,10 @@ if(ENABLE_HTTP_COMPRESSION)
     endif()
 else()
     message(STATUS "HTTP compression disabled (use -DENABLE_HTTP_COMPRESSION=ON to enable)")
+    # HTTP compression disabled, so WS deflate needs its own zlib link
+    if(ZLIB_FOUND)
+        set(WS_DEFLATE_LIBS ZLIB::ZLIB)
+    endif()
 endif()
 
 if(SOCKETHTTP1_HAS_COMPRESSION)
