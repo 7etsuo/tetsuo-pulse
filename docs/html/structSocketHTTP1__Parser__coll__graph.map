@@ -1,7 +1,0 @@
-<map id="SocketHTTP1_Parser_T" name="SocketHTTP1_Parser_T">
-<area shape="rect" id="Node000001" title="Internal implementation structure for the HTTP/1.1 parser (SocketHTTP1_Parser_T)." alt="" coords="79,152,245,177"/>
-<area shape="rect" id="Node000002" href="$group__http1.html#structSocketHTTP1__Config" title="Runtime configuration structure for the HTTP/1.1 parser." alt="" coords="5,5,156,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="96,42,158,150,153,153,92,44"/>
-<area shape="rect" id="Node000003" href="$group__http1__private.html#structHTTP1__TokenBuf" title="Dynamic resizable buffer for accumulating parsed HTTP tokens." alt="" coords="180,5,307,31"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="234,44,188,129,173,153,168,150,184,127,229,42"/>
-</map>

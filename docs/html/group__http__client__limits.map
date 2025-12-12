@@ -1,4 +1,0 @@
-<map id="Connection and Resource Limits" name="Connection and Resource Limits">
-<area shape="rect" id="Node000002" href="$group__http__client.html" title="High&#45;level HTTP client library supporting HTTP/1.1, HTTP/2, connection pooling, async I/O,..." alt="" coords="5,13,147,38"/>
-<area shape="rect" id="Node000001" title="Limits on redirects, connections, and retries for safety and performance." alt="" coords="195,5,368,45"/>
-</map>

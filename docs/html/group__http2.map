@@ -1,4 +1,0 @@
-<map id="HTTP/2 Protocol Implementation" name="HTTP/2 Protocol Implementation">
-<area shape="rect" id="Node000002" href="$group__http.html" title="Complete HTTP/1.1 and HTTP/2 protocol implementation with client and server support." alt="" coords="5,5,116,31"/>
-<area shape="rect" id="Node000001" title="HTTP/2 (RFC 9113) support with framing, streams, flow control, and HPACK integration." alt="" coords="164,5,377,31"/>
-</map>

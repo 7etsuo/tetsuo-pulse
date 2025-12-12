@@ -1,5 +1,0 @@
-<map id="TLSContextPinning" name="TLSContextPinning">
-<area shape="rect" id="Node000001" title="TLSContextPinning &#45; Certificate pinning configuration." alt="" coords="5,93,140,119"/>
-<area shape="rect" id="Node000002" href="$group__security.html#structTLSCertPin" title="TLSCertPin &#45; Single certificate pin entry (SPKI SHA256 hash)" alt="" coords="27,5,118,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="75,45,75,93,70,93,70,45"/>
-</map>

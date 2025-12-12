@@ -1,4 +1,0 @@
-<map id="Core Foundation Modules" name="Core Foundation Modules">
-<area shape="rect" id="Node000001" title="Base infrastructure for memory management, exception handling, and core utilities...." alt="" coords="5,13,176,38"/>
-<area shape="rect" id="Node000002" href="$group__socket__live__utils.html" title="Thread&#45;safe global counter for tracking active Socket_T instances." alt="" coords="224,5,371,45"/>
-</map>

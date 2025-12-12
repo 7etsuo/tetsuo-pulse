@@ -1,9 +1,0 @@
-<map id="SocketBase_T" name="SocketBase_T">
-<area shape="rect" id="Node000001" title="Internal implementation of SocketBase_T opaque type." alt="" coords="188,93,296,119"/>
-<area shape="rect" id="Node000002" href="$group__foundation.html#structSocketTimeouts__T" title="Basic timeout configuration structure for socket operations." alt="" coords="5,5,137,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="108,34,220,91,218,95,105,39"/>
-<area shape="rect" id="Node000003" href="$group__foundation.html#structSocketMetricsSnapshot" title="SocketMetricsSnapshot &#45; Thread&#45;safe snapshot of all library metrics." alt="" coords="161,5,323,31"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="245,45,245,93,239,93,239,45"/>
-<area shape="rect" id="Node000004" href="$group__core__io.html#structSocketStats__T" title="Per&#45;socket I/O statistics structure." alt="" coords="347,5,457,31"/>
-<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="370,40,265,95,262,91,367,35"/>
-</map>

@@ -1,8 +1,0 @@
-<map id="ServerConnection" name="ServerConnection">
-<area shape="rect" id="Node000001" title="Core internal structure representing an active HTTP client connection." alt="" coords="52,95,179,121"/>
-<area shape="poly" id="edge3_Node000001_Node000001" title=" " alt="" coords="194,99,205,108,197,116,179,119,179,114,195,111,200,108,191,104"/>
-<area shape="rect" id="Node000002" title=" " alt="" coords="5,5,84,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="65,40,108,93,104,97,60,43"/>
-<area shape="rect" id="Node000003" href="$group__http.html#structSocketHTTP__Request" title="Protocol&#45;agnostic representation of an HTTP request message." alt="" coords="109,5,263,31"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="170,43,127,97,123,93,166,40"/>
-</map>

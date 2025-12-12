@@ -1,8 +1,0 @@
-<map id="Core I/O Modules" name="Core I/O Modules">
-<area shape="rect" id="Node000001" title="Fundamental socket primitives for TCP, UDP, Unix domain, and DNS operations." alt="" coords="5,117,131,143"/>
-<area shape="rect" id="Node000002" href="$group__dns.html" title="Thread pool&#45;based DNS resolution with guaranteed timeouts and SocketPoll integration." alt="" coords="308,5,512,31"/>
-<area shape="rect" id="Node000006" href="$group__proxy.html" title="Transparent TCP proxy support with sync/async APIs." alt="" coords="329,57,491,83"/>
-<area shape="rect" id="Node000005" href="$group__proxy__private.html" title=" " alt="" coords="330,117,490,157"/>
-<area shape="rect" id="Node000003" href="$group__socket__live__utils.html" title="Thread&#45;safe global counter for tracking active Socket_T instances." alt="" coords="337,189,483,229"/>
-<area shape="rect" id="Node000004" href="$group__socket__tls__utils.html" title="Utilities for initializing and managing TLS state in Socket_T." alt="" coords="347,253,473,293"/>
-</map>

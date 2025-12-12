@@ -1,6 +1,0 @@
-<map id="HTTPPool" name="HTTPPool">
-<area shape="rect" id="Node000001" title="HTTP connection pool managing reusable connections by host:port key." alt="" coords="21,141,104,167"/>
-<area shape="rect" id="Node000002" href="$group__http.html#structHTTPPoolEntry" title="HTTP connection pool entry for reusing connections to the same host:port." alt="" coords="5,15,120,40"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="65,54,65,141,60,141,60,54"/>
-<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="134,15,143,19,147,28,139,38,121,42,119,37,136,34,141,27,139,23,132,20"/>
-</map>

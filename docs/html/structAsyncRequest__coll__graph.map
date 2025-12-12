@@ -1,6 +1,0 @@
-<map id="AsyncRequest" name="AsyncRequest">
-<area shape="rect" id="Node000001" title="Internal structure for tracking asynchronous I/O requests." alt="" coords="5,108,113,133"/>
-<area shape="poly" id="edge2_Node000001_Node000001" title=" " alt="" coords="128,111,136,114,140,121,132,130,114,133,113,127,129,125,135,120,133,118,126,116"/>
-<area shape="rect" id="Node000002" title=" " alt="" coords="20,5,99,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="62,45,62,108,57,108,57,45"/>
-</map>

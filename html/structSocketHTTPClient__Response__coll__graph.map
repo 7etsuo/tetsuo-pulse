@@ -1,8 +1,0 @@
-<map id="SocketHTTPClient_Response" name="SocketHTTPClient_Response">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,229,204,255"/>
-<area shape="rect" id="Node000002" href="$structSocketHTTP__Headers.html" title=" " alt="" coords="27,141,182,167"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="107,181,107,229,102,229,102,181"/>
-<area shape="rect" id="Node000003" href="$structHeaderEntry.html" title=" " alt="" coords="57,15,152,40"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="107,54,107,141,102,141,102,54"/>
-<area shape="poly" id="edge3_Node000003_Node000003" title=" " alt="" coords="167,15,175,19,179,28,171,39,153,42,152,37,168,34,173,27,171,23,164,19"/>
-</map>

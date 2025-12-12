@@ -1,4 +1,0 @@
-<map id="Backend Function API" name="Backend Function API">
-<area shape="rect" id="Node000001" title="Essential functions for polling backend operations and lifecycle." alt="" coords="224,5,376,31"/>
-<area shape="rect" id="Node000002" href="$group__event__system__backend.html" title="Internal platform abstraction for efficient I/O event multiplexing." alt="" coords="5,5,176,31"/>
-</map>

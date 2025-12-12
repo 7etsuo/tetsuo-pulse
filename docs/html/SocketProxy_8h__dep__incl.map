@@ -1,7 +1,0 @@
-<map id="SocketProxy.h" name="SocketProxy.h">
-<area shape="rect" id="Node000001" title="Proxy tunneling module for HTTP CONNECT and SOCKS protocols." alt="" coords="106,5,213,31"/>
-<area shape="rect" id="Node000002" href="$SocketProxy-private_8h.html" title="Internal structures and functions for SocketProxy module." alt="" coords="5,79,156,104"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="138,42,95,80,92,76,135,38"/>
-<area shape="rect" id="Node000003" href="$proxy__connect_8c.html" title=" " alt="" coords="180,79,299,104"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="184,38,228,76,224,80,180,42"/>
-</map>
