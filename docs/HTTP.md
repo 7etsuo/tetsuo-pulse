@@ -62,7 +62,7 @@ SocketHTTPClient_T client = SocketHTTPClient_new(NULL);
 SocketHTTPClient_Config config;
 SocketHTTPClient_config_defaults(&config);
 
-config.max_version = HTTP_VERSION_2_0;        /* Prefer HTTP/2 */
+config.max_version = HTTP_VERSION_2;          /* Prefer HTTP/2 */
 config.follow_redirects = 5;                   /* Max 5 redirects */
 config.connect_timeout_ms = 10000;             /* 10 second timeout */
 config.enable_connection_pool = 1;             /* Enable pooling */
@@ -319,7 +319,7 @@ This hardening prevents exhaustion DoS, invalid state manipulation, and UB from 
 SocketHTTPClient_Response response;
 SocketHTTPClient_get(client, "https://example.com", &response);
 
-if (response.version == HTTP_VERSION_2_0) {
+if (response.version == HTTP_VERSION_2) {
     printf("Using HTTP/2\n");
 }
 ```
