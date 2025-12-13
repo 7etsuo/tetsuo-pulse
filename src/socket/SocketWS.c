@@ -27,6 +27,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <poll.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
@@ -45,6 +46,23 @@
 #include "socket/Socket.h"
 #include "socket/SocketBuf.h"
 #include "socket/SocketWS-private.h"
+
+static unsigned
+ws_translate_poll_revents (short revents)
+{
+  unsigned ev = 0;
+
+  if (revents & POLLIN)
+    ev |= POLL_READ;
+  if (revents & POLLOUT)
+    ev |= POLL_WRITE;
+  if (revents & POLLERR)
+    ev |= POLL_ERROR;
+  if (revents & POLLHUP)
+    ev |= POLL_HANGUP;
+
+  return ev;
+}
 
 /* ============================================================================
  * Module Constants
@@ -470,6 +488,54 @@ ws_message_finalize (SocketWS_T ws)
 }
 
 /* ============================================================================
+ * Message Finalization Helpers
+ * ============================================================================
+ */
+
+/**
+ * ws_finalize_assembled_message - Apply post-processing to an assembled message
+ * @ws: WebSocket context
+ *
+ * Handles permessage-deflate decompression when negotiated. Leaves
+ * ws->message.* populated for consumption by SocketWS_recv_message().
+ *
+ * Returns: 0 on success, -1 on error (ws->last_error set)
+ */
+static int
+ws_finalize_assembled_message (SocketWS_T ws)
+{
+  assert (ws);
+
+  /* Nothing to do if no payload yet */
+  if (ws->message.len == 0 || ws->message.fragment_count == 0)
+    return 0;
+
+  if (ws->message.compressed)
+    {
+#ifdef SOCKETWS_HAS_DEFLATE
+      unsigned char *decompressed = NULL;
+      size_t decompressed_len = 0;
+
+      if (ws_decompress_message (ws, ws->message.data, ws->message.len,
+                                 &decompressed, &decompressed_len)
+          < 0)
+        return -1;
+
+      ws->message.data = decompressed;
+      ws->message.len = decompressed_len;
+      ws->message.compressed = 0;
+#else
+      ws_set_error (
+          ws, WS_ERROR_COMPRESSION,
+          "Compressed message received but permessage-deflate not enabled");
+      return -1;
+#endif
+    }
+
+  return 0;
+}
+
+/* ============================================================================
  * I/O Helpers
  * ============================================================================
  */
@@ -486,16 +552,30 @@ ws_message_finalize (SocketWS_T ws)
 static ssize_t
 ws_send_contiguous (SocketWS_T ws, const void *ptr, size_t available)
 {
-  ssize_t sent;
+  volatile ssize_t sent = 0;
+  volatile int failed = 0;
 
-  sent = Socket_send (ws->socket, ptr, available);
-  if (sent < 0)
-    {
-      if (errno == EAGAIN || errno == EWOULDBLOCK)
-        return 0;
-      ws_set_error (ws, WS_ERROR, "Socket send failed");
-      return -1;
-    }
+  TRY { sent = Socket_send (ws->socket, ptr, available); }
+  EXCEPT (Socket_Closed)
+  {
+    /* Normal/expected close path: don't spam error logs. */
+    ws_set_error (ws, WS_ERROR_CLOSED, NULL);
+    ws->state = WS_STATE_CLOSED;
+    ws->close_code = WS_CLOSE_ABNORMAL;
+    failed = 1;
+  }
+  EXCEPT (Socket_Failed)
+  {
+    ws_set_error (ws, WS_ERROR, "Socket send failed");
+    failed = 1;
+  }
+  END_TRY;
+
+  if (failed)
+    return -1;
+
+  if (sent <= 0)
+    return 0; /* Would block / no progress */
 
   SocketBuf_consume (ws->send_buf, (size_t)sent);
   return sent;
@@ -534,22 +614,31 @@ ws_flush_send_buffer (SocketWS_T ws)
 static ssize_t
 ws_recv_contiguous (SocketWS_T ws, void *ptr, size_t space)
 {
-  ssize_t received;
+  volatile ssize_t received = 0;
+  volatile int failed = 0;
 
-  received = Socket_recv (ws->socket, ptr, space);
-  if (received < 0)
-    {
-      if (errno == EAGAIN || errno == EWOULDBLOCK)
-        return 0;
-      ws_set_error (ws, WS_ERROR, "Socket recv failed");
-      return -1;
-    }
+  TRY { received = Socket_recv (ws->socket, ptr, space); }
+  EXCEPT (Socket_Closed)
+  {
+    /* EOF / connection closed */
+    /* Normal/expected close path: don't spam error logs. */
+    ws_set_error (ws, WS_ERROR_CLOSED, NULL);
+    ws->state = WS_STATE_CLOSED;
+    ws->close_code = WS_CLOSE_ABNORMAL;
+    received = 0;
+  }
+  EXCEPT (Socket_Failed)
+  {
+    ws_set_error (ws, WS_ERROR, "Socket recv failed");
+    failed = 1;
+  }
+  END_TRY;
 
-  if (received == 0)
-    {
-      /* EOF */
-      return 0;
-    }
+  if (failed)
+    return -1;
+
+  if (received <= 0)
+    return 0; /* Would block */
 
   SocketBuf_written (ws->recv_buf, (size_t)received);
   return received;
@@ -1043,6 +1132,8 @@ SocketWS_client_new (Socket_T socket, const char *host, const char *path,
   TRY
   {
     ws->socket = socket;
+    /* SocketWS_process() is event-driven and relies on non-blocking I/O. */
+    Socket_setnonblocking (ws->socket);
     ws->host = ws_copy_string (ws->arena, host);
     ws->path = ws_copy_string (ws->arena, path ? path : "/");
 
@@ -1051,6 +1142,11 @@ SocketWS_client_new (Socket_T socket, const char *host, const char *path,
         SOCKET_RAISE_MSG (SocketWS, SocketWS_Failed,
                           "Failed to initialize handshake");
       }
+  }
+  EXCEPT (Socket_Failed)
+  {
+    SOCKET_RAISE_MSG (SocketWS, SocketWS_Failed,
+                      "Failed to set WebSocket socket to non-blocking mode");
   }
   EXCEPT (SocketWS_Failed)
   {
@@ -1079,12 +1175,19 @@ SocketWS_server_accept (Socket_T socket, const SocketHTTP_Request *request,
   TRY
   {
     ws->socket = socket;
+    /* SocketWS_process() is event-driven and relies on non-blocking I/O. */
+    Socket_setnonblocking (ws->socket);
 
     if (ws_handshake_server_init (ws, request) < 0)
       {
         SOCKET_RAISE_MSG (SocketWS, SocketWS_Failed,
                           "Failed to initialize server handshake");
       }
+  }
+  EXCEPT (Socket_Failed)
+  {
+    SOCKET_RAISE_MSG (SocketWS, SocketWS_Failed,
+                      "Failed to set WebSocket socket to non-blocking mode");
   }
   EXCEPT (SocketWS_Failed)
   {
@@ -1282,6 +1385,48 @@ SocketWS_poll_events (SocketWS_T ws)
   return events;
 }
 
+/**
+ * ws_process_frames - Drain receive buffer into frames/messages
+ * @ws: WebSocket context
+ *
+ * Parses available frames, handling control frames inline and assembling data
+ * frames into ws->message. Stops when a complete data message is ready or no
+ * more data is available.
+ *
+ * Returns: 1 if a complete message became available, 0 if no complete message,
+ *          -1 on error.
+ */
+static int
+ws_process_frames (SocketWS_T ws)
+{
+  SocketWS_FrameParse frame = { 0 };
+
+  assert (ws);
+
+  /* If a message is already assembled, do not consume further frames until the
+   * caller retrieves it. */
+  if (ws->message.len > 0 && ws->message.fragment_count > 0)
+    return 1;
+
+  while (1)
+    {
+      int result = ws_recv_frame (ws, &frame);
+      if (result == -2)
+        return 0; /* Would block / need more data */
+      if (result < 0)
+        return -1; /* Error */
+
+      /* Control frames handled internally; continue draining */
+      if (result == 0)
+        continue;
+
+      /* Data message completed */
+      if (ws_finalize_assembled_message (ws) < 0)
+        return -1;
+      return 1;
+    }
+}
+
 int
 SocketWS_process (SocketWS_T ws, unsigned events)
 {
@@ -1303,11 +1448,13 @@ SocketWS_process (SocketWS_T ws, unsigned events)
       n = ws_fill_recv_buffer (ws);
       if (n < 0)
         return -1;
-      if (n == 0 && ws->state == WS_STATE_OPEN)
+
+      /* Parse any buffered frames into messages */
+      if (ws->state == WS_STATE_OPEN)
         {
-          /* EOF received */
-          ws->state = WS_STATE_CLOSED;
-          ws->close_code = WS_CLOSE_ABNORMAL;
+          int frame_result = ws_process_frames (ws);
+          if (frame_result < 0)
+            return -1;
         }
     }
 
@@ -1403,8 +1550,6 @@ SocketWS_close (SocketWS_T ws, int code, const char *reason)
  * Convenience Functions
  * ============================================================================
  */
-
-#include <poll.h>
 
 SocketWS_T
 SocketWS_connect (const char *url, const char *protocols)
@@ -1526,7 +1671,7 @@ SocketWS_connect (const char *url, const char *protocols)
       {
         struct pollfd pfd = { .fd = Socket_fd (sock), .events = POLLIN | POLLOUT };
         poll (&pfd, 1, 5000);
-        SocketWS_process (ws, pfd.revents);
+        SocketWS_process (ws, ws_translate_poll_revents (pfd.revents));
       }
 
     if (result < 0 || ws->state != WS_STATE_OPEN)
@@ -1573,64 +1718,35 @@ SocketWS_recv_json (SocketWS_T ws, char **json_out, size_t *json_len)
   *json_out = NULL;
   *json_len = 0;
 
-  /* Process until we have a complete message */
-  while (ws->state == WS_STATE_OPEN)
+  SocketWS_Message msg = { 0 };
+  int recv_result = SocketWS_recv_message (ws, &msg);
+  if (recv_result < 0)
+    return ws->last_error;
+
+  /* Only accept text frames for JSON */
+  if (msg.type != WS_OPCODE_TEXT)
     {
-      /* Check if message assembly has data and is complete (fragment_count > 0
-       * and len > 0 typically indicates assembly in progress; we need to check
-       * for FIN which is handled during process) */
-
-      /* Need more data - poll and process */
-      struct pollfd pfd = { .fd = Socket_fd (ws->socket), .events = POLLIN };
-      int ret = poll (&pfd, 1, 5000);
-      if (ret < 0 && errno != EINTR)
-        {
-          ws_set_error (ws, WS_ERROR, "Poll failed");
-          return WS_ERROR;
-        }
-      if (ret == 0)
-        {
-          ws_set_error (ws, WS_ERROR_TIMEOUT, "Timeout waiting for message");
-          return WS_ERROR_TIMEOUT;
-        }
-
-      /* Process incoming data - this will assemble messages internally */
-      int proc_result = SocketWS_process (ws, (unsigned)pfd.revents);
-      if (proc_result < 0)
-        return ws->last_error;
-
-      /* Check if a complete message is ready in assembly buffer */
-      if (ws->message.len > 0 && ws->message.fragment_count > 0)
-        {
-          /* Only accept text frames for JSON */
-          if (ws->message.type != WS_OPCODE_TEXT)
-            {
-              ws_message_reset (&ws->message);
-              ws_set_error (ws, WS_ERROR_PROTOCOL,
-                            "Expected text frame for JSON");
-              return WS_ERROR_PROTOCOL;
-            }
-
-          /* Allocate and copy */
-          *json_out = malloc (ws->message.len + 1);
-          if (!*json_out)
-            {
-              ws_message_reset (&ws->message);
-              ws_set_error (ws, WS_ERROR, "Out of memory");
-              return WS_ERROR;
-            }
-
-          memcpy (*json_out, ws->message.data, ws->message.len);
-          (*json_out)[ws->message.len] = '\0';
-          *json_len = ws->message.len;
-
-          ws_message_reset (&ws->message);
-          return WS_OK;
-        }
+      if (msg.data)
+        free (msg.data);
+      ws_set_error (ws, WS_ERROR_PROTOCOL, "Expected text frame for JSON");
+      return WS_ERROR_PROTOCOL;
     }
 
-  ws_set_error (ws, WS_ERROR_CLOSED, "Connection closed");
-  return WS_ERROR_CLOSED;
+  *json_out = malloc (msg.len + 1);
+  if (!*json_out)
+    {
+      if (msg.data)
+        free (msg.data);
+      ws_set_error (ws, WS_ERROR, "Out of memory");
+      return WS_ERROR;
+    }
+
+  memcpy (*json_out, msg.data, msg.len);
+  (*json_out)[msg.len] = '\0';
+  *json_len = msg.len;
+
+  free (msg.data);
+  return WS_OK;
 }
 
 int64_t
@@ -1683,44 +1799,93 @@ SocketWS_recv_message (SocketWS_T ws, SocketWS_Message *msg)
   assert (msg);
 
   /* Initialize output */
+  memset (msg, 0, sizeof (*msg));
   msg->type = WS_OPCODE_TEXT;
-  msg->data = NULL;
-  msg->len = 0;
 
-  /* Check if a complete message is ready */
-  if (ws->message.len > 0 && ws->message.fragment_count > 0)
+  while (1)
     {
-      /* Only return data messages - control frames are handled internally */
-      if (ws->message.type != WS_OPCODE_TEXT && ws->message.type != WS_OPCODE_BINARY)
+      /* Deliver if message already assembled */
+      if (ws->message.len > 0 && ws->message.fragment_count > 0)
+        break;
+
+      /* Closed? */
+      if (ws->state == WS_STATE_CLOSED)
         {
-          /* Reset and ignore control frames */
-          ws_message_reset (&ws->message);
-          ws_set_error (ws, WS_ERROR_PROTOCOL, "Control frame received but not returned to user");
-          return WS_ERROR_PROTOCOL;
+          ws_set_error (ws, WS_ERROR_CLOSED, "Connection closed");
+          return -1;
         }
 
-      /* Allocate buffer for the message */
-      msg->data = malloc (ws->message.len);
-      if (!msg->data)
+      /* Poll for events and process */
+      struct pollfd pfd = { 0 };
+      pfd.fd = Socket_fd (ws->socket);
+      pfd.events = POLLIN;
+      if (SocketBuf_available (ws->send_buf) > 0)
+        pfd.events |= POLLOUT;
+
+      int timeout_ms
+          = (ws->config.ping_timeout_ms > 0) ? ws->config.ping_timeout_ms : -1;
+
+      int poll_result = poll (&pfd, 1, timeout_ms);
+      if (poll_result < 0)
         {
-          ws_set_error (ws, WS_ERROR, "Out of memory allocating message buffer");
-          return WS_ERROR;
+          if (errno == EINTR)
+            continue;
+          ws_set_error (ws, WS_ERROR, "Poll failed");
+          return -1;
+        }
+      if (poll_result == 0)
+        {
+          ws_set_error (ws, WS_ERROR_TIMEOUT, "Timeout waiting for message");
+          return -1;
         }
 
-      /* Copy message data */
-      memcpy (msg->data, ws->message.data, ws->message.len);
-      msg->len = ws->message.len;
-      msg->type = ws->message.type;
+      unsigned ev = 0;
+      if (pfd.revents & POLLIN)
+        ev |= POLL_READ;
+      if (pfd.revents & POLLOUT)
+        ev |= POLL_WRITE;
+      if (pfd.revents & POLLERR)
+        ev |= POLL_ERROR;
+      if (pfd.revents & POLLHUP)
+        ev |= POLL_HANGUP;
 
-      /* Reset message assembly for next message */
-      ws_message_reset (&ws->message);
+      if (ev == 0)
+        continue;
 
-      return 0; /* Success */
+      if (SocketWS_process (ws, ev) < 0)
+        return -1;
     }
 
-  /* No message available */
-  ws_set_error (ws, WS_ERROR_WOULD_BLOCK, "No complete message available");
-  return WS_ERROR_WOULD_BLOCK;
+  /* Only return data messages - control frames are handled internally */
+  if (ws->message.type != WS_OPCODE_TEXT
+      && ws->message.type != WS_OPCODE_BINARY)
+    {
+      ws_message_reset (&ws->message);
+      ws_set_error (ws, WS_ERROR_PROTOCOL,
+                    "Control frame received but not returned to user");
+      return -1;
+    }
+
+  if (ws_finalize_assembled_message (ws) < 0)
+    return -1;
+
+  /* Allocate buffer for the message */
+  msg->data = malloc (ws->message.len);
+  if (!msg->data)
+    {
+      ws_set_error (ws, WS_ERROR, "Out of memory allocating message buffer");
+      return -1;
+    }
+
+  /* Copy message data */
+  memcpy (msg->data, ws->message.data, ws->message.len);
+  msg->len = ws->message.len;
+  msg->type = ws->message.type;
+
+  /* Reset message assembly for next message */
+  ws_message_reset (&ws->message);
+
+  return 0; /* Success */
 }
 
 void

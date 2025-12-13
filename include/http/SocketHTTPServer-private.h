@@ -45,11 +45,10 @@
 #include "core/SocketIPTracker.h"
 #include "core/SocketRateLimit.h"
 #include "http/SocketHTTP1.h"
+#include "http/SocketHTTP2.h"
 #include "socket/SocketBuf.h"
 #include <pthread.h>
 #include <stdatomic.h>
-
-SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPServer);
 
 /* Internal types */
 
@@ -235,13 +234,72 @@ typedef struct MiddlewareEntry
  */
 typedef enum
 {
+  CONN_STATE_TLS_HANDSHAKE,
   CONN_STATE_READING_REQUEST,
   CONN_STATE_READING_BODY,
   CONN_STATE_HANDLING,
   CONN_STATE_STREAMING_RESPONSE,
   CONN_STATE_SENDING_RESPONSE,
+  CONN_STATE_HTTP2,
   CONN_STATE_CLOSED
 } ServerConnState;
+
+/**
+ * @brief Per-stream request/response state for HTTP/2 connections.
+ * @ingroup http
+ * @internal
+ *
+ * HTTP/2 multiplexes multiple requests over one TCP/TLS connection, so we
+ * cannot store request/response state in ServerConnection (which is
+ * connection-scoped). This structure holds per-stream state and is referenced
+ * from SocketHTTPServer_Request via req->h2_stream.
+ *
+ * Lifecycle:
+ * - Allocated on HTTP2_EVENT_STREAM_START (or first headers event) and stored
+ *   as userdata on SocketHTTP2_Stream_T.
+ * - Arena disposed when stream ends or resets.
+ */
+typedef struct ServerHTTP2Stream
+{
+  SocketHTTP2_Stream_T stream;
+  Arena_T arena;
+  struct ServerHTTP2Stream *next;
+
+  /* Request data */
+  SocketHTTP_Request *request; /* Arena-owned copy built from pseudo-headers */
+  char *h2_protocol; /* :protocol pseudo-header (RFC 8441), if present */
+  SocketHTTP_Headers_T request_trailers; /* Optional HTTP/2 request trailers */
+  int request_complete;
+  int request_end_stream;
+  int handled;
+  void *body;
+  SocketBuf_T body_buf;
+  size_t body_len;
+  size_t body_capacity;
+  size_t body_received;
+  int body_uses_buf;
+
+  /* Request body streaming (optional) */
+  SocketHTTPServer_BodyCallback body_callback;
+  void *body_callback_userdata;
+  int body_streaming;
+  int ws_over_h2; /* RFC 8441 mode (Extended CONNECT) */
+
+  /* Response data */
+  int response_status;
+  SocketHTTP_Headers_T response_headers;
+  SocketHTTP_Headers_T response_trailers; /* Optional HTTP/2 response trailers */
+  void *response_body;
+  size_t response_body_len;
+  size_t response_body_sent;
+  int response_finished;
+  int response_end_stream_sent;
+
+  /* Response streaming */
+  int response_streaming;
+  int response_headers_sent;
+  SocketBuf_T response_outbuf; /* For buffering when flow control blocks */
+} ServerHTTP2Stream;
 
 /**
  * @brief Core internal structure representing an active HTTP client
@@ -278,6 +336,14 @@ typedef struct ServerConnection
   SocketHTTP1_Parser_T parser;
   SocketBuf_T inbuf;
   SocketBuf_T outbuf;
+
+  /* TLS / HTTP/2 mode */
+  int tls_enabled;
+  int tls_handshake_done;
+  int is_http2;
+  SocketHTTP2_Conn_T http2_conn;
+  int http2_callback_set;
+  ServerHTTP2Stream *http2_streams;
 
   /* Request data */
   const SocketHTTP_Request *request;
@@ -350,6 +416,7 @@ struct SocketHTTPServer_Request
 {
   SocketHTTPServer_T server;
   ServerConnection *conn;
+  ServerHTTP2Stream *h2_stream;
   Arena_T arena;
   int64_t start_time_ms;
 };

@@ -35,26 +35,33 @@
 #include <stdatomic.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
+#include <sys/socket.h>
 
 #include "core/Arena.h"
 #include "core/SocketIPTracker.h"
 #include "core/SocketMetrics.h"
 #include "core/SocketRateLimit.h"
+#include "core/SocketCrypto.h"
 #include "core/SocketUtil.h"
 #include "http/SocketHTTP.h"
 #include "http/SocketHTTP1.h"
+#include "http/SocketHTTP2-private.h"
 #include "http/SocketHTTPServer-private.h"
 #include "http/SocketHTTPServer.h"
 #include "poll/SocketPoll.h"
 #include "socket/Socket.h"
 #include "socket/SocketBuf.h"
 #include "socket/SocketWS.h"
+#if SOCKET_HAS_TLS
+#include "tls/SocketTLS.h"
+#endif
 
 /* Override log component for this module */
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "HTTPServer"
 
-/* Module exception declared once in private header - no duplicate needed */
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPServer);
 
 /* ============================================================================
  * Exception Definitions
@@ -146,7 +153,7 @@ SocketHTTPServer_config_defaults (SocketHTTPServer_Config *config)
 
   config->tls_context = NULL;
 
-  config->max_version = HTTP_VERSION_1_1;
+  config->max_version = HTTP_VERSION_2;
   config->enable_h2c_upgrade = HTTPSERVER_DEFAULT_ENABLE_H2C_UPGRADE;
 
   config->max_header_size = HTTPSERVER_DEFAULT_MAX_HEADER_SIZE;
@@ -479,8 +486,1146 @@ server_accept_clients (SocketHTTPServer_T server)
           continue;
         }
 
-      SocketPoll_add (server->poll, client, POLL_READ, conn);
+      /* During TLS handshake we must poll for write readiness too. */
+      if (conn->state == CONN_STATE_TLS_HANDSHAKE)
+        SocketPoll_add (server->poll, client, POLL_READ | POLL_WRITE, conn);
+      else
+        SocketPoll_add (server->poll, client, POLL_READ, conn);
     }
+}
+
+typedef struct
+{
+  SocketHTTPServer_T server;
+  ServerConnection *conn;
+} HTTP2ServerCallbackCtx;
+
+static ServerHTTP2Stream *
+server_http2_stream_get_or_create (SocketHTTPServer_T server,
+                                   ServerConnection *conn,
+                                   SocketHTTP2_Stream_T stream)
+{
+  ServerHTTP2Stream *s
+      = (ServerHTTP2Stream *)SocketHTTP2_Stream_get_userdata (stream);
+
+  (void)server;
+
+  if (s != NULL)
+    return s;
+
+  Arena_T arena = Arena_new ();
+  if (arena == NULL)
+    return NULL;
+
+  s = Arena_alloc (arena, sizeof (*s), __FILE__, __LINE__);
+  if (s == NULL)
+    {
+      Arena_dispose (&arena);
+      return NULL;
+    }
+
+  memset (s, 0, sizeof (*s));
+  s->arena = arena;
+  s->stream = stream;
+  s->response_status = 200;
+  s->response_headers = SocketHTTP_Headers_new (arena);
+
+  s->next = conn->http2_streams;
+  conn->http2_streams = s;
+
+  SocketHTTP2_Stream_set_userdata (stream, s);
+  return s;
+}
+
+static int
+server_http2_build_request (SocketHTTPServer_T server, ServerHTTP2Stream *s,
+                            const SocketHPACK_Header *headers,
+                            size_t header_count, int end_stream)
+{
+  SocketHTTP_Request *req;
+  SocketHTTP_Headers_T h;
+  const char *scheme = NULL;
+  const char *authority = NULL;
+  const char *path = NULL;
+  const char *protocol = NULL;
+  SocketHTTP_Method method = HTTP_METHOD_UNKNOWN;
+  int64_t content_length = -1;
+
+  assert (server != NULL);
+  assert (s != NULL);
+  assert (headers != NULL);
+
+  if (s->request != NULL)
+    return 0;
+
+  h = SocketHTTP_Headers_new (s->arena);
+  if (h == NULL)
+    return -1;
+
+  for (size_t i = 0; i < header_count; i++)
+    {
+      const SocketHPACK_Header *hdr = &headers[i];
+
+      if (hdr->name == NULL || hdr->value == NULL)
+        continue;
+
+      if (hdr->name_len > 0 && hdr->name[0] == ':')
+        {
+          if (hdr->name_len == 7 && memcmp (hdr->name, ":method", 7) == 0)
+            method = SocketHTTP_method_parse (hdr->value, hdr->value_len);
+          else if (hdr->name_len == 7 && memcmp (hdr->name, ":scheme", 7) == 0)
+            scheme = socket_util_arena_strndup (s->arena, hdr->value, hdr->value_len);
+          else if (hdr->name_len == 10
+                   && memcmp (hdr->name, ":authority", 10) == 0)
+            authority = socket_util_arena_strndup (s->arena, hdr->value, hdr->value_len);
+          else if (hdr->name_len == 5 && memcmp (hdr->name, ":path", 5) == 0)
+            path = socket_util_arena_strndup (s->arena, hdr->value, hdr->value_len);
+          else if (hdr->name_len == 9
+                   && memcmp (hdr->name, ":protocol", 9) == 0)
+            protocol = socket_util_arena_strndup (s->arena, hdr->value,
+                                                  hdr->value_len);
+          continue;
+        }
+
+      SocketHTTP_Headers_add_n (h, hdr->name, hdr->name_len, hdr->value,
+                               hdr->value_len);
+    }
+
+  if (path == NULL)
+    path = "/";
+
+  {
+    int64_t cl = -1;
+    if (SocketHTTP_Headers_get_int (h, "Content-Length", &cl) == 0)
+      content_length = cl;
+    else
+      content_length = -1;
+  }
+
+  req = Arena_alloc (s->arena, sizeof (*req), __FILE__, __LINE__);
+  if (req == NULL)
+    return -1;
+  memset (req, 0, sizeof (*req));
+
+  req->method = method;
+  req->version = HTTP_VERSION_2;
+  req->scheme = scheme;
+  req->authority = authority;
+  req->path = path;
+  req->headers = h;
+  req->content_length = content_length;
+  req->has_body = end_stream ? 0 : 1;
+
+  s->request = req;
+  if (protocol != NULL && s->h2_protocol == NULL)
+    s->h2_protocol = (char *)protocol;
+  s->request_end_stream = end_stream ? 1 : 0;
+  if (end_stream)
+    s->request_complete = 1;
+
+  if (req->has_body && content_length > 0
+      && (server->config.max_body_size == 0
+          || (size_t)content_length <= server->config.max_body_size))
+    {
+      s->body_capacity = (size_t)content_length;
+      s->body = Arena_alloc (s->arena, s->body_capacity, __FILE__, __LINE__);
+      if (s->body == NULL)
+        return -1;
+      s->body_uses_buf = 0;
+    }
+
+  return 0;
+}
+
+static void
+server_http2_try_dispose_stream (ServerConnection *conn, ServerHTTP2Stream *s)
+{
+  assert (conn != NULL);
+  assert (s != NULL);
+
+  /* Only dispose when we have fully sent our response (END_STREAM queued/sent)
+   * and no buffered output remains. */
+  if (!s->response_end_stream_sent)
+    return;
+  if (s->response_outbuf != NULL && SocketBuf_available (s->response_outbuf) > 0)
+    return;
+  if (s->response_body != NULL && s->response_body_sent < s->response_body_len)
+    return;
+
+  /* Unlink */
+  ServerHTTP2Stream **pp = &conn->http2_streams;
+  while (*pp != NULL && *pp != s)
+    pp = &(*pp)->next;
+  if (*pp == s)
+    *pp = s->next;
+
+  SocketHTTP2_Stream_set_userdata (s->stream, NULL);
+  if (s->arena != NULL)
+    Arena_dispose (&s->arena);
+}
+
+static void
+server_http2_send_end_stream (ServerConnection *conn, ServerHTTP2Stream *s)
+{
+  assert (conn != NULL);
+  assert (s != NULL);
+
+  if (s->response_end_stream_sent)
+    return;
+
+  if (s->response_trailers != NULL
+      && SocketHTTP_Headers_count (s->response_trailers) > 0)
+    {
+      size_t total = SocketHTTP_Headers_count (s->response_trailers);
+      size_t count = 0;
+      SocketHPACK_Header *trailers = NULL;
+
+      /* Count valid (non-pseudo) trailers. */
+      for (size_t i = 0; i < total; i++)
+        {
+          const SocketHTTP_Header *hdr = SocketHTTP_Headers_at (s->response_trailers, i);
+          if (hdr == NULL || hdr->name == NULL || hdr->value == NULL)
+            continue;
+          if (hdr->name[0] == ':')
+            continue;
+          count++;
+        }
+
+      if (count > 0)
+        {
+          trailers
+              = Arena_alloc (s->arena, count * sizeof (*trailers), __FILE__, __LINE__);
+          if (trailers == NULL)
+            {
+              SocketHTTP2_Stream_close (s->stream, HTTP2_INTERNAL_ERROR);
+              s->response_end_stream_sent = 1;
+              server_http2_try_dispose_stream (conn, s);
+              return;
+            }
+          memset (trailers, 0, count * sizeof (*trailers));
+
+          size_t out = 0;
+          for (size_t i = 0; i < total; i++)
+            {
+              const SocketHTTP_Header *hdr
+                  = SocketHTTP_Headers_at (s->response_trailers, i);
+              if (hdr == NULL || hdr->name == NULL || hdr->value == NULL)
+                continue;
+              if (hdr->name[0] == ':')
+                continue;
+              trailers[out].name = hdr->name;
+              trailers[out].name_len = strlen (hdr->name);
+              trailers[out].value = hdr->value;
+              trailers[out].value_len = strlen (hdr->value);
+              out++;
+            }
+
+          if (SocketHTTP2_Stream_send_trailers (s->stream, trailers, count) < 0)
+            SocketHTTP2_Stream_close (s->stream, HTTP2_INTERNAL_ERROR);
+        }
+    }
+  else
+    {
+      (void)SocketHTTP2_Stream_send_data (s->stream, "", 0, 1);
+    }
+
+  s->response_end_stream_sent = 1;
+  server_http2_try_dispose_stream (conn, s);
+}
+
+static void
+server_http2_flush_stream_output (ServerConnection *conn, ServerHTTP2Stream *s)
+{
+  assert (conn != NULL);
+  assert (s != NULL);
+
+  /* Flush buffered chunks first */
+  while (s->response_outbuf != NULL)
+    {
+      size_t avail = 0;
+      const void *ptr = SocketBuf_readptr (s->response_outbuf, &avail);
+      if (avail == 0 || ptr == NULL)
+        break;
+
+      ssize_t sent = SocketHTTP2_Stream_send_data (s->stream, ptr, avail, 0);
+      if (sent <= 0)
+        break;
+
+      SocketBuf_consume (s->response_outbuf, (size_t)sent);
+    }
+
+  /* Flush non-streaming body remainder */
+  while (s->response_body != NULL && s->response_body_sent < s->response_body_len)
+    {
+      const unsigned char *p = (const unsigned char *)s->response_body;
+      size_t remaining = s->response_body_len - s->response_body_sent;
+      ssize_t sent = SocketHTTP2_Stream_send_data (s->stream, p + s->response_body_sent,
+                                                   remaining, 0);
+      if (sent <= 0)
+        break;
+      s->response_body_sent += (size_t)sent;
+    }
+
+  /* If streaming ended and all pending output is flushed, send END_STREAM. */
+  if (s->response_streaming && s->response_finished && !s->response_end_stream_sent)
+    {
+      if ((s->response_outbuf == NULL
+           || SocketBuf_available (s->response_outbuf) == 0)
+          && (s->response_body == NULL
+              || s->response_body_sent >= s->response_body_len))
+        {
+          server_http2_send_end_stream (conn, s);
+        }
+    }
+}
+
+static void
+server_http2_send_nonstreaming_response (ServerConnection *conn,
+                                         ServerHTTP2Stream *s)
+{
+  SocketHTTP_Response response;
+  int end_stream;
+  int has_trailers;
+
+  assert (conn != NULL);
+  assert (s != NULL);
+  assert (s->response_headers != NULL);
+
+  if (s->response_headers_sent)
+    return;
+
+  memset (&response, 0, sizeof (response));
+  response.version = HTTP_VERSION_2;
+  response.status_code = s->response_status;
+  response.headers = s->response_headers;
+
+  has_trailers = (s->response_trailers != NULL
+                  && SocketHTTP_Headers_count (s->response_trailers) > 0)
+                     ? 1
+                     : 0;
+  end_stream
+      = ((s->response_body == NULL || s->response_body_len == 0) && !has_trailers)
+            ? 1
+            : 0;
+
+  if (SocketHTTP2_Stream_send_response (s->stream, &response, end_stream) < 0)
+    {
+      SocketHTTP2_Stream_close (s->stream, HTTP2_INTERNAL_ERROR);
+      return;
+    }
+
+  s->response_headers_sent = 1;
+
+  if (end_stream)
+    {
+      s->response_end_stream_sent = 1;
+      server_http2_try_dispose_stream (conn, s);
+      return;
+    }
+
+  /* No body, but trailers exist: finalize via trailers (END_STREAM). */
+  if ((s->response_body == NULL || s->response_body_len == 0) && has_trailers)
+    {
+      server_http2_send_end_stream (conn, s);
+      return;
+    }
+
+  /* Queue as much body as possible now; remainder is flushed later. */
+  server_http2_flush_stream_output (conn, s);
+
+  if (s->response_body != NULL && s->response_body_sent >= s->response_body_len
+      && (s->response_outbuf == NULL
+          || SocketBuf_available (s->response_outbuf) == 0))
+    {
+      server_http2_send_end_stream (conn, s);
+    }
+}
+
+static void
+server_http2_handle_request (HTTP2ServerCallbackCtx *ctx, ServerHTTP2Stream *s)
+{
+  SocketHTTPServer_T server;
+  ServerConnection *conn;
+  struct SocketHTTPServer_Request req_ctx;
+  int reject_status = 0;
+
+  assert (ctx != NULL);
+  server = ctx->server;
+  conn = ctx->conn;
+  assert (server != NULL);
+  assert (conn != NULL);
+  assert (s != NULL);
+  assert (s->request != NULL);
+
+  if (s->handled)
+    return;
+  s->handled = 1;
+
+  req_ctx.server = server;
+  req_ctx.conn = conn;
+  req_ctx.h2_stream = s;
+  req_ctx.arena = s->arena;
+  req_ctx.start_time_ms = Socket_get_monotonic_ms ();
+
+  if (s->request->path == NULL || s->request->path[0] != '/'
+      || strlen (s->request->path) > SOCKETHTTP_MAX_URI_LEN)
+    {
+      s->response_status = 400;
+      SocketHTTPServer_Request_body_string (&req_ctx, "Bad Request");
+      SocketHTTPServer_Request_finish (&req_ctx);
+      return;
+    }
+
+  SocketRateLimit_T limiter = find_rate_limiter (server, s->request->path);
+  if (limiter != NULL && !SocketRateLimit_try_acquire (limiter, 1))
+    {
+      SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_SERVER_RATE_LIMITED,
+                          rate_limited);
+      s->response_status = 429;
+      SocketHTTPServer_Request_body_string (&req_ctx, "Too Many Requests");
+      SocketHTTPServer_Request_finish (&req_ctx);
+      return;
+    }
+
+  if (server->validator != NULL)
+    {
+      if (!server->validator (&req_ctx, &reject_status,
+                              server->validator_userdata))
+        {
+          if (reject_status == 0)
+            reject_status = 403;
+          s->response_status = reject_status;
+          SocketHTTPServer_Request_body_string (&req_ctx, "Request Rejected");
+          SocketHTTPServer_Request_finish (&req_ctx);
+          return;
+        }
+    }
+
+  s->response_status = 200;
+
+  for (MiddlewareEntry *mw = server->middleware_chain; mw != NULL; mw = mw->next)
+    {
+      int result = mw->func (&req_ctx, mw->userdata);
+      if (result != 0)
+        {
+          SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL,
+                              requests_total);
+          return;
+        }
+    }
+
+  if (server->handler != NULL)
+    server->handler (&req_ctx, server->handler_userdata);
+
+  SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL,
+                      requests_total);
+
+  /* If the handler didn't opt into streaming, send response now. */
+  if (!s->response_streaming)
+    server_http2_send_nonstreaming_response (conn, s);
+  else
+    server_http2_flush_stream_output (conn, s);
+}
+
+static void
+server_http2_stream_cb (SocketHTTP2_Conn_T http2_conn, SocketHTTP2_Stream_T stream,
+                        int event, void *userdata)
+{
+  HTTP2ServerCallbackCtx *ctx = (HTTP2ServerCallbackCtx *)userdata;
+  SocketHTTPServer_T server;
+  ServerConnection *conn;
+  ServerHTTP2Stream *s;
+
+  (void)http2_conn;
+
+  if (ctx == NULL)
+    return;
+  server = ctx->server;
+  conn = ctx->conn;
+  if (server == NULL || conn == NULL)
+    return;
+
+  s = server_http2_stream_get_or_create (server, conn, stream);
+  if (s == NULL)
+    return;
+
+  if (event == HTTP2_EVENT_HEADERS_RECEIVED)
+    {
+      SocketHPACK_Header hdrs[SOCKETHTTP2_MAX_DECODED_HEADERS];
+      size_t hdr_count = 0;
+      int end_stream = 0;
+
+      if (SocketHTTP2_Stream_recv_headers (stream, hdrs,
+                                           SOCKETHTTP2_MAX_DECODED_HEADERS,
+                                           &hdr_count, &end_stream)
+          == 1)
+        {
+          if (server_http2_build_request (server, s, hdrs, hdr_count, end_stream) < 0)
+            return;
+        }
+    }
+  else if (event == HTTP2_EVENT_TRAILERS_RECEIVED)
+    {
+      SocketHPACK_Header trailers[SOCKETHTTP2_MAX_DECODED_HEADERS];
+      size_t trailer_count = 0;
+
+      if (SocketHTTP2_Stream_recv_trailers (stream, trailers,
+                                            SOCKETHTTP2_MAX_DECODED_HEADERS,
+                                            &trailer_count)
+          == 1)
+        {
+          if (s->request_trailers == NULL)
+            {
+              s->request_trailers = SocketHTTP_Headers_new (s->arena);
+              if (s->request_trailers == NULL)
+                {
+                  SocketHTTP2_Stream_close (stream, HTTP2_INTERNAL_ERROR);
+                  return;
+                }
+            }
+
+          for (size_t i = 0; i < trailer_count; i++)
+            {
+              const SocketHPACK_Header *hdr = &trailers[i];
+              if (hdr->name == NULL || hdr->value == NULL)
+                continue;
+              /* RFC 9113: trailers must not include pseudo-headers. */
+              if (hdr->name_len > 0 && hdr->name[0] == ':')
+                continue;
+              SocketHTTP_Headers_add_n (s->request_trailers, hdr->name,
+                                       hdr->name_len, hdr->value,
+                                       hdr->value_len);
+            }
+        }
+    }
+  else if (event == HTTP2_EVENT_DATA_RECEIVED)
+    {
+      int end_stream = 0;
+      char buf[HTTPSERVER_RECV_BUFFER_SIZE];
+
+      for (;;)
+        {
+          ssize_t n = SocketHTTP2_Stream_recv_data (stream, buf, sizeof (buf),
+                                                    &end_stream);
+          if (n <= 0)
+            break;
+
+          s->body_received += (size_t)n;
+
+          if (s->body_streaming && s->body_callback)
+            {
+              struct SocketHTTPServer_Request req_ctx;
+              req_ctx.server = server;
+              req_ctx.conn = conn;
+              req_ctx.h2_stream = s;
+              req_ctx.arena = s->arena;
+              req_ctx.start_time_ms = Socket_get_monotonic_ms ();
+
+              if (s->body_callback (&req_ctx, buf, (size_t)n, end_stream,
+                                    s->body_callback_userdata)
+                  != 0)
+                {
+                  SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
+                  return;
+                }
+            }
+          else
+            {
+              size_t max_body = server->config.max_body_size;
+
+              if (max_body > 0 && s->body_len + (size_t)n > max_body)
+                {
+                  SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
+                  return;
+                }
+
+              if (!s->body_uses_buf && s->body != NULL)
+                {
+                  size_t space = s->body_capacity - s->body_len;
+                  size_t to_copy = (size_t)n;
+                  if (to_copy > space)
+                    to_copy = space;
+                  memcpy ((char *)s->body + s->body_len, buf, to_copy);
+                  s->body_len += to_copy;
+                }
+              else
+                {
+                  if (!s->body_uses_buf)
+                    {
+                      size_t initial_size = HTTPSERVER_CHUNKED_BODY_INITIAL_SIZE;
+                      if (max_body > 0 && initial_size > max_body)
+                        initial_size = max_body;
+                      s->body_buf = SocketBuf_new (s->arena, initial_size);
+                      if (s->body_buf == NULL)
+                        {
+                          SocketHTTP2_Stream_close (stream, HTTP2_INTERNAL_ERROR);
+                          return;
+                        }
+                      s->body_uses_buf = 1;
+                    }
+
+                  if (!SocketBuf_ensure (s->body_buf, (size_t)n))
+                    {
+                      SocketHTTP2_Stream_close (stream, HTTP2_INTERNAL_ERROR);
+                      return;
+                    }
+                  SocketBuf_write (s->body_buf, buf, (size_t)n);
+                  s->body_len = SocketBuf_available (s->body_buf);
+                }
+            }
+
+          if (end_stream)
+            break;
+        }
+
+      if (end_stream)
+        s->request_complete = 1;
+    }
+  else if (event == HTTP2_EVENT_STREAM_END)
+    {
+      s->request_complete = 1;
+    }
+  else if (event == HTTP2_EVENT_STREAM_RESET)
+    {
+      s->request_complete = 1;
+    }
+
+  if (event == HTTP2_EVENT_WINDOW_UPDATE)
+    {
+      server_http2_flush_stream_output (conn, s);
+      server_http2_try_dispose_stream (conn, s);
+      return;
+    }
+
+  if (event == HTTP2_EVENT_STREAM_RESET)
+    {
+      /* Peer reset: free stream state immediately. */
+      /* Unlink + dispose without waiting for pending output. */
+      ServerHTTP2Stream **pp = &conn->http2_streams;
+      while (*pp != NULL && *pp != s)
+        pp = &(*pp)->next;
+      if (*pp == s)
+        *pp = s->next;
+      SocketHTTP2_Stream_set_userdata (s->stream, NULL);
+      if (s->arena != NULL)
+        Arena_dispose (&s->arena);
+      return;
+    }
+
+  if (s->request != NULL && s->request_complete)
+    server_http2_handle_request (ctx, s);
+
+  if (event == HTTP2_EVENT_STREAM_END)
+    {
+      server_http2_try_dispose_stream (conn, s);
+    }
+}
+
+static int
+server_http2_enable (SocketHTTPServer_T server, ServerConnection *conn)
+{
+  SocketHTTP2_Config cfg;
+  HTTP2ServerCallbackCtx *ctx;
+
+  assert (server != NULL);
+  assert (conn != NULL);
+
+  if (conn->http2_conn == NULL)
+    {
+      SocketHTTP2_config_defaults (&cfg, HTTP2_ROLE_SERVER);
+
+      /* Apply server limits */
+      if (server->config.max_concurrent_requests > 0)
+        cfg.max_concurrent_streams
+            = (uint32_t)server->config.max_concurrent_requests;
+
+      conn->http2_conn = SocketHTTP2_Conn_new (conn->socket, &cfg, conn->arena);
+      if (conn->http2_conn == NULL)
+        return -1;
+    }
+
+  if (conn->http2_callback_set)
+    return 0;
+
+  ctx = Arena_alloc (conn->arena, sizeof (*ctx), __FILE__, __LINE__);
+  if (ctx == NULL)
+    return -1;
+  ctx->server = server;
+  ctx->conn = conn;
+
+  SocketHTTP2_Conn_set_stream_callback (conn->http2_conn, server_http2_stream_cb,
+                                       ctx);
+  conn->http2_callback_set = 1;
+
+  return 0;
+}
+
+#if SOCKET_HAS_TLS
+static int
+server_process_tls_handshake (SocketHTTPServer_T server, ServerConnection *conn,
+                              unsigned events)
+{
+  volatile TLSHandshakeState hs = TLS_HANDSHAKE_NOT_STARTED;
+
+  (void)events;
+
+  assert (server != NULL);
+  assert (conn != NULL);
+
+  TRY { hs = SocketTLS_handshake (conn->socket); }
+  EXCEPT (SocketTLS_HandshakeFailed)
+  {
+    conn->state = CONN_STATE_CLOSED;
+    return -1;
+  }
+  EXCEPT (SocketTLS_VerifyFailed)
+  {
+    conn->state = CONN_STATE_CLOSED;
+    return -1;
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    conn->state = CONN_STATE_CLOSED;
+    return -1;
+  }
+  END_TRY;
+
+  if (hs == TLS_HANDSHAKE_COMPLETE)
+    {
+      conn->tls_handshake_done = 1;
+
+      /* Decide protocol by ALPN. If not negotiated, fall back to HTTP/1.1. */
+      const char *alpn = SocketTLS_get_alpn_selected (conn->socket);
+      if (alpn != NULL && strcmp (alpn, "h2") == 0
+          && server->config.max_version >= HTTP_VERSION_2)
+        {
+          conn->is_http2 = 1;
+          conn->state = CONN_STATE_HTTP2;
+          if (server_http2_enable (server, conn) < 0)
+            {
+              conn->state = CONN_STATE_CLOSED;
+              return -1;
+            }
+          SocketPoll_mod (server->poll, conn->socket, POLL_READ | POLL_WRITE, conn);
+        }
+      else
+        {
+          conn->is_http2 = 0;
+          conn->state = CONN_STATE_READING_REQUEST;
+          SocketPoll_mod (server->poll, conn->socket, POLL_READ, conn);
+        }
+
+      return 0;
+    }
+
+  /* Continue handshake: narrow poll interest to avoid busy loops. */
+  if (hs == TLS_HANDSHAKE_WANT_READ)
+    SocketPoll_mod (server->poll, conn->socket, POLL_READ, conn);
+  else if (hs == TLS_HANDSHAKE_WANT_WRITE)
+    SocketPoll_mod (server->poll, conn->socket, POLL_WRITE, conn);
+  else
+    SocketPoll_mod (server->poll, conn->socket, POLL_READ | POLL_WRITE, conn);
+
+  return 0;
+}
+#endif
+
+static int
+server_process_http2 (SocketHTTPServer_T server, ServerConnection *conn,
+                      unsigned events)
+{
+  volatile int r = 0;
+  volatile int f = 0;
+  volatile int stream_error = 0;
+
+  assert (server != NULL);
+  assert (conn != NULL);
+
+  if (conn->http2_conn == NULL)
+    {
+      if (server_http2_enable (server, conn) < 0)
+        return -1;
+    }
+
+  TRY { r = SocketHTTP2_Conn_process (conn->http2_conn, events); }
+  EXCEPT (SocketHTTP2_ProtocolError)
+  {
+    return -1;
+  }
+  EXCEPT (SocketHTTP2_FlowControlError)
+  {
+    return -1;
+  }
+  EXCEPT (SocketHTTP2_StreamError)
+  {
+    /* Stream-level error: non-fatal for the connection (RFC 9113).
+     * The core resets the offending stream; other streams may continue. */
+    if (Except_frame.exception != NULL && Except_frame.exception->reason != NULL)
+      SOCKET_LOG_WARN_MSG ("HTTP/2 stream error: %s",
+                           Except_frame.exception->reason);
+    stream_error = 1;
+    r = 0;
+  }
+  EXCEPT (Socket_Failed)
+  {
+    return -1;
+  }
+  END_TRY;
+
+  if (!stream_error && r < 0)
+    return -1;
+
+  TRY { f = SocketHTTP2_Conn_flush (conn->http2_conn); }
+  EXCEPT (Socket_Failed)
+  {
+    return -1;
+  }
+  EXCEPT (SocketHTTP2_FlowControlError)
+  {
+    return -1;
+  }
+  END_TRY;
+
+  if (SocketHTTP2_Conn_is_closed (conn->http2_conn))
+    return -1;
+
+  if (f == 1)
+    SocketPoll_mod (server->poll, conn->socket, POLL_READ | POLL_WRITE, conn);
+  else
+    SocketPoll_mod (server->poll, conn->socket, POLL_READ, conn);
+
+  return 0;
+}
+
+static int
+server_header_has_token_ci (const char *value, const char *token)
+{
+  const char *p;
+  size_t token_len;
+
+  if (value == NULL || token == NULL)
+    return 0;
+
+  token_len = strlen (token);
+  if (token_len == 0)
+    return 0;
+
+  p = value;
+  while (*p != '\0')
+    {
+      while (*p == ' ' || *p == '\t' || *p == ',')
+        p++;
+      if (*p == '\0')
+        break;
+
+      const char *start = p;
+      while (*p != '\0' && *p != ',')
+        p++;
+      const char *end = p;
+
+      while (end > start && (end[-1] == ' ' || end[-1] == '\t'))
+        end--;
+
+      size_t len = (size_t)(end - start);
+      if (len == token_len && strncasecmp (start, token, token_len) == 0)
+        return 1;
+    }
+
+  return 0;
+}
+
+static int
+server_decode_http2_settings (Arena_T arena, const char *b64url,
+                              unsigned char **out, size_t *out_len)
+{
+  size_t in_len;
+  size_t pad;
+  char *tmp;
+  size_t tmp_len;
+  unsigned char *decoded;
+  size_t decoded_max;
+  ssize_t decoded_len;
+
+  assert (out != NULL);
+  assert (out_len != NULL);
+
+  *out = NULL;
+  *out_len = 0;
+
+  if (b64url == NULL)
+    return -1;
+
+  in_len = strlen (b64url);
+  if (in_len == 0)
+    return -1;
+
+  pad = in_len % 4;
+  if (pad == 1)
+    return -1; /* Invalid Base64URL length */
+  if (pad != 0)
+    pad = 4 - pad;
+  else
+    pad = 0;
+
+  tmp_len = in_len + pad;
+  tmp = Arena_alloc (arena, tmp_len + 1, __FILE__, __LINE__);
+  if (tmp == NULL)
+    return -1;
+
+  for (size_t i = 0; i < in_len; i++)
+    {
+      char c = b64url[i];
+      if (c == '-')
+        c = '+';
+      else if (c == '_')
+        c = '/';
+      tmp[i] = c;
+    }
+  for (size_t i = 0; i < pad; i++)
+    tmp[in_len + i] = '=';
+  tmp[tmp_len] = '\0';
+
+  decoded_max = SocketCrypto_base64_decoded_size (tmp_len);
+  decoded = Arena_alloc (arena, decoded_max, __FILE__, __LINE__);
+  if (decoded == NULL)
+    return -1;
+
+  decoded_len = -1;
+  TRY
+  {
+    decoded_len = SocketCrypto_base64_decode (tmp, tmp_len, decoded, decoded_max);
+  }
+  EXCEPT (SocketCrypto_Failed)
+  {
+    return -1;
+  }
+  END_TRY;
+  if (decoded_len < 0)
+    return -1;
+
+  *out = decoded;
+  *out_len = (size_t)decoded_len;
+  return 0;
+}
+
+static int
+server_try_h2c_upgrade (SocketHTTPServer_T server, ServerConnection *conn)
+{
+  const SocketHTTP_Request *req;
+  SocketHTTP_Headers_T headers;
+  const char *upgrade;
+  const char *connection;
+  const char *settings_b64;
+  unsigned char *settings_payload = NULL;
+  size_t settings_len = 0;
+
+  assert (server != NULL);
+  assert (conn != NULL);
+
+  if (!server->config.enable_h2c_upgrade)
+    return 0;
+  if (server->config.max_version < HTTP_VERSION_2)
+    return 0;
+  if (server->config.tls_context != NULL)
+    return 0; /* h2c is cleartext */
+
+  req = conn->request;
+  if (req == NULL || req->headers == NULL)
+    return 0;
+
+  headers = req->headers;
+  upgrade = SocketHTTP_Headers_get (headers, "Upgrade");
+  connection = SocketHTTP_Headers_get (headers, "Connection");
+  settings_b64 = SocketHTTP_Headers_get (headers, "HTTP2-Settings");
+
+  if (upgrade == NULL || strcasecmp (upgrade, "h2c") != 0)
+    return 0;
+
+  if (!server_header_has_token_ci (connection, "Upgrade")
+      || !server_header_has_token_ci (connection, "HTTP2-Settings"))
+    return 0;
+
+  if (settings_b64 == NULL)
+    return 0;
+
+  if (server_decode_http2_settings (conn->arena, settings_b64, &settings_payload,
+                                    &settings_len)
+      < 0)
+    {
+      connection_send_error (server, conn, 400, "Bad Request");
+      conn->state = CONN_STATE_CLOSED;
+      return 1;
+    }
+
+  /* Send 101 Switching Protocols for h2c upgrade. */
+  {
+    char resp_buf[HTTPSERVER_RESPONSE_HEADER_BUFFER_SIZE];
+    SocketHTTP_Headers_T resp_headers = SocketHTTP_Headers_new (conn->arena);
+    SocketHTTP_Response resp;
+    ssize_t resp_len;
+
+    if (resp_headers == NULL)
+      {
+        conn->state = CONN_STATE_CLOSED;
+        return 1;
+      }
+
+    SocketHTTP_Headers_set (resp_headers, "Connection", "Upgrade");
+    SocketHTTP_Headers_set (resp_headers, "Upgrade", "h2c");
+
+    memset (&resp, 0, sizeof (resp));
+    resp.version = HTTP_VERSION_1_1;
+    resp.status_code = 101;
+    resp.headers = resp_headers;
+
+    resp_len = SocketHTTP1_serialize_response (&resp, resp_buf, sizeof (resp_buf));
+    if (resp_len < 0
+        || connection_send_data (server, conn, resp_buf, (size_t)resp_len) < 0)
+      {
+        conn->state = CONN_STATE_CLOSED;
+        return 1;
+      }
+  }
+
+  conn->http2_conn
+      = SocketHTTP2_Conn_upgrade_server (conn->socket, req, settings_payload,
+                                         settings_len, conn->arena);
+  if (conn->http2_conn == NULL)
+    {
+      conn->state = CONN_STATE_CLOSED;
+      return 1;
+    }
+
+  conn->is_http2 = 1;
+  conn->state = CONN_STATE_HTTP2;
+
+  if (server_http2_enable (server, conn) < 0)
+    {
+      conn->state = CONN_STATE_CLOSED;
+      return 1;
+    }
+
+  /* Transfer any already-buffered bytes (read by HTTP/1 parser) into HTTP/2
+   * recv buffer so we don't drop frames sent immediately after upgrade. */
+  while (SocketBuf_available (conn->inbuf) > 0)
+    {
+      size_t avail = 0;
+      const void *ptr = SocketBuf_readptr (conn->inbuf, &avail);
+      if (avail == 0 || ptr == NULL)
+        break;
+      if (!SocketBuf_ensure (conn->http2_conn->recv_buf, avail))
+        break;
+      SocketBuf_write (conn->http2_conn->recv_buf, ptr, avail);
+      SocketBuf_consume (conn->inbuf, avail);
+    }
+
+  SocketHTTP2_Stream_T stream1 = SocketHTTP2_Conn_get_stream (conn->http2_conn, 1);
+  if (stream1 != NULL)
+    {
+      ServerHTTP2Stream *s = server_http2_stream_get_or_create (server, conn, stream1);
+      if (s != NULL && s->request == NULL)
+        {
+          SocketHTTP_Request *h2req;
+          SocketHTTP_Headers_T h2h;
+          const char *host;
+
+          h2req = Arena_alloc (s->arena, sizeof (*h2req), __FILE__, __LINE__);
+          h2h = SocketHTTP_Headers_new (s->arena);
+          if (h2req != NULL && h2h != NULL)
+            {
+              memset (h2req, 0, sizeof (*h2req));
+
+              host = SocketHTTP_Headers_get (headers, "Host");
+              h2req->method = req->method;
+              h2req->version = HTTP_VERSION_2;
+              h2req->scheme = "http";
+              h2req->authority = host ? socket_util_arena_strdup (s->arena, host) : "";
+              h2req->path = req->path ? socket_util_arena_strdup (s->arena, req->path) : "/";
+              h2req->headers = h2h;
+              h2req->content_length = -1;
+              h2req->has_body = 0;
+
+              for (size_t i = 0; i < SocketHTTP_Headers_count (headers); i++)
+                {
+                  const SocketHTTP_Header *hdr = SocketHTTP_Headers_at (headers, i);
+                  if (hdr == NULL || hdr->name == NULL || hdr->value == NULL)
+                    continue;
+                  if (strcasecmp (hdr->name, "Connection") == 0
+                      || strcasecmp (hdr->name, "Upgrade") == 0
+                      || strcasecmp (hdr->name, "HTTP2-Settings") == 0
+                      || strcasecmp (hdr->name, "Keep-Alive") == 0
+                      || strcasecmp (hdr->name, "Proxy-Connection") == 0
+                      || strcasecmp (hdr->name, "Host") == 0)
+                    continue;
+                  if (strcasecmp (hdr->name, "TE") == 0
+                      && strcasecmp (hdr->value, "trailers") != 0)
+                    continue;
+                  SocketHTTP_Headers_add (h2h, hdr->name, hdr->value);
+                }
+
+              s->request = h2req;
+              s->request_complete = 1;
+              s->request_end_stream = 1;
+
+              HTTP2ServerCallbackCtx tmp;
+              tmp.server = server;
+              tmp.conn = conn;
+              server_http2_handle_request (&tmp, s);
+            }
+        }
+    }
+
+  SocketPoll_mod (server->poll, conn->socket, POLL_READ | POLL_WRITE, conn);
+  return 1;
+}
+
+static int
+server_try_http2_prior_knowledge (SocketHTTPServer_T server, ServerConnection *conn,
+                                  unsigned events)
+{
+  unsigned char preface[HTTP2_PREFACE_SIZE];
+  int fd;
+  ssize_t n;
+
+  assert (server != NULL);
+  assert (conn != NULL);
+
+  if (!(events & POLL_READ))
+    return 0;
+  if (server->config.tls_context != NULL)
+    return 0;
+  if (server->config.max_version < HTTP_VERSION_2)
+    return 0;
+  if (conn->state != CONN_STATE_READING_REQUEST)
+    return 0;
+  if (conn->http2_conn != NULL || conn->is_http2)
+    return 0;
+
+  fd = Socket_fd (conn->socket);
+  n = recv (fd, preface, sizeof (preface), MSG_PEEK | MSG_DONTWAIT);
+  if (n < 0)
+    {
+      if (errno == EAGAIN || errno == EWOULDBLOCK)
+        return 0;
+      return 0;
+    }
+  if ((size_t)n < sizeof (preface))
+    return 0;
+
+  if (memcmp (preface, HTTP2_CLIENT_PREFACE, HTTP2_PREFACE_SIZE) != 0)
+    return 0;
+
+  conn->is_http2 = 1;
+  conn->state = CONN_STATE_HTTP2;
+
+  if (server_http2_enable (server, conn) < 0)
+    {
+      conn->state = CONN_STATE_CLOSED;
+      return 0;
+    }
+
+  (void)server_process_http2 (server, conn, events);
+  return 1;
 }
 
 /**
@@ -523,6 +1668,7 @@ server_run_validator_impl (SocketHTTPServer_T server, ServerConnection *conn)
 
   req_ctx.server = server;
   req_ctx.conn = conn;
+  req_ctx.h2_stream = NULL;
   req_ctx.arena = conn->arena;
   req_ctx.start_time_ms = conn->request_start_ms;
 
@@ -591,6 +1737,7 @@ server_invoke_handler (SocketHTTPServer_T server, ServerConnection *conn)
 
   req_ctx.server = server;
   req_ctx.conn = conn;
+  req_ctx.h2_stream = NULL;
   req_ctx.arena = conn->arena;
   req_ctx.start_time_ms = conn->request_start_ms;
 
@@ -708,6 +1855,10 @@ server_handle_parsed_request (SocketHTTPServer_T server,
   if (!server_check_rate_limit (server, conn))
     return 0;
 
+  /* HTTP/1.1 Upgrade: h2c (cleartext HTTP/2). */
+  if (server_try_h2c_upgrade (server, conn))
+    return 0;
+
   /* Try static file serving first (before validator for efficiency) */
   if (server->static_routes != NULL && server_try_static_file (server, conn))
     {
@@ -754,6 +1905,9 @@ server_process_client_event (SocketHTTPServer_T server, ServerConnection *conn,
 {
   int requests_processed = 0;
 
+  if (server_try_http2_prior_knowledge (server, conn, events))
+    return 0;
+
   /* Handle disconnect/error events first */
   if (events & (POLL_HANGUP | POLL_ERROR))
     {
@@ -764,7 +1918,30 @@ server_process_client_event (SocketHTTPServer_T server, ServerConnection *conn,
 
   if (events & POLL_READ)
     {
-      connection_read (server, conn);
+      /* TLS handshake must complete before any application reads. */
+      if (conn->state != CONN_STATE_TLS_HANDSHAKE && conn->state != CONN_STATE_HTTP2)
+        connection_read (server, conn);
+    }
+
+  if (conn->state == CONN_STATE_TLS_HANDSHAKE)
+    {
+#if SOCKET_HAS_TLS
+      if (server_process_tls_handshake (server, conn, events) < 0)
+        conn->state = CONN_STATE_CLOSED;
+#else
+      conn->state = CONN_STATE_CLOSED;
+#endif
+    }
+
+  if (conn->state == CONN_STATE_HTTP2)
+    {
+      if (server_process_http2 (server, conn, events) < 0)
+        conn->state = CONN_STATE_CLOSED;
+      if (conn->state == CONN_STATE_CLOSED)
+        {
+          connection_close (server, conn);
+        }
+      return 0;
     }
 
   if (conn->state == CONN_STATE_READING_REQUEST)
@@ -811,6 +1988,7 @@ server_process_client_event (SocketHTTPServer_T server, ServerConnection *conn,
               struct SocketHTTPServer_Request req_ctx;
               req_ctx.server = server;
               req_ctx.conn = conn;
+              req_ctx.h2_stream = NULL;
               req_ctx.arena = conn->arena;
               req_ctx.start_time_ms = conn->request_start_ms;
 
@@ -1099,6 +2277,8 @@ SocketHTTP_Method
 SocketHTTPServer_Request_method (SocketHTTPServer_Request_T req)
 {
   assert (req != NULL);
+  if (req->h2_stream != NULL && req->h2_stream->request != NULL)
+    return req->h2_stream->request->method;
   if (req->conn->request == NULL)
     return HTTP_METHOD_UNKNOWN;
   return req->conn->request->method;
@@ -1108,6 +2288,8 @@ const char *
 SocketHTTPServer_Request_path (SocketHTTPServer_Request_T req)
 {
   assert (req != NULL);
+  if (req->h2_stream != NULL && req->h2_stream->request != NULL)
+    return req->h2_stream->request->path;
   if (req->conn->request == NULL)
     return "/";
   return req->conn->request->path;
@@ -1117,6 +2299,15 @@ const char *
 SocketHTTPServer_Request_query (SocketHTTPServer_Request_T req)
 {
   assert (req != NULL);
+  if (req->h2_stream != NULL && req->h2_stream->request != NULL)
+    {
+      const char *path = req->h2_stream->request->path;
+      const char *q;
+      if (path == NULL)
+        return NULL;
+      q = strchr (path, '?');
+      return q ? q + 1 : NULL;
+    }
   if (req->conn->request == NULL)
     return NULL;
 
@@ -1132,15 +2323,54 @@ SocketHTTP_Headers_T
 SocketHTTPServer_Request_headers (SocketHTTPServer_Request_T req)
 {
   assert (req != NULL);
+  if (req->h2_stream != NULL && req->h2_stream->request != NULL)
+    return req->h2_stream->request->headers;
   if (req->conn->request == NULL)
     return NULL;
   return req->conn->request->headers;
+}
+
+SocketHTTP_Headers_T
+SocketHTTPServer_Request_trailers (SocketHTTPServer_Request_T req)
+{
+  assert (req != NULL);
+
+  if (req->h2_stream != NULL)
+    return req->h2_stream->request_trailers;
+
+  return NULL;
+}
+
+const char *
+SocketHTTPServer_Request_h2_protocol (SocketHTTPServer_Request_T req)
+{
+  assert (req != NULL);
+
+  if (req->h2_stream != NULL)
+    return req->h2_stream->h2_protocol;
+
+  return NULL;
 }
 
 const void *
 SocketHTTPServer_Request_body (SocketHTTPServer_Request_T req)
 {
   assert (req != NULL);
+
+  if (req->h2_stream != NULL)
+    {
+      ServerHTTP2Stream *s = req->h2_stream;
+      if (s->body_streaming)
+        return NULL;
+      if (s->body_uses_buf)
+        {
+          SocketBuf_compact (s->body_buf);
+          size_t len;
+          return SocketBuf_readptr (s->body_buf, &len);
+        }
+      return s->body;
+    }
+
   if (req->conn->body_streaming)
     return NULL;
 
@@ -1161,6 +2391,17 @@ size_t
 SocketHTTPServer_Request_body_len (SocketHTTPServer_Request_T req)
 {
   assert (req != NULL);
+
+  if (req->h2_stream != NULL)
+    {
+      ServerHTTP2Stream *s = req->h2_stream;
+      if (s->body_streaming)
+        return 0;
+      if (s->body_uses_buf)
+        return SocketBuf_available (s->body_buf);
+      return s->body_len;
+    }
+
   if (req->conn->body_streaming)
     return 0;
 
@@ -1181,6 +2422,8 @@ SocketHTTP_Version
 SocketHTTPServer_Request_version (SocketHTTPServer_Request_T req)
 {
   assert (req != NULL);
+  if (req->h2_stream != NULL && req->h2_stream->request != NULL)
+    return HTTP_VERSION_2;
   if (req->conn->request == NULL)
     return HTTP_VERSION_1_1;
   return req->conn->request->version;
@@ -1209,7 +2452,10 @@ void
 SocketHTTPServer_Request_status (SocketHTTPServer_Request_T req, int code)
 {
   assert (req != NULL);
-  req->conn->response_status = code;
+  if (req->h2_stream != NULL)
+    req->h2_stream->response_status = code;
+  else
+    req->conn->response_status = code;
 }
 
 void
@@ -1220,7 +2466,39 @@ SocketHTTPServer_Request_header (SocketHTTPServer_Request_T req,
   assert (name != NULL);
   assert (value != NULL);
 
-  SocketHTTP_Headers_add (req->conn->response_headers, name, value);
+  if (req->h2_stream != NULL)
+    {
+      if (req->h2_stream->response_headers == NULL)
+        req->h2_stream->response_headers = SocketHTTP_Headers_new (req->arena);
+      SocketHTTP_Headers_add (req->h2_stream->response_headers, name, value);
+    }
+  else
+    {
+      SocketHTTP_Headers_add (req->conn->response_headers, name, value);
+    }
+}
+
+int
+SocketHTTPServer_Request_trailer (SocketHTTPServer_Request_T req,
+                                  const char *name, const char *value)
+{
+  assert (req != NULL);
+  assert (name != NULL);
+  assert (value != NULL);
+
+  if (req->h2_stream == NULL)
+    return -1;
+
+  if (req->h2_stream->response_end_stream_sent)
+    return -1;
+
+  if (req->h2_stream->response_trailers == NULL)
+    req->h2_stream->response_trailers = SocketHTTP_Headers_new (req->arena);
+  if (req->h2_stream->response_trailers == NULL)
+    return -1;
+
+  SocketHTTP_Headers_add (req->h2_stream->response_trailers, name, value);
+  return 0;
 }
 
 void
@@ -1231,8 +2509,16 @@ SocketHTTPServer_Request_body_data (SocketHTTPServer_Request_T req,
 
   if (data == NULL || len == 0)
     {
-      req->conn->response_body = NULL;
-      req->conn->response_body_len = 0;
+      if (req->h2_stream != NULL)
+        {
+          req->h2_stream->response_body = NULL;
+          req->h2_stream->response_body_len = 0;
+        }
+      else
+        {
+          req->conn->response_body = NULL;
+          req->conn->response_body_len = 0;
+        }
       return;
     }
 
@@ -1240,8 +2526,16 @@ SocketHTTPServer_Request_body_data (SocketHTTPServer_Request_T req,
   if (body_copy != NULL)
     {
       memcpy (body_copy, data, len);
-      req->conn->response_body = body_copy;
-      req->conn->response_body_len = len;
+      if (req->h2_stream != NULL)
+        {
+          req->h2_stream->response_body = body_copy;
+          req->h2_stream->response_body_len = len;
+        }
+      else
+        {
+          req->conn->response_body = body_copy;
+          req->conn->response_body_len = len;
+        }
     }
 }
 
@@ -1265,7 +2559,10 @@ void
 SocketHTTPServer_Request_finish (SocketHTTPServer_Request_T req)
 {
   assert (req != NULL);
-  req->conn->response_finished = 1;
+  if (req->h2_stream != NULL)
+    req->h2_stream->response_finished = 1;
+  else
+    req->conn->response_finished = 1;
 }
 
 /* ============================================================================
@@ -1280,15 +2577,26 @@ SocketHTTPServer_Request_body_stream (SocketHTTPServer_Request_T req,
 {
   assert (req != NULL);
 
-  req->conn->body_callback = callback;
-  req->conn->body_callback_userdata = userdata;
-  req->conn->body_streaming = 1;
+  if (req->h2_stream != NULL)
+    {
+      req->h2_stream->body_callback = callback;
+      req->h2_stream->body_callback_userdata = userdata;
+      req->h2_stream->body_streaming = 1;
+    }
+  else
+    {
+      req->conn->body_callback = callback;
+      req->conn->body_callback_userdata = userdata;
+      req->conn->body_streaming = 1;
+    }
 }
 
 int64_t
 SocketHTTPServer_Request_body_expected (SocketHTTPServer_Request_T req)
 {
   assert (req != NULL);
+  if (req->h2_stream != NULL && req->h2_stream->request != NULL)
+    return req->h2_stream->request->content_length;
   return SocketHTTP1_Parser_content_length (req->conn->parser);
 }
 
@@ -1296,6 +2604,8 @@ int
 SocketHTTPServer_Request_is_chunked (SocketHTTPServer_Request_T req)
 {
   assert (req != NULL);
+  if (req->h2_stream != NULL)
+    return 0;
   return SocketHTTP1_Parser_body_mode (req->conn->parser)
          == HTTP1_BODY_CHUNKED;
 }
@@ -1309,6 +2619,30 @@ int
 SocketHTTPServer_Request_begin_stream (SocketHTTPServer_Request_T req)
 {
   assert (req != NULL);
+
+  if (req->h2_stream != NULL)
+    {
+      ServerHTTP2Stream *s = req->h2_stream;
+      SocketHTTP_Response response;
+
+      if (s->response_headers_sent)
+        return -1;
+
+      if (s->response_headers == NULL)
+        s->response_headers = SocketHTTP_Headers_new (req->arena);
+
+      memset (&response, 0, sizeof (response));
+      response.version = HTTP_VERSION_2;
+      response.status_code = s->response_status;
+      response.headers = s->response_headers;
+
+      if (SocketHTTP2_Stream_send_response (s->stream, &response, 0) < 0)
+        return -1;
+
+      s->response_streaming = 1;
+      s->response_headers_sent = 1;
+      return 0;
+    }
 
   if (req->conn->response_headers_sent)
     return -1;
@@ -1346,6 +2680,39 @@ SocketHTTPServer_Request_send_chunk (SocketHTTPServer_Request_T req,
 {
   assert (req != NULL);
 
+  if (req->h2_stream != NULL)
+    {
+      ServerHTTP2Stream *s = req->h2_stream;
+      const unsigned char *p = (const unsigned char *)data;
+      ssize_t accepted;
+
+      if (!s->response_streaming || !s->response_headers_sent)
+        return -1;
+
+      if (len == 0)
+        return 0;
+
+      accepted = SocketHTTP2_Stream_send_data (s->stream, data, len, 0);
+      if (accepted < 0)
+        return -1;
+
+      if ((size_t)accepted < len)
+        {
+          if (s->response_outbuf == NULL)
+            s->response_outbuf = SocketBuf_new (s->arena, HTTPSERVER_IO_BUFFER_SIZE);
+          if (s->response_outbuf == NULL)
+            return -1;
+          if (!SocketBuf_ensure (s->response_outbuf, len - (size_t)accepted))
+            return -1;
+          SocketBuf_write (s->response_outbuf, p + accepted, len - (size_t)accepted);
+        }
+
+      /* Try to flush any buffered remainder immediately. */
+      server_http2_flush_stream_output (req->conn, s);
+
+      return 0;
+    }
+
   if (!req->conn->response_streaming || !req->conn->response_headers_sent)
     return -1;
 
@@ -1366,6 +2733,30 @@ int
 SocketHTTPServer_Request_end_stream (SocketHTTPServer_Request_T req)
 {
   assert (req != NULL);
+
+  if (req->h2_stream != NULL)
+    {
+      ServerHTTP2Stream *s = req->h2_stream;
+
+      if (!s->response_streaming)
+        return -1;
+
+      s->response_finished = 1;
+
+      /* Try to flush any buffered output and then send END_STREAM. */
+      server_http2_flush_stream_output (req->conn, s);
+
+      if (!s->response_end_stream_sent
+          && (s->response_outbuf == NULL
+              || SocketBuf_available (s->response_outbuf) == 0))
+        {
+          /* server_http2_flush_stream_output() will send trailers or END_STREAM
+           * once all pending output is drained. */
+          server_http2_flush_stream_output (req->conn, s);
+        }
+
+      return 0;
+    }
 
   if (!req->conn->response_streaming)
     return -1;
@@ -1397,39 +2788,107 @@ SocketHTTPServer_Request_push (SocketHTTPServer_Request_T req,
   assert (req != NULL);
   assert (path != NULL);
 
-  (void)path;
-  (void)headers;
+  /* Only available for HTTP/2 requests */
+  if (req->h2_stream == NULL || req->h2_stream->request == NULL
+      || req->conn->http2_conn == NULL)
+    return -1;
 
-  /* HTTP/2 push not yet integrated - return error for HTTP/1.1 */
-  if (req->conn->request == NULL
-      || req->conn->request->version != HTTP_VERSION_2)
+  /* Peer can disable push via SETTINGS_ENABLE_PUSH=0 */
+  if (SocketHTTP2_Conn_get_setting (req->conn->http2_conn,
+                                   HTTP2_SETTINGS_ENABLE_PUSH)
+      == 0)
+    return -1;
+
+  if (path[0] != '/')
+    return -1;
+
+  const SocketHTTP_Request *parent_req = req->h2_stream->request;
+  const char *scheme = parent_req->scheme ? parent_req->scheme : "https";
+  const char *authority = parent_req->authority ? parent_req->authority : "";
+
+  size_t extra = headers ? SocketHTTP_Headers_count (headers) : 0;
+  size_t total = HTTP2_REQUEST_PSEUDO_HEADER_COUNT + extra;
+
+  SocketHPACK_Header *hpack
+      = Arena_alloc (req->arena, total * sizeof (*hpack), __FILE__, __LINE__);
+  if (hpack == NULL)
+    return -1;
+
+  memset (hpack, 0, total * sizeof (*hpack));
+
+  /* Pseudo-headers */
+  hpack[0].name = ":method";
+  hpack[0].name_len = 7;
+  hpack[0].value = "GET";
+  hpack[0].value_len = 3;
+
+  hpack[1].name = ":scheme";
+  hpack[1].name_len = 7;
+  hpack[1].value = scheme;
+  hpack[1].value_len = strlen (scheme);
+
+  hpack[2].name = ":authority";
+  hpack[2].name_len = 10;
+  hpack[2].value = authority;
+  hpack[2].value_len = strlen (authority);
+
+  hpack[3].name = ":path";
+  hpack[3].name_len = 5;
+  hpack[3].value = path;
+  hpack[3].value_len = strlen (path);
+
+  /* Additional headers */
+  size_t out_idx = HTTP2_REQUEST_PSEUDO_HEADER_COUNT;
+  if (headers != NULL)
     {
-      return -1;
+      for (size_t i = 0; i < extra; i++)
+        {
+          const SocketHTTP_Header *hdr = SocketHTTP_Headers_at (headers, i);
+          if (hdr == NULL || hdr->name == NULL || hdr->value == NULL)
+            continue;
+          if (hdr->name[0] == ':')
+            continue; /* disallow pseudo headers from user input */
+
+          hpack[out_idx].name = hdr->name;
+          hpack[out_idx].name_len = strlen (hdr->name);
+          hpack[out_idx].value = hdr->value;
+          hpack[out_idx].value_len = strlen (hdr->value);
+          out_idx++;
+        }
     }
 
-  /* HTTP/2 Server Push is not yet implemented.
-   *
-   * Implementation requirements:
-   * - Track HTTP/2 connections separately from HTTP/1.1
-   * - Maintain HPACK encoder/decoder state per connection
-   * - Use SocketHTTP2_Stream_push_promise() for push promises
-   * - Handle client SETTINGS_ENABLE_PUSH flag
-   * - Manage pushed stream IDs (even numbers from server)
-   *
-   * Status: Planned for future release.
-   * Note: Server Push is deprecated in most browsers but still useful
-   *       for proxies and non-browser clients.
-   *
-   * For now, use Link header preload hints as an alternative:
-   *   Link: </style.css>; rel=preload; as=style
-   */
-  return -1;
+  total = out_idx;
+
+  SocketHTTP2_Stream_T promised
+      = SocketHTTP2_Stream_push_promise (req->h2_stream->stream, hpack, total);
+  if (promised == NULL)
+    return -1;
+
+  /* Build synthetic request on promised stream and run normal handler pipeline. */
+  ServerHTTP2Stream *ps
+      = server_http2_stream_get_or_create (req->server, req->conn, promised);
+  if (ps == NULL)
+    return -1;
+
+  if (server_http2_build_request (req->server, ps, hpack, total, 1) < 0)
+    return -1;
+
+  ps->request_complete = 1;
+
+  HTTP2ServerCallbackCtx cb;
+  cb.server = req->server;
+  cb.conn = req->conn;
+  server_http2_handle_request (&cb, ps);
+
+  return 0;
 }
 
 int
 SocketHTTPServer_Request_is_http2 (SocketHTTPServer_Request_T req)
 {
   assert (req != NULL);
+  if (req->h2_stream != NULL && req->h2_stream->request != NULL)
+    return 1;
   if (req->conn->request == NULL)
     return 0;
   return req->conn->request->version == HTTP_VERSION_2;
@@ -1504,6 +2963,78 @@ SocketHTTPServer_Request_upgrade_websocket (SocketHTTPServer_Request_T req)
   END_TRY;
 
   return NULL; /* Only reached on alloc failures before accept */
+}
+
+SocketHTTP2_Stream_T
+SocketHTTPServer_Request_accept_websocket_h2 (SocketHTTPServer_Request_T req,
+                                              SocketHTTPServer_BodyCallback callback,
+                                              void *userdata)
+{
+  ServerHTTP2Stream *s;
+  const char *version;
+  SocketHTTP_Response response;
+
+  assert (req != NULL);
+
+  if (req->h2_stream == NULL || req->h2_stream->request == NULL)
+    return NULL;
+
+  if (callback == NULL)
+    return NULL;
+
+  s = req->h2_stream;
+
+  /* RFC 8441 Extended CONNECT: :method=CONNECT, :protocol=websocket */
+  if (s->request->method != HTTP_METHOD_CONNECT)
+    return NULL;
+  if (s->h2_protocol == NULL || strcmp (s->h2_protocol, "websocket") != 0)
+    return NULL;
+
+  version = SocketHTTP_Headers_get (s->request->headers, "Sec-WebSocket-Version");
+  if (version != NULL && strcmp (version, "13") != 0)
+    return NULL;
+
+  if (s->response_headers_sent)
+    return NULL;
+
+  if (s->response_headers == NULL)
+    s->response_headers = SocketHTTP_Headers_new (req->arena);
+  if (s->response_headers == NULL)
+    return NULL;
+
+  s->response_status = 200;
+
+  memset (&response, 0, sizeof (response));
+  response.version = HTTP_VERSION_2;
+  response.status_code = 200;
+  response.headers = s->response_headers;
+
+  TRY
+  {
+    if (SocketHTTP2_Stream_send_response (s->stream, &response, 0) < 0)
+      return NULL;
+  }
+  EXCEPT (Socket_Failed)
+  {
+    return NULL;
+  }
+  EXCEPT (SocketHTTP2_ProtocolError)
+  {
+    return NULL;
+  }
+  END_TRY;
+
+  /* Mark as streaming so server won't auto-send a standard HTTP response. */
+  s->response_streaming = 1;
+  s->response_headers_sent = 1;
+
+  /* Deliver future DATA bytes via callback (WebSocket frames on DATA stream). */
+  s->body_streaming = 1;
+  s->body_callback = callback;
+  s->body_callback_userdata = userdata;
+  s->ws_over_h2 = 1;
+
+  return s->stream;
 }
 
 /* ============================================================================
@@ -1590,6 +3121,27 @@ SocketHTTPServer_drain (SocketHTTPServer_T server, int timeout_ms)
   if (server->listen_socket != NULL)
     {
       SocketPoll_del (server->poll, server->listen_socket);
+    }
+
+  /* For HTTP/2 connections, send GOAWAY so clients stop opening new streams. */
+  for (ServerConnection *conn = server->connections; conn != NULL; conn = conn->next)
+    {
+      if (conn->state == CONN_STATE_HTTP2 && conn->http2_conn != NULL)
+        {
+          TRY
+          {
+            SocketHTTP2_Conn_goaway (conn->http2_conn, HTTP2_NO_ERROR, NULL, 0);
+          }
+          EXCEPT (SocketHTTP2_ProtocolError)
+          {
+            /* Best-effort during drain. */
+          }
+          EXCEPT (SocketHTTP2_FlowControlError)
+          {
+            /* Best-effort during drain. */
+          }
+          END_TRY;
+        }
     }
 
   return 0;

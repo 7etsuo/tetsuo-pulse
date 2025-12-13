@@ -386,93 +386,53 @@ SocketHTTPClient_free(&client);
 
 ### HTTP Server
 
+For details on HTTP/2 negotiation (ALPN vs h2c vs prior-knowledge), stream lifecycle,
+trailers, GOAWAY/drain, and RFC 8441 status, see `docs/HTTP2-SERVER.md`.
+
 ```c
 #include "http/SocketHTTPServer.h"
+#include "http/SocketHTTP.h"
+#include <string.h>
 
-void handle_request(SocketHTTPServer_Request_T req, SocketHTTPServer_Response_T resp, void *data)
+static void
+handle_request (SocketHTTPServer_Request_T req, void *userdata)
 {
-    const char *method = SocketHTTPServer_Request_method(req);
-    const char *uri = SocketHTTPServer_Request_uri(req);
-    
-    if (strcmp(method, "GET") == 0 && strcmp(uri, "/") == 0) {
-        SocketHTTPServer_Response_status(resp, 200);
-        SocketHTTPServer_Response_header(resp, "Content-Type", "text/html");
-        SocketHTTPServer_Response_body(resp, "<h1>Hello World</h1>", 20);
-    } else {
-        SocketHTTPServer_Response_status(resp, 404);
-        SocketHTTPServer_Response_body(resp, "Not Found", 9);
-    }
-    
-    SocketHTTPServer_Response_send(resp);
+    (void)userdata;
+
+    if (SocketHTTPServer_Request_method (req) == HTTP_METHOD_GET
+        && strcmp (SocketHTTPServer_Request_path (req), "/") == 0)
+      {
+        SocketHTTPServer_Request_status (req, 200);
+        SocketHTTPServer_Request_header (req, "content-type", "text/html");
+        SocketHTTPServer_Request_body_string (req, "<h1>Hello World</h1>");
+        SocketHTTPServer_Request_finish (req);
+        return;
+      }
+
+    SocketHTTPServer_Request_status (req, 404);
+    SocketHTTPServer_Request_body_string (req, "Not Found");
+    SocketHTTPServer_Request_finish (req);
 }
 
-SocketHTTPServer_Config config = HTTPSERVER_CONFIG_DEFAULTS;
-config.port = 8080;
-config.max_connections = 1000;
+int
+main (void)
+{
+    SocketHTTPServer_Config config;
+    SocketHTTPServer_T server;
 
-SocketHTTPServer_T server = SocketHTTPServer_new(NULL, &config);
-SocketHTTPServer_set_handler(server, handle_request, NULL);
-SocketHTTPServer_start(server);
+    SocketHTTPServer_config_defaults (&config);
+    config.port = 8080;
+    config.max_version = HTTP_VERSION_2;   /* Allow HTTP/2 (default) */
+    config.enable_h2c_upgrade = 0;         /* h2c is opt-in */
 
-/* Event loop */
-while (running) {
-    SocketHTTPServer_poll(server, 1000);
+    server = SocketHTTPServer_new (&config);
+    SocketHTTPServer_set_handler (server, handle_request, NULL);
+    SocketHTTPServer_start (server);
+
+    /* Event loop */
+    for (;;)
+      SocketHTTPServer_process (server, 1000);
 }
-
-SocketHTTPServer_stop(server);
-SocketHTTPServer_free(&server);
-```
-
-### HTTP Server Middleware & Static Files
-
-```c
-#include "http/SocketHTTPServer.h"
-
-/* Logging middleware */
-int log_middleware(SocketHTTPServer_Request_T req, void *data) {
-    printf("[%s] %s\n",
-           SocketHTTP_method_name(SocketHTTPServer_Request_method(req)),
-           SocketHTTPServer_Request_path(req));
-    return 0;  /* Continue to next middleware/handler */
-}
-
-/* Authentication middleware */
-int auth_middleware(SocketHTTPServer_Request_T req, void *data) {
-    const char *token = SocketHTTPServer_Request_header(req, "Authorization");
-    if (!token) {
-        SocketHTTPServer_Request_status(req, 401);
-        SocketHTTPServer_Request_body_data(req, "Unauthorized", 12);
-        SocketHTTPServer_Request_finish(req);
-        return 1;  /* Stop chain - request handled */
-    }
-    return 0;  /* Continue */
-}
-
-/* Custom error handler */
-void error_handler(SocketHTTPServer_Request_T req, int code, void *data) {
-    char body[256];
-    snprintf(body, sizeof(body),
-             "<html><body><h1>Error %d</h1></body></html>", code);
-    SocketHTTPServer_Request_header(req, "Content-Type", "text/html");
-    SocketHTTPServer_Request_body_data(req, body, strlen(body));
-    SocketHTTPServer_Request_finish(req);
-}
-
-SocketHTTPServer_T server = SocketHTTPServer_new(NULL, &config);
-
-/* Add middleware chain */
-SocketHTTPServer_add_middleware(server, log_middleware, NULL);
-SocketHTTPServer_add_middleware(server, auth_middleware, &auth_config);
-
-/* Serve static files */
-SocketHTTPServer_add_static_dir(server, "/static", "./public");
-SocketHTTPServer_add_static_dir(server, "/assets", "/var/www/assets");
-
-/* Set custom error pages */
-SocketHTTPServer_set_error_handler(server, error_handler, NULL);
-
-SocketHTTPServer_set_handler(server, handle_request, NULL);
-SocketHTTPServer_start(server);
 ```
 
 ### HTTP/2 Stream Management

@@ -20,7 +20,7 @@ The `SocketWS_T` module provides full RFC 6455 WebSocket support with:
 ## Security Considerations
 
 ### Key Security Features
-- **Masking Enforcement**: Clients MUST mask all outgoing frames; servers MUST NOT mask incoming frames from clients (RFC 6455 §5.3). Violations trigger protocol error and connection close.
+- **Masking Enforcement**: Clients MUST mask all frames sent to servers, and servers MUST close the connection if they receive an unmasked frame from a client (RFC 6455 §5.3). Clients MUST close if they receive a masked frame from a server.
 - **UTF-8 Validation**: All text frames and close reasons are validated incrementally (rejects overlong encodings, surrogates, invalid sequences per SocketUTF8).
 - **Size Limits**: Configurable `max_frame_size` (default 16MB), `max_message_size` (64MB), `max_fragments` prevent DoS via large/fragmented messages or decompression bombs.
 - **Overflow Protection**: Uses `SocketSecurity_check_add/multiply` for all buffer/message size calculations to prevent integer overflows.
@@ -199,6 +199,31 @@ if (SocketWS_is_upgrade(&http_request)) {
     while (SocketWS_handshake(ws) > 0) { }
 }
 ```
+
+---
+
+## WebSockets over HTTP/2 (RFC 8441 / Extended CONNECT)
+
+RFC 8441 defines WebSockets over HTTP/2 using **Extended CONNECT** (a `CONNECT` request
+with `:protocol = websocket`).
+
+### Current status
+
+`SocketHTTPServer` **does not yet expose a stream-backed `SocketWS_T`** for HTTP/2
+streams, so you cannot currently accept an RFC 8441 WebSocket and then use the normal
+`SocketWS_*` framing API on that stream.
+
+### What to do today
+
+- Use **HTTP/1.1 WebSocket upgrade (RFC 6455)** via
+  `SocketHTTPServer_Request_is_websocket()` + `SocketHTTPServer_Request_upgrade_websocket()`
+  (works over plain HTTP/1.1 and HTTPS).
+
+### Security notes
+
+- RFC 8441 requires careful **flow control / backpressure** integration with HTTP/2.
+- Stream resets (RST_STREAM) and GOAWAY need a clear mapping to WebSocket close/error
+  semantics.
 
 ---
 

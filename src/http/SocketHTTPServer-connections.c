@@ -23,6 +23,11 @@
 #include "http/SocketHTTP1.h"
 #include "http/SocketHTTPServer-private.h"
 #include "socket/Socket.h"
+#if SOCKET_HAS_TLS
+#include "tls/SocketTLS.h"
+#endif
+
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPServer);
 
 /* ============================================================================
  * Internal Helper Declarations
@@ -327,6 +332,7 @@ connection_read_initial_body (SocketHTTPServer_T server, ServerConnection *conn)
           struct SocketHTTPServer_Request req_ctx;
           req_ctx.server = server;
           req_ctx.conn = conn;
+          req_ctx.h2_stream = NULL;
           req_ctx.arena = conn->arena;
           req_ctx.start_time_ms = conn->request_start_ms;
 
@@ -607,6 +613,7 @@ connection_send_error (SocketHTTPServer_T server, ServerConnection *conn,
       struct SocketHTTPServer_Request req_ctx;
       req_ctx.server = server;
       req_ctx.conn = conn;
+      req_ctx.h2_stream = NULL;
       req_ctx.arena = conn->arena;
       req_ctx.start_time_ms = conn->request_start_ms;
 
@@ -719,6 +726,21 @@ connection_init_resources (SocketHTTPServer_T server, ServerConnection *conn,
   conn->response_headers = SocketHTTP_Headers_new (arena);
 
   conn->memory_used = sizeof (*conn) + (2 * HTTPSERVER_IO_BUFFER_SIZE);
+
+  /* Optional TLS enable: handshake is driven by server event loop. */
+  if (server->config.tls_context != NULL)
+    {
+#if SOCKET_HAS_TLS
+      conn->tls_enabled = 1;
+      conn->tls_handshake_done = 0;
+      SocketTLS_enable (conn->socket, server->config.tls_context);
+      conn->state = CONN_STATE_TLS_HANDSHAKE;
+#else
+      HTTPSERVER_ERROR_MSG ("TLS requested but SOCKET_HAS_TLS=0");
+      RAISE_HTTPSERVER_ERROR (SocketHTTPServer_Failed);
+#endif
+    }
+
   return 0;
 }
 
@@ -823,6 +845,19 @@ connection_close (SocketHTTPServer_T server, ServerConnection *conn)
 {
   if (conn == NULL)
     return;
+
+  /* Free HTTP/2 connection (does not close underlying socket). */
+  if (conn->http2_conn != NULL)
+    SocketHTTP2_Conn_free (&conn->http2_conn);
+
+  /* Dispose any per-stream arenas that may still be linked (defensive). */
+  while (conn->http2_streams != NULL)
+    {
+      ServerHTTP2Stream *next = conn->http2_streams->next;
+      if (conn->http2_streams->arena != NULL)
+        Arena_dispose (&conn->http2_streams->arena);
+      conn->http2_streams = next;
+    }
 
   /* Release IP tracking */
   if (server->ip_tracker != NULL && conn->client_addr[0] != '\0')

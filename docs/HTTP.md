@@ -5,6 +5,9 @@ Complete guide to HTTP/1.1 and HTTP/2 support in the Socket Library.
 
 **Module Group**: HTTP | **Related Modules**: SocketHTTP, SocketHTTP1, SocketHTTP2, SocketHTTPClient, SocketHTTPServer
 
+For server-side HTTP/2 wiring details (ALPN vs h2c vs prior-knowledge, stream lifecycle,
+trailers, GOAWAY/drain, RFC 8441 status), see `docs/HTTP2-SERVER.md`.
+
 ---
 
 ## Quick Start
@@ -72,7 +75,7 @@ SocketHTTPClient_T client = SocketHTTPClient_new(&config);
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `max_version` | `HTTP_VERSION_2_0` | Maximum HTTP version to use |
+| `max_version` | `HTTP_VERSION_2` | Maximum HTTP version to use |
 | `enable_connection_pool` | `1` | Enable connection reuse |
 | `max_connections_per_host` | `6` | Per-host connection limit |
 | `max_total_connections` | `100` | Total connection limit |

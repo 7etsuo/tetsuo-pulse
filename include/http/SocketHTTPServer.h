@@ -57,6 +57,7 @@
 #include "core/Except.h"
 #include "core/SocketRateLimit.h"
 #include "http/SocketHTTP.h"
+#include "http/SocketHTTP2.h"
 #include "poll/SocketPoll.h"
 #include "socket/Socket.h"
 
@@ -1007,6 +1008,38 @@ extern SocketHTTP_Headers_T
 SocketHTTPServer_Request_headers (SocketHTTPServer_Request_T req);
 
 /**
+ * @brief Access HTTP trailer headers (HTTP/2 only).
+ * @ingroup http
+ *
+ * For HTTP/2 requests, trailers may arrive after the request body and are
+ * exposed via this accessor. For HTTP/1.x, trailers are not currently exposed
+ * and this function returns NULL.
+ *
+ * @param req Request context.
+ * @return Trailer headers container, or NULL if none/unsupported.
+ *
+ * @note The returned headers are owned by the server and valid for the request
+ * lifetime. Do not free.
+ *
+ * @see SocketHTTP2_Stream_recv_trailers() for the underlying HTTP/2 mechanism.
+ */
+extern SocketHTTP_Headers_T
+SocketHTTPServer_Request_trailers (SocketHTTPServer_Request_T req);
+
+/**
+ * @brief Get HTTP/2 :protocol pseudo-header (RFC 8441), if present.
+ * @ingroup http
+ *
+ * RFC 8441 introduces the :protocol pseudo-header for Extended CONNECT.
+ * For example, WebSockets-over-h2 uses `:protocol = websocket`.
+ *
+ * @param req Request context.
+ * @return Protocol string (e.g., "websocket"), or NULL if not present.
+ */
+extern const char *
+SocketHTTPServer_Request_h2_protocol (SocketHTTPServer_Request_T req);
+
+/**
  * @brief Get pointer to fully buffered request body data.
  * @ingroup http
  *
@@ -1192,6 +1225,28 @@ extern void SocketHTTPServer_Request_status (SocketHTTPServer_Request_T req,
  * name, control chars).
  */
 extern void SocketHTTPServer_Request_header (SocketHTTPServer_Request_T req,
+                                             const char *name,
+                                             const char *value);
+
+/**
+ * @brief Add a response trailer header (HTTP/2 only).
+ * @ingroup http
+ *
+ * Adds a trailer header to be sent at end-of-stream for HTTP/2 responses.
+ * For HTTP/1.x, this function returns -1 (HTTP/1 trailer generation is not
+ * implemented in the server path).
+ *
+ * @param req Request context.
+ * @param name Trailer header name.
+ * @param value Trailer header value.
+ *
+ * @return 0 on success, -1 if unsupported/invalid state.
+ *
+ * @note Trailers are emitted when the response is finalized (finish/end_stream).
+ * @see SocketHTTPServer_Request_finish() for non-streaming responses.
+ * @see SocketHTTPServer_Request_end_stream() for streaming responses.
+ */
+extern int SocketHTTPServer_Request_trailer (SocketHTTPServer_Request_T req,
                                              const char *name,
                                              const char *value);
 
@@ -1575,6 +1630,27 @@ SocketHTTPServer_Request_is_websocket (SocketHTTPServer_Request_T req);
  */
 extern SocketWS_T
 SocketHTTPServer_Request_upgrade_websocket (SocketHTTPServer_Request_T req);
+
+/**
+ * @brief Accept an RFC 8441 WebSocket-over-HTTP/2 request (Extended CONNECT).
+ * @ingroup websocket
+ *
+ * Validates an HTTP/2 Extended CONNECT request with `:method=CONNECT` and
+ * `:protocol=websocket`, sends a `:status=200` response, and configures the
+ * stream to deliver received DATA bytes via the provided callback.
+ *
+ * @param req Request context (must be HTTP/2).
+ * @param callback Callback invoked for received DATA bytes.
+ * @param userdata User data passed to callback.
+ *
+ * @return The underlying HTTP/2 stream on success, or NULL on failure.
+ *
+ * @note Use SocketHTTP2_Stream_send_data() to send WebSocket frames.
+ */
+extern SocketHTTP2_Stream_T
+SocketHTTPServer_Request_accept_websocket_h2 (SocketHTTPServer_Request_T req,
+                                              SocketHTTPServer_BodyCallback callback,
+                                              void *userdata);
 
 /* ============================================================================
  * Rate Limiting

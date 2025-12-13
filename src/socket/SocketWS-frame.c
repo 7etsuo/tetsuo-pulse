@@ -1112,7 +1112,15 @@ ws_process_payload (SocketWS_T ws)
   to_read = (available < payload_remaining) ? available : payload_remaining;
 
   if (ws_is_control_opcode (ws->frame.opcode))
-    return ws_recv_control_payload (ws, available);
+    {
+      /* Control frames (PING/PONG/CLOSE) have max 125 bytes payload and must be
+       * processed atomically. Avoid partial reads into a temporary buffer,
+       * which would corrupt payload content if it arrives split across TCP
+       * segments. */
+      if (available < payload_remaining)
+        return -2;
+      return ws_recv_control_payload (ws, available);
+    }
 
   return ws_recv_data_payload (ws, to_read);
 }
@@ -1166,39 +1174,23 @@ ws_recv_frame (SocketWS_T ws, SocketWS_FrameParse *frame_out)
           ws_set_error (ws, err, "Frame header parse error");
           return -1;
         }
-
-      // Validate masking per RFC 6455 Section 5.3: clients MUST mask ALL
-      // frames, servers MUST NOT mask any frame
-      if ((ws->role == WS_ROLE_SERVER && ws->frame.masked)
-          || (ws->role == WS_ROLE_CLIENT && !ws->frame.masked))
-        {
-          ws_set_error (
-              ws, WS_ERROR_PROTOCOL,
-              "Invalid frame masking: %s frames not allowed for %s role",
-              ws->frame.masked ? "Masked" : "Unmasked",
-              ws->role == WS_ROLE_SERVER ? "server receiving (from client)"
-                                         : "client receiving (from server)");
-          // Send protocol error close per RFC 6455
-          (void)ws_send_close (ws, WS_CLOSE_PROTOCOL_ERROR,
-                               "Masking violation");
-          return -1;
-        }
     }
 
   *frame_out = ws->frame;
 
-  /* Validate masking bit per RFC 6455 Section 5.3:
-   * - Clients MUST mask all frames sent to server (masked == 1 when received
-   * by server)
-   * - Servers MUST NOT mask frames sent to client (masked == 0 when received
-   * by client)
-   */
+  /* Validate masking per RFC 6455 Section 5.3:
+   * - Client -> Server frames MUST be masked (server receives masked=1)
+   * - Server -> Client frames MUST NOT be masked (client receives masked=0) */
   if ((ws->role == WS_ROLE_SERVER && !ws->frame.masked)
       || (ws->role == WS_ROLE_CLIENT && ws->frame.masked))
     {
-      ws_set_error (ws, WS_ERROR_PROTOCOL,
-                    "Invalid masking in received frame (role=%d, masked=%d)",
-                    (int)ws->role, (int)ws->frame.masked);
+      ws_set_error (
+          ws, WS_ERROR_PROTOCOL,
+          "Invalid frame masking: role=%s received %s frame",
+          ws->role == WS_ROLE_SERVER ? "server" : "client",
+          ws->frame.masked ? "masked" : "unmasked");
+      /* Send protocol error close per RFC 6455 */
+      (void)ws_send_close (ws, WS_CLOSE_PROTOCOL_ERROR, "Masking violation");
       return -1;
     }
 

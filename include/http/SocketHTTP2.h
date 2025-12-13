@@ -1242,6 +1242,22 @@ extern int32_t SocketHTTP2_Conn_recv_window (SocketHTTP2_Conn_T conn);
 extern SocketHTTP2_Stream_T SocketHTTP2_Stream_new (SocketHTTP2_Conn_T conn);
 
 /**
+ * @brief Look up an existing stream by ID.
+ * @ingroup http2
+ * @param conn  Parent connection
+ * @param stream_id  Stream identifier (must be non-zero)
+ *
+ * Returns an existing stream object if present, or NULL if the stream is not
+ * known/has been closed. This is primarily useful for h2c upgrade handling
+ * where stream 1 is pre-created.
+ *
+ * @return Stream handle or NULL
+ * @threadsafe No
+ */
+extern SocketHTTP2_Stream_T SocketHTTP2_Conn_get_stream (SocketHTTP2_Conn_T conn,
+                                                         uint32_t stream_id);
+
+/**
  * @brief Get stream ID
  * @ingroup http2
  * @param stream  Stream

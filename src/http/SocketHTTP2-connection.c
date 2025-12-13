@@ -1691,8 +1691,6 @@ SocketHTTP2_Conn_upgrade_server (Socket_T socket,
   SocketHTTP2_Conn_T conn;
   SocketHTTP2_Stream_T stream;
 
-  (void)settings_payload;
-  (void)settings_len;
   (void)initial_request;
 
   SocketHTTP2_config_defaults (&config, HTTP2_ROLE_SERVER);
@@ -1714,6 +1712,21 @@ SocketHTTP2_Conn_upgrade_server (Socket_T socket,
   stream->state = HTTP2_STREAM_STATE_HALF_CLOSED_REMOTE;
   conn->last_peer_stream_id = 1;
 
+  /* Apply the client's HTTP2-Settings (RFC 9113 / legacy RFC 7540 upgrade). */
+  if (settings_payload != NULL && settings_len > 0)
+    {
+      if (parse_and_apply_all_settings (conn, settings_payload, settings_len) < 0)
+        {
+          SocketHTTP2_Conn_free (&conn);
+          return NULL;
+        }
+      if (send_settings_ack (conn) < 0)
+        {
+          SocketHTTP2_Conn_free (&conn);
+          return NULL;
+        }
+    }
+
   /* Send SETTINGS */
   if (send_initial_settings (conn) < 0)
     {
@@ -1724,6 +1737,17 @@ SocketHTTP2_Conn_upgrade_server (Socket_T socket,
   conn->state = HTTP2_CONN_STATE_SETTINGS_SENT;
 
   return conn;
+}
+
+SocketHTTP2_Stream_T
+SocketHTTP2_Conn_get_stream (SocketHTTP2_Conn_T conn, uint32_t stream_id)
+{
+  assert (conn != NULL);
+
+  if (stream_id == 0)
+    return NULL;
+
+  return http2_stream_lookup (conn, stream_id);
 }
 
 /* ============================================================================

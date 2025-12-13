@@ -27,6 +27,7 @@
  */
 
 #include <arpa/inet.h>
+#include <assert.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdatomic.h>
@@ -35,16 +36,14 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <poll.h>
 
 #include "core/Arena.h"
 #include "core/Except.h"
-#include "core/SocketConfig.h" /* For SOCKET_HAS_TLS */
-#include "core/SocketCrypto.h"
 #include "http/SocketHTTP.h"
 #include "http/SocketHTTP1.h"
 #include "poll/SocketPoll.h"
 #include "socket/Socket.h"
-#include "socket/SocketBuf.h"
 #include "socket/SocketWS.h"
 #include "test/Test.h"
 
@@ -81,6 +80,58 @@ typedef struct
   int port;
   Arena_T arena;
 } WSTestServer;
+
+static unsigned
+ws_test_translate_revents (short revents)
+{
+  unsigned ev = 0;
+
+  if (revents & POLLIN)
+    ev |= POLL_READ;
+  if (revents & POLLOUT)
+    ev |= POLL_WRITE;
+  if (revents & POLLERR)
+    ev |= POLL_ERROR;
+  if (revents & POLLHUP)
+    ev |= POLL_HANGUP;
+
+  return ev;
+}
+
+static short
+ws_test_poll_wanted_events (SocketWS_T ws)
+{
+  unsigned need;
+  short events = 0;
+
+  assert (ws != NULL);
+
+  need = SocketWS_poll_events (ws);
+  if (need & POLL_READ)
+    events |= POLLIN;
+  if (need & POLL_WRITE)
+    events |= POLLOUT;
+
+  /* Always allow reads to avoid stalling if poll_events returns 0. */
+  if (events == 0)
+    events = POLLIN;
+
+  return events;
+}
+
+static void
+ws_test_poll_and_process (SocketWS_T ws, int timeout_ms)
+{
+  struct pollfd pfd = { 0 };
+
+  assert (ws != NULL);
+
+  pfd.fd = Socket_fd (SocketWS_socket (ws));
+  pfd.events = ws_test_poll_wanted_events (ws);
+
+  if (poll (&pfd, 1, timeout_ms) > 0)
+    SocketWS_process (ws, ws_test_translate_revents (pfd.revents));
+}
 
 /* Parse incoming HTTP upgrade request and accept WebSocket */
 static int
@@ -184,7 +235,25 @@ ws_server_thread_func (void *arg)
   /* Keep connection alive for tests */
   while (server->running && server->ws != NULL)
     {
-      usleep (10000);
+      ws_test_poll_and_process (server->ws, 50);
+
+      /* Echo any received messages */
+      if (SocketWS_recv_available (server->ws) > 0)
+        {
+          SocketWS_Message msg = { 0 };
+          if (SocketWS_recv_message (server->ws, &msg) == 0)
+            {
+              if (msg.type == WS_OPCODE_TEXT)
+                SocketWS_send_text (server->ws, (const char *)msg.data,
+                                    msg.len);
+              else if (msg.type == WS_OPCODE_BINARY)
+                SocketWS_send_binary (server->ws, msg.data, msg.len);
+              free (msg.data);
+            }
+        }
+
+      if (SocketWS_state (server->ws) == WS_STATE_CLOSED)
+        break;
     }
 
   /* Clean close */
@@ -394,8 +463,26 @@ TEST (ws_integration_send_text)
   result = SocketWS_send_text (ws, test_message, strlen (test_message));
   ASSERT_EQ (result, 0);
 
-  /* Note: Receiving is not tested as SocketWS_recv_message is not implemented
-   */
+  /* Receive echoed message */
+  SocketWS_Message msg = { 0 };
+  int recv_result = -1;
+  int timeout_ms = TEST_TIMEOUT_MS;
+  while (timeout_ms > 0)
+    {
+      ws_test_poll_and_process (ws, 50);
+      if (SocketWS_recv_available (ws) > 0)
+        {
+          recv_result = SocketWS_recv_message (ws, &msg);
+          break;
+        }
+      timeout_ms -= 50;
+    }
+
+  ASSERT_EQ (recv_result, 0);
+  ASSERT_EQ (msg.type, WS_OPCODE_TEXT);
+  ASSERT_EQ (msg.len, strlen (test_message));
+  ASSERT_EQ (memcmp (msg.data, test_message, msg.len), 0);
+  free (msg.data);
 
   SocketWS_close (ws, WS_CLOSE_NORMAL, NULL);
 
@@ -464,6 +551,27 @@ TEST (ws_integration_send_binary)
   result = SocketWS_send_binary (ws, binary_data, sizeof (binary_data));
   ASSERT_EQ (result, 0);
 
+  /* Receive echoed binary */
+  SocketWS_Message msg = { 0 };
+  int recv_result = -1;
+  int timeout_ms = TEST_TIMEOUT_MS;
+  while (timeout_ms > 0)
+    {
+      ws_test_poll_and_process (ws, 50);
+      if (SocketWS_recv_available (ws) > 0)
+        {
+          recv_result = SocketWS_recv_message (ws, &msg);
+          break;
+        }
+      timeout_ms -= 50;
+    }
+
+  ASSERT_EQ (recv_result, 0);
+  ASSERT_EQ (msg.type, WS_OPCODE_BINARY);
+  ASSERT_EQ (msg.len, sizeof (binary_data));
+  ASSERT_EQ (memcmp (msg.data, binary_data, msg.len), 0);
+  free (msg.data);
+
   SocketWS_close (ws, WS_CLOSE_NORMAL, NULL);
 
   EXCEPT (Socket_Failed)
@@ -526,6 +634,30 @@ TEST (ws_integration_ping)
   /* Send ping */
   result = SocketWS_ping (ws, ping_data, strlen (ping_data));
   ASSERT_EQ (result, 0);
+
+  /* After ping, ensure we can still exchange messages */
+  const char *text = "Ping roundtrip";
+  ASSERT_EQ (SocketWS_send_text (ws, text, strlen (text)), 0);
+
+  SocketWS_Message msg = { 0 };
+  int recv_result = -1;
+  int timeout_ms = TEST_TIMEOUT_MS;
+  while (timeout_ms > 0)
+    {
+      ws_test_poll_and_process (ws, 50);
+      if (SocketWS_recv_available (ws) > 0)
+        {
+          recv_result = SocketWS_recv_message (ws, &msg);
+          break;
+        }
+      timeout_ms -= 50;
+    }
+
+  ASSERT_EQ (recv_result, 0);
+  ASSERT_EQ (msg.type, WS_OPCODE_TEXT);
+  ASSERT_EQ (msg.len, strlen (text));
+  ASSERT_EQ (memcmp (msg.data, text, msg.len), 0);
+  free (msg.data);
 
   SocketWS_close (ws, WS_CLOSE_NORMAL, NULL);
 

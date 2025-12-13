@@ -85,6 +85,17 @@ When using this library, we recommend:
 - Use connection pooling with proper cleanup
 - Enable kTLS offload for high-performance scenarios (`SocketTLS_enable_ktls()`)
 
+### HTTP/2 Server Security
+- Prefer **TLS + ALPN** for HTTP/2. Configure ALPN to include `"h2"` (and `"http/1.1"` as fallback) and use `SocketHTTPServer_Config.tls_context`.
+- Treat **h2c upgrade (cleartext HTTP/2)** as advanced/opt-in. Only enable with `SocketHTTPServer_Config.enable_h2c_upgrade = 1` on trusted networks or behind a reverse proxy; do not expose h2c on the open internet unless you understand the risks.
+- Enforce resource limits: header sizes, body sizes, and concurrency limits via `SocketHTTPServer_Config` fields (e.g., `max_header_size`, `max_body_size`, `max_concurrent_requests`).
+- Be cautious with **HTTP/2 server push** (`SocketHTTPServer_Request_push()`): it consumes bandwidth and can be abused if overused.
+- Validate and bound **trailers** (HTTP/2) like normal headers; trailers are untrusted input.
+
+### WebSocket Security (HTTP/1.1 vs HTTP/2)
+- HTTP/1.1 WebSocket upgrade (RFC 6455) is supported via `SocketHTTPServer_Request_upgrade_websocket()`.
+- WebSockets over HTTP/2 (RFC 8441 / Extended CONNECT) are **not fully supported** yet (no stream-backed `SocketWS_T`). Prefer RFC 6455 upgrade over HTTP/1.1/HTTPS for now.
+
 ### Forward Secrecy
 - Use TLS 1.3 KeyUpdate for long-lived connections (`SocketTLS_request_key_update()`)
 - Rotate session ticket keys periodically (`SocketTLSContext_rotate_session_ticket_key()`)
