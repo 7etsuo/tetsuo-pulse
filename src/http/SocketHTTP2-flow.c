@@ -47,37 +47,6 @@
  */
 
 /**
- * flow_consume_window - Consume bytes from a flow control window
- * @window: Pointer to window value (int32_t)
- * @bytes: Number of bytes to consume
- *
- * Returns: 0 on success, -1 if window would go negative or bytes > INT32_MAX
- * Thread-safe: No - modifies window directly
- *
- * Checks if window has capacity and deducts bytes atomically.
- * Logs warning on violation. Window may become negative if peer violates
- * flow control, but this function prevents it.
- */
-static int
-flow_consume_window (int32_t *window, size_t bytes)
-{
-  if (bytes > INT32_MAX)
-    return -1;
-
-  int32_t consume = (int32_t)bytes;
-
-  if (consume > *window)
-    {
-      SOCKET_LOG_WARN_MSG ("Flow control violation: consume %ld > window %ld",
-                           (long)consume, (long)*window);
-      return -1;
-    }
-
-  *window -= consume;
-  return 0;
-}
-
-/**
  * flow_update_window - Add increment to a flow control window
  * @window: Pointer to window value (int32_t)
  * @increment: Amount to add (from WINDOW_UPDATE frame)
@@ -177,15 +146,34 @@ http2_flow_consume_level (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
     return -1;
 
   int32_t *cwindow = is_recv ? &conn->recv_window : &conn->send_window;
-  if (flow_consume_window (cwindow, bytes) < 0)
+  int32_t *swindow = NULL;
+  if (stream)
+    swindow = is_recv ? &stream->recv_window : &stream->send_window;
+
+  // Check connection window
+  if (bytes > INT32_MAX)
     return -1;
 
-  if (stream)
+  int32_t consume = (int32_t)bytes;
+  if (consume > *cwindow)
     {
-      int32_t *swindow = is_recv ? &stream->recv_window : &stream->send_window;
-      if (flow_consume_window (swindow, bytes) < 0)
-        return -1;
+      SOCKET_LOG_WARN_MSG ("Flow control violation: consume %ld > connection window %ld",
+                           (long)consume, (long)*cwindow);
+      return -1;
     }
+
+  // Check stream window if applicable
+  if (swindow && consume > *swindow)
+    {
+      SOCKET_LOG_WARN_MSG ("Flow control violation: consume %ld > stream window %ld",
+                           (long)consume, (long)*swindow);
+      return -1;
+    }
+
+  // Now consume both windows
+  *cwindow -= consume;
+  if (swindow)
+    *swindow -= consume;
 
   return 0;
 }

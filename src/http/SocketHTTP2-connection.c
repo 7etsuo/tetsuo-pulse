@@ -550,6 +550,11 @@ SocketHTTP2_Conn_new (Socket_T socket, const SocketHTTP2_Config *config,
     conn->settings_timeout_ms = cfg->settings_timeout_ms;
     conn->ping_timeout_ms = cfg->ping_timeout_ms;
     conn->idle_timeout_ms = cfg->idle_timeout_ms;
+
+    /* Initialize timeout tracking */
+    conn->settings_sent_time = 0;
+    conn->ping_sent_time = 0;
+    conn->last_activity_time = Socket_get_monotonic_ms ();
   }
   EXCEPT (SocketHTTP2)
   {
@@ -817,6 +822,7 @@ handshake_send_settings (SocketHTTP2_Conn_T conn)
     return -1;
 
   conn->settings_ack_pending = 1;
+  conn->settings_sent_time = Socket_get_monotonic_ms ();
   conn->state = HTTP2_CONN_STATE_SETTINGS_SENT;
 
   /* If connection-level window is larger than default, send WINDOW_UPDATE */
@@ -904,8 +910,13 @@ SocketHTTP2_Conn_settings (SocketHTTP2_Conn_T conn,
   header.flags = 0;
   header.stream_id = 0;
 
+  int rv = http2_frame_send (conn, &header, payload, payload_len);
+  if (rv < 0)
+    return -1;
+
   conn->settings_ack_pending = 1;
-  return http2_frame_send (conn, &header, payload, payload_len);
+  conn->settings_sent_time = Socket_get_monotonic_ms ();
+  return 0;
 }
 
 /* ============================================================================
@@ -935,6 +946,7 @@ SocketHTTP2_Conn_ping (SocketHTTP2_Conn_T conn, const unsigned char opaque[8])
   /* Store for matching ACK */
   memcpy (conn->ping_opaque, payload, HTTP2_PING_PAYLOAD_SIZE);
   conn->ping_pending = 1;
+  conn->ping_sent_time = Socket_get_monotonic_ms ();
 
   header.length = HTTP2_PING_PAYLOAD_SIZE;
   header.type = HTTP2_FRAME_PING;
@@ -1030,9 +1042,11 @@ read_socket_to_buffer (SocketHTTP2_Conn_T conn)
     return 0;
 
   ssize_t n = Socket_recv (conn->socket, write_ptr, space);
-  if (n > 0)
+  if (n > 0) {
     SocketBuf_written (conn->recv_buf, (size_t)n);
-  else if (n < 0)
+    /* Update activity time on recv */
+    conn->last_activity_time = Socket_get_monotonic_ms ();
+  } else if (n < 0)
     return -1;
 
   return 0;
@@ -1115,6 +1129,9 @@ process_single_frame (SocketHTTP2_Conn_T conn)
   if (http2_process_frame (conn, &header, payload) < 0)
     return -1;
 
+  /* Update activity time on frame process */
+  conn->last_activity_time = Socket_get_monotonic_ms ();
+
   /* Consume the frame */
   SocketBuf_consume (conn->recv_buf, HTTP2_FRAME_HEADER_SIZE + header.length);
   return 1;
@@ -1132,6 +1149,42 @@ SocketHTTP2_Conn_process (SocketHTTP2_Conn_T conn, unsigned events)
 
   assert (conn);
   (void)events; /* May use for POLL_READ/POLL_WRITE optimization later */
+
+  int64_t now_ms = Socket_get_monotonic_ms ();
+
+  /* Enforce HTTP/2 timeouts (RFC 9113) */
+
+  /* SETTINGS ACK timeout */
+  if (conn->settings_ack_pending && conn->settings_timeout_ms > 0 &&
+      (now_ms - conn->settings_sent_time >= (int64_t)conn->settings_timeout_ms)) {
+    SOCKET_LOG_WARN_MSG ("HTTP/2 SETTINGS ACK timeout (%" PRId64 " ms)",
+                         now_ms - conn->settings_sent_time);
+    SocketHTTP2_Conn_goaway (conn, HTTP2_SETTINGS_TIMEOUT,
+                             "SETTINGS ACK timeout", 20);
+    return -1;
+  }
+
+  /* PING ACK timeout */
+  if (conn->ping_pending && conn->ping_timeout_ms > 0 &&
+      (now_ms - conn->ping_sent_time >= (int64_t)conn->ping_timeout_ms)) {
+    SOCKET_LOG_WARN_MSG ("HTTP/2 PING ACK timeout (%" PRId64 " ms)",
+                         now_ms - conn->ping_sent_time);
+    SocketHTTP2_Conn_goaway (conn, HTTP2_PROTOCOL_ERROR,
+                             "PING ACK timeout", 16);
+    return -1;
+  }
+
+  /* Idle timeout (only if no active streams) */
+  if (conn->idle_timeout_ms > 0) {
+    uint32_t active = SocketHTTP2_Conn_get_concurrent_streams (conn);
+    if (active == 0 &&
+        (now_ms - conn->last_activity_time >= (int64_t)conn->idle_timeout_ms)) {
+      SOCKET_LOG_INFO_MSG ("HTTP/2 idle connection timeout (%" PRId64 " ms, no active streams)",
+                           now_ms - conn->last_activity_time);
+      SocketHTTP2_Conn_goaway (conn, HTTP2_NO_ERROR, "Idle timeout", 12);
+      return -1;
+    }
+  }
 
   /* Read data from socket into receive buffer */
   if (read_socket_to_buffer (conn) < 0)
@@ -1177,9 +1230,11 @@ SocketHTTP2_Conn_flush (SocketHTTP2_Conn_T conn)
         break;
 
       ssize_t sent = Socket_send (conn->socket, data, available);
-      if (sent > 0)
+      if (sent > 0) {
         SocketBuf_consume (conn->send_buf, (size_t)sent);
-      else if (sent == 0)
+        /* Update activity time on send */
+        conn->last_activity_time = Socket_get_monotonic_ms ();
+      } else if (sent == 0)
         return 1; /* Would block */
       else
         return -1;
@@ -1676,6 +1731,7 @@ SocketHTTP2_Conn_upgrade_client (Socket_T socket,
       return NULL;
     }
   conn->settings_ack_pending = 1;
+  conn->settings_sent_time = Socket_get_monotonic_ms ();
   conn->state = HTTP2_CONN_STATE_SETTINGS_SENT;
 
   return conn;
@@ -1734,6 +1790,7 @@ SocketHTTP2_Conn_upgrade_server (Socket_T socket,
       return NULL;
     }
   conn->settings_ack_pending = 1;
+  conn->settings_sent_time = Socket_get_monotonic_ms ();
   conn->state = HTTP2_CONN_STATE_SETTINGS_SENT;
 
   return conn;
@@ -1817,11 +1874,12 @@ SocketHTTP2_Conn_get_concurrent_streams (SocketHTTP2_Conn_T conn)
   assert (conn);
 
   /* Count active streams (non-idle, non-closed) */
-  for (uint32_t i = 0; i < conn->stream_count; i++)
+  for (uint32_t i = 0; i < HTTP2_STREAM_HASH_SIZE; i++)
     {
-      if (conn->streams[i] != NULL)
+      struct SocketHTTP2_Stream *s;
+      for (s = conn->streams[i]; s != NULL; s = s->hash_next)
         {
-          SocketHTTP2_StreamState state = conn->streams[i]->state;
+          SocketHTTP2_StreamState state = s->state;
           if (state != HTTP2_STREAM_STATE_IDLE
               && state != HTTP2_STREAM_STATE_CLOSED)
             {

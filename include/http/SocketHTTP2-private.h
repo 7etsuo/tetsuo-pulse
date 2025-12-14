@@ -329,7 +329,16 @@ struct SocketHTTP2_Conn
   /* Timeouts (milliseconds) */
   int settings_timeout_ms;
   int ping_timeout_ms;
-  int idle_timeout_ms;
+  int idle_timeout_ms;  /**< Idle connection timeout in ms (0 = disabled) */
+
+  /** Monotonic time (ms) when last SETTINGS frame sent, expecting ACK */
+  int64_t settings_sent_time;
+
+  /** Monotonic time (ms) when PING frame sent, expecting ACK */
+  int64_t ping_sent_time;
+
+  /** Monotonic time (ms) of last frame recv or send activity */
+  int64_t last_activity_time;
 
   /* RST_STREAM rate limiting (CVE-2023-44487 protection) */
   uint32_t rst_count_in_window; /**< RST_STREAM count in current window */
