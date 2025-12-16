@@ -25,7 +25,30 @@
  * - Settings negotiation and GOAWAY handling
  * - Stream hashing and lifecycle with push support
  *
- * Follows RFC 9113 with extensions for security and performance.
+ * ## Header Validation and Error Handling
+ *
+ * HTTP/2 header validation strictly follows RFC 9113 requirements:
+ *
+ * ### Pseudo-Header Validation
+ * - **Order**: Pseudo-headers (:*) must appear before regular headers
+ * - **Duplication**: Pseudo-headers must not be duplicated
+ * - **Required (Requests)**: :method, :scheme/:authority, :path
+ * - **Required (Responses)**: :status
+ * - **:protocol**: Requires SETTINGS_ENABLE_CONNECT_PROTOCOL=1
+ *
+ * ### Forbidden Headers
+ * Connection-specific headers are forbidden per RFC 9113 Section 8.2.2:
+ * - connection, keep-alive, proxy-authenticate, proxy-authorization
+ * - te (except "trailers"), trailers, transfer-encoding, upgrade
+ *
+ * ### TE Header Restrictions
+ * - TE header may only contain "trailers" value in HTTP/2
+ * - Empty TE header is equivalent to "trailers"
+ *
+ * ### Error Code Mapping
+ * - **Stream Errors (RST_STREAM)**: Request header validation failures
+ * - **Connection Errors (GOAWAY)**: Response header validation failures,
+ *   protocol violations
  *
  * @see SocketHTTP2.h Public HTTP/2 connection and stream API.
  * @see SocketHPACK.h Header compression (HPACK) module.
@@ -96,6 +119,7 @@ static const unsigned char HTTP2_CLIENT_PREFACE[HTTP2_PREFACE_SIZE]
 #define SETTINGS_IDX_INITIAL_WINDOW_SIZE 3
 #define SETTINGS_IDX_MAX_FRAME_SIZE 4
 #define SETTINGS_IDX_MAX_HEADER_LIST_SIZE 5
+#define SETTINGS_IDX_ENABLE_CONNECT_PROTOCOL 6
 
 /**
  * @brief Fixed size of a SETTINGS frame parameter entry.

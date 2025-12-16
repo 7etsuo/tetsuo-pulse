@@ -324,9 +324,35 @@ typedef enum
  *
  * Standard error codes used in RST_STREAM and GOAWAY frames.
  * HTTP2_NO_ERROR indicates graceful closure without error.
+ *
+ * ## Error Code Usage in Header Validation
+ *
+ * | Error Code | Used For | Frame Type |
+ * |------------|----------|------------|
+ * | HTTP2_PROTOCOL_ERROR | Invalid pseudo-headers, forbidden headers, TE restrictions | RST_STREAM (requests), GOAWAY (responses) |
+ * | HTTP2_COMPRESSION_ERROR | HPACK decompression failures | GOAWAY |
+ * | HTTP2_ENHANCE_YOUR_CALM | Header list size exceeded, CONTINUATION flood | RST_STREAM |
+ *
+ * ## Header Validation Errors
+ *
+ * ### Stream-Level Errors (RST_STREAM)
+ * - Pseudo-header order violations (pseudo after regular headers)
+ * - Duplicate pseudo-headers
+ * - Missing required pseudo-headers in requests
+ * - Invalid :method values
+ * - Forbidden connection-specific headers in requests
+ * - TE header with invalid values in requests
+ *
+ * ### Connection-Level Errors (GOAWAY)
+ * - Missing :status in responses
+ * - Invalid :status values in responses
+ * - Unknown pseudo-headers
+ * - Protocol violations in header processing
+ *
  * @see SocketHTTP2_error_string() for descriptive strings.
  * @see SocketHTTP2_Conn_goaway() to send GOAWAY with error code.
  * @see SocketHTTP2_Stream_close() to send RST_STREAM.
+ * @see http2_validate_headers() for validation implementation.
  */
 typedef enum
 {
@@ -366,11 +392,12 @@ typedef enum
   HTTP2_SETTINGS_MAX_CONCURRENT_STREAMS = 0x3,
   HTTP2_SETTINGS_INITIAL_WINDOW_SIZE = 0x4,
   HTTP2_SETTINGS_MAX_FRAME_SIZE = 0x5,
-  HTTP2_SETTINGS_MAX_HEADER_LIST_SIZE = 0x6
+  HTTP2_SETTINGS_MAX_HEADER_LIST_SIZE = 0x6,
+  HTTP2_SETTINGS_ENABLE_CONNECT_PROTOCOL = 0x8
 } SocketHTTP2_SettingsId;
 
 /** Number of defined settings */
-#define HTTP2_SETTINGS_COUNT 6
+#define HTTP2_SETTINGS_COUNT 7
 
 /* ============================================================================
  * Stream States (RFC 9113 Section 5.1)
@@ -474,6 +501,8 @@ typedef struct
   uint32_t initial_window_size;
   uint32_t max_frame_size;
   uint32_t max_header_list_size;
+  uint32_t enable_connect_protocol; /**< Enable extended CONNECT methods
+                                       (SETTINGS_ENABLE_CONNECT_PROTOCOL) */
 
   /* Connection-level flow control */
   uint32_t connection_window_size;
@@ -553,6 +582,7 @@ typedef struct
  * - Initial window size: 65535 bytes
  * - Max frame size: 16384 bytes
  * - Max header list size: 16KB
+ * - Enable connect protocol: 0 (RFC 8441 extended CONNECT disabled)
  * - Stream open rate: 100/sec with 10 burst (DoS protection)
  * - Stream close rate: 200/sec with 20 burst
  * - Connection window: 1MB

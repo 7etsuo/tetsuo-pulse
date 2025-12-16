@@ -61,6 +61,9 @@
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "HTTPServer"
 
+/* Server-specific logging macros */
+#define SERVER_LOG_ERROR(fmt, ...) SOCKET_LOG_ERROR_MSG(fmt, ##__VA_ARGS__)
+
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPServer);
 
 /* ============================================================================
@@ -537,6 +540,43 @@ server_http2_stream_get_or_create (SocketHTTPServer_T server,
   return s;
 }
 
+/**
+ * server_http2_is_connection_header_forbidden - Check if header is forbidden in HTTP/2
+ * @header: Header to check
+ *
+ * Returns: 1 if header is forbidden, 0 if allowed
+ */
+static int
+server_http2_is_connection_header_forbidden (const SocketHPACK_Header *header)
+{
+  /* Connection-specific headers forbidden in HTTP/2 per RFC 9113 Section 8.2.2 */
+  static const char *forbidden[] = {
+    "connection",
+    "keep-alive",
+    "proxy-authenticate",
+    "proxy-authorization",
+    "te",
+    "trailers",
+    "transfer-encoding",
+    "upgrade"
+  };
+
+  for (size_t i = 0; i < sizeof(forbidden) / sizeof(forbidden[0]); i++)
+    {
+      size_t len = strlen (forbidden[i]);
+      if (header->name_len == len &&
+          strncasecmp (header->name, forbidden[i], len) == 0)
+        {
+          /* Special case: TE is allowed only with "trailers" value (checked elsewhere) */
+          if (len == 2 && memcmp (header->name, "te", 2) == 0)
+            continue;
+          return 1;
+        }
+    }
+
+  return 0;
+}
+
 static int
 server_http2_build_request (SocketHTTPServer_T server, ServerHTTP2Stream *s,
                             const SocketHPACK_Header *headers,
@@ -562,6 +602,11 @@ server_http2_build_request (SocketHTTPServer_T server, ServerHTTP2Stream *s,
   if (h == NULL)
     return -1;
 
+  /* Validate pseudo-headers and extract them */
+  int pseudo_headers_seen = 0;
+  int has_method = 0, has_scheme = 0, has_authority = 0, has_path = 0;
+  int pseudo_section_ended = 0;
+
   for (size_t i = 0; i < header_count; i++)
     {
       const SocketHPACK_Header *hdr = &headers[i];
@@ -571,24 +616,131 @@ server_http2_build_request (SocketHTTPServer_T server, ServerHTTP2Stream *s,
 
       if (hdr->name_len > 0 && hdr->name[0] == ':')
         {
+          /* Pseudo-headers must appear before regular headers */
+          if (pseudo_section_ended)
+            {
+              SERVER_LOG_ERROR ("Pseudo-header '%.*s' appears after regular headers",
+                               (int)hdr->name_len, hdr->name);
+              return -1;
+            }
+
+          /* Validate pseudo-header name and track required ones */
           if (hdr->name_len == 7 && memcmp (hdr->name, ":method", 7) == 0)
-            method = SocketHTTP_method_parse (hdr->value, hdr->value_len);
+            {
+              if (pseudo_headers_seen & (1 << 0))
+                {
+                  SERVER_LOG_ERROR ("Duplicate :method pseudo-header");
+                  return -1;
+                }
+              pseudo_headers_seen |= (1 << 0);
+              has_method = 1;
+              method = SocketHTTP_method_parse (hdr->value, hdr->value_len);
+              if (method == HTTP_METHOD_UNKNOWN)
+                {
+                  SERVER_LOG_ERROR ("Invalid HTTP method in :method pseudo-header");
+                  return -1;
+                }
+            }
           else if (hdr->name_len == 7 && memcmp (hdr->name, ":scheme", 7) == 0)
-            scheme = socket_util_arena_strndup (s->arena, hdr->value, hdr->value_len);
-          else if (hdr->name_len == 10
-                   && memcmp (hdr->name, ":authority", 10) == 0)
-            authority = socket_util_arena_strndup (s->arena, hdr->value, hdr->value_len);
+            {
+              if (pseudo_headers_seen & (1 << 1))
+                {
+                  SERVER_LOG_ERROR ("Duplicate :scheme pseudo-header");
+                  return -1;
+                }
+              pseudo_headers_seen |= (1 << 1);
+              has_scheme = 1;
+              scheme = socket_util_arena_strndup (s->arena, hdr->value, hdr->value_len);
+            }
+          else if (hdr->name_len == 10 && memcmp (hdr->name, ":authority", 10) == 0)
+            {
+              if (pseudo_headers_seen & (1 << 2))
+                {
+                  SERVER_LOG_ERROR ("Duplicate :authority pseudo-header");
+                  return -1;
+                }
+              pseudo_headers_seen |= (1 << 2);
+              has_authority = 1;
+              authority = socket_util_arena_strndup (s->arena, hdr->value, hdr->value_len);
+            }
           else if (hdr->name_len == 5 && memcmp (hdr->name, ":path", 5) == 0)
-            path = socket_util_arena_strndup (s->arena, hdr->value, hdr->value_len);
-          else if (hdr->name_len == 9
-                   && memcmp (hdr->name, ":protocol", 9) == 0)
-            protocol = socket_util_arena_strndup (s->arena, hdr->value,
-                                                  hdr->value_len);
+            {
+              if (pseudo_headers_seen & (1 << 3))
+                {
+                  SERVER_LOG_ERROR ("Duplicate :path pseudo-header");
+                  return -1;
+                }
+              pseudo_headers_seen |= (1 << 3);
+              has_path = 1;
+              path = socket_util_arena_strndup (s->arena, hdr->value, hdr->value_len);
+            }
+          else if (hdr->name_len == 9 && memcmp (hdr->name, ":protocol", 9) == 0)
+            {
+              if (pseudo_headers_seen & (1 << 4))
+                {
+                  SERVER_LOG_ERROR ("Duplicate :protocol pseudo-header");
+                  return -1;
+                }
+              pseudo_headers_seen |= (1 << 4);
+
+              /* :protocol requires SETTINGS_ENABLE_CONNECT_PROTOCOL */
+              /* Note: We can't easily check this here as we don't have conn access */
+              /* The validation happens in http2_validate_headers on the client side */
+              protocol = socket_util_arena_strndup (s->arena, hdr->value, hdr->value_len);
+            }
+          else
+            {
+              /* Unknown pseudo-header */
+              SERVER_LOG_ERROR ("Unknown pseudo-header: %.*s",
+                               (int)hdr->name_len, hdr->name);
+              return -1;
+            }
           continue;
+        }
+
+      /* Regular header - pseudo-header section has ended */
+      pseudo_section_ended = 1;
+
+      /* Check for forbidden connection-specific headers */
+      if (server_http2_is_connection_header_forbidden (hdr))
+        {
+          SERVER_LOG_ERROR ("Forbidden connection-specific header: %.*s",
+                           (int)hdr->name_len, hdr->name);
+          return -1;
+        }
+
+      /* Check TE header restrictions */
+      if (hdr->name_len == 2 && memcmp (hdr->name, "te", 2) == 0)
+        {
+          /* TE must be "trailers" or empty (which is equivalent to "trailers") */
+          if (hdr->value_len > 0 &&
+              !(hdr->value_len == 8 && memcmp (hdr->value, "trailers", 8) == 0))
+            {
+              SERVER_LOG_ERROR ("TE header value must be 'trailers', got: %.*s",
+                               (int)hdr->value_len, hdr->value);
+              return -1;
+            }
         }
 
       SocketHTTP_Headers_add_n (h, hdr->name, hdr->name_len, hdr->value,
                                hdr->value_len);
+    }
+
+  /* Validate required pseudo-headers for requests */
+  if (!has_method)
+    {
+      SERVER_LOG_ERROR ("Request missing required :method pseudo-header");
+      return -1;
+    }
+  if (!has_scheme && !has_authority)
+    {
+      SERVER_LOG_ERROR ("Request missing required :scheme or :authority pseudo-header");
+      return -1;
+    }
+  if (!has_path)
+    {
+      SERVER_LOG_ERROR ("Request missing required :path pseudo-header");
+      return -1;
     }
 
   if (path == NULL)

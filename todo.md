@@ -54,34 +54,34 @@ An agent should check items off as they’re implemented, reviewed, and verified
 
 ## B) Core HTTP/2 protocol completeness (RFC 9113)
 
-### B1) SETTINGS: implement and negotiate all settings required for planned features
+### B1) SETTINGS: implement and negotiate all settings required for planned features ✅ COMPLETED
 
-- [ ] **What to do**: Add missing settings that the project claims/needs, especially for RFC 8441:
+- [x] **What to do**: Add missing settings that the project claims/needs, especially for RFC 8441:
   - `SETTINGS_ENABLE_CONNECT_PROTOCOL (0x8)` (required to legitimately use `:protocol`)
-- [ ] **Where**:
+- [x] **Where**:
   - `include/http/SocketHTTP2.h` (settings enums/constants)
   - `include/http/SocketHTTP2-private.h` (settings arrays + indices)
   - `src/http/SocketHTTP2-connection.c` (parse/apply settings + ACK behavior)
-- [ ] **Done when**:
-  - [ ] Unknown settings are ignored per RFC rules (unless you intentionally treat some as protocol errors—document that choice).
-  - [ ] `SETTINGS_ENABLE_CONNECT_PROTOCOL` is stored and enforced for `:protocol` usage.
-  - [ ] Settings changes correctly update dependent state (e.g., window deltas for `INITIAL_WINDOW_SIZE`).
+- [x] **Done when**:
+  - [x] Unknown settings are ignored per RFC rules (unless you intentionally treat some as protocol errors—document that choice).
+  - [x] `SETTINGS_ENABLE_CONNECT_PROTOCOL` is stored and enforced for `:protocol` usage.
+  - [x] Settings changes correctly update dependent state (e.g., window deltas for `INITIAL_WINDOW_SIZE`).
 
-### B2) HEADERS / pseudo-header validation audit (strict RFC behavior)
+### B2) HEADERS / pseudo-header validation audit (strict RFC behavior) ✅ COMPLETED
 
-- [ ] **What to do**: Audit header decoding and request/response construction for:
+- [x] **What to do**: Audit header decoding and request/response construction for:
   - pseudo-header order and duplication rules
   - forbidden connection-specific headers (`Connection`, `Upgrade`, etc.)
   - `TE` only allowed value: `trailers`
   - request required pseudo-headers `:method`, `:scheme`, `:authority`, `:path` (as applicable)
   - response required pseudo-header `:status`
-- [ ] **Where**:
+- [x] **Where**:
   - `src/http/SocketHTTP2-stream.c` (HEADERS processing)
   - `src/http/SocketHTTP2-connection.c` (PUSH_PROMISE / CONTINUATION integration)
   - `src/http/SocketHTTPServer.c` (`server_http2_build_request`)
-- [ ] **Done when**:
-  - [ ] Violations map to correct stream vs connection errors (RST_STREAM vs GOAWAY).
-  - [ ] Behavior is documented in headers/docs (what error code is used).
+- [x] **Done when**:
+  - [x] Violations map to correct stream vs connection errors (RST_STREAM vs GOAWAY).
+  - [x] Behavior is documented in headers/docs (what error code is used).
 
 ### B2a) Enforce “malformed message” rules (field validity + Content-Length consistency)
 

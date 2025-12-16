@@ -205,6 +205,7 @@ SocketHTTP2_config_defaults (SocketHTTP2_Config *config, SocketHTTP2_Role role)
   config->initial_window_size = SOCKETHTTP2_DEFAULT_INITIAL_WINDOW_SIZE;
   config->max_frame_size = SOCKETHTTP2_DEFAULT_MAX_FRAME_SIZE;
   config->max_header_list_size = SOCKETHTTP2_DEFAULT_MAX_HEADER_LIST_SIZE;
+  config->enable_connect_protocol = 0; /* RFC 8441: disabled by default */
 
   /* Security defaults for rate limiting */
   config->max_stream_open_rate = 100; /* streams/sec */
@@ -249,6 +250,8 @@ init_local_settings (SocketHTTP2_Conn_T conn, const SocketHTTP2_Config *config)
   conn->local_settings[SETTINGS_IDX_MAX_FRAME_SIZE] = config->max_frame_size;
   conn->local_settings[SETTINGS_IDX_MAX_HEADER_LIST_SIZE]
       = config->max_header_list_size;
+  conn->local_settings[SETTINGS_IDX_ENABLE_CONNECT_PROTOCOL]
+      = config->enable_connect_protocol;
 }
 
 static const uint32_t peer_setting_defaults[HTTP2_SETTINGS_COUNT] = {
@@ -257,7 +260,8 @@ static const uint32_t peer_setting_defaults[HTTP2_SETTINGS_COUNT] = {
   UINT32_MAX, /* SETTINGS_MAX_CONCURRENT_STREAMS: unbounded initially */
   SOCKETHTTP2_DEFAULT_INITIAL_WINDOW_SIZE,
   SOCKETHTTP2_DEFAULT_MAX_FRAME_SIZE,
-  UINT32_MAX /* SETTINGS_MAX_HEADER_LIST_SIZE: unbounded initially */
+  UINT32_MAX, /* SETTINGS_MAX_HEADER_LIST_SIZE: unbounded initially */
+  0           /* SETTINGS_ENABLE_CONNECT_PROTOCOL: disabled by default */
 };
 
 /**
@@ -1392,11 +1396,49 @@ validate_and_apply_setting (SocketHTTP2_Conn_T conn, uint16_t id,
     case HTTP2_SETTINGS_HEADER_TABLE_SIZE:
       SocketHPACK_Decoder_set_table_size (conn->decoder, value);
       break;
+
+    case HTTP2_SETTINGS_ENABLE_CONNECT_PROTOCOL:
+      /* RFC 8441: Extended CONNECT - value must be 0 or 1 */
+      if (value > 1)
+        {
+          http2_send_connection_error (conn, HTTP2_PROTOCOL_ERROR);
+          return -1;
+        }
+      break;
     }
 
-  /* Store setting */
-  if (id >= 1 && id <= HTTP2_SETTINGS_COUNT)
-    conn->peer_settings[id - 1] = value;
+  /* Store setting - map setting ID to array index */
+  size_t array_index = SIZE_MAX;
+  switch (id)
+    {
+    case HTTP2_SETTINGS_HEADER_TABLE_SIZE:
+      array_index = SETTINGS_IDX_HEADER_TABLE_SIZE;
+      break;
+    case HTTP2_SETTINGS_ENABLE_PUSH:
+      array_index = SETTINGS_IDX_ENABLE_PUSH;
+      break;
+    case HTTP2_SETTINGS_MAX_CONCURRENT_STREAMS:
+      array_index = SETTINGS_IDX_MAX_CONCURRENT_STREAMS;
+      break;
+    case HTTP2_SETTINGS_INITIAL_WINDOW_SIZE:
+      array_index = SETTINGS_IDX_INITIAL_WINDOW_SIZE;
+      break;
+    case HTTP2_SETTINGS_MAX_FRAME_SIZE:
+      array_index = SETTINGS_IDX_MAX_FRAME_SIZE;
+      break;
+    case HTTP2_SETTINGS_MAX_HEADER_LIST_SIZE:
+      array_index = SETTINGS_IDX_MAX_HEADER_LIST_SIZE;
+      break;
+    case HTTP2_SETTINGS_ENABLE_CONNECT_PROTOCOL:
+      array_index = SETTINGS_IDX_ENABLE_CONNECT_PROTOCOL;
+      break;
+    default:
+      /* Unknown settings are ignored per RFC 9113 Section 6.5.2 */
+      break;
+    }
+
+  if (array_index != SIZE_MAX)
+    conn->peer_settings[array_index] = value;
 
   return 0;
 }
