@@ -110,16 +110,16 @@ An agent should check items off as they’re implemented, reviewed, and verified
 - [x] **Done when**:
   - [x] Multiple Cookie fields become a single effective Cookie string with `"; "` delimiters when exposed to apps/HTTP/1.1 translation paths.
 
-### B3) CONTINUATION sequencing and interleaving rules (hard guarantee)
+### B3) CONTINUATION sequencing and interleaving rules (hard guarantee) ✅ COMPLETED
 
-- [ ] **What to do**: Confirm that while `expecting_continuation` is set:
+- [x] **What to do**: Confirm that while `expecting_continuation` is set:
   - only CONTINUATION frames for the same stream are accepted
   - interleaving other frames is rejected per RFC
   - max continuation frames and max header list size limits are enforced (DoS)
-- [ ] **Where**: `src/http/SocketHTTP2-connection.c`, `src/http/SocketHTTP2-stream.c`, `include/http/SocketHTTP2-private.h`
-- [ ] **Done when**:
-  - [ ] Violations produce correct GOAWAY/stream reset behavior.
-  - [ ] No state leaks across streams after END_HEADERS.
+- [x] **Where**: `src/http/SocketHTTP2-connection.c`, `src/http/SocketHTTP2-stream.c`, `include/http/SocketHTTP2-private.h`
+- [x] **Done when**:
+  - [x] Violations produce correct GOAWAY/stream reset behavior.
+  - [x] No state leaks across streams after END_HEADERS.
 
 ### B4) GOAWAY correctness (last stream id + stream creation rules)
 
