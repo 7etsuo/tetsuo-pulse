@@ -1200,6 +1200,94 @@ protocol_error:
   return -1;
 }
 
+/**
+ * http2_recombine_cookie_headers - Recombine multiple cookie headers per RFC 9113 §8.2.3
+ * @arena: Arena for allocations
+ * @headers: Pointer to headers array (modified in place)
+ * @count: Pointer to header count (modified if headers are recombined)
+ *
+ * If multiple "cookie" fields are present, they are concatenated using "; " delimiter
+ * and replaced with a single cookie header. This ensures proper HTTP/1.1 compatibility.
+ *
+ * Returns: 0 on success, -1 on allocation failure
+ */
+static int
+http2_recombine_cookie_headers (Arena_T arena, SocketHPACK_Header *headers, size_t *count)
+{
+  size_t cookie_count = 0;
+  size_t first_cookie_idx = (size_t)-1;
+  size_t total_value_len = 0;
+
+  /* Find all cookie headers */
+  for (size_t i = 0; i < *count; i++)
+    {
+      const SocketHPACK_Header *h = &headers[i];
+      if (h->name_len == 6 && memcmp (h->name, "cookie", 6) == 0)
+        {
+          cookie_count++;
+          if (first_cookie_idx == (size_t)-1)
+            first_cookie_idx = i;
+
+          /* Account for value length + "; " delimiter (except for last) */
+          total_value_len += h->value_len;
+          if (cookie_count > 1)
+            total_value_len += 2; /* "; " */
+        }
+    }
+
+  /* If only one or zero cookie headers, nothing to do */
+  if (cookie_count <= 1)
+    return 0;
+
+  /* Allocate space for combined cookie value */
+  char *combined_value = Arena_alloc (arena, total_value_len + 1, __FILE__, __LINE__);
+  if (combined_value == NULL)
+    return -1;
+
+  /* Build combined cookie value */
+  size_t offset = 0;
+  size_t processed_cookies = 0;
+  for (size_t i = 0; i < *count; i++)
+    {
+      const SocketHPACK_Header *h = &headers[i];
+      if (h->name_len == 6 && memcmp (h->name, "cookie", 6) == 0)
+        {
+          /* Copy value */
+          memcpy (combined_value + offset, h->value, h->value_len);
+          offset += h->value_len;
+
+          processed_cookies++;
+          if (processed_cookies < cookie_count)
+            {
+              /* Add delimiter (except for last cookie) */
+              memcpy (combined_value + offset, "; ", 2);
+              offset += 2;
+            }
+        }
+    }
+
+  /* Update the first cookie header with combined value */
+  headers[first_cookie_idx].value = combined_value;
+  headers[first_cookie_idx].value_len = total_value_len;
+
+  /* Remove subsequent cookie headers by shifting array */
+  size_t new_count = 0;
+  for (size_t i = 0; i < *count; i++)
+    {
+      const SocketHPACK_Header *h = &headers[i];
+      if (!(h->name_len == 6 && memcmp (h->name, "cookie", 6) == 0 && i > first_cookie_idx))
+        {
+          /* Keep this header */
+          if (new_count != i)
+            headers[new_count] = *h;
+          new_count++;
+        }
+    }
+
+  *count = new_count;
+  return 0;
+}
+
 http2_decode_headers (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
                       const unsigned char *block, size_t len)
 {
@@ -1223,6 +1311,13 @@ http2_decode_headers (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
   /* Validate headers according to RFC 9113 */
   if (http2_validate_headers (conn, stream, decoded_headers, header_count) < 0)
     return -1;
+
+  /* Recombine multiple cookie headers per RFC 9113 §8.2.3 */
+  if (http2_recombine_cookie_headers (conn->arena, decoded_headers, &header_count) < 0)
+    {
+      SOCKET_LOG_ERROR_MSG ("failed to recombine cookie headers");
+      return -1;
+    }
 
   /* Store decoded headers based on whether this is initial headers or trailers
    */

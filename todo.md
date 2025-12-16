@@ -100,15 +100,15 @@ An agent should check items off as they’re implemented, reviewed, and verified
   - [x] `content-length` mismatch with DATA bytes is detected and handled as malformed.
   - [x] Malformed messages do not get forwarded/accepted by higher layers.
 
-### B2b) Cookie header splitting/recombination rules (RFC 9113 §8.2.3)
+### B2b) Cookie header splitting/recombination rules (RFC 9113 §8.2.3) ✅ COMPLETED
 
-- [ ] **What to do**: Support Cookie header splitting for better compression, and ensure correct recombination when translating out of HTTP/2:
+- [x] **What to do**: Support Cookie header splitting for better compression, and ensure correct recombination when translating out of HTTP/2:
   - If multiple `cookie` fields are received after decompression, they MUST be concatenated into one octet string using delimiter `"; "` before passing to a non-HTTP/2 context (e.g., HTTP/1.1, generic app server expectations).
-- [ ] **Where**:
+- [x] **Where**:
   - `src/http/SocketHTTP2-stream.c` (header decode normalization)
   - `src/http/SocketHTTPServer.c` / `src/http/SocketHTTPClient.c` (request/response object construction)
-- [ ] **Done when**:
-  - [ ] Multiple Cookie fields become a single effective Cookie string with `"; "` delimiters when exposed to apps/HTTP/1.1 translation paths.
+- [x] **Done when**:
+  - [x] Multiple Cookie fields become a single effective Cookie string with `"; "` delimiters when exposed to apps/HTTP/1.1 translation paths.
 
 ### B3) CONTINUATION sequencing and interleaving rules (hard guarantee)
 
