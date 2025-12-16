@@ -83,22 +83,22 @@ An agent should check items off as they’re implemented, reviewed, and verified
   - [x] Violations map to correct stream vs connection errors (RST_STREAM vs GOAWAY).
   - [x] Behavior is documented in headers/docs (what error code is used).
 
-### B2a) Enforce “malformed message” rules (field validity + Content-Length consistency)
+### B2a) Enforce "malformed message" rules (field validity + Content-Length consistency) ✅ COMPLETED
 
-- [ ] **What to do**: Implement/verify strict malformed-message handling per RFC 9113:
+- [x] **What to do**: Implement/verify strict malformed-message handling per RFC 9113:
   - Field names MUST be lowercase when constructing HTTP/2 messages.
   - Minimal field name/value validation (reject prohibited chars like NUL/CR/LF; reject leading/trailing whitespace in values).
-  - Treat messages as malformed when `content-length` doesn’t match total DATA payload length (subject to HTTP semantics like 204/304/HEAD).
+  - Treat messages as malformed when `content-length` doesn't match total DATA payload length (subject to HTTP semantics like 204/304/HEAD).
   - Ensure malformed requests/responses are treated as **stream errors** of type `PROTOCOL_ERROR` (and optionally send an HTTP 400 for malformed requests when possible).
-- [ ] **Where**:
+- [x] **Where**:
   - `src/http/SocketHTTP2-stream.c` (decoded header validation, trailer validation)
   - `src/http/SocketHTTP2-connection.c` (error mapping: stream vs connection)
   - `src/http/SocketHTTPServer.c` / `src/http/SocketHTTPClient.c` (semantic translation, Content-Length accounting)
-- [ ] **Done when**:
-  - [ ] Uppercase field names are rejected (malformed).
-  - [ ] Prohibited characters (NUL/CR/LF) and invalid whitespace boundaries are rejected (malformed).
-  - [ ] `content-length` mismatch with DATA bytes is detected and handled as malformed.
-  - [ ] Malformed messages do not get forwarded/accepted by higher layers.
+- [x] **Done when**:
+  - [x] Uppercase field names are rejected (malformed).
+  - [x] Prohibited characters (NUL/CR/LF) and invalid whitespace boundaries are rejected (malformed).
+  - [x] `content-length` mismatch with DATA bytes is detected and handled as malformed.
+  - [x] Malformed messages do not get forwarded/accepted by higher layers.
 
 ### B2b) Cookie header splitting/recombination rules (RFC 9113 §8.2.3)
 

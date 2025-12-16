@@ -199,6 +199,10 @@ init_stream_fields (SocketHTTP2_Stream_T stream, const SocketHTTP2_Conn_T conn,
   stream->recv_window = conn->initial_recv_window;
   stream->pending_end_stream = 0;
   stream->is_push_stream = 0;
+
+  /* Initialize Content-Length validation fields */
+  stream->expected_content_length = -1; /* No Content-Length specified */
+  stream->total_data_received = 0;
 }
 
 /**
@@ -1029,6 +1033,53 @@ static int http2_validate_headers (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T
           /* Regular header - pseudo-header section has ended */
           pseudo_section_ended = 1;
 
+          /* Malformed message validation per RFC 9113 Section 8.2.1 */
+
+          /* Field names MUST be lowercase when constructing HTTP/2 messages */
+          for (size_t j = 0; j < h->name_len; j++)
+            {
+              if (h->name[j] >= 'A' && h->name[j] <= 'Z')
+                {
+                  SOCKET_LOG_ERROR_MSG ("Uppercase character in field name: %.*s",
+                                       (int)h->name_len, h->name);
+                  goto protocol_error;
+                }
+            }
+
+          /* Reject prohibited characters in field names (NUL/CR/LF) */
+          for (size_t j = 0; j < h->name_len; j++)
+            {
+              if (h->name[j] == '\0' || h->name[j] == '\r' || h->name[j] == '\n')
+                {
+                  SOCKET_LOG_ERROR_MSG ("Prohibited character in field name: %.*s",
+                                       (int)h->name_len, h->name);
+                  goto protocol_error;
+                }
+            }
+
+          /* Reject prohibited characters in field values (NUL/CR/LF) */
+          for (size_t j = 0; j < h->value_len; j++)
+            {
+              if (h->value[j] == '\0' || h->value[j] == '\r' || h->value[j] == '\n')
+                {
+                  SOCKET_LOG_ERROR_MSG ("Prohibited character in field value: %.*s",
+                                       (int)h->name_len, h->name);
+                  goto protocol_error;
+                }
+            }
+
+          /* Reject leading/trailing whitespace in field values */
+          if (h->value_len > 0)
+            {
+              if (h->value[0] == ' ' || h->value[0] == '\t' ||
+                  h->value[h->value_len - 1] == ' ' || h->value[h->value_len - 1] == '\t')
+                {
+                  SOCKET_LOG_ERROR_MSG ("Leading/trailing whitespace in field value: %.*s",
+                                       (int)h->name_len, h->name);
+                  goto protocol_error;
+                }
+            }
+
           /* Check for forbidden connection-specific headers */
           if (http2_is_connection_header_forbidden (h))
             {
@@ -1056,6 +1107,50 @@ static int http2_validate_headers (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T
                   goto protocol_error;
                 }
             }
+        }
+    }
+
+  /* Extract Content-Length for validation */
+  for (size_t i = 0; i < count; i++)
+    {
+      const SocketHPACK_Header *h = &headers[i];
+      if (h->name_len == 14 && memcmp (h->name, "content-length", 14) == 0)
+        {
+          /* Parse Content-Length value */
+          if (h->value_len == 0)
+            {
+              /* Empty Content-Length is invalid */
+              SOCKET_LOG_ERROR_MSG ("Empty Content-Length header");
+              goto protocol_error;
+            }
+
+          int64_t cl = 0;
+          int valid = 1;
+          for (size_t j = 0; j < h->value_len; j++)
+            {
+              if (h->value[j] < '0' || h->value[j] > '9')
+                {
+                  valid = 0;
+                  break;
+                }
+              if (cl > (INT64_MAX - (h->value[j] - '0')) / 10)
+                {
+                  valid = 0; /* Overflow */
+                  break;
+                }
+              cl = cl * 10 + (h->value[j] - '0');
+            }
+
+          if (!valid)
+            {
+              SOCKET_LOG_ERROR_MSG ("Invalid Content-Length value: %.*s",
+                                   (int)h->value_len, h->value);
+              goto protocol_error;
+            }
+
+          /* Store Content-Length for validation */
+          stream->expected_content_length = cl;
+          break; /* Only use first Content-Length header */
         }
     }
 
@@ -1914,8 +2009,24 @@ http2_process_data (SocketHTTP2_Conn_T conn,
   size_t written = SocketBuf_write (stream->recv_buf, padded.data, padded.len);
   assert (written == padded.len); /* Should be full after space check */
 
+  /* Track total DATA bytes received for Content-Length validation */
+  stream->total_data_received += padded.len;
+
   if (header->flags & HTTP2_FLAG_END_STREAM)
-    stream->end_stream_received = 1;
+    {
+      stream->end_stream_received = 1;
+
+      /* Validate Content-Length when END_STREAM is received */
+      if (stream->expected_content_length >= 0 &&
+          (size_t)stream->expected_content_length != stream->total_data_received)
+        {
+          SOCKET_LOG_ERROR_MSG ("Content-Length mismatch: expected %" PRId64 " bytes, "
+                               "received %zu bytes",
+                               stream->expected_content_length, stream->total_data_received);
+          http2_send_stream_error (conn, stream->id, HTTP2_PROTOCOL_ERROR);
+          return -1;
+        }
+    }
 
   http2_emit_stream_event (conn, stream, HTTP2_EVENT_DATA_RECEIVED);
   return 0;

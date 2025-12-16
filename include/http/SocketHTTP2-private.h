@@ -222,6 +222,10 @@ struct SocketHTTP2_Stream
   /* Received data buffer */
   SocketBuf_T recv_buf; /**< Received DATA frames */
 
+  /* Content-Length validation */
+  int64_t expected_content_length; /**< Expected Content-Length from headers (-1 if not set) */
+  size_t total_data_received;      /**< Total DATA payload bytes received */
+
   /* Header state */
   int headers_received;    /**< Headers have been received */
   int end_stream_received; /**< END_STREAM flag received */
