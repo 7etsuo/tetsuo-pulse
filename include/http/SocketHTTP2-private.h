@@ -234,6 +234,7 @@ struct SocketHTTP2_Stream
                               split headers */
   int is_push_stream;    /**< 1 if this is a server push stream, 0 otherwise */
   int trailers_received; /**< Trailers received */
+  int rst_received;      /**< RST_STREAM received (prevents sending RST_STREAM in response) */
 
   /* Decoded headers storage */
   SocketHPACK_Header

@@ -639,6 +639,24 @@ http2_send_stream_error (SocketHTTP2_Conn_T conn, uint32_t stream_id,
   if (!conn)
     return;
 
+  /* RFC 9113: MUST NOT send RST_STREAM in response to RST_STREAM */
+  if (error_code == HTTP2_NO_ERROR)
+    {
+      /* This is not an error, but a normal RST_STREAM - always allow */
+    }
+  else
+    {
+      /* Check if we received RST_STREAM for this stream */
+      SocketHTTP2_Stream_T stream = http2_stream_lookup (conn, stream_id);
+      if (stream && stream->rst_received)
+        {
+          SOCKET_LOG_DEBUG_MSG ("Not sending RST_STREAM for stream %u: "
+                               "already received RST_STREAM (RFC 9113)",
+                               stream_id);
+          return;
+        }
+    }
+
   header.length = HTTP2_WINDOW_UPDATE_PAYLOAD_SIZE;
   header.type = HTTP2_FRAME_RST_STREAM;
   header.flags = 0;

@@ -1734,6 +1734,8 @@ http2_process_rst_stream (SocketHTTP2_Conn_T conn,
   SocketHTTP2_Stream_T stream = http2_stream_lookup (conn, header->stream_id);
   if (stream)
     {
+      /* RFC 9113: MUST NOT send RST_STREAM in response to RST_STREAM */
+      stream->rst_received = 1;
       stream->state = HTTP2_STREAM_STATE_CLOSED;
       http2_emit_stream_event (conn, stream, HTTP2_EVENT_STREAM_RESET);
     }

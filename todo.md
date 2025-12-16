@@ -121,29 +121,29 @@ An agent should check items off as they’re implemented, reviewed, and verified
   - [x] Violations produce correct GOAWAY/stream reset behavior.
   - [x] No state leaks across streams after END_HEADERS.
 
-### B4) GOAWAY correctness (last stream id + stream creation rules)
+### B4) GOAWAY correctness (last stream id + stream creation rules) ✅ COMPLETED
 
-- [ ] **What to do**:
+- [x] **What to do**:
   - Ensure `last_peer_stream_id` / `max_peer_stream_id` are correctly maintained.
   - Ensure no new streams are created beyond peer GOAWAY limit.
   - Ensure graceful close behavior does not break in-flight streams.
-- [ ] **Where**: `src/http/SocketHTTP2-connection.c`, `src/http/SocketHTTP2-stream.c`
-- [ ] **Done when**:
-  - [ ] New streams after GOAWAY are rejected correctly.
-  - [ ] Connection closes cleanly once in-flight work completes or timeout triggers.
+- [x] **Where**: `src/http/SocketHTTP2-connection.c`, `src/http/SocketHTTP2-stream.c`
+- [x] **Done when**:
+  - [x] New streams after GOAWAY are rejected correctly.
+  - [x] Connection closes cleanly once in-flight work completes or timeout triggers.
 
-### B4a) Stream state machine compliance (allowed frames per state; correct error level)
+### B4a) Stream state machine compliance (allowed frames per state; correct error level) ✅ COMPLETED
 
-- [ ] **What to do**: Validate the stream state machine enforces RFC 9113 frame-type constraints per state (IDLE/RESERVED/OPEN/HALF_CLOSED/CLOSED):
+- [x] **What to do**: Validate the stream state machine enforces RFC 9113 frame-type constraints per state (IDLE/RESERVED/OPEN/HALF_CLOSED/CLOSED):
   - In `reserved (local)` / `reserved (remote)` states, enforce allowed send/receive frame types and treat invalid frame types as **connection errors** of type `PROTOCOL_ERROR` where required.
   - In `half-closed (local)`, ensure only `WINDOW_UPDATE`, `PRIORITY`, and `RST_STREAM` are sent; other outbound frames are blocked.
   - Ensure protocol loop avoidance: MUST NOT send `RST_STREAM` in response to `RST_STREAM`.
-- [ ] **Where**:
+- [x] **Where**:
   - `src/http/SocketHTTP2-stream.c` (state transitions + per-frame handlers)
   - `src/http/SocketHTTP2-connection.c` (error mapping: stream vs connection, GOAWAY vs RST_STREAM)
-- [ ] **Done when**:
-  - [ ] Frame-type/state violations reliably map to the correct stream/connection error behavior.
-  - [ ] No RST_STREAM ping-pong loops are possible.
+- [x] **Done when**:
+  - [x] Frame-type/state violations reliably map to the correct stream/connection error behavior.
+  - [x] No RST_STREAM ping-pong loops are possible.
 
 ### B5) Frame validation audit (length/flags/stream-id constraints)
 

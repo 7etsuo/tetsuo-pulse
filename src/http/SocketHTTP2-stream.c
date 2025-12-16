@@ -199,6 +199,7 @@ init_stream_fields (SocketHTTP2_Stream_T stream, const SocketHTTP2_Conn_T conn,
   stream->recv_window = conn->initial_recv_window;
   stream->pending_end_stream = 0;
   stream->is_push_stream = 0;
+  stream->rst_received = 0;
 
   /* Initialize Content-Length validation fields */
   stream->expected_content_length = -1; /* No Content-Length specified */
@@ -2204,6 +2205,10 @@ validate_new_stream_id (SocketHTTP2_Conn_T conn, uint32_t stream_id)
   if (stream_id <= conn->last_peer_stream_id)
     return -1;
 
+  /* After receiving GOAWAY, reject streams beyond the peer's last stream ID */
+  if (conn->goaway_received && stream_id > conn->max_peer_stream_id)
+    return -1;
+
   return 0;
 }
 
@@ -2317,8 +2322,19 @@ http2_process_headers (SocketHTTP2_Conn_T conn,
                                    0);
   if (error != HTTP2_NO_ERROR)
     {
-      http2_send_stream_error (conn, header->stream_id, error);
-      return 0;
+      /* RFC 9113: PROTOCOL_ERROR in reserved states is a connection error */
+      if (error == HTTP2_PROTOCOL_ERROR &&
+          (stream->state == HTTP2_STREAM_STATE_RESERVED_LOCAL ||
+           stream->state == HTTP2_STREAM_STATE_RESERVED_REMOTE))
+        {
+          http2_send_connection_error (conn, HTTP2_PROTOCOL_ERROR);
+          return -1;
+        }
+      else
+        {
+          http2_send_stream_error (conn, header->stream_id, error);
+          return 0;
+        }
     }
 
   if (extract_headers_payload (header, payload, &header_block,
