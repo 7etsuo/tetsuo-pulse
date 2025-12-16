@@ -1219,7 +1219,7 @@ http2_recombine_cookie_headers (Arena_T arena, SocketHPACK_Header *headers, size
   size_t first_cookie_idx = (size_t)-1;
   size_t total_value_len = 0;
 
-  /* Find all cookie headers */
+  /* Find all cookie headers and count them */
   for (size_t i = 0; i < *count; i++)
     {
       const SocketHPACK_Header *h = &headers[i];
@@ -1228,12 +1228,23 @@ http2_recombine_cookie_headers (Arena_T arena, SocketHPACK_Header *headers, size
           cookie_count++;
           if (first_cookie_idx == (size_t)-1)
             first_cookie_idx = i;
-
-          /* Account for value length + "; " delimiter (except for last) */
-          total_value_len += h->value_len;
-          if (cookie_count > 1)
-            total_value_len += 2; /* "; " */
         }
+    }
+
+  /* Calculate total size needed: sum of all values + delimiters between them */
+  if (cookie_count > 0)
+    {
+      for (size_t i = 0; i < *count; i++)
+        {
+          const SocketHPACK_Header *h = &headers[i];
+          if (h->name_len == 6 && memcmp (h->name, "cookie", 6) == 0)
+            {
+              total_value_len += h->value_len;
+            }
+        }
+      /* Add delimiters between cookies (N-1 delimiters for N cookies) */
+      if (cookie_count > 1)
+        total_value_len += 2 * (cookie_count - 1);
     }
 
   /* If only one or zero cookie headers, nothing to do */
