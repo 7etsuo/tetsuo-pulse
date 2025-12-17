@@ -526,6 +526,10 @@ http2_frame_validate (SocketHTTP2_Conn_T conn,
   if (conn->expecting_continuation && header->type != HTTP2_FRAME_CONTINUATION)
     return HTTP2_PROTOCOL_ERROR;
 
+  /* RFC 9113 §5.5: Extension frames MUST NOT appear in the middle of a field block */
+  if (conn->expecting_continuation && header->type > HTTP2_FRAME_CONTINUATION)
+    return HTTP2_PROTOCOL_ERROR;
+
   /* Ignore unknown frame types (RFC 9113 Section 4.1) */
   if (header->type > HTTP2_FRAME_CONTINUATION)
     return HTTP2_NO_ERROR;

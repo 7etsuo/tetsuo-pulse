@@ -163,19 +163,19 @@ An agent should check items off as they’re implemented, reviewed, and verified
 - [x] **Done when**:
   - [x] PRIORITY frames never crash/kill connection; they’re ignored with optional debug logs.
 
-### B7) Extension points: unknown frames + extensible elements (RFC 9113 §5.5)
+### B7) Extension points: unknown frames + extensible elements (RFC 9113 §5.5) ✅ COMPLETED
 
-- [ ] **What to do**:
+- [x] **What to do**:
   - Implementations MUST ignore unknown/unsupported values in extensible protocol elements.
   - Implementations MUST discard frames with unknown or unsupported frame types.
-  - Extension frames MUST NOT appear “in the middle of a field block”; if they do, treat as a **connection error** of type `PROTOCOL_ERROR`.
-- [ ] **Where**:
+  - Extension frames MUST NOT appear "in the middle of a field block"; if they do, treat as a **connection error** of type `PROTOCOL_ERROR`.
+- [x] **Where**:
   - `src/http/SocketHTTP2-frame.c` (frame parsing/validation surface)
   - `src/http/SocketHTTP2-connection.c` (dispatch rules + header-block/continuation state machine)
-- [ ] **Done when**:
-  - [ ] Unknown frame types are safely discarded without corrupting state.
-  - [ ] Unknown/unsupported values in extensible elements are ignored.
-  - [ ] Extension frames during an in-progress header block reliably produce connection `PROTOCOL_ERROR`.
+- [x] **Done when**:
+  - [x] Unknown frame types are safely discarded without corrupting state.
+  - [x] Unknown/unsupported values in extensible elements are ignored.
+  - [x] Extension frames during an in-progress header block reliably produce connection `PROTOCOL_ERROR`.
 
 ---
 
