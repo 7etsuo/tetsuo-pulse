@@ -224,44 +224,44 @@ An agent should check items off as they’re implemented, reviewed, and verified
 
 ### D1) Confirm server push is RFC-correct and not leaky
 
-- [ ] **What to do**: Validate server push behavior:
+- [x] **What to do**: Validate server push behavior:
   - honor peer `ENABLE_PUSH`
   - correct promised stream id allocation and state (`RESERVED_LOCAL`)
   - correct request pseudo-headers for pushed resources
-- [ ] **Where**:
+- [x] **Where**:
   - `src/http/SocketHTTPServer.c` (push API surface)
   - `src/http/SocketHTTP2-stream.c` (push promise)
-- [ ] **Done when**:
-  - [ ] Push works only when enabled and never violates stream id parity rules.
+- [x] **Done when**:
+  - [x] Push works only when enabled and never violates stream id parity rules.
 
 ### D2) Ensure HTTP/2 request/response trailers are RFC-correct
 
-- [ ] **What to do**:
+- [x] **What to do**:
   - Confirm request trailers are captured and exposed consistently.
   - Confirm response trailer API only emits trailers at end-of-stream and rejects pseudo-headers in trailers.
-- [ ] **Where**:
+- [x] **Where**:
   - `src/http/SocketHTTPServer.c`
   - `include/http/SocketHTTPServer.h` (`SocketHTTPServer_Request_trailers`, `SocketHTTPServer_Request_trailer`)
-- [ ] **Done when**:
-  - [ ] Trailers cannot be sent before headers/body ordering rules allow.
-  - [ ] Trailers are visible to handlers (request) and delivered to peers (response).
+- [x] **Done when**:
+  - [x] Trailers cannot be sent before headers/body ordering rules allow.
+  - [x] Trailers are visible to handlers (request) and delivered to peers (response).
 
-### D3) h2c + prior-knowledge are “real”, not hacky (verify edge cases)
+### D3) h2c + prior-knowledge are "real", not hacky (verify edge cases)
 
-- [ ] **What to do**: Audit upgrade and prior-knowledge entry:
+- [x] **What to do**: Audit upgrade and prior-knowledge entry:
   - Ensure HTTP/1 parser does not consume bytes incorrectly before upgrade.
   - Ensure buffered bytes are correctly transferred into HTTP/2 recv buffer.
   - Ensure 101 response is correct for h2c upgrade.
-- [ ] **Where**: `src/http/SocketHTTPServer.c`, `src/http/SocketHTTP2-connection.c`
-- [ ] **Done when**:
-  - [ ] Upgrade and prior-knowledge work with real clients without dropped bytes.
-  - [ ] h2c upgrade request requires **exactly one** `HTTP2-Settings` header and `Connection: Upgrade, HTTP2-Settings` (server MUST NOT upgrade otherwise).
-  - [ ] Server MUST ignore `"h2"` tokens in the HTTP/1.1 `Upgrade` header (h2 is TLS-only).
-  - [ ] Server MUST NOT send `HTTP2-Settings` header field in responses; SETTINGS are sent as HTTP/2 frames.
-  - [ ] HTTP2-Settings decoding uses base64url rules (token68; no trailing `=`).
-  - [ ] After sending 101, server’s first HTTP/2 frame is SETTINGS; client then sends the HTTP/2 connection preface (including SETTINGS).
-  - [ ] If the HTTP/1.1 upgrade request contains a payload body, it is fully received before switching to HTTP/2 frames (client-side requirement; server-side robustness).
-  - [ ] Behavior is documented in `docs/HTTP2-SERVER.md`.
+- [x] **Where**: `src/http/SocketHTTPServer.c`, `src/http/SocketHTTP2-connection.c`
+- [x] **Done when**:
+  - [x] Upgrade and prior-knowledge work with real clients without dropped bytes.
+  - [x] h2c upgrade request requires **exactly one** `HTTP2-Settings` header and `Connection: Upgrade, HTTP2-Settings` (server MUST NOT upgrade otherwise).
+  - [x] Server MUST ignore `"h2"` tokens in the HTTP/1.1 `Upgrade` header (h2 is TLS-only).
+  - [x] Server MUST NOT send `HTTP2-Settings` header field in responses; SETTINGS are sent as HTTP/2 frames.
+  - [x] HTTP2-Settings decoding uses base64url rules (token68; no trailing `=`).
+  - [x] After sending 101, server’s first HTTP/2 frame is SETTINGS; client then sends the HTTP/2 connection preface (including SETTINGS).
+  - [x] If the HTTP/1.1 upgrade request contains a payload body, it is fully received before switching to HTTP/2 frames (client-side requirement; server-side robustness).
+  - [x] Behavior is documented in `docs/HTTP2-SERVER.md`.
 
 ---
 
