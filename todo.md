@@ -145,23 +145,23 @@ An agent should check items off as they’re implemented, reviewed, and verified
   - [x] Frame-type/state violations reliably map to the correct stream/connection error behavior.
   - [x] No RST_STREAM ping-pong loops are possible.
 
-### B5) Frame validation audit (length/flags/stream-id constraints)
+### B5) Frame validation audit (length/flags/stream-id constraints) ✅ COMPLETED
 
-- [ ] **What to do**: Confirm `http2_frame_validate()` enforces RFC constraints for each frame type:
+- [x] **What to do**: Confirm `http2_frame_validate()` enforces RFC constraints for each frame type:
   - Stream 0 vs non-zero requirements
   - Fixed-length frames (PING=8, RST=4, WINDOW_UPDATE=4, etc.)
   - Invalid flags rejection
   - `MAX_FRAME_SIZE` enforcement for inbound frames
-- [ ] **Where**: `src/http/SocketHTTP2-frame.c`
-- [ ] **Done when**:
-  - [ ] Any deviation triggers correct `HTTP2_FRAME_SIZE_ERROR` / `HTTP2_PROTOCOL_ERROR` mapping.
+- [x] **Where**: `src/http/SocketHTTP2-frame.c`
+- [x] **Done when**:
+  - [x] Any deviation triggers correct `HTTP2_FRAME_SIZE_ERROR` / `HTTP2_PROTOCOL_ERROR` mapping.
 
-### B6) PRIORITY is deprecated (RFC 9113) — keep behavior explicit
+### B6) PRIORITY is deprecated (RFC 9113) — keep behavior explicit ✅ COMPLETED
 
-- [ ] **What to do**: Keep ignoring PRIORITY frames (allowed), but ensure validation does not create false protocol errors.
-- [ ] **Where**: `src/http/SocketHTTP2-priority.c`, `src/http/SocketHTTP2-frame.c`
-- [ ] **Done when**:
-  - [ ] PRIORITY frames never crash/kill connection; they’re ignored with optional debug logs.
+- [x] **What to do**: Keep ignoring PRIORITY frames (allowed), but ensure validation does not create false protocol errors.
+- [x] **Where**: `src/http/SocketHTTP2-priority.c`, `src/http/SocketHTTP2-frame.c`
+- [x] **Done when**:
+  - [x] PRIORITY frames never crash/kill connection; they’re ignored with optional debug logs.
 
 ### B7) Extension points: unknown frames + extensible elements (RFC 9113 §5.5)
 
