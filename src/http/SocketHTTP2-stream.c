@@ -907,7 +907,7 @@ static int http2_validate_headers (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T
                                    const SocketHPACK_Header *headers, size_t count,
                                    int is_trailer)
 {
-  int is_request = (conn->role == HTTP2_ROLE_CLIENT ? 0 : 1); /* Client receives responses */
+  int is_request = (conn->role == HTTP2_ROLE_CLIENT ? 1 : 0); /* Client sends requests */
   int pseudo_headers_seen = 0;
   int has_method = 0, has_scheme = 0, has_authority = 0, has_path = 0, has_status = 0;
   int has_te = 0;
