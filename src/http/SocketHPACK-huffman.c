@@ -768,6 +768,7 @@ SocketHPACK_huffman_encode (const unsigned char *input, size_t input_len,
  *
  * Decodes Huffman-encoded data using bit-by-bit approach.
  * Validates EOS padding per RFC 7541 requirements.
+ * Rejects EOS symbols in the middle of strings per RFC 7541 §5.2.
  *
  * Returns: Number of bytes decoded, or -1 on error
  */
@@ -806,7 +807,17 @@ SocketHPACK_huffman_decode (const unsigned char *input, size_t input_len,
       if (decode_result < 0)
         return -1; /* Buffer overflow or other error */
 
-      if (decode_result == 0)
+      if (decode_result == 2)
+        {
+          /* EOS symbol found - only allowed at end with valid padding */
+          if (bits_avail <= HUFFMAN_MAX_PAD_BITS
+              && is_valid_eos_padding (bits, bits_avail))
+            break; /* Valid EOS at end of stream */
+
+          /* EOS in middle of string is an error (RFC 7541 §5.2) */
+          return -1;
+        }
+      else if (decode_result == 0)
         {
           /* No match - check if valid padding at end */
           if (bits_avail <= HUFFMAN_MAX_PAD_BITS

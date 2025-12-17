@@ -467,8 +467,9 @@ SocketHPACK_Encoder_new (const SocketHPACK_EncoderConfig *config,
   encoder = ALLOC (arena, sizeof (*encoder));
 
   encoder->table = SocketHPACK_Table_new (config->max_table_size, arena);
-  encoder->pending_table_size = 0;
-  encoder->pending_table_size_update = 0;
+  encoder->pending_table_sizes[0] = 0;
+  encoder->pending_table_sizes[1] = 0;
+  encoder->pending_table_size_count = 0;
   encoder->huffman_encode = config->huffman_encode;
   encoder->use_indexing = config->use_indexing;
   encoder->arena = arena;
@@ -491,8 +492,45 @@ SocketHPACK_Encoder_set_table_size (SocketHPACK_Encoder_T encoder,
                                     size_t max_size)
 {
   assert (encoder != NULL);
-  encoder->pending_table_size = max_size;
-  encoder->pending_table_size_update = 1;
+
+  /* RFC 7541 §4.2: Multiple size changes between header blocks
+   * Emit smallest size first, then final size (at most two updates) */
+  if (encoder->pending_table_size_count == 0)
+    {
+      /* First pending update */
+      encoder->pending_table_sizes[0] = max_size;
+      encoder->pending_table_size_count = 1;
+    }
+  else if (encoder->pending_table_size_count == 1)
+    {
+      /* Second pending update - order smallest first, then final */
+      if (max_size < encoder->pending_table_sizes[0])
+        {
+          encoder->pending_table_sizes[1] = encoder->pending_table_sizes[0];
+          encoder->pending_table_sizes[0] = max_size;
+        }
+      else
+        {
+          encoder->pending_table_sizes[1] = max_size;
+        }
+      encoder->pending_table_size_count = 2;
+    }
+  else
+    {
+      /* Already have 2 pending - replace final with new size */
+      if (max_size < encoder->pending_table_sizes[0])
+        {
+          /* New size is smaller than first - replace both */
+          encoder->pending_table_sizes[0] = max_size;
+          encoder->pending_table_sizes[1] = 0; /* Only one update needed */
+          encoder->pending_table_size_count = 1;
+        }
+      else
+        {
+          /* Replace final size */
+          encoder->pending_table_sizes[1] = max_size;
+        }
+    }
 }
 
 SocketHPACK_Table_T
@@ -589,24 +627,39 @@ hpack_encode_table_size_update (size_t max_size, unsigned char *output,
 }
 
 /**
- * Emit pending dynamic table size update at start of header block.
+ * Emit pending dynamic table size updates at start of header block.
+ * RFC 7541 §4.2: Emit smallest size first, then final size (at most two updates).
  */
 static ssize_t
-emit_pending_table_update (SocketHPACK_Encoder_T encoder,
-                           unsigned char *output, size_t output_size)
+emit_pending_table_updates (SocketHPACK_Encoder_T encoder,
+                            unsigned char *output, size_t output_size)
 {
-  if (!encoder->pending_table_size_update)
-    return 0;
+  size_t pos = 0;
+  int i;
 
-  ssize_t encoded = hpack_encode_table_size_update (
-      encoder->pending_table_size, output, output_size);
-  if (encoded < 0)
-    return -1;
+  for (i = 0; i < encoder->pending_table_size_count; i++)
+    {
+      size_t update_size = encoder->pending_table_sizes[i];
+      if (update_size == 0)
+        continue; /* Skip empty slots */
 
-  SocketHPACK_Table_set_max_size (encoder->table, encoder->pending_table_size);
-  encoder->pending_table_size_update = 0;
+      ssize_t encoded = hpack_encode_table_size_update (
+          update_size, output + pos, output_size - pos);
+      if (encoded < 0)
+        return -1;
 
-  return encoded;
+      pos += (size_t)encoded;
+    }
+
+  /* Apply the final size to the table */
+  if (encoder->pending_table_size_count > 0)
+    {
+      size_t final_size = encoder->pending_table_sizes[encoder->pending_table_size_count - 1];
+      SocketHPACK_Table_set_max_size (encoder->table, final_size);
+    }
+
+  encoder->pending_table_size_count = 0;
+  return (ssize_t)pos;
 }
 
 /**
@@ -693,8 +746,8 @@ SocketHPACK_Encoder_encode (SocketHPACK_Encoder_T encoder,
   if ((headers == NULL && count > 0) || (output == NULL && output_size > 0))
     return -1;
 
-  /* Emit pending table size update */
-  encoded = emit_pending_table_update (encoder, output, output_size);
+  /* Emit pending table size updates */
+  encoded = emit_pending_table_updates (encoder, output, output_size);
   if (encoded < 0)
     return -1;
   pos = (size_t)encoded;
@@ -1055,8 +1108,10 @@ SocketHPACK_Decoder_decode (SocketHPACK_Decoder_T decoder,
         return result;
 
       /* Store header */
-      if (hdr_count < max_headers)
-        headers[hdr_count] = header;
+      if (hdr_count >= max_headers)
+        return HPACK_ERROR_LIST_SIZE; /* Too many headers */
+
+      headers[hdr_count] = header;
       hdr_count++;
     }
 

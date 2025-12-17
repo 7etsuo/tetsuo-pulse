@@ -181,42 +181,42 @@ An agent should check items off as they’re implemented, reviewed, and verified
 
 ## C) HPACK completeness (RFC 7541)
 
-### C1) HPACK security and limits audit (“HPACK bombs”)
+### C1) HPACK security and limits audit ("HPACK bombs") ✅ COMPLETED
 
-- [ ] **What to do**: Ensure header decompression is protected:
+- [x] **What to do**: Ensure header decompression is protected:
   - max header list size enforcement
   - dynamic table size updates via SETTINGS_HEADER_TABLE_SIZE
   - bounded number of decoded headers
-- [ ] **Where**:
+- [x] **Where**:
   - `src/http/SocketHPACK*.c`
   - `src/http/SocketHTTP2-stream.c` (decode integration)
   - `include/http/SocketHTTP2.h` (limits constants like `SOCKETHTTP2_MAX_DECODED_HEADERS`)
-- [ ] **Done when**:
-  - [ ] Oversized/abusive inputs trigger `HTTP2_COMPRESSION_ERROR` or appropriate stream/conn error.
-  - [ ] No unbounded allocations from peer-controlled header blocks.
+- [x] **Done when**:
+  - [x] Oversized/abusive inputs trigger `HTTP2_COMPRESSION_ERROR` or appropriate stream/conn error.
+  - [x] No unbounded allocations from peer-controlled header blocks.
 
-### C2) HPACK dynamic table size update ordering (RFC 7541 §4.2) + bounds (RFC 7541 §6.3)
+### C2) HPACK dynamic table size update ordering (RFC 7541 §4.2) + bounds (RFC 7541 §6.3) ✅ COMPLETED
 
-- [ ] **What to do**:
+- [x] **What to do**:
   - When SETTINGS changes `SETTINGS_HEADER_TABLE_SIZE`, ensure the encoder signals the new max via a dynamic table size update at the **start** of the first header block after the change (in HTTP/2: after SETTINGS is acknowledged).
   - If max size changes multiple times between header blocks, ensure signaling rules are followed (smallest then final; at most two updates).
-  - Treat a dynamic table size update exceeding the peer’s acknowledged limit as a decoding error.
-- [ ] **Where**:
+  - Treat a dynamic table size update exceeding the peer's acknowledged limit as a decoding error.
+- [x] **Where**:
   - `src/http/SocketHPACK*.c` (encoder/decoder table size update handling)
   - `src/http/SocketHTTP2-stream.c` (integration around SETTINGS ACK and first header block)
-- [ ] **Done when**:
-  - [ ] Table size updates are emitted in the correct place/order and never violate the negotiated maximum.
-  - [ ] Violations reliably map to `HTTP2_COMPRESSION_ERROR`.
+- [x] **Done when**:
+  - [x] Table size updates are emitted in the correct place/order and never violate the negotiated maximum.
+  - [x] Violations reliably map to `HTTP2_COMPRESSION_ERROR`.
 
-### C3) HPACK Huffman strict decoding (RFC 7541 §5.2)
+### C3) HPACK Huffman strict decoding (RFC 7541 §5.2) ✅ COMPLETED
 
-- [ ] **What to do**: Ensure the HPACK decoder rejects invalid Huffman encodings:
+- [x] **What to do**: Ensure the HPACK decoder rejects invalid Huffman encodings:
   - Padding longer than 7 bits is a decoding error.
-  - Padding that isn’t a prefix of the EOS code is a decoding error.
+  - Padding that isn't a prefix of the EOS code is a decoding error.
   - A Huffman-encoded string containing the EOS symbol is a decoding error.
-- [ ] **Where**: `src/http/SocketHPACK*.c`
-- [ ] **Done when**:
-  - [ ] Invalid Huffman inputs reliably produce decoding errors and are surfaced as `HTTP2_COMPRESSION_ERROR`.
+- [x] **Where**: `src/http/SocketHPACK*.c`
+- [x] **Done when**:
+  - [x] Invalid Huffman inputs reliably produce decoding errors and are surfaced as `HTTP2_COMPRESSION_ERROR`.
 
 ---
 

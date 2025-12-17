@@ -229,9 +229,8 @@ struct SocketHPACK_Encoder
   SocketHPACK_Table_T
       table; /**< Dynamic table shared with decoder if symmetric */
   size_t
-      pending_table_size; /**< Pending dynamic table size update (0 if none) */
-  int pending_table_size_update; /**< Flag indicating a table size update is
-                                    queued */
+      pending_table_sizes[2]; /**< Pending dynamic table size updates (RFC 7541 §4.2) */
+  int pending_table_size_count; /**< Number of pending table size updates (0-2) */
   int huffman_encode; /**< Flag to enable Huffman coding for strings */
   int use_indexing;   /**< Flag to enable dynamic table indexing */
   Arena_T arena;      /**< Arena for temporary allocations during encoding */
