@@ -895,15 +895,17 @@ http2_is_connection_header_forbidden (const SocketHPACK_Header *header)
  * @stream: Stream receiving headers
  * @headers: Decoded headers array
  * @count: Number of headers
+ * @is_trailer: Non-zero if these are trailer headers (RFC 9113 §8.1.3)
  *
  * Validates pseudo-header order, duplication, forbidden headers, and required
  * pseudo-headers per RFC 9113 Section 8.3 (for requests) and Section 8.1.2.4
- * (for responses).
+ * (for responses). Pseudo-headers are forbidden in trailers per §8.1.3.
  *
  * Returns: 0 on valid headers, -1 on validation failure (error sent)
  */
 static int http2_validate_headers (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
-                                   const SocketHPACK_Header *headers, size_t count)
+                                   const SocketHPACK_Header *headers, size_t count,
+                                   int is_trailer)
 {
   int is_request = (conn->role == HTTP2_ROLE_CLIENT ? 0 : 1); /* Client receives responses */
   int pseudo_headers_seen = 0;
@@ -920,6 +922,14 @@ static int http2_validate_headers (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T
       /* Check for pseudo-header */
       if (h->name_len > 0 && h->name[0] == ':')
         {
+          /* RFC 9113 §8.1.3: Pseudo-header fields MUST NOT appear in trailer fields */
+          if (is_trailer)
+            {
+              SOCKET_LOG_ERROR_MSG ("Pseudo-header '%.*s' not allowed in trailers",
+                                   (int)h->name_len, h->name);
+              goto protocol_error;
+            }
+
           /* Pseudo-headers must appear before regular headers */
           if (pseudo_section_ended)
             {
@@ -1321,7 +1331,8 @@ http2_decode_headers (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
   assert (header_count <= HTTP2_MAX_DECODED_HEADERS);
 
   /* Validate headers according to RFC 9113 */
-  if (http2_validate_headers (conn, stream, decoded_headers, header_count) < 0)
+  int is_trailer = stream->end_stream_received;
+  if (http2_validate_headers (conn, stream, decoded_headers, header_count, is_trailer) < 0)
     return -1;
 
   /* Recombine multiple cookie headers per RFC 9113 §8.2.3 */
