@@ -82,6 +82,21 @@
   while (0)
 
 /**
+ * REQUIRE_VALID_FLAGS - Validate frame flags are valid for frame type
+ * @header: Frame header to validate
+ * @valid_flags: Bitmask of allowed flags for this frame type
+ *
+ * Returns HTTP2_PROTOCOL_ERROR if any invalid flags are set.
+ */
+#define REQUIRE_VALID_FLAGS(header, valid_flags)                             \
+  do                                                                          \
+    {                                                                         \
+      if (((header)->flags & ~(valid_flags)) != 0)                            \
+        return HTTP2_PROTOCOL_ERROR;                                          \
+    }                                                                         \
+  while (0)
+
+/**
  * STRING_LOOKUP - Lookup string from static array with bounds check
  * @array: Static string array
  * @count: Number of elements in array
@@ -300,6 +315,7 @@ SocketHTTP2_frame_header_serialize (const SocketHTTP2_FrameHeader *header,
  * validate_data_frame - Validate DATA frame (Section 6.1)
  *
  * DATA frames MUST be associated with a stream (stream_id != 0).
+ * Valid flags: END_STREAM (0x01), PADDED (0x08).
  */
 static SocketHTTP2_ErrorCode
 validate_data_frame (const SocketHTTP2_FrameHeader *header,
@@ -307,6 +323,7 @@ validate_data_frame (const SocketHTTP2_FrameHeader *header,
 {
   (void)conn;
   REQUIRE_STREAM (header);
+  REQUIRE_VALID_FLAGS (header, HTTP2_FLAG_END_STREAM | HTTP2_FLAG_PADDED);
   return HTTP2_NO_ERROR;
 }
 
@@ -314,6 +331,8 @@ validate_data_frame (const SocketHTTP2_FrameHeader *header,
  * validate_headers_frame - Validate HEADERS frame (Section 6.2)
  *
  * HEADERS frames MUST be associated with a stream (stream_id != 0).
+ * Valid flags: END_STREAM (0x01), END_HEADERS (0x04), PADDED (0x08),
+ * PRIORITY (0x20).
  */
 static SocketHTTP2_ErrorCode
 validate_headers_frame (const SocketHTTP2_FrameHeader *header,
@@ -321,6 +340,8 @@ validate_headers_frame (const SocketHTTP2_FrameHeader *header,
 {
   (void)conn;
   REQUIRE_STREAM (header);
+  REQUIRE_VALID_FLAGS (header, HTTP2_FLAG_END_STREAM | HTTP2_FLAG_END_HEADERS
+                       | HTTP2_FLAG_PADDED | HTTP2_FLAG_PRIORITY);
   return HTTP2_NO_ERROR;
 }
 
@@ -328,6 +349,7 @@ validate_headers_frame (const SocketHTTP2_FrameHeader *header,
  * validate_priority_frame - Validate PRIORITY frame (Section 6.3)
  *
  * PRIORITY has fixed 5-byte payload and requires stream association.
+ * Valid flags: None (PRIORITY frames must not have any flags set).
  */
 static SocketHTTP2_ErrorCode
 validate_priority_frame (const SocketHTTP2_FrameHeader *header,
@@ -336,6 +358,7 @@ validate_priority_frame (const SocketHTTP2_FrameHeader *header,
   (void)conn;
   REQUIRE_STREAM (header);
   REQUIRE_EXACT_LENGTH (header, HTTP2_PRIORITY_PAYLOAD_SIZE);
+  REQUIRE_VALID_FLAGS (header, 0);  /* No flags allowed */
   return HTTP2_NO_ERROR;
 }
 
@@ -343,6 +366,7 @@ validate_priority_frame (const SocketHTTP2_FrameHeader *header,
  * validate_rst_stream_frame - Validate RST_STREAM frame (Section 6.4)
  *
  * RST_STREAM has fixed 4-byte payload and requires stream association.
+ * Valid flags: None (RST_STREAM frames must not have any flags set).
  */
 static SocketHTTP2_ErrorCode
 validate_rst_stream_frame (const SocketHTTP2_FrameHeader *header,
@@ -351,6 +375,7 @@ validate_rst_stream_frame (const SocketHTTP2_FrameHeader *header,
   (void)conn;
   REQUIRE_STREAM (header);
   REQUIRE_EXACT_LENGTH (header, HTTP2_WINDOW_UPDATE_PAYLOAD_SIZE);
+  REQUIRE_VALID_FLAGS (header, 0);  /* No flags allowed */
   return HTTP2_NO_ERROR;
 }
 
@@ -359,6 +384,7 @@ validate_rst_stream_frame (const SocketHTTP2_FrameHeader *header,
  *
  * SETTINGS applies to connection, not stream. ACK must have empty payload.
  * Non-ACK payload must be divisible by 6 (each setting is 6 bytes).
+ * Valid flags: ACK (0x01).
  */
 static SocketHTTP2_ErrorCode
 validate_settings_frame (const SocketHTTP2_FrameHeader *header,
@@ -366,6 +392,7 @@ validate_settings_frame (const SocketHTTP2_FrameHeader *header,
 {
   (void)conn;
   REQUIRE_CONNECTION_ONLY (header);
+  REQUIRE_VALID_FLAGS (header, HTTP2_FLAG_ACK);
 
   if ((header->flags & HTTP2_FLAG_ACK)
           ? (header->length != 0)
@@ -380,12 +407,14 @@ validate_settings_frame (const SocketHTTP2_FrameHeader *header,
  *
  * PUSH_PROMISE requires stream association. Clients must have push enabled.
  * Servers must not receive PUSH_PROMISE.
+ * Valid flags: END_HEADERS (0x04), PADDED (0x08).
  */
 static SocketHTTP2_ErrorCode
 validate_push_promise_frame (const SocketHTTP2_FrameHeader *header,
                              SocketHTTP2_Conn_T conn)
 {
   REQUIRE_STREAM (header);
+  REQUIRE_VALID_FLAGS (header, HTTP2_FLAG_END_HEADERS | HTTP2_FLAG_PADDED);
 
   /* Servers never receive PUSH_PROMISE; clients error if push disabled */
   if (conn->role == HTTP2_ROLE_SERVER
@@ -400,6 +429,7 @@ validate_push_promise_frame (const SocketHTTP2_FrameHeader *header,
  * validate_ping_frame - Validate PING frame (Section 6.7)
  *
  * PING has fixed 8-byte payload and must be connection-level (stream_id=0).
+ * Valid flags: ACK (0x01).
  */
 static SocketHTTP2_ErrorCode
 validate_ping_frame (const SocketHTTP2_FrameHeader *header,
@@ -408,6 +438,7 @@ validate_ping_frame (const SocketHTTP2_FrameHeader *header,
   (void)conn;
   REQUIRE_CONNECTION_ONLY (header);
   REQUIRE_EXACT_LENGTH (header, HTTP2_PING_PAYLOAD_SIZE);
+  REQUIRE_VALID_FLAGS (header, HTTP2_FLAG_ACK);
   return HTTP2_NO_ERROR;
 }
 
@@ -415,6 +446,7 @@ validate_ping_frame (const SocketHTTP2_FrameHeader *header,
  * validate_goaway_frame - Validate GOAWAY frame (Section 6.8)
  *
  * GOAWAY must be connection-level with minimum 8-byte payload.
+ * Valid flags: None (GOAWAY frames must not have any flags set).
  */
 static SocketHTTP2_ErrorCode
 validate_goaway_frame (const SocketHTTP2_FrameHeader *header,
@@ -422,6 +454,7 @@ validate_goaway_frame (const SocketHTTP2_FrameHeader *header,
 {
   (void)conn;
   REQUIRE_CONNECTION_ONLY (header);
+  REQUIRE_VALID_FLAGS (header, 0);  /* No flags allowed */
   if (header->length < HTTP2_GOAWAY_HEADER_SIZE)
     return HTTP2_FRAME_SIZE_ERROR;
   return HTTP2_NO_ERROR;
@@ -431,6 +464,7 @@ validate_goaway_frame (const SocketHTTP2_FrameHeader *header,
  * validate_window_update_frame - Validate WINDOW_UPDATE frame (Section 6.9)
  *
  * WINDOW_UPDATE has fixed 4-byte payload. Can be connection or stream level.
+ * Valid flags: None (WINDOW_UPDATE frames must not have any flags set).
  */
 static SocketHTTP2_ErrorCode
 validate_window_update_frame (const SocketHTTP2_FrameHeader *header,
@@ -438,6 +472,7 @@ validate_window_update_frame (const SocketHTTP2_FrameHeader *header,
 {
   (void)conn;
   REQUIRE_EXACT_LENGTH (header, HTTP2_WINDOW_UPDATE_PAYLOAD_SIZE);
+  REQUIRE_VALID_FLAGS (header, 0);  /* No flags allowed */
   return HTTP2_NO_ERROR;
 }
 
@@ -446,12 +481,14 @@ validate_window_update_frame (const SocketHTTP2_FrameHeader *header,
  *
  * CONTINUATION must follow HEADERS/PUSH_PROMISE/CONTINUATION and must be
  * for the same stream that started the header block.
+ * Valid flags: END_HEADERS (0x04).
  */
 static SocketHTTP2_ErrorCode
 validate_continuation_frame (const SocketHTTP2_FrameHeader *header,
                              SocketHTTP2_Conn_T conn)
 {
   REQUIRE_STREAM (header);
+  REQUIRE_VALID_FLAGS (header, HTTP2_FLAG_END_HEADERS);
 
   if (!conn->expecting_continuation
       || conn->continuation_stream_id != header->stream_id)
