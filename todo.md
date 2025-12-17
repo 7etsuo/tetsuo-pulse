@@ -269,12 +269,12 @@ An agent should check items off as they’re implemented, reviewed, and verified
 
 ### E1) Stop claiming “automatic HTTP/2 negotiation” unless it’s true
 
-- [ ] **What to do**: Align documentation with reality OR implement negotiation fully.
+- [ ] **What to do**: implement negotiation fully.
 - [ ] **Where**:
   - `docs/HTTP.md` currently claims “automatic protocol negotiation”
   - `src/http/SocketHTTPClient-pool.c` explicitly says “HTTP/2 stream multiplexing (future)”
 - [ ] **Done when**:
-  - [ ] Either docs are corrected to “HTTP/2 WIP” OR the client actually negotiates and uses HTTP/2 end-to-end.
+  - [ ] Either docs are corrected to “HTTP/2 WIP” OR the client actually negotiates and uses HTTP/2 end-to-end. We want it implemented. 
 
 ### E2) Implement HTTP/2 connection establishment for client
 
