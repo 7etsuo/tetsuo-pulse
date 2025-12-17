@@ -1237,12 +1237,13 @@ extern void SocketHTTPServer_Request_header (SocketHTTPServer_Request_T req,
  * implemented in the server path).
  *
  * @param req Request context.
- * @param name Trailer header name.
+ * @param name Trailer header name (MUST NOT start with ':' - pseudo-headers forbidden).
  * @param value Trailer header value.
  *
- * @return 0 on success, -1 if unsupported/invalid state.
+ * @return 0 on success, -1 if unsupported/invalid state or pseudo-header provided.
  *
  * @note Trailers are emitted when the response is finalized (finish/end_stream).
+ * @note Per RFC 9113 §8.1.3, pseudo-header fields MUST NOT appear in trailers.
  * @see SocketHTTPServer_Request_finish() for non-streaming responses.
  * @see SocketHTTPServer_Request_end_stream() for streaming responses.
  */

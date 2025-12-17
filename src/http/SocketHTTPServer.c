@@ -1511,15 +1511,8 @@ server_decode_http2_settings (Arena_T arena, const char *b64url,
   if (in_len == 0)
     return -1;
 
-  pad = in_len % 4;
-  if (pad == 1)
-    return -1; /* Invalid Base64URL length */
-  if (pad != 0)
-    pad = 4 - pad;
-  else
-    pad = 0;
-
-  tmp_len = in_len + pad;
+  /* HTTP2-Settings uses base64url (token68) without padding */
+  tmp_len = in_len;
   tmp = Arena_alloc (arena, tmp_len + 1, __FILE__, __LINE__);
   if (tmp == NULL)
     return -1;
@@ -1533,8 +1526,6 @@ server_decode_http2_settings (Arena_T arena, const char *b64url,
         c = '/';
       tmp[i] = c;
     }
-  for (size_t i = 0; i < pad; i++)
-    tmp[in_len + i] = '=';
   tmp[tmp_len] = '\0';
 
   decoded_max = SocketCrypto_base64_decoded_size (tmp_len);
@@ -1597,7 +1588,22 @@ server_try_h2c_upgrade (SocketHTTPServer_T server, ServerConnection *conn)
       || !server_header_has_token_ci (connection, "HTTP2-Settings"))
     return 0;
 
+  /* RFC 9113 §3.2.1: If the upgrade request contains a payload body, it must
+   * be fully received before switching to HTTP/2 frames. */
+  if (req->has_body)
+    return 0;
+
+  /* RFC 9113 §3.2.1: There MUST be exactly one HTTP2-Settings header */
   if (settings_b64 == NULL)
+    return 0;
+
+  /* Count HTTP2-Settings headers - there must be exactly one */
+  const char *settings_values[10];  /* Max 10 headers should be sufficient */
+  size_t settings_count = SocketHTTP_Headers_get_all (headers, "HTTP2-Settings",
+                                                       settings_values,
+                                                       sizeof(settings_values)/sizeof(settings_values[0]));
+
+  if (settings_count != 1)
     return 0;
 
   if (server_decode_http2_settings (conn->arena, settings_b64, &settings_payload,
@@ -2639,6 +2645,10 @@ SocketHTTPServer_Request_trailer (SocketHTTPServer_Request_T req,
   assert (value != NULL);
 
   if (req->h2_stream == NULL)
+    return -1;
+
+  /* RFC 9113 §8.1.3: Pseudo-header fields MUST NOT appear in trailer fields */
+  if (name[0] == ':')
     return -1;
 
   if (req->h2_stream->response_end_stream_sent)

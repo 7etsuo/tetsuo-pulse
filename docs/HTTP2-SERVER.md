@@ -50,11 +50,52 @@ If present, it consumes the preface and initializes an HTTP/2 connection immedia
 
 ### 3) h2c upgrade from HTTP/1.1 (optional)
 
-If `config.enable_h2c_upgrade = 1`, and an HTTP/1.1 request includes:
-- `Upgrade: h2c`
-- `HTTP2-Settings: <base64url>`
+If `config.enable_h2c_upgrade = 1`, the server supports HTTP/2 over cleartext (h2c) upgrade as specified in RFC 9113 §3.2.1.
 
-the server responds with `101 Switching Protocols`, upgrades the connection, applies the decoded settings payload, and continues in HTTP/2 mode.
+#### Upgrade Request Requirements
+
+The server accepts h2c upgrade only when the HTTP/1.1 request **exactly matches** these requirements:
+
+- **Method**: Any HTTP method (typically GET for testing)
+- **Headers** (case-insensitive):
+  - `Upgrade: h2c` (exactly "h2c", not "h2")
+  - `Connection: Upgrade, HTTP2-Settings` (must include both tokens)
+  - Exactly **one** `HTTP2-Settings` header with base64url-encoded SETTINGS payload
+
+#### HTTP2-Settings Header Format
+
+The `HTTP2-Settings` header value is:
+- Encoded as **base64url** (RFC 4648 §5) using **token68** syntax (RFC 7235)
+- Contains the raw bytes of an HTTP/2 SETTINGS frame payload
+- **No padding characters** (`=` are not appended)
+- **No whitespace** allowed
+
+**Example valid header:**
+```
+HTTP2-Settings: AAMAAABkAAQAAP__
+```
+
+This decodes to SETTINGS with:
+- `SETTINGS_MAX_CONCURRENT_STREAMS = 100`
+- `SETTINGS_INITIAL_WINDOW_SIZE = 65536`
+
+#### Upgrade Process
+
+1. **Client sends HTTP/1.1 request** with required headers
+2. **Server validates** all requirements (method, headers, no request body)
+3. **Server responds** with `101 Switching Protocols`
+4. **Server sends SETTINGS frame** as first HTTP/2 frame
+5. **Client sends** HTTP/2 connection preface + SETTINGS
+6. **Connection continues** in HTTP/2 mode
+
+#### Implementation Details
+
+- **HTTP2-Settings decoding**: Uses base64url alphabet (`-` → `+`, `_` → `/`) with **no padding**
+- **Validation**: Exactly one HTTP2-Settings header required (rejects multiple)
+- **Request body**: Upgrade rejected if request contains payload body
+- **TLS-only "h2"**: Server ignores `Upgrade: h2` (TLS-only token)
+- **No response HTTP2-Settings**: Server never sends HTTP2-Settings header in responses
+- **Buffer transfer**: Any buffered bytes from HTTP/1.1 parser are transferred to HTTP/2
 
 **Security note**: h2c is cleartext; do not enable on untrusted networks unless you fully understand the implications (see Security section below).
 
