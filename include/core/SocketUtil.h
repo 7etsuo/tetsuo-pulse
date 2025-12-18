@@ -33,10 +33,12 @@
 
 #include <errno.h>
 #include <limits.h>
+#include <pthread.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
@@ -2189,5 +2191,146 @@ SocketTimeout_elapsed_ms (int64_t start_ms)
 {
   return SocketTimeout_now_ms () - start_ms;
 }
+
+/* ============================================================================
+ * MUTEX + ARENA MANAGER PATTERN
+ * ============================================================================
+ *
+ * Standard pattern for modules with mutex-protected arena allocation.
+ * Embed SOCKET_MUTEX_ARENA_FIELDS in struct, use SOCKET_MUTEX_ARENA_*() macros.
+ *
+ * Example usage:
+ *   struct MyModule_T {
+ *     SOCKET_MUTEX_ARENA_FIELDS;
+ *     // ... module-specific fields
+ *   };
+ *
+ *   MyModule_T MyModule_new(Arena_T arena) {
+ *     MyModule_T m = arena ? CALLOC(arena, 1, sizeof(*m)) : calloc(1, sizeof(*m));
+ *     if (!m) SOCKET_RAISE_MSG(...);
+ *     m->arena = arena;
+ *     SOCKET_MUTEX_ARENA_INIT(m, MyModule, MyModule_Failed);
+ *     return m;
+ *   }
+ *
+ *   void MyModule_free(MyModule_T *m) {
+ *     if (!m || !*m) return;
+ *     SOCKET_MUTEX_ARENA_DESTROY(*m);
+ *     if (!(*m)->arena) free(*m);
+ *     *m = NULL;
+ *   }
+ */
+
+/** Mutex initialization states */
+#define SOCKET_MUTEX_UNINITIALIZED 0
+#define SOCKET_MUTEX_INITIALIZED 1
+#define SOCKET_MUTEX_SHUTDOWN (-1)
+
+/**
+ * @brief SOCKET_MUTEX_ARENA_FIELDS - Fields to embed in managed structs
+ *
+ * Provides the standard pattern for modules that need:
+ * - pthread_mutex_t for thread-safe operations
+ * - Arena_T for optional arena-based allocation
+ * - Initialization state tracking for safe cleanup
+ *
+ * Usage:
+ *   struct MyModule_T {
+ *     SOCKET_MUTEX_ARENA_FIELDS;
+ *     // ... other fields
+ *   };
+ */
+#define SOCKET_MUTEX_ARENA_FIELDS                                             \
+        pthread_mutex_t mutex;                                                \
+        Arena_T arena;                                                        \
+        int initialized
+
+/**
+ * @brief SOCKET_MUTEX_ARENA_INIT - Initialize mutex and set state
+ * @param obj Pointer to struct containing SOCKET_MUTEX_ARENA_FIELDS
+ * @param module_name Module name for exception (e.g., SocketRateLimit)
+ * @param exc_var Exception variable to raise on failure
+ *
+ * Prerequisites: obj->arena must already be set by caller.
+ * Initializes mutex and sets initialized = SOCKET_MUTEX_INITIALIZED.
+ * Raises exception on mutex init failure.
+ *
+ * Usage:
+ *   limiter->arena = arena;
+ *   SOCKET_MUTEX_ARENA_INIT(limiter, SocketRateLimit, SocketRateLimit_Failed);
+ */
+#define SOCKET_MUTEX_ARENA_INIT(obj, module_name, exc_var)                    \
+        do                                                                    \
+          {                                                                   \
+            (obj)->initialized = SOCKET_MUTEX_UNINITIALIZED;                  \
+            if (pthread_mutex_init (&(obj)->mutex, NULL) != 0)                \
+              {                                                               \
+                SOCKET_RAISE_MSG (module_name, exc_var,                       \
+                                  "Failed to initialize mutex");              \
+              }                                                               \
+            (obj)->initialized = SOCKET_MUTEX_INITIALIZED;                    \
+          }                                                                   \
+        while (0)
+
+/**
+ * @brief SOCKET_MUTEX_ARENA_DESTROY - Cleanup mutex if initialized
+ * @param obj Pointer to struct containing SOCKET_MUTEX_ARENA_FIELDS
+ *
+ * Destroys mutex only if initialized == SOCKET_MUTEX_INITIALIZED.
+ * Sets initialized = SOCKET_MUTEX_UNINITIALIZED after cleanup.
+ * Safe to call multiple times (idempotent).
+ */
+#define SOCKET_MUTEX_ARENA_DESTROY(obj)                                       \
+        do                                                                    \
+          {                                                                   \
+            if ((obj)->initialized == SOCKET_MUTEX_INITIALIZED)               \
+              {                                                               \
+                pthread_mutex_destroy (&(obj)->mutex);                        \
+                (obj)->initialized = SOCKET_MUTEX_UNINITIALIZED;              \
+              }                                                               \
+          }                                                                   \
+        while (0)
+
+/**
+ * @brief SOCKET_MUTEX_ARENA_ALLOC - Allocate from arena or malloc
+ * @param obj Pointer to struct containing SOCKET_MUTEX_ARENA_FIELDS
+ * @param size Bytes to allocate
+ *
+ * Returns: Allocated pointer (uninitialized) or NULL on failure
+ */
+#define SOCKET_MUTEX_ARENA_ALLOC(obj, size)                                   \
+        ((obj)->arena ? Arena_alloc ((obj)->arena, (size), __FILE__, __LINE__)\
+                      : malloc (size))
+
+/**
+ * @brief SOCKET_MUTEX_ARENA_CALLOC - Allocate zeroed memory
+ * @param obj Pointer to struct containing SOCKET_MUTEX_ARENA_FIELDS
+ * @param count Number of elements
+ * @param size Size per element
+ *
+ * Returns: Allocated zeroed pointer or NULL on failure
+ */
+#define SOCKET_MUTEX_ARENA_CALLOC(obj, count, size)                           \
+        ((obj)->arena ? Arena_calloc ((obj)->arena, (count), (size),          \
+                                      __FILE__, __LINE__)                     \
+                      : calloc ((count), (size)))
+
+/**
+ * @brief SOCKET_MUTEX_ARENA_FREE - Free if malloc mode (no-op for arena)
+ * @param obj Pointer to struct containing SOCKET_MUTEX_ARENA_FIELDS
+ * @param ptr Pointer to free
+ *
+ * Only frees if arena == NULL (malloc mode). Arena memory is freed
+ * when the arena is disposed.
+ */
+#define SOCKET_MUTEX_ARENA_FREE(obj, ptr)                                     \
+        do                                                                    \
+          {                                                                   \
+            if ((obj)->arena == NULL && (ptr) != NULL)                        \
+              {                                                               \
+                free (ptr);                                                   \
+              }                                                               \
+          }                                                                   \
+        while (0)
 
 #endif /* SOCKETUTIL_INCLUDED */

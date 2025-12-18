@@ -1595,6 +1595,8 @@ synprotect_init_base (T protect, Arena_T arena,
  * @protect: Protection instance
  *
  * Returns: 1 on success, 0 on failure
+ *
+ * Uses SOCKET_MUTEX_INITIALIZED constant for consistent pattern.
  */
 static int
 synprotect_init_mutex (T protect)
@@ -1602,7 +1604,7 @@ synprotect_init_mutex (T protect)
   if (pthread_mutex_init (&protect->mutex, NULL) != 0)
     return 0;
 
-  protect->initialized = 1;
+  protect->initialized = SOCKET_MUTEX_INITIALIZED;
   return 1;
 }
 
@@ -1690,7 +1692,7 @@ SocketSYNProtect_free (T *protect)
 
   p = *protect;
 
-  if (p->initialized)
+  if (p->initialized == SOCKET_MUTEX_INITIALIZED)
     pthread_mutex_destroy (&p->mutex);
 
   if (p->global_limiter != NULL)

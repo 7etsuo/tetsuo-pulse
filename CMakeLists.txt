@@ -216,6 +216,8 @@ set(LIB_SOURCES
     src/core/SocketUtil.c
     src/core/SocketTimer.c
     src/core/SocketRateLimit.c
+    src/core/HashTable.c
+    src/core/TimeWindow.c
     src/core/SocketIPTracker.c
     src/core/SocketSYNProtect.c
     src/core/SocketCrypto.c
@@ -543,6 +545,8 @@ set(TEST_SOURCES
     test_new_features
     test_arena
     test_except
+    test_hashtable
+    test_timewindow
     test_socketerror
     test_socket
     test_socketbuf

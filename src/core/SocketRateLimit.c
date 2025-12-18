@@ -287,18 +287,14 @@ ratelimit_init_fields (T limiter, size_t tokens_per_sec, size_t bucket_size,
  * ratelimit_init_mutex - Initialize the limiter's mutex
  * @limiter: Rate limiter instance
  *
+ * Uses SOCKET_MUTEX_ARENA_INIT macro for consistent pattern.
  * Raises: SocketRateLimit_Failed if pthread_mutex_init fails
  */
 static void
 ratelimit_init_mutex (T limiter)
 {
   assert (limiter);
-
-  if (pthread_mutex_init (&limiter->mutex, NULL) != 0)
-    SOCKET_RAISE_MSG (SocketRateLimit, SocketRateLimit_Failed,
-                      "Failed to initialize rate limiter mutex");
-
-  limiter->initialized = SOCKET_RATELIMIT_MUTEX_INITIALIZED;
+  SOCKET_MUTEX_ARENA_INIT (limiter, SocketRateLimit, SocketRateLimit_Failed);
 }
 
 /**

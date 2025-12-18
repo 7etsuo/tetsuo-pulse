@@ -80,9 +80,10 @@
  * @internal
  *
  * Used in initialized field: -1 means being freed, do not use after this.
+ * Uses standardized SOCKET_MUTEX_SHUTDOWN from SocketUtil.h.
  * @see SocketRateLimit_free()
  */
-#define SOCKET_RATELIMIT_SHUTDOWN (-1)
+#define SOCKET_RATELIMIT_SHUTDOWN SOCKET_MUTEX_SHUTDOWN
 
 /**
  * @brief Internal flag indicating mutex is not yet initialized.
@@ -90,8 +91,9 @@
  * @internal
  *
  * Value 0 in initialized field before mutex creation.
+ * Uses standardized SOCKET_MUTEX_UNINITIALIZED from SocketUtil.h.
  */
-#define SOCKET_RATELIMIT_MUTEX_UNINITIALIZED 0
+#define SOCKET_RATELIMIT_MUTEX_UNINITIALIZED SOCKET_MUTEX_UNINITIALIZED
 
 /**
  * @brief Internal flag indicating mutex is initialized and ready.
@@ -99,8 +101,9 @@
  * @internal
  *
  * Value 1 in initialized field after successful mutex_init().
+ * Uses standardized SOCKET_MUTEX_INITIALIZED from SocketUtil.h.
  */
-#define SOCKET_RATELIMIT_MUTEX_INITIALIZED 1
+#define SOCKET_RATELIMIT_MUTEX_INITIALIZED SOCKET_MUTEX_INITIALIZED
 
 /**
  * @section ratelimit_struct Rate Limiter Structure
