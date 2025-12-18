@@ -265,54 +265,59 @@ An agent should check items off as they’re implemented, reviewed, and verified
 
 ---
 
-## E) SocketHTTPClient: implement real HTTP/2 (currently incomplete)
+## E) SocketHTTPClient: implement real HTTP/2 ~~(currently incomplete)~~ ✅ COMPLETED
 
-### E1) Stop claiming “automatic HTTP/2 negotiation” unless it’s true
+### E1) ~~Stop claiming "automatic HTTP/2 negotiation" unless it's true~~ ✅ Implemented
 
-- [ ] **What to do**: implement negotiation fully.
-- [ ] **Where**:
-  - `docs/HTTP.md` currently claims “automatic protocol negotiation”
-  - `src/http/SocketHTTPClient-pool.c` explicitly says “HTTP/2 stream multiplexing (future)”
-- [ ] **Done when**:
-  - [ ] Either docs are corrected to “HTTP/2 WIP” OR the client actually negotiates and uses HTTP/2 end-to-end. We want it implemented. 
+- [x] **What to do**: implement negotiation fully.
+- [x] **Where**:
+  - `docs/HTTP.md` currently claims "automatic protocol negotiation"
+  - `src/http/SocketHTTPClient-pool.c` ~~explicitly says "HTTP/2 stream multiplexing (future)"~~ now implements it
+- [x] **Done when**:
+  - [x] ~~Either docs are corrected to "HTTP/2 WIP" OR~~ the client actually negotiates and uses HTTP/2 end-to-end.
+  - [x] ALPN negotiation via `configure_alpn_for_http2()` and `determine_negotiated_version()` in pool.c
 
-### E2) Implement HTTP/2 connection establishment for client
+### E2) Implement HTTP/2 connection establishment for client ✅
 
-- [ ] **What to do**:
+- [x] **What to do**:
   - TLS: configure ALPN to include `"h2"` and select HTTP/2 when negotiated.
   - Cleartext (optional): support prior-knowledge and/or h2c upgrade if `allow_http2_cleartext`.
   - Create/manage `SocketHTTP2_Conn_T` per origin and complete handshake.
-- [ ] **Where**:
+- [x] **Where**:
   - `src/http/SocketHTTPClient.c`
   - `src/http/SocketHTTPClient-pool.c`
   - TLS integration: `include/tls/SocketTLS*.h`, client TLS setup code paths
-- [ ] **Done when**:
-  - [ ] A client can make a GET to an h2-capable server and actually uses HTTP/2 frames/streams.
+- [x] **Done when**:
+  - [x] A client can make a GET to an h2-capable server and actually uses HTTP/2 frames/streams.
+  - [x] `init_http2_entry_fields()`, `create_http2_entry_resources()`, `create_http2_connection()` in pool.c
 
-### E3) Implement request/response mapping over HTTP/2 streams
+### E3) Implement request/response mapping over HTTP/2 streams ✅
 
-- [ ] **What to do**:
+- [x] **What to do**:
   - Open a stream per request.
   - Send request HEADERS (+ DATA if body).
   - Receive response HEADERS/DATA/TRAILERS and populate `SocketHTTPClient_Response`.
   - Correctly handle `END_STREAM`, backpressure, and partial sends.
-- [ ] **Where**:
+- [x] **Where**:
   - `src/http/SocketHTTPClient.c`
   - `src/http/SocketHTTPClient-*.c` (pool/retry/auth if needed)
   - `src/http/SocketHTTP2-*.c` (if missing APIs for client use)
-- [ ] **Done when**:
-  - [ ] HTTP/2 responses behave like HTTP/1 client API semantics (status/headers/body).
-  - [ ] Errors map to client error codes consistently.
+- [x] **Done when**:
+  - [x] HTTP/2 responses behave like HTTP/1 client API semantics (status/headers/body).
+  - [x] Errors map to client error codes consistently.
+  - [x] `execute_http2_request()`, `build_http2_request()`, `parse_http2_response_headers()` in SocketHTTPClient.c
 
-### E4) Implement real HTTP/2 multiplexing in the pool (not “future”)
+### E4) Implement real HTTP/2 multiplexing in the pool ~~(not "future")~~ ✅
 
-- [ ] **What to do**:
+- [x] **What to do**:
   - Track active streams per connection.
   - Queue or open new connections when `MAX_CONCURRENT_STREAMS` reached.
   - Handle GOAWAY by draining/retrying requests as appropriate.
-- [ ] **Where**: `src/http/SocketHTTPClient-pool.c`, `include/http/SocketHTTPClient-private.h`
-- [ ] **Done when**:
-  - [ ] Multiple concurrent requests to same origin share a single HTTP/2 connection.
+- [x] **Where**: `src/http/SocketHTTPClient-pool.c`, `include/http/SocketHTTPClient-private.h`
+- [x] **Done when**:
+  - [x] Multiple concurrent requests to same origin share a single HTTP/2 connection.
+  - [x] `entry_can_handle_request()`, `entry_mark_in_use()` check/update `active_streams`
+  - [x] `httpclient_pool_release()` decrements `active_streams` for HTTP/2
 
 ---
 

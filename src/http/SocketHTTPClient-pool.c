@@ -42,6 +42,9 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPClient);
 #include "tls/SocketTLSContext.h"
 #endif
 
+/* HTTP/2 support */
+#include "http/SocketHTTP2.h"
+
 /* #include <string.h> - provided by SocketUtil.h or others */
 #include <time.h>
 
@@ -445,6 +448,58 @@ httpclient_pool_free (HTTPPool *pool)
  * ============================================================================
  */
 
+/**
+ * entry_can_handle_request - Check if pool entry can handle another request
+ * @entry: Pool entry to check
+ *
+ * Returns: 1 if entry can accept request, 0 if not
+ *
+ * For HTTP/1.1: check that entry is not in use
+ * For HTTP/2: check that active_streams < peer's MAX_CONCURRENT_STREAMS
+ */
+static int
+entry_can_handle_request (HTTPPoolEntry *entry)
+{
+  if (entry->closed)
+    return 0;
+
+  if (entry->version == HTTP_VERSION_2)
+    {
+      /* HTTP/2: allow multiplexing up to MAX_CONCURRENT_STREAMS */
+      if (entry->proto.h2.conn == NULL)
+        return 0;
+      uint32_t max_streams = SocketHTTP2_Conn_get_setting (
+          entry->proto.h2.conn, HTTP2_SETTINGS_MAX_CONCURRENT_STREAMS);
+      return (uint32_t)entry->proto.h2.active_streams < max_streams;
+    }
+
+  /* HTTP/1.1: must not be in use (sequential requests only) */
+  return !entry->in_use;
+}
+
+/**
+ * entry_mark_in_use - Mark pool entry as handling a request
+ * @entry: Pool entry to mark
+ *
+ * For HTTP/1.1: sets in_use flag
+ * For HTTP/2: increments active_streams counter
+ */
+static void
+entry_mark_in_use (HTTPPoolEntry *entry)
+{
+  if (entry->version == HTTP_VERSION_2)
+    {
+      /* HTTP/2: increment stream count (actual stream created later) */
+      entry->proto.h2.active_streams++;
+    }
+  else
+    {
+      /* HTTP/1.1: mark as exclusively in use */
+      entry->in_use = 1;
+    }
+  entry->last_used = pool_time ();
+}
+
 HTTPPoolEntry *
 httpclient_pool_get (HTTPPool *pool, const char *host, int port, int is_secure)
 {
@@ -465,10 +520,9 @@ httpclient_pool_get (HTTPPool *pool, const char *host, int port, int is_secure)
     {
       ++chain_len;
       if (host_port_secure_match (entry, host, port, is_secure)
-          && !entry->in_use && !entry->closed)
+          && entry_can_handle_request (entry))
         {
-          entry->in_use = 1;
-          entry->last_used = pool_time ();
+          entry_mark_in_use (entry);
           pool->reused_connections++;
           pthread_mutex_unlock (&pool->mutex);
           return entry;
@@ -489,7 +543,20 @@ httpclient_pool_release (HTTPPool *pool, HTTPPoolEntry *entry)
   assert (entry != NULL);
 
   pthread_mutex_lock (&pool->mutex);
-  entry->in_use = 0;
+
+  if (entry->version == HTTP_VERSION_2)
+    {
+      /* HTTP/2: decrement active stream count */
+      if (entry->proto.h2.active_streams > 0)
+        entry->proto.h2.active_streams--;
+      /* Note: connection remains in pool for reuse with other streams */
+    }
+  else
+    {
+      /* HTTP/1.1: mark as no longer in use */
+      entry->in_use = 0;
+    }
+
   entry->last_used = pool_time ();
   pthread_mutex_unlock (&pool->mutex);
 }
@@ -699,6 +766,180 @@ create_http1_connection (HTTPPool *pool, Socket_T socket, const char *host,
   return (HTTPPoolEntry *)entry;
 }
 
+/* ============================================================================
+ * HTTP/2 Connection Creation
+ * ============================================================================
+ */
+
+/**
+ * init_http2_entry_fields - Initialize HTTP/2 entry fields
+ * @entry: Pool entry
+ * @socket: Connected socket (with TLS after ALPN negotiation)
+ * @host: Target hostname (will be copied)
+ * @port: Target port
+ * @is_secure: TLS flag (always 1 for HTTP/2 over TLS)
+ * @pool: Pool for hostname allocation
+ *
+ * Raises: Arena_Failed on host string allocation failure
+ * Thread-safe: No (modifies entry under caller lock)
+ */
+static void
+init_http2_entry_fields (HTTPPoolEntry *entry, Socket_T socket,
+                         const char *host, int port, int is_secure,
+                         HTTPPool *pool)
+{
+  (void)socket; /* Socket is stored in HTTP/2 conn, not directly in entry */
+  size_t host_len = strlen (host);
+  size_t alloc_size = host_len + 1;
+
+  if (!SOCKET_SECURITY_VALID_SIZE (alloc_size))
+    {
+      SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed,
+                        "Hostname too long: %zu bytes", host_len);
+    }
+
+  entry->host = Arena_alloc (pool->arena, alloc_size, __FILE__, __LINE__);
+  memcpy (entry->host, host, alloc_size);
+  entry->port = port;
+  entry->is_secure = is_secure;
+  entry->version = HTTP_VERSION_2;
+  entry->created_at = pool_time ();
+  entry->last_used = entry->created_at;
+  entry->in_use = 0; /* HTTP/2: multiple streams, not exclusive */
+  entry->closed = 0;
+  entry->proto.h2.conn = NULL;
+  entry->proto.h2.active_streams = 0;
+}
+
+/**
+ * create_http2_entry_resources - Create HTTP/2 connection and perform handshake
+ * @entry: Pool entry with socket set
+ * @socket: Connected TLS socket
+ * @pool: Connection pool for arena
+ *
+ * Creates SocketHTTP2_Conn_T with CLIENT role and completes the HTTP/2
+ * handshake (preface + SETTINGS exchange).
+ *
+ * Raises: SocketHTTP2_ProtocolError on handshake failure
+ * Thread-safe: No
+ */
+static int
+create_http2_entry_resources (HTTPPoolEntry *entry, Socket_T socket,
+                              HTTPPool *pool)
+{
+  SocketHTTP2_Config config;
+  SocketHTTP2_Conn_T conn;
+  int handshake_result;
+
+  /* Initialize HTTP/2 configuration with client defaults */
+  SocketHTTP2_config_defaults (&config, HTTP2_ROLE_CLIENT);
+
+  /* Create HTTP/2 connection */
+  conn = SocketHTTP2_Conn_new (socket, &config, pool->arena);
+  if (conn == NULL)
+    return -1;
+
+  entry->proto.h2.conn = conn;
+
+  /* Complete HTTP/2 handshake (preface + SETTINGS) */
+  do
+    {
+      handshake_result = SocketHTTP2_Conn_handshake (conn);
+      if (handshake_result < 0)
+        {
+          /* Handshake failed */
+          SocketHTTP2_Conn_free (&entry->proto.h2.conn);
+          return -1;
+        }
+      if (handshake_result == 1)
+        {
+          /* Need more I/O - process and flush */
+          if (SocketHTTP2_Conn_process (conn, 0) < 0)
+            {
+              SocketHTTP2_Conn_free (&entry->proto.h2.conn);
+              return -1;
+            }
+          if (SocketHTTP2_Conn_flush (conn) < 0)
+            {
+              SocketHTTP2_Conn_free (&entry->proto.h2.conn);
+              return -1;
+            }
+        }
+    }
+  while (handshake_result == 1);
+
+  return 0;
+}
+
+/**
+ * create_http2_connection - Create new HTTP/2 pool entry
+ * @pool: Connection pool
+ * @socket: Connected TLS socket (ownership transferred)
+ * @host: Target hostname
+ * @port: Target port
+ * @is_secure: Always 1 for HTTP/2 over TLS
+ *
+ * Returns: New pool entry, or NULL on failure
+ *
+ * Allocates entry, creates HTTP/2 connection, performs handshake.
+ * On failure, socket is NOT freed - caller retains ownership.
+ */
+static HTTPPoolEntry *
+create_http2_connection (HTTPPool *pool, Socket_T socket, const char *host,
+                         int port, int is_secure)
+{
+  HTTPPoolEntry *volatile entry = NULL;
+  volatile int stage = 0;
+
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wclobbered"
+#endif
+
+  TRY
+  {
+    entry = pool_entry_alloc (pool);
+    stage = 1;
+
+    init_http2_entry_fields ((HTTPPoolEntry *)entry, socket, host, port,
+                             is_secure, pool);
+    stage = 2;
+
+    if (create_http2_entry_resources ((HTTPPoolEntry *)entry, socket, pool)
+        != 0)
+      {
+        RAISE (SocketHTTP2_ProtocolError);
+      }
+    stage = 3;
+  }
+  EXCEPT (Arena_Failed)
+  {
+    if (stage >= 2 && entry != NULL && ((HTTPPoolEntry *)entry)->proto.h2.conn)
+      SocketHTTP2_Conn_free (&((HTTPPoolEntry *)entry)->proto.h2.conn);
+    if (stage >= 1 && entry != NULL)
+      recycle_entry_on_failure (pool, (HTTPPoolEntry *)entry);
+    return NULL;
+  }
+  EXCEPT (SocketHTTP2_ProtocolError)
+  {
+    if (stage >= 1 && entry != NULL)
+      recycle_entry_on_failure (pool, (HTTPPoolEntry *)entry);
+    return NULL;
+  }
+  END_TRY;
+
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
+
+  pool_hash_add (pool, (HTTPPoolEntry *)entry);
+  pool_list_add (pool, (HTTPPoolEntry *)entry);
+  pool->current_count++;
+  pool->total_requests++;
+
+  return (HTTPPoolEntry *)entry;
+}
+
 /**
  * check_connection_limits - Check if new connection can be created
  * @client: HTTP client
@@ -889,16 +1130,66 @@ perform_tls_handshake (Socket_T socket, int timeout_ms)
 }
 
 /**
- * setup_tls_connection - Enable TLS and perform handshake
+ * configure_alpn_for_http2 - Configure ALPN protocols for HTTP/2 negotiation
+ * @tls_ctx: TLS context to configure
+ * @max_version: Maximum HTTP version allowed by client config
+ *
+ * Configures ALPN protocol list based on max_version setting:
+ * - HTTP/2: ["h2", "http/1.1"]
+ * - HTTP/1.1 only: ["http/1.1"]
+ *
+ * Returns: 0 on success, -1 on failure
+ */
+static void
+configure_alpn_for_http2 (SocketTLSContext_T tls_ctx,
+                          SocketHTTP_Version max_version)
+{
+  if (max_version >= HTTP_VERSION_2)
+    {
+      /* Prefer HTTP/2, fall back to HTTP/1.1 */
+      static const char *h2_protos[] = { "h2", "http/1.1" };
+      SocketTLSContext_set_alpn_protos (tls_ctx, h2_protos, 2);
+    }
+  else
+    {
+      /* HTTP/1.1 only */
+      static const char *h1_protos[] = { "http/1.1" };
+      SocketTLSContext_set_alpn_protos (tls_ctx, h1_protos, 1);
+    }
+}
+
+/**
+ * determine_negotiated_version - Determine HTTP version from ALPN result
+ * @socket: TLS-enabled socket after handshake
+ *
+ * Returns: Negotiated HTTP version (HTTP_VERSION_2 for "h2", HTTP_VERSION_1_1
+ * otherwise)
+ */
+static SocketHTTP_Version
+determine_negotiated_version (Socket_T socket)
+{
+  const char *alpn = SocketTLS_get_alpn_selected (socket);
+  if (alpn != NULL && strcmp (alpn, "h2") == 0)
+    return HTTP_VERSION_2;
+  return HTTP_VERSION_1_1;
+}
+
+/**
+ * setup_tls_connection - Enable TLS and perform handshake with ALPN
  * @client: HTTP client
  * @socket: Connected TCP socket (freed on error)
  * @hostname: SNI hostname
+ * @negotiated_version: Output - negotiated HTTP version (HTTP/2 or HTTP/1.1)
+ *
+ * Configures ALPN based on client's max_version setting, performs TLS
+ * handshake, and determines negotiated HTTP version from ALPN result.
  *
  * Returns: 0 on success, -1 on failure (socket freed on error)
  */
 static int
 setup_tls_connection (SocketHTTPClient_T client, Socket_T *socket,
-                      const char *hostname)
+                      const char *hostname,
+                      SocketHTTP_Version *negotiated_version)
 {
   if (hostname == NULL || *hostname == '\0')
     {
@@ -927,6 +1218,9 @@ setup_tls_connection (SocketHTTPClient_T client, Socket_T *socket,
       return -1;
     }
 
+  /* Configure ALPN for HTTP/2 negotiation */
+  configure_alpn_for_http2 (tls_ctx, client->config.max_version);
+
   if (enable_socket_tls (*socket, tls_ctx) != 0)
     {
       Socket_free (socket);
@@ -946,6 +1240,10 @@ setup_tls_connection (SocketHTTPClient_T client, Socket_T *socket,
       client->last_error = HTTPCLIENT_ERROR_TLS;
       return -1;
     }
+
+  /* Determine negotiated HTTP version from ALPN */
+  if (negotiated_version != NULL)
+    *negotiated_version = determine_negotiated_version (*socket);
 
   return 0;
 }
@@ -1041,18 +1339,29 @@ create_temp_entry (Socket_T socket, const char *host, int port, int is_secure)
  * @host: Target hostname
  * @port: Target port
  * @is_secure: 1 for HTTPS, 0 for HTTP
+ * @version: Negotiated HTTP version (HTTP_VERSION_2_0 or HTTP_VERSION_1_1)
  *
  * Returns: Pool entry, or NULL on failure
+ *
+ * Dispatches to HTTP/2 or HTTP/1.1 connection creation based on the
+ * negotiated version from ALPN.
  */
 static HTTPPoolEntry *
 create_pooled_entry (SocketHTTPClient_T client, Socket_T socket,
-                     const char *host, int port, int is_secure)
+                     const char *host, int port, int is_secure,
+                     SocketHTTP_Version version)
 {
   HTTPPoolEntry *entry;
 
   pthread_mutex_lock (&client->pool->mutex);
-  entry
-      = create_http1_connection (client->pool, socket, host, port, is_secure);
+
+  if (version == HTTP_VERSION_2)
+    entry
+        = create_http2_connection (client->pool, socket, host, port, is_secure);
+  else
+    entry
+        = create_http1_connection (client->pool, socket, host, port, is_secure);
+
   pthread_mutex_unlock (&client->pool->mutex);
 
   if (entry == NULL)
@@ -1077,10 +1386,10 @@ create_pooled_entry (SocketHTTPClient_T client, Socket_T socket,
  * Returns: Pool entry for connection, or NULL on failure
  *
  * Orchestrates connection establishment:
- * 1. Try existing pool connection
+ * 1. Try existing pool connection (supports HTTP/2 multiplexing)
  * 2. Establish TCP via Happy Eyeballs
- * 3. Set up TLS if needed
- * 4. Create pool entry (or temporary for non-pooled)
+ * 3. Set up TLS if needed (with ALPN for HTTP/2 negotiation)
+ * 4. Create pool entry (HTTP/2 or HTTP/1.1 based on ALPN result)
  */
 HTTPPoolEntry *
 httpclient_connect (SocketHTTPClient_T client, const SocketHTTP_URI *uri)
@@ -1089,6 +1398,7 @@ httpclient_connect (SocketHTTPClient_T client, const SocketHTTP_URI *uri)
   Socket_T socket;
   int port;
   int is_secure;
+  SocketHTTP_Version negotiated_version = HTTP_VERSION_1_1;
 
   assert (client != NULL);
   assert (uri != NULL);
@@ -1105,7 +1415,8 @@ httpclient_connect (SocketHTTPClient_T client, const SocketHTTP_URI *uri)
     return entry;
 
   /* pool_try_get_connection returns NULL if limits exceeded after cleanup */
-  if (client->pool != NULL && client->last_error == HTTPCLIENT_ERROR_LIMIT_EXCEEDED)
+  if (client->pool != NULL
+      && client->last_error == HTTPCLIENT_ERROR_LIMIT_EXCEEDED)
     return NULL;
 
   /* Establish new TCP connection */
@@ -1113,11 +1424,13 @@ httpclient_connect (SocketHTTPClient_T client, const SocketHTTP_URI *uri)
   if (socket == NULL)
     return 0;
 
-    /* Handle TLS if needed */
+    /* Handle TLS if needed (with ALPN for HTTP/2 negotiation) */
 #if SOCKET_HAS_TLS
   if (is_secure)
     {
-      if (setup_tls_connection (client, &socket, uri->host) != 0)
+      if (setup_tls_connection (client, &socket, uri->host,
+                                &negotiated_version)
+          != 0)
         return 0;
     }
 #else
@@ -1132,8 +1445,10 @@ httpclient_connect (SocketHTTPClient_T client, const SocketHTTP_URI *uri)
 
   /* Create pool entry or temporary entry */
   if (client->pool != NULL)
-    return create_pooled_entry (client, socket, uri->host, port, is_secure);
+    return create_pooled_entry (client, socket, uri->host, port, is_secure,
+                                negotiated_version);
 
+  /* Non-pooled: only HTTP/1.1 for now (temp entries don't support HTTP/2) */
   TRY { return create_temp_entry (socket, uri->host, port, is_secure); }
   EXCEPT (Arena_Failed)
   {

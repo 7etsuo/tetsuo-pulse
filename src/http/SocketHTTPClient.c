@@ -27,6 +27,7 @@
 #include "core/SocketUtil.h"
 #include "http/SocketHTTP.h"
 #include "http/SocketHTTP1.h"
+#include "http/SocketHTTP2.h"
 #include "http/SocketHTTPClient-private.h"
 #include "http/SocketHTTPClient.h"
 #include "socket/Socket.h"
@@ -1475,6 +1476,282 @@ prepare_request_headers (SocketHTTPClient_T client,
   add_content_length_header (req);
 }
 
+/* ============================================================================
+ * Internal: HTTP/2 Request Execution
+ * ============================================================================
+ */
+
+/**
+ * build_http2_request - Build HTTP/2 request from client request
+ * @req: Client request
+ * @http_req: Output HTTP request structure
+ *
+ * Builds the HTTP request structure for HTTP/2 from the client request.
+ */
+static void
+build_http2_request (const SocketHTTPClient_Request_T req,
+                     SocketHTTP_Request *http_req)
+{
+  http_req->method = req->method;
+  http_req->version = HTTP_VERSION_2;
+  http_req->scheme = req->uri.scheme;
+  http_req->authority = req->uri.host; /* authority is just host for client */
+  /* :path is path + query in HTTP/2; if no path, use "/" */
+  http_req->path = (req->uri.path && req->uri.path_len > 0) ? req->uri.path
+                                                            : "/";
+  http_req->headers = req->headers;
+  http_req->has_body = (req->body != NULL && req->body_len > 0);
+  http_req->content_length
+      = http_req->has_body ? (int64_t)req->body_len : (int64_t)-1;
+}
+
+/**
+ * parse_http2_response_headers - Convert HTTP/2 headers to response
+ * @headers: HPACK header array from HTTP/2
+ * @header_count: Number of headers
+ * @response: Output response
+ * @arena: Memory arena for allocations
+ *
+ * Returns: 0 on success, -1 on error
+ *
+ * Extracts :status pseudo-header and converts to response structure.
+ */
+static int
+parse_http2_response_headers (const SocketHPACK_Header *headers,
+                              size_t header_count,
+                              SocketHTTPClient_Response *response,
+                              Arena_T arena)
+{
+  size_t i;
+  int status_found = 0;
+
+  /* Find :status pseudo-header first */
+  for (i = 0; i < header_count; i++)
+    {
+      if (headers[i].name_len == 7
+          && memcmp (headers[i].name, ":status", 7) == 0)
+        {
+          /* Parse status code */
+          response->status_code = (int)strtol (headers[i].value, NULL, 10);
+          if (response->status_code < 100 || response->status_code > 599)
+            return -1;
+          status_found = 1;
+          break;
+        }
+    }
+
+  if (!status_found)
+    return -1;
+
+  /* Copy regular headers (skip pseudo-headers) */
+  if (response->headers == NULL)
+    response->headers = SocketHTTP_Headers_new (arena);
+
+  for (i = 0; i < header_count; i++)
+    {
+      if (headers[i].name[0] == ':')
+        continue; /* Skip pseudo-headers */
+
+      /* Copy header name and value */
+      char *name = Arena_alloc (arena, headers[i].name_len + 1, __FILE__,
+                                __LINE__);
+      char *value = Arena_alloc (arena, headers[i].value_len + 1, __FILE__,
+                                 __LINE__);
+      memcpy (name, headers[i].name, headers[i].name_len);
+      name[headers[i].name_len] = '\0';
+      memcpy (value, headers[i].value, headers[i].value_len);
+      value[headers[i].value_len] = '\0';
+
+      SocketHTTP_Headers_add (response->headers, name, value);
+    }
+
+  return 0;
+}
+
+/**
+ * execute_http2_request - Execute complete HTTP/2 request-response cycle
+ * @conn: Pool connection entry (with HTTP/2 connection)
+ * @req: Client request
+ * @response: Output response
+ * @max_response_size: Maximum response body size (0 = unlimited)
+ *
+ * Returns: 0 on success, -1 on error, -2 on response size limit exceeded
+ *
+ * Executes HTTP/2 request using stream operations:
+ * 1. Create new stream
+ * 2. Send request headers (and body if present)
+ * 3. Receive response headers
+ * 4. Receive response body
+ */
+static int
+execute_http2_request (HTTPPoolEntry *conn,
+                       const SocketHTTPClient_Request_T req,
+                       SocketHTTPClient_Response *response,
+                       size_t max_response_size)
+{
+  SocketHTTP2_Conn_T h2conn = conn->proto.h2.conn;
+  SocketHTTP2_Stream_T stream;
+  SocketHTTP_Request http_req;
+  SocketHPACK_Header headers[SOCKETHTTP2_MAX_DECODED_HEADERS];
+  size_t header_count;
+  int end_stream;
+  int has_body;
+  ssize_t recv_len;
+  size_t total_body = 0;
+  Arena_T arena;
+  unsigned char *body_buf;
+  size_t body_cap;
+
+  assert (conn != NULL);
+  assert (h2conn != NULL);
+  assert (req != NULL);
+  assert (response != NULL);
+
+  /* Check if connection is still valid */
+  if (SocketHTTP2_Conn_is_closed (h2conn))
+    return -1;
+
+  /* Create new stream */
+  stream = SocketHTTP2_Stream_new (h2conn);
+  if (stream == NULL)
+    return -1;
+
+  /* Increment active stream counter */
+  conn->proto.h2.active_streams++;
+
+  /* Build request */
+  build_http2_request (req, &http_req);
+
+  /* Determine if we have a body */
+  has_body = (req->body != NULL && req->body_len > 0);
+
+  /* Send request headers */
+  if (SocketHTTP2_Stream_send_request (stream, &http_req, !has_body) != 0)
+    {
+      conn->proto.h2.active_streams--;
+      SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
+      return -1;
+    }
+
+  /* Send body if present */
+  if (has_body)
+    {
+      ssize_t sent
+          = SocketHTTP2_Stream_send_data (stream, req->body, req->body_len, 1);
+      if (sent < 0)
+        {
+          conn->proto.h2.active_streams--;
+          SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
+          return -1;
+        }
+    }
+
+  /* Flush the connection to send frames */
+  if (SocketHTTP2_Conn_flush (h2conn) < 0)
+    {
+      conn->proto.h2.active_streams--;
+      return -1;
+    }
+
+  /* Receive response headers (loop until we get them) */
+  header_count = 0;
+  end_stream = 0;
+  while (header_count == 0)
+    {
+      int r = SocketHTTP2_Stream_recv_headers (stream, headers,
+                                               SOCKETHTTP2_MAX_DECODED_HEADERS,
+                                               &header_count, &end_stream);
+      if (r < 0)
+        {
+          conn->proto.h2.active_streams--;
+          return -1;
+        }
+      if (r == 0)
+        {
+          /* Need more data - process connection */
+          if (SocketHTTP2_Conn_process (h2conn, 0) < 0)
+            {
+              conn->proto.h2.active_streams--;
+              return -1;
+            }
+        }
+    }
+
+  /* Get arena for response allocations */
+  arena = SocketHTTP2_Conn_arena (h2conn);
+
+  /* Parse response headers */
+  if (parse_http2_response_headers (headers, header_count, response, arena)
+      != 0)
+    {
+      conn->proto.h2.active_streams--;
+      return -1;
+    }
+
+  /* If END_STREAM set on headers, we're done */
+  if (end_stream)
+    {
+      response->body = NULL;
+      response->body_len = 0;
+      conn->proto.h2.active_streams--;
+      return 0;
+    }
+
+  /* Receive response body */
+  body_cap = (max_response_size > 0) ? max_response_size : (64 * 1024);
+  body_buf = Arena_alloc (arena, body_cap, __FILE__, __LINE__);
+
+  while (!end_stream)
+    {
+      recv_len = SocketHTTP2_Stream_recv_data (
+          stream, body_buf + total_body, body_cap - total_body, &end_stream);
+
+      if (recv_len < 0)
+        {
+          conn->proto.h2.active_streams--;
+          return -1;
+        }
+
+      if (recv_len == 0 && !end_stream)
+        {
+          /* Need more data - process connection */
+          if (SocketHTTP2_Conn_process (h2conn, 0) < 0)
+            {
+              conn->proto.h2.active_streams--;
+              return -1;
+            }
+          continue;
+        }
+
+      total_body += (size_t)recv_len;
+
+      /* Check size limit */
+      if (max_response_size > 0 && total_body > max_response_size)
+        {
+          conn->proto.h2.active_streams--;
+          SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
+          return -2; /* Size limit exceeded */
+        }
+
+      /* Grow buffer if needed and no size limit */
+      if (total_body >= body_cap && max_response_size == 0)
+        {
+          size_t new_cap = body_cap * 2;
+          unsigned char *new_buf
+              = Arena_alloc (arena, new_cap, __FILE__, __LINE__);
+          memcpy (new_buf, body_buf, total_body);
+          body_buf = new_buf;
+          body_cap = new_cap;
+        }
+    }
+
+  response->body = (char *)body_buf;
+  response->body_len = total_body;
+  conn->proto.h2.active_streams--;
+
+  return 0;
+}
+
 /**
  * execute_protocol_request - Execute request based on HTTP version
  * @conn: Pool connection entry
@@ -1484,6 +1761,9 @@ prepare_request_headers (SocketHTTPClient_T client,
  * @client: HTTP client (for error reporting)
  *
  * Returns: 0 on success, -1 on error, -2 on size limit exceeded
+ *
+ * Dispatches to HTTP/1.1 or HTTP/2 request execution based on the
+ * negotiated protocol version.
  */
 static int
 execute_protocol_request (HTTPPoolEntry *conn, SocketHTTPClient_Request_T req,
@@ -1492,6 +1772,9 @@ execute_protocol_request (HTTPPoolEntry *conn, SocketHTTPClient_Request_T req,
 {
   if (conn->version == HTTP_VERSION_1_1 || conn->version == HTTP_VERSION_1_0)
     return execute_http1_request (conn, req, response, max_response_size);
+
+  if (conn->version == HTTP_VERSION_2)
+    return execute_http2_request (conn, req, response, max_response_size);
 
   client->last_error = HTTPCLIENT_ERROR_PROTOCOL;
   HTTPCLIENT_ERROR_FMT ("HTTP version %d not supported", conn->version);
