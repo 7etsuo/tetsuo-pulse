@@ -21,6 +21,7 @@
 /* All includes before T macro definition to avoid redefinition warnings */
 #include <errno.h>
 #include <fcntl.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -56,6 +57,74 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketDNS);
 
 /*
  * =============================================================================
+ * Internal Helper Macros
+ * =============================================================================
+ */
+
+/**
+ * @brief Helper macro for pthread primitive initialization with cleanup on
+ * failure.
+ * @param dns DNS resolver instance
+ * @param init_func pthread init function (pthread_mutex_init or
+ * pthread_cond_init)
+ * @param ptr Pointer to the primitive to initialize
+ * @param cleanup_level Cleanup level to use on failure
+ * @param error_msg Error message to include in exception
+ *
+ * Reduces boilerplate in pthread initialization functions by handling the
+ * common pattern of: init, check result, cleanup on failure, raise exception.
+ */
+#define INIT_PTHREAD_PRIMITIVE(dns, init_func, ptr, cleanup_level, error_msg) \
+  do                                                                          \
+    {                                                                         \
+      if (init_func ((ptr), NULL) != 0)                                       \
+        {                                                                     \
+          cleanup_on_init_failure ((dns), (cleanup_level));                   \
+          SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed, (error_msg));        \
+        }                                                                     \
+    }                                                                         \
+  while (0)
+
+/**
+ * @brief Cleanup function for SCOPED_MUTEX_LOCK.
+ * @param mutex Pointer to mutex pointer to unlock
+ *
+ * Uses GCC cleanup attribute to automatically unlock mutex when variable
+ * goes out of scope.
+ */
+static inline void
+mutex_unlock_cleanup (pthread_mutex_t **mutex)
+{
+  if (*mutex)
+    pthread_mutex_unlock (*mutex);
+}
+
+/**
+ * @brief Scoped mutex lock with automatic unlock via cleanup attribute.
+ * @param mutex_ptr Pointer to mutex to lock
+ *
+ * Usage: SCOPED_MUTEX_LOCK(&dns->mutex);
+ * The mutex will be automatically unlocked when the enclosing scope exits,
+ * including on early returns. Uses GCC's cleanup attribute (GNU extension).
+ *
+ * Example:
+ *   void foo(struct SocketDNS_T *dns) {
+ *     SCOPED_MUTEX_LOCK(&dns->mutex);
+ *     if (error) return;  // mutex auto-unlocks
+ *     // ... work ...
+ *   }  // mutex auto-unlocks here too
+ */
+#define SCOPED_MUTEX_LOCK(mutex_ptr)                                          \
+  pthread_mutex_lock (mutex_ptr);                                             \
+  pthread_mutex_t *SOCKET_CONCAT (_scoped_mutex_, __LINE__)                   \
+      __attribute__ ((cleanup (mutex_unlock_cleanup), unused)) = (mutex_ptr)
+
+/* Helper for unique variable names */
+#define SOCKET_CONCAT_INNER(a, b) a##b
+#define SOCKET_CONCAT(a, b) SOCKET_CONCAT_INNER (a, b)
+
+/*
+ * =============================================================================
  * Synchronization - Mutex and Condition Variables
  * =============================================================================
  */
@@ -69,12 +138,8 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketDNS);
 void
 initialize_mutex (struct SocketDNS_T *dns)
 {
-  if (pthread_mutex_init (&dns->mutex, NULL) != 0)
-    {
-      cleanup_on_init_failure (dns, DNS_CLEAN_NONE);
-      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
-                        "Failed to initialize DNS resolver mutex");
-    }
+  INIT_PTHREAD_PRIMITIVE (dns, pthread_mutex_init, &dns->mutex, DNS_CLEAN_NONE,
+                          "Failed to initialize DNS resolver mutex");
 }
 
 /**
@@ -86,12 +151,9 @@ initialize_mutex (struct SocketDNS_T *dns)
 void
 initialize_queue_condition (struct SocketDNS_T *dns)
 {
-  if (pthread_cond_init (&dns->queue_cond, NULL) != 0)
-    {
-      cleanup_on_init_failure (dns, DNS_CLEAN_MUTEX);
-      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
-                        "Failed to initialize DNS resolver queue condition");
-    }
+  INIT_PTHREAD_PRIMITIVE (dns, pthread_cond_init, &dns->queue_cond,
+                          DNS_CLEAN_MUTEX,
+                          "Failed to initialize DNS resolver queue condition");
 }
 
 /**
@@ -103,12 +165,9 @@ initialize_queue_condition (struct SocketDNS_T *dns)
 void
 initialize_result_condition (struct SocketDNS_T *dns)
 {
-  if (pthread_cond_init (&dns->result_cond, NULL) != 0)
-    {
-      cleanup_on_init_failure (dns, DNS_CLEAN_CONDS);
-      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
-                        "Failed to initialize DNS resolver result condition");
-    }
+  INIT_PTHREAD_PRIMITIVE (dns, pthread_cond_init, &dns->result_cond,
+                          DNS_CLEAN_CONDS,
+                          "Failed to initialize DNS resolver result condition");
 }
 
 /**
@@ -499,44 +558,23 @@ drain_completion_pipe (struct SocketDNS_T *dns)
 }
 
 /**
- * free_queue_request_results - Free addrinfo results for queue-linked requests
- * @head: Head of queue-linked request list
+ * free_request_list_results - Free addrinfo results for linked request list
+ * @head: Head of request list
+ * @next_offset: Offset of next-pointer field within SocketDNS_Request_T
+ *               (use offsetof(struct SocketDNS_Request_T, queue_next) or
+ *               offsetof(struct SocketDNS_Request_T, hash_next))
  *
- * Traverses via queue_next, freeing getaddrinfo results.
- * Request structures themselves are in Arena, so not freed here.
+ * Generic traversal that works with either queue_next or hash_next linkage.
+ * Frees getaddrinfo results; request structures are in Arena, not freed here.
  */
 static void
-free_queue_request_results (Request_T head)
+free_request_list_results (Request_T head, size_t next_offset)
 {
   Request_T curr = head;
 
   while (curr)
     {
-      Request_T next = curr->queue_next;
-      if (curr->result)
-        {
-          SocketCommon_free_addrinfo (curr->result);
-          curr->result = NULL;
-        }
-      curr = next;
-    }
-}
-
-/**
- * free_hash_request_results - Free addrinfo results for hash-linked requests
- * @head: Head of hash-linked request list
- *
- * Traverses via hash_next, freeing getaddrinfo results.
- * Request structures themselves are in Arena, so not freed here.
- */
-static void
-free_hash_request_results (Request_T head)
-{
-  Request_T curr = head;
-
-  while (curr)
-    {
-      Request_T next = curr->hash_next;
+      Request_T next = *(Request_T *)((char *)curr + next_offset);
       if (curr->result)
         {
           SocketCommon_free_addrinfo (curr->result);
@@ -557,11 +595,13 @@ void
 free_all_requests (T d)
 {
   /* Free queue-linked requests */
-  free_queue_request_results (d->queue_head);
+  free_request_list_results (
+      d->queue_head, offsetof (struct SocketDNS_Request_T, queue_next));
 
   /* Free hash-linked requests */
   for (int i = 0; i < SOCKET_DNS_REQUEST_HASH_SIZE; i++)
-    free_hash_request_results (d->request_hash[i]);
+    free_request_list_results (
+        d->request_hash[i], offsetof (struct SocketDNS_Request_T, hash_next));
 }
 
 /**
@@ -573,14 +613,13 @@ free_all_requests (T d)
 void
 reset_dns_state (T d)
 {
-  pthread_mutex_lock (&d->mutex);
+  SCOPED_MUTEX_LOCK (&d->mutex);
   free_all_requests (d);
   d->queue_head = NULL;
   d->queue_tail = NULL;
   d->queue_size = 0;
   for (int i = 0; i < SOCKET_DNS_REQUEST_HASH_SIZE; i++)
     d->request_hash[i] = NULL;
-  pthread_mutex_unlock (&d->mutex);
 }
 
 /**
@@ -1040,9 +1079,8 @@ void
 handle_request_timeout (struct SocketDNS_T *dns,
                         struct SocketDNS_Request_T *req)
 {
-  pthread_mutex_lock (&dns->mutex);
+  SCOPED_MUTEX_LOCK (&dns->mutex);
   mark_request_timeout (dns, req);
-  pthread_mutex_unlock (&dns->mutex);
 }
 
 /*
@@ -1321,7 +1359,7 @@ handle_resolution_result (struct SocketDNS_T *dns,
                           struct SocketDNS_Request_T *req,
                           struct addrinfo *result, int res)
 {
-  pthread_mutex_lock (&dns->mutex);
+  SCOPED_MUTEX_LOCK (&dns->mutex);
   if (request_timed_out (dns, req))
     {
       if (result)
@@ -1332,7 +1370,6 @@ handle_resolution_result (struct SocketDNS_T *dns,
       res = EAI_AGAIN;
     }
   store_resolution_result (dns, req, result, res);
-  pthread_mutex_unlock (&dns->mutex);
 }
 
 /**
@@ -1403,16 +1440,14 @@ static int
 check_pre_processing_timeout (struct SocketDNS_T *dns,
                               struct SocketDNS_Request_T *req)
 {
-  pthread_mutex_lock (&dns->mutex);
+  SCOPED_MUTEX_LOCK (&dns->mutex);
   if (request_timed_out (dns, req))
     {
       /* Call mark_request_timeout directly since we already hold mutex
        * (handle_request_timeout would deadlock by trying to lock again) */
       mark_request_timeout (dns, req);
-      pthread_mutex_unlock (&dns->mutex);
       return 1;
     }
-  pthread_mutex_unlock (&dns->mutex);
   return 0;
 }
 
