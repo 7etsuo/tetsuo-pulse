@@ -1401,6 +1401,17 @@ validate_and_apply_setting (SocketHTTP2_Conn_T conn, uint16_t id,
       /* RFC 8441: Extended CONNECT - value must be 0 or 1 */
       if (value > 1)
         {
+          SOCKET_LOG_ERROR_MSG (
+              "SETTINGS_ENABLE_CONNECT_PROTOCOL invalid value: %u", value);
+          http2_send_connection_error (conn, HTTP2_PROTOCOL_ERROR);
+          return -1;
+        }
+      /* RFC 8441 Section 3: sender MUST NOT send 0 after previously sending 1 */
+      if (value == 0
+          && conn->peer_settings[SETTINGS_IDX_ENABLE_CONNECT_PROTOCOL] == 1)
+        {
+          SOCKET_LOG_ERROR_MSG (
+              "SETTINGS_ENABLE_CONNECT_PROTOCOL reverted from 1 to 0");
           http2_send_connection_error (conn, HTTP2_PROTOCOL_ERROR);
           return -1;
         }
