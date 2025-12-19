@@ -910,6 +910,8 @@ static int http2_validate_headers (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T
   int is_request = (conn->role == HTTP2_ROLE_CLIENT ? 1 : 0); /* Client sends requests */
   int pseudo_headers_seen = 0;
   int has_method = 0, has_scheme = 0, has_authority = 0, has_path = 0, has_status = 0;
+  int has_protocol = 0;   /* RFC 8441: Extended CONNECT :protocol pseudo-header */
+  int is_connect_method = 0; /* Track if :method is CONNECT */
   int has_te = 0;
 
   /* Track pseudo-header order - must appear before regular headers */
@@ -948,6 +950,10 @@ static int http2_validate_headers (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T
                 }
               pseudo_headers_seen |= (1 << 0);
               has_method = 1;
+
+              /* Track CONNECT method for RFC 9113/RFC 8441 pseudo-header rules */
+              if (h->value_len == 7 && memcmp (h->value, "CONNECT", 7) == 0)
+                is_connect_method = 1;
 
               /* Method must be valid HTTP method for requests */
               if (is_request && SocketHTTP_method_parse (h->value, h->value_len) == HTTP_METHOD_UNKNOWN)
@@ -1024,10 +1030,41 @@ static int http2_validate_headers (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T
                 }
               pseudo_headers_seen |= (1 << 5);
 
-              /* :protocol requires SETTINGS_ENABLE_CONNECT_PROTOCOL */
-              if (conn->peer_settings[SETTINGS_IDX_ENABLE_CONNECT_PROTOCOL] == 0)
+              /* RFC 8441: :protocol is only valid in requests (Extended CONNECT)
+               * - Server receiving request: check if WE advertised support
+               * - Client receiving response: :protocol should never appear
+               */
+              if (conn->role == HTTP2_ROLE_SERVER)
                 {
-                  SOCKET_LOG_ERROR_MSG (":protocol pseudo-header requires SETTINGS_ENABLE_CONNECT_PROTOCOL");
+                  /* Server must have advertised SETTINGS_ENABLE_CONNECT_PROTOCOL=1 */
+                  if (conn->local_settings[SETTINGS_IDX_ENABLE_CONNECT_PROTOCOL] == 0)
+                    {
+                      SOCKET_LOG_ERROR_MSG (
+                          ":protocol requires SETTINGS_ENABLE_CONNECT_PROTOCOL=1");
+                      goto protocol_error;
+                    }
+                }
+              else
+                {
+                  /* Client should never receive :protocol in responses */
+                  SOCKET_LOG_ERROR_MSG (
+                      ":protocol pseudo-header not allowed in responses");
+                  goto protocol_error;
+                }
+
+              /* RFC 8441: Store :protocol value for Extended CONNECT */
+              has_protocol = 1;
+              stream->is_extended_connect = 1;
+              if (h->value_len > 0 && h->value_len < sizeof (stream->protocol))
+                {
+                  memcpy (stream->protocol, h->value, h->value_len);
+                  stream->protocol[h->value_len] = '\0';
+                }
+              else if (h->value_len > 0)
+                {
+                  /* Protocol value too long */
+                  SOCKET_LOG_ERROR_MSG (":protocol value too long: %zu bytes",
+                                       h->value_len);
                   goto protocol_error;
                 }
             }
@@ -1168,21 +1205,63 @@ static int http2_validate_headers (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T
   /* Validate required pseudo-headers */
   if (is_request)
     {
-      /* Request headers: must have :method, :scheme/:authority, :path */
+      /* All requests must have :method */
       if (!has_method)
         {
           SOCKET_LOG_ERROR_MSG ("Request missing required :method pseudo-header");
           goto protocol_error;
         }
-      if (!has_scheme && !has_authority)
+
+      if (is_connect_method)
         {
-          SOCKET_LOG_ERROR_MSG ("Request missing required :scheme or :authority pseudo-header");
-          goto protocol_error;
+          /* CONNECT requests have different requirements per RFC 9113 §8.5 */
+          if (has_protocol)
+            {
+              /* RFC 8441 Extended CONNECT: :scheme, :path, :authority all required */
+              if (!has_scheme || !has_path || !has_authority)
+                {
+                  SOCKET_LOG_ERROR_MSG (
+                      "Extended CONNECT requires :scheme, :path, and :authority");
+                  goto protocol_error;
+                }
+            }
+          else
+            {
+              /* Standard CONNECT: only :authority allowed, no :scheme/:path */
+              if (!has_authority)
+                {
+                  SOCKET_LOG_ERROR_MSG ("CONNECT requires :authority pseudo-header");
+                  goto protocol_error;
+                }
+              if (has_scheme || has_path)
+                {
+                  SOCKET_LOG_ERROR_MSG (
+                      "Standard CONNECT must not have :scheme or :path pseudo-headers");
+                  goto protocol_error;
+                }
+            }
         }
-      if (!has_path)
+      else
         {
-          SOCKET_LOG_ERROR_MSG ("Request missing required :path pseudo-header");
-          goto protocol_error;
+          /* Non-CONNECT requests per RFC 9113 §8.3.1 */
+          if (!has_scheme && !has_authority)
+            {
+              SOCKET_LOG_ERROR_MSG (
+                  "Request missing required :scheme or :authority pseudo-header");
+              goto protocol_error;
+            }
+          if (!has_path)
+            {
+              SOCKET_LOG_ERROR_MSG ("Request missing required :path pseudo-header");
+              goto protocol_error;
+            }
+          /* :protocol only valid with CONNECT method */
+          if (has_protocol)
+            {
+              SOCKET_LOG_ERROR_MSG (
+                  ":protocol pseudo-header only valid with CONNECT method");
+              goto protocol_error;
+            }
         }
     }
   else

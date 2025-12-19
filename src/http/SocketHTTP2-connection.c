@@ -733,6 +733,8 @@ should_send_setting (uint16_t id, uint32_t value)
       return value != SOCKETHTTP2_DEFAULT_MAX_FRAME_SIZE;
     case HTTP2_SETTINGS_MAX_HEADER_LIST_SIZE:
       return 1; /* Always send this one */
+    case HTTP2_SETTINGS_ENABLE_CONNECT_PROTOCOL:
+      return value != 0; /* RFC 8441: Send if enabled (differs from default 0) */
     default:
       return 0;
     }

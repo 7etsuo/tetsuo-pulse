@@ -236,6 +236,10 @@ struct SocketHTTP2_Stream
   int trailers_received; /**< Trailers received */
   int rst_received;      /**< RST_STREAM received (prevents sending RST_STREAM in response) */
 
+  /* RFC 8441 Extended CONNECT support */
+  int is_extended_connect; /**< 1 if RFC 8441 Extended CONNECT request */
+  char protocol[32];       /**< :protocol value (e.g., "websocket") for Extended CONNECT */
+
   /* Decoded headers storage */
   SocketHPACK_Header
       headers[SOCKETHTTP2_MAX_DECODED_HEADERS]; /**< Decoded initial headers */
