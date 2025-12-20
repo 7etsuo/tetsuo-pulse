@@ -24,6 +24,7 @@
 #include "http/SocketHTTPClient.h"
 #include "socket/Socket.h"
 #include "socket/SocketDgram.h"
+#include "socket/SocketWS.h"
 
 #ifdef SOCKET_HAS_TLS
 #include "tls/SocketTLS.h"
@@ -55,8 +56,7 @@ struct SocketSimple_HTTP
 
 struct SocketSimple_WS
 {
-  void *ws; /* SocketWS_T */
-  struct SocketSimple_Socket *sock;
+  SocketWS_T ws;
 };
 
 /* ============================================================================

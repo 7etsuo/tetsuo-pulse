@@ -47,6 +47,7 @@ Socket_simple_connect_tls_ex (const char *host, int port,
 {
   volatile Socket_T sock = NULL;
   volatile SocketTLSContext_T ctx = NULL;
+  volatile int exception_occurred = 0;
   struct SocketSimple_Socket *handle = NULL;
   SocketSimple_TLSOptions opts_local;
 
@@ -109,31 +110,46 @@ Socket_simple_connect_tls_ex (const char *host, int port,
   EXCEPT (SocketTLS_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_TLS, "TLS error");
-    goto cleanup;
+    exception_occurred = 1;
   }
   EXCEPT (SocketTLS_HandshakeFailed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_TLS_HANDSHAKE, "TLS handshake failed");
-    goto cleanup;
+    exception_occurred = 1;
   }
   EXCEPT (SocketTLS_VerifyFailed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_TLS_VERIFY,
                       "Certificate verification failed");
-    goto cleanup;
+    exception_occurred = 1;
   }
   EXCEPT (Socket_Failed)
   {
     simple_set_error_errno (SOCKET_SIMPLE_ERR_CONNECT, "Connection failed");
-    goto cleanup;
+    exception_occurred = 1;
+  }
+  FINALLY
+  {
+    if (exception_occurred)
+      {
+        if (ctx)
+          SocketTLSContext_free ((SocketTLSContext_T *)&ctx);
+        if (sock)
+          Socket_free ((Socket_T *)&sock);
+      }
   }
   END_TRY;
+
+  if (exception_occurred)
+    return NULL;
 
   handle = calloc (1, sizeof (*handle));
   if (!handle)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
-      goto cleanup;
+      SocketTLSContext_free ((SocketTLSContext_T *)&ctx);
+      Socket_free ((Socket_T *)&sock);
+      return NULL;
     }
 
   handle->socket = sock;
@@ -141,13 +157,6 @@ Socket_simple_connect_tls_ex (const char *host, int port,
   handle->is_tls = 1;
   handle->is_connected = 1;
   return handle;
-
-cleanup:
-  if (ctx)
-    SocketTLSContext_free ((SocketTLSContext_T *)&ctx);
-  if (sock)
-    Socket_free ((Socket_T *)&sock);
-  return NULL;
 }
 
 int
@@ -161,6 +170,7 @@ Socket_simple_enable_tls_ex (SocketSimple_Socket_T sock, const char *hostname,
                              const SocketSimple_TLSOptions *opts_param)
 {
   volatile SocketTLSContext_T ctx = NULL;
+  volatile int exception_occurred = 0;
   SocketSimple_TLSOptions opts_local;
 
   /* Copy options to local before TRY block */
@@ -206,18 +216,22 @@ Socket_simple_enable_tls_ex (SocketSimple_Socket_T sock, const char *hostname,
   EXCEPT (SocketTLS_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_TLS, "TLS error");
-    if (ctx)
-      SocketTLSContext_free ((SocketTLSContext_T *)&ctx);
-    return -1;
+    exception_occurred = 1;
   }
   EXCEPT (SocketTLS_HandshakeFailed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_TLS_HANDSHAKE, "TLS handshake failed");
-    if (ctx)
+    exception_occurred = 1;
+  }
+  FINALLY
+  {
+    if (exception_occurred && ctx)
       SocketTLSContext_free ((SocketTLSContext_T *)&ctx);
-    return -1;
   }
   END_TRY;
+
+  if (exception_occurred)
+    return -1;
 
   sock->tls_ctx = ctx;
   sock->is_tls = 1;
@@ -313,6 +327,7 @@ Socket_simple_listen_tls (const char *host, int port, int backlog,
 {
   volatile Socket_T sock = NULL;
   volatile SocketTLSContext_T ctx = NULL;
+  volatile int exception_occurred = 0;
   struct SocketSimple_Socket *handle = NULL;
 
   Socket_simple_clear_error ();
@@ -344,7 +359,7 @@ Socket_simple_listen_tls (const char *host, int port, int backlog,
   {
     simple_set_error (SOCKET_SIMPLE_ERR_TLS,
                       "Failed to create TLS server context");
-    goto cleanup;
+    exception_occurred = 1;
   }
   EXCEPT (Socket_Failed)
   {
@@ -357,15 +372,30 @@ Socket_simple_listen_tls (const char *host, int port, int backlog,
       {
         simple_set_error_errno (SOCKET_SIMPLE_ERR_LISTEN, "Listen failed");
       }
-    goto cleanup;
+    exception_occurred = 1;
+  }
+  FINALLY
+  {
+    if (exception_occurred)
+      {
+        if (ctx)
+          SocketTLSContext_free ((SocketTLSContext_T *)&ctx);
+        if (sock)
+          Socket_free ((Socket_T *)&sock);
+      }
   }
   END_TRY;
+
+  if (exception_occurred)
+    return NULL;
 
   handle = calloc (1, sizeof (*handle));
   if (!handle)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
-      goto cleanup;
+      SocketTLSContext_free ((SocketTLSContext_T *)&ctx);
+      Socket_free ((Socket_T *)&sock);
+      return NULL;
     }
 
   handle->socket = sock;
@@ -374,19 +404,13 @@ Socket_simple_listen_tls (const char *host, int port, int backlog,
   handle->is_server = 1;
   handle->is_connected = 0;
   return handle;
-
-cleanup:
-  if (ctx)
-    SocketTLSContext_free ((SocketTLSContext_T *)&ctx);
-  if (sock)
-    Socket_free ((Socket_T *)&sock);
-  return NULL;
 }
 
 SocketSimple_Socket_T
 Socket_simple_accept_tls (SocketSimple_Socket_T server)
 {
   volatile Socket_T client = NULL;
+  volatile int exception_occurred = 0;
   struct SocketSimple_Socket *handle = NULL;
 
   Socket_simple_clear_error ();
@@ -419,32 +443,45 @@ Socket_simple_accept_tls (SocketSimple_Socket_T server)
   EXCEPT (SocketTLS_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_TLS, "TLS error during accept");
-    goto cleanup;
+    exception_occurred = 1;
   }
   EXCEPT (SocketTLS_HandshakeFailed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_TLS_HANDSHAKE,
                       "TLS handshake failed during accept");
-    goto cleanup;
+    exception_occurred = 1;
   }
   EXCEPT (SocketTLS_VerifyFailed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_TLS_VERIFY,
                       "Client certificate verification failed");
-    goto cleanup;
+    exception_occurred = 1;
   }
   EXCEPT (Socket_Failed)
   {
     simple_set_error_errno (SOCKET_SIMPLE_ERR_ACCEPT, "Accept failed");
-    goto cleanup;
+    exception_occurred = 1;
+  }
+  FINALLY
+  {
+    if (exception_occurred && client)
+      {
+        SocketTLS_disable (client);
+        Socket_free ((Socket_T *)&client);
+      }
   }
   END_TRY;
+
+  if (exception_occurred)
+    return NULL;
 
   handle = calloc (1, sizeof (*handle));
   if (!handle)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
-      goto cleanup;
+      SocketTLS_disable (client);
+      Socket_free ((Socket_T *)&client);
+      return NULL;
     }
 
   handle->socket = client;
@@ -453,14 +490,6 @@ Socket_simple_accept_tls (SocketSimple_Socket_T server)
   handle->is_server = 0;
   handle->is_connected = 1;
   return handle;
-
-cleanup:
-  if (client)
-    {
-      SocketTLS_disable (client);
-      Socket_free ((Socket_T *)&client);
-    }
-  return NULL;
 }
 
 #else /* !SOCKET_HAS_TLS */

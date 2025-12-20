@@ -8,7 +8,7 @@
  * @file SocketSimple-ws.c
  * @brief WebSocket implementation for Simple API.
  *
- * TODO: Wrap SocketWS module.
+ * Wraps the SocketWS module with exception-safe Simple API patterns.
  */
 
 #include "SocketSimple-internal.h"
@@ -28,124 +28,441 @@ Socket_simple_ws_options_init (SocketSimple_WSOptions *opts)
 }
 
 /* ============================================================================
- * Connection (TODO)
+ * Connection Functions
  * ============================================================================
  */
 
 SocketSimple_WS_T
 Socket_simple_ws_connect (const char *url)
 {
-  (void)url;
-  simple_set_error (SOCKET_SIMPLE_ERR_UNSUPPORTED,
-                    "WebSocket not yet implemented");
-  return NULL;
+  return Socket_simple_ws_connect_ex (url, NULL);
 }
 
 SocketSimple_WS_T
-Socket_simple_ws_connect_ex (const char *url, const SocketSimple_WSOptions *opts)
+Socket_simple_ws_connect_ex (const char *url,
+                             const SocketSimple_WSOptions *opts_param)
 {
-  (void)url;
-  (void)opts;
-  simple_set_error (SOCKET_SIMPLE_ERR_UNSUPPORTED,
-                    "WebSocket not yet implemented");
-  return NULL;
+  volatile SocketWS_T ws = NULL;
+  volatile int exception_occurred = 0;
+  struct SocketSimple_WS *handle = NULL;
+  SocketSimple_WSOptions opts_local;
+  const char *protocols;
+
+  Socket_simple_clear_error ();
+
+  if (!url)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid URL");
+      return NULL;
+    }
+
+  if (!opts_param)
+    {
+      Socket_simple_ws_options_init (&opts_local);
+      opts_param = &opts_local;
+    }
+
+  protocols = opts_param->subprotocols;
+
+  TRY { ws = SocketWS_connect (url, protocols); }
+  EXCEPT (SocketWS_Failed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_CONNECT, "WebSocket connection failed");
+    exception_occurred = 1;
+  }
+  EXCEPT (SocketWS_ProtocolError)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_WS_PROTOCOL, "WebSocket protocol error");
+    exception_occurred = 1;
+  }
+  FINALLY
+  {
+    if (exception_occurred && ws)
+      {
+        SocketWS_free ((SocketWS_T *)&ws);
+      }
+  }
+  END_TRY;
+
+  if (exception_occurred)
+    return NULL;
+
+  if (!ws)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_CONNECT, "WebSocket connection failed");
+      return NULL;
+    }
+
+  handle = calloc (1, sizeof (*handle));
+  if (!handle)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
+      SocketWS_free ((SocketWS_T *)&ws);
+      return NULL;
+    }
+
+  handle->ws = ws;
+  return handle;
 }
 
 /* ============================================================================
- * Send (TODO)
+ * Send Functions
  * ============================================================================
  */
 
 int
 Socket_simple_ws_send_text (SocketSimple_WS_T ws, const char *text, size_t len)
 {
-  (void)ws;
-  (void)text;
-  (void)len;
-  simple_set_error (SOCKET_SIMPLE_ERR_UNSUPPORTED,
-                    "WebSocket not yet implemented");
-  return -1;
+  volatile int ret = -1;
+  volatile int exception_occurred = 0;
+
+  Socket_simple_clear_error ();
+
+  if (!ws || !ws->ws || !text)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
+      return -1;
+    }
+
+  TRY { ret = SocketWS_send_text (ws->ws, text, len); }
+  EXCEPT (SocketWS_Failed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_SEND, "WebSocket send failed");
+    exception_occurred = 1;
+  }
+  EXCEPT (SocketWS_Closed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_CLOSED, "WebSocket connection closed");
+    exception_occurred = 1;
+  }
+  END_TRY;
+
+  if (exception_occurred)
+    return -1;
+
+  if (ret != 0)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_SEND, "WebSocket send failed");
+      return -1;
+    }
+
+  return 0;
 }
 
 int
 Socket_simple_ws_send_binary (SocketSimple_WS_T ws, const void *data,
                               size_t len)
 {
-  (void)ws;
-  (void)data;
-  (void)len;
-  simple_set_error (SOCKET_SIMPLE_ERR_UNSUPPORTED,
-                    "WebSocket not yet implemented");
-  return -1;
+  volatile int ret = -1;
+  volatile int exception_occurred = 0;
+
+  Socket_simple_clear_error ();
+
+  if (!ws || !ws->ws || !data)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
+      return -1;
+    }
+
+  TRY { ret = SocketWS_send_binary (ws->ws, data, len); }
+  EXCEPT (SocketWS_Failed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_SEND, "WebSocket send failed");
+    exception_occurred = 1;
+  }
+  EXCEPT (SocketWS_Closed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_CLOSED, "WebSocket connection closed");
+    exception_occurred = 1;
+  }
+  END_TRY;
+
+  if (exception_occurred)
+    return -1;
+
+  if (ret != 0)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_SEND, "WebSocket send failed");
+      return -1;
+    }
+
+  return 0;
 }
 
 int
 Socket_simple_ws_send_json (SocketSimple_WS_T ws, const char *json)
 {
-  (void)ws;
-  (void)json;
-  simple_set_error (SOCKET_SIMPLE_ERR_UNSUPPORTED,
-                    "WebSocket not yet implemented");
-  return -1;
+  volatile int ret = -1;
+  volatile int exception_occurred = 0;
+
+  Socket_simple_clear_error ();
+
+  if (!ws || !ws->ws || !json)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
+      return -1;
+    }
+
+  TRY { ret = SocketWS_send_json (ws->ws, json); }
+  EXCEPT (SocketWS_Failed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_SEND, "WebSocket send failed");
+    exception_occurred = 1;
+  }
+  EXCEPT (SocketWS_Closed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_CLOSED, "WebSocket connection closed");
+    exception_occurred = 1;
+  }
+  END_TRY;
+
+  if (exception_occurred)
+    return -1;
+
+  if (ret != 0)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_SEND, "WebSocket send failed");
+      return -1;
+    }
+
+  return 0;
 }
 
 int
 Socket_simple_ws_ping (SocketSimple_WS_T ws)
 {
-  (void)ws;
-  simple_set_error (SOCKET_SIMPLE_ERR_UNSUPPORTED,
-                    "WebSocket not yet implemented");
-  return -1;
+  volatile int ret = -1;
+  volatile int exception_occurred = 0;
+
+  Socket_simple_clear_error ();
+
+  if (!ws || !ws->ws)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid WebSocket");
+      return -1;
+    }
+
+  TRY { ret = SocketWS_ping (ws->ws, NULL, 0); }
+  EXCEPT (SocketWS_Failed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_SEND, "WebSocket ping failed");
+    exception_occurred = 1;
+  }
+  EXCEPT (SocketWS_Closed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_CLOSED, "WebSocket connection closed");
+    exception_occurred = 1;
+  }
+  END_TRY;
+
+  if (exception_occurred)
+    return -1;
+
+  if (ret != 0)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_SEND, "WebSocket ping failed");
+      return -1;
+    }
+
+  return 0;
 }
 
 /* ============================================================================
- * Receive (TODO)
+ * Receive Functions
  * ============================================================================
  */
+
+static SocketSimple_WSMessageType
+map_opcode_to_simple_type (SocketWS_Opcode opcode)
+{
+  switch (opcode)
+    {
+    case WS_OPCODE_TEXT:
+      return SOCKET_SIMPLE_WS_TEXT;
+    case WS_OPCODE_BINARY:
+      return SOCKET_SIMPLE_WS_BINARY;
+    case WS_OPCODE_PING:
+      return SOCKET_SIMPLE_WS_PING;
+    case WS_OPCODE_PONG:
+      return SOCKET_SIMPLE_WS_PONG;
+    case WS_OPCODE_CLOSE:
+      return SOCKET_SIMPLE_WS_CLOSE;
+    default:
+      return SOCKET_SIMPLE_WS_BINARY;
+    }
+}
 
 int
 Socket_simple_ws_recv (SocketSimple_WS_T ws, SocketSimple_WSMessage *msg)
 {
-  (void)ws;
-  (void)msg;
-  simple_set_error (SOCKET_SIMPLE_ERR_UNSUPPORTED,
-                    "WebSocket not yet implemented");
-  return -1;
+  volatile int ret = -1;
+  volatile int exception_occurred = 0;
+  SocketWS_Message lib_msg;
+
+  Socket_simple_clear_error ();
+
+  if (!ws || !ws->ws || !msg)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
+      return -1;
+    }
+
+  memset (msg, 0, sizeof (*msg));
+  memset (&lib_msg, 0, sizeof (lib_msg));
+
+  TRY { ret = SocketWS_recv_message (ws->ws, &lib_msg); }
+  EXCEPT (SocketWS_Failed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_RECV, "WebSocket receive failed");
+    exception_occurred = 1;
+  }
+  EXCEPT (SocketWS_Closed)
+  {
+    /* Get close info before marking as exception */
+    msg->type = SOCKET_SIMPLE_WS_CLOSE;
+    msg->close_code = SocketWS_close_code (ws->ws);
+    const char *reason = SocketWS_close_reason (ws->ws);
+    if (reason)
+      msg->close_reason = strdup (reason);
+    return 0; /* Not an error, just closed */
+  }
+  EXCEPT (SocketWS_ProtocolError)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_WS_PROTOCOL, "WebSocket protocol error");
+    exception_occurred = 1;
+  }
+  END_TRY;
+
+  if (exception_occurred)
+    return -1;
+
+  if (ret == 0)
+    {
+      /* Clean close */
+      msg->type = SOCKET_SIMPLE_WS_CLOSE;
+      msg->close_code = SocketWS_close_code (ws->ws);
+      const char *reason = SocketWS_close_reason (ws->ws);
+      if (reason)
+        msg->close_reason = strdup (reason);
+      return 0;
+    }
+
+  if (ret < 0)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_RECV, "WebSocket receive failed");
+      return -1;
+    }
+
+  /* Copy message to simple struct */
+  msg->type = map_opcode_to_simple_type (lib_msg.type);
+  msg->len = lib_msg.len;
+  msg->data = lib_msg.data; /* Transfer ownership */
+
+  return 0;
 }
 
 int
 Socket_simple_ws_recv_timeout (SocketSimple_WS_T ws, SocketSimple_WSMessage *msg,
                                int timeout_ms)
 {
-  (void)ws;
-  (void)msg;
-  (void)timeout_ms;
-  simple_set_error (SOCKET_SIMPLE_ERR_UNSUPPORTED,
-                    "WebSocket not yet implemented");
-  return -1;
+  Socket_simple_clear_error ();
+
+  if (!ws || !ws->ws || !msg)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
+      return -1;
+    }
+
+  /* Use Socket_probe on the underlying socket for timeout */
+  Socket_T sock = SocketWS_socket (ws->ws);
+  if (!sock)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_SOCKET, "Invalid socket");
+      return -1;
+    }
+
+  volatile int ready = 0;
+  volatile int exception_occurred = 0;
+
+  TRY { ready = Socket_probe (sock, timeout_ms); }
+  EXCEPT (Socket_Failed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_RECV, "Socket probe failed");
+    exception_occurred = 1;
+  }
+  END_TRY;
+
+  if (exception_occurred)
+    return -1;
+
+  if (!ready)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "Receive timed out");
+      return 1; /* Timeout */
+    }
+
+  return Socket_simple_ws_recv (ws, msg);
 }
 
 /* ============================================================================
- * Close
+ * Close Functions
  * ============================================================================
  */
 
 int
 Socket_simple_ws_close (SocketSimple_WS_T ws, int code, const char *reason)
 {
-  (void)ws;
-  (void)code;
-  (void)reason;
-  simple_set_error (SOCKET_SIMPLE_ERR_UNSUPPORTED,
-                    "WebSocket not yet implemented");
-  return -1;
+  volatile int ret = -1;
+  volatile int exception_occurred = 0;
+
+  Socket_simple_clear_error ();
+
+  if (!ws || !ws->ws)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid WebSocket");
+      return -1;
+    }
+
+  TRY { ret = SocketWS_close (ws->ws, code, reason); }
+  EXCEPT (SocketWS_Failed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_SOCKET, "WebSocket close failed");
+    exception_occurred = 1;
+  }
+  EXCEPT (SocketWS_Closed)
+  {
+    /* Already closed, not an error */
+    return 0;
+  }
+  END_TRY;
+
+  if (exception_occurred)
+    return -1;
+
+  if (ret != 0)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_SOCKET, "WebSocket close failed");
+      return -1;
+    }
+
+  return 0;
 }
 
 void
 Socket_simple_ws_free (SocketSimple_WS_T *ws)
 {
-  if (ws)
-    *ws = NULL;
+  if (!ws || !*ws)
+    return;
+
+  struct SocketSimple_WS *handle = *ws;
+
+  if (handle->ws)
+    {
+      SocketWS_free (&handle->ws);
+    }
+
+  free (handle);
+  *ws = NULL;
 }
 
 void
@@ -159,27 +476,30 @@ Socket_simple_ws_message_free (SocketSimple_WSMessage *msg)
 }
 
 /* ============================================================================
- * Status
+ * Status Functions
  * ============================================================================
  */
 
 int
 Socket_simple_ws_is_open (SocketSimple_WS_T ws)
 {
-  (void)ws;
-  return 0;
+  if (!ws || !ws->ws)
+    return 0;
+  return SocketWS_state (ws->ws) == WS_STATE_OPEN;
 }
 
 const char *
 Socket_simple_ws_protocol (SocketSimple_WS_T ws)
 {
-  (void)ws;
-  return NULL;
+  if (!ws || !ws->ws)
+    return NULL;
+  return SocketWS_selected_subprotocol (ws->ws);
 }
 
 int
 Socket_simple_ws_fd (SocketSimple_WS_T ws)
 {
-  (void)ws;
-  return -1;
+  if (!ws || !ws->ws)
+    return -1;
+  return SocketWS_pollfd (ws->ws);
 }

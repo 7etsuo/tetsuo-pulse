@@ -29,6 +29,8 @@ Socket_simple_dns_resolve_timeout (const char *hostname,
   volatile struct addrinfo *res = NULL;
   struct addrinfo *p;
   struct addrinfo hints;
+  volatile int ret = -1;
+  volatile int exception_occurred = 0;
   int count = 0;
 
   Socket_simple_clear_error ();
@@ -53,9 +55,21 @@ Socket_simple_dns_resolve_timeout (const char *hostname,
   EXCEPT (SocketDNS_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_DNS, "DNS resolution failed");
-    return -1;
+    exception_occurred = 1;
+  }
+  FINALLY
+  {
+    /* Cleanup res on exception - normal path handles it below */
+    if (exception_occurred && res)
+      {
+        freeaddrinfo ((struct addrinfo *)res);
+        res = NULL;
+      }
   }
   END_TRY;
+
+  if (exception_occurred)
+    return -1;
 
   if (!res)
     {
@@ -88,7 +102,7 @@ Socket_simple_dns_resolve_timeout (const char *hostname,
   for (p = (struct addrinfo *)res; p != NULL && i < count; p = p->ai_next)
     {
       char host[NI_MAXHOST];
-      /* Use library's reverse lookup wrapper */
+      /* Use library's reverse lookup wrapper - returns 0 on success */
       if (SocketCommon_reverse_lookup (p->ai_addr, p->ai_addrlen, host,
                                        sizeof (host), NULL, 0, NI_NUMERICHOST,
                                        SocketCommon_Failed)
@@ -114,7 +128,8 @@ Socket_simple_dns_resolve_timeout (const char *hostname,
       return -1;
     }
 
-  return 0;
+  ret = 0;
+  return ret;
 }
 
 int
@@ -148,6 +163,8 @@ Socket_simple_dns_lookup4 (const char *hostname, char *buf, size_t len)
   SocketDNS_T dns = SocketCommon_get_dns_resolver ();
   volatile struct addrinfo *res = NULL;
   struct addrinfo hints;
+  volatile int exception_occurred = 0;
+  int ret = -1;
 
   Socket_simple_clear_error ();
 
@@ -170,9 +187,20 @@ Socket_simple_dns_lookup4 (const char *hostname, char *buf, size_t len)
   EXCEPT (SocketDNS_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_DNS, "DNS resolution failed");
-    return -1;
+    exception_occurred = 1;
+  }
+  FINALLY
+  {
+    if (exception_occurred && res)
+      {
+        freeaddrinfo ((struct addrinfo *)res);
+        res = NULL;
+      }
   }
   END_TRY;
+
+  if (exception_occurred)
+    return -1;
 
   if (!res)
     {
@@ -188,16 +216,15 @@ Socket_simple_dns_lookup4 (const char *hostname, char *buf, size_t len)
       == 0)
     {
       snprintf (buf, len, "%s", host);
+      ret = 0;
     }
   else
     {
-      freeaddrinfo ((struct addrinfo *)res);
       simple_set_error (SOCKET_SIMPLE_ERR_DNS, "Failed to get address string");
-      return -1;
     }
 
   freeaddrinfo ((struct addrinfo *)res);
-  return 0;
+  return ret;
 }
 
 int
@@ -206,6 +233,8 @@ Socket_simple_dns_lookup6 (const char *hostname, char *buf, size_t len)
   SocketDNS_T dns = SocketCommon_get_dns_resolver ();
   volatile struct addrinfo *res = NULL;
   struct addrinfo hints;
+  volatile int exception_occurred = 0;
+  int ret = -1;
 
   Socket_simple_clear_error ();
 
@@ -228,9 +257,20 @@ Socket_simple_dns_lookup6 (const char *hostname, char *buf, size_t len)
   EXCEPT (SocketDNS_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_DNS, "DNS resolution failed");
-    return -1;
+    exception_occurred = 1;
+  }
+  FINALLY
+  {
+    if (exception_occurred && res)
+      {
+        freeaddrinfo ((struct addrinfo *)res);
+        res = NULL;
+      }
   }
   END_TRY;
+
+  if (exception_occurred)
+    return -1;
 
   if (!res)
     {
@@ -246,22 +286,23 @@ Socket_simple_dns_lookup6 (const char *hostname, char *buf, size_t len)
       == 0)
     {
       snprintf (buf, len, "%s", host);
+      ret = 0;
     }
   else
     {
-      freeaddrinfo ((struct addrinfo *)res);
       simple_set_error (SOCKET_SIMPLE_ERR_DNS, "Failed to get address string");
-      return -1;
     }
 
   freeaddrinfo ((struct addrinfo *)res);
-  return 0;
+  return ret;
 }
 
 int
 Socket_simple_dns_reverse (const char *ip, char *hostname, size_t len)
 {
-  struct addrinfo hints, *res;
+  struct addrinfo hints;
+  struct addrinfo *res = NULL;
+  int ret = -1;
 
   Socket_simple_clear_error ();
 
@@ -292,15 +333,17 @@ Socket_simple_dns_reverse (const char *ip, char *hostname, size_t len)
   /* Use library's reverse lookup (without NI_NUMERICHOST to get hostname) */
   if (SocketCommon_reverse_lookup (res->ai_addr, res->ai_addrlen, hostname, len,
                                    NULL, 0, 0, SocketCommon_Failed)
-      != 0)
+      == 0)
     {
-      freeaddrinfo (res);
+      ret = 0;
+    }
+  else
+    {
       simple_set_error (SOCKET_SIMPLE_ERR_DNS, "Reverse lookup failed");
-      return -1;
     }
 
   freeaddrinfo (res);
-  return 0;
+  return ret;
 }
 
 void
