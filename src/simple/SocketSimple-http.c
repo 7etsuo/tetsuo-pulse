@@ -29,7 +29,16 @@ static pthread_mutex_t g_http_mutex = PTHREAD_MUTEX_INITIALIZER;
 static void
 init_global_http_client (void)
 {
-  TRY { g_http_client = SocketHTTPClient_new (NULL); }
+  SocketHTTPClient_Config config;
+
+  /* Use HTTP/1.1 only for Simple API global client.
+   * HTTP/2 requires more complex async processing that doesn't fit
+   * the simple blocking API model well. Users who need HTTP/2 should
+   * use the full SocketHTTPClient API with Socket_simple_http_new_ex(). */
+  SocketHTTPClient_config_defaults (&config);
+  config.max_version = HTTP_VERSION_1_1;
+
+  TRY { g_http_client = SocketHTTPClient_new (&config); }
   EXCEPT (SocketHTTPClient_Failed) { g_http_client = NULL; }
   END_TRY;
 }

@@ -426,7 +426,7 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
  * @see docs/SECURITY.md#tls-versions for detailed version security analysis.
  */
 #ifndef SOCKET_TLS_MIN_VERSION
-#define SOCKET_TLS_MIN_VERSION TLS1_3_VERSION
+#define SOCKET_TLS_MIN_VERSION TLS1_2_VERSION
 #endif
 
 /**

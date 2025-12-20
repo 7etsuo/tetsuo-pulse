@@ -1112,9 +1112,10 @@ TEST (tls_protocol_version_config)
   SocketTLSContext_T ctx = NULL;
   SocketTLSConfig_T config;
 
-  /* Test 1: Verify default config uses TLS 1.3 */
+  /* Test 1: Verify default config - min is TLS 1.2 for compatibility,
+   * max is TLS 1.3 for best security when supported */
   SocketTLS_config_defaults (&config);
-  ASSERT_EQ (config.min_version, TLS1_3_VERSION);
+  ASSERT_EQ (config.min_version, TLS1_2_VERSION);
   ASSERT_EQ (config.max_version, TLS1_3_VERSION);
 
   /* Test 2: Create context with default config - should be TLS 1.3 */

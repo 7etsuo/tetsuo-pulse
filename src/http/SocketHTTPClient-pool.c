@@ -1281,8 +1281,13 @@ setup_tls_connection (SocketHTTPClient_T client, Socket_T *socket,
       return -1;
     }
 
-  /* Configure ALPN for HTTP/2 negotiation */
-  configure_alpn_for_http2 (tls_ctx, client->config.max_version);
+  /* Configure ALPN for HTTP/2 negotiation.
+   * Non-pooled mode (pool == NULL) only supports HTTP/1.1, so limit ALPN
+   * to prevent negotiating h2 that we can't handle. */
+  SocketHTTP_Version effective_max_version = client->config.max_version;
+  if (client->pool == NULL && effective_max_version > HTTP_VERSION_1_1)
+    effective_max_version = HTTP_VERSION_1_1;
+  configure_alpn_for_http2 (tls_ctx, effective_max_version);
 
   if (enable_socket_tls (*socket, tls_ctx) != 0)
     {
@@ -1511,7 +1516,18 @@ httpclient_connect (SocketHTTPClient_T client, const SocketHTTP_URI *uri)
     return create_pooled_entry (client, socket, uri->host, port, is_secure,
                                 negotiated_version);
 
-  /* Non-pooled: only HTTP/1.1 for now (temp entries don't support HTTP/2) */
+  /* Non-pooled: only HTTP/1.1 supported (temp entries don't do HTTP/2).
+   * If ALPN negotiated h2, we must fail since we can't handle HTTP/2 framing.
+   * This can happen when the server only supports h2 (rare) or prefers it. */
+  if (negotiated_version == HTTP_VERSION_2)
+    {
+      HTTPCLIENT_ERROR_MSG ("HTTP/2 negotiated but non-pooled mode only "
+                            "supports HTTP/1.1");
+      Socket_free (&socket);
+      client->last_error = HTTPCLIENT_ERROR_PROTOCOL;
+      return NULL;
+    }
+
   TRY { return create_temp_entry (socket, uri->host, port, is_secure); }
   EXCEPT (Arena_Failed)
   {

@@ -484,9 +484,9 @@ generate_hash_seed (void)
   unsigned char seed_bytes[sizeof (unsigned)];
   unsigned seed;
 
-  ssize_t got_bytes
-      = SocketCrypto_random_bytes (seed_bytes, sizeof (seed_bytes));
-  if (got_bytes == (ssize_t)sizeof (seed_bytes))
+  /* SocketCrypto_random_bytes returns 0 on success, -1 on failure */
+  int result = SocketCrypto_random_bytes (seed_bytes, sizeof (seed_bytes));
+  if (result == 0)
     {
       memcpy (&seed, seed_bytes, sizeof (seed));
     }
@@ -495,8 +495,8 @@ generate_hash_seed (void)
       /* Fallback: time + PID */
       seed = (unsigned)time (NULL) ^ (unsigned)getpid ();
       SOCKET_LOG_WARN_MSG (
-          "SocketIPTracker: fallback hash seed (crypto random failed: %zd)",
-          got_bytes);
+          "SocketIPTracker: fallback hash seed (crypto random failed: %d)",
+          result);
     }
 
   return seed;

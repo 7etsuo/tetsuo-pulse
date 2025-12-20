@@ -250,12 +250,15 @@ init_crl_mutex (T ctx)
  */
 
 /**
- * configure_tls13_only - Apply TLS1.3-only security settings
+ * configure_tls13_only - Apply secure TLS settings
  * @ssl_ctx: OpenSSL context to configure
  *
- * Sets minimum/maximum protocol to TLS1.3, configures modern ciphers,
- * disables renegotiation for security, and sets certificate chain
- * depth limit.
+ * Sets minimum/maximum protocol versions (TLS 1.2 min, TLS 1.3 max by default),
+ * configures modern ciphers for both TLS 1.2 and 1.3, disables renegotiation
+ * for security, and sets certificate chain depth limit.
+ *
+ * TLS 1.2 ciphers: ECDHE + AEAD only (AES-GCM, ChaCha20-Poly1305)
+ * TLS 1.3 ciphers: Modern AEAD suites
  *
  * Raises: SocketTLS_Failed on configuration failure
  */
@@ -265,17 +268,25 @@ configure_tls13_only (SSL_CTX *ssl_ctx)
   SSL_CTX_CONFIGURE (ssl_ctx,
                      SSL_CTX_set_min_proto_version (ssl_ctx,
                                                     SOCKET_TLS_MIN_VERSION),
-                     "Failed to set TLS1.3 min version");
+                     "Failed to set TLS min version");
 
   SSL_CTX_CONFIGURE (ssl_ctx,
                      SSL_CTX_set_max_proto_version (ssl_ctx,
                                                     SOCKET_TLS_MAX_VERSION),
-                     "Failed to enforce TLS1.3 max version");
+                     "Failed to set TLS max version");
 
+  /* TLS 1.3 cipher suites (only used for TLS 1.3 connections) */
   SSL_CTX_CONFIGURE (ssl_ctx,
                      SSL_CTX_set_ciphersuites (ssl_ctx,
                                                SOCKET_TLS13_CIPHERSUITES),
-                     "Failed to set secure ciphersuites");
+                     "Failed to set TLS 1.3 ciphersuites");
+
+  /* TLS 1.2 cipher suites: ECDHE + AEAD only for forward secrecy
+   * Excludes CBC modes (Lucky13), RSA key exchange (no PFS), weak ciphers */
+  SSL_CTX_CONFIGURE (ssl_ctx,
+                     SSL_CTX_set_cipher_list (ssl_ctx,
+                         "ECDHE+AESGCM:ECDHE+CHACHA20:!aNULL:!MD5:!RC4"),
+                     "Failed to set TLS 1.2 ciphers");
 
   /* Security options:
    * - NO_RENEGOTIATION: Prevents CVE-2009-3555, Triple Handshake, DoS

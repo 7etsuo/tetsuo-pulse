@@ -423,23 +423,36 @@ he_start_dns_resolution (T he)
                    "Started DNS resolution for %s:%d (timeout=%dms)", he->host,
                    he->port, dns_timeout);
 
-  /* Integrate DNS completion FD with poll if available */
+  /* Integrate DNS completion FD with poll if available.
+   * Note: DNS pollfd may be an eventfd (not a socket), so we check
+   * first before trying to wrap it. Non-socket fds can't be used
+   * with SocketPoll which expects Socket_T wrappers. */
   if (he->poll && he->dns && he->dns_request && !he->dns_poll_wrapper) {
     int orig_fd = SocketDNS_pollfd (he->dns);
     if (orig_fd >= 0) {
-      int dup_fd = fcntl (orig_fd, F_DUPFD_CLOEXEC, 10);
-      if (dup_fd >= 0) {
-        TRY {
-          he->dns_poll_wrapper = Socket_new_from_fd (dup_fd);
-          if (he->dns_poll_wrapper != NULL) {
-            SocketPoll_add (he->poll, he->dns_poll_wrapper, POLL_READ, he);
-          }
-        } EXCEPT (Socket_Failed) {
-          close (dup_fd);
-          SOCKET_LOG_WARN_MSG ("Failed to create DNS poll wrapper");
-        } END_TRY;
+      /* Check if it's actually a socket before wrapping */
+      int optval;
+      socklen_t optlen = sizeof (optval);
+      if (getsockopt (orig_fd, SOL_SOCKET, SO_TYPE, &optval, &optlen) == 0) {
+        /* It's a socket - we can wrap it */
+        int dup_fd = fcntl (orig_fd, F_DUPFD_CLOEXEC, 10);
+        if (dup_fd >= 0) {
+          TRY {
+            he->dns_poll_wrapper = Socket_new_from_fd (dup_fd);
+            if (he->dns_poll_wrapper != NULL) {
+              SocketPoll_add (he->poll, he->dns_poll_wrapper, POLL_READ, he);
+            }
+          } EXCEPT (Socket_Failed) {
+            close (dup_fd);
+            SOCKET_LOG_WARN_MSG ("Failed to create DNS poll wrapper");
+          } END_TRY;
+        } else {
+          SOCKET_LOG_WARN_MSG ("Failed to dup DNS pollfd %d: %s", orig_fd, strerror (errno));
+        }
       } else {
-        SOCKET_LOG_WARN_MSG ("Failed to dup DNS pollfd %d: %s", orig_fd, strerror (errno));
+        /* Not a socket (e.g., eventfd) - can't integrate with SocketPoll.
+         * This is normal for some DNS implementations. */
+        SOCKET_LOG_DEBUG_MSG ("DNS pollfd %d is not a socket (can't integrate with SocketPoll)", orig_fd);
       }
     } else {
       SOCKET_LOG_DEBUG_MSG ("No DNS pollfd available for integration");
