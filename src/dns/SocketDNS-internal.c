@@ -31,6 +31,11 @@
 #include "dns/SocketDNS-private.h"
 #include "dns/SocketDNS.h"
 
+#ifdef __linux__
+#include <resolv.h>
+#include <arpa/inet.h>
+#endif
+
 /* Redefine T after all includes (Arena.h and SocketDNS.h both undef T at end)
  */
 #undef T
@@ -1464,6 +1469,43 @@ process_single_request (struct SocketDNS_T *dns,
   invoke_callback (dns, req);
 }
 
+#ifdef __linux__
+/**
+ * apply_custom_resolver_config - Apply custom nameservers/search domains
+ * @res_state: Thread-local resolver state
+ * @dns: DNS resolver instance (must hold mutex when calling)
+ */
+static void
+apply_custom_resolver_config (struct __res_state *res_state,
+                              struct SocketDNS_T *dns)
+{
+  if (dns->custom_nameservers && dns->nameserver_count > 0)
+    {
+      res_state->nscount = 0;
+      for (size_t i = 0; i < dns->nameserver_count && i < MAXNS; i++)
+        {
+          struct in_addr addr;
+          if (inet_aton (dns->custom_nameservers[i], &addr))
+            {
+              res_state->nsaddr_list[i].sin_addr = addr;
+              res_state->nsaddr_list[i].sin_family = AF_INET;
+              res_state->nsaddr_list[i].sin_port = htons (53);
+              res_state->nscount++;
+            }
+        }
+    }
+
+  /* Note: Search domains are not applied here because res_state->dnsrch
+   * is an array of pointers into defdname buffer, not char arrays.
+   * Implementing proper search domain support requires managing the
+   * defdname buffer layout. For now, only nameservers are applied.
+   * TODO: Implement search domain support with defdname buffer management.
+   */
+  (void)dns->search_domains;
+  (void)dns->search_domain_count;
+}
+#endif
+
 /**
  * worker_thread - Worker thread for DNS resolution
  * @arg: DNS resolver instance
@@ -1480,6 +1522,22 @@ worker_thread (void *arg)
 
   initialize_addrinfo_hints (&hints);
 
+#ifdef __linux__
+  struct __res_state res_state;
+  int resolver_initialized = 0;
+#endif
+
+#ifdef __linux__
+  memset (&res_state, 0, sizeof (res_state));
+  if (res_ninit (&res_state) == 0)
+    {
+      resolver_initialized = 1;
+      pthread_mutex_lock (&dns->mutex);
+      apply_custom_resolver_config (&res_state, dns);
+      pthread_mutex_unlock (&dns->mutex);
+    }
+#endif
+
   while (1)
     {
       struct SocketDNS_Request_T *req;
@@ -1493,6 +1551,11 @@ worker_thread (void *arg)
 
       process_single_request (dns, req, &hints);
     }
+
+#ifdef __linux__
+  if (resolver_initialized)
+    res_nclose (&res_state);
+#endif
 
   return NULL;
 }

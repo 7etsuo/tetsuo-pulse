@@ -38,6 +38,17 @@
 /* Thread-local exception for this translation unit */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLS);
 
+/* Ex-data index for associating SocketTLSContext_T with SSL_CTX */
+static int tls_ctx_ex_data_index = -1;
+
+static void
+ensure_ex_data_index(void)
+{
+  if (tls_ctx_ex_data_index < 0) {
+    tls_ctx_ex_data_index = SSL_CTX_get_ex_new_index(0, NULL, NULL, NULL, NULL);
+  }
+}
+
 
 /* ============================================================================
  * TCP Optimization for TLS Handshake
@@ -633,6 +644,15 @@ SocketTLS_get_key_update_count (Socket_T socket)
 
 /* Sharded session cache structs defined in SocketTLS-private.h */
 
+/**
+ * @brief Session entry wrapper for intrusive hash table
+ */
+typedef struct SessionEntry {
+  unsigned char session_id[32];  /**< Copy of session ID for lookup */
+  SSL_SESSION *session;          /**< The OpenSSL session object */
+  struct SessionEntry *next;     /**< Hash chain pointer */
+} SessionEntry;
+
 /* Helper functions for sharded session hash table */
 static unsigned
 sharded_session_hash (const void *key, unsigned seed, unsigned table_size)
@@ -650,9 +670,7 @@ sharded_session_compare (const void *entry, const void *key)
 static void **
 sharded_session_next_ptr (void *entry)
 {
-  (void) entry;
-  static void *dummy_next;
-  return &dummy_next;
+  return (void **)&((SessionEntry *)entry)->next;
 }
 
 /* Static config for sharded session hash table */
@@ -676,6 +694,107 @@ select_shard (TLSSessionCacheSharded_T *cache, const unsigned char *session_id,
       hash = hash * 31 + session_id[i];
     }
   return (size_t)((hash * HASH_GOLDEN_RATIO) & cache->shard_mask);
+}
+
+/**
+ * sharded_get_session_cb - Retrieve session from sharded cache
+ */
+static SSL_SESSION *
+sharded_get_session_cb(SSL *ssl, const unsigned char *id, int id_len, int *copy)
+{
+  SSL_CTX *ssl_ctx = SSL_get_SSL_CTX(ssl);
+  SocketTLSContext_T ctx = SSL_CTX_get_ex_data(ssl_ctx, tls_ctx_ex_data_index);
+  if (!ctx || !ctx->sharded_enabled)
+    return NULL;
+
+  TLSSessionCacheSharded_T *cache = &ctx->sharded_session_cache;
+  size_t shard_idx = select_shard(cache, id, (size_t)id_len);
+  TLSSessionShard_T *shard = &cache->shards[shard_idx];
+
+  pthread_mutex_lock(&shard->mutex);
+  SessionEntry *entry = HashTable_find(shard->session_table, id, NULL);
+  SSL_SESSION *sess = NULL;
+  if (entry) {
+    sess = entry->session;
+    shard->hits++;
+    *copy = 1;
+  } else {
+    shard->misses++;
+  }
+  pthread_mutex_unlock(&shard->mutex);
+
+  return sess;
+}
+
+/**
+ * sharded_new_session_cb - Store newly negotiated session
+ */
+static int
+sharded_new_session_cb(SSL *ssl, SSL_SESSION *sess)
+{
+  SSL_CTX *ssl_ctx = SSL_get_SSL_CTX(ssl);
+  SocketTLSContext_T ctx = SSL_CTX_get_ex_data(ssl_ctx, tls_ctx_ex_data_index);
+  if (!ctx || !ctx->sharded_enabled)
+    return 0;
+
+  unsigned int id_len;
+  const unsigned char *id = SSL_SESSION_get_id(sess, &id_len);
+
+  TLSSessionCacheSharded_T *cache = &ctx->sharded_session_cache;
+  size_t shard_idx = select_shard(cache, id, id_len);
+  TLSSessionShard_T *shard = &cache->shards[shard_idx];
+
+  pthread_mutex_lock(&shard->mutex);
+  if (shard->current_count >= shard->max_sessions) {
+    pthread_mutex_unlock(&shard->mutex);
+    return 0;
+  }
+
+  SessionEntry *entry = Arena_alloc(ctx->arena, sizeof(SessionEntry), __FILE__, __LINE__);
+  if (!entry) {
+    pthread_mutex_unlock(&shard->mutex);
+    return 0;
+  }
+
+  memset(entry->session_id, 0, 32);
+  memcpy(entry->session_id, id, id_len < 32 ? id_len : 32);
+  entry->session = sess;
+  entry->next = NULL;
+
+  HashTable_insert(shard->session_table, entry, entry->session_id);
+  shard->current_count++;
+  shard->stores++;
+  pthread_mutex_unlock(&shard->mutex);
+
+  return 1;
+}
+
+/**
+ * sharded_remove_session_cb - Remove session from sharded cache
+ */
+static void
+sharded_remove_session_cb(SSL_CTX *ssl_ctx, SSL_SESSION *sess)
+{
+  SocketTLSContext_T ctx = SSL_CTX_get_ex_data(ssl_ctx, tls_ctx_ex_data_index);
+  if (!ctx || !ctx->sharded_enabled)
+    return;
+
+  unsigned int id_len;
+  const unsigned char *id = SSL_SESSION_get_id(sess, &id_len);
+
+  TLSSessionCacheSharded_T *cache = &ctx->sharded_session_cache;
+  size_t shard_idx = select_shard(cache, id, id_len);
+  TLSSessionShard_T *shard = &cache->shards[shard_idx];
+
+  pthread_mutex_lock(&shard->mutex);
+  void *prev = NULL;
+  SessionEntry *entry = HashTable_find(shard->session_table, id, &prev);
+  if (entry) {
+    HashTable_remove(shard->session_table, entry, prev, id);
+    if (shard->current_count > 0)
+      shard->current_count--;
+  }
+  pthread_mutex_unlock(&shard->mutex);
 }
 
 /**
@@ -745,11 +864,11 @@ SocketTLSContext_create_sharded_cache (SocketTLSContext_T ctx,
 
     ctx->sharded_enabled = 1;
 
-    /* TODO: Set OpenSSL session callbacks to use sharded storage
-     * SSL_CTX_sess_set_get_cb(ctx->ssl_ctx, sharded_get_session_cb);
-     * SSL_CTX_sess_set_new_cb(ctx->ssl_ctx, sharded_new_session_cb);
-     * SSL_CTX_sess_set_remove_cb(ctx->ssl_ctx, sharded_remove_session_cb);
-     */
+    ensure_ex_data_index();
+    SSL_CTX_set_ex_data(ctx->ssl_ctx, tls_ctx_ex_data_index, ctx);
+    SSL_CTX_sess_set_get_cb(ctx->ssl_ctx, sharded_get_session_cb);
+    SSL_CTX_sess_set_new_cb(ctx->ssl_ctx, sharded_new_session_cb);
+    SSL_CTX_sess_set_remove_cb(ctx->ssl_ctx, sharded_remove_session_cb);
 
     SOCKET_LOG_INFO_MSG ("Created sharded session cache with %zu shards (%zu sessions/shard, timeout %lds)",
                          actual_shards, sessions_per_shard_final, timeout_seconds);

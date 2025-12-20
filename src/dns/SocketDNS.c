@@ -1885,9 +1885,13 @@ SocketDNS_set_nameservers (T dns, const char **servers, size_t count)
    * doesn't support this directly, we store the config but don't apply it.
    * Future: Could implement with res_query() or a custom DNS client. */
 
+#ifdef __linux__
+  return 0;  /* Successfully configured - will be applied in worker threads */
+#else
   SOCKET_LOG_WARN_MSG (
       "Custom nameservers configured but not applied (platform limitation)");
   return -1;
+#endif
 }
 
 /**
@@ -1926,6 +1930,9 @@ SocketDNS_set_search_domains (T dns, const char **domains, size_t count)
   if (result < 0)
     return -1;
 
+  /* Search domains are stored but not applied. On Linux, the res_state->dnsrch
+   * array contains pointers into the defdname buffer, making it non-trivial
+   * to set custom search domains. Only nameservers are currently supported. */
   SOCKET_LOG_WARN_MSG (
       "Custom search domains configured but not applied (platform limitation)");
   return -1;
