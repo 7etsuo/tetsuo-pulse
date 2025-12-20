@@ -4,11 +4,8 @@ libdir=${prefix}/lib
 includedir=${prefix}/include
 
 Name: libsocket
-Description: High-performance C socket library with TLS, async I/O, and connection pooling
+Description: High-performance C socket library with TLS, HTTP/2, and WebSocket support
 Version: @PROJECT_VERSION@
-URL: https://github.com/tetsuo/tetsuo-socket
-
-Libs: -L${libdir} -lsocket -lpthread -lm
+Libs: -L${libdir} -lsocket
 Libs.private: @PC_LIBS_PRIVATE@
 Cflags: -I${includedir}
-

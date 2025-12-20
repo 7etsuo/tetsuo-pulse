@@ -323,32 +323,34 @@ main (int argc, char *argv[])
           {
             /* Check for new connections */
             if (events[i].socket == server)
-      {
-        Socket_T client = Socket_accept (server);
-        if (client)
-          {
-            Socket_setnonblocking (client);
-            Connection_T conn = SocketPool_add (pool, client);
-            if (conn)
               {
-                SocketPoll_add (poll, client, POLL_READ, conn);
+                Socket_T client = Socket_accept (server);
+                if (client)
+                  {
+                    Socket_setnonblocking (client);
+                    Connection_T conn = SocketPool_add (pool, client);
+                    if (conn)
+                      {
+                        SocketPoll_add (poll, client, POLL_READ, conn);
 
-                /* Get pool statistics */
-                size_t active_count = SocketPool_get_active_count (pool);
-                size_t idle_count = SocketPool_get_idle_count (pool);
-                double hit_rate = SocketPool_get_hit_rate (pool);
+                        /* Get pool statistics */
+                        size_t active_count
+                            = SocketPool_get_active_count (pool);
+                        size_t idle_count = SocketPool_get_idle_count (pool);
+                        double hit_rate = SocketPool_get_hit_rate (pool);
 
-                printf ("[%s:%d] Client connected (active: %zu, idle: %zu, hit rate: %.1f%%)\n",
-                        Socket_getpeeraddr (client),
-                        Socket_getpeerport (client),
-                        active_count, idle_count, hit_rate * 100.0);
-              }
-            else
-              {
-                printf ("Pool full, rejecting connection\n");
-                Socket_free (&client);
-              }
-          }
+                        printf ("[%s:%d] Client connected (active: %zu, idle: "
+                                "%zu, hit rate: %.1f%%)\n",
+                                Socket_getpeeraddr (client),
+                                Socket_getpeerport (client), active_count,
+                                idle_count, hit_rate * 100.0);
+                      }
+                    else
+                      {
+                        printf ("Pool full, rejecting connection\n");
+                        Socket_free (&client);
+                      }
+                  }
                 continue;
               }
 
@@ -369,11 +371,13 @@ main (int argc, char *argv[])
                     /* Show socket statistics before closing */
                     SocketStats_T stats;
                     Socket_getstats (client, &stats);
-                    printf ("[%s:%d] Stats: sent=%zu, recv=%zu, duration=%.1fs\n",
-                            Socket_getpeeraddr (client),
-                            Socket_getpeerport (client),
-                            stats.bytes_sent, stats.bytes_received,
-                            (Socket_get_monotonic_ms () - stats.create_time_ms) / 1000.0);
+                    printf (
+                        "[%s:%d] Stats: sent=%zu, recv=%zu, duration=%.1fs\n",
+                        Socket_getpeeraddr (client),
+                        Socket_getpeerport (client), stats.bytes_sent,
+                        stats.bytes_received,
+                        (Socket_get_monotonic_ms () - stats.create_time_ms)
+                            / 1000.0);
 
                     Socket_free (&client);
                     printf ("Connections remaining: %zu\n",
@@ -458,14 +462,8 @@ main (int argc, char *argv[])
   {
     fprintf (stderr, "Socket error\n"); /* Note: This returns const char * */
   }
-  EXCEPT (SocketPoll_Failed)
-  {
-    fprintf (stderr, "Poll error\n");
-  }
-  EXCEPT (SocketPool_Failed)
-  {
-    fprintf (stderr, "Pool error\n");
-  }
+  EXCEPT (SocketPoll_Failed) { fprintf (stderr, "Poll error\n"); }
+  EXCEPT (SocketPool_Failed) { fprintf (stderr, "Pool error\n"); }
   END_TRY;
 
   /* Cleanup */

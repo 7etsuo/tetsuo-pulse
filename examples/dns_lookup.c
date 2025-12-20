@@ -37,9 +37,12 @@ rrtype_string (int rrtype)
 {
   switch (rrtype)
     {
-    case 1: return "A";
-    case 28: return "AAAA";
-    default: return "UNKNOWN";
+    case 1:
+      return "A";
+    case 28:
+      return "AAAA";
+    default:
+      return "UNKNOWN";
     }
 }
 
@@ -106,12 +109,14 @@ main (int argc, char **argv)
 
                         if (rp->ai_family == AF_INET)
                           {
-                            struct sockaddr_in *ipv4 = (struct sockaddr_in *)rp->ai_addr;
+                            struct sockaddr_in *ipv4
+                                = (struct sockaddr_in *)rp->ai_addr;
                             addr = &(ipv4->sin_addr);
                           }
                         else if (rp->ai_family == AF_INET6)
                           {
-                            struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)rp->ai_addr;
+                            struct sockaddr_in6 *ipv6
+                                = (struct sockaddr_in6 *)rp->ai_addr;
                             addr = &(ipv6->sin6_addr);
                           }
                         else
@@ -119,8 +124,12 @@ main (int argc, char **argv)
                             continue;
                           }
 
-                        inet_ntop (rp->ai_family, addr, addr_str, sizeof (addr_str));
-                        printf ("  %s %s\n", rrtype_string (rp->ai_family == AF_INET ? 1 : 28), addr_str);
+                        inet_ntop (rp->ai_family, addr, addr_str,
+                                   sizeof (addr_str));
+                        printf (
+                            "  %s %s\n",
+                            rrtype_string (rp->ai_family == AF_INET ? 1 : 28),
+                            addr_str);
                       }
 
                     freeaddrinfo (res);
@@ -148,8 +157,8 @@ main (int argc, char **argv)
         /* Synchronous lookup */
         printf ("Performing synchronous DNS resolution...\n");
 
-        struct addrinfo hints = { .ai_family = AF_UNSPEC,
-                                  .ai_socktype = SOCK_STREAM };
+        struct addrinfo hints
+            = { .ai_family = AF_UNSPEC, .ai_socktype = SOCK_STREAM };
         struct addrinfo *res;
 
         if (SocketDNS_resolve_sync (dns, hostname, 80, &hints, 5000))
@@ -157,7 +166,8 @@ main (int argc, char **argv)
             printf ("✅ DNS resolution successful!\n");
             printf ("Addresses found:\n");
 
-            for (res = SocketDNS_resolve_sync (dns, hostname, 80, &hints, 5000);
+            for (res
+                 = SocketDNS_resolve_sync (dns, hostname, 80, &hints, 5000);
                  res != NULL; res = res->ai_next)
               {
                 char addr_str[INET6_ADDRSTRLEN];
@@ -165,12 +175,14 @@ main (int argc, char **argv)
 
                 if (res->ai_family == AF_INET)
                   {
-                    struct sockaddr_in *ipv4 = (struct sockaddr_in *)res->ai_addr;
+                    struct sockaddr_in *ipv4
+                        = (struct sockaddr_in *)res->ai_addr;
                     addr = &(ipv4->sin_addr);
                   }
                 else if (res->ai_family == AF_INET6)
                   {
-                    struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)res->ai_addr;
+                    struct sockaddr_in6 *ipv6
+                        = (struct sockaddr_in6 *)res->ai_addr;
                     addr = &(ipv6->sin6_addr);
                   }
                 else
@@ -179,7 +191,9 @@ main (int argc, char **argv)
                   }
 
                 inet_ntop (res->ai_family, addr, addr_str, sizeof (addr_str));
-                printf ("  %s %s\n", rrtype_string (res->ai_family == AF_INET ? 1 : 28), addr_str);
+                printf ("  %s %s\n",
+                        rrtype_string (res->ai_family == AF_INET ? 1 : 28),
+                        addr_str);
               }
 
             freeaddrinfo (res);

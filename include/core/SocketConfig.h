@@ -1228,6 +1228,116 @@ extern const char *Socket_safe_strerror (int errnum);
 #endif
 
 /* ============================================================================
+ * Pool Health Check Configuration
+ * ============================================================================
+ */
+
+/**
+ * @brief Hash table size for per-host circuit breaker entries.
+ *
+ * Prime number for good hash distribution.
+ *
+ * @ingroup connection_pool
+ * @see SocketPoolHealth_T for health check implementation.
+ */
+#ifndef SOCKET_HEALTH_HASH_SIZE
+#define SOCKET_HEALTH_HASH_SIZE 257
+#endif
+
+/**
+ * @brief Consecutive failures to open circuit breaker.
+ *
+ * When a host reaches this many consecutive failures, the circuit
+ * opens and new connections to that host are blocked.
+ *
+ * @ingroup connection_pool
+ * @see SocketPoolHealth_Config for configuration.
+ */
+#ifndef SOCKET_HEALTH_DEFAULT_FAILURE_THRESHOLD
+#define SOCKET_HEALTH_DEFAULT_FAILURE_THRESHOLD 5
+#endif
+
+/**
+ * @brief Time in OPEN state before transitioning to HALF_OPEN.
+ *
+ * After this timeout, the circuit breaker allows a probe attempt.
+ *
+ * @ingroup connection_pool
+ * @see SocketPoolHealth_Config for configuration.
+ */
+#ifndef SOCKET_HEALTH_DEFAULT_RESET_TIMEOUT_MS
+#define SOCKET_HEALTH_DEFAULT_RESET_TIMEOUT_MS 30000
+#endif
+
+/**
+ * @brief Maximum probe attempts in HALF_OPEN state.
+ *
+ * If all probes fail, circuit returns to OPEN for another reset_timeout.
+ *
+ * @ingroup connection_pool
+ * @see SocketPoolHealth_Config for configuration.
+ */
+#ifndef SOCKET_HEALTH_DEFAULT_HALF_OPEN_MAX_PROBES
+#define SOCKET_HEALTH_DEFAULT_HALF_OPEN_MAX_PROBES 3
+#endif
+
+/**
+ * @brief Interval between health probe cycles.
+ *
+ * Background thread wakes at this interval to probe connections.
+ *
+ * @ingroup connection_pool
+ * @see SocketPoolHealth_Config for configuration.
+ */
+#ifndef SOCKET_HEALTH_DEFAULT_PROBE_INTERVAL_MS
+#define SOCKET_HEALTH_DEFAULT_PROBE_INTERVAL_MS 10000
+#endif
+
+/**
+ * @brief Timeout for individual health probe operations.
+ *
+ * Each probe callback should complete within this time.
+ *
+ * @ingroup connection_pool
+ * @see SocketPoolHealth_Config for configuration.
+ */
+#ifndef SOCKET_HEALTH_DEFAULT_PROBE_TIMEOUT_MS
+#define SOCKET_HEALTH_DEFAULT_PROBE_TIMEOUT_MS 5000
+#endif
+
+/**
+ * @brief Maximum connections to probe per cycle.
+ *
+ * Limits CPU usage per probe cycle.
+ *
+ * @ingroup connection_pool
+ * @see SocketPoolHealth_Config for configuration.
+ */
+#ifndef SOCKET_HEALTH_DEFAULT_PROBES_PER_CYCLE
+#define SOCKET_HEALTH_DEFAULT_PROBES_PER_CYCLE 10
+#endif
+
+/**
+ * @brief Maximum length of "host:port" key string.
+ *
+ * @ingroup connection_pool
+ * @see SocketPoolHealth_T for health check implementation.
+ */
+#ifndef SOCKET_HEALTH_MAX_HOST_KEY_LEN
+#define SOCKET_HEALTH_MAX_HOST_KEY_LEN 256
+#endif
+
+/**
+ * @brief Health check worker thread stack size.
+ *
+ * @ingroup connection_pool
+ * @see SocketPoolHealth_T for health check implementation.
+ */
+#ifndef SOCKET_HEALTH_WORKER_STACK_SIZE
+#define SOCKET_HEALTH_WORKER_STACK_SIZE (128 * 1024)
+#endif
+
+/* ============================================================================
  * Logging Configuration
  * ============================================================================
  */

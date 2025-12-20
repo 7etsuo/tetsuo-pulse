@@ -49,8 +49,7 @@ simulate_work_wrapper (Connection_T conn, void *arg)
 
   printf ("[%s:%d] Working for %dms...\n",
           Socket_getpeeraddr (Connection_socket (conn)),
-          Socket_getpeerport (Connection_socket (conn)),
-          duration_ms);
+          Socket_getpeerport (Connection_socket (conn)), duration_ms);
 
   usleep (duration_ms * 1000);
 
@@ -120,7 +119,8 @@ main (int argc, char **argv)
         /* Add some connections to the pool */
         printf ("Adding connections to pool...\n");
 
-        for (volatile int i = 0; i < 3 && SocketPool_count (pool) < (size_t)max_connections; i++)
+        for (volatile int i = 0;
+             i < 3 && SocketPool_count (pool) < (size_t)max_connections; i++)
           {
             /* Create a dummy connection (we'll simulate with localhost) */
             Socket_T sock = Socket_new (AF_INET, SOCK_STREAM, 0);
@@ -147,9 +147,11 @@ main (int argc, char **argv)
         /* Display pool statistics */
         printf ("\nPool Statistics:\n");
         printf ("  Total connections: %zu\n", SocketPool_count (pool));
-        printf ("  Active connections: %zu\n", SocketPool_get_active_count (pool));
+        printf ("  Active connections: %zu\n",
+                SocketPool_get_active_count (pool));
         printf ("  Idle connections: %zu\n", SocketPool_get_idle_count (pool));
-        printf ("  Hit rate: %.1f%%\n", SocketPool_get_hit_rate (pool) * 100.0);
+        printf ("  Hit rate: %.1f%%\n",
+                SocketPool_get_hit_rate (pool) * 100.0);
 
         /* Simulate work on some connections */
         if (SocketPool_count (pool) > 0)
@@ -157,10 +159,11 @@ main (int argc, char **argv)
             printf ("\nSimulating work on connections...\n");
 
             SocketPool_foreach (pool, simulate_work_wrapper,
-                               (void *)500); /* 500ms work */
+                                (void *)500); /* 500ms work */
 
             /* Find a specific connection (first idle one) */
-            Connection_T found = SocketPool_find (pool, is_idle_connection, NULL);
+            Connection_T found
+                = SocketPool_find (pool, is_idle_connection, NULL);
 
             if (found)
               {
@@ -174,7 +177,8 @@ main (int argc, char **argv)
           {
             printf ("\nCleaning up idle connections...\n");
             SocketPool_cleanup (pool, 1); /* 1 second idle timeout */
-            printf ("After cleanup: %zu connections\n", SocketPool_count (pool));
+            printf ("After cleanup: %zu connections\n",
+                    SocketPool_count (pool));
           }
 
         printf ("\nCycle %d complete\n\n", cycle + 1);
