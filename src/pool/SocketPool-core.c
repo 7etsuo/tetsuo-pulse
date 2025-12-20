@@ -287,6 +287,8 @@ SocketPool_connections_initialize_slot (struct Connection *conn)
   conn->active = 0;
   conn->hash_next = NULL;
   conn->free_next = NULL;
+  conn->active_next = NULL;
+  conn->active_prev = NULL;
   conn->reconnect = NULL;
   conn->tracked_ip = NULL;
 #if SOCKET_HAS_TLS
@@ -457,6 +459,8 @@ construct_pool (Arena_T arena, size_t maxconns, size_t bufsize)
   pool->bufsize = bufsize;
   pool->count = 0;
   pool->arena = arena;
+  pool->active_head = NULL;
+  pool->active_tail = NULL;
   pool->dns = NULL;
   pool->async_ctx = NULL;
   pool->async_pending_count = 0;

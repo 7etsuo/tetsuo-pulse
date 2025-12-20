@@ -224,6 +224,34 @@ rehash_active_connections (T pool, size_t valid_count)
 }
 
 /**
+ * rebuild_active_list - Rebuild active list after array realloc
+ * @pool: Pool instance
+ * @valid_count: Number of valid slots to scan (min of old/new size)
+ *
+ * Thread-safe: Call with mutex held
+ * Clears active list and re-links all active connections.
+ * Must be called after rehash_active_connections during resize.
+ */
+static void
+rebuild_active_list (T pool, size_t valid_count)
+{
+  pool->active_head = NULL;
+  pool->active_tail = NULL;
+
+  for (size_t i = 0; i < valid_count; i++)
+    {
+      Connection_T conn = &pool->connections[i];
+      if (conn->active)
+        {
+          /* Clear stale pointers before re-adding */
+          conn->active_prev = NULL;
+          conn->active_next = NULL;
+          add_to_active_list (pool, conn);
+        }
+    }
+}
+
+/**
  * relink_free_slots - Relink free slots to free_list
  * @pool: Pool instance
  * @maxconns: Limit for scanning (new effective max)
@@ -418,6 +446,7 @@ SocketPool_resize (T pool, size_t new_maxconns)
   valid_count
       = old_maxconns < new_maxconns ? old_maxconns : new_maxconns;
   rehash_active_connections (pool, valid_count);
+  rebuild_active_list (pool, valid_count);
 
   if (new_maxconns > old_maxconns)
     initialize_new_slots (pool, old_maxconns, new_maxconns);
@@ -546,7 +575,7 @@ SocketPool_count (T pool)
  *
  * Calls func for each active connection.
  * Thread-safe: Yes - holds mutex during iteration with periodic yielding
- * Performance: O(n) where n is maxconns
+ * Performance: O(active_count) - iterates only active connections via linked list
  * Warning: Callback must not modify pool structure
  *
  * Note: Yields lock every SOCKET_POOL_FOREACH_BATCH_SIZE iterations to
@@ -555,30 +584,35 @@ SocketPool_count (T pool)
 void
 SocketPool_foreach (T pool, void (*func) (Connection_T, void *), void *arg)
 {
-  size_t end;
+  Connection_T conn;
+  Connection_T next;
+  size_t batch_count;
 
   assert (pool);
   assert (func);
 
   pthread_mutex_lock (&pool->mutex);
 
-  for (size_t i = 0; i < pool->maxconns; i += SOCKET_POOL_FOREACH_BATCH_SIZE)
+  conn = pool->active_head;
+  batch_count = 0;
+
+  while (conn)
     {
-      end = (i + SOCKET_POOL_FOREACH_BATCH_SIZE < pool->maxconns)
-                ? i + SOCKET_POOL_FOREACH_BATCH_SIZE
-                : pool->maxconns;
+      /* Cache next pointer before callback (callback might modify state) */
+      next = conn->active_next;
 
-      for (size_t j = i; j < end; ++j)
-        {
-          if (pool->connections[j].active)
-            func (&pool->connections[j], arg);
-        }
+      func (conn, arg);
+      batch_count++;
 
-      if (end < pool->maxconns)
+      /* Yield lock periodically to reduce contention */
+      if (batch_count >= SOCKET_POOL_FOREACH_BATCH_SIZE && next)
         {
           pthread_mutex_unlock (&pool->mutex);
-          pthread_mutex_lock (&pool->mutex); /* Yield lock briefly */
+          pthread_mutex_lock (&pool->mutex);
+          batch_count = 0;
         }
+
+      conn = next;
     }
 
   pthread_mutex_unlock (&pool->mutex);
@@ -592,27 +626,25 @@ SocketPool_foreach (T pool, void (*func) (Connection_T, void *), void *arg)
  *
  * Returns: First matching connection or NULL if none found
  * Thread-safe: Yes - holds mutex during search
- * Complexity: O(n) worst case
+ * Complexity: O(active_count) - iterates only active connections via linked list
  */
 Connection_T
 SocketPool_find (T pool, SocketPool_Predicate predicate, void *userdata)
 {
   Connection_T result = NULL;
+  Connection_T conn;
 
   assert (pool);
   assert (predicate);
 
   pthread_mutex_lock (&pool->mutex);
 
-  for (size_t i = 0; i < pool->maxconns; i++)
+  for (conn = pool->active_head; conn; conn = conn->active_next)
     {
-      if (pool->connections[i].active)
+      if (predicate (conn, userdata))
         {
-          if (predicate (&pool->connections[i], userdata))
-            {
-              result = &pool->connections[i];
-              break;
-            }
+          result = conn;
+          break;
         }
     }
 
@@ -630,13 +662,14 @@ SocketPool_find (T pool, SocketPool_Predicate predicate, void *userdata)
  *
  * Returns: Number of matching connections found
  * Thread-safe: Yes - holds mutex during search
- * Complexity: O(n)
+ * Complexity: O(active_count) - iterates only active connections via linked list
  */
 size_t
 SocketPool_filter (T pool, SocketPool_Predicate predicate, void *userdata,
                    Connection_T *results, size_t max_results)
 {
   size_t found = 0;
+  Connection_T conn;
 
   assert (pool);
   assert (predicate);
@@ -647,13 +680,11 @@ SocketPool_filter (T pool, SocketPool_Predicate predicate, void *userdata,
 
   pthread_mutex_lock (&pool->mutex);
 
-  for (size_t i = 0; i < pool->maxconns && found < max_results; i++)
+  for (conn = pool->active_head; conn && found < max_results;
+       conn = conn->active_next)
     {
-      if (pool->connections[i].active)
-        {
-          if (predicate (&pool->connections[i], userdata))
-            results[found++] = &pool->connections[i];
-        }
+      if (predicate (conn, userdata))
+        results[found++] = conn;
     }
 
   pthread_mutex_unlock (&pool->mutex);

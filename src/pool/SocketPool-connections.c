@@ -100,6 +100,61 @@ return_to_free_list (T pool, Connection_T conn)
   pool->free_list = conn;
 }
 
+/* ============================================================================
+ * Active List Management
+ * ============================================================================
+ */
+
+/**
+ * @brief Add connection to active list (O(1) append to tail).
+ * @ingroup connection_mgmt
+ * @param pool Pool instance.
+ * @param conn Connection to add to active list.
+ * @threadsafe Call with mutex held.
+ *
+ * Maintains doubly-linked list of active connections for O(active_count)
+ * iteration instead of O(maxconns).
+ */
+void
+add_to_active_list (T pool, Connection_T conn)
+{
+  conn->active_prev = pool->active_tail;
+  conn->active_next = NULL;
+
+  if (pool->active_tail)
+    pool->active_tail->active_next = conn;
+  else
+    pool->active_head = conn;
+
+  pool->active_tail = conn;
+}
+
+/**
+ * @brief Remove connection from active list (O(1) unlink).
+ * @ingroup connection_mgmt
+ * @param pool Pool instance.
+ * @param conn Connection to remove from active list.
+ * @threadsafe Call with mutex held.
+ *
+ * Uses prev/next pointers for O(1) removal without traversal.
+ */
+void
+remove_from_active_list (T pool, Connection_T conn)
+{
+  if (conn->active_prev)
+    conn->active_prev->active_next = conn->active_next;
+  else
+    pool->active_head = conn->active_next;
+
+  if (conn->active_next)
+    conn->active_next->active_prev = conn->active_prev;
+  else
+    pool->active_tail = conn->active_prev;
+
+  conn->active_prev = NULL;
+  conn->active_next = NULL;
+}
+
 /**
  * @brief Prepare a free slot for use.
  * @param pool Pool instance.
@@ -501,6 +556,7 @@ setup_new_connection (T pool, Connection_T conn, Socket_T socket, time_t now)
 {
   initialize_connection (conn, socket, now);
   insert_into_hash_table (pool, conn, socket);
+  add_to_active_list (pool, conn);
   increment_pool_count (pool);
   pool->stats_total_added++;
   SocketMetrics_increment (SOCKET_METRIC_POOL_CONNECTIONS_ADDED, 1);
@@ -811,6 +867,7 @@ static void
 remove_known_connection (T pool, Connection_T conn, Socket_T socket)
 {
   remove_from_hash_table (pool, conn, socket);
+  remove_from_active_list (pool, conn);
   release_connection_resources (pool, conn, socket);
   return_to_free_list (pool, conn);
   decrement_pool_count (pool);

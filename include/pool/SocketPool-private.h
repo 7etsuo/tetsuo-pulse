@@ -338,6 +338,8 @@ struct Connection
   int active;        /**< Non-zero if slot contains active connection */
   struct Connection *hash_next; /**< Next in hash table collision chain */
   struct Connection *free_next; /**< Next in free list (when inactive) */
+  struct Connection *active_next; /**< Next in active connection list */
+  struct Connection *active_prev; /**< Prev in active connection list */
   SocketReconnect_T
       reconnect; /**< Auto-reconnection context (NULL if disabled) */
   char
@@ -534,6 +536,8 @@ struct T
   struct Connection *connections; /**< Pre-allocated connection array */
   Connection_T *hash_table;       /**< Hash table for O(1) lookup */
   Connection_T free_list;         /**< Linked list of free slots */
+  Connection_T active_head;       /**< Head of active connection list */
+  Connection_T active_tail;       /**< Tail of active connection list */
   Socket_T *cleanup_buffer;       /**< Buffer for cleanup operations */
   size_t maxconns;                /**< Maximum connections */
   size_t bufsize;                 /**< Buffer size per connection */
@@ -827,6 +831,32 @@ extern void remove_from_free_list (SocketPool_T pool, Connection_T conn);
  * @see remove_from_free_list() for reverse operation.
  */
 extern void return_to_free_list (SocketPool_T pool, Connection_T conn);
+
+/**
+ * @brief Add connection to active list.
+ * @ingroup connection_mgmt
+ * @param pool Pool instance.
+ * @param conn Connection to add to active list.
+ *
+ * Appends connection to tail of active list for O(active_count) iteration.
+ * Thread-safe: Call with mutex held.
+ *
+ * @see remove_from_active_list() for reverse operation.
+ */
+extern void add_to_active_list (SocketPool_T pool, Connection_T conn);
+
+/**
+ * @brief Remove connection from active list.
+ * @ingroup connection_mgmt
+ * @param pool Pool instance.
+ * @param conn Connection to remove from active list.
+ *
+ * Unlinks connection from active list in O(1) time using prev/next pointers.
+ * Thread-safe: Call with mutex held.
+ *
+ * @see add_to_active_list() for reverse operation.
+ */
+extern void remove_from_active_list (SocketPool_T pool, Connection_T conn);
 
 /**
  * @brief Prepare free slot for new connection.
@@ -1220,19 +1250,5 @@ pool_is_valid_ip (const char *ip)
 {
   return ip != NULL && ip[0] != '\0';
 }
-
-/**
- * @brief Close and remove socket from pool with error handling.
- * @ingroup connection_mgmt
- * @param pool Pool instance.
- * @param socket Pointer to socket to close (set to NULL on success).
- * @param context Context string for debug logging.
- * @threadsafe Yes - handles locking internally.
- *
- * Removes socket from pool and frees it, ignoring errors during cleanup.
- * Used by resize, cleanup, and drain operations.
- */
-extern void pool_close_socket_safe (SocketPool_T pool, Socket_T *socket,
-                                    const char *context);
 
 #endif /* SOCKETPOOL_PRIVATE_H_INCLUDED */
