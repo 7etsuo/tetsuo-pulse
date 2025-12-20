@@ -31,6 +31,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#include "core/SocketCrypto.h"
 #include "core/SocketUtil.h"
 #include <openssl/err.h>
 
@@ -239,6 +240,48 @@ ssl_validate_file_path (const char *path, size_t max_len)
    * but actual file operations will fail with appropriate errors */
 
   return 1;
+}
+
+/* ============================================================================
+ * Common Buffer Management
+ * ============================================================================
+ */
+
+/**
+ * @brief Securely clear a buffer if allocated.
+ * @ingroup security
+ * @param buf Buffer pointer (may be NULL).
+ * @param size Size of buffer in bytes.
+ *
+ * Uses SocketCrypto_secure_clear to wipe sensitive data that cannot be
+ * optimized away. No-op if buf is NULL.
+ *
+ * @threadsafe Yes - pure function, no side effects.
+ */
+static inline void
+ssl_secure_clear_buf (void *buf, size_t size)
+{
+  if (buf)
+    SocketCrypto_secure_clear (buf, size);
+}
+
+/**
+ * @brief Securely clear a hostname string.
+ * @ingroup security
+ * @param hostname Hostname string (may be NULL).
+ *
+ * Securely clears the hostname including null terminator. No-op if NULL.
+ *
+ * @threadsafe Yes - pure function, no side effects.
+ */
+static inline void
+ssl_secure_clear_hostname (const char *hostname)
+{
+  if (hostname)
+    {
+      size_t len = strlen (hostname) + 1;
+      SocketCrypto_secure_clear ((void *)hostname, len);
+    }
 }
 
 /* ============================================================================

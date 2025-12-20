@@ -805,7 +805,7 @@ SocketPool_set_reconnect_policy (T pool,
 {
   assert (pool);
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
 
   if (policy)
     {
@@ -817,7 +817,7 @@ SocketPool_set_reconnect_policy (T pool,
       pool->reconnect_enabled = 0;
     }
 
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 }
 
 /**
@@ -837,10 +837,10 @@ SocketPool_set_pre_resize_callback (T pool, SocketPool_PreResizeCallback cb,
 {
   assert (pool);
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
   pool->pre_resize_cb = cb;
   pool->pre_resize_cb_data = data;
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 }
 
 /**
@@ -862,19 +862,19 @@ SocketPool_enable_reconnect (T pool, Connection_T conn, const char *host,
   assert (host);
   assert (port > 0 && port <= SOCKET_MAX_PORT);
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
   free_existing_reconnect (conn);
   const SocketReconnect_Policy_T *policy = get_reconnect_policy (pool);
 
   TRY { create_reconnect_context (conn, host, port, policy); }
   EXCEPT (SocketReconnect_Failed)
   {
-    pthread_mutex_unlock (&pool->mutex);
+    POOL_UNLOCK (pool);
     RERAISE;
   }
   END_TRY;
 
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 
   log_reconnect_enabled (host, port);
 }
@@ -892,9 +892,9 @@ SocketPool_disable_reconnect (T pool, Connection_T conn)
   assert (pool);
   assert (conn);
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
   free_existing_reconnect (conn);
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 }
 
 /**
@@ -922,7 +922,7 @@ SocketPool_process_reconnects (T pool)
 {
   assert (pool);
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
 
   for (size_t i = 0; i < pool->maxconns; i++)
     {
@@ -931,7 +931,7 @@ SocketPool_process_reconnects (T pool)
         process_single_reconnect (conn);
     }
 
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 }
 
 /**
@@ -979,7 +979,7 @@ SocketPool_reconnect_timeout_ms (T pool)
 
   assert (pool);
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
 
   for (size_t i = 0; i < pool->maxconns; i++)
     {
@@ -987,7 +987,7 @@ SocketPool_reconnect_timeout_ms (T pool)
       min_timeout = update_min_timeout (min_timeout, timeout);
     }
 
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 
   return min_timeout;
 }
@@ -1046,10 +1046,10 @@ SocketPool_set_validation_callback (T pool, SocketPool_ValidationCallback cb,
 {
   assert (pool);
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
   pool->validation_cb = cb;
   pool->validation_cb_data = data;
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 }
 
 /**
@@ -1066,10 +1066,10 @@ SocketPool_set_resize_callback (T pool, SocketPool_ResizeCallback cb,
 {
   assert (pool);
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
   pool->resize_cb = cb;
   pool->resize_cb_data = data;
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 }
 
 /* ============================================================================
@@ -1202,7 +1202,7 @@ SocketPool_get_stats (T pool, SocketPool_Stats *stats)
   now_ms = Socket_get_monotonic_ms ();
   now = safe_time ();
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
 
   /* Cumulative counters */
   stats->total_added = pool->stats_total_added;
@@ -1228,7 +1228,7 @@ SocketPool_get_stats (T pool, SocketPool_Stats *stats)
   stats->churn_rate_per_sec = calculate_churn_rate (
       pool->stats_total_added, pool->stats_total_removed, window_sec);
 
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 }
 
 /**
@@ -1242,7 +1242,7 @@ SocketPool_reset_stats (T pool)
 {
   assert (pool);
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
 
   pool->stats_total_added = 0;
   pool->stats_total_removed = 0;
@@ -1253,7 +1253,7 @@ SocketPool_reset_stats (T pool)
   pool->stats_idle_cleanups = 0;
   pool->stats_start_time_ms = Socket_get_monotonic_ms ();
 
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 }
 
 /**
@@ -1270,9 +1270,9 @@ SocketPool_get_idle_count (T pool)
 
   assert (pool);
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
   idle = count_idle_connections (pool);
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 
   return idle;
 }
@@ -1291,9 +1291,9 @@ SocketPool_get_active_count (T pool)
 
   assert (pool);
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
   active = pool->count;
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 
   return active;
 }
@@ -1312,9 +1312,9 @@ SocketPool_get_hit_rate (T pool)
 
   assert (pool);
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
   rate = calculate_reuse_rate (pool->stats_total_added, pool->stats_total_reused);
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 
   return rate;
 }
@@ -1338,7 +1338,7 @@ SocketPool_shrink (T pool)
 
   assert (pool);
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
 
   /* Count free slots and clear their buffers in single pass */
   curr = pool->free_list;
@@ -1352,7 +1352,7 @@ SocketPool_shrink (T pool)
       curr = curr->free_next;
     }
 
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 
   return released;
 }
@@ -1370,10 +1370,10 @@ SocketPool_set_idle_callback (T pool, SocketPool_IdleCallback cb, void *data)
 {
   assert (pool);
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
   pool->idle_cb = cb;
   pool->idle_cb_data = data;
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 }
 
 #undef T

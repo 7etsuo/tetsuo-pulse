@@ -27,6 +27,7 @@
 
 #include "core/SocketCrypto.h"
 #include "core/SocketUtil.h"
+#include "http/SocketHTTP-private.h"
 #include "http/SocketHTTPClient-private.h"
 
 /* ============================================================================
@@ -100,45 +101,10 @@ safe_strcpy (char *dst, size_t dst_size, const char *src)
   dst[copy_len] = '\0';
 }
 
-/**
- * skip_delimiters - Skip whitespace and commas
- * @p: Pointer to current position
- *
- * Returns: Pointer past any whitespace, tabs, or commas
- */
-static const char *
-skip_delimiters (const char *p)
-{
-  while (*p == ' ' || *p == '\t' || *p == ',')
-    p++;
-  return p;
-}
-
-/**
- * skip_whitespace - Skip whitespace only (not commas)
- * @p: Pointer to current position
- *
- * Returns: Pointer past any whitespace or tabs
- */
-static const char *
-skip_whitespace (const char *p)
-{
-  while (*p == ' ' || *p == '\t')
-    p++;
-  return p;
-}
-
-/**
- * is_token_boundary - Check if character is a token boundary
- * @c: Character to check
- *
- * Returns: 1 if boundary, 0 otherwise
- */
-static int
-is_token_boundary (char c)
-{
-  return c == '\0' || c == ',' || c == ' ' || c == '\t';
-}
+/* Use shared utilities from SocketHTTP-private.h */
+#define skip_delimiters sockethttp_skip_delimiters
+#define skip_whitespace sockethttp_skip_whitespace
+#define is_token_boundary sockethttp_is_token_boundary
 
 /* ============================================================================
  * Quoted String Parsing

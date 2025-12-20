@@ -358,7 +358,7 @@ handle_shrink_excess (T pool, size_t new_maxconns)
   excess_sockets = calloc (excess_count, sizeof (Socket_T));
   if (!excess_sockets)
     {
-      pthread_mutex_unlock (&pool->mutex);
+      POOL_UNLOCK (pool);
       RAISE_POOL_MSG (SocketPool_Failed,
                       SOCKET_ENOMEM ": Cannot allocate excess buffer");
     }
@@ -375,10 +375,10 @@ handle_shrink_excess (T pool, size_t new_maxconns)
                        excess_count, collected, pool->count);
     }
 
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
   close_excess_sockets (pool, excess_sockets, collected);
   free (excess_sockets);
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
 }
 
 /**
@@ -405,13 +405,13 @@ SocketPool_resize (T pool, size_t new_maxconns)
 
   new_maxconns = socketpool_enforce_max_connections (new_maxconns);
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
 
   old_maxconns = pool->maxconns;
 
   if (new_maxconns == old_maxconns)
     {
-      pthread_mutex_unlock (&pool->mutex);
+      POOL_UNLOCK (pool);
       return;
     }
 
@@ -436,7 +436,7 @@ SocketPool_resize (T pool, size_t new_maxconns)
 
   if (realloc_connections_array (pool, new_maxconns) != 0)
     {
-      pthread_mutex_unlock (&pool->mutex);
+      POOL_UNLOCK (pool);
       RAISE_POOL_ERROR (SocketPool_Failed);
     }
 
@@ -459,7 +459,7 @@ SocketPool_resize (T pool, size_t new_maxconns)
   cb = pool->resize_cb;
   cb_data = pool->resize_cb_data;
 
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 
   /* Invoke resize callback outside lock to prevent deadlock */
   if (cb)
@@ -493,7 +493,7 @@ SocketPool_prewarm (T pool, int percentage)
   assert (pool);
   assert (percentage >= 0 && percentage <= 100);
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
 
   if (!SocketSecurity_check_multiply (pool->maxconns, (size_t)percentage, &tmp)
       || tmp / SOCKET_PERCENTAGE_DIVISOR > pool->maxconns - pool->count)
@@ -524,7 +524,7 @@ SocketPool_prewarm (T pool, int percentage)
         }
     }
 
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 }
 
 /**
@@ -541,9 +541,9 @@ SocketPool_set_bufsize (T pool, size_t new_bufsize)
 
   new_bufsize = socketpool_enforce_buffer_size (new_bufsize);
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
   pool->bufsize = new_bufsize;
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 }
 
 /**
@@ -560,9 +560,9 @@ SocketPool_count (T pool)
 
   assert (pool);
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
   count = pool->count;
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 
   return count;
 }
@@ -591,7 +591,7 @@ SocketPool_foreach (T pool, void (*func) (Connection_T, void *), void *arg)
   assert (pool);
   assert (func);
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
 
   conn = pool->active_head;
   batch_count = 0;
@@ -607,15 +607,15 @@ SocketPool_foreach (T pool, void (*func) (Connection_T, void *), void *arg)
       /* Yield lock periodically to reduce contention */
       if (batch_count >= SOCKET_POOL_FOREACH_BATCH_SIZE && next)
         {
-          pthread_mutex_unlock (&pool->mutex);
-          pthread_mutex_lock (&pool->mutex);
+          POOL_UNLOCK (pool);
+          POOL_LOCK (pool);
           batch_count = 0;
         }
 
       conn = next;
     }
 
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 }
 
 /**
@@ -637,7 +637,7 @@ SocketPool_find (T pool, SocketPool_Predicate predicate, void *userdata)
   assert (pool);
   assert (predicate);
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
 
   for (conn = pool->active_head; conn; conn = conn->active_next)
     {
@@ -648,7 +648,7 @@ SocketPool_find (T pool, SocketPool_Predicate predicate, void *userdata)
         }
     }
 
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
   return result;
 }
 
@@ -678,7 +678,7 @@ SocketPool_filter (T pool, SocketPool_Predicate predicate, void *userdata,
   if (max_results == 0)
     return 0;
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
 
   for (conn = pool->active_head; conn && found < max_results;
        conn = conn->active_next)
@@ -687,7 +687,7 @@ SocketPool_filter (T pool, SocketPool_Predicate predicate, void *userdata,
         results[found++] = conn;
     }
 
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
   return found;
 }
 
@@ -876,9 +876,9 @@ SocketPool_accept_batch (T pool, Socket_T server, int max_accepts,
       return 0;
     }
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
   int available = (int)(pool->maxconns - pool->count);
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
   limit = available > 0 ? available : 0;
   if (limit <= 0)
     return 0;
@@ -1181,9 +1181,9 @@ async_connect_dns_callback (Request_T req, struct addrinfo *result,
 
 invoke_callback:
   /* Remove context from list */
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
   remove_async_context (pool, ctx);
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 
   /* Invoke user callback */
   if (ctx->cb)
@@ -1235,7 +1235,7 @@ SocketPool_connect_async (T pool, const char *host, int port,
 
   validate_connect_async_params (pool, host, port, callback);
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
 
   TRY
   {
@@ -1284,12 +1284,12 @@ SocketPool_connect_async (T pool, const char *host, int port,
       }
     if (socket)
       Socket_free ((Socket_T *)&socket);
-    pthread_mutex_unlock (&pool->mutex);
+    POOL_UNLOCK (pool);
     RERAISE;
   }
   END_TRY;
 
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
   return req;
 }
 
@@ -1310,9 +1310,9 @@ SocketPool_set_syn_protection (T pool, SocketSYNProtect_T protect)
 {
   assert (pool);
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
   pool->syn_protect = protect;
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 }
 
 /**
@@ -1329,9 +1329,9 @@ SocketPool_get_syn_protection (T pool)
 
   assert (pool);
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
   protect = pool->syn_protect;
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 
   return protect;
 }
@@ -1408,7 +1408,7 @@ check_pre_accept_limits (T pool, SocketSYNProtect_T *protect_out)
   int accepting;
   int rate_ok;
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
 
   /* Capture SYN protect instance */
   if (protect_out)
@@ -1419,7 +1419,7 @@ check_pre_accept_limits (T pool, SocketSYNProtect_T *protect_out)
                == POOL_STATE_RUNNING);
   if (!accepting)
     {
-      pthread_mutex_unlock (&pool->mutex);
+      POOL_UNLOCK (pool);
       return 0;
     }
 
@@ -1427,7 +1427,7 @@ check_pre_accept_limits (T pool, SocketSYNProtect_T *protect_out)
   rate_ok = (!pool->conn_limiter
              || SocketRateLimit_available (pool->conn_limiter) > 0);
 
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 
   return rate_ok;
 }
@@ -1453,7 +1453,7 @@ consume_rate_and_track_ip (T pool, const char *client_ip)
   int rate_ok;
   int ip_ok;
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
 
   /* Consume rate token */
   rate_ok = (!pool->conn_limiter
@@ -1461,7 +1461,7 @@ consume_rate_and_track_ip (T pool, const char *client_ip)
 
   if (!rate_ok)
     {
-      pthread_mutex_unlock (&pool->mutex);
+      POOL_UNLOCK (pool);
       return 0;
     }
 
@@ -1471,12 +1471,12 @@ consume_rate_and_track_ip (T pool, const char *client_ip)
       ip_ok = SocketIPTracker_track (pool->ip_tracker, client_ip);
       if (!ip_ok)
         {
-          pthread_mutex_unlock (&pool->mutex);
+          POOL_UNLOCK (pool);
           return 0;
         }
     }
 
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
   return 1;
 }
 

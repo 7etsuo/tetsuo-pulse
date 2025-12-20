@@ -327,13 +327,13 @@ transition_to_stopped (T pool, int timed_out)
   SocketMetrics_increment (SOCKET_METRIC_POOL_DRAIN_COMPLETED, 1);
 
   /* Release lock BEFORE callback to prevent deadlock */
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 
   if (cb)
     cb (pool, timed_out, cb_data);
 
   /* Re-acquire lock for caller (they expect to hold it) */
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
 }
 
 /**
@@ -372,13 +372,13 @@ force_close_all_connections (T pool)
   close_count = collect_active_connections (pool, to_close, pool->maxconns);
 
   /* Release lock before closing sockets */
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 
   /* Close all collected sockets */
   close_collected_connections (pool, to_close, close_count);
 
   /* Re-acquire lock for caller */
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
 
   if (allocated)
     free (to_close);
@@ -409,7 +409,7 @@ SocketPool_drain (T pool, int timeout_ms)
 
   assert (pool);
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
 
   /* Only transition from RUNNING */
   current_state = load_pool_state (pool);
@@ -418,7 +418,7 @@ SocketPool_drain (T pool, int timeout_ms)
       SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
                        "Pool drain called but state is %d (not RUNNING)",
                        (int)current_state);
-      pthread_mutex_unlock (&pool->mutex);
+      POOL_UNLOCK (pool);
       return;
     }
 
@@ -446,7 +446,7 @@ SocketPool_drain (T pool, int timeout_ms)
   if (current_count == 0)
     {
       transition_to_stopped (pool, 0);
-      pthread_mutex_unlock (&pool->mutex);
+      POOL_UNLOCK (pool);
       return;
     }
 
@@ -455,11 +455,11 @@ SocketPool_drain (T pool, int timeout_ms)
     {
       force_close_all_connections (pool);
       transition_to_stopped (pool, 1);
-      pthread_mutex_unlock (&pool->mutex);
+      POOL_UNLOCK (pool);
       return;
     }
 
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 }
 
 /**
@@ -479,7 +479,7 @@ SocketPool_drain_poll (T pool)
 
   assert (pool);
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
 
   state = load_pool_state (pool);
   current_count = pool->count;
@@ -487,11 +487,11 @@ SocketPool_drain_poll (T pool)
   switch (state)
     {
     case POOL_STATE_STOPPED:
-      pthread_mutex_unlock (&pool->mutex);
+      POOL_UNLOCK (pool);
       return 0;
 
     case POOL_STATE_RUNNING:
-      pthread_mutex_unlock (&pool->mutex);
+      POOL_UNLOCK (pool);
       return (int)current_count;
 
     case POOL_STATE_DRAINING:
@@ -502,7 +502,7 @@ SocketPool_drain_poll (T pool)
   if (current_count == 0)
     {
       transition_to_stopped (pool, 0);
-      pthread_mutex_unlock (&pool->mutex);
+      POOL_UNLOCK (pool);
       return 0;
     }
 
@@ -516,11 +516,11 @@ SocketPool_drain_poll (T pool)
                        current_count);
       force_close_all_connections (pool);
       transition_to_stopped (pool, 1);
-      pthread_mutex_unlock (&pool->mutex);
+      POOL_UNLOCK (pool);
       return -1;
     }
 
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
   return (int)current_count;
 }
 
@@ -563,13 +563,13 @@ SocketPool_drain_force (T pool)
 
   assert (pool);
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
 
   state = load_pool_state (pool);
 
   if (state == POOL_STATE_STOPPED)
     {
-      pthread_mutex_unlock (&pool->mutex);
+      POOL_UNLOCK (pool);
       return;
     }
 
@@ -587,7 +587,7 @@ SocketPool_drain_force (T pool)
     force_close_all_connections (pool);
 
   transition_to_stopped (pool, 1);
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 }
 
 /**
@@ -641,10 +641,10 @@ SocketPool_set_drain_callback (T pool, SocketPool_DrainCallback cb, void *data)
 {
   assert (pool);
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
   pool->drain_cb = cb;
   pool->drain_cb_data = data;
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 }
 
 /* ============================================================================
@@ -664,9 +664,9 @@ SocketPool_set_idle_timeout (T pool, time_t timeout_sec)
 {
   assert (pool);
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
   pool->idle_timeout_sec = timeout_sec;
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 }
 
 /**
@@ -683,9 +683,9 @@ SocketPool_get_idle_timeout (const T pool)
 
   assert (pool);
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
   timeout = pool->idle_timeout_sec;
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 
   return timeout;
 }
@@ -704,18 +704,18 @@ SocketPool_idle_cleanup_due_ms (const T pool)
 
   assert (pool);
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
 
   if (pool->idle_timeout_sec == 0)
     {
-      pthread_mutex_unlock (&pool->mutex);
+      POOL_UNLOCK (pool);
       return -1;
     }
 
   remaining = safe_add_ms (pool->last_cleanup_ms, pool->cleanup_interval_ms)
               - Socket_get_monotonic_ms ();
 
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 
   return remaining > 0 ? remaining : 0;
 }
@@ -737,11 +737,11 @@ SocketPool_run_idle_cleanup (T pool)
 
   assert (pool);
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
 
   if (pool->idle_timeout_sec == 0)
     {
-      pthread_mutex_unlock (&pool->mutex);
+      POOL_UNLOCK (pool);
       return 0;
     }
 
@@ -751,14 +751,14 @@ SocketPool_run_idle_cleanup (T pool)
 
   if (now_ms < next_cleanup_ms)
     {
-      pthread_mutex_unlock (&pool->mutex);
+      POOL_UNLOCK (pool);
       return 0;
     }
 
   pool->last_cleanup_ms = now_ms;
   idle_timeout = pool->idle_timeout_sec;
 
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 
   /* Run cleanup - SocketPool_cleanup handles its own locking */
   count_before = SocketPool_count (pool);
@@ -769,9 +769,9 @@ SocketPool_run_idle_cleanup (T pool)
 
   if (cleaned_count > 0)
     {
-      pthread_mutex_lock (&pool->mutex);
+      POOL_LOCK (pool);
       pool->stats_idle_cleanups += cleaned_count;
-      pthread_mutex_unlock (&pool->mutex);
+      POOL_UNLOCK (pool);
 
       SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
                        "Idle cleanup removed %zu connections", cleaned_count);

@@ -115,6 +115,30 @@ chunk_limit (const struct ChunkHeader *chunk)
   return (char *)chunk + chunk_total_size (chunk);
 }
 
+/**
+ * arena_link_chunk - Link new chunk into arena's allocation chain
+ * @arena: Arena to link chunk into
+ * @ptr: Chunk header to link
+ * @limit: End pointer of chunk usable space
+ *
+ * Saves current arena state into chunk header and updates arena to use
+ * the new chunk. Used when adding cached or newly allocated chunks.
+ * Thread-safe: Must be called with arena->mutex held
+ */
+static inline void
+arena_link_chunk (T arena, struct ChunkHeader *ptr, char *limit)
+{
+  /* Save current arena state into chunk header */
+  ptr->prev = arena->prev;
+  ptr->avail = arena->avail;
+  ptr->limit = arena->limit;
+
+  /* Update arena to use new chunk */
+  arena->avail = (char *)((union header *)ptr + 1);
+  arena->limit = limit;
+  arena->prev = ptr;
+}
+
 /* ==================== Global State ==================== */
 
 /* Arena exception definition */
@@ -689,15 +713,7 @@ Arena_alloc (T arena, size_t nbytes, const char *file, int line)
 
       if (cache_result == ARENA_CHUNK_REUSED)
         {
-          /* Save current arena state into chunk header */
-          ptr->prev = arena->prev;
-          ptr->avail = arena->avail;
-          ptr->limit = arena->limit;
-
-          /* Update arena to use new chunk */
-          arena->avail = (char *)((union header *)ptr + 1);
-          arena->limit = limit;
-          arena->prev = ptr;
+          arena_link_chunk (arena, ptr, limit);
         }
       else
         {
@@ -709,15 +725,7 @@ Arena_alloc (T arena, size_t nbytes, const char *file, int line)
                               "Failed to allocate chunk for %zu bytes (out of memory)",
                               aligned_size);
 
-          /* Save current arena state into chunk header */
-          ptr->prev = arena->prev;
-          ptr->avail = arena->avail;
-          ptr->limit = arena->limit;
-
-          /* Update arena to use new chunk */
-          arena->avail = (char *)((union header *)ptr + 1);
-          arena->limit = limit;
-          arena->prev = ptr;
+          arena_link_chunk (arena, ptr, limit);
         }
     }
   void *result = arena->avail;

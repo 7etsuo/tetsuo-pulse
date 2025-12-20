@@ -1418,40 +1418,52 @@ socket_get_ucred (const Socket_T socket, struct ucred *cred)
 }
 #endif
 
-int
-Socket_getpeerpid (const Socket_T socket)
+/**
+ * socket_get_ucred_field - Get a specific field from peer credentials
+ * @socket: Socket to query
+ * @field: 0=pid, 1=uid, 2=gid
+ * Returns: Field value or -1 on error/unsupported
+ */
+static int
+socket_get_ucred_field (const Socket_T socket, int field)
 {
   assert (socket);
 #ifdef SO_PEERCRED
   struct ucred cred;
   if (socket_get_ucred (socket, &cred) == 0)
-    return cred.pid;
+    {
+      switch (field)
+        {
+        case 0:
+          return cred.pid;
+        case 1:
+          return (int)cred.uid;
+        case 2:
+          return (int)cred.gid;
+        }
+    }
+#else
+  (void)field;
 #endif
   return -1;
+}
+
+int
+Socket_getpeerpid (const Socket_T socket)
+{
+  return socket_get_ucred_field (socket, 0);
 }
 
 int
 Socket_getpeeruid (const Socket_T socket)
 {
-  assert (socket);
-#ifdef SO_PEERCRED
-  struct ucred cred;
-  if (socket_get_ucred (socket, &cred) == 0)
-    return cred.uid;
-#endif
-  return -1;
+  return socket_get_ucred_field (socket, 1);
 }
 
 int
 Socket_getpeergid (const Socket_T socket)
 {
-  assert (socket);
-#ifdef SO_PEERCRED
-  struct ucred cred;
-  if (socket_get_ucred (socket, &cred) == 0)
-    return cred.gid;
-#endif
-  return -1;
+  return socket_get_ucred_field (socket, 2);
 }
 
 /* ==================== Bandwidth Limiting ==================== */

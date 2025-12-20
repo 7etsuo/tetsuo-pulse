@@ -1041,57 +1041,42 @@ SocketPoll_setdefaulttimeout (T poll, int timeout)
 /* ==================== Wait Helper Functions ==================== */
 
 /**
- * resolve_timeout_from_default - Resolve timeout using default if requested
+ * compute_wait_timeout - Compute final timeout for wait operation
  * @poll: Poll instance
- * @timeout: Input timeout (may be SOCKET_POLL_TIMEOUT_USE_DEFAULT)
- * Returns: Resolved timeout value
+ * @timeout: Requested timeout (may be SOCKET_POLL_TIMEOUT_USE_DEFAULT)
+ * Returns: Final timeout in ms, respecting default and pending timers
+ *
+ * Consolidates timeout resolution:
+ * 1. Resolves USE_DEFAULT to pool's default_timeout_ms
+ * 2. Considers pending timer heap entries
+ * 3. Clamps to safe range for int conversion
  */
 static int
-resolve_timeout_from_default (const T poll, const int timeout)
+compute_wait_timeout (const T poll, const int timeout)
 {
-  if (timeout == SOCKET_POLL_TIMEOUT_USE_DEFAULT)
-    return poll->default_timeout_ms;
-  return timeout;
-}
+  /* Step 1: Resolve default timeout */
+  int resolved = (timeout == SOCKET_POLL_TIMEOUT_USE_DEFAULT)
+                     ? poll->default_timeout_ms
+                     : timeout;
 
-/**
- * clamp_timer_timeout - Clamp timer delay to safe range
- * @next_timer_ms: Timer delay in milliseconds
- * Returns: Clamped timeout value safe for int conversion
- */
-static int
-clamp_timer_timeout (const int64_t next_timer_ms)
-{
-  int64_t clamped = next_timer_ms;
+  /* Step 2: Check timer heap for earlier deadline */
+  if (poll->timer_heap)
+    {
+      int64_t next_timer_ms = SocketTimer_heap_peek_delay (poll->timer_heap);
 
-  if (clamped > SOCKET_MAX_TIMER_TIMEOUT_MS)
-    clamped = SOCKET_MAX_TIMER_TIMEOUT_MS;
-  if (clamped > INT_MAX)
-    clamped = INT_MAX;
+      if (next_timer_ms >= 0 && (resolved < 0 || next_timer_ms < resolved))
+        {
+          /* Step 3: Clamp to safe range */
+          int64_t clamped = next_timer_ms;
+          if (clamped > SOCKET_MAX_TIMER_TIMEOUT_MS)
+            clamped = SOCKET_MAX_TIMER_TIMEOUT_MS;
+          if (clamped > INT_MAX)
+            clamped = INT_MAX;
+          return (int)clamped;
+        }
+    }
 
-  return (int)clamped;
-}
-
-/**
- * calculate_effective_timeout - Compute timeout considering timers
- * @poll: Poll instance
- * @timeout: Requested timeout
- * Returns: Effective timeout that respects pending timers
- */
-static int
-calculate_effective_timeout (const T poll, const int timeout)
-{
-  int64_t next_timer_ms;
-
-  if (!poll->timer_heap)
-    return timeout;
-
-  next_timer_ms = SocketTimer_heap_peek_delay (poll->timer_heap);
-
-  if (next_timer_ms >= 0 && (timeout < 0 || next_timer_ms < timeout))
-    return clamp_timer_timeout (next_timer_ms);
-
-  return timeout;
+  return resolved;
 }
 
 /**
@@ -1175,8 +1160,7 @@ SocketPoll_wait (T poll, SocketEvent_T **events, int timeout)
   assert (poll);
   assert (events);
 
-  timeout = resolve_timeout_from_default (poll, timeout);
-  timeout = calculate_effective_timeout (poll, timeout);
+  timeout = compute_wait_timeout (poll, timeout);
 
   process_async_completions_if_available (poll);
 

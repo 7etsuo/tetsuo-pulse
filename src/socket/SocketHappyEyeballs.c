@@ -545,6 +545,8 @@ he_handle_dns_success (T he, struct addrinfo *result)
 /**
  * he_process_dns_completion - Check and process DNS completion
  * @he: Happy Eyeballs context
+ *
+ * Shared implementation for both DNS completion callback and event processing.
  */
 static void
 he_process_dns_completion (T he)
@@ -566,25 +568,8 @@ he_process_dns_completion (T he)
   he_handle_dns_success (he, result);
 }
 
-static void
-he_process_dns_event (T he)
-{
-  struct addrinfo *result;
-
-  if (!he->dns || !he->dns_request)
-    return;
-
-  result = SocketDNS_getresult (he->dns, he->dns_request);
-  if (!result)
-    {
-      int error = SocketDNS_geterror (he->dns, he->dns_request);
-      if (error != 0)
-        he_handle_dns_error (he, error);
-      return;
-    }
-
-  he_handle_dns_success (he, result);
-}
+/* he_process_dns_event is identical to he_process_dns_completion - use alias */
+#define he_process_dns_event he_process_dns_completion
 
 /* ============================================================================
  * Address Sorting (RFC 8305)

@@ -129,20 +129,8 @@ allocate_tls_buffers (Socket_T socket)
     }
 }
 
-/**
- * tls_secure_clear_buf - Securely clear a TLS buffer if allocated
- * @buf: Buffer pointer
- * @size: Buffer size
- *
- * Uses SocketCrypto_secure_clear to wipe sensitive data that cannot be
- * optimized away. No-op if buf is NULL. Thread-safe: Yes
- */
-static void
-tls_secure_clear_buf (void *buf, size_t size)
-{
-  if (buf)
-    SocketCrypto_secure_clear (buf, size);
-}
+/* tls_secure_clear_buf is now provided by ssl_secure_clear_buf() in
+ * SocketSSL-internal.h - use that shared implementation instead */
 
 /**
  * free_tls_resources - Cleanup TLS resources
@@ -169,17 +157,12 @@ free_tls_resources (Socket_T socket)
     }
 
   /* Securely clear TLS buffers that may contain sensitive decrypted data */
-  tls_secure_clear_buf (socket->tls_read_buf, SOCKET_TLS_BUFFER_SIZE);
-  tls_secure_clear_buf (socket->tls_write_buf, SOCKET_TLS_BUFFER_SIZE);
+  ssl_secure_clear_buf (socket->tls_read_buf, SOCKET_TLS_BUFFER_SIZE);
+  ssl_secure_clear_buf (socket->tls_write_buf, SOCKET_TLS_BUFFER_SIZE);
 
   /* Clear SNI hostname (may contain sensitive connection info) */
-  if (socket->tls_sni_hostname)
-    {
-      size_t hostname_len = strlen (socket->tls_sni_hostname) + 1;
-      SocketCrypto_secure_clear ((void *)socket->tls_sni_hostname,
-                                 hostname_len);
-      socket->tls_sni_hostname = NULL;
-    }
+  ssl_secure_clear_hostname (socket->tls_sni_hostname);
+  socket->tls_sni_hostname = NULL;
 
   socket->tls_enabled = 0;
   socket->tls_handshake_done = 0;

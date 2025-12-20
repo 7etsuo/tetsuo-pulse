@@ -136,26 +136,12 @@ free_dtls_resources (SocketDgram_T socket)
       socket->dtls_ctx = NULL;
     }
 
-  /* Securely clear DTLS buffers */
-  if (socket->dtls_read_buf)
-    {
-      SocketCrypto_secure_clear (socket->dtls_read_buf,
-                                 SOCKET_DTLS_MAX_RECORD_SIZE);
-    }
-  if (socket->dtls_write_buf)
-    {
-      SocketCrypto_secure_clear (socket->dtls_write_buf,
-                                 SOCKET_DTLS_MAX_RECORD_SIZE);
-    }
+  /* Securely clear DTLS buffers using shared helper */
+  ssl_secure_clear_buf (socket->dtls_read_buf, SOCKET_DTLS_MAX_RECORD_SIZE);
+  ssl_secure_clear_buf (socket->dtls_write_buf, SOCKET_DTLS_MAX_RECORD_SIZE);
 
-  /* Clear SNI hostname */
-  if (socket->dtls_sni_hostname)
-    {
-      size_t hostname_len = strlen (socket->dtls_sni_hostname)
-                            + 1; /* include null terminator */
-      SocketCrypto_secure_clear ((void *)socket->dtls_sni_hostname,
-                                 hostname_len);
-    }
+  /* Clear SNI hostname using shared helper */
+  ssl_secure_clear_hostname (socket->dtls_sni_hostname);
 
   /* Invalidate peer cache */
   if (socket->dtls_peer_res)

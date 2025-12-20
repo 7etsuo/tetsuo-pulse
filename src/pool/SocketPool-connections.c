@@ -660,9 +660,9 @@ SocketPool_add (T pool, Socket_T socket)
 
   time_t now = safe_time ();
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
   Connection_T conn = add_unlocked (pool, socket, now);
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 
   return conn;
 }
@@ -727,11 +727,11 @@ run_validation_callback_unlocked (T pool, Connection_T conn)
 
   /* Temporarily release mutex for callback to avoid deadlock/long holds.
    * Re-acquire to safely remove if invalid. Races handled by re-validation. */
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 
   int valid = cb (conn, cb_data);
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
 
   /* Re-validate: Check if connection still exists and matches */
   Connection_T current_conn = find_slot (pool, socket);
@@ -776,7 +776,7 @@ SocketPool_get (T pool, Socket_T socket)
 
   time_t now = safe_time ();
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
   Connection_T conn = get_unlocked (pool, socket, now);
 
   /* Run validation callback if connection found */
@@ -785,14 +785,14 @@ SocketPool_get (T pool, Socket_T socket)
       if (!run_validation_callback_unlocked (pool, conn))
         {
           /* Callback returned invalid and already removed connection */
-          pthread_mutex_unlock (&pool->mutex);
+          POOL_UNLOCK (pool);
           return NULL;
         }
       /* Valid connection - update stats */
 
     }
 
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
   return conn;
 }
 
@@ -910,9 +910,9 @@ SocketPool_remove (T pool, Socket_T socket)
     SOCKET_RAISE_MSG(SocketPool, SocketPool_Failed,
                     "Invalid NULL pool or socket in SocketPool_remove");
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
   remove_unlocked (pool, socket);
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 }
 
 /* ============================================================================
@@ -1073,9 +1073,9 @@ SocketPool_cleanup (T pool, time_t idle_timeout)
 
   time_t now = safe_time ();
 
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
   size_t close_count = collect_idle_sockets (pool, idle_timeout, now);
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 
   close_collected_sockets (pool, close_count);
 }
@@ -1295,13 +1295,13 @@ SocketPool_check_connection (T pool, Connection_T conn)
     return res;
 
   /* Check for staleness */
-  pthread_mutex_lock (&pool->mutex);
+  POOL_LOCK (pool);
   pool->stats_health_checks++;
   time_t now = safe_time ();
   int is_stale = check_connection_staleness (pool, conn, now);
   if (is_stale)
     pool->stats_health_failures++;
-  pthread_mutex_unlock (&pool->mutex);
+  POOL_UNLOCK (pool);
 
   return is_stale ? POOL_CONN_STALE : POOL_CONN_HEALTHY;
 }

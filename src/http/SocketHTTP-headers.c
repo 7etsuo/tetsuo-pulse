@@ -267,19 +267,8 @@ remove_one_n (SocketHTTP_Headers_T headers, const char *name, size_t name_len)
  * ============================================================================
  */
 
-/**
- * skip_token_delimiters - Skip whitespace and comma delimiters
- * @p: Pointer to current position
- *
- * Returns: Pointer to start of next token or end of string
- */
-static const char *
-skip_token_delimiters (const char *p)
-{
-  while (*p == ' ' || *p == '\t' || *p == ',')
-    p++;
-  return p;
-}
+/* skip_token_delimiters - Use shared sockethttp_skip_delimiters */
+#define skip_token_delimiters sockethttp_skip_delimiters
 
 /**
  * extract_token_bounds - Find end of current token

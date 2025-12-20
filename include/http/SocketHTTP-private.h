@@ -302,4 +302,65 @@ extern const unsigned char sockethttp_hex_value[256];
  */
 #define SOCKETHTTP_HEX_VALUE(c) (sockethttp_hex_value[(unsigned char)(c)])
 
+/* ============================================================================
+ * Shared Parsing Utilities
+ * ============================================================================
+ */
+
+/**
+ * @brief Skip whitespace characters (space and tab).
+ * @internal
+ * @ingroup http
+ * @param p Pointer to current position in string.
+ * @return Pointer past any whitespace or tabs.
+ *
+ * Used throughout HTTP parsing for optional whitespace (OWS) handling.
+ *
+ * @threadsafe Yes - pure function.
+ */
+static inline const char *
+sockethttp_skip_whitespace (const char *p)
+{
+  while (*p == ' ' || *p == '\t')
+    p++;
+  return p;
+}
+
+/**
+ * @brief Skip token delimiters (whitespace and commas).
+ * @internal
+ * @ingroup http
+ * @param p Pointer to current position in string.
+ * @return Pointer past any whitespace, tabs, or commas.
+ *
+ * Used for parsing comma-separated lists in HTTP headers (e.g., Cache-Control,
+ * Accept, WWW-Authenticate parameters).
+ *
+ * @threadsafe Yes - pure function.
+ */
+static inline const char *
+sockethttp_skip_delimiters (const char *p)
+{
+  while (*p == ' ' || *p == '\t' || *p == ',')
+    p++;
+  return p;
+}
+
+/**
+ * @brief Check if character is a token boundary.
+ * @internal
+ * @ingroup http
+ * @param c Character to check.
+ * @return 1 if boundary (NUL, comma, space, tab), 0 otherwise.
+ *
+ * Used for token extraction in header value parsing.
+ *
+ * @threadsafe Yes - pure function.
+ */
+static inline int
+sockethttp_is_token_boundary (char c)
+{
+  return c == '\0' || c == ',' || c == ' ' || c == '\t';
+}
+
 #endif /* SOCKETHTTP_PRIVATE_INCLUDED */
