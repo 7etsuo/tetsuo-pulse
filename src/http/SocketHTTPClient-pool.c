@@ -67,6 +67,13 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPClient);
 #define POOL_MAX_HASH_CHAIN_LEN 1024
 #endif
 
+/**
+ * @brief Milliseconds per second for timeout conversions.
+ */
+#ifndef POOL_MS_PER_SECOND
+#define POOL_MS_PER_SECOND 1000
+#endif
+
 /* ============================================================================
  * Pool Configuration
  * ============================================================================
@@ -86,17 +93,17 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPClient);
 static void pool_entry_remove_and_recycle (HTTPPool *pool, HTTPPoolEntry *entry);
 
 /**
- * pool_time - Get monotonic time in seconds
+ * pool_time - Get current time in seconds for pool tracking
  *
- * Returns: Current monotonic time as time_t (seconds)
+ * Returns: Current time as time_t (seconds)
  *
- * Uses Socket_get_monotonic_ms() from SocketUtil.h and converts
- * to seconds for backward compatibility with time_t-based callers.
+ * Used for idle timeout tracking. Uses wall-clock time which is
+ * acceptable for connection pooling purposes.
  */
 static time_t
 pool_time (void)
 {
-  return (time_t)(Socket_get_monotonic_ms () / SOCKET_MS_PER_SECOND);
+  return time (NULL);
 }
 
 /**
@@ -608,7 +615,7 @@ httpclient_pool_cleanup_idle (HTTPPool *pool)
   pthread_mutex_lock (&pool->mutex);
 
   now = pool_time ();
-  idle_threshold = pool->idle_timeout_ms / SOCKET_MS_PER_SECOND;
+  idle_threshold = pool->idle_timeout_ms / POOL_MS_PER_SECOND;
 
   HTTPPoolEntry *entry = pool->all_conns;
   while (entry != NULL)

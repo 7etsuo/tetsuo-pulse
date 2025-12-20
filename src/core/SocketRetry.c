@@ -19,13 +19,6 @@
  *   jittered_delay = capped_delay * (1 + jitter * (2 * random - 1))
  */
 
-#include "core/SocketRetry.h"
-
-#include "core/Except.h"
-#include "core/SocketCrypto.h"
-#include "core/SocketSecurity.h"
-#include "core/SocketUtil.h"
-
 #include <assert.h>
 #include <errno.h>
 #include <float.h>
@@ -34,6 +27,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
+#include "core/Except.h"
+#include "core/SocketCrypto.h"
+#include "core/SocketRetry.h"
+#include "core/SocketSecurity.h"
+#include "core/SocketUtil.h"
 
 /* ============================================================================
  * Constants

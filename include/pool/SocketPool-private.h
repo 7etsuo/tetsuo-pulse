@@ -1163,4 +1163,71 @@ socketpool_enforce_buffer_size (size_t bufsize)
                                    SOCKET_MAX_BUFFER_SIZE);
 }
 
+/* ============================================================================
+ * Shared Inline Helpers
+ * ============================================================================
+ */
+
+/**
+ * @brief Overflow-safe millisecond addition with saturation.
+ * @ingroup connection_mgmt
+ * @param base Base time in milliseconds.
+ * @param delta Delta to add in milliseconds.
+ * @return base + delta, or INT64_MAX if overflow would occur.
+ * @threadsafe Yes - pure function.
+ *
+ * Used for deadline calculations where overflow must saturate to
+ * INT64_MAX rather than wrap around.
+ */
+static inline int64_t
+pool_safe_add_ms (int64_t base, int64_t delta)
+{
+  if (delta > 0 && base > INT64_MAX - delta)
+    return INT64_MAX;
+  return base + delta;
+}
+
+/**
+ * @brief Check if pool state is RUNNING (lock-free).
+ * @ingroup connection_mgmt
+ * @param pool Pool instance.
+ * @return Non-zero if pool is in RUNNING state.
+ * @threadsafe Yes - uses C11 atomic acquire semantics.
+ *
+ * Lock-free state check for determining if pool is accepting connections.
+ */
+static inline int
+pool_is_running (const SocketPool_T pool)
+{
+  return atomic_load_explicit (&pool->state, memory_order_acquire)
+         == POOL_STATE_RUNNING;
+}
+
+/**
+ * @brief Check if IP address is valid for tracking.
+ * @ingroup connection_mgmt
+ * @param ip IP address string (may be NULL).
+ * @return Non-zero if IP is valid (non-NULL and non-empty).
+ * @threadsafe Yes - pure function.
+ */
+static inline int
+pool_is_valid_ip (const char *ip)
+{
+  return ip != NULL && ip[0] != '\0';
+}
+
+/**
+ * @brief Close and remove socket from pool with error handling.
+ * @ingroup connection_mgmt
+ * @param pool Pool instance.
+ * @param socket Pointer to socket to close (set to NULL on success).
+ * @param context Context string for debug logging.
+ * @threadsafe Yes - handles locking internally.
+ *
+ * Removes socket from pool and frees it, ignoring errors during cleanup.
+ * Used by resize, cleanup, and drain operations.
+ */
+extern void pool_close_socket_safe (SocketPool_T pool, Socket_T *socket,
+                                    const char *context);
+
 #endif /* SOCKETPOOL_PRIVATE_H_INCLUDED */

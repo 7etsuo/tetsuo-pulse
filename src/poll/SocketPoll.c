@@ -63,6 +63,71 @@ const Except_T SocketPoll_Failed
  */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketPoll);
 
+/* ==================== Generic Hash Table Macros ==================== */
+
+/**
+ * HASH_LIST_PREPEND - Generic macro to prepend entry to hash chain
+ * @table: Hash table array (e.g., poll->socket_data_map)
+ * @hash: Bucket index
+ * @entry: Entry to insert (must have 'next' pointer as first link field)
+ * @next_field: Name of the next pointer field (e.g., next)
+ *
+ * Reduces duplication between insert_socket_data_entry and insert_fd_socket_entry.
+ */
+#define HASH_LIST_PREPEND(table, hash, entry, next_field)                     \
+  do                                                                          \
+    {                                                                         \
+      (entry)->next_field = (table)[(hash)];                                  \
+      (table)[(hash)] = (entry);                                              \
+    }                                                                         \
+  while (0)
+
+/**
+ * HASH_LIST_REMOVE - Generic macro to remove entry from hash chain by key
+ * @table: Hash table array
+ * @hash: Bucket index
+ * @key_field: Field to compare (e.g., socket, fd)
+ * @key_value: Value to match
+ * @next_field: Name of the next pointer field
+ *
+ * Uses double-pointer technique for clean removal.
+ * Reduces duplication between remove_socket_data_entry and remove_fd_socket_entry.
+ */
+#define HASH_LIST_REMOVE(table, hash, key_field, key_value, next_field)       \
+  do                                                                          \
+    {                                                                         \
+      __typeof__ ((table)[(hash)]) *_pp = &(table)[(hash)];                   \
+      while (*_pp)                                                            \
+        {                                                                     \
+          if ((*_pp)->key_field == (key_value))                               \
+            {                                                                 \
+              *_pp = (*_pp)->next_field;                                      \
+              break;                                                          \
+            }                                                                 \
+          _pp = &(*_pp)->next_field;                                          \
+        }                                                                     \
+    }                                                                         \
+  while (0)
+
+/* ==================== Thread-Safe Accessor Macros ==================== */
+
+/**
+ * LOCKED_INT_GETTER - Thread-safe getter for int field
+ * @poll: Poll instance
+ * @field: Field to read
+ *
+ * Returns the field value with proper mutex protection.
+ * Reduces boilerplate in SocketPoll_getdefaulttimeout, getmaxregistered, etc.
+ */
+#define LOCKED_INT_GETTER(poll, field)                                        \
+  ({                                                                          \
+    int _value;                                                               \
+    pthread_mutex_lock (&(poll)->mutex);                                      \
+    _value = (poll)->field;                                                   \
+    pthread_mutex_unlock (&(poll)->mutex);                                    \
+    _value;                                                                   \
+  })
+
 /* ==================== Forward Declarations ==================== */
 
 static void cleanup_poll_partial (T poll);

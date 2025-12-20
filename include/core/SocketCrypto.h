@@ -503,6 +503,24 @@ extern int SocketCrypto_random_bytes (void *output, size_t len);
  */
 extern uint32_t SocketCrypto_random_uint32 (void);
 
+/**
+ * @brief Clean up internal cryptographic resources.
+ * @ingroup foundation
+ *
+ * Releases any cached resources held by the SocketCrypto module.
+ * When TLS is not available (SOCKET_HAS_TLS == 0), this closes
+ * the cached /dev/urandom file descriptor used for random number
+ * generation.
+ *
+ * This function is optional and only needed for clean shutdown
+ * or resource leak detection tools. Safe to call multiple times.
+ *
+ * @threadsafe Yes - uses mutex protection for shared resources.
+ *
+ * @see SocketCrypto_random_bytes() for random generation.
+ */
+extern void SocketCrypto_cleanup (void);
+
 /* ============================================================================
  * WebSocket Handshake Helpers (RFC 6455)
  * ============================================================================

@@ -24,11 +24,11 @@
  * Thread safety: All functions are thread-safe (no global state).
  */
 
-#include "core/SocketUTF8.h"
-#include "core/SocketUtil.h"
-
 #include <assert.h>
 #include <string.h>
+
+#include "core/SocketUTF8.h"
+#include "core/SocketUtil.h"
 
 /* ============================================================================
  * Exception Definition
@@ -354,7 +354,7 @@ validate_continuations (const unsigned char *data, int count, int *consumed)
  *
  * When we hit reject state, determine what kind of error occurred.
  */
-static SocketUTF8_Result
+static inline SocketUTF8_Result
 classify_error (uint32_t prev_state, unsigned char byte)
 {
   /* Check for overlong 2-byte encodings (C0-C1 starts) - only from accept */
@@ -395,7 +395,7 @@ classify_error (uint32_t prev_state, unsigned char byte)
  *
  * Returns: Specific error type
  */
-static SocketUTF8_Result
+static inline SocketUTF8_Result
 classify_first_byte_error (unsigned char byte)
 {
   if (byte >= UTF8_2BYTE_START && byte <= UTF8_2BYTE_OVERLONG_END)
@@ -605,9 +605,7 @@ SocketUTF8_encode (uint32_t codepoint, unsigned char *output)
   int len;
 
   if (!output)
-    {
-      return 0;
-    }
+    return 0;
 
   len = SocketUTF8_codepoint_len (codepoint);
   if (len == 0)

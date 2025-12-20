@@ -20,11 +20,12 @@
  * - New/free are safe across threads (independent instances)
  */
 
-#include "core/HashTable.h"
-#include "core/SocketUtil.h"
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "core/HashTable.h"
+#include "core/SocketUtil.h"
 
 #define T HashTable_T
 
@@ -100,7 +101,6 @@ validate_config (const HashTable_Config *config)
 static void **
 allocate_buckets (Arena_T arena, size_t count)
 {
-  size_t size = count * sizeof (void *);
   void **buckets;
 
   if (arena != NULL)

@@ -278,8 +278,7 @@ create_ip_entry (T protect, const char *ip, int64_t now_ms)
     evict_lru_entry (protect);
 
   if (protect->ip_entry_count >= protect->config.max_tracked_ips)
-    return NULL; // Still full, can't add more (arena mode or alloc would evict
-                 // but limit reached)
+    return NULL; /* Still full, can't add more (arena mode limit reached) */
 
   entry = alloc_zeroed (protect, 1, sizeof (*entry));
   if (entry == NULL)
@@ -797,7 +796,7 @@ whitelist_check (T protect, const char *ip)
     return 0;
 
   family = parse_ip_address (ip, ip_bytes, sizeof (ip_bytes));
-  // If invalid IP, can't be whitelisted
+  /* If invalid IP, can't be whitelisted */
   if (family == 0)
     return 0;
 
@@ -1482,55 +1481,62 @@ synprotect_get_config (const SocketSYNProtect_Config *config,
       *local_config = *config;
     }
 
-  // Harden config: Clamp invalid values to prevent misconfig DoS/OOM
+  /* Harden config: Clamp invalid values to prevent misconfig DoS/OOM */
   SocketSYNProtect_Config *cfg = local_config;
+
+  /* Window duration: must be positive and capped */
   if (cfg->window_duration_ms <= 0)
     cfg->window_duration_ms = SOCKET_SYN_DEFAULT_WINDOW_MS;
-  if (cfg->window_duration_ms > 60000)
-    cfg->window_duration_ms = 60000; // Cap 1min
+  if (cfg->window_duration_ms > SOCKET_SYN_MAX_WINDOW_MS)
+    cfg->window_duration_ms = SOCKET_SYN_MAX_WINDOW_MS;
 
+  /* Attempts per window: must be positive and capped */
   if (cfg->max_attempts_per_window <= 0)
     cfg->max_attempts_per_window = SOCKET_SYN_DEFAULT_MAX_PER_WINDOW;
-  if (cfg->max_attempts_per_window > 1000)
-    cfg->max_attempts_per_window = 1000;
+  if (cfg->max_attempts_per_window > SOCKET_SYN_MAX_ATTEMPTS_CAP)
+    cfg->max_attempts_per_window = SOCKET_SYN_MAX_ATTEMPTS_CAP;
 
+  /* Global rate: must be positive and capped */
   if (cfg->max_global_per_second <= 0)
     cfg->max_global_per_second = SOCKET_SYN_DEFAULT_GLOBAL_PER_SEC;
-  if (cfg->max_global_per_second > 10000)
-    cfg->max_global_per_second = 10000;
+  if (cfg->max_global_per_second > SOCKET_SYN_MAX_GLOBAL_PER_SEC_CAP)
+    cfg->max_global_per_second = SOCKET_SYN_MAX_GLOBAL_PER_SEC_CAP;
 
-  // Score thresholds: Ensure logical order 1.0 >= throttle >= challenge >=
-  // block >= 0.0
+  /* Score thresholds: Ensure logical order 1.0 >= throttle >= challenge >=
+   * block >= 0.0 */
   cfg->score_throttle = synprotect_clamp_score (cfg->score_throttle);
   cfg->score_challenge = synprotect_clamp_score (cfg->score_challenge);
   cfg->score_block = synprotect_clamp_score (cfg->score_block);
   if (cfg->score_challenge > cfg->score_throttle)
-    cfg->score_challenge = cfg->score_throttle * 0.8f;
+    cfg->score_challenge = cfg->score_throttle * SOCKET_SYN_CHALLENGE_ADJUST_FACTOR;
   if (cfg->score_block > cfg->score_challenge)
-    cfg->score_block = cfg->score_challenge * 0.5f;
+    cfg->score_block = cfg->score_challenge * SOCKET_SYN_BLOCK_ADJUST_FACTOR;
 
-  // Memory limits: Prevent OOM
+  /* Memory limits: Prevent OOM */
   if (cfg->max_tracked_ips == 0)
     cfg->max_tracked_ips = SOCKET_SYN_DEFAULT_MAX_TRACKED_IPS;
-  if (cfg->max_tracked_ips > 1000000)
-    cfg->max_tracked_ips = 1000000; // Reasonable cap
+  if (cfg->max_tracked_ips > SOCKET_SYN_MAX_TRACKED_IPS_CAP)
+    cfg->max_tracked_ips = SOCKET_SYN_MAX_TRACKED_IPS_CAP;
 
   if (cfg->max_whitelist == 0)
     cfg->max_whitelist = SOCKET_SYN_DEFAULT_MAX_WHITELIST;
-  if (cfg->max_whitelist > 10000)
-    cfg->max_whitelist = 10000;
+  if (cfg->max_whitelist > SOCKET_SYN_MAX_LIST_CAP)
+    cfg->max_whitelist = SOCKET_SYN_MAX_LIST_CAP;
 
   if (cfg->max_blacklist == 0)
     cfg->max_blacklist = SOCKET_SYN_DEFAULT_MAX_BLACKLIST;
-  if (cfg->max_blacklist > 10000)
-    cfg->max_blacklist = 10000;
+  if (cfg->max_blacklist > SOCKET_SYN_MAX_LIST_CAP)
+    cfg->max_blacklist = SOCKET_SYN_MAX_LIST_CAP;
 
-  // Other rates positive
+  /* Score rates: must be non-negative */
   if (cfg->score_decay_per_sec < 0.0f)
     cfg->score_decay_per_sec = SOCKET_SYN_DEFAULT_SCORE_DECAY;
   if (cfg->score_penalty_attempt < 0.0f)
     cfg->score_penalty_attempt = SOCKET_SYN_DEFAULT_PENALTY_ATTEMPT;
-  // etc.
+  if (cfg->score_penalty_failure < 0.0f)
+    cfg->score_penalty_failure = SOCKET_SYN_DEFAULT_PENALTY_FAILURE;
+  if (cfg->score_reward_success < 0.0f)
+    cfg->score_reward_success = SOCKET_SYN_DEFAULT_REWARD_SUCCESS;
 
   return local_config;
 }

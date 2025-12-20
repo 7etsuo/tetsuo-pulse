@@ -8,6 +8,7 @@
  * Socket-convenience.c - Convenience wrapper functions
  *
  * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
  *
  * Implements high-level convenience functions that combine multiple
  * socket operations into single calls for common use cases:
@@ -18,6 +19,10 @@
  * - Socket_connect_nonblocking() - Non-blocking connect initiation
  * - Socket_listen_unix() - One-call Unix domain server setup
  * - Socket_connect_unix_timeout() - Unix domain connect with timeout
+ *
+ * Thread Safety:
+ * All functions in this module are thread-safe. They operate on
+ * independent socket instances and use thread-local error buffers.
  */
 
 #include <arpa/inet.h>
@@ -33,6 +38,7 @@
 #include <unistd.h>
 
 #include "core/SocketConfig.h"
+#define SOCKET_LOG_COMPONENT "SocketConvenience"
 #include "core/SocketUtil.h"
 #include "socket/Socket-private.h"
 #include "socket/Socket.h"
@@ -48,6 +54,185 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketConvenience);
 #define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketConvenience, e)
 
 /* ============================================================================
+ * Static Helper Functions
+ * ============================================================================
+ */
+
+/**
+ * poll_with_eintr_retry - Execute poll with automatic EINTR retry
+ * @pfd: Pointer to pollfd structure
+ * @timeout_ms: Timeout in milliseconds
+ *
+ * Returns: poll() result (>0 ready, 0 timeout, <0 error other than EINTR)
+ * Thread-safe: Yes
+ *
+ * Wraps poll() to automatically retry on EINTR, which can occur when
+ * a signal is delivered during the poll wait.
+ */
+static int
+poll_with_eintr_retry (struct pollfd *pfd, int timeout_ms)
+{
+        int result;
+
+        assert (pfd != NULL);
+
+        while ((result = poll (pfd, 1, timeout_ms)) < 0 && errno == EINTR)
+                ; /* Retry on EINTR */
+
+        return result;
+}
+
+/**
+ * get_socket_flags - Get current socket flags with error handling
+ * @fd: File descriptor to query
+ * @flags_out: Output parameter for flags
+ *
+ * Returns: 0 on success, -1 on error (raises exception)
+ * Thread-safe: Yes
+ */
+static int
+get_socket_flags (int fd, int *flags_out)
+{
+        int flags;
+
+        assert (flags_out != NULL);
+
+        flags = fcntl (fd, F_GETFL);
+        if (flags < 0)
+                {
+                        SOCKET_ERROR_FMT ("Failed to get socket flags");
+                        RAISE_MODULE_ERROR (Socket_Failed);
+                }
+
+        *flags_out = flags;
+        return 0;
+}
+
+/**
+ * set_nonblocking_mode - Set socket to non-blocking mode
+ * @fd: File descriptor
+ * @original_flags: Current flags value
+ *
+ * Returns: 0 on success, -1 on error (raises exception)
+ * Thread-safe: Yes
+ */
+static int
+set_nonblocking_mode (int fd, int original_flags)
+{
+        if (fcntl (fd, F_SETFL, original_flags | O_NONBLOCK) < 0)
+                {
+                        SOCKET_ERROR_FMT ("Failed to set non-blocking mode");
+                        RAISE_MODULE_ERROR (Socket_Failed);
+                }
+        return 0;
+}
+
+/**
+ * restore_blocking_mode - Restore socket to original blocking mode
+ * @fd: File descriptor
+ * @original_flags: Original flags to restore
+ *
+ * Thread-safe: Yes
+ *
+ * Logs warning on failure but does not raise exception, as this is
+ * typically called in cleanup paths where we want to continue.
+ */
+static void
+restore_blocking_mode (int fd, int original_flags)
+{
+        if (fcntl (fd, F_SETFL, original_flags) < 0)
+                {
+                        SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                                         "Failed to restore blocking mode "
+                                         "(fd=%d, errno=%d): %s",
+                                         fd, errno, Socket_safe_strerror (errno));
+                }
+}
+
+/**
+ * check_connect_result - Check result of non-blocking connect via SO_ERROR
+ * @fd: File descriptor
+ * @context_path: Path or address for error message context
+ *
+ * Returns: 0 on success
+ * Raises: Socket_Failed on error
+ * Thread-safe: Yes
+ */
+static int
+check_connect_result (int fd, const char *context_path)
+{
+        int error = 0;
+        socklen_t error_len = sizeof (error);
+
+        if (getsockopt (fd, SOL_SOCKET, SO_ERROR, &error, &error_len) < 0)
+                {
+                        SOCKET_ERROR_FMT ("getsockopt(SO_ERROR) failed");
+                        RAISE_MODULE_ERROR (Socket_Failed);
+                }
+
+        if (error != 0)
+                {
+                        errno = error;
+                        SOCKET_ERROR_FMT ("Connect to %.*s failed",
+                                          SOCKET_ERROR_MAX_HOSTNAME, context_path);
+                        RAISE_MODULE_ERROR (Socket_Failed);
+                }
+
+        return 0;
+}
+
+/**
+ * parse_ip_address - Parse IPv4 or IPv6 address string
+ * @ip_address: IP address string to parse
+ * @addr: Output sockaddr_storage
+ * @addrlen: Output address length
+ *
+ * Returns: 0 on success
+ * Raises: Socket_Failed if address is invalid
+ * Thread-safe: Yes
+ */
+static int
+parse_ip_address (const char *ip_address, struct sockaddr_storage *addr,
+                  socklen_t *addrlen, int port)
+{
+        struct sockaddr_in *addr4;
+        struct sockaddr_in6 *addr6;
+
+        assert (ip_address != NULL);
+        assert (addr != NULL);
+        assert (addrlen != NULL);
+
+        memset (addr, 0, sizeof (*addr));
+
+        /* Try IPv4 first */
+        addr4 = (struct sockaddr_in *)addr;
+        if (inet_pton (AF_INET, ip_address, &addr4->sin_addr) == 1)
+                {
+                        addr4->sin_family = AF_INET;
+                        addr4->sin_port = htons ((uint16_t)port);
+                        *addrlen = sizeof (struct sockaddr_in);
+                        return 0;
+                }
+
+        /* Try IPv6 */
+        addr6 = (struct sockaddr_in6 *)addr;
+        if (inet_pton (AF_INET6, ip_address, &addr6->sin6_addr) == 1)
+                {
+                        addr6->sin6_family = AF_INET6;
+                        addr6->sin6_port = htons ((uint16_t)port);
+                        *addrlen = sizeof (struct sockaddr_in6);
+                        return 0;
+                }
+
+        /* Invalid address */
+        SOCKET_ERROR_MSG ("Invalid IP address (not IPv4 or IPv6): %.*s",
+                          SOCKET_ERROR_MAX_HOSTNAME, ip_address);
+        RAISE_MODULE_ERROR (Socket_Failed);
+
+        return -1; /* Unreachable, but satisfies compiler */
+}
+
+/* ============================================================================
  * TCP Convenience Functions
  * ============================================================================
  */
@@ -55,44 +240,48 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketConvenience);
 /**
  * Socket_listen_tcp - Create a listening TCP server socket in one call
  * @host: Local address to bind (NULL or "" for INADDR_ANY)
- * @port: Local port to bind (1-65535)
- * @backlog: Maximum pending connections
+ * @port: Local port to bind (0-65535, 0 for ephemeral)
+ * @backlog: Maximum pending connections (must be > 0)
  *
  * Returns: New listening socket ready for Socket_accept()
  * Raises: Socket_Failed on error
  * Thread-safe: Yes
+ *
+ * Combines Socket_new(), Socket_setreuseaddr(), Socket_bind(), and
+ * Socket_listen() into a single convenient call. The socket is
+ * configured with SO_REUSEADDR to allow quick server restart.
  */
 T
 Socket_listen_tcp (const char *host, int port, int backlog)
 {
-  T server = NULL;
+        T server = NULL;
 
-  assert (port >= 0 && port <= SOCKET_MAX_PORT);
-  assert (backlog > 0);
+        assert (port >= 0 && port <= SOCKET_MAX_PORT);
+        assert (backlog > 0);
 
-  TRY
-  {
-    /* Create IPv4 TCP socket (use AF_INET6 for dual-stack if needed) */
-    server = Socket_new (AF_INET, SOCK_STREAM, 0);
+        TRY
+        {
+                /* Create IPv4 TCP socket */
+                server = Socket_new (AF_INET, SOCK_STREAM, 0);
 
-    /* Enable address reuse for quick restart */
-    Socket_setreuseaddr (server);
+                /* Enable address reuse for quick restart */
+                Socket_setreuseaddr (server);
 
-    /* Bind to address/port */
-    Socket_bind (server, host, port);
+                /* Bind to address/port */
+                Socket_bind (server, host, port);
 
-    /* Start listening */
-    Socket_listen (server, backlog);
-  }
-  EXCEPT (Socket_Failed)
-  {
-    if (server)
-      Socket_free (&server);
-    RERAISE;
-  }
-  END_TRY;
+                /* Start listening */
+                Socket_listen (server, backlog);
+        }
+        EXCEPT (Socket_Failed)
+        {
+                if (server)
+                        Socket_free (&server);
+                RERAISE;
+        }
+        END_TRY;
 
-  return server;
+        return server;
 }
 
 /**
@@ -102,216 +291,191 @@ Socket_listen_tcp (const char *host, int port, int backlog)
  * @timeout_ms: Connection timeout in milliseconds (0 = no timeout)
  *
  * Returns: New connected socket
- * Raises: Socket_Failed on error
+ * Raises: Socket_Failed on error or timeout
  * Thread-safe: Yes
+ *
+ * Combines Socket_new(), timeout configuration, and Socket_connect()
+ * into a single convenient call. If timeout_ms > 0, the connection
+ * attempt will fail with ETIMEDOUT if it takes longer than specified.
  */
 T
 Socket_connect_tcp (const char *host, int port, int timeout_ms)
 {
-  T client = NULL;
+        T client = NULL;
 
-  assert (host != NULL);
-  assert (port > 0 && port <= SOCKET_MAX_PORT);
-  assert (timeout_ms >= 0);
+        assert (host != NULL);
+        assert (port > 0 && port <= SOCKET_MAX_PORT);
+        assert (timeout_ms >= 0);
 
-  TRY
-  {
-    /* Create IPv4 TCP socket */
-    client = Socket_new (AF_INET, SOCK_STREAM, 0);
+        TRY
+        {
+                /* Create IPv4 TCP socket */
+                client = Socket_new (AF_INET, SOCK_STREAM, 0);
 
-    /* Set connect timeout if specified */
-    if (timeout_ms > 0)
-      {
-        SocketTimeouts_T timeouts = { 0 };
-        Socket_timeouts_get (client, &timeouts);
-        timeouts.connect_timeout_ms = timeout_ms;
-        Socket_timeouts_set (client, &timeouts);
-      }
+                /* Set connect timeout if specified */
+                if (timeout_ms > 0)
+                        {
+                                SocketTimeouts_T timeouts = { 0 };
+                                Socket_timeouts_get (client, &timeouts);
+                                timeouts.connect_timeout_ms = timeout_ms;
+                                Socket_timeouts_set (client, &timeouts);
+                        }
 
-    /* Connect to remote host */
-    Socket_connect (client, host, port);
-  }
-  EXCEPT (Socket_Failed)
-  {
-    if (client)
-      Socket_free (&client);
-    RERAISE;
-  }
-  END_TRY;
+                /* Connect to remote host */
+                Socket_connect (client, host, port);
+        }
+        EXCEPT (Socket_Failed)
+        {
+                if (client)
+                        Socket_free (&client);
+                RERAISE;
+        }
+        END_TRY;
 
-  return client;
+        return client;
 }
 
 /**
  * Socket_accept_timeout - Accept incoming connection with explicit timeout
- * @socket: Listening socket
+ * @socket: Listening socket (must be in listening state)
  * @timeout_ms: Timeout in milliseconds (0 = immediate, -1 = block forever)
  *
  * Returns: New client socket, or NULL if timeout expired
  * Raises: Socket_Failed on accept error
  * Thread-safe: Yes
+ *
+ * Performs a timed accept operation. If timeout_ms is 0, performs an
+ * immediate non-blocking check. If timeout_ms is -1, blocks indefinitely.
+ * Otherwise, waits up to timeout_ms for an incoming connection.
+ *
+ * Note: Temporarily sets the socket to non-blocking mode during the
+ * operation and restores the original mode afterwards.
  */
 T
 Socket_accept_timeout (T socket, int timeout_ms)
 {
-  int fd;
-  int original_flags;
-  volatile int need_restore = 0;
-  volatile T client = NULL;
+        int fd;
+        int original_flags;
+        volatile int need_restore = 0;
+        volatile T client = NULL;
 
-  assert (socket);
+        assert (socket);
 
-  fd = Socket_fd (socket);
+        fd = Socket_fd (socket);
 
-  /* Get current flags */
-  original_flags = fcntl (fd, F_GETFL);
-  if (original_flags < 0)
-    {
-      SOCKET_ERROR_FMT ("Failed to get socket flags");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+        /* Get current flags */
+        get_socket_flags (fd, &original_flags);
 
-  /* Set non-blocking if needed for timeout handling */
-  if ((original_flags & O_NONBLOCK) == 0)
-    {
-      if (fcntl (fd, F_SETFL, original_flags | O_NONBLOCK) < 0)
+        /* Set non-blocking if needed for timeout handling */
+        if ((original_flags & O_NONBLOCK) == 0)
+                {
+                        set_nonblocking_mode (fd, original_flags);
+                        need_restore = 1;
+                }
+
+        TRY
         {
-          SOCKET_ERROR_FMT ("Failed to set non-blocking mode");
-          RAISE_MODULE_ERROR (Socket_Failed);
+                /* Wait for incoming connection with timeout */
+                if (timeout_ms != 0)
+                        {
+                                struct pollfd pfd = { .fd = fd,
+                                                      .events = POLLIN,
+                                                      .revents = 0 };
+                                int poll_result;
+
+                                poll_result = poll_with_eintr_retry (&pfd, timeout_ms);
+
+                                if (poll_result < 0)
+                                        {
+                                                SOCKET_ERROR_FMT ("poll() failed in accept_timeout");
+                                                RAISE_MODULE_ERROR (Socket_Failed);
+                                        }
+
+                                if (poll_result == 0)
+                                        {
+                                                /* Timeout - return NULL (not an error) */
+                                                client = NULL;
+                                        }
+                                else
+                                        {
+                                                /* Ready to accept */
+                                                client = Socket_accept (socket);
+                                        }
+                        }
+                else
+                        {
+                                /* Immediate check (non-blocking) */
+                                client = Socket_accept (socket);
+                        }
         }
-      need_restore = 1;
-    }
+        FINALLY
+        {
+                /* Restore original blocking mode */
+                if (need_restore)
+                        restore_blocking_mode (fd, original_flags);
+        }
+        END_TRY;
 
-  TRY
-  {
-    /* Wait for incoming connection with timeout */
-    if (timeout_ms != 0)
-      {
-        struct pollfd pfd = { .fd = fd, .events = POLLIN, .revents = 0 };
-        int poll_result;
-
-        while ((poll_result = poll (&pfd, 1, timeout_ms)) < 0 && errno == EINTR)
-          ; /* Retry on EINTR */
-
-        if (poll_result < 0)
-          {
-            SOCKET_ERROR_FMT ("poll() failed in accept_timeout");
-            RAISE_MODULE_ERROR (Socket_Failed);
-          }
-
-        if (poll_result == 0)
-          {
-            /* Timeout - return NULL (not an error) */
-            client = NULL;
-          }
-        else
-          {
-            /* Ready to accept */
-            client = Socket_accept (socket);
-          }
-      }
-    else
-      {
-        /* Immediate check (non-blocking) */
-        client = Socket_accept (socket);
-      }
-  }
-  FINALLY
-  {
-    /* Restore original blocking mode */
-    if (need_restore)
-      {
-        if (fcntl (fd, F_SETFL, original_flags) < 0)
-          {
-            SocketLog_emitf (SOCKET_LOG_WARN, "SocketConvenience",
-                             "Failed to restore blocking mode after "
-                             "accept_timeout (fd=%d, errno=%d): %s",
-                             fd, errno, Socket_safe_strerror (errno));
-          }
-      }
-  }
-  END_TRY;
-
-  return client;
+        return client;
 }
 
 /**
  * Socket_connect_nonblocking - Initiate non-blocking connect (IP only)
  * @socket: Socket (will be set to non-blocking)
- * @ip_address: Remote IP address (no hostnames)
+ * @ip_address: Remote IP address (IPv4 or IPv6, no hostnames)
  * @port: Remote port (1-65535)
  *
- * Returns: 0 if connected immediately, 1 if in progress
+ * Returns: 0 if connected immediately, 1 if connection in progress
  * Raises: Socket_Failed on invalid IP or immediate failure
  * Thread-safe: Yes
+ *
+ * Initiates a non-blocking connect operation. The socket is set to
+ * non-blocking mode before connecting. If the connection cannot be
+ * completed immediately (common for TCP), returns 1 and the caller
+ * should poll for POLLOUT to determine when the connection completes.
+ *
+ * Note: Does not accept hostnames - use Socket_connect() for hostname
+ * resolution or SocketDNS for async resolution.
  */
 int
 Socket_connect_nonblocking (T socket, const char *ip_address, int port)
 {
-  struct sockaddr_storage addr;
-  socklen_t addrlen = 0;
-  int fd;
-  int result;
+        struct sockaddr_storage addr;
+        socklen_t addrlen = 0;
+        int fd;
+        int result;
 
-  assert (socket);
-  assert (ip_address != NULL);
-  assert (port > 0 && port <= SOCKET_MAX_PORT);
+        assert (socket);
+        assert (ip_address != NULL);
+        assert (port > 0 && port <= SOCKET_MAX_PORT);
 
-  fd = Socket_fd (socket);
+        fd = Socket_fd (socket);
 
-  /* Parse IP address - try IPv4 first, then IPv6 */
-  memset (&addr, 0, sizeof (addr));
+        /* Parse IP address */
+        parse_ip_address (ip_address, &addr, &addrlen, port);
 
-  /* Try IPv4 */
-  struct sockaddr_in *addr4 = (struct sockaddr_in *)&addr;
-  if (inet_pton (AF_INET, ip_address, &addr4->sin_addr) == 1)
-    {
-      addr4->sin_family = AF_INET;
-      addr4->sin_port = htons ((uint16_t)port);
-      addrlen = sizeof (struct sockaddr_in);
-    }
-  else
-    {
-      /* Try IPv6 */
-      struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)&addr;
-      if (inet_pton (AF_INET6, ip_address, &addr6->sin6_addr) == 1)
-        {
-          addr6->sin6_family = AF_INET6;
-          addr6->sin6_port = htons ((uint16_t)port);
-          addrlen = sizeof (struct sockaddr_in6);
-        }
-      else
-        {
-          SOCKET_ERROR_MSG ("Invalid IP address (not IPv4 or IPv6): %.*s",
-                            SOCKET_ERROR_MAX_HOSTNAME, ip_address);
-          RAISE_MODULE_ERROR (Socket_Failed);
-        }
-    }
+        /* Set socket to non-blocking mode */
+        Socket_setnonblocking (socket);
 
-  /* Set socket to non-blocking mode */
-  Socket_setnonblocking (socket);
+        /* Initiate connect */
+        result = connect (fd, (struct sockaddr *)&addr, addrlen);
 
-  /* Initiate connect */
-  result = connect (fd, (struct sockaddr *)&addr, addrlen);
+        if (result == 0)
+                {
+                        /* Connected immediately (rare for TCP, common for Unix domain) */
+                        return 0;
+                }
 
-  if (result == 0)
-    {
-      /* Connected immediately (rare for TCP, common for Unix domain) */
-      return 0;
-    }
+        if (errno == EINPROGRESS || errno == EINTR)
+                {
+                        /* Connection in progress - caller should poll for POLLOUT */
+                        return 1;
+                }
 
-  if (errno == EINPROGRESS || errno == EINTR)
-    {
-      /* Connection in progress - caller should poll */
-      return 1;
-    }
-
-  /* Immediate failure */
-  SOCKET_ERROR_FMT ("Connect to %.*s:%d failed", SOCKET_ERROR_MAX_HOSTNAME,
-                    ip_address, port);
-  RAISE_MODULE_ERROR (Socket_Failed);
-
-  return -1; /* Unreachable */
+        /* Immediate failure */
+        SOCKET_ERROR_FMT ("Connect to %.*s:%d failed", SOCKET_ERROR_MAX_HOSTNAME,
+                          ip_address, port);
+        RAISE_MODULE_ERROR (Socket_Failed);
 }
 
 /* ============================================================================
@@ -321,183 +485,166 @@ Socket_connect_nonblocking (T socket, const char *ip_address, int port)
 
 /**
  * Socket_listen_unix - Create a listening Unix domain socket in one call
- * @path: Socket file path (or '@' prefix for abstract)
- * @backlog: Maximum pending connections
+ * @path: Socket file path (or '@' prefix for abstract namespace on Linux)
+ * @backlog: Maximum pending connections (must be > 0)
  *
  * Returns: New listening Unix domain socket
- * Raises: SocketUnix_Failed on error
+ * Raises: Socket_Failed on error
  * Thread-safe: Yes
+ *
+ * Combines Socket_new(), Socket_bind_unix(), and Socket_listen() into
+ * a single convenient call. For filesystem paths, any existing socket
+ * file is removed before binding (handled by Socket_bind_unix).
+ *
+ * For abstract namespace sockets (Linux only), prefix the path with '@'.
  */
 T
 Socket_listen_unix (const char *path, int backlog)
 {
-  T server = NULL;
+        T server = NULL;
 
-  assert (path != NULL);
-  assert (backlog > 0);
+        assert (path != NULL);
+        assert (backlog > 0);
 
-  TRY
-  {
-    /* Create Unix domain stream socket */
-    server = Socket_new (AF_UNIX, SOCK_STREAM, 0);
+        TRY
+        {
+                /* Create Unix domain stream socket */
+                server = Socket_new (AF_UNIX, SOCK_STREAM, 0);
 
-    /* Bind to path */
-    Socket_bind_unix (server, path);
+                /* Bind to path */
+                Socket_bind_unix (server, path);
 
-    /* Start listening */
-    Socket_listen (server, backlog);
-  }
-  EXCEPT (Socket_Failed)
-  {
-    if (server)
-      Socket_free (&server);
-    RERAISE;
-  }
-  END_TRY;
+                /* Start listening */
+                Socket_listen (server, backlog);
+        }
+        EXCEPT (Socket_Failed)
+        {
+                if (server)
+                        Socket_free (&server);
+                RERAISE;
+        }
+        END_TRY;
 
-  return server;
+        return server;
 }
 
 /**
  * Socket_connect_unix_timeout - Connect to Unix domain socket with timeout
  * @socket: Unix domain socket (AF_UNIX)
- * @path: Server socket path
+ * @path: Server socket path (or '@' prefix for abstract)
  * @timeout_ms: Connection timeout in milliseconds (0 = no timeout)
  *
- * Raises: SocketUnix_Failed on error or timeout
+ * Raises: Socket_Failed on error or timeout
  * Thread-safe: Yes
+ *
+ * Connects to a Unix domain socket with optional timeout. If timeout_ms
+ * is 0, performs a blocking connect. Otherwise, uses non-blocking connect
+ * with poll to enforce the timeout.
+ *
+ * For abstract namespace sockets (Linux only), prefix the path with '@'.
  */
 void
 Socket_connect_unix_timeout (T socket, const char *path, int timeout_ms)
 {
-  struct sockaddr_un addr;
-  size_t path_len;
-  int fd;
-  volatile int original_flags = 0;
-  volatile int need_restore = 0;
-  int result;
+        struct sockaddr_un addr;
+        size_t path_len;
+        int fd;
+        volatile int original_flags = 0;
+        volatile int need_restore = 0;
+        int result;
 
-  assert (socket);
-  assert (path != NULL);
-  assert (timeout_ms >= 0);
+        assert (socket);
+        assert (path != NULL);
+        assert (timeout_ms >= 0);
 
-  fd = Socket_fd (socket);
-  path_len = strlen (path);
+        fd = Socket_fd (socket);
+        path_len = strlen (path);
 
-  /* Validate path length */
-  if (path_len == 0 || path_len >= sizeof (addr.sun_path))
-    {
-      SOCKET_ERROR_MSG ("Invalid Unix socket path length: %zu", path_len);
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+        /* Validate path length */
+        if (path_len == 0 || path_len >= sizeof (addr.sun_path))
+                {
+                        SOCKET_ERROR_MSG ("Invalid Unix socket path length: %zu", path_len);
+                        RAISE_MODULE_ERROR (Socket_Failed);
+                }
 
-  /* Build address */
-  memset (&addr, 0, sizeof (addr));
-  addr.sun_family = AF_UNIX;
+        /* Build address */
+        memset (&addr, 0, sizeof (addr));
+        addr.sun_family = AF_UNIX;
 
-  /* Handle abstract sockets (Linux: '@' prefix becomes '\0') */
-  if (path[0] == '@')
-    {
-      addr.sun_path[0] = '\0';
-      memcpy (addr.sun_path + 1, path + 1, path_len - 1);
-    }
-  else
-    {
-      memcpy (addr.sun_path, path, path_len);
-    }
+        /* Handle abstract sockets (Linux: '@' prefix becomes '\0') */
+        if (path[0] == '@')
+                {
+                        addr.sun_path[0] = '\0';
+                        memcpy (addr.sun_path + 1, path + 1, path_len - 1);
+                }
+        else
+                {
+                        memcpy (addr.sun_path, path, path_len);
+                }
 
-  /* If timeout specified, use non-blocking connect */
-  if (timeout_ms > 0)
-    {
-      original_flags = fcntl (fd, F_GETFL);
-      if (original_flags < 0)
+        /* If timeout specified, use non-blocking connect */
+        if (timeout_ms > 0)
+                {
+                        get_socket_flags (fd, (int *)&original_flags);
+
+                        if ((original_flags & O_NONBLOCK) == 0)
+                                {
+                                        set_nonblocking_mode (fd, original_flags);
+                                        need_restore = 1;
+                                }
+                }
+
+        TRY
         {
-          SOCKET_ERROR_FMT ("Failed to get socket flags");
-          RAISE_MODULE_ERROR (Socket_Failed);
-        }
+                result = connect (fd, (struct sockaddr *)&addr, sizeof (addr));
 
-      if ((original_flags & O_NONBLOCK) == 0)
+                if (result == 0 || errno == EISCONN)
+                        {
+                                /* Connected immediately */
+                        }
+                else if (timeout_ms > 0
+                         && (errno == EINPROGRESS || errno == EINTR || errno == EAGAIN))
+                        {
+                                /* Wait for connection with timeout */
+                                struct pollfd pfd = { .fd = fd,
+                                                      .events = POLLOUT,
+                                                      .revents = 0 };
+                                int poll_result;
+
+                                poll_result = poll_with_eintr_retry (&pfd, timeout_ms);
+
+                                if (poll_result < 0)
+                                        {
+                                                SOCKET_ERROR_FMT ("poll() failed during Unix connect");
+                                                RAISE_MODULE_ERROR (Socket_Failed);
+                                        }
+
+                                if (poll_result == 0)
+                                        {
+                                                errno = ETIMEDOUT;
+                                                SOCKET_ERROR_MSG (SOCKET_ETIMEDOUT ": Unix connect to %.*s",
+                                                                  SOCKET_ERROR_MAX_HOSTNAME, path);
+                                                RAISE_MODULE_ERROR (Socket_Failed);
+                                        }
+
+                                /* Check if connect succeeded */
+                                check_connect_result (fd, path);
+                        }
+                else
+                        {
+                                /* Connect failed immediately */
+                                SOCKET_ERROR_FMT ("Unix connect to %.*s failed",
+                                                  SOCKET_ERROR_MAX_HOSTNAME, path);
+                                RAISE_MODULE_ERROR (Socket_Failed);
+                        }
+        }
+        FINALLY
         {
-          if (fcntl (fd, F_SETFL, original_flags | O_NONBLOCK) < 0)
-            {
-              SOCKET_ERROR_FMT ("Failed to set non-blocking mode");
-              RAISE_MODULE_ERROR (Socket_Failed);
-            }
-          need_restore = 1;
+                /* Restore original blocking mode */
+                if (need_restore)
+                        restore_blocking_mode (fd, original_flags);
         }
-    }
-
-  TRY
-  {
-    result = connect (fd, (struct sockaddr *)&addr, sizeof (addr));
-
-    if (result == 0 || errno == EISCONN)
-      {
-        /* Connected immediately */
-      }
-    else if (timeout_ms > 0
-             && (errno == EINPROGRESS || errno == EINTR || errno == EAGAIN))
-      {
-        /* Wait for connection with timeout */
-        struct pollfd pfd = { .fd = fd, .events = POLLOUT, .revents = 0 };
-        int poll_result;
-
-        while ((poll_result = poll (&pfd, 1, timeout_ms)) < 0 && errno == EINTR)
-          ; /* Retry on EINTR */
-
-        if (poll_result < 0)
-          {
-            SOCKET_ERROR_FMT ("poll() failed during Unix connect");
-            RAISE_MODULE_ERROR (Socket_Failed);
-          }
-
-        if (poll_result == 0)
-          {
-            errno = ETIMEDOUT;
-            SOCKET_ERROR_MSG (SOCKET_ETIMEDOUT ": Unix connect to %.*s",
-                              SOCKET_ERROR_MAX_HOSTNAME, path);
-            RAISE_MODULE_ERROR (Socket_Failed);
-          }
-
-        /* Check if connect succeeded */
-        int error = 0;
-        socklen_t error_len = sizeof (error);
-        if (getsockopt (fd, SOL_SOCKET, SO_ERROR, &error, &error_len) < 0)
-          {
-            SOCKET_ERROR_FMT ("getsockopt(SO_ERROR) failed");
-            RAISE_MODULE_ERROR (Socket_Failed);
-          }
-
-        if (error != 0)
-          {
-            errno = error;
-            SOCKET_ERROR_FMT ("Unix connect to %.*s failed",
-                              SOCKET_ERROR_MAX_HOSTNAME, path);
-            RAISE_MODULE_ERROR (Socket_Failed);
-          }
-      }
-    else
-      {
-        /* Connect failed immediately */
-        SOCKET_ERROR_FMT ("Unix connect to %.*s failed",
-                          SOCKET_ERROR_MAX_HOSTNAME, path);
-        RAISE_MODULE_ERROR (Socket_Failed);
-      }
-  }
-  FINALLY
-  {
-    /* Restore original blocking mode */
-    if (need_restore)
-      {
-        if (fcntl (fd, F_SETFL, original_flags) < 0)
-          {
-            SocketLog_emitf (SOCKET_LOG_WARN, "SocketConvenience",
-                             "Failed to restore blocking mode after "
-                             "Unix connect (fd=%d, errno=%d): %s",
-                             fd, errno, Socket_safe_strerror (errno));
-          }
-      }
-  }
-  END_TRY;
+        END_TRY;
 }
 
+#undef T

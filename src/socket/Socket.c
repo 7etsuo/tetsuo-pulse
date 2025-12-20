@@ -1642,7 +1642,7 @@ Socket_resetstats (T socket)
  * Thread-safe: Yes
  */
 int
-Socket_probe (T socket, int timeout_ms)
+Socket_probe (const T socket, int timeout_ms)
 {
   int fd;
   int error;
@@ -1705,7 +1705,7 @@ Socket_probe (T socket, int timeout_ms)
  * Thread-safe: Yes
  */
 int
-Socket_get_error (T socket)
+Socket_get_error (const T socket)
 {
   int fd;
   int error = 0;
@@ -1731,7 +1731,7 @@ Socket_get_error (T socket)
  * Thread-safe: Yes
  */
 int
-Socket_is_readable (T socket)
+Socket_is_readable (const T socket)
 {
   int fd;
   struct pollfd pfd;
@@ -1763,7 +1763,7 @@ Socket_is_readable (T socket)
  * Thread-safe: Yes
  */
 int
-Socket_is_writable (T socket)
+Socket_is_writable (const T socket)
 {
   int fd;
   struct pollfd pfd;
@@ -1798,7 +1798,7 @@ Socket_is_writable (T socket)
  * Thread-safe: Yes
  */
 int
-Socket_get_tcp_info (T socket, SocketTCPInfo *info)
+Socket_get_tcp_info (const T socket, SocketTCPInfo *info)
 {
   int fd;
   struct tcp_info kernel_info;
@@ -1898,7 +1898,7 @@ Socket_get_tcp_info (T socket, SocketTCPInfo *info)
  * Thread-safe: Yes
  */
 int32_t
-Socket_get_rtt (T socket)
+Socket_get_rtt (const T socket)
 {
 #if defined(__linux__) && defined(TCP_INFO)
   int fd;
@@ -1929,7 +1929,7 @@ Socket_get_rtt (T socket)
  * Thread-safe: Yes
  */
 int32_t
-Socket_get_cwnd (T socket)
+Socket_get_cwnd (const T socket)
 {
 #if defined(__linux__) && defined(TCP_INFO)
   int fd;

@@ -8,6 +8,7 @@
  * SocketReconnect.c - Automatic Reconnection Framework Implementation
  *
  * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
  *
  * Implements automatic reconnection with exponential backoff, circuit breaker
  * pattern, and health monitoring.
@@ -23,21 +24,8 @@
  *   HALF_OPEN -> OPEN: On failed probe
  */
 
-#include "socket/SocketReconnect-private.h"
-#include "socket/SocketReconnect.h"
-
-#include "core/Arena.h"
-#include "core/Except.h"
-#include "core/SocketSecurity.h"
-#include "core/SocketUtil.h"
-#include "socket/Socket.h"
-
+/* System headers first (alphabetical order) */
 #include <assert.h>
-
-SOCKET_DECLARE_MODULE_EXCEPTION (SocketReconnect);
-
-#define RAISE_RECONNECT_ERROR_MSG(exception, fmt, ...)                        \
-  SOCKET_RAISE_FMT (SocketReconnect, exception, fmt, ##__VA_ARGS__)
 #include <errno.h>
 #include <fcntl.h>
 #include <math.h>
@@ -47,6 +35,16 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketReconnect);
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+
+/* Project headers */
+#include "socket/SocketReconnect-private.h"
+#include "socket/SocketReconnect.h"
+
+#include "core/Arena.h"
+#include "core/Except.h"
+#include "core/SocketSecurity.h"
+#include "core/SocketUtil.h"
+#include "socket/Socket.h"
 
 #define T SocketReconnect_T
 
@@ -62,6 +60,19 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketReconnect);
 
 /* Macro to raise exception with detailed error message */
 #define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketReconnect, e)
+
+#define RAISE_RECONNECT_ERROR_MSG(exception, fmt, ...)                        \
+  SOCKET_RAISE_FMT (SocketReconnect, exception, fmt, ##__VA_ARGS__)
+
+/**
+ * @brief Minimum poll timeout for health check when user specifies 0 or
+ * negative.
+ *
+ * A minimum timeout ensures we don't spin too fast when checking socket health.
+ */
+#ifndef SOCKET_RECONNECT_MIN_HEALTH_POLL_MS
+#define SOCKET_RECONNECT_MIN_HEALTH_POLL_MS 100
+#endif
 
 /* ============================================================================
  * State Names
@@ -82,37 +93,11 @@ SocketReconnect_state_name (SocketReconnect_State state)
 /* ============================================================================
  * Internal Helper Functions
  * ============================================================================
+ *
+ * Note: socketreconnect_now_ms(), socketreconnect_elapsed_ms(), and
+ * reconnect_jitter() are defined in SocketReconnect-private.h as static
+ * inline functions for use across split files if needed.
  */
-
-static int64_t
-socketreconnect_get_time_ms (void)
-{
-  return Socket_get_monotonic_ms();
-}
-
-static double
-socketreconnect_random_double (void)
-{
-  unsigned int value;
-  if (SocketCrypto_random_bytes(&value, sizeof(value)) == 0) {
-    return (double)value / (double)0xFFFFFFFFU;
-  } else {
-    /* Fallback to time-based PRNG */
-#ifdef _WIN32
-    static __declspec(thread) unsigned int seed = 0;
-#else
-    static __thread unsigned int seed = 0;
-#endif
-    if (seed == 0) {
-      seed = (unsigned int)Socket_get_monotonic_ms();
-    }
-    /* xorshift32 */
-    seed ^= seed << 13;
-    seed ^= seed >> 17;
-    seed ^= seed << 5;
-    return (double)seed / (double)0xFFFFFFFFU;
-  }
-}
 
 /* ============================================================================
  * Policy Defaults
@@ -167,7 +152,7 @@ transition_state (T conn, SocketReconnect_State new_state)
     return;
 
   conn->state = new_state;
-  conn->state_start_time_ms = socketreconnect_get_time_ms ();
+  conn->state_start_time_ms = socketreconnect_now_ms ();
 
   SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
                    "%s:%d state transition: %s -> %s", conn->host, conn->port,
@@ -203,7 +188,7 @@ calculate_backoff_delay (T conn)
     {
       double jitter_range = delay * conn->policy.jitter;
       double jitter_offset
-          = jitter_range * (2.0 * socketreconnect_random_double () - 1.0);
+          = jitter_range * (2.0 * reconnect_jitter () - 1.0);
       delay += jitter_offset;
     }
 
@@ -242,7 +227,7 @@ update_circuit_breaker (T conn, int success)
         {
           /* Probe failed, reopen circuit */
           conn->circuit_state = CIRCUIT_OPEN;
-          conn->circuit_open_time_ms = socketreconnect_get_time_ms ();
+          conn->circuit_open_time_ms = socketreconnect_now_ms ();
           SocketLog_emitf (
               SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
               "%s:%d circuit breaker reopened after probe failure", conn->host,
@@ -254,7 +239,7 @@ update_circuit_breaker (T conn, int success)
         {
           /* Too many failures, open circuit */
           conn->circuit_state = CIRCUIT_OPEN;
-          conn->circuit_open_time_ms = socketreconnect_get_time_ms ();
+          conn->circuit_open_time_ms = socketreconnect_now_ms ();
           SocketLog_emitf (
               SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
               "%s:%d circuit breaker opened after %d consecutive failures",
@@ -411,7 +396,7 @@ start_connect (T conn)
   /* Update attempt tracking */
   conn->attempt_count++;
   conn->total_attempts++;
-  conn->last_attempt_time_ms = socketreconnect_get_time_ms ();
+  conn->last_attempt_time_ms = socketreconnect_now_ms ();
 
   SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
                    "%s:%d starting connection attempt %d", conn->host,
@@ -657,7 +642,7 @@ complete_tls_connection (T conn)
   conn->consecutive_failures = 0;
   conn->attempt_count = 0;
   conn->total_successes++;
-  conn->last_success_time_ms = socketreconnect_get_time_ms ();
+  conn->last_success_time_ms = socketreconnect_now_ms ();
   conn->last_health_check_ms = conn->last_success_time_ms;
 
   conn->error_buf[0] = '\0';
@@ -719,7 +704,7 @@ handle_connect_success (T conn)
   conn->consecutive_failures = 0;
   conn->attempt_count = 0;
   conn->total_successes++;
-  conn->last_success_time_ms = socketreconnect_get_time_ms ();
+  conn->last_success_time_ms = socketreconnect_now_ms ();
   conn->last_health_check_ms = conn->last_success_time_ms;
 
   /* Clear error buffer on success to prevent stale error messages */
@@ -765,7 +750,7 @@ handle_connect_failure (T conn)
   /* Enter backoff */
   conn->current_backoff_delay_ms = calculate_backoff_delay (conn);
   conn->backoff_until_ms
-      = socketreconnect_get_time_ms () + conn->current_backoff_delay_ms;
+      = socketreconnect_now_ms () + conn->current_backoff_delay_ms;
 
   SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
                    "%s:%d backing off for %d ms", conn->host, conn->port,
@@ -791,12 +776,14 @@ handle_connect_failure (T conn)
  * EOF (0 bytes readable) indicates disconnection.
  */
 static int
-default_health_check (T conn, Socket_T socket, int timeout_ms, void *userdata)
+default_health_check (const T conn, const Socket_T socket, int timeout_ms,
+                      void *userdata)
 {
   struct pollfd pfd;
   int fd, result;
   char buf;
-  int poll_timeout = (timeout_ms > 0) ? timeout_ms : 100; /* Min 100ms check */
+  int poll_timeout
+      = (timeout_ms > 0) ? timeout_ms : SOCKET_RECONNECT_MIN_HEALTH_POLL_MS;
 
   (void)conn;
   (void)userdata;
@@ -850,7 +837,7 @@ perform_health_check (T conn)
   healthy = check (conn, conn->socket, conn->policy.health_check_timeout_ms,
                    conn->userdata);
 
-  conn->last_health_check_ms = socketreconnect_get_time_ms ();
+  conn->last_health_check_ms = socketreconnect_now_ms ();
 
   if (!healthy)
     {
@@ -968,7 +955,7 @@ SocketReconnect_new (const char *host, int port,
   /* Initialize state */
   conn->state = RECONNECT_DISCONNECTED;
   conn->circuit_state = CIRCUIT_CLOSED;
-  conn->state_start_time_ms = socketreconnect_get_time_ms ();
+  conn->state_start_time_ms = socketreconnect_now_ms ();
 
   SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
                    "Created reconnection context for %s:%d", host, port);
@@ -1186,7 +1173,7 @@ SocketReconnect_next_timeout_ms (T conn)
 
   assert (conn);
 
-  now = socketreconnect_get_time_ms ();
+  now = socketreconnect_now_ms ();
 
   switch (conn->state)
     {
@@ -1233,7 +1220,7 @@ SocketReconnect_tick (T conn)
 
   assert (conn);
 
-  now = socketreconnect_get_time_ms ();
+  now = socketreconnect_now_ms ();
 
   switch (conn->state)
     {

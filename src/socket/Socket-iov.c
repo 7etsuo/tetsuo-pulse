@@ -20,8 +20,10 @@
  * - Memory-efficient buffering
  */
 
+#include <assert.h>
 #include <errno.h>
 #include <limits.h>
+#include <poll.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -30,10 +32,9 @@
 #include <unistd.h>
 
 #ifdef __linux__
+#include <fcntl.h>
 #include <sys/sendfile.h>
 #endif
-
-#include <assert.h>
 
 #include "core/SocketConfig.h"
 #include "core/SocketUtil.h"
@@ -41,6 +42,14 @@
 #include "socket/Socket.h"
 #include "socket/SocketCommon.h"
 #include "socket/SocketIO.h"
+
+/**
+ * Default chunk size for splice operations (64KB)
+ * This provides good performance for socket-to-socket transfers
+ */
+#ifndef SOCKET_SPLICE_CHUNK_SIZE
+#define SOCKET_SPLICE_CHUNK_SIZE 65536
+#endif
 
 #define T Socket_T
 
@@ -552,7 +561,31 @@ Socket_recvvall (T socket, struct iovec *iov, int iovcnt)
 
 /* ==================== I/O Operations with Timeout ==================== */
 
-#include <poll.h>
+/**
+ * calculate_deadline_ms - Calculate deadline from timeout
+ * @timeout_ms: Timeout in milliseconds (>0 for deadline, <=0 for none)
+ *
+ * Returns: Deadline timestamp in milliseconds, or 0 if no deadline
+ */
+static int64_t
+calculate_deadline_ms (int timeout_ms)
+{
+  if (timeout_ms > 0)
+    return Socket_get_monotonic_ms () + timeout_ms;
+  return 0;
+}
+
+/**
+ * get_remaining_timeout_ms - Get remaining time until deadline
+ * @deadline_ms: Deadline timestamp from calculate_deadline_ms()
+ *
+ * Returns: Remaining milliseconds (may be negative if past deadline)
+ */
+static int64_t
+get_remaining_timeout_ms (int64_t deadline_ms)
+{
+  return deadline_ms - Socket_get_monotonic_ms ();
+}
 
 /**
  * wait_for_socket - Wait for socket to be ready with timeout
@@ -607,7 +640,7 @@ Socket_sendall_timeout (T socket, const void *buf, size_t len, int timeout_ms)
   volatile size_t total_sent = 0;
   const char *ptr;
   int fd;
-  volatile int64_t deadline_ms = 0;
+  volatile int64_t deadline_ms;
   int64_t remaining_ms;
   ssize_t sent;
 
@@ -619,10 +652,7 @@ Socket_sendall_timeout (T socket, const void *buf, size_t len, int timeout_ms)
 
   fd = SocketBase_fd (socket->base);
   ptr = (const char *)buf;
-
-  /* Calculate deadline if timeout specified */
-  if (timeout_ms > 0)
-    deadline_ms = Socket_get_monotonic_ms () + timeout_ms;
+  deadline_ms = calculate_deadline_ms (timeout_ms);
 
   TRY
   {
@@ -631,7 +661,7 @@ Socket_sendall_timeout (T socket, const void *buf, size_t len, int timeout_ms)
         /* Check remaining time */
         if (timeout_ms > 0)
           {
-            remaining_ms = deadline_ms - Socket_get_monotonic_ms ();
+            remaining_ms = get_remaining_timeout_ms (deadline_ms);
             if (remaining_ms <= 0)
               break; /* Timeout */
 
@@ -680,7 +710,7 @@ Socket_recvall_timeout (T socket, void *buf, size_t len, int timeout_ms)
   volatile size_t total_received = 0;
   char *ptr;
   int fd;
-  volatile int64_t deadline_ms = 0;
+  volatile int64_t deadline_ms;
   int64_t remaining_ms;
   ssize_t received;
 
@@ -692,10 +722,7 @@ Socket_recvall_timeout (T socket, void *buf, size_t len, int timeout_ms)
 
   fd = SocketBase_fd (socket->base);
   ptr = (char *)buf;
-
-  /* Calculate deadline if timeout specified */
-  if (timeout_ms > 0)
-    deadline_ms = Socket_get_monotonic_ms () + timeout_ms;
+  deadline_ms = calculate_deadline_ms (timeout_ms);
 
   TRY
   {
@@ -704,7 +731,7 @@ Socket_recvall_timeout (T socket, void *buf, size_t len, int timeout_ms)
         /* Check remaining time */
         if (timeout_ms > 0)
           {
-            remaining_ms = deadline_ms - Socket_get_monotonic_ms ();
+            remaining_ms = get_remaining_timeout_ms (deadline_ms);
             if (remaining_ms <= 0)
               break; /* Timeout */
 
@@ -818,13 +845,49 @@ Socket_recvv_timeout (T socket, struct iovec *iov, int iovcnt, int timeout_ms)
 /* ==================== Advanced I/O Operations ==================== */
 
 #ifdef __linux__
-#include <fcntl.h>
+
+/**
+ * close_pipe_fds - Close both ends of a pipe
+ * @pipe_fds: Array of two file descriptors (read and write ends)
+ *
+ * Helper to ensure both pipe ends are always closed together.
+ */
+static void
+close_pipe_fds (int pipe_fds[2])
+{
+  close (pipe_fds[0]);
+  close (pipe_fds[1]);
+}
+
+/**
+ * handle_splice_error - Handle splice system call errors
+ * @saved_errno: The errno value from the failed splice call
+ * @direction: Error message direction ("from socket" or "to socket")
+ *
+ * Returns: 0 if the error is EAGAIN/EWOULDBLOCK (would block)
+ * Raises: Socket_Closed for connection errors, Socket_Failed for other errors
+ */
+static ssize_t
+handle_splice_error (int saved_errno, const char *direction)
+{
+  if (saved_errno == EAGAIN || saved_errno == EWOULDBLOCK)
+    return 0;
+
+  if (saved_errno == EPIPE || saved_errno == ECONNRESET)
+    {
+      SOCKET_ERROR_MSG ("Connection closed during splice");
+      RAISE_MODULE_ERROR (Socket_Closed);
+    }
+
+  SOCKET_ERROR_FMT ("splice() %s failed", direction);
+  RAISE_MODULE_ERROR (Socket_Failed);
+}
 
 /**
  * Socket_splice - Zero-copy socket-to-socket transfer (Linux)
  * @socket_in: Source socket
  * @socket_out: Destination socket
- * @len: Maximum bytes to transfer (0 for default)
+ * @len: Maximum bytes to transfer (0 for default SOCKET_SPLICE_CHUNK_SIZE)
  *
  * Returns: Bytes transferred, 0 if would block, -1 if not supported
  * Raises: Socket_Closed, Socket_Failed
@@ -843,7 +906,7 @@ Socket_splice (T socket_in, T socket_out, size_t len)
   fd_in = SocketBase_fd (socket_in->base);
   fd_out = SocketBase_fd (socket_out->base);
 
-  chunk_size = (len > 0) ? len : 65536;
+  chunk_size = (len > 0) ? len : SOCKET_SPLICE_CHUNK_SIZE;
 
   /* Create pipe for intermediate buffer */
   if (pipe (pipe_fds) < 0)
@@ -859,23 +922,13 @@ Socket_splice (T socket_in, T socket_out, size_t len)
   if (spliced_in < 0)
     {
       int saved_errno = errno;
-      close (pipe_fds[0]);
-      close (pipe_fds[1]);
-      if (saved_errno == EAGAIN || saved_errno == EWOULDBLOCK)
-        return 0;
-      if (saved_errno == EPIPE || saved_errno == ECONNRESET)
-        {
-          SOCKET_ERROR_MSG ("Connection closed during splice");
-          RAISE_MODULE_ERROR (Socket_Closed);
-        }
-      SOCKET_ERROR_FMT ("splice() from socket failed");
-      RAISE_MODULE_ERROR (Socket_Failed);
+      close_pipe_fds (pipe_fds);
+      return handle_splice_error (saved_errno, "from socket");
     }
 
   if (spliced_in == 0)
     {
-      close (pipe_fds[0]);
-      close (pipe_fds[1]);
+      close_pipe_fds (pipe_fds);
       return 0;
     }
 
@@ -883,21 +936,10 @@ Socket_splice (T socket_in, T socket_out, size_t len)
   spliced_out = splice (pipe_fds[0], NULL, fd_out, NULL, (size_t)spliced_in,
                         SPLICE_F_MOVE | SPLICE_F_NONBLOCK);
 
-  close (pipe_fds[0]);
-  close (pipe_fds[1]);
+  close_pipe_fds (pipe_fds);
 
   if (spliced_out < 0)
-    {
-      if (errno == EAGAIN || errno == EWOULDBLOCK)
-        return 0;
-      if (errno == EPIPE || errno == ECONNRESET)
-        {
-          SOCKET_ERROR_MSG ("Connection closed during splice");
-          RAISE_MODULE_ERROR (Socket_Closed);
-        }
-      SOCKET_ERROR_FMT ("splice() to socket failed");
-      RAISE_MODULE_ERROR (Socket_Failed);
-    }
+    return handle_splice_error (errno, "to socket");
 
   return spliced_out;
 }

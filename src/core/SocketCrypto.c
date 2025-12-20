@@ -60,6 +60,21 @@
  */
 #define WEBSOCKET_CONCAT_BUFFER_SIZE 64
 
+/**
+ * Base64 block size (4 characters encode 3 bytes)
+ */
+#define BASE64_BLOCK_SIZE 4
+
+/**
+ * Base64 invalid character marker in decode table
+ */
+#define BASE64_INVALID_CHAR 255
+
+/**
+ * Maximum padding characters in Base64 (RFC 4648)
+ */
+#define BASE64_MAX_PADDING 2
+
 /* ============================================================================
  * Exception Definition
  * ============================================================================
@@ -87,7 +102,7 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketCrypto);
     {                                                                         \
       if (!(ptr) && (len) > 0)                                                \
         SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,                  \
-                          name ": NULL input with non-zero length");          \
+                          "%s: NULL input with non-zero length", name);       \
     }                                                                         \
   while (0)
 
@@ -159,31 +174,37 @@ static const char hex_upper[] = "0123456789ABCDEF";
  * ============================================================================
  */
 
-void
-SocketCrypto_sha1 (const void *input, size_t input_len,
-                   unsigned char output[SOCKET_CRYPTO_SHA1_SIZE])
-{
-  assert (output);
-
-  SOCKET_CRYPTO_CHECK_INPUT (input, input_len, "SHA-1");
-  if (input_len > 0 && !SOCKET_SECURITY_VALID_SIZE (input_len))
-    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,
-                      "SHA-1: input too large: %zu > %zu", (size_t)input_len,
-                      (size_t)SOCKET_SECURITY_MAX_ALLOCATION);
-
 #if SOCKET_HAS_TLS
-  EVP_MD_CTX *ctx = NULL;
+/**
+ * crypto_evp_digest - Common EVP digest computation helper
+ * @md: OpenSSL digest method (EVP_sha1, EVP_sha256, EVP_md5)
+ * @input: Input data to hash
+ * @input_len: Length of input data
+ * @output: Output buffer for digest
+ * @algo_name: Algorithm name for error messages (e.g., "SHA-1")
+ *
+ * Encapsulates the common EVP_MD_CTX lifecycle: create, init, update, final,
+ * free. Raises SocketCrypto_Failed on any failure.
+ *
+ * Thread-safe: Yes
+ */
+static void
+crypto_evp_digest (const EVP_MD *md, const void *input, size_t input_len,
+                   unsigned char *output, const char *algo_name)
+{
+  EVP_MD_CTX *volatile ctx = NULL;
+
   TRY
   {
     ctx = EVP_MD_CTX_new ();
     if (!ctx)
       SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,
-                        "SHA-1: Failed to create context");
+                        "%s: Failed to create context", algo_name);
 
-    if (EVP_DigestInit_ex (ctx, EVP_sha1 (), NULL) != 1
+    if (EVP_DigestInit_ex (ctx, md, NULL) != 1
         || EVP_DigestUpdate (ctx, input, input_len) != 1
         || EVP_DigestFinal_ex (ctx, output, NULL) != 1)
-      SOCKET_CRYPTO_RAISE_FAILED ("SHA-1");
+      SOCKET_CRYPTO_RAISE_FAILED (algo_name);
   }
   FINALLY
   {
@@ -191,6 +212,22 @@ SocketCrypto_sha1 (const void *input, size_t input_len,
       EVP_MD_CTX_free (ctx);
   }
   END_TRY;
+}
+#endif
+
+void
+SocketCrypto_sha1 (const void *input, size_t input_len,
+                   unsigned char output[SOCKET_CRYPTO_SHA1_SIZE])
+{
+  assert (output);
+  SOCKET_CRYPTO_CHECK_INPUT (input, input_len, "SHA-1");
+  if (input_len > 0 && !SOCKET_SECURITY_VALID_SIZE (input_len))
+    SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,
+                      "SHA-1: input too large: %zu > %zu", (size_t)input_len,
+                      (size_t)SOCKET_SECURITY_MAX_ALLOCATION);
+
+#if SOCKET_HAS_TLS
+  crypto_evp_digest (EVP_sha1 (), input, input_len, output, "SHA-1");
 #else
   (void)output;
   SOCKET_CRYPTO_REQUIRE_TLS;
@@ -202,7 +239,6 @@ SocketCrypto_sha256 (const void *input, size_t input_len,
                      unsigned char output[SOCKET_CRYPTO_SHA256_SIZE])
 {
   assert (output);
-
   SOCKET_CRYPTO_CHECK_INPUT (input, input_len, "SHA-256");
   if (input_len > 0 && !SOCKET_SECURITY_VALID_SIZE (input_len))
     SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,
@@ -210,25 +246,7 @@ SocketCrypto_sha256 (const void *input, size_t input_len,
                       (size_t)SOCKET_SECURITY_MAX_ALLOCATION);
 
 #if SOCKET_HAS_TLS
-  EVP_MD_CTX *ctx = NULL;
-  TRY
-  {
-    ctx = EVP_MD_CTX_new ();
-    if (!ctx)
-      SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,
-                        "SHA-256: Failed to create context");
-
-    if (EVP_DigestInit_ex (ctx, EVP_sha256 (), NULL) != 1
-        || EVP_DigestUpdate (ctx, input, input_len) != 1
-        || EVP_DigestFinal_ex (ctx, output, NULL) != 1)
-      SOCKET_CRYPTO_RAISE_FAILED ("SHA-256");
-  }
-  FINALLY
-  {
-    if (ctx)
-      EVP_MD_CTX_free (ctx);
-  }
-  END_TRY;
+  crypto_evp_digest (EVP_sha256 (), input, input_len, output, "SHA-256");
 #else
   (void)output;
   SOCKET_CRYPTO_REQUIRE_TLS;
@@ -240,7 +258,6 @@ SocketCrypto_md5 (const void *input, size_t input_len,
                   unsigned char output[SOCKET_CRYPTO_MD5_SIZE])
 {
   assert (output);
-
   SOCKET_CRYPTO_CHECK_INPUT (input, input_len, "MD5");
   if (input_len > 0 && !SOCKET_SECURITY_VALID_SIZE (input_len))
     SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,
@@ -248,25 +265,7 @@ SocketCrypto_md5 (const void *input, size_t input_len,
                       (size_t)SOCKET_SECURITY_MAX_ALLOCATION);
 
 #if SOCKET_HAS_TLS
-  EVP_MD_CTX *ctx = NULL;
-  TRY
-  {
-    ctx = EVP_MD_CTX_new ();
-    if (!ctx)
-      SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,
-                        "MD5: Failed to create context");
-
-    if (EVP_DigestInit_ex (ctx, EVP_md5 (), NULL) != 1
-        || EVP_DigestUpdate (ctx, input, input_len) != 1
-        || EVP_DigestFinal_ex (ctx, output, NULL) != 1)
-      SOCKET_CRYPTO_RAISE_FAILED ("MD5");
-  }
-  FINALLY
-  {
-    if (ctx)
-      EVP_MD_CTX_free (ctx);
-  }
-  END_TRY;
+  crypto_evp_digest (EVP_md5 (), input, input_len, output, "MD5");
 #else
   (void)output;
   SOCKET_CRYPTO_REQUIRE_TLS;
@@ -556,7 +555,7 @@ base64_decode_partial_block (unsigned char *buffer, int buffer_pos,
     return -1;
 
   /* Pad with zeros */
-  while (buffer_pos < 4)
+  while (buffer_pos < BASE64_BLOCK_SIZE)
     buffer[buffer_pos++] = 0;
 
   /* Output first byte */
@@ -606,12 +605,12 @@ base64_decode_char (unsigned char c, unsigned char *buffer, int *buffer_pos,
   if (c == '=')
     {
       (*padding_count)++;
-      if (*padding_count > 2)
+      if (*padding_count > BASE64_MAX_PADDING)
         return -1; /* Too much padding */
       buffer[(*buffer_pos)++] = 0;
 
       /* Process complete 4-character block with padding */
-      if (*buffer_pos == 4)
+      if (*buffer_pos == BASE64_BLOCK_SIZE)
         {
           if (base64_decode_block (buffer, *padding_count, output, out_pos,
                                    output_size)
@@ -628,13 +627,13 @@ base64_decode_char (unsigned char c, unsigned char *buffer, int *buffer_pos,
 
   /* Decode character */
   unsigned char val = base64_decode_table[c];
-  if (val == 255)
+  if (val == BASE64_INVALID_CHAR)
     return -1; /* Invalid character */
 
   buffer[(*buffer_pos)++] = val;
 
   /* Process complete 4-character block (no padding) */
-  if (*buffer_pos == 4)
+  if (*buffer_pos == BASE64_BLOCK_SIZE)
     {
       if (base64_decode_block (buffer, 0, output, out_pos, output_size) < 0)
         return -1;
@@ -650,7 +649,7 @@ SocketCrypto_base64_decode (const char *input, size_t input_len,
                             unsigned char *output, size_t output_size)
 {
   size_t out_pos = 0;
-  unsigned char buffer[4];
+  unsigned char buffer[BASE64_BLOCK_SIZE];
   int buffer_pos = 0;
   int padding_count = 0;
   size_t i;
@@ -805,6 +804,57 @@ SocketCrypto_hex_decode (const char *input, size_t input_len,
 #if !SOCKET_HAS_TLS
 static pthread_mutex_t urand_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int urand_fd = -1;
+
+/**
+ * urandom_ensure_open - Ensure /dev/urandom fd is open (cached)
+ *
+ * Must be called with urand_mutex held.
+ *
+ * Returns: Valid fd on success, -1 on failure
+ * Thread-safe: No (caller must hold urand_mutex)
+ */
+static int
+urandom_ensure_open (void)
+{
+  if (urand_fd >= 0)
+    return urand_fd;
+
+  urand_fd = open ("/dev/urandom", O_RDONLY);
+  return urand_fd;
+}
+
+/**
+ * urandom_read_all - Read exactly len bytes from /dev/urandom
+ * @fd: Open file descriptor for /dev/urandom
+ * @buf: Output buffer
+ * @len: Number of bytes to read
+ *
+ * Handles EINTR and short reads.
+ *
+ * Returns: 0 on success, -1 on failure
+ * Thread-safe: No (caller must hold urand_mutex)
+ */
+static int
+urandom_read_all (int fd, unsigned char *buf, size_t len)
+{
+  size_t bytes_read = 0;
+
+  while (bytes_read < len)
+    {
+      ssize_t n = read (fd, buf + bytes_read, len - bytes_read);
+      if (n < 0)
+        {
+          if (errno == EINTR)
+            continue;
+          return -1;
+        }
+      if (n == 0)
+        return -1; /* Unexpected EOF */
+      bytes_read += (size_t)n;
+    }
+
+  return 0;
+}
 #endif
 
 int
@@ -817,53 +867,22 @@ SocketCrypto_random_bytes (void *output, size_t len)
     return 0;
 
   if (!SOCKET_SECURITY_VALID_SIZE (len))
-    {
-      return -1; /* Too large for security limits */
-    }
+    return -1; /* Too large for security limits */
 
 #if SOCKET_HAS_TLS
   if (RAND_bytes ((unsigned char *)output, (int)len) != 1)
     return -1;
   return 0;
 #else
-  /* Fallback to /dev/urandom when TLS not available - cached fd for efficiency
-   */
+  int result = -1;
+
   pthread_mutex_lock (&urand_mutex);
-  int fd = urand_fd;
-  if (fd < 0)
-    {
-      fd = open ("/dev/urandom", O_RDONLY);
-      if (fd < 0)
-        {
-          pthread_mutex_unlock (&urand_mutex);
-          return -1;
-        }
-      urand_fd = fd;
-    }
-
-  ssize_t bytes_read = 0;
-  unsigned char *buf = (unsigned char *)output;
-
-  while ((size_t)bytes_read < len)
-    {
-      ssize_t n = read (fd, buf + bytes_read, len - (size_t)bytes_read);
-      if (n < 0)
-        {
-          if (errno == EINTR)
-            continue;
-          pthread_mutex_unlock (&urand_mutex);
-          return -1;
-        }
-      if (n == 0)
-        {
-          pthread_mutex_unlock (&urand_mutex);
-          return -1;
-        }
-      bytes_read += n;
-    }
-
+  int fd = urandom_ensure_open ();
+  if (fd >= 0)
+    result = urandom_read_all (fd, (unsigned char *)output, len);
   pthread_mutex_unlock (&urand_mutex);
-  return 0;
+
+  return result;
 #endif
 }
 
@@ -877,6 +896,21 @@ SocketCrypto_random_uint32 (void)
                       "Random number generation failed");
 
   return value;
+}
+
+void
+SocketCrypto_cleanup (void)
+{
+#if !SOCKET_HAS_TLS
+  pthread_mutex_lock (&urand_mutex);
+  if (urand_fd >= 0)
+    {
+      close (urand_fd);
+      urand_fd = -1;
+    }
+  pthread_mutex_unlock (&urand_mutex);
+#endif
+  /* No cleanup needed when using OpenSSL RAND_bytes */
 }
 
 /* ============================================================================
@@ -912,26 +946,32 @@ SocketCrypto_websocket_accept (
   memcpy (concat_buffer, client_key, key_len);
   memcpy (concat_buffer + key_len, SOCKET_CRYPTO_WEBSOCKET_GUID, guid_len + 1);
 
-#if SOCKET_HAS_TLS
-  /* Compute SHA-1 hash */
-  if (!SHA1 ((const unsigned char *)concat_buffer, concat_len, sha1_hash))
-    return -1;
+  volatile int result = -1;
 
-  /* Base64 encode the hash */
-  if (SocketCrypto_base64_encode (sha1_hash, SOCKET_CRYPTO_SHA1_SIZE, output,
-                                  SOCKET_CRYPTO_WEBSOCKET_ACCEPT_SIZE)
-      < 0)
-    return -1;
+  TRY
+  {
+    /* Compute SHA-1 hash using internal wrapper */
+    SocketCrypto_sha1 (concat_buffer, concat_len, sha1_hash);
 
-  /* Clear sensitive data */
-  OPENSSL_cleanse (concat_buffer, sizeof (concat_buffer));
-  OPENSSL_cleanse (sha1_hash, sizeof (sha1_hash));
+    /* Base64 encode the hash */
+    if (SocketCrypto_base64_encode (sha1_hash, SOCKET_CRYPTO_SHA1_SIZE, output,
+                                    SOCKET_CRYPTO_WEBSOCKET_ACCEPT_SIZE)
+        >= 0)
+      result = 0;
+  }
+  EXCEPT (SocketCrypto_Failed)
+  {
+    result = -1;
+  }
+  FINALLY
+  {
+    /* Clear sensitive data */
+    SocketCrypto_secure_clear (concat_buffer, sizeof (concat_buffer));
+    SocketCrypto_secure_clear (sha1_hash, sizeof (sha1_hash));
+  }
+  END_TRY;
 
-  return 0;
-#else
-  (void)sha1_hash;
-  return -1;
-#endif
+  return result;
 }
 
 int

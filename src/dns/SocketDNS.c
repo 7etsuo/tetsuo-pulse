@@ -367,7 +367,7 @@ static void handle_sync_error (struct SocketDNS_T *dns,
 static struct addrinfo *
 dns_sync_fast_path (const char *host, int port, const struct addrinfo *hints)
 {
-  struct addrinfo *tmp_res = NULL;
+  struct addrinfo *tmp_res;
   int family = hints ? hints->ai_family : AF_UNSPEC;
 
   SocketCommon_resolve_address (host, port, hints, &tmp_res, SocketDNS_Failed,

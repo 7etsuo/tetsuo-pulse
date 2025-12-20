@@ -52,7 +52,6 @@
 
 /* Quantile string constants to eliminate magic strings in exports */
 static const char *const QUANTILE_STR_P50 = "0.5";
-
 static const char *const QUANTILE_STR_P90 = "0.9";
 static const char *const QUANTILE_STR_P95 = "0.95";
 static const char *const QUANTILE_STR_P99 = "0.99";
@@ -454,7 +453,8 @@ histogram_destroy (Histogram *h)
  * @h: Histogram to update
  * @value: Value to record
  *
- * Thread-safe: Yes (mutex protected)
+ * Thread-safe: Yes (mutex protected, count incremented atomically inside lock
+ *              to maintain consistency with values array)
  */
 static void
 histogram_observe (Histogram *h, double value)
@@ -470,9 +470,9 @@ histogram_observe (Histogram *h, double value)
   if (value > h->max)
     h->max = value;
 
-  pthread_mutex_unlock (&h->mutex);
-
   atomic_fetch_add (&h->count, 1);
+
+  pthread_mutex_unlock (&h->mutex);
 }
 
 /**
@@ -489,9 +489,14 @@ histogram_copy_values (Histogram *h, double *dest, uint64_t count)
 {
   size_t n;
 
+  assert (h != NULL);
+  assert (dest != NULL);
+
   n = count < SOCKET_METRICS_HISTOGRAM_BUCKETS
           ? (size_t)count
           : SOCKET_METRICS_HISTOGRAM_BUCKETS;
+
+  assert (n <= SOCKET_METRICS_HISTOGRAM_BUCKETS);
 
   pthread_mutex_lock (&h->mutex);
   memcpy (dest, h->values, n * sizeof (double));
@@ -829,7 +834,7 @@ SocketMetrics_histogram_percentile (SocketHistogramMetric metric,
 uint64_t
 SocketMetrics_histogram_count (SocketHistogramMetric metric)
 {
-  if (!HISTOGRAM_VALID (metric))
+  if (!histogram_is_valid (metric))
     return 0;
   return atomic_load (&histogram_values[metric].count);
 }

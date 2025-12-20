@@ -963,9 +963,15 @@ socketlog_format_and_call_fallback (const SocketLogAllInfo *all,
   if (message)
     memcpy (buffer, message, msg_len);
 
+  /* Null-terminate after message to ensure valid string even if no fields
+   * are written. This fixes potential uninitialized buffer when message is
+   * NULL and all fields have NULL key/value. */
+  buffer[msg_len] = '\0';
+
   remaining = sizeof (buffer) - msg_len;
   socketlog_format_fields (buffer + msg_len, remaining, fields, field_count);
 
+  /* Safety fallback: ensure final null-termination */
   buffer[sizeof (buffer) - 1] = '\0';
   socketlog_call_fallback (all, level, component, buffer);
 }

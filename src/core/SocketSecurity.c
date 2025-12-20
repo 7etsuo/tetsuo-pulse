@@ -210,8 +210,8 @@ populate_ws_limits (SocketSecurityLimits *limits)
 static void
 populate_tls_limits (SocketSecurityLimits *limits)
 {
-#if SOCKET_HAS_TLS
   assert (limits != NULL);
+#if SOCKET_HAS_TLS
   limits->tls_max_cert_chain_depth = SOCKET_TLS_MAX_CERT_CHAIN_DEPTH;
   limits->tls_session_cache_size = SOCKET_TLS_SESSION_CACHE_SIZE;
   limits->tls_max_alpn_protocols = SOCKET_TLS_MAX_ALPN_PROTOCOLS;
@@ -219,8 +219,6 @@ populate_tls_limits (SocketSecurityLimits *limits)
   limits->tls_max_alpn_total_bytes
       = SOCKET_TLS_MAX_ALPN_TOTAL_BYTES; /* From config, e.g., 1024 for DoS
                                             protection */
-#else
-  (void)limits; /* Unused when TLS disabled */
 #endif
 }
 

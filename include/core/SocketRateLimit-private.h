@@ -106,6 +106,36 @@
 #define SOCKET_RATELIMIT_MUTEX_INITIALIZED SOCKET_MUTEX_INITIALIZED
 
 /**
+ * @brief Maximum retries when waiting for mutex during free.
+ * @ingroup utilities
+ * @internal
+ *
+ * Limits how long SocketRateLimit_free() waits for concurrent operations
+ * to complete before destroying the mutex. With 1ms sleep per retry,
+ * this provides approximately 10 seconds of wait time.
+ */
+#ifndef SOCKET_RATELIMIT_FREE_MAX_RETRIES
+#define SOCKET_RATELIMIT_FREE_MAX_RETRIES 10000
+#endif
+
+/**
+ * @brief Debug warning macro for rate limiter operations.
+ * @ingroup utilities
+ * @internal
+ *
+ * By default, this is a no-op. Define SOCKET_RATELIMIT_DEBUG_WARNINGS=1
+ * before including this header to enable stderr output for debugging.
+ *
+ * @param msg String message to output
+ */
+#ifdef SOCKET_RATELIMIT_DEBUG_WARNINGS
+#include <stdio.h>
+#define SOCKET_RATELIMIT_WARN(msg) fprintf (stderr, "WARN: %s\n", (msg))
+#else
+#define SOCKET_RATELIMIT_WARN(msg) ((void)0)
+#endif
+
+/**
  * @section ratelimit_struct Rate Limiter Structure
  * @ingroup utilities
  * @internal

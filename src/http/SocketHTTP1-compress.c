@@ -21,16 +21,18 @@
  * handling, matching the underlying zlib/brotli library patterns.
  */
 
-#include "http/SocketHTTP1-private.h"
-#include "http/SocketHTTP1.h"
-
-#include "core/SocketSecurity.h"
-
-#if SOCKETHTTP1_HAS_COMPRESSION
-
+/* System headers first */
 #include <assert.h>
 #include <limits.h>
 
+/* Project headers */
+#include "core/SocketSecurity.h"
+#include "http/SocketHTTP1-private.h"
+#include "http/SocketHTTP1.h"
+
+#if SOCKETHTTP1_HAS_COMPRESSION
+
+/* Compression library headers (conditional) */
 #ifdef SOCKETHTTP1_HAS_ZLIB
 #include <zlib.h>
 #endif
@@ -39,6 +41,10 @@
 #include <brotli/decode.h>
 #include <brotli/encode.h>
 #endif
+
+/* Module type alias following C Interfaces and Implementations pattern */
+#define T_DECODER SocketHTTP1_Decoder_T
+#define T_ENCODER SocketHTTP1_Encoder_T
 
 /* ============================================================================
  * Compression Constants
@@ -83,26 +89,34 @@
  * ============================================================================
  */
 
+/**
+ * struct SocketHTTP1_Decoder - Internal decoder state for content decoding
+ *
+ * Manages decompression state for gzip, deflate, or brotli content.
+ * Tracks total decompressed bytes to enforce zip bomb protection limits.
+ *
+ * Thread-safe: No - single-threaded use per instance
+ */
 struct SocketHTTP1_Decoder
 {
-  SocketHTTP_Coding coding;
-  Arena_T arena;
+  SocketHTTP_Coding coding;         /**< Content coding type (gzip/deflate/br) */
+  Arena_T arena;                    /**< Memory arena for allocations */
 
   union
   {
 #ifdef SOCKETHTTP1_HAS_ZLIB
-    z_stream zlib;
+    z_stream zlib;                  /**< zlib inflate stream state */
 #endif
 #ifdef SOCKETHTTP1_HAS_BROTLI
-    BrotliDecoderState *brotli;
+    BrotliDecoderState *brotli;     /**< Brotli decoder instance */
 #endif
-    int dummy; /* Placeholder if no compression available */
+    int dummy;                      /**< Placeholder if no compression */
   } state;
 
-  int initialized;
-  int finished;
-  size_t total_decompressed;
-  size_t max_decompressed_size;
+  int initialized;                  /**< Backend initialized flag */
+  int finished;                     /**< Decompression complete flag */
+  size_t total_decompressed;        /**< Running total of output bytes */
+  size_t max_decompressed_size;     /**< Limit for zip bomb protection */
 };
 
 /* ============================================================================
@@ -110,27 +124,35 @@ struct SocketHTTP1_Decoder
  * ============================================================================
  */
 
+/**
+ * struct SocketHTTP1_Encoder - Internal encoder state for content encoding
+ *
+ * Manages compression state for gzip, deflate, or brotli output.
+ * Tracks total encoded bytes for optional output size limiting.
+ *
+ * Thread-safe: No - single-threaded use per instance
+ */
 struct SocketHTTP1_Encoder
 {
-  SocketHTTP_Coding coding;
-  Arena_T arena;
-  SocketHTTP1_CompressLevel level;
+  SocketHTTP_Coding coding;             /**< Content coding type */
+  Arena_T arena;                        /**< Memory arena for allocations */
+  SocketHTTP1_CompressLevel level;      /**< Compression level (fast/default/best) */
 
   union
   {
 #ifdef SOCKETHTTP1_HAS_ZLIB
-    z_stream zlib;
+    z_stream zlib;                      /**< zlib deflate stream state */
 #endif
 #ifdef SOCKETHTTP1_HAS_BROTLI
-    BrotliEncoderState *brotli;
+    BrotliEncoderState *brotli;         /**< Brotli encoder instance */
 #endif
-    int dummy;
+    int dummy;                          /**< Placeholder if no compression */
   } state;
 
-  int initialized;
-  int finished;
-  size_t total_encoded;
-  size_t max_encoded_size;
+  int initialized;                      /**< Backend initialized flag */
+  int finished;                         /**< Compression complete flag */
+  size_t total_encoded;                 /**< Running total of output bytes */
+  size_t max_encoded_size;              /**< Optional output size limit */
 };
 
 /* ============================================================================
@@ -271,17 +293,35 @@ update_encode_total (size_t *total, size_t produced, size_t max_size)
 }
 
 /**
- * get_effective_max_size - Get effective max decompressed size from config
+ * get_effective_max_decompressed_size - Get effective max decompressed size
  * @cfg: Configuration (may be NULL)
  *
  * Returns: max_decompressed_size from config, or SIZE_MAX if 0/NULL
+ *
+ * Used by decoders to enforce decompression limits (zip bomb protection).
  */
 static size_t
-get_effective_max_size (const SocketHTTP1_Config *cfg)
+get_effective_max_decompressed_size (const SocketHTTP1_Config *cfg)
 {
   if (cfg == NULL || cfg->max_decompressed_size == 0)
     return SIZE_MAX;
   return cfg->max_decompressed_size;
+}
+
+/**
+ * get_effective_max_encoded_size - Get effective max encoded output size
+ * @cfg: Configuration (may be NULL)
+ *
+ * Returns: SIZE_MAX (no limit on encoded output by default)
+ *
+ * Encoded output is typically smaller than input, so no default limit.
+ * Applications can set their own limits if needed.
+ */
+static size_t
+get_effective_max_encoded_size (const SocketHTTP1_Config *cfg)
+{
+  (void)cfg; /* Currently unused, reserved for future configuration */
+  return SIZE_MAX;
 }
 
 /* ============================================================================
@@ -1040,7 +1080,7 @@ SocketHTTP1_Decoder_new (SocketHTTP_Coding coding,
 
   decoder->coding = coding;
   decoder->arena = arena;
-  decoder->max_decompressed_size = get_effective_max_size (cfg);
+  decoder->max_decompressed_size = get_effective_max_decompressed_size (cfg);
 
   if (!init_decoder_backend (decoder))
     return NULL;
@@ -1167,7 +1207,7 @@ SocketHTTP1_Encoder_new (SocketHTTP_Coding coding,
   encoder->coding = coding;
   encoder->arena = arena;
   encoder->level = level;
-  encoder->max_encoded_size = get_effective_max_size (cfg);
+  encoder->max_encoded_size = get_effective_max_encoded_size (cfg);
 
   if (!init_encoder_backend (encoder))
     return NULL;
@@ -1256,6 +1296,9 @@ SocketHTTP1_Encoder_finish (SocketHTTP1_Encoder_T encoder,
 
   return res;
 }
+
+#undef T_DECODER
+#undef T_ENCODER
 
 #else /* !SOCKETHTTP1_HAS_COMPRESSION */
 

@@ -1569,171 +1569,115 @@ parse_http2_response_headers (const SocketHPACK_Header *headers,
 }
 
 /**
- * execute_http2_request - Execute complete HTTP/2 request-response cycle
- * @conn: Pool connection entry (with HTTP/2 connection)
- * @req: Client request
- * @response: Output response
- * @max_response_size: Maximum response body size (0 = unlimited)
+ * http2_send_request - Send HTTP/2 request headers and optional body
+ * @stream: HTTP/2 stream
+ * @h2conn: HTTP/2 connection
+ * @http_req: Request to send
+ * @body: Request body (may be NULL)
+ * @body_len: Body length
  *
- * Returns: 0 on success, -1 on error, -2 on response size limit exceeded
- *
- * Executes HTTP/2 request using stream operations:
- * 1. Create new stream
- * 2. Send request headers (and body if present)
- * 3. Receive response headers
- * 4. Receive response body
+ * Returns: 0 on success, -1 on error
  */
 static int
-execute_http2_request (HTTPPoolEntry *conn,
-                       const SocketHTTPClient_Request_T req,
-                       SocketHTTPClient_Response *response,
-                       size_t max_response_size)
+http2_send_request (SocketHTTP2_Stream_T stream, SocketHTTP2_Conn_T h2conn,
+                    const SocketHTTP_Request *http_req, const void *body,
+                    size_t body_len)
 {
-  SocketHTTP2_Conn_T h2conn = conn->proto.h2.conn;
-  SocketHTTP2_Stream_T stream;
-  SocketHTTP_Request http_req;
-  SocketHPACK_Header headers[SOCKETHTTP2_MAX_DECODED_HEADERS];
-  size_t header_count;
-  int end_stream;
-  int has_body;
-  ssize_t recv_len;
-  size_t total_body = 0;
-  Arena_T arena;
-  unsigned char *body_buf;
-  size_t body_cap;
+  int has_body = (body != NULL && body_len > 0);
 
-  assert (conn != NULL);
-  assert (h2conn != NULL);
-  assert (req != NULL);
-  assert (response != NULL);
-
-  /* Check if connection is still valid */
-  if (SocketHTTP2_Conn_is_closed (h2conn))
+  if (SocketHTTP2_Stream_send_request (stream, http_req, !has_body) != 0)
     return -1;
 
-  /* Create new stream */
-  stream = SocketHTTP2_Stream_new (h2conn);
-  if (stream == NULL)
-    return -1;
-
-  /* Increment active stream counter */
-  conn->proto.h2.active_streams++;
-
-  /* Build request */
-  build_http2_request (req, &http_req);
-
-  /* Determine if we have a body */
-  has_body = (req->body != NULL && req->body_len > 0);
-
-  /* Send request headers */
-  if (SocketHTTP2_Stream_send_request (stream, &http_req, !has_body) != 0)
-    {
-      conn->proto.h2.active_streams--;
-      SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
-      return -1;
-    }
-
-  /* Send body if present */
   if (has_body)
     {
-      ssize_t sent
-          = SocketHTTP2_Stream_send_data (stream, req->body, req->body_len, 1);
+      ssize_t sent = SocketHTTP2_Stream_send_data (stream, body, body_len, 1);
       if (sent < 0)
-        {
-          conn->proto.h2.active_streams--;
-          SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
-          return -1;
-        }
+        return -1;
     }
 
-  /* Flush the connection to send frames */
-  if (SocketHTTP2_Conn_flush (h2conn) < 0)
-    {
-      conn->proto.h2.active_streams--;
-      return -1;
-    }
+  return SocketHTTP2_Conn_flush (h2conn);
+}
 
-  /* Receive response headers (loop until we get them) */
-  header_count = 0;
-  end_stream = 0;
+/**
+ * http2_recv_headers - Receive and parse HTTP/2 response headers
+ * @stream: HTTP/2 stream
+ * @h2conn: HTTP/2 connection
+ * @response: Output response structure
+ * @end_stream: Output flag indicating stream end
+ *
+ * Returns: 0 on success, -1 on error
+ */
+static int
+http2_recv_headers (SocketHTTP2_Stream_T stream, SocketHTTP2_Conn_T h2conn,
+                    SocketHTTPClient_Response *response, int *end_stream)
+{
+  SocketHPACK_Header headers[SOCKETHTTP2_MAX_DECODED_HEADERS];
+  size_t header_count = 0;
+  Arena_T arena;
+
+  *end_stream = 0;
+
   while (header_count == 0)
     {
       int r = SocketHTTP2_Stream_recv_headers (stream, headers,
                                                SOCKETHTTP2_MAX_DECODED_HEADERS,
-                                               &header_count, &end_stream);
+                                               &header_count, end_stream);
       if (r < 0)
-        {
-          conn->proto.h2.active_streams--;
-          return -1;
-        }
-      if (r == 0)
-        {
-          /* Need more data - process connection */
-          if (SocketHTTP2_Conn_process (h2conn, 0) < 0)
-            {
-              conn->proto.h2.active_streams--;
-              return -1;
-            }
-        }
+        return -1;
+
+      if (r == 0 && SocketHTTP2_Conn_process (h2conn, 0) < 0)
+        return -1;
     }
 
-  /* Get arena for response allocations */
   arena = SocketHTTP2_Conn_arena (h2conn);
+  return parse_http2_response_headers (headers, header_count, response, arena);
+}
 
-  /* Parse response headers */
-  if (parse_http2_response_headers (headers, header_count, response, arena)
-      != 0)
-    {
-      conn->proto.h2.active_streams--;
-      return -1;
-    }
-
-  /* If END_STREAM set on headers, we're done */
-  if (end_stream)
-    {
-      response->body = NULL;
-      response->body_len = 0;
-      conn->proto.h2.active_streams--;
-      return 0;
-    }
-
-  /* Receive response body */
-  body_cap = (max_response_size > 0) ? max_response_size : (64 * 1024);
-  body_buf = Arena_alloc (arena, body_cap, __FILE__, __LINE__);
+/**
+ * http2_recv_body - Receive HTTP/2 response body with dynamic buffer growth
+ * @stream: HTTP/2 stream
+ * @h2conn: HTTP/2 connection
+ * @arena: Arena for allocations
+ * @max_response_size: Maximum body size (0 = unlimited)
+ * @body_out: Output body buffer
+ * @body_len_out: Output body length
+ *
+ * Returns: 0 on success, -1 on error, -2 on size limit exceeded
+ */
+static int
+http2_recv_body (SocketHTTP2_Stream_T stream, SocketHTTP2_Conn_T h2conn,
+                 Arena_T arena, size_t max_response_size,
+                 unsigned char **body_out, size_t *body_len_out)
+{
+  size_t body_cap = (max_response_size > 0) ? max_response_size
+                                            : HTTPCLIENT_H2_BODY_INITIAL_CAPACITY;
+  unsigned char *body_buf = Arena_alloc (arena, body_cap, __FILE__, __LINE__);
+  size_t total_body = 0;
+  int end_stream = 0;
 
   while (!end_stream)
     {
-      recv_len = SocketHTTP2_Stream_recv_data (
+      ssize_t recv_len = SocketHTTP2_Stream_recv_data (
           stream, body_buf + total_body, body_cap - total_body, &end_stream);
 
       if (recv_len < 0)
-        {
-          conn->proto.h2.active_streams--;
-          return -1;
-        }
+        return -1;
 
       if (recv_len == 0 && !end_stream)
         {
-          /* Need more data - process connection */
           if (SocketHTTP2_Conn_process (h2conn, 0) < 0)
-            {
-              conn->proto.h2.active_streams--;
-              return -1;
-            }
+            return -1;
           continue;
         }
 
       total_body += (size_t)recv_len;
 
-      /* Check size limit */
       if (max_response_size > 0 && total_body > max_response_size)
         {
-          conn->proto.h2.active_streams--;
           SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
-          return -2; /* Size limit exceeded */
+          return -2;
         }
 
-      /* Grow buffer if needed and no size limit */
       if (total_body >= body_cap && max_response_size == 0)
         {
           size_t new_cap = body_cap * 2;
@@ -1745,11 +1689,81 @@ execute_http2_request (HTTPPoolEntry *conn,
         }
     }
 
-  response->body = (char *)body_buf;
-  response->body_len = total_body;
-  conn->proto.h2.active_streams--;
-
+  *body_out = body_buf;
+  *body_len_out = total_body;
   return 0;
+}
+
+/**
+ * execute_http2_request - Execute complete HTTP/2 request-response cycle
+ * @conn: Pool connection entry (with HTTP/2 connection)
+ * @req: Client request
+ * @response: Output response
+ * @max_response_size: Maximum response body size (0 = unlimited)
+ *
+ * Returns: 0 on success, -1 on error, -2 on response size limit exceeded
+ *
+ * Orchestrates HTTP/2 request execution using helper functions.
+ */
+static int
+execute_http2_request (HTTPPoolEntry *conn,
+                       const SocketHTTPClient_Request_T req,
+                       SocketHTTPClient_Response *response,
+                       size_t max_response_size)
+{
+  SocketHTTP2_Conn_T h2conn = conn->proto.h2.conn;
+  SocketHTTP2_Stream_T stream;
+  SocketHTTP_Request http_req;
+  int end_stream;
+  int result;
+
+  assert (conn != NULL);
+  assert (h2conn != NULL);
+  assert (req != NULL);
+  assert (response != NULL);
+
+  if (SocketHTTP2_Conn_is_closed (h2conn))
+    return -1;
+
+  stream = SocketHTTP2_Stream_new (h2conn);
+  if (stream == NULL)
+    return -1;
+
+  conn->proto.h2.active_streams++;
+  build_http2_request (req, &http_req);
+
+  /* Send request */
+  if (http2_send_request (stream, h2conn, &http_req, req->body, req->body_len)
+      < 0)
+    {
+      conn->proto.h2.active_streams--;
+      SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
+      return -1;
+    }
+
+  /* Receive headers */
+  if (http2_recv_headers (stream, h2conn, response, &end_stream) < 0)
+    {
+      conn->proto.h2.active_streams--;
+      return -1;
+    }
+
+  /* No body if END_STREAM set on headers */
+  if (end_stream)
+    {
+      response->body = NULL;
+      response->body_len = 0;
+      conn->proto.h2.active_streams--;
+      return 0;
+    }
+
+  /* Receive body */
+  result
+      = http2_recv_body (stream, h2conn, SocketHTTP2_Conn_arena (h2conn),
+                         max_response_size, (unsigned char **)&response->body,
+                         &response->body_len);
+  conn->proto.h2.active_streams--;
+  return result;
 }
 
 /**

@@ -815,7 +815,7 @@ extern void Socket_resetstats (T socket);
  * @see Socket_get_error() for retrieving specific error codes
  * @see Socket_isconnected() for basic connection state check
  */
-extern int Socket_probe (T socket, int timeout_ms);
+extern int Socket_probe (const T socket, int timeout_ms);
 
 /**
  * @brief Get pending socket error (SO_ERROR).
@@ -858,7 +858,7 @@ extern int Socket_probe (T socket, int timeout_ms);
  * @see Socket_probe() for comprehensive health check
  * @see Socket_connect_nonblocking() for async connect usage
  */
-extern int Socket_get_error (T socket);
+extern int Socket_get_error (const T socket);
 
 /**
  * @brief Check if socket has data available to read without blocking.
@@ -894,7 +894,7 @@ extern int Socket_get_error (T socket);
  * @see Socket_is_writable() for write readiness check
  * @see SocketPoll for efficient event-driven I/O
  */
-extern int Socket_is_readable (T socket);
+extern int Socket_is_readable (const T socket);
 
 /**
  * @brief Check if socket can accept writes without blocking.
@@ -927,7 +927,7 @@ extern int Socket_is_readable (T socket);
  * @see Socket_is_readable() for read readiness check
  * @see Socket_get_error() to check after non-blocking connect
  */
-extern int Socket_is_writable (T socket);
+extern int Socket_is_writable (const T socket);
 
 #ifdef __linux__
 /**
@@ -1047,7 +1047,7 @@ typedef struct SocketTCPInfo
  * @see Socket_get_cwnd() for congestion window query
  * @see SocketTCPInfo for field descriptions
  */
-extern int Socket_get_tcp_info (T socket, SocketTCPInfo *info);
+extern int Socket_get_tcp_info (const T socket, SocketTCPInfo *info);
 #endif /* __linux__ */
 
 /**
@@ -1080,7 +1080,7 @@ extern int Socket_get_tcp_info (T socket, SocketTCPInfo *info);
  * @see Socket_get_tcp_info() for comprehensive TCP statistics (Linux)
  * @see Socket_getstats() for SocketStats_T with rtt_us field
  */
-extern int32_t Socket_get_rtt (T socket);
+extern int32_t Socket_get_rtt (const T socket);
 
 /**
  * @brief Get current congestion window size.
@@ -1109,7 +1109,7 @@ extern int32_t Socket_get_rtt (T socket);
  *
  * @see Socket_get_tcp_info() for comprehensive TCP statistics (Linux)
  */
-extern int32_t Socket_get_cwnd (T socket);
+extern int32_t Socket_get_cwnd (const T socket);
 
 /* ============================================================================
  * Connection Operations

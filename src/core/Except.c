@@ -8,6 +8,7 @@
  * Except.c - Exception handling implementation
  *
  * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
  *
  * This module provides a structured exception handling mechanism for C,
  * enabling non-local jumps with proper cleanup semantics via TRY/EXCEPT/
@@ -35,6 +36,48 @@
 #include <stdlib.h>
 
 #include "core/Except.h"
+
+/* ============================================================================
+ * Compiler Attribute Macros
+ * ============================================================================
+ */
+
+/**
+ * EXCEPT_NORETURN - Mark function as never returning
+ *
+ * Helps compiler optimize and detect unreachable code after calls.
+ */
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+#define EXCEPT_NORETURN _Noreturn
+#elif defined(__GNUC__) || defined(__clang__)
+#define EXCEPT_NORETURN __attribute__ ((noreturn))
+#elif defined(_MSC_VER)
+#define EXCEPT_NORETURN __declspec (noreturn)
+#else
+#define EXCEPT_NORETURN
+#endif
+
+/**
+ * EXCEPT_COLD - Mark function as unlikely to be called
+ *
+ * Helps branch prediction by moving cold code away from hot paths.
+ */
+#if defined(__GNUC__) || defined(__clang__)
+#define EXCEPT_COLD __attribute__ ((cold))
+#else
+#define EXCEPT_COLD
+#endif
+
+/**
+ * EXCEPT_NONNULL - Mark pointer parameters as non-null
+ *
+ * Enables compiler warnings when NULL is passed to annotated parameters.
+ */
+#if defined(__GNUC__) || defined(__clang__)
+#define EXCEPT_NONNULL(...) __attribute__ ((nonnull (__VA_ARGS__)))
+#else
+#define EXCEPT_NONNULL(...)
+#endif
 
 /* ============================================================================
  * Constants
@@ -95,7 +138,7 @@ const Except_T Assert_Failed = { &Assert_Failed, "Assertion failed" };
  *
  * Used before abort() to ensure error messages are visible.
  */
-static void
+static inline void
 except_flush_stderr (void)
 {
   fflush (stderr);
@@ -109,6 +152,7 @@ except_flush_stderr (void)
  *
  * Writes message to stderr followed by newline.
  */
+EXCEPT_NONNULL (1)
 static void
 except_emit_fatal (const char *message)
 {
@@ -124,11 +168,11 @@ except_emit_fatal (const char *message)
  *
  * Outputs ": <reason>" or ": (no reason provided)" if reason is NULL.
  */
+EXCEPT_NONNULL (1)
 static void
 except_emit_reason (const Except_T *e)
 {
   assert (e != NULL);
-
   fprintf (stderr, ": %s",
            e->reason != NULL ? e->reason : "(no reason provided)");
 }
@@ -146,22 +190,14 @@ except_emit_reason (const Except_T *e)
 static void
 except_emit_location (const char *file, int line)
 {
-  if (file != NULL)
-    {
-      fprintf (stderr, " raised at %s", file);
-      if (line > 0)
-        fprintf (stderr, ":%d\n", line);
-      else
-        fprintf (stderr, "\n");
-    }
+  if (file != NULL && line > 0)
+    fprintf (stderr, " raised at %s:%d\n", file, line);
+  else if (file != NULL)
+    fprintf (stderr, " raised at %s\n", file);
   else if (line > 0)
-    {
-      fprintf (stderr, " raised at line %d\n", line);
-    }
+    fprintf (stderr, " raised at line %d\n", line);
   else
-    {
-      fprintf (stderr, " (location unknown)\n");
-    }
+    fprintf (stderr, " (location unknown)\n");
 }
 
 /**
@@ -176,7 +212,7 @@ except_emit_location (const char *file, int line)
  *
  * Security: Ensures diagnostic messages are visible before termination.
  */
-static void
+EXCEPT_COLD EXCEPT_NORETURN static void
 except_finish_abort (void)
 {
   except_emit_fatal (EXCEPT_ABORTING_FMT);
@@ -198,7 +234,7 @@ except_finish_abort (void)
  *
  * Thread-safe: Yes
  */
-static void
+EXCEPT_COLD static void
 except_validate_not_null (const Except_T *e)
 {
   if (e != NULL)
@@ -216,7 +252,7 @@ except_validate_not_null (const Except_T *e)
 
 /**
  * except_abort_uncaught - Handle uncaught exception by aborting
- * @e: Exception that was uncaught
+ * @e: Exception that was uncaught (must not be NULL)
  * @file: Source file where exception was raised
  * @line: Line number where exception was raised
  *
@@ -224,6 +260,7 @@ except_validate_not_null (const Except_T *e)
  *
  * Thread-safe: Yes
  */
+EXCEPT_COLD EXCEPT_NORETURN EXCEPT_NONNULL (1)
 static void
 except_abort_uncaught (const Except_T *e, const char *file, int line)
 {
@@ -247,7 +284,8 @@ except_abort_uncaught (const Except_T *e, const char *file, int line)
  *
  * Thread-safe: Yes (operates on caller's frame)
  */
-static void
+EXCEPT_NONNULL (1, 2)
+static inline void
 except_store_exception (Except_Frame *frame, const Except_T *e,
                         const char *file, int line)
 {
@@ -269,7 +307,8 @@ except_store_exception (Except_Frame *frame, const Except_T *e,
  * Returns: void
  * Thread-safe: Yes (thread-local storage)
  */
-static void
+EXCEPT_NONNULL (1)
+static inline void
 except_pop_frame (Except_Frame *frame)
 {
   assert (frame != NULL);
@@ -290,16 +329,19 @@ except_pop_frame (Except_Frame *frame)
  * Note: Casting away volatile is safe because setjmp already saved the
  * environment contents non-volatily in the frame.
  */
+EXCEPT_NORETURN EXCEPT_NONNULL (1)
 static void
 except_jump_to_handler (Except_Frame *frame)
 {
-  jmp_buf *env_ptr;
-
   assert (frame != NULL);
 
-  /* Cast away volatile - jmp_buf contents already saved by setjmp */
-  env_ptr = (jmp_buf *)&frame->env;
-  longjmp (*env_ptr, Except_raised);
+  /*
+   * Cast away volatile - jmp_buf contents already saved by setjmp.
+   * The volatile qualifier on Except_frame.env prevents the compiler from
+   * optimizing away stores before setjmp, but the saved contents themselves
+   * are stable after setjmp returns.
+   */
+  longjmp (*(jmp_buf *)&frame->env, Except_raised);
 }
 
 /* ============================================================================
@@ -332,7 +374,7 @@ except_jump_to_handler (Except_Frame *frame)
  * Security: Validates NULL exception pointer to prevent undefined behavior.
  *           Uses abort() for uncaught exceptions (fail-fast for safety).
  */
-void
+EXCEPT_NORETURN void
 Except_raise (const Except_T *e, const char *file, int line)
 {
   Except_Frame *frame;

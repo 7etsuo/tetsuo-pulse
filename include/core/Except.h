@@ -551,7 +551,18 @@ extern const Except_T Assert_Failed;
  * @see Except_T for exception structure.
  * @see docs/ERROR_HANDLING.md for best practices and patterns.
  */
-void Except_raise (const Except_T *e, const char *file, int line);
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+extern _Noreturn void Except_raise (const Except_T *e, const char *file,
+                                    int line);
+#elif defined(__GNUC__) || defined(__clang__)
+extern void Except_raise (const Except_T *e, const char *file, int line)
+    __attribute__ ((noreturn));
+#elif defined(_MSC_VER)
+extern __declspec (noreturn) void Except_raise (const Except_T *e,
+                                                const char *file, int line);
+#else
+extern void Except_raise (const Except_T *e, const char *file, int line);
+#endif
 
 /**
  * @brief Raise an exception with current file and line information.

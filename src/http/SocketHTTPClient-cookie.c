@@ -219,9 +219,12 @@ path_matches (const char *request_path, const char *cookie_path)
  * @len: Length of value string
  *
  * Returns: Unix timestamp of expiration, or 0 if invalid/session cookie
+ *
+ * Per RFC 6265: Non-positive Max-Age means delete cookie (return 1 for
+ * immediate expiry). Positive values are capped at HTTPCLIENT_MAX_COOKIE_AGE_SEC.
  */
 static time_t
-parse_max_age (const char *value, size_t len)
+parse_max_age (const char *value, const size_t len)
 {
   const char *start;
   size_t remaining;
@@ -287,10 +290,11 @@ parse_max_age (const char *value, size_t len)
  * @value: String value ("Strict", "Lax", "None", case-insensitive)
  * @len: Length of value string
  *
- * Returns: Parsed SameSite enum, defaults to LAX if unknown
+ * Returns: Parsed SameSite enum, defaults to LAX if unknown per RFC 6265bis
+ * Thread-safe: Yes (stateless)
  */
 static SocketHTTPClient_SameSite
-parse_same_site (const char *value, size_t len)
+parse_same_site (const char *value, const size_t len)
 {
   if (value == NULL || len == 0)
     return COOKIE_SAMESITE_LAX;
@@ -368,19 +372,22 @@ cookie_entry_update_value_flags (CookieEntry *entry,
 }
 
 /**
- * evict_oldest_cookie - Remove the oldest cookie from jar
- * @jar: Cookie jar
+ * evict_oldest_cookie - Remove the oldest cookie from jar by creation time
+ * @jar: Cookie jar to evict from
+ *
+ * Scans all cookies to find oldest by creation timestamp and removes it.
+ * Used when jar reaches max_cookies limit before adding new cookie.
  *
  * Thread-safe: No (caller must hold mutex)
+ * Complexity: O(n) where n is total cookie count
  */
 static void
 evict_oldest_cookie (SocketHTTPClient_CookieJar_T jar)
 {
   time_t oldest_time = (time_t)-1;
   CookieEntry **oldest_pp = NULL;
-  size_t i;
 
-  for (i = 0; i < jar->hash_size; i++)
+  for (size_t i = 0; i < jar->hash_size; i++)
     {
       CookieEntry **pp = &jar->hash_table[i];
       while (*pp != NULL)
@@ -606,8 +613,7 @@ SocketHTTPClient_CookieJar_set (SocketHTTPClient_CookieJar_T jar,
 
         entry->next = jar->hash_table[hash];
         jar->hash_table[hash] = entry;
-        if (!SocketSecurity_check_add (jar->count, 1, &jar->count))
-          jar->count++;
+        jar->count++;
       }
   }
   EXCEPT (SocketHTTPClient_Failed)
@@ -657,16 +663,13 @@ SocketHTTPClient_CookieJar_clear (SocketHTTPClient_CookieJar_T jar)
 void
 SocketHTTPClient_CookieJar_clear_expired (SocketHTTPClient_CookieJar_T jar)
 {
-  time_t now;
-  size_t i;
-
   assert (jar != NULL);
 
-  now = time (NULL);
+  const time_t now = time (NULL);
 
   pthread_mutex_lock (&jar->mutex);
 
-  for (i = 0; i < jar->hash_size; i++)
+  for (size_t i = 0; i < jar->hash_size; i++)
     {
       CookieEntry **pp = &jar->hash_table[i];
       while (*pp != NULL)
@@ -905,13 +908,10 @@ int
 SocketHTTPClient_CookieJar_save (SocketHTTPClient_CookieJar_T jar,
                                  const char *filename)
 {
-  FILE *f;
-  size_t i;
-
   assert (jar != NULL);
   assert (filename != NULL);
 
-  f = fopen (filename, "w");
+  FILE *f = fopen (filename, "w");
   if (f == NULL)
     {
       HTTPCLIENT_ERROR_FMT ("fopen(\"%s\", \"w\") failed", filename);
@@ -924,7 +924,7 @@ SocketHTTPClient_CookieJar_save (SocketHTTPClient_CookieJar_T jar,
 
   pthread_mutex_lock (&jar->mutex);
 
-  for (i = 0; i < jar->hash_size; i++)
+  for (size_t i = 0; i < jar->hash_size; i++)
     {
       CookieEntry *entry = jar->hash_table[i];
       while (entry != NULL)
@@ -969,24 +969,26 @@ SocketHTTPClient_CookieJar_save (SocketHTTPClient_CookieJar_T jar,
  */
 
 /**
- * cookie_matches_request - Check if cookie matches request
- * @cookie: Cookie to check
- * @host: Request hostname
- * @path: Request path
- * @is_secure: 1 if HTTPS, 0 if HTTP
- * @now: Current time
- * @enforce_samesite: 1 if SameSite enforcement enabled
- * @is_cross_site: 1 if cross-site request
- * @is_top_level_nav: 1 if top-level navigation
- * @is_safe_method: 1 if safe method (GET/HEAD/OPTIONS)
+ * cookie_matches_request - Check if cookie matches request context
+ * @cookie: Cookie to check (read-only)
+ * @host: Request hostname for domain matching
+ * @path: Request path for path matching
+ * @is_secure: 1 if HTTPS connection, 0 if HTTP
+ * @now: Current time for expiry check
+ * @enforce_samesite: 1 to enforce SameSite policy
+ * @is_cross_site: 1 if cross-site request context
+ * @is_top_level_nav: 1 if top-level navigation (for Lax)
+ * @is_safe_method: 1 if safe HTTP method (GET/HEAD/OPTIONS)
  *
  * Returns: 1 if cookie should be sent, 0 otherwise
+ * Thread-safe: Yes (read-only access to cookie)
  */
 static int
 cookie_matches_request (const SocketHTTPClient_Cookie *cookie,
-                        const char *host, const char *path, int is_secure,
-                        time_t now, int enforce_samesite, int is_cross_site,
-                        int is_top_level_nav, int is_safe_method)
+                        const char *host, const char *path, const int is_secure,
+                        const time_t now, const int enforce_samesite,
+                        const int is_cross_site, const int is_top_level_nav,
+                        const int is_safe_method)
 {
   if (cookie->expires > 0 && cookie->expires < now)
     return 0;
@@ -1000,12 +1002,12 @@ cookie_matches_request (const SocketHTTPClient_Cookie *cookie,
   if (!path_matches (path, cookie->path))
     return 0;
 
-  if (enforce_samesite)
+  if (enforce_samesite && is_cross_site)
     {
-      if (cookie->same_site == COOKIE_SAMESITE_STRICT && is_cross_site)
+      if (cookie->same_site == COOKIE_SAMESITE_STRICT)
         return 0;
       if (cookie->same_site == COOKIE_SAMESITE_LAX
-          && !(is_top_level_nav && is_safe_method))
+          && (!is_top_level_nav || !is_safe_method))
         return 0;
       if (cookie->same_site == COOKIE_SAMESITE_NONE && !is_secure)
         return 0;

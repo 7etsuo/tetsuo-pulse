@@ -76,7 +76,7 @@ ratelimit_calculate_tokens_to_add (int64_t elapsed_ms, size_t tokens_per_sec)
       = SocketSecurity_safe_multiply ((size_t)elapsed_ms, tokens_per_ms);
   if (safe_tokens == 0) /* Overflow or zero */
     return 0;
-  return (safe_tokens > SIZE_MAX) ? SIZE_MAX : safe_tokens;
+  return safe_tokens;
 }
 
 /**
@@ -432,7 +432,7 @@ SocketRateLimit_free (T *limiter)
       WITH_LOCK (l, l->initialized = SOCKET_RATELIMIT_SHUTDOWN;);
 
       /* Wait for concurrent operations to complete before destroying mutex */
-      int retries = 10000; /* max ~10s wait */
+      int retries = SOCKET_RATELIMIT_FREE_MAX_RETRIES;
       while (retries-- > 0)
         {
           if (pthread_mutex_trylock (&l->mutex) == 0)
@@ -440,13 +440,13 @@ SocketRateLimit_free (T *limiter)
               pthread_mutex_unlock (&l->mutex);
               break; /* No holder, safe to destroy */
             }
-          struct timespec ts = { 0, 1000000 }; /* 1ms */
+          struct timespec ts = { 0, SOCKET_NS_PER_MS }; /* 1ms */
           nanosleep (&ts, NULL);
         }
       if (retries < 0)
         {
-          SOCKET_LOG_WARN_MSG ("SocketRateLimit_free: destroying potentially "
-                               "locked mutex after timeout");
+          SOCKET_RATELIMIT_WARN ("SocketRateLimit_free: destroying potentially "
+                                 "locked mutex after timeout");
         }
 
       pthread_mutex_destroy (&l->mutex);
