@@ -270,9 +270,12 @@ finalize_tls_state (Socket_T socket, SSL *ssl, SocketTLSContext_T ctx)
 void
 SocketTLS_enable (Socket_T socket, SocketTLSContext_T ctx)
 {
-  assert (socket);
-  assert (ctx);
-  assert (SocketTLSContext_get_ssl_ctx (ctx));
+  if (!socket)
+    RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Socket cannot be NULL");
+  if (!ctx)
+    RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "TLS context cannot be NULL");
+  if (!SocketTLSContext_get_ssl_ctx (ctx))
+    RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "TLS context has no SSL_CTX");
 
   validate_tls_enable_preconditions (socket);
 
@@ -342,7 +345,9 @@ void
 SocketTLS_set_hostname (Socket_T socket, const char *hostname)
 {
   assert (socket);
-  assert (hostname);
+
+  if (!hostname)
+    RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Hostname cannot be NULL");
 
   REQUIRE_TLS_ENABLED (socket, SocketTLS_Failed);
 
@@ -377,7 +382,8 @@ SocketTLS_set_hostname (Socket_T socket, const char *hostname)
 TLSHandshakeState
 SocketTLS_handshake (Socket_T socket)
 {
-  assert (socket);
+  if (!socket)
+    RAISE_TLS_ERROR_MSG (SocketTLS_HandshakeFailed, "Socket cannot be NULL");
 
   REQUIRE_TLS_ENABLED (socket, SocketTLS_HandshakeFailed);
 
@@ -551,11 +557,12 @@ do_handshake_poll (Socket_T socket, unsigned events, int timeout_ms)
 int
 SocketTLS_disable (Socket_T socket)
 {
-  assert (socket);
+  if (!socket)
+    RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Socket cannot be NULL");
 
-  /* Check if TLS is even enabled */
+  /* Check if TLS is even enabled - no-op if not */
   if (!socket->tls_enabled)
-    return -1;
+    return 0;
 
   int clean_shutdown = 0;
 

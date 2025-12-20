@@ -444,32 +444,67 @@ TEST (context_max_protocol_version)
   END_TRY;
 }
 
+/* Helper to generate certificate with specific hostname */
+static int
+generate_sni_certs (const char *cert_file, const char *key_file,
+                    const char *hostname)
+{
+  char cmd[1024];
+  snprintf (cmd, sizeof (cmd),
+            "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s "
+            "-days 1 -nodes -subj '/CN=%s' -batch 2>/dev/null",
+            key_file, cert_file, hostname);
+  return (system (cmd) == 0) ? 0 : -1;
+}
+
 /* ==================== SNI Certificate Tests ==================== */
 
 TEST (context_add_sni_certificate)
 {
-  const char *cert_file = "test_ctx_sni.crt";
-  const char *key_file = "test_ctx_sni.key";
+  const char *cert_file1 = "test_ctx_sni1.crt";
+  const char *key_file1 = "test_ctx_sni1.key";
+  const char *cert_file2 = "test_ctx_sni2.crt";
+  const char *key_file2 = "test_ctx_sni2.key";
   SocketTLSContext_T ctx = NULL;
 
-  if (generate_test_certs (cert_file, key_file) != 0)
+  /* Generate certificates with matching hostnames */
+  if (generate_sni_certs (cert_file1, key_file1, "example.com") != 0)
     return;
+  if (generate_sni_certs (cert_file2, key_file2, "test.example.com") != 0)
+    {
+      remove_test_certs (cert_file1, key_file1);
+      return;
+    }
 
   TRY
   {
-    ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+    /* Use localhost for the default server cert */
+    const char *main_cert = "test_ctx_sni_main.crt";
+    const char *main_key = "test_ctx_sni_main.key";
+    if (generate_test_certs (main_cert, main_key) != 0)
+      {
+        remove_test_certs (cert_file1, key_file1);
+        remove_test_certs (cert_file2, key_file2);
+        return;
+      }
+
+    ctx = SocketTLSContext_new_server (main_cert, main_key, NULL);
     ASSERT_NOT_NULL (ctx);
 
-    /* Add certificate for specific hostname */
-    SocketTLSContext_add_certificate (ctx, "example.com", cert_file, key_file);
-    SocketTLSContext_add_certificate (ctx, "test.example.com", cert_file,
-                                      key_file);
+    /* Add certificate for specific hostnames with matching certs */
+    SocketTLSContext_add_certificate (ctx, "example.com", cert_file1,
+                                      key_file1);
+    SocketTLSContext_add_certificate (ctx, "test.example.com", cert_file2,
+                                      key_file2);
+
+    remove_test_certs (main_cert, main_key);
   }
   FINALLY
   {
     if (ctx)
       SocketTLSContext_free (&ctx);
-    remove_test_certs (cert_file, key_file);
+    remove_test_certs (cert_file1, key_file1);
+    remove_test_certs (cert_file2, key_file2);
   }
   END_TRY;
 }

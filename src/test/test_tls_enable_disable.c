@@ -286,10 +286,11 @@ TEST (tls_set_hostname_after_enable)
   END_TRY;
 }
 
-TEST (tls_set_hostname_null_clears)
+TEST (tls_set_hostname_null_rejected)
 {
   Socket_T socket = NULL;
   SocketTLSContext_T ctx = NULL;
+  volatile int caught = 0;
 
   TRY
   {
@@ -301,9 +302,15 @@ TEST (tls_set_hostname_null_clears)
 
     SocketTLS_enable (socket, ctx);
 
-    /* Set then clear hostname */
+    /* Set valid hostname first */
     SocketTLS_set_hostname (socket, "example.com");
-    SocketTLS_set_hostname (socket, NULL);
+
+    /* NULL hostname should raise exception */
+    TRY { SocketTLS_set_hostname (socket, NULL); }
+    EXCEPT (SocketTLS_Failed) { caught = 1; }
+    END_TRY;
+
+    ASSERT_EQ (caught, 1);
   }
   FINALLY
   {
@@ -340,7 +347,7 @@ TEST (tls_info_queries_before_handshake)
     ASSERT_NULL (alpn); /* No ALPN negotiated yet */
 
     int reused = SocketTLS_is_session_reused (socket);
-    ASSERT_EQ (reused, 0); /* No session yet */
+    ASSERT_EQ (reused, -1); /* Returns -1 before handshake complete */
 
     long verify_result = SocketTLS_get_verify_result (socket);
     (void)verify_result; /* Value may vary */

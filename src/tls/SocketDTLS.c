@@ -423,9 +423,12 @@ dtls_set_ssl_hostname (SocketDgram_T socket, const char *hostname)
 void
 SocketDTLS_enable (SocketDgram_T socket, SocketDTLSContext_T ctx)
 {
-  assert (socket);
-  assert (ctx);
-  assert (SocketDTLSContext_get_ssl_ctx (ctx));
+  if (!socket)
+    RAISE (SocketDTLS_Failed);
+  if (!ctx)
+    RAISE (SocketDTLS_Failed);
+  if (!SocketDTLSContext_get_ssl_ctx (ctx))
+    RAISE (SocketDTLS_Failed);
 
   validate_dtls_enable_preconditions (socket);
 

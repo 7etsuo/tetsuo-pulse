@@ -494,7 +494,11 @@ SocketDTLSContext_set_cookie_secret (T ctx, const unsigned char *secret,
                                      size_t len)
 {
   assert (ctx);
-  assert (secret);
+
+  if (!secret)
+    {
+      RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed, "Cookie secret cannot be NULL");
+    }
 
   if (len != SOCKET_DTLS_COOKIE_SECRET_LEN)
     {
@@ -503,9 +507,20 @@ SocketDTLSContext_set_cookie_secret (T ctx, const unsigned char *secret,
                                 SOCKET_DTLS_COOKIE_SECRET_LEN, len);
     }
 
+  if (!ctx->is_server)
+    {
+      RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
+                                "Cookie secret only for server contexts");
+    }
+
   pthread_mutex_lock (&ctx->cookie.secret_mutex);
   memcpy (ctx->cookie.secret, secret, len);
   pthread_mutex_unlock (&ctx->cookie.secret_mutex);
+
+  /* Set OpenSSL cookie callbacks and enable cookie exchange */
+  SSL_CTX_set_cookie_generate_cb (ctx->ssl_ctx, dtls_cookie_generate_cb);
+  SSL_CTX_set_cookie_verify_cb (ctx->ssl_ctx, dtls_cookie_verify_cb);
+  ctx->cookie.cookie_enabled = 1;
 }
 
 void

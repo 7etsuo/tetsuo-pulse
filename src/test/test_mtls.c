@@ -251,6 +251,7 @@ TEST (mtls_missing_client_cert_fails)
   const char *client_key = "test_mtls_missing_client.key";
   Socket_T client = NULL, server = NULL;
   SocketTLSContext_T client_ctx = NULL, server_ctx = NULL;
+  volatile int handshake_failed = 0;
 
   if (generate_mtls_certs (ca_cert, ca_key, server_cert, server_key,
                            client_cert, client_key)
@@ -275,8 +276,18 @@ TEST (mtls_missing_client_cert_fails)
     SocketTLS_enable (server, server_ctx);
 
     /* Handshake should fail because client has no cert */
-    int result = complete_handshake (client, server);
-    ASSERT_NE (result, 0); /* Should fail */
+    /* Either returns -1 or raises an exception */
+    TRY
+    {
+      int result = complete_handshake (client, server);
+      if (result != 0)
+        handshake_failed = 1;
+    }
+    EXCEPT (SocketTLS_Failed) { handshake_failed = 1; }
+    EXCEPT (SocketTLS_HandshakeFailed) { handshake_failed = 1; }
+    END_TRY;
+
+    ASSERT_EQ (handshake_failed, 1); /* Should have failed */
   }
   FINALLY
   {

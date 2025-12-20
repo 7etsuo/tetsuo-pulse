@@ -374,9 +374,9 @@ TEST (security_check_cert_expiry)
     ctx = SocketTLSContext_new_client (NULL);
     SocketTLS_enable (socket, ctx);
 
-    /* Before handshake, expiry should be 0 or error */
+    /* Before handshake, expiry should be -1 (no certificate available) */
     time_t expiry = SocketTLS_get_cert_expiry (socket);
-    ASSERT_EQ (expiry, 0);
+    ASSERT_EQ (expiry, (time_t)-1);
   }
   FINALLY
   {

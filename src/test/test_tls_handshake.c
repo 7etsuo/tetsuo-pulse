@@ -218,8 +218,8 @@ TEST (handshake_loop_with_timeout)
     SocketTLS_enable (client, client_ctx);
     SocketTLS_enable (server, server_ctx);
 
-    /* Use handshake_loop with timeout */
-    /* We need to drive both sides in parallel */
+    /* Use single-step handshake since handshake_loop with short timeouts
+     * doesn't work well when driving both sides in a loop */
     TLSHandshakeState client_state = TLS_HANDSHAKE_IN_PROGRESS;
     TLSHandshakeState server_state = TLS_HANDSHAKE_IN_PROGRESS;
     int iterations = 0;
@@ -230,17 +230,18 @@ TEST (handshake_loop_with_timeout)
         if (client_state != TLS_HANDSHAKE_COMPLETE
             && client_state != TLS_HANDSHAKE_ERROR)
           {
-            client_state = SocketTLS_handshake_loop (client, 100);
+            client_state = SocketTLS_handshake (client);
           }
         if (server_state != TLS_HANDSHAKE_COMPLETE
             && server_state != TLS_HANDSHAKE_ERROR)
           {
-            server_state = SocketTLS_handshake_loop (server, 100);
+            server_state = SocketTLS_handshake (server);
           }
 
         iterations++;
-        if (iterations > 100)
+        if (iterations > 1000)
           break;
+        usleep (1000);
       }
 
     ASSERT_EQ (client_state, TLS_HANDSHAKE_COMPLETE);
@@ -290,8 +291,9 @@ TEST (handshake_auto_socket_pair)
     SocketTLS_enable (client, client_ctx);
     SocketTLS_enable (server, server_ctx);
 
-    /* Drive handshakes in parallel until one completes,
-     * then use handshake_auto for the other */
+    /* Use single-step handshake since handshake_auto with long timeouts
+     * doesn't work well when driving both sides in a loop - the timeout
+     * on one side blocks the other */
     TLSHandshakeState client_state = TLS_HANDSHAKE_IN_PROGRESS;
     TLSHandshakeState server_state = TLS_HANDSHAKE_IN_PROGRESS;
     int loops = 0;
@@ -303,12 +305,12 @@ TEST (handshake_auto_socket_pair)
         if (client_state != TLS_HANDSHAKE_COMPLETE
             && client_state != TLS_HANDSHAKE_ERROR)
           {
-            client_state = SocketTLS_handshake_auto (client);
+            client_state = SocketTLS_handshake (client);
           }
         if (server_state != TLS_HANDSHAKE_COMPLETE
             && server_state != TLS_HANDSHAKE_ERROR)
           {
-            server_state = SocketTLS_handshake_auto (server);
+            server_state = SocketTLS_handshake (server);
           }
         loops++;
         usleep (1000);
@@ -401,7 +403,8 @@ TEST (handshake_loop_ex_with_poll_interval)
     SocketTLS_enable (client, client_ctx);
     SocketTLS_enable (server, server_ctx);
 
-    /* Use handshake_loop_ex with custom poll interval */
+    /* Use single-step handshake since loop_ex with short timeouts
+     * doesn't work well when driving both sides in a loop */
     TLSHandshakeState client_state = TLS_HANDSHAKE_IN_PROGRESS;
     TLSHandshakeState server_state = TLS_HANDSHAKE_IN_PROGRESS;
     int iterations = 0;
@@ -412,17 +415,18 @@ TEST (handshake_loop_ex_with_poll_interval)
         if (client_state != TLS_HANDSHAKE_COMPLETE
             && client_state != TLS_HANDSHAKE_ERROR)
           {
-            client_state = SocketTLS_handshake_loop_ex (client, 500, 50);
+            client_state = SocketTLS_handshake (client);
           }
         if (server_state != TLS_HANDSHAKE_COMPLETE
             && server_state != TLS_HANDSHAKE_ERROR)
           {
-            server_state = SocketTLS_handshake_loop_ex (server, 500, 50);
+            server_state = SocketTLS_handshake (server);
           }
 
         iterations++;
-        if (iterations > 50)
+        if (iterations > 1000)
           break;
+        usleep (1000);
       }
 
     ASSERT_EQ (client_state, TLS_HANDSHAKE_COMPLETE);

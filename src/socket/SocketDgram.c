@@ -167,10 +167,10 @@ SocketDgram_free (T *socket)
       s->dtls_sni_hostname = NULL;
     }
 
-  /* Invalidate DTLS peer cache */
+  /* Invalidate DTLS peer cache - use SocketCommon_free_addrinfo for copied addrinfo */
   if (s->dtls_peer_res)
     {
-      freeaddrinfo (s->dtls_peer_res);
+      SocketCommon_free_addrinfo (s->dtls_peer_res);
       s->dtls_peer_res = NULL;
     }
   s->dtls_peer_host = NULL;
