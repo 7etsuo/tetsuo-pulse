@@ -646,7 +646,7 @@ SocketHTTP1_Parser_reset (SocketHTTP1_Parser_T parser)
 static int64_t
 parse_cl_value (const char *str, size_t len)
 {
-  const char *p;
+  const char *p = str;
   size_t i = 0;
   int64_t value = 0;
 
@@ -654,8 +654,6 @@ parse_cl_value (const char *str, size_t len)
     len = strlen (str);
   if (len == 0)
     return -1;
-
-  p = str;
 
   /* Skip leading OWS */
   while (i < len && http1_is_ows (p[i]))
@@ -684,7 +682,14 @@ parse_cl_value (const char *str, size_t len)
 
 /**
  * cl_validator - Callback to validate all CL headers equal
- * Used with Headers_iterate
+ * @name: Header name
+ * @name_len: Header name length
+ * @value: Header value
+ * @value_len: Header value length
+ * @userdata: Expected Content-Length value (int64_t pointer)
+ *
+ * Used with Headers_iterate to validate all Content-Length headers.
+ * Returns: 0 to continue iteration, -1 on mismatch/error
  */
 static int
 cl_validator (const char *name, size_t name_len, const char *value,
@@ -706,12 +711,14 @@ cl_validator (const char *name, size_t name_len, const char *value,
  * parse_content_length - Parse and validate Content-Length header
  * @headers: Headers collection to search
  *
- * Now validates ALL Content-Length headers parse to identical value.
+ * Validates ALL Content-Length headers parse to identical value
+ * per RFC 9112 Section 6.3 for request smuggling prevention.
+ *
  * Returns: Value on success, -1 on error (invalid or mismatch), -2 if not
  * present
  */
 static int64_t
-parse_content_length (const SocketHTTP_Headers_T headers)
+parse_content_length (SocketHTTP_Headers_T headers)
 {
   if (!headers)
     return -1;
@@ -805,10 +812,11 @@ http1_contains_token (const char *value, const char *token)
  * @headers: Headers collection
  *
  * Searches ALL Transfer-Encoding headers for "chunked" token.
+ *
  * Returns: 1 if chunked found in any, 0 otherwise
  */
 static int
-has_chunked_encoding (const SocketHTTP_Headers_T headers)
+has_chunked_encoding (SocketHTTP_Headers_T headers)
 {
   if (!headers)
     return 0;
@@ -831,12 +839,13 @@ has_chunked_encoding (const SocketHTTP_Headers_T headers)
  * codings
  * @headers: Headers collection
  *
- * Scans TE headers for known unsupported codings (gzip, compress, etc.).
- * Used for strict validation.
+ * Scans Transfer-Encoding headers for known unsupported codings
+ * (gzip, compress, deflate, etc.). Used for strict RFC 9112 validation.
+ *
  * Returns: 1 if unsupported found, 0 otherwise
  */
 static int
-has_other_transfer_coding (const SocketHTTP_Headers_T headers)
+has_other_transfer_coding (SocketHTTP_Headers_T headers)
 {
   static const char *unsupported[]
       = { "gzip", "x-gzip", "compress", "deflate", "identity", NULL };
