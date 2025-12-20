@@ -1666,6 +1666,60 @@ extern const char *
 SocketHTTP2_stream_state_string (SocketHTTP2_StreamState state);
 
 /* ============================================================================
+ * Stream Data API
+ * ============================================================================
+ */
+
+/**
+ * @brief Send DATA frame on stream
+ * @ingroup http2
+ *
+ * Sends data on the specified stream as one or more DATA frames, respecting
+ * flow control windows. May send less than requested if flow control window
+ * is exhausted.
+ *
+ * @param stream     Stream to send on (must be open for sending)
+ * @param data       Data buffer to send
+ * @param len        Length of data
+ * @param end_stream Set END_STREAM flag (closes send side)
+ *
+ * @return Bytes sent (may be less than len due to flow control), -1 on error
+ * @threadsafe No - stream operations are not thread-safe
+ */
+extern ssize_t SocketHTTP2_Stream_send_data (SocketHTTP2_Stream_T stream,
+                                             const void *data, size_t len,
+                                             int end_stream);
+
+/**
+ * @brief Receive DATA from stream
+ * @ingroup http2
+ *
+ * Reads available data from the stream's receive buffer. Returns immediately
+ * with available data (non-blocking).
+ *
+ * @param stream      Stream to read from
+ * @param buf         Buffer to read into
+ * @param len         Maximum bytes to read
+ * @param end_stream  Output: set to 1 if END_STREAM received and buffer empty
+ *
+ * @return Bytes read, 0 if no data available
+ * @threadsafe No - stream operations are not thread-safe
+ */
+extern ssize_t SocketHTTP2_Stream_recv_data (SocketHTTP2_Stream_T stream,
+                                             void *buf, size_t len,
+                                             int *end_stream);
+
+/**
+ * @brief Get connection from stream
+ * @ingroup http2
+ *
+ * @param stream  Stream handle
+ * @return Associated connection
+ */
+extern SocketHTTP2_Conn_T
+SocketHTTP2_Stream_get_connection (SocketHTTP2_Stream_T stream);
+
+/* ============================================================================
  * Frame Parsing (Low-level API)
  * ============================================================================
  */

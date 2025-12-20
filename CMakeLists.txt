@@ -253,6 +253,10 @@ set(LIB_SOURCES
     src/socket/SocketWS.c
     src/socket/SocketWS-handshake.c
     src/socket/SocketWS-frame.c
+    src/socket/SocketWS-transport.c
+
+    # WebSocket over HTTP/2 (RFC 8441)
+    src/socket/SocketWSH2.c
     
     # DNS module (consolidated)
     src/dns/SocketDNS.c

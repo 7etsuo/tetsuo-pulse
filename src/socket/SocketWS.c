@@ -560,6 +560,35 @@ ws_finalize_assembled_message (SocketWS_T ws)
 }
 
 /* ============================================================================
+ * Transport Helpers
+ * ============================================================================
+ */
+
+/**
+ * ws_requires_masking - Check if frames require client masking
+ * @ws: WebSocket context
+ *
+ * Per RFC 6455, client frames over TCP must be masked.
+ * Per RFC 8441, HTTP/2 WebSocket frames do not use masking.
+ *
+ * Returns: 1 if masking required, 0 otherwise
+ */
+int
+ws_requires_masking (SocketWS_T ws)
+{
+  assert (ws);
+
+  /* Use transport's masking flag if transport is set */
+  if (ws->transport)
+    {
+      return SocketWS_Transport_requires_masking (ws->transport);
+    }
+
+  /* Fallback: RFC 6455 rule - client frames must be masked */
+  return ws->role == WS_ROLE_CLIENT;
+}
+
+/* ============================================================================
  * I/O Helpers
  * ============================================================================
  */
@@ -570,6 +599,8 @@ ws_finalize_assembled_message (SocketWS_T ws)
  * @ptr: Data pointer
  * @available: Available length
  *
+ * Uses transport abstraction if available, falls back to direct socket I/O.
+ *
  * Returns: Bytes sent, 0 would block/empty, -1 error
  * Raises: None (sets ws error)
  */
@@ -579,24 +610,53 @@ ws_send_contiguous (SocketWS_T ws, const void *ptr, size_t available)
   volatile ssize_t sent = 0;
   volatile int failed = 0;
 
-  TRY { sent = Socket_send (ws->socket, ptr, available); }
-  EXCEPT (Socket_Closed)
-  {
-    /* Normal/expected close path: don't spam error logs. */
-    ws_set_error (ws, WS_ERROR_CLOSED, NULL);
-    ws->state = WS_STATE_CLOSED;
-    ws->close_code = WS_CLOSE_ABNORMAL;
-    failed = 1;
-  }
-  EXCEPT (Socket_Failed)
-  {
-    ws_set_error (ws, WS_ERROR, "Socket send failed");
-    failed = 1;
-  }
-  END_TRY;
+  /* Use transport abstraction if available */
+  if (ws->transport)
+    {
+      sent = SocketWS_Transport_send (ws->transport, ptr, available);
+      if (sent < 0)
+        {
+          if (errno == EAGAIN || errno == EWOULDBLOCK)
+            {
+              /* Would block - not an error */
+              sent = 0;
+            }
+          else if (errno == EPIPE)
+            {
+              ws_set_error (ws, WS_ERROR_CLOSED, NULL);
+              ws->state = WS_STATE_CLOSED;
+              ws->close_code = WS_CLOSE_ABNORMAL;
+              return -1;
+            }
+          else
+            {
+              ws_set_error (ws, WS_ERROR, "Transport send failed");
+              return -1;
+            }
+        }
+    }
+  else
+    {
+      /* Fallback to direct socket I/O for backward compatibility */
+      TRY { sent = Socket_send (ws->socket, ptr, available); }
+      EXCEPT (Socket_Closed)
+      {
+        /* Normal/expected close path: don't spam error logs. */
+        ws_set_error (ws, WS_ERROR_CLOSED, NULL);
+        ws->state = WS_STATE_CLOSED;
+        ws->close_code = WS_CLOSE_ABNORMAL;
+        failed = 1;
+      }
+      EXCEPT (Socket_Failed)
+      {
+        ws_set_error (ws, WS_ERROR, "Socket send failed");
+        failed = 1;
+      }
+      END_TRY;
 
-  if (failed)
-    return -1;
+      if (failed)
+        return -1;
+    }
 
   if (sent <= 0)
     return 0; /* Would block / no progress */
@@ -612,7 +672,7 @@ ws_flush_send_buffer (SocketWS_T ws)
   const void *ptr;
 
   assert (ws);
-  assert (ws->socket);
+  assert (ws->socket || ws->transport); /* Need either socket or transport */
 
   available = SocketBuf_available (ws->send_buf);
   if (available == 0)
@@ -632,6 +692,8 @@ ws_flush_send_buffer (SocketWS_T ws)
  * @ptr: Write pointer
  * @space: Available space
  *
+ * Uses transport abstraction if available, falls back to direct socket I/O.
+ *
  * Returns: Bytes received, 0 EOF/would block, -1 error
  * Raises: None (sets ws error)
  */
@@ -641,25 +703,54 @@ ws_recv_contiguous (SocketWS_T ws, void *ptr, size_t space)
   volatile ssize_t received = 0;
   volatile int failed = 0;
 
-  TRY { received = Socket_recv (ws->socket, ptr, space); }
-  EXCEPT (Socket_Closed)
-  {
-    /* EOF / connection closed */
-    /* Normal/expected close path: don't spam error logs. */
-    ws_set_error (ws, WS_ERROR_CLOSED, NULL);
-    ws->state = WS_STATE_CLOSED;
-    ws->close_code = WS_CLOSE_ABNORMAL;
-    received = 0;
-  }
-  EXCEPT (Socket_Failed)
-  {
-    ws_set_error (ws, WS_ERROR, "Socket recv failed");
-    failed = 1;
-  }
-  END_TRY;
+  /* Use transport abstraction if available */
+  if (ws->transport)
+    {
+      received = SocketWS_Transport_recv (ws->transport, ptr, space);
+      if (received < 0)
+        {
+          if (errno == EAGAIN || errno == EWOULDBLOCK)
+            {
+              /* Would block - not an error */
+              received = 0;
+            }
+          else
+            {
+              ws_set_error (ws, WS_ERROR, "Transport recv failed");
+              return -1;
+            }
+        }
+      else if (received == 0)
+        {
+          /* EOF */
+          ws_set_error (ws, WS_ERROR_CLOSED, NULL);
+          ws->state = WS_STATE_CLOSED;
+          ws->close_code = WS_CLOSE_ABNORMAL;
+        }
+    }
+  else
+    {
+      /* Fallback to direct socket I/O for backward compatibility */
+      TRY { received = Socket_recv (ws->socket, ptr, space); }
+      EXCEPT (Socket_Closed)
+      {
+        /* EOF / connection closed */
+        /* Normal/expected close path: don't spam error logs. */
+        ws_set_error (ws, WS_ERROR_CLOSED, NULL);
+        ws->state = WS_STATE_CLOSED;
+        ws->close_code = WS_CLOSE_ABNORMAL;
+        received = 0;
+      }
+      EXCEPT (Socket_Failed)
+      {
+        ws_set_error (ws, WS_ERROR, "Socket recv failed");
+        failed = 1;
+      }
+      END_TRY;
 
-  if (failed)
-    return -1;
+      if (failed)
+        return -1;
+    }
 
   if (received <= 0)
     return 0; /* Would block */
@@ -675,7 +766,7 @@ ws_fill_recv_buffer (SocketWS_T ws)
   void *ptr;
 
   assert (ws);
-  assert (ws->socket);
+  assert (ws->socket || ws->transport); /* Need either socket or transport */
 
   /* Get contiguous write pointer */
   ptr = SocketBuf_writeptr (ws->recv_buf, &space);
@@ -1388,6 +1479,14 @@ int
 SocketWS_pollfd (SocketWS_T ws)
 {
   assert (ws);
+
+  /* Use transport abstraction if available */
+  if (ws->transport)
+    {
+      return SocketWS_Transport_get_fd (ws->transport);
+    }
+
+  /* Fallback to direct socket access */
   assert (ws->socket);
   return Socket_fd (ws->socket);
 }

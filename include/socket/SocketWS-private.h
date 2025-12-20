@@ -38,6 +38,7 @@
 #include "http/SocketHTTP1.h"
 #include "socket/Socket.h"
 #include "socket/SocketBuf.h"
+#include "socket/SocketWS-transport.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -627,6 +628,8 @@ struct SocketWS
   Arena_T arena; /**< Memory arena for all dynamic allocations */
   SocketBuf_T recv_buf; /**< Receive circular buffer for incoming data */
   SocketBuf_T send_buf; /**< Send circular buffer for outgoing data */
+  SocketWS_Transport_T transport; /**< Transport abstraction (NULL = use socket
+                                       directly for backward compat) */
 
   /* Configuration (copied at creation) */
   SocketWS_Config config; /**< User-provided configuration */
@@ -793,6 +796,28 @@ typedef struct SocketWS *SocketWS_T;
  * @see Arena_dispose() For freeing allocated strings.
  */
 char *ws_copy_string (Arena_T arena, const char *str);
+
+/* ============================================================================
+ * Internal Helper Functions - Transport
+ * ============================================================================
+ */
+
+/**
+ * @brief Check if WebSocket frames require client masking.
+ * @internal
+ * @ingroup websocket
+ *
+ * Per RFC 6455, client frames over TCP must be masked to prevent proxy cache
+ * poisoning attacks. Per RFC 8441, HTTP/2 WebSocket frames do not use masking
+ * as the HTTP/2 stream provides sufficient framing security.
+ *
+ * Uses transport abstraction's masking flag if transport is set, otherwise
+ * falls back to RFC 6455 rule (client frames masked).
+ *
+ * @param[in] ws WebSocket context
+ * @return 1 if masking required, 0 otherwise
+ */
+int ws_requires_masking (SocketWS_T ws);
 
 /* ============================================================================
  * Internal Helper Functions - Frame Sending

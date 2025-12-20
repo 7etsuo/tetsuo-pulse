@@ -572,8 +572,11 @@ ws_frame_parse_header (SocketWS_FrameParse *frame, const unsigned char *data,
 static size_t
 ws_encode_extended_length (unsigned char *header, size_t offset, uint64_t len, unsigned char code)
 {
+  /* Extract the length indicator (126 or 127) ignoring the mask bit */
+  unsigned char len_indicator = code & 0x7F;
+
   header[offset++] = code;
-  int bytes = (code == SOCKETWS_EXTENDED_LEN_16) ? 2 : SOCKETWS_EXTENDED_LEN_64_SIZE;
+  int bytes = (len_indicator == SOCKETWS_EXTENDED_LEN_16) ? 2 : SOCKETWS_EXTENDED_LEN_64_SIZE;
   for (int i = 0; i < bytes; i++)
     {
       header[offset++] = (len >> ((bytes - 1 - i) * 8)) & 0xFF;
@@ -602,11 +605,15 @@ ws_encode_payload_length (unsigned char *header, size_t offset, int masked,
     }
   else if (payload_len <= SOCKETWS_MAX_16BIT_PAYLOAD)
     {
-      offset = ws_encode_extended_length (header, offset, payload_len, SOCKETWS_EXTENDED_LEN_16);
+      /* Extended 16-bit length: second byte has MASK bit + 126 */
+      offset = ws_encode_extended_length (header, offset, payload_len,
+                                          mask_bit | SOCKETWS_EXTENDED_LEN_16);
     }
   else
     {
-      offset = ws_encode_extended_length (header, offset, payload_len, SOCKETWS_EXTENDED_LEN_64);
+      /* Extended 64-bit length: second byte has MASK bit + 127 */
+      offset = ws_encode_extended_length (header, offset, payload_len,
+                                          mask_bit | SOCKETWS_EXTENDED_LEN_64);
     }
 
   return offset;
@@ -660,12 +667,13 @@ ws_frame_build_header (unsigned char *header, int fin, SocketWS_Opcode opcode,
  */
 
 /**
- * ws_ensure_mask_key - Generate mask key if client role
+ * ws_ensure_mask_key - Generate mask key if masking required
  * @ws: WebSocket context
  * @mask_key: Output buffer for mask key
- * @masked: Output - set to 1 if client, 0 if server
+ * @masked: Output - set to 1 if masking required, 0 otherwise
  *
- * Clients must mask, servers must not mask.
+ * For RFC 6455 (TCP): Clients must mask, servers must not.
+ * For RFC 8441 (HTTP/2): No masking required.
  *
  * Returns: 0 on success, -1 on error
  */
@@ -674,7 +682,7 @@ ws_ensure_mask_key (SocketWS_T ws,
                     unsigned char mask_key[SOCKETWS_MASK_KEY_SIZE],
                     int *masked)
 {
-  *masked = (ws->role == WS_ROLE_CLIENT);
+  *masked = ws_requires_masking (ws);
 
   if (*masked)
     {
@@ -1150,20 +1158,31 @@ ws_recv_frame (SocketWS_T ws, SocketWS_FrameParse *frame_out)
   *frame_out = ws->frame;
   bool is_control_frame = ws_is_control_opcode (ws->frame.opcode);
 
-  /* Validate masking per RFC 6455 Section 5.3:
-   * - Client -> Server frames MUST be masked (server receives masked=1)
-   * - Server -> Client frames MUST NOT be masked (client receives masked=0) */
-  if ((ws->role == WS_ROLE_SERVER && !ws->frame.masked)
-      || (ws->role == WS_ROLE_CLIENT && ws->frame.masked))
+  /* Validate masking:
+   * RFC 6455 (TCP): Client -> Server MUST be masked, Server -> Client MUST NOT
+   * RFC 8441 (HTTP/2): No masking required (transport provides security)
+   *
+   * Check if using H2 transport - if so, skip masking validation entirely */
+  int skip_masking_validation = 0;
+  if (ws->transport
+      && SocketWS_Transport_type (ws->transport) == SOCKETWS_TRANSPORT_H2STREAM)
+    skip_masking_validation = 1;
+
+  if (!skip_masking_validation)
     {
-      ws_set_error (
-          ws, WS_ERROR_PROTOCOL,
-          "Invalid frame masking: role=%s received %s frame",
-          ws->role == WS_ROLE_SERVER ? "server" : "client",
-          ws->frame.masked ? "masked" : "unmasked");
-      /* Send protocol error close per RFC 6455 */
-      (void)ws_send_close (ws, WS_CLOSE_PROTOCOL_ERROR, "Masking violation");
-      return -1;
+      /* RFC 6455 masking rules apply */
+      if ((ws->role == WS_ROLE_SERVER && !ws->frame.masked)
+          || (ws->role == WS_ROLE_CLIENT && ws->frame.masked))
+        {
+          ws_set_error (
+              ws, WS_ERROR_PROTOCOL,
+              "Invalid frame masking: role=%s received %s frame",
+              ws->role == WS_ROLE_SERVER ? "server" : "client",
+              ws->frame.masked ? "masked" : "unmasked");
+          /* Send protocol error close per RFC 6455 */
+          (void)ws_send_close (ws, WS_CLOSE_PROTOCOL_ERROR, "Masking violation");
+          return -1;
+        }
     }
 
   if (ws_check_payload_size (ws) < 0)

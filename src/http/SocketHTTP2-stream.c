@@ -764,6 +764,13 @@ SocketHTTP2_Stream_set_userdata (SocketHTTP2_Stream_T stream, void *userdata)
   stream->userdata = userdata;
 }
 
+SocketHTTP2_Conn_T
+SocketHTTP2_Stream_get_connection (SocketHTTP2_Stream_T stream)
+{
+  assert (stream);
+  return stream->conn;
+}
+
 /* ============================================================================
  * Stream Flow Control
  * ============================================================================
