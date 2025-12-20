@@ -55,8 +55,6 @@ const Except_T SocketHTTP2_FlowControlError
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP2);
 
-#define RAISE_HTTP2_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketHTTP2, e)
-
 /* ============================================================================
  * Rate Limiting Helper
  * ============================================================================
@@ -1328,71 +1326,173 @@ process_settings_ack (SocketHTTP2_Conn_T conn)
 }
 
 /**
+ * setting_id_to_index - Map HTTP/2 setting ID to internal array index
+ * @id: Setting identifier (1-based per RFC 9113)
+ *
+ * Maps RFC 9113 setting IDs to our internal 0-based array indices.
+ * SETTINGS_ENABLE_CONNECT_PROTOCOL (0x8) maps to index 6 despite gap.
+ *
+ * Returns: Array index (0-6) on success, SIZE_MAX for unknown settings
+ * Thread-safe: Yes - pure function with no side effects
+ */
+static inline size_t
+setting_id_to_index (uint16_t id)
+{
+  /* Standard settings 1-6 map directly to indices 0-5 */
+  if (id >= 1 && id <= 6)
+    return (size_t)(id - 1);
+
+  /* RFC 8441: SETTINGS_ENABLE_CONNECT_PROTOCOL (0x8) maps to index 6 */
+  if (id == HTTP2_SETTINGS_ENABLE_CONNECT_PROTOCOL)
+    return SETTINGS_IDX_ENABLE_CONNECT_PROTOCOL;
+
+  /* Unknown settings ignored per RFC 9113 Section 6.5.2 */
+  return SIZE_MAX;
+}
+
+/**
+ * validate_enable_push - Validate SETTINGS_ENABLE_PUSH value
+ * @conn: Connection
+ * @value: Setting value (must be 0 or 1)
+ *
+ * Returns: 0 on success, -1 on error (sends connection error)
+ */
+static int
+validate_enable_push (SocketHTTP2_Conn_T conn, uint32_t value)
+{
+  if (value > 1)
+    {
+      http2_send_connection_error (conn, HTTP2_PROTOCOL_ERROR);
+      return -1;
+    }
+  return 0;
+}
+
+/**
+ * validate_initial_window_size - Validate and apply SETTINGS_INITIAL_WINDOW_SIZE
+ * @conn: Connection
+ * @value: New initial window size
+ *
+ * Validates the window size and adjusts all existing stream windows.
+ *
+ * Returns: 0 on success, -1 on error (sends connection error)
+ */
+static int
+validate_initial_window_size (SocketHTTP2_Conn_T conn, uint32_t value)
+{
+  if (value > SOCKETHTTP2_MAX_WINDOW_SIZE)
+    {
+      http2_send_connection_error (conn, HTTP2_FLOW_CONTROL_ERROR);
+      return -1;
+    }
+
+  /* Adjust existing stream windows */
+  int32_t delta
+      = (int32_t)value
+        - (int32_t)conn->peer_settings[SETTINGS_IDX_INITIAL_WINDOW_SIZE];
+
+  for (size_t j = 0; j < HTTP2_STREAM_HASH_SIZE; j++)
+    {
+      SocketHTTP2_Stream_T s = conn->streams[j];
+      while (s)
+        {
+          if (http2_flow_adjust_window (&s->send_window, delta) < 0)
+            {
+              http2_send_connection_error (conn, HTTP2_FLOW_CONTROL_ERROR);
+              return -1;
+            }
+          s = s->hash_next;
+        }
+    }
+
+  conn->initial_send_window = (int32_t)value;
+  return 0;
+}
+
+/**
+ * validate_max_frame_size - Validate SETTINGS_MAX_FRAME_SIZE value
+ * @conn: Connection
+ * @value: Max frame size (must be 16384 to 16777215)
+ *
+ * Returns: 0 on success, -1 on error (sends connection error)
+ */
+static int
+validate_max_frame_size (SocketHTTP2_Conn_T conn, uint32_t value)
+{
+  if (value < SOCKETHTTP2_DEFAULT_MAX_FRAME_SIZE
+      || value > SOCKETHTTP2_MAX_MAX_FRAME_SIZE)
+    {
+      http2_send_connection_error (conn, HTTP2_PROTOCOL_ERROR);
+      return -1;
+    }
+  return 0;
+}
+
+/**
+ * validate_enable_connect_protocol - Validate SETTINGS_ENABLE_CONNECT_PROTOCOL
+ * @conn: Connection
+ * @value: Setting value (must be 0 or 1, cannot revert from 1 to 0)
+ *
+ * RFC 8441 Section 3: Once enabled, cannot be disabled.
+ *
+ * Returns: 0 on success, -1 on error (sends connection error)
+ */
+static int
+validate_enable_connect_protocol (SocketHTTP2_Conn_T conn, uint32_t value)
+{
+  if (value > 1)
+    {
+      SOCKET_LOG_ERROR_MSG (
+          "SETTINGS_ENABLE_CONNECT_PROTOCOL invalid value: %u", value);
+      http2_send_connection_error (conn, HTTP2_PROTOCOL_ERROR);
+      return -1;
+    }
+
+  /* RFC 8441 Section 3: sender MUST NOT send 0 after previously sending 1 */
+  if (value == 0
+      && conn->peer_settings[SETTINGS_IDX_ENABLE_CONNECT_PROTOCOL] == 1)
+    {
+      SOCKET_LOG_ERROR_MSG (
+          "SETTINGS_ENABLE_CONNECT_PROTOCOL reverted from 1 to 0");
+      http2_send_connection_error (conn, HTTP2_PROTOCOL_ERROR);
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
  * validate_and_apply_setting - Validate and apply a single setting
  * @conn: Connection
  * @id: Setting identifier
  * @value: Setting value
  *
+ * Validates the setting per RFC 9113 rules and applies it to the connection.
+ * Unknown settings are silently ignored per RFC 9113 Section 6.5.2.
+ *
  * Returns: 0 on success, -1 on error (sends connection error)
+ * Thread-safe: No - modifies connection state
  */
 static int
 validate_and_apply_setting (SocketHTTP2_Conn_T conn, uint16_t id,
                             uint32_t value)
 {
+  /* Validate setting based on type */
   switch (id)
     {
     case HTTP2_SETTINGS_ENABLE_PUSH:
-      if (value > 1)
-        {
-          http2_send_connection_error (conn, HTTP2_PROTOCOL_ERROR);
-          return -1;
-        }
+      if (validate_enable_push (conn, value) < 0)
+        return -1;
       break;
 
     case HTTP2_SETTINGS_INITIAL_WINDOW_SIZE:
-      if (value > SOCKETHTTP2_MAX_WINDOW_SIZE)
-        {
-          http2_send_connection_error (conn, HTTP2_FLOW_CONTROL_ERROR);
-          return -1;
-        }
-      /* Adjust existing stream windows */
-      {
-        int32_t delta
-            = (int32_t)value
-              - (int32_t)conn->peer_settings[SETTINGS_IDX_INITIAL_WINDOW_SIZE];
-        for (size_t j = 0; j < HTTP2_STREAM_HASH_SIZE; j++)
-          {
-            SocketHTTP2_Stream_T s = conn->streams[j];
-            while (s)
-              {
-                if (http2_flow_adjust_window (&s->send_window, delta) < 0)
-                  {
-                    http2_send_connection_error (conn,
-                                                 HTTP2_FLOW_CONTROL_ERROR);
-                    return -1;
-                  }
-                s = s->hash_next;
-              }
-          }
-        conn->initial_send_window = (int32_t)value;
-      }
+      if (validate_initial_window_size (conn, value) < 0)
+        return -1;
       break;
 
     case HTTP2_SETTINGS_MAX_FRAME_SIZE:
-      if (value < SOCKETHTTP2_DEFAULT_MAX_FRAME_SIZE
-          || value > SOCKETHTTP2_MAX_MAX_FRAME_SIZE)
-        {
-          http2_send_connection_error (conn, HTTP2_PROTOCOL_ERROR);
-          return -1;
-        }
-      break;
-
-    case HTTP2_SETTINGS_MAX_CONCURRENT_STREAMS:
-      /* Peer limit for streams we open - validated by stream creation */
-      break;
-
-    case HTTP2_SETTINGS_MAX_HEADER_LIST_SIZE:
-      /* Peer limit for header lists we send - respected by encoder */
+      if (validate_max_frame_size (conn, value) < 0)
+        return -1;
       break;
 
     case HTTP2_SETTINGS_HEADER_TABLE_SIZE:
@@ -1400,56 +1500,22 @@ validate_and_apply_setting (SocketHTTP2_Conn_T conn, uint16_t id,
       break;
 
     case HTTP2_SETTINGS_ENABLE_CONNECT_PROTOCOL:
-      /* RFC 8441: Extended CONNECT - value must be 0 or 1 */
-      if (value > 1)
-        {
-          SOCKET_LOG_ERROR_MSG (
-              "SETTINGS_ENABLE_CONNECT_PROTOCOL invalid value: %u", value);
-          http2_send_connection_error (conn, HTTP2_PROTOCOL_ERROR);
-          return -1;
-        }
-      /* RFC 8441 Section 3: sender MUST NOT send 0 after previously sending 1 */
-      if (value == 0
-          && conn->peer_settings[SETTINGS_IDX_ENABLE_CONNECT_PROTOCOL] == 1)
-        {
-          SOCKET_LOG_ERROR_MSG (
-              "SETTINGS_ENABLE_CONNECT_PROTOCOL reverted from 1 to 0");
-          http2_send_connection_error (conn, HTTP2_PROTOCOL_ERROR);
-          return -1;
-        }
+      if (validate_enable_connect_protocol (conn, value) < 0)
+        return -1;
       break;
-    }
 
-  /* Store setting - map setting ID to array index */
-  size_t array_index = SIZE_MAX;
-  switch (id)
-    {
-    case HTTP2_SETTINGS_HEADER_TABLE_SIZE:
-      array_index = SETTINGS_IDX_HEADER_TABLE_SIZE;
-      break;
-    case HTTP2_SETTINGS_ENABLE_PUSH:
-      array_index = SETTINGS_IDX_ENABLE_PUSH;
-      break;
     case HTTP2_SETTINGS_MAX_CONCURRENT_STREAMS:
-      array_index = SETTINGS_IDX_MAX_CONCURRENT_STREAMS;
-      break;
-    case HTTP2_SETTINGS_INITIAL_WINDOW_SIZE:
-      array_index = SETTINGS_IDX_INITIAL_WINDOW_SIZE;
-      break;
-    case HTTP2_SETTINGS_MAX_FRAME_SIZE:
-      array_index = SETTINGS_IDX_MAX_FRAME_SIZE;
-      break;
     case HTTP2_SETTINGS_MAX_HEADER_LIST_SIZE:
-      array_index = SETTINGS_IDX_MAX_HEADER_LIST_SIZE;
+      /* These are limits on what we can send - no validation needed */
       break;
-    case HTTP2_SETTINGS_ENABLE_CONNECT_PROTOCOL:
-      array_index = SETTINGS_IDX_ENABLE_CONNECT_PROTOCOL;
-      break;
+
     default:
-      /* Unknown settings are ignored per RFC 9113 Section 6.5.2 */
+      /* Unknown settings ignored per RFC 9113 Section 6.5.2 */
       break;
     }
 
+  /* Store setting using efficient ID-to-index mapping */
+  size_t array_index = setting_id_to_index (id);
   if (array_index != SIZE_MAX)
     conn->peer_settings[array_index] = value;
 
@@ -1610,6 +1676,7 @@ http2_process_goaway (SocketHTTP2_Conn_T conn,
                       const SocketHTTP2_FrameHeader *header,
                       const unsigned char *payload)
 {
+  /* header already validated by caller - length and stream_id checked */
   (void)header;
 
   /* Parse last stream ID and error code */
