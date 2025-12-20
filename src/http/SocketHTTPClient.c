@@ -1429,6 +1429,9 @@ should_follow_redirect (SocketHTTPClient_T client,
  * @redirect_count: Current redirect count
  *
  * Returns: 0 if handled (response updated), 1 if not handled, -1 on error
+ *
+ * Properly handles both absolute and relative redirect URLs per RFC 7231.
+ * Relative URLs are resolved against the original request's base URI.
  */
 static int
 handle_redirect (SocketHTTPClient_T client, SocketHTTPClient_Request_T req,
@@ -1436,7 +1439,13 @@ handle_redirect (SocketHTTPClient_T client, SocketHTTPClient_Request_T req,
 {
   const char *location;
   SocketHTTP_URIResult uri_result;
+  SocketHTTP_URI new_uri;
   int status_code;
+
+  /* Save original URI components for relative URL resolution */
+  const char *orig_scheme = req->uri.scheme;
+  const char *orig_host = req->uri.host;
+  int orig_port = req->uri.port;
 
   if (!should_follow_redirect (client, req, response->status_code))
     return 1; /* Not following */
@@ -1450,14 +1459,26 @@ handle_redirect (SocketHTTPClient_T client, SocketHTTPClient_Request_T req,
   /* Free current response */
   SocketHTTPClient_Response_free (response);
 
-  /* Parse new location */
-  uri_result = SocketHTTP_URI_parse (location, 0, &req->uri, req->arena);
+  /* Parse new location into temporary struct first */
+  memset (&new_uri, 0, sizeof (new_uri));
+  uri_result = SocketHTTP_URI_parse (location, 0, &new_uri, req->arena);
   if (uri_result != URI_PARSE_OK)
     {
       client->last_error = HTTPCLIENT_ERROR_PROTOCOL;
       HTTPCLIENT_ERROR_MSG ("Invalid redirect location: %s", location);
       return -1;
     }
+
+  /* Resolve relative URLs: if no host, inherit from original request */
+  if (new_uri.host == NULL)
+    {
+      new_uri.scheme = orig_scheme;
+      new_uri.host = orig_host;
+      new_uri.port = orig_port;
+    }
+
+  /* Update request URI */
+  req->uri = new_uri;
 
   /* 303 changes method to GET */
   if (status_code == 303)

@@ -9,7 +9,7 @@
 # (socket_static, OpenSSL, pthread, etc.)
 
 # =============================================================================
-# curl_clone - Minimal curl-like HTTP client
+# tetsuo_curl - Minimal curl-like HTTP client
 # =============================================================================
 # Demonstrates:
 #   - HTTP GET/POST/PUT/DELETE
@@ -18,8 +18,8 @@
 #   - File output
 #   - Basic auth (structure, not fully wired yet)
 
-add_executable(simple_curl_clone curl_clone.c)
-target_link_libraries(simple_curl_clone ${EXAMPLE_LIBS})
+add_executable(tetsuo_curl tetsuo_curl.c)
+target_link_libraries(tetsuo_curl ${EXAMPLE_LIBS})
 
 # =============================================================================
 # Future examples (uncomment as implemented):
