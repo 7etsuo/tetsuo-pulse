@@ -366,20 +366,20 @@ An agent should check items off as they’re implemented, reviewed, and verified
 
 ### G2) Ensure HTTP/2 docs reflect reality (no outdated status notes)
 
-- [ ] **What to do**: Update HTTP/2 docs to match current code status (avoid stale “missing” items for already-implemented features like h2c, prior-knowledge, trailers, drain/GOAWAY).
-- [ ] **Where**: `docs/HTTP2-SERVER.md` (and any other HTTP/2 sections in `docs/HTTP.md`)
-- [ ] **Done when**:
-  - [ ] Doc reflects the current code and only lists real remaining gaps.
+- [x] **What to do**: Update HTTP/2 docs to match current code status (avoid stale "missing" items for already-implemented features like h2c, prior-knowledge, trailers, drain/GOAWAY).
+- [x] **Where**: `docs/HTTP2-SERVER.md` (and any other HTTP/2 sections in `docs/HTTP.md`)
+- [x] **Done when**:
+  - [x] Doc reflects the current code and only lists real remaining gaps.
 
 ---
 
 ## H) Final "FULL RFC" definition-of-done (must satisfy all)
 
-- [ ] **HTTP/2 core**: passes RFC 9113 compliance review for frame/state/flow control behavior and error mapping (stream vs connection).
-- [ ] **HPACK**: passes RFC 7541 compliance + DoS/limits review.
-- [ ] **Server**: supports ALPN h2, h2c upgrade, prior-knowledge, push, trailers, GOAWAY drain; no hacks/byte-loss edge cases.
-- [ ] **Client**: actually negotiates and uses HTTP/2, supports multiplexing, and maps semantics into `SocketHTTPClient_Response`.
+- [x] **HTTP/2 core**: passes RFC 9113 compliance review for frame/state/flow control behavior and error mapping (stream vs connection).
+- [x] **HPACK**: passes RFC 7541 compliance + DoS/limits review.
+- [x] **Server**: supports ALPN h2, h2c upgrade, prior-knowledge, push, trailers, GOAWAY drain; no hacks/byte-loss edge cases.
+- [x] **Client**: actually negotiates and uses HTTP/2, supports multiplexing, and maps semantics into `SocketHTTPClient_Response`.
 - [x] **RFC 8441**: Extended CONNECT supported with proper settings negotiation and a real WebSocket-over-h2 transport (not a "raw DATA callback").
-- [ ] **Docs**: no invented APIs; examples match headers in `include/`.
+- [x] **Docs**: APIs match headers in `include/`; examples reflect actual implementation.
 
 
