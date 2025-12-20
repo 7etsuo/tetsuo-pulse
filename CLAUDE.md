@@ -25,6 +25,9 @@ CC=clang cmake -S . -B build -DENABLE_FUZZING=ON
 # Run single test
 cd build && ./test_socket
 
+# Run fuzzers (after ENABLE_FUZZING build)
+cd build && ./fuzz_socketbuf corpus/socketbuf/ -fork=16 -max_len=4096
+
 # Generate documentation
 cd build && make doc
 ```
@@ -35,13 +38,17 @@ cd build && make doc
 |--------|-------------|
 | `ENABLE_TLS` | Enable TLS/SSL support (default: ON) |
 | `ENABLE_SANITIZERS` | Enable ASan + UBSan |
+| `ENABLE_TSAN` | Enable ThreadSanitizer (incompatible with ASan) |
 | `ENABLE_COVERAGE` | Enable gcov code coverage |
 | `ENABLE_FUZZING` | Enable libFuzzer harnesses (requires Clang) |
+| `ENABLE_HTTP_COMPRESSION` | Enable gzip/deflate/brotli for HTTP |
 | `BUILD_EXAMPLES` | Build example programs |
 
 ## Architecture Overview
 
-This is a high-performance C socket library for POSIX systems with exception-based error handling.
+This is a high-performance C socket library for POSIX systems with two API styles:
+1. **Exception-based API** - Uses `TRY/EXCEPT/FINALLY` blocks for clean error propagation
+2. **Simple API** - Return-code based convenience layer (no exceptions needed)
 
 ### Module Organization
 
@@ -54,6 +61,7 @@ include/
 ├── pool/       # Connection pooling with rate limiting
 ├── tls/        # TLS/DTLS support (OpenSSL/LibreSSL)
 ├── http/       # HTTP/1.1, HTTP/2, HPACK, client/server APIs
+├── simple/     # Return-code based convenience API (no TRY/EXCEPT)
 └── test/       # Test framework
 
 src/
@@ -64,21 +72,33 @@ src/
 ├── pool/       # Connection pool, drain state machine
 ├── tls/        # TLS context, kTLS, DTLS, certificate pinning
 ├── http/       # HTTP parsing, HPACK codec, HTTP/2 framing
+├── simple/     # Simple API implementation wrapping core modules
 ├── test/       # Test files (test_*.c)
 └── fuzz/       # Fuzzing harnesses (fuzz_*.c)
 ```
 
 ### Key Design Patterns
 
-**Exception-Based Error Handling**
+**Exception-Based Error Handling** - Variables modified in TRY blocks must be `volatile`:
 ```c
+volatile int result = 0;
 TRY {
     Socket_connect(socket, host, port);
+    result = 1;
 } EXCEPT(Socket_Failed) {
     fprintf(stderr, "Error: %s\n", Socket_GetLastError());
 } FINALLY {
-    // Cleanup (always executed)
+    // Cleanup (always executed, even on RERAISE)
 } END_TRY;
+```
+
+**Simple API Alternative** - Return codes instead of exceptions:
+```c
+SocketSimple_Socket_T sock = Socket_simple_connect("example.com", 80);
+if (!sock) {
+    fprintf(stderr, "Error: %s\n", Socket_simple_error());
+    return -1;
+}
 ```
 
 **Arena Memory Management** - Related objects share an arena for lifecycle management:
@@ -152,6 +172,16 @@ Key test files map to modules:
 ## Thread Safety
 
 - Socket operations are thread-safe per socket (one thread per socket recommended)
-- Error reporting uses thread-local storage
+- Error reporting uses thread-local storage (`__thread` / `__declspec(thread)`)
 - Shared structures (SocketPoll, SocketPool) are mutex-protected
 - DNS callbacks are invoked from worker threads, not main thread
+- Exception stack (`Except_stack`) is thread-local - each thread has independent TRY context
+
+## Exception Safety
+
+When writing code with `TRY/EXCEPT/FINALLY`:
+- Use `volatile` for variables modified inside TRY that are read after exception
+- Use `RETURN` macro (not bare `return`) to properly unwind exception stack
+- `FINALLY` always executes, even after `RERAISE`
+- Avoid raising exceptions inside `FINALLY` blocks
+- Use `RERAISE` to propagate caught exceptions to outer handlers
