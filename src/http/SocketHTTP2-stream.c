@@ -852,35 +852,103 @@ http2_encode_and_alloc_block (SocketHTTP2_Conn_T conn,
   return len;
 }
 
+/* ============================================================================
+ * Header Validation Helpers
+ * ============================================================================
+ */
+
+/**
+ * http2_field_has_prohibited_chars - Check for NUL/CR/LF in field data
+ * @data: Data to check
+ * @len: Length of data
+ *
+ * Prohibited characters per RFC 9113 Section 8.2.1.
+ *
+ * Returns: 1 if prohibited chars found, 0 if clean
+ * Thread-safe: Yes
+ */
+static inline int
+http2_field_has_prohibited_chars (const char *data, size_t len)
+{
+  for (size_t i = 0; i < len; i++)
+    {
+      if (data[i] == '\0' || data[i] == '\r' || data[i] == '\n')
+        return 1;
+    }
+  return 0;
+}
+
+/**
+ * http2_field_has_uppercase - Check for uppercase ASCII in field name
+ * @name: Field name to check
+ * @len: Length of name
+ *
+ * HTTP/2 requires lowercase field names per RFC 9113 Section 8.2.1.
+ *
+ * Returns: 1 if uppercase found, 0 if all lowercase
+ * Thread-safe: Yes
+ */
+static inline int
+http2_field_has_uppercase (const char *name, size_t len)
+{
+  for (size_t i = 0; i < len; i++)
+    {
+      if (name[i] >= 'A' && name[i] <= 'Z')
+        return 1;
+    }
+  return 0;
+}
+
+/**
+ * http2_field_has_boundary_whitespace - Check for leading/trailing whitespace
+ * @value: Field value to check
+ * @len: Length of value
+ *
+ * Returns: 1 if boundary whitespace found, 0 otherwise
+ * Thread-safe: Yes
+ */
+static inline int
+http2_field_has_boundary_whitespace (const char *value, size_t len)
+{
+  if (len == 0)
+    return 0;
+  return (value[0] == ' ' || value[0] == '\t' || value[len - 1] == ' '
+          || value[len - 1] == '\t');
+}
+
 /**
  * http2_is_connection_header_forbidden - Check if header is forbidden in HTTP/2
  * @header: Header to check
  *
+ * Connection-specific headers forbidden per RFC 9113 Section 8.2.2.
+ *
  * Returns: 1 if header is forbidden, 0 if allowed
+ * Thread-safe: Yes
  */
 static int
 http2_is_connection_header_forbidden (const SocketHPACK_Header *header)
 {
-  /* Connection-specific headers forbidden in HTTP/2 per RFC 9113 Section 8.2.2 */
-  static const char *forbidden[] = {
-    "connection",
-    "keep-alive",
-    "proxy-authenticate",
-    "proxy-authorization",
-    "te",
-    "trailers",
-    "transfer-encoding",
-    "upgrade"
-  };
+  static const struct
+  {
+    const char *name;
+    size_t len;
+  } forbidden[] = { { "connection", 10 },
+                    { "keep-alive", 10 },
+                    { "proxy-authenticate", 18 },
+                    { "proxy-authorization", 19 },
+                    { "te", 2 },
+                    { "trailers", 8 },
+                    { "transfer-encoding", 17 },
+                    { "upgrade", 7 } };
 
-  for (size_t i = 0; i < sizeof(forbidden) / sizeof(forbidden[0]); i++)
+  for (size_t i = 0; i < sizeof (forbidden) / sizeof (forbidden[0]); i++)
     {
-      size_t len = strlen (forbidden[i]);
-      if (header->name_len == len &&
-          strncasecmp (header->name, forbidden[i], len) == 0)
+      if (header->name_len == forbidden[i].len
+          && strncasecmp (header->name, forbidden[i].name, forbidden[i].len)
+                 == 0)
         {
-          /* Special case: TE is allowed only with "trailers" value (checked elsewhere) */
-          if (len == 2 && memcmp (header->name, "te", 2) == 0)
+          /* TE is allowed only with "trailers" value (checked separately) */
+          if (forbidden[i].len == 2)
             continue;
           return 1;
         }
@@ -1083,56 +1151,44 @@ static int http2_validate_headers (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T
 
           /* Malformed message validation per RFC 9113 Section 8.2.1 */
 
-          /* Field names MUST be lowercase when constructing HTTP/2 messages */
-          for (size_t j = 0; j < h->name_len; j++)
+          /* Field names MUST be lowercase */
+          if (http2_field_has_uppercase (h->name, h->name_len))
             {
-              if (h->name[j] >= 'A' && h->name[j] <= 'Z')
-                {
-                  SOCKET_LOG_ERROR_MSG ("Uppercase character in field name: %.*s",
-                                       (int)h->name_len, h->name);
-                  goto protocol_error;
-                }
+              SOCKET_LOG_ERROR_MSG ("Uppercase character in field name: %.*s",
+                                    (int)h->name_len, h->name);
+              goto protocol_error;
             }
 
           /* Reject prohibited characters in field names (NUL/CR/LF) */
-          for (size_t j = 0; j < h->name_len; j++)
+          if (http2_field_has_prohibited_chars (h->name, h->name_len))
             {
-              if (h->name[j] == '\0' || h->name[j] == '\r' || h->name[j] == '\n')
-                {
-                  SOCKET_LOG_ERROR_MSG ("Prohibited character in field name: %.*s",
-                                       (int)h->name_len, h->name);
-                  goto protocol_error;
-                }
+              SOCKET_LOG_ERROR_MSG ("Prohibited character in field name: %.*s",
+                                    (int)h->name_len, h->name);
+              goto protocol_error;
             }
 
           /* Reject prohibited characters in field values (NUL/CR/LF) */
-          for (size_t j = 0; j < h->value_len; j++)
+          if (http2_field_has_prohibited_chars (h->value, h->value_len))
             {
-              if (h->value[j] == '\0' || h->value[j] == '\r' || h->value[j] == '\n')
-                {
-                  SOCKET_LOG_ERROR_MSG ("Prohibited character in field value: %.*s",
-                                       (int)h->name_len, h->name);
-                  goto protocol_error;
-                }
+              SOCKET_LOG_ERROR_MSG ("Prohibited character in field value: %.*s",
+                                    (int)h->name_len, h->name);
+              goto protocol_error;
             }
 
           /* Reject leading/trailing whitespace in field values */
-          if (h->value_len > 0)
+          if (http2_field_has_boundary_whitespace (h->value, h->value_len))
             {
-              if (h->value[0] == ' ' || h->value[0] == '\t' ||
-                  h->value[h->value_len - 1] == ' ' || h->value[h->value_len - 1] == '\t')
-                {
-                  SOCKET_LOG_ERROR_MSG ("Leading/trailing whitespace in field value: %.*s",
-                                       (int)h->name_len, h->name);
-                  goto protocol_error;
-                }
+              SOCKET_LOG_ERROR_MSG (
+                  "Leading/trailing whitespace in field value: %.*s",
+                  (int)h->name_len, h->name);
+              goto protocol_error;
             }
 
           /* Check for forbidden connection-specific headers */
           if (http2_is_connection_header_forbidden (h))
             {
               SOCKET_LOG_ERROR_MSG ("Forbidden connection-specific header: %.*s",
-                                   (int)h->name_len, h->name);
+                                    (int)h->name_len, h->name);
               goto protocol_error;
             }
 
@@ -1146,12 +1202,20 @@ static int http2_validate_headers (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T
                 }
               has_te = 1;
 
-              /* TE must be "trailers" or empty (which is equivalent to "trailers") */
-              if (h->value_len > 0 &&
-                  !(h->value_len == 8 && memcmp (h->value, "trailers", 8) == 0))
+              /* TE must be "trailers" or empty */
+              if (h->value_len > 0 && h->value_len != 8)
                 {
-                  SOCKET_LOG_ERROR_MSG ("TE header value must be 'trailers', got: %.*s",
-                                       (int)h->value_len, h->value);
+                  SOCKET_LOG_ERROR_MSG (
+                      "TE header value must be 'trailers', got: %.*s",
+                      (int)h->value_len, h->value);
+                  goto protocol_error;
+                }
+              if (h->value_len == 8
+                  && memcmp (h->value, "trailers", 8) != 0)
+                {
+                  SOCKET_LOG_ERROR_MSG (
+                      "TE header value must be 'trailers', got: %.*s",
+                      (int)h->value_len, h->value);
                   goto protocol_error;
                 }
             }
@@ -1389,6 +1453,7 @@ http2_recombine_cookie_headers (Arena_T arena, SocketHPACK_Header *headers, size
   return 0;
 }
 
+int
 http2_decode_headers (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
                       const unsigned char *block, size_t len)
 {

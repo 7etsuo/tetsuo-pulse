@@ -283,6 +283,42 @@ extern const char *Socket_safe_strerror (int errnum);
 #endif
 
 /**
+ * @brief Initial capacity for SocketBuf when doubling from zero.
+ *
+ * Used by SocketBuf_reserve() when calculating new capacity.
+ *
+ * @ingroup core_io
+ * @see SocketBuf_reserve() for buffer resizing.
+ */
+#ifndef SOCKETBUF_INITIAL_CAPACITY
+#define SOCKETBUF_INITIAL_CAPACITY 4096
+#endif
+
+/**
+ * @brief Allocation overhead for SocketBuf capacity calculations.
+ *
+ * Safety margin to account for arena alignment and metadata.
+ *
+ * @ingroup core_io
+ * @see SocketBuf_reserve() for usage.
+ */
+#ifndef SOCKETBUF_ALLOC_OVERHEAD
+#define SOCKETBUF_ALLOC_OVERHEAD 64
+#endif
+
+/**
+ * @brief Maximum capacity for readline temporary buffer.
+ *
+ * Limits stack allocation in SocketBuf_readline() for safety.
+ *
+ * @ingroup core_io
+ * @see SocketBuf_readline() for usage.
+ */
+#ifndef SOCKETBUF_MAX_LINE_LENGTH
+#define SOCKETBUF_MAX_LINE_LENGTH 8192
+#endif
+
+/**
  * @brief Maximum UDP payload size excluding headers.
  *
  * Respects IPv4/IPv6 protocol maximums to avoid fragmentation.
@@ -1103,6 +1139,92 @@ extern const char *Socket_safe_strerror (int errnum);
  */
 #ifndef SOCKET_BITS_PER_BYTE
 #define SOCKET_BITS_PER_BYTE 8
+#endif
+
+/**
+ * @brief Maximum allowed window duration for SYN protection.
+ *
+ * Caps config.window_duration_ms to prevent excessive memory usage.
+ * Security limit: 60 seconds maximum.
+ *
+ * @ingroup security
+ * @see SocketSYNProtect_Config for configuration.
+ */
+#ifndef SOCKET_SYN_MAX_WINDOW_MS
+#define SOCKET_SYN_MAX_WINDOW_MS 60000
+#endif
+
+/**
+ * @brief Maximum allowed attempts per window for SYN protection.
+ *
+ * Caps config.max_attempts_per_window to prevent abuse.
+ *
+ * @ingroup security
+ * @see SocketSYNProtect_Config for configuration.
+ */
+#ifndef SOCKET_SYN_MAX_ATTEMPTS_CAP
+#define SOCKET_SYN_MAX_ATTEMPTS_CAP 1000
+#endif
+
+/**
+ * @brief Maximum allowed global connections per second.
+ *
+ * Caps config.max_global_per_second to prevent resource exhaustion.
+ *
+ * @ingroup security
+ * @see SocketSYNProtect_Config for configuration.
+ */
+#ifndef SOCKET_SYN_MAX_GLOBAL_PER_SEC_CAP
+#define SOCKET_SYN_MAX_GLOBAL_PER_SEC_CAP 10000
+#endif
+
+/**
+ * @brief Score adjustment factor for challenge threshold.
+ *
+ * Used when score_challenge > score_throttle to auto-correct.
+ *
+ * @ingroup security
+ * @see SocketSYNProtect_Config for configuration.
+ */
+#ifndef SOCKET_SYN_CHALLENGE_ADJUST_FACTOR
+#define SOCKET_SYN_CHALLENGE_ADJUST_FACTOR 0.8f
+#endif
+
+/**
+ * @brief Score adjustment factor for block threshold.
+ *
+ * Used when score_block > score_challenge to auto-correct.
+ *
+ * @ingroup security
+ * @see SocketSYNProtect_Config for configuration.
+ */
+#ifndef SOCKET_SYN_BLOCK_ADJUST_FACTOR
+#define SOCKET_SYN_BLOCK_ADJUST_FACTOR 0.5f
+#endif
+
+/**
+ * @brief Maximum tracked IPs cap for SYN protection.
+ *
+ * Prevents OOM from excessive tracked IP allocations.
+ * Security limit: 1 million IPs maximum.
+ *
+ * @ingroup security
+ * @see SocketSYNProtect_Config for configuration.
+ */
+#ifndef SOCKET_SYN_MAX_TRACKED_IPS_CAP
+#define SOCKET_SYN_MAX_TRACKED_IPS_CAP 1000000
+#endif
+
+/**
+ * @brief Maximum whitelist/blacklist entries cap.
+ *
+ * Prevents OOM from excessive list allocations.
+ *
+ * @ingroup security
+ * @see SocketSYNProtect_Config for configuration.
+ */
+#ifndef SOCKET_SYN_MAX_LIST_CAP
+#define SOCKET_SYN_MAX_LIST_CAP 10000
 #endif
 
 /* ============================================================================

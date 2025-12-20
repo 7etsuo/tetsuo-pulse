@@ -181,6 +181,15 @@ SocketBuf_new (Arena_T arena, size_t capacity)
   return buf;
 }
 
+/**
+ * SocketBuf_release - Release buffer handle (invalidate pointer)
+ * @bufp: Pointer to buffer pointer (set to NULL)
+ *
+ * Nullifies the buffer pointer to prevent use-after-free. Does not
+ * free memory (arena-managed). Idempotent if *bufp is already NULL.
+ *
+ * Thread-safe: Yes (no shared state modified)
+ */
 void
 SocketBuf_release (T *bufp)
 {
@@ -644,6 +653,52 @@ SocketBuf_written (T buf, size_t len)
 
 /* ==================== Buffer Management Operations ==================== */
 
+/**
+ * compact_rotate_in_place - Rotate buffer data in place using reversal
+ * @data: Buffer data pointer
+ * @capacity: Buffer capacity
+ * @head: Current head position
+ * @size: Current data size
+ *
+ * Uses the "three reversals" algorithm to rotate data in place:
+ * 1. Reverse [head, capacity)
+ * 2. Reverse [0, head)
+ * 3. Reverse [0, size)
+ *
+ * This is O(n) and requires no additional memory.
+ */
+static void
+compact_rotate_in_place (char *data, size_t capacity, size_t head, size_t size)
+{
+  /* Helper macro to swap bytes */
+#define SWAP_BYTES(a, b)                                                      \
+  do                                                                          \
+    {                                                                         \
+      char tmp = (a);                                                         \
+      (a) = (b);                                                              \
+      (b) = tmp;                                                              \
+    }                                                                         \
+  while (0)
+
+  /* Reverse function for a range [start, end) */
+  size_t first_part = capacity - head;
+  size_t second_part = size - first_part;
+
+  /* Reverse [head, capacity) */
+  for (size_t i = 0; i < first_part / 2; i++)
+    SWAP_BYTES (data[head + i], data[capacity - 1 - i]);
+
+  /* Reverse [0, second_part) */
+  for (size_t i = 0; i < second_part / 2; i++)
+    SWAP_BYTES (data[i], data[second_part - 1 - i]);
+
+  /* Reverse [0, size) */
+  for (size_t i = 0; i < size / 2; i++)
+    SWAP_BYTES (data[i], data[size - 1 - i]);
+
+#undef SWAP_BYTES
+}
+
 void
 SocketBuf_compact (T buf)
 {
@@ -664,7 +719,6 @@ SocketBuf_compact (T buf)
   else
     {
       /* Data wraps around - need temporary or two-part move */
-      /* Use a simple approach: copy wrapped part first */
       size_t second_part = buf->size - first_part;
 
       /* If there's room at the end, shift first part up temporarily */
@@ -687,12 +741,9 @@ SocketBuf_compact (T buf)
             }
           else
             {
-              /* Fall back to byte-by-byte rotation if no memory */
-              for (size_t i = 0; i < buf->size; i++)
-                {
-                  buf->data[i]
-                      = buf->data[(buf->head + i) % buf->capacity];
-                }
+              /* Fall back to in-place rotation using reversal algorithm */
+              compact_rotate_in_place (buf->data, buf->capacity, buf->head,
+                                       buf->size);
             }
         }
     }
@@ -780,6 +831,36 @@ SocketBuf_find (T buf, const void *needle, size_t needle_len)
   return -1;
 }
 
+/**
+ * readline_copy_and_strip - Copy line data and strip CR/LF endings
+ * @src: Source buffer containing line data
+ * @src_len: Length of source data
+ * @dst: Destination buffer
+ * @newline_pos: Position of newline in source, or -1 if not found
+ *
+ * Returns: Number of bytes written to dst (excluding null terminator)
+ */
+static size_t
+readline_copy_and_strip (const char *src, size_t src_len, char *dst,
+                         ssize_t newline_pos)
+{
+  size_t line_bytes;
+
+  if (newline_pos >= 0)
+    line_bytes = (size_t)newline_pos;
+  else
+    line_bytes = src_len;
+
+  /* Strip trailing \r if present (handle \r\n line endings) */
+  if (line_bytes > 0 && src[line_bytes - 1] == '\r')
+    line_bytes--;
+
+  memcpy (dst, src, line_bytes);
+  dst[line_bytes] = '\0';
+
+  return line_bytes;
+}
+
 ssize_t
 SocketBuf_readline (T buf, char *line, size_t max_len)
 {
@@ -809,33 +890,22 @@ SocketBuf_readline (T buf, char *line, size_t max_len)
 
   /* Read the line data and newline together */
   size_t total_to_read = line_len + 1; /* Include newline */
-  if (total_to_read > max_len) {
+  if (total_to_read > max_len)
     total_to_read = max_len;
-  }
 
-  char temp[max_len + 1];
-  size_t bytes_read = SocketBuf_read(buf, temp, total_to_read);
+  /* Use fixed-size buffer to avoid VLA security issues */
+  char temp[SOCKETBUF_MAX_LINE_LENGTH + 1];
+  if (total_to_read > SOCKETBUF_MAX_LINE_LENGTH)
+    total_to_read = SOCKETBUF_MAX_LINE_LENGTH;
+
+  size_t bytes_read = SocketBuf_read (buf, temp, total_to_read);
 
   /* Find newline in what we read */
-  char *nl_pos2 = memchr(temp, '\n', bytes_read);
-  size_t line_bytes = 0;
+  char *nl_ptr = memchr (temp, '\n', bytes_read);
+  ssize_t newline_offset = nl_ptr ? (nl_ptr - temp) : -1;
 
-  if (nl_pos2) {
-    line_bytes = nl_pos2 - temp;
-    /* Strip trailing \r if present (handle \r\n line endings) */
-    if (line_bytes > 0 && temp[line_bytes - 1] == '\r')
-      line_bytes--;
-    memcpy(line, temp, line_bytes);
-    line[line_bytes] = '\0';
-  } else {
-    /* No newline found, return what we have */
-    line_bytes = bytes_read;
-    /* Strip trailing \r if present */
-    if (line_bytes > 0 && temp[line_bytes - 1] == '\r')
-      line_bytes--;
-    memcpy(line, temp, line_bytes);
-    line[line_bytes] = '\0';
-  }
+  size_t line_bytes
+      = readline_copy_and_strip (temp, bytes_read, line, newline_offset);
 
   return (ssize_t)line_bytes;
 }
