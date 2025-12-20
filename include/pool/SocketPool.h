@@ -172,6 +172,33 @@ typedef void (*SocketPool_ResizeCallback) (T pool, size_t old_size,
                                            size_t new_size, void *data);
 
 /**
+ * @brief Callback invoked BEFORE pool resize for pointer invalidation.
+ * @ingroup connection_mgmt
+ * @param pool Pool instance about to be resized.
+ * @param old_size Current maximum connection capacity.
+ * @param new_size New maximum connection capacity.
+ * @param[in] data User data from SocketPool_set_pre_resize_callback().
+ *
+ * CRITICAL: After this callback returns, all Connection_T pointers
+ * obtained from this pool become INVALID due to internal array reallocation.
+ * Callers MUST:
+ * 1. Clear all cached Connection_T pointers
+ * 2. Re-acquire them via SocketPool_get() after resize completes
+ *
+ * THREAD SAFETY REQUIREMENTS:
+ * - Called with pool mutex HELD - keep operations quick (&lt;1ms)
+ * - MUST NOT call SocketPool_add/remove/get (will deadlock)
+ * - MAY safely clear external pointer caches
+ * - MAY safely update external state
+ *
+ * @see SocketPool_set_pre_resize_callback() for registration.
+ * @see SocketPool_resize() for resize operations.
+ * @see SocketPool_ResizeCallback for post-resize notification.
+ */
+typedef void (*SocketPool_PreResizeCallback) (T pool, size_t old_size,
+                                              size_t new_size, void *data);
+
+/**
  * @brief Callback invoked when a connection becomes idle.
  * @ingroup connection_mgmt
  * @param conn Connection that became idle.
@@ -585,6 +612,28 @@ extern size_t SocketPool_count (T pool);
  * @see SocketPool_set_resize_callback() for notifications.
  */
 extern void SocketPool_resize (T pool, size_t new_maxconns);
+
+/**
+ * @brief Register callback for pre-resize notification.
+ * @ingroup connection_mgmt
+ * @param[in] pool Pool instance.
+ * @param cb Callback function (NULL to disable).
+ * @param[in] data User data passed to callback.
+ * @threadsafe Yes.
+ *
+ * Registers a callback invoked BEFORE pool resize operations. This allows
+ * external code to clear cached Connection_T pointers before they become
+ * invalid due to internal array reallocation.
+ *
+ * @warning After callback returns, ALL Connection_T pointers from this pool
+ * are invalid. Re-acquire them via SocketPool_get() after resize completes.
+ *
+ * @see SocketPool_PreResizeCallback for callback requirements.
+ * @see SocketPool_resize() for resize operations.
+ */
+extern void SocketPool_set_pre_resize_callback (T pool,
+                                                 SocketPool_PreResizeCallback cb,
+                                                 void *data);
 
 /**
  * @brief Pre-allocate buffers for percentage of free slots.

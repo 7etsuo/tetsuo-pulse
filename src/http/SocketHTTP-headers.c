@@ -45,23 +45,26 @@
  */
 
 /**
- * find_entry - Find header entry by name (case-insensitive)
+ * find_entry_with_prev - Find header entry and track predecessor
  * @headers: Header collection
  * @name: Header name to find
  * @name_len: Length of name
+ * @prev_ptr_out: Output pointer to predecessor's hash_next pointer (for O(1) unlink)
  *
  * Returns: Entry pointer or NULL if not found
+ * On success, *prev_ptr_out points to the hash_next pointer that points to entry
  */
 static HeaderEntry *
-find_entry (SocketHTTP_Headers_T headers, const char *name, size_t name_len)
+find_entry_with_prev (SocketHTTP_Headers_T headers, const char *name,
+                      size_t name_len, HeaderEntry ***prev_ptr_out)
 {
   unsigned bucket = socket_util_hash_djb2_ci_len (name, name_len,
                                                   SOCKETHTTP_HEADER_BUCKETS);
-  HeaderEntry *entry = headers->buckets[bucket];
+  HeaderEntry **pp = &headers->buckets[bucket];
 
   /* SECURITY: Limit traversal to prevent hash collision DoS */
   int chain_len = 0;
-  while (entry)
+  while (*pp)
     {
       chain_len++;
       if (chain_len > SOCKETHTTP_MAX_CHAIN_SEARCH_LEN)
@@ -72,25 +75,43 @@ find_entry (SocketHTTP_Headers_T headers, const char *name, size_t name_len)
               chain_len, bucket);
           return NULL;
         }
-      if (sockethttp_name_equal (entry->name, entry->name_len, name, name_len))
-        return entry;
-      entry = entry->hash_next;
+      if (sockethttp_name_equal ((*pp)->name, (*pp)->name_len, name, name_len))
+        {
+          if (prev_ptr_out)
+            *prev_ptr_out = pp;
+          return *pp;
+        }
+      pp = &(*pp)->hash_next;
     }
   return NULL;
 }
 
 /**
+ * find_entry - Find header entry by name (case-insensitive)
+ * @headers: Header collection
+ * @name: Header name to find
+ * @name_len: Length of name
+ *
+ * Returns: Entry pointer or NULL if not found
+ */
+static HeaderEntry *
+find_entry (SocketHTTP_Headers_T headers, const char *name, size_t name_len)
+{
+  return find_entry_with_prev (headers, name, name_len, NULL);
+}
+
+/**
  * add_to_bucket - Add entry to hash bucket
  * @headers: Header collection
- * @entry: Entry to add
+ * @entry: Entry to add (must have entry->hash pre-computed)
  *
  * Returns: 0 on success, -1 if bucket chain too long (DoS protection)
  */
 static int
 add_to_bucket (SocketHTTP_Headers_T headers, HeaderEntry *entry)
 {
-  unsigned bucket = socket_util_hash_djb2_ci_len (entry->name, entry->name_len,
-                                                  SOCKETHTTP_HEADER_BUCKETS);
+  /* Use cached hash from entry (computed during add_n) */
+  unsigned bucket = entry->hash;
 
   /* SECURITY: Check current chain length to prevent hash collision DoS */
   int chain_len = 0;
@@ -108,15 +129,28 @@ add_to_bucket (SocketHTTP_Headers_T headers, HeaderEntry *entry)
 }
 
 /**
- * remove_from_bucket - Remove entry from hash bucket
- * @headers: Header collection
+ * unlink_from_bucket_fast - O(1) unlink entry using predecessor pointer
  * @entry: Entry to remove
+ * @prev_ptr: Pointer to hash_next that points to entry (from find_entry_with_prev)
+ */
+static void
+unlink_from_bucket_fast (HeaderEntry *entry, HeaderEntry **prev_ptr)
+{
+  *prev_ptr = entry->hash_next;
+}
+
+/**
+ * remove_from_bucket - Remove entry from hash bucket (O(n) traversal)
+ * @headers: Header collection
+ * @entry: Entry to remove (uses cached entry->hash)
+ *
+ * Note: Prefer unlink_from_bucket_fast() when predecessor is known from find.
  */
 static void
 remove_from_bucket (SocketHTTP_Headers_T headers, HeaderEntry *entry)
 {
-  unsigned bucket = socket_util_hash_djb2_ci_len (entry->name, entry->name_len,
-                                                  SOCKETHTTP_HEADER_BUCKETS);
+  /* Use cached hash from entry */
+  unsigned bucket = entry->hash;
   HeaderEntry **pp = &headers->buckets[bucket];
 
   while (*pp)
@@ -176,7 +210,8 @@ remove_from_list (SocketHTTP_Headers_T headers, HeaderEntry *entry)
 static int
 remove_one_n (SocketHTTP_Headers_T headers, const char *name, size_t name_len)
 {
-  HeaderEntry *entry = find_entry (headers, name, name_len);
+  HeaderEntry **prev_ptr = NULL;
+  HeaderEntry *entry = find_entry_with_prev (headers, name, name_len, &prev_ptr);
   if (!entry)
     return 0;
 
@@ -203,7 +238,8 @@ remove_one_n (SocketHTTP_Headers_T headers, const char *name, size_t name_len)
       headers->total_size -= delta;
     }
 
-  remove_from_bucket (headers, entry);
+  /* Use fast O(1) unlink since we tracked predecessor during find */
+  unlink_from_bucket_fast (entry, prev_ptr);
   remove_from_list (headers, entry);
   headers->count--;
 
@@ -406,6 +442,10 @@ SocketHTTP_Headers_add_n (SocketHTTP_Headers_T headers, const char *name,
 
   if (allocate_entry_name (headers->arena, entry, name, name_len) < 0)
     return -1;
+
+  /* Cache hash bucket index to avoid recomputation in bucket operations */
+  entry->hash = socket_util_hash_djb2_ci_len (name, name_len,
+                                              SOCKETHTTP_HEADER_BUCKETS);
 
   if (allocate_entry_value (headers->arena, entry, value, value_len) < 0)
     return -1;

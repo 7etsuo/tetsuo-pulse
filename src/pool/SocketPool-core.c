@@ -484,6 +484,10 @@ construct_pool (Arena_T arena, size_t maxconns, size_t bufsize)
   pool->validation_cb_data = NULL;
   pool->resize_cb = NULL;
   pool->resize_cb_data = NULL;
+  pool->pre_resize_cb = NULL;
+  pool->pre_resize_cb_data = NULL;
+  pool->idle_cb = NULL;
+  pool->idle_cb_data = NULL;
 
   /* From initialize_pool_stats + consolidate monotonic time call with idle_cleanup */
   int64_t now_ms = Socket_get_monotonic_ms ();
@@ -809,6 +813,29 @@ SocketPool_set_reconnect_policy (T pool,
       pool->reconnect_enabled = 0;
     }
 
+  pthread_mutex_unlock (&pool->mutex);
+}
+
+/**
+ * SocketPool_set_pre_resize_callback - Register pre-resize notification
+ * @pool: Pool instance
+ * @cb: Callback function (NULL to disable)
+ * @data: User data passed to callback
+ *
+ * Thread-safe: Yes
+ *
+ * Registers a callback invoked BEFORE pool resize. Allows external code
+ * to clear cached Connection_T pointers before they become invalid.
+ */
+void
+SocketPool_set_pre_resize_callback (T pool, SocketPool_PreResizeCallback cb,
+                                    void *data)
+{
+  assert (pool);
+
+  pthread_mutex_lock (&pool->mutex);
+  pool->pre_resize_cb = cb;
+  pool->pre_resize_cb_data = data;
   pthread_mutex_unlock (&pool->mutex);
 }
 

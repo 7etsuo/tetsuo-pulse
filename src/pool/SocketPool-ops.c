@@ -370,6 +370,8 @@ SocketPool_resize (T pool, size_t new_maxconns)
   size_t valid_count;
   SocketPool_ResizeCallback cb = NULL;
   void *cb_data = NULL;
+  SocketPool_PreResizeCallback pre_cb = NULL;
+  void *pre_cb_data = NULL;
 
   assert (pool);
 
@@ -383,6 +385,22 @@ SocketPool_resize (T pool, size_t new_maxconns)
     {
       pthread_mutex_unlock (&pool->mutex);
       return;
+    }
+
+  /* Capture pre-resize callback info BEFORE any modifications */
+  pre_cb = pool->pre_resize_cb;
+  pre_cb_data = pool->pre_resize_cb_data;
+
+  /* CRITICAL: Invoke pre-resize callback WITH mutex held so external
+   * code can safely clear cached Connection_T pointers before they
+   * become invalid due to realloc. The callback must be quick and
+   * MUST NOT call SocketPool_add/remove/get (will deadlock). */
+  if (pre_cb)
+    {
+      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                       "Pool pre-resize notification: %zu -> %zu connections",
+                       old_maxconns, new_maxconns);
+      pre_cb (pool, old_maxconns, new_maxconns, pre_cb_data);
     }
 
   if (new_maxconns < old_maxconns)

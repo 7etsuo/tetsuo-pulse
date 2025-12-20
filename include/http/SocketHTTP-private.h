@@ -78,6 +78,7 @@ typedef struct HeaderEntry
   size_t name_len;  /**< Length of name excluding null terminator */
   char *value;      /**< Header value (null-terminated, arena-allocated) */
   size_t value_len; /**< Length of value excluding null terminator */
+  unsigned hash;    /**< Cached hash bucket index (avoid recomputation) */
 
   struct HeaderEntry
       *hash_next; /**< Next entry in same hash bucket (collision resolution) */

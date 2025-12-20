@@ -584,6 +584,11 @@ struct T
       resize_cb;        /**< Pool resize notification callback */
   void *resize_cb_data; /**< User data for resize callback */
 
+  /* Pre-resize callback (called BEFORE realloc for pointer invalidation) */
+  SocketPool_PreResizeCallback
+      pre_resize_cb;        /**< Pre-resize notification callback */
+  void *pre_resize_cb_data; /**< User data for pre-resize callback */
+
   /* Idle callback */
   SocketPool_IdleCallback
       idle_cb;        /**< Callback when connection becomes idle */
