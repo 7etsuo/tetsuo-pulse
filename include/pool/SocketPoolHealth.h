@@ -190,6 +190,15 @@ typedef struct SocketPoolHealth_Config {
      * Default: SOCKET_HEALTH_DEFAULT_PROBES_PER_CYCLE (10)
      */
     int probes_per_cycle;
+
+    /**
+     * @brief Maximum circuit breaker entries.
+     *
+     * Limits memory usage by capping total circuit entries. When limit
+     * is reached, new host:port pairs are not tracked (treated as CLOSED).
+     * Default: SOCKET_HEALTH_DEFAULT_MAX_CIRCUITS (10000)
+     */
+    int max_circuits;
 } SocketPoolHealth_Config;
 
 /**

@@ -1318,6 +1318,19 @@ extern const char *Socket_safe_strerror (int errnum);
 #endif
 
 /**
+ * @brief Maximum number of circuit breaker entries.
+ *
+ * Limits memory usage from unbounded circuit entry creation.
+ * When limit is reached, new hosts use a shared "overflow" entry.
+ *
+ * @ingroup connection_pool
+ * @see SocketPoolHealth_Config for configuration.
+ */
+#ifndef SOCKET_HEALTH_DEFAULT_MAX_CIRCUITS
+#define SOCKET_HEALTH_DEFAULT_MAX_CIRCUITS 10000
+#endif
+
+/**
  * @brief Maximum length of "host:port" key string.
  *
  * @ingroup connection_pool

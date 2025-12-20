@@ -41,7 +41,8 @@ health_monotonic_ms (void)
 {
   struct timespec ts;
   clock_gettime (CLOCK_MONOTONIC, &ts);
-  return (int64_t)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+  /* Cast before multiplication to prevent overflow on 32-bit time_t */
+  return ((int64_t)ts.tv_sec) * 1000 + ts.tv_nsec / 1000000;
 }
 
 /* ============================================================================
@@ -124,6 +125,15 @@ health_find_circuit (SocketPoolHealth_T health, const char *host, int port,
 
   if (!create)
     return NULL;
+
+  /* Enforce max_circuits limit to prevent unbounded memory growth */
+  if (health->circuit_count >= health->config.max_circuits)
+    {
+      SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                       "Circuit limit reached (%d), not tracking %s:%d",
+                       health->config.max_circuits, host, port);
+      return NULL;
+    }
 
   /* Create new entry - caller must hold circuit_mutex */
   entry = Arena_alloc (health->arena, sizeof (*entry), __FILE__, __LINE__);
@@ -473,6 +483,7 @@ SocketPoolHealth_config_defaults (SocketPoolHealth_Config *config)
   config->probe_interval_ms = SOCKET_HEALTH_DEFAULT_PROBE_INTERVAL_MS;
   config->probe_timeout_ms = SOCKET_HEALTH_DEFAULT_PROBE_TIMEOUT_MS;
   config->probes_per_cycle = SOCKET_HEALTH_DEFAULT_PROBES_PER_CYCLE;
+  config->max_circuits = SOCKET_HEALTH_DEFAULT_MAX_CIRCUITS;
 }
 
 int
@@ -484,7 +495,8 @@ SocketPool_enable_health_checks (struct SocketPool_T *pool,
   if (!pool || !config)
     return -1;
 
-  if (config->failure_threshold < 1 || config->probe_interval_ms < 100)
+  if (config->failure_threshold < 1 || config->probe_interval_ms < 100
+      || config->max_circuits < 1)
     return -1;
 
   pthread_mutex_lock (&pool->mutex);
@@ -660,17 +672,23 @@ SocketPool_circuit_allows (struct SocketPool_T *pool, const char *host,
 
     case POOL_CIRCUIT_HALF_OPEN:
       {
+        /* Use compare-exchange loop to atomically check and increment,
+           preventing TOCTOU race that could exceed max probes */
         int probes
             = atomic_load_explicit (&entry->half_open_probes, memory_order_acquire);
-        if (probes < pool->health->config.half_open_max_probes)
+        while (probes < pool->health->config.half_open_max_probes)
           {
-            atomic_fetch_add (&entry->half_open_probes, 1);
-            allows = 1;
+            if (atomic_compare_exchange_weak_explicit (
+                    &entry->half_open_probes, &probes, probes + 1,
+                    memory_order_acq_rel, memory_order_acquire))
+              {
+                allows = 1;
+                break;
+              }
+            /* probes updated by compare_exchange on failure, retry */
           }
-        else
-          {
-            allows = 0;
-          }
+        if (probes >= pool->health->config.half_open_max_probes)
+          allows = 0;
       }
       break;
     }
