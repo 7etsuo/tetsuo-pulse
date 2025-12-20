@@ -350,7 +350,6 @@ socket_recvv_internal (T socket, struct iovec *iov, int iovcnt, int flags)
 int
 socket_is_tls_enabled (const T socket)
 {
-  (void) socket;
   assert (socket);
 #if SOCKET_HAS_TLS
   return socket->tls_enabled ? 1 : 0;
@@ -368,7 +367,6 @@ socket_is_tls_enabled (const T socket)
 int
 socket_tls_want_read (const T socket)
 {
-  (void) socket;
   assert (socket);
 #if SOCKET_HAS_TLS
   SSL *ssl = socket_get_ssl (socket);
@@ -391,7 +389,6 @@ socket_tls_want_read (const T socket)
 int
 socket_tls_want_write (const T socket)
 {
-  (void) socket;
   assert (socket);
 #if SOCKET_HAS_TLS
   if (!socket_get_ssl (socket))
@@ -802,12 +799,6 @@ socket_recvv_tls (T socket, struct iovec *iov, int iovcnt)
                SOCKET_ENOMEM ": Cannot allocate TLS recvv buffer");
 
   int ssl_result = SSL_read (ssl, temp_buf, (int)total_capacity);
-  if (ssl_result > 0)
-    {
-      SocketCrypto_secure_clear (
-          temp_buf, (size_t)ssl_result); /* Clear decrypted data after copy to
-                                            user buffers */
-    }
 
   if (ssl_result <= 0)
     {
