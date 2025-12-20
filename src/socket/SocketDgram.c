@@ -208,8 +208,7 @@ resolve_sendto_address (const char *host, int port, struct addrinfo **res)
   char port_str[SOCKET_PORT_STR_BUFSIZE];
   int result;
 
-  result = snprintf (port_str, sizeof (port_str), "%d", port);
-  assert (result > 0 && result < (int)sizeof (port_str));
+  snprintf (port_str, sizeof (port_str), "%d", port);
 
   SocketCommon_setup_hints (&hints, SOCKET_DGRAM_TYPE, 0);
   result = getaddrinfo (host, port_str, &hints, res);
@@ -234,7 +233,8 @@ resolve_sendto_address (const char *host, int port, struct addrinfo **res)
  * Raises: SocketDgram_Failed on error or if len > SAFE_UDP_SIZE
  */
 static ssize_t
-perform_sendto (T socket, const void *buf, size_t len, struct addrinfo *res)
+perform_sendto (T socket, const void *buf, size_t len,
+                const struct addrinfo *res)
 {
   ssize_t sent;
 
@@ -676,7 +676,7 @@ typedef enum
  * Returns: 0 on success, -1 on failure
  */
 static int
-dgram_try_single_address (int fd, struct addrinfo *rp, DgramOpType op)
+dgram_try_single_address (int fd, const struct addrinfo *rp, DgramOpType op)
 {
   return (op == DGRAM_OP_BIND) ? bind (fd, rp->ai_addr, rp->ai_addrlen)
                                : connect (fd, rp->ai_addr, rp->ai_addrlen);
@@ -726,8 +726,17 @@ dgram_try_addresses (T socket, struct addrinfo *res, int socket_family,
 
       if (dgram_try_single_address (fd, rp, op) == 0)
         {
-          memcpy (&socket->base->remote_addr, rp->ai_addr, rp->ai_addrlen);
-          socket->base->remote_addrlen = rp->ai_addrlen;
+          /* Cache address in appropriate field based on operation type */
+          if (op == DGRAM_OP_CONNECT)
+            {
+              memcpy (&socket->base->remote_addr, rp->ai_addr, rp->ai_addrlen);
+              socket->base->remote_addrlen = rp->ai_addrlen;
+            }
+          else
+            {
+              memcpy (&socket->base->local_addr, rp->ai_addr, rp->ai_addrlen);
+              socket->base->local_addrlen = rp->ai_addrlen;
+            }
           return 0;
         }
     }
