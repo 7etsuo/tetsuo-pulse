@@ -32,6 +32,13 @@
 /** Maximum chain length per bucket to prevent hash collision DoS attacks */
 #define SOCKETHTTP_MAX_CHAIN_LEN 10
 
+/**
+ * Maximum chain length to traverse during search operations.
+ * Set to 2x the insertion limit to allow searching existing entries
+ * even when bucket is at capacity.
+ */
+#define SOCKETHTTP_MAX_CHAIN_SEARCH_LEN (SOCKETHTTP_MAX_CHAIN_LEN * 2)
+
 /* ============================================================================
  * Internal Helper Functions - Hash Table Operations
  * ============================================================================
@@ -57,8 +64,8 @@ find_entry (SocketHTTP_Headers_T headers, const char *name, size_t name_len)
   while (entry)
     {
       chain_len++;
-      if (chain_len > SOCKETHTTP_MAX_CHAIN_LEN * 2)
-        { /* Allow double for search tolerance */
+      if (chain_len > SOCKETHTTP_MAX_CHAIN_SEARCH_LEN)
+        {
           SOCKET_LOG_WARN_MSG (
               "SocketHTTP",
               "Excessive hash chain length %d in bucket %u - potential DoS",
@@ -91,11 +98,9 @@ add_to_bucket (SocketHTTP_Headers_T headers, HeaderEntry *entry)
        curr = curr->hash_next)
     {
       chain_len++;
-      if (chain_len > SOCKETHTTP_MAX_CHAIN_LEN)
+      if (chain_len >= SOCKETHTTP_MAX_CHAIN_LEN)
         return -1; /* Bucket too crowded - potential DoS */
     }
-  if (chain_len >= SOCKETHTTP_MAX_CHAIN_LEN)
-    return -1;
 
   entry->hash_next = headers->buckets[bucket];
   headers->buckets[bucket] = entry;
