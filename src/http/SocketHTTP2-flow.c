@@ -24,14 +24,13 @@
  * The effective window is the minimum of both levels.
  */
 
-#include "http/SocketHTTP2-private.h"
-#include "http/SocketHTTP2.h"
+#include <assert.h>
+#include <stdint.h>
 
 #include "core/SocketSecurity.h"
 #include "core/SocketUtil.h"
-
-#include <assert.h>
-#include <stdint.h>
+#include "http/SocketHTTP2-private.h"
+#include "http/SocketHTTP2.h"
 
 /* ============================================================================
  * Logging Component
@@ -150,27 +149,29 @@ http2_flow_consume_level (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
   if (stream)
     swindow = is_recv ? &stream->recv_window : &stream->send_window;
 
-  // Check connection window
+  /* Check connection window */
   if (bytes > INT32_MAX)
     return -1;
 
   int32_t consume = (int32_t)bytes;
   if (consume > *cwindow)
     {
-      SOCKET_LOG_WARN_MSG ("Flow control violation: consume %ld > connection window %ld",
-                           (long)consume, (long)*cwindow);
+      SOCKET_LOG_WARN_MSG (
+          "Flow control violation: consume %d > connection window %d",
+          (int)consume, (int)*cwindow);
       return -1;
     }
 
-  // Check stream window if applicable
+  /* Check stream window if applicable */
   if (swindow && consume > *swindow)
     {
-      SOCKET_LOG_WARN_MSG ("Flow control violation: consume %ld > stream window %ld",
-                           (long)consume, (long)*swindow);
+      SOCKET_LOG_WARN_MSG (
+          "Flow control violation: consume %d > stream window %d",
+          (int)consume, (int)*swindow);
       return -1;
     }
 
-  // Now consume both windows
+  /* Consume both windows atomically */
   *cwindow -= consume;
   if (swindow)
     *swindow -= consume;
@@ -347,12 +348,14 @@ http2_flow_available_send (const SocketHTTP2_Conn_T conn,
  * @delta: Signed adjustment (+increase, -decrease)
  *
  * Returns: 0 on success, -1 if adjustment invalid (negative window or
- * overflow) Thread-safe: No - modifies window directly
+ * overflow)
+ * Thread-safe: No - modifies window directly
  *
  * Per RFC 9113 Section 6.5.2: Adjusts window for SETTINGS_INITIAL_WINDOW_SIZE
  * change.
  * - Negative window after adjustment -> FLOW_CONTROL_ERROR
- * - Window > SOCKETHTTP2_MAX_WINDOW_SIZE -> error (defense against invalid settings)
+ * - Window > SOCKETHTTP2_MAX_WINDOW_SIZE -> error (defense against invalid
+ * settings)
  * - Logs warning on error.
  * - Handles delta == 0 as no-op.
  */
@@ -367,16 +370,16 @@ http2_flow_adjust_window (int32_t *window, int32_t delta)
   if (new_value < 0)
     {
       SOCKET_LOG_WARN_MSG (
-          "Flow window adjustment would make negative: current %ld + %ld",
-          (long)*window, (long)delta);
+          "Flow window adjustment would make negative: current %d + %d",
+          (int)*window, (int)delta);
       return -1;
     }
 
   if (new_value > SOCKETHTTP2_MAX_WINDOW_SIZE)
     {
       SOCKET_LOG_WARN_MSG (
-          "Flow window adjustment overflow: current %ld + %ld > max %u",
-          (long)*window, (long)delta, SOCKETHTTP2_MAX_WINDOW_SIZE);
+          "Flow window adjustment overflow: current %d + %d > max %u",
+          (int)*window, (int)delta, (unsigned)SOCKETHTTP2_MAX_WINDOW_SIZE);
       return -1;
     }
 
