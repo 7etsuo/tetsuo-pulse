@@ -598,6 +598,9 @@ struct T
       idle_cb;        /**< Callback when connection becomes idle */
   void *idle_cb_data; /**< User data for idle callback */
 
+  /* Health checking subsystem */
+  struct SocketPoolHealth_T *health; /**< Health check context (NULL if disabled) */
+
   /* Statistics tracking */
   uint64_t stats_total_added;     /**< Total connections added */
   uint64_t stats_total_removed;   /**< Total connections removed */

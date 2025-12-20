@@ -1717,6 +1717,13 @@ extern void SocketPool_set_idle_callback (T pool, SocketPool_IdleCallback cb,
  */
 extern time_t Connection_created_at (const Connection_T conn);
 
+/* ============================================================================
+ * Health Checking API
+ * ============================================================================ */
+
+/* Full API documentation in SocketPoolHealth.h */
+#include "pool/SocketPoolHealth.h"
+
 #undef T
 
 /** @} */ /* end of connection_mgmt group */

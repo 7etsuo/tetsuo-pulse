@@ -23,6 +23,7 @@
 #include <time.h>
 
 #include "pool/SocketPool-private.h"
+#include "pool/SocketPoolHealth.h"
 #include "socket/SocketReconnect.h"
 /* SocketUtil.h included via SocketPool-private.h */
 
@@ -493,6 +494,9 @@ construct_pool (Arena_T arena, size_t maxconns, size_t bufsize)
   pool->idle_cb = NULL;
   pool->idle_cb_data = NULL;
 
+  /* Health checking subsystem (disabled by default) */
+  pool->health = NULL;
+
   /* From initialize_pool_stats + consolidate monotonic time call with idle_cleanup */
   int64_t now_ms = Socket_get_monotonic_ms ();
   pool->last_cleanup_ms = now_ms;
@@ -674,6 +678,9 @@ SocketPool_free (T *pool)
 {
   if (!pool || !*pool)
     return;
+
+  /* Stop health check thread before freeing any resources */
+  SocketPool_disable_health_checks (*pool);
 
   free_dns_resolver (*pool);
   free_reconnect_contexts (*pool);

@@ -272,6 +272,7 @@ set(LIB_SOURCES
     src/pool/SocketPool-ops.c
     src/pool/SocketPool-ratelimit.c
     src/pool/SocketPool-drain.c
+    src/pool/SocketPool-health.c
     
     # HTTP module (RFC 9110/3986)
     src/http/SocketHTTP-core.c
@@ -559,6 +560,7 @@ set(TEST_SOURCES
     test_socketdgram
     test_socketpoll
     test_socketpool
+    test_pool_health
     test_socketdns
     test_integration
     test_threadsafety
