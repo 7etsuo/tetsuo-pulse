@@ -43,12 +43,10 @@
 #include <zlib.h>
 
 #include "core/Arena.h"
+#include "core/SocketSecurity.h"
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "SocketWS"
-#include "core/SocketSecurity.h"
 #include "core/SocketUtil.h"
-
-#include "core/SocketSecurity.h"
 
 /* ============================================================================
  * Constants
@@ -329,6 +327,55 @@ should_reset_inflate_context (const SocketWS_T ws)
  */
 
 /**
+ * try_grow_compress_buffer - Attempt to grow compression buffer
+ * @ws: WebSocket context
+ * @strm: zlib stream
+ * @buf: Output buffer pointer (updated on success)
+ * @buf_size: Buffer size pointer (updated on success)
+ * @total_out: Bytes already written
+ *
+ * Validates new size against security limits, allocates new buffer,
+ * and updates zlib stream output pointers.
+ *
+ * Returns: 0 on success, -1 on error
+ */
+static int
+try_grow_compress_buffer (SocketWS_T ws, z_stream *strm, unsigned char **buf,
+                          size_t *buf_size, size_t total_out)
+{
+  size_t new_size;
+
+  if (!SocketSecurity_check_multiply (*buf_size, WS_DEFLATE_BUF_GROWTH,
+                                      &new_size))
+    {
+      ws_set_error (ws, WS_ERROR_COMPRESSION,
+                    "Buffer growth multiplication overflow");
+      return -1;
+    }
+  if (!SocketSecurity_check_size (new_size))
+    {
+      ws_set_error (ws, WS_ERROR_COMPRESSION,
+                    "Buffer size exceeds security limit: %zu", new_size);
+      return -1;
+    }
+
+  unsigned char *new_buf
+      = grow_arena_buffer (ws->arena, *buf, *buf_size, total_out, new_size);
+  if (!new_buf)
+    {
+      ws_set_error (ws, WS_ERROR_COMPRESSION, "Failed to grow buffer");
+      return -1;
+    }
+
+  *buf = new_buf;
+  *buf_size = new_size;
+  strm->next_out = *buf + total_out;
+  strm->avail_out = (uInt)(*buf_size - total_out);
+
+  return 0;
+}
+
+/**
  * compress_loop - Perform deflate compression loop
  * @ws: WebSocket context
  * @strm: zlib stream
@@ -344,7 +391,7 @@ compress_loop (SocketWS_T ws, z_stream *strm, unsigned char **buf,
 {
   int ret;
 
-  // Data compression phase with Z_NO_FLUSH
+  /* Data compression phase with Z_NO_FLUSH */
   do
     {
       ret = deflate (strm, Z_NO_FLUSH);
@@ -360,41 +407,17 @@ compress_loop (SocketWS_T ws, z_stream *strm, unsigned char **buf,
       /* Grow buffer if needed */
       if (strm->avail_out == 0 && strm->avail_in > 0)
         {
-          size_t new_size;
-          if (!SocketSecurity_check_multiply (*buf_size, WS_DEFLATE_BUF_GROWTH,
-                                              &new_size))
-            {
-              ws_set_error (ws, WS_ERROR_COMPRESSION,
-                            "Buffer growth multiplication overflow");
-              return -1;
-            }
-          if (!SocketSecurity_check_size (new_size))
-            {
-              ws_set_error (ws, WS_ERROR_COMPRESSION,
-                            "Grow buffer size exceeds security limit: %zu",
-                            new_size);
-              return -1;
-            }
-          unsigned char *new_buf = grow_arena_buffer (
-              ws->arena, *buf, *buf_size, *total_out, new_size);
-          if (!new_buf)
-            {
-              ws_set_error (ws, WS_ERROR_COMPRESSION,
-                            "Failed to grow compress buffer");
-              return -1;
-            }
-          *buf = new_buf;
-          *buf_size = new_size;
-          strm->next_out = *buf + *total_out;
-          strm->avail_out = (uInt)(*buf_size - *total_out);
+          if (try_grow_compress_buffer (ws, strm, buf, buf_size, *total_out)
+              < 0)
+            return -1;
         }
     }
   while (strm->avail_in > 0);
 
-  // Flush phase to output remaining data and (if applicable) end block for
-  // BFINAL=1
+  /* Flush phase to output remaining data and end block for BFINAL=1 */
   int flush_type = should_reset_deflate_context (ws) ? Z_FINISH : Z_SYNC_FLUSH;
   int finished = 0;
+
   while (!finished)
     {
       ret = deflate (strm, flush_type);
@@ -416,46 +439,75 @@ compress_loop (SocketWS_T ws, z_stream *strm, unsigned char **buf,
       /* Grow buffer if needed during flush */
       if (strm->avail_out == 0)
         {
-          size_t new_size;
-          if (!SocketSecurity_check_multiply (*buf_size, WS_DEFLATE_BUF_GROWTH,
-                                              &new_size))
-            {
-              ws_set_error (ws, WS_ERROR_COMPRESSION,
-                            "Flush buffer growth multiplication overflow");
-              return -1;
-            }
-          if (!SocketSecurity_check_size (new_size))
-            {
-              ws_set_error (
-                  ws, WS_ERROR_COMPRESSION,
-                  "Flush grow buffer size exceeds security limit: %zu",
-                  new_size);
-              return -1;
-            }
-          unsigned char *new_buf = grow_arena_buffer (
-              ws->arena, *buf, *buf_size, *total_out, new_size);
-          if (!new_buf)
-            {
-              ws_set_error (ws, WS_ERROR_COMPRESSION,
-                            "Failed to grow flush buffer");
-              return -1;
-            }
-          *buf = new_buf;
-          *buf_size = new_size;
-          strm->next_out = *buf + *total_out;
-          strm->avail_out = (uInt)(*buf_size - *total_out);
+          if (try_grow_compress_buffer (ws, strm, buf, buf_size, *total_out)
+              < 0)
+            return -1;
         }
 
       if (flush_type == Z_FINISH && ret == Z_STREAM_END)
         finished = 1;
       else if (flush_type == Z_SYNC_FLUSH && ret == Z_OK
                && strm->avail_in == 0)
-        finished = 1; // Flush complete
+        finished = 1;
       else if (ret != Z_OK)
-        finished = 1; // Error or unexpected
+        finished = 1;
     }
 
   *total_out = *buf_size - strm->avail_out;
+  return 0;
+}
+
+/**
+ * try_grow_decompress_buffer - Attempt to grow decompression buffer
+ * @ws: WebSocket context
+ * @strm: zlib stream
+ * @buf: Output buffer pointer (updated on success)
+ * @buf_size: Buffer size pointer (updated on success)
+ * @total_out: Bytes already written
+ *
+ * Validates new size against security limits and max_message_size,
+ * allocates new buffer, and updates zlib stream output pointers.
+ *
+ * Returns: 0 on success, -1 on error
+ */
+static int
+try_grow_decompress_buffer (SocketWS_T ws, z_stream *strm, unsigned char **buf,
+                            size_t *buf_size, size_t total_out)
+{
+  size_t new_size;
+
+  if (!SocketSecurity_check_multiply (*buf_size, WS_DEFLATE_BUF_GROWTH,
+                                      &new_size))
+    {
+      ws_set_error (ws, WS_ERROR_COMPRESSION,
+                    "Buffer growth multiplication overflow");
+      return -1;
+    }
+
+  /* Enforce max message size to prevent decompression bombs */
+  if (new_size > ws->config.max_message_size)
+    new_size = ws->config.max_message_size;
+
+  if (new_size <= *buf_size)
+    {
+      ws_set_error (ws, WS_ERROR_MESSAGE_TOO_LARGE,
+                    "Decompressed message too large");
+      return -1;
+    }
+
+  unsigned char *new_buf
+      = grow_arena_buffer (ws->arena, *buf, *buf_size, total_out, new_size);
+  if (!new_buf)
+    {
+      ws_set_error (ws, WS_ERROR_COMPRESSION, "Failed to grow buffer");
+      return -1;
+    }
+
+  *buf = new_buf;
+  *buf_size = new_size;
+  strm->next_out = *buf + total_out;
+  strm->avail_out = (uInt)(*buf_size - total_out);
+
   return 0;
 }
 
@@ -491,45 +543,16 @@ decompress_loop (SocketWS_T ws, z_stream *strm, unsigned char **buf,
       /* Grow buffer if needed */
       if (strm->avail_out == 0 && ret != Z_STREAM_END)
         {
-          size_t new_size;
-          if (!SocketSecurity_check_multiply (*buf_size, WS_DEFLATE_BUF_GROWTH,
-                                              &new_size))
-            {
-              ws_set_error (ws, WS_ERROR_COMPRESSION,
-                            "Buffer growth multiplication overflow");
-              return -1;
-            }
-
-          /* Enforce max message size */
-          if (new_size > ws->config.max_message_size)
-            new_size = ws->config.max_message_size;
-
-          if (new_size <= *buf_size)
-            {
-              ws_set_error (ws, WS_ERROR_MESSAGE_TOO_LARGE,
-                            "Decompressed message too large");
-              return -1;
-            }
-
-          unsigned char *new_buf = grow_arena_buffer (
-              ws->arena, *buf, *buf_size, *total_out, new_size);
-          if (!new_buf)
-            {
-              ws_set_error (ws, WS_ERROR_COMPRESSION,
-                            "Failed to grow decompress buffer");
-              return -1;
-            }
-          *buf = new_buf;
-          *buf_size = new_size;
-          strm->next_out = *buf + *total_out;
-          strm->avail_out = (uInt)(*buf_size - *total_out);
+          if (try_grow_decompress_buffer (ws, strm, buf, buf_size, *total_out)
+              < 0)
+            return -1;
         }
     }
   while (strm->avail_in > 0 && ret != Z_STREAM_END);
 
   *total_out = *buf_size - strm->avail_out;
 
-  // Ensure all input consumed (trailer processed)
+  /* Ensure all input consumed (trailer processed) */
   if (strm->avail_in > 0)
     {
       ws_set_error (ws, WS_ERROR_COMPRESSION,
