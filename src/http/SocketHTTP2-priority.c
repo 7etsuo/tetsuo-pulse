@@ -49,23 +49,26 @@
  */
 
 /**
- * http2_process_priority - Process PRIORITY frame (deprecated)
- * @conn: HTTP/2 connection context (unused - kept for dispatch API
- *        consistency)
- * @header: Frame header (provides stream ID for logging)
- * @payload: Frame payload (ignored per RFC 9113)
+ * http2_process_priority - Process deprecated PRIORITY frame (RFC 9113)
+ * @conn: HTTP/2 connection context (unused, kept for dispatch API consistency)
+ * @header: Frame header (stream ID used for debug logging only)
+ * @payload: Frame payload (ignored per RFC 9113 deprecation)
  *
- * Returns: 0 (always succeeds - frame is ignored)
- * Raises: None - validation errors raised earlier in frame parser
- * Thread-safe: Yes - thread-safe logging; no state modification
+ * Returns: 0 (always succeeds since frame is ignored per specification)
+ * Raises: None (validation errors raised earlier in http2_frame_validate)
+ * Thread-safe: Yes (uses only thread-safe logging, no state modification)
  *
- * Per RFC 9113 Section 5.3.2: PRIORITY frames are deprecated. Endpoints
- * SHOULD NOT send them, and MAY ignore them. This implementation ignores
- * them with debug logging for monitoring non-compliant peers.
+ * Per RFC 9113 Section 5.3.2, the PRIORITY frame mechanism from RFC 7540 is
+ * deprecated. Endpoints SHOULD NOT send PRIORITY frames and MAY ignore them.
+ * This implementation follows the recommendation to ignore with debug logging
+ * for monitoring non-compliant peers that may still send these frames.
  *
- * Prior validation in frame parser ensures: stream ID > 0, length == 5.
+ * Modern priority signaling uses RFC 9218 (Extensible Priorities) via HTTP
+ * header fields (Priority header) instead of this deprecated frame-based
+ * scheme.
  *
- * @ingroup http2_private
+ * Prior validation in http2_frame_validate() ensures: stream_id > 0 and
+ * length == 5 (fixed payload size per RFC 7540 Section 6.3).
  */
 int
 http2_process_priority (SocketHTTP2_Conn_T conn,

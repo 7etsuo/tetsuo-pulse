@@ -846,25 +846,23 @@ extern int http2_process_headers (SocketHTTP2_Conn_T conn,
 
 /**
  * @internal
- * @brief Process incoming HTTP/2 PRIORITY frame for dependency tree updates.
+ * @brief Process incoming HTTP/2 PRIORITY frame (deprecated per RFC 9113).
  * @ingroup http
  *
- * Parses 4-byte stream dependency ID, weight (1-256), and exclusive flag.
- * Updates stream's parent/weight/exclusive in priority tree, may rebalance
- * scheduler. Valid only on open streams; ignores on idle/closed. No flow
- * control impact.
+ * Per RFC 9113 Section 5.3.2, the PRIORITY frame mechanism from RFC 7540 is
+ * deprecated. Endpoints SHOULD NOT send PRIORITY frames and MAY ignore them.
+ * This implementation ignores the frame with debug logging for monitoring
+ * non-compliant peers. Modern priority signaling uses RFC 9218 (Extensible
+ * Priorities) via HTTP header fields instead.
  *
- * @param conn HTTP/2 connection.
- * @param header PRIORITY frame header (stream ID must be non-zero).
- * @param payload Fixed 5-byte payload: dep_stream_id (31 bits) + exclusive (1
- * bit) + weight (8 bits).
- * @return 0 on success (priority updated), -1 if invalid (e.g.,
- * self-dependency, closed stream).
- * @pre Frame length == 5, header validated.
- * @throws SocketHTTP2_ProtocolError for malformed priority or invalid deps.
- * @see SocketHTTP2_Stream_T::parent, ::weight, ::exclusive for fields updated.
- * @see RFC 9113 §6.6 PRIORITY frame specification.
- * @see HTTP/2 priority tree for scheduling implications.
+ * @param conn HTTP/2 connection (unused, kept for dispatch API consistency).
+ * @param header PRIORITY frame header (stream ID used for logging only).
+ * @param payload Fixed 5-byte payload (ignored per RFC 9113 deprecation).
+ * @return 0 (always succeeds since frame is ignored per specification).
+ * @pre Frame length == 5, stream_id > 0 (validated in http2_frame_validate).
+ * @note Frame is ignored per RFC 9113; no state changes occur.
+ * @see RFC 9113 Section 5.3.2 for deprecation rationale.
+ * @see RFC 9218 for modern Extensible Priorities mechanism.
  */
 extern int http2_process_priority (SocketHTTP2_Conn_T conn,
                                    const SocketHTTP2_FrameHeader *header,
