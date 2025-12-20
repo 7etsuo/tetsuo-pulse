@@ -19,15 +19,17 @@
  * - Encoder and decoder state machines
  */
 
+/* System headers first (per C Interfaces and Implementations style) */
+#include <assert.h>
+#include <stdbool.h>
+#include <string.h>
+
+/* Project headers */
 #include "http/SocketHPACK-private.h"
 #include "http/SocketHPACK.h"
 
 #include "core/SocketSecurity.h"
 #include "core/SocketUtil.h"
-
-#include <assert.h>
-#include <stdbool.h>
-#include <string.h>
 
 /* ============================================================================
  * Constants - RFC 7541 Field Type Bit Patterns
