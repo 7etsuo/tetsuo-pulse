@@ -374,7 +374,7 @@ validate_rst_stream_frame (const SocketHTTP2_FrameHeader *header,
 {
   (void)conn;
   REQUIRE_STREAM (header);
-  REQUIRE_EXACT_LENGTH (header, HTTP2_WINDOW_UPDATE_PAYLOAD_SIZE);
+  REQUIRE_EXACT_LENGTH (header, HTTP2_RST_STREAM_PAYLOAD_SIZE);
   REQUIRE_VALID_FLAGS (header, 0);  /* No flags allowed */
   return HTTP2_NO_ERROR;
 }
@@ -526,10 +526,6 @@ http2_frame_validate (SocketHTTP2_Conn_T conn,
   if (conn->expecting_continuation && header->type != HTTP2_FRAME_CONTINUATION)
     return HTTP2_PROTOCOL_ERROR;
 
-  /* RFC 9113 §5.5: Extension frames MUST NOT appear in the middle of a field block */
-  if (conn->expecting_continuation && header->type > HTTP2_FRAME_CONTINUATION)
-    return HTTP2_PROTOCOL_ERROR;
-
   /* Ignore unknown frame types (RFC 9113 Section 4.1) */
   if (header->type > HTTP2_FRAME_CONTINUATION)
     return HTTP2_NO_ERROR;
@@ -675,30 +671,26 @@ http2_send_stream_error (SocketHTTP2_Conn_T conn, uint32_t stream_id,
                          SocketHTTP2_ErrorCode error_code)
 {
   SocketHTTP2_FrameHeader header;
-  unsigned char payload[HTTP2_WINDOW_UPDATE_PAYLOAD_SIZE];
+  unsigned char payload[HTTP2_RST_STREAM_PAYLOAD_SIZE];
 
   if (!conn)
     return;
 
   /* RFC 9113: MUST NOT send RST_STREAM in response to RST_STREAM */
-  if (error_code == HTTP2_NO_ERROR)
-    {
-      /* This is not an error, but a normal RST_STREAM - always allow */
-    }
-  else
+  if (error_code != HTTP2_NO_ERROR)
     {
       /* Check if we received RST_STREAM for this stream */
       SocketHTTP2_Stream_T stream = http2_stream_lookup (conn, stream_id);
       if (stream && stream->rst_received)
         {
           SOCKET_LOG_DEBUG_MSG ("Not sending RST_STREAM for stream %u: "
-                               "already received RST_STREAM (RFC 9113)",
-                               stream_id);
+                                "already received RST_STREAM (RFC 9113)",
+                                stream_id);
           return;
         }
     }
 
-  header.length = HTTP2_WINDOW_UPDATE_PAYLOAD_SIZE;
+  header.length = HTTP2_RST_STREAM_PAYLOAD_SIZE;
   header.type = HTTP2_FRAME_RST_STREAM;
   header.flags = 0;
   header.stream_id = stream_id;

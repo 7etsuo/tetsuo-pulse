@@ -156,6 +156,15 @@ static const unsigned char HTTP2_CLIENT_PREFACE[HTTP2_PREFACE_SIZE]
  */
 #define HTTP2_WINDOW_UPDATE_SIZE 4
 
+/**
+ * @brief Fixed size of RST_STREAM frame payload (error code).
+ * @ingroup http
+ * @internal
+ * @details 4 bytes unsigned integer error code.
+ * @see RFC 9113 Section 6.4 RST_STREAM.
+ */
+#define HTTP2_RST_STREAM_PAYLOAD_SIZE 4
+
 /* ============================================================================
  * Connection State
  * ============================================================================

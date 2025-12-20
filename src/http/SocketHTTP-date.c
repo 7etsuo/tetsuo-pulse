@@ -98,6 +98,19 @@
 /** Maximum length for long day names in RFC 850 */
 #define LONG_DAY_MAX_LEN 9
 
+/** Number of days in a week */
+#define DAYS_PER_WEEK 7
+
+/** Number of months in a year */
+#define MONTHS_PER_YEAR 12
+
+/** Maximum characters to log for invalid date strings (prevents log flooding)
+ */
+#define LOG_DATE_TRUNCATE_LEN 50
+
+/** Maximum valid year for HTTP dates (AD) */
+#define MAX_YEAR 9999
+
 /* ============================================================================
  * Lookup Tables
  * ============================================================================
@@ -121,7 +134,7 @@ static const char *const day_names_long[] = {
 };
 
 /** Lengths of long day names (matches day_names_long order) */
-static const size_t day_long_lengths[7] = { 6, 6, 7, 9, 8, 6, 8 };
+static const size_t day_long_lengths[DAYS_PER_WEEK] = { 6, 6, 7, 9, 8, 6, 8 };
 
 /** Month names (3 characters, case-insensitive matching) */
 static const struct
@@ -135,7 +148,7 @@ static const struct
 };
 
 /** Days per month in non-leap year (index 0=January, 11=December) */
-static const int days_per_month[12]
+static const int days_per_month[MONTHS_PER_YEAR]
     = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 
 /* ============================================================================
@@ -193,7 +206,7 @@ is_leap_year (int year)
 static int
 valid_date_parts (const DateParts *parts)
 {
-  if (parts->month < 0 || parts->month > 11)
+  if (parts->month < 0 || parts->month > (MONTHS_PER_YEAR - 1))
     return 0;
 
   if (parts->day < 1 || parts->day > MAX_DAY)
@@ -215,8 +228,8 @@ valid_date_parts (const DateParts *parts)
   if (parts->second < 0 || parts->second > MAX_SECOND)
     return 0;
 
-  /* Optional: year range check (e.g., AD 1 to 9999) */
-  if (parts->year <= 0 || parts->year > 9999)
+  /* Year range check (e.g., AD 1 to MAX_YEAR) */
+  if (parts->year <= 0 || parts->year > MAX_YEAR)
     return 0;
 
   return 1;
@@ -237,7 +250,7 @@ valid_date_parts (const DateParts *parts)
 static int
 parse_day_short (const char *s)
 {
-  for (int i = 0; i < 7; i++)
+  for (int i = 0; i < DAYS_PER_WEEK; i++)
     {
       if (strncasecmp (s, day_names_short[i], SHORT_NAME_LEN) == 0)
         return i;
@@ -259,7 +272,7 @@ parse_day_long (const char *s, size_t len)
   if (len < LONG_DAY_MIN_LEN || len > LONG_DAY_MAX_LEN)
     return -1;
 
-  for (int i = 0; i < 7; i++)
+  for (int i = 0; i < DAYS_PER_WEEK; i++)
     {
       if (len == day_long_lengths[i]
           && strncasecmp (s, day_names_long[i], len) == 0)
@@ -1013,7 +1026,8 @@ SocketHTTP_date_parse (const char *date_str, size_t len, time_t *time_out)
     }
 
   /* All formats failed - use %.*s to handle non-null-terminated input */
-  int print_len = (len > 50) ? 50 : (int)len;
+  int print_len = (len > LOG_DATE_TRUNCATE_LEN) ? LOG_DATE_TRUNCATE_LEN
+                                                : (int)len;
   SOCKET_LOG_WARN_MSG ("Invalid HTTP date format (len=%zu): %.*s...", len,
                        print_len, date_str);
   return -1;
@@ -1045,11 +1059,11 @@ SocketHTTP_date_format (time_t t, char *output)
   /* Clamp invalid fields (defense-in-depth, though gmtime_r should produce
    * valid) */
   int wday = tm->tm_wday;
-  if (wday < 0 || wday > 6)
+  if (wday < 0 || wday > (DAYS_PER_WEEK - 1))
     wday = 0;
 
   int mon = tm->tm_mon;
-  if (mon < 0 || mon > 11)
+  if (mon < 0 || mon > (MONTHS_PER_YEAR - 1))
     mon = 0;
 
   /* Format IMF-fixdate (29 chars + null) */
