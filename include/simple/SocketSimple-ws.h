@@ -249,6 +249,106 @@ extern const char *Socket_simple_ws_protocol(SocketSimple_WS_T ws);
  */
 extern int Socket_simple_ws_fd(SocketSimple_WS_T ws);
 
+/*============================================================================
+ * Server Types
+ *============================================================================*/
+
+/**
+ * @brief WebSocket server configuration.
+ */
+typedef struct {
+    size_t max_frame_size;     /**< Max frame size (default: 16MB) */
+    size_t max_message_size;   /**< Max message size (default: 64MB) */
+    int validate_utf8;         /**< Validate UTF-8 in text frames (default: 1) */
+    int enable_compression;    /**< Enable permessage-deflate (default: 0) */
+    int ping_interval_ms;      /**< Auto-ping interval (0 = disabled) */
+    const char **subprotocols; /**< Supported subprotocols, NULL-terminated */
+} SocketSimple_WSServerConfig;
+
+/**
+ * @brief Initialize WebSocket server config with defaults.
+ *
+ * @param config Config structure to initialize.
+ */
+extern void Socket_simple_ws_server_config_init(SocketSimple_WSServerConfig *config);
+
+/*============================================================================
+ * Server Functions
+ *============================================================================*/
+
+/**
+ * @brief Check if an HTTP request is a WebSocket upgrade.
+ *
+ * Use within an HTTP server handler to detect upgrade requests.
+ *
+ * @param method HTTP method (e.g., "GET").
+ * @param headers NULL-terminated array of "Name: Value" headers.
+ * @return 1 if valid WebSocket upgrade, 0 otherwise.
+ */
+extern int Socket_simple_ws_is_upgrade(const char *method, const char **headers);
+
+/**
+ * @brief Accept WebSocket upgrade from HTTP server request.
+ *
+ * Call this from an HTTP server handler when is_upgrade() returns true.
+ * Sends the 101 Switching Protocols response and returns a WebSocket handle.
+ *
+ * @param http_req HTTP server request handle (SocketSimple_HTTPServerRequest_T).
+ * @param config Optional server config (NULL for defaults).
+ * @return WebSocket handle on success, NULL on error.
+ *
+ * Example:
+ * @code
+ * void handle_websocket(SocketSimple_HTTPServerRequest_T req, void *arg) {
+ *     // Check if upgrade request
+ *     const char *upgrade = Socket_simple_http_server_request_header(req, "Upgrade");
+ *     if (upgrade && strcasecmp(upgrade, "websocket") == 0) {
+ *         SocketSimple_WS_T ws = Socket_simple_ws_accept(req, NULL);
+ *         if (ws) {
+ *             // WebSocket connection established
+ *             Socket_simple_ws_send_text(ws, "Hello!", 6);
+ *             // Handle WebSocket...
+ *             Socket_simple_ws_free(&ws);
+ *         }
+ *         return;
+ *     }
+ *     // Not an upgrade - send normal response
+ *     Socket_simple_http_server_response_error(req, 400, "Expected WebSocket");
+ * }
+ * @endcode
+ */
+extern SocketSimple_WS_T Socket_simple_ws_accept(
+    void *http_req,
+    const SocketSimple_WSServerConfig *config);
+
+/**
+ * @brief Accept WebSocket upgrade on a raw socket.
+ *
+ * For use when you have a raw socket and parsed HTTP headers manually.
+ * The socket must have received a valid HTTP upgrade request.
+ *
+ * @param sock Socket handle (SocketSimple_Socket_T).
+ * @param ws_key The Sec-WebSocket-Key header value from client.
+ * @param config Optional server config (NULL for defaults).
+ * @return WebSocket handle on success, NULL on error.
+ */
+extern SocketSimple_WS_T Socket_simple_ws_accept_raw(
+    void *sock,
+    const char *ws_key,
+    const SocketSimple_WSServerConfig *config);
+
+/**
+ * @brief Reject WebSocket upgrade with error response.
+ *
+ * @param http_req HTTP server request handle.
+ * @param status HTTP status code (e.g., 400, 403).
+ * @param reason Error message.
+ */
+extern void Socket_simple_ws_reject(
+    void *http_req,
+    int status,
+    const char *reason);
+
 #ifdef __cplusplus
 }
 #endif

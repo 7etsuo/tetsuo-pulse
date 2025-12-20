@@ -98,7 +98,27 @@ typedef enum {
     SOCKET_SIMPLE_ERR_MEMORY,        /**< Memory allocation failed */
     SOCKET_SIMPLE_ERR_INVALID_ARG,   /**< Invalid argument */
     SOCKET_SIMPLE_ERR_UNSUPPORTED,   /**< Feature not supported */
-    SOCKET_SIMPLE_ERR_IO             /**< File I/O error */
+    SOCKET_SIMPLE_ERR_IO,            /**< File I/O error */
+
+    /* Pool/Poll errors */
+    SOCKET_SIMPLE_ERR_POOL,          /**< Connection pool error */
+    SOCKET_SIMPLE_ERR_POLL,          /**< Poll/event error */
+    SOCKET_SIMPLE_ERR_POOL_FULL,     /**< Pool at capacity */
+    SOCKET_SIMPLE_ERR_POOL_DRAINING, /**< Pool is draining */
+
+    /* Proxy errors */
+    SOCKET_SIMPLE_ERR_PROXY,         /**< Proxy connection failed */
+    SOCKET_SIMPLE_ERR_PROXY_AUTH,    /**< Proxy authentication failed */
+    SOCKET_SIMPLE_ERR_PROXY_DENIED,  /**< Proxy denied connection */
+
+    /* Server errors */
+    SOCKET_SIMPLE_ERR_SERVER,        /**< HTTP server error */
+
+    /* Rate limiting */
+    SOCKET_SIMPLE_ERR_RATELIMIT,     /**< Rate limit exceeded */
+
+    /* Security */
+    SOCKET_SIMPLE_ERR_SECURITY       /**< Security/protection error */
 } SocketSimple_ErrorCode;
 
 /*============================================================================
@@ -138,11 +158,26 @@ extern void Socket_simple_clear_error(void);
  * Include Sub-modules
  *============================================================================*/
 
+/* Core socket operations */
 #include "SocketSimple-tcp.h"
 #include "SocketSimple-tls.h"
+#include "SocketSimple-dns.h"
+
+/* Higher-level protocols */
 #include "SocketSimple-http.h"
 #include "SocketSimple-ws.h"
-#include "SocketSimple-dns.h"
+
+/* Infrastructure */
+#include "SocketSimple-pool.h"
+#include "SocketSimple-poll.h"
+#include "SocketSimple-proxy.h"
+#include "SocketSimple-ratelimit.h"
+
+/* Servers */
+#include "SocketSimple-http-server.h"
+
+/* Security */
+#include "SocketSimple-security.h"
 
 #ifdef __cplusplus
 }

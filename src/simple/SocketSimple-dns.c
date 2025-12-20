@@ -12,6 +12,7 @@
 #include "SocketSimple-internal.h"
 
 #include "socket/SocketCommon.h"
+#include "dns/SocketDNS.h"
 
 #include <netdb.h>
 
@@ -361,4 +362,471 @@ Socket_simple_dns_result_free (SocketSimple_DNSResult *result)
       free (result->addresses);
     }
   memset (result, 0, sizeof (*result));
+}
+
+/* ============================================================================
+ * Async DNS Internal Structures
+ * ============================================================================
+ */
+
+struct SocketSimple_DNS
+{
+  SocketDNS_T dns;
+};
+
+struct SocketSimple_DNSRequest
+{
+  SocketDNS_Request_T *core_req;
+  SocketDNS_T dns;
+  int complete;
+  int error;
+  struct addrinfo *result;
+};
+
+/* Callback wrapper for async mode */
+struct simple_dns_callback_ctx
+{
+  SocketSimple_DNSCallback callback;
+  void *userdata;
+  SocketDNS_T dns;
+};
+
+static void
+simple_dns_callback_wrapper (SocketDNS_Request_T *req, struct addrinfo *result,
+                             int error, void *data)
+{
+  struct simple_dns_callback_ctx *ctx = data;
+  SocketSimple_DNSResult simple_result;
+
+  (void)req;
+
+  memset (&simple_result, 0, sizeof (simple_result));
+
+  if (error == 0 && result)
+    {
+      /* Convert addrinfo to simple result */
+      struct addrinfo *p;
+      int count = 0;
+
+      for (p = result; p != NULL; p = p->ai_next)
+        count++;
+
+      if (count > 0)
+        {
+          simple_result.addresses = calloc ((size_t)count + 1, sizeof (char *));
+          if (simple_result.addresses)
+            {
+              int i = 0;
+              for (p = result; p != NULL && i < count; p = p->ai_next)
+                {
+                  char host[NI_MAXHOST];
+                  if (SocketCommon_reverse_lookup (p->ai_addr, p->ai_addrlen,
+                                                   host, sizeof (host), NULL, 0,
+                                                   NI_NUMERICHOST,
+                                                   SocketCommon_Failed)
+                      == 0)
+                    {
+                      simple_result.addresses[i] = strdup (host);
+                      if (simple_result.addresses[i])
+                        i++;
+                    }
+                }
+              simple_result.count = i;
+              simple_result.family = result->ai_family;
+            }
+        }
+    }
+
+  /* Call user callback */
+  if (ctx->callback)
+    {
+      ctx->callback (error == 0 ? &simple_result : NULL, error, ctx->userdata);
+    }
+
+  /* Cleanup */
+  Socket_simple_dns_result_free (&simple_result);
+  if (result)
+    freeaddrinfo (result);
+  free (ctx);
+}
+
+/* ============================================================================
+ * Async DNS Resolver Lifecycle
+ * ============================================================================
+ */
+
+SocketSimple_DNS_T
+Socket_simple_dns_new (void)
+{
+  volatile SocketDNS_T dns = NULL;
+  struct SocketSimple_DNS *handle = NULL;
+
+  Socket_simple_clear_error ();
+
+  TRY { dns = SocketDNS_new (); }
+  EXCEPT (SocketDNS_Failed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_DNS, "Failed to create DNS resolver");
+    return NULL;
+  }
+  END_TRY;
+
+  if (!dns)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_DNS, "Failed to create DNS resolver");
+      return NULL;
+    }
+
+  handle = calloc (1, sizeof (*handle));
+  if (!handle)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
+      SocketDNS_free ((SocketDNS_T *)&dns);
+      return NULL;
+    }
+
+  handle->dns = dns;
+  return handle;
+}
+
+void
+Socket_simple_dns_free (SocketSimple_DNS_T *dns)
+{
+  if (!dns || !*dns)
+    return;
+
+  struct SocketSimple_DNS *handle = *dns;
+
+  if (handle->dns)
+    {
+      SocketDNS_free (&handle->dns);
+    }
+
+  free (handle);
+  *dns = NULL;
+}
+
+/* ============================================================================
+ * Async DNS Configuration
+ * ============================================================================
+ */
+
+void
+Socket_simple_dns_set_timeout (SocketSimple_DNS_T dns, int timeout_ms)
+{
+  if (!dns || !dns->dns)
+    return;
+  SocketDNS_settimeout (dns->dns, timeout_ms);
+}
+
+int
+Socket_simple_dns_get_timeout (SocketSimple_DNS_T dns)
+{
+  if (!dns || !dns->dns)
+    return 0;
+  return SocketDNS_gettimeout (dns->dns);
+}
+
+void
+Socket_simple_dns_set_max_pending (SocketSimple_DNS_T dns, size_t max_pending)
+{
+  if (!dns || !dns->dns)
+    return;
+
+  TRY { SocketDNS_setmaxpending (dns->dns, max_pending); }
+  EXCEPT (SocketDNS_Failed) { /* Ignore errors */
+  }
+  END_TRY;
+}
+
+void
+Socket_simple_dns_prefer_ipv6 (SocketSimple_DNS_T dns, int prefer_ipv6)
+{
+  if (!dns || !dns->dns)
+    return;
+  SocketDNS_prefer_ipv6 (dns->dns, prefer_ipv6);
+}
+
+/* ============================================================================
+ * Async DNS Resolution (Callback Mode)
+ * ============================================================================
+ */
+
+int
+Socket_simple_dns_resolve_async (SocketSimple_DNS_T dns, const char *hostname,
+                                 SocketSimple_DNSCallback callback,
+                                 void *userdata)
+{
+  struct simple_dns_callback_ctx *ctx;
+
+  Socket_simple_clear_error ();
+
+  if (!dns || !dns->dns || !hostname || !callback)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
+      return -1;
+    }
+
+  ctx = malloc (sizeof (*ctx));
+  if (!ctx)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
+      return -1;
+    }
+
+  ctx->callback = callback;
+  ctx->userdata = userdata;
+  ctx->dns = dns->dns;
+
+  TRY
+  {
+    SocketDNS_resolve (dns->dns, hostname, 0, simple_dns_callback_wrapper, ctx);
+  }
+  EXCEPT (SocketDNS_Failed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_DNS, "Failed to start DNS resolution");
+    free (ctx);
+    return -1;
+  }
+  END_TRY;
+
+  return 0;
+}
+
+/* ============================================================================
+ * Async DNS Resolution (Polling Mode)
+ * ============================================================================
+ */
+
+SocketSimple_DNSRequest_T
+Socket_simple_dns_resolve_start (SocketSimple_DNS_T dns, const char *hostname)
+{
+  SocketDNS_Request_T *volatile req = NULL;
+  struct SocketSimple_DNSRequest *volatile handle = NULL;
+  volatile int exception_occurred = 0;
+
+  Socket_simple_clear_error ();
+
+  if (!dns || !dns->dns || !hostname)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
+      return NULL;
+    }
+
+  handle = calloc (1, sizeof (*handle));
+  if (!handle)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
+      return NULL;
+    }
+
+  TRY { req = SocketDNS_resolve (dns->dns, hostname, 0, NULL, NULL); }
+  EXCEPT (SocketDNS_Failed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_DNS, "Failed to start DNS resolution");
+    exception_occurred = 1;
+  }
+  END_TRY;
+
+  if (exception_occurred)
+    {
+      free ((void *)handle);
+      return NULL;
+    }
+
+  if (!req)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_DNS, "Failed to start DNS resolution");
+      free ((void *)handle);
+      return NULL;
+    }
+
+  handle->core_req = (SocketDNS_Request_T *)req;
+  handle->dns = dns->dns;
+  handle->complete = 0;
+  handle->error = 0;
+  handle->result = NULL;
+
+  return (SocketSimple_DNSRequest_T)handle;
+}
+
+int
+Socket_simple_dns_pollfd (SocketSimple_DNS_T dns)
+{
+  if (!dns || !dns->dns)
+    return -1;
+  return SocketDNS_pollfd (dns->dns);
+}
+
+int
+Socket_simple_dns_check (SocketSimple_DNS_T dns)
+{
+  if (!dns || !dns->dns)
+    return 0;
+  return SocketDNS_check (dns->dns);
+}
+
+int
+Socket_simple_dns_request_done (SocketSimple_DNSRequest_T req)
+{
+  if (!req || !req->core_req || !req->dns)
+    return 1; /* Consider invalid as done */
+
+  /* Check if result is available */
+  struct addrinfo *result = SocketDNS_getresult (req->dns, req->core_req);
+  if (result)
+    {
+      req->result = result;
+      req->error = SocketDNS_geterror (req->dns, req->core_req);
+      req->complete = 1;
+      return 1;
+    }
+
+  /* Check for error without result */
+  int err = SocketDNS_geterror (req->dns, req->core_req);
+  if (err != 0)
+    {
+      req->error = err;
+      req->complete = 1;
+      return 1;
+    }
+
+  return 0;
+}
+
+int
+Socket_simple_dns_request_result (SocketSimple_DNSRequest_T req,
+                                  SocketSimple_DNSResult *result)
+{
+  Socket_simple_clear_error ();
+
+  if (!req || !result)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
+      return -1;
+    }
+
+  memset (result, 0, sizeof (*result));
+
+  if (!req->complete)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_DNS, "Request not complete");
+      return -1;
+    }
+
+  if (req->error != 0)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_DNS, "DNS resolution failed");
+      return -1;
+    }
+
+  if (!req->result)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_DNS, "No result available");
+      return -1;
+    }
+
+  /* Convert addrinfo to simple result */
+  struct addrinfo *p;
+  int count = 0;
+
+  for (p = req->result; p != NULL; p = p->ai_next)
+    count++;
+
+  if (count == 0)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_DNS, "No addresses found");
+      return -1;
+    }
+
+  result->addresses = calloc ((size_t)count + 1, sizeof (char *));
+  if (!result->addresses)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
+      return -1;
+    }
+
+  int i = 0;
+  for (p = req->result; p != NULL && i < count; p = p->ai_next)
+    {
+      char host[NI_MAXHOST];
+      if (SocketCommon_reverse_lookup (p->ai_addr, p->ai_addrlen, host,
+                                       sizeof (host), NULL, 0, NI_NUMERICHOST,
+                                       SocketCommon_Failed)
+          == 0)
+        {
+          result->addresses[i] = strdup (host);
+          if (result->addresses[i])
+            i++;
+        }
+    }
+
+  result->count = i;
+  result->family = req->result->ai_family;
+
+  if (result->count == 0)
+    {
+      free (result->addresses);
+      result->addresses = NULL;
+      simple_set_error (SOCKET_SIMPLE_ERR_DNS, "Failed to convert addresses");
+      return -1;
+    }
+
+  return 0;
+}
+
+int
+Socket_simple_dns_request_error (SocketSimple_DNSRequest_T req)
+{
+  if (!req)
+    return -1;
+  return req->error;
+}
+
+void
+Socket_simple_dns_request_cancel (SocketSimple_DNS_T dns,
+                                  SocketSimple_DNSRequest_T req)
+{
+  if (!dns || !dns->dns || !req || !req->core_req)
+    return;
+
+  SocketDNS_cancel (dns->dns, req->core_req);
+  req->complete = 1;
+  req->error = -1;
+}
+
+void
+Socket_simple_dns_request_free (SocketSimple_DNSRequest_T *req)
+{
+  if (!req || !*req)
+    return;
+
+  struct SocketSimple_DNSRequest *handle = *req;
+
+  if (handle->result)
+    freeaddrinfo (handle->result);
+
+  free (handle);
+  *req = NULL;
+}
+
+/* ============================================================================
+ * DNS Cache Control
+ * ============================================================================
+ */
+
+void
+Socket_simple_dns_cache_clear (SocketSimple_DNS_T dns)
+{
+  if (!dns || !dns->dns)
+    return;
+  SocketDNS_cache_clear (dns->dns);
+}
+
+void
+Socket_simple_dns_cache_set_ttl (SocketSimple_DNS_T dns, int ttl_seconds)
+{
+  if (!dns || !dns->dns)
+    return;
+  SocketDNS_cache_set_ttl (dns->dns, ttl_seconds);
 }

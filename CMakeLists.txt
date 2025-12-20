@@ -313,6 +313,12 @@ set(LIB_SOURCES
     src/simple/SocketSimple-dns.c
     src/simple/SocketSimple-http.c
     src/simple/SocketSimple-ws.c
+    src/simple/SocketSimple-pool.c
+    src/simple/SocketSimple-poll.c
+    src/simple/SocketSimple-ratelimit.c
+    src/simple/SocketSimple-proxy.c
+    src/simple/SocketSimple-http-server.c
+    src/simple/SocketSimple-security.c
 )
 
 # Add TLS sources if enabled (split for maintainability)
@@ -515,6 +521,12 @@ set(SIMPLE_HEADERS
     include/simple/SocketSimple-http.h
     include/simple/SocketSimple-ws.h
     include/simple/SocketSimple-dns.h
+    include/simple/SocketSimple-pool.h
+    include/simple/SocketSimple-poll.h
+    include/simple/SocketSimple-proxy.h
+    include/simple/SocketSimple-http-server.h
+    include/simple/SocketSimple-ratelimit.h
+    include/simple/SocketSimple-security.h
 )
 
 install(TARGETS socket_static socket_shared

@@ -1,44 +1,74 @@
-# Simple API Implementation Plan
+# Simple API Implementation Status
 
-## Phase 0: Restructure into Sub-files
+## Completed Modules
 
-Split implementation into modules, keep SocketSimple.c as thin wrappers:
+- [x] **TCP/UDP** (`SocketSimple-tcp.h`) - Client, server, UDP send/recv
+- [x] **TLS** (`SocketSimple-tls.h`) - TLS client and server
+- [x] **DNS** (`SocketSimple-dns.h`) - Blocking DNS resolution
+- [x] **HTTP** (`SocketSimple-http.h`) - HTTP client (GET/POST/PUT/DELETE)
+- [x] **WebSocket** (`SocketSimple-ws.h`) - WebSocket client
 
-```
-src/simple/
-  SocketSimple.c          # Thin wrappers + error state (stays small)
-  SocketSimple-internal.h # Shared internals (error helpers, handle struct)
-  SocketSimple-tcp.c      # TCP/UDP implementation
-  SocketSimple-tls.c      # TLS implementation
-  SocketSimple-dns.c      # DNS implementation
-  SocketSimple-http.c     # HTTP implementation
-  SocketSimple-ws.c       # WebSocket implementation
-```
+## Completed Modules (continued)
 
-Update CMakeLists.txt to compile all .c files.
+### Phase 1: Foundation
 
-## Phase 1: UDP (SocketDgram)
-- Implement in SocketSimple-tcp.c
-- Replace stubbed sendto/recvfrom with SocketDgram wrappers
+- [x] **Pool** (`SocketSimple-pool.h`)
+  - Connection pooling with rate limiting
+  - Per-IP connection limits
+  - Graceful shutdown (drain)
+  - Pool statistics
 
-## Phase 2: DNS (SocketDNS)
-- Create SocketSimple-dns.c
-- Replace raw getaddrinfo() with SocketDNS module
-- Implement async DNS with timeout
+- [x] **Poll** (`SocketSimple-poll.h`)
+  - Event-driven I/O (epoll/kqueue/poll wrapper)
+  - Socket registration and event waiting
+  - Cross-platform backend abstraction
 
-## Phase 3: TLS Server
-- Add to SocketSimple-tls.c
-- Implement listen_tls/accept_tls
+- [x] **Rate Limiting** (`SocketSimple-ratelimit.h`)
+  - Token bucket rate limiter
+  - Non-blocking and blocking acquire
 
-## Phase 4: HTTP (SocketHTTPClient)
-- Create SocketSimple-http.c
-- Wrap SocketHTTPClient for all methods
-- URL parsing, response population
+### Phase 2: Networking
 
-## Phase 5: WebSocket (SocketWS)
-- Create SocketSimple-ws.c
-- Wrap SocketWS connect/send/recv/close
+- [x] **Proxy** (`SocketSimple-proxy.h`)
+  - SOCKS4/4a/5 support
+  - HTTP CONNECT tunneling
+  - Proxy URL parsing
 
----
+## Completed Modules (continued)
 
-**Current Status:** TCP client/server and TLS client work. Everything else stubbed.
+### Phase 3: Application
+
+- [x] **HTTP Server** (`SocketSimple-http-server.h`)
+  - Request/response handling
+  - Streaming responses
+  - Graceful shutdown (drain)
+  - Statistics and connection tracking
+
+### Phase 4: Extensions
+
+- [ ] **WebSocket Server** (`SocketSimple-ws.h`) - *Partially implemented*
+  - [x] Server config (max frame/message size, UTF-8 validation)
+  - [x] `Socket_simple_ws_is_upgrade()` - Detect upgrade requests
+  - [ ] `Socket_simple_ws_accept()` - Accept from HTTP server request (TODO)
+  - [ ] `Socket_simple_ws_accept_raw()` - Accept on raw sockets (TODO)
+  - [ ] `Socket_simple_ws_reject()` - Reject upgrade (TODO)
+
+- [x] **Security** (`SocketSimple-security.h`)
+  - SYN flood protection with reputation system
+  - IP tracking with per-IP connection limits
+  - Whitelist/blacklist management
+  - Statistics and cleanup
+
+- [x] **Async DNS** (`SocketSimple-dns.h`)
+  - Non-blocking DNS with callbacks
+  - Polling mode for event loop integration
+  - DNS cache control
+
+## Implementation Notes
+
+All modules follow these conventions:
+- Opaque types: `SocketSimple_Module_T`
+- Concrete structs: `SocketSimple_StructName` (no `_T`)
+- Functions: `Socket_simple_module_verb()`
+- Cleanup: `Socket_simple_module_free(Type *handle)` sets handle to NULL
+- Errors: NULL/-1 on failure, use `Socket_simple_error()` for message
