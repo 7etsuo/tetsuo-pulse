@@ -480,11 +480,8 @@ cleanup_pipe (struct SocketDNS_T *dns)
 {
   for (int i = 0; i < 2; i++)
     {
-      if (dns->pipefd[i] >= 0)
-        {
-          SAFE_CLOSE (dns->pipefd[i]);
-          dns->pipefd[i] = -1;
-        }
+      SAFE_CLOSE (dns->pipefd[i]);
+      dns->pipefd[i] = -1;
     }
 }
 
