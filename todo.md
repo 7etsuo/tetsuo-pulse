@@ -323,16 +323,16 @@ An agent should check items off as they’re implemented, reviewed, and verified
 
 ## F) RFC 8441 WebSockets-over-HTTP/2 (no hacky “just bytes”)
 
-### F1) Implement `SETTINGS_ENABLE_CONNECT_PROTOCOL (0x8)` and enforce it
+### F1) Implement `SETTINGS_ENABLE_CONNECT_PROTOCOL (0x8)` and enforce it ✅ COMPLETED
 
-- [ ] **What to do**: Add support and enforce `:protocol` usage only when negotiated.
-- [ ] **Where**: `include/http/SocketHTTP2.h`, `src/http/SocketHTTP2-connection.c`
-- [ ] **Done when**:
-  - [ ] Server and client correctly negotiate and validate Extended CONNECT.
-  - [ ] `SETTINGS_ENABLE_CONNECT_PROTOCOL` value is validated as 0 or 1.
-  - [ ] A sender MUST NOT send value 0 after previously sending value 1 (enforced in our local settings behavior).
-  - [ ] If a client uses `:protocol` without first receiving `SETTINGS_ENABLE_CONNECT_PROTOCOL=1`, the peer treats it as malformed and triggers the correct stream error (`PROTOCOL_ERROR`).
-  - [ ] On requests bearing `:protocol`, `:scheme` and `:path` are also required; and `:authority` semantics follow the RFC 8441 override (server MUST NOT treat `:authority` as a proxy-tunnel host).
+- [x] **What to do**: Add support and enforce `:protocol` usage only when negotiated.
+- [x] **Where**: `include/http/SocketHTTP2.h`, `src/http/SocketHTTP2-connection.c`, `src/http/SocketHTTP2-stream.c`
+- [x] **Done when**:
+  - [x] Server and client correctly negotiate and validate Extended CONNECT.
+  - [x] `SETTINGS_ENABLE_CONNECT_PROTOCOL` value is validated as 0 or 1.
+  - [x] A sender MUST NOT send value 0 after previously sending value 1 (enforced in our local settings behavior).
+  - [x] If a client uses `:protocol` without first receiving `SETTINGS_ENABLE_CONNECT_PROTOCOL=1`, the peer treats it as malformed and triggers the correct stream error (`PROTOCOL_ERROR`).
+  - [x] On requests bearing `:protocol`, `:scheme` and `:path` are also required; and `:authority` semantics follow the RFC 8441 override (server MUST NOT treat `:authority` as a proxy-tunnel host).
 
 ### F2) Replace “callback-only DATA delivery” with a real stream-backed WebSocket transport
 
