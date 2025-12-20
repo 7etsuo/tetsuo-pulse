@@ -27,6 +27,8 @@
 #include "http/SocketHPACK-private.h"
 #include "http/SocketHPACK.h"
 
+#define T SocketHPACK_Table_T
+
 /* Module exception for this translation unit (required for SOCKET_RAISE_MSG) */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketHPACK);
 
@@ -583,12 +585,13 @@ SocketHPACK_static_find (const char *name, size_t name_len, const char *value,
                          size_t value_len)
 {
   int name_match = 0;
+  size_t i;
 
   if (!hpack_validate_search_params (name, name_len))
     return 0;
 
   /* Linear search through static table (sufficient for 61 entries) */
-  for (size_t i = 0; i < SOCKETHPACK_STATIC_TABLE_SIZE; i++)
+  for (i = 0; i < SOCKETHPACK_STATIC_TABLE_SIZE; i++)
     {
       const HPACK_StaticEntry *entry = &hpack_static_table[i];
       int match
@@ -780,6 +783,7 @@ SocketHPACK_Table_find (SocketHPACK_Table_T table, const char *name,
                         size_t name_len, const char *value, size_t value_len)
 {
   int name_match = 0;
+  size_t i;
 
   if (!hpack_validate_table (table, "Table_find"))
     return 0;
@@ -787,7 +791,7 @@ SocketHPACK_Table_find (SocketHPACK_Table_T table, const char *name,
   if (!hpack_validate_search_params (name, name_len))
     return 0;
 
-  for (size_t i = 0; i < table->count; i++)
+  for (i = 0; i < table->count; i++)
     {
       size_t actual_index = (table->tail - 1 - i) & (table->capacity - 1);
       HPACK_DynamicEntry *entry = &table->entries[actual_index];
@@ -805,3 +809,5 @@ SocketHPACK_Table_find (SocketHPACK_Table_T table, const char *name,
 
   return name_match;
 }
+
+#undef T
