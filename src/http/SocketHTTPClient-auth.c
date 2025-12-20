@@ -19,15 +19,15 @@
  * duplication.
  */
 
-#include "core/SocketCrypto.h"
-#include "core/SocketUtil.h"
-#include "http/SocketHTTPClient-private.h"
-
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+
+#include "core/SocketCrypto.h"
+#include "core/SocketUtil.h"
+#include "http/SocketHTTPClient-private.h"
 
 /* ============================================================================
  * Digest Challenge Structure
@@ -288,9 +288,9 @@ parse_parameter_name (const char *p, char *name, size_t name_size)
 
 /**
  * store_challenge_field - Store parsed field in challenge structure
- * @ch: Challenge structure
- * @name: Field name
- * @value: Field value
+ * @ch: Challenge structure (output)
+ * @name: Field name (read-only)
+ * @value: Field value (read-only)
  */
 static void
 store_challenge_field (DigestChallenge *ch, const char *name,
@@ -768,9 +768,9 @@ generate_cnonce (char *cnonce, size_t size)
 {
   unsigned char random_bytes[HTTPCLIENT_DIGEST_CNONCE_SIZE];
 
-  (void)size;
   assert (cnonce != NULL);
   assert (size >= HTTPCLIENT_DIGEST_CNONCE_HEX_SIZE);
+  (void)size;
 
   if (SocketCrypto_random_bytes (random_bytes, sizeof (random_bytes)) != 0)
     {
