@@ -13,8 +13,69 @@
  * Implements HTTP methods, status codes, versions, and character tables.
  */
 
+#include <string.h>
+
 #include "http/SocketHTTP-private.h"
 #include "http/SocketHTTP.h"
+
+/* ============================================================================
+ * String Length Constants for HTTP Parsing
+ * ============================================================================
+ *
+ * Named constants for HTTP token lengths used in parsing to eliminate magic
+ * numbers. These match the canonical string representations in RFC 9110.
+ */
+
+/** @brief Length of "HTTP/X.Y" version strings (e.g., "HTTP/1.1") */
+#define SOCKETHTTP_VERSION_STR_LEN_FULL 8
+
+/** @brief Length of "HTTP/N" version strings (e.g., "HTTP/2") */
+#define SOCKETHTTP_VERSION_STR_LEN_SHORT 6
+
+/** @brief Length of "GET" method string */
+#define SOCKETHTTP_METHOD_LEN_GET 3
+
+/** @brief Length of "PUT" method string */
+#define SOCKETHTTP_METHOD_LEN_PUT 3
+
+/** @brief Length of "HEAD" method string */
+#define SOCKETHTTP_METHOD_LEN_HEAD 4
+
+/** @brief Length of "POST" method string */
+#define SOCKETHTTP_METHOD_LEN_POST 4
+
+/** @brief Length of "TRACE" method string */
+#define SOCKETHTTP_METHOD_LEN_TRACE 5
+
+/** @brief Length of "PATCH" method string */
+#define SOCKETHTTP_METHOD_LEN_PATCH 5
+
+/** @brief Length of "DELETE" method string */
+#define SOCKETHTTP_METHOD_LEN_DELETE 6
+
+/** @brief Length of "CONNECT" method string */
+#define SOCKETHTTP_METHOD_LEN_CONNECT 7
+
+/** @brief Length of "OPTIONS" method string */
+#define SOCKETHTTP_METHOD_LEN_OPTIONS 7
+
+/** @brief Length of "identity" coding string */
+#define SOCKETHTTP_CODING_LEN_IDENTITY 8
+
+/** @brief Length of "chunked" coding string */
+#define SOCKETHTTP_CODING_LEN_CHUNKED 7
+
+/** @brief Length of "gzip" coding string */
+#define SOCKETHTTP_CODING_LEN_GZIP 4
+
+/** @brief Length of "deflate" coding string */
+#define SOCKETHTTP_CODING_LEN_DEFLATE 7
+
+/** @brief Length of "compress" coding string */
+#define SOCKETHTTP_CODING_LEN_COMPRESS 8
+
+/** @brief Length of "br" (Brotli) coding string */
+#define SOCKETHTTP_CODING_LEN_BR 2
 
 /* Status code boundaries defined in SocketHTTP.h */
 /* ============================================================================
@@ -266,20 +327,20 @@ SocketHTTP_version_parse (const char *str, size_t len)
     return HTTP_VERSION_0_9;
   len = sockethttp_effective_length (str, len);
 
-  if (len == 8)
+  if (len == SOCKETHTTP_VERSION_STR_LEN_FULL)
     {
-      if (memcmp (str, "HTTP/0.9", 8) == 0)
+      if (memcmp (str, "HTTP/0.9", SOCKETHTTP_VERSION_STR_LEN_FULL) == 0)
         return HTTP_VERSION_0_9;
-      if (memcmp (str, "HTTP/1.0", 8) == 0)
+      if (memcmp (str, "HTTP/1.0", SOCKETHTTP_VERSION_STR_LEN_FULL) == 0)
         return HTTP_VERSION_1_0;
-      if (memcmp (str, "HTTP/1.1", 8) == 0)
+      if (memcmp (str, "HTTP/1.1", SOCKETHTTP_VERSION_STR_LEN_FULL) == 0)
         return HTTP_VERSION_1_1;
     }
-  if (len == 6)
+  if (len == SOCKETHTTP_VERSION_STR_LEN_SHORT)
     {
-      if (memcmp (str, "HTTP/2", 6) == 0)
+      if (memcmp (str, "HTTP/2", SOCKETHTTP_VERSION_STR_LEN_SHORT) == 0)
         return HTTP_VERSION_2;
-      if (memcmp (str, "HTTP/3", 6) == 0)
+      if (memcmp (str, "HTTP/3", SOCKETHTTP_VERSION_STR_LEN_SHORT) == 0)
         return HTTP_VERSION_3;
     }
   return HTTP_VERSION_0_9;
@@ -343,24 +404,41 @@ SocketHTTP_method_parse (const char *str, size_t len)
   len = sockethttp_effective_length (str, len);
 
   /* Case-sensitive match for standard methods (RFC 9110 requires uppercase) */
-  if (len == 3 && memcmp (str, "GET", 3) == 0)
-    return HTTP_METHOD_GET;
-  if (len == 4 && memcmp (str, "HEAD", 4) == 0)
-    return HTTP_METHOD_HEAD;
-  if (len == 4 && memcmp (str, "POST", 4) == 0)
-    return HTTP_METHOD_POST;
-  if (len == 3 && memcmp (str, "PUT", 3) == 0)
-    return HTTP_METHOD_PUT;
-  if (len == 6 && memcmp (str, "DELETE", 6) == 0)
-    return HTTP_METHOD_DELETE;
-  if (len == 7 && memcmp (str, "CONNECT", 7) == 0)
-    return HTTP_METHOD_CONNECT;
-  if (len == 7 && memcmp (str, "OPTIONS", 7) == 0)
-    return HTTP_METHOD_OPTIONS;
-  if (len == 5 && memcmp (str, "TRACE", 5) == 0)
-    return HTTP_METHOD_TRACE;
-  if (len == 5 && memcmp (str, "PATCH", 5) == 0)
-    return HTTP_METHOD_PATCH;
+  switch (len)
+    {
+    case SOCKETHTTP_METHOD_LEN_GET: /* 3: GET, PUT */
+      if (memcmp (str, "GET", SOCKETHTTP_METHOD_LEN_GET) == 0)
+        return HTTP_METHOD_GET;
+      if (memcmp (str, "PUT", SOCKETHTTP_METHOD_LEN_PUT) == 0)
+        return HTTP_METHOD_PUT;
+      break;
+
+    case SOCKETHTTP_METHOD_LEN_HEAD: /* 4: HEAD, POST */
+      if (memcmp (str, "HEAD", SOCKETHTTP_METHOD_LEN_HEAD) == 0)
+        return HTTP_METHOD_HEAD;
+      if (memcmp (str, "POST", SOCKETHTTP_METHOD_LEN_POST) == 0)
+        return HTTP_METHOD_POST;
+      break;
+
+    case SOCKETHTTP_METHOD_LEN_TRACE: /* 5: TRACE, PATCH */
+      if (memcmp (str, "TRACE", SOCKETHTTP_METHOD_LEN_TRACE) == 0)
+        return HTTP_METHOD_TRACE;
+      if (memcmp (str, "PATCH", SOCKETHTTP_METHOD_LEN_PATCH) == 0)
+        return HTTP_METHOD_PATCH;
+      break;
+
+    case SOCKETHTTP_METHOD_LEN_DELETE: /* 6: DELETE */
+      if (memcmp (str, "DELETE", SOCKETHTTP_METHOD_LEN_DELETE) == 0)
+        return HTTP_METHOD_DELETE;
+      break;
+
+    case SOCKETHTTP_METHOD_LEN_CONNECT: /* 7: CONNECT, OPTIONS */
+      if (memcmp (str, "CONNECT", SOCKETHTTP_METHOD_LEN_CONNECT) == 0)
+        return HTTP_METHOD_CONNECT;
+      if (memcmp (str, "OPTIONS", SOCKETHTTP_METHOD_LEN_OPTIONS) == 0)
+        return HTTP_METHOD_OPTIONS;
+      break;
+    }
 
   return HTTP_METHOD_UNKNOWN;
 }
@@ -687,18 +765,32 @@ SocketHTTP_coding_parse (const char *name, size_t len)
   len = sockethttp_effective_length (name, len);
 
   /* Case-insensitive match per RFC 9110 */
-  if (len == 8 && strncasecmp (name, "identity", 8) == 0)
-    return HTTP_CODING_IDENTITY;
-  if (len == 7 && strncasecmp (name, "chunked", 7) == 0)
-    return HTTP_CODING_CHUNKED;
-  if (len == 4 && strncasecmp (name, "gzip", 4) == 0)
-    return HTTP_CODING_GZIP;
-  if (len == 7 && strncasecmp (name, "deflate", 7) == 0)
-    return HTTP_CODING_DEFLATE;
-  if (len == 8 && strncasecmp (name, "compress", 8) == 0)
-    return HTTP_CODING_COMPRESS;
-  if (len == 2 && strncasecmp (name, "br", 2) == 0)
-    return HTTP_CODING_BR;
+  switch (len)
+    {
+    case SOCKETHTTP_CODING_LEN_BR: /* 2: br */
+      if (strncasecmp (name, "br", SOCKETHTTP_CODING_LEN_BR) == 0)
+        return HTTP_CODING_BR;
+      break;
+
+    case SOCKETHTTP_CODING_LEN_GZIP: /* 4: gzip */
+      if (strncasecmp (name, "gzip", SOCKETHTTP_CODING_LEN_GZIP) == 0)
+        return HTTP_CODING_GZIP;
+      break;
+
+    case SOCKETHTTP_CODING_LEN_CHUNKED: /* 7: chunked, deflate */
+      if (strncasecmp (name, "chunked", SOCKETHTTP_CODING_LEN_CHUNKED) == 0)
+        return HTTP_CODING_CHUNKED;
+      if (strncasecmp (name, "deflate", SOCKETHTTP_CODING_LEN_DEFLATE) == 0)
+        return HTTP_CODING_DEFLATE;
+      break;
+
+    case SOCKETHTTP_CODING_LEN_IDENTITY: /* 8: identity, compress */
+      if (strncasecmp (name, "identity", SOCKETHTTP_CODING_LEN_IDENTITY) == 0)
+        return HTTP_CODING_IDENTITY;
+      if (strncasecmp (name, "compress", SOCKETHTTP_CODING_LEN_COMPRESS) == 0)
+        return HTTP_CODING_COMPRESS;
+      break;
+    }
 
   return HTTP_CODING_UNKNOWN;
 }
