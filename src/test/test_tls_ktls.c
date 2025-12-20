@@ -20,6 +20,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,6 +37,7 @@
 #include "tls/SocketTLS.h"
 #include "tls/SocketTLSConfig.h"
 #include "tls/SocketTLSContext.h"
+#include <openssl/crypto.h>
 
 /* ==================== Test Helpers ==================== */
 
@@ -45,41 +47,16 @@
 static int
 generate_test_certs (const char *cert_file, const char *key_file)
 {
-  char cmd[2048];
-  const char *conf_file = "/tmp/openssl_ktls_test.cnf";
-  FILE *f;
-
-  f = fopen (conf_file, "w");
-  if (!f)
-    return -1;
-  fprintf (f, "[req]\n"
-              "distinguished_name = req_dn\n"
-              "x509_extensions = v3_ca\n"
-              "[req_dn]\n"
-              "CN = localhost\n"
-              "[v3_ca]\n"
-              "basicConstraints = CA:TRUE\n"
-              "keyUsage = keyCertSign, cRLSign\n");
-  fclose (f);
+  char cmd[1024];
 
   snprintf (cmd, sizeof (cmd),
-            "openssl genrsa -out %s 2048 2>/dev/null && "
-            "openssl req -new -x509 -key %s -out %s -days 1 -nodes "
-            "-subj '/CN=localhost' -config %s -extensions v3_ca 2>/dev/null",
-            key_file, key_file, cert_file, conf_file);
+            "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s "
+            "-days 1 -nodes -subj '/CN=localhost' -batch 2>/dev/null",
+            key_file, cert_file);
   if (system (cmd) != 0)
-    {
-      unlink (conf_file);
-      goto fail;
-    }
+    return -1;
 
-  unlink (conf_file);
   return 0;
-
-fail:
-  unlink (cert_file);
-  unlink (key_file);
-  return -1;
 }
 
 static void
@@ -97,7 +74,7 @@ TEST (ktls_availability_detection)
   int available = SocketTLS_ktls_available ();
 
   /* Result should be boolean */
-  ASSERT_TRUE (available == 0 || available == 1);
+  ASSERT (available == 0 || available == 1);
 
   printf ("  kTLS availability: %s\n", available ? "YES" : "NO");
 
@@ -183,7 +160,7 @@ TEST (ktls_enable_requires_tls)
     SocketTLS_enable_ktls (sock);
 
     /* Should not reach here */
-    ASSERT_TRUE (0);
+    ASSERT (0);
   }
   EXCEPT (SocketTLS_Failed)
   {
@@ -293,10 +270,10 @@ TEST (ktls_full_handshake)
     int server_rx = SocketTLS_is_ktls_rx_active (server);
 
     /* Status should be 0 or 1 (not -1) after successful handshake */
-    ASSERT_TRUE (client_tx == 0 || client_tx == 1);
-    ASSERT_TRUE (client_rx == 0 || client_rx == 1);
-    ASSERT_TRUE (server_tx == 0 || server_tx == 1);
-    ASSERT_TRUE (server_rx == 0 || server_rx == 1);
+    ASSERT (client_tx == 0 || client_tx == 1);
+    ASSERT (client_rx == 0 || client_rx == 1);
+    ASSERT (server_tx == 0 || server_tx == 1);
+    ASSERT (server_rx == 0 || server_rx == 1);
 
     printf ("  kTLS client TX: %d, RX: %d\n", client_tx, client_rx);
     printf ("  kTLS server TX: %d, RX: %d\n", server_tx, server_rx);
@@ -304,7 +281,7 @@ TEST (ktls_full_handshake)
     /* Test I/O still works (regardless of kTLS status) */
     const char *test_msg = "Hello kTLS!";
     ssize_t sent = SocketTLS_send (client, test_msg, strlen (test_msg));
-    ASSERT_TRUE (sent > 0);
+    ASSERT (sent > 0);
 
     char buf[64];
     ssize_t received = 0;
@@ -314,20 +291,23 @@ TEST (ktls_full_handshake)
         if (received == 0 && errno == EAGAIN)
           usleep (1000);
       }
-    ASSERT_TRUE (received > 0);
+    ASSERT (received > 0);
     buf[received] = '\0';
-    ASSERT_STREQ (buf, test_msg);
+    ASSERT (strcmp (buf, test_msg) == 0);
   }
   FINALLY
   {
     if (client)
       {
-        SocketTLS_shutdown (client);
+        /* Use SocketTLS_disable for best-effort cleanup without exceptions.
+         * SocketTLS_shutdown can timeout and raise exceptions which would
+         * prevent subsequent cleanup in the FINALLY block. */
+        SocketTLS_disable (client);
         Socket_free (&client);
       }
     if (server)
       {
-        SocketTLS_shutdown (server);
+        SocketTLS_disable (server);
         Socket_free (&server);
       }
     if (client_ctx)
@@ -348,25 +328,26 @@ TEST (ktls_sendfile_basic)
   const char *cert_file = "test_ktls_sendfile.crt";
   const char *key_file = "test_ktls_sendfile.key";
   const char *test_file = "/tmp/ktls_test_data.bin";
+  const char *file_content = "This is test data for kTLS sendfile.";
   Socket_T client = NULL, server = NULL;
   SocketTLSContext_T client_ctx = NULL, server_ctx = NULL;
-  int file_fd = -1;
+  volatile int file_fd = -1;
 
   if (generate_test_certs (cert_file, key_file) != 0)
     return;
 
   /* Create test file */
-  file_fd = open (test_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-  if (file_fd < 0)
-    {
-      remove_test_certs (cert_file, key_file);
-      return;
-    }
-
-  const char *file_content = "This is test data for kTLS sendfile.";
-  write (file_fd, file_content, strlen (file_content));
-  close (file_fd);
-  file_fd = -1;
+  {
+    int fd = open (test_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (fd < 0)
+      {
+        remove_test_certs (cert_file, key_file);
+        return;
+      }
+    ssize_t written = write (fd, file_content, strlen (file_content));
+    (void)written;
+    close (fd);
+  }
 
   TRY
   {
@@ -404,12 +385,12 @@ TEST (ktls_sendfile_basic)
 
     /* Open file for reading */
     file_fd = open (test_file, O_RDONLY);
-    ASSERT_TRUE (file_fd >= 0);
+    ASSERT (file_fd >= 0);
 
     /* Send file via SocketTLS_sendfile */
     ssize_t sent = SocketTLS_sendfile (client, file_fd, 0,
                                        strlen (file_content));
-    ASSERT_TRUE (sent > 0);
+    ASSERT (sent > 0);
     ASSERT_EQ ((size_t)sent, strlen (file_content));
 
     /* Receive on server */
@@ -427,7 +408,7 @@ TEST (ktls_sendfile_basic)
       }
     ASSERT_EQ ((size_t)total_received, strlen (file_content));
     buf[total_received] = '\0';
-    ASSERT_STREQ (buf, file_content);
+    ASSERT (strcmp (buf, file_content) == 0);
   }
   FINALLY
   {
@@ -435,12 +416,13 @@ TEST (ktls_sendfile_basic)
       close (file_fd);
     if (client)
       {
-        SocketTLS_shutdown (client);
+        /* Use SocketTLS_disable for best-effort cleanup without exceptions */
+        SocketTLS_disable (client);
         Socket_free (&client);
       }
     if (server)
       {
-        SocketTLS_shutdown (server);
+        SocketTLS_disable (server);
         Socket_free (&server);
       }
     if (client_ctx)
@@ -455,32 +437,20 @@ TEST (ktls_sendfile_basic)
   ASSERT_EQ (Socket_debug_live_count (), 0);
 }
 
-/* ==================== Test Runner ==================== */
-
-int
-main (void)
-{
-  printf ("=== kTLS (Kernel TLS) Unit Tests ===\n\n");
-
-  RUN_TEST (ktls_availability_detection);
-  RUN_TEST (ktls_enable_before_tls);
-  RUN_TEST (ktls_enable_requires_tls);
-  RUN_TEST (ktls_status_invalid_socket);
-  RUN_TEST (ktls_status_no_tls);
-  RUN_TEST (ktls_full_handshake);
-  RUN_TEST (ktls_sendfile_basic);
-
-  printf ("\n=== All kTLS Tests Passed ===\n");
-  return 0;
-}
-
-#else /* !SOCKET_HAS_TLS */
-
-int
-main (void)
-{
-  printf ("TLS support not compiled in - skipping kTLS tests\n");
-  return 0;
-}
-
 #endif /* SOCKET_HAS_TLS */
+
+int
+main (void)
+{
+  /* Ignore SIGPIPE */
+  signal (SIGPIPE, SIG_IGN);
+
+  Test_run_all ();
+
+#if SOCKET_HAS_TLS
+  /* Clean up OpenSSL global state to prevent false leak reports */
+  OPENSSL_cleanup ();
+#endif
+
+  return Test_get_failures () > 0 ? 1 : 0;
+}
