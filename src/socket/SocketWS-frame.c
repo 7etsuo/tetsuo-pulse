@@ -78,9 +78,6 @@ static uint64_t
 ws_build_mask64 (const unsigned char mask[SOCKETWS_MASK_KEY_SIZE]);
 
 /* Header Buffer Helpers */
-static size_t ws_copy_to_header_buf (SocketWS_FrameParse *frame,
-                                     const unsigned char **data, size_t *len,
-                                     size_t target_size);
 
 /* Frame Header Parsing Helpers */
 static SocketWS_Error ws_parse_basic_header (SocketWS_FrameParse *frame);

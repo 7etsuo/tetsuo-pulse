@@ -266,8 +266,8 @@ copy_data (const char **input_pos, const char *input_end, char **output_pos,
  * Calculates and stores progress offsets for both input and output.
  */
 static inline void
-update_progress (const char *input_start, const char *input_pos,
-                 const char *output_start, const char *output_pos,
+update_progress (const char *const input_start, const char *const input_pos,
+                 const char *const output_start, const char *const output_pos,
                  size_t *consumed, size_t *written)
 {
   *consumed = (size_t)(input_pos - input_start);
@@ -408,7 +408,7 @@ SocketHTTP1_chunk_final (char *output, size_t output_size,
  * Returns: HTTP1_OK when complete, HTTP1_INCOMPLETE if more data needed
  */
 static SocketHTTP1_Result
-read_body_content_length (SocketHTTP1_Parser_T parser, const char *input,
+read_body_content_length (SocketHTTP1_Parser_T parser, const char *const input,
                           size_t input_len, size_t *consumed, char *output,
                           size_t output_len, size_t *written)
 {
@@ -454,7 +454,7 @@ read_body_content_length (SocketHTTP1_Parser_T parser, const char *input,
  * Returns: HTTP1_INCOMPLETE always (complete only on connection close)
  */
 static SocketHTTP1_Result
-read_body_until_close (SocketHTTP1_Parser_T parser, const char *input,
+read_body_until_close (SocketHTTP1_Parser_T parser, const char *const input,
                        size_t input_len, size_t *consumed, char *output,
                        size_t output_len, size_t *written)
 {
@@ -481,6 +481,7 @@ read_body_until_close (SocketHTTP1_Parser_T parser, const char *input,
  * @input: Input buffer (points to start of chunk size line)
  * @len: Available input length
  * @line_len: Output - total line length including CRLF
+ * @max_ext_len: Maximum allowed chunk extension length
  *
  * Parses hex chunk size, skips optional chunk extensions, expects CRLF.
  * Tolerates bare LF for lenient parsing.
@@ -488,7 +489,7 @@ read_body_until_close (SocketHTTP1_Parser_T parser, const char *input,
  * Returns: Chunk size on success, -1 on error, -2 if incomplete
  */
 static int64_t
-parse_chunk_size (const char *input, size_t len, size_t *line_len,
+parse_chunk_size (const char *const input, size_t len, size_t *line_len,
                   size_t max_ext_len)
 {
   const char *p = input;
@@ -690,7 +691,7 @@ handle_chunk_crlf_states (SocketHTTP1_Parser_T parser, const char **p,
  *          or error code
  */
 static SocketHTTP1_Result
-read_body_chunked (SocketHTTP1_Parser_T parser, const char *input,
+read_body_chunked (SocketHTTP1_Parser_T parser, const char *const input,
                    size_t input_len, size_t *consumed, char *output,
                    size_t output_len, size_t *written)
 {
