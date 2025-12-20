@@ -1491,7 +1491,6 @@ server_decode_http2_settings (Arena_T arena, const char *b64url,
                               unsigned char **out, size_t *out_len)
 {
   size_t in_len;
-  size_t pad;
   char *tmp;
   size_t tmp_len;
   unsigned char *decoded;
