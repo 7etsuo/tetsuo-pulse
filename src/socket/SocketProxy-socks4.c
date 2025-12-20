@@ -56,7 +56,7 @@
 
 /**
  * socks4_write_header - Write SOCKS4 request header (version + command + port)
- * @buf: Output buffer
+ * @buf: Output buffer (must have at least 4 bytes available)
  * @port: Destination port (1-65535)
  *
  * Returns: Number of bytes written (always 4)
@@ -81,17 +81,14 @@ socks4_write_header (unsigned char *buf, int port)
  * @username: Username or NULL (empty string if NULL)
  * @bytes_written: Output - bytes written including null terminator
  *
- * Returns: 0 on success, -1 if buffer overflow
+ * Returns: 0 on success, -1 if buffer overflow or username too long
  */
 static int
 socks4_write_userid (unsigned char *buf, size_t buf_remaining,
                      const char *username, size_t *bytes_written)
 {
-  const char *userid;
-  size_t userid_len;
-
-  userid = (username != NULL) ? username : "";
-  userid_len = strlen (userid);
+  const char *userid = (username != NULL) ? username : "";
+  size_t userid_len = strlen (userid);
 
   /* Limit username length per convention */
   if (userid_len > SOCKET_PROXY_MAX_USERNAME_LEN)
@@ -102,11 +99,100 @@ socks4_write_userid (unsigned char *buf, size_t buf_remaining,
 
   /* Need space for userid + null terminator */
   if (userid_len + 1 > buf_remaining)
-    return -1;
+    {
+      *bytes_written = 0;
+      return -1;
+    }
 
   memcpy (buf, userid, userid_len);
   buf[userid_len] = 0x00;
   *bytes_written = userid_len + 1;
+  return 0;
+}
+
+/**
+ * socks4_validate_inputs - Common input validation for SOCKS4/4a requests
+ * @conn: Proxy connection context
+ *
+ * Returns: 0 on success, -1 on validation failure (error set in conn)
+ *
+ * Validates port, hostname, and optional username for SOCKS4 requests.
+ */
+static int
+socks4_validate_inputs (struct SocketProxy_Conn_T *conn)
+{
+  TRY
+  {
+    SocketCommon_validate_port (conn->target_port, SocketProxy_Failed);
+    SocketCommon_validate_hostname (conn->target_host, SocketProxy_Failed);
+
+    if (conn->username != NULL)
+      {
+        size_t user_len = strlen (conn->username);
+        if (user_len > SOCKET_PROXY_MAX_USERNAME_LEN)
+          {
+            socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                                   "Username too long (max %d): %zu",
+                                   SOCKET_PROXY_MAX_USERNAME_LEN, user_len);
+            RETURN -1;
+          }
+        if (SocketUTF8_validate_str (conn->username) != UTF8_VALID)
+          {
+            socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                                   "Invalid UTF-8 in username");
+            RETURN -1;
+          }
+      }
+  }
+  EXCEPT (SocketProxy_Failed)
+  {
+    socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL, "%s", socket_error_buf);
+    RETURN -1;
+  }
+  END_TRY;
+
+  return 0;
+}
+
+/**
+ * socks4a_validate_hostname - Validate hostname for SOCKS4a requests
+ * @conn: Proxy connection context
+ * @host_len: Length of target hostname
+ *
+ * Returns: 0 on success, -1 on validation failure (error set in conn)
+ *
+ * Performs additional hostname validation specific to SOCKS4a:
+ * - Checks length bounds (1 to SOCKET_PROXY_MAX_HOSTNAME_LEN)
+ * - Rejects forbidden characters (CR, LF)
+ * - Validates UTF-8 encoding
+ */
+static int
+socks4a_validate_hostname (struct SocketProxy_Conn_T *conn, size_t host_len)
+{
+  if (host_len == 0 || host_len > SOCKET_PROXY_MAX_HOSTNAME_LEN)
+    {
+      socketproxy_set_error (
+          conn, PROXY_ERROR_PROTOCOL,
+          "Hostname invalid length: %zu bytes (must be 1-%d)", host_len,
+          SOCKET_PROXY_MAX_HOSTNAME_LEN);
+      return -1;
+    }
+
+  if (strpbrk (conn->target_host, "\r\n") != NULL)
+    {
+      socketproxy_set_error (
+          conn, PROXY_ERROR_PROTOCOL,
+          "Hostname contains forbidden characters (CR or LF)");
+      return -1;
+    }
+
+  if (SocketUTF8_validate_str (conn->target_host) != UTF8_VALID)
+    {
+      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                             "Invalid UTF-8 in target host");
+      return -1;
+    }
+
   return 0;
 }
 
@@ -138,33 +224,9 @@ proxy_socks4_send_connect (struct SocketProxy_Conn_T *conn)
 
   assert (conn != NULL);
 
-  /* Validate inputs */
-  TRY
-  {
-    SocketCommon_validate_port (conn->target_port, SocketProxy_Failed);
-    SocketCommon_validate_hostname (conn->target_host, SocketProxy_Failed);
-    size_t user_len = conn->username ? strlen (conn->username) : 0;
-    if (user_len > SOCKET_PROXY_MAX_USERNAME_LEN)
-      {
-        socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                               "Username too long (max %d): %zu",
-                               SOCKET_PROXY_MAX_USERNAME_LEN, user_len);
-        RETURN - 1;
-      }
-    if (conn->username
-        && SocketUTF8_validate_str (conn->username) != UTF8_VALID)
-      {
-        socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                               "Invalid UTF-8 in username");
-        RETURN - 1;
-      }
-  }
-  EXCEPT (SocketProxy_Failed)
-  {
-    socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL, "%s", socket_error_buf);
-    RETURN - 1;
-  }
-  END_TRY;
+  /* Validate inputs using common helper */
+  if (socks4_validate_inputs (conn) < 0)
+    return -1;
 
   /* Parse target as IPv4 address */
   if (inet_pton (AF_INET, conn->target_host, &ipv4) != 1)
@@ -227,68 +289,18 @@ proxy_socks4a_send_connect (struct SocketProxy_Conn_T *conn)
 
   assert (conn != NULL);
 
-  /* Validate inputs */
-  TRY
-  {
-    SocketCommon_validate_port (conn->target_port, SocketProxy_Failed);
-    SocketCommon_validate_hostname (conn->target_host, SocketProxy_Failed);
-    size_t user_len = conn->username ? strlen (conn->username) : 0;
-    if (user_len > SOCKET_PROXY_MAX_USERNAME_LEN)
-      {
-        socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                               "Username too long (max %d): %zu",
-                               SOCKET_PROXY_MAX_USERNAME_LEN, user_len);
-        RETURN - 1;
-      }
-    if (conn->username
-        && SocketUTF8_validate_str (conn->username) != UTF8_VALID)
-      {
-        socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                               "Invalid UTF-8 in username");
-        RETURN - 1;
-      }
-  }
-  EXCEPT (SocketProxy_Failed)
-  {
-    socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL, "%s", socket_error_buf);
-    RETURN - 1;
-  }
-  END_TRY;
+  /* Validate inputs using common helper */
+  if (socks4_validate_inputs (conn) < 0)
+    return -1;
 
-  /* Check if target is already an IPv4 address */
+  /* Check if target is already an IPv4 address - delegate to plain SOCKS4 */
   if (inet_pton (AF_INET, conn->target_host, &ipv4) == 1)
     return proxy_socks4_send_connect (conn);
 
-  /* Validate hostname length and UTF-8 */
+  /* Additional hostname validation for SOCKS4a */
   host_len = strlen (conn->target_host);
-  if (host_len == 0 || host_len > SOCKET_PROXY_MAX_HOSTNAME_LEN)
-    {
-      socketproxy_set_error (
-          conn, PROXY_ERROR_PROTOCOL,
-          "Hostname invalid length: %zu bytes (must be 1-%d)", host_len,
-          SOCKET_PROXY_MAX_HOSTNAME_LEN);
-      return -1;
-    }
-  if (strpbrk (conn->target_host, "\r\n") != NULL)
-    {
-      socketproxy_set_error (
-          conn, PROXY_ERROR_PROTOCOL,
-          "Hostname contains forbidden characters (CR or LF)");
-      return -1;
-    }
-  if (conn->target_port < 1 || conn->target_port > 65535)
-    {
-      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                             "Invalid target port %d (must be 1-65535)",
-                             conn->target_port);
-      return -1;
-    }
-  if (SocketUTF8_validate_str (conn->target_host) != UTF8_VALID)
-    {
-      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                             "Invalid UTF-8 in target host");
-      return -1;
-    }
+  if (socks4a_validate_hostname (conn, host_len) < 0)
+    return -1;
 
   /* Write header: version + command + port */
   len += socks4_write_header (buf + len, conn->target_port);

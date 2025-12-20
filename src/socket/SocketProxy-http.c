@@ -8,6 +8,7 @@
  * SocketProxy-http.c - HTTP CONNECT Protocol Implementation
  *
  * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
  *
  * Implements HTTP CONNECT method for proxy tunneling (RFC 7231 Section 4.3.6).
  *
@@ -16,6 +17,11 @@
  * 2. Optionally includes Proxy-Authorization header for Basic auth
  * 3. Server responds with HTTP status line (200 = success)
  * 4. After 200, connection is upgraded to raw TCP tunnel
+ *
+ * Security:
+ * - Uses SocketHTTP1_Parser_T in strict mode to prevent request smuggling
+ * - Credentials are securely cleared after Base64 encoding via SocketCrypto
+ * - All buffer operations are bounds-checked to prevent overflows
  *
  * The implementation reuses:
  * - SocketHTTP1_Parser_T for response parsing (strict mode prevents smuggling)
@@ -43,16 +49,36 @@
 #define SOCKET_PROXY_CREDENTIALS_BUFSIZE                                      \
   (SOCKET_PROXY_MAX_USERNAME_LEN + SOCKET_PROXY_MAX_PASSWORD_LEN + 2)
 
-/** Buffer size for Base64-encoded auth header value */
-#define SOCKET_PROXY_AUTH_HEADER_BUFSIZE                                      \
-  ((SOCKET_PROXY_CREDENTIALS_BUFSIZE * 4 / 3)                                 \
-   + SOCKET_PROXY_BASIC_AUTH_PREFIX_LEN + 32)
-
 /** Length of "Basic " prefix for Proxy-Authorization header */
 #define SOCKET_PROXY_BASIC_AUTH_PREFIX_LEN (sizeof ("Basic ") - 1)
 
+/** Base64 encoding padding allowance for header value */
+#define SOCKET_PROXY_BASE64_PADDING 32
+
+/** Buffer size for Base64-encoded auth header value */
+#define SOCKET_PROXY_AUTH_HEADER_BUFSIZE                                      \
+  ((SOCKET_PROXY_CREDENTIALS_BUFSIZE * 4 / 3)                                 \
+   + SOCKET_PROXY_BASIC_AUTH_PREFIX_LEN + SOCKET_PROXY_BASE64_PADDING)
+
 /** CRLF size for HTTP line endings */
 #define SOCKET_PROXY_CRLF_SIZE (sizeof ("\r\n") - 1)
+
+/* HTTP status code range boundaries */
+#define HTTP_STATUS_SUCCESS_MIN 200
+#define HTTP_STATUS_SUCCESS_MAX 299
+#define HTTP_STATUS_CLIENT_ERROR_MIN 400
+#define HTTP_STATUS_CLIENT_ERROR_MAX 499
+#define HTTP_STATUS_SERVER_ERROR_MIN 500
+
+/* Specific HTTP status codes for proxy responses */
+#define HTTP_STATUS_BAD_REQUEST 400
+#define HTTP_STATUS_FORBIDDEN 403
+#define HTTP_STATUS_NOT_FOUND 404
+#define HTTP_STATUS_PROXY_AUTH_REQUIRED 407
+#define HTTP_STATUS_INTERNAL_SERVER_ERROR 500
+#define HTTP_STATUS_BAD_GATEWAY 502
+#define HTTP_STATUS_SERVICE_UNAVAILABLE 503
+#define HTTP_STATUS_GATEWAY_TIMEOUT 504
 
 /* ============================================================================
  * Helper Functions
@@ -71,9 +97,10 @@
  * @fmt: printf-style format string
  *
  * Returns: 0 on success, -1 on truncation/error
+ * Thread-safe: No (modifies caller-provided buffers)
  *
  * Consolidates the repeated pattern of snprintf + bounds check + error
- * handling.
+ * handling. Uses vsnprintf for safe formatting with size limits.
  */
 static int
 append_formatted (char *buf, size_t *len, size_t *remaining, char *error_buf,
@@ -100,15 +127,17 @@ append_formatted (char *buf, size_t *len, size_t *remaining, char *error_buf,
 
 /**
  * build_basic_auth - Build Basic auth header value
- * @username: Username for authentication
- * @password: Password for authentication
+ * @username: Username for authentication (must not be NULL)
+ * @password: Password for authentication (must not be NULL)
  * @output: Output buffer for "Basic base64(user:pass)"
  * @output_size: Size of output buffer
  *
- * Returns: 0 on success, -1 on error
+ * Returns: 0 on success, -1 on error (credentials truncated or encoding failed)
+ * Thread-safe: Yes (uses stack-local buffer, secure clear)
  *
  * Securely builds Basic authentication header and clears credentials
- * from memory after encoding.
+ * from memory after encoding using SocketCrypto_secure_clear() to prevent
+ * sensitive data from being left in memory.
  */
 static int
 build_basic_auth (const char *username, const char *password, char *output,
@@ -165,7 +194,15 @@ build_basic_auth (const char *username, const char *password, char *output,
  */
 
 /**
- * append_request_line - Append CONNECT request line
+ * append_request_line - Append CONNECT request line to buffer
+ * @conn: Proxy connection context with target host/port
+ * @buf: Output buffer
+ * @len: Pointer to current buffer length (updated)
+ * @remaining: Pointer to remaining buffer space (updated)
+ *
+ * Returns: 0 on success, -1 if buffer too small
+ *
+ * Formats: "CONNECT host:port HTTP/1.1\r\n"
  */
 static int
 append_request_line (struct SocketProxy_Conn_T *conn, char *buf, size_t *len,
@@ -178,7 +215,15 @@ append_request_line (struct SocketProxy_Conn_T *conn, char *buf, size_t *len,
 }
 
 /**
- * append_host_header - Append Host header
+ * append_host_header - Append Host header to buffer
+ * @conn: Proxy connection context with target host/port
+ * @buf: Output buffer
+ * @len: Pointer to current buffer length (updated)
+ * @remaining: Pointer to remaining buffer space (updated)
+ *
+ * Returns: 0 on success, -1 if buffer too small
+ *
+ * Formats: "Host: host:port\r\n"
  */
 static int
 append_host_header (struct SocketProxy_Conn_T *conn, char *buf, size_t *len,
@@ -191,8 +236,16 @@ append_host_header (struct SocketProxy_Conn_T *conn, char *buf, size_t *len,
 }
 
 /**
- * append_auth_header - Append Proxy-Authorization header if credentials
- * present
+ * append_auth_header - Append Proxy-Authorization header if credentials present
+ * @conn: Proxy connection context with optional username/password
+ * @buf: Output buffer
+ * @len: Pointer to current buffer length (updated)
+ * @remaining: Pointer to remaining buffer space (updated)
+ *
+ * Returns: 0 on success (or no credentials), -1 on encoding/buffer error
+ *
+ * If credentials are present, formats: "Proxy-Authorization: Basic <b64>\r\n"
+ * Securely clears the encoded auth header after use.
  */
 static int
 append_auth_header (struct SocketProxy_Conn_T *conn, char *buf, size_t *len,
@@ -217,14 +270,22 @@ append_auth_header (struct SocketProxy_Conn_T *conn, char *buf, size_t *len,
                              sizeof (conn->error_buf), "Auth header too long",
                              "Proxy-Authorization: %s\r\n", auth_header);
 
-  /* Clear auth header after use */
+  /* Clear auth header after use - security best practice */
   SocketCrypto_secure_clear (auth_header, sizeof (auth_header));
 
   return result;
 }
 
 /**
- * append_extra_headers - Append extra headers if provided
+ * append_extra_headers - Append user-provided extra headers to buffer
+ * @conn: Proxy connection context with optional extra_headers
+ * @buf: Output buffer
+ * @len: Pointer to current buffer length (updated)
+ * @remaining: Pointer to remaining buffer space (updated)
+ *
+ * Returns: 0 on success (or no extra headers), -1 if buffer too small
+ *
+ * Serializes extra HTTP headers using SocketHTTP1_serialize_headers.
  */
 static int
 append_extra_headers (struct SocketProxy_Conn_T *conn, char *buf, size_t *len,
@@ -250,7 +311,15 @@ append_extra_headers (struct SocketProxy_Conn_T *conn, char *buf, size_t *len,
 }
 
 /**
- * append_request_terminator - Append final CRLF to end headers
+ * append_request_terminator - Append final CRLF to end HTTP headers
+ * @conn: Proxy connection context for error reporting
+ * @buf: Output buffer
+ * @len: Pointer to current buffer length (updated)
+ * @remaining: Pointer to remaining buffer space (updated)
+ *
+ * Returns: 0 on success, -1 if buffer too small
+ *
+ * Appends "\r\n" to terminate the HTTP header section.
  */
 static int
 append_request_terminator (struct SocketProxy_Conn_T *conn, char *buf,
@@ -268,6 +337,22 @@ append_request_terminator (struct SocketProxy_Conn_T *conn, char *buf,
   return 0;
 }
 
+/**
+ * proxy_http_send_connect - Build HTTP CONNECT request for proxy tunneling
+ * @conn: Proxy connection context with target host/port and optional auth
+ *
+ * Returns: 0 on success (request in send_buf), -1 on error
+ * Thread-safe: No (modifies conn->send_buf and conn->proto_state)
+ *
+ * Builds a complete HTTP CONNECT request in the connection's send buffer:
+ * - Request line: CONNECT target:port HTTP/1.1
+ * - Host header (required by HTTP/1.1)
+ * - Proxy-Authorization header (if credentials configured)
+ * - Extra headers (if configured)
+ * - Empty line to terminate headers
+ *
+ * After success, caller should send conn->send_buf[0..send_len-1].
+ */
 int
 proxy_http_send_connect (struct SocketProxy_Conn_T *conn)
 {
@@ -279,7 +364,7 @@ proxy_http_send_connect (struct SocketProxy_Conn_T *conn)
   if (append_request_line (conn, buf, &len, &remaining) < 0)
     return -1;
 
-  /* Host header (required) */
+  /* Host header (required by HTTP/1.1) */
   if (append_host_header (conn, buf, &len, &remaining) < 0)
     return -1;
 
@@ -291,7 +376,7 @@ proxy_http_send_connect (struct SocketProxy_Conn_T *conn)
   if (append_extra_headers (conn, buf, &len, &remaining) < 0)
     return -1;
 
-  /* End of headers */
+  /* Empty line to terminate headers */
   if (append_request_terminator (conn, buf, &len, &remaining) < 0)
     return -1;
 
@@ -321,7 +406,14 @@ proxy_http_send_connect (struct SocketProxy_Conn_T *conn)
  */
 
 /**
- * create_http_parser - Create HTTP parser on first call
+ * create_http_parser - Lazily create HTTP parser for response parsing
+ * @conn: Proxy connection context
+ *
+ * Returns: 0 on success (parser ready), -1 on allocation failure
+ * Thread-safe: No (modifies conn->http_parser)
+ *
+ * Creates the HTTP/1.1 parser on first call using strict mode to prevent
+ * request smuggling attacks. Parser is allocated from conn->arena.
  */
 static int
 create_http_parser (struct SocketProxy_Conn_T *conn)
@@ -332,7 +424,7 @@ create_http_parser (struct SocketProxy_Conn_T *conn)
     return 0;
 
   SocketHTTP1_config_defaults (&config);
-  config.strict_mode = 1; /* Strict mode for security */
+  config.strict_mode = 1; /* Strict mode prevents request smuggling */
 
   conn->http_parser
       = SocketHTTP1_Parser_new (HTTP1_PARSE_RESPONSE, &config, conn->arena);
@@ -347,7 +439,16 @@ create_http_parser (struct SocketProxy_Conn_T *conn)
 }
 
 /**
- * parse_http_response - Feed data to parser and handle result
+ * parse_http_response - Feed received data to parser and interpret result
+ * @conn: Proxy connection context with data in recv_buf
+ *
+ * Returns: PROXY_OK on success, PROXY_IN_PROGRESS if more data needed,
+ *          or error result on parse/protocol failure
+ * Thread-safe: No (modifies conn->recv_buf and conn->recv_len)
+ *
+ * Feeds buffered data to the HTTP parser, shifts consumed bytes out of
+ * the buffer, and interprets the parsed response. Detects smuggling
+ * attacks via strict parser mode.
  */
 static SocketProxy_Result
 parse_http_response (struct SocketProxy_Conn_T *conn)
@@ -396,6 +497,18 @@ parse_http_response (struct SocketProxy_Conn_T *conn)
     }
 }
 
+/**
+ * proxy_http_recv_response - Parse HTTP CONNECT response from proxy
+ * @conn: Proxy connection context with received data in recv_buf
+ *
+ * Returns: PROXY_OK on successful 2xx response, PROXY_IN_PROGRESS if more
+ *          data needed, or error result on parse/protocol/auth failure
+ * Thread-safe: No (modifies connection state)
+ *
+ * Creates HTTP parser on first call (lazy initialization), then feeds
+ * buffered data to parser. On complete response, maps HTTP status to
+ * proxy result code.
+ */
 SocketProxy_Result
 proxy_http_recv_response (struct SocketProxy_Conn_T *conn)
 {
@@ -411,26 +524,32 @@ proxy_http_recv_response (struct SocketProxy_Conn_T *conn)
  */
 
 /**
- * map_4xx_status - Map 4xx client error to result
+ * map_4xx_status - Map 4xx client error to proxy result
+ * @status: HTTP status code in 4xx range
+ *
+ * Returns: Appropriate SocketProxy_Result for the status code
+ * Thread-safe: No (uses thread-local error buffer via PROXY_ERROR_MSG)
+ *
+ * Maps HTTP client errors to semantic proxy result codes.
  */
 static SocketProxy_Result
 map_4xx_status (int status)
 {
   switch (status)
     {
-    case 400:
+    case HTTP_STATUS_BAD_REQUEST:
       PROXY_ERROR_MSG ("HTTP 400 Bad Request");
       return PROXY_ERROR_PROTOCOL;
 
-    case 403:
+    case HTTP_STATUS_FORBIDDEN:
       PROXY_ERROR_MSG ("HTTP 403 Forbidden");
       return PROXY_ERROR_FORBIDDEN;
 
-    case 404:
+    case HTTP_STATUS_NOT_FOUND:
       PROXY_ERROR_MSG ("HTTP 404 Not Found");
       return PROXY_ERROR_HOST_UNREACHABLE;
 
-    case 407:
+    case HTTP_STATUS_PROXY_AUTH_REQUIRED:
       PROXY_ERROR_MSG ("HTTP 407 Proxy Authentication Required");
       return PROXY_ERROR_AUTH_REQUIRED;
 
@@ -441,26 +560,32 @@ map_4xx_status (int status)
 }
 
 /**
- * map_5xx_status - Map 5xx server error to result
+ * map_5xx_status - Map 5xx server error to proxy result
+ * @status: HTTP status code in 5xx range
+ *
+ * Returns: Appropriate SocketProxy_Result for the status code
+ * Thread-safe: No (uses thread-local error buffer via PROXY_ERROR_MSG)
+ *
+ * Maps HTTP server errors to semantic proxy result codes.
  */
 static SocketProxy_Result
 map_5xx_status (int status)
 {
   switch (status)
     {
-    case 500:
+    case HTTP_STATUS_INTERNAL_SERVER_ERROR:
       PROXY_ERROR_MSG ("HTTP 500 Internal Server Error");
       return PROXY_ERROR;
 
-    case 502:
+    case HTTP_STATUS_BAD_GATEWAY:
       PROXY_ERROR_MSG ("HTTP 502 Bad Gateway");
       return PROXY_ERROR_HOST_UNREACHABLE;
 
-    case 503:
+    case HTTP_STATUS_SERVICE_UNAVAILABLE:
       PROXY_ERROR_MSG ("HTTP 503 Service Unavailable");
       return PROXY_ERROR;
 
-    case 504:
+    case HTTP_STATUS_GATEWAY_TIMEOUT:
       PROXY_ERROR_MSG ("HTTP 504 Gateway Timeout");
       return PROXY_ERROR_TIMEOUT;
 
@@ -470,19 +595,33 @@ map_5xx_status (int status)
     }
 }
 
+/**
+ * proxy_http_status_to_result - Convert HTTP status code to proxy result
+ * @status: HTTP status code from proxy response
+ *
+ * Returns: SocketProxy_Result corresponding to the HTTP status
+ * Thread-safe: No (uses thread-local error buffer for error messages)
+ *
+ * Maps HTTP status codes to semantic proxy results:
+ * - 2xx: Success (tunnel established)
+ * - 4xx: Client errors (auth required, forbidden, etc.)
+ * - 5xx: Server errors (bad gateway, timeout, etc.)
+ * - Other: Protocol error (unexpected response)
+ */
 SocketProxy_Result
 proxy_http_status_to_result (int status)
 {
-  /* 2xx Success */
-  if (status >= 200 && status < 300)
+  /* 2xx Success - tunnel established */
+  if (status >= HTTP_STATUS_SUCCESS_MIN && status <= HTTP_STATUS_SUCCESS_MAX)
     return PROXY_OK;
 
   /* 4xx Client Error */
-  if (status >= 400 && status < 500)
+  if (status >= HTTP_STATUS_CLIENT_ERROR_MIN
+      && status <= HTTP_STATUS_CLIENT_ERROR_MAX)
     return map_4xx_status (status);
 
   /* 5xx Server Error */
-  if (status >= 500)
+  if (status >= HTTP_STATUS_SERVER_ERROR_MIN)
     return map_5xx_status (status);
 
   /* Unexpected status (1xx, 3xx, or invalid) */

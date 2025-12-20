@@ -8,6 +8,7 @@
  * SocketWS.c - WebSocket Protocol Core (RFC 6455)
  *
  * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
  *
  * Core WebSocket lifecycle, configuration, state management, and I/O.
  * Frame parsing and handshake logic are in separate files.
@@ -47,6 +48,20 @@
 #include "socket/SocketBuf.h"
 #include "socket/SocketWS-private.h"
 
+#define T SocketWS_T
+
+/* ============================================================================
+ * Poll Event Translation
+ * ============================================================================
+ */
+
+/**
+ * ws_translate_poll_revents - Translate poll(2) revents to library events
+ * @revents: poll(2) revents bitmask
+ *
+ * Returns: Library POLL_* event bitmask
+ * Thread-safe: Yes - pure function
+ */
 static unsigned
 ws_translate_poll_revents (short revents)
 {
@@ -74,6 +89,15 @@ ws_translate_poll_revents (short revents)
 
 /** Buffer growth factor for message assembly */
 #define SOCKETWS_MESSAGE_BUFFER_GROWTH_FACTOR 2
+
+/** Maximum iterations for buffer growth loop (overflow protection) */
+#define SOCKETWS_MAX_GROWTH_ITERATIONS 64
+
+/** Default zlib compression level */
+#define SOCKETWS_DEFAULT_COMPRESSION_LEVEL 6
+
+/** Default zlib window bits (maximum) */
+#define SOCKETWS_DEFAULT_WINDOW_BITS 15
 
 /* ============================================================================
  * Exception Definitions
@@ -361,8 +385,8 @@ ws_message_grow_buffer (SocketWS_T ws, size_t required_len)
   new_capacity
       = msg->capacity ? msg->capacity : SOCKETWS_INITIAL_MESSAGE_CAPACITY;
   size_t iterations = 0;
-  while (new_capacity < required_len && iterations < 64)
-    { // Prevent potential loop on overflow
+  while (new_capacity < required_len && iterations < SOCKETWS_MAX_GROWTH_ITERATIONS)
+    { /* Prevent potential loop on overflow */
       size_t temp;
       if (!SocketSecurity_check_multiply (
               new_capacity, SOCKETWS_MESSAGE_BUFFER_GROWTH_FACTOR, &temp))
@@ -966,8 +990,8 @@ ws_handle_control_frame (SocketWS_T ws, SocketWS_Opcode opcode,
       ws->last_pong_received_time = Socket_get_monotonic_ms ();
       ws->awaiting_pong = 0;
 
-      // Optional: Validate pong payload matches pending ping (prevents
-      // spoofing)
+      /* Optional: Validate pong payload matches pending ping (prevents
+       * spoofing) */
       if (ws->pending_ping_len > 0
           && (len != (size_t)ws->pending_ping_len
               || SocketCrypto_secure_compare (
@@ -1839,16 +1863,7 @@ SocketWS_recv_message (SocketWS_T ws, SocketWS_Message *msg)
           return -1;
         }
 
-      unsigned ev = 0;
-      if (pfd.revents & POLLIN)
-        ev |= POLL_READ;
-      if (pfd.revents & POLLOUT)
-        ev |= POLL_WRITE;
-      if (pfd.revents & POLLERR)
-        ev |= POLL_ERROR;
-      if (pfd.revents & POLLHUP)
-        ev |= POLL_HANGUP;
-
+      unsigned ev = ws_translate_poll_revents (pfd.revents);
       if (ev == 0)
         continue;
 
@@ -1894,11 +1909,11 @@ SocketWS_compression_options_defaults (SocketWS_CompressionOptions *options)
   assert (options);
 
   memset (options, 0, sizeof (*options));
-  options->level = 6;  /* Default zlib compression level */
+  options->level = SOCKETWS_DEFAULT_COMPRESSION_LEVEL;
   options->server_no_context_takeover = 0;
   options->client_no_context_takeover = 0;
-  options->server_max_window_bits = 15;
-  options->client_max_window_bits = 15;
+  options->server_max_window_bits = SOCKETWS_DEFAULT_WINDOW_BITS;
+  options->client_max_window_bits = SOCKETWS_DEFAULT_WINDOW_BITS;
 }
 
 int
@@ -1933,3 +1948,5 @@ SocketWS_enable_compression (SocketWS_T ws,
   return -1;
 #endif
 }
+
+#undef T
