@@ -455,10 +455,10 @@ ws_validate_accept_value (SocketWS_T ws, SocketHTTP_Headers_T headers)
       return -1;
     }
 
-  unsigned char temp_hash[20];
+  unsigned char temp_hash[SOCKET_CRYPTO_SHA1_SIZE];
   ssize_t decoded_len = SocketCrypto_base64_decode (
       accept, accept_len, temp_hash, sizeof (temp_hash));
-  if (decoded_len != 20)
+  if (decoded_len != SOCKET_CRYPTO_SHA1_SIZE)
     {
       SocketCrypto_secure_clear (temp_hash, sizeof (temp_hash));
       ws_set_error (ws, WS_ERROR_HANDSHAKE,
@@ -646,7 +646,7 @@ ws_validate_upgrade_response (SocketWS_T ws,
     }
 #endif
 
-  // Clear sensitive handshake data after successful validation
+  /* Clear sensitive handshake data after successful validation */
   SocketCrypto_secure_clear (ws->handshake.client_key,
                              sizeof (ws->handshake.client_key));
   SocketCrypto_secure_clear (ws->handshake.expected_accept,
@@ -760,6 +760,8 @@ ws_read_and_parse_response (SocketWS_T ws)
  * @ws: WebSocket context
  *
  * Returns: 0 on success, -1 on error
+ *
+ * Note: Compression initialization is handled in ws_validate_upgrade_response()
  */
 static int
 ws_finalize_client_handshake (SocketWS_T ws)
@@ -773,25 +775,7 @@ ws_finalize_client_handshake (SocketWS_T ws)
       return -1;
     }
 
-  if (ws_validate_upgrade_response (ws, response) < 0)
-    return -1;
-
-#ifdef SOCKETWS_HAS_DEFLATE
-  if (ws->handshake.compression_negotiated)
-    {
-      if (ws_compression_init (ws) < 0)
-        {
-          SocketLog_emit (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-                          "Compression init failed, continuing without");
-        }
-      else
-        {
-          ws->compression_enabled = 1;
-        }
-    }
-#endif
-
-  return 0;
+  return ws_validate_upgrade_response (ws, response);
 }
 
 int
@@ -1090,10 +1074,10 @@ ws_validate_client_key (SocketWS_T ws, SocketHTTP_Headers_T headers,
       return -1;
     }
 
-  unsigned char temp[16];
+  unsigned char temp[SOCKETWS_KEY_RAW_SIZE];
   ssize_t decoded_len
       = SocketCrypto_base64_decode (key, key_len, temp, sizeof (temp));
-  if (decoded_len != 16)
+  if (decoded_len != SOCKETWS_KEY_RAW_SIZE)
     {
       SocketCrypto_secure_clear (temp, sizeof (temp));
       ws_set_error (ws, WS_ERROR_HANDSHAKE,
@@ -1391,6 +1375,33 @@ SocketWS_is_upgrade (const SocketHTTP_Request *request)
 }
 
 /**
+ * ws_copy_status_phrase - Safely copy status phrase with length limit
+ * @dest: Destination buffer
+ * @dest_size: Size of destination buffer
+ * @reason: Source string (may be NULL)
+ * @default_phrase: Default phrase if reason is NULL or too long
+ */
+static void
+ws_copy_status_phrase (char *dest, size_t dest_size, const char *reason,
+                       const char *default_phrase)
+{
+  const char *source;
+  size_t max_len;
+
+  assert (dest && dest_size > 0 && default_phrase);
+
+  /* Use reason if short enough, otherwise use default */
+  max_len = dest_size - 1;
+  if (reason && strlen (reason) < max_len)
+    source = reason;
+  else
+    source = default_phrase;
+
+  /* Safe copy with guaranteed null termination */
+  snprintf (dest, dest_size, "%s", source);
+}
+
+/**
  * SocketWS_server_reject - Reject WebSocket upgrade with HTTP response
  * @socket: TCP socket
  * @status_code: HTTP status code (e.g., 400, 403)
@@ -1399,8 +1410,8 @@ SocketWS_is_upgrade (const SocketHTTP_Request *request)
 void
 SocketWS_server_reject (Socket_T socket, int status_code, const char *reason)
 {
-  char buf[1024]; // Increased for safety
-  char status_phrase[64];
+  char buf[SOCKETWS_REJECT_RESPONSE_SIZE];
+  char status_phrase[SOCKETWS_REJECT_STATUS_PHRASE_SIZE];
   const char *body_text;
   size_t body_len;
   int written;
@@ -1410,24 +1421,16 @@ SocketWS_server_reject (Socket_T socket, int status_code, const char *reason)
 
   body_text = reason ? reason : "WebSocket upgrade rejected";
 
-  // Prepare status phrase (short version of reason or default)
-  if (reason && strlen (reason) < 60)
-    {
-      strncpy (status_phrase, reason, sizeof (status_phrase) - 1);
-      status_phrase[sizeof (status_phrase) - 1] = '\0';
-    }
-  else
-    {
-      strncpy (status_phrase, "WebSocket Error", sizeof (status_phrase) - 1);
-      status_phrase[sizeof (status_phrase) - 1] = '\0';
-    }
+  /* Prepare status phrase (short version of reason or default) */
+  ws_copy_status_phrase (status_phrase, sizeof (status_phrase), reason,
+                         "WebSocket Error");
 
   body_len = strlen (body_text);
-  // Cap body length to prevent oversized responses
-  if (body_len > 512)
-    body_len = 512;
+  /* Cap body length to prevent oversized responses */
+  if (body_len > SOCKETWS_REJECT_BODY_MAX_SIZE)
+    body_len = SOCKETWS_REJECT_BODY_MAX_SIZE;
 
-  // Format response with exact body length
+  /* Format response with exact body length */
   written = snprintf (buf, sizeof (buf),
                       "HTTP/1.1 %d %s\r\n"
                       "Content-Type: text/plain\r\n"
@@ -1444,7 +1447,7 @@ SocketWS_server_reject (Socket_T socket, int status_code, const char *reason)
     }
   else
     {
-      // Fallback minimal response on format error
+      /* Fallback minimal response on format error */
       const char *fallback = "HTTP/1.1 400 Bad Request\r\n\r\n";
       Socket_send (socket, fallback, strlen (fallback));
     }

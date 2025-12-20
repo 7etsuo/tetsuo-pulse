@@ -87,6 +87,19 @@
 #define SOCKETWS_HANDSHAKE_RESPONSE_SIZE 4096
 #endif
 
+/** Maximum size for reject response buffer */
+#ifndef SOCKETWS_REJECT_RESPONSE_SIZE
+#define SOCKETWS_REJECT_RESPONSE_SIZE 1024
+#endif
+
+/** Maximum size for reject response body */
+#ifndef SOCKETWS_REJECT_BODY_MAX_SIZE
+#define SOCKETWS_REJECT_BODY_MAX_SIZE 512
+#endif
+
+/** Maximum size for reject response status phrase */
+#define SOCKETWS_REJECT_STATUS_PHRASE_SIZE 64
+
 /** Value for Upgrade header in WebSocket handshake */
 #define SOCKETWS_UPGRADE_VALUE "websocket"
 
@@ -101,6 +114,9 @@
 
 /** Expected length of Base64-encoded Sec-WebSocket-Key */
 #define SOCKETWS_KEY_BASE64_LENGTH 24
+
+/** Raw Sec-WebSocket-Key size in bytes (before Base64 encoding) */
+#define SOCKETWS_KEY_RAW_SIZE 16
 
 /** No port specified (for Host header logic) */
 #define SOCKETWS_NO_PORT 0
