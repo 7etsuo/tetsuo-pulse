@@ -921,45 +921,17 @@ SocketPool_remove (T pool, Socket_T socket)
  */
 
 /**
- * @brief Check if time difference exceeds timeout.
- * @now Current time
- * @last_activity Last activity time
- * @timeout Timeout in seconds
- *
- * Returns: Non-zero if (now - last_activity) > timeout
- * Thread-safe: Yes - pure function
- */
-static int
-is_timed_out (time_t now, time_t last_activity, time_t timeout)
-{
-  return difftime (now, last_activity) > (double)timeout;
-}
-
-/**
- * @brief Determine if connection should be closed.
- * @idle_timeout Idle timeout in seconds (0 means close all)
- * @now Current time
- * @last_activity Last activity time
- *
- * Returns: 1 if connection should be closed, 0 otherwise
- * Thread-safe: Yes - pure function
- */
-static int
-should_close_connection (time_t idle_timeout, time_t now, time_t last_activity)
-{
-  if (idle_timeout == 0)
-    return 1;
-  return is_timed_out (now, last_activity, idle_timeout);
-}
-
-/**
- * @brief Check if connection is active and idle.
+ * @brief Check if connection is active and has exceeded idle timeout.
  * @conn Connection to check
- * @idle_timeout Idle timeout in seconds
+ * @idle_timeout Idle timeout in seconds (0 means close all active connections)
  * @now Current time
  *
- * Returns: 1 if connection should be collected for cleanup
+ * Returns: 1 if connection should be collected for cleanup, 0 otherwise
  * Thread-safe: Call with mutex held
+ *
+ * Consolidates active check, socket validity check, and idle timeout check
+ * into a single function. Idle timeout of 0 indicates all active connections
+ * should be closed.
  */
 static int
 is_connection_idle (const Connection_T conn, time_t idle_timeout, time_t now)
@@ -967,7 +939,12 @@ is_connection_idle (const Connection_T conn, time_t idle_timeout, time_t now)
   if (!conn->active || !conn->socket)
     return 0;
 
-  return should_close_connection (idle_timeout, now, conn->last_activity);
+  /* Idle timeout of 0 means close all active connections */
+  if (idle_timeout == 0)
+    return 1;
+
+  /* Check if connection has exceeded idle timeout */
+  return difftime (now, conn->last_activity) > (double)idle_timeout;
 }
 
 /**
@@ -1012,33 +989,18 @@ collect_idle_sockets (T pool, time_t idle_timeout, time_t now)
 }
 
 /**
- * @brief Close and remove a single socket from pool.
- * @pool Pool instance
- * @socket Socket to close
- *
- * Thread-safe: Yes - acquires mutex internally
- * Logs errors at DEBUG level rather than propagating.
- *
- * Uses shared socketpool_close_socket_safe() helper.
- */
-static void
-close_single_socket (T pool, Socket_T socket)
-{
-  socketpool_close_socket_safe (pool, &socket, "Cleanup");
-}
-
-/**
  * @brief Close and remove collected sockets.
  * @pool Pool instance
  * @close_count Number of sockets to close
  *
  * Thread-safe: Yes - each socket operation is thread-safe
+ * Uses shared socketpool_close_socket_safe() helper directly.
  */
 static void
 close_collected_sockets (T pool, size_t close_count)
 {
   for (size_t i = 0; i < close_count; i++)
-    close_single_socket (pool, pool->cleanup_buffer[i]);
+    socketpool_close_socket_safe (pool, &pool->cleanup_buffer[i], "Cleanup");
 }
 
 /**
@@ -1262,7 +1224,8 @@ check_connection_staleness (T pool, Connection_T conn, time_t now)
   if (idle_timeout <= 0)
     return 0;
 
-  return is_timed_out (now, conn->last_activity, idle_timeout);
+  /* Check if connection has exceeded idle timeout */
+  return difftime (now, conn->last_activity) > (double)idle_timeout;
 }
 
 /**

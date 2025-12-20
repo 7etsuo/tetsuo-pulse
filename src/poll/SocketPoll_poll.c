@@ -531,22 +531,6 @@ reset_backend_wait_state (PollBackend_T backend, int nev)
   backend->last_wait_count = nev;
 }
 
-/**
- * handle_poll_error - Handle poll error result
- * @backend: Backend instance
- *
- * Returns: 0 if EINTR (treat as timeout), -1 for other errors
- */
-static int
-handle_poll_error (PollBackend_T backend)
-{
-  reset_backend_wait_state (backend, 0);
-
-  if (errno == EINTR)
-    return 0;
-
-  return -1;
-}
 
 /**
  * handle_poll_success - Handle successful poll result
@@ -595,7 +579,10 @@ backend_wait (PollBackend_T backend, const int timeout_ms)
   result = poll (backend->fds, backend->nfds, timeout_ms);
 
   if (result < 0)
-    return handle_poll_error (backend);
+    {
+      reset_backend_wait_state (backend, 0);
+      return HANDLE_POLL_ERROR (backend);
+    }
 
   return handle_poll_success (backend, result);
 }

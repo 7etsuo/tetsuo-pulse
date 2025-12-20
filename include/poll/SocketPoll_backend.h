@@ -316,6 +316,31 @@ typedef struct PollBackend_T *PollBackend_T;
   while (0)
 
 /**
+ * @brief Handle EINTR error from backend wait operations.
+ * @ingroup event_system_backend
+ *
+ * Common error handling pattern for backend_wait implementations across all
+ * three backends (epoll, kqueue, poll). When a wait syscall is interrupted
+ * by a signal (errno == EINTR), this returns 0 to indicate no events ready
+ * (allowing the caller to retry if desired). For other errors, returns -1
+ * to propagate the error condition.
+ *
+ * @param[in] backend Backend instance to reset state for.
+ *
+ * @return 0 if errno == EINTR (treat as timeout), -1 for all other errors.
+ *
+ * @note Caller must check errno after this macro returns -1.
+ * @note Sets backend->last_nev to 0 to prevent stale event access.
+ *
+ * @see backend_wait() in all three backend implementations.
+ */
+#define HANDLE_POLL_ERROR(backend)                                            \
+  ({                                                                          \
+    (backend)->last_nev = 0;                                                  \
+    (errno == EINTR) ? 0 : -1;                                                \
+  })
+
+/**
  * @brief Essential macro to validate file descriptors before backend system
  * calls.
  * @ingroup event_system_backend

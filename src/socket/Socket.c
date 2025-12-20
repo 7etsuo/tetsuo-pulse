@@ -120,6 +120,28 @@ Socket_ignore_sigpipe (void)
 /* Static helper functions */
 
 /**
+ * cache_remote_endpoint - Cache remote endpoint from address structure
+ * @base: Socket base to update
+ * @addr: Address structure
+ * @addrlen: Address length
+ *
+ * Caches peer information from given address. On failure, sets fields to NULL/0.
+ * Thread-safe: No - assumes exclusive access to socket base
+ */
+static void
+cache_remote_endpoint (SocketBase_T base, const struct sockaddr *addr,
+                       socklen_t addrlen)
+{
+  if (SocketCommon_cache_endpoint (SocketBase_arena (base), addr, addrlen,
+                                   &base->remoteaddr, &base->remoteport)
+      != 0)
+    {
+      base->remoteaddr = NULL;
+      base->remoteport = 0;
+    }
+}
+
+/**
  * socket_alloc - Allocate and initialize Socket_T structure
  * @arena: Memory arena for allocation
  * @alloc_type: Description for error message (unused, kept for consistency)
@@ -512,9 +534,11 @@ unix_unlink_stale (const char *path)
 
 /**
  * unix_setup_abstract_socket - Setup abstract namespace socket address
- * @addr: Output sockaddr_un structure
+ * @addr: Output sockaddr_un structure (already initialized)
  * @path: Unix socket path (starting with '@')
  * @path_len: Length of path
+ *
+ * Note: addr must be pre-initialized with memset and sun_family set
  */
 static void
 unix_setup_abstract_socket (struct sockaddr_un *addr, const char *path,
@@ -527,8 +551,6 @@ unix_setup_abstract_socket (struct sockaddr_un *addr, const char *path,
   if (name_len > max_name_len)
     name_len = max_name_len;
 
-  memset (addr, 0, sizeof (*addr));
-  addr->sun_family = AF_UNIX;
   addr->sun_path[0] = '\0'; /* Abstract namespace marker */
   /* Skip the '@' prefix when copying to sun_path */
   if (name_len > 0)
@@ -537,9 +559,11 @@ unix_setup_abstract_socket (struct sockaddr_un *addr, const char *path,
 
 /**
  * unix_setup_regular_socket - Setup regular filesystem socket address
- * @addr: Output sockaddr_un structure
+ * @addr: Output sockaddr_un structure (already initialized)
  * @path: Unix socket path
  * @path_len: Length of path
+ *
+ * Note: addr must be pre-initialized with memset and sun_family set
  */
 static void
 unix_setup_regular_socket (struct sockaddr_un *addr, const char *path,
@@ -550,8 +574,6 @@ unix_setup_regular_socket (struct sockaddr_un *addr, const char *path,
   if (path_len > max_path_len)
     path_len = max_path_len;
 
-  memset (addr, 0, sizeof (*addr));
-  addr->sun_family = AF_UNIX;
   memcpy (addr->sun_path, path, path_len);
   addr->sun_path[path_len] = '\0';
 }
@@ -562,7 +584,6 @@ unix_setup_regular_socket (struct sockaddr_un *addr, const char *path,
  * @path: Unix socket path (@ prefix for abstract)
  *
  * Note: Path validation must be done separately via unix_validate_path()
- * Note: memset is called by the abstract/regular helpers, not here
  */
 static void
 unix_setup_sockaddr (struct sockaddr_un *addr, const char *path)
@@ -574,7 +595,11 @@ unix_setup_sockaddr (struct sockaddr_un *addr, const char *path)
 
   path_len = strlen (path);
 
-  /* Helper functions handle memset internally */
+  /* Common initialization for both abstract and regular sockets */
+  memset (addr, 0, sizeof (*addr));
+  addr->sun_family = AF_UNIX;
+
+  /* Delegate path setup to specialized functions */
   if (path[0] == '@')
     unix_setup_abstract_socket (addr, path, path_len);
   else
@@ -682,15 +707,7 @@ Socket_isconnected (T socket)
       if (socket->base->remoteaddr == NULL
           && SocketBase_arena (socket->base) != NULL)
         {
-          /* Cache peer info from getpeername result (inline - single use) */
-          if (SocketCommon_cache_endpoint (
-                  SocketBase_arena (socket->base), (struct sockaddr *)&addr,
-                  len, &socket->base->remoteaddr, &socket->base->remoteport)
-              != 0)
-            {
-              socket->base->remoteaddr = NULL;
-              socket->base->remoteport = 0;
-            }
+          cache_remote_endpoint (socket->base, (struct sockaddr *)&addr, len);
         }
       return 1;
     }
@@ -1202,16 +1219,8 @@ Socket_accept (T socket)
 
     newsocket = create_accepted_socket (newfd, &addr, addrlen);
 
-    /* Cache peer info from accepted address (inline - single use) */
-    if (SocketCommon_cache_endpoint (SocketBase_arena (newsocket->base),
-                                     (struct sockaddr *)&addr, addrlen,
-                                     &newsocket->base->remoteaddr,
-                                     &newsocket->base->remoteport)
-        != 0)
-      {
-        newsocket->base->remoteaddr = NULL;
-        newsocket->base->remoteport = 0;
-      }
+    /* Cache peer info from accepted address */
+    cache_remote_endpoint (newsocket->base, (struct sockaddr *)&addr, addrlen);
 
     SocketCommon_update_local_endpoint (newsocket->base);
     SocketEvent_emit_accept (

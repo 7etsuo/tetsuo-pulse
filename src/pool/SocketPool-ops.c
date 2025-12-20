@@ -54,23 +54,6 @@ static int consume_rate_and_track_ip (T pool, const char *client_ip);
  */
 
 /**
- * close_socket_safe - Close and remove socket with error handling
- * @pool: Pool instance
- * @socket: Pointer to socket to close (set to NULL on success)
- * @context: Context string for log message (e.g., "Resize", "Cleanup")
- *
- * Thread-safe: Called outside pool lock
- * Handles errors gracefully - logs at DEBUG level and continues.
- *
- * Uses shared socketpool_close_socket_safe() helper from private header.
- */
-static void
-close_socket_safe (T pool, Socket_T *socket, const char *context)
-{
-  socketpool_close_socket_safe (pool, socket, context);
-}
-
-/**
  * handle_syn_consume_failure - Handle rate/IP consumption failure for SYN
  * @protect: SYN protection instance
  * @client_ip: Client IP address for failure report
@@ -298,16 +281,17 @@ initialize_new_slots (T pool, size_t old_maxconns, size_t new_maxconns)
  *
  * Thread-safe: Called outside lock
  * Handles errors gracefully - logs and continues on failure.
+ * Uses shared socketpool_close_socket_safe() helper directly.
  */
 static void
 close_excess_sockets (T pool, Socket_T *excess_sockets, size_t excess_count)
 {
-  /* volatile prevents clobbering when close_socket_safe may use setjmp */
+  /* volatile prevents clobbering when socketpool_close_socket_safe may use setjmp */
   volatile size_t i;
   for (i = 0; i < excess_count; i++)
     {
       if (excess_sockets[i])
-        close_socket_safe (pool, &excess_sockets[i], "Resize");
+        socketpool_close_socket_safe (pool, &excess_sockets[i], "Resize");
     }
 }
 

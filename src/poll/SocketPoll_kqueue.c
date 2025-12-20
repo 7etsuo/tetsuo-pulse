@@ -282,13 +282,7 @@ backend_wait (PollBackend_T backend, int timeout_ms)
                 timeout_ptr);
 
   if (nev < 0)
-    {
-      backend->last_nev = 0;
-      /* kevent was interrupted by signal - return 0 to allow retry */
-      if (errno == EINTR)
-        return 0;
-      return -1;
-    }
+    return HANDLE_POLL_ERROR (backend);
 
   backend->last_nev = nev;
   return nev;

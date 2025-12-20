@@ -181,6 +181,41 @@ locked_ip_op_int (T pool, const char *ip,
 }
 
 /* ============================================================================
+ * Static Helper Functions - Component Configuration
+ * ============================================================================
+ */
+
+/**
+ * Generic macro for pool component configuration (create or reconfigure).
+ * Eliminates code duplication between rate limiter and IP tracker setup.
+ *
+ * @param POOL Connection pool instance
+ * @param FIELD Pool field name (conn_limiter or ip_tracker)
+ * @param RECONFIG_CALL Reconfiguration function call
+ * @param CREATE_CALL Creation function call (must return new component)
+ * @param EXCEPTION Exception type to catch
+ *
+ * Returns: 1 on success, 0 on failure
+ * Thread-safe: Caller must hold pool mutex
+ */
+#define CONFIGURE_POOL_COMPONENT(POOL, FIELD, RECONFIG_CALL, CREATE_CALL,    \
+                                 EXCEPTION)                                   \
+  do                                                                          \
+    {                                                                         \
+      if ((POOL)->FIELD)                                                      \
+        {                                                                     \
+          RECONFIG_CALL;                                                      \
+          return 1;                                                           \
+        }                                                                     \
+      TRY (POOL)->FIELD = (CREATE_CALL);                                      \
+      EXCEPT (EXCEPTION)                                                      \
+      return 0;                                                               \
+      END_TRY;                                                                \
+      return 1;                                                               \
+    }                                                                         \
+  while (0)
+
+/* ============================================================================
  * Static Helper Functions - Rate Limiter Management
  * ============================================================================
  */
@@ -196,18 +231,9 @@ locked_ip_op_int (T pool, const char *ip,
 static int
 configure_rate_limiter (T pool, size_t rate, size_t burst)
 {
-  if (pool->conn_limiter)
-    {
-      SocketRateLimit_configure (pool->conn_limiter, rate, burst);
-      return 1;
-    }
-
-  TRY pool->conn_limiter = SocketRateLimit_new (pool->arena, rate, burst);
-  EXCEPT (SocketRateLimit_Failed)
-  return 0;
-  END_TRY;
-
-  return 1;
+  CONFIGURE_POOL_COMPONENT (
+      pool, conn_limiter, SocketRateLimit_configure (pool->conn_limiter, rate, burst),
+      SocketRateLimit_new (pool->arena, rate, burst), SocketRateLimit_Failed);
 }
 
 /* ============================================================================
@@ -225,18 +251,9 @@ configure_rate_limiter (T pool, size_t rate, size_t burst)
 static int
 configure_ip_tracker (T pool, int max_conns)
 {
-  if (pool->ip_tracker)
-    {
-      SocketIPTracker_setmax (pool->ip_tracker, max_conns);
-      return 1;
-    }
-
-  TRY pool->ip_tracker = SocketIPTracker_new (pool->arena, max_conns);
-  EXCEPT (SocketIPTracker_Failed)
-  return 0;
-  END_TRY;
-
-  return 1;
+  CONFIGURE_POOL_COMPONENT (
+      pool, ip_tracker, SocketIPTracker_setmax (pool->ip_tracker, max_conns),
+      SocketIPTracker_new (pool->arena, max_conns), SocketIPTracker_Failed);
 }
 
 

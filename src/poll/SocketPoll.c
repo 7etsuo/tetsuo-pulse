@@ -131,6 +131,27 @@ poll_fd_hash (const T poll, int fd)
 /* ==================== Hash Table Insertion ==================== */
 
 /**
+ * HASH_TABLE_INSERT - Generic macro for hash table insertion
+ * @table: Hash table array (e.g., poll->socket_data_map)
+ * @hash: Hash bucket index
+ * @entry: Entry to insert
+ * @next_field: Name of the next pointer field in the entry structure
+ *
+ * Inserts entry at the head of the hash chain using standard linked list
+ * insertion pattern. Consolidates duplicate insertion logic across different
+ * hash table types.
+ *
+ * Thread-safe: Caller must hold mutex.
+ */
+#define HASH_TABLE_INSERT(table, hash, entry, next_field)                     \
+  do                                                                          \
+    {                                                                         \
+      (entry)->next_field = (table)[hash];                                    \
+      (table)[hash] = (entry);                                                \
+    }                                                                         \
+  while (0)
+
+/**
  * insert_socket_data_entry - Insert socket data entry into hash table
  * @poll: Poll instance
  * @hash: Hash bucket index
@@ -140,8 +161,7 @@ poll_fd_hash (const T poll, int fd)
 static void
 insert_socket_data_entry (T poll, unsigned hash, SocketData *entry)
 {
-  entry->next = poll->socket_data_map[hash];
-  poll->socket_data_map[hash] = entry;
+  HASH_TABLE_INSERT (poll->socket_data_map, hash, entry, next);
 }
 
 /**
@@ -154,8 +174,7 @@ insert_socket_data_entry (T poll, unsigned hash, SocketData *entry)
 static void
 insert_fd_socket_entry (T poll, unsigned fd_hash, FdSocketEntry *entry)
 {
-  entry->next = poll->fd_to_socket_map[fd_hash];
-  poll->fd_to_socket_map[fd_hash] = entry;
+  HASH_TABLE_INSERT (poll->fd_to_socket_map, fd_hash, entry, next);
 }
 
 /* ==================== Hash Table Lookup ==================== */

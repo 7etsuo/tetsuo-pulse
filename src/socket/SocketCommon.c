@@ -1922,19 +1922,6 @@ socketcommon_duplicate_address (Arena_T arena, const char *addr_str)
   return copy;
 }
 
-/**
- * socketcommon_parse_port_string - Parse port string to integer
- * @serv: Port string to parse
- *
- * Returns: Port number (0-65535), or 0 on invalid input
- * Thread-safe: Yes (preserves errno)
- */
-static int
-socketcommon_parse_port_string (const char *serv)
-{
-  return socketcommon_parse_port_number (serv);
-}
-
 void
 socketcommon_convert_port_to_string (int port, char *port_str, size_t bufsize)
 {
@@ -1979,7 +1966,7 @@ SocketCommon_cache_endpoint (Arena_T arena, const struct sockaddr *addr,
     return -1;
 
   *addr_out = copy;
-  *port_out = socketcommon_parse_port_string (serv);
+  *port_out = socketcommon_parse_port_number (serv);
   return 0;
 }
 
