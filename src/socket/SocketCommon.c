@@ -238,19 +238,26 @@ SocketCommon_parse_ip (const char *ip_str, int *family)
  * @prefix_out: Output for parsed prefix length
  *
  * Returns: 0 on success, -1 on parse error
+ * Thread-safe: Yes
  */
 static int
 cidr_parse_prefix (const char *prefix_str, long *prefix_out)
 {
   char *endptr = NULL;
   long prefix_long;
+  int saved_errno;
 
+  saved_errno = errno;
   errno = 0;
   prefix_long = strtol (prefix_str, &endptr, 10);
 
   if (errno != 0 || endptr == prefix_str || *endptr != '\0' || prefix_long < 0)
-    return -1;
+    {
+      errno = saved_errno;
+      return -1;
+    }
 
+  errno = saved_errno;
   *prefix_out = prefix_long;
   return 0;
 }
@@ -316,11 +323,14 @@ cidr_parse_ipv6 (const char *addr_str, long prefix, unsigned char *network,
 /**
  * socketcommon_parse_cidr - Parse CIDR notation into network and prefix
  * @cidr_str: CIDR string (e.g., "192.168.1.0/24" or "2001:db8::/32")
- * @network: Output buffer for network address
+ * @network: Output buffer for network address (must be SOCKET_IPV6_ADDR_BYTES)
  * @prefix_len: Output for prefix length
  * @family: Output for address family (AF_INET or AF_INET6)
  *
  * Returns: 0 on success, -1 on parse error
+ * Thread-safe: Yes
+ *
+ * Note: Uses strdup internally; caller does not need to free any memory.
  */
 static int
 socketcommon_parse_cidr (const char *cidr_str, unsigned char *network,
@@ -1167,6 +1177,36 @@ SocketCommon_setup_hints (struct addrinfo *hints, int socktype, int flags)
 }
 
 /**
+ * socketcommon_parse_port_for_dns - Parse port string for DNS resolution
+ * @port_str: Port string to parse (may be NULL or empty)
+ *
+ * Returns: Port number (1-65535), or 0 for unspecified/invalid
+ * Thread-safe: Yes (preserves errno)
+ */
+static int
+socketcommon_parse_port_for_dns (const char *port_str)
+{
+  char *endptr;
+  long p;
+  int saved_errno;
+
+  if (!port_str || !*port_str)
+    return 0;
+
+  saved_errno = errno;
+  errno = 0;
+  p = strtol (port_str, &endptr, 10);
+  if (errno == 0 && endptr != port_str && *endptr == '\0' && p >= 1
+      && p <= 65535)
+    {
+      errno = saved_errno;
+      return (int)p;
+    }
+  errno = saved_errno;
+  return 0;
+}
+
+/**
  * socketcommon_perform_getaddrinfo - Perform DNS resolution with timeout
  * @host: Hostname or IP address (NULL for wildcard)
  * @port_str: Port number as string
@@ -1176,6 +1216,7 @@ SocketCommon_setup_hints (struct addrinfo *hints, int socktype, int flags)
  * @exception_type: Exception type to raise
  *
  * Returns: 0 on success, -1 on failure
+ * Thread-safe: Yes
  *
  * Uses the global DNS resolver with timeout guarantees. This prevents
  * unbounded blocking on DNS failures (which could block for 30+ seconds
@@ -1192,21 +1233,7 @@ socketcommon_perform_getaddrinfo (const char *host, const char *port_str,
   int timeout_ms;
 
   /* Parse port string safely with validation */
-  port = 0;
-  if (port_str && *port_str)
-    {
-      char *endptr;
-      long p = strtol (port_str, &endptr, 10);
-      if (endptr != port_str && *endptr == '\0' && p >= 1 && p <= 65535)
-        {
-          port = (int)p;
-        }
-      else
-        {
-          /* Invalid port - will use default in getaddrinfo */
-          port = 0;
-        }
-    }
+  port = socketcommon_parse_port_for_dns (port_str);
 
   /* Get global DNS resolver with timeout support */
   dns = SocketCommon_get_dns_resolver ();
@@ -1892,19 +1919,32 @@ socketcommon_duplicate_address (Arena_T arena, const char *addr_str)
   return copy;
 }
 
+/**
+ * socketcommon_parse_port_string - Parse port string to integer
+ * @serv: Port string to parse
+ *
+ * Returns: Port number (0-65535), or 0 on invalid input
+ * Thread-safe: Yes (preserves errno)
+ */
 static int
 socketcommon_parse_port_string (const char *serv)
 {
   char *endptr = NULL;
   long port_long = 0;
+  int saved_errno;
 
   assert (serv);
 
+  saved_errno = errno;
   errno = 0;
   port_long = strtol (serv, &endptr, 10);
   if (errno == 0 && endptr != serv && *endptr == '\0' && port_long >= 0
       && port_long <= SOCKET_MAX_PORT)
-    return (int)port_long;
+    {
+      errno = saved_errno;
+      return (int)port_long;
+    }
+  errno = saved_errno;
   return 0;
 }
 
@@ -2114,23 +2154,41 @@ common_multicast_operation (SocketBase_T base, const char *group,
   END_TRY;
 }
 
+/**
+ * validate_multicast_params - Validate multicast operation parameters
+ * @base: Socket base to validate
+ * @group: Multicast group string to validate
+ * @op_name: Operation name for error messages ("join" or "leave")
+ * @exc_type: Exception type to raise on failure
+ *
+ * Raises: exc_type if parameters are invalid
+ * Thread-safe: Yes
+ */
+static void
+validate_multicast_params (SocketBase_T base, const char *group,
+                           const char *op_name, Except_T exc_type)
+{
+  size_t group_len;
+
+  if (!base || !group)
+    {
+      SOCKET_RAISE_MSG (SocketCommon, exc_type,
+                        "Invalid parameters for %s_multicast", op_name);
+    }
+
+  group_len = strlen (group);
+  if (group_len == 0 || group_len > SOCKET_ERROR_MAX_HOSTNAME)
+    {
+      SOCKET_RAISE_MSG (SocketCommon, exc_type,
+                        "Invalid group length for %s_multicast", op_name);
+    }
+}
+
 void
 SocketCommon_join_multicast (SocketBase_T base, const char *group,
                              const char *interface, Except_T exc_type)
 {
-  if (!base || !group)
-    {
-      SOCKET_RAISE_MSG (SocketCommon, exc_type,
-                        "Invalid parameters for join_multicast");
-    }
-
-  size_t group_len = strlen (group);
-  if (group_len == 0 || group_len > SOCKET_ERROR_MAX_HOSTNAME)
-    {
-      SOCKET_RAISE_MSG (SocketCommon, exc_type,
-                        "Invalid group length for join_multicast");
-    }
-
+  validate_multicast_params (base, group, "join", exc_type);
   common_multicast_operation (base, group, interface, MCAST_OP_JOIN, exc_type);
 }
 
@@ -2138,19 +2196,7 @@ void
 SocketCommon_leave_multicast (SocketBase_T base, const char *group,
                               const char *interface, Except_T exc_type)
 {
-  if (!base || !group)
-    {
-      SOCKET_RAISE_MSG (SocketCommon, exc_type,
-                        "Invalid parameters for leave_multicast");
-    }
-
-  size_t group_len = strlen (group);
-  if (group_len == 0 || group_len > SOCKET_ERROR_MAX_HOSTNAME)
-    {
-      SOCKET_RAISE_MSG (SocketCommon, exc_type,
-                        "Invalid group length for leave_multicast");
-    }
-
+  validate_multicast_params (base, group, "leave", exc_type);
   common_multicast_operation (base, group, interface, MCAST_OP_LEAVE,
                               exc_type);
 }
