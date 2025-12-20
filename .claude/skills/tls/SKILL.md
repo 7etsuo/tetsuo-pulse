@@ -139,12 +139,28 @@ SocketDTLS_set_retransmit_timeout(sock, 1000, 60000);  // min/max ms
 
 ## Security Checklist
 
-1. [ ] TLS 1.3 minimum (no TLS 1.2 fallback unless required)
+1. [ ] TLS version appropriate for use case (default: TLS 1.2 minimum for compatibility, TLS 1.3 max for security)
 2. [ ] Certificate verification enabled (`SSL_VERIFY_PEER`)
 3. [ ] Hostname verification via `SocketTLS_set_hostname()`
 4. [ ] ALPN configured for protocol negotiation
 5. [ ] Session resumption for performance
 6. [ ] Graceful shutdown with `SocketTLS_shutdown()` or `SocketTLS_disable()`
+
+## TLS Version Defaults
+
+The library defaults to:
+- **Minimum**: TLS 1.2 (`SOCKET_TLS_MIN_VERSION`) - for broad compatibility
+- **Maximum**: TLS 1.3 (`SOCKET_TLS_MAX_VERSION`) - for best security when available
+
+For high-security environments requiring TLS 1.3 only:
+```c
+SocketTLSConfig_T config;
+SocketTLS_config_defaults(&config);
+config.min_version = TLS1_3_VERSION;  // Require TLS 1.3
+SocketTLSContext_T ctx = SocketTLSContext_new(&config);
+```
+
+Note: Some servers (e.g., httpbin.org) only support TLS 1.2, so TLS 1.3-only policy may cause connection failures.
 
 ## Files Reference
 

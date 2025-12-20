@@ -38,10 +38,12 @@ The `include/` directory contains a comprehensive, battle-tested API. Before wri
 - **SocketPoolHealth.h**: Circuit breaker for connection validation
 
 ### Security (`include/tls/`)
-- **SocketTLS.h**: TLS 1.3 with `SocketTLS_enable()`, `SocketTLS_handshake()`, `SocketTLS_send()`, `SocketTLS_recv()`, certificate pinning
+- **SocketTLS.h**: TLS 1.2/1.3 with `SocketTLS_enable()`, `SocketTLS_handshake()`, `SocketTLS_send()`, `SocketTLS_recv()`, certificate pinning
 - **SocketTLSContext.h**: Context management with `SocketTLSContext_new_client()`, `SocketTLSContext_new_server()`
 - **SocketDTLS.h**: DTLS for encrypted UDP
 - **SocketSYNProtect.h**: SYN flood protection
+
+**Note**: The Simple API's global HTTP client uses HTTP/1.1 only for blocking simplicity. For HTTP/2, use `Socket_simple_http_new_ex()` or the full `SocketHTTPClient` API.
 
 ### HTTP (`include/http/`)
 - **SocketHTTP.h**: Headers, URI parsing, status codes, content negotiation
