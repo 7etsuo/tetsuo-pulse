@@ -1883,6 +1883,145 @@ extern CTValidationMode SocketTLSContext_get_ct_mode (T ctx);
  */
 extern void SocketTLSContext_set_ctlog_list_file (T ctx, const char *log_file);
 
+/* ============================================================================
+ * TLS 1.3 0-RTT Early Data Replay Protection
+ * ============================================================================
+ *
+ * 0-RTT early data is vulnerable to replay attacks. Attackers can capture
+ * early data and replay it to cause duplicate operations on the server.
+ *
+ * This API provides a callback mechanism for applications to implement
+ * replay detection. The callback is invoked by SocketTLS_accept_early_data()
+ * to check if the early data should be accepted.
+ *
+ * Common replay protection strategies:
+ * - Single-use ticket nonces (store used nonces, reject duplicates)
+ * - Timestamp-based windows (reject old tickets)
+ * - Strike register (Cloudflare-style bloom filter)
+ *
+ * Thread safety: Configuration is NOT thread-safe - perform before sharing.
+ * Callback invocation is serialized per-connection.
+ */
+
+/**
+ * @brief Callback for 0-RTT early data replay detection.
+ * @ingroup security
+ * @param ctx TLS context receiving the early data
+ * @param session_id Unique session identifier (from session ticket)
+ * @param session_id_len Length of session_id
+ * @param user_data User-provided data from registration
+ *
+ * Called by the server when early data is received. The callback must:
+ * - Return 1 to ACCEPT the early data (first-seen, safe to process)
+ * - Return 0 to REJECT the early data (replay detected or uncertain)
+ *
+ * The session_id is derived from the session ticket and uniquely identifies
+ * the resumption attempt. Store seen session_ids to detect replays.
+ *
+ * ## Thread Safety Requirements
+ *
+ * This callback may be invoked concurrently from multiple threads if the
+ * TLS context is shared across connections. The implementation MUST be
+ * thread-safe. Use appropriate synchronization for shared state.
+ *
+ * ## Example Implementation
+ *
+ * @code{.c}
+ * int my_replay_check(SocketTLSContext_T ctx,
+ *                     const unsigned char *session_id,
+ *                     size_t session_id_len,
+ *                     void *user_data) {
+ *     ReplayStore *store = (ReplayStore *)user_data;
+ *
+ *     pthread_mutex_lock(&store->lock);
+ *     int seen = replay_store_check_and_add(store, session_id, session_id_len);
+ *     pthread_mutex_unlock(&store->lock);
+ *
+ *     return seen ? 0 : 1;  // Reject if seen before, accept if new
+ * }
+ * @endcode
+ *
+ * @threadsafe Conditional - callback MUST be thread-safe if context is shared
+ */
+typedef int (*SocketTLSEarlyDataReplayCallback) (T ctx,
+                                                  const unsigned char *session_id,
+                                                  size_t session_id_len,
+                                                  void *user_data);
+
+/**
+ * @brief Register callback for 0-RTT replay protection.
+ * @ingroup security
+ * @param ctx TLS context (server only)
+ * @param callback Replay detection callback (NULL to disable)
+ * @param user_data Opaque data passed to callback
+ *
+ * Registers a callback that is invoked when early data is received.
+ * The callback determines whether to accept or reject the early data
+ * based on replay detection logic.
+ *
+ * If require_protection is set via SocketTLSContext_require_early_data_replay(),
+ * early data will be rejected if no callback is registered.
+ *
+ * @return void
+ * @throws SocketTLS_Failed if called on client context
+ * @threadsafe No - call during configuration phase only
+ *
+ * @see SocketTLSEarlyDataReplayCallback for callback implementation
+ * @see SocketTLSContext_require_early_data_replay() for enforcement
+ * @see SocketTLSContext_enable_early_data() for enabling 0-RTT
+ */
+extern void SocketTLSContext_set_early_data_replay_callback (
+    T ctx, SocketTLSEarlyDataReplayCallback callback, void *user_data);
+
+/**
+ * @brief Require replay protection for early data acceptance.
+ * @ingroup security
+ * @param ctx TLS context (server only)
+ * @param require 1 = require callback, 0 = allow without callback (default)
+ *
+ * When enabled, early data is automatically rejected unless a replay
+ * callback is registered AND the callback returns 1 (accept).
+ *
+ * Recommended for production servers accepting 0-RTT early data.
+ * Without this, early data is vulnerable to replay attacks.
+ *
+ * @return void
+ * @throws SocketTLS_Failed if called on client context
+ * @threadsafe No - call during configuration phase only
+ *
+ * @see SocketTLSContext_set_early_data_replay_callback() for registration
+ * @see SocketTLSContext_enable_early_data() for enabling 0-RTT
+ */
+extern void SocketTLSContext_require_early_data_replay (T ctx, int require);
+
+/**
+ * @brief Check if replay callback is registered.
+ * @ingroup security
+ * @param ctx TLS context
+ *
+ * @return 1 if callback registered, 0 if not
+ * @throws None
+ * @threadsafe Yes (read-only)
+ */
+extern int SocketTLSContext_has_early_data_replay_callback (T ctx);
+
+/**
+ * @brief Invoke replay callback for early data check.
+ * @ingroup security
+ * @param ctx TLS context
+ * @param session_id Session identifier from ticket
+ * @param session_id_len Length of session_id
+ *
+ * Called internally by SocketTLS_accept_early_data() to check replay.
+ * Applications can also call this for custom early data handling.
+ *
+ * @return 1 if accepted (or no callback/requirement), 0 if rejected
+ * @throws None
+ * @threadsafe Yes - callback invocation is per-connection
+ */
+extern int SocketTLSContext_check_early_data_replay (
+    T ctx, const unsigned char *session_id, size_t session_id_len);
+
 /* Internal functions (not part of public API) */
 /**
  * @brief Get underlying OpenSSL SSL_CTX*.

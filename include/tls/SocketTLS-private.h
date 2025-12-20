@@ -784,6 +784,13 @@ struct T
   /* Custom Certificate Store Lookup */
   void *cert_lookup_callback;  /**< SocketTLSCertLookupCallback (cast) */
   void *cert_lookup_user_data; /**< User data for cert lookup callback */
+
+  /* 0-RTT Early Data Replay Protection */
+  void *early_data_replay_callback; /**< SocketTLSEarlyDataReplayCallback (cast
+                                       to avoid circular deps) */
+  void *early_data_replay_user_data; /**< User data for replay callback */
+  int early_data_replay_required;    /**< 1 = require replay protection before
+                                        accepting early data (server only) */
 };
 
 /**

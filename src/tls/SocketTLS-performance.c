@@ -38,15 +38,34 @@
 /* Thread-local exception for this translation unit */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLS);
 
-/* Ex-data index for associating SocketTLSContext_T with SSL_CTX */
+/* Ex-data index for associating SocketTLSContext_T with SSL_CTX
+ * Thread-safe initialization using pthread_once to prevent race conditions
+ * when multiple threads create sharded caches concurrently. */
 static int tls_ctx_ex_data_index = -1;
+static pthread_once_t tls_ctx_ex_data_once = PTHREAD_ONCE_INIT;
 
+/**
+ * init_ex_data_index - One-time initialization of ex-data index
+ *
+ * Called via pthread_once to ensure thread-safe single initialization.
+ * This prevents race conditions where multiple threads could call
+ * SSL_CTX_get_ex_new_index() simultaneously and get different indices.
+ */
+static void
+init_ex_data_index(void)
+{
+  tls_ctx_ex_data_index = SSL_CTX_get_ex_new_index(0, NULL, NULL, NULL, NULL);
+}
+
+/**
+ * ensure_ex_data_index - Thread-safe ex-data index initialization
+ *
+ * Uses pthread_once for guaranteed single initialization across all threads.
+ */
 static void
 ensure_ex_data_index(void)
 {
-  if (tls_ctx_ex_data_index < 0) {
-    tls_ctx_ex_data_index = SSL_CTX_get_ex_new_index(0, NULL, NULL, NULL, NULL);
-  }
+  pthread_once(&tls_ctx_ex_data_once, init_ex_data_index);
 }
 
 
@@ -1176,6 +1195,160 @@ TLSBufferPool_free (TLSBufferPool_T *pool)
   Arena_dispose (&p->arena);
 
   *pool = NULL;
+}
+
+/* ============================================================================
+ * 0-RTT Early Data Replay Protection API
+ * ============================================================================
+ *
+ * These functions provide a callback-based mechanism for applications to
+ * implement replay detection for TLS 1.3 0-RTT early data.
+ */
+
+/**
+ * SocketTLSContext_set_early_data_replay_callback - Register replay callback
+ * @ctx: TLS context (server only)
+ * @callback: Replay detection callback (NULL to disable)
+ * @user_data: Opaque data passed to callback
+ *
+ * Registers a callback that is invoked when early data is received.
+ * The callback should implement replay detection (e.g., nonce tracking).
+ *
+ * Thread-safe: No - call during configuration phase only.
+ */
+void
+SocketTLSContext_set_early_data_replay_callback (
+    SocketTLSContext_T ctx, SocketTLSEarlyDataReplayCallback callback,
+    void *user_data)
+{
+  assert (ctx);
+
+  if (!ctx->is_server)
+    {
+      RAISE_TLS_ERROR_MSG (SocketTLS_Failed,
+                           "Replay callback only valid for server contexts");
+    }
+
+  ctx->early_data_replay_callback = (void *)callback;
+  ctx->early_data_replay_user_data = user_data;
+
+  if (callback)
+    {
+      SOCKET_LOG_DEBUG_MSG ("Registered 0-RTT replay protection callback");
+    }
+  else
+    {
+      SOCKET_LOG_DEBUG_MSG ("Cleared 0-RTT replay protection callback");
+    }
+}
+
+/**
+ * SocketTLSContext_require_early_data_replay - Require replay protection
+ * @ctx: TLS context (server only)
+ * @require: 1 = require callback, 0 = allow without callback
+ *
+ * When enabled, early data is rejected unless a replay callback is
+ * registered AND returns 1 (accept).
+ *
+ * Thread-safe: No - call during configuration phase only.
+ */
+void
+SocketTLSContext_require_early_data_replay (SocketTLSContext_T ctx,
+                                             int require)
+{
+  assert (ctx);
+
+  if (!ctx->is_server)
+    {
+      RAISE_TLS_ERROR_MSG (
+          SocketTLS_Failed,
+          "Replay requirement only valid for server contexts");
+    }
+
+  ctx->early_data_replay_required = require ? 1 : 0;
+
+  if (require)
+    {
+      SOCKET_LOG_DEBUG_MSG (
+          "Enabled mandatory 0-RTT replay protection requirement");
+    }
+  else
+    {
+      SOCKET_LOG_DEBUG_MSG (
+          "Disabled mandatory 0-RTT replay protection requirement");
+    }
+}
+
+/**
+ * SocketTLSContext_has_early_data_replay_callback - Check if callback set
+ * @ctx: TLS context
+ *
+ * Thread-safe: Yes (read-only)
+ */
+int
+SocketTLSContext_has_early_data_replay_callback (SocketTLSContext_T ctx)
+{
+  assert (ctx);
+  return ctx->early_data_replay_callback != NULL;
+}
+
+/**
+ * SocketTLSContext_check_early_data_replay - Invoke replay check
+ * @ctx: TLS context
+ * @session_id: Session identifier from ticket
+ * @session_id_len: Length of session_id
+ *
+ * Invokes the registered replay callback to determine if early data
+ * should be accepted. If no callback is registered:
+ * - If replay protection is required, returns 0 (reject)
+ * - Otherwise returns 1 (accept - vulnerable to replay)
+ *
+ * Thread-safe: Yes - callback invocation is per-connection
+ */
+int
+SocketTLSContext_check_early_data_replay (SocketTLSContext_T ctx,
+                                           const unsigned char *session_id,
+                                           size_t session_id_len)
+{
+  assert (ctx);
+
+  SocketTLSEarlyDataReplayCallback callback
+      = (SocketTLSEarlyDataReplayCallback)ctx->early_data_replay_callback;
+
+  if (!callback)
+    {
+      /* No callback registered */
+      if (ctx->early_data_replay_required)
+        {
+          SOCKET_LOG_DEBUG_MSG (
+              "Rejecting early data: replay protection required but no "
+              "callback registered");
+          SocketMetrics_counter_inc (SOCKET_CTR_TLS_EARLY_DATA_REPLAY_REJECTED);
+          return 0; /* Reject - protection required but not available */
+        }
+
+      /* No requirement, accept (but log warning) */
+      SOCKET_LOG_DEBUG_MSG (
+          "Accepting early data without replay protection (vulnerable)");
+      return 1;
+    }
+
+  /* Invoke the callback */
+  int result = callback (ctx, session_id, session_id_len,
+                         ctx->early_data_replay_user_data);
+
+  if (result)
+    {
+      SOCKET_LOG_DEBUG_MSG ("Replay callback accepted early data");
+    }
+  else
+    {
+      SOCKET_LOG_DEBUG_MSG ("Replay callback rejected early data (replay "
+                            "detected or uncertain)");
+      SocketMetrics_counter_inc (SOCKET_CTR_TLS_EARLY_DATA_REPLAY_REJECTED);
+    }
+
+  return result;
 }
 
 #endif /* SOCKET_HAS_TLS */

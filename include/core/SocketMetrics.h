@@ -388,6 +388,8 @@ typedef enum SocketCounterMetric
   SOCKET_CTR_TLS_CRL_CHECK_FAILURES, /**< CRL/OCSP revocation check failures */
   SOCKET_CTR_TLS_EARLY_DATA_SENT,    /**< TLS 1.3 0-RTT early data sent */
   SOCKET_CTR_TLS_EARLY_DATA_RECV,    /**< TLS 1.3 0-RTT early data received */
+  SOCKET_CTR_TLS_EARLY_DATA_REPLAY_REJECTED, /**< 0-RTT early data rejected for
+                                                replay protection */
   SOCKET_CTR_TLS_KEY_UPDATES,        /**< TLS 1.3 KeyUpdate operations */
 
   /* DTLS Counters */
