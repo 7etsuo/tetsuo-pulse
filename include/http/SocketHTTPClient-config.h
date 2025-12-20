@@ -512,6 +512,67 @@
 #define HTTPCLIENT_DEFAULT_RETRY_ON_5XX 0
 #endif
 
+/**
+ * @brief Exponential backoff multiplier for retry delays (2.0 = doubling).
+ * @ingroup http_client
+ * @ingroup http_client_retry
+ *
+ * Controls how aggressively delays grow between retry attempts.
+ * Formula: delay_n = initial_delay * pow(multiplier, n-1), capped at max_delay.
+ *
+ * 2.0 doubles delay each attempt (100ms -> 200ms -> 400ms -> ...).
+ * Values >1.0 provide exponential backoff; =1.0 gives constant delay.
+ *
+ * @note Fixed at compile-time; not configurable per-client at runtime.
+ * @warning Values >4.0 may cause very long delays after few attempts.
+ * @see HTTPCLIENT_DEFAULT_RETRY_INITIAL_DELAY_MS starting delay.
+ * @see HTTPCLIENT_DEFAULT_RETRY_MAX_DELAY_MS backoff cap.
+ * @see SOCKET_RETRY_DEFAULT_MULTIPLIER underlying SocketRetry default.
+ */
+#ifndef HTTPCLIENT_RETRY_MULTIPLIER
+#define HTTPCLIENT_RETRY_MULTIPLIER 2.0
+#endif
+
+/**
+ * @brief Jitter factor for randomizing retry delays (0.25 = +/-25%).
+ * @ingroup http_client
+ * @ingroup http_client_retry
+ *
+ * Adds randomness to computed delays to prevent thundering herd problem when
+ * multiple clients retry simultaneously after a server outage.
+ *
+ * Formula: jittered = delay * (1 + jitter * (2*rand() - 1))
+ * 0.25 means +/-25% variation (e.g., 100ms becomes 75-125ms).
+ *
+ * Range 0.0 to 1.0:
+ * - 0.0: No jitter (exact calculated delays)
+ * - 0.25: Moderate (recommended, prevents synchronization)
+ * - 1.0: Full jitter (delays vary 0% to 200%)
+ *
+ * @note Fixed at compile-time; not configurable per-client at runtime.
+ * @see HTTPCLIENT_RETRY_MULTIPLIER exponential factor.
+ * @see SOCKET_RETRY_DEFAULT_JITTER underlying SocketRetry default.
+ */
+#ifndef HTTPCLIENT_RETRY_JITTER_FACTOR
+#define HTTPCLIENT_RETRY_JITTER_FACTOR 0.25
+#endif
+
+/**
+ * @brief Minimum delay returned on invalid retry input (1 ms).
+ * @ingroup http_client
+ * @ingroup http_client_retry
+ *
+ * Fallback value when httpclient_calculate_retry_delay() receives invalid
+ * parameters (NULL client or attempt < 1). Ensures at least minimal delay
+ * rather than immediate retry on misconfiguration.
+ *
+ * @note Internal constant; not typically overridden.
+ * @see httpclient_calculate_retry_delay() usage context.
+ */
+#ifndef HTTPCLIENT_MIN_DELAY_MS
+#define HTTPCLIENT_MIN_DELAY_MS 1
+#endif
+
 /** @} */ /* end of http_client_retry group */
 
 /**
@@ -962,6 +1023,23 @@
  */
 #ifndef HTTPCLIENT_BODY_CHUNK_SIZE
 #define HTTPCLIENT_BODY_CHUNK_SIZE 4096
+#endif
+
+/**
+ * @brief Initial buffer capacity for HTTP/2 response body accumulation (64KB).
+ * @ingroup http_client
+ *
+ * Initial allocation size for HTTP/2 response body buffer when max_response_size
+ * is unlimited. Buffer grows dynamically by doubling when full.
+ * 64KB balances memory usage with allocation overhead for typical responses.
+ *
+ * When max_response_size is set, that value is used as initial capacity instead.
+ *
+ * @see HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE for body size limits.
+ * @see execute_http2_request() HTTP/2 response body handling.
+ */
+#ifndef HTTPCLIENT_H2_BODY_INITIAL_CAPACITY
+#define HTTPCLIENT_H2_BODY_INITIAL_CAPACITY (64 * 1024)
 #endif
 
 /**

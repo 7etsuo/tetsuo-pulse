@@ -27,10 +27,14 @@
 #include "socket/SocketProxy.h"
 #include "tls/SocketTLSConfig.h"
 
-SOCKET_DECLARE_MODULE_EXCEPTION (SocketProxy);
+/**
+ * Module exception declaration for SocketProxy.
+ * Uses centralized SOCKET_DECLARE_MODULE_EXCEPTION macro from SocketUtil.h.
+ */
+SOCKET_DECLARE_MODULE_EXCEPTION (Proxy);
 
 #define RAISE_PROXY_ERROR_MSG(exception, fmt, ...)                            \
-  SOCKET_RAISE_FMT (SocketProxy, exception, fmt, ##__VA_ARGS__)
+  SOCKET_RAISE_FMT (Proxy, exception, fmt, ##__VA_ARGS__)
 
 #include "core/Arena.h"
 #include "core/SocketCrypto.h"
@@ -63,13 +67,6 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketProxy);
 
 const Except_T SocketProxy_Failed
     = { &SocketProxy_Failed, "Proxy operation failed" };
-
-/**
- * Thread-local exception for detailed error messages.
- * REFACTOR: Now uses centralized SOCKET_DECLARE_MODULE_EXCEPTION macro
- * from SocketUtil.h instead of manual platform-specific declarations.
- */
-SOCKET_DECLARE_MODULE_EXCEPTION (Proxy);
 
 /* ============================================================================
  * Thread-Local Static Buffer for URL Parsing
@@ -654,11 +651,9 @@ socketproxy_do_recv (struct SocketProxy_Conn_T *conn)
       return 0; /* EOF */
     }
 
-  if (conn->recvbuf != NULL)
-    {
-      SocketBuf_written (conn->recvbuf, (size_t)n);
-    }
-  else
+  /* NOTE: SocketBuf_written already called inside TRY block for recvbuf case.
+   * Only update recv_len for fixed buffer case here. */
+  if (conn->recvbuf == NULL)
     {
       conn->recv_len += (size_t)n;
     }
@@ -1604,7 +1599,10 @@ proxy_process_recv (struct SocketProxy_Conn_T *conn)
       return -1;
     }
 
-  /* Setup recv_buf for protocol dispatch (compat layer) */
+  /* Setup recv_buf for protocol dispatch (compat layer).
+   * Copy data from SocketBuf to fixed recv_buf for protocol handlers.
+   * NOTE: We consume from recvbuf AFTER protocol dispatch, based on how
+   * much the handler actually processed (recv_offset). */
   if (conn->recvbuf != NULL && avail > 0)
     {
       size_t read_avail = avail; /* Preserve original avail */
@@ -1614,19 +1612,19 @@ proxy_process_recv (struct SocketProxy_Conn_T *conn)
       avail = (read_avail > sizeof (conn->recv_buf)) ? sizeof (conn->recv_buf)
                                                      : read_avail;
       memcpy (conn->recv_buf, ptr, avail);
-      SocketBuf_consume (conn->recvbuf, avail); /* Advance buffer after read */
       conn->recv_len = avail;
       conn->recv_offset = 0;
     }
 
   res = proxy_dispatch_protocol_recv (conn);
 
-  /* Consume parsed data from buffer */
+  /* Consume parsed data from buffer based on what protocol handler processed */
   size_t consumed = conn->recv_offset; /* Protocol funcs advance this */
   if (consumed > 0)
     {
       if (conn->recvbuf != NULL)
         {
+          /* Consume only what was actually processed from the SocketBuf */
           SocketBuf_consume (conn->recvbuf, consumed);
         }
       else

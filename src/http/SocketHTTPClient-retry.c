@@ -27,12 +27,13 @@
 #include "http/SocketHTTPClient-private.h"
 
 /* ============================================================================
- * Constants
+ * Time Conversion Constants
  * ============================================================================
+ *
+ * Note: HTTPCLIENT_MIN_DELAY_MS, HTTPCLIENT_RETRY_MULTIPLIER, and
+ * HTTPCLIENT_RETRY_JITTER_FACTOR are defined in SocketHTTPClient-config.h
+ * for compile-time configuration consistency.
  */
-
-/** Minimum delay to return on invalid input (ms) */
-#define HTTPCLIENT_MIN_DELAY_MS 1
 
 /** Time conversion: milliseconds per second */
 #define MILLISECONDS_PER_SECOND 1000
