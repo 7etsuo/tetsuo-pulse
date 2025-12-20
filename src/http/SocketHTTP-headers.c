@@ -16,10 +16,67 @@
 
 
 
+#include "core/SocketCrypto.h"
 #include "core/SocketSecurity.h"
 #include "core/SocketUtil.h"
 #include "http/SocketHTTP-private.h"
 #include "http/SocketHTTP.h"
+
+#include <time.h>
+
+/* ============================================================================
+ * Hash Seed Randomization (DoS Protection)
+ * ============================================================================
+ */
+
+/* Random hash seed initialized once per process */
+static uint32_t header_hash_seed = 0;
+static int header_hash_seed_initialized = 0;
+
+static uint32_t
+get_header_hash_seed (void)
+{
+  if (!header_hash_seed_initialized)
+    {
+      if (SocketCrypto_random_bytes (&header_hash_seed,
+                                     sizeof (header_hash_seed))
+          != 0)
+        {
+          /* Fallback to time-based seed if crypto fails */
+          header_hash_seed = (uint32_t)time (NULL) ^ (uint32_t)getpid ();
+        }
+      header_hash_seed_initialized = 1;
+    }
+  return header_hash_seed;
+}
+
+/**
+ * hash_header_name_seeded - Hash header name with randomized seed
+ * @name: Header name
+ * @len: Name length
+ * @buckets: Number of hash buckets
+ *
+ * Uses DJB2 algorithm with random seed to prevent hash collision DoS attacks.
+ *
+ * Returns: Hash bucket index
+ */
+static unsigned
+hash_header_name_seeded (const char *name, size_t len, unsigned buckets)
+{
+  uint32_t seed = get_header_hash_seed ();
+  unsigned long hash = 5381 ^ seed;
+
+  for (size_t i = 0; i < len; i++)
+    {
+      unsigned char c = (unsigned char)name[i];
+      /* Case-insensitive */
+      if (c >= 'A' && c <= 'Z')
+        c += 32;
+      hash = ((hash << 5) + hash) ^ c;
+    }
+
+  return (unsigned)(hash % buckets);
+}
 
 /* ============================================================================
  * Constants
@@ -74,8 +131,8 @@ static HeaderEntry *
 find_entry_with_prev (SocketHTTP_Headers_T headers, const char *name,
                       size_t name_len, HeaderEntry ***prev_ptr_out)
 {
-  unsigned bucket = socket_util_hash_djb2_ci_len (name, name_len,
-                                                  SOCKETHTTP_HEADER_BUCKETS);
+  unsigned bucket = hash_header_name_seeded (name, name_len,
+                                             SOCKETHTTP_HEADER_BUCKETS);
   HeaderEntry **pp = &headers->buckets[bucket];
 
   /* SECURITY: Limit traversal to prevent hash collision DoS */
@@ -86,7 +143,6 @@ find_entry_with_prev (SocketHTTP_Headers_T headers, const char *name,
       if (chain_len > SOCKETHTTP_MAX_CHAIN_SEARCH_LEN)
         {
           SOCKET_LOG_WARN_MSG (
-              "SocketHTTP",
               "Excessive hash chain length %d in bucket %u - potential DoS",
               chain_len, bucket);
           return NULL;
@@ -240,14 +296,12 @@ remove_one_n (SocketHTTP_Headers_T headers, const char *name, size_t name_len)
     {
       /* Invalid entry sizes, reset total */
       headers->total_size = 0;
-      SOCKET_LOG_WARN_MSG ("SocketHTTP",
-                           "Invalid header entry sizes in remove");
+      SOCKET_LOG_WARN_MSG ("Invalid header entry sizes in remove");
     }
   else if (delta > headers->total_size)
     {
       headers->total_size = 0;
-      SOCKET_LOG_WARN_MSG ("SocketHTTP",
-                           "Header total_size underflow in remove");
+      SOCKET_LOG_WARN_MSG ("Header total_size underflow in remove");
     }
   else
     {
@@ -455,8 +509,8 @@ SocketHTTP_Headers_add_n (SocketHTTP_Headers_T headers, const char *name,
     return -1;
 
   /* Cache hash bucket index to avoid recomputation in bucket operations */
-  entry->hash = socket_util_hash_djb2_ci_len (name, name_len,
-                                              SOCKETHTTP_HEADER_BUCKETS);
+  entry->hash = hash_header_name_seeded (name, name_len,
+                                         SOCKETHTTP_HEADER_BUCKETS);
 
   if (allocate_entry_value (headers->arena, entry, value, value_len) < 0)
     return -1;
@@ -541,11 +595,12 @@ SocketHTTP_Headers_get_int (SocketHTTP_Headers_T headers, const char *name,
   /* Parse digits with overflow protection */
   if (!(*p >= '0' && *p <= '9'))
     return -1;
-  int64_t result = 0;
+  uint64_t result = 0;
   while (*p >= '0' && *p <= '9')
     {
       int digit = *p - '0';
-      if (result > (INT64_MAX - digit) / 10)
+      /* Check for overflow: result * 10 + digit > UINT64_MAX */
+      if (result > (UINT64_MAX - digit) / 10)
         return -1; /* Overflow */
       result = result * 10 + digit;
       p++;
@@ -557,7 +612,21 @@ SocketHTTP_Headers_get_int (SocketHTTP_Headers_T headers, const char *name,
   if (*p != '\0')
     return -1;
 
-  *value = negative ? -result : result;
+  /* SECURITY: Convert to signed with overflow check to prevent negation overflow */
+  if (negative)
+    {
+      /* Check that result doesn't exceed abs(INT64_MIN) to prevent overflow */
+      if (result > ((uint64_t)INT64_MAX + 1))
+        return -1;  /* Would overflow on negation */
+      *value = -(int64_t)result;
+    }
+  else
+    {
+      if (result > (uint64_t)INT64_MAX)
+        return -1;
+      *value = (int64_t)result;
+    }
+
   return 0;
 }
 

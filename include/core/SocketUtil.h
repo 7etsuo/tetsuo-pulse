@@ -399,7 +399,8 @@ void SocketLog_emit (SocketLogLevel level, const char *component,
  * @see @ref foundation for related utilities like SocketMetrics.
  */
 void SocketLog_emitf (SocketLogLevel level, const char *component,
-                      const char *fmt, ...);
+                      const char *fmt, ...)
+    __attribute__ ((format (printf, 3, 4)));
 
 /**
  * @brief Emit formatted log message using va_list for arguments.
@@ -429,7 +430,8 @@ void SocketLog_emitf (SocketLogLevel level, const char *component,
  * @see SocketLog_setcallback() for output routing.
  */
 void SocketLog_emitfv (SocketLogLevel level, const char *component,
-                       const char *fmt, va_list args);
+                       const char *fmt, va_list args)
+    __attribute__ ((format (printf, 3, 0)));
 
 /**
  * @brief SocketLog_setlevel - Configure global minimum log level threshold.
@@ -559,6 +561,44 @@ extern SocketLogLevel SocketLog_getlevel (void);
 /* Log at FATAL level (critical errors, typically before abort) */
 #define SOCKET_LOG_FATAL_MSG(fmt, ...)                                        \
   SocketLog_emitf (SOCKET_LOG_FATAL, SOCKET_LOG_COMPONENT, fmt, ##__VA_ARGS__)
+
+/* ----------------------------------------------------------------------------
+ * Safe Logging Macros (for untrusted/user-controlled messages)
+ * ----------------------------------------------------------------------------
+ *
+ * These macros use SocketLog_emit() with a fixed "%s" format to safely log
+ * user-controlled strings without format string vulnerabilities.
+ *
+ * Use these when logging data that may come from untrusted sources.
+ *
+ * Usage:
+ *   const char *user_input = get_user_input();
+ *   SOCKET_LOG_INFO_SAFE(user_input);  // Safe - no format string attack
+ */
+
+/* Log untrusted string at TRACE level */
+#define SOCKET_LOG_TRACE_SAFE(msg)                                            \
+  SocketLog_emit (SOCKET_LOG_TRACE, SOCKET_LOG_COMPONENT, (msg))
+
+/* Log untrusted string at DEBUG level */
+#define SOCKET_LOG_DEBUG_SAFE(msg)                                            \
+  SocketLog_emit (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT, (msg))
+
+/* Log untrusted string at INFO level */
+#define SOCKET_LOG_INFO_SAFE(msg)                                             \
+  SocketLog_emit (SOCKET_LOG_INFO, SOCKET_LOG_COMPONENT, (msg))
+
+/* Log untrusted string at WARN level */
+#define SOCKET_LOG_WARN_SAFE(msg)                                             \
+  SocketLog_emit (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT, (msg))
+
+/* Log untrusted string at ERROR level */
+#define SOCKET_LOG_ERROR_SAFE(msg)                                            \
+  SocketLog_emit (SOCKET_LOG_ERROR, SOCKET_LOG_COMPONENT, (msg))
+
+/* Log untrusted string at FATAL level */
+#define SOCKET_LOG_FATAL_SAFE(msg)                                            \
+  SocketLog_emit (SOCKET_LOG_FATAL, SOCKET_LOG_COMPONENT, (msg))
 
 /* ----------------------------------------------------------------------------
  * Thread-Local Logging Context

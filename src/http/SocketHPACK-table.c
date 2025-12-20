@@ -541,6 +541,19 @@ hpack_table_evict (SocketHPACK_Table_T table, size_t required_space)
       HPACK_DynamicEntry *entry = &table->entries[table->head];
       size_t entry_size = hpack_entry_size (entry->name_len, entry->value_len);
 
+      /* Protect against underflow */
+      if (entry_size > table->size)
+        {
+          /* Corrupted state - reset table */
+          SOCKET_LOG_ERROR_MSG (
+              "SocketHPACK: table corruption detected (entry_size=%zu > "
+              "table_size=%zu), resetting table",
+              entry_size, table->size);
+          table->size = 0;
+          table->count = 0;
+          return evicted;
+        }
+
       table->size -= entry_size;
       table->head = (table->head + 1) & (table->capacity - 1);
       table->count--;
@@ -561,14 +574,18 @@ SocketHPACK_static_get (size_t index, SocketHPACK_Header *header)
   const HPACK_StaticEntry *entry;
   SocketHPACK_Result res;
 
-  res = hpack_validate_index (index, SOCKETHPACK_STATIC_TABLE_SIZE,
-                              "static_get");
-  if (res != HPACK_OK)
-    return res;
-
   res = hpack_validate_header_ptr (header, "static_get");
   if (res != HPACK_OK)
     return res;
+
+  /* Validate static table index (1-61 per RFC 7541) */
+  if (index == 0 || index > SOCKETHPACK_STATIC_TABLE_SIZE)
+    {
+      SOCKET_LOG_WARN_MSG (
+          "SocketHPACK static_get: invalid index %zu (valid range 1-%zu)", index,
+          (size_t)SOCKETHPACK_STATIC_TABLE_SIZE);
+      return HPACK_ERROR_INVALID_INDEX;
+    }
 
   entry = &hpack_static_table[index - 1];
   header->name = entry->name;
@@ -696,7 +713,7 @@ SocketHPACK_Table_set_max_size (SocketHPACK_Table_T table, size_t max_size)
     {
       SOCKET_LOG_WARN_MSG (
           "SocketHPACK Table_set_max_size: clamping max_size from %zu to %zu",
-          max_size, SOCKETHPACK_MAX_TABLE_SIZE);
+          max_size, (size_t)SOCKETHPACK_MAX_TABLE_SIZE);
       max_size = SOCKETHPACK_MAX_TABLE_SIZE;
     }
 
@@ -714,6 +731,7 @@ SocketHPACK_Table_get (SocketHPACK_Table_T table, size_t index,
                        SocketHPACK_Header *header)
 {
   size_t actual_index;
+  size_t offset;
   HPACK_DynamicEntry *entry;
   SocketHPACK_Result res;
 
@@ -721,16 +739,31 @@ SocketHPACK_Table_get (SocketHPACK_Table_T table, size_t index,
   if (res != HPACK_OK)
     return res;
 
-  res = hpack_validate_index (index, table->count, "Table_get");
-  if (res != HPACK_OK)
-    return res;
-
   res = hpack_validate_header_ptr (header, "Table_get");
   if (res != HPACK_OK)
     return res;
 
+  /* Validate index is within table bounds */
+  if (index == 0 || index > table->count)
+    {
+      SOCKET_LOG_WARN_MSG (
+          "SocketHPACK Table_get: invalid index %zu (valid range 1-%zu)", index,
+          table->count);
+      return HPACK_ERROR_INVALID_INDEX;
+    }
+
+  /* Safe index calculation with underflow protection */
+  offset = index - 1;
+  if (offset >= table->capacity)
+    {
+      SOCKET_LOG_ERROR_MSG (
+          "SocketHPACK Table_get: offset %zu exceeds capacity %zu", offset,
+          table->capacity);
+      return HPACK_ERROR_INVALID_INDEX;
+    }
+
   /* Index 1 = most recent (tail - 1), Index n = oldest (head) */
-  actual_index = (table->tail - index) & (table->capacity - 1);
+  actual_index = (table->tail + table->capacity - 1 - offset) & (table->capacity - 1);
   entry = &table->entries[actual_index];
 
   header->name = entry->name;

@@ -66,6 +66,7 @@
 #define HPACK_HUFFMAN_RATIO 2 /* Estimated decode expansion ratio */
 
 #define HPACK_UINT64_SHIFT_LIMIT 63 /* Maximum shift before uint64_t overflow */
+#define HPACK_MAX_INT_CONTINUATION_BYTES 10 /* Limit continuation bytes for integer decoding */
 
 /* Literal encoding mode flags */
 #define HPACK_LITERAL_WITH_INDEXING 0x40
@@ -182,15 +183,21 @@ decode_int_continuation (const unsigned char *input, size_t input_len,
                          size_t *pos, uint64_t *result, unsigned int *shift)
 {
   uint64_t byte_val;
+  unsigned int continuation_count = 0;
 
   do
     {
       if (*pos >= input_len)
         return HPACK_INCOMPLETE;
 
+      continuation_count++;
+      if (continuation_count > HPACK_MAX_INT_CONTINUATION_BYTES)
+        return HPACK_ERROR_INTEGER;
+
       byte_val = input[(*pos)++];
 
-      if (*shift >= HPACK_UINT64_SHIFT_LIMIT)
+      /* SECURITY: Limit shift to 56 bits to prevent overflow (56 + 7 = 63 bits max) */
+      if (*shift > 56)
         return HPACK_ERROR_INTEGER;
 
       uint64_t add_val = (byte_val & HPACK_INT_PAYLOAD_MASK) << *shift;
@@ -1063,6 +1070,9 @@ SocketHPACK_Decoder_decode (SocketHPACK_Decoder_T decoder,
 
   *header_count = 0;
 
+  /* Track input bytes for expansion ratio enforcement */
+  decoder->decode_input_bytes += input_len;
+
   while (pos < input_len)
     {
       unsigned char byte = input[pos];
@@ -1136,6 +1146,16 @@ SocketHPACK_Decoder_decode (SocketHPACK_Decoder_T decoder,
 
       headers[hdr_count] = header;
       hdr_count++;
+
+      /* Track output bytes and check expansion ratio to prevent HPACK bombs */
+      decoder->decode_output_bytes += header.name_len + header.value_len;
+      if (decoder->decode_input_bytes > 0)
+        {
+          double current_ratio = (double)decoder->decode_output_bytes /
+                                (double)decoder->decode_input_bytes;
+          if (current_ratio > decoder->max_expansion_ratio)
+            return HPACK_ERROR_BOMB;
+        }
     }
 
   *header_count = hdr_count;

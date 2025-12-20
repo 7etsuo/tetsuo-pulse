@@ -146,6 +146,44 @@ safe_append_int64 (char **buf, size_t *remaining, int64_t value)
  */
 
 /**
+ * header_name_valid_for_serialize - Validate header name for serialization
+ * @name: Header name
+ * @len: Header name length
+ *
+ * Returns: 1 if valid, 0 if contains forbidden characters
+ */
+static int
+header_name_valid_for_serialize (const char *name, size_t len)
+{
+  for (size_t i = 0; i < len; i++)
+    {
+      unsigned char c = (unsigned char)name[i];
+      if (c == '\r' || c == '\n' || c == '\0' || c == ':')
+        return 0;
+    }
+  return len > 0;
+}
+
+/**
+ * header_value_valid_for_serialize - Validate header value for serialization
+ * @value: Header value
+ * @len: Header value length
+ *
+ * Returns: 1 if valid, 0 if contains forbidden characters
+ */
+static int
+header_value_valid_for_serialize (const char *value, size_t len)
+{
+  for (size_t i = 0; i < len; i++)
+    {
+      unsigned char c = (unsigned char)value[i];
+      if (c == '\r' || c == '\n' || c == '\0')
+        return 0;
+    }
+  return 1;
+}
+
+/**
  * serialize_ctx - Context for header serialization callback
  */
 struct serialize_ctx
@@ -173,7 +211,12 @@ serialize_header_cb (const char *name, size_t name_len, const char *value,
 {
   struct serialize_ctx *ctx = userdata;
 
-/* Assuming headers validated on addition, skip redundant check during serialization */
+  /* Validate header for CRLF injection (defense in depth) */
+  if (!header_name_valid_for_serialize (name, name_len)
+      || !header_value_valid_for_serialize (value, value_len))
+    {
+      return -1; /* Reject headers with control characters */
+    }
 
   /* Append: name ": " value "\r\n" */
   if (safe_append (&ctx->buf, &ctx->remaining, name, name_len) < 0

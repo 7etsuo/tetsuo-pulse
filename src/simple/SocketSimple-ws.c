@@ -12,6 +12,10 @@
  */
 
 #include "SocketSimple-internal.h"
+#include "core/Arena.h"
+#include "http/SocketHTTP.h"
+#include "http/SocketHTTPServer-private.h"
+#include "simple/SocketSimple-http-server.h"
 
 /* ============================================================================
  * WebSocket Options
@@ -67,12 +71,14 @@ Socket_simple_ws_connect_ex (const char *url,
   TRY { ws = SocketWS_connect (url, protocols); }
   EXCEPT (SocketWS_Failed)
   {
-    simple_set_error (SOCKET_SIMPLE_ERR_CONNECT, "WebSocket connection failed");
+    simple_set_error (SOCKET_SIMPLE_ERR_CONNECT,
+                      "WebSocket connection failed");
     exception_occurred = 1;
   }
   EXCEPT (SocketWS_ProtocolError)
   {
-    simple_set_error (SOCKET_SIMPLE_ERR_WS_PROTOCOL, "WebSocket protocol error");
+    simple_set_error (SOCKET_SIMPLE_ERR_WS_PROTOCOL,
+                      "WebSocket protocol error");
     exception_occurred = 1;
   }
   FINALLY
@@ -89,7 +95,8 @@ Socket_simple_ws_connect_ex (const char *url,
 
   if (!ws)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_CONNECT, "WebSocket connection failed");
+      simple_set_error (SOCKET_SIMPLE_ERR_CONNECT,
+                        "WebSocket connection failed");
       return NULL;
     }
 
@@ -328,7 +335,8 @@ Socket_simple_ws_recv (SocketSimple_WS_T ws, SocketSimple_WSMessage *msg)
   }
   EXCEPT (SocketWS_ProtocolError)
   {
-    simple_set_error (SOCKET_SIMPLE_ERR_WS_PROTOCOL, "WebSocket protocol error");
+    simple_set_error (SOCKET_SIMPLE_ERR_WS_PROTOCOL,
+                      "WebSocket protocol error");
     exception_occurred = 1;
   }
   END_TRY;
@@ -362,8 +370,8 @@ Socket_simple_ws_recv (SocketSimple_WS_T ws, SocketSimple_WSMessage *msg)
 }
 
 int
-Socket_simple_ws_recv_timeout (SocketSimple_WS_T ws, SocketSimple_WSMessage *msg,
-                               int timeout_ms)
+Socket_simple_ws_recv_timeout (SocketSimple_WS_T ws,
+                               SocketSimple_WSMessage *msg, int timeout_ms)
 {
   Socket_simple_clear_error ();
 
@@ -506,7 +514,8 @@ Socket_simple_ws_fd (SocketSimple_WS_T ws)
 
 /* ============================================================================
  * Server Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 void
 Socket_simple_ws_server_config_init (SocketSimple_WSServerConfig *config)
@@ -574,49 +583,325 @@ Socket_simple_ws_is_upgrade (const char *method, const char **headers)
   return has_upgrade && has_connection && has_key && has_version;
 }
 
+/**
+ * @brief Convert Simple API config to core SocketWS_Config.
+ */
+static void
+convert_ws_server_config (const SocketSimple_WSServerConfig *simple_config,
+                          SocketWS_Config *ws_config)
+{
+  SocketWS_config_defaults (ws_config);
+  ws_config->role = WS_ROLE_SERVER;
+
+  if (simple_config)
+    {
+      ws_config->max_frame_size = simple_config->max_frame_size;
+      ws_config->max_message_size = simple_config->max_message_size;
+      ws_config->validate_utf8 = simple_config->validate_utf8;
+      ws_config->enable_permessage_deflate = simple_config->enable_compression;
+      ws_config->ping_interval_ms = simple_config->ping_interval_ms;
+      ws_config->subprotocols = simple_config->subprotocols;
+    }
+}
+
 SocketSimple_WS_T
 Socket_simple_ws_accept (void *http_req,
                          const SocketSimple_WSServerConfig *config)
 {
-  (void)http_req;
-  (void)config;
+  volatile SocketWS_T ws = NULL;
+  volatile int exception_occurred = 0;
+  struct SocketSimple_WS *handle = NULL;
+  SocketWS_Config ws_config;
 
-  /* TODO: Implement WebSocket upgrade from HTTP server request.
-   * This requires access to internal HTTP server request structure.
-   * For now, use Socket_simple_ws_accept_raw with a raw socket
-   * and parsed WebSocket key.
-   */
-  simple_set_error (SOCKET_SIMPLE_ERR_UNSUPPORTED,
-                    "WebSocket upgrade from HTTP server not yet implemented. "
-                    "Use Socket_simple_ws_accept_raw with a raw socket.");
-  return NULL;
+  Socket_simple_clear_error ();
+
+  if (!http_req)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "HTTP request is NULL");
+      return NULL;
+    }
+
+  /* Get the Simple API HTTP server request wrapper */
+  SocketSimple_HTTPServerRequest_T simple_req
+      = (SocketSimple_HTTPServerRequest_T)http_req;
+
+  /* Access the core HTTP server request through the simple wrapper */
+  SocketHTTPServer_Request_T core_req = simple_req->core_req;
+  if (!core_req)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                        "Invalid HTTP server request");
+      return NULL;
+    }
+
+  /* Get the underlying connection and socket */
+  ServerConnection *conn = core_req->conn;
+  if (!conn || !conn->socket)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                        "HTTP connection has no socket");
+      return NULL;
+    }
+
+  /* Get the parsed HTTP request */
+  const SocketHTTP_Request *request = conn->request;
+  if (!request)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                        "HTTP request not parsed");
+      return NULL;
+    }
+
+  /* Convert Simple API config to core config */
+  convert_ws_server_config (config, &ws_config);
+
+  TRY
+  {
+    /* Accept the WebSocket upgrade */
+    ws = SocketWS_server_accept (conn->socket, request, &ws_config);
+
+    if (ws)
+      {
+        /* Complete the handshake (sends 101 Switching Protocols) */
+        int handshake_result;
+        do
+          {
+            handshake_result = SocketWS_handshake (ws);
+          }
+        while (handshake_result > 0);
+
+        if (handshake_result < 0)
+          {
+            simple_set_error (SOCKET_SIMPLE_ERR_WS_PROTOCOL,
+                              "WebSocket handshake failed");
+            SocketWS_free ((SocketWS_T *)&ws);
+            exception_occurred = 1;
+          }
+      }
+  }
+  EXCEPT (SocketWS_Failed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_SOCKET,
+                      "WebSocket server accept failed");
+    exception_occurred = 1;
+  }
+  EXCEPT (SocketWS_ProtocolError)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_WS_PROTOCOL,
+                      "WebSocket protocol error during accept");
+    exception_occurred = 1;
+  }
+  FINALLY
+  {
+    if (exception_occurred && ws)
+      {
+        SocketWS_free ((SocketWS_T *)&ws);
+      }
+  }
+  END_TRY;
+
+  if (exception_occurred)
+    return NULL;
+
+  if (!ws)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_SOCKET, "WebSocket accept failed");
+      return NULL;
+    }
+
+  /* Create the simple wrapper handle */
+  handle = calloc (1, sizeof (*handle));
+  if (!handle)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
+      SocketWS_free ((SocketWS_T *)&ws);
+      return NULL;
+    }
+
+  handle->ws = ws;
+
+  /* Mark the HTTP connection as upgraded - prevent normal response handling.
+   * The socket is now owned by the WebSocket, so we need to prevent the
+   * HTTP server from closing it. Set conn->socket to NULL to indicate this. */
+  conn->socket = NULL;
+
+  return handle;
 }
 
 SocketSimple_WS_T
 Socket_simple_ws_accept_raw (void *sock, const char *ws_key,
                              const SocketSimple_WSServerConfig *config)
 {
-  (void)sock;
-  (void)ws_key;
-  (void)config;
+  volatile SocketWS_T ws = NULL;
+  volatile int exception_occurred = 0;
+  struct SocketSimple_WS *handle = NULL;
+  SocketWS_Config ws_config;
+  volatile Arena_T arena = NULL;
+  volatile SocketHTTP_Request *request = NULL;
+  volatile SocketHTTP_Headers_T headers = NULL;
 
-  /* TODO: Implement WebSocket accept on raw socket.
-   * This requires building internal HTTP request structures.
-   * For production use, the WebSocket client API is fully functional.
-   */
-  simple_set_error (SOCKET_SIMPLE_ERR_UNSUPPORTED,
-                    "WebSocket raw accept not yet implemented");
-  return NULL;
+  Socket_simple_clear_error ();
+
+  if (!sock)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Socket is NULL");
+      return NULL;
+    }
+
+  if (!ws_key || strlen (ws_key) == 0)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                        "WebSocket key is required");
+      return NULL;
+    }
+
+  /* Cast the socket handle */
+  Socket_T socket = (Socket_T)sock;
+
+  /* Convert Simple API config to core config */
+  convert_ws_server_config (config, &ws_config);
+
+  TRY
+  {
+    /* Create a temporary arena for the fake HTTP request */
+    arena = Arena_new ();
+
+    /* Build a minimal HTTP request structure for WebSocket upgrade */
+    request
+        = Arena_alloc (arena, sizeof (SocketHTTP_Request), __FILE__, __LINE__);
+    memset ((void *)request, 0, sizeof (SocketHTTP_Request));
+
+    /* Create headers container */
+    headers = SocketHTTP_Headers_new (arena);
+
+    /* Add required WebSocket upgrade headers */
+    SocketHTTP_Headers_add (headers, "Upgrade", "websocket");
+    SocketHTTP_Headers_add (headers, "Connection", "Upgrade");
+    SocketHTTP_Headers_add (headers, "Sec-WebSocket-Key", ws_key);
+    SocketHTTP_Headers_add (headers, "Sec-WebSocket-Version", "13");
+
+    /* Set up the request structure */
+    ((SocketHTTP_Request *)request)->method = HTTP_METHOD_GET;
+    ((SocketHTTP_Request *)request)->headers = headers;
+    ((SocketHTTP_Request *)request)->path = "/";
+    ((SocketHTTP_Request *)request)->version = HTTP_VERSION_1_1;
+
+    /* Accept the WebSocket upgrade */
+    ws = SocketWS_server_accept (socket, (const SocketHTTP_Request *)request,
+                                 &ws_config);
+
+    if (ws)
+      {
+        /* Complete the handshake (sends 101 Switching Protocols) */
+        int handshake_result;
+        do
+          {
+            handshake_result = SocketWS_handshake (ws);
+          }
+        while (handshake_result > 0);
+
+        if (handshake_result < 0)
+          {
+            simple_set_error (SOCKET_SIMPLE_ERR_WS_PROTOCOL,
+                              "WebSocket handshake failed");
+            SocketWS_free ((SocketWS_T *)&ws);
+            exception_occurred = 1;
+          }
+      }
+  }
+  EXCEPT (SocketWS_Failed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_SOCKET,
+                      "WebSocket server accept failed");
+    exception_occurred = 1;
+  }
+  EXCEPT (SocketWS_ProtocolError)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_WS_PROTOCOL,
+                      "WebSocket protocol error during accept");
+    exception_occurred = 1;
+  }
+  EXCEPT (Arena_Failed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
+    exception_occurred = 1;
+  }
+  FINALLY
+  {
+    /* Clean up the temporary arena - the WebSocket has its own copy of
+     * what it needs */
+    if (arena)
+      {
+        Arena_dispose ((Arena_T *)&arena);
+      }
+    if (exception_occurred && ws)
+      {
+        SocketWS_free ((SocketWS_T *)&ws);
+      }
+  }
+  END_TRY;
+
+  if (exception_occurred)
+    return NULL;
+
+  if (!ws)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_SOCKET, "WebSocket accept failed");
+      return NULL;
+    }
+
+  /* Create the simple wrapper handle */
+  handle = calloc (1, sizeof (*handle));
+  if (!handle)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
+      SocketWS_free ((SocketWS_T *)&ws);
+      return NULL;
+    }
+
+  handle->ws = ws;
+  return handle;
 }
 
 void
 Socket_simple_ws_reject (void *http_req, int status, const char *reason)
 {
-  (void)http_req;
-  (void)status;
-  (void)reason;
+  Socket_simple_clear_error ();
 
-  /* TODO: Implement WebSocket rejection.
-   * This requires access to internal HTTP server request structure.
-   */
+  if (!http_req)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "HTTP request is NULL");
+      return;
+    }
+
+  /* Get the Simple API HTTP server request wrapper */
+  SocketSimple_HTTPServerRequest_T simple_req
+      = (SocketSimple_HTTPServerRequest_T)http_req;
+
+  /* Access the core HTTP server request through the simple wrapper */
+  SocketHTTPServer_Request_T core_req = simple_req->core_req;
+  if (!core_req)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                        "Invalid HTTP server request");
+      return;
+    }
+
+  /* Get the underlying connection and socket */
+  ServerConnection *conn = core_req->conn;
+  if (!conn || !conn->socket)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                        "HTTP connection has no socket");
+      return;
+    }
+
+  /* Use SocketWS_server_reject to send rejection response */
+  TRY { SocketWS_server_reject (conn->socket, status, reason); }
+  EXCEPT (Socket_Failed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_SEND,
+                      "Failed to send rejection response");
+  }
+  END_TRY;
 }

@@ -87,6 +87,23 @@
 /** Default string for unknown file locations */
 #define EXCEPT_UNKNOWN_FILE "unknown"
 
+/**
+ * SOCKET_EXCEPT_VERBOSE_UNCAUGHT - Control verbosity of uncaught exceptions
+ *
+ * When 0 (default in release builds), only logs basename of file paths
+ * to prevent leaking internal directory structure.
+ * When 1, logs full file paths for debugging.
+ *
+ * Compile-time configuration to reduce attack surface information disclosure.
+ */
+#ifndef SOCKET_EXCEPT_VERBOSE_UNCAUGHT
+#ifdef NDEBUG
+#define SOCKET_EXCEPT_VERBOSE_UNCAUGHT 0
+#else
+#define SOCKET_EXCEPT_VERBOSE_UNCAUGHT 1
+#endif
+#endif
+
 /** Format string for uncaught exception header */
 #define EXCEPT_UNCAUGHT_FMT "Uncaught exception"
 
@@ -178,6 +195,35 @@ except_emit_reason (const Except_T *e)
 }
 
 /**
+ * except_basename - Extract filename from full path
+ * @path: Full file path (may be NULL)
+ *
+ * Returns: Pointer to filename component (after last / or \), or path itself
+ *          if no separator found. Returns EXCEPT_UNKNOWN_FILE if path is NULL.
+ *
+ * Thread-safe: Yes (pure function, no state)
+ *
+ * Security: Prevents leaking internal directory structure in error messages.
+ */
+static const char *
+except_basename (const char *path)
+{
+  const char *last_sep = NULL;
+  const char *p;
+
+  if (path == NULL)
+    return EXCEPT_UNKNOWN_FILE;
+
+  for (p = path; *p != '\0'; p++)
+    {
+      if (*p == '/' || *p == '\\')
+        last_sep = p;
+    }
+
+  return (last_sep != NULL) ? (last_sep + 1) : path;
+}
+
+/**
  * except_emit_location - Write source location to stderr
  * @file: Source file (may be NULL)
  * @line: Line number (may be 0 if unknown)
@@ -186,14 +232,23 @@ except_emit_reason (const Except_T *e)
  *
  * Outputs location in format " raised at file:line\n" with graceful
  * degradation when file or line is unavailable.
+ *
+ * Security: In release builds (NDEBUG defined), only outputs basename
+ *           to prevent information disclosure about directory structure.
  */
 static void
 except_emit_location (const char *file, int line)
 {
-  if (file != NULL && line > 0)
-    fprintf (stderr, " raised at %s:%d\n", file, line);
-  else if (file != NULL)
-    fprintf (stderr, " raised at %s\n", file);
+#if SOCKET_EXCEPT_VERBOSE_UNCAUGHT
+  const char *display_file = file;
+#else
+  const char *display_file = except_basename (file);
+#endif
+
+  if (display_file != NULL && line > 0)
+    fprintf (stderr, " raised at %s:%d\n", display_file, line);
+  else if (display_file != NULL)
+    fprintf (stderr, " raised at %s\n", display_file);
   else if (line > 0)
     fprintf (stderr, " raised at line %d\n", line);
   else

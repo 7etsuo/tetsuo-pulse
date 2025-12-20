@@ -16,7 +16,8 @@
 
 /* ============================================================================
  * Internal Structure
- * ============================================================================ */
+ * ============================================================================
+ */
 
 struct SocketSimple_Poll
 {
@@ -27,7 +28,8 @@ struct SocketSimple_Poll
 
 /* ============================================================================
  * Helper: Map Simple events to core events
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static unsigned
 simple_to_core_events (int events)
@@ -61,7 +63,8 @@ core_to_simple_events (unsigned events)
 
 /* ============================================================================
  * Poll Lifecycle
- * ============================================================================ */
+ * ============================================================================
+ */
 
 SocketSimple_Poll_T
 Socket_simple_poll_new (int max_events_arg)
@@ -76,13 +79,11 @@ Socket_simple_poll_new (int max_events_arg)
       max_events = 64; /* Default */
     }
 
-  TRY
-  {
-    poll = SocketPoll_new (max_events);
-  }
+  TRY { poll = SocketPoll_new (max_events); }
   EXCEPT (SocketPoll_Failed)
   {
-    simple_set_error (SOCKET_SIMPLE_ERR_POLL, "Failed to create poll instance");
+    simple_set_error (SOCKET_SIMPLE_ERR_POLL,
+                      "Failed to create poll instance");
     return NULL;
   }
   END_TRY;
@@ -121,7 +122,8 @@ Socket_simple_poll_free (SocketSimple_Poll_T *poll)
 
 /* ============================================================================
  * Socket Registration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 Socket_simple_poll_add (SocketSimple_Poll_T poll, SocketSimple_Socket_T sock,
@@ -152,16 +154,14 @@ Socket_simple_poll_add (SocketSimple_Poll_T poll, SocketSimple_Socket_T sock,
     }
   else
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid socket handle");
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                        "Invalid socket handle");
       return -1;
     }
 
   unsigned core_events = simple_to_core_events (events);
 
-  TRY
-  {
-    SocketPoll_add (poll->poll, core_sock, core_events, data);
-  }
+  TRY { SocketPoll_add (poll->poll, core_sock, core_events, data); }
   EXCEPT (SocketPoll_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_POLL, "Failed to add socket to poll");
@@ -188,16 +188,14 @@ Socket_simple_poll_mod (SocketSimple_Poll_T poll, SocketSimple_Socket_T sock,
   Socket_T core_sock = sock->socket;
   if (!core_sock)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid socket handle");
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                        "Invalid socket handle");
       return -1;
     }
 
   unsigned core_events = simple_to_core_events (events);
 
-  TRY
-  {
-    SocketPoll_mod (poll->poll, core_sock, core_events, data);
-  }
+  TRY { SocketPoll_mod (poll->poll, core_sock, core_events, data); }
   EXCEPT (SocketPoll_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_POLL,
@@ -224,14 +222,12 @@ Socket_simple_poll_del (SocketSimple_Poll_T poll, SocketSimple_Socket_T sock)
   Socket_T core_sock = sock->socket;
   if (!core_sock)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid socket handle");
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                        "Invalid socket handle");
       return -1;
     }
 
-  TRY
-  {
-    SocketPoll_del (poll->poll, core_sock);
-  }
+  TRY { SocketPoll_del (poll->poll, core_sock); }
   EXCEPT (SocketPoll_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_POLL,
@@ -260,17 +256,15 @@ Socket_simple_poll_modify_events (SocketSimple_Poll_T poll,
   Socket_T core_sock = sock->socket;
   if (!core_sock)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid socket handle");
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                        "Invalid socket handle");
       return -1;
     }
 
   unsigned add = simple_to_core_events (add_events);
   unsigned remove = simple_to_core_events (remove_events);
 
-  TRY
-  {
-    SocketPoll_modify_events (poll->poll, core_sock, add, remove);
-  }
+  TRY { SocketPoll_modify_events (poll->poll, core_sock, add, remove); }
   EXCEPT (SocketPoll_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_POLL, "Failed to modify poll events");
@@ -283,7 +277,8 @@ Socket_simple_poll_modify_events (SocketSimple_Poll_T poll,
 
 /* ============================================================================
  * Event Waiting
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 Socket_simple_poll_wait (SocketSimple_Poll_T poll,
@@ -317,10 +312,7 @@ Socket_simple_poll_wait (SocketSimple_Poll_T poll,
   volatile int nev = 0;
   SocketEvent_T *core_events = NULL;
 
-  TRY
-  {
-    nev = SocketPoll_wait (poll->poll, &core_events, actual_timeout);
-  }
+  TRY { nev = SocketPoll_wait (poll->poll, &core_events, actual_timeout); }
   EXCEPT (SocketPoll_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_POLL, "Poll wait failed");
@@ -336,7 +328,8 @@ Socket_simple_poll_wait (SocketSimple_Poll_T poll,
        * expects SocketSimple_Socket_T. This is a limitation - the caller
        * needs to track the mapping themselves via the data pointer.
        * We set sock to NULL and rely on data for context. */
-      events[i].sock = NULL; /* Caller must use data for socket identification */
+      events[i].sock
+          = NULL; /* Caller must use data for socket identification */
       events[i].events = core_to_simple_events (core_events[i].events);
       events[i].data = core_events[i].data;
     }
@@ -346,7 +339,8 @@ Socket_simple_poll_wait (SocketSimple_Poll_T poll,
 
 /* ============================================================================
  * Poll Information
- * ============================================================================ */
+ * ============================================================================
+ */
 
 const char *
 Socket_simple_poll_backend (SocketSimple_Poll_T poll)

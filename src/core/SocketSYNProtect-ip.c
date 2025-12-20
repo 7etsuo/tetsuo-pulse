@@ -86,6 +86,48 @@ parse_ip_address (const char *ip, uint8_t *addr_bytes, size_t addr_size)
   return 0;
 }
 
+/**
+ * ip_addresses_equal - Compare two IP addresses for equality
+ * @ip1: First IP address string
+ * @ip2: Second IP address string
+ *
+ * Parses both IPs to binary form and compares bytes. This handles different
+ * string representations of the same IP (e.g., "::1" vs "0:0:0:0:0:0:0:1").
+ *
+ * Returns: 1 if equal, 0 if different or on parse error
+ *
+ * Security: Prevents whitelist/blacklist bypass via alternate IP formats.
+ */
+static int
+ip_addresses_equal (const char *ip1, const char *ip2)
+{
+  uint8_t bytes1[SOCKET_IPV6_ADDR_BYTES];
+  uint8_t bytes2[SOCKET_IPV6_ADDR_BYTES];
+  int family1, family2;
+  size_t cmp_len;
+
+  /* Quick path: if strings are identical, IPs are equal */
+  if (strcmp (ip1, ip2) == 0)
+    return 1;
+
+  /* Parse both addresses */
+  family1 = parse_ip_address (ip1, bytes1, sizeof (bytes1));
+  family2 = parse_ip_address (ip2, bytes2, sizeof (bytes2));
+
+  /* Parse errors mean not equal */
+  if (family1 == 0 || family2 == 0)
+    return 0;
+
+  /* Different address families */
+  if (family1 != family2)
+    return 0;
+
+  /* Compare the appropriate number of bytes */
+  cmp_len = (family1 == AF_INET) ? SOCKET_IPV4_ADDR_BYTES
+                                 : SOCKET_IPV6_ADDR_BYTES;
+  return memcmp (bytes1, bytes2, cmp_len) == 0;
+}
+
 /* ============================================================================
  * Internal Helper Functions - CIDR Matching
  * ============================================================================
@@ -180,17 +222,26 @@ ip_matches_cidr (const char *ip, const SocketSYN_WhitelistEntry *entry)
 /**
  * whitelist_check_bucket_bytes - Check single bucket for IP match
  * @entry: First entry in bucket chain
- * @ip_str: IP address string (for exact matches)
+ * @ip_str: IP address string (unused for CIDR, used for quick path)
  * @family: Parsed family
  * @ip_bytes: Parsed IP bytes
  *
  * Returns: 1 if found, 0 otherwise
+ *
+ * Security: For non-CIDR entries, compares using parsed bytes to prevent
+ * bypass via alternate IP string representations (e.g., ::1 vs 0:0:0:0:0:0:0:1).
  */
 static int
 whitelist_check_bucket_bytes (const SocketSYN_WhitelistEntry *entry,
                               const char *ip_str, int family,
                               const uint8_t *ip_bytes)
 {
+  size_t cmp_len;
+
+  /* Determine comparison length based on address family */
+  cmp_len = (family == AF_INET) ? SOCKET_IPV4_ADDR_BYTES
+                                : SOCKET_IPV6_ADDR_BYTES;
+
   while (entry != NULL)
     {
       if (entry->is_cidr)
@@ -201,7 +252,13 @@ whitelist_check_bucket_bytes (const SocketSYN_WhitelistEntry *entry,
         }
       else
         {
+          /* Quick path: string match */
           if (strcmp (entry->ip, ip_str) == 0)
+            return 1;
+
+          /* Full comparison using parsed bytes to handle alternate formats */
+          if (entry->addr_family == family
+              && memcmp (entry->addr_bytes, ip_bytes, cmp_len) == 0)
             return 1;
         }
       entry = entry->next;
@@ -324,6 +381,9 @@ remove_ip_entry_from_hash (SocketSYNProtect_T protect, SocketSYN_IPEntry *entry)
  * @now_ms: Current timestamp
  *
  * Returns: 1 if blacklisted and not expired, 0 otherwise
+ *
+ * Security: Uses binary IP comparison to prevent bypass via alternate
+ * IP string representations (e.g., ::1 vs 0:0:0:0:0:0:0:1).
  */
 static int
 blacklist_check (SocketSYNProtect_T protect, const char *ip, int64_t now_ms)
@@ -339,7 +399,7 @@ blacklist_check (SocketSYNProtect_T protect, const char *ip, int64_t now_ms)
 
   while (entry != NULL)
     {
-      if (strcmp (entry->ip, ip) == 0)
+      if (ip_addresses_equal (entry->ip, ip))
         {
           if (entry->expires_ms == 0 || entry->expires_ms > now_ms)
             return 1;

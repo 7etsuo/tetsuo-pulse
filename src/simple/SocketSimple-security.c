@@ -15,8 +15,8 @@
 #include "SocketSimple-internal.h"
 #include "simple/SocketSimple-security.h"
 
-#include "core/SocketSYNProtect.h"
 #include "core/SocketIPTracker.h"
+#include "core/SocketSYNProtect.h"
 
 /* ============================================================================
  * Internal Structures
@@ -144,8 +144,8 @@ Socket_simple_syn_check (SocketSimple_SYNProtect_T protect,
   if (!protect || !protect->protect)
     return SOCKET_SIMPLE_SYN_ALLOW;
 
-  SocketSYN_Action action = SocketSYNProtect_check (protect->protect,
-                                                    client_ip, NULL);
+  SocketSYN_Action action
+      = SocketSYNProtect_check (protect->protect, client_ip, NULL);
 
   switch (action)
     {

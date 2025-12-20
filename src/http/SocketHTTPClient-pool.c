@@ -529,6 +529,38 @@ httpclient_pool_get (HTTPPool *pool, const char *host, int port, int is_secure)
       if (host_port_secure_match (entry, host, port, is_secure)
           && entry_can_handle_request (entry))
         {
+          /* SECURITY FIX: Verify TLS hostname matches for secure connections
+           * to prevent connection reuse across different hostnames.
+           * CVE-like vulnerability: An attacker could obtain a connection to
+           * evil.com, then reuse it for bank.com if we don't verify SNI hostname.
+           * RFC 6125 requires hostname verification on every TLS session use.
+           */
+          if (entry->is_secure && host) {
+            /* Hostnames are case-insensitive per RFC 1035 */
+            if (strcasecmp(entry->sni_hostname, host) != 0) {
+              /* Hostname mismatch - skip this connection and continue search.
+               * This prevents an attacker from reusing a TLS connection
+               * established for one hostname with a different target hostname.
+               */
+              entry = entry->hash_next;
+              continue;
+            }
+          }
+
+          /* SECURITY: Clear buffers before reuse to prevent information leakage */
+          if (entry->version == HTTP_VERSION_1_1 || entry->version == HTTP_VERSION_1_0) {
+            if (entry->proto.h1.inbuf) {
+              SocketBuf_clear(entry->proto.h1.inbuf);
+            }
+            if (entry->proto.h1.outbuf) {
+              SocketBuf_clear(entry->proto.h1.outbuf);
+            }
+            /* Reset parser state */
+            if (entry->proto.h1.parser) {
+              SocketHTTP1_Parser_reset(entry->proto.h1.parser);
+            }
+          }
+
           entry_mark_in_use (entry);
           pool->reused_connections++;
           pthread_mutex_unlock (&pool->mutex);
@@ -697,6 +729,18 @@ init_http1_entry_fields (HTTPPoolEntry *entry, Socket_T socket,
   entry->in_use = 1;
   entry->closed = 0;
   entry->proto.h1.socket = socket;
+
+  /* SECURITY: Store SNI hostname for TLS verification on connection reuse.
+   * This prevents hostname confusion attacks where a connection established
+   * for one hostname could be incorrectly reused for a different hostname.
+   * The stored hostname is verified on every pool_get() call before reuse.
+   */
+  if (is_secure && host) {
+    strncpy(entry->sni_hostname, host, sizeof(entry->sni_hostname) - 1);
+    entry->sni_hostname[sizeof(entry->sni_hostname) - 1] = '\0';
+  } else {
+    entry->sni_hostname[0] = '\0';
+  }
 }
 
 /**
@@ -816,6 +860,18 @@ init_http2_entry_fields (HTTPPoolEntry *entry, Socket_T socket,
   entry->closed = 0;
   entry->proto.h2.conn = NULL;
   entry->proto.h2.active_streams = 0;
+
+  /* SECURITY: Store SNI hostname for TLS verification on connection reuse.
+   * This prevents hostname confusion attacks where a connection established
+   * for one hostname could be incorrectly reused for a different hostname.
+   * The stored hostname is verified on every pool_get() call before reuse.
+   */
+  if (is_secure && host) {
+    strncpy(entry->sni_hostname, host, sizeof(entry->sni_hostname) - 1);
+    entry->sni_hostname[sizeof(entry->sni_hostname) - 1] = '\0';
+  } else {
+    entry->sni_hostname[0] = '\0';
+  }
 }
 
 /**

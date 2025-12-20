@@ -280,9 +280,19 @@ SocketHTTPClient_new (const SocketHTTPClient_Config *config)
   /* Copy configuration */
   client->config = *config;
 
-  /* Duplicate user agent string into arena using centralized utility */
+  /* SECURITY: Validate and duplicate user agent string */
   if (config->user_agent != NULL)
     {
+      /* Validate user agent for control characters */
+      for (const char *p = config->user_agent; *p; p++)
+        {
+          if (*p == '\r' || *p == '\n')
+            {
+              Arena_dispose (&arena);
+              SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed,
+                                "Invalid characters in User-Agent config");
+            }
+        }
       client->config.user_agent
           = socket_util_arena_strdup (arena, config->user_agent);
     }
@@ -958,6 +968,27 @@ execute_http1_request (HTTPPoolEntry *conn,
  */
 
 /**
+ * hostname_safe - Validate hostname for control characters
+ * @host: Hostname to validate
+ * @len: Length of hostname
+ *
+ * Returns: 1 if safe, 0 if contains control characters
+ *
+ * SECURITY: Prevents CRLF injection in Host header
+ */
+static int
+hostname_safe (const char *host, size_t len)
+{
+  for (size_t i = 0; i < len; i++)
+    {
+      unsigned char c = (unsigned char)host[i];
+      if (c == '\r' || c == '\n' || c == '\0' || c < 0x20)
+        return 0;
+    }
+  return 1;
+}
+
+/**
  * add_host_header - Add Host header if not present
  * @req: Request to modify
  */
@@ -980,6 +1011,13 @@ add_host_header (SocketHTTPClient_Request_T req)
     {
       /* Truncate or raise error; here log and skip */
       HTTPCLIENT_ERROR_MSG ("Host header too long, skipping");
+      return;
+    }
+
+  /* SECURITY: Validate hostname for control characters (injection prevention) */
+  if (!hostname_safe (req->uri.host, host_len))
+    {
+      HTTPCLIENT_ERROR_MSG ("Invalid characters in hostname");
       return;
     }
 
@@ -1323,6 +1361,11 @@ handle_401_auth_retry (SocketHTTPClient_T client,
 
   /* Prepare for retry */
   SocketHTTPClient_Response_free (response);
+
+  /* SECURITY: Remove old authorization header before adding new one */
+  SocketHTTP_Headers_remove (req->headers, "Authorization");
+
+  /* Now add the new authorization */
   SocketHTTP_Headers_set (req->headers, "Authorization", auth_header);
   SocketCrypto_secure_clear (auth_header, sizeof (auth_header));
 

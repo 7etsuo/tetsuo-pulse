@@ -85,10 +85,23 @@ When using this library, we recommend:
 - Use connection pooling with proper cleanup
 - Enable kTLS offload for high-performance scenarios (`SocketTLS_enable_ktls()`)
 
+### HTTP Server Security
+- **Slowloris Attack Prevention**: Configure comprehensive timeout enforcement in `SocketHTTPServer_Config`:
+  - `tls_handshake_timeout_ms` (default: 10s) - Prevents slow TLS handshake attacks
+  - `request_read_timeout_ms` (default: 30s) - Limits total time to read request headers and body
+  - `keepalive_timeout_ms` (default: 60s) - Closes idle keep-alive connections
+  - `response_write_timeout_ms` (default: 60s) - Limits response transmission time
+  - `max_connection_lifetime_ms` (default: 300s) - Defense-in-depth timeout for all states
+- Enforce resource limits via `SocketHTTPServer_Config`:
+  - `max_header_size` (default: 64KB) - Prevents header bomb attacks
+  - `max_body_size` (default: 10MB) - Prevents large payload DoS
+  - `max_connections` (default: 1000) - Global connection limit
+  - `max_connections_per_client` (default: 100) - Per-IP connection limit
+  - `max_concurrent_requests` (default: 100) - HTTP/2 stream limit
+
 ### HTTP/2 Server Security
 - Prefer **TLS + ALPN** for HTTP/2. Configure ALPN to include `"h2"` (and `"http/1.1"` as fallback) and use `SocketHTTPServer_Config.tls_context`.
 - Treat **h2c upgrade (cleartext HTTP/2)** as advanced/opt-in. Only enable with `SocketHTTPServer_Config.enable_h2c_upgrade = 1` on trusted networks or behind a reverse proxy; do not expose h2c on the open internet unless you understand the risks.
-- Enforce resource limits: header sizes, body sizes, and concurrency limits via `SocketHTTPServer_Config` fields (e.g., `max_header_size`, `max_body_size`, `max_concurrent_requests`).
 - Be cautious with **HTTP/2 server push** (`SocketHTTPServer_Request_push()`): it consumes bandwidth and can be abused if overused.
 - Validate and bound **trailers** (HTTP/2) like normal headers; trailers are untrusted input.
 
@@ -151,6 +164,11 @@ This library includes comprehensive security features:
 - **DTLS Cookie Exchange**: Prevents UDP amplification attacks
 - **Rate Limiting**: Token bucket with configurable burst
 - **Connection Limits**: Per-IP tracking with automatic cleanup
+- **HTTP Server Slowloris Protection**: Multi-layered timeout enforcement
+  - TLS handshake timeout prevents slow TLS negotiation attacks
+  - Header parsing timeout prevents slow header attacks
+  - HTTP/2 idle connection timeout prevents resource exhaustion
+  - Global connection lifetime timeout (defense-in-depth)
 - **CRL Refresh Intervals**: Minimum 60 seconds prevents refresh storms
 - **Renegotiation Limits**: Maximum 3 per connection (TLS 1.2)
 
@@ -165,6 +183,7 @@ This library includes comprehensive security features:
 | MITM | TLS 1.3 + cert verification + SPKI pinning | `SocketTLSContext-pinning.c` |
 | Downgrade | TLS1.3_VERSION min + SSL_OP_NO_RENEGOTIATION | `SocketTLSContext-core.c` |
 | DoS | DTLS cookies, file limits, rate limiting | `SocketDTLS-cookie.c`, `SocketSYNProtect.c` |
+| Slowloris | Multi-layered timeout enforcement (TLS, headers, HTTP/2, lifetime) | `SocketHTTPServer.c` |
 | Timing | `SocketCrypto_secure_compare()` everywhere | `SocketCrypto.c`, pinning, cookies |
 | Memory Disclosure | `SocketCrypto_secure_clear()`, `OPENSSL_cleanse()` | All buffer/key cleanup paths |
 | Replay | 0-RTT warnings, session freshness checks | `SocketTLSContext-session.c` |

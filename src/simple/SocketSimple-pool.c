@@ -17,7 +17,8 @@
 
 /* ============================================================================
  * Internal Structures
- * ============================================================================ */
+ * ============================================================================
+ */
 
 struct SocketSimple_Pool
 {
@@ -34,7 +35,8 @@ struct SocketSimple_Conn
 
 /* ============================================================================
  * Helper: Map pool state to simple state
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static SocketSimple_PoolState
 core_to_simple_state (SocketPool_State state)
@@ -54,7 +56,8 @@ core_to_simple_state (SocketPool_State state)
 
 /* ============================================================================
  * Pool Lifecycle
- * ============================================================================ */
+ * ============================================================================
+ */
 
 void
 Socket_simple_pool_options_init (SocketSimple_PoolOptions *opts)
@@ -163,7 +166,8 @@ Socket_simple_pool_free (SocketSimple_Pool_T *pool)
 
 /* ============================================================================
  * Connection Management
- * ============================================================================ */
+ * ============================================================================
+ */
 
 SocketSimple_Conn_T
 Socket_simple_pool_add (SocketSimple_Pool_T pool, SocketSimple_Socket_T sock)
@@ -186,14 +190,10 @@ Socket_simple_pool_add (SocketSimple_Pool_T pool, SocketSimple_Socket_T sock)
       return NULL;
     }
 
-  TRY
-  {
-    conn = SocketPool_add (pool->pool, sock->socket);
-  }
+  TRY { conn = SocketPool_add (pool->pool, sock->socket); }
   EXCEPT (SocketPool_Failed)
   {
-    simple_set_error (SOCKET_SIMPLE_ERR_POOL,
-                      "Failed to add socket to pool");
+    simple_set_error (SOCKET_SIMPLE_ERR_POOL, "Failed to add socket to pool");
     return NULL;
   }
   END_TRY;
@@ -251,7 +251,8 @@ Socket_simple_pool_get (SocketSimple_Pool_T pool, SocketSimple_Socket_T sock)
 }
 
 int
-Socket_simple_pool_remove (SocketSimple_Pool_T pool, SocketSimple_Socket_T sock)
+Socket_simple_pool_remove (SocketSimple_Pool_T pool,
+                           SocketSimple_Socket_T sock)
 {
   Socket_simple_clear_error ();
 
@@ -304,7 +305,8 @@ Socket_simple_pool_cleanup (SocketSimple_Pool_T pool, int max_idle_ms)
 
 /* ============================================================================
  * Accept with Rate Limiting
- * ============================================================================ */
+ * ============================================================================
+ */
 
 SocketSimple_Conn_T
 Socket_simple_pool_accept (SocketSimple_Pool_T pool,
@@ -328,10 +330,7 @@ Socket_simple_pool_accept (SocketSimple_Pool_T pool,
       return NULL;
     }
 
-  TRY
-  {
-    client = Socket_accept (listener->socket);
-  }
+  TRY { client = Socket_accept (listener->socket); }
   EXCEPT (Socket_Failed)
   {
     simple_set_error_errno (SOCKET_SIMPLE_ERR_ACCEPT, "Accept failed");
@@ -394,10 +393,7 @@ Socket_simple_pool_accept_limited (SocketSimple_Pool_T pool,
     }
 
   /* Use rate-limited accept */
-  TRY
-  {
-    client = SocketPool_accept_limited (pool->pool, listener->socket);
-  }
+  TRY { client = SocketPool_accept_limited (pool->pool, listener->socket); }
   EXCEPT (SocketPool_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_POOL, "Rate limited accept failed");
@@ -437,7 +433,8 @@ Socket_simple_pool_accept_limited (SocketSimple_Pool_T pool,
 
 /* ============================================================================
  * Rate Limiting Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 Socket_simple_pool_set_conn_rate (SocketSimple_Pool_T pool, int conns_per_sec)
@@ -471,7 +468,8 @@ Socket_simple_pool_set_max_per_ip (SocketSimple_Pool_T pool, int max)
 
 /* ============================================================================
  * Graceful Shutdown (Drain)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 Socket_simple_pool_drain (SocketSimple_Pool_T pool, int timeout_ms)
@@ -528,7 +526,8 @@ Socket_simple_pool_state (SocketSimple_Pool_T pool)
 
 /* ============================================================================
  * Statistics
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 Socket_simple_pool_get_stats (SocketSimple_Pool_T pool,
@@ -586,7 +585,8 @@ Socket_simple_pool_reset_stats (SocketSimple_Pool_T pool)
 
 /* ============================================================================
  * Connection Accessors
- * ============================================================================ */
+ * ============================================================================
+ */
 
 SocketSimple_Socket_T
 Socket_simple_conn_socket (SocketSimple_Conn_T conn)
@@ -660,7 +660,8 @@ Socket_simple_conn_peer_ip (SocketSimple_Conn_T conn, char *buf, size_t len)
   const char *peer = Socket_getpeeraddr (sock);
   if (!peer)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_SOCKET, "Failed to get peer address");
+      simple_set_error (SOCKET_SIMPLE_ERR_SOCKET,
+                        "Failed to get peer address");
       return -1;
     }
 

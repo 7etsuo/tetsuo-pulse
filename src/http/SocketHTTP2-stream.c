@@ -2550,22 +2550,25 @@ http2_process_continuation (SocketHTTP2_Conn_T conn,
       return -1;
     }
 
+  /* SECURITY: Enforce CONTINUATION frame limit BEFORE processing to prevent memory exhaustion attacks.
+   * This protects against malicious clients sending unlimited CONTINUATION frames.
+   * RFC 9113 does not specify a limit, but this is a critical DoS protection measure. */
+  conn->continuation_frame_count++;
+  if (conn->continuation_frame_count > SOCKETHTTP2_MAX_CONTINUATION_FRAMES)
+    {
+      SOCKET_LOG_WARN_MSG ("SECURITY: HTTP/2 CONTINUATION frame limit exceeded: "
+                           "%" PRIu32 " > %u for stream %u - potential DoS attack detected",
+                           conn->continuation_frame_count,
+                           SOCKETHTTP2_MAX_CONTINUATION_FRAMES,
+                           header->stream_id);
+      http2_send_connection_error (conn, HTTP2_ENHANCE_YOUR_CALM);
+      return -1;
+    }
+
   stream = http2_stream_lookup (conn, header->stream_id);
   if (!stream || !stream->header_block)
     {
       http2_send_connection_error (conn, HTTP2_PROTOCOL_ERROR);
-      return -1;
-    }
-
-  /* Limit number of CONTINUATION frames to prevent DoS */
-  conn->continuation_frame_count++;
-  if (conn->continuation_frame_count > SOCKETHTTP2_MAX_CONTINUATION_FRAMES)
-    {
-      SOCKET_LOG_WARN_MSG ("HTTP/2 CONTINUATION flood detected "
-                           "(%" PRIu32 " frames for stream %u), "
-                           "closing connection",
-                           conn->continuation_frame_count, header->stream_id);
-      http2_send_connection_error (conn, HTTP2_ENHANCE_YOUR_CALM);
       return -1;
     }
 

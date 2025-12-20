@@ -20,7 +20,8 @@
 
 /* ============================================================================
  * Configuration Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 void
 Socket_simple_proxy_config_init (SocketSimple_ProxyConfig *config)
@@ -88,7 +89,8 @@ set_proxy_error (SocketProxy_Result result, const char *default_msg)
       simple_set_error (SOCKET_SIMPLE_ERR_PROXY, "Target network unreachable");
       break;
     case PROXY_ERROR_CONNECTION_REFUSED:
-      simple_set_error (SOCKET_SIMPLE_ERR_PROXY, "Connection refused by target");
+      simple_set_error (SOCKET_SIMPLE_ERR_PROXY,
+                        "Connection refused by target");
       break;
     case PROXY_ERROR_TTL_EXPIRED:
       simple_set_error (SOCKET_SIMPLE_ERR_PROXY, "TTL expired");
@@ -101,7 +103,8 @@ set_proxy_error (SocketProxy_Result result, const char *default_msg)
                         "Proxy command not supported");
       break;
     case PROXY_ERROR_TIMEOUT:
-      simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "Proxy operation timed out");
+      simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT,
+                        "Proxy operation timed out");
       break;
     case PROXY_ERROR_CANCELLED:
       simple_set_error (SOCKET_SIMPLE_ERR_PROXY, "Proxy operation cancelled");
@@ -199,7 +202,8 @@ url_decode (const char *src, size_t src_len, char *dst, size_t dst_size)
 }
 
 int
-Socket_simple_proxy_parse_url (const char *url, SocketSimple_ProxyConfig *config)
+Socket_simple_proxy_parse_url (const char *url,
+                               SocketSimple_ProxyConfig *config)
 {
   Socket_simple_clear_error ();
 
@@ -372,7 +376,8 @@ Socket_simple_proxy_type_name (SocketSimple_ProxyType type)
 
 /* ============================================================================
  * Synchronous Connection
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /* Helper to build core config from simple config */
 static void
@@ -457,10 +462,7 @@ Socket_simple_proxy_connect_timeout (const SocketSimple_ProxyConfig *config,
       core_config.handshake_timeout_ms = timeout_ms;
     }
 
-  TRY
-  {
-    sock = SocketProxy_connect (&core_config, target_host, target_port);
-  }
+  TRY { sock = SocketProxy_connect (&core_config, target_host, target_port); }
   EXCEPT (SocketProxy_Failed)
   {
     set_proxy_error (PROXY_ERROR, "Proxy connection failed");
@@ -533,7 +535,8 @@ Socket_simple_proxy_connect_tls (const SocketSimple_ProxyConfig *config,
 
 /* ============================================================================
  * Tunnel on Existing Socket
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 Socket_simple_proxy_tunnel (SocketSimple_Socket_T sock,

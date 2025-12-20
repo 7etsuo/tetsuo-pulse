@@ -93,6 +93,8 @@ typedef struct SocketTLSContext_T *SocketTLSContext_T;
  *   HTTPSERVER_DEFAULT_KEEPALIVE_TIMEOUT_MS - 60s - Keep-alive timeout
  *   HTTPSERVER_DEFAULT_REQUEST_READ_TIMEOUT_MS - 30s - Full request read
  *   HTTPSERVER_DEFAULT_RESPONSE_WRITE_TIMEOUT_MS - 60s - Full response write
+ *   HTTPSERVER_DEFAULT_TLS_HANDSHAKE_TIMEOUT_MS - 10s - TLS handshake timeout
+ *   HTTPSERVER_DEFAULT_MAX_CONNECTION_LIFETIME_MS - 300s - Max connection lifetime
  *
  * ENFORCEMENT:
  *   - max_header_size: Enforced by HTTP/1.1 parser (returns error)
@@ -187,6 +189,16 @@ typedef struct SocketTLSContext_T *SocketTLSContext_T;
 /** Default response write timeout (ms) - time to send full response */
 #ifndef HTTPSERVER_DEFAULT_RESPONSE_WRITE_TIMEOUT_MS
 #define HTTPSERVER_DEFAULT_RESPONSE_WRITE_TIMEOUT_MS 60000
+#endif
+
+/** Default TLS handshake timeout (ms) - SECURITY: Slowloris prevention */
+#ifndef HTTPSERVER_DEFAULT_TLS_HANDSHAKE_TIMEOUT_MS
+#define HTTPSERVER_DEFAULT_TLS_HANDSHAKE_TIMEOUT_MS 10000
+#endif
+
+/** Default maximum connection lifetime (ms) - SECURITY: Defense-in-depth */
+#ifndef HTTPSERVER_DEFAULT_MAX_CONNECTION_LIFETIME_MS
+#define HTTPSERVER_DEFAULT_MAX_CONNECTION_LIFETIME_MS 300000
 #endif
 
 /** Default max connections per client IP */
@@ -388,6 +400,20 @@ typedef struct
                                   * timely response delivery; aborts on
                                   * timeout.
                                   */
+  int tls_handshake_timeout_ms; /**< @brief Maximum time to complete TLS
+                                 * handshake in ms (default: 10s). Prevents
+                                 * slowloris attacks during TLS negotiation.
+                                 * SECURITY: Enforced during
+                                 * CONN_STATE_TLS_HANDSHAKE state.
+                                 */
+  int max_connection_lifetime_ms; /**< @brief Maximum total connection lifetime
+                                   * in ms (default: 300s / 5 min).
+                                   * Defense-in-depth timeout that closes
+                                   * connections regardless of state after this
+                                   * time. Set to 0 to disable. SECURITY:
+                                   * Prevents resource exhaustion from
+                                   * state-based attacks.
+                                   */
 
   /* Connection Limits */
   size_t max_connections; /**< @brief Total maximum concurrent connections

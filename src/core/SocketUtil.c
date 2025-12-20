@@ -50,6 +50,47 @@
 static volatile int monotonic_fallback_warned = 0;
 
 /**
+ * SOCKET_MONOTONIC_STRICT - Fail instead of falling back to CLOCK_REALTIME
+ *
+ * When 1, Socket_get_monotonic_ms() returns 0 if no monotonic clock is
+ * available, instead of falling back to CLOCK_REALTIME.
+ *
+ * Security: CLOCK_REALTIME can be manipulated by attackers with system
+ * access, potentially bypassing time-based security controls like rate
+ * limiting and SYN flood protection.
+ *
+ * Default: 0 (allow fallback for compatibility)
+ */
+#ifndef SOCKET_MONOTONIC_STRICT
+#define SOCKET_MONOTONIC_STRICT 0
+#endif
+
+/**
+ * Preferred monotonic clock sources in priority order.
+ *
+ * These clocks are immune to system time adjustments (NTP, manual changes):
+ * - CLOCK_MONOTONIC_RAW: Unaffected by NTP adjustments (Linux 2.6.28+)
+ * - CLOCK_MONOTONIC: Standard monotonic, may have NTP slewing
+ * - CLOCK_BOOTTIME: Includes suspend time (Linux 2.6.39+)
+ * - CLOCK_UPTIME_RAW: Like MONOTONIC_RAW but stops during sleep (macOS)
+ */
+static const clockid_t preferred_clocks[] = {
+#ifdef CLOCK_MONOTONIC_RAW
+  CLOCK_MONOTONIC_RAW,
+#endif
+  CLOCK_MONOTONIC,
+#ifdef CLOCK_BOOTTIME
+  CLOCK_BOOTTIME,
+#endif
+#ifdef CLOCK_UPTIME_RAW
+  CLOCK_UPTIME_RAW,
+#endif
+};
+
+#define PREFERRED_CLOCKS_COUNT                                                \
+  (sizeof (preferred_clocks) / sizeof (preferred_clocks[0]))
+
+/**
  * socket_timespec_to_ms - Convert timespec to milliseconds
  * @ts: Pointer to timespec structure
  *
@@ -107,20 +148,41 @@ socket_warn_monotonic_fallback (void)
  * Returns: Current monotonic time in milliseconds, or 0 on failure
  * Thread-safe: Yes (no shared state modified except one-time warning flag)
  *
- * Uses CLOCK_MONOTONIC with CLOCK_REALTIME fallback. Returns 0 if both
- * clocks fail (should never happen on POSIX systems).
+ * Tries multiple monotonic clock sources in priority order:
+ * 1. CLOCK_MONOTONIC_RAW (Linux, immune to NTP)
+ * 2. CLOCK_MONOTONIC (standard, may have NTP slewing)
+ * 3. CLOCK_BOOTTIME (Linux, includes suspend time)
+ * 4. CLOCK_UPTIME_RAW (macOS)
+ *
+ * Falls back to CLOCK_REALTIME only if all monotonic clocks fail and
+ * SOCKET_MONOTONIC_STRICT is 0 (default).
  *
  * Security: CLOCK_REALTIME fallback is vulnerable to time manipulation
- * attacks. A one-time warning is emitted if fallback occurs.
+ * attacks. A one-time warning is emitted if fallback occurs. Set
+ * SOCKET_MONOTONIC_STRICT=1 to disable fallback in security-critical
+ * deployments.
  */
 int64_t
 Socket_get_monotonic_ms (void)
 {
   int64_t result_ms;
+  size_t i;
 
-  if (socket_try_clock (CLOCK_MONOTONIC, &result_ms))
-    return result_ms;
+  /* Try all preferred monotonic clocks first */
+  for (i = 0; i < PREFERRED_CLOCKS_COUNT; i++)
+    {
+      if (socket_try_clock (preferred_clocks[i], &result_ms))
+        return result_ms;
+    }
 
+#if SOCKET_MONOTONIC_STRICT
+  /* Strict mode: fail instead of using CLOCK_REALTIME */
+  SocketLog_emit (SOCKET_LOG_ERROR, "Socket",
+                  "No monotonic clock available and SOCKET_MONOTONIC_STRICT "
+                  "is enabled");
+  return 0;
+#else
+  /* Fallback to CLOCK_REALTIME with security warning */
   if (socket_try_clock (CLOCK_REALTIME, &result_ms))
     {
       socket_warn_monotonic_fallback ();
@@ -128,6 +190,7 @@ Socket_get_monotonic_ms (void)
     }
 
   return 0;
+#endif
 }
 
 /* ===========================================================================

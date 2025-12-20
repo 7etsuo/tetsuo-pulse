@@ -312,7 +312,8 @@ Socket_simple_get_cert_cn (SocketSimple_Socket_T sock, char *buf, size_t len)
       simple_set_error (SOCKET_SIMPLE_ERR_TLS, "No peer certificate");
       return -1;
     }
-  simple_set_error (SOCKET_SIMPLE_ERR_TLS, "Failed to get certificate subject");
+  simple_set_error (SOCKET_SIMPLE_ERR_TLS,
+                    "Failed to get certificate subject");
   return -1;
 }
 
@@ -347,9 +348,9 @@ Socket_simple_listen_tls (const char *host, int port, int backlog,
 
   TRY
   {
-    /* Use library convenience function - handles address family automatically */
-    sock = Socket_listen_tcp (host ? host : "0.0.0.0",
-                              port,
+    /* Use library convenience function - handles address family automatically
+     */
+    sock = Socket_listen_tcp (host ? host : "0.0.0.0", port,
                               backlog > 0 ? backlog : 128);
 
     /* Create server TLS context */

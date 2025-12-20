@@ -357,7 +357,10 @@ connection_read_initial_body (SocketHTTPServer_T server, ServerConnection *conn)
 
       size_t max_body = server->config.max_body_size;
       size_t process_len = input_len;
-      if (conn->body_received + input_len > max_body) {
+
+      /* Overflow-safe check */
+      if (max_body > 0 && (input_len > max_body - conn->body_received)) {
+        /* Would exceed limit */
         process_len = max_body - conn->body_received;
         if (process_len == 0) {
           connection_reject_oversized_body (server, conn);
@@ -462,7 +465,10 @@ connection_read_initial_body (SocketHTTPServer_T server, ServerConnection *conn)
       /* Content-Length mode: use fixed buffer */
       size_t max_body = server->config.max_body_size;
       size_t process_len = input_len;
-      if (conn->body_len + input_len > max_body) {
+
+      /* Overflow-safe check */
+      if (max_body > 0 && (input_len > max_body - conn->body_len)) {
+        /* Would exceed limit */
         process_len = max_body - conn->body_len;
         if (process_len == 0) {
           connection_reject_oversized_body (server, conn);

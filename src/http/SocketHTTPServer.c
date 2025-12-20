@@ -166,6 +166,10 @@ SocketHTTPServer_config_defaults (SocketHTTPServer_Config *config)
   config->request_read_timeout_ms = HTTPSERVER_DEFAULT_REQUEST_READ_TIMEOUT_MS;
   config->response_write_timeout_ms
       = HTTPSERVER_DEFAULT_RESPONSE_WRITE_TIMEOUT_MS;
+  config->tls_handshake_timeout_ms
+      = HTTPSERVER_DEFAULT_TLS_HANDSHAKE_TIMEOUT_MS;
+  config->max_connection_lifetime_ms
+      = HTTPSERVER_DEFAULT_MAX_CONNECTION_LIFETIME_MS;
   config->max_connections = HTTPSERVER_DEFAULT_MAX_CONNECTIONS;
   config->max_requests_per_connection
       = HTTPSERVER_DEFAULT_MAX_REQUESTS_PER_CONN;
@@ -2291,6 +2295,12 @@ server_process_client_event (SocketHTTPServer_T server, ServerConnection *conn,
  * @conn: Connection to check
  * @now: Current time in milliseconds
  *
+ * SECURITY: Enhanced timeout enforcement to prevent Slowloris attacks
+ * - TLS handshake timeout (CONN_STATE_TLS_HANDSHAKE)
+ * - HTTP/2 idle connection timeout (CONN_STATE_HTTP2)
+ * - Header parsing timeout (CONN_STATE_READING_REQUEST with partial data)
+ * - Global connection lifetime limit (defense-in-depth)
+ *
  * Returns: 1 if timed out (connection closed), 0 otherwise
  */
 static int
@@ -2298,6 +2308,39 @@ server_check_connection_timeout (SocketHTTPServer_T server,
                                  ServerConnection *conn, int64_t now)
 {
   int64_t idle_ms = now - conn->last_activity_ms;
+  int64_t connection_age_ms = now - conn->created_at_ms;
+
+  /* SECURITY: Global connection lifetime timeout (defense-in-depth)
+   * Protects against any state-based attack where connections are held
+   * indefinitely. Applies to all states. Set to 0 to disable. */
+  if (server->config.max_connection_lifetime_ms > 0
+      && connection_age_ms > server->config.max_connection_lifetime_ms)
+    {
+      SOCKET_LOG_WARN_MSG (
+          "Connection lifetime exceeded (%lld ms > %d ms), closing connection",
+          (long long)connection_age_ms,
+          server->config.max_connection_lifetime_ms);
+      SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT,
+                          requests_timeout);
+      connection_close (server, conn);
+      return 1;
+    }
+
+  /* SECURITY: TLS handshake timeout
+   * Prevents slowloris attacks during TLS negotiation phase.
+   * Attacker can hold connection indefinitely during handshake without this. */
+  if (conn->state == CONN_STATE_TLS_HANDSHAKE
+      && server->config.tls_handshake_timeout_ms > 0
+      && idle_ms > server->config.tls_handshake_timeout_ms)
+    {
+      SOCKET_LOG_WARN_MSG (
+          "TLS handshake timeout (%lld ms > %d ms), closing connection",
+          (long long)idle_ms, server->config.tls_handshake_timeout_ms);
+      SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT,
+                          requests_timeout);
+      connection_close (server, conn);
+      return 1;
+    }
 
   /* Check keepalive timeout */
   if (conn->state == CONN_STATE_READING_REQUEST
@@ -2309,7 +2352,25 @@ server_check_connection_timeout (SocketHTTPServer_T server,
       return 1;
     }
 
-  /* Check request read timeout */
+  /* SECURITY: Header parsing timeout
+   * Prevents slowloris attacks where headers are sent slowly.
+   * Use request_start_ms if set (request started), otherwise use
+   * last_activity_ms for connections that haven't started a request yet. */
+  if (conn->state == CONN_STATE_READING_REQUEST && conn->request_start_ms > 0
+      && (now - conn->request_start_ms)
+             > server->config.request_read_timeout_ms)
+    {
+      SOCKET_LOG_WARN_MSG (
+          "Header parsing timeout (%lld ms > %d ms), closing connection",
+          (long long)(now - conn->request_start_ms),
+          server->config.request_read_timeout_ms);
+      SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT,
+                          requests_timeout);
+      connection_close (server, conn);
+      return 1;
+    }
+
+  /* Check request read timeout (body reading) */
   if (conn->state == CONN_STATE_READING_BODY && conn->request_start_ms > 0
       && (now - conn->request_start_ms)
              > server->config.request_read_timeout_ms)
@@ -2326,6 +2387,21 @@ server_check_connection_timeout (SocketHTTPServer_T server,
       && (now - conn->response_start_ms)
              > server->config.response_write_timeout_ms)
     {
+      SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT,
+                          requests_timeout);
+      connection_close (server, conn);
+      return 1;
+    }
+
+  /* SECURITY: HTTP/2 idle connection timeout
+   * Prevents resource exhaustion from idle HTTP/2 connections.
+   * HTTP/2 connections can be long-lived, but should close if truly idle. */
+  if (conn->state == CONN_STATE_HTTP2
+      && idle_ms > server->config.keepalive_timeout_ms)
+    {
+      SOCKET_LOG_WARN_MSG (
+          "HTTP/2 connection idle timeout (%lld ms > %d ms), closing connection",
+          (long long)idle_ms, server->config.keepalive_timeout_ms);
       SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT,
                           requests_timeout);
       connection_close (server, conn);
@@ -2605,6 +2681,18 @@ SocketHTTPServer_Request_memory_used (SocketHTTPServer_Request_T req)
  * ============================================================================
  */
 
+/* Validate header for CRLF injection */
+static int
+response_header_safe(const char *str)
+{
+  if (!str) return 0;
+  for (const char *p = str; *p; p++) {
+    if (*p == '\r' || *p == '\n')
+      return 0;
+  }
+  return 1;
+}
+
 void
 SocketHTTPServer_Request_status (SocketHTTPServer_Request_T req, int code)
 {
@@ -2622,6 +2710,12 @@ SocketHTTPServer_Request_header (SocketHTTPServer_Request_T req,
   assert (req != NULL);
   assert (name != NULL);
   assert (value != NULL);
+
+  /* Reject headers with CRLF characters (injection prevention) */
+  if (!response_header_safe(name) || !response_header_safe(value)) {
+    SOCKET_LOG_WARN_MSG("Rejected response header with CRLF characters");
+    return;
+  }
 
   if (req->h2_stream != NULL)
     {

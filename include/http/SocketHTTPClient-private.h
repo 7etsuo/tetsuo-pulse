@@ -110,6 +110,7 @@ typedef struct HTTPPoolEntry
   char *host;    /**< Target hostname (owned, null-terminated) */
   int port;      /**< Target port */
   int is_secure; /**< Using TLS */
+  char sni_hostname[256];  /**< Hostname used for TLS SNI verification */
 
   SocketHTTP_Version version; /**< Negotiated protocol version */
 
@@ -908,6 +909,22 @@ extern int httpclient_should_retry_error (const SocketHTTPClient_T client,
  */
 extern int httpclient_should_retry_status (const SocketHTTPClient_T client,
                                            int status);
+/**
+ * @brief Determine if HTTP status code warrants retry with method check.
+ * @ingroup http
+ *
+ * Same as httpclient_should_retry_status but includes idempotency check.
+ * Only retries 5xx for idempotent methods (GET, HEAD, PUT, DELETE, OPTIONS, TRACE).
+ *
+ * @param client The client for config retry policy.
+ * @param status The HTTP status code received.
+ * @param method The HTTP method from the request.
+ * @return 1 if retryable, 0 otherwise.
+ * @threadsafe Yes.
+ * @see httpclient_should_retry_status() for legacy version.
+ */
+extern int httpclient_should_retry_status_with_method (
+    const SocketHTTPClient_T client, int status, SocketHTTP_Method method);
 /**
  * @brief Calculate exponential backoff delay for retry attempt.
  * @ingroup http

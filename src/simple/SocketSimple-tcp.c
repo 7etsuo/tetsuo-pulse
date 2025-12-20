@@ -43,7 +43,8 @@ Socket_simple_connect_timeout (const char *host, int port, int timeout_ms)
 
   TRY
   {
-    /* Use library convenience function - handles address family automatically */
+    /* Use library convenience function - handles address family automatically
+     */
     sock = Socket_connect_tcp (host, port, timeout_ms);
   }
   EXCEPT (Socket_Failed)
@@ -56,7 +57,8 @@ Socket_simple_connect_timeout (const char *host, int port, int timeout_ms)
       }
     else
       {
-        simple_set_error_errno (SOCKET_SIMPLE_ERR_CONNECT, "Connection failed");
+        simple_set_error_errno (SOCKET_SIMPLE_ERR_CONNECT,
+                                "Connection failed");
       }
     if (sock)
       Socket_free ((Socket_T *)&sock);
@@ -92,9 +94,9 @@ Socket_simple_listen (const char *host, int port, int backlog)
 
   TRY
   {
-    /* Use library convenience function - handles address family automatically */
-    sock = Socket_listen_tcp (host ? host : "0.0.0.0",
-                              port,
+    /* Use library convenience function - handles address family automatically
+     */
+    sock = Socket_listen_tcp (host ? host : "0.0.0.0", port,
                               backlog > 0 ? backlog : 128);
   }
   EXCEPT (Socket_Failed)
@@ -131,7 +133,8 @@ Socket_simple_accept (SocketSimple_Socket_T server)
 
   if (!server || !server->socket)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid server socket");
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                        "Invalid server socket");
       return NULL;
     }
 
@@ -160,7 +163,8 @@ Socket_simple_accept_timeout (SocketSimple_Socket_T server, int timeout_ms)
 
   if (!server || !server->socket)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid server socket");
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                        "Invalid server socket");
       return NULL;
     }
 
@@ -483,7 +487,8 @@ Socket_simple_udp_bind (const char *host, int port)
 
   TRY
   {
-    /* Use library convenience function - handles address family automatically */
+    /* Use library convenience function - handles address family automatically
+     */
     dgram = SocketDgram_bind_udp (host ? host : "0.0.0.0", port);
   }
   EXCEPT (SocketDgram_Failed)
@@ -573,8 +578,8 @@ Socket_simple_udp_recvfrom (SocketSimple_Socket_T sock, void *buf, size_t len,
 
   TRY
   {
-    received = SocketDgram_recvfrom (sock->dgram, buf, len, from_host, host_len,
-                                     from_port);
+    received = SocketDgram_recvfrom (sock->dgram, buf, len, from_host,
+                                     host_len, from_port);
   }
   EXCEPT (SocketDgram_Failed)
   {

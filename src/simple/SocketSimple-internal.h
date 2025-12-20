@@ -31,22 +31,35 @@
 #include "tls/SocketTLSContext.h"
 #endif
 
+/* Forward declarations for cross-module access */
+#include "http/SocketHTTPServer.h"
+
 /* ============================================================================
  * Internal Handle Structures
  * ============================================================================
  */
 
+/**
+ * @brief Internal HTTP server request wrapper.
+ *
+ * Shared definition for use by WebSocket upgrade functionality.
+ */
+struct SocketSimple_HTTPServerRequest
+{
+  SocketHTTPServer_Request_T core_req;
+};
+
 struct SocketSimple_Socket
 {
-  Socket_T socket;          /* TCP socket (NULL for UDP) */
-  SocketDgram_T dgram;      /* UDP socket (NULL for TCP) */
+  Socket_T socket;     /* TCP socket (NULL for UDP) */
+  SocketDgram_T dgram; /* UDP socket (NULL for TCP) */
 #ifdef SOCKET_HAS_TLS
   SocketTLSContext_T tls_ctx;
 #endif
   int is_tls;
   int is_server;
   int is_connected;
-  int is_udp;               /* Flag to distinguish TCP vs UDP */
+  int is_udp; /* Flag to distinguish TCP vs UDP */
 };
 
 struct SocketSimple_HTTP

@@ -211,6 +211,81 @@ httpclient_should_retry_error (const SocketHTTPClient_T client,
 }
 
 /**
+ * is_idempotent_method - Check if HTTP method is idempotent
+ * @method: HTTP method to check
+ *
+ * Returns: 1 if idempotent (safe to retry), 0 otherwise
+ * Thread-safe: Yes
+ *
+ * Idempotent methods per RFC 7231: GET, HEAD, PUT, DELETE, OPTIONS, TRACE.
+ * POST and PATCH are not idempotent and should not be retried on 5xx.
+ */
+static int
+is_idempotent_method (SocketHTTP_Method method)
+{
+  switch (method)
+    {
+    case HTTP_METHOD_GET:
+    case HTTP_METHOD_HEAD:
+    case HTTP_METHOD_PUT:
+    case HTTP_METHOD_DELETE:
+    case HTTP_METHOD_OPTIONS:
+    case HTTP_METHOD_TRACE:
+      return 1;
+    default:
+      return 0;
+    }
+}
+
+/**
+ * httpclient_should_retry_status - Check if HTTP status should trigger retry
+ * @client: HTTP client with retry config (read-only)
+ * @status: HTTP status code
+ * @method: HTTP method from request
+ *
+ * Returns: 1 if should retry, 0 otherwise
+ * Thread-safe: Yes
+ *
+ * Retries server errors (HTTP status category 5) only if config.retry_on_5xx
+ * is enabled AND the HTTP method is idempotent. Uses SocketHTTP_status_category
+ * for accurate classification.
+ *
+ * SECURITY: Only retries idempotent requests (GET, HEAD, OPTIONS, PUT, DELETE)
+ * to avoid duplicate side effects. Non-idempotent methods (POST, PATCH) are
+ * never retried to prevent unintended duplicate actions.
+ *
+ * Non-server-error status codes (including 4xx client errors) are never
+ * retried as they indicate permanent failures or client-side issues.
+ *
+ * @see SocketHTTP_status_category() for status classification.
+ * @see SocketHTTPClient_Config::retry_on_5xx for enabling.
+ * @see is_idempotent_method() for method classification.
+ */
+int
+httpclient_should_retry_status_with_method (const SocketHTTPClient_T client,
+                                             int status,
+                                             SocketHTTP_Method method)
+{
+  if (client == NULL)
+    return 0;
+
+  if (SocketHTTP_status_category (status) == HTTP_STATUS_SERVER_ERROR
+      && client->config.retry_on_5xx)
+    {
+      /* SECURITY: Only retry 5xx for idempotent methods */
+      if (!is_idempotent_method (method))
+        {
+          SOCKET_LOG_DEBUG_MSG ("Not retrying %d on non-idempotent method",
+                                status);
+          return 0;
+        }
+      return 1;
+    }
+
+  return 0;
+}
+
+/**
  * httpclient_should_retry_status - Check if HTTP status should trigger retry
  * @client: HTTP client with retry config (read-only)
  * @status: HTTP status code
@@ -218,29 +293,17 @@ httpclient_should_retry_error (const SocketHTTPClient_T client,
  * Returns: 1 if should retry, 0 otherwise
  * Thread-safe: Yes
  *
- * Retries server errors (HTTP status category 5) only if config.retry_on_5xx
- * is enabled. Uses SocketHTTP_status_category for accurate classification.
+ * Legacy function - assumes GET method for backward compatibility.
+ * Use httpclient_should_retry_status_with_method() for proper method checking.
  *
- * IMPORTANT: Enable only for idempotent requests (GET, HEAD, OPTIONS, PUT,
- * DELETE) to avoid duplicate side effects on retry. Non-idempotent methods
- * (POST, PATCH) may cause unintended duplicate actions.
- *
- * Non-server-error status codes (including 4xx client errors) are never
- * retried as they indicate permanent failures or client-side issues.
- *
- * @see SocketHTTP_status_category() for status classification.
- * @see SocketHTTPClient_Config::retry_on_5xx for enabling.
+ * @see httpclient_should_retry_status_with_method() for method-aware version.
  */
 int
 httpclient_should_retry_status (const SocketHTTPClient_T client, int status)
 {
-  if (client == NULL)
-    return 0;
-
-  if (SocketHTTP_status_category (status) == HTTP_STATUS_SERVER_ERROR)
-    return client->config.retry_on_5xx;
-
-  return 0;
+  /* Assume GET method for backward compatibility */
+  return httpclient_should_retry_status_with_method (client, status,
+                                                      HTTP_METHOD_GET);
 }
 
 /* ============================================================================

@@ -23,6 +23,7 @@
 #include "http/SocketHTTP1.h"
 
 #include <assert.h>
+#include <string.h>
 
 /* ============================================================================
  * Table-Driven DFA Tables (Hoehrmann-style)
@@ -856,6 +857,40 @@ http1_contains_token (const char *value, const char *token)
 }
 
 /**
+ * te_chunked_is_last - Validate that chunked is the last transfer coding
+ * @te_value: Transfer-Encoding header value
+ *
+ * Per RFC 9112, chunked must be the final transfer coding if present.
+ *
+ * Returns: 1 if chunked is last or not present, 0 if violation detected
+ */
+static int
+te_chunked_is_last (const char *te_value)
+{
+  /* Find "chunked" token */
+  const char *chunked = strcasestr (te_value, "chunked");
+  if (!chunked)
+    return 1; /* No chunked - valid */
+
+  /* Check nothing follows "chunked" except whitespace/comma */
+  const char *after = chunked + 7;
+  while (*after)
+    {
+      if (*after == ',')
+        {
+          /* Another coding follows - chunked is not last */
+          const char *next = after + 1;
+          while (*next == ' ' || *next == '\t')
+            next++;
+          if (*next && *next != '\0')
+            return 0; /* Another token follows */
+        }
+      after++;
+    }
+  return 1;
+}
+
+/**
  * has_chunked_encoding - Check if Transfer-Encoding includes chunked
  * @headers: Headers collection
  *
@@ -1011,6 +1046,18 @@ determine_body_mode (SocketHTTP1_Parser_T parser)
           if (parser->config.strict_mode
               && has_other_transfer_coding (parser->headers))
             return HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING;
+
+          /* Validate chunked is last per RFC 9112 */
+          const char *te_values[SOCKETHTTP_MAX_HEADERS];
+          size_t count = SocketHTTP_Headers_get_all (
+              parser->headers, "Transfer-Encoding", te_values,
+              SOCKETHTTP_MAX_HEADERS);
+          for (size_t i = 0; i < count; i++)
+            {
+              if (!te_chunked_is_last (te_values[i]))
+                return HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING;
+            }
+
           set_body_mode_chunked (parser);
         }
       return HTTP1_OK;

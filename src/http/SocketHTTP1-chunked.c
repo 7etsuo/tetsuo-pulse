@@ -520,13 +520,13 @@ parse_chunk_size (const char *const input, size_t len, size_t *line_len,
     {
       p++;
       ext_len = 1;
-      while (p < end && *p != '\r' && *p != '\n' && ext_len < max_ext_len)
+      while (p < end && *p != '\r' && *p != '\n')
         {
-          p++;
           ext_len++;
+          if (ext_len > max_ext_len)
+            return -1; /* Extension too long */
+          p++;
         }
-      if (ext_len > max_ext_len)
-        return -1; /* Extension too long */
     }
 
   crlf_result_t res = skip_crlf (&p, end);
@@ -537,8 +537,8 @@ parse_chunk_size (const char *const input, size_t len, size_t *line_len,
 
   *line_len = (size_t)(p - input);
 
-  /* Validate size fits in size_t */
-  if (size > SIZE_MAX)
+  /* SECURITY: Validate size fits in int64_t before cast to prevent overflow */
+  if (size > (uint64_t)INT64_MAX)
     return -1;
 
   return (int64_t)size;

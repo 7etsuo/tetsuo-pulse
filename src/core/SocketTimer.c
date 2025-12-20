@@ -41,6 +41,7 @@
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "core/SocketConfig.h"
+#include "core/SocketSecurity.h"
 #include "core/SocketTimer-private.h"
 #include "core/SocketTimer.h"
 #include "core/SocketUtil.h"
@@ -456,12 +457,18 @@ sockettimer_find_in_heap (const SocketTimer_heap_T *heap,
  * @current_capacity: Current capacity
  *
  * Returns: 1 if overflow would occur, 0 otherwise
+ *
+ * Uses SocketSecurity_check_multiply() for consistent overflow-safe arithmetic.
  */
 static int
 sockettimer_check_capacity_overflow (size_t current_capacity)
 {
-  size_t new_capacity = current_capacity * SOCKET_TIMER_HEAP_GROWTH_FACTOR;
-  return new_capacity <= current_capacity;
+  size_t new_capacity;
+  if (!SocketSecurity_check_multiply (current_capacity,
+                                      SOCKET_TIMER_HEAP_GROWTH_FACTOR,
+                                      &new_capacity))
+    return 1; /* Would overflow */
+  return 0;
 }
 
 /**
@@ -762,6 +769,12 @@ sockettimer_add_timer_internal (SocketPoll_T poll, int64_t delay_ms,
  *
  * Returns: New heap instance or NULL on error
  * Thread-safe: No (heap not yet initialized)
+ *
+ * @note All allocations below are from the arena. On initialization failure,
+ *       partial allocations remain in the arena until Arena_dispose() is
+ *       called. This is by design - arena provides batch deallocation only.
+ *       Callers must dispose the arena to reclaim memory from partial
+ *       initialization failures. This is standard arena semantics, not a leak.
  */
 SocketTimer_heap_T *
 SocketTimer_heap_new (Arena_T arena)
@@ -772,17 +785,20 @@ SocketTimer_heap_new (Arena_T arena)
   if (!arena)
     return NULL;
 
+  /* Allocations from arena - freed only when arena is disposed */
   heap = sockettimer_heap_alloc_structure (arena);
   if (!heap)
     return NULL;
 
   timers = sockettimer_heap_alloc_timers (arena);
   if (!timers)
+    /* heap allocation remains in arena until Arena_dispose() */
     return NULL;
 
   sockettimer_heap_init_state (heap, timers, arena);
 
   if (sockettimer_heap_init_mutex (heap) != 0)
+    /* heap + timers remain in arena until Arena_dispose() */
     return NULL;
 
   return heap;

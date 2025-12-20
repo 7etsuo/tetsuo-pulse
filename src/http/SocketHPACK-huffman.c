@@ -459,7 +459,8 @@ is_valid_eos_padding (uint64_t bits, int bits_avail)
   uint32_t pad_mask;
   uint32_t padding;
 
-  if (bits_avail <= 0 || bits_avail > HUFFMAN_MAX_PAD_BITS)
+  /* Padding must be 1-7 bits only (< 8), per RFC 7541 Section 5.2 */
+  if (bits_avail <= 0 || bits_avail >= 8)
     return 0;
 
   pad_mask = (1U << bits_avail) - 1;

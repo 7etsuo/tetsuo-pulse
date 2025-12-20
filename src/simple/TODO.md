@@ -46,12 +46,12 @@
 
 ### Phase 4: Extensions
 
-- [ ] **WebSocket Server** (`SocketSimple-ws.h`) - *Partially implemented*
+- [x] **WebSocket Server** (`SocketSimple-ws.h`)
   - [x] Server config (max frame/message size, UTF-8 validation)
   - [x] `Socket_simple_ws_is_upgrade()` - Detect upgrade requests
-  - [ ] `Socket_simple_ws_accept()` - Accept from HTTP server request (TODO)
-  - [ ] `Socket_simple_ws_accept_raw()` - Accept on raw sockets (TODO)
-  - [ ] `Socket_simple_ws_reject()` - Reject upgrade (TODO)
+  - [x] `Socket_simple_ws_accept()` - Accept from HTTP server request
+  - [x] `Socket_simple_ws_accept_raw()` - Accept on raw sockets with WebSocket key
+  - [x] `Socket_simple_ws_reject()` - Reject upgrade request
 
 - [x] **Security** (`SocketSimple-security.h`)
   - SYN flood protection with reputation system

@@ -64,7 +64,8 @@ Socket_simple_http_options_init (SocketSimple_HTTPOptions *opts)
  */
 
 static int
-convert_response (SocketHTTPClient_Response *src, SocketSimple_HTTPResponse *dst)
+convert_response (SocketHTTPClient_Response *src,
+                  SocketSimple_HTTPResponse *dst)
 {
   const char *ct;
   const char *loc;
@@ -244,7 +245,8 @@ Socket_simple_http_get_ex (const char *url, const char **headers,
   {
     req = SocketHTTPClient_Request_new (client, HTTP_METHOD_GET, url);
 
-    /* Add custom headers - use stack buffer to avoid malloc leak on exception */
+    /* Add custom headers - use stack buffer to avoid malloc leak on exception
+     */
     if (headers)
       {
         for (const char **h = headers; *h != NULL; h++)
@@ -428,7 +430,8 @@ Socket_simple_http_put (const char *url, const char *content_type,
 }
 
 int
-Socket_simple_http_delete (const char *url, SocketSimple_HTTPResponse *response)
+Socket_simple_http_delete (const char *url,
+                           SocketSimple_HTTPResponse *response)
 {
   SocketHTTPClient_T client;
   SocketHTTPClient_Response lib_response;
@@ -488,7 +491,8 @@ Socket_simple_http_delete (const char *url, SocketSimple_HTTPResponse *response)
  */
 
 int
-Socket_simple_http_get_json (const char *url, char **json_out, size_t *json_len)
+Socket_simple_http_get_json (const char *url, char **json_out,
+                             size_t *json_len)
 {
   SocketHTTPClient_T client;
   volatile int status = -1;

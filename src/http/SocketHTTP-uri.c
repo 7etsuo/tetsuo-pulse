@@ -1058,9 +1058,6 @@ SocketHTTP_URI_decode (const char *input, size_t len, char *output,
 
   for (size_t i = 0; i < len; i++)
     {
-      if (out_len >= output_size)
-        return -1;
-
       if (input[i] == '%')
         {
           if (i + 2 >= len)
@@ -1072,15 +1069,27 @@ SocketHTTP_URI_decode (const char *input, size_t len, char *output,
           if (hi == 255 || lo == 255)
             return -1;
 
+          /* SECURITY: Check bounds BEFORE writing to prevent buffer overflow */
+          if (out_len + 1 > output_size)
+            return -1;
+
           output[out_len++] = (char)((hi << 4) | lo);
           i += 2;
         }
       else if (input[i] == '+')
         {
+          /* SECURITY: Check bounds BEFORE writing to prevent buffer overflow */
+          if (out_len + 1 > output_size)
+            return -1;
+
           output[out_len++] = ' ';
         }
       else
         {
+          /* SECURITY: Check bounds BEFORE writing to prevent buffer overflow */
+          if (out_len + 1 > output_size)
+            return -1;
+
           output[out_len++] = input[i];
         }
     }
@@ -1461,6 +1470,49 @@ validate_host_wrap (const char *host, size_t len)
 }
 
 /**
+ * check_path_traversal - Check for path traversal attempts
+ * @path: Path string
+ * @len: Length
+ *
+ * Detects ".." sequences that could escape the root directory.
+ * Also checks for encoded traversal attempts (%2e%2e).
+ *
+ * Returns: URI_PARSE_OK or URI_PARSE_INVALID_PATH
+ */
+static SocketHTTP_URIResult
+check_path_traversal (const char *path, size_t len)
+{
+  /* Check for .. sequences that could escape the root */
+  for (size_t i = 0; i + 1 < len; i++)
+    {
+      if (path[i] == '.' && path[i + 1] == '.')
+        {
+          /* Check if preceded by / or start of string */
+          if (i == 0 || path[i - 1] == '/')
+            {
+              /* Check if followed by / or end of string or ? */
+              if (i + 2 >= len || path[i + 2] == '/' || path[i + 2] == '?')
+                return URI_PARSE_INVALID_PATH;
+            }
+        }
+    }
+
+  /* Check for encoded traversal: %2e%2e or %2E%2E */
+  for (size_t i = 0; i + 5 < len; i++)
+    {
+      if (path[i] == '%' && (path[i + 1] == '2')
+          && (path[i + 2] == 'e' || path[i + 2] == 'E') && path[i + 3] == '%'
+          && (path[i + 4] == '2')
+          && (path[i + 5] == 'e' || path[i + 5] == 'E'))
+        {
+          return URI_PARSE_INVALID_PATH;
+        }
+    }
+
+  return URI_PARSE_OK;
+}
+
+/**
  * validate_path_query - Validate path or query chars per RFC 3986 section 3.3
  * @s: String
  * @len: Length
@@ -1500,6 +1552,15 @@ validate_path_query (const char *s, size_t len, int is_path)
         }
       i++;
     }
+
+  /* Check for path traversal before returning OK */
+  if (is_path)
+    {
+      SocketHTTP_URIResult traversal = check_path_traversal (s, len);
+      if (traversal != URI_PARSE_OK)
+        return traversal;
+    }
+
   return URI_PARSE_OK;
 }
 
@@ -1606,7 +1667,17 @@ parse_quoted_value (const char *p, const char *end, const char **value_start,
               *value_len = 0;
               return end;
             }
-          p++; // Skip escaped character
+
+          p++; /* Move to escaped character */
+
+          /* Reject control characters in escape sequences */
+          unsigned char esc = (unsigned char)*p;
+          if (esc < 0x20 || esc == 0x7F)
+            {
+              *value_start = NULL;
+              *value_len = 0;
+              return end;
+            }
         }
       p++;
     }
@@ -1847,31 +1918,48 @@ qvalue_compare (const void *a, const void *b)
 }
 
 /**
- * accept_parse_quality - Parse quality parameter value
+ * accept_parse_quality - Parse quality parameter value (locale-independent)
  * @p: Position after "q="
- * @end: End of input (unused but kept for API consistency)
+ * @end: End of input
+ * @out_pos: Output position after parsing
  *
+ * Manual parsing to avoid locale-dependent strtof behavior.
  * Returns: Quality value clamped to [0.0, 1.0]
  */
 static float
 accept_parse_quality (const char *p, const char *end, const char **out_pos)
 {
-  char *qend;
-  float quality;
+  float quality = 0.0f;
+  const char *start = p;
 
-  (void)end; /* Reserved for future bounds checking */
+  /* Parse integer part */
+  while (p < end && *p >= '0' && *p <= '9')
+    {
+      quality = quality * 10.0f + (*p - '0');
+      p++;
+    }
 
-  quality = strtof (p, &qend);
+  /* Parse decimal part */
+  if (p < end && *p == '.')
+    {
+      p++;
+      float divisor = 10.0f;
+      while (p < end && *p >= '0' && *p <= '9')
+        {
+          quality += (*p - '0') / divisor;
+          divisor *= 10.0f;
+          p++;
+        }
+    }
 
-  if (qend > p)
-    *out_pos = qend;
-  else
-    *out_pos = p;
+  *out_pos = (p > start) ? p : start;
 
+  /* Clamp to valid range [0.0, 1.0] */
   if (quality < 0.0f)
-    return 0.0f;
+    quality = 0.0f;
   if (quality > 1.0f)
-    return 1.0f;
+    quality = 1.0f;
+
   return quality;
 }
 

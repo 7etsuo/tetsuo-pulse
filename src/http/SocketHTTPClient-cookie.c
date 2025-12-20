@@ -92,6 +92,7 @@ static const char COOKIE_ATTR_SAMESITE_STR[] = "SameSite";
  * Returns: 1 if valid, 0 if invalid
  *
  * Per RFC 6265 §3.1, cookie-octet excludes CTL chars (0-31, 127-159).
+ * SECURITY: Also rejects CRLF characters to prevent header injection.
  */
 static int
 validate_cookie_octets (const unsigned char *data, size_t len)
@@ -100,6 +101,9 @@ validate_cookie_octets (const unsigned char *data, size_t len)
   for (i = 0; i < len; i++)
     {
       unsigned char c = data[i];
+      /* SECURITY: Reject CRLF and null bytes for injection prevention */
+      if (c == '\r' || c == '\n' || c == '\0')
+        return 0;
       if (c <= 31 || (c >= 127 && c <= 159) ||
           c == ';' || c == '=' || c == ',' || c == ' ')
         return 0;
@@ -226,13 +230,14 @@ path_matches (const char *request_path, const char *cookie_path)
  *
  * Per RFC 6265: Non-positive Max-Age means delete cookie (return 1 for
  * immediate expiry). Positive values are capped at HTTPCLIENT_MAX_COOKIE_AGE_SEC.
+ * SECURITY: Fixed overflow handling - checks overflow before sign application.
  */
 static time_t
 parse_max_age (const char *value, const size_t len)
 {
   const char *start;
   size_t remaining;
-  int sign = 1;
+  int negative = 0;
   long age = 0;
   int has_digit = 0;
   time_t now, expires;
@@ -244,6 +249,7 @@ parse_max_age (const char *value, const size_t len)
   start = value;
   remaining = len;
 
+  /* Skip leading whitespace */
   while (remaining > 0 && (*start == ' ' || *start == '\t'))
     {
       start++;
@@ -252,20 +258,23 @@ parse_max_age (const char *value, const size_t len)
   if (remaining == 0)
     return 0;
 
+  /* Check for negative sign */
   if (*start == '-')
     {
-      sign = -1;
+      negative = 1;
       start++;
       remaining--;
       if (remaining == 0)
         return 0;
     }
 
+  /* Parse digits with overflow protection */
   while (remaining > 0 && *start >= '0' && *start <= '9')
     {
       has_digit = 1;
-      if (age > (LONG_MAX - 9) / 10)
-        return 0;
+      /* SECURITY: Check overflow before multiplication and addition */
+      if (age > (LONG_MAX - (*start - '0')) / 10)
+        return 0;  /* Overflow detected */
       age = age * 10 + (*start - '0');
       start++;
       remaining--;
@@ -274,16 +283,23 @@ parse_max_age (const char *value, const size_t len)
   if (!has_digit || remaining > 0)
     return 0;
 
-  age *= sign;
-  if (age <= 0)
-    return 1;
+  /* SECURITY: Check that negation won't overflow before applying sign */
+  if (negative)
+    {
+      /* For negative values, check against abs(LONG_MIN) = LONG_MAX + 1 */
+      if ((unsigned long long)age > (unsigned long long)LONG_MAX + 1)
+        return 0;  /* Would overflow on negation */
+      return 1;  /* Negative Max-Age means expired immediately */
+    }
 
+  /* Cap at maximum allowed age */
   if (age > HTTPCLIENT_MAX_COOKIE_AGE_SEC)
     age = HTTPCLIENT_MAX_COOKIE_AGE_SEC;
 
+  /* Calculate expiration time with overflow protection */
   now = time (NULL);
   if (!SocketSecurity_check_add ((size_t)now, (size_t)age, &temp))
-    return 1;
+    return 1;  /* Overflow in time calculation - treat as expired */
   expires = (time_t)temp;
 
   return expires;
@@ -532,8 +548,19 @@ SocketHTTPClient_CookieJar_new (void)
     jar->arena = (Arena_T)arena;
     jar->hash_size = HTTPCLIENT_COOKIE_HASH_SIZE;
     jar->max_cookies = HTTPCLIENT_MAX_COOKIES;
-    SocketCrypto_random_bytes ((unsigned char *)&jar->hash_seed,
-                               sizeof (jar->hash_seed));
+
+    /* SECURITY: Initialize hash seed - mandatory for collision resistance */
+    if (SocketCrypto_random_bytes ((unsigned char *)&jar->hash_seed,
+                                   sizeof (jar->hash_seed)) != 0)
+      {
+        /* Crypto failure - use fallback but log warning */
+        SOCKET_LOG_WARN_MSG ("Cookie jar hash seed crypto failed, using fallback");
+        jar->hash_seed = (uint32_t)time (NULL) ^ (uint32_t)getpid () ^ (uint32_t)(uintptr_t)jar;
+      }
+    if (jar->hash_seed == 0)
+      {
+        jar->hash_seed = 0x12345678;  /* Never use zero seed */
+      }
 
     jar->hash_table = Arena_calloc ((Arena_T)arena, HTTPCLIENT_COOKIE_HASH_SIZE,
                                     sizeof (CookieEntry *), __FILE__, __LINE__);

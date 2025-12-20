@@ -37,7 +37,8 @@ simple_set_error (SocketSimple_ErrorCode code, const char *msg)
   simple_error.errno_value = errno;
   if (msg)
     {
-      snprintf (simple_error.message, sizeof (simple_error.message), "%s", msg);
+      snprintf (simple_error.message, sizeof (simple_error.message), "%s",
+                msg);
     }
   else
     {

@@ -29,6 +29,11 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+
+#ifdef __linux__
+#include <sys/auxv.h>
+#endif
 
 #define T SocketSYNProtect_T
 
@@ -57,6 +62,67 @@ static const char *const reputation_names[]
 #define ACTION_NAMES_COUNT (sizeof (action_names) / sizeof (action_names[0]))
 #define REPUTATION_NAMES_COUNT                                                \
   (sizeof (reputation_names) / sizeof (reputation_names[0]))
+
+/* ============================================================================
+ * Internal Helper Functions - Hash Seed Generation
+ * ============================================================================
+ */
+
+/**
+ * synprotect_get_fallback_seed - Generate fallback seed from multiple sources
+ *
+ * Uses multiple entropy sources to generate a reasonably random seed when
+ * cryptographic randomness is unavailable. This is more secure than using
+ * a constant seed.
+ *
+ * Entropy sources used:
+ * - AT_RANDOM from Linux aux vector (kernel-provided random at exec)
+ * - Process ID (changes across invocations)
+ * - Stack address (ASLR entropy)
+ * - Monotonic time (some unpredictability)
+ *
+ * Returns: Mixed seed value
+ *
+ * Security: Not cryptographically secure but significantly better than
+ * a constant seed for hash collision resistance.
+ */
+static unsigned
+synprotect_get_fallback_seed (void)
+{
+  unsigned seed = 0;
+
+#ifdef __linux__
+  /* Linux: Use AT_RANDOM from aux vector if available */
+  /* This is 16 bytes of random data provided by kernel at exec time */
+  unsigned long at_random = getauxval (AT_RANDOM);
+  if (at_random != 0)
+    {
+      const unsigned char *random_bytes = (const unsigned char *)at_random;
+      seed ^= (unsigned)random_bytes[0];
+      seed ^= (unsigned)random_bytes[1] << 8;
+      seed ^= (unsigned)random_bytes[2] << 16;
+      seed ^= (unsigned)random_bytes[3] << 24;
+    }
+#endif
+
+  /* Mix in process ID - changes across invocations */
+  seed ^= (unsigned)getpid ();
+
+  /* Mix in address from stack for ASLR entropy */
+  seed ^= (unsigned)(uintptr_t)&seed;
+
+  /* Mix in monotonic time for additional unpredictability */
+  seed ^= (unsigned)Socket_get_monotonic_ms ();
+
+  /* Final mixing to distribute bits */
+  seed = socket_util_hash_uint (seed, UINT_MAX);
+
+  /* Ensure non-zero (zero would trigger re-generation) */
+  if (seed == 0)
+    seed = 0x5bd1e995; /* Arbitrary non-zero value */
+
+  return seed;
+}
 
 /* ============================================================================
  * Internal Helper Functions - String Utilities
@@ -1511,6 +1577,10 @@ synprotect_alloc_structure (Arena_T arena)
  * @protect: Protection instance
  * @arena: Arena used for allocation
  * @config: Configuration to copy
+ *
+ * Security: Hash seed generation uses cryptographic randomness when available,
+ * falling back to multiple entropy sources (AT_RANDOM, PID, ASLR, time) to
+ * mitigate hash collision DoS attacks.
  */
 static void
 synprotect_init_base (T protect, Arena_T arena,
@@ -1530,13 +1600,14 @@ synprotect_init_base (T protect, Arena_T arena,
                                        sizeof (protect->hash_seed))
             != 0)
           {
-            protect->hash_seed = (unsigned)Socket_get_monotonic_ms ();
+            /* Cryptographic random failed, use fallback with multiple sources */
+            protect->hash_seed = synprotect_get_fallback_seed ();
           }
       }
       EXCEPT (SocketCrypto_Failed)
       {
-        protect->hash_seed
-            = SOCKET_UTIL_DJB2_SEED; /* Fallback to standard DJB2 seed */
+        /* Exception from crypto layer, use fallback with multiple sources */
+        protect->hash_seed = synprotect_get_fallback_seed ();
       }
       END_TRY;
     }
