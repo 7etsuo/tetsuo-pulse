@@ -101,6 +101,16 @@ Socket_setreuseaddr (T socket)
   SocketCommon_setreuseaddr (socket->base, Socket_Failed);
 }
 
+/**
+ * Socket_setreuseport - Enable SO_REUSEPORT socket option
+ * @socket: Socket instance
+ *
+ * Allows multiple sockets to bind to the same port for load balancing.
+ * Available on Linux 3.9+ and BSD systems.
+ *
+ * Raises: Socket_Failed on setsockopt failure or unsupported platform
+ * Thread-safe: Yes
+ */
 void
 Socket_setreuseport (T socket)
 {
@@ -108,6 +118,17 @@ Socket_setreuseport (T socket)
   SocketCommon_setreuseport (socket->base, Socket_Failed);
 }
 
+/**
+ * Socket_setcloexec - Set close-on-exec flag for socket
+ * @socket: Socket instance
+ * @enable: Non-zero to enable, zero to disable
+ *
+ * Controls whether the socket file descriptor is closed automatically
+ * when the process calls exec(). Prevents fd leaks to child processes.
+ *
+ * Raises: Socket_Failed on fcntl failure
+ * Thread-safe: Yes
+ */
 void
 Socket_setcloexec (T socket, int enable)
 {
@@ -139,6 +160,16 @@ Socket_settimeout (T socket, int timeout_sec)
   SocketCommon_settimeout (socket->base, timeout_sec, Socket_Failed);
 }
 
+/**
+ * Socket_gettimeout - Get socket I/O timeout
+ * @socket: Socket instance
+ *
+ * Retrieves the current receive timeout (SO_RCVTIMEO) in seconds.
+ *
+ * Returns: Timeout in seconds (0 = infinite)
+ * Raises: Socket_Failed on getsockopt failure
+ * Thread-safe: Yes
+ */
 int
 Socket_gettimeout (T socket)
 {
@@ -158,6 +189,16 @@ Socket_gettimeout (T socket)
  * ============================================================================
  */
 
+/**
+ * Socket_timeouts_get - Get socket timeout configuration
+ * @socket: Socket instance
+ * @timeouts: Output parameter for timeout configuration
+ *
+ * Retrieves the current timeout configuration (connect, DNS, operation)
+ * from the socket instance.
+ *
+ * Thread-safe: Yes (reads immutable after set)
+ */
 void
 Socket_timeouts_get (const T socket, SocketTimeouts_T *timeouts)
 {
@@ -167,6 +208,17 @@ Socket_timeouts_get (const T socket, SocketTimeouts_T *timeouts)
   *timeouts = socket->base->timeouts;
 }
 
+/**
+ * Socket_timeouts_set - Set socket timeout configuration
+ * @socket: Socket instance
+ * @timeouts: Timeout configuration to apply (NULL = reset to defaults)
+ *
+ * Configures the timeout values for connect, DNS, and operation phases.
+ * If timeouts is NULL, resets to global default values. All timeout
+ * values are sanitized (negative values treated as 0 = infinite).
+ *
+ * Thread-safe: Yes (mutex-protected default access)
+ */
 void
 Socket_timeouts_set (T socket, const SocketTimeouts_T *timeouts)
 {
@@ -188,18 +240,47 @@ Socket_timeouts_set (T socket, const SocketTimeouts_T *timeouts)
       = socketcommon_sanitize_timeout (timeouts->operation_timeout_ms);
 }
 
+/**
+ * Socket_timeouts_getdefaults - Get global default timeout configuration
+ * @timeouts: Output parameter for default timeout values
+ *
+ * Retrieves the global default timeout configuration used for new sockets.
+ *
+ * Thread-safe: Yes
+ */
 void
 Socket_timeouts_getdefaults (SocketTimeouts_T *timeouts)
 {
   SocketCommon_timeouts_getdefaults (timeouts);
 }
 
+/**
+ * Socket_timeouts_setdefaults - Set global default timeout configuration
+ * @timeouts: Timeout configuration to set as global defaults
+ *
+ * Updates the global default timeout configuration that will be applied
+ * to newly created sockets.
+ *
+ * Thread-safe: Yes (internally synchronized)
+ */
 void
 Socket_timeouts_setdefaults (const SocketTimeouts_T *timeouts)
 {
   SocketCommon_timeouts_setdefaults (timeouts);
 }
 
+/**
+ * Socket_timeouts_set_extended - Set extended per-phase timeout configuration
+ * @socket: Socket instance
+ * @extended: Extended timeout configuration with per-phase values
+ *
+ * Configures granular timeouts for specific operation phases (DNS, connect,
+ * TLS, operation). Non-zero values override the corresponding basic timeout.
+ * The tls_timeout_ms falls back to operation_timeout_ms if not explicitly set.
+ * Note: request_timeout_ms is handled at the HTTP client level, not here.
+ *
+ * Thread-safe: No (caller must ensure exclusive access)
+ */
 void
 Socket_timeouts_set_extended (T socket,
                               const SocketTimeouts_Extended_T *extended)
@@ -221,10 +302,19 @@ Socket_timeouts_set_extended (T socket,
   else if (extended->tls_timeout_ms != 0)
     socket->base->timeouts.operation_timeout_ms
         = socketcommon_sanitize_timeout (extended->tls_timeout_ms);
-
-  /* Note: request_timeout_ms is handled at the HTTP client level */
 }
 
+/**
+ * Socket_timeouts_get_extended - Get extended per-phase timeout configuration
+ * @socket: Socket instance
+ * @extended: Output parameter for extended timeout values
+ *
+ * Retrieves the current timeout configuration in extended format with
+ * per-phase breakdown. The tls_timeout_ms is derived from operation_timeout_ms.
+ * request_timeout_ms is always 0 (handled at HTTP client level).
+ *
+ * Thread-safe: Yes (reads immutable after set)
+ */
 void
 Socket_timeouts_get_extended (const T socket,
                               SocketTimeouts_Extended_T *extended)
@@ -303,26 +393,28 @@ validate_keepalive_parameters (int idle, int interval, int count)
 }
 
 /**
- * socket_options_get_option_no_raise - Get socket option without raising
- * exception
+ * socket_get_option_quiet - Get socket option without raising exception
  * @fd: File descriptor
- * @level: Option level
- * @optname: Option name
+ * @level: Option level (e.g., SOCKET_SOL_SOCKET, SOCKET_IPPROTO_TCP)
+ * @optname: Option name (e.g., SOCKET_TCP_FASTOPEN)
  * @optval: Output buffer for option value
  * @optlen: Input/output length of optval
+ *
+ * Wrapper around getsockopt(2) that returns success/failure without
+ * raising exceptions. Used for optional platform-specific options where
+ * failure is acceptable (e.g., querying TCP_FASTOPEN on unsupported systems).
  *
  * Returns: 0 on success, -1 on failure (errno set)
  * Thread-safe: Yes
  */
 static int
-socket_options_get_option_no_raise (int fd, int level, int optname,
-                                    void *optval, socklen_t *optlen)
+socket_get_option_quiet (int fd, int level, int optname, void *optval,
+                         socklen_t *optlen)
 {
   assert (fd >= 0);
   assert (optval);
   assert (optlen);
 
-  errno = 0;
   return getsockopt (fd, level, optname, optval, optlen) == 0 ? 0 : -1;
 }
 
@@ -454,6 +546,18 @@ Socket_getkeepalive (T socket, int *idle, int *interval, int *count)
  * ============================================================================
  */
 
+/**
+ * Socket_setnodelay - Enable or disable TCP_NODELAY (Nagle's algorithm)
+ * @socket: Socket instance
+ * @nodelay: Non-zero to disable Nagle (enable nodelay), zero to enable Nagle
+ *
+ * Disabling Nagle's algorithm (nodelay=1) reduces latency for small packets
+ * at the cost of potentially higher bandwidth usage. Recommended for
+ * interactive or real-time protocols.
+ *
+ * Raises: Socket_Failed on setsockopt failure
+ * Thread-safe: Yes
+ */
 void
 Socket_setnodelay (T socket, int nodelay)
 {
@@ -463,6 +567,14 @@ Socket_setnodelay (T socket, int nodelay)
                                SOCKET_TCP_NODELAY, val, Socket_Failed);
 }
 
+/**
+ * Socket_getnodelay - Get TCP_NODELAY setting
+ * @socket: Socket instance
+ *
+ * Returns: Non-zero if TCP_NODELAY is enabled, 0 if disabled
+ * Raises: Socket_Failed on getsockopt failure
+ * Thread-safe: Yes
+ */
 int
 Socket_getnodelay (T socket)
 {
@@ -516,8 +628,8 @@ Socket_getcongestion (T socket, char *algorithm, size_t len)
   assert (len > 0);
 
 #if SOCKET_HAS_TCP_CONGESTION
-  if (socket_options_get_option_no_raise (
-          fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_CONGESTION, algorithm, &optlen)
+  if (socket_get_option_quiet (fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_CONGESTION,
+                               algorithm, &optlen)
       < 0)
     return -1;
   if (optlen > (socklen_t)len)
@@ -622,8 +734,8 @@ Socket_getfastopen (T socket)
   assert (socket);
 
 #if SOCKET_HAS_TCP_FASTOPEN
-  if (socket_options_get_option_no_raise (fd, SOCKET_IPPROTO_TCP,
-                                          SOCKET_TCP_FASTOPEN, &opt, &optlen)
+  if (socket_get_option_quiet (fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_FASTOPEN,
+                               &opt, &optlen)
       < 0)
     return -1;
   return opt;
@@ -664,9 +776,8 @@ Socket_getusertimeout (T socket)
   assert (socket);
 
 #if SOCKET_HAS_TCP_USER_TIMEOUT
-  if (socket_options_get_option_no_raise (fd, SOCKET_IPPROTO_TCP,
-                                          SOCKET_TCP_USER_TIMEOUT, &timeout_ms,
-                                          &optlen)
+  if (socket_get_option_quiet (fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_USER_TIMEOUT,
+                               &timeout_ms, &optlen)
       < 0)
     return 0;
   return timeout_ms;
