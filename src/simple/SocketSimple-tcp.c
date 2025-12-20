@@ -64,7 +64,12 @@ Socket_simple_connect_timeout (const char *host, int port, int timeout_ms)
   }
   END_TRY;
 
-  return simple_create_handle (sock, 0, 0);
+  SocketSimple_Socket_T handle = simple_create_handle (sock, 0, 0);
+  if (!handle)
+    {
+      Socket_free ((Socket_T *)&sock);
+    }
+  return handle;
 }
 
 /* ============================================================================
@@ -109,7 +114,12 @@ Socket_simple_listen (const char *host, int port, int backlog)
   }
   END_TRY;
 
-  return simple_create_handle (sock, 1, 0);
+  SocketSimple_Socket_T handle = simple_create_handle (sock, 1, 0);
+  if (!handle)
+    {
+      Socket_free ((Socket_T *)&sock);
+    }
+  return handle;
 }
 
 SocketSimple_Socket_T
@@ -133,7 +143,12 @@ Socket_simple_accept (SocketSimple_Socket_T server)
   }
   END_TRY;
 
-  return simple_create_handle (client, 0, 0);
+  SocketSimple_Socket_T handle = simple_create_handle (client, 0, 0);
+  if (!handle)
+    {
+      Socket_free ((Socket_T *)&client);
+    }
+  return handle;
 }
 
 SocketSimple_Socket_T
@@ -165,7 +180,12 @@ Socket_simple_accept_timeout (SocketSimple_Socket_T server, int timeout_ms)
   }
   END_TRY;
 
-  return simple_create_handle (client, 0, 0);
+  SocketSimple_Socket_T handle = simple_create_handle (client, 0, 0);
+  if (!handle)
+    {
+      Socket_free ((Socket_T *)&client);
+    }
+  return handle;
 }
 
 /* ============================================================================
@@ -239,7 +259,7 @@ Socket_simple_recv_timeout (SocketSimple_Socket_T sock, void *buf, size_t len,
                             int timeout_ms)
 {
   volatile ssize_t n = 0;
-  int ready;
+  volatile int timed_out = 0;
 
   Socket_simple_clear_error ();
 
@@ -251,13 +271,16 @@ Socket_simple_recv_timeout (SocketSimple_Socket_T sock, void *buf, size_t len,
 
   TRY
   {
-    ready = Socket_probe (sock->socket, timeout_ms);
+    int ready = Socket_probe (sock->socket, timeout_ms);
     if (!ready)
       {
         simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "Receive timed out");
-        return -1;
+        timed_out = 1;
       }
-    n = Socket_recv (sock->socket, buf, len);
+    else
+      {
+        n = Socket_recv (sock->socket, buf, len);
+      }
   }
   EXCEPT (Socket_Failed)
   {
@@ -278,6 +301,11 @@ Socket_simple_recv_timeout (SocketSimple_Socket_T sock, void *buf, size_t len,
     return 0;
   }
   END_TRY;
+
+  if (timed_out)
+    {
+      return -1;
+    }
 
   if (n == 0)
     {
@@ -467,7 +495,12 @@ Socket_simple_udp_bind (const char *host, int port)
   }
   END_TRY;
 
-  return simple_create_udp_handle (dgram);
+  SocketSimple_Socket_T handle = simple_create_udp_handle (dgram);
+  if (!handle)
+    {
+      SocketDgram_free ((SocketDgram_T *)&dgram);
+    }
+  return handle;
 }
 
 SocketSimple_Socket_T
@@ -485,7 +518,12 @@ Socket_simple_udp_new (void)
   }
   END_TRY;
 
-  return simple_create_udp_handle (dgram);
+  SocketSimple_Socket_T handle = simple_create_udp_handle (dgram);
+  if (!handle)
+    {
+      SocketDgram_free ((SocketDgram_T *)&dgram);
+    }
+  return handle;
 }
 
 int
