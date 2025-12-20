@@ -30,9 +30,8 @@
 #include "socket/SocketProxy.h"
 
 #include "core/SocketCrypto.h"
-
 #include "core/SocketUTF8.h"
-#include "socket/SocketCommon.h"
+
 #include <arpa/inet.h>
 #include <assert.h>
 #include <errno.h>
@@ -43,6 +42,15 @@
  * ============================================================================
  */
 
+/**
+ * proxy_socks5_check_version - Validate SOCKS5 protocol version byte
+ * @conn: Proxy connection context for error reporting
+ * @got: Actual version byte received
+ * @expected: Expected version byte
+ * @field: Field description for error message
+ *
+ * Returns: PROXY_OK if versions match, PROXY_ERROR_PROTOCOL otherwise
+ */
 static SocketProxy_Result
 proxy_socks5_check_version (struct SocketProxy_Conn_T *conn, unsigned char got,
                             unsigned char expected, const char *field)
@@ -58,6 +66,13 @@ proxy_socks5_check_version (struct SocketProxy_Conn_T *conn, unsigned char got,
   return PROXY_OK;
 }
 
+/**
+ * proxy_socks5_ensure_data - Check if sufficient data available in recv buffer
+ * @conn: Proxy connection context
+ * @needed: Minimum bytes required
+ *
+ * Returns: PROXY_OK if enough data, PROXY_IN_PROGRESS if more needed
+ */
 static inline SocketProxy_Result
 proxy_socks5_ensure_data (struct SocketProxy_Conn_T *conn, size_t needed)
 {
@@ -241,25 +256,17 @@ proxy_socks5_send_auth (struct SocketProxy_Conn_T *conn)
       return -1;
     }
 
-  /* Additional validation using common helpers */
-  TRY SocketCommon_validate_hostname (conn->username, SocketProxy_Failed);
+  /* Additional validation: UTF-8 check for username and password */
   if (SocketUTF8_validate_str (conn->username) != UTF8_VALID)
     {
-      PROXY_ERROR_MSG ("Invalid UTF-8 in username");
-      socketproxy_set_error (conn, PROXY_ERROR, "%s", socket_error_buf);
+      socketproxy_set_error (conn, PROXY_ERROR, "Invalid UTF-8 in username");
       return -1;
     }
-  SocketCommon_validate_hostname (conn->password, SocketProxy_Failed);
   if (SocketUTF8_validate_str (conn->password) != UTF8_VALID)
     {
-      PROXY_ERROR_MSG ("Invalid UTF-8 in password");
-      socketproxy_set_error (conn, PROXY_ERROR, "%s", socket_error_buf);
+      socketproxy_set_error (conn, PROXY_ERROR, "Invalid UTF-8 in password");
       return -1;
     }
-  EXCEPT (SocketProxy_Failed)
-  socketproxy_set_error (conn, PROXY_ERROR, "%s", socket_error_buf);
-  return -1;
-  END_TRY;
 
   /* Build auth request */
   buf[len++] = SOCKS5_AUTH_VERSION; /* VER = 0x01 */
@@ -367,19 +374,26 @@ proxy_socks5_send_connect (struct SocketProxy_Conn_T *conn)
   struct in6_addr ipv6;
   size_t host_len;
 
-  /* Additional validation using common helpers */
-  TRY SocketCommon_validate_port (conn->target_port, SocketProxy_Failed);
-  SocketCommon_validate_hostname (conn->target_host, SocketProxy_Failed);
-  if (SocketUTF8_validate_str (conn->target_host) != UTF8_VALID)
+  /* Validate target port range */
+  if (conn->target_port < 1 || conn->target_port > 65535)
     {
-      PROXY_ERROR_MSG ("Invalid UTF-8 in target host");
-      socketproxy_set_error (conn, PROXY_ERROR, "%s", socket_error_buf);
+      socketproxy_set_error (conn, PROXY_ERROR,
+                             "Invalid target port %d (must be 1-65535)",
+                             conn->target_port);
       return -1;
     }
-  EXCEPT (SocketProxy_Failed)
-  socketproxy_set_error (conn, PROXY_ERROR, "%s", socket_error_buf);
-  return -1;
-  END_TRY;
+
+  /* Validate target host */
+  if (conn->target_host == NULL || conn->target_host[0] == '\0')
+    {
+      socketproxy_set_error (conn, PROXY_ERROR, "Target host is empty");
+      return -1;
+    }
+  if (SocketUTF8_validate_str (conn->target_host) != UTF8_VALID)
+    {
+      socketproxy_set_error (conn, PROXY_ERROR, "Invalid UTF-8 in target host");
+      return -1;
+    }
 
   /* Header */
   buf[len++] = SOCKS5_VERSION;     /* VER */
@@ -420,13 +434,6 @@ proxy_socks5_send_connect (struct SocketProxy_Conn_T *conn)
           socketproxy_set_error (
               conn, PROXY_ERROR,
               "Hostname contains forbidden characters (CR or LF)");
-          return -1;
-        }
-      if (conn->target_port < 1 || conn->target_port > 65535)
-        {
-          socketproxy_set_error (conn, PROXY_ERROR,
-                                 "Invalid target port %d (must be 1-65535)",
-                                 conn->target_port);
           return -1;
         }
 
