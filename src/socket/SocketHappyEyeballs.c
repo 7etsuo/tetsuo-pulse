@@ -168,12 +168,15 @@ he_copy_hostname (T he, const char *host)
 /**
  * he_init_context_fields - Initialize context fields after allocation
  * @he: Context to initialize
- * @dns: DNS resolver (may be NULL)
- * @poll: Poll instance (may be NULL)
- * @port: Target port
+ * @dns: DNS resolver (may be NULL for sync API)
+ * @poll: Poll instance (may be NULL for sync API)
+ * @port: Target port (1-65535)
+ *
+ * Sets initial field values including start timestamp for timeout tracking.
  */
 static void
-he_init_context_fields (T he, SocketDNS_T dns, SocketPoll_T poll, int port)
+he_init_context_fields (T he, const SocketDNS_T dns, const SocketPoll_T poll,
+                        const int port)
 {
   he->port = port;
   he->dns = dns;
@@ -208,15 +211,19 @@ he_alloc_base_context (void)
  * he_create_context - Create Happy Eyeballs context
  * @dns: DNS resolver (may be NULL for sync API)
  * @poll: Poll instance (may be NULL for sync API)
- * @host: Target hostname
- * @port: Target port
- * @config: Configuration options
+ * @host: Target hostname (will be copied into context)
+ * @port: Target port (1-65535)
+ * @config: Configuration options (NULL for defaults)
  *
- * Returns: New context or NULL on failure
+ * Returns: New context or NULL on allocation failure
+ *
+ * Allocates context and arena, copies hostname, initializes fields.
+ * Caller owns the returned context and must free with SocketHappyEyeballs_free.
  */
 static T
-he_create_context (SocketDNS_T dns, SocketPoll_T poll, const char *host,
-                   int port, const SocketHE_Config_T *config)
+he_create_context (const SocketDNS_T dns, const SocketPoll_T poll,
+                   const char *host, const int port,
+                   const SocketHE_Config_T *config)
 {
   T he = he_alloc_base_context ();
   if (!he)
@@ -350,11 +357,12 @@ he_cancel_dns (T he)
 
 /**
  * he_calculate_dns_timeout - Calculate effective DNS timeout
- * @he: Happy Eyeballs context
+ * @he: Happy Eyeballs context (read-only access)
  *
  * Returns: DNS timeout in milliseconds (0 = no timeout)
  *
  * Uses dns_timeout_ms if set, otherwise limits by total_timeout_ms.
+ * Prioritizes explicit DNS timeout over total timeout when both are set.
  */
 static int
 he_calculate_dns_timeout (const T he)
@@ -421,12 +429,15 @@ he_setup_dns_hints (struct addrinfo *hints)
 
 /**
  * he_format_port_string - Format port number as string
- * @port: Port number
- * @port_str: Output buffer
+ * @port: Port number (1-65535)
+ * @port_str: Output buffer (must be at least SOCKET_HE_PORT_STR_SIZE)
  * @port_str_size: Size of output buffer
+ *
+ * Formats the port number for use with getaddrinfo() which requires
+ * a string representation of the service/port.
  */
 static void
-he_format_port_string (int port, char *port_str, size_t port_str_size)
+he_format_port_string (const int port, char *port_str, const size_t port_str_size)
 {
   snprintf (port_str, port_str_size, "%d", port);
 }
@@ -434,10 +445,12 @@ he_format_port_string (int port, char *port_str, size_t port_str_size)
 /**
  * he_set_dns_error - Set DNS error in context
  * @he: Happy Eyeballs context
- * @error: Error code from DNS resolution
+ * @error: Error code from DNS resolution (EAI_* constants)
+ *
+ * Formats the DNS error using gai_strerror() for human-readable output.
  */
 static void
-he_set_dns_error (T he, int error)
+he_set_dns_error (T he, const int error)
 {
   snprintf (he->error_buf, sizeof (he->error_buf), "DNS resolution failed: %s",
             gai_strerror (error));
@@ -447,12 +460,14 @@ he_set_dns_error (T he, int error)
 /**
  * he_handle_dns_resolve_error - Handle DNS resolution error result
  * @he: Happy Eyeballs context
- * @result: Error code from getaddrinfo
+ * @result: Error code from getaddrinfo (EAI_* constants)
  *
  * Returns: -1 always (indicates failure)
+ *
+ * Sets the DNS error in context and returns failure status.
  */
 static int
-he_handle_dns_resolve_error (T he, int result)
+he_handle_dns_resolve_error (T he, const int result)
 {
   he_set_dns_error (he, result);
   return -1;
@@ -506,10 +521,12 @@ he_dns_blocking_resolve (T he)
 /**
  * he_handle_dns_error - Handle DNS resolution error
  * @he: Happy Eyeballs context
- * @error: Error code from DNS
+ * @error: Error code from DNS (EAI_* constants)
+ *
+ * Sets DNS error state and transitions to FAILED state.
  */
 static void
-he_handle_dns_error (T he, int error)
+he_handle_dns_error (T he, const int error)
 {
   he_set_dns_error (he, error);
   he->dns_complete = 1;
@@ -567,9 +584,12 @@ he_process_dns_completion (T he)
 
 /**
  * he_count_addresses_by_family - Count addresses of each family
- * @res: Address list
+ * @res: Address list (read-only)
  * @ipv6_count: Output for IPv6 count
  * @ipv4_count: Output for IPv4 count
+ *
+ * Iterates through the resolved address list and counts IPv6 and IPv4
+ * addresses separately for RFC 8305 interleaving logic.
  */
 static void
 he_count_addresses_by_family (const struct addrinfo *res, int *ipv6_count,
@@ -790,9 +810,13 @@ he_get_next_address (T he)
  *
  * Note: No public API exists for clearing non-blocking mode on Socket_T,
  * so we use direct fcntl here. Socket_setnonblocking() only enables it.
+ *
+ * This restores the socket to blocking mode after the Happy Eyeballs
+ * racing is complete, providing the expected behavior for callers who
+ * want a regular blocking socket.
  */
 static void
-he_clear_nonblocking (int fd)
+he_clear_nonblocking (const int fd)
 {
   int flags = fcntl (fd, F_GETFL);
 
@@ -901,10 +925,12 @@ he_add_attempt_to_poll (T he, SocketHE_Attempt_T *attempt)
  * he_family_name - Get address family name string
  * @family: Address family (AF_INET or AF_INET6)
  *
- * Returns: "IPv6" or "IPv4"
+ * Returns: "IPv6" for AF_INET6, "IPv4" otherwise
+ *
+ * Used for logging connection attempts with human-readable family names.
  */
 static const char *
-he_family_name (int family)
+he_family_name (const int family)
 {
   return (family == AF_INET6) ? "IPv6" : "IPv4";
 }
@@ -1191,9 +1217,12 @@ he_fail_attempt (T he, SocketHE_Attempt_T *attempt, int error)
  * @revents: Output for poll results
  *
  * Returns: 1 if ready, 0 if pending, -1 on error
+ *
+ * Uses poll() with zero timeout for non-blocking status check.
+ * EINTR is handled gracefully by returning 0 (still pending).
  */
 static int
-he_poll_attempt_status (int fd, short *revents)
+he_poll_attempt_status (const int fd, short *revents)
 {
   struct pollfd pfd;
   int result;
@@ -1215,9 +1244,12 @@ he_poll_attempt_status (int fd, short *revents)
  * @fd: File descriptor to check
  *
  * Returns: 0 if connected, error code otherwise
+ *
+ * Uses getsockopt(SO_ERROR) to retrieve the pending socket error,
+ * which is the standard POSIX way to check async connect() result.
  */
 static int
-he_check_socket_error (int fd)
+he_check_socket_error (const int fd)
 {
   int error = 0;
   socklen_t len = sizeof (error);
@@ -1410,6 +1442,9 @@ he_all_attempts_done (const T he)
  *
  * Checks if reason already points to error_buf to avoid self-copy which
  * triggers -Wrestrict warnings with GCC 13's aggressive inlining + fortify.
+ *
+ * Uses snprintf with "%s" format for safety against format string injection
+ * if reason contains user-influenced data from DNS or socket errors.
  */
 static void
 he_set_error (T he, const char *reason)
@@ -1418,8 +1453,8 @@ he_set_error (T he, const char *reason)
   if (!reason || he->error_buf[0] != '\0' || reason == he->error_buf)
     return;
 
-  strncpy (he->error_buf, reason, sizeof (he->error_buf) - 1);
-  he->error_buf[sizeof (he->error_buf) - 1] = '\0';
+  /* Use snprintf for guaranteed null-termination and format safety */
+  snprintf (he->error_buf, sizeof (he->error_buf), "%s", reason);
 }
 
 /**
@@ -1501,9 +1536,12 @@ he_check_total_timeout (const T he)
  * @remaining_ms: Remaining time in milliseconds
  *
  * Returns: Updated timeout value (minimum of current and remaining)
+ *
+ * Clamps remaining_ms to INT_MAX to avoid overflow when casting to int.
+ * A negative or zero remaining_ms returns 0 (immediate timeout).
  */
 static int
-he_apply_timeout_limit (int current_timeout, int64_t remaining_ms)
+he_apply_timeout_limit (const int current_timeout, const int64_t remaining_ms)
 {
   if (remaining_ms <= 0)
     return 0;
@@ -1760,10 +1798,14 @@ SocketHappyEyeballs_process (T he)
  * @poll: Poll instance
  * @host: Hostname
  * @port: Port number
+ *
+ * Validates all input parameters for the async start API.
+ * Uses asserts for development-time checks; parameters are
+ * marked as used to avoid warnings in release builds.
  */
 static void
-he_validate_start_params (SocketDNS_T dns, SocketPoll_T poll, const char *host,
-                          int port)
+he_validate_start_params (const SocketDNS_T dns, const SocketPoll_T poll,
+                          const char *host, int port)
 {
   assert (dns);
   assert (poll);
@@ -1972,13 +2014,16 @@ sync_calculate_poll_timeout (const T he)
 /**
  * sync_process_poll_results - Process poll results for sync API
  * @he: Happy Eyeballs context
- * @pfds: Poll file descriptor array
+ * @pfds: Poll file descriptor array (read-only)
  * @attempt_map: Attempt pointer array
  * @nfds: Number of descriptors
+ *
+ * Iterates poll results and checks each attempt for completion.
+ * Stops early if a connection succeeds.
  */
 static void
 sync_process_poll_results (T he, const struct pollfd *pfds,
-                           SocketHE_Attempt_T **attempt_map, int nfds)
+                           SocketHE_Attempt_T **attempt_map, const int nfds)
 {
   for (int i = 0; i < nfds && he->state != HE_STATE_CONNECTED; i++)
     {
@@ -2036,13 +2081,15 @@ sync_try_start_fallback (T he)
 
 /**
  * sync_should_exit_loop - Check if sync loop should exit
- * @he: Happy Eyeballs context
+ * @he: Happy Eyeballs context (read-only)
  * @nfds: Number of poll descriptors
  *
  * Returns: 1 if should exit, 0 otherwise
+ *
+ * Exit conditions: no fds to poll, no pending fallback, all attempts done.
  */
 static int
-sync_should_exit_loop (const T he, int nfds)
+sync_should_exit_loop (const T he, const int nfds)
 {
   return nfds == 0 && !he_should_start_fallback (he)
          && he_all_attempts_done (he);
@@ -2085,9 +2132,12 @@ sync_handle_timeout_check (T he)
  * @timeout: Timeout in milliseconds
  *
  * Returns: poll() result, or 0 on EINTR
+ *
+ * Handles EINTR gracefully by returning 0 (continue polling).
+ * Other errors return negative values.
  */
 static int
-sync_do_poll (struct pollfd *pfds, int nfds, int timeout)
+sync_do_poll (struct pollfd *pfds, const int nfds, const int timeout)
 {
   int result = poll (pfds, nfds, timeout);
 
