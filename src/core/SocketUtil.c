@@ -40,6 +40,7 @@
 
 #include "core/SocketConfig.h"
 #include "core/SocketUtil.h"
+#include "core/SocketMetrics.h"
 
 /* ===========================================================================
  * TIME UTILITIES SUBSYSTEM
@@ -1053,12 +1054,35 @@ SocketLog_emit_structured (SocketLogLevel level, const char *component,
  * This legacy system is kept for backward compatibility with existing code.
  */
 
-/* Mutex protecting metric values */
-static pthread_mutex_t socketmetrics_legacy_mutex = PTHREAD_MUTEX_INITIALIZER;
+/* ===========================================================================
+ * LEGACY TO NEW METRICS MAPPING
+ * ===========================================================================
+ */
+static const SocketCounterMetric legacy_to_counter[SOCKET_METRIC_COUNT] = {
+    [SOCKET_METRIC_SOCKET_CONNECT_SUCCESS] = SOCKET_CTR_SOCKET_CONNECT_SUCCESS,
+    [SOCKET_METRIC_SOCKET_CONNECT_FAILURE] = SOCKET_CTR_SOCKET_CONNECT_FAILED,
+    [SOCKET_METRIC_SOCKET_SHUTDOWN_CALL] = SOCKET_CTR_SOCKET_CLOSED, /* approximate */
+    [SOCKET_METRIC_DNS_REQUEST_SUBMITTED] = SOCKET_CTR_DNS_QUERIES_TOTAL,
+    [SOCKET_METRIC_DNS_REQUEST_COMPLETED] = SOCKET_CTR_DNS_QUERIES_TOTAL, /* approximate for success */
+    [SOCKET_METRIC_DNS_REQUEST_FAILED] = SOCKET_CTR_DNS_QUERIES_FAILED,
+    [SOCKET_METRIC_DNS_REQUEST_CANCELLED] = SOCKET_CTR_DNS_QUERIES_CANCELLED,
+    [SOCKET_METRIC_DNS_REQUEST_TIMEOUT] = SOCKET_CTR_DNS_QUERIES_TIMEOUT,
+    [SOCKET_METRIC_POLL_WAKEUPS] = SOCKET_CTR_POLL_WAKEUPS,
+    [SOCKET_METRIC_POLL_EVENTS_DISPATCHED] = SOCKET_CTR_POLL_EVENTS_DISPATCHED,
+    [SOCKET_METRIC_POOL_CONNECTIONS_ADDED] = SOCKET_CTR_POOL_CONNECTIONS_CREATED,
+    [SOCKET_METRIC_POOL_CONNECTIONS_REMOVED] = SOCKET_CTR_POOL_CONNECTIONS_DESTROYED,
+    [SOCKET_METRIC_POOL_CONNECTIONS_REUSED] = SOCKET_CTR_POOL_CONNECTIONS_REUSED,
+    [SOCKET_METRIC_POOL_DRAIN_INITIATED] = SOCKET_CTR_POOL_DRAIN_STARTED,
+    [SOCKET_METRIC_POOL_DRAIN_COMPLETED] = SOCKET_CTR_POOL_DRAIN_COMPLETED,
+    [SOCKET_METRIC_POOL_HEALTH_CHECKS] = (SocketCounterMetric)-1, /* unmapped, add if needed */
+    [SOCKET_METRIC_POOL_HEALTH_FAILURES] = (SocketCounterMetric)-1,
+    [SOCKET_METRIC_POOL_VALIDATION_FAILURES] = (SocketCounterMetric)-1,
+    [SOCKET_METRIC_POOL_IDLE_CLEANUPS] = (SocketCounterMetric)-1,
+};
 
-/* Metric values array */
-static unsigned long long socketmetrics_legacy_values[SOCKET_METRIC_COUNT]
-    = { 0ULL };
+/* No mutex needed - new system handles thread safety */
+
+/* No local storage - forwards to new SocketMetrics system */
 
 /* Metric names for display/debugging */
 static const char *const socketmetrics_legacy_names[SOCKET_METRIC_COUNT]
@@ -1070,6 +1094,8 @@ static const char *const socketmetrics_legacy_names[SOCKET_METRIC_COUNT]
         "dns.request_failed",
         "dns.request_cancelled",
         "dns.request_timeout",
+        "dns.cache_hit",
+        "dns.cache_miss",
         "poll.wakeups",
         "poll.events_dispatched",
         "pool.connections_added",
@@ -1115,9 +1141,15 @@ SocketMetrics_increment (SocketMetric metric, unsigned long value)
       return;
     }
 
-  pthread_mutex_lock (&socketmetrics_legacy_mutex);
-  socketmetrics_legacy_values[metric] += value;
-  pthread_mutex_unlock (&socketmetrics_legacy_mutex);
+  SocketCounterMetric new_metric = legacy_to_counter[metric];
+  if (new_metric != (SocketCounterMetric)-1) {
+    SocketMetrics_counter_add (new_metric, (uint64_t)value);
+  } else {
+    SocketLog_emitf (SOCKET_LOG_WARN, "SocketMetrics",
+                     "Unmapped legacy metric %s (%d) ignored; consider migrating to new API",
+                     socketmetrics_legacy_names[metric], (int)metric);
+    // Legacy behavior preserved if needed by adding mapping
+  }
 }
 
 /**
@@ -1132,6 +1164,7 @@ SocketMetrics_increment (SocketMetric metric, unsigned long value)
 void
 SocketMetrics_getsnapshot (SocketMetricsSnapshot *snapshot)
 {
+  int i;
   if (snapshot == NULL)
     {
       SocketLog_emit (SOCKET_LOG_WARN, "SocketMetrics",
@@ -1139,10 +1172,18 @@ SocketMetrics_getsnapshot (SocketMetricsSnapshot *snapshot)
       return;
     }
 
-  pthread_mutex_lock (&socketmetrics_legacy_mutex);
-  memcpy (snapshot->values, socketmetrics_legacy_values,
-          sizeof (socketmetrics_legacy_values));
-  pthread_mutex_unlock (&socketmetrics_legacy_mutex);
+  for (i = 0; i < SOCKET_METRIC_COUNT; i++)
+    {
+      SocketCounterMetric new_metric = legacy_to_counter[i];
+      if (new_metric != (SocketCounterMetric)-1)
+        {
+          snapshot->values[i] = SocketMetrics_counter_get (new_metric);
+        }
+      else
+        {
+          snapshot->values[i] = 0ULL;  /* Unmapped legacy metrics return 0 */
+        }
+    }
 }
 
 /**
@@ -1156,10 +1197,8 @@ SocketMetrics_getsnapshot (SocketMetricsSnapshot *snapshot)
 void
 SocketMetrics_legacy_reset (void)
 {
-  pthread_mutex_lock (&socketmetrics_legacy_mutex);
-  memset (socketmetrics_legacy_values, 0,
-          sizeof (socketmetrics_legacy_values));
-  pthread_mutex_unlock (&socketmetrics_legacy_mutex);
+  /* Legacy reset forwards to new system reset_counters (resets all counters) */
+  SocketMetrics_reset_counters ();
 }
 
 /**
@@ -1174,7 +1213,12 @@ SocketMetrics_name (SocketMetric metric)
 {
   if (!socketmetrics_legacy_is_valid (metric))
     return "unknown";
-  return socketmetrics_legacy_names[metric];
+
+  SocketCounterMetric new_metric = legacy_to_counter[metric];
+  if (new_metric != (SocketCounterMetric)-1)
+    return SocketMetrics_counter_name (new_metric);
+  else
+    return socketmetrics_legacy_names[metric];  /* Keep legacy name for unmapped */
 }
 
 /**

@@ -376,50 +376,143 @@ ws_validate_status_101 (SocketWS_T ws, const SocketHTTP_Response *response)
 }
 
 /**
- * ws_validate_upgrade_header - Validate Upgrade header value
+ * ws_validate_websocket_upgrade_header - Validate Upgrade: websocket header (shared for req/res)
  * @ws: WebSocket context
- * @headers: HTTP headers
+ * @headers: HTTP headers from request or response
+ * @include_value: If true, include actual header value in error message for debugging
  *
- * Returns: 0 on success, -1 on error
+ * Returns: 0 on success, -1 on error. Sets error via ws_set_error.
+ *
+ * @note Used for both client response validation and server request validation.
  */
 static int
-ws_validate_upgrade_header (SocketWS_T ws, SocketHTTP_Headers_T headers)
+ws_validate_websocket_upgrade_header (SocketWS_T ws, SocketHTTP_Headers_T headers, bool include_value)
 {
-  const char *upgrade;
-
-  upgrade = SocketHTTP_Headers_get (headers, "Upgrade");
+  const char *upgrade = SocketHTTP_Headers_get (headers, "Upgrade");
   if (!upgrade || strcasecmp (upgrade, SOCKETWS_UPGRADE_VALUE) != 0)
     {
-      ws_set_error (ws, WS_ERROR_HANDSHAKE,
-                    "Missing or invalid Upgrade header: %s",
-                    upgrade ? upgrade : "(null)");
+      if (include_value)
+        {
+          ws_set_error (ws, WS_ERROR_HANDSHAKE,
+                        "Missing or invalid Upgrade header: %s",
+                        upgrade ? upgrade : "(null)");
+        }
+      else
+        {
+          ws_set_error (ws, WS_ERROR_HANDSHAKE,
+                        "Missing or invalid Upgrade header");
+        }
       return -1;
     }
   return 0;
 }
 
 /**
- * ws_validate_connection_upgrade - Validate Connection header contains Upgrade
+ * ws_validate_connection_upgrade_header - Validate Connection header contains "Upgrade" (shared for req/res)
  * @ws: WebSocket context
- * @headers: HTTP headers
+ * @headers: HTTP headers from request or response
+ * @include_value: If true, include actual header value in error message for debugging
  *
- * Returns: 0 on success, -1 on error
+ * Returns: 0 on success, -1 on error. Sets error via ws_set_error.
+ *
+ * @note Used for both client response validation and server request validation.
  */
 static int
-ws_validate_connection_upgrade (SocketWS_T ws, SocketHTTP_Headers_T headers)
+ws_validate_connection_upgrade_header (SocketWS_T ws, SocketHTTP_Headers_T headers, bool include_value)
 {
-  const char *connection;
-
-  connection = SocketHTTP_Headers_get (headers, "Connection");
-  if (!connection
-      || strcasestr (connection, SOCKETWS_CONNECTION_VALUE) == NULL)
+  const char *connection = SocketHTTP_Headers_get (headers, "Connection");
+  if (!connection || strcasestr (connection, SOCKETWS_CONNECTION_VALUE) == NULL)
     {
-      ws_set_error (ws, WS_ERROR_HANDSHAKE,
-                    "Missing or invalid Connection header: %s",
-                    connection ? connection : "(null)");
+      if (include_value)
+        {
+          ws_set_error (ws, WS_ERROR_HANDSHAKE,
+                        "Missing or invalid Connection header: %s",
+                        connection ? connection : "(null)");
+        }
+      else
+        {
+          ws_set_error (ws, WS_ERROR_HANDSHAKE,
+                        "Missing or invalid Connection header");
+        }
       return -1;
     }
   return 0;
+}
+
+/**
+ * ws_validate_base64_decoding - Shared helper to validate WebSocket base64 values
+ * @ws: WebSocket context
+ * @b64str: Input base64 string
+ * @b64_len: Length of b64str
+ * @expected_decoded_len: Expected length after base64 decode
+ * @field_desc: Field name for error messages (e.g., "Sec-WebSocket-Key")
+ *
+ * Validates base64 decoding without retaining decoded data. Uses secure clear on temp buffer.
+ * Does NOT check b64_len; caller must validate length first.
+ *
+ * Returns: 0 on success, -1 on error (sets error via ws_set_error)
+ *
+ * @note Used internally for Sec-WebSocket-Key and Sec-WebSocket-Accept validation.
+ * @security Clears temporary decode buffer to prevent sensitive data leaks.
+ * @complexity O(n) where n is decoded length
+ */
+static int
+ws_validate_base64_decoding (SocketWS_T ws, const char *b64str, size_t b64_len,
+                             size_t expected_decoded_len, const char *field_desc)
+{
+  unsigned char temp[32];
+  if (expected_decoded_len > sizeof (temp))
+    {
+      ws_set_error (ws, WS_ERROR_HANDSHAKE,
+                    "Internal error: %s decoded size too large (%zu)",
+                    field_desc, expected_decoded_len);
+      return -1;
+    }
+  ssize_t decoded = SocketCrypto_base64_decode (b64str, b64_len, temp,
+                                                expected_decoded_len);
+  SocketCrypto_secure_clear (temp, expected_decoded_len);
+  if (decoded != (ssize_t)expected_decoded_len)
+    {
+      ws_set_error (ws, WS_ERROR_HANDSHAKE,
+                    "Invalid %s format (base64 decode failed or wrong length: %zd)",
+                    field_desc, decoded);
+      return -1;
+    }
+  return 0;
+}
+
+/**
+ * ws_init_compression_if_negotiated - Initialize compression if negotiated (shared helper)
+ * @ws: WebSocket context
+ *
+ * Initializes per-message deflate compression context if negotiated during handshake.
+ * Called after successful handshake validation on both client and server sides.
+ * Logs warning if init fails but continues without compression.
+ *
+ * @note Only effective if SOCKETWS_HAS_DEFLATE defined and compression_negotiated true.
+ * @note Idempotent: safe to call multiple times.
+ * @threadsafe No - assumes single-threaded handshake completion.
+ * @see ws_compression_init() for low-level init
+ */
+static void
+ws_init_compression_if_negotiated (SocketWS_T ws)
+{
+#ifdef SOCKETWS_HAS_DEFLATE
+  if (ws->handshake.compression_negotiated)
+    {
+      if (ws_compression_init (ws) < 0)
+        {
+          SocketLog_emit (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                          "Compression init failed, continuing without");
+        }
+      else
+        {
+          ws->compression_enabled = 1;
+        }
+    }
+#else
+  (void)ws;
+#endif
 }
 
 /**
@@ -455,19 +548,8 @@ ws_validate_accept_value (SocketWS_T ws, SocketHTTP_Headers_T headers)
       return -1;
     }
 
-  unsigned char temp_hash[SOCKET_CRYPTO_SHA1_SIZE];
-  ssize_t decoded_len = SocketCrypto_base64_decode (
-      accept, accept_len, temp_hash, sizeof (temp_hash));
-  if (decoded_len != SOCKET_CRYPTO_SHA1_SIZE)
-    {
-      SocketCrypto_secure_clear (temp_hash, sizeof (temp_hash));
-      ws_set_error (ws, WS_ERROR_HANDSHAKE,
-                    "Invalid Sec-WebSocket-Accept format (base64 decode "
-                    "failed or wrong length: %zd)",
-                    decoded_len);
-      return -1;
-    }
-  SocketCrypto_secure_clear (temp_hash, sizeof (temp_hash));
+  if (ws_validate_base64_decoding (ws, accept, accept_len, SOCKET_CRYPTO_SHA1_SIZE, "Sec-WebSocket-Accept") < 0)
+    return -1;
 
   if (SocketCrypto_secure_compare (accept, ws->handshake.expected_accept,
                                    accept_len)
@@ -559,14 +641,22 @@ ws_parse_window_bits (const char *extensions, const char *param_name)
 }
 
 /**
- * ws_parse_compression_extension - Parse permessage-deflate parameters
+ * ws_parse_permessage_deflate_params - Parse permessage-deflate extension parameters (shared)
  * @ws: WebSocket context
- * @extensions: Extension header value
+ * @extensions: Sec-WebSocket-Extensions header value string
+ *
+ * Parses permessage-deflate parameters from extensions string.
+ * Sets handshake flags only if "permessage-deflate" found.
+ * Used by both client (server response) and server (client request) negotiation.
+ *
+ * @note Does not check config.enable_permessage_deflate; caller must handle.
+ * @note Window bits default to SOCKETWS_DEFAULT_DEFLATE_WINDOW_BITS if not specified.
+ * @see ws_negotiate_server_compression() for server-specific overrides.
  */
 static void
-ws_parse_compression_extension (SocketWS_T ws, const char *extensions)
+ws_parse_permessage_deflate_params (SocketWS_T ws, const char *extensions)
 {
-  if (!strstr (extensions, "permessage-deflate"))
+  if (!extensions || !strstr (extensions, "permessage-deflate"))
     return;
 
   ws->handshake.compression_negotiated = 1;
@@ -598,7 +688,7 @@ ws_parse_negotiated_extensions (SocketWS_T ws, SocketHTTP_Headers_T headers)
   if (!extensions)
     return;
 
-  ws_parse_compression_extension (ws, extensions);
+  ws_parse_permessage_deflate_params (ws, extensions);
 }
 
 /**
@@ -617,10 +707,10 @@ ws_validate_upgrade_response (SocketWS_T ws,
   if (ws_validate_status_101 (ws, response) < 0)
     return -1;
 
-  if (ws_validate_upgrade_header (ws, response->headers) < 0)
+  if (ws_validate_websocket_upgrade_header (ws, response->headers, true) < 0)
     return -1;
 
-  if (ws_validate_connection_upgrade (ws, response->headers) < 0)
+  if (ws_validate_connection_upgrade_header (ws, response->headers, true) < 0)
     return -1;
 
   if (ws_validate_accept_value (ws, response->headers) < 0)
@@ -631,20 +721,7 @@ ws_validate_upgrade_response (SocketWS_T ws,
 
   ws_parse_negotiated_extensions (ws, response->headers);
 
-#ifdef SOCKETWS_HAS_DEFLATE
-  if (ws->handshake.compression_negotiated)
-    {
-      if (ws_compression_init (ws) < 0)
-        {
-          SocketLog_emit (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-                          "Compression init failed, continuing without");
-        }
-      else
-        {
-          ws->compression_enabled = 1;
-        }
-    }
-#endif
+  ws_init_compression_if_negotiated (ws);
 
   /* Clear sensitive handshake data after successful validation */
   SocketCrypto_secure_clear (ws->handshake.client_key,
@@ -997,52 +1074,9 @@ ws_build_server_response (SocketWS_T ws, const char *client_key)
  * ============================================================================
  */
 
-/**
- * ws_validate_client_upgrade_header - Validate Upgrade header from client
- * @ws: WebSocket context
- * @headers: HTTP headers
- *
- * Returns: 0 on success, -1 on error
- */
-static int
-ws_validate_client_upgrade_header (SocketWS_T ws, SocketHTTP_Headers_T headers)
-{
-  const char *upgrade;
 
-  upgrade = SocketHTTP_Headers_get (headers, "Upgrade");
-  if (!upgrade || strcasecmp (upgrade, SOCKETWS_UPGRADE_VALUE) != 0)
-    {
-      ws_set_error (ws, WS_ERROR_HANDSHAKE,
-                    "Missing or invalid Upgrade header");
-      return -1;
-    }
-  return 0;
-}
 
-/**
- * ws_validate_client_connection_header - Validate Connection header from
- * client
- * @ws: WebSocket context
- * @headers: HTTP headers
- *
- * Returns: 0 on success, -1 on error
- */
-static int
-ws_validate_client_connection_header (SocketWS_T ws,
-                                      SocketHTTP_Headers_T headers)
-{
-  const char *connection;
 
-  connection = SocketHTTP_Headers_get (headers, "Connection");
-  if (!connection
-      || strcasestr (connection, SOCKETWS_CONNECTION_VALUE) == NULL)
-    {
-      ws_set_error (ws, WS_ERROR_HANDSHAKE,
-                    "Missing or invalid Connection header");
-      return -1;
-    }
-  return 0;
-}
 
 /**
  * ws_validate_client_key - Validate Sec-WebSocket-Key from client
@@ -1074,19 +1108,8 @@ ws_validate_client_key (SocketWS_T ws, SocketHTTP_Headers_T headers,
       return -1;
     }
 
-  unsigned char temp[SOCKETWS_KEY_RAW_SIZE];
-  ssize_t decoded_len
-      = SocketCrypto_base64_decode (key, key_len, temp, sizeof (temp));
-  if (decoded_len != SOCKETWS_KEY_RAW_SIZE)
-    {
-      SocketCrypto_secure_clear (temp, sizeof (temp));
-      ws_set_error (ws, WS_ERROR_HANDSHAKE,
-                    "Invalid Sec-WebSocket-Key format (base64 decode failed "
-                    "or wrong length: %zd)",
-                    decoded_len);
-      return -1;
-    }
-  SocketCrypto_secure_clear (temp, sizeof (temp));
+  if (ws_validate_base64_decoding (ws, key, key_len, SOCKETWS_KEY_RAW_SIZE, "Sec-WebSocket-Key") < 0)
+    return -1;
 
   *key_out = key;
   return 0;
@@ -1128,10 +1151,10 @@ ws_validate_client_upgrade_request (SocketWS_T ws,
                                     const SocketHTTP_Request *request,
                                     const char **key_out)
 {
-  if (ws_validate_client_upgrade_header (ws, request->headers) < 0)
+  if (ws_validate_websocket_upgrade_header (ws, request->headers, true) < 0)
     return -1;
 
-  if (ws_validate_client_connection_header (ws, request->headers) < 0)
+  if (ws_validate_connection_upgrade_header (ws, request->headers, true) < 0)
     return -1;
 
   if (ws_validate_client_key (ws, request->headers, key_out) < 0)
@@ -1195,28 +1218,15 @@ ws_negotiate_server_compression (SocketWS_T ws, SocketHTTP_Headers_T headers)
     return;
 
   extensions = SocketHTTP_Headers_get (headers, "Sec-WebSocket-Extensions");
-  if (!extensions || !strstr (extensions, "permessage-deflate"))
-    return;
 
-  ws->handshake.compression_negotiated = 1;
+  ws_parse_permessage_deflate_params (ws, extensions);
 
-  if (strstr (extensions, "server_no_context_takeover"))
-    ws->handshake.server_no_context_takeover = 1;
-
-  if (strstr (extensions, "client_no_context_takeover"))
-    ws->handshake.client_no_context_takeover = 1;
-
-  if (ws->config.deflate_no_context_takeover)
+  if (ws->handshake.compression_negotiated &&
+      ws->config.deflate_no_context_takeover)
     {
       ws->handshake.server_no_context_takeover = 1;
       ws->handshake.client_no_context_takeover = 1;
     }
-
-  ws->handshake.server_max_window_bits
-      = ws_parse_window_bits (extensions, "server_max_window_bits");
-
-  ws->handshake.client_max_window_bits
-      = ws_parse_window_bits (extensions, "client_max_window_bits");
 }
 
 int
@@ -1250,22 +1260,7 @@ ws_handshake_server_init (SocketWS_T ws, const SocketHTTP_Request *request)
 static void
 ws_finalize_server_handshake (SocketWS_T ws)
 {
-#ifdef SOCKETWS_HAS_DEFLATE
-  if (ws->handshake.compression_negotiated)
-    {
-      if (ws_compression_init (ws) < 0)
-        {
-          SocketLog_emit (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-                          "Compression init failed, continuing without");
-        }
-      else
-        {
-          ws->compression_enabled = 1;
-        }
-    }
-#else
-  (void)ws;
-#endif
+  ws_init_compression_if_negotiated (ws);
 }
 
 int

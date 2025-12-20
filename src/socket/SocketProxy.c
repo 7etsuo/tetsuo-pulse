@@ -90,6 +90,9 @@ static __thread size_t proxy_static_total_used = 0;
  * ============================================================================
  */
 
+/* Forward declaration for proxy_check_timeout (defined later in file) */
+static int proxy_check_timeout (struct SocketProxy_Conn_T *conn);
+
 /**
  * proxy_clear_nonblocking - Clear non-blocking mode from socket
  * @fd: File descriptor
@@ -962,6 +965,155 @@ proxy_start_async_connect (struct SocketProxy_Conn_T *conn)
     }
 
   conn->state = PROXY_STATE_CONNECTING_PROXY;
+  return 0;
+}
+
+/**
+ * proxy_setup_tls_to_proxy - Setup TLS context and state for HTTPS proxy
+ * @conn: Connection context (socket must be connected and non-blocking)
+ *
+ * Initializes TLS context with secure defaults if not provided, sets SNI hostname,
+ * configures ALPN for HTTP/1.1, transitions state to TLS_TO_PROXY, and sets
+ * handshake start time for TLS phase.
+ *
+ * @return 0 on success, -1 on failure (sets error state and result)
+ * @throws SocketTLS_Failed if context creation fails (caught and converted)
+ */
+static int
+proxy_setup_tls_to_proxy (struct SocketProxy_Conn_T *conn)
+{
+#if SOCKET_HAS_TLS
+  if (conn->tls_ctx == NULL) {
+    TRY {
+      /* Create client context with system CAs, TLS 1.3 enforcement, modern ciphers */
+      conn->tls_ctx = SocketTLSContext_new_client (NULL);
+
+      /* ALPN: http/1.1 required for HTTP CONNECT over TLS to proxy */
+      const char *alpn_protos[] = { "http/1.1" };
+      SocketTLSContext_set_alpn_protos (conn->tls_ctx, alpn_protos, 1);
+    } EXCEPT (SocketTLS_Failed) {
+      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                             "Failed to create TLS context for HTTPS proxy: %s",
+                             Socket_GetLastError ());
+      return -1;
+    } END_TRY;
+  }
+
+  SocketTLS_set_hostname (conn->socket, conn->proxy_host);
+
+  conn->state = PROXY_STATE_TLS_TO_PROXY;
+  conn->handshake_start_time_ms = socketproxy_get_time_ms ();
+  return 0;
+#else
+  socketproxy_set_error (conn, PROXY_ERROR_UNSUPPORTED,
+                         "HTTPS proxy requires TLS support (SOCKET_HAS_TLS)");
+  return -1;
+#endif
+}
+
+/**
+ * proxy_perform_sync_tls_handshake - Synchronous TLS handshake with polling
+ * @conn: Connection context in PROXY_STATE_TLS_TO_PROXY
+ *
+ * Drives non-blocking TLS handshake to completion or failure/timeout using poll.
+ * Uses handshake_timeout_ms from config or default.
+ *
+ * @return 0 on successful completion (sets tls_enabled=1), -1 on error/timeout
+ */
+static int
+proxy_perform_sync_tls_handshake (struct SocketProxy_Conn_T *conn)
+{
+#if SOCKET_HAS_TLS
+  int64_t deadline_ms = conn->handshake_start_time_ms + (int64_t)conn->handshake_timeout_ms;
+
+  while (1) {
+    /* Check timeout before each attempt */
+    if (proxy_check_timeout (conn) < 0) {
+      return -1;
+    }
+
+    TLSHandshakeState hs = SocketTLS_handshake (conn->socket);
+
+    if (hs == TLS_HANDSHAKE_COMPLETE) {
+      conn->tls_enabled = 1;
+      return 0;
+    } else if (hs == TLS_HANDSHAKE_ERROR) {
+      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                             "TLS handshake to proxy failed: %s",
+                             Socket_GetLastError ());
+      return -1;
+    }
+
+    /* Continue handshake requires I/O readiness */
+    unsigned events = (hs == TLS_HANDSHAKE_WANT_READ ? POLL_READ : POLL_WRITE);
+    short poll_events = (events == POLL_READ ? POLLIN : POLLOUT);
+    struct pollfd pfd = { .fd = Socket_fd (conn->socket), .events = poll_events, .revents = 0 };
+
+    int64_t now_ms = socketproxy_get_time_ms ();
+    int poll_to = (int)SocketTimeout_remaining_ms (deadline_ms - now_ms);
+
+    int ret = poll (&pfd, 1, poll_to);
+    if (ret < 0) {
+      if (errno == EINTR) continue;
+      socketproxy_set_error (conn, PROXY_ERROR,
+                             "poll failed during TLS handshake to proxy: %s",
+                             strerror (errno));
+      return -1;
+    }
+    if (ret == 0) {
+      /* Timeout */
+      socketproxy_set_error (conn, PROXY_ERROR_TIMEOUT,
+                             "TLS handshake to proxy timeout (%d ms)",
+                             conn->handshake_timeout_ms);
+      return -1;
+    }
+    /* Socket ready, retry handshake */
+  }
+#else
+  return -1;
+#endif
+}
+
+/**
+ * proxy_setup_after_tcp_connect - Post-TCP connection setup for proxy handshake
+ * @conn: Connection context after successful TCP connect to proxy (non-blocking)
+ * @sync_mode: 1=synchronous (perform TLS + build request), 0=asynchronous (setup only)
+ *
+ * Unified entry point after TCP connection establishment.
+ * - Non-HTTPS: Sets HANDSHAKE_SEND state, protocol timeout, builds initial request
+ * - HTTPS async: Sets up TLS (ctx, SNI, ALPN, state, TLS-phase timeout)
+ * - HTTPS sync: Sets up TLS, performs full handshake, transitions to HANDSHAKE_SEND
+ *               with protocol-phase timeout, builds request
+ *
+ * @return 0 on success/pending (async), -1 on error (sets FAILED state, error result)
+ */
+static int
+proxy_setup_after_tcp_connect (struct SocketProxy_Conn_T *conn, int sync_mode)
+{
+  if (conn->type != SOCKET_PROXY_HTTPS) {
+    /* Direct protocol handshake (SOCKS/HTTP) */
+    conn->state = PROXY_STATE_HANDSHAKE_SEND;
+    conn->handshake_start_time_ms = socketproxy_get_time_ms ();
+    return (proxy_build_initial_request (conn) == 0 ? 0 : -1);
+  }
+
+  /* HTTPS proxy: TLS tunnel to proxy server */
+  if (proxy_setup_tls_to_proxy (conn) < 0) {
+    return -1;
+  }
+
+  if (sync_mode) {
+    /* Synchronous TLS handshake completion */
+    if (proxy_perform_sync_tls_handshake (conn) < 0) {
+      return -1;
+    }
+    /* Transition to protocol handshake phase */
+    conn->state = PROXY_STATE_HANDSHAKE_SEND;
+    conn->handshake_start_time_ms = socketproxy_get_time_ms ();
+    return (proxy_build_initial_request (conn) == 0 ? 0 : -1);
+  }
+
+  /* Asynchronous: defer TLS handshake and protocol to SocketProxy_Conn_process() */
   return 0;
 }
 

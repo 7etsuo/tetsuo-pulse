@@ -19,7 +19,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <stdlib.h>
-#include <string.h>
+
 
 #include "core/SocketUtil.h"
 #include "http/SocketHTTP-private.h"
@@ -79,6 +79,9 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP);
 /** Minimum valid IPv6 literal length including brackets: [::] */
 #define URI_IPV6_MIN_LEN 4
 
+/** Maximum scheme length (e.g., https, ws, etc.) */
+#define URI_MAX_SCHEME_LEN 64
+
 /* ============================================================================
  * Constants for Media Type Parsing
  * ============================================================================
@@ -124,6 +127,32 @@ is_scheme_char (char c, int first)
   if (first)
     return isalpha ((unsigned char)c);
   return isalnum ((unsigned char)c) || c == '+' || c == '-' || c == '.';
+}
+
+/**
+ * validate_scheme - Validate scheme string per RFC 3986 §3.1
+ * @s: Scheme bytes
+ * @len: Length
+ *
+ * Checks: non-empty, first char ALPHA, subsequent scheme chars.
+ *
+ * Returns: URI_PARSE_OK or URI_PARSE_INVALID_SCHEME
+ */
+static SocketHTTP_URIResult
+validate_scheme (const char *s, size_t len)
+{
+  if (len == 0)
+    return URI_PARSE_INVALID_SCHEME;
+
+  if (!is_scheme_char (s[0], 1))
+    return URI_PARSE_INVALID_SCHEME;
+
+  for (size_t i = 1; i < len; i++) {
+    if (!is_scheme_char (s[i], 0))
+      return URI_PARSE_INVALID_SCHEME;
+  }
+
+  return URI_PARSE_OK;
 }
 
 /**
@@ -206,6 +235,79 @@ uri_alloc_component (Arena_T arena, const char *start, const char *end,
   char *copy = uri_arena_copy (arena, start, len);
   if (!copy)
     return URI_PARSE_ERROR;
+
+  *out_str = copy;
+  *out_len = len;
+  return URI_PARSE_OK;
+}
+
+/**
+ * ComponentValidator - Callback type for validating URI components before allocation.
+ * @note Returns URI_PARSE_OK or specific error code.
+ */
+typedef SocketHTTP_URIResult (*ComponentValidator)(const char *s, size_t len);
+
+/**
+ * alloc_and_validate - Generic helper to allocate, validate, and post-process URI components.
+ * @ingroup http
+ * @brief Reduces code duplication in URI component allocation and validation.
+ *
+ * @param arena Arena for memory allocation
+ * @param start Start pointer of component in input string
+ * @param end End pointer of component (exclusive)
+ * @param max_len Maximum permitted length (security limit)
+ * @param validator Optional pre-allocation validator (NULL = skip)
+ * @param post_process Optional post-allocation processor (e.g., scheme_to_lower)
+ * @param out_str Output allocated string (NULL if empty/invalid unless alloc_empty)
+ * @param out_len Output length of string
+ * @param alloc_empty If true and len==0, allocate empty "" string; else NULL
+ *
+ * @return URI_PARSE_OK on success, validator's error, URI_PARSE_TOO_LONG, or URI_PARSE_ERROR (alloc fail)
+ *
+ * @note Validates before allocating to avoid memory waste on invalid input.
+ * @note Caller must ensure start/end pointers are valid relative to input.
+ * @note post_process must not raise exceptions or allocate.
+ * @threadsafe No - uses Arena (not thread-safe)
+ * @see uri_alloc_all_components() for usage in URI parsing.
+ * @complexity O(len) for validation + O(1) alloc
+ */
+static SocketHTTP_URIResult
+alloc_and_validate (Arena_T arena, const char *start, const char *end,
+                    size_t max_len, ComponentValidator validator,
+                    void (*post_process)(char *str, size_t len),
+                    const char **out_str, size_t *out_len, int alloc_empty)
+{
+  *out_str = NULL;
+  *out_len = 0;
+
+  if (!start || end <= start) {
+    if (alloc_empty) {
+      char *empty = uri_arena_copy (arena, "", 0);
+      if (!empty)
+        return URI_PARSE_ERROR;
+      *out_str = empty;
+      *out_len = 0;
+    }
+    return URI_PARSE_OK;
+  }
+
+  size_t len = (size_t)(end - start);
+  if (len > max_len)
+    return URI_PARSE_TOO_LONG;
+
+  // Pre-validate before allocation
+  if (validator) {
+    SocketHTTP_URIResult vr = validator (start, len);
+    if (vr != URI_PARSE_OK)
+      return vr;
+  }
+
+  char *copy = uri_arena_copy (arena, start, len);
+  if (!copy)
+    return URI_PARSE_ERROR;
+
+  if (post_process)
+    post_process (copy, len);
 
   *out_str = copy;
   *out_len = len;
@@ -1119,11 +1221,15 @@ validate_token_span (const char *start, size_t len)
 /**
  * is_unreserved - Check if character is unreserved (RFC 3986)
  * @c: Character to check
+ *
+ * Unreserved characters: ALPHA / DIGIT / "-" / "." / "_" / "~"
  */
 static inline int
 is_unreserved (unsigned char c)
 {
-  return isalnum (c) || c == '-' || c == '.' || c == '_' || c == '~';
+  return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
+         || (c >= '0' && c <= '9') || c == '-' || c == '.' || c == '_'
+         || c == '~';
 }
 
 /**
@@ -1143,7 +1249,7 @@ is_sub_delims (unsigned char c)
 static inline int
 is_pchar_raw (unsigned char c)
 {
-  return is_unreserved (c) || is_sub_delims (c) || c == ':' || c == '@';
+  return SOCKETHTTP_IS_UNRESERVED (c) || is_sub_delims (c) || c == ':' || c == '@';
 }
 
 /**
@@ -1211,7 +1317,7 @@ validate_pct_encoded (const char *s, size_t len)
 static inline int
 is_reg_name_raw (unsigned char c)
 {
-  return is_unreserved (c) || is_sub_delims (c) || c == '%';
+  return SOCKETHTTP_IS_UNRESERVED (c) || is_sub_delims (c) || c == '%';
 }
 
 /**
@@ -1340,6 +1446,21 @@ validate_host (const char *host, size_t len, int *out_is_ipv6)
 }
 
 /**
+ * validate_host_wrap - Wrapper for validate_host omitting out_is_ipv6 (for ComponentValidator use)
+ * @host: Host string
+ * @len: Length
+ *
+ * Internally calls validate_host with dummy IPv6 flag.
+ * Returns: URI_PARSE_OK or error from validate_host
+ */
+static SocketHTTP_URIResult
+validate_host_wrap (const char *host, size_t len)
+{
+  int dummy = 0;
+  return validate_host (host, len, &dummy);
+}
+
+/**
  * validate_path_query - Validate path or query chars per RFC 3986 section 3.3
  * @s: String
  * @len: Length
@@ -1380,6 +1501,32 @@ validate_path_query (const char *s, size_t len, int is_path)
       i++;
     }
   return URI_PARSE_OK;
+}
+
+/**
+ * validate_path_query_path - Wrapper for path-specific validation (is_path = 1)
+ * @s: Path component string
+ * @len: Length of string
+ * @return URI_PARSE_OK or URI_PARSE_INVALID_PATH on error
+ * @see validate_path_query
+ */
+static SocketHTTP_URIResult
+validate_path_query_path (const char *s, size_t len)
+{
+  return validate_path_query (s, len, 1);
+}
+
+/**
+ * validate_path_query_nonpath - Wrapper for query/fragment validation (is_path = 0)
+ * @s: Query or fragment component string
+ * @len: Length of string
+ * @return URI_PARSE_OK or URI_PARSE_INVALID_QUERY on error
+ * @see validate_path_query
+ */
+static SocketHTTP_URIResult
+validate_path_query_nonpath (const char *s, size_t len)
+{
+  return validate_path_query (s, len, 0);
 }
 
 /**

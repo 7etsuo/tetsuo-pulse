@@ -31,36 +31,11 @@
 
 #define T SocketDTLSContext_T
 
-/* ============================================================================
- * Exception Definitions
- * ============================================================================
- */
+/* Module exceptions declared via macro below; general DTLS exceptions defined in SocketDTLS.c */
 
-const Except_T SocketDTLS_Failed
-    = { &SocketDTLS_Failed, "DTLS operation failed" };
-const Except_T SocketDTLS_HandshakeFailed
-    = { &SocketDTLS_HandshakeFailed, "DTLS handshake failed" };
-const Except_T SocketDTLS_VerifyFailed
-    = { &SocketDTLS_VerifyFailed, "DTLS certificate verification failed" };
-const Except_T SocketDTLS_CookieFailed
-    = { &SocketDTLS_CookieFailed, "DTLS cookie exchange failed" };
-const Except_T SocketDTLS_TimeoutExpired
-    = { &SocketDTLS_TimeoutExpired, "DTLS handshake timeout expired" };
-const Except_T SocketDTLS_ShutdownFailed
-    = { &SocketDTLS_ShutdownFailed, "DTLS shutdown failed" };
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketDTLSContext);
 
-/* ============================================================================
- * Thread-Local Error Buffers
- * ============================================================================
- */
-
-#ifdef _WIN32
-__declspec (thread) char dtls_context_error_buf[SOCKET_DTLS_ERROR_BUFSIZE];
-__declspec (thread) Except_T SocketDTLSContext_DetailedException;
-#else
-__thread char dtls_context_error_buf[SOCKET_DTLS_ERROR_BUFSIZE];
-__thread Except_T SocketDTLSContext_DetailedException;
-#endif
+/* Thread-local error handling via centralized SocketUtil infrastructure (socket_error_buf) */
 
 /* Global ex_data index for storing context pointer in SSL_CTX */
 static int dtls_context_exdata_idx = -1;
@@ -101,7 +76,7 @@ raise_openssl_error (const char *context)
  * @is_server: 1 for server, 0 for client
  */
 static void
-apply_dtls_defaults (SSL_CTX *ssl_ctx, int is_server)
+apply_dtls_defaults (SSL_CTX *ssl_ctx)
 {
   /* Set DTLS 1.2 minimum/maximum versions */
   if (SSL_CTX_set_min_proto_version (ssl_ctx, SOCKET_DTLS_MIN_VERSION) != 1)
@@ -134,7 +109,6 @@ apply_dtls_defaults (SSL_CTX *ssl_ctx, int is_server)
   SSL_CTX_set_verify_depth (ssl_ctx, SOCKET_DTLS_MAX_CERT_CHAIN_DEPTH);
 
   /* Note: Session cache mode is configured via SocketDTLSContext_enable_session_cache() */
-  (void)is_server;
 }
 
 /**
@@ -155,14 +129,7 @@ alloc_context (SSL_CTX *ssl_ctx, int is_server)
                                 "Failed to allocate DTLS context");
     }
 
-  ctx->arena = Arena_new ();
-  if (!ctx->arena)
-    {
-      SSL_CTX_free (ssl_ctx);
-      free (ctx);
-      RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
-                                "Failed to allocate DTLS context arena");
-    }
+  ctx->arena = Arena_new(); /* Raises Arena_Failed on failure; no NULL check needed */
 
   ctx->ssl_ctx = ssl_ctx;
   ctx->is_server = is_server;
@@ -214,11 +181,7 @@ SocketDTLSContext_new_server (const char *cert_file, const char *key_file,
   assert (cert_file);
   assert (key_file);
 
-  if (!dtls_validate_file_path (cert_file))
-    RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed, "Invalid certificate path");
-
-  if (!dtls_validate_file_path (key_file))
-    RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed, "Invalid key path");
+  /* Full path validation performed in SocketDTLSContext_load_certificate */
 
   /* Create DTLS server method context */
   const SSL_METHOD *method = DTLS_server_method ();
@@ -229,7 +192,7 @@ SocketDTLSContext_new_server (const char *cert_file, const char *key_file,
   if (!ssl_ctx)
     raise_openssl_error ("Failed to create DTLS server context");
 
-  apply_dtls_defaults (ssl_ctx, 1);
+  apply_dtls_defaults (ssl_ctx);
 
   T ctx = alloc_context (ssl_ctx, 1);
 
@@ -265,7 +228,7 @@ SocketDTLSContext_new_client (const char *ca_file)
   if (!ssl_ctx)
     raise_openssl_error ("Failed to create DTLS client context");
 
-  apply_dtls_defaults (ssl_ctx, 0);
+  apply_dtls_defaults (ssl_ctx);
 
   T ctx = alloc_context (ssl_ctx, 0);
 
@@ -662,14 +625,14 @@ alpn_select_cb (SSL *ssl, const unsigned char **out, unsigned char *outlen,
       if (client_proto + client_len > client_end)
         break;
 
-      /* Check against our protocols */
+      /* Check against our protocols using cached lengths */
       for (size_t i = 0; i < ctx->alpn.count; i++)
         {
           const char *our_proto = ctx->alpn.protocols[i];
-          size_t our_len = strlen (our_proto);
+          size_t our_len = ctx->alpn.lens[i];
 
           if (our_len == client_len
-              && memcmp (our_proto, client_proto, client_len) == 0)
+              && memcmp (our_proto, client_proto, our_len) == 0)
             {
               *out = client_proto;
               *outlen = (unsigned char)client_len;
@@ -687,12 +650,11 @@ SocketDTLSContext_set_alpn_protos (T ctx, const char **protos, size_t count)
 {
   assert (ctx);
 
+  ctx->alpn.protocols = NULL;
+  ctx->alpn.lens = NULL;
+  ctx->alpn.count = 0;
   if (!protos || count == 0)
-    {
-      ctx->alpn.protocols = NULL;
-      ctx->alpn.count = 0;
-      return;
-    }
+    return;
 
   if (count > SOCKET_DTLS_MAX_ALPN_PROTOCOLS)
     {
@@ -701,15 +663,15 @@ SocketDTLSContext_set_alpn_protos (T ctx, const char **protos, size_t count)
                                 SOCKET_DTLS_MAX_ALPN_PROTOCOLS);
     }
 
-  /* Allocate array in arena */
-  ctx->alpn.protocols
-      = Arena_alloc (ctx->arena, count * sizeof (char *), __FILE__, __LINE__);
-  if (!ctx->alpn.protocols)
+  /* Allocate lens array first */
+  ctx->alpn.lens = Arena_alloc (ctx->arena, count * sizeof (size_t), __FILE__, __LINE__);
+  if (!ctx->alpn.lens)
     RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
-                              "Failed to allocate ALPN protocol array");
+                              "Failed to allocate ALPN lens array");
 
-  /* Copy protocol strings */
-  for (size_t i = 0; i < count; i++)
+  /* Pre-validate protocols, compute lengths and wire_len (for client) */
+  size_t wire_len = 0;
+  for (size_t i = 0; i < count; ++i)
     {
       size_t len = strlen (protos[i]);
       if (len == 0 || len > SOCKET_DTLS_MAX_ALPN_LEN)
@@ -717,56 +679,69 @@ SocketDTLSContext_set_alpn_protos (T ctx, const char **protos, size_t count)
           RAISE_DTLS_CTX_ERROR_FMT (SocketDTLS_Failed,
                                     "Invalid ALPN protocol length: %zu", len);
         }
+      ctx->alpn.lens[i] = len;
 
-      size_t total_size;
-      if (!SocketSecurity_check_add (len, 1, &total_size)
-          || !SocketSecurity_check_size (total_size))
+      /* Security check for string allocation size */
+      size_t ts;
+      if (!SocketSecurity_check_add (len, 1, &ts) || !SocketSecurity_check_size (ts))
         {
-          RAISE_DTLS_CTX_ERROR_MSG (
-              SocketDTLS_Failed,
-              "Parameter string too long for secure allocation");
+          RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
+                                    "ALPN protocol string too long for allocation");
         }
+
+      /* Compute wire_len for client case */
+      size_t new_wl;
+      if (!SocketSecurity_check_add (wire_len, 1 + len, &new_wl) || !SocketSecurity_check_size (new_wl))
+        {
+          RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed, "ALPN wire format too large");
+        }
+      wire_len = new_wl;
+    }
+
+  /* Allocate protocols array */
+  ctx->alpn.protocols = Arena_alloc (ctx->arena, count * sizeof (char *), __FILE__, __LINE__);
+  if (!ctx->alpn.protocols)
+    RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
+                              "Failed to allocate ALPN protocol array");
+
+  /* Copy protocol strings using cached lengths */
+  for (size_t i = 0; i < count; ++i)
+    {
+      size_t len = ctx->alpn.lens[i];
+      size_t total_size = len + 1;
       char *copy = Arena_alloc (ctx->arena, total_size, __FILE__, __LINE__);
       if (!copy)
         RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
                                   "Failed to allocate ALPN protocol string");
-      memcpy (copy, protos[i], len + 1);
+      memcpy (copy, protos[i], total_size);
       ctx->alpn.protocols[i] = copy;
     }
 
   ctx->alpn.count = count;
 
-  /* Set server callback */
+  /* Server: set selection callback */
   if (ctx->is_server)
     {
       SSL_CTX_set_alpn_select_cb (ctx->ssl_ctx, alpn_select_cb, ctx);
     }
+  /* Client: build and set wire format using cached lengths */
   else
     {
-      /* Client: build wire format */
-      size_t wire_len = 0;
-      for (size_t i = 0; i < count; i++)
-        {
-          wire_len += 1 + strlen (protos[i]);
-        }
-
-      unsigned char *wire
-          = Arena_alloc (ctx->arena, wire_len, __FILE__, __LINE__);
+      if (wire_len == 0)
+        return;
+      unsigned char *wire = Arena_alloc (ctx->arena, wire_len, __FILE__, __LINE__);
       if (!wire)
         RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
                                   "Failed to allocate ALPN wire format");
-
       unsigned char *p = wire;
-      for (size_t i = 0; i < count; i++)
+      for (size_t i = 0; i < count; ++i)
         {
-          size_t len = strlen (protos[i]);
-          *p++ = (unsigned char)len;
+          size_t len = ctx->alpn.lens[i];
+          *p++ = (unsigned char) len;
           memcpy (p, protos[i], len);
           p += len;
         }
-
-      if (SSL_CTX_set_alpn_protos (ctx->ssl_ctx, wire, (unsigned int)wire_len)
-          != 0)
+      if (SSL_CTX_set_alpn_protos (ctx->ssl_ctx, wire, (unsigned int) wire_len) != 0)
         raise_openssl_error ("Failed to set ALPN protocols");
     }
 }

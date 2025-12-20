@@ -67,6 +67,7 @@
 #include "core/Except.h"
 #include "core/SocketCrypto.h" /* For SocketCrypto_secure_clear */
 #include "core/SocketUtil.h"
+#include "core/HashTable.h"
 #include "socket/Socket-private.h"
 #include "tls/SocketSSL-internal.h" /* Shared TLS/DTLS utilities */
 #include "tls/SocketTLS.h"
@@ -313,6 +314,65 @@ tls_handle_ssl_error (Socket_T socket, SSL *ssl, int ssl_result)
       socket->tls_handshake_done = 0;
       errno = EIO;
       return TLS_HANDSHAKE_ERROR;
+    }
+}
+
+ /**
+  * @brief tls_handle_ssl_write_result - Handle result from SSL_write or SSL_sendfile
+  * @ingroup security
+  * @param ssl SSL connection object
+  * @param ssl_result Raw result from SSL_write (int) or SSL_sendfile (ssize_t)
+  * @param operation Operation name for error message (e.g., "TLS send", "sendfile")
+  *
+  * Common handler for SSL write I/O errors. Returns bytes sent (>0), 0 for would-block
+  * (errno=EAGAIN), or raises appropriate exception for fatal errors.
+  *
+  * Matches logic in SocketTLS_send/recv for consistency. Used by kTLS sendfile and
+  * other I/O operations to avoid code duplication.
+  *
+  * @return Bytes sent on success, 0 on would-block, raises on fatal error
+  * @threadsafe Yes - per-connection SSL state
+  */
+static inline void
+tls_format_openssl_error (const char *context);
+
+/* Forward declaration to fix compilation order */
+
+static inline ssize_t
+tls_handle_ssl_write_result (SSL *ssl, ssize_t ssl_result, const char *operation)
+{
+  if (ssl_result > 0)
+    return ssl_result;
+
+  int ssl_error = SSL_get_error (ssl, (int)ssl_result);
+
+  switch (ssl_error)
+    {
+    case SSL_ERROR_WANT_READ:
+    case SSL_ERROR_WANT_WRITE:
+      errno = EAGAIN;
+      return 0;
+
+    case SSL_ERROR_ZERO_RETURN:
+      errno = 0;
+      tls_format_openssl_error (operation ? operation : "TLS write: peer closed (zero return)");
+      return -2;  /* Special: clean close - caller should raise Socket_Closed */
+
+    case SSL_ERROR_SYSCALL:
+      if (errno == 0)
+        errno = ECONNRESET;
+      tls_format_openssl_error (operation ? operation : "TLS write syscall error");
+      return -1;
+
+    case SSL_ERROR_SSL:
+      errno = EPROTO;
+      tls_format_openssl_error (operation ? operation : "TLS write protocol error");
+      return -1;
+
+    default:
+      errno = EIO;
+      tls_format_openssl_error (operation ? operation : "TLS write unknown error");
+      return -1;
     }
 }
 
@@ -615,6 +675,32 @@ typedef struct
 } TLSContextALPN;
 
 /**
+ * @brief Sharded session cache shard for concurrent access.
+ * @internal
+ */
+struct TLSSessionShard {
+  HashTable_T session_table;   /**< Hash table mapping session ID (const unsigned char*) to SSL_SESSION* */
+  pthread_mutex_t mutex;       /**< Protects shard state and hash table */
+  size_t max_sessions;         /**< Max sessions before eviction */
+  size_t current_count;        /**< Current active sessions */
+  size_t hits;                 /**< Hits on this shard */
+  size_t misses;               /**< Misses on this shard */
+  size_t stores;               /**< Stores on this shard */
+};
+typedef struct TLSSessionShard TLSSessionShard_T;
+
+/**
+ * @brief Sharded session cache manager for high-concurrency servers.
+ * @internal
+ */
+struct TLSSessionCacheSharded {
+  TLSSessionShard_T *shards;   /**< Array of shards */
+  size_t num_shards;           /**< Number of shards */
+  size_t shard_mask;           /**< num_shards - 1 for fast modulo */
+};
+typedef struct TLSSessionCacheSharded TLSSessionCacheSharded_T;
+
+/**
  * @brief TLS context structure for managing OpenSSL SSL_CTX with secure
  * defaults, certificates, verification, ALPN, and session caching.
  * @ingroup security
@@ -629,6 +715,8 @@ struct T
   int is_server;    /**< 1 for server context, 0 for client context. */
   int session_cache_enabled; /**< Flag to enable session caching (default: 1).
                               */
+  TLSSessionCacheSharded_T sharded_session_cache; /**< Sharded session cache structure for multi-threaded scalability */
+  int sharded_enabled; /**< 1 if sharded session cache is active (disables standard cache) */
   size_t session_cache_size; /**< Maximum number of sessions in cache (default:
                                 1024). */
   size_t cache_hits;         /**< Number of session resumptions (hits). */

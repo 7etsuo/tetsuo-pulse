@@ -80,14 +80,24 @@ static int g_dns_timeout_ms = SOCKET_DEFAULT_DNS_TIMEOUT_MS;
  * init_global_dns_resolver - One-time initialization of global DNS resolver
  *
  * Called exactly once via pthread_once. Creates the global DNS resolver
- * with default configuration.
+ * with default configuration. On allocation failure, logs error and leaves
+ * resolver NULL (callers must handle NULL resolver gracefully).
  */
 static void
 init_global_dns_resolver (void)
 {
-  g_dns_resolver = SocketDNS_new ();
-  if (g_dns_resolver)
+  TRY
+  {
+    g_dns_resolver = SocketDNS_new ();
     SocketDNS_settimeout (g_dns_resolver, g_dns_timeout_ms);
+  }
+  EXCEPT (SocketDNS_Failed)
+  {
+    SOCKET_LOG_ERROR_MSG ("Failed to initialize global DNS resolver: %s",
+                          Except_frame.exception->reason);
+    g_dns_resolver = NULL;
+  }
+  END_TRY;
 }
 
 SocketDNS_T
@@ -155,7 +165,10 @@ int
 socketcommon_sanitize_timeout (int timeout_ms)
 {
   if (timeout_ms < 0)
-    return 0;
+    {
+      SOCKET_LOG_WARN_MSG ("Negative timeout %d clamped to 0", timeout_ms);
+      return 0;
+    }
   return timeout_ms;
 }
 
@@ -572,21 +585,8 @@ socketcommon_validate_hostname_labels (const char *hostname)
 bool
 socketcommon_is_ip_address (const char *host)
 {
-  if (!host)
-    return false;
-
-  size_t len = strlen (host);
-  if (len == 0 || len > SOCKET_ERROR_MAX_HOSTNAME)
-    return false;
-
-  struct in_addr addr4;
-  struct in6_addr addr6;
-
-  if (inet_pton (SOCKET_AF_INET, host, &addr4) == 1)
-    return true;
-  if (inet_pton (SOCKET_AF_INET6, host, &addr6) == 1)
-    return true;
-  return false;
+  int dummy_family;
+  return SocketCommon_parse_ip (host, &dummy_family) != 0;
 }
 
 /**
@@ -1177,14 +1177,17 @@ SocketCommon_setup_hints (struct addrinfo *hints, int socktype, int flags)
 }
 
 /**
- * socketcommon_parse_port_for_dns - Parse port string for DNS resolution
- * @port_str: Port string to parse (may be NULL or empty)
+ * socketcommon_parse_port_number - Parse port string to integer port number
+ * @str: Port string to parse (may be NULL or empty)
  *
- * Returns: Port number (1-65535), or 0 for unspecified/invalid
+ * Returns: Port number (0-65535), or 0 on invalid input
  * Thread-safe: Yes (preserves errno)
+ *
+ * Handles NULL/empty input gracefully, returning 0.
+ * Validates numeric range including port 0 (OS-assigned).
  */
 static int
-socketcommon_parse_port_for_dns (const char *port_str)
+socketcommon_parse_port_number (const char *port_str)
 {
   char *endptr;
   long p;
@@ -1196,8 +1199,8 @@ socketcommon_parse_port_for_dns (const char *port_str)
   saved_errno = errno;
   errno = 0;
   p = strtol (port_str, &endptr, 10);
-  if (errno == 0 && endptr != port_str && *endptr == '\0' && p >= 1
-      && p <= 65535)
+  if (errno == 0 && endptr != port_str && *endptr == '\0' && p >= 0
+      && p <= SOCKET_MAX_PORT)
     {
       errno = saved_errno;
       return (int)p;
@@ -1233,7 +1236,7 @@ socketcommon_perform_getaddrinfo (const char *host, const char *port_str,
   int timeout_ms;
 
   /* Parse port string safely with validation */
-  port = socketcommon_parse_port_for_dns (port_str);
+  port = socketcommon_parse_port_number (port_str);
 
   /* Get global DNS resolver with timeout support */
   dns = SocketCommon_get_dns_resolver ();
@@ -1929,23 +1932,7 @@ socketcommon_duplicate_address (Arena_T arena, const char *addr_str)
 static int
 socketcommon_parse_port_string (const char *serv)
 {
-  char *endptr = NULL;
-  long port_long = 0;
-  int saved_errno;
-
-  assert (serv);
-
-  saved_errno = errno;
-  errno = 0;
-  port_long = strtol (serv, &endptr, 10);
-  if (errno == 0 && endptr != serv && *endptr == '\0' && port_long >= 0
-      && port_long <= SOCKET_MAX_PORT)
-    {
-      errno = saved_errno;
-      return (int)port_long;
-    }
-  errno = saved_errno;
-  return 0;
+  return socketcommon_parse_port_number (serv);
 }
 
 void

@@ -37,37 +37,25 @@
  */
 
 /**
- * timewindow_clamp_elapsed - Clamp elapsed time to valid range
- * @elapsed: Time elapsed since window start
- * @duration: Window duration
+ * timewindow_clamp_to_duration - Clamp elapsed time to [0, duration]
+ * @elapsed: Raw elapsed time (may be negative or oversized)
+ * @duration: Positive window duration
  *
- * Returns: Clamped elapsed time in [0, duration]
- */
-static int64_t
-timewindow_clamp_elapsed (int64_t elapsed, int duration)
-{
-        if (elapsed < 0)
-                return 0;
-        if (elapsed > duration)
-                return duration;
-        return elapsed;
-}
-
-/**
- * timewindow_calculate_progress - Calculate progress through window as float
- * @elapsed: Time elapsed since window start
- * @duration_ms: Window duration
+ * Returns: Clamped value for consistent progress calculations
  *
- * Returns: Progress in [0.0, 1.0]
+ * Used internally by progress tracking functions to handle clock skew
+ * and overflow cases uniformly.
  */
-static float
-timewindow_calculate_progress (int64_t elapsed, int duration_ms)
-{
-        if (duration_ms <= 0)
-                return 1.0f;
-
-        elapsed = timewindow_clamp_elapsed (elapsed, duration_ms);
-        return (float)elapsed / (float)duration_ms;
+static inline int64_t
+timewindow_clamp_to_duration(int64_t elapsed, int duration) {
+    if (duration <= 0)
+        return 0;
+    if (elapsed < 0)
+        return 0;
+    int64_t d = duration;
+    if (elapsed > d)
+        return d;
+    return elapsed;
 }
 
 /* ============================================================================
@@ -89,13 +77,12 @@ TimeWindow_init (T *tw, int duration_ms, int64_t now_ms)
 int
 TimeWindow_rotate_if_needed (T *tw, int64_t now_ms)
 {
-        int64_t elapsed;
-
         assert (tw != NULL);
 
-        elapsed = now_ms - tw->window_start_ms;
+        int64_t elapsed = now_ms - tw->window_start_ms;
+        int64_t clamped_elapsed = timewindow_clamp_to_duration(elapsed, tw->duration_ms);
 
-        if (elapsed >= tw->duration_ms) {
+        if (clamped_elapsed >= tw->duration_ms) {
                 tw->previous_count = tw->current_count;
                 tw->current_count = 0;
                 tw->window_start_ms = now_ms;
@@ -117,21 +104,23 @@ TimeWindow_record (T *tw, int64_t now_ms)
 uint32_t
 TimeWindow_effective_count (const T *tw, int64_t now_ms)
 {
-        float progress;
-        float previous_weight;
-        int64_t elapsed;
-
         assert (tw != NULL);
 
-        if (tw->duration_ms <= 0)
+        int duration_ms = tw->duration_ms;
+        if (duration_ms <= 0)
                 return tw->current_count;
 
-        elapsed = now_ms - tw->window_start_ms;
-        progress = timewindow_calculate_progress (elapsed, tw->duration_ms);
-        previous_weight = 1.0f - progress;
+        int64_t elapsed = now_ms - tw->window_start_ms;
+        int64_t clamped_elapsed = timewindow_clamp_to_duration(elapsed, duration_ms);
 
-        return tw->current_count
-               + (uint32_t)(tw->previous_count * previous_weight);
+        int64_t remaining = (int64_t)duration_ms - clamped_elapsed;
+        uint32_t weighted_previous = 0;
+        if (remaining > 0) {
+                uint64_t temp = ((uint64_t)tw->previous_count * (uint64_t)remaining) / (uint64_t)duration_ms;
+                weighted_previous = (uint32_t)temp;
+        }
+
+        return tw->current_count + weighted_previous;
 }
 
 void
@@ -147,12 +136,16 @@ TimeWindow_reset (T *tw, int64_t now_ms)
 float
 TimeWindow_progress (const T *tw, int64_t now_ms)
 {
-        int64_t elapsed;
-
         assert (tw != NULL);
 
-        elapsed = now_ms - tw->window_start_ms;
-        return timewindow_calculate_progress (elapsed, tw->duration_ms);
+        int duration_ms = tw->duration_ms;
+        if (duration_ms <= 0)
+                return 1.0f;
+
+        int64_t elapsed = now_ms - tw->window_start_ms;
+        int64_t clamped_elapsed = timewindow_clamp_to_duration(elapsed, duration_ms);
+
+        return (float)clamped_elapsed / (float)duration_ms;
 }
 
 #undef T

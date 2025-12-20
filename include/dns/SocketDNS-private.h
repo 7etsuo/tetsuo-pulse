@@ -226,7 +226,7 @@ struct SocketDNS_Request_T
   struct SocketDNS_Request_T *queue_next; /**< Queue linked list pointer */
   struct SocketDNS_Request_T *hash_next;  /**< Hash table chain pointer */
   unsigned hash_value;                    /**< Cached hash for O(1) removal */
-  struct timespec submit_time; /**< CLOCK_MONOTONIC submission timestamp */
+  int64_t submit_time_ms; /**< Monotonic timestamp (ms since boot) at submission for timeout calculation. Use Socket_get_monotonic_ms() for current time. */
   int timeout_override_ms;     /**< Per-request timeout (-1 = use default) */
   struct SocketDNS_T *dns_resolver; /**< Back-pointer to owning resolver */
 };

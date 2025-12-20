@@ -42,6 +42,27 @@
 #include "core/SocketUtil.h"
 #include "socket/SocketCommon.h"
 
+/* ============================================================================
+ * Exception Definitions
+ * ============================================================================
+ */
+
+const Except_T SocketDTLS_Failed
+    = { .type = &SocketDTLS_Failed, .reason = "DTLS operation failed" };
+const Except_T SocketDTLS_HandshakeFailed
+    = { .type = &SocketDTLS_HandshakeFailed, .reason = "DTLS handshake failed" };
+const Except_T SocketDTLS_VerifyFailed
+    = { .type = &SocketDTLS_VerifyFailed,
+        .reason = "DTLS certificate verification failed" };
+const Except_T SocketDTLS_CookieFailed
+    = { .type = &SocketDTLS_CookieFailed,
+        .reason = "DTLS cookie exchange failed" };
+const Except_T SocketDTLS_TimeoutExpired
+    = { .type = &SocketDTLS_TimeoutExpired,
+        .reason = "DTLS handshake timeout expired" };
+const Except_T SocketDTLS_ShutdownFailed
+    = { .type = &SocketDTLS_ShutdownFailed, .reason = "DTLS shutdown failed" };
+
 #ifndef SOCKET_DTLS_DEFAULT_SHUTDOWN_TIMEOUT_MS
 #define SOCKET_DTLS_DEFAULT_SHUTDOWN_TIMEOUT_MS                               \
   5000 /* ms, configurable via compile-time override */

@@ -597,6 +597,7 @@ struct SocketHTTP1_Parser
   int64_t content_length; /* From header, or -1 */
   int64_t body_remaining; /* Bytes remaining */
   int body_complete;      /* Body fully received */
+  uint64_t body_read;       /**< Total body bytes processed */
 
   /* Chunked encoding */
   size_t chunk_size;      /* Current chunk size */

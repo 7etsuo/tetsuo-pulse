@@ -53,14 +53,7 @@
 /** RFC 6455: MSB of 64-bit payload length must be 0 */
 #define SOCKETWS_PAYLOAD_MSB_MASK (1ULL << 63)
 
-/** Bit shift constants for 64-bit length encoding (network byte order) */
-#define SOCKETWS_SHIFT_BYTE_7 56
-#define SOCKETWS_SHIFT_BYTE_6 48
-#define SOCKETWS_SHIFT_BYTE_5 40
-#define SOCKETWS_SHIFT_BYTE_4 32
-#define SOCKETWS_SHIFT_BYTE_3 24
-#define SOCKETWS_SHIFT_BYTE_2 16
-#define SOCKETWS_SHIFT_BYTE_1 8
+
 
 /* ============================================================================
  * Static Helper Function Declarations
@@ -84,6 +77,7 @@ static SocketWS_Error ws_parse_basic_header (SocketWS_FrameParse *frame);
 static SocketWS_Error
 ws_validate_frame_header (const SocketWS_FrameParse *frame);
 static void ws_determine_header_length (SocketWS_FrameParse *frame);
+static void ws_transition_to_payload (SocketWS_FrameParse *frame);
 static SocketWS_Error ws_parse_extended_length (SocketWS_FrameParse *frame);
 static void ws_extract_mask_key (SocketWS_FrameParse *frame);
 static SocketWS_Error ws_process_header_state (SocketWS_FrameParse *frame,
@@ -101,8 +95,7 @@ static SocketWS_Error ws_process_mask_key_state (SocketWS_FrameParse *frame,
 /* Frame Header Building Helpers */
 static size_t ws_encode_payload_length (unsigned char *header, size_t offset,
                                         int masked, uint64_t payload_len);
-static void ws_encode_64bit_length (unsigned char *header, size_t offset,
-                                    uint64_t payload_len);
+static size_t ws_encode_extended_length (unsigned char *header, size_t offset, uint64_t len, unsigned char code);
 
 /* Mask Key Helpers */
 static int ws_ensure_mask_key (SocketWS_T ws,
@@ -339,6 +332,17 @@ ws_validate_frame_header (const SocketWS_FrameParse *frame)
 }
 
 /**
+ * ws_transition_to_payload - Transition frame state to payload reading
+ * @frame: Frame parsing state
+ */
+static void
+ws_transition_to_payload (SocketWS_FrameParse *frame)
+{
+  frame->state = WS_FRAME_STATE_PAYLOAD;
+  frame->payload_received = 0;
+}
+
+/**
  * ws_determine_header_length - Calculate total header size
  * @frame: Frame parsing state
  *
@@ -347,28 +351,22 @@ ws_validate_frame_header (const SocketWS_FrameParse *frame)
 static void
 ws_determine_header_length (SocketWS_FrameParse *frame)
 {
-  if (frame->payload_len == SOCKETWS_EXTENDED_LEN_16)
+  if (frame->payload_len == SOCKETWS_EXTENDED_LEN_16 ||
+      frame->payload_len == SOCKETWS_EXTENDED_LEN_64)
     {
-      frame->header_needed
-          = SOCKETWS_BASE_HEADER_SIZE + SOCKETWS_EXTENDED_LEN_16_SIZE;
-      frame->state = WS_FRAME_STATE_EXTENDED_LEN;
-    }
-  else if (frame->payload_len == SOCKETWS_EXTENDED_LEN_64)
-    {
-      frame->header_needed
-          = SOCKETWS_BASE_HEADER_SIZE + SOCKETWS_EXTENDED_LEN_64_SIZE;
+      size_t ext_size = (frame->payload_len == SOCKETWS_EXTENDED_LEN_16) ?
+                        SOCKETWS_EXTENDED_LEN_16_SIZE : SOCKETWS_EXTENDED_LEN_64_SIZE;
+      frame->header_needed = SOCKETWS_BASE_HEADER_SIZE + ext_size;
       frame->state = WS_FRAME_STATE_EXTENDED_LEN;
     }
   else if (frame->masked)
     {
-      frame->header_needed
-          = SOCKETWS_BASE_HEADER_SIZE + SOCKETWS_MASK_KEY_SIZE;
+      frame->header_needed = SOCKETWS_BASE_HEADER_SIZE + SOCKETWS_MASK_KEY_SIZE;
       frame->state = WS_FRAME_STATE_MASK_KEY;
     }
   else
     {
-      frame->state = WS_FRAME_STATE_PAYLOAD;
-      frame->payload_received = 0;
+      ws_transition_to_payload (frame);
     }
 }
 
@@ -382,27 +380,14 @@ static SocketWS_Error
 ws_parse_extended_length (SocketWS_FrameParse *frame)
 {
   size_t offset = SOCKETWS_BASE_HEADER_SIZE;
-  int i;
-
-  if (frame->payload_len == SOCKETWS_EXTENDED_LEN_16)
+  int bytes = (frame->payload_len == SOCKETWS_EXTENDED_LEN_16) ? 2 : SOCKETWS_EXTENDED_LEN_64_SIZE;
+  frame->payload_len = 0;
+  for (int i = 0; i < bytes; i++)
     {
-      frame->payload_len = ((uint64_t)frame->header_buf[offset] << 8)
-                           | (uint64_t)frame->header_buf[offset + 1];
+      frame->payload_len = (frame->payload_len << 8) | frame->header_buf[offset + i];
     }
-  else
-    {
-      frame->payload_len = 0;
-      for (i = 0; i < SOCKETWS_EXTENDED_LEN_64_SIZE; i++)
-        {
-          frame->payload_len <<= 8;
-          frame->payload_len |= frame->header_buf[offset + i];
-        }
-
-      /* RFC 6455: MSB must be 0 */
-      if (frame->payload_len & SOCKETWS_PAYLOAD_MSB_MASK)
-        return WS_ERROR_PROTOCOL;
-    }
-
+  if (bytes == SOCKETWS_EXTENDED_LEN_64_SIZE && (frame->payload_len & SOCKETWS_PAYLOAD_MSB_MASK))
+    return WS_ERROR_PROTOCOL;
   return WS_OK;
 }
 
@@ -483,8 +468,7 @@ ws_process_extended_len_state (SocketWS_FrameParse *frame,
       return WS_ERROR_WOULD_BLOCK;
     }
 
-  frame->state = WS_FRAME_STATE_PAYLOAD;
-  frame->payload_received = 0;
+  ws_transition_to_payload (frame);
   return WS_OK;
 }
 
@@ -511,8 +495,7 @@ ws_process_mask_key_state (SocketWS_FrameParse *frame,
 
   ws_extract_mask_key (frame);
 
-  frame->state = WS_FRAME_STATE_PAYLOAD;
-  frame->payload_received = 0;
+  ws_transition_to_payload (frame);
   return WS_OK;
 }
 
@@ -586,18 +569,16 @@ ws_frame_parse_header (SocketWS_FrameParse *frame, const unsigned char *data,
  * @offset: Starting offset in header
  * @payload_len: Payload length to encode
  */
-static void
-ws_encode_64bit_length (unsigned char *header, size_t offset,
-                        uint64_t payload_len)
+static size_t
+ws_encode_extended_length (unsigned char *header, size_t offset, uint64_t len, unsigned char code)
 {
-  header[offset] = (payload_len >> SOCKETWS_SHIFT_BYTE_7) & 0xFF;
-  header[offset + 1] = (payload_len >> SOCKETWS_SHIFT_BYTE_6) & 0xFF;
-  header[offset + 2] = (payload_len >> SOCKETWS_SHIFT_BYTE_5) & 0xFF;
-  header[offset + 3] = (payload_len >> SOCKETWS_SHIFT_BYTE_4) & 0xFF;
-  header[offset + 4] = (payload_len >> SOCKETWS_SHIFT_BYTE_3) & 0xFF;
-  header[offset + 5] = (payload_len >> SOCKETWS_SHIFT_BYTE_2) & 0xFF;
-  header[offset + 6] = (payload_len >> SOCKETWS_SHIFT_BYTE_1) & 0xFF;
-  header[offset + 7] = payload_len & 0xFF;
+  header[offset++] = code;
+  int bytes = (code == SOCKETWS_EXTENDED_LEN_16) ? 2 : SOCKETWS_EXTENDED_LEN_64_SIZE;
+  for (int i = 0; i < bytes; i++)
+    {
+      header[offset++] = (len >> ((bytes - 1 - i) * 8)) & 0xFF;
+    }
+  return offset;
 }
 
 /**
@@ -621,15 +602,11 @@ ws_encode_payload_length (unsigned char *header, size_t offset, int masked,
     }
   else if (payload_len <= SOCKETWS_MAX_16BIT_PAYLOAD)
     {
-      header[offset++] = mask_bit | SOCKETWS_EXTENDED_LEN_16;
-      header[offset++] = (payload_len >> 8) & 0xFF;
-      header[offset++] = payload_len & 0xFF;
+      offset = ws_encode_extended_length (header, offset, payload_len, SOCKETWS_EXTENDED_LEN_16);
     }
   else
     {
-      header[offset++] = mask_bit | SOCKETWS_EXTENDED_LEN_64;
-      ws_encode_64bit_length (header, offset, payload_len);
-      offset += SOCKETWS_EXTENDED_LEN_64_SIZE;
+      offset = ws_encode_extended_length (header, offset, payload_len, SOCKETWS_EXTENDED_LEN_64);
     }
 
   return offset;
@@ -699,16 +676,13 @@ ws_ensure_mask_key (SocketWS_T ws,
 {
   *masked = (ws->role == WS_ROLE_CLIENT);
 
-  if (!*masked)
+  if (*masked)
     {
-      memset (mask_key, 0, SOCKETWS_MASK_KEY_SIZE);
-      return 0;
-    }
-
-  if (SocketCrypto_random_bytes (mask_key, SOCKETWS_MASK_KEY_SIZE) != 0)
-    {
-      ws_set_error (ws, WS_ERROR, "Failed to generate mask key");
-      return -1;
+      if (SocketCrypto_random_bytes (mask_key, SOCKETWS_MASK_KEY_SIZE) != 0)
+        {
+          ws_set_error (ws, WS_ERROR, "Failed to generate mask key");
+          return -1;
+        }
     }
 
   return 0;
@@ -1024,17 +998,17 @@ ws_finalize_frame (SocketWS_T ws, SocketWS_FrameParse *frame_out)
 {
   frame_out->state = WS_FRAME_STATE_COMPLETE;
 
+  int ret = -2;
   if (ws->frame.fin)
     {
       if (ws_message_finalize (ws) < 0)
-        return -1;
-
-      ws_frame_reset (&ws->frame);
-      return 1;
+        ret = -1;
+      else
+        ret = 1;
     }
 
   ws_frame_reset (&ws->frame);
-  return -2;
+  return ret;
 }
 
 /**
@@ -1174,6 +1148,7 @@ ws_recv_frame (SocketWS_T ws, SocketWS_FrameParse *frame_out)
     }
 
   *frame_out = ws->frame;
+  bool is_control_frame = ws_is_control_opcode (ws->frame.opcode);
 
   /* Validate masking per RFC 6455 Section 5.3:
    * - Client -> Server frames MUST be masked (server receives masked=1)
@@ -1197,9 +1172,12 @@ ws_recv_frame (SocketWS_T ws, SocketWS_FrameParse *frame_out)
   result = ws_process_payload (ws);
   if (result == -1)
     return -1;
+
+  *frame_out = ws->frame;
+
   if (result == -2)
     return -2;
-  if (result == 0 && ws_is_control_opcode (ws->frame.opcode))
+  if (result == 0 && is_control_frame)
     return 0;
 
   if (ws->frame.payload_received >= ws->frame.payload_len)

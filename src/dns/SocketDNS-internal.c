@@ -27,7 +27,7 @@
 #include <string.h>
 
 #include "core/Arena.h"
-#include "core/SocketSecurity.h"
+
 #include "dns/SocketDNS-private.h"
 #include "dns/SocketDNS.h"
 
@@ -338,17 +338,34 @@ setup_thread_attributes (pthread_attr_t *attr)
 }
 
 /**
- * cleanup_partial_workers - Join already-created workers on failure
+ * cleanup_partial_workers - Join partially created workers on init failure
  * @dns: DNS resolver instance
- * @created_count: Number of threads successfully created
+ * @created_count: Number of threads already created before failure
  *
- * Thread-safe: No - called during initialization before threads are fully up
+ * Thread-safe: Partial - calls signal_shutdown_and_broadcast() with mutex (safe),
+ * but joins without full synchronization (init phase).
+ * Called when thread creation partially fails during SocketDNS_new().
+ *
+ * Signals shutdown to wake any started workers, then joins created threads.
+ * Followed by cleanup_on_init_failure() for resources.
+ *
+ * @see signal_shutdown_and_broadcast() for safe signaling.
+ * @see create_single_worker_thread() for failure path.
+ * @see cleanup_on_init_failure() for resource cleanup.
  */
+static void
+signal_shutdown_and_broadcast (struct SocketDNS_T *dns)
+{
+  pthread_mutex_lock (&dns->mutex);
+  dns->shutdown = 1;
+  pthread_cond_broadcast (&dns->queue_cond);
+  pthread_mutex_unlock (&dns->mutex);
+}
+
 static void
 cleanup_partial_workers (struct SocketDNS_T *dns, int created_count)
 {
-  dns->shutdown = 1;
-  pthread_cond_broadcast (&dns->queue_cond);
+  signal_shutdown_and_broadcast (dns);
 
   for (int i = 0; i < created_count; i++)
     pthread_join (dns->workers[i], NULL);
@@ -512,21 +529,35 @@ cleanup_on_init_failure (struct SocketDNS_T *dns,
 }
 
 /**
- * shutdown_workers - Signal and wait for worker threads
+ * signal_shutdown_and_broadcast - Signal shutdown to workers and broadcast condition
+ * @dns: DNS resolver instance
+ *
+ * Thread-safe: Yes - acquires mutex, sets shutdown flag, broadcasts queue_cond to wake waiting workers.
+ * Unlocks before return. Used during normal shutdown and partial init failure recovery.
+ *
+ * @see shutdown_workers() for full shutdown sequence including joins.
+ * @see cleanup_partial_workers() for init failure case.
+ */
+/**
+ * shutdown_workers - Gracefully shutdown worker threads
  * @d: DNS resolver instance
  *
- * Thread-safe: Yes - uses mutex internally, safe to call from main thread
+ * Thread-safe: Yes - uses signal_shutdown_and_broadcast() which protects with mutex.
  *
- * Signals shutdown and joins all worker threads. Blocks until all workers
- * have terminated.
+ * Signals all workers to exit via shutdown flag and condition broadcast, then
+ * blocks until all threads have joined. Called during SocketDNS_free() after
+ * state reset and before resource destruction.
+ *
+ * @note Blocks caller until all workers terminate.
+ * @note Called after drain_completion_pipe() to avoid stuck workers.
+ * @see signal_shutdown_and_broadcast() for low-level signaling.
+ * @see reset_dns_state() for preceding state cleanup.
+ * @see destroy_dns_resources() for following resource cleanup.
  */
 void
 shutdown_workers (T d)
 {
-  pthread_mutex_lock (&d->mutex);
-  d->shutdown = 1;
-  pthread_cond_broadcast (&d->queue_cond);
-  pthread_mutex_unlock (&d->mutex);
+  signal_shutdown_and_broadcast (d);
 
   for (int i = 0; i < d->num_workers; i++)
     pthread_join (d->workers[i], NULL);
@@ -736,7 +767,7 @@ initialize_request_fields (struct SocketDNS_Request_T *req, int port,
   req->error = 0;
   req->queue_next = NULL;
   req->hash_next = NULL;
-  clock_gettime (CLOCK_MONOTONIC, &req->submit_time);
+  req->submit_time_ms = Socket_get_monotonic_ms ();
   req->timeout_override_ms = -1;
 }
 
@@ -930,6 +961,7 @@ cancel_pending_request (struct SocketDNS_T *dns,
                         struct SocketDNS_Request_T *req)
 {
   queue_remove (dns, req);
+  hash_table_remove (dns, req);
   req->state = REQ_CANCELLED;
 }
 
@@ -960,53 +992,8 @@ request_effective_timeout_ms (const struct SocketDNS_T *dns,
   return dns->request_timeout_ms;
 }
 
-/**
- * calculate_elapsed_ms - Calculate elapsed milliseconds between two monotonic
- * timestamps
- * @start: Starting timestamp (earlier in time)
- * @end: Ending timestamp (later in time)
- *
- * Returns: Elapsed milliseconds, or LLONG_MAX on overflow/clock error (treat
- * as timed out) Thread-safe: Yes - pure function, no shared state or side
- * effects
- *
- * Computes precise elapsed time using secure arithmetic to prevent overflow.
- * Assumes monotonic clock (end >= start). Handles nsec borrow from sec_delta.
- * Uses SocketSecurity_check_multiply for safe sec * 1000 conversion.
- * @see request_timed_out() for usage in timeout checks.
- */
-static long long
-calculate_elapsed_ms (const struct timespec *start, const struct timespec *end)
-{
-  long long sec_delta = (long long)end->tv_sec - (long long)start->tv_sec;
-  long long nsec_delta = (long long)end->tv_nsec - (long long)start->tv_nsec;
-  size_t sec_delta_u;
-  size_t sec_ms_u;
-  long long sec_ms;
-  long long nsec_ms;
 
-  /* Clock error - monotonic should not decrease */
-  if (sec_delta < 0)
-    return 0LL;
 
-  /* Handle nanosecond borrow */
-  if (nsec_delta < 0)
-    {
-      sec_delta--;
-      nsec_delta += SOCKET_NS_PER_SECOND;
-    }
-
-  /* Safe overflow check for sec * 1000 */
-  sec_delta_u = (size_t)sec_delta;
-  if (!SocketSecurity_check_multiply (sec_delta_u,
-                                      (size_t)SOCKET_MS_PER_SECOND, &sec_ms_u))
-    return LLONG_MAX; /* Overflow: treat as very long elapsed */
-
-  sec_ms = (long long)sec_ms_u;
-  nsec_ms = nsec_delta / (long long)SOCKET_NS_PER_MS;
-
-  return sec_ms + nsec_ms;
-}
 
 /**
  * request_timed_out - Check if request has timed out
@@ -1014,13 +1001,14 @@ calculate_elapsed_ms (const struct timespec *start, const struct timespec *end)
  * @req: Request to check (read-only)
  *
  * Returns: 1 if timed out, 0 otherwise (including when timeout disabled)
- * Thread-safe: Yes - read-only access to req state and pure elapsed
- * calculation
+ * Thread-safe: Yes - read-only access to req state; uses thread-safe Socket_get_monotonic_ms()
  *
- * Uses CLOCK_MONOTONIC via calculate_elapsed_ms() for reliable timing immune
- * to system clock adjustments. Returns 0 if effective timeout <= 0 (disabled).
- * Overflow or clock error treated as timeout for safety.
- * @see calculate_elapsed_ms() for low-level time delta computation.
+ * Computes elapsed time using Socket_get_monotonic_ms() for reliable monotonic timing
+ * immune to system clock adjustments. Returns 0 if effective timeout <= 0 (disabled).
+ * Negative elapsed (rare clock anomaly) treated as 0 for safety.
+ *
+ * @see Socket_get_monotonic_ms() for timestamp acquisition details.
+ * @see SocketUtil.h for timing utilities.
  */
 int
 request_timed_out (const struct SocketDNS_T *dns,
@@ -1030,13 +1018,14 @@ request_timed_out (const struct SocketDNS_T *dns,
   if (timeout_ms <= 0)
     return 0;
 
-  struct timespec now;
-  clock_gettime (CLOCK_MONOTONIC, &now);
+  int64_t now_ms = Socket_get_monotonic_ms ();
+  long long elapsed_ms = now_ms - req->submit_time_ms;
 
-  long long elapsed_ms = calculate_elapsed_ms (&req->submit_time, &now);
+  /* Defensive: unlikely but handle clock anomaly */
+  if (elapsed_ms < 0)
+    elapsed_ms = 0;
 
-  /* Overflow or timeout exceeded */
-  if (elapsed_ms == LLONG_MAX || elapsed_ms >= (long long)timeout_ms)
+  if (elapsed_ms >= (long long)timeout_ms)
     return 1;
 
   return 0;

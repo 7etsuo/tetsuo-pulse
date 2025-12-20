@@ -92,12 +92,15 @@ extern void TimeWindow_record (TimeWindow_T *tw, int64_t now_ms);
  * The effective count uses linear interpolation based on progress
  * through the current window:
  *
- *   effective = current + previous * (1 - progress)
+ *   effective = current + floor( previous * remaining / duration )
  *
- * Where progress is elapsed_time / window_duration (clamped to [0,1]).
+ * Where remaining = duration - clamp(now - window_start, 0, duration)
  *
- * This provides smooth rate measurement without sudden jumps
- * at window boundaries.
+ * This uses precise integer arithmetic for exact results without
+ * floating-point precision loss. Provides smooth rate measurement
+ * without sudden jumps at window boundaries.
+ *
+ * @note Clamping handles clock skew and ensures progress in [0,1].
  */
 extern uint32_t TimeWindow_effective_count (const TimeWindow_T *tw,
                                             int64_t now_ms);

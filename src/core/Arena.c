@@ -366,34 +366,7 @@ allocate_raw_chunk (size_t total)
 
 /* ==================== Chunk Cache Operations ==================== */
 
-/**
- * chunk_cache_get - Get chunk from free cache (thread-safe)
- * @ptr_out: Output pointer for chunk header
- * @limit_out: Output pointer for chunk limit
- *
- * Returns: ARENA_CHUNK_REUSED if found, ARENA_CHUNK_NOT_REUSED otherwise
- * Thread-safe: Yes (uses global arena_mutex)
- */
-static int
-chunk_cache_get (struct ChunkHeader **ptr_out, char **limit_out)
-{
-  struct ChunkHeader *ptr;
-  int result = ARENA_CHUNK_NOT_REUSED;
 
-  pthread_mutex_lock (&arena_mutex);
-
-  if ((ptr = freechunks) != NULL)
-    {
-      freechunks = freechunks->prev;
-      nfree--;
-      *ptr_out = ptr;
-      *limit_out = chunk_limit (ptr);
-      result = ARENA_CHUNK_REUSED;
-    }
-
-  pthread_mutex_unlock (&arena_mutex);
-  return result;
-}
 
 /**
  * chunk_cache_return - Return chunk to free cache or free it
@@ -439,11 +412,7 @@ chunk_cache_return (struct ChunkHeader *chunk)
  * Returns: 1 if valid (non-zero and <= max), 0 otherwise
  * Thread-safe: Yes (pure function)
  */
-static int
-arena_validate_nbytes (size_t nbytes)
-{
-  return SocketSecurity_check_size (nbytes);
-}
+
 
 /**
  * arena_align_size - Compute ceiling-aligned allocation size
@@ -477,7 +446,7 @@ arena_calculate_aligned_size (size_t nbytes)
 {
   size_t final_size;
 
-  if (!arena_validate_nbytes (nbytes))
+  if (!SocketSecurity_check_size (nbytes))
     return 0;
 
   final_size = arena_align_size (nbytes);
@@ -492,30 +461,7 @@ arena_calculate_aligned_size (size_t nbytes)
 
 /* ==================== Chunk Linking ==================== */
 
-/**
- * arena_link_chunk - Link a chunk into the arena's chunk list
- * @arena: Arena to link chunk into
- * @chunk: Chunk header to link
- * @limit: End of chunk's usable space
- *
- * Thread-safe: No (must be called with arena->mutex held)
- *
- * Saves arena's current state into chunk header and updates arena
- * to use the new chunk for subsequent allocations.
- */
-static void
-arena_link_chunk (T arena, struct ChunkHeader *chunk, char *limit)
-{
-  /* Save current arena state into chunk header */
-  chunk->prev = arena->prev;
-  chunk->avail = arena->avail;
-  chunk->limit = arena->limit;
 
-  /* Update arena to use new chunk */
-  arena->avail = (char *)((union header *)chunk + 1);
-  arena->limit = limit;
-  arena->prev = chunk;
-}
 
 /* ==================== Chunk Allocation ==================== */
 
@@ -616,100 +562,16 @@ arena_release_all_chunks (T arena)
 
 /* ==================== Space Allocation ==================== */
 
-/**
- * arena_ensure_space - Ensure sufficient space in current chunk or allocate
- * new
- * @arena: Arena instance
- * @aligned_size: Required aligned space
- *
- * Expands arena by allocating new chunks until sufficient space available.
- * Returns: ARENA_SUCCESS if space ensured, ARENA_FAILURE otherwise
- * Thread-safe: No (must hold arena->mutex)
- * Pre: arena->mutex held by caller
- */
-static int
-arena_ensure_space (T arena, size_t aligned_size)
-{
-  while (arena->avail == NULL || arena->limit == NULL
-         || (size_t)(arena->limit - arena->avail) < aligned_size)
-    {
-      if (arena_get_chunk (arena, aligned_size) != ARENA_SUCCESS)
-        return ARENA_FAILURE;
-    }
-  return ARENA_SUCCESS;
-}
 
-/**
- * validate_arena - Common validation for arena pointer
- * @arena: Arena instance to validate
- * @func: Caller function name for error reporting
- *
- * Raises: Arena_Failed if arena is NULL
- * Thread-safe: Yes
- */
-static void
-validate_arena (const T arena, const char *func)
-{
-  if (arena == NULL)
-    SOCKET_RAISE_MSG (Arena, Arena_Failed, "NULL arena pointer in %s", func);
-}
 
-/**
- * arena_ignore_debug_info - Suppress unused warnings for debug params
- * @file: File name param (unused)
- * @line: Line number param (unused)
- *
- * Common helper to suppress compiler warnings in both alloc and calloc.
- * Thread-safe: Yes (empty function)
- */
-static inline void
-arena_ignore_debug_info (const char *file, int line)
-{
-  (void)file;
-  (void)line;
-}
 
-/**
- * arena_get_aligned_or_raise - Get aligned size or raise exception
- * @nbytes: Bytes to align
- *
- * Returns: Aligned size
- * Raises: Arena_Failed if invalid size or overflow
- * Thread-safe: Yes
- */
-static size_t
-arena_get_aligned_or_raise (size_t nbytes)
-{
-  size_t aligned_size = arena_calculate_aligned_size (nbytes);
-  if (aligned_size == 0)
-    SOCKET_RAISE_MSG (
-        Arena, Arena_Failed,
-        "Invalid allocation size: %zu bytes (overflow or exceeds limit)",
-        nbytes);
-  return aligned_size;
-}
 
-/**
- * arena_perform_locked_allocation - Allocate under arena mutex
- * @arena: Arena with mutex held
- * @aligned_size: Pre-validated aligned size
- *
- * Returns: Pointer to allocated memory
- * Raises: Arena_Failed if cannot ensure space (out of memory)
- * Pre: Caller holds arena->mutex
- * Thread-safe: No (requires external mutex protection)
- */
-static void *
-arena_perform_locked_allocation (T arena, size_t aligned_size)
-{
-  if (arena_ensure_space (arena, aligned_size) != ARENA_SUCCESS)
-    SOCKET_RAISE_MSG (Arena, Arena_Failed,
-                      "Failed to allocate chunk for %zu bytes (out of memory)",
-                      aligned_size);
-  void *result = arena->avail;
-  arena->avail += aligned_size;
-  return result;
-}
+
+
+
+
+
+
 
 /* ==================== Public API ==================== */
 
@@ -787,17 +649,79 @@ Arena_dispose (T *ap)
 void *
 Arena_alloc (T arena, size_t nbytes, const char *file, int line)
 {
-  arena_ignore_debug_info (file, line);
-  validate_arena (arena, "Arena_alloc");
+  (void)file; (void)line;
+  if (arena == NULL)
+    SOCKET_RAISE_MSG (Arena, Arena_Failed, "NULL arena pointer in %s", "Arena_alloc");
 
   if (nbytes == 0)
     SOCKET_RAISE_MSG (Arena, Arena_Failed,
                       "Zero size allocation in Arena_alloc");
 
-  size_t aligned_size = arena_get_aligned_or_raise (nbytes);
+  size_t aligned_size = arena_calculate_aligned_size (nbytes);
+  if (aligned_size == 0)
+    SOCKET_RAISE_MSG (
+        Arena, Arena_Failed,
+        "Invalid allocation size: %zu bytes (overflow or exceeds limit)",
+        nbytes);
 
   pthread_mutex_lock (&arena->mutex);
-  void *result = arena_perform_locked_allocation (arena, aligned_size);
+  while (arena->avail == NULL || arena->limit == NULL
+         || (size_t)(arena->limit - arena->avail) < aligned_size)
+    {
+      /* Try to reuse a cached chunk */
+      struct ChunkHeader *ptr;
+      char *limit;
+      size_t chunk_size;
+
+      /* Inline chunk_cache_get */
+      int cache_result = ARENA_CHUNK_NOT_REUSED;
+      pthread_mutex_lock (&arena_mutex);
+
+      if ((ptr = freechunks) != NULL)
+        {
+          freechunks = freechunks->prev;
+          nfree--;
+          limit = chunk_limit (ptr);
+          cache_result = ARENA_CHUNK_REUSED;
+        }
+
+      pthread_mutex_unlock (&arena_mutex);
+
+      if (cache_result == ARENA_CHUNK_REUSED)
+        {
+          /* Save current arena state into chunk header */
+          ptr->prev = arena->prev;
+          ptr->avail = arena->avail;
+          ptr->limit = arena->limit;
+
+          /* Update arena to use new chunk */
+          arena->avail = (char *)((union header *)ptr + 1);
+          arena->limit = limit;
+          arena->prev = ptr;
+        }
+      else
+        {
+          /* Allocate a new chunk */
+          chunk_size = (ARENA_CHUNK_SIZE < aligned_size) ? aligned_size : ARENA_CHUNK_SIZE;
+
+          if (arena_allocate_new_chunk (chunk_size, &ptr, &limit) != ARENA_SUCCESS)
+            SOCKET_RAISE_MSG (Arena, Arena_Failed,
+                              "Failed to allocate chunk for %zu bytes (out of memory)",
+                              aligned_size);
+
+          /* Save current arena state into chunk header */
+          ptr->prev = arena->prev;
+          ptr->avail = arena->avail;
+          ptr->limit = arena->limit;
+
+          /* Update arena to use new chunk */
+          arena->avail = (char *)((union header *)ptr + 1);
+          arena->limit = limit;
+          arena->prev = ptr;
+        }
+    }
+  void *result = arena->avail;
+  arena->avail += aligned_size;
   pthread_mutex_unlock (&arena->mutex);
 
   return result;
@@ -819,42 +743,29 @@ Arena_alloc (T arena, size_t nbytes, const char *file, int line)
  * Allocates count * nbytes bytes from the arena and initializes to zero.
  * Uses Arena_alloc internally with overflow protection for multiplication.
  */
-/**
- * validate_calloc_params - Validate calloc parameters and compute total
- * @count: Number of elements
- * @nbytes: Bytes per element
- * @func: Function name for error messages
- *
- * Performs overflow check for count * nbytes and validates total <= max.
- * Raises: Arena_Failed on invalid params or overflow
- * Thread-safe: Yes
- */
-static void
-validate_calloc_params (size_t count, size_t nbytes, const char *func)
+
+
+void *
+Arena_calloc (T arena, size_t count, size_t nbytes, const char *file, int line)
 {
+  (void)file; (void)line;
+  if (arena == NULL)
+    SOCKET_RAISE_MSG (Arena, Arena_Failed, "NULL arena pointer in %s", "Arena_calloc");
   if (count == 0 || nbytes == 0)
     SOCKET_RAISE_MSG (Arena, Arena_Failed,
                       "Invalid count (%zu) or nbytes (%zu) in %s", count,
-                      nbytes, func);
+                      nbytes, "Arena_calloc");
 
   size_t total;
   if (!SocketSecurity_check_multiply (count, nbytes, &total))
     SOCKET_RAISE_MSG (Arena, Arena_Failed,
                       "calloc overflow: count=%zu, nbytes=%zu in %s", count,
-                      nbytes, func);
+                      nbytes, "Arena_calloc");
 
   if (!SocketSecurity_check_size (total))
     SOCKET_RAISE_MSG (Arena, Arena_Failed,
                       "calloc size exceeds maximum: %zu (limit=%zu) in %s",
-                      total, SocketSecurity_get_max_allocation (), func);
-}
-
-void *
-Arena_calloc (T arena, size_t count, size_t nbytes, const char *file, int line)
-{
-  arena_ignore_debug_info (file, line);
-  validate_arena (arena, "Arena_calloc");
-  validate_calloc_params (count, nbytes, "Arena_calloc");
+                      total, SocketSecurity_get_max_allocation (), "Arena_calloc");
 
   /* Allocate via Arena_alloc (reuses validation and alignment logic) */
   void *ptr = Arena_alloc (arena, count * nbytes, file, line);

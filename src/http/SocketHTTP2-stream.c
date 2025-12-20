@@ -981,6 +981,7 @@ static int http2_validate_headers (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T
   int has_protocol = 0;   /* RFC 8441: Extended CONNECT :protocol pseudo-header */
   int is_connect_method = 0; /* Track if :method is CONNECT */
   int has_te = 0;
+  bool parsed_content_length = false;
 
   /* Track pseudo-header order - must appear before regular headers */
   int pseudo_section_ended = 0;
@@ -1219,10 +1220,49 @@ static int http2_validate_headers (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T
                   goto protocol_error;
                 }
             }
+
+          /* Parse first Content-Length header for validation (only first valid one used) */
+          if (!parsed_content_length && h->name_len == 14 && memcmp (h->name, "content-length", 14) == 0)
+            {
+              /* Parse Content-Length value */
+              if (h->value_len == 0)
+                {
+                  SOCKET_LOG_ERROR_MSG ("Empty Content-Length header");
+                  goto protocol_error;
+                }
+
+              int64_t cl = 0;
+              int valid = 1;
+              for (size_t j = 0; j < h->value_len; j++)
+                {
+                  if (h->value[j] < '0' || h->value[j] > '9')
+                    {
+                      valid = 0;
+                      break;
+                    }
+                  if (cl > (INT64_MAX - (h->value[j] - '0')) / 10)
+                    {
+                      valid = 0; /* Overflow */
+                      break;
+                    }
+                  cl = cl * 10 + (h->value[j] - '0');
+                }
+
+              if (!valid)
+                {
+                  SOCKET_LOG_ERROR_MSG ("Invalid Content-Length value: %.*s",
+                                        (int)h->value_len, h->value);
+                  goto protocol_error;
+                }
+
+              /* Store for later validation against total DATA received */
+              stream->expected_content_length = cl;
+              parsed_content_length = true;
+            }
         }
     }
 
-  /* Extract Content-Length for validation */
+  /* Content-Length parsing moved to main validation loop */
   for (size_t i = 0; i < count; i++)
     {
       const SocketHPACK_Header *h = &headers[i];
@@ -1260,7 +1300,7 @@ static int http2_validate_headers (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T
               goto protocol_error;
             }
 
-          /* Store Content-Length for validation */
+          /* removed duplicate */
           stream->expected_content_length = cl;
           break; /* Only use first Content-Length header */
         }
@@ -1371,83 +1411,66 @@ http2_recombine_cookie_headers (Arena_T arena, SocketHPACK_Header *headers, size
   size_t cookie_count = 0;
   size_t first_cookie_idx = (size_t)-1;
   size_t total_value_len = 0;
+  size_t *cookie_indices = NULL;
+  size_t num_cookies = 0;
 
-  /* Find all cookie headers and count them */
-  for (size_t i = 0; i < *count; i++)
-    {
-      const SocketHPACK_Header *h = &headers[i];
-      if (h->name_len == 6 && memcmp (h->name, "cookie", 6) == 0)
-        {
-          cookie_count++;
-          if (first_cookie_idx == (size_t)-1)
-            first_cookie_idx = i;
-        }
+  if (*count == 0) return 0;
+
+  cookie_indices = Arena_alloc (arena, *count * sizeof (size_t), __FILE__, __LINE__);
+  if (cookie_indices == NULL) return -1;
+
+  /* Single pass: collect cookie indices, calculate lengths, find first */
+  for (size_t i = 0; i < *count; i++) {
+    const SocketHPACK_Header *h = &headers[i];
+    if (h->name_len == 6 && memcmp (h->name, "cookie", 6) == 0) {
+      cookie_indices[num_cookies] = i;
+      if (first_cookie_idx == (size_t)-1) first_cookie_idx = i;
+      total_value_len += h->value_len;
+      num_cookies++;
     }
+  }
 
-  /* Calculate total size needed: sum of all values + delimiters between them */
-  if (cookie_count > 0)
-    {
-      for (size_t i = 0; i < *count; i++)
-        {
-          const SocketHPACK_Header *h = &headers[i];
-          if (h->name_len == 6 && memcmp (h->name, "cookie", 6) == 0)
-            {
-              total_value_len += h->value_len;
-            }
-        }
-      /* Add delimiters between cookies (N-1 delimiters for N cookies) */
-      if (cookie_count > 1)
-        total_value_len += 2 * (cookie_count - 1);
-    }
+  cookie_count = num_cookies;
 
-  /* If only one or zero cookie headers, nothing to do */
-  if (cookie_count <= 1)
-    return 0;
+  if (cookie_count <= 1) return 0;
 
-  /* Allocate space for combined cookie value */
+  total_value_len += 2 * (cookie_count - 1); /* delimiters "; " */
+
   char *combined_value = Arena_alloc (arena, total_value_len + 1, __FILE__, __LINE__);
-  if (combined_value == NULL)
-    return -1;
+  if (combined_value == NULL) return -1;
 
-  /* Build combined cookie value */
+  /* Build combined value using indices */
   size_t offset = 0;
-  size_t processed_cookies = 0;
-  for (size_t i = 0; i < *count; i++)
-    {
-      const SocketHPACK_Header *h = &headers[i];
-      if (h->name_len == 6 && memcmp (h->name, "cookie", 6) == 0)
-        {
-          /* Copy value */
-          memcpy (combined_value + offset, h->value, h->value_len);
-          offset += h->value_len;
-
-          processed_cookies++;
-          if (processed_cookies < cookie_count)
-            {
-              /* Add delimiter (except for last cookie) */
-              memcpy (combined_value + offset, "; ", 2);
-              offset += 2;
-            }
-        }
+  for (size_t k = 0; k < cookie_count; k++) {
+    size_t i = cookie_indices[k];
+    memcpy (combined_value + offset, headers[i].value, headers[i].value_len);
+    offset += headers[i].value_len;
+    if (k < cookie_count - 1) {
+      memcpy (combined_value + offset, "; ", 2);
+      offset += 2;
     }
+  }
 
-  /* Update the first cookie header with combined value */
   headers[first_cookie_idx].value = combined_value;
   headers[first_cookie_idx].value_len = total_value_len;
 
-  /* Remove subsequent cookie headers by shifting array */
+  /* Shift array, skipping extra cookies using indices */
   size_t new_count = 0;
-  for (size_t i = 0; i < *count; i++)
-    {
-      const SocketHPACK_Header *h = &headers[i];
-      if (!(h->name_len == 6 && memcmp (h->name, "cookie", 6) == 0 && i > first_cookie_idx))
-        {
-          /* Keep this header */
-          if (new_count != i)
-            headers[new_count] = *h;
-          new_count++;
-        }
+  for (size_t i = 0; i < *count; i++) {
+    int skip = 0;
+    for (size_t k = 0; k < cookie_count; k++) {
+      if (cookie_indices[k] == i && i != first_cookie_idx) {
+        skip = 1;
+        break;
+      }
     }
+    if (!skip) {
+      if (new_count != i) {
+        headers[new_count] = headers[i];
+      }
+      new_count++;
+    }
+  }
 
   *count = new_count;
   return 0;

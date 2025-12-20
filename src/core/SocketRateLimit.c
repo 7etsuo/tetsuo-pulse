@@ -21,10 +21,9 @@
  */
 
 #include <assert.h>
-#include <errno.h>
 #include <stdlib.h>
-#include <string.h>
 
+#include "core/Except.h"
 #include "core/SocketConfig.h"
 #include "core/SocketRateLimit-private.h"
 #include "core/SocketSecurity.h"
@@ -32,6 +31,37 @@
 #include "socket/SocketCommon.h"
 
 #define T SocketRateLimit_T
+
+/**
+ * WITH_LOCK - Macro to execute code with mutex acquired
+ * @limiter: Rate limiter instance
+ * @code: Code block to execute while mutex is held
+ *
+ * Simplifies common lock/unlock patterns across public API functions.
+ * Does not perform refill - add ratelimit_refill_bucket(limiter) inside code
+ * if needed. For cases requiring early unlock, use manual locking.
+ *
+ * Example:
+ *   WITH_LOCK(limiter, {
+ *     ratelimit_refill_bucket(limiter);
+ *     result = ratelimit_try_consume(limiter, tokens);
+ *   });
+ *
+ * Thread-safe: Yes
+ */
+#define WITH_LOCK(limiter, code)                                              \
+  do                                                                          \
+    {                                                                         \
+      T _l = (T)(limiter);                                                    \
+      int lock_err = pthread_mutex_lock (&_l->mutex);                         \
+      if (lock_err != 0)                                                      \
+        SOCKET_RAISE_MSG (SocketRateLimit, SocketRateLimit_Failed,            \
+                          "pthread_mutex_lock failed: %s",                    \
+                          Socket_safe_strerror (lock_err));                   \
+      TRY{ code } FINALLY { (void)pthread_mutex_unlock (&_l->mutex); }        \
+      END_TRY;                                                                \
+    }                                                                         \
+  while (0)
 
 /* Live instance count for debugging and leak detection */
 static struct SocketLiveCount ratelimit_live_tracker
@@ -89,23 +119,18 @@ ratelimit_calculate_tokens_to_add (int64_t elapsed_ms, size_t tokens_per_sec)
 static int64_t
 ratelimit_calculate_wait_ms (size_t needed, size_t tokens_per_sec)
 {
-  int64_t wait_ms;
-
   assert (tokens_per_sec > 0);
 
   size_t ms_per_token = SOCKET_MS_PER_SECOND / tokens_per_sec;
   if (ms_per_token == 0) /* tokens_per_sec too large */
     return SOCKET_RATELIMIT_IMPOSSIBLE_WAIT;
-  size_t safe_wait_ms = SocketSecurity_safe_multiply (needed, ms_per_token);
-  uint64_t wait64 = safe_wait_ms;
-  if (wait64 > (uint64_t)INT64_MAX)
-    {
-      return INT64_MAX;
-    }
 
-  wait_ms = (int64_t)wait64;
+  size_t safe_wait_ms;
+  if (!SocketSecurity_check_multiply (needed, ms_per_token, &safe_wait_ms))
+    return INT64_MAX;  /* Overflow: treat as very long wait */
 
-  return (wait_ms > 0) ? wait_ms : SOCKET_RATELIMIT_MIN_WAIT_MS;
+  int64_t wait_ms = (int64_t) safe_wait_ms;
+  return wait_ms;  /* Guaranteed > 0 and no overflow */
 }
 
 /* ============================================================================
@@ -160,16 +185,14 @@ ratelimit_add_tokens (T limiter, size_t tokens_to_add, int64_t now_ms)
   size_t new_tokens;
   if (SocketSecurity_check_add (limiter->tokens, tokens_to_add, &new_tokens))
     {
+      if (new_tokens > limiter->bucket_size)
+        new_tokens = limiter->bucket_size;
       limiter->tokens = new_tokens;
     }
   else
     {
-      /* Overflow - cap to bucket_size */
       limiter->tokens = limiter->bucket_size;
     }
-
-  if (limiter->tokens > limiter->bucket_size)
-    limiter->tokens = limiter->bucket_size;
 
   limiter->last_refill_ms = now_ms;
 }
@@ -239,6 +262,151 @@ ratelimit_compute_wait_time (const T limiter, size_t tokens)
 
   needed = tokens - limiter->tokens;
   return ratelimit_calculate_wait_ms (needed, limiter->tokens_per_sec);
+}
+
+/* ============================================================================
+ * Private Helper Functions for Public API Patterns
+ * ============================================================================
+ */
+
+/**
+ * ratelimit_try_consume_with_refill - Internal helper for try_acquire logic
+ * @limiter: Rate limiter instance
+ * @tokens: Number of tokens to try consume
+ *
+ * Performs lock, initialized check, refill, and try consume atomically.
+ * Returns: 1 success, 0 limited or invalid state
+ * Thread-safe: Yes
+ */
+static int
+ratelimit_try_consume_with_refill (T limiter, size_t tokens)
+{
+  volatile int result = 0;
+
+  WITH_LOCK (limiter, {
+    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED)
+      {
+        result = 0;
+      }
+    else
+      {
+        ratelimit_refill_bucket (_l);
+        result = ratelimit_try_consume (_l, tokens);
+      }
+  });
+
+  return result;
+}
+
+/**
+ * ratelimit_available_with_refill - Internal helper for available logic
+ * @limiter: Rate limiter instance
+ *
+ * Performs lock, check, refill, get tokens.
+ * Returns: Available tokens or 0 if invalid
+ */
+static size_t
+ratelimit_available_with_refill (T limiter)
+{
+  volatile size_t available = 0;
+
+  WITH_LOCK (limiter, {
+    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED)
+      {
+        available = 0;
+      }
+    else
+      {
+        ratelimit_refill_bucket (_l);
+        available = _l->tokens;
+      }
+  });
+
+  return available;
+}
+
+/**
+ * ratelimit_wait_time_with_refill - Internal helper for wait_time_ms logic
+ * @limiter: Rate limiter instance
+ * @tokens: Tokens needed
+ *
+ * Performs lock, check, bucket check, refill, compute wait.
+ * Returns: wait ms or impossible
+ */
+static int64_t
+ratelimit_wait_time_with_refill (T limiter, size_t tokens)
+{
+  volatile int64_t wait_ms = SOCKET_RATELIMIT_IMPOSSIBLE_WAIT;
+
+  WITH_LOCK (limiter, {
+    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED)
+      {
+        wait_ms = SOCKET_RATELIMIT_IMPOSSIBLE_WAIT;
+      }
+    else if (tokens > _l->bucket_size)
+      {
+        wait_ms = SOCKET_RATELIMIT_IMPOSSIBLE_WAIT;
+      }
+    else
+      {
+        ratelimit_refill_bucket (_l);
+        wait_ms = ratelimit_compute_wait_time (_l, tokens);
+      }
+  });
+
+  return wait_ms;
+}
+
+/**
+ * ratelimit_get_rate_locked - Internal helper for get_rate logic
+ * @limiter: Rate limiter instance
+ *
+ * Performs lock, initialized check, return tokens_per_sec or 0
+ * Returns: Current rate or 0 if invalid
+ */
+static size_t
+ratelimit_get_rate_locked (T limiter)
+{
+  volatile size_t rate = 0;
+
+  WITH_LOCK (limiter, {
+    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED)
+      {
+        rate = 0;
+      }
+    else
+      {
+        rate = _l->tokens_per_sec;
+      }
+  });
+
+  return rate;
+}
+
+/**
+ * ratelimit_get_bucket_size_locked - Internal helper for get_bucket_size logic
+ * @limiter: Rate limiter instance
+ *
+ * Performs lock, initialized check, return bucket_size or 0
+ * Returns: Current bucket size or 0 if invalid
+ */
+static size_t
+ratelimit_get_bucket_size_locked (T limiter)
+{
+  volatile size_t size = 0;
+
+  WITH_LOCK (limiter, {
+    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED)
+      {
+        size = 0;
+      }
+    else
+      {
+        size = _l->bucket_size;
+      }
+  });
+
+  return size;
 }
 
 /* ============================================================================
@@ -479,25 +647,12 @@ SocketRateLimit_free (T *limiter)
 int
 SocketRateLimit_try_acquire (T limiter, size_t tokens)
 {
-  volatile int result = 0;
-
   assert (limiter);
 
   if (tokens == 0)
     return 1;
 
-  WITH_LOCK (limiter, {
-    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED)
-      {
-        result = 0;
-      }
-    else
-      {
-        ratelimit_refill_bucket (_l);
-        result = ratelimit_try_consume (_l, tokens);
-      }
-  });
-  return result;
+  return ratelimit_try_consume_with_refill (limiter, tokens);
 }
 
 /**
@@ -515,30 +670,12 @@ SocketRateLimit_try_acquire (T limiter, size_t tokens)
 int64_t
 SocketRateLimit_wait_time_ms (T limiter, size_t tokens)
 {
-  volatile int64_t wait_ms = SOCKET_RATELIMIT_IMPOSSIBLE_WAIT;
-
   assert (limiter);
 
   if (tokens == 0)
     return 0;
 
-  WITH_LOCK (limiter, {
-    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED)
-      {
-        wait_ms = SOCKET_RATELIMIT_IMPOSSIBLE_WAIT;
-      }
-    else if (tokens > _l->bucket_size)
-      {
-        wait_ms = SOCKET_RATELIMIT_IMPOSSIBLE_WAIT;
-      }
-    else
-      {
-        ratelimit_refill_bucket (_l);
-        wait_ms = ratelimit_compute_wait_time (_l, tokens);
-      }
-  });
-
-  return wait_ms;
+  return ratelimit_wait_time_with_refill (limiter, tokens);
 }
 
 /**
@@ -553,23 +690,9 @@ SocketRateLimit_wait_time_ms (T limiter, size_t tokens)
 size_t
 SocketRateLimit_available (T limiter)
 {
-  volatile size_t available = 0;
-
   assert (limiter);
 
-  WITH_LOCK (limiter, {
-    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED)
-      {
-        available = 0;
-      }
-    else
-      {
-        ratelimit_refill_bucket (_l);
-        available = _l->tokens;
-      }
-  });
-
-  return available;
+  return ratelimit_available_with_refill (limiter);
 }
 
 /**
@@ -701,22 +824,9 @@ SocketRateLimit_configure (T limiter, size_t tokens_per_sec,
 size_t
 SocketRateLimit_get_rate (T limiter)
 {
-  volatile size_t rate = 0;
-
   assert (limiter);
 
-  WITH_LOCK (limiter, {
-    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED)
-      {
-        rate = 0;
-      }
-    else
-      {
-        rate = _l->tokens_per_sec;
-      }
-  });
-
-  return rate;
+  return ratelimit_get_rate_locked (limiter);
 }
 
 /**
@@ -729,22 +839,9 @@ SocketRateLimit_get_rate (T limiter)
 size_t
 SocketRateLimit_get_bucket_size (T limiter)
 {
-  volatile size_t size = 0;
-
   assert (limiter);
 
-  WITH_LOCK (limiter, {
-    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED)
-      {
-        size = 0;
-      }
-    else
-      {
-        size = _l->bucket_size;
-      }
-  });
-
-  return size;
+  return ratelimit_get_bucket_size_locked (limiter);
 }
 
 /**

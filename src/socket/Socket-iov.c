@@ -53,6 +53,11 @@
 
 #define T Socket_T
 
+/* Generic step function typedefs to reduce code duplication in loop implementations */
+typedef ssize_t (*SocketSendStepFn)(T socket, const void *buf, size_t len);
+typedef ssize_t (*SocketRecvStepFn)(T socket, void *buf, size_t len);
+typedef ssize_t (*SocketIovStepFn)(T socket, struct iovec *iov, int iovcnt);
+
 /* Declare module-specific exception using centralized macros */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketIOV);
 

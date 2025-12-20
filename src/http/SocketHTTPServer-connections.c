@@ -50,6 +50,10 @@ static int connection_read_initial_body (SocketHTTPServer_T server,
                                          ServerConnection *conn);
 static void connection_reject_oversized_body (SocketHTTPServer_T server,
                                               ServerConnection *conn);
+
+static void connection_init_request_ctx (SocketHTTPServer_T server,
+                                         ServerConnection *conn,
+                                         struct SocketHTTPServer_Request *ctx);
 /* Non-static - used from SocketHTTPServer.c (declared in private header) */
 
 /* ============================================================================
@@ -170,6 +174,11 @@ connection_reset_for_keepalive (ServerConnection *conn)
   SocketBuf_clear (conn->inbuf);
   SocketBuf_clear (conn->outbuf);
 
+  if (conn->body_uses_buf && conn->body_buf != NULL) {
+    SocketBuf_release (&conn->body_buf);
+    conn->body_uses_buf = 0;
+  }
+
   SocketHTTP_Headers_clear (conn->response_headers);
   conn->response_status = 0;
   conn->response_body = NULL;
@@ -236,6 +245,17 @@ connection_reject_oversized_body (SocketHTTPServer_T server,
   conn->state = CONN_STATE_CLOSED;
 }
 
+static void
+connection_init_request_ctx (SocketHTTPServer_T server, ServerConnection *conn,
+                             struct SocketHTTPServer_Request *ctx)
+{
+  ctx->server = server;
+  ctx->conn = conn;
+  ctx->h2_stream = NULL;
+  ctx->arena = conn->arena;
+  ctx->start_time_ms = conn->request_start_ms;
+}
+
 /**
  * connection_setup_body_buffer - Allocate body buffer based on mode
  * @server: HTTP server for config
@@ -255,7 +275,6 @@ connection_setup_body_buffer (SocketHTTPServer_T server, ServerConnection *conn)
   int64_t cl = SocketHTTP1_Parser_content_length (conn->parser);
   size_t max_body = server->config.max_body_size;
 
-  conn->body_mode = mode;
   conn->body_uses_buf = 0;
 
   if (mode == HTTP1_BODY_CONTENT_LENGTH && cl > 0)
@@ -283,6 +302,11 @@ connection_setup_body_buffer (SocketHTTPServer_T server, ServerConnection *conn)
       size_t initial_size = HTTPSERVER_CHUNKED_BODY_INITIAL_SIZE;
       if (initial_size > max_body)
         initial_size = max_body;
+
+      if (conn->body_uses_buf && conn->body_buf != NULL) {
+        SocketBuf_release (&conn->body_buf);
+        conn->body_uses_buf = 0;
+      }
 
       conn->body_buf = SocketBuf_new (conn->arena, initial_size);
       if (conn->body_buf == NULL)
@@ -331,8 +355,18 @@ connection_read_initial_body (SocketHTTPServer_T server, ServerConnection *conn)
       char temp_buf[HTTPSERVER_RECV_BUFFER_SIZE];
       size_t temp_avail = sizeof (temp_buf);
 
+      size_t max_body = server->config.max_body_size;
+      size_t process_len = input_len;
+      if (conn->body_received + input_len > max_body) {
+        process_len = max_body - conn->body_received;
+        if (process_len == 0) {
+          connection_reject_oversized_body (server, conn);
+          return -1;
+        }
+      }
+
       r = SocketHTTP1_Parser_read_body (conn->parser, (const char *)input,
-                                        input_len, &body_consumed, temp_buf,
+                                        process_len, &body_consumed, temp_buf,
                                         temp_avail, &written);
 
       SocketBuf_consume (conn->inbuf, body_consumed);
@@ -345,11 +379,7 @@ connection_read_initial_body (SocketHTTPServer_T server, ServerConnection *conn)
 
           /* Create request context for callback */
           struct SocketHTTPServer_Request req_ctx;
-          req_ctx.server = server;
-          req_ctx.conn = conn;
-          req_ctx.h2_stream = NULL;
-          req_ctx.arena = conn->arena;
-          req_ctx.start_time_ms = conn->request_start_ms;
+          connection_init_request_ctx (server, conn, &req_ctx);
 
           int cb_result = conn->body_callback (&req_ctx, temp_buf, written,
                                                is_final,
@@ -426,35 +456,29 @@ connection_read_initial_body (SocketHTTPServer_T server, ServerConnection *conn)
         SocketBuf_written (conn->body_buf, written);
 
       conn->body_len = SocketBuf_available (conn->body_buf);
-
-      /* Check size limit after write */
-      if (conn->body_len > max_body
-          && !SocketHTTP1_Parser_body_complete (conn->parser))
-        {
-          connection_reject_oversized_body (server, conn);
-          return -1;
-        }
     }
   else
     {
       /* Content-Length mode: use fixed buffer */
+      size_t max_body = server->config.max_body_size;
+      size_t process_len = input_len;
+      if (conn->body_len + input_len > max_body) {
+        process_len = max_body - conn->body_len;
+        if (process_len == 0) {
+          connection_reject_oversized_body (server, conn);
+          return -1;
+        }
+      }
+
       char *output = (char *)conn->body + conn->body_len;
       size_t output_avail = conn->body_capacity - conn->body_len;
 
       r = SocketHTTP1_Parser_read_body (conn->parser, (const char *)input,
-                                        input_len, &body_consumed, output,
+                                        process_len, &body_consumed, output,
                                         output_avail, &written);
 
       SocketBuf_consume (conn->inbuf, body_consumed);
       conn->body_len += written;
-
-      /* Reject oversized bodies early */
-      if (conn->body_len > server->config.max_body_size
-          && !SocketHTTP1_Parser_body_complete (conn->parser))
-        {
-          connection_reject_oversized_body (server, conn);
-          return -1;
-        }
     }
 
   if (r == HTTP1_ERROR)
@@ -511,6 +535,7 @@ connection_parse_request (SocketHTTPServer_T server, ServerConnection *conn)
 
   /* Headers complete - setup request handling */
   conn->request = SocketHTTP1_Parser_get_request (conn->parser);
+  conn->body_mode = SocketHTTP1_Parser_body_mode (conn->parser);
   conn->request_start_ms = Socket_get_monotonic_ms ();
 
   /* Run validator early to allow streaming mode setup before body buffering.
@@ -539,7 +564,7 @@ connection_parse_request (SocketHTTPServer_T server, ServerConnection *conn)
   else if (conn->request->has_body && conn->body_streaming)
     {
       /* Streaming mode enabled by validator - read initial body with callback */
-      conn->body_mode = SocketHTTP1_Parser_body_mode (conn->parser);
+
       int body_result = connection_read_initial_body (server, conn);
       if (body_result <= 0)
         return body_result;
@@ -639,11 +664,7 @@ connection_send_error (SocketHTTPServer_T server, ServerConnection *conn,
   if (server->error_handler != NULL)
     {
       struct SocketHTTPServer_Request req_ctx;
-      req_ctx.server = server;
-      req_ctx.conn = conn;
-      req_ctx.h2_stream = NULL;
-      req_ctx.arena = conn->arena;
-      req_ctx.start_time_ms = conn->request_start_ms;
+      connection_init_request_ctx (server, conn, &req_ctx);
 
       /* Handler is responsible for setting headers, body, and calling finish */
       server->error_handler (&req_ctx, status, server->error_handler_userdata);
@@ -953,6 +974,12 @@ connection_close (SocketHTTPServer_T server, ServerConnection *conn)
   /* Update global + per-server metrics */
   SERVER_GAUGE_DEC (server, SOCKET_GAU_HTTP_SERVER_ACTIVE_CONNECTIONS,
                     active_connections);
+
+  /* Release body buffer if allocated */
+  if (conn->body_uses_buf && conn->body_buf != NULL) {
+    SocketBuf_release (&conn->body_buf);
+    conn->body_uses_buf = 0;
+  }
 
   /* Free arena */
   if (conn->arena != NULL)

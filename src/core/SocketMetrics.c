@@ -615,16 +615,31 @@ histogram_compute_derived_stats (SocketMetrics_HistogramSnapshot *snap)
  *
  * Thread-safe: Yes (pure function)
  */
+static const double percentile_levels[] = {
+    PERCENTILE_P50,
+    PERCENTILE_P75,
+    PERCENTILE_P90,
+    PERCENTILE_P95,
+    PERCENTILE_P99,
+    PERCENTILE_P999
+};
+
 static void
 histogram_calculate_percentiles (const double *sorted, size_t n,
                                  SocketMetrics_HistogramSnapshot *snap)
 {
-  snap->p50 = percentile_from_sorted (sorted, n, PERCENTILE_P50);
-  snap->p75 = percentile_from_sorted (sorted, n, PERCENTILE_P75);
-  snap->p90 = percentile_from_sorted (sorted, n, PERCENTILE_P90);
-  snap->p95 = percentile_from_sorted (sorted, n, PERCENTILE_P95);
-  snap->p99 = percentile_from_sorted (sorted, n, PERCENTILE_P99);
-  snap->p999 = percentile_from_sorted (sorted, n, PERCENTILE_P999);
+  double *pfields[] = {
+    &snap->p50,
+    &snap->p75,
+    &snap->p90,
+    &snap->p95,
+    &snap->p99,
+    &snap->p999
+  };
+
+  for (size_t k = 0; k < sizeof(percentile_levels)/sizeof(percentile_levels[0]); k++) {
+    *pfields[k] = percentile_from_sorted (sorted, n, percentile_levels[k]);
+  }
 }
 
 /**

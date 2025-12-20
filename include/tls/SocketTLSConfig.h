@@ -137,13 +137,13 @@
  *
  * ## Fields
  *
- * | Field       | Type | Description                                      |
- * Default                          |
- * |-------------|------|--------------------------------------------------|----------------------------------|
- * | min_version | int  | Minimum supported TLS protocol version (OpenSSL
- * constant like TLS1_3_VERSION) | SOCKET_TLS_MIN_VERSION | | max_version | int
- * | Maximum supported TLS protocol version           | SOCKET_TLS_MAX_VERSION
- * |
+ * | Field                  | Type | Description                                      | Default                                      |
+ * |------------------------|------|--------------------------------------------------|----------------------------------------------|
+ * | min_version            | int  | Minimum supported TLS protocol version (OpenSSL constant like TLS1_3_VERSION) | SOCKET_TLS_MIN_VERSION (TLS1_3_VERSION)      |
+ * | max_version            | int  | Maximum supported TLS protocol version           | SOCKET_TLS_MAX_VERSION (TLS1_3_VERSION)      |
+ * | handshake_timeout_ms   | int  | Default handshake timeout in ms                  | SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS (30s)|
+ * | shutdown_timeout_ms    | int  | Default shutdown timeout in ms                   | SOCKET_TLS_DEFAULT_SHUTDOWN_TIMEOUT_MS (5s)  |
+ * | poll_interval_ms       | int  | Default poll interval for non-blocking ops in ms | SOCKET_TLS_POLL_INTERVAL_MS (100ms)          |
  *
  * ## Usage Example
  *
@@ -185,7 +185,32 @@ struct SocketTLSConfig_T
    * @see SOCKET_TLS_MAX_VERSION
    */
   int max_version;
-  /* Expand with ciphers, timeouts, etc. as API evolves */
+  /** Default TLS handshake timeout in milliseconds.
+   * Default: SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS (30000 ms / 30 seconds).
+   * Used by non-blocking handshake functions to prevent indefinite hangs.
+   * Set to 0 for no timeout (infinite wait).
+   * @see SocketTLS_handshake_loop()
+   * @see SocketTLSConfig_T doc for usage.
+   * @see SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS
+   */
+  int handshake_timeout_ms;
+  /** Default TLS shutdown timeout in milliseconds.
+   * Default: SOCKET_TLS_DEFAULT_SHUTDOWN_TIMEOUT_MS (5000 ms / 5 seconds).
+   * Maximum time to wait for peer's close_notify during graceful shutdown.
+   * Set to 0 for no timeout.
+   * @see SocketTLS_shutdown()
+   * @see SOCKET_TLS_DEFAULT_SHUTDOWN_TIMEOUT_MS
+   */
+  int shutdown_timeout_ms;
+  /** Default poll interval for non-blocking handshake loops in milliseconds.
+   * Default: SOCKET_TLS_POLL_INTERVAL_MS (100 ms).
+   * Controls sleep duration between handshake poll attempts for CPU efficiency.
+   * Set to 0 for busy-wait (minimal latency, high CPU).
+   * @see SocketTLS_handshake_loop_ex()
+   * @see SOCKET_TLS_POLL_INTERVAL_MS
+   */
+  int poll_interval_ms;
+  /* Future expansion: add ciphersuites string, verify modes, session cache params, OCSP/CRL settings, etc. */
 };
 
 typedef struct SocketTLSConfig_T SocketTLSConfig_T;
@@ -193,9 +218,10 @@ typedef struct SocketTLSConfig_T SocketTLSConfig_T;
  * @brief Initialize the TLS configuration with secure library defaults.
  * @ingroup security
  *
- * Populates the structure with safe defaults: sets min_version and max_version
- * to TLS 1.3 (SOCKET_TLS_MIN_VERSION == SOCKET_TLS_MAX_VERSION),
- * zero-initializes other fields. This enforces a strict TLS 1.3-only policy by
+ * Populates the structure with safe defaults: sets protocol versions to TLS 1.3-only,
+ * timeouts to secure values (30s handshake, 5s shutdown, 100ms poll), zero-initializes
+ * other fields. This enforces a strict TLS 1.3-only policy by default with balanced
+ * performance and security timeouts.
  * default, disabling legacy protocols for enhanced security against downgrade
  * attacks.
  *
@@ -212,11 +238,14 @@ typedef struct SocketTLSConfig_T SocketTLSConfig_T;
  *
  * ## Defaults Set
  *
- * | Field       | Value Set                             |
- * |-------------|---------------------------------------|
- * | min_version | SOCKET_TLS_MIN_VERSION (TLS1_3_VERSION)|
- * | max_version | SOCKET_TLS_MAX_VERSION (TLS1_3_VERSION)|
- * | other fields| 0 (zero-initialized)                  |
+ * | Field                  | Value Set                                      |
+ * |------------------------|------------------------------------------------|
+ * | min_version            | SOCKET_TLS_MIN_VERSION (TLS1_3_VERSION)        |
+ * | max_version            | SOCKET_TLS_MAX_VERSION (TLS1_3_VERSION)        |
+ * | handshake_timeout_ms   | SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS (30s)  |
+ * | shutdown_timeout_ms    | SOCKET_TLS_DEFAULT_SHUTDOWN_TIMEOUT_MS (5s)    |
+ * | poll_interval_ms       | SOCKET_TLS_POLL_INTERVAL_MS (100ms)            |
+ * | other fields           | 0 (zero-initialized)                          |
  *
  * ## Usage Example
  *

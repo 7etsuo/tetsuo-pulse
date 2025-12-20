@@ -94,12 +94,16 @@ static const char COOKIE_ATTR_SAMESITE_STR[] = "SameSite";
  * Per RFC 6265 §3.1, cookie-octet excludes CTL chars (0-31, 127-159).
  */
 static int
-is_valid_cookie_octet (unsigned char c)
+validate_cookie_octets (const unsigned char *data, size_t len)
 {
-  if (c <= 31 || (c >= 127 && c <= 159))
-    return 0;
-  if (c == ';' || c == '=' || c == ',' || c == ' ')
-    return 0;
+  size_t i;
+  for (i = 0; i < len; i++)
+    {
+      unsigned char c = data[i];
+      if (c <= 31 || (c >= 127 && c <= 159) ||
+          c == ';' || c == '=' || c == ',' || c == ' ')
+        return 0;
+    }
   return 1;
 }
 
@@ -313,6 +317,25 @@ parse_same_site (const char *value, const size_t len)
 
   return COOKIE_SAMESITE_LAX;
 }
+
+/**
+ * cookie_expiry_is_valid - Check if cookie expiry time is reasonable
+ * @expires: Proposed expiry timestamp
+ * @now: Current time
+ *
+ * Returns: 1 if valid (session or reasonable future/past), 0 otherwise
+ *
+ * Does not log; used by validation functions.
+ */
+static int
+cookie_expiry_is_valid (time_t expires, time_t now)
+{
+  return expires == 0 ||
+         (expires >= now - SECONDS_PER_DAY &&
+          expires <= now + MAX_COOKIE_EXPIRY_FUTURE);
+}
+
+
 
 /**
  * get_default_path - Get default path from request URI (RFC 6265 §5.1.4)
@@ -572,6 +595,84 @@ SocketHTTPClient_CookieJar_set (SocketHTTPClient_CookieJar_T jar,
 
   TRY
   {
+    // Validate cookie before storing
+    if (cookie->name == NULL || cookie->value == NULL || cookie->domain == NULL)
+      {
+        SocketLog_emitf (SOCKET_LOG_ERROR, SOCKET_LOG_COMPONENT,
+                         "Invalid NULL fields in cookie set for name=%s domain=%s",
+                         cookie->name ? cookie->name : "NULL",
+                         cookie->domain ? cookie->domain : "NULL");
+        result = -1;
+        goto unlock;
+      }
+
+    time_t now_t = time (NULL);
+    size_t name_l = strlen (cookie->name);
+    size_t value_l = strlen (cookie->value);
+    size_t domain_l = strlen (cookie->domain);
+    size_t path_l = cookie->path ? strlen (cookie->path) : 0;
+
+    if (name_l == 0 || name_l > HTTPCLIENT_COOKIE_MAX_NAME_LEN ||
+        value_l == 0 || value_l > HTTPCLIENT_COOKIE_MAX_VALUE_LEN ||
+        domain_l == 0 || domain_l > HTTPCLIENT_COOKIE_MAX_DOMAIN_LEN ||
+        (cookie->path && (path_l == 0 || path_l > HTTPCLIENT_COOKIE_MAX_PATH_LEN ||
+                          cookie->path[0] != '/')))
+      {
+        SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                         "Cookie rejected: invalid field lengths or format "
+                         "(name_len=%zu value_len=%zu domain_len=%zu path_len=%zu) "
+                         "for cookie %s",
+                         name_l, value_l, domain_l, path_l, cookie->name);
+        result = -1;
+        goto unlock;
+      }
+
+    if (!validate_cookie_octets ((const unsigned char *)cookie->name, name_l) ||
+        !validate_cookie_octets ((const unsigned char *)cookie->value, value_l))
+      {
+        SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                         "Cookie rejected: invalid characters in name or value for cookie %s",
+                         cookie->name);
+        result = -1;
+        goto unlock;
+      }
+
+    if (cookie->expires != 0 && !cookie_expiry_is_valid (cookie->expires, now_t))
+      {
+        SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                         "Cookie rejected: unreasonable expiry %lld for cookie %s",
+                         (long long)cookie->expires, cookie->name);
+        result = -1;
+        goto unlock;
+      }
+
+    if (cookie->secure != 0 && cookie->secure != 1)
+      {
+        SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                         "Cookie rejected: invalid secure flag (%d) for cookie %s",
+                         cookie->secure, cookie->name);
+        result = -1;
+        goto unlock;
+      }
+
+    if (cookie->http_only != 0 && cookie->http_only != 1)
+      {
+        SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                         "Cookie rejected: invalid http_only flag (%d) for cookie %s",
+                         cookie->http_only, cookie->name);
+        result = -1;
+        goto unlock;
+      }
+
+    if (cookie->same_site < COOKIE_SAMESITE_NONE || cookie->same_site > COOKIE_SAMESITE_STRICT)
+      {
+        SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                         "Cookie rejected: invalid same_site (%d) for cookie %s",
+                         cookie->same_site, cookie->name);
+        result = -1;
+        goto unlock;
+      }
+
     effective_path = cookie->path ? cookie->path : "/";
     hash = cookie_hash (cookie->domain, effective_path, cookie->name,
                         jar->hash_size, jar->hash_seed);
@@ -695,99 +796,13 @@ SocketHTTPClient_CookieJar_clear_expired (SocketHTTPClient_CookieJar_T jar)
  * ============================================================================
  */
 
-/**
- * validate_cookie_field_lengths - Validate cookie field lengths from file
- * @domain_len: Length of domain field
- * @path_len: Length of path field
- * @name_len: Length of name field
- * @value_len: Length of value field
- *
- * Returns: 1 if valid, 0 if any field too long
- */
-static int
-validate_cookie_field_lengths (size_t domain_len, size_t path_len,
-                               size_t name_len, size_t value_len)
-{
-  if (!SocketSecurity_check_size (domain_len)
-      || !SocketSecurity_check_size (path_len)
-      || !SocketSecurity_check_size (name_len)
-      || !SocketSecurity_check_size (value_len))
-    return 0;
 
-  if (domain_len > HTTPCLIENT_COOKIE_MAX_DOMAIN_LEN
-      || path_len > HTTPCLIENT_COOKIE_MAX_PATH_LEN
-      || name_len > HTTPCLIENT_COOKIE_MAX_NAME_LEN
-      || value_len > HTTPCLIENT_COOKIE_MAX_VALUE_LEN)
-    {
-      SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-                       "Cookie rejected: field too long (domain:%zu, "
-                       "path:%zu, name:%zu, value:%zu)",
-                       domain_len, path_len, name_len, value_len);
-      return 0;
-    }
 
-  return 1;
-}
 
-/**
- * validate_cookie_characters - Validate name/value characters
- * @name: Cookie name
- * @name_len: Length of name
- * @value: Cookie value
- * @value_len: Length of value
- *
- * Returns: 1 if valid, 0 if invalid characters found
- */
-static int
-validate_cookie_characters (const char *name, size_t name_len,
-                            const char *value, size_t value_len)
-{
-  size_t i;
 
-  for (i = 0; i < name_len; i++)
-    {
-      if (!is_valid_cookie_octet ((unsigned char)name[i]))
-        {
-          SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-                           "Cookie rejected: invalid character in name");
-          return 0;
-        }
-    }
 
-  for (i = 0; i < value_len; i++)
-    {
-      if (!is_valid_cookie_octet ((unsigned char)value[i]))
-        {
-          SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-                           "Cookie rejected: invalid character in value");
-          return 0;
-        }
-    }
 
-  return 1;
-}
 
-/**
- * validate_cookie_expiry - Validate cookie expiry time
- * @expires_time: Expiry timestamp from file
- * @now: Current time
- *
- * Returns: 1 if valid, 0 if unreasonable
- */
-static int
-validate_cookie_expiry (time_t expires_time, time_t now)
-{
-  if (expires_time != 0
-      && (expires_time < now - SECONDS_PER_DAY
-          || expires_time > now + MAX_COOKIE_EXPIRY_FUTURE))
-    {
-      SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-                       "Cookie rejected: unreasonable expires %lld",
-                       (long long)expires_time);
-      return 0;
-    }
-  return 1;
-}
 
 /* ============================================================================
  * Cookie File Persistence
@@ -816,8 +831,8 @@ SocketHTTPClient_CookieJar_load (SocketHTTPClient_CookieJar_T jar,
       char *domain, *flag, *path, *secure, *expires, *name, *value;
       char *saveptr = NULL;
       SocketHTTPClient_Cookie cookie;
-      size_t len, domain_len, path_len, name_len, value_len;
-      time_t expires_time, now;
+      size_t len;
+      time_t expires_time;
 
       if (line[0] == '#' || line[0] == '\n')
         continue;
@@ -839,24 +854,6 @@ SocketHTTPClient_CookieJar_load (SocketHTTPClient_CookieJar_T jar,
       if (!domain || !path || !secure || !expires || !name || !value)
         continue;
 
-      domain_len = strlen (domain);
-      path_len = strlen (path);
-      name_len = strlen (name);
-      value_len = strlen (value);
-
-      if (!validate_cookie_field_lengths (domain_len, path_len, name_len,
-                                          value_len))
-        continue;
-
-      if (path[0] != '/')
-        {
-          SocketLog_emitf (
-              SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-              "Cookie rejected: invalid path '%s' (must start with '/')",
-              path);
-          continue;
-        }
-
       if (strcmp (secure, "TRUE") != 0 && strcmp (secure, "FALSE") != 0)
         {
           SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
@@ -865,20 +862,21 @@ SocketHTTPClient_CookieJar_load (SocketHTTPClient_CookieJar_T jar,
           continue;
         }
 
-      expires_time = (time_t)strtoll (expires, NULL, 10);
-      now = time (NULL);
-
-      if (!validate_cookie_expiry (expires_time, now))
-        continue;
-
-      if (!validate_cookie_characters (name, name_len, value, value_len))
-        continue;
+      char *endptr;
+      expires_time = strtoll (expires, &endptr, 10);
+      if (endptr == expires || *endptr != '\0')
+        {
+          SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                           "Cookie rejected: invalid expires field '%s'",
+                           expires);
+          continue;
+        }
 
       memset (&cookie, 0, sizeof (cookie));
       cookie.domain = domain;
       cookie.path = path;
       cookie.secure = (strcmp (secure, "TRUE") == 0);
-      cookie.expires = expires_time;
+      cookie.expires = (time_t)expires_time;
       cookie.name = name;
       cookie.value = value;
 
@@ -1219,7 +1217,7 @@ parse_cookie_name_value (const char **p, const char *end,
   const char *ptr = *p;
   const char *name_start, *name_end;
   const char *value_start, *value_end;
-  size_t name_len, val_len, i;
+  size_t name_len, val_len;
 
   if (parse_token (&ptr, end, &name_start, &name_end) != 0)
     {
@@ -1243,6 +1241,24 @@ parse_cookie_name_value (const char **p, const char *end,
     }
   val_len = value_end - value_start;
 
+  // Validate name and value length and characters
+  if (name_len == 0 || name_len > HTTPCLIENT_COOKIE_MAX_NAME_LEN ||
+      val_len > HTTPCLIENT_COOKIE_MAX_VALUE_LEN)
+    {
+      HTTPCLIENT_ERROR_MSG ("Invalid length for cookie name or value");
+      return -1;
+    }
+  if (!validate_cookie_octets ((const unsigned char *)name_start, name_len))
+    {
+      HTTPCLIENT_ERROR_MSG ("Invalid character in cookie name");
+      return -1;
+    }
+  if (!validate_cookie_octets ((const unsigned char *)value_start, val_len))
+    {
+      HTTPCLIENT_ERROR_MSG ("Invalid character in cookie value");
+      return -1;
+    }
+
   cookie->name = socket_util_arena_strndup (arena, name_start, name_len);
   if (cookie->name == NULL)
     {
@@ -1251,30 +1267,12 @@ parse_cookie_name_value (const char **p, const char *end,
       return -1;
     }
 
-  for (i = 0; i < name_len; i++)
-    {
-      if (!is_valid_cookie_octet ((unsigned char)name_start[i]))
-        {
-          HTTPCLIENT_ERROR_MSG ("Invalid character in cookie name");
-          return -1;
-        }
-    }
-
   cookie->value = socket_util_arena_strndup (arena, value_start, val_len);
   if (cookie->value == NULL)
     {
       HTTPCLIENT_ERROR_MSG (
           "socket_util_arena_strndup failed for cookie value");
       return -1;
-    }
-
-  for (i = 0; i < val_len; i++)
-    {
-      if (!is_valid_cookie_octet ((unsigned char)value_start[i]))
-        {
-          HTTPCLIENT_ERROR_MSG ("Invalid character in cookie value");
-          return -1;
-        }
     }
 
   *p = ptr;
@@ -1441,7 +1439,6 @@ httpclient_parse_set_cookie (const char *value, size_t len,
 {
   const char *p = value;
   const char *end = value + (len > 0 ? len : strlen (value));
-  size_t name_len, value_len, domain_len;
 
   assert (value != NULL);
   assert (cookie != NULL);
@@ -1472,17 +1469,34 @@ httpclient_parse_set_cookie (const char *value, size_t len,
       return -1;
     }
 
-  name_len = strlen (cookie->name);
-  value_len = strlen (cookie->value);
-  domain_len = strlen (cookie->domain);
-  if (name_len > HTTPCLIENT_COOKIE_MAX_NAME_LEN
-      || value_len > HTTPCLIENT_COOKIE_MAX_VALUE_LEN
-      || domain_len > HTTPCLIENT_COOKIE_MAX_DOMAIN_LEN)
+  size_t domain_len = strlen (cookie->domain);
+  if (domain_len == 0 || domain_len > HTTPCLIENT_COOKIE_MAX_DOMAIN_LEN)
     {
       SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-                       "Set-Cookie rejected: field length exceeds limits "
-                       "(name:%zu, value:%zu, domain:%zu)",
-                       name_len, value_len, domain_len);
+                       "Set-Cookie rejected: invalid domain length %zu",
+                       domain_len);
+      return -1;
+    }
+
+  if (cookie->path != NULL)
+    {
+      size_t path_len = strlen (cookie->path);
+      if (path_len == 0 || path_len > HTTPCLIENT_COOKIE_MAX_PATH_LEN ||
+          cookie->path[0] != '/')
+        {
+          SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                           "Set-Cookie rejected: invalid path '%s' (len=%zu)",
+                           cookie->path, path_len);
+          return -1;
+        }
+    }
+
+  time_t now = time (NULL);
+  if (cookie->expires != 0 && !cookie_expiry_is_valid (cookie->expires, now))
+    {
+      SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                       "Set-Cookie rejected: unreasonable expires %lld",
+                       (long long)cookie->expires);
       return -1;
     }
 

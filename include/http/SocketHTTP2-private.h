@@ -66,6 +66,7 @@
 #include "http/SocketHPACK.h"
 #include "http/SocketHTTP2.h"
 #include "socket/SocketBuf.h"
+#include "core/TimeWindow.h"
 
 extern const Except_T SocketHTTP2_Failed;
 extern const Except_T SocketHTTP2_ProtocolError;
@@ -382,17 +383,10 @@ struct SocketHTTP2_Conn
   /** Monotonic time (ms) of last frame recv or send activity */
   int64_t last_activity_time;
 
-  /* RST_STREAM rate limiting (CVE-2023-44487 protection) */
-  uint32_t rst_count_in_window; /**< RST_STREAM count in current window */
-  int64_t rst_window_start_ms;  /**< Window start timestamp (monotonic) */
-
-  /* PING rate limiting (DoS protection) */
-  uint32_t ping_count_in_window; /**< PING count in current window */
-  int64_t ping_window_start_ms;  /**< Window start timestamp (monotonic) */
-
-  /* SETTINGS rate limiting (DoS protection) */
-  uint32_t settings_count_in_window; /**< SETTINGS count in current window */
-  int64_t settings_window_start_ms;  /**< Window start timestamp (monotonic) */
+  /* Frame rate limiting using TimeWindow module (sliding window counters) */
+  TimeWindow_T rst_window;       /**< RST_STREAM rate limiter (CVE-2023-44487 protection) */
+  TimeWindow_T ping_window;      /**< PING frame rate limiter (DoS protection) */
+  TimeWindow_T settings_window;  /**< SETTINGS frame rate limiter (DoS protection) */
 };
 
 /* ============================================================================
@@ -853,29 +847,7 @@ extern int http2_process_headers (SocketHTTP2_Conn_T conn,
                                   const SocketHTTP2_FrameHeader *header,
                                   const unsigned char *payload);
 
-/**
- * @internal
- * @brief Process incoming HTTP/2 PRIORITY frame (deprecated per RFC 9113).
- * @ingroup http
- *
- * Per RFC 9113 Section 5.3.2, the PRIORITY frame mechanism from RFC 7540 is
- * deprecated. Endpoints SHOULD NOT send PRIORITY frames and MAY ignore them.
- * This implementation ignores the frame with debug logging for monitoring
- * non-compliant peers. Modern priority signaling uses RFC 9218 (Extensible
- * Priorities) via HTTP header fields instead.
- *
- * @param conn HTTP/2 connection (unused, kept for dispatch API consistency).
- * @param header PRIORITY frame header (stream ID used for logging only).
- * @param payload Fixed 5-byte payload (ignored per RFC 9113 deprecation).
- * @return 0 (always succeeds since frame is ignored per specification).
- * @pre Frame length == 5, stream_id > 0 (validated in http2_frame_validate).
- * @note Frame is ignored per RFC 9113; no state changes occur.
- * @see RFC 9113 Section 5.3.2 for deprecation rationale.
- * @see RFC 9218 for modern Extensible Priorities mechanism.
- */
-extern int http2_process_priority (SocketHTTP2_Conn_T conn,
-                                   const SocketHTTP2_FrameHeader *header,
-                                   const unsigned char *payload);
+
 
 /**
  * @internal

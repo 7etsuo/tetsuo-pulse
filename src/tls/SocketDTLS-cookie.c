@@ -63,30 +63,7 @@ get_time_bucket (void)
   return (uint32_t)(now_ms / lifetime_ms);
 }
 
-/**
- * extract_ipv4_address - Extract IPv4 address from BIO_ADDR
- * @bio_addr: Source BIO address
- * @peer_addr: Output sockaddr_storage
- * @peer_len: Output address length
- *
- * Returns: 0 on success, -1 on failure
- */
-static int
-extract_ipv4_address (BIO_ADDR *bio_addr, struct sockaddr_storage *peer_addr,
-                      socklen_t *peer_len)
-{
-  struct sockaddr_in *sin = (struct sockaddr_in *)peer_addr;
-  size_t addr_len = sizeof (sin->sin_addr);
 
-  *peer_len = sizeof (struct sockaddr_in);
-  memset (peer_addr, 0, *peer_len);
-
-  sin->sin_family = AF_INET;
-  sin->sin_port = BIO_ADDR_rawport (bio_addr);
-  BIO_ADDR_rawaddress (bio_addr, &sin->sin_addr, &addr_len);
-
-  return 0;
-}
 
 /**
  * extract_ipv6_address - Extract IPv6 address from BIO_ADDR
@@ -96,23 +73,46 @@ extract_ipv4_address (BIO_ADDR *bio_addr, struct sockaddr_storage *peer_addr,
  *
  * Returns: 0 on success, -1 on failure
  */
+/* Combined into bio_addr_to_sockaddr_storage */
+
+/**
+ * bio_addr_to_sockaddr_storage - Convert BIO_ADDR to sockaddr_storage
+ * @bio_addr: Source BIO_ADDR
+ * @peer_addr: Output sockaddr_storage
+ * @peer_len: Output address length
+ *
+ * Supports AF_INET and AF_INET6. Sets family, port, zeros other fields,
+ * copies address bytes via BIO_ADDR_rawaddress.
+ *
+ * Returns: 0 on success, -1 on unsupported family
+ */
 static int
-extract_ipv6_address (BIO_ADDR *bio_addr, struct sockaddr_storage *peer_addr,
-                      socklen_t *peer_len)
+bio_addr_to_sockaddr_storage (BIO_ADDR *bio_addr, struct sockaddr_storage *peer_addr,
+                              socklen_t *peer_len)
 {
-  struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)peer_addr;
-  size_t addr_len = sizeof (sin6->sin6_addr);
-
-  *peer_len = sizeof (struct sockaddr_in6);
-  memset (peer_addr, 0, *peer_len);
-
-  sin6->sin6_family = AF_INET6;
-  sin6->sin6_port = BIO_ADDR_rawport (bio_addr);
-  sin6->sin6_flowinfo = 0;
-  sin6->sin6_scope_id = 0;
-  BIO_ADDR_rawaddress (bio_addr, &sin6->sin6_addr, &addr_len);
-
-  return 0;
+  int family = BIO_ADDR_family (bio_addr);
+  if (family == AF_INET) {
+    struct sockaddr_in *sin = (struct sockaddr_in *)peer_addr;
+    size_t addr_len = sizeof (sin->sin_addr);
+    *peer_len = sizeof (struct sockaddr_in);
+    memset (peer_addr, 0, *peer_len);
+    sin->sin_family = AF_INET;
+    sin->sin_port = BIO_ADDR_rawport (bio_addr);
+    BIO_ADDR_rawaddress (bio_addr, &sin->sin_addr, &addr_len);
+    return 0;
+  } else if (family == AF_INET6) {
+    struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)peer_addr;
+    size_t addr_len = sizeof (sin6->sin6_addr);
+    *peer_len = sizeof (struct sockaddr_in6);
+    memset (peer_addr, 0, *peer_len);
+    sin6->sin6_family = AF_INET6;
+    sin6->sin6_port = BIO_ADDR_rawport (bio_addr);
+    sin6->sin6_flowinfo = 0;
+    sin6->sin6_scope_id = 0;
+    BIO_ADDR_rawaddress (bio_addr, &sin6->sin6_addr, &addr_len);
+    return 0;
+  }
+  return -1;
 }
 
 /**
@@ -128,7 +128,6 @@ get_peer_from_bio_dgram (BIO *bio, struct sockaddr_storage *peer_addr,
                          socklen_t *peer_len)
 {
   BIO_ADDR *bio_addr;
-  int family;
   int result = -1;
 
   bio_addr = BIO_ADDR_new ();
@@ -138,12 +137,7 @@ get_peer_from_bio_dgram (BIO *bio, struct sockaddr_storage *peer_addr,
   if (!BIO_dgram_get_peer (bio, bio_addr))
     goto cleanup;
 
-  family = BIO_ADDR_family (bio_addr);
-
-  if (family == AF_INET)
-    result = extract_ipv4_address (bio_addr, peer_addr, peer_len);
-  else if (family == AF_INET6)
-    result = extract_ipv6_address (bio_addr, peer_addr, peer_len);
+  result = bio_addr_to_sockaddr_storage (bio_addr, peer_addr, peer_len);
 
 cleanup:
   BIO_ADDR_free (bio_addr);
@@ -387,28 +381,25 @@ dtls_cookie_verify_cb (SSL *ssl, const unsigned char *cookie,
 
   pthread_mutex_lock (&ctx->cookie.secret_mutex);
 
-  /* Try current secret with current and previous timestamp buckets */
-  if (try_verify_cookie (cookie, ctx->cookie.secret, addr, peer_len, timestamp,
-                         expected)
-      || try_verify_cookie (cookie, ctx->cookie.secret, addr, peer_len,
-                            timestamp - 1, expected))
-    {
-      verified = 1;
-      goto cleanup;
-    }
+  const unsigned char *secrets[COOKIE_SECRET_COUNT] = {
+    ctx->cookie.secret,
+    ctx->cookie.prev_secret
+  };
+  int num_secrets = 1;
+  if (is_secret_set (secrets[1])) {
+    num_secrets = COOKIE_SECRET_COUNT;
+  }
 
-  /* Try previous secret if set (for rotation window) */
-  if (is_secret_set (ctx->cookie.prev_secret))
-    {
-      if (try_verify_cookie (cookie, ctx->cookie.prev_secret, addr, peer_len,
-                             timestamp, expected)
-          || try_verify_cookie (cookie, ctx->cookie.prev_secret, addr,
-                                peer_len, timestamp - 1, expected))
-        {
-          verified = 1;
-          goto cleanup;
-        }
+  verified = 0;
+  for (int s = 0; s < num_secrets; s++) {
+    for (int t = 0; t < COOKIE_TIMESTAMP_WINDOW; t++) {
+      uint32_t ts = timestamp - t;
+      if (try_verify_cookie (cookie, secrets[s], addr, peer_len, ts, expected)) {
+        verified = 1;
+        goto cleanup;
+      }
     }
+  }
 
 cleanup:
   pthread_mutex_unlock (&ctx->cookie.secret_mutex);

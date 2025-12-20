@@ -45,6 +45,10 @@
 #include "core/SocketSecurity.h"
 #include "core/SocketUtil.h"
 #include "socket/Socket.h"
+#include "socket/SocketIO.h"
+#if SOCKET_HAS_TLS
+#include "tls/SocketTLS.h"
+#endif
 
 #define T SocketReconnect_T
 
@@ -89,6 +93,37 @@ SocketReconnect_state_name (SocketReconnect_State state)
     return state_names[state];
   return "UNKNOWN";
 }
+
+static void
+reconnect_set_socket_error (T conn, const char *operation, int err)
+{
+  conn->last_error = err;
+  snprintf (conn->error_buf, sizeof (conn->error_buf),
+            "%s: %s", operation, Socket_safe_strerror (err));
+}
+
+static void
+restore_socket_blocking (Socket_T socket)
+{
+  if (!socket)
+    return;
+  int fd = Socket_fd (socket);
+  if (fd < 0)
+    return;
+  int flags = fcntl (fd, F_GETFL);
+  if (flags >= 0)
+    fcntl (fd, F_SETFL, flags & ~O_NONBLOCK);
+}
+
+#if SOCKET_HAS_TLS
+static void
+reconnect_set_tls_error (T conn, const char *operation)
+{
+  conn->last_error = errno;
+  snprintf (conn->error_buf, sizeof (conn->error_buf),
+            "%s: %s", operation, Socket_GetLastError ());
+}
+#endif
 
 /* ============================================================================
  * Internal Helper Functions
@@ -373,10 +408,8 @@ start_connect (T conn)
   EXCEPT (Socket_Failed)
   {
     int err = Socket_geterrno ();
-    snprintf (conn->error_buf, sizeof (conn->error_buf),
-              "Failed to create socket: %s", Socket_safe_strerror (err));
-    conn->last_error = Socket_geterrno (); /* LCOV_EXCL_LINE */
-    return 0;                              /* LCOV_EXCL_LINE */
+    reconnect_set_socket_error (conn, "Failed to create socket", err);
+    return 0;
   }
   END_TRY;
 
@@ -384,14 +417,18 @@ start_connect (T conn)
     return 0;
 
   /* Set non-blocking for async connect */
-  fd = Socket_fd (conn->socket);
-  flags = fcntl (fd, F_GETFL);
-  if (flags < 0 || fcntl (fd, F_SETFL, flags | O_NONBLOCK) < 0)
-    {
-      conn->last_error = errno; /* LCOV_EXCL_LINE */
-      close_socket (conn);      /* LCOV_EXCL_LINE */
-      return 0;                 /* LCOV_EXCL_LINE */
-    }
+  TRY
+  {
+    Socket_setnonblocking (conn->socket);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    int err = Socket_geterrno ();
+    reconnect_set_socket_error (conn, "Failed to set non-blocking mode", err);
+    close_socket (conn);
+    return 0;
+  }
+  END_TRY;
 
   /* Update attempt tracking */
   conn->attempt_count++;
@@ -413,8 +450,9 @@ start_connect (T conn)
   EXCEPT (Socket_Failed)
   {
     /* Check if it's EINPROGRESS (non-blocking connect started) */
+    int err = Socket_geterrno ();
     /* LCOV_EXCL_START - requires non-routable address for async connect */
-    if (Socket_geterrno () == EINPROGRESS || Socket_geterrno () == EINTR)
+    if (err == EINPROGRESS || err == EINTR)
       {
         conn->connect_in_progress = 1;
         return 1;
@@ -422,10 +460,7 @@ start_connect (T conn)
     /* LCOV_EXCL_STOP */
 
     /* Real failure */
-    int err = Socket_geterrno ();
-    snprintf (conn->error_buf, sizeof (conn->error_buf), "Connect failed: %s",
-              Socket_safe_strerror (err));
-    conn->last_error = Socket_geterrno ();
+    reconnect_set_socket_error (conn, "Connect failed", err);
     close_socket (conn);
     return 0;
   }
@@ -465,7 +500,7 @@ check_connect_completion (T conn)
     {
       if (errno == EINTR)
         return 0;
-      conn->last_error = errno;
+      reconnect_set_socket_error (conn, "Connect poll failed", errno);
       return -1;
     }
 
@@ -478,9 +513,8 @@ check_connect_completion (T conn)
       error = 0;
       len = sizeof (error);
       getsockopt (fd, SOL_SOCKET, SO_ERROR, &error, &len);
-      conn->last_error = error ? error : ECONNREFUSED;
-      snprintf (conn->error_buf, sizeof (conn->error_buf),
-                "Connect failed: %s", Socket_safe_strerror (conn->last_error));
+      int connect_err = error ? error : ECONNREFUSED;
+      reconnect_set_socket_error (conn, "Connect poll error", connect_err);
       return -1;
     }
 
@@ -489,22 +523,18 @@ check_connect_completion (T conn)
   len = sizeof (error);
   if (getsockopt (fd, SOL_SOCKET, SO_ERROR, &error, &len) < 0)
     {
-      conn->last_error = errno;
+      reconnect_set_socket_error (conn, "Connect check getsockopt failed", errno);
       return -1;
     }
 
   if (error != 0)
     {
-      conn->last_error = error;
-      snprintf (conn->error_buf, sizeof (conn->error_buf),
-                "Connect failed: %s", Socket_safe_strerror (error));
+      reconnect_set_socket_error (conn, "Connect check failed", error);
       return -1;
     }
 
   /* Success! Restore blocking mode */
-  int flags = fcntl (fd, F_GETFL);
-  if (flags >= 0)
-    fcntl (fd, F_SETFL, flags & ~O_NONBLOCK);
+  restore_socket_blocking (conn->socket);
 
   conn->connect_in_progress = 0;
   return 1;
@@ -549,9 +579,7 @@ start_tls_handshake (T conn)
   }
   EXCEPT (SocketTLS_Failed)
   {
-    snprintf (conn->error_buf, sizeof (conn->error_buf),
-              "TLS enable failed: %s", Socket_GetLastError ());
-    conn->last_error = errno;
+    reconnect_set_tls_error (conn, "TLS enable failed");
     return 0;
   }
   END_TRY;
@@ -576,25 +604,19 @@ perform_tls_handshake_step (T conn)
   TRY { state = SocketTLS_handshake (conn->socket); }
   EXCEPT (SocketTLS_HandshakeFailed)
   {
-    snprintf (conn->error_buf, sizeof (conn->error_buf),
-              "TLS handshake failed: %s", Socket_GetLastError ());
-    conn->last_error = errno;
+    reconnect_set_tls_error (conn, "TLS handshake failed");
     conn->tls_handshake_state = TLS_HANDSHAKE_ERROR;
     return -1;
   }
   EXCEPT (SocketTLS_VerifyFailed)
   {
-    snprintf (conn->error_buf, sizeof (conn->error_buf),
-              "TLS certificate verification failed: %s", Socket_GetLastError ());
-    conn->last_error = errno;
+    reconnect_set_tls_error (conn, "TLS certificate verification failed");
     conn->tls_handshake_state = TLS_HANDSHAKE_ERROR;
     return -1;
   }
   EXCEPT (SocketTLS_Failed)
   {
-    snprintf (conn->error_buf, sizeof (conn->error_buf), "TLS error: %s",
-              Socket_GetLastError ());
-    conn->last_error = errno;
+    reconnect_set_tls_error (conn, "TLS error");
     conn->tls_handshake_state = TLS_HANDSHAKE_ERROR;
     return -1;
   }
@@ -622,8 +644,7 @@ perform_tls_handshake_step (T conn)
     case TLS_HANDSHAKE_ERROR:
       if (conn->error_buf[0] == '\0')
         {
-          snprintf (conn->error_buf, sizeof (conn->error_buf),
-                    "TLS handshake error");
+          reconnect_set_tls_error (conn, "TLS handshake error");
         }
       return -1;
 
@@ -810,11 +831,29 @@ default_health_check (const T conn, const Socket_T socket, int timeout_ms,
   /* If readable, peek to check for EOF */
   if (pfd.revents & POLLIN)
     {
-      result = recv (fd, &buf, 1, MSG_PEEK | MSG_DONTWAIT);
-      if (result == 0)
-        return 0; /* EOF - disconnected */
-      if (result < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
-        return 0; /* Error */
+      char dummy;
+      volatile ssize_t peek_res = 0;
+      TRY
+      {
+        peek_res = socket_recv_internal (socket, &dummy, 1, MSG_PEEK | MSG_DONTWAIT);
+      }
+      EXCEPT (Socket_Failed)
+      {
+        return 0;
+      }
+      EXCEPT (Socket_Closed)
+      {
+        return 0;
+      }
+#if SOCKET_HAS_TLS
+      EXCEPT (SocketTLS_Failed)
+      {
+        return 0;
+      }
+#endif
+      END_TRY;
+      if (peek_res == 0)
+        return 0; /* EOF or would block */
     }
 
   return 1;
@@ -1308,24 +1347,13 @@ SocketReconnect_send (T conn, const void *buf, size_t len)
 
   TRY
   {
-#if SOCKET_HAS_TLS
-    if (conn->tls_ctx && conn->tls_handshake_state == TLS_HANDSHAKE_COMPLETE)
-      {
-        result = SocketTLS_send (conn->socket, buf, len);
-      }
-    else
-#endif /* SOCKET_HAS_TLS */
-      {
-        result = Socket_send (conn->socket, buf, len);
-      }
+    result = socket_send_internal (conn->socket, buf, len, 0);
   }
   EXCEPT (Socket_Failed)
   {
     /* Connection error - trigger reconnect */
-    conn->last_error = Socket_geterrno ();
     int err = Socket_geterrno ();
-    snprintf (conn->error_buf, sizeof (conn->error_buf), "Send failed: %s",
-              Socket_safe_strerror (err));
+    reconnect_set_socket_error (conn, "Send failed", err);
     close_socket (conn);
     handle_connect_failure (conn);
     errno = ENOTCONN;
@@ -1343,9 +1371,7 @@ SocketReconnect_send (T conn, const void *buf, size_t len)
   EXCEPT (SocketTLS_Failed)
   {
     /* TLS error - trigger reconnect */
-    conn->last_error = errno;
-    snprintf (conn->error_buf, sizeof (conn->error_buf), "TLS send failed: %s",
-              Socket_GetLastError ());
+    reconnect_set_tls_error (conn, "TLS send failed");
     close_socket (conn);
     handle_connect_failure (conn);
     errno = ENOTCONN;
@@ -1354,9 +1380,7 @@ SocketReconnect_send (T conn, const void *buf, size_t len)
   EXCEPT (SocketTLS_ProtocolError)
   {
     /* TLS protocol error - trigger reconnect */
-    conn->last_error = errno;
-    snprintf (conn->error_buf, sizeof (conn->error_buf),
-              "TLS protocol error: %s", Socket_GetLastError ());
+    reconnect_set_tls_error (conn, "TLS protocol error");
     close_socket (conn);
     handle_connect_failure (conn);
     errno = ENOTCONN;
@@ -1384,24 +1408,13 @@ SocketReconnect_recv (T conn, void *buf, size_t len)
 
   TRY
   {
-#if SOCKET_HAS_TLS
-    if (conn->tls_ctx && conn->tls_handshake_state == TLS_HANDSHAKE_COMPLETE)
-      {
-        result = SocketTLS_recv (conn->socket, buf, len);
-      }
-    else
-#endif /* SOCKET_HAS_TLS */
-      {
-        result = Socket_recv (conn->socket, buf, len);
-      }
+    result = socket_recv_internal (conn->socket, buf, len, 0);
   }
   EXCEPT (Socket_Failed)
   {
     /* Connection error - trigger reconnect */
-    conn->last_error = Socket_geterrno ();
     int err = Socket_geterrno ();
-    snprintf (conn->error_buf, sizeof (conn->error_buf), "Recv failed: %s",
-              Socket_safe_strerror (err));
+    reconnect_set_socket_error (conn, "Recv failed", err);
     close_socket (conn);
     handle_connect_failure (conn);
     return 0;
@@ -1417,9 +1430,7 @@ SocketReconnect_recv (T conn, void *buf, size_t len)
   EXCEPT (SocketTLS_Failed)
   {
     /* TLS error - trigger reconnect */
-    conn->last_error = errno;
-    snprintf (conn->error_buf, sizeof (conn->error_buf), "TLS recv failed: %s",
-              Socket_GetLastError ());
+    reconnect_set_tls_error (conn, "TLS recv failed");
     close_socket (conn);
     handle_connect_failure (conn);
     return 0;
@@ -1427,9 +1438,7 @@ SocketReconnect_recv (T conn, void *buf, size_t len)
   EXCEPT (SocketTLS_ProtocolError)
   {
     /* TLS protocol error - trigger reconnect */
-    conn->last_error = errno;
-    snprintf (conn->error_buf, sizeof (conn->error_buf),
-              "TLS protocol error: %s", Socket_GetLastError ());
+    reconnect_set_tls_error (conn, "TLS protocol error");
     close_socket (conn);
     handle_connect_failure (conn);
     return 0;

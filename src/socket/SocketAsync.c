@@ -233,27 +233,28 @@ accumulate_transfer_progress (struct AsyncRequest *req, ssize_t result)
  *
  * Thread-safe: Yes - delegates to find_and_remove_request for mutex handling
  */
+static void
+process_request_completion (T async, struct AsyncRequest *req, ssize_t result, int err)
+{
+  if (err == 0)
+    accumulate_transfer_progress (req, result);
+
+  if (req->cb)
+    req->cb (req->socket, result, err, req->user_data);
+
+  socket_async_free_request (async, req);
+}
+
 #ifdef SOCKET_HAS_IO_URING
 static void
 handle_completion (T async, unsigned request_id, ssize_t result, int err)
 {
   struct AsyncRequest *req;
-  SocketAsync_Callback cb;
-  Socket_T socket;
-  void *user_data;
 
-  if (!find_and_remove_request (async, request_id, &req, &cb, &socket,
-                                &user_data))
+  if (!find_and_remove_request (async, request_id, &req, NULL, NULL, NULL))
     return;
 
-  /* Accumulate progress for partial transfers */
-  if (err == 0)
-    accumulate_transfer_progress (req, result);
-
-  if (cb)
-    cb (socket, result, err, user_data);
-
-  socket_async_free_request (async, req);
+  process_request_completion (async, req, result, err);
 }
 #endif /* SOCKET_HAS_IO_URING */
 
@@ -577,58 +578,59 @@ submit_kqueue_aio (T async, struct AsyncRequest *req)
  *
  * Thread-safe: Yes (operates on single socket)
  */
-static void
-kqueue_perform_io (struct AsyncRequest *req, ssize_t *result, int *err)
+static ssize_t
+socket_async_perform_io (Socket_T socket, enum AsyncRequestType type,
+                         const void *send_buf, void *recv_buf, size_t len,
+                         int *err_out)
 {
-  *result = 0;
-  *err = 0;
+  ssize_t result;
+  *err_out = 0;
 
   TRY
   {
-    if (req->type == REQ_SEND)
-      {
-        *result = socket_send_internal (req->socket, req->send_buf, req->len,
-                                        MSG_NOSIGNAL);
-        if (*result == 0)
-          {
-            *err = EAGAIN;
-            *result = -1;
-          }
-      }
+    if (type == REQ_SEND)
+      result = socket_send_internal (socket, send_buf, len, MSG_NOSIGNAL);
     else
+      result = socket_recv_internal (socket, recv_buf, len, 0);
+
+    if (result == 0)
       {
-        *result
-            = socket_recv_internal (req->socket, req->recv_buf, req->len, 0);
-        if (*result == 0)
-          {
-            *err = EAGAIN;
-            *result = -1;
-          }
+        *err_out = EAGAIN;
+        result = -1;
       }
   }
   EXCEPT (Socket_Closed)
   {
-    *err = ECONNRESET;
-    *result = -1;
+    *err_out = ECONNRESET;
+    result = -1;
   }
   EXCEPT (Socket_Failed)
   {
-    *err = errno ? errno : EPROTO;
-    *result = -1;
+    *err_out = errno ? errno : EPROTO;
+    result = -1;
   }
 #if SOCKET_HAS_TLS
   EXCEPT (SocketTLS_HandshakeFailed)
   {
-    *err = EAGAIN;
-    *result = -1;
+    *err_out = EAGAIN;
+    result = -1;
   }
   EXCEPT (SocketTLS_Failed)
   {
-    *err = errno ? errno : EPROTO;
-    *result = -1;
+    *err_out = errno ? errno : EPROTO;
+    result = -1;
   }
 #endif
   END_TRY;
+
+  return result;
+}
+
+static void
+kqueue_perform_io (struct AsyncRequest *req, ssize_t *result, int *err)
+{
+  *result = socket_async_perform_io (req->socket, req->type, req->send_buf,
+                                     req->recv_buf, req->len, err);
 }
 
 /**
@@ -646,14 +648,7 @@ kqueue_complete_request (T async, struct AsyncRequest *req)
 
   kqueue_perform_io (req, &result, &err);
 
-  /* Accumulate progress for partial transfers */
-  if (err == 0)
-    accumulate_transfer_progress (req, result);
-
-  if (req->cb)
-    req->cb (req->socket, result, err, req->user_data);
-
-  socket_async_free_request (async, req);
+  process_request_completion (async, req, result, err);
 }
 
 /**

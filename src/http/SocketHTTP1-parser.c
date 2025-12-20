@@ -31,6 +31,52 @@
 
 /* clang-format off */
 
+/* Common row macros for state tables to reduce duplication */
+#define STATUS_CODE_ROW     {  __,  S3,  __,  CR,  __,  __,  __,  __,  SC,  __,  __,  __,  __,  __,  __,  __,  __,  __ }
+#define SP_AFTER_STAT_ROW   {  __,  RE,  RE,  CR,  HS,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  __ }
+#define REASON_ROW          {  __,  RE,  RE,  CR,  HS,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  __ }
+#define VERSION_H_ROW       {  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  V1,  __,  __,  __,  __,  __ }
+#define VERSION_T1_ROW      {  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  V2,  __,  __,  __,  __,  __ }
+#define VERSION_T2_ROW      {  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  VP,  __,  __,  __,  __ }
+#define VERSION_P_ROW       {  __,  __,  __,  __,  __,  __,  VS,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __ }
+#define VERSION_SLASH_ROW   {  __,  __,  __,  __,  __,  __,  __,  __,  VM,  __,  __,  __,  __,  __,  __,  __,  __,  __ }
+#define VERSION_MAJOR_ROW   {  __,  __,  __,  __,  __,  __,  __,  VD,  VM,  __,  __,  __,  __,  __,  __,  __,  __,  __ }
+#define VERSION_DOT_ROW     {  __,  __,  __,  __,  __,  __,  __,  __,  Vm,  __,  __,  __,  __,  __,  __,  __,  __,  __ }
+#define LINE_CR_ROW         {  __,  __,  __,  __,  HS,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __ }
+#define LINE_LF_ROW         {  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __ }
+#define HEADER_START_ROW    {  __,  __,  __,  HL,  _C,  __,  __,  HN,  HN,  HN,  HN,  HN,  HN,  HN,  HN,  __,  __,  __ }
+#define HEADER_NAME_ROW     {  __,  __,  __,  __,  __,  HC,  __,  HN,  HN,  HN,  HN,  HN,  HN,  HN,  HN,  __,  __,  __ }
+#define HEADER_COLON_ROW    {  __,  HC,  HC,  HR,  HS,  HV,  HV,  HV,  HV,  HV,  HV,  HV,  HV,  HV,  HV,  HV,  HV,  __ }
+#define HEADER_VALUE_ROW    {  __,  HV,  HV,  HR,  HS,  HV,  HV,  HV,  HV,  HV,  HV,  HV,  HV,  HV,  HV,  HV,  HV,  __ }
+#define HEADER_V_OWS_ROW    {  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __ }
+#define HEADER_CR_ROW       {  __,  __,  __,  __,  HS,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __ }
+#define HEADER_LF_ROW       {  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __ }
+#define HEADERS_END_ROW     {  __,  __,  __,  __,  _C,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __ }
+
+/* Common action rows */
+#define STATUS_CODE_ACT_ROW     {  _E,  _N,  _E,  _N,  _E,  _E,  _E,  _E,  SD,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E }
+#define SP_AFTER_STAT_ACT_ROW   {  _E,  _N,  _N,  _N,  _N,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _E }
+#define REASON_ACT_ROW          {  _E,  _R,  _R,  _N,  _N,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _E }
+#define VERSION_H_ACT_ROW       {  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _N,  _E,  _E,  _E,  _E,  _E }
+#define VERSION_T1_ACT_ROW      {  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _N,  _E,  _E,  _E,  _E,  _E }
+#define VERSION_T2_ACT_ROW      {  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _N,  _E,  _E,  _E,  _E }
+#define VERSION_P_ACT_ROW       {  _E,  _E,  _E,  _E,  _E,  _E,  _N,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E }
+#define VERSION_SLASH_ACT_ROW   {  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  MJ,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E }
+#define VERSION_MAJOR_ACT_ROW   {  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _N,  MJ,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E }
+#define VERSION_DOT_ACT_ROW     {  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  Mn,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E }
+#define LINE_CR_ACT_ROW         {  _E,  _E,  _E,  _E,  _N,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E }
+#define LINE_LF_ACT_ROW         {  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E }
+#define HEADER_START_ACT_ROW    {  _E,  _E,  _E,  _N,  HD,  _E,  _E,  _h,  _h,  _h,  _h,  _h,  _h,  _h,  _h,  _E,  _E,  _E }
+#define HEADER_NAME_ACT_ROW     {  _E,  _E,  _E,  _E,  _E,  _N,  _E,  _h,  _h,  _h,  _h,  _h,  _h,  _h,  _h,  _E,  _E,  _E }
+#define HEADER_COLON_ACT_ROW    {  _E,  _N,  _N,  _N,  HE,  _v,  _v,  _v,  _v,  _v,  _v,  _v,  _v,  _v,  _v,  _v,  _v,  _E }
+#define HEADER_VALUE_ACT_ROW    {  _E,  _v,  _v,  _N,  HE,  _v,  _v,  _v,  _v,  _v,  _v,  _v,  _v,  _v,  _v,  _v,  _v,  _E }
+#define HEADER_V_OWS_ACT_ROW    {  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E }
+#define HEADER_CR_ACT_ROW       {  _E,  _E,  _E,  _E,  HE,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E }
+#define HEADER_LF_ACT_ROW       {  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E }
+#define HEADERS_END_ACT_ROW     {  _E,  _E,  _E,  _E,  HD,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E }
+
+
+
 /**
  * Character classification table (256 bytes)
  *
@@ -173,10 +219,10 @@ const uint8_t http1_req_state[HTTP1_NUM_STATES][HTTP1_NUM_CLASSES] = {
   /* SP_AFTER_METH */ {  __,  __,  __,  __,  __,  UR,  UR,  UR,  UR,  UR,  UR,  UR,  UR,  UR,  UR,  UR,  __,  __ },
   /* URI           */ {  __,  S2,  __,  CR,  HS,  UR,  UR,  UR,  UR,  UR,  UR,  UR,  UR,  UR,  UR,  UR,  __,  __ },
   /* SP_AFTER_URI  */ {  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  VH,  __,  __,  __,  __,  __,  __ },
-  /* STATUS_CODE   */ {  __,  S3,  __,  CR,  __,  __,  __,  __,  SC,  __,  __,  __,  __,  __,  __,  __,  __,  __ },
-  /* SP_AFTER_STAT */ {  __,  RE,  RE,  CR,  HS,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  __ },
-  /* REASON        */ {  __,  RE,  RE,  CR,  HS,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  __ },
-  /* VERSION_H     */ {  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  V1,  __,  __,  __,  __,  __ },
+  /* STATUS_CODE   */ STATUS_CODE_ROW,
+  /* SP_AFTER_STAT */ SP_AFTER_STAT_ROW,
+  /* REASON        */ REASON_ROW,
+  /* VERSION_H     */ VERSION_H_ROW,
   /* VERSION_T1    */ {  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  V2,  __,  __,  __,  __,  __ },
   /* VERSION_T2    */ {  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  VP,  __,  __,  __,  __ },
   /* VERSION_P     */ {  __,  __,  __,  __,  __,  __,  VS,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __ },
@@ -210,10 +256,10 @@ const uint8_t http1_resp_state[HTTP1_NUM_STATES][HTTP1_NUM_CLASSES] = {
   /* SP_AFTER_METH */ {  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __ },
   /* URI           */ {  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __ },
   /* SP_AFTER_URI  */ {  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __ },
-  /* STATUS_CODE   */ {  __,  S3,  __,  CR,  __,  __,  __,  __,  SC,  __,  __,  __,  __,  __,  __,  __,  __,  __ },
-  /* SP_AFTER_STAT */ {  __,  RE,  RE,  CR,  HS,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  __ },
-  /* REASON        */ {  __,  RE,  RE,  CR,  HS,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  RE,  __ },
-  /* VERSION_H     */ {  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  V1,  __,  __,  __,  __,  __ },
+  /* STATUS_CODE   */ STATUS_CODE_ROW,
+  /* SP_AFTER_STAT */ SP_AFTER_STAT_ROW,
+  /* REASON        */ REASON_ROW,
+  /* VERSION_H     */ VERSION_H_ROW,
   /* VERSION_T1    */ {  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  V2,  __,  __,  __,  __,  __ },
   /* VERSION_T2    */ {  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  VP,  __,  __,  __,  __ },
   /* VERSION_P     */ {  __,  __,  __,  __,  __,  __,  VS,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __ },
@@ -264,7 +310,7 @@ const uint8_t http1_req_action[HTTP1_NUM_STATES][HTTP1_NUM_CLASSES] = {
   /* SP_AFTER_METH */ {  _E,  _E,  _E,  _E,  _E,  _U,  _U,  _U,  _U,  _U,  _U,  _U,  _U,  _U,  _U,  _U,  _E,  _E },
   /* URI           */ {  _E, UE_,  _E,  _N,  _N,  _U,  _U,  _U,  _U,  _U,  _U,  _U,  _U,  _U,  _U,  _U,  _E,  _E },
   /* SP_AFTER_URI  */ {  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _N,  _E,  _E,  _E,  _E,  _E,  _E },
-  /* STATUS_CODE   */ {  _E,  _N,  _E,  _N,  _E,  _E,  _E,  _E,  SD,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E },
+  /* STATUS_CODE   */ STATUS_CODE_ACT_ROW,
   /* SP_AFTER_STAT */ {  _E,  _N,  _N,  _N,  _N,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _E },
   /* REASON        */ {  _E,  _R,  _R,  _N,  _N,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _E },
   /* VERSION_H     */ {  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _N,  _E,  _E,  _E,  _E,  _E },
@@ -300,7 +346,7 @@ const uint8_t http1_resp_action[HTTP1_NUM_STATES][HTTP1_NUM_CLASSES] = {
   /* SP_AFTER_METH */ {  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E },
   /* URI           */ {  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E },
   /* SP_AFTER_URI  */ {  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E },
-  /* STATUS_CODE   */ {  _E,  _N,  _E,  _N,  _E,  _E,  _E,  _E,  SD,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E },
+  /* STATUS_CODE   */ STATUS_CODE_ACT_ROW,
   /* SP_AFTER_STAT */ {  _E,  _N,  _N,  _N,  _N,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _E },
   /* REASON        */ {  _E,  _R,  _R,  _N,  _N,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _R,  _E },
   /* VERSION_H     */ {  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _N,  _E,  _E,  _E,  _E,  _E },
@@ -417,6 +463,7 @@ static const char *result_strings[] = {
   [HTTP1_ERROR_INVALID_CONTENT_LENGTH] = "Invalid Content-Length",
   [HTTP1_ERROR_INVALID_CHUNK_SIZE] = "Invalid chunk size",
   [HTTP1_ERROR_CHUNK_TOO_LARGE] = "Chunk too large",
+  [HTTP1_ERROR_BODY_TOO_LARGE] = "Body too large",
   [HTTP1_ERROR_INVALID_TRAILER] = "Invalid trailer",
   [HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING] = "Unsupported transfer coding",
   [HTTP1_ERROR_UNEXPECTED_EOF] = "Unexpected end of input",
@@ -518,6 +565,7 @@ reset_body_tracking (SocketHTTP1_Parser_T parser)
   parser->content_length = -1;
   parser->body_remaining = -1;
   parser->body_complete = 0;
+  parser->body_read = 0;
   parser->chunk_size = 0;
   parser->chunk_remaining = 0;
 }

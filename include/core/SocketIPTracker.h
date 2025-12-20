@@ -456,7 +456,7 @@ extern void SocketIPTracker_free (T *tracker);
  *
  * @see SocketIPTracker_release() Balance with disconnect
  * @see SocketIPTracker_count() Query current count for IP
- * @see validate_ip_format() Internal check (IPv4/6 via inet_pton)
+ * @see validate_ip() Internal validation (basic check + IPv4/6 format via inet_pton)
  * @see SocketPool_track_ip() If using pool-managed tracking
  * @see docs/SECURITY.md Rate limiting strategies
  */

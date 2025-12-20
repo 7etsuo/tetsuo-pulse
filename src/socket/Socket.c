@@ -119,6 +119,43 @@ Socket_ignore_sigpipe (void)
 
 /* Static helper functions */
 
+/**
+ * socket_alloc - Allocate and initialize Socket_T structure
+ * @arena: Memory arena for allocation
+ * @alloc_type: Description for error message (unused, kept for consistency)
+ *
+ * Allocates Socket_T using Arena_calloc, initializes freed flag.
+ * Arena_calloc raises Arena_Failed on allocation failure.
+ * Caller responsible for arena cleanup if exception raised.
+ * Thread-safe: No - arena must be thread-local or locked
+ */
+static T
+socket_alloc (Arena_T arena, const char *alloc_type)
+{
+  (void)alloc_type;
+  T sock = Arena_calloc (arena, 1, sizeof (struct Socket_T), __FILE__, __LINE__);
+  atomic_store_explicit (&sock->freed, 0, memory_order_relaxed);
+  return sock;
+}
+
+/**
+ * socket_alloc_base - Allocate SocketBase_T structure
+ * @arena: Memory arena for allocation
+ * @alloc_type: Description for error message (unused, kept for consistency)
+ *
+ * Allocates SocketBase_T using Arena_calloc.
+ * Arena_calloc raises Arena_Failed on allocation failure.
+ * Caller responsible for arena cleanup if exception raised.
+ * Thread-safe: No - arena must be thread-local or locked
+ */
+static SocketBase_T
+socket_alloc_base (Arena_T arena, const char *alloc_type)
+{
+  (void)alloc_type;
+  return Arena_calloc (arena, 1, sizeof (struct SocketBase_T),
+                       __FILE__, __LINE__);
+}
+
 #if SOCKET_HAS_TLS
 /**
  * socket_init_tls_fields - Initialize TLS fields to defaults
@@ -150,9 +187,70 @@ socket_init_tls_fields (Socket_T sock)
   sock->tls_ktls_tx_active = 0;
   sock->tls_ktls_rx_active = 0;
 }
-#endif
 
 /**
+ * socket_cleanup_tls - Cleanup TLS resources for a socket
+ * @s: Socket instance
+ *
+ * Performs TLS-specific cleanup: frees SSL object, ALPN temp data, etc.
+ * Safe to call multiple times or on uninitialized TLS (idempotent).
+ * Thread-safe: No - assumes exclusive access to socket
+ * Note: Exported for use by socketpair cleanup
+ */
+static void
+socket_cleanup_tls (Socket_T s)
+{
+  if (s->tls_ssl)
+    {
+      SSL *tls_ssl = (SSL *)s->tls_ssl;
+      tls_cleanup_alpn_temp (tls_ssl); /* Free ALPN temp if stored */
+      SSL_free (tls_ssl);
+      s->tls_ssl = NULL;
+    }
+  /* Add other TLS cleanup if necessary (e.g., ctx if owned per socket) */
+}
+
+#endif /* SOCKET_HAS_TLS */
+
+/**
+ * socket_init_after_alloc - Common initialization after socket allocation
+ * @sock: Newly allocated socket with base set
+ *
+ * Initializes common fields: stats, TLS (if enabled), live count, metrics peak.
+ * Must be called after base is set and before use.
+ * Thread-safe: Yes (atomics and mutex where needed)
+ */
+static void
+socket_init_after_alloc (T sock)
+{
+  /* Initialize per-socket statistics */
+  sock->base->stats.create_time_ms = Socket_get_monotonic_ms ();
+  sock->base->stats.connect_time_ms = 0;
+  sock->base->stats.last_recv_time_ms = 0;
+  sock->base->stats.last_send_time_ms = 0;
+  sock->base->stats.bytes_sent = 0;
+  sock->base->stats.bytes_received = 0;
+  sock->base->stats.packets_sent = 0;
+  sock->base->stats.packets_received = 0;
+  sock->base->stats.send_errors = 0;
+  sock->base->stats.recv_errors = 0;
+  sock->base->stats.rtt_us = -1;
+  sock->base->stats.rtt_var_us = -1;
+
+#if SOCKET_HAS_TLS
+  socket_init_tls_fields (sock);
+#endif
+
+  socket_live_increment ();
+
+  /* Update peak connection tracking */
+  SocketMetrics_update_peak_if_needed (Socket_debug_live_count ());
+}
+
+/**
+ * socket_alloc - Allocate and initialize Socket_T structure
+ * @arena: Memory arena for allocation
+ * @alloc_type: Description for error message (e.g., "socket")
  * validate_fd_is_socket - Validate file descriptor is a socket
  * @fd: File descriptor to validate
  * Raises: Socket_Failed if fd is not a socket
@@ -172,39 +270,31 @@ validate_fd_is_socket (int fd)
  * @arena: Arena for allocations
  * @fd: File descriptor to wrap
  * Returns: Allocated socket structure
- * Raises: Socket_Failed on allocation failure
+ * Raises: Socket_Failed on allocation failure (arena disposed on error)
  */
 static T
 allocate_socket_from_fd (Arena_T arena, int fd)
 {
-  T sock;
+  volatile T sock = NULL;
 
-  sock = Arena_calloc (arena, 1, sizeof (struct Socket_T), __FILE__, __LINE__);
-  atomic_store_explicit (&sock->freed, 0, memory_order_relaxed);
-  if (!sock)
-    {
-      Arena_dispose (&arena);
-      SOCKET_RAISE_MSG (Socket, Socket_Failed,
-                        SOCKET_ENOMEM
-                        ": Cannot allocate sock for new_from_fd");
-    }
+  TRY
+  {
+    sock = socket_alloc (arena, "sock for new_from_fd");
+    ((T)sock)->base = socket_alloc_base (arena, "base for new_from_fd");
+  }
+  EXCEPT (Arena_Failed)
+  {
+    Arena_dispose (&arena);
+    RAISE_MODULE_ERROR (Socket_Failed);
+  }
+  END_TRY;
 
-  sock->base = Arena_calloc (arena, 1, sizeof (struct SocketBase_T), __FILE__,
-                             __LINE__);
-  if (!sock->base)
-    {
-      Arena_dispose (&arena);
-      SOCKET_RAISE_MSG (Socket, Socket_Failed,
-                        SOCKET_ENOMEM
-                        ": Cannot allocate base for new_from_fd");
-    }
-
-  sock->base->arena = arena;
+  ((T)sock)->base->arena = arena;
 
   /* init_base sets fd, domain, type, protocol and initializes all endpoints */
-  SocketCommon_init_base (sock->base, fd, AF_UNSPEC, 0, 0, Socket_Failed);
+  SocketCommon_init_base (((T)sock)->base, fd, AF_UNSPEC, 0, 0, Socket_Failed);
 
-  return sock;
+  return (T)sock;
 }
 
 /**
@@ -235,45 +325,31 @@ setup_socket_nonblocking (T socket)
 T
 Socket_new (int domain, int type, int protocol)
 {
-  SocketBase_T base = NULL;
-  T sock;
+  volatile SocketBase_T base = NULL;
+  volatile T sock = NULL;
 
   TRY base = SocketCommon_new_base (domain, type, protocol);
   EXCEPT (Arena_Failed)
   RAISE_MODULE_ERROR (Socket_Failed);
   END_TRY;
 
-  if (!base || !SocketBase_arena (base))
+  if (!base || !SocketBase_arena ((SocketBase_T)base))
     SOCKET_RAISE_MSG (Socket, Socket_Failed,
                       "Invalid base from new_base (null arena)");
 
-  sock = Arena_calloc (SocketBase_arena (base), 1, sizeof (struct Socket_T),
-                       __FILE__, __LINE__);
-  atomic_store_explicit (&sock->freed, 0, memory_order_relaxed);
-  if (!sock)
-    {
-      SocketCommon_free_base (&base);
-      SOCKET_RAISE_MSG (Socket, Socket_Failed,
-                        SOCKET_ENOMEM ": Cannot allocate socket structure");
-    }
+  TRY sock = socket_alloc (SocketBase_arena ((SocketBase_T)base), "socket");
+  EXCEPT (Arena_Failed)
+  {
+    SocketCommon_free_base ((SocketBase_T *)&base);
+    RAISE_MODULE_ERROR (Socket_Failed);
+  }
+  END_TRY;
 
-  sock->base = base;
+  ((T)sock)->base = (SocketBase_T)base;
 
-  /* Initialize per-socket statistics */
-  sock->base->stats.create_time_ms = Socket_get_monotonic_ms ();
-  sock->base->stats.rtt_us = -1;
-  sock->base->stats.rtt_var_us = -1;
+  socket_init_after_alloc ((T)sock);
 
-#if SOCKET_HAS_TLS
-  socket_init_tls_fields (sock);
-#endif
-
-  socket_live_increment ();
-
-  /* Update peak connection tracking */
-  SocketMetrics_update_peak_if_needed (Socket_debug_live_count ());
-
-  return sock;
+  return (T)sock;
 }
 
 void
@@ -295,14 +371,8 @@ Socket_free (T *socket)
 
     /* Stream-specific cleanup (TLS) before base free */
 #if SOCKET_HAS_TLS
-  if (s->tls_ssl)
-    {
-      SSL *tls_ssl = (SSL *)s->tls_ssl;
-      tls_cleanup_alpn_temp (tls_ssl); /* Free ALPN temp if stored */
-      SSL_free (tls_ssl);
-      s->tls_ssl = NULL;
-    }
-    /* Add other TLS cleanup if necessary (e.g., ctx if owned per socket) */
+  socket_cleanup_tls(s);
+  /* Add other TLS cleanup if necessary (e.g., ctx if owned per socket) */
 #endif
 
   /* Common base cleanup: closes fd, disposes arena (frees s too) */
@@ -329,7 +399,7 @@ Socket_new_from_fd (int fd)
 
   T sock = allocate_socket_from_fd (arena, fd);
 
-  /* Init TLS etc as in Socket_new */
+  socket_init_after_alloc (sock);
 
   /* Set non-blocking mode (required for batch accept) */
   setup_socket_nonblocking (sock);
@@ -380,7 +450,6 @@ Socket_debug_live_count (void)
 }
 
 /* ==================== Unix Domain Socket Operations ==================== */
-/* Merged from SocketUnix.c */
 
 /**
  * unix_is_abstract_path - Check if path is abstract namespace
@@ -579,8 +648,7 @@ Socket_connect_unix (Socket_T socket, const char *path)
   SocketCommon_update_local_endpoint (socket->base);
 }
 
-/* ==================== State Queries ====================
- * Merged from Socket-state.c */
+/* ==================== State Queries ==================== */
 
 /* check_bound_* helpers moved to SocketCommon.h as inline functions:
  * - SocketCommon_check_bound_ipv4()
@@ -728,8 +796,7 @@ Socket_getlocalport (const T socket)
   return socket->base->localport;
 }
 
-/* ==================== Bind Operations ====================
- * Merged from Socket-bind.c */
+/* ==================== Bind Operations ==================== */
 
 /* Bind setup uses SocketCommon_validate_port and SocketCommon_setup_hints
  * directly */
@@ -901,8 +968,7 @@ Socket_bind_async_cancel (SocketDNS_T dns, Request_T req)
     SocketDNS_cancel (dns, req);
 }
 
-/* ==================== Accept Operations ====================
- * Merged from Socket-accept.c */
+/* ==================== Accept Operations ==================== */
 
 /* Forward declarations */
 static int accept_connection (T socket, struct sockaddr_storage *addr,
@@ -947,16 +1013,17 @@ accept_create_arena (int newfd)
 static T
 accept_alloc_socket (Arena_T arena)
 {
-  T newsocket
-      = Arena_calloc (arena, 1, sizeof (struct Socket_T), __FILE__, __LINE__);
-  atomic_store_explicit (&newsocket->freed, 0, memory_order_relaxed);
-  if (!newsocket)
-    {
-      Arena_dispose (&arena);
-      SOCKET_RAISE_MSG (Socket, Socket_Failed,
-                        SOCKET_ENOMEM ": Cannot allocate socket structure");
-    }
-  return newsocket;
+  volatile T newsocket = NULL;
+
+  TRY newsocket = socket_alloc (arena, "accepted socket");
+  EXCEPT (Arena_Failed)
+  {
+    Arena_dispose (&arena);
+    RAISE_MODULE_ERROR (Socket_Failed);
+  }
+  END_TRY;
+
+  return (T)newsocket;
 }
 
 /**
@@ -969,15 +1036,17 @@ accept_alloc_socket (Arena_T arena)
 static SocketBase_T
 accept_alloc_base (Arena_T arena)
 {
-  SocketBase_T base = Arena_calloc (arena, 1, sizeof (struct SocketBase_T),
-                                    __FILE__, __LINE__);
-  if (!base)
-    {
-      Arena_dispose (&arena);
-      SOCKET_RAISE_MSG (Socket, Socket_Failed,
-                        SOCKET_ENOMEM ": Cannot allocate base structure");
-    }
-  return base;
+  volatile SocketBase_T base = NULL;
+
+  TRY base = socket_alloc_base (arena, "accepted base");
+  EXCEPT (Arena_Failed)
+  {
+    Arena_dispose (&arena);
+    RAISE_MODULE_ERROR (Socket_Failed);
+  }
+  END_TRY;
+
+  return (SocketBase_T)base;
 }
 
 /**
@@ -1035,25 +1104,7 @@ accept_init_socket (T newsocket, SocketBase_T base, Arena_T arena, int newfd,
   base->localaddr = NULL;
   base->localport = 0;
 
-  /* Initialize per-socket statistics for accepted connection */
-  base->stats.create_time_ms = Socket_get_monotonic_ms ();
-  base->stats.connect_time_ms = 0;
-  base->stats.last_recv_time_ms = 0;
-  base->stats.last_send_time_ms = 0;
-  base->stats.bytes_sent = 0;
-  base->stats.bytes_received = 0;
-  base->stats.packets_sent = 0;
-  base->stats.packets_received = 0;
-  base->stats.send_errors = 0;
-  base->stats.recv_errors = 0;
-  base->stats.rtt_us = -1;
-  base->stats.rtt_var_us = -1;
-
-#if SOCKET_HAS_TLS
-  socket_init_tls_fields (newsocket);
-#endif
-
-  socket_live_increment ();
+  socket_init_after_alloc (newsocket);
 }
 
 /* ==================== Accept Connection ==================== */
@@ -1182,8 +1233,7 @@ Socket_accept (T socket)
   return NULL;
 }
 
-/* ==================== Pair Operations ====================
- * Merged from Socket-pair.c */
+/* ==================== Pair Operations ==================== */
 
 /**
  * socketpair_validate_type - Validate socket type for socketpair
@@ -1246,36 +1296,31 @@ static Arena_T
 socketpair_allocate_socket (int fd, int type, Socket_T *out_socket)
 {
   Arena_T arena = Arena_new ();
-  Socket_T sock;
+  volatile Socket_T sock = NULL;
 
   if (!arena)
     SOCKET_RAISE_MSG (Socket, Socket_Failed,
                       SOCKET_ENOMEM ": Cannot allocate arena for socket pair");
 
-  sock = Arena_calloc (arena, 1, sizeof (struct Socket_T), __FILE__, __LINE__);
-  atomic_store_explicit (&sock->freed, 0, memory_order_relaxed);
-  if (!sock)
-    {
-      Arena_dispose (&arena);
-      SOCKET_RAISE_MSG (Socket, Socket_Failed,
-                        SOCKET_ENOMEM
-                        ": Cannot allocate socket structure for pair");
-    }
+  TRY
+  {
+    sock = socket_alloc (arena, "socket pair");
+    ((Socket_T)sock)->base = socket_alloc_base (arena, "socket pair base");
+  }
+  EXCEPT (Arena_Failed)
+  {
+    Arena_dispose (&arena);
+    RAISE_MODULE_ERROR (Socket_Failed);
+  }
+  END_TRY;
 
-  sock->base = Arena_calloc (arena, 1, sizeof (struct SocketBase_T), __FILE__,
-                             __LINE__);
-  if (!sock->base)
-    {
-      Arena_dispose (&arena);
-      SOCKET_RAISE_MSG (Socket, Socket_Failed,
-                        SOCKET_ENOMEM ": Cannot allocate base for socket");
-    }
+  ((Socket_T)sock)->base->arena = arena;
+  SocketCommon_init_base (((Socket_T)sock)->base, fd, AF_UNIX, type, 0, Socket_Failed);
+  ((Socket_T)sock)->base->remoteaddr = NULL; /* Pair sockets are connected */
 
-  sock->base->arena = arena;
-  SocketCommon_init_base (sock->base, fd, AF_UNIX, type, 0, Socket_Failed);
-  sock->base->remoteaddr = NULL; /* Pair sockets are connected */
+  socket_init_after_alloc ((Socket_T)sock);
 
-  *out_socket = sock;
+  *out_socket = (Socket_T)sock;
   return arena;
 }
 
@@ -1290,13 +1335,7 @@ socketpair_cleanup_socket (Socket_T sock, int fd)
   if (sock)
     {
 #if SOCKET_HAS_TLS
-      if (sock->tls_ssl)
-        {
-          tls_cleanup_alpn_temp (
-              (SSL *)sock->tls_ssl); /* Free ALPN temp if stored */
-          SSL_free ((SSL *)sock->tls_ssl);
-          sock->tls_ssl = NULL;
-        }
+      socket_cleanup_tls (sock);
 #endif
       SocketCommon_free_base (&sock->base);
       socket_live_decrement ();

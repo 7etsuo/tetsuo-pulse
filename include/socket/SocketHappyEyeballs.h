@@ -581,6 +581,58 @@ extern void SocketHappyEyeballs_config_defaults (SocketHE_Config_T *config);
  */
 
 /**
+ * @brief Process SocketPoll events for Happy Eyeballs progress and completion checks.
+ * @ingroup async_io
+ * @param[in] he Happy Eyeballs context.
+ * @param[in] events Array of SocketEvent_T from SocketPoll_wait() on the poll passed to start().
+ * @param[in] num_events Number of events returned by SocketPoll_wait().
+ * @threadsafe No.
+ *
+ * For optimal performance and to avoid redundant polling, call this function immediately after
+ * SocketPoll_wait() on the poll instance associated with this context. It processes:
+ * - DNS resolution completion events (from internal pipe FD).
+ * - Connection attempt completion events (connect(2) ready or error).
+ *
+ * This dispatches events to internal handlers without busy-waiting or poll(0) on each FD.
+ * Call before SocketHappyEyeballs_process() in your event loop for complete state advancement.
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * SocketEvent_T *events = NULL;
+ * int nfds = SocketPoll_wait(poll, &events, timeout_ms);  // poll from start()
+ *
+ * // Handle your other sockets first if mixed in poll
+ * for (int i = 0; i < nfds; ++i) {
+ *   // ... non-HE event handling ...
+ * }
+ *
+ * // Process HE events
+ * SocketHappyEyeballs_process_events(he, events, nfds);
+ *
+ * // Advance timers, start fallbacks, check timeouts, etc.
+ * SocketHappyEyeballs_process(he);
+ *
+ * // Free events if allocated by wait() (check impl)
+ * if (events) free(events);  // Or per impl
+ * @endcode
+ *
+ * @note Only processes events relevant to this context (DNS FD or attempt sockets).
+ * @note Ignores irrelevant events on the poll.
+ * @note Safe with num_events == 0 (no-op).
+ * @note Enhances efficiency: avoids O(attempts) poll(0) calls in process().
+ * @warning Must use events from the correct poll instance (passed to start()).
+ * @warning Do not store or modify events array beyond immediate use.
+ *
+ * @see SocketPoll_wait() for event retrieval.
+ * @see SocketHappyEyeballs_process() for non-event state advancement.
+ * @see SocketHappyEyeballs_start() for poll setup.
+ * @see SocketEvent_T for event structure.
+ * @complexity O(num_events) - linear scan of provided events.
+ */
+extern void SocketHappyEyeballs_process_events (T he, SocketEvent_T *events, int num_events);
+
+/**
  * @brief Get milliseconds until the next Happy Eyeballs timer expiry.
  * @ingroup async_io
  * @param[in] he Happy Eyeballs context.

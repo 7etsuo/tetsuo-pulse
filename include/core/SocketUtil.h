@@ -906,6 +906,8 @@ typedef enum SocketMetric
   SOCKET_METRIC_DNS_REQUEST_FAILED,
   SOCKET_METRIC_DNS_REQUEST_CANCELLED,
   SOCKET_METRIC_DNS_REQUEST_TIMEOUT,
+  SOCKET_METRIC_DNS_CACHE_HIT,
+  SOCKET_METRIC_DNS_CACHE_MISS,
   SOCKET_METRIC_POLL_WAKEUPS,
   SOCKET_METRIC_POLL_EVENTS_DISPATCHED,
   SOCKET_METRIC_POOL_CONNECTIONS_ADDED,
@@ -959,37 +961,45 @@ typedef struct SocketMetricsSnapshot
 } SocketMetricsSnapshot;
 
 /**
- * @brief SocketMetrics_increment - Increment a metric counter
+ * @brief SocketMetrics_increment - Legacy metric increment (forwards to new system)
  * @ingroup foundation
- * @param metric Metric to increment
- * @param value Amount to add
- * @threadsafe Yes
+ * @deprecated Use SocketMetrics_counter_inc(SocketCounterMetric) from SocketMetrics.h
+ * @param metric Legacy metric enum
+ * @param value Amount to add (uint64_t in new API)
+ * @threadsafe Yes - forwards to atomic new system
+ * @note For backward compatibility; forwards to new counters where mapped.
+ * @see SocketMetrics.h for full metrics suite (gauges, histograms, exports)
  */
 void SocketMetrics_increment (SocketMetric metric, unsigned long value);
 
 /**
- * @brief SocketMetrics_getsnapshot - Get atomic snapshot of all metrics
+ * @brief SocketMetrics_getsnapshot - Legacy snapshot (populated from new system)
  * @ingroup foundation
- * @param snapshot Output structure to receive metric values
- * @threadsafe Yes
+ * @deprecated Use SocketMetrics_get(SocketMetrics_Snapshot *) from SocketMetrics.h for full data
+ * @param snapshot Legacy snapshot struct (counters only)
+ * @threadsafe Yes - reads from new atomic/thread-safe system
+ * @note Populates legacy values from mapped new counters; unmapped are 0.
+ * @see SocketMetrics.h SocketMetrics_Snapshot for gauges/histograms too
  */
 void SocketMetrics_getsnapshot (SocketMetricsSnapshot *snapshot);
 
 /**
- * @brief SocketMetrics_legacy_reset - Reset legacy metrics to zero
+ * @brief SocketMetrics_legacy_reset - Reset (forwards to new system)
  * @ingroup foundation
- * @threadsafe Yes
- * @note This is the legacy API. For new code, use SocketMetrics_reset() from
- * SocketMetrics.h.
+ * @deprecated Use SocketMetrics_reset() from SocketMetrics.h
+ * @threadsafe Yes - calls new reset_counters (resets all counters)
+ * @note For compatibility; resets all new counters, not just legacy mapped.
  */
 void SocketMetrics_legacy_reset (void);
 
 /**
- * @brief SocketMetrics_name - Get human-readable name for a metric
+ * @brief SocketMetrics_name - Get name (forwards to new or legacy)
  * @ingroup foundation
- * @param metric Metric to get name for
- * @return Static string with metric name
+ * @deprecated Use SocketMetrics_counter_name(SocketCounterMetric) etc. from SocketMetrics.h
+ * @param metric Legacy metric enum
+ * @return Mapped new name or legacy name for unmapped
  * @threadsafe Yes
+ * @note For compatibility; prefer new API names for consistency.
  */
 const char *SocketMetrics_name (SocketMetric metric);
 

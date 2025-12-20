@@ -21,6 +21,7 @@
 
 #include "core/SocketCrypto.h"
 #include "core/SocketUtil.h"
+#include "core/HashTable.h"
 #include "tls/SocketTLS-private.h"
 #include <assert.h>
 #include <errno.h>
@@ -33,6 +34,8 @@
  * Thread-Local Error Buffers
  * ============================================================================
  */
+
+
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLSContext);
 
 /* Global ex_data index for context lookup (thread-safe initialization) */
@@ -158,6 +161,13 @@ ctx_raise_openssl_error (const char *context)
 }
 
 /* ============================================================================
+ * Context Setup Callback Type
+ * ============================================================================
+ */
+
+typedef void (*TLSContextSetupFunc)(T ctx, void *user_data);
+
+/* ============================================================================
  * Structure Initialization Helpers
  * ============================================================================
  */
@@ -279,6 +289,78 @@ configure_tls13_only (SSL_CTX *ssl_ctx)
    * long chains. SOCKET_TLS_MAX_CERT_CHAIN_DEPTH (default 10) allows
    * typical commercial CA hierarchies while blocking malicious chains. */
   SSL_CTX_set_verify_depth (ssl_ctx, SOCKET_TLS_MAX_CERT_CHAIN_DEPTH);
+}
+
+/* ============================================================================
+ * Generic Context Creation with Setup
+ * ============================================================================
+ */
+
+/**
+ * tls_context_new_with_setup - Create TLS context with optional setup callback.
+ * @method OpenSSL SSL_METHOD for client or server.
+ * @is_server 1 for server context, 0 for client.
+ * @setup Optional setup function invoked after allocation and basic init.
+ * @user_data Arbitrary data passed to setup callback.
+ *
+ * This internal helper allocates the context using ctx_alloc_and_init(),
+ * then invokes the setup callback if provided. On any failure during setup,
+ * the partially allocated context is freed and the exception reraised.
+ *
+ * Reduces code duplication in public creation functions by encapsulating
+ * the common TRY/EXCEPT pattern for allocation + configuration.
+ *
+ * ## Error Handling
+ *
+ * - Allocation failure: Exception raised immediately, no partial state.
+ * - Setup failure: Context freed, original exception reraised.
+ * - Volatile pointer used to preserve state across longjmp in EXCEPT.
+ *
+ * ## Usage
+ *
+ * @code
+ * static void my_setup(T ctx, void *data) {
+ *   // Custom configuration, e.g., load certs
+ *   SocketTLSContext_load_certificate(ctx, ((struct MyData*)data)->cert, ...);
+ * }
+ *
+ * T ctx = tls_context_new_with_setup(TLS_server_method(), 1, my_setup, &my_data);
+ * @endcode
+ *
+ * @note Setup callback must not free or dispose the context.
+ * @note Thread-safe if setup callback is thread-safe.
+ * @note Caller responsible for eventual SocketTLSContext_free(ctx).
+ *
+ * @return Fully initialized T context on success.
+ * @throws SocketTLS_Failed (or subclasses) from alloc/init/setup failures.
+ * @internal
+ */
+static T
+tls_context_new_with_setup(const SSL_METHOD *method, int is_server,
+                           TLSContextSetupFunc setup, void *user_data)
+{
+  T ctx_local;
+  volatile T *ctx_ptr = &ctx_local;
+
+  TRY
+  {
+    *ctx_ptr = ctx_alloc_and_init(method, is_server);
+    if (setup != NULL)
+    {
+      setup(*ctx_ptr, user_data);
+    }
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    if (*ctx_ptr != NULL)
+    {
+      SocketTLSContext_free((T *)ctx_ptr);
+    }
+    RERAISE;
+  }
+  END_TRY;
+
+  return *ctx_ptr;
 }
 
 /* ============================================================================
@@ -613,6 +695,24 @@ SocketTLSContext_new (const SocketTLSConfig_T *config)
   return ctx;
 }
 
+/* Named struct for server setup data */
+struct ServerSetupData {
+  const char *cert_file;
+  const char *key_file;
+  const char *ca_file;
+};
+
+static void
+setup_new_server(T ctx, void *data)
+{
+  struct ServerSetupData *setup_data = (struct ServerSetupData *) data;
+
+  SocketTLSContext_load_certificate(ctx, setup_data->cert_file, setup_data->key_file);
+  if (setup_data->ca_file != NULL) {
+    SocketTLSContext_load_ca(ctx, setup_data->ca_file);
+  }
+}
+
 T
 SocketTLSContext_new_server (const char *cert_file, const char *key_file,
                              const char *ca_file)
@@ -620,22 +720,9 @@ SocketTLSContext_new_server (const char *cert_file, const char *key_file,
   assert (cert_file);
   assert (key_file);
 
-  T ctx = ctx_alloc_and_init (TLS_server_method (), 1);
+  struct ServerSetupData setup_data = {cert_file, key_file, ca_file};
 
-  TRY
-  {
-    SocketTLSContext_load_certificate (ctx, cert_file, key_file);
-    if (ca_file)
-      SocketTLSContext_load_ca (ctx, ca_file);
-  }
-  EXCEPT (SocketTLS_Failed)
-  {
-    SocketTLSContext_free (&ctx);
-    RERAISE;
-  }
-  END_TRY;
-
-  return ctx;
+  return tls_context_new_with_setup(TLS_server_method(), 1, setup_new_server, &setup_data);
 }
 
 T
@@ -675,6 +762,19 @@ SocketTLSContext_free (T *ctx)
     }
 
   secure_clear_sensitive_data (c);
+
+  /* Cleanup sharded session cache if enabled */
+  if (c->sharded_enabled)
+    {
+      for (size_t i = 0; i < c->sharded_session_cache.num_shards; i++)
+        {
+          TLSSessionShard_T *shard = &c->sharded_session_cache.shards[i];
+          if (shard->session_table)
+            HashTable_free (&shard->session_table);
+          pthread_mutex_destroy (&shard->mutex);
+        }
+      c->sharded_enabled = 0;
+    }
 
   if (c->arena)
     Arena_dispose (&c->arena);

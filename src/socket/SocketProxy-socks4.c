@@ -81,7 +81,9 @@ socks4_write_header (unsigned char *buf, int port)
  * @username: Username or NULL (empty string if NULL)
  * @bytes_written: Output - bytes written including null terminator
  *
- * Returns: 0 on success, -1 if buffer overflow or username too long
+ * Returns: 0 on success, -1 if buffer overflow
+ *
+ * Username length and validity already checked by caller (socks4_validate_inputs).
  */
 static int
 socks4_write_userid (unsigned char *buf, size_t buf_remaining,
@@ -90,12 +92,7 @@ socks4_write_userid (unsigned char *buf, size_t buf_remaining,
   const char *userid = (username != NULL) ? username : "";
   size_t userid_len = strlen (userid);
 
-  /* Limit username length per convention */
-  if (userid_len > SOCKET_PROXY_MAX_USERNAME_LEN)
-    {
-      *bytes_written = 0;
-      return -1;
-    }
+  /* userid_len already validated <= SOCKET_PROXY_MAX_USERNAME_LEN and UTF-8 by caller */
 
   /* Need space for userid + null terminator */
   if (userid_len + 1 > buf_remaining)
@@ -116,7 +113,10 @@ socks4_write_userid (unsigned char *buf, size_t buf_remaining,
  *
  * Returns: 0 on success, -1 on validation failure (error set in conn)
  *
- * Validates port, hostname, and optional username for SOCKS4 requests.
+ * Validates port (1-65535), hostname (RFC 1123 syntax, UTF-8, length <=255),
+ * and optional username (length <=255, UTF-8) for SOCKS4/4a requests.
+ *
+ * Sets PROXY_ERROR_PROTOCOL on validation failures.
  */
 static int
 socks4_validate_inputs (struct SocketProxy_Conn_T *conn)
@@ -125,6 +125,14 @@ socks4_validate_inputs (struct SocketProxy_Conn_T *conn)
   {
     SocketCommon_validate_port (conn->target_port, SocketProxy_Failed);
     SocketCommon_validate_hostname (conn->target_host, SocketProxy_Failed);
+
+    /* UTF-8 validation for target host (hostnames may be internationalized) */
+    if (SocketUTF8_validate_str (conn->target_host) != UTF8_VALID)
+      {
+        socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                               "Invalid UTF-8 in target host");
+        RETURN -1;
+      }
 
     if (conn->username != NULL)
       {
@@ -154,47 +162,7 @@ socks4_validate_inputs (struct SocketProxy_Conn_T *conn)
   return 0;
 }
 
-/**
- * socks4a_validate_hostname - Validate hostname for SOCKS4a requests
- * @conn: Proxy connection context
- * @host_len: Length of target hostname
- *
- * Returns: 0 on success, -1 on validation failure (error set in conn)
- *
- * Performs additional hostname validation specific to SOCKS4a:
- * - Checks length bounds (1 to SOCKET_PROXY_MAX_HOSTNAME_LEN)
- * - Rejects forbidden characters (CR, LF)
- * - Validates UTF-8 encoding
- */
-static int
-socks4a_validate_hostname (struct SocketProxy_Conn_T *conn, size_t host_len)
-{
-  if (host_len == 0 || host_len > SOCKET_PROXY_MAX_HOSTNAME_LEN)
-    {
-      socketproxy_set_error (
-          conn, PROXY_ERROR_PROTOCOL,
-          "Hostname invalid length: %zu bytes (must be 1-%d)", host_len,
-          SOCKET_PROXY_MAX_HOSTNAME_LEN);
-      return -1;
-    }
 
-  if (strpbrk (conn->target_host, "\r\n") != NULL)
-    {
-      socketproxy_set_error (
-          conn, PROXY_ERROR_PROTOCOL,
-          "Hostname contains forbidden characters (CR or LF)");
-      return -1;
-    }
-
-  if (SocketUTF8_validate_str (conn->target_host) != UTF8_VALID)
-    {
-      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                             "Invalid UTF-8 in target host");
-      return -1;
-    }
-
-  return 0;
-}
 
 /* ============================================================================
  * SOCKS4 Connect Request
@@ -297,10 +265,8 @@ proxy_socks4a_send_connect (struct SocketProxy_Conn_T *conn)
   if (inet_pton (AF_INET, conn->target_host, &ipv4) == 1)
     return proxy_socks4_send_connect (conn);
 
-  /* Additional hostname validation for SOCKS4a */
   host_len = strlen (conn->target_host);
-  if (socks4a_validate_hostname (conn, host_len) < 0)
-    return -1;
+  /* Additional validation (UTF-8, etc.) already performed in socks4_validate_inputs() */
 
   /* Write header: version + command + port */
   len += socks4_write_header (buf + len, conn->target_port);

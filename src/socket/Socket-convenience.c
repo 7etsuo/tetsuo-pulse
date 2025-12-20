@@ -5,31 +5,49 @@
  */
 
 /**
- * Socket-convenience.c - Convenience wrapper functions
+ * @file Socket-convenience.c
+ * @ingroup core_io
+ * @brief High-level convenience functions for socket setup and connections
  *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
+ * This split implementation file provides simplified APIs for common socket
+ * patterns, reducing boilerplate code while maintaining full control and safety.
+ * Functions combine creation, configuration, binding, listening, connecting,
+ * and timeout handling into single calls.
  *
- * Implements high-level convenience functions that combine multiple
- * socket operations into single calls for common use cases:
+ * ## Key Features
  *
- * - Socket_listen_tcp() - One-call TCP server setup
- * - Socket_connect_tcp() - One-call TCP client with timeout
- * - Socket_accept_timeout() - Accept with explicit timeout
- * - Socket_connect_nonblocking() - Non-blocking connect initiation
- * - Socket_listen_unix() - One-call Unix domain server setup
- * - Socket_connect_unix_timeout() - Unix domain connect with timeout
+ * - **TCP Convenience**: Quick server/client setup with reuseaddr and timeouts
+ * - **Timed Operations**: Accept and connect with poll-based timeouts and EINTR retry
+ * - **Non-blocking Support**: Initiate async connects, temporary mode management
+ * - **Unix Domain**: Full support for filesystem and abstract sockets (Linux)
+ * - **Error Handling**: Consistent exception raising with detailed messages
+ * - **Mode Preservation**: Automatic restoration of original blocking/non-blocking state
  *
- * Thread Safety:
- * All functions in this module are thread-safe. They operate on
- * independent socket instances and use thread-local error buffers.
+ * ## Module Dependencies
+ *
+ * - Foundation: Arena, Except for memory/error handling
+ * - Core I/O: Socket base API (bind, listen, connect, accept)
+ * - Utilities: SocketUtil for logging, timeouts, error categorization
+ *
+ * ## Usage Philosophy
+ *
+ * Designed for rapid prototyping and production use cases where simplicity
+ * outweighs low-level customization. For advanced scenarios (e.g., custom options,
+ * IPv6 dual-stack, event integration), use base Socket API directly.
+ *
+ * All functions are thread-safe and integrate seamlessly with SocketPoll and SocketPool.
+ *
+ * @see Socket.h for declarations and base API
+ * @see core/SocketUtil.h for shared utilities and macros
+ * @see docs/ASYNC_IO.md for integration with event systems
+ * @see docs/ERROR_HANDLING.md for exception patterns
  */
 
 #include <arpa/inet.h>
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <netdb.h>
+
 #include <poll.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -232,24 +250,120 @@ parse_ip_address (const char *ip_address, struct sockaddr_storage *addr,
         return -1; /* Unreachable, but satisfies compiler */
 }
 
+/**
+ * @brief Temporarily manage socket non-blocking mode for timed operations.
+ * @ingroup core_io
+ *
+ * Centralizes logic to set socket to non-blocking mode before timed operations
+ * and restore original mode afterward. Used by convenience functions to avoid
+ * code duplication.
+ *
+ * Call with enable=1 before TRY to setup, and enable=0 in FINALLY to cleanup.
+ * If socket already non-blocking, no change is made.
+ *
+ * @param[in] fd File descriptor of socket
+ * @param[in] enable 1=setup non-blocking, 0=restore original
+ * @param[out] original_flags Stores original flags when enabling (volatile compatible)
+ * @param[out] need_restore Tracks if restore was needed (volatile compatible)
+ *
+ * @threadsafe Yes - atomic fcntl operations, no shared state
+ *
+ * @note Designed for use with volatile int locals in TRY/EXCEPT contexts to prevent clobbering
+ * @note Does not raise exceptions; logs warnings on restore failure (non-fatal)
+ * @note Uses local copy for fcntl to avoid volatile access issues in system calls
+ *
+ * @see Socket_accept_timeout()
+ * @see Socket_connect_unix_timeout()
+ * @see .cursorrules#volatile-variables-with-tryexcept-critical
+ */
+static void
+with_nonblocking_scope (int fd, int enable, volatile int *original_flags, volatile int *need_restore)
+{
+        assert (fd >= 0);
+        assert (original_flags != NULL);
+        assert (need_restore != NULL);
+
+        if (!enable) {
+                /* Restore original blocking mode if we changed it */
+                if (*need_restore) {
+                        restore_blocking_mode (fd, (int)*original_flags);
+                        *need_restore = 0;
+                }
+                return;
+        }
+
+        /* Setup non-blocking if not already set - use local copy for syscalls */
+        int flags_copy;
+        get_socket_flags (fd, &flags_copy);
+        *original_flags = flags_copy;
+        if ((flags_copy & O_NONBLOCK) == 0) {
+                set_nonblocking_mode (fd, flags_copy);
+                *need_restore = 1;
+        } else {
+                *need_restore = 0;
+        }
+}
+
 /* ============================================================================
  * TCP Convenience Functions
  * ============================================================================
  */
 
 /**
- * Socket_listen_tcp - Create a listening TCP server socket in one call
- * @host: Local address to bind (NULL or "" for INADDR_ANY)
- * @port: Local port to bind (0-65535, 0 for ephemeral)
- * @backlog: Maximum pending connections (must be > 0)
+ * @brief Create and configure listening TCP server socket in single call.
+ * @ingroup core_io
  *
- * Returns: New listening socket ready for Socket_accept()
- * Raises: Socket_Failed on error
- * Thread-safe: Yes
+ * High-level convenience for TCP server setup: creates IPv4 TCP socket,
+ * enables SO_REUSEADDR for fast restarts, binds to specified host/port,
+ * and starts listening with given backlog. Ready for immediate Socket_accept() calls.
  *
- * Combines Socket_new(), Socket_setreuseaddr(), Socket_bind(), and
- * Socket_listen() into a single convenient call. The socket is
- * configured with SO_REUSEADDR to allow quick server restart.
+ * Supports INADDR_ANY (NULL or "") for all interfaces; port 0 assigns ephemeral port.
+ * Does not support IPv6 (use Socket_new(AF_INET6, ...) for dual-stack).
+ *
+ * @param[in] host Bind address (IPv4 or NULL/"" for 0.0.0.0)
+ * @param[in] port Local port (0-65535; 0=ephemeral)
+ * @param[in] backlog Listen queue depth (SOMAXCONN recommended for production)
+ *
+ * @return New listening Socket_T ready for accepts
+ *
+ * @throws Socket_Failed On socket creation failure, bind error (EADDRINUSE, EACCES),
+ *                       listen failure, or invalid params (port/backlog)
+ *
+ * @threadsafe Yes - creates independent new socket
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * // Simple HTTP server setup
+ * Socket_T server = Socket_listen_tcp(NULL, 8080, SOMAXCONN);
+ * if (server) {
+ *   while (running) {
+ *     Socket_T client = Socket_accept_timeout(server, 1000);  // Optional timeout
+ *     if (client) {
+ *       // Handle client...
+ *       Socket_free(&client);
+ *     }
+ *   }
+ *   Socket_free(&server);
+ * }
+ * @endcode
+ *
+ * ## Configuration Notes
+ *
+ * - SO_REUSEADDR enabled to allow bind after quick server crashes/restarts
+ * - SO_REUSEPORT not set (use Socket_setreuseport() post-creation for load balancing)
+ * - Backlog clamped internally if invalid (see listen(2) man page)
+ * - No TLS/Proxy/DNS config; apply post-creation via SocketTLS_enable() etc.
+ *
+ * @note IPv4 only; for IPv6: Socket_new(AF_INET6, SOCK_STREAM, 0) + manual bind/listen
+ * @warning Port <1024 requires root privileges (or setcap)
+ * @note Ephemeral port: Check Socket_getlocalport(server) after bind
+ * @complexity O(1)
+ *
+ * @see Socket_listen_unix() for Unix domain equivalent
+ * @see Socket_bind() and Socket_listen() for low-level control
+ * @see Socket_setreuseport() for multi-process sharing
+ * @see SocketPool_accept_limited() for pooled accepts with limits
  */
 T
 Socket_listen_tcp (const char *host, int port, int backlog)
@@ -336,83 +450,118 @@ Socket_connect_tcp (const char *host, int port, int timeout_ms)
 }
 
 /**
- * Socket_accept_timeout - Accept incoming connection with explicit timeout
- * @socket: Listening socket (must be in listening state)
- * @timeout_ms: Timeout in milliseconds (0 = immediate, -1 = block forever)
+ * @brief Accept incoming connection with configurable timeout behavior.
+ * @ingroup core_io
  *
- * Returns: New client socket, or NULL if timeout expired
- * Raises: Socket_Failed on accept error
- * Thread-safe: Yes
+ * Performs timed or blocking accept on listening socket. Behavior varies by timeout_ms:
  *
- * Performs a timed accept operation. If timeout_ms is 0, performs an
- * immediate non-blocking check. If timeout_ms is -1, blocks indefinitely.
- * Otherwise, waits up to timeout_ms for an incoming connection.
+ * - -1: Blocks indefinitely using standard blocking accept (no mode change)
+ * - 0: Immediate non-blocking check (temporarily enables non-blocking if needed)
+ * - >0: Polls for POLLIN up to timeout_ms, then accepts if ready
  *
- * Note: Temporarily sets the socket to non-blocking mode during the
- * operation and restores the original mode afterwards.
+ * Returns NULL on timeout for positive timeouts without raising exception.
+ * Restores original socket blocking mode after finite/immediate operations.
+ *
+ * @param[in] socket Listening Socket_T (must be bound and listening)
+ * @param[in] timeout_ms Timeout: -1=infinite block, 0=immediate, >0=ms timeout
+ *
+ * @return New connected Socket_T on success, NULL on timeout (positive timeout_ms)
+ *
+ * @throws Socket_Failed On accept failure, poll error, invalid socket/fd, or system errors (EAGAIN not considered failure)
+ *
+ * @threadsafe Yes - per-socket operation, thread-local error buffers and mode restoration
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * Socket_T server = Socket_listen_tcp("127.0.0.1", 8080, 128);
+ *
+ * // Block forever (traditional blocking accept)
+ * Socket_T client1 = Socket_accept_timeout(server, -1);
+ *
+ * // Wait max 5s for connection
+ * Socket_T client2 = Socket_accept_timeout(server, 5000);
+ * if (client2 == NULL) {
+ *     SOCKET_LOG_INFO_MSG("Accept timeout - no connection");
+ *     // Continue or retry
+ * }
+ *
+ * // Non-blocking immediate check
+ * Socket_T client3 = Socket_accept_timeout(server, 0);
+ * if (client3 == NULL) {
+ *     // No pending connection
+ * }
+ *
+ * Socket_free(&server);
+ * @endcode
+ *
+ * ## Edge Cases and Notes
+ *
+ * - If socket already non-blocking, mode not changed
+ * - Compatible with event loops (SocketPoll integration via non-blocking poll)
+ * - For -1, relies on socket's configured timeouts if any (SO_RCVTIMEO etc.)
+ * - Poll uses EINTR retry internally for signal safety
+ * - On Windows, uses WSAPoll equivalent (poll emulation)
+ *
+ * @warning Listening socket state not validated; ensure Socket_islistening(socket) == 1
+ * @note IPv4/IPv6/Unix domain supported via underlying Socket_accept()
+ * @complexity O(1) average; O(timeout_ms / poll_interval) worst for long timeouts
+ *
+ * @see Socket_accept() base accept without timeout
+ * @see Socket_listen_tcp() for TCP server creation
+ * @see SocketPoll_add() for event-driven accept
+ * @see docs/ASYNC_IO.md for non-blocking patterns
  */
 T
 Socket_accept_timeout (T socket, int timeout_ms)
 {
-        int fd;
-        int original_flags;
-        volatile int need_restore = 0;
         volatile T client = NULL;
-
+        int fd = Socket_fd (socket);
         assert (socket);
 
-        fd = Socket_fd (socket);
+        if (timeout_ms == -1) {
+                /* Infinite block: use standard blocking accept, no mode change */
+                TRY {
+                        client = Socket_accept (socket);
+                } EXCEPT (Socket_Failed) {
+                        RERAISE;
+                } END_TRY;
+                return client;
+        }
 
-        /* Get current flags */
-        get_socket_flags (fd, &original_flags);
-
-        /* Set non-blocking if needed for timeout handling */
-        if ((original_flags & O_NONBLOCK) == 0)
-                {
-                        set_nonblocking_mode (fd, original_flags);
-                        need_restore = 1;
-                }
+        /* Finite timeout or immediate: enable non-blocking mode temporarily */
+        int original_flags;
+        volatile int need_restore = 0;
+        with_nonblocking_scope (fd, 1, &original_flags, &need_restore);
 
         TRY
         {
-                /* Wait for incoming connection with timeout */
-                if (timeout_ms != 0)
-                        {
-                                struct pollfd pfd = { .fd = fd,
-                                                      .events = POLLIN,
-                                                      .revents = 0 };
-                                int poll_result;
+                int do_accept = 1;
+                struct pollfd pfd = { .fd = fd, .events = POLLIN, .revents = 0 };
+                int poll_result;
 
-                                poll_result = poll_with_eintr_retry (&pfd, timeout_ms);
-
-                                if (poll_result < 0)
-                                        {
-                                                SOCKET_ERROR_FMT ("poll() failed in accept_timeout");
-                                                RAISE_MODULE_ERROR (Socket_Failed);
-                                        }
-
-                                if (poll_result == 0)
-                                        {
-                                                /* Timeout - return NULL (not an error) */
-                                                client = NULL;
-                                        }
-                                else
-                                        {
-                                                /* Ready to accept */
-                                                client = Socket_accept (socket);
-                                        }
+                if (timeout_ms > 0) {
+                        /* Poll for readiness with timeout */
+                        poll_result = poll_with_eintr_retry (&pfd, timeout_ms);
+                        if (poll_result < 0) {
+                                SOCKET_ERROR_FMT ("poll() failed in accept_timeout");
+                                RAISE_MODULE_ERROR (Socket_Failed);
                         }
-                else
-                        {
-                                /* Immediate check (non-blocking) */
-                                client = Socket_accept (socket);
+                        if (poll_result == 0) {
+                                /* Timeout expired */
+                                client = NULL;
+                                do_accept = 0;
                         }
+                } /* else timeout_ms == 0: immediate non-blocking accept, do_accept=1 */
+
+                if (do_accept) {
+                        client = Socket_accept (socket);
+                }
         }
         FINALLY
         {
-                /* Restore original blocking mode */
-                if (need_restore)
-                        restore_blocking_mode (fd, original_flags);
+                /* Restore original mode */
+                with_nonblocking_scope (fd, 0, &original_flags, &need_restore);
         }
         END_TRY;
 
@@ -529,19 +678,70 @@ Socket_listen_unix (const char *path, int backlog)
 }
 
 /**
- * Socket_connect_unix_timeout - Connect to Unix domain socket with timeout
- * @socket: Unix domain socket (AF_UNIX)
- * @path: Server socket path (or '@' prefix for abstract)
- * @timeout_ms: Connection timeout in milliseconds (0 = no timeout)
+ * @brief Connect to Unix domain socket with optional timeout control.
+ * @ingroup core_io
  *
- * Raises: Socket_Failed on error or timeout
- * Thread-safe: Yes
+ * Establishes a connection to a Unix domain server socket. Supports both blocking
+ * and timed non-blocking connection attempts.
  *
- * Connects to a Unix domain socket with optional timeout. If timeout_ms
- * is 0, performs a blocking connect. Otherwise, uses non-blocking connect
- * with poll to enforce the timeout.
+ * - timeout_ms == 0: Performs blocking connect using high-level Socket_connect_unix() (no temporary mode change)
+ * - timeout_ms > 0: Non-blocking connect initiation + POLLOUT poll up to timeout_ms, then verifies completion
  *
- * For abstract namespace sockets (Linux only), prefix the path with '@'.
+ * Supports filesystem paths and Linux abstract namespace (prefix path with '@').
+ * Validates path length and builds sockaddr_un internally.
+ *
+ * @param[in] socket Pre-created AF_UNIX SOCK_STREAM socket
+ * @param[in] path Socket file path or abstract name (e.g., "@abstract")
+ * @param[in] timeout_ms 0=blocking (no timeout), >0=milliseconds timeout
+ *
+ * @throws Socket_Failed On immediate connect failure, poll failure, timeout expiration (ETIMEDOUT),
+ *                       invalid path length (>=108 bytes), or system errors (EINPROGRESS handled internally)
+ *
+ * @threadsafe Yes - per-socket, thread-local errors, atomic mode changes
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * Socket_T client = Socket_new(AF_UNIX, SOCK_STREAM, 0);
+ *
+ * TRY {
+ *   // Blocking connect - waits indefinitely
+ *   Socket_connect_unix_timeout(client, "/var/run/myserver.sock", 0);
+ * } EXCEPT(Socket_Failed) {
+ *   // Connect failed (e.g., no server, permission denied)
+ *   Socket_free(&client);
+ *   return -1;
+ * }
+ *
+ * // Use client...
+ * Socket_free(&client);
+ *
+ * TRY {
+ *   Socket_T timed_client = Socket_new(AF_UNIX, SOCK_STREAM, 0);
+ *   Socket_connect_unix_timeout(timed_client, "@abstract_server", 3000);  // 3s timeout
+ * } EXCEPT(Socket_Failed) {
+ *   // Timeout or error
+ * }
+ * @endcode
+ *
+ * ## Behavior Details
+ *
+ * - For blocking (0): Delegates to Socket_connect_unix() for consistency with library API
+ * - For timed (>0): Manually constructs sockaddr_un and calls connect(); polls POLLOUT for completion
+ * - Abstract sockets: '@' prefix sets sun_path[0]='\0' per Linux man pages
+ * - Error checking: Uses getsockopt(SO_ERROR) post-poll to detect connect outcome
+ * - Mode restoration: Always restores original blocking mode after timed operations
+ * - EINTR/EAGAIN handled during poll and connect
+ *
+ * @note Path must be null-terminated; max length ~108 bytes (sizeof(sun_path)-1)
+ * @warning Socket must be unused AF_UNIX stream; reuse raises undefined behavior
+ * @note No support for -1 (infinite); use 0 for blocking
+ * @complexity O(1) for blocking; O(timeout_ms) for timed polls
+ *
+ * @see Socket_connect_unix() for blocking connect without timeout param
+ * @see Socket_listen_unix() for server-side Unix socket setup
+ * @see with_nonblocking_scope() internal mode management helper
+ * @see docs/SECURITY.md#unix-domain-sockets for security considerations
  */
 void
 Socket_connect_unix_timeout (T socket, const char *path, int timeout_ms)
@@ -561,88 +761,73 @@ Socket_connect_unix_timeout (T socket, const char *path, int timeout_ms)
         path_len = strlen (path);
 
         /* Validate path length */
-        if (path_len == 0 || path_len >= sizeof (addr.sun_path))
-                {
-                        SOCKET_ERROR_MSG ("Invalid Unix socket path length: %zu", path_len);
-                        RAISE_MODULE_ERROR (Socket_Failed);
-                }
+        if (path_len == 0 || path_len >= sizeof (addr.sun_path)) {
+                SOCKET_ERROR_MSG ("Invalid Unix socket path length: %zu", path_len);
+                RAISE_MODULE_ERROR (Socket_Failed);
+        }
 
         /* Build address */
         memset (&addr, 0, sizeof (addr));
         addr.sun_family = AF_UNIX;
 
         /* Handle abstract sockets (Linux: '@' prefix becomes '\0') */
-        if (path[0] == '@')
-                {
-                        addr.sun_path[0] = '\0';
-                        memcpy (addr.sun_path + 1, path + 1, path_len - 1);
-                }
-        else
-                {
-                        memcpy (addr.sun_path, path, path_len);
-                }
+        if (path[0] == '@') {
+                addr.sun_path[0] = '\0';
+                memcpy (addr.sun_path + 1, path + 1, path_len - 1);
+        } else {
+                memcpy (addr.sun_path, path, path_len);
+        }
 
-        /* If timeout specified, use non-blocking connect */
-        if (timeout_ms > 0)
-                {
-                        get_socket_flags (fd, (int *)&original_flags);
+        if (timeout_ms == 0) {
+                /* Blocking connect: delegate to high-level API, no mode change */
+                TRY {
+                        Socket_connect_unix (socket, path);
+                } EXCEPT (Socket_Failed) {
+                        RERAISE;
+                } END_TRY;
+                return;
+        }
 
-                        if ((original_flags & O_NONBLOCK) == 0)
-                                {
-                                        set_nonblocking_mode (fd, original_flags);
-                                        need_restore = 1;
-                                }
-                }
+        /* Timed connect: enable non-blocking temporarily */
+        with_nonblocking_scope (fd, 1, &original_flags, &need_restore);
 
-        TRY
-        {
+        TRY {
                 result = connect (fd, (struct sockaddr *)&addr, sizeof (addr));
 
-                if (result == 0 || errno == EISCONN)
-                        {
-                                /* Connected immediately */
-                        }
-                else if (timeout_ms > 0
-                         && (errno == EINPROGRESS || errno == EINTR || errno == EAGAIN))
-                        {
-                                /* Wait for connection with timeout */
-                                struct pollfd pfd = { .fd = fd,
-                                                      .events = POLLOUT,
-                                                      .revents = 0 };
-                                int poll_result;
+                if (result == 0 || errno == EISCONN) {
+                        /* Immediate success */
+                        return;
+                }
 
-                                poll_result = poll_with_eintr_retry (&pfd, timeout_ms);
+                if (errno != EINPROGRESS && errno != EINTR && errno != EAGAIN && errno != EWOULDBLOCK) {
+                        /* Immediate failure */
+                        SOCKET_ERROR_FMT ("Unix connect to %.*s failed",
+                                          SOCKET_ERROR_MAX_HOSTNAME, path);
+                        RAISE_MODULE_ERROR (Socket_Failed);
+                }
 
-                                if (poll_result < 0)
-                                        {
-                                                SOCKET_ERROR_FMT ("poll() failed during Unix connect");
-                                                RAISE_MODULE_ERROR (Socket_Failed);
-                                        }
+                /* In progress: poll for completion */
+                struct pollfd pfd = { .fd = fd, .events = POLLOUT, .revents = 0 };
+                int poll_result = poll_with_eintr_retry (&pfd, timeout_ms);
 
-                                if (poll_result == 0)
-                                        {
-                                                errno = ETIMEDOUT;
-                                                SOCKET_ERROR_MSG (SOCKET_ETIMEDOUT ": Unix connect to %.*s",
-                                                                  SOCKET_ERROR_MAX_HOSTNAME, path);
-                                                RAISE_MODULE_ERROR (Socket_Failed);
-                                        }
+                if (poll_result < 0) {
+                        SOCKET_ERROR_FMT ("poll() failed during Unix connect");
+                        RAISE_MODULE_ERROR (Socket_Failed);
+                }
 
-                                /* Check if connect succeeded */
-                                check_connect_result (fd, path);
-                        }
-                else
-                        {
-                                /* Connect failed immediately */
-                                SOCKET_ERROR_FMT ("Unix connect to %.*s failed",
-                                                  SOCKET_ERROR_MAX_HOSTNAME, path);
-                                RAISE_MODULE_ERROR (Socket_Failed);
-                        }
+                if (poll_result == 0) {
+                        errno = ETIMEDOUT;
+                        SOCKET_ERROR_MSG ("%s: Unix connect to %.*s",
+                                          SOCKET_ETIMEDOUT, SOCKET_ERROR_MAX_HOSTNAME, path);
+                        RAISE_MODULE_ERROR (Socket_Failed);
+                }
+
+                /* Verify connect outcome */
+                check_connect_result (fd, path);
         }
-        FINALLY
-        {
-                /* Restore original blocking mode */
-                if (need_restore)
-                        restore_blocking_mode (fd, original_flags);
+        FINALLY {
+                /* Restore original mode */
+                with_nonblocking_scope (fd, 0, (int *)&original_flags, &need_restore);
         }
         END_TRY;
 }

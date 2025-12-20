@@ -207,6 +207,23 @@ struct SocketHPACK_Table
   Arena_T arena;   /**< Arena for allocating entries and strings */
 };
 
+/**
+ * @brief Find exact match or name-only match in dynamic table.
+ * @ingroup hpack_private
+ * @internal
+ *
+ * Returns >0 for exact match index (1=most recent), <0 for -(name match index),
+ * 0 if no match.
+ * @param table Dynamic table to search.
+ * @param name Header name to match.
+ * @param name_len Name length.
+ * @param value Header value (for exact match; NULL ignores value).
+ * @param value_len Value length.
+ * @return Positive: exact index; negative: -(name index); 0: no match.
+ */
+extern int SocketHPACK_Table_find (SocketHPACK_Table_T table, const char *name,
+                                   size_t name_len, const char *value, size_t value_len);
+
 /* ============================================================================
  * Encoder Structure
  * ============================================================================

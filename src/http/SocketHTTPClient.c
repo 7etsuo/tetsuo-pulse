@@ -598,29 +598,65 @@ calculate_new_capacity (HTTP1BodyAccumulator *acc, size_t needed_size)
  *
  * Returns: 0 on success, -1 on allocation failure
  */
-static int
-grow_body_buffer (HTTP1BodyAccumulator *acc, size_t needed_size)
+/**
+ * httpclient_grow_body_buffer - Grow arena buffer for body accumulation
+ * @arena: Arena for allocation
+ * @buf: Pointer to buffer pointer (updated)
+ * @capacity: Pointer to capacity (updated)
+ * @total: Pointer to current total bytes (updated to needed)
+ * @needed_size: New required total size
+ * @max_size: Maximum allowed size (0=unlimited)
+ *
+ * Common implementation for HTTP/1 and HTTP/2 body buffer growth.
+ * Exponential doubling with safe math, clamp to max_size.
+ * Reallocates via Arena_alloc, copies existing data.
+ * Replaces redundant growth logic in HTTP1 and HTTP2.
+ *
+ * Returns: 0 success, -1 alloc fail or overflow
+ */
+int
+httpclient_grow_body_buffer (Arena_T arena, char **buf, size_t *capacity, size_t *total, size_t needed_size, size_t max_size)
 {
+  size_t base_cap = (*capacity == 0) ? HTTPCLIENT_BODY_CHUNK_SIZE : *capacity;
   size_t new_cap;
-  char *new_buf;
 
-  if (needed_size <= acc->body_capacity)
+  if (needed_size <= *capacity)
     return 0;
 
-  new_cap = calculate_new_capacity (acc, needed_size);
-  if (new_cap == 0)
-    return -1;
+  /* Exponential growth with safe multiply */
+  new_cap = base_cap;
+  for (int i = 0; i < 32 && new_cap < needed_size; i++) {
+    size_t temp = SocketSecurity_safe_multiply (new_cap, 2);
+    if (temp == 0 || temp / 2 != new_cap) /* Overflow check */
+      return -1;
+    new_cap = temp;
+  }
 
-  new_buf = Arena_alloc (acc->arena, new_cap, __FILE__, __LINE__);
+  /* Clamp to max_size */
+  if (max_size > 0 && new_cap > max_size)
+    new_cap = max_size;
+
+  if (new_cap < needed_size)
+    return -1; /* Still too small after growth */
+
+  char *new_buf = Arena_alloc (arena, new_cap, __FILE__, __LINE__);
   if (new_buf == NULL)
     return -1;
 
-  if (acc->body_buf != NULL)
-    memcpy (new_buf, acc->body_buf, acc->total_body);
+  if (*buf != NULL && *total > 0)
+    memcpy (new_buf, *buf, *total);
 
-  acc->body_buf = new_buf;
-  acc->body_capacity = new_cap;
+  *buf = new_buf;
+  *capacity = new_cap;
   return 0;
+}
+
+/* Note: Caller must update *total after adding data to reach needed_size. */
+
+static int
+grow_body_buffer (HTTP1BodyAccumulator *acc, size_t needed_size)
+{
+  return httpclient_grow_body_buffer (acc->arena, &acc->body_buf, &acc->body_capacity, &acc->total_body, needed_size, acc->max_size);
 }
 
 /**
@@ -1678,15 +1714,14 @@ http2_recv_body (SocketHTTP2_Stream_T stream, SocketHTTP2_Conn_T h2conn,
           return -2;
         }
 
-      if (total_body >= body_cap && max_response_size == 0)
-        {
-          size_t new_cap = body_cap * 2;
-          unsigned char *new_buf
-              = Arena_alloc (arena, new_cap, __FILE__, __LINE__);
-          memcpy (new_buf, body_buf, total_body);
-          body_buf = new_buf;
-          body_cap = new_cap;
+      /* Grow if full and unlimited size */
+      if (total_body >= body_cap && max_response_size == 0) {
+        size_t needed = total_body + HTTPCLIENT_BODY_CHUNK_SIZE; /* Ensure space for next chunk */
+        if (httpclient_grow_body_buffer (arena, (char **)&body_buf, &body_cap, &total_body, needed, max_response_size) != 0) {
+          SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
+          return -1;
         }
+      }
     }
 
   *body_out = body_buf;
@@ -2208,7 +2243,7 @@ extern int httpclient_should_retry_error (const SocketHTTPClient_T client,
 extern int httpclient_should_retry_status (const SocketHTTPClient_T client,
                                            int status);
 
-/* clear_response_for_retry moved to SocketHTTPClient-retry.c */
+
 extern void
 httpclient_clear_response_for_retry (SocketHTTPClient_Response *response);
 

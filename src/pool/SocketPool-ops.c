@@ -301,11 +301,7 @@ close_excess_sockets (T pool, Socket_T *excess_sockets, size_t excess_count)
  *
  * Returns: Allocated buffer or NULL
  */
-static Socket_T *
-allocate_excess_buffer (size_t excess_count)
-{
-  return calloc (excess_count, sizeof (Socket_T));
-}
+/* Inlined allocate_excess_buffer into handle_shrink_excess for simplicity */
 
 /**
  * handle_shrink_excess - Handle excess connections when shrinking
@@ -331,7 +327,7 @@ handle_shrink_excess (T pool, size_t new_maxconns)
   if (excess_count == 0)
     return;
 
-  excess_sockets = allocate_excess_buffer (excess_count);
+  excess_sockets = calloc (excess_count, sizeof (Socket_T));
   if (!excess_sockets)
     {
       pthread_mutex_unlock (&pool->mutex);
@@ -703,50 +699,14 @@ accept_connection_direct (int server_fd)
  * @accepted: Output array
  *
  * Returns: 1 if valid, 0 if invalid
- */
-static int
-validate_batch_params (T pool, Socket_T server, int max_accepts,
-                       size_t accepted_capacity, Socket_T *accepted)
-{
-  if (!pool || !server || !accepted)
-    return 0;
-
-  if (max_accepts <= 0 || max_accepts > SOCKET_POOL_MAX_BATCH_ACCEPTS)
-    {
-      SOCKET_ERROR_MSG ("Invalid max_accepts %d (must be 1-%d)", max_accepts,
-                        SOCKET_POOL_MAX_BATCH_ACCEPTS);
-      return 0;
-    }
-
-  if ((size_t)max_accepts > accepted_capacity)
-    {
-      SOCKET_ERROR_MSG ("accepted_capacity %zu too small for max_accepts %d",
-                        accepted_capacity, max_accepts);
-      return 0;
-    }
-
-  return 1;
-}
-
+ *//* Inlined validate_batch_params into SocketPool_accept_batch for simplicity */
 /**
  * get_available_slots - Get available pool slots
  * @pool: Pool instance
  *
  * Returns: Number of available slots (>= 0)
  * Thread-safe: Yes - uses internal mutex
- */
-static int
-get_available_slots (T pool)
-{
-  int available;
-
-  pthread_mutex_lock (&pool->mutex);
-  available = (int)(pool->maxconns - pool->count);
-  pthread_mutex_unlock (&pool->mutex);
-
-  return available > 0 ? available : 0;
-}
-
+ *//* Inlined get_available_slots into SocketPool_accept_batch for simplicity */
 /**
  * wrap_fd_as_socket - Create Socket_T from file descriptor
  * @newfd: File descriptor to wrap
@@ -850,11 +810,27 @@ SocketPool_accept_batch (T pool, Socket_T server, int max_accepts,
   int server_fd;
   int result;
 
-  if (!validate_batch_params (pool, server, max_accepts, accepted_capacity,
-                              accepted))
+  if (!pool || !server || !accepted)
     return 0;
 
-  limit = get_available_slots (pool);
+  if (max_accepts <= 0 || max_accepts > SOCKET_POOL_MAX_BATCH_ACCEPTS)
+    {
+      SOCKET_ERROR_MSG ("Invalid max_accepts %d (must be 1-%d)", max_accepts,
+                        SOCKET_POOL_MAX_BATCH_ACCEPTS);
+      return 0;
+    }
+
+  if ((size_t)max_accepts > accepted_capacity)
+    {
+      SOCKET_ERROR_MSG ("accepted_capacity %zu too small for max_accepts %d",
+                        accepted_capacity, max_accepts);
+      return 0;
+    }
+
+  pthread_mutex_lock (&pool->mutex);
+  int available = (int)(pool->maxconns - pool->count);
+  pthread_mutex_unlock (&pool->mutex);
+  limit = available > 0 ? available : 0;
   if (limit <= 0)
     return 0;
 

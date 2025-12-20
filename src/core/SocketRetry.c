@@ -57,6 +57,9 @@
 /** Time conversion: nanoseconds per millisecond */
 #define NANOSECONDS_PER_MILLISECOND 1000000L
 
+/** Double representation of UINT32_MAX for random value normalization */
+#define UINT32_MAX_DOUBLE ((double)0xFFFFFFFFU)
+
 #define T SocketRetry_T
 
 #undef SOCKET_LOG_COMPONENT
@@ -82,6 +85,27 @@ struct T
 };
 
 /* ============================================================================
+ * Common Random Helper
+ * ============================================================================
+ */
+
+/**
+ * try_crypto_random - Attempt to fill output with cryptographically secure random bytes
+ * @out: Pointer to unsigned int to fill
+ *
+ * Returns: 1 if successful (crypto available and bytes generated), 0 otherwise
+ * Thread-safe: Yes
+ */
+static int
+try_crypto_random (unsigned int *out)
+{
+  if (!SocketSecurity_has_tls ())
+    return 0;
+
+  return SocketCrypto_random_bytes (out, sizeof (*out)) == 0;
+}
+
+/* ============================================================================
  * Random Number Generation (for jitter)
  * ============================================================================
  *
@@ -104,20 +128,24 @@ retry_random_double (unsigned int *state)
 {
   unsigned int value;
 
-  /* Try cryptographic random first */
-  if (SocketSecurity_has_tls ()
-      && SocketCrypto_random_bytes (&value, sizeof (value)) == 0)
-    return (double)value / (double)0xFFFFFFFFU;
+  if (try_crypto_random (&value))
+    return (double)value / UINT32_MAX_DOUBLE;
 
   /* Fallback: xorshift32 PRNG */
   if (*state == 0)
-    *state = (unsigned int)Socket_get_monotonic_ms ();
+    {
+      unsigned int temp = 0;
+      if (try_crypto_random (&temp))
+        *state = temp;
+      else
+        *state = (unsigned int)Socket_get_monotonic_ms ();
+    }
 
   *state ^= *state << 13;
   *state ^= *state >> 17;
   *state ^= *state << 5;
 
-  return (double)*state / (double)0xFFFFFFFFU;
+  return (double)*state / UINT32_MAX_DOUBLE;
 }
 
 /* ============================================================================
@@ -414,17 +442,10 @@ static unsigned int
 init_random_state (void)
 {
   unsigned int seed = 0;
-  uint8_t bytes[sizeof (unsigned int)];
 
-  /* Try crypto random for high entropy */
-  if (SocketSecurity_has_tls ()
-      && SocketCrypto_random_bytes (bytes, sizeof (bytes)) == 0)
-    {
-      memcpy (&seed, bytes, sizeof (seed));
-      return seed;
-    }
+  if (try_crypto_random (&seed))
+    return seed;
 
-  /* Fallback to monotonic time */
   seed = (unsigned int)Socket_get_monotonic_ms ();
   return seed;
 }

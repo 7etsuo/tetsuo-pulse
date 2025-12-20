@@ -943,33 +943,36 @@ extern int httpclient_calculate_retry_delay (const SocketHTTPClient_T client,
 extern void httpclient_retry_sleep_ms (int ms);
 
 /**
- * @brief Clear HTTP response for retry, preserving useful fields.
+ * @brief Grow arena-allocated body buffer to accommodate needed size.
  * @ingroup http
  *
- * Resets body buffer, status, headers for new request/response cycle.
- * Keeps connection info if keep-alive.
- * Used before retrying same connection.
+ * Exponential growth with safe multiplication checks, clamping to max_size.
+ * Reallocates via Arena_alloc, copies existing data.
  *
- * @param response The response struct to clear.
- * @throws None.
- * @threadsafe Conditional - no locks, caller synchronize.
- * @see SocketHTTP_Response for fields reset.
- * @see httpclient_clear_response_for_retry() for client-specific.
+ * @param arena Arena for new buffer allocation.
+ * @param buf Pointer to current buffer pointer (updated).
+ * @param capacity Pointer to current capacity (updated).
+ * @param total Pointer to current total size (updated to needed).
+ * @param needed Required new total size (total + additional).
+ * @param max_size Maximum allowed size (0 = unlimited).
+ * @return 0 on success, -1 on allocation failure or overflow.
+ * @threadsafe No - arena not safe.
+ * @see accumulate_body_chunk() for usage.
  */
-extern void clear_response_for_retry (SocketHTTP_Response *response);
+extern int httpclient_grow_body_buffer(Arena_T arena, char **buf, size_t *capacity, size_t *total, size_t needed, size_t max_size);
 /**
  * @brief Clear client-specific HTTP response for retry.
  * @ingroup http
  *
- * Resets client response fields like body, headers, status, error.
- * Calls clear_response_for_retry on internal SocketHTTP_Response.
+ * Clears headers via SocketHTTP_Headers_clear() and zeros structure fields via memset().
+ * Resets status_code=0, body=NULL, body_len=0, version=0, arena=NULL for reuse.
  * Prepares for new response on same or new connection.
  *
- * @param response The client response to clear.
+ * @param[in,out] response The client response to clear (modified in place).
  * @throws None.
- * @threadsafe Conditional.
- * @see clear_response_for_retry() for core response clear.
- * @see SocketHTTPClient_Response for fields.
+ * @threadsafe No - modifies response structure directly.
+ * @see SocketHTTPClient_Response for structure details.
+ * @note Caller must handle arena disposal and body freeing separately if required.
  */
 extern void
 httpclient_clear_response_for_retry (SocketHTTPClient_Response *response);

@@ -39,6 +39,41 @@ struct T
 #undef T
 
 /**
+ * @brief Mapping between epoll events and portable poll events.
+ *
+ * Centralizes event translation to eliminate duplicated if-conditions
+ * across translate_to_epoll() and translate_from_epoll().
+ *
+ * @note Fixed-size array; extend by adding entries before terminator {0,0}.
+ * Supports future event types without code duplication.
+ */
+static const struct {
+  unsigned epoll_flag;
+  unsigned poll_flag;
+} epoll_event_map[] = {
+  { EPOLLIN,  POLL_READ },
+  { EPOLLOUT, POLL_WRITE },
+  { EPOLLERR, POLL_ERROR },
+  { EPOLLHUP, POLL_HANGUP },
+  { 0, 0 }
+};
+
+/**
+ * @brief Mapping between portable poll events and epoll events.
+ *
+ * Used for translate_to_epoll() to avoid duplicated if-conditions.
+ * Only includes input events (READ/WRITE); errors/hangup not settable by user.
+ */
+static const struct {
+  unsigned poll_event;
+  unsigned epoll_flag;
+} poll_to_epoll_map[] = {
+  { POLL_READ,  EPOLLIN },
+  { POLL_WRITE, EPOLLOUT },
+  { 0, 0 }
+};
+
+/**
  * translate_to_epoll - Convert abstract poll events to epoll events
  * @events: Abstract poll event flags (POLL_READ, POLL_WRITE)
  *
@@ -46,19 +81,22 @@ struct T
  *
  * Edge-triggered mode requires the application to drain all available
  * data on each event notification to avoid starvation.
+ *
+ * Uses poll_to_epoll_map for centralized translation, reducing hardcoded
+ * if-conditions and enabling easy extension for future event types.
  */
 static unsigned
 translate_to_epoll (unsigned events)
 {
-  unsigned epoll_events = 0;
+  unsigned epoll_events = EPOLLET;  /* Always edge-triggered */
 
-  if (events & POLL_READ)
-    epoll_events |= EPOLLIN;
+  for (size_t i = 0; poll_to_epoll_map[i].poll_event != 0; ++i) {
+    if (events & poll_to_epoll_map[i].poll_event) {
+      epoll_events |= poll_to_epoll_map[i].epoll_flag;
+    }
+  }
 
-  if (events & POLL_WRITE)
-    epoll_events |= EPOLLOUT;
-
-  return epoll_events | EPOLLET;
+  return epoll_events;
 }
 
 /**
@@ -69,23 +107,20 @@ translate_to_epoll (unsigned events)
  *
  * Maps EPOLLIN->POLL_READ, EPOLLOUT->POLL_WRITE, EPOLLERR->POLL_ERROR,
  * EPOLLHUP->POLL_HANGUP for portable event handling.
+ *
+ * Uses epoll_event_map for centralized translation, reducing hardcoded
+ * if-conditions and enabling easy extension for future event types.
  */
 static unsigned
 translate_from_epoll (unsigned epoll_events)
 {
   unsigned events = 0;
 
-  if (epoll_events & EPOLLIN)
-    events |= POLL_READ;
-
-  if (epoll_events & EPOLLOUT)
-    events |= POLL_WRITE;
-
-  if (epoll_events & EPOLLERR)
-    events |= POLL_ERROR;
-
-  if (epoll_events & EPOLLHUP)
-    events |= POLL_HANGUP;
+  for (size_t i = 0; epoll_event_map[i].epoll_flag != 0; ++i) {
+    if (epoll_events & epoll_event_map[i].epoll_flag) {
+      events |= epoll_event_map[i].poll_flag;
+    }
+  }
 
   return events;
 }

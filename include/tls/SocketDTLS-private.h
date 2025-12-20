@@ -783,6 +783,7 @@ typedef struct
 typedef struct
 {
   const char **protocols; /**< Array of protocol strings */
+  size_t *lens;           /**< Precomputed lengths of protocols[i] for O(1) access */
   size_t count;           /**< Number of protocols */
   const char
       *selected; /**< Negotiated protocol (set by server, read by client) */
@@ -824,91 +825,25 @@ struct T
   int max_timeout_ms;
 };
 
-/* ============================================================================
- * Thread-Local Error Storage for SocketDTLSContext
- * ============================================================================
- */
-
 /**
- * @brief Thread-local error buffer for SocketDTLSContext operations.
+ * @brief Context-specific raise macros using centralized SocketUtil infrastructure
  * @ingroup security
- * @var dtls_context_error_buf
  *
- * Used by RAISE_DTLS_CTX_ERROR macros to store formatted error messages
- * with context. Thread-local to support concurrent operations without
- * contention or corruption.
+ * These macros provide module-prefixed exception raising for SocketDTLSContext
+ * using the shared socket_error_buf and SOCKET_RAISE_* family of macros.
+ * No separate thread-local storage needed.
  *
- * @see RAISE_DTLS_CTX_ERROR*
- * @see SOCKET_DTLS_ERROR_BUFSIZE for size constant
+ * @see SOCKET_RAISE_MODULE_ERROR() base macro
+ * @see core/SocketUtil.h for implementation details
  */
-#ifdef _WIN32
-extern
-    __declspec (thread) char dtls_context_error_buf[SOCKET_DTLS_ERROR_BUFSIZE];
-#else
-extern __thread char dtls_context_error_buf[SOCKET_DTLS_ERROR_BUFSIZE];
-#endif
+#define RAISE_DTLS_CTX_ERROR(exception) \
+  SOCKET_RAISE_MODULE_ERROR(SocketDTLSContext, exception)
 
-/**
- * @brief Thread-local detailed exception for SocketDTLSContext errors.
- * @ingroup security
- * @var SocketDTLSContext_DetailedException
- *
- * Exception instance used by module macros to attach .reason pointing to
- * dtls_context_error_buf. Enables race-free detailed exception raising in
- * multi-threaded contexts.
- *
- * @see RAISE_DTLS_CTX_ERROR*
- * @see Except_T base structure
- */
-#ifdef _WIN32
-extern __declspec (thread) Except_T SocketDTLSContext_DetailedException;
-#else
-extern __thread Except_T SocketDTLSContext_DetailedException;
-#endif
+#define RAISE_DTLS_CTX_ERROR_MSG(exception, msg) \
+  SOCKET_RAISE_MSG(SocketDTLSContext, exception, msg)
 
-/**
- * @brief RAISE_DTLS_CTX_ERROR - Raise context exception with current error
- * buffer
- * @ingroup security
- * @param exception Exception type to raise
- *
- * Creates thread-local copy of exception with reason from
- * dtls_context_error_buf. Uses the detailed exception pattern to prevent race
- * conditions when multiple threads raise the same exception type.
- */
-#define RAISE_DTLS_CTX_ERROR(exception)                                       \
-  do                                                                          \
-    {                                                                         \
-      SocketDTLSContext_DetailedException = (exception);                      \
-      SocketDTLSContext_DetailedException.reason = dtls_context_error_buf;    \
-      RAISE (SocketDTLSContext_DetailedException);                            \
-    }                                                                         \
-  while (0)
-
-/**
- * @brief RAISE_DTLS_CTX_ERROR_MSG - Raise context exception with formatted
- * message
- * @ingroup security
- * @param exception Exception type to raise
- * @param msg Error message format string
- * @param ... Format arguments
- *
- * Raises DTLS context exception with formatted error message. Uses
- * thread-local exception storage to prevent race conditions.
- */
-#define RAISE_DTLS_CTX_ERROR_MSG(exception, msg)                              \
-  do                                                                          \
-    {                                                                         \
-      SOCKET_RAISE_MSG (SocketDTLSContext, exception, msg);                   \
-    }                                                                         \
-  while (0)
-
-#define RAISE_DTLS_CTX_ERROR_FMT(exception, fmt, ...)                         \
-  do                                                                          \
-    {                                                                         \
-      SOCKET_RAISE_FMT (SocketDTLSContext, exception, fmt, __VA_ARGS__);      \
-    }                                                                         \
-  while (0)
+#define RAISE_DTLS_CTX_ERROR_FMT(exception, fmt, ...) \
+  SOCKET_RAISE_FMT(SocketDTLSContext, exception, fmt, ##__VA_ARGS__)
 
 /* ============================================================================
  * Utility Macros

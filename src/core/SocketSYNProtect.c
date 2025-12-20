@@ -96,44 +96,14 @@ alloc_zeroed (T protect, size_t count, size_t size)
   return calloc (count, size);
 }
 
-/**
- * free_memory - Free heap-allocated memory (no-op for arena)
- * @protect: Protection instance
- * @ptr: Pointer to free
- */
-static void
-free_memory (T protect, void *ptr)
-{
-  if (protect->use_malloc && ptr != NULL)
-    free (ptr);
-}
+
 
 /* ============================================================================
  * Internal Helper Functions - LRU List Operations
  * ============================================================================
  */
 
-/**
- * lru_remove - Remove entry from LRU list
- * @protect: Protection instance (must hold mutex)
- * @entry: Entry to remove
- */
-static void
-lru_remove (T protect, SocketSYN_IPEntry *entry)
-{
-  if (entry->lru_prev != NULL)
-    entry->lru_prev->lru_next = entry->lru_next;
-  else
-    protect->lru_head = entry->lru_next;
 
-  if (entry->lru_next != NULL)
-    entry->lru_next->lru_prev = entry->lru_prev;
-  else
-    protect->lru_tail = entry->lru_prev;
-
-  entry->lru_prev = NULL;
-  entry->lru_next = NULL;
-}
 
 /**
  * lru_push_front - Move entry to front of LRU list (most recently used)
@@ -197,28 +167,7 @@ find_ip_entry (T protect, const char *ip)
   return NULL;
 }
 
-/**
- * remove_ip_entry_from_hash - Remove entry from hash table
- * @protect: Protection instance (must hold mutex)
- * @entry: Entry to remove
- */
-static void
-remove_ip_entry_from_hash (T protect, SocketSYN_IPEntry *entry)
-{
-  unsigned bucket
-      = synprotect_hash_ip (protect, entry->state.ip, protect->ip_table_size);
-  SocketSYN_IPEntry **pp = &protect->ip_table[bucket];
 
-  while (*pp != NULL)
-    {
-      if (*pp == entry)
-        {
-          *pp = entry->hash_next;
-          break;
-        }
-      pp = &(*pp)->hash_next;
-    }
-}
 
 /**
  * evict_lru_entry - Evict least recently used entry

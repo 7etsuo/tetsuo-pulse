@@ -24,7 +24,7 @@
  * Thread safety: All functions are thread-safe (no global state).
  */
 
-#include <assert.h>
+
 #include <string.h>
 
 #include "core/SocketUTF8.h"
@@ -274,6 +274,24 @@ dfa_transition (uint32_t state, uint8_t char_class)
 }
 
 /**
+ * dfa_step - Perform one step of DFA transition and check for reject state.
+ * @state: Pointer to current DFA state (updated to next state).
+ * @byte: Input byte to process.
+ * @prev_out: Output - previous state before transition (for error classification).
+ *
+ * Returns: 1 if transition successful (not reject), 0 if reject state reached.
+ * On 0, *prev_out set to state before this byte for classify_error.
+ */
+static inline int
+dfa_step (uint32_t *state, unsigned char byte, uint32_t *prev_out)
+{
+  uint8_t char_class = utf8_class[byte];
+  *prev_out = *state;
+  *state = dfa_transition (*state, char_class);
+  return (*state != UTF8_STATE_REJECT) ? 1 : 0;
+}
+
+/**
  * update_sequence_tracking - Update bytes tracking for incremental validation
  * @state: Incremental state structure to update (not NULL)
  * @prev_state: DFA state before processing current byte
@@ -308,6 +326,18 @@ update_sequence_tracking (SocketUTF8_State *state, uint32_t prev_state,
  * Internal Helpers
  * ============================================================================
  */
+
+/**
+ * raise_arg_error - Raise SocketUTF8_Failed with argument error message.
+ * @msg: Error message describing invalid argument.
+ *
+ * Centralized error raising for invalid parameters to reduce duplication.
+ */
+static void
+raise_arg_error (const char *msg)
+{
+  SOCKET_RAISE_MSG (SocketUTF8, SocketUTF8_Failed, "%s", msg);
+}
 
 /**
  * is_continuation_byte - Check if byte is valid UTF-8 continuation
@@ -412,26 +442,19 @@ SocketUTF8_Result
 SocketUTF8_validate (const unsigned char *data, size_t len)
 {
   if (len > 0 && !data)
-    {
-      SOCKET_RAISE_MSG (SocketUTF8, SocketUTF8_Failed,
-                        "data must not be NULL when len > 0");
-    }
+    raise_arg_error ("data must not be NULL when len > 0");
 
   uint32_t state = UTF8_STATE_ACCEPT;
-  uint32_t prev_state;
   size_t i;
+  uint32_t prev;
 
   if (len == 0)
     return UTF8_VALID;
 
   for (i = 0; i < len; i++)
     {
-      uint8_t byte_class = utf8_class[data[i]];
-      prev_state = state;
-      state = dfa_transition (state, byte_class);
-
-      if (state == UTF8_STATE_REJECT)
-        return classify_error (prev_state, data[i]);
+      if (!dfa_step (&state, data[i], &prev))
+        return classify_error (prev, data[i]);
     }
 
   return (state == UTF8_STATE_ACCEPT) ? UTF8_VALID : UTF8_INCOMPLETE;
@@ -455,10 +478,7 @@ void
 SocketUTF8_init (SocketUTF8_State *state)
 {
   if (!state)
-    {
-      SOCKET_RAISE_MSG (SocketUTF8, SocketUTF8_Failed,
-                        "state must not be NULL");
-    }
+    raise_arg_error ("state must not be NULL");
 
   state->state = UTF8_STATE_ACCEPT;
   state->bytes_needed = 0;
@@ -487,42 +507,29 @@ SocketUTF8_update (SocketUTF8_State *state, const unsigned char *data,
                    size_t len)
 {
   if (!state)
-    {
-      SOCKET_RAISE_MSG (SocketUTF8, SocketUTF8_Failed,
-                        "state must not be NULL");
-    }
+    raise_arg_error ("state must not be NULL");
   if (len > 0 && !data)
-    {
-      SOCKET_RAISE_MSG (SocketUTF8, SocketUTF8_Failed,
-                        "data must not be NULL when len > 0");
-    }
+    raise_arg_error ("data must not be NULL when len > 0");
 
   uint32_t dfa_state;
-  uint32_t prev_state;
   size_t i;
+  uint32_t prev;
 
   dfa_state = state->state;
-
-  if (dfa_state == UTF8_STATE_REJECT)
-    return UTF8_INVALID;
 
   if (len == 0)
     return get_current_status (dfa_state);
 
   for (i = 0; i < len; i++)
     {
-      uint8_t byte_class = utf8_class[data[i]];
-      prev_state = dfa_state;
-      dfa_state = dfa_transition (dfa_state, byte_class);
-
-      if (dfa_state == UTF8_STATE_REJECT)
+      if (!dfa_step (&dfa_state, data[i], &prev))
         {
           state->state = UTF8_STATE_REJECT;
-          return classify_error (prev_state, data[i]);
+          return classify_error (prev, data[i]);
         }
 
       /* Track bytes for multi-byte sequences */
-      update_sequence_tracking (state, prev_state, dfa_state);
+      update_sequence_tracking (state, prev, dfa_state);
     }
 
   state->state = dfa_state;
@@ -533,16 +540,15 @@ SocketUTF8_Result
 SocketUTF8_finish (const SocketUTF8_State *state)
 {
   if (!state)
-    {
-      SOCKET_RAISE_MSG (SocketUTF8, SocketUTF8_Failed,
-                        "state must not be NULL");
-    }
+    raise_arg_error ("state must not be NULL");
   return get_current_status (state->state);
 }
 
 void
 SocketUTF8_reset (SocketUTF8_State *state)
 {
+  if (!state)
+    raise_arg_error ("state must not be NULL");
   SocketUTF8_init (state);
 }
 
@@ -599,6 +605,13 @@ SocketUTF8_sequence_len (unsigned char first_byte)
   return 0;
 }
 
+/* Static tables for UTF-8 lead byte configuration (indexed by sequence length) */
+static const uint8_t utf8_lead_start[5] =
+  { 0x00, 0x00, 0xC0, 0xE0, 0xF0 };  /* [len] lead byte prefix */
+
+static const uint8_t utf8_lead_mask[5] =
+  { 0x00, 0x7F, 0x1F, 0x0F, 0x07 };  /* [len] payload bits in lead byte */
+
 int
 SocketUTF8_encode (uint32_t codepoint, unsigned char *output)
 {
@@ -611,39 +624,26 @@ SocketUTF8_encode (uint32_t codepoint, unsigned char *output)
   if (len == 0)
     return 0;
 
-  switch (len)
+  if (len == 1)
     {
-    case 1:
-      output[0] = (unsigned char)codepoint;
-      break;
-    case 2:
-      output[0] = (unsigned char)(UTF8_2BYTE_START
-                                  | ((codepoint >> 6) & UTF8_2BYTE_LEAD_MASK));
-      output[1] = (unsigned char)(UTF8_CONTINUATION_START
-                                  | (codepoint & UTF8_CONTINUATION_MASK_VAL));
-      break;
-    case 3:
-      output[0] = (unsigned char)(UTF8_3BYTE_START
-                                  | ((codepoint >> 12) & UTF8_3BYTE_LEAD_MASK));
-      output[1] = (unsigned char)(UTF8_CONTINUATION_START
-                                  | ((codepoint >> 6)
-                                     & UTF8_CONTINUATION_MASK_VAL));
-      output[2] = (unsigned char)(UTF8_CONTINUATION_START
-                                  | (codepoint & UTF8_CONTINUATION_MASK_VAL));
-      break;
-    case 4:
-      output[0] = (unsigned char)(UTF8_4BYTE_START
-                                  | ((codepoint >> 18) & UTF8_4BYTE_LEAD_MASK));
-      output[1] = (unsigned char)(UTF8_CONTINUATION_START
-                                  | ((codepoint >> 12)
-                                     & UTF8_CONTINUATION_MASK_VAL));
-      output[2] = (unsigned char)(UTF8_CONTINUATION_START
-                                  | ((codepoint >> 6)
-                                     & UTF8_CONTINUATION_MASK_VAL));
-      output[3] = (unsigned char)(UTF8_CONTINUATION_START
-                                  | (codepoint & UTF8_CONTINUATION_MASK_VAL));
-      break;
+      output[0] = (unsigned char) codepoint;
+      return 1;
     }
+
+  // len 2-4: fill continuation bytes from LSB
+  uint32_t temp_cp = codepoint;
+  int pos = len - 1;
+  output[pos] = (unsigned char) (UTF8_CONTINUATION_START | (temp_cp & UTF8_CONTINUATION_MASK_VAL));
+  temp_cp >>= 6;
+  pos--;
+  while (pos > 0)
+    {
+      output[pos] = (unsigned char) (UTF8_CONTINUATION_START | (temp_cp & UTF8_CONTINUATION_MASK_VAL));
+      temp_cp >>= 6;
+      pos--;
+    }
+  // now pos == 0; temp_cp holds lead byte payload bits
+  output[0] = (unsigned char) (utf8_lead_start[len] | (temp_cp & utf8_lead_mask[len]));
 
   return len;
 }
@@ -662,10 +662,11 @@ decode_2byte (const unsigned char *data, uint32_t *codepoint, size_t *consumed)
   uint32_t cp;
   size_t bytes_used = 2;
   SocketUTF8_Result result;
+  int fail_idx;
 
-  if (!is_continuation_byte (data[1]))
+  if (!validate_continuations (data, 1, &fail_idx))
     {
-      bytes_used = 1;
+      bytes_used = (size_t) fail_idx;
       result = UTF8_INVALID;
       goto done;
     }
@@ -794,10 +795,7 @@ SocketUTF8_decode (const unsigned char *data, size_t len, uint32_t *codepoint,
   SocketUTF8_Result result;
 
   if (len > 0 && !data)
-    {
-      SOCKET_RAISE_MSG (SocketUTF8, SocketUTF8_Failed,
-                        "data must not be NULL when len > 0");
-    }
+    raise_arg_error ("data must not be NULL when len > 0");
 
   if (len == 0)
     {
@@ -859,15 +857,9 @@ SocketUTF8_count_codepoints (const unsigned char *data, size_t len,
                              size_t *count)
 {
   if (!count)
-    {
-      SOCKET_RAISE_MSG (SocketUTF8, SocketUTF8_Failed,
-                        "count output must not be NULL");
-    }
+    raise_arg_error ("count output must not be NULL");
   if (len > 0 && !data)
-    {
-      SOCKET_RAISE_MSG (SocketUTF8, SocketUTF8_Failed,
-                        "data must not be NULL when len > 0");
-    }
+    raise_arg_error ("data must not be NULL when len > 0");
 
   size_t cp_count = 0;
   size_t pos = 0;
@@ -883,10 +875,14 @@ SocketUTF8_count_codepoints (const unsigned char *data, size_t len,
     {
       result = SocketUTF8_decode (data + pos, len - pos, NULL, &consumed);
       if (result != UTF8_VALID)
-        return result;
+        {
+          *count = cp_count;  /* Report partial count on error */
+          return result;
+        }
 
       if (consumed == 0)
         { /* Safety: prevent infinite loop */
+          *count = cp_count;
           return UTF8_INVALID;
         }
 

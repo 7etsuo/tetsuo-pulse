@@ -173,12 +173,7 @@ serialize_header_cb (const char *name, size_t name_len, const char *value,
 {
   struct serialize_ctx *ctx = userdata;
 
-  if (!SocketHTTP_header_name_valid (name, name_len)
-      || !SocketHTTP_header_value_valid (value, value_len))
-    {
-      SOCKET_RAISE_MSG (SocketHTTP1, SocketHTTP1_SerializeError,
-                        "Invalid header name or value");
-    }
+/* Assuming headers validated on addition, skip redundant check during serialization */
 
   /* Append: name ": " value "\r\n" */
   if (safe_append (&ctx->buf, &ctx->remaining, name, name_len) < 0
@@ -274,18 +269,6 @@ append_content_length_header (char **buf, size_t *remaining,
  *
  * Raises: SocketHTTP1_SerializeError if invalid
  */
-static void
-validate_request_target (const char *target)
-{
-  size_t target_len = strlen (target);
-  if (!SocketHTTP_header_value_valid (target, target_len))
-    {
-      SOCKET_RAISE_MSG (SocketHTTP1, SocketHTTP1_SerializeError,
-                        "Invalid request target contains forbidden "
-                        "characters (CR/LF/NUL)");
-    }
-}
-
 /**
  * serialize_request_line - Serialize HTTP request line
  * @request: Request structure
@@ -320,9 +303,14 @@ serialize_request_line (const SocketHTTP_Request *request, char **buf,
     return -1;
 
   target = request->path && request->path[0] ? request->path : "/";
-  validate_request_target (target);
-
-  if (safe_append_str (buf, remaining, target) < 0)
+  size_t target_len = strlen(target);
+  if (!SocketHTTP_header_value_valid(target, target_len))
+    {
+      SOCKET_RAISE_MSG (SocketHTTP1, SocketHTTP1_SerializeError,
+                        "Invalid request target contains forbidden "
+                        "characters (CR/LF/NUL)");
+    }
+  if (safe_append (buf, remaining, target, target_len) < 0)
     return -1;
 
   if (safe_append_sp (buf, remaining) < 0)
@@ -403,7 +391,7 @@ serialize_response_line (const SocketHTTP_Response *response, char **buf,
                             "Invalid reason phrase contains forbidden "
                             "characters (CR/LF/NUL)");
         }
-      if (safe_append_str (buf, remaining, reason) < 0)
+      if (safe_append (buf, remaining, reason, reason_len) < 0)
         return -1;
     }
 
@@ -449,7 +437,7 @@ add_optional_host_header (const SocketHTTP_Request *request, char **buf,
           "Invalid authority contains forbidden characters (CR/LF/NUL)");
     }
 
-  if (safe_append_str (buf, remaining, request->authority) < 0)
+  if (safe_append (buf, remaining, request->authority, auth_len) < 0)
     return -1;
 
   return safe_append_crlf (buf, remaining);

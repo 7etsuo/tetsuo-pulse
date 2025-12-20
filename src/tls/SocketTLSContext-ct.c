@@ -27,9 +27,11 @@
 
 #define T SocketTLSContext_T
 
-SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLSContext);
+
 
 /* CT support detection is now in SocketTLSConfig.h (included via private.h) */
+
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLSContext);
 
 /* ============================================================================
  * Certificate Transparency Implementation
@@ -39,16 +41,7 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLSContext);
 #if SOCKET_HAS_CT_SUPPORT
 
 /**
- * SocketTLSContext_enable_ct - Enable Certificate Transparency verification
- * @ctx: TLS context instance (client only)
- * @mode: Validation mode (strict or permissive)
- *
- * Enables CT verification for client connections using OpenSSL's built-in
- * CT policy. In strict mode, connections fail if no valid SCTs are present.
- * In permissive mode, missing SCTs are logged but don't cause failure.
- *
- * Raises: SocketTLS_Failed if called on server context
- * Thread-safe: No - configure before sharing context
+ * @note Implementation of SocketTLSContext_enable_ct(). See header for details.
  */
 void
 SocketTLSContext_enable_ct (T ctx, CTValidationMode mode)
@@ -71,11 +64,7 @@ SocketTLSContext_enable_ct (T ctx, CTValidationMode mode)
 }
 
 /**
- * SocketTLSContext_ct_enabled - Check if CT verification is enabled
- * @ctx: TLS context instance
- *
- * Returns: 1 if CT enabled, 0 if disabled
- * Thread-safe: Yes (read-only)
+ * @note Implementation of SocketTLSContext_ct_enabled(). See header for details.
  */
 int
 SocketTLSContext_ct_enabled (T ctx)
@@ -85,11 +74,7 @@ SocketTLSContext_ct_enabled (T ctx)
 }
 
 /**
- * SocketTLSContext_get_ct_mode - Get current CT validation mode
- * @ctx: TLS context instance
- *
- * Returns: CT validation mode if enabled, CT_VALIDATION_PERMISSIVE if disabled
- * Thread-safe: Yes (read-only)
+ * @note Implementation of SocketTLSContext_get_ct_mode(). See header for details.
  */
 CTValidationMode
 SocketTLSContext_get_ct_mode (T ctx)
@@ -99,15 +84,7 @@ SocketTLSContext_get_ct_mode (T ctx)
 }
 
 /**
- * SocketTLSContext_set_ctlog_list_file - Load custom CT log list
- * @ctx: TLS context instance (client only)
- * @log_file: Path to CT log list file (OpenSSL format)
- *
- * Loads a custom list of trusted CT logs from file, overriding OpenSSL
- * defaults. The file should be in OpenSSL CT log list format.
- *
- * Raises: SocketTLS_Failed if file invalid, load fails, or server context
- * Thread-safe: No - configure before sharing context
+ * @note Implementation of SocketTLSContext_set_ctlog_list_file(). See header for details.
  */
 void
 SocketTLSContext_set_ctlog_list_file (T ctx, const char *log_file)
@@ -134,28 +111,24 @@ SocketTLSContext_set_ctlog_list_file (T ctx, const char *log_file)
 
 #else /* !SOCKET_HAS_CT_SUPPORT */
 
+static void
+raise_ct_not_supported(T ctx, const char *feature) {
+  assert(ctx);
+  RAISE_CTX_ERROR_MSG(SocketTLS_Failed, "%s not supported (requires OpenSSL 1.1.0+ with CT)", feature);
+}
+
 /**
- * SocketTLSContext_enable_ct - Stub when CT not supported
- * @ctx: TLS context instance
- * @mode: Validation mode (ignored)
- *
- * Raises: SocketTLS_Failed always (CT not available)
+ * @note Stub implementation when CT not supported. See header for details.
  */
 void
 SocketTLSContext_enable_ct (T ctx, CTValidationMode mode)
 {
-  (void)mode;
-  assert (ctx);
-  RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
-                       "Certificate Transparency not supported (requires "
-                       "OpenSSL 1.1.0+ with CT)");
+  TLS_UNUSED(mode);
+  raise_ct_not_supported(ctx, "Certificate Transparency");
 }
 
 /**
- * SocketTLSContext_ct_enabled - Stub when CT not supported
- * @ctx: TLS context instance
- *
- * Returns: 0 always (CT not available)
+ * @note Stub implementation when CT not supported. See header for details.
  */
 int
 SocketTLSContext_ct_enabled (T ctx)
@@ -165,10 +138,7 @@ SocketTLSContext_ct_enabled (T ctx)
 }
 
 /**
- * SocketTLSContext_get_ct_mode - Stub when CT not supported
- * @ctx: TLS context instance
- *
- * Returns: CT_VALIDATION_PERMISSIVE (default, CT not available)
+ * @note Stub implementation when CT not supported. See header for details.
  */
 CTValidationMode
 SocketTLSContext_get_ct_mode (T ctx)
@@ -178,20 +148,13 @@ SocketTLSContext_get_ct_mode (T ctx)
 }
 
 /**
- * SocketTLSContext_set_ctlog_list_file - Stub when CT not supported
- * @ctx: TLS context instance
- * @log_file: Path to CT log file (ignored)
- *
- * Raises: SocketTLS_Failed always (CT not available)
+ * @note Stub implementation when CT not supported. See header for details.
  */
 void
 SocketTLSContext_set_ctlog_list_file (T ctx, const char *log_file)
 {
-  (void)log_file;
-  assert (ctx);
-  RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
-                       "Custom CT log list not supported (requires "
-                       "OpenSSL 1.1.0+ with CT)");
+  TLS_UNUSED(log_file);
+  raise_ct_not_supported(ctx, "Custom CT log list");
 }
 
 #endif /* SOCKET_HAS_CT_SUPPORT */

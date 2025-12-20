@@ -767,7 +767,7 @@ SocketHPACK_huffman_encoded_size (const unsigned char *input, size_t input_len)
   if (!validate_buffer (input, input_len))
     return 0;
 
-  /* Sum bits for all input symbols */
+  /* Sum bits for all input symbols + EOS (RFC 7541 §5.2) */
   for (i = 0; i < input_len; i++)
     {
       size_t sym_bits = hpack_huffman_encode[input[i]].bits;
@@ -777,7 +777,16 @@ SocketHPACK_huffman_encoded_size (const unsigned char *input, size_t input_len)
       total_bits = next_bits;
     }
 
-  /* Round up to bytes (padding will be added) */
+  /* Always append EOS symbol, even for empty input */
+  {
+    size_t eos_bits = hpack_huffman_encode[HPACK_HUFFMAN_EOS].bits;
+    size_t next_bits;
+    if (!SocketSecurity_check_add (total_bits, eos_bits, &next_bits))
+      return SIZE_MAX; /* Overflow */
+    total_bits = next_bits;
+  }
+
+  /* Round up to whole bytes, accounting for final padding (0-7 bits) */
   return (total_bits + (HUFFMAN_BITS_PER_BYTE - 1)) / HUFFMAN_BITS_PER_BYTE;
 }
 
@@ -828,7 +837,19 @@ SocketHPACK_huffman_encode (const unsigned char *input, size_t input_len,
         return -1;
     }
 
-  /* Pad remaining bits with 1s (EOS prefix per RFC 7541) */
+  /* Append EOS symbol after all input bytes (mandatory per RFC 7541 §5.2,
+   * even for empty strings) */
+  {
+    const HPACK_HuffmanSymbol *eos_sym = &hpack_huffman_encode[HPACK_HUFFMAN_EOS];
+    bits = (bits << eos_sym->bits) | eos_sym->code;
+    bits_avail += (int)eos_sym->bits;
+
+    /* Flush any complete bytes from the EOS addition */
+    if (flush_complete_bytes (&bits, &bits_avail, output, &out_pos, output_size) < 0)
+      return -1;
+  }
+
+  /* Pad any remaining bits (<8) with 1s to byte-align the final byte */
   if (bits_avail > 0)
     {
       int pad_bits = HUFFMAN_BITS_PER_BYTE - bits_avail;

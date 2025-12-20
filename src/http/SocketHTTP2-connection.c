@@ -24,6 +24,7 @@
 #include "core/SocketUtil.h"
 #include "socket/Socket.h"
 #include "socket/SocketBuf.h"
+#include "core/TimeWindow.h"
 
 #include <assert.h>
 #include <inttypes.h>
@@ -55,39 +56,6 @@ const Except_T SocketHTTP2_FlowControlError
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP2);
 
-/* ============================================================================
- * Rate Limiting Helper
- * ============================================================================
- */
-
-/**
- * check_rate_limit - Check and update sliding window rate limit
- * @count: Pointer to current count in window
- * @window_start_ms: Pointer to window start timestamp
- * @now_ms: Current monotonic time
- * @window_duration_ms: Duration of rate limit window
- * @max_count: Maximum allowed count per window
- *
- * Updates the sliding window counter. Returns 1 if rate limit exceeded,
- * 0 if within limits. Automatically resets window when expired.
- *
- * Thread-safe: No - caller must ensure exclusive access
- */
-static int
-check_rate_limit (uint32_t *count, int64_t *window_start_ms, int64_t now_ms,
-                  int64_t window_duration_ms, uint32_t max_count)
-{
-  /* Reset window if expired */
-  if (now_ms - *window_start_ms > window_duration_ms)
-    {
-      *window_start_ms = now_ms;
-      *count = 0;
-    }
-
-  /* Increment and check limit */
-  (*count)++;
-  return *count > max_count;
-}
 
 /* ============================================================================
  * Configuration Constants
@@ -557,6 +525,11 @@ SocketHTTP2_Conn_new (Socket_T socket, const SocketHTTP2_Config *config,
     conn->settings_sent_time = 0;
     conn->ping_sent_time = 0;
     conn->last_activity_time = Socket_get_monotonic_ms ();
+
+    /* Initialize frame rate limiters using TimeWindow module */
+    TimeWindow_init(&conn->settings_window, SOCKETHTTP2_SETTINGS_RATE_WINDOW_MS, conn->last_activity_time);
+    TimeWindow_init(&conn->ping_window, SOCKETHTTP2_PING_RATE_WINDOW_MS, conn->last_activity_time);
+    TimeWindow_init(&conn->rst_window, SOCKETHTTP2_RST_RATE_WINDOW_MS, conn->last_activity_time);
   }
   EXCEPT (SocketHTTP2)
   {
@@ -1264,7 +1237,10 @@ http2_process_frame (SocketHTTP2_Conn_T conn,
     case HTTP2_FRAME_HEADERS:
       return http2_process_headers (conn, header, payload);
     case HTTP2_FRAME_PRIORITY:
-      return http2_process_priority (conn, header, payload);
+      /* Deprecated per RFC 9113 §6.3: ignore PRIORITY frame with logging for compatibility */
+      SOCKET_LOG_DEBUG_MSG ("Ignoring deprecated PRIORITY frame: stream=%u len=%u",
+                            header->stream_id, (unsigned)header->length);
+      return 0;
     case HTTP2_FRAME_RST_STREAM:
       return http2_process_rst_stream (conn, header, payload);
     case HTTP2_FRAME_SETTINGS:
@@ -1590,18 +1566,17 @@ http2_process_settings (SocketHTTP2_Conn_T conn,
       return 0;
     }
 
-  /* Rate limit non-ACK SETTINGS frames to prevent flood attacks */
+  /* Rate limit non-ACK SETTINGS frames to prevent flood attacks (using TimeWindow) */
   int64_t now_ms = Socket_get_monotonic_ms ();
-  if (check_rate_limit (&conn->settings_count_in_window,
-                        &conn->settings_window_start_ms, now_ms,
-                        SOCKETHTTP2_SETTINGS_RATE_WINDOW_MS,
-                        SOCKETHTTP2_SETTINGS_RATE_LIMIT))
+  TimeWindow_record(&conn->settings_window, now_ms);
+  if (conn->settings_window.current_count > SOCKETHTTP2_SETTINGS_RATE_LIMIT)
     {
+      int64_t elapsed_ms = now_ms - conn->settings_window.window_start_ms;
       SOCKET_LOG_WARN_MSG ("HTTP/2 SETTINGS rate limit exceeded "
-                           "(%" PRIu32 " in %" PRId64 "ms), "
+                           "(%" PRIu32 " in approx %" PRId64 "ms), "
                            "closing connection",
-                           conn->settings_count_in_window,
-                           now_ms - conn->settings_window_start_ms);
+                           conn->settings_window.current_count,
+                           elapsed_ms);
       http2_send_connection_error (conn, HTTP2_ENHANCE_YOUR_CALM);
       return -1;
     }
@@ -1629,18 +1604,17 @@ http2_process_ping (SocketHTTP2_Conn_T conn,
                     const SocketHTTP2_FrameHeader *header,
                     const unsigned char *payload)
 {
-  /* Rate limit PING frames to prevent flood attacks */
+  /* Rate limit PING frames to prevent flood attacks (using TimeWindow) */
   int64_t now_ms = Socket_get_monotonic_ms ();
-  if (check_rate_limit (&conn->ping_count_in_window,
-                        &conn->ping_window_start_ms, now_ms,
-                        SOCKETHTTP2_PING_RATE_WINDOW_MS,
-                        SOCKETHTTP2_PING_RATE_LIMIT))
+  TimeWindow_record(&conn->ping_window, now_ms);
+  if (conn->ping_window.current_count > SOCKETHTTP2_PING_RATE_LIMIT)
     {
+      int64_t elapsed_ms = now_ms - conn->ping_window.window_start_ms;
       SOCKET_LOG_WARN_MSG ("HTTP/2 PING rate limit exceeded "
-                           "(%" PRIu32 " in %" PRId64 "ms), "
+                           "(%" PRIu32 " in approx %" PRId64 "ms), "
                            "closing connection",
-                           conn->ping_count_in_window,
-                           now_ms - conn->ping_window_start_ms);
+                           conn->ping_window.current_count,
+                           elapsed_ms);
       http2_send_connection_error (conn, HTTP2_ENHANCE_YOUR_CALM);
       return -1;
     }
@@ -1795,17 +1769,17 @@ http2_process_rst_stream (SocketHTTP2_Conn_T conn,
 {
   uint32_t error_code = read_u32_be (payload);
 
-  /* CVE-2023-44487: Rate limit RST_STREAM frames to prevent Rapid Reset DoS */
+  /* CVE-2023-44487: Rate limit RST_STREAM frames to prevent Rapid Reset DoS (using TimeWindow) */
   int64_t now_ms = Socket_get_monotonic_ms ();
-  if (check_rate_limit (&conn->rst_count_in_window, &conn->rst_window_start_ms,
-                        now_ms, SOCKETHTTP2_RST_RATE_WINDOW_MS,
-                        SOCKETHTTP2_RST_RATE_LIMIT))
+  TimeWindow_record(&conn->rst_window, now_ms);
+  if (conn->rst_window.current_count > SOCKETHTTP2_RST_RATE_LIMIT)
     {
+      int64_t elapsed_ms = now_ms - conn->rst_window.window_start_ms;
       SOCKET_LOG_WARN_MSG ("HTTP/2 RST_STREAM rate limit exceeded "
-                           "(%" PRIu32 " in %" PRId64 "ms), "
+                           "(%" PRIu32 " in approx %" PRId64 "ms), "
                            "closing connection (CVE-2023-44487 protection)",
-                           conn->rst_count_in_window,
-                           now_ms - conn->rst_window_start_ms);
+                           conn->rst_window.current_count,
+                           elapsed_ms);
       http2_send_connection_error (conn, HTTP2_ENHANCE_YOUR_CALM);
       return -1;
     }

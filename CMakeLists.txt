@@ -220,6 +220,8 @@ set(LIB_SOURCES
     src/core/TimeWindow.c
     src/core/SocketIPTracker.c
     src/core/SocketSYNProtect.c
+    src/core/SocketSYNProtect-list.c
+    src/core/SocketSYNProtect-ip.c
     src/core/SocketCrypto.c
     src/core/SocketUTF8.c
     src/core/SocketSecurity.c
@@ -288,7 +290,7 @@ set(LIB_SOURCES
     src/http/SocketHTTP2-connection.c
     src/http/SocketHTTP2-stream.c
     src/http/SocketHTTP2-flow.c
-    src/http/SocketHTTP2-priority.c
+
     
     # HTTP Client and Server APIs (Phase 7)
     src/http/SocketHTTPClient.c

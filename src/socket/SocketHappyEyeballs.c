@@ -268,6 +268,17 @@ he_free_resolved (T he)
 static void
 he_free_owned_resources (T he)
 {
+  if (he->dns_poll_wrapper) {
+    if (he->poll) {
+      TRY {
+        SocketPoll_del (he->poll, he->dns_poll_wrapper);
+      } EXCEPT (SocketPoll_Failed) {
+        /* Ignore poll del failure during cleanup */
+      } END_TRY;
+    }
+    Socket_free (&he->dns_poll_wrapper);
+  }
+
   if (he->owns_dns && he->dns)
     SocketDNS_free (&he->dns);
 
@@ -411,6 +422,30 @@ he_start_dns_resolution (T he)
   SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
                    "Started DNS resolution for %s:%d (timeout=%dms)", he->host,
                    he->port, dns_timeout);
+
+  /* Integrate DNS completion FD with poll if available */
+  if (he->poll && he->dns && he->dns_request && !he->dns_poll_wrapper) {
+    int orig_fd = SocketDNS_pollfd (he->dns);
+    if (orig_fd >= 0) {
+      int dup_fd = fcntl (orig_fd, F_DUPFD_CLOEXEC, 10);
+      if (dup_fd >= 0) {
+        TRY {
+          he->dns_poll_wrapper = Socket_new_from_fd (dup_fd);
+          if (he->dns_poll_wrapper != NULL) {
+            SocketPoll_add (he->poll, he->dns_poll_wrapper, POLL_READ, he);
+          }
+        } EXCEPT (Socket_Failed) {
+          close (dup_fd);
+          SOCKET_LOG_WARN_MSG ("Failed to create DNS poll wrapper");
+        } END_TRY;
+      } else {
+        SOCKET_LOG_WARN_MSG ("Failed to dup DNS pollfd %d: %s", orig_fd, strerror (errno));
+      }
+    } else {
+      SOCKET_LOG_DEBUG_MSG ("No DNS pollfd available for integration");
+    }
+  }
+
   return 0;
 }
 
@@ -457,66 +492,11 @@ he_set_dns_error (T he, const int error)
   he->dns_error = error;
 }
 
-/**
- * he_handle_dns_resolve_error - Handle DNS resolution error result
- * @he: Happy Eyeballs context
- * @result: Error code from getaddrinfo (EAI_* constants)
- *
- * Returns: -1 always (indicates failure)
- *
- * Sets the DNS error in context and returns failure status.
+/* REMOVED: DNS error handling unified in he_handle_dns_error; no separate getaddrinfo error handler. */
+
+/* REMOVED: DNS resolution unified with async path in process(); no separate blocking resolve needed.
+ * Uses SocketDNS integration for both sync and async modes.
  */
-static int
-he_handle_dns_resolve_error (T he, const int result)
-{
-  he_set_dns_error (he, result);
-  return -1;
-}
-
-/**
- * he_dns_blocking_resolve - Perform blocking DNS resolution
- * @he: Happy Eyeballs context
- *
- * Returns: 0 on success, -1 on failure
- */
-static int
-he_dns_blocking_resolve (T he)
-{
-  struct addrinfo hints;
-  struct addrinfo *original = NULL;
-  char port_str[SOCKET_HE_PORT_STR_SIZE];
-  int result;
-
-  SocketCommon_validate_hostname (he->host, SocketHE_Failed);
-  SocketCommon_validate_port (he->port, SocketHE_Failed);
-
-  he_setup_dns_hints (&hints);
-  he_format_port_string (he->port, port_str, sizeof (port_str));
-
-  result = getaddrinfo (he->host, port_str, &hints, &original);
-  if (result != 0)
-    return he_handle_dns_resolve_error (he, result);
-
-  if (!original)
-    {
-      snprintf (he->error_buf, sizeof (he->error_buf), "No addresses found");
-      return -1;
-    }
-
-  /* Copy the result so he->resolved is always a copy we can free uniformly */
-  he->resolved = SocketCommon_copy_addrinfo (original);
-  freeaddrinfo (original);
-
-  if (!he->resolved)
-    {
-      snprintf (he->error_buf, sizeof (he->error_buf),
-                "Memory allocation failed");
-      return -1;
-    }
-
-  he->dns_complete = 1;
-  return 0;
-}
 
 /**
  * he_handle_dns_error - Handle DNS resolution error
@@ -551,6 +531,15 @@ he_handle_dns_success (T he, struct addrinfo *result)
 
   he_sort_addresses (he);
   he->state = HE_STATE_CONNECTING;
+
+  /* Cleanup DNS poll integration since resolution complete */
+  if (he->poll && he->dns_poll_wrapper) {
+    TRY {
+      SocketPoll_del (he->poll, he->dns_poll_wrapper);
+    } EXCEPT (SocketPoll_Failed) {
+      SOCKET_LOG_WARN_MSG ("Failed to remove DNS wrapper from poll");
+    } END_TRY;
+  }
 }
 
 /**
@@ -559,6 +548,26 @@ he_handle_dns_success (T he, struct addrinfo *result)
  */
 static void
 he_process_dns_completion (T he)
+{
+  struct addrinfo *result;
+
+  if (!he->dns || !he->dns_request)
+    return;
+
+  result = SocketDNS_getresult (he->dns, he->dns_request);
+  if (!result)
+    {
+      int error = SocketDNS_geterror (he->dns, he->dns_request);
+      if (error != 0)
+        he_handle_dns_error (he, error);
+      return;
+    }
+
+  he_handle_dns_success (he, result);
+}
+
+static void
+he_process_dns_event (T he)
 {
   struct addrinfo *result;
 
@@ -1375,10 +1384,13 @@ he_process_poll_result (T he, SocketHE_Attempt_T *attempt, int fd,
  * Returns: 1 if connected, 0 if still pending, -1 if failed
  */
 static int
-he_check_attempt_completion (T he, SocketHE_Attempt_T *attempt)
+he_check_attempt_completion_with_events (T he, SocketHE_Attempt_T *attempt, unsigned poll_events)
 {
-  int fd, result;
-  short revents;
+  short revents = (short) poll_events;
+  int fd;
+  int poll_result;
+  short actual_revents;
+  bool has_event = (poll_events != 0);
 
   if (attempt->state != HE_ATTEMPT_CONNECTING)
     return attempt->state == HE_ATTEMPT_CONNECTED ? 1 : -1;
@@ -1387,9 +1399,24 @@ he_check_attempt_completion (T he, SocketHE_Attempt_T *attempt)
     return -1;
 
   fd = Socket_fd (attempt->socket);
-  result = he_poll_attempt_status (fd, &revents);
 
-  return he_process_poll_result (he, attempt, fd, result, revents);
+  if (!has_event) {
+    poll_result = he_poll_attempt_status (fd, &actual_revents);
+    if (poll_result < 0)
+      return -1;
+    revents = actual_revents;
+  } else {
+    poll_result = 1;
+    actual_revents = revents;
+  }
+
+  return he_process_poll_result (he, attempt, fd, poll_result, revents);
+}
+
+static int
+he_check_attempt_completion (T he, SocketHE_Attempt_T *attempt)
+{
+  return he_check_attempt_completion_with_events (he, attempt, 0);
 }
 
 /**
@@ -1787,6 +1814,30 @@ SocketHappyEyeballs_process (T he)
     }
 }
 
+void
+SocketHappyEyeballs_process_events (T he, SocketEvent_T *events, int num_events)
+{
+  assert (he);
+  if (num_events <= 0 || !events)
+    return;
+
+  for (int i = 0; i < num_events; ++i) {
+    SocketEvent_T *ev = &events[i];
+    void *data = ev->data;
+    unsigned ev_events = ev->events;
+
+    if (data == he && he->dns_poll_wrapper && ev->socket == he->dns_poll_wrapper) {
+      /* DNS completion event */
+      he_process_dns_event (he);
+    } else if (data != NULL) {
+      /* Connection attempt event */
+      SocketHE_Attempt_T *attempt = (SocketHE_Attempt_T *) data;
+      he_check_attempt_completion_with_events (he, attempt, ev_events);
+    }
+    /* Ignore other events on poll */
+  }
+}
+
 /* ============================================================================
  * Asynchronous API
  * ============================================================================
@@ -2147,180 +2198,26 @@ sync_do_poll (struct pollfd *pfds, const int nfds, const int timeout)
   return result;
 }
 
-/**
- * sync_execute_poll_cycle - Execute poll cycle and process results
- * @he: Happy Eyeballs context
- * @pfds: Poll fd array
- * @attempt_map: Attempt map array
- *
- * Returns: 1 if should exit loop, 0 to continue
- */
-static int
-sync_execute_poll_cycle (T he, struct pollfd *pfds,
-                         SocketHE_Attempt_T **attempt_map)
-{
-  int timeout = sync_calculate_poll_timeout (he);
-  int nfds = sync_build_poll_set (he, pfds, attempt_map);
+/* REMOVED: Poll cycle now handled by SocketPoll_wait + process_events in unified loop. */
 
-  if (sync_should_exit_loop (he, nfds))
-    return 1;
+/* REMOVED: Sync loop iteration unified into connect() main loop using process_events and process calls. */
 
-  if (sync_do_poll (pfds, nfds, timeout) < 0)
-    return 1;
+/* REMOVED: Synchronous loop now unified with event-driven process_events + process in connect(). Uses internal poll for blocking wait. */
 
-  sync_process_poll_results (he, pfds, attempt_map, nfds);
-  return 0;
-}
-
-/**
- * sync_loop_iteration - Execute one iteration of the sync loop
- * @he: Happy Eyeballs context
- * @pfds: Poll fd array
- * @attempt_map: Attempt map array
- *
- * Returns: 1 if should exit loop, 0 to continue
- */
-static int
-sync_loop_iteration (T he, struct pollfd *pfds,
-                     SocketHE_Attempt_T **attempt_map)
-{
-  if (sync_handle_timeout_check (he))
-    return 1;
-
-  he_start_first_attempt (he);
-  if (he->state == HE_STATE_CONNECTED)
-    return 1;
-
-  if (sync_execute_poll_cycle (he, pfds, attempt_map))
-    return 1;
-
-  if (sync_try_start_fallback (he))
-    return 1;
-
-  sync_check_attempt_timeouts (he);
-  sync_check_all_failed (he);
-
-  return he->error_buf[0] != '\0';
-}
-
-/**
- * sync_run_connection_loop - Run synchronous connection loop
- * @he: Happy Eyeballs context
- */
-static void
-sync_run_connection_loop (T he)
-{
-  struct pollfd pfds[SOCKET_HE_MAX_ATTEMPTS];
-  SocketHE_Attempt_T *attempt_map[SOCKET_HE_MAX_ATTEMPTS];
-
-  while (he->state == HE_STATE_CONNECTING)
-    {
-      if (sync_loop_iteration (he, pfds, attempt_map))
-        break;
-    }
-}
-
-/**
- * sync_finalize_result - Finalize result for sync API
- * @he: Happy Eyeballs context
- *
- * Returns: Connected socket or NULL
- */
-static Socket_T
-sync_finalize_result (T he)
-{
-  if (he->state == HE_STATE_CONNECTED)
-    return SocketHappyEyeballs_result (he);
-
-  he_cleanup_attempts (he);
-  he_transition_to_failed (he, he->error_buf);
-  return NULL;
-}
+/* REMOVED: Result retrieval and failure handling now unified in connect() loop and SocketHappyEyeballs_result(). */
 
 /* ============================================================================
  * Synchronous API
  * ============================================================================
  */
 
-/**
- * sync_create_and_resolve - Create context and perform blocking DNS
- * @host: Hostname to resolve
- * @port: Target port
- * @config: Configuration options
- * @errmsg: Buffer for error message on failure
- * @errmsg_size: Size of error buffer
- *
- * Returns: Context on success, NULL on failure (errmsg set)
- */
-static T
-sync_create_and_resolve (const char *host, int port,
-                         const SocketHE_Config_T *config, char *errmsg,
-                         size_t errmsg_size)
-{
-  T he = he_create_context (NULL, NULL, host, port, config);
+/* REMOVED: Sync mode now uses unified async state machine with internal DNS and poll resources. No separate creation needed. */
 
-  if (!he)
-    {
-      snprintf (errmsg, errmsg_size,
-                "Failed to create Happy Eyeballs context");
-      return NULL;
-    }
+/* REMOVED: Address sorting and state transition now handled in unified he_handle_dns_success(). */
 
-  if (he_dns_blocking_resolve (he) < 0)
-    {
-      snprintf (errmsg, errmsg_size, "%s", he->error_buf);
-      SocketHappyEyeballs_free (&he);
-      return NULL;
-    }
+/* REMOVED: Error message handling unified; no separate copy needed. */
 
-  return he;
-}
-
-/**
- * sync_prepare_connections - Prepare context for connection attempts
- * @he: Happy Eyeballs context
- *
- * Sorts addresses and transitions to connecting state.
- */
-static void
-sync_prepare_connections (T he)
-{
-  he_sort_addresses (he);
-  he->state = HE_STATE_CONNECTING;
-}
-
-/**
- * sync_copy_error_message - Copy error message from context
- * @he: Happy Eyeballs context
- * @errmsg_copy: Destination buffer
- * @errmsg_size: Size of destination buffer
- *
- * Security: Uses "%s" format to safely copy error_buf contents.
- * This prevents format string injection even if error_buf contains
- * user-influenced data (e.g., from DNS error messages).
- */
-static void
-sync_copy_error_message (const T he, char *errmsg_copy, size_t errmsg_size)
-{
-  if (he->error_buf[0])
-    /* SECURITY: Use %s to prevent format string injection from error_buf */
-    snprintf (errmsg_copy, errmsg_size, "%s", he->error_buf);
-}
-
-/**
- * sync_raise_error_and_return - Raise exception with error message
- * @errmsg_copy: Error message buffer
- *
- * Security: Uses SOCKET_RAISE_MSG with "%s" format to safely pass
- * user-influenced error messages without format string injection risk.
- */
-static Socket_T
-sync_raise_error_and_return (const char *errmsg_copy)
-{
-  SOCKET_RAISE_MSG (SocketHE, SocketHE_Failed, "%s",
-                    errmsg_copy[0] ? errmsg_copy : "Happy Eyeballs failed");
-  return NULL; /* Not reached */
-}
+/* REMOVED: Error raising now inlined in connect() using SOCKET_RAISE_FMT for formatted messages. */
 
 /**
  * SocketHappyEyeballs_connect - Connect using Happy Eyeballs (blocking)
@@ -2336,31 +2233,107 @@ Socket_T
 SocketHappyEyeballs_connect (const char *host, int port,
                              const SocketHE_Config_T *config)
 {
-  T he;
-  Socket_T result;
-  char errmsg_copy[SOCKET_HE_ERROR_BUFSIZE] = { 0 };
+  T he = NULL;
+  Socket_T volatile sock = NULL;
+  SocketDNS_T temp_dns = NULL;
+  SocketPoll_T temp_poll = NULL;
+  SocketEvent_T *events = NULL;
+  const char *volatile err_msg = NULL;
 
   assert (host);
   assert (port > 0 && port <= SOCKET_MAX_PORT);
 
-  he = sync_create_and_resolve (host, port, config, errmsg_copy,
-                                sizeof (errmsg_copy));
-  if (!he)
-    return sync_raise_error_and_return (errmsg_copy);
+  TRY
+  {
+    temp_dns = SocketDNS_new ();
+  }
+  EXCEPT (SocketDNS_Failed)
+  {
+    err_msg = Socket_GetLastError ();
+    SOCKET_RAISE_FMT (SocketHE, SocketHE_Failed, "Failed to create DNS resolver: %s", err_msg ? err_msg : "Unknown error");
+  }
+  END_TRY;
 
-  sync_prepare_connections (he);
-  sync_run_connection_loop (he);
-  result = sync_finalize_result (he);
+  TRY
+  {
+    temp_poll = SocketPoll_new (SOCKET_HE_MAX_ATTEMPTS);
+  }
+  EXCEPT (SocketPoll_Failed)
+  {
+    SocketDNS_free (&temp_dns);
+    err_msg = Socket_GetLastError ();
+    SOCKET_RAISE_FMT (SocketHE, SocketHE_Failed, "Failed to create poll: %s", err_msg ? err_msg : "Unknown error");
+  }
+  END_TRY;
 
-  if (!result)
-    sync_copy_error_message (he, errmsg_copy, sizeof (errmsg_copy));
+  TRY
+  {
+    he = he_create_context (temp_dns, temp_poll, host, port, config);
+    he->owns_dns = 1;
+    he->owns_poll = 1;
+  }
+  EXCEPT (SocketHE_Failed)
+  {
+    SocketPoll_free (&temp_poll);
+    SocketDNS_free (&temp_dns);
+    err_msg = Socket_GetLastError ();
+    SOCKET_RAISE_FMT (SocketHE, SocketHE_Failed, "Failed to create context: %s", err_msg ? err_msg : "Unknown error");
+  }
+  END_TRY;
+
+  he->state = HE_STATE_IDLE;
+  SocketHappyEyeballs_process (he);  // Starts async DNS resolution and poll integration
+
+  // Blocking loop until complete
+  while (he->state == HE_STATE_RESOLVING || he->state == HE_STATE_CONNECTING)
+    {
+      int timeout = SocketHappyEyeballs_next_timeout_ms (he);
+      if (timeout < 0)
+        timeout = 5000;  // Fallback interval if no timers (prevent infinite block)
+      else if (timeout == 0)
+        {
+          he_handle_total_timeout (he);
+          break;
+        }
+
+      events = NULL;
+      int n = SocketPoll_wait (he->poll, &events, timeout);
+      if (n < 0)
+        {
+          if (errno == EINTR)
+            continue;
+          char tmp_err[256];
+          snprintf (tmp_err, sizeof (tmp_err), "Internal poll failed during connect: %s", strerror (errno));
+          he_transition_to_failed (he, tmp_err);
+          break;
+        }
+
+      SocketHappyEyeballs_process_events (he, events, n);
+
+      SocketHappyEyeballs_process (he);
+
+      // Note: events is internal to poll, no free needed
+    }
+
+  if (he->state == HE_STATE_CONNECTED)
+    {
+      sock = SocketHappyEyeballs_result (he);
+    }
+  else
+    {
+      err_msg = SocketHappyEyeballs_error (he);
+      if (!err_msg)
+        err_msg = "Connection failed (unknown reason)";
+    }
 
   SocketHappyEyeballs_free (&he);
 
-  if (!result)
-    return sync_raise_error_and_return (errmsg_copy);
+  if (!sock)
+    {
+      SOCKET_RAISE_MSG (SocketHE, SocketHE_Failed, "%s", err_msg);
+    }
 
-  return result;
+  return sock;
 }
 
 #undef T

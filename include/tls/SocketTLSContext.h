@@ -297,7 +297,7 @@ extern T SocketTLSContext_new (const SocketTLSConfig_T *config);
  *
  * @return void
  * @throws SocketTLS_Failed on file errors, format issues, or mismatch
- * @threadsafe Yes (mutex protected) - modifies shared context
+ * @threadsafe No - caller must synchronize configuration changes
  */
 extern void SocketTLSContext_load_certificate (T ctx, const char *cert_file,
                                                const char *key_file);
@@ -854,7 +854,7 @@ extern int SocketTLS_get_ocsp_status (Socket_T socket);
  *
  * @return void
  * @throws SocketTLS_Failed if server context or OpenSSL error
- * @threadsafe Yes (mutex protected) - modifies shared context
+ * @threadsafe No - caller must synchronize configuration changes
  */
 extern void SocketTLSContext_enable_ocsp_stapling (T ctx);
 
@@ -1410,7 +1410,7 @@ extern void SocketTLSContext_set_session_id_context (
  *
  * @return void
  * @throws SocketTLS_Failed if cannot enable or configure
- * @threadsafe Yes (mutex protected) - modifies shared context during setup
+ * @threadsafe No - caller must synchronize configuration changes during setup
  */
 extern void SocketTLSContext_enable_session_cache (T ctx, size_t max_sessions,
                                                    long timeout_seconds);
@@ -1592,7 +1592,7 @@ extern void SocketTLSContext_disable_session_tickets (T ctx);
  * @see SocketTLSContext_add_pin_hex() for hex-encoded input.
  * @see SocketTLSContext_add_pin_from_cert() to generate from file.
  * @see SocketTLSContext_set_pin_enforcement() to control failure behavior.
- * @threadsafe Yes (mutex protected) - modifies shared context
+ * @threadsafe No - caller must synchronize configuration changes
  */
 extern void SocketTLSContext_add_pin (T ctx, const unsigned char *sha256_hash);
 
@@ -1665,7 +1665,7 @@ extern void SocketTLSContext_add_pin_hex (T ctx, const char *hex_hash);
  *
  * @return void
  * @throws SocketTLS_Failed if file invalid, parse error, or max pins exceeded
- * @threadsafe Yes (mutex protected) - modifies shared context
+ * @threadsafe No - caller must synchronize configuration changes
  */
 extern void SocketTLSContext_add_pin_from_cert (T ctx, const char *cert_file);
 
@@ -1680,7 +1680,7 @@ extern void SocketTLSContext_add_pin_from_cert (T ctx, const char *cert_file);
  *
  * @return void
  * @throws SocketTLS_Failed if cert NULL, extraction fails, or max exceeded
- * @threadsafe Yes (mutex protected) - modifies shared context
+ * @threadsafe No - caller must synchronize configuration changes
  */
 extern void SocketTLSContext_add_pin_from_x509 (T ctx, const X509 *cert);
 
@@ -1694,7 +1694,7 @@ extern void SocketTLSContext_add_pin_from_x509 (T ctx, const X509 *cert);
  *
  * @return void
  * @throws None
- * @threadsafe Yes (mutex protected) - modifies shared context
+ * @threadsafe No - caller must synchronize configuration changes
  */
 extern void SocketTLSContext_clear_pins (T ctx);
 
@@ -1711,7 +1711,7 @@ extern void SocketTLSContext_clear_pins (T ctx);
  *
  * @return void
  * @throws None
- * @threadsafe Yes (mutex protected) - modifies shared context
+ * @threadsafe No - caller must synchronize configuration changes
  */
 extern void SocketTLSContext_set_pin_enforcement (T ctx, int enforce);
 
@@ -1840,7 +1840,7 @@ typedef enum
  *
  * @return void
  * @throws SocketTLS_Failed if CT not supported or server context
- * @threadsafe Yes (mutex protected) - modifies shared context
+ * @threadsafe No - caller must synchronize configuration changes
  * @ingroup security
  */
 extern void SocketTLSContext_enable_ct (T ctx, CTValidationMode mode);

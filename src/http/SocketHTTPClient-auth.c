@@ -47,6 +47,8 @@ typedef struct
   int stale;
 } DigestChallenge;
 
+typedef void (*HttpAuthParamCallback)(const char *name, const char *value, void *userdata);
+
 /* ============================================================================
  * Forward Declarations
  * ============================================================================
@@ -61,6 +63,13 @@ static const char *parse_parameter_name (const char *p, char *name,
                                          size_t name_size);
 static void store_challenge_field (DigestChallenge *ch, const char *name,
                                    const char *value);
+
+static int check_stale_value(const char *value);
+
+static int parse_http_auth_params(const char *header, int require_prefix,
+                                  HttpAuthParamCallback cb, void *userdata);
+
+static const char *skip_to_next_param(const char *p);
 
 /* ============================================================================
  * String Utility Helpers
@@ -307,7 +316,21 @@ store_challenge_field (DigestChallenge *ch, const char *name,
   else if (strcasecmp (name, "algorithm") == 0)
     safe_strcpy (ch->algorithm, sizeof (ch->algorithm), value);
   else if (strcasecmp (name, "stale") == 0)
-    ch->stale = (strcasecmp (value, HTTPCLIENT_DIGEST_TOKEN_TRUE) == 0);
+    ch->stale = check_stale_value(value);
+}
+
+static void
+store_param_cb(const char *name, const char *value, void *userdata) {
+    DigestChallenge *ch = (DigestChallenge *)userdata;
+    store_challenge_field(ch, name, value);
+}
+
+static void
+check_stale_cb(const char *name, const char *value, void *userdata) {
+    int *is_stale = (int *)userdata;
+    if (strcasecmp(name, "stale") == 0) {
+        *is_stale |= check_stale_value(value);
+    }
 }
 
 /* ============================================================================
@@ -670,31 +693,7 @@ skip_digest_prefix (const char *header, int strict)
   return strict ? NULL : header;
 }
 
-/**
- * parse_single_challenge_param - Parse one name=value parameter
- * @p: Current position
- * @ch: Challenge structure to populate
- *
- * Returns: Position after parameter, or NULL on error
- */
-static const char *
-parse_single_challenge_param (const char *p, DigestChallenge *ch)
-{
-  char name[HTTPCLIENT_DIGEST_PARAM_NAME_MAX_LEN];
-  char value[HTTPCLIENT_DIGEST_VALUE_MAX_LEN];
 
-  p = parse_parameter_name (p, name, sizeof (name));
-  if (p == NULL)
-    return NULL;
-
-  p++;
-  p = parse_param_value (p, value, sizeof (value));
-  if (p == NULL)
-    return NULL;
-
-  store_challenge_field (ch, name, value);
-  return p;
-}
 
 /**
  * validate_challenge - Ensure required fields present
@@ -725,30 +724,52 @@ validate_challenge (const DigestChallenge *ch)
 static int
 parse_digest_challenge (const char *header, DigestChallenge *ch)
 {
-  const char *p;
-
   memset (ch, 0, sizeof (*ch));
-
-  p = skip_digest_prefix (header, 1);
-  if (p == NULL)
+  int res = parse_http_auth_params(header, 1, store_param_cb, ch);
+  if (res != 0)
     return -1;
-
-  while (*p)
-    {
-      p = skip_delimiters (p);
-      if (*p == '\0')
-        break;
-
-      p = parse_single_challenge_param (p, ch);
-      if (p == NULL)
-        return -1;
-    }
-
   if (validate_challenge (ch) != 0)
     return -1;
 
   if (ch->algorithm[0] == '\0')
     safe_strcpy (ch->algorithm, sizeof (ch->algorithm), "MD5");
+
+  return 0;
+}
+
+static int
+parse_http_auth_params(const char *header, int require_prefix,
+                       HttpAuthParamCallback cb, void *userdata) {
+  const char *p = skip_digest_prefix(header, require_prefix);
+  if (require_prefix && p == NULL) {
+    SOCKET_LOG_WARN_MSG("Missing Digest prefix in auth header");
+    return -1;
+  }
+
+  while (*p) {
+    p = skip_delimiters(p);
+    if (*p == '\0') break;
+
+    char name[HTTPCLIENT_DIGEST_PARAM_NAME_MAX_LEN];
+    const char *eq_pos = parse_parameter_name(p, name, sizeof(name));
+    if (eq_pos == NULL || *eq_pos != '=') {
+      p = skip_to_next_param(p);
+      continue;
+    }
+
+    p = eq_pos + 1;
+    p = skip_whitespace(p);
+
+    char value[HTTPCLIENT_DIGEST_VALUE_MAX_LEN];
+    const char *next_p = parse_param_value(p, value, sizeof(value));
+    if (next_p == NULL) {
+      p = skip_to_next_param(p);
+      continue;
+    }
+
+    cb(name, value, userdata);
+    p = next_p;
+  }
 
   return 0;
 }
@@ -897,55 +918,15 @@ skip_to_next_param (const char *p)
   return p;
 }
 
-/**
- * find_stale_parameter - Search for stale=true in header
- * @p: Pointer past "Digest " prefix
- *
- * Returns: 1 if stale=true found, 0 otherwise
- */
-static int
-find_stale_parameter (const char *p)
-{
-  char name[HTTPCLIENT_DIGEST_PARAM_NAME_MAX_LEN];
-  char value[HTTPCLIENT_DIGEST_VALUE_MAX_LEN];
 
-  while (*p)
-    {
-      p = skip_delimiters (p);
-      if (*p == '\0')
-        break;
-
-      const char *eq_pos = parse_parameter_name (p, name, sizeof (name));
-      if (eq_pos == NULL)
-        {
-          p = skip_to_next_param (p);
-          continue;
-        }
-
-      p = skip_whitespace (eq_pos + 1);
-      p = parse_param_value (p, value, sizeof (value));
-
-      if (p == NULL)
-        break;
-
-      if (strcasecmp (name, HTTPCLIENT_DIGEST_TOKEN_STALE) == 0)
-        {
-          if (check_stale_value (value))
-            return 1;
-        }
-    }
-
-  return 0;
-}
 
 int
 httpclient_auth_is_stale_nonce (const char *www_authenticate)
 {
-  const char *p;
-
   if (www_authenticate == NULL)
     return 0;
 
-  p = skip_digest_prefix (www_authenticate, 0);
-  return find_stale_parameter (p);
+  int is_stale = 0;
+  parse_http_auth_params(www_authenticate, 0, check_stale_cb, &is_stale);
+  return is_stale;
 }

@@ -324,7 +324,7 @@ init_completed_request_fields (struct SocketDNS_Request_T *req,
   req->error = 0;
   req->queue_next = NULL;
   req->hash_next = NULL;
-  clock_gettime (CLOCK_MONOTONIC, &req->submit_time);
+  req->submit_time_ms = Socket_get_monotonic_ms ();
   req->timeout_override_ms = -1;
 }
 

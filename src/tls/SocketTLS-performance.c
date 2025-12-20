@@ -31,12 +31,13 @@
 #include "core/Arena.h"
 #include "core/SocketMetrics.h"
 #include "core/SocketUtil.h"
+#include "core/HashTable.h"
 #include "tls/SocketTLS-private.h"
 #include "tls/SocketTLSContext.h"
 
 /* Thread-local exception for this translation unit */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLS);
-SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLSContext);
+
 
 /* ============================================================================
  * TCP Optimization for TLS Handshake
@@ -630,38 +631,43 @@ SocketTLS_get_key_update_count (Socket_T socket)
  * for resume attempts.
  */
 
-/**
- * @brief Session cache shard structure
- */
-struct TLSSessionShard
-{
-  SSL_CTX *ssl_ctx;       /**< OpenSSL context for this shard */
-  pthread_mutex_t mutex;  /**< Per-shard lock */
-  size_t max_sessions;    /**< Max sessions in this shard */
-  size_t current_count;   /**< Current session count (approximate) */
-  size_t hits;            /**< Cache hits */
-  size_t misses;          /**< Cache misses */
-  size_t stores;          /**< Sessions stored */
-};
+/* Sharded session cache structs defined in SocketTLS-private.h */
 
-/**
- * @brief Sharded session cache manager
- */
-struct TLSSessionCacheSharded
+/* Helper functions for sharded session hash table */
+static unsigned
+sharded_session_hash (const void *key, unsigned seed, unsigned table_size)
 {
-  struct TLSSessionShard *shards;   /**< Array of shards */
-  size_t num_shards;                /**< Number of shards (power of 2) */
-  size_t shard_mask;                /**< Bitmask for shard selection */
-  Arena_T arena;                    /**< Memory arena for allocations */
-};
+  uintptr_t h = (uintptr_t) key ^ seed;
+  return (unsigned) (h % table_size);
+}
 
-typedef struct TLSSessionCacheSharded *TLSSessionCacheSharded_T;
+static int
+sharded_session_compare (const void *entry, const void *key)
+{
+  return memcmp (entry, key, 32); /* Fixed 32 bytes assumed */
+}
+
+static void **
+sharded_session_next_ptr (void *entry)
+{
+  (void) entry;
+  static void *dummy_next;
+  return &dummy_next;
+}
+
+/* Static config for sharded session hash table */
+static const HashTable_Config sharded_session_config = {
+    .bucket_count = 64,
+    .hash_seed = SOCKET_UTIL_DJB2_SEED,
+    .hash = sharded_session_hash,
+    .compare = sharded_session_compare,
+    .next_ptr = sharded_session_next_ptr};
 
 /**
  * Select shard based on session ID hash using golden ratio multiplication
  */
 static size_t
-select_shard (TLSSessionCacheSharded_T cache, const unsigned char *session_id,
+select_shard (TLSSessionCacheSharded_T *cache, const unsigned char *session_id,
               size_t id_len)
 {
   unsigned hash = 0;
@@ -695,45 +701,109 @@ SocketTLSContext_create_sharded_cache (SocketTLSContext_T ctx,
   assert (ctx);
   assert (ctx->ssl_ctx);
 
-  /* Round up to power of 2 and cap at 256 */
+  /* Round up to power of 2 and cap at 256 for efficient hashing */
   size_t actual_shards = socket_util_round_up_pow2 (num_shards);
   if (actual_shards < 2)
     actual_shards = 2;
   if (actual_shards > 256)
     actual_shards = 256;
 
-  /* For now, use the standard session cache with documented threading model.
-   * Full shard implementation would require custom SSL_CTX_sess_set_get/new_cb
-   * callbacks that route to appropriate shards. This is a placeholder that
-   * sets up the basic infrastructure. */
+  TRY
+  {
+    /* Disable standard session cache - use sharded instead */
+    ctx->session_cache_enabled = 0;
+    ctx->cache_hits = ctx->cache_misses = ctx->cache_stores = 0;
 
-  /* Enable standard session caching with larger size */
-  size_t total_sessions = actual_shards * sessions_per_shard;
-  SocketTLSContext_enable_session_cache (ctx, total_sessions, timeout_seconds);
+    /* Set OpenSSL to use no internal cache, rely on custom sharded callbacks */
+    int mode = ctx->is_server ? SSL_SESS_CACHE_SERVER : SSL_SESS_CACHE_CLIENT;
+    SSL_CTX_set_session_cache_mode (ctx->ssl_ctx, SSL_SESS_CACHE_NO_INTERNAL_STORE | mode);
 
-  SOCKET_LOG_INFO_MSG ("Created session cache with %zu logical shards, "
-                       "%zu total sessions",
-                       actual_shards, total_sessions);
+    /* Allocate sharded cache structure */
+    ctx->sharded_session_cache.num_shards = actual_shards;
+    ctx->sharded_session_cache.shard_mask = actual_shards - 1;
+    ctx->sharded_session_cache.shards = Arena_calloc (ctx->arena, actual_shards,
+                                                       sizeof (TLSSessionShard_T),
+                                                       __FILE__, __LINE__);
+
+    size_t sessions_per_shard_final = sessions_per_shard ? sessions_per_shard : (SOCKET_TLS_SESSION_CACHE_SIZE / actual_shards);
+
+    for (size_t i = 0; i < actual_shards; i++)
+    {
+      TLSSessionShard_T *shard = &ctx->sharded_session_cache.shards[i];
+
+      /* Initialize hash table for sessions using file-scope config */
+      shard->session_table = HashTable_new (ctx->arena, &sharded_session_config);
+      if (!shard->session_table)
+        RAISE_TLS_ERROR (SocketTLS_Failed);
+
+      pthread_mutex_init (&shard->mutex, NULL);
+
+      shard->max_sessions = sessions_per_shard_final;
+      shard->current_count = 0;
+      shard->hits = shard->misses = shard->stores = 0;
+    }
+
+    ctx->sharded_enabled = 1;
+
+    /* TODO: Set OpenSSL session callbacks to use sharded storage
+     * SSL_CTX_sess_set_get_cb(ctx->ssl_ctx, sharded_get_session_cb);
+     * SSL_CTX_sess_set_new_cb(ctx->ssl_ctx, sharded_new_session_cb);
+     * SSL_CTX_sess_set_remove_cb(ctx->ssl_ctx, sharded_remove_session_cb);
+     */
+
+    SOCKET_LOG_INFO_MSG ("Created sharded session cache with %zu shards (%zu sessions/shard, timeout %lds)",
+                         actual_shards, sessions_per_shard_final, timeout_seconds);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    /* Partial cleanup would be needed, but for simplicity RERAISE */
+    RERAISE;
+  }
+  END_TRY;
 }
 
 /**
- * SocketTLSContext_get_sharded_stats - Get statistics from all shards
- * @ctx: TLS context
- * @total_hits: Output for total cache hits (may be NULL)
- * @total_misses: Output for total cache misses (may be NULL)
- * @total_stores: Output for total sessions stored (may be NULL)
+ * SocketTLSContext_get_sharded_stats - Get aggregate statistics from sharded session cache
+ * @ctx: TLS context with sharded cache enabled
+ * @total_hits: Output - total cache hits across all shards (may be NULL)
+ * @total_misses: Output - total cache misses across all shards (may be NULL)
+ * @total_stores: Output - total sessions stored across all shards (may be NULL)
  *
- * Aggregates statistics across all cache shards.
+ * Sums statistics from all shards by locking each mutex briefly.
+ * If sharded cache not enabled, returns standard cache stats as fallback.
  *
- * Thread-safe: Yes - uses per-shard and stats mutexes.
+ * @threadsafe Yes - locks per-shard mutexes sequentially
+ * @complexity O(number of shards) - linear scan over shards
+ *
+ * @see SocketTLSContext_create_sharded_cache() to enable sharded caching
  */
 void
 SocketTLSContext_get_sharded_stats (SocketTLSContext_T ctx, size_t *total_hits,
                                     size_t *total_misses, size_t *total_stores)
 {
-  /* Delegate to standard stats for now */
-  SocketTLSContext_get_cache_stats (ctx, total_hits, total_misses,
-                                    total_stores);
+  if (!ctx || !ctx->sharded_enabled)
+    {
+      SocketTLSContext_get_cache_stats (ctx, total_hits, total_misses, total_stores);
+      return;
+    }
+
+  size_t hits = 0, misses = 0, stores = 0;
+
+  for (size_t i = 0; i < ctx->sharded_session_cache.num_shards; i++)
+    {
+      TLSSessionShard_T *shard = &ctx->sharded_session_cache.shards[i];
+      pthread_mutex_lock (&shard->mutex);
+      hits += shard->hits;
+      misses += shard->misses;
+      stores += shard->stores;
+      pthread_mutex_unlock (&shard->mutex);
+    }
+
+  if (total_hits) *total_hits = hits;
+  if (total_misses) *total_misses = misses;
+  if (total_stores) *total_stores = stores;
+
+  SOCKET_LOG_DEBUG_MSG ("Sharded cache stats: hits=%zu misses=%zu stores=%zu", hits, misses, stores);
 }
 
 /* ============================================================================

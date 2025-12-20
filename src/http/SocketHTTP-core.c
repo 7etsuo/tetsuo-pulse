@@ -13,8 +13,9 @@
  * Implements HTTP methods, status codes, versions, and character tables.
  */
 
-#include <string.h>
 
+
+#include <stdbool.h>
 #include "http/SocketHTTP-private.h"
 #include "http/SocketHTTP.h"
 
@@ -210,6 +211,47 @@ const unsigned char sockethttp_hex_value[256] = {
  * ============================================================================
  */
 
+/* Forward declaration */
+static size_t sockethttp_effective_length (const char *str, size_t len);
+
+/**
+ * @brief Parse entry for enum string mapping.
+ * @internal
+ */
+struct ParseEntry {
+  size_t len;
+  const char *str;
+  int val;
+  bool case_insens;  /**< true for case-insensitive match */
+};
+
+/**
+ * @brief Parse string to enum value using table lookup.
+ * @internal
+ *
+ * @param str Input string
+ * @param len Length (or 0 for strlen)
+ * @param table Parse table entries
+ * @param table_size Number of entries
+ * @param default_val Default if no match
+ * @return Matched value or default_val
+ */
+static int
+sockethttp_parse_enum(const char *str, size_t len, const struct ParseEntry *table, size_t table_size, int default_val)
+{
+  if (!str)
+    return default_val;
+  len = sockethttp_effective_length(str, len);
+  for (size_t i = 0; i < table_size; i++) {
+    if (len == table[i].len &&
+        (table[i].case_insens ? strncasecmp(str, table[i].str, len) == 0 :
+                                memcmp(str, table[i].str, len) == 0)) {
+      return table[i].val;
+    }
+  }
+  return default_val;
+}
+
 /**
  * sockethttp_effective_length - Get effective string length
  *
@@ -312,6 +354,14 @@ SocketHTTP_version_string (SocketHTTP_Version version)
     }
 }
 
+static const struct ParseEntry version_table[] = {
+    {SOCKETHTTP_VERSION_STR_LEN_FULL, "HTTP/0.9", HTTP_VERSION_0_9, false},
+    {SOCKETHTTP_VERSION_STR_LEN_FULL, "HTTP/1.0", HTTP_VERSION_1_0, false},
+    {SOCKETHTTP_VERSION_STR_LEN_FULL, "HTTP/1.1", HTTP_VERSION_1_1, false},
+    {SOCKETHTTP_VERSION_STR_LEN_SHORT, "HTTP/2", HTTP_VERSION_2, false},
+    {SOCKETHTTP_VERSION_STR_LEN_SHORT, "HTTP/3", HTTP_VERSION_3, false},
+};
+
 /**
  * SocketHTTP_version_parse - Parse version string
  * @str: Version string (e.g., "HTTP/1.1")
@@ -323,27 +373,8 @@ SocketHTTP_version_string (SocketHTTP_Version version)
 SocketHTTP_Version
 SocketHTTP_version_parse (const char *str, size_t len)
 {
-  if (!str)
-    return HTTP_VERSION_0_9;
-  len = sockethttp_effective_length (str, len);
-
-  if (len == SOCKETHTTP_VERSION_STR_LEN_FULL)
-    {
-      if (memcmp (str, "HTTP/0.9", SOCKETHTTP_VERSION_STR_LEN_FULL) == 0)
-        return HTTP_VERSION_0_9;
-      if (memcmp (str, "HTTP/1.0", SOCKETHTTP_VERSION_STR_LEN_FULL) == 0)
-        return HTTP_VERSION_1_0;
-      if (memcmp (str, "HTTP/1.1", SOCKETHTTP_VERSION_STR_LEN_FULL) == 0)
-        return HTTP_VERSION_1_1;
-    }
-  if (len == SOCKETHTTP_VERSION_STR_LEN_SHORT)
-    {
-      if (memcmp (str, "HTTP/2", SOCKETHTTP_VERSION_STR_LEN_SHORT) == 0)
-        return HTTP_VERSION_2;
-      if (memcmp (str, "HTTP/3", SOCKETHTTP_VERSION_STR_LEN_SHORT) == 0)
-        return HTTP_VERSION_3;
-    }
-  return HTTP_VERSION_0_9;
+  return (SocketHTTP_Version)sockethttp_parse_enum(str, len, version_table,
+    sizeof(version_table) / sizeof(version_table[0]), HTTP_VERSION_0_9);
 }
 
 /* ============================================================================
@@ -388,6 +419,18 @@ SocketHTTP_method_name (SocketHTTP_Method method)
     }
 }
 
+static const struct ParseEntry method_table[] = {
+    {SOCKETHTTP_METHOD_LEN_GET, "GET", HTTP_METHOD_GET, false},
+    {SOCKETHTTP_METHOD_LEN_PUT, "PUT", HTTP_METHOD_PUT, false},
+    {SOCKETHTTP_METHOD_LEN_HEAD, "HEAD", HTTP_METHOD_HEAD, false},
+    {SOCKETHTTP_METHOD_LEN_POST, "POST", HTTP_METHOD_POST, false},
+    {SOCKETHTTP_METHOD_LEN_TRACE, "TRACE", HTTP_METHOD_TRACE, false},
+    {SOCKETHTTP_METHOD_LEN_PATCH, "PATCH", HTTP_METHOD_PATCH, false},
+    {SOCKETHTTP_METHOD_LEN_DELETE, "DELETE", HTTP_METHOD_DELETE, false},
+    {SOCKETHTTP_METHOD_LEN_CONNECT, "CONNECT", HTTP_METHOD_CONNECT, false},
+    {SOCKETHTTP_METHOD_LEN_OPTIONS, "OPTIONS", HTTP_METHOD_OPTIONS, false},
+};
+
 /**
  * SocketHTTP_method_parse - Parse method string
  * @str: Method string (e.g., "GET", "POST")
@@ -399,48 +442,8 @@ SocketHTTP_method_name (SocketHTTP_Method method)
 SocketHTTP_Method
 SocketHTTP_method_parse (const char *str, size_t len)
 {
-  if (!str)
-    return HTTP_METHOD_UNKNOWN;
-  len = sockethttp_effective_length (str, len);
-
-  /* Case-sensitive match for standard methods (RFC 9110 requires uppercase) */
-  switch (len)
-    {
-    case SOCKETHTTP_METHOD_LEN_GET: /* 3: GET, PUT */
-      if (memcmp (str, "GET", SOCKETHTTP_METHOD_LEN_GET) == 0)
-        return HTTP_METHOD_GET;
-      if (memcmp (str, "PUT", SOCKETHTTP_METHOD_LEN_PUT) == 0)
-        return HTTP_METHOD_PUT;
-      break;
-
-    case SOCKETHTTP_METHOD_LEN_HEAD: /* 4: HEAD, POST */
-      if (memcmp (str, "HEAD", SOCKETHTTP_METHOD_LEN_HEAD) == 0)
-        return HTTP_METHOD_HEAD;
-      if (memcmp (str, "POST", SOCKETHTTP_METHOD_LEN_POST) == 0)
-        return HTTP_METHOD_POST;
-      break;
-
-    case SOCKETHTTP_METHOD_LEN_TRACE: /* 5: TRACE, PATCH */
-      if (memcmp (str, "TRACE", SOCKETHTTP_METHOD_LEN_TRACE) == 0)
-        return HTTP_METHOD_TRACE;
-      if (memcmp (str, "PATCH", SOCKETHTTP_METHOD_LEN_PATCH) == 0)
-        return HTTP_METHOD_PATCH;
-      break;
-
-    case SOCKETHTTP_METHOD_LEN_DELETE: /* 6: DELETE */
-      if (memcmp (str, "DELETE", SOCKETHTTP_METHOD_LEN_DELETE) == 0)
-        return HTTP_METHOD_DELETE;
-      break;
-
-    case SOCKETHTTP_METHOD_LEN_CONNECT: /* 7: CONNECT, OPTIONS */
-      if (memcmp (str, "CONNECT", SOCKETHTTP_METHOD_LEN_CONNECT) == 0)
-        return HTTP_METHOD_CONNECT;
-      if (memcmp (str, "OPTIONS", SOCKETHTTP_METHOD_LEN_OPTIONS) == 0)
-        return HTTP_METHOD_OPTIONS;
-      break;
-    }
-
-  return HTTP_METHOD_UNKNOWN;
+  return (SocketHTTP_Method)sockethttp_parse_enum(str, len, method_table,
+    sizeof(method_table) / sizeof(method_table[0]), HTTP_METHOD_UNKNOWN);
 }
 
 /**
@@ -516,6 +519,85 @@ static const char
     *status_reasons[HTTP_STATUS_CODE_MAX - HTTP_STATUS_CODE_MIN + 1]
     = { NULL };
 
+/**
+ * @brief Static mapping of HTTP status codes to reason phrases.
+ * @internal
+ * @note Indexed by code - HTTP_STATUS_CODE_MIN; 0-terminated sentinel.
+ */
+static const struct {
+    int code;
+    const char *phrase;
+} status_phrases_static[] = {
+    {HTTP_STATUS_CONTINUE, "Continue"},
+    {HTTP_STATUS_SWITCHING_PROTOCOLS, "Switching Protocols"},
+    {HTTP_STATUS_PROCESSING, "Processing"},
+    {HTTP_STATUS_EARLY_HINTS, "Early Hints"},
+
+    {HTTP_STATUS_OK, "OK"},
+    {HTTP_STATUS_CREATED, "Created"},
+    {HTTP_STATUS_ACCEPTED, "Accepted"},
+    {HTTP_STATUS_NON_AUTHORITATIVE, "Non-Authoritative Information"},
+    {HTTP_STATUS_NO_CONTENT, "No Content"},
+    {HTTP_STATUS_RESET_CONTENT, "Reset Content"},
+    {HTTP_STATUS_PARTIAL_CONTENT, "Partial Content"},
+    {HTTP_STATUS_MULTI_STATUS, "Multi-Status"},
+    {HTTP_STATUS_ALREADY_REPORTED, "Already Reported"},
+    {HTTP_STATUS_IM_USED, "IM Used"},
+
+    {HTTP_STATUS_MULTIPLE_CHOICES, "Multiple Choices"},
+    {HTTP_STATUS_MOVED_PERMANENTLY, "Moved Permanently"},
+    {HTTP_STATUS_FOUND, "Found"},
+    {HTTP_STATUS_SEE_OTHER, "See Other"},
+    {HTTP_STATUS_NOT_MODIFIED, "Not Modified"},
+    {HTTP_STATUS_USE_PROXY, "Use Proxy"},
+    {HTTP_STATUS_TEMPORARY_REDIRECT, "Temporary Redirect"},
+    {HTTP_STATUS_PERMANENT_REDIRECT, "Permanent Redirect"},
+
+    {HTTP_STATUS_BAD_REQUEST, "Bad Request"},
+    {HTTP_STATUS_UNAUTHORIZED, "Unauthorized"},
+    {HTTP_STATUS_PAYMENT_REQUIRED, "Payment Required"},
+    {HTTP_STATUS_FORBIDDEN, "Forbidden"},
+    {HTTP_STATUS_NOT_FOUND, "Not Found"},
+    {HTTP_STATUS_METHOD_NOT_ALLOWED, "Method Not Allowed"},
+    {HTTP_STATUS_NOT_ACCEPTABLE, "Not Acceptable"},
+    {HTTP_STATUS_PROXY_AUTH_REQUIRED, "Proxy Authentication Required"},
+    {HTTP_STATUS_REQUEST_TIMEOUT, "Request Timeout"},
+    {HTTP_STATUS_CONFLICT, "Conflict"},
+    {HTTP_STATUS_GONE, "Gone"},
+    {HTTP_STATUS_LENGTH_REQUIRED, "Length Required"},
+    {HTTP_STATUS_PRECONDITION_FAILED, "Precondition Failed"},
+    {HTTP_STATUS_CONTENT_TOO_LARGE, "Content Too Large"},
+    {HTTP_STATUS_URI_TOO_LONG, "URI Too Long"},
+    {HTTP_STATUS_UNSUPPORTED_MEDIA_TYPE, "Unsupported Media Type"},
+    {HTTP_STATUS_RANGE_NOT_SATISFIABLE, "Range Not Satisfiable"},
+    {HTTP_STATUS_EXPECTATION_FAILED, "Expectation Failed"},
+    {HTTP_STATUS_IM_A_TEAPOT, "I'm a Teapot"},
+    {HTTP_STATUS_MISDIRECTED_REQUEST, "Misdirected Request"},
+    {HTTP_STATUS_UNPROCESSABLE_CONTENT, "Unprocessable Content"},
+    {HTTP_STATUS_LOCKED, "Locked"},
+    {HTTP_STATUS_FAILED_DEPENDENCY, "Failed Dependency"},
+    {HTTP_STATUS_TOO_EARLY, "Too Early"},
+    {HTTP_STATUS_UPGRADE_REQUIRED, "Upgrade Required"},
+    {HTTP_STATUS_PRECONDITION_REQUIRED, "Precondition Required"},
+    {HTTP_STATUS_TOO_MANY_REQUESTS, "Too Many Requests"},
+    {HTTP_STATUS_HEADER_TOO_LARGE, "Request Header Fields Too Large"},
+    {HTTP_STATUS_UNAVAILABLE_LEGAL, "Unavailable For Legal Reasons"},
+
+    {HTTP_STATUS_INTERNAL_ERROR, "Internal Server Error"},
+    {HTTP_STATUS_NOT_IMPLEMENTED, "Not Implemented"},
+    {HTTP_STATUS_BAD_GATEWAY, "Bad Gateway"},
+    {HTTP_STATUS_SERVICE_UNAVAILABLE, "Service Unavailable"},
+    {HTTP_STATUS_GATEWAY_TIMEOUT, "Gateway Timeout"},
+    {HTTP_STATUS_VERSION_NOT_SUPPORTED, "HTTP Version Not Supported"},
+    {HTTP_STATUS_VARIANT_ALSO_NEGOTIATES, "Variant Also Negotiates"},
+    {HTTP_STATUS_INSUFFICIENT_STORAGE, "Insufficient Storage"},
+    {HTTP_STATUS_LOOP_DETECTED, "Loop Detected"},
+    {HTTP_STATUS_NOT_EXTENDED, "Not Extended"},
+    {HTTP_STATUS_NETWORK_AUTH_REQUIRED, "Network Authentication Required"},
+
+    {0, NULL}
+};
+
 const char *
 SocketHTTP_status_reason (int code)
 {
@@ -533,118 +615,12 @@ static void sockethttp_status_reasons_init (void)
 static void
 sockethttp_status_reasons_init (void)
 {
-  status_reasons[HTTP_STATUS_CONTINUE - HTTP_STATUS_CODE_MIN] = "Continue";
-  status_reasons[HTTP_STATUS_SWITCHING_PROTOCOLS - HTTP_STATUS_CODE_MIN]
-      = "Switching Protocols";
-  status_reasons[HTTP_STATUS_PROCESSING - HTTP_STATUS_CODE_MIN] = "Processing";
-  status_reasons[HTTP_STATUS_EARLY_HINTS - HTTP_STATUS_CODE_MIN]
-      = "Early Hints";
-
-  status_reasons[HTTP_STATUS_OK - HTTP_STATUS_CODE_MIN] = "OK";
-  status_reasons[HTTP_STATUS_CREATED - HTTP_STATUS_CODE_MIN] = "Created";
-  status_reasons[HTTP_STATUS_ACCEPTED - HTTP_STATUS_CODE_MIN] = "Accepted";
-  status_reasons[HTTP_STATUS_NON_AUTHORITATIVE - HTTP_STATUS_CODE_MIN]
-      = "Non-Authoritative Information";
-  status_reasons[HTTP_STATUS_NO_CONTENT - HTTP_STATUS_CODE_MIN] = "No Content";
-  status_reasons[HTTP_STATUS_RESET_CONTENT - HTTP_STATUS_CODE_MIN]
-      = "Reset Content";
-  status_reasons[HTTP_STATUS_PARTIAL_CONTENT - HTTP_STATUS_CODE_MIN]
-      = "Partial Content";
-  status_reasons[HTTP_STATUS_MULTI_STATUS - HTTP_STATUS_CODE_MIN]
-      = "Multi-Status";
-  status_reasons[HTTP_STATUS_ALREADY_REPORTED - HTTP_STATUS_CODE_MIN]
-      = "Already Reported";
-  status_reasons[HTTP_STATUS_IM_USED - HTTP_STATUS_CODE_MIN] = "IM Used";
-
-  status_reasons[HTTP_STATUS_MULTIPLE_CHOICES - HTTP_STATUS_CODE_MIN]
-      = "Multiple Choices";
-  status_reasons[HTTP_STATUS_MOVED_PERMANENTLY - HTTP_STATUS_CODE_MIN]
-      = "Moved Permanently";
-  status_reasons[HTTP_STATUS_FOUND - HTTP_STATUS_CODE_MIN] = "Found";
-  status_reasons[HTTP_STATUS_SEE_OTHER - HTTP_STATUS_CODE_MIN] = "See Other";
-  status_reasons[HTTP_STATUS_NOT_MODIFIED - HTTP_STATUS_CODE_MIN]
-      = "Not Modified";
-  status_reasons[HTTP_STATUS_USE_PROXY - HTTP_STATUS_CODE_MIN] = "Use Proxy";
-  status_reasons[HTTP_STATUS_TEMPORARY_REDIRECT - HTTP_STATUS_CODE_MIN]
-      = "Temporary Redirect";
-  status_reasons[HTTP_STATUS_PERMANENT_REDIRECT - HTTP_STATUS_CODE_MIN]
-      = "Permanent Redirect";
-
-  status_reasons[HTTP_STATUS_BAD_REQUEST - HTTP_STATUS_CODE_MIN]
-      = "Bad Request";
-  status_reasons[HTTP_STATUS_UNAUTHORIZED - HTTP_STATUS_CODE_MIN]
-      = "Unauthorized";
-  status_reasons[HTTP_STATUS_PAYMENT_REQUIRED - HTTP_STATUS_CODE_MIN]
-      = "Payment Required";
-  status_reasons[HTTP_STATUS_FORBIDDEN - HTTP_STATUS_CODE_MIN] = "Forbidden";
-  status_reasons[HTTP_STATUS_NOT_FOUND - HTTP_STATUS_CODE_MIN] = "Not Found";
-  status_reasons[HTTP_STATUS_METHOD_NOT_ALLOWED - HTTP_STATUS_CODE_MIN]
-      = "Method Not Allowed";
-  status_reasons[HTTP_STATUS_NOT_ACCEPTABLE - HTTP_STATUS_CODE_MIN]
-      = "Not Acceptable";
-  status_reasons[HTTP_STATUS_PROXY_AUTH_REQUIRED - HTTP_STATUS_CODE_MIN]
-      = "Proxy Authentication Required";
-  status_reasons[HTTP_STATUS_REQUEST_TIMEOUT - HTTP_STATUS_CODE_MIN]
-      = "Request Timeout";
-  status_reasons[HTTP_STATUS_CONFLICT - HTTP_STATUS_CODE_MIN] = "Conflict";
-  status_reasons[HTTP_STATUS_GONE - HTTP_STATUS_CODE_MIN] = "Gone";
-  status_reasons[HTTP_STATUS_LENGTH_REQUIRED - HTTP_STATUS_CODE_MIN]
-      = "Length Required";
-  status_reasons[HTTP_STATUS_PRECONDITION_FAILED - HTTP_STATUS_CODE_MIN]
-      = "Precondition Failed";
-  status_reasons[HTTP_STATUS_CONTENT_TOO_LARGE - HTTP_STATUS_CODE_MIN]
-      = "Content Too Large";
-  status_reasons[HTTP_STATUS_URI_TOO_LONG - HTTP_STATUS_CODE_MIN]
-      = "URI Too Long";
-  status_reasons[HTTP_STATUS_UNSUPPORTED_MEDIA_TYPE - HTTP_STATUS_CODE_MIN]
-      = "Unsupported Media Type";
-  status_reasons[HTTP_STATUS_RANGE_NOT_SATISFIABLE - HTTP_STATUS_CODE_MIN]
-      = "Range Not Satisfiable";
-  status_reasons[HTTP_STATUS_EXPECTATION_FAILED - HTTP_STATUS_CODE_MIN]
-      = "Expectation Failed";
-  status_reasons[HTTP_STATUS_IM_A_TEAPOT - HTTP_STATUS_CODE_MIN]
-      = "I'm a Teapot";
-  status_reasons[HTTP_STATUS_MISDIRECTED_REQUEST - HTTP_STATUS_CODE_MIN]
-      = "Misdirected Request";
-  status_reasons[HTTP_STATUS_UNPROCESSABLE_CONTENT - HTTP_STATUS_CODE_MIN]
-      = "Unprocessable Content";
-  status_reasons[HTTP_STATUS_LOCKED - HTTP_STATUS_CODE_MIN] = "Locked";
-  status_reasons[HTTP_STATUS_FAILED_DEPENDENCY - HTTP_STATUS_CODE_MIN]
-      = "Failed Dependency";
-  status_reasons[HTTP_STATUS_TOO_EARLY - HTTP_STATUS_CODE_MIN] = "Too Early";
-  status_reasons[HTTP_STATUS_UPGRADE_REQUIRED - HTTP_STATUS_CODE_MIN]
-      = "Upgrade Required";
-  status_reasons[HTTP_STATUS_PRECONDITION_REQUIRED - HTTP_STATUS_CODE_MIN]
-      = "Precondition Required";
-  status_reasons[HTTP_STATUS_TOO_MANY_REQUESTS - HTTP_STATUS_CODE_MIN]
-      = "Too Many Requests";
-  status_reasons[HTTP_STATUS_HEADER_TOO_LARGE - HTTP_STATUS_CODE_MIN]
-      = "Request Header Fields Too Large";
-  status_reasons[HTTP_STATUS_UNAVAILABLE_LEGAL - HTTP_STATUS_CODE_MIN]
-      = "Unavailable For Legal Reasons";
-
-  status_reasons[HTTP_STATUS_INTERNAL_ERROR - HTTP_STATUS_CODE_MIN]
-      = "Internal Server Error";
-  status_reasons[HTTP_STATUS_NOT_IMPLEMENTED - HTTP_STATUS_CODE_MIN]
-      = "Not Implemented";
-  status_reasons[HTTP_STATUS_BAD_GATEWAY - HTTP_STATUS_CODE_MIN]
-      = "Bad Gateway";
-  status_reasons[HTTP_STATUS_SERVICE_UNAVAILABLE - HTTP_STATUS_CODE_MIN]
-      = "Service Unavailable";
-  status_reasons[HTTP_STATUS_GATEWAY_TIMEOUT - HTTP_STATUS_CODE_MIN]
-      = "Gateway Timeout";
-  status_reasons[HTTP_STATUS_VERSION_NOT_SUPPORTED - HTTP_STATUS_CODE_MIN]
-      = "HTTP Version Not Supported";
-  status_reasons[HTTP_STATUS_VARIANT_ALSO_NEGOTIATES - HTTP_STATUS_CODE_MIN]
-      = "Variant Also Negotiates";
-  status_reasons[HTTP_STATUS_INSUFFICIENT_STORAGE - HTTP_STATUS_CODE_MIN]
-      = "Insufficient Storage";
-  status_reasons[HTTP_STATUS_LOOP_DETECTED - HTTP_STATUS_CODE_MIN]
-      = "Loop Detected";
-  status_reasons[HTTP_STATUS_NOT_EXTENDED - HTTP_STATUS_CODE_MIN]
-      = "Not Extended";
-  status_reasons[HTTP_STATUS_NETWORK_AUTH_REQUIRED - HTTP_STATUS_CODE_MIN]
-      = "Network Authentication Required";
+  for (size_t i = 0; status_phrases_static[i].code != 0; i++) {
+    int idx = status_phrases_static[i].code - HTTP_STATUS_CODE_MIN;
+    if (idx >= 0 && idx < (int)(sizeof(status_reasons) / sizeof(status_reasons[0]))) {
+      status_reasons[idx] = status_phrases_static[i].phrase;
+    }
+  }
 }
 
 SocketHTTP_StatusCategory
@@ -749,6 +725,15 @@ SocketHTTP_header_value_valid (const char *value, size_t len)
  * ============================================================================
  */
 
+static const struct ParseEntry coding_table[] = {
+    {SOCKETHTTP_CODING_LEN_BR, "br", HTTP_CODING_BR, true},
+    {SOCKETHTTP_CODING_LEN_GZIP, "gzip", HTTP_CODING_GZIP, true},
+    {SOCKETHTTP_CODING_LEN_CHUNKED, "chunked", HTTP_CODING_CHUNKED, true},
+    {SOCKETHTTP_CODING_LEN_DEFLATE, "deflate", HTTP_CODING_DEFLATE, true},
+    {SOCKETHTTP_CODING_LEN_IDENTITY, "identity", HTTP_CODING_IDENTITY, true},
+    {SOCKETHTTP_CODING_LEN_COMPRESS, "compress", HTTP_CODING_COMPRESS, true},
+};
+
 /**
  * SocketHTTP_coding_parse - Parse coding name
  * @name: Coding name string
@@ -760,42 +745,11 @@ SocketHTTP_header_value_valid (const char *value, size_t len)
 SocketHTTP_Coding
 SocketHTTP_coding_parse (const char *name, size_t len)
 {
-  if (!name)
-    return HTTP_CODING_UNKNOWN;
-  len = sockethttp_effective_length (name, len);
-
-  /* Case-insensitive match per RFC 9110 */
-  switch (len)
-    {
-    case SOCKETHTTP_CODING_LEN_BR: /* 2: br */
-      if (strncasecmp (name, "br", SOCKETHTTP_CODING_LEN_BR) == 0)
-        return HTTP_CODING_BR;
-      break;
-
-    case SOCKETHTTP_CODING_LEN_GZIP: /* 4: gzip */
-      if (strncasecmp (name, "gzip", SOCKETHTTP_CODING_LEN_GZIP) == 0)
-        return HTTP_CODING_GZIP;
-      break;
-
-    case SOCKETHTTP_CODING_LEN_CHUNKED: /* 7: chunked, deflate */
-      if (strncasecmp (name, "chunked", SOCKETHTTP_CODING_LEN_CHUNKED) == 0)
-        return HTTP_CODING_CHUNKED;
-      if (strncasecmp (name, "deflate", SOCKETHTTP_CODING_LEN_DEFLATE) == 0)
-        return HTTP_CODING_DEFLATE;
-      break;
-
-    case SOCKETHTTP_CODING_LEN_IDENTITY: /* 8: identity, compress */
-      if (strncasecmp (name, "identity", SOCKETHTTP_CODING_LEN_IDENTITY) == 0)
-        return HTTP_CODING_IDENTITY;
-      if (strncasecmp (name, "compress", SOCKETHTTP_CODING_LEN_COMPRESS) == 0)
-        return HTTP_CODING_COMPRESS;
-      break;
-    }
-
-  return HTTP_CODING_UNKNOWN;
+  return (SocketHTTP_Coding)sockethttp_parse_enum(name, len, coding_table,
+    sizeof(coding_table) / sizeof(coding_table[0]), HTTP_CODING_UNKNOWN);
 }
 
-/* Coding table no longer needed; optimized to direct strncasecmp checks */
+
 
 /**
  * SocketHTTP_coding_name - Get coding name string

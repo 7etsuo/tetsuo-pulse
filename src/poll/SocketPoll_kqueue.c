@@ -58,6 +58,24 @@ struct T
 #undef T
 
 /**
+ * @brief Mapping between portable poll events and kqueue filters.
+ *
+ * Centralizes event translation to eliminate duplicated if-conditions
+ * across setup_event_filters() and backend_get_event().
+ *
+ * @note Fixed-size array; extend by adding entries before terminator {0,0}.
+ * Supports future event types without code duplication.
+ */
+static const struct {
+    unsigned poll_event;
+    int filter;
+} kqueue_event_map[] = {
+    { POLL_READ,  EVFILT_READ },
+    { POLL_WRITE, EVFILT_WRITE },
+    { 0, 0 }
+};
+
+/**
  * backend_new - Create a new kqueue backend instance
  * @arena: Arena for allocations
  * @maxevents: Maximum number of events to return per wait call
@@ -140,16 +158,16 @@ setup_event_filters (PollBackend_T backend, int fd, unsigned events,
   int nev = 0;
   unsigned short flags = action | (action == EV_ADD ? EV_CLEAR : 0);
 
-  if (events & POLL_READ)
+  /* Use mapping to avoid duplicated conditional logic */
+  for (size_t i = 0; kqueue_event_map[i].poll_event != 0; ++i)
     {
-      EV_SET (&ev[nev], fd, EVFILT_READ, flags, 0, 0, NULL);
-      nev++;
-    }
-
-  if (events & POLL_WRITE)
-    {
-      EV_SET (&ev[nev], fd, EVFILT_WRITE, flags, 0, 0, NULL);
-      nev++;
+      if (events & kqueue_event_map[i].poll_event)
+        {
+          EV_SET (&ev[nev], fd, kqueue_event_map[i].filter, flags, 0, 0, NULL);
+          ++nev;
+          /* kqueue supports multiple filters per fd; limit to array size for safety */
+          if (nev >= (int)(sizeof(ev) / sizeof(ev[0]))) break;
+        }
     }
 
   if (nev == 0)
@@ -315,12 +333,15 @@ backend_get_event (const PollBackend_T backend, int index, int *fd_out,
   /* Extract file descriptor from kevent ident field */
   *fd_out = (int)kev->ident;
 
-  /* Translate kqueue filter to portable event flags */
-  if (kev->filter == EVFILT_READ)
-    events |= POLL_READ;
-
-  if (kev->filter == EVFILT_WRITE)
-    events |= POLL_WRITE;
+  /* Translate kqueue filter to portable event flags using centralized mapping */
+  for (size_t i = 0; kqueue_event_map[i].poll_event != 0; ++i)
+    {
+      if (kqueue_event_map[i].filter == (int)kev->filter)
+        {
+          events |= kqueue_event_map[i].poll_event;
+          break;
+        }
+    }
 
   /* Check for error conditions */
   if (kev->flags & EV_ERROR)

@@ -1038,46 +1038,16 @@ SocketTLS_send (Socket_T socket, const void *buf, size_t len)
       return (ssize_t)result;
     }
 
-  /* result <= 0: Check SSL_get_error for specific error condition */
-  int ssl_error = SSL_get_error (ssl, result);
-
-  switch (ssl_error)
+  ssize_t handled = tls_handle_ssl_write_result (ssl, result, "TLS send");
+  if (handled < -1)
     {
-    case SSL_ERROR_WANT_READ:
-    case SSL_ERROR_WANT_WRITE:
-      /* Non-blocking: would block, set errno and return 0.
-       * Caller should poll for readiness and retry. */
-      errno = EAGAIN;
-      return 0;
-
-    case SSL_ERROR_ZERO_RETURN:
-      /* Peer sent close_notify - connection closing cleanly.
-       * For send, this typically shouldn't happen, but handle it. */
       RAISE (Socket_Closed);
-      __builtin_unreachable (); /* RAISE never returns */
-
-    case SSL_ERROR_SYSCALL:
-      /* System call error. errno already set by the underlying call.
-       * If errno is 0, the peer closed unexpectedly. */
-      if (errno == 0)
-        errno = ECONNRESET;
-      tls_format_openssl_error ("TLS send failed (syscall)");
-      RAISE_TLS_ERROR (SocketTLS_Failed);
-      __builtin_unreachable (); /* RAISE never returns */
-
-    case SSL_ERROR_SSL:
-      /* Protocol error - fatal TLS failure */
-      errno = EPROTO;
-      tls_format_openssl_error ("TLS send failed (protocol)");
-      RAISE_TLS_ERROR (SocketTLS_Failed);
-      __builtin_unreachable (); /* RAISE never returns */
-
-    default:
-      /* Unknown error */
-      errno = EIO;
-      tls_format_openssl_error ("TLS send failed (unknown)");
+    }
+  else if (handled < 0)
+    {
       RAISE_TLS_ERROR (SocketTLS_Failed);
     }
+  return handled;
 
   /* Unreachable - all cases either return or raise */
   return -1;

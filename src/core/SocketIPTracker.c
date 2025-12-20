@@ -95,54 +95,87 @@ struct T
 };
 
 /**
- * validate_ip_format - Validate IP string format using inet_pton
- * @ip: IP address string
+ * Mutex operation macros for common lock/read/write patterns
+ * These eliminate duplicated pthread_mutex_lock/unlock code in simple getters/setters.
+ * No error checking on lock return value (matches existing code behavior).
+ * Use TRACKER_READ_FIELD and TRACKER_WRITE_FIELD for atomic field access.
+ * Thread-safe: Yes, but macros assume non-NULL valid tracker pointer.
  *
- * Returns: true if valid IPv4 or IPv6, false otherwise
+ * @note In release builds, asserts may be disabled; macros do not validate tracker.
+ * @see pthread_mutex_lock(3) for underlying synchronization primitive.
+ */
+#define TRACKER_LOCK(t)     do { pthread_mutex_lock (&(t)->mutex); } while (0)
+#define TRACKER_UNLOCK(t)   do { pthread_mutex_unlock (&(t)->mutex); } while (0)
+#define TRACKER_READ_FIELD(t, field, var) do { \
+  TRACKER_LOCK(t); \
+  var = (t)->field; \
+  TRACKER_UNLOCK(t); \
+} while (0)
+#define TRACKER_WRITE_FIELD(t, field, val) do { \
+  TRACKER_LOCK(t); \
+  (t)->field = (val); \
+  TRACKER_UNLOCK(t); \
+} while (0)
+
+/**
+ * clamp_max_per_ip - Clamp maximum connections per IP to non-negative
+ * @val: Input value
+ *
+ * Returns: max(0, val) - eliminates duplicated clamping logic
  * Thread-safe: Yes (pure function)
  */
-static bool
-validate_ip_format (const char *ip)
+static inline int
+clamp_max_per_ip (int val)
 {
+  return val < 0 ? 0 : val;
+}
+
+typedef enum {
+  IP_VALID,
+  IP_BASIC_INVALID,
+  IP_ADVANCED_INVALID
+} IPValidationResult;
+
+/**
+ * validate_ip - Comprehensive IP address validation with result codes
+ * @ip: IP address string to validate
+ * @caller: Caller identifier for logging advanced errors (NULL to suppress logging)
+ *
+ * Returns: IP_VALID if fully valid, IP_BASIC_INVALID if NULL/empty,
+ *          IP_ADVANCED_INVALID if format/length invalid (logs if caller provided)
+ * Thread-safe: Yes (pure function)
+ *
+ * Performs all validation in one call to eliminate duplication.
+ * Basic check: SOCKET_VALID_IP_STRING (non-NULL, non-empty)
+ * Advanced check: length < SOCKET_IP_MAX_LEN and valid IPv4/IPv6 via inet_pton
+ *
+ * Logging: Only for advanced invalid cases when caller != NULL
+ */
+static IPValidationResult
+validate_ip (const char *ip, const char *caller)
+{
+  if (!SOCKET_VALID_IP_STRING (ip))
+    return IP_BASIC_INVALID;
+
+  size_t ip_len = strlen (ip);
+  if (ip_len >= (size_t)SOCKET_IP_MAX_LEN)
+    {
+      if (caller != NULL)
+        SOCKET_LOG_WARN_MSG ("Invalid IP for %s: %s (len=%zu)", caller, ip, ip_len);
+      return IP_ADVANCED_INVALID;
+    }
+
   struct in_addr ipv4;
   if (inet_pton (AF_INET, ip, &ipv4) == 1)
-    return true;
+    return IP_VALID;
 
   struct in6_addr ipv6;
   if (inet_pton (AF_INET6, ip, &ipv6) == 1)
-    return true;
+    return IP_VALID;
 
-  return false;
-}
-
-/**
- * validate_ip_full - Full IP validation (null, empty, length, format)
- * @ip: IP address string
- * @caller: Caller function name for logging (NULL to suppress logging)
- *
- * Returns: true if valid for tracking, false otherwise
- * Thread-safe: Yes (pure function)
- *
- * Validates:
- * - Non-NULL and non-empty string (via SOCKET_VALID_IP_STRING)
- * - Length < SOCKET_IP_MAX_LEN
- * - Valid IPv4 or IPv6 format via inet_pton
- */
-static bool
-validate_ip_full (const char *ip, const char *caller)
-{
-  if (!SOCKET_VALID_IP_STRING (ip))
-    return false;
-
-  size_t ip_len = strlen (ip);
-  if (ip_len >= (size_t)SOCKET_IP_MAX_LEN || !validate_ip_format (ip))
-    {
-      if (caller != NULL)
-        SOCKET_LOG_WARN_MSG ("Invalid IP for %s: %s (len=%zu)", caller, ip,
-                             ip_len);
-      return false;
-    }
-  return true;
+  if (caller != NULL)
+    SOCKET_LOG_WARN_MSG ("Invalid IP format for %s: %s (len=%zu)", caller, ip, ip_len);
+  return IP_ADVANCED_INVALID;
 }
 
 /* ============================================================================
@@ -151,26 +184,34 @@ validate_ip_full (const char *ip, const char *caller)
  */
 
 /**
- * iptracker_hash - Hash function for IP addresses
+ * iptracker_hash - Hash function for IP addresses (seeded DJB2 via utilities)
  * @key: IP address string
- * @seed: Hash seed for randomization
+ * @seed: Hash seed for randomization (incorporated via uint seeded hash)
  * @table_size: Number of buckets
  *
- * Returns: Bucket index
+ * Returns: Bucket index [0, table_size)
+ *
+ * Uses socket_util_hash_djb2() for base string hash and
+ * socket_util_hash_uint_seeded() to incorporate seed for DoS resistance.
+ * Avoids custom DJB2 implementation duplication.
+ *
+ * @see socket_util_hash_djb2() Base string hashing
+ * @see socket_util_hash_uint_seeded() Seed incorporation
  */
 static unsigned
 iptracker_hash (const void *key, unsigned seed, unsigned table_size)
 {
   const char *str = (const char *)key;
-  unsigned hash = SOCKET_UTIL_DJB2_SEED ^ seed;
-  int c;
 
-  /* DJB2 hash: hash * 33 + c */
-  while ((c = *str++) != '\0')
-    hash = ((hash << 5) + hash) + (unsigned)c;
+  /* Use utility DJB2 for string hashing to avoid code duplication */
+  unsigned str_hash = socket_util_hash_djb2 (str, table_size);
 
-  /* Defensive: avoid division by zero if table_size is 0 */
-  return table_size > 0 ? hash % table_size : hash;
+  /* Defensive: avoid issues if table_size == 0 */
+  if (table_size == 0)
+    return str_hash;
+
+  /* Incorporate seed via utility seeded hash for randomization and DoS resistance */
+  return socket_util_hash_uint_seeded (str_hash, table_size, (uint32_t)seed);
 }
 
 /**
@@ -425,9 +466,7 @@ init_tracker_fields (T tracker, Arena_T arena, int max_per_ip)
   assert (tracker != NULL);
 
   memset (tracker, 0, sizeof (*tracker));
-  tracker->max_per_ip = max_per_ip;
-  if (tracker->max_per_ip < 0)
-    tracker->max_per_ip = 0;
+  tracker->max_per_ip = clamp_max_per_ip (max_per_ip);
   tracker->max_unique_ips = SOCKET_MAX_CONNECTIONS;
   tracker->arena = arena;
   tracker->initialized = SOCKET_MUTEX_UNINITIALIZED;
@@ -738,11 +777,11 @@ SocketIPTracker_track (T tracker, const char *ip)
 
   assert (tracker != NULL);
 
-  if (!SOCKET_VALID_IP_STRING (ip))
+  IPValidationResult res = validate_ip (ip, "tracking");
+  if (res == IP_BASIC_INVALID)
     return 1;
-
-  if (!validate_ip_full (ip, "tracking"))
-    return 0; /* Reject invalid IPs */
+  if (res != IP_VALID)
+    return 0;
 
   pthread_mutex_lock (&tracker->mutex);
 
@@ -771,10 +810,8 @@ SocketIPTracker_release (T tracker, const char *ip)
 
   assert (tracker != NULL);
 
-  if (!SOCKET_VALID_IP_STRING (ip))
-    return;
-
-  if (!validate_ip_full (ip, "release"))
+  IPValidationResult res = validate_ip (ip, "release");
+  if (res != IP_VALID)
     return;
 
   pthread_mutex_lock (&tracker->mutex);
@@ -812,10 +849,8 @@ SocketIPTracker_count (T tracker, const char *ip)
 
   assert (tracker != NULL);
 
-  if (!SOCKET_VALID_IP_STRING (ip))
-    return 0;
-
-  if (!validate_ip_full (ip, NULL)) /* No logging for count queries */
+  IPValidationResult res = validate_ip (ip, NULL);
+  if (res != IP_VALID)
     return 0;
 
   pthread_mutex_lock (&tracker->mutex);
@@ -843,9 +878,7 @@ SocketIPTracker_setmax (T tracker, int max_per_ip)
 {
   assert (tracker != NULL);
 
-  pthread_mutex_lock (&tracker->mutex);
-  tracker->max_per_ip = (max_per_ip < 0 ? 0 : max_per_ip);
-  pthread_mutex_unlock (&tracker->mutex);
+  TRACKER_WRITE_FIELD (tracker, max_per_ip, clamp_max_per_ip (max_per_ip));
 }
 
 /**
@@ -864,9 +897,7 @@ SocketIPTracker_getmax (T tracker)
 
   assert (tracker != NULL);
 
-  pthread_mutex_lock (&tracker->mutex);
-  max = tracker->max_per_ip;
-  pthread_mutex_unlock (&tracker->mutex);
+  TRACKER_READ_FIELD (tracker, max_per_ip, max);
 
   return max;
 }
@@ -886,9 +917,7 @@ SocketIPTracker_setmaxunique (T tracker, size_t max_unique)
 {
   assert (tracker != NULL);
 
-  pthread_mutex_lock (&tracker->mutex);
-  tracker->max_unique_ips = max_unique;
-  pthread_mutex_unlock (&tracker->mutex);
+  TRACKER_WRITE_FIELD (tracker, max_unique_ips, max_unique);
 }
 
 /**
@@ -928,9 +957,7 @@ SocketIPTracker_total (T tracker)
 
   assert (tracker != NULL);
 
-  pthread_mutex_lock (&tracker->mutex);
-  total = tracker->total_conns;
-  pthread_mutex_unlock (&tracker->mutex);
+  TRACKER_READ_FIELD (tracker, total_conns, total);
 
   return total;
 }
@@ -952,9 +979,7 @@ SocketIPTracker_unique_ips (T tracker)
 
   assert (tracker != NULL);
 
-  pthread_mutex_lock (&tracker->mutex);
-  unique = tracker->unique_ips;
-  pthread_mutex_unlock (&tracker->mutex);
+  TRACKER_READ_FIELD (tracker, unique_ips, unique);
 
   return unique;
 }

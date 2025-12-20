@@ -86,25 +86,25 @@
  */
 
 /**
- * append_formatted - Append formatted string to request buffer with bounds
- * check
+ * proxy_http_append_formatted - Append formatted HTTP line to request buffer using connection error buf
+ * @conn: Proxy connection context for error reporting
  * @buf: Buffer start pointer
  * @len: Pointer to current length (updated on success)
  * @remaining: Pointer to remaining space (updated on success)
- * @error_buf: Connection error buffer for error messages
- * @error_size: Size of error buffer
- * @error_msg: Error message to set on failure
- * @fmt: printf-style format string
+ * @error_msg: Error message to set in conn->error_buf on failure
+ * @fmt: printf-style format string for the header line (must end with \r\n)
  *
- * Returns: 0 on success, -1 on truncation/error
- * Thread-safe: No (modifies caller-provided buffers)
+ * Returns: 0 on success, -1 on truncation/error (error in conn->error_buf)
+ * Thread-safe: No (modifies conn buffers)
  *
- * Consolidates the repeated pattern of snprintf + bounds check + error
- * handling. Uses vsnprintf for safe formatting with size limits.
+ * Simplified helper for HTTP request building. Uses conn->error_buf automatically.
+ * Consolidates bounds-checked formatting for headers like "Host: %s:%d\r\n".
+ * Assumes fmt includes \r\n termination.
+ *
+ * @see append_request_terminator() for final CRLF if needed.
  */
 static int
-append_formatted (char *buf, size_t *len, size_t *remaining, char *error_buf,
-                  size_t error_size, const char *error_msg, const char *fmt,
+proxy_http_append_formatted (struct SocketProxy_Conn_T *conn, char *buf, size_t *len, size_t *remaining, const char *error_msg, const char *fmt,
                   ...)
 {
   va_list args;
@@ -116,7 +116,7 @@ append_formatted (char *buf, size_t *len, size_t *remaining, char *error_buf,
 
   if (n < 0 || (size_t)n >= *remaining)
     {
-      snprintf (error_buf, error_size, "%s", error_msg);
+      snprintf (conn->error_buf, sizeof (conn->error_buf), "%s", error_msg);
       return -1;
     }
 
@@ -208,8 +208,7 @@ static int
 append_request_line (struct SocketProxy_Conn_T *conn, char *buf, size_t *len,
                      size_t *remaining)
 {
-  return append_formatted (buf, len, remaining, conn->error_buf,
-                           sizeof (conn->error_buf), "Request line too long",
+  return proxy_http_append_formatted (conn, buf, len, remaining, "Request line too long",
                            "CONNECT %s:%d HTTP/1.1\r\n", conn->target_host,
                            conn->target_port);
 }
@@ -229,8 +228,7 @@ static int
 append_host_header (struct SocketProxy_Conn_T *conn, char *buf, size_t *len,
                     size_t *remaining)
 {
-  return append_formatted (buf, len, remaining, conn->error_buf,
-                           sizeof (conn->error_buf), "Host header too long",
+  return proxy_http_append_formatted (conn, buf, len, remaining, "Host header too long",
                            "Host: %s:%d\r\n", conn->target_host,
                            conn->target_port);
 }
@@ -266,8 +264,7 @@ append_auth_header (struct SocketProxy_Conn_T *conn, char *buf, size_t *len,
       return -1;
     }
 
-  result = append_formatted (buf, len, remaining, conn->error_buf,
-                             sizeof (conn->error_buf), "Auth header too long",
+  result = proxy_http_append_formatted (conn, buf, len, remaining, "Auth header too long",
                              "Proxy-Authorization: %s\r\n", auth_header);
 
   /* Clear auth header after use - security best practice */
@@ -320,21 +317,13 @@ append_extra_headers (struct SocketProxy_Conn_T *conn, char *buf, size_t *len,
  * Returns: 0 on success, -1 if buffer too small
  *
  * Appends "\r\n" to terminate the HTTP header section.
+ * Uses proxy_http_append_formatted for consistency and bounds check.
  */
 static int
 append_request_terminator (struct SocketProxy_Conn_T *conn, char *buf,
                            size_t *len, size_t *remaining)
 {
-  if (*remaining < SOCKET_PROXY_CRLF_SIZE + 1)
-    {
-      snprintf (conn->error_buf, sizeof (conn->error_buf), "Request too long");
-      return -1;
-    }
-
-  /* Copy CRLF with null terminator; send_len controls actual bytes sent */
-  memcpy (buf + *len, "\r\n", SOCKET_PROXY_CRLF_SIZE + 1);
-  *len += SOCKET_PROXY_CRLF_SIZE;
-  return 0;
+  return proxy_http_append_formatted (conn, buf, len, remaining, "Request terminator too small", "\r\n");
 }
 
 /**
@@ -523,77 +512,7 @@ proxy_http_recv_response (struct SocketProxy_Conn_T *conn)
  * ============================================================================
  */
 
-/**
- * map_4xx_status - Map 4xx client error to proxy result
- * @status: HTTP status code in 4xx range
- *
- * Returns: Appropriate SocketProxy_Result for the status code
- * Thread-safe: No (uses thread-local error buffer via PROXY_ERROR_MSG)
- *
- * Maps HTTP client errors to semantic proxy result codes.
- */
-static SocketProxy_Result
-map_4xx_status (int status)
-{
-  switch (status)
-    {
-    case HTTP_STATUS_BAD_REQUEST:
-      PROXY_ERROR_MSG ("HTTP 400 Bad Request");
-      return PROXY_ERROR_PROTOCOL;
 
-    case HTTP_STATUS_FORBIDDEN:
-      PROXY_ERROR_MSG ("HTTP 403 Forbidden");
-      return PROXY_ERROR_FORBIDDEN;
-
-    case HTTP_STATUS_NOT_FOUND:
-      PROXY_ERROR_MSG ("HTTP 404 Not Found");
-      return PROXY_ERROR_HOST_UNREACHABLE;
-
-    case HTTP_STATUS_PROXY_AUTH_REQUIRED:
-      PROXY_ERROR_MSG ("HTTP 407 Proxy Authentication Required");
-      return PROXY_ERROR_AUTH_REQUIRED;
-
-    default:
-      PROXY_ERROR_MSG ("HTTP %d Client Error", status);
-      return PROXY_ERROR;
-    }
-}
-
-/**
- * map_5xx_status - Map 5xx server error to proxy result
- * @status: HTTP status code in 5xx range
- *
- * Returns: Appropriate SocketProxy_Result for the status code
- * Thread-safe: No (uses thread-local error buffer via PROXY_ERROR_MSG)
- *
- * Maps HTTP server errors to semantic proxy result codes.
- */
-static SocketProxy_Result
-map_5xx_status (int status)
-{
-  switch (status)
-    {
-    case HTTP_STATUS_INTERNAL_SERVER_ERROR:
-      PROXY_ERROR_MSG ("HTTP 500 Internal Server Error");
-      return PROXY_ERROR;
-
-    case HTTP_STATUS_BAD_GATEWAY:
-      PROXY_ERROR_MSG ("HTTP 502 Bad Gateway");
-      return PROXY_ERROR_HOST_UNREACHABLE;
-
-    case HTTP_STATUS_SERVICE_UNAVAILABLE:
-      PROXY_ERROR_MSG ("HTTP 503 Service Unavailable");
-      return PROXY_ERROR;
-
-    case HTTP_STATUS_GATEWAY_TIMEOUT:
-      PROXY_ERROR_MSG ("HTTP 504 Gateway Timeout");
-      return PROXY_ERROR_TIMEOUT;
-
-    default:
-      PROXY_ERROR_MSG ("HTTP %d Server Error", status);
-      return PROXY_ERROR;
-    }
-}
 
 /**
  * proxy_http_status_to_result - Convert HTTP status code to proxy result
@@ -618,11 +537,57 @@ proxy_http_status_to_result (int status)
   /* 4xx Client Error */
   if (status >= HTTP_STATUS_CLIENT_ERROR_MIN
       && status <= HTTP_STATUS_CLIENT_ERROR_MAX)
-    return map_4xx_status (status);
+    {
+      switch (status)
+        {
+        case HTTP_STATUS_BAD_REQUEST:
+          PROXY_ERROR_MSG ("HTTP 400 Bad Request");
+          return PROXY_ERROR_PROTOCOL;
+
+        case HTTP_STATUS_FORBIDDEN:
+          PROXY_ERROR_MSG ("HTTP 403 Forbidden");
+          return PROXY_ERROR_FORBIDDEN;
+
+        case HTTP_STATUS_NOT_FOUND:
+          PROXY_ERROR_MSG ("HTTP 404 Not Found");
+          return PROXY_ERROR_HOST_UNREACHABLE;
+
+        case HTTP_STATUS_PROXY_AUTH_REQUIRED:
+          PROXY_ERROR_MSG ("HTTP 407 Proxy Authentication Required");
+          return PROXY_ERROR_AUTH_REQUIRED;
+
+        default:
+          PROXY_ERROR_MSG ("HTTP %d Client Error", status);
+          return PROXY_ERROR;
+        }
+    }
 
   /* 5xx Server Error */
   if (status >= HTTP_STATUS_SERVER_ERROR_MIN)
-    return map_5xx_status (status);
+    {
+      switch (status)
+        {
+        case HTTP_STATUS_INTERNAL_SERVER_ERROR:
+          PROXY_ERROR_MSG ("HTTP 500 Internal Server Error");
+          return PROXY_ERROR;
+
+        case HTTP_STATUS_BAD_GATEWAY:
+          PROXY_ERROR_MSG ("HTTP 502 Bad Gateway");
+          return PROXY_ERROR_HOST_UNREACHABLE;
+
+        case HTTP_STATUS_SERVICE_UNAVAILABLE:
+          PROXY_ERROR_MSG ("HTTP 503 Service Unavailable");
+          return PROXY_ERROR;
+
+        case HTTP_STATUS_GATEWAY_TIMEOUT:
+          PROXY_ERROR_MSG ("HTTP 504 Gateway Timeout");
+          return PROXY_ERROR_TIMEOUT;
+
+        default:
+          PROXY_ERROR_MSG ("HTTP %d Server Error", status);
+          return PROXY_ERROR;
+        }
+    }
 
   /* Unexpected status (1xx, 3xx, or invalid) */
   PROXY_ERROR_MSG ("Unexpected HTTP status: %d", status);

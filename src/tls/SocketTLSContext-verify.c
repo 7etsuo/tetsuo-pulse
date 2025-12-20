@@ -19,8 +19,12 @@
 #if SOCKET_HAS_TLS
 
 #include "core/SocketSecurity.h"
+#include "core/SocketUtil.h"
 #include "tls/SocketTLS-private.h"
 #include <assert.h>
+
+/* Thread-local exception for SocketTLSContext module */
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLSContext);
 #include <dirent.h>
 #include <errno.h>
 #include <openssl/ocsp.h>
@@ -29,7 +33,7 @@
 
 #define T SocketTLSContext_T
 
-SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLSContext);
+
 
 /* ============================================================================
  * Configuration Constants

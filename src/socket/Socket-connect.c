@@ -239,14 +239,6 @@ socket_get_connect_error_msg (int saved_errno)
  * Returns: 1 if error is retriable (caller should not raise), 0 otherwise
  * Thread-safe: Yes (stateless)
  */
-static int
-socket_is_retriable_connect_error (int saved_errno)
-{
-  return saved_errno == ECONNREFUSED || saved_errno == ETIMEDOUT
-         || saved_errno == ENETUNREACH || saved_errno == EHOSTUNREACH
-         || saved_errno == ECONNABORTED;
-}
-
 /**
  * socket_handle_connect_error - Handle and log connect error
  * @host: Hostname for error message
@@ -496,7 +488,7 @@ connect_try_addresses (const T sock, struct addrinfo *res, int socket_family,
     }
 
   saved_errno = errno;
-  if (socket_is_retriable_connect_error (saved_errno))
+  if (SocketError_is_retryable_errno(saved_errno))
     {
       errno = saved_errno;
       return;
@@ -697,7 +689,7 @@ Socket_connect (T socket, const char *host, int port)
   {
     int saved_errno = errno;
     SocketCommon_free_addrinfo (res);
-    if (socket_is_retriable_connect_error (saved_errno))
+    if (SocketError_is_retryable_errno(saved_errno))
       {
         errno = saved_errno;
         return;

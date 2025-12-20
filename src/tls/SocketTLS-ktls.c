@@ -35,7 +35,8 @@
 #include "tls/SocketTLS-private.h"
 #include "tls/SocketTLSConfig.h"
 
-/* Thread-local exception for this translation unit */
+/* Thread-local exception for this translation unit - declared early for inline helpers */
+#include "core/Except.h"  /* For Except_T and module exception macros */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLS);
 
 /* Linux kTLS headers - only available on Linux with kTLS support */
@@ -87,7 +88,7 @@ ktls_check_kernel_support (void)
     return 1;
 
   /* Check if TLS is built into the kernel (proc interface) */
-  if (stat ("/proc/sys/net/tls", &st) == 0)
+  if (stat ("/proc/net/tls_stat", &st) == 0)
     return 1;
 
   /* Module might auto-load on first use, so return tentative success
@@ -279,20 +280,17 @@ SocketTLS_sendfile (Socket_T socket, int file_fd, off_t offset, size_t size)
   /* Check if kTLS TX is active - use SSL_sendfile for zero-copy */
   if (socket->tls_ktls_tx_active)
     {
-      ossl_ssize_t sent = SSL_sendfile (ssl, file_fd, offset, size, 0);
-      if (sent < 0)
+      ossl_ssize_t sent_raw = SSL_sendfile (ssl, file_fd, offset, size, 0);
+      ssize_t sent = tls_handle_ssl_write_result (ssl, sent_raw, "SSL_sendfile");
+      if (sent < -1)
         {
-          int ssl_error = SSL_get_error (ssl, (int)sent);
-          if (ssl_error == SSL_ERROR_WANT_WRITE
-              || ssl_error == SSL_ERROR_WANT_READ)
-            {
-              errno = EAGAIN;
-              return 0;
-            }
-          tls_format_openssl_error ("SSL_sendfile failed");
+          RAISE (Socket_Closed);
+        }
+      else if (sent < 0)
+        {
           RAISE_TLS_ERROR (SocketTLS_Failed);
         }
-      return (ssize_t)sent;
+      return sent;
     }
 #endif
 
@@ -325,7 +323,7 @@ SocketTLS_sendfile (Socket_T socket, int file_fd, off_t offset, size_t size)
       if (nread == 0)
         break; /* EOF */
 
-      /* Send via SSL_write */
+      /* Send via SSL_write with partial handling */
       size_t sent_chunk = 0;
       while (sent_chunk < (size_t)nread)
         {
@@ -333,21 +331,24 @@ SocketTLS_sendfile (Socket_T socket, int file_fd, off_t offset, size_t size)
           if (to_send > INT_MAX)
             to_send = INT_MAX;
 
-          int ret = SSL_write (ssl, buf + sent_chunk, to_send);
-          if (ret <= 0)
+          int ret_raw = SSL_write (ssl, buf + sent_chunk, to_send);
+          ssize_t ret = tls_handle_ssl_write_result (ssl, ret_raw, "SSL_write in sendfile fallback");
+          if (ret < -1)
             {
-              int ssl_error = SSL_get_error (ssl, ret);
-              if (ssl_error == SSL_ERROR_WANT_WRITE
-                  || ssl_error == SSL_ERROR_WANT_READ)
-                {
-                  errno = EAGAIN;
-                  return total_sent > 0 ? total_sent : 0;
-                }
-              tls_format_openssl_error ("SSL_write in sendfile failed");
+              RAISE (Socket_Closed);
+            }
+          else if (ret < 0)
+            {
               RAISE_TLS_ERROR (SocketTLS_Failed);
             }
           sent_chunk += (size_t)ret;
+          if (ret == 0)
+            {
+              /* Would block - return partial progress including this chunk's sent */
+              return total_sent + sent_chunk;
+            }
         }
+      /* Full chunk sent */
       total_sent += nread;
     }
 

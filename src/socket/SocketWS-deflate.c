@@ -112,45 +112,35 @@ validate_window_bits (int bits)
  */
 
 /**
- * init_deflate_stream - Initialize zlib deflate stream
- * @strm: Deflate stream to initialize
+ * init_zlib_stream - Initialize zlib stream (deflate or inflate)
+ * @strm: Stream to initialize
  * @window_bits: Window bits (8-15)
+ * @is_deflate: 1 for deflate, 0 for inflate
  *
  * Returns: Z_OK on success, zlib error code on failure
  */
 static int
-init_deflate_stream (z_stream *strm, int window_bits)
+init_zlib_stream (z_stream *strm, int window_bits, int is_deflate)
 {
   assert (strm);
   strm->zalloc = Z_NULL;
   strm->zfree = Z_NULL;
   strm->opaque = Z_NULL;
+  if (!is_deflate) {
+    strm->avail_in = 0;
+    strm->next_in = Z_NULL;
+  }
 
   /* Use negative window bits to get raw deflate (no zlib header) */
-  return deflateInit2 (strm, WS_DEFLATE_LEVEL, Z_DEFLATED, -window_bits,
-                       WS_DEFLATE_MEMLEVEL, Z_DEFAULT_STRATEGY);
+  if (is_deflate) {
+    return deflateInit2 (strm, WS_DEFLATE_LEVEL, Z_DEFLATED, -window_bits,
+                         WS_DEFLATE_MEMLEVEL, Z_DEFAULT_STRATEGY);
+  } else {
+    return inflateInit2 (strm, -window_bits);
+  }
 }
 
-/**
- * init_inflate_stream - Initialize zlib inflate stream
- * @strm: Inflate stream to initialize
- * @window_bits: Window bits (8-15)
- *
- * Returns: Z_OK on success, zlib error code on failure
- */
-static int
-init_inflate_stream (z_stream *strm, int window_bits)
-{
-  assert (strm);
-  strm->zalloc = Z_NULL;
-  strm->zfree = Z_NULL;
-  strm->opaque = Z_NULL;
-  strm->avail_in = 0;
-  strm->next_in = Z_NULL;
 
-  /* Use negative window bits to get raw deflate (no zlib header) */
-  return inflateInit2 (strm, -window_bits);
-}
 
 /* ============================================================================
  * Static Helper Functions - Buffer Management
@@ -158,46 +148,33 @@ init_inflate_stream (z_stream *strm, int window_bits)
  */
 
 /**
- * calculate_compress_buffer_size - Calculate initial buffer for compression
- * @input_len: Input data length
+ * calculate_zlib_buffer_size - Calculate initial output buffer size for zlib operation
+ * @input_len: Input data length to zlib
+ * @is_decompress: 1 for decompress operation (multiply expansion), 0 for compress (add padding)
  *
- * Returns: Appropriate buffer size
+ * Returns: Appropriate initial buffer size with security checks
  */
 static size_t
-calculate_compress_buffer_size (size_t input_len)
+calculate_zlib_buffer_size (size_t input_len, int is_decompress)
 {
   size_t buf_size;
-  if (!SocketSecurity_check_add (input_len, WS_DEFLATE_HEADER_PADDING,
-                                 &buf_size))
-    {
+  if (is_decompress) {
+    if (!SocketSecurity_check_multiply (input_len, WS_DEFLATE_EXPANSION_FACTOR,
+                                        &buf_size)) {
+      buf_size = SIZE_MAX / 2; // fallback on overflow
+    }
+  } else {
+    if (!SocketSecurity_check_add (input_len, WS_DEFLATE_HEADER_PADDING,
+                                   &buf_size)) {
       buf_size = input_len; // fallback
     }
+  }
   if (buf_size < WS_DEFLATE_INITIAL_BUF_SIZE)
     buf_size = WS_DEFLATE_INITIAL_BUF_SIZE;
   return buf_size;
 }
 
-/**
- * calculate_decompress_buffer_size - Calculate initial buffer for
- * decompression
- * @input_len: Compressed input length
- *
- * Returns: Appropriate buffer size
- */
-static size_t
-calculate_decompress_buffer_size (size_t input_len)
-{
-  size_t buf_size;
-  if (!SocketSecurity_check_multiply (input_len, WS_DEFLATE_EXPANSION_FACTOR,
-                                      &buf_size))
-    {
-      // Overflow, cap at reasonable max
-      buf_size = SIZE_MAX / 2; // or specific limit
-    }
-  if (buf_size < WS_DEFLATE_INITIAL_BUF_SIZE)
-    buf_size = WS_DEFLATE_INITIAL_BUF_SIZE;
-  return buf_size;
-}
+
 
 /**
  * grow_arena_buffer - Grow buffer allocated from arena
@@ -288,38 +265,28 @@ append_deflate_trailer (Arena_T arena, const unsigned char *input,
  */
 
 /**
- * should_reset_deflate_context - Check if deflate context should reset
+ * should_reset_zlib_context - Check if zlib context should reset
  * @ws: WebSocket context
+ * @is_deflate: 1 for deflate context, 0 for inflate
  *
- * Returns: 1 if should reset, 0 otherwise
+ * Returns: 1 if should reset (no context takeover), 0 otherwise
  */
 static int
-should_reset_deflate_context (const SocketWS_T ws)
+should_reset_zlib_context (const SocketWS_T ws, int is_deflate)
 {
   assert (ws);
 
-  if (ws->role == WS_ROLE_CLIENT)
-    return ws->compression.client_no_context_takeover;
+  int client_no = ws->compression.client_no_context_takeover;
+  int server_no = ws->compression.server_no_context_takeover;
 
-  return ws->compression.server_no_context_takeover;
+  if (ws->role == WS_ROLE_CLIENT) {
+    return is_deflate ? client_no : server_no;
+  } else {
+    return is_deflate ? server_no : client_no;
+  }
 }
 
-/**
- * should_reset_inflate_context - Check if inflate context should reset
- * @ws: WebSocket context
- *
- * Returns: 1 if should reset, 0 otherwise
- */
-static int
-should_reset_inflate_context (const SocketWS_T ws)
-{
-  assert (ws);
 
-  if (ws->role == WS_ROLE_CLIENT)
-    return ws->compression.server_no_context_takeover;
-
-  return ws->compression.client_no_context_takeover;
-}
 
 /* ============================================================================
  * Static Helper Functions - Compression Core
@@ -327,21 +294,22 @@ should_reset_inflate_context (const SocketWS_T ws)
  */
 
 /**
- * try_grow_compress_buffer - Attempt to grow compression buffer
+ * try_grow_zlib_buffer - Attempt to grow zlib output buffer
  * @ws: WebSocket context
  * @strm: zlib stream
  * @buf: Output buffer pointer (updated on success)
  * @buf_size: Buffer size pointer (updated on success)
  * @total_out: Bytes already written
+ * @is_decompress: 1 if decompress buffer (cap to max_message_size), 0 for compress
  *
- * Validates new size against security limits, allocates new buffer,
- * and updates zlib stream output pointers.
+ * Validates new size against security limits (and max_message_size for decompress),
+ * allocates new buffer from arena, and updates zlib stream output pointers.
  *
  * Returns: 0 on success, -1 on error
  */
 static int
-try_grow_compress_buffer (SocketWS_T ws, z_stream *strm, unsigned char **buf,
-                          size_t *buf_size, size_t total_out)
+try_grow_zlib_buffer (SocketWS_T ws, z_stream *strm, unsigned char **buf,
+                      size_t *buf_size, size_t total_out, int is_decompress)
 {
   size_t new_size;
 
@@ -352,11 +320,27 @@ try_grow_compress_buffer (SocketWS_T ws, z_stream *strm, unsigned char **buf,
                     "Buffer growth multiplication overflow");
       return -1;
     }
-  if (!SocketSecurity_check_size (new_size))
+
+  if (is_decompress)
     {
-      ws_set_error (ws, WS_ERROR_COMPRESSION,
-                    "Buffer size exceeds security limit: %zu", new_size);
-      return -1;
+      size_t max_allowed = ws->config.max_message_size;
+      if (new_size > max_allowed)
+        new_size = max_allowed;
+      if (new_size <= *buf_size)
+        {
+          ws_set_error (ws, WS_ERROR_MESSAGE_TOO_LARGE,
+                        "Decompressed message too large");
+          return -1;
+        }
+    }
+  else
+    {
+      if (!SocketSecurity_check_size (new_size))
+        {
+          ws_set_error (ws, WS_ERROR_COMPRESSION,
+                        "Buffer size exceeds security limit: %zu", new_size);
+          return -1;
+        }
     }
 
   unsigned char *new_buf
@@ -374,6 +358,8 @@ try_grow_compress_buffer (SocketWS_T ws, z_stream *strm, unsigned char **buf,
 
   return 0;
 }
+
+
 
 /**
  * compress_loop - Perform deflate compression loop
@@ -407,7 +393,7 @@ compress_loop (SocketWS_T ws, z_stream *strm, unsigned char **buf,
       /* Grow buffer if needed */
       if (strm->avail_out == 0 && strm->avail_in > 0)
         {
-          if (try_grow_compress_buffer (ws, strm, buf, buf_size, *total_out)
+          if (try_grow_zlib_buffer (ws, strm, buf, buf_size, *total_out, 0 /* compress */)
               < 0)
             return -1;
         }
@@ -415,7 +401,7 @@ compress_loop (SocketWS_T ws, z_stream *strm, unsigned char **buf,
   while (strm->avail_in > 0);
 
   /* Flush phase to output remaining data and end block for BFINAL=1 */
-  int flush_type = should_reset_deflate_context (ws) ? Z_FINISH : Z_SYNC_FLUSH;
+  int flush_type = should_reset_zlib_context (ws, 1 /* deflate */) ? Z_FINISH : Z_SYNC_FLUSH;
   int finished = 0;
 
   while (!finished)
@@ -439,7 +425,7 @@ compress_loop (SocketWS_T ws, z_stream *strm, unsigned char **buf,
       /* Grow buffer if needed during flush */
       if (strm->avail_out == 0)
         {
-          if (try_grow_compress_buffer (ws, strm, buf, buf_size, *total_out)
+          if (try_grow_zlib_buffer (ws, strm, buf, buf_size, *total_out, 0 /* compress */)
               < 0)
             return -1;
         }
@@ -457,59 +443,7 @@ compress_loop (SocketWS_T ws, z_stream *strm, unsigned char **buf,
   return 0;
 }
 
-/**
- * try_grow_decompress_buffer - Attempt to grow decompression buffer
- * @ws: WebSocket context
- * @strm: zlib stream
- * @buf: Output buffer pointer (updated on success)
- * @buf_size: Buffer size pointer (updated on success)
- * @total_out: Bytes already written
- *
- * Validates new size against security limits and max_message_size,
- * allocates new buffer, and updates zlib stream output pointers.
- *
- * Returns: 0 on success, -1 on error
- */
-static int
-try_grow_decompress_buffer (SocketWS_T ws, z_stream *strm, unsigned char **buf,
-                            size_t *buf_size, size_t total_out)
-{
-  size_t new_size;
 
-  if (!SocketSecurity_check_multiply (*buf_size, WS_DEFLATE_BUF_GROWTH,
-                                      &new_size))
-    {
-      ws_set_error (ws, WS_ERROR_COMPRESSION,
-                    "Buffer growth multiplication overflow");
-      return -1;
-    }
-
-  /* Enforce max message size to prevent decompression bombs */
-  if (new_size > ws->config.max_message_size)
-    new_size = ws->config.max_message_size;
-
-  if (new_size <= *buf_size)
-    {
-      ws_set_error (ws, WS_ERROR_MESSAGE_TOO_LARGE,
-                    "Decompressed message too large");
-      return -1;
-    }
-
-  unsigned char *new_buf
-      = grow_arena_buffer (ws->arena, *buf, *buf_size, total_out, new_size);
-  if (!new_buf)
-    {
-      ws_set_error (ws, WS_ERROR_COMPRESSION, "Failed to grow buffer");
-      return -1;
-    }
-
-  *buf = new_buf;
-  *buf_size = new_size;
-  strm->next_out = *buf + total_out;
-  strm->avail_out = (uInt)(*buf_size - total_out);
-
-  return 0;
-}
 
 /**
  * decompress_loop - Perform inflate decompression loop
@@ -543,7 +477,7 @@ decompress_loop (SocketWS_T ws, z_stream *strm, unsigned char **buf,
       /* Grow buffer if needed */
       if (strm->avail_out == 0 && ret != Z_STREAM_END)
         {
-          if (try_grow_decompress_buffer (ws, strm, buf, buf_size, *total_out)
+          if (try_grow_zlib_buffer (ws, strm, buf, buf_size, *total_out, 1 /* decompress */)
               < 0)
             return -1;
         }
@@ -614,7 +548,7 @@ ws_compression_init (SocketWS_T ws)
   ws->compression.client_max_window_bits = deflate_bits;
 
   /* Initialize deflate stream */
-  ret = init_deflate_stream (&ws->compression.deflate_stream, deflate_bits);
+  ret = init_zlib_stream (&ws->compression.deflate_stream, deflate_bits, 1 /* deflate */);
   if (ret != Z_OK)
     {
       ws_set_error (ws, WS_ERROR_COMPRESSION, "deflateInit2 failed: %d", ret);
@@ -623,7 +557,7 @@ ws_compression_init (SocketWS_T ws)
   ws->compression.deflate_initialized = 1;
 
   /* Initialize inflate stream */
-  ret = init_inflate_stream (&ws->compression.inflate_stream, inflate_bits);
+  ret = init_zlib_stream (&ws->compression.inflate_stream, inflate_bits, 0 /* inflate */);
   if (ret != Z_OK)
     {
       deflateEnd (&ws->compression.deflate_stream);
@@ -652,17 +586,25 @@ ws_compression_free (SocketWS_T ws)
 {
   assert (ws);
 
-  if (ws->compression.deflate_initialized)
-    {
-      deflateEnd (&ws->compression.deflate_stream);
-      ws->compression.deflate_initialized = 0;
-    }
+  struct {
+    z_stream *strm;
+    int *initialized;
+    int is_deflate;
+  } contexts[] = {
+    { &ws->compression.deflate_stream, &ws->compression.deflate_initialized, 1 },
+    { &ws->compression.inflate_stream, &ws->compression.inflate_initialized, 0 }
+  };
 
-  if (ws->compression.inflate_initialized)
-    {
-      inflateEnd (&ws->compression.inflate_stream);
-      ws->compression.inflate_initialized = 0;
+  for (size_t i = 0; i < sizeof(contexts)/sizeof(contexts[0]); i++) {
+    if (*contexts[i].initialized) {
+      if (contexts[i].is_deflate) {
+        deflateEnd (contexts[i].strm);
+      } else {
+        inflateEnd (contexts[i].strm);
+      }
+      *contexts[i].initialized = 0;
     }
+  }
 
   /* Buffers not allocated; no action needed */
 }
@@ -708,7 +650,7 @@ ws_compress_message (SocketWS_T ws, const unsigned char *input,
   strm = &ws->compression.deflate_stream;
 
   /* Allocate output buffer */
-  buf_size = calculate_compress_buffer_size (input_len);
+  buf_size = calculate_zlib_buffer_size (input_len, 0 /* compress */);
   if (!SocketSecurity_check_size (buf_size))
     {
       ws_set_error (ws, WS_ERROR_COMPRESSION,
@@ -738,7 +680,7 @@ ws_compress_message (SocketWS_T ws, const unsigned char *input,
   remove_deflate_trailer (buf, &total_out);
 
   /* Reset context if no context takeover */
-  if (should_reset_deflate_context (ws))
+  if (should_reset_zlib_context (ws, 1 /* deflate */))
     deflateReset (strm);
 
   *output = buf;
@@ -808,7 +750,7 @@ ws_decompress_message (SocketWS_T ws, const unsigned char *input,
     }
 
   /* Allocate output buffer */
-  buf_size = calculate_decompress_buffer_size (input_len);
+  buf_size = calculate_zlib_buffer_size (input_len, 1 /* decompress */);
   if (!SocketSecurity_check_size (buf_size))
     {
       ws_set_error (ws, WS_ERROR_COMPRESSION,
@@ -844,7 +786,7 @@ ws_decompress_message (SocketWS_T ws, const unsigned char *input,
     }
 
   /* Reset context if no context takeover */
-  if (should_reset_inflate_context (ws))
+  if (should_reset_zlib_context (ws, 0 /* inflate */))
     inflateReset (strm);
 
   *output = buf;

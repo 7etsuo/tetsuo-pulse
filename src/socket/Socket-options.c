@@ -48,7 +48,6 @@
  * MODULE EXCEPTION INFRASTRUCTURE
  * ============================================================================
  */
-
 /* Declare module-specific exception using centralized macros */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketOptions);
 
@@ -58,6 +57,13 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketOptions);
   SOCKET_RAISE_FMT (SocketOptions, e, fmt, ##__VA_ARGS__)
 #define RAISE_MSG(e, fmt, ...)                                                \
   SOCKET_RAISE_MSG (SocketOptions, e, fmt, ##__VA_ARGS__)
+
+/* Internal helper prototypes */
+static int socket_get_tcp_int_quiet (int fd, int optname, int *out);
+static int socket_get_tcp_uint_quiet (int fd, int optname, unsigned int *out);
+static int socket_get_tcp_string_quiet (int fd, int optname, char *buf, size_t buflen);
+static int socket_getbuf_size (T socket, int optname);
+static void socket_setbuf_size (T socket, int optname, int size, const char *buf_type);
 
 /* sanitize_timeout is defined in SocketCommon.c - use extern declaration */
 extern int socketcommon_sanitize_timeout (int timeout_ms);
@@ -340,57 +346,24 @@ Socket_timeouts_get_extended (const T socket,
  *
  * Returns: Non-zero if valid, 0 if invalid
  */
-static int
-socket_shutdown_mode_valid (int how)
-{
-  return (how == SOCKET_SHUT_RD || how == SOCKET_SHUT_WR
-          || how == SOCKET_SHUT_RDWR);
-}
+
 
 void
 Socket_shutdown (T socket, int how)
 {
   assert (socket);
 
-  if (!socket_shutdown_mode_valid (how))
-    RAISE_MSG (Socket_Failed, "Invalid shutdown mode: %d", how);
+  if (how != SOCKET_SHUT_RD && how != SOCKET_SHUT_WR && how != SOCKET_SHUT_RDWR)
+    RAISE_MSG (Socket_Failed, "Invalid shutdown mode %d: must be SHUT_RD (0), SHUT_WR (1), or SHUT_RDWR (2)", how);
 
   if (shutdown (SocketBase_fd (socket->base), how) < 0)
-    RAISE_FMT (Socket_Failed, "Failed to shutdown socket (how=%d)", how);
+    RAISE_FMT (Socket_Failed, "shutdown failed on fd %d (how=%d): %s", SocketBase_fd (socket->base), how, Socket_safe_strerror(errno));
 }
 
 /* ============================================================================
  * KEEPALIVE OPERATIONS
  * ============================================================================
  */
-
-/**
- * validate_keepalive_parameters - Validate keepalive configuration
- * @idle: Time before first probe (seconds)
- * @interval: Interval between probes (seconds)
- * @count: Number of failed probes before disconnect
- *
- * Raises: Socket_Failed if any parameter is <= 0
- */
-static void
-validate_keepalive_parameters (int idle, int interval, int count)
-{
-  if (idle <= 0 || interval <= 0 || count <= 0)
-    RAISE_MSG (Socket_Failed,
-               "Invalid keepalive parameters (idle=%d, interval=%d, "
-               "count=%d): all must be > 0",
-               idle, interval, count);
-  if (idle > SOCKET_KEEPALIVE_MAX_IDLE || interval > SOCKET_KEEPALIVE_MAX_INTERVAL
-      || count > SOCKET_KEEPALIVE_MAX_COUNT)
-    {
-      RAISE_MSG (Socket_Failed,
-                 "Unreasonable keepalive parameters (idle=%d, interval=%d, "
-                 "count=%d): values too large (max idle=%d, interval=%d, "
-                 "count=%d)",
-                 idle, interval, count, SOCKET_KEEPALIVE_MAX_IDLE,
-                 SOCKET_KEEPALIVE_MAX_INTERVAL, SOCKET_KEEPALIVE_MAX_COUNT);
-    }
-}
 
 /**
  * socket_get_option_quiet - Get socket option without raising exception
@@ -419,87 +392,99 @@ socket_get_option_quiet (int fd, int level, int optname, void *optval,
 }
 
 /**
- * enable_socket_keepalive - Enable SO_KEEPALIVE option
- * @socket: Socket instance
+ * socket_get_tcp_int_quiet - Get TCP integer option quietly
+ * @fd: File descriptor
+ * @optname: Option name (e.g. TCP_NODELAY)
+ * @out: Pointer to output int
  *
- * Raises: Socket_Failed on setsockopt failure
+ * Performs getsockopt for TCP option, initializes *out to 0.
+ * Returns 0 on success, -1 on failure (errno set).
  */
-static void
-enable_socket_keepalive (T socket)
+static int
+socket_get_tcp_int_quiet (int fd, int optname, int *out)
 {
-  SocketCommon_set_option_int (socket->base, SOCKET_SOL_SOCKET,
-                               SOCKET_SO_KEEPALIVE, 1, Socket_Failed);
+  socklen_t len = sizeof (*out);
+  *out = 0;
+  return socket_get_option_quiet (fd, SOCKET_IPPROTO_TCP, optname, out, &len);
 }
 
 /**
- * set_keepalive_idle_time - Set TCP_KEEPIDLE option
- * @socket: Socket instance
- * @idle: Idle time in seconds
+ * socket_get_tcp_uint_quiet - Get TCP unsigned int option quietly
+ * @fd: File descriptor
+ * @optname: Option name (e.g. TCP_USER_TIMEOUT)
+ * @out: Pointer to output unsigned int
  *
- * Raises: Socket_Failed on setsockopt failure
- * Note: No-op on platforms without TCP_KEEPIDLE
+ * Similar to socket_get_tcp_int_quiet for unsigned values.
  */
-static void
-set_keepalive_idle_time (T socket, int idle)
+static int
+socket_get_tcp_uint_quiet (int fd, int optname, unsigned int *out)
 {
-#ifdef TCP_KEEPIDLE
-  SocketCommon_set_option_int (socket->base, SOCKET_IPPROTO_TCP,
-                               SOCKET_TCP_KEEPIDLE, idle, Socket_Failed);
-#else
-  (void)socket;
-  (void)idle;
-#endif
+  socklen_t len = sizeof (*out);
+  *out = 0;
+  return socket_get_option_quiet (fd, SOCKET_IPPROTO_TCP, optname, out, &len);
 }
 
 /**
- * set_keepalive_interval - Set TCP_KEEPINTVL option
- * @socket: Socket instance
- * @interval: Probe interval in seconds
+ * socket_get_tcp_string_quiet - Get TCP string option quietly
+ * @fd: File descriptor
+ * @optname: Option name (e.g. TCP_CONGESTION)
+ * @buf: Output buffer
+ * @buflen: Size of buffer (including space for null terminator)
  *
- * Raises: Socket_Failed on setsockopt failure
- * Note: No-op on platforms without TCP_KEEPINTVL
+ * Performs getsockopt into buf, null-terminates, checks for truncation.
+ * Returns 0 on success, -1 on failure.
  */
-static void
-set_keepalive_interval (T socket, int interval)
+static int
+socket_get_tcp_string_quiet (int fd, int optname, char *buf, size_t buflen)
 {
-#ifdef TCP_KEEPINTVL
-  SocketCommon_set_option_int (socket->base, SOCKET_IPPROTO_TCP,
-                               SOCKET_TCP_KEEPINTVL, interval, Socket_Failed);
-#else
-  (void)socket;
-  (void)interval;
-#endif
+  assert (fd >= 0);
+  assert (buf);
+  assert (buflen > 0);
+  socklen_t len = (socklen_t) buflen;
+  if (socket_get_option_quiet (fd, SOCKET_IPPROTO_TCP, optname, buf, &len) < 0)
+    return -1;
+  if (len > (socklen_t) buflen) {
+    errno = EMSGSIZE;
+    return -1;
+  }
+  buf[buflen - 1] = '\0';
+  return 0;
 }
 
-/**
- * set_keepalive_count - Set TCP_KEEPCNT option
- * @socket: Socket instance
- * @count: Number of probes before disconnect
- *
- * Raises: Socket_Failed on setsockopt failure
- * Note: No-op on platforms without TCP_KEEPCNT
- */
-static void
-set_keepalive_count (T socket, int count)
-{
-#ifdef TCP_KEEPCNT
-  SocketCommon_set_option_int (socket->base, SOCKET_IPPROTO_TCP,
-                               SOCKET_TCP_KEEPCNT, count, Socket_Failed);
-#else
-  (void)socket;
-  (void)count;
-#endif
-}
 
 void
 Socket_setkeepalive (T socket, int idle, int interval, int count)
 {
   assert (socket);
-  validate_keepalive_parameters (idle, interval, count);
-  enable_socket_keepalive (socket);
-  set_keepalive_idle_time (socket, idle);
-  set_keepalive_interval (socket, interval);
-  set_keepalive_count (socket, count);
+  if (idle <= 0 || interval <= 0 || count <= 0)
+    RAISE_MSG (Socket_Failed,
+               "Invalid keepalive parameters (idle=%d, interval=%d, "
+               "count=%d): all must be > 0",
+               idle, interval, count);
+  if (idle > SOCKET_KEEPALIVE_MAX_IDLE || interval > SOCKET_KEEPALIVE_MAX_INTERVAL
+      || count > SOCKET_KEEPALIVE_MAX_COUNT)
+    {
+      RAISE_MSG (Socket_Failed,
+                 "Unreasonable keepalive parameters (idle=%d, interval=%d, "
+                 "count=%d): values too large (max idle=%d, interval=%d, "
+                 "count=%d)",
+                 idle, interval, count, SOCKET_KEEPALIVE_MAX_IDLE,
+                 SOCKET_KEEPALIVE_MAX_INTERVAL, SOCKET_KEEPALIVE_MAX_COUNT);
+    }
+  SocketCommon_set_option_int (socket->base, SOCKET_SOL_SOCKET,
+                               SOCKET_SO_KEEPALIVE, 1, Socket_Failed);
+#ifdef TCP_KEEPIDLE
+  SocketCommon_set_option_int (socket->base, SOCKET_IPPROTO_TCP,
+                               SOCKET_TCP_KEEPIDLE, idle, Socket_Failed);
+#endif
+#ifdef TCP_KEEPINTVL
+  SocketCommon_set_option_int (socket->base, SOCKET_IPPROTO_TCP,
+                               SOCKET_TCP_KEEPINTVL, interval, Socket_Failed);
+#endif
+#ifdef TCP_KEEPCNT
+  SocketCommon_set_option_int (socket->base, SOCKET_IPPROTO_TCP,
+                               SOCKET_TCP_KEEPCNT, count, Socket_Failed);
+#endif
 }
 
 void
@@ -620,27 +605,14 @@ Socket_setcongestion (T socket, const char *algorithm)
 int
 Socket_getcongestion (T socket, char *algorithm, size_t len)
 {
-  int fd = SocketBase_fd (socket->base);
-  socklen_t optlen = (socklen_t)len;
-
   assert (socket);
   assert (algorithm);
   assert (len > 0);
 
 #if SOCKET_HAS_TCP_CONGESTION
-  if (socket_get_option_quiet (fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_CONGESTION,
-                               algorithm, &optlen)
-      < 0)
-    return -1;
-  if (optlen > (socklen_t)len)
-    {
-      errno = EMSGSIZE;
-      return -1;
-    }
-  algorithm[(size_t)len - 1] = '\0'; /* Ensure null termination */
-  return 0;
+  int fd = SocketBase_fd (socket->base);
+  return socket_get_tcp_string_quiet (fd, SOCKET_TCP_CONGESTION, algorithm, len);
 #else
-  (void)fd;
   return -1;
 #endif
 }
@@ -653,57 +625,66 @@ Socket_getcongestion (T socket, char *algorithm, size_t len)
 void
 Socket_setrcvbuf (T socket, int size)
 {
-  assert (socket);
-  assert (size > 0);
-  if (!SOCKET_VALID_BUFFER_SIZE ((size_t)size))
-    {
-      RAISE_FMT (Socket_Failed,
-                 "Invalid receive buffer size %d (min=%d, max=%d)", size,
-                 (int)SOCKET_MIN_BUFFER_SIZE, (int)SOCKET_MAX_BUFFER_SIZE);
-    }
-  SocketCommon_set_option_int (socket->base, SOCKET_SOL_SOCKET,
-                               SOCKET_SO_RCVBUF, size, Socket_Failed);
+  socket_setbuf_size (socket, SOCKET_SO_RCVBUF, size, "receive");
 }
 
 void
 Socket_setsndbuf (T socket, int size)
 {
-  assert (socket);
-  assert (size > 0);
-  if (!SOCKET_VALID_BUFFER_SIZE ((size_t)size))
-    {
-      RAISE_FMT (Socket_Failed, "Invalid send buffer size %d (min=%d, max=%d)",
-                 size, (int)SOCKET_MIN_BUFFER_SIZE,
-                 (int)SOCKET_MAX_BUFFER_SIZE);
-    }
-  SocketCommon_set_option_int (socket->base, SOCKET_SOL_SOCKET,
-                               SOCKET_SO_SNDBUF, size, Socket_Failed);
+  socket_setbuf_size (socket, SOCKET_SO_SNDBUF, size, "send");
 }
 
 int
 Socket_getrcvbuf (T socket)
 {
-  int bufsize = 0;
-
-  assert (socket);
-
-  SocketCommon_getoption_int (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET,
-                              SOCKET_SO_RCVBUF, &bufsize, Socket_Failed);
-
-  return bufsize;
+  return socket_getbuf_size (socket, SOCKET_SO_RCVBUF);
 }
 
 int
 Socket_getsndbuf (T socket)
 {
-  int bufsize = 0;
+  return socket_getbuf_size (socket, SOCKET_SO_SNDBUF);
+}
 
+/**
+ * socket_getbuf_size - Get socket buffer size option
+ * @socket: Socket instance
+ * @optname: SO_RCVBUF or SO_SNDBUF
+ *
+ * Uses SocketCommon_getoption_int, raises Socket_Failed on error.
+ */
+static int
+socket_getbuf_size (T socket, int optname)
+{
   assert (socket);
-
-  SocketCommon_getoption_int (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET,
-                              SOCKET_SO_SNDBUF, &bufsize, Socket_Failed);
-
+  int fd = SocketBase_fd (socket->base);
+  int bufsize = 0;
+  SocketCommon_getoption_int (fd, SOCKET_SOL_SOCKET, optname, &bufsize, Socket_Failed);
   return bufsize;
+}
+
+/**
+ * socket_setbuf_size - Set socket buffer size option
+ * @socket: Socket instance
+ * @optname: SO_RCVBUF or SO_SNDBUF
+ * @size: Buffer size
+ * @buf_type: "receive" or "send" for error message
+ *
+ * Validates size, sets option, raises on invalid or failure.
+ */
+static void
+socket_setbuf_size (T socket, int optname, int size, const char *buf_type)
+{
+  assert (socket);
+  assert (size > 0);
+  if (!SOCKET_VALID_BUFFER_SIZE ((size_t)size))
+    {
+      RAISE_FMT (Socket_Failed,
+                 "Invalid %s buffer size %d (min=%zu, max=%zu)",
+                 buf_type, size,
+                 (size_t)SOCKET_MIN_BUFFER_SIZE, (size_t)SOCKET_MAX_BUFFER_SIZE);
+    }
+  SocketCommon_set_option_int (socket->base, SOCKET_SOL_SOCKET, optname, size, Socket_Failed);
 }
 
 /* ============================================================================
@@ -727,20 +708,15 @@ Socket_setfastopen (T socket, int enable)
 int
 Socket_getfastopen (T socket)
 {
-  int fd = SocketBase_fd (socket->base);
-  int opt = 0;
-  socklen_t optlen = sizeof (opt);
-
   assert (socket);
 
 #if SOCKET_HAS_TCP_FASTOPEN
-  if (socket_get_option_quiet (fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_FASTOPEN,
-                               &opt, &optlen)
-      < 0)
+  int fd = SocketBase_fd (socket->base);
+  int opt;
+  if (socket_get_tcp_int_quiet (fd, SOCKET_TCP_FASTOPEN, &opt) < 0)
     return -1;
   return opt;
 #else
-  (void)fd;
   return -1;
 #endif
 }
@@ -769,20 +745,15 @@ Socket_setusertimeout (T socket, unsigned int timeout_ms)
 unsigned int
 Socket_getusertimeout (T socket)
 {
-  int fd = SocketBase_fd (socket->base);
-  unsigned int timeout_ms = 0;
-  socklen_t optlen = sizeof (timeout_ms);
-
   assert (socket);
 
 #if SOCKET_HAS_TCP_USER_TIMEOUT
-  if (socket_get_option_quiet (fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_USER_TIMEOUT,
-                               &timeout_ms, &optlen)
-      < 0)
+  int fd = SocketBase_fd (socket->base);
+  unsigned int timeout_ms;
+  if (socket_get_tcp_uint_quiet (fd, SOCKET_TCP_USER_TIMEOUT, &timeout_ms) < 0)
     return 0;
   return timeout_ms;
 #else
-  (void)fd;
   return 0;
 #endif
 }

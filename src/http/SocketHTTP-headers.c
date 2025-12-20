@@ -14,7 +14,7 @@
  * case-insensitive lookup using hash table with separate chaining.
  */
 
-#include <string.h>
+
 
 #include "core/SocketSecurity.h"
 #include "core/SocketUtil.h"

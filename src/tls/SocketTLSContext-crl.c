@@ -19,9 +19,12 @@
 
 #if SOCKET_HAS_TLS
 
+#include "core/SocketUtil.h"
 #include "tls/SocketTLS-private.h"
 
+/* Thread-local exception for SocketTLSContext module */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLSContext);
+
 #include <assert.h>
 #include <limits.h>
 #include <stdint.h>
@@ -49,14 +52,6 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLSContext);
  * Raises: SocketTLS_Failed if control characters found
  * Thread-safe: No
  */
-static void
-validate_path_chars (const char *path, size_t path_len, const char *context)
-{
-  if (ssl_contains_control_chars (path, path_len))
-    RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
-                         "%s path contains invalid control character", context);
-}
-
 /**
  * validate_path_length - Validate path does not exceed maximum length
  * @path_len: Length of path
@@ -66,13 +61,6 @@ validate_path_chars (const char *path, size_t path_len, const char *context)
  * Raises: SocketTLS_Failed if path too long
  * Thread-safe: No
  */
-static void
-validate_path_length (size_t path_len, const char *context)
-{
-  if (path_len >= SOCKET_TLS_CRL_MAX_PATH_LEN)
-    RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "%s path too long", context);
-}
-
 /**
  * validate_crl_interval - Validate CRL refresh interval
  * @interval_seconds: Refresh interval in seconds
@@ -105,11 +93,10 @@ validate_crl_interval (long interval_seconds)
  * validate_crl_path_security - Validate CRL path for security issues
  * @crl_path: Path to validate
  *
- * Checks for:
- * - Path traversal sequences (..)
- * - Control characters
- * - Excessive length
- * - Resolvability (must exist and be accessible)
+ * Checks for all security issues using tls_validate_file_path() on both the
+ * original path and its resolved canonical path (via realpath). Ensures path
+ * is resolvable, exists, and passes all checks: length limits, no control
+ * characters, no traversal sequences, not a symlink (before and after resolution).
  *
  * Returns: void
  * Raises: SocketTLS_Failed on validation failure
@@ -121,34 +108,20 @@ validate_crl_path_security (const char *crl_path)
   if (!crl_path || !*crl_path)
     RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "CRL path cannot be NULL or empty");
 
-  size_t path_len = strlen (crl_path);
-  validate_path_length (path_len, "CRL");
-  validate_path_chars (crl_path, path_len, "CRL");
-
-  if (ssl_contains_path_traversal (crl_path, path_len))
+  if (!tls_validate_file_path (crl_path))
     RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
-                         "CRL path contains '..' traversal (not allowed)");
+                         "CRL path failed security validation (length, characters, traversal, or symlink)");
 
-  /* Resolve path and validate result */
+  /* Resolve path and validate canonical form - ensures safe resolution */
   char *resolved_path = realpath (crl_path, NULL);
   if (!resolved_path)
     RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "Invalid or unresolvable CRL path");
 
-  /* Validate resolved path - must free on any error */
-  size_t res_len = strlen (resolved_path);
-
-  if (res_len >= SOCKET_TLS_CRL_MAX_PATH_LEN)
+  if (!tls_validate_file_path (resolved_path))
     {
       free (resolved_path);
-      RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "Resolved CRL path too long");
-    }
-
-  if (ssl_contains_control_chars (resolved_path, res_len))
-    {
-      free (resolved_path);
-      RAISE_CTX_ERROR_MSG (
-          SocketTLS_Failed,
-          "Resolved CRL path contains invalid control character");
+      RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
+                           "Resolved CRL path failed security validation");
     }
 
   free (resolved_path);

@@ -94,7 +94,7 @@ valid_prefix_bits (int prefix_bits)
 const Except_T SocketHPACK_Error
     = { &SocketHPACK_Error, "HPACK compression error" };
 
-SOCKET_DECLARE_MODULE_EXCEPTION (SocketHPACK);
+static __thread Except_T SocketHPACK_DetailedException __attribute__((unused));
 
 #define RAISE_HPACK_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketHPACK, e)
 
@@ -345,18 +345,39 @@ decode_string_header (const unsigned char *input, size_t input_len,
 /**
  * Decode literal string data.
  */
+/**
+ * @brief Allocate a buffer for a null-terminated string from the arena.
+ *
+ * Performs security-checked allocation for buf_size + 1 bytes.
+ * Does not initialize or null-terminate; caller must fill and set terminator.
+ *
+ * @param arena Arena for allocation.
+ * @param buf_size Bytes for content (excluding null terminator).
+ * @param[out] buf_out Pointer to receive allocated buffer (set to NULL on error? No, but error if fail).
+ * @return HPACK_OK on success, HPACK_ERROR_BOMB on size check fail, HPACK_ERROR on alloc fail.
+ */
+static SocketHPACK_Result
+allocate_string_buffer (Arena_T arena, size_t buf_size, char **buf_out)
+{
+  size_t alloc_size = buf_size + 1;
+  if (!SocketSecurity_check_size (alloc_size))
+    return HPACK_ERROR_BOMB;
+
+  *buf_out = ALLOC (arena, alloc_size);
+  if (*buf_out == NULL)
+    return HPACK_ERROR;
+
+  return HPACK_OK;
+}
+
 static SocketHPACK_Result
 decode_string_data_literal (const unsigned char *input, size_t str_len,
                             size_t pos, char **str_out, size_t *str_len_out,
                             Arena_T arena)
 {
-  size_t alloc_size = str_len + 1;
-  if (!SocketSecurity_check_size (alloc_size))
-    return HPACK_ERROR_BOMB;
-
-  *str_out = ALLOC (arena, alloc_size);
-  if (*str_out == NULL)
-    return HPACK_ERROR;
+  SocketHPACK_Result result = allocate_string_buffer (arena, str_len, str_out);
+  if (result != HPACK_OK)
+    return result;
 
   memcpy (*str_out, input + pos, str_len);
   (*str_out)[str_len] = '\0';
@@ -377,12 +398,9 @@ decode_string_data_huffman (const unsigned char *input, size_t encoded_len,
                                       &max_decoded))
     return HPACK_ERROR_BOMB;
 
-  if (!SocketSecurity_check_size (max_decoded + 1))
-    return HPACK_ERROR_BOMB;
-
-  *str_out = ALLOC (arena, max_decoded + 1);
-  if (*str_out == NULL)
-    return HPACK_ERROR;
+  SocketHPACK_Result result = allocate_string_buffer (arena, max_decoded, str_out);
+  if (result != HPACK_OK)
+    return result;
 
   ssize_t decoded = SocketHPACK_huffman_decode (
       input + pos, encoded_len, (unsigned char *)*str_out, max_decoded);
@@ -429,6 +447,8 @@ hpack_decode_string (const unsigned char *input, size_t input_len,
   *consumed = pos + len;
   return HPACK_OK;
 }
+
+
 
 /* ============================================================================
  * Encoder Configuration
@@ -896,9 +916,10 @@ hpack_copy_indexed_name (SocketHPACK_Decoder_T decoder, size_t index,
   if (result != HPACK_OK)
     return result;
 
-  char *name_copy = ALLOC (arena, name_hdr.name_len + 1);
-  if (name_copy == NULL)
-    return HPACK_ERROR;
+  char *name_copy;
+  SocketHPACK_Result alloc_result = allocate_string_buffer (arena, name_hdr.name_len, &name_copy);
+  if (alloc_result != HPACK_OK)
+    return alloc_result;
 
   memcpy (name_copy, name_hdr.name, name_hdr.name_len);
   name_copy[name_hdr.name_len] = '\0';

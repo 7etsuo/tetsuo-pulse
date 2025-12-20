@@ -34,6 +34,8 @@
 
 #define T SocketTLSContext_T
 
+
+
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLSContext);
 
 /* ============================================================================
@@ -325,6 +327,37 @@ SocketTLSContext_get_cache_stats (T ctx, size_t *hits, size_t *misses,
  */
 
 /**
+ * configure_ticket_keys - Internal helper to configure session ticket keys in OpenSSL context
+ * @ctx: TLS context
+ * @key: Key bytes
+ * @key_len: Key length (validated by caller)
+ *
+ * Performs the memcpy to internal storage, sets OpenSSL ticket keys via ctrl,
+ * and cleanses on failure. Does not touch tickets_enabled flag.
+ *
+ * Returns: 1 on success, 0 on failure (OpenSSL ctrl failed)
+ *
+ * Note: Assumes caller has validated key_len and key != NULL.
+ * Thread-safe: No locking - caller must synchronize if necessary.
+ */
+static int
+configure_ticket_keys (T ctx, const unsigned char *key, size_t key_len)
+{
+  memcpy (ctx->ticket_key, key, key_len);
+
+  if (SSL_CTX_ctrl (ctx->ssl_ctx, SSL_CTRL_SET_TLSEXT_TICKET_KEYS,
+                    (int)key_len, ctx->ticket_key)
+      != 1)
+    {
+      /* Clear key material on failure */
+      OPENSSL_cleanse (ctx->ticket_key, SOCKET_TLS_TICKET_KEY_LEN);
+      return 0;
+    }
+
+  return 1;
+}
+
+/**
  * SocketTLSContext_enable_session_tickets - Enable TLS session tickets
  * @ctx: TLS context (must not be NULL)
  * @key: Session ticket encryption key (must be SOCKET_TLS_TICKET_KEY_LEN
@@ -367,18 +400,12 @@ SocketTLSContext_enable_session_tickets (T ctx, const unsigned char *key,
     }
 
   /* Copy key into structure for secure clearing on context free */
-  memcpy (ctx->ticket_key, key, key_len);
-  ctx->tickets_enabled = 1;
-
-  if (SSL_CTX_ctrl (ctx->ssl_ctx, SSL_CTRL_SET_TLSEXT_TICKET_KEYS,
-                    (int)key_len, ctx->ticket_key)
-      != 1)
+  if (!configure_ticket_keys (ctx, key, key_len))
     {
-      /* Clear key material on failure before raising exception */
-      OPENSSL_cleanse (ctx->ticket_key, SOCKET_TLS_TICKET_KEY_LEN);
-      ctx->tickets_enabled = 0;
       ctx_raise_openssl_error ("Failed to set session ticket keys");
     }
+
+  ctx->tickets_enabled = 1;
 }
 
 /**
@@ -432,16 +459,9 @@ SocketTLSContext_rotate_session_ticket_key (T ctx, const unsigned char *new_key,
   /* Securely clear old key before replacement */
   OPENSSL_cleanse (ctx->ticket_key, SOCKET_TLS_TICKET_KEY_LEN);
 
-  /* Copy new key into structure */
-  memcpy (ctx->ticket_key, new_key, new_key_len);
-
-  /* Apply to OpenSSL context */
-  if (SSL_CTX_ctrl (ctx->ssl_ctx, SSL_CTRL_SET_TLSEXT_TICKET_KEYS,
-                    (int)new_key_len, ctx->ticket_key)
-      != 1)
+  /* Apply new key */
+  if (!configure_ticket_keys (ctx, new_key, new_key_len))
     {
-      /* Clear key material on failure */
-      OPENSSL_cleanse (ctx->ticket_key, SOCKET_TLS_TICKET_KEY_LEN);
       ctx->tickets_enabled = 0;
       pthread_mutex_unlock (&ctx->stats_mutex);
       ctx_raise_openssl_error ("Failed to rotate session ticket keys");

@@ -400,6 +400,8 @@ struct SocketHE_T
   int owns_dns;  /**< Flag: 1 if this context created and owns ::dns. */
   int owns_poll; /**< Flag: 1 if this context created and owns ::poll. */
 
+  Socket_T dns_poll_wrapper; /**< Internal wrapper for DNS poll FD (non-owning dup fd). */
+
   /* === DNS State === */
   Request_T dns_request;     /**< Active asynchronous DNS request handle
                                 (SocketDNS_Request_T *). */

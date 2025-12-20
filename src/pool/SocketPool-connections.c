@@ -115,8 +115,7 @@ prepare_free_slot (T pool, Connection_T conn)
   /* Reuse existing buffers if available, otherwise allocate new ones */
   if (conn->inbuf && conn->outbuf)
     {
-      SocketBuf_secureclear (conn->inbuf);
-      SocketBuf_secureclear (conn->outbuf);
+      SocketPool_connections_release_buffers (conn);
       return 0;
     }
 
@@ -243,7 +242,6 @@ reset_slot_base_fields (Connection_T conn)
   conn->data = NULL;
   conn->last_activity = 0;
   conn->active = 0;
-  conn->tracked_ip = NULL;
 }
 
 /**
@@ -482,8 +480,7 @@ handle_existing_slot (Connection_T conn, time_t now)
 {
   /* Secure clear buffers on reuse to prevent data leakage (security.md Section
    * 20) */
-  SocketBuf_secureclear (conn->inbuf);
-  SocketBuf_secureclear (conn->outbuf);
+  SocketPool_connections_release_buffers (conn);
   update_existing_slot (conn, now);
   SocketMetrics_increment (SOCKET_METRIC_POOL_CONNECTIONS_REUSED, 1);
   return conn;
@@ -602,7 +599,7 @@ Connection_T
 SocketPool_add (T pool, Socket_T socket)
 {
   if (!pool || !socket)
-    RAISE_POOL_MSG (SocketPool_Failed,
+    SOCKET_RAISE_MSG(SocketPool, SocketPool_Failed,
                     "Invalid NULL pool or socket in SocketPool_add");
 
   time_t now = safe_time ();
@@ -718,7 +715,7 @@ Connection_T
 SocketPool_get (T pool, Socket_T socket)
 {
   if (!pool || !socket)
-    RAISE_POOL_MSG (SocketPool_Failed,
+    SOCKET_RAISE_MSG(SocketPool, SocketPool_Failed,
                     "Invalid NULL pool or socket in SocketPool_get");
 
   time_t now = safe_time ();
@@ -736,8 +733,7 @@ SocketPool_get (T pool, Socket_T socket)
           return NULL;
         }
       /* Valid connection - update stats */
-      pool->stats_total_reused++;
-      SocketMetrics_increment (SOCKET_METRIC_POOL_CONNECTIONS_REUSED, 1);
+
     }
 
   pthread_mutex_unlock (&pool->mutex);
@@ -854,7 +850,7 @@ void
 SocketPool_remove (T pool, Socket_T socket)
 {
   if (!pool || !socket)
-    RAISE_POOL_MSG (SocketPool_Failed,
+    SOCKET_RAISE_MSG(SocketPool, SocketPool_Failed,
                     "Invalid NULL pool or socket in SocketPool_remove");
 
   pthread_mutex_lock (&pool->mutex);
@@ -1234,7 +1230,7 @@ SocketPool_ConnHealth
 SocketPool_check_connection (T pool, Connection_T conn)
 {
   if (!pool || !conn)
-    RAISE_POOL_MSG (SocketPool_Failed,
+    SOCKET_RAISE_MSG(SocketPool, SocketPool_Failed,
                     "Invalid NULL pool or conn in SocketPool_check_connection");
 
   SocketPool_ConnHealth res = check_socket_health (conn);

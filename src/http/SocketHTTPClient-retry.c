@@ -45,14 +45,10 @@
  * Response Clearing
  * ============================================================================
  *
- * Two functions exist to clear responses for retry:
- * - clear_response_for_retry: For SocketHTTP_Response (core HTTP type)
- * - httpclient_clear_response_for_retry: For SocketHTTPClient_Response (client
- * type)
+ * httpclient_clear_response_for_retry: Clears SocketHTTPClient_Response for retry attempts.
  *
- * Both use the same macro pattern but operate on different struct types.
- * The SocketHTTPClient_Response wraps SocketHTTP_Response with additional
- * client-specific fields (arena, version).
+ * Uses CLEAR_RESPONSE macro to clear headers and zero structure fields for reuse.
+ * The SocketHTTPClient_Response includes client-specific fields like arena and body.
  */
 
 /**
@@ -253,27 +249,6 @@ httpclient_should_retry_status (const SocketHTTPClient_T client, int status)
  */
 
 /**
- * clear_response_for_retry - Clear SocketHTTP_Response for retry attempt
- * @response: Response to clear (modified)
- *
- * Clears headers and zeros the structure for reuse in retry attempts.
- * Caller responsible for freeing body if separately allocated.
- *
- * Thread-safe: No (modifies response)
- *
- * This function operates on SocketHTTP_Response (core HTTP type).
- * For SocketHTTPClient_Response, use httpclient_clear_response_for_retry().
- *
- * @note Handles NULL response gracefully (no-op).
- * @see httpclient_clear_response_for_retry() for client response type.
- */
-void
-clear_response_for_retry (SocketHTTP_Response *response)
-{
-  CLEAR_RESPONSE (response);
-}
-
-/**
  * httpclient_clear_response_for_retry - Clear SocketHTTPClient_Response for
  * retry
  * @response: Client response to clear (modified)
@@ -283,12 +258,11 @@ clear_response_for_retry (SocketHTTP_Response *response)
  *
  * Thread-safe: No (modifies response)
  *
- * This function operates on SocketHTTPClient_Response (client-specific type
- * with arena field). For core SocketHTTP_Response, use
- * clear_response_for_retry().
+ * Operates on SocketHTTPClient_Response, which includes client-specific fields (arena, body).
  *
  * @note Handles NULL response gracefully (no-op).
- * @see clear_response_for_retry() for core HTTP response type.
+ * @note Clears headers and zeros fields (status, body=NULL, len=0, version=0, arena=NULL) for reuse.
+ * Caller must manage arena disposal and body freeing if needed before reuse.
  * @see SocketHTTPClient_Response for structure definition.
  */
 void

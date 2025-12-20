@@ -190,20 +190,46 @@ find_slot (T pool, const Socket_T socket)
  */
 
 /**
+ * @brief Generic allocation helper for pool components.
+ * @param arena Arena for allocation (NULL for system malloc)
+ * @param count Number of elements
+ * @param elem_size Size of each element
+ * @param what Description for error message
+ * @return Allocated zeroed memory
+ * @throws SocketPool_Failed on allocation failure
+ * @threadsafe Yes
+ *
+ * Uses CALLOC when arena provided (with debug info), calloc otherwise.
+ * Common error handling extracted to reduce redundancy.
+ */
+static void *
+pool_alloc (Arena_T arena, size_t count, size_t elem_size, const char *what)
+{
+  void *ptr;
+  if (arena != NULL) {
+    ptr = CALLOC (arena, count, elem_size);
+  } else {
+    ptr = calloc (count, elem_size);
+  }
+  if (!ptr)
+    RAISE_POOL_MSG (SocketPool_Failed,
+                    SOCKET_ENOMEM ": Cannot allocate %s", what);
+  return ptr;
+}
+
+/**
  * SocketPool_connections_allocate_array - Allocate connections array
  * @maxconns: Number of slots to allocate
  *
  * Returns: Allocated and zeroed array
  * Raises: SocketPool_Failed on allocation failure
+ *
+ * Uses generic pool_alloc helper for consistency.
  */
 struct Connection *
 SocketPool_connections_allocate_array (size_t maxconns)
 {
-  struct Connection *conns = calloc (maxconns, sizeof (struct Connection));
-  if (!conns)
-    RAISE_POOL_MSG (SocketPool_Failed,
-                    SOCKET_ENOMEM ": Cannot allocate connections array");
-  return conns;
+  return pool_alloc (NULL, maxconns, sizeof (struct Connection), "connections array");
 }
 
 /**
@@ -212,16 +238,13 @@ SocketPool_connections_allocate_array (size_t maxconns)
  *
  * Returns: Allocated and zeroed hash table
  * Raises: SocketPool_Failed on allocation failure
+ *
+ * Uses generic pool_alloc helper for consistency.
  */
 Connection_T *
 SocketPool_connections_allocate_hash_table (Arena_T arena)
 {
-  Connection_T *table
-      = CALLOC (arena, SOCKET_HASH_SIZE, sizeof (Connection_T));
-  if (!table)
-    RAISE_POOL_MSG (SocketPool_Failed,
-                    SOCKET_ENOMEM ": Cannot allocate hash table");
-  return table;
+  return pool_alloc (arena, SOCKET_HASH_SIZE, sizeof (Connection_T), "hash table");
 }
 
 /**
@@ -231,15 +254,13 @@ SocketPool_connections_allocate_hash_table (Arena_T arena)
  *
  * Returns: Allocated and zeroed buffer
  * Raises: SocketPool_Failed on allocation failure
+ *
+ * Uses generic pool_alloc helper for consistency.
  */
 Socket_T *
 SocketPool_cleanup_allocate_buffer (Arena_T arena, size_t maxconns)
 {
-  Socket_T *buf = CALLOC (arena, maxconns, sizeof (Socket_T));
-  if (!buf)
-    RAISE_POOL_MSG (SocketPool_Failed,
-                    SOCKET_ENOMEM ": Cannot allocate cleanup buffer");
-  return buf;
+  return pool_alloc (arena, maxconns, sizeof (Socket_T), "cleanup buffer");
 }
 
 /* ============================================================================
@@ -375,113 +396,19 @@ allocate_pool_components (Arena_T arena, size_t maxconns, T pool)
   pool->cleanup_buffer = SocketPool_cleanup_allocate_buffer (arena, maxconns);
 }
 
-/**
- * initialize_pool_fields - Initialize scalar fields of the pool structure
- * @pool: Pool instance to initialize
- * @arena: Memory arena reference
- * @maxconns: Maximum number of connections
- * @bufsize: Buffer size for new connections
- */
-static void
-initialize_pool_fields (T pool, Arena_T arena, size_t maxconns, size_t bufsize)
-{
-  pool->maxconns = maxconns;
-  pool->bufsize = bufsize;
-  pool->count = 0;
-  pool->arena = arena;
-  pool->dns = NULL;
-  pool->async_ctx = NULL;
-  pool->async_pending_count = 0;
-}
+/* initialize_pool_fields inlined into construct_pool */
 
-/**
- * initialize_pool_rate_limiting - Initialize rate limiting fields
- * @pool: Pool instance to initialize
- *
- * Sets rate limiting fields to disabled by default.
- */
-static void
-initialize_pool_rate_limiting (T pool)
-{
-  pool->conn_limiter = NULL;
-  pool->ip_tracker = NULL;
-}
+/* initialize_pool_rate_limiting inlined into construct_pool */
 
-/**
- * initialize_pool_drain - Initialize graceful shutdown (drain) fields
- * @pool: Pool instance to initialize
- *
- * Sets drain fields to initial RUNNING state with no callback.
- */
-static void
-initialize_pool_drain (T pool)
-{
-  atomic_init (&pool->state, POOL_STATE_RUNNING);
-  pool->drain_deadline_ms = 0;
-  pool->drain_cb = NULL;
-  pool->drain_cb_data = NULL;
-}
+/* initialize_pool_drain inlined into construct_pool */
 
-/**
- * initialize_pool_reconnect - Initialize reconnection support fields
- * @pool: Pool instance to initialize
- *
- * Sets reconnection to disabled by default.
- */
-static void
-initialize_pool_reconnect (T pool)
-{
-  pool->reconnect_enabled = 0;
-  memset (&pool->reconnect_policy, 0, sizeof (pool->reconnect_policy));
-}
+/* initialize_pool_reconnect inlined into construct_pool */
 
-/**
- * initialize_pool_idle_cleanup - Initialize idle connection cleanup fields
- * @pool: Pool instance to initialize
- *
- * Sets idle cleanup to defaults from configuration.
- */
-static void
-initialize_pool_idle_cleanup (T pool)
-{
-  pool->idle_timeout_sec = SOCKET_POOL_DEFAULT_IDLE_TIMEOUT;
-  pool->last_cleanup_ms = Socket_get_monotonic_ms ();
-  pool->cleanup_interval_ms = SOCKET_POOL_DEFAULT_CLEANUP_INTERVAL_MS;
-}
+/* initialize_pool_idle_cleanup inlined into construct_pool (time call consolidated) */
 
-/**
- * initialize_pool_callbacks - Initialize callback fields
- * @pool: Pool instance to initialize
- *
- * Sets validation and resize callbacks to disabled.
- */
-static void
-initialize_pool_callbacks (T pool)
-{
-  pool->validation_cb = NULL;
-  pool->validation_cb_data = NULL;
-  pool->resize_cb = NULL;
-  pool->resize_cb_data = NULL;
-}
+/* initialize_pool_callbacks inlined into construct_pool */
 
-/**
- * initialize_pool_stats - Initialize statistics tracking fields
- * @pool: Pool instance to initialize
- *
- * Zeros all statistics counters and sets start time.
- */
-static void
-initialize_pool_stats (T pool)
-{
-  pool->stats_total_added = 0;
-  pool->stats_total_removed = 0;
-  pool->stats_total_reused = 0;
-  pool->stats_health_checks = 0;
-  pool->stats_health_failures = 0;
-  pool->stats_validation_failures = 0;
-  pool->stats_idle_cleanups = 0;
-  pool->stats_start_time_ms = Socket_get_monotonic_ms ();
-}
+/* initialize_pool_stats inlined into construct_pool (time call consolidated) */
 
 /**
  * validate_pool_params - Validate pool creation parameters
@@ -522,13 +449,54 @@ construct_pool (Arena_T arena, size_t maxconns, size_t bufsize)
 {
   T pool = allocate_pool_structure (arena);
   allocate_pool_components (arena, maxconns, pool);
-  initialize_pool_fields (pool, arena, maxconns, bufsize);
-  initialize_pool_rate_limiting (pool);
-  initialize_pool_drain (pool);
-  initialize_pool_reconnect (pool);
-  initialize_pool_idle_cleanup (pool);
-  initialize_pool_callbacks (pool);
-  initialize_pool_stats (pool);
+
+  /* Inline simple field initializations to reduce redundant wrapper functions */
+
+  /* From initialize_pool_fields */
+  pool->maxconns = maxconns;
+  pool->bufsize = bufsize;
+  pool->count = 0;
+  pool->arena = arena;
+  pool->dns = NULL;
+  pool->async_ctx = NULL;
+  pool->async_pending_count = 0;
+
+  /* From initialize_pool_rate_limiting */
+  pool->conn_limiter = NULL;
+  pool->ip_tracker = NULL;
+
+  /* From initialize_pool_drain */
+  atomic_init (&pool->state, POOL_STATE_RUNNING);
+  pool->drain_deadline_ms = 0;
+  pool->drain_cb = NULL;
+  pool->drain_cb_data = NULL;
+
+  /* From initialize_pool_reconnect */
+  pool->reconnect_enabled = 0;
+  memset (&pool->reconnect_policy, 0, sizeof (pool->reconnect_policy));
+
+  /* From initialize_pool_idle_cleanup (partial) */
+  pool->idle_timeout_sec = SOCKET_POOL_DEFAULT_IDLE_TIMEOUT;
+  pool->cleanup_interval_ms = SOCKET_POOL_DEFAULT_CLEANUP_INTERVAL_MS;
+
+  /* From initialize_pool_callbacks */
+  pool->validation_cb = NULL;
+  pool->validation_cb_data = NULL;
+  pool->resize_cb = NULL;
+  pool->resize_cb_data = NULL;
+
+  /* From initialize_pool_stats + consolidate monotonic time call with idle_cleanup */
+  int64_t now_ms = Socket_get_monotonic_ms ();
+  pool->last_cleanup_ms = now_ms;
+  pool->stats_start_time_ms = now_ms;
+  pool->stats_total_added = 0;
+  pool->stats_total_removed = 0;
+  pool->stats_total_reused = 0;
+  pool->stats_health_checks = 0;
+  pool->stats_health_failures = 0;
+  pool->stats_validation_failures = 0;
+  pool->stats_idle_cleanups = 0;
+
   initialize_pool_mutex (pool);
   build_free_list (pool, maxconns);
   return pool;
@@ -1079,6 +1047,24 @@ SocketPool_set_resize_callback (T pool, SocketPool_ResizeCallback cb,
  */
 
 /**
+ * @brief Overflow-safe uint64_t addition with saturation.
+ * @param a First operand
+ * @param b Second operand
+ * @return Sum if no overflow, UINT64_MAX if overflow (saturated)
+ * @threadsafe Yes - pure function
+ *
+ * Used in statistics calculations to prevent undefined behavior on overflow.
+ * Returns saturated value instead of wrapping around.
+ */
+static uint64_t
+safe_u64_add (uint64_t a, uint64_t b)
+{
+  if (a > UINT64_MAX - b)
+    return UINT64_MAX;
+  return a + b;
+}
+
+/**
  * calculate_reuse_rate - Calculate connection reuse rate
  * @added: Total connections added
  * @reused: Total connections reused
@@ -1091,15 +1077,7 @@ SocketPool_set_resize_callback (T pool, SocketPool_ResizeCallback cb,
 static double
 calculate_reuse_rate (uint64_t added, uint64_t reused)
 {
-  /* Security: Check for overflow before addition */
-  if (added > UINT64_MAX - reused)
-    {
-      /* Overflow would occur - use saturated addition for best-effort result
-       */
-      return (double)reused / (double)UINT64_MAX;
-    }
-
-  uint64_t total = added + reused;
+  uint64_t total = safe_u64_add (added, reused);
   if (total == 0)
     return 0.0;
   return (double)reused / (double)total;
@@ -1147,16 +1125,10 @@ calculate_avg_connection_age (T pool, time_t now)
 static double
 calculate_churn_rate (uint64_t added, uint64_t removed, double window_sec)
 {
-  uint64_t total;
-
   if (window_sec <= 0.0)
     return 0.0;
 
-  /* Security: Check for overflow before addition */
-  if (added > UINT64_MAX - removed)
-    total = UINT64_MAX; /* Saturate on overflow */
-  else
-    total = added + removed;
+  uint64_t total = safe_u64_add (added, removed);
 
   return (double)total / window_sec;
 }

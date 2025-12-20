@@ -52,9 +52,12 @@ SocketTLS_config_defaults (SocketTLSConfig_T *config)
   config->min_version = SOCKET_TLS_MIN_VERSION;
   config->max_version = SOCKET_TLS_MAX_VERSION;
 
-  /* Future expansion: add ciphers, timeouts, verification settings as
-   * SocketTLSConfig_T gains fields. All new fields should be documented
-   * in SocketTLSConfig.h with secure defaults. */
+  /* Set timeout defaults from header constants */
+  config->handshake_timeout_ms = SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS;
+  config->shutdown_timeout_ms = SOCKET_TLS_DEFAULT_SHUTDOWN_TIMEOUT_MS;
+  config->poll_interval_ms = SOCKET_TLS_POLL_INTERVAL_MS;
+
+  /* Future expansion: add ciphersuites, verify modes, session params, etc. */
 }
 
 #else /* !SOCKET_HAS_TLS */

@@ -61,131 +61,13 @@ struct T
 
 /* ==================== Safe Allocation Helpers ==================== */
 
-/**
- * safe_calloc_array - Safely allocate zeroed array with overflow protection
- * @num: Number of elements
- * @elem_size: Size of each element
- *
- * Returns: Allocated array or NULL on failure (errno set)
- * Thread-safe: Yes
- * Note: Uses SocketSecurity_check_multiply for overflow protection
- */
-static void *
-safe_calloc_array (size_t num, size_t elem_size)
-{
-  size_t total;
+/* Inlined into callers to reduce redundancy; uses SocketSecurity_check_multiply directly */
 
-  if (num == 0 || elem_size == 0)
-    return calloc (1, 1); /* Minimal allocation for zero case */
-
-  if (!SocketSecurity_check_multiply (num, elem_size, &total))
-    {
-      errno = EOVERFLOW;
-      return NULL;
-    }
-
-  return calloc (num, elem_size);
-}
-
-/**
- * safe_realloc_array - Safely reallocate array with overflow protection
- * @ptr: Pointer to reallocate (NULL ok for initial alloc)
- * @num: New number of elements
- * @elem_size: Size of each element
- *
- * Returns: Reallocated array or NULL on failure (errno set)
- * Thread-safe: Yes
- */
-static void *
-safe_realloc_array (void *ptr, size_t num, size_t elem_size)
-{
-  size_t total;
-
-  if (num == 0)
-    {
-      errno = EINVAL;
-      return NULL;
-    }
-
-  if (!SocketSecurity_check_multiply (num, elem_size, &total))
-    {
-      errno = EOVERFLOW;
-      return NULL;
-    }
-
-  return realloc (ptr, total);
-}
+/* safe_realloc_array inlined into callers using SocketSecurity_check_multiply */
 
 /* ==================== Integer Safe Arithmetic Helpers ==================== */
 
-/**
- * safe_int_add - Safely add two positive integers with overflow check
- * @a: First operand (non-negative)
- * @b: Second operand (positive increment)
- * @result_out: Output result (only set on success)
- *
- * Returns: 0 on success, -1 on overflow
- */
-static int
-safe_int_add (int a, int b, int *result_out)
-{
-  size_t sum;
-
-  if (!result_out || a < 0 || b < 0)
-    {
-      errno = EINVAL;
-      return -1;
-    }
-
-  if (!SocketSecurity_check_add ((size_t)a, (size_t)b, &sum))
-    {
-      errno = EOVERFLOW;
-      return -1;
-    }
-
-  if (sum > (size_t)INT_MAX)
-    {
-      errno = EOVERFLOW;
-      return -1;
-    }
-
-  *result_out = (int)sum;
-  return 0;
-}
-
-/**
- * safe_int_double - Safely double a positive integer with overflow check
- * @val: Value to double (positive capacity)
- * @result_out: Output doubled value (only set on success)
- *
- * Returns: 0 on success, -1 on overflow
- */
-static int
-safe_int_double (int val, int *result_out)
-{
-  size_t product;
-
-  if (!result_out || val < 0)
-    {
-      errno = EINVAL;
-      return -1;
-    }
-
-  if (!SocketSecurity_check_multiply ((size_t)val, 2, &product))
-    {
-      errno = EOVERFLOW;
-      return -1;
-    }
-
-  if (product > (size_t)INT_MAX)
-    {
-      errno = EOVERFLOW;
-      return -1;
-    }
-
-  *result_out = (int)product;
-  return 0;
-}
+/* safe_int_add and safe_int_double inlined into callers using SocketSecurity_check_add/multiply directly */
 
 /* ==================== Initialization Helpers ==================== */
 
@@ -211,11 +93,20 @@ init_fd_mapping_range (int *mapping, const int start, const int end)
 static int *
 allocate_fd_mapping (const int size)
 {
-  int *mapping = safe_calloc_array ((size_t)size, sizeof (int));
-
-  if (mapping)
-    init_fd_mapping_range (mapping, 0, size);
-
+  size_t total_bytes;
+  if (size <= 0) {
+    errno = EINVAL;
+    return NULL;
+  }
+  if (!SocketSecurity_check_multiply((size_t)size, sizeof(int), &total_bytes)) {
+    errno = EOVERFLOW;
+    return NULL;
+  }
+  int *mapping = calloc((size_t)size, sizeof(int));
+  if (!mapping) {
+    return NULL;
+  }
+  init_fd_mapping_range (mapping, 0, size);
   return mapping;
 }
 
@@ -251,8 +142,18 @@ compute_max_fd_limit (int initial_max_fd)
 static int
 init_backend_fds (PollBackend_T backend)
 {
-  backend->fds
-      = safe_calloc_array ((size_t)backend->capacity, sizeof (struct pollfd));
+  size_t total_bytes;
+  if (backend->capacity <= 0) {
+    errno = EINVAL;
+    backend->fds = NULL;
+    return -1;
+  }
+  if (!SocketSecurity_check_multiply((size_t)backend->capacity, sizeof(struct pollfd), &total_bytes)) {
+    errno = EOVERFLOW;
+    backend->fds = NULL;
+    return -1;
+  }
+  backend->fds = calloc((size_t)backend->capacity, sizeof(struct pollfd));
   return backend->fds ? 0 : -1;
 }
 
@@ -359,8 +260,12 @@ ensure_fd_mapping (PollBackend_T backend, const int fd)
   if (fd < backend->max_fd)
     return 0;
 
-  if (safe_int_add (fd, POLL_FD_MAP_EXPAND_INCREMENT, &new_max) < 0)
+  size_t sum;
+  if (!SocketSecurity_check_add((size_t)fd, (size_t)POLL_FD_MAP_EXPAND_INCREMENT, &sum) || sum > INT_MAX) {
+    errno = EOVERFLOW;
     return -1;
+  }
+  new_max = (int)sum;
 
   if (new_max > backend->max_fd_limit)
     {
@@ -368,10 +273,15 @@ ensure_fd_mapping (PollBackend_T backend, const int fd)
       return -1;
     }
 
-  new_mapping
-      = safe_realloc_array (backend->fd_to_index, (size_t)new_max, sizeof (int));
-  if (!new_mapping)
+  size_t total_bytes;
+  if (!SocketSecurity_check_multiply((size_t)new_max, sizeof(int), &total_bytes)) {
+    errno = EOVERFLOW;
     return -1;
+  }
+  new_mapping = realloc(backend->fd_to_index, total_bytes);
+  if (!new_mapping) {
+    return -1;
+  }
 
   init_fd_mapping_range (new_mapping, backend->max_fd, new_max);
   backend->fd_to_index = new_mapping;
@@ -397,13 +307,22 @@ ensure_capacity (PollBackend_T backend)
   if (backend->nfds < backend->capacity)
     return 0;
 
-  if (safe_int_double (backend->capacity, &new_capacity) < 0)
+  size_t product;
+  if (!SocketSecurity_check_multiply((size_t)backend->capacity, 2, &product) || product > INT_MAX) {
+    errno = EOVERFLOW;
     return -1;
+  }
+  new_capacity = (int)product;
 
-  new_fds = safe_realloc_array (backend->fds, (size_t)new_capacity,
-                                sizeof (struct pollfd));
-  if (!new_fds)
+  size_t total_bytes;
+  if (!SocketSecurity_check_multiply((size_t)new_capacity, sizeof(struct pollfd), &total_bytes)) {
+    errno = EOVERFLOW;
     return -1;
+  }
+  new_fds = realloc(backend->fds, total_bytes);
+  if (!new_fds) {
+    return -1;
+  }
 
   backend->fds = new_fds;
   backend->capacity = new_capacity;
