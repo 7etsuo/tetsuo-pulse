@@ -13,12 +13,23 @@
  *
  * Features:
  * - Async context lifecycle management (new/free)
- * - Request ID generation and tracking
- * - Hash table-based request lookup
- * - Completion callback handling
- * - Thread-safe operations
+ * - Request ID generation and tracking via hash table
+ * - O(1) average-case request lookup and cancellation
+ * - Completion callback handling with partial transfer support
+ * - Thread-safe operations via mutex protection
  * - Memory management using Arena allocation
  * - Automatic backend detection (io_uring, kqueue, fallback)
+ * - Batch submission support for reduced syscall overhead
+ *
+ * Backend Support:
+ * - Linux (kernel 5.1+): io_uring with eventfd notification
+ * - BSD/macOS: kqueue with edge-triggered events
+ * - Other POSIX: Fallback mode with manual I/O
+ *
+ * Thread Safety:
+ * - All public APIs are thread-safe via internal mutex
+ * - Callbacks invoked from the thread calling process_completions()
+ * - Request state protected during concurrent access
  *
  * Part of the Socket Library
  * Following C Interfaces and Implementations patterns
@@ -90,11 +101,12 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketAsync);
  * @request_id: Request ID to hash
  *
  * Returns: Hash value in range [0, SOCKET_HASH_TABLE_SIZE)
+ * Thread-safe: Yes - pure function with no side effects
  *
  * Uses socket_util_hash_uint() for golden ratio multiplicative hashing.
  */
-static unsigned
-request_hash (unsigned request_id)
+static inline unsigned
+request_hash (const unsigned request_id)
 {
   return socket_util_hash_uint (request_id, SOCKET_HASH_TABLE_SIZE);
 }
@@ -158,14 +170,24 @@ socket_async_allocate_request (T async)
  * @req: Request to clear
  *
  * Note: Request is allocated from arena, so no explicit free needed.
- * We clear it for safety to prevent use-after-free bugs.
+ * We clear it securely to prevent use-after-free bugs and ensure
+ * sensitive callback data doesn't persist in memory.
+ *
+ * Thread-safe: No - caller must ensure exclusive access
  */
 static void
 socket_async_free_request (T async, struct AsyncRequest *req)
 {
   (void)async;
   if (req)
-    memset (req, 0, sizeof (*req));
+    {
+      /* Use secure clear to prevent compiler optimization and ensure
+       * sensitive data (user_data pointers, callback addresses) is zeroed */
+      volatile unsigned char *p = (volatile unsigned char *)req;
+      size_t n = sizeof (*req);
+      while (n--)
+        *p++ = 0;
+    }
 }
 
 static int find_and_remove_request (T async, unsigned request_id,
@@ -175,6 +197,32 @@ static int find_and_remove_request (T async, unsigned request_id,
                                     void **out_user_data);
 
 static void remove_known_request (T async, struct AsyncRequest *req);
+
+/**
+ * accumulate_transfer_progress - Update request progress for partial transfers
+ * @req: Request to update
+ * @result: Bytes transferred in this operation (must be > 0)
+ *
+ * Accumulates transferred bytes for partial transfer tracking.
+ * Caps at request length to prevent overflow.
+ *
+ * Thread-safe: No - caller must ensure exclusive access to req
+ */
+static inline void
+accumulate_transfer_progress (struct AsyncRequest *req, ssize_t result)
+{
+  size_t transferred;
+
+  if (result <= 0)
+    return;
+
+  transferred = (size_t)result;
+  req->completed += transferred;
+
+  /* Cap at requested length to prevent overflow */
+  if (req->completed > req->len)
+    req->completed = req->len;
+}
 
 /**
  * handle_completion - Handle async operation completion
@@ -199,13 +247,8 @@ handle_completion (T async, unsigned request_id, ssize_t result, int err)
     return;
 
   /* Accumulate progress for partial transfers */
-  if (err == 0 && result > 0) {
-    size_t transferred = (size_t)result;
-    req->completed += transferred;
-    if (req->completed > req->len) {
-      req->completed = req->len;  /* Cap at requested length */
-    }
-  }
+  if (err == 0)
+    accumulate_transfer_progress (req, result);
 
   if (cb)
     cb (socket, result, err, user_data);
@@ -604,13 +647,8 @@ kqueue_complete_request (T async, struct AsyncRequest *req)
   kqueue_perform_io (req, &result, &err);
 
   /* Accumulate progress for partial transfers */
-  if (err == 0 && result > 0) {
-    size_t transferred = (size_t)result;
-    req->completed += transferred;
-    if (req->completed > req->len) {
-      req->completed = req->len;  /* Cap at requested length */
-    }
-  }
+  if (err == 0)
+    accumulate_transfer_progress (req, result);
 
   if (req->cb)
     req->cb (req->socket, result, err, req->user_data);
@@ -837,20 +875,20 @@ socket_async_submit (T async, Socket_T socket, enum AsyncRequestType type,
   if (!async || !socket || !cb || len == 0)
     {
       errno = EINVAL;
-      SOCKET_ERROR_FMT (
-          "Invalid parameters for async submit");
+      SOCKET_ERROR_FMT ("Invalid parameters: async=%p socket=%p cb=%p len=%zu",
+                        (void *)async, (void *)socket, (void *)cb, len);
       RAISE_MODULE_ERROR (SocketAsync_Failed);
     }
   if (type == REQ_SEND && !send_buf)
     {
       errno = EINVAL;
-      SOCKET_ERROR_MSG ("Send buffer required for REQ_SEND");
+      SOCKET_ERROR_MSG ("Send buffer is NULL for send operation");
       RAISE_MODULE_ERROR (SocketAsync_Failed);
     }
   if (type == REQ_RECV && !recv_buf)
     {
       errno = EINVAL;
-      SOCKET_ERROR_MSG ("Recv buffer required for REQ_RECV");
+      SOCKET_ERROR_MSG ("Receive buffer is NULL for recv operation");
       RAISE_MODULE_ERROR (SocketAsync_Failed);
     }
 

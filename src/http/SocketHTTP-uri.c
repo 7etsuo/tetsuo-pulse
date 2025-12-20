@@ -8,19 +8,22 @@
  * SocketHTTP-uri.c - URI Parsing (RFC 3986)
  *
  * Part of the Socket Library
+ * Following C Interfaces and Implementations patterns
  *
  * Implements URI parsing using a single-pass state machine parser.
  * Handles absolute URIs, relative references, and IPv6 addresses.
+ *
+ * Thread-safe: Yes (all functions are pure, no global state)
  */
-
-#include "core/SocketUtil.h"
-#include "http/SocketHTTP-private.h"
-#include "http/SocketHTTP.h"
 
 #include <assert.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "core/SocketUtil.h"
+#include "http/SocketHTTP-private.h"
+#include "http/SocketHTTP.h"
 
 /* ============================================================================
  * Module-Specific Error Handling
@@ -41,6 +44,9 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP);
 /* ============================================================================
  * URI Component Length Limits (RFC 3986 + Security)
  * ============================================================================
+ *
+ * These limits prevent resource exhaustion attacks via oversized URI
+ * components. Values align with common web server defaults and RFC guidance.
  */
 
 /** Maximum userinfo length to prevent abuse (user:password format) */
@@ -63,6 +69,15 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP);
 
 /** Buffer size for port string serialization (":65535\0") */
 #define URI_PORT_BUFSIZE 8
+
+/** Length of "https" scheme for secure URI detection */
+#define URI_SCHEME_HTTPS_LEN 5
+
+/** Length of "wss" scheme for secure WebSocket detection */
+#define URI_SCHEME_WSS_LEN 3
+
+/** Minimum valid IPv6 literal length including brackets: [::] */
+#define URI_IPV6_MIN_LEN 4
 
 /* ============================================================================
  * Constants for Media Type Parsing
@@ -548,7 +563,7 @@ uri_run_state_machine (const char *uri, size_t len, URIParseContext *ctx)
           break;
 
         case URI_STATE_FRAGMENT:
-          // Control chars already rejected above
+          /* Control chars already rejected above */
           break;
         }
 
@@ -616,10 +631,13 @@ uri_finalize_state (URIParseContext *ctx, const char *end)
 }
 
 /**
- * uri_parse_port - Parse port number from string
+ * uri_parse_port - Parse port number from string with overflow protection
  * @start: Start of port string
  * @end: End of port string
  * @port_out: Output port number
+ *
+ * Validates port is numeric digits only and within valid range (0-65535).
+ * Checks for overflow before each multiplication to prevent undefined behavior.
  *
  * Returns: URI_PARSE_OK on success, URI_PARSE_INVALID_PORT on error
  */
@@ -635,9 +653,14 @@ uri_parse_port (const char *start, const char *end, int *port_out)
     {
       if (!isdigit ((unsigned char)*pp))
         return URI_PARSE_INVALID_PORT;
-      port = port * 10 + (*pp - '0');
-      if (port > URI_MAX_PORT)
+
+      int digit = *pp - '0';
+
+      /* Check for overflow before multiplication: port * 10 + digit > MAX */
+      if (port > (URI_MAX_PORT - digit) / 10)
         return URI_PARSE_INVALID_PORT;
+
+      port = port * 10 + digit;
     }
 
   *port_out = port;
@@ -869,9 +892,11 @@ SocketHTTP_URI_is_secure (const SocketHTTP_URI *uri)
   if (!uri || !uri->scheme)
     return 0;
 
-  if (uri->scheme_len == 5 && memcmp (uri->scheme, "https", 5) == 0)
+  if (uri->scheme_len == URI_SCHEME_HTTPS_LEN
+      && memcmp (uri->scheme, "https", URI_SCHEME_HTTPS_LEN) == 0)
     return 1;
-  if (uri->scheme_len == 3 && memcmp (uri->scheme, "wss", 3) == 0)
+  if (uri->scheme_len == URI_SCHEME_WSS_LEN
+      && memcmp (uri->scheme, "wss", URI_SCHEME_WSS_LEN) == 0)
     return 1;
 
   return 0;
@@ -1066,26 +1091,12 @@ SocketHTTP_URI_build (const SocketHTTP_URI *uri, char *output,
  */
 
 /**
- * is_token_char - Check if character is valid HTTP token character (RFC 7230)
- * @c: Character to check
- *
- * Uses the centralized SOCKETHTTP_IS_TCHAR table lookup for O(1) validation.
- *
- * Returns: Non-zero if valid token char, zero otherwise
- */
-static inline int
-is_token_char (unsigned char c)
-{
-  return SOCKETHTTP_IS_TCHAR (c);
-}
-
-/**
  * validate_token_span - Validate entire span consists of HTTP token chars
  * @start: Start of span
  * @len: Length of span
  *
  * Uses the centralized SOCKETHTTP_IS_TCHAR table lookup for O(1) per-char
- * validation.
+ * validation per RFC 7230 token character rules.
  *
  * Returns: 1 if all characters are valid tokens, 0 otherwise
  */
@@ -1274,20 +1285,20 @@ is_ipv6_char (unsigned char c)
 static SocketHTTP_URIResult
 validate_ipv6_literal (const char *host, size_t len)
 {
-  if (len < 4 || host[0] != '[' || host[len - 1] != ']')
+  if (len < URI_IPV6_MIN_LEN || host[0] != '[' || host[len - 1] != ']')
     return URI_PARSE_INVALID_HOST;
 
   size_t inner_len = len - 2;
   if (inner_len == 0)
     return URI_PARSE_INVALID_HOST;
 
-  // Basic char check inside
+  /* Basic char check inside brackets */
   SocketHTTP_URIResult r = validate_string_chars (
       host + 1, inner_len, is_ipv6_char, URI_PARSE_INVALID_HOST);
   if (r != URI_PARSE_OK)
     return r;
 
-  // Check no extra ]
+  /* Check no extra closing bracket */
   if (strchr (host + 1, ']') != host + len - 1)
     return URI_PARSE_INVALID_HOST;
 
@@ -1300,7 +1311,9 @@ validate_ipv6_literal (const char *host, size_t len)
  * @len: Length
  * @out_is_ipv6: Set to 1 if IPv6 literal (output)
  *
- * Supports reg-name and IPv6 literal (basic). IPv4 deferred.
+ * Supports reg-name and IPv6 literal (basic). IPv4 validation is deferred
+ * to socket address functions since reg-name validation passes IPv4 format.
+ *
  * Returns: URI_PARSE_OK or error
  */
 
@@ -1308,7 +1321,7 @@ static SocketHTTP_URIResult
 validate_host (const char *host, size_t len, int *out_is_ipv6)
 {
   if (!host || len == 0)
-    return URI_PARSE_OK; // Empty host allowed in some contexts?
+    return URI_PARSE_OK; /* Empty host allowed in some URI contexts */
 
   *out_is_ipv6 = 0;
 
@@ -1318,8 +1331,11 @@ validate_host (const char *host, size_t len, int *out_is_ipv6)
       return validate_ipv6_literal (host, len);
     }
 
-  // Reg-name or IPv4 (basic IPv4 defer to socket lib)
-  // For security, validate as reg-name (IPv4 digits will pass)
+  /*
+   * Reg-name or IPv4 address - validate as reg-name since IPv4 digit
+   * format passes reg-name validation. Full IPv4 validation deferred
+   * to socket address resolution.
+   */
   return validate_reg_name (host, len);
 }
 
