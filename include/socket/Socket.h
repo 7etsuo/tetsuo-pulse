@@ -2927,6 +2927,160 @@ extern T Socket_listen_unix (const char *path, int backlog);
 extern void Socket_connect_unix_timeout (T socket, const char *path,
                                          int timeout_ms);
 
+/**
+ * @brief Send a single file descriptor over Unix domain socket.
+ * @ingroup core_io
+ *
+ * Uses SCM_RIGHTS ancillary data to pass a file descriptor to the peer
+ * process. This enables nginx-style worker process models, zero-downtime
+ * restarts, and process isolation architectures.
+ *
+ * @param[in] socket Connected Unix domain socket (AF_UNIX)
+ * @param[in] fd_to_pass File descriptor to send (must be open)
+ *
+ * @return 1 on success, 0 if would block (non-blocking mode)
+ *
+ * @throws Socket_Failed if socket is NULL, not AF_UNIX, or fd invalid
+ * @throws Socket_Closed if peer disconnected
+ *
+ * @threadsafe Yes - uses thread-local error buffers
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Parent process: pass accepted connection to worker
+ * Socket_T client = Socket_accept(server);
+ * Socket_sendfd(worker_pipe, Socket_fd(client));
+ * Socket_free(&client);  // Original still valid in parent until closed
+ * @endcode
+ *
+ * @note The sender retains ownership of the original fd
+ * @note Receiver gets a duplicate fd and must close it separately
+ *
+ * @see Socket_recvfd() for receiving file descriptors
+ * @see Socket_sendfds() for sending multiple file descriptors
+ */
+extern int Socket_sendfd (T socket, int fd_to_pass);
+
+/**
+ * @brief Receive a single file descriptor from Unix domain socket.
+ * @ingroup core_io
+ *
+ * Uses SCM_RIGHTS ancillary data to receive a file descriptor from the peer
+ * process. Caller takes ownership of the received fd and must close it.
+ *
+ * @param[in] socket Connected Unix domain socket (AF_UNIX)
+ * @param[out] fd_received Output for received file descriptor (-1 if none)
+ *
+ * @return 1 on success, 0 if would block (non-blocking mode)
+ *
+ * @throws Socket_Failed if socket is NULL, not AF_UNIX, or invalid pointer
+ * @throws Socket_Closed if peer disconnected or EOF
+ *
+ * @threadsafe Yes - uses thread-local error buffers
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Worker process: receive connection from parent
+ * int client_fd = -1;
+ * if (Socket_recvfd(parent_pipe, &client_fd)) {
+ *     Socket_T client = Socket_from_fd(client_fd, AF_INET, SOCK_STREAM);
+ *     handle_client(client);
+ *     Socket_free(&client);  // Also closes fd
+ * }
+ * @endcode
+ *
+ * @note Caller takes ownership of received fd and must close it
+ * @note fd_received is set to -1 if no fd was attached to message
+ *
+ * @see Socket_sendfd() for sending file descriptors
+ * @see Socket_recvfds() for receiving multiple file descriptors
+ */
+extern int Socket_recvfd (T socket, int *fd_received);
+
+/**
+ * @brief Send multiple file descriptors over Unix domain socket.
+ * @ingroup core_io
+ *
+ * Uses SCM_RIGHTS ancillary data to pass multiple file descriptors in a
+ * single message. More efficient than multiple Socket_sendfd() calls.
+ *
+ * @param[in] socket Connected Unix domain socket (AF_UNIX)
+ * @param[in] fds Array of file descriptors to send
+ * @param[in] count Number of file descriptors (1 to SOCKET_MAX_FDS_PER_MSG)
+ *
+ * @return 1 on success, 0 if would block (non-blocking mode)
+ *
+ * @throws Socket_Failed if socket invalid, not AF_UNIX, fds invalid, or
+ *         count exceeds SOCKET_MAX_FDS_PER_MSG
+ * @throws Socket_Closed if peer disconnected
+ *
+ * @threadsafe Yes - uses thread-local error buffers
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Pass multiple connections to worker
+ * int client_fds[3];
+ * for (int i = 0; i < 3; i++) {
+ *     Socket_T client = Socket_accept(server);
+ *     client_fds[i] = Socket_fd(client);
+ * }
+ * Socket_sendfds(worker_pipe, client_fds, 3);
+ * @endcode
+ *
+ * @note Maximum fds per message is SOCKET_MAX_FDS_PER_MSG (253)
+ * @note All fds must be valid and open
+ *
+ * @see Socket_recvfds() for receiving multiple file descriptors
+ * @see Socket_sendfd() for sending a single file descriptor
+ */
+extern int Socket_sendfds (T socket, const int *fds, size_t count);
+
+/**
+ * @brief Receive multiple file descriptors from Unix domain socket.
+ * @ingroup core_io
+ *
+ * Uses SCM_RIGHTS ancillary data to receive multiple file descriptors in a
+ * single message. Caller takes ownership of all received fds.
+ *
+ * @param[in] socket Connected Unix domain socket (AF_UNIX)
+ * @param[out] fds Output array for received file descriptors
+ * @param[in] max_count Maximum fds to receive (1 to SOCKET_MAX_FDS_PER_MSG)
+ * @param[out] received_count Actual number of fds received
+ *
+ * @return 1 on success, 0 if would block (non-blocking mode)
+ *
+ * @throws Socket_Failed if socket invalid, not AF_UNIX, invalid pointers,
+ *         or max_count exceeds SOCKET_MAX_FDS_PER_MSG
+ * @throws Socket_Closed if peer disconnected or EOF
+ *
+ * @threadsafe Yes - uses thread-local error buffers
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Worker: receive batch of connections
+ * int client_fds[10];
+ * size_t count;
+ * if (Socket_recvfds(parent_pipe, client_fds, 10, &count)) {
+ *     for (size_t i = 0; i < count; i++) {
+ *         spawn_handler(client_fds[i]);
+ *     }
+ * }
+ * @endcode
+ *
+ * @note Caller takes ownership of all received fds and must close them
+ * @note Unused slots in fds array are set to -1
+ * @note If more fds received than max_count, excess are closed
+ *
+ * @see Socket_sendfds() for sending multiple file descriptors
+ * @see Socket_recvfd() for receiving a single file descriptor
+ */
+extern int Socket_recvfds (T socket, int *fds, size_t max_count,
+                           size_t *received_count);
+
 #undef T
 
 /** @} */ /* end of core_io group */
