@@ -63,6 +63,16 @@
     }                                                                         \
   while (0)
 
+/**
+ * RATELIMIT_IS_VALID - Check if limiter is properly initialized
+ * @_l: Limiter instance (must be within WITH_LOCK scope)
+ *
+ * Returns: Non-zero if limiter is valid and initialized.
+ * Used inside WITH_LOCK blocks to guard operations.
+ */
+#define RATELIMIT_IS_VALID(_l)                                                \
+  ((_l)->initialized == SOCKET_RATELIMIT_MUTEX_INITIALIZED)
+
 /* Live instance count for debugging and leak detection */
 static struct SocketLiveCount ratelimit_live_tracker
     = SOCKETLIVECOUNT_STATIC_INIT;
@@ -284,7 +294,7 @@ ratelimit_try_consume_with_refill (T limiter, size_t tokens)
   volatile int result = 0;
 
   WITH_LOCK (limiter, {
-    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED)
+    if (!RATELIMIT_IS_VALID (_l))
       {
         result = 0;
       }
@@ -311,7 +321,7 @@ ratelimit_available_with_refill (T limiter)
   volatile size_t available = 0;
 
   WITH_LOCK (limiter, {
-    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED)
+    if (!RATELIMIT_IS_VALID (_l))
       {
         available = 0;
       }
@@ -339,7 +349,7 @@ ratelimit_wait_time_with_refill (T limiter, size_t tokens)
   volatile int64_t wait_ms = SOCKET_RATELIMIT_IMPOSSIBLE_WAIT;
 
   WITH_LOCK (limiter, {
-    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED)
+    if (!RATELIMIT_IS_VALID (_l))
       {
         wait_ms = SOCKET_RATELIMIT_IMPOSSIBLE_WAIT;
       }
@@ -370,7 +380,7 @@ ratelimit_get_rate_locked (T limiter)
   volatile size_t rate = 0;
 
   WITH_LOCK (limiter, {
-    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED)
+    if (!RATELIMIT_IS_VALID (_l))
       {
         rate = 0;
       }
@@ -396,7 +406,7 @@ ratelimit_get_bucket_size_locked (T limiter)
   volatile size_t size = 0;
 
   WITH_LOCK (limiter, {
-    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED)
+    if (!RATELIMIT_IS_VALID (_l))
       {
         size = 0;
       }
@@ -494,37 +504,6 @@ ratelimit_validate_params (size_t tokens_per_sec, size_t *bucket_size)
  * Mutex Helper Macro
  * ============================================================================
  */
-
-/**
- * WITH_LOCK - Macro to execute code with mutex acquired
- * @limiter: Rate limiter instance
- * @code: Code block to execute while mutex is held
- *
- * Simplifies common lock/unlock patterns across public API functions.
- * Does not perform refill - add ratelimit_refill_bucket(limiter) inside code
- * if needed. For cases requiring early unlock, use manual locking.
- *
- * Example:
- *   WITH_LOCK(limiter, {
- *     ratelimit_refill_bucket(limiter);
- *     result = ratelimit_try_consume(limiter, tokens);
- *   });
- *
- * Thread-safe: Yes
- */
-#define WITH_LOCK(limiter, code)                                              \
-  do                                                                          \
-    {                                                                         \
-      T _l = (T)(limiter);                                                    \
-      int lock_err = pthread_mutex_lock (&_l->mutex);                         \
-      if (lock_err != 0)                                                      \
-        SOCKET_RAISE_MSG (SocketRateLimit, SocketRateLimit_Failed,            \
-                          "pthread_mutex_lock failed: %s",                    \
-                          Socket_safe_strerror (lock_err));                   \
-      TRY{ code } FINALLY { (void)pthread_mutex_unlock (&_l->mutex); }        \
-      END_TRY;                                                                \
-    }                                                                         \
-  while (0)
 
 /* ============================================================================
  * Public API - Lifecycle
@@ -778,7 +757,7 @@ SocketRateLimit_reset (T limiter)
   assert (limiter);
 
   WITH_LOCK (limiter, {
-    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED)
+    if (!RATELIMIT_IS_VALID (_l))
       SOCKET_RAISE_MSG (SocketRateLimit, SocketRateLimit_Failed,
                         "Cannot reset shutdown or uninitialized rate limiter");
 
@@ -804,7 +783,7 @@ SocketRateLimit_configure (T limiter, size_t tokens_per_sec,
   assert (limiter);
 
   WITH_LOCK (limiter, {
-    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED)
+    if (!RATELIMIT_IS_VALID (_l))
       SOCKET_RAISE_MSG (
           SocketRateLimit, SocketRateLimit_Failed,
           "Cannot configure shutdown or uninitialized rate limiter");

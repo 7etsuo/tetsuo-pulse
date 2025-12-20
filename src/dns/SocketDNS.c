@@ -133,6 +133,26 @@ validate_request_ownership_locked (const struct SocketDNS_T *dns,
 }
 
 /**
+ * @brief Validate ownership and return early if invalid.
+ * @param dns Resolver (must have mutex locked).
+ * @param req Request to validate.
+ * @param retval Return value if validation fails.
+ *
+ * Consolidates the common pattern of validating ownership, unlocking,
+ * and returning on failure. Must be called with mutex already locked.
+ */
+#define VALIDATE_OWNERSHIP_OR_RETURN(dns, req, retval)                        \
+  do                                                                          \
+    {                                                                         \
+      if (!validate_request_ownership_locked ((dns), (req)))                  \
+        {                                                                     \
+          pthread_mutex_unlock (&(dns)->mutex);                               \
+          return retval;                                                      \
+        }                                                                     \
+    }                                                                         \
+  while (0)
+
+/**
  * @brief Cancel pending queued request (remove from queue).
  * @param dns Resolver.
  * @param req Pending request.
@@ -720,12 +740,7 @@ SocketDNS_cancel (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
     return;
 
   pthread_mutex_lock (&dns->mutex);
-
-  if (!validate_request_ownership_locked (dns, req))
-    {
-      pthread_mutex_unlock (&dns->mutex);
-      return;
-    }
+  VALIDATE_OWNERSHIP_OR_RETURN (dns, req, );
 
   handle_cancel_by_state (dns, req, &send_signal, &cancelled);
 
@@ -990,12 +1005,7 @@ SocketDNS_getresult (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
     return NULL;
 
   pthread_mutex_lock (&dns->mutex);
-
-  if (!validate_request_ownership_locked (dns, req))
-    {
-      pthread_mutex_unlock (&dns->mutex);
-      return NULL;
-    }
+  VALIDATE_OWNERSHIP_OR_RETURN (dns, req, NULL);
 
   result = transfer_result_ownership (req);
   pthread_mutex_unlock (&dns->mutex);
@@ -1036,12 +1046,7 @@ SocketDNS_geterror (struct SocketDNS_T *dns,
     return 0;
 
   pthread_mutex_lock (&dns->mutex);
-
-  if (!validate_request_ownership_locked (dns, req))
-    {
-      pthread_mutex_unlock (&dns->mutex);
-      return 0;
-    }
+  VALIDATE_OWNERSHIP_OR_RETURN (dns, req, 0);
 
   if (req->state == REQ_COMPLETE || req->state == REQ_CANCELLED)
     error = req->error;
@@ -1120,12 +1125,7 @@ SocketDNS_request_settimeout (struct SocketDNS_T *dns,
     return;
 
   pthread_mutex_lock (&dns->mutex);
-
-  if (!validate_request_ownership_locked (dns, req))
-    {
-      pthread_mutex_unlock (&dns->mutex);
-      return;
-    }
+  VALIDATE_OWNERSHIP_OR_RETURN (dns, req, );
 
   if (req->state == REQ_PENDING || req->state == REQ_PROCESSING)
     req->timeout_override_ms = SANITIZE_TIMEOUT_MS (timeout_ms);

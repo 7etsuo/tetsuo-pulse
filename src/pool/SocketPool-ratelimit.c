@@ -42,28 +42,6 @@
  */
 
 /* ============================================================================
- * Static Helper Functions - IP Address Validation
- * ============================================================================
- */
-
-/**
- * is_valid_ip_for_tracking - Check if IP is valid for tracking
- * @ip: IP address string (may be NULL)
- *
- * Returns: 1 if IP is valid (non-NULL and non-empty), 0 otherwise
- *
- * Centralizes the IP validation pattern used throughout this module.
- *
- * @see SocketPool_track_ip() for usage
- * @see SocketPool_release_ip() for releasing tracked IPs
- */
-static int
-is_valid_ip_for_tracking (const char *ip)
-{
-  return ip != NULL && ip[0] != '\0';
-}
-
-/* ============================================================================
  * Static Helper Functions - Rate Limit Checks
  * ============================================================================
  */
@@ -97,7 +75,7 @@ rate_limit_allows (const T pool)
 static int
 ip_limit_allows (const T pool, const char *client_ip)
 {
-  if (!pool->ip_tracker || !is_valid_ip_for_tracking (client_ip))
+  if (!pool->ip_tracker || !pool_is_valid_ip (client_ip))
     return 1;
 
   return SocketIPTracker_count (pool->ip_tracker, client_ip)
@@ -161,7 +139,7 @@ static void
 locked_ip_op_void (T pool, const char *ip,
                    void (*op) (SocketIPTracker_T, const char *))
 {
-  if (!is_valid_ip_for_tracking (ip))
+  if (!pool_is_valid_ip (ip))
     return;
 
   POOL_LOCK (pool);
@@ -190,7 +168,7 @@ locked_ip_op_int (T pool, const char *ip,
 {
   int res;
 
-  if (!is_valid_ip_for_tracking (ip))
+  if (!pool_is_valid_ip (ip))
     return no_tracker_retval;
 
   POOL_LOCK (pool);

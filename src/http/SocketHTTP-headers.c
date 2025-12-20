@@ -39,6 +39,22 @@
  */
 #define SOCKETHTTP_MAX_CHAIN_SEARCH_LEN (SOCKETHTTP_MAX_CHAIN_LEN * 2)
 
+/**
+ * VALIDATE_HEADERS_NAME - Validate headers and name parameters.
+ * @headers: Headers collection (may be NULL).
+ * @name: Header name (may be NULL).
+ * @retval: Value to return if validation fails.
+ *
+ * Common validation pattern for public header functions.
+ */
+#define VALIDATE_HEADERS_NAME(headers, name, retval)                          \
+  do                                                                          \
+    {                                                                         \
+      if (!(headers) || !(name))                                              \
+        return (retval);                                                      \
+    }                                                                         \
+  while (0)
+
 /* ============================================================================
  * Internal Helper Functions - Hash Table Operations
  * ============================================================================
@@ -311,6 +327,28 @@ validate_header_limits (SocketHTTP_Headers_T headers, size_t entry_size)
 }
 
 /**
+ * allocate_string_copy - Allocate and copy a string to arena
+ * @arena: Memory arena
+ * @src: Source string (may be NULL)
+ * @len: String length (0 for empty)
+ *
+ * Returns: Null-terminated copy or NULL on allocation failure.
+ * If src is NULL or len is 0, returns empty string.
+ */
+static char *
+allocate_string_copy (Arena_T arena, const char *src, size_t len)
+{
+  size_t alloc_size = (src && len > 0) ? len + 1 : 1;
+  char *copy = ALLOC (arena, alloc_size);
+  if (!copy)
+    return NULL;
+  if (src && len > 0)
+    memcpy (copy, src, len);
+  copy[alloc_size - 1] = '\0';
+  return copy;
+}
+
+/**
  * allocate_entry_name - Allocate and copy header name
  * @arena: Memory arena
  * @entry: Entry to populate
@@ -323,11 +361,9 @@ static int
 allocate_entry_name (Arena_T arena, HeaderEntry *entry, const char *name,
                      size_t name_len)
 {
-  char *name_copy = ALLOC (arena, name_len + 1);
+  char *name_copy = allocate_string_copy (arena, name, name_len);
   if (!name_copy)
     return -1;
-  memcpy (name_copy, name, name_len);
-  name_copy[name_len] = '\0';
   entry->name = name_copy;
   entry->name_len = name_len;
   return 0;
@@ -346,24 +382,11 @@ static int
 allocate_entry_value (Arena_T arena, HeaderEntry *entry, const char *value,
                       size_t value_len)
 {
-  char *value_copy;
-  if (value && value_len > 0)
-    {
-      value_copy = ALLOC (arena, value_len + 1);
-      if (!value_copy)
-        return -1;
-      memcpy (value_copy, value, value_len);
-      value_copy[value_len] = '\0';
-    }
-  else
-    {
-      value_copy = ALLOC (arena, 1);
-      if (!value_copy)
-        return -1;
-      *value_copy = '\0';
-    }
+  char *value_copy = allocate_string_copy (arena, value, value_len);
+  if (!value_copy)
+    return -1;
   entry->value = value_copy;
-  entry->value_len = value_len ? value_len : 0;
+  entry->value_len = (value && value_len > 0) ? value_len : 0;
   return 0;
 }
 
@@ -417,8 +440,7 @@ int
 SocketHTTP_Headers_add_n (SocketHTTP_Headers_T headers, const char *name,
                           size_t name_len, const char *value, size_t value_len)
 {
-  if (!headers || !name)
-    return -1;
+  VALIDATE_HEADERS_NAME (headers, name, -1);
 
   if (!SocketHTTP_header_name_valid (name, name_len))
     return -1;
@@ -475,8 +497,7 @@ int
 SocketHTTP_Headers_set (SocketHTTP_Headers_T headers, const char *name,
                         const char *value)
 {
-  if (!headers || !name)
-    return -1;
+  VALIDATE_HEADERS_NAME (headers, name, -1);
 
   SocketHTTP_Headers_remove_all (headers, name);
   return SocketHTTP_Headers_add (headers, name, value);
@@ -490,8 +511,7 @@ SocketHTTP_Headers_set (SocketHTTP_Headers_T headers, const char *name,
 const char *
 SocketHTTP_Headers_get (SocketHTTP_Headers_T headers, const char *name)
 {
-  if (!headers || !name)
-    return NULL;
+  VALIDATE_HEADERS_NAME (headers, name, NULL);
 
   size_t name_len = strlen (name);
   HeaderEntry *entry = find_entry (headers, name, name_len);
@@ -581,8 +601,7 @@ SocketHTTP_Headers_get_all (SocketHTTP_Headers_T headers, const char *name,
 int
 SocketHTTP_Headers_has (SocketHTTP_Headers_T headers, const char *name)
 {
-  if (!headers || !name)
-    return 0;
+  VALIDATE_HEADERS_NAME (headers, name, 0);
 
   size_t name_len = strlen (name);
   return find_entry (headers, name, name_len) != NULL;
@@ -630,8 +649,7 @@ SocketHTTP_Headers_contains (SocketHTTP_Headers_T headers, const char *name,
 int
 SocketHTTP_Headers_remove (SocketHTTP_Headers_T headers, const char *name)
 {
-  if (!headers || !name)
-    return 0;
+  VALIDATE_HEADERS_NAME (headers, name, 0);
 
   size_t name_len = strlen (name);
   return remove_one_n (headers, name, name_len);
@@ -640,8 +658,7 @@ SocketHTTP_Headers_remove (SocketHTTP_Headers_T headers, const char *name)
 int
 SocketHTTP_Headers_remove_all (SocketHTTP_Headers_T headers, const char *name)
 {
-  if (!headers || !name)
-    return 0;
+  VALIDATE_HEADERS_NAME (headers, name, 0);
 
   size_t name_len = strlen (name);
   int removed = 0;

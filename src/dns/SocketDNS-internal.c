@@ -204,11 +204,8 @@ create_completion_pipe (struct SocketDNS_T *dns)
       || SocketCommon_setcloexec (dns->pipefd[1], 1) < 0)
     {
       int saved_errno = errno;
-      SAFE_CLOSE (dns->pipefd[0]);
-      SAFE_CLOSE (dns->pipefd[1]);
-      dns->pipefd[0] = -1;
-      dns->pipefd[1] = -1;
-      cleanup_on_init_failure (dns, DNS_CLEAN_PIPE);
+      cleanup_pipe (dns);
+      cleanup_on_init_failure (dns, DNS_CLEAN_CONDS);
       errno = saved_errno;
       SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,
                         "Failed to set close-on-exec flag on pipe");
