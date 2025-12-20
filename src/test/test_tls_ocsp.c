@@ -527,9 +527,20 @@ TEST (ocsp_large_response)
   SocketTLSContext_T ctx = NULL;
   unsigned char *large_response = NULL;
   volatile int exception_raised = 0;
+  size_t response_size = 32 * 1024; /* 32KB */
 
   if (generate_test_certs (cert_file, key_file) != 0)
     return;
+
+  /* Allocate before TRY to ensure cleanup in FINALLY can see the pointer */
+  large_response = malloc (response_size);
+  if (!large_response)
+    {
+      remove_test_certs (cert_file, key_file);
+      ASSERT_NOT_NULL (large_response);
+      return;
+    }
+  memset (large_response, 0x42, response_size);
 
   TRY
   {
@@ -538,11 +549,6 @@ TEST (ocsp_large_response)
 
     /* Large response within limits, but dummy data fails DER validation.
      * This tests that format validation is applied to large responses too. */
-    size_t response_size = 32 * 1024; /* 32KB */
-    large_response = malloc (response_size);
-    ASSERT_NOT_NULL (large_response);
-
-    memset (large_response, 0x42, response_size);
     SocketTLSContext_set_ocsp_response (ctx, large_response, response_size);
     ASSERT (0); /* Should not reach here - validation should fail */
   }
@@ -553,8 +559,7 @@ TEST (ocsp_large_response)
   }
   FINALLY
   {
-    if (large_response)
-      free (large_response);
+    free (large_response);
     if (ctx)
       SocketTLSContext_free (&ctx);
     remove_test_certs (cert_file, key_file);

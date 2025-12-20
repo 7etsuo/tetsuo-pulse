@@ -2731,6 +2731,13 @@ TEST (socketmetrics_all_metric_types)
                        &snapshot, SOCKET_METRIC_SOCKET_CONNECT_FAILURE));
   ASSERT_EQ (3ULL, SocketMetrics_snapshot_value (
                        &snapshot, SOCKET_METRIC_SOCKET_SHUTDOWN_CALL));
+  {
+    uint64_t actual_dns = SocketMetrics_snapshot_value (
+        &snapshot, SOCKET_METRIC_DNS_REQUEST_SUBMITTED);
+    if (actual_dns != 4ULL)
+      printf ("\n  [DEBUG] DNS_REQUEST_SUBMITTED = %llu (expected 4)\n",
+              (unsigned long long)actual_dns);
+  }
   ASSERT_EQ (4ULL, SocketMetrics_snapshot_value (
                        &snapshot, SOCKET_METRIC_DNS_REQUEST_SUBMITTED));
   ASSERT_EQ (5ULL, SocketMetrics_snapshot_value (

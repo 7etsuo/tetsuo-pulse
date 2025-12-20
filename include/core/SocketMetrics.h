@@ -402,7 +402,8 @@ typedef enum SocketCounterMetric
   SOCKET_CTR_DTLS_FRAGMENT_FAILURES,       /**< DTLS fragmentation errors */
 
   /* DNS Counters */
-  SOCKET_CTR_DNS_QUERIES_TOTAL,     /**< Total DNS queries */
+  SOCKET_CTR_DNS_QUERIES_TOTAL,     /**< Total DNS queries submitted */
+  SOCKET_CTR_DNS_QUERIES_COMPLETED, /**< Successfully completed DNS queries */
   SOCKET_CTR_DNS_QUERIES_FAILED,    /**< Failed DNS queries */
   SOCKET_CTR_DNS_QUERIES_TIMEOUT,   /**< Timed out DNS queries */
   SOCKET_CTR_DNS_QUERIES_CANCELLED, /**< Cancelled DNS queries */

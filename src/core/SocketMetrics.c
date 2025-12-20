@@ -174,8 +174,9 @@ static const char *const counter_names[SOCKET_COUNTER_METRIC_COUNT] = {
   "dtls_cookie_verification_failures", "dtls_replay_packets_detected",
   "dtls_fragment_failures",
   /* DNS */
-  "dns_queries_total", "dns_queries_failed", "dns_queries_timeout",
-  "dns_queries_cancelled", "dns_cache_hits", "dns_cache_misses",
+  "dns_queries_total", "dns_queries_completed", "dns_queries_failed",
+  "dns_queries_timeout", "dns_queries_cancelled", "dns_cache_hits",
+  "dns_cache_misses",
   /* Socket */
   "socket_created", "socket_closed", "socket_connect_success",
   "socket_connect_failed", "socket_accept_total",
@@ -225,9 +226,9 @@ static const char *const counter_help[SOCKET_COUNTER_METRIC_COUNT] = {
   "DTLS packets rejected due to replay detection",
   "DTLS fragmented message reassembly failures",
   /* DNS */
-  "Total DNS queries submitted", "Failed DNS queries",
-  "DNS queries that timed out", "DNS queries cancelled", "DNS cache hits",
-  "DNS cache misses",
+  "Total DNS queries submitted", "Successfully completed DNS queries",
+  "Failed DNS queries", "DNS queries that timed out", "DNS queries cancelled",
+  "DNS cache hits", "DNS cache misses",
   /* Socket */
   "Total sockets created", "Total sockets closed",
   "Successful socket connect operations", "Failed socket connect operations",

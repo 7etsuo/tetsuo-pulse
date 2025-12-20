@@ -791,22 +791,24 @@ Socket_connect_unix_timeout (T socket, const char *path, int timeout_ms)
         /* Timed connect: enable non-blocking temporarily */
         with_nonblocking_scope (fd, 1, &original_flags, &need_restore);
 
+        result = connect (fd, (struct sockaddr *)&addr, sizeof (addr));
+
+        if (result == 0 || errno == EISCONN) {
+                /* Immediate success - restore flags and return */
+                with_nonblocking_scope (fd, 0, (int *)&original_flags, &need_restore);
+                return;
+        }
+
+        if (errno != EINPROGRESS && errno != EINTR && errno != EAGAIN && errno != EWOULDBLOCK) {
+                /* Immediate failure - restore flags before raising */
+                with_nonblocking_scope (fd, 0, (int *)&original_flags, &need_restore);
+                SOCKET_ERROR_FMT ("Unix connect to %.*s failed",
+                                  SOCKET_ERROR_MAX_HOSTNAME, path);
+                RAISE_MODULE_ERROR (Socket_Failed);
+        }
+
+        /* In progress: poll for completion */
         TRY {
-                result = connect (fd, (struct sockaddr *)&addr, sizeof (addr));
-
-                if (result == 0 || errno == EISCONN) {
-                        /* Immediate success */
-                        return;
-                }
-
-                if (errno != EINPROGRESS && errno != EINTR && errno != EAGAIN && errno != EWOULDBLOCK) {
-                        /* Immediate failure */
-                        SOCKET_ERROR_FMT ("Unix connect to %.*s failed",
-                                          SOCKET_ERROR_MAX_HOSTNAME, path);
-                        RAISE_MODULE_ERROR (Socket_Failed);
-                }
-
-                /* In progress: poll for completion */
                 struct pollfd pfd = { .fd = fd, .events = POLLOUT, .revents = 0 };
                 int poll_result = poll_with_eintr_retry (&pfd, timeout_ms);
 

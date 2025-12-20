@@ -2288,13 +2288,16 @@ SocketHappyEyeballs_connect (const char *host, int port,
   while (he->state == HE_STATE_RESOLVING || he->state == HE_STATE_CONNECTING)
     {
       int timeout = SocketHappyEyeballs_next_timeout_ms (he);
-      if (timeout < 0)
-        timeout = 5000;  // Fallback interval if no timers (prevent infinite block)
-      else if (timeout == 0)
+      if (timeout == 0)
         {
           he_handle_total_timeout (he);
           break;
         }
+      /* Cap to shorter interval for frequent DNS/state checking.
+       * Without poll integration for DNS, we need to poll frequently
+       * to detect DNS completion and start connection attempts. */
+      if (timeout < 0 || timeout > SOCKET_HE_SYNC_POLL_INTERVAL_MS)
+        timeout = SOCKET_HE_SYNC_POLL_INTERVAL_MS;
 
       events = NULL;
       int n = SocketPoll_wait (he->poll, &events, timeout);
@@ -2321,9 +2324,22 @@ SocketHappyEyeballs_connect (const char *host, int port,
     }
   else
     {
-      err_msg = SocketHappyEyeballs_error (he);
-      if (!err_msg)
-        err_msg = "Connection failed (unknown reason)";
+      /* Copy error message before freeing context to avoid use-after-free */
+      const char *tmp_err = SocketHappyEyeballs_error (he);
+      if (tmp_err)
+        {
+          static _Thread_local char err_buf[512];
+          size_t len = strlen (tmp_err);
+          if (len >= sizeof (err_buf))
+            len = sizeof (err_buf) - 1;
+          memcpy (err_buf, tmp_err, len);
+          err_buf[len] = '\0';
+          err_msg = err_buf;
+        }
+      else
+        {
+          err_msg = "Connection failed (unknown reason)";
+        }
     }
 
   SocketHappyEyeballs_free (&he);
