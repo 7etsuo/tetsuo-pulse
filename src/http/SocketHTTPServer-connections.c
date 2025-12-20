@@ -50,15 +50,7 @@ static int connection_read_initial_body (SocketHTTPServer_T server,
                                          ServerConnection *conn);
 static void connection_reject_oversized_body (SocketHTTPServer_T server,
                                               ServerConnection *conn);
-/* Non-static - used from SocketHTTPServer.c */
-void connection_send_error (SocketHTTPServer_T server,
-                            ServerConnection *conn,
-                            int status_code,
-                            const char *reason);
-
-/* Forward declaration for public helper used before definition */
-void connection_send_error (SocketHTTPServer_T server, ServerConnection *conn,
-                            int status, const char *body);
+/* Non-static - used from SocketHTTPServer.c (declared in private header) */
 
 /* ============================================================================
  * Connection I/O
@@ -67,10 +59,14 @@ void connection_send_error (SocketHTTPServer_T server, ServerConnection *conn,
 
 /**
  * connection_read - Read data from connection socket into buffer
- * @server: HTTP server (unused, kept for API consistency)
+ * @server: HTTP server (for metrics)
  * @conn: Connection to read from
  *
+ * Reads data from the socket into the connection's input buffer.
+ * Updates activity timestamp and metrics on successful read.
+ *
  * Returns: >0 bytes read, 0 on would-block, -1 on error/close
+ * Thread-safe: No (single event loop thread)
  */
 int
 connection_read (SocketHTTPServer_T server, ServerConnection *conn)
@@ -115,7 +111,11 @@ connection_read (SocketHTTPServer_T server, ServerConnection *conn)
  * @data: Data buffer to send
  * @len: Length of data
  *
+ * Sends data using Socket_sendall which handles partial sends.
+ * Updates activity timestamp and bytes_sent metrics.
+ *
  * Returns: 0 on success, -1 on error
+ * Thread-safe: No (single event loop thread)
  */
 int
 connection_send_data (SocketHTTPServer_T server, ServerConnection *conn,
@@ -157,6 +157,10 @@ connection_send_data (SocketHTTPServer_T server, ServerConnection *conn,
  * @conn: Connection to reset
  *
  * Clears per-request state while preserving socket and buffers.
+ * Increments request count and resets parser for next request.
+ * Called when keep-alive is enabled and connection can be reused.
+ *
+ * Thread-safe: No (single event loop thread)
  */
 void
 connection_reset_for_keepalive (ServerConnection *conn)
@@ -192,7 +196,10 @@ connection_reset_for_keepalive (ServerConnection *conn)
  * @server: HTTP server
  * @conn: Connection
  *
- * Records latency and either resets for keep-alive or closes connection.
+ * Records latency via histogram metrics and either resets for keep-alive
+ * or closes the connection based on HTTP/1.1 keep-alive semantics.
+ *
+ * Thread-safe: No (single event loop thread)
  */
 void
 connection_finish_request (SocketHTTPServer_T server, ServerConnection *conn)
@@ -214,6 +221,11 @@ connection_finish_request (SocketHTTPServer_T server, ServerConnection *conn)
  * connection_reject_oversized_body - Send 413 and close connection
  * @server: HTTP server
  * @conn: Connection with oversized body
+ *
+ * Sends a 413 Payload Too Large response and marks connection for closure.
+ * Increments the SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED metric.
+ *
+ * Thread-safe: No (single event loop thread)
  */
 static void
 connection_reject_oversized_body (SocketHTTPServer_T server,
@@ -229,10 +241,12 @@ connection_reject_oversized_body (SocketHTTPServer_T server,
  * @server: HTTP server for config
  * @conn: Connection with parsed headers
  *
- * For Content-Length mode: allocates exact buffer size upfront.
- * For Chunked/Until-Close mode: uses SocketBuf_T with dynamic growth.
+ * Allocates the body buffer based on Transfer-Encoding mode:
+ * - Content-Length: allocates exact buffer size upfront
+ * - Chunked/Until-Close: uses SocketBuf_T with dynamic growth
  *
  * Returns: 0 on success, -1 on failure (state set to CLOSED)
+ * Thread-safe: No (single event loop thread)
  */
 static int
 connection_setup_body_buffer (SocketHTTPServer_T server, ServerConnection *conn)
@@ -293,6 +307,7 @@ connection_setup_body_buffer (SocketHTTPServer_T server, ServerConnection *conn)
  * Supports streaming mode where body data is delivered via callback.
  *
  * Returns: 0 if more data needed, 1 if body complete, -1 on error
+ * Thread-safe: No (single event loop thread)
  */
 static int
 connection_read_initial_body (SocketHTTPServer_T server, ServerConnection *conn)
@@ -462,7 +477,12 @@ connection_read_initial_body (SocketHTTPServer_T server, ServerConnection *conn)
  * @server: HTTP server
  * @conn: Connection with data in inbuf
  *
+ * Incrementally parses HTTP request using SocketHTTP1_Parser.
+ * On headers complete, runs validator callback for early rejection.
+ * Sets up body handling (buffered or streaming) based on headers.
+ *
  * Returns: 0 need more data, 1 request ready, -1 error
+ * Thread-safe: No (single event loop thread)
  */
 int
 connection_parse_request (SocketHTTPServer_T server, ServerConnection *conn)
@@ -538,6 +558,12 @@ connection_parse_request (SocketHTTPServer_T server, ServerConnection *conn)
  * connection_send_response - Serialize and send HTTP response
  * @server: HTTP server
  * @conn: Connection with response data set
+ *
+ * Serializes HTTP/1.1 response headers and body using SocketHTTP1.
+ * Automatically sets Content-Length header for non-streaming responses.
+ * Updates 4xx/5xx error metrics as appropriate.
+ *
+ * Thread-safe: No (single event loop thread)
  */
 void
 connection_send_response (SocketHTTPServer_T server, ServerConnection *conn)
@@ -594,12 +620,14 @@ connection_send_response (SocketHTTPServer_T server, ServerConnection *conn)
  * @server: HTTP server
  * @conn: Connection to send error on
  * @status: HTTP status code
- * @body: Optional error message body
+ * @body: Optional error message body (NULL for no body)
  *
  * If a custom error handler is registered via SocketHTTPServer_set_error_handler(),
  * it will be invoked to allow custom error page generation. The handler can set
  * response headers and body, then call SocketHTTPServer_Request_finish().
  * If no custom handler is set, a default text/plain response is sent.
+ *
+ * Thread-safe: No (single event loop thread)
  */
 void
 connection_send_error (SocketHTTPServer_T server, ServerConnection *conn,
@@ -647,6 +675,11 @@ connection_send_error (SocketHTTPServer_T server, ServerConnection *conn,
 /**
  * connection_set_client_addr - Cache client IP address
  * @conn: Connection to update
+ *
+ * Retrieves peer address from socket and caches in connection structure.
+ * Uses safe strncpy with explicit null termination.
+ *
+ * Thread-safe: No (single event loop thread)
  */
 static void
 connection_set_client_addr (ServerConnection *conn)
@@ -662,9 +695,13 @@ connection_set_client_addr (ServerConnection *conn)
 /**
  * connection_create_parser - Create HTTP/1.1 parser with server config
  * @arena: Arena for parser allocations
- * @config: Server configuration
+ * @config: Server configuration (for max_header_size limit)
+ *
+ * Creates a new HTTP/1.1 request parser with limits from server config.
  *
  * Returns: New parser or raises SocketHTTPServer_Failed
+ * Raises: SocketHTTPServer_Failed on allocation failure
+ * Thread-safe: No (single event loop thread)
  */
 static SocketHTTP1_Parser_T
 connection_create_parser (Arena_T arena, const SocketHTTPServer_Config *config)
@@ -683,8 +720,13 @@ connection_create_parser (Arena_T arena, const SocketHTTPServer_Config *config)
 
 /**
  * record_request_latency - Record request processing time
- * @server: HTTP server (unused)
- * @request_start_ms: Request start timestamp
+ * @server: HTTP server (unused, reserved for future per-server histograms)
+ * @request_start_ms: Request start timestamp in milliseconds
+ *
+ * Calculates elapsed time and records to global latency histogram.
+ * Uses monotonic clock for accurate timing independent of wall clock changes.
+ *
+ * Thread-safe: Yes (SocketMetrics is thread-safe)
  */
 static void
 record_request_latency (SocketHTTPServer_T server, int64_t request_start_ms)
@@ -703,9 +745,14 @@ record_request_latency (SocketHTTPServer_T server, int64_t request_start_ms)
  * connection_init_resources - Initialize connection buffers and parser
  * @server: HTTP server
  * @conn: Allocated connection struct (zeroed)
- * @socket: Client socket
+ * @socket: Client socket (ownership transferred)
+ *
+ * Allocates arena, creates buffers and parser, sets initial state.
+ * Enables TLS if configured, transitioning to TLS handshake state.
  *
  * Returns: 0 on success, -1 on failure
+ * Raises: SocketHTTPServer_Failed on critical errors
+ * Thread-safe: No (single event loop thread)
  */
 static int
 connection_init_resources (SocketHTTPServer_T server, ServerConnection *conn,
@@ -749,7 +796,11 @@ connection_init_resources (SocketHTTPServer_T server, ServerConnection *conn,
  * @server: HTTP server
  * @conn: Initialized connection
  *
+ * Tracks the connection with IP tracker for per-IP limits.
+ * Adds connection to doubly-linked list and updates metrics.
+ *
  * Returns: 0 on success, -1 if IP limit exceeded
+ * Thread-safe: No (single event loop thread)
  */
 static int
 connection_add_to_server (SocketHTTPServer_T server, ServerConnection *conn)
@@ -790,7 +841,12 @@ connection_add_to_server (SocketHTTPServer_T server, ServerConnection *conn)
  * @server: HTTP server
  * @socket: Accepted client socket (ownership transferred)
  *
+ * Allocates connection structure, initializes resources (arena, buffers,
+ * parser), adds to server's connection list, and tracks IP for limits.
+ * On failure, cleans up all allocated resources and closes socket.
+ *
  * Returns: New connection or NULL on failure
+ * Thread-safe: No (single event loop thread)
  */
 ServerConnection *
 connection_new (SocketHTTPServer_T server, Socket_T socket)
@@ -838,7 +894,21 @@ connection_new (SocketHTTPServer_T server, Socket_T socket)
 /**
  * connection_close - Close and cleanup connection
  * @server: HTTP server
- * @conn: Connection to close
+ * @conn: Connection to close (may be NULL)
+ *
+ * Releases all connection resources in proper order:
+ * - Frees HTTP/2 connection and streams if applicable
+ * - Releases IP tracking entry
+ * - Removes from poll
+ * - Closes socket
+ * - Removes from doubly-linked list
+ * - Updates metrics
+ * - Disposes arena (frees all arena-allocated memory)
+ * - Frees connection structure
+ *
+ * Safe to call with NULL conn (no-op).
+ *
+ * Thread-safe: No (single event loop thread)
  */
 void
 connection_close (SocketHTTPServer_T server, ServerConnection *conn)
