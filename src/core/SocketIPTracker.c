@@ -25,21 +25,25 @@
  * for direct O(1) unlinking.
  */
 
+/* System headers first (alphabetical order) */
+#include <arpa/inet.h>
+#include <assert.h>
+#include <netinet/in.h>
+#include <pthread.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
+
+/* Project headers */
 #include "core/Except.h"
 #include "core/HashTable.h"
 #include "core/SocketConfig.h"
 #include "core/SocketCrypto.h"
 #include "core/SocketIPTracker.h"
 #include "core/SocketUtil.h"
-#include <arpa/inet.h>
-#include <assert.h>
-#include <netinet/in.h>
-#include <pthread.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <unistd.h>
 
 #define T SocketIPTracker_T
 
@@ -111,6 +115,36 @@ validate_ip_format (const char *ip)
   return false;
 }
 
+/**
+ * validate_ip_full - Full IP validation (null, empty, length, format)
+ * @ip: IP address string
+ * @caller: Caller function name for logging (NULL to suppress logging)
+ *
+ * Returns: true if valid for tracking, false otherwise
+ * Thread-safe: Yes (pure function)
+ *
+ * Validates:
+ * - Non-NULL and non-empty string (via SOCKET_VALID_IP_STRING)
+ * - Length < SOCKET_IP_MAX_LEN
+ * - Valid IPv4 or IPv6 format via inet_pton
+ */
+static bool
+validate_ip_full (const char *ip, const char *caller)
+{
+  if (!SOCKET_VALID_IP_STRING (ip))
+    return false;
+
+  size_t ip_len = strlen (ip);
+  if (ip_len >= (size_t)SOCKET_IP_MAX_LEN || !validate_ip_format (ip))
+    {
+      if (caller != NULL)
+        SOCKET_LOG_WARN_MSG ("Invalid IP for %s: %s (len=%zu)", caller, ip,
+                             ip_len);
+      return false;
+    }
+  return true;
+}
+
 /* ============================================================================
  * HashTable Callbacks
  * ============================================================================
@@ -131,9 +165,11 @@ iptracker_hash (const void *key, unsigned seed, unsigned table_size)
   unsigned hash = SOCKET_UTIL_DJB2_SEED ^ seed;
   int c;
 
+  /* DJB2 hash: hash * 33 + c */
   while ((c = *str++) != '\0')
     hash = ((hash << 5) + hash) + (unsigned)c;
 
+  /* Defensive: avoid division by zero if table_size is 0 */
   return table_size > 0 ? hash % table_size : hash;
 }
 
@@ -255,8 +291,8 @@ alloc_and_init_entry (const T tracker, const char *ip, int initial_count)
   if (entry == NULL)
     return NULL;
 
-  strncpy (entry->ip, ip, SOCKET_IP_MAX_LEN - 1);
-  entry->ip[SOCKET_IP_MAX_LEN - 1] = '\0';
+  /* snprintf guarantees null termination and is safer than strncpy */
+  snprintf (entry->ip, sizeof (entry->ip), "%s", ip);
   entry->count = initial_count;
   entry->next = NULL;
 
@@ -358,23 +394,6 @@ free_all_entries (T tracker)
  */
 
 /**
- * arena_or_malloc - Allocate from arena or standard malloc
- * @arena: Arena (NULL for malloc)
- * @size: Bytes to allocate
- *
- * Returns: Allocated pointer or NULL
- * Thread-safe: Yes
- */
-static void *
-arena_or_malloc (Arena_T arena, size_t size)
-{
-  if (arena != NULL)
-    return Arena_alloc (arena, size, __FILE__, __LINE__);
-
-  return malloc (size);
-}
-
-/**
  * allocate_tracker - Allocate tracker structure
  * @arena: Arena for allocation (NULL for heap)
  *
@@ -384,7 +403,10 @@ arena_or_malloc (Arena_T arena, size_t size)
 static T
 allocate_tracker (Arena_T arena)
 {
-  return (T)arena_or_malloc (arena, sizeof (struct T));
+  if (arena != NULL)
+    return (T)Arena_alloc (arena, sizeof (struct T), __FILE__, __LINE__);
+
+  return (T)malloc (sizeof (struct T));
 }
 
 /**
@@ -579,12 +601,14 @@ create_new_entry_and_track (T tracker, const char *ip)
 static int
 increment_existing_entry (T tracker, IPEntry *entry)
 {
+  /* Prevent integer overflow: ensure count + 1 won't exceed INT_MAX */
   if (entry->count >= INT_MAX - 1)
     {
       SOCKET_LOG_ERROR_MSG ("IP tracker count overflow for IP %s", entry->ip);
       return 0;
     }
 
+  /* Use size_t for comparison to avoid signed/unsigned mismatch */
   size_t attempted = (size_t)entry->count + 1;
   if (is_unlimited_mode (tracker) || attempted <= (size_t)tracker->max_per_ip)
     {
@@ -717,13 +741,8 @@ SocketIPTracker_track (T tracker, const char *ip)
   if (!SOCKET_VALID_IP_STRING (ip))
     return 1;
 
-  size_t ip_len = strlen (ip);
-  if (ip_len >= (size_t)SOCKET_IP_MAX_LEN || !validate_ip_format (ip))
-    {
-      SOCKET_LOG_WARN_MSG ("Invalid IP for tracking: %s (len=%zu)", ip,
-                           ip_len);
-      return 0; /* Reject invalid IPs */
-    }
+  if (!validate_ip_full (ip, "tracking"))
+    return 0; /* Reject invalid IPs */
 
   pthread_mutex_lock (&tracker->mutex);
 
@@ -755,12 +774,8 @@ SocketIPTracker_release (T tracker, const char *ip)
   if (!SOCKET_VALID_IP_STRING (ip))
     return;
 
-  size_t ip_len = strlen (ip);
-  if (ip_len >= (size_t)SOCKET_IP_MAX_LEN || !validate_ip_format (ip))
-    {
-      SOCKET_LOG_WARN_MSG ("Invalid IP for release: %s", ip);
-      return;
-    }
+  if (!validate_ip_full (ip, "release"))
+    return;
 
   pthread_mutex_lock (&tracker->mutex);
 
@@ -800,8 +815,7 @@ SocketIPTracker_count (T tracker, const char *ip)
   if (!SOCKET_VALID_IP_STRING (ip))
     return 0;
 
-  size_t ip_len = strlen (ip);
-  if (ip_len >= (size_t)SOCKET_IP_MAX_LEN || !validate_ip_format (ip))
+  if (!validate_ip_full (ip, NULL)) /* No logging for count queries */
     return 0;
 
   pthread_mutex_lock (&tracker->mutex);
