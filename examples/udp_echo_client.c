@@ -80,8 +80,7 @@ main (int argc, char **argv)
         printf ("Received echo (%zd bytes): %s\n", n, buffer);
 
         /* Verify it's the same message */
-        if (n == (ssize_t)strlen (message) &&
-            memcmp (buffer, message, n) == 0)
+        if (n == (ssize_t)strlen (message) && memcmp (buffer, message, n) == 0)
           {
             printf ("✅ Echo successful!\n");
           }
@@ -91,11 +90,11 @@ main (int argc, char **argv)
             result = 1;
           }
       }
-      else
-        {
-          printf ("Receive error or timeout\n");
-          result = 1;
-        }
+    else
+      {
+        printf ("Receive error or timeout\n");
+        result = 1;
+      }
   }
   EXCEPT (SocketDgram_Failed)
   {

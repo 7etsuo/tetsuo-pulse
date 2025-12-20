@@ -242,7 +242,8 @@ main (int argc, char **argv)
                       "%Y-%m-%d %H:%M:%S UTC", tm_after);
             printf ("   Valid From: %s\n", not_before_buf);
             printf ("   Valid To:   %s\n", not_after_buf);
-            printf ("   Fingerprint (SHA256): %.32s...\n", cert_info.fingerprint);
+            printf ("   Fingerprint (SHA256): %.32s...\n",
+                    cert_info.fingerprint);
           }
 
         /* Report certificate lookup activity */
@@ -314,7 +315,8 @@ main (int argc, char **argv)
   }
   EXCEPT (SocketTLS_HandshakeFailed)
   {
-    fprintf (stderr, "\n❌ TLS handshake failed: %s\n", Socket_GetLastError ());
+    fprintf (stderr, "\n❌ TLS handshake failed: %s\n",
+             Socket_GetLastError ());
     result = 1;
   }
   EXCEPT (SocketTLS_VerifyFailed)

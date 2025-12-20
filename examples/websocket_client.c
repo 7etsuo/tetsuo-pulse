@@ -139,7 +139,7 @@ main (int argc, char **argv)
             printf ("Waiting for response...\n");
 
             /* Poll for message with timeout */
-            SocketWS_Message msg = {0};
+            SocketWS_Message msg = { 0 };
             int recv_result = -1;
             int timeout_ms = 5000; /* 5 second timeout */
 
@@ -253,8 +253,8 @@ main (int argc, char **argv)
         /* Wait for close confirmation */
         while (SocketWS_state (ws) != WS_STATE_CLOSED && running)
           {
-            struct pollfd pfd = { .fd = Socket_fd (SocketWS_socket (ws)),
-                                  .events = POLLIN };
+            struct pollfd pfd
+                = { .fd = Socket_fd (SocketWS_socket (ws)), .events = POLLIN };
             int poll_result = poll (&pfd, 1, 100);
 
             if (poll_result > 0)

@@ -99,7 +99,8 @@ main (int argc, char **argv)
 
     char *json_data = NULL;
     size_t json_len = 0;
-    int json_status = SocketHTTPClient_json_get (client, json_url, &json_data, &json_len);
+    int json_status
+        = SocketHTTPClient_json_get (client, json_url, &json_data, &json_len);
 
     if (json_status < 0)
       {

@@ -305,6 +305,14 @@ set(LIB_SOURCES
     src/http/SocketHTTPClient-retry.c
     src/http/SocketHTTPServer.c
     src/http/SocketHTTPServer-connections.c
+
+    # Simple convenience API
+    src/simple/SocketSimple.c
+    src/simple/SocketSimple-tcp.c
+    src/simple/SocketSimple-tls.c
+    src/simple/SocketSimple-dns.c
+    src/simple/SocketSimple-http.c
+    src/simple/SocketSimple-ws.c
 )
 
 # Add TLS sources if enabled (split for maintainability)
@@ -500,6 +508,15 @@ set(TEST_HEADERS
     include/test/Test.h
 )
 
+set(SIMPLE_HEADERS
+    include/simple/SocketSimple.h
+    include/simple/SocketSimple-tcp.h
+    include/simple/SocketSimple-tls.h
+    include/simple/SocketSimple-http.h
+    include/simple/SocketSimple-ws.h
+    include/simple/SocketSimple-dns.h
+)
+
 install(TARGETS socket_static socket_shared
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
@@ -513,6 +530,7 @@ install(FILES ${POOL_HEADERS} DESTINATION include/pool)
 install(FILES ${TLS_HEADERS} DESTINATION include/tls)
 install(FILES ${HTTP_HEADERS} DESTINATION include/http)
 install(FILES ${TEST_HEADERS} DESTINATION include/test)
+install(FILES ${SIMPLE_HEADERS} DESTINATION include/simple)
 
 # Print build configuration
 message(STATUS "Socket Library Configuration:")
@@ -609,6 +627,23 @@ if(SOCKET_HAS_TLS)
         test_tls_performance
         test_dtls_integration
         test_socketpool_tls
+        # Additional TLS tests
+        test_dtls_basic
+        test_dtls_cookie
+        test_dtls_mtu
+        test_mtls
+        test_tls_context
+        test_tls_enable_disable
+        test_tls_handshake
+        test_tls_http2
+        test_tls_io
+        test_tls_security
+        test_tls_session
+        # CRL and advanced TLS tests
+        test_tls_crl
+        test_tls_crl_integration
+        test_tls_ktls
+        test_tls_reconnect
     )
 endif()
 

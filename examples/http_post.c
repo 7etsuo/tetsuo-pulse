@@ -148,8 +148,8 @@ main (int argc, char **argv)
 
     char *json_response = NULL;
     size_t json_response_len = 0;
-    int json_post_status = SocketHTTPClient_json_post (client, url, json_payload,
-                                                       &json_response, &json_response_len);
+    int json_post_status = SocketHTTPClient_json_post (
+        client, url, json_payload, &json_response, &json_response_len);
 
     if (json_post_status < 0)
       {
@@ -163,7 +163,8 @@ main (int argc, char **argv)
 
         if (json_response && json_response_len > 0)
           {
-            size_t display_len = json_response_len > 2000 ? 2000 : json_response_len;
+            size_t display_len
+                = json_response_len > 2000 ? 2000 : json_response_len;
             printf ("JSON POST Response:\n");
             fwrite (json_response, 1, display_len, stdout);
             printf ("\n");

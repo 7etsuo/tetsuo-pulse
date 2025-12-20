@@ -83,8 +83,7 @@ main (int argc, char **argv)
         printf ("Received echo (%zd bytes): %s\n", n, buffer);
 
         /* Verify it's the same message */
-        if (n == (ssize_t)strlen (message) &&
-            memcmp (buffer, message, n) == 0)
+        if (n == (ssize_t)strlen (message) && memcmp (buffer, message, n) == 0)
           {
             printf ("✅ Echo successful!\n");
           }
@@ -99,11 +98,11 @@ main (int argc, char **argv)
         printf ("Server closed connection unexpectedly\n");
         result = 1;
       }
-      else
-        {
-          printf ("Receive error\n");
-          result = 1;
-        }
+    else
+      {
+        printf ("Receive error\n");
+        result = 1;
+      }
 
     /* Clean close */
     Socket_shutdown (sock, SHUT_WR); /* Send EOF */

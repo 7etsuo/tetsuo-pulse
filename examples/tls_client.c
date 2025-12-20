@@ -8,7 +8,8 @@
  * tls_client.c - TLS/SSL Client Example
  *
  * Demonstrates establishing a TLS connection using the SocketTLS API.
- * Shows certificate verification, cipher information, and secure communication.
+ * Shows certificate verification, cipher information, and secure
+ * communication.
  *
  * Build:
  *   cmake -DENABLE_TLS=ON -DBUILD_EXAMPLES=ON ..
@@ -89,8 +90,8 @@ main (int argc, char **argv)
     /* Perform TLS handshake */
     printf ("Performing TLS handshake...\n");
     TLSHandshakeState state;
-    while ((state = SocketTLS_handshake (sock)) == TLS_HANDSHAKE_WANT_READ ||
-           state == TLS_HANDSHAKE_WANT_WRITE)
+    while ((state = SocketTLS_handshake (sock)) == TLS_HANDSHAKE_WANT_READ
+           || state == TLS_HANDSHAKE_WANT_WRITE)
       {
         /* Handshake in progress */
         printf (".");
@@ -115,7 +116,8 @@ main (int argc, char **argv)
           }
         else
           {
-            printf ("Certificate: ❌ Verification failed (code: %ld)\n", verify_result);
+            printf ("Certificate: ❌ Verification failed (code: %ld)\n",
+                    verify_result);
           }
 
         /* Check if session was reused */
@@ -159,7 +161,8 @@ main (int argc, char **argv)
                 lines++;
               }
 
-            if (strstr (buffer, "HTTP/1.1 200") || strstr (buffer, "HTTP/1.0 200"))
+            if (strstr (buffer, "HTTP/1.1 200")
+                || strstr (buffer, "HTTP/1.0 200"))
               {
                 printf ("\n✅ HTTPS request successful!\n");
               }
@@ -201,7 +204,8 @@ main (int argc, char **argv)
   }
   EXCEPT (SocketTLS_VerifyFailed)
   {
-    fprintf (stderr, "TLS certificate verification failed: %s\n", Socket_GetLastError ());
+    fprintf (stderr, "TLS certificate verification failed: %s\n",
+             Socket_GetLastError ());
     result = 1;
   }
   END_TRY;

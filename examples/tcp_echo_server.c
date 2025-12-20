@@ -102,8 +102,7 @@ main (int argc, char **argv)
             char buffer[1024];
             ssize_t n;
 
-            printf ("[%s:%d] Client connected\n",
-                    Socket_getpeeraddr (client),
+            printf ("[%s:%d] Client connected\n", Socket_getpeeraddr (client),
                     Socket_getpeerport (client));
 
             /* Echo loop */
@@ -113,8 +112,7 @@ main (int argc, char **argv)
 
                 printf ("[%s:%d] Received %zd bytes: %.50s%s\n",
                         Socket_getpeeraddr (client),
-                        Socket_getpeerport (client),
-                        n, buffer,
+                        Socket_getpeerport (client), n, buffer,
                         n > 50 ? "..." : "");
 
                 /* Echo back */
@@ -129,8 +127,7 @@ main (int argc, char **argv)
               }
             else
               {
-                printf ("[%s:%d] Error\n",
-                        Socket_getpeeraddr (client),
+                printf ("[%s:%d] Error\n", Socket_getpeeraddr (client),
                         Socket_getpeerport (client));
               }
 

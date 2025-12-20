@@ -60,6 +60,7 @@ High-performance, exception-driven socket toolkit for POSIX systems. Provides a 
 
 ### Infrastructure
 - **Exception-Based Errors** - Clean error propagation with `TRY/EXCEPT/FINALLY`
+- **Simple API** - Return-code based convenience layer for common operations (no TRY/EXCEPT needed)
 - **Arena Memory Management** - Efficient allocation with overflow protection
 - **Circular Buffer I/O** - Zero-copy buffering for network operations
 - **Asynchronous I/O** - Platform-optimized async operations (io_uring/kqueue)
@@ -232,6 +233,54 @@ if (status == 1) {
     /* In progress - poll for POLL_WRITE then check Socket_isconnected() */
 }
 ```
+
+### Simple API (No TRY/EXCEPT Required)
+
+For users who prefer return-code based error handling, the Simple API provides a convenience layer that wraps the exception-based internals:
+
+```c
+#include "simple/SocketSimple.h"
+
+/* TCP Client - returns NULL on error */
+SocketSimple_Socket_T sock = Socket_simple_connect("example.com", 80);
+if (!sock) {
+    fprintf(stderr, "Error: %s\n", Socket_simple_error());
+    return 1;
+}
+Socket_simple_send(sock, "GET / HTTP/1.0\r\n\r\n", 18);
+char buf[4096];
+ssize_t n = Socket_simple_recv(sock, buf, sizeof(buf));
+Socket_simple_close(&sock);
+
+/* TLS Client - one-liner with cert verification */
+SocketSimple_Socket_T tls = Socket_simple_connect_tls("api.example.com", 443);
+if (tls) {
+    Socket_simple_send(tls, request, len);
+    Socket_simple_close(&tls);
+}
+
+/* HTTP GET - returns 0 on success */
+SocketSimple_HTTPResponse resp;
+if (Socket_simple_http_get("https://api.example.com/data", &resp) == 0) {
+    printf("Status: %d, Body: %.*s\n", resp.status_code, (int)resp.body_len, resp.body);
+    Socket_simple_http_response_free(&resp);
+}
+
+/* WebSocket - handles ws:// and wss:// */
+SocketSimple_WS_T ws = Socket_simple_ws_connect("wss://echo.example.com/ws");
+if (ws) {
+    Socket_simple_ws_send_text(ws, "Hello!", 6);
+    SocketSimple_WSMessage msg;
+    if (Socket_simple_ws_recv(ws, &msg) == 0) {
+        printf("Received: %.*s\n", (int)msg.len, (char *)msg.data);
+        Socket_simple_ws_message_free(&msg);
+    }
+    Socket_simple_ws_close(ws, 1000, "Bye");
+    Socket_simple_ws_free(&ws);
+}
+```
+
+See [docs/simple.md](docs/simple.md) for full API documentation.
 
 ## Usage Patterns
 

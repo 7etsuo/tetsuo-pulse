@@ -20,7 +20,9 @@
  *
  * Test with:
  *   echo "Hello, World!" | nc -u localhost 8080
- *   python3 -c "import socket; s=socket.socket(socket.AF_INET,socket.SOCK_DGRAM); s.sendto(b'Hello',('localhost',8080)); print(s.recv(1024))"
+ *   python3 -c "import socket;
+ * s=socket.socket(socket.AF_INET,socket.SOCK_DGRAM);
+ * s.sendto(b'Hello',('localhost',8080)); print(s.recv(1024))"
  */
 
 #include <signal.h>
@@ -96,9 +98,8 @@ main (int argc, char **argv)
           {
             buffer[n] = '\0'; /* Null terminate for printing */
 
-            printf ("[%s:%d] Received %zd bytes: %.50s%s\n",
-                    client_host, client_port, n, buffer,
-                    n > 50 ? "..." : "");
+            printf ("[%s:%d] Received %zd bytes: %.50s%s\n", client_host,
+                    client_port, n, buffer, n > 50 ? "..." : "");
 
             /* Echo back to client */
             SocketDgram_sendto (sock, buffer, n, client_host, client_port);
