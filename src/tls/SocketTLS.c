@@ -36,6 +36,7 @@
 #include "core/SocketMetrics.h"
 #include "core/SocketUtil.h"
 #include "poll/SocketPoll.h"
+#include "tls/SocketSSL-internal.h"
 #include "tls/SocketTLS-private.h"
 #include "tls/SocketTLSContext.h"
 
@@ -321,23 +322,18 @@ copy_hostname_to_socket (Socket_T socket, const char *hostname, size_t len)
  * @ssl: SSL object
  * @hostname: Hostname for SNI
  *
- * Enables peer certificate verification and hostname checking.
- * SSL_set_verify() with SSL_VERIFY_PEER ensures the handshake fails
- * if the server certificate is invalid or hostname doesn't match.
+ * Wrapper around shared ssl_apply_sni_hostname() helper with TLS-specific
+ * error handling. Enables peer certificate verification and hostname checking.
  *
  * Raises: SocketTLS_Failed on OpenSSL error
  */
 static void
 apply_sni_to_ssl (SSL *ssl, const char *hostname)
 {
-  /* Enable peer certificate verification - required for hostname check to work
-   */
-  SSL_set_verify (ssl, SSL_VERIFY_PEER, NULL);
-
-  if (SSL_set_tlsext_host_name (ssl, hostname) != 1)
+  int ret = ssl_apply_sni_hostname (ssl, hostname);
+  if (ret == -1)
     RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Failed to set SNI hostname");
-
-  if (SSL_set1_host (ssl, hostname) != 1)
+  if (ret == -2)
     RAISE_TLS_ERROR_MSG (SocketTLS_Failed,
                          "Failed to enable hostname verification");
 }

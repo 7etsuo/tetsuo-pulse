@@ -329,6 +329,69 @@ struct SocketDNS_T
  */
 #define SANITIZE_TIMEOUT_MS(timeout_ms) ((timeout_ms) < 0 ? 0 : (timeout_ms))
 
+/* ==================== Mutex-Protected Field Access Macros ==================== */
+
+/**
+ * @brief Thread-safe getter for int field with mutex protection.
+ * @ingroup dns
+ * @param dns DNS resolver instance
+ * @param field Field name to read
+ *
+ * Returns field value with proper mutex locking/unlocking.
+ * Reduces boilerplate in SocketDNS_gettimeout, SocketDNS_get_prefer_ipv6, etc.
+ *
+ * Usage: int timeout = DNS_LOCKED_INT_GETTER(dns, request_timeout_ms);
+ */
+#define DNS_LOCKED_INT_GETTER(dns, field)                                     \
+  ({                                                                          \
+    int _value;                                                               \
+    pthread_mutex_lock (&(dns)->mutex);                                       \
+    _value = (dns)->field;                                                    \
+    pthread_mutex_unlock (&(dns)->mutex);                                     \
+    _value;                                                                   \
+  })
+
+/**
+ * @brief Thread-safe getter for size_t field with mutex protection.
+ * @ingroup dns
+ * @param dns DNS resolver instance
+ * @param field Field name to read
+ *
+ * Returns field value with proper mutex locking/unlocking.
+ * Reduces boilerplate in SocketDNS_getmaxpending and similar functions.
+ *
+ * Usage: size_t max = DNS_LOCKED_SIZE_GETTER(dns, max_pending);
+ */
+#define DNS_LOCKED_SIZE_GETTER(dns, field)                                    \
+  ({                                                                          \
+    size_t _value;                                                            \
+    pthread_mutex_lock (&(dns)->mutex);                                       \
+    _value = (dns)->field;                                                    \
+    pthread_mutex_unlock (&(dns)->mutex);                                     \
+    _value;                                                                   \
+  })
+
+/**
+ * @brief Thread-safe setter for int field with mutex protection.
+ * @ingroup dns
+ * @param dns DNS resolver instance
+ * @param field Field name to write
+ * @param value Value to set
+ *
+ * Sets field value with proper mutex locking/unlocking.
+ * Reduces boilerplate in SocketDNS_settimeout, SocketDNS_prefer_ipv6, etc.
+ *
+ * Usage: DNS_LOCKED_INT_SETTER(dns, request_timeout_ms, new_timeout);
+ */
+#define DNS_LOCKED_INT_SETTER(dns, field, value)                              \
+  do                                                                          \
+    {                                                                         \
+      pthread_mutex_lock (&(dns)->mutex);                                     \
+      (dns)->field = (value);                                                 \
+      pthread_mutex_unlock (&(dns)->mutex);                                   \
+    }                                                                         \
+  while (0)
+
 /* Thread-local exception - extern declaration (defined in SocketDNS.c) */
 extern const Except_T SocketDNS_Failed;
 

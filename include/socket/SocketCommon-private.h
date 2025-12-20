@@ -89,7 +89,10 @@
 #include "core/SocketUtil.h"
 #include "socket/Socket.h" /* For SocketTimeouts_T if not in config */
 #include "socket/SocketCommon.h"
+#include <errno.h>
+#include <poll.h>
 #include <stdbool.h>
+#include <sys/socket.h>
 
 /**
  * @brief Internal implementation of SocketBase_T opaque type.
@@ -893,5 +896,116 @@ extern const Except_T SocketCommon_Failed;
  * @see docs/TIMEOUTS.md for timeout configuration guide
  */
 extern int socketcommon_sanitize_timeout (int timeout_ms);
+
+/* ============================================================================
+ * Shared Poll and Connect Helpers
+ * ============================================================================
+ * Consolidated implementations for poll EINTR retry and SO_ERROR checking
+ * to eliminate duplication across Socket-connect.c and Socket-convenience.c.
+ * These helpers provide consistent behavior for non-blocking connection
+ * handling.
+ *
+ * @internal
+ * @ingroup core_io
+ */
+
+/**
+ * @brief Poll for socket events with automatic EINTR retry.
+ * @internal
+ * @ingroup core_io
+ *
+ * Wrapper around poll(2) that automatically retries on EINTR interruption.
+ * Used for timed waits during non-blocking connect and accept operations.
+ *
+ * @param[in] pfd Pointer to pollfd structure (fd, events, revents)
+ * @param[in] timeout_ms Timeout in milliseconds (0=immediate, >0=wait, -1=infinite)
+ *
+ * @return Poll result: >0=events ready, 0=timeout, <0=error (errno set, not EINTR)
+ *
+ * @throws None - returns error code via return value and errno
+ * @threadsafe Yes - operates on single pollfd, no shared state
+ * @complexity O(1) per call, may retry on signal interruption
+ *
+ *  Usage Example
+ *
+ * @code{.c}
+ * struct pollfd pfd = { .fd = fd, .events = POLLOUT };
+ * int result = socket_poll_eintr_retry(&pfd, 5000);
+ * if (result > 0) {
+ *     // Socket ready for write
+ * } else if (result == 0) {
+ *     errno = ETIMEDOUT;
+ * } else {
+ *     // Error occurred (check errno)
+ * }
+ * @endcode
+ *
+ * @note EINTR handled transparently; caller sees only final result
+ * @note Used by both connect and accept timeout implementations
+ * @see poll(2) for underlying system call
+ * @see socket_check_so_error() for verifying connect completion
+ */
+static inline int
+socket_poll_eintr_retry (struct pollfd *pfd, int timeout_ms)
+{
+  int result;
+  while ((result = poll (pfd, 1, timeout_ms)) < 0 && errno == EINTR)
+    ; /* Retry on EINTR */
+  return result;
+}
+
+/**
+ * @brief Check SO_ERROR after async connect to verify completion status.
+ * @internal
+ * @ingroup core_io
+ *
+ * Retrieves pending socket error from SO_ERROR option to determine if
+ * a non-blocking connect succeeded or failed after poll indicates writability.
+ * Standard pattern per connect(2) man pages for async connect verification.
+ *
+ * @param[in] fd File descriptor of socket with pending connect
+ *
+ * @return 0 on success (connection established), -1 on error (errno set to pending error)
+ *
+ * @throws None - returns error code via return value and errno
+ * @threadsafe Yes - operates on single fd, uses stack variables
+ * @complexity O(1) - single getsockopt call
+ *
+ *  Usage Example
+ *
+ * @code{.c}
+ * // After poll returns POLLOUT on connecting socket
+ * if (socket_check_so_error(fd) == 0) {
+ *     // Connection successful
+ * } else {
+ *     // Connection failed, errno contains reason
+ *     // (ECONNREFUSED, ETIMEDOUT, etc.)
+ * }
+ * @endcode
+ *
+ * @note Must be called after poll/select indicates socket writable
+ * @note Sets errno to pending error if connect failed
+ * @note getsockopt failure returns -1 with original errno preserved
+ * @see connect(2) for async connect pattern
+ * @see getsockopt(2) SO_ERROR documentation
+ * @see socket_poll_eintr_retry() for polling before this check
+ */
+static inline int
+socket_check_so_error (int fd)
+{
+  int error = 0;
+  socklen_t error_len = sizeof (error);
+
+  if (getsockopt (fd, SOCKET_SOL_SOCKET, SO_ERROR, &error, &error_len) < 0)
+    return -1;
+
+  if (error != 0)
+    {
+      errno = error;
+      return -1;
+    }
+
+  return 0;
+}
 
 #endif /* SOCKETCOMMON_PRIVATE_INCLUDED */

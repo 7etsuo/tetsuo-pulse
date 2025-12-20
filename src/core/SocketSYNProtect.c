@@ -67,12 +67,13 @@ static const char *const reputation_names[]
  * safe_copy_ip - Safely copy IP string with null termination
  * @dest: Destination buffer (must be at least SOCKET_IP_MAX_LEN bytes)
  * @src: Source IP string
+ *
+ * Now delegates to shared socket_util_safe_copy_ip() utility.
  */
 static void
 safe_copy_ip (char *dest, const char *src)
 {
-  strncpy (dest, src, SOCKET_IP_MAX_LEN - 1);
-  dest[SOCKET_IP_MAX_LEN - 1] = '\0';
+  socket_util_safe_copy_ip (dest, src, SOCKET_IP_MAX_LEN);
 }
 
 /* ============================================================================

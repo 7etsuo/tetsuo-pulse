@@ -75,51 +75,6 @@ store_remote_addr (T socket, const struct sockaddr *addr, socklen_t addrlen)
 /* ==================== Poll/Wait Helpers ==================== */
 
 /**
- * socket_wait_poll_with_retry - Wait for socket writability with EINTR retry
- * @fd: File descriptor
- * @timeout_ms: Timeout in milliseconds
- *
- * Returns: poll() result (0 on timeout, >0 on ready, -1 on error)
- * Thread-safe: Yes (operates on single fd)
- */
-static int
-socket_wait_poll_with_retry (int fd, int timeout_ms)
-{
-  struct pollfd pfd = { .fd = fd, .events = POLLOUT, .revents = 0 };
-  int result;
-
-  while ((result = poll (&pfd, 1, timeout_ms)) < 0 && errno == EINTR)
-    ; /* EINTR retry */
-
-  return result;
-}
-
-/**
- * socket_check_connect_error - Check SO_ERROR after async connect
- * @fd: File descriptor
- *
- * Returns: 0 on success, -1 on error (sets errno)
- * Thread-safe: Yes (operates on single fd)
- */
-static int
-socket_check_connect_error (int fd)
-{
-  int error = 0;
-  socklen_t error_len = sizeof (error);
-
-  if (getsockopt (fd, SOCKET_SOL_SOCKET, SO_ERROR, &error, &error_len) < 0)
-    return -1;
-
-  if (error != 0)
-    {
-      errno = error;
-      return -1;
-    }
-
-  return 0;
-}
-
-/**
  * socket_wait_for_connect - Wait for connect to complete with timeout
  * @socket: Socket instance
  * @timeout_ms: Timeout in milliseconds
@@ -134,7 +89,8 @@ socket_wait_for_connect (T socket, int timeout_ms)
   assert (timeout_ms >= 0);
 
   int fd = SocketBase_fd (socket->base);
-  int result = socket_wait_poll_with_retry (fd, timeout_ms);
+  struct pollfd pfd = { .fd = fd, .events = POLLOUT, .revents = 0 };
+  int result = socket_poll_eintr_retry (&pfd, timeout_ms);
 
   if (result < 0)
     return -1;
@@ -145,7 +101,7 @@ socket_wait_for_connect (T socket, int timeout_ms)
       return -1;
     }
 
-  return socket_check_connect_error (fd);
+  return socket_check_so_error (fd);
 }
 
 /**

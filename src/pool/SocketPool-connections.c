@@ -1018,23 +1018,13 @@ collect_idle_sockets (T pool, time_t idle_timeout, time_t now)
  *
  * Thread-safe: Yes - acquires mutex internally
  * Logs errors at DEBUG level rather than propagating.
+ *
+ * Uses shared socketpool_close_socket_safe() helper.
  */
 static void
 close_single_socket (T pool, Socket_T socket)
 {
-  TRY
-  {
-    SocketPool_remove (pool, socket);
-    Socket_free (&socket);
-  }
-  ELSE
-  {
-    /* Ignore SocketPool_Failed or Socket_Failed during cleanup -
-     * socket may already be removed or closed */
-    SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                     "Cleanup: socket close/remove failed (may be stale)");
-  }
-  END_TRY;
+  socketpool_close_socket_safe (pool, &socket, "Cleanup");
 }
 
 /**

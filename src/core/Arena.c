@@ -390,7 +390,36 @@ allocate_raw_chunk (size_t total)
 
 /* ==================== Chunk Cache Operations ==================== */
 
+/**
+ * chunk_cache_get - Try to retrieve chunk from free cache
+ * @ptr_out: Output pointer for chunk header
+ * @limit_out: Output pointer for chunk limit
+ *
+ * Attempts to retrieve a cached chunk from the global free list.
+ * Thread-safe: Yes (uses global arena_mutex)
+ *
+ * Returns: ARENA_CHUNK_REUSED if chunk retrieved, ARENA_CHUNK_NOT_REUSED otherwise
+ */
+static int
+chunk_cache_get (struct ChunkHeader **ptr_out, char **limit_out)
+{
+  int result = ARENA_CHUNK_NOT_REUSED;
 
+  pthread_mutex_lock (&arena_mutex);
+
+  if (freechunks != NULL)
+    {
+      *ptr_out = freechunks;
+      freechunks = freechunks->prev;
+      nfree--;
+      *limit_out = chunk_limit (*ptr_out);
+      result = ARENA_CHUNK_REUSED;
+    }
+
+  pthread_mutex_unlock (&arena_mutex);
+
+  return result;
+}
 
 /**
  * chunk_cache_return - Return chunk to free cache or free it
@@ -692,40 +721,13 @@ Arena_alloc (T arena, size_t nbytes, const char *file, int line)
   while (arena->avail == NULL || arena->limit == NULL
          || (size_t)(arena->limit - arena->avail) < aligned_size)
     {
-      /* Try to reuse a cached chunk */
-      struct ChunkHeader *ptr;
-      char *limit;
-      size_t chunk_size;
-
-      /* Inline chunk_cache_get */
-      int cache_result = ARENA_CHUNK_NOT_REUSED;
-      pthread_mutex_lock (&arena_mutex);
-
-      if ((ptr = freechunks) != NULL)
+      /* Get a chunk from cache or allocate new */
+      if (arena_get_chunk (arena, aligned_size) != ARENA_SUCCESS)
         {
-          freechunks = freechunks->prev;
-          nfree--;
-          limit = chunk_limit (ptr);
-          cache_result = ARENA_CHUNK_REUSED;
-        }
-
-      pthread_mutex_unlock (&arena_mutex);
-
-      if (cache_result == ARENA_CHUNK_REUSED)
-        {
-          arena_link_chunk (arena, ptr, limit);
-        }
-      else
-        {
-          /* Allocate a new chunk */
-          chunk_size = (ARENA_CHUNK_SIZE < aligned_size) ? aligned_size : ARENA_CHUNK_SIZE;
-
-          if (arena_allocate_new_chunk (chunk_size, &ptr, &limit) != ARENA_SUCCESS)
-            SOCKET_RAISE_MSG (Arena, Arena_Failed,
-                              "Failed to allocate chunk for %zu bytes (out of memory)",
-                              aligned_size);
-
-          arena_link_chunk (arena, ptr, limit);
+          pthread_mutex_unlock (&arena->mutex);
+          SOCKET_RAISE_MSG (Arena, Arena_Failed,
+                            "Failed to allocate chunk for %zu bytes (out of memory)",
+                            aligned_size);
         }
     }
   void *result = arena->avail;

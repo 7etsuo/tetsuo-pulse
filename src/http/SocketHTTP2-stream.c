@@ -61,41 +61,9 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP2);
 #define HTTP2_MAX_STREAM_ID 0x7FFFFFFF
 
 /* ============================================================================
- * 31-bit serialization helpers (stream ID and window sizes)
+ * Stream Helper Functions
  * ============================================================================
  */
-
-/**
- * http2_serialize_31bit_uint - Serialize 31-bit unsigned integer
- * @value: Value to serialize (high bit must be 0 for stream IDs)
- * @payload: Output buffer (4 bytes)
- *
- * Thread-safe: Yes
- */
-static void
-http2_serialize_31bit_uint (uint32_t value, unsigned char *payload)
-{
-  payload[0] = (unsigned char)((value >> 24) & 0x7F);
-  payload[1] = (unsigned char)((value >> 16) & 0xFF);
-  payload[2] = (unsigned char)((value >> 8) & 0xFF);
-  payload[3] = (unsigned char)(value & 0xFF);
-}
-
-/**
- * http2_deserialize_31bit_uint - Deserialize 31-bit unsigned integer
- * @payload: Input buffer
- * @offset: Byte offset in payload
- *
- * Returns: Deserialized value
- * Thread-safe: Yes
- */
-static uint32_t
-http2_deserialize_31bit_uint (const unsigned char *payload, size_t offset)
-{
-  return ((uint32_t)(payload[offset] & 0x7F) << 24)
-         | ((uint32_t)payload[offset + 1] << 16)
-         | ((uint32_t)payload[offset + 2] << 8) | payload[offset + 3];
-}
 
 static inline int
 http2_is_end_stream (uint8_t flags)
@@ -786,7 +754,7 @@ SocketHTTP2_Stream_window_update (SocketHTTP2_Stream_T stream,
   assert (stream);
   assert (increment > 0 && increment <= HTTP2_MAX_STREAM_ID);
 
-  http2_serialize_31bit_uint (increment, payload);
+  write_u31_be (payload, increment);
 
   header.length = HTTP2_WINDOW_UPDATE_PAYLOAD_SIZE;
   header.type = HTTP2_FRAME_WINDOW_UPDATE;
@@ -2181,7 +2149,7 @@ SocketHTTP2_Stream_push_promise (SocketHTTP2_Stream_T stream,
       return NULL;
     }
 
-  http2_serialize_31bit_uint (promised_id, payload);
+  write_u31_be (payload, promised_id);
 
   header_block_len = http2_encode_headers (
       conn, request_headers, header_count,
@@ -2697,7 +2665,7 @@ extract_push_promise_payload (const SocketHTTP2_FrameHeader *header,
   if (header->length < offset + HTTP2_PUSH_PROMISE_ID_SIZE + pad_len)
     return -1;
 
-  *promised_id = http2_deserialize_31bit_uint (payload, offset);
+  *promised_id = read_u31_be (payload + offset);
   offset += HTTP2_PUSH_PROMISE_ID_SIZE;
 
   if ((*promised_id & 1) != 0)

@@ -1122,6 +1122,77 @@ extern void validate_saved_session (Connection_T conn, time_t now);
 extern unsigned socketpool_hash (const Socket_T socket);
 
 /* ============================================================================
+ * Socket Close Helpers (Shared)
+ * ============================================================================
+ */
+
+/**
+ * @brief Safely close and remove socket from pool with error suppression.
+ * @ingroup connection_mgmt
+ *
+ * Consolidated helper for safe socket closure during cleanup/resize operations.
+ * Wraps SocketPool_remove() + Socket_free() in TRY/ELSE to suppress exceptions
+ * (logged at DEBUG level instead). Prevents cascading failures during bulk
+ * cleanup when sockets may be stale or already closed.
+ *
+ * Used to eliminate duplicate error-handling code in:
+ * - close_single_socket() in SocketPool-connections.c
+ * - close_socket_safe() in SocketPool-ops.c
+ *
+ * @param[in] pool Pool instance (for SocketPool_remove).
+ * @param[in,out] socket_ptr Pointer to socket pointer (Socket_T*).
+ *     Socket freed and pointer set to NULL on success.
+ *     Unchanged on failure (logged only).
+ * @param[in] context Optional context string for debug logging (e.g., "Cleanup",
+ *     "Resize"). Pass NULL to omit context in log message.
+ *
+ * @threadsafe Yes - acquires pool mutex internally via SocketPool_remove().
+ *
+ * @complexity O(1) average for hash removal, O(1) for socket close.
+ *
+ *  Usage Example
+ *
+ * @code
+ * // In SocketPool_cleanup() or similar
+ * for (size_t i = 0; i < close_count; i++) {
+ *   socketpool_close_socket_safe(pool, &sockets_to_close[i], "Cleanup");
+ * }
+ * @endcode
+ *
+ * @note Errors suppressed (not raised) to enable robust batch cleanup.
+ * @warning Socket must be from the same pool instance, else remove fails.
+ * @note Context string not copied; must remain valid during call.
+ *
+ * @see SocketPool_remove() for pool removal (may raise SocketPool_Failed).
+ * @see Socket_free() for socket closure (may raise Socket_Failed).
+ * @see SocketLog_emitf() for debug-level error logging.
+ * @see close_single_socket() in SocketPool-connections.c (refactored to use this).
+ * @see close_socket_safe() in SocketPool-ops.c (refactored to use this).
+ */
+static inline void
+socketpool_close_socket_safe (SocketPool_T pool, Socket_T *socket_ptr,
+                               const char *context)
+{
+  TRY
+  {
+    SocketPool_remove (pool, *socket_ptr);
+    Socket_free (socket_ptr);
+  }
+  ELSE
+  {
+    /* Ignore SocketPool_Failed or Socket_Failed during cleanup -
+     * socket may already be removed or closed */
+    if (context)
+      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                       "%s: socket close/remove failed (may be stale)", context);
+    else
+      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                       "Cleanup: socket close/remove failed (may be stale)");
+  }
+  END_TRY;
+}
+
+/* ============================================================================
  * Core Functions (from SocketPool-core.c)
  * ============================================================================
  */

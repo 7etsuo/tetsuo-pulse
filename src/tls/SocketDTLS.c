@@ -41,6 +41,7 @@
 #include "core/SocketSecurity.h"
 #include "core/SocketUtil.h"
 #include "socket/SocketCommon.h"
+#include "tls/SocketSSL-internal.h"
 
 /* ============================================================================
  * Exception Definitions
@@ -395,7 +396,9 @@ dtls_set_bio_peer_address (BIO *bio, struct addrinfo *result)
  * @socket: Socket with DTLS enabled
  * @hostname: Hostname string
  *
- * Sets SNI and hostname verification on SSL object.
+ * Wrapper around shared ssl_apply_sni_hostname() helper with DTLS-specific
+ * error handling. Sets SNI and hostname verification on SSL object.
+ *
  * Raises: SocketDTLS_Failed on failure
  * Thread-safe: No (single-threaded SSL)
  */
@@ -404,12 +407,10 @@ dtls_set_ssl_hostname (SocketDgram_T socket, const char *hostname)
 {
   SSL *ssl = REQUIRE_DTLS_SSL (socket, SocketDTLS_Failed);
 
-  SSL_set_verify (ssl, SSL_VERIFY_PEER, NULL);
-
-  if (SSL_set_tlsext_host_name (ssl, hostname) != 1)
+  int ret = ssl_apply_sni_hostname (ssl, hostname);
+  if (ret == -1)
     RAISE_DTLS_ERROR_MSG (SocketDTLS_Failed, "Failed to set SNI hostname");
-
-  if (SSL_set1_host (ssl, hostname) != 1)
+  if (ret == -2)
     RAISE_DTLS_ERROR_MSG (SocketDTLS_Failed,
                           "Failed to enable hostname verification");
 }

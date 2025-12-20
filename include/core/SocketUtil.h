@@ -2343,4 +2343,44 @@ SocketTimeout_elapsed_ms (int64_t start_ms)
           }                                                                   \
         while (0)
 
+/* ============================================================================
+ * IP ADDRESS UTILITY FUNCTIONS
+ * ============================================================================
+ */
+
+/**
+ * @brief Safely copy IP address string with null termination
+ * @ingroup utilities
+ *
+ * Copies IP address from src to dest with guaranteed null-termination.
+ * Prevents buffer overflows by limiting copy to max_len-1 bytes and
+ * always null-terminating the result.
+ *
+ * @param[out] dest Destination buffer (must be at least max_len bytes)
+ * @param[in] src Source IP string to copy
+ * @param[in] max_len Maximum size of destination buffer
+ *
+ * @threadsafe Yes - no shared state
+ *
+ * @complexity O(min(strlen(src), max_len)) - linear in string length
+ *
+ * Usage:
+ *   char ip_buf[SOCKET_IP_MAX_LEN];
+ *   socket_util_safe_copy_ip(ip_buf, client_ip, sizeof(ip_buf));
+ *
+ * @note Truncates src if it exceeds max_len-1 characters
+ * @warning dest must be at least max_len bytes to avoid buffer overflow
+ *
+ * @see SOCKET_IP_MAX_LEN for standard IP buffer size
+ * @see strncpy(3) for underlying copy mechanism
+ */
+static inline void
+socket_util_safe_copy_ip (char *dest, const char *src, size_t max_len)
+{
+  if (max_len == 0)
+    return;
+  strncpy (dest, src, max_len - 1);
+  dest[max_len - 1] = '\0';
+}
+
 #endif /* SOCKETUTIL_INCLUDED */

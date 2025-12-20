@@ -76,29 +76,6 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketConvenience);
  * ============================================================================
  */
 
-/**
- * poll_with_eintr_retry - Execute poll with automatic EINTR retry
- * @pfd: Pointer to pollfd structure
- * @timeout_ms: Timeout in milliseconds
- *
- * Returns: poll() result (>0 ready, 0 timeout, <0 error other than EINTR)
- * Thread-safe: Yes
- *
- * Wraps poll() to automatically retry on EINTR, which can occur when
- * a signal is delivered during the poll wait.
- */
-static int
-poll_with_eintr_retry (struct pollfd *pfd, int timeout_ms)
-{
-        int result;
-
-        assert (pfd != NULL);
-
-        while ((result = poll (pfd, 1, timeout_ms)) < 0 && errno == EINTR)
-                ; /* Retry on EINTR */
-
-        return result;
-}
 
 /**
  * get_socket_flags - Get current socket flags with error handling
@@ -179,18 +156,8 @@ restore_blocking_mode (int fd, int original_flags)
 static int
 check_connect_result (int fd, const char *context_path)
 {
-        int error = 0;
-        socklen_t error_len = sizeof (error);
-
-        if (getsockopt (fd, SOL_SOCKET, SO_ERROR, &error, &error_len) < 0)
+        if (socket_check_so_error (fd) < 0)
                 {
-                        SOCKET_ERROR_FMT ("getsockopt(SO_ERROR) failed");
-                        RAISE_MODULE_ERROR (Socket_Failed);
-                }
-
-        if (error != 0)
-                {
-                        errno = error;
                         SOCKET_ERROR_FMT ("Connect to %.*s failed",
                                           SOCKET_ERROR_MAX_HOSTNAME, context_path);
                         RAISE_MODULE_ERROR (Socket_Failed);
@@ -542,7 +509,7 @@ Socket_accept_timeout (T socket, int timeout_ms)
 
                 if (timeout_ms > 0) {
                         /* Poll for readiness with timeout */
-                        poll_result = poll_with_eintr_retry (&pfd, timeout_ms);
+                        poll_result = socket_poll_eintr_retry (&pfd, timeout_ms);
                         if (poll_result < 0) {
                                 SOCKET_ERROR_FMT ("poll() failed in accept_timeout");
                                 RAISE_MODULE_ERROR (Socket_Failed);
@@ -810,7 +777,7 @@ Socket_connect_unix_timeout (T socket, const char *path, int timeout_ms)
         /* In progress: poll for completion */
         TRY {
                 struct pollfd pfd = { .fd = fd, .events = POLLOUT, .revents = 0 };
-                int poll_result = poll_with_eintr_retry (&pfd, timeout_ms);
+                int poll_result = socket_poll_eintr_retry (&pfd, timeout_ms);
 
                 if (poll_result < 0) {
                         SOCKET_ERROR_FMT ("poll() failed during Unix connect");

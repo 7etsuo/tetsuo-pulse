@@ -776,16 +776,10 @@ SocketDNS_cancel (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 size_t
 SocketDNS_getmaxpending (struct SocketDNS_T *dns)
 {
-  size_t current;
-
   if (!dns)
     return 0;
 
-  pthread_mutex_lock (&dns->mutex);
-  current = dns->max_pending;
-  pthread_mutex_unlock (&dns->mutex);
-
-  return current;
+  return DNS_LOCKED_SIZE_GETTER (dns, max_pending);
 }
 
 /**
@@ -848,16 +842,10 @@ SocketDNS_setmaxpending (struct SocketDNS_T *dns, size_t max_pending)
 int
 SocketDNS_gettimeout (struct SocketDNS_T *dns)
 {
-  int current;
-
   if (!dns)
     return 0;
 
-  pthread_mutex_lock (&dns->mutex);
-  current = dns->request_timeout_ms;
-  pthread_mutex_unlock (&dns->mutex);
-
-  return current;
+  return DNS_LOCKED_INT_GETTER (dns, request_timeout_ms);
 }
 
 /**
@@ -883,9 +871,8 @@ SocketDNS_settimeout (struct SocketDNS_T *dns, int timeout_ms)
   if (!dns)
     return;
 
-  pthread_mutex_lock (&dns->mutex);
-  dns->request_timeout_ms = SANITIZE_TIMEOUT_MS (timeout_ms);
-  pthread_mutex_unlock (&dns->mutex);
+  DNS_LOCKED_INT_SETTER (dns, request_timeout_ms,
+                         SANITIZE_TIMEOUT_MS (timeout_ms));
 }
 
 /**
@@ -1775,9 +1762,7 @@ SocketDNS_prefer_ipv6 (T dns, int prefer_ipv6)
 {
   assert (dns);
 
-  pthread_mutex_lock (&dns->mutex);
-  dns->prefer_ipv6 = prefer_ipv6 ? 1 : 0;
-  pthread_mutex_unlock (&dns->mutex);
+  DNS_LOCKED_INT_SETTER (dns, prefer_ipv6, prefer_ipv6 ? 1 : 0);
 }
 
 /**
@@ -1790,15 +1775,9 @@ SocketDNS_prefer_ipv6 (T dns, int prefer_ipv6)
 int
 SocketDNS_get_prefer_ipv6 (T dns)
 {
-  int prefer;
-
   assert (dns);
 
-  pthread_mutex_lock (&dns->mutex);
-  prefer = dns->prefer_ipv6;
-  pthread_mutex_unlock (&dns->mutex);
-
-  return prefer;
+  return DNS_LOCKED_INT_GETTER (dns, prefer_ipv6);
 }
 
 /**

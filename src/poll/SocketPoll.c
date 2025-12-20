@@ -224,21 +224,14 @@ socket_data_lookup_unlocked (const T poll, const Socket_T socket)
  * @hash: Hash bucket index
  * @socket: Socket to remove
  * Thread-safe: No (caller must hold mutex)
+ *
+ * Uses HASH_CHAIN_REMOVE macro to eliminate duplicate removal code.
  */
 static void
 remove_socket_data_entry (T poll, unsigned hash, Socket_T socket)
 {
-  SocketData **pp = &poll->socket_data_map[hash];
-
-  while (*pp)
-    {
-      if ((*pp)->socket == socket)
-        {
-          *pp = (*pp)->next;
-          return;
-        }
-      pp = &(*pp)->next;
-    }
+  HASH_CHAIN_REMOVE (&poll->socket_data_map[hash], SocketData, socket, socket,
+                     next);
 }
 
 /**
@@ -247,21 +240,14 @@ remove_socket_data_entry (T poll, unsigned hash, Socket_T socket)
  * @fd_hash: Hash bucket index
  * @fd: File descriptor to remove
  * Thread-safe: No (caller must hold mutex)
+ *
+ * Uses HASH_CHAIN_REMOVE macro to eliminate duplicate removal code.
  */
 static void
 remove_fd_socket_entry (T poll, unsigned fd_hash, int fd)
 {
-  FdSocketEntry **pp = &poll->fd_to_socket_map[fd_hash];
-
-  while (*pp)
-    {
-      if ((*pp)->fd == fd)
-        {
-          *pp = (*pp)->next;
-          return;
-        }
-      pp = &(*pp)->next;
-    }
+  HASH_CHAIN_REMOVE (&poll->fd_to_socket_map[fd_hash], FdSocketEntry, fd, fd,
+                     next);
 }
 
 /* ==================== Unlocked Hash Table Operations ==================== */

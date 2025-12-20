@@ -62,24 +62,12 @@ static int consume_rate_and_track_ip (T pool, const char *client_ip);
  * Thread-safe: Called outside pool lock
  * Handles errors gracefully - logs at DEBUG level and continues.
  *
- * Used by both resize and cleanup operations to avoid code duplication.
+ * Uses shared socketpool_close_socket_safe() helper from private header.
  */
 static void
 close_socket_safe (T pool, Socket_T *socket, const char *context)
 {
-  TRY
-  {
-    SocketPool_remove (pool, *socket);
-    Socket_free (socket);
-  }
-  ELSE
-  {
-    /* Ignore SocketPool_Failed or Socket_Failed during cleanup -
-     * socket may already be removed or closed */
-    SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                     "%s: socket close/remove failed (may be stale)", context);
-  }
-  END_TRY;
+  socketpool_close_socket_safe (pool, socket, context);
 }
 
 /**

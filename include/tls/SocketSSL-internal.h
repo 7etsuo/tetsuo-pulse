@@ -34,6 +34,7 @@
 #include "core/SocketCrypto.h"
 #include "core/SocketUtil.h"
 #include <openssl/err.h>
+#include <openssl/ssl.h>
 
 /* ============================================================================
  * Common Utility Macros
@@ -425,6 +426,196 @@ ssl_format_openssl_error_to_buf (const char *context, char *buf,
    * Per OpenSSL documentation: "After handling an error, the error queue
    * should be cleared using ERR_clear_error()" */
   ERR_clear_error ();
+}
+
+/* ============================================================================
+ * Common SSL/TLS Operations
+ * ============================================================================
+ */
+
+/**
+ * @brief Apply SNI hostname to SSL object with verification enabled.
+ * @ingroup security
+ * @param ssl SSL object to configure
+ * @param hostname Hostname for SNI and verification
+ *
+ * Configures SSL object for peer verification with SNI hostname extension
+ * and automatic hostname verification. This is the standard setup for
+ * TLS and DTLS client connections.
+ *
+ * ## Operations Performed
+ *
+ * 1. **Peer Verification**: Enables SSL_VERIFY_PEER to require valid
+ *    certificate from peer during handshake.
+ *
+ * 2. **SNI Extension**: Sets TLS SNI (Server Name Indication) extension
+ *    via SSL_set_tlsext_host_name() to indicate which hostname the client
+ *    is trying to reach.
+ *
+ * 3. **Hostname Verification**: Enables automatic hostname verification
+ *    via SSL_set1_host() to ensure the peer certificate's CN or SAN
+ *    matches the expected hostname.
+ *
+ * ## Return Values
+ *
+ * Returns 0 on success, or negative error code:
+ * - -1: SSL_set_tlsext_host_name() failed
+ * - -2: SSL_set1_host() failed
+ *
+ * ## Usage Pattern
+ *
+ * @code{.c}
+ * int ret = ssl_apply_sni_hostname(ssl, "example.com");
+ * if (ret < 0) {
+ *     // Handle error - ret indicates which operation failed
+ *     RAISE_ERROR_MSG(Module_Failed, "Failed to set SNI hostname");
+ * }
+ * @endcode
+ *
+ * @threadsafe No - modifies SSL object state
+ *
+ * @see SSL_set_verify() for verification mode
+ * @see SSL_set_tlsext_host_name() for SNI extension
+ * @see SSL_set1_host() for hostname verification
+ */
+static inline int
+ssl_apply_sni_hostname (SSL *ssl, const char *hostname)
+{
+  /* Enable peer certificate verification - required for hostname check */
+  SSL_set_verify (ssl, SSL_VERIFY_PEER, NULL);
+
+  /* Set SNI extension */
+  if (SSL_set_tlsext_host_name (ssl, hostname) != 1)
+    return -1;
+
+  /* Enable hostname verification */
+  if (SSL_set1_host (ssl, hostname) != 1)
+    return -2;
+
+  return 0;
+}
+
+/**
+ * @brief Handle SSL handshake result and determine next action.
+ * @ingroup security
+ * @param ssl SSL object
+ * @param ssl_result Return value from SSL_do_handshake()
+ * @param handshake_done_flag Pointer to flag to set on completion (may be NULL)
+ *
+ * Processes the return value from SSL_do_handshake() and translates it
+ * into actionable next steps for non-blocking handshake operations.
+ *
+ * ## Return Values
+ *
+ * - **0**: Handshake complete successfully (ssl_result == 1)
+ * - **1**: Need to wait for readable data (SSL_ERROR_WANT_READ)
+ * - **2**: Need to wait for writable socket (SSL_ERROR_WANT_WRITE)
+ * - **-1**: Fatal error occurred (all other SSL errors)
+ *
+ * ## Handshake Done Flag
+ *
+ * If handshake_done_flag is non-NULL and handshake completes (return 0),
+ * the flag is set to 1. This allows callers to update state atomically
+ * with the handshake result check.
+ *
+ * ## Error Handling
+ *
+ * This function does NOT raise exceptions or format error messages - it
+ * only returns error codes. Callers should check the return value and
+ * call ssl_format_openssl_error_to_buf() or module-specific error
+ * formatting as needed.
+ *
+ * ## Usage Pattern
+ *
+ * @code{.c}
+ * int result = SSL_do_handshake(ssl);
+ * if (result == 1) {
+ *     // Handshake complete
+ * } else {
+ *     int next = ssl_handle_handshake_result(ssl, result, &socket->handshake_done);
+ *     switch (next) {
+ *         case 0: // Complete
+ *             break;
+ *         case 1: // WANT_READ
+ *             poll_for_read();
+ *             break;
+ *         case 2: // WANT_WRITE
+ *             poll_for_write();
+ *             break;
+ *         case -1: // Error
+ *             handle_error();
+ *             break;
+ *     }
+ * }
+ * @endcode
+ *
+ * @threadsafe No - reads SSL error state
+ *
+ * @see SSL_do_handshake() for handshake operation
+ * @see SSL_get_error() for error code interpretation
+ */
+static inline int
+ssl_handle_handshake_result (SSL *ssl, int ssl_result, int *handshake_done_flag)
+{
+  /* Fast path: handshake complete */
+  if (ssl_result == 1)
+    {
+      if (handshake_done_flag)
+        *handshake_done_flag = 1;
+      return 0;
+    }
+
+  /* ssl_result <= 0: query error code */
+  int ssl_error = SSL_get_error (ssl, ssl_result);
+
+  switch (ssl_error)
+    {
+    case SSL_ERROR_WANT_READ:
+      return 1;
+
+    case SSL_ERROR_WANT_WRITE:
+      return 2;
+
+    default:
+      /* All other errors are fatal */
+      return -1;
+    }
+}
+
+/**
+ * @brief Get SSL object from opaque pointer with validation.
+ * @ingroup security
+ * @param ssl_ptr Opaque pointer to SSL object (void*)
+ * @param enabled_flag Flag indicating if TLS/DTLS is enabled
+ *
+ * Safely retrieves SSL object from opaque void pointer with validation.
+ * Returns NULL if TLS/DTLS is not enabled or pointer is NULL.
+ *
+ * This is a convenience helper for modules that store SSL* as void*
+ * to avoid header pollution in public interfaces.
+ *
+ * ## Return Value
+ *
+ * Returns SSL* if enabled_flag is true and ssl_ptr is non-NULL,
+ * otherwise returns NULL.
+ *
+ * ## Usage Pattern
+ *
+ * @code{.c}
+ * SSL *ssl = ssl_get_from_opaque(socket->tls_ssl, socket->tls_enabled);
+ * if (!ssl) {
+ *     return -1; // TLS not enabled or SSL object missing
+ * }
+ * @endcode
+ *
+ * @threadsafe Yes - pure function, no side effects
+ */
+static inline SSL *
+ssl_get_from_opaque (void *ssl_ptr, int enabled_flag)
+{
+  if (!enabled_flag || !ssl_ptr)
+    return NULL;
+  return (SSL *)ssl_ptr;
 }
 
 #endif /* SOCKET_HAS_TLS */
