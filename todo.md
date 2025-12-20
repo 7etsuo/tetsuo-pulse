@@ -334,21 +334,22 @@ An agent should check items off as they’re implemented, reviewed, and verified
   - [x] If a client uses `:protocol` without first receiving `SETTINGS_ENABLE_CONNECT_PROTOCOL=1`, the peer treats it as malformed and triggers the correct stream error (`PROTOCOL_ERROR`).
   - [x] On requests bearing `:protocol`, `:scheme` and `:path` are also required; and `:authority` semantics follow the RFC 8441 override (server MUST NOT treat `:authority` as a proxy-tunnel host).
 
-### F2) Replace “callback-only DATA delivery” with a real stream-backed WebSocket transport
+### F2) Replace "callback-only DATA delivery" with a real stream-backed WebSocket transport ✅ COMPLETED
 
-- [ ] **What to do**:
+- [x] **What to do**:
   - Provide a real WebSocket framing API over an HTTP/2 stream (RFC 8441).
   - Correctly map close/error semantics between WebSocket and HTTP/2 (RST_STREAM, END_STREAM).
   - Integrate with HTTP/2 flow control (WINDOW_UPDATE) for backpressure-safe operation.
-- [ ] **Where**:
-  - Current hook: `src/http/SocketHTTPServer.c` (`SocketHTTPServer_Request_accept_websocket_h2`)
-  - Candidate design: adapt `SocketWS` to accept a “transport vtable” (TCP vs HTTP/2 stream), or create a dedicated adapter module (e.g., `SocketWSH2`) and wire it here.
-- [ ] **Done when**:
-  - [ ] Users can handle RFC 8441 WebSockets with the same high-level ergonomics as RFC 6455 WebSockets.
-  - [ ] No masking assumptions leak from RFC 6455 into RFC 8441 behavior.
-  - [ ] The CONNECT request for WebSockets uses `:method=CONNECT` and `:protocol=websocket`, and does **not** include HTTP/1.1-only `Connection`/`Upgrade` headers.
-  - [ ] Do not perform RFC 6455 `Sec-WebSocket-Key` / `Sec-WebSocket-Accept` processing for RFC 8441 (it is superseded); but still support `Origin`, `sec-websocket-version`, `sec-websocket-protocol`, and `sec-websocket-extensions` headers as per RFC 8441.
-  - [ ] WebSocket “orderly close” maps to END_STREAM; abnormal closure/reset maps to `RST_STREAM` with `CANCEL`.
+- [x] **Where**:
+  - Transport abstraction: `src/socket/SocketWS-transport.c` (vtable with socket and H2 stream backends)
+  - WebSocket-over-HTTP/2 API: `include/socket/SocketWSH2.h`, `src/socket/SocketWSH2.c`
+  - Updated masking logic: `src/socket/SocketWS-frame.c`
+- [x] **Done when**:
+  - [x] Users can handle RFC 8441 WebSockets with the same high-level ergonomics as RFC 6455 WebSockets.
+  - [x] No masking assumptions leak from RFC 6455 into RFC 8441 behavior (transport `requires_masking` flag).
+  - [x] The CONNECT request for WebSockets uses `:method=CONNECT` and `:protocol=websocket`, and does **not** include HTTP/1.1-only `Connection`/`Upgrade` headers.
+  - [x] Do not perform RFC 6455 `Sec-WebSocket-Key` / `Sec-WebSocket-Accept` processing for RFC 8441 (it is superseded); but still support `Origin`, `sec-websocket-version`, `sec-websocket-protocol`, and `sec-websocket-extensions` headers as per RFC 8441.
+  - [x] WebSocket "orderly close" maps to END_STREAM; abnormal closure/reset maps to `RST_STREAM` with `CANCEL`.
 
 ---
 
@@ -372,13 +373,13 @@ An agent should check items off as they’re implemented, reviewed, and verified
 
 ---
 
-## H) Final “FULL RFC” definition-of-done (must satisfy all)
+## H) Final "FULL RFC" definition-of-done (must satisfy all)
 
 - [ ] **HTTP/2 core**: passes RFC 9113 compliance review for frame/state/flow control behavior and error mapping (stream vs connection).
 - [ ] **HPACK**: passes RFC 7541 compliance + DoS/limits review.
 - [ ] **Server**: supports ALPN h2, h2c upgrade, prior-knowledge, push, trailers, GOAWAY drain; no hacks/byte-loss edge cases.
 - [ ] **Client**: actually negotiates and uses HTTP/2, supports multiplexing, and maps semantics into `SocketHTTPClient_Response`.
-- [ ] **RFC 8441**: Extended CONNECT supported with proper settings negotiation and a real WebSocket-over-h2 transport (not a “raw DATA callback”).
+- [x] **RFC 8441**: Extended CONNECT supported with proper settings negotiation and a real WebSocket-over-h2 transport (not a "raw DATA callback").
 - [ ] **Docs**: no invented APIs; examples match headers in `include/`.
 
 
