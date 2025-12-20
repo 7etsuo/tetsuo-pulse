@@ -44,9 +44,9 @@ const Except_T SocketHTTP1_SerializeError
 
 /* Serialize-specific constants */
 #define HTTP_HOST_PREFIX "Host: "
-#define HTTP_HOST_PREFIX_LEN 6
+#define HTTP_HOST_PREFIX_LEN (sizeof (HTTP_HOST_PREFIX) - 1)
 #define HTTP_CONTENT_LENGTH_PREFIX "Content-Length: "
-#define HTTP_CONTENT_LENGTH_PREFIX_LEN 16
+#define HTTP_CONTENT_LENGTH_PREFIX_LEN (sizeof (HTTP_CONTENT_LENGTH_PREFIX) - 1)
 
 /* ============================================================================
  * Buffer Append Helpers
