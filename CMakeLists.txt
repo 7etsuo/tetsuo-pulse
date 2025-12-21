@@ -319,6 +319,7 @@ set(LIB_SOURCES
     src/simple/SocketSimple-proxy.c
     src/simple/SocketSimple-http-server.c
     src/simple/SocketSimple-security.c
+    src/simple/SocketSimple-async.c
 )
 
 # Add TLS sources if enabled (split for maintainability)
