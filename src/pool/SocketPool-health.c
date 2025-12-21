@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "pool/SocketPool-private.h"
 #include "pool/SocketPoolHealth-private.h"
@@ -50,14 +51,19 @@ health_monotonic_ms (void)
  * ============================================================================ */
 
 /**
- * @brief DJB2 hash for string keys.
+ * @brief DJB2 hash for string keys with seed randomization.
  * @param key String to hash.
+ * @param seed Hash seed for randomization (prevents hash collision DoS).
  * @return Hash value.
+ *
+ * Security: The seed is XOR'd into the initial hash value to randomize
+ * the hash distribution per-instance, preventing attackers from crafting
+ * keys that cause hash collisions.
  */
 unsigned int
-health_hash_key (const char *key)
+health_hash_key (const char *key, unsigned int seed)
 {
-  unsigned int hash = 5381;
+  unsigned int hash = 5381 ^ seed;
   int c;
 
   while ((c = *key++) != 0)
@@ -112,7 +118,7 @@ health_find_circuit (SocketPoolHealth_T health, const char *host, int port,
   if (health_make_host_key (host, port, key, sizeof (key)) < 0)
     return NULL;
 
-  bucket = health_hash_key (key) % SOCKET_HEALTH_HASH_SIZE;
+  bucket = health_hash_key (key, health->hash_seed) % SOCKET_HEALTH_HASH_SIZE;
   entry = health->circuit_table[bucket];
 
   /* Search chain */
@@ -278,8 +284,10 @@ health_run_probe_cycle (SocketPoolHealth_T health)
       /* Re-acquire mutex */
       pthread_mutex_lock (&pool->mutex);
 
-      /* Check if connection still valid */
-      if (!probe_conn->active)
+      /* Security: TOCTOU check - verify connection still valid AND socket
+       * hasn't changed while we released the mutex. The socket handle could
+       * have been replaced if the connection was removed and re-added. */
+      if (!probe_conn->active || probe_conn->socket != socket)
         continue;
     }
   pthread_mutex_unlock (&pool->mutex);
@@ -439,6 +447,10 @@ health_create (struct SocketPool_T *pool, Arena_T arena)
   memset (health, 0, sizeof (*health));
   health->pool = pool;
   health->arena = arena;
+
+  /* Security: Initialize hash seed for hash collision DoS prevention.
+   * Uses time + pid for per-instance uniqueness. */
+  health->hash_seed = (unsigned int)time (NULL) ^ (unsigned int)getpid ();
 
   if (pthread_mutex_init (&health->circuit_mutex, NULL) != 0)
     return NULL;

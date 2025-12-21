@@ -128,21 +128,24 @@ typedef struct Connection *Connection_T;
  * caller. If returns 0, the connection is automatically removed from the pool
  * and NULL is returned to the caller.
  *
- * CRITICAL THREAD SAFETY REQUIREMENTS:
- * The callback is invoked with the pool mutex held:
- * - MUST NOT call any SocketPool_* functions (will cause deadlock)
- * - MUST NOT call functions that acquire the pool mutex
- * - MUST NOT block for extended periods (degrades pool performance for all
- * users)
- * - SHOULD complete in &lt;1ms for optimal performance
- * - MAY safely read via Connection_* accessors (thread-safe)
- * - MAY perform quick socket health checks (e.g., poll(fd, 0 timeout))
+ * THREAD SAFETY NOTES:
+ * The pool mutex is RELEASED before invoking this callback and re-acquired
+ * after it returns. This prevents deadlock but has important implications:
  *
- * Violating these may cause deadlocks or severe performance degradation.
- * For complex validation:
- * - Use a separate validation thread with async notification
- * - Perform additional validation after SocketPool_get() returns
- * - Rely on SocketPool_check_connection() for simple cases
+ * - MAY safely call SocketPool_add/remove/get on OTHER sockets (not conn)
+ * - MAY safely read via Connection_* accessors (thread-safe)
+ * - MAY perform I/O operations like poll(), recv(MSG_PEEK), etc.
+ * - SHOULD complete reasonably quickly (degrades get() latency for caller)
+ *
+ * RACE CONDITIONS:
+ * Because the mutex is released, the connection may be concurrently removed
+ * by another thread while validation runs. The pool handles this safely:
+ * - After callback returns, pool re-validates that conn still exists
+ * - If conn was removed, the return value is ignored (connection gone)
+ * - The Connection_T pointer passed to callback remains valid during the call
+ *
+ * WARNING: Do NOT cache the Connection_T pointer beyond the callback return.
+ * After returning, the connection may be removed and the pointer invalidated.
  *
  * Use for application-specific health checks beyond built-in validation.
  *
@@ -190,6 +193,12 @@ typedef void (*SocketPool_ResizeCallback) (T pool, size_t old_size,
  * - MUST NOT call SocketPool_add/remove/get (will deadlock)
  * - MAY safely clear external pointer caches
  * - MAY safely update external state
+ *
+ * WARNING: Long-running callbacks (>1ms) will block ALL pool operations
+ * (add/remove/get/foreach) for all threads. For complex cleanup:
+ * - Schedule work to be done after resize completes (use ResizeCallback)
+ * - Use async notification patterns (work queue, condition variable)
+ * - Keep this callback to simple pointer clearing only
  *
  * @see SocketPool_set_pre_resize_callback() for registration.
  * @see SocketPool_resize() for resize operations.
