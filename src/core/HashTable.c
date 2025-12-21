@@ -4,21 +4,7 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * HashTable.c - Generic Intrusive Hash Table Implementation
- *
- * Part of the Socket Library
- *
- * Provides a reusable hash table with:
- * - Chained collision handling using caller's next pointer
- * - Configurable hash and comparison functions
- * - Arena or malloc allocation for bucket array
- * - O(1) average insert, find, remove operations
- *
- * Thread Safety:
- * - NOT built-in (caller must provide synchronization)
- * - New/free are safe across threads (independent instances)
- */
+/* Generic intrusive hash table with chained collision handling */
 
 #include <assert.h>
 #include <stdlib.h>
@@ -44,18 +30,15 @@ SOCKET_DECLARE_MODULE_EXCEPTION (HashTable);
  * ============================================================================
  */
 
-/**
- * struct T - Hash table internal structure
- */
 struct T
 {
-  void **buckets;                  /**< Array of bucket head pointers */
-  size_t bucket_count;             /**< Number of buckets */
-  unsigned hash_seed;              /**< Hash seed for randomization */
-  HashTable_HashFunc hash;         /**< Hash function */
-  HashTable_CompareFunc compare;   /**< Key comparison function */
-  HashTable_GetNextPtrFunc next_ptr; /**< Get entry's next pointer */
-  Arena_T arena;                   /**< Arena for allocation (NULL=malloc) */
+  void **buckets;
+  size_t bucket_count;
+  unsigned hash_seed;
+  HashTable_HashFunc hash;
+  HashTable_CompareFunc compare;
+  HashTable_GetNextPtrFunc next_ptr;
+  Arena_T arena; /* NULL=malloc */
 };
 
 /* ============================================================================
@@ -63,12 +46,6 @@ struct T
  * ============================================================================
  */
 
-/**
- * validate_config - Validate configuration parameters
- * @config: Configuration to validate
- *
- * Raises: HashTable_Failed on invalid config
- */
 static void
 validate_config (const HashTable_Config *config)
 {
@@ -91,13 +68,6 @@ validate_config (const HashTable_Config *config)
                       "next_ptr function required");
 }
 
-/**
- * allocate_buckets - Allocate bucket array
- * @arena: Arena or NULL for malloc
- * @count: Number of buckets
- *
- * Returns: Zeroed bucket array or NULL on failure
- */
 static void **
 allocate_buckets (Arena_T arena, size_t count)
 {
@@ -111,26 +81,12 @@ allocate_buckets (Arena_T arena, size_t count)
   return buckets;
 }
 
-/**
- * compute_bucket - Compute bucket index for key
- * @table: Hash table instance
- * @key: Key to hash
- *
- * Returns: Bucket index
- */
 static unsigned
 compute_bucket (T table, const void *key)
 {
   return table->hash (key, table->hash_seed, (unsigned)table->bucket_count);
 }
 
-/**
- * get_next - Get next entry in chain
- * @table: Hash table instance
- * @entry: Current entry
- *
- * Returns: Next entry or NULL
- */
 static void *
 get_next (T table, void *entry)
 {
@@ -138,12 +94,6 @@ get_next (T table, void *entry)
   return *next_ptr;
 }
 
-/**
- * set_next - Set next entry in chain
- * @table: Hash table instance
- * @entry: Entry to modify
- * @next: Value to set as next
- */
 static void
 set_next (T table, void *entry, void *next)
 {
@@ -163,7 +113,6 @@ HashTable_new (Arena_T arena, const HashTable_Config *config)
 
   validate_config (config);
 
-  /* Allocate structure */
   if (arena != NULL)
     table = Arena_alloc (arena, sizeof (*table), __FILE__, __LINE__);
   else
@@ -173,7 +122,6 @@ HashTable_new (Arena_T arena, const HashTable_Config *config)
     SOCKET_RAISE_MSG (HashTable, HashTable_Failed,
                       "Failed to allocate hash table");
 
-  /* Initialize fields */
   table->bucket_count = config->bucket_count;
   table->hash_seed = config->hash_seed;
   table->hash = config->hash;
@@ -181,7 +129,6 @@ HashTable_new (Arena_T arena, const HashTable_Config *config)
   table->next_ptr = config->next_ptr;
   table->arena = arena;
 
-  /* Allocate buckets */
   table->buckets = allocate_buckets (arena, config->bucket_count);
   if (table->buckets == NULL)
     {
@@ -204,8 +151,7 @@ HashTable_free (T *table)
 
   t = *table;
 
-  /* Only free if using malloc (not arena) */
-  if (t->arena == NULL)
+  if (t->arena == NULL) /* Only free if using malloc */
     {
       free (t->buckets);
       free (t);
@@ -260,8 +206,7 @@ HashTable_insert (T table, void *entry, const void *key)
 
   bucket = compute_bucket (table, key);
 
-  /* Insert at head for O(1) */
-  set_next (table, entry, table->buckets[bucket]);
+  set_next (table, entry, table->buckets[bucket]); /* Insert at head for O(1) */
   table->buckets[bucket] = entry;
 }
 
@@ -277,17 +222,10 @@ HashTable_remove (T table, void *entry, void *prev, const void *key)
   bucket = compute_bucket (table, key);
 
   if (prev != NULL)
-    {
-      /* Entry is in middle/end of chain */
-      set_next (table, prev, get_next (table, entry));
-    }
+    set_next (table, prev, get_next (table, entry));
   else
-    {
-      /* Entry is at bucket head */
-      table->buckets[bucket] = get_next (table, entry);
-    }
+    table->buckets[bucket] = get_next (table, entry);
 
-  /* Clear entry's next pointer for safety */
   set_next (table, entry, NULL);
 }
 
@@ -306,11 +244,10 @@ HashTable_foreach (T table, HashTable_IterFunc func, void *context)
       entry = table->buckets[i];
       while (entry != NULL)
         {
-          /* Get next before callback in case callback modifies entry */
-          next = get_next (table, entry);
+          next = get_next (table, entry); /* Get next before callback modifies entry */
 
           if (func (entry, context) != 0)
-            return; /* Early exit requested */
+            return;
 
           entry = next;
         }

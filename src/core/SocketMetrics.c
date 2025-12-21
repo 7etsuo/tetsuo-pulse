@@ -4,25 +4,7 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * SocketMetrics.c - Production-Grade Metrics Implementation
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
- *
- * This file implements the comprehensive metrics collection and export system
- * for production monitoring and observability.
- *
- * IMPLEMENTATION NOTES:
- * - Counters and gauges use atomic operations for lock-free performance
- * - Histograms use a circular buffer with mutex protection
- * - Percentiles calculated using sort + linear interpolation
- *
- * THREAD SAFETY:
- * - All counter/gauge operations are atomic
- * - Histogram operations protected by per-histogram mutex
- * - Snapshot operations acquire all locks atomically
- */
+/* Metrics collection and export system */
 
 #include <assert.h>
 #include <math.h>
@@ -42,22 +24,17 @@
  * ============================================================================
  */
 
-/** Standard percentiles for histogram snapshots */
 #define PERCENTILE_P50 50.0
 #define PERCENTILE_P75 75.0
 #define PERCENTILE_P90 90.0
 #define PERCENTILE_P95 95.0
 #define PERCENTILE_P99 99.0
 #define PERCENTILE_P999 99.9
-
-/* Quantile string constants to eliminate magic strings in exports */
 static const char *const QUANTILE_STR_P50 = "0.5";
 static const char *const QUANTILE_STR_P90 = "0.9";
 static const char *const QUANTILE_STR_P95 = "0.95";
 static const char *const QUANTILE_STR_P99 = "0.99";
 static const char *const QUANTILE_STR_P999 = "0.999";
-
-/* StatsD percentile labels */
 static const char *const STATSD_PCT_P50 = "p50";
 static const char *const STATSD_PCT_P95 = "p95";
 static const char *const STATSD_PCT_P99 = "p99";
@@ -81,28 +58,8 @@ static const char *const STATSD_PCT_P99 = "p99";
  * ============================================================================
  */
 
-/**
- * COUNTER_VALID - Check if counter metric index is valid
- * @m: Counter metric index
- *
- * Returns: 1 if valid, 0 otherwise
- */
 #define COUNTER_VALID(m) ((m) >= 0 && (m) < SOCKET_COUNTER_METRIC_COUNT)
-
-/**
- * GAUGE_VALID - Check if gauge metric index is valid
- * @m: Gauge metric index
- *
- * Returns: 1 if valid, 0 otherwise
- */
 #define GAUGE_VALID(m) ((m) >= 0 && (m) < SOCKET_GAUGE_METRIC_COUNT)
-
-/**
- * HISTOGRAM_VALID - Check if histogram metric index is valid
- * @m: Histogram metric index
- *
- * Returns: 1 if valid, 0 otherwise
- */
 #define HISTOGRAM_VALID(m) ((m) >= 0 && (m) < SOCKET_HISTOGRAM_METRIC_COUNT)
 
 /* ============================================================================
@@ -110,12 +67,7 @@ static const char *const STATSD_PCT_P99 = "p99";
  * ============================================================================
  */
 
-/**
- * Histogram - Internal histogram data structure
- *
- * Uses circular buffer reservoir sampling for O(1) insertion.
- * Percentile calculation is O(n log n) using qsort.
- */
+/* Circular buffer with O(1) insertion, O(n log n) percentile calculation */
 typedef struct Histogram
 {
   pthread_mutex_t mutex;
@@ -138,8 +90,6 @@ static _Atomic uint64_t counter_values[SOCKET_COUNTER_METRIC_COUNT];
 static _Atomic int64_t gauge_values[SOCKET_GAUGE_METRIC_COUNT];
 static Histogram histogram_values[SOCKET_HISTOGRAM_METRIC_COUNT];
 static pthread_mutex_t metrics_global_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-/* Peak connection tracking */
 static _Atomic int peak_socket_count = 0;
 
 /* ============================================================================
@@ -335,13 +285,6 @@ static const char *const category_names[SOCKET_METRIC_CAT_COUNT]
  * ============================================================================
  */
 
-/**
- * histogram_is_valid - Check if histogram metric is valid and initialized
- * @metric: Histogram metric to check
- *
- * Returns: 1 if valid and initialized, 0 otherwise
- * Thread-safe: Yes (reads atomic/static data only)
- */
 static inline int
 histogram_is_valid (SocketHistogramMetric metric)
 {
@@ -355,14 +298,6 @@ histogram_is_valid (SocketHistogramMetric metric)
  * ============================================================================
  */
 
-/**
- * compare_double - Comparison function for qsort
- * @a: First double pointer
- * @b: Second double pointer
- *
- * Returns: -1, 0, or 1 for ordering
- * Thread-safe: Yes (pure function)
- */
 static int
 compare_double (const void *a, const void *b)
 {
@@ -376,17 +311,7 @@ compare_double (const void *a, const void *b)
   return 0;
 }
 
-/**
- * percentile_from_sorted - Calculate percentile from sorted array
- * @sorted: Sorted array of values
- * @n: Number of elements in array
- * @percentile: Percentile to calculate (0.0 to 100.0)
- *
- * Returns: Interpolated percentile value
- * Thread-safe: Yes (pure function)
- *
- * Uses linear interpolation for accurate percentile calculation.
- */
+/* Linear interpolation for percentile calculation */
 static double
 percentile_from_sorted (const double *sorted, size_t n, double percentile)
 {
@@ -414,12 +339,6 @@ percentile_from_sorted (const double *sorted, size_t n, double percentile)
  * ============================================================================
  */
 
-/**
- * histogram_init - Initialize a histogram structure
- * @h: Histogram to initialize
- *
- * Thread-safe: No (called during init only)
- */
 static void
 histogram_init (Histogram *h)
 {
@@ -433,12 +352,6 @@ histogram_init (Histogram *h)
   h->initialized = 1;
 }
 
-/**
- * histogram_destroy - Destroy a histogram structure
- * @h: Histogram to destroy
- *
- * Thread-safe: No (called during shutdown only)
- */
 static void
 histogram_destroy (Histogram *h)
 {
@@ -449,14 +362,7 @@ histogram_destroy (Histogram *h)
     }
 }
 
-/**
- * histogram_observe - Record an observation
- * @h: Histogram to update
- * @value: Value to record
- *
- * Thread-safe: Yes (mutex protected, count incremented atomically inside lock
- *              to maintain consistency with values array)
- */
+/* Count incremented atomically inside lock to maintain consistency */
 static void
 histogram_observe (Histogram *h, double value)
 {
@@ -476,15 +382,6 @@ histogram_observe (Histogram *h, double value)
   pthread_mutex_unlock (&h->mutex);
 }
 
-/**
- * histogram_copy_values - Copy histogram values to buffer
- * @h: Histogram to copy from
- * @dest: Destination buffer (must be SOCKET_METRICS_HISTOGRAM_BUCKETS size)
- * @count: Total observation count
- *
- * Returns: Number of values copied (min of count and bucket size)
- * Thread-safe: Yes (mutex protected)
- */
 static size_t
 histogram_copy_values (Histogram *h, double *dest, uint64_t count)
 {
@@ -506,16 +403,7 @@ histogram_copy_values (Histogram *h, double *dest, uint64_t count)
   return n;
 }
 
-/**
- * histogram_get_sorted_copy - Get sorted copy of histogram values
- * @h: Histogram to query
- * @out_count: Output - number of values in sorted array
- *
- * Returns: Malloc'd sorted array, or NULL if empty/error. Caller must free.
- * Thread-safe: Yes (uses internal locking)
- *
- * Consolidates malloc + copy + qsort pattern used by multiple functions.
- */
+/* Malloc'd sorted array, or NULL if empty. Caller must free. */
 static double *
 histogram_get_sorted_copy (Histogram *h, size_t *out_count)
 {
@@ -544,14 +432,6 @@ histogram_get_sorted_copy (Histogram *h, size_t *out_count)
   return sorted;
 }
 
-/**
- * histogram_percentile - Calculate percentile from histogram
- * @h: Histogram to query
- * @percentile: Percentile (0.0 to 100.0)
- *
- * Returns: Percentile value, or 0.0 if no data
- * Thread-safe: Yes (uses internal locking)
- */
 static double
 histogram_percentile (Histogram *h, double percentile)
 {
@@ -569,14 +449,6 @@ histogram_percentile (Histogram *h, double percentile)
   return result;
 }
 
-/**
- * histogram_copy_basic_stats - Copy basic statistics from histogram (sum, min,
- * max)
- * @h: Histogram source
- * @snap: Snapshot to update
- *
- * Thread-safe: Yes (mutex protected)
- */
 static void
 histogram_copy_basic_stats (Histogram *h,
                             SocketMetrics_HistogramSnapshot *snap)
@@ -588,12 +460,6 @@ histogram_copy_basic_stats (Histogram *h,
   pthread_mutex_unlock (&h->mutex);
 }
 
-/**
- * histogram_compute_derived_stats - Compute mean from sum and count
- * @snap: Snapshot to update
- *
- * Thread-safe: Yes (pure function)
- */
 static void
 histogram_compute_derived_stats (SocketMetrics_HistogramSnapshot *snap)
 {
@@ -607,15 +473,6 @@ histogram_compute_derived_stats (SocketMetrics_HistogramSnapshot *snap)
     }
 }
 
-/**
- * histogram_calculate_percentiles - Calculate all standard percentiles from
- * sorted data
- * @sorted: Sorted array of values
- * @n: Number of values
- * @snap: Snapshot to update with percentiles
- *
- * Thread-safe: Yes (pure function)
- */
 static const double percentile_levels[] = {
     PERCENTILE_P50,
     PERCENTILE_P75,
@@ -643,13 +500,6 @@ histogram_calculate_percentiles (const double *sorted, size_t n,
   }
 }
 
-/**
- * histogram_fill_snapshot - Fill snapshot with histogram statistics
- * @h: Histogram to snapshot
- * @snap: Output snapshot structure
- *
- * Thread-safe: Yes (uses internal locking)
- */
 static void
 histogram_fill_snapshot (Histogram *h, SocketMetrics_HistogramSnapshot *snap)
 {
@@ -677,12 +527,6 @@ histogram_fill_snapshot (Histogram *h, SocketMetrics_HistogramSnapshot *snap)
   free (sorted);
 }
 
-/**
- * histogram_reset - Reset histogram to initial state
- * @h: Histogram to reset
- *
- * Thread-safe: Yes (mutex protected)
- */
 static void
 histogram_reset (Histogram *h)
 {
@@ -962,16 +806,6 @@ SocketMetrics_reset_histograms (void)
  * ============================================================================
  */
 
-/**
- * export_append - Safely append formatted string to export buffer
- * @buffer: Buffer to write to
- * @buffer_size: Total buffer size
- * @pos: Current position (updated on success)
- * @fmt: Printf format string
- *
- * Returns: Number of characters written, or 0 if buffer full
- * Thread-safe: No (operates on caller's buffer)
- */
 static size_t
 export_append (char *buffer, size_t buffer_size, size_t *pos, const char *fmt,
                ...)
@@ -1001,16 +835,6 @@ export_append (char *buffer, size_t buffer_size, size_t *pos, const char *fmt,
   return (size_t)written;
 }
 
-/**
- * export_counter_prometheus - Export single counter in Prometheus format
- * @buffer: Output buffer
- * @buffer_size: Buffer size
- * @pos: Current position pointer
- * @idx: Counter index
- * @value: Counter value
- *
- * Thread-safe: No (operates on caller's buffer)
- */
 static void
 export_counter_prometheus (char *buffer, size_t buffer_size, size_t *pos,
                            int idx, uint64_t value)
@@ -1023,16 +847,6 @@ export_counter_prometheus (char *buffer, size_t buffer_size, size_t *pos,
                  counter_names[idx], (unsigned long long)value);
 }
 
-/**
- * export_gauge_prometheus - Export single gauge in Prometheus format
- * @buffer: Output buffer
- * @buffer_size: Buffer size
- * @pos: Current position pointer
- * @idx: Gauge index
- * @value: Gauge value
- *
- * Thread-safe: No (operates on caller's buffer)
- */
 static void
 export_gauge_prometheus (char *buffer, size_t buffer_size, size_t *pos,
                          int idx, int64_t value)
@@ -1045,17 +859,6 @@ export_gauge_prometheus (char *buffer, size_t buffer_size, size_t *pos,
                  gauge_names[idx], (long long)value);
 }
 
-/**
- * export_prometheus_quantiles - Export histogram quantiles in Prometheus
- * format
- * @buffer: Output buffer
- * @buffer_size: Buffer size
- * @pos: Position (updated)
- * @name: Metric name
- * @h: Histogram snapshot
- *
- * Thread-safe: No
- */
 static void
 export_prometheus_quantiles (char *buffer, size_t buffer_size, size_t *pos,
                              const char *name,
@@ -1081,16 +884,6 @@ export_prometheus_quantiles (char *buffer, size_t buffer_size, size_t *pos,
     }
 }
 
-/**
- * export_prometheus_histogram_summary - Export histogram sum and count
- * @buffer: Output buffer
- * @buffer_size: Buffer size
- * @pos: Position (updated)
- * @name: Metric name
- * @h: Histogram snapshot
- *
- * Thread-safe: No
- */
 static void
 export_prometheus_histogram_summary (char *buffer, size_t buffer_size,
                                      size_t *pos, const char *name,
@@ -1102,16 +895,6 @@ export_prometheus_histogram_summary (char *buffer, size_t buffer_size,
                  (unsigned long long)h->count);
 }
 
-/**
- * export_histogram_prometheus - Export single histogram in Prometheus format
- * @buffer: Output buffer
- * @buffer_size: Buffer size
- * @pos: Current position pointer
- * @idx: Histogram index
- * @h: Histogram snapshot
- *
- * Thread-safe: No (operates on caller's buffer)
- */
 static void
 export_histogram_prometheus (char *buffer, size_t buffer_size, size_t *pos,
                              int idx, const SocketMetrics_HistogramSnapshot *h)
@@ -1158,16 +941,6 @@ SocketMetrics_export_prometheus (char *buffer, size_t buffer_size)
   return pos;
 }
 
-/**
- * export_statsd_counters - Export counters in StatsD format
- * @buffer: Output buffer
- * @buffer_size: Buffer size
- * @pos: Position (updated)
- * @pfx: Prefix
- * @snapshot: Snapshot
- *
- * Thread-safe: No (caller must hold snapshot consistency)
- */
 static void
 export_statsd_counters (char *buffer, size_t buffer_size, size_t *pos,
                         const char *pfx,
@@ -1182,16 +955,6 @@ export_statsd_counters (char *buffer, size_t buffer_size, size_t *pos,
     }
 }
 
-/**
- * export_statsd_gauges - Export gauges in StatsD format
- * @buffer: Output buffer
- * @buffer_size: Buffer size
- * @pos: Position (updated)
- * @pfx: Prefix
- * @snapshot: Snapshot
- *
- * Thread-safe: No
- */
 static void
 export_statsd_gauges (char *buffer, size_t buffer_size, size_t *pos,
                       const char *pfx, const SocketMetrics_Snapshot *snapshot)
@@ -1204,18 +967,6 @@ export_statsd_gauges (char *buffer, size_t buffer_size, size_t *pos,
     }
 }
 
-/**
- * export_statsd_single_histogram - Export single histogram percentiles in
- * StatsD format
- * @buffer: Output buffer
- * @buffer_size: Buffer size
- * @pos: Position (updated)
- * @pfx: Prefix
- * @name: Histogram name
- * @h: Histogram snapshot
- *
- * Thread-safe: No
- */
 static void
 export_statsd_single_histogram (char *buffer, size_t buffer_size, size_t *pos,
                                 const char *pfx, const char *name,
@@ -1234,16 +985,6 @@ export_statsd_single_histogram (char *buffer, size_t buffer_size, size_t *pos,
     }
 }
 
-/**
- * export_statsd_histograms - Export all histograms in StatsD format
- * @buffer: Output buffer
- * @buffer_size: Buffer size
- * @pos: Position (updated)
- * @pfx: Prefix
- * @snapshot: Snapshot
- *
- * Thread-safe: No
- */
 static void
 export_statsd_histograms (char *buffer, size_t buffer_size, size_t *pos,
                           const char *pfx,
@@ -1280,15 +1021,6 @@ SocketMetrics_export_statsd (char *buffer, size_t buffer_size,
   return pos;
 }
 
-/**
- * export_json_counters - Export counters section in JSON format
- * @buffer: Output buffer
- * @buffer_size: Buffer size
- * @pos: Current position (updated)
- * @snapshot: Metrics snapshot
- *
- * Thread-safe: No (caller ensures consistency via snapshot)
- */
 static void
 export_json_counters (char *buffer, size_t buffer_size, size_t *pos,
                       const SocketMetrics_Snapshot *snapshot)
@@ -1309,15 +1041,6 @@ export_json_counters (char *buffer, size_t buffer_size, size_t *pos,
   export_append (buffer, buffer_size, pos, "\n  },");
 }
 
-/**
- * export_json_gauges - Export gauges section in JSON format
- * @buffer: Output buffer
- * @buffer_size: Buffer size
- * @pos: Current position (updated)
- * @snapshot: Metrics snapshot
- *
- * Thread-safe: No (caller ensures consistency via snapshot)
- */
 static void
 export_json_gauges (char *buffer, size_t buffer_size, size_t *pos,
                     const SocketMetrics_Snapshot *snapshot)
@@ -1337,16 +1060,6 @@ export_json_gauges (char *buffer, size_t buffer_size, size_t *pos,
   export_append (buffer, buffer_size, pos, "\n  },");
 }
 
-/**
- * export_json_single_histogram - Export single histogram object in JSON
- * @buffer: Output buffer
- * @buffer_size: Buffer size
- * @pos: Current position (updated)
- * @name: Histogram name
- * @h: Histogram snapshot
- *
- * Thread-safe: No (caller ensures consistency)
- */
 static void
 export_json_single_histogram (char *buffer, size_t buffer_size, size_t *pos,
                               const char *name,
@@ -1370,15 +1083,6 @@ export_json_single_histogram (char *buffer, size_t buffer_size, size_t *pos,
   export_append (buffer, buffer_size, pos, "    }");
 }
 
-/**
- * export_json_histograms - Export histograms section in JSON format
- * @buffer: Output buffer
- * @buffer_size: Buffer size
- * @pos: Current position (updated)
- * @snapshot: Metrics snapshot
- *
- * Thread-safe: No (caller ensures consistency via snapshot)
- */
 static void
 export_json_histograms (char *buffer, size_t buffer_size, size_t *pos,
                         const SocketMetrics_Snapshot *snapshot)
@@ -1490,37 +1194,19 @@ SocketMetrics_category_name (SocketMetricCategory category)
  * ============================================================================
  */
 
-/**
- * SocketMetrics_get_socket_count - Get current count of open sockets
- *
- * Returns: Current number of Socket_T instances
- * Thread-safe: Yes - wraps Socket_debug_live_count()
- */
 int
 SocketMetrics_get_socket_count (void)
 {
-  /* Forward to the underlying Socket live count implementation */
   extern int Socket_debug_live_count (void);
   return Socket_debug_live_count ();
 }
 
-/**
- * SocketMetrics_get_peak_connections - Get peak connection count
- *
- * Returns: Highest socket count since init/reset
- * Thread-safe: Yes - atomic read
- */
 int
 SocketMetrics_get_peak_connections (void)
 {
   return atomic_load_explicit (&peak_socket_count, memory_order_relaxed);
 }
 
-/**
- * SocketMetrics_reset_peaks - Reset peak counters to current values
- *
- * Thread-safe: Yes - atomic update
- */
 void
 SocketMetrics_reset_peaks (void)
 {
@@ -1528,18 +1214,12 @@ SocketMetrics_reset_peaks (void)
   atomic_store_explicit (&peak_socket_count, current, memory_order_relaxed);
 }
 
-/**
- * SocketMetrics_update_peak_if_needed - Update peak if current is higher
- *
- * Called from socket creation path to track peak.
- * Thread-safe: Yes - uses compare-and-swap
- */
+/* Update peak if current is higher using compare-and-swap */
 void
 SocketMetrics_update_peak_if_needed (int current_count)
 {
   int old_peak = atomic_load_explicit (&peak_socket_count, memory_order_relaxed);
 
-  /* Retry compare-and-swap until we either update or find a higher value */
   while (current_count > old_peak)
     {
       if (atomic_compare_exchange_weak_explicit (&peak_socket_count, &old_peak,
@@ -1547,6 +1227,5 @@ SocketMetrics_update_peak_if_needed (int current_count)
                                                  memory_order_relaxed,
                                                  memory_order_relaxed))
         break;
-      /* old_peak was updated by the failed CAS, loop again */
     }
 }

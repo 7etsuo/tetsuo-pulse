@@ -4,30 +4,7 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * SocketUtil.c - Core utility subsystems
- *
- * Part of the Socket Library
- *
- * This file consolidates the core utility and observability modules:
- * - Error handling (thread-local error buffers, errno mapping)
- * - Logging subsystem (configurable callbacks, multiple log levels)
- * - Metrics collection (thread-safe counters, atomic snapshots)
- * - Event dispatching (connection events, DNS timeouts, poll wakeups)
- *
- * FEATURES:
- * - Thread-local error message storage with errno capture
- * - Configurable log callback with default stderr/stdout output
- * - Thread-safe metrics with atomic snapshot capability
- * - Event notification system for socket library operations
- * - Multiple log levels (TRACE, DEBUG, INFO, WARN, ERROR, FATAL)
- *
- * THREAD SAFETY:
- * - Error handling: Uses thread-local storage (no mutex needed)
- * - Logging: Callback get/set operations are mutex protected
- * - Metrics: All operations are mutex protected
- * - Events: Handler registration is mutex protected; callbacks invoked outside
- */
+/* Core utility subsystems: error handling, logging, metrics, events */
 
 #include <assert.h>
 #include <errno.h>
@@ -49,31 +26,12 @@
 /* Flag for one-time CLOCK_MONOTONIC fallback warning */
 static volatile int monotonic_fallback_warned = 0;
 
-/**
- * SOCKET_MONOTONIC_STRICT - Fail instead of falling back to CLOCK_REALTIME
- *
- * When 1, Socket_get_monotonic_ms() returns 0 if no monotonic clock is
- * available, instead of falling back to CLOCK_REALTIME.
- *
- * Security: CLOCK_REALTIME can be manipulated by attackers with system
- * access, potentially bypassing time-based security controls like rate
- * limiting and SYN flood protection.
- *
- * Default: 0 (allow fallback for compatibility)
- */
+/* Fail instead of falling back to CLOCK_REALTIME (default: 0 for compat) */
 #ifndef SOCKET_MONOTONIC_STRICT
 #define SOCKET_MONOTONIC_STRICT 0
 #endif
 
-/**
- * Preferred monotonic clock sources in priority order.
- *
- * These clocks are immune to system time adjustments (NTP, manual changes):
- * - CLOCK_MONOTONIC_RAW: Unaffected by NTP adjustments (Linux 2.6.28+)
- * - CLOCK_MONOTONIC: Standard monotonic, may have NTP slewing
- * - CLOCK_BOOTTIME: Includes suspend time (Linux 2.6.39+)
- * - CLOCK_UPTIME_RAW: Like MONOTONIC_RAW but stops during sleep (macOS)
- */
+/* Preferred monotonic clock sources in priority order */
 static const clockid_t preferred_clocks[] = {
 #ifdef CLOCK_MONOTONIC_RAW
   CLOCK_MONOTONIC_RAW,
@@ -90,13 +48,6 @@ static const clockid_t preferred_clocks[] = {
 #define PREFERRED_CLOCKS_COUNT                                                \
   (sizeof (preferred_clocks) / sizeof (preferred_clocks[0]))
 
-/**
- * socket_timespec_to_ms - Convert timespec to milliseconds
- * @ts: Pointer to timespec structure
- *
- * Returns: Time in milliseconds
- * Thread-safe: Yes (pure function)
- */
 static int64_t
 socket_timespec_to_ms (const struct timespec *ts)
 {
@@ -104,14 +55,6 @@ socket_timespec_to_ms (const struct timespec *ts)
          + (int64_t)ts->tv_nsec / SOCKET_NS_PER_MS;
 }
 
-/**
- * socket_try_clock - Attempt to get time from specified clock
- * @clock_id: Clock to query (CLOCK_MONOTONIC or CLOCK_REALTIME)
- * @result_ms: Output pointer for result in milliseconds
- *
- * Returns: 1 on success, 0 on failure
- * Thread-safe: Yes
- */
 static int
 socket_try_clock (clockid_t clock_id, int64_t *result_ms)
 {
@@ -125,11 +68,7 @@ socket_try_clock (clockid_t clock_id, int64_t *result_ms)
   return 0;
 }
 
-/**
- * socket_warn_monotonic_fallback - Emit one-time warning for clock fallback
- *
- * Thread-safe: Yes (benign race on flag)
- */
+/* Emit one-time warning for clock fallback (benign race on flag) */
 static void
 socket_warn_monotonic_fallback (void)
 {
@@ -142,26 +81,6 @@ socket_warn_monotonic_fallback (void)
     }
 }
 
-/**
- * Socket_get_monotonic_ms - Get current monotonic time in milliseconds
- *
- * Returns: Current monotonic time in milliseconds, or 0 on failure
- * Thread-safe: Yes (no shared state modified except one-time warning flag)
- *
- * Tries multiple monotonic clock sources in priority order:
- * 1. CLOCK_MONOTONIC_RAW (Linux, immune to NTP)
- * 2. CLOCK_MONOTONIC (standard, may have NTP slewing)
- * 3. CLOCK_BOOTTIME (Linux, includes suspend time)
- * 4. CLOCK_UPTIME_RAW (macOS)
- *
- * Falls back to CLOCK_REALTIME only if all monotonic clocks fail and
- * SOCKET_MONOTONIC_STRICT is 0 (default).
- *
- * Security: CLOCK_REALTIME fallback is vulnerable to time manipulation
- * attacks. A one-time warning is emitted if fallback occurs. Set
- * SOCKET_MONOTONIC_STRICT=1 to disable fallback in security-critical
- * deployments.
- */
 int64_t
 Socket_get_monotonic_ms (void)
 {
@@ -197,12 +116,6 @@ Socket_get_monotonic_ms (void)
  * ERROR MAPPING TABLE
  * ===========================================================================*/
 
-/**
- * SocketErrorMapping - Comprehensive errno to error info mapping
- *
- * Single source of truth for errno classification across all error functions.
- * Data-driven approach eliminates code duplication in switch statements.
- */
 typedef struct SocketErrorMapping
 {
   int err;
@@ -265,24 +178,12 @@ static const SocketErrorMapping error_mappings[] = {
   { EPERM, SOCKET_ERROR_UNKNOWN, SOCKET_ERROR_CATEGORY_APPLICATION, 0 },
 };
 
-/** Number of entries in error_mappings table */
 #define NUM_ERROR_MAPPINGS                                                    \
   (sizeof (error_mappings) / sizeof (error_mappings[0]))
-
-/** Number of entries in category names table (defined below) */
 #define NUM_ERROR_CATEGORIES 6
-
-/** Number of entries in log level names table (defined below) */
 #define NUM_LOG_LEVELS 6
 
-/**
- * socket_find_error_mapping - Find error mapping entry for given errno
- * @err: errno value to look up
- *
- * Returns: Pointer to mapping entry if found, NULL otherwise
- * Thread-safe: Yes (pure function, const data)
- * Complexity: O(n) linear scan of ~30 entries - acceptable for small table
- */
+/* O(n) linear scan of ~30 entries - acceptable for small table */
 static const SocketErrorMapping *
 socket_find_error_mapping (const int err)
 {
@@ -300,17 +201,6 @@ socket_find_error_mapping (const int err)
  * ERROR HANDLING SUBSYSTEM
  * ===========================================================================*/
 
-/**
- * socket_errno_to_errorcode - Map errno value to SocketErrorCode via table
- * lookup
- * @errno_val: errno value to map
- *
- * Returns: Corresponding SocketErrorCode enum value from error_mappings table
- * Thread-safe: Yes (pure function, const data)
- *
- * Table-driven mapping of POSIX errno to SocketErrorCode using centralized
- * error_mappings table. Unknown errnos map to SOCKET_ERROR_UNKNOWN.
- */
 static SocketErrorCode
 socket_errno_to_errorcode (int errno_val)
 {
@@ -327,61 +217,24 @@ __thread char socket_error_buf[SOCKET_ERROR_BUFSIZE] = { 0 };
 __thread int socket_last_errno = 0;
 #endif
 
-/**
- * Socket_GetLastError - Get the last error message
- *
- * Returns: Pointer to thread-local error message buffer
- * Thread-safe: Yes (returns thread-local data)
- *
- * Returns the most recent error message set by SOCKET_ERROR_FMT or
- * SOCKET_ERROR_MSG macros.
- */
 const char *
 Socket_GetLastError (void)
 {
   return socket_error_buf;
 }
 
-/**
- * Socket_geterrno - Get the last captured errno value
- *
- * Returns: Last errno value captured by error macros (0 if no error)
- * Thread-safe: Yes (uses thread-local storage)
- *
- * Returns the errno value that was captured when the last error message
- * was formatted.
- */
 int
 Socket_geterrno (void)
 {
   return socket_last_errno;
 }
 
-/**
- * Socket_geterrorcode - Get the last error as a SocketErrorCode enum
- *
- * Returns: SocketErrorCode enum value corresponding to last captured errno
- * Thread-safe: Yes (uses thread-local storage)
- *
- * Converts the last captured errno to a structured SocketErrorCode
- * for programmatic error handling.
- */
 SocketErrorCode
 Socket_geterrorcode (void)
 {
   return socket_errno_to_errorcode (socket_last_errno);
 }
 
-/**
- * Socket_safe_strerror - Thread-safe strerror implementation
- * @errnum: Error number to convert
- *
- * Returns: Pointer to thread-local string describing the error
- * Thread-safe: Yes (uses thread-local buffer and strerror_r)
- *
- * Provides a thread-safe alternative to strerror() which is not
- * guaranteed to be thread-safe on all platforms.
- */
 const char *
 Socket_safe_strerror (int errnum)
 {
@@ -408,23 +261,10 @@ Socket_safe_strerror (int errnum)
  * ERROR CATEGORIZATION SUBSYSTEM
  * ===========================================================================*/
 
-/* Category names for display (indexed by SocketErrorCategory) */
 static const char *const socket_error_category_names[] = {
   "NETWORK", "PROTOCOL", "APPLICATION", "TIMEOUT", "RESOURCE", "UNKNOWN"
 };
 
-/* Uses NUM_ERROR_CATEGORIES defined above for bounds checking */
-
-/**
- * SocketError_categorize_errno - Categorize errno using centralized table
- * @err: errno value to categorize
- *
- * Returns: SocketErrorCategory from error_mappings table or UNKNOWN
- * Thread-safe: Yes (pure function, const data)
- *
- * Table-driven categorization using error_mappings. Covers all previously
- * switch-mapped errnos plus additional ones for completeness.
- */
 SocketErrorCategory
 SocketError_categorize_errno (int err)
 {
@@ -432,13 +272,6 @@ SocketError_categorize_errno (int err)
   return m ? m->category : SOCKET_ERROR_CATEGORY_UNKNOWN;
 }
 
-/**
- * SocketError_category_name - Get string name for error category
- * @category: Error category
- *
- * Returns: Static string with category name
- * Thread-safe: Yes (returns static data)
- */
 const char *
 SocketError_category_name (SocketErrorCategory category)
 {
@@ -447,16 +280,6 @@ SocketError_category_name (SocketErrorCategory category)
   return socket_error_category_names[category];
 }
 
-/**
- * SocketError_is_retryable_errno - Check if errno is retryable using table
- * @err: errno value to check
- *
- * Returns: 1 if retryable per error_mappings table, 0 otherwise
- * Thread-safe: Yes (pure function, const data)
- *
- * Table-driven retryability check using centralized error_mappings.
- * Unknown errnos default to non-retryable for safety.
- */
 int
 SocketError_is_retryable_errno (int err)
 {
@@ -477,22 +300,9 @@ static SocketLogLevel socketlog_min_level = SOCKET_LOG_INFO;
 static SocketLogStructuredCallback socketlog_structured_callback = NULL;
 static void *socketlog_structured_userdata = NULL;
 
-/* Level names for display (indexed by SocketLogLevel) */
 static const char *const default_level_names[]
     = { "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL" };
 
-/* Uses NUM_LOG_LEVELS defined in error mapping section for bounds checking */
-
-/* Timestamp formatting constants - defined in SocketConfig.h */
-
-/**
- * socketlog_format_timestamp - Format current time as timestamp string
- * @buf: Buffer to write timestamp to
- * @bufsize: Size of buffer
- *
- * Returns: Pointer to buf with formatted timestamp
- * Thread-safe: Yes (uses localtime_r/localtime_s)
- */
 static const char *
 socketlog_format_timestamp (char *buf, size_t bufsize)
 {
@@ -518,31 +328,13 @@ socketlog_format_timestamp (char *buf, size_t bufsize)
   return buf;
 }
 
-/**
- * socketlog_get_stream - Get appropriate output stream for log level
- * @level: Log level
- *
- * Returns: stderr for ERROR/FATAL, stdout otherwise
- * Thread-safe: Yes
- */
+/* stderr for ERROR/FATAL, stdout otherwise */
 static FILE *
 socketlog_get_stream (SocketLogLevel level)
 {
   return level >= SOCKET_LOG_ERROR ? stderr : stdout;
 }
 
-/**
- * default_logger - Default logging implementation
- * @userdata: User data (unused)
- * @level: Log level
- * @component: Component name
- * @message: Log message
- *
- * Thread-safe: Yes
- *
- * Writes formatted log messages to stdout (INFO and below) or stderr
- * (WARN and above) with timestamp, level, and component prefix.
- */
 static void
 default_logger (void *userdata, SocketLogLevel level, const char *component,
                 const char *message)
@@ -557,15 +349,6 @@ default_logger (void *userdata, SocketLogLevel level, const char *component,
            message ? message : "(null)");
 }
 
-/**
- * SocketLog_setcallback - Set custom logging callback
- * @callback: Callback function or NULL for default logger
- * @userdata: User data passed to callback
- *
- * Thread-safe: Yes (mutex protected)
- *
- * Replaces the current logging callback. Pass NULL to restore default.
- */
 void
 SocketLog_setcallback (SocketLogCallback callback, void *userdata)
 {
@@ -575,13 +358,6 @@ SocketLog_setcallback (SocketLogCallback callback, void *userdata)
   pthread_mutex_unlock (&socketlog_mutex);
 }
 
-/**
- * SocketLog_getcallback - Get current logging callback
- * @userdata: Output pointer for user data (may be NULL)
- *
- * Returns: Current callback, or default_logger if none set
- * Thread-safe: Yes (mutex protected)
- */
 SocketLogCallback
 SocketLog_getcallback (void **userdata)
 {
@@ -596,13 +372,6 @@ SocketLog_getcallback (void **userdata)
   return callback;
 }
 
-/**
- * SocketLog_levelname - Get string name for log level
- * @level: Log level
- *
- * Returns: Static string with level name
- * Thread-safe: Yes (returns static data)
- */
 const char *
 SocketLog_levelname (SocketLogLevel level)
 {
@@ -611,15 +380,6 @@ SocketLog_levelname (SocketLogLevel level)
   return default_level_names[level];
 }
 
-/**
- * SocketLog_setlevel - Set minimum log level for filtering
- * @min_level: Minimum level to emit (messages below this are suppressed)
- *
- * Thread-safe: Yes (mutex protected)
- *
- * Sets the global minimum log level. Log messages with severity below
- * min_level will be silently discarded. Default is SOCKET_LOG_INFO.
- */
 void
 SocketLog_setlevel (SocketLogLevel min_level)
 {
@@ -628,12 +388,7 @@ SocketLog_setlevel (SocketLogLevel min_level)
   pthread_mutex_unlock (&socketlog_mutex);
 }
 
-/**
- * SocketLogAllInfo - All logging configuration info acquired under single lock
- *
- * Contains fallback and structured callbacks/userdata plus should_log flag.
- * Used internally to consolidate mutex acquisitions across logging subsystems.
- */
+/* All logging config acquired under single lock to consolidate mutex calls */
 typedef struct SocketLogAllInfo
 {
   SocketLogCallback fallback_callback;
@@ -643,20 +398,6 @@ typedef struct SocketLogAllInfo
   int should_log;
 } SocketLogAllInfo;
 
-/* SocketLogCallbackInfo removed - use SocketLogAllInfo instead for
- * consolidated callback acquisition */
-
-/**
- * socketlog_acquire_all_info - Acquire all logging configuration under mutex
- *
- * @level: Log level to check against minimum for should_log
- *
- * Returns: Structure containing all protected log state
- * Thread-safe: Yes (mutex protected)
- *
- * Copies all logging callbacks, userdata, and computes should_log under
- * single mutex acquisition to minimize lock contention.
- */
 static SocketLogAllInfo
 socketlog_acquire_all_info (SocketLogLevel level)
 {
@@ -674,12 +415,6 @@ socketlog_acquire_all_info (SocketLogLevel level)
   return info;
 }
 
-/**
- * SocketLog_getlevel - Get current minimum log level
- *
- * Returns: Current minimum log level
- * Thread-safe: Yes (mutex protected)
- */
 SocketLogLevel
 SocketLog_getlevel (void)
 {
@@ -692,17 +427,6 @@ SocketLog_getlevel (void)
   return level;
 }
 
-/**
- * SocketLog_emit - Emit a log message
- * @level: Log level
- * @component: Component name (may be NULL)
- * @message: Log message (may be NULL)
- *
- * Thread-safe: Yes
- *
- * Invokes the current logging callback with the provided message.
- * Messages with level below the configured minimum are suppressed.
- */
 void
 SocketLog_emit (SocketLogLevel level, const char *component,
                 const char *message)
@@ -714,18 +438,7 @@ SocketLog_emit (SocketLogLevel level, const char *component,
   all.fallback_callback (all.fallback_userdata, level, component, message);
 }
 
-/**
- * SocketLog_emitf - Emit formatted log message
- * @level: Log level
- * @component: Component name
- * @fmt: Printf-style format string
- * @...: Format arguments
- *
- * Thread-safe: Yes
- *
- * WARNING: fmt must be a compile-time literal to prevent format string
- * attacks. Do not use user-controlled format strings.
- */
+/* WARNING: fmt must be a compile-time literal to prevent format string attacks */
 void
 SocketLog_emitf (SocketLogLevel level, const char *component, const char *fmt,
                  ...)
@@ -737,16 +450,7 @@ SocketLog_emitf (SocketLogLevel level, const char *component, const char *fmt,
   va_end (args);
 }
 
-/**
- * socketlog_apply_truncation - Apply truncation indicator to buffer
- * @buffer: Buffer to modify
- * @bufsize: Size of buffer
- *
- * Thread-safe: Yes
- *
- * Appends "..." to indicate message was truncated.
- * Uses memcpy for efficiency instead of character-by-character assignment.
- */
+/* Appends "..." to indicate message was truncated */
 static void
 socketlog_apply_truncation (char *buffer, size_t bufsize)
 {
@@ -758,20 +462,7 @@ socketlog_apply_truncation (char *buffer, size_t bufsize)
     }
 }
 
-/**
- * SocketLog_emitfv - Emit formatted log message with va_list
- * @level: Log level
- * @component: Component name
- * @fmt: Printf-style format string
- * @args: Format arguments as va_list
- *
- * Thread-safe: Yes
- *
- * WARNING: fmt must be a compile-time literal to prevent format string
- * attacks. Do not use user-controlled format strings.
- *
- * If the formatted message is truncated, appends "..." indicator.
- */
+/* WARNING: fmt must be a compile-time literal to prevent format string attacks */
 void
 SocketLog_emitfv (SocketLogLevel level, const char *component, const char *fmt,
                   va_list args)
@@ -797,7 +488,6 @@ SocketLog_emitfv (SocketLogLevel level, const char *component, const char *fmt,
  * LOGGING CONTEXT SUBSYSTEM
  * ===========================================================================*/
 
-/* Thread-local logging context for correlation IDs */
 #ifdef _WIN32
 static __declspec (thread) SocketLogContext socketlog_context = { "", "", -1 };
 static __declspec (thread) int socketlog_context_set = 0;
@@ -806,15 +496,6 @@ static __thread SocketLogContext socketlog_context = { "", "", -1 };
 static __thread int socketlog_context_set = 0;
 #endif
 
-/**
- * SocketLog_setcontext - Set thread-local logging context
- * @ctx: Context to copy (NULL clears context)
- *
- * Thread-safe: Yes (uses thread-local storage)
- *
- * Sets the logging context for the current thread. The context is
- * copied, so the caller may free or modify ctx after this call.
- */
 void
 SocketLog_setcontext (const SocketLogContext *ctx)
 {
@@ -826,22 +507,13 @@ SocketLog_setcontext (const SocketLogContext *ctx)
 
   memcpy (&socketlog_context, ctx, sizeof (SocketLogContext));
 
-  /* Ensure null termination of ID strings */
+  /* Ensure null termination */
   socketlog_context.trace_id[SOCKET_LOG_ID_SIZE - 1] = '\0';
   socketlog_context.request_id[SOCKET_LOG_ID_SIZE - 1] = '\0';
 
   socketlog_context_set = 1;
 }
 
-/**
- * SocketLog_getcontext - Get thread-local logging context
- *
- * Returns: Pointer to thread-local context, or NULL if not set
- * Thread-safe: Yes (uses thread-local storage)
- *
- * Returns pointer to internal thread-local storage. Do not modify
- * the returned pointer; use SocketLog_setcontext to update.
- */
 const SocketLogContext *
 SocketLog_getcontext (void)
 {
@@ -851,13 +523,6 @@ SocketLog_getcontext (void)
   return &socketlog_context;
 }
 
-/**
- * SocketLog_clearcontext - Clear thread-local logging context
- *
- * Thread-safe: Yes (uses thread-local storage)
- *
- * Clears the logging context for the current thread.
- */
 void
 SocketLog_clearcontext (void)
 {
@@ -870,16 +535,6 @@ SocketLog_clearcontext (void)
  * STRUCTURED LOGGING SUBSYSTEM
  * ===========================================================================*/
 
-/* SocketLogStructuredInfo removed - use SocketLogAllInfo which includes
- * structured fields */
-
-/**
- * SocketLog_setstructuredcallback - Set structured logging callback
- * @callback: Callback function or NULL to disable structured logging
- * @userdata: User data passed to callback
- *
- * Thread-safe: Yes (mutex protected)
- */
 void
 SocketLog_setstructuredcallback (SocketLogStructuredCallback callback,
                                  void *userdata)
@@ -890,19 +545,7 @@ SocketLog_setstructuredcallback (SocketLogStructuredCallback callback,
   pthread_mutex_unlock (&socketlog_mutex);
 }
 
-/**
- * socketlog_append_field_if_space - Append single field if space available
- * @buffer: Output buffer
- * @pos: Current position in buffer (updated on success)
- * @bufsize: Total buffer size
- * @field: Field to append
- *
- * Returns: 1 on success, 0 if truncated or null field, -1 on snprintf error
- * Thread-safe: Yes (pure function)
- *
- * Appends " key=value" if field valid and space available. Updates pos on
- * success.
- */
+/* Appends " key=value" if field valid and space available */
 static int
 socketlog_append_field_if_space (char *buffer, size_t *pos, size_t bufsize,
                                  const SocketLogField *field)
@@ -927,19 +570,7 @@ socketlog_append_field_if_space (char *buffer, size_t *pos, size_t bufsize,
   return 1;
 }
 
-/**
- * socketlog_format_fields - Format structured fields as key=value string
- * @buffer: Output buffer
- * @bufsize: Buffer size
- * @fields: Array of fields
- * @field_count: Number of fields
- *
- * Returns: Number of characters written (excluding NUL)
- * Thread-safe: Yes
- *
- * Formats fields as " key1=value1 key2=value2" (with leading space).
- * Uses socketlog_append_field_if_space for modular field appending.
- */
+/* Formats fields as " key1=value1 key2=value2" (with leading space) */
 static size_t
 socketlog_format_fields (char *buffer, size_t bufsize,
                          const SocketLogField *fields, size_t field_count)
@@ -960,17 +591,6 @@ socketlog_format_fields (char *buffer, size_t bufsize,
   return pos;
 }
 
-/**
- * socketlog_call_structured - Invoke structured logging callback
- * @all: All info structure
- * @level: Log level
- * @component: Component name
- * @message: Log message
- * @fields: Structured fields
- * @field_count: Number of fields
- *
- * Thread-safe: Yes (delegates to callback)
- */
 static void
 socketlog_call_structured (const SocketLogAllInfo *all, SocketLogLevel level,
                            const char *component, const char *message,
@@ -981,15 +601,6 @@ socketlog_call_structured (const SocketLogAllInfo *all, SocketLogLevel level,
                             SocketLog_getcontext ());
 }
 
-/**
- * socketlog_call_fallback - Invoke fallback logging callback
- * @all: All info structure
- * @level: Log level
- * @component: Component name
- * @message: Log message
- *
- * Thread-safe: Yes (delegates to callback)
- */
 static void
 socketlog_call_fallback (const SocketLogAllInfo *all, SocketLogLevel level,
                          const char *component, const char *message)
@@ -997,19 +608,7 @@ socketlog_call_fallback (const SocketLogAllInfo *all, SocketLogLevel level,
   all->fallback_callback (all->fallback_userdata, level, component, message);
 }
 
-/**
- * socketlog_format_and_call_fallback - Format fields and invoke fallback
- * callback
- * @all: All info structure
- * @level: Log level
- * @component: Component name
- * @message: Original log message
- * @fields: Structured fields to format
- * @field_count: Number of fields
- *
- * Formats fields as " key=value" appended to message copy, then calls
- * fallback. Thread-safe: Yes
- */
+/* Formats fields as " key=value" appended to message copy, then calls fallback */
 static void
 socketlog_format_and_call_fallback (const SocketLogAllInfo *all,
                                     SocketLogLevel level,
@@ -1040,20 +639,7 @@ socketlog_format_and_call_fallback (const SocketLogAllInfo *all,
   socketlog_call_fallback (all, level, component, buffer);
 }
 
-/**
- * socketlog_emit_structured_with_all - Emit structured log using all info
- * @all: Acquired all logging info
- * @level: Log level
- * @component: Component name
- * @message: Log message
- * @fields: Structured fields (may be NULL)
- * @field_count: Number of fields
- *
- * Thread-safe: Yes
- *
- * Dispatches to structured callback if available, otherwise formats fields
- * into fallback message or uses message directly.
- */
+/* Dispatches to structured callback if available, else formats fields into fallback */
 static void
 socketlog_emit_structured_with_all (const SocketLogAllInfo *all,
                                     SocketLogLevel level,
@@ -1077,20 +663,6 @@ socketlog_emit_structured_with_all (const SocketLogAllInfo *all,
     }
 }
 
-/**
- * SocketLog_emit_structured - Emit log message with structured fields
- * @level: Log level
- * @component: Component name
- * @message: Log message
- * @fields: Array of key-value pairs (may be NULL)
- * @field_count: Number of fields
- *
- * Thread-safe: Yes
- *
- * Emits a log message with structured key-value pairs. If a structured
- * callback is set, it receives the fields directly. Otherwise, fields
- * are formatted as "key=value" pairs appended to the message.
- */
 void
 SocketLog_emit_structured (SocketLogLevel level, const char *component,
                            const char *message, const SocketLogField *fields,
@@ -1107,20 +679,9 @@ SocketLog_emit_structured (SocketLogLevel level, const char *component,
 /* ===========================================================================
  * LEGACY METRICS SUBSYSTEM
  * ===========================================================================
- *
- * NOTE: This is the legacy basic metrics system. For production use, prefer
- * the comprehensive SocketMetrics system in SocketMetrics.h which provides:
- * - Counter, gauge, and histogram metrics
- * - Latency percentile calculations (p50, p95, p99)
- * - Prometheus, StatsD, and JSON export formats
- *
- * This legacy system is kept for backward compatibility with existing code.
+ * NOTE: Legacy system for backward compatibility. Prefer SocketMetrics.h.
  */
 
-/* ===========================================================================
- * LEGACY TO NEW METRICS MAPPING
- * ===========================================================================
- */
 static const SocketCounterMetric legacy_to_counter[SOCKET_METRIC_COUNT] = {
     [SOCKET_METRIC_SOCKET_CONNECT_SUCCESS] = SOCKET_CTR_SOCKET_CONNECT_SUCCESS,
     [SOCKET_METRIC_SOCKET_CONNECT_FAILURE] = SOCKET_CTR_SOCKET_CONNECT_FAILED,
@@ -1143,11 +704,6 @@ static const SocketCounterMetric legacy_to_counter[SOCKET_METRIC_COUNT] = {
     [SOCKET_METRIC_POOL_IDLE_CLEANUPS] = (SocketCounterMetric)-1,
 };
 
-/* No mutex needed - new system handles thread safety */
-
-/* No local storage - forwards to new SocketMetrics system */
-
-/* Metric names for display/debugging */
 static const char *const socketmetrics_legacy_names[SOCKET_METRIC_COUNT]
     = { "socket.connect_success",
         "socket.connect_failure",
@@ -1171,29 +727,13 @@ static const char *const socketmetrics_legacy_names[SOCKET_METRIC_COUNT]
         "pool.validation_failures",
         "pool.idle_cleanups" };
 
-/**
- * socketmetrics_legacy_is_valid - Check if metric index is valid
- * @metric: Metric to validate
- *
- * Returns: 1 if valid, 0 otherwise
- * Thread-safe: Yes (pure function, no shared state)
- */
 static inline int
 socketmetrics_legacy_is_valid (const SocketMetric metric)
 {
   return metric >= 0 && metric < SOCKET_METRIC_COUNT;
 }
 
-/**
- * SocketMetrics_increment - Increment a legacy metric counter
- * @metric: Metric to increment (from SocketMetric enum)
- * @value: Amount to add to the metric
- *
- * Thread-safe: Yes (mutex protected)
- *
- * NOTE: This is the legacy API. For new code, use SocketMetrics_counter_inc()
- * from SocketMetrics.h.
- */
+/* NOTE: Legacy API. For new code, use SocketMetrics_counter_inc() */
 void
 SocketMetrics_increment (SocketMetric metric, unsigned long value)
 {
@@ -1215,15 +755,7 @@ SocketMetrics_increment (SocketMetric metric, unsigned long value)
   }
 }
 
-/**
- * SocketMetrics_getsnapshot - Get atomic snapshot of legacy metrics
- * @snapshot: Output structure to receive metric values
- *
- * Thread-safe: Yes (mutex protected)
- *
- * NOTE: This is the legacy API. For new code, use SocketMetrics_get()
- * from SocketMetrics.h.
- */
+/* NOTE: Legacy API. For new code, use SocketMetrics_get() */
 void
 SocketMetrics_getsnapshot (SocketMetricsSnapshot *snapshot)
 {
@@ -1249,28 +781,13 @@ SocketMetrics_getsnapshot (SocketMetricsSnapshot *snapshot)
     }
 }
 
-/**
- * SocketMetrics_legacy_reset - Reset legacy metrics to zero
- *
- * Thread-safe: Yes (mutex protected)
- *
- * NOTE: This is the legacy API. For new code, use SocketMetrics_reset()
- * from SocketMetrics.h.
- */
+/* NOTE: Legacy API. For new code, use SocketMetrics_reset() */
 void
 SocketMetrics_legacy_reset (void)
 {
-  /* Legacy reset forwards to new system reset_counters (resets all counters) */
   SocketMetrics_reset_counters ();
 }
 
-/**
- * SocketMetrics_name - Get human-readable name for a legacy metric
- * @metric: Metric to get name for
- *
- * Returns: Static string with metric name, or "unknown" for invalid metrics
- * Thread-safe: Yes (returns static data)
- */
 const char *
 SocketMetrics_name (SocketMetric metric)
 {
@@ -1284,12 +801,6 @@ SocketMetrics_name (SocketMetric metric)
     return socketmetrics_legacy_names[metric];  /* Keep legacy name for unmapped */
 }
 
-/**
- * SocketMetrics_count - Get total number of legacy metrics
- *
- * Returns: Number of metrics in the SocketMetric enum
- * Thread-safe: Yes (returns constant)
- */
 size_t
 SocketMetrics_count (void)
 {
@@ -1300,29 +811,17 @@ SocketMetrics_count (void)
  * EVENTS SUBSYSTEM
  * ===========================================================================*/
 
-/**
- * SocketEventHandler - Internal handler registration structure
- */
 typedef struct SocketEventHandler
 {
   SocketEventCallback callback;
   void *userdata;
 } SocketEventHandler;
 
-/* Mutex protecting handler array */
 static pthread_mutex_t socketevent_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-/* Registered handlers */
 static SocketEventHandler socketevent_handlers[SOCKET_EVENT_MAX_HANDLERS];
 static size_t socketevent_handler_count = 0;
 
-/**
- * socketevent_copy_handlers_unlocked - Copy handlers (caller holds mutex)
- * @local_handlers: Destination array for handler copies
- *
- * Returns: Number of handlers copied
- * Thread-safe: No (caller must hold socketevent_mutex)
- */
+/* Caller must hold socketevent_mutex */
 static size_t
 socketevent_copy_handlers_unlocked (SocketEventHandler *local_handlers)
 {
@@ -1331,14 +830,6 @@ socketevent_copy_handlers_unlocked (SocketEventHandler *local_handlers)
   return socketevent_handler_count;
 }
 
-/**
- * socketevent_invoke_handlers - Invoke all handler callbacks
- * @handlers: Array of handlers to invoke (const - not modified)
- * @count: Number of handlers
- * @event: Event to pass to callbacks
- *
- * Thread-safe: Yes (no mutex needed - operates on local copy)
- */
 static void
 socketevent_invoke_handlers (const SocketEventHandler *handlers, size_t count,
                              const SocketEventRecord *event)
@@ -1352,15 +843,7 @@ socketevent_invoke_handlers (const SocketEventHandler *handlers, size_t count,
     }
 }
 
-/**
- * socketevent_dispatch - Dispatch event to all registered handlers
- * @event: Event record to dispatch
- *
- * Thread-safe: Yes
- *
- * Copies handlers under mutex, then invokes each callback outside mutex
- * to prevent deadlocks. Callbacks must not block indefinitely.
- */
+/* Copies handlers under mutex, then invokes callbacks outside mutex */
 static void
 socketevent_dispatch (const SocketEventRecord *event)
 {
@@ -1376,14 +859,7 @@ socketevent_dispatch (const SocketEventRecord *event)
   socketevent_invoke_handlers (local_handlers, count, event);
 }
 
-/**
- * socketevent_find_handler_unlocked - Find handler in array (mutex held)
- * @callback: Callback to find (must not be NULL)
- * @userdata: User data to match (may be NULL)
- *
- * Returns: Index of handler if found, -1 otherwise
- * Thread-safe: No (caller must hold socketevent_mutex)
- */
+/* Caller must hold socketevent_mutex */
 static ssize_t
 socketevent_find_handler_unlocked (const SocketEventCallback callback,
                                    const void *userdata)
@@ -1399,13 +875,7 @@ socketevent_find_handler_unlocked (const SocketEventCallback callback,
   return -1;
 }
 
-/**
- * socketevent_add_handler_unlocked - Add handler to array (mutex held)
- * @callback: Callback to add
- * @userdata: User data for callback
- *
- * Thread-safe: No (caller must hold socketevent_mutex)
- */
+/* Caller must hold socketevent_mutex */
 static void
 socketevent_add_handler_unlocked (SocketEventCallback callback, void *userdata)
 {
@@ -1414,16 +884,7 @@ socketevent_add_handler_unlocked (SocketEventCallback callback, void *userdata)
   socketevent_handler_count++;
 }
 
-/**
- * socketevent_can_register_unlocked - Check if registration is possible
- * @callback: Callback to register
- * @userdata: User data for callback
- *
- * Returns: 1 if can register, 0 if duplicate or limit reached
- * Thread-safe: No (caller must hold socketevent_mutex)
- *
- * Logs warnings for duplicate or limit-reached conditions.
- */
+/* Caller must hold socketevent_mutex */
 static int
 socketevent_can_register_unlocked (SocketEventCallback callback,
                                    const void *userdata)
@@ -1441,17 +902,6 @@ socketevent_can_register_unlocked (SocketEventCallback callback,
   return 1;
 }
 
-/**
- * SocketEvent_register - Register an event handler
- * @callback: Callback function to register
- * @userdata: User data passed to callback
- *
- * Thread-safe: Yes (mutex protected)
- *
- * Registers a callback to receive socket events. Duplicate registrations
- * (same callback and userdata) are silently ignored. If the handler limit
- * is reached, the registration is logged and ignored.
- */
 void
 SocketEvent_register (SocketEventCallback callback, void *userdata)
 {
@@ -1470,12 +920,7 @@ SocketEvent_register (SocketEventCallback callback, void *userdata)
   pthread_mutex_unlock (&socketevent_mutex);
 }
 
-/**
- * socketevent_remove_at_index_unlocked - Remove handler at index (mutex held)
- * @index: Index of handler to remove
- *
- * Thread-safe: No (caller must hold socketevent_mutex)
- */
+/* Caller must hold socketevent_mutex */
 static void
 socketevent_remove_at_index_unlocked (size_t index)
 {
@@ -1489,16 +934,6 @@ socketevent_remove_at_index_unlocked (size_t index)
   socketevent_handler_count--;
 }
 
-/**
- * SocketEvent_unregister - Unregister an event handler
- * @callback: Callback function to unregister
- * @userdata: User data that was passed to register
- *
- * Thread-safe: Yes (mutex protected)
- *
- * Removes a previously registered handler. Both callback and userdata
- * must match. If not found, the call is silently ignored.
- */
 void
 SocketEvent_unregister (SocketEventCallback callback, const void *userdata)
 {
@@ -1520,21 +955,7 @@ SocketEvent_unregister (SocketEventCallback callback, const void *userdata)
   pthread_mutex_unlock (&socketevent_mutex);
 }
 
-/**
- * socketevent_init_connection - Initialize connection event record
- * @event: Event record to initialize
- * @type: Event type (ACCEPTED or CONNECTED)
- * @component: Component name
- * @fd: File descriptor
- * @peer_addr: Peer IP address string
- * @peer_port: Peer port number
- * @local_addr: Local IP address string
- * @local_port: Local port number
- *
- * Thread-safe: Yes
- *
- * Helper to eliminate duplication in emit_accept and emit_connect.
- */
+/* Helper to eliminate duplication in emit_accept and emit_connect */
 static void
 socketevent_init_connection (SocketEventRecord *event, SocketEventType type,
                              const char *component, int fd,
@@ -1550,16 +971,6 @@ socketevent_init_connection (SocketEventRecord *event, SocketEventType type,
   event->data.connection.local_port = local_port;
 }
 
-/**
- * SocketEvent_emit_accept - Emit connection accepted event
- * @fd: File descriptor of accepted socket
- * @peer_addr: Peer IP address string
- * @peer_port: Peer port number
- * @local_addr: Local IP address string
- * @local_port: Local port number
- *
- * Thread-safe: Yes
- */
 void
 SocketEvent_emit_accept (int fd, const char *peer_addr, int peer_port,
                          const char *local_addr, int local_port)
@@ -1571,16 +982,6 @@ SocketEvent_emit_accept (int fd, const char *peer_addr, int peer_port,
   socketevent_dispatch (&event);
 }
 
-/**
- * SocketEvent_emit_connect - Emit connection established event
- * @fd: File descriptor of connected socket
- * @peer_addr: Peer IP address string
- * @peer_port: Peer port number
- * @local_addr: Local IP address string
- * @local_port: Local port number
- *
- * Thread-safe: Yes
- */
 void
 SocketEvent_emit_connect (int fd, const char *peer_addr, int peer_port,
                           const char *local_addr, int local_port)
@@ -1592,13 +993,6 @@ SocketEvent_emit_connect (int fd, const char *peer_addr, int peer_port,
   socketevent_dispatch (&event);
 }
 
-/**
- * SocketEvent_emit_dns_timeout - Emit DNS resolution timeout event
- * @host: Hostname that timed out
- * @port: Port number being resolved
- *
- * Thread-safe: Yes
- */
 void
 SocketEvent_emit_dns_timeout (const char *host, int port)
 {
@@ -1612,13 +1006,6 @@ SocketEvent_emit_dns_timeout (const char *host, int port)
   socketevent_dispatch (&event);
 }
 
-/**
- * SocketEvent_emit_poll_wakeup - Emit poll wakeup event
- * @nfds: Number of file descriptors with events
- * @timeout_ms: Timeout that was used for poll
- *
- * Thread-safe: Yes
- */
 void
 SocketEvent_emit_poll_wakeup (int nfds, int timeout_ms)
 {

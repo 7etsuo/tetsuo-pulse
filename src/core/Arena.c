@@ -4,29 +4,7 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * Arena.c - Arena memory allocator
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
- *
- * An arena (also called a memory pool or region) is a memory management
- * technique where allocations are made from a large chunk of memory.
- * All allocations in an arena can be freed at once by disposing the arena.
- *
- * Features:
- * - Fast allocation (no per-allocation overhead)
- * - No memory fragmentation within the arena
- * - Simple cleanup - dispose entire arena at once
- * - Thread-safe chunk management with mutex protection
- *
- * Thread Safety:
- * - All operations fully thread-safe with per-arena and global mutex
- * protection
- * - Multiple threads can safely allocate from the same arena concurrently
- * - Each arena has its own mutex protecting allocation state
- * - Global free chunk cache protected by separate mutex
- */
+/* Arena.c - Arena memory allocator implementation */
 
 #include <assert.h>
 #include <limits.h>
@@ -47,12 +25,7 @@
 
 /* ==================== Internal Structures ==================== */
 
-/**
- * ChunkHeader - Header for memory chunks in the arena
- *
- * Each chunk stores a linked list pointer and allocation state.
- * chunk_size tracks actual usable size for proper reuse.
- */
+/* Header for memory chunks in the arena */
 struct ChunkHeader
 {
   struct ChunkHeader *prev;
@@ -61,11 +34,7 @@ struct ChunkHeader
   size_t chunk_size;
 };
 
-/**
- * header - Union for proper memory alignment
- *
- * Ensures all allocations are aligned for any data type.
- */
+/* Union for proper memory alignment */
 union header
 {
   struct ChunkHeader b;
@@ -73,11 +42,7 @@ union header
   union align a;
 };
 
-/**
- * Arena structure - Main arena instance
- *
- * Contains allocation state and per-arena mutex for thread safety.
- */
+/* Arena structure - allocation state and per-arena mutex */
 struct T
 {
   struct ChunkHeader *prev;
@@ -88,43 +53,19 @@ struct T
 
 /* ==================== Chunk Helper Functions ==================== */
 
-/**
- * chunk_total_size - Calculate total size of chunk including header
- * @chunk: Chunk header pointer
- *
- * Returns: Total bytes occupied by chunk (header + usable space)
- * Thread-safe: Yes (const, no side effects)
- */
 static inline size_t
 chunk_total_size (const struct ChunkHeader *chunk)
 {
   return sizeof (union header) + chunk->chunk_size;
 }
 
-/**
- * chunk_limit - Calculate end pointer of chunk usable space
- * @chunk: Chunk header pointer
- *
- * Returns: Pointer to end of usable space in chunk
- * Thread-safe: Yes (const, no side effects)
- * Note: Assumes valid chunk with chunk_size set
- */
 static inline char *
 chunk_limit (const struct ChunkHeader *chunk)
 {
   return (char *)chunk + chunk_total_size (chunk);
 }
 
-/**
- * arena_link_chunk - Link new chunk into arena's allocation chain
- * @arena: Arena to link chunk into
- * @ptr: Chunk header to link
- * @limit: End pointer of chunk usable space
- *
- * Saves current arena state into chunk header and updates arena to use
- * the new chunk. Used when adding cached or newly allocated chunks.
- * Thread-safe: Must be called with arena->mutex held
- */
+/* Link new chunk into arena's allocation chain (must hold arena->mutex) */
 static inline void
 arena_link_chunk (T arena, struct ChunkHeader *ptr, char *limit)
 {
@@ -180,25 +121,6 @@ SocketConfig_get_memory_used (void)
 /* Forward declaration for helper used in global_memory_try_alloc */
 static int check_alloc_allowed (size_t current, size_t nbytes, size_t limit);
 
-/**
- * global_memory_try_alloc - Try to allocate bytes from global limit
- * @nbytes: Number of bytes to allocate
- *
- * Returns: 1 if allocation allowed, 0 if would exceed limit
- * Thread-safe: Yes (atomic compare-exchange loop for strict enforcement)
- *
- * Security: Uses atomic CAS loop to prevent TOCTOU race conditions where
- * multiple threads could simultaneously pass the limit check and exceed
- * the configured memory limit.
- */
-/**
- * global_memory_try_unlimited - Allocate under unlimited policy
- * @nbytes: Bytes to allocate
- *
- * Adds to global used counter using relaxed memory order (no limit check).
- * Returns: Always 1 (success)
- * Thread-safe: Yes (atomic fetch_add relaxed)
- */
 static int
 global_memory_try_unlimited (size_t nbytes)
 {
@@ -207,15 +129,7 @@ global_memory_try_unlimited (size_t nbytes)
   return 1;
 }
 
-/**
- * global_memory_try_limited - Allocate under limited policy with CAS
- * @limit: Current memory limit
- * @nbytes: Bytes to allocate
- *
- * Uses atomic CAS loop to enforce strict limit without TOCTOU races.
- * Returns: 1 if allocated successfully, 0 if limit exceeded
- * Thread-safe: Yes (atomic CAS acq_rel)
- */
+/* Allocate under limited policy with atomic CAS to prevent TOCTOU races */
 static int
 global_memory_try_limited (size_t limit, size_t nbytes)
 {
@@ -250,12 +164,6 @@ global_memory_try_alloc (size_t nbytes)
   return global_memory_try_limited (limit, nbytes);
 }
 
-/**
- * global_memory_release - Release bytes back to global pool
- * @nbytes: Number of bytes to release
- *
- * Thread-safe: Yes (atomic subtraction)
- */
 static void
 global_memory_release (size_t nbytes)
 {
@@ -265,17 +173,6 @@ global_memory_release (size_t nbytes)
 
 /* ==================== Global Memory Helper Functions ==================== */
 
-/**
- * check_alloc_allowed - Check if allocation is allowed under limits
- * @current: Current used memory
- * @nbytes: Bytes to allocate
- * @limit: Global memory limit (0 = unlimited)
- *
- * Performs overflow and limit checks.
- *
- * Returns: 1 if allowed, 0 otherwise
- * Thread-safe: Yes (pure function)
- */
 static int
 check_alloc_allowed (size_t current, size_t nbytes, size_t limit)
 {
@@ -297,14 +194,6 @@ check_alloc_allowed (size_t current, size_t nbytes, size_t limit)
 
 /* ==================== Allocation Helper Functions ==================== */
 
-/**
- * validate_chunk_size - Validate chunk size and calculate total
- * @chunk_size: Usable chunk size (excluding header)
- * @total_out: Output total size including header
- *
- * Returns: ARENA_SUCCESS if valid, ARENA_FAILURE otherwise
- * Thread-safe: Yes
- */
 static int
 validate_chunk_size (size_t chunk_size, size_t *total_out)
 {
@@ -329,16 +218,6 @@ validate_chunk_size (size_t chunk_size, size_t *total_out)
   return ARENA_SUCCESS;
 }
 
-/**
- * acquire_global_memory - Check and acquire from global memory limit
- * @total: Total bytes to allocate
- *
- * Attempts to reserve memory from global limit tracker.
- * Updates metrics and sets error on failure.
- *
- * Returns: ARENA_SUCCESS if acquired, ARENA_FAILURE otherwise
- * Thread-safe: Yes (uses atomic operations)
- */
 static int
 acquire_global_memory (size_t total)
 {
@@ -355,16 +234,6 @@ acquire_global_memory (size_t total)
   return ARENA_SUCCESS;
 }
 
-/**
- * allocate_raw_chunk - Allocate raw memory for chunk and validate
- * @total: Total size including header
- *
- * Allocates memory using malloc and performs pointer arithmetic validation.
- * Releases global memory reservation and frees on validation failure.
- *
- * Returns: Validated chunk pointer, or NULL on failure
- * Thread-safe: Yes
- */
 static struct ChunkHeader *
 allocate_raw_chunk (size_t total)
 {
@@ -390,16 +259,6 @@ allocate_raw_chunk (size_t total)
 
 /* ==================== Chunk Cache Operations ==================== */
 
-/**
- * chunk_cache_get - Try to retrieve chunk from free cache
- * @ptr_out: Output pointer for chunk header
- * @limit_out: Output pointer for chunk limit
- *
- * Attempts to retrieve a cached chunk from the global free list.
- * Thread-safe: Yes (uses global arena_mutex)
- *
- * Returns: ARENA_CHUNK_REUSED if chunk retrieved, ARENA_CHUNK_NOT_REUSED otherwise
- */
 static int
 chunk_cache_get (struct ChunkHeader **ptr_out, char **limit_out)
 {
@@ -421,14 +280,6 @@ chunk_cache_get (struct ChunkHeader **ptr_out, char **limit_out)
   return result;
 }
 
-/**
- * chunk_cache_return - Return chunk to free cache or free it
- * @chunk: Chunk to return
- *
- * Attempts to add chunk to global free cache if under limit.
- * Otherwise frees the chunk and releases global memory reservation.
- * Thread-safe: Yes (uses global arena_mutex)
- */
 static void
 chunk_cache_return (struct ChunkHeader *chunk)
 {
@@ -458,23 +309,6 @@ chunk_cache_return (struct ChunkHeader *chunk)
 
 /* ==================== Alignment Calculation ==================== */
 
-/**
- * arena_validate_nbytes - Validate input bytes for allocation
- * @nbytes: Bytes to validate
- *
- * Returns: 1 if valid (non-zero and <= max), 0 otherwise
- * Thread-safe: Yes (pure function)
- */
-
-
-/**
- * arena_align_size - Compute ceiling-aligned allocation size
- * @nbytes: Number of bytes to align
- *
- * Precondition: nbytes validated as non-zero and <= ARENA_MAX_ALLOC_SIZE
- * Returns: Aligned size, or 0 on arithmetic overflow
- * Thread-safe: Yes (pure function)
- */
 static size_t
 arena_align_size (size_t nbytes)
 {
@@ -518,15 +352,6 @@ arena_calculate_aligned_size (size_t nbytes)
 
 /* ==================== Chunk Allocation ==================== */
 
-/**
- * arena_allocate_new_chunk - Allocate a fresh chunk from system memory
- * @chunk_size: Usable size (excluding header)
- * @ptr_out: Output pointer for chunk header
- * @limit_out: Output pointer for chunk limit
- *
- * Returns: ARENA_SUCCESS on success, ARENA_FAILURE on failure
- * Thread-safe: Yes
- */
 static int
 arena_allocate_new_chunk (size_t chunk_size, struct ChunkHeader **ptr_out,
                           char **limit_out)
@@ -551,15 +376,7 @@ arena_allocate_new_chunk (size_t chunk_size, struct ChunkHeader **ptr_out,
   return ARENA_SUCCESS;
 }
 
-/**
- * arena_get_chunk - Obtain chunk for allocation (reuse or allocate)
- * @arena: Arena needing chunk
- * @min_size: Minimum chunk size required
- *
- * Tries free cache first, then allocates fresh chunk if needed.
- * Returns: ARENA_SUCCESS if chunk obtained, ARENA_FAILURE otherwise
- * Thread-safe: No (must hold arena->mutex, uses global arena_mutex internally)
- */
+/* Must hold arena->mutex */
 static int
 arena_get_chunk (T arena, size_t min_size)
 {
@@ -586,12 +403,7 @@ arena_get_chunk (T arena, size_t min_size)
 
 /* ==================== Chunk Cleanup ==================== */
 
-/**
- * arena_release_all_chunks - Release all chunks from arena
- * @arena: Arena to clear
- *
- * Thread-safe: No (must be called with arena->mutex held)
- */
+/* Must hold arena->mutex */
 static void
 arena_release_all_chunks (T arena)
 {
@@ -628,16 +440,6 @@ arena_release_all_chunks (T arena)
 
 /* ==================== Public API ==================== */
 
-/**
- * Arena_new - Create a new arena instance
- *
- * Returns: New arena instance
- * Raises: Arena_Failed if allocation or mutex initialization fails
- * Thread-safe: Yes
- *
- * Creates a new arena allocator with thread-safe allocation support.
- * Memory is managed in chunks; all freed when arena is disposed.
- */
 T
 Arena_new (void)
 {
@@ -662,17 +464,6 @@ Arena_new (void)
   return arena;
 }
 
-/**
- * Arena_dispose - Dispose of an arena and all its allocations
- * @ap: Pointer to arena pointer (will be set to NULL)
- *
- * Frees all memory allocated from this arena including the arena structure
- * itself. After this call, the arena pointer is invalid.
- *
- * Raises: None (void function)
- * Thread-safe: Yes (but arena should not be used concurrently during disposal)
- * Pre-conditions: ap != NULL, *ap != NULL (handles NULL gracefully)
- */
 void
 Arena_dispose (T *ap)
 {
@@ -685,20 +476,6 @@ Arena_dispose (T *ap)
   *ap = NULL;
 }
 
-/**
- * Arena_alloc - Allocate memory from arena
- * @arena: Arena to allocate from
- * @nbytes: Number of bytes to allocate
- * @file: Source file name (for debugging)
- * @line: Source line number (for debugging)
- *
- * Returns: Pointer to allocated memory
- * Raises: Arena_Failed if allocation fails due to insufficient space or
- * overflow Thread-safe: Yes Pre-conditions: arena != NULL, nbytes > 0
- *
- * Allocates memory from the arena with proper alignment and overflow
- * protection. Memory remains valid until the arena is cleared or disposed.
- */
 void *
 Arena_alloc (T arena, size_t nbytes, const char *file, int line)
 {
@@ -737,24 +514,6 @@ Arena_alloc (T arena, size_t nbytes, const char *file, int line)
   return result;
 }
 
-/**
- * Arena_calloc - Allocate and zero memory from arena
- * @arena: Arena to allocate from
- * @count: Number of elements
- * @nbytes: Size of each element
- * @file: Source file (for debugging)
- * @line: Source line (for debugging)
- *
- * Returns: Pointer to zeroed memory
- * Raises: Arena_Failed if allocation fails or overflow occurs
- * Thread-safe: Yes
- * Pre-conditions: arena != NULL, count > 0, nbytes > 0
- *
- * Allocates count * nbytes bytes from the arena and initializes to zero.
- * Uses Arena_alloc internally with overflow protection for multiplication.
- */
-
-
 void *
 Arena_calloc (T arena, size_t count, size_t nbytes, const char *file, int line)
 {
@@ -784,17 +543,6 @@ Arena_calloc (T arena, size_t count, size_t nbytes, const char *file, int line)
   return ptr;
 }
 
-/**
- * Arena_clear - Clear all allocations from arena
- * @arena: Arena to clear
- *
- * Releases all memory chunks back to the free pool without freeing the arena
- * structure. The arena can be reused for new allocations after clearing.
- *
- * Raises: None (void function)
- * Thread-safe: Yes
- * Pre-conditions: arena != NULL (handles NULL gracefully)
- */
 void
 Arena_clear (T arena)
 {
