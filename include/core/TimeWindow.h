@@ -62,9 +62,6 @@ typedef struct TimeWindow_T
 
 /**
  * @brief Initialize a time window
- * @param tw Time window to initialize
- * @param duration_ms Window duration in milliseconds (must be > 0)
- * @param now_ms Current timestamp in milliseconds
  *
  * Sets up the window with zero counts starting at the given time.
  * Duration is clamped to minimum of 1ms if invalid.
@@ -73,8 +70,6 @@ extern void TimeWindow_init (TimeWindow_T *tw, int duration_ms, int64_t now_ms);
 
 /**
  * @brief Record an event in the time window
- * @param tw Time window instance
- * @param now_ms Current timestamp in milliseconds
  *
  * Automatically rotates the window if the duration has elapsed,
  * then increments the current count. Previous count is preserved
@@ -84,10 +79,7 @@ extern void TimeWindow_record (TimeWindow_T *tw, int64_t now_ms);
 
 /**
  * @brief Calculate effective count with interpolation
- * @param tw Time window instance
- * @param now_ms Current timestamp in milliseconds
- *
- * Returns: Weighted count combining current and previous windows
+ * @return Weighted count combining current and previous windows
  *
  * The effective count uses linear interpolation based on progress
  * through the current window:
@@ -107,8 +99,6 @@ extern uint32_t TimeWindow_effective_count (const TimeWindow_T *tw,
 
 /**
  * @brief Reset time window to empty state
- * @param tw Time window to reset
- * @param now_ms Current timestamp for new window start
  *
  * Clears both current and previous counts, restarts the window
  * at the given timestamp.
@@ -117,10 +107,7 @@ extern void TimeWindow_reset (TimeWindow_T *tw, int64_t now_ms);
 
 /**
  * @brief Rotate window if duration has elapsed
- * @param tw Time window instance
- * @param now_ms Current timestamp in milliseconds
- *
- * Returns: 1 if window was rotated, 0 if not
+ * @return 1 if window was rotated, 0 if not
  *
  * Explicitly rotate the window without recording an event.
  * Useful when you need to update the window state before
@@ -130,10 +117,7 @@ extern int TimeWindow_rotate_if_needed (TimeWindow_T *tw, int64_t now_ms);
 
 /**
  * @brief Get progress through current window
- * @param tw Time window instance
- * @param now_ms Current timestamp in milliseconds
- *
- * Returns: Progress as float from 0.0 (start) to 1.0 (end)
+ * @return Progress as float from 0.0 (start) to 1.0 (end)
  *
  * Useful for custom interpolation or debugging.
  */
