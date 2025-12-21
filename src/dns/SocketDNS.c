@@ -70,12 +70,6 @@ const Except_T SocketDNS_Failed
  */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketDNS);
 
-/*
- * =============================================================================
- * Validation Functions
- * =============================================================================
- */
-
 /**
  * @brief Validate hostname and port parameters for DNS resolution.
  * @param host Hostname or NULL (for wildcard/AI_PASSIVE).
@@ -453,32 +447,6 @@ wait_and_retrieve_result (struct SocketDNS_T *dns,
  * Public API - Lifecycle
  * =============================================================================
  */
-
-/**
- * @brief Create new DNS resolver instance.
- * @ingroup core_io
- * @return New DNS resolver instance.
- * @throws SocketDNS_Failed on memory allocation, mutex init, pipe creation, or worker thread startup failure.
- * @threadsafe Yes - each resolver instance is independent.
- *
- * Allocates and initializes a new SocketDNS_T instance with default configuration:
- * - num_workers = SOCKET_DNS_DEFAULT_NUM_WORKERS (typically CPU cores)
- * - max_pending = SOCKET_DNS_MAX_PENDING (typically 1000)
- * - request_timeout_ms = SOCKET_DNS_DEFAULT_TIMEOUT_MS (typically 5000ms)
- *
- * The resolver creates a thread pool for async getaddrinfo() calls and sets up internal synchronization primitives (mutex, conditions, completion pipe).
- *
- * Usage:
- *   SocketDNS_T *dns = SocketDNS_new();
- *   // Use dns for resolutions...
- *   SocketDNS_free(&dns);
- *
- * @see SocketDNS_free() for cleanup.
- * @see SocketDNS_resolve() for submitting resolution requests.
- * @see SocketDNS_setmaxpending() and SocketDNS_settimeout() for configuration.
- * @see docs/ASYNC_IO.md for thread pool and async patterns.
- * @see SocketCommon.h for address resolution utilities used internally.
- */
 T
 SocketDNS_new (void)
 {
@@ -491,25 +459,6 @@ SocketDNS_new (void)
 
   return dns;
 }
-
-/**
- * @brief Destroy DNS resolver instance and free all resources.
- * @ingroup core_io
- * @param dns Pointer to DNS resolver instance (set to NULL on success).
- * @throws None - safe to call on NULL or already-freed instance.
- * @threadsafe Conditional - concurrent use with active resolutions may race (requests may complete after free if not waited for).
- *
- * Shuts down worker threads, cancels pending requests, drains completion pipe, and frees all allocated resources (arena, mutex, conditions, pipe, threads).
- *
- * All pending and in-progress requests are cancelled with EAI_CANCELED error. Completed requests remain retrievable until SocketDNS_getresult() is called.
- *
- * Note: After free, all Request_T handles become invalid. Applications must cancel or retrieve results before freeing to avoid leaks and undefined behavior.
- *
- * @see SocketDNS_new() for creation.
- * @see SocketDNS_cancel() for cancelling individual requests.
- * @see SocketDNS_getresult() to retrieve pending results before free.
- * @see docs/MEMORY_MANAGEMENT.md for arena cleanup patterns.
- */
 void
 SocketDNS_free (T *dns)
 {
@@ -646,50 +595,6 @@ submit_resolve_request (struct SocketDNS_T *dns, Request_T req)
   SocketMetrics_increment (SOCKET_METRIC_DNS_REQUEST_SUBMITTED, 1);
   pthread_mutex_unlock (&dns->mutex);
 }
-
-/**
- * @brief Submit asynchronous DNS resolution request to thread pool.
- * @ingroup core_io
- * @param dns DNS resolver instance.
- * @param host Hostname or IP address to resolve (NULL for wildcard bind with AI_PASSIVE flag).
- * @param port Port number (0-65535; 0 means no service resolution).
- * @param callback Completion callback (NULL for polling mode).
- * @param data User data passed to callback (ignored if no callback).
- * @return Request handle for tracking completion (valid until result retrieved or cancelled).
- * @throws SocketDNS_Failed if queue full (max_pending exceeded) or invalid parameters.
- * @threadsafe Yes - internal mutex protects queue and hash table.
- *
- * Submits a DNS resolution request. For IP addresses or NULL host, may use fast-path synchronous resolution but returns Request_T handle.
- *
- * Validation:
- * - Hostname per RFC 1123 (labels alphanumeric + hyphen/dot).
- * - Supports IPv4/IPv6 addresses.
- * - Port 0-65535 (0 for address-only lookup).
- *
- * Callback Mode: Invoked from worker thread on completion. Must be thread-safe; see SocketDNS_Callback for details.
- * Polling Mode: Use SocketDNS_pollfd(), SocketDNS_check(), SocketDNS_getresult().
- *
- * Additional control:
- * - SocketDNS_cancel() to abort before completion.
- * - SocketDNS_request_settimeout() for per-request timeout after submit.
- *
- * Error codes (getaddrinfo()):
- * - 0: Success
- * - EAI_AGAIN: Temporary (retryable)
- * - EAI_NONAME: Not found (permanent)
- * - EAI_FAIL: Non-recoverable
- * - EAI_SYSTEM: System error
- * - EAI_CANCELED: User cancellation (custom)
- *
- * @see SocketDNS_Callback for callback safety requirements.
- * @see SocketDNS_getresult() for retrieving results in polling mode.
- * @see SocketDNS_cancel() for request cancellation.
- * @see SocketDNS_request_settimeout() for timeouts.
- * @see SocketCommon_resolve_address() for underlying resolution (internal).
- * @see docs/SECURITY.md for DoS protection via queue limits.
- * @see docs/ERROR_HANDLING.md for retryable error patterns.
- * @see docs/ASYNC_IO.md for worker thread considerations.
- */
 Request_T
 SocketDNS_resolve (struct SocketDNS_T *dns, const char *host, int port,
                    SocketDNS_Callback callback, void *data)

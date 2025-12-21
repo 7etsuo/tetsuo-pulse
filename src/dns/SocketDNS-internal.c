@@ -4,20 +4,6 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * @file SocketDNS-internal.c
- * @ingroup dns
- * @brief Internal implementation for async DNS resolution.
- *
- * Core implementation details for the DNS resolver module.
- * Contains thread pool management, request processing, synchronization,
- * and cleanup operations.
- *
- * @see SocketDNS.c for public API implementation.
- * @see SocketDNS.h for public API declarations.
- * @see SocketDNS-private.h for internal structures.
- */
-
 /* All includes before T macro definition to avoid redefinition warnings */
 #include <errno.h>
 #include <fcntl.h>
@@ -59,12 +45,6 @@
  * SocketDNS_DetailedException.
  */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketDNS);
-
-/*
- * =============================================================================
- * Internal Helper Macros
- * =============================================================================
- */
 
 /**
  * @brief Helper macro for pthread primitive initialization with cleanup on
@@ -288,13 +268,6 @@ initialize_pipe (struct SocketDNS_T *dns)
  * =============================================================================
  * Initialization - Resolver Allocation and Setup
  * =============================================================================
- */
-
-/**
- * allocate_dns_resolver - Allocate and initialize basic DNS resolver structure
- * Returns: Allocated DNS resolver or NULL on failure
- * Raises: SocketDNS_Failed on allocation failure
- * Allocates DNS resolver structure and sets up basic fields.
  */
 T
 allocate_dns_resolver (void)
