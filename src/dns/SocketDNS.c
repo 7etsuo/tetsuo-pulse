@@ -1446,6 +1446,30 @@ cache_hash_remove (struct SocketDNS_T *dns, struct SocketDNS_CacheEntry *entry)
 }
 
 /**
+ * cache_remove_entry - Remove and free a cache entry from all data structures
+ * @dns: DNS resolver instance
+ * @entry: Cache entry to remove (must not be NULL)
+ *
+ * Thread-safe: Must hold mutex
+ *
+ * Consolidates the common pattern of removing an entry from LRU list,
+ * hash table, freeing resources, and updating size counter. Does NOT
+ * update eviction counter - caller must do so if appropriate.
+ *
+ * @see cache_evict_oldest() for eviction with counter update
+ * @see cache_lookup() for expired entry removal
+ * @see SocketDNS_cache_remove() for explicit removal
+ */
+static void
+cache_remove_entry (struct SocketDNS_T *dns, struct SocketDNS_CacheEntry *entry)
+{
+  cache_lru_remove (dns, entry);
+  cache_hash_remove (dns, entry);
+  cache_entry_free (entry);
+  dns->cache_size--;
+}
+
+/**
  * cache_evict_oldest - Evict the oldest (LRU tail) entry
  * @dns: DNS resolver instance
  *
@@ -1459,10 +1483,7 @@ cache_evict_oldest (struct SocketDNS_T *dns)
   if (!oldest)
     return;
 
-  cache_lru_remove (dns, oldest);
-  cache_hash_remove (dns, oldest);
-  cache_entry_free (oldest);
-  dns->cache_size--;
+  cache_remove_entry (dns, oldest);
   dns->cache_evictions++;
 }
 
@@ -1495,10 +1516,7 @@ cache_lookup (struct SocketDNS_T *dns, const char *hostname)
           if (cache_entry_expired (dns, entry))
             {
               /* Expired - remove and return miss */
-              cache_lru_remove (dns, entry);
-              cache_hash_remove (dns, entry);
-              cache_entry_free (entry);
-              dns->cache_size--;
+              cache_remove_entry (dns, entry);
               dns->cache_evictions++;
               return NULL;
             }
@@ -1591,19 +1609,26 @@ cache_insert (struct SocketDNS_T *dns, const char *hostname,
 }
 
 /**
- * SocketDNS_cache_clear - Clear the entire DNS cache
+ * cache_clear_locked - Clear entire cache (internal, mutex must be held)
  * @dns: DNS resolver instance
  *
- * Thread-safe: Yes
+ * Thread-safe: Must hold mutex
+ *
+ * Internal helper that performs cache clearing without acquiring the mutex.
+ * Used by both SocketDNS_cache_clear() and SocketDNS_cache_set_max_entries()
+ * to avoid deadlock when clearing cache while already holding the lock.
+ *
+ * @see SocketDNS_cache_clear() for public API
+ * @see SocketDNS_cache_set_max_entries() for usage when disabling cache
  */
-void
-SocketDNS_cache_clear (T dns)
+static void
+cache_clear_locked (struct SocketDNS_T *dns)
 {
   size_t i;
 
-  assert (dns);
-
-  pthread_mutex_lock (&dns->mutex);
+  /* Early exit if cache is already empty - O(1) instead of O(hash_size) */
+  if (dns->cache_size == 0)
+    return;
 
   /* Free all entries in hash table */
   for (i = 0; i < SOCKET_DNS_CACHE_HASH_SIZE; i++)
@@ -1621,7 +1646,21 @@ SocketDNS_cache_clear (T dns)
   dns->cache_lru_head = NULL;
   dns->cache_lru_tail = NULL;
   dns->cache_size = 0;
+}
 
+/**
+ * SocketDNS_cache_clear - Clear the entire DNS cache
+ * @dns: DNS resolver instance
+ *
+ * Thread-safe: Yes
+ */
+void
+SocketDNS_cache_clear (T dns)
+{
+  assert (dns);
+
+  pthread_mutex_lock (&dns->mutex);
+  cache_clear_locked (dns);
   pthread_mutex_unlock (&dns->mutex);
 }
 
@@ -1638,7 +1677,6 @@ SocketDNS_cache_remove (T dns, const char *hostname)
 {
   unsigned hash;
   struct SocketDNS_CacheEntry *entry;
-  struct SocketDNS_CacheEntry **pp;
   int found = 0;
 
   assert (dns);
@@ -1647,21 +1685,17 @@ SocketDNS_cache_remove (T dns, const char *hostname)
   pthread_mutex_lock (&dns->mutex);
 
   hash = cache_hash_function (hostname);
-  pp = &dns->cache_hash[hash];
+  entry = dns->cache_hash[hash];
 
-  while (*pp)
+  while (entry)
     {
-      entry = *pp;
       if (strcasecmp (entry->hostname, hostname) == 0)
         {
-          *pp = entry->hash_next;
-          cache_lru_remove (dns, entry);
-          cache_entry_free (entry);
-          dns->cache_size--;
+          cache_remove_entry (dns, entry);
           found = 1;
           break;
         }
-      pp = &entry->hash_next;
+      entry = entry->hash_next;
     }
 
   pthread_mutex_unlock (&dns->mutex);
@@ -1691,6 +1725,9 @@ SocketDNS_cache_set_ttl (T dns, int ttl_seconds)
  * @max_entries: Maximum entries (0 disables caching)
  *
  * Thread-safe: Yes
+ *
+ * Note: Uses cache_clear_locked() internally to avoid deadlock when
+ * disabling caching (max_entries == 0) while holding the mutex.
  */
 void
 SocketDNS_cache_set_max_entries (T dns, size_t max_entries)
@@ -1701,16 +1738,16 @@ SocketDNS_cache_set_max_entries (T dns, size_t max_entries)
 
   dns->cache_max_entries = max_entries;
 
-  /* Evict if now over limit */
-  while (dns->cache_size > max_entries && max_entries > 0)
-    cache_evict_oldest (dns);
-
-  /* If disabled, clear everything */
-  if (max_entries == 0 && dns->cache_size > 0)
+  if (max_entries == 0)
     {
-      pthread_mutex_unlock (&dns->mutex);
-      SocketDNS_cache_clear (dns);
-      return;
+      /* Disabling cache - clear everything using locked helper */
+      cache_clear_locked (dns);
+    }
+  else
+    {
+      /* Evict if now over limit */
+      while (dns->cache_size > max_entries)
+        cache_evict_oldest (dns);
     }
 
   pthread_mutex_unlock (&dns->mutex);
