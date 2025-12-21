@@ -13,9 +13,6 @@
 #include <arpa/inet.h>
 #include <string.h>
 
-/* ============================================================================
- * Internal Helper Functions - IP Address Parsing
- * ============================================================================
  */
 
 static int
@@ -87,9 +84,6 @@ ip_addresses_equal (const char *ip1, const char *ip2)
   return memcmp (bytes1, bytes2, cmp_len) == 0;
 }
 
-/* ============================================================================
- * Internal Helper Functions - CIDR Matching
- * ============================================================================
  */
 
 static int
@@ -141,9 +135,6 @@ ip_matches_cidr (const char *ip, const SocketSYN_WhitelistEntry *entry)
   return ip_matches_cidr_bytes (family, ip_bytes, entry);
 }
 
-/* ============================================================================
- * Internal Helper Functions - Whitelist
- * ============================================================================
  */
 
 /* Compares parsed bytes to prevent bypass via alternate IP formats */
@@ -242,9 +233,6 @@ whitelist_check (SocketSYNProtect_T protect, const char *ip)
   return whitelist_check_all_cidrs_bytes (protect, family, ip_bytes, bucket);
 }
 
-/* ============================================================================
- * Internal Helper Functions - Blacklist
- * ============================================================================
  */
 
 void

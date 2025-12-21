@@ -13,9 +13,6 @@
 
 #define T TimeWindow_T
 
-/* ============================================================================
- * Internal Helper Functions
- * ============================================================================
  */
 
 /* Clamp elapsed time to [0, duration] to handle clock skew */
@@ -31,9 +28,6 @@ timewindow_clamp_to_duration(int64_t elapsed, int duration) {
     return elapsed;
 }
 
-/* ============================================================================
- * Public API Implementation
- * ============================================================================
  */
 
 void

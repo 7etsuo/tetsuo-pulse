@@ -26,9 +26,6 @@
 
 #define T SocketIPTracker_T
 
-/* ============================================================================
- * Exception Definitions
- * ============================================================================
  */
 
 const Except_T SocketIPTracker_Failed
@@ -36,9 +33,6 @@ const Except_T SocketIPTracker_Failed
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketIPTracker);
 
-/* ============================================================================
- * Internal Structures
- * ============================================================================
  */
 
 typedef struct IPEntry
@@ -114,9 +108,6 @@ validate_ip (const char *ip, const char *caller)
   return IP_ADVANCED_INVALID;
 }
 
-/* ============================================================================
- * HashTable Callbacks
- * ============================================================================
  */
 
 /* Uses DJB2 string hash with seed for DoS resistance */
@@ -155,9 +146,6 @@ find_entry (const T tracker, const char *ip, IPEntry **prev_out)
 
   return (IPEntry *)HashTable_find (tracker->table, ip, (void **)prev_out);
 }
-/* ============================================================================
- * Internal Helper Functions - Generic Allocation/Free
- * ============================================================================
  */
 
 static void *
@@ -177,9 +165,6 @@ tracker_free_raw (const T tracker, void *ptr)
     free (ptr);
 }
 
-/* ============================================================================
- * Internal Helper Functions - Entry Allocation
- * ============================================================================
  */
 
 static IPEntry *
@@ -221,9 +206,6 @@ create_and_insert_entry (T tracker, const char *ip, int initial_count)
   return entry;
 }
 
-/* ============================================================================
- * Internal Helper Functions - Entry Removal
- * ============================================================================
  */
 
 /* O(1) removal with prev pointer, caller must hold mutex */
@@ -239,9 +221,6 @@ unlink_entry (T tracker, IPEntry *entry, IPEntry *prev)
   tracker_free_raw (tracker, entry);
 }
 
-/* ============================================================================
- * Internal Helper Functions - Entry Cleanup
- * ============================================================================
  */
 
 static int
@@ -259,9 +238,6 @@ free_all_entries (T tracker)
     HashTable_foreach (tracker->table, free_entry_callback, tracker);
 }
 
-/* ============================================================================
- * Internal Helper Functions - Tracker Initialization
- * ============================================================================
  */
 
 static T
@@ -358,9 +334,6 @@ cleanup_failed_tracker (T tracker)
     }
 }
 
-/* ============================================================================
- * Internal Helper Functions - Track Operations
- * ============================================================================
  */
 
 static bool
@@ -423,9 +396,6 @@ track_internal (T tracker, const char *ip)
   return increment_existing_entry (tracker, entry);
 }
 
-/* ============================================================================
- * Public API Implementation
- * ============================================================================
  */
 
 T

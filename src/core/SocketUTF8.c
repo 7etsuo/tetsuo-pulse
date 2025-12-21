@@ -12,16 +12,10 @@
 #include "core/SocketUTF8.h"
 #include "core/SocketUtil.h"
 
-/* ==================== Exception Definition ==================== */
-
-const Except_T SocketUTF8_Failed
     = { &SocketUTF8_Failed, "UTF-8 validation failed" };
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketUTF8);
 
-/* ==================== DFA State Constants ==================== */
-
-#define UTF8_STATE_ACCEPT 0
 #define UTF8_STATE_REJECT 1
 #define UTF8_STATE_2BYTE_EXPECT 2
 #define UTF8_STATE_E0_SPECIAL 3
@@ -33,9 +27,6 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketUTF8);
 #define UTF8_NUM_CHAR_CLASSES 12
 #define UTF8_NUM_DFA_STATES 9
 
-/* ==================== Hoehrmann DFA Tables ==================== */
-
-/* clang-format off */
 
 /* Maps each byte (0x00-0xFF) to a character class (0-11) */
 static const uint8_t utf8_class[256] = {
@@ -104,9 +95,6 @@ static const uint8_t utf8_state_bytes[] = {
   4, /* UTF8_STATE_F4_SPECIAL: 4-byte total (after F4) */
 };
 
-/* ==================== Result String Table ==================== */
-
-static const char *utf8_result_strings[] = {
   "Valid UTF-8",                            /* UTF8_VALID */
   "Invalid byte sequence",                  /* UTF8_INVALID */
   "Incomplete sequence (needs more bytes)", /* UTF8_INCOMPLETE */
@@ -115,9 +103,6 @@ static const char *utf8_result_strings[] = {
   "Code point exceeds U+10FFFF"             /* UTF8_TOO_LARGE */
 };
 
-/* ==================== Byte Pattern Constants ==================== */
-
-#define UTF8_CONTINUATION_MASK 0xC0
 #define UTF8_CONTINUATION_START 0x80
 #define UTF8_ASCII_HIGH_BIT 0x80
 
@@ -156,9 +141,6 @@ static const char *utf8_result_strings[] = {
 #define UTF8_F4_TOO_LARGE_MIN 0x90
 #define UTF8_F4_TOO_LARGE_MAX 0xBF
 
-/* ==================== DFA Helpers ==================== */
-
-static inline uint32_t
 dfa_transition (uint32_t state, uint8_t char_class)
 {
   return utf8_state[state * UTF8_NUM_CHAR_CLASSES + char_class];
@@ -195,9 +177,6 @@ update_sequence_tracking (SocketUTF8_State *state, uint32_t prev_state,
     }
 }
 
-/* ==================== Internal Helpers ==================== */
-
-static void
 raise_arg_error (const char *msg)
 {
   SOCKET_RAISE_MSG (SocketUTF8, SocketUTF8_Failed, "%s", msg);
@@ -264,9 +243,6 @@ classify_first_byte_error (unsigned char byte)
   return UTF8_INVALID;
 }
 
-/* ==================== One-Shot Validation ==================== */
-
-SocketUTF8_Result
 SocketUTF8_validate (const unsigned char *data, size_t len)
 {
   if (len > 0 && !data)
@@ -297,9 +273,6 @@ SocketUTF8_validate_str (const char *str)
   return SocketUTF8_validate ((const unsigned char *)str, strlen (str));
 }
 
-/* ==================== Incremental Validation ==================== */
-
-void
 SocketUTF8_init (SocketUTF8_State *state)
 {
   if (!state)
@@ -369,9 +342,6 @@ SocketUTF8_reset (SocketUTF8_State *state)
   SocketUTF8_init (state);
 }
 
-/* ==================== UTF-8 Utilities ==================== */
-
-int
 SocketUTF8_codepoint_len (uint32_t codepoint)
 {
   if (codepoint >= SOCKET_UTF8_SURROGATE_MIN

@@ -19,9 +19,6 @@
 #include "core/SocketUtil.h"
 #include "core/SocketMetrics.h"
 
-/* ===========================================================================
- * TIME UTILITIES SUBSYSTEM
- * ===========================================================================*/
 
 /* Flag for one-time CLOCK_MONOTONIC fallback warning */
 static volatile int monotonic_fallback_warned = 0;
@@ -112,9 +109,6 @@ Socket_get_monotonic_ms (void)
 #endif
 }
 
-/* ===========================================================================
- * ERROR MAPPING TABLE
- * ===========================================================================*/
 
 typedef struct SocketErrorMapping
 {
@@ -197,9 +191,6 @@ socket_find_error_mapping (const int err)
   return NULL;
 }
 
-/* ===========================================================================
- * ERROR HANDLING SUBSYSTEM
- * ===========================================================================*/
 
 static SocketErrorCode
 socket_errno_to_errorcode (int errno_val)
@@ -257,9 +248,6 @@ Socket_safe_strerror (int errnum)
 #endif
 }
 
-/* ===========================================================================
- * ERROR CATEGORIZATION SUBSYSTEM
- * ===========================================================================*/
 
 static const char *const socket_error_category_names[] = {
   "NETWORK", "PROTOCOL", "APPLICATION", "TIMEOUT", "RESOURCE", "UNKNOWN"
@@ -287,9 +275,6 @@ SocketError_is_retryable_errno (int err)
   return m ? m->retryable : 0;
 }
 
-/* ===========================================================================
- * LOGGING SUBSYSTEM
- * ===========================================================================*/
 
 /* Mutex protecting callback, userdata, and log level */
 static pthread_mutex_t socketlog_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -484,9 +469,6 @@ SocketLog_emitfv (SocketLogLevel level, const char *component, const char *fmt,
   SocketLog_emit (level, component, buffer);
 }
 
-/* ===========================================================================
- * LOGGING CONTEXT SUBSYSTEM
- * ===========================================================================*/
 
 #ifdef _WIN32
 static __declspec (thread) SocketLogContext socketlog_context = { "", "", -1 };
@@ -531,9 +513,6 @@ SocketLog_clearcontext (void)
   socketlog_context_set = 0;
 }
 
-/* ===========================================================================
- * STRUCTURED LOGGING SUBSYSTEM
- * ===========================================================================*/
 
 void
 SocketLog_setstructuredcallback (SocketLogStructuredCallback callback,
@@ -676,9 +655,6 @@ SocketLog_emit_structured (SocketLogLevel level, const char *component,
                                       field_count);
 }
 
-/* ===========================================================================
- * LEGACY METRICS SUBSYSTEM
- * ===========================================================================
  * NOTE: Legacy system for backward compatibility. Prefer SocketMetrics.h.
  */
 
@@ -751,7 +727,7 @@ SocketMetrics_increment (SocketMetric metric, unsigned long value)
     SocketLog_emitf (SOCKET_LOG_WARN, "SocketMetrics",
                      "Unmapped legacy metric %s (%d) ignored; consider migrating to new API",
                      socketmetrics_legacy_names[metric], (int)metric);
-    // Legacy behavior preserved if needed by adding mapping
+
   }
 }
 
@@ -807,9 +783,6 @@ SocketMetrics_count (void)
   return SOCKET_METRIC_COUNT;
 }
 
-/* ===========================================================================
- * EVENTS SUBSYSTEM
- * ===========================================================================*/
 
 typedef struct SocketEventHandler
 {

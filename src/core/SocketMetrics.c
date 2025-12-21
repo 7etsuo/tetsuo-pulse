@@ -4,7 +4,7 @@
  * https://x.com/tetsuoai
  */
 
-/* Metrics collection and export system */
+
 
 #include <assert.h>
 #include <math.h>
@@ -19,9 +19,6 @@
 #include "core/SocketMetrics.h"
 #include "core/SocketUtil.h"
 
-/* ============================================================================
- * Configuration Constants
- * ============================================================================
  */
 
 #define PERCENTILE_P50 50.0
@@ -39,9 +36,6 @@ static const char *const STATSD_PCT_P50 = "p50";
 static const char *const STATSD_PCT_P95 = "p95";
 static const char *const STATSD_PCT_P99 = "p99";
 
-/* ============================================================================
- * Internal Logging
- * ============================================================================
  */
 
 #define METRICS_LOG_DEBUG_MSG(fmt, ...)                                       \
@@ -53,21 +47,15 @@ static const char *const STATSD_PCT_P99 = "p99";
 #define METRICS_LOG_DEBUG(msg) ((void)0)
 #endif
 
-/* ============================================================================
- * Validation Macros
- * ============================================================================
  */
 
 #define COUNTER_VALID(m) ((m) >= 0 && (m) < SOCKET_COUNTER_METRIC_COUNT)
 #define GAUGE_VALID(m) ((m) >= 0 && (m) < SOCKET_GAUGE_METRIC_COUNT)
 #define HISTOGRAM_VALID(m) ((m) >= 0 && (m) < SOCKET_HISTOGRAM_METRIC_COUNT)
 
-/* ============================================================================
- * Internal Structures
- * ============================================================================
  */
 
-/* Circular buffer with O(1) insertion, O(n log n) percentile calculation */
+
 typedef struct Histogram
 {
   pthread_mutex_t mutex;
@@ -80,9 +68,6 @@ typedef struct Histogram
   int initialized;
 } Histogram;
 
-/* ============================================================================
- * Static Data
- * ============================================================================
  */
 
 static _Atomic int metrics_initialized = 0;
@@ -92,9 +77,6 @@ static Histogram histogram_values[SOCKET_HISTOGRAM_METRIC_COUNT];
 static pthread_mutex_t metrics_global_mutex = PTHREAD_MUTEX_INITIALIZER;
 static _Atomic int peak_socket_count = 0;
 
-/* ============================================================================
- * Metric Name Tables
- * ============================================================================
  */
 
 static const char *const counter_names[SOCKET_COUNTER_METRIC_COUNT] = {
@@ -280,9 +262,6 @@ static const char *const histogram_help[SOCKET_HISTOGRAM_METRIC_COUNT] = {
 static const char *const category_names[SOCKET_METRIC_CAT_COUNT]
     = { "pool", "http_client", "http_server", "tls", "dns", "socket", "poll" };
 
-/* ============================================================================
- * Histogram Validation Helper
- * ============================================================================
  */
 
 static inline int
@@ -293,9 +272,6 @@ histogram_is_valid (SocketHistogramMetric metric)
   return histogram_values[metric].initialized;
 }
 
-/* ============================================================================
- * Percentile Calculation Helpers
- * ============================================================================
  */
 
 static int
@@ -334,9 +310,6 @@ percentile_from_sorted (const double *sorted, size_t n, double percentile)
   return sorted[lower] * (1.0 - frac) + sorted[upper] * frac;
 }
 
-/* ============================================================================
- * Histogram Implementation
- * ============================================================================
  */
 
 static void
@@ -541,9 +514,6 @@ histogram_reset (Histogram *h)
   atomic_store (&h->count, 0);
 }
 
-/* ============================================================================
- * Initialization and Shutdown
- * ============================================================================
  */
 
 int
@@ -589,9 +559,6 @@ SocketMetrics_shutdown (void)
   METRICS_LOG_DEBUG ("Metrics subsystem shutdown");
 }
 
-/* ============================================================================
- * Counter Operations
- * ============================================================================
  */
 
 void
@@ -618,9 +585,6 @@ SocketMetrics_counter_get (SocketCounterMetric metric)
   return atomic_load (&counter_values[metric]);
 }
 
-/* ============================================================================
- * Gauge Operations
- * ============================================================================
  */
 
 void
@@ -663,9 +627,6 @@ SocketMetrics_gauge_get (SocketGaugeMetric metric)
   return atomic_load (&gauge_values[metric]);
 }
 
-/* ============================================================================
- * Histogram Operations
- * ============================================================================
  */
 
 void
@@ -730,9 +691,6 @@ SocketMetrics_histogram_snapshot (SocketHistogramMetric metric,
   histogram_fill_snapshot (&histogram_values[metric], snapshot);
 }
 
-/* ============================================================================
- * Snapshot and Reset
- * ============================================================================
  */
 
 void
@@ -801,9 +759,6 @@ SocketMetrics_reset_histograms (void)
     }
 }
 
-/* ============================================================================
- * Export Helpers
- * ============================================================================
  */
 
 static size_t
@@ -909,9 +864,6 @@ export_histogram_prometheus (char *buffer, size_t buffer_size, size_t *pos,
   export_prometheus_histogram_summary (buffer, buffer_size, pos, name, h);
 }
 
-/* ============================================================================
- * Export Functions
- * ============================================================================
  */
 
 size_t
@@ -1128,9 +1080,6 @@ SocketMetrics_export_json (char *buffer, size_t buffer_size)
   return pos;
 }
 
-/* ============================================================================
- * Metric Metadata
- * ============================================================================
  */
 
 const char *
@@ -1189,9 +1138,6 @@ SocketMetrics_category_name (SocketMetricCategory category)
   return category_names[category];
 }
 
-/* ============================================================================
- * Socket Count and Peak Tracking
- * ============================================================================
  */
 
 int

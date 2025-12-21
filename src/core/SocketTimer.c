@@ -4,7 +4,7 @@
  * https://x.com/tetsuoai
  */
 
-/* Timer subsystem with min-heap implementation */
+
 
 #include <assert.h>
 #include <inttypes.h>
@@ -21,11 +21,9 @@
 #include "core/SocketTimer.h"
 #include "core/SocketUtil.h"
 
-/* ===========================================================================
- * Thread-Local Error Handling
- * ===========================================================================*/
 
-/* Timer exception definition */
+
+
 const Except_T SocketTimer_Failed
     = { &SocketTimer_Failed, "Timer operation failed" };
 
@@ -33,9 +31,7 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketTimer);
 
 struct SocketTimer_heap_T *socketpoll_get_timer_heap (SocketPoll_T poll);
 
-/* ===========================================================================
- * Validation Helpers (Static)
- * ===========================================================================*/
+
 
 static SocketTimer_heap_T *
 sockettimer_validate_heap (SocketPoll_T poll)
@@ -84,9 +80,7 @@ sockettimer_validate_timer_params (int64_t delay_ms, int64_t interval_ms,
     }
 }
 
-/* ===========================================================================
- * Timer Allocation and Initialization (Static)
- * ===========================================================================*/
+
 
 static void *
 sockettimer_calloc_with_raise (Arena_T arena, size_t nmemb, size_t size,
@@ -140,9 +134,7 @@ sockettimer_create_timer (Arena_T arena, int64_t delay_ms, int64_t interval_ms,
   return timer;
 }
 
-/* ===========================================================================
- * Heap Index Calculations (Static)
- * ===========================================================================*/
+
 
 static size_t
 sockettimer_heap_parent (size_t index)
@@ -174,9 +166,7 @@ sockettimer_heap_swap (struct SocketTimer_T **timers, size_t i, size_t j)
   timers[j]->heap_index = j;
 }
 
-/* ===========================================================================
- * Heap Operations (Static)
- * ===========================================================================*/
+
 
 static void
 sockettimer_heap_sift_up (struct SocketTimer_T **timers, size_t index)
@@ -226,7 +216,7 @@ sockettimer_heap_sift_down (struct SocketTimer_T **timers, size_t count,
     }
 }
 
-/* Move last element to root and restore heap property */
+
 static void
 sockettimer_heap_move_last_to_root (struct SocketTimer_T **timers,
                                     size_t *count)
@@ -269,7 +259,7 @@ sockettimer_skip_cancelled (SocketTimer_heap_T *heap)
     sockettimer_remove_cancelled_root (heap);
 }
 
-/* O(1) lookup using maintained heap_index field */
+
 static ssize_t
 sockettimer_find_in_heap (const SocketTimer_heap_T *heap,
                           const struct SocketTimer_T *timer)
@@ -383,9 +373,7 @@ sockettimer_handle_expired (SocketTimer_heap_T *heap,
   return 1;
 }
 
-/* ===========================================================================
- * Heap Allocation Helpers (Static)
- * ===========================================================================*/
+
 
 static SocketTimer_heap_T *
 sockettimer_heap_alloc_structure (Arena_T arena)
@@ -435,9 +423,7 @@ sockettimer_heap_unlock (SocketTimer_heap_T *heap)
                       "pthread_mutex_unlock failed: %d", ret);
 }
 
-/* ===========================================================================
- * Internal Peek (Unlocked)
- * ===========================================================================*/
+
 
 static struct SocketTimer_T *
 sockettimer_peek_unlocked (SocketTimer_heap_T *heap)
@@ -446,9 +432,7 @@ sockettimer_peek_unlocked (SocketTimer_heap_T *heap)
   return (heap->count > 0) ? heap->timers[0] : NULL;
 }
 
-/* ===========================================================================
- * Internal Helpers for Public API
- * ===========================================================================*/
+
 
 /* Returns NULL instead of raising on failure */
 static SocketTimer_heap_T *
@@ -481,9 +465,7 @@ sockettimer_add_timer_internal (SocketPoll_T poll, int64_t delay_ms,
   return timer;
 }
 
-/* ===========================================================================
- * Heap Public API
- * ===========================================================================*/
+
 
 /* Partial allocations remain in arena until Arena_dispose() */
 SocketTimer_heap_T *
@@ -679,9 +661,7 @@ SocketTimer_process_expired (SocketTimer_heap_T *heap)
   return fired_count;
 }
 
-/* ===========================================================================
- * Public Timer API - One-Shot and Repeating
- * ===========================================================================*/
+
 
 SocketTimer_T
 SocketTimer_add (SocketPoll_T poll, int64_t delay_ms,
@@ -699,9 +679,7 @@ SocketTimer_add_repeating (SocketPoll_T poll, int64_t interval_ms,
                                          callback, userdata, 1);
 }
 
-/* ===========================================================================
- * Public Timer API - Cancel and Query
- * ===========================================================================*/
+
 
 int
 SocketTimer_cancel (SocketPoll_T poll, SocketTimer_T timer)
@@ -745,11 +723,11 @@ sockettimer_calculate_safe_expiry (int64_t now_ms, int64_t delay_ms)
 {
   int64_t clamped_delay = delay_ms;
 
-  /* Clamp delay to maximum allowed */
+
   if (delay_ms > SOCKET_MAX_TIMER_DELAY_MS)
     clamped_delay = SOCKET_MAX_TIMER_DELAY_MS;
 
-  /* Check for overflow */
+
   if (clamped_delay > 0 && now_ms > INT64_MAX - clamped_delay)
     return INT64_MAX;
 

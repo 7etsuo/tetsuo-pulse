@@ -27,9 +27,6 @@
 #include <unistd.h>
 #endif
 
-/* ============================================================================
- * Internal Constants
- * ============================================================================
  */
 
 #define WEBSOCKET_KEY_RANDOM_BYTES 16 /* 16 bytes = 128 bits per RFC 6455 */
@@ -39,9 +36,6 @@
 #define BASE64_INVALID_CHAR 255
 #define BASE64_MAX_PADDING 2
 
-/* ============================================================================
- * Exception Definition
- * ============================================================================
  */
 
 const Except_T SocketCrypto_Failed
@@ -71,9 +65,6 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketCrypto);
   SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,                        \
                     "%s computation failed", name)
 
-/* ============================================================================
- * Static Constants
- * ============================================================================
  */
 
 static const char base64_alphabet[]
@@ -105,9 +96,6 @@ static const unsigned char base64_decode_table[256] = {
 static const char hex_lower[] = "0123456789abcdef";
 static const char hex_upper[] = "0123456789ABCDEF";
 
-/* ============================================================================
- * Hash Functions
- * ============================================================================
  */
 
 #if SOCKET_HAS_TLS
@@ -196,9 +184,6 @@ SocketCrypto_md5 (const void *input, size_t input_len,
 #endif
 }
 
-/* ============================================================================
- * HMAC Functions
- * ============================================================================
  */
 
 void
@@ -249,9 +234,6 @@ SocketCrypto_hmac_sha256 (const void *key, size_t key_len, const void *data,
 #endif
 }
 
-/* ============================================================================
- * Base64 Encoding (RFC 4648)
- * ============================================================================
  */
 
 size_t
@@ -509,9 +491,6 @@ SocketCrypto_base64_decode (const char *input, size_t input_len,
   return (ssize_t)out_pos;
 }
 
-/* ============================================================================
- * Hexadecimal Encoding
- * ============================================================================
  */
 
 void
@@ -598,9 +577,6 @@ SocketCrypto_hex_decode (const char *input, size_t input_len,
   return (ssize_t)(input_len / 2);
 }
 
-/* ============================================================================
- * Random Number Generation
- * ============================================================================
  */
 
 #if !SOCKET_HAS_TLS
@@ -697,9 +673,6 @@ SocketCrypto_cleanup (void)
 #endif
 }
 
-/* ============================================================================
- * WebSocket Handshake Helpers (RFC 6455)
- * ============================================================================
  */
 
 int
@@ -776,9 +749,6 @@ SocketCrypto_websocket_key (char output[SOCKET_CRYPTO_WEBSOCKET_KEY_SIZE])
   return 0;
 }
 
-/* ============================================================================
- * Security Utilities
- * ============================================================================
  */
 
 int

@@ -4,7 +4,7 @@
  * https://x.com/tetsuoai
  */
 
-/* Exception handling implementation using thread-local exception stack */
+
 
 #include <assert.h>
 #include <stdio.h>
@@ -12,9 +12,6 @@
 
 #include "core/Except.h"
 
-/* ============================================================================
- * Compiler Attribute Macros
- * ============================================================================
  */
 
 /* Mark function as never returning */
@@ -42,9 +39,6 @@
 #define EXCEPT_NONNULL(...)
 #endif
 
-/* ============================================================================
- * Constants
- * ============================================================================
  */
 
 /* Default string for unknown file locations */
@@ -66,9 +60,6 @@
   "This indicates a programming error in exception usage"
 #define EXCEPT_ABORTING_FMT "aborting..."
 
-/* ============================================================================
- * Thread-Local Storage
- * ============================================================================
  */
 
 /* Thread-local exception stack - each thread maintains its own */
@@ -78,16 +69,10 @@ __declspec (thread) Except_Frame *Except_stack = NULL;
 __thread Except_Frame *Except_stack = NULL;
 #endif
 
-/* ============================================================================
- * Global Exception Types
- * ============================================================================
  */
 
 const Except_T Assert_Failed = { &Assert_Failed, "Assertion failed" };
 
-/* ============================================================================
- * Static Helper Functions - Output
- * ============================================================================
  */
 
 static inline void
@@ -159,9 +144,6 @@ except_finish_abort (void)
   abort ();
 }
 
-/* ============================================================================
- * Static Helper Functions - Validation
- * ============================================================================
  */
 
 EXCEPT_COLD static void
@@ -175,9 +157,6 @@ except_validate_not_null (const Except_T *e)
   except_finish_abort ();
 }
 
-/* ============================================================================
- * Static Helper Functions - Uncaught Handling
- * ============================================================================
  */
 
 EXCEPT_COLD EXCEPT_NORETURN EXCEPT_NONNULL (1)
@@ -190,9 +169,6 @@ except_abort_uncaught (const Except_T *e, const char *file, int line)
   except_finish_abort ();
 }
 
-/* ============================================================================
- * Static Helper Functions - Frame Management
- * ============================================================================
  */
 
 EXCEPT_NONNULL (1, 2)
@@ -226,9 +202,6 @@ except_jump_to_handler (Except_Frame *frame)
   longjmp (*(jmp_buf *)&frame->env, Except_raised);
 }
 
-/* ============================================================================
- * Public Functions
- * ============================================================================
  */
 
 EXCEPT_NORETURN void

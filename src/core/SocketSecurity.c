@@ -52,9 +52,6 @@
 #include "tls/SocketTLSConfig.h"
 #endif
 
-/* ============================================================================
- * Exception Definitions
- * ============================================================================
  */
 
 const Except_T SocketSecurity_SizeExceeded
@@ -65,9 +62,6 @@ const Except_T SocketSecurity_ValidationFailed
     = { &SocketSecurity_ValidationFailed, "Input validation failed" };
 
 
-/* ============================================================================
- * Static Helper Functions - Populate Limit Categories
- * ============================================================================
  */
 static void
 populate_memory_limits (SocketSecurityLimits *limits)
@@ -157,9 +151,6 @@ populate_timeout_limits (SocketSecurityLimits *limits)
   limits->timeout_request_ms = SOCKET_SECURITY_MAX_REQUEST_TIMEOUT_MS;
 }
 
-/* ============================================================================
- * Public Limit Query Functions
- * ============================================================================
  */
 
 /* Set optional output parameter if not NULL */
@@ -225,9 +216,6 @@ SocketSecurity_get_hpack_limits (size_t *max_table)
   set_size_ptr (max_table, SOCKETHPACK_MAX_TABLE_SIZE);
 }
 
-/* ============================================================================
- * Size Validation Functions
- * ============================================================================
  */
 
 int

@@ -4,7 +4,7 @@
  * https://x.com/tetsuoai
  */
 
-/* SYN flood protection implementation */
+
 
 #include "core/SocketSYNProtect-private.h"
 #include "core/SocketSYNProtect.h"
@@ -26,9 +26,6 @@
 
 #define T SocketSYNProtect_T
 
-/* ============================================================================
- * Exception Definitions
- * ============================================================================
  */
 
 const Except_T SocketSYNProtect_Failed
@@ -36,9 +33,6 @@ const Except_T SocketSYNProtect_Failed
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketSYNProtect);
 
-/* ============================================================================
- * Static String Tables
- * ============================================================================
  */
 
 static const char *const action_names[]
@@ -51,9 +45,6 @@ static const char *const reputation_names[]
 #define REPUTATION_NAMES_COUNT                                                \
   (sizeof (reputation_names) / sizeof (reputation_names[0]))
 
-/* ============================================================================
- * Internal Helper Functions - Hash Seed Generation
- * ============================================================================
  */
 
 /* Generate fallback seed from multiple entropy sources */
@@ -86,9 +77,6 @@ synprotect_get_fallback_seed (void)
   return seed;
 }
 
-/* ============================================================================
- * Internal Helper Functions - String Utilities
- * ============================================================================
  */
 
 static void
@@ -97,9 +85,6 @@ safe_copy_ip (char *dest, const char *src)
   socket_util_safe_copy_ip (dest, src, SOCKET_IP_MAX_LEN);
 }
 
-/* ============================================================================
- * Internal Helper Functions - Memory Allocation
- * ============================================================================
  */
 
 static void *
@@ -112,9 +97,6 @@ alloc_zeroed (T protect, size_t count, size_t size)
 
 
 
-/* ============================================================================
- * Internal Helper Functions - LRU List Operations
- * ============================================================================
  */
 
 static void
@@ -141,9 +123,6 @@ lru_touch (T protect, SocketSYN_IPEntry *entry)
     }
 }
 
-/* ============================================================================
- * Internal Helper Functions - IP Entry Management
- * ============================================================================
  */
 
 static SocketSYN_IPEntry *
@@ -234,9 +213,6 @@ get_or_create_ip_entry (T protect, const char *ip, int64_t now_ms)
   return create_ip_entry (protect, ip, now_ms);
 }
 
-/* ============================================================================
- * Internal Helper Functions - Sliding Window
- * ============================================================================
  */
 
 static void
@@ -292,9 +268,6 @@ calculate_effective_attempts (const SocketSYN_IPState *state, int64_t now_ms,
          + (uint32_t)(state->attempts_previous * previous_weight);
 }
 
-/* ============================================================================
- * Internal Helper Functions - Reputation Scoring
- * ============================================================================
  */
 
 static void
@@ -354,9 +327,6 @@ reward_success (SocketSYN_IPState *state,
   update_reputation_from_score (state, config);
 }
 
-/* ============================================================================
- * Internal Helper Functions - Action Determination
- * ============================================================================
  */
 
 static int
@@ -388,9 +358,6 @@ determine_action (const SocketSYN_IPState *state,
   return SYN_ACTION_ALLOW;
 }
 
-/* ============================================================================
- * Internal Helper Functions - IP Address Parsing
- * ============================================================================
  */
 
 static int
@@ -435,9 +402,6 @@ parse_ip_address (const char *ip, uint8_t *addr_bytes, size_t addr_size)
   return 0;
 }
 
-/* ============================================================================
- * Internal Helper Functions - CIDR Matching
- * ============================================================================
  */
 
 static int
@@ -489,9 +453,6 @@ ip_matches_cidr (const char *ip, const SocketSYN_WhitelistEntry *entry)
   return ip_matches_cidr_bytes (family, ip_bytes, entry);
 }
 
-/* ============================================================================
- * Internal Helper Functions - Whitelist
- * ============================================================================
  */
 
 static int
@@ -580,9 +541,6 @@ whitelist_check (T protect, const char *ip)
   return whitelist_check_all_cidrs_bytes (protect, family, ip_bytes, bucket);
 }
 
-/* ============================================================================
- * Internal Helper Functions - Blacklist
- * ============================================================================
  */
 
 static int
@@ -610,9 +568,6 @@ blacklist_check (T protect, const char *ip, int64_t now_ms)
   return 0;
 }
 
-/* ============================================================================
- * Internal Helper Functions - Check Processing
- * ============================================================================
  */
 
 static void
@@ -729,9 +684,6 @@ check_whitelist_blacklist (T protect, const char *client_ip, int64_t now_ms,
   return 0;
 }
 
-/* ============================================================================
- * Internal Helper Functions - Initialization Cleanup
- * ============================================================================
  */
 
 typedef enum
@@ -772,9 +724,6 @@ cleanup_synprotect_init (T protect, SYN_CleanupStage stage)
     }
 }
 
-/* ============================================================================
- * Internal Helper Functions - Initialization
- * ============================================================================
  */
 
 static int
@@ -827,9 +776,6 @@ init_atomic_stats (T protect)
   atomic_store (&protect->stat_lru_evictions, 0);
 }
 
-/* ============================================================================
- * Internal Helper Functions - Cleanup
- * ============================================================================
  */
 
 static void
@@ -877,9 +823,6 @@ free_blacklist_entries (T protect)
     }
 }
 
-/* ============================================================================
- * Internal Helper Functions - CIDR Parsing
- * ============================================================================
  */
 
 static int
@@ -912,9 +855,6 @@ parse_cidr_notation (const char *cidr, char *ip_out, size_t ip_out_size,
   return 1;
 }
 
-/* ============================================================================
- * Internal Helper Functions - Whitelist/Blacklist Common Operations
- * ============================================================================
  */
 
 static SocketSYN_WhitelistEntry *
@@ -991,9 +931,6 @@ create_blacklist_entry (T protect, const char *ip, int64_t expires_ms)
   return entry;
 }
 
-/* ============================================================================
- * Internal Helper Functions - Check Core Logic
- * ============================================================================
  */
 
 static int
@@ -1030,9 +967,6 @@ process_tracked_ip (T protect, const char *client_ip, int64_t now_ms,
   return action;
 }
 
-/* ============================================================================
- * Public API Implementation - Lifecycle
- * ============================================================================
  */
 
 void
@@ -1299,9 +1233,6 @@ SocketSYNProtect_configure (T protect, const SocketSYNProtect_Config *config)
   pthread_mutex_unlock (&protect->mutex);
 }
 
-/* ============================================================================
- * Public API Implementation - Core Protection
- * ============================================================================
  */
 
 SocketSYN_Action
@@ -1403,9 +1334,6 @@ SocketSYNProtect_report_failure (T protect, const char *client_ip,
   pthread_mutex_unlock (&protect->mutex);
 }
 
-/* ============================================================================
- * Public API Implementation - Whitelist Management
- * ============================================================================
  */
 
 int
@@ -1589,9 +1517,6 @@ SocketSYNProtect_whitelist_clear (T protect)
   pthread_mutex_unlock (&protect->mutex);
 }
 
-/* ============================================================================
- * Public API Implementation - Blacklist Management
- * ============================================================================
  */
 
 static int64_t
@@ -1737,9 +1662,6 @@ SocketSYNProtect_blacklist_clear (T protect)
   pthread_mutex_unlock (&protect->mutex);
 }
 
-/* ============================================================================
- * Public API Implementation - Query and Statistics
- * ============================================================================
  */
 
 static size_t
@@ -1867,9 +1789,6 @@ SocketSYNProtect_reputation_name (SocketSYN_Reputation rep)
   return "UNKNOWN";
 }
 
-/* ============================================================================
- * Public API Implementation - Maintenance
- * ============================================================================
  */
 
 static size_t

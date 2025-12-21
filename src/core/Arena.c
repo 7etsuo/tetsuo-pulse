@@ -4,7 +4,7 @@
  * https://x.com/tetsuoai
  */
 
-/* Arena.c - Arena memory allocator implementation */
+
 
 #include <assert.h>
 #include <limits.h>
@@ -23,9 +23,9 @@
 
 #define T Arena_T
 
-/* ==================== Internal Structures ==================== */
 
-/* Header for memory chunks in the arena */
+
+
 struct ChunkHeader
 {
   struct ChunkHeader *prev;
@@ -34,7 +34,7 @@ struct ChunkHeader
   size_t chunk_size;
 };
 
-/* Union for proper memory alignment */
+
 union header
 {
   struct ChunkHeader b;
@@ -42,7 +42,7 @@ union header
   union align a;
 };
 
-/* Arena structure - allocation state and per-arena mutex */
+
 struct T
 {
   struct ChunkHeader *prev;
@@ -51,7 +51,7 @@ struct T
   pthread_mutex_t mutex;
 };
 
-/* ==================== Chunk Helper Functions ==================== */
+
 
 static inline size_t
 chunk_total_size (const struct ChunkHeader *chunk)
@@ -69,20 +69,20 @@ chunk_limit (const struct ChunkHeader *chunk)
 static inline void
 arena_link_chunk (T arena, struct ChunkHeader *ptr, char *limit)
 {
-  /* Save current arena state into chunk header */
+
   ptr->prev = arena->prev;
   ptr->avail = arena->avail;
   ptr->limit = arena->limit;
 
-  /* Update arena to use new chunk */
+
   arena->avail = (char *)((union header *)ptr + 1);
   arena->limit = limit;
   arena->prev = ptr;
 }
 
-/* ==================== Global State ==================== */
 
-/* Arena exception definition */
+
+
 const Except_T Arena_Failed = { &Arena_Failed, "Arena operation failed" };
 
 /* Thread-local exception using centralized infrastructure */
@@ -93,7 +93,7 @@ static struct ChunkHeader *freechunks = NULL;
 static int nfree = 0;
 static pthread_mutex_t arena_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-/* ==================== Global Memory Limit Tracking ==================== */
+
 
 /* Atomic counters for global memory tracking */
 static _Atomic size_t global_memory_used = 0;
@@ -118,7 +118,7 @@ SocketConfig_get_memory_used (void)
   return atomic_load_explicit (&global_memory_used, memory_order_acquire);
 }
 
-/* Forward declaration for helper used in global_memory_try_alloc */
+
 static int check_alloc_allowed (size_t current, size_t nbytes, size_t limit);
 
 static int
@@ -157,7 +157,7 @@ global_memory_try_alloc (size_t nbytes)
   size_t limit
       = atomic_load_explicit (&global_memory_limit, memory_order_acquire);
 
-  /* No limit set - always allow */
+
   if (limit == 0)
     return global_memory_try_unlimited (nbytes);
 
@@ -171,7 +171,7 @@ global_memory_release (size_t nbytes)
                              memory_order_relaxed);
 }
 
-/* ==================== Global Memory Helper Functions ==================== */
+
 
 static int
 check_alloc_allowed (size_t current, size_t nbytes, size_t limit)
@@ -186,13 +186,13 @@ check_alloc_allowed (size_t current, size_t nbytes, size_t limit)
   return 1;
 }
 
-/* ==================== Validation Macros ==================== */
+
 
 #define ARENA_VALID_PTR_ARITH(ptr, offset, max)                               \
   (((uintptr_t)(ptr) <= UINTPTR_MAX - (offset))                               \
    && ((uintptr_t)(ptr) + (offset) <= (uintptr_t)(max)))
 
-/* ==================== Allocation Helper Functions ==================== */
+
 
 static int
 validate_chunk_size (size_t chunk_size, size_t *total_out)
@@ -257,7 +257,7 @@ allocate_raw_chunk (size_t total)
   return ptr;
 }
 
-/* ==================== Chunk Cache Operations ==================== */
+
 
 static int
 chunk_cache_get (struct ChunkHeader **ptr_out, char **limit_out)
@@ -307,7 +307,7 @@ chunk_cache_return (struct ChunkHeader *chunk)
     }
 }
 
-/* ==================== Alignment Calculation ==================== */
+
 
 static size_t
 arena_align_size (size_t nbytes)
@@ -346,11 +346,11 @@ arena_calculate_aligned_size (size_t nbytes)
   return final_size;
 }
 
-/* ==================== Chunk Linking ==================== */
 
 
 
-/* ==================== Chunk Allocation ==================== */
+
+
 
 static int
 arena_allocate_new_chunk (size_t chunk_size, struct ChunkHeader **ptr_out,
@@ -384,14 +384,14 @@ arena_get_chunk (T arena, size_t min_size)
   char *limit;
   size_t chunk_size;
 
-  /* Try to reuse a cached chunk */
+
   if (chunk_cache_get (&ptr, &limit) == ARENA_CHUNK_REUSED)
     {
       arena_link_chunk (arena, ptr, limit);
       return ARENA_SUCCESS;
     }
 
-  /* Allocate a new chunk */
+
   chunk_size = (ARENA_CHUNK_SIZE < min_size) ? min_size : ARENA_CHUNK_SIZE;
 
   if (arena_allocate_new_chunk (chunk_size, &ptr, &limit) != ARENA_SUCCESS)
@@ -401,7 +401,7 @@ arena_get_chunk (T arena, size_t min_size)
   return ARENA_SUCCESS;
 }
 
-/* ==================== Chunk Cleanup ==================== */
+
 
 /* Must hold arena->mutex */
 static void
@@ -425,7 +425,6 @@ arena_release_all_chunks (T arena)
   assert (arena->limit == NULL);
 }
 
-/* ==================== Space Allocation ==================== */
 
 
 
@@ -438,7 +437,8 @@ arena_release_all_chunks (T arena)
 
 
 
-/* ==================== Public API ==================== */
+
+
 
 T
 Arena_new (void)
@@ -498,7 +498,7 @@ Arena_alloc (T arena, size_t nbytes, const char *file, int line)
   while (arena->avail == NULL || arena->limit == NULL
          || (size_t)(arena->limit - arena->avail) < aligned_size)
     {
-      /* Get a chunk from cache or allocate new */
+
       if (arena_get_chunk (arena, aligned_size) != ARENA_SUCCESS)
         {
           pthread_mutex_unlock (&arena->mutex);

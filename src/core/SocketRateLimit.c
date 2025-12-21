@@ -4,7 +4,7 @@
  * https://x.com/tetsuoai
  */
 
-/* Token bucket rate limiter implementation */
+
 
 #include <assert.h>
 #include <stdlib.h>
@@ -46,10 +46,7 @@ static struct SocketLiveCount ratelimit_live_tracker
 #define ratelimit_live_dec()                                                  \
   SocketLiveCount_decrement (&ratelimit_live_tracker)
 
-/* ============================================================================
- * Exception Definitions
- * ============================================================================
- */
+
 
 const Except_T SocketRateLimit_Failed
     = { &SocketRateLimit_Failed, "Rate limiter operation failed" };
@@ -57,10 +54,7 @@ const Except_T SocketRateLimit_Failed
 /* Thread-local exception using centralized macro */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketRateLimit);
 
-/* ============================================================================
- * Pure Helper Functions (No Mutex Required, No Side Effects)
- * ============================================================================
- */
+
 
 static size_t
 ratelimit_calculate_tokens_to_add (int64_t elapsed_ms, size_t tokens_per_sec)
@@ -93,10 +87,7 @@ ratelimit_calculate_wait_ms (size_t needed, size_t tokens_per_sec)
   return wait_ms;  /* Guaranteed > 0 and no overflow */
 }
 
-/* ============================================================================
- * Bucket Operations (Caller Must Hold Mutex)
- * ============================================================================
- */
+
 
 /* Calculate elapsed time since last refill, clamped to prevent clock jump attacks */
 static int64_t
@@ -185,10 +176,7 @@ ratelimit_compute_wait_time (const T limiter, size_t tokens)
   return ratelimit_calculate_wait_ms (needed, limiter->tokens_per_sec);
 }
 
-/* ============================================================================
- * Private Helper Functions for Public API Patterns
- * ============================================================================
- */
+
 
 static int
 ratelimit_try_consume_with_refill (T limiter, size_t tokens)
@@ -292,10 +280,7 @@ ratelimit_get_bucket_size_locked (T limiter)
   return size;
 }
 
-/* ============================================================================
- * Lifecycle Helpers
- * ============================================================================
- */
+
 
 static T
 ratelimit_allocate (Arena_T arena)
@@ -344,10 +329,7 @@ ratelimit_validate_params (size_t tokens_per_sec, size_t *bucket_size)
                       "Rate limiter parameters exceed security limits");
 }
 
-/* ============================================================================
- * Public API - Lifecycle
- * ============================================================================
- */
+
 
 T
 SocketRateLimit_new (Arena_T arena, size_t tokens_per_sec, size_t bucket_size)
@@ -357,13 +339,13 @@ SocketRateLimit_new (Arena_T arena, size_t tokens_per_sec, size_t bucket_size)
 
   ratelimit_validate_params (tokens_per_sec, &normalized_bucket);
 
-  /* Allocate structure */
+
   limiter = ratelimit_allocate (arena);
   if (!limiter)
     SOCKET_RAISE_MSG (SocketRateLimit, SocketRateLimit_Failed,
                       "Failed to allocate rate limiter");
 
-  /* Initialize fields */
+
   ratelimit_init_fields (limiter, tokens_per_sec, normalized_bucket, arena);
 
   TRY
@@ -425,10 +407,7 @@ SocketRateLimit_free (T *limiter)
   *limiter = NULL;
 }
 
-/* ============================================================================
- * Public API - Token Acquisition
- * ============================================================================
- */
+
 
 int
 SocketRateLimit_try_acquire (T limiter, size_t tokens)
@@ -486,10 +465,7 @@ ratelimit_update_bucket_locked (T limiter, size_t new_size)
     }
 }
 
-/* ============================================================================
- * Public API - Configuration
- * ============================================================================
- */
+
 
 static void
 ratelimit_reset_locked (T limiter)

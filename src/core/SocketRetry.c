@@ -21,9 +21,6 @@
 #include "core/SocketSecurity.h"
 #include "core/SocketUtil.h"
 
-/* ============================================================================
- * Constants
- * ============================================================================
  */
 
 #define RETRY_MIN_DELAY_MS 1.0
@@ -44,9 +41,6 @@ const Except_T SocketRetry_Failed
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketRetry);
 
-/* ============================================================================
- * Internal Structure
- * ============================================================================
  */
 
 struct T
@@ -56,9 +50,6 @@ struct T
   unsigned int random_state; /* xorshift32 PRNG state */
 };
 
-/* ============================================================================
- * Random Number Generation
- * ============================================================================
  */
 
 static int
@@ -96,9 +87,6 @@ retry_random_double (unsigned int *state)
   return (double)*state / UINT32_MAX_DOUBLE;
 }
 
-/* ============================================================================
- * Policy Defaults and Validation
- * ============================================================================
  */
 
 void
@@ -146,9 +134,6 @@ validate_policy (const SocketRetry_Policy *policy)
   return 1;
 }
 
-/* ============================================================================
- * Backoff Calculation
- * ============================================================================
  */
 
 /* Compute base^exp iteratively to avoid pow() overhead */
@@ -276,9 +261,6 @@ SocketRetry_calculate_delay (const SocketRetry_Policy *policy, int attempt)
   return calculate_backoff_delay (policy, attempt, &state);
 }
 
-/* ============================================================================
- * Sleep Helper
- * ============================================================================
  */
 
 /* Sleep with EINTR handling via nanosleep */
@@ -302,9 +284,6 @@ retry_sleep_ms (int ms)
     }
 }
 
-/* ============================================================================
- * Context Management
- * ============================================================================
  */
 
 static unsigned int
@@ -360,9 +339,6 @@ SocketRetry_free (T *retry)
   *retry = NULL;
 }
 
-/* ============================================================================
- * Retry Execution Helpers
- * ============================================================================
  */
 
 static void
@@ -432,9 +408,6 @@ perform_single_attempt (T retry, SocketRetry_Operation operation,
   return result;
 }
 
-/* ============================================================================
- * Retry Execution
- * ============================================================================
  */
 
 int
@@ -477,9 +450,6 @@ SocketRetry_execute_simple (T retry, SocketRetry_Operation operation,
   return SocketRetry_execute (retry, operation, NULL, context);
 }
 
-/* ============================================================================
- * Statistics and State
- * ============================================================================
  */
 
 void
