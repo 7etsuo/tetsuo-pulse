@@ -9,21 +9,9 @@
  * @brief Internal HTTP core structures and helper functions.
  * @ingroup http
  *
- * This header contains internal structures and helper functions for the HTTP
- * module. NOT for public consumption - use SocketHTTP.h instead.
- *
- * Contains:
- * - Header collection internal structures (hash table + linked list)
- * - URI parser state machine internals
- * - Internal helper functions for case-insensitive operations
- * - Private utility functions for HTTP processing
- *
- * Thread safety: Functions in this header are not thread-safe unless
- * documented.
- *
- * @see SocketHTTP.h for public API.
- * @see SocketHTTP1-private.h for HTTP/1.1 internal structures.
- * @see SocketHTTP2-private.h for HTTP/2 internal structures.
+ * Internal structures and helpers for HTTP module. NOT for public consumption.
+ * Contains header collection internals (hash table + linked list), URI parser
+ * state machine, and character classification utilities.
  */
 
 #ifndef SOCKETHTTP_PRIVATE_INCLUDED
@@ -33,117 +21,58 @@
 #include "http/SocketHTTP.h"
 #include <string.h> /* for strncasecmp */
 
-/* ============================================================================
- * Header Collection Internals
- * ============================================================================
- */
-
 /**
- * @brief Hash table bucket count for header collections (internal constant).
+ * @brief Hash table bucket count for header collections.
  * @internal
- * @ingroup http
  *
- * Fixed prime number (31) providing good distribution for typical HTTP header
- * counts (10-30). Balances low collision rate with minimal memory overhead.
- *
- * @see socket_util_hash_djb2_ci_len() for the hashing function used.
- * @threadsafe Yes - compile-time constant.
- * @see SocketHTTP_Headers::buckets for the hash table implementation.
+ * Fixed prime (31) for good distribution with typical HTTP header counts
+ * (10-30).
  */
 #define SOCKETHTTP_HEADER_BUCKETS 31
 
 /**
  * @brief Individual HTTP header entry (name-value pair).
  * @internal
- * @ingroup http
  *
- * Internal node structure used by SocketHTTP_Headers_T for storing individual
- * headers in both hash table collision chains and insertion-order
- * doubly-linked list.
- *
- * Header names are stored case-preserved but looked up case-insensitively.
- * Both name and value are null-terminated C strings allocated from the
- * containing headers' arena.
- *
- * @note All fields are private; access via SocketHTTP_Headers_* public
- * functions only.
- * @see SocketHTTP_Headers_T for the containing collection.
- * @see sockethttp_name_equal() for case-insensitive name matching.
- * @see socket_util_hash_djb2_ci_len() for hash computation.
+ * Node for hash table collision chains and insertion-order linked list.
+ * Names are case-preserved but looked up case-insensitively.
  */
 typedef struct HeaderEntry
 {
-  char *name;       /**< Header name (case-preserved, null-terminated,
-                       arena-allocated) */
-  size_t name_len;  /**< Length of name excluding null terminator */
-  char *value;      /**< Header value (null-terminated, arena-allocated) */
-  size_t value_len; /**< Length of value excluding null terminator */
-  unsigned hash;    /**< Cached hash bucket index (avoid recomputation) */
+  char *name;       /**< Header name (case-preserved, arena-allocated) */
+  size_t name_len;  /**< Length of name excluding null */
+  char *value;      /**< Header value (arena-allocated) */
+  size_t value_len; /**< Length of value excluding null */
+  unsigned hash;    /**< Cached hash bucket index */
 
-  struct HeaderEntry
-      *hash_next; /**< Next entry in same hash bucket (collision resolution) */
-  struct HeaderEntry
-      *list_next; /**< Next entry in insertion-order doubly-linked list */
-  struct HeaderEntry
-      *list_prev; /**< Previous entry in insertion-order doubly-linked list */
+  struct HeaderEntry *hash_next; /**< Next in hash bucket chain */
+  struct HeaderEntry *list_next; /**< Next in insertion order */
+  struct HeaderEntry *list_prev; /**< Previous in insertion order */
 } HeaderEntry;
 
 /**
  * @brief Internal implementation of SocketHTTP_Headers_T header collection.
  * @internal
- * @ingroup http
  *
- * Private structure providing case-insensitive header lookup via hash table
- * (separate chaining) and ordered iteration via doubly-linked list.
- *
- * All memory allocations (entries, strings) from provided arena.
- * Not thread-safe; external locking required for concurrent access.
- *
- * @note Direct field access prohibited; use public SocketHTTP_Headers_*
- * functions.
- * @see SocketHTTP_Headers_T public opaque type.
- * @see HeaderEntry for individual header nodes.
- * @see socket_util_hash_djb2_ci_len() and sockethttp_name_equal() for internal
- * lookup logic.
+ * Case-insensitive header lookup via hash table (separate chaining) and
+ * ordered iteration via doubly-linked list. All allocations from arena.
+ * Not thread-safe.
  */
 struct SocketHTTP_Headers
 {
-  Arena_T arena; /**< Arena for all allocations in this collection */
-  HeaderEntry *buckets[SOCKETHTTP_HEADER_BUCKETS]; /**< Hash table buckets
-                                                      (fixed-size array) */
-  HeaderEntry *first; /**< Head of insertion-order doubly-linked list (or NULL
-                         if empty) */
-  HeaderEntry *last;  /**< Tail of insertion-order doubly-linked list (or NULL
-                         if empty) */
-  size_t count;       /**< Number of headers currently stored */
-  size_t
-      total_size; /**< Cumulative size of all header names + values (bytes) */
+  Arena_T arena;                                    /**< Arena for allocations */
+  HeaderEntry *buckets[SOCKETHTTP_HEADER_BUCKETS]; /**< Hash table buckets */
+  HeaderEntry *first; /**< Head of insertion-order list */
+  HeaderEntry *last;  /**< Tail of insertion-order list */
+  size_t count;       /**< Number of headers stored */
+  size_t total_size;  /**< Total size of names + values (bytes) */
 };
 
-/* ============================================================================
- * Internal Helper Functions
- * ============================================================================
- */
-
 /**
- * @brief Perform case-insensitive comparison of HTTP header names.
+ * @brief Case-insensitive comparison of HTTP header names.
  * @internal
- * @ingroup http
- * @param a Pointer to first header name bytes.
- * @param a_len Byte length of first name.
- * @param b Pointer to second header name bytes.
- * @param b_len Byte length of second name.
- * @return 1 if names match case-insensitively and lengths equal, 0 otherwise.
- * @threadsafe Yes - pure function using standard library strncasecmp().
  *
- * Compares HTTP header field names per RFC 9110 §5.2 rule: field names
- * case-insensitive. Early length check avoids unnecessary strncasecmp call.
- * Used in hash table lookup collision resolution.
- *
- * @note Does not validate input as tokens; assumes pre-validated names.
- * @see socket_util_hash_djb2_ci_len() for complementary hashing.
- * @see strncasecmp(3) for implementation details.
- * @see SocketHTTP_Headers_get() and SocketHTTP_Headers_has() for usage.
+ * RFC 9110 §5.2 compliant. Returns 1 if equal, 0 otherwise.
  */
 static inline int
 sockethttp_name_equal (const char *a, size_t a_len, const char *b,
@@ -154,25 +83,12 @@ sockethttp_name_equal (const char *a, size_t a_len, const char *b,
   return strncasecmp (a, b, a_len) == 0;
 }
 
-/* ============================================================================
- * URI Parser Internals
- * ============================================================================
- */
-
 /**
- * @brief Internal states for DFA-based URI parser (RFC 3986 compliant).
+ * @brief Internal states for DFA-based URI parser (RFC 3986).
  * @internal
- * @ingroup http
  *
- * State machine states used by SocketHTTP_URI_parse() for parsing URI
- * components: scheme://[userinfo@]host[:port]/path?query#fragment
- *
- * Handles generic syntax including IPv6 literals, percent-encoding, and
- * reserved chars. Invalid transitions lead to SocketHTTP_InvalidURI exception.
- *
- * @see SocketHTTP_URI_parse() public API.
- * @see SocketHTTP_URI for parsed result structure.
- * @see docs/HTTP.md for URI handling in HTTP context.
+ * Parses scheme://[userinfo@]host[:port]/path?query#fragment including IPv6
+ * literals and percent-encoding.
  */
 typedef enum
 {
@@ -189,134 +105,56 @@ typedef enum
   URI_STATE_FRAGMENT
 } URIParserState;
 
-/* ============================================================================
- * Character Classification Tables
- * ============================================================================
- */
-
 /**
  * @brief Lookup table for valid HTTP token characters (tchar) per RFC 9110
  * §5.6.
  * @internal
- * @ingroup http
- *
- * Static array[256] where non-zero value indicates the character is a valid
- * token char for HTTP header field names and values (excluding separators like
- * :, ;, etc.).
  *
  * tchar ::= "!" / "#" / "$" / "%" / "&" / "'" / "*" / "+" / "-" / "." /
  *           "^" / "_" / "`" / "|" / "~" / DIGIT / ALPHA
- *
- * Used for fast validation in header parsing and media type processing.
- *
- * @see SOCKETHTTP_IS_TCHAR() macro for usage.
- * @threadsafe Yes - static const array, read-only.
- * @see SocketHTTP_Headers_add() for header validation context.
  */
 extern const unsigned char sockethttp_tchar_table[256];
 
 /**
- * @brief Check if a character is a valid HTTP token character (tchar).
+ * @brief Check if character is valid HTTP token character (RFC 9110 §5.6).
  * @internal
- * @ingroup http
- * @param c Character to validate (automatically promoted to unsigned char via
- * cast)
- * @return Non-zero if valid tchar per RFC 9110, zero otherwise.
- *
- * Fast O(1) table lookup used throughout HTTP parsing for validating
- * header field names, values, media type parameters, etc.
- *
- * @see sockethttp_tchar_table for the underlying validation table.
- * @threadsafe Yes - macro, pure function.
- * @see RFC 9110 §5.6 for complete tchar grammar.
  */
 #define SOCKETHTTP_IS_TCHAR(c) (sockethttp_tchar_table[(unsigned char)(c)])
 
 /**
  * @brief Lookup table for URI unreserved characters per RFC 3986 §2.3.
  * @internal
- * @ingroup http
  *
- * Static array[256] where non-zero value indicates characters that do not
- * require percent-encoding in URI components: ALPHA / DIGIT / "-" / "." / "_"
- * / "~"
- *
- * Used in URI encoding to identify safe characters and in decoding validation.
- *
- * @see SOCKETHTTP_IS_UNRESERVED() macro.
- * @threadsafe Yes - static const array, read-only.
- * @see SocketHTTP_URI_encode() and SocketHTTP_URI_decode().
- * @see RFC 3986 §2.3 for unreserved set definition.
+ * Characters not requiring percent-encoding: ALPHA / DIGIT / "-" / "." / "_" /
+ * "~"
  */
 extern const unsigned char sockethttp_uri_unreserved[256];
 
 /**
- * @brief Test if a character is URI unreserved (no percent-encoding required).
+ * @brief Test if character is URI unreserved (RFC 3986 §2.3).
  * @internal
- * @ingroup http
- * @param c Character to test (promoted to unsigned char)
- * @return Non-zero if unreserved per RFC 3986, zero otherwise.
- *
- * Used in URI encoding to skip encoding for safe characters and in validation.
- *
- * @see sockethttp_uri_unreserved table.
- * @see SocketHTTP_URI_encode() for encoding context.
- * @threadsafe Yes - macro, pure function.
- * @see RFC 3986 §2.3 unreserved characters.
  */
 #define SOCKETHTTP_IS_UNRESERVED(c)                                           \
   (sockethttp_uri_unreserved[(unsigned char)(c)])
 
 /**
- * @brief Hexadecimal digit value lookup table for decoding and validation.
+ * @brief Hexadecimal digit value lookup table.
  * @internal
- * @ingroup http
  *
- * Static array[256] mapping ASCII characters to their hex value (0-15) for
- * valid digits, or 255 for invalid characters. Supports '0'-'9', 'a'-'f',
- * 'A'-'F'.
- *
- * Essential for percent-decoding (%XX sequences) in URIs and chunked encoding
- * sizes.
- *
- * @see SOCKETHTTP_HEX_VALUE() macro.
- * @see SocketHTTP_URI_decode() for URI percent-decoding usage.
- * @see SocketHTTP1 chunk size parsing in HTTP/1.1.
+ * Maps '0'-'9', 'a'-'f', 'A'-'F' to 0-15, invalid chars to 255.
+ * Used for percent-decoding and chunked encoding.
  */
 extern const unsigned char sockethttp_hex_value[256];
 
 /**
- * @brief Extract numeric value from hexadecimal digit character.
+ * @brief Extract hex digit value (0-15) or 255 if invalid.
  * @internal
- * @ingroup http
- * @param c ASCII character to convert ('0'-'9', 'a'-'f', 'A'-'F')
- * @return 0-15 for valid hex digit, 255 for invalid input.
- *
- * Constant-time table lookup used in percent-decoding and hex parsing.
- * Invalid characters (non-hex) return 255 to simplify error checking.
- *
- * @see sockethttp_hex_value table.
- * @threadsafe Yes - static const array, read-only.
- * @threadsafe Yes - macro, pure function.
- * @see SocketHTTP_URI_decode() usage example.
  */
 #define SOCKETHTTP_HEX_VALUE(c) (sockethttp_hex_value[(unsigned char)(c)])
 
-/* ============================================================================
- * Shared Parsing Utilities
- * ============================================================================
- */
-
 /**
- * @brief Skip whitespace characters (space and tab).
+ * @brief Skip whitespace (space/tab) for OWS handling.
  * @internal
- * @ingroup http
- * @param p Pointer to current position in string.
- * @return Pointer past any whitespace or tabs.
- *
- * Used throughout HTTP parsing for optional whitespace (OWS) handling.
- *
- * @threadsafe Yes - pure function.
  */
 static inline const char *
 sockethttp_skip_whitespace (const char *p)
@@ -327,16 +165,8 @@ sockethttp_skip_whitespace (const char *p)
 }
 
 /**
- * @brief Skip token delimiters (whitespace and commas).
+ * @brief Skip delimiters (space/tab/comma) for list parsing.
  * @internal
- * @ingroup http
- * @param p Pointer to current position in string.
- * @return Pointer past any whitespace, tabs, or commas.
- *
- * Used for parsing comma-separated lists in HTTP headers (e.g., Cache-Control,
- * Accept, WWW-Authenticate parameters).
- *
- * @threadsafe Yes - pure function.
  */
 static inline const char *
 sockethttp_skip_delimiters (const char *p)
@@ -347,15 +177,8 @@ sockethttp_skip_delimiters (const char *p)
 }
 
 /**
- * @brief Check if character is a token boundary.
+ * @brief Check if character is token boundary (NUL/comma/space/tab).
  * @internal
- * @ingroup http
- * @param c Character to check.
- * @return 1 if boundary (NUL, comma, space, tab), 0 otherwise.
- *
- * Used for token extraction in header value parsing.
- *
- * @threadsafe Yes - pure function.
  */
 static inline int
 sockethttp_is_token_boundary (char c)
