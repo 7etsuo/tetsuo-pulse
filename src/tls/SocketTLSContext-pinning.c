@@ -482,22 +482,26 @@ SocketTLSContext_add_pin_from_cert (T ctx, const char *cert_file)
                            "Cannot fdopen certificate file descriptor");
     }
 
-  /* Validate file size to prevent resource exhaustion */
-  if (fseek (fp, 0, SEEK_END) != 0)
+  /* Validate file size to prevent resource exhaustion.
+   * Use fseeko/ftello with off_t for proper large file support on 32-bit
+   * systems where long may be 32-bit but off_t is 64-bit with LFS. */
+  if (fseeko (fp, 0, SEEK_END) != 0)
     {
       fclose (fp);
       RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
                            "Cannot seek in certificate file");
     }
 
-  long fsize = ftell (fp);
-  if (fsize < 0 || fseek (fp, 0, SEEK_SET) != 0)
+  off_t fsize = ftello (fp);
+  if (fsize < 0 || fseeko (fp, 0, SEEK_SET) != 0)
     {
       fclose (fp);
       RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
                            "Cannot determine certificate file size");
     }
 
+  /* Safe cast to size_t - fsize is already validated as non-negative above.
+   * The subsequent SOCKET_TLS_MAX_CERT_FILE_SIZE check ensures reasonable bounds. */
   size_t usize = (size_t)fsize;
   if (usize > SOCKET_TLS_MAX_CERT_FILE_SIZE
       || !SocketSecurity_check_size (usize))

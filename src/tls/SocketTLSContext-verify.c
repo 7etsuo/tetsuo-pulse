@@ -856,6 +856,9 @@ SocketTLSContext_validate_ciphersuites (const char *ciphersuites)
  * @resp: OCSP response to encode
  * @out_der: Output DER buffer (OPENSSL_malloc'd)
  *
+ * Security: Pre-checks encoded size before allocation to prevent
+ * memory exhaustion from maliciously large OCSP responses.
+ *
  * Returns: DER length on success, 0 on failure (out_der set to NULL)
  */
 static int
@@ -864,6 +867,15 @@ encode_ocsp_response (OCSP_RESPONSE *resp, unsigned char **out_der)
   int len;
 
   *out_der = NULL;
+
+  /* Security: Pre-check encoded size before allocating memory.
+   * Passing NULL to i2d_OCSP_RESPONSE returns the required size
+   * without allocating, preventing DoS via memory exhaustion. */
+  len = i2d_OCSP_RESPONSE (resp, NULL);
+  if (len <= 0 || len > SOCKET_TLS_MAX_OCSP_RESPONSE_LEN)
+    return 0;
+
+  /* Now allocate and encode - size is known to be safe */
   len = i2d_OCSP_RESPONSE (resp, out_der);
 
   /* i2d returns negative on error; positive on success with allocation */
@@ -927,19 +939,45 @@ validate_ocsp_response_size (size_t len)
 }
 
 /**
- * validate_ocsp_response_format - Validate response DER format
+ * validate_ocsp_response_format - Validate response DER format and status
  * @response: Response bytes
  * @len: Response length
+ *
+ * Performs comprehensive validation in a single parse to avoid redundant
+ * parsing operations. Checks DER format, response status, and basic
+ * response structure in one pass.
  */
 static void
 validate_ocsp_response_format (const unsigned char *response, size_t len)
 {
   const unsigned char *p = response;
   OCSP_RESPONSE *resp = d2i_OCSP_RESPONSE (NULL, &p, len);
+  OCSP_BASICRESP *basic = NULL;
+  int status;
 
   if (!resp)
     RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "Invalid OCSP response format");
 
+  /* Perform complete validation in single parse pass to avoid
+   * redundant parsing when response is later used. */
+  status = OCSP_response_status (resp);
+  if (status != OCSP_RESPONSE_STATUS_SUCCESSFUL)
+    {
+      OCSP_RESPONSE_free (resp);
+      RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
+                           "OCSP response status not successful: %d", status);
+    }
+
+  /* Validate basic response structure */
+  basic = OCSP_response_get1_basic (resp);
+  if (!basic)
+    {
+      OCSP_RESPONSE_free (resp);
+      RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
+                           "OCSP response missing basic response structure");
+    }
+
+  OCSP_BASICRESP_free (basic);
   OCSP_RESPONSE_free (resp);
 }
 
@@ -1277,6 +1315,36 @@ SocketTLSContext_ocsp_stapling_enabled (T ctx)
  * Check for OPENSSL_VERSION_NUMBER >= 0x30000000L */
 #if OPENSSL_VERSION_NUMBER >= 0x30000000L
 
+/* Security: Dynamically allocated ex_data index to avoid conflicts with
+ * other libraries using X509_STORE ex_data. Using hardcoded index 0
+ * could cause resource conflicts and potential security issues. */
+static int x509_store_exdata_idx = -1;
+static pthread_once_t x509_store_exdata_once = PTHREAD_ONCE_INIT;
+
+/**
+ * init_x509_store_exdata_index - Initialize X509_STORE ex_data index
+ *
+ * Called once via pthread_once to allocate a unique ex_data index.
+ */
+static void
+init_x509_store_exdata_index (void)
+{
+  x509_store_exdata_idx
+      = X509_STORE_get_ex_new_index (0, NULL, NULL, NULL, NULL);
+}
+
+/**
+ * get_x509_store_exdata_index - Get the allocated ex_data index
+ *
+ * Returns: Allocated index, or -1 if allocation failed
+ */
+static int
+get_x509_store_exdata_index (void)
+{
+  pthread_once (&x509_store_exdata_once, init_x509_store_exdata_index);
+  return x509_store_exdata_idx;
+}
+
 /**
  * cert_lookup_wrapper - Internal wrapper for X509_STORE lookup callback
  * @store_ctx: OpenSSL X509_STORE_CTX (from which we get our context)
@@ -1301,11 +1369,13 @@ static STACK_OF (X509) *
   if (!store)
     return NULL;
 
-  /* We need to find our SocketTLSContext_T. The store doesn't directly
-   * have ex_data, but we can check all SSL objects using this store.
-   * For simplicity, we use a static approach: store the context pointer
-   * in the X509_STORE ex_data. */
-  T ctx = (T)X509_STORE_get_ex_data (store, 0);
+  /* Retrieve our SocketTLSContext_T from the X509_STORE ex_data.
+   * Uses dynamically allocated index to avoid conflicts with other libraries. */
+  int idx = get_x509_store_exdata_index ();
+  if (idx < 0)
+    return NULL;
+
+  T ctx = (T)X509_STORE_get_ex_data (store, idx);
   if (!ctx)
     return NULL;
 
@@ -1359,11 +1429,19 @@ SocketTLSContext_set_cert_lookup_callback (
                            "Failed to get certificate store for lookup callback");
     }
 
+  /* Get dynamically allocated ex_data index */
+  int exdata_idx = get_x509_store_exdata_index ();
+  if (exdata_idx < 0)
+    {
+      RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
+                           "Failed to allocate X509_STORE ex_data index");
+    }
+
   if (callback)
     {
       /* Store our context in the X509_STORE ex_data for retrieval in callback.
-       * OpenSSL's X509_STORE has ex_data slots we can use. */
-      if (X509_STORE_set_ex_data (store, 0, ctx) != 1)
+       * Uses dynamically allocated index to avoid conflicts with other libs. */
+      if (X509_STORE_set_ex_data (store, exdata_idx, ctx) != 1)
         {
           RAISE_CTX_ERROR_MSG (
               SocketTLS_Failed,
@@ -1380,7 +1458,7 @@ SocketTLSContext_set_cert_lookup_callback (
     {
       /* Disable custom lookup by clearing the callback */
       X509_STORE_set_lookup_certs (store, NULL);
-      X509_STORE_set_ex_data (store, 0, NULL);
+      X509_STORE_set_ex_data (store, exdata_idx, NULL);
     }
 #else
   /* OpenSSL < 3.0.0: X509_STORE_set_lookup_certs_cb not available.

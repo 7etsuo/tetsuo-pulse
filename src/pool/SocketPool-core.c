@@ -464,6 +464,7 @@ construct_pool (Arena_T arena, size_t maxconns, size_t bufsize)
   pool->active_tail = NULL;
   pool->dns = NULL;
   pool->async_ctx = NULL;
+  pool->async_ctx_freelist = NULL;
   pool->async_pending_count = 0;
 
   /* From initialize_pool_rate_limiting */
@@ -610,6 +611,7 @@ free_pending_async_contexts (T pool)
       ctx = ctx->next;
     }
   pool->async_ctx = NULL;
+  pool->async_ctx_freelist = NULL; /* Also clear freelist */
   pool->async_pending_count = 0;
 }
 
@@ -1089,16 +1091,28 @@ SocketPool_set_resize_callback (T pool, SocketPool_ResizeCallback cb,
  * @param a First operand
  * @param b Second operand
  * @return Sum if no overflow, UINT64_MAX if overflow (saturated)
- * @threadsafe Yes - pure function
+ * @threadsafe Yes - uses thread-local static for once-only logging
  *
  * Used in statistics calculations to prevent undefined behavior on overflow.
  * Returns saturated value instead of wrapping around.
+ * Logs a warning on first saturation to alert operators.
  */
 static uint64_t
 safe_u64_add (uint64_t a, uint64_t b)
 {
   if (a > UINT64_MAX - b)
-    return UINT64_MAX;
+    {
+      /* Log warning on first saturation (thread-local to avoid data races) */
+      static __thread int logged_saturation = 0;
+      if (!logged_saturation)
+        {
+          logged_saturation = 1;
+          SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                           "Statistics counter saturated at UINT64_MAX "
+                           "(long-running server or extremely high churn)");
+        }
+      return UINT64_MAX;
+    }
   return a + b;
 }
 

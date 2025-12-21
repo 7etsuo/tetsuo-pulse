@@ -2934,7 +2934,7 @@ TEST (tls_ocsp_response_too_large)
 #endif
 }
 
-/* ==================== OCSP Valid Response Set Test ==================== */
+/* ==================== OCSP Response Validation Test ==================== */
 
 TEST (tls_ocsp_set_valid_response)
 {
@@ -2948,12 +2948,15 @@ TEST (tls_ocsp_set_valid_response)
   SocketTLSContext_T ctx = NULL;
   unsigned char *der = NULL;
   OCSP_RESPONSE *resp = NULL;
+  volatile int rejected_non_successful = 0;
 
   TRY
   {
     ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
 
-    /* Create a valid OCSP response (tryLater status) and serialize to DER */
+    /* Test that non-successful OCSP responses are correctly rejected.
+     * Security: OCSP responses with status like TRYLATER or MALFORMED
+     * cannot be used for stapling and should be rejected upfront. */
     resp = OCSP_response_create (OCSP_RESPONSE_STATUS_TRYLATER, NULL);
     ASSERT_NOT_NULL (resp);
 
@@ -2961,14 +2964,21 @@ TEST (tls_ocsp_set_valid_response)
     ASSERT (len > 0);
     ASSERT_NOT_NULL (der);
 
-    /* Set the valid OCSP response - exercises success path */
+    /* Attempt to set non-successful OCSP response - should be rejected */
     TRY
     {
       SocketTLSContext_set_ocsp_response (ctx, der, len);
-      /* Should succeed - valid DER-encoded OCSP response */
+      /* Should NOT succeed - non-successful status must be rejected */
+      ASSERT (0);
     }
-    EXCEPT (SocketTLS_Failed) { ASSERT (0); /* Unexpected failure */ }
+    EXCEPT (SocketTLS_Failed)
+    {
+      /* Expected: non-successful OCSP responses are correctly rejected */
+      rejected_non_successful = 1;
+    }
     END_TRY;
+
+    ASSERT (rejected_non_successful);
   }
   FINALLY
   {

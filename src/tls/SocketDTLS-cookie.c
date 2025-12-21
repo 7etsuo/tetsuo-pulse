@@ -46,21 +46,53 @@
  * ============================================================================
  */
 
+/* Security: Random offset for bucket boundaries, initialized once per process.
+ * This makes bucket boundaries unpredictable to attackers, preventing them
+ * from timing replay attacks around known bucket transitions. */
+static uint32_t bucket_offset = 0;
+static pthread_once_t bucket_offset_once = PTHREAD_ONCE_INIT;
+
+/**
+ * init_bucket_offset - Initialize random bucket offset
+ *
+ * Generates a random offset (0 to COOKIE_LIFETIME-1 seconds in ms) to add
+ * unpredictability to bucket boundaries. Called once via pthread_once.
+ */
+static void
+init_bucket_offset (void)
+{
+  unsigned char rand_bytes[4];
+  if (SocketCrypto_random_bytes (rand_bytes, sizeof (rand_bytes)) == 0)
+    {
+      uint32_t rand_val = ((uint32_t)rand_bytes[0] << 24)
+                          | ((uint32_t)rand_bytes[1] << 16)
+                          | ((uint32_t)rand_bytes[2] << 8)
+                          | (uint32_t)rand_bytes[3];
+      /* Offset within the cookie lifetime window (in milliseconds) */
+      bucket_offset = rand_val % (SOCKET_DTLS_COOKIE_LIFETIME_SEC * 1000);
+    }
+}
+
 /**
  * get_time_bucket - Get current monotonic time bucket
  *
  * Returns monotonic time truncated to SOCKET_DTLS_COOKIE_LIFETIME_SEC
  * intervals. Uses Socket_get_monotonic_ms() to prevent clock manipulation
- * attacks.
+ * attacks. Adds a random offset to bucket boundaries to prevent attackers
+ * from predicting when cookies will become invalid.
  *
  * Returns: Current time bucket as uint32_t
  */
 static uint32_t
 get_time_bucket (void)
 {
+  pthread_once (&bucket_offset_once, init_bucket_offset);
+
   int64_t now_ms = Socket_get_monotonic_ms ();
   int64_t lifetime_ms = (int64_t)SOCKET_DTLS_COOKIE_LIFETIME_SEC * 1000LL;
-  return (uint32_t)(now_ms / lifetime_ms);
+  /* Apply random offset to make bucket boundaries unpredictable */
+  int64_t offset_now_ms = now_ms + bucket_offset;
+  return (uint32_t)(offset_now_ms / lifetime_ms);
 }
 
 

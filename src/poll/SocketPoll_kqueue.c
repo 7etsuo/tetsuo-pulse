@@ -31,6 +31,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/event.h>
@@ -324,7 +325,11 @@ backend_get_event (const PollBackend_T backend, int index, int *fd_out,
 
   kev = &backend->events[index];
 
-  /* Extract file descriptor from kevent ident field */
+  /* Extract file descriptor from kevent ident field.
+   * Defense-in-depth: validate ident fits in int to prevent truncation.
+   * In practice, file descriptors are always small positive integers. */
+  if (kev->ident > (uintptr_t)INT_MAX)
+    return -1;
   *fd_out = (int)kev->ident;
 
   /* Translate kqueue filter to portable event flags using centralized mapping */

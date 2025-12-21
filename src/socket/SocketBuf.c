@@ -790,6 +790,28 @@ get_byte_at_offset (const T buf, size_t offset)
   return (unsigned char)buf->data[(buf->head + offset) % buf->capacity];
 }
 
+/**
+ * match_pattern_at_offset - Check if pattern matches at given offset
+ * @buf: Buffer to search in
+ * @offset: Offset from head to start matching
+ * @pattern: Pattern bytes to match
+ * @pattern_len: Length of pattern
+ *
+ * Returns: 1 if pattern matches at offset, 0 otherwise
+ * Thread-safe: No (caller must ensure exclusive access)
+ */
+static int
+match_pattern_at_offset (const T buf, size_t offset,
+                         const unsigned char *pattern, size_t pattern_len)
+{
+  for (size_t j = 0; j < pattern_len; j++)
+    {
+      if (get_byte_at_offset (buf, offset + j) != pattern[j])
+        return 0;
+    }
+  return 1;
+}
+
 ssize_t
 SocketBuf_find (T buf, const void *needle, size_t needle_len)
 {
@@ -815,16 +837,7 @@ SocketBuf_find (T buf, const void *needle, size_t needle_len)
   /* Simple search - handles circular buffer transparently */
   for (size_t i = 0; i < search_limit; i++)
     {
-      int found = 1;
-      for (size_t j = 0; j < needle_len; j++)
-        {
-          if (get_byte_at_offset (buf, i + j) != pattern[j])
-            {
-              found = 0;
-              break;
-            }
-        }
-      if (found)
+      if (match_pattern_at_offset (buf, i, pattern, needle_len))
         return (ssize_t)i;
     }
 

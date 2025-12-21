@@ -549,6 +549,9 @@ struct T
   SocketDNS_T dns; /**< Internal DNS resolver (lazy init) */
   AsyncConnectContext_T
       async_ctx;              /**< Linked list of pending async connects */
+  AsyncConnectContext_T
+      async_ctx_freelist;     /**< Freelist of reusable async connect contexts
+                                 (security: prevents unbounded arena growth) */
   size_t async_pending_count; /**< Count of pending async connects (security
                                  limit) */
 

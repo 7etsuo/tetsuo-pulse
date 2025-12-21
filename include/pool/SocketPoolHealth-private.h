@@ -188,6 +188,15 @@ typedef struct SocketPoolHealth_T {
      */
     int circuit_count;
 
+    /**
+     * @brief Hash seed for DJB2 randomization.
+     *
+     * Security: Randomized at initialization to prevent hash collision
+     * DoS attacks where attacker crafts host:port keys that collide.
+     * Generated from time + pid for per-instance uniqueness.
+     */
+    unsigned int hash_seed;
+
     /* ========================================================================
      * Probe Callback
      * ======================================================================== */
@@ -404,13 +413,15 @@ int health_make_host_key(const char *host, int port, char *buf, size_t len);
  * @brief Hash function for host keys.
  * @internal
  *
- * DJB2 hash for string keys.
+ * DJB2 hash for string keys with per-instance seed randomization.
+ * The seed prevents hash collision DoS attacks.
  *
- * @param key Host key string.
+ * @param key  Host key string.
+ * @param seed Hash seed from health context (health->hash_seed).
  *
  * @return Hash value (use % SOCKET_HEALTH_HASH_SIZE for bucket).
  */
-unsigned int health_hash_key(const char *key);
+unsigned int health_hash_key(const char *key, unsigned int seed);
 
 /**
  * @brief Check if circuit should transition OPEN -> HALF_OPEN.

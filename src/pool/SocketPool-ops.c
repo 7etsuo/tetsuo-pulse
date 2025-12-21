@@ -848,15 +848,21 @@ SocketPool_accept_batch (T pool, Socket_T server, int max_accepts,
       return 0;
     }
 
+  /* Security: Calculate available slots using unsigned arithmetic with explicit
+   * comparison to prevent overflow. If count >= maxconns (shouldn't happen but
+   * could due to a bug), we safely return 0 rather than computing a huge value
+   * from unsigned wraparound. */
   POOL_LOCK (pool);
-  int available = (int)(pool->maxconns - pool->count);
+  size_t pool_count = pool->count;
+  size_t pool_maxconns = pool->maxconns;
   POOL_UNLOCK (pool);
-  limit = available > 0 ? available : 0;
-  if (limit <= 0)
+
+  if (pool_count >= pool_maxconns)
     return 0;
 
-  if (max_accepts < limit)
-    limit = max_accepts;
+  size_t available = pool_maxconns - pool_count;
+  /* Clamp to max_accepts (already validated as <= SOCKET_POOL_MAX_BATCH_ACCEPTS) */
+  limit = (available > (size_t)max_accepts) ? max_accepts : (int)available;
 
   server_fd = Socket_fd (server);
 
@@ -1008,10 +1014,24 @@ SocketPool_prepare_connection (T pool, SocketDNS_T dns, const char *host,
  * @pool: Pool instance
  *
  * Returns: New context or NULL on failure
+ * Thread-safe: Call with mutex held
+ *
+ * Security: Uses freelist to reuse contexts and prevent unbounded arena
+ * memory growth from repeated async connect operations.
  */
 static AsyncConnectContext_T
 alloc_async_context (T pool)
 {
+  AsyncConnectContext_T ctx;
+
+  /* Check freelist first for reuse (prevents arena growth) */
+  if (pool->async_ctx_freelist)
+    {
+      ctx = pool->async_ctx_freelist;
+      pool->async_ctx_freelist = ctx->next;
+      return ctx;
+    }
+
   return ALLOC (pool->arena, sizeof (struct AsyncConnectContext));
 }
 
@@ -1055,11 +1075,37 @@ add_async_context (T pool, AsyncConnectContext_T ctx)
 }
 
 /**
+ * return_to_async_freelist - Return context to freelist for reuse
+ * @pool: Pool instance
+ * @ctx: Context to return
+ *
+ * Thread-safe: Call with mutex held
+ *
+ * Security: Clears sensitive fields before adding to freelist.
+ */
+static void
+return_to_async_freelist (T pool, AsyncConnectContext_T ctx)
+{
+  /* Clear sensitive fields */
+  ctx->socket = NULL;
+  ctx->cb = NULL;
+  ctx->user_data = NULL;
+  ctx->req = NULL;
+  ctx->pool = NULL;
+
+  /* Add to freelist head */
+  ctx->next = pool->async_ctx_freelist;
+  pool->async_ctx_freelist = ctx;
+}
+
+/**
  * remove_async_context - Remove context from pool's list
  * @pool: Pool instance
  * @ctx: Context to remove
  *
  * Thread-safe: Call with mutex held
+ *
+ * Note: Context is returned to freelist for reuse after removal.
  */
 static void
 remove_async_context (T pool, AsyncConnectContext_T ctx)
@@ -1071,6 +1117,7 @@ remove_async_context (T pool, AsyncConnectContext_T ctx)
         {
           *pp = ctx->next;
           pool->async_pending_count--;
+          return_to_async_freelist (pool, ctx);
           return;
         }
       pp = &(*pp)->next;
@@ -1152,14 +1199,18 @@ async_connect_dns_callback (Request_T req, struct addrinfo *result,
   SocketCommon_free_addrinfo (result);
 
 invoke_callback:
-  /* Remove context from list */
+  /* Save callback and data before removing context (removal clears them) */
+  SocketPool_ConnectCallback user_cb = ctx->cb;
+  void *user_data = ctx->user_data;
+
+  /* Remove context from list (this returns it to freelist and clears fields) */
   POOL_LOCK (pool);
   remove_async_context (pool, ctx);
   POOL_UNLOCK (pool);
 
-  /* Invoke user callback */
-  if (ctx->cb)
-    ctx->cb (conn, callback_error, ctx->user_data);
+  /* Invoke user callback using saved values */
+  if (user_cb)
+    user_cb (conn, callback_error, user_data);
 }
 
 /**
