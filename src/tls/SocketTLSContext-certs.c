@@ -66,13 +66,21 @@ ctx_raise_error_fmt (const char *fmt, ...)
  * @path: File path to validate
  * @desc: Description for error message (e.g., "certificate", "private key")
  *
+ * Security: Error messages use generic text to avoid leaking filesystem
+ * structure information. Full path is logged at DEBUG level for diagnostics.
+ *
  * Raises: SocketTLS_Failed on invalid path
  */
 static void
 validate_file_path_or_raise (const char *path, const char *desc)
 {
   if (!tls_validate_file_path (path))
-    ctx_raise_error_fmt ("Invalid %s file path '%s'", desc, path);
+    {
+      /* Log full path at debug level for diagnostics, but don't expose in
+       * exception message to prevent filesystem structure disclosure. */
+      SOCKET_LOG_DEBUG_MSG ("Path validation failed for %s: %s", desc, path);
+      ctx_raise_error_fmt ("Invalid %s file path", desc);
+    }
 }
 
 /**
@@ -198,6 +206,9 @@ find_sni_cert_index (const T ctx, const char *hostname)
  * @ad: Alert descriptor (unused)
  * @arg: Context pointer
  *
+ * Security: Validates hostname length before processing to prevent
+ * issues with malformed SNI extensions containing excessive lengths.
+ *
  * Returns: SSL_TLSEXT_ERR_OK on match, SSL_TLSEXT_ERR_NOACK otherwise
  */
 static int
@@ -208,6 +219,12 @@ sni_callback (SSL *ssl, int *ad, void *arg)
   const char *hostname = SSL_get_servername (ssl, TLSEXT_NAMETYPE_host_name);
 
   if (!hostname || !ctx)
+    return SSL_TLSEXT_ERR_NOACK;
+
+  /* Security: Validate hostname length per RFC 6066 (max 255 bytes).
+   * Prevents issues with malformed SNI extensions. */
+  size_t hostname_len = strlen (hostname);
+  if (hostname_len == 0 || hostname_len > SOCKET_TLS_MAX_SNI_LEN)
     return SSL_TLSEXT_ERR_NOACK;
 
   int idx = find_sni_cert_index (ctx, hostname);
