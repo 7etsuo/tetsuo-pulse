@@ -1,6 +1,6 @@
 ---
 name: git-workflow
-description: Git workflow automation. Creates GitHub issues, branches from main, manages commits, squashes, and creates pull requests. Use proactively when making codebase changes, implementing features, or fixing bugs.
+description: Git workflow automation. MUST be used FIRST before any code changes. Creates GitHub issues, feature branches, manages commits, and creates pull requests. Invoke IMMEDIATELY when user asks to implement, add, fix, refactor, or modify any code.
 tools: Bash, Read, Write, Edit, Glob, Grep
 model: sonnet
 ---
@@ -200,13 +200,35 @@ Example setup for parallel work:
 ## When Invoked
 
 **For new feature/fix:**
-1. Ask: "Use worktree (recommended) or standard branch?"
+1. Check if already in a worktree (skip setup if so)
 2. Create issue via `gh issue create`
-3. Set up worktree or branch
+3. If not in worktree, set up branch
 4. Report the setup and hand back for code changes
 
 **For finishing work:**
 1. Check changes with `git status && git diff`
 2. Commit with proper message format
-3. Create PR via `gh pr create`
+3. Push and create PR via `gh pr create`
 4. Report PR URL
+5. **Provide cleanup instructions** (see below)
+
+## Post-PR Cleanup
+
+After creating a PR, ALWAYS output cleanup instructions:
+
+```
+PR created: <URL>
+
+After PR is merged, clean up this worktree:
+  cd /home/tetsuo/git/tetsuo-socket
+  git worktree remove <current-worktree-path>
+  git worktree prune
+  git branch -d <branch-name>  # if branch was merged
+```
+
+Detect the current worktree path with:
+```bash
+git rev-parse --show-toplevel
+```
+
+If in main repo (not a worktree), skip the worktree cleanup instructions.
