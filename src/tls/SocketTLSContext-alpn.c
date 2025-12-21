@@ -597,24 +597,37 @@ SocketTLSContext_set_alpn_callback (T ctx, SocketTLSAlpnCallback callback,
  * ============================================================================
  */
 
-/** Static process-wide ex_data index for ALPN temp buffers */
+/** Static process-wide ex_data index for ALPN temp buffers.
+ * Thread-safe initialization using pthread_once to prevent race conditions
+ * when multiple threads create SSL objects concurrently. */
 static int tls_alpn_ex_idx = -1;
+static pthread_once_t tls_alpn_ex_once = PTHREAD_ONCE_INIT;
 
 /**
- * tls_get_alpn_ex_idx - Get or create ex_data index for ALPN temps
+ * init_alpn_ex_idx - One-time initialization of ALPN ex-data index
  *
- * Lazy init; called once per process.
+ * Called via pthread_once to ensure thread-safe single initialization.
+ * This prevents race conditions where multiple threads could call
+ * SSL_get_ex_new_index() simultaneously and get different indices.
+ */
+static void
+init_alpn_ex_idx (void)
+{
+  tls_alpn_ex_idx
+      = SSL_get_ex_new_index (0, "tls alpn temp buf", NULL, NULL, NULL);
+}
+
+/**
+ * tls_get_alpn_ex_idx - Get ex_data index for ALPN temps (thread-safe)
+ *
+ * Uses pthread_once for guaranteed single initialization across all threads.
  *
  * Returns: Index or -1 on failure (rare, fallback leak)
  */
 int
 tls_get_alpn_ex_idx (void)
 {
-  if (tls_alpn_ex_idx == -1)
-    {
-      tls_alpn_ex_idx
-          = SSL_get_ex_new_index (0, "tls alpn temp buf", NULL, NULL, NULL);
-    }
+  pthread_once (&tls_alpn_ex_once, init_alpn_ex_idx);
   return tls_alpn_ex_idx;
 }
 

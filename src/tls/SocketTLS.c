@@ -1641,15 +1641,8 @@ SocketTLS_session_restore (Socket_T socket, const unsigned char *buffer,
 
 /* ==================== Renegotiation Control ==================== */
 
-/**
- * @brief Maximum renegotiations allowed per connection for DoS protection.
- *
- * Limits the number of renegotiations to prevent CPU exhaustion attacks.
- * Once this limit is exceeded, further renegotiation attempts are rejected.
- */
-#ifndef SOCKET_TLS_MAX_RENEGOTIATIONS
-#define SOCKET_TLS_MAX_RENEGOTIATIONS 3
-#endif
+/* SOCKET_TLS_MAX_RENEGOTIATIONS is now defined in SocketTLSConfig.h
+ * with comprehensive documentation about DoS protection rationale. */
 
 int
 SocketTLS_check_renegotiation (Socket_T socket)
@@ -1941,15 +1934,8 @@ SocketTLS_get_peer_cert_chain (Socket_T socket, X509 ***chain_out,
 
 /* ==================== OCSP Status ==================== */
 
-/**
- * @brief Default maximum age for OCSP responses (5 minutes tolerance)
- *
- * OCSP responses older than this are considered stale even if still
- * within the nextUpdate window. Prevents replay of old responses.
- */
-#ifndef SOCKET_TLS_OCSP_MAX_AGE_SECONDS
-#define SOCKET_TLS_OCSP_MAX_AGE_SECONDS 300
-#endif
+/* SOCKET_TLS_OCSP_MAX_AGE_SECONDS is now defined in SocketTLSConfig.h
+ * with comprehensive documentation about replay prevention rationale. */
 
 int
 SocketTLS_get_ocsp_response_status (Socket_T socket)
