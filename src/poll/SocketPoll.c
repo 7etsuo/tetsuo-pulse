@@ -828,13 +828,17 @@ check_registration_limit (T poll)
  * @poll: Poll instance
  * @hash: Hash bucket index
  * @socket: Socket to check
- * Raises: SocketPoll_Failed if socket already present
+ * Raises: SocketPoll_Failed if socket already present or chain too long
  * Thread-safe: No (caller must hold mutex)
+ *
+ * Security: Also enforces SOCKET_MAX_HASH_CHAIN_LENGTH to prevent
+ * algorithmic complexity attacks via hash collisions (DoS mitigation).
  */
 static void
 check_socket_not_duplicate (T poll, unsigned hash, Socket_T socket)
 {
   SocketData *entry = poll->socket_data_map[hash];
+  int chain_length = 0;
 
   while (entry)
     {
@@ -843,8 +847,19 @@ check_socket_not_duplicate (T poll, unsigned hash, Socket_T socket)
           SOCKET_ERROR_MSG ("Socket already in poll set");
           RAISE_POLL_ERROR (SocketPoll_Failed);
         }
+      chain_length++;
       entry = entry->next;
     }
+
+  /* Defense-in-depth: Reject if hash chain is too long (DoS mitigation) */
+#if SOCKET_MAX_HASH_CHAIN_LENGTH > 0
+  if (chain_length >= SOCKET_MAX_HASH_CHAIN_LENGTH)
+    {
+      SOCKET_ERROR_FMT ("Hash chain length %d exceeds limit %d (possible DoS)",
+                        chain_length, SOCKET_MAX_HASH_CHAIN_LENGTH);
+      RAISE_POLL_ERROR (SocketPoll_Failed);
+    }
+#endif
 }
 
 /**

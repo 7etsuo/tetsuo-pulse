@@ -442,6 +442,22 @@ extern const char *Socket_safe_strerror (int errnum);
 #define SOCKET_HASH_TABLE_SIZE 1021
 #endif
 
+/**
+ * @brief Maximum hash chain length before rejecting insertion.
+ *
+ * Defense-in-depth against algorithmic complexity attacks where an attacker
+ * could craft inputs that cause hash collisions, degrading O(1) lookups to O(n).
+ * When a hash bucket exceeds this chain length, new registrations are rejected.
+ *
+ * Set to 0 to disable chain length checking (not recommended).
+ *
+ * @ingroup foundation
+ * @see SOCKET_HASH_TABLE_SIZE for hash table sizing.
+ */
+#ifndef SOCKET_MAX_HASH_CHAIN_LENGTH
+#define SOCKET_MAX_HASH_CHAIN_LENGTH 16
+#endif
+
 /* ============================================================================
  * Arena Memory Configuration
  * ============================================================================

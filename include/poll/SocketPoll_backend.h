@@ -272,7 +272,8 @@ typedef struct PollBackend_T *PollBackend_T;
 #define VALIDATE_MAXEVENTS(maxevents, event_type)                             \
   do                                                                          \
     {                                                                         \
-      if ((size_t)(maxevents) <= 0)                                           \
+      /* Check before cast to detect negative values correctly */             \
+      if ((maxevents) <= 0)                                                   \
         {                                                                     \
           errno = EINVAL;                                                     \
           return NULL;                                                        \
