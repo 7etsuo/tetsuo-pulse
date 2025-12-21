@@ -1389,4 +1389,113 @@ read_u31_be (const unsigned char *buf)
          | ((uint32_t)buf[2] << 8) | buf[3];
 }
 
+/* ============================================================================
+ * Internal Functions - Header Validation (RFC 9113 Section 8)
+ * ============================================================================
+ */
+
+/**
+ * @brief Check if header is a connection-specific header forbidden in HTTP/2.
+ * @ingroup http
+ * @internal
+ *
+ * Checks header name against the list of connection-specific headers that
+ * are forbidden in HTTP/2 per RFC 9113 Section 8.2.2:
+ * - connection, keep-alive, proxy-authenticate, proxy-authorization
+ * - te (except with "trailers" value), trailers, transfer-encoding, upgrade
+ *
+ * The TE header check returns 0 (not forbidden) here; caller must separately
+ * validate that TE contains only "trailers" value.
+ *
+ * @param header The HPACK header to check (non-NULL).
+ * @return 1 if header is forbidden, 0 if allowed.
+ * @note Thread-safe: Yes (read-only, no shared state).
+ * @see http2_validate_te_header() for TE value validation.
+ * @see RFC 9113 Section 8.2.2 Connection-Specific Header Fields.
+ */
+extern int http2_is_connection_header_forbidden (const SocketHPACK_Header *header);
+
+/**
+ * @brief Check for uppercase ASCII letters in HTTP/2 field name.
+ * @ingroup http
+ * @internal
+ *
+ * HTTP/2 requires all field names to be lowercase per RFC 9113 Section 8.2.1.
+ * This function detects any uppercase ASCII letters (A-Z) in the name.
+ *
+ * @param name Field name to check (non-NULL).
+ * @param len Length of field name.
+ * @return 1 if uppercase found, 0 if all lowercase.
+ * @note Thread-safe: Yes (pure function).
+ * @see RFC 9113 Section 8.2.1 Field Validity.
+ */
+extern int http2_field_has_uppercase (const char *name, size_t len);
+
+/**
+ * @brief Check for prohibited characters (NUL/CR/LF) in field data.
+ * @ingroup http
+ * @internal
+ *
+ * HTTP/2 prohibits NUL (0x00), CR (0x0D), and LF (0x0A) in both field names
+ * and field values per RFC 9113 Section 8.2.1.
+ *
+ * @param data Field data to check (non-NULL).
+ * @param len Length of data.
+ * @return 1 if prohibited characters found, 0 if clean.
+ * @note Thread-safe: Yes (pure function).
+ * @see RFC 9113 Section 8.2.1 Field Validity.
+ */
+extern int http2_field_has_prohibited_chars (const char *data, size_t len);
+
+/**
+ * @brief Check for leading/trailing whitespace in field value.
+ * @ingroup http
+ * @internal
+ *
+ * HTTP/2 field values must not have leading or trailing whitespace
+ * (SP or HTAB) per RFC 9113 Section 8.2.1.
+ *
+ * @param value Field value to check (non-NULL for len > 0).
+ * @param len Length of value (0 returns 0).
+ * @return 1 if boundary whitespace found, 0 otherwise.
+ * @note Thread-safe: Yes (pure function).
+ * @see RFC 9113 Section 8.2.1 Field Validity.
+ */
+extern int http2_field_has_boundary_whitespace (const char *value, size_t len);
+
+/**
+ * @brief Validate TE header value for HTTP/2 compliance.
+ * @ingroup http
+ * @internal
+ *
+ * In HTTP/2, the TE header may only contain "trailers" value.
+ * Empty TE is equivalent to "trailers" and is allowed.
+ *
+ * @param value TE header value (may be NULL for empty).
+ * @param len Length of value.
+ * @return 0 if valid ("trailers" or empty), -1 if invalid.
+ * @note Thread-safe: Yes (pure function).
+ * @see RFC 9113 Section 8.2.2 Connection-Specific Header Fields.
+ */
+extern int http2_validate_te_header (const char *value, size_t len);
+
+/**
+ * @brief Validate a regular (non-pseudo) header field for HTTP/2 compliance.
+ * @ingroup http
+ * @internal
+ *
+ * Performs comprehensive validation of a regular header field per RFC 9113:
+ * - Field name must be lowercase (no uppercase ASCII)
+ * - No prohibited characters (NUL/CR/LF) in name or value
+ * - No leading/trailing whitespace in value
+ * - Not a forbidden connection-specific header
+ * - TE header must contain only "trailers" value
+ *
+ * @param header The HPACK header to validate (non-NULL).
+ * @return 0 if valid, -1 if validation fails.
+ * @note Thread-safe: Yes (pure function).
+ * @see RFC 9113 Section 8.2 HTTP Fields.
+ */
+extern int http2_validate_regular_header (const SocketHPACK_Header *header);
+
 #endif /* SOCKETHTTP2_PRIVATE_INCLUDED */
