@@ -348,7 +348,7 @@ connect_wait_completion (T socket, const struct sockaddr *addr,
  * Thread-safe: Yes (operates on single socket)
  */
 static int
-try_connect_address (const T socket, const struct sockaddr *addr,
+try_connect_address (T socket, const struct sockaddr *addr,
                      socklen_t addrlen, int timeout_ms)
 {
   int original_flags;
@@ -377,7 +377,7 @@ try_connect_address (const T socket, const struct sockaddr *addr,
  * Thread-safe: Yes (operates on single socket)
  */
 static int
-try_connect_resolved_addresses (const T socket, struct addrinfo *res,
+try_connect_resolved_addresses (T socket, struct addrinfo *res,
                                 int socket_family, int timeout_ms)
 {
   struct addrinfo *rp;
@@ -431,7 +431,7 @@ connect_resolve_address (const char *host, int port, int socket_family,
  * Thread-safe: Yes (operates on single socket)
  */
 static void
-connect_try_addresses (const T sock, struct addrinfo *res, int socket_family,
+connect_try_addresses (T sock, struct addrinfo *res, int socket_family,
                        int timeout_ms)
 {
   int saved_errno;
@@ -479,7 +479,7 @@ connect_validate_params (T socket, const char *host, int port)
  * Thread-safe: Yes (operates on single socket)
  */
 static void
-connect_execute (const T sock, struct addrinfo *res, int socket_family)
+connect_execute (T sock, struct addrinfo *res, int socket_family)
 {
   int timeout_ms = sock->base->timeouts.connect_timeout_ms;
   connect_try_addresses (sock, res, socket_family, timeout_ms);

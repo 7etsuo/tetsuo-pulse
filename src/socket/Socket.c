@@ -270,9 +270,21 @@ socket_init_after_alloc (T sock)
 }
 
 /**
- * socket_alloc - Allocate and initialize Socket_T structure
- * @arena: Memory arena for allocation
- * @alloc_type: Description for error message (e.g., "socket")
+ * get_socket_type - Get socket type via SO_TYPE option
+ * @fd: File descriptor to query
+ * @type_out: Output for socket type (SOCK_STREAM, etc.)
+ *
+ * Returns: 0 on success, -1 on failure
+ * Thread-safe: Yes (pure syscall wrapper)
+ */
+static int
+get_socket_type (int fd, int *type_out)
+{
+  socklen_t opt_len = sizeof (*type_out);
+  return getsockopt (fd, SOL_SOCKET, SO_TYPE, type_out, &opt_len);
+}
+
+/**
  * validate_fd_is_socket - Validate file descriptor is a socket
  * @fd: File descriptor to validate
  * Raises: Socket_Failed if fd is not a socket
@@ -280,9 +292,8 @@ socket_init_after_alloc (T sock)
 static void
 validate_fd_is_socket (int fd)
 {
-  int optval;
-  socklen_t optlen = sizeof (optval);
-  if (getsockopt (fd, SOL_SOCKET, SO_TYPE, &optval, &optlen) < 0)
+  int type;
+  if (get_socket_type (fd, &type) < 0)
     SOCKET_RAISE_FMT (Socket, Socket_Failed,
                       "Invalid file descriptor (not a socket): fd=%d", fd);
 }
@@ -1078,9 +1089,8 @@ static int
 accept_infer_socket_type (int newfd, Arena_T arena)
 {
   int type_opt;
-  socklen_t opt_len = sizeof (type_opt);
 
-  if (getsockopt (newfd, SOL_SOCKET, SO_TYPE, &type_opt, &opt_len) < 0)
+  if (get_socket_type (newfd, &type_opt) < 0)
     {
       Arena_dispose (&arena);
       SAFE_CLOSE (newfd);
