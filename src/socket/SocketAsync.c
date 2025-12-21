@@ -77,12 +77,16 @@
 
 /* Request structures defined in SocketAsync-private.h */
 
-/* Async context structure defined in SocketAsync-private.h 
+/* Async context structure defined in SocketAsync-private.h
  *
- * Includes additional fields for future partial completion and timeout support:
- * - size_t completed in AsyncRequest
- * - time_t submitted_at in AsyncRequest
- * Code will be updated to utilize them in subsequent commits.
+ * Key fields for partial completion and timeout support:
+ * - size_t completed in AsyncRequest - tracks bytes transferred so far
+ * - int64_t submitted_at in AsyncRequest - submission timestamp for timeout
+ * - int64_t deadline_ms in AsyncRequest - per-request deadline (0 = use global)
+ * - int64_t request_timeout_ms in SocketAsync_T - global timeout (0 = disabled)
+ *
+ * See SocketAsync_send_continue(), SocketAsync_recv_continue() for continuation.
+ * See SocketAsync_set_timeout(), SocketAsync_expire_stale() for timeout handling.
  */
 
 /* Exception */
@@ -198,6 +202,8 @@ static int find_and_remove_request (T async, unsigned request_id,
 
 static void remove_known_request (T async, struct AsyncRequest *req);
 
+static int check_and_expire_stale_requests (T async);
+
 /**
  * accumulate_transfer_progress - Update request progress for partial transfers
  * @req: Request to update
@@ -289,6 +295,7 @@ setup_async_request (T async, Socket_T socket, SocketAsync_Callback cb,
   req->recv_buf = recv_buf;
   req->len = len;
   req->flags = flags;
+  req->deadline_ms = 0; /* Use global timeout; caller may override */
 
   return req;
 }
@@ -311,6 +318,62 @@ cleanup_failed_request (T async, struct AsyncRequest *req)
   socket_async_free_request (async, req);
 }
 /* LCOV_EXCL_STOP */
+
+/**
+ * find_request_unlocked - Find request by ID without removing
+ * @async: Async context (must hold mutex)
+ * @request_id: ID of request to find
+ *
+ * Returns: Pointer to request if found, NULL otherwise
+ * Thread-safe: No - caller must hold async->mutex
+ *
+ * Used for progress queries and continuation where we need to inspect
+ * request state before deciding whether to remove it.
+ */
+static struct AsyncRequest *
+find_request_unlocked (T async, unsigned request_id)
+{
+  unsigned hash;
+  struct AsyncRequest *req;
+
+  assert (async);
+
+  hash = request_hash (request_id);
+  req = async->requests[hash];
+
+  while (req && req->request_id != request_id)
+    req = req->next;
+
+  return req;
+}
+
+/**
+ * remove_request_unlocked - Remove specific request from hash table
+ * @async: Async context (must hold mutex)
+ * @req: Request to remove
+ *
+ * Thread-safe: No - caller must hold async->mutex
+ *
+ * Unlinks request from hash chain. Safe if req not in table (no-op).
+ */
+static void
+remove_request_unlocked (T async, struct AsyncRequest *req)
+{
+  unsigned hash;
+  struct AsyncRequest **pp;
+
+  if (!req)
+    return;
+
+  hash = request_hash (req->request_id);
+  pp = &async->requests[hash];
+
+  while (*pp && *pp != req)
+    pp = &(*pp)->next;
+
+  if (*pp == req)
+    *pp = req->next;
+}
 
 /**
  * find_and_remove_request - Find request by ID, remove from hash table,
@@ -808,35 +871,45 @@ submit_async_operation (T async, struct AsyncRequest *req)
  * @async: Async context
  * @timeout_ms: Timeout in milliseconds
  *
- * Returns: Number of completions processed
+ * Returns: Number of completions processed (including expired requests)
+ *
+ * Also checks for and expires stale requests when global or per-request
+ * timeouts are configured.
  */
 static int
 process_async_completions_internal (T async,
                                     int timeout_ms __attribute__ ((unused)))
 {
+  int completed = 0;
+
   assert (async);
 
-  if (!async->available)
-    return 0;
-
-#ifdef SOCKET_HAS_IO_URING
-  if (async->ring)
+  /* Process backend completions if available */
+  if (async->available)
     {
-      uint64_t val;
-      ssize_t n = read (async->io_uring_fd, &val, sizeof (val));
-      if (n > 0)
-        return process_io_uring_completions (async, SOCKET_MAX_EVENT_BATCH);
-      return 0;
-    }
+#ifdef SOCKET_HAS_IO_URING
+      if (async->ring)
+        {
+          uint64_t val;
+          ssize_t n = read (async->io_uring_fd, &val, sizeof (val));
+          if (n > 0)
+            completed = process_io_uring_completions (async,
+                                                      SOCKET_MAX_EVENT_BATCH);
+        }
 #endif
 
 #if defined(__APPLE__) || defined(__FreeBSD__)
-  if (async->kqueue_fd >= 0)
-    return process_kqueue_completions (async, timeout_ms,
-                                       SOCKET_MAX_EVENT_BATCH);
+      if (async->kqueue_fd >= 0)
+        completed = process_kqueue_completions (async, timeout_ms,
+                                                SOCKET_MAX_EVENT_BATCH);
 #endif
+    }
 
-  return 0;
+  /* Check for stale requests when timeout is configured */
+  if (async->request_timeout_ms > 0)
+    completed += check_and_expire_stale_requests (async);
+
+  return completed;
 }
 
 /**
@@ -1260,6 +1333,447 @@ SocketAsync_set_backend (SocketAsync_Backend backend)
   pthread_mutex_unlock (&backend_pref_mutex);
 
   return 0;
+}
+
+/* ==================== Progress and Continuation API ==================== */
+
+/**
+ * SocketAsync_get_progress - Query progress of a pending async request
+ * @async: Async context
+ * @request_id: ID of request to query
+ * @completed: Output: bytes completed so far (set to 0 if not found)
+ * @total: Output: total bytes requested (set to 0 if not found)
+ *
+ * Returns: 1 if request found, 0 if not found or already completed
+ * Thread-safe: Yes
+ *
+ * Allows applications to check progress of in-flight operations before
+ * deciding whether to continue or cancel them.
+ */
+int
+SocketAsync_get_progress (T async, unsigned request_id, size_t *completed,
+                          size_t *total)
+{
+  struct AsyncRequest *req;
+  int found = 0;
+
+  if (completed)
+    *completed = 0;
+  if (total)
+    *total = 0;
+
+  if (!async || request_id == 0)
+    return 0;
+
+  pthread_mutex_lock (&async->mutex);
+  req = find_request_unlocked (async, request_id);
+  if (req)
+    {
+      found = 1;
+      if (completed)
+        *completed = req->completed;
+      if (total)
+        *total = req->len;
+    }
+  pthread_mutex_unlock (&async->mutex);
+
+  return found;
+}
+
+/**
+ * socket_async_continue_request - Internal helper for continuation
+ * @async: Async context
+ * @request_id: Original request ID
+ * @expected_type: Expected request type (REQ_SEND or REQ_RECV)
+ *
+ * Returns: New request ID on success, 0 on failure
+ * Thread-safe: Yes
+ *
+ * Finds original request, validates type, extracts remaining transfer info,
+ * removes original, creates new request with remaining data.
+ */
+static unsigned
+socket_async_continue_request (T async, unsigned request_id,
+                               enum AsyncRequestType expected_type)
+{
+  struct AsyncRequest *orig_req;
+  struct AsyncRequest *new_req;
+  Socket_T socket;
+  SocketAsync_Callback cb;
+  void *user_data;
+  const void *send_buf = NULL;
+  void *recv_buf = NULL;
+  size_t remaining_len;
+  SocketAsync_Flags flags;
+  unsigned new_id;
+
+  if (!async || request_id == 0)
+    return 0;
+
+  pthread_mutex_lock (&async->mutex);
+
+  orig_req = find_request_unlocked (async, request_id);
+  if (!orig_req)
+    {
+      pthread_mutex_unlock (&async->mutex);
+      return 0;
+    }
+
+  /* Validate type matches */
+  if (orig_req->type != expected_type)
+    {
+      pthread_mutex_unlock (&async->mutex);
+      return 0;
+    }
+
+  /* Check if anything remains */
+  if (orig_req->completed >= orig_req->len)
+    {
+      pthread_mutex_unlock (&async->mutex);
+      return 0;
+    }
+
+  /* Extract info from original request */
+  socket = orig_req->socket;
+  cb = orig_req->cb;
+  user_data = orig_req->user_data;
+  remaining_len = orig_req->len - orig_req->completed;
+  flags = orig_req->flags;
+
+  if (expected_type == REQ_SEND)
+    send_buf = (const char *)orig_req->send_buf + orig_req->completed;
+  else
+    recv_buf = (char *)orig_req->recv_buf + orig_req->completed;
+
+  /* Remove original from hash table */
+  remove_request_unlocked (async, orig_req);
+
+  pthread_mutex_unlock (&async->mutex);
+
+  /* Free original request */
+  socket_async_free_request (async, orig_req);
+
+  /* Create and submit new request with remaining data */
+  new_req = setup_async_request (async, socket, cb, user_data, expected_type,
+                                 send_buf, recv_buf, remaining_len, flags);
+
+  new_id = submit_and_track_request (async, new_req);
+  if (new_id == 0)
+    socket_async_free_request (async, new_req);
+
+  return new_id;
+}
+
+/**
+ * SocketAsync_send_continue - Continue a partially completed send operation
+ * @async: Async context
+ * @request_id: ID of the original request to continue
+ *
+ * Returns: New request ID (>0) on success, 0 if original not found or complete
+ * Thread-safe: Yes
+ *
+ * Looks up the original request, calculates remaining buffer (buf + completed,
+ * len - completed), and resubmits with the same callback/user_data. Original
+ * request is removed and freed.
+ */
+unsigned
+SocketAsync_send_continue (T async, unsigned request_id)
+{
+  return socket_async_continue_request (async, request_id, REQ_SEND);
+}
+
+/**
+ * SocketAsync_recv_continue - Continue a partially completed receive operation
+ * @async: Async context
+ * @request_id: ID of the original request to continue
+ *
+ * Returns: New request ID (>0) on success, 0 if original not found or complete
+ * Thread-safe: Yes
+ */
+unsigned
+SocketAsync_recv_continue (T async, unsigned request_id)
+{
+  return socket_async_continue_request (async, request_id, REQ_RECV);
+}
+
+/* ==================== Timeout Configuration API ==================== */
+
+/**
+ * SocketAsync_set_timeout - Set global request timeout for async context
+ * @async: Async context
+ * @timeout_ms: Timeout in milliseconds (0 = disable timeout)
+ *
+ * Thread-safe: Yes
+ *
+ * Requests older than this timeout will be cancelled with ETIMEDOUT during
+ * SocketAsync_process_completions() or SocketAsync_expire_stale().
+ * Per-request deadlines (set via send_timeout/recv_timeout) override this.
+ */
+void
+SocketAsync_set_timeout (T async, int64_t timeout_ms)
+{
+  if (!async)
+    return;
+
+  pthread_mutex_lock (&async->mutex);
+  async->request_timeout_ms = (timeout_ms > 0) ? timeout_ms : 0;
+  pthread_mutex_unlock (&async->mutex);
+}
+
+/**
+ * SocketAsync_get_timeout - Get current global request timeout
+ * @async: Async context
+ *
+ * Returns: Timeout in milliseconds (0 = disabled)
+ * Thread-safe: Yes
+ */
+int64_t
+SocketAsync_get_timeout (T async)
+{
+  int64_t timeout;
+
+  if (!async)
+    return 0;
+
+  pthread_mutex_lock (&async->mutex);
+  timeout = async->request_timeout_ms;
+  pthread_mutex_unlock (&async->mutex);
+
+  return timeout;
+}
+
+/**
+ * check_and_expire_stale_requests - Check all requests for timeout expiration
+ * @async: Async context
+ *
+ * Returns: Number of requests expired
+ * Thread-safe: Yes
+ *
+ * Iterates all hash buckets, finds stale requests based on their deadline
+ * or global timeout, invokes callbacks with ETIMEDOUT, removes from tracking.
+ */
+static int
+check_and_expire_stale_requests (T async)
+{
+  int64_t now_ms;
+  int expired_count = 0;
+  struct AsyncRequest *expired_list = NULL;
+  struct AsyncRequest *expired_tail = NULL;
+  int64_t global_timeout;
+
+  if (!async)
+    return 0;
+
+  now_ms = Socket_get_monotonic_ms ();
+
+  pthread_mutex_lock (&async->mutex);
+  global_timeout = async->request_timeout_ms;
+
+  /* Collect expired requests under lock */
+  for (unsigned i = 0; i < SOCKET_HASH_TABLE_SIZE; i++)
+    {
+      struct AsyncRequest **pp = &async->requests[i];
+
+      while (*pp)
+        {
+          struct AsyncRequest *req = *pp;
+          int64_t deadline;
+
+          /* Determine effective deadline */
+          if (req->deadline_ms > 0)
+            {
+              /* Per-request deadline takes precedence */
+              deadline = req->deadline_ms;
+            }
+          else if (global_timeout > 0 && req->submitted_at > 0)
+            {
+              /* Use global timeout from submission time */
+              deadline = req->submitted_at + global_timeout;
+            }
+          else
+            {
+              /* No timeout configured */
+              pp = &req->next;
+              continue;
+            }
+
+          if (now_ms >= deadline)
+            {
+              /* Unlink from hash chain */
+              *pp = req->next;
+
+              /* Add to expired list */
+              req->next = NULL;
+              if (expired_tail)
+                expired_tail->next = req;
+              else
+                expired_list = req;
+              expired_tail = req;
+              expired_count++;
+            }
+          else
+            {
+              pp = &req->next;
+            }
+        }
+    }
+
+  pthread_mutex_unlock (&async->mutex);
+
+  /* Invoke callbacks outside lock */
+  while (expired_list)
+    {
+      struct AsyncRequest *req = expired_list;
+      expired_list = req->next;
+
+      if (req->cb)
+        req->cb (req->socket, -1, ETIMEDOUT, req->user_data);
+
+      socket_async_free_request (async, req);
+    }
+
+  return expired_count;
+}
+
+/**
+ * SocketAsync_expire_stale - Manually check and cancel stale (timed-out) requests
+ * @async: Async context
+ *
+ * Returns: Number of requests cancelled due to timeout
+ * Thread-safe: Yes
+ *
+ * Called automatically from SocketAsync_process_completions() when timeout is
+ * configured. Can also be called manually for finer control over when stale
+ * request cleanup occurs.
+ */
+int
+SocketAsync_expire_stale (T async)
+{
+  return check_and_expire_stale_requests (async);
+}
+
+/* ==================== Timeout-Aware Send/Recv API ==================== */
+
+/**
+ * socket_async_submit_with_timeout - Common submit logic with per-request timeout
+ * @async: Async context
+ * @socket: Target socket
+ * @type: REQ_SEND or REQ_RECV
+ * @send_buf: Buffer for send (NULL for recv)
+ * @recv_buf: Buffer for recv (NULL for send)
+ * @len: Buffer length
+ * @cb: Completion callback (required)
+ * @user_data: User data for callback
+ * @flags: Operation flags
+ * @timeout_ms: Per-request timeout in milliseconds (0 = use global)
+ *
+ * Returns: Request ID on success, raises on failure
+ * Thread-safe: Yes
+ */
+static unsigned
+socket_async_submit_with_timeout (T async, Socket_T socket,
+                                  enum AsyncRequestType type,
+                                  const void *send_buf, void *recv_buf,
+                                  size_t len, SocketAsync_Callback cb,
+                                  void *user_data, SocketAsync_Flags flags,
+                                  int64_t timeout_ms)
+{
+  struct AsyncRequest *req;
+  unsigned request_id;
+
+  /* Validate parameters */
+  if (!async || !socket || !cb || len == 0)
+    {
+      errno = EINVAL;
+      SOCKET_ERROR_FMT ("Invalid parameters: async=%p socket=%p cb=%p len=%zu",
+                        (void *)async, (void *)socket, (void *)cb, len);
+      RAISE_MODULE_ERROR (SocketAsync_Failed);
+    }
+  if (type == REQ_SEND && !send_buf)
+    {
+      errno = EINVAL;
+      SOCKET_ERROR_MSG ("Send buffer is NULL for send operation");
+      RAISE_MODULE_ERROR (SocketAsync_Failed);
+    }
+  if (type == REQ_RECV && !recv_buf)
+    {
+      errno = EINVAL;
+      SOCKET_ERROR_MSG ("Receive buffer is NULL for recv operation");
+      RAISE_MODULE_ERROR (SocketAsync_Failed);
+    }
+
+  /* Ensure socket is non-blocking */
+  TRY { Socket_setnonblocking (socket); }
+  EXCEPT (Socket_Failed) { /* Ignore - may already be set or error */ }
+  END_TRY;
+
+  req = setup_async_request (async, socket, cb, user_data, type, send_buf,
+                             recv_buf, len, flags);
+
+  /* Set per-request deadline if specified */
+  if (timeout_ms > 0)
+    req->deadline_ms = Socket_get_monotonic_ms () + timeout_ms;
+
+  request_id = submit_and_track_request (async, req);
+  if (request_id == 0)
+    {
+      const char *op = (type == REQ_SEND) ? "send" : "recv";
+      SOCKET_ERROR_FMT ("Failed to submit async %s (errno=%d)", op, errno);
+      RAISE_MODULE_ERROR (SocketAsync_Failed);
+    }
+
+  return request_id;
+}
+
+/**
+ * SocketAsync_send_timeout - Submit async send with per-request timeout
+ * @async: Async context
+ * @socket: Target socket
+ * @buf: Data buffer to send
+ * @len: Length of data
+ * @cb: Completion callback (required)
+ * @user_data: User data passed to callback
+ * @flags: Operation flags
+ * @timeout_ms: Per-request timeout in milliseconds (0 = use global timeout)
+ *
+ * Returns: Unique request ID on success, raises SocketAsync_Failed on error
+ * Thread-safe: Yes
+ *
+ * Like SocketAsync_send() but with explicit per-request timeout. The request
+ * will be cancelled with ETIMEDOUT if not completed within timeout_ms.
+ */
+unsigned
+SocketAsync_send_timeout (T async, Socket_T socket, const void *buf, size_t len,
+                          SocketAsync_Callback cb, void *user_data,
+                          SocketAsync_Flags flags, int64_t timeout_ms)
+{
+  return socket_async_submit_with_timeout (async, socket, REQ_SEND, buf, NULL,
+                                           len, cb, user_data, flags,
+                                           timeout_ms);
+}
+
+/**
+ * SocketAsync_recv_timeout - Submit async recv with per-request timeout
+ * @async: Async context
+ * @socket: Target socket
+ * @buf: Receive buffer
+ * @len: Buffer length
+ * @cb: Completion callback (required)
+ * @user_data: User data passed to callback
+ * @flags: Operation flags
+ * @timeout_ms: Per-request timeout in milliseconds (0 = use global timeout)
+ *
+ * Returns: Unique request ID on success, raises SocketAsync_Failed on error
+ * Thread-safe: Yes
+ */
+unsigned
+SocketAsync_recv_timeout (T async, Socket_T socket, void *buf, size_t len,
+                          SocketAsync_Callback cb, void *user_data,
+                          SocketAsync_Flags flags, int64_t timeout_ms)
+{
+  return socket_async_submit_with_timeout (async, socket, REQ_RECV, NULL, buf,
+                                           len, cb, user_data, flags,
+                                           timeout_ms);
 }
 
 #undef T

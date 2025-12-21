@@ -72,9 +72,8 @@
  * Enables handling of large or interrupted transfers:
  * - completed accumulates bytes across multiple backend invocations
  * - Remaining data: send_buf + completed, length (len - completed)
- * - Library can resubmit automatically in future enhancements
- * - App can use SocketAsync_send_continue() (planned) for seamless remainder
- * handling
+ * - Use SocketAsync_send_continue() or SocketAsync_recv_continue() for
+ *   automatic remainder handling without manual offset tracking
  *
  * @code{.c}
  * // Example partial handling in callback
@@ -213,10 +212,9 @@ struct AsyncRequest
    * Supports resubmission of remaining data for large transfers or when
    * backend reports partial results (e.g., io_uring CQE res < requested).
    *
-   * @note Enables future SocketAsync_send_continue() and
-   * SocketAsync_recv_continue() for automatic handling without application
-   * offset tracking.
-   * @see SocketAsync_send_continue() (planned)
+   * @see SocketAsync_send_continue() for automatic send continuation.
+   * @see SocketAsync_recv_continue() for automatic recv continuation.
+   * @see SocketAsync_get_progress() to query completion status.
    */
   size_t completed; /* Bytes completed so far */
 
@@ -236,6 +234,25 @@ struct AsyncRequest
    * @see SocketTimeout_remaining_ms()
    */
   int64_t submitted_at; /* Submission time (ms, monotonic) */
+
+  /**
+   * @brief Per-request deadline for timeout detection (milliseconds, monotonic).
+   *
+   * Set via SocketAsync_send_timeout() or SocketAsync_recv_timeout() to specify
+   * a per-request timeout. Overrides global context timeout when non-zero.
+   *
+   * Values:
+   * - 0: Use global context timeout (async->request_timeout_ms)
+   * - >0: Absolute deadline (monotonic ms) - request expires when now >= deadline
+   *
+   * Checked during SocketAsync_process_completions() and SocketAsync_expire_stale().
+   * On expiration, callback is invoked with err=ETIMEDOUT.
+   *
+   * @see SocketAsync_send_timeout()
+   * @see SocketAsync_recv_timeout()
+   * @see SocketAsync_expire_stale()
+   */
+  int64_t deadline_ms; /* Per-request deadline (0 = use global) */
 
   /**
    * @brief Operation flags.
@@ -468,6 +485,25 @@ struct SocketAsync_T
    * @see SocketAsync_backend_name()
    */
   const char *backend_name;
+
+  /**
+   * @brief Global request timeout in milliseconds.
+   *
+   * Default timeout applied to all requests that don't have a per-request
+   * deadline. Set via SocketAsync_set_timeout().
+   *
+   * Values:
+   * - 0: Timeout disabled (default) - requests never expire automatically
+   * - >0: Requests older than this are cancelled with ETIMEDOUT
+   *
+   * Checked during SocketAsync_process_completions(). Per-request deadlines
+   * (AsyncRequest::deadline_ms > 0) override this global setting.
+   *
+   * @see SocketAsync_set_timeout()
+   * @see SocketAsync_get_timeout()
+   * @see SocketAsync_expire_stale()
+   */
+  int64_t request_timeout_ms; /* Global timeout (0 = disabled) */
 };
 
 /** @} */ /* end of async_io private definitions */

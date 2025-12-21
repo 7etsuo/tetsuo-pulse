@@ -1143,6 +1143,209 @@ extern int SocketAsync_backend_available (SocketAsync_Backend backend);
  */
 extern int SocketAsync_set_backend (SocketAsync_Backend backend);
 
+/* ==================== Progress and Continuation API ==================== */
+
+/**
+ * @brief Query progress of a pending async request.
+ * @ingroup async_io
+ * @param[in] async Async context.
+ * @param[in] request_id ID of request to query.
+ * @param[out] completed Output: bytes completed so far (set to 0 if not found).
+ * @param[out] total Output: total bytes requested (set to 0 if not found).
+ * @return 1 if request found, 0 if not found or already completed.
+ *
+ * Allows applications to check progress of in-flight operations before
+ * deciding whether to continue or cancel them.
+ *
+ * @threadsafe Yes.
+ * @complexity O(1) average.
+ *
+ * @see SocketAsync_send_continue() to resume partial transfers.
+ * @see SocketAsync_recv_continue() to resume partial receives.
+ */
+extern int SocketAsync_get_progress (T async, unsigned request_id,
+                                     size_t *completed, size_t *total);
+
+/**
+ * @brief Continue a partially completed send operation.
+ * @ingroup async_io
+ * @param[in] async Async context.
+ * @param[in] request_id ID of the original request to continue.
+ * @return New request ID (>0) on success, 0 if original not found or complete.
+ *
+ * Looks up the original request, calculates remaining buffer (buf + completed,
+ * len - completed), and resubmits with the same callback/user_data. Original
+ * request is removed and freed.
+ *
+ * @threadsafe Yes.
+ * @complexity O(1) average.
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * void send_callback(Socket_T sock, ssize_t bytes, int err, void *ud) {
+ *     struct SendState *state = (struct SendState *)ud;
+ *     if (err != 0) {
+ *         // Handle error
+ *         return;
+ *     }
+ *     if (bytes > 0 && bytes < (ssize_t)(state->total_len - state->sent)) {
+ *         // Partial send - continue with remainder
+ *         state->sent += bytes;
+ *         unsigned new_id = SocketAsync_send_continue(state->async, state->req_id);
+ *         if (new_id > 0) state->req_id = new_id;
+ *     }
+ * }
+ * @endcode
+ *
+ * @see SocketAsync_get_progress() to check progress before continuing.
+ * @see SocketAsync_send() for initial submission.
+ */
+extern unsigned SocketAsync_send_continue (T async, unsigned request_id);
+
+/**
+ * @brief Continue a partially completed receive operation.
+ * @ingroup async_io
+ * @param[in] async Async context.
+ * @param[in] request_id ID of the original request to continue.
+ * @return New request ID (>0) on success, 0 if original not found or complete.
+ *
+ * @threadsafe Yes.
+ * @complexity O(1) average.
+ *
+ * @see SocketAsync_recv() for initial submission.
+ * @see SocketAsync_get_progress() to check progress before continuing.
+ */
+extern unsigned SocketAsync_recv_continue (T async, unsigned request_id);
+
+/* ==================== Timeout Configuration API ==================== */
+
+/**
+ * @brief Set the global request timeout for an async context.
+ * @ingroup async_io
+ * @param[in] async Async context.
+ * @param[in] timeout_ms Timeout in milliseconds (0 = disable timeout).
+ *
+ * Requests older than this timeout will be cancelled with ETIMEDOUT during
+ * SocketAsync_process_completions() or SocketAsync_expire_stale().
+ * Per-request deadlines (set via send_timeout/recv_timeout) override this.
+ *
+ * @threadsafe Yes.
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Set 30-second timeout for all requests
+ * SocketAsync_set_timeout(async, 30000);
+ *
+ * // Later, disable timeout
+ * SocketAsync_set_timeout(async, 0);
+ * @endcode
+ *
+ * @see SocketAsync_get_timeout() to query current timeout.
+ * @see SocketAsync_send_timeout() for per-request timeouts.
+ * @see SocketAsync_expire_stale() for manual expiration.
+ */
+extern void SocketAsync_set_timeout (T async, int64_t timeout_ms);
+
+/**
+ * @brief Get the current global request timeout.
+ * @ingroup async_io
+ * @param[in] async Async context.
+ * @return Timeout in milliseconds (0 = disabled).
+ *
+ * @threadsafe Yes.
+ */
+extern int64_t SocketAsync_get_timeout (T async);
+
+/**
+ * @brief Manually check and cancel stale (timed-out) requests.
+ * @ingroup async_io
+ * @param[in] async Async context.
+ * @return Number of requests cancelled due to timeout.
+ *
+ * Iterates all pending requests and cancels those that have exceeded their
+ * deadline (per-request or global). Callbacks are invoked with err=ETIMEDOUT.
+ *
+ * Called automatically from SocketAsync_process_completions() when global
+ * timeout is configured. Can also be called manually for finer control.
+ *
+ * @threadsafe Yes.
+ * @complexity O(n) where n = pending requests.
+ *
+ * @see SocketAsync_set_timeout() to configure global timeout.
+ * @see SocketAsync_send_timeout() for per-request timeouts.
+ */
+extern int SocketAsync_expire_stale (T async);
+
+/* ==================== Timeout-Aware Send/Recv API ==================== */
+
+/**
+ * @brief Submit async send with per-request timeout.
+ * @ingroup async_io
+ * @param[in] async Async context.
+ * @param[in] socket Target socket.
+ * @param[in] buf Data buffer to send.
+ * @param[in] len Length of data.
+ * @param[in] cb Completion callback (required).
+ * @param[in] user_data User data passed to callback.
+ * @param[in] flags Operation flags.
+ * @param[in] timeout_ms Per-request timeout in milliseconds (0 = use global).
+ * @return Unique request ID on success.
+ * @throws SocketAsync_Failed on error.
+ *
+ * Like SocketAsync_send() but with explicit per-request timeout. The request
+ * will be cancelled with ETIMEDOUT if not completed within timeout_ms.
+ *
+ * @threadsafe Yes.
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Send with 5-second timeout
+ * unsigned req_id = SocketAsync_send_timeout(async, sock, buf, len,
+ *                                             callback, user_data,
+ *                                             ASYNC_FLAG_NONE, 5000);
+ * @endcode
+ *
+ * @see SocketAsync_send() for sends using global timeout.
+ * @see SocketAsync_set_timeout() for global timeout configuration.
+ */
+extern unsigned SocketAsync_send_timeout (T async, Socket_T socket,
+                                          const void *buf, size_t len,
+                                          SocketAsync_Callback cb,
+                                          void *user_data,
+                                          SocketAsync_Flags flags,
+                                          int64_t timeout_ms);
+
+/**
+ * @brief Submit async recv with per-request timeout.
+ * @ingroup async_io
+ * @param[in] async Async context.
+ * @param[in] socket Target socket.
+ * @param[out] buf Receive buffer.
+ * @param[in] len Buffer length.
+ * @param[in] cb Completion callback (required).
+ * @param[in] user_data User data passed to callback.
+ * @param[in] flags Operation flags.
+ * @param[in] timeout_ms Per-request timeout in milliseconds (0 = use global).
+ * @return Unique request ID on success.
+ * @throws SocketAsync_Failed on error.
+ *
+ * Like SocketAsync_recv() but with explicit per-request timeout. The request
+ * will be cancelled with ETIMEDOUT if not completed within timeout_ms.
+ *
+ * @threadsafe Yes.
+ *
+ * @see SocketAsync_recv() for receives using global timeout.
+ * @see SocketAsync_set_timeout() for global timeout configuration.
+ */
+extern unsigned SocketAsync_recv_timeout (T async, Socket_T socket, void *buf,
+                                          size_t len, SocketAsync_Callback cb,
+                                          void *user_data,
+                                          SocketAsync_Flags flags,
+                                          int64_t timeout_ms);
+
 #undef T
 
 /** @} */ // end of async_io group
