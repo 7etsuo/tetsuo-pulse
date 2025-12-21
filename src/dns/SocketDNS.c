@@ -20,6 +20,7 @@
 
 /* System headers first */
 
+#include <arpa/inet.h>
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
@@ -1130,12 +1131,13 @@ SocketDNS_request_settimeout (struct SocketDNS_T *dns,
  * @timeout_ms: Timeout in milliseconds
  * @deadline: Output timespec structure
  *
- * Uses CLOCK_REALTIME as required by pthread_cond_timedwait.
+ * Security: Uses CLOCK_MONOTONIC to prevent timing attacks via system clock
+ * manipulation. The result_cond is initialized with CLOCK_MONOTONIC attribute.
  */
 static void
 compute_deadline (int timeout_ms, struct timespec *deadline)
 {
-  clock_gettime (CLOCK_REALTIME, deadline);
+  clock_gettime (CLOCK_MONOTONIC, deadline);
   deadline->tv_sec += timeout_ms / SOCKET_MS_PER_SECOND;
   deadline->tv_nsec += (timeout_ms % SOCKET_MS_PER_SECOND)
                        * (SOCKET_NS_PER_SECOND / SOCKET_MS_PER_SECOND);
@@ -1781,6 +1783,34 @@ SocketDNS_get_prefer_ipv6 (T dns)
 }
 
 /**
+ * @brief Validate IP address format (IPv4 or IPv6).
+ * @param ip IP address string to validate.
+ * @return 1 if valid IPv4 or IPv6, 0 if invalid.
+ *
+ * Security: Uses inet_pton() which is safe and properly validates
+ * IP address format without buffer overflow risks.
+ */
+static int
+validate_ip_address (const char *ip)
+{
+  struct in_addr addr4;
+  struct in6_addr addr6;
+
+  if (!ip || !*ip)
+    return 0;
+
+  /* Try IPv4 first (more common) */
+  if (inet_pton (AF_INET, ip, &addr4) == 1)
+    return 1;
+
+  /* Try IPv6 */
+  if (inet_pton (AF_INET6, ip, &addr6) == 1)
+    return 1;
+
+  return 0;
+}
+
+/**
  * @brief Copy string array to arena-allocated storage (helper).
  * @param dns DNS resolver instance.
  * @param src Source string array.
@@ -1822,22 +1852,39 @@ copy_string_array_to_arena (struct SocketDNS_T *dns, const char **src,
 /**
  * SocketDNS_set_nameservers - Set custom nameservers
  * @dns: DNS resolver instance
- * @servers: Array of nameserver IP addresses
+ * @servers: Array of nameserver IP addresses (IPv4 or IPv6)
  * @count: Number of servers
  *
- * Returns: 0 on success, -1 if not supported
+ * Returns: 0 on success, -1 if not supported or invalid IP
  * Thread-safe: Yes
  *
+ * Security: Validates all IP addresses before storing to prevent
+ * injection attacks and ensure only valid IPs reach the resolver.
+ *
  * Note: Custom nameservers require platform-specific support.
- * On Linux, this would modify _res structure. Currently returns -1
- * as a safe default since getaddrinfo() uses system resolver.
+ * On Linux, this modifies the per-thread resolver state.
  */
 int
 SocketDNS_set_nameservers (T dns, const char **servers, size_t count)
 {
   int result;
+  size_t i;
 
   assert (dns);
+
+  /* Validate all IP addresses before acquiring lock */
+  if (servers != NULL && count > 0)
+    {
+      for (i = 0; i < count; i++)
+        {
+          if (!validate_ip_address (servers[i]))
+            {
+              SOCKET_LOG_WARN_MSG ("Invalid nameserver IP address: %s",
+                                   servers[i] ? servers[i] : "(null)");
+              return -1;
+            }
+        }
+    }
 
   pthread_mutex_lock (&dns->mutex);
 
@@ -1865,7 +1912,7 @@ SocketDNS_set_nameservers (T dns, const char **servers, size_t count)
    * Future: Could implement with res_query() or a custom DNS client. */
 
 #ifdef __linux__
-  return 0;  /* Successfully configured - will be applied in worker threads */
+  return 0; /* Successfully configured - will be applied in worker threads */
 #else
   SOCKET_LOG_WARN_MSG (
       "Custom nameservers configured but not applied (platform limitation)");

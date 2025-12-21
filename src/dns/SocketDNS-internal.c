@@ -166,13 +166,44 @@ initialize_queue_condition (struct SocketDNS_T *dns)
  * @dns: DNS resolver instance
  *
  * Raises: SocketDNS_Failed on initialization failure
+ *
+ * Security: Uses CLOCK_MONOTONIC to prevent timing attacks via system clock
+ * manipulation. This ensures pthread_cond_timedwait() deadlines are immune
+ * to NTP adjustments or malicious clock changes.
  */
 void
 initialize_result_condition (struct SocketDNS_T *dns)
 {
-  INIT_PTHREAD_PRIMITIVE (dns, pthread_cond_init, &dns->result_cond,
-                          DNS_CLEAN_CONDS,
-                          "Failed to initialize DNS resolver result condition");
+  pthread_condattr_t attr;
+  int rc;
+
+  rc = pthread_condattr_init (&attr);
+  if (rc != 0)
+    {
+      cleanup_on_init_failure (dns, DNS_CLEAN_CONDS);
+      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+                        "Failed to initialize condition attributes");
+    }
+
+  /* Use CLOCK_MONOTONIC for immunity to system clock changes */
+  rc = pthread_condattr_setclock (&attr, CLOCK_MONOTONIC);
+  if (rc != 0)
+    {
+      pthread_condattr_destroy (&attr);
+      cleanup_on_init_failure (dns, DNS_CLEAN_CONDS);
+      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+                        "Failed to set CLOCK_MONOTONIC for condition variable");
+    }
+
+  rc = pthread_cond_init (&dns->result_cond, &attr);
+  pthread_condattr_destroy (&attr);
+
+  if (rc != 0)
+    {
+      cleanup_on_init_failure (dns, DNS_CLEAN_CONDS);
+      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+                        "Failed to initialize DNS resolver result condition");
+    }
 }
 
 /**
@@ -588,6 +619,33 @@ drain_completion_pipe (struct SocketDNS_T *dns)
 }
 
 /**
+ * secure_clear_memory - Securely clear memory to prevent information leakage
+ * @ptr: Pointer to memory to clear
+ * @len: Number of bytes to clear
+ *
+ * Uses explicit_bzero on Linux/glibc to prevent compiler optimization from
+ * removing the clear operation. Falls back to volatile memset otherwise.
+ *
+ * Security: Prevents hostname/IP strings from lingering in memory after
+ * DNS resolver disposal, defending against memory disclosure attacks.
+ */
+static void
+secure_clear_memory (void *ptr, size_t len)
+{
+  if (!ptr || len == 0)
+    return;
+
+#ifdef __linux__
+  explicit_bzero (ptr, len);
+#else
+  /* Volatile pointer prevents compiler from optimizing away the memset */
+  volatile unsigned char *vptr = (volatile unsigned char *)ptr;
+  while (len--)
+    *vptr++ = 0;
+#endif
+}
+
+/**
  * free_request_list_results - Free addrinfo results for linked request list
  * @head: Head of request list
  * @next_offset: Offset of next-pointer field within SocketDNS_Request_T
@@ -596,6 +654,9 @@ drain_completion_pipe (struct SocketDNS_T *dns)
  *
  * Generic traversal that works with either queue_next or hash_next linkage.
  * Frees getaddrinfo results; request structures are in Arena, not freed here.
+ *
+ * Security: Securely clears hostname strings before arena disposal to prevent
+ * information leakage from deallocated memory.
  */
 static void
 free_request_list_results (Request_T head, size_t next_offset)
@@ -605,6 +666,13 @@ free_request_list_results (Request_T head, size_t next_offset)
   while (curr)
     {
       Request_T next = *(Request_T *)((char *)curr + next_offset);
+
+      /* Securely clear hostname before arena disposal */
+      if (curr->host)
+        {
+          secure_clear_memory (curr->host, strlen (curr->host));
+        }
+
       if (curr->result)
         {
           SocketCommon_free_addrinfo (curr->result);
@@ -1474,6 +1542,10 @@ process_single_request (struct SocketDNS_T *dns,
  * apply_custom_resolver_config - Apply custom nameservers/search domains
  * @res_state: Thread-local resolver state
  * @dns: DNS resolver instance (must hold mutex when calling)
+ *
+ * Security: Supports both IPv4 and IPv6 nameservers using inet_pton()
+ * for safe address parsing. IPv6 addresses use the resolver extension
+ * structure (_u._ext.nsaddrs).
  */
 static void
 apply_custom_resolver_config (struct __res_state *res_state,
@@ -1482,15 +1554,60 @@ apply_custom_resolver_config (struct __res_state *res_state,
   if (dns->custom_nameservers && dns->nameserver_count > 0)
     {
       res_state->nscount = 0;
-      for (size_t i = 0; i < dns->nameserver_count && i < MAXNS; i++)
+
+      /* Static storage for IPv6 addresses (thread-local, one per worker) */
+      static __thread struct sockaddr_in6 ipv6_addrs[MAXNS];
+      static __thread struct sockaddr_in6 *ipv6_ptrs[MAXNS];
+      int ipv6_count = 0;
+
+      for (size_t i = 0; i < dns->nameserver_count && res_state->nscount < MAXNS;
+           i++)
         {
-          struct in_addr addr;
-          if (inet_aton (dns->custom_nameservers[i], &addr))
+          const char *ip = dns->custom_nameservers[i];
+          struct in_addr addr4;
+          struct in6_addr addr6;
+
+          /* Try IPv4 first */
+          if (inet_pton (AF_INET, ip, &addr4) == 1)
             {
-              res_state->nsaddr_list[i].sin_addr = addr;
-              res_state->nsaddr_list[i].sin_family = AF_INET;
-              res_state->nsaddr_list[i].sin_port = htons (53);
+              int idx = res_state->nscount;
+              res_state->nsaddr_list[idx].sin_family = AF_INET;
+              res_state->nsaddr_list[idx].sin_addr = addr4;
+              res_state->nsaddr_list[idx].sin_port = htons (53);
               res_state->nscount++;
+            }
+          /* Try IPv6 */
+          else if (inet_pton (AF_INET6, ip, &addr6) == 1)
+            {
+              if (ipv6_count < MAXNS)
+                {
+                  memset (&ipv6_addrs[ipv6_count], 0,
+                          sizeof (struct sockaddr_in6));
+                  ipv6_addrs[ipv6_count].sin6_family = AF_INET6;
+                  ipv6_addrs[ipv6_count].sin6_addr = addr6;
+                  ipv6_addrs[ipv6_count].sin6_port = htons (53);
+                  ipv6_ptrs[ipv6_count] = &ipv6_addrs[ipv6_count];
+                  ipv6_count++;
+                }
+            }
+          else
+            {
+              SOCKET_LOG_WARN_MSG (
+                  "Invalid nameserver IP (should not happen after validation): "
+                  "%s",
+                  ip);
+            }
+        }
+
+      /* Apply IPv6 nameservers if any were configured */
+      if (ipv6_count > 0)
+        {
+          /* The _u._ext structure holds IPv6 nameserver pointers.
+           * Note: This is a glibc extension and may not be portable. */
+          res_state->_u._ext.nscount6 = ipv6_count;
+          for (int j = 0; j < ipv6_count; j++)
+            {
+              res_state->_u._ext.nsaddrs[j] = ipv6_ptrs[j];
             }
         }
     }
