@@ -9,7 +9,7 @@
 
 /**
  * @defgroup utilities Utilities
- * @brief Helper modules for rate limiting, retry logic, and metrics
+ * Helper modules for rate limiting, retry logic, and metrics
  *
  * The utilities group provides cross-cutting concerns like metrics collection,
  * rate limiting, retry policies, and performance monitoring. These modules
@@ -48,7 +48,7 @@
 /**
  * @file SocketMetrics.h
  * @ingroup utilities
- * @brief Production-grade metrics collection and observability for monitoring.
+ * Production-grade metrics collection and observability for monitoring.
  *
  * This header provides comprehensive metrics collection and export
  * capabilities for production monitoring and observability. It tracks
@@ -76,26 +76,19 @@
  * ## Usage Example
  *
  * @code{.c}
- * // Initialize (optional, auto-called by library)
  * SocketMetrics_init();
  *
- * // Record a counter event
  * SocketMetrics_counter_inc(SOCKET_CTR_HTTP_CLIENT_REQUESTS_TOTAL);
  *
- * // Update gauge for current state
  * SocketMetrics_gauge_set(SOCKET_GAU_HTTP_CLIENT_ACTIVE_REQUESTS, 5);
  *
- * // Time an operation with macro convenience
  * SOCKET_METRICS_TIME_START();
  * // ... perform HTTP request ...
  * SOCKET_METRICS_TIME_OBSERVE(SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS);
  *
- * // Export for monitoring system
  * char buffer[65536];
  * size_t len = SocketMetrics_export_prometheus(buffer, sizeof(buffer));
- * // Send buffer to Prometheus scraper or log file
  *
- * // Cleanup at shutdown
  * SocketMetrics_shutdown();
  * @endcode
  *
@@ -168,14 +161,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/* ============================================================================
- * Configuration
- * ============================================================================
- */
-
 /**
- * @brief SOCKET_METRICS_HISTOGRAM_BUCKETS - Number of samples in histogram
- * reservoir
+ * SOCKET_METRICS_HISTOGRAM_BUCKETS - Number of samples in histogram reservoir
  * @ingroup utilities
  *
  * Higher values give more accurate percentiles but use more memory.
@@ -186,7 +173,7 @@
 #endif
 
 /**
- * @brief SOCKET_METRICS_EXPORT_BUFFER_SIZE - Default export buffer size
+ * SOCKET_METRICS_EXPORT_BUFFER_SIZE - Default export buffer size
  * @ingroup utilities
  */
 #ifndef SOCKET_METRICS_EXPORT_BUFFER_SIZE
@@ -194,7 +181,7 @@
 #endif
 
 /**
- * @brief SOCKET_METRICS_MAX_LABEL_LEN - Maximum length for metric labels
+ * SOCKET_METRICS_MAX_LABEL_LEN - Maximum length for metric labels
  * @ingroup utilities
  */
 #ifndef SOCKET_METRICS_MAX_LABEL_LEN
@@ -202,20 +189,15 @@
 #endif
 
 /**
- * @brief SOCKET_METRICS_MAX_HELP_LEN - Maximum length for metric help text
+ * SOCKET_METRICS_MAX_HELP_LEN - Maximum length for metric help text
  * @ingroup utilities
  */
 #ifndef SOCKET_METRICS_MAX_HELP_LEN
 #define SOCKET_METRICS_MAX_HELP_LEN 256
 #endif
 
-/* ============================================================================
- * Metric Type Definitions
- * ============================================================================
- */
-
 /**
- * @brief Metric type enumeration defining the three supported metric kinds.
+ * Metric type enumeration defining the three supported metric kinds.
  * @ingroup utilities
  *
  * This enum classifies metrics into counters (cumulative totals that only
@@ -257,15 +239,13 @@
  */
 typedef enum SocketMetricType
 {
-  SOCKET_METRIC_TYPE_COUNTER
-  = 0, /**< Monotonically increasing counter for event totals */
-  SOCKET_METRIC_TYPE_GAUGE, /**< Gauge for current state values (up or down) */
-  SOCKET_METRIC_TYPE_HISTOGRAM /**< Histogram for distributions with
-                                  percentiles */
+  SOCKET_METRIC_TYPE_COUNTER = 0,
+  SOCKET_METRIC_TYPE_GAUGE,
+  SOCKET_METRIC_TYPE_HISTOGRAM
 } SocketMetricType;
 
 /**
- * @brief Category enumeration for logical grouping of metrics by subsystem.
+ * Category enumeration for logical grouping of metrics by subsystem.
  * @ingroup utilities
  *
  * Metrics are organized into categories corresponding to major library
@@ -309,31 +289,18 @@ typedef enum SocketMetricType
  */
 typedef enum SocketMetricCategory
 {
-  SOCKET_METRIC_CAT_POOL
-  = 0, /**< Connection pool metrics: lifecycle, health, efficiency */
-  SOCKET_METRIC_CAT_HTTP_CLIENT, /**< HTTP client metrics: requests, latency,
-                                    throughput */
-  SOCKET_METRIC_CAT_HTTP_SERVER, /**< HTTP server metrics: requests handled,
-                                    errors, bytes */
-  SOCKET_METRIC_CAT_TLS, /**< TLS/SSL metrics: handshakes, verification,
-                            sessions */
-  SOCKET_METRIC_CAT_DNS, /**< DNS resolution metrics: queries, cache, timeouts
-                          */
-  SOCKET_METRIC_CAT_SOCKET, /**< Core socket metrics: creation, connect, accept
-                             */
-  SOCKET_METRIC_CAT_POLL,   /**< Poll/event loop metrics: wakeups, events,
-                               timeouts */
-  SOCKET_METRIC_CAT_COUNT   /**< Sentinel: total number of categories (not for
-                               use) */
+  SOCKET_METRIC_CAT_POOL = 0,
+  SOCKET_METRIC_CAT_HTTP_CLIENT,
+  SOCKET_METRIC_CAT_HTTP_SERVER,
+  SOCKET_METRIC_CAT_TLS,
+  SOCKET_METRIC_CAT_DNS,
+  SOCKET_METRIC_CAT_SOCKET,
+  SOCKET_METRIC_CAT_POLL,
+  SOCKET_METRIC_CAT_COUNT
 } SocketMetricCategory;
 
-/* ============================================================================
- * Counter Metrics (Monotonically Increasing)
- * ============================================================================
- */
-
 /**
- * @brief SocketCounterMetric - Counter metric identifiers
+ * SocketCounterMetric - Counter metric identifiers
  * @ingroup utilities
  *
  * Counters are monotonically increasing values that track totals.
@@ -341,119 +308,97 @@ typedef enum SocketMetricCategory
  */
 typedef enum SocketCounterMetric
 {
-  /* Connection Pool Counters */
-  SOCKET_CTR_POOL_CONNECTIONS_CREATED = 0, /**< Total connections created */
-  SOCKET_CTR_POOL_CONNECTIONS_DESTROYED,   /**< Total connections destroyed */
-  SOCKET_CTR_POOL_CONNECTIONS_FAILED,      /**< Failed connection attempts */
-  SOCKET_CTR_POOL_CONNECTIONS_REUSED,      /**< Connections reused from pool */
-  SOCKET_CTR_POOL_CONNECTIONS_EVICTED, /**< Connections evicted (idle/max age)
-                                        */
-  SOCKET_CTR_POOL_DRAIN_STARTED,       /**< Drain operations started */
-  SOCKET_CTR_POOL_DRAIN_COMPLETED,     /**< Drain operations completed */
+  SOCKET_CTR_POOL_CONNECTIONS_CREATED = 0,
+  SOCKET_CTR_POOL_CONNECTIONS_DESTROYED,
+  SOCKET_CTR_POOL_CONNECTIONS_FAILED,
+  SOCKET_CTR_POOL_CONNECTIONS_REUSED,
+  SOCKET_CTR_POOL_CONNECTIONS_EVICTED,
+  SOCKET_CTR_POOL_DRAIN_STARTED,
+  SOCKET_CTR_POOL_DRAIN_COMPLETED,
 
-  /* HTTP Client Counters */
-  SOCKET_CTR_HTTP_CLIENT_REQUESTS_TOTAL,   /**< Total HTTP requests sent */
-  SOCKET_CTR_HTTP_CLIENT_REQUESTS_FAILED,  /**< Failed HTTP requests */
-  SOCKET_CTR_HTTP_CLIENT_REQUESTS_TIMEOUT, /**< Timed out HTTP requests */
-  SOCKET_CTR_HTTP_CLIENT_BYTES_SENT,       /**< Total bytes sent */
-  SOCKET_CTR_HTTP_CLIENT_BYTES_RECEIVED,   /**< Total bytes received */
-  SOCKET_CTR_HTTP_CLIENT_RETRIES,          /**< Request retry count */
+  SOCKET_CTR_HTTP_CLIENT_REQUESTS_TOTAL,
+  SOCKET_CTR_HTTP_CLIENT_REQUESTS_FAILED,
+  SOCKET_CTR_HTTP_CLIENT_REQUESTS_TIMEOUT,
+  SOCKET_CTR_HTTP_CLIENT_BYTES_SENT,
+  SOCKET_CTR_HTTP_CLIENT_BYTES_RECEIVED,
+  SOCKET_CTR_HTTP_CLIENT_RETRIES,
 
-  /* HTTP Server Counters */
-  SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL,    /**< Total requests received */
-  SOCKET_CTR_HTTP_SERVER_REQUESTS_FAILED,   /**< Failed request processing */
-  SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT,  /**< Requests timed out */
-  SOCKET_CTR_HTTP_SERVER_RATE_LIMITED,      /**< Requests rejected by rate limit */
-  SOCKET_CTR_HTTP_SERVER_BYTES_SENT,        /**< Total bytes sent */
-  SOCKET_CTR_HTTP_SERVER_BYTES_RECEIVED,    /**< Total bytes received */
-  SOCKET_CTR_HTTP_SERVER_CONNECTIONS_TOTAL, /**< Total connections accepted */
+  SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL,
+  SOCKET_CTR_HTTP_SERVER_REQUESTS_FAILED,
+  SOCKET_CTR_HTTP_SERVER_REQUESTS_TIMEOUT,
+  SOCKET_CTR_HTTP_SERVER_RATE_LIMITED,
+  SOCKET_CTR_HTTP_SERVER_BYTES_SENT,
+  SOCKET_CTR_HTTP_SERVER_BYTES_RECEIVED,
+  SOCKET_CTR_HTTP_SERVER_CONNECTIONS_TOTAL,
 
-  /* HTTP Response Status Counters */
-  SOCKET_CTR_HTTP_RESPONSES_1XX, /**< Informational responses */
-  SOCKET_CTR_HTTP_RESPONSES_2XX, /**< Successful responses */
-  SOCKET_CTR_HTTP_RESPONSES_3XX, /**< Redirection responses */
-  SOCKET_CTR_HTTP_RESPONSES_4XX, /**< Client error responses */
-  SOCKET_CTR_HTTP_RESPONSES_5XX, /**< Server error responses */
+  SOCKET_CTR_HTTP_RESPONSES_1XX,
+  SOCKET_CTR_HTTP_RESPONSES_2XX,
+  SOCKET_CTR_HTTP_RESPONSES_3XX,
+  SOCKET_CTR_HTTP_RESPONSES_4XX,
+  SOCKET_CTR_HTTP_RESPONSES_5XX,
 
-  /* TLS Counters */
-  SOCKET_CTR_TLS_HANDSHAKES_TOTAL,     /**< Total TLS handshakes */
-  SOCKET_CTR_TLS_HANDSHAKES_FAILED,    /**< Failed TLS handshakes */
-  SOCKET_CTR_TLS_SESSION_REUSE_COUNT,  /**< Session resumption count */
-  SOCKET_CTR_TLS_CERT_VERIFY_FAILURES, /**< Certificate verification failures
-                                        */
-  SOCKET_CTR_TLS_RENEGOTIATIONS,       /**< TLS renegotiations (blocked) */
-  SOCKET_CTR_TLS_PINNING_FAILURES,     /**< Certificate pinning violations */
-  SOCKET_CTR_TLS_CT_VERIFICATION_FAILURES, /**< Certificate Transparency
-                                              failures */
-  SOCKET_CTR_TLS_CRL_CHECK_FAILURES, /**< CRL/OCSP revocation check failures */
-  SOCKET_CTR_TLS_EARLY_DATA_SENT,    /**< TLS 1.3 0-RTT early data sent */
-  SOCKET_CTR_TLS_EARLY_DATA_RECV,    /**< TLS 1.3 0-RTT early data received */
-  SOCKET_CTR_TLS_EARLY_DATA_REPLAY_REJECTED, /**< 0-RTT early data rejected for
-                                                replay protection */
-  SOCKET_CTR_TLS_KEY_UPDATES,        /**< TLS 1.3 KeyUpdate operations */
+  SOCKET_CTR_TLS_HANDSHAKES_TOTAL,
+  SOCKET_CTR_TLS_HANDSHAKES_FAILED,
+  SOCKET_CTR_TLS_SESSION_REUSE_COUNT,
+  SOCKET_CTR_TLS_CERT_VERIFY_FAILURES,
+  SOCKET_CTR_TLS_RENEGOTIATIONS,
+  SOCKET_CTR_TLS_PINNING_FAILURES,
+  SOCKET_CTR_TLS_CT_VERIFICATION_FAILURES,
+  SOCKET_CTR_TLS_CRL_CHECK_FAILURES,
+  SOCKET_CTR_TLS_EARLY_DATA_SENT,
+  SOCKET_CTR_TLS_EARLY_DATA_RECV,
+  SOCKET_CTR_TLS_EARLY_DATA_REPLAY_REJECTED,
+  SOCKET_CTR_TLS_KEY_UPDATES,
 
-  /* DTLS Counters */
-  SOCKET_CTR_DTLS_HANDSHAKES_TOTAL,    /**< Total DTLS handshakes initiated */
-  SOCKET_CTR_DTLS_HANDSHAKES_COMPLETE, /**< Completed DTLS handshakes */
-  SOCKET_CTR_DTLS_HANDSHAKES_FAILED,   /**< Failed DTLS handshakes */
-  SOCKET_CTR_DTLS_COOKIES_GENERATED,   /**< DTLS cookies generated */
-  SOCKET_CTR_DTLS_COOKIES_VERIFIED,    /**< DTLS cookies verified successfully */
-  SOCKET_CTR_DTLS_COOKIE_VERIFICATION_FAILURES, /**< Invalid DTLS cookies */
-  SOCKET_CTR_DTLS_REPLAY_PACKETS_DETECTED, /**< DTLS replay protection triggers
-                                            */
-  SOCKET_CTR_DTLS_FRAGMENT_FAILURES,       /**< DTLS fragmentation errors */
+  SOCKET_CTR_DTLS_HANDSHAKES_TOTAL,
+  SOCKET_CTR_DTLS_HANDSHAKES_COMPLETE,
+  SOCKET_CTR_DTLS_HANDSHAKES_FAILED,
+  SOCKET_CTR_DTLS_COOKIES_GENERATED,
+  SOCKET_CTR_DTLS_COOKIES_VERIFIED,
+  SOCKET_CTR_DTLS_COOKIE_VERIFICATION_FAILURES,
+  SOCKET_CTR_DTLS_REPLAY_PACKETS_DETECTED,
+  SOCKET_CTR_DTLS_FRAGMENT_FAILURES,
 
-  /* DNS Counters */
-  SOCKET_CTR_DNS_QUERIES_TOTAL,     /**< Total DNS queries submitted */
-  SOCKET_CTR_DNS_QUERIES_COMPLETED, /**< Successfully completed DNS queries */
-  SOCKET_CTR_DNS_QUERIES_FAILED,    /**< Failed DNS queries */
-  SOCKET_CTR_DNS_QUERIES_TIMEOUT,   /**< Timed out DNS queries */
-  SOCKET_CTR_DNS_QUERIES_CANCELLED, /**< Cancelled DNS queries */
-  SOCKET_CTR_DNS_CACHE_HITS,        /**< DNS cache hits */
-  SOCKET_CTR_DNS_CACHE_MISSES,      /**< DNS cache misses */
+  SOCKET_CTR_DNS_QUERIES_TOTAL,
+  SOCKET_CTR_DNS_QUERIES_COMPLETED,
+  SOCKET_CTR_DNS_QUERIES_FAILED,
+  SOCKET_CTR_DNS_QUERIES_TIMEOUT,
+  SOCKET_CTR_DNS_QUERIES_CANCELLED,
+  SOCKET_CTR_DNS_CACHE_HITS,
+  SOCKET_CTR_DNS_CACHE_MISSES,
 
-  /* Core Socket Counters */
-  SOCKET_CTR_SOCKET_CREATED,         /**< Sockets created */
-  SOCKET_CTR_SOCKET_CLOSED,          /**< Sockets closed */
-  SOCKET_CTR_SOCKET_CONNECT_SUCCESS, /**< Successful connects */
-  SOCKET_CTR_SOCKET_CONNECT_FAILED,  /**< Failed connects */
-  SOCKET_CTR_SOCKET_ACCEPT_TOTAL,    /**< Total accepts */
+  SOCKET_CTR_SOCKET_CREATED,
+  SOCKET_CTR_SOCKET_CLOSED,
+  SOCKET_CTR_SOCKET_CONNECT_SUCCESS,
+  SOCKET_CTR_SOCKET_CONNECT_FAILED,
+  SOCKET_CTR_SOCKET_ACCEPT_TOTAL,
 
-  /* Poll Counters */
-  SOCKET_CTR_POLL_WAKEUPS,             /**< Poll wakeup count */
-  SOCKET_CTR_POLL_EVENTS_DISPATCHED,   /**< Events dispatched */
-  SOCKET_CTR_POLL_TIMEOUT_EXPIRATIONS, /**< Poll timeout expirations */
+  SOCKET_CTR_POLL_WAKEUPS,
+  SOCKET_CTR_POLL_EVENTS_DISPATCHED,
+  SOCKET_CTR_POLL_TIMEOUT_EXPIRATIONS,
 
-  /* Resource Limit Counters */
-  SOCKET_CTR_LIMIT_HEADER_SIZE_EXCEEDED,   /**< Header size limit exceeded */
-  SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED,     /**< Body size limit exceeded */
-  SOCKET_CTR_LIMIT_RESPONSE_SIZE_EXCEEDED, /**< Response size limit exceeded */
-  SOCKET_CTR_LIMIT_MEMORY_EXCEEDED,        /**< Global memory limit exceeded */
-  SOCKET_CTR_LIMIT_CONNECTIONS_EXCEEDED,   /**< Max connections exceeded */
-  SOCKET_CTR_LIMIT_STREAMS_EXCEEDED,       /**< HTTP/2 max streams exceeded */
-  SOCKET_CTR_LIMIT_HEADER_LIST_EXCEEDED, /**< HTTP/2 header list size exceeded
-                                          */
+  SOCKET_CTR_LIMIT_HEADER_SIZE_EXCEEDED,
+  SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED,
+  SOCKET_CTR_LIMIT_RESPONSE_SIZE_EXCEEDED,
+  SOCKET_CTR_LIMIT_MEMORY_EXCEEDED,
+  SOCKET_CTR_LIMIT_CONNECTIONS_EXCEEDED,
+  SOCKET_CTR_LIMIT_STREAMS_EXCEEDED,
+  SOCKET_CTR_LIMIT_HEADER_LIST_EXCEEDED,
 
-  /* SYN Flood Protection Counters */
-  SOCKET_CTR_SYNPROTECT_ATTEMPTS_TOTAL, /**< Total SYN/check attempts */
-  SOCKET_CTR_SYNPROTECT_ALLOWED,        /**< Allowed connections */
-  SOCKET_CTR_SYNPROTECT_THROTTLED,      /**< Throttled connections */
-  SOCKET_CTR_SYNPROTECT_CHALLENGED,     /**< Challenged connections */
-  SOCKET_CTR_SYNPROTECT_BLOCKED,        /**< Blocked connections */
-  SOCKET_CTR_SYNPROTECT_WHITELISTED,    /**< Whitelisted IPs */
-  SOCKET_CTR_SYNPROTECT_BLACKLISTED,    /**< Blacklisted IPs */
-  SOCKET_CTR_SYNPROTECT_LRU_EVICTIONS,  /**< LRU evictions from IP table */
+  SOCKET_CTR_SYNPROTECT_ATTEMPTS_TOTAL,
+  SOCKET_CTR_SYNPROTECT_ALLOWED,
+  SOCKET_CTR_SYNPROTECT_THROTTLED,
+  SOCKET_CTR_SYNPROTECT_CHALLENGED,
+  SOCKET_CTR_SYNPROTECT_BLOCKED,
+  SOCKET_CTR_SYNPROTECT_WHITELISTED,
+  SOCKET_CTR_SYNPROTECT_BLACKLISTED,
+  SOCKET_CTR_SYNPROTECT_LRU_EVICTIONS,
 
-  SOCKET_COUNTER_METRIC_COUNT /**< Number of counter metrics */
+  SOCKET_COUNTER_METRIC_COUNT
 } SocketCounterMetric;
 
-/* ============================================================================
- * Gauge Metrics (Current Values)
- * ============================================================================
- */
-
 /**
- * @brief SocketGaugeMetric - Gauge metric identifiers
+ * SocketGaugeMetric - Gauge metric identifiers
  * @ingroup utilities
  *
  * Gauges represent current values that can increase or decrease.
@@ -461,52 +406,39 @@ typedef enum SocketCounterMetric
  */
 typedef enum SocketGaugeMetric
 {
-  /* Connection Pool Gauges */
-  SOCKET_GAU_POOL_ACTIVE_CONNECTIONS = 0, /**< Currently active connections */
-  SOCKET_GAU_POOL_IDLE_CONNECTIONS,       /**< Currently idle connections */
-  SOCKET_GAU_POOL_PENDING_CONNECTIONS,    /**< Pending connection attempts */
-  SOCKET_GAU_POOL_SIZE,                   /**< Current pool capacity */
+  SOCKET_GAU_POOL_ACTIVE_CONNECTIONS = 0,
+  SOCKET_GAU_POOL_IDLE_CONNECTIONS,
+  SOCKET_GAU_POOL_PENDING_CONNECTIONS,
+  SOCKET_GAU_POOL_SIZE,
 
-  /* HTTP Client Gauges */
-  SOCKET_GAU_HTTP_CLIENT_ACTIVE_REQUESTS,  /**< In-flight HTTP requests */
-  SOCKET_GAU_HTTP_CLIENT_OPEN_CONNECTIONS, /**< Open HTTP connections */
+  SOCKET_GAU_HTTP_CLIENT_ACTIVE_REQUESTS,
+  SOCKET_GAU_HTTP_CLIENT_OPEN_CONNECTIONS,
 
-  /* HTTP Server Gauges */
-  SOCKET_GAU_HTTP_SERVER_ACTIVE_CONNECTIONS, /**< Active server connections */
-  SOCKET_GAU_HTTP_SERVER_ACTIVE_REQUESTS,    /**< In-flight server requests */
-  SOCKET_GAU_HTTP_SERVER_QUEUED_REQUESTS,    /**< Requests waiting in queue */
+  SOCKET_GAU_HTTP_SERVER_ACTIVE_CONNECTIONS,
+  SOCKET_GAU_HTTP_SERVER_ACTIVE_REQUESTS,
+  SOCKET_GAU_HTTP_SERVER_QUEUED_REQUESTS,
 
-  /* TLS Gauges */
-  SOCKET_GAU_TLS_ACTIVE_SESSIONS,  /**< Active TLS sessions */
-  SOCKET_GAU_TLS_CACHED_SESSIONS,  /**< Cached session tickets */
-  SOCKET_GAU_DTLS_ACTIVE_SESSIONS, /**< Active DTLS sessions */
+  SOCKET_GAU_TLS_ACTIVE_SESSIONS,
+  SOCKET_GAU_TLS_CACHED_SESSIONS,
+  SOCKET_GAU_DTLS_ACTIVE_SESSIONS,
 
-  /* DNS Gauges */
-  SOCKET_GAU_DNS_PENDING_QUERIES, /**< Pending DNS queries */
-  SOCKET_GAU_DNS_WORKER_THREADS,  /**< Active DNS worker threads */
-  SOCKET_GAU_DNS_CACHE_SIZE,      /**< DNS cache entry count */
+  SOCKET_GAU_DNS_PENDING_QUERIES,
+  SOCKET_GAU_DNS_WORKER_THREADS,
+  SOCKET_GAU_DNS_CACHE_SIZE,
 
-  /* Core Socket Gauges */
-  SOCKET_GAU_SOCKET_OPEN_FDS, /**< Open file descriptors */
+  SOCKET_GAU_SOCKET_OPEN_FDS,
 
-  /* Poll Gauges */
-  SOCKET_GAU_POLL_REGISTERED_FDS, /**< FDs registered with poll */
-  SOCKET_GAU_POLL_ACTIVE_TIMERS,  /**< Active timers */
+  SOCKET_GAU_POLL_REGISTERED_FDS,
+  SOCKET_GAU_POLL_ACTIVE_TIMERS,
 
-  /* SYN Flood Protection Gauges */
-  SOCKET_GAU_SYNPROTECT_TRACKED_IPS, /**< Currently tracked IP entries */
-  SOCKET_GAU_SYNPROTECT_BLOCKED_IPS, /**< Currently blocked IPs */
+  SOCKET_GAU_SYNPROTECT_TRACKED_IPS,
+  SOCKET_GAU_SYNPROTECT_BLOCKED_IPS,
 
-  SOCKET_GAUGE_METRIC_COUNT /**< Number of gauge metrics */
+  SOCKET_GAUGE_METRIC_COUNT
 } SocketGaugeMetric;
 
-/* ============================================================================
- * Histogram Metrics (Distributions)
- * ============================================================================
- */
-
 /**
- * @brief SocketHistogramMetric - Histogram metric identifiers
+ * SocketHistogramMetric - Histogram metric identifiers
  * @ingroup utilities
  *
  * Histograms track value distributions and support percentile queries.
@@ -514,42 +446,31 @@ typedef enum SocketGaugeMetric
  */
 typedef enum SocketHistogramMetric
 {
-  /* Connection Pool Histograms */
-  SOCKET_HIST_POOL_ACQUIRE_TIME_MS = 0, /**< Time to acquire connection */
-  SOCKET_HIST_POOL_CONNECTION_AGE_MS,   /**< Connection age at close */
-  SOCKET_HIST_POOL_IDLE_TIME_MS,        /**< Time connection was idle */
+  SOCKET_HIST_POOL_ACQUIRE_TIME_MS = 0,
+  SOCKET_HIST_POOL_CONNECTION_AGE_MS,
+  SOCKET_HIST_POOL_IDLE_TIME_MS,
 
-  /* HTTP Client Histograms */
-  SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS, /**< Request latency (total) */
-  SOCKET_HIST_HTTP_CLIENT_CONNECT_TIME_MS,    /**< Connection time */
-  SOCKET_HIST_HTTP_CLIENT_TTFB_MS,            /**< Time to first byte */
-  SOCKET_HIST_HTTP_CLIENT_RESPONSE_SIZE,      /**< Response body size */
+  SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS,
+  SOCKET_HIST_HTTP_CLIENT_CONNECT_TIME_MS,
+  SOCKET_HIST_HTTP_CLIENT_TTFB_MS,
+  SOCKET_HIST_HTTP_CLIENT_RESPONSE_SIZE,
 
-  /* HTTP Server Histograms */
-  SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS, /**< Request processing time */
-  SOCKET_HIST_HTTP_SERVER_RESPONSE_SIZE,      /**< Response body size */
-  SOCKET_HIST_HTTP_SERVER_REQUEST_SIZE,       /**< Request body size */
+  SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS,
+  SOCKET_HIST_HTTP_SERVER_RESPONSE_SIZE,
+  SOCKET_HIST_HTTP_SERVER_REQUEST_SIZE,
 
-  /* TLS Histograms */
-  SOCKET_HIST_TLS_HANDSHAKE_TIME_MS,  /**< TLS handshake duration */
-  SOCKET_HIST_DTLS_HANDSHAKE_TIME_MS, /**< DTLS handshake duration */
+  SOCKET_HIST_TLS_HANDSHAKE_TIME_MS,
+  SOCKET_HIST_DTLS_HANDSHAKE_TIME_MS,
 
-  /* DNS Histograms */
-  SOCKET_HIST_DNS_QUERY_TIME_MS, /**< DNS query duration */
+  SOCKET_HIST_DNS_QUERY_TIME_MS,
 
-  /* Core Socket Histograms */
-  SOCKET_HIST_SOCKET_CONNECT_TIME_MS, /**< Connect duration */
+  SOCKET_HIST_SOCKET_CONNECT_TIME_MS,
 
-  SOCKET_HISTOGRAM_METRIC_COUNT /**< Number of histogram metrics */
+  SOCKET_HISTOGRAM_METRIC_COUNT
 } SocketHistogramMetric;
 
-/* ============================================================================
- * Snapshot Structures
- * ============================================================================
- */
-
 /**
- * @brief Point-in-time snapshot of histogram statistics with percentiles.
+ * Point-in-time snapshot of histogram statistics with percentiles.
  * @ingroup utilities
  * Contains count, sum, min/max, mean, and common percentiles (p50, p95, etc.).
  * @see SocketMetrics_histogram_snapshot() to populate this structure.
@@ -557,22 +478,21 @@ typedef enum SocketHistogramMetric
  */
 typedef struct SocketMetrics_HistogramSnapshot
 {
-  uint64_t count; /**< Total observations */
-  double sum;     /**< Sum of all observations */
-  double min;     /**< Minimum observed value */
-  double max;     /**< Maximum observed value */
-  double mean;    /**< Mean value */
-  double p50;     /**< 50th percentile (median) */
-  double p75;     /**< 75th percentile */
-  double p90;     /**< 90th percentile */
-  double p95;     /**< 95th percentile */
-  double p99;     /**< 99th percentile */
-  double p999;    /**< 99.9th percentile */
+  uint64_t count;
+  double sum;
+  double min;
+  double max;
+  double mean;
+  double p50;
+  double p75;
+  double p90;
+  double p95;
+  double p99;
+  double p999;
 } SocketMetrics_HistogramSnapshot;
 
 /**
- * @brief Complete point-in-time snapshot of all metrics for export and
- * analysis.
+ * Complete point-in-time snapshot of all metrics for export and analysis.
  * @ingroup utilities
  *
  * Aggregates counters, gauges, and histogram snapshots across all categories.
@@ -582,19 +502,14 @@ typedef struct SocketMetrics_HistogramSnapshot
  */
 typedef struct SocketMetrics_Snapshot
 {
-  uint64_t timestamp_ms;                          /**< Snapshot time */
-  uint64_t counters[SOCKET_COUNTER_METRIC_COUNT]; /**< Counter values */
-  int64_t gauges[SOCKET_GAUGE_METRIC_COUNT];      /**< Gauge values */
+  uint64_t timestamp_ms;
+  uint64_t counters[SOCKET_COUNTER_METRIC_COUNT];
+  int64_t gauges[SOCKET_GAUGE_METRIC_COUNT];
   SocketMetrics_HistogramSnapshot histograms[SOCKET_HISTOGRAM_METRIC_COUNT];
 } SocketMetrics_Snapshot;
 
-/* ============================================================================
- * Initialization and Shutdown
- * ============================================================================
- */
-
 /**
- * @brief Initialize the metrics subsystem.
+ * Initialize the metrics subsystem.
  * @ingroup utilities
  * @return 0 on success, -1 on failure.
  * @threadsafe Yes - idempotent, can be called multiple times.
@@ -606,7 +521,7 @@ typedef struct SocketMetrics_Snapshot
 extern int SocketMetrics_init (void);
 
 /**
- * @brief Shut down the metrics subsystem, releasing all resources.
+ * Shut down the metrics subsystem, releasing all resources.
  * @ingroup utilities
  * @threadsafe Yes - idempotent, safe to call multiple times even if not
  * initialized.
@@ -615,13 +530,8 @@ extern int SocketMetrics_init (void);
  */
 extern void SocketMetrics_shutdown (void);
 
-/* ============================================================================
- * Counter Operations
- * ============================================================================
- */
-
 /**
- * @brief Increment a counter metric by 1 atomically.
+ * Increment a counter metric by 1 atomically.
  * @ingroup utilities
  * @param metric The counter metric identifier to increment.
  * @threadsafe Yes - uses atomic operations for thread safety.
@@ -632,101 +542,82 @@ extern void SocketMetrics_shutdown (void);
 extern void SocketMetrics_counter_inc (SocketCounterMetric metric);
 
 /**
- * @brief Add value to counter
+ * Add value to counter
  * @ingroup utilities
  * @param metric Counter metric to modify
  * @param value Value to add (must be positive)
- *
  * @threadsafe Yes (atomic operation)
  */
 extern void SocketMetrics_counter_add (SocketCounterMetric metric,
                                        uint64_t value);
 
 /**
- * @brief Get current counter value
+ * Get current counter value
  * @ingroup utilities
  * @param metric Counter metric to read
- *
  * @return Current counter value
  * @threadsafe Yes (atomic read)
  */
 extern uint64_t SocketMetrics_counter_get (SocketCounterMetric metric);
 
-/* ============================================================================
- * Gauge Operations
- * ============================================================================
- */
-
 /**
- * @brief Set gauge to specific value
+ * Set gauge to specific value
  * @ingroup utilities
  * @param metric Gauge metric to set
  * @param value New value
- *
  * @threadsafe Yes (atomic operation)
  */
 extern void SocketMetrics_gauge_set (SocketGaugeMetric metric, int64_t value);
 
 /**
- * @brief Increment gauge by 1
+ * Increment gauge by 1
  * @ingroup utilities
  * @param metric Gauge metric to increment
- *
  * @threadsafe Yes (atomic operation)
  */
 extern void SocketMetrics_gauge_inc (SocketGaugeMetric metric);
 
 /**
- * @brief Decrement gauge by 1
+ * Decrement gauge by 1
  * @ingroup utilities
  * @param metric Gauge metric to decrement
- *
  * @threadsafe Yes (atomic operation)
  */
 extern void SocketMetrics_gauge_dec (SocketGaugeMetric metric);
 
 /**
- * @brief Add value to gauge
+ * Add value to gauge
  * @ingroup utilities
  * @param metric Gauge metric to modify
  * @param value Value to add (can be negative)
- *
  * @threadsafe Yes (atomic operation)
  */
 extern void SocketMetrics_gauge_add (SocketGaugeMetric metric, int64_t value);
 
 /**
- * @brief Get current gauge value
+ * Get current gauge value
  * @ingroup utilities
  * @param metric Gauge metric to read
- *
  * @return Current gauge value
  * @threadsafe Yes (atomic read)
  */
 extern int64_t SocketMetrics_gauge_get (SocketGaugeMetric metric);
 
-/* ============================================================================
- * Histogram Operations
- * ============================================================================
- */
-
 /**
- * @brief Record observation in histogram
+ * Record observation in histogram
  * @ingroup utilities
  * @param metric Histogram metric to update
  * @param value Observed value
- *
  * @threadsafe Yes (mutex protected)
  */
 extern void SocketMetrics_histogram_observe (SocketHistogramMetric metric,
                                              double value);
 
 /**
- * @brief Get percentile from histogram
+ * Get percentile from histogram
  * @ingroup utilities
  * @param metric Histogram metric to query
  * @param percentile Percentile to calculate (0.0 to 100.0)
- *
  * @return Percentile value, or 0.0 if no data
  * @threadsafe Yes (mutex protected)
  *
@@ -736,31 +627,28 @@ extern double SocketMetrics_histogram_percentile (SocketHistogramMetric metric,
                                                   double percentile);
 
 /**
- * @brief Get observation count
+ * Get observation count
  * @ingroup utilities
  * @param metric Histogram metric to query
- *
  * @return Total number of observations
  * @threadsafe Yes (atomic read)
  */
 extern uint64_t SocketMetrics_histogram_count (SocketHistogramMetric metric);
 
 /**
- * @brief Get sum of observations
+ * Get sum of observations
  * @ingroup utilities
  * @param metric Histogram metric to query
- *
  * @return Sum of all observed values
  * @threadsafe Yes (mutex protected)
  */
 extern double SocketMetrics_histogram_sum (SocketHistogramMetric metric);
 
 /**
- * @brief Get histogram snapshot
+ * Get histogram snapshot
  * @ingroup utilities
  * @param metric Histogram metric to snapshot
  * @param snapshot Output structure for snapshot data
- *
  * @threadsafe Yes (mutex protected)
  *
  * Calculates all statistics and percentiles at snapshot time.
@@ -769,13 +657,8 @@ extern void
 SocketMetrics_histogram_snapshot (SocketHistogramMetric metric,
                                   SocketMetrics_HistogramSnapshot *snapshot);
 
-/* ============================================================================
- * Snapshot and Reset
- * ============================================================================
- */
-
 /**
- * @brief Capture a complete point-in-time snapshot of all metrics.
+ * Capture a complete point-in-time snapshot of all metrics.
  * @ingroup utilities
  * @param snapshot Output structure populated with current metrics data.
  * @threadsafe Yes - provides consistent view without blocking other
@@ -787,9 +670,8 @@ SocketMetrics_histogram_snapshot (SocketHistogramMetric metric,
 extern void SocketMetrics_get (SocketMetrics_Snapshot *snapshot);
 
 /**
- * @brief Reset all metrics to initial values
+ * Reset all metrics to initial values
  * @ingroup utilities
- *
  * @threadsafe Yes
  *
  * Resets all counters to 0, gauges to 0, and clears histogram data.
@@ -797,32 +679,24 @@ extern void SocketMetrics_get (SocketMetrics_Snapshot *snapshot);
 extern void SocketMetrics_reset (void);
 
 /**
- * @brief Reset only counter metrics
+ * Reset only counter metrics
  * @ingroup utilities
- *
  * @threadsafe Yes
  */
 extern void SocketMetrics_reset_counters (void);
 
 /**
- * @brief Reset only histogram metrics
+ * Reset only histogram metrics
  * @ingroup utilities
- *
  * @threadsafe Yes
  */
 extern void SocketMetrics_reset_histograms (void);
 
-/* ============================================================================
- * Export Functions
- * ============================================================================
- */
-
 /**
- * @brief Export metrics in Prometheus text format
+ * Export metrics in Prometheus text format
  * @ingroup utilities
  * @param buffer Output buffer for formatted text
  * @param buffer_size Size of output buffer
- *
  * @return Number of bytes written (excluding NUL), or required size if too
  * small.
  * @threadsafe Yes - atomic snapshot acquisition with mutex protection for
@@ -840,12 +714,11 @@ extern size_t SocketMetrics_export_prometheus (char *buffer,
                                                size_t buffer_size);
 
 /**
- * @brief Export metrics in StatsD format
+ * Export metrics in StatsD format
  * @ingroup utilities
  * @param buffer Output buffer for formatted text
  * @param buffer_size Size of output buffer
  * @param prefix Metric name prefix (e.g., "myapp.socket") or NULL
- *
  * @return Number of bytes written (excluding NUL), or required size if too
  * small.
  * @threadsafe Yes - atomic snapshot acquisition with mutex protection for
@@ -862,11 +735,10 @@ extern size_t SocketMetrics_export_statsd (char *buffer, size_t buffer_size,
                                            const char *prefix);
 
 /**
- * @brief Export metrics in JSON format
+ * Export metrics in JSON format
  * @ingroup utilities
  * @param buffer Output buffer for formatted text
  * @param buffer_size Size of output buffer
- *
  * @return Number of bytes written (excluding NUL), or required size if too
  * small.
  * @threadsafe Yes - atomic snapshot acquisition with mutex protection for
@@ -899,73 +771,62 @@ extern size_t SocketMetrics_export_statsd (char *buffer, size_t buffer_size,
  */
 extern size_t SocketMetrics_export_json (char *buffer, size_t buffer_size);
 
-/* ============================================================================
- * Metric Metadata
- * ============================================================================
- */
-
 /**
- * @brief Get counter metric name
+ * Get counter metric name
  * @ingroup utilities
  * @param metric Counter metric
- *
  * @return Static string with metric name (snake_case)
  * @threadsafe Yes
  */
 extern const char *SocketMetrics_counter_name (SocketCounterMetric metric);
 
 /**
- * @brief Get gauge metric name
+ * Get gauge metric name
  * @ingroup utilities
  * @param metric Gauge metric
- *
  * @return Static string with metric name (snake_case)
  * @threadsafe Yes
  */
 extern const char *SocketMetrics_gauge_name (SocketGaugeMetric metric);
 
 /**
- * @brief Get histogram metric name
+ * Get histogram metric name
  * @ingroup utilities
  * @param metric Histogram metric
- *
  * @return Static string with metric name (snake_case)
  * @threadsafe Yes
  */
 extern const char *SocketMetrics_histogram_name (SocketHistogramMetric metric);
 
 /**
- * @brief Get counter metric help text
+ * Get counter metric help text
  * @ingroup utilities
  * @param metric Counter metric
- *
  * @return Static string with help text
  * @threadsafe Yes
  */
 extern const char *SocketMetrics_counter_help (SocketCounterMetric metric);
 
 /**
- * @brief Get gauge metric help text
+ * Get gauge metric help text
  * @ingroup utilities
  * @param metric Gauge metric
- *
  * @return Static string with help text
  * @threadsafe Yes
  */
 extern const char *SocketMetrics_gauge_help (SocketGaugeMetric metric);
 
 /**
- * @brief Get histogram metric help text
+ * Get histogram metric help text
  * @ingroup utilities
  * @param metric Histogram metric
- *
  * @return Static string with help text
  * @threadsafe Yes
  */
 extern const char *SocketMetrics_histogram_help (SocketHistogramMetric metric);
 
 /**
- * @brief Get the name of a metric category as a static string.
+ * Get the name of a metric category as a static string.
  * @ingroup utilities
  * @param category The metric category enum value.
  * @return Static read-only string (do not free) with category name.
@@ -974,20 +835,14 @@ extern const char *SocketMetrics_histogram_help (SocketHistogramMetric metric);
  */
 extern const char *SocketMetrics_category_name (SocketMetricCategory category);
 
-/* ============================================================================
- * Socket Count and Peak Tracking
- * ============================================================================
- */
-
 /**
- * @brief Get current count of open sockets.
+ * Get current count of open sockets.
  * @ingroup utilities
  *
  * Returns the number of Socket_T instances currently allocated (not freed).
  * This is useful for monitoring resource usage and detecting leaks.
  *
  * @return Current count of open Socket_T instances (>= 0)
- *
  * @threadsafe Yes - atomic counter read
  *
  * ## Example
@@ -1007,7 +862,7 @@ extern const char *SocketMetrics_category_name (SocketMetricCategory category);
 extern int SocketMetrics_get_socket_count (void);
 
 /**
- * @brief Get peak (high watermark) count of simultaneous connections.
+ * Get peak (high watermark) count of simultaneous connections.
  * @ingroup utilities
  *
  * Returns the highest number of Socket_T instances that were allocated
@@ -1017,17 +872,14 @@ extern int SocketMetrics_get_socket_count (void);
  * This is useful for capacity planning and understanding peak load.
  *
  * @return Peak socket count since init/reset (>= 0)
- *
  * @threadsafe Yes - atomic counter read
  *
  * ## Example
  *
  * @code{.c}
- * // After running load test
  * printf("Peak connections: %d\n", SocketMetrics_get_peak_connections());
  * printf("Current connections: %d\n", SocketMetrics_get_socket_count());
  *
- * // Reset for next interval
  * SocketMetrics_reset_peaks();
  * @endcode
  *
@@ -1037,7 +889,7 @@ extern int SocketMetrics_get_socket_count (void);
 extern int SocketMetrics_get_peak_connections (void);
 
 /**
- * @brief Reset peak connection counters.
+ * Reset peak connection counters.
  * @ingroup utilities
  *
  * Resets the peak (high watermark) connection count to the current count.
@@ -1049,7 +901,6 @@ extern int SocketMetrics_get_peak_connections (void);
  * ## Example
  *
  * @code{.c}
- * // Log peaks every hour
  * while (running) {
  *     sleep(3600);
  *     printf("Peak this hour: %d\n", SocketMetrics_get_peak_connections());
@@ -1063,7 +914,7 @@ extern int SocketMetrics_get_peak_connections (void);
 extern void SocketMetrics_reset_peaks (void);
 
 /**
- * @brief Internal: Update peak counter if current count is higher.
+ * Internal: Update peak counter if current count is higher.
  * @ingroup utilities
  * @internal
  *
@@ -1071,25 +922,19 @@ extern void SocketMetrics_reset_peaks (void);
  * Applications should not call this directly.
  *
  * @param[in] current_count Current socket count
- *
  * @threadsafe Yes - uses atomic compare-and-swap
  */
 extern void SocketMetrics_update_peak_if_needed (int current_count);
 
-/* ============================================================================
- * Convenience Macros
- * ============================================================================
- */
-
 /**
- * @brief SOCKET_METRICS_TIME_START - Start timing an operation
+ * SOCKET_METRICS_TIME_START - Start timing an operation
  * @ingroup utilities
  */
 #define SOCKET_METRICS_TIME_START()                                           \
   int64_t _socket_metrics_start_time = Socket_get_monotonic_ms ()
 
 /**
- * @brief SOCKET_METRICS_TIME_OBSERVE - Record elapsed time to histogram
+ * SOCKET_METRICS_TIME_OBSERVE - Record elapsed time to histogram
  * @ingroup utilities
  * @param metric Histogram metric to record to
  */
@@ -1103,8 +948,7 @@ extern void SocketMetrics_update_peak_if_needed (int current_count);
   while (0)
 
 /**
- * @brief SOCKET_METRICS_HTTP_RESPONSE_CLASS - Record HTTP response by status
- * class
+ * SOCKET_METRICS_HTTP_RESPONSE_CLASS - Record HTTP response by status class
  * @ingroup utilities
  * @param status HTTP status code (100-599)
  */
