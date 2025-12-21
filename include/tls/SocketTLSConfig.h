@@ -1284,6 +1284,97 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
 #define SOCKET_TLS_CRL_MAX_PATH_LEN 4096
 #endif
 
+/* ============================================================================
+ * TLS 1.3 Early Data (0-RTT) Configuration
+ * ============================================================================
+ */
+
+/**
+ * @brief Default early data buffer size for TLS 1.3 0-RTT
+ * @ingroup tls_config
+ *
+ * Default maximum size for TLS 1.3 early data (0-RTT): 16384 bytes (16KB).
+ *
+ * ## Rationale for 16KB
+ *
+ * - **TLS record alignment**: Matches TLS record size limit (RFC 8446)
+ * - **Memory efficiency**: Large enough for typical request data
+ * - **DoS protection**: Limits early data buffering before handshake
+ * - **Industry standard**: Matches common server configurations
+ *
+ * @warning Early data is NOT replay-protected by default. Only use for
+ *          idempotent operations or implement application-level replay
+ *          detection.
+ *
+ * @see SocketTLSContext_enable_early_data() for configuration
+ */
+#ifndef SOCKET_TLS_DEFAULT_EARLY_DATA_SIZE
+#define SOCKET_TLS_DEFAULT_EARLY_DATA_SIZE 16384
+#endif
+
+/* ============================================================================
+ * TLS Renegotiation Protection
+ * ============================================================================
+ */
+
+/**
+ * @brief Maximum renegotiations allowed per connection for DoS protection
+ * @ingroup tls_config
+ *
+ * Limits the number of TLS renegotiations to prevent CPU exhaustion attacks: 3.
+ *
+ * ## Rationale for 3 Renegotiations
+ *
+ * - **DoS prevention**: Renegotiation is computationally expensive; attackers
+ *   can force repeated renegotiations to exhaust server CPU (CVE-2011-1473)
+ * - **Legitimate usage**: Most applications need 0-1 renegotiations (key
+ *   rotation, client certificate request)
+ * - **Security margin**: 3 allows for edge cases without enabling abuse
+ * - **TLS 1.3 note**: TLS 1.3 uses KeyUpdate instead of renegotiation; this
+ *   limit only applies to TLS 1.2 and earlier
+ *
+ * @note Once limit is exceeded, further renegotiation attempts are rejected.
+ *
+ * @see SocketTLS_check_renegotiation() for runtime renegotiation handling
+ * @see SocketTLS_disable_renegotiation() to completely disable
+ */
+#ifndef SOCKET_TLS_MAX_RENEGOTIATIONS
+#define SOCKET_TLS_MAX_RENEGOTIATIONS 3
+#endif
+
+/* ============================================================================
+ * OCSP Stapling Configuration
+ * ============================================================================
+ */
+
+/**
+ * @brief Maximum age tolerance for OCSP responses in seconds
+ * @ingroup tls_config
+ *
+ * Maximum allowed age for OCSP responses before they are considered stale:
+ * 300 seconds (5 minutes).
+ *
+ * ## Rationale for 5 Minutes
+ *
+ * - **Replay prevention**: Prevents replay of old (but technically valid)
+ *   OCSP responses that might hide recent revocations
+ * - **Clock tolerance**: Accommodates minor clock drift between client/server
+ * - **Network delays**: Allows for reasonable OCSP response caching and
+ *   delivery latency
+ * - **Security balance**: Short enough to detect recent revocations, long
+ *   enough to avoid false positives
+ *
+ * @note This is checked in addition to the response's nextUpdate field.
+ *       A response is rejected if:
+ *       - It's older than this limit, OR
+ *       - Current time is past nextUpdate
+ *
+ * @see SocketTLS_get_ocsp_response_status() for OCSP verification
+ */
+#ifndef SOCKET_TLS_OCSP_MAX_AGE_SECONDS
+#define SOCKET_TLS_OCSP_MAX_AGE_SECONDS 300
+#endif
+
 #else /* SOCKET_HAS_TLS not defined */
 
 /* Stub definitions when TLS is disabled */

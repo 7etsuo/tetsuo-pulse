@@ -286,16 +286,16 @@ tls_pinning_find (const TLSCertPin *pins, size_t count,
   if (!pins || count == 0 || !hash)
     return 0;
 
-  int found = 0;
+  /* Use volatile to prevent compiler optimizations that could leak timing.
+   * Use bitwise OR accumulation instead of branching to ensure truly
+   * constant-time execution regardless of match position. */
+  volatile int found = 0;
   for (size_t i = 0; i < count; i++)
     {
-      if (SocketCrypto_secure_compare (hash, pins[i].hash,
-                                       SOCKET_TLS_PIN_HASH_LEN)
-          == 0)
-        {
-          found = 1;
-          /* Don't break - continue scanning for constant time */
-        }
+      int match = (SocketCrypto_secure_compare (hash, pins[i].hash,
+                                                SOCKET_TLS_PIN_HASH_LEN)
+                   == 0);
+      found |= match;
     }
 
   return found;

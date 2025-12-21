@@ -409,7 +409,7 @@ static STACK_OF (X509) * load_chain_from_file (const char *cert_file)
     }
 
   X509 *volatile cert = NULL;
-  int num_certs = 0;
+  volatile int num_certs = 0;
 
   while ((cert = PEM_read_X509 (fp, NULL, NULL, NULL)) != NULL)
     {

@@ -260,10 +260,10 @@ SocketTLSContext_enable_early_data (SocketTLSContext_T ctx,
   assert (ctx);
   assert (ctx->ssl_ctx);
 
-  /* Default to 16KB for early data (matches TLS record size) */
+  /* Default to configured early data size (matches TLS record size) */
   uint32_t early_data_size = max_early_data > 0
                                  ? max_early_data
-                                 : 16384;
+                                 : SOCKET_TLS_DEFAULT_EARLY_DATA_SIZE;
 
   /* Server-side: Set maximum early data to accept */
   if (ctx->is_server)
