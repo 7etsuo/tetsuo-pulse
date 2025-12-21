@@ -295,8 +295,8 @@ set(LIB_SOURCES
     src/http/SocketHTTP2-connection.c
     src/http/SocketHTTP2-stream.c
     src/http/SocketHTTP2-flow.c
+    src/http/SocketHTTP2-validate.c
 
-    
     # HTTP Client and Server APIs (Phase 7)
     src/http/SocketHTTPClient.c
     src/http/SocketHTTPClient-pool.c

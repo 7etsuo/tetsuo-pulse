@@ -544,42 +544,8 @@ server_http2_stream_get_or_create (SocketHTTPServer_T server,
   return s;
 }
 
-/**
- * server_http2_is_connection_header_forbidden - Check if header is forbidden in HTTP/2
- * @header: Header to check
- *
- * Returns: 1 if header is forbidden, 0 if allowed
- */
-static int
-server_http2_is_connection_header_forbidden (const SocketHPACK_Header *header)
-{
-  /* Connection-specific headers forbidden in HTTP/2 per RFC 9113 Section 8.2.2 */
-  static const char *forbidden[] = {
-    "connection",
-    "keep-alive",
-    "proxy-authenticate",
-    "proxy-authorization",
-    "te",
-    "trailers",
-    "transfer-encoding",
-    "upgrade"
-  };
-
-  for (size_t i = 0; i < sizeof(forbidden) / sizeof(forbidden[0]); i++)
-    {
-      size_t len = strlen (forbidden[i]);
-      if (header->name_len == len &&
-          strncasecmp (header->name, forbidden[i], len) == 0)
-        {
-          /* Special case: TE is allowed only with "trailers" value (checked elsewhere) */
-          if (len == 2 && memcmp (header->name, "te", 2) == 0)
-            continue;
-          return 1;
-        }
-    }
-
-  return 0;
-}
+/* Connection header validation uses shared http2_is_connection_header_forbidden()
+ * from SocketHTTP2-validate.c via SocketHTTP2-private.h */
 
 static int
 server_http2_build_request (SocketHTTPServer_T server, ServerHTTP2Stream *s,
@@ -705,25 +671,18 @@ server_http2_build_request (SocketHTTPServer_T server, ServerHTTP2Stream *s,
       /* Regular header - pseudo-header section has ended */
       pseudo_section_ended = 1;
 
-      /* Check for forbidden connection-specific headers */
-      if (server_http2_is_connection_header_forbidden (hdr))
+      /* Comprehensive RFC 9113 Section 8.2 header validation:
+       * - Field name must be lowercase (no uppercase ASCII)
+       * - No prohibited characters (NUL/CR/LF) in name or value
+       * - No leading/trailing whitespace in value
+       * - Not a forbidden connection-specific header
+       * - TE header must contain only "trailers" value
+       */
+      if (http2_validate_regular_header (hdr) != 0)
         {
-          SERVER_LOG_ERROR ("Forbidden connection-specific header: %.*s",
+          SERVER_LOG_ERROR ("Invalid HTTP/2 header: %.*s",
                            (int)hdr->name_len, hdr->name);
           return -1;
-        }
-
-      /* Check TE header restrictions */
-      if (hdr->name_len == 2 && memcmp (hdr->name, "te", 2) == 0)
-        {
-          /* TE must be "trailers" or empty (which is equivalent to "trailers") */
-          if (hdr->value_len > 0 &&
-              !(hdr->value_len == 8 && memcmp (hdr->value, "trailers", 8) == 0))
-            {
-              SERVER_LOG_ERROR ("TE header value must be 'trailers', got: %.*s",
-                               (int)hdr->value_len, hdr->value);
-              return -1;
-            }
         }
 
       SocketHTTP_Headers_add_n (h, hdr->name, hdr->name_len, hdr->value,
