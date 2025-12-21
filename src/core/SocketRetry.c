@@ -4,20 +4,7 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * SocketRetry.c - Generic Retry Framework Implementation
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
- *
- * Implements exponential backoff retry logic with jitter.
- * Algorithm matches SocketReconnect for consistency.
- *
- * Backoff Formula:
- *   base_delay = initial_delay * multiplier^(attempt - 1)
- *   capped_delay = min(base_delay, max_delay)
- *   jittered_delay = capped_delay * (1 + jitter * (2 * random - 1))
- */
+/* Generic retry framework with exponential backoff and jitter */
 
 #include <assert.h>
 #include <errno.h>
@@ -39,25 +26,12 @@
  * ============================================================================
  */
 
-/** Minimum delay to avoid zero/negative delays after jitter */
 #define RETRY_MIN_DELAY_MS 1.0
-
-/** Policy validation: maximum allowed multiplier */
 #define SOCKET_RETRY_MAX_MULTIPLIER 16.0
-
-/** Policy validation: maximum delay value in milliseconds (1 hour) */
 #define SOCKET_RETRY_MAX_DELAY_VALUE_MS 3600000
-
-/** Maximum exponent to prevent CPU DoS from excessive loop iterations */
-#define RETRY_MAX_EXPONENT 1000
-
-/** Time conversion: milliseconds per second */
+#define RETRY_MAX_EXPONENT 1000 /* Prevent CPU DoS from excessive loops */
 #define MILLISECONDS_PER_SECOND 1000
-
-/** Time conversion: nanoseconds per millisecond */
 #define NANOSECONDS_PER_MILLISECOND 1000000L
-
-/** Double representation of UINT32_MAX for random value normalization */
 #define UINT32_MAX_DOUBLE ((double)0xFFFFFFFFU)
 
 #define T SocketRetry_T
@@ -65,11 +39,9 @@
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "Retry"
 
-/* Exception definition */
 const Except_T SocketRetry_Failed
     = { &SocketRetry_Failed, "Retry operation failed" };
 
-/* Declare module-specific exception using centralized macros */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketRetry);
 
 /* ============================================================================
@@ -79,23 +51,16 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketRetry);
 
 struct T
 {
-  SocketRetry_Policy policy; /**< Current retry policy */
-  SocketRetry_Stats stats;   /**< Statistics from last execution */
-  unsigned int random_state; /**< Random state for jitter (xorshift32) */
+  SocketRetry_Policy policy;
+  SocketRetry_Stats stats;
+  unsigned int random_state; /* xorshift32 PRNG state */
 };
 
 /* ============================================================================
- * Common Random Helper
+ * Random Number Generation
  * ============================================================================
  */
 
-/**
- * try_crypto_random - Attempt to fill output with cryptographically secure random bytes
- * @out: Pointer to unsigned int to fill
- *
- * Returns: 1 if successful (crypto available and bytes generated), 0 otherwise
- * Thread-safe: Yes
- */
 static int
 try_crypto_random (unsigned int *out)
 {
@@ -105,24 +70,7 @@ try_crypto_random (unsigned int *out)
   return SocketCrypto_random_bytes (out, sizeof (*out)) == 0;
 }
 
-/* ============================================================================
- * Random Number Generation (for jitter)
- * ============================================================================
- *
- * Uses SocketCrypto_random_bytes() as primary source with xorshift32 PRNG
- * fallback. Matches pattern from SocketReconnect-private.h for consistency.
- */
-
-/**
- * retry_random_double - Generate random double in [0, 1)
- * @state: Random state for fallback PRNG (modified on fallback path)
- *
- * Returns: Random value in [0, 1)
- * Thread-safe: Yes (crypto path is reentrant, fallback uses instance state)
- *
- * Primary: SocketCrypto_random_bytes() for cryptographic randomness
- * Fallback: xorshift32 PRNG for performance when crypto unavailable
- */
+/* Crypto random with xorshift32 fallback */
 static double
 retry_random_double (unsigned int *state)
 {
@@ -153,12 +101,6 @@ retry_random_double (unsigned int *state)
  * ============================================================================
  */
 
-/**
- * SocketRetry_policy_defaults - Initialize policy with defaults
- * @policy: Policy structure to initialize
- *
- * Thread-safe: Yes
- */
 void
 SocketRetry_policy_defaults (SocketRetry_Policy *policy)
 {
@@ -171,15 +113,6 @@ SocketRetry_policy_defaults (SocketRetry_Policy *policy)
   policy->jitter = SOCKET_RETRY_DEFAULT_JITTER;
 }
 
-/**
- * validate_policy - Validate retry policy parameters
- * @policy: Policy to validate
- *
- * Returns: 1 if valid, 0 if invalid
- * Thread-safe: Yes
- *
- * Validates policy parameters are within safe ranges to prevent DoS.
- */
 static int
 validate_policy (const SocketRetry_Policy *policy)
 {
@@ -218,14 +151,7 @@ validate_policy (const SocketRetry_Policy *policy)
  * ============================================================================
  */
 
-/**
- * power_double - Compute base^exp for double (iterative to avoid pow overhead)
- * @base: Base value (multiplier)
- * @exp: Exponent (non-negative integer)
- *
- * Returns: base^exp, or INFINITY on overflow
- * Thread-safe: Yes
- */
+/* Compute base^exp iteratively to avoid pow() overhead */
 static double
 power_double (double base, int exp)
 {
@@ -259,14 +185,6 @@ power_double (double base, int exp)
   return result;
 }
 
-/**
- * exponential_backoff - Compute exponential backoff delay before jitter
- * @policy: Policy containing backoff parameters
- * @attempt: Current attempt number (1-based)
- *
- * Returns: Base exponential delay in ms (double)
- * Thread-safe: Yes
- */
 static double
 exponential_backoff (const SocketRetry_Policy *policy, int attempt)
 {
@@ -293,15 +211,6 @@ exponential_backoff (const SocketRetry_Policy *policy, int attempt)
   return base_delay;
 }
 
-/**
- * apply_jitter_to_delay - Apply jitter to base delay
- * @base_delay: Base delay in ms
- * @policy: Policy containing jitter factor
- * @random_state: Random state for jitter (modified)
- *
- * Returns: Jittered delay in ms
- * Thread-safe: No (modifies random_state)
- */
 static double
 apply_jitter_to_delay (double base_delay, const SocketRetry_Policy *policy,
                        unsigned int *random_state)
@@ -324,13 +233,6 @@ apply_jitter_to_delay (double base_delay, const SocketRetry_Policy *policy,
   return jittered_delay;
 }
 
-/**
- * clamp_final_delay - Clamp delay to valid range
- * @delay: Delay to clamp
- *
- * Returns: Clamped delay in ms (double, safe for int cast)
- * Thread-safe: Yes
- */
 static double
 clamp_final_delay (double delay)
 {
@@ -345,15 +247,6 @@ clamp_final_delay (double delay)
   return delay;
 }
 
-/**
- * calculate_backoff_delay - Calculate delay with jitter
- * @policy: Policy containing backoff parameters
- * @attempt: Current attempt number (1-based)
- * @random_state: Random state for jitter (modified)
- *
- * Returns: Delay in milliseconds
- * Thread-safe: No (modifies random_state)
- */
 static int
 calculate_backoff_delay (const SocketRetry_Policy *policy, int attempt,
                          unsigned int *random_state)
@@ -367,16 +260,6 @@ calculate_backoff_delay (const SocketRetry_Policy *policy, int attempt,
   return (int)delay;
 }
 
-/**
- * SocketRetry_calculate_delay - Public delay calculation
- * @policy: Policy to use
- * @attempt: Attempt number (1-based)
- *
- * Returns: Delay in milliseconds (with jitter), or 0 if invalid parameters
- * Thread-safe: Yes (creates temporary random state)
- *
- * Logs warning if policy invalid or attempt <1.
- */
 int
 SocketRetry_calculate_delay (const SocketRetry_Policy *policy, int attempt)
 {
@@ -398,15 +281,7 @@ SocketRetry_calculate_delay (const SocketRetry_Policy *policy, int attempt)
  * ============================================================================
  */
 
-/**
- * retry_sleep_ms - Sleep for specified milliseconds
- * @ms: Milliseconds to sleep
- *
- * Thread-safe: Yes
- *
- * Uses nanosleep for better precision than usleep.
- * Handles EINTR by continuing the sleep.
- */
+/* Sleep with EINTR handling via nanosleep */
 static void
 retry_sleep_ms (int ms)
 {
@@ -432,12 +307,6 @@ retry_sleep_ms (int ms)
  * ============================================================================
  */
 
-/**
- * init_random_state - Initialize random state for jitter
- *
- * Returns: Initial random state value
- * Thread-safe: Yes
- */
 static unsigned int
 init_random_state (void)
 {
@@ -450,14 +319,6 @@ init_random_state (void)
   return seed;
 }
 
-/**
- * SocketRetry_new - Create a new retry context
- * @policy: Retry policy (NULL for defaults)
- *
- * Returns: New retry context
- * Raises: SocketRetry_Failed on allocation failure or invalid policy
- * Thread-safe: Yes (each instance independent)
- */
 T
 SocketRetry_new (const SocketRetry_Policy *policy)
 {
@@ -469,7 +330,6 @@ SocketRetry_new (const SocketRetry_Policy *policy)
     SOCKET_RAISE_MSG (SocketRetry, SocketRetry_Failed,
                       "Failed to allocate retry context");
 
-  /* Initialize policy */
   if (policy != NULL)
     {
       if (!validate_policy (policy))
@@ -490,10 +350,6 @@ SocketRetry_new (const SocketRetry_Policy *policy)
   return retry;
 }
 
-/**
- * SocketRetry_free - Free a retry context
- * @retry: Pointer to context (will be set to NULL)
- */
 void
 SocketRetry_free (T *retry)
 {
@@ -509,28 +365,12 @@ SocketRetry_free (T *retry)
  * ============================================================================
  */
 
-/**
- * reset_retry_stats - Reset statistics for new execution
- * @retry: Retry context
- *
- * Thread-safe: No
- */
 static void
 reset_retry_stats (T retry)
 {
   memset (&retry->stats, 0, sizeof (retry->stats));
 }
 
-/**
- * should_continue_retry - Check if retry should continue after failure
- * @retry: Retry context
- * @result: Operation result code
- * @attempt: Current attempt number
- * @should_retry: User callback (may be NULL)
- * @context: User context
- *
- * Returns: 1 if should retry, 0 if should stop
- */
 static int
 should_continue_retry (const T retry, int result, int attempt,
                        SocketRetry_ShouldRetry should_retry, void *context)
@@ -553,11 +393,6 @@ should_continue_retry (const T retry, int result, int attempt,
   return 1;
 }
 
-/**
- * apply_backoff_delay - Calculate and apply backoff delay
- * @retry: Retry context (stats updated)
- * @attempt: Current attempt number
- */
 static void
 apply_backoff_delay (T retry, int attempt)
 {
@@ -573,17 +408,6 @@ apply_backoff_delay (T retry, int attempt)
   retry_sleep_ms (delay_ms);
 }
 
-/**
- * perform_single_attempt - Perform single retry attempt and log result
- * @retry: Retry context
- * @operation: Operation callback
- * @context: User context
- * @attempt_num: Current attempt number
- * @start_time: Execution start time (for total_time calc on success)
- *
- * Returns: 0 on success (sets total_time_ms), non-zero on failure
- * Thread-safe: No
- */
 static int
 perform_single_attempt (T retry, SocketRetry_Operation operation,
                         void *context, int attempt_num,
@@ -601,7 +425,6 @@ perform_single_attempt (T retry, SocketRetry_Operation operation,
       return 0;
     }
 
-  /* Operation failed */
   retry->stats.last_error = result;
   SOCKET_LOG_DEBUG_MSG ("Attempt %d failed with error %d", attempt_num,
                         result);
@@ -614,16 +437,6 @@ perform_single_attempt (T retry, SocketRetry_Operation operation,
  * ============================================================================
  */
 
-/**
- * SocketRetry_execute - Execute operation with retries
- * @retry: Retry context
- * @operation: Operation to execute
- * @should_retry: Retry decision callback (NULL = retry all)
- * @context: User context
- *
- * Returns: 0 on success, last error code on failure
- * Thread-safe: No (instance not thread-safe)
- */
 int
 SocketRetry_execute (T retry, SocketRetry_Operation operation,
                      SocketRetry_ShouldRetry should_retry, void *context)
@@ -657,14 +470,6 @@ SocketRetry_execute (T retry, SocketRetry_Operation operation,
   return retry->stats.last_error;
 }
 
-/**
- * SocketRetry_execute_simple - Execute with default retry logic
- * @retry: Retry context
- * @operation: Operation to execute
- * @context: User context
- *
- * Returns: 0 on success, last error code on failure
- */
 int
 SocketRetry_execute_simple (T retry, SocketRetry_Operation operation,
                             void *context)
@@ -677,11 +482,6 @@ SocketRetry_execute_simple (T retry, SocketRetry_Operation operation,
  * ============================================================================
  */
 
-/**
- * SocketRetry_get_stats - Get statistics from last execution
- * @retry: Retry context
- * @stats: Output structure
- */
 void
 SocketRetry_get_stats (const T retry, SocketRetry_Stats *stats)
 {
@@ -691,25 +491,15 @@ SocketRetry_get_stats (const T retry, SocketRetry_Stats *stats)
   *stats = retry->stats;
 }
 
-/**
- * SocketRetry_reset - Reset context for reuse
- * @retry: Retry context
- */
 void
 SocketRetry_reset (T retry)
 {
   assert (retry != NULL);
 
   reset_retry_stats (retry);
-  /* Preserve policy and re-seed random state with better entropy */
   retry->random_state = init_random_state ();
 }
 
-/**
- * SocketRetry_get_policy - Get current policy
- * @retry: Retry context
- * @policy: Output structure
- */
 void
 SocketRetry_get_policy (const T retry, SocketRetry_Policy *policy)
 {
@@ -719,13 +509,6 @@ SocketRetry_get_policy (const T retry, SocketRetry_Policy *policy)
   *policy = retry->policy;
 }
 
-/**
- * SocketRetry_set_policy - Update policy
- * @retry: Retry context
- * @policy: New policy settings
- *
- * Raises: SocketRetry_Failed on NULL arguments or invalid policy
- */
 void
 SocketRetry_set_policy (T retry, const SocketRetry_Policy *policy)
 {

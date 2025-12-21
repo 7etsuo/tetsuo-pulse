@@ -4,25 +4,7 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * TimeWindow.c - Sliding Time Window Implementation
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
- *
- * Provides a time-based sliding window counter with smooth
- * interpolation between consecutive periods for accurate rate
- * measurement.
- *
- * Algorithm:
- * - Maintains counts for current and previous time periods
- * - On rotation, previous = current, current = 0
- * - Effective count interpolates based on window progress
- *
- * Thread Safety:
- * - NOT built-in (caller must provide synchronization)
- * - All functions are reentrant when called on separate instances
- */
+/* Sliding time window counter with smooth interpolation */
 
 #include <assert.h>
 #include <stddef.h>
@@ -36,16 +18,7 @@
  * ============================================================================
  */
 
-/**
- * timewindow_clamp_to_duration - Clamp elapsed time to [0, duration]
- * @elapsed: Raw elapsed time (may be negative or oversized)
- * @duration: Positive window duration
- *
- * Returns: Clamped value for consistent progress calculations
- *
- * Used internally by progress tracking functions to handle clock skew
- * and overflow cases uniformly.
- */
+/* Clamp elapsed time to [0, duration] to handle clock skew */
 static inline int64_t
 timewindow_clamp_to_duration(int64_t elapsed, int duration) {
     if (duration <= 0)

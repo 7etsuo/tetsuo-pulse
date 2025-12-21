@@ -4,25 +4,7 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * SocketUTF8.c - UTF-8 Validation Implementation
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
- *
- * Implements DFA-based UTF-8 validation using the Hoehrmann algorithm,
- * which provides O(n) time complexity with O(1) space complexity.
- *
- * The DFA approach handles all UTF-8 security requirements:
- * - Overlong encoding rejection (built into state transitions)
- * - Surrogate rejection (U+D800-U+DFFF)
- * - Maximum code point validation (U+10FFFF)
- * - Proper continuation byte checking
- *
- * Reference: http://bjoern.hoehrmann.de/utf-8/decoder/dfa/
- *
- * Thread safety: All functions are thread-safe (no global state).
- */
+/* UTF-8 validation using Hoehrmann DFA algorithm */
 
 
 #include <string.h>
@@ -30,91 +12,32 @@
 #include "core/SocketUTF8.h"
 #include "core/SocketUtil.h"
 
-/* ============================================================================
- * Exception Definition
- * ============================================================================
- */
+/* ==================== Exception Definition ==================== */
 
 const Except_T SocketUTF8_Failed
     = { &SocketUTF8_Failed, "UTF-8 validation failed" };
 
-/* Thread-local exception for detailed error messages */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketUTF8);
 
-/* ============================================================================
- * DFA State Constants (must be defined before tables that reference them)
- * ============================================================================
- */
+/* ==================== DFA State Constants ==================== */
 
-/** DFA state: Valid complete sequence (accept state) */
 #define UTF8_STATE_ACCEPT 0
-
-/** DFA state: Invalid sequence (reject/sink state) */
 #define UTF8_STATE_REJECT 1
-
-/** DFA state: Expecting 1 continuation byte (2-byte sequence) */
 #define UTF8_STATE_2BYTE_EXPECT 2
-
-/** DFA state: After E0, expect A0-BF then continuation (avoid overlong) */
 #define UTF8_STATE_E0_SPECIAL 3
-
-/** DFA state: Expecting 2 continuation bytes (3-byte mid-sequence) */
 #define UTF8_STATE_3BYTE_EXPECT 4
-
-/** DFA state: After ED, expect 80-9F then continuation (avoid surrogates) */
 #define UTF8_STATE_ED_SPECIAL 5
-
-/** DFA state: After F0, expect 90-BF then 2 continuations (avoid overlong) */
 #define UTF8_STATE_F0_SPECIAL 6
-
-/** DFA state: Expecting 3 continuation bytes (4-byte sequence) */
 #define UTF8_STATE_4BYTE_EXPECT 7
-
-/** DFA state: After F4, expect 80-8F then 2 continuations (avoid >U+10FFFF) */
 #define UTF8_STATE_F4_SPECIAL 8
-
-/** Number of character classes in the DFA (byte classification) */
 #define UTF8_NUM_CHAR_CLASSES 12
-
-/** Number of states in the DFA */
 #define UTF8_NUM_DFA_STATES 9
 
-/* ============================================================================
- * Hoehrmann DFA Tables
- * ============================================================================
- *
- * The DFA uses two tables:
- * 1. utf8_class[256]: Maps each byte to a character class (0-11)
- * 2. utf8_state[UTF8_NUM_DFA_STATES * UTF8_NUM_CHAR_CLASSES]: State transitions
- *
- * States (UTF8_NUM_DFA_STATES = 9):
- *   0 = UTF8_STATE_ACCEPT (valid complete sequence)
- *   1 = UTF8_STATE_REJECT (invalid sequence)
- *   2-8 = intermediate states (expecting continuation bytes)
- *
- * Character classes (UTF8_NUM_CHAR_CLASSES = 12):
- *   0: 00..7F (ASCII)
- *   1: 80..8F (continuation byte, lower)
- *   2: 90..9F (continuation byte, middle-low)
- *   3: A0..BF (continuation byte, upper)
- *   4: C0..C1 (invalid overlong 2-byte start)
- *   5: C2..DF (valid 2-byte start)
- *   6: E0     (3-byte start, special: next must be A0..BF)
- *   7: E1..EC, EE..EF (3-byte start)
- *   8: ED     (3-byte start, special: next must be 80..9F for surrogates)
- *   9: F0     (4-byte start, special: next must be 90..BF)
- *  10: F1..F3 (4-byte start)
- *  11: F4     (4-byte start, special: next must be 80..8F)
- */
+/* ==================== Hoehrmann DFA Tables ==================== */
 
 /* clang-format off */
 
-/**
- * UTF-8 byte classification table
- *
- * Maps each byte value (0x00-0xFF) to a character class for the DFA.
- * This table encodes the UTF-8 byte patterns and their roles.
- */
+/* Maps each byte (0x00-0xFF) to a character class (0-11) */
 static const uint8_t utf8_class[256] = {
   /*      0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F */
   /* 0 */ 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
@@ -135,16 +58,7 @@ static const uint8_t utf8_class[256] = {
   /* F */ 9, 10, 10, 10, 11,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4
 };
 
-/**
- * UTF-8 state transition table
- *
- * Given current state and character class, returns next state.
- * Indexed as: utf8_state[state * UTF8_NUM_CHAR_CLASSES + class]
- *
- * The table is organized with UTF8_NUM_CHAR_CLASSES (12) columns per row
- * (one per character class), and rows represent states 0 through 8
- * (UTF8_NUM_DFA_STATES = 9 total states).
- */
+/* DFA state transitions: utf8_state[state * UTF8_NUM_CHAR_CLASSES + class] */
 static const uint8_t utf8_state[] = {
   /* State UTF8_STATE_ACCEPT: From accept state (initial or complete sequence) */
   /*        ASCII 80-8F 90-9F A0-BF C0-C1 C2-DF  E0  E1-EC/EE-EF ED  F0 F1-F3 F4 */
@@ -177,10 +91,7 @@ static const uint8_t utf8_state[] = {
 
 /* clang-format on */
 
-/**
- * Number of bytes expected for each starting state
- * Maps intermediate state -> total bytes in sequence
- */
+/* Maps DFA state to total bytes in sequence */
 static const uint8_t utf8_state_bytes[] = {
   1, /* UTF8_STATE_ACCEPT: ASCII/single-byte complete */
   0, /* UTF8_STATE_REJECT: Invalid - no bytes */
@@ -193,10 +104,7 @@ static const uint8_t utf8_state_bytes[] = {
   4, /* UTF8_STATE_F4_SPECIAL: 4-byte total (after F4) */
 };
 
-/* ============================================================================
- * Result String Table
- * ============================================================================
- */
+/* ==================== Result String Table ==================== */
 
 static const char *utf8_result_strings[] = {
   "Valid UTF-8",                            /* UTF8_VALID */
@@ -207,14 +115,8 @@ static const char *utf8_result_strings[] = {
   "Code point exceeds U+10FFFF"             /* UTF8_TOO_LARGE */
 };
 
-/* ============================================================================
- * Byte Pattern Constants
- * ============================================================================
- */
+/* ==================== Byte Pattern Constants ==================== */
 
-/**
- * UTF-8 byte masks and start bytes for lead/continuation identification
- */
 #define UTF8_CONTINUATION_MASK 0xC0
 #define UTF8_CONTINUATION_START 0x80
 #define UTF8_ASCII_HIGH_BIT 0x80
@@ -254,34 +156,15 @@ static const char *utf8_result_strings[] = {
 #define UTF8_F4_TOO_LARGE_MIN 0x90
 #define UTF8_F4_TOO_LARGE_MAX 0xBF
 
-/* ============================================================================
- * DFA Helpers
- * ============================================================================
- */
+/* ==================== DFA Helpers ==================== */
 
-/**
- * dfa_transition - Compute next DFA state from current state and char class
- * @state: Current DFA state (0-8)
- * @char_class: Character class from utf8_class[byte] (0-11)
- *
- * Returns: Next DFA state per utf8_state table lookup
- * Thread-safe: Yes (pure function)
- */
 static inline uint32_t
 dfa_transition (uint32_t state, uint8_t char_class)
 {
   return utf8_state[state * UTF8_NUM_CHAR_CLASSES + char_class];
 }
 
-/**
- * dfa_step - Perform one step of DFA transition and check for reject state.
- * @state: Pointer to current DFA state (updated to next state).
- * @byte: Input byte to process.
- * @prev_out: Output - previous state before transition (for error classification).
- *
- * Returns: 1 if transition successful (not reject), 0 if reject state reached.
- * On 0, *prev_out set to state before this byte for classify_error.
- */
+/* Returns 1 if transition successful, 0 if reject state reached */
 static inline int
 dfa_step (uint32_t *state, unsigned char byte, uint32_t *prev_out)
 {
@@ -291,17 +174,7 @@ dfa_step (uint32_t *state, unsigned char byte, uint32_t *prev_out)
   return (*state != UTF8_STATE_REJECT) ? 1 : 0;
 }
 
-/**
- * update_sequence_tracking - Update bytes tracking for incremental validation
- * @state: Incremental state structure to update (not NULL)
- * @prev_state: DFA state before processing current byte
- * @curr_state: DFA state after processing current byte
- *
- * Updates state->bytes_needed and state->bytes_seen based on transition.
- * Used only in incremental mode to track partial multi-byte sequences.
- *
- * Thread-safe: Yes (modifies caller-owned state)
- */
+/* Update bytes_needed and bytes_seen for incremental validation */
 static void
 update_sequence_tracking (SocketUTF8_State *state, uint32_t prev_state,
                           uint32_t curr_state)
@@ -322,43 +195,21 @@ update_sequence_tracking (SocketUTF8_State *state, uint32_t prev_state,
     }
 }
 
-/* ============================================================================
- * Internal Helpers
- * ============================================================================
- */
+/* ==================== Internal Helpers ==================== */
 
-/**
- * raise_arg_error - Raise SocketUTF8_Failed with argument error message.
- * @msg: Error message describing invalid argument.
- *
- * Centralized error raising for invalid parameters to reduce duplication.
- */
 static void
 raise_arg_error (const char *msg)
 {
   SOCKET_RAISE_MSG (SocketUTF8, SocketUTF8_Failed, "%s", msg);
 }
 
-/**
- * is_continuation_byte - Check if byte is valid UTF-8 continuation
- * @byte: Byte to check
- *
- * Returns: 1 if valid continuation (10xxxxxx), 0 otherwise
- */
 static inline int
 is_continuation_byte (unsigned char byte)
 {
   return (byte & UTF8_CONTINUATION_MASK) == UTF8_CONTINUATION_START;
 }
 
-/**
- * validate_continuations - Validate a sequence of continuation bytes
- * @data: Pointer to continuation bytes (starts at data[1])
- * @count: Number of continuation bytes to validate
- * @consumed: Output - set to index of first invalid byte on failure
- *
- * Returns: 1 if all valid, 0 if invalid (consumed set to failure index)
- */
+/* Returns 1 if all valid, 0 if invalid (consumed set to failure index) */
 static int
 validate_continuations (const unsigned char *data, int count, int *consumed)
 {
@@ -375,43 +226,29 @@ validate_continuations (const unsigned char *data, int count, int *consumed)
   return 1;
 }
 
-/**
- * classify_error - Classify error type based on DFA state and byte
- * @prev_state: DFA state before the error
- * @byte: Byte that caused the error
- *
- * Returns: Specific error type for better diagnostics
- *
- * When we hit reject state, determine what kind of error occurred.
- */
+/* Classify error type based on DFA state and byte that caused rejection */
 static inline SocketUTF8_Result
 classify_error (uint32_t prev_state, unsigned char byte)
 {
-  /* Check for overlong 2-byte encodings (C0-C1 starts) - only from accept */
   if (prev_state == UTF8_STATE_ACCEPT && byte >= UTF8_2BYTE_START
       && byte <= UTF8_2BYTE_OVERLONG_END)
     return UTF8_OVERLONG;
 
-  /* Check for invalid bytes (F5-FF) - only from accept state */
   if (prev_state == UTF8_STATE_ACCEPT && byte >= UTF8_INVALID_5BYTE_START)
     return UTF8_INVALID;
 
-  /* E0 followed by 80-9F is overlong 3-byte */
   if (prev_state == UTF8_STATE_E0_SPECIAL && byte >= UTF8_E0_OVERLONG_MIN
       && byte <= UTF8_E0_OVERLONG_MAX)
     return UTF8_OVERLONG;
 
-  /* ED followed by A0-BF is surrogate */
   if (prev_state == UTF8_STATE_ED_SPECIAL && byte >= UTF8_ED_SURROGATE_MIN
       && byte <= UTF8_ED_SURROGATE_MAX)
     return UTF8_SURROGATE;
 
-  /* F0 followed by 80-8F is overlong 4-byte */
   if (prev_state == UTF8_STATE_F0_SPECIAL && byte >= UTF8_F0_OVERLONG_MIN
       && byte <= UTF8_F0_OVERLONG_MAX)
     return UTF8_OVERLONG;
 
-  /* F4 followed by 90-BF exceeds U+10FFFF */
   if (prev_state == UTF8_STATE_F4_SPECIAL && byte >= UTF8_F4_TOO_LARGE_MIN
       && byte <= UTF8_F4_TOO_LARGE_MAX)
     return UTF8_TOO_LARGE;
@@ -419,12 +256,6 @@ classify_error (uint32_t prev_state, unsigned char byte)
   return UTF8_INVALID;
 }
 
-/**
- * classify_first_byte_error - Classify error for invalid first byte
- * @byte: First byte that was invalid
- *
- * Returns: Specific error type
- */
 static inline SocketUTF8_Result
 classify_first_byte_error (unsigned char byte)
 {
@@ -433,10 +264,7 @@ classify_first_byte_error (unsigned char byte)
   return UTF8_INVALID;
 }
 
-/* ============================================================================
- * One-Shot Validation
- * ============================================================================
- */
+/* ==================== One-Shot Validation ==================== */
 
 SocketUTF8_Result
 SocketUTF8_validate (const unsigned char *data, size_t len)
@@ -469,10 +297,7 @@ SocketUTF8_validate_str (const char *str)
   return SocketUTF8_validate ((const unsigned char *)str, strlen (str));
 }
 
-/* ============================================================================
- * Incremental Validation
- * ============================================================================
- */
+/* ==================== Incremental Validation ==================== */
 
 void
 SocketUTF8_init (SocketUTF8_State *state)
@@ -485,13 +310,6 @@ SocketUTF8_init (SocketUTF8_State *state)
   state->bytes_seen = 0;
 }
 
-/**
- * get_current_status - Get current validation status from DFA state
- * @dfa_state: Current DFA state
- *
- * Returns: UTF8_VALID if accept, UTF8_INVALID if reject, UTF8_INCOMPLETE
- * otherwise
- */
 static inline SocketUTF8_Result
 get_current_status (uint32_t state)
 {
@@ -528,7 +346,6 @@ SocketUTF8_update (SocketUTF8_State *state, const unsigned char *data,
           return classify_error (prev, data[i]);
         }
 
-      /* Track bytes for multi-byte sequences */
       update_sequence_tracking (state, prev, dfa_state);
     }
 
@@ -552,20 +369,15 @@ SocketUTF8_reset (SocketUTF8_State *state)
   SocketUTF8_init (state);
 }
 
-/* ============================================================================
- * UTF-8 Utilities
- * ============================================================================
- */
+/* ==================== UTF-8 Utilities ==================== */
 
 int
 SocketUTF8_codepoint_len (uint32_t codepoint)
 {
-  /* Check for surrogate (invalid) */
   if (codepoint >= SOCKET_UTF8_SURROGATE_MIN
       && codepoint <= SOCKET_UTF8_SURROGATE_MAX)
     return 0;
 
-  /* Check for out of range */
   if (codepoint > SOCKET_UTF8_MAX_CODEPOINT)
     return 0;
 
@@ -581,36 +393,29 @@ SocketUTF8_codepoint_len (uint32_t codepoint)
 int
 SocketUTF8_sequence_len (unsigned char first_byte)
 {
-  /* ASCII: 0xxxxxxx (high bit 0) */
   if ((first_byte & UTF8_ASCII_HIGH_BIT) == 0)
     return 1;
 
-  /* Continuation bytes: 10xxxxxx - invalid as start */
   if ((first_byte & UTF8_CONTINUATION_MASK) == UTF8_CONTINUATION_START)
     return 0;
 
-  /* 2-byte: 110xxxxx (C2-DF valid, C0-C1 overlong) */
   if ((first_byte & UTF8_2BYTE_MASK) == UTF8_2BYTE_START)
     return (first_byte >= UTF8_2BYTE_MIN_VALID) ? 2 : 0;
 
-  /* 3-byte: 1110xxxx (E0-EF) */
   if ((first_byte & UTF8_3BYTE_MASK) == UTF8_3BYTE_START)
     return 3;
 
-  /* 4-byte: 11110xxx (F0-F4 valid, F5-FF invalid) */
   if ((first_byte & UTF8_4BYTE_MASK) == UTF8_4BYTE_START)
     return (first_byte <= UTF8_4BYTE_MAX_VALID) ? 4 : 0;
 
-  /* Invalid: 111110xx or higher (F5-FF, or malformed) */
   return 0;
 }
 
-/* Static tables for UTF-8 lead byte configuration (indexed by sequence length) */
 static const uint8_t utf8_lead_start[5] =
-  { 0x00, 0x00, 0xC0, 0xE0, 0xF0 };  /* [len] lead byte prefix */
+  { 0x00, 0x00, 0xC0, 0xE0, 0xF0 };
 
 static const uint8_t utf8_lead_mask[5] =
-  { 0x00, 0x7F, 0x1F, 0x0F, 0x07 };  /* [len] payload bits in lead byte */
+  { 0x00, 0x7F, 0x1F, 0x0F, 0x07 };
 
 int
 SocketUTF8_encode (uint32_t codepoint, unsigned char *output)
@@ -630,7 +435,6 @@ SocketUTF8_encode (uint32_t codepoint, unsigned char *output)
       return 1;
     }
 
-  // len 2-4: fill continuation bytes from LSB
   uint32_t temp_cp = codepoint;
   int pos = len - 1;
   output[pos] = (unsigned char) (UTF8_CONTINUATION_START | (temp_cp & UTF8_CONTINUATION_MASK_VAL));
@@ -642,20 +446,11 @@ SocketUTF8_encode (uint32_t codepoint, unsigned char *output)
       temp_cp >>= 6;
       pos--;
     }
-  // now pos == 0; temp_cp holds lead byte payload bits
   output[0] = (unsigned char) (utf8_lead_start[len] | (temp_cp & utf8_lead_mask[len]));
 
   return len;
 }
 
-/**
- * decode_2byte - Decode a 2-byte UTF-8 sequence
- * @data: Pointer to 2-byte sequence (caller ensures 2 bytes available)
- * @codepoint: Output codepoint (set on success only)
- * @consumed: Output bytes consumed (may be NULL)
- *
- * Returns: UTF8_VALID on success, error code on failure
- */
 static SocketUTF8_Result
 decode_2byte (const unsigned char *data, uint32_t *codepoint, size_t *consumed)
 {
@@ -689,14 +484,6 @@ done:
   return result;
 }
 
-/**
- * decode_3byte - Decode a 3-byte UTF-8 sequence
- * @data: Pointer to 3-byte sequence (caller ensures 3 bytes available)
- * @codepoint: Output codepoint (set on success only)
- * @consumed: Output bytes consumed (may be NULL)
- *
- * Returns: UTF8_VALID on success, error code on failure
- */
 static SocketUTF8_Result
 decode_3byte (const unsigned char *data, uint32_t *codepoint, size_t *consumed)
 {
@@ -737,14 +524,6 @@ done:
   return result;
 }
 
-/**
- * decode_4byte - Decode a 4-byte UTF-8 sequence
- * @data: Pointer to 4-byte sequence (caller ensures 4 bytes available)
- * @codepoint: Output codepoint (set on success only)
- * @consumed: Output bytes consumed (may be NULL)
- *
- * Returns: UTF8_VALID on success, error code on failure
- */
 static SocketUTF8_Result
 decode_4byte (const unsigned char *data, uint32_t *codepoint, size_t *consumed)
 {

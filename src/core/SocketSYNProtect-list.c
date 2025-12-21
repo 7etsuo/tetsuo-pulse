@@ -4,11 +4,7 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * SocketSYNProtect-list.c - List Management for SYN Protection
- *
- * Implements LRU list operations and related utilities for IP entry management.
- */
+/* LRU list operations for SYN protection IP entry management */
 
 #include "core/SocketSYNProtect-private.h"
 #include "core/SocketSYNProtect.h"
@@ -23,11 +19,6 @@
  * ============================================================================
  */
 
-/**
- * lru_remove - Remove entry from LRU list
- * @protect: Protection instance (must hold mutex)
- * @entry: Entry to remove
- */
 void
 lru_remove (SocketSYNProtect_T protect, SocketSYN_IPEntry *entry)
 {
@@ -45,11 +36,6 @@ lru_remove (SocketSYNProtect_T protect, SocketSYN_IPEntry *entry)
   entry->lru_next = NULL;
 }
 
-/**
- * lru_push_front - Move entry to front of LRU list (most recently used)
- * @protect: Protection instance (must hold mutex)
- * @entry: Entry to move
- */
 void
 lru_push_front (SocketSYNProtect_T protect, SocketSYN_IPEntry *entry)
 {
@@ -64,11 +50,6 @@ lru_push_front (SocketSYNProtect_T protect, SocketSYN_IPEntry *entry)
   protect->lru_head = entry;
 }
 
-/**
- * lru_touch - Mark entry as recently used
- * @protect: Protection instance (must hold mutex)
- * @entry: Entry to touch
- */
 void
 lru_touch (SocketSYNProtect_T protect, SocketSYN_IPEntry *entry)
 {
@@ -79,11 +60,7 @@ lru_touch (SocketSYNProtect_T protect, SocketSYN_IPEntry *entry)
     }
 }
 
-/**
- * free_memory - Free heap-allocated memory (no-op for arena)
- * @protect: Protection instance
- * @ptr: Pointer to free
- */
+/* Free heap-allocated memory (no-op for arena) */
 void
 free_memory (SocketSYNProtect_T protect, void *ptr)
 {
@@ -91,10 +68,6 @@ free_memory (SocketSYNProtect_T protect, void *ptr)
     free (ptr);
 }
 
-/**
- * evict_lru_entry - Evict least recently used entry
- * @protect: Protection instance (must hold mutex)
- */
 void
 evict_lru_entry (SocketSYNProtect_T protect)
 {
