@@ -64,6 +64,12 @@
   - Polling mode for event loop integration
   - DNS cache control
 
+- [x] **Async I/O** (`SocketSimple-async.h`)
+  - Async send/recv with callbacks
+  - Per-request and global timeouts
+  - Progress tracking and partial transfer continuation
+  - Backend info (io_uring/kqueue/poll)
+
 ## Implementation Notes
 
 All modules follow these conventions:

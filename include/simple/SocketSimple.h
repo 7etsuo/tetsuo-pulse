@@ -118,7 +118,10 @@ typedef enum {
     SOCKET_SIMPLE_ERR_RATELIMIT,     /**< Rate limit exceeded */
 
     /* Security */
-    SOCKET_SIMPLE_ERR_SECURITY       /**< Security/protection error */
+    SOCKET_SIMPLE_ERR_SECURITY,      /**< Security/protection error */
+
+    /* Async I/O */
+    SOCKET_SIMPLE_ERR_ASYNC          /**< Async I/O operation failed */
 } SocketSimple_ErrorCode;
 
 /*============================================================================
@@ -178,6 +181,9 @@ extern void Socket_simple_clear_error(void);
 
 /* Security */
 #include "SocketSimple-security.h"
+
+/* Async I/O */
+#include "SocketSimple-async.h"
 
 #ifdef __cplusplus
 }
