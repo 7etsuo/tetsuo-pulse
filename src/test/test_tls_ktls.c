@@ -327,7 +327,9 @@ TEST (ktls_sendfile_basic)
 {
   const char *cert_file = "test_ktls_sendfile.crt";
   const char *key_file = "test_ktls_sendfile.key";
-  const char *test_file = "/tmp/ktls_test_data.bin";
+  char test_file[64];
+  snprintf (test_file, sizeof (test_file), "/tmp/ktls_test_data_%d.bin",
+            (int)getpid ());
   const char *file_content = "This is test data for kTLS sendfile.";
   Socket_T client = NULL, server = NULL;
   SocketTLSContext_T client_ctx = NULL, server_ctx = NULL;
