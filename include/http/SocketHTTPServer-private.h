@@ -6,36 +6,11 @@
 
 /**
  * @file SocketHTTPServer-private.h
- * @brief Private implementation details for HTTP server connection and state
- * management.
- * @ingroup http
+ * @brief Private implementation details for HTTP server.
  * @internal
  *
- * Internal header exposing structures and helpers for HTTP server
- * implementation. Not part of public API** - intended for use only within C
- * implementation files (src/http/ *.c). For public interface, include
- * SocketHTTPServer.h.
- *
- * Key internals documented here:
- * - @ref ServerConnection active connection state and buffers
- * - @ref ServerConnState processing pipeline states
- * - Rate limiting integration (@ref RateLimitEntry)
- * - Error macros (@ref http_error_macros)
- * - Connection lifecycle helpers (connection_new(), etc.)
- *
- * Supports HTTP/1.1 parsing via SocketHTTP1, HTTP/2 via SocketHTTP2,
- * event-driven I/O with SocketPoll, and security features from utilities
- * modules. Includes graceful drain/shutdown, per-IP limits, and DoS
- * protections.
- *
- * Threading model: Single-threaded event loop (non-thread-safe).
- *
- * @see @ref http "HTTP Module" group for public APIs.
- * @see SocketHTTPServer.h public header and functions.
- * @see SocketHTTP-private.h shared HTTP internals.
- * @see @ref connection_mgmt "Connection Management" for pooling integration.
- * @see @ref utilities "Utilities" for rate limiting and metrics.
- * @see docs/HTTP-REFACTOR.md for design rationale (if exists).
+ * Internal header for HTTP server implementation (src/http/*.c only).
+ * Threading: Single-threaded event loop (non-thread-safe).
  */
 
 #ifndef SOCKETHTTPSERVER_PRIVATE_INCLUDED
@@ -53,13 +28,8 @@
 /* Internal types */
 
 /**
- * @brief Per-server metrics counters for instance-specific tracking.
- * @ingroup http
+ * @brief Per-server metrics counters (when per_server_metrics enabled).
  * @internal
- *
- * When per_server_metrics is enabled, these counters track metrics for a
- * specific server instance. Global metrics are still updated for aggregation.
- * All counters are atomic for thread safety.
  */
 typedef struct SocketHTTPServer_InstanceMetrics
 {
