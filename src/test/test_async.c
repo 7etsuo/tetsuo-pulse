@@ -625,6 +625,357 @@ TEST (async_set_backend_unavailable)
     }
 }
 
+/* ==================== Progress Query Tests ==================== */
+
+TEST (async_get_progress_null)
+{
+  setup_signals ();
+  size_t completed = 999, total = 999;
+
+  /* NULL async should return 0 */
+  int result = SocketAsync_get_progress (NULL, 1, &completed, &total);
+  ASSERT_EQ (0, result);
+  ASSERT_EQ (0U, completed);
+  ASSERT_EQ (0U, total);
+}
+
+TEST (async_get_progress_invalid_id)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketAsync_T async = NULL;
+  size_t completed = 999, total = 999;
+
+  TRY { async = SocketAsync_new (arena); }
+  EXCEPT (SocketAsync_Failed)
+  {
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  /* Invalid request ID (0 or non-existent) should return 0 */
+  int result = SocketAsync_get_progress (async, 0, &completed, &total);
+  ASSERT_EQ (0, result);
+
+  result = SocketAsync_get_progress (async, 999, &completed, &total);
+  ASSERT_EQ (0, result);
+
+  SocketAsync_free (&async);
+  Arena_dispose (&arena);
+}
+
+TEST (async_get_progress_pending)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketAsync_T async = NULL;
+  Socket_T socket = NULL;
+
+  TRY { async = SocketAsync_new (arena); }
+  EXCEPT (SocketAsync_Failed)
+  {
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  TRY { socket = Socket_new (AF_INET, SOCK_STREAM, 0); }
+  EXCEPT (Socket_Failed)
+  {
+    SocketAsync_free (&async);
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  /* Submit a request */
+  const char *test_data = "hello";
+  volatile unsigned req_id = 0;
+
+  TRY
+  {
+    req_id = SocketAsync_send (async, socket, test_data, strlen (test_data),
+                               async_test_callback, NULL, ASYNC_FLAG_NONE);
+  }
+  EXCEPT (SocketAsync_Failed) { req_id = 0; }
+  END_TRY;
+
+  if (req_id > 0)
+    {
+      size_t completed = 999, total = 999;
+      int result = SocketAsync_get_progress (async, req_id, &completed, &total);
+      ASSERT_EQ (1, result);
+      ASSERT_EQ (0U, completed); /* Not yet completed */
+      ASSERT_EQ (strlen (test_data), total);
+    }
+
+  SocketAsync_cancel_all (async);
+  Socket_free (&socket);
+  SocketAsync_free (&async);
+  Arena_dispose (&arena);
+}
+
+/* ==================== Continuation Tests ==================== */
+
+TEST (async_send_continue_invalid)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketAsync_T async = NULL;
+
+  TRY { async = SocketAsync_new (arena); }
+  EXCEPT (SocketAsync_Failed)
+  {
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  /* Continue on non-existent request should return 0 */
+  unsigned result = SocketAsync_send_continue (async, 999);
+  ASSERT_EQ (0U, result);
+
+  /* Continue on invalid ID (0) should return 0 */
+  result = SocketAsync_send_continue (async, 0);
+  ASSERT_EQ (0U, result);
+
+  /* NULL async should return 0 */
+  result = SocketAsync_send_continue (NULL, 1);
+  ASSERT_EQ (0U, result);
+
+  SocketAsync_free (&async);
+  Arena_dispose (&arena);
+}
+
+TEST (async_recv_continue_invalid)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketAsync_T async = NULL;
+
+  TRY { async = SocketAsync_new (arena); }
+  EXCEPT (SocketAsync_Failed)
+  {
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  /* Continue on non-existent request should return 0 */
+  unsigned result = SocketAsync_recv_continue (async, 999);
+  ASSERT_EQ (0U, result);
+
+  /* NULL async should return 0 */
+  result = SocketAsync_recv_continue (NULL, 1);
+  ASSERT_EQ (0U, result);
+
+  SocketAsync_free (&async);
+  Arena_dispose (&arena);
+}
+
+/* ==================== Timeout Configuration Tests ==================== */
+
+TEST (async_timeout_default)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketAsync_T async = NULL;
+
+  TRY { async = SocketAsync_new (arena); }
+  EXCEPT (SocketAsync_Failed)
+  {
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  /* Default timeout should be 0 (disabled) */
+  int64_t timeout = SocketAsync_get_timeout (async);
+  ASSERT_EQ (0LL, timeout);
+
+  SocketAsync_free (&async);
+  Arena_dispose (&arena);
+}
+
+TEST (async_timeout_set_get)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketAsync_T async = NULL;
+
+  TRY { async = SocketAsync_new (arena); }
+  EXCEPT (SocketAsync_Failed)
+  {
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  /* Set timeout and verify */
+  SocketAsync_set_timeout (async, 5000);
+  int64_t timeout = SocketAsync_get_timeout (async);
+  ASSERT_EQ (5000LL, timeout);
+
+  /* Disable timeout */
+  SocketAsync_set_timeout (async, 0);
+  timeout = SocketAsync_get_timeout (async);
+  ASSERT_EQ (0LL, timeout);
+
+  /* Negative values should be treated as 0 */
+  SocketAsync_set_timeout (async, -100);
+  timeout = SocketAsync_get_timeout (async);
+  ASSERT_EQ (0LL, timeout);
+
+  SocketAsync_free (&async);
+  Arena_dispose (&arena);
+}
+
+TEST (async_timeout_null)
+{
+  setup_signals ();
+
+  /* NULL async should be handled gracefully */
+  SocketAsync_set_timeout (NULL, 5000);
+  int64_t timeout = SocketAsync_get_timeout (NULL);
+  ASSERT_EQ (0LL, timeout);
+}
+
+/* ==================== Stale Request Expiration Tests ==================== */
+
+TEST (async_expire_stale_empty)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketAsync_T async = NULL;
+
+  TRY { async = SocketAsync_new (arena); }
+  EXCEPT (SocketAsync_Failed)
+  {
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  /* No pending requests - should return 0 */
+  int expired = SocketAsync_expire_stale (async);
+  ASSERT_EQ (0, expired);
+
+  SocketAsync_free (&async);
+  Arena_dispose (&arena);
+}
+
+TEST (async_expire_stale_null)
+{
+  setup_signals ();
+
+  /* NULL async should return 0 */
+  int expired = SocketAsync_expire_stale (NULL);
+  ASSERT_EQ (0, expired);
+}
+
+/* ==================== Timeout-Aware Send/Recv Tests ==================== */
+
+TEST (async_send_timeout_basic)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketAsync_T async = NULL;
+  Socket_T socket = NULL;
+
+  TRY { async = SocketAsync_new (arena); }
+  EXCEPT (SocketAsync_Failed)
+  {
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  TRY { socket = Socket_new (AF_INET, SOCK_STREAM, 0); }
+  EXCEPT (Socket_Failed)
+  {
+    SocketAsync_free (&async);
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  /* Submit send with 5-second timeout */
+  const char *test_data = "test";
+  volatile unsigned req_id = 0;
+
+  TRY
+  {
+    req_id = SocketAsync_send_timeout (async, socket, test_data,
+                                        strlen (test_data), async_test_callback,
+                                        NULL, ASYNC_FLAG_NONE, 5000);
+  }
+  EXCEPT (SocketAsync_Failed) { req_id = 0; }
+  END_TRY;
+
+  /* Should succeed if async available */
+  if (req_id > 0)
+    {
+      ASSERT (req_id > 0);
+      /* Cancel to clean up */
+      SocketAsync_cancel (async, req_id);
+    }
+
+  Socket_free (&socket);
+  SocketAsync_free (&async);
+  Arena_dispose (&arena);
+}
+
+TEST (async_recv_timeout_basic)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketAsync_T async = NULL;
+  Socket_T socket = NULL;
+
+  TRY { async = SocketAsync_new (arena); }
+  EXCEPT (SocketAsync_Failed)
+  {
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  TRY { socket = Socket_new (AF_INET, SOCK_STREAM, 0); }
+  EXCEPT (Socket_Failed)
+  {
+    SocketAsync_free (&async);
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  /* Submit recv with 5-second timeout */
+  char recv_buf[256];
+  volatile unsigned req_id = 0;
+
+  TRY
+  {
+    req_id = SocketAsync_recv_timeout (async, socket, recv_buf,
+                                        sizeof (recv_buf), async_test_callback,
+                                        NULL, ASYNC_FLAG_NONE, 5000);
+  }
+  EXCEPT (SocketAsync_Failed) { req_id = 0; }
+  END_TRY;
+
+  /* Should succeed if async available */
+  if (req_id > 0)
+    {
+      ASSERT (req_id > 0);
+      /* Cancel to clean up */
+      SocketAsync_cancel (async, req_id);
+    }
+
+  Socket_free (&socket);
+  SocketAsync_free (&async);
+  Arena_dispose (&arena);
+}
+
 /* ==================== Main ==================== */
 
 int
