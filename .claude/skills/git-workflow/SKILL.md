@@ -140,3 +140,19 @@ Each directory gets its own Claude session with full isolation.
 - [ ] Links to issue with "Fixes #N"
 - [ ] Describes WHY, not just WHAT
 - [ ] Includes test plan
+
+## Post-PR Cleanup
+
+After creating a PR, ALWAYS show cleanup instructions:
+
+```
+PR created: <URL>
+
+After PR is merged, clean up this worktree:
+  cd /home/tetsuo/git/tetsuo-socket
+  git worktree remove $(pwd)
+  git worktree prune
+  git branch -d <branch-name>
+```
+
+Skip worktree cleanup if working in main repo (not a worktree).

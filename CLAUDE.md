@@ -2,6 +2,45 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## MANDATORY: Git Workflow for Code Changes
+
+**BEFORE making ANY code changes** (implement, add, fix, refactor, modify), you MUST:
+
+1. **Invoke `/git-workflow`** to set up proper git workflow
+2. The skill will ensure you're on a feature branch (not main)
+3. Only proceed with code changes AFTER git workflow confirms setup
+
+**This is NOT optional.** The git-safety-check hook will block commits to main.
+
+### Quick Reference
+
+| Action | Command |
+|--------|---------|
+| Start new work | `/git-workflow` → creates issue + branch |
+| Commit changes | `/git-workflow` → proper commit format |
+| Create PR | `/git-workflow` → PR with correct template |
+
+### Branch Naming
+
+- Features: `issue-<num>-<description>`
+- Fixes: `issue-<num>-fix-<description>`
+
+### Commit Format
+
+```
+<type>: <description>
+
+<body>
+
+Fixes #<issue>
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
+
+Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`
+
 ## Build Commands
 
 ```bash
