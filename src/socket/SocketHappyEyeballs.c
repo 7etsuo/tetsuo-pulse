@@ -1240,6 +1240,19 @@ he_calculate_next_timeout (const T he, int timeout)
   return timeout;
 }
 
+/**
+ * @brief Check if there are more addresses to try after the current one.
+ *
+ * Used to determine if fallback timer should be armed. For single-address
+ * hosts (e.g., numeric IP addresses), there's no fallback needed so we
+ * skip the delay timer (RFC 8305 §5.1 optimization).
+ */
+static int
+he_has_more_addresses (const T he)
+{
+  return (he->next_ipv6 != NULL || he->next_ipv4 != NULL);
+}
+
 static void
 he_start_first_attempt (T he)
 {
@@ -1254,7 +1267,10 @@ he_start_first_attempt (T he)
 
   he_start_attempt (he, entry);
   he->first_attempt_time_ms = Socket_get_monotonic_ms ();
-  he->fallback_timer_armed = 1;
+
+  /* Only arm fallback timer if there are more addresses to try.
+   * For single-address hosts (e.g., numeric IP), skip the delay. */
+  he->fallback_timer_armed = he_has_more_addresses (he) ? 1 : 0;
 }
 
 static void

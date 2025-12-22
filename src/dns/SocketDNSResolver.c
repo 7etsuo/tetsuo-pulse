@@ -17,6 +17,7 @@
 
 #include <arpa/inet.h>
 #include <assert.h>
+#include <net/if.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
@@ -164,18 +165,103 @@ hash_query_id (uint16_t id)
   return id % QUERY_HASH_SIZE;
 }
 
-/* Check if hostname is an IP address */
+/**
+ * Check if hostname is a numeric IPv4 address.
+ *
+ * Uses strict dotted-decimal format per RFC 3986 Section 3.2.2.
+ *
+ * @param hostname  Address string to check.
+ * @param addr      Optional output for parsed address.
+ * @return 1 if valid IPv4, 0 otherwise.
+ */
+static int
+is_ipv4_address (const char *hostname, struct in_addr *addr)
+{
+  struct in_addr temp;
+  if (!addr)
+    addr = &temp;
+
+  return inet_pton (AF_INET, hostname, addr) == 1;
+}
+
+/**
+ * Check if hostname is a numeric IPv6 address, with optional zone ID.
+ *
+ * Handles zone identifiers like "fe80::1%eth0" per RFC 6874.
+ * The zone ID is stripped before validation since inet_pton(3) doesn't
+ * handle zone IDs.
+ *
+ * @param hostname     Address string to check.
+ * @param addr         Optional output for parsed address.
+ * @param scope_id_out Optional output for scope ID (0 if no zone specified).
+ * @return 1 if valid IPv6, 0 otherwise.
+ */
+static int
+is_ipv6_address (const char *hostname, struct in6_addr *addr,
+                 unsigned int *scope_id_out)
+{
+  struct in6_addr temp_addr;
+  char addr_buf[INET6_ADDRSTRLEN];
+  const char *zone_sep;
+  size_t addr_len;
+
+  if (!addr)
+    addr = &temp_addr;
+
+  if (scope_id_out)
+    *scope_id_out = 0;
+
+  /* Check for zone ID separator (RFC 6874) */
+  zone_sep = strchr (hostname, '%');
+  if (!zone_sep)
+    {
+      /* No zone ID - direct parse */
+      return inet_pton (AF_INET6, hostname, addr) == 1;
+    }
+
+  /* Has zone ID - extract and parse address part only */
+  addr_len = (size_t)(zone_sep - hostname);
+  if (addr_len == 0 || addr_len >= sizeof (addr_buf))
+    return 0;
+
+  memcpy (addr_buf, hostname, addr_len);
+  addr_buf[addr_len] = '\0';
+
+  if (inet_pton (AF_INET6, addr_buf, addr) != 1)
+    return 0;
+
+  /* Convert zone ID to scope_id using if_nametoindex */
+  if (scope_id_out)
+    {
+      const char *zone_id = zone_sep + 1;
+      if (*zone_id != '\0')
+        {
+          /* Try to convert interface name to index */
+          unsigned int idx = if_nametoindex (zone_id);
+          if (idx > 0)
+            *scope_id_out = idx;
+          /* If if_nametoindex fails, leave scope_id as 0 */
+        }
+    }
+
+  return 1;
+}
+
+/**
+ * Check if hostname is a numeric IP address (IPv4 or IPv6).
+ *
+ * Handles:
+ * - IPv4 dotted-decimal: "192.168.1.1"
+ * - IPv6 colon-hex: "2001:db8::1"
+ * - IPv6 with zone ID: "fe80::1%eth0" (RFC 6874)
+ *
+ * @param hostname Address string to check.
+ * @return 1 if valid IP address, 0 otherwise.
+ */
 static int
 is_ip_address (const char *hostname)
 {
-  struct in_addr addr4;
-  struct in6_addr addr6;
-
-  if (inet_pton (AF_INET, hostname, &addr4) == 1)
-    return 1;
-  if (inet_pton (AF_INET6, hostname, &addr6) == 1)
-    return 1;
-  return 0;
+  return is_ipv4_address (hostname, NULL) || is_ipv6_address (hostname, NULL, NULL);
 }
 
 /* Check if hostname is "localhost" (case-insensitive) */
@@ -1079,36 +1165,47 @@ SocketDNSResolver_resolve (T resolver, const char *hostname, int flags,
   if ((flags & (RESOLVER_FLAG_IPV4 | RESOLVER_FLAG_IPV6)) == 0)
     flags |= RESOLVER_FLAG_BOTH;
 
-  /* Check if hostname is an IP address */
-  if (is_ip_address (hostname))
-    {
-      /* Create immediate result for IP address */
-      SocketDNSResolver_Result result = { 0 };
-      SocketDNSResolver_Address addr = { 0 };
-      struct in_addr v4;
-      struct in6_addr v6;
+  /* Check if hostname is a numeric IP address - fast path skips DNS */
+  {
+    SocketDNSResolver_Result result = { 0 };
+    SocketDNSResolver_Address addr = { 0 };
+    struct in_addr v4;
+    struct in6_addr v6;
+    unsigned int scope_id = 0;
 
-      if (inet_pton (AF_INET, hostname, &v4) == 1)
-        {
-          addr.family = AF_INET;
-          addr.addr.v4 = v4;
-          addr.ttl = 0; /* No TTL for literals */
-        }
-      else if (inet_pton (AF_INET6, hostname, &v6) == 1)
-        {
-          addr.family = AF_INET6;
-          addr.addr.v6 = v6;
-          addr.ttl = 0;
-        }
+    if (is_ipv4_address (hostname, &v4))
+      {
+        /* IPv4 numeric address - no DNS needed */
+        addr.family = AF_INET;
+        addr.addr.v4 = v4;
+        addr.ttl = 0; /* No TTL for literals */
 
-      result.addresses = &addr;
-      result.count = 1;
-      result.min_ttl = 0;
+        result.addresses = &addr;
+        result.count = 1;
+        result.min_ttl = 0;
 
-      /* Invoke callback immediately */
-      callback (NULL, &result, RESOLVER_OK, userdata);
-      return NULL; /* No pending query */
-    }
+        callback (NULL, &result, RESOLVER_OK, userdata);
+        return NULL; /* No pending query */
+      }
+
+    if (is_ipv6_address (hostname, &v6, &scope_id))
+      {
+        /* IPv6 numeric address (with optional zone ID) - no DNS needed */
+        addr.family = AF_INET6;
+        addr.addr.v6 = v6;
+        addr.ttl = 0;
+        /* Note: scope_id is available for caller but not stored in result.
+         * The caller can use if_nametoindex() to get it if needed. */
+        (void)scope_id;
+
+        result.addresses = &addr;
+        result.count = 1;
+        result.min_ttl = 0;
+
+        callback (NULL, &result, RESOLVER_OK, userdata);
+        return NULL; /* No pending query */
+      }
+  }
 
   /* Check if hostname is "localhost" - return loopback addresses */
   if (is_localhost (hostname))

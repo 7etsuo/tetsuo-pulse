@@ -128,6 +128,189 @@ TEST (dns_resolver_ip_address)
   Arena_dispose (&arena);
 }
 
+/* Test: IPv6 with zone ID (RFC 6874) */
+TEST (dns_resolver_ipv6_zone_id)
+{
+  Arena_T arena = Arena_new ();
+  SocketDNSResolver_T resolver = SocketDNSResolver_new (arena);
+
+  /* Add a nameserver (not used for IP addresses) */
+  SocketDNSResolver_add_nameserver (resolver, "8.8.8.8", 53);
+
+  /* Test link-local address with zone ID using loopback interface */
+  g_callback_invoked = 0;
+  g_callback_error = -999;
+  g_callback_count = 0;
+
+  /* fe80::1%lo - link-local with loopback zone ID */
+  SocketDNSResolver_Query_T q
+      = SocketDNSResolver_resolve (resolver, "fe80::1%lo", RESOLVER_FLAG_IPV6,
+                                   test_callback, NULL);
+
+  /* Should return immediately (no DNS query) */
+  ASSERT_NULL (q);
+  ASSERT_EQ (g_callback_invoked, 1);
+  ASSERT_EQ (g_callback_error, RESOLVER_OK);
+  ASSERT_EQ (g_callback_count, 1);
+
+  /* Test with eth0 zone ID (may not exist, but parsing should work) */
+  g_callback_invoked = 0;
+  g_callback_error = -999;
+  g_callback_count = 0;
+
+  q = SocketDNSResolver_resolve (resolver, "fe80::1%eth0", RESOLVER_FLAG_IPV6,
+                                 test_callback, NULL);
+
+  ASSERT_NULL (q);
+  ASSERT_EQ (g_callback_invoked, 1);
+  ASSERT_EQ (g_callback_error, RESOLVER_OK);
+  ASSERT_EQ (g_callback_count, 1);
+
+  SocketDNSResolver_free (&resolver);
+  Arena_dispose (&arena);
+}
+
+/* Test: Various IPv4 address formats */
+TEST (dns_resolver_ipv4_formats)
+{
+  Arena_T arena = Arena_new ();
+  SocketDNSResolver_T resolver = SocketDNSResolver_new (arena);
+  SocketDNSResolver_add_nameserver (resolver, "8.8.8.8", 53);
+
+  /* Standard format */
+  g_callback_invoked = 0;
+  SocketDNSResolver_resolve (resolver, "192.168.1.1", RESOLVER_FLAG_IPV4,
+                             test_callback, NULL);
+  ASSERT_EQ (g_callback_invoked, 1);
+  ASSERT_EQ (g_callback_error, RESOLVER_OK);
+
+  /* Loopback */
+  g_callback_invoked = 0;
+  SocketDNSResolver_resolve (resolver, "127.0.0.1", RESOLVER_FLAG_IPV4,
+                             test_callback, NULL);
+  ASSERT_EQ (g_callback_invoked, 1);
+  ASSERT_EQ (g_callback_error, RESOLVER_OK);
+
+  /* All zeros */
+  g_callback_invoked = 0;
+  SocketDNSResolver_resolve (resolver, "0.0.0.0", RESOLVER_FLAG_IPV4,
+                             test_callback, NULL);
+  ASSERT_EQ (g_callback_invoked, 1);
+  ASSERT_EQ (g_callback_error, RESOLVER_OK);
+
+  /* Broadcast */
+  g_callback_invoked = 0;
+  SocketDNSResolver_resolve (resolver, "255.255.255.255", RESOLVER_FLAG_IPV4,
+                             test_callback, NULL);
+  ASSERT_EQ (g_callback_invoked, 1);
+  ASSERT_EQ (g_callback_error, RESOLVER_OK);
+
+  SocketDNSResolver_free (&resolver);
+  Arena_dispose (&arena);
+}
+
+/* Test: Various IPv6 address formats */
+TEST (dns_resolver_ipv6_formats)
+{
+  Arena_T arena = Arena_new ();
+  SocketDNSResolver_T resolver = SocketDNSResolver_new (arena);
+  SocketDNSResolver_add_nameserver (resolver, "8.8.8.8", 53);
+
+  /* Full format */
+  g_callback_invoked = 0;
+  SocketDNSResolver_resolve (resolver, "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+                             RESOLVER_FLAG_IPV6, test_callback, NULL);
+  ASSERT_EQ (g_callback_invoked, 1);
+  ASSERT_EQ (g_callback_error, RESOLVER_OK);
+
+  /* Compressed format */
+  g_callback_invoked = 0;
+  SocketDNSResolver_resolve (resolver, "2001:db8:85a3::8a2e:370:7334",
+                             RESOLVER_FLAG_IPV6, test_callback, NULL);
+  ASSERT_EQ (g_callback_invoked, 1);
+  ASSERT_EQ (g_callback_error, RESOLVER_OK);
+
+  /* Loopback */
+  g_callback_invoked = 0;
+  SocketDNSResolver_resolve (resolver, "::1", RESOLVER_FLAG_IPV6,
+                             test_callback, NULL);
+  ASSERT_EQ (g_callback_invoked, 1);
+  ASSERT_EQ (g_callback_error, RESOLVER_OK);
+
+  /* All zeros */
+  g_callback_invoked = 0;
+  SocketDNSResolver_resolve (resolver, "::", RESOLVER_FLAG_IPV6,
+                             test_callback, NULL);
+  ASSERT_EQ (g_callback_invoked, 1);
+  ASSERT_EQ (g_callback_error, RESOLVER_OK);
+
+  /* IPv4-mapped IPv6 */
+  g_callback_invoked = 0;
+  SocketDNSResolver_resolve (resolver, "::ffff:192.0.2.1", RESOLVER_FLAG_IPV6,
+                             test_callback, NULL);
+  ASSERT_EQ (g_callback_invoked, 1);
+  ASSERT_EQ (g_callback_error, RESOLVER_OK);
+
+  SocketDNSResolver_free (&resolver);
+  Arena_dispose (&arena);
+}
+
+/* Test: Localhost resolution */
+TEST (dns_resolver_localhost)
+{
+  Arena_T arena = Arena_new ();
+  SocketDNSResolver_T resolver = SocketDNSResolver_new (arena);
+  SocketDNSResolver_add_nameserver (resolver, "8.8.8.8", 53);
+
+  /* "localhost" should return immediately without DNS query */
+  g_callback_invoked = 0;
+  g_callback_error = -999;
+  g_callback_count = 0;
+
+  SocketDNSResolver_Query_T q
+      = SocketDNSResolver_resolve (resolver, "localhost", RESOLVER_FLAG_BOTH,
+                                   test_callback, NULL);
+
+  ASSERT_NULL (q);
+  ASSERT_EQ (g_callback_invoked, 1);
+  ASSERT_EQ (g_callback_error, RESOLVER_OK);
+  /* Should return both IPv4 and IPv6 loopback */
+  ASSERT_EQ (g_callback_count, 2);
+
+  /* Case insensitive */
+  g_callback_invoked = 0;
+  g_callback_count = 0;
+  q = SocketDNSResolver_resolve (resolver, "LOCALHOST", RESOLVER_FLAG_BOTH,
+                                 test_callback, NULL);
+  ASSERT_NULL (q);
+  ASSERT_EQ (g_callback_invoked, 1);
+  ASSERT_EQ (g_callback_error, RESOLVER_OK);
+  ASSERT_EQ (g_callback_count, 2);
+
+  /* IPv4 only */
+  g_callback_invoked = 0;
+  g_callback_count = 0;
+  q = SocketDNSResolver_resolve (resolver, "localhost", RESOLVER_FLAG_IPV4,
+                                 test_callback, NULL);
+  ASSERT_NULL (q);
+  ASSERT_EQ (g_callback_invoked, 1);
+  ASSERT_EQ (g_callback_error, RESOLVER_OK);
+  ASSERT_EQ (g_callback_count, 1);
+
+  /* IPv6 only */
+  g_callback_invoked = 0;
+  g_callback_count = 0;
+  q = SocketDNSResolver_resolve (resolver, "localhost", RESOLVER_FLAG_IPV6,
+                                 test_callback, NULL);
+  ASSERT_NULL (q);
+  ASSERT_EQ (g_callback_invoked, 1);
+  ASSERT_EQ (g_callback_error, RESOLVER_OK);
+  ASSERT_EQ (g_callback_count, 1);
+
+  SocketDNSResolver_free (&resolver);
+  Arena_dispose (&arena);
+}
+
 /* Test: No nameservers error */
 TEST (dns_resolver_no_nameservers)
 {
