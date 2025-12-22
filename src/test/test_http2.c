@@ -775,6 +775,62 @@ test_validate_regular_header_rfc9113 (void)
 }
 
 /* ============================================================================
+ * TLS Validation Tests (RFC 9113 §9.2)
+ * ============================================================================
+ */
+
+static int
+test_tls_result_strings (void)
+{
+  TEST_BEGIN (tls_result_strings);
+
+  /* Test that all result codes have meaningful strings */
+  const char *str;
+
+  str = SocketHTTP2_tls_result_string (HTTP2_TLS_OK);
+  TEST_ASSERT (str != NULL, "HTTP2_TLS_OK should have a string");
+  TEST_ASSERT (strlen (str) > 0, "String should not be empty");
+
+  str = SocketHTTP2_tls_result_string (HTTP2_TLS_NOT_ENABLED);
+  TEST_ASSERT (str != NULL, "HTTP2_TLS_NOT_ENABLED should have a string");
+  TEST_ASSERT (strstr (str, "cleartext") != NULL || strstr (str, "not enabled") != NULL,
+               "Should mention cleartext or not enabled");
+
+  str = SocketHTTP2_tls_result_string (HTTP2_TLS_VERSION_TOO_LOW);
+  TEST_ASSERT (str != NULL, "HTTP2_TLS_VERSION_TOO_LOW should have a string");
+  TEST_ASSERT (strstr (str, "1.2") != NULL, "Should mention TLS 1.2");
+
+  str = SocketHTTP2_tls_result_string (HTTP2_TLS_CIPHER_FORBIDDEN);
+  TEST_ASSERT (str != NULL, "HTTP2_TLS_CIPHER_FORBIDDEN should have a string");
+  TEST_ASSERT (strstr (str, "cipher") != NULL || strstr (str, "Cipher") != NULL,
+               "Should mention cipher");
+
+  str = SocketHTTP2_tls_result_string (HTTP2_TLS_ALPN_MISMATCH);
+  TEST_ASSERT (str != NULL, "HTTP2_TLS_ALPN_MISMATCH should have a string");
+  TEST_ASSERT (strstr (str, "ALPN") != NULL || strstr (str, "h2") != NULL,
+               "Should mention ALPN or h2");
+
+  /* Unknown code should still return a valid string */
+  str = SocketHTTP2_tls_result_string ((SocketHTTP2_TLSResult)-99);
+  TEST_ASSERT (str != NULL, "Unknown code should have a string");
+
+  TEST_PASS ();
+}
+
+static int
+test_tls_validate_null_socket (void)
+{
+  TEST_BEGIN (tls_validate_null_socket);
+
+  /* NULL socket should return NOT_ENABLED */
+  SocketHTTP2_TLSResult result = SocketHTTP2_validate_tls (NULL);
+  TEST_ASSERT (result == HTTP2_TLS_NOT_ENABLED,
+               "NULL socket should return NOT_ENABLED");
+
+  TEST_PASS ();
+}
+
+/* ============================================================================
  * Main Test Runner
  * ============================================================================
  */
@@ -832,6 +888,12 @@ main (void)
   test_field_name_colon ();
   test_field_name_valid ();
   test_validate_regular_header_rfc9113 ();
+  printf ("\n");
+
+  /* TLS validation tests (RFC 9113 §9.2) */
+  printf ("TLS Validation Tests (RFC 9113 §9.2):\n");
+  test_tls_result_strings ();
+  test_tls_validate_null_socket ();
   printf ("\n");
 
   /* Summary */

@@ -1274,6 +1274,21 @@ SocketTLS_get_version (Socket_T socket)
   return ssl ? SSL_get_version (ssl) : NULL;
 }
 
+int
+SocketTLS_get_protocol_version (Socket_T socket)
+{
+  assert (socket);
+
+  SSL *ssl = tls_socket_get_ssl (socket);
+  if (!ssl)
+    return 0;
+
+  /* SSL_version() returns the protocol version:
+   * TLS1_VERSION (0x0301), TLS1_1_VERSION (0x0302),
+   * TLS1_2_VERSION (0x0303), TLS1_3_VERSION (0x0304) */
+  return SSL_version (ssl);
+}
+
 long
 SocketTLS_get_verify_result (Socket_T socket)
 {

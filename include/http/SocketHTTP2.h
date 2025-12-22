@@ -548,6 +548,52 @@ extern void
 SocketHTTP2_frame_header_serialize (const SocketHTTP2_FrameHeader *header,
                                     unsigned char *data);
 
+/* TLS Validation (RFC 9113 Section 9.2) */
+
+/**
+ * @brief TLS validation result codes for HTTP/2 connections.
+ *
+ * RFC 9113 Section 9.2 specifies TLS requirements for HTTP/2:
+ * - TLS version 1.2 or higher
+ * - ALPN protocol "h2" must be negotiated
+ * - Certain cipher suites are forbidden (Appendix A)
+ */
+typedef enum
+{
+  HTTP2_TLS_OK = 0,               /**< TLS requirements satisfied */
+  HTTP2_TLS_NOT_ENABLED = -1,     /**< Socket has no TLS enabled */
+  HTTP2_TLS_VERSION_TOO_LOW = -2, /**< TLS version < 1.2 */
+  HTTP2_TLS_CIPHER_FORBIDDEN = -3, /**< Cipher suite is on forbidden list */
+  HTTP2_TLS_ALPN_MISMATCH = -4    /**< ALPN is not "h2" */
+} SocketHTTP2_TLSResult;
+
+/**
+ * @brief Validate TLS connection meets HTTP/2 requirements (RFC 9113 §9.2).
+ *
+ * Checks that the TLS connection satisfies RFC 9113 security requirements:
+ * 1. TLS version is 1.2 or higher
+ * 2. ALPN protocol "h2" was negotiated (for TLS connections)
+ * 3. Cipher suite is not on the forbidden list (Appendix A)
+ *
+ * This function should be called after the TLS handshake completes but
+ * before creating HTTP/2 streams.
+ *
+ * @param socket The socket to validate (may or may not have TLS)
+ * @return HTTP2_TLS_OK if requirements met, negative error code otherwise
+ *
+ * @note For cleartext HTTP/2 (h2c), TLS is not required and this returns
+ *       HTTP2_TLS_NOT_ENABLED which callers can treat as acceptable.
+ */
+extern SocketHTTP2_TLSResult SocketHTTP2_validate_tls (Socket_T socket);
+
+/**
+ * @brief Get human-readable string for TLS validation result.
+ *
+ * @param result The TLS validation result code
+ * @return Static string describing the result
+ */
+extern const char *SocketHTTP2_tls_result_string (SocketHTTP2_TLSResult result);
+
 /** @} */
 
 #endif /* SOCKETHTTP2_INCLUDED */

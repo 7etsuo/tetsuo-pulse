@@ -1119,6 +1119,30 @@ extern const char *SocketTLS_get_cipher (Socket_T socket);
 extern const char *SocketTLS_get_version (Socket_T socket);
 
 /**
+ * @brief Get negotiated TLS protocol version as numeric value
+ * @ingroup security
+ * @param socket The socket instance with completed handshake
+ *
+ * Returns the TLS protocol version as a numeric value suitable for
+ * comparison. This is useful for validating minimum TLS version requirements
+ * (e.g., HTTP/2 requires TLS 1.2+).
+ *
+ * Common version values (from OpenSSL):
+ * - TLS1_VERSION   (0x0301) - TLS 1.0
+ * - TLS1_1_VERSION (0x0302) - TLS 1.1
+ * - TLS1_2_VERSION (0x0303) - TLS 1.2
+ * - TLS1_3_VERSION (0x0304) - TLS 1.3
+ *
+ * @return Protocol version number, or 0 if unavailable
+ * @throws None
+ * @threadsafe Yes - reads immutable post-handshake state
+ *
+ * @see SocketTLS_get_version() for human-readable version string.
+ * @see SocketTLSContext_set_min_protocol() for minimum version config.
+ */
+extern int SocketTLS_get_protocol_version (Socket_T socket);
+
+/**
  * @brief Get peer certificate verification result
  * @ingroup security
  * @param socket The socket instance with completed handshake
