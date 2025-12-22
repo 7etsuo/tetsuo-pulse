@@ -111,6 +111,10 @@ init_stream_fields (SocketHTTP2_Stream_T stream, const SocketHTTP2_Conn_T conn,
   /* Initialize Content-Length validation fields */
   stream->expected_content_length = -1; /* No Content-Length specified */
   stream->total_data_received = 0;
+
+  /* Initialize RFC 9218 priority to defaults */
+  stream->priority.urgency = SOCKETHTTP2_PRIORITY_DEFAULT_URGENCY;
+  stream->priority.incremental = 0;
 }
 
 static void

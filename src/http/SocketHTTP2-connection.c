@@ -949,6 +949,9 @@ http2_process_frame (SocketHTTP2_Conn_T conn,
       return http2_process_window_update (conn, header, payload);
     case HTTP2_FRAME_CONTINUATION:
       return http2_process_continuation (conn, header, payload);
+    case HTTP2_FRAME_PRIORITY_UPDATE:
+      /* RFC 9218: Extensible Priorities */
+      return http2_process_priority_update (conn, header, payload);
     default:
       /* Unknown frame types are ignored (RFC 9113 Section 4.1) */
       return 0;
