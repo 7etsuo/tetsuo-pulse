@@ -30,22 +30,11 @@
 
 #define T SocketTLSContext_T
 
-/* ============================================================================
- * Thread-Local Error Buffers
- * ============================================================================
- */
-
-
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLSContext);
 
 /* Global ex_data index for context lookup (thread-safe initialization) */
 int tls_context_exdata_idx = -1;
 static pthread_once_t exdata_init_once = PTHREAD_ONCE_INIT;
-
-/* ============================================================================
- * Internal Helper Macros
- * ============================================================================
- */
 
 /**
  * SSL_CTX_CONFIGURE - Configure SSL_CTX with automatic cleanup on failure
@@ -68,11 +57,6 @@ static pthread_once_t exdata_init_once = PTHREAD_ONCE_INIT;
     }                                                                         \
   while (0)
 
-/* ============================================================================
- * One-Time Initialization
- * ============================================================================
- */
-
 /**
  * init_exdata_idx - One-time initialization of ex_data index
  *
@@ -84,11 +68,6 @@ init_exdata_idx (void)
   tls_context_exdata_idx
       = SSL_CTX_get_ex_new_index (0, "SocketTLSContext", NULL, NULL, NULL);
 }
-
-/* ============================================================================
- * Error Handling Helpers
- * ============================================================================
- */
 
 /**
  * raise_system_error - Format and raise system error (errno-based)
@@ -160,17 +139,7 @@ ctx_raise_openssl_error (const char *context)
   RAISE_CTX_ERROR (SocketTLS_Failed);
 }
 
-/* ============================================================================
- * Context Setup Callback Type
- * ============================================================================
- */
-
 typedef void (*TLSContextSetupFunc)(T ctx, void *user_data);
-
-/* ============================================================================
- * Structure Initialization Helpers
- * ============================================================================
- */
 
 /**
  * init_sni_certs - Initialize SNI certificate structure
@@ -244,11 +213,6 @@ init_crl_mutex (T ctx)
   pthread_mutexattr_destroy (&attr);
 }
 
-/* ============================================================================
- * SSL_CTX Configuration
- * ============================================================================
- */
-
 /**
  * configure_tls13_only - Apply secure TLS settings
  * @ssl_ctx: OpenSSL context to configure
@@ -301,11 +265,6 @@ configure_tls13_only (SSL_CTX *ssl_ctx)
    * typical commercial CA hierarchies while blocking malicious chains. */
   SSL_CTX_set_verify_depth (ssl_ctx, SOCKET_TLS_MAX_CERT_CHAIN_DEPTH);
 }
-
-/* ============================================================================
- * Generic Context Creation with Setup
- * ============================================================================
- */
 
 /**
  * tls_context_new_with_setup - Create TLS context with optional setup callback.
@@ -373,11 +332,6 @@ tls_context_new_with_setup(const SSL_METHOD *method, int is_server,
 
   return *ctx_ptr;
 }
-
-/* ============================================================================
- * Context Allocation
- * ============================================================================
- */
 
 /**
  * alloc_context_struct - Allocate and zero-initialize context structure
@@ -463,11 +417,6 @@ ctx_alloc_and_init (const SSL_METHOD *method, int is_server)
 
   return ctx;
 }
-
-/* ============================================================================
- * Context Cleanup Helpers
- * ============================================================================
- */
 
 /**
  * free_sni_arrays - Free SNI certificate path arrays
@@ -570,11 +519,6 @@ tls_context_get_from_ssl (const SSL *ssl)
   return tls_context_get_from_ssl_ctx (ssl_ctx);
 }
 
-/* ============================================================================
- * Client Context CA Loading Helpers
- * ============================================================================
- */
-
 /**
  * try_load_user_ca - Attempt to load user-provided CA file
  * @ctx: Client context
@@ -650,11 +594,6 @@ handle_no_trusted_ca (T *ctx_ptr, int user_ca_provided)
     }
 }
 
-/* ============================================================================
- * Custom Protocol Configuration
- * ============================================================================
- */
-
 /**
  * apply_custom_protocol_config - Apply custom protocol version limits
  * @ctx: Context to configure
@@ -671,11 +610,6 @@ apply_custom_protocol_config (T ctx, const SocketTLSConfig_T *config)
   if (config->max_version != SOCKET_TLS_MAX_VERSION)
     SocketTLSContext_set_max_protocol (ctx, config->max_version);
 }
-
-/* ============================================================================
- * Public Context Lifecycle API
- * ============================================================================
- */
 
 T
 SocketTLSContext_new (const SocketTLSConfig_T *config)

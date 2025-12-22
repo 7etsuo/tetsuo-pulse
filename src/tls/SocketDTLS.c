@@ -31,22 +31,12 @@
 #include <poll.h>
 #include <string.h>
 
-/* ============================================================================
- * Module Exception Declaration
- * ============================================================================
- */
-
 #include "core/SocketCrypto.h"
 #include "core/SocketMetrics.h"
 #include "core/SocketSecurity.h"
 #include "core/SocketUtil.h"
 #include "socket/SocketCommon.h"
 #include "tls/SocketSSL-internal.h"
-
-/* ============================================================================
- * Exception Definitions
- * ============================================================================
- */
 
 const Except_T SocketDTLS_Failed
     = { .type = &SocketDTLS_Failed, .reason = "DTLS operation failed" };
@@ -70,11 +60,6 @@ const Except_T SocketDTLS_ShutdownFailed
 #endif
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketDTLS);
-
-/* ============================================================================
- * Internal Helper Functions
- * ============================================================================
- */
 
 /**
  * allocate_single_dtls_buffer - Allocate a single DTLS buffer if needed
@@ -261,11 +246,6 @@ finalize_dtls_state (SocketDgram_T socket, SSL *ssl, SocketDTLSContext_T ctx)
   socket->dtls_mtu = SocketDTLSContext_get_mtu (ctx);
 }
 
-/* ============================================================================
- * DTLS Peer Resolution Helpers
- * ============================================================================
- */
-
 /**
  * dtls_resolve_peer - Resolve peer hostname/port for DTLS BIO
  * @host: Hostname or IP
@@ -415,11 +395,6 @@ dtls_set_ssl_hostname (SocketDgram_T socket, const char *hostname)
                           "Failed to enable hostname verification");
 }
 
-/* ============================================================================
- * DTLS Enable and Configuration
- * ============================================================================
- */
-
 void
 SocketDTLS_enable (SocketDgram_T socket, SocketDTLSContext_T ctx)
 {
@@ -549,11 +524,6 @@ SocketDTLS_set_mtu (SocketDgram_T socket, size_t mtu)
   DTLS_set_link_mtu (ssl, (long)mtu);
   socket->dtls_mtu = mtu;
 }
-
-/* ============================================================================
- * DTLS Handshake
- * ============================================================================
- */
 
 /**
  * dtls_check_cookie_exchange_state - Check if SSL is in cookie exchange
@@ -855,11 +825,6 @@ SocketDTLS_listen (SocketDgram_T socket)
   return dtls_handle_listen_no_cookies (socket, ssl);
 }
 
-/* ============================================================================
- * DTLS I/O Operations
- * ============================================================================
- */
-
 ssize_t
 SocketDTLS_send (SocketDgram_T socket, const void *buf, size_t len)
 {
@@ -1029,11 +994,6 @@ SocketDTLS_recvfrom (SocketDgram_T socket, void *buf, size_t len, char *host,
   return n;
 }
 
-/* ============================================================================
- * DTLS Connection Information
- * ============================================================================
- */
-
 const char *
 SocketDTLS_get_cipher (SocketDgram_T socket)
 {
@@ -1109,11 +1069,6 @@ SocketDTLS_get_mtu (SocketDgram_T socket)
 {
   return socket ? socket->dtls_mtu : SOCKET_DTLS_DEFAULT_MTU;
 }
-
-/* ============================================================================
- * DTLS Shutdown
- * ============================================================================
- */
 
 /**
  * dtls_shutdown_single_attempt - Perform single SSL_shutdown attempt
@@ -1214,11 +1169,6 @@ SocketDTLS_is_shutdown (SocketDgram_T socket)
 {
   return socket ? socket->dtls_shutdown_done : 0;
 }
-
-/* ============================================================================
- * DTLS State Queries
- * ============================================================================
- */
 
 int
 SocketDTLS_is_enabled (SocketDgram_T socket)

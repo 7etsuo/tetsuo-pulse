@@ -30,21 +30,11 @@
 #include <string.h>
 #include <time.h>
 
-/* ============================================================================
- * Constants
- * ============================================================================
- */
-
 /** Number of timestamp buckets to check (current + previous for edge cases) */
 #define COOKIE_TIMESTAMP_WINDOW 2
 
 /** Number of secrets to try (current + previous for rotation) */
 #define COOKIE_SECRET_COUNT 2
-
-/* ============================================================================
- * Internal Helper Functions
- * ============================================================================
- */
 
 /* Security: Random offset for bucket boundaries, initialized once per process.
  * This makes bucket boundaries unpredictable to attackers, preventing them
@@ -96,16 +86,6 @@ get_time_bucket (void)
 }
 
 
-
-/**
- * extract_ipv6_address - Extract IPv6 address from BIO_ADDR
- * @bio_addr: Source BIO address
- * @peer_addr: Output sockaddr_storage
- * @peer_len: Output address length
- *
- * Returns: 0 on success, -1 on failure
- */
-/* Combined into bio_addr_to_sockaddr_storage */
 
 /**
  * bio_addr_to_sockaddr_storage - Convert BIO_ADDR to sockaddr_storage
@@ -301,11 +281,6 @@ is_secret_set (const unsigned char *secret)
          != 0;
 }
 
-/* ============================================================================
- * Public Cookie Functions (called by SocketDTLSContext.c)
- * ============================================================================
- */
-
 /**
  * dtls_generate_cookie_hmac - Generate HMAC-based cookie
  * @secret: Secret key
@@ -326,11 +301,6 @@ dtls_generate_cookie_hmac (const unsigned char *secret,
   return compute_cookie_hmac (secret, peer_addr, peer_len, get_time_bucket (),
                               out_cookie);
 }
-
-/* ============================================================================
- * OpenSSL Cookie Callbacks
- * ============================================================================
- */
 
 /**
  * dtls_cookie_generate_cb - OpenSSL cookie generation callback

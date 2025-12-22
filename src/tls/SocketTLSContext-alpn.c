@@ -30,11 +30,6 @@
 
 #define T SocketTLSContext_T
 
-/* ============================================================================
- * Constants
- * ============================================================================
- */
-
 /** Initial capacity for dynamically-grown protocol arrays */
 #define ALPN_INITIAL_CAPACITY 4
 
@@ -43,11 +38,6 @@
 
 /** RFC 7301 Section 3.2: Maximum printable ASCII character (~) */
 #define ALPN_PRINTABLE_ASCII_MAX 0x7Eu
-
-/* ============================================================================
- * RFC 7301 Section 3.2 Validation
- * ============================================================================
- */
 
 /**
  * validate_alpn_protocol_chars - Validate ALPN protocol name characters
@@ -71,11 +61,6 @@ validate_alpn_protocol_chars (const unsigned char *data, size_t len)
     }
   return true;
 }
-
-/* ============================================================================
- * Wire Format Parsing Helpers
- * ============================================================================
- */
 
 /**
  * free_client_protos - Free parsed client protocols array
@@ -240,11 +225,6 @@ parse_client_protos (const unsigned char *in, unsigned int inlen,
   return protos;
 }
 
-/* ============================================================================
- * Protocol Selection
- * ============================================================================
- */
-
 /**
  * find_matching_proto - Find first matching protocol (server preference order)
  * @server_protos: Server's protocol list (preference order)
@@ -401,11 +381,6 @@ alpn_select_cb (SSL *ssl, const unsigned char **out, unsigned char *outlen,
   return SSL_TLSEXT_ERR_OK;
 }
 
-/* ============================================================================
- * Wire Format Building
- * ============================================================================
- */
-
 /**
  * build_wire_format - Build ALPN wire format from protocol list
  * @ctx: Context with arena
@@ -461,11 +436,6 @@ build_wire_format (T ctx, const char *const *protos, size_t count,
   *len_out = total;
   return buf;
 }
-
-/* ============================================================================
- * Validation and Setup Helpers
- * ============================================================================
- */
 
 /**
  * validate_alpn_count - Validate ALPN protocol count against runtime limit
@@ -560,11 +530,6 @@ apply_alpn_to_ssl_ctx (T ctx, const char *const *protos, size_t count)
   SSL_CTX_set_alpn_select_cb (ctx->ssl_ctx, alpn_select_cb, ctx);
 }
 
-/* ============================================================================
- * Public ALPN API
- * ============================================================================
- */
-
 void
 SocketTLSContext_set_alpn_protos (T ctx, const char **protos, size_t count)
 {
@@ -591,11 +556,6 @@ SocketTLSContext_set_alpn_callback (T ctx, SocketTLSAlpnCallback callback,
   ctx->alpn.callback = callback;
   ctx->alpn.callback_user_data = user_data;
 }
-
-/* ============================================================================
- * ALPN Temp Buffer Cleanup (for UAF fix)
- * ============================================================================
- */
 
 /** Static process-wide ex_data index for ALPN temp buffers.
  * Thread-safe initialization using pthread_once to prevent race conditions

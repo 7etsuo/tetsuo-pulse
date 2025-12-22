@@ -41,11 +41,6 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketDTLSContext);
 static int dtls_context_exdata_idx = -1;
 static pthread_once_t dtls_exdata_once = PTHREAD_ONCE_INIT;
 
-/* ============================================================================
- * Internal Helper Functions
- * ============================================================================
- */
-
 /**
  * init_exdata_index - Initialize ex_data index (called once)
  */
@@ -169,11 +164,6 @@ alloc_context (SSL_CTX *ssl_ctx, int is_server)
   return ctx;
 }
 
-/* ============================================================================
- * Context Creation and Destruction
- * ============================================================================
- */
-
 T
 SocketDTLSContext_new_server (const char *cert_file, const char *key_file,
                               const char *ca_file)
@@ -287,11 +277,6 @@ SocketDTLSContext_free (T *ctx_p)
   free (ctx);
   *ctx_p = NULL;
 }
-
-/* ============================================================================
- * Certificate Management
- * ============================================================================
- */
 
 /**
  * open_and_stat_file - Securely open file and retrieve stat info
@@ -455,11 +440,6 @@ SocketDTLSContext_set_verify_mode (T ctx, TLSVerifyMode mode)
   SSL_CTX_set_verify (ctx->ssl_ctx, ssl_mode, NULL);
 }
 
-/* ============================================================================
- * Cookie Exchange (DoS Protection)
- * ============================================================================
- */
-
 void
 SocketDTLSContext_enable_cookie_exchange (T ctx)
 {
@@ -553,11 +533,6 @@ SocketDTLSContext_has_cookie_exchange (T ctx)
   return ctx ? ctx->cookie.cookie_enabled : 0;
 }
 
-/* ============================================================================
- * MTU Configuration
- * ============================================================================
- */
-
 void
 SocketDTLSContext_set_mtu (T ctx, size_t mtu)
 {
@@ -578,11 +553,6 @@ SocketDTLSContext_get_mtu (T ctx)
 {
   return ctx ? ctx->mtu : SOCKET_DTLS_DEFAULT_MTU;
 }
-
-/* ============================================================================
- * Protocol Configuration
- * ============================================================================
- */
 
 void
 SocketDTLSContext_set_min_protocol (T ctx, int version)
@@ -612,11 +582,6 @@ SocketDTLSContext_set_cipher_list (T ctx, const char *ciphers)
   if (SSL_CTX_set_cipher_list (ctx->ssl_ctx, cipher_list) != 1)
     raise_openssl_error ("Failed to set DTLS cipher list");
 }
-
-/* ============================================================================
- * ALPN Support
- * ============================================================================
- */
 
 /**
  * alpn_select_cb - ALPN selection callback for server
@@ -761,11 +726,6 @@ SocketDTLSContext_set_alpn_protos (T ctx, const char **protos, size_t count)
     }
 }
 
-/* ============================================================================
- * Session Management
- * ============================================================================
- */
-
 void
 SocketDTLSContext_enable_session_cache (T ctx, size_t max_sessions,
                                         long timeout_seconds)
@@ -817,11 +777,6 @@ SocketDTLSContext_get_cache_stats (T ctx, size_t *hits, size_t *misses,
   pthread_mutex_unlock (&ctx->stats_mutex);
 }
 
-/* ============================================================================
- * Timeout Configuration
- * ============================================================================
- */
-
 void
 SocketDTLSContext_set_timeout (T ctx, int initial_ms, int max_ms)
 {
@@ -842,11 +797,6 @@ SocketDTLSContext_set_timeout (T ctx, int initial_ms, int max_ms)
   ctx->initial_timeout_ms = initial_ms;
   ctx->max_timeout_ms = max_ms;
 }
-
-/* ============================================================================
- * Internal Access
- * ============================================================================
- */
 
 void *
 SocketDTLSContext_get_ssl_ctx (T ctx)

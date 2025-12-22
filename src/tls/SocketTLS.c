@@ -40,11 +40,6 @@
 #include "tls/SocketTLS-private.h"
 #include "tls/SocketTLSContext.h"
 
-/* ============================================================================
- * Internal Constants
- * ============================================================================
- */
-
 /**
  * @brief Small poll capacity for single-FD handshake polling.
  * @ingroup security
@@ -55,11 +50,6 @@
 #define TLS_HANDSHAKE_POLL_CAPACITY 16
 
 #define T SocketTLS_T
-
-/* ============================================================================
- * Exception Definitions
- * ============================================================================
- */
 
 const Except_T SocketTLS_Failed
     = { &SocketTLS_Failed, "TLS operation failed" };
@@ -72,15 +62,7 @@ const Except_T SocketTLS_ProtocolError
 const Except_T SocketTLS_ShutdownFailed
     = { &SocketTLS_ShutdownFailed, "TLS shutdown failed" };
 
-/* ============================================================================
- * Thread-Local Error Buffers
- * ============================================================================
- */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLS);
-/* ============================================================================
- * Internal Helper Functions
- * ============================================================================
- */
 
 /**
  * tls_alloc_buf - Allocate a TLS buffer from socket arena
@@ -173,11 +155,6 @@ free_tls_resources (Socket_T socket)
   socket->tls_read_buf_len = 0;
   socket->tls_write_buf_len = 0;
 }
-
-/* ============================================================================
- * TLS Enable and Configuration
- * ============================================================================
- */
 
 /**
  * validate_tls_enable_preconditions - Validate socket is ready for TLS
@@ -373,11 +350,6 @@ SocketTLS_set_hostname (Socket_T socket, const char *hostname)
 
   apply_sni_to_ssl (ssl, hostname);
 }
-
-/* ============================================================================
- * TLS Handshake and Shutdown
- * ============================================================================
- */
 
 TLSHandshakeState
 SocketTLS_handshake (Socket_T socket)
@@ -1082,11 +1054,6 @@ SocketTLS_shutdown_send (Socket_T socket)
     }
 }
 
-/* ============================================================================
- * TLS I/O Operations
- * ============================================================================
- */
-
 /**
  * SocketTLS_send - Send data over a TLS-encrypted connection
  * @socket: Socket with completed TLS handshake
@@ -1285,11 +1252,6 @@ SocketTLS_recv (Socket_T socket, void *buf, size_t len)
   return -1;
 }
 
-/* ============================================================================
- * TLS Connection Information
- * ============================================================================
- */
-
 const char *
 SocketTLS_get_cipher (Socket_T socket)
 {
@@ -1404,8 +1366,6 @@ SocketTLS_get_alpn_selected (Socket_T socket)
   proto_copy[alpn_len] = '\0';
   return proto_copy;
 }
-
-/* ==================== Session Management ==================== */
 
 /**
  * SocketTLS_session_save - Export TLS session for later resumption
@@ -1639,8 +1599,6 @@ SocketTLS_session_restore (Socket_T socket, const unsigned char *buffer,
  * Thread-safe: Yes - reads immutable post-handshake state
  */
 
-/* ==================== Renegotiation Control ==================== */
-
 /* SOCKET_TLS_MAX_RENEGOTIATIONS is now defined in SocketTLSConfig.h
  * with comprehensive documentation about DoS protection rationale. */
 
@@ -1748,8 +1706,6 @@ SocketTLS_get_renegotiation_count (Socket_T socket)
 
   return socket->tls_renegotiation_count;
 }
-
-/* ==================== Certificate Information ==================== */
 
 /**
  * asn1_time_to_time_t - Convert ASN1_TIME to time_t
@@ -1888,8 +1844,6 @@ SocketTLS_get_cert_subject (Socket_T socket, char *buf, size_t len)
   return (int)strlen (buf);
 }
 
-/* ==================== Certificate Chain Access ==================== */
-
 int
 SocketTLS_get_peer_cert_chain (Socket_T socket, X509 ***chain_out,
                                int *chain_len)
@@ -1931,8 +1885,6 @@ SocketTLS_get_peer_cert_chain (Socket_T socket, X509 ***chain_out,
   *chain_len = num;
   return 1;
 }
-
-/* ==================== OCSP Status ==================== */
 
 /* SOCKET_TLS_OCSP_MAX_AGE_SECONDS is now defined in SocketTLSConfig.h
  * with comprehensive documentation about replay prevention rationale. */

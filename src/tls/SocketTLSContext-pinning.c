@@ -55,18 +55,8 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLSContext);
 
 #define T SocketTLSContext_T
 
-/* ============================================================================
- * Exception Definition
- * ============================================================================
- */
-
 const Except_T SocketTLS_PinVerifyFailed
     = { &SocketTLS_PinVerifyFailed, "Certificate pin verification failed" };
-
-/* ============================================================================
- * Internal Helper Functions
- * ============================================================================
- */
 
 /**
  * parse_hex_hash - Parse hex string to binary hash
@@ -225,11 +215,6 @@ raise_invalid_pin_param (const char *msg)
   RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "%s", msg);
 }
 
-/* ============================================================================
- * SPKI Hash Extraction
- * ============================================================================
- */
-
 /**
  * tls_pinning_extract_spki_hash - Compute SPKI SHA256 hash from X509 cert
  * @cert: Certificate to extract public key info from (non-owning)
@@ -261,11 +246,6 @@ tls_pinning_extract_spki_hash (const X509 *cert, unsigned char *out_hash)
   OPENSSL_free (spki_der);
   return 0;
 }
-
-/* ============================================================================
- * Pin Lookup
- * ============================================================================
- */
 
 /**
  * tls_pinning_find - Constant-time search for hash in pin array
@@ -300,11 +280,6 @@ tls_pinning_find (const TLSCertPin *pins, size_t count,
 
   return found;
 }
-
-/* ============================================================================
- * Chain Verification
- * ============================================================================
- */
 
 /**
  * tls_pinning_check_chain - Verify if any cert in chain matches a pin
@@ -372,11 +347,6 @@ tls_pinning_check_chain (T ctx, const STACK_OF (X509) * chain)
 
   return 0;
 }
-
-/* ============================================================================
- * Public API
- * ============================================================================
- */
 
 /**
  * SocketTLSContext_add_pin - Add binary SHA256 SPKI pin to context
