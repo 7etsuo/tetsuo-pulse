@@ -590,3 +590,108 @@ HTTP server (from `include/http/SocketHTTPServer.h`):
 
 ### Lifecycle:
 - `SocketHTTPServer_free(&server)` - Free server
+
+## SocketBuf Functions
+
+Circular buffer for efficient socket I/O (from `include/socket/SocketBuf.h`):
+
+### Creation/Disposal:
+- `SocketBuf_new(arena, capacity)` - Create buffer with initial capacity
+- `SocketBuf_release(&buf)` - Release buffer resources
+
+### Writing Data:
+- `SocketBuf_write(buf, data, len)` - Write data to buffer (returns bytes written)
+- `SocketBuf_writef(buf, format, ...)` - Printf-style write
+- `SocketBuf_writeptr(buf, &len)` - Get write pointer for direct writes
+- `SocketBuf_commit(buf, len)` - Commit bytes after direct write
+
+### Reading Data:
+- `SocketBuf_read(buf, data, len)` - Read and remove data (returns bytes read)
+- `SocketBuf_peek(buf, data, len)` - Read without removing
+- `SocketBuf_readptr(buf, &len)` - Get read pointer for zero-copy
+- `SocketBuf_consume(buf, len)` - Remove bytes after read
+
+### Buffer Management:
+- `SocketBuf_available(buf)` - Bytes available to read
+- `SocketBuf_space(buf)` - Space available for writing
+- `SocketBuf_capacity(buf)` - Total capacity
+- `SocketBuf_reserve(buf, min_space)` - Ensure minimum write space
+- `SocketBuf_clear(buf)` - Clear buffer (fast)
+- `SocketBuf_secureclear(buf)` - Clear buffer securely (for sensitive data)
+- `SocketBuf_compact(buf)` - Compact buffer to reduce fragmentation
+
+## SocketDgram Functions
+
+UDP and datagram socket operations (from `include/socket/SocketDgram.h`):
+
+### Creation:
+- `SocketDgram_new()` - Create unbound datagram socket
+- `SocketDgram_new6()` - Create IPv6 datagram socket
+- `SocketDgram_bind(host, port)` - Create and bind datagram socket
+- `SocketDgram_bind6(host, port)` - Create and bind IPv6 datagram socket
+- `SocketDgram_unix(path)` - Create Unix domain datagram socket
+
+### I/O:
+- `SocketDgram_sendto(socket, data, len, host, port)` - Send datagram to address
+- `SocketDgram_recvfrom(socket, buf, len, &from_host, &from_port)` - Receive with sender info
+- `SocketDgram_send(socket, data, len)` - Send to connected peer
+- `SocketDgram_recv(socket, buf, len)` - Receive from connected peer
+- `SocketDgram_sendv(socket, iov, iovcnt)` - Scatter-gather send
+- `SocketDgram_recvv(socket, iov, iovcnt)` - Scatter-gather receive
+- `SocketDgram_sendmsg(socket, &msg, flags)` - Low-level send with message header
+- `SocketDgram_recvmsg(socket, &msg, flags)` - Low-level receive with message header
+
+### Connected Mode:
+- `SocketDgram_connect(socket, host, port)` - Connect to default peer
+- `SocketDgram_disconnect(socket)` - Remove connected peer
+- `SocketDgram_isconnected(socket)` - Check if connected
+
+### Multicast:
+- `SocketDgram_joinmulticast(socket, group, interface)` - Join multicast group
+- `SocketDgram_leavemulticast(socket, group, interface)` - Leave multicast group
+- `SocketDgram_setmulticastttl(socket, ttl)` - Set multicast TTL
+- `SocketDgram_setmulticastloop(socket, enable)` - Enable/disable multicast loopback
+
+### Broadcast:
+- `SocketDgram_setbroadcast(socket, enable)` - Enable/disable broadcast
+
+### Options:
+- `SocketDgram_setnonblocking(socket, nonblock)` - Set non-blocking mode
+- `SocketDgram_gettimeout(socket)` - Get timeout
+- `SocketDgram_settimeout(socket, timeout_ms)` - Set timeout
+- `SocketDgram_setrecvbuf(socket, size)` - Set receive buffer size
+- `SocketDgram_setsendbuf(socket, size)` - Set send buffer size
+
+### Cleanup:
+- `SocketDgram_close(&socket)` - Close datagram socket
+
+## SocketAsync Functions
+
+Asynchronous I/O with native backends (from `include/socket/SocketAsync.h`):
+
+### Context Management:
+- `SocketAsync_new(arena, max_ops)` - Create async context
+- `SocketAsync_free(&async)` - Free async context
+- `SocketAsync_pollfd(async)` - Get file descriptor for poll integration
+- `SocketAsync_process(async)` - Process completions
+
+### Operations:
+- `SocketAsync_send(async, socket, data, len, callback, userdata)` - Async send
+- `SocketAsync_recv(async, socket, buf, len, callback, userdata)` - Async receive
+- `SocketAsync_sendv(async, socket, iov, iovcnt, callback, userdata)` - Async scatter send
+- `SocketAsync_recvv(async, socket, iov, iovcnt, callback, userdata)` - Async gather receive
+- `SocketAsync_accept(async, socket, callback, userdata)` - Async accept
+- `SocketAsync_connect(async, socket, host, port, callback, userdata)` - Async connect
+
+### Cancellation:
+- `SocketAsync_cancel(async, op)` - Cancel pending operation
+- `SocketAsync_cancel_all(async, socket)` - Cancel all ops on socket
+
+### Backend Info:
+- `SocketAsync_backend(async)` - Get backend name ("io_uring", "kqueue", "poll")
+- `SocketAsync_capabilities(async)` - Get capability flags (ZEROCOPY, LINKED, etc.)
+
+### Flags:
+- `SOCKETASYNC_URGENT` - High priority operation
+- `SOCKETASYNC_LINKED` - Link with next operation (io_uring)
+- `SOCKETASYNC_ZEROCOPY` - Enable zero-copy if supported
