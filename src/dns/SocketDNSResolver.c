@@ -1005,6 +1005,32 @@ complete_query (T resolver, struct SocketDNSResolver_Query *q, int error)
 }
 
 /*
+ * Configuration Propagation
+ */
+
+/**
+ * @brief Apply resolver configuration to transport layer.
+ *
+ * Propagates timeout, retry, and rotation settings to the underlying
+ * transport. Called when configuration changes or when loading from
+ * resolv.conf.
+ *
+ * @param resolver Resolver instance.
+ */
+static void
+apply_config_to_transport (T resolver)
+{
+  SocketDNSTransport_Config config = { 0 };
+
+  config.initial_timeout_ms = resolver->timeout_ms;
+  config.max_timeout_ms = resolver->timeout_ms * 4; /* 4x for backoff headroom */
+  config.max_retries = resolver->max_retries;
+  config.rotate_nameservers = 1;
+
+  SocketDNSTransport_configure (resolver->transport, &config);
+}
+
+/*
  * Public API Implementation
  */
 
@@ -1108,6 +1134,18 @@ SocketDNSResolver_load_resolv_conf (T resolver)
         }
     }
 
+  /* Apply timeout/retry/rotate options from resolv.conf (RFC 1035 §4.2.1) */
+  resolver->timeout_ms = config.timeout_secs * 1000;
+  resolver->max_retries = config.attempts;
+
+  /* Propagate to transport layer */
+  SocketDNSTransport_Config transport_config = { 0 };
+  transport_config.initial_timeout_ms = resolver->timeout_ms;
+  transport_config.max_timeout_ms = resolver->timeout_ms * 4;
+  transport_config.max_retries = resolver->max_retries;
+  transport_config.rotate_nameservers = SocketDNSConfig_has_rotate (&config);
+  SocketDNSTransport_configure (resolver->transport, &transport_config);
+
   return count;
 }
 
@@ -1140,6 +1178,9 @@ SocketDNSResolver_set_timeout (T resolver, int timeout_ms)
   assert (resolver);
   resolver->timeout_ms = timeout_ms > 0 ? timeout_ms
                                         : RESOLVER_DEFAULT_TIMEOUT_MS;
+
+  /* Propagate to transport (RFC 1035 §4.2.1) */
+  apply_config_to_transport (resolver);
 }
 
 void
@@ -1148,6 +1189,9 @@ SocketDNSResolver_set_retries (T resolver, int max_retries)
   assert (resolver);
   resolver->max_retries = max_retries >= 0 ? max_retries
                                            : RESOLVER_DEFAULT_MAX_RETRIES;
+
+  /* Propagate to transport (RFC 1035 §4.2.1) */
+  apply_config_to_transport (resolver);
 }
 
 SocketDNSResolver_Query_T
