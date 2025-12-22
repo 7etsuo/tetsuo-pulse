@@ -831,3 +831,45 @@ SocketDNS_rdata_parse_aaaa (const SocketDNS_RR *rr, struct in6_addr *addr)
 
   return 0;
 }
+
+/*
+ * CNAME RDATA Parsing (RFC 1035 Section 3.3.1)
+ *
+ * CNAME Record:
+ *   Variable length - domain name (may use compression pointers)
+ *
+ * The CNAME RDATA contains a single domain name that specifies the
+ * canonical or primary name for the owner. Unlike A/AAAA which contain
+ * raw address bytes, CNAME requires full message context for compression
+ * pointer resolution.
+ */
+
+int
+SocketDNS_rdata_parse_cname (const unsigned char *msg, size_t msglen,
+                             const SocketDNS_RR *rr, char *cname,
+                             size_t cnamelen)
+{
+  size_t rdata_offset;
+
+  if (!msg || !rr || !cname || cnamelen == 0)
+    return -1;
+
+  /* Validate RR type */
+  if (rr->type != DNS_TYPE_CNAME)
+    return -1;
+
+  /* RDATA must be present and non-empty */
+  if (!rr->rdata || rr->rdlength == 0)
+    return -1;
+
+  /* Calculate offset of RDATA within message */
+  rdata_offset = (size_t)(rr->rdata - msg);
+
+  /* Validate offset is within message bounds */
+  if (rdata_offset >= msglen || rdata_offset + rr->rdlength > msglen)
+    return -1;
+
+  /* Decode the domain name from RDATA (handles compression pointers) */
+  return SocketDNS_name_decode (msg, msglen, rdata_offset, cname, cnamelen,
+                                NULL);
+}
