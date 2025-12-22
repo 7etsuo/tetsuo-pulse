@@ -80,6 +80,7 @@ struct SocketHTTP2_Stream
   int rst_received;
   int is_extended_connect;
   char protocol[32];
+  SocketHTTP2_Priority priority; /* RFC 9218 extensible priority */
   SocketHPACK_Header headers[SOCKETHTTP2_MAX_DECODED_HEADERS];
   size_t header_count;
   int headers_consumed;
@@ -229,6 +230,10 @@ extern int http2_process_window_update (SocketHTTP2_Conn_T conn,
 extern int http2_process_continuation (SocketHTTP2_Conn_T conn,
                                        const SocketHTTP2_FrameHeader *header,
                                        const unsigned char *payload);
+
+extern int http2_process_priority_update (SocketHTTP2_Conn_T conn,
+                                          const SocketHTTP2_FrameHeader *header,
+                                          const unsigned char *payload);
 
 extern int http2_decode_headers (SocketHTTP2_Conn_T conn,
                                  SocketHTTP2_Stream_T stream,

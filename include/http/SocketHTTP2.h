@@ -163,7 +163,8 @@ typedef enum
   HTTP2_FRAME_PING = 0x6,
   HTTP2_FRAME_GOAWAY = 0x7,
   HTTP2_FRAME_WINDOW_UPDATE = 0x8,
-  HTTP2_FRAME_CONTINUATION = 0x9
+  HTTP2_FRAME_CONTINUATION = 0x9,
+  HTTP2_FRAME_PRIORITY_UPDATE = 0x10 /* RFC 9218 */
 } SocketHTTP2_FrameType;
 
 /* Frame flags (bitmasks) */
@@ -287,6 +288,27 @@ typedef struct
   uint16_t id;
   uint32_t value;
 } SocketHTTP2_Setting;
+
+/* RFC 9218 Extensible Priorities */
+
+/** Default priority urgency (RFC 9218 Section 4) */
+#define SOCKETHTTP2_PRIORITY_DEFAULT_URGENCY 3
+
+/** Maximum valid urgency value */
+#define SOCKETHTTP2_PRIORITY_MAX_URGENCY 7
+
+/**
+ * RFC 9218 Extensible Priority parameters.
+ *
+ * Priority replaces the deprecated RFC 7540 priority scheme.
+ * - urgency: 0-7, lower is more urgent (default: 3)
+ * - incremental: true for streams that benefit from partial delivery
+ */
+typedef struct
+{
+  uint8_t urgency;    /**< 0-7, lower = more urgent, default 3 */
+  int incremental;    /**< boolean, default false */
+} SocketHTTP2_Priority;
 
 /* Configuration Functions */
 
@@ -536,6 +558,81 @@ SocketHTTP2_stream_state_string (SocketHTTP2_StreamState state);
 
 extern SocketHTTP2_Conn_T
 SocketHTTP2_Stream_get_connection (SocketHTTP2_Stream_T stream);
+
+/* RFC 9218 Extensible Priorities */
+
+/**
+ * Initialize priority with RFC 9218 defaults.
+ * Sets urgency=3 and incremental=false.
+ */
+extern void SocketHTTP2_Priority_init (SocketHTTP2_Priority *priority);
+
+/**
+ * Parse a Priority header field value (RFC 9218 Section 4).
+ *
+ * Parses Structured Field Dictionary format like "u=3, i" or "u=0".
+ * On parse error, priority is set to defaults (urgency=3, incremental=false).
+ *
+ * @param value Priority header field value (not null-terminated)
+ * @param len Length of value
+ * @param priority Output priority structure
+ * @return 0 on success, -1 on parse error (priority set to defaults)
+ */
+extern int SocketHTTP2_Priority_parse (const char *value, size_t len,
+                                       SocketHTTP2_Priority *priority);
+
+/**
+ * Serialize priority to Priority header field value.
+ *
+ * @param priority Priority to serialize
+ * @param buf Output buffer
+ * @param buf_size Size of output buffer
+ * @return Number of bytes written, or -1 if buffer too small
+ */
+extern ssize_t SocketHTTP2_Priority_serialize (
+    const SocketHTTP2_Priority *priority, char *buf, size_t buf_size);
+
+/**
+ * Get the priority of a stream (RFC 9218).
+ *
+ * Returns the current priority, which may have been set via:
+ * - Priority header in request/response
+ * - PRIORITY_UPDATE frame
+ *
+ * @param stream The stream
+ * @param priority Output priority structure
+ * @return 0 on success
+ */
+extern int SocketHTTP2_Stream_get_priority (SocketHTTP2_Stream_T stream,
+                                            SocketHTTP2_Priority *priority);
+
+/**
+ * Set the priority of a stream (RFC 9218).
+ *
+ * Updates the stream's priority locally. Use send_priority_update()
+ * to send a PRIORITY_UPDATE frame to the peer.
+ *
+ * @param stream The stream
+ * @param priority New priority
+ * @return 0 on success, -1 on error
+ */
+extern int SocketHTTP2_Stream_set_priority (SocketHTTP2_Stream_T stream,
+                                            const SocketHTTP2_Priority *priority);
+
+/**
+ * Send PRIORITY_UPDATE frame (RFC 9218 Section 7).
+ *
+ * Sends a PRIORITY_UPDATE frame to update the priority of a stream.
+ * The frame is sent on stream 0 (connection control stream).
+ *
+ * @param conn Connection to send on
+ * @param stream_id ID of stream to reprioritize
+ * @param priority New priority parameters
+ * @return 0 on success, -1 on error
+ */
+extern int SocketHTTP2_send_priority_update (SocketHTTP2_Conn_T conn,
+                                             uint32_t stream_id,
+                                             const SocketHTTP2_Priority *priority);
 
 /* Frame Parsing (Low-level) */
 

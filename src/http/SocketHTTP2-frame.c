@@ -407,6 +407,10 @@ SocketHTTP2_error_string (SocketHTTP2_ErrorCode code)
 const char *
 SocketHTTP2_frame_type_string (SocketHTTP2_FrameType type)
 {
+  /* RFC 9218: PRIORITY_UPDATE is 0x10, outside the main frame type array */
+  if (type == HTTP2_FRAME_PRIORITY_UPDATE)
+    return "PRIORITY_UPDATE";
+
   return STRING_LOOKUP (frame_type_names, FRAME_TYPE_COUNT, type,
                         "UNKNOWN_FRAME");
 }

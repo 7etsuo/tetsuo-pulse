@@ -296,6 +296,7 @@ set(LIB_SOURCES
     src/http/SocketHTTP2-stream.c
     src/http/SocketHTTP2-flow.c
     src/http/SocketHTTP2-validate.c
+    src/http/SocketHTTP2-priority.c
 
     # HTTP Client and Server APIs (Phase 7)
     src/http/SocketHTTPClient.c
@@ -616,6 +617,7 @@ set(TEST_SOURCES
     test_http1_parser
     test_hpack
     test_http2
+    test_http2_priority
     test_http2_rate_limit
     test_http_client
     test_proxy
