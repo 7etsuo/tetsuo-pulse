@@ -276,6 +276,16 @@ SocketHTTP2_Conn_new (Socket_T socket, const SocketHTTP2_Config *config,
   assert (socket);
   assert (arena);
 
+  /* RFC 9113 §9.2: Validate TLS requirements for HTTP/2 over TLS */
+  SocketHTTP2_TLSResult tls_result = SocketHTTP2_validate_tls (socket);
+  if (tls_result != HTTP2_TLS_OK && tls_result != HTTP2_TLS_NOT_ENABLED)
+    {
+      /* TLS is enabled but doesn't meet HTTP/2 requirements */
+      SOCKET_RAISE_MSG (SocketHTTP2, SocketHTTP2_ProtocolError,
+                        "HTTP/2 TLS validation failed: %s",
+                        SocketHTTP2_tls_result_string (tls_result));
+    }
+
   /* Use default config if none provided */
   if (config == NULL)
     {

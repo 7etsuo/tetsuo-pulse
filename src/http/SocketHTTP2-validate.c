@@ -5,7 +5,7 @@
  */
 
 /*
- * SocketHTTP2-validate.c - HTTP/2 Header Validation (RFC 9113)
+ * SocketHTTP2-validate.c - HTTP/2 Header and TLS Validation (RFC 9113)
  */
 
 #include <string.h>
@@ -13,6 +13,12 @@
 
 #include "http/SocketHPACK.h"
 #include "http/SocketHTTP2-private.h"
+#include "socket/Socket.h"
+
+#if SOCKET_HAS_TLS
+#include "tls/SocketTLS.h"
+#include <openssl/ssl.h>
+#endif
 
 static const struct
 {
@@ -187,4 +193,133 @@ http2_validate_regular_header (const SocketHPACK_Header *header)
     }
 
   return 0;
+}
+
+/*
+ * TLS Validation for HTTP/2 (RFC 9113 Section 9.2 and Appendix A)
+ *
+ * RFC 9113 Section 9.2:
+ * "Implementations of HTTP/2 MUST use TLS version 1.2 or higher for HTTP/2
+ *  over TLS."
+ * "The TLS implementation MUST support the Server Name Indication (SNI)
+ *  extension"
+ * "HTTP/2 MUST be used over TLS using ALPN"
+ *
+ * RFC 9113 Appendix A - TLS 1.2 Cipher Suite Blocklist:
+ * All cipher suites that do not offer forward secrecy or that use
+ * encryption algorithms considered weak MUST NOT be used.
+ */
+
+#if SOCKET_HAS_TLS
+
+/* RFC 9113 Appendix A: Forbidden cipher patterns */
+static int
+http2_is_cipher_forbidden (const char *cipher)
+{
+  if (cipher == NULL)
+    return 1; /* No cipher is forbidden */
+
+  /* NULL ciphers - no encryption */
+  if (strstr (cipher, "NULL") != NULL)
+    return 1;
+
+  /* Export ciphers - weak */
+  if (strstr (cipher, "EXPORT") != NULL)
+    return 1;
+
+  /* RC4 ciphers - broken */
+  if (strstr (cipher, "RC4") != NULL)
+    return 1;
+
+  /* 3DES ciphers - weak (Sweet32) */
+  if (strstr (cipher, "3DES") != NULL)
+    return 1;
+  if (strstr (cipher, "DES-CBC3") != NULL)
+    return 1;
+
+  /* Anonymous ciphers - no authentication */
+  if (strstr (cipher, "ADH") != NULL)
+    return 1;
+  if (strstr (cipher, "AECDH") != NULL)
+    return 1;
+  if (strncmp (cipher, "aNULL", 5) == 0)
+    return 1;
+
+  /* DES ciphers (single DES) - very weak */
+  if (strstr (cipher, "-DES-") != NULL
+      && strstr (cipher, "3DES") == NULL
+      && strstr (cipher, "DES-CBC3") == NULL)
+    return 1;
+
+  /* MD5 MAC - weak hash */
+  if (strstr (cipher, "MD5") != NULL)
+    return 1;
+
+  return 0; /* Cipher is allowed */
+}
+
+#endif /* SOCKET_HAS_TLS */
+
+SocketHTTP2_TLSResult
+SocketHTTP2_validate_tls (Socket_T socket)
+{
+  if (socket == NULL)
+    return HTTP2_TLS_NOT_ENABLED;
+
+#if SOCKET_HAS_TLS
+  /* Check if TLS is enabled on this socket */
+  const char *version_str = SocketTLS_get_version (socket);
+  if (version_str == NULL)
+    {
+      /* TLS not enabled - this is OK for h2c (cleartext HTTP/2) */
+      return HTTP2_TLS_NOT_ENABLED;
+    }
+
+  /* RFC 9113 §9.2: TLS 1.2 or higher required */
+  int protocol_version = SocketTLS_get_protocol_version (socket);
+  if (protocol_version < TLS1_2_VERSION)
+    {
+      return HTTP2_TLS_VERSION_TOO_LOW;
+    }
+
+  /* RFC 9113 §9.2: ALPN "h2" must be negotiated for TLS connections */
+  const char *alpn = SocketTLS_get_alpn_selected (socket);
+  if (alpn == NULL || strcmp (alpn, "h2") != 0)
+    {
+      return HTTP2_TLS_ALPN_MISMATCH;
+    }
+
+  /* RFC 9113 Appendix A: Check cipher suite is not forbidden */
+  const char *cipher = SocketTLS_get_cipher (socket);
+  if (http2_is_cipher_forbidden (cipher))
+    {
+      return HTTP2_TLS_CIPHER_FORBIDDEN;
+    }
+
+  return HTTP2_TLS_OK;
+
+#else
+  /* TLS support not compiled in */
+  return HTTP2_TLS_NOT_ENABLED;
+#endif
+}
+
+const char *
+SocketHTTP2_tls_result_string (SocketHTTP2_TLSResult result)
+{
+  switch (result)
+    {
+    case HTTP2_TLS_OK:
+      return "TLS requirements satisfied";
+    case HTTP2_TLS_NOT_ENABLED:
+      return "TLS not enabled (cleartext HTTP/2)";
+    case HTTP2_TLS_VERSION_TOO_LOW:
+      return "TLS version too low (RFC 9113 requires TLS 1.2+)";
+    case HTTP2_TLS_CIPHER_FORBIDDEN:
+      return "Forbidden cipher suite (RFC 9113 Appendix A)";
+    case HTTP2_TLS_ALPN_MISMATCH:
+      return "ALPN protocol is not 'h2' (RFC 9113 §9.2)";
+    default:
+      return "Unknown TLS validation error";
+    }
 }
