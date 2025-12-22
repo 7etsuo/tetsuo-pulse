@@ -42,21 +42,6 @@ static int check_stale_value(const char *value);
 static int parse_http_auth_params(const char *header, int require_prefix,
                                   HttpAuthParamCallback cb, void *userdata);
 static const char *skip_to_next_param(const char *p);
-static void
-safe_strcpy (char *dst, size_t dst_size, const char *src)
-{
-  size_t copy_len;
-
-  if (dst_size == 0)
-    return;
-
-  copy_len = strlen (src);
-  if (copy_len >= dst_size)
-    copy_len = dst_size - 1;
-
-  memcpy (dst, src, copy_len);
-  dst[copy_len] = '\0';
-}
 
 #define skip_delimiters sockethttp_skip_delimiters
 #define skip_whitespace sockethttp_skip_whitespace
@@ -160,15 +145,15 @@ store_challenge_field (DigestChallenge *ch, const char *name,
                        const char *value)
 {
   if (strcasecmp (name, "realm") == 0)
-    safe_strcpy (ch->realm, sizeof (ch->realm), value);
+    socket_util_safe_strncpy (ch->realm, value, sizeof (ch->realm));
   else if (strcasecmp (name, "nonce") == 0)
-    safe_strcpy (ch->nonce, sizeof (ch->nonce), value);
+    socket_util_safe_strncpy (ch->nonce, value, sizeof (ch->nonce));
   else if (strcasecmp (name, "opaque") == 0)
-    safe_strcpy (ch->opaque, sizeof (ch->opaque), value);
+    socket_util_safe_strncpy (ch->opaque, value, sizeof (ch->opaque));
   else if (strcasecmp (name, "qop") == 0)
-    safe_strcpy (ch->qop, sizeof (ch->qop), value);
+    socket_util_safe_strncpy (ch->qop, value, sizeof (ch->qop));
   else if (strcasecmp (name, "algorithm") == 0)
-    safe_strcpy (ch->algorithm, sizeof (ch->algorithm), value);
+    socket_util_safe_strncpy (ch->algorithm, value, sizeof (ch->algorithm));
   else if (strcasecmp (name, "stale") == 0)
     ch->stale = check_stale_value(value);
 }
@@ -443,8 +428,6 @@ skip_digest_prefix (const char *header, int strict)
   return strict ? NULL : header;
 }
 
-
-
 static int
 validate_challenge (const DigestChallenge *ch)
 {
@@ -469,7 +452,7 @@ parse_digest_challenge (const char *header, DigestChallenge *ch)
     return -1;
 
   if (ch->algorithm[0] == '\0')
-    safe_strcpy (ch->algorithm, sizeof (ch->algorithm), "MD5");
+    socket_util_safe_strncpy (ch->algorithm, "MD5", sizeof (ch->algorithm));
 
   return 0;
 }
@@ -610,8 +593,6 @@ skip_to_next_param (const char *p)
     }
   return p;
 }
-
-
 
 int
 httpclient_auth_is_stale_nonce (const char *www_authenticate)
