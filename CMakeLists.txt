@@ -612,6 +612,7 @@ set(TEST_SOURCES
     test_dns_wire
     test_dns_transport
     test_dns_config
+    test_dns_cache
     test_integration
     test_threadsafety
     test_happy_eyeballs

@@ -15,6 +15,8 @@
 
 #include "dns/SocketDNS-private.h"
 #include "dns/SocketDNS.h"
+#include "socket/SocketCommon-private.h"
+#include "socket/SocketCommon.h"
 
 #ifdef __linux__
 #include <arpa/inet.h>
@@ -413,6 +415,7 @@ reset_dns_state (T d)
 {
   SCOPED_MUTEX_LOCK (&d->mutex);
   free_all_requests (d);
+  cache_clear_locked (d); /* Free cache entries' malloc'd addrinfo results */
   d->queue_head = NULL;
   d->queue_tail = NULL;
   d->queue_size = 0;
@@ -806,6 +809,14 @@ store_resolution_result (struct SocketDNS_T *dns,
     {
       copy_and_store_result (req, result, error);
       update_completion_metrics (error);
+
+      /* Insert successful results into cache (mutex already held by caller) */
+      if (error == 0 && req->host != NULL && req->result != NULL
+          && !socketcommon_is_ip_address (req->host))
+        {
+          cache_insert (dns, req->host, req->result);
+        }
+
       SIGNAL_DNS_COMPLETION (dns);
     }
   else
@@ -893,6 +904,28 @@ process_single_request (struct SocketDNS_T *dns,
 {
   if (check_pre_processing_timeout (dns, req))
     return;
+
+  /* Check cache first (skip for NULL host / IP addresses) */
+  if (req->host != NULL && !socketcommon_is_ip_address (req->host))
+    {
+      pthread_mutex_lock (&dns->mutex);
+      struct SocketDNS_CacheEntry *cached = cache_lookup (dns, req->host);
+      if (cached)
+        {
+          /* Cache hit - copy result directly (avoid double-copy via
+           * store_resolution_result which frees input with freeaddrinfo,
+           * but SocketCommon_copy_addrinfo results need free_addrinfo) */
+          req->result = SocketCommon_copy_addrinfo (cached->result);
+          req->state = REQ_COMPLETE;
+          req->error = req->result ? 0 : EAI_MEMORY;
+          update_completion_metrics (req->error);
+          SIGNAL_DNS_COMPLETION (dns);
+          pthread_mutex_unlock (&dns->mutex);
+          invoke_callback (dns, req);
+          return;
+        }
+      pthread_mutex_unlock (&dns->mutex);
+    }
 
   struct addrinfo local_hints;
   prepare_local_hints (&local_hints, base_hints, req);

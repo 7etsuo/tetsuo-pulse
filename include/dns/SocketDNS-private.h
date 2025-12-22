@@ -380,4 +380,11 @@ extern void invoke_callback (struct SocketDNS_T *dns,
 extern void validate_resolve_params (const char *host, int port);
 extern struct SocketDNS_T *allocate_dns_resolver (void);
 
+/* Cache functions - defined in SocketDNS.c, used by SocketDNS-internal.c */
+extern struct SocketDNS_CacheEntry *cache_lookup (struct SocketDNS_T *dns,
+                                                   const char *hostname);
+extern void cache_insert (struct SocketDNS_T *dns, const char *hostname,
+                          struct addrinfo *result);
+extern void cache_clear_locked (struct SocketDNS_T *dns);
+
 #endif /* SOCKETDNS_PRIVATE_INCLUDED */
