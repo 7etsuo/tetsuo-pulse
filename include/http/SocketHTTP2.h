@@ -361,6 +361,26 @@ extern int SocketHTTP2_Stream_send_headers (SocketHTTP2_Stream_T stream,
                                             const SocketHPACK_Header *headers,
                                             size_t header_count,
                                             int end_stream);
+
+/**
+ * Send HEADERS frame with padding (RFC 9113 Section 6.2).
+ *
+ * Padding can be used to obscure the exact size of frame content for
+ * traffic analysis mitigation. The padding bytes are filled with zeros.
+ *
+ * @param stream The stream to send headers on
+ * @param headers Array of HPACK headers to send
+ * @param header_count Number of headers in the array
+ * @param pad_length Number of padding bytes (0-255)
+ * @param end_stream Set to 1 to close the stream after sending
+ * @return 0 on success, -1 on error
+ */
+extern int
+SocketHTTP2_Stream_send_headers_padded (SocketHTTP2_Stream_T stream,
+                                        const SocketHPACK_Header *headers,
+                                        size_t header_count, uint8_t pad_length,
+                                        int end_stream);
+
 extern int SocketHTTP2_Stream_send_request (SocketHTTP2_Stream_T stream,
                                             const SocketHTTP_Request *request,
                                             int end_stream);
@@ -373,6 +393,25 @@ SocketHTTP2_Stream_send_response (SocketHTTP2_Stream_T stream,
 extern ssize_t SocketHTTP2_Stream_send_data (SocketHTTP2_Stream_T stream,
                                              const void *data, size_t len,
                                              int end_stream);
+
+/**
+ * Send DATA frame with padding (RFC 9113 Section 6.1).
+ *
+ * Padding can be used to obscure the exact size of frame content for
+ * traffic analysis mitigation. The padding bytes are filled with zeros.
+ *
+ * @param stream The stream to send data on
+ * @param data The data payload to send
+ * @param len Length of the data payload
+ * @param pad_length Number of padding bytes (0-255)
+ * @param end_stream Set to 1 to close the stream after sending
+ * @return Bytes accepted (may be less due to flow control), -1 on error
+ */
+extern ssize_t
+SocketHTTP2_Stream_send_data_padded (SocketHTTP2_Stream_T stream,
+                                     const void *data, size_t len,
+                                     uint8_t pad_length, int end_stream);
+
 extern int
 SocketHTTP2_Stream_send_trailers (SocketHTTP2_Stream_T stream,
                                   const SocketHPACK_Header *trailers,

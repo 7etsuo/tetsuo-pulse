@@ -1346,6 +1346,162 @@ SocketHTTP2_Stream_send_headers (SocketHTTP2_Stream_T stream,
   return 0;
 }
 
+static int
+send_single_headers_frame_padded (SocketHTTP2_Conn_T conn,
+                                  SocketHTTP2_Stream_T stream,
+                                  const unsigned char *header_block,
+                                  size_t block_len, uint8_t pad_length,
+                                  int end_stream)
+{
+  SocketHTTP2_FrameHeader frame_header;
+  unsigned char *padded_payload;
+  size_t total_len;
+
+  /* Total payload: 1 (pad_length) + header_block + padding */
+  total_len = 1 + block_len + pad_length;
+
+  padded_payload = Arena_alloc (conn->arena, total_len, __FILE__, __LINE__);
+  if (!padded_payload)
+    return -1;
+
+  padded_payload[0] = pad_length;
+  memcpy (padded_payload + 1, header_block, block_len);
+  /* RFC 9113 §6.2: Padding octets MUST be set to zero */
+  memset (padded_payload + 1 + block_len, 0, pad_length);
+
+  frame_header.length = (uint32_t)total_len;
+  frame_header.type = HTTP2_FRAME_HEADERS;
+  frame_header.flags = HTTP2_FLAG_PADDED | HTTP2_FLAG_END_HEADERS
+                       | (end_stream ? HTTP2_FLAG_END_STREAM : 0);
+  frame_header.stream_id = stream->id;
+
+  return http2_frame_send (conn, &frame_header, padded_payload, total_len);
+}
+
+static int
+send_fragmented_headers_padded (SocketHTTP2_Conn_T conn,
+                                SocketHTTP2_Stream_T stream,
+                                const unsigned char *header_block,
+                                size_t block_len, uint32_t max_frame_size,
+                                uint8_t pad_length, int end_stream)
+{
+  SocketHTTP2_FrameHeader frame_header;
+  unsigned char *first_payload;
+  size_t first_data_len, first_total_len;
+  size_t offset;
+
+  /* First frame includes padding overhead: 1 (pad_length) + data + padding */
+  /* Calculate how much header data fits in first frame with padding */
+  if (max_frame_size < (size_t)(1 + pad_length + 1))
+    return -1; /* Frame too small for any data with padding */
+
+  first_data_len = max_frame_size - 1 - pad_length;
+  if (first_data_len > block_len)
+    first_data_len = block_len;
+  first_total_len = 1 + first_data_len + pad_length;
+
+  first_payload = Arena_alloc (conn->arena, first_total_len, __FILE__, __LINE__);
+  if (!first_payload)
+    return -1;
+
+  first_payload[0] = pad_length;
+  memcpy (first_payload + 1, header_block, first_data_len);
+  memset (first_payload + 1 + first_data_len, 0, pad_length);
+
+  frame_header.length = (uint32_t)first_total_len;
+  frame_header.type = HTTP2_FRAME_HEADERS;
+  frame_header.flags = HTTP2_FLAG_PADDED;
+  if (end_stream)
+    frame_header.flags |= HTTP2_FLAG_END_STREAM;
+  if (first_data_len >= block_len)
+    frame_header.flags |= HTTP2_FLAG_END_HEADERS;
+  frame_header.stream_id = stream->id;
+
+  if (http2_frame_send (conn, &frame_header, first_payload, first_total_len) < 0)
+    return -1;
+
+  /* Send remaining header data as CONTINUATION frames (no padding) */
+  offset = first_data_len;
+  while (offset < block_len)
+    {
+      size_t chunk_len = block_len - offset;
+      if (chunk_len > max_frame_size)
+        chunk_len = max_frame_size;
+      int is_last = (offset + chunk_len >= block_len);
+
+      frame_header.length = (uint32_t)chunk_len;
+      frame_header.type = HTTP2_FRAME_CONTINUATION;
+      frame_header.flags = is_last ? HTTP2_FLAG_END_HEADERS : 0;
+      frame_header.stream_id = stream->id;
+
+      if (http2_frame_send (conn, &frame_header, header_block + offset,
+                            chunk_len) < 0)
+        return -1;
+
+      offset += chunk_len;
+    }
+
+  return 0;
+}
+
+int
+SocketHTTP2_Stream_send_headers_padded (SocketHTTP2_Stream_T stream,
+                                        const SocketHPACK_Header *headers,
+                                        size_t header_count, uint8_t pad_length,
+                                        int end_stream)
+{
+  SocketHTTP2_Conn_T conn;
+  SocketHTTP2_ErrorCode error;
+
+  assert (stream);
+  assert (headers || header_count == 0);
+
+  conn = stream->conn;
+
+  /* If no padding requested, use the unpadded version */
+  if (pad_length == 0)
+    return SocketHTTP2_Stream_send_headers (stream, headers, header_count,
+                                            end_stream);
+
+  error = http2_stream_transition (stream, HTTP2_FRAME_HEADERS,
+                                   end_stream ? HTTP2_FLAG_END_STREAM : 0, 1);
+  if (error != HTTP2_NO_ERROR)
+    return -1;
+
+  unsigned char *header_block;
+  ssize_t block_len_ssize = http2_encode_and_alloc_block (
+      conn, headers, header_count, &header_block);
+  if (block_len_ssize < 0)
+    return -1;
+  size_t block_len = (size_t)block_len_ssize;
+
+  uint32_t max_frame_size = conn->peer_settings[SETTINGS_IDX_MAX_FRAME_SIZE];
+
+  /* Total padded frame size: 1 (pad_length) + header_block + padding */
+  size_t total_padded_len = 1 + block_len + pad_length;
+
+  if (total_padded_len <= max_frame_size)
+    {
+      if (send_single_headers_frame_padded (conn, stream, header_block,
+                                            block_len, pad_length, end_stream)
+          < 0)
+        return -1;
+    }
+  else
+    {
+      if (send_fragmented_headers_padded (conn, stream, header_block, block_len,
+                                          max_frame_size, pad_length,
+                                          end_stream)
+          < 0)
+        return -1;
+    }
+
+  if (end_stream)
+    stream->end_stream_sent = 1;
+
+  return 0;
+}
+
 static void
 build_request_pseudo_headers (const SocketHTTP_Request *request,
                               SocketHPACK_Header *pseudo)
@@ -1596,6 +1752,92 @@ SocketHTTP2_Stream_send_data (SocketHTTP2_Stream_T stream, const void *data,
     stream->end_stream_sent = 1;
 
   return (ssize_t)send_len;
+}
+
+ssize_t
+SocketHTTP2_Stream_send_data_padded (SocketHTTP2_Stream_T stream,
+                                     const void *data, size_t len,
+                                     uint8_t pad_length, int end_stream)
+{
+  SocketHTTP2_Conn_T conn;
+  SocketHTTP2_FrameHeader header;
+  SocketHTTP2_ErrorCode error;
+  size_t send_len, total_frame_len;
+  unsigned char *padded_payload;
+
+  assert (stream);
+  assert (data || len == 0);
+
+  conn = stream->conn;
+
+  /* If no padding requested, use the unpadded version */
+  if (pad_length == 0)
+    return SocketHTTP2_Stream_send_data (stream, data, len, end_stream);
+
+  error = http2_stream_transition (stream, HTTP2_FRAME_DATA,
+                                   end_stream ? HTTP2_FLAG_END_STREAM : 0, 1);
+  if (error != HTTP2_NO_ERROR)
+    return -1;
+
+  /* Calculate total frame size: 1 (pad_length field) + data + padding */
+  total_frame_len = 1 + len + pad_length;
+
+  /* RFC 9113 §6.1: Pad Length MUST NOT exceed payload minus required fields */
+  if (pad_length >= total_frame_len)
+    return -1;
+
+  /* Check against max frame size */
+  uint32_t max_frame_size = conn->peer_settings[SETTINGS_IDX_MAX_FRAME_SIZE];
+  if (total_frame_len > max_frame_size)
+    {
+      /* Adjust data length to fit within frame size constraints */
+      size_t max_data = max_frame_size - 1 - pad_length;
+      if (max_data == 0)
+        return 0; /* Cannot send any data with this padding */
+      len = (len > max_data) ? max_data : len;
+      total_frame_len = 1 + len + pad_length;
+      end_stream = 0; /* Can't end stream if we can't send all data */
+    }
+
+  send_len = calculate_send_length (conn, stream, total_frame_len, &end_stream);
+  if (send_len == 0)
+    return 0;
+
+  /* If flow control reduced send_len, recalculate data portion */
+  if (send_len < total_frame_len)
+    {
+      if (send_len <= (size_t)(1 + pad_length))
+        return 0; /* Not enough room for any data */
+      len = send_len - 1 - pad_length;
+      total_frame_len = send_len;
+      end_stream = 0;
+    }
+
+  http2_flow_consume_send (conn, stream, total_frame_len);
+
+  /* Build padded payload: [Pad Length (1)] [Data (*)] [Padding (*)] */
+  padded_payload = Arena_alloc (conn->arena, total_frame_len, __FILE__, __LINE__);
+  if (!padded_payload)
+    return -1;
+
+  padded_payload[0] = pad_length;
+  if (len > 0)
+    memcpy (padded_payload + 1, data, len);
+  /* RFC 9113 §6.1: Padding octets MUST be set to zero */
+  memset (padded_payload + 1 + len, 0, pad_length);
+
+  header.length = (uint32_t)total_frame_len;
+  header.type = HTTP2_FRAME_DATA;
+  header.flags = HTTP2_FLAG_PADDED | (end_stream ? HTTP2_FLAG_END_STREAM : 0);
+  header.stream_id = stream->id;
+
+  if (http2_frame_send (conn, &header, padded_payload, total_frame_len) < 0)
+    return -1;
+
+  if (end_stream)
+    stream->end_stream_sent = 1;
+
+  return (ssize_t)len;
 }
 
 int
