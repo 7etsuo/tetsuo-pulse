@@ -282,10 +282,11 @@ Socket_simple_poll_modify_events (SocketSimple_Poll_T poll,
 
 int
 Socket_simple_poll_wait (SocketSimple_Poll_T poll,
-                         SocketSimple_PollEvent *events, int max_events,
+                         SocketSimple_PollEvent *events, int max_events_arg,
                          int timeout_ms_arg)
 {
   volatile int timeout_ms = timeout_ms_arg;
+  volatile int max_events = max_events_arg;
 
   Socket_simple_clear_error ();
 

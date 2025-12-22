@@ -642,10 +642,10 @@ static TLSHandshakeState
 handshake_loop_internal (Socket_T socket, int timeout_ms, int poll_interval_ms,
                          int64_t start_time_ms)
 {
-  int64_t deadline
+  volatile int64_t deadline
       = (timeout_ms > 0) ? SocketTimeout_deadline_ms (timeout_ms) : 0LL;
 
-  TLSHandshakeState final_state = TLS_HANDSHAKE_ERROR;
+  volatile TLSHandshakeState final_state = TLS_HANDSHAKE_ERROR;
   volatile int loop_timeout = 0;
   volatile int loop_poll_error = 0;
   volatile int64_t final_elapsed_ms = 0;

@@ -685,8 +685,7 @@ parse_response (T resolver, struct SocketDNSResolver_Query *q,
             return RESOLVER_ERROR_CNAME_LOOP;
 
           /* Store CNAME target for re-query */
-          strncpy (q->current_name, cname_target, DNS_MAX_NAME_LEN - 1);
-          q->current_name[DNS_MAX_NAME_LEN - 1] = '\0';
+          snprintf (q->current_name, DNS_MAX_NAME_LEN, "%s", cname_target);
           q->cname_depth++;
           q->state = QUERY_STATE_CNAME;
           return RESOLVER_OK; /* Will trigger re-query */
@@ -850,8 +849,8 @@ transport_callback (SocketDNSQuery_T query, const unsigned char *response,
                       q->state = QUERY_STATE_FAILED;
                       return;
                     }
-                  strncpy (q->current_name, cname_target, DNS_MAX_NAME_LEN - 1);
-                  q->current_name[DNS_MAX_NAME_LEN - 1] = '\0';
+                  snprintf (q->current_name, DNS_MAX_NAME_LEN, "%s",
+                            cname_target);
                   q->cname_depth++;
                   q->state = QUERY_STATE_CNAME;
                   return;
@@ -1280,10 +1279,8 @@ SocketDNSResolver_resolve (T resolver, const char *hostname, int flags,
 
   memset (q, 0, sizeof (*q));
   q->id = generate_unique_id (resolver);
-  strncpy (q->hostname, hostname, DNS_MAX_NAME_LEN - 1);
-  q->hostname[DNS_MAX_NAME_LEN - 1] = '\0';
-  strncpy (q->current_name, hostname, DNS_MAX_NAME_LEN - 1);
-  q->current_name[DNS_MAX_NAME_LEN - 1] = '\0';
+  snprintf (q->hostname, DNS_MAX_NAME_LEN, "%s", hostname);
+  snprintf (q->current_name, DNS_MAX_NAME_LEN, "%s", hostname);
   q->flags = flags;
   q->state = QUERY_STATE_INIT;
   q->callback = callback;

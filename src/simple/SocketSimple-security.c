@@ -306,7 +306,12 @@ Socket_simple_syn_get_ip_state (SocketSimple_SYNProtect_T protect,
     return 0;
 
   memset (state, 0, sizeof (*state));
-  strncpy (state->ip, core_state.ip, sizeof (state->ip) - 1);
+  /* Safe copy with explicit null termination */
+  size_t ip_len = strlen (core_state.ip);
+  if (ip_len >= sizeof (state->ip))
+    ip_len = sizeof (state->ip) - 1;
+  memcpy (state->ip, core_state.ip, ip_len);
+  state->ip[ip_len] = '\0';
   state->attempts_current = core_state.attempts_current;
   state->successes = core_state.successes;
   state->failures = core_state.failures;
