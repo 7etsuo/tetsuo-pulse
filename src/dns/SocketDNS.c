@@ -18,45 +18,31 @@
  * @see SocketDNS-private.h for internal structures.
  */
 
-/* System headers first */
-
 #include <arpa/inet.h>
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
 #include <strings.h>
 
-/* Project headers - Arena.h included to ensure T macro is defined/undefined
- * before we define our module's T. SocketDNS-private.h forward-declares
- * Arena_T but doesn't include Arena.h to avoid T macro conflicts in other
- * contexts. */
 #include "core/Arena.h"
 #include "dns/SocketDNS-private.h"
 #include "dns/SocketDNS.h"
 #include "socket/SocketCommon-private.h"
 
-/* Define our module's T macro (Arena.h undefs T at end of header) */
-#undef T /* Defensive: ensure clean slate */
+#undef T
 #define T SocketDNS_T
 
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "SocketDNS"
 
-/* Global exception for SocketDNS failures (thread-safe as immutable) */
 const Except_T SocketDNS_Failed
     = { &SocketDNS_Failed, "SocketDNS operation failed" };
 
-/* Thread-local exception for formatted error messages (per-thread for safety)
- */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketDNS);
 
-/* Validate hostname and port for DNS resolution. NULL host ok for bind. */
 void
 validate_resolve_params (const char *host, int port)
 {
-  /* Host validation - NULL is allowed for wildcard bind with AI_PASSIVE.
-   * Uses SocketCommon validation to avoid duplication. */
-
   if (host != NULL)
     {
       if (!socketcommon_is_ip_address (host))
@@ -68,7 +54,6 @@ validate_resolve_params (const char *host, int port)
   SocketCommon_validate_port (port, SocketDNS_Failed);
 }
 
-/* Security: Prevents cross-resolver corruption via back-pointer check */
 static int
 validate_request_ownership_locked (const struct SocketDNS_T *dns,
                                    const struct SocketDNS_Request_T *req)
@@ -76,7 +61,6 @@ validate_request_ownership_locked (const struct SocketDNS_T *dns,
   return req->dns_resolver == dns;
 }
 
-/* Validate ownership and return early if invalid. Must hold mutex. */
 #define VALIDATE_OWNERSHIP_OR_RETURN(dns, req, retval)                        \
   do                                                                          \
     {                                                                         \
@@ -88,7 +72,6 @@ validate_request_ownership_locked (const struct SocketDNS_T *dns,
     }                                                                         \
   while (0)
 
-/* Cancel pending queued request. Sets REQ_CANCELLED, error=EAI_CANCELED. */
 static void
 cancel_pending_state (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 {
@@ -96,23 +79,18 @@ cancel_pending_state (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
   req->error = dns_cancellation_error ();
 }
 
-/* Mark in-progress request cancelled. Worker discards result post-resolve. */
 static void
 cancel_processing_state (struct SocketDNS_T *dns,
                          struct SocketDNS_Request_T *req)
 {
-  (void)dns; /* Suppress unused parameter warning */
+  (void)dns;
   req->state = REQ_CANCELLED;
   req->error = dns_cancellation_error ();
 }
 
-/* Handle cancellation of completed request. Frees result if no callback. */
 static void
 cancel_complete_state (struct SocketDNS_Request_T *req)
 {
-  /* Only free result if no callback was provided.
-   * If callback exists, it has received ownership of the result
-   * and is responsible for freeing it (may have already done so). */
   if (req->result && !req->callback)
     {
       SocketCommon_free_addrinfo (req->result);
@@ -121,7 +99,6 @@ cancel_complete_state (struct SocketDNS_Request_T *req)
   req->error = dns_cancellation_error ();
 }
 
-/* Dispatch cancellation logic by request state */
 static void
 handle_cancel_by_state (struct SocketDNS_T *dns,
                         struct SocketDNS_Request_T *req, int *send_signal,
@@ -152,11 +129,6 @@ handle_cancel_by_state (struct SocketDNS_T *dns,
     }
 }
 
-/*
- * Transfer result ownership from request to caller (polling mode).
- * Callback mode: returns NULL (callback already consumed result).
- * Post-success: request invalid, removed from table.
- */
 static struct addrinfo *
 transfer_result_ownership (struct SocketDNS_Request_T *req)
 {
@@ -164,9 +136,6 @@ transfer_result_ownership (struct SocketDNS_Request_T *req)
 
   if (req->state == REQ_COMPLETE)
     {
-      /* If no callback, transfer ownership to caller; else callback consumed
-       * it
-       */
       if (!req->callback)
         {
           result = req->result;
@@ -179,7 +148,6 @@ transfer_result_ownership (struct SocketDNS_Request_T *req)
   return result;
 }
 
-/* Initialize completed request fields. Copies result to arena, frees input. */
 static void
 init_completed_request_fields (struct SocketDNS_Request_T *req,
                                struct SocketDNS_T *dns,
@@ -205,7 +173,6 @@ init_completed_request_fields (struct SocketDNS_Request_T *req,
   req->timeout_override_ms = -1;
 }
 
-/* Forward declarations for synchronous resolution helpers */
 static int wait_for_completion (struct SocketDNS_T *dns,
                                 const struct SocketDNS_Request_T *req,
                                 int timeout_ms);
@@ -218,10 +185,6 @@ static void handle_sync_error (struct SocketDNS_T *dns,
                                struct SocketDNS_Request_T *req, int error,
                                const char *host);
 
-/*
- * Fast-path synchronous resolution for IP addresses and wildcard binds.
- * Bypasses thread pool since these can be resolved immediately.
- */
 static struct addrinfo *
 dns_sync_fast_path (const char *host, int port, const struct addrinfo *hints)
 {
@@ -237,10 +200,6 @@ dns_sync_fast_path (const char *host, int port, const struct addrinfo *hints)
   return result;
 }
 
-/*
- * Wait for async request completion with timeout, retrieve result.
- * Raises SocketDNS_Failed on timeout or resolution error.
- */
 static struct addrinfo *
 wait_and_retrieve_result (struct SocketDNS_T *dns,
                           struct SocketDNS_Request_T *req, int timeout_ms,
@@ -305,7 +264,6 @@ validate_dns_instance (const struct SocketDNS_T *dns)
     }
 }
 
-/* Security: Check queue capacity to prevent DoS via memory exhaustion */
 static void
 check_queue_capacity (struct SocketDNS_T *dns)
 {
@@ -323,7 +281,6 @@ check_queue_capacity (struct SocketDNS_T *dns)
   pthread_mutex_unlock (&dns->mutex);
 }
 
-/* Allocate and prepare new resolution request */
 static Request_T
 prepare_resolve_request (struct SocketDNS_T *dns, const char *host, int port,
                          SocketDNS_Callback callback, void *data)
@@ -333,7 +290,6 @@ prepare_resolve_request (struct SocketDNS_T *dns, const char *host, int port,
   return allocate_request (dns, host, host_len, port, callback, data);
 }
 
-/* Submit request to queue under mutex protection */
 static void
 submit_resolve_request (struct SocketDNS_T *dns, Request_T req)
 {
@@ -454,22 +410,14 @@ SocketDNS_check (struct SocketDNS_T *dns)
   if (!dns)
     return 0;
 
-  /* Check if pipe is still valid (may be closed during shutdown) */
   if (dns->pipefd[0] < 0)
     return 0;
 
-  /* Read all available data from pipe (non-blocking) */
   while ((n = read (dns->pipefd[0], buffer, sizeof (buffer))) > 0)
-    {
-      count += n;
-    }
+    count += n;
 
-  /* EAGAIN/EWOULDBLOCK means no data available - not an error */
   if (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
-    {
-      /* Real error - but don't raise exception, just return count */
-      return count;
-    }
+    return count;
 
   return count;
 }
@@ -510,8 +458,6 @@ SocketDNS_geterror (struct SocketDNS_T *dns,
   return error;
 }
 
-/* Internal API for fast-path resolution. Copies result to arena, signals
- * completion. */
 Request_T
 SocketDNS_create_completed_request (struct SocketDNS_T *dns,
                                     struct addrinfo *result, int port)
@@ -550,8 +496,6 @@ SocketDNS_request_settimeout (struct SocketDNS_T *dns,
   pthread_mutex_unlock (&dns->mutex);
 }
 
-/* Security: Uses CLOCK_MONOTONIC to prevent timing attacks via clock
- * manipulation */
 static void
 compute_deadline (int timeout_ms, struct timespec *deadline)
 {
@@ -560,7 +504,6 @@ compute_deadline (int timeout_ms, struct timespec *deadline)
   deadline->tv_nsec += (timeout_ms % SOCKET_MS_PER_SECOND)
                        * (SOCKET_NS_PER_SECOND / SOCKET_MS_PER_SECOND);
 
-  /* Normalize nanoseconds (handle overflow from ms->ns conversion) */
   if (deadline->tv_nsec >= SOCKET_NS_PER_SECOND)
     {
       deadline->tv_sec++;
@@ -568,8 +511,6 @@ compute_deadline (int timeout_ms, struct timespec *deadline)
     }
 }
 
-/* Wait for request completion. Returns 0 on completion, ETIMEDOUT on timeout.
- */
 static int
 wait_for_completion (struct SocketDNS_T *dns,
                      const struct SocketDNS_Request_T *req, int timeout_ms)
@@ -597,7 +538,6 @@ wait_for_completion (struct SocketDNS_T *dns,
   return 0;
 }
 
-/* Handle timeout: cancels request, unlocks mutex, raises exception */
 static void
 handle_sync_timeout (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req,
                      int timeout_ms, const char *host)
@@ -612,7 +552,6 @@ handle_sync_timeout (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req,
                     host ? host : "(wildcard)");
 }
 
-/* Handle resolution error: removes request, unlocks mutex, raises exception */
 static void
 handle_sync_error (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req,
                    int error, const char *host)
@@ -625,7 +564,6 @@ handle_sync_error (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req,
                     host ? host : "(wildcard)", gai_strerror (error));
 }
 
-/* Submit async request and block until completion or timeout */
 static struct addrinfo *
 resolve_async_with_wait (struct SocketDNS_T *dns, const char *host, int port,
                          int timeout_ms)
@@ -655,12 +593,9 @@ SocketDNS_resolve_sync (struct SocketDNS_T *dns, const char *host, int port,
 
   effective_timeout = (timeout_ms > 0) ? timeout_ms : dns->request_timeout_ms;
 
-  /* Fast path: IP addresses and wildcard use direct synchronous resolution via
-   * helper */
   if (host == NULL || socketcommon_is_ip_address (host))
     return dns_sync_fast_path (host, port, hints);
 
-  /* Hostname requires async resolution with timeout */
   return resolve_async_with_wait (dns, host, port, effective_timeout);
 }
 
@@ -678,7 +613,7 @@ cache_entry_expired (const struct SocketDNS_T *dns,
   int64_t age_ms;
 
   if (dns->cache_ttl_seconds <= 0)
-    return 0; /* TTL disabled, never expire */
+    return 0;
 
   now_ms = Socket_get_monotonic_ms ();
   age_ms = now_ms - entry->insert_time_ms;
@@ -725,8 +660,6 @@ cache_entry_free (struct SocketDNS_CacheEntry *entry)
     {
       if (entry->result)
         SocketCommon_free_addrinfo (entry->result);
-      /* hostname is arena-allocated, no free needed */
-      /* entry itself is arena-allocated, no free needed */
     }
 }
 
@@ -747,8 +680,6 @@ cache_hash_remove (struct SocketDNS_T *dns, struct SocketDNS_CacheEntry *entry)
     }
 }
 
-/* Remove entry from LRU + hash, free resources, update size. Does NOT update
- * eviction counter. */
 static void
 cache_remove_entry (struct SocketDNS_T *dns,
                     struct SocketDNS_CacheEntry *entry)
@@ -771,7 +702,6 @@ cache_evict_oldest (struct SocketDNS_T *dns)
   dns->cache_evictions++;
 }
 
-/* Returns cache entry or NULL if not found/expired. Updates LRU on hit. */
 static struct SocketDNS_CacheEntry *
 cache_lookup (struct SocketDNS_T *dns, const char *hostname)
 {
@@ -779,7 +709,7 @@ cache_lookup (struct SocketDNS_T *dns, const char *hostname)
   struct SocketDNS_CacheEntry *entry;
 
   if (dns->cache_max_entries == 0)
-    return NULL; /* Cache disabled */
+    return NULL;
 
   hash = cache_hash_function (hostname);
   entry = dns->cache_hash[hash];
@@ -788,16 +718,13 @@ cache_lookup (struct SocketDNS_T *dns, const char *hostname)
     {
       if (strcasecmp (entry->hostname, hostname) == 0)
         {
-          /* Check TTL */
           if (cache_entry_expired (dns, entry))
             {
-              /* Expired - remove and return miss */
               cache_remove_entry (dns, entry);
               dns->cache_evictions++;
               return NULL;
             }
 
-          /* Hit - update LRU and access time */
           entry->last_access_ms = Socket_get_monotonic_ms ();
           cache_lru_remove (dns, entry);
           cache_lru_insert_front (dns, entry);
@@ -867,17 +794,14 @@ cache_insert (struct SocketDNS_T *dns, const char *hostname,
   dns->cache_insertions++;
 }
 
-/* Internal helper: clears cache without acquiring mutex */
 static void
 cache_clear_locked (struct SocketDNS_T *dns)
 {
   size_t i;
 
-  /* Early exit if cache is already empty - O(1) instead of O(hash_size) */
   if (dns->cache_size == 0)
     return;
 
-  /* Free all entries in hash table */
   for (i = 0; i < SOCKET_DNS_CACHE_HASH_SIZE; i++)
     {
       struct SocketDNS_CacheEntry *entry = dns->cache_hash[i];
@@ -956,12 +880,10 @@ SocketDNS_cache_set_max_entries (T dns, size_t max_entries)
 
   if (max_entries == 0)
     {
-      /* Disabling cache - clear everything using locked helper */
       cache_clear_locked (dns);
     }
   else
     {
-      /* Evict if now over limit */
       while (dns->cache_size > max_entries)
         cache_evict_oldest (dns);
     }
@@ -1009,7 +931,6 @@ SocketDNS_get_prefer_ipv6 (T dns)
   return DNS_LOCKED_INT_GETTER (dns, prefer_ipv6);
 }
 
-/* Security: Uses inet_pton() which validates without buffer overflow risks */
 static int
 validate_ip_address (const char *ip)
 {
@@ -1019,11 +940,9 @@ validate_ip_address (const char *ip)
   if (!ip || !*ip)
     return 0;
 
-  /* Try IPv4 first (more common) */
   if (inet_pton (AF_INET, ip, &addr4) == 1)
     return 1;
 
-  /* Try IPv6 */
   if (inet_pton (AF_INET6, ip, &addr6) == 1)
     return 1;
 
@@ -1058,7 +977,6 @@ copy_string_array_to_arena (struct SocketDNS_T *dns, const char **src,
   return 0;
 }
 
-/* Security: Validates all IP addresses before storing */
 int
 SocketDNS_set_nameservers (T dns, const char **servers, size_t count)
 {
@@ -1067,7 +985,6 @@ SocketDNS_set_nameservers (T dns, const char **servers, size_t count)
 
   assert (dns);
 
-  /* Validate all IP addresses before acquiring lock */
   if (servers != NULL && count > 0)
     {
       for (i = 0; i < count; i++)
@@ -1083,7 +1000,6 @@ SocketDNS_set_nameservers (T dns, const char **servers, size_t count)
 
   pthread_mutex_lock (&dns->mutex);
 
-  /* Clear existing custom nameservers (arena-allocated, just NULL ptr) */
   dns->custom_nameservers = NULL;
   dns->nameserver_count = 0;
 
@@ -1100,13 +1016,8 @@ SocketDNS_set_nameservers (T dns, const char **servers, size_t count)
   if (result < 0)
     return -1;
 
-    /* Note: Actually using custom nameservers requires platform-specific
-     * resolver configuration (e.g., res_init() on Linux). Since getaddrinfo()
-     * doesn't support this directly, we store the config but don't apply it.
-     * Future: Could implement with res_query() or a custom DNS client. */
-
 #ifdef __linux__
-  return 0; /* Successfully configured - will be applied in worker threads */
+  return 0;
 #else
   SOCKET_LOG_WARN_MSG (
       "Custom nameservers configured but not applied (platform limitation)");
@@ -1123,7 +1034,6 @@ SocketDNS_set_search_domains (T dns, const char **domains, size_t count)
 
   pthread_mutex_lock (&dns->mutex);
 
-  /* Clear existing search domains (arena-allocated, just NULL ptr) */
   dns->search_domains = NULL;
   dns->search_domain_count = 0;
 
@@ -1140,11 +1050,8 @@ SocketDNS_set_search_domains (T dns, const char **domains, size_t count)
   if (result < 0)
     return -1;
 
-  /* Search domains are stored but not applied. On Linux, the res_state->dnsrch
-   * array contains pointers into the defdname buffer, making it non-trivial
-   * to set custom search domains. Only nameservers are currently supported. */
-  SOCKET_LOG_WARN_MSG ("Custom search domains configured but not applied "
-                       "(platform limitation)");
+  SOCKET_LOG_WARN_MSG (
+      "Custom search domains configured but not applied (platform limitation)");
   return -1;
 }
 
