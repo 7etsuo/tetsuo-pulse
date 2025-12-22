@@ -11,7 +11,7 @@
 #include "core/Except.h"
 #include "core/SocketSecurity.h"
 #include "core/SocketUtil.h"
-#include "dns/SocketDNS.h"
+#include "dns/SocketDNSResolver.h"
 #include "poll/SocketPoll.h"
 #include "socket/Socket.h"
 #include "socket/SocketCommon.h"
@@ -46,6 +46,12 @@ static int he_start_dns_resolution (T he);
 static void he_process_dns_completion (T he);
 static void he_sort_addresses (T he);
 static SocketHE_AddressEntry_T *he_get_next_address (T he);
+static void he_dns_callback (SocketDNSResolver_Query_T query,
+                             const SocketDNSResolver_Result *result, int error,
+                             void *userdata);
+static struct addrinfo *
+he_convert_resolver_result (const SocketDNSResolver_Result *result, int port);
+static void he_free_converted_addrinfo (struct addrinfo *ai);
 
 static int he_start_attempt (T he, SocketHE_AddressEntry_T *entry);
 static int he_initiate_connect (T he, SocketHE_Attempt_T *attempt,
@@ -108,11 +114,11 @@ he_copy_hostname (T he, const char *host)
 }
 
 static void
-he_init_context_fields (T he, const SocketDNS_T dns, const SocketPoll_T poll,
-                        const int port)
+he_init_context_fields (T he, const SocketDNSResolver_T resolver,
+                        const SocketPoll_T poll, const int port)
 {
   he->port = port;
-  he->dns = dns;
+  he->resolver = resolver;
   he->poll = poll;
   he->state = HE_STATE_IDLE;
   he->start_time_ms = Socket_get_monotonic_ms ();
@@ -136,7 +142,7 @@ he_alloc_base_context (void)
 }
 
 static T
-he_create_context (const SocketDNS_T dns, const SocketPoll_T poll,
+he_create_context (const SocketDNSResolver_T resolver, const SocketPoll_T poll,
                    const char *host, const int port,
                    const SocketHE_Config_T *config)
 {
@@ -153,7 +159,7 @@ he_create_context (const SocketDNS_T dns, const SocketPoll_T poll,
       return NULL;
     }
 
-  he_init_context_fields (he, dns, poll, port);
+  he_init_context_fields (he, resolver, poll, port);
   return he;
 }
 
@@ -162,7 +168,7 @@ he_free_resolved (T he)
 {
   if (he->resolved)
     {
-      SocketCommon_free_addrinfo (he->resolved);
+      he_free_converted_addrinfo (he->resolved);
       he->resolved = NULL;
     }
 }
@@ -170,19 +176,12 @@ he_free_resolved (T he)
 static void
 he_free_owned_resources (T he)
 {
-  if (he->dns_poll_wrapper) {
-    if (he->poll) {
-      TRY {
-        SocketPoll_del (he->poll, he->dns_poll_wrapper);
-      } EXCEPT (SocketPoll_Failed) {
-        /* Ignore poll del failure during cleanup */
-      } END_TRY;
-    }
-    Socket_free (&he->dns_poll_wrapper);
-  }
+  if (he->owns_resolver && he->resolver)
+    SocketDNSResolver_free (&he->resolver);
 
-  if (he->owns_dns && he->dns)
-    SocketDNS_free (&he->dns);
+  /* Dispose resolver's arena after freeing resolver (only if we created it) */
+  if (he->owns_resolver && he->resolver_arena)
+    Arena_dispose (&he->resolver_arena);
 
   if (he->owns_poll && he->poll)
     SocketPoll_free (&he->poll);
@@ -240,10 +239,14 @@ SocketHappyEyeballs_cancel (T he)
 static void
 he_cancel_dns (T he)
 {
-  if (he->dns_request && he->dns)
+  if (he->dns_query && he->resolver)
     {
-      SocketDNS_cancel (he->dns, he->dns_request);
-      he->dns_request = NULL;
+      SocketDNSResolver_cancel (he->resolver, he->dns_query);
+      /* Process immediately to invoke the cancellation callback while
+       * the HE context is still valid. This prevents use-after-free if
+       * the resolver is freed after the HE context. */
+      SocketDNSResolver_process (he->resolver, 0);
+      he->dns_query = NULL;
     }
 }
 
@@ -263,67 +266,214 @@ he_calculate_dns_timeout (const T he)
   return 0; /* No timeout */
 }
 
+/**
+ * @brief Free addrinfo list created by he_convert_resolver_result.
+ *
+ * Our allocation pattern embeds sockaddr in the same allocation as addrinfo,
+ * so we need a custom free function instead of freeaddrinfo().
+ */
+static void
+he_free_converted_addrinfo (struct addrinfo *ai)
+{
+  while (ai)
+    {
+      struct addrinfo *next = ai->ai_next;
+      free (ai); /* sockaddr is embedded, single free */
+      ai = next;
+    }
+}
+
+/**
+ * @brief Convert SocketDNSResolver_Result to struct addrinfo linked list.
+ *
+ * Creates a POSIX addrinfo chain from resolver results for compatibility
+ * with existing address iteration code. Uses a custom allocation pattern
+ * where sockaddr is embedded in the same block as addrinfo.
+ *
+ * @note Must be freed with he_free_converted_addrinfo(), NOT freeaddrinfo().
+ */
+static struct addrinfo *
+he_convert_resolver_result (const SocketDNSResolver_Result *result, int port)
+{
+  struct addrinfo *head = NULL;
+  struct addrinfo **tail = &head;
+  size_t i;
+
+  if (!result || result->count == 0)
+    return NULL;
+
+  for (i = 0; i < result->count; i++)
+    {
+      const SocketDNSResolver_Address *addr = &result->addresses[i];
+      struct addrinfo *ai;
+      size_t addrlen;
+
+      /* Allocate addrinfo structure */
+      if (addr->family == AF_INET)
+        addrlen = sizeof (struct sockaddr_in);
+      else if (addr->family == AF_INET6)
+        addrlen = sizeof (struct sockaddr_in6);
+      else
+        continue; /* Skip unsupported families */
+
+      ai = calloc (1, sizeof (struct addrinfo) + addrlen);
+      if (!ai)
+        {
+          /* Free already allocated entries on failure */
+          he_free_converted_addrinfo (head);
+          return NULL;
+        }
+
+      ai->ai_family = addr->family;
+      ai->ai_socktype = SOCK_STREAM;
+      ai->ai_protocol = IPPROTO_TCP;
+      ai->ai_addrlen = addrlen;
+      ai->ai_addr = (struct sockaddr *)(ai + 1);
+
+      if (addr->family == AF_INET)
+        {
+          struct sockaddr_in *sin = (struct sockaddr_in *)ai->ai_addr;
+          sin->sin_family = AF_INET;
+          sin->sin_port = htons ((uint16_t)port);
+          memcpy (&sin->sin_addr, &addr->addr.v4, sizeof (struct in_addr));
+        }
+      else
+        {
+          struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)ai->ai_addr;
+          sin6->sin6_family = AF_INET6;
+          sin6->sin6_port = htons ((uint16_t)port);
+          memcpy (&sin6->sin6_addr, &addr->addr.v6, sizeof (struct in6_addr));
+        }
+
+      /* Append to list */
+      *tail = ai;
+      tail = &ai->ai_next;
+    }
+
+  return head;
+}
+
+/**
+ * @brief DNS resolution callback from SocketDNSResolver.
+ *
+ * Called when DNS resolution completes (success or error).
+ * May be called synchronously for IP address literals.
+ */
+static void
+he_dns_callback (SocketDNSResolver_Query_T query,
+                 const SocketDNSResolver_Result *result, int error,
+                 void *userdata)
+{
+  T he = (T)userdata;
+
+  (void)query; /* May be NULL for IP literals */
+
+  /* If the HE context is already in a terminal state, ignore this callback.
+   * This can happen when the context was cancelled but the callback is
+   * still invoked during resolver cleanup. */
+  if (he->state == HE_STATE_CANCELLED || he->state == HE_STATE_FAILED
+      || he->state == HE_STATE_CONNECTED)
+    return;
+
+  he->dns_callback_pending = 1;
+
+  if (error != RESOLVER_OK)
+    {
+      /* Resolution failed or cancelled */
+      if (error == RESOLVER_ERROR_CANCELLED)
+        {
+          /* Cancellation is normal during shutdown - don't transition to failed */
+          he->dns_error = error;
+          he->dns_complete = 1;
+          he->dns_query = NULL;
+          return;
+        }
+
+      snprintf (he->error_buf, sizeof (he->error_buf),
+                "DNS resolution failed: %s", SocketDNSResolver_strerror (error));
+      he->dns_error = error;
+      he->dns_complete = 1;
+      he->dns_query = NULL;
+
+      /* Only transition if not already done (avoid double transition) */
+      if (he->state == HE_STATE_RESOLVING || he->state == HE_STATE_IDLE)
+        he_transition_to_failed (he, he->error_buf);
+      return;
+    }
+
+  /* Convert resolver result to addrinfo format */
+  struct addrinfo *resolved = he_convert_resolver_result (result, he->port);
+  if (!resolved)
+    {
+      snprintf (he->error_buf, sizeof (he->error_buf),
+                "DNS resolution returned no usable addresses");
+      he->dns_error = RESOLVER_ERROR_NXDOMAIN;
+      he->dns_complete = 1;
+      he->dns_query = NULL;
+      he_transition_to_failed (he, he->error_buf);
+      return;
+    }
+
+  /* Success - store result and transition to connecting */
+  he->resolved = resolved;
+  he->dns_complete = 1;
+  he->dns_query = NULL;
+
+  SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                   "DNS resolution complete for %s:%d", he->host, he->port);
+
+  he_sort_addresses (he);
+  he->state = HE_STATE_CONNECTING;
+}
+
 static int
 he_start_dns_resolution (T he)
 {
   int dns_timeout;
+  int flags;
 
   assert (he);
-  assert (he->dns);
+  assert (he->resolver);
 
-  he->dns_request
-      = SocketDNS_resolve (he->dns, he->host, he->port, NULL, NULL);
-  if (!he->dns_request)
+  /* Reset callback state */
+  he->dns_complete = 0;
+  he->dns_callback_pending = 0;
+
+  /* Use RESOLVER_FLAG_BOTH to get both IPv4 and IPv6 addresses */
+  flags = RESOLVER_FLAG_BOTH;
+
+  /* Configure resolver timeout before query */
+  dns_timeout = he_calculate_dns_timeout (he);
+  if (dns_timeout > 0)
+    SocketDNSResolver_set_timeout (he->resolver, dns_timeout);
+
+  /* Start async resolution with callback.
+   * Note: For IP address literals, the callback fires immediately
+   * before resolve() returns, with dns_query = NULL. */
+  he->dns_query = SocketDNSResolver_resolve (he->resolver, he->host, flags,
+                                             he_dns_callback, he);
+
+  /* Check if callback already fired (IP address fast path) */
+  if (he->dns_callback_pending)
+    {
+      /* Callback already processed the result */
+      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                       "DNS resolution immediate for %s:%d (IP literal)",
+                       he->host, he->port);
+      return 0;
+    }
+
+  /* For hostname queries, dns_query should be non-NULL */
+  if (!he->dns_query && !he->dns_complete)
     {
       he_transition_to_failed (he, "Failed to start DNS resolution");
       return -1;
     }
 
-  /* Propagate DNS timeout to resolver */
-  dns_timeout = he_calculate_dns_timeout (he);
-  if (dns_timeout > 0)
-    SocketDNS_request_settimeout (he->dns, he->dns_request, dns_timeout);
-
   he->state = HE_STATE_RESOLVING;
   SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
                    "Started DNS resolution for %s:%d (timeout=%dms)", he->host,
                    he->port, dns_timeout);
-
-  /* Integrate DNS completion FD with poll if available.
-   * Note: DNS pollfd may be an eventfd (not a socket), so we check
-   * first before trying to wrap it. Non-socket fds can't be used
-   * with SocketPoll which expects Socket_T wrappers. */
-  if (he->poll && he->dns && he->dns_request && !he->dns_poll_wrapper) {
-    int orig_fd = SocketDNS_pollfd (he->dns);
-    if (orig_fd >= 0) {
-      /* Check if it's actually a socket before wrapping */
-      int optval;
-      socklen_t optlen = sizeof (optval);
-      if (getsockopt (orig_fd, SOL_SOCKET, SO_TYPE, &optval, &optlen) == 0) {
-        /* It's a socket - we can wrap it */
-        int dup_fd = fcntl (orig_fd, F_DUPFD_CLOEXEC, 10);
-        if (dup_fd >= 0) {
-          TRY {
-            he->dns_poll_wrapper = Socket_new_from_fd (dup_fd);
-            if (he->dns_poll_wrapper != NULL) {
-              SocketPoll_add (he->poll, he->dns_poll_wrapper, POLL_READ, he);
-            }
-          } EXCEPT (Socket_Failed) {
-            close (dup_fd);
-            SOCKET_LOG_WARN_MSG ("Failed to create DNS poll wrapper");
-          } END_TRY;
-        } else {
-          SOCKET_LOG_WARN_MSG ("Failed to dup DNS pollfd %d: %s", orig_fd, strerror (errno));
-        }
-      } else {
-        /* Not a socket (e.g., eventfd) - can't integrate with SocketPoll.
-         * This is normal for some DNS implementations. */
-        SOCKET_LOG_DEBUG_MSG ("DNS pollfd %d is not a socket (can't integrate with SocketPoll)", orig_fd);
-      }
-    } else {
-      SOCKET_LOG_DEBUG_MSG ("No DNS pollfd available for integration");
-    }
-  }
 
   return 0;
 }
@@ -357,60 +507,25 @@ he_set_dns_error (T he, const int error)
  * Uses SocketDNS integration for both sync and async modes.
  */
 
-static void
-he_handle_dns_error (T he, const int error)
-{
-  he_set_dns_error (he, error);
-  he->dns_complete = 1;
-  he->dns_request = NULL;
-  he_transition_to_failed (he, he->error_buf);
-}
-
-static void
-he_handle_dns_success (T he, struct addrinfo *result)
-{
-  he->resolved = result;
-  he->dns_complete = 1;
-  he->dns_request = NULL;
-
-  SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                   "DNS resolution complete for %s:%d", he->host, he->port);
-
-  he_sort_addresses (he);
-  he->state = HE_STATE_CONNECTING;
-
-  /* Cleanup DNS poll integration since resolution complete */
-  if (he->poll && he->dns_poll_wrapper) {
-    TRY {
-      SocketPoll_del (he->poll, he->dns_poll_wrapper);
-    } EXCEPT (SocketPoll_Failed) {
-      SOCKET_LOG_WARN_MSG ("Failed to remove DNS wrapper from poll");
-    } END_TRY;
-  }
-}
-
+/**
+ * @brief Process pending DNS resolution.
+ *
+ * Drives the async resolver to process incoming responses.
+ * The actual result handling is done in he_dns_callback().
+ */
 static void
 he_process_dns_completion (T he)
 {
-  struct addrinfo *result;
-
-  if (!he->dns || !he->dns_request)
+  if (!he->resolver)
     return;
 
-  result = SocketDNS_getresult (he->dns, he->dns_request);
-  if (!result)
-    {
-      int error = SocketDNS_geterror (he->dns, he->dns_request);
-      if (error != 0)
-        he_handle_dns_error (he, error);
-      return;
-    }
+  /* If callback already fired, nothing more to do */
+  if (he->dns_complete)
+    return;
 
-  he_handle_dns_success (he, result);
+  /* Drive the resolver - this will call he_dns_callback when complete */
+  SocketDNSResolver_process (he->resolver, 0);
 }
-
-/* he_process_dns_event is identical to he_process_dns_completion - use alias */
-#define he_process_dns_event he_process_dns_completion
 
 static void
 he_count_addresses_by_family (const struct addrinfo *res, int *ipv6_count,
@@ -1201,18 +1316,15 @@ he_process_connecting_state (T he)
 static void
 he_process_idle_state (T he)
 {
-  if (he->dns)
+  if (he->resolver)
     he_start_dns_resolution (he);
 }
 
 static void
 he_process_resolving_state (T he)
 {
-  if (he->dns)
-    {
-      SocketDNS_check (he->dns);
-      he_process_dns_completion (he);
-    }
+  if (he->resolver)
+    he_process_dns_completion (he);
 }
 
 void
@@ -1248,47 +1360,47 @@ SocketHappyEyeballs_process_events (T he, SocketEvent_T *events, int num_events)
   if (num_events <= 0 || !events)
     return;
 
-  for (int i = 0; i < num_events; ++i) {
-    SocketEvent_T *ev = &events[i];
-    void *data = ev->data;
-    unsigned ev_events = ev->events;
+  for (int i = 0; i < num_events; ++i)
+    {
+      SocketEvent_T *ev = &events[i];
+      void *data = ev->data;
+      unsigned ev_events = ev->events;
 
-    if (data == he && he->dns_poll_wrapper && ev->socket == he->dns_poll_wrapper) {
-      /* DNS completion event */
-      he_process_dns_event (he);
-    } else if (data != NULL) {
-      /* Connection attempt event */
-      SocketHE_Attempt_T *attempt = (SocketHE_Attempt_T *) data;
-      he_check_attempt_completion_with_events (he, attempt, ev_events);
+      /* DNS is now callback-based via SocketDNSResolver, no poll events needed */
+      if (data != NULL)
+        {
+          /* Connection attempt event */
+          SocketHE_Attempt_T *attempt = (SocketHE_Attempt_T *)data;
+          he_check_attempt_completion_with_events (he, attempt, ev_events);
+        }
+      /* Ignore other events on poll */
     }
-    /* Ignore other events on poll */
-  }
 }
 
 static void
-he_validate_start_params (const SocketDNS_T dns, const SocketPoll_T poll,
-                          const char *host, int port)
+he_validate_start_params (const SocketDNSResolver_T resolver,
+                          const SocketPoll_T poll, const char *host, int port)
 {
-  assert (dns);
+  assert (resolver);
   assert (poll);
   assert (host);
   assert (port > 0 && port <= SOCKET_MAX_PORT);
-  (void)dns;
+  (void)resolver;
   (void)poll;
   (void)host;
   (void)port;
 }
 
 T
-SocketHappyEyeballs_start (SocketDNS_T dns, SocketPoll_T poll,
+SocketHappyEyeballs_start (SocketDNSResolver_T resolver, SocketPoll_T poll,
                            const char *host, int port,
                            const SocketHE_Config_T *config)
 {
   T he;
 
-  he_validate_start_params (dns, poll, host, port);
+  he_validate_start_params (resolver, poll, host, port);
 
-  he = he_create_context (dns, poll, host, port, config);
+  he = he_create_context (resolver, poll, host, port, config);
   if (!he)
     {
       SOCKET_RAISE_MSG (SocketHE, SocketHE_Failed,
@@ -1515,7 +1627,8 @@ SocketHappyEyeballs_connect (const char *host, int port,
 {
   T he = NULL;
   Socket_T volatile sock = NULL;
-  SocketDNS_T temp_dns = NULL;
+  Arena_T temp_arena = NULL;
+  SocketDNSResolver_T temp_resolver = NULL;
   SocketPoll_T temp_poll = NULL;
   SocketEvent_T *events = NULL;
   const char *volatile err_msg = NULL;
@@ -1523,14 +1636,25 @@ SocketHappyEyeballs_connect (const char *host, int port,
   assert (host);
   assert (port > 0 && port <= SOCKET_MAX_PORT);
 
+  temp_arena = Arena_new ();
+  if (!temp_arena)
+    {
+      SOCKET_RAISE_MSG (SocketHE, SocketHE_Failed,
+                        "Failed to create arena for DNS resolver");
+    }
+
   TRY
   {
-    temp_dns = SocketDNS_new ();
+    temp_resolver = SocketDNSResolver_new (temp_arena);
+    SocketDNSResolver_load_resolv_conf (temp_resolver);
   }
-  EXCEPT (SocketDNS_Failed)
+  EXCEPT (SocketDNSResolver_Failed)
   {
+    Arena_dispose (&temp_arena);
     err_msg = Socket_GetLastError ();
-    SOCKET_RAISE_FMT (SocketHE, SocketHE_Failed, "Failed to create DNS resolver: %s", err_msg ? err_msg : "Unknown error");
+    SOCKET_RAISE_FMT (SocketHE, SocketHE_Failed,
+                      "Failed to create DNS resolver: %s",
+                      err_msg ? err_msg : "Unknown error");
   }
   END_TRY;
 
@@ -1540,24 +1664,30 @@ SocketHappyEyeballs_connect (const char *host, int port,
   }
   EXCEPT (SocketPoll_Failed)
   {
-    SocketDNS_free (&temp_dns);
+    SocketDNSResolver_free (&temp_resolver);
+    Arena_dispose (&temp_arena);
     err_msg = Socket_GetLastError ();
-    SOCKET_RAISE_FMT (SocketHE, SocketHE_Failed, "Failed to create poll: %s", err_msg ? err_msg : "Unknown error");
+    SOCKET_RAISE_FMT (SocketHE, SocketHE_Failed, "Failed to create poll: %s",
+                      err_msg ? err_msg : "Unknown error");
   }
   END_TRY;
 
   TRY
   {
-    he = he_create_context (temp_dns, temp_poll, host, port, config);
-    he->owns_dns = 1;
+    he = he_create_context (temp_resolver, temp_poll, host, port, config);
+    he->owns_resolver = 1;
+    he->resolver_arena = temp_arena; /* Track resolver's arena for cleanup */
     he->owns_poll = 1;
   }
   EXCEPT (SocketHE_Failed)
   {
     SocketPoll_free (&temp_poll);
-    SocketDNS_free (&temp_dns);
+    SocketDNSResolver_free (&temp_resolver);
+    Arena_dispose (&temp_arena);
     err_msg = Socket_GetLastError ();
-    SOCKET_RAISE_FMT (SocketHE, SocketHE_Failed, "Failed to create context: %s", err_msg ? err_msg : "Unknown error");
+    SOCKET_RAISE_FMT (SocketHE, SocketHE_Failed,
+                      "Failed to create context: %s",
+                      err_msg ? err_msg : "Unknown error");
   }
   END_TRY;
 

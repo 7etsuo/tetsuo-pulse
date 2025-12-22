@@ -178,6 +178,13 @@ is_ip_address (const char *hostname)
   return 0;
 }
 
+/* Check if hostname is "localhost" (case-insensitive) */
+static int
+is_localhost (const char *hostname)
+{
+  return strcasecmp (hostname, "localhost") == 0;
+}
+
 /*
  * Query ID Management
  */
@@ -1099,6 +1106,37 @@ SocketDNSResolver_resolve (T resolver, const char *hostname, int flags,
       result.min_ttl = 0;
 
       /* Invoke callback immediately */
+      callback (NULL, &result, RESOLVER_OK, userdata);
+      return NULL; /* No pending query */
+    }
+
+  /* Check if hostname is "localhost" - return loopback addresses */
+  if (is_localhost (hostname))
+    {
+      SocketDNSResolver_Result result = { 0 };
+      SocketDNSResolver_Address addrs[2];
+      size_t addr_count = 0;
+
+      /* Return both IPv4 and IPv6 loopback based on flags */
+      if (flags & RESOLVER_FLAG_IPV4)
+        {
+          addrs[addr_count].family = AF_INET;
+          addrs[addr_count].addr.v4.s_addr = htonl (INADDR_LOOPBACK);
+          addrs[addr_count].ttl = 0;
+          addr_count++;
+        }
+      if (flags & RESOLVER_FLAG_IPV6)
+        {
+          addrs[addr_count].family = AF_INET6;
+          addrs[addr_count].addr.v6 = in6addr_loopback;
+          addrs[addr_count].ttl = 0;
+          addr_count++;
+        }
+
+      result.addresses = addrs;
+      result.count = addr_count;
+      result.min_ttl = 0;
+
       callback (NULL, &result, RESOLVER_OK, userdata);
       return NULL; /* No pending query */
     }

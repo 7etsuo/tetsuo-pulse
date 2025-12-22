@@ -85,7 +85,7 @@
 
 #include "core/Arena.h"
 #include "core/Except.h"
-#include "dns/SocketDNS.h"
+#include "dns/SocketDNSResolver.h"
 #include "poll/SocketPoll.h"
 #include "socket/Socket.h"
 
@@ -619,7 +619,7 @@ SocketProxy_tunnel (Socket_T socket, const SocketProxy_Config *proxy,
  * @see docs/ASYNC_IO.md for full event loop patterns.
  * @see docs/PROXY.md#async-api for advanced async features.
  */
-extern T SocketProxy_Conn_start (SocketDNS_T dns, SocketPoll_T poll,
+extern T SocketProxy_Conn_start (SocketDNSResolver_T resolver, SocketPoll_T poll,
                                  const SocketProxy_Config *proxy,
                                  const char *target_host, int target_port);
 

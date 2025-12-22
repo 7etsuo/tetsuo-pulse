@@ -76,7 +76,7 @@
 
 #include "core/Arena.h"
 #include "core/SocketUtil.h"
-#include "dns/SocketDNS.h"
+#include "dns/SocketDNSResolver.h"
 #include "http/SocketHTTP1.h"
 #include "poll/SocketPoll.h"
 #include "socket/Socket.h"
@@ -638,10 +638,10 @@ struct SocketProxy_Conn_T
   SocketBuf_T recvbuf; /**< Receive buffer for protocol parsing */
 
   /* Async connection resources */
-  SocketDNS_T dns;   /**< DNS resolver for async connection */
-  SocketPoll_T poll; /**< Poll instance for async connection */
-  SocketHE_T he;     /**< HappyEyeballs context (during connect) */
-  int owns_dns_poll; /**< 1 if we own dns/poll (sync wrapper), 0 if external */
+  SocketDNSResolver_T resolver; /**< DNS resolver for async connection */
+  SocketPoll_T poll;            /**< Poll instance for async connection */
+  SocketHE_T he;                /**< HappyEyeballs context (during connect) */
+  int owns_resolver_poll; /**< 1 if we own resolver/poll (sync wrapper), 0 if external */
 
   /* HTTP CONNECT specific */
   SocketHTTP1_Parser_T http_parser; /**< HTTP response parser */

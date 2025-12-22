@@ -26,7 +26,7 @@ SOCKET_DECLARE_MODULE_EXCEPTION (Proxy);
 
 #include "core/Arena.h"
 #include "core/SocketCrypto.h"
-#include "dns/SocketDNS.h"
+#include "dns/SocketDNSResolver.h"
 #include "poll/SocketPoll.h"
 #if SOCKET_HAS_TLS
 #include "tls/SocketTLS.h"
@@ -791,7 +791,8 @@ proxy_start_async_connect (struct SocketProxy_Conn_T *conn)
   he_config.total_timeout_ms = conn->connect_timeout_ms;
 
   TRY conn->he = SocketHappyEyeballs_start (
-      conn->dns, conn->poll, conn->proxy_host, conn->proxy_port, &he_config);
+      conn->resolver, conn->poll, conn->proxy_host, conn->proxy_port,
+      &he_config);
   EXCEPT (SocketHE_Failed)
   socketproxy_set_error (conn, PROXY_ERROR_CONNECT,
                          "Failed to start async connection to proxy");
@@ -922,14 +923,14 @@ proxy_setup_after_tcp_connect (struct SocketProxy_Conn_T *conn, int sync_mode)
  */
 
 SocketProxy_Conn_T
-SocketProxy_Conn_start (SocketDNS_T dns, SocketPoll_T poll,
+SocketProxy_Conn_start (SocketDNSResolver_T resolver, SocketPoll_T poll,
                         const SocketProxy_Config *proxy,
                         const char *target_host, int target_port)
 {
   SocketProxy_Conn_T conn;
   Arena_T arena;
 
-  assert (dns != NULL);
+  assert (resolver != NULL);
   assert (poll != NULL);
   assert (proxy != NULL);
   assert (target_host != NULL);
@@ -951,9 +952,9 @@ SocketProxy_Conn_start (SocketDNS_T dns, SocketPoll_T poll,
   conn = Arena_alloc (arena, sizeof (*conn), __FILE__, __LINE__);
   proxy_init_context (conn, arena, proxy, target_host, target_port);
 
-  conn->dns = dns;
+  conn->resolver = resolver;
   conn->poll = poll;
-  conn->owns_dns_poll = 0;
+  conn->owns_resolver_poll = 0;
 
   if (proxy_start_async_connect (conn) < 0)
     return conn;
@@ -1041,10 +1042,10 @@ SocketProxy_Conn_free (SocketProxy_Conn_T *conn)
     }
 #endif
 
-  if (c->owns_dns_poll)
+  if (c->owns_resolver_poll)
     {
-      if (c->dns != NULL)
-        SocketDNS_free (&c->dns);
+      if (c->resolver != NULL)
+        SocketDNSResolver_free (&c->resolver);
       if (c->poll != NULL)
         SocketPoll_free (&c->poll);
     }
