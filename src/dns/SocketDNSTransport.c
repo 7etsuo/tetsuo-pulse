@@ -6,16 +6,25 @@
 
 /**
  * @file SocketDNSTransport.c
- * @brief DNS UDP transport implementation (RFC 1035 Section 4.2.1).
+ * @brief DNS UDP and TCP transport implementation (RFC 1035 Section 4.2).
  * @ingroup dns_transport
  *
- * Implements async UDP transport for DNS queries with retry and timeout
+ * Implements async UDP and TCP transport for DNS queries with retry and timeout
  * handling. Uses non-blocking sockets with poll() for event processing.
+ *
+ * TCP transport per RFC 1035 Section 4.2.2:
+ * - 2-byte length prefix (network byte order) before message
+ * - Used when UDP response truncated (TC bit)
+ * - Non-blocking connect and I/O
+ * - Connection reuse for multiple queries
  */
 
 #include <arpa/inet.h>
 #include <assert.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <poll.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -30,11 +39,33 @@
 #undef T
 #define T SocketDNSTransport_T
 
+/* TCP connection state per nameserver */
+struct DNSTCPConnection
+{
+  int fd;                                  /* TCP socket fd (-1 if not connected) */
+  int family;                              /* AF_INET or AF_INET6 */
+  int connecting;                          /* Non-blocking connect in progress */
+  int64_t connect_start_ms;                /* When connect started */
+  int64_t last_activity_ms;                /* Last send/recv time */
+
+  /* Receive state for 2-byte length prefix */
+  unsigned char len_buf[2];                /* Length prefix buffer */
+  size_t len_received;                     /* Bytes of length received (0-2) */
+  size_t msg_len;                          /* Message length after decoding */
+  unsigned char *recv_buf;                 /* Message receive buffer */
+  size_t recv_len;                         /* Bytes of message received */
+
+  /* Send state for pending data */
+  unsigned char *send_buf;                 /* Pending send data */
+  size_t send_len;                         /* Total bytes to send */
+  size_t send_offset;                      /* Bytes already sent */
+};
+
 /* Internal query state */
 struct SocketDNSQuery
 {
   uint16_t id;                           /* DNS message ID */
-  unsigned char query[DNS_UDP_MAX_SIZE]; /* Query copy */
+  unsigned char *query;                  /* Query copy (arena-allocated) */
   size_t query_len;                      /* Query length */
   int current_ns;                        /* Current nameserver index */
   int retry_count;                       /* Number of retries */
@@ -42,6 +73,7 @@ struct SocketDNSQuery
   int64_t sent_time_ms;                  /* Timestamp when sent */
   int cancelled;                         /* Cancelled flag */
   int completed;                         /* Completed flag */
+  int is_tcp;                            /* Using TCP transport */
   SocketDNSTransport_Callback callback;  /* User callback */
   void *userdata;                        /* User data */
   struct SocketDNSQuery *next;           /* Linked list next */
@@ -63,18 +95,23 @@ struct T
   int nameserver_count;
   int current_ns; /* Current nameserver for rotation */
 
+  /* TCP connections per nameserver */
+  struct DNSTCPConnection tcp_conns[DNS_MAX_NAMESERVERS];
+
   /* Configuration */
   int initial_timeout_ms;
   int max_timeout_ms;
   int max_retries;
   int rotate_nameservers;
+  int tcp_connect_timeout_ms;
+  int tcp_idle_timeout_ms;
 
   /* Query tracking */
   struct SocketDNSQuery *pending_head;
   struct SocketDNSQuery *pending_tail;
   int pending_count;
 
-  /* Receive buffer */
+  /* Receive buffer (for UDP) */
   unsigned char recv_buf[DNS_UDP_MAX_SIZE];
 };
 
@@ -318,7 +355,8 @@ check_timeouts (T transport)
     {
       next = query->next;
 
-      if (query->completed || query->cancelled)
+      /* Skip completed, cancelled, and TCP queries */
+      if (query->completed || query->cancelled || query->is_tcp)
         continue;
 
       /* Check if timed out */
@@ -402,6 +440,15 @@ SocketDNSTransport_new (Arena_T arena, SocketPoll_T poll)
   transport->max_timeout_ms = DNS_RETRY_MAX_MS;
   transport->max_retries = DNS_RETRY_MAX_ATTEMPTS;
   transport->rotate_nameservers = 1;
+  transport->tcp_connect_timeout_ms = DNS_TCP_CONNECT_TIMEOUT_MS;
+  transport->tcp_idle_timeout_ms = DNS_TCP_IDLE_TIMEOUT_MS;
+
+  /* Initialize TCP connections to disconnected state */
+  for (int i = 0; i < DNS_MAX_NAMESERVERS; i++)
+    {
+      transport->tcp_conns[i].fd = -1;
+      transport->tcp_conns[i].connecting = 0;
+    }
 
   /* Create IPv4 socket */
   TRY
@@ -467,7 +514,17 @@ SocketDNSTransport_free (T *transport)
         }
     }
 
-  /* Free sockets */
+  /* Close TCP connections */
+  for (int i = 0; i < DNS_MAX_NAMESERVERS; i++)
+    {
+      if ((*transport)->tcp_conns[i].fd >= 0)
+        {
+          close ((*transport)->tcp_conns[i].fd);
+          (*transport)->tcp_conns[i].fd = -1;
+        }
+    }
+
+  /* Free UDP sockets */
   if ((*transport)->socket_v4)
     SocketDgram_free (&(*transport)->socket_v4);
   if ((*transport)->socket_v6)
@@ -571,13 +628,15 @@ SocketDNSTransport_query_udp (T transport, const unsigned char *query_data,
   if (SocketDNS_header_decode (query_data, len, &hdr) != 0)
     return NULL;
 
-  /* Allocate query struct */
+  /* Allocate query struct and buffer */
   query = Arena_alloc (transport->arena, sizeof (*query), __FILE__, __LINE__);
   memset (query, 0, sizeof (*query));
 
+  query->query = Arena_alloc (transport->arena, len, __FILE__, __LINE__);
   query->id = hdr.id;
   memcpy (query->query, query_data, len);
   query->query_len = len;
+  query->is_tcp = 0;
   query->current_ns = transport->current_ns;
   query->retry_count = 0;
   query->timeout_ms = transport->initial_timeout_ms;
@@ -626,6 +685,9 @@ SocketDNSTransport_cancel (T transport, SocketDNSQuery_T query)
 
   return -1;
 }
+
+/* Forward declaration for TCP processing */
+static int process_tcp_queries (T transport);
 
 int
 SocketDNSTransport_process (T transport, int timeout_ms)
@@ -681,8 +743,11 @@ SocketDNSTransport_process (T transport, int timeout_ms)
         }
     }
 
-  /* Check for timeouts */
+  /* Check for timeouts (UDP only) */
   processed += check_timeouts (transport);
+
+  /* Process TCP queries */
+  processed += process_tcp_queries (transport);
 
   return processed;
 }
@@ -738,6 +803,513 @@ SocketDNSTransport_pending_count (T transport)
   return transport->pending_count;
 }
 
+/* ============== TCP Transport Implementation ============== */
+
+/* Close a TCP connection and reset state */
+static void
+tcp_conn_close (struct DNSTCPConnection *conn)
+{
+  if (conn->fd >= 0)
+    {
+      close (conn->fd);
+      conn->fd = -1;
+    }
+  conn->connecting = 0;
+  conn->len_received = 0;
+  conn->msg_len = 0;
+  conn->recv_len = 0;
+  conn->send_len = 0;
+  conn->send_offset = 0;
+}
+
+/* Create a non-blocking TCP socket */
+static int
+tcp_socket_create (int family)
+{
+  int fd;
+  int flags;
+
+  fd = socket (family, SOCK_STREAM, 0);
+  if (fd < 0)
+    return -1;
+
+  /* Set non-blocking */
+  flags = fcntl (fd, F_GETFL);
+  if (flags < 0 || fcntl (fd, F_SETFL, flags | O_NONBLOCK) < 0)
+    {
+      close (fd);
+      return -1;
+    }
+
+  /* Disable Nagle for lower latency */
+  int nodelay = 1;
+  setsockopt (fd, IPPROTO_TCP, TCP_NODELAY, &nodelay, sizeof (nodelay));
+
+  return fd;
+}
+
+/* Start non-blocking connect to nameserver */
+static int
+tcp_conn_start (T transport, int ns_idx)
+{
+  struct DNSTCPConnection *conn = &transport->tcp_conns[ns_idx];
+  SocketDNS_Nameserver *ns = &transport->nameservers[ns_idx];
+  struct sockaddr_storage ss;
+  socklen_t sslen;
+  int ret;
+
+  /* Already connected or connecting? */
+  if (conn->fd >= 0)
+    return 0;
+
+  /* Create socket */
+  conn->fd = tcp_socket_create (ns->family);
+  if (conn->fd < 0)
+    return -1;
+
+  conn->family = ns->family;
+
+  /* Build sockaddr */
+  memset (&ss, 0, sizeof (ss));
+  if (ns->family == AF_INET)
+    {
+      struct sockaddr_in *sa4 = (struct sockaddr_in *)&ss;
+      sa4->sin_family = AF_INET;
+      sa4->sin_port = htons ((uint16_t)ns->port);
+      if (inet_pton (AF_INET, ns->address, &sa4->sin_addr) != 1)
+        {
+          tcp_conn_close (conn);
+          return -1;
+        }
+      sslen = sizeof (*sa4);
+    }
+  else
+    {
+      struct sockaddr_in6 *sa6 = (struct sockaddr_in6 *)&ss;
+      sa6->sin6_family = AF_INET6;
+      sa6->sin6_port = htons ((uint16_t)ns->port);
+      if (inet_pton (AF_INET6, ns->address, &sa6->sin6_addr) != 1)
+        {
+          tcp_conn_close (conn);
+          return -1;
+        }
+      sslen = sizeof (*sa6);
+    }
+
+  /* Non-blocking connect */
+  ret = connect (conn->fd, (struct sockaddr *)&ss, sslen);
+  if (ret < 0)
+    {
+      if (errno == EINPROGRESS)
+        {
+          conn->connecting = 1;
+          conn->connect_start_ms = get_monotonic_ms ();
+          return 0;
+        }
+      tcp_conn_close (conn);
+      return -1;
+    }
+
+  /* Connected immediately */
+  conn->connecting = 0;
+  conn->last_activity_ms = get_monotonic_ms ();
+  return 0;
+}
+
+/* Check if connect completed (for EINPROGRESS) */
+static int
+tcp_conn_check_connect (T transport, int ns_idx)
+{
+  struct DNSTCPConnection *conn = &transport->tcp_conns[ns_idx];
+  struct pollfd pfd;
+  int ret, err;
+  socklen_t errlen = sizeof (err);
+
+  if (!conn->connecting)
+    return conn->fd >= 0 ? 1 : -1;
+
+  /* Check with poll */
+  pfd.fd = conn->fd;
+  pfd.events = POLLOUT;
+  pfd.revents = 0;
+  ret = poll (&pfd, 1, 0);
+
+  if (ret < 0)
+    {
+      tcp_conn_close (conn);
+      return -1;
+    }
+
+  if (ret == 0)
+    {
+      /* Still connecting - check timeout */
+      int64_t now = get_monotonic_ms ();
+      if (now - conn->connect_start_ms > transport->tcp_connect_timeout_ms)
+        {
+          tcp_conn_close (conn);
+          return -1;
+        }
+      return 0; /* Still in progress */
+    }
+
+  /* Check for connect error */
+  if (getsockopt (conn->fd, SOL_SOCKET, SO_ERROR, &err, &errlen) < 0 || err != 0)
+    {
+      tcp_conn_close (conn);
+      return -1;
+    }
+
+  /* Connected! */
+  conn->connecting = 0;
+  conn->last_activity_ms = get_monotonic_ms ();
+  return 1;
+}
+
+/* Send data on TCP with length prefix (RFC 1035 §4.2.2) */
+static int
+tcp_send_query (T transport, struct SocketDNSQuery *query)
+{
+  struct DNSTCPConnection *conn = &transport->tcp_conns[query->current_ns];
+  unsigned char len_prefix[2];
+  ssize_t sent;
+  size_t total_len;
+
+  if (conn->fd < 0 || conn->connecting)
+    return -1;
+
+  /* If we have pending send data, continue that first */
+  if (conn->send_len > 0)
+    {
+      while (conn->send_offset < conn->send_len)
+        {
+          sent = send (conn->fd, conn->send_buf + conn->send_offset,
+                       conn->send_len - conn->send_offset, MSG_NOSIGNAL);
+          if (sent < 0)
+            {
+              if (errno == EAGAIN || errno == EWOULDBLOCK)
+                return 0; /* Would block, try again later */
+              tcp_conn_close (conn);
+              return -1;
+            }
+          conn->send_offset += (size_t)sent;
+        }
+      /* Done sending */
+      conn->send_len = 0;
+      conn->send_offset = 0;
+      return 1;
+    }
+
+  /* Build message with length prefix */
+  total_len = 2 + query->query_len;
+  conn->send_buf = Arena_alloc (transport->arena, total_len, __FILE__, __LINE__);
+  len_prefix[0] = (unsigned char)((query->query_len >> 8) & 0xFF);
+  len_prefix[1] = (unsigned char)(query->query_len & 0xFF);
+  memcpy (conn->send_buf, len_prefix, 2);
+  memcpy (conn->send_buf + 2, query->query, query->query_len);
+  conn->send_len = total_len;
+  conn->send_offset = 0;
+
+  /* Try to send immediately */
+  while (conn->send_offset < conn->send_len)
+    {
+      sent = send (conn->fd, conn->send_buf + conn->send_offset,
+                   conn->send_len - conn->send_offset, MSG_NOSIGNAL);
+      if (sent < 0)
+        {
+          if (errno == EAGAIN || errno == EWOULDBLOCK)
+            return 0; /* Would block */
+          tcp_conn_close (conn);
+          return -1;
+        }
+      conn->send_offset += (size_t)sent;
+    }
+
+  conn->send_len = 0;
+  conn->send_offset = 0;
+  conn->last_activity_ms = get_monotonic_ms ();
+  query->sent_time_ms = conn->last_activity_ms;
+  return 1;
+}
+
+/* Receive TCP response with length prefix */
+static int
+tcp_recv_response (T transport, int ns_idx, unsigned char **response,
+                   size_t *response_len)
+{
+  struct DNSTCPConnection *conn = &transport->tcp_conns[ns_idx];
+  ssize_t received;
+
+  if (conn->fd < 0)
+    return -1;
+
+  /* First read the 2-byte length prefix */
+  while (conn->len_received < 2)
+    {
+      received = recv (conn->fd, conn->len_buf + conn->len_received,
+                       2 - conn->len_received, 0);
+      if (received < 0)
+        {
+          if (errno == EAGAIN || errno == EWOULDBLOCK)
+            return 0; /* Would block */
+          tcp_conn_close (conn);
+          return -1;
+        }
+      if (received == 0)
+        {
+          /* Connection closed */
+          tcp_conn_close (conn);
+          return -1;
+        }
+      conn->len_received += (size_t)received;
+    }
+
+  /* Decode length and allocate buffer if needed */
+  if (conn->recv_buf == NULL)
+    {
+      conn->msg_len
+          = ((size_t)conn->len_buf[0] << 8) | (size_t)conn->len_buf[1];
+      if (conn->msg_len == 0 || conn->msg_len > DNS_TCP_MAX_SIZE)
+        {
+          tcp_conn_close (conn);
+          return -1;
+        }
+      conn->recv_buf
+          = Arena_alloc (transport->arena, conn->msg_len, __FILE__, __LINE__);
+      conn->recv_len = 0;
+    }
+
+  /* Read the message */
+  while (conn->recv_len < conn->msg_len)
+    {
+      received = recv (conn->fd, conn->recv_buf + conn->recv_len,
+                       conn->msg_len - conn->recv_len, 0);
+      if (received < 0)
+        {
+          if (errno == EAGAIN || errno == EWOULDBLOCK)
+            return 0; /* Would block */
+          tcp_conn_close (conn);
+          return -1;
+        }
+      if (received == 0)
+        {
+          tcp_conn_close (conn);
+          return -1;
+        }
+      conn->recv_len += (size_t)received;
+    }
+
+  /* Complete response received */
+  *response = conn->recv_buf;
+  *response_len = conn->msg_len;
+
+  /* Reset for next message */
+  conn->len_received = 0;
+  conn->msg_len = 0;
+  conn->recv_buf = NULL;
+  conn->recv_len = 0;
+  conn->last_activity_ms = get_monotonic_ms ();
+
+  return 1;
+}
+
+/* Process TCP queries - check connections and receive responses */
+static int
+process_tcp_queries (T transport)
+{
+  struct SocketDNSQuery *query, *next;
+  int processed = 0;
+  int64_t now_ms = get_monotonic_ms ();
+
+  for (query = transport->pending_head; query != NULL; query = next)
+    {
+      next = query->next;
+
+      if (!query->is_tcp || query->completed || query->cancelled)
+        continue;
+
+      struct DNSTCPConnection *conn = &transport->tcp_conns[query->current_ns];
+
+      /* Check connection state */
+      if (conn->connecting)
+        {
+          int status = tcp_conn_check_connect (transport, query->current_ns);
+          if (status < 0)
+            {
+              complete_query (transport, query, NULL, 0, DNS_ERROR_CONNFAIL);
+              processed++;
+              continue;
+            }
+          if (status == 0)
+            continue; /* Still connecting */
+
+          /* Now connected, send query */
+          if (tcp_send_query (transport, query) < 0)
+            {
+              complete_query (transport, query, NULL, 0, DNS_ERROR_NETWORK);
+              processed++;
+              continue;
+            }
+        }
+
+      /* Check for response */
+      if (conn->fd >= 0 && !conn->connecting)
+        {
+          struct pollfd pfd = { .fd = conn->fd, .events = POLLIN, .revents = 0 };
+          if (poll (&pfd, 1, 0) > 0 && (pfd.revents & POLLIN))
+            {
+              unsigned char *response;
+              size_t response_len;
+              int ret = tcp_recv_response (transport, query->current_ns,
+                                           &response, &response_len);
+              if (ret < 0)
+                {
+                  complete_query (transport, query, NULL, 0, DNS_ERROR_NETWORK);
+                  processed++;
+                  continue;
+                }
+              if (ret > 0)
+                {
+                  /* Validate response */
+                  SocketDNS_Header hdr;
+                  if (response_len >= DNS_HEADER_SIZE
+                      && SocketDNS_header_decode (response, response_len, &hdr)
+                             == 0
+                      && hdr.qr == 1 && hdr.id == query->id)
+                    {
+                      int error = rcode_to_error (hdr.rcode);
+                      complete_query (transport, query, response, response_len,
+                                      error);
+                      processed++;
+                    }
+                  else
+                    {
+                      /* Invalid response, but keep connection open for retries */
+                      complete_query (transport, query, NULL, 0,
+                                      DNS_ERROR_INVALID);
+                      processed++;
+                    }
+                  continue;
+                }
+            }
+        }
+
+      /* Check for timeout */
+      if (now_ms - query->sent_time_ms >= query->timeout_ms)
+        {
+          complete_query (transport, query, NULL, 0, DNS_ERROR_TIMEOUT);
+          processed++;
+        }
+    }
+
+  return processed;
+}
+
+SocketDNSQuery_T
+SocketDNSTransport_query_tcp (T transport, const unsigned char *query_data,
+                              size_t len, SocketDNSTransport_Callback callback,
+                              void *userdata)
+{
+  struct SocketDNSQuery *query;
+  SocketDNS_Header hdr;
+
+  assert (transport);
+  assert (query_data);
+  assert (callback);
+
+  /* Validate size */
+  if (len < DNS_HEADER_SIZE || len > DNS_TCP_MAX_SIZE)
+    return NULL;
+
+  /* Check nameservers */
+  if (transport->nameserver_count == 0)
+    {
+      callback (NULL, NULL, 0, DNS_ERROR_NONS, userdata);
+      return NULL;
+    }
+
+  /* Check pending limit */
+  if (transport->pending_count >= DNS_MAX_PENDING_QUERIES)
+    return NULL;
+
+  /* Decode header to get ID */
+  if (SocketDNS_header_decode (query_data, len, &hdr) != 0)
+    return NULL;
+
+  /* Allocate query struct and buffer */
+  query = Arena_alloc (transport->arena, sizeof (*query), __FILE__, __LINE__);
+  memset (query, 0, sizeof (*query));
+
+  query->query = Arena_alloc (transport->arena, len, __FILE__, __LINE__);
+  query->id = hdr.id;
+  memcpy (query->query, query_data, len);
+  query->query_len = len;
+  query->is_tcp = 1;
+  query->current_ns = transport->current_ns;
+  query->retry_count = 0;
+  query->timeout_ms = transport->tcp_connect_timeout_ms;
+  query->callback = callback;
+  query->userdata = userdata;
+
+  /* Add to pending list */
+  add_to_pending (transport, query);
+
+  /* Start TCP connection if needed */
+  if (tcp_conn_start (transport, query->current_ns) < 0)
+    {
+      remove_from_pending (transport, query);
+      callback (query, NULL, 0, DNS_ERROR_CONNFAIL, userdata);
+      return NULL;
+    }
+
+  /* If already connected, send immediately */
+  struct DNSTCPConnection *conn = &transport->tcp_conns[query->current_ns];
+  if (!conn->connecting)
+    {
+      if (tcp_send_query (transport, query) < 0)
+        {
+          remove_from_pending (transport, query);
+          callback (query, NULL, 0, DNS_ERROR_NETWORK, userdata);
+          return NULL;
+        }
+    }
+  else
+    {
+      /* Will be sent when connection completes */
+      query->sent_time_ms = get_monotonic_ms ();
+    }
+
+  /* Rotate nameserver for next query */
+  if (transport->rotate_nameservers && transport->nameserver_count > 1)
+    {
+      transport->current_ns
+          = (transport->current_ns + 1) % transport->nameserver_count;
+    }
+
+  return query;
+}
+
+void
+SocketDNSTransport_tcp_close_all (T transport)
+{
+  assert (transport);
+
+  for (int i = 0; i < DNS_MAX_NAMESERVERS; i++)
+    {
+      tcp_conn_close (&transport->tcp_conns[i]);
+    }
+}
+
+int
+SocketDNSTransport_tcp_fd (T transport, int ns_index)
+{
+  assert (transport);
+
+  if (ns_index < 0 || ns_index >= transport->nameserver_count)
+    return -1;
+
+  return transport->tcp_conns[ns_index].fd;
+}
+
 const char *
 SocketDNSTransport_strerror (int error)
 {
@@ -765,6 +1337,8 @@ SocketDNSTransport_strerror (int error)
       return "Query refused";
     case DNS_ERROR_NONS:
       return "No nameservers configured";
+    case DNS_ERROR_CONNFAIL:
+      return "TCP connection failed";
     default:
       return "Unknown error";
     }

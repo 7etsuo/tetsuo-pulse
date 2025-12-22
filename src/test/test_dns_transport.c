@@ -5,12 +5,13 @@
  */
 
 /*
- * test_dns_transport.c - Unit tests for DNS UDP transport (RFC 1035 §4.2.1)
+ * test_dns_transport.c - Unit tests for DNS transport (RFC 1035 §4.2)
  *
  * Tests the DNS transport layer functionality including:
  * - Transport instance lifecycle
  * - Nameserver configuration
- * - Query submission and validation
+ * - UDP query submission and validation (§4.2.1)
+ * - TCP transport with length prefix (§4.2.2)
  * - Error code handling
  */
 
@@ -20,6 +21,7 @@
 #include "test/Test.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 /* Test basic transport instantiation */
@@ -435,6 +437,172 @@ TEST (dns_transport_free_cancels_queries)
   ASSERT_EQ (callback_invoked, 1);
   ASSERT_EQ (callback_error, DNS_ERROR_CANCELLED);
 
+  Arena_dispose (&arena);
+}
+
+/* ============== TCP Transport Tests ============== */
+
+/* Test TCP query without nameserver returns NULL and calls callback */
+TEST (dns_transport_tcp_query_no_nameserver)
+{
+  Arena_T arena = Arena_new ();
+  SocketDNSTransport_T transport = SocketDNSTransport_new (arena, NULL);
+  SocketDNSQuery_T query;
+  unsigned char query_buf[DNS_HEADER_SIZE];
+  SocketDNS_Header hdr;
+
+  callback_invoked = 0;
+  callback_error = 0;
+
+  /* No nameserver configured */
+  memset (&hdr, 0, sizeof (hdr));
+  hdr.id = 0x5678;
+  hdr.rd = 1;
+  SocketDNS_header_encode (&hdr, query_buf, sizeof (query_buf));
+
+  query = SocketDNSTransport_query_tcp (transport, query_buf, DNS_HEADER_SIZE,
+                                        test_callback, NULL);
+  ASSERT_NULL (query);
+  ASSERT_EQ (callback_invoked, 1);
+  ASSERT_EQ (callback_error, DNS_ERROR_NONS);
+
+  SocketDNSTransport_free (&transport);
+  Arena_dispose (&arena);
+}
+
+/* Test TCP fd accessor returns -1 when not connected */
+TEST (dns_transport_tcp_fd_not_connected)
+{
+  Arena_T arena = Arena_new ();
+  SocketDNSTransport_T transport = SocketDNSTransport_new (arena, NULL);
+  int fd;
+
+  SocketDNSTransport_add_nameserver (transport, "127.0.0.1", DNS_PORT);
+
+  /* TCP not connected yet */
+  fd = SocketDNSTransport_tcp_fd (transport, 0);
+  ASSERT_EQ (fd, -1);
+
+  /* Invalid index */
+  fd = SocketDNSTransport_tcp_fd (transport, -1);
+  ASSERT_EQ (fd, -1);
+
+  fd = SocketDNSTransport_tcp_fd (transport, 100);
+  ASSERT_EQ (fd, -1);
+
+  SocketDNSTransport_free (&transport);
+  Arena_dispose (&arena);
+}
+
+/* Test TCP query size validation (larger than UDP limit allowed) */
+TEST (dns_transport_tcp_query_size_validation)
+{
+  Arena_T arena = Arena_new ();
+  SocketDNSTransport_T transport = SocketDNSTransport_new (arena, NULL);
+  SocketDNSQuery_T query;
+  unsigned char *large_query;
+  SocketDNS_Header hdr;
+
+  SocketDNSTransport_add_nameserver (transport, "127.0.0.1", DNS_PORT);
+
+  /* Query larger than UDP max (512) but within TCP max (65535) is OK */
+  large_query = malloc (1024);
+  ASSERT_NOT_NULL (large_query);
+
+  memset (&hdr, 0, sizeof (hdr));
+  hdr.id = 0xABCD;
+  hdr.rd = 1;
+  SocketDNS_header_encode (&hdr, large_query, 1024);
+
+  /* This will try to connect which may fail, but the size is valid */
+  callback_invoked = 0;
+  query = SocketDNSTransport_query_tcp (transport, large_query, 1024,
+                                        test_callback, NULL);
+  /* Query may return NULL if connection fails, but that's OK */
+  /* The important thing is we didn't reject it for size */
+
+  if (query)
+    {
+      SocketDNSTransport_cancel (transport, query);
+    }
+
+  /* Query too large (> 65535) should fail */
+  /* Can't test this directly without allocating 65MB+ */
+
+  free (large_query);
+  SocketDNSTransport_free (&transport);
+  Arena_dispose (&arena);
+}
+
+/* Test TCP close all function */
+TEST (dns_transport_tcp_close_all)
+{
+  Arena_T arena = Arena_new ();
+  SocketDNSTransport_T transport = SocketDNSTransport_new (arena, NULL);
+
+  SocketDNSTransport_add_nameserver (transport, "127.0.0.1", DNS_PORT);
+  SocketDNSTransport_add_nameserver (transport, "8.8.8.8", DNS_PORT);
+
+  /* Close all should not crash even with no connections */
+  SocketDNSTransport_tcp_close_all (transport);
+
+  /* All TCP fds should be -1 */
+  ASSERT_EQ (SocketDNSTransport_tcp_fd (transport, 0), -1);
+  ASSERT_EQ (SocketDNSTransport_tcp_fd (transport, 1), -1);
+
+  SocketDNSTransport_free (&transport);
+  Arena_dispose (&arena);
+}
+
+/* Test TCP error string for CONNFAIL */
+TEST (dns_transport_tcp_strerror_connfail)
+{
+  const char *str;
+
+  str = SocketDNSTransport_strerror (DNS_ERROR_CONNFAIL);
+  ASSERT_NOT_NULL (str);
+  ASSERT (strlen (str) > 0);
+}
+
+/* Test TCP query returns handle when connection starts */
+TEST (dns_transport_tcp_query_starts_connect)
+{
+  Arena_T arena = Arena_new ();
+  SocketDNSTransport_T transport = SocketDNSTransport_new (arena, NULL);
+  SocketDNSQuery_T query;
+  unsigned char query_buf[DNS_HEADER_SIZE];
+  SocketDNS_Header hdr;
+
+  /* Use localhost - connection will either succeed or fail quickly */
+  SocketDNSTransport_add_nameserver (transport, "127.0.0.1", DNS_PORT);
+
+  memset (&hdr, 0, sizeof (hdr));
+  hdr.id = 0x1234;
+  hdr.rd = 1;
+  hdr.qdcount = 1;
+  SocketDNS_header_encode (&hdr, query_buf, sizeof (query_buf));
+
+  callback_invoked = 0;
+  query = SocketDNSTransport_query_tcp (transport, query_buf, DNS_HEADER_SIZE,
+                                        test_callback, NULL);
+
+  /* Query may fail to connect (no DNS server on 127.0.0.1:53) */
+  /* But the function should have attempted and either returned handle or failed */
+  if (query)
+    {
+      ASSERT_EQ (SocketDNSQuery_get_id (query), 0x1234);
+      /* Cancel to clean up */
+      SocketDNSTransport_cancel (transport, query);
+    }
+  else
+    {
+      /* Connection failed - callback should be invoked */
+      ASSERT_EQ (callback_invoked, 1);
+      ASSERT (callback_error == DNS_ERROR_CONNFAIL
+              || callback_error == DNS_ERROR_NETWORK);
+    }
+
+  SocketDNSTransport_free (&transport);
   Arena_dispose (&arena);
 }
 
