@@ -1357,6 +1357,61 @@ handle_dfa_action (SocketHTTP1_Parser_T parser, uint8_t action, uint8_t c,
     }
 }
 
+/* Fast path: batch process header values until CR
+ * Returns pointer to first non-value byte (CR or invalid), or end if all valid
+ */
+static inline const char *
+scan_header_value (const char *p, const char *end)
+{
+  /* Find CR - marks end of header value */
+  const char *cr = memchr (p, '\r', (size_t)(end - p));
+  if (cr)
+    {
+      /* Validate all bytes before CR are valid field content */
+      for (const char *v = p; v < cr; v++)
+        {
+          unsigned char c = (unsigned char)*v;
+          /* field-content = field-vchar [ 1*( SP / HTAB / field-vchar ) ]
+           * field-vchar = VCHAR / obs-text
+           * VCHAR = 0x21-0x7E, obs-text = 0x80-0xFF, SP = 0x20, HTAB = 0x09 */
+          if (c < 0x20 && c != 0x09)
+            return v; /* Invalid control character */
+          if (c == 0x7F)
+            return v; /* DEL is invalid */
+        }
+      return cr;
+    }
+  /* No CR found - validate all remaining bytes */
+  for (const char *v = p; v < end; v++)
+    {
+      unsigned char c = (unsigned char)*v;
+      if (c < 0x20 && c != 0x09)
+        return v;
+      if (c == 0x7F)
+        return v;
+    }
+  return end;
+}
+
+/* Fast path: batch process header names until colon
+ * Returns pointer to first non-tchar byte (colon or invalid), or end
+ */
+static inline const char *
+scan_header_name (const char *p, const char *end)
+{
+  while (p < end)
+    {
+      unsigned char c = (unsigned char)*p;
+      if (c == ':')
+        return p;
+      /* tchar validation via lookup table */
+      if (!SOCKETHTTP_IS_TCHAR (c))
+        return p;
+      p++;
+    }
+  return end;
+}
+
 static SocketHTTP1_Result
 parse_headers_loop (SocketHTTP1_Parser_T parser, const char *data, size_t len,
                     size_t *consumed,
@@ -1376,69 +1431,182 @@ parse_headers_loop (SocketHTTP1_Parser_T parser, const char *data, size_t len,
 
   while (p < end)
     {
-      uint8_t c = (uint8_t)*p;
-      uint8_t cc = http1_char_class[c];
-      HTTP1_InternalState next_state;
-      uint8_t action;
-
       /* Handle body/trailer states outside the table-driven loop */
       if (state >= HTTP1_PS_BODY_IDENTITY)
         return handle_body_state_exit (parser, state, (size_t)(p - data),
                                        consumed);
 
-      /* Table lookups - the core of the optimization */
-      next_state = (HTTP1_InternalState)state_table[state][cc];
-      action = action_table[state][cc];
-
-      result = handle_dfa_action (parser, action, c, p, data, consumed, state,
-                                  &next_state);
-      if (result != HTTP1_OK)
-        return result;
-
-      /* Check for error transition */
-      if (next_state == HTTP1_PS_ERROR)
+      /*
+       * OPTIMIZATION 1: Batch processing for header values
+       * Header values are typically 10-100+ bytes. Instead of per-byte
+       * processing, scan ahead to find CR and copy the entire block.
+       */
+      if (state == HTTP1_PS_HEADER_VALUE)
         {
-          set_error (parser, state_to_error (state));
-          *consumed = (size_t)(p - data);
-          return parser->error;
+          const char *value_end = scan_header_value (p, end);
+          size_t chunk_len = (size_t)(value_end - p);
+
+          if (chunk_len > 0)
+            {
+              /* Check line length limit */
+              if (parser->header_line_length + chunk_len
+                  > parser->config.max_header_line)
+                {
+                  set_error (parser, HTTP1_ERROR_HEADER_TOO_LARGE);
+                  *consumed = (size_t)(p - data);
+                  return parser->error;
+                }
+
+              /* Batch append to value buffer */
+              if (http1_tokenbuf_append_block (
+                      &parser->value_buf, parser->arena, p, chunk_len,
+                      parser->config.max_header_value)
+                  < 0)
+                {
+                  set_error (parser, HTTP1_ERROR_HEADER_TOO_LARGE);
+                  *consumed = (size_t)(p - data);
+                  return parser->error;
+                }
+
+              parser->line_length += chunk_len;
+              parser->header_line_length += chunk_len;
+              p = value_end;
+              continue; /* Next iteration will handle CR or invalid char */
+            }
+          /* Fall through to normal byte processing for CR/invalid */
         }
 
-      /* Update state and counters */
-      state = next_state;
-      parser->line_length++;
-      if (in_header_state (state))
-        parser->header_line_length++;
-
-      /* Check line length limits */
-      if (in_header_state (state)
-          && parser->header_line_length > parser->config.max_header_line)
+      /*
+       * OPTIMIZATION 2: Batch processing for header names
+       */
+      if (state == HTTP1_PS_HEADER_NAME)
         {
-          set_error (parser, HTTP1_ERROR_HEADER_TOO_LARGE);
-          *consumed = (size_t)(p - data);
-          return parser->error;
-        }
-      if (state <= HTTP1_PS_LINE_CR
-          && parser->line_length > parser->config.max_request_line)
-        {
-          set_error (parser, HTTP1_ERROR_LINE_TOO_LONG);
-          *consumed = (size_t)(p - data);
-          return parser->error;
+          const char *name_end = scan_header_name (p, end);
+          size_t chunk_len = (size_t)(name_end - p);
+
+          if (chunk_len > 0)
+            {
+              if (parser->header_line_length + chunk_len
+                  > parser->config.max_header_line)
+                {
+                  set_error (parser, HTTP1_ERROR_HEADER_TOO_LARGE);
+                  *consumed = (size_t)(p - data);
+                  return parser->error;
+                }
+
+              if (http1_tokenbuf_append_block (
+                      &parser->name_buf, parser->arena, p, chunk_len,
+                      parser->config.max_header_name)
+                  < 0)
+                {
+                  set_error (parser, HTTP1_ERROR_INVALID_HEADER_NAME);
+                  *consumed = (size_t)(p - data);
+                  return parser->error;
+                }
+
+              parser->line_length += chunk_len;
+              parser->header_line_length += chunk_len;
+              p = name_end;
+              continue;
+            }
         }
 
-      /* Reset line length on header start */
-      if (state == HTTP1_PS_HEADER_START)
-        {
-          parser->line_length = 0;
-          parser->header_line_length = 0;
-          parser->state = HTTP1_STATE_HEADERS;
-        }
+      /* Standard byte-by-byte processing for state transitions */
+      {
+        uint8_t c = (uint8_t)*p;
+        uint8_t cc = http1_char_class[c];
+        HTTP1_InternalState next_state;
+        uint8_t action;
 
-      p++;
+        next_state = (HTTP1_InternalState)state_table[state][cc];
+        action = action_table[state][cc];
 
-      /* Handle transition to body/complete/error states */
-      if (state >= HTTP1_PS_BODY_IDENTITY)
-        return handle_body_state_exit (parser, state, (size_t)(p - data),
-                                       consumed);
+        /*
+         * OPTIMIZATION 3: Inline trivial actions
+         * Only call handle_dfa_action for non-trivial cases.
+         */
+        if (action == HTTP1_ACT_NONE)
+          {
+            /* Just transition, no side effect - skip function call */
+          }
+        else if (action == HTTP1_ACT_STORE_VALUE)
+          {
+            /* Inline single-byte value append (for bytes after batch) */
+            if (http1_tokenbuf_append (&parser->value_buf, parser->arena,
+                                       (char)c, parser->config.max_header_value)
+                < 0)
+              {
+                set_error (parser, HTTP1_ERROR_HEADER_TOO_LARGE);
+                *consumed = (size_t)(p - data);
+                return parser->error;
+              }
+          }
+        else if (action == HTTP1_ACT_STORE_NAME)
+          {
+            /* Inline single-byte name append */
+            if (http1_tokenbuf_append (&parser->name_buf, parser->arena,
+                                       (char)c, parser->config.max_header_name)
+                < 0)
+              {
+                set_error (parser, HTTP1_ERROR_INVALID_HEADER_NAME);
+                *consumed = (size_t)(p - data);
+                return parser->error;
+              }
+          }
+        else
+          {
+            /* Non-trivial action - use full handler */
+            result = handle_dfa_action (parser, action, c, p, data, consumed,
+                                        state, &next_state);
+            if (result != HTTP1_OK)
+              return result;
+          }
+
+        /* Check for error transition */
+        if (next_state == HTTP1_PS_ERROR)
+          {
+            set_error (parser, state_to_error (state));
+            *consumed = (size_t)(p - data);
+            return parser->error;
+          }
+
+        /* Update state and counters */
+        state = next_state;
+        parser->line_length++;
+        if (in_header_state (state))
+          parser->header_line_length++;
+
+        /* Check line length limits */
+        if (in_header_state (state)
+            && parser->header_line_length > parser->config.max_header_line)
+          {
+            set_error (parser, HTTP1_ERROR_HEADER_TOO_LARGE);
+            *consumed = (size_t)(p - data);
+            return parser->error;
+          }
+        if (state <= HTTP1_PS_LINE_CR
+            && parser->line_length > parser->config.max_request_line)
+          {
+            set_error (parser, HTTP1_ERROR_LINE_TOO_LONG);
+            *consumed = (size_t)(p - data);
+            return parser->error;
+          }
+
+        /* Reset line length on header start */
+        if (state == HTTP1_PS_HEADER_START)
+          {
+            parser->line_length = 0;
+            parser->header_line_length = 0;
+            parser->state = HTTP1_STATE_HEADERS;
+          }
+
+        p++;
+
+        /* Handle transition to body/complete/error states */
+        if (state >= HTTP1_PS_BODY_IDENTITY)
+          return handle_body_state_exit (parser, state, (size_t)(p - data),
+                                         consumed);
+      }
     }
 
   parser->internal_state = state;
