@@ -389,3 +389,16 @@ Socket_simple_poll_set_timeout (SocketSimple_Poll_T poll, int timeout_ms)
 
   return 0;
 }
+
+/* ============================================================================
+ * Internal Helper: Access core poll handle (used by timer module)
+ * ============================================================================
+ */
+
+SocketPoll_T
+simple_poll_get_core (SocketSimple_Poll_T poll)
+{
+  if (!poll)
+    return NULL;
+  return poll->poll;
+}
