@@ -21,7 +21,8 @@
 #include "http/SocketHTTP.h"
 #include <string.h>
 
-#define SOCKETHTTP_HEADER_BUCKETS 31
+#define SOCKETHTTP_HEADER_BUCKETS 32
+#define SOCKETHTTP_HEADER_BUCKET_MASK (SOCKETHTTP_HEADER_BUCKETS - 1)
 
 typedef struct HeaderEntry
 {

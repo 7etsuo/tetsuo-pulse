@@ -308,6 +308,7 @@ set(LIB_SOURCES
     src/http/SocketHTTPClient-auth.c
     src/http/SocketHTTPClient-cookie.c
     src/http/SocketHTTPClient-retry.c
+    src/http/SocketHTTPClient-arena.c
     src/http/SocketHTTPServer.c
     src/http/SocketHTTPServer-connections.c
 

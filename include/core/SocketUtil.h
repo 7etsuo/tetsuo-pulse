@@ -763,7 +763,7 @@ extern __thread int socket_last_errno;
       int _socket_error_ret = snprintf (                                      \
           tmp_buf, sizeof (tmp_buf), fmt " (errno: %d - %s)", ##__VA_ARGS__,  \
           socket_last_errno, Socket_safe_strerror (socket_last_errno));       \
-      strncpy (socket_error_buf, tmp_buf, SOCKET_ERROR_BUFSIZE - 1);          \
+      memcpy (socket_error_buf, tmp_buf, SOCKET_ERROR_BUFSIZE);               \
       socket_error_buf[SOCKET_ERROR_BUFSIZE - 1] = '\0';                      \
       SOCKET_ERROR_APPLY_TRUNCATION (_socket_error_ret);                      \
       (void)_socket_error_ret;                                                \
@@ -784,7 +784,7 @@ extern __thread int socket_last_errno;
       char tmp_buf[SOCKET_ERROR_BUFSIZE];                                     \
       int _socket_error_ret                                                   \
           = snprintf (tmp_buf, sizeof (tmp_buf), fmt, ##__VA_ARGS__);         \
-      strncpy (socket_error_buf, tmp_buf, SOCKET_ERROR_BUFSIZE - 1);          \
+      memcpy (socket_error_buf, tmp_buf, SOCKET_ERROR_BUFSIZE);               \
       socket_error_buf[SOCKET_ERROR_BUFSIZE - 1] = '\0';                      \
       SOCKET_ERROR_APPLY_TRUNCATION (_socket_error_ret);                      \
       (void)_socket_error_ret;                                                \

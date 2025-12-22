@@ -714,6 +714,7 @@ test_ws_compression_errors (void)
   // Invalid window bits
   ws->handshake.client_max_window_bits = 20; // Invalid >15
   int init_ret = ws_compression_init (ws);
+  (void)init_ret; /* Used in assert */
   assert (init_ret == -1); // Should error on validation
 
   // Reset for other test
