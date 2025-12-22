@@ -4,21 +4,6 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * SocketIO.c - Internal I/O abstraction layer
- *
- * Implements the internal I/O operations for sockets, handling both
- * standard system calls (send/recv) and TLS operations (SSL_write/SSL_read).
- * This abstraction allows the upper layers to be agnostic of the underlying
- * transport security.
- *
- * Features:
- * - Transparent TLS support
- * - Scatter/gather I/O emulation for TLS
- * - Consistent error handling via exceptions
- * - Thread-safe operation
- */
-
 /* System headers first (GNU C style) */
 #include <assert.h>
 #include <errno.h>
@@ -77,16 +62,6 @@ static ssize_t socket_recvv_tls (T socket, struct iovec *iov, int iovcnt);
  * - socketio_is_connection_closed_recv()
  */
 
-/**
- * socket_send_raw - Raw socket send operation
- * @socket: Socket instance
- * @buf: Data to send
- * @len: Length of data
- * @flags: Send flags
- *
- * Returns: Bytes sent or 0 if would block
- * Raises: Socket_Failed, Socket_Closed
- */
 static ssize_t
 socket_send_raw (T socket, const void *buf, size_t len, int flags)
 {
@@ -104,16 +79,6 @@ socket_send_raw (T socket, const void *buf, size_t len, int flags)
   return result;
 }
 
-/**
- * socket_recv_raw - Raw socket receive operation
- * @socket: Socket instance
- * @buf: Buffer for received data
- * @len: Buffer size
- * @flags: Receive flags
- *
- * Returns: Bytes received or 0 if would block
- * Raises: Socket_Failed, Socket_Closed
- */
 static ssize_t
 socket_recv_raw (T socket, void *buf, size_t len, int flags)
 {
@@ -135,15 +100,6 @@ socket_recv_raw (T socket, void *buf, size_t len, int flags)
   return result;
 }
 
-/**
- * socket_send_internal - Internal send operation
- * @socket: Socket instance
- * @buf: Data to send
- * @len: Length of data
- * @flags: Send flags
- *
- * Returns: Bytes sent or 0 if would block
- */
 ssize_t
 socket_send_internal (T socket, const void *buf, size_t len, int flags)
 {
@@ -175,15 +131,6 @@ socket_send_internal (T socket, const void *buf, size_t len, int flags)
   return result;
 }
 
-/**
- * socket_recv_internal - Internal receive operation
- * @socket: Socket instance
- * @buf: Buffer for received data
- * @len: Buffer size
- * @flags: Receive flags
- *
- * Returns: Bytes received or 0 if would block
- */
 ssize_t
 socket_recv_internal (T socket, void *buf, size_t len, int flags)
 {
@@ -215,18 +162,6 @@ socket_recv_internal (T socket, void *buf, size_t len, int flags)
   return result;
 }
 
-/**
- * socket_sendv_raw - Raw scatter/gather send implementation
- * @socket: Socket instance
- * @iov: Array of iovec structures
- * @iovcnt: Number of iovec structures
- * @flags: Send flags (MSG_NOSIGNAL automatically added)
- * Returns: Total bytes sent or 0 if would block
- * Raises: Socket_Failed
- *
- * Uses sendmsg() instead of writev() to support MSG_NOSIGNAL for
- * SIGPIPE suppression. The flags parameter is OR'd with MSG_NOSIGNAL.
- */
 static ssize_t
 socket_sendv_raw (T socket, const struct iovec *iov, int iovcnt, int flags)
 {
@@ -251,15 +186,6 @@ socket_sendv_raw (T socket, const struct iovec *iov, int iovcnt, int flags)
   return result;
 }
 
-/**
- * socket_recvv_raw - Raw scatter/gather receive implementation
- * @socket: Socket instance
- * @iov: Array of iovec structures
- * @iovcnt: Number of iovec structures
- * @flags: Receive flags
- * Returns: Total bytes received or 0 if would block
- * Raises: Socket_Failed or Socket_Closed
- */
 static ssize_t
 socket_recvv_raw (T socket, struct iovec *iov, int iovcnt, int flags)
 {
@@ -282,15 +208,6 @@ socket_recvv_raw (T socket, struct iovec *iov, int iovcnt, int flags)
   return result;
 }
 
-/**
- * socket_sendv_internal - Internal scatter/gather send
- * @socket: Socket instance
- * @iov: Array of iovec structures
- * @iovcnt: Number of iovec structures
- * @flags: Send flags
- *
- * Returns: Total bytes sent or 0 if would block
- */
 ssize_t
 socket_sendv_internal (T socket, const struct iovec *iov, int iovcnt,
                        int flags)
@@ -312,15 +229,6 @@ socket_sendv_internal (T socket, const struct iovec *iov, int iovcnt,
   return socket_sendv_raw (socket, iov, iovcnt, flags);
 }
 
-/**
- * socket_recvv_internal - Internal scatter/gather receive
- * @socket: Socket instance
- * @iov: Array of iovec structures
- * @iovcnt: Number of iovec structures
- * @flags: Receive flags
- *
- * Returns: Total bytes received or 0 if would block
- */
 ssize_t
 socket_recvv_internal (T socket, struct iovec *iov, int iovcnt, int flags)
 {
@@ -341,12 +249,6 @@ socket_recvv_internal (T socket, struct iovec *iov, int iovcnt, int flags)
   return socket_recvv_raw (socket, iov, iovcnt, flags);
 }
 
-/**
- * socket_is_tls_enabled - Check if TLS is enabled
- * @socket: Socket instance (read-only)
- *
- * Returns: 1 if enabled, 0 otherwise
- */
 int
 socket_is_tls_enabled (const T socket)
 {
@@ -359,11 +261,6 @@ socket_is_tls_enabled (const T socket)
 #endif
 }
 
-/**
- * socket_tls_want_read - Check if TLS wants read
- * @socket: Socket instance (read-only)
- * Returns: 1 if want read, 0 otherwise
- */
 int
 socket_tls_want_read (const T socket)
 {
@@ -381,11 +278,6 @@ socket_tls_want_read (const T socket)
 #endif
 }
 
-/**
- * socket_tls_want_write - Check if TLS wants write
- * @socket: Socket instance (read-only)
- * Returns: 1 if want write, 0 otherwise
- */
 int
 socket_tls_want_write (const T socket)
 {
@@ -402,17 +294,10 @@ socket_tls_want_write (const T socket)
 #endif
 }
 
-/* ==================== TLS I/O Operations ==================== */
 /* Merged from SocketIO-tls.c and SocketIO-tls-iov.c */
 
 #if SOCKET_HAS_TLS
 
-/**
- * socket_get_ssl - Helper to get SSL object from socket
- * @socket: Socket instance
- *
- * Returns: SSL object or NULL if not available
- */
 SSL *
 socket_get_ssl (T socket)
 {
@@ -423,15 +308,6 @@ socket_get_ssl (T socket)
 
 /* socket_is_recoverable_io_error removed - use socketio_is_wouldblock() */
 
-/* ==================== SSL Error Mapping ==================== */
-
-/**
- * SSLErrorMapping - Mapping from SSL error code to errno and state
- *
- * Provides data-driven error handling for SSL operations. Each entry
- * maps an SSL_ERROR_* code to the corresponding errno value and
- * indicates whether the error clears the handshake completion flag.
- */
 typedef struct
 {
   int ssl_error;        /**< SSL_ERROR_* constant */
@@ -439,13 +315,6 @@ typedef struct
   int clears_handshake; /**< 1 if this error resets handshake_done */
 } SSLErrorMapping;
 
-/**
- * SSL error mapping table - data-driven error classification
- *
- * This table maps SSL error codes to errno values. Using a table instead
- * of a switch statement makes it easier to add new error codes and
- * ensures consistent handling across all TLS operations.
- */
 static const SSLErrorMapping ssl_error_map[] = {
   { SSL_ERROR_NONE, 0, 0 },
   { SSL_ERROR_SSL, EPROTO, 0 },
@@ -463,12 +332,6 @@ static const SSLErrorMapping ssl_error_map[] = {
 
 #define SSL_ERROR_MAP_SIZE (sizeof (ssl_error_map) / sizeof (ssl_error_map[0]))
 
-/**
- * ssl_lookup_error - Find mapping for SSL error code
- * @ssl_error: SSL_ERROR_* constant to look up
- *
- * Returns: Pointer to mapping entry, or NULL if not found
- */
 static const SSLErrorMapping *
 ssl_lookup_error (int ssl_error)
 {
@@ -480,14 +343,6 @@ ssl_lookup_error (int ssl_error)
   return NULL;
 }
 
-/**
- * ssl_handle_syscall_error - Handle SSL_ERROR_SYSCALL specially
- *
- * Returns: -1 (always an error)
- *
- * SSL_ERROR_SYSCALL requires special handling: if errno is 0,
- * the connection was closed (EOF). Otherwise, keep the existing errno.
- */
 static int
 ssl_handle_syscall_error (void)
 {
@@ -496,19 +351,6 @@ ssl_handle_syscall_error (void)
   return -1;
 }
 
-/**
- * socket_handle_ssl_error - Map SSL error codes to errno values
- * @socket: Socket instance
- * @ssl: SSL object
- * @ssl_result: Result from SSL operation
- *
- * Returns: 0 on SSL_ERROR_NONE, -1 on error (sets errno)
- * Thread-safe: Yes (operates on single socket)
- *
- * Uses data-driven mapping table to convert SSL error codes to
- * appropriate errno values. Updates socket handshake state when
- * SSL indicates the handshake needs to continue.
- */
 int
 socket_handle_ssl_error (T socket, SSL *ssl, int ssl_result)
 {
@@ -536,13 +378,6 @@ socket_handle_ssl_error (T socket, SSL *ssl, int ssl_result)
   return -1;
 }
 
-/**
- * socket_validate_tls_ready - Validate TLS is ready for I/O
- * @socket: Socket instance
- *
- * Returns: SSL pointer if ready, raises exception otherwise
- * Thread-safe: Yes (operates on single socket)
- */
 SSL *
 socket_validate_tls_ready (T socket)
 {
@@ -554,16 +389,6 @@ socket_validate_tls_ready (T socket)
   return ssl;
 }
 
-/**
- * socket_send_tls - TLS send operation
- * @socket: Socket instance with TLS enabled
- * @buf: Data to send
- * @len: Length of data
- *
- * Returns: Bytes sent or 0 if would block
- * Raises: SocketTLS_Failed on error
- * Thread-safe: Yes (operates on single socket)
- */
 static ssize_t
 socket_send_tls (T socket, const void *buf, size_t len)
 {
@@ -586,16 +411,6 @@ socket_send_tls (T socket, const void *buf, size_t len)
   return (ssize_t)ssl_result;
 }
 
-/**
- * socket_recv_tls - TLS receive operation
- * @socket: Socket instance with TLS enabled
- * @buf: Buffer for received data
- * @len: Buffer size
- *
- * Returns: Bytes received or 0 if would block
- * Raises: SocketTLS_Failed on error, Socket_Closed on disconnect
- * Thread-safe: Yes (operates on single socket)
- */
 static ssize_t
 socket_recv_tls (T socket, void *buf, size_t len)
 {
@@ -620,25 +435,8 @@ socket_recv_tls (T socket, void *buf, size_t len)
   return (ssize_t)ssl_result;
 }
 
-/* ==================== TLS Scatter/Gather I/O ==================== */
 /* Merged from SocketIO-tls-iov.c */
 
-/**
- * copy_iov_to_buffer - Copy iovec array to contiguous buffer
- * @iov: Array of iovec structures
- * @iovcnt: Number of iovec structures
- * @buffer: Destination buffer
- * @buffer_size: Size of destination buffer
- *
- * Returns: Total bytes copied
- * Raises: Socket_Failed if buffer too small or overflow detected
- * Thread-safe: Yes (operates on local data)
- *
- * Security: Pre-validates total iovec size using
- * SocketCommon_calculate_total_iov_len which performs overflow-safe summation.
- * This prevents integer overflow attacks that could bypass the per-iteration
- * buffer bounds check.
- */
 static size_t
 copy_iov_to_buffer (const struct iovec *iov, int iovcnt, void *buffer,
                     size_t buffer_size)
@@ -674,16 +472,6 @@ copy_iov_to_buffer (const struct iovec *iov, int iovcnt, void *buffer,
   return offset;
 }
 
-/**
- * distribute_buffer_to_iov - Distribute buffer data across iovec array
- * @buffer: Source buffer
- * @buffer_len: Length of data in buffer
- * @iov: Array of iovec structures
- * @iovcnt: Number of iovec structures
- *
- * Returns: Total bytes distributed
- * Thread-safe: Yes (operates on local data)
- */
 static size_t
 distribute_buffer_to_iov (const void *buffer, size_t buffer_len,
                           struct iovec *iov, int iovcnt)
@@ -724,16 +512,6 @@ distribute_buffer_to_iov (const void *buffer, size_t buffer_len,
   return buffer_len - remaining;
 }
 
-/**
- * socket_sendv_tls - TLS scatter/gather send implementation
- * @socket: Socket instance
- * @iov: Array of iovec structures
- * @iovcnt: Number of iovec structures
- *
- * Returns: Total bytes sent or 0 if would block
- * Raises: Socket_Failed or SocketTLS_Failed
- * Thread-safe: Yes (operates on single socket)
- */
 static ssize_t
 socket_sendv_tls (T socket, const struct iovec *iov, int iovcnt)
 {
@@ -769,16 +547,6 @@ socket_sendv_tls (T socket, const struct iovec *iov, int iovcnt)
   return (ssize_t)ssl_result;
 }
 
-/**
- * socket_recvv_tls - TLS scatter/gather receive implementation
- * @socket: Socket instance
- * @iov: Array of iovec structures
- * @iovcnt: Number of iovec structures
- *
- * Returns: Total bytes received or 0 if would block
- * Raises: Socket_Failed, SocketTLS_Failed, or Socket_Closed
- * Thread-safe: Yes (operates on single socket)
- */
 static ssize_t
 socket_recvv_tls (T socket, struct iovec *iov, int iovcnt)
 {

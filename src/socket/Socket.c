@@ -5,17 +5,7 @@
  */
 
 /**
- * Socket.c - Socket abstraction layer (Core)
- *
- * Core socket lifecycle and basic operations. Extended operations are
- * implemented in separate modules for better organization.
- *
- * This file contains:
- * - Socket lifecycle management (new/free)
- * - Basic I/O operations (send/recv/sendall/recvall)
- * - Socket state queries (connected/bound/listening)
- * - Basic accessor functions
- * - Live count tracking for debugging
+ * Socket.c - Core socket lifecycle and basic operations
  */
 
 #include <assert.h>
@@ -66,44 +56,16 @@ static struct SocketLiveCount socket_live_tracker
 const Except_T Socket_Failed = { &Socket_Failed, "Socket operation failed" };
 const Except_T Socket_Closed = { &Socket_Closed, "Socket closed" };
 
-/* Thread-local exception for detailed error messages.
- * Prevents race conditions when multiple threads raise same exception. */
-/* Declare module-specific exception using centralized macros */
 SOCKET_DECLARE_MODULE_EXCEPTION (Socket);
 
-/* Macro to raise exception with detailed error message */
 #define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR (Socket, e)
 
-/* ============================================================================
- * Error Retryability
- * ============================================================================
- */
-
-/**
- * Socket_error_is_retryable - Check if errno indicates retryable error
- * @err: errno value to check
- *
- * Returns: 1 if error is typically retryable, 0 if fatal
- * Thread-safe: Yes (pure function)
- *
- * Wrapper around SocketError_is_retryable_errno() for consistency.
- */
 int
 Socket_error_is_retryable (int err)
 {
   return SocketError_is_retryable_errno (err);
 }
 
-/**
- * Socket_ignore_sigpipe - Globally ignore SIGPIPE signal
- *
- * NOTE: This function is NOT required when using this library.
- * See Socket.h for full documentation.
- *
- * Implementation uses sigaction() for reliable signal handling.
- * SA_RESTART is NOT set because SIGPIPE should not interrupt syscalls
- * when ignored (the signal is simply discarded).
- */
 int
 Socket_ignore_sigpipe (void)
 {
@@ -117,17 +79,6 @@ Socket_ignore_sigpipe (void)
   return sigaction (SIGPIPE, &sa, NULL);
 }
 
-/* Static helper functions */
-
-/**
- * cache_remote_endpoint - Cache remote endpoint from address structure
- * @base: Socket base to update
- * @addr: Address structure
- * @addrlen: Address length
- *
- * Caches peer information from given address. On failure, sets fields to NULL/0.
- * Thread-safe: No - assumes exclusive access to socket base
- */
 static void
 cache_remote_endpoint (SocketBase_T base, const struct sockaddr *addr,
                        socklen_t addrlen)
@@ -141,16 +92,6 @@ cache_remote_endpoint (SocketBase_T base, const struct sockaddr *addr,
     }
 }
 
-/**
- * socket_alloc - Allocate and initialize Socket_T structure
- * @arena: Memory arena for allocation
- * @alloc_type: Description for error message (unused, kept for consistency)
- *
- * Allocates Socket_T using Arena_calloc, initializes freed flag.
- * Arena_calloc raises Arena_Failed on allocation failure.
- * Caller responsible for arena cleanup if exception raised.
- * Thread-safe: No - arena must be thread-local or locked
- */
 static T
 socket_alloc (Arena_T arena, const char *alloc_type)
 {
@@ -160,16 +101,6 @@ socket_alloc (Arena_T arena, const char *alloc_type)
   return sock;
 }
 
-/**
- * socket_alloc_base - Allocate SocketBase_T structure
- * @arena: Memory arena for allocation
- * @alloc_type: Description for error message (unused, kept for consistency)
- *
- * Allocates SocketBase_T using Arena_calloc.
- * Arena_calloc raises Arena_Failed on allocation failure.
- * Caller responsible for arena cleanup if exception raised.
- * Thread-safe: No - arena must be thread-local or locked
- */
 static SocketBase_T
 socket_alloc_base (Arena_T arena, const char *alloc_type)
 {
@@ -179,14 +110,6 @@ socket_alloc_base (Arena_T arena, const char *alloc_type)
 }
 
 #if SOCKET_HAS_TLS
-/**
- * socket_init_tls_fields - Initialize TLS fields to defaults
- * @sock: Socket instance to initialize
- *
- * Sets all TLS-related fields to safe default values (NULL/0).
- * Thread-safe: No (operates on single socket during construction)
- * Note: Exported for use by Socket-accept.c
- */
 void
 socket_init_tls_fields (Socket_T sock)
 {
@@ -204,21 +127,11 @@ socket_init_tls_fields (Socket_T sock)
   sock->tls_timeouts = (SocketTimeouts_T){ 0 };
   sock->tls_renegotiation_count = 0;
 
-  /* kTLS offload state */
   sock->tls_ktls_enabled = 0;
   sock->tls_ktls_tx_active = 0;
   sock->tls_ktls_rx_active = 0;
 }
 
-/**
- * socket_cleanup_tls - Cleanup TLS resources for a socket
- * @s: Socket instance
- *
- * Performs TLS-specific cleanup: frees SSL object, ALPN temp data, etc.
- * Safe to call multiple times or on uninitialized TLS (idempotent).
- * Thread-safe: No - assumes exclusive access to socket
- * Note: Exported for use by socketpair cleanup
- */
 static void
 socket_cleanup_tls (Socket_T s)
 {
@@ -229,23 +142,13 @@ socket_cleanup_tls (Socket_T s)
       SSL_free (tls_ssl);
       s->tls_ssl = NULL;
     }
-  /* Add other TLS cleanup if necessary (e.g., ctx if owned per socket) */
 }
 
 #endif /* SOCKET_HAS_TLS */
 
-/**
- * socket_init_after_alloc - Common initialization after socket allocation
- * @sock: Newly allocated socket with base set
- *
- * Initializes common fields: stats, TLS (if enabled), live count, metrics peak.
- * Must be called after base is set and before use.
- * Thread-safe: Yes (atomics and mutex where needed)
- */
 static void
 socket_init_after_alloc (T sock)
 {
-  /* Initialize per-socket statistics */
   sock->base->stats.create_time_ms = Socket_get_monotonic_ms ();
   sock->base->stats.connect_time_ms = 0;
   sock->base->stats.last_recv_time_ms = 0;
@@ -264,19 +167,9 @@ socket_init_after_alloc (T sock)
 #endif
 
   socket_live_increment ();
-
-  /* Update peak connection tracking */
   SocketMetrics_update_peak_if_needed (Socket_debug_live_count ());
 }
 
-/**
- * get_socket_type - Get socket type via SO_TYPE option
- * @fd: File descriptor to query
- * @type_out: Output for socket type (SOCK_STREAM, etc.)
- *
- * Returns: 0 on success, -1 on failure
- * Thread-safe: Yes (pure syscall wrapper)
- */
 static int
 get_socket_type (int fd, int *type_out)
 {
@@ -284,11 +177,6 @@ get_socket_type (int fd, int *type_out)
   return getsockopt (fd, SOL_SOCKET, SO_TYPE, type_out, &opt_len);
 }
 
-/**
- * validate_fd_is_socket - Validate file descriptor is a socket
- * @fd: File descriptor to validate
- * Raises: Socket_Failed if fd is not a socket
- */
 static void
 validate_fd_is_socket (int fd)
 {
@@ -298,13 +186,6 @@ validate_fd_is_socket (int fd)
                       "Invalid file descriptor (not a socket): fd=%d", fd);
 }
 
-/**
- * allocate_socket_from_fd - Allocate socket structure from existing fd
- * @arena: Arena for allocations
- * @fd: File descriptor to wrap
- * Returns: Allocated socket structure
- * Raises: Socket_Failed on allocation failure (arena disposed on error)
- */
 static T
 allocate_socket_from_fd (Arena_T arena, int fd)
 {
@@ -323,18 +204,10 @@ allocate_socket_from_fd (Arena_T arena, int fd)
   END_TRY;
 
   ((T)sock)->base->arena = arena;
-
-  /* init_base sets fd, domain, type, protocol and initializes all endpoints */
   SocketCommon_init_base (((T)sock)->base, fd, AF_UNSPEC, 0, 0, Socket_Failed);
-
   return (T)sock;
 }
 
-/**
- * setup_socket_nonblocking - Set socket to non-blocking mode
- * @socket: Socket to configure
- * Raises: Socket_Failed on failure
- */
 static void
 setup_socket_nonblocking (T socket)
 {
@@ -394,26 +267,17 @@ Socket_free (T *socket)
 
   int was_first
       = (atomic_exchange_explicit (&s->freed, 1, memory_order_acq_rel) == 0);
-  *socket = NULL; /* Invalidate caller pointer before cleanup to avoid UB */
+  *socket = NULL;
 
   if (!was_first)
-    {
-      /* Already freed by concurrent thread - skip to prevent double-free */
-      return;
-    }
+    return;
 
-    /* Stream-specific cleanup (TLS) before base free */
 #if SOCKET_HAS_TLS
   socket_cleanup_tls(s);
-  /* Add other TLS cleanup if necessary (e.g., ctx if owned per socket) */
 #endif
 
-  /* Common base cleanup: closes fd, disposes arena (frees s too) */
   SocketCommon_free_base (&s->base);
-
-  /* Type-specific decrement - only by the thread that actually frees */
   socket_live_decrement ();
-  /* Caller pointer already invalidated earlier */
 }
 
 T
@@ -433,10 +297,7 @@ Socket_new_from_fd (int fd)
   T sock = allocate_socket_from_fd (arena, fd);
 
   socket_init_after_alloc (sock);
-
-  /* Set non-blocking mode (required for batch accept) */
   setup_socket_nonblocking (sock);
-
   return sock;
 }
 
@@ -451,9 +312,6 @@ Socket_recv (T socket, void *buf, size_t len)
 {
   return socket_recv_internal (socket, buf, len, 0);
 }
-
-/* ==================== Wrapper Functions for Split APIs ====================
- */
 
 void
 Socket_listen (Socket_T socket, int backlog)
@@ -471,38 +329,18 @@ Socket_listen (Socket_T socket, int backlog)
                       "Failed to listen on socket (backlog=%d)", backlog);
 }
 
-/**
- * Socket_debug_live_count - Get count of live sockets (thread-safe)
- * Returns: Current number of live Socket_T instances
- * Thread-safe: Yes - protected by mutex
- */
 int
 Socket_debug_live_count (void)
 {
   return SocketLiveCount_get (&socket_live_tracker);
 }
 
-/* ==================== Unix Domain Socket Operations ==================== */
-
-/**
- * unix_is_abstract_path - Check if path is abstract namespace
- * @path: Unix socket path
- *
- * Returns: true if path starts with '@' (abstract namespace marker)
- */
 static inline bool
 unix_is_abstract_path (const char *path)
 {
   return path && path[0] == '@';
 }
 
-/**
- * unix_validate_path - Validate Unix socket path length and security
- * @path: Path string
- * @path_len: Length of path
- *
- * Returns: 0 on valid, -1 on invalid (sets error message)
- */
 static int
 unix_validate_path (const char *path, size_t path_len)
 {
@@ -515,7 +353,6 @@ unix_validate_path (const char *path, size_t path_len)
       return -1;
     }
 
-  /* Check for directory traversal */
   if (strstr (path, "/../") || strcmp (path, "..") == 0
       || strncmp (path, "../", 3) == 0
       || (path_len >= 3 && strcmp (path + path_len - 3, "/..") == 0))
@@ -528,12 +365,6 @@ unix_validate_path (const char *path, size_t path_len)
   return 0;
 }
 
-/**
- * unix_unlink_stale - Remove stale socket file if it exists
- * @path: Unix socket path
- *
- * Raises: Socket_Failed if unable to unlink existing socket file
- */
 static void
 unix_unlink_stale (const char *path)
 {
@@ -543,44 +374,24 @@ unix_unlink_stale (const char *path)
                       "Failed to unlink stale socket %s", path);
 }
 
-/**
- * unix_setup_abstract_socket - Setup abstract namespace socket address
- * @addr: Output sockaddr_un structure (already initialized)
- * @path: Unix socket path (starting with '@')
- * @path_len: Length of path
- *
- * Note: addr must be pre-initialized with memset and sun_family set
- */
 static void
 unix_setup_abstract_socket (struct sockaddr_un *addr, const char *path,
                             size_t path_len)
 {
-  /* Calculate the actual name length (excluding the '@' prefix) */
   size_t name_len = path_len > 0 ? path_len - 1 : 0;
-  /* Ensure name fits in sun_path after the leading null byte */
   size_t max_name_len = sizeof (addr->sun_path) - 1;
   if (name_len > max_name_len)
     name_len = max_name_len;
 
-  addr->sun_path[0] = '\0'; /* Abstract namespace marker */
-  /* Skip the '@' prefix when copying to sun_path */
+  addr->sun_path[0] = '\0';
   if (name_len > 0)
     memcpy (addr->sun_path + 1, path + 1, name_len);
 }
 
-/**
- * unix_setup_regular_socket - Setup regular filesystem socket address
- * @addr: Output sockaddr_un structure (already initialized)
- * @path: Unix socket path
- * @path_len: Length of path
- *
- * Note: addr must be pre-initialized with memset and sun_family set
- */
 static void
 unix_setup_regular_socket (struct sockaddr_un *addr, const char *path,
                            size_t path_len)
 {
-  /* Ensure path fits in sun_path with null terminator */
   size_t max_path_len = sizeof (addr->sun_path) - 1;
   if (path_len > max_path_len)
     path_len = max_path_len;
@@ -589,13 +400,6 @@ unix_setup_regular_socket (struct sockaddr_un *addr, const char *path,
   addr->sun_path[path_len] = '\0';
 }
 
-/**
- * unix_setup_sockaddr - Initialize sockaddr_un from path
- * @addr: Output sockaddr_un structure
- * @path: Unix socket path (@ prefix for abstract)
- *
- * Note: Path validation must be done separately via unix_validate_path()
- */
 static void
 unix_setup_sockaddr (struct sockaddr_un *addr, const char *path)
 {
@@ -605,12 +409,9 @@ unix_setup_sockaddr (struct sockaddr_un *addr, const char *path)
   assert (path);
 
   path_len = strlen (path);
-
-  /* Common initialization for both abstract and regular sockets */
   memset (addr, 0, sizeof (*addr));
   addr->sun_family = AF_UNIX;
 
-  /* Delegate path setup to specialized functions */
   if (path[0] == '@')
     unix_setup_abstract_socket (addr, path, path_len);
   else
@@ -631,7 +432,6 @@ Socket_bind_unix (Socket_T socket, const char *path)
   if (unix_validate_path (path, path_len) < 0)
     RAISE_MODULE_ERROR (Socket_Failed);
 
-  /* Unlink stale socket file for regular (non-abstract) paths */
   if (!unix_is_abstract_path (path))
     unix_unlink_stale (path);
 
@@ -657,7 +457,6 @@ Socket_connect_unix (Socket_T socket, const char *path)
 
   path_len = strlen (path);
 
-  /* Validate path before use */
   if (unix_validate_path (path, path_len) < 0)
     RAISE_MODULE_ERROR (Socket_Failed);
 
@@ -678,20 +477,10 @@ Socket_connect_unix (Socket_T socket, const char *path)
                           "Failed to connect to Unix socket %s", path);
     }
 
-  /* Update remote endpoint */
   memcpy (&socket->base->remote_addr, &addr, sizeof (addr));
   socket->base->remote_addrlen = sizeof (addr);
   SocketCommon_update_local_endpoint (socket->base);
 }
-
-/* ==================== State Queries ==================== */
-
-/* check_bound_* helpers moved to SocketCommon.h as inline functions:
- * - SocketCommon_check_bound_ipv4()
- * - SocketCommon_check_bound_ipv6()
- * - SocketCommon_check_bound_unix()
- * - SocketCommon_check_bound_by_family()
- */
 
 int
 Socket_isconnected (T socket)
@@ -700,34 +489,24 @@ Socket_isconnected (T socket)
   socklen_t len = sizeof (addr);
 
   assert (socket);
-
-  /* Initialize to zero to avoid Valgrind warnings about uninitialized memory
-   */
   memset (&addr, 0, sizeof (addr));
 
-  /* Check if we have cached peer address */
   if (socket->base->remoteaddr != NULL)
     return 1;
 
-  /* Use getpeername() to check connection state */
   if (getpeername (SocketBase_fd (socket->base), (struct sockaddr *)&addr,
                    &len)
       == 0)
     {
-      /* Socket is connected - cache peer info if not already set */
       if (socket->base->remoteaddr == NULL
           && SocketBase_arena (socket->base) != NULL)
-        {
-          cache_remote_endpoint (socket->base, (struct sockaddr *)&addr, len);
-        }
+        cache_remote_endpoint (socket->base, (struct sockaddr *)&addr, len);
       return 1;
     }
 
-  /* Not connected or error occurred */
   if (errno == ENOTCONN)
     return 0;
 
-  /* Other errors (EBADF, etc.) - treat as not connected */
   return 0;
 }
 
@@ -738,16 +517,11 @@ Socket_isbound (T socket)
   socklen_t len = sizeof (addr);
 
   assert (socket);
-
-  /* Initialize to zero to avoid Valgrind warnings about uninitialized memory
-   */
   memset (&addr, 0, sizeof (addr));
 
-  /* Check if we have cached local address */
   if (socket->base->localaddr != NULL)
     return 1;
 
-  /* Use getsockname() to check binding state */
   if (getsockname (SocketBase_fd (socket->base), (struct sockaddr *)&addr,
                    &len)
       == 0)
@@ -761,26 +535,20 @@ Socket_islistening (T socket)
 {
   assert (socket);
 
-  /* Socket must be bound to be listening */
   if (!Socket_isbound (socket))
     return 0;
 
-  /* Socket must not be connected to be listening */
   if (Socket_isconnected (socket))
     return 0;
 
-  /* Additional check: verify socket is actually in listening state
-   * by checking if accept() would work (non-blocking check) */
   {
     int error = 0;
     socklen_t error_len = sizeof (error);
 
-    /* Check SO_ERROR - listening sockets should have no error */
     if (getsockopt (SocketBase_fd (socket->base), SOCKET_SOL_SOCKET, SO_ERROR,
                     &error, &error_len)
         == 0)
       {
-        /* If there's a connection error, socket might be in wrong state */
         if (error != 0 && error != ENOTCONN)
           return 0;
       }
@@ -824,11 +592,6 @@ Socket_getlocalport (const T socket)
   return socket->base->localport;
 }
 
-/* ==================== Bind Operations ==================== */
-
-/* Bind setup uses SocketCommon_validate_port and SocketCommon_setup_hints
- * directly */
-
 static int
 is_common_bind_error (int err)
 {
@@ -836,19 +599,6 @@ is_common_bind_error (int err)
          || err == EAFNOSUPPORT;
 }
 
-/* handle_bind_error removed - use SocketCommon_format_bind_error() instead */
-
-/* ==================== Bind Operations ==================== */
-
-/**
- * bind_resolve_address - Resolve hostname for binding
- * @host: Hostname to resolve (NULL for wildcard)
- * @port: Port number
- * @socket_family: Socket address family
- * @res: Output for resolved addresses
- *
- * Sets errno to EAI_FAIL on resolution failure without raising.
- */
 static void
 bind_resolve_address (const char *host, int port, int socket_family,
                       struct addrinfo **res)
@@ -859,14 +609,6 @@ bind_resolve_address (const char *host, int port, int socket_family,
     errno = EAI_FAIL;
 }
 
-/**
- * bind_try_addresses - Attempt bind to resolved addresses
- * @sock: Socket instance (volatile-safe)
- * @res: Resolved address list
- * @socket_family: Socket address family
- *
- * Raises: Socket_Failed on non-common errors
- */
 static void
 bind_try_addresses (T sock, struct addrinfo *res, int socket_family)
 {
@@ -895,7 +637,7 @@ Socket_bind (T socket, const char *host, int port)
 {
   struct addrinfo *res = NULL;
   int socket_family;
-  volatile T vsock = socket; /* Preserve across exception boundaries */
+  volatile T vsock = socket;
 
   assert (socket);
 
@@ -920,7 +662,6 @@ Socket_bind (T socket, const char *host, int port)
     if (is_common_bind_error (saved_errno))
       {
         errno = saved_errno;
-        /* Frame already popped by EXCEPT macro, safe to use plain return */
         return;
       }
     errno = saved_errno;
@@ -948,8 +689,6 @@ Socket_bind_with_addrinfo (T socket, struct addrinfo *res)
   RAISE_MODULE_ERROR (Socket_Failed);
 }
 
-/* ==================== Async Bind Operations ==================== */
-
 Request_T
 Socket_bind_async (SocketDNS_T dns, T socket, const char *host, int port)
 {
@@ -958,14 +697,9 @@ Socket_bind_async (SocketDNS_T dns, T socket, const char *host, int port)
   assert (dns);
   assert (socket);
 
-  /* Validate port using common validator for consistent error handling */
   SocketCommon_validate_port (port, Socket_Failed);
-
-  /* Normalize wildcard addresses to NULL - use existing utility */
   host = SocketCommon_normalize_wildcard_host (host);
 
-  /* For wildcard bind (NULL host), resolve synchronously and create completed
-   * request */
   if (host == NULL)
     {
       SocketCommon_setup_hints (&hints, SOCKET_STREAM_TYPE, SOCKET_AI_PASSIVE);
@@ -977,7 +711,6 @@ Socket_bind_async (SocketDNS_T dns, T socket, const char *host, int port)
       return SocketDNS_create_completed_request (dns, res, port);
     }
 
-  /* For non-wildcard hosts, use async DNS resolution */
   {
     Request_T req = SocketDNS_resolve (dns, host, port, NULL, NULL);
     if (socket->base->timeouts.dns_timeout_ms > 0)
@@ -996,24 +729,12 @@ Socket_bind_async_cancel (SocketDNS_T dns, Request_T req)
     SocketDNS_cancel (dns, req);
 }
 
-/* ==================== Accept Operations ==================== */
-
-/* Forward declarations */
 static int accept_connection (T socket, struct sockaddr_storage *addr,
                               socklen_t *addrlen);
 static T create_accepted_socket (int newfd,
                                  const struct sockaddr_storage *addr,
                                  socklen_t addrlen);
 
-/* ==================== Accept Helper Functions ==================== */
-
-/**
- * accept_create_arena - Create arena for accepted socket
- * @newfd: File descriptor to close on failure
- *
- * Returns: New arena
- * Raises: Socket_Failed on allocation failure
- */
 static Arena_T
 accept_create_arena (int newfd)
 {
@@ -1031,13 +752,6 @@ accept_create_arena (int newfd)
   return (Arena_T)arena;
 }
 
-/**
- * accept_alloc_socket - Allocate socket structure from arena
- * @arena: Memory arena
- *
- * Returns: Allocated socket structure
- * Raises: Socket_Failed on allocation failure (disposes arena)
- */
 static T
 accept_alloc_socket (Arena_T arena)
 {
@@ -1054,13 +768,6 @@ accept_alloc_socket (Arena_T arena)
   return (T)newsocket;
 }
 
-/**
- * accept_alloc_base - Allocate base structure from arena
- * @arena: Memory arena
- *
- * Returns: Allocated base structure
- * Raises: Socket_Failed on allocation failure (disposes arena)
- */
 static SocketBase_T
 accept_alloc_base (Arena_T arena)
 {
@@ -1077,14 +784,6 @@ accept_alloc_base (Arena_T arena)
   return (SocketBase_T)base;
 }
 
-/**
- * accept_infer_socket_type - Get SO_TYPE from accepted socket
- * @newfd: File descriptor
- * @arena: Arena for cleanup on failure
- *
- * Returns: Socket type (SOCK_STREAM, etc.)
- * Raises: Socket_Failed on getsockopt failure
- */
 static int
 accept_infer_socket_type (int newfd, Arena_T arena)
 {
@@ -1099,18 +798,6 @@ accept_infer_socket_type (int newfd, Arena_T arena)
   return type_opt;
 }
 
-/**
- * accept_init_socket - Initialize accepted socket structure
- * @newsocket: Socket to initialize
- * @base: Base to attach
- * @arena: Memory arena
- * @newfd: File descriptor
- * @addr: Peer address
- * @addrlen: Address length
- * @type_opt: Socket type from SO_TYPE
- *
- * Initializes all socket fields and increments live count.
- */
 static void
 accept_init_socket (T newsocket, SocketBase_T base, Arena_T arena, int newfd,
                     const struct sockaddr_storage *addr, socklen_t addrlen,
@@ -1134,19 +821,6 @@ accept_init_socket (T newsocket, SocketBase_T base, Arena_T arena, int newfd,
   socket_init_after_alloc (newsocket);
 }
 
-/* ==================== Accept Connection ==================== */
-
-/**
- * accept_connection - Accept a new connection
- * @socket: Listening socket
- * @addr: Output address structure
- * @addrlen: Input/output address length
- *
- * Returns: New file descriptor or -1 on EAGAIN/EWOULDBLOCK
- * Raises: Socket_Failed on other errors
- *
- * All accepted sockets have close-on-exec flag set by default.
- */
 static int
 accept_connection (T socket, struct sockaddr_storage *addr, socklen_t *addrlen)
 {
@@ -1179,20 +853,6 @@ accept_connection (T socket, struct sockaddr_storage *addr, socklen_t *addrlen)
   return newfd;
 }
 
-/* ==================== Create Accepted Socket ==================== */
-
-/**
- * create_accepted_socket - Create socket structure for accepted connection
- * @newfd: Accepted file descriptor
- * @addr: Peer address
- * @addrlen: Address length
- *
- * Returns: New socket instance
- * Raises: Socket_Failed on allocation or initialization failure
- *
- * Orchestrates arena creation, structure allocation, type inference,
- * and initialization via focused helper functions.
- */
 static T
 create_accepted_socket (int newfd, const struct sockaddr_storage *addr,
                         socklen_t addrlen)
@@ -1216,9 +876,6 @@ Socket_accept (T socket)
   T newsocket = NULL;
 
   assert (socket);
-
-  /* Initialize to zero to avoid Valgrind warnings about uninitialized memory
-   * when accept only partially fills the structure (e.g., Unix sockets). */
   memset (&addr, 0, sizeof (addr));
 
   TRY
@@ -1228,8 +885,6 @@ Socket_accept (T socket)
       RETURN NULL;
 
     newsocket = create_accepted_socket (newfd, &addr, addrlen);
-
-    /* Cache peer info from accepted address */
     cache_remote_endpoint (newsocket->base, (struct sockaddr *)&addr, addrlen);
 
     SocketCommon_update_local_endpoint (newsocket->base);
@@ -1244,32 +899,15 @@ Socket_accept (T socket)
   {
     if (newfd >= 0)
       SAFE_CLOSE (newfd);
-    /* Assume create_accepted_socket handles partial cleanup */
     RERAISE;
   }
   END_TRY;
-  /* Unreachable due to returns inside TRY or RERAISE in EXCEPT */
   return NULL;
 }
 
-/* ==================== Pair Operations ==================== */
-
-/**
- * socketpair_validate_type - Validate socket type for socketpair
- * @type: Socket type to validate
- *
- * Raises: Socket_Failed if type is invalid
- *
- * Note: SOCK_SEQPACKET is intentionally excluded despite being valid for
- * Unix domain sockets. It provides connection-oriented, reliable, atomic
- * record delivery but has limited portability (not available on all Unix
- * variants) and is rarely needed in practice. Applications requiring
- * message boundaries should use SOCK_DGRAM which is universally supported.
- */
 static void
 socketpair_validate_type (int type)
 {
-  /* Only SOCK_STREAM and SOCK_DGRAM supported - see doc for SOCK_SEQPACKET */
   if (type != SOCK_STREAM && type != SOCK_DGRAM)
     SOCKET_RAISE_MSG (Socket, Socket_Failed,
                       "Invalid socket type for socketpair: %d (must be "
@@ -1277,13 +915,6 @@ socketpair_validate_type (int type)
                       type);
 }
 
-/**
- * socketpair_create_fds - Create the underlying socket pair file descriptors
- * @type: Socket type (SOCK_STREAM or SOCK_DGRAM)
- * @sv: Output array for the two file descriptors
- *
- * Raises: Socket_Failed on error
- */
 static void
 socketpair_create_fds (int type, int sv[2])
 {
@@ -1296,21 +927,11 @@ socketpair_create_fds (int type, int sv[2])
                       "Failed to create socket pair (type=%d)", type);
 
 #if !SOCKET_HAS_SOCK_CLOEXEC
-  /* Fallback: Set CLOEXEC on both fds */
   SocketCommon_set_cloexec_fd (sv[0], true, Socket_Failed);
   SocketCommon_set_cloexec_fd (sv[1], true, Socket_Failed);
 #endif
 }
 
-/**
- * socketpair_allocate_socket - Allocate a single socket for socketpair
- * @fd: File descriptor to associate
- * @type: Socket type
- * @out_socket: Output for allocated socket
- *
- * Returns: The arena used (caller may transfer ownership)
- * Raises: Socket_Failed on allocation failure
- */
 static Arena_T
 socketpair_allocate_socket (int fd, int type, Socket_T *out_socket)
 {
@@ -1335,7 +956,7 @@ socketpair_allocate_socket (int fd, int type, Socket_T *out_socket)
 
   ((Socket_T)sock)->base->arena = arena;
   SocketCommon_init_base (((Socket_T)sock)->base, fd, AF_UNIX, type, 0, Socket_Failed);
-  ((Socket_T)sock)->base->remoteaddr = NULL; /* Pair sockets are connected */
+  ((Socket_T)sock)->base->remoteaddr = NULL;
 
   socket_init_after_alloc ((Socket_T)sock);
 
@@ -1343,11 +964,6 @@ socketpair_allocate_socket (int fd, int type, Socket_T *out_socket)
   return arena;
 }
 
-/**
- * socketpair_cleanup_socket - Cleanup a socket on error
- * @sock: Socket to cleanup (may be NULL)
- * @fd: File descriptor to close if socket not allocated
- */
 static void
 socketpair_cleanup_socket (Socket_T sock, int fd)
 {
@@ -1365,18 +981,6 @@ socketpair_cleanup_socket (Socket_T sock, int fd)
     }
 }
 
-/**
- * SocketPair_new - Create a pair of connected Unix domain sockets
- * @type: Socket type (SOCK_STREAM or SOCK_DGRAM)
- * @socket1: Output - first socket of the pair
- * @socket2: Output - second socket of the pair
- * Raises: Socket_Failed on error
- * Thread-safe: Yes (creates new sockets)
- * Note: Creates two connected Unix domain sockets for IPC.
- * Both sockets are ready to use - no bind/connect needed.
- * Typically used for parent-child or thread communication.
- * Only supports AF_UNIX (Unix domain sockets).
- */
 void
 SocketPair_new (int type, Socket_T *socket1, Socket_T *socket2)
 {
@@ -1392,15 +996,12 @@ SocketPair_new (int type, Socket_T *socket1, Socket_T *socket2)
 
   TRY
   {
-    /* Allocate first socket - arena owned by sock1->base */
     (void)socketpair_allocate_socket (sv[0], type, &sock1);
-    sv[0] = -1; /* FD now owned by sock1 */
+    sv[0] = -1;
 
-    /* Allocate second socket - arena owned by sock2->base */
     (void)socketpair_allocate_socket (sv[1], type, &sock2);
-    sv[1] = -1; /* FD now owned by sock2 */
+    sv[1] = -1;
 
-    /* Transfer ownership to caller */
     *socket1 = sock1;
     *socket2 = sock2;
     sock1 = NULL;
@@ -1408,8 +1009,6 @@ SocketPair_new (int type, Socket_T *socket1, Socket_T *socket2)
   }
   EXCEPT (Socket_Failed)
   {
-    /* Cleanup in reverse acquisition order */
-    /* socketpair_cleanup_socket handles arena via SocketCommon_free_base */
     socketpair_cleanup_socket (sock2, sv[1]);
     socketpair_cleanup_socket (sock1, sv[0]);
     RERAISE;
@@ -1417,17 +1016,7 @@ SocketPair_new (int type, Socket_T *socket1, Socket_T *socket2)
   END_TRY;
 }
 
-/* ==================== Peer Credentials ==================== */
-
 #ifdef SO_PEERCRED
-/**
- * socket_get_ucred - Get peer credentials from Unix domain socket
- * @socket: Socket instance
- * @cred: Output for ucred structure
- *
- * Returns: 0 on success, -1 on failure
- * Thread-safe: Yes (operates on single socket)
- */
 static int
 socket_get_ucred (const Socket_T socket, struct ucred *cred)
 {
@@ -1437,12 +1026,6 @@ socket_get_ucred (const Socket_T socket, struct ucred *cred)
 }
 #endif
 
-/**
- * socket_get_ucred_field - Get a specific field from peer credentials
- * @socket: Socket to query
- * @field: 0=pid, 1=uid, 2=gid
- * Returns: Field value or -1 on error/unsupported
- */
 static int
 socket_get_ucred_field (const Socket_T socket, int field)
 {
@@ -1485,8 +1068,6 @@ Socket_getpeergid (const Socket_T socket)
   return socket_get_ucred_field (socket, 2);
 }
 
-/* ==================== Bandwidth Limiting ==================== */
-
 void
 Socket_setbandwidth (T socket, size_t bytes_per_sec)
 {
@@ -1495,24 +1076,16 @@ Socket_setbandwidth (T socket, size_t bytes_per_sec)
 
   if (bytes_per_sec == 0)
     {
-      /* Disable bandwidth limiting */
       if (socket->bandwidth_limiter)
-        {
-          /* Arena-allocated, so just set to NULL - will be freed with arena */
-          socket->bandwidth_limiter = NULL;
-        }
+        socket->bandwidth_limiter = NULL;
       return;
     }
 
   if (socket->bandwidth_limiter)
-    {
-      /* Reconfigure existing limiter */
-      SocketRateLimit_configure (socket->bandwidth_limiter, bytes_per_sec,
-                                 bytes_per_sec);
-    }
+    SocketRateLimit_configure (socket->bandwidth_limiter, bytes_per_sec,
+                               bytes_per_sec);
   else
     {
-      /* Create new limiter using socket's arena */
       TRY socket->bandwidth_limiter = SocketRateLimit_new (
           SocketBase_arena (socket->base), bytes_per_sec, bytes_per_sec);
       EXCEPT (SocketRateLimit_Failed)
@@ -1527,9 +1100,7 @@ Socket_getbandwidth (T socket)
   assert (socket);
 
   if (!socket->bandwidth_limiter)
-    {
-      return 0; /* Unlimited */
-    }
+    return 0;
 
   return SocketRateLimit_get_rate (socket->bandwidth_limiter);
 }
@@ -1542,34 +1113,19 @@ Socket_send_limited (T socket, const void *buf, size_t len)
   assert (socket);
   assert (buf || len == 0);
 
-  /* If no bandwidth limit, behave like Socket_send */
   if (!socket->bandwidth_limiter)
-    {
-      return Socket_send (socket, buf, len);
-    }
+    return Socket_send (socket, buf, len);
 
-  /* Try to acquire tokens for the full length */
   if (SocketRateLimit_try_acquire (socket->bandwidth_limiter, len))
-    {
-      /* Full amount allowed */
-      return Socket_send (socket, buf, len);
-    }
+    return Socket_send (socket, buf, len);
 
-  /* Check how many tokens are available */
   allowed = SocketRateLimit_available (socket->bandwidth_limiter);
   if (allowed == 0)
-    {
-      /* Rate limited - return 0 to indicate caller should wait */
-      return 0;
-    }
+    return 0;
 
-  /* Send partial amount */
   if (SocketRateLimit_try_acquire (socket->bandwidth_limiter, allowed))
-    {
-      return Socket_send (socket, buf, allowed);
-    }
+    return Socket_send (socket, buf, allowed);
 
-  /* Shouldn't reach here, but handle gracefully */
   return 0;
 }
 
@@ -1582,35 +1138,20 @@ Socket_recv_limited (T socket, void *buf, size_t len)
   assert (socket);
   assert (buf || len == 0);
 
-  /* If no bandwidth limit, behave like Socket_recv */
   if (!socket->bandwidth_limiter)
-    {
-      return Socket_recv (socket, buf, len);
-    }
+    return Socket_recv (socket, buf, len);
 
-  /* Check how much we're allowed to receive */
   allowed = SocketRateLimit_available (socket->bandwidth_limiter);
   if (allowed == 0)
-    {
-      /* Rate limited - return 0 to indicate caller should wait */
-      return 0;
-    }
+    return 0;
 
-  /* Limit receive to allowed amount */
   if (allowed < len)
-    {
-      len = allowed;
-    }
+    len = allowed;
 
-  /* Receive data */
   received = Socket_recv (socket, buf, len);
 
-  /* Consume tokens for what we actually received */
   if (received > 0)
-    {
-      SocketRateLimit_try_acquire (socket->bandwidth_limiter,
-                                   (size_t)received);
-    }
+    SocketRateLimit_try_acquire (socket->bandwidth_limiter, (size_t)received);
 
   return received;
 }
@@ -1621,34 +1162,21 @@ Socket_bandwidth_wait_ms (T socket, size_t bytes)
   assert (socket);
 
   if (!socket->bandwidth_limiter)
-    {
-      return 0; /* No limit - immediate */
-    }
+    return 0;
 
   return SocketRateLimit_wait_time_ms (socket->bandwidth_limiter, bytes);
 }
 
-/* ==================== Per-Socket Statistics ==================== */
-
-/**
- * Socket_getstats - Retrieve current statistics for a socket
- * @socket: Socket to query
- * @stats: Output structure for statistics
- *
- * Thread-safe: Yes - atomic copy of stats
- */
 void
 Socket_getstats (const T socket, SocketStats_T *stats)
 {
   assert (socket);
   assert (stats);
 
-  /* Copy stats atomically using mutex */
   pthread_mutex_lock (&socket->base->mutex);
   *stats = socket->base->stats;
   pthread_mutex_unlock (&socket->base->mutex);
 
-  /* Try to get RTT from TCP_INFO (Linux only) */
 #if defined(__linux__) && defined(TCP_INFO)
   {
     struct tcp_info info;
@@ -1673,44 +1201,22 @@ Socket_getstats (const T socket, SocketStats_T *stats)
 #endif
 }
 
-/**
- * Socket_resetstats - Reset statistics counters for a socket
- * @socket: Socket to reset
- *
- * Resets all counters except create_time_ms which preserves original value.
- * Thread-safe: Yes - uses mutex
- */
 void
 Socket_resetstats (T socket)
 {
+  int64_t create_time;
+
   assert (socket);
 
   pthread_mutex_lock (&socket->base->mutex);
-
-  /* Preserve create_time_ms */
-  int64_t create_time = socket->base->stats.create_time_ms;
-
-  /* Zero all stats */
+  create_time = socket->base->stats.create_time_ms;
   memset (&socket->base->stats, 0, sizeof (SocketStats_T));
-
-  /* Restore preserved fields */
   socket->base->stats.create_time_ms = create_time;
   socket->base->stats.rtt_us = -1;
   socket->base->stats.rtt_var_us = -1;
-
   pthread_mutex_unlock (&socket->base->mutex);
 }
 
-/* ==================== Connection Health & Probing ==================== */
-
-/**
- * Socket_probe - Check if connection is still alive
- * @socket: Connected socket to probe
- * @timeout_ms: Maximum probe time (-1 for non-blocking)
- *
- * Returns: 1 if healthy, 0 if dead/error
- * Thread-safe: Yes
- */
 int
 Socket_probe (const T socket, int timeout_ms)
 {
@@ -1728,16 +1234,14 @@ Socket_probe (const T socket, int timeout_ms)
   if (fd < 0)
     return 0;
 
-  /* Step 1: Check for pending socket error (SO_ERROR) */
   error = 0;
   error_len = sizeof (error);
   if (getsockopt (fd, SOL_SOCKET, SO_ERROR, &error, &error_len) < 0)
     return 0;
 
   if (error != 0)
-    return 0; /* Socket has pending error */
+    return 0;
 
-  /* Step 2: Check if socket is readable/has data or closed */
   poll_timeout = (timeout_ms < 0) ? 0 : timeout_ms;
   pfd.fd = fd;
   pfd.events = POLLIN;
@@ -1746,34 +1250,25 @@ Socket_probe (const T socket, int timeout_ms)
   if (poll (&pfd, 1, poll_timeout) < 0)
     {
       if (errno == EINTR)
-        return 1; /* Interrupted, assume healthy */
+        return 1;
       return 0;
     }
 
   if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL))
-    return 0; /* Error or hangup */
+    return 0;
 
-  /* Step 3: If readable, peek to see if it's EOF (closed) or data */
   if (pfd.revents & POLLIN)
     {
       peek_result = recv (fd, &peek_buf, 1, MSG_PEEK | MSG_DONTWAIT);
       if (peek_result == 0)
-        return 0; /* Peer closed connection gracefully */
+        return 0;
       if (peek_result < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
-        return 0; /* Error */
-      /* Data available - connection healthy */
+        return 0;
     }
 
-  return 1; /* Appears healthy */
+  return 1;
 }
 
-/**
- * Socket_get_error - Get pending socket error (SO_ERROR)
- * @socket: Socket to check
- *
- * Returns: 0 if no error, otherwise errno value
- * Thread-safe: Yes
- */
 int
 Socket_get_error (const T socket)
 {
@@ -1793,13 +1288,6 @@ Socket_get_error (const T socket)
   return error;
 }
 
-/**
- * Socket_is_readable - Check if socket has data available
- * @socket: Socket to check
- *
- * Returns: 1 if data available, 0 if would block, -1 on error
- * Thread-safe: Yes
- */
 int
 Socket_is_readable (const T socket)
 {
@@ -1825,13 +1313,6 @@ Socket_is_readable (const T socket)
   return (pfd.revents & POLLIN) ? 1 : 0;
 }
 
-/**
- * Socket_is_writable - Check if socket can accept writes
- * @socket: Socket to check
- *
- * Returns: 1 if write ready, 0 if would block, -1 on error
- * Thread-safe: Yes
- */
 int
 Socket_is_writable (const T socket)
 {
@@ -1854,19 +1335,10 @@ Socket_is_writable (const T socket)
   if (pfd.revents & (POLLERR | POLLNVAL))
     return -1;
 
-  /* POLLHUP with POLLOUT means writable but peer closed read side */
   return (pfd.revents & POLLOUT) ? 1 : 0;
 }
 
 #ifdef __linux__
-/**
- * Socket_get_tcp_info - Retrieve TCP connection statistics (Linux)
- * @socket: Connected TCP socket
- * @info: Output structure
- *
- * Returns: 0 on success, -1 on error
- * Thread-safe: Yes
- */
 int
 Socket_get_tcp_info (const T socket, SocketTCPInfo *info)
 {
@@ -1886,7 +1358,6 @@ Socket_get_tcp_info (const T socket, SocketTCPInfo *info)
   if (getsockopt (fd, IPPROTO_TCP, TCP_INFO, &kernel_info, &info_len) < 0)
     return -1;
 
-  /* Map kernel tcp_info to our SocketTCPInfo structure */
   memset (info, 0, sizeof (*info));
 
   info->state = kernel_info.tcpi_state;
@@ -1929,7 +1400,6 @@ Socket_get_tcp_info (const T socket, SocketTCPInfo *info)
 
   info->total_retrans = kernel_info.tcpi_total_retrans;
 
-/* Extended fields - check if available */
 #ifdef HAVE_TCP_INFO_PACING_RATE
   info->pacing_rate = kernel_info.tcpi_pacing_rate;
   info->max_pacing_rate = kernel_info.tcpi_max_pacing_rate;
@@ -1960,13 +1430,6 @@ Socket_get_tcp_info (const T socket, SocketTCPInfo *info)
 }
 #endif /* __linux__ */
 
-/**
- * Socket_get_rtt - Get current RTT estimate
- * @socket: Connected TCP socket
- *
- * Returns: RTT in microseconds, or -1 if unavailable
- * Thread-safe: Yes
- */
 int32_t
 Socket_get_rtt (const T socket)
 {
@@ -1991,13 +1454,6 @@ Socket_get_rtt (const T socket)
 #endif
 }
 
-/**
- * Socket_get_cwnd - Get current congestion window size
- * @socket: Connected TCP socket
- *
- * Returns: Congestion window in segments, or -1 if unavailable
- * Thread-safe: Yes
- */
 int32_t
 Socket_get_cwnd (const T socket)
 {

@@ -4,19 +4,6 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * SocketBuf.c - Circular buffer for socket I/O
- *
- * Implements a circular buffer for efficient socket I/O operations.
- *
- * Features:
- * - Circular buffer implementation
- * - Read/write/peek operations
- * - Dynamic buffer resizing
- * - Zero-copy pointer access
- * - Secure memory clearing
- */
-
 #include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -37,15 +24,12 @@
 const Except_T SocketBuf_Failed
     = { &SocketBuf_Failed, "SocketBuf operation failed" };
 
-/* Declare module-specific exception using centralized macros */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketBuf);
 
-/* Module-local convenience macros for error handling */
 #define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketBuf, e)
 #define RAISE_MSG(e, fmt, ...)                                                \
   SOCKET_RAISE_MSG (SocketBuf, e, fmt, ##__VA_ARGS__)
 
-/* Validation macros for defensive programming */
 #define VALIDATE_BUF(buf)                                                     \
   do                                                                          \
     {                                                                         \
@@ -88,13 +72,7 @@ struct T
   Arena_T arena;
 };
 
-/**
- * SocketBuf_check_invariants - Validate buffer invariants
- * @buf: Buffer to check (read-only)
- *
- * Returns: true if all invariants hold, false otherwise
- * Thread-safe: No (caller must ensure exclusive access)
- */
+
 bool
 SocketBuf_check_invariants (const T buf)
 {
@@ -107,12 +85,7 @@ SocketBuf_check_invariants (const T buf)
   return true;
 }
 
-/**
- * new_validate_capacity - Validate capacity for new buffer
- * @capacity: Requested capacity
- *
- * Raises: SocketBuf_Failed if capacity exceeds SOCKETBUF_MAX_CAPACITY
- */
+
 static void
 new_validate_capacity (size_t capacity)
 {
@@ -124,11 +97,7 @@ new_validate_capacity (size_t capacity)
                SOCKET_MAX_BUFFER_SIZE);
 }
 
-/**
- * new_alloc_struct - Allocate buffer structure
- * @arena: Memory arena
- * Returns: Allocated buffer or raises on failure
- */
+
 static T
 new_alloc_struct (Arena_T arena)
 {
@@ -139,12 +108,7 @@ new_alloc_struct (Arena_T arena)
   return buf;
 }
 
-/**
- * new_alloc_data - Allocate buffer data
- * @arena: Memory arena
- * @capacity: Buffer capacity
- * Returns: Allocated data or raises on failure
- */
+
 static char *
 new_alloc_data (Arena_T arena, size_t capacity)
 {
@@ -155,13 +119,7 @@ new_alloc_data (Arena_T arena, size_t capacity)
   return data;
 }
 
-/**
- * SocketBuf_new - Create new circular buffer
- * @arena: Memory arena for allocations
- * @capacity: Buffer capacity in bytes
- * Returns: New buffer instance
- * Raises: SocketBuf_Failed on allocation failure or invalid capacity
- */
+
 T
 SocketBuf_new (Arena_T arena, size_t capacity)
 {
@@ -181,15 +139,7 @@ SocketBuf_new (Arena_T arena, size_t capacity)
   return buf;
 }
 
-/**
- * SocketBuf_release - Release buffer handle (invalidate pointer)
- * @bufp: Pointer to buffer pointer (set to NULL)
- *
- * Nullifies the buffer pointer to prevent use-after-free. Does not
- * free memory (arena-managed). Idempotent if *bufp is already NULL.
- *
- * Thread-safe: Yes (no shared state modified)
- */
+
 void
 SocketBuf_release (T *bufp)
 {
@@ -201,13 +151,7 @@ SocketBuf_release (T *bufp)
   *bufp = NULL;
 }
 
-/**
- * circular_calc_chunk - Calculate chunk size for circular buffer transfer
- * @capacity: Buffer capacity
- * @pos: Current position in buffer
- * @remaining: Remaining bytes to transfer
- * Returns: Chunk size for this iteration
- */
+
 static size_t
 circular_calc_chunk (size_t capacity, size_t pos, size_t remaining)
 {
@@ -215,13 +159,7 @@ circular_calc_chunk (size_t capacity, size_t pos, size_t remaining)
   return chunk > remaining ? remaining : chunk;
 }
 
-/**
- * circular_copy_to_buffer - Copy data to circular buffer at position
- * @buf: Target buffer
- * @src: Source data
- * @pos: Position in buffer
- * @len: Length to copy
- */
+
 static void
 circular_copy_to_buffer (T buf, const char *src, size_t pos, size_t len)
 {
@@ -229,13 +167,7 @@ circular_copy_to_buffer (T buf, const char *src, size_t pos, size_t len)
   memcpy (buf->data + pos, src, len);
 }
 
-/**
- * SocketBuf_write - Write data to circular buffer
- * @buf: Buffer to write to
- * @data: Source data
- * @len: Maximum bytes to write
- * Returns: Bytes actually written
- */
+
 size_t
 SocketBuf_write (T buf, const void *data, size_t len)
 {
@@ -267,13 +199,7 @@ SocketBuf_write (T buf, const void *data, size_t len)
   return written;
 }
 
-/**
- * circular_copy_from_buffer - Copy data from circular buffer at position
- * @buf: Source buffer (read-only)
- * @dst: Destination data
- * @pos: Position in buffer
- * @len: Length to copy
- */
+
 static void
 circular_copy_from_buffer (const T buf, char *dst, size_t pos, size_t len)
 {
@@ -281,13 +207,7 @@ circular_copy_from_buffer (const T buf, char *dst, size_t pos, size_t len)
   memcpy (dst, buf->data + pos, len);
 }
 
-/**
- * SocketBuf_read - Read data from circular buffer (destructive)
- * @buf: Buffer to read from
- * @data: Destination buffer
- * @len: Maximum bytes to read
- * Returns: Bytes actually read
- */
+
 size_t
 SocketBuf_read (T buf, void *data, size_t len)
 {
@@ -318,13 +238,7 @@ SocketBuf_read (T buf, void *data, size_t len)
   return bytes_read;
 }
 
-/**
- * SocketBuf_peek - Peek data from circular buffer (non-destructive)
- * @buf: Buffer to peek from
- * @data: Destination buffer
- * @len: Maximum bytes to peek
- * Returns: Bytes actually peeked
- */
+
 size_t
 SocketBuf_peek (T buf, void *data, size_t len)
 {
@@ -407,11 +321,7 @@ SocketBuf_clear (T buf)
   buf->size = 0;
 }
 
-/**
- * SocketBuf_secureclear - Securely clear buffer (for sensitive data)
- * @buf: Buffer to clear
- *
- * Zeros memory contents before resetting pointers. Uses SocketCrypto
+/* Zeros memory contents before resetting pointers. Uses SocketCrypto
  * secure clear to prevent compiler optimization removal. Use for
  * sensitive data (passwords, keys, tokens).
  */
@@ -427,16 +337,7 @@ SocketBuf_secureclear (T buf)
   buf->size = 0;
 }
 
-/* ==================== Reserve Operations ==================== */
 
-/**
- * reserve_calc_new_capacity - Calculate new capacity for reserve
- * @current_cap: Current capacity
- * @total_needed: Total capacity needed (current size + min_space)
- *
- * Returns: New capacity or 0 on overflow/invalid
- * Thread-safe: Yes (pure function)
- */
 static size_t
 reserve_calc_new_capacity (size_t current_cap, size_t total_needed)
 {
@@ -463,15 +364,7 @@ reserve_calc_new_capacity (size_t current_cap, size_t total_needed)
   return new_cap;
 }
 
-/**
- * reserve_migrate_data - Migrate data to new buffer and cleanup old
- * @buf: Buffer to update
- * @new_data: New buffer data pointer
- * @new_cap: New buffer capacity
- *
- * Thread-safe: No (modifies buffer)
- *
- * Note: Uses memmove instead of memcpy because arena allocation may place
+/* Note: Uses memmove instead of memcpy because arena allocation may place
  * new_data adjacent to old_data in the same chunk, causing memory regions
  * to overlap when old_data + head extends into new_data's region.
  *
@@ -486,17 +379,14 @@ reserve_migrate_data (T buf, char *new_data, size_t new_cap)
 
   if (buf->size > 0)
     {
-      /* Calculate contiguous bytes from head to end of buffer */
       size_t first_part = old_cap - buf->head;
 
       if (first_part >= buf->size)
         {
-          /* No wrap - all data is contiguous from head */
           memmove (new_data, old_data + buf->head, buf->size);
         }
       else
         {
-          /* Data wraps around - copy in two parts */
           memmove (new_data, old_data + buf->head, first_part);
           memmove (new_data + first_part, old_data, buf->size - first_part);
         }
@@ -511,15 +401,7 @@ reserve_migrate_data (T buf, char *new_data, size_t new_cap)
   buf->tail = buf->size;
 }
 
-/**
- * SocketBuf_reserve - Resize buffer to ensure min_space available
- * @buf: Buffer to resize
- * @min_space: Minimum additional space required
- *
- * Raises: SocketBuf_Failed on overflow or allocation failure
- * Thread-safe: No (modifies buffer)
- *
- * Memory note: This function allocates a new buffer from the arena and
+/* Memory note: This function allocates a new buffer from the arena and
  * abandons the old buffer. Since arenas don't support individual frees,
  * the old allocation remains until Arena_dispose(). This is acceptable
  * because:
@@ -555,8 +437,6 @@ SocketBuf_reserve (T buf, size_t min_space)
     RAISE_MSG (SocketBuf_Failed, "SocketBuf reserve: new capacity invalid "
                                  "(overflow or exceeds limits)");
 
-  /* Arena allocation - old buffer remains allocated until arena disposal.
-   * See function doc for rationale on this acceptable memory behavior. */
   char *new_data = Arena_calloc (buf->arena, 1, new_cap, __FILE__, __LINE__);
   if (!new_data)
     RAISE_MSG (SocketBuf_Failed, SOCKET_ENOMEM ": Failed to calloc SocketBuf");
@@ -564,8 +444,6 @@ SocketBuf_reserve (T buf, size_t min_space)
   reserve_migrate_data (buf, new_data, new_cap);
   SOCKETBUF_INVARIANTS (buf);
 }
-
-/* ==================== Zero-Copy Pointer Access ==================== */
 
 const void *
 SocketBuf_readptr (T buf, size_t *len)
@@ -651,16 +529,7 @@ SocketBuf_written (T buf, size_t len)
   SOCKETBUF_INVARIANTS (buf);
 }
 
-/* ==================== Buffer Management Operations ==================== */
-
-/**
- * compact_rotate_in_place - Rotate buffer data in place using reversal
- * @data: Buffer data pointer
- * @capacity: Buffer capacity
- * @head: Current head position
- * @size: Current data size
- *
- * Uses the "three reversals" algorithm to rotate data in place:
+/* Uses the "three reversals" algorithm to rotate data in place:
  * 1. Reverse [head, capacity)
  * 2. Reverse [0, head)
  * 3. Reverse [0, size)
@@ -670,7 +539,6 @@ SocketBuf_written (T buf, size_t len)
 static void
 compact_rotate_in_place (char *data, size_t capacity, size_t head, size_t size)
 {
-  /* Helper macro to swap bytes */
 #define SWAP_BYTES(a, b)                                                      \
   do                                                                          \
     {                                                                         \
@@ -680,19 +548,15 @@ compact_rotate_in_place (char *data, size_t capacity, size_t head, size_t size)
     }                                                                         \
   while (0)
 
-  /* Reverse function for a range [start, end) */
   size_t first_part = capacity - head;
   size_t second_part = size - first_part;
 
-  /* Reverse [head, capacity) */
   for (size_t i = 0; i < first_part / 2; i++)
     SWAP_BYTES (data[head + i], data[capacity - 1 - i]);
 
-  /* Reverse [0, second_part) */
   for (size_t i = 0; i < second_part / 2; i++)
     SWAP_BYTES (data[i], data[second_part - 1 - i]);
 
-  /* Reverse [0, size) */
   for (size_t i = 0; i < size / 2; i++)
     SWAP_BYTES (data[i], data[size - 1 - i]);
 
@@ -704,44 +568,35 @@ SocketBuf_compact (T buf)
 {
   VALIDATE_BUF (buf);
 
-  /* Nothing to do if empty or already compacted */
   if (buf->size == 0 || buf->head == 0)
     return;
 
-  /* Calculate contiguous bytes from head to end of buffer */
   size_t first_part = buf->capacity - buf->head;
 
   if (first_part >= buf->size)
     {
-      /* No wrap - all data is contiguous, just memmove */
       memmove (buf->data, buf->data + buf->head, buf->size);
     }
   else
     {
-      /* Data wraps around - need temporary or two-part move */
       size_t second_part = buf->size - first_part;
 
-      /* If there's room at the end, shift first part up temporarily */
       if (first_part <= buf->head)
         {
-          /* Can move directly: second part fits before first moves */
           memmove (buf->data + first_part, buf->data, second_part);
           memmove (buf->data, buf->data + buf->head, first_part);
         }
       else
         {
-          /* Need to be careful - use arena temp buffer */
           char *temp = Arena_alloc (buf->arena, buf->size, __FILE__, __LINE__);
           if (temp)
             {
               memmove (temp, buf->data + buf->head, first_part);
               memmove (temp + first_part, buf->data, second_part);
               memmove (buf->data, temp, buf->size);
-              /* Arena temp will be freed with arena */
             }
           else
             {
-              /* Fall back to in-place rotation using reversal algorithm */
               compact_rotate_in_place (buf->data, buf->capacity, buf->head,
                                        buf->size);
             }
@@ -759,18 +614,14 @@ SocketBuf_ensure (T buf, size_t min_space)
 {
   VALIDATE_BUF (buf);
 
-  /* Check if already have enough space */
   if (SocketBuf_space (buf) >= min_space)
     return 1;
 
-  /* Try compacting first - might free up contiguous space */
   SocketBuf_compact (buf);
 
-  /* Check again after compacting */
   if (SocketBuf_space (buf) >= min_space)
     return 1;
 
-  /* Need to resize */
   TRY { SocketBuf_reserve (buf, min_space); }
   EXCEPT (SocketBuf_Failed) { return 0; }
   END_TRY;
@@ -778,28 +629,14 @@ SocketBuf_ensure (T buf, size_t min_space)
   return 1;
 }
 
-/**
- * get_byte_at_offset - Get byte at offset from head (handles wraparound)
- * @buf: Buffer to read from
- * @offset: Offset from head
- * Returns: Byte value at offset
- */
+
 static unsigned char
 get_byte_at_offset (const T buf, size_t offset)
 {
   return (unsigned char)buf->data[(buf->head + offset) % buf->capacity];
 }
 
-/**
- * match_pattern_at_offset - Check if pattern matches at given offset
- * @buf: Buffer to search in
- * @offset: Offset from head to start matching
- * @pattern: Pattern bytes to match
- * @pattern_len: Length of pattern
- *
- * Returns: 1 if pattern matches at offset, 0 otherwise
- * Thread-safe: No (caller must ensure exclusive access)
- */
+
 static int
 match_pattern_at_offset (const T buf, size_t offset,
                          const unsigned char *pattern, size_t pattern_len)
@@ -834,7 +671,6 @@ SocketBuf_find (T buf, const void *needle, size_t needle_len)
   const unsigned char *pattern = needle;
   size_t search_limit = buf->size - needle_len + 1;
 
-  /* Simple search - handles circular buffer transparently */
   for (size_t i = 0; i < search_limit; i++)
     {
       if (match_pattern_at_offset (buf, i, pattern, needle_len))
@@ -844,15 +680,7 @@ SocketBuf_find (T buf, const void *needle, size_t needle_len)
   return -1;
 }
 
-/**
- * readline_copy_and_strip - Copy line data and strip CR/LF endings
- * @src: Source buffer containing line data
- * @src_len: Length of source data
- * @dst: Destination buffer
- * @newline_pos: Position of newline in source, or -1 if not found
- *
- * Returns: Number of bytes written to dst (excluding null terminator)
- */
+
 static size_t
 readline_copy_and_strip (const char *src, size_t src_len, char *dst,
                          ssize_t newline_pos)
@@ -864,7 +692,6 @@ readline_copy_and_strip (const char *src, size_t src_len, char *dst,
   else
     line_bytes = src_len;
 
-  /* Strip trailing \r if present (handle \r\n line endings) */
   if (line_bytes > 0 && src[line_bytes - 1] == '\r')
     line_bytes--;
 
@@ -889,31 +716,25 @@ SocketBuf_readline (T buf, char *line, size_t max_len)
   if (max_len == 0)
     return -1;
 
-  /* Check if there's a complete line by trying to find newline */
   ssize_t nl_pos = SocketBuf_find (buf, "\n", 1);
   if (nl_pos < 0)
-    return -1; /* No complete line yet */
+    return -1;
 
-  /* Calculate line length excluding newline */
   size_t line_len = (size_t)nl_pos;
 
-  /* Limit to max_len - 1 (reserve space for null) */
   if (line_len > max_len - 1)
     line_len = max_len - 1;
 
-  /* Read the line data and newline together */
-  size_t total_to_read = line_len + 1; /* Include newline */
+  size_t total_to_read = line_len + 1;
   if (total_to_read > max_len)
     total_to_read = max_len;
 
-  /* Use fixed-size buffer to avoid VLA security issues */
   char temp[SOCKETBUF_MAX_LINE_LENGTH + 1];
   if (total_to_read > SOCKETBUF_MAX_LINE_LENGTH)
     total_to_read = SOCKETBUF_MAX_LINE_LENGTH;
 
   size_t bytes_read = SocketBuf_read (buf, temp, total_to_read);
 
-  /* Find newline in what we read */
   char *nl_ptr = memchr (temp, '\n', bytes_read);
   ssize_t newline_offset = nl_ptr ? (nl_ptr - temp) : -1;
 
@@ -922,8 +743,6 @@ SocketBuf_readline (T buf, char *line, size_t max_len)
 
   return (ssize_t)line_bytes;
 }
-
-/* ==================== Scatter-Gather I/O ==================== */
 
 #include <sys/uio.h>
 
@@ -955,7 +774,6 @@ SocketBuf_readv (T buf, const struct iovec *iov, int iovcnt)
       size_t n = SocketBuf_read (buf, iov[i].iov_base, iov[i].iov_len);
       total_read += n;
 
-      /* If we read less than requested, buffer is empty */
       if (n < iov[i].iov_len)
         break;
     }
@@ -991,7 +809,6 @@ SocketBuf_writev (T buf, const struct iovec *iov, int iovcnt)
       size_t n = SocketBuf_write (buf, iov[i].iov_base, iov[i].iov_len);
       total_written += n;
 
-      /* If we wrote less than requested, buffer is full */
       if (n < iov[i].iov_len)
         break;
     }

@@ -4,24 +4,6 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * SocketDgram.c - UDP/datagram socket implementation
- *
- * Consolidated module for UDP socket operations including core lifecycle,
- * options, bind/connect, and scatter/gather I/O.
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
- *
- * Features:
- * - Socket lifecycle management (new/free)
- * - Basic send/recv operations
- * - Socket options (reuseaddr, broadcast, multicast, TTL)
- * - Bind and connect operations with address resolution
- * - Scatter/gather I/O (sendv/recvv)
- * - Thread-safe live count tracking
- */
-
 #include <assert.h>
 #include <errno.h>
 #include <limits.h>
@@ -60,13 +42,10 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketDgram);
 
 #define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketDgram, e)
 
-/* Shared live count tracker - see SocketLiveCount in SocketCommon.h */
 static struct SocketLiveCount dgram_live_tracker = SOCKETLIVECOUNT_STATIC_INIT;
 
 #define dgram_live_increment() SocketLiveCount_increment (&dgram_live_tracker)
 #define dgram_live_decrement() SocketLiveCount_decrement (&dgram_live_tracker)
-
-/* Note: struct T defined in SocketDgram-private.h */
 
 int
 SocketDgram_debug_live_count (void)
@@ -74,14 +53,6 @@ SocketDgram_debug_live_count (void)
   return SocketLiveCount_get (&dgram_live_tracker);
 }
 
-/* ==================== Lifecycle Operations ==================== */
-
-/**
- * dgram_alloc_structure - Allocate datagram socket structure from arena
- * @base: Initialized socket base
- *
- * Returns: Allocated structure, or raises exception
- */
 static T
 dgram_alloc_structure (SocketBase_T base)
 {
@@ -131,20 +102,17 @@ SocketDgram_free (T *socket)
   if (!s)
     return;
 
-  *socket = NULL; /* Invalidate caller pointer before cleanup */
+  *socket = NULL;
 
 #if SOCKET_HAS_TLS
-  /* DTLS cleanup: free SSL and securely clear sensitive data */
   if (s->dtls_ssl)
     {
       SSL_set_app_data ((SSL *)s->dtls_ssl, NULL);
-      tls_cleanup_alpn_temp (
-          (SSL *)s->dtls_ssl); /* Free ALPN temp if stored (shared with TLS) */
+      tls_cleanup_alpn_temp ((SSL *)s->dtls_ssl);
       SSL_free ((SSL *)s->dtls_ssl);
       s->dtls_ssl = NULL;
       s->dtls_ctx = NULL;
     }
-  /* Securely clear DTLS buffers if allocated */
   if (s->dtls_read_buf)
     {
       SocketCrypto_secure_clear (s->dtls_read_buf,
@@ -190,17 +158,6 @@ SocketDgram_free (T *socket)
   dgram_live_decrement ();
 }
 
-/* ==================== Address Resolution Helpers ==================== */
-
-/**
- * resolve_sendto_address - Resolve hostname for sendto operation
- * @host: Hostname or IP address
- * @port: Port number
- * @res: Output for resolved addresses
- *
- * Returns: 0 on success
- * Raises: SocketDgram_Failed on resolution failure
- */
 static int
 resolve_sendto_address (const char *host, int port, struct addrinfo **res)
 {
@@ -222,16 +179,6 @@ resolve_sendto_address (const char *host, int port, struct addrinfo **res)
   return 0;
 }
 
-/**
- * perform_sendto - Execute sendto system call with error handling
- * @socket: Datagram socket
- * @buf: Data to send
- * @len: Length of data
- * @res: Resolved destination address
- *
- * Returns: Bytes sent, or 0 if would block
- * Raises: SocketDgram_Failed on error or if len > SAFE_UDP_SIZE
- */
 static ssize_t
 perform_sendto (T socket, const void *buf, size_t len,
                 const struct addrinfo *res)
@@ -258,17 +205,6 @@ perform_sendto (T socket, const void *buf, size_t len,
   return sent;
 }
 
-/**
- * perform_recvfrom - Execute recvfrom system call with error handling
- * @socket: Datagram socket
- * @buf: Buffer for received data
- * @len: Buffer size
- * @addr: Output for sender address
- * @addrlen: Input/output for address length
- *
- * Returns: Bytes received, or 0 if would block
- * Raises: SocketDgram_Failed on error
- */
 static ssize_t
 perform_recvfrom (T socket, void *buf, size_t len,
                   struct sockaddr_storage *addr, socklen_t *addrlen)
@@ -285,14 +221,6 @@ perform_recvfrom (T socket, void *buf, size_t len,
   return received;
 }
 
-/**
- * extract_sender_info - Extract host and port from sender address
- * @addr: Sender address storage
- * @addrlen: Address length
- * @host: Output buffer for hostname/IP
- * @host_len: Size of host buffer
- * @port: Output for port number
- */
 static void
 extract_sender_info (const struct sockaddr_storage *addr, socklen_t addrlen,
                      char *host, size_t host_len, int *port)
@@ -317,8 +245,6 @@ extract_sender_info (const struct sockaddr_storage *addr, socklen_t addrlen,
       *port = 0;
     }
 }
-
-/* ==================== Basic I/O Operations ==================== */
 
 ssize_t
 SocketDgram_sendto (T socket, const void *buf, size_t len, const char *host,
@@ -403,8 +329,6 @@ SocketDgram_recv (T socket, void *buf, size_t len)
     }
   return received;
 }
-
-/* ==================== Socket Options ==================== */
 
 void
 SocketDgram_setnonblocking (T socket)
@@ -553,15 +477,6 @@ SocketDgram_setcloexec (T socket, int enable)
                                       SocketDgram_Failed);
 }
 
-/**
- * dgram_get_ttl_params - Get TTL socket option parameters by address family
- * @socket_family: Address family (SOCKET_AF_INET or SOCKET_AF_INET6)
- * @level: Output for protocol level
- * @optname: Output for option name
- *
- * Returns: 0 on success
- * Raises: SocketDgram_Failed for unsupported family
- */
 static int
 dgram_get_ttl_params (int socket_family, int *level, int *optname)
 {
@@ -600,8 +515,6 @@ SocketDgram_getttl (T socket)
 
   return ttl;
 }
-
-/* ==================== State/Accessor Functions ==================== */
 
 int
 SocketDgram_fd (const T socket)
@@ -658,8 +571,6 @@ SocketDgram_isbound (T socket)
   return 0;
 }
 
-/* ==================== Bind/Connect Operations ==================== */
-
 /* Operation type for dgram_perform_address_operation */
 typedef enum
 {
@@ -667,14 +578,6 @@ typedef enum
   DGRAM_OP_CONNECT
 } DgramOpType;
 
-/**
- * dgram_try_single_address - Try operation on single address
- * @fd: Socket file descriptor
- * @rp: Address to try
- * @op: Operation type
- *
- * Returns: 0 on success, -1 on failure
- */
 static int
 dgram_try_single_address (int fd, const struct addrinfo *rp, DgramOpType op)
 {
@@ -682,13 +585,6 @@ dgram_try_single_address (int fd, const struct addrinfo *rp, DgramOpType op)
                                : connect (fd, rp->ai_addr, rp->ai_addrlen);
 }
 
-/**
- * dgram_setup_dual_stack - Configure IPv6 dual-stack for bind operations
- * @fd: Socket file descriptor
- * @family: Address family
- * @socket_family: Socket's configured family
- * @op: Operation type
- */
 static void
 dgram_setup_dual_stack (int fd, int family, int socket_family, DgramOpType op)
 {
@@ -701,15 +597,6 @@ dgram_setup_dual_stack (int fd, int family, int socket_family, DgramOpType op)
     }
 }
 
-/**
- * dgram_try_addresses - Try operation on resolved addresses
- * @socket: Datagram socket
- * @res: Resolved address list
- * @socket_family: Socket address family filter
- * @op: Operation type (DGRAM_OP_BIND or DGRAM_OP_CONNECT)
- *
- * Returns: 0 on success, -1 if all addresses failed
- */
 static int
 dgram_try_addresses (T socket, struct addrinfo *res, int socket_family,
                      DgramOpType op)
@@ -743,15 +630,6 @@ dgram_try_addresses (T socket, struct addrinfo *res, int socket_family,
   return -1;
 }
 
-/**
- * dgram_perform_address_operation - Common bind/connect implementation
- * @socket: Datagram socket
- * @host: Host address (may be NULL for bind wildcard)
- * @port: Port number
- * @op: Operation type
- *
- * Raises: SocketDgram_Failed on failure
- */
 static void
 dgram_perform_address_operation (T socket, const char *host, int port,
                                  DgramOpType op)
@@ -808,13 +686,6 @@ SocketDgram_connect (T socket, const char *host, int port)
   dgram_perform_address_operation (socket, host, port, DGRAM_OP_CONNECT);
 }
 
-/* ==================== Scatter/Gather I/O ==================== */
-
-/**
- * dgram_validate_iov - Validate iovec parameters
- * @iov: Array of iovec structures
- * @iovcnt: Number of iovec structures
- */
 static void
 dgram_validate_iov (const struct iovec *iov, int iovcnt)
 {
@@ -919,15 +790,6 @@ SocketDgram_recvall (T socket, void *buf, size_t len)
   return (ssize_t)total_received;
 }
 
-/**
- * dgram_iov_loop_send - Common loop for scatter/gather send all
- * @socket: Datagram socket
- * @iov_copy: Working copy of iovec array
- * @iovcnt: Number of iovec structures
- * @total_len: Total bytes to send
- *
- * Returns: Total bytes sent
- */
 static size_t
 dgram_iov_loop_send (T socket, struct iovec *iov_copy, int iovcnt,
                      size_t total_len)
@@ -952,15 +814,6 @@ dgram_iov_loop_send (T socket, struct iovec *iov_copy, int iovcnt,
   return total_sent;
 }
 
-/**
- * dgram_iov_loop_recv - Common loop for scatter/gather receive all
- * @socket: Datagram socket
- * @iov_copy: Working copy of iovec array
- * @iovcnt: Number of iovec structures
- * @total_len: Total bytes to receive
- *
- * Returns: Total bytes received
- */
 static size_t
 dgram_iov_loop_recv (T socket, struct iovec *iov_copy, int iovcnt,
                      size_t total_len)
@@ -1027,17 +880,6 @@ SocketDgram_recvvall (T socket, struct iovec *iov, int iovcnt)
   return (ssize_t)total_received;
 }
 
-/* ==================== Convenience Functions ==================== */
-
-/**
- * SocketDgram_bind_udp - Create a bound UDP socket in one call
- * @host: Local address to bind (NULL or "" for INADDR_ANY)
- * @port: Local port to bind (1-65535, or 0 for ephemeral)
- *
- * Returns: New bound UDP socket
- * Raises: SocketDgram_Failed on error
- * Thread-safe: Yes
- */
 T
 SocketDgram_bind_udp (const char *host, int port)
 {

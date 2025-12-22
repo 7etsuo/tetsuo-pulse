@@ -4,16 +4,8 @@
  * https://x.com/tetsuoai
  */
 
-/**
+/*
  * SocketProxy.c - Proxy Tunneling Support Core Implementation
- *
- * Part of the Socket Library
- *
- * Core module providing:
- * - Configuration defaults and URL parsing
- * - Synchronous and asynchronous connection APIs
- * - State machine driver
- * - Error handling and utility functions
  *
  * Protocol-specific implementations are in separate files:
  * - SocketProxy-socks5.c - SOCKS5 protocol (RFC 1928/1929)
@@ -27,10 +19,6 @@
 #include "socket/SocketProxy.h"
 #include "tls/SocketTLSConfig.h"
 
-/**
- * Module exception declaration for SocketProxy.
- * Uses centralized SOCKET_DECLARE_MODULE_EXCEPTION macro from SocketUtil.h.
- */
 SOCKET_DECLARE_MODULE_EXCEPTION (Proxy);
 
 #define RAISE_PROXY_ERROR_MSG(exception, fmt, ...)                            \
@@ -60,20 +48,8 @@ SOCKET_DECLARE_MODULE_EXCEPTION (Proxy);
 #include <string.h>
 #include <unistd.h>
 
-/* ============================================================================
- * Exception Definition
- * ============================================================================
- */
-
 const Except_T SocketProxy_Failed
     = { &SocketProxy_Failed, "Proxy operation failed" };
-
-/* ============================================================================
- * Thread-Local Static Buffer for URL Parsing
- * ============================================================================
- */
-
-/* Thread-local static buffer for URL parsing when arena is NULL */
 #ifdef _WIN32
 static
     __declspec (thread) char proxy_static_buf[SOCKET_PROXY_STATIC_BUFFER_SIZE];
@@ -85,20 +61,7 @@ static __thread size_t proxy_static_offset = 0;
 static __thread size_t proxy_static_total_used = 0;
 #endif
 
-/* ============================================================================
- * Internal Helpers
- * ============================================================================
- */
-
-/* Forward declaration for proxy_check_timeout (defined later in file) */
 static int proxy_check_timeout (struct SocketProxy_Conn_T *conn);
-
-/**
- * proxy_clear_nonblocking - Clear non-blocking mode from socket
- * @fd: File descriptor
- *
- * Restores socket to blocking mode for caller convenience.
- */
 static void
 proxy_clear_nonblocking (int fd)
 {
@@ -107,11 +70,6 @@ proxy_clear_nonblocking (int fd)
   if (flags >= 0)
     fcntl (fd, F_SETFL, flags & ~O_NONBLOCK);
 }
-
-/* ============================================================================
- * Configuration
- * ============================================================================
- */
 
 void
 SocketProxy_config_defaults (SocketProxy_Config *config)
@@ -127,14 +85,6 @@ SocketProxy_config_defaults (SocketProxy_Config *config)
   config->handshake_timeout_ms = SOCKET_PROXY_DEFAULT_HANDSHAKE_TIMEOUT_MS;
 }
 
-/* ============================================================================
- * URL Parser - Internal Helpers
- * ============================================================================
- */
-
-/**
- * Allocate string in arena or static buffer
- */
 static char *
 proxy_alloc_string (const char *src, size_t len, Arena_T arena)
 {
@@ -163,10 +113,9 @@ proxy_alloc_string (const char *src, size_t len, Arena_T arena)
           return NULL;
         }
 
-      /* Use static thread-local buffer */
       if (proxy_static_offset + needed > SOCKET_PROXY_STATIC_BUFFER_SIZE)
         {
-          proxy_static_offset = 0; /* Wrap around */
+          proxy_static_offset = 0;
         }
       dst = proxy_static_buf + proxy_static_offset;
       proxy_static_offset += needed;
@@ -174,7 +123,7 @@ proxy_alloc_string (const char *src, size_t len, Arena_T arena)
     }
 
   if (dst == NULL)
-    return NULL; /* Arena failure */
+    return NULL;
 
   memcpy (dst, src, len);
   dst[len] = '\0';
@@ -185,7 +134,6 @@ int
 socketproxy_parse_scheme (const char *url, SocketProxy_Config *config,
                           const char **end)
 {
-  /* Match scheme:// */
   if (strncasecmp (url, "http://", 7) == 0)
     {
       config->type = SOCKET_PROXY_HTTP;
@@ -230,14 +178,13 @@ socketproxy_parse_scheme (const char *url, SocketProxy_Config *config,
     }
   if (strncasecmp (url, "socks://", 8) == 0)
     {
-      /* Treat bare socks:// as SOCKS5 */
       config->type = SOCKET_PROXY_SOCKS5;
       config->port = SOCKET_PROXY_DEFAULT_SOCKS_PORT;
       *end = url + 8;
       return 0;
     }
 
-  return -1; /* Unknown scheme */
+  return -1;
 }
 
 int
@@ -247,11 +194,9 @@ socketproxy_parse_userinfo (const char *start, SocketProxy_Config *config,
   const char *at_sign;
   const char *colon;
 
-  /* Look for @ sign indicating end of userinfo */
   at_sign = strchr (start, '@');
   if (at_sign == NULL)
     {
-      /* No userinfo */
       *end = start;
       return 0;
     }
@@ -264,12 +209,9 @@ socketproxy_parse_userinfo (const char *start, SocketProxy_Config *config,
       return -1;
     }
 
-  /* Check for port-like pattern (host:port) - @ should come before : in host
-   */
   colon = strchr (start, ':');
   if (colon != NULL && colon > at_sign)
     {
-      /* The @ is in the userinfo, colon is after it */
       colon = NULL;
       for (const char *p = start; p < at_sign; p++)
         {
@@ -282,7 +224,6 @@ socketproxy_parse_userinfo (const char *start, SocketProxy_Config *config,
     }
   else if (colon != NULL && colon < at_sign)
     {
-      /* Colon is before @ so it's password separator */
     }
   else
     {
@@ -299,7 +240,6 @@ socketproxy_parse_userinfo (const char *start, SocketProxy_Config *config,
 
   if (colon != NULL && colon < at_sign)
     {
-      /* user:pass@host */
       size_t user_len = (size_t)(colon - start);
       size_t pass_len = (size_t)(at_sign - colon - 1);
 
@@ -327,7 +267,6 @@ socketproxy_parse_userinfo (const char *start, SocketProxy_Config *config,
       if (config->password == NULL)
         return -1;
 
-      /* Validate password chars (printable ASCII, no controls) */
       for (const char *s = config->password; *s; s++)
         {
           if (!isprint ((unsigned char)*s))
@@ -339,7 +278,6 @@ socketproxy_parse_userinfo (const char *start, SocketProxy_Config *config,
     }
   else
     {
-      /* user@host (no password) */
       size_t user_len = (size_t)(at_sign - start);
 
       if (user_len > SOCKET_PROXY_MAX_USERNAME_LEN)
@@ -377,14 +315,12 @@ socketproxy_parse_hostport (const char *start, SocketProxy_Config *config,
   const char *host_start;
   const char *host_end;
   const char *port_start;
-  const char *authority_end; /* Tracks actual end of authority component */
+  const char *authority_end;
   size_t host_len;
 
-  /* Handle IPv6 address in brackets */
   bracket_open = strchr (start, '[');
   if (bracket_open == start)
     {
-      /* [ipv6]:port format */
       bracket_close = strchr (start, ']');
       if (bracket_close == NULL)
         return -1;
@@ -392,7 +328,7 @@ socketproxy_parse_hostport (const char *start, SocketProxy_Config *config,
       host_start = start + 1;
       host_end = bracket_close;
       port_start = bracket_close + 1;
-      authority_end = bracket_close + 1; /* Default to after ] */
+      authority_end = bracket_close + 1;
 
       if (*port_start == ':')
         {
@@ -402,12 +338,11 @@ socketproxy_parse_hostport (const char *start, SocketProxy_Config *config,
             if (endptr > port_start + 1 && p >= 1 && p <= 65535)
               {
                 config->port = (int)p;
-                authority_end = endptr; /* Update to end of port */
+                authority_end = endptr;
               }
             else if (*endptr == '\0' || *endptr == '/' || *endptr == '?'
                      || *endptr == '#')
               {
-                /* Valid end character, parse what we have */
                 if (endptr > port_start + 1 && p >= 1 && p <= 65535)
                   {
                     config->port = (int)p;
@@ -415,12 +350,12 @@ socketproxy_parse_hostport (const char *start, SocketProxy_Config *config,
                   }
                 else
                   {
-                    return -1; /* Invalid port */
+                    return -1;
                   }
               }
             else
               {
-                return -1; /* Invalid port */
+                return -1;
               }
           }
           if (config->port <= 0 || config->port > 65535)
@@ -429,18 +364,15 @@ socketproxy_parse_hostport (const char *start, SocketProxy_Config *config,
     }
   else
     {
-      /* host:port or just host */
       host_start = start;
 
-      /* Find end of authority (path, query, fragment, or end) */
       authority_end = start;
       while (*authority_end && *authority_end != '/' && *authority_end != '?'
              && *authority_end != '#')
         authority_end++;
 
-      host_end = authority_end; /* Default if no port */
+      host_end = authority_end;
 
-      /* Look for port (last colon before authority_end) */
       colon = NULL;
       for (const char *p = start; p < authority_end; p++)
         {
@@ -450,16 +382,15 @@ socketproxy_parse_hostport (const char *start, SocketProxy_Config *config,
 
       if (colon != NULL)
         {
-          host_end = colon; /* Host ends at colon */
+          host_end = colon;
           {
             char *endptr;
             long p = strtol (colon + 1, &endptr, 10);
             if (endptr <= colon + 1 || p < 1 || p > 65535)
               {
-                return -1; /* Invalid port */
+                return -1;
               }
             config->port = (int)p;
-            /* authority_end should include the port we just parsed */
             if (endptr > authority_end)
               authority_end = endptr;
           }
@@ -485,11 +416,6 @@ socketproxy_parse_hostport (const char *start, SocketProxy_Config *config,
   return 0;
 }
 
-/* ============================================================================
- * URL Parser - Public API
- * ============================================================================
- */
-
 int
 SocketProxy_parse_url (const char *url, SocketProxy_Config *config,
                        Arena_T arena)
@@ -501,32 +427,25 @@ SocketProxy_parse_url (const char *url, SocketProxy_Config *config,
   if (url == NULL || *url == '\0')
     return -1;
 
-  /* Reset static buffer if not using arena */
   if (arena == NULL)
     {
       proxy_static_offset = 0;
       proxy_static_total_used = 0;
     }
 
-  /* Initialize config */
   SocketProxy_config_defaults (config);
 
-  /* Parse scheme */
   if (socketproxy_parse_scheme (url, config, &p) < 0)
     return -1;
 
-  /* Parse optional userinfo */
   if (socketproxy_parse_userinfo (p, config, arena, &p) < 0)
     return -1;
 
-  /* Parse host[:port] */
   {
     size_t consumed;
     if (socketproxy_parse_hostport (p, config, arena, &consumed) < 0)
       return -1;
 
-    /* Validate no trailing path/query/fragment (proxy URLs are authority-only)
-     */
     size_t remaining = strlen (p) - consumed;
     if (remaining > 0)
       {
@@ -545,11 +464,6 @@ SocketProxy_parse_url (const char *url, SocketProxy_Config *config,
 
   return 0;
 }
-
-/* ============================================================================
- * State Machine Helpers
- * ============================================================================
- */
 
 void
 socketproxy_set_error (struct SocketProxy_Conn_T *conn,
@@ -577,7 +491,6 @@ socketproxy_do_send (struct SocketProxy_Conn_T *conn)
       TRY n = Socket_send (conn->socket, conn->send_buf + conn->send_offset,
                            conn->send_len - conn->send_offset);
       EXCEPT (Socket_Closed)
-      /* Connection closed by peer */
       caught_closed = 1;
       END_TRY;
 
@@ -587,13 +500,13 @@ socketproxy_do_send (struct SocketProxy_Conn_T *conn)
       if (n < 0)
         {
           if (errno == EAGAIN || errno == EWOULDBLOCK)
-            return 1; /* More to send */
-          return -1;  /* Error */
+            return 1;
+          return -1;
         }
       conn->send_offset += (size_t)n;
     }
 
-  return 0; /* All sent */
+  return 0;
 }
 
 int
@@ -613,7 +526,6 @@ socketproxy_do_recv (struct SocketProxy_Conn_T *conn)
     }
   if (space == 0)
     {
-      /* Buffer full - protocol error */
       return -1;
     }
 
@@ -624,8 +536,8 @@ socketproxy_do_recv (struct SocketProxy_Conn_T *conn)
         size_t wlen;
         void *ptr = SocketBuf_writeptr (conn->recvbuf, &wlen);
         if (ptr == NULL || wlen == 0)
-          break;                              /* No space */
-        wlen = (wlen < space) ? wlen : space; /* Safety */
+          break;
+        wlen = (wlen < space) ? wlen : space;
         n = Socket_recv (conn->socket, ptr, wlen);
         if (n > 0)
           SocketBuf_written (conn->recvbuf, (size_t)n);
@@ -636,26 +548,22 @@ socketproxy_do_recv (struct SocketProxy_Conn_T *conn)
       }
   }
   EXCEPT (Socket_Closed)
-  /* Connection closed by peer */
   caught_closed = 1;
   END_TRY;
 
   if (caught_closed)
-    return 0; /* Treat as EOF */
+    return 0;
 
   if (n < 0)
     {
       if (errno == EAGAIN || errno == EWOULDBLOCK)
-        return 0; /* No data available */
-      return -1;  /* Error */
+        return 0;
+      return -1;
     }
   if (n == 0)
     {
-      return 0; /* EOF */
+      return 0;
     }
-
-  /* NOTE: SocketBuf_written already called inside TRY block for recvbuf case.
-   * Only update recv_len for fixed buffer case here. */
   if (conn->recvbuf == NULL)
     {
       conn->recv_len += (size_t)n;
@@ -664,21 +572,14 @@ socketproxy_do_recv (struct SocketProxy_Conn_T *conn)
   return (int)n;
 }
 
-/* ============================================================================
- * State Machine Driver
- * ============================================================================
- */
-
 void
 socketproxy_advance_state (struct SocketProxy_Conn_T *conn)
 {
-  /* Handle send completion -> move to receive */
   if (conn->state == PROXY_STATE_HANDSHAKE_SEND
       || conn->state == PROXY_STATE_AUTH_SEND)
     {
       if (conn->send_offset >= conn->send_len)
         {
-          /* All data sent, move to receive */
           if (conn->state == PROXY_STATE_AUTH_SEND)
             conn->state = PROXY_STATE_AUTH_RECV;
           else
@@ -691,22 +592,8 @@ socketproxy_advance_state (struct SocketProxy_Conn_T *conn)
         }
       return;
     }
-
-  /* Handle receive completion based on protocol */
-  /* Protocol-specific handlers call this after successful parse */
 }
 
-/* ============================================================================
- * Async Connection - Helper Functions
- * ============================================================================
- */
-
-/**
- * proxy_validate_config - Validate proxy configuration
- * @proxy: Proxy configuration
- *
- * Returns: 0 on success, raises SocketProxy_Failed on error
- */
 static int
 proxy_validate_config (const SocketProxy_Config *proxy)
 {
@@ -725,7 +612,6 @@ proxy_validate_config (const SocketProxy_Config *proxy)
         }
     }
 
-  /* Validate credentials */
   if (proxy->username)
     {
       size_t ulen = strlen (proxy->username);
@@ -746,22 +632,11 @@ proxy_validate_config (const SocketProxy_Config *proxy)
                            SOCKET_PROXY_MAX_PASSWORD_LEN, plen);
           RAISE_PROXY_ERROR (SocketProxy_Failed);
         }
-      /* Optional: SocketCommon_validate_hostname for password? No, passwords
-       * can have special chars. Just length for now. */
     }
 
   return 0;
 }
 
-/**
- * proxy_validate_target - Validate target hostname length
- * @target_host: Target hostname
- *
- * Returns: 0 on success, raises SocketProxy_Failed on error
- *
- * REFACTOR: Removed target_len_out parameter - validation is
- * self-contained and caller no longer needs the length value.
- */
 static int
 proxy_validate_target (const char *target_host, int target_port)
 {
@@ -793,20 +668,6 @@ proxy_validate_target (const char *target_host, int target_port)
   return 0;
 }
 
-/* REFACTOR: Removed proxy_copy_string() - now uses socket_util_arena_strdup()
- * from SocketUtil.h which provides the same functionality. */
-
-/**
- * proxy_init_context - Initialize connection context
- * @conn: Connection context
- * @arena: Memory arena
- * @proxy: Proxy configuration
- * @target_host: Target hostname
- * @target_port: Target port
- *
- * REFACTOR: Removed target_len parameter - socket_util_arena_strdup
- * handles length calculation internally.
- */
 static void
 proxy_init_context (struct SocketProxy_Conn_T *conn, Arena_T arena,
                     const SocketProxy_Config *proxy, const char *target_host,
@@ -842,12 +703,6 @@ proxy_init_context (struct SocketProxy_Conn_T *conn, Arena_T arena,
   conn->start_time_ms = socketproxy_get_time_ms ();
 }
 
-/**
- * proxy_build_initial_request - Build initial protocol request
- * @conn: Connection context
- *
- * Returns: 0 on success, sets error on failure
- */
 static int
 proxy_build_initial_request (struct SocketProxy_Conn_T *conn)
 {
@@ -900,13 +755,6 @@ proxy_build_initial_request (struct SocketProxy_Conn_T *conn)
   return 0;
 }
 
-/**
- * proxy_connect_to_server_sync - Connect to proxy server via HappyEyeballs
- * (blocking)
- * @conn: Connection context
- *
- * Returns: 0 on success, -1 on failure (sets error)
- */
 static int
 proxy_connect_to_server_sync (struct SocketProxy_Conn_T *conn)
 {
@@ -934,12 +782,6 @@ proxy_connect_to_server_sync (struct SocketProxy_Conn_T *conn)
   return 0;
 }
 
-/**
- * proxy_start_async_connect - Start async connection to proxy server
- * @conn: Connection context
- *
- * Returns: 0 on success, -1 on failure (sets error)
- */
 static int
 proxy_start_async_connect (struct SocketProxy_Conn_T *conn)
 {
@@ -968,27 +810,14 @@ proxy_start_async_connect (struct SocketProxy_Conn_T *conn)
   return 0;
 }
 
-/**
- * proxy_setup_tls_to_proxy - Setup TLS context and state for HTTPS proxy
- * @conn: Connection context (socket must be connected and non-blocking)
- *
- * Initializes TLS context with secure defaults if not provided, sets SNI hostname,
- * configures ALPN for HTTP/1.1, transitions state to TLS_TO_PROXY, and sets
- * handshake start time for TLS phase.
- *
- * @return 0 on success, -1 on failure (sets error state and result)
- * @throws SocketTLS_Failed if context creation fails (caught and converted)
- */
 static int
 proxy_setup_tls_to_proxy (struct SocketProxy_Conn_T *conn)
 {
 #if SOCKET_HAS_TLS
   if (conn->tls_ctx == NULL) {
     TRY {
-      /* Create client context with system CAs, TLS 1.3 enforcement, modern ciphers */
       conn->tls_ctx = SocketTLSContext_new_client (NULL);
 
-      /* ALPN: http/1.1 required for HTTP CONNECT over TLS to proxy */
       const char *alpn_protos[] = { "http/1.1" };
       SocketTLSContext_set_alpn_protos (conn->tls_ctx, alpn_protos, 1);
     } EXCEPT (SocketTLS_Failed) {
@@ -1011,15 +840,6 @@ proxy_setup_tls_to_proxy (struct SocketProxy_Conn_T *conn)
 #endif
 }
 
-/**
- * proxy_perform_sync_tls_handshake - Synchronous TLS handshake with polling
- * @conn: Connection context in PROXY_STATE_TLS_TO_PROXY
- *
- * Drives non-blocking TLS handshake to completion or failure/timeout using poll.
- * Uses handshake_timeout_ms from config or default.
- *
- * @return 0 on successful completion (sets tls_enabled=1), -1 on error/timeout
- */
 static int
 proxy_perform_sync_tls_handshake (struct SocketProxy_Conn_T *conn)
 {
@@ -1044,7 +864,6 @@ proxy_perform_sync_tls_handshake (struct SocketProxy_Conn_T *conn)
       return -1;
     }
 
-    /* Continue handshake requires I/O readiness */
     unsigned events = (hs == TLS_HANDSHAKE_WANT_READ ? POLL_READ : POLL_WRITE);
     short poll_events = (events == POLL_READ ? POLLIN : POLLOUT);
     struct pollfd pfd = { .fd = Socket_fd (conn->socket), .events = poll_events, .revents = 0 };
@@ -1061,59 +880,39 @@ proxy_perform_sync_tls_handshake (struct SocketProxy_Conn_T *conn)
       return -1;
     }
     if (ret == 0) {
-      /* Timeout */
       socketproxy_set_error (conn, PROXY_ERROR_TIMEOUT,
                              "TLS handshake to proxy timeout (%d ms)",
                              conn->handshake_timeout_ms);
       return -1;
     }
-    /* Socket ready, retry handshake */
   }
 #else
   return -1;
 #endif
 }
 
-/**
- * proxy_setup_after_tcp_connect - Post-TCP connection setup for proxy handshake
- * @conn: Connection context after successful TCP connect to proxy (non-blocking)
- * @sync_mode: 1=synchronous (perform TLS + build request), 0=asynchronous (setup only)
- *
- * Unified entry point after TCP connection establishment.
- * - Non-HTTPS: Sets HANDSHAKE_SEND state, protocol timeout, builds initial request
- * - HTTPS async: Sets up TLS (ctx, SNI, ALPN, state, TLS-phase timeout)
- * - HTTPS sync: Sets up TLS, performs full handshake, transitions to HANDSHAKE_SEND
- *               with protocol-phase timeout, builds request
- *
- * @return 0 on success/pending (async), -1 on error (sets FAILED state, error result)
- */
 static int
 proxy_setup_after_tcp_connect (struct SocketProxy_Conn_T *conn, int sync_mode)
 {
   if (conn->type != SOCKET_PROXY_HTTPS) {
-    /* Direct protocol handshake (SOCKS/HTTP) */
     conn->state = PROXY_STATE_HANDSHAKE_SEND;
     conn->handshake_start_time_ms = socketproxy_get_time_ms ();
     return (proxy_build_initial_request (conn) == 0 ? 0 : -1);
   }
 
-  /* HTTPS proxy: TLS tunnel to proxy server */
   if (proxy_setup_tls_to_proxy (conn) < 0) {
     return -1;
   }
 
   if (sync_mode) {
-    /* Synchronous TLS handshake completion */
     if (proxy_perform_sync_tls_handshake (conn) < 0) {
       return -1;
     }
-    /* Transition to protocol handshake phase */
     conn->state = PROXY_STATE_HANDSHAKE_SEND;
     conn->handshake_start_time_ms = socketproxy_get_time_ms ();
     return (proxy_build_initial_request (conn) == 0 ? 0 : -1);
   }
 
-  /* Asynchronous: defer TLS handshake and protocol to SocketProxy_Conn_process() */
   return 0;
 }
 
@@ -1152,14 +951,12 @@ SocketProxy_Conn_start (SocketDNS_T dns, SocketPoll_T poll,
   conn = Arena_alloc (arena, sizeof (*conn), __FILE__, __LINE__);
   proxy_init_context (conn, arena, proxy, target_host, target_port);
 
-  /* Store external DNS/poll references */
   conn->dns = dns;
   conn->poll = poll;
-  conn->owns_dns_poll = 0; /* External resources - don't free */
+  conn->owns_dns_poll = 0;
 
-  /* Start async connection to proxy server */
   if (proxy_start_async_connect (conn) < 0)
-    return conn; /* Return in FAILED state */
+    return conn;
 
   return conn;
 }
@@ -1191,18 +988,14 @@ SocketProxy_Conn_new (const SocketProxy_Config *proxy, const char *target_host,
   conn = Arena_alloc (arena, sizeof (*conn), __FILE__, __LINE__);
   proxy_init_context (conn, arena, proxy, target_host, target_port);
 
-  /* Connect to proxy server (blocking) */
   if (proxy_connect_to_server_sync (conn) < 0)
     return conn;
 
-  /* Set non-blocking for async I/O */
   Socket_setnonblocking (conn->socket);
 
-  /* Move to handshake phase */
   conn->state = PROXY_STATE_HANDSHAKE_SEND;
   conn->handshake_start_time_ms = socketproxy_get_time_ms ();
 
-  /* Build initial protocol request */
   proxy_build_initial_request (conn);
 
   return conn;
@@ -1219,44 +1012,35 @@ SocketProxy_Conn_free (SocketProxy_Conn_T *conn)
 
   c = *conn;
 
-  /* CRITICAL: Save arena pointer BEFORE any cleanup that might free connection
-   * structure. The connection is allocated from its own arena, so we must save
-   * the arena pointer before disposing it. */
   arena = c->arena;
 
-  /* Clear credentials from memory */
   if (c->password != NULL)
     {
       SocketCrypto_secure_clear (c->password, strlen (c->password));
     }
 
-  /* Free HappyEyeballs context if active */
   if (c->he != NULL)
     {
       SocketHappyEyeballs_free (&c->he);
     }
 
-  /* Close socket if not transferred */
   if (c->socket != NULL && !c->transferred)
     {
       Socket_free (&c->socket);
     }
 
-  /* Free HTTP parser if allocated */
   if (c->http_parser != NULL)
     {
       SocketHTTP1_Parser_free (&c->http_parser);
     }
 
 #if SOCKET_HAS_TLS
-  /* Shutdown TLS if enabled and socket not transferred */
   if (c->tls_enabled && c->socket != NULL && !c->transferred)
     {
       SocketTLS_shutdown (c->socket);
     }
 #endif
 
-  /* Free owned DNS/poll resources (sync wrapper case) */
   if (c->owns_dns_poll)
     {
       if (c->dns != NULL)
@@ -1265,16 +1049,10 @@ SocketProxy_Conn_free (SocketProxy_Conn_T *conn)
         SocketPoll_free (&c->poll);
     }
 
-  /* Free arena (releases all memory including connection structure itself) */
   Arena_dispose (&arena);
 
   *conn = NULL;
 }
-
-/* ============================================================================
- * Async Connection - State Query
- * ============================================================================
- */
 
 int
 SocketProxy_Conn_poll (SocketProxy_Conn_T conn)
@@ -1325,25 +1103,16 @@ SocketProxy_Conn_socket (SocketProxy_Conn_T conn)
   conn->socket = NULL;
   conn->transferred = 1;
 
-  /* Restore blocking mode for caller */
   proxy_clear_nonblocking (Socket_fd (sock));
 
   return sock;
 }
-
-/* ============================================================================
- * Async Connection - Event Loop Integration
- * ============================================================================
- */
 
 int
 SocketProxy_Conn_fd (SocketProxy_Conn_T conn)
 {
   assert (conn != NULL);
 
-  /* During CONNECTING_PROXY, HappyEyeballs manages its own fds via
-   * the poll instance passed to SocketProxy_Conn_start(). Return -1
-   * to indicate no direct fd to poll. */
   if (conn->state == PROXY_STATE_CONNECTING_PROXY)
     return -1;
 
@@ -1361,9 +1130,6 @@ SocketProxy_Conn_events (SocketProxy_Conn_T conn)
   switch (conn->state)
     {
     case PROXY_STATE_CONNECTING_PROXY:
-      /* HappyEyeballs manages its own poll events via the poll
-       * instance passed to SocketProxy_Conn_start(). Caller should
-       * use SocketPoll_wait() on their poll instance. */
       return 0;
 
     case PROXY_STATE_TLS_TO_PROXY:
@@ -1374,7 +1140,7 @@ SocketProxy_Conn_events (SocketProxy_Conn_T conn)
           return POLL_READ;
         if (hs == TLS_HANDSHAKE_WANT_WRITE)
           return POLL_WRITE;
-        return 0; /* complete or error */
+        return 0;
       }
 #else
       return 0;
@@ -1404,11 +1170,9 @@ SocketProxy_Conn_next_timeout_ms (SocketProxy_Conn_T conn)
   if (SocketProxy_Conn_poll (conn))
     return -1;
 
-  /* During CONNECTING_PROXY, use HappyEyeballs timeout */
   if (conn->state == PROXY_STATE_CONNECTING_PROXY && conn->he != NULL)
     return SocketHappyEyeballs_next_timeout_ms (conn->he);
 
-  /* During handshake phases, use handshake timeout */
   if (conn->handshake_start_time_ms == 0)
     return SOCKET_PROXY_DEFAULT_POLL_TIMEOUT_MS;
 
@@ -1429,7 +1193,6 @@ SocketProxy_Conn_cancel (SocketProxy_Conn_T conn)
   conn->state = PROXY_STATE_CANCELLED;
   conn->result = PROXY_ERROR_CANCELLED;
 
-  /* Cancel HappyEyeballs if still connecting */
   if (conn->he != NULL)
     {
       SocketHappyEyeballs_cancel (conn->he);
@@ -1442,17 +1205,6 @@ SocketProxy_Conn_cancel (SocketProxy_Conn_T conn)
     }
 }
 
-/* ============================================================================
- * Async Connection - Process Helper Functions
- * ============================================================================
- */
-
-/**
- * proxy_check_timeout - Check if handshake has timed out
- * @conn: Connection context
- *
- * Returns: 0 if not timed out, -1 if timed out (sets error)
- */
 static int
 proxy_check_timeout (struct SocketProxy_Conn_T *conn)
 {
@@ -1468,12 +1220,6 @@ proxy_check_timeout (struct SocketProxy_Conn_T *conn)
   return 0;
 }
 
-/**
- * proxy_process_connecting - Process CONNECTING_PROXY state
- * @conn: Connection context
- *
- * Returns: 0 if still connecting, 1 if connected and transitioned, -1 on error
- */
 static int
 proxy_process_connecting (struct SocketProxy_Conn_T *conn)
 {
@@ -1486,18 +1232,15 @@ proxy_process_connecting (struct SocketProxy_Conn_T *conn)
       return -1;
     }
 
-  /* Process HappyEyeballs state machine */
   SocketHappyEyeballs_process (conn->he);
 
-  /* Check if HappyEyeballs is complete */
   if (!SocketHappyEyeballs_poll (conn->he))
-    return 0; /* Still connecting */
+    return 0;
 
   he_state = SocketHappyEyeballs_state (conn->he);
 
   if (he_state == HE_STATE_CONNECTED)
     {
-      /* Get the connected socket */
       conn->socket = SocketHappyEyeballs_result (conn->he);
       SocketHappyEyeballs_free (&conn->he);
 
@@ -1508,7 +1251,6 @@ proxy_process_connecting (struct SocketProxy_Conn_T *conn)
           return -1;
         }
 
-      /* Set non-blocking for async handshake */
       Socket_setnonblocking (conn->socket);
 
 #if SOCKET_HAS_TLS
@@ -1518,15 +1260,8 @@ proxy_process_connecting (struct SocketProxy_Conn_T *conn)
             {
               TRY
               {
-                /* Create hardened client TLS context with system CA
-                 * verification. SocketTLSContext_new_client(NULL) provides:
-                 * - Certificate verification (TLS_VERIFY_PEER)
-                 * - System CA loading via SSL_CTX_set_default_verify_paths()
-                 * - TLS 1.3-only enforcement via secure defaults
-                 * - Modern cipher suites (ECDHE + AES-GCM/ChaCha20-Poly1305) */
                 conn->tls_ctx = SocketTLSContext_new_client (NULL);
 
-                /* Set ALPN for HTTP CONNECT proxy (http/1.1 required) */
                 const char *alpn_protos[] = { "http/1.1" };
                 SocketTLSContext_set_alpn_protos (conn->tls_ctx, alpn_protos,
                                                   1);
@@ -1541,29 +1276,24 @@ proxy_process_connecting (struct SocketProxy_Conn_T *conn)
               END_TRY;
             }
 
-          /* Set SNI for proxy hostname */
           SocketTLS_set_hostname (conn->socket, conn->proxy_host);
 
-          /* Start TLS handshake */
           conn->state = PROXY_STATE_TLS_TO_PROXY;
           conn->handshake_start_time_ms = socketproxy_get_time_ms ();
-          return 1; /* Transitioned to TLS handshake */
+          return 1;
         }
 #endif
 
-      /* Normal protocol handshake for non-HTTPS */
       conn->state = PROXY_STATE_HANDSHAKE_SEND;
       conn->handshake_start_time_ms = socketproxy_get_time_ms ();
 
-      /* Build initial protocol request */
       if (proxy_build_initial_request (conn) < 0)
         return -1;
 
-      return 1; /* Connected and transitioned */
+      return 1;
     }
   else
     {
-      /* Connection failed */
       const char *error = SocketHappyEyeballs_error (conn->he);
       socketproxy_set_error (conn, PROXY_ERROR_CONNECT,
                              "Failed to connect to proxy: %s",
@@ -1573,12 +1303,6 @@ proxy_process_connecting (struct SocketProxy_Conn_T *conn)
     }
 }
 
-/**
- * proxy_process_send - Process send states
- * @conn: Connection context
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 proxy_process_send (struct SocketProxy_Conn_T *conn)
 {
@@ -1596,12 +1320,6 @@ proxy_process_send (struct SocketProxy_Conn_T *conn)
   return 0;
 }
 
-/**
- * proxy_socks5_send_connect_request - Send SOCKS5 connect after auth
- * @conn: Connection context
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 proxy_socks5_send_connect_request (struct SocketProxy_Conn_T *conn)
 {
@@ -1618,13 +1336,6 @@ proxy_socks5_send_connect_request (struct SocketProxy_Conn_T *conn)
   return 0;
 }
 
-/**
- * proxy_socks5_handle_method_response - Handle SOCKS5 method selection
- * response
- * @conn: Connection context
- *
- * Returns: Result code
- */
 static SocketProxy_Result
 proxy_socks5_handle_method_response (struct SocketProxy_Conn_T *conn)
 {
@@ -1652,12 +1363,6 @@ proxy_socks5_handle_method_response (struct SocketProxy_Conn_T *conn)
   return PROXY_IN_PROGRESS;
 }
 
-/**
- * proxy_socks5_process_recv - Process SOCKS5 receive state
- * @conn: Connection context
- *
- * Returns: Result code
- */
 static SocketProxy_Result
 proxy_socks5_process_recv (struct SocketProxy_Conn_T *conn)
 {
@@ -1693,12 +1398,6 @@ proxy_socks5_process_recv (struct SocketProxy_Conn_T *conn)
     }
 }
 
-/**
- * proxy_dispatch_protocol_recv - Dispatch to protocol-specific receive handler
- * @conn: Connection context
- *
- * Returns: Result code
- */
 static SocketProxy_Result
 proxy_dispatch_protocol_recv (struct SocketProxy_Conn_T *conn)
 {
@@ -1721,12 +1420,6 @@ proxy_dispatch_protocol_recv (struct SocketProxy_Conn_T *conn)
     }
 }
 
-/**
- * proxy_process_recv - Process receive states
- * @conn: Connection context
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 proxy_process_recv (struct SocketProxy_Conn_T *conn)
 {
@@ -1751,16 +1444,12 @@ proxy_process_recv (struct SocketProxy_Conn_T *conn)
       return -1;
     }
 
-  /* Setup recv_buf for protocol dispatch (compat layer).
-   * Copy data from SocketBuf to fixed recv_buf for protocol handlers.
-   * NOTE: We consume from recvbuf AFTER protocol dispatch, based on how
-   * much the handler actually processed (recv_offset). */
   if (conn->recvbuf != NULL && avail > 0)
     {
-      size_t read_avail = avail; /* Preserve original avail */
+      size_t read_avail = avail;
       const void *ptr = SocketBuf_readptr (conn->recvbuf, &read_avail);
       if (ptr == NULL)
-        return -1; /* Error or empty */
+        return -1;
       avail = (read_avail > sizeof (conn->recv_buf)) ? sizeof (conn->recv_buf)
                                                      : read_avail;
       memcpy (conn->recv_buf, ptr, avail);
@@ -1770,13 +1459,11 @@ proxy_process_recv (struct SocketProxy_Conn_T *conn)
 
   res = proxy_dispatch_protocol_recv (conn);
 
-  /* Consume parsed data from buffer based on what protocol handler processed */
-  size_t consumed = conn->recv_offset; /* Protocol funcs advance this */
+  size_t consumed = conn->recv_offset;
   if (consumed > 0)
     {
       if (conn->recvbuf != NULL)
         {
-          /* Consume only what was actually processed from the SocketBuf */
           SocketBuf_consume (conn->recvbuf, consumed);
         }
       else
@@ -1799,11 +1486,6 @@ proxy_process_recv (struct SocketProxy_Conn_T *conn)
 
   return 0;
 }
-
-/* ============================================================================
- * Async Connection - Process
- * ============================================================================
- */
 
 void
 SocketProxy_Conn_process (SocketProxy_Conn_T conn)
@@ -1841,7 +1523,6 @@ SocketProxy_Conn_process (SocketProxy_Conn_T conn)
                                  Socket_GetLastError ());
           conn->state = PROXY_STATE_FAILED;
         }
-        /* else in progress - continue polling for WANT_READ/WRITE */
 #endif
       break;
 
@@ -1864,23 +1545,6 @@ SocketProxy_Conn_process (SocketProxy_Conn_T conn)
     }
 }
 
-/* ============================================================================
- * Synchronous API - Helpers
- * ============================================================================
- */
-
-/**
- * proxy_tunnel_init_context - Initialize tunnel context on stack
- * @conn: Connection context (caller-allocated)
- * @socket: Connected socket
- * @proxy: Proxy configuration
- * @target_host: Target hostname
- * @target_port: Target port
- * @arena: Optional arena for allocations (e.g., TLS context)
- *
- * Initializes a stack-allocated connection context. If arena provided, used
- * for dynamic resources.
- */
 static void
 proxy_tunnel_init_context (struct SocketProxy_Conn_T *conn, Socket_T socket,
                            const SocketProxy_Config *proxy,
@@ -1892,7 +1556,7 @@ proxy_tunnel_init_context (struct SocketProxy_Conn_T *conn, Socket_T socket,
   if (arena != NULL)
     conn->recvbuf = SocketBuf_new (arena, SOCKET_PROXY_BUFFER_SIZE);
   else
-    conn->recvbuf = NULL; /* Use fixed recv_buf for stack mode */
+    conn->recvbuf = NULL;
 #if SOCKET_HAS_TLS
   conn->tls_ctx = proxy->tls_ctx;
   conn->tls_enabled = 0;
@@ -1919,16 +1583,6 @@ proxy_tunnel_init_context (struct SocketProxy_Conn_T *conn, Socket_T socket,
   conn->handshake_start_time_ms = conn->start_time_ms;
 }
 
-/**
- * proxy_run_poll_loop - Execute poll loop until complete
- * @conn: Connection context
- * @fd: File descriptor to poll
- *
- * Returns: 0 on success, -1 on poll error
- *
- * Runs the poll loop until the connection completes (success, fail, or
- * cancel).
- */
 static int
 proxy_run_poll_loop (struct SocketProxy_Conn_T *conn, int fd)
 {
@@ -1995,11 +1649,9 @@ SocketProxy_tunnel (Socket_T socket, const SocketProxy_Config *proxy,
   if (target_port < 1 || target_port > 65535)
     return PROXY_ERROR_PROTOCOL;
 
-  /* Initialize context on stack */
   proxy_tunnel_init_context (conn, socket, proxy, target_host, target_port,
                              arena);
 
-  /* Check and set non-blocking mode */
   fd = Socket_fd (socket);
   flags = fcntl (fd, F_GETFL);
   was_nonblocking = (flags >= 0 && (flags & O_NONBLOCK));
@@ -2007,7 +1659,6 @@ SocketProxy_tunnel (Socket_T socket, const SocketProxy_Config *proxy,
   if (!was_nonblocking)
     Socket_setnonblocking (socket);
 
-    /* TLS handshake for HTTPS proxy if needed (sync loop) */
 #if SOCKET_HAS_TLS
   if (conn->type == SOCKET_PROXY_HTTPS)
     {
@@ -2015,15 +1666,8 @@ SocketProxy_tunnel (Socket_T socket, const SocketProxy_Config *proxy,
         {
           TRY
           {
-            /* Create hardened client TLS context with system CA verification.
-             * SocketTLSContext_new_client(NULL) provides:
-             * - Certificate verification (TLS_VERIFY_PEER)
-             * - System CA loading via SSL_CTX_set_default_verify_paths()
-             * - TLS 1.3-only enforcement via secure defaults
-             * - Modern cipher suites (ECDHE + AES-GCM/ChaCha20-Poly1305) */
             conn->tls_ctx = SocketTLSContext_new_client (NULL);
 
-            /* Set ALPN for HTTP CONNECT proxy (http/1.1 required) */
             const char *alpn_protos[] = { "http/1.1" };
             SocketTLSContext_set_alpn_protos (conn->tls_ctx, alpn_protos, 1);
           }
@@ -2039,13 +1683,11 @@ SocketProxy_tunnel (Socket_T socket, const SocketProxy_Config *proxy,
           END_TRY;
         }
 
-      /* Set SNI */
       SocketTLS_set_hostname (conn->socket, proxy->host);
 
       conn->state = PROXY_STATE_TLS_TO_PROXY;
       conn->handshake_start_time_ms = socketproxy_get_time_ms ();
 
-      /* Sync handshake loop */
       int64_t deadline_ms
           = conn->handshake_start_time_ms + conn->handshake_timeout_ms;
       while (1)
@@ -2067,7 +1709,6 @@ SocketProxy_tunnel (Socket_T socket, const SocketProxy_Config *proxy,
             }
           else
             {
-              /* WANT_READ or WANT_WRITE - poll */
               unsigned events
                   = (hs == TLS_HANDSHAKE_WANT_READ ? POLLIN : POLLOUT);
               struct pollfd pfd = { fd, (short)events, 0 };
@@ -2096,7 +1737,6 @@ SocketProxy_tunnel (Socket_T socket, const SocketProxy_Config *proxy,
                 }
               if (ret == 0)
                 {
-                  /* timeout */
                   return PROXY_ERROR_TIMEOUT;
                 }
             }
@@ -2104,7 +1744,6 @@ SocketProxy_tunnel (Socket_T socket, const SocketProxy_Config *proxy,
     }
 #endif
 
-  /* Build initial protocol request */
   if (proxy_build_initial_request (conn) < 0)
     {
       if (!was_nonblocking)
@@ -2112,24 +1751,14 @@ SocketProxy_tunnel (Socket_T socket, const SocketProxy_Config *proxy,
       return conn->result;
     }
 
-  /* Run poll loop */
   proxy_run_poll_loop (conn, fd);
 
-  /* Restore blocking mode if originally blocking */
   if (!was_nonblocking)
     proxy_clear_nonblocking (fd);
 
   return conn->result;
 }
 
-/**
- * proxy_connect_poll_loop - Execute poll loop for async connection
- * @conn: Connection context
- *
- * Returns: 0 on success, -1 on poll error or invalid fd
- *
- * Similar to proxy_run_poll_loop but handles the Conn API for async cases.
- */
 static int
 proxy_connect_poll_loop (SocketProxy_Conn_T conn)
 {

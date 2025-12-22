@@ -4,10 +4,7 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * SocketWSH2.c - WebSocket over HTTP/2 (RFC 8441)
- *
- * Part of the Socket Library
+/* SocketWSH2.c - WebSocket over HTTP/2 (RFC 8441)
  *
  * Implements WebSocket connections over HTTP/2 streams using Extended CONNECT.
  *
@@ -32,39 +29,15 @@
 #include <assert.h>
 #include <string.h>
 
-/* ============================================================================
- * Module Log Component
- * ============================================================================
- */
-
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "SocketWSH2"
 
 #include "core/SocketUtil.h"
 
-/* ============================================================================
- * Internal Constants
- * ============================================================================
- */
-
 /** Buffer sizes for WebSocket-over-HTTP/2 */
 #define WSH2_RECV_BUFFER_SIZE 16384
 #define WSH2_SEND_BUFFER_SIZE 16384
 
-/* ============================================================================
- * Internal Helpers
- * ============================================================================
- */
-
-/**
- * wsh2_create_ws_context - Create WebSocket context for HTTP/2 stream
- * @arena: Memory arena for allocations
- * @stream: HTTP/2 stream
- * @config: WebSocket configuration
- * @role: Client or server role
- *
- * Returns: WebSocket context or NULL on failure
- */
 static SocketWS_T
 wsh2_create_ws_context (Arena_T arena, SocketHTTP2_Stream_T stream,
                         const SocketWS_Config *config, SocketWS_Role role)
@@ -137,11 +110,6 @@ wsh2_create_ws_context (Arena_T arena, SocketHTTP2_Stream_T stream,
 
   return ws;
 }
-
-/* ============================================================================
- * Server API
- * ============================================================================
- */
 
 int
 SocketWSH2_is_websocket_request (SocketHTTP2_Stream_T stream)
@@ -221,11 +189,6 @@ SocketWSH2_server_accept (SocketHTTP2_Stream_T stream,
 
   return ws;
 }
-
-/* ============================================================================
- * Client API
- * ============================================================================
- */
 
 int
 SocketWSH2_is_supported (SocketHTTP2_Conn_T conn)
@@ -362,11 +325,6 @@ SocketWSH2_client_connect (SocketHTTP2_Conn_T conn, const char *path,
 
   return ws;
 }
-
-/* ============================================================================
- * Accessor Functions
- * ============================================================================
- */
 
 SocketHTTP2_Stream_T
 SocketWSH2_get_stream (SocketWS_T ws)

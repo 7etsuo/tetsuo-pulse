@@ -4,10 +4,7 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * SocketWS-transport.c - WebSocket Transport Abstraction Layer
- *
- * Part of the Socket Library
+/* SocketWS-transport.c - WebSocket Transport Abstraction Layer
  *
  * Implements pluggable transport backends for WebSocket I/O:
  * - TCP/TLS socket transport (RFC 6455)
@@ -34,29 +31,11 @@
 #include <errno.h>
 #include <string.h>
 
-/* ============================================================================
- * Module Log Component
- * ============================================================================
- */
-
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "SocketWS-transport"
 
 #include "core/SocketUtil.h"
 
-/* ============================================================================
- * Socket Transport Backend (RFC 6455)
- * ============================================================================
- */
-
-/**
- * socket_transport_send - Send data over TCP/TLS socket
- * @ctx: Socket_T cast to void*
- * @data: Data buffer to send
- * @len: Number of bytes to send
- *
- * Returns: Bytes sent on success, -1 on error
- */
 static ssize_t
 socket_transport_send (void *ctx, const void *data, size_t len)
 {
@@ -87,14 +66,6 @@ socket_transport_send (void *ctx, const void *data, size_t len)
   return sent;
 }
 
-/**
- * socket_transport_recv - Receive data from TCP/TLS socket
- * @ctx: Socket_T cast to void*
- * @buf: Buffer to receive into
- * @len: Maximum bytes to receive
- *
- * Returns: Bytes received on success, 0 on EOF, -1 on error
- */
 static ssize_t
 socket_transport_recv (void *ctx, void *buf, size_t len)
 {
@@ -124,13 +95,6 @@ socket_transport_recv (void *ctx, void *buf, size_t len)
   return received;
 }
 
-/**
- * socket_transport_close - Close TCP/TLS socket transport
- * @ctx: Socket_T cast to void*
- * @orderly: Non-zero for graceful shutdown, 0 for immediate
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 socket_transport_close (void *ctx, int orderly)
 {
@@ -158,12 +122,6 @@ socket_transport_close (void *ctx, int orderly)
   return 0;
 }
 
-/**
- * socket_transport_get_fd - Get file descriptor for poll integration
- * @ctx: Socket_T cast to void*
- *
- * Returns: File descriptor >= 0
- */
 static int
 socket_transport_get_fd (void *ctx)
 {
@@ -174,12 +132,6 @@ socket_transport_get_fd (void *ctx)
   return Socket_fd (socket);
 }
 
-/**
- * socket_transport_free - Release socket transport resources
- * @ctx: Socket_T cast to void*
- *
- * Note: Does NOT close the socket; lifecycle managed by owner
- */
 static void
 socket_transport_free (void *ctx)
 {
@@ -197,21 +149,6 @@ static const SocketWS_TransportOps socket_ops = {
   .free = socket_transport_free,
 };
 
-/* ============================================================================
- * HTTP/2 Stream Transport Backend (RFC 8441)
- * ============================================================================
- */
-
-/**
- * h2stream_transport_send - Send data over HTTP/2 stream as DATA frame
- * @ctx: SocketHTTP2_Stream_T cast to void*
- * @data: Data buffer to send
- * @len: Number of bytes to send
- *
- * WebSocket frames are carried directly as HTTP/2 DATA frame payloads.
- *
- * Returns: Bytes sent on success, -1 on error
- */
 static ssize_t
 h2stream_transport_send (void *ctx, const void *data, size_t len)
 {
@@ -296,16 +233,6 @@ h2stream_transport_send (void *ctx, const void *data, size_t len)
   return (ssize_t)send_len;
 }
 
-/**
- * h2stream_transport_recv - Receive data from HTTP/2 stream
- * @ctx: SocketHTTP2_Stream_T cast to void*
- * @buf: Buffer to receive into
- * @len: Maximum bytes to receive
- *
- * Reads from the stream's receive buffer (populated by DATA frame processing).
- *
- * Returns: Bytes received on success, 0 on EOF (END_STREAM), -1 on error
- */
 static ssize_t
 h2stream_transport_recv (void *ctx, void *buf, size_t len)
 {
@@ -359,13 +286,6 @@ h2stream_transport_recv (void *ctx, void *buf, size_t len)
   return (ssize_t)read_len;
 }
 
-/**
- * h2stream_transport_close - Close HTTP/2 stream transport
- * @ctx: SocketHTTP2_Stream_T cast to void*
- * @orderly: Non-zero for END_STREAM, 0 for RST_STREAM with CANCEL
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 h2stream_transport_close (void *ctx, int orderly)
 {
@@ -413,14 +333,6 @@ h2stream_transport_close (void *ctx, int orderly)
   return 0;
 }
 
-/**
- * h2stream_transport_get_fd - Get file descriptor for HTTP/2 stream
- * @ctx: SocketHTTP2_Stream_T cast to void*
- *
- * HTTP/2 streams don't have their own FD - poll the connection instead.
- *
- * Returns: -1 (streams have no direct FD)
- */
 static int
 h2stream_transport_get_fd (void *ctx)
 {
@@ -430,12 +342,6 @@ h2stream_transport_get_fd (void *ctx)
   return -1;
 }
 
-/**
- * h2stream_transport_free - Release HTTP/2 stream transport resources
- * @ctx: SocketHTTP2_Stream_T cast to void*
- *
- * Note: Does NOT destroy the stream; lifecycle managed by connection
- */
 static void
 h2stream_transport_free (void *ctx)
 {
@@ -453,19 +359,6 @@ static const SocketWS_TransportOps h2stream_ops = {
   .free = h2stream_transport_free,
 };
 
-/* ============================================================================
- * Factory Functions
- * ============================================================================
- */
-
-/**
- * SocketWS_Transport_socket - Create socket-based transport (RFC 6455)
- * @arena: Memory arena for allocations
- * @socket: Connected TCP/TLS socket (ownership transferred)
- * @is_client: Non-zero if client role (enables masking per RFC 6455)
- *
- * Returns: Transport handle, or NULL on failure
- */
 SocketWS_Transport_T
 SocketWS_Transport_socket (Arena_T arena, Socket_T socket, int is_client)
 {
@@ -494,15 +387,6 @@ SocketWS_Transport_socket (Arena_T arena, Socket_T socket, int is_client)
   return transport;
 }
 
-/**
- * SocketWS_Transport_h2stream - Create HTTP/2 stream transport (RFC 8441)
- * @arena: Memory arena for allocations
- * @stream: HTTP/2 stream from Extended CONNECT
- *
- * HTTP/2 WebSockets do not use masking per RFC 8441.
- *
- * Returns: Transport handle, or NULL on failure
- */
 SocketWS_Transport_T
 SocketWS_Transport_h2stream (Arena_T arena, SocketHTTP2_Stream_T stream)
 {
@@ -530,17 +414,6 @@ SocketWS_Transport_h2stream (Arena_T arena, SocketHTTP2_Stream_T stream)
   return transport;
 }
 
-/* ============================================================================
- * Transport Access Functions
- * ============================================================================
- */
-
-/**
- * SocketWS_Transport_type - Get the transport type
- * @transport: Transport handle
- *
- * Returns: Transport type (SOCKET or H2STREAM)
- */
 SocketWS_TransportType
 SocketWS_Transport_type (SocketWS_Transport_T transport)
 {
@@ -548,12 +421,6 @@ SocketWS_Transport_type (SocketWS_Transport_T transport)
   return transport->type;
 }
 
-/**
- * SocketWS_Transport_requires_masking - Check if transport requires masking
- * @transport: Transport handle
- *
- * Returns: Non-zero if masking required, 0 otherwise
- */
 int
 SocketWS_Transport_requires_masking (SocketWS_Transport_T transport)
 {
@@ -561,14 +428,6 @@ SocketWS_Transport_requires_masking (SocketWS_Transport_T transport)
   return transport->requires_masking;
 }
 
-/**
- * SocketWS_Transport_send - Send data through the transport
- * @transport: Transport handle
- * @data: Data to send
- * @len: Length of data
- *
- * Returns: Bytes sent, or -1 on error
- */
 ssize_t
 SocketWS_Transport_send (SocketWS_Transport_T transport, const void *data,
                          size_t len)
@@ -580,14 +439,6 @@ SocketWS_Transport_send (SocketWS_Transport_T transport, const void *data,
   return transport->ops->send (transport->ctx, data, len);
 }
 
-/**
- * SocketWS_Transport_recv - Receive data from the transport
- * @transport: Transport handle
- * @buf: Buffer to receive into
- * @len: Maximum bytes to receive
- *
- * Returns: Bytes received, 0 on EOF, -1 on error
- */
 ssize_t
 SocketWS_Transport_recv (SocketWS_Transport_T transport, void *buf, size_t len)
 {
@@ -598,13 +449,6 @@ SocketWS_Transport_recv (SocketWS_Transport_T transport, void *buf, size_t len)
   return transport->ops->recv (transport->ctx, buf, len);
 }
 
-/**
- * SocketWS_Transport_close - Close the transport
- * @transport: Transport handle
- * @orderly: Non-zero for graceful close
- *
- * Returns: 0 on success, -1 on error
- */
 int
 SocketWS_Transport_close (SocketWS_Transport_T transport, int orderly)
 {
@@ -615,12 +459,6 @@ SocketWS_Transport_close (SocketWS_Transport_T transport, int orderly)
   return transport->ops->close (transport->ctx, orderly);
 }
 
-/**
- * SocketWS_Transport_get_fd - Get file descriptor for poll integration
- * @transport: Transport handle
- *
- * Returns: File descriptor, or -1 if not available
- */
 int
 SocketWS_Transport_get_fd (SocketWS_Transport_T transport)
 {
@@ -631,13 +469,6 @@ SocketWS_Transport_get_fd (SocketWS_Transport_T transport)
   return transport->ops->get_fd (transport->ctx);
 }
 
-/**
- * SocketWS_Transport_free - Free transport resources
- * @transport: Pointer to transport handle (set to NULL)
- *
- * Releases transport-specific resources. The transport handle
- * becomes invalid after this call.
- */
 void
 SocketWS_Transport_free (SocketWS_Transport_T *transport)
 {
@@ -656,12 +487,6 @@ SocketWS_Transport_free (SocketWS_Transport_T *transport)
   SOCKET_LOG_DEBUG_MSG ("Freed transport resources");
 }
 
-/**
- * SocketWS_Transport_get_socket - Get underlying socket (socket transport only)
- * @transport: Transport handle
- *
- * Returns: Socket_T if socket transport, NULL otherwise
- */
 Socket_T
 SocketWS_Transport_get_socket (SocketWS_Transport_T transport)
 {
@@ -673,12 +498,6 @@ SocketWS_Transport_get_socket (SocketWS_Transport_T transport)
   return (Socket_T)transport->ctx;
 }
 
-/**
- * SocketWS_Transport_get_h2stream - Get underlying HTTP/2 stream (H2 transport only)
- * @transport: Transport handle
- *
- * Returns: SocketHTTP2_Stream_T if H2 transport, NULL otherwise
- */
 SocketHTTP2_Stream_T
 SocketWS_Transport_get_h2stream (SocketWS_Transport_T transport)
 {

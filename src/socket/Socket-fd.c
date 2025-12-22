@@ -4,29 +4,7 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * Socket-fd.c - File Descriptor Passing (SCM_RIGHTS)
- *
- * Implements file descriptor passing over Unix domain sockets using
- * SCM_RIGHTS ancillary data. This enables nginx-style worker process models,
- * zero-downtime restarts, and process isolation architectures.
- *
- * Features:
- * - Single FD passing (Socket_sendfd/Socket_recvfd)
- * - Multiple FD passing (Socket_sendfds/Socket_recvfds)
- * - Non-blocking support (returns 0 on EAGAIN/EWOULDBLOCK)
- * - Thread-safe error reporting
- * - Resource safety (closes leaked FDs on error)
- *
- * PLATFORM REQUIREMENTS:
- * - POSIX-compliant Unix domain sockets
- * - NOT available on Windows
- *
- * Reference: POSIX.1-2008, sendmsg/recvmsg with SCM_RIGHTS
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
- */
+/* Reference: POSIX.1-2008, sendmsg/recvmsg with SCM_RIGHTS */
 
 #include <errno.h>
 #include <fcntl.h>
@@ -45,30 +23,12 @@
 
 #define T Socket_T
 
-/**
- * Dummy byte value for FD passing data payload.
- * SCM_RIGHTS requires at least 1 byte of data to be sent.
- */
+/* SCM_RIGHTS requires at least 1 byte of data to be sent */
 #define FD_PASS_DUMMY_BYTE '\x00'
 
-/**
- * Declare module-specific exception for FD passing errors.
- * Uses SocketFD prefix to distinguish from general Socket errors.
- */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketFD);
 
-/* ==================== Static Helpers ==================== */
-
-/**
- * validate_unix_socket - Verify socket is AF_UNIX
- * @socket: Socket to validate
- *
- * Returns: 1 if valid Unix socket
- * Raises: Socket_Failed if socket is NULL or not AF_UNIX
- *
- * SCM_RIGHTS only works with Unix domain sockets.
- * Thread-safe: Yes (reads immutable domain field)
- */
+/* SCM_RIGHTS only works with Unix domain sockets */
 static int
 validate_unix_socket (const T socket)
 {
@@ -88,32 +48,12 @@ validate_unix_socket (const T socket)
         return 1;
 }
 
-/**
- * validate_fd_open - Check if a file descriptor is valid and open
- * @fd: File descriptor to check
- *
- * Returns: 1 if fd is valid and open, 0 otherwise
- * Thread-safe: Yes
- */
 static int
 validate_fd_open (int fd)
 {
         return (fd >= 0 && fcntl (fd, F_GETFD) >= 0);
 }
 
-/**
- * validate_fd_array_nonclosing - Validate FD array without closing on error (for sending)
- * @fds: Array of FDs to validate
- * @count: Number of FDs
- * @context: Context string for error messages
- *
- * Validates non-null, count range, each fd >=0 and open.
- * Raises on first error.
- *
- * Returns: 1 if valid
- * Raises: Socket_Failed on validation failure
- * Thread-safe: Yes
- */
 static int
 validate_fd_array_nonclosing (const int *fds, size_t count, const char *context)
 {
@@ -150,14 +90,6 @@ validate_fd_array_nonclosing (const int *fds, size_t count, const char *context)
         return 1;
 }
 
-/**
- * close_received_fds - Close array of received file descriptors
- * @fds: Array of file descriptors
- * @count: Number of descriptors to close
- *
- * Used for cleanup on error paths to prevent fd leaks.
- * Thread-safe: Yes (close is thread-safe per fd)
- */
 static void
 close_received_fds (int *fds, size_t count)
 {
@@ -173,19 +105,6 @@ close_received_fds (int *fds, size_t count)
         }
 }
 
-/* is_wouldblock() and is_connection_error() removed - logic inlined into handle_fdmsg_error() */
-
-/* ==================== Message Setup Helpers ==================== */
-
-/**
- * setup_fd_msg_data - Setup msghdr for FD passing
- * @msg: msghdr to setup
- * @iov: iovec already set with valid base/len for dummy data
- *
- * Sets msg_iov, msg_iovlen, and zeroes msg.
- * Caller must initialize iov with dummy byte buffer before calling.
- * Thread-safe: Yes
- */
 static void
 setup_fd_msg_data (struct msghdr *msg, struct iovec *iov)
 {
@@ -194,16 +113,6 @@ setup_fd_msg_data (struct msghdr *msg, struct iovec *iov)
         msg->msg_iovlen = 1;
 }
 
-/**
- * setup_cmsg_buf - Setup control message buffer for FD passing
- * @buf: cmsg buffer
- * @buf_size: sizeof(buf)
- * @controllen: Value for msg_controllen (CMSG_SPACE(data_len) for send, buf_size for recv)
- * @msg: msghdr to setup control
- *
- * Common setup for both send and recv cmsg buffers.
- * Thread-safe: Yes
- */
 static void
 setup_cmsg_buf (char *buf, size_t buf_size, size_t controllen, struct msghdr *msg)
 {
@@ -212,17 +121,6 @@ setup_cmsg_buf (char *buf, size_t buf_size, size_t controllen, struct msghdr *ms
         msg->msg_controllen = controllen;
 }
 
-/* Removed: setup_send_cmsg_buf and setup_recv_cmsg_buf - unified into setup_cmsg_buf */
-
-/**
- * build_rights_cmsg - Build SCM_RIGHTS control message header and data
- * @cmsg: cmsghdr pointer (from CMSG_FIRSTHDR)
- * @data_len: Length of FD data (sizeof(int)*count)
- * @fds: Array of FDs to copy into CMSG_DATA
- *
- * Sets cmsg fields and copies FDs into data area.
- * Thread-safe: Yes
- */
 static void
 build_rights_cmsg (struct cmsghdr *cmsg, size_t data_len, const int *fds)
 {
@@ -232,19 +130,6 @@ build_rights_cmsg (struct cmsghdr *cmsg, size_t data_len, const int *fds)
         memcpy (CMSG_DATA (cmsg), fds, data_len);
 }
 
-/* ==================== Error Handling Helpers ==================== */
-
-/**
- * handle_fdmsg_error - Unified error handling for sendmsg/recvmsg in FD passing
- * @result: Result from sendmsg/recvmsg
- * @is_recv: 1 if recvmsg (handles result==0), 0 if sendmsg
- * @op_name: Operation name for error message (e.g., "sendmsg", "recvmsg")
- * @count: Number of FDs (for sendmsg message; ignored for recvmsg)
- *
- * Returns: 1 on success, 0 on would-block
- * Raises: Socket_Closed on connection close/EOF, Socket_Failed on other errors
- * Thread-safe: Yes
- */
 static int
 handle_fdmsg_error (ssize_t result, int is_recv, const char *op_name, size_t count)
 {
@@ -269,24 +154,11 @@ handle_fdmsg_error (ssize_t result, int is_recv, const char *op_name, size_t cou
         }
         else if (is_recv && result == 0)
         {
-                /* Peer closed connection */
                 RAISE (Socket_Closed);
         }
         return 1;
 }
 
-/* Removed: is_wouldblock() and is_connection_error() - inlined above */
-
-/* ==================== FD Extraction and Validation ==================== */
-
-/**
- * validate_cmsg_data_len - Validate cmsg data length for SCM_RIGHTS
- * @cmsg: Control message header to validate
- *
- * Returns: 1 if valid
- * Raises: Socket_Failed if invalid
- * Thread-safe: Yes
- */
 static int
 validate_cmsg_data_len (const struct cmsghdr *cmsg)
 {
@@ -305,18 +177,6 @@ validate_cmsg_data_len (const struct cmsghdr *cmsg)
         return 1;
 }
 
-/**
- * validate_fd_array_closing - Validate FD array and close all on error (for receiving)
- * @fds: Array of received FDs (modifiable)
- * @received_count: Pointer to count (set to 0 on error)
- * @count: Number of FDs to validate
- * @context: Context string for error messages
- *
- * Checks each fd >=0 and open, closes ALL fds on any failure.
- * Sets *received_count = 0 on error.
- * Raises on invalid.
- * Thread-safe: Yes
- */
 static void
 validate_fd_array_closing (int *fds, size_t *received_count, size_t count, const char *context)
 {
@@ -342,22 +202,8 @@ validate_fd_array_closing (int *fds, size_t *received_count, size_t count, const
                                           context, i);
                 }
         }
-        /* If all valid, leave *received_count unchanged (set by caller) */
 }
 
-/**
- * process_single_cmsg - Process a single SCM_RIGHTS control message
- * @cmsg: Control message to process
- * @temp_fds: Temporary buffer for accumulating FDs
- * @total_fds: Pointer to current total FD count
- * @max_temp: Maximum size of temp_fds buffer
- *
- * Extracts FDs from cmsg into temp_fds, closing excess if buffer full.
- *
- * Returns: Number of FDs processed from this cmsg
- * Raises: Socket_Failed on invalid cmsg
- * Thread-safe: Yes
- */
 static size_t
 process_single_cmsg (const struct cmsghdr *cmsg, int *temp_fds,
                      size_t *total_fds, size_t max_temp)
@@ -402,19 +248,6 @@ process_single_cmsg (const struct cmsghdr *cmsg, int *temp_fds,
         return to_copy;
 }
 
-/**
- * extract_rights_fds - Extract and validate FDs from recvmsg control messages
- * @msg: msghdr from recvmsg
- * @fds: Output array for validated FDs
- * @max_count: Max FDs to extract/validate
- *
- * Processes SCM_RIGHTS cmsgs, extracts FDs to temp, validates, copies to fds.
- * Closes excess if more than max_count received.
- *
- * Returns: Number of extracted FDs
- * Raises: Socket_Failed on error
- * Thread-safe: Yes
- */
 static size_t
 extract_rights_fds (const struct msghdr *msg, int *fds, size_t max_count)
 {
@@ -424,10 +257,8 @@ extract_rights_fds (const struct msghdr *msg, int *fds, size_t max_count)
         size_t validated_count;
         size_t i;
 
-        /* Initialize temp buffer to invalid FDs for safety */
         memset (temp_fds, -1, sizeof (temp_fds));
 
-        /* Process all control messages */
         cmsg = CMSG_FIRSTHDR ((struct msghdr *)msg);
         while (cmsg != NULL)
         {
@@ -440,7 +271,6 @@ extract_rights_fds (const struct msghdr *msg, int *fds, size_t max_count)
                 cmsg = CMSG_NXTHDR ((struct msghdr *)msg, cmsg);
         }
 
-        /* Check total against caller's max */
         if (total_fds > max_count)
         {
                 close_received_fds (temp_fds, total_fds);
@@ -450,35 +280,17 @@ extract_rights_fds (const struct msghdr *msg, int *fds, size_t max_count)
                                   total_fds, max_count);
         }
 
-        /* Validate all accumulated FDs */
         validated_count = total_fds;
         validate_fd_array_closing (temp_fds, &validated_count, total_fds, "FD extraction");
 
-        /* Copy validated FDs to output */
         memcpy (fds, temp_fds, validated_count * sizeof (int));
 
-        /* Set remaining output slots to -1 for safety */
         for (i = validated_count; i < max_count; i++)
                 fds[i] = -1;
 
         return validated_count;
 }
 
-/* ==================== Core FD Passing Implementation ==================== */
-
-/**
- * socket_sendfds_internal - Internal implementation for sending FDs
- * @socket: Connected Unix domain socket
- * @fds: Array of file descriptors to send
- * @count: Number of file descriptors
- *
- * Returns: 1 on success, 0 on would-block
- * Raises: Socket_Failed on error, Socket_Closed on disconnect
- *
- * Uses sendmsg with SCM_RIGHTS control message to pass file descriptors.
- * A dummy byte is sent as data payload (required by Linux kernel).
- * Thread-safe: Yes
- */
 static int
 socket_sendfds_internal (const T socket, const int *fds, size_t count)
 {
@@ -493,41 +305,22 @@ socket_sendfds_internal (const T socket, const int *fds, size_t count)
 
         fd = SocketBase_fd (socket->base);
 
-        /* Setup dummy data byte */
         dummy[0] = FD_PASS_DUMMY_BYTE;
         iov.iov_base = dummy;
         iov.iov_len = sizeof (dummy[0]);
 
         setup_fd_msg_data (&msg, &iov);
 
-        /* Setup control message buffer */
         cmsg_data_len = sizeof (int) * count;
         setup_cmsg_buf (cmsg_buf, sizeof (cmsg_buf), CMSG_SPACE (cmsg_data_len), &msg);
 
-        /* Build SCM_RIGHTS control message */
         cmsg = CMSG_FIRSTHDR (&msg);
         build_rights_cmsg (cmsg, cmsg_data_len, fds);
 
-        /* Send message with SCM_RIGHTS */
         result = sendmsg (fd, &msg, MSG_NOSIGNAL);
         return handle_fdmsg_error (result, 0, "sendmsg", count);
 }
 
-/**
- * socket_recvfds_internal - Internal implementation for receiving FDs
- * @socket: Connected Unix domain socket
- * @fds: Output array for received file descriptors
- * @max_count: Maximum number of FDs to receive
- * @received_count: Output for actual number of FDs received
- *
- * Returns: 1 on success, 0 on would-block
- * Raises: Socket_Failed on error, Socket_Closed on disconnect
- *
- * Uses recvmsg to receive SCM_RIGHTS control message with file descriptors.
- * On success, *received_count contains the actual number of FDs received.
- * Caller takes ownership of received FDs and must close them.
- * Thread-safe: Yes
- */
 static int
 socket_recvfds_internal (const T socket, int *fds, size_t max_count,
                          size_t *received_count)
@@ -543,12 +336,10 @@ socket_recvfds_internal (const T socket, int *fds, size_t max_count,
 
         fd = SocketBase_fd (socket->base);
 
-        /* Initialize output */
         *received_count = 0;
         for (i = 0; i < max_count; i++)
                 fds[i] = -1;
 
-        /* Setup dummy data buffer */
         dummy[0] = FD_PASS_DUMMY_BYTE;
         iov.iov_base = dummy;
         iov.iov_len = sizeof (dummy[0]);
@@ -556,41 +347,25 @@ socket_recvfds_internal (const T socket, int *fds, size_t max_count,
         setup_fd_msg_data (&msg, &iov);
         setup_cmsg_buf (cmsg_buf, sizeof (cmsg_buf), sizeof (cmsg_buf), &msg);
 
-        /* Receive message */
         result = recvmsg (fd, &msg, 0);
         if (!handle_fdmsg_error (result, 1, "recvmsg", 0))
                 return 0;
 
-        /* Check for truncated control message */
         if (msg.msg_flags & MSG_CTRUNC)
                 SOCKET_RAISE_MSG (SocketFD, Socket_Failed,
                                   "Control message truncated - FD array may "
                                   "be incomplete");
 
-        /* Check for data truncation - enforce protocol: only dummy byte expected */
         if (msg.msg_flags & MSG_TRUNC)
                 SOCKET_RAISE_MSG (SocketFD, Socket_Failed,
                                   "FD passing message data truncated - "
                                   "unexpected extra data from peer");
 
-        /* Extract and validate FDs from control messages */
         num_fds = extract_rights_fds (&msg, fds, max_count);
         *received_count = num_fds;
         return 1;
 }
 
-/* ==================== Public API ==================== */
-
-/**
- * Socket_sendfd - Send single file descriptor over Unix socket
- * @socket: Connected Unix domain socket
- * @fd_to_pass: File descriptor to send
- *
- * Returns: 1 on success, 0 on would-block
- * Raises: Socket_Failed on error, Socket_Closed on disconnect
- *
- * Thread-safe: Yes (uses thread-local error buffers)
- */
 int
 Socket_sendfd (T socket, int fd_to_pass)
 {
@@ -600,17 +375,6 @@ Socket_sendfd (T socket, int fd_to_pass)
         return socket_sendfds_internal (socket, &fd_to_pass, 1);
 }
 
-/**
- * Socket_recvfd - Receive single file descriptor from Unix socket
- * @socket: Connected Unix domain socket
- * @fd_received: Output pointer for received FD (set to -1 if no FD attached)
- *
- * Returns: 1 on success, 0 on would-block
- * Raises: Socket_Failed on error, Socket_Closed on disconnect
- *
- * Caller takes ownership of received FD and must close it.
- * Thread-safe: Yes (uses thread-local error buffers)
- */
 int
 Socket_recvfd (T socket, int *fd_received)
 {
@@ -626,17 +390,6 @@ Socket_recvfd (T socket, int *fd_received)
         return socket_recvfds_internal (socket, fd_received, 1, &received_count);
 }
 
-/**
- * Socket_sendfds - Send multiple file descriptors over Unix socket
- * @socket: Connected Unix domain socket
- * @fds: Array of file descriptors to send
- * @count: Number of file descriptors (1 to SOCKET_MAX_FDS_PER_MSG)
- *
- * Returns: 1 on success, 0 on would-block
- * Raises: Socket_Failed on error, Socket_Closed on disconnect
- *
- * Thread-safe: Yes (uses thread-local error buffers)
- */
 int
 Socket_sendfds (T socket, const int *fds, size_t count)
 {
@@ -646,19 +399,6 @@ Socket_sendfds (T socket, const int *fds, size_t count)
         return socket_sendfds_internal (socket, fds, count);
 }
 
-/**
- * Socket_recvfds - Receive multiple file descriptors from Unix socket
- * @socket: Connected Unix domain socket
- * @fds: Output array for received file descriptors
- * @max_count: Maximum FDs to receive (1 to SOCKET_MAX_FDS_PER_MSG)
- * @received_count: Output for actual number of FDs received
- *
- * Returns: 1 on success, 0 on would-block
- * Raises: Socket_Failed on error, Socket_Closed on disconnect
- *
- * Caller takes ownership of all received FDs and must close them.
- * Thread-safe: Yes (uses thread-local error buffers)
- */
 int
 Socket_recvfds (T socket, int *fds, size_t max_count, size_t *received_count)
 {
