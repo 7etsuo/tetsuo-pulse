@@ -164,6 +164,7 @@ extern void Socket_simple_clear_error(void);
 /* Core socket operations */
 #include "SocketSimple-tcp.h"
 #include "SocketSimple-tls.h"
+#include "SocketSimple-dtls.h"
 #include "SocketSimple-dns.h"
 
 /* Higher-level protocols */
