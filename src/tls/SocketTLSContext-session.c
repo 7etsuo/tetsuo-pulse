@@ -38,21 +38,7 @@
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLSContext);
 
-/**
- * new_session_cb - Called by OpenSSL when new session is created
- * @ssl: SSL connection
- * @sess: New session (ownership depends on return value)
- *
- * Returns: 0 to let OpenSSL handle session storage and cleanup.
- *
- * This callback is invoked after a successful TLS handshake creates a new
- * session that can be reused. We only use it for statistics tracking, not
- * custom storage, so we return 0 to let OpenSSL manage the session.
- *
- * Note: Return value semantics:
- *   - 0: OpenSSL owns session (handles storage/free)
- *   - 1: Callback takes ownership (must free session manually)
- */
+/* Return 0: OpenSSL owns session. Return 1: callback takes ownership. */
 static int
 new_session_cb (SSL *ssl, SSL_SESSION *sess)
 {
@@ -67,23 +53,9 @@ new_session_cb (SSL *ssl, SSL_SESSION *sess)
   return 0;
 }
 
-/**
- * info_callback - Called by OpenSSL on TLS state changes
- * @ssl: SSL connection (const per OpenSSL signature)
- * @where: Event type bitmask (SSL_CB_* flags)
- * @ret: Event-specific value; for errors indicates failure, otherwise unused
- *
- * Tracks session reuse statistics on handshake completion. Called multiple
- * times during handshake at various state transitions.
- *
- * Note on 'ret' parameter: In SSL_CB_HANDSHAKE_DONE context, ret is always 1
- * (success) since the callback is only invoked on successful completion.
- * We check ret != 0 defensively for any error callbacks that might sneak in.
- */
 static void
 info_callback (const SSL *ssl, int where, int ret)
 {
-  /* Skip callbacks with error indication (ret == 0 for some callback types) */
   if (ret == 0)
     return;
 
@@ -93,9 +65,7 @@ info_callback (const SSL *ssl, int where, int ret)
       if (ctx)
         {
           pthread_mutex_lock (&ctx->stats_mutex);
-          /* Note: SSL_session_reused() expects non-const SSL*, but the info
-           * callback signature provides const SSL*. This is an OpenSSL API
-           * inconsistency - the function doesn't modify the SSL object. */
+          /* Cast: OpenSSL API inconsistency - SSL_session_reused needs non-const */
           if (SSL_session_reused ((SSL *)ssl))
             ctx->cache_hits++;
           else
@@ -105,13 +75,6 @@ info_callback (const SSL *ssl, int where, int ret)
     }
 }
 
-/**
- * set_cache_size - Set session cache size with validation
- * @ctx: TLS context
- * @size: Cache size (must be > 0)
- *
- * Raises: SocketTLS_Failed on invalid size or OpenSSL error
- */
 static void
 set_cache_size (T ctx, size_t size)
 {
@@ -142,30 +105,6 @@ set_cache_size (T ctx, size_t size)
   ctx->session_cache_size = size;
 }
 
-/**
- * SocketTLSContext_set_session_id_context - Set session ID context for servers
- * @ctx: TLS context (must not be NULL)
- * @context: Session ID context bytes (must not be NULL)
- * @context_len: Length of context (1-32 bytes, per OpenSSL limit)
- *
- * Raises: SocketTLS_Failed on invalid parameters or OpenSSL error
- *
- * Sets the session ID context used to differentiate sessions between different
- * server applications or virtual hosts. Sessions created with one context will
- * not be reused when a client connects to a server with a different context.
- *
- * This is critical for:
- * - Multi-tenant servers with different security requirements per tenant
- * - Virtual hosting with separate session caches per hostname
- * - Load-balanced clusters that need consistent session behavior
- * - Applications sharing an SSL_CTX but needing session isolation
- *
- * For simple single-application servers, a fixed string like "myapp" works.
- * For virtual hosting, use the hostname or a hash of server configuration.
- * For enhanced security, include a unique server identifier.
- *
- * Thread-safe: No - call before sharing context across threads.
- */
 void
 SocketTLSContext_set_session_id_context (T ctx, const unsigned char *context,
                                          size_t context_len)
@@ -196,24 +135,6 @@ SocketTLSContext_set_session_id_context (T ctx, const unsigned char *context,
     }
 }
 
-/**
- * SocketTLSContext_enable_session_cache - Enable TLS session caching
- * @ctx: TLS context (must not be NULL)
- * @max_sessions: Maximum cached sessions (0 = use OpenSSL default)
- * @timeout_seconds: Session timeout (<=0 = use
- * SOCKET_TLS_SESSION_TIMEOUT_DEFAULT)
- *
- * Raises: SocketTLS_Failed on configuration error
- *
- * Enables session caching for faster subsequent connections via TLS session
- * resumption. For servers, stores sessions in internal cache. For clients,
- * stores sessions for reuse when reconnecting to the same server.
- *
- * Installs callbacks to track cache statistics (hits, misses, stores).
- * Statistics can be retrieved via SocketTLSContext_get_cache_stats().
- *
- * Thread-safe: No - call before sharing context across threads.
- */
 void
 SocketTLSContext_enable_session_cache (T ctx, size_t max_sessions,
                                        long timeout_seconds)
@@ -244,18 +165,6 @@ SocketTLSContext_enable_session_cache (T ctx, size_t max_sessions,
   ctx->session_cache_enabled = 1;
 }
 
-/**
- * SocketTLSContext_set_session_cache_size - Update session cache size
- * @ctx: TLS context (must not be NULL)
- * @size: New cache size (must be > 0)
- *
- * Raises: SocketTLS_Failed on invalid size or OpenSSL error
- *
- * Updates the maximum number of sessions stored in the cache. Existing
- * sessions beyond the new limit may be evicted by OpenSSL.
- *
- * Thread-safe: No - call before sharing context across threads.
- */
 void
 SocketTLSContext_set_session_cache_size (T ctx, size_t size)
 {
@@ -264,18 +173,6 @@ SocketTLSContext_set_session_cache_size (T ctx, size_t size)
   set_cache_size (ctx, size);
 }
 
-/**
- * SocketTLSContext_get_cache_stats - Retrieve session cache statistics
- * @ctx: TLS context (may be NULL)
- * @hits: Output for cache hits (session reused) - may be NULL
- * @misses: Output for cache misses (full handshake) - may be NULL
- * @stores: Output for new sessions stored - may be NULL
- *
- * Returns statistics via output parameters. If ctx is NULL or session cache
- * is not enabled, all outputs are set to 0.
- *
- * Thread-safe: Yes - protected by stats_mutex.
- */
 void
 SocketTLSContext_get_cache_stats (T ctx, size_t *hits, size_t *misses,
                                   size_t *stores)
@@ -301,20 +198,6 @@ SocketTLSContext_get_cache_stats (T ctx, size_t *hits, size_t *misses,
   pthread_mutex_unlock (&ctx->stats_mutex);
 }
 
-/**
- * configure_ticket_keys - Internal helper to configure session ticket keys in OpenSSL context
- * @ctx: TLS context
- * @key: Key bytes
- * @key_len: Key length (validated by caller)
- *
- * Performs the memcpy to internal storage, sets OpenSSL ticket keys via ctrl,
- * and cleanses on failure. Does not touch tickets_enabled flag.
- *
- * Returns: 1 on success, 0 on failure (OpenSSL ctrl failed)
- *
- * Note: Assumes caller has validated key_len and key != NULL.
- * Thread-safe: No locking - caller must synchronize if necessary.
- */
 static int
 configure_ticket_keys (T ctx, const unsigned char *key, size_t key_len)
 {
@@ -324,7 +207,6 @@ configure_ticket_keys (T ctx, const unsigned char *key, size_t key_len)
                     (int)key_len, ctx->ticket_key)
       != 1)
     {
-      /* Clear key material on failure */
       OPENSSL_cleanse (ctx->ticket_key, SOCKET_TLS_TICKET_KEY_LEN);
       return 0;
     }
@@ -332,27 +214,6 @@ configure_ticket_keys (T ctx, const unsigned char *key, size_t key_len)
   return 1;
 }
 
-/**
- * SocketTLSContext_enable_session_tickets - Enable TLS session tickets
- * @ctx: TLS context (must not be NULL)
- * @key: Session ticket encryption key (must be SOCKET_TLS_TICKET_KEY_LEN
- * bytes)
- * @key_len: Key length (must equal SOCKET_TLS_TICKET_KEY_LEN = 80)
- *
- * Raises: SocketTLS_Failed on invalid key length or OpenSSL error
- *
- * Enables stateless session resumption via encrypted session tickets.
- * The key should be cryptographically random and rotated periodically.
- * Key format (80 bytes total):
- *   - 16 bytes: ticket name (identifies which key encrypted the ticket)
- *   - 32 bytes: AES-256 key (encrypts ticket contents)
- *   - 32 bytes: HMAC-SHA256 key (authenticates ticket)
- *
- * Security: The key is copied into the context structure and will be
- * securely cleared when the context is freed.
- *
- * Thread-safe: No - call before sharing context across threads.
- */
 void
 SocketTLSContext_enable_session_tickets (T ctx, const unsigned char *key,
                                          size_t key_len)
@@ -374,7 +235,6 @@ SocketTLSContext_enable_session_tickets (T ctx, const unsigned char *key,
                            "Session ticket key pointer cannot be NULL");
     }
 
-  /* Copy key into structure for secure clearing on context free */
   if (!configure_ticket_keys (ctx, key, key_len))
     {
       ctx_raise_openssl_error ("Failed to set session ticket keys");
@@ -383,23 +243,6 @@ SocketTLSContext_enable_session_tickets (T ctx, const unsigned char *key,
   ctx->tickets_enabled = 1;
 }
 
-/**
- * SocketTLSContext_rotate_session_ticket_key - Rotate the session ticket key
- * @ctx: TLS context (must not be NULL)
- * @new_key: New ticket encryption key (must be SOCKET_TLS_TICKET_KEY_LEN bytes)
- * @new_key_len: Key length (must equal SOCKET_TLS_TICKET_KEY_LEN = 80)
- *
- * Raises: SocketTLS_Failed on invalid parameters or OpenSSL error
- *
- * Replaces the current session ticket key with a new one. The old key is
- * securely cleared from memory before being replaced. Existing sessions
- * encrypted with the old key will fail resumption (full handshake required).
- *
- * For graceful rotation without breaking active sessions, schedule rotation
- * during low-traffic periods or implement multi-key support.
- *
- * Thread-safe: Yes - uses stats_mutex to protect key updates.
- */
 void
 SocketTLSContext_rotate_session_ticket_key (T ctx, const unsigned char *new_key,
                                             size_t new_key_len)
@@ -428,13 +271,9 @@ SocketTLSContext_rotate_session_ticket_key (T ctx, const unsigned char *new_key,
                            "New session ticket key pointer cannot be NULL");
     }
 
-  /* Thread-safe key rotation using stats_mutex */
   pthread_mutex_lock (&ctx->stats_mutex);
-
-  /* Securely clear old key before replacement */
   OPENSSL_cleanse (ctx->ticket_key, SOCKET_TLS_TICKET_KEY_LEN);
 
-  /* Apply new key */
   if (!configure_ticket_keys (ctx, new_key, new_key_len))
     {
       ctx->tickets_enabled = 0;
@@ -445,14 +284,6 @@ SocketTLSContext_rotate_session_ticket_key (T ctx, const unsigned char *new_key,
   pthread_mutex_unlock (&ctx->stats_mutex);
 }
 
-/**
- * SocketTLSContext_session_tickets_enabled - Check if session tickets enabled
- * @ctx: TLS context (may be NULL)
- *
- * Returns: 1 if session tickets are enabled, 0 otherwise
- *
- * Thread-safe: Yes - read-only access to atomic flag.
- */
 int
 SocketTLSContext_session_tickets_enabled (T ctx)
 {
@@ -461,15 +292,6 @@ SocketTLSContext_session_tickets_enabled (T ctx)
   return ctx->tickets_enabled;
 }
 
-/**
- * SocketTLSContext_disable_session_tickets - Disable tickets and clear key
- * @ctx: TLS context (must not be NULL)
- *
- * Disables session ticket support and securely wipes the ticket encryption
- * key from memory. Does nothing if tickets are not enabled.
- *
- * Thread-safe: Yes - uses stats_mutex to protect key clearing.
- */
 void
 SocketTLSContext_disable_session_tickets (T ctx)
 {
@@ -479,14 +301,9 @@ SocketTLSContext_disable_session_tickets (T ctx)
     return;
 
   pthread_mutex_lock (&ctx->stats_mutex);
-
-  /* Securely clear the ticket key */
   OPENSSL_cleanse (ctx->ticket_key, SOCKET_TLS_TICKET_KEY_LEN);
   ctx->tickets_enabled = 0;
-
-  /* Disable tickets in OpenSSL by setting the NO_TICKET option */
   SSL_CTX_set_options (ctx->ssl_ctx, SSL_OP_NO_TICKET);
-
   pthread_mutex_unlock (&ctx->stats_mutex);
 }
 

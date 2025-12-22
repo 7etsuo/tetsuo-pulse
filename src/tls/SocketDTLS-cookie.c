@@ -42,12 +42,6 @@
 static uint32_t bucket_offset = 0;
 static pthread_once_t bucket_offset_once = PTHREAD_ONCE_INIT;
 
-/**
- * init_bucket_offset - Initialize random bucket offset
- *
- * Generates a random offset (0 to COOKIE_LIFETIME-1 seconds in ms) to add
- * unpredictability to bucket boundaries. Called once via pthread_once.
- */
 static void
 init_bucket_offset (void)
 {
@@ -58,21 +52,10 @@ init_bucket_offset (void)
                           | ((uint32_t)rand_bytes[1] << 16)
                           | ((uint32_t)rand_bytes[2] << 8)
                           | (uint32_t)rand_bytes[3];
-      /* Offset within the cookie lifetime window (in milliseconds) */
       bucket_offset = rand_val % (SOCKET_DTLS_COOKIE_LIFETIME_SEC * 1000);
     }
 }
 
-/**
- * get_time_bucket - Get current monotonic time bucket
- *
- * Returns monotonic time truncated to SOCKET_DTLS_COOKIE_LIFETIME_SEC
- * intervals. Uses Socket_get_monotonic_ms() to prevent clock manipulation
- * attacks. Adds a random offset to bucket boundaries to prevent attackers
- * from predicting when cookies will become invalid.
- *
- * Returns: Current time bucket as uint32_t
- */
 static uint32_t
 get_time_bucket (void)
 {
@@ -80,24 +63,12 @@ get_time_bucket (void)
 
   int64_t now_ms = Socket_get_monotonic_ms ();
   int64_t lifetime_ms = (int64_t)SOCKET_DTLS_COOKIE_LIFETIME_SEC * 1000LL;
-  /* Apply random offset to make bucket boundaries unpredictable */
   int64_t offset_now_ms = now_ms + bucket_offset;
   return (uint32_t)(offset_now_ms / lifetime_ms);
 }
 
 
 
-/**
- * bio_addr_to_sockaddr_storage - Convert BIO_ADDR to sockaddr_storage
- * @bio_addr: Source BIO_ADDR
- * @peer_addr: Output sockaddr_storage
- * @peer_len: Output address length
- *
- * Supports AF_INET and AF_INET6. Sets family, port, zeros other fields,
- * copies address bytes via BIO_ADDR_rawaddress.
- *
- * Returns: 0 on success, -1 on unsupported family
- */
 static int
 bio_addr_to_sockaddr_storage (BIO_ADDR *bio_addr, struct sockaddr_storage *peer_addr,
                               socklen_t *peer_len)
@@ -127,14 +98,6 @@ bio_addr_to_sockaddr_storage (BIO_ADDR *bio_addr, struct sockaddr_storage *peer_
   return -1;
 }
 
-/**
- * get_peer_from_bio_dgram - Extract peer address from DTLS BIO
- * @bio: SSL read BIO
- * @peer_addr: Output sockaddr_storage
- * @peer_len: Output address length
- *
- * Returns: 0 on success, -1 on failure
- */
 static int
 get_peer_from_bio_dgram (BIO *bio, struct sockaddr_storage *peer_addr,
                          socklen_t *peer_len)
@@ -156,17 +119,6 @@ cleanup:
   return result;
 }
 
-/**
- * get_peer_address_from_ssl - Extract peer address from SSL connection
- * @ssl: SSL object
- * @peer_addr: Output buffer for peer address
- * @peer_len: Output for address length
- *
- * Tries getpeername() via underlying socket fd first, falls back to
- * BIO_dgram_get_peer() for DTLS/UDP peer tracking.
- *
- * Returns: 0 on success, -1 on failure
- */
 static int
 get_peer_address_from_ssl (SSL *ssl, struct sockaddr_storage *peer_addr,
                            socklen_t *peer_len)
@@ -178,7 +130,6 @@ get_peer_address_from_ssl (SSL *ssl, struct sockaddr_storage *peer_addr,
   if (!bio)
     return -1;
 
-  /* Try getpeername first via underlying fd */
   fd = BIO_get_fd (bio, NULL);
   if (fd >= 0)
     {
@@ -187,23 +138,9 @@ get_peer_address_from_ssl (SSL *ssl, struct sockaddr_storage *peer_addr,
         return 0;
     }
 
-  /* Fallback: Extract from BIO dgram peer address */
   return get_peer_from_bio_dgram (bio, peer_addr, peer_len);
 }
 
-/**
- * compute_cookie_hmac - Compute HMAC-SHA256 cookie
- * @secret: Secret key (SOCKET_DTLS_COOKIE_SECRET_LEN bytes)
- * @peer_addr: Peer socket address
- * @peer_len: Peer address length
- * @timestamp: Timestamp bucket
- * @out_cookie: Output buffer (SOCKET_DTLS_COOKIE_LEN bytes)
- *
- * Note: Called from OpenSSL callbacks which expect return codes, not
- * exceptions. Catches SocketCrypto_Failed and converts to return code.
- *
- * Returns: 0 on success, -1 on failure
- */
 static int
 compute_cookie_hmac (const unsigned char *secret,
                      const struct sockaddr *peer_addr, socklen_t peer_len,
@@ -217,7 +154,6 @@ compute_cookie_hmac (const unsigned char *secret,
   if (peer_len > sizeof (struct sockaddr_storage))
     return -1;
 
-  /* Build HMAC input: peer_addr || timestamp (network byte order) */
   memcpy (input, peer_addr, peer_len);
   input_len = peer_len;
 
@@ -225,7 +161,6 @@ compute_cookie_hmac (const unsigned char *secret,
   memcpy (input + input_len, &ts_net, sizeof (ts_net));
   input_len += sizeof (ts_net);
 
-  /* Compute HMAC-SHA256 - catch exceptions for OpenSSL callback context */
   TRY
   {
     SocketCrypto_hmac_sha256 (secret, SOCKET_DTLS_COOKIE_SECRET_LEN, input,
@@ -238,19 +173,6 @@ compute_cookie_hmac (const unsigned char *secret,
   return result;
 }
 
-/**
- * try_verify_cookie - Attempt to verify cookie against one secret/timestamp
- * @cookie: Cookie to verify
- * @secret: Secret key to try
- * @peer_addr: Peer socket address
- * @peer_len: Peer address length
- * @timestamp: Timestamp bucket to try
- * @expected: Buffer for computed expected cookie (SOCKET_DTLS_COOKIE_LEN)
- *
- * Computes expected cookie and performs constant-time comparison.
- *
- * Returns: 1 if cookie matches, 0 otherwise
- */
 static int
 try_verify_cookie (const unsigned char *cookie, const unsigned char *secret,
                    const struct sockaddr *peer_addr, socklen_t peer_len,
@@ -264,14 +186,6 @@ try_verify_cookie (const unsigned char *cookie, const unsigned char *secret,
          == 0;
 }
 
-/**
- * is_secret_set - Check if a secret buffer contains non-zero data
- * @secret: Secret buffer to check
- *
- * Uses constant-time comparison against zeros to avoid timing attacks.
- *
- * Returns: 1 if secret is set (non-zero), 0 if all zeros
- */
 static int
 is_secret_set (const unsigned char *secret)
 {
@@ -281,15 +195,6 @@ is_secret_set (const unsigned char *secret)
          != 0;
 }
 
-/**
- * dtls_generate_cookie_hmac - Generate HMAC-based cookie
- * @secret: Secret key
- * @peer_addr: Peer socket address
- * @peer_len: Peer address length
- * @out_cookie: Output buffer (SOCKET_DTLS_COOKIE_LEN bytes)
- *
- * Returns: 0 on success, -1 on failure
- */
 int
 dtls_generate_cookie_hmac (const unsigned char *secret,
                            const struct sockaddr *peer_addr,
@@ -302,17 +207,6 @@ dtls_generate_cookie_hmac (const unsigned char *secret,
                               out_cookie);
 }
 
-/**
- * dtls_cookie_generate_cb - OpenSSL cookie generation callback
- * @ssl: SSL object
- * @cookie: Output buffer for cookie
- * @cookie_len: Output for cookie length
- *
- * Called by OpenSSL during DTLS handshake when server sends
- * HelloVerifyRequest.
- *
- * Returns: 1 on success, 0 on failure
- */
 int
 dtls_cookie_generate_cb (SSL *ssl, unsigned char *cookie,
                          unsigned int *cookie_len)
@@ -343,18 +237,6 @@ dtls_cookie_generate_cb (SSL *ssl, unsigned char *cookie,
   return 1;
 }
 
-/**
- * dtls_cookie_verify_cb - OpenSSL cookie verification callback
- * @ssl: SSL object
- * @cookie: Cookie to verify
- * @cookie_len: Cookie length
- *
- * Called by OpenSSL to verify cookie echoed by client in ClientHello.
- * Tries current and previous secrets with current and previous timestamp
- * buckets to handle rotation and edge cases near bucket boundaries.
- *
- * Returns: 1 if valid, 0 if invalid
- */
 int
 dtls_cookie_verify_cb (SSL *ssl, const unsigned char *cookie,
                        unsigned int cookie_len)
@@ -367,7 +249,6 @@ dtls_cookie_verify_cb (SSL *ssl, const unsigned char *cookie,
   uint32_t timestamp;
   int verified = 0;
 
-  /* Validate context and cookie length */
   ctx = dtls_context_get_from_ssl (ssl);
   if (!ctx || !ctx->cookie.cookie_enabled)
     return 0;
@@ -405,8 +286,6 @@ dtls_cookie_verify_cb (SSL *ssl, const unsigned char *cookie,
 
 cleanup:
   pthread_mutex_unlock (&ctx->cookie.secret_mutex);
-
-  /* Always clear expected cookie from stack - security critical */
   SocketCrypto_secure_clear (expected, sizeof (expected));
 
   if (!verified)
