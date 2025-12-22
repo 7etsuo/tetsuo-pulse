@@ -73,6 +73,50 @@ valid_prefix_bits (int prefix_bits)
 }
 
 /* ============================================================================
+ * Header Name Normalization (RFC 9113 §8.2)
+ * ============================================================================
+ */
+
+/**
+ * Create lowercase copy of header name in arena.
+ * RFC 9113 §8.2: "Field names MUST be converted to lowercase when
+ * constructing an HTTP/2 message."
+ */
+static const char *
+lowercase_header_name (Arena_T arena, const char *name, size_t len)
+{
+  char *lower;
+  size_t i;
+  int needs_conversion = 0;
+
+  /* Check if conversion is needed */
+  for (i = 0; i < len; i++)
+    {
+      if (name[i] >= 'A' && name[i] <= 'Z')
+        {
+          needs_conversion = 1;
+          break;
+        }
+    }
+
+  if (!needs_conversion)
+    return name;
+
+  /* Allocate and convert */
+  lower = ALLOC (arena, len + 1);
+  for (i = 0; i < len; i++)
+    {
+      if (name[i] >= 'A' && name[i] <= 'Z')
+        lower[i] = (char)(name[i] + ('a' - 'A'));
+      else
+        lower[i] = name[i];
+    }
+  lower[len] = '\0';
+
+  return lower;
+}
+
+/* ============================================================================
  * Exception Definition
  * ============================================================================
  */
@@ -633,7 +677,15 @@ hpack_encode_header (SocketHPACK_Encoder_T encoder,
                      size_t output_size)
 {
   size_t name_index = 0;
-  int exact_index = find_header_index (encoder, hdr, &name_index);
+  int exact_index;
+  SocketHPACK_Header normalized_hdr;
+
+  /* RFC 9113 §8.2: Convert field names to lowercase */
+  normalized_hdr = *hdr;
+  normalized_hdr.name
+      = lowercase_header_name (encoder->arena, hdr->name, hdr->name_len);
+
+  exact_index = find_header_index (encoder, &normalized_hdr, &name_index);
 
   if (exact_index > 0)
     return hpack_encode_indexed ((size_t)exact_index, output, output_size);
@@ -652,13 +704,15 @@ hpack_encode_header (SocketHPACK_Encoder_T encoder,
     mode = HPACK_LITERAL_WITHOUT_INDEX;
 
   ssize_t encoded = hpack_encode_literal (
-      mode, name_index, hdr->name, hdr->name_len, hdr->value, hdr->value_len,
-      encoder->huffman_encode, output, output_size);
+      mode, name_index, normalized_hdr.name, normalized_hdr.name_len,
+      normalized_hdr.value, normalized_hdr.value_len, encoder->huffman_encode,
+      output, output_size);
 
   if (encoded >= 0 && add_to_table)
     {
-      SocketHPACK_Table_add (encoder->table, hdr->name, hdr->name_len,
-                             hdr->value, hdr->value_len);
+      SocketHPACK_Table_add (encoder->table, normalized_hdr.name,
+                             normalized_hdr.name_len, normalized_hdr.value,
+                             normalized_hdr.value_len);
     }
 
   return encoded;

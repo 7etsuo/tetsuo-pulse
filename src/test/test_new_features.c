@@ -632,8 +632,8 @@ TEST(socket_cork_basic)
 /* Test Socket_peek function */
 TEST(socket_peek_basic)
 {
-  Socket_T server = Socket_listen_tcp("127.0.0.1", 8080, 1);
-  int port = 8080;
+  Socket_T server = Socket_listen_tcp("127.0.0.1", 0, 1);
+  int port = Socket_getlocalport(server);
 
   Socket_T client = Socket_connect_tcp("127.0.0.1", port, 1000);
   Socket_T accepted = Socket_accept_timeout(server, 1000);
