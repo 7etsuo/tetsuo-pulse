@@ -848,6 +848,74 @@ test_decoder_invalid_table_size_update (void)
   printf ("PASS\n");
 }
 
+/**
+ * Test multiple valid table size updates (RFC 7541 §4.2)
+ * Two consecutive updates at the beginning should succeed.
+ */
+static void
+test_decoder_multiple_table_size_updates (void)
+{
+  Arena_T arena;
+  SocketHPACK_Decoder_T decoder;
+  SocketHPACK_Header headers[16];
+  size_t header_count;
+  SocketHPACK_Result result;
+
+  /* Two table size updates: 0x21 = size 1, 0x3f 0x61 = size 128 */
+  unsigned char input[] = { 0x21, 0x3f, 0x61 };
+
+  printf ("  Decoder multiple table size updates... ");
+
+  arena = Arena_new ();
+  decoder = SocketHPACK_Decoder_new (NULL, arena);
+
+  result = SocketHPACK_Decoder_decode (decoder, input, sizeof (input), headers,
+                                       16, &header_count, arena);
+  TEST_ASSERT (result == HPACK_OK, "Two updates should succeed");
+  TEST_ASSERT (header_count == 0, "Should decode 0 headers");
+
+  SocketHPACK_Table_T table = SocketHPACK_Decoder_get_table (decoder);
+  TEST_ASSERT (SocketHPACK_Table_max_size (table) == 128,
+               "Final table max size should be 128");
+
+  SocketHPACK_Decoder_free (&decoder);
+  Arena_dispose (&arena);
+
+  printf ("PASS\n");
+}
+
+/**
+ * Test exceeding table size update limit (RFC 7541 §4.2)
+ * Three consecutive updates should fail.
+ */
+static void
+test_decoder_exceeded_table_size_updates (void)
+{
+  Arena_T arena;
+  SocketHPACK_Decoder_T decoder;
+  SocketHPACK_Header headers[16];
+  size_t header_count;
+  SocketHPACK_Result result;
+
+  /* Three table size updates: 0x21 = size 1, 0x22 = size 2, 0x23 = size 3 */
+  unsigned char input[] = { 0x21, 0x22, 0x23 };
+
+  printf ("  Decoder exceeded table size updates... ");
+
+  arena = Arena_new ();
+  decoder = SocketHPACK_Decoder_new (NULL, arena);
+
+  result = SocketHPACK_Decoder_decode (decoder, input, sizeof (input), headers,
+                                       16, &header_count, arena);
+  TEST_ASSERT (result == HPACK_ERROR_TABLE_SIZE,
+               "Third update should fail with TABLE_SIZE error");
+
+  SocketHPACK_Decoder_free (&decoder);
+  Arena_dispose (&arena);
+
+  printf ("PASS\n");
+}
+
 /* ============================================================================
  * RFC 7541 Appendix C Test Vectors
  * ============================================================================
@@ -1066,6 +1134,8 @@ main (void)
   test_decoder_decode_literal_never ();
   test_decoder_decode_table_size_update ();
   test_decoder_invalid_table_size_update ();
+  test_decoder_multiple_table_size_updates ();
+  test_decoder_exceeded_table_size_updates ();
 
   printf ("\nRFC 7541 Test Vectors:\n");
   test_rfc7541_c2_1 ();
