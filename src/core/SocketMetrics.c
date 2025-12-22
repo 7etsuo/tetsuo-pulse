@@ -482,7 +482,6 @@ histogram_fill_snapshot (Histogram *h, SocketMetrics_HistogramSnapshot *snap)
   histogram_copy_basic_stats (h, snap);
   histogram_compute_derived_stats (snap);
 
-  /* Get sorted values for percentile calculation */
   sorted = histogram_get_sorted_copy (h, &n);
   if (!sorted)
     return;

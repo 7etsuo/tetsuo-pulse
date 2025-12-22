@@ -161,7 +161,6 @@ dfa_step (uint32_t *state, unsigned char byte, uint32_t *prev_out)
   return (*state != UTF8_STATE_REJECT) ? 1 : 0;
 }
 
-/* Update bytes_needed and bytes_seen for incremental validation */
 static void
 update_sequence_tracking (SocketUTF8_State *state, uint32_t prev_state,
                           uint32_t curr_state)
@@ -211,7 +210,6 @@ validate_continuations (const unsigned char *data, int count, int *consumed)
   return 1;
 }
 
-/* Classify error type based on DFA state and byte that caused rejection */
 static inline SocketUTF8_Result
 classify_error (uint32_t prev_state, unsigned char byte)
 {

@@ -18,7 +18,6 @@
 
 #define T SocketRateLimit_T
 
-/* Execute code with mutex acquired */
 #define WITH_LOCK(limiter, code)                                              \
   do                                                                          \
     {                                                                         \
@@ -33,11 +32,9 @@
     }                                                                         \
   while (0)
 
-/* Check if limiter is properly initialized */
 #define RATELIMIT_IS_VALID(_l)                                                \
   ((_l)->initialized == SOCKET_RATELIMIT_MUTEX_INITIALIZED)
 
-/* Live instance count for debugging and leak detection */
 static struct SocketLiveCount ratelimit_live_tracker
     = SOCKETLIVECOUNT_STATIC_INIT;
 
@@ -51,7 +48,6 @@ static struct SocketLiveCount ratelimit_live_tracker
 const Except_T SocketRateLimit_Failed
     = { &SocketRateLimit_Failed, "Rate limiter operation failed" };
 
-/* Thread-local exception using centralized macro */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketRateLimit);
 
 
