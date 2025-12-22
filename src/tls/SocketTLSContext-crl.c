@@ -34,14 +34,6 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLSContext);
 
 #define T SocketTLSContext_T
 
-/* ============================================================================
- * CRL Path Validation Helpers
- * ============================================================================
- *
- * Uses shared ssl_contains_control_chars() and ssl_contains_path_traversal()
- * from SocketSSL-internal.h for consistency across TLS/DTLS modules.
- */
-
 /**
  * validate_path_chars - Validate path contains no control characters
  * @path: Path to validate
@@ -126,11 +118,6 @@ validate_crl_path_security (const char *crl_path)
 
   free (resolved_path);
 }
-
-/* ============================================================================
- * CRL Auto-Refresh Implementation
- * ============================================================================
- */
 
 /**
  * try_load_crl - Attempt to load CRL file, catching errors

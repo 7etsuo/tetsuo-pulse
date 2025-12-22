@@ -38,11 +38,6 @@
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLSContext);
 
-/* ============================================================================
- * Session Cache Callbacks (Internal)
- * ============================================================================
- */
-
 /**
  * new_session_cb - Called by OpenSSL when new session is created
  * @ssl: SSL connection
@@ -110,11 +105,6 @@ info_callback (const SSL *ssl, int where, int ret)
     }
 }
 
-/* ============================================================================
- * Cache Size Management (Internal)
- * ============================================================================
- */
-
 /**
  * set_cache_size - Set session cache size with validation
  * @ctx: TLS context
@@ -151,11 +141,6 @@ set_cache_size (T ctx, size_t size)
 
   ctx->session_cache_size = size;
 }
-
-/* ============================================================================
- * Session ID Context
- * ============================================================================
- */
 
 /**
  * SocketTLSContext_set_session_id_context - Set session ID context for servers
@@ -210,11 +195,6 @@ SocketTLSContext_set_session_id_context (T ctx, const unsigned char *context,
       ctx_raise_openssl_error ("Failed to set session ID context");
     }
 }
-
-/* ============================================================================
- * Public Session Cache API
- * ============================================================================
- */
 
 /**
  * SocketTLSContext_enable_session_cache - Enable TLS session caching
@@ -320,11 +300,6 @@ SocketTLSContext_get_cache_stats (T ctx, size_t *hits, size_t *misses,
     *stores = ctx->cache_stores;
   pthread_mutex_unlock (&ctx->stats_mutex);
 }
-
-/* ============================================================================
- * Session Tickets
- * ============================================================================
- */
 
 /**
  * configure_ticket_keys - Internal helper to configure session ticket keys in OpenSSL context

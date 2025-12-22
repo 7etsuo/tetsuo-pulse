@@ -69,21 +69,6 @@ ensure_ex_data_index(void)
 }
 
 
-/* ============================================================================
- * TCP Optimization for TLS Handshake
- * ============================================================================
- *
- * TCP tuning options that improve TLS handshake latency:
- *
- * - TCP_NODELAY: Disables Nagle's algorithm, reducing latency for small
- *   handshake messages. Critical for TLS where multiple small messages
- *   are exchanged rapidly during handshake.
- *
- * - TCP_QUICKACK: Disables delayed ACKs temporarily, useful during handshake
- *   to reduce RTT. Only available on Linux. Reverts to normal ACK behavior
- *   after kernel decides to disable it.
- */
-
 /* Linux-specific TCP_QUICKACK availability */
 #ifdef __linux__
 #define SOCKET_HAS_QUICKACK 1
@@ -211,30 +196,6 @@ SocketTLS_restore_tcp_defaults (Socket_T socket)
 
   return 0;
 }
-
-/* ============================================================================
- * TLS 1.3 0-RTT Early Data Support
- * ============================================================================
- *
- * 0-RTT (Zero Round Trip Time) allows clients to send application data in
- * the first flight of the handshake, reducing latency by one RTT.
- *
- * Security Considerations:
- * - Early data is NOT replay-protected by default
- * - Server must implement application-level replay protection
- * - Only idempotent operations should use early data
- * - Early data should not contain sensitive information that changes state
- *
- * Typical use cases:
- * - HTTP GET requests (idempotent)
- * - DNS queries
- * - Heartbeat/ping messages
- *
- * NOT recommended for:
- * - POST requests that modify state
- * - Financial transactions
- * - Any non-idempotent operation
- */
 
 /**
  * SocketTLSContext_enable_early_data - Enable TLS 1.3 0-RTT support
@@ -529,27 +490,6 @@ SocketTLS_get_early_data_status (Socket_T socket)
     }
 }
 
-/* ============================================================================
- * TLS 1.3 KeyUpdate Support
- * ============================================================================
- *
- * TLS 1.3 replaces renegotiation with KeyUpdate, a lightweight mechanism to
- * rotate encryption keys without a full handshake. This provides forward
- * secrecy for long-lived connections by periodically generating new keys.
- *
- * KeyUpdate is useful for:
- * - Long-lived database connections
- * - VPN tunnels
- * - Persistent WebSocket connections
- * - Any connection open for hours/days
- *
- * Unlike renegotiation:
- * - KeyUpdate is much lighter (no full handshake)
- * - Cannot change certificates or cipher suites
- * - Only rotates symmetric keys derived from the master secret
- * - Both directions can be updated independently
- */
-
 /**
  * SocketTLS_request_key_update - Request TLS 1.3 key rotation
  * @socket: Socket with completed TLS 1.3 handshake
@@ -648,18 +588,6 @@ SocketTLS_get_key_update_count (Socket_T socket)
 
   return socket->tls_key_update_count;
 }
-
-/* ============================================================================
- * Session Cache Sharding for Multi-Threaded Servers
- * ============================================================================
- *
- * For high-concurrency servers, a single session cache protected by a
- * global mutex becomes a bottleneck. Session cache sharding distributes
- * sessions across multiple independent caches, each with its own mutex.
- *
- * Sharding is based on session ID hash, ensuring consistent shard selection
- * for resume attempts.
- */
 
 /* Sharded session cache structs defined in SocketTLS-private.h */
 
@@ -944,20 +872,6 @@ SocketTLSContext_get_sharded_stats (SocketTLSContext_T ctx, size_t *total_hits,
   SOCKET_LOG_DEBUG_MSG ("Sharded cache stats: hits=%zu misses=%zu stores=%zu", hits, misses, stores);
 }
 
-/* ============================================================================
- * TLS Buffer Pool for High-Connection Scenarios
- * ============================================================================
- *
- * For servers with thousands of concurrent TLS connections, arena allocation
- * per-socket can lead to memory fragmentation. A buffer pool pre-allocates
- * fixed-size buffers that can be reused across connections.
- *
- * This is especially useful for:
- * - Short-lived connections (reduce allocation overhead)
- * - Memory-constrained environments
- * - Predictable memory usage patterns
- */
-
 /**
  * @brief TLS buffer pool entry
  */
@@ -1196,14 +1110,6 @@ TLSBufferPool_free (TLSBufferPool_T *pool)
 
   *pool = NULL;
 }
-
-/* ============================================================================
- * 0-RTT Early Data Replay Protection API
- * ============================================================================
- *
- * These functions provide a callback-based mechanism for applications to
- * implement replay detection for TLS 1.3 0-RTT early data.
- */
 
 /**
  * SocketTLSContext_set_early_data_replay_callback - Register replay callback

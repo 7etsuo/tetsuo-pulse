@@ -33,11 +33,6 @@
 
 #define T SocketTLSContext_T
 
-/* ============================================================================
- * Internal Error Helpers
- * ============================================================================
- */
-
 /**
  * ctx_raise_error_fmt - Raise TLS exception with formatted message
  * @fmt: Format string
@@ -55,11 +50,6 @@ ctx_raise_error_fmt (const char *fmt, ...)
   va_end (args);
   ctx_raise_openssl_error (buf);
 }
-
-/* ============================================================================
- * Path Validation
- * ============================================================================
- */
 
 /**
  * validate_file_path_or_raise - Validate file path and raise on failure
@@ -96,11 +86,6 @@ validate_cert_key_paths (const char *cert_file, const char *key_file)
   validate_file_path_or_raise (cert_file, "certificate");
   validate_file_path_or_raise (key_file, "private key");
 }
-
-/* ============================================================================
- * Certificate Management
- * ============================================================================
- */
 
 void
 SocketTLSContext_load_certificate (T ctx, const char *cert_file,
@@ -140,11 +125,6 @@ SocketTLSContext_load_ca (T ctx, const char *ca_file)
         ctx_raise_openssl_error ("Failed to load CA certificates");
     }
 }
-
-/* ============================================================================
- * SNI Certificate Management - Internal Helpers
- * ============================================================================
- */
 
 /**
  * apply_sni_cert - Apply certificate and key to SSL connection
@@ -235,11 +215,6 @@ sni_callback (SSL *ssl, int *ad, void *arg)
                          ctx->sni_certs.pkeys[idx]);
 }
 
-/* ============================================================================
- * SNI Array Expansion
- * ============================================================================
- */
-
 /**
  * sni_realloc_array - Safely reallocate a single SNI array
  * @ptr: Pointer to array pointer
@@ -286,11 +261,6 @@ expand_sni_capacity (T ctx)
 
   ctx->sni_certs.capacity = new_cap;
 }
-
-/* ============================================================================
- * SNI Certificate Loading Helpers
- * ============================================================================
- */
 
 /**
  * validate_and_copy_hostname - Validate and copy hostname to arena
@@ -520,11 +490,6 @@ load_and_verify_keypair (const char *cert_file, const char *key_file,
   *pkey_out = pkey;
 }
 
-/* ============================================================================
- * SNI Certificate Validation
- * ============================================================================
- */
-
 /**
  * validate_server_context - Ensure context is a server context
  * @ctx: Context to validate
@@ -602,11 +567,6 @@ validate_hostname_matches_cert (STACK_OF (X509) * chain, EVP_PKEY *pkey,
       ctx_raise_error_fmt ("SNI %s for hostname '%s'", reason, hostname);
     }
 }
-
-/* ============================================================================
- * Public API
- * ============================================================================
- */
 
 /**
  * validate_and_prepare_sni_slot - Validate inputs and prepare SNI metadata

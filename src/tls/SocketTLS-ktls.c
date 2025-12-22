@@ -59,11 +59,6 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLS);
 #define SOCKET_HAS_OPENSSL_KTLS 0
 #endif
 
-/* ============================================================================
- * Internal Helper Functions
- * ============================================================================
- */
-
 /**
  * ktls_check_kernel_support - Check if kernel TLS module is available
  *
@@ -159,11 +154,6 @@ ktls_update_offload_status (Socket_T socket)
     }
 #endif
 }
-
-/* ============================================================================
- * Public API Implementation
- * ============================================================================
- */
 
 /**
  * SocketTLS_ktls_available - Check if kTLS support is available
@@ -354,11 +344,6 @@ SocketTLS_sendfile (Socket_T socket, int file_fd, off_t offset, size_t size)
 
   return total_sent;
 }
-
-/* ============================================================================
- * Internal Hook for Handshake Completion
- * ============================================================================
- */
 
 /**
  * ktls_on_handshake_complete - Called when TLS handshake completes

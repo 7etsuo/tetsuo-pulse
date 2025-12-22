@@ -35,11 +35,6 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLSContext);
 
 
 
-/* ============================================================================
- * Configuration Constants
- * ============================================================================
- */
-
 /**
  * Default cipher list for legacy TLS (< 1.3) when user doesn't specify.
  * Excludes weak ciphers while maintaining compatibility.
@@ -50,17 +45,7 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLSContext);
   "HIGH:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!SRP:!CAMELLIA"
 #endif
 
-/* ============================================================================
- * Forward Declarations
- * ============================================================================
- */
-
 static int internal_verify_callback (int pre_ok, X509_STORE_CTX *x509_ctx);
-
-/* ============================================================================
- * Verification Mode Helpers
- * ============================================================================
- */
 
 /**
  * verify_mode_to_openssl - Convert TLSVerifyMode to OpenSSL flags
@@ -117,11 +102,6 @@ apply_verify_settings (T ctx)
   ERR_clear_error ();
   SSL_CTX_set_verify (ctx->ssl_ctx, openssl_mode, cb);
 }
-
-/* ============================================================================
- * Certificate Pinning Helpers
- * ============================================================================
- */
 
 /* Suppress -Wclobbered warning for setjmp/longjmp usage (GCC only) */
 #if defined(__GNUC__) && !defined(__clang__)
@@ -264,11 +244,6 @@ check_certificate_pins (T ctx, X509_STORE_CTX *x509_ctx)
   return handle_pin_mismatch (ctx, x509_ctx);
 }
 
-/* ============================================================================
- * User Callback Invocation
- * ============================================================================
- */
-
 /**
  * invoke_user_callback - Call user verification callback with exception safety
  * @ctx: TLS context
@@ -308,11 +283,6 @@ invoke_user_callback (T ctx, int pre_ok, X509_STORE_CTX *x509_ctx,
   return result;
 }
 
-/* ============================================================================
- * Internal Verification Callback
- * ============================================================================
- */
-
 /**
  * get_verify_context - Extract verification context from OpenSSL callback
  * @x509_ctx: Certificate store context
@@ -337,11 +307,6 @@ get_verify_context (X509_STORE_CTX *x509_ctx, Socket_T *out_sock, T *out_ctx)
   *out_ctx = (T)(*out_sock)->tls_ctx;
   return *out_ctx != NULL;
 }
-
-/* ============================================================================
- * OCSP Must-Staple Verification Helpers
- * ============================================================================
- */
 
 /**
  * check_ocsp_must_staple - Verify OCSP stapling requirements
@@ -485,11 +450,6 @@ internal_verify_callback (int pre_ok, X509_STORE_CTX *x509_ctx)
 #pragma GCC diagnostic pop
 #endif
 
-/* ============================================================================
- * Public Verification API
- * ============================================================================
- */
-
 void
 SocketTLSContext_set_verify_mode (T ctx, TLSVerifyMode mode)
 {
@@ -511,11 +471,6 @@ SocketTLSContext_set_verify_callback (T ctx, SocketTLSVerifyCallback callback,
   ctx->verify_user_data = user_data;
   apply_verify_settings (ctx);
 }
-
-/* ============================================================================
- * CRL Management
- * ============================================================================
- */
 
 /**
  * validate_crl_file_size - Check CRL file size against limits
@@ -650,11 +605,6 @@ SocketTLSContext_reload_crl (T ctx, const char *crl_path)
    * Use when you have downloaded an updated CRL and want to reload it. */
   SocketTLSContext_refresh_crl (ctx, crl_path);
 }
-
-/* ============================================================================
- * Protocol Configuration
- * ============================================================================
- */
 
 /**
  * apply_min_proto_fallback - Fallback for older OpenSSL versions
@@ -846,11 +796,6 @@ SocketTLSContext_validate_ciphersuites (const char *ciphersuites)
   return result == 1 ? 1 : 0;
 }
 
-/* ============================================================================
- * OCSP Stapling Server-Side
- * ============================================================================
- */
-
 /**
  * encode_ocsp_response - Encode OCSP response to DER format
  * @resp: OCSP response to encode
@@ -1017,11 +962,6 @@ SocketTLSContext_set_ocsp_gen_callback (T ctx, SocketTLSOcspGenCallback cb,
   SSL_CTX_set_tlsext_status_cb (ctx->ssl_ctx, status_cb_wrapper);
 }
 
-/* ============================================================================
- * OCSP Status Query (Socket-side)
- * ============================================================================
- */
-
 /**
  * validate_socket_for_ocsp - Check socket is ready for OCSP query
  * @socket: Socket to validate
@@ -1105,18 +1045,6 @@ SocketTLS_get_ocsp_status (Socket_T socket)
 
   return status;
 }
-
-/* ============================================================================
- * OCSP Must-Staple Detection and Enforcement (RFC 7633)
- * ============================================================================
- *
- * OCSP Must-Staple is indicated by the id-pe-tlsfeature extension
- * (OID 1.3.6.1.5.5.7.1.24) containing the status_request (5) value.
- *
- * The extension format per RFC 7633 Section 4:
- * TLS Feature ::= SEQUENCE OF INTEGER
- * Where INTEGER value 5 = status_request (OCSP stapling)
- */
 
 /* OID for id-pe-tlsfeature: 1.3.6.1.5.5.7.1.24
  * status_request value per RFC 6066 / RFC 7633 */
@@ -1265,11 +1193,6 @@ SocketTLSContext_get_ocsp_must_staple (T ctx)
   return (OCSPMustStapleMode)ctx->ocsp_must_staple_mode;
 }
 
-/* ============================================================================
- * OCSP Stapling Client Enable
- * ============================================================================
- */
-
 void
 SocketTLSContext_enable_ocsp_stapling (T ctx)
 {
@@ -1293,23 +1216,6 @@ SocketTLSContext_ocsp_stapling_enabled (T ctx)
   assert (ctx);
   return ctx->ocsp_stapling_enabled;
 }
-
-/* ============================================================================
- * Custom Certificate Store Callback
- * ============================================================================
- *
- * OpenSSL 1.1.0+ provides X509_STORE_set_lookup_certs_cb() for custom
- * certificate lookup during chain building. This allows loading certificates
- * from databases, HSMs, or other non-filesystem sources.
- *
- * The callback is invoked when OpenSSL needs to find issuer certificates
- * during chain verification. It receives the subject name being searched
- * and should return a STACK_OF(X509) with matching certificates.
- *
- * Thread Safety: The callback must be thread-safe as it may be called
- * concurrently from multiple verification operations if the context
- * is shared across threads.
- */
 
 /* X509_STORE_set_lookup_certs_cb is only available in OpenSSL 3.0.0+
  * Check for OPENSSL_VERSION_NUMBER >= 0x30000000L */

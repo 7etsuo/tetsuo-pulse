@@ -33,11 +33,6 @@
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLSContext);
 
-/* ============================================================================
- * Certificate Transparency Implementation
- * ============================================================================
- */
-
 #if SOCKET_HAS_CT_SUPPORT
 
 /**
