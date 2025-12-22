@@ -940,6 +940,7 @@ SocketHPACK_Decoder_decode (SocketHPACK_Decoder_T decoder,
   size_t hdr_count = 0;
   size_t total_size = 0;
   int table_update_allowed = 1;
+  int table_update_count = 0; /* RFC 7541 §4.2: at most 2 updates per block */
   SocketHPACK_Result result;
 
   assert (decoder != NULL);
@@ -1000,9 +1001,15 @@ SocketHPACK_Decoder_decode (SocketHPACK_Decoder_T decoder,
           if (!table_update_allowed)
             return HPACK_ERROR_TABLE_SIZE;
 
+          /* RFC 7541 §4.2: at most SOCKETHPACK_MAX_TABLE_UPDATES per block */
+          if (table_update_count >= SOCKETHPACK_MAX_TABLE_UPDATES)
+            return HPACK_ERROR_TABLE_SIZE;
+
           result = hpack_decode_table_update (decoder, input, input_len, &pos);
           if (result != HPACK_OK)
             return result;
+
+          table_update_count++;
           continue;
         }
       else
