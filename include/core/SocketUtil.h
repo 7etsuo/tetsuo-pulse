@@ -1621,4 +1621,35 @@ socket_util_safe_copy_ip (char *dest, const char *src, size_t max_len)
   dest[max_len - 1] = '\0';
 }
 
+/**
+ * socket_util_safe_strncpy - Safe string copy with guaranteed null-termination
+ * @dest: Destination buffer
+ * @src: Source string to copy
+ * @max_len: Maximum size of destination buffer (including null terminator)
+ *
+ * Copies up to max_len-1 characters from src to dest and always null-terminates.
+ * Prevents buffer overflow by design. Truncates if source exceeds max_len-1.
+ *
+ * @threadsafe Yes - no shared state
+ *
+ * @complexity O(min(strlen(src), max_len)) - linear in string length
+ *
+ * Usage:
+ *   char buf[256];
+ *   socket_util_safe_strncpy(buf, user_input, sizeof(buf));
+ *
+ * @note Truncates src if it exceeds max_len-1 characters
+ * @warning dest must be at least max_len bytes to avoid buffer overflow
+ *
+ * @see strncpy(3) for underlying copy mechanism
+ */
+static inline void
+socket_util_safe_strncpy (char *dest, const char *src, size_t max_len)
+{
+  if (max_len == 0)
+    return;
+  strncpy (dest, src, max_len - 1);
+  dest[max_len - 1] = '\0';
+}
+
 #endif /* SOCKETUTIL_INCLUDED */
