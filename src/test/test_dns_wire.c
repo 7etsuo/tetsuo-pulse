@@ -13,6 +13,7 @@
 #include "dns/SocketDNSWire.h"
 #include "test/Test.h"
 
+#include <arpa/inet.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -1390,6 +1391,219 @@ TEST (dns_rr_decode_invalid_offset)
   memset (wire, 0, sizeof (wire));
   ASSERT_EQ (SocketDNS_rr_decode (wire, sizeof (wire), 100, &rr, NULL), -1);
   ASSERT_EQ (SocketDNS_rr_skip (wire, sizeof (wire), 100, NULL), -1);
+}
+
+/* ==================== A/AAAA RDATA Parsing Tests ==================== */
+
+/* Test A record RDATA parsing */
+TEST (dns_rdata_parse_a_valid)
+{
+  unsigned char wire[] = {
+    7, 'e', 'x', 'a', 'm', 'p', 'l', 'e',
+    3, 'c', 'o', 'm',
+    0,              /* Name terminator */
+    0, 1,           /* TYPE = A */
+    0, 1,           /* CLASS = IN */
+    0, 0, 0x0E, 0x10, /* TTL = 3600 */
+    0, 4,           /* RDLENGTH = 4 */
+    93, 184, 216, 34  /* 93.184.216.34 (example.com) */
+  };
+  SocketDNS_RR rr;
+  struct in_addr addr;
+  char str[INET_ADDRSTRLEN];
+
+  ASSERT_EQ (SocketDNS_rr_decode (wire, sizeof (wire), 0, &rr, NULL), 0);
+  ASSERT_EQ (rr.type, DNS_TYPE_A);
+  ASSERT_EQ (rr.rdlength, DNS_RDATA_A_SIZE);
+
+  ASSERT_EQ (SocketDNS_rdata_parse_a (&rr, &addr), 0);
+  inet_ntop (AF_INET, &addr, str, sizeof (str));
+  ASSERT (strcmp (str, "93.184.216.34") == 0);
+}
+
+/* Test AAAA record RDATA parsing */
+TEST (dns_rdata_parse_aaaa_valid)
+{
+  unsigned char wire[] = {
+    7, 'e', 'x', 'a', 'm', 'p', 'l', 'e',
+    3, 'c', 'o', 'm',
+    0,              /* Name terminator */
+    0, 28,          /* TYPE = AAAA (28) */
+    0, 1,           /* CLASS = IN */
+    0, 0, 0x0E, 0x10, /* TTL = 3600 */
+    0, 16,          /* RDLENGTH = 16 */
+    /* 2606:2800:0220:0001:0248:1893:25c8:1946 */
+    0x26, 0x06, 0x28, 0x00, 0x02, 0x20, 0x00, 0x01,
+    0x02, 0x48, 0x18, 0x93, 0x25, 0xc8, 0x19, 0x46
+  };
+  SocketDNS_RR rr;
+  struct in6_addr addr;
+  char str[INET6_ADDRSTRLEN];
+
+  ASSERT_EQ (SocketDNS_rr_decode (wire, sizeof (wire), 0, &rr, NULL), 0);
+  ASSERT_EQ (rr.type, DNS_TYPE_AAAA);
+  ASSERT_EQ (rr.rdlength, DNS_RDATA_AAAA_SIZE);
+
+  ASSERT_EQ (SocketDNS_rdata_parse_aaaa (&rr, &addr), 0);
+  inet_ntop (AF_INET6, &addr, str, sizeof (str));
+  ASSERT (strcmp (str, "2606:2800:220:1:248:1893:25c8:1946") == 0);
+}
+
+/* Test A parser rejects wrong rdlength */
+TEST (dns_rdata_parse_a_wrong_rdlength)
+{
+  SocketDNS_RR rr;
+  struct in_addr addr;
+  unsigned char fake_rdata[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+
+  memset (&rr, 0, sizeof (rr));
+  rr.type = DNS_TYPE_A;
+  rr.rdata = fake_rdata;
+
+  /* rdlength = 3 (too short) */
+  rr.rdlength = 3;
+  ASSERT_EQ (SocketDNS_rdata_parse_a (&rr, &addr), -1);
+
+  /* rdlength = 5 (too long) */
+  rr.rdlength = 5;
+  ASSERT_EQ (SocketDNS_rdata_parse_a (&rr, &addr), -1);
+}
+
+/* Test AAAA parser rejects wrong rdlength */
+TEST (dns_rdata_parse_aaaa_wrong_rdlength)
+{
+  SocketDNS_RR rr;
+  struct in6_addr addr;
+  unsigned char fake_rdata[20];
+
+  memset (&rr, 0, sizeof (rr));
+  memset (fake_rdata, 0, sizeof (fake_rdata));
+  rr.type = DNS_TYPE_AAAA;
+  rr.rdata = fake_rdata;
+
+  /* rdlength = 15 (too short) */
+  rr.rdlength = 15;
+  ASSERT_EQ (SocketDNS_rdata_parse_aaaa (&rr, &addr), -1);
+
+  /* rdlength = 17 (too long) */
+  rr.rdlength = 17;
+  ASSERT_EQ (SocketDNS_rdata_parse_aaaa (&rr, &addr), -1);
+}
+
+/* Test A parser rejects AAAA record */
+TEST (dns_rdata_parse_a_rejects_aaaa)
+{
+  SocketDNS_RR rr;
+  struct in_addr addr;
+  unsigned char fake_rdata[16];
+
+  memset (&rr, 0, sizeof (rr));
+  memset (fake_rdata, 0, sizeof (fake_rdata));
+  rr.type = DNS_TYPE_AAAA;  /* Wrong type */
+  rr.rdlength = 4;
+  rr.rdata = fake_rdata;
+
+  ASSERT_EQ (SocketDNS_rdata_parse_a (&rr, &addr), -1);
+}
+
+/* Test AAAA parser rejects A record */
+TEST (dns_rdata_parse_aaaa_rejects_a)
+{
+  SocketDNS_RR rr;
+  struct in6_addr addr;
+  unsigned char fake_rdata[16];
+
+  memset (&rr, 0, sizeof (rr));
+  memset (fake_rdata, 0, sizeof (fake_rdata));
+  rr.type = DNS_TYPE_A;  /* Wrong type */
+  rr.rdlength = 16;
+  rr.rdata = fake_rdata;
+
+  ASSERT_EQ (SocketDNS_rdata_parse_aaaa (&rr, &addr), -1);
+}
+
+/* Test NULL pointer handling for A parser */
+TEST (dns_rdata_parse_a_null_handling)
+{
+  SocketDNS_RR rr;
+  struct in_addr addr;
+  unsigned char fake_rdata[4] = {1, 2, 3, 4};
+
+  memset (&rr, 0, sizeof (rr));
+  rr.type = DNS_TYPE_A;
+  rr.rdlength = 4;
+  rr.rdata = fake_rdata;
+
+  /* NULL rr */
+  ASSERT_EQ (SocketDNS_rdata_parse_a (NULL, &addr), -1);
+
+  /* NULL addr */
+  ASSERT_EQ (SocketDNS_rdata_parse_a (&rr, NULL), -1);
+
+  /* NULL rdata */
+  rr.rdata = NULL;
+  ASSERT_EQ (SocketDNS_rdata_parse_a (&rr, &addr), -1);
+}
+
+/* Test NULL pointer handling for AAAA parser */
+TEST (dns_rdata_parse_aaaa_null_handling)
+{
+  SocketDNS_RR rr;
+  struct in6_addr addr;
+  unsigned char fake_rdata[16];
+
+  memset (&rr, 0, sizeof (rr));
+  memset (fake_rdata, 0, sizeof (fake_rdata));
+  rr.type = DNS_TYPE_AAAA;
+  rr.rdlength = 16;
+  rr.rdata = fake_rdata;
+
+  /* NULL rr */
+  ASSERT_EQ (SocketDNS_rdata_parse_aaaa (NULL, &addr), -1);
+
+  /* NULL addr */
+  ASSERT_EQ (SocketDNS_rdata_parse_aaaa (&rr, NULL), -1);
+
+  /* NULL rdata */
+  rr.rdata = NULL;
+  ASSERT_EQ (SocketDNS_rdata_parse_aaaa (&rr, &addr), -1);
+}
+
+/* Test A parser with loopback address */
+TEST (dns_rdata_parse_a_loopback)
+{
+  SocketDNS_RR rr;
+  struct in_addr addr;
+  unsigned char rdata[4] = {127, 0, 0, 1};  /* 127.0.0.1 */
+  char str[INET_ADDRSTRLEN];
+
+  memset (&rr, 0, sizeof (rr));
+  rr.type = DNS_TYPE_A;
+  rr.rdlength = 4;
+  rr.rdata = rdata;
+
+  ASSERT_EQ (SocketDNS_rdata_parse_a (&rr, &addr), 0);
+  inet_ntop (AF_INET, &addr, str, sizeof (str));
+  ASSERT (strcmp (str, "127.0.0.1") == 0);
+}
+
+/* Test AAAA parser with loopback address */
+TEST (dns_rdata_parse_aaaa_loopback)
+{
+  SocketDNS_RR rr;
+  struct in6_addr addr;
+  unsigned char rdata[16] = {0, 0, 0, 0, 0, 0, 0, 0,
+                             0, 0, 0, 0, 0, 0, 0, 1};  /* ::1 */
+  char str[INET6_ADDRSTRLEN];
+
+  memset (&rr, 0, sizeof (rr));
+  rr.type = DNS_TYPE_AAAA;
+  rr.rdlength = 16;
+  rr.rdata = rdata;
+
+  ASSERT_EQ (SocketDNS_rdata_parse_aaaa (&rr, &addr), 0);
+  inet_ntop (AF_INET6, &addr, str, sizeof (str));
+  ASSERT (strcmp (str, "::1") == 0);
 }
 
 int
