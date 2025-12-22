@@ -13,6 +13,7 @@
 #include "dns/SocketDNSWire.h"
 #include "test/Test.h"
 
+#include <stdio.h>
 #include <string.h>
 
 /* Test basic header encoding and decoding round-trip */
@@ -469,6 +470,337 @@ TEST (dns_wire_flags_byte_layout)
   h.rcode = 0x0F;
   SocketDNS_header_encode (&h, buf, sizeof (buf));
   ASSERT ((buf[3] & 0x0F) == 0x0F);
+}
+
+/* ==================== Domain Name Tests ==================== */
+
+/* Test basic domain name encoding */
+TEST (dns_name_encode_basic)
+{
+  unsigned char buf[DNS_MAX_NAME_LEN];
+  size_t written;
+  int ret;
+
+  ret = SocketDNS_name_encode ("www.example.com", buf, sizeof (buf), &written);
+  ASSERT_EQ (ret, 0);
+  ASSERT_EQ (written, 17);
+
+  /* Verify wire format: [3]www[7]example[3]com[0] */
+  ASSERT_EQ (buf[0], 3);
+  ASSERT (memcmp (buf + 1, "www", 3) == 0);
+  ASSERT_EQ (buf[4], 7);
+  ASSERT (memcmp (buf + 5, "example", 7) == 0);
+  ASSERT_EQ (buf[12], 3);
+  ASSERT (memcmp (buf + 13, "com", 3) == 0);
+  ASSERT_EQ (buf[16], 0);
+}
+
+/* Test encoding root domain */
+TEST (dns_name_encode_root)
+{
+  unsigned char buf[DNS_MAX_NAME_LEN];
+  size_t written;
+
+  /* Empty string = root */
+  ASSERT_EQ (SocketDNS_name_encode ("", buf, sizeof (buf), &written), 0);
+  ASSERT_EQ (written, 1);
+  ASSERT_EQ (buf[0], 0);
+
+  /* Single dot = root */
+  ASSERT_EQ (SocketDNS_name_encode (".", buf, sizeof (buf), &written), 0);
+  ASSERT_EQ (written, 1);
+  ASSERT_EQ (buf[0], 0);
+}
+
+/* Test encoding with trailing dot */
+TEST (dns_name_encode_trailing_dot)
+{
+  unsigned char buf[DNS_MAX_NAME_LEN];
+  size_t written1, written2;
+
+  ASSERT_EQ (SocketDNS_name_encode ("example.com", buf, sizeof (buf), &written1), 0);
+  ASSERT_EQ (SocketDNS_name_encode ("example.com.", buf, sizeof (buf), &written2), 0);
+  ASSERT_EQ (written1, written2);
+}
+
+/* Test basic domain name decoding */
+TEST (dns_name_decode_basic)
+{
+  /* Wire format for "www.example.com" */
+  unsigned char wire[] = { 3, 'w', 'w', 'w', 7, 'e', 'x', 'a', 'm', 'p', 'l', 'e',
+                           3, 'c', 'o', 'm', 0 };
+  char name[DNS_MAX_NAME_LEN];
+  size_t consumed;
+  int len;
+
+  len = SocketDNS_name_decode (wire, sizeof (wire), 0, name, sizeof (name),
+                               &consumed);
+  ASSERT_EQ (len, 15); /* "www.example.com" */
+  ASSERT_EQ (consumed, 17);
+  ASSERT (strcmp (name, "www.example.com") == 0);
+}
+
+/* Test decoding with compression pointer */
+TEST (dns_name_decode_compression)
+{
+  /* Simulated DNS message:
+   * Offset 0-11: Header (12 bytes)
+   * Offset 12: "example.com" in wire format
+   * Offset 24: "www" + pointer to offset 12
+   */
+  unsigned char msg[32];
+  char name[DNS_MAX_NAME_LEN];
+  size_t consumed;
+  int len;
+
+  /* Header (dummy) */
+  memset (msg, 0, 12);
+
+  /* "example.com" at offset 12 */
+  msg[12] = 7;
+  memcpy (msg + 13, "example", 7);
+  msg[20] = 3;
+  memcpy (msg + 21, "com", 3);
+  msg[24] = 0;
+
+  /* Decode "example.com" from offset 12 */
+  len = SocketDNS_name_decode (msg, 25, 12, name, sizeof (name), &consumed);
+  ASSERT_EQ (len, 11); /* "example.com" */
+  ASSERT (strcmp (name, "example.com") == 0);
+
+  /* Now add "www" + pointer at offset 25 */
+  msg[25] = 3;
+  memcpy (msg + 26, "www", 3);
+  msg[29] = 0xC0;       /* Compression pointer */
+  msg[30] = 12;         /* Points to offset 12 */
+
+  len = SocketDNS_name_decode (msg, 31, 25, name, sizeof (name), &consumed);
+  ASSERT_EQ (len, 15); /* "www.example.com" */
+  ASSERT_EQ (consumed, 6); /* 1 + 3 + 2 (pointer) */
+  ASSERT (strcmp (name, "www.example.com") == 0);
+}
+
+/* Test compression loop detection */
+TEST (dns_name_decode_loop_detection)
+{
+  /* Create a message with a self-referential pointer */
+  unsigned char msg[16];
+  char name[DNS_MAX_NAME_LEN];
+
+  memset (msg, 0, 12);
+  /* Pointer at offset 12 pointing to offset 12 (infinite loop) */
+  msg[12] = 0xC0;
+  msg[13] = 12;
+
+  ASSERT_EQ (SocketDNS_name_decode (msg, 14, 12, name, sizeof (name), NULL), -1);
+}
+
+/* Test valid domain names */
+TEST (dns_name_valid_basic)
+{
+  ASSERT_EQ (SocketDNS_name_valid ("example.com"), 1);
+  ASSERT_EQ (SocketDNS_name_valid ("www.example.com"), 1);
+  ASSERT_EQ (SocketDNS_name_valid ("a.b.c.d.e.f"), 1);
+  ASSERT_EQ (SocketDNS_name_valid (""), 1); /* Root */
+  ASSERT_EQ (SocketDNS_name_valid ("."), 1); /* Root */
+  ASSERT_EQ (SocketDNS_name_valid ("example.com."), 1); /* Trailing dot */
+}
+
+/* Test invalid domain names */
+TEST (dns_name_valid_invalid)
+{
+  /* Empty label (consecutive dots) */
+  ASSERT_EQ (SocketDNS_name_valid ("example..com"), 0);
+  /* Leading dot (empty first label) */
+  ASSERT_EQ (SocketDNS_name_valid (".example.com"), 0);
+  /* NULL pointer */
+  ASSERT_EQ (SocketDNS_name_valid (NULL), 0);
+}
+
+/* Test label length limit (63 bytes) */
+TEST (dns_name_valid_label_length)
+{
+  char label64[65];
+  char name[80];
+
+  memset (label64, 'a', 64);
+  label64[64] = '\0';
+
+  /* 64 character label - invalid */
+  snprintf (name, sizeof (name), "%s.com", label64);
+  ASSERT_EQ (SocketDNS_name_valid (name), 0);
+
+  /* 63 character label - valid */
+  label64[63] = '\0';
+  snprintf (name, sizeof (name), "%s.com", label64);
+  ASSERT_EQ (SocketDNS_name_valid (name), 1);
+}
+
+/* Test case-insensitive domain name comparison */
+TEST (dns_name_equal_basic)
+{
+  ASSERT_EQ (SocketDNS_name_equal ("example.com", "example.com"), 1);
+  ASSERT_EQ (SocketDNS_name_equal ("Example.COM", "example.com"), 1);
+  ASSERT_EQ (SocketDNS_name_equal ("EXAMPLE.COM", "example.com"), 1);
+  ASSERT_EQ (SocketDNS_name_equal ("example.com", "EXAMPLE.COM"), 1);
+}
+
+/* Test comparison with trailing dots */
+TEST (dns_name_equal_trailing_dot)
+{
+  ASSERT_EQ (SocketDNS_name_equal ("example.com", "example.com."), 1);
+  ASSERT_EQ (SocketDNS_name_equal ("example.com.", "example.com"), 1);
+  ASSERT_EQ (SocketDNS_name_equal ("example.com.", "example.com."), 1);
+}
+
+/* Test non-equal names */
+TEST (dns_name_equal_different)
+{
+  ASSERT_EQ (SocketDNS_name_equal ("example.com", "example.org"), 0);
+  ASSERT_EQ (SocketDNS_name_equal ("www.example.com", "example.com"), 0);
+  ASSERT_EQ (SocketDNS_name_equal ("example.com", "examples.com"), 0);
+}
+
+/* Test buffer too small for encoding */
+TEST (dns_name_encode_buffer_small)
+{
+  unsigned char buf[5]; /* Too small for "www.com" */
+  ASSERT_EQ (SocketDNS_name_encode ("www.com", buf, sizeof (buf), NULL), -1);
+}
+
+/* Test NULL pointer handling for name functions */
+TEST (dns_name_null_handling)
+{
+  unsigned char buf[32];
+  char name[32];
+
+  ASSERT_EQ (SocketDNS_name_encode (NULL, buf, sizeof (buf), NULL), -1);
+  ASSERT_EQ (SocketDNS_name_encode ("test", NULL, sizeof (buf), NULL), -1);
+  ASSERT_EQ (SocketDNS_name_decode (NULL, 32, 0, name, sizeof (name), NULL), -1);
+  ASSERT_EQ (SocketDNS_name_decode (buf, 32, 0, NULL, sizeof (name), NULL), -1);
+  ASSERT_EQ (SocketDNS_name_equal (NULL, "test"), 0);
+  ASSERT_EQ (SocketDNS_name_equal ("test", NULL), 0);
+}
+
+/* Test wire length calculation */
+TEST (dns_name_wire_length)
+{
+  ASSERT_EQ (SocketDNS_name_wire_length (""), 1);
+  ASSERT_EQ (SocketDNS_name_wire_length ("."), 1);
+  ASSERT_EQ (SocketDNS_name_wire_length ("com"), 5); /* 1+3+1 */
+  ASSERT_EQ (SocketDNS_name_wire_length ("example.com"), 13); /* 1+7+1+3+1 */
+  ASSERT_EQ (SocketDNS_name_wire_length ("www.example.com"), 17);
+}
+
+/* Test encode/decode roundtrip */
+TEST (dns_name_roundtrip)
+{
+  const char *names[] = {
+    "example.com",
+    "www.example.com",
+    "a.b.c.d.e.f.g",
+    "test123.subdomain.domain.tld",
+    ""  /* root */
+  };
+  size_t i;
+
+  for (i = 0; i < sizeof (names) / sizeof (names[0]); i++)
+    {
+      unsigned char wire[DNS_MAX_NAME_LEN];
+      char decoded[DNS_MAX_NAME_LEN];
+      size_t written, consumed;
+      int len;
+
+      ASSERT_EQ (SocketDNS_name_encode (names[i], wire, sizeof (wire), &written), 0);
+      len = SocketDNS_name_decode (wire, written, 0, decoded, sizeof (decoded),
+                                   &consumed);
+      ASSERT (len >= 0);
+      ASSERT_EQ (consumed, written);
+
+      /* For root, decoded will be empty string */
+      if (names[i][0] == '\0')
+        ASSERT_EQ (decoded[0], '\0');
+      else
+        ASSERT (SocketDNS_name_equal (names[i], decoded) == 1);
+    }
+}
+
+/* Test decoding at various offsets */
+TEST (dns_name_decode_offset)
+{
+  unsigned char msg[64];
+  char name[DNS_MAX_NAME_LEN];
+  size_t consumed;
+  int len;
+
+  memset (msg, 0, sizeof (msg));
+
+  /* Put "test.com" at offset 20 */
+  msg[20] = 4;
+  memcpy (msg + 21, "test", 4);
+  msg[25] = 3;
+  memcpy (msg + 26, "com", 3);
+  msg[29] = 0;
+
+  len = SocketDNS_name_decode (msg, 30, 20, name, sizeof (name), &consumed);
+  ASSERT_EQ (len, 8); /* "test.com" */
+  ASSERT_EQ (consumed, 10);
+  ASSERT (strcmp (name, "test.com") == 0);
+}
+
+/* Test invalid offset */
+TEST (dns_name_decode_invalid_offset)
+{
+  unsigned char msg[32];
+  char name[DNS_MAX_NAME_LEN];
+
+  memset (msg, 0, sizeof (msg));
+
+  /* Offset beyond message length */
+  ASSERT_EQ (SocketDNS_name_decode (msg, 32, 100, name, sizeof (name), NULL), -1);
+}
+
+/* Test truncated label */
+TEST (dns_name_decode_truncated_label)
+{
+  /* Label says 10 bytes but only 5 available */
+  unsigned char msg[] = { 10, 'a', 'b', 'c', 'd', 'e' };
+  char name[DNS_MAX_NAME_LEN];
+
+  ASSERT_EQ (SocketDNS_name_decode (msg, sizeof (msg), 0, name, sizeof (name), NULL), -1);
+}
+
+/* Test nested compression pointers */
+TEST (dns_name_decode_nested_pointers)
+{
+  unsigned char msg[64];
+  char name[DNS_MAX_NAME_LEN];
+  size_t consumed;
+  int len;
+
+  memset (msg, 0, 12); /* Header */
+
+  /* "com" at offset 12 */
+  msg[12] = 3;
+  memcpy (msg + 13, "com", 3);
+  msg[16] = 0;
+
+  /* "example" + pointer to "com" at offset 17 */
+  msg[17] = 7;
+  memcpy (msg + 18, "example", 7);
+  msg[25] = 0xC0;
+  msg[26] = 12; /* Points to "com" */
+
+  /* "www" + pointer to "example.com" at offset 27 */
+  msg[27] = 3;
+  memcpy (msg + 28, "www", 3);
+  msg[31] = 0xC0;
+  msg[32] = 17; /* Points to "example" + pointer */
+
+  len = SocketDNS_name_decode (msg, 33, 27, name, sizeof (name), &consumed);
+  ASSERT_EQ (len, 15); /* "www.example.com" */
+  ASSERT_EQ (consumed, 6); /* 1+3+2 */
+  ASSERT (strcmp (name, "www.example.com") == 0);
 }
 
 int
