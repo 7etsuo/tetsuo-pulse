@@ -173,8 +173,14 @@ extern void Socket_simple_clear_error(void);
 /* Infrastructure */
 #include "SocketSimple-pool.h"
 #include "SocketSimple-poll.h"
+#include "SocketSimple-timer.h"
 #include "SocketSimple-proxy.h"
 #include "SocketSimple-ratelimit.h"
+#include "SocketSimple-buf.h"
+
+/* Connection Management */
+#include "SocketSimple-happyeyeballs.h"
+#include "SocketSimple-reconnect.h"
 
 /* Servers */
 #include "SocketSimple-http-server.h"

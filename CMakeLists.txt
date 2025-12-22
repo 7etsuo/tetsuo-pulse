@@ -320,6 +320,10 @@ set(LIB_SOURCES
     src/simple/SocketSimple-http-server.c
     src/simple/SocketSimple-security.c
     src/simple/SocketSimple-async.c
+    src/simple/SocketSimple-buf.c
+    src/simple/SocketSimple-timer.c
+    src/simple/SocketSimple-happyeyeballs.c
+    src/simple/SocketSimple-reconnect.c
 )
 
 # Add TLS sources if enabled (split for maintainability)
@@ -528,6 +532,10 @@ set(SIMPLE_HEADERS
     include/simple/SocketSimple-http-server.h
     include/simple/SocketSimple-ratelimit.h
     include/simple/SocketSimple-security.h
+    include/simple/SocketSimple-buf.h
+    include/simple/SocketSimple-timer.h
+    include/simple/SocketSimple-happyeyeballs.h
+    include/simple/SocketSimple-reconnect.h
 )
 
 install(TARGETS socket_static socket_shared
