@@ -411,6 +411,10 @@ Logging, metrics, and events (from `include/core/SocketUtil.h`):
 - `SocketEvents_emit(event_type, event_data)` - Emit event
 - `SocketEvents_set_callback(callback, userdata)` - Set custom event callback
 
+### Safe String Utilities:
+- `socket_util_safe_strncpy(dest, src, max_len)` - Safe string copy with guaranteed null-termination (use instead of strncpy)
+- `socket_util_safe_copy_ip(dest, src, max_len)` - Safe IP address string copy (use with SOCKET_IP_MAX_LEN)
+
 ### Hash Utilities:
 - `socket_util_hash_fd(fd, table_size)` - Hash file descriptor (golden ratio)
 - `socket_util_hash_ptr(ptr, table_size)` - Hash pointer
