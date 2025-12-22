@@ -299,8 +299,7 @@ socketlog_format_timestamp (char *buf, size_t bufsize)
   if (!time_ok
       || strftime (buf, bufsize, SOCKET_LOG_TIMESTAMP_FORMAT, &tm_buf) == 0)
     {
-      strncpy (buf, SOCKET_LOG_DEFAULT_TIMESTAMP, bufsize);
-      buf[bufsize - 1] = '\0';
+      socket_util_safe_strncpy (buf, SOCKET_LOG_DEFAULT_TIMESTAMP, bufsize);
     }
 
   return buf;
