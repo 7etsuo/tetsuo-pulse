@@ -499,7 +499,8 @@ httpclient_pool_cleanup_idle (HTTPPool *pool)
 static void
 create_http1_entry_resources (HTTPPoolEntry *entry)
 {
-  entry->proto.h1.conn_arena = Arena_new ();
+  /* Use unlocked arena for single-threaded per-connection use */
+  entry->proto.h1.conn_arena = Arena_new_unlocked ();
 
   entry->proto.h1.parser = SocketHTTP1_Parser_new (HTTP1_PARSE_RESPONSE, NULL,
                                                    entry->proto.h1.conn_arena);
@@ -990,8 +991,9 @@ create_temp_entry (Socket_T socket, const char *host, int port, int is_secure)
 
   memset (&temp_entry, 0, sizeof (temp_entry));
 
-  /* Create thread-local arena first for host copy and parser */
-  temp_arena = Arena_new ();
+  /* Create thread-local arena first for host copy and parser.
+   * Use unlocked arena since temp entries are thread-local. */
+  temp_arena = Arena_new_unlocked ();
   if (temp_arena == NULL)
     {
       return NULL; /* Allocation failed */
