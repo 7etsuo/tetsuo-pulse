@@ -2110,6 +2110,40 @@ validate_push_promise (SocketHTTP2_Conn_T conn,
   return 0;
 }
 
+/**
+ * Validate promised stream ID per RFC 9113 Section 6.6/8.4.
+ *
+ * The promised stream identifier MUST be a valid choice for the next
+ * stream sent by the sender (monotonically increasing, not in use).
+ *
+ * @return 0 on success, -1 on error (caller sends PROTOCOL_ERROR).
+ */
+static int
+validate_promised_stream_id (SocketHTTP2_Conn_T conn, uint32_t promised_id)
+{
+  /* RFC 9113 §5.1.1: Stream ID 0 reserved, must be <= max */
+  if (promised_id == 0 || promised_id > HTTP2_MAX_STREAM_ID)
+    return -1;
+
+  /* RFC 9113 §5.1.1: Server streams must be even (defensive check) */
+  if ((promised_id & 1) != 0)
+    return -1;
+
+  /* RFC 9113 §5.1.1: Must be greater than any previously opened/reserved */
+  if (promised_id <= conn->last_peer_stream_id)
+    return -1;
+
+  /* Stream must not already exist */
+  if (http2_stream_lookup (conn, promised_id) != NULL)
+    return -1;
+
+  /* After GOAWAY, reject streams beyond the peer's limit */
+  if (conn->goaway_received && promised_id > conn->max_peer_stream_id)
+    return -1;
+
+  return 0;
+}
+
 static int
 extract_push_promise_payload (const SocketHTTP2_FrameHeader *header,
                               const unsigned char *payload,
@@ -2165,6 +2199,13 @@ http2_process_push_promise (SocketHTTP2_Conn_T conn,
       return -1;
     }
 
+  /* RFC 9113 §8.4: Validate promised stream ID */
+  if (validate_promised_stream_id (conn, promised_id) < 0)
+    {
+      http2_send_connection_error (conn, HTTP2_PROTOCOL_ERROR);
+      return -1;
+    }
+
   promised = http2_stream_create (conn, promised_id,
                                   1 /* local server-initiated push */);
   if (!promised)
@@ -2173,6 +2214,10 @@ http2_process_push_promise (SocketHTTP2_Conn_T conn,
       return 0;
     }
   promised->is_push_stream = 1;
+
+  /* Track highest server-initiated stream ID for future validation */
+  if (promised_id > conn->last_peer_stream_id)
+    conn->last_peer_stream_id = promised_id;
 
   /* Reset continuation counter for new push header block */
   conn->continuation_frame_count = 0;
