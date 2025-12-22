@@ -1067,6 +1067,331 @@ TEST (dns_question_decode_compressed)
   ASSERT_EQ (q.qtype, DNS_TYPE_A);
 }
 
+/* ==================== Resource Record Tests ==================== */
+
+/* Test basic A record decoding */
+TEST (dns_rr_decode_a_record)
+{
+  /* Wire format for "example.com" A record with IP 192.0.2.1 */
+  unsigned char wire[] = {
+    7, 'e', 'x', 'a', 'm', 'p', 'l', 'e',
+    3, 'c', 'o', 'm',
+    0,              /* Name terminator */
+    0, 1,           /* TYPE = A (1) */
+    0, 1,           /* CLASS = IN (1) */
+    0, 0, 0x0E, 0x10, /* TTL = 3600 seconds */
+    0, 4,           /* RDLENGTH = 4 */
+    192, 0, 2, 1    /* RDATA = 192.0.2.1 */
+  };
+  SocketDNS_RR rr;
+  size_t consumed;
+  int ret;
+
+  ret = SocketDNS_rr_decode (wire, sizeof (wire), 0, &rr, &consumed);
+  ASSERT_EQ (ret, 0);
+  ASSERT_EQ (consumed, sizeof (wire));
+  ASSERT (strcmp (rr.name, "example.com") == 0);
+  ASSERT_EQ (rr.type, DNS_TYPE_A);
+  ASSERT_EQ (rr.rclass, DNS_CLASS_IN);
+  ASSERT_EQ (rr.ttl, 3600);
+  ASSERT_EQ (rr.rdlength, 4);
+  ASSERT_NOT_NULL (rr.rdata);
+  ASSERT_EQ (rr.rdata[0], 192);
+  ASSERT_EQ (rr.rdata[1], 0);
+  ASSERT_EQ (rr.rdata[2], 2);
+  ASSERT_EQ (rr.rdata[3], 1);
+}
+
+/* Test AAAA record decoding */
+TEST (dns_rr_decode_aaaa_record)
+{
+  /* Wire format for "ipv6.example.com" AAAA record with 2001:db8::1 */
+  unsigned char wire[] = {
+    4, 'i', 'p', 'v', '6',
+    7, 'e', 'x', 'a', 'm', 'p', 'l', 'e',
+    3, 'c', 'o', 'm',
+    0,              /* Name terminator */
+    0, 28,          /* TYPE = AAAA (28) */
+    0, 1,           /* CLASS = IN (1) */
+    0, 0, 0x1C, 0x20, /* TTL = 7200 seconds */
+    0, 16,          /* RDLENGTH = 16 */
+    0x20, 0x01, 0x0D, 0xB8, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01  /* 2001:db8::1 */
+  };
+  SocketDNS_RR rr;
+  size_t consumed;
+  int ret;
+
+  ret = SocketDNS_rr_decode (wire, sizeof (wire), 0, &rr, &consumed);
+  ASSERT_EQ (ret, 0);
+  ASSERT_EQ (consumed, sizeof (wire));
+  ASSERT (strcmp (rr.name, "ipv6.example.com") == 0);
+  ASSERT_EQ (rr.type, DNS_TYPE_AAAA);
+  ASSERT_EQ (rr.rclass, DNS_CLASS_IN);
+  ASSERT_EQ (rr.ttl, 7200);
+  ASSERT_EQ (rr.rdlength, 16);
+  ASSERT_NOT_NULL (rr.rdata);
+  ASSERT_EQ (rr.rdata[0], 0x20);
+  ASSERT_EQ (rr.rdata[1], 0x01);
+}
+
+/* Test RR with compressed name */
+TEST (dns_rr_decode_compressed_name)
+{
+  unsigned char msg[64];
+  SocketDNS_RR rr;
+  size_t consumed;
+
+  memset (msg, 0, 12); /* Header */
+
+  /* "example.com" at offset 12 */
+  msg[12] = 7;
+  memcpy (msg + 13, "example", 7);
+  msg[20] = 3;
+  memcpy (msg + 21, "com", 3);
+  msg[24] = 0;
+
+  /* RR at offset 25 with compressed name pointing to offset 12 */
+  msg[25] = 0xC0;
+  msg[26] = 12;       /* Pointer to "example.com" */
+  msg[27] = 0; msg[28] = 1;   /* TYPE = A */
+  msg[29] = 0; msg[30] = 1;   /* CLASS = IN */
+  msg[31] = 0; msg[32] = 0; msg[33] = 0; msg[34] = 60;  /* TTL = 60 */
+  msg[35] = 0; msg[36] = 4;   /* RDLENGTH = 4 */
+  msg[37] = 10; msg[38] = 0; msg[39] = 0; msg[40] = 1;  /* 10.0.0.1 */
+
+  ASSERT_EQ (SocketDNS_rr_decode (msg, 41, 25, &rr, &consumed), 0);
+  ASSERT_EQ (consumed, 16); /* 2 (ptr) + 10 (fixed) + 4 (rdata) */
+  ASSERT (strcmp (rr.name, "example.com") == 0);
+  ASSERT_EQ (rr.type, DNS_TYPE_A);
+  ASSERT_EQ (rr.ttl, 60);
+  ASSERT_EQ (rr.rdlength, 4);
+}
+
+/* Test RR with zero TTL */
+TEST (dns_rr_decode_zero_ttl)
+{
+  unsigned char wire[] = {
+    3, 'f', 'o', 'o',
+    0,              /* Name terminator */
+    0, 1,           /* TYPE = A */
+    0, 1,           /* CLASS = IN */
+    0, 0, 0, 0,     /* TTL = 0 */
+    0, 4,           /* RDLENGTH = 4 */
+    127, 0, 0, 1    /* 127.0.0.1 */
+  };
+  SocketDNS_RR rr;
+
+  ASSERT_EQ (SocketDNS_rr_decode (wire, sizeof (wire), 0, &rr, NULL), 0);
+  ASSERT_EQ (rr.ttl, 0);
+}
+
+/* Test RR with maximum TTL */
+TEST (dns_rr_decode_max_ttl)
+{
+  unsigned char wire[] = {
+    3, 'f', 'o', 'o',
+    0,              /* Name terminator */
+    0, 1,           /* TYPE = A */
+    0, 1,           /* CLASS = IN */
+    0xFF, 0xFF, 0xFF, 0xFF, /* TTL = 0xFFFFFFFF (max) */
+    0, 4,           /* RDLENGTH = 4 */
+    1, 2, 3, 4
+  };
+  SocketDNS_RR rr;
+
+  ASSERT_EQ (SocketDNS_rr_decode (wire, sizeof (wire), 0, &rr, NULL), 0);
+  ASSERT_EQ (rr.ttl, 0xFFFFFFFF);
+}
+
+/* Test RR with zero RDLENGTH */
+TEST (dns_rr_decode_zero_rdlength)
+{
+  unsigned char wire[] = {
+    3, 'f', 'o', 'o',
+    0,              /* Name terminator */
+    0, 10,          /* TYPE = NULL (10) */
+    0, 1,           /* CLASS = IN */
+    0, 0, 0, 60,    /* TTL = 60 */
+    0, 0            /* RDLENGTH = 0 */
+  };
+  SocketDNS_RR rr;
+  size_t consumed;
+
+  ASSERT_EQ (SocketDNS_rr_decode (wire, sizeof (wire), 0, &rr, &consumed), 0);
+  ASSERT_EQ (consumed, sizeof (wire));
+  ASSERT_EQ (rr.rdlength, 0);
+  ASSERT_NULL (rr.rdata);  /* NULL when rdlength is 0 */
+}
+
+/* Test RR skip basic */
+TEST (dns_rr_skip_basic)
+{
+  unsigned char wire[] = {
+    7, 'e', 'x', 'a', 'm', 'p', 'l', 'e',
+    3, 'c', 'o', 'm',
+    0,              /* Name terminator */
+    0, 1,           /* TYPE = A */
+    0, 1,           /* CLASS = IN */
+    0, 0, 0x0E, 0x10, /* TTL = 3600 */
+    0, 4,           /* RDLENGTH = 4 */
+    192, 0, 2, 1
+  };
+  size_t consumed;
+
+  ASSERT_EQ (SocketDNS_rr_skip (wire, sizeof (wire), 0, &consumed), 0);
+  ASSERT_EQ (consumed, sizeof (wire));
+}
+
+/* Test skipping multiple RRs */
+TEST (dns_rr_skip_multiple)
+{
+  /* Two A records back to back */
+  unsigned char wire[] = {
+    /* First RR: "a.com" A 1.2.3.4 */
+    1, 'a', 3, 'c', 'o', 'm', 0,
+    0, 1, 0, 1,           /* TYPE=A, CLASS=IN */
+    0, 0, 0, 60,          /* TTL=60 */
+    0, 4, 1, 2, 3, 4,     /* RDLENGTH=4, RDATA */
+    /* Second RR: "b.com" A 5.6.7.8 */
+    1, 'b', 3, 'c', 'o', 'm', 0,
+    0, 1, 0, 1,           /* TYPE=A, CLASS=IN */
+    0, 0, 0, 60,          /* TTL=60 */
+    0, 4, 5, 6, 7, 8      /* RDLENGTH=4, RDATA */
+  };
+  size_t consumed1, consumed2;
+  size_t offset = 0;
+
+  /* Skip first RR */
+  ASSERT_EQ (SocketDNS_rr_skip (wire, sizeof (wire), offset, &consumed1), 0);
+  ASSERT_EQ (consumed1, 21); /* 7 (name) + 10 (fixed) + 4 (rdata) */
+
+  offset += consumed1;
+
+  /* Skip second RR */
+  ASSERT_EQ (SocketDNS_rr_skip (wire, sizeof (wire), offset, &consumed2), 0);
+  ASSERT_EQ (consumed2, 21);
+
+  /* Total should match */
+  ASSERT_EQ (offset + consumed2, sizeof (wire));
+}
+
+/* Test RR decode after question (typical response parsing) */
+TEST (dns_rr_decode_after_question)
+{
+  unsigned char msg[128];
+  size_t offset;
+  SocketDNS_Question q;
+  SocketDNS_RR rr;
+  size_t consumed;
+
+  memset (msg, 0, sizeof (msg));
+
+  /* Build a minimal response: header + question + answer */
+  /* Header at offset 0: ID=0x1234, QR=1, QDCOUNT=1, ANCOUNT=1 */
+  msg[0] = 0x12; msg[1] = 0x34;  /* ID */
+  msg[2] = 0x80; msg[3] = 0x00;  /* QR=1, flags=0 */
+  msg[4] = 0; msg[5] = 1;        /* QDCOUNT=1 */
+  msg[6] = 0; msg[7] = 1;        /* ANCOUNT=1 */
+
+  /* Question at offset 12: "test.com" A IN */
+  offset = 12;
+  msg[offset++] = 4;
+  memcpy (msg + offset, "test", 4); offset += 4;
+  msg[offset++] = 3;
+  memcpy (msg + offset, "com", 3); offset += 3;
+  msg[offset++] = 0;
+  msg[offset++] = 0; msg[offset++] = 1;  /* QTYPE=A */
+  msg[offset++] = 0; msg[offset++] = 1;  /* QCLASS=IN */
+
+  /* Answer RR: compressed name + A record */
+  msg[offset++] = 0xC0;
+  msg[offset++] = 12;  /* Pointer to "test.com" */
+  msg[offset++] = 0; msg[offset++] = 1;  /* TYPE=A */
+  msg[offset++] = 0; msg[offset++] = 1;  /* CLASS=IN */
+  msg[offset++] = 0; msg[offset++] = 0;
+  msg[offset++] = 0; msg[offset++] = 120; /* TTL=120 */
+  msg[offset++] = 0; msg[offset++] = 4;  /* RDLENGTH=4 */
+  msg[offset++] = 93; msg[offset++] = 184;
+  msg[offset++] = 216; msg[offset++] = 34; /* 93.184.216.34 */
+
+  /* Parse question */
+  ASSERT_EQ (SocketDNS_question_decode (msg, offset, 12, &q, &consumed), 0);
+  ASSERT (strcmp (q.qname, "test.com") == 0);
+
+  /* Parse answer RR */
+  size_t rr_offset = 12 + consumed;
+  ASSERT_EQ (SocketDNS_rr_decode (msg, offset, rr_offset, &rr, &consumed), 0);
+  ASSERT (strcmp (rr.name, "test.com") == 0);
+  ASSERT_EQ (rr.type, DNS_TYPE_A);
+  ASSERT_EQ (rr.ttl, 120);
+  ASSERT_EQ (rr.rdlength, 4);
+  ASSERT_EQ (rr.rdata[0], 93);
+}
+
+/* Test RR decode truncated - missing RDATA */
+TEST (dns_rr_decode_truncated_rdata)
+{
+  unsigned char wire[] = {
+    3, 'f', 'o', 'o',
+    0,              /* Name terminator */
+    0, 1,           /* TYPE = A */
+    0, 1,           /* CLASS = IN */
+    0, 0, 0, 60,    /* TTL = 60 */
+    0, 4            /* RDLENGTH = 4, but no RDATA follows */
+  };
+  SocketDNS_RR rr;
+
+  ASSERT_EQ (SocketDNS_rr_decode (wire, sizeof (wire), 0, &rr, NULL), -1);
+}
+
+/* Test RR decode truncated - missing fixed fields */
+TEST (dns_rr_decode_truncated_fixed)
+{
+  unsigned char wire[] = {
+    3, 'f', 'o', 'o',
+    0,              /* Name terminator */
+    0, 1,           /* TYPE = A */
+    0, 1,           /* CLASS = IN */
+    0, 0            /* TTL incomplete */
+  };
+  SocketDNS_RR rr;
+
+  ASSERT_EQ (SocketDNS_rr_decode (wire, sizeof (wire), 0, &rr, NULL), -1);
+}
+
+/* Test RR NULL pointer handling */
+TEST (dns_rr_null_handling)
+{
+  unsigned char wire[] = {
+    3, 'f', 'o', 'o', 0,
+    0, 1, 0, 1,
+    0, 0, 0, 60,
+    0, 4, 1, 2, 3, 4
+  };
+  SocketDNS_RR rr;
+  size_t consumed;
+
+  ASSERT_EQ (SocketDNS_rr_decode (NULL, 64, 0, &rr, &consumed), -1);
+  ASSERT_EQ (SocketDNS_rr_decode (wire, sizeof (wire), 0, NULL, &consumed), -1);
+  ASSERT_EQ (SocketDNS_rr_skip (NULL, 64, 0, &consumed), -1);
+
+  /* consumed=NULL should not crash */
+  ASSERT_EQ (SocketDNS_rr_decode (wire, sizeof (wire), 0, &rr, NULL), 0);
+  ASSERT_EQ (SocketDNS_rr_skip (wire, sizeof (wire), 0, NULL), 0);
+}
+
+/* Test RR decode invalid offset */
+TEST (dns_rr_decode_invalid_offset)
+{
+  unsigned char wire[32];
+  SocketDNS_RR rr;
+
+  memset (wire, 0, sizeof (wire));
+  ASSERT_EQ (SocketDNS_rr_decode (wire, sizeof (wire), 100, &rr, NULL), -1);
+  ASSERT_EQ (SocketDNS_rr_skip (wire, sizeof (wire), 100, NULL), -1);
+}
+
 int
 main (void)
 {
