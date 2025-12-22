@@ -189,7 +189,7 @@ alloc_and_init_entry (const T tracker, const char *ip, int initial_count)
   if (entry == NULL)
     return NULL;
 
-  snprintf (entry->ip, sizeof (entry->ip), "%s", ip);
+  socket_util_safe_copy_ip (entry->ip, ip, sizeof (entry->ip));
   entry->count = initial_count;
   entry->next = NULL;
 
