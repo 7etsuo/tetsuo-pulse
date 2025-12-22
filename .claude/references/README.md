@@ -4,7 +4,24 @@ This directory contains extracted shared reference material from the large comma
 
 ## Reference Files
 
-### 1. module-apis.md
+### 1. simple-api.md
+Complete API reference for the Simple API layer - return-code-based convenience wrappers.
+
+**Contents**:
+- Error handling (Socket_simple_error, Socket_simple_code)
+- TCP socket operations (connect, listen, accept, send, recv)
+- UDP socket operations (sendto, recvfrom, multicast)
+- TLS functions (connect_tls, enable_tls, session resumption)
+- HTTP client (GET, POST, PUT, DELETE, JSON convenience)
+- WebSocket client and server (connect, send, recv)
+- DNS resolution (sync and async with caching)
+- Poll event loop (add, mod, del, wait)
+- Connection pool (rate limiting, graceful shutdown)
+- Proxy tunneling (SOCKS4/5, HTTP CONNECT)
+
+**Use when**: Writing simple applications, quick prototyping, or when exception handling is not desired.
+
+### 2. module-apis.md (Exception-based API)
 Complete API reference for all Socket library modules, extracted from command files for reuse.
 
 **Contents**:
@@ -32,10 +49,13 @@ Complete API reference for all Socket library modules, extracted from command fi
 - SocketSYNProtect functions (SYN flood protection)
 - SocketHTTPClient functions (HTTP client)
 - SocketHTTPServer functions (HTTP server)
+- SocketBuf functions (circular buffer for efficient I/O)
+- SocketDgram functions (UDP/datagram, multicast, broadcast)
+- SocketAsync functions (async I/O with io_uring/kqueue)
 
 **Use when**: Writing code that uses these modules, documenting APIs, or creating examples.
 
-### 2. protocol-patterns.md
+### 3. protocol-patterns.md
 Implementation patterns for TLS, HTTP, WebSocket, and other protocols.
 
 **Contents**:
@@ -59,7 +79,7 @@ Implementation patterns for TLS, HTTP, WebSocket, and other protocols.
 
 **Use when**: Implementing protocol handlers, optimizing performance, or ensuring secure patterns.
 
-### 3. security-limits.md
+### 4. security-limits.md
 Security constants and limits from `SocketSecurity.h` and other security-critical headers.
 
 **Contents**:
@@ -90,7 +110,7 @@ Security constants and limits from `SocketSecurity.h` and other security-critica
 
 **Use when**: Configuring security limits, validating input sizes, or documenting security boundaries.
 
-### 4. security-patterns.md
+### 5. security-patterns.md
 Security-focused implementation patterns and validation utilities.
 
 **Contents**:
@@ -116,7 +136,7 @@ Security-focused implementation patterns and validation utilities.
 
 **Use when**: Writing security-critical code, preventing attacks, or ensuring safe operations.
 
-### 5. style-guide.md
+### 6. style-guide.md
 C Interfaces and Implementations patterns and GNU C style guidelines.
 
 **Contents**:
@@ -141,6 +161,7 @@ Command files can now reference these shared materials instead of duplicating co
 
 ```markdown
 <!-- In command.md -->
+For Simple API reference, see `.claude/references/simple-api.md`
 For complete API reference, see `.claude/references/module-apis.md`
 For protocol implementation patterns, see `.claude/references/protocol-patterns.md`
 For security limits, see `.claude/references/security-limits.md`
@@ -167,10 +188,11 @@ When updating shared content:
 
 ## File Sizes
 
-- `module-apis.md`: ~27KB (comprehensive API reference)
+- `simple-api.md`: ~12KB (Simple API reference)
+- `module-apis.md`: ~30KB (comprehensive API reference)
 - `protocol-patterns.md`: ~14KB (implementation patterns)
 - `security-limits.md`: ~9.5KB (limits and constants)
 - `security-patterns.md`: ~16KB (security best practices)
 - `style-guide.md`: ~14KB (coding standards)
 
-Total: ~80KB of shared reference material extracted from commands
+Total: ~96KB of shared reference material extracted from commands
