@@ -16,6 +16,7 @@
 #include "http/SocketHPACK.h"
 #include "http/SocketHTTP.h"
 #include "http/SocketHTTP2.h"
+#include "http/SocketHTTP2-private.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -593,6 +594,187 @@ test_padding_constraints (void)
 }
 
 /* ============================================================================
+ * Field Name Validation Tests (RFC 9113 §8.2.1)
+ * ============================================================================
+ */
+
+static int
+test_field_name_control_chars (void)
+{
+  TEST_BEGIN (field_name_control_chars);
+
+  /* NUL character */
+  TEST_ASSERT (http2_field_name_has_prohibited_chars ("field\x00name", 10) == 1,
+               "NUL should be rejected");
+
+  /* TAB character (0x09) */
+  TEST_ASSERT (http2_field_name_has_prohibited_chars ("field\tname", 10) == 1,
+               "TAB should be rejected");
+
+  /* CR/LF */
+  TEST_ASSERT (http2_field_name_has_prohibited_chars ("field\rname", 10) == 1,
+               "CR should be rejected");
+  TEST_ASSERT (http2_field_name_has_prohibited_chars ("field\nname", 10) == 1,
+               "LF should be rejected");
+
+  /* Other control characters */
+  TEST_ASSERT (http2_field_name_has_prohibited_chars ("field\x01name", 10) == 1,
+               "SOH should be rejected");
+  TEST_ASSERT (http2_field_name_has_prohibited_chars ("field\x1Fname", 10) == 1,
+               "US should be rejected");
+
+  TEST_PASS ();
+}
+
+static int
+test_field_name_space (void)
+{
+  TEST_BEGIN (field_name_space);
+
+  /* Space (0x20) */
+  TEST_ASSERT (http2_field_name_has_prohibited_chars ("field name", 10) == 1,
+               "Space should be rejected");
+  TEST_ASSERT (http2_field_name_has_prohibited_chars (" field", 6) == 1,
+               "Leading space should be rejected");
+  TEST_ASSERT (http2_field_name_has_prohibited_chars ("field ", 6) == 1,
+               "Trailing space should be rejected");
+
+  TEST_PASS ();
+}
+
+static int
+test_field_name_uppercase (void)
+{
+  TEST_BEGIN (field_name_uppercase);
+
+  /* Uppercase A-Z (0x41-0x5A) */
+  TEST_ASSERT (http2_field_name_has_prohibited_chars ("Content-Type", 12) == 1,
+               "Uppercase C should be rejected");
+  TEST_ASSERT (http2_field_name_has_prohibited_chars ("CONTENT", 7) == 1,
+               "All uppercase should be rejected");
+  TEST_ASSERT (http2_field_name_has_prohibited_chars ("Accept", 6) == 1,
+               "Uppercase A should be rejected");
+
+  TEST_PASS ();
+}
+
+static int
+test_field_name_del_extended (void)
+{
+  TEST_BEGIN (field_name_del_extended);
+
+  /* DEL (0x7F) */
+  TEST_ASSERT (http2_field_name_has_prohibited_chars ("field\x7Fname", 10) == 1,
+               "DEL should be rejected");
+
+  /* Extended ASCII (0x80-0xFF) */
+  TEST_ASSERT (http2_field_name_has_prohibited_chars ("field\x80name", 10) == 1,
+               "0x80 should be rejected");
+  TEST_ASSERT (http2_field_name_has_prohibited_chars ("field\xFFname", 10) == 1,
+               "0xFF should be rejected");
+  TEST_ASSERT (http2_field_name_has_prohibited_chars ("caf\xE9", 4) == 1,
+               "Non-ASCII should be rejected");
+
+  TEST_PASS ();
+}
+
+static int
+test_field_name_colon (void)
+{
+  TEST_BEGIN (field_name_colon);
+
+  /* Colon in middle is forbidden */
+  TEST_ASSERT (http2_field_name_has_prohibited_chars ("field:name", 10) == 1,
+               "Colon in middle should be rejected");
+
+  /* Colon at start is allowed (pseudo-headers) */
+  TEST_ASSERT (http2_field_name_has_prohibited_chars (":method", 7) == 0,
+               "Leading colon should be allowed for pseudo-headers");
+  TEST_ASSERT (http2_field_name_has_prohibited_chars (":path", 5) == 0,
+               "Pseudo-header :path should be allowed");
+  TEST_ASSERT (http2_field_name_has_prohibited_chars (":status", 7) == 0,
+               "Pseudo-header :status should be allowed");
+
+  TEST_PASS ();
+}
+
+static int
+test_field_name_valid (void)
+{
+  TEST_BEGIN (field_name_valid);
+
+  /* Valid lowercase names */
+  TEST_ASSERT (http2_field_name_has_prohibited_chars ("content-type", 12) == 0,
+               "Lowercase content-type should be valid");
+  TEST_ASSERT (http2_field_name_has_prohibited_chars ("accept-encoding", 15) == 0,
+               "Lowercase accept-encoding should be valid");
+  TEST_ASSERT (http2_field_name_has_prohibited_chars ("x-custom-header", 15) == 0,
+               "Custom header should be valid");
+
+  /* Numbers and special allowed characters */
+  TEST_ASSERT (http2_field_name_has_prohibited_chars ("x-header-123", 12) == 0,
+               "Numbers should be valid");
+  TEST_ASSERT (http2_field_name_has_prohibited_chars ("x_underscore", 12) == 0,
+               "Underscore should be valid");
+
+  TEST_PASS ();
+}
+
+static int
+test_validate_regular_header_rfc9113 (void)
+{
+  TEST_BEGIN (validate_regular_header_rfc9113);
+
+  SocketHPACK_Header header;
+
+  /* Valid header */
+  header.name = "content-type";
+  header.name_len = 12;
+  header.value = "text/html";
+  header.value_len = 9;
+  TEST_ASSERT (http2_validate_regular_header (&header) == 0,
+               "Valid header should pass");
+
+  /* Header with TAB in name should fail */
+  header.name = "content\ttype";
+  header.name_len = 12;
+  TEST_ASSERT (http2_validate_regular_header (&header) != 0,
+               "Header with TAB in name should fail");
+
+  /* Header with space in name should fail */
+  header.name = "content type";
+  header.name_len = 12;
+  TEST_ASSERT (http2_validate_regular_header (&header) != 0,
+               "Header with space in name should fail");
+
+  /* Header with DEL in name should fail */
+  header.name = "content\x7Ftype";
+  header.name_len = 12;
+  TEST_ASSERT (http2_validate_regular_header (&header) != 0,
+               "Header with DEL in name should fail");
+
+  /* Header with extended ASCII should fail */
+  header.name = "content\x80type";
+  header.name_len = 12;
+  TEST_ASSERT (http2_validate_regular_header (&header) != 0,
+               "Header with extended ASCII should fail");
+
+  /* Header with colon in name should fail */
+  header.name = "content:type";
+  header.name_len = 12;
+  TEST_ASSERT (http2_validate_regular_header (&header) != 0,
+               "Header with colon in name should fail");
+
+  /* Uppercase in name should fail */
+  header.name = "Content-Type";
+  header.name_len = 12;
+  TEST_ASSERT (http2_validate_regular_header (&header) != 0,
+               "Uppercase in name should fail");
+
+  TEST_PASS ();
+}
+
+/* ============================================================================
  * Main Test Runner
  * ============================================================================
  */
@@ -639,6 +821,17 @@ main (void)
   test_padded_data_frame_format ();
   test_padded_headers_frame_format ();
   test_padding_constraints ();
+  printf ("\n");
+
+  /* Field name validation tests (RFC 9113 §8.2.1) */
+  printf ("Field Name Validation Tests (RFC 9113 §8.2.1):\n");
+  test_field_name_control_chars ();
+  test_field_name_space ();
+  test_field_name_uppercase ();
+  test_field_name_del_extended ();
+  test_field_name_colon ();
+  test_field_name_valid ();
+  test_validate_regular_header_rfc9113 ();
   printf ("\n");
 
   /* Summary */

@@ -58,6 +58,43 @@ http2_field_has_prohibited_chars (const char *data, size_t len)
 }
 
 int
+http2_field_name_has_prohibited_chars (const char *name, size_t len)
+{
+  /*
+   * RFC 9113 §8.2.1: Field name validation
+   *
+   * "A field name MUST NOT contain characters in the ranges
+   *  0x00-0x20, 0x41-0x5a, or 0x7f-0xff."
+   *
+   * Additionally:
+   * "With the exception of pseudo-header fields, which have a name
+   *  that starts with a single colon, field names MUST NOT include
+   *  a colon."
+   */
+  for (size_t i = 0; i < len; i++)
+    {
+      unsigned char c = (unsigned char)name[i];
+
+      /* 0x00-0x20: NUL, control characters (including TAB), and space */
+      if (c <= 0x20)
+        return 1;
+
+      /* 0x41-0x5A: Uppercase A-Z */
+      if (c >= 0x41 && c <= 0x5A)
+        return 1;
+
+      /* 0x7F-0xFF: DEL and extended ASCII */
+      if (c >= 0x7F)
+        return 1;
+
+      /* Colon only allowed as first character (pseudo-headers) */
+      if (c == ':' && i > 0)
+        return 1;
+    }
+  return 0;
+}
+
+int
 http2_field_has_boundary_whitespace (const char *value, size_t len)
 {
   if (len == 0)
@@ -124,12 +161,10 @@ http2_validate_regular_header (const SocketHPACK_Header *header)
   if (header == NULL)
     return -1;
 
-  /* Field names must be lowercase */
-  if (http2_field_has_uppercase (header->name, header->name_len))
-    return -1;
-
-  /* No prohibited characters in field name */
-  if (http2_field_has_prohibited_chars (header->name, header->name_len))
+  /* RFC 9113 §8.2.1: Complete field name validation
+   * (includes lowercase check, control chars, space, DEL, extended ASCII,
+   * and colon position) */
+  if (http2_field_name_has_prohibited_chars (header->name, header->name_len))
     return -1;
 
   /* No prohibited characters in field value */
