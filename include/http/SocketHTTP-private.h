@@ -34,6 +34,7 @@ typedef struct HeaderEntry
   struct HeaderEntry *hash_next;
   struct HeaderEntry *list_next;
   struct HeaderEntry *list_prev;
+  int is_ref; /* 1 = zero-copy reference, 0 = owned copy */
 } HeaderEntry;
 
 struct SocketHTTP_Headers

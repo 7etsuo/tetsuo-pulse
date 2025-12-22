@@ -392,12 +392,92 @@ SocketHTTP_Headers_add_n (SocketHTTP_Headers_T headers, const char *name,
   if (allocate_entry_value (headers->arena, entry, value, value_len) < 0)
     return -1;
 
+  entry->is_ref = 0;
+
   if (add_to_bucket (headers, entry) < 0)
     return -1;
 
   add_to_list (headers, entry);
   headers->count++;
   headers->total_size += entry_size;
+
+  return 0;
+}
+
+int
+SocketHTTP_Headers_add_ref (SocketHTTP_Headers_T headers, const char *name,
+                            size_t name_len, const char *value,
+                            size_t value_len)
+{
+  VALIDATE_HEADERS_NAME (headers, name, -1);
+
+  if (!SocketHTTP_header_name_valid (name, name_len))
+    return -1;
+
+  if (!SocketHTTP_header_value_valid (value, value_len))
+    return -1;
+
+  size_t temp_size;
+  if (!SocketSecurity_check_add (name_len, value_len, &temp_size))
+    return -1;
+  size_t entry_size;
+  if (!SocketSecurity_check_add (temp_size, HEADER_ENTRY_NULL_OVERHEAD,
+                                 &entry_size))
+    return -1;
+  if (validate_header_limits (headers, entry_size) < 0)
+    return -1;
+
+  HeaderEntry *entry = ALLOC (headers->arena, sizeof (*entry));
+  if (!entry)
+    return -1;
+
+  /* Store references directly - NO COPY */
+  entry->name = (char *)name;
+  entry->name_len = name_len;
+  entry->value = (char *)value;
+  entry->value_len = value_len;
+  entry->is_ref = 1;
+
+  entry->hash = hash_header_name_seeded (name, name_len,
+                                         SOCKETHTTP_HEADER_BUCKET_MASK);
+
+  if (add_to_bucket (headers, entry) < 0)
+    return -1;
+
+  add_to_list (headers, entry);
+  headers->count++;
+  headers->total_size += entry_size;
+
+  return 0;
+}
+
+int
+SocketHTTP_Headers_materialize (SocketHTTP_Headers_T headers)
+{
+  if (!headers)
+    return -1;
+
+  for (HeaderEntry *e = headers->first; e != NULL; e = e->list_next)
+    {
+      if (!e->is_ref)
+        continue;
+
+      /* Copy name */
+      char *name_copy = allocate_string_copy (headers->arena, e->name,
+                                              e->name_len);
+      if (!name_copy)
+        return -1;
+
+      /* Copy value */
+      char *value_copy = allocate_string_copy (headers->arena, e->value,
+                                               e->value_len);
+      if (!value_copy)
+        return -1;
+
+      e->name = name_copy;
+      e->value = value_copy;
+      e->is_ref = 0;
+    }
 
   return 0;
 }

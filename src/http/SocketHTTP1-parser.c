@@ -1044,6 +1044,12 @@ add_current_header (SocketHTTP1_Parser_T parser)
 {
   char *name;
   char *value;
+  size_t name_len;
+  size_t value_len;
+
+  /* Capture lengths before terminate modifies buffer */
+  name_len = parser->name_buf.len;
+  value_len = parser->value_buf.len;
 
   name = http1_tokenbuf_terminate (&parser->name_buf, parser->arena,
                                    parser->config.max_header_name);
@@ -1056,20 +1062,21 @@ add_current_header (SocketHTTP1_Parser_T parser)
   if (parser->header_count >= parser->config.max_headers)
     return HTTP1_ERROR_TOO_MANY_HEADERS;
 
-  parser->total_header_size
-      += parser->name_buf.len + parser->value_buf.len + HTTP1_HEADER_OVERHEAD;
+  parser->total_header_size += name_len + value_len + HTTP1_HEADER_OVERHEAD;
   if (parser->total_header_size > parser->config.max_header_size)
     return HTTP1_ERROR_HEADER_TOO_LARGE;
 
-  if (SocketHTTP_Headers_add_n (parser->headers, name, parser->name_buf.len,
-                                value, parser->value_buf.len)
+  /* Use zero-copy: store pointers directly into arena buffer, no second copy */
+  if (SocketHTTP_Headers_add_ref (parser->headers, name, name_len, value,
+                                  value_len)
       < 0)
     return HTTP1_ERROR_INVALID_HEADER_VALUE;
 
   parser->header_count++;
 
-  http1_tokenbuf_reset (&parser->name_buf);
-  http1_tokenbuf_reset (&parser->value_buf);
+  /* Release buffer ownership - data stays in arena for header reference */
+  http1_tokenbuf_release (&parser->name_buf);
+  http1_tokenbuf_release (&parser->value_buf);
 
   return HTTP1_OK;
 }
