@@ -224,6 +224,44 @@ http1_tokenbuf_append (HTTP1_TokenBuf *buf, Arena_T arena, char c,
   return 0;
 }
 
+static inline int
+http1_tokenbuf_append_block (HTTP1_TokenBuf *buf, Arena_T arena,
+                             const char *src, size_t count, size_t max_size)
+{
+  size_t new_len;
+  size_t new_capacity;
+  char *new_data;
+
+  if (count == 0)
+    return 0;
+
+  new_len = buf->len + count;
+  if (new_len > max_size)
+    return -1;
+
+  if (new_len > buf->capacity)
+    {
+      new_capacity = (buf->capacity == 0) ? 64 : buf->capacity;
+      while (new_capacity < new_len)
+        new_capacity *= 2;
+      if (new_capacity > max_size)
+        new_capacity = max_size;
+
+      new_data = Arena_alloc (arena, new_capacity, __FILE__, __LINE__);
+      if (!new_data)
+        return -1;
+
+      if (buf->data && buf->len > 0)
+        memcpy (new_data, buf->data, buf->len);
+      buf->data = new_data;
+      buf->capacity = new_capacity;
+    }
+
+  memcpy (buf->data + buf->len, src, count);
+  buf->len = new_len;
+  return 0;
+}
+
 static inline char *
 http1_tokenbuf_terminate (HTTP1_TokenBuf *buf, Arena_T arena, size_t max_size)
 {
