@@ -113,6 +113,33 @@ if (!SOCKET_VALID_BUFFER_SIZE(buffer_size)) {
 }
 ```
 
+## Safe String Copy Patterns
+
+### Use socket_util_safe_strncpy Instead of strncpy:
+```c
+/* NEVER use strncpy() directly - may not null-terminate */
+
+/* WRONG - strncpy does NOT guarantee null-termination */
+char buf[256];
+strncpy(buf, user_input, sizeof(buf));  /* BUG: may not be null-terminated! */
+
+/* CORRECT - socket_util_safe_strncpy always null-terminates */
+char buf[256];
+socket_util_safe_strncpy(buf, user_input, sizeof(buf));  /* Always safe */
+```
+
+### Safe IP Address Copy:
+```c
+/* Use socket_util_safe_copy_ip for IP address strings */
+char ip_buf[SOCKET_IP_MAX_LEN];
+socket_util_safe_copy_ip(ip_buf, client_ip, sizeof(ip_buf));
+```
+
+### Why strncpy is Dangerous:
+- `strncpy(dest, src, n)` does NOT null-terminate if `strlen(src) >= n`
+- This leads to buffer overread vulnerabilities when the string is used
+- `socket_util_safe_strncpy` always null-terminates by copying at most `max_len-1` chars
+
 ## Cryptographic Security Patterns
 
 ### Constant-Time Comparison (Timing Attack Prevention):

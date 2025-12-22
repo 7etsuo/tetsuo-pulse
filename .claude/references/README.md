@@ -118,6 +118,7 @@ Security-focused implementation patterns and validation utilities.
 - Safe allocation patterns (Arena with overflow protection, buffer size validation)
 - Overflow-safe arithmetic (addition, multiplication with checks)
 - Input validation macros (port, buffer size)
+- Safe string copy patterns (socket_util_safe_strncpy instead of strncpy)
 - Cryptographic security patterns (constant-time comparison, secure clearing, CSPRNG)
 - Thread-safe error handling (thread-local exceptions, error buffers)
 - Safe system call patterns (SAFE_CLOSE, thread-safe strerror)
