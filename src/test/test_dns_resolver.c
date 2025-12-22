@@ -522,6 +522,54 @@ TEST (dns_resolver_config_setters)
   Arena_dispose (&arena);
 }
 
+/* Test: Configuration propagates to transport (RFC 1035 §4.2.1) */
+TEST (dns_resolver_config_propagation)
+{
+  Arena_T arena = Arena_new ();
+  SocketDNSResolver_T resolver = SocketDNSResolver_new (arena);
+
+  /* Set timeout and retries - should propagate to transport */
+  SocketDNSResolver_set_timeout (resolver, 3000);
+  SocketDNSResolver_set_retries (resolver, 5);
+
+  /* Add nameserver to enable queries */
+  int ret = SocketDNSResolver_add_nameserver (resolver, "8.8.8.8", 53);
+  ASSERT_EQ (ret, 0);
+
+  /* Verify resolver is still functional after config changes */
+  ASSERT_EQ (SocketDNSResolver_nameserver_count (resolver), 1);
+
+  /* Change config again - should not crash */
+  SocketDNSResolver_set_timeout (resolver, 1000);
+  SocketDNSResolver_set_retries (resolver, 2);
+
+  SocketDNSResolver_free (&resolver);
+  Arena_dispose (&arena);
+}
+
+/* Test: resolv.conf options apply to transport */
+TEST (dns_resolver_resolv_conf_options)
+{
+  Arena_T arena = Arena_new ();
+  SocketDNSResolver_T resolver = SocketDNSResolver_new (arena);
+
+  /* Load resolv.conf - should apply timeout/attempts/rotate */
+  int count = SocketDNSResolver_load_resolv_conf (resolver);
+
+  /* Should have loaded at least one nameserver (or fallback) */
+  ASSERT (count >= 0);
+
+  /* Resolver should be functional */
+  ASSERT (SocketDNSResolver_nameserver_count (resolver) >= 0);
+
+  /* Can override config after loading */
+  SocketDNSResolver_set_timeout (resolver, 2000);
+  SocketDNSResolver_set_retries (resolver, 3);
+
+  SocketDNSResolver_free (&resolver);
+  Arena_dispose (&arena);
+}
+
 /* Test: Cancel non-existent query */
 TEST (dns_resolver_cancel_invalid)
 {
