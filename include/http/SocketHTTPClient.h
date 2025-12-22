@@ -7,139 +7,29 @@
 /**
  * @defgroup http_client HTTP Client Module
  * @ingroup http
- * @brief High-level HTTP client library supporting HTTP/1.1, HTTP/2,
- * connection pooling, async I/O, authentication, cookies, redirects,
- * compression, and proxy support.
+ * @brief High-level HTTP client with HTTP/1.1, HTTP/2, pooling, auth, and
+ * cookies.
  *
- * The HTTP client module offers a production-ready implementation for making
- * HTTP requests with modern features, security, and performance optimizations.
+ * Features:
+ * - Sync/async request execution with connection pooling
+ * - HTTP/2 via ALPN with HTTP/1.1 fallback
+ * - RFC 6265 cookies with SameSite support
+ * - Basic, Digest, Bearer authentication
+ * - Compression (gzip, deflate, brotli)
+ * - Redirect following with loop detection
+ * - Configurable timeouts and retries
  *
- * Key Features:
- * - Synchronous and asynchronous request execution
- * - Automatic protocol negotiation (HTTP/2 via ALPN prioritized)
- * - Efficient connection pooling with per-host limits, idle timeouts, and
- * reuse statistics
- * - RFC 6265-compliant cookie management including SameSite attributes
- * - Support for authentication schemes: Basic (RFC 7617), Digest (RFC 7616),
- * Bearer tokens (RFC 6750)
- * - Automatic compression handling (gzip, deflate, brotli) with decompression
- * - Intelligent redirect following with loop detection and method preservation
- * - Proxy configuration and Happy Eyeballs for dual-stack IPv6 preference
- * - Configurable timeouts, retries, and error recovery for resilience
- * - Comprehensive logging, metrics, and pool management APIs
+ * Thread safety: Client instances are NOT thread-safe. Cookie jar is
+ * thread-safe.
  *
- * Components:
- * - @ref SocketHTTPClient_T: Core client instance managing pool and
- * configuration
- * - @ref SocketHTTPClient_Config: Detailed runtime configuration options
- * - @ref SocketHTTPClient_Request_T: Builder pattern for custom requests
- * (sync/async)
- * - @ref SocketHTTPClient_AsyncRequest_T: Handle for monitoring/canceling
- * async operations
- * - @ref SocketHTTPClient_Response: Structured access to response data and
- * metadata
- * - @ref SocketHTTPClient_CookieJar_T: Secure cookie storage, loading, and
- * saving
- * - @ref SocketHTTPClient_Auth: Configuration for authentication credentials
- * - @ref SocketHTTPClient_Error: Enumerated errors with retryability
- * classification
- * - @ref SocketHTTPClient_PoolStats: Connection pool performance metrics
- *
- * Dependencies and Integration:
- * - @ref http "HTTP Protocol Modules" for parsing, serialization, and HPACK
- * - @ref connection_mgmt "Connection Management" for advanced pooling and
- * reconnection
- * - @ref security "Security Modules" for TLS, certificate verification, and
- * SYN protection
- * - @ref async_io "Async I/O" and @ref event_system "Event System" for
- * non-blocking workflows
- * - @ref core_io::dns "DNS Resolution" for efficient hostname lookup
- * - @ref utilities "Utilities" for rate limiting, retry policies, and metrics
- * - @ref foundation "Foundation" for arena allocation and exception handling
- *
- * Security Considerations:
- * - Strict certificate validation and hostname matching (configurable bypass
- * for testing)
- * - Protection against memory exhaustion via response size limits and header
- * validation
- * - Secure handling of sensitive data (cleartext credentials warning;
- * recommend secure storage)
- * - Enforcement of cookie security flags (Secure, HttpOnly, SameSite)
- * - Rejection of malformed responses to mitigate injection and smuggling
- * attacks
- * - Configurable limits on redirects, retries, and connection counts to
- * prevent abuse
- *
- * Thread Safety:
- * - Client instances are NOT thread-safe; design for one instance per thread
- * or use mutexes
- * - Pure functions (e.g., config_defaults, error_is_retryable) are thread-safe
- * - Cookie jar is thread-safe with internal locking
- *
- * Platform Support:
- * - POSIX-compliant (Linux, BSD, macOS)
- * - Requires pthread for internal threading (DNS workers, timers)
- * - Optional TLS via CMake -DENABLE_TLS=ON (OpenSSL or LibreSSL)
- * - Poll backends auto-detected (epoll/kqueue/poll)
- *
- * Examples:
- * @include examples/http_get.c
- * @include examples/http_post.c
- * @include examples/http2_client.c
- *
- * Documentation:
- * @see docs/HTTP_CLIENT_GUIDE.md for tutorials and patterns
- * @see docs/SECURITY_GUIDE.md for authentication and TLS best practices
- * @see @ref http_client_cookie "Cookie Configuration Constants"
- * @see @ref http_client_encoding "Content Encoding Configuration"
- *
+ * @see docs/HTTP_CLIENT_GUIDE.md for tutorials.
  * @{
  */
 
 /**
  * @file SocketHTTPClient.h
- * @ingroup http_client http_client
- * @brief Public API for the HTTP client module, including types, functions,
- * and configuration.
- *
- * This header defines the high-level interface for HTTP requests and
- * responses. See module brief for features and @ref http_client "group
- * documentation" for details.
- *
- * Provides a robust HTTP client supporting HTTP/1.1 and HTTP/2 with advanced
- * features:
- * - @ref connection_mgmt "Connection pooling" with per-host limits and idle
- * timeouts
- * - Automatic protocol negotiation via ALPN (h2 preferred)
- * - RFC 6265 cookie handling with SameSite support
- * - Multiple authentication schemes: Basic (RFC 7617), Digest (RFC 7616),
- * Bearer (RFC 6750)
- * - Compression support: Accept gzip/deflate/brotli with auto-decompression
- * - Configurable redirect following with loop detection
- * - Synchronous and asynchronous APIs with event integration
- * - Integration with @ref security "TLS" for HTTPS (OpenSSL/LibreSSL)
- * - Proxy support via @ref core_io "SocketProxy"
- *
- * Underlying dependencies:
- * - @ref http "SocketHTTP" / SocketHTTP1 / SocketHTTP2 for protocol handling
- * - @ref async_io "SocketHappyEyeballs" for IPv6-preferred connections
- * - @ref core_io::dns "SocketDNS" for async resolution
- * - @ref foundation "Arena" for memory management
- *
- * Thread safety: Instances are NOT thread-safe. Use one per thread or
- * synchronize externally.
- *
- * Platform: POSIX (Linux/BSD/macOS), requires pthread. TLS optional via CMake
- * -DENABLE_TLS=ON.
- *
- * Example usage:
- * @include examples/http_get.c
- *
- * @see @ref http_client "HTTP Client Module" for full API reference.
- * @see SocketHTTPClient_new() for instantiation.
- * @see SocketHTTPClient_get() / SocketHTTPClient_get_async() for requests.
- * @see docs/HTTP_GUIDE.md for detailed usage and best practices.
- * @see docs/SECURITY_GUIDE.md for auth/TLS configuration.
+ * @ingroup http_client
+ * @brief Public API for HTTP client module.
  */
 
 #ifndef SOCKETHTTPCLIENT_INCLUDED
@@ -620,95 +510,16 @@ typedef struct
  */
 
 /**
- * @brief Initialize SocketHTTPClient_Config structure with production-safe
- * defaults.
+ * @brief Initialize config with production-safe defaults.
  * @ingroup http_client
+ * @param config Config structure to initialize
  *
- * Populates the configuration with values optimized for secure, performant
- * HTTP client usage in production environments. This function sets up a
- * balanced configuration that prioritizes security (TLS verification, limited
- * redirects/connections), performance (HTTP/2 preference, pooling), and
- * resilience (timeouts, optional retries).
+ * Sets balanced defaults: HTTP/2, pooling (6/host, 100 total), 30s connect
+ * timeout, 60s request timeout, 10 redirects, compression enabled, TLS
+ * verification on, retries disabled.
  *
- * Detailed defaults include:
- * - Protocol: Max HTTP/2 with ALPN negotiation for modern servers; falls back
- * to HTTP/1.1.
- * - Pooling: 6 connections per host (RFC 7540 recommendation), total 100 to
- * prevent resource exhaustion.
- * - Timeouts: Conservative values to avoid hanging: 30s connect, 60s request,
- * 10s DNS.
- * - Redirects: Follow up to 10 for GET/HEAD (safe methods); POST redirects
- * disabled to prevent unintended repeats.
- * - Compression: Accept all common encodings with auto-decompression to save
- * bandwidth.
- * - TLS: Strict verification; uses system default context (customizable via
- * tls_context).
- * - Retry: Disabled (safe default); enable for idempotent requests only.
- * - Limits: Unlimited response size (monitor max_response_size for memory
- * safety).
- * - Security: SameSite enforcement for cookies.
- *
- * After calling, override specific fields as needed for application
- * requirements (e.g., shorter timeouts for mobile). Invalid configs (e.g.,
- * negative timeouts) will cause SocketHTTPClient_new() to fail with
- * SocketHTTPClient_Failed.
- *
- * @param[in,out] config Pointer to SocketHTTPClient_Config structure to
- * initialize and modify.
- *
- * This function modifies the structure in place, setting all fields to
- * defaults. No allocation performed; pure data initialization.
- *
- * @threadsafe Yes - pure function with no side effects or shared state access.
- *
- * ## Usage Example
- *
- * @code{.c}
- * SocketHTTPClient_Config config;
- * SocketHTTPClient_config_defaults(&config);
- *
- * // Override for custom needs
- * config.connect_timeout_ms = 5000;  // 5s for faster failure
- * config.follow_redirects = 5;       // Limit redirects
- * config.user_agent = "MyApp/1.0";   // Custom UA
- *
- * SocketHTTPClient_T client = SocketHTTPClient_new(&config);
- * if (client) {
- *     // Use client...
- *     SocketHTTPClient_free(&client);
- * }
- * @endcode
- *
- * ## Advanced Usage with TLS
- *
- * @code{.c}
- * TRY {
- *     SocketTLSContext_T tls_ctx = SocketTLSContext_new(); // Custom TLS
- *     SocketTLSContext_load_certs(tls_ctx, "ca.pem");
- *
- *     SocketHTTPClient_Config config;
- *     SocketHTTPClient_config_defaults(&config);
- *     config.tls_context = tls_ctx;
- *     config.verify_ssl = 1; // Strict verify
- *
- *     SocketHTTPClient_T client = SocketHTTPClient_new(&config);
- *     // HTTPS requests will use custom TLS
- * } EXCEPT(SocketHTTPClient_Failed) {
- *     // Handle config error
- * } END_TRY;
- * @endcode
- *
- * @note Defaults assume SOCKET_HAS_TLS=1 for HTTPS; disable via
- * config.verify_ssl=0 for testing (insecure!).
- * @warning Unlimited max_response_size can lead to memory exhaustion on large
- * responses; set limit for untrusted servers.
- * @complexity O(1) - constant time structure initialization, no loops or
- * allocations.
- *
- * @see SocketHTTPClient_new() to create client from config.
- * @see SocketHTTPClient_Config for all field descriptions and valid ranges.
- * @see docs/HTTP_CLIENT_GUIDE.md#configuration for tuning guide.
- * @see SocketTLSContext_new() for TLS customization.
+ * @threadsafe Yes (pure function)
+ * @see SocketHTTPClient_Config for field descriptions.
  */
 extern void SocketHTTPClient_config_defaults (SocketHTTPClient_Config *config);
 
