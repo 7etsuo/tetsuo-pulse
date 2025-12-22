@@ -19,89 +19,28 @@
 #include "http/SocketHTTP-private.h"
 #include "http/SocketHTTP.h"
 
-/* ============================================================================
- * String Length Constants for HTTP Parsing
- * ============================================================================
- *
- * Named constants for HTTP token lengths used in parsing to eliminate magic
- * numbers. These match the canonical string representations in RFC 9110.
- */
-
-/** @brief Length of "HTTP/X.Y" version strings (e.g., "HTTP/1.1") */
+/* String length constants for HTTP token parsing (RFC 9110) */
 #define SOCKETHTTP_VERSION_STR_LEN_FULL 8
-
-/** @brief Length of "HTTP/N" version strings (e.g., "HTTP/2") */
 #define SOCKETHTTP_VERSION_STR_LEN_SHORT 6
-
-/** @brief Length of "GET" method string */
 #define SOCKETHTTP_METHOD_LEN_GET 3
-
-/** @brief Length of "PUT" method string */
 #define SOCKETHTTP_METHOD_LEN_PUT 3
-
-/** @brief Length of "HEAD" method string */
 #define SOCKETHTTP_METHOD_LEN_HEAD 4
-
-/** @brief Length of "POST" method string */
 #define SOCKETHTTP_METHOD_LEN_POST 4
-
-/** @brief Length of "TRACE" method string */
 #define SOCKETHTTP_METHOD_LEN_TRACE 5
-
-/** @brief Length of "PATCH" method string */
 #define SOCKETHTTP_METHOD_LEN_PATCH 5
-
-/** @brief Length of "DELETE" method string */
 #define SOCKETHTTP_METHOD_LEN_DELETE 6
-
-/** @brief Length of "CONNECT" method string */
 #define SOCKETHTTP_METHOD_LEN_CONNECT 7
-
-/** @brief Length of "OPTIONS" method string */
 #define SOCKETHTTP_METHOD_LEN_OPTIONS 7
-
-/** @brief Length of "identity" coding string */
 #define SOCKETHTTP_CODING_LEN_IDENTITY 8
-
-/** @brief Length of "chunked" coding string */
 #define SOCKETHTTP_CODING_LEN_CHUNKED 7
-
-/** @brief Length of "gzip" coding string */
 #define SOCKETHTTP_CODING_LEN_GZIP 4
-
-/** @brief Length of "deflate" coding string */
 #define SOCKETHTTP_CODING_LEN_DEFLATE 7
-
-/** @brief Length of "compress" coding string */
 #define SOCKETHTTP_CODING_LEN_COMPRESS 8
-
-/** @brief Length of "br" (Brotli) coding string */
 #define SOCKETHTTP_CODING_LEN_BR 2
-
-/* Status code boundaries defined in SocketHTTP.h */
-/* ============================================================================
- * Exception Definitions
- * ============================================================================
- */
-
+/* Exception Definitions */
 const Except_T SocketHTTP_Failed = { &SocketHTTP_Failed, "HTTP core failure" };
-
-/**
- * @internal
- * @brief Exception for HTTP core parsing failures.
- */
 const Except_T SocketHTTP_ParseError = { &SocketHTTP_Failed, "HTTP core parse error" };
-
-/**
- * @internal
- * @brief Exception for invalid URI syntax or validation errors.
- */
 const Except_T SocketHTTP_InvalidURI = { &SocketHTTP_Failed, "Invalid URI syntax" };
-
-/**
- * @internal
- * @brief Exception for invalid HTTP header names or values.
- */
 const Except_T SocketHTTP_InvalidHeader = { &SocketHTTP_Failed, "Invalid HTTP header" };
 
 /* ============================================================================
@@ -164,19 +103,9 @@ const unsigned char sockethttp_uri_unreserved[256] = {
   0, 0, 0, 0
 };
 
-/**
- * Invalid hex digit marker value for sockethttp_hex_value table.
- * Values 0-15 are valid hex digits; 255 indicates non-hex character.
- */
+/* Hex value table for percent decoding (0-15 valid, 255 invalid) */
 #define SOCKETHTTP_HEX_INVALID 255
-
-/** Shorthand for invalid hex in table initialization */
 #define X SOCKETHTTP_HEX_INVALID
-
-/**
- * Hex value table for percent decoding
- * Returns 0-15 for '0'-'9', 'a'-'f', 'A'-'F', or SOCKETHTTP_HEX_INVALID (255)
- */
 const unsigned char sockethttp_hex_value[256] = {
   /* 0x00-0x0F */ X, X, X, X, X, X, X, X, X, X, X, X, X, X, X, X,
   /* 0x10-0x1F */ X, X, X, X, X, X, X, X, X, X, X, X, X, X, X, X,
@@ -204,38 +133,17 @@ const unsigned char sockethttp_hex_value[256] = {
 
 #undef X
 
-/* Version lookup optimized to switch/if in functions */
-
-/* ============================================================================
- * Helper Functions
- * ============================================================================
- */
-
 /* Forward declaration */
 static size_t sockethttp_effective_length (const char *str, size_t len);
 
-/**
- * @brief Parse entry for enum string mapping.
- * @internal
- */
+/* Parse entry for enum string mapping */
 struct ParseEntry {
   size_t len;
   const char *str;
   int val;
-  bool case_insens;  /**< true for case-insensitive match */
+  bool case_insens;
 };
 
-/**
- * @brief Parse string to enum value using table lookup.
- * @internal
- *
- * @param str Input string
- * @param len Length (or 0 for strlen)
- * @param table Parse table entries
- * @param table_size Number of entries
- * @param default_val Default if no match
- * @return Matched value or default_val
- */
 static int
 sockethttp_parse_enum(const char *str, size_t len, const struct ParseEntry *table, size_t table_size, int default_val)
 {
@@ -252,15 +160,7 @@ sockethttp_parse_enum(const char *str, size_t len, const struct ParseEntry *tabl
   return default_val;
 }
 
-/**
- * sockethttp_effective_length - Get effective string length
- *
- * @str: Input string (non-NULL)
- * @len: Provided length, or 0 to use strlen
- *
- * Returns: Length of the string
- * Thread-safe: Yes
- */
+/* Get effective string length (use strlen if len==0) */
 static size_t
 sockethttp_effective_length (const char *str, size_t len)
 {
@@ -268,46 +168,22 @@ sockethttp_effective_length (const char *str, size_t len)
     return 0;
   if (len == 0)
     return strlen (str);
-  /* When explicit length is provided, return it as-is to allow
-   * detection of embedded NUL bytes in validation functions */
   return len;
 }
 
-/**
- * sockethttp_is_token - Validate token characters
- *
- * @s: String to validate
- * @len: Length of string
- *
- * Per RFC 9110 token definition.
- *
- * Returns: 1 if all characters are valid tchar, 0 otherwise
- * Thread-safe: Yes
- */
+/* Validate token characters per RFC 9110 */
 static int
 sockethttp_is_token (const char *s, size_t len)
 {
   for (size_t i = 0; i < len; i++)
     {
       if (!SOCKETHTTP_IS_TCHAR (s[i]))
-        {
-          return 0;
-        }
+        return 0;
     }
   return 1;
 }
 
-/**
- * sockethttp_header_value_is_safe - Check header value for injection chars
- *
- * @s: Header value string
- * @len: Length
- *
- * Rejects NUL, CR, LF to prevent header injection.
- *
- * Returns: 1 if safe, 0 otherwise
- * Thread-safe: Yes
- */
+/* Check header value for injection chars (NUL, CR, LF) */
 static int
 sockethttp_header_value_is_safe (const char *s, size_t len)
 {
@@ -315,25 +191,11 @@ sockethttp_header_value_is_safe (const char *s, size_t len)
     {
       unsigned char c = (unsigned char)s[i];
       if (c == 0 || c == '\r' || c == '\n')
-        {
-          return 0;
-        }
+        return 0;
     }
   return 1;
 }
 
-/* ============================================================================
- * HTTP Version Functions
- * ============================================================================
- */
-
-/**
- * SocketHTTP_version_string - Get version string
- * @version: HTTP version
- *
- * Returns: Static string like "HTTP/1.1", or "HTTP/?" for unknown
- * Thread-safe: Yes
- */
 const char *
 SocketHTTP_version_string (SocketHTTP_Version version)
 {
@@ -362,14 +224,6 @@ static const struct ParseEntry version_table[] = {
     {SOCKETHTTP_VERSION_STR_LEN_SHORT, "HTTP/3", HTTP_VERSION_3, false},
 };
 
-/**
- * SocketHTTP_version_parse - Parse version string
- * @str: Version string (e.g., "HTTP/1.1")
- * @len: String length (0 for strlen)
- *
- * Returns: HTTP version, or HTTP_VERSION_0_9 if unrecognized
- * Thread-safe: Yes
- */
 SocketHTTP_Version
 SocketHTTP_version_parse (const char *str, size_t len)
 {
@@ -377,20 +231,6 @@ SocketHTTP_version_parse (const char *str, size_t len)
     sizeof(version_table) / sizeof(version_table[0]), HTTP_VERSION_0_9);
 }
 
-/* ============================================================================
- * HTTP Method Functions
- * ============================================================================
- */
-
-/* Method lookup optimized to direct memcmp/switch in functions */
-
-/**
- * SocketHTTP_method_name - Get method name string
- * @method: HTTP method
- *
- * Returns: Static string like "GET", or NULL for unknown
- * Thread-safe: Yes
- */
 const char *
 SocketHTTP_method_name (SocketHTTP_Method method)
 {
@@ -431,14 +271,6 @@ static const struct ParseEntry method_table[] = {
     {SOCKETHTTP_METHOD_LEN_OPTIONS, "OPTIONS", HTTP_METHOD_OPTIONS, false},
 };
 
-/**
- * SocketHTTP_method_parse - Parse method string
- * @str: Method string (e.g., "GET", "POST")
- * @len: String length (0 for strlen)
- *
- * Returns: HTTP method, or HTTP_METHOD_UNKNOWN if unrecognized
- * Thread-safe: Yes
- */
 SocketHTTP_Method
 SocketHTTP_method_parse (const char *str, size_t len)
 {
@@ -446,13 +278,6 @@ SocketHTTP_method_parse (const char *str, size_t len)
     sizeof(method_table) / sizeof(method_table[0]), HTTP_METHOD_UNKNOWN);
 }
 
-/**
- * SocketHTTP_method_properties - Get method semantic properties
- * @method: HTTP method
- *
- * Returns: Method properties structure
- * Thread-safe: Yes
- */
 SocketHTTP_MethodProperties
 SocketHTTP_method_properties (SocketHTTP_Method method)
 {
@@ -481,16 +306,6 @@ SocketHTTP_method_properties (SocketHTTP_Method method)
     }
 }
 
-/**
- * SocketHTTP_method_valid - Check if string is valid HTTP method token
- * @str: Method string
- * @len: String length
- *
- * Returns: 1 if valid token per RFC 9110, 0 otherwise
- * Thread-safe: Yes
- *
- * Valid token chars: !#$%&'*+-.0-9A-Z^_`a-z|~
- */
 int
 SocketHTTP_method_valid (const char *str, size_t len)
 {
@@ -499,31 +314,14 @@ SocketHTTP_method_valid (const char *str, size_t len)
   len = sockethttp_effective_length (str, len);
   if (len == 0)
     return 0;
-
-  /* Per RFC 9110, method is a token */
   return sockethttp_is_token (str, len);
 }
 
-/* ============================================================================
- * HTTP Status Code Functions
- * ============================================================================
- */
-
-/**
- * Status code reason phrases lookup table
- *
- * Indexed by (code - HTTP_STATUS_CODE_MIN). Size 500 for codes 100-599.
- * NULL entries for undefined codes.
- */
+/* Status code reason phrases (indexed by code - 100) */
 static const char
     *status_reasons[HTTP_STATUS_CODE_MAX - HTTP_STATUS_CODE_MIN + 1]
     = { NULL };
 
-/**
- * @brief Static mapping of HTTP status codes to reason phrases.
- * @internal
- * @note Indexed by code - HTTP_STATUS_CODE_MIN; 0-terminated sentinel.
- */
 static const struct {
     int code;
     const char *phrase;
@@ -636,31 +434,15 @@ SocketHTTP_status_category (int code)
     return HTTP_STATUS_CLIENT_ERROR;
   if (code >= HTTP_STATUS_5XX_MIN && code <= HTTP_STATUS_5XX_MAX)
     return HTTP_STATUS_SERVER_ERROR;
-  return 0; /**< Invalid or unknown category */
+  return 0;
 }
 
 int
 SocketHTTP_status_valid (int code)
 {
   return code >= HTTP_STATUS_CODE_MIN && code <= HTTP_STATUS_CODE_MAX;
-  /**< Valid HTTP status codes are 100-599 per RFC 9110 */
 }
 
-/* ============================================================================
- * Header Validation Functions
- * ============================================================================
- */
-
-/**
- * SocketHTTP_header_name_valid - Validate header name
- * @name: Header name
- * @len: Name length
- *
- * Per RFC 9110, header names are tokens (tchar characters only).
- *
- * Returns: 1 if valid, 0 otherwise
- * Thread-safe: Yes
- */
 int
 SocketHTTP_header_name_valid (const char *name, size_t len)
 {
@@ -669,29 +451,10 @@ SocketHTTP_header_name_valid (const char *name, size_t len)
   len = sockethttp_effective_length (name, len);
   if (len == 0 || len > SOCKETHTTP_MAX_HEADER_NAME)
     return 0;
-
-  /* Header name must be a token per RFC 9110 */
   return sockethttp_is_token (name, len);
 }
 
-/**
- * SocketHTTP_header_value_valid - Validate header value
- * @value: Header value
- * @len: Value length
- *
- * SECURITY: Rejects NUL, CR, and LF characters to prevent HTTP header
- * injection attacks (CWE-113). Per RFC 9110 Section 5.5, obs-fold (CRLF
- * followed by SP/HTAB) is deprecated and should not be generated.
- *
- * This stricter validation prevents:
- * - CRLF injection for header manipulation
- * - Response splitting attacks
- * - Cache poisoning via injected headers
- * - Session hijacking via injected Set-Cookie
- *
- * Returns: 1 if valid (no NUL/CR/LF), 0 otherwise
- * Thread-safe: Yes
- */
+/* SECURITY: Rejects NUL/CR/LF to prevent header injection (CWE-113) */
 int
 SocketHTTP_header_value_valid (const char *value, size_t len)
 {
@@ -700,30 +463,8 @@ SocketHTTP_header_value_valid (const char *value, size_t len)
   len = sockethttp_effective_length (value, len);
   if (len > SOCKETHTTP_MAX_HEADER_VALUE)
     return 0;
-
-  /*
-   * SECURITY: Reject NUL, CR, and LF in header values to prevent
-   * HTTP header injection attacks (CWE-113).
-   *
-   * Per RFC 9110 Section 5.5, field values should not contain CR or LF
-   * except in obsolete line folding (obs-fold), which is deprecated.
-   * For security, we reject ALL CR and LF characters to prevent:
-   *   - Header injection via CRLF sequences
-   *   - Response splitting attacks
-   *   - Cache poisoning
-   *   - Session hijacking via injected Set-Cookie headers
-   *
-   * Note: Applications that need to include CR/LF must use proper
-   * encoding (e.g., percent-encoding for URIs, quoted-string for some
-   * headers, or multipart for bodies).
-   */
   return sockethttp_header_value_is_safe (value, len);
 }
-
-/* ============================================================================
- * Transfer/Content Coding Functions
- * ============================================================================
- */
 
 static const struct ParseEntry coding_table[] = {
     {SOCKETHTTP_CODING_LEN_BR, "br", HTTP_CODING_BR, true},
@@ -734,14 +475,6 @@ static const struct ParseEntry coding_table[] = {
     {SOCKETHTTP_CODING_LEN_COMPRESS, "compress", HTTP_CODING_COMPRESS, true},
 };
 
-/**
- * SocketHTTP_coding_parse - Parse coding name
- * @name: Coding name string
- * @len: Name length (0 for strlen)
- *
- * Returns: Coding type, or HTTP_CODING_UNKNOWN
- * Thread-safe: Yes
- */
 SocketHTTP_Coding
 SocketHTTP_coding_parse (const char *name, size_t len)
 {
@@ -749,15 +482,6 @@ SocketHTTP_coding_parse (const char *name, size_t len)
     sizeof(coding_table) / sizeof(coding_table[0]), HTTP_CODING_UNKNOWN);
 }
 
-
-
-/**
- * SocketHTTP_coding_name - Get coding name string
- * @coding: Coding type
- *
- * Returns: Static string, or NULL for unknown
- * Thread-safe: Yes
- */
 const char *
 SocketHTTP_coding_name (SocketHTTP_Coding coding)
 {

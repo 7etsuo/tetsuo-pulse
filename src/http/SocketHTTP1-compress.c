@@ -4,21 +4,10 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * SocketHTTP1-compress.c - HTTP/1.1 Content Encoding Support
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
- *
- * Implements RFC 9110 Section 8.4 content coding:
- * - gzip (RFC 1952) via zlib
- * - deflate (RFC 1951) via zlib
- * - br (Brotli, RFC 7932) via libbrotli (optional)
- *
- * This file is only compiled when ENABLE_HTTP_COMPRESSION is ON.
- *
- * Design note: This module uses return codes (not exceptions) for error
- * handling, matching the underlying zlib/brotli library patterns.
+/* SocketHTTP1-compress.c - HTTP/1.1 Content Encoding (RFC 9110 Section 8.4)
+ * Supports gzip (RFC 1952), deflate (RFC 1951), and Brotli (RFC 7932).
+ * Only compiled when ENABLE_HTTP_COMPRESSION is ON.
+ * Uses return codes (not exceptions) to match underlying zlib/brotli patterns.
  */
 
 /* System headers first */
@@ -45,11 +34,6 @@
 /* Module type alias following C Interfaces and Implementations pattern */
 #define T_DECODER SocketHTTP1_Decoder_T
 #define T_ENCODER SocketHTTP1_Encoder_T
-
-/* ============================================================================
- * Compression Constants
- * ============================================================================
- */
 
 #ifdef SOCKETHTTP1_HAS_ZLIB
 
@@ -84,11 +68,6 @@
 
 #endif /* SOCKETHTTP1_HAS_BROTLI */
 
-/* ============================================================================
- * Decoder Structure
- * ============================================================================
- */
-
 /**
  * struct SocketHTTP1_Decoder - Internal decoder state for content decoding
  *
@@ -118,11 +97,6 @@ struct SocketHTTP1_Decoder
   size_t total_decompressed;        /**< Running total of output bytes */
   size_t max_decompressed_size;     /**< Limit for zip bomb protection */
 };
-
-/* ============================================================================
- * Encoder Structure
- * ============================================================================
- */
 
 /**
  * struct SocketHTTP1_Encoder - Internal encoder state for content encoding
@@ -155,17 +129,6 @@ struct SocketHTTP1_Encoder
   size_t max_encoded_size;              /**< Optional output size limit */
 };
 
-/* ============================================================================
- * Static Helper Functions - Common Utilities
- * ============================================================================
- */
-
-/**
- * is_supported_coding - Check if coding is supported for compression
- * @coding: Content coding to check
- *
- * Returns: 1 if supported, 0 otherwise
- */
 static int
 is_supported_coding (SocketHTTP_Coding coding)
 {
@@ -183,31 +146,12 @@ is_supported_coding (SocketHTTP_Coding coding)
   return 0;
 }
 
-/**
- * check_buffer_limits - Validate buffer sizes for zlib/brotli operations
- * @input_len: Input buffer length
- * @output_len: Output buffer length
- *
- * zlib uses uInt (typically 32-bit), so we must check against UINT_MAX.
- *
- * Returns: 1 if sizes are valid, 0 if too large
- */
 static int
 check_buffer_limits (size_t input_len, size_t output_len)
 {
   return (input_len <= UINT_MAX && output_len <= UINT_MAX);
 }
 
-/**
- * check_decode_output_limits - Validate output against decompression limits
- * @total: Current total decompressed bytes
- * @output_len: Proposed output buffer size
- * @max_size: Maximum allowed decompressed size (SIZE_MAX = unlimited)
- *
- * Checks for potential overflow and limit violations BEFORE decoding.
- *
- * Returns: HTTP1_OK if safe, HTTP1_ERROR or HTTP1_ERROR_BODY_TOO_LARGE on error
- */
 static SocketHTTP1_Result
 check_decode_output_limits (size_t total, size_t output_len, size_t max_size)
 {
@@ -229,14 +173,6 @@ check_decode_output_limits (size_t total, size_t output_len, size_t max_size)
   return HTTP1_OK;
 }
 
-/**
- * update_decode_total - Update total and check limit after decode
- * @total: Pointer to total decompressed counter
- * @written: Bytes just written
- * @max_size: Maximum allowed decompressed size (SIZE_MAX = unlimited)
- *
- * Returns: HTTP1_OK if within limits, HTTP1_ERROR_BODY_TOO_LARGE if exceeded
- */
 static SocketHTTP1_Result
 update_decode_total (size_t *total, size_t written, size_t max_size)
 {
@@ -246,14 +182,6 @@ update_decode_total (size_t *total, size_t written, size_t max_size)
   return HTTP1_OK;
 }
 
-/**
- * check_encode_output_limits - Validate output against encoding limits
- * @total: Current total encoded bytes
- * @output_len: Proposed output buffer size
- * @max_size: Maximum allowed encoded size (SIZE_MAX = unlimited)
- *
- * Returns: 1 if safe, 0 on limit violation or overflow
- */
 static int
 check_encode_output_limits (size_t total, size_t output_len, size_t max_size)
 {
@@ -275,14 +203,6 @@ check_encode_output_limits (size_t total, size_t output_len, size_t max_size)
   return 1;
 }
 
-/**
- * update_encode_total - Update total and check limit after encode
- * @total: Pointer to total encoded counter
- * @produced: Bytes just produced
- * @max_size: Maximum allowed encoded size (SIZE_MAX = unlimited)
- *
- * Returns: 1 if within limits, 0 if exceeded
- */
 static int
 update_encode_total (size_t *total, size_t produced, size_t max_size)
 {
@@ -292,19 +212,9 @@ update_encode_total (size_t *total, size_t produced, size_t max_size)
   return 1;
 }
 
-/**
- * Default maximum decompressed size (100MB) for zip bomb protection
- */
+/* Default maximum decompressed size (100MB) for zip bomb protection */
 #define HTTP1_DEFAULT_MAX_DECOMPRESSED_SIZE (100 * 1024 * 1024)
 
-/**
- * get_effective_max_decompressed_size - Get effective max decompressed size
- * @cfg: Configuration (may be NULL)
- *
- * Returns: max_decompressed_size from config, or default limit if 0/NULL
- *
- * Used by decoders to enforce decompression limits (zip bomb protection).
- */
 static size_t
 get_effective_max_decompressed_size (const SocketHTTP1_Config *cfg)
 {
@@ -313,15 +223,6 @@ get_effective_max_decompressed_size (const SocketHTTP1_Config *cfg)
   return cfg->max_decompressed_size;
 }
 
-/**
- * get_effective_max_encoded_size - Get effective max encoded output size
- * @cfg: Configuration (may be NULL)
- *
- * Returns: SIZE_MAX (no limit on encoded output by default)
- *
- * Encoded output is typically smaller than input, so no default limit.
- * Applications can set their own limits if needed.
- */
 static size_t
 get_effective_max_encoded_size (const SocketHTTP1_Config *cfg)
 {
@@ -329,19 +230,8 @@ get_effective_max_encoded_size (const SocketHTTP1_Config *cfg)
   return SIZE_MAX;
 }
 
-/* ============================================================================
- * Static Helper Functions - zlib
- * ============================================================================
- */
-
 #ifdef SOCKETHTTP1_HAS_ZLIB
 
-/**
- * get_zlib_window_bits - Get window bits for coding type
- * @coding: GZIP or DEFLATE
- *
- * Returns: Window bits value for inflateInit2/deflateInit2
- */
 static int
 get_zlib_window_bits (SocketHTTP_Coding coding)
 {
@@ -349,12 +239,6 @@ get_zlib_window_bits (SocketHTTP_Coding coding)
                                       : ZLIB_WINDOW_BITS_DEFLATE;
 }
 
-/**
- * map_compress_level_to_zlib - Map our level enum to zlib level
- * @level: SocketHTTP1_CompressLevel
- *
- * Returns: zlib compression level (1-9 or Z_DEFAULT_COMPRESSION)
- */
 static int
 map_compress_level_to_zlib (SocketHTTP1_CompressLevel level)
 {
@@ -369,12 +253,6 @@ map_compress_level_to_zlib (SocketHTTP1_CompressLevel level)
     }
 }
 
-/**
- * init_zlib_decoder - Initialize zlib inflate stream
- * @decoder: Decoder instance
- *
- * Returns: 1 on success, 0 on failure
- */
 static int
 init_zlib_decoder (SocketHTTP1_Decoder_T decoder)
 {
@@ -387,12 +265,6 @@ init_zlib_decoder (SocketHTTP1_Decoder_T decoder)
   return 1;
 }
 
-/**
- * init_zlib_encoder - Initialize zlib deflate stream
- * @encoder: Encoder instance
- *
- * Returns: 1 on success, 0 on failure
- */
 static int
 init_zlib_encoder (SocketHTTP1_Encoder_T encoder)
 {
@@ -408,38 +280,18 @@ init_zlib_encoder (SocketHTTP1_Encoder_T encoder)
   return 1;
 }
 
-/**
- * cleanup_zlib_decoder - Clean up zlib inflate stream
- * @decoder: Decoder instance
- */
 static void
 cleanup_zlib_decoder (SocketHTTP1_Decoder_T decoder)
 {
   inflateEnd (&decoder->state.zlib);
 }
 
-/**
- * cleanup_zlib_encoder - Clean up zlib deflate stream
- * @encoder: Encoder instance
- */
 static void
 cleanup_zlib_encoder (SocketHTTP1_Encoder_T encoder)
 {
   deflateEnd (&encoder->state.zlib);
 }
 
-/**
- * decode_zlib - Decode data using zlib inflate
- * @decoder: Decoder instance
- * @input: Input buffer
- * @input_len: Input length
- * @consumed: Output - bytes consumed
- * @output: Output buffer
- * @output_len: Output buffer size
- * @written: Output - bytes written
- *
- * Returns: HTTP1_OK, HTTP1_INCOMPLETE, or HTTP1_ERROR
- */
 static SocketHTTP1_Result
 decode_zlib (SocketHTTP1_Decoder_T decoder, const unsigned char *input,
              size_t input_len, size_t *consumed, unsigned char *output,
@@ -470,15 +322,6 @@ decode_zlib (SocketHTTP1_Decoder_T decoder, const unsigned char *input,
   return HTTP1_ERROR;
 }
 
-/**
- * finish_zlib_decode - Finish zlib decoding
- * @decoder: Decoder instance
- * @output: Output buffer
- * @output_len: Buffer size
- * @written: Output - bytes written
- *
- * Returns: HTTP1_OK, HTTP1_INCOMPLETE, or HTTP1_ERROR
- */
 static SocketHTTP1_Result
 finish_zlib_decode (SocketHTTP1_Decoder_T decoder, unsigned char *output,
                     size_t output_len, size_t *written)
@@ -507,17 +350,6 @@ finish_zlib_decode (SocketHTTP1_Decoder_T decoder, unsigned char *output,
   return HTTP1_ERROR;
 }
 
-/**
- * encode_zlib - Encode data using zlib deflate
- * @encoder: Encoder instance
- * @input: Input buffer
- * @input_len: Input length
- * @output: Output buffer
- * @output_len: Buffer size
- * @flush: Flush mode (1 = sync flush, 0 = no flush)
- *
- * Returns: Bytes written, or -1 on error
- */
 static ssize_t
 encode_zlib (SocketHTTP1_Encoder_T encoder, const unsigned char *input,
              size_t input_len, unsigned char *output, size_t output_len,
@@ -540,14 +372,6 @@ encode_zlib (SocketHTTP1_Encoder_T encoder, const unsigned char *input,
   return -1;
 }
 
-/**
- * finish_zlib_encode - Finish zlib encoding
- * @encoder: Encoder instance
- * @output: Output buffer
- * @output_len: Buffer size
- *
- * Returns: Bytes written, or -1 on error
- */
 static ssize_t
 finish_zlib_encode (SocketHTTP1_Encoder_T encoder, unsigned char *output,
                     size_t output_len)
@@ -579,19 +403,8 @@ finish_zlib_encode (SocketHTTP1_Encoder_T encoder, unsigned char *output,
 
 #endif /* SOCKETHTTP1_HAS_ZLIB */
 
-/* ============================================================================
- * Static Helper Functions - Brotli
- * ============================================================================
- */
-
 #ifdef SOCKETHTTP1_HAS_BROTLI
 
-/**
- * map_compress_level_to_brotli - Map our level enum to brotli quality
- * @level: SocketHTTP1_CompressLevel
- *
- * Returns: Brotli quality (1-11)
- */
 static int
 map_compress_level_to_brotli (SocketHTTP1_CompressLevel level)
 {
@@ -606,12 +419,6 @@ map_compress_level_to_brotli (SocketHTTP1_CompressLevel level)
     }
 }
 
-/**
- * init_brotli_decoder - Initialize Brotli decoder
- * @decoder: Decoder instance
- *
- * Returns: 1 on success, 0 on failure
- */
 static int
 init_brotli_decoder (SocketHTTP1_Decoder_T decoder)
 {
@@ -623,12 +430,6 @@ init_brotli_decoder (SocketHTTP1_Decoder_T decoder)
   return 1;
 }
 
-/**
- * init_brotli_encoder - Initialize Brotli encoder
- * @encoder: Encoder instance
- *
- * Returns: 1 on success, 0 on failure
- */
 static int
 init_brotli_encoder (SocketHTTP1_Encoder_T encoder)
 {
@@ -645,10 +446,6 @@ init_brotli_encoder (SocketHTTP1_Encoder_T encoder)
   return 1;
 }
 
-/**
- * cleanup_brotli_decoder - Clean up Brotli decoder
- * @decoder: Decoder instance
- */
 static void
 cleanup_brotli_decoder (SocketHTTP1_Decoder_T decoder)
 {
@@ -656,10 +453,6 @@ cleanup_brotli_decoder (SocketHTTP1_Decoder_T decoder)
     BrotliDecoderDestroyInstance (decoder->state.brotli);
 }
 
-/**
- * cleanup_brotli_encoder - Clean up Brotli encoder
- * @encoder: Encoder instance
- */
 static void
 cleanup_brotli_encoder (SocketHTTP1_Encoder_T encoder)
 {
@@ -667,18 +460,6 @@ cleanup_brotli_encoder (SocketHTTP1_Encoder_T encoder)
     BrotliEncoderDestroyInstance (encoder->state.brotli);
 }
 
-/**
- * decode_brotli - Decode data using Brotli
- * @decoder: Decoder instance
- * @input: Input buffer
- * @input_len: Input length
- * @consumed: Output - bytes consumed
- * @output: Output buffer
- * @output_len: Buffer size
- * @written: Output - bytes written
- *
- * Returns: HTTP1_OK, HTTP1_INCOMPLETE, or HTTP1_ERROR
- */
 static SocketHTTP1_Result
 decode_brotli (SocketHTTP1_Decoder_T decoder, const unsigned char *input,
                size_t input_len, size_t *consumed, unsigned char *output,
@@ -709,15 +490,6 @@ decode_brotli (SocketHTTP1_Decoder_T decoder, const unsigned char *input,
   return HTTP1_ERROR;
 }
 
-/**
- * finish_brotli_decode - Finish Brotli decoding
- * @decoder: Decoder instance
- * @output: Output buffer for remaining data
- * @output_len: Output buffer size
- * @written: Output - bytes written
- *
- * Returns: HTTP1_OK, HTTP1_INCOMPLETE, or HTTP1_ERROR
- */
 static SocketHTTP1_Result
 finish_brotli_decode (SocketHTTP1_Decoder_T decoder, unsigned char *output,
                       size_t output_len, size_t *written)
@@ -745,17 +517,6 @@ finish_brotli_decode (SocketHTTP1_Decoder_T decoder, unsigned char *output,
   return HTTP1_ERROR;
 }
 
-/**
- * encode_brotli - Encode data using Brotli
- * @encoder: Encoder instance
- * @input: Input buffer
- * @input_len: Input length
- * @output: Output buffer
- * @output_len: Buffer size
- * @flush: Flush mode (1 = flush, 0 = process)
- *
- * Returns: Bytes written, or -1 on error
- */
 static ssize_t
 encode_brotli (SocketHTTP1_Encoder_T encoder, const unsigned char *input,
                size_t input_len, unsigned char *output, size_t output_len,
@@ -775,14 +536,6 @@ encode_brotli (SocketHTTP1_Encoder_T encoder, const unsigned char *input,
   return (ssize_t)(output_len - avail_out);
 }
 
-/**
- * finish_brotli_encode - Finish Brotli encoding
- * @encoder: Encoder instance
- * @output: Output buffer
- * @output_len: Buffer size
- *
- * Returns: Bytes written, or -1 on error
- */
 static ssize_t
 finish_brotli_encode (SocketHTTP1_Encoder_T encoder, unsigned char *output,
                       size_t output_len)
@@ -805,17 +558,6 @@ finish_brotli_encode (SocketHTTP1_Encoder_T encoder, unsigned char *output,
 
 #endif /* SOCKETHTTP1_HAS_BROTLI */
 
-/* ============================================================================
- * Decoder Dispatch Helpers
- * ============================================================================
- */
-
-/**
- * init_decoder_backend - Initialize decoder for specific coding
- * @decoder: Decoder instance with coding already set
- *
- * Returns: 1 on success, 0 on failure
- */
 static int
 init_decoder_backend (SocketHTTP1_Decoder_T decoder)
 {
@@ -837,10 +579,6 @@ init_decoder_backend (SocketHTTP1_Decoder_T decoder)
     }
 }
 
-/**
- * cleanup_decoder_backend - Clean up decoder backend resources
- * @decoder: Decoder instance
- */
 static void
 cleanup_decoder_backend (SocketHTTP1_Decoder_T decoder)
 {
@@ -867,18 +605,6 @@ cleanup_decoder_backend (SocketHTTP1_Decoder_T decoder)
     }
 }
 
-/**
- * dispatch_decode - Dispatch decode operation to appropriate backend
- * @decoder: Decoder instance
- * @input: Input buffer
- * @input_len: Input length
- * @consumed: Output - bytes consumed
- * @output: Output buffer
- * @output_len: Output buffer size
- * @written: Output - bytes written
- *
- * Returns: HTTP1_OK, HTTP1_INCOMPLETE, or HTTP1_ERROR
- */
 static SocketHTTP1_Result
 dispatch_decode (SocketHTTP1_Decoder_T decoder, const unsigned char *input,
                  size_t input_len, size_t *consumed, unsigned char *output,
@@ -904,15 +630,6 @@ dispatch_decode (SocketHTTP1_Decoder_T decoder, const unsigned char *input,
     }
 }
 
-/**
- * dispatch_decode_finish - Dispatch finish operation to appropriate backend
- * @decoder: Decoder instance
- * @output: Output buffer
- * @output_len: Buffer size
- * @written: Output - bytes written
- *
- * Returns: HTTP1_OK, HTTP1_INCOMPLETE, or HTTP1_ERROR
- */
 static SocketHTTP1_Result
 dispatch_decode_finish (SocketHTTP1_Decoder_T decoder, unsigned char *output,
                         size_t output_len, size_t *written)
@@ -935,17 +652,6 @@ dispatch_decode_finish (SocketHTTP1_Decoder_T decoder, unsigned char *output,
     }
 }
 
-/* ============================================================================
- * Encoder Dispatch Helpers
- * ============================================================================
- */
-
-/**
- * init_encoder_backend - Initialize encoder for specific coding
- * @encoder: Encoder instance with coding already set
- *
- * Returns: 1 on success, 0 on failure
- */
 static int
 init_encoder_backend (SocketHTTP1_Encoder_T encoder)
 {
@@ -967,10 +673,6 @@ init_encoder_backend (SocketHTTP1_Encoder_T encoder)
     }
 }
 
-/**
- * cleanup_encoder_backend - Clean up encoder backend resources
- * @encoder: Encoder instance
- */
 static void
 cleanup_encoder_backend (SocketHTTP1_Encoder_T encoder)
 {
@@ -997,17 +699,6 @@ cleanup_encoder_backend (SocketHTTP1_Encoder_T encoder)
     }
 }
 
-/**
- * dispatch_encode - Dispatch encode operation to appropriate backend
- * @encoder: Encoder instance
- * @input: Input buffer
- * @input_len: Input length
- * @output: Output buffer
- * @output_len: Buffer size
- * @flush: Flush mode
- *
- * Returns: Bytes written, or -1 on error
- */
 static ssize_t
 dispatch_encode (SocketHTTP1_Encoder_T encoder, const unsigned char *input,
                  size_t input_len, unsigned char *output, size_t output_len,
@@ -1033,14 +724,6 @@ dispatch_encode (SocketHTTP1_Encoder_T encoder, const unsigned char *input,
     }
 }
 
-/**
- * dispatch_encode_finish - Dispatch finish operation to appropriate backend
- * @encoder: Encoder instance
- * @output: Output buffer
- * @output_len: Buffer size
- *
- * Returns: Bytes written, or -1 on error
- */
 static ssize_t
 dispatch_encode_finish (SocketHTTP1_Encoder_T encoder, unsigned char *output,
                         size_t output_len)
@@ -1062,11 +745,6 @@ dispatch_encode_finish (SocketHTTP1_Encoder_T encoder, unsigned char *output,
       return -1;
     }
 }
-
-/* ============================================================================
- * Decoder Implementation
- * ============================================================================
- */
 
 SocketHTTP1_Decoder_T
 SocketHTTP1_Decoder_new (SocketHTTP_Coding coding,
@@ -1187,11 +865,6 @@ SocketHTTP1_Decoder_finish (SocketHTTP1_Decoder_T decoder,
 
   return res;
 }
-
-/* ============================================================================
- * Encoder Implementation
- * ============================================================================
- */
 
 SocketHTTP1_Encoder_T
 SocketHTTP1_Encoder_new (SocketHTTP_Coding coding,

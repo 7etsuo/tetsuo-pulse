@@ -4,16 +4,8 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * SocketHTTP1-parser.c - HTTP/1.1 DFA-based Incremental Parser
- *
- * Part of the Socket Library
- *
- * Implements RFC 9112 HTTP/1.1 message parsing with:
- * - O(n) time complexity via DFA state machine
- * - Single-pass parsing (no backtracking)
- * - Request smuggling prevention
- * - Configurable limits
+/* SocketHTTP1-parser.c - HTTP/1.1 DFA-based Incremental Parser (RFC 9112)
+ * O(n) single-pass parsing with request smuggling prevention.
  */
 
 #include "core/SocketSecurity.h"
@@ -24,11 +16,6 @@
 
 #include <assert.h>
 #include <string.h>
-
-/* ============================================================================
- * Table-Driven DFA Tables (Hoehrmann-style)
- * ============================================================================
- */
 
 /* clang-format off */
 
@@ -414,11 +401,6 @@ const uint8_t http1_resp_action[HTTP1_NUM_STATES][HTTP1_NUM_CLASSES] = {
 #undef HD
 #undef _E
 
-/* ============================================================================
- * Exception Definition
- * ============================================================================
- */
-
 const Except_T SocketHTTP1_ParseError
     = { &SocketHTTP1_ParseError, "HTTP/1.1 parse error" };
 
@@ -426,11 +408,6 @@ const Except_T SocketHTTP1_ParseError
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP1);
 
 #define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketHTTP1, e)
-
-/* ============================================================================
- * Constants
- * ============================================================================
- */
 
 /* Initial token buffer sizes - see SocketHTTP1-private.h for defaults */
 
@@ -442,11 +419,6 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP1);
 
 /* Header size calculation overhead (": \r\n") */
 #define HTTP1_HEADER_OVERHEAD 4
-
-/* ============================================================================
- * Result Strings
- * ============================================================================
- */
 
 static const char *result_strings[] = {
   [HTTP1_OK] = "OK",
@@ -482,11 +454,6 @@ SocketHTTP1_result_string (SocketHTTP1_Result result)
   return "Unknown error";
 }
 
-/* ============================================================================
- * Configuration
- * ============================================================================
- */
-
 void
 SocketHTTP1_config_defaults (SocketHTTP1_Config *config)
 {
@@ -506,17 +473,6 @@ SocketHTTP1_config_defaults (SocketHTTP1_Config *config)
   config->strict_mode = 1;
 }
 
-/* ============================================================================
- * Parser Lifecycle - Static Helpers
- * ============================================================================
- */
-
-/**
- * init_token_buffers - Initialize all token buffers for parser
- * @parser: Parser instance to initialize
- *
- * Returns: 0 on success, -1 on failure
- */
 static int
 init_token_buffers (SocketHTTP1_Parser_T parser)
 {
@@ -541,10 +497,6 @@ init_token_buffers (SocketHTTP1_Parser_T parser)
   return 0;
 }
 
-/**
- * reset_token_buffers - Reset all token buffers for reuse
- * @parser: Parser instance
- */
 static void
 reset_token_buffers (SocketHTTP1_Parser_T parser)
 {
@@ -555,10 +507,6 @@ reset_token_buffers (SocketHTTP1_Parser_T parser)
   http1_tokenbuf_reset (&parser->value_buf);
 }
 
-/**
- * reset_body_tracking - Reset body-related fields
- * @parser: Parser instance
- */
 static void
 reset_body_tracking (SocketHTTP1_Parser_T parser)
 {
@@ -570,11 +518,6 @@ reset_body_tracking (SocketHTTP1_Parser_T parser)
   parser->chunk_size = 0;
   parser->chunk_remaining = 0;
 }
-
-/* ============================================================================
- * Parser Lifecycle - Public API
- * ============================================================================
- */
 
 SocketHTTP1_Parser_T
 SocketHTTP1_Parser_new (SocketHTTP1_ParseMode mode,
@@ -679,19 +622,6 @@ SocketHTTP1_Parser_reset (SocketHTTP1_Parser_T parser)
   memset (&parser->message, 0, sizeof (parser->message));
 }
 
-/* ============================================================================
- * Body Mode Determination (RFC 9112 Section 6) - Static Helpers
- * ============================================================================
- */
-
-/**
- * parse_cl_value - Parse single Content-Length value string
- * @str: String to parse
- * @len: Length of string (0 for strlen)
- *
- * Parses digits with leading/trailing OWS, overflow-safe.
- * Returns: Parsed value or -1 on invalid.
- */
 static int64_t
 parse_cl_value (const char *str, size_t len)
 {
@@ -729,17 +659,6 @@ parse_cl_value (const char *str, size_t len)
   return value;
 }
 
-/**
- * cl_validator - Callback to validate all CL headers equal
- * @name: Header name
- * @name_len: Header name length
- * @value: Header value
- * @value_len: Header value length
- * @userdata: Expected Content-Length value (int64_t pointer)
- *
- * Used with Headers_iterate to validate all Content-Length headers.
- * Returns: 0 to continue iteration, -1 on mismatch/error
- */
 static int
 cl_validator (const char *name, size_t name_len, const char *value,
               size_t value_len, void *userdata)
@@ -789,13 +708,6 @@ parse_content_length (SocketHTTP_Headers_T headers)
   return cl_val;
 }
 
-/**
- * http1_skip_token_delimiters - Skip whitespace and comma delimiters in header
- * values
- * @p: Pointer to current position
- *
- * Returns: Pointer to start of next token or end of string
- */
 static const char *
 http1_skip_token_delimiters (const char *p)
 {
@@ -804,13 +716,6 @@ http1_skip_token_delimiters (const char *p)
   return p;
 }
 
-/**
- * http1_extract_token_bounds - Find end of current token in header value
- * @start: Start of token
- * @end: Output pointer to one past end of token
- *
- * Returns: Length of token
- */
 static size_t
 http1_extract_token_bounds (const char *start, const char **end)
 {
@@ -821,15 +726,6 @@ http1_extract_token_bounds (const char *start, const char **end)
   return (size_t)(p - start);
 }
 
-/**
- * http1_contains_token - Check if value contains token (comma-separated)
- * @value: Header value string
- * @token: Token to search for
- *
- * Uses sockethttp_name_equal for case-insensitive token comparison.
- *
- * Returns: 1 if found, 0 otherwise
- */
 static int
 http1_contains_token (const char *value, const char *token)
 {
@@ -890,14 +786,6 @@ te_chunked_is_last (const char *te_value)
   return 1;
 }
 
-/**
- * has_chunked_encoding - Check if Transfer-Encoding includes chunked
- * @headers: Headers collection
- *
- * Searches ALL Transfer-Encoding headers for "chunked" token.
- *
- * Returns: 1 if chunked found in any, 0 otherwise
- */
 static int
 has_chunked_encoding (SocketHTTP_Headers_T headers)
 {
@@ -951,10 +839,6 @@ has_other_transfer_coding (SocketHTTP_Headers_T headers)
   return 0;
 }
 
-/**
- * set_body_mode_chunked - Set parser to chunked body mode
- * @parser: Parser instance
- */
 static void
 set_body_mode_chunked (SocketHTTP1_Parser_T parser)
 {
@@ -963,10 +847,6 @@ set_body_mode_chunked (SocketHTTP1_Parser_T parser)
   parser->body_remaining = -1;
 }
 
-/**
- * set_body_mode_until_close - Set parser to read until close
- * @parser: Parser instance
- */
 static void
 set_body_mode_until_close (SocketHTTP1_Parser_T parser)
 {
@@ -975,11 +855,6 @@ set_body_mode_until_close (SocketHTTP1_Parser_T parser)
   parser->body_remaining = -1;
 }
 
-/**
- * set_body_mode_content_length - Set parser to fixed content length
- * @parser: Parser instance
- * @length: Content length value
- */
 static void
 set_body_mode_content_length (SocketHTTP1_Parser_T parser, int64_t length)
 {
@@ -991,10 +866,6 @@ set_body_mode_content_length (SocketHTTP1_Parser_T parser, int64_t length)
     parser->body_complete = 1;
 }
 
-/**
- * set_body_mode_none - Set parser to no body mode
- * @parser: Parser instance
- */
 static void
 set_body_mode_none (SocketHTTP1_Parser_T parser)
 {
@@ -1004,12 +875,6 @@ set_body_mode_none (SocketHTTP1_Parser_T parser)
   parser->body_complete = 1;
 }
 
-/**
- * determine_body_mode - Determine body transfer mode from headers
- * @parser: Parser instance
- *
- * Returns: HTTP1_OK or error code (smuggling detected)
- */
 static SocketHTTP1_Result
 determine_body_mode (SocketHTTP1_Parser_T parser)
 {
@@ -1075,18 +940,6 @@ determine_body_mode (SocketHTTP1_Parser_T parser)
   return HTTP1_OK;
 }
 
-/* ============================================================================
- * HTTP Version and Connection Helpers
- * ============================================================================
- */
-
-/**
- * map_http_version - Map version major/minor to enum
- * @major: HTTP major version
- * @minor: HTTP minor version
- *
- * Returns: SocketHTTP_Version enum value
- */
 static SocketHTTP_Version
 map_http_version (int major, int minor)
 {
@@ -1102,13 +955,6 @@ map_http_version (int major, int minor)
   return HTTP_VERSION_1_1; /* Default */
 }
 
-/**
- * determine_keepalive - Determine connection persistence from version/headers
- * @version: HTTP version enum
- * @headers: Headers collection
- *
- * Returns: 1 if keep-alive, 0 if close
- */
 static int
 determine_keepalive (SocketHTTP_Version version,
                      const SocketHTTP_Headers_T headers)
@@ -1123,10 +969,6 @@ determine_keepalive (SocketHTTP_Version version,
   return SocketHTTP_Headers_contains (headers, "Connection", "keep-alive");
 }
 
-/**
- * check_upgrade - Check and set upgrade protocol if present
- * @parser: Parser instance
- */
 static void
 check_upgrade (SocketHTTP1_Parser_T parser)
 {
@@ -1138,16 +980,6 @@ check_upgrade (SocketHTTP1_Parser_T parser)
     }
 }
 
-/**
- * finalize_common - Common finalization for request/response after headers
- * @parser: Parser instance
- * @version: Parsed HTTP version
- *
- * Handles body mode determination, keepalive, upgrade checks.
- * Caller must set message.version and message.headers before calling.
- *
- * Returns: HTTP1_OK or error
- */
 static SocketHTTP1_Result
 finalize_common (SocketHTTP1_Parser_T parser, SocketHTTP_Version version)
 {
@@ -1163,17 +995,6 @@ finalize_common (SocketHTTP1_Parser_T parser, SocketHTTP_Version version)
   return HTTP1_OK;
 }
 
-/* ============================================================================
- * Message Finalization
- * ============================================================================
- */
-
-/**
- * finalize_request - Finalize request after headers are complete
- * @parser: Parser instance
- *
- * Returns: HTTP1_OK or error code
- */
 static SocketHTTP1_Result
 finalize_request (SocketHTTP1_Parser_T parser)
 {
@@ -1228,12 +1049,6 @@ finalize_request (SocketHTTP1_Parser_T parser)
   return HTTP1_OK;
 }
 
-/**
- * finalize_response - Finalize response after headers are complete
- * @parser: Parser instance
- *
- * Returns: HTTP1_OK or error code
- */
 static SocketHTTP1_Result
 finalize_response (SocketHTTP1_Parser_T parser)
 {
@@ -1283,16 +1098,6 @@ finalize_response (SocketHTTP1_Parser_T parser)
   return HTTP1_OK;
 }
 
-/* ============================================================================
- * DFA Parser Core - Error and State Helpers
- * ============================================================================
- */
-
-/**
- * set_error - Set parser error state
- * @parser: Parser instance
- * @error: Error code to set
- */
 static void
 set_error (SocketHTTP1_Parser_T parser, SocketHTTP1_Result error)
 {
@@ -1315,12 +1120,6 @@ set_error (SocketHTTP1_Parser_T parser, SocketHTTP1_Result error)
     }                                                                         \
   while (0)
 
-/**
- * add_current_header - Add accumulated header to collection
- * @parser: Parser instance
- *
- * Returns: HTTP1_OK or error code
- */
 static SocketHTTP1_Result
 add_current_header (SocketHTTP1_Parser_T parser)
 {
@@ -1356,12 +1155,6 @@ add_current_header (SocketHTTP1_Parser_T parser)
   return HTTP1_OK;
 }
 
-/**
- * state_to_error - Map internal state to appropriate error code
- * @state: Current internal parser state
- *
- * Returns: Appropriate SocketHTTP1_Result error code
- */
 static SocketHTTP1_Result
 state_to_error (HTTP1_InternalState state)
 {
@@ -1405,22 +1198,6 @@ state_to_error (HTTP1_InternalState state)
     }
 }
 
-/* ============================================================================
- * DFA Parser Core - Action Handlers
- * ============================================================================
- */
-
-/**
- * handle_store_action - Handle token buffer store actions
- * @parser: Parser instance
- * @action: Action type
- * @c: Character to store
- * @p: Current position
- * @data: Data start
- * @consumed: Consumed output
- *
- * Returns: HTTP1_OK or error code
- */
 static SocketHTTP1_Result
 handle_store_action (SocketHTTP1_Parser_T parser, uint8_t action, char c,
                      const char *p, const char *data, size_t *consumed)
@@ -1476,15 +1253,6 @@ handle_store_action (SocketHTTP1_Parser_T parser, uint8_t action, char c,
   return HTTP1_OK;
 }
 
-/**
- * handle_method_end - Handle method completion action
- * @parser: Parser instance
- * @p: Current position
- * @data: Data start
- * @consumed: Consumed output
- *
- * Returns: HTTP1_OK or error code
- */
 static SocketHTTP1_Result
 handle_method_end (SocketHTTP1_Parser_T parser, const char *p,
                    const char *data, size_t *consumed)
@@ -1499,15 +1267,6 @@ handle_method_end (SocketHTTP1_Parser_T parser, const char *p,
   return HTTP1_OK;
 }
 
-/**
- * handle_uri_end - Handle URI completion action
- * @parser: Parser instance
- * @p: Current position
- * @data: Data start
- * @consumed: Consumed output
- *
- * Returns: HTTP1_OK or error code
- */
 static SocketHTTP1_Result
 handle_uri_end (SocketHTTP1_Parser_T parser, const char *p, const char *data,
                 size_t *consumed)
@@ -1519,17 +1278,6 @@ handle_uri_end (SocketHTTP1_Parser_T parser, const char *p, const char *data,
   return HTTP1_OK;
 }
 
-/**
- * handle_version_digit - Handle version digit action
- * @parser: Parser instance
- * @action: VERSION_MAJ or VERSION_MIN
- * @c: Digit character
- * @p: Current position
- * @data: Data start
- * @consumed: Consumed output
- *
- * Returns: HTTP1_OK or error code
- */
 static SocketHTTP1_Result
 handle_version_digit (SocketHTTP1_Parser_T parser, uint8_t action, char c,
                       const char *p, const char *data, size_t *consumed)
@@ -1552,16 +1300,6 @@ handle_version_digit (SocketHTTP1_Parser_T parser, uint8_t action, char c,
   return HTTP1_OK;
 }
 
-/**
- * handle_status_digit - Handle status code digit action
- * @parser: Parser instance
- * @c: Digit character
- * @p: Current position
- * @data: Data start
- * @consumed: Consumed output
- *
- * Returns: HTTP1_OK or error code
- */
 static SocketHTTP1_Result
 handle_status_digit (SocketHTTP1_Parser_T parser, char c, const char *p,
                      const char *data, size_t *consumed)
@@ -1574,12 +1312,6 @@ handle_status_digit (SocketHTTP1_Parser_T parser, char c, const char *p,
   return HTTP1_OK;
 }
 
-/**
- * calculate_next_body_state - Calculate next state/internal_state after
- * headers
- * @parser: Parser instance
- * @next_state: Output internal state
- */
 static void
 calculate_next_body_state (SocketHTTP1_Parser_T parser,
                            HTTP1_InternalState *next_state)
@@ -1601,32 +1333,12 @@ calculate_next_body_state (SocketHTTP1_Parser_T parser,
     }
 }
 
-/* ============================================================================
- * DFA Parser Core - Header Parsing Loop
- * ============================================================================
- */
-
-/**
- * in_header_state - Check if parser is in header parsing states
- * @state: Current internal state
- *
- * Returns: 1 if in header states, 0 otherwise
- */
 static inline int
 in_header_state (HTTP1_InternalState state)
 {
   return state >= HTTP1_PS_HEADER_START && state <= HTTP1_PS_HEADERS_END_LF;
 }
 
-/**
- * handle_body_state_exit - Handle exit when entering body/terminal states
- * @parser: Parser instance
- * @state: Current state
- * @consumed_bytes: Bytes consumed to set
- *
- * Sets parser internal state and returns appropriate result.
- * Returns: HTTP1_OK for body/complete states, parser->error for error state
- */
 static inline SocketHTTP1_Result
 handle_body_state_exit (SocketHTTP1_Parser_T parser, HTTP1_InternalState state,
                         size_t consumed_bytes, size_t *consumed)
@@ -1641,19 +1353,6 @@ handle_body_state_exit (SocketHTTP1_Parser_T parser, HTTP1_InternalState state,
   return HTTP1_OK;
 }
 
-/**
- * handle_dfa_action - Execute DFA action for current byte
- * @parser: Parser instance
- * @action: Action to execute
- * @c: Current byte
- * @p: Current position
- * @loop_data: Data start for consumed calc
- * @data: Original data start
- * @consumed: Consumed output
- * @next_state: Output next state (modified)
- *
- * Returns: HTTP1_OK or error code
- */
 static SocketHTTP1_Result
 handle_dfa_action (SocketHTTP1_Parser_T parser, uint8_t action, uint8_t c,
                    const char *p, const char *data, size_t *consumed,
@@ -1821,11 +1520,6 @@ parse_headers_loop (SocketHTTP1_Parser_T parser, const char *data, size_t len,
   return HTTP1_INCOMPLETE;
 }
 
-/* ============================================================================
- * DFA Parser Core - Main Loop
- * ============================================================================
- */
-
 /**
  * SocketHTTP1_Parser_execute - Main DFA parsing function
  * @parser: Parser instance
@@ -1876,11 +1570,6 @@ SocketHTTP1_Parser_execute (SocketHTTP1_Parser_T parser, const char *data,
 /* Undefine internal macro */
 #undef RETURN_PARSE_ERROR
 
-/* ============================================================================
- * State Accessors
- * ============================================================================
- */
-
 SocketHTTP1_State
 SocketHTTP1_Parser_state (SocketHTTP1_Parser_T parser)
 {
@@ -1916,11 +1605,6 @@ SocketHTTP1_Parser_get_response (SocketHTTP1_Parser_T parser)
   return &parser->message.response;
 }
 
-/* ============================================================================
- * Body Handling
- * ============================================================================
- */
-
 SocketHTTP1_BodyMode
 SocketHTTP1_Parser_body_mode (SocketHTTP1_Parser_T parser)
 {
@@ -1955,11 +1639,6 @@ SocketHTTP1_Parser_get_trailers (SocketHTTP1_Parser_T parser)
   assert (parser);
   return parser->trailers;
 }
-
-/* ============================================================================
- * Connection Management
- * ============================================================================
- */
 
 int
 SocketHTTP1_Parser_should_keepalive (SocketHTTP1_Parser_T parser)

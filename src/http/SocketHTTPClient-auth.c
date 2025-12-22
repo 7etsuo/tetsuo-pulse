@@ -5,18 +5,7 @@
  */
 
 /**
- * SocketHTTPClient-auth.c - HTTP Authentication Implementation
- *
- * Part of the Socket Library
- *
- * Implements HTTP authentication schemes:
- * - Basic Authentication (RFC 7617) - Uses SocketCrypto_base64_encode()
- * - Digest Authentication (RFC 7616) - Uses SocketCrypto_md5(),
- * SocketCrypto_sha256()
- * - Bearer Token (RFC 6750) - Simple token header
- *
- * Leverages SocketCrypto for all cryptographic operations to avoid
- * duplication.
+ * SocketHTTPClient-auth.c - HTTP Authentication (RFC 7617 Basic, RFC 7616 Digest, RFC 6750 Bearer)
  */
 
 #include <assert.h>
@@ -30,14 +19,6 @@
 #include "http/SocketHTTP-private.h"
 #include "http/SocketHTTPClient-private.h"
 
-/* ============================================================================
- * Digest Challenge Structure
- * ============================================================================
- */
-
-/**
- * Parsed Digest authentication challenge
- */
 typedef struct
 {
   char realm[HTTPCLIENT_DIGEST_REALM_MAX_LEN];
@@ -50,11 +31,6 @@ typedef struct
 
 typedef void (*HttpAuthParamCallback)(const char *name, const char *value, void *userdata);
 
-/* ============================================================================
- * Forward Declarations
- * ============================================================================
- */
-
 static const char *parse_quoted_string (const char *p, char *out,
                                         size_t out_size);
 static const char *parse_token_value (const char *p, char *out,
@@ -64,27 +40,10 @@ static const char *parse_parameter_name (const char *p, char *name,
                                          size_t name_size);
 static void store_challenge_field (DigestChallenge *ch, const char *name,
                                    const char *value);
-
 static int check_stale_value(const char *value);
-
 static int parse_http_auth_params(const char *header, int require_prefix,
                                   HttpAuthParamCallback cb, void *userdata);
-
 static const char *skip_to_next_param(const char *p);
-
-/* ============================================================================
- * String Utility Helpers
- * ============================================================================
- */
-
-/**
- * safe_strcpy - Copy string with truncation
- * @dst: Destination buffer
- * @dst_size: Size of destination buffer
- * @src: Source string
- *
- * Copies at most dst_size-1 characters and always null-terminates.
- */
 static void
 safe_strcpy (char *dst, size_t dst_size, const char *src)
 {
@@ -101,24 +60,9 @@ safe_strcpy (char *dst, size_t dst_size, const char *src)
   dst[copy_len] = '\0';
 }
 
-/* Use shared utilities from SocketHTTP-private.h */
 #define skip_delimiters sockethttp_skip_delimiters
 #define skip_whitespace sockethttp_skip_whitespace
 #define is_token_boundary sockethttp_is_token_boundary
-
-/* ============================================================================
- * Quoted String Parsing
- * ============================================================================
- */
-
-/**
- * advance_quoted_content - Advance past quoted string content handling escapes
- * @p: Pointer after opening quote
- * @out: Output buffer (NULL to skip without copying)
- * @out_size: Output buffer size
- *
- * Returns: Pointer at closing quote or end of input
- */
 static const char *
 advance_quoted_content (const char *p, char *out, size_t out_size)
 {
@@ -148,14 +92,6 @@ advance_quoted_content (const char *p, char *out, size_t out_size)
   return p;
 }
 
-/**
- * parse_quoted_string - Parse a quoted string value
- * @p: Pointer starting at opening quote
- * @out: Output buffer
- * @out_size: Output buffer size
- *
- * Returns: Pointer past closing quote, or NULL on error
- */
 static const char *
 parse_quoted_string (const char *p, char *out, size_t out_size)
 {
@@ -171,14 +107,6 @@ parse_quoted_string (const char *p, char *out, size_t out_size)
   return p + 1;
 }
 
-/**
- * parse_token_value - Parse unquoted token value
- * @p: Pointer to start of value
- * @out: Output buffer
- * @out_size: Output buffer size
- *
- * Returns: Pointer past value
- */
 static const char *
 parse_token_value (const char *p, char *out, size_t out_size)
 {
@@ -191,12 +119,6 @@ parse_token_value (const char *p, char *out, size_t out_size)
   return p;
 }
 
-/**
- * skip_quoted_value - Skip past a quoted value including escapes
- * @p: Pointer starting at opening quote
- *
- * Returns: Pointer past closing quote
- */
 static const char *
 skip_quoted_value (const char *p)
 {
@@ -212,14 +134,6 @@ skip_quoted_value (const char *p)
   return p;
 }
 
-/**
- * parse_param_value - Parse parameter value after '='
- * @p: Pointer after '='
- * @out: Output buffer
- * @out_size: Output buffer size
- *
- * Returns: Pointer past value, or NULL on error
- */
 static const char *
 parse_param_value (const char *p, char *out, size_t out_size)
 {
@@ -228,19 +142,6 @@ parse_param_value (const char *p, char *out, size_t out_size)
                      : parse_token_value (p, out, out_size);
 }
 
-/* ============================================================================
- * Parameter Name Parsing
- * ============================================================================
- */
-
-/**
- * parse_parameter_name - Parse parameter name up to '='
- * @p: Pointer to start of parameter
- * @name: Output buffer for name
- * @name_size: Name buffer size
- *
- * Returns: Pointer at '=', or NULL on error
- */
 static const char *
 parse_parameter_name (const char *p, char *name, size_t name_size)
 {
@@ -256,17 +157,6 @@ parse_parameter_name (const char *p, char *name, size_t name_size)
   return (*p == '=') ? p : NULL;
 }
 
-/* ============================================================================
- * Challenge Field Storage
- * ============================================================================
- */
-
-/**
- * store_challenge_field - Store parsed field in challenge structure
- * @ch: Challenge structure (output)
- * @name: Field name (read-only)
- * @value: Field value (read-only)
- */
 static void
 store_challenge_field (DigestChallenge *ch, const char *name,
                        const char *value)
@@ -299,18 +189,6 @@ check_stale_cb(const char *name, const char *value, void *userdata) {
     }
 }
 
-/* ============================================================================
- * Digest Hash Computation
- * ============================================================================
- */
-
-/**
- * digest_hash - Compute hash and format as lowercase hex string
- * @data: Input data
- * @len: Input length
- * @use_sha256: Use SHA-256 (1) or MD5 (0)
- * @hex_output: Output buffer (must be HTTPCLIENT_DIGEST_HEX_SIZE)
- */
 static void
 digest_hash (const void *data, size_t len, int use_sha256, char *hex_output)
 {
@@ -328,16 +206,6 @@ digest_hash (const void *data, size_t len, int use_sha256, char *hex_output)
     }
 }
 
-/**
- * compute_ha1 - Compute H(A1) = H(username:realm:password)
- * @username: Username
- * @realm: Realm from challenge
- * @password: Password
- * @use_sha256: Use SHA-256 (1) or MD5 (0)
- * @ha1_hex: Output buffer (must be HTTPCLIENT_DIGEST_HEX_SIZE)
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 compute_ha1 (const char *username, const char *realm, const char *password,
              int use_sha256, char *ha1_hex)
@@ -355,15 +223,6 @@ compute_ha1 (const char *username, const char *realm, const char *password,
   return 0;
 }
 
-/**
- * compute_ha2 - Compute H(A2) = H(method:uri)
- * @method: HTTP method
- * @uri: Request URI
- * @use_sha256: Use SHA-256 (1) or MD5 (0)
- * @ha2_hex: Output buffer (must be HTTPCLIENT_DIGEST_HEX_SIZE)
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 compute_ha2 (const char *method, const char *uri, int use_sha256,
              char *ha2_hex)
@@ -379,19 +238,6 @@ compute_ha2 (const char *method, const char *uri, int use_sha256,
   return 0;
 }
 
-/**
- * compute_response_with_qop - Compute response with qop=auth
- * @ha1_hex: H(A1) as hex
- * @nonce: Server nonce
- * @nc: Nonce count
- * @cnonce: Client nonce
- * @qop: QoP value
- * @ha2_hex: H(A2) as hex
- * @use_sha256: Use SHA-256 or MD5
- * @response_hex: Output buffer
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 compute_response_with_qop (const char *ha1_hex, const char *nonce,
                            const char *nc, const char *cnonce, const char *qop,
@@ -439,19 +285,6 @@ compute_response_no_qop (const char *ha1_hex, const char *nonce,
   return 0;
 }
 
-/**
- * compute_response_hash - Compute final Digest response hash
- * @ha1_hex: H(A1) as hex string
- * @nonce: Server nonce
- * @nc: Nonce count (may be NULL)
- * @cnonce: Client nonce (may be NULL)
- * @qop: QoP value (may be NULL)
- * @ha2_hex: H(A2) as hex string
- * @use_sha256: Use SHA-256 (1) or MD5 (0)
- * @response_hex: Output buffer
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 compute_response_hash (const char *ha1_hex, const char *nonce, const char *nc,
                        const char *cnonce, const char *qop,
@@ -464,11 +297,6 @@ compute_response_hash (const char *ha1_hex, const char *nonce, const char *nc,
     return compute_response_no_qop (ha1_hex, nonce, ha2_hex, use_sha256,
                                     response_hex);
 }
-
-/* ============================================================================
- * Basic Authentication (RFC 7617)
- * ============================================================================
- */
 
 int
 httpclient_auth_basic_header (const char *username, const char *password,
@@ -510,11 +338,6 @@ httpclient_auth_basic_header (const char *username, const char *password,
   return (encoded_len < 0) ? -1 : 0;
 }
 
-/* ============================================================================
- * Bearer Authentication (RFC 6750)
- * ============================================================================
- */
-
 int
 httpclient_auth_bearer_header (const char *token, char *output,
                                size_t output_size)
@@ -544,14 +367,6 @@ httpclient_auth_bearer_header (const char *token, char *output,
   return 0;
 }
 
-/* ============================================================================
- * Digest Response Header Formatting
- * ============================================================================
- */
-
-/**
- * format_digest_header_with_qop - Format header with qop parameters
- */
 static int
 format_digest_header_with_qop (const char *username, const char *realm,
                                const char *nonce, const char *uri,
@@ -570,9 +385,6 @@ format_digest_header_with_qop (const char *username, const char *realm,
   return (written < 0 || (size_t)written >= output_size) ? -1 : 0;
 }
 
-/**
- * format_digest_header_no_qop - Format header without qop parameters
- */
 static int
 format_digest_header_no_qop (const char *username, const char *realm,
                              const char *nonce, const char *uri,
@@ -588,11 +400,6 @@ format_digest_header_no_qop (const char *username, const char *realm,
 
   return (written < 0 || (size_t)written >= output_size) ? -1 : 0;
 }
-
-/* ============================================================================
- * Digest Authentication Response Generation
- * ============================================================================
- */
 
 int
 httpclient_auth_digest_response (const char *username, const char *password,
@@ -636,18 +443,6 @@ httpclient_auth_digest_response (const char *username, const char *password,
                                         output_size);
 }
 
-/* ============================================================================
- * Digest Challenge Parsing
- * ============================================================================
- */
-
-/**
- * skip_digest_prefix - Skip "Digest " prefix if present
- * @header: Header value
- * @strict: Require prefix
- *
- * Returns: Pointer after prefix, or NULL if strict and missing
- */
 static const char *
 skip_digest_prefix (const char *header, int strict)
 {
@@ -661,12 +456,6 @@ skip_digest_prefix (const char *header, int strict)
 
 
 
-/**
- * validate_challenge - Ensure required fields present
- * @ch: Challenge to validate
- *
- * Returns: 0 if valid, -1 if missing required fields
- */
 static int
 validate_challenge (const DigestChallenge *ch)
 {
@@ -680,13 +469,6 @@ validate_challenge (const DigestChallenge *ch)
   return 0;
 }
 
-/**
- * parse_digest_challenge - Parse Digest WWW-Authenticate header
- * @header: WWW-Authenticate header value
- * @ch: Output challenge structure
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 parse_digest_challenge (const char *header, DigestChallenge *ch)
 {
@@ -740,16 +522,6 @@ parse_http_auth_params(const char *header, int require_prefix,
   return 0;
 }
 
-/* ============================================================================
- * Client Nonce Generation
- * ============================================================================
- */
-
-/**
- * generate_cnonce - Generate client nonce for Digest auth
- * @cnonce: Output buffer
- * @size: Buffer size (must be >= HTTPCLIENT_DIGEST_CNONCE_HEX_SIZE)
- */
 static void
 generate_cnonce (char *cnonce, size_t size)
 {
@@ -770,11 +542,6 @@ generate_cnonce (char *cnonce, size_t size)
   SocketCrypto_hex_encode (random_bytes, sizeof (random_bytes), cnonce, 1);
   SocketCrypto_secure_clear (random_bytes, sizeof (random_bytes));
 }
-
-/* ============================================================================
- * QoP Selection
- * ============================================================================
- */
 
 /**
  * find_auth_qop - Find "auth" token in qop list
@@ -807,11 +574,6 @@ find_auth_qop (const char *qop_list)
 
   return NULL;
 }
-
-/* ============================================================================
- * Public Digest Auth Helper
- * ============================================================================
- */
 
 int
 httpclient_auth_digest_challenge (const char *www_authenticate,
@@ -848,29 +610,12 @@ httpclient_auth_digest_challenge (const char *www_authenticate,
       cnonce, use_sha256, output, output_size);
 }
 
-/* ============================================================================
- * Stale Nonce Detection
- * ============================================================================
- */
-
-/**
- * check_stale_value - Check if parsed value indicates stale=true
- * @value: Parsed parameter value
- *
- * Returns: 1 if stale=true, 0 otherwise
- */
 static int
 check_stale_value (const char *value)
 {
   return strcasecmp (value, HTTPCLIENT_DIGEST_TOKEN_TRUE) == 0;
 }
 
-/**
- * skip_to_next_param - Skip past current parameter value
- * @p: Current position in header
- *
- * Returns: Position at next parameter or end
- */
 static const char *
 skip_to_next_param (const char *p)
 {

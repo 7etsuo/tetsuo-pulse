@@ -25,13 +25,7 @@
 #include "http/SocketHTTP-private.h"
 #include "http/SocketHTTP.h"
 
-/* ============================================================================
- * Module-Specific Error Handling
- * ============================================================================
- */
-
-/* Note: DetailedException unused in this file - errors return codes instead */
-/* Suppress warning for unused thread-local variable on GCC only */
+/* Suppress warning for unused DetailedException (errors use return codes) */
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -41,62 +35,22 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP);
 #pragma GCC diagnostic pop
 #endif
 
-/* ============================================================================
- * URI Component Length Limits (RFC 3986 + Security)
- * ============================================================================
- *
- * These limits prevent resource exhaustion attacks via oversized URI
- * components. Values align with common web server defaults and RFC guidance.
- */
-
-/** Maximum userinfo length to prevent abuse (user:password format) */
+/* URI component length limits (RFC 3986 + security) */
 #define URI_MAX_USERINFO_LEN 128
-
-/** Maximum host length per DNS standards (RFC 1035) */
 #define URI_MAX_HOST_LEN 255
-
-/** Maximum path length for typical HTTP requests */
 #define URI_MAX_PATH_LEN 4096
-
-/** Maximum query string length */
 #define URI_MAX_QUERY_LEN 8192
-
-/** Maximum fragment length */
 #define URI_MAX_FRAGMENT_LEN 8192
-
-/** Maximum port number (16-bit unsigned) */
 #define URI_MAX_PORT 65535
-
-/** Buffer size for port string serialization (":65535\0") */
 #define URI_PORT_BUFSIZE 8
-
-/** Length of "https" scheme for secure URI detection */
 #define URI_SCHEME_HTTPS_LEN 5
-
-/** Length of "wss" scheme for secure WebSocket detection */
 #define URI_SCHEME_WSS_LEN 3
-
-/** Minimum valid IPv6 literal length including brackets: [::] */
 #define URI_IPV6_MIN_LEN 4
-
-/** Maximum scheme length (e.g., https, ws, etc.) */
 #define URI_MAX_SCHEME_LEN 64
 
-/* ============================================================================
- * Constants for Media Type Parsing
- * ============================================================================
- */
-
-/** Length of "charset" parameter name */
+/* Media type parsing constants */
 #define MEDIATYPE_CHARSET_LEN 7
-
-/** Length of "boundary" parameter name */
 #define MEDIATYPE_BOUNDARY_LEN 8
-
-/* ============================================================================
- * Internal Helper Functions - Character Classification
- * ============================================================================
- */
 
 /* Forward declarations for validation functions */
 static SocketHTTP_URIResult validate_reg_name (const char *host, size_t len);
@@ -112,15 +66,6 @@ static SocketHTTP_URIResult validate_path_query (const char *s, size_t len,
 
 static SocketHTTP_URIResult validate_fragment (const char *s, size_t len);
 
-/**
- * is_scheme_char - Check if character is valid scheme character
- * @c: Character to check
- * @first: Non-zero if this is the first character
- *
- * scheme = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
- *
- * Returns: Non-zero if valid, zero otherwise
- */
 static inline int
 is_scheme_char (char c, int first)
 {
@@ -129,15 +74,6 @@ is_scheme_char (char c, int first)
   return isalnum ((unsigned char)c) || c == '+' || c == '-' || c == '.';
 }
 
-/**
- * validate_scheme - Validate scheme string per RFC 3986 §3.1
- * @s: Scheme bytes
- * @len: Length
- *
- * Checks: non-empty, first char ALPHA, subsequent scheme chars.
- *
- * Returns: URI_PARSE_OK or URI_PARSE_INVALID_SCHEME
- */
 static SocketHTTP_URIResult
 validate_scheme (const char *s, size_t len)
 {
@@ -155,14 +91,6 @@ validate_scheme (const char *s, size_t len)
   return URI_PARSE_OK;
 }
 
-/**
- * is_control_char - Check if character is a control character
- * @c: Character to check
- *
- * Rejects 0x00-0x1F and DEL (0x7F) for defense in depth.
- *
- * Returns: Non-zero if control character, zero otherwise
- */
 static inline int
 is_control_char (char c)
 {
@@ -170,23 +98,6 @@ is_control_char (char c)
   return uc < 0x20 || uc == 0x7F;
 }
 
-/* ============================================================================
- * Internal Helper Functions - String Allocation
- * ============================================================================
- */
-
-/**
- * uri_arena_copy - Copy substring into arena (for non-null-terminated sources)
- * @arena: Memory arena
- * @src: Source string (may not be null-terminated)
- * @len: Exact number of bytes to copy
- *
- * Unlike socket_util_arena_strndup() which uses strlen(), this function
- * copies exactly 'len' bytes, making it suitable for substring extraction
- * from URI parsing where source is pointer-delimited, not null-terminated.
- *
- * Returns: Null-terminated copy in arena, or NULL on allocation failure
- */
 static inline char *
 uri_arena_copy (Arena_T arena, const char *src, size_t len)
 {
@@ -198,11 +109,6 @@ uri_arena_copy (Arena_T arena, const char *src, size_t len)
   return copy;
 }
 
-/**
- * scheme_to_lower - Convert scheme to lowercase in place
- * @scheme: Scheme string
- * @len: String length
- */
 static void
 scheme_to_lower (char *scheme, size_t len)
 {
@@ -212,17 +118,6 @@ scheme_to_lower (char *scheme, size_t len)
         scheme[i] = scheme[i] + ('a' - 'A');
     }
 }
-
-/**
- * uri_alloc_component - Allocate and assign a URI component
- * @arena: Memory arena
- * @start: Component start pointer
- * @end: Component end pointer
- * @out_str: Output string pointer
- * @out_len: Output length pointer
- *
- * Returns: URI_PARSE_OK on success, URI_PARSE_ERROR on allocation failure
- */
 
 static SocketHTTP_URIResult
 uri_alloc_component (Arena_T arena, const char *start, const char *end,
@@ -241,36 +136,8 @@ uri_alloc_component (Arena_T arena, const char *start, const char *end,
   return URI_PARSE_OK;
 }
 
-/**
- * ComponentValidator - Callback type for validating URI components before allocation.
- * @note Returns URI_PARSE_OK or specific error code.
- */
 typedef SocketHTTP_URIResult (*ComponentValidator)(const char *s, size_t len);
 
-/**
- * alloc_and_validate - Generic helper to allocate, validate, and post-process URI components.
- * @ingroup http
- * @brief Reduces code duplication in URI component allocation and validation.
- *
- * @param arena Arena for memory allocation
- * @param start Start pointer of component in input string
- * @param end End pointer of component (exclusive)
- * @param max_len Maximum permitted length (security limit)
- * @param validator Optional pre-allocation validator (NULL = skip)
- * @param post_process Optional post-allocation processor (e.g., scheme_to_lower)
- * @param out_str Output allocated string (NULL if empty/invalid unless alloc_empty)
- * @param out_len Output length of string
- * @param alloc_empty If true and len==0, allocate empty "" string; else NULL
- *
- * @return URI_PARSE_OK on success, validator's error, URI_PARSE_TOO_LONG, or URI_PARSE_ERROR (alloc fail)
- *
- * @note Validates before allocating to avoid memory waste on invalid input.
- * @note Caller must ensure start/end pointers are valid relative to input.
- * @note post_process must not raise exceptions or allocate.
- * @threadsafe No - uses Arena (not thread-safe)
- * @see uri_alloc_all_components() for usage in URI parsing.
- * @complexity O(len) for validation + O(1) alloc
- */
 static SocketHTTP_URIResult
 alloc_and_validate (Arena_T arena, const char *start, const char *end,
                     size_t max_len, ComponentValidator validator,
@@ -314,14 +181,6 @@ alloc_and_validate (Arena_T arena, const char *start, const char *end,
   return URI_PARSE_OK;
 }
 
-/* ============================================================================
- * URI Parsing - State Machine Helpers
- * ============================================================================
- */
-
-/**
- * URIParseContext - Context for URI parsing state machine
- */
 typedef struct
 {
   const char *scheme_start;
@@ -343,10 +202,6 @@ typedef struct
   int in_ipv6;
 } URIParseContext;
 
-/**
- * uri_init_context - Initialize URI parsing context
- * @ctx: Context to initialize
- */
 static void
 uri_init_context (URIParseContext *ctx)
 {
@@ -354,12 +209,6 @@ uri_init_context (URIParseContext *ctx)
   ctx->state = URI_STATE_START;
 }
 
-/**
- * uri_handle_start - Handle URI_STATE_START
- * @ctx: Parse context
- * @c: Current character
- * @p: Current position
- */
 static void
 uri_handle_start (URIParseContext *ctx, char c, const char *p)
 {
@@ -394,14 +243,6 @@ uri_handle_start (URIParseContext *ctx, char c, const char *p)
     }
 }
 
-/**
- * uri_handle_scheme - Handle URI_STATE_SCHEME
- * @ctx: Parse context
- * @c: Current character
- * @p: Current position
- *
- * Returns: 0 to continue to next char, 1 to re-process current char
- */
 static int
 uri_handle_scheme (URIParseContext *ctx, char c, const char *p)
 {
@@ -421,12 +262,6 @@ uri_handle_scheme (URIParseContext *ctx, char c, const char *p)
   return 0;
 }
 
-/**
- * uri_handle_scheme_colon - Handle URI_STATE_SCHEME_COLON
- * @ctx: Parse context
- * @c: Current character
- * @p: Current position
- */
 static void
 uri_handle_scheme_colon (URIParseContext *ctx, char c, const char *p)
 {
@@ -455,14 +290,6 @@ uri_handle_scheme_colon (URIParseContext *ctx, char c, const char *p)
     }
 }
 
-/**
- * uri_handle_authority_start - Handle URI_STATE_AUTHORITY_START
- * @ctx: Parse context
- * @c: Current character
- * @p: Current position
- *
- * Returns: 0 to continue to next char, 1 to re-process current char
- */
 static int
 uri_handle_authority_start (URIParseContext *ctx, char c, const char *p)
 {
@@ -478,11 +305,6 @@ uri_handle_authority_start (URIParseContext *ctx, char c, const char *p)
   return 1;
 }
 
-/**
- * uri_finalize_authority - Finalize port_end and host_end for authority
- * @ctx: Parse context
- * @p: Current position
- */
 static void
 uri_finalize_authority (URIParseContext *ctx, const char *p)
 {
@@ -492,12 +314,6 @@ uri_finalize_authority (URIParseContext *ctx, const char *p)
     ctx->host_end = p;
 }
 
-/**
- * uri_handle_authority - Handle URI_STATE_AUTHORITY
- * @ctx: Parse context
- * @c: Current character
- * @p: Current position
- */
 static void
 uri_handle_authority (URIParseContext *ctx, char c, const char *p)
 {
@@ -545,11 +361,6 @@ uri_handle_authority (URIParseContext *ctx, char c, const char *p)
     }
 }
 
-/**
- * uri_handle_host_ipv6 - Handle URI_STATE_HOST_IPV6
- * @ctx: Parse context
- * @c: Current character
- */
 static void
 uri_handle_host_ipv6 (URIParseContext *ctx, char c)
 {
@@ -560,12 +371,6 @@ uri_handle_host_ipv6 (URIParseContext *ctx, char c)
     }
 }
 
-/**
- * uri_handle_path - Handle URI_STATE_PATH
- * @ctx: Parse context
- * @c: Current character
- * @p: Current position
- */
 static void
 uri_handle_path (URIParseContext *ctx, char c, const char *p)
 {
@@ -583,12 +388,6 @@ uri_handle_path (URIParseContext *ctx, char c, const char *p)
     }
 }
 
-/**
- * uri_handle_query - Handle URI_STATE_QUERY
- * @ctx: Parse context
- * @c: Current character
- * @p: Current position
- */
 static void
 uri_handle_query (URIParseContext *ctx, char c, const char *p)
 {
@@ -599,15 +398,6 @@ uri_handle_query (URIParseContext *ctx, char c, const char *p)
       ctx->state = URI_STATE_FRAGMENT;
     }
 }
-
-/**
- * uri_run_state_machine - Execute URI parsing state machine
- * @uri: Input URI string
- * @len: URI length
- * @ctx: Parse context (output)
- *
- * Returns: URI_PARSE_OK on success, error code otherwise
- */
 
 static SocketHTTP_URIResult
 uri_run_state_machine (const char *uri, size_t len, URIParseContext *ctx)
@@ -675,14 +465,6 @@ uri_run_state_machine (const char *uri, size_t len, URIParseContext *ctx)
   return URI_PARSE_OK;
 }
 
-/**
- * uri_finalize_state - Finalize parsing state after reaching end
- * @ctx: Parse context
- * @end: End of input
- *
- * Returns: URI_PARSE_OK on success, error code otherwise
- */
-
 static SocketHTTP_URIResult
 uri_finalize_state (URIParseContext *ctx, const char *end)
 {
@@ -732,18 +514,6 @@ uri_finalize_state (URIParseContext *ctx, const char *end)
   return URI_PARSE_OK;
 }
 
-/**
- * uri_parse_port - Parse port number from string with overflow protection
- * @start: Start of port string
- * @end: End of port string
- * @port_out: Output port number
- *
- * Validates port is numeric digits only and within valid range (0-65535).
- * Checks for overflow before each multiplication to prevent undefined behavior.
- *
- * Returns: URI_PARSE_OK on success, URI_PARSE_INVALID_PORT on error
- */
-
 static SocketHTTP_URIResult
 uri_parse_port (const char *start, const char *end, int *port_out)
 {
@@ -768,16 +538,6 @@ uri_parse_port (const char *start, const char *end, int *port_out)
   *port_out = port;
   return URI_PARSE_OK;
 }
-
-/**
- * uri_alloc_all_components - Allocate all URI components from context
- * @ctx: Parse context
- * @result: Output URI structure
- * @arena: Memory arena
- * @end: End of input
- *
- * Returns: URI_PARSE_OK on success, error code otherwise
- */
 
 static SocketHTTP_URIResult
 uri_alloc_all_components (const URIParseContext *ctx, SocketHTTP_URI *result,
@@ -918,11 +678,6 @@ uri_alloc_all_components (const URIParseContext *ctx, SocketHTTP_URI *result,
   return URI_PARSE_OK;
 }
 
-/* ============================================================================
- * URI Parsing - Public API
- * ============================================================================
- */
-
 const char *
 SocketHTTP_URI_result_string (SocketHTTP_URIResult result)
 {
@@ -1003,11 +758,6 @@ SocketHTTP_URI_is_secure (const SocketHTTP_URI *uri)
 
   return 0;
 }
-
-/* ============================================================================
- * Percent Encoding/Decoding
- * ============================================================================
- */
 
 ssize_t
 SocketHTTP_URI_encode (const char *input, size_t len, char *output,
@@ -1101,11 +851,6 @@ SocketHTTP_URI_decode (const char *input, size_t len, char *output,
   return (ssize_t)out_len;
 }
 
-/* ============================================================================
- * URI Build - Helper Macros
- * ============================================================================
- */
-
 #define URI_APPEND_STR(out, pos, size, s, l)                                  \
   do                                                                          \
     {                                                                         \
@@ -1196,21 +941,6 @@ SocketHTTP_URI_build (const SocketHTTP_URI *uri, char *output,
 #undef URI_APPEND_STR
 #undef URI_APPEND_CHAR
 
-/* ============================================================================
- * Media Type Parsing - Helper Functions
- * ============================================================================
- */
-
-/**
- * validate_token_span - Validate entire span consists of HTTP token chars
- * @start: Start of span
- * @len: Length of span
- *
- * Uses the centralized SOCKETHTTP_IS_TCHAR table lookup for O(1) per-char
- * validation per RFC 7230 token character rules.
- *
- * Returns: 1 if all characters are valid tokens, 0 otherwise
- */
 static inline int
 validate_token_span (const char *start, size_t len)
 {
@@ -1222,17 +952,6 @@ validate_token_span (const char *start, size_t len)
   return 1;
 }
 
-/* ============================================================================
- * URI Component Validation Helpers (RFC 3986)
- * ============================================================================
- */
-
-/**
- * is_unreserved - Check if character is unreserved (RFC 3986)
- * @c: Character to check
- *
- * Unreserved characters: ALPHA / DIGIT / "-" / "." / "_" / "~"
- */
 static inline int
 is_unreserved (unsigned char c)
 {
@@ -1241,35 +960,17 @@ is_unreserved (unsigned char c)
          || c == '~';
 }
 
-/**
- * is_sub_delims - Check if character is sub-delims (RFC 3986)
- * @c: Character to check
- */
 static inline int
 is_sub_delims (unsigned char c)
 {
   return strchr ("!$&'()*+,;=", c) != NULL;
 }
 
-/**
- * is_pchar_raw - Check if raw character valid in pchar (excluding %XX)
- * @c: Character to check
- */
 static inline int
 is_pchar_raw (unsigned char c)
 {
   return SOCKETHTTP_IS_UNRESERVED (c) || is_sub_delims (c) || c == ':' || c == '@';
 }
-
-/**
- * validate_string_chars - Validate string consists of allowed raw chars
- * @start: Start of string
- * @len: Length
- * @validator: Validation function
- * @error_type: Error code on failure
- *
- * Returns: URI_PARSE_OK or specified error
- */
 
 static SocketHTTP_URIResult
 validate_string_chars (const char *start, size_t len,
@@ -1283,15 +984,6 @@ validate_string_chars (const char *start, size_t len,
     }
   return URI_PARSE_OK;
 }
-
-/**
- * validate_pct_encoded - Basic check for %XX in string (not full decode)
- * @s: String to check
- * @len: Length
- *
- * Checks % is followed by two hex digits. Does not validate overall syntax.
- * Returns: URI_PARSE_OK or URI_PARSE_ERROR
- */
 
 static SocketHTTP_URIResult
 validate_pct_encoded (const char *s, size_t len)
@@ -1317,38 +1009,17 @@ validate_pct_encoded (const char *s, size_t len)
   return URI_PARSE_OK;
 }
 
-/**
- * is_reg_name_raw - Check if raw char valid in reg-name (RFC 3986)
- * @c: Character to check
- *
- * Valid: unreserved / sub-delims / % (pct will be validated separately)
- */
 static inline int
 is_reg_name_raw (unsigned char c)
 {
   return SOCKETHTTP_IS_UNRESERVED (c) || is_sub_delims (c) || c == '%';
 }
 
-/**
- * is_userinfo_raw - Check if raw char valid in userinfo (RFC 3986)
- * @c: Character to check
- *
- * Valid: unreserved / sub-delims / ":" / % (pct will be validated separately)
- * Note: userinfo allows ':' unlike reg-name (for user:password format)
- */
 static inline int
 is_userinfo_raw (unsigned char c)
 {
   return is_unreserved (c) || is_sub_delims (c) || c == ':' || c == '%';
 }
-
-/**
- * validate_reg_name - Validate reg-name component
- * @host: Host string
- * @len: Length
- *
- * Returns: URI_PARSE_OK or URI_PARSE_INVALID_HOST
- */
 
 static SocketHTTP_URIResult
 validate_reg_name (const char *host, size_t len)
@@ -1360,13 +1031,6 @@ validate_reg_name (const char *host, size_t len)
   return validate_pct_encoded (host, len);
 }
 
-/**
- * validate_userinfo - Validate userinfo component (RFC 3986 3.2.1)
- * @userinfo: Userinfo string
- * @len: Length
- *
- * Returns: URI_PARSE_OK or URI_PARSE_ERROR
- */
 static SocketHTTP_URIResult
 validate_userinfo (const char *userinfo, size_t len)
 {
@@ -1377,25 +1041,11 @@ validate_userinfo (const char *userinfo, size_t len)
   return validate_pct_encoded (userinfo, len);
 }
 
-/**
- * is_ipv6_char - Basic check for IPv6 literal chars inside [ ]
- * @c: Character to check
- */
 static inline int
 is_ipv6_char (unsigned char c)
 {
   return isxdigit (c) || c == ':' || c == '.';
 }
-
-/**
- * validate_ipv6_literal - Basic validation for IPv6 address literal [IPv6addr]
- * @host: Full host string (including [ ])
- * @len: Length
- *
- * Simple check: brackets match, inside valid chars, no early close.
- * Full validation deferred to socket address functions.
- * Returns: URI_PARSE_OK or URI_PARSE_INVALID_HOST
- */
 
 static SocketHTTP_URIResult
 validate_ipv6_literal (const char *host, size_t len)
@@ -1420,18 +1070,6 @@ validate_ipv6_literal (const char *host, size_t len)
   return URI_PARSE_OK;
 }
 
-/**
- * validate_host - Validate host component per RFC 3986 section 3.2.2
- * @host: Host string
- * @len: Length
- * @out_is_ipv6: Set to 1 if IPv6 literal (output)
- *
- * Supports reg-name and IPv6 literal (basic). IPv4 validation is deferred
- * to socket address functions since reg-name validation passes IPv4 format.
- *
- * Returns: URI_PARSE_OK or error
- */
-
 static SocketHTTP_URIResult
 validate_host (const char *host, size_t len, int *out_is_ipv6)
 {
@@ -1454,14 +1092,6 @@ validate_host (const char *host, size_t len, int *out_is_ipv6)
   return validate_reg_name (host, len);
 }
 
-/**
- * validate_host_wrap - Wrapper for validate_host omitting out_is_ipv6 (for ComponentValidator use)
- * @host: Host string
- * @len: Length
- *
- * Internally calls validate_host with dummy IPv6 flag.
- * Returns: URI_PARSE_OK or error from validate_host
- */
 static SocketHTTP_URIResult
 validate_host_wrap (const char *host, size_t len)
 {
@@ -1469,16 +1099,7 @@ validate_host_wrap (const char *host, size_t len)
   return validate_host (host, len, &dummy);
 }
 
-/**
- * check_path_traversal - Check for path traversal attempts
- * @path: Path string
- * @len: Length
- *
- * Detects ".." sequences that could escape the root directory.
- * Also checks for encoded traversal attempts (%2e%2e).
- *
- * Returns: URI_PARSE_OK or URI_PARSE_INVALID_PATH
- */
+/* SECURITY: Detect path traversal attacks (.. and encoded %2e%2e) */
 static SocketHTTP_URIResult
 check_path_traversal (const char *path, size_t len)
 {
@@ -1511,15 +1132,6 @@ check_path_traversal (const char *path, size_t len)
 
   return URI_PARSE_OK;
 }
-
-/**
- * validate_path_query - Validate path or query chars per RFC 3986 section 3.3
- * @s: String
- * @len: Length
- * @is_path: 1 for path (allows /), 0 for query
- *
- * Returns: URI_PARSE_OK or URI_PARSE_INVALID_PATH/QUERY
- */
 
 static SocketHTTP_URIResult
 validate_path_query (const char *s, size_t len, int is_path)
@@ -1564,41 +1176,17 @@ validate_path_query (const char *s, size_t len, int is_path)
   return URI_PARSE_OK;
 }
 
-/**
- * validate_path_query_path - Wrapper for path-specific validation (is_path = 1)
- * @s: Path component string
- * @len: Length of string
- * @return URI_PARSE_OK or URI_PARSE_INVALID_PATH on error
- * @see validate_path_query
- */
 static SocketHTTP_URIResult
 validate_path_query_path (const char *s, size_t len)
 {
   return validate_path_query (s, len, 1);
 }
 
-/**
- * validate_path_query_nonpath - Wrapper for query/fragment validation (is_path = 0)
- * @s: Query or fragment component string
- * @len: Length of string
- * @return URI_PARSE_OK or URI_PARSE_INVALID_QUERY on error
- * @see validate_path_query
- */
 static SocketHTTP_URIResult
 validate_path_query_nonpath (const char *s, size_t len)
 {
   return validate_path_query (s, len, 0);
 }
-
-/**
- * validate_fragment - Validate fragment component per RFC 3986 section 3.5
- * @s: Fragment string
- * @len: Length
- *
- * fragment = *( pchar / "/" / "?" )
- * Same as query validation.
- * Returns: URI_PARSE_OK or URI_PARSE_INVALID_QUERY (reused)
- */
 
 static SocketHTTP_URIResult
 validate_fragment (const char *s, size_t len)
@@ -1606,13 +1194,6 @@ validate_fragment (const char *s, size_t len)
   return validate_path_query (s, len, 0); // Treat as query-like
 }
 
-/**
- * skip_whitespace - Skip leading whitespace
- * @p: Current position
- * @end: End of input
- *
- * Returns: Position after whitespace
- */
 static const char *
 skip_whitespace (const char *p, const char *end)
 {
@@ -1621,14 +1202,6 @@ skip_whitespace (const char *p, const char *end)
   return p;
 }
 
-/**
- * find_token_end - Find end of token (stopped by delimiter chars)
- * @p: Current position
- * @end: End of input
- * @delims: Delimiter characters string
- *
- * Returns: Position at end of token
- */
 static const char *
 find_token_end (const char *p, const char *end, const char *delims)
 {
@@ -1642,15 +1215,6 @@ find_token_end (const char *p, const char *end, const char *delims)
   return p;
 }
 
-/**
- * parse_quoted_value - Parse a quoted parameter value
- * @p: Position after opening quote
- * @end: End of input
- * @value_start: Output value start
- * @value_len: Output value length
- *
- * Returns: Position after closing quote (or end if no closing quote)
- */
 static const char *
 parse_quoted_value (const char *p, const char *end, const char **value_start,
                     size_t *value_len)
@@ -1687,15 +1251,6 @@ parse_quoted_value (const char *p, const char *end, const char **value_start,
   return p;
 }
 
-/**
- * mediatype_parse_type_subtype - Parse type/subtype from Content-Type
- * @p: Current position
- * @end: End of input
- * @result: Output structure
- * @arena: Memory arena
- *
- * Returns: Position after type/subtype, or NULL on error
- */
 static const char *
 mediatype_parse_type_subtype (const char *p, const char *end,
                               SocketHTTP_MediaType *result, Arena_T arena)
@@ -1743,15 +1298,6 @@ mediatype_parse_type_subtype (const char *p, const char *end,
   return p;
 }
 
-/**
- * mediatype_parse_parameter - Parse a single parameter
- * @p: Current position (after semicolon/whitespace)
- * @end: End of input
- * @result: Output structure
- * @arena: Memory arena
- *
- * Returns: Position after parameter
- */
 static const char *
 mediatype_parse_parameter (const char *p, const char *end,
                            SocketHTTP_MediaType *result, Arena_T arena)
@@ -1830,11 +1376,6 @@ mediatype_parse_parameter (const char *p, const char *end,
   return p;
 }
 
-/* ============================================================================
- * Media Type Parsing - Public API
- * ============================================================================
- */
-
 int
 SocketHTTP_MediaType_parse (const char *value, size_t len,
                             SocketHTTP_MediaType *result, Arena_T arena)
@@ -1896,14 +1437,6 @@ SocketHTTP_MediaType_matches (const SocketHTTP_MediaType *type,
   return 1;
 }
 
-/* ============================================================================
- * Accept Header Parsing
- * ============================================================================
- */
-
-/**
- * qvalue_compare - Compare function for qsort by quality descending
- */
 static int
 qvalue_compare (const void *a, const void *b)
 {
@@ -1917,15 +1450,7 @@ qvalue_compare (const void *a, const void *b)
   return 0;
 }
 
-/**
- * accept_parse_quality - Parse quality parameter value (locale-independent)
- * @p: Position after "q="
- * @end: End of input
- * @out_pos: Output position after parsing
- *
- * Manual parsing to avoid locale-dependent strtof behavior.
- * Returns: Quality value clamped to [0.0, 1.0]
- */
+/* Locale-independent quality parameter parsing */
 static float
 accept_parse_quality (const char *p, const char *end, const char **out_pos)
 {
@@ -1963,15 +1488,6 @@ accept_parse_quality (const char *p, const char *end, const char **out_pos)
   return quality;
 }
 
-/**
- * accept_parse_single - Parse a single Accept header value
- * @p: Current position
- * @end: End of input
- * @result: Output quality value
- * @arena: Memory arena
- *
- * Returns: Position after this value (at comma or end)
- */
 static const char *
 accept_parse_single (const char *p, const char *end,
                      SocketHTTP_QualityValue *result, Arena_T arena)

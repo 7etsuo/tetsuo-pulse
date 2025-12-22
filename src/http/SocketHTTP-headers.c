@@ -24,12 +24,7 @@
 
 #include <time.h>
 
-/* ============================================================================
- * Hash Seed Randomization (DoS Protection)
- * ============================================================================
- */
-
-/* Random hash seed initialized once per process */
+/* Random hash seed for DoS protection */
 static uint32_t header_hash_seed = 0;
 static int header_hash_seed_initialized = 0;
 
@@ -50,16 +45,6 @@ get_header_hash_seed (void)
   return header_hash_seed;
 }
 
-/**
- * hash_header_name_seeded - Hash header name with randomized seed
- * @name: Header name
- * @len: Name length
- * @buckets: Number of hash buckets
- *
- * Uses DJB2 algorithm with random seed to prevent hash collision DoS attacks.
- *
- * Returns: Hash bucket index
- */
 static unsigned
 hash_header_name_seeded (const char *name, size_t len, unsigned buckets)
 {
@@ -78,32 +63,11 @@ hash_header_name_seeded (const char *name, size_t len, unsigned buckets)
   return (unsigned)(hash % buckets);
 }
 
-/* ============================================================================
- * Constants
- * ============================================================================
- */
-
-/** Overhead for null terminators in header entry size calculation */
+/* Constants */
 #define HEADER_ENTRY_NULL_OVERHEAD 2
-
-/** Maximum chain length per bucket to prevent hash collision DoS attacks */
 #define SOCKETHTTP_MAX_CHAIN_LEN 10
-
-/**
- * Maximum chain length to traverse during search operations.
- * Set to 2x the insertion limit to allow searching existing entries
- * even when bucket is at capacity.
- */
 #define SOCKETHTTP_MAX_CHAIN_SEARCH_LEN (SOCKETHTTP_MAX_CHAIN_LEN * 2)
 
-/**
- * VALIDATE_HEADERS_NAME - Validate headers and name parameters.
- * @headers: Headers collection (may be NULL).
- * @name: Header name (may be NULL).
- * @retval: Value to return if validation fails.
- *
- * Common validation pattern for public header functions.
- */
 #define VALIDATE_HEADERS_NAME(headers, name, retval)                          \
   do                                                                          \
     {                                                                         \
@@ -112,21 +76,6 @@ hash_header_name_seeded (const char *name, size_t len, unsigned buckets)
     }                                                                         \
   while (0)
 
-/* ============================================================================
- * Internal Helper Functions - Hash Table Operations
- * ============================================================================
- */
-
-/**
- * find_entry_with_prev - Find header entry and track predecessor
- * @headers: Header collection
- * @name: Header name to find
- * @name_len: Length of name
- * @prev_ptr_out: Output pointer to predecessor's hash_next pointer (for O(1) unlink)
- *
- * Returns: Entry pointer or NULL if not found
- * On success, *prev_ptr_out points to the hash_next pointer that points to entry
- */
 static HeaderEntry *
 find_entry_with_prev (SocketHTTP_Headers_T headers, const char *name,
                       size_t name_len, HeaderEntry ***prev_ptr_out)
@@ -158,27 +107,12 @@ find_entry_with_prev (SocketHTTP_Headers_T headers, const char *name,
   return NULL;
 }
 
-/**
- * find_entry - Find header entry by name (case-insensitive)
- * @headers: Header collection
- * @name: Header name to find
- * @name_len: Length of name
- *
- * Returns: Entry pointer or NULL if not found
- */
 static HeaderEntry *
 find_entry (SocketHTTP_Headers_T headers, const char *name, size_t name_len)
 {
   return find_entry_with_prev (headers, name, name_len, NULL);
 }
 
-/**
- * add_to_bucket - Add entry to hash bucket
- * @headers: Header collection
- * @entry: Entry to add (must have entry->hash pre-computed)
- *
- * Returns: 0 on success, -1 if bucket chain too long (DoS protection)
- */
 static int
 add_to_bucket (SocketHTTP_Headers_T headers, HeaderEntry *entry)
 {

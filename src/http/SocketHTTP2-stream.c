@@ -4,17 +4,8 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * SocketHTTP2-stream.c - HTTP/2 Stream State Machine
- *
- * Part of the Socket Library
- *
- * Implements:
- * - Stream creation and lookup (O(1) hash table)
- * - Stream state machine (RFC 9113 Section 5.1)
- * - DATA/HEADERS frame processing
- * - Header encoding/decoding integration
- * - Stream sending/receiving
+/*
+ * SocketHTTP2-stream.c - HTTP/2 Stream State Machine (RFC 9113)
  */
 
 #include "http/SocketHTTP2-private.h"
@@ -27,43 +18,16 @@
 #include <inttypes.h>
 #include <string.h>
 
-/* ============================================================================
- * Module Log Component
- * ============================================================================
- */
-
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "HTTP2"
 
-/* ============================================================================
- * Module Exception
- * ============================================================================
- */
-
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP2);
 
-/* ============================================================================
- * Module Constants
- * ============================================================================
- */
-
-/** Default stream receive buffer size */
 #define HTTP2_STREAM_RECV_BUF_SIZE SOCKETHTTP2_DEFAULT_STREAM_RECV_BUF_SIZE
-
-/** Initial header block allocation size */
 #define HTTP2_INITIAL_HEADER_BLOCK_SIZE                                       \
   SOCKETHTTP2_DEFAULT_INITIAL_HEADER_BLOCK_SIZE
-
-/** Maximum decoded headers per block */
 #define HTTP2_MAX_DECODED_HEADERS SOCKETHTTP2_MAX_DECODED_HEADERS
-
-/** Maximum stream ID (2^31 - 1) */
 #define HTTP2_MAX_STREAM_ID 0x7FFFFFFF
-
-/* ============================================================================
- * Stream Helper Functions
- * ============================================================================
- */
 
 static inline int
 http2_is_end_stream (uint8_t flags)
@@ -71,18 +35,6 @@ http2_is_end_stream (uint8_t flags)
   return (flags & HTTP2_FLAG_END_STREAM) != 0;
 }
 
-/**
- * http2_extract_padded - Extract padding information from frame
- * @header: Frame header
- * @payload: Frame payload
- * @extra_offset: Output - bytes consumed by padding field and optional fields
- * @pad_len: Output - padding length
- *
- * Common logic for PADDED frames (DATA, HEADERS, PUSH_PROMISE).
- * Handles validation of padding length and frame size.
- *
- * Returns: 0 on success, -1 on protocol error
- */
 static int
 http2_extract_padded (const SocketHTTP2_FrameHeader *header,
                       const unsigned char *payload, size_t *extra_offset,
@@ -105,11 +57,6 @@ http2_extract_padded (const SocketHTTP2_FrameHeader *header,
 
   return 0;
 }
-
-/* ============================================================================
- * Stream Lookup (O(1) using hash table)
- * ============================================================================
- */
 
 SocketHTTP2_Stream_T
 http2_stream_lookup (const SocketHTTP2_Conn_T conn, uint32_t stream_id)
@@ -143,18 +90,6 @@ http2_stream_lookup (const SocketHTTP2_Conn_T conn, uint32_t stream_id)
   return NULL;
 }
 
-/* ============================================================================
- * Stream Creation Helpers
- * ============================================================================
- */
-
-/**
- * init_stream_fields - Initialize stream structure fields
- * @stream: Stream to initialize
- * @conn: Parent connection
- * @stream_id: Stream identifier
- * @is_local_initiated: True if locally initiated stream
- */
 static void
 init_stream_fields (SocketHTTP2_Stream_T stream, const SocketHTTP2_Conn_T conn,
                     uint32_t stream_id, bool is_local_initiated)
@@ -174,13 +109,6 @@ init_stream_fields (SocketHTTP2_Stream_T stream, const SocketHTTP2_Conn_T conn,
   stream->total_data_received = 0;
 }
 
-/**
- * add_stream_to_hash - Add stream to connection's hash table
- * @conn: Connection
- * @stream: Stream to add
- *
- * Uses seeded hash for security (prevents hash collision DoS).
- */
 static void
 add_stream_to_hash (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream)
 {
@@ -191,13 +119,6 @@ add_stream_to_hash (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream)
   conn->stream_count++;
 }
 
-/**
- * remove_stream_from_hash - Remove stream from hash table
- * @conn: Connection
- * @stream: Stream to remove
- *
- * Uses seeded hash matching add_stream_to_hash for consistency.
- */
 static void
 remove_stream_from_hash (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream)
 {
@@ -217,19 +138,6 @@ remove_stream_from_hash (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream)
     }
 }
 
-/* ============================================================================
- * Stream Lifecycle
- * ============================================================================
- */
-
-/**
- * get_initiated_count - Get pointer to appropriate initiated stream count
- * @conn: Connection
- * @is_local: True if locally initiated stream
- *
- * Returns pointer to server_initiated_count for local streams,
- * client_initiated_count for peer-initiated streams.
- */
 static inline uint32_t *
 get_initiated_count (SocketHTTP2_Conn_T conn, int is_local)
 {
@@ -317,21 +225,6 @@ http2_stream_destroy (SocketHTTP2_Stream_T stream)
     SocketBuf_release (&stream->recv_buf);
 }
 
-/* ============================================================================
- * Stream State Machine - Transition Helpers
- * ============================================================================
- */
-
-/**
- * transition_from_idle - Handle state transition from IDLE
- * @stream: Stream
- * @frame_type: Frame type
- * @flags: Frame flags
- * @is_send: 1 if sending, 0 if receiving
- * @new_state: Output - new state
- *
- * Returns: HTTP2_NO_ERROR on success, error code otherwise
- */
 static SocketHTTP2_ErrorCode
 transition_from_idle (uint8_t frame_type, uint8_t flags, int is_send,
                       SocketHTTP2_StreamState *new_state)
@@ -365,9 +258,6 @@ transition_from_idle (uint8_t frame_type, uint8_t flags, int is_send,
   return HTTP2_PROTOCOL_ERROR;
 }
 
-/**
- * transition_from_reserved_local - Handle transition from RESERVED_LOCAL
- */
 static SocketHTTP2_ErrorCode
 transition_from_reserved_local (uint8_t frame_type, int is_send,
                                 SocketHTTP2_StreamState *new_state)
@@ -393,9 +283,6 @@ transition_from_reserved_local (uint8_t frame_type, int is_send,
   return HTTP2_PROTOCOL_ERROR;
 }
 
-/**
- * transition_from_reserved_remote - Handle transition from RESERVED_REMOTE
- */
 static SocketHTTP2_ErrorCode
 transition_from_reserved_remote (uint8_t frame_type, int is_send,
                                  SocketHTTP2_StreamState *new_state)
@@ -421,9 +308,6 @@ transition_from_reserved_remote (uint8_t frame_type, int is_send,
   return HTTP2_PROTOCOL_ERROR;
 }
 
-/**
- * transition_from_open - Handle transition from OPEN
- */
 static SocketHTTP2_ErrorCode
 transition_from_open (uint8_t frame_type, uint8_t flags, int is_send,
                       SocketHTTP2_StreamState *new_state)
@@ -445,9 +329,6 @@ transition_from_open (uint8_t frame_type, uint8_t flags, int is_send,
   return HTTP2_NO_ERROR;
 }
 
-/**
- * transition_from_half_closed_local - Handle transition from HALF_CLOSED_LOCAL
- */
 static SocketHTTP2_ErrorCode
 transition_from_half_closed_local (uint8_t frame_type, uint8_t flags,
                                    int is_send,
@@ -478,10 +359,6 @@ transition_from_half_closed_local (uint8_t frame_type, uint8_t flags,
   return HTTP2_STREAM_CLOSED;
 }
 
-/**
- * transition_from_half_closed_remote - Handle transition from
- * HALF_CLOSED_REMOTE
- */
 static SocketHTTP2_ErrorCode
 transition_from_half_closed_remote (uint8_t frame_type, uint8_t flags,
                                     int is_send,
@@ -512,9 +389,6 @@ transition_from_half_closed_remote (uint8_t frame_type, uint8_t flags,
   return HTTP2_STREAM_CLOSED;
 }
 
-/**
- * transition_from_closed - Handle transition from CLOSED
- */
 static SocketHTTP2_ErrorCode
 transition_from_closed (uint8_t frame_type, int is_send)
 {
@@ -528,11 +402,6 @@ transition_from_closed (uint8_t frame_type, int is_send)
 
   return HTTP2_STREAM_CLOSED;
 }
-
-/* ============================================================================
- * Stream State Machine (RFC 9113 Section 5.1)
- * ============================================================================
- */
 
 SocketHTTP2_ErrorCode
 http2_stream_transition (SocketHTTP2_Stream_T stream, uint8_t frame_type,
@@ -581,20 +450,6 @@ http2_stream_transition (SocketHTTP2_Stream_T stream, uint8_t frame_type,
   return error;
 }
 
-/* ============================================================================
- * Header Event Emission
- * ============================================================================
- */
-
-/**
- * emit_header_event - Emit appropriate header or trailer event
- * @conn: Connection
- * @stream: Stream
- *
- * Emits PUSH_PROMISE for initial push headers, HEADERS_RECEIVED for initial
- * regular headers, or TRAILERS_RECEIVED for trailers. Sets headers_received=1.
- * Thread-safe: No
- */
 static void
 emit_header_event (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream)
 {
@@ -618,22 +473,6 @@ emit_header_event (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream)
     }
 }
 
-/* ============================================================================
- * Header Copy Helper
- * ============================================================================
- */
-
-/**
- * copy_and_consume - Copy headers from stream storage and mark consumed
- * @dest: Destination buffer (or NULL to just count)
- * @max_count: Maximum number to copy
- * @src: Source headers array
- * @src_count: Number of source headers
- * @consumed: Output - set to 1 if consumed
- *
- * Returns: Number of headers copied (min(src_count, max_count))
- * Thread-safe: Yes
- */
 static size_t
 copy_and_consume (SocketHPACK_Header *dest, size_t max_count,
                   const SocketHPACK_Header *src, size_t src_count,
@@ -653,11 +492,6 @@ copy_and_consume (SocketHPACK_Header *dest, size_t max_count,
 
   return copy_count;
 }
-
-/* ============================================================================
- * Stream Public API
- * ============================================================================
- */
 
 SocketHTTP2_Stream_T
 SocketHTTP2_Stream_new (SocketHTTP2_Conn_T conn)
@@ -739,11 +573,6 @@ SocketHTTP2_Stream_get_connection (SocketHTTP2_Stream_T stream)
   return stream->conn;
 }
 
-/* ============================================================================
- * Stream Flow Control
- * ============================================================================
- */
-
 int
 SocketHTTP2_Stream_window_update (SocketHTTP2_Stream_T stream,
                                   uint32_t increment)
@@ -779,11 +608,6 @@ SocketHTTP2_Stream_recv_window (SocketHTTP2_Stream_T stream)
   return stream->recv_window;
 }
 
-/* ============================================================================
- * Header Encoding/Decoding
- * ============================================================================
- */
-
 ssize_t
 http2_encode_headers (SocketHTTP2_Conn_T conn,
                       const SocketHPACK_Header *headers, size_t count,
@@ -793,19 +617,6 @@ http2_encode_headers (SocketHTTP2_Conn_T conn,
                                      output_size);
 }
 
-/**
- * http2_encode_and_alloc_block - Encode headers and allocate block
- * @conn: Connection
- * @headers: Headers to encode
- * @count: Number of headers
- * @block_out: Output - allocated block
- *
- * Allocates block using arena, encodes, returns length or -1 on error
- * Caller must not free block (arena managed)
- *
- * Returns: Encoded length or -1 on error
- * Thread-safe: No
- */
 static unsigned char *alloc_header_block (SocketHTTP2_Conn_T conn,
                                           size_t initial_size);
 
@@ -827,22 +638,6 @@ http2_encode_and_alloc_block (SocketHTTP2_Conn_T conn,
   return len;
 }
 
-/* Header validation helpers now in SocketHTTP2-validate.c */
-
-/**
- * http2_validate_headers - Validate decoded headers according to RFC 9113
- * @conn: HTTP/2 connection
- * @stream: Stream receiving headers
- * @headers: Decoded headers array
- * @count: Number of headers
- * @is_trailer: Non-zero if these are trailer headers (RFC 9113 §8.1.3)
- *
- * Validates pseudo-header order, duplication, forbidden headers, and required
- * pseudo-headers per RFC 9113 Section 8.3 (for requests) and Section 8.1.2.4
- * (for responses). Pseudo-headers are forbidden in trailers per §8.1.3.
- *
- * Returns: 0 on valid headers, -1 on validation failure (error sent)
- */
 static int http2_validate_headers (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
                                    const SocketHPACK_Header *headers, size_t count,
                                    int is_trailer)
@@ -1266,17 +1061,6 @@ protocol_error:
   return -1;
 }
 
-/**
- * http2_recombine_cookie_headers - Recombine multiple cookie headers per RFC 9113 §8.2.3
- * @arena: Arena for allocations
- * @headers: Pointer to headers array (modified in place)
- * @count: Pointer to header count (modified if headers are recombined)
- *
- * If multiple "cookie" fields are present, they are concatenated using "; " delimiter
- * and replaced with a single cookie header. This ensures proper HTTP/1.1 compatibility.
- *
- * Returns: 0 on success, -1 on allocation failure
- */
 static int
 http2_recombine_cookie_headers (Arena_T arena, SocketHPACK_Header *headers, size_t *count)
 {
@@ -1402,32 +1186,12 @@ http2_decode_headers (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
   return 0;
 }
 
-/* ============================================================================
- * Header Block Buffer Management
- * ============================================================================
- */
-
-/**
- * alloc_header_block - Allocate header block buffer
- * @conn: Connection
- * @initial_size: Initial size
- *
- * Returns: Allocated buffer or NULL
- */
 static unsigned char *
 alloc_header_block (SocketHTTP2_Conn_T conn, size_t initial_size)
 {
   return Arena_alloc (conn->arena, initial_size, __FILE__, __LINE__);
 }
 
-/**
- * grow_header_block - Grow header block buffer
- * @conn: Connection
- * @stream: Stream with header block
- * @needed: Additional bytes needed
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 grow_header_block (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
                    size_t needed)
@@ -1445,15 +1209,6 @@ grow_header_block (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
   return 0;
 }
 
-/**
- * init_pending_header_block - Initialize pending header block for CONTINUATION
- * @conn: Connection
- * @stream: Stream
- * @data: Initial header data
- * @len: Data length
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 init_pending_header_block (SocketHTTP2_Conn_T conn,
                            SocketHTTP2_Stream_T stream,
@@ -1470,10 +1225,6 @@ init_pending_header_block (SocketHTTP2_Conn_T conn,
   return 0;
 }
 
-/**
- * clear_pending_header_block - Clear pending header block state
- * @stream: Stream
- */
 static void
 clear_pending_header_block (SocketHTTP2_Stream_T stream)
 {
@@ -1482,21 +1233,6 @@ clear_pending_header_block (SocketHTTP2_Stream_T stream)
   stream->header_block_capacity = 0;
 }
 
-/* ============================================================================
- * Sending Headers - Helpers
- * ============================================================================
- */
-
-/**
- * send_single_headers_frame - Send complete headers in single frame
- * @conn: Connection
- * @stream: Stream
- * @header_block: Encoded header block
- * @block_len: Block length
- * @end_stream: END_STREAM flag
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 send_single_headers_frame (SocketHTTP2_Conn_T conn,
                            SocketHTTP2_Stream_T stream,
@@ -1514,19 +1250,6 @@ send_single_headers_frame (SocketHTTP2_Conn_T conn,
   return http2_frame_send (conn, &frame_header, header_block, block_len);
 }
 
-/**
- * send_headers_chunk - Send single chunk of headers/CONTINUATION frame
- * @conn: Connection
- * @stream: Stream
- * @data: Data to send
- * @chunk_len: Chunk length
- * @first: 1 if first chunk (HEADERS frame)
- * @last: 1 if last chunk (END_HEADERS flag)
- * @end_stream: Set END_STREAM if first chunk
- *
- * Returns: 0 on success, -1 on error
- * Thread-safe: No
- */
 static int
 send_headers_chunk (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
                     const unsigned char *data, size_t chunk_len, int first,
@@ -1546,18 +1269,6 @@ send_headers_chunk (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
   return http2_frame_send (conn, &frame_header, data, chunk_len);
 }
 
-/**
- * send_fragmented_headers - Send headers with CONTINUATION frames
- * @conn: Connection
- * @stream: Stream
- * @header_block: Encoded header block
- * @block_len: Block length
- * @max_frame_size: Maximum frame payload size
- * @end_stream: END_STREAM flag
- *
- * Returns: 0 on success, -1 on error
- * Thread-safe: No
- */
 static int
 send_fragmented_headers (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
                          const unsigned char *header_block, size_t block_len,
@@ -1584,11 +1295,6 @@ send_fragmented_headers (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
 
   return 0;
 }
-
-/* ============================================================================
- * Sending Headers
- * ============================================================================
- */
 
 int
 SocketHTTP2_Stream_send_headers (SocketHTTP2_Stream_T stream,
@@ -1639,16 +1345,6 @@ SocketHTTP2_Stream_send_headers (SocketHTTP2_Stream_T stream,
   return 0;
 }
 
-/* ============================================================================
- * Request/Response Header Building
- * ============================================================================
- */
-
-/**
- * build_request_pseudo_headers - Build pseudo-headers for HTTP/2 request
- * @request: HTTP request
- * @pseudo: Output array (4 elements)
- */
 static void
 build_request_pseudo_headers (const SocketHTTP_Request *request,
                               SocketHPACK_Header *pseudo)
@@ -1678,13 +1374,6 @@ build_request_pseudo_headers (const SocketHTTP_Request *request,
   pseudo[3].never_index = 0;
 }
 
-/**
- * copy_regular_headers - Copy regular headers to HPACK array
- * @src: Source headers collection
- * @dest: Destination HPACK array
- * @offset: Starting offset in dest
- * @count: Number of headers to copy
- */
 static void
 copy_regular_headers (SocketHTTP_Headers_T src, SocketHPACK_Header *dest,
                       size_t offset, size_t count)
@@ -1843,20 +1532,6 @@ SocketHTTP2_Stream_send_trailers (SocketHTTP2_Stream_T stream,
   return SocketHTTP2_Stream_send_headers (stream, trailers, count, 1);
 }
 
-/* ============================================================================
- * Sending Data
- * ============================================================================
- */
-
-/**
- * calculate_send_length - Calculate actual send length based on flow control
- * @conn: Connection
- * @stream: Stream
- * @requested_len: Requested length
- * @end_stream: Pointer to end_stream flag (may be cleared)
- *
- * Returns: Actual bytes to send (0 if blocked)
- */
 static size_t
 calculate_send_length (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
                        size_t requested_len, int *end_stream)
@@ -1921,11 +1596,6 @@ SocketHTTP2_Stream_send_data (SocketHTTP2_Stream_T stream, const void *data,
 
   return (ssize_t)send_len;
 }
-
-/* ============================================================================
- * Receiving
- * ============================================================================
- */
 
 int
 SocketHTTP2_Stream_recv_headers (SocketHTTP2_Stream_T stream,
@@ -2000,11 +1670,6 @@ SocketHTTP2_Stream_recv_trailers (SocketHTTP2_Stream_T stream,
   return 1;
 }
 
-/* ============================================================================
- * Server Push
- * ============================================================================
- */
-
 SocketHTTP2_Stream_T
 SocketHTTP2_Stream_push_promise (SocketHTTP2_Stream_T stream,
                                  const SocketHPACK_Header *request_headers,
@@ -2073,28 +1738,12 @@ SocketHTTP2_Stream_push_promise (SocketHTTP2_Stream_T stream,
   return pushed;
 }
 
-/* ============================================================================
- * Frame Processing - Padding Helpers
- * ============================================================================
- */
-
-/**
- * PaddedData - Extracted payload data after removing padding
- */
 typedef struct
 {
   const unsigned char *data;
   size_t len;
 } PaddedData;
 
-/**
- * extract_padded_data - Extract payload with padding removed
- * @header: Frame header
- * @payload: Frame payload
- * @result: Output - data pointer and length
- *
- * Returns: 0 on success, -1 on protocol error
- */
 static int
 extract_padded_data (const SocketHTTP2_FrameHeader *header,
                      const unsigned char *payload, PaddedData *result)
@@ -2110,11 +1759,6 @@ extract_padded_data (const SocketHTTP2_FrameHeader *header,
 
   return 0;
 }
-
-/* ============================================================================
- * Frame Processing - DATA
- * ============================================================================
- */
 
 int
 http2_process_data (SocketHTTP2_Conn_T conn,
@@ -2189,24 +1833,6 @@ http2_process_data (SocketHTTP2_Conn_T conn,
   return 0;
 }
 
-/* ============================================================================
- * Stream Creation for Incoming Frames
- * ============================================================================
- */
-
-/**
- * http2_get_or_create_stream_for_headers - Get or create stream for HEADERS
- * frame
- * @conn: Connection
- * @stream_id: Stream ID from frame
- *
- * Looks up existing stream or creates new one if valid new stream ID.
- * Sends appropriate error frames on failure.
- *
- * Returns: Stream pointer or NULL on error (error frame already sent)
- * Note: Caller must check return and handle connection/stream error
- * accordingly.
- */
 static int validate_new_stream_id (SocketHTTP2_Conn_T conn,
                                    uint32_t stream_id);
 
@@ -2240,18 +1866,6 @@ http2_get_or_create_stream_for_headers (SocketHTTP2_Conn_T conn,
   return stream;
 }
 
-/* ============================================================================
- * Frame Processing - HEADERS
- * ============================================================================
- */
-
-/**
- * validate_new_stream_id - Validate stream ID for new peer-initiated stream
- * @conn: Connection
- * @stream_id: Stream ID
- *
- * Returns: 0 if valid, -1 on protocol error
- */
 static int
 validate_new_stream_id (SocketHTTP2_Conn_T conn, uint32_t stream_id)
 {
@@ -2273,15 +1887,6 @@ validate_new_stream_id (SocketHTTP2_Conn_T conn, uint32_t stream_id)
   return 0;
 }
 
-/**
- * extract_headers_payload - Extract header block with padding/priority removed
- * @header: Frame header
- * @payload: Frame payload
- * @block: Output - header block pointer
- * @block_len: Output - header block length
- *
- * Returns: 0 on success, -1 on protocol error
- */
 static int
 extract_headers_payload (const SocketHTTP2_FrameHeader *header,
                          const unsigned char *payload,
@@ -2304,16 +1909,6 @@ extract_headers_payload (const SocketHTTP2_FrameHeader *header,
   return 0;
 }
 
-/**
- * process_complete_header_block - Process complete header block
- * @conn: Connection
- * @stream: Stream
- * @block: Header block
- * @len: Block length
- * @end_stream: END_STREAM flag set
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 process_complete_header_block (SocketHTTP2_Conn_T conn,
                                SocketHTTP2_Stream_T stream,
@@ -2333,15 +1928,6 @@ process_complete_header_block (SocketHTTP2_Conn_T conn,
   return 0;
 }
 
-/**
- * setup_continuation_state - Setup state for CONTINUATION frames
- * @conn: Connection
- * @stream: Stream
- * @block: Initial header block
- * @len: Block length
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 setup_continuation_state (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
                           const unsigned char *block, size_t len)
@@ -2424,11 +2010,6 @@ http2_process_headers (SocketHTTP2_Conn_T conn,
                                    header_block_len);
 }
 
-/* ============================================================================
- * Frame Processing - CONTINUATION
- * ============================================================================
- */
-
 int
 http2_process_continuation (SocketHTTP2_Conn_T conn,
                             const SocketHTTP2_FrameHeader *header,
@@ -2507,18 +2088,6 @@ http2_process_continuation (SocketHTTP2_Conn_T conn,
   return 0;
 }
 
-/* ============================================================================
- * Frame Processing - PUSH_PROMISE
- * ============================================================================
- */
-
-/**
- * validate_push_promise - Validate PUSH_PROMISE can be received
- * @conn: Connection
- * @header: Frame header
- *
- * Returns: 0 if valid, -1 on protocol error
- */
 static int
 validate_push_promise (SocketHTTP2_Conn_T conn,
                        const SocketHTTP2_FrameHeader *header)
@@ -2535,16 +2104,6 @@ validate_push_promise (SocketHTTP2_Conn_T conn,
   return 0;
 }
 
-/**
- * extract_push_promise_payload - Extract PUSH_PROMISE payload
- * @header: Frame header
- * @payload: Frame payload
- * @promised_id: Output - promised stream ID
- * @block: Output - header block pointer
- * @block_len: Output - header block length
- *
- * Returns: 0 on success, -1 on protocol error
- */
 static int
 extract_push_promise_payload (const SocketHTTP2_FrameHeader *header,
                               const unsigned char *payload,

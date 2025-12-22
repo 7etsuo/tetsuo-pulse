@@ -5,19 +5,7 @@
  */
 
 /**
- * SocketHTTPClient-pool.c - HTTP Connection Pool Implementation
- *
- * Part of the Socket Library
- *
- * HTTP connection pool with:
- * - Per-host keying (host:port:secure)
- * - Happy Eyeballs integration for fast connection
- * - HTTP/1.1 connection reuse
- * - HTTP/2 stream multiplexing (future)
- *
- * Leverages:
- * - SocketHappyEyeballs for fast dual-stack connection
- * - SocketHTTP1 for HTTP/1.1 parsing
+ * SocketHTTPClient-pool.c - HTTP Connection Pooling with Happy Eyeballs
  */
 
 #include "core/Arena.h"
@@ -56,64 +44,24 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPClient);
 #define HTTPS_DEFAULT_PORT 443
 #endif
 
-/**
- * @brief Maximum hash chain length before raising collision attack error.
- *
- * Security limit to prevent DoS via hash collision attacks.
- * If a hash chain exceeds this length during traversal, the operation
- * fails with an exception indicating possible attack.
- */
+/* SECURITY: Limit to prevent DoS via hash collision attacks */
 #ifndef POOL_MAX_HASH_CHAIN_LEN
 #define POOL_MAX_HASH_CHAIN_LEN 1024
 #endif
 
-/**
- * @brief Milliseconds per second for timeout conversions.
- */
 #ifndef POOL_MS_PER_SECOND
 #define POOL_MS_PER_SECOND 1000
 #endif
 
-/* ============================================================================
- * Pool Configuration
- * ============================================================================
- * Pool constants are defined in SocketHTTPClient-config.h:
- *   - HTTPCLIENT_POOL_HASH_SIZE (127) - default hash table size
- *   - HTTPCLIENT_IO_BUFFER_SIZE (8192) - I/O buffer size per connection
- *   - HTTPCLIENT_POOL_LARGE_HASH_SIZE (251) - large pool hash size
- *   - HTTPCLIENT_POOL_LARGE_THRESHOLD (100) - threshold for larger hash
- */
-
-/* ============================================================================
- * Internal Helper Functions
- * ============================================================================
- */
-
 /* Forward declarations */
 static void pool_entry_remove_and_recycle (HTTPPool *pool, HTTPPoolEntry *entry);
 
-/**
- * pool_time - Get current time in seconds for pool tracking
- *
- * Returns: Current time as time_t (seconds)
- *
- * Used for idle timeout tracking. Uses wall-clock time which is
- * acceptable for connection pooling purposes.
- */
 static time_t
 pool_time (void)
 {
   return time (NULL);
 }
 
-/**
- * pool_entry_alloc - Allocate a new pool entry
- * @pool: Connection pool
- *
- * Returns: Zeroed pool entry, or NULL on allocation failure
- *
- * Tries free list first for reuse, otherwise allocates from arena.
- */
 static HTTPPoolEntry *
 pool_entry_alloc (HTTPPool *pool)
 {
@@ -139,13 +87,6 @@ pool_entry_alloc (HTTPPool *pool)
   return entry;
 }
 
-/**
- * pool_hash_add - Add entry to hash table
- * @pool: Connection pool
- * @entry: Entry to add (must have host/port set)
- *
- * Adds entry at head of hash chain for O(1) insertion.
- */
 static void
 pool_hash_add (HTTPPool *pool, HTTPPoolEntry *entry)
 {
@@ -156,15 +97,6 @@ pool_hash_add (HTTPPool *pool, HTTPPoolEntry *entry)
   pool->hash_table[hash] = entry;
 }
 
-/**
- * raise_chain_too_long - Raise exception for hash chain length exceeded
- * @chain_len: Current chain length
- * @context: Description of operation for error message
- * @host: Host being accessed (may be NULL)
- * @port: Port being accessed
- *
- * Raises SocketHTTPClient_Failed with detailed collision attack message.
- */
 static void
 raise_chain_too_long (size_t chain_len, const char *context, const char *host,
                       int port)
@@ -181,13 +113,6 @@ raise_chain_too_long (size_t chain_len, const char *context, const char *host,
                       chain_len, POOL_MAX_HASH_CHAIN_LEN, context);
 }
 
-/**
- * pool_hash_remove - Remove entry from hash table
- * @pool: Connection pool
- * @entry: Entry to remove
- *
- * Scans hash chain to find and unlink the entry.
- */
 static void
 pool_hash_remove (HTTPPool *pool, HTTPPoolEntry *entry)
 {
@@ -212,13 +137,6 @@ pool_hash_remove (HTTPPool *pool, HTTPPoolEntry *entry)
                           entry->port);
 }
 
-/**
- * pool_list_add - Add entry to all connections list
- * @pool: Connection pool
- * @entry: Entry to add
- *
- * Adds entry at head of doubly-linked list for O(1) insertion.
- */
 static void
 pool_list_add (HTTPPool *pool, HTTPPoolEntry *entry)
 {
@@ -229,13 +147,6 @@ pool_list_add (HTTPPool *pool, HTTPPoolEntry *entry)
   pool->all_conns = entry;
 }
 
-/**
- * pool_list_remove - Remove entry from all connections list
- * @pool: Connection pool
- * @entry: Entry to remove
- *
- * Unlinks entry from doubly-linked list in O(1).
- */
 static void
 pool_list_remove (HTTPPool *pool, HTTPPoolEntry *entry)
 {
@@ -251,12 +162,6 @@ pool_list_remove (HTTPPool *pool, HTTPPoolEntry *entry)
   entry->prev = NULL;
 }
 
-/**
- * close_http1_resources - Close HTTP/1.1 connection resources
- * @entry: Pool entry with HTTP/1.1 resources
- *
- * Releases socket, parser, buffers, and connection arena.
- */
 static void
 close_http1_resources (HTTPPoolEntry *entry)
 {
@@ -276,12 +181,6 @@ close_http1_resources (HTTPPoolEntry *entry)
     Arena_dispose (&entry->proto.h1.conn_arena);
 }
 
-/**
- * close_http2_resources - Close HTTP/2 connection resources
- * @entry: Pool entry with HTTP/2 resources
- *
- * Releases HTTP/2 connection.
- */
 static void
 close_http2_resources (HTTPPoolEntry *entry)
 {
@@ -289,12 +188,6 @@ close_http2_resources (HTTPPoolEntry *entry)
     SocketHTTP2_Conn_free (&entry->proto.h2.conn);
 }
 
-/**
- * pool_entry_close - Close and clean up a connection entry
- * @entry: Entry to close (may be NULL)
- *
- * Releases all resources based on protocol version.
- */
 static void
 pool_entry_close (HTTPPoolEntry *entry)
 {
@@ -309,18 +202,6 @@ pool_entry_close (HTTPPoolEntry *entry)
   entry->closed = 1;
 }
 
-/**
- * host_port_secure_match - Check if entry matches host/port/secure
- * @entry: Pool entry
- * @host: Target hostname
- * @port: Target port
- * @is_secure: TLS flag
- *
- * Returns: 1 if matches, 0 otherwise
- *
- * Performs case-insensitive host comparison.
- * Thread-safe: Yes (read-only)
- */
 static int
 host_port_secure_match (const HTTPPoolEntry *entry, const char *host, int port,
                         int is_secure)
@@ -330,17 +211,6 @@ host_port_secure_match (const HTTPPoolEntry *entry, const char *host, int port,
   return strcasecmp (entry->host, host) == 0;
 }
 
-/**
- * pool_count_for_host - Count connections to a specific host:port
- * @pool: Connection pool
- * @host: Target hostname
- * @port: Target port
- * @is_secure: TLS flag
- *
- * Returns: Number of connections to the host
- *
- * Caller must hold pool mutex.
- */
 static size_t
 pool_count_for_host (HTTPPool *pool, const char *host, int port, int is_secure)
 {
@@ -361,11 +231,6 @@ pool_count_for_host (HTTPPool *pool, const char *host, int port, int is_secure)
 
   return count;
 }
-
-/* ============================================================================
- * Pool Lifecycle
- * ============================================================================
- */
 
 HTTPPool *
 httpclient_pool_new (Arena_T arena, const SocketHTTPClient_Config *config)
@@ -450,20 +315,6 @@ httpclient_pool_free (HTTPPool *pool)
   pthread_mutex_destroy (&pool->mutex);
 }
 
-/* ============================================================================
- * Pool Operations
- * ============================================================================
- */
-
-/**
- * entry_can_handle_request - Check if pool entry can handle another request
- * @entry: Pool entry to check
- *
- * Returns: 1 if entry can accept request, 0 if not
- *
- * For HTTP/1.1: check that entry is not in use
- * For HTTP/2: check that active_streams < peer's MAX_CONCURRENT_STREAMS
- */
 static int
 entry_can_handle_request (HTTPPoolEntry *entry)
 {
@@ -484,13 +335,6 @@ entry_can_handle_request (HTTPPoolEntry *entry)
   return !entry->in_use;
 }
 
-/**
- * entry_mark_in_use - Mark pool entry as handling a request
- * @entry: Pool entry to mark
- *
- * For HTTP/1.1: sets in_use flag
- * For HTTP/2: increments active_streams counter
- */
 static void
 entry_mark_in_use (HTTPPoolEntry *entry)
 {
@@ -611,16 +455,6 @@ httpclient_pool_close (HTTPPool *pool, HTTPPoolEntry *entry)
   pthread_mutex_unlock (&pool->mutex);
 }
 
-/**
- * pool_entry_remove_and_recycle - Remove entry from pool and add to free list
- * @pool: Connection pool (mutex held)
- * @entry: Entry to remove
- *
- * Removes entry from hash table and all-connections list, closes resources,
- * decrements count, and adds to free list for reuse. Caller must hold mutex.
- *
- * Thread-safe: No (caller must hold pool->mutex)
- */
 static void
 pool_entry_remove_and_recycle (HTTPPool *pool, HTTPPoolEntry *entry)
 {
@@ -664,21 +498,6 @@ httpclient_pool_cleanup_idle (HTTPPool *pool)
   pthread_mutex_unlock (&pool->mutex);
 }
 
-/* ============================================================================
- * Connection Establishment - Helper Functions
- * ============================================================================
- */
-
-/**
- * create_http1_entry_resources - Allocate HTTP/1.1 parser and buffers
- * @entry: Pool entry to initialize
- *
- * Raises: Arena_Failed, SocketHTTP1_ParseError, SocketBuf_Failed on allocation
- * failure
- *
- * Creates a connection arena, parser, and I/O buffers for the entry.
- * Thread-safe: No (caller must synchronize access to entry)
- */
 static void
 create_http1_entry_resources (HTTPPoolEntry *entry)
 {
@@ -693,18 +512,6 @@ create_http1_entry_resources (HTTPPoolEntry *entry)
       = SocketBuf_new (entry->proto.h1.conn_arena, HTTPCLIENT_IO_BUFFER_SIZE);
 }
 
-/**
- * init_http1_entry_fields - Initialize HTTP/1.1 entry fields
- * @entry: Pool entry
- * @socket: Connected socket
- * @host: Target hostname (will be copied)
- * @port: Target port
- * @is_secure: TLS flag
- * @pool: Pool for hostname allocation
- *
- * Raises: Arena_Failed on host string allocation failure
- * Thread-safe: No (modifies entry under caller lock)
- */
 static void
 init_http1_entry_fields (HTTPPoolEntry *entry, Socket_T socket,
                          const char *host, int port, int is_secure,
@@ -743,13 +550,6 @@ init_http1_entry_fields (HTTPPoolEntry *entry, Socket_T socket,
   }
 }
 
-/**
- * recycle_entry_on_failure - Return entry to free list on allocation failure
- * @pool: Connection pool
- * @entry: Entry to recycle
- *
- * Helper to add entry back to free list when allocation fails.
- */
 static void
 recycle_entry_on_failure (HTTPPool *pool, HTTPPoolEntry *entry)
 {
@@ -757,19 +557,6 @@ recycle_entry_on_failure (HTTPPool *pool, HTTPPoolEntry *entry)
   pool->free_entries = entry;
 }
 
-/**
- * create_http1_connection - Create new HTTP/1.1 pool entry
- * @pool: Connection pool
- * @socket: Connected socket (ownership transferred)
- * @host: Target hostname
- * @port: Target port
- * @is_secure: 1 for HTTPS, 0 for HTTP
- *
- * Returns: New pool entry, or NULL on failure
- *
- * Allocates entry, copies host, creates parser/buffers, adds to pool.
- * On failure, socket is NOT freed - caller retains ownership.
- */
 static HTTPPoolEntry *
 create_http1_connection (HTTPPool *pool, Socket_T socket, const char *host,
                          int port, int is_secure)
@@ -817,23 +604,6 @@ create_http1_connection (HTTPPool *pool, Socket_T socket, const char *host,
   return (HTTPPoolEntry *)entry;
 }
 
-/* ============================================================================
- * HTTP/2 Connection Creation
- * ============================================================================
- */
-
-/**
- * init_http2_entry_fields - Initialize HTTP/2 entry fields
- * @entry: Pool entry
- * @socket: Connected socket (with TLS after ALPN negotiation)
- * @host: Target hostname (will be copied)
- * @port: Target port
- * @is_secure: TLS flag (always 1 for HTTP/2 over TLS)
- * @pool: Pool for hostname allocation
- *
- * Raises: Arena_Failed on host string allocation failure
- * Thread-safe: No (modifies entry under caller lock)
- */
 static void
 init_http2_entry_fields (HTTPPoolEntry *entry, Socket_T socket,
                          const char *host, int port, int is_secure,
@@ -874,18 +644,6 @@ init_http2_entry_fields (HTTPPoolEntry *entry, Socket_T socket,
   }
 }
 
-/**
- * create_http2_entry_resources - Create HTTP/2 connection and perform handshake
- * @entry: Pool entry with socket set
- * @socket: Connected TLS socket
- * @pool: Connection pool for arena
- *
- * Creates SocketHTTP2_Conn_T with CLIENT role and completes the HTTP/2
- * handshake (preface + SETTINGS exchange).
- *
- * Raises: SocketHTTP2_ProtocolError on handshake failure
- * Thread-safe: No
- */
 static int
 create_http2_entry_resources (HTTPPoolEntry *entry, Socket_T socket,
                               HTTPPool *pool)
@@ -934,19 +692,6 @@ create_http2_entry_resources (HTTPPoolEntry *entry, Socket_T socket,
   return 0;
 }
 
-/**
- * create_http2_connection - Create new HTTP/2 pool entry
- * @pool: Connection pool
- * @socket: Connected TLS socket (ownership transferred)
- * @host: Target hostname
- * @port: Target port
- * @is_secure: Always 1 for HTTP/2 over TLS
- *
- * Returns: New pool entry, or NULL on failure
- *
- * Allocates entry, creates HTTP/2 connection, performs handshake.
- * On failure, socket is NOT freed - caller retains ownership.
- */
 static HTTPPoolEntry *
 create_http2_connection (HTTPPool *pool, Socket_T socket, const char *host,
                          int port, int is_secure)
@@ -1003,19 +748,6 @@ create_http2_connection (HTTPPool *pool, Socket_T socket, const char *host,
   return (HTTPPoolEntry *)entry;
 }
 
-/**
- * check_connection_limits - Check if new connection can be created
- * @client: HTTP client
- * @host: Target hostname
- * @port: Target port
- * @is_secure: TLS flag
- *
- * Checks per-host and total connection limits under lock.
- * Sets last_error to LIMIT_EXCEEDED if limits hit.
- *
- * Returns: 1 if can create (limits allow), 0 if limits exceeded
- * Thread-safe: Yes (uses mutex)
- */
 static int
 check_connection_limits (SocketHTTPClient_T client, const char *host, int port,
                          int is_secure)
@@ -1045,19 +777,6 @@ check_connection_limits (SocketHTTPClient_T client, const char *host, int port,
   return can_create;
 }
 
-/**
- * pool_try_get_connection - Try to get existing connection from pool
- * @client: HTTP client
- * @host: Target hostname
- * @port: Target port
- * @is_secure: 1 for HTTPS, 0 for HTTP
- *
- * Returns: Pool entry if reusable connection found, NULL otherwise
- *
- * Attempts to find a reusable cached connection. If none found and limits
- * are hit, cleans up idle connections and rechecks. Returns NULL in both
- * "create new" and "limits exceeded" cases - caller checks last_error.
- */
 static HTTPPoolEntry *
 pool_try_get_connection (SocketHTTPClient_T client, const char *host, int port,
                          int is_secure)
@@ -1089,16 +808,6 @@ pool_try_get_connection (SocketHTTPClient_T client, const char *host, int port,
   return NULL;
 }
 
-/**
- * establish_tcp_connection - Create TCP connection with Happy Eyeballs
- * @client: HTTP client
- * @host: Target hostname
- * @port: Target port
- *
- * Returns: Connected socket, or NULL on failure
- *
- * Uses Happy Eyeballs for fast dual-stack connection establishment.
- */
 static Socket_T
 establish_tcp_connection (SocketHTTPClient_T client, const char *host,
                           int port)
@@ -1130,12 +839,6 @@ establish_tcp_connection (SocketHTTPClient_T client, const char *host,
 }
 
 #if SOCKET_HAS_TLS
-/**
- * ensure_tls_context - Get or create TLS context
- * @client: HTTP client
- *
- * Returns: TLS context, or NULL on failure
- */
 static SocketTLSContext_T
 ensure_tls_context (SocketHTTPClient_T client)
 {
@@ -1152,13 +855,6 @@ ensure_tls_context (SocketHTTPClient_T client)
   return client->default_tls_ctx;
 }
 
-/**
- * enable_socket_tls - Enable TLS on socket
- * @socket: TCP socket
- * @tls_ctx: TLS context
- *
- * Returns: 0 on success, -1 on failure
- */
 static int
 enable_socket_tls (Socket_T socket, SocketTLSContext_T tls_ctx)
 {
@@ -1169,13 +865,6 @@ enable_socket_tls (Socket_T socket, SocketTLSContext_T tls_ctx)
   return 0;
 }
 
-/**
- * perform_tls_handshake - Perform TLS handshake with timeout
- * @socket: TLS-enabled socket
- * @timeout_ms: Handshake timeout
- *
- * Returns: 0 on success, -1 on failure
- */
 static int
 perform_tls_handshake (Socket_T socket, int timeout_ms)
 {
@@ -1192,17 +881,6 @@ perform_tls_handshake (Socket_T socket, int timeout_ms)
   return 0;
 }
 
-/**
- * configure_alpn_for_http2 - Configure ALPN protocols for HTTP/2 negotiation
- * @tls_ctx: TLS context to configure
- * @max_version: Maximum HTTP version allowed by client config
- *
- * Configures ALPN protocol list based on max_version setting:
- * - HTTP/2: ["h2", "http/1.1"]
- * - HTTP/1.1 only: ["http/1.1"]
- *
- * Returns: 0 on success, -1 on failure
- */
 static void
 configure_alpn_for_http2 (SocketTLSContext_T tls_ctx,
                           SocketHTTP_Version max_version)
@@ -1221,13 +899,6 @@ configure_alpn_for_http2 (SocketTLSContext_T tls_ctx,
     }
 }
 
-/**
- * determine_negotiated_version - Determine HTTP version from ALPN result
- * @socket: TLS-enabled socket after handshake
- *
- * Returns: Negotiated HTTP version (HTTP_VERSION_2 for "h2", HTTP_VERSION_1_1
- * otherwise)
- */
 static SocketHTTP_Version
 determine_negotiated_version (Socket_T socket)
 {
@@ -1237,18 +908,6 @@ determine_negotiated_version (Socket_T socket)
   return HTTP_VERSION_1_1;
 }
 
-/**
- * setup_tls_connection - Enable TLS and perform handshake with ALPN
- * @client: HTTP client
- * @socket: Connected TCP socket (freed on error)
- * @hostname: SNI hostname
- * @negotiated_version: Output - negotiated HTTP version (HTTP/2 or HTTP/1.1)
- *
- * Configures ALPN based on client's max_version setting, performs TLS
- * handshake, and determines negotiated HTTP version from ALPN result.
- *
- * Returns: 0 on success, -1 on failure (socket freed on error)
- */
 static int
 setup_tls_connection (SocketHTTPClient_T client, Socket_T *socket,
                       const char *hostname,
@@ -1400,20 +1059,6 @@ create_temp_entry (Socket_T socket, const char *host, int port, int is_secure)
   return &temp_entry;
 }
 
-/**
- * create_pooled_entry - Create pool entry for new connection
- * @client: HTTP client
- * @socket: Connected socket (freed on error)
- * @host: Target hostname
- * @port: Target port
- * @is_secure: 1 for HTTPS, 0 for HTTP
- * @version: Negotiated HTTP version (HTTP_VERSION_2_0 or HTTP_VERSION_1_1)
- *
- * Returns: Pool entry, or NULL on failure
- *
- * Dispatches to HTTP/2 or HTTP/1.1 connection creation based on the
- * negotiated version from ALPN.
- */
 static HTTPPoolEntry *
 create_pooled_entry (SocketHTTPClient_T client, Socket_T socket,
                      const char *host, int port, int is_secure,
@@ -1440,11 +1085,6 @@ create_pooled_entry (SocketHTTPClient_T client, Socket_T socket,
 
   return entry;
 }
-
-/* ============================================================================
- * Connection Establishment - Main Function
- * ============================================================================
- */
 
 /**
  * httpclient_connect - Get or create connection to host
