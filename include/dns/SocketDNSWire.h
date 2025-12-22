@@ -469,6 +469,116 @@ extern void SocketDNS_question_init (SocketDNS_Question *question,
 
 /** @} */ /* End of dns_question group */
 
+/**
+ * @defgroup dns_rr DNS Resource Record Parsing
+ * @brief Resource record parsing from DNS responses.
+ * @ingroup dns_wire
+ * @{
+ */
+
+/** Maximum RDATA size in bytes (16-bit RDLENGTH field limit). */
+#define DNS_MAX_RDATA_LEN 65535
+
+/**
+ * @brief DNS resource record structure (parsed representation).
+ *
+ * Represents a single resource record from answer, authority, or
+ * additional sections of a DNS response message.
+ *
+ * ## Wire Format (RFC 1035 Section 4.1.3)
+ *
+ * ```
+ * +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+ * |                      NAME                     |
+ * +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+ * |                      TYPE                     |
+ * +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+ * |                     CLASS                     |
+ * +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+ * |                      TTL                      |
+ * |                                               |
+ * +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+ * |                   RDLENGTH                    |
+ * +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+ * /                     RDATA                     /
+ * +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+ * ```
+ *
+ * @note The `rdata` field points into the original message buffer.
+ *       Do not modify or free the message while the RR is in use.
+ */
+typedef struct
+{
+  char name[DNS_MAX_NAME_LEN]; /**< Owner domain name */
+  uint16_t type;               /**< RR type (SocketDNS_Type) */
+  uint16_t rclass;             /**< RR class (SocketDNS_Class) */
+  uint32_t ttl;                /**< Time to live in seconds */
+  uint16_t rdlength;           /**< Length of RDATA in bytes */
+  const unsigned char *rdata;  /**< Pointer to RDATA within message */
+} SocketDNS_RR;
+
+/**
+ * @brief Decode a resource record from wire format.
+ * @ingroup dns_rr
+ *
+ * Parses a single resource record from the answer, authority, or additional
+ * section of a DNS response. Handles domain name compression.
+ *
+ * @param[in]  msg      Full DNS message buffer (for compression pointers).
+ * @param[in]  msglen   Total length of the DNS message.
+ * @param[in]  offset   Offset within msg where RR starts.
+ * @param[out] rr       Output resource record structure.
+ * @param[out] consumed Bytes consumed from offset position (may be NULL).
+ * @return 0 on success, -1 on error.
+ *
+ * @code{.c}
+ * // After parsing header and question section...
+ * size_t offset = header_size + question_size;
+ * for (int i = 0; i < header.ancount; i++) {
+ *     SocketDNS_RR rr;
+ *     size_t consumed;
+ *     if (SocketDNS_rr_decode(msg, msglen, offset, &rr, &consumed) == 0) {
+ *         printf("RR: %s type=%d ttl=%u rdlen=%u\n",
+ *                rr.name, rr.type, rr.ttl, rr.rdlength);
+ *         offset += consumed;
+ *     }
+ * }
+ * @endcode
+ */
+extern int SocketDNS_rr_decode (const unsigned char *msg, size_t msglen,
+                                size_t offset, SocketDNS_RR *rr,
+                                size_t *consumed);
+
+/**
+ * @brief Skip over a resource record without full parsing.
+ * @ingroup dns_rr
+ *
+ * Efficiently skips an RR to reach subsequent records. Only parses
+ * enough to determine the total wire size.
+ *
+ * @param[in]  msg      Full DNS message buffer.
+ * @param[in]  msglen   Total length of the DNS message.
+ * @param[in]  offset   Offset within msg where RR starts.
+ * @param[out] consumed Bytes consumed from offset position (may be NULL).
+ * @return 0 on success, -1 on error.
+ *
+ * @code{.c}
+ * // Skip all answer records to reach authority section
+ * size_t offset = header_size + question_size;
+ * for (int i = 0; i < header.ancount; i++) {
+ *     size_t consumed;
+ *     if (SocketDNS_rr_skip(msg, msglen, offset, &consumed) != 0)
+ *         break;
+ *     offset += consumed;
+ * }
+ * // offset now points to authority section
+ * @endcode
+ */
+extern int SocketDNS_rr_skip (const unsigned char *msg, size_t msglen,
+                              size_t offset, size_t *consumed);
+
+/** @} */ /* End of dns_rr group */
+
 /** @} */ /* End of dns_wire group */
 
 #endif /* SOCKETDNSWIRE_INCLUDED */

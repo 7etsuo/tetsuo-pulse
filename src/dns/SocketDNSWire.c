@@ -34,6 +34,29 @@ dns_pack_be16 (unsigned char *p, uint16_t v)
   p[1] = (unsigned char)(v & 0xFF);
 }
 
+static inline uint32_t
+dns_unpack_be32 (const unsigned char *p)
+{
+  return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16)
+         | ((uint32_t)p[2] << 8) | (uint32_t)p[3];
+}
+
+static inline void
+dns_pack_be32 (unsigned char *p, uint32_t v)
+{
+  p[0] = (unsigned char)((v >> 24) & 0xFF);
+  p[1] = (unsigned char)((v >> 16) & 0xFF);
+  p[2] = (unsigned char)((v >> 8) & 0xFF);
+  p[3] = (unsigned char)(v & 0xFF);
+}
+
+/* Silence compiler warning for unused static inline */
+static inline void
+dns_pack_be32_unused_check (void)
+{
+  (void)dns_pack_be32;
+}
+
 /*
  * Flags word layout (16 bits):
  *
@@ -635,4 +658,118 @@ SocketDNS_question_init (SocketDNS_Question *question, const char *name,
 
   question->qtype = qtype;
   question->qclass = DNS_CLASS_IN; /* Default to Internet class */
+}
+
+/*
+ * Resource Record Decoding (RFC 1035 Section 4.1.3)
+ *
+ * RR Format:
+ *   NAME     - variable length domain name (may be compressed)
+ *   TYPE     - 2 bytes
+ *   CLASS    - 2 bytes
+ *   TTL      - 4 bytes
+ *   RDLENGTH - 2 bytes
+ *   RDATA    - variable length (RDLENGTH bytes)
+ *
+ * Fixed portion after NAME is 10 bytes (2+2+4+2).
+ */
+
+#define DNS_RR_FIXED_SIZE 10 /* TYPE + CLASS + TTL + RDLENGTH */
+
+int
+SocketDNS_rr_decode (const unsigned char *msg, size_t msglen, size_t offset,
+                     SocketDNS_RR *rr, size_t *consumed)
+{
+  size_t name_consumed;
+  int name_len;
+  size_t pos;
+  uint16_t rdlength;
+
+  if (!msg || !rr)
+    return -1;
+
+  if (offset >= msglen)
+    return -1;
+
+  /* Decode the owner name */
+  name_len = SocketDNS_name_decode (msg, msglen, offset, rr->name,
+                                    sizeof (rr->name), &name_consumed);
+  if (name_len < 0)
+    return -1;
+
+  pos = offset + name_consumed;
+
+  /* Need 10 more bytes for TYPE, CLASS, TTL, RDLENGTH */
+  if (pos + DNS_RR_FIXED_SIZE > msglen)
+    return -1;
+
+  /* TYPE (2 bytes) */
+  rr->type = dns_unpack_be16 (msg + pos);
+  pos += 2;
+
+  /* CLASS (2 bytes) */
+  rr->rclass = dns_unpack_be16 (msg + pos);
+  pos += 2;
+
+  /* TTL (4 bytes) */
+  rr->ttl = dns_unpack_be32 (msg + pos);
+  pos += 4;
+
+  /* RDLENGTH (2 bytes) */
+  rdlength = dns_unpack_be16 (msg + pos);
+  pos += 2;
+
+  /* Verify RDATA fits in message */
+  if (pos + rdlength > msglen)
+    return -1;
+
+  rr->rdlength = rdlength;
+  rr->rdata = (rdlength > 0) ? (msg + pos) : NULL;
+
+  if (consumed)
+    *consumed = name_consumed + DNS_RR_FIXED_SIZE + rdlength;
+
+  return 0;
+}
+
+int
+SocketDNS_rr_skip (const unsigned char *msg, size_t msglen, size_t offset,
+                   size_t *consumed)
+{
+  char name_buf[DNS_MAX_NAME_LEN];
+  size_t name_consumed;
+  int name_len;
+  size_t pos;
+  uint16_t rdlength;
+
+  if (!msg)
+    return -1;
+
+  if (offset >= msglen)
+    return -1;
+
+  /* Skip the name */
+  name_len
+      = SocketDNS_name_decode (msg, msglen, offset, name_buf, sizeof (name_buf),
+                               &name_consumed);
+  if (name_len < 0)
+    return -1;
+
+  pos = offset + name_consumed;
+
+  /* Need 10 bytes for fixed fields */
+  if (pos + DNS_RR_FIXED_SIZE > msglen)
+    return -1;
+
+  /* Skip TYPE, CLASS, TTL to get RDLENGTH at offset+6 */
+  rdlength = dns_unpack_be16 (msg + pos + 8);
+
+  /* Verify RDATA fits */
+  if (pos + DNS_RR_FIXED_SIZE + rdlength > msglen)
+    return -1;
+
+  if (consumed)
+    *consumed = name_consumed + DNS_RR_FIXED_SIZE + rdlength;
+
+  return 0;
 }
