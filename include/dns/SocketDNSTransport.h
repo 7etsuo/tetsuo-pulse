@@ -9,7 +9,7 @@
 
 /**
  * @file SocketDNSTransport.h
- * @brief DNS UDP and TCP transport layer (RFC 1035 Section 4.2).
+ * @brief DNS UDP and TCP transport layer (RFC 1035 Section 4.2, RFC 6891).
  * @ingroup dns
  *
  * Provides async UDP and TCP transport for DNS queries with automatic retry,
@@ -20,6 +20,7 @@
  *
  * - RFC 1035 Section 4.2.1: UDP usage (port 53, 512 byte limit)
  * - RFC 1035 Section 4.2.2: TCP usage (2-byte length prefix, for truncated responses)
+ * - RFC 6891: EDNS0 (larger UDP payload, up to 4096 bytes)
  *
  * ## Features
  *
@@ -30,6 +31,7 @@
  * - TCP transport with 2-byte length prefix per RFC 1035
  * - TCP connection reuse for multiple queries
  * - IPv4 and IPv6 nameserver support
+ * - EDNS0 support for larger UDP responses (up to 4096 bytes)
  *
  * @see SocketDNSWire.h for message encoding/decoding.
  * @see SocketDNS.h for the high-level resolver API.

@@ -977,3 +977,154 @@ SocketDNS_rdata_parse_soa (const unsigned char *msg, size_t msglen,
 
   return 0;
 }
+
+/*
+ * EDNS0 OPT Pseudo-RR Encoding/Decoding (RFC 6891)
+ *
+ * The OPT record is a pseudo-RR with non-standard field usage:
+ *   NAME     - Must be 0 (root domain, single zero byte)
+ *   TYPE     - 41 (OPT)
+ *   CLASS    - Requestor's UDP payload size
+ *   TTL      - Extended RCODE (8 bits) | VERSION (8 bits) | DO (1 bit) | Z (15 bits)
+ *   RDLENGTH - Length of options data
+ *   RDATA    - Zero or more {option-code, option-length, option-data} tuples
+ *
+ * Wire format (11 bytes minimum without options):
+ *   +--+--+--+--+--+--+--+--+--+--+--+
+ *   |0 |  TYPE=41  |  UDP SIZE |  TTL (4 bytes)  | RDLEN |
+ *   +--+--+--+--+--+--+--+--+--+--+--+
+ */
+
+void
+SocketDNS_opt_init (SocketDNS_OPT *opt, uint16_t udp_size)
+{
+  if (!opt)
+    return;
+
+  memset (opt, 0, sizeof (*opt));
+
+  /* Enforce minimum UDP payload size per RFC 6891 Section 6.2.3 */
+  opt->udp_payload_size = (udp_size < DNS_EDNS0_MIN_UDPSIZE)
+                              ? DNS_EDNS0_MIN_UDPSIZE
+                              : udp_size;
+  opt->version = DNS_EDNS0_VERSION;
+  /* do_bit = 0, z = 0, rdlength = 0, rdata = NULL (already zeroed) */
+}
+
+int
+SocketDNS_opt_encode (const SocketDNS_OPT *opt, unsigned char *buf,
+                      size_t buflen)
+{
+  size_t total;
+  uint32_t ttl;
+  unsigned char *p;
+
+  if (!opt || !buf)
+    return -1;
+
+  total = DNS_OPT_FIXED_SIZE + opt->rdlength;
+  if (buflen < total)
+    return -1;
+
+  p = buf;
+
+  /* NAME = root (single zero byte) */
+  *p++ = 0x00;
+
+  /* TYPE = OPT (41) */
+  dns_pack_be16 (p, DNS_TYPE_OPT);
+  p += 2;
+
+  /* CLASS = UDP payload size */
+  dns_pack_be16 (p, opt->udp_payload_size);
+  p += 2;
+
+  /* TTL = extended RCODE (8) | version (8) | DO (1) | Z (15) */
+  ttl = ((uint32_t)opt->extended_rcode << 24)
+        | ((uint32_t)opt->version << 16)
+        | ((uint32_t)(opt->do_bit ? 0x8000 : 0))
+        | ((uint32_t)(opt->z & 0x7FFF));
+  dns_pack_be32 (p, ttl);
+  p += 4;
+
+  /* RDLENGTH */
+  dns_pack_be16 (p, opt->rdlength);
+  p += 2;
+
+  /* RDATA (options) */
+  if (opt->rdlength > 0 && opt->rdata != NULL)
+    memcpy (p, opt->rdata, opt->rdlength);
+
+  return (int)total;
+}
+
+int
+SocketDNS_opt_decode (const unsigned char *buf, size_t len, SocketDNS_OPT *opt)
+{
+  const unsigned char *p;
+  uint16_t type;
+  uint32_t ttl;
+
+  if (!buf || !opt)
+    return -1;
+
+  if (len < DNS_OPT_FIXED_SIZE)
+    return -1;
+
+  p = buf;
+
+  /* NAME must be root (single zero byte) */
+  if (*p++ != 0x00)
+    return -1;
+
+  /* TYPE must be OPT (41) */
+  type = dns_unpack_be16 (p);
+  p += 2;
+  if (type != DNS_TYPE_OPT)
+    return -1;
+
+  /* CLASS = UDP payload size */
+  opt->udp_payload_size = dns_unpack_be16 (p);
+  p += 2;
+
+  /* TTL = extended RCODE | version | flags */
+  ttl = dns_unpack_be32 (p);
+  p += 4;
+
+  opt->extended_rcode = (uint8_t)((ttl >> 24) & 0xFF);
+  opt->version = (uint8_t)((ttl >> 16) & 0xFF);
+  opt->do_bit = (uint8_t)((ttl >> 15) & 0x01);
+  opt->z = (uint16_t)(ttl & 0x7FFF);
+
+  /* RDLENGTH */
+  opt->rdlength = dns_unpack_be16 (p);
+  p += 2;
+
+  /* Validate RDLENGTH doesn't exceed available buffer */
+  if (len < (size_t)DNS_OPT_FIXED_SIZE + opt->rdlength)
+    return -1;
+
+  /* RDATA pointer (not copied, points into buffer) */
+  opt->rdata = (opt->rdlength > 0) ? p : NULL;
+
+  return DNS_OPT_FIXED_SIZE + (int)opt->rdlength;
+}
+
+uint16_t
+SocketDNS_opt_extended_rcode (const SocketDNS_Header *hdr,
+                              const SocketDNS_OPT *opt)
+{
+  uint16_t rcode;
+
+  if (!hdr)
+    return 0;
+
+  /* Base 4-bit RCODE from header */
+  rcode = (uint16_t)(hdr->rcode & 0x0F);
+
+  /* Combine with upper 8 bits from OPT if present */
+  if (opt != NULL)
+    rcode |= ((uint16_t)opt->extended_rcode << 4);
+
+  return rcode;
+}

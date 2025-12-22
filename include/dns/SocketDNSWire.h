@@ -764,6 +764,161 @@ extern int SocketDNS_rdata_parse_soa (const unsigned char *msg, size_t msglen,
 
 /** @} */ /* End of dns_rdata group */
 
+/**
+ * @defgroup dns_edns0 EDNS0 Extension Mechanism
+ * @brief EDNS0 OPT pseudo-RR encoding and decoding (RFC 6891).
+ * @ingroup dns_wire
+ * @{
+ */
+
+/** EDNS0 version number (RFC 6891 Section 6.1.3). */
+#define DNS_EDNS0_VERSION 0
+
+/** Default UDP payload size for EDNS0 (RFC 6891 Section 6.2.5). */
+#define DNS_EDNS0_DEFAULT_UDPSIZE 4096
+
+/** Minimum UDP payload size (values below treated as 512, RFC 6891 Section 6.2.3). */
+#define DNS_EDNS0_MIN_UDPSIZE 512
+
+/** Fixed size of OPT pseudo-RR in bytes (1 + 2 + 2 + 4 + 2 = 11). */
+#define DNS_OPT_FIXED_SIZE 11
+
+/**
+ * @brief EDNS0 OPT pseudo-RR structure (RFC 6891).
+ *
+ * Represents the EDNS0 extension mechanism pseudo-RR. Unlike standard RRs,
+ * the OPT record uses fields differently:
+ * - NAME: Always root (0x00)
+ * - TYPE: OPT (41)
+ * - CLASS: Requestor's UDP payload size
+ * - TTL: Extended RCODE, version, and flags
+ * - RDATA: Zero or more options
+ *
+ * ## Wire Format (RFC 6891 Section 6.1.2)
+ *
+ * ```
+ * +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+ * |0 |                 TYPE = 41                  |  1 + 2 bytes
+ * +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+ * |              UDP Payload Size                |  2 bytes
+ * +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+ * |  Extended RCODE   |  VERSION  | DO |    Z    |  4 bytes
+ * +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+ * |                 RDLENGTH                     |  2 bytes
+ * +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+ * |                   RDATA                      |  variable
+ * +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+ * ```
+ */
+typedef struct
+{
+  uint16_t udp_payload_size; /**< Max UDP payload size (CLASS field) */
+  uint8_t extended_rcode;    /**< Upper 8 bits of 12-bit RCODE (TTL bits 24-31) */
+  uint8_t version;           /**< EDNS version (TTL bits 16-23), 0 for EDNS0 */
+  uint8_t do_bit;            /**< DNSSEC OK flag (TTL bit 15) */
+  uint16_t z;                /**< Reserved, must be zero (TTL bits 0-14) */
+  uint16_t rdlength;         /**< Length of RDATA in bytes */
+  const unsigned char *rdata; /**< Pointer to RDATA (options), not owned */
+} SocketDNS_OPT;
+
+/**
+ * @brief Initialize an OPT record with default values.
+ * @ingroup dns_edns0
+ *
+ * Sets up an OPT record for a standard EDNS0 query with:
+ * - Specified UDP payload size (minimum 512)
+ * - Version 0 (EDNS0)
+ * - DO bit cleared (no DNSSEC)
+ * - No options (RDLENGTH = 0)
+ *
+ * @param[out] opt      OPT structure to initialize.
+ * @param[in]  udp_size Maximum UDP payload size to advertise.
+ *                      Values below 512 are normalized to 512.
+ *
+ * @code{.c}
+ * SocketDNS_OPT opt;
+ * SocketDNS_opt_init(&opt, 4096);
+ * // opt.udp_payload_size = 4096, opt.version = 0, opt.do_bit = 0
+ * @endcode
+ */
+extern void SocketDNS_opt_init (SocketDNS_OPT *opt, uint16_t udp_size);
+
+/**
+ * @brief Encode an OPT record to wire format.
+ * @ingroup dns_edns0
+ *
+ * Serializes an OPT pseudo-RR to wire format as specified in RFC 6891.
+ * The encoded record can be appended to the additional section of a query.
+ *
+ * @param[in]  opt    OPT structure to encode.
+ * @param[out] buf    Output buffer for wire format.
+ * @param[in]  buflen Size of output buffer.
+ * @return Number of bytes written on success, -1 on error (buffer too small).
+ *
+ * @code{.c}
+ * SocketDNS_OPT opt;
+ * SocketDNS_opt_init(&opt, 4096);
+ * unsigned char buf[DNS_OPT_FIXED_SIZE];
+ * int len = SocketDNS_opt_encode(&opt, buf, sizeof(buf));
+ * if (len > 0) {
+ *     // Append buf to query, increment ARCOUNT
+ * }
+ * @endcode
+ */
+extern int SocketDNS_opt_encode (const SocketDNS_OPT *opt, unsigned char *buf,
+                                  size_t buflen);
+
+/**
+ * @brief Decode an OPT record from wire format.
+ * @ingroup dns_edns0
+ *
+ * Parses an OPT pseudo-RR from the additional section of a DNS response.
+ * Validates that NAME is root (0x00) and TYPE is OPT (41).
+ *
+ * @param[in]  buf    Buffer containing OPT record.
+ * @param[in]  len    Length of buffer.
+ * @param[out] opt    Output OPT structure.
+ * @return Number of bytes consumed on success, -1 on error.
+ *
+ * @code{.c}
+ * // Find OPT in additional section
+ * SocketDNS_OPT opt;
+ * int consumed = SocketDNS_opt_decode(additional_ptr, remaining, &opt);
+ * if (consumed > 0) {
+ *     printf("Server supports %u byte UDP\n", opt.udp_payload_size);
+ * }
+ * @endcode
+ */
+extern int SocketDNS_opt_decode (const unsigned char *buf, size_t len,
+                                  SocketDNS_OPT *opt);
+
+/**
+ * @brief Calculate the 12-bit extended RCODE from header and OPT.
+ * @ingroup dns_edns0
+ *
+ * Combines the 4-bit RCODE from the DNS header with the 8-bit extended
+ * RCODE from the OPT record to form the full 12-bit extended RCODE
+ * as specified in RFC 6891 Section 6.1.3.
+ *
+ * @param[in] hdr DNS header (contains lower 4 bits of RCODE).
+ * @param[in] opt OPT record (contains upper 8 bits of RCODE), may be NULL.
+ * @return 12-bit extended RCODE (0-4095).
+ *
+ * @code{.c}
+ * SocketDNS_Header hdr;
+ * SocketDNS_OPT opt;
+ * // ... decode header and OPT ...
+ * uint16_t rcode = SocketDNS_opt_extended_rcode(&hdr, &opt);
+ * if (rcode == 16) {
+ *     // BADVERS - server doesn't support this EDNS version
+ * }
+ * @endcode
+ */
+extern uint16_t SocketDNS_opt_extended_rcode (const SocketDNS_Header *hdr,
+                                               const SocketDNS_OPT *opt);
+
+/** @} */ /* End of dns_edns0 group */
+
 /** @} */ /* End of dns_wire group */
 
 #endif /* SOCKETDNSWIRE_INCLUDED */
