@@ -81,7 +81,14 @@ done
 
 # Get script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BUILD_DIR="$SCRIPT_DIR/build"
+
+# Use build-release for performance benchmarks (no sanitizers)
+# Fall back to build/ if build-release doesn't exist
+if [ -d "$SCRIPT_DIR/build-release" ]; then
+    BUILD_DIR="$SCRIPT_DIR/build-release"
+else
+    BUILD_DIR="$SCRIPT_DIR/build"
+fi
 
 # Create output directory
 mkdir -p "$OUTPUT_DIR"
