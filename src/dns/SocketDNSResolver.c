@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <sys/random.h>
 #include <time.h>
 
 #define T SocketDNSResolver_T
@@ -102,8 +103,6 @@ struct T
   struct SocketDNSResolver_Query *query_head;
   struct SocketDNSResolver_Query *query_tail;
   int pending_count;
-  uint16_t next_query_id;
-  uint16_t id_seed;
 
   /* Cache */
   struct CacheEntry *cache_hash[CACHE_HASH_SIZE];
@@ -271,10 +270,28 @@ is_localhost (const char *hostname)
   return strcasecmp (hostname, "localhost") == 0;
 }
 
+/**
+ * Cap TTL to maximum allowed value per RFC 8767.
+ *
+ * Prevents cache poisoning via excessively long TTLs and ensures
+ * reasonable cache refresh intervals.
+ */
+static inline uint32_t
+cap_ttl (uint32_t ttl)
+{
+  return ttl > DNS_TTL_MAX ? DNS_TTL_MAX : ttl;
+}
+
 /*
  * Query ID Management
  */
 
+/**
+ * Generate a cryptographically random query ID per RFC 5452 Section 4.
+ *
+ * Uses getrandom() for full 16-bit entropy to prevent cache poisoning
+ * attacks. Falls back to XOR of monotonic time bits if getrandom() fails.
+ */
 static uint16_t
 generate_unique_id (T resolver)
 {
@@ -284,9 +301,18 @@ generate_unique_id (T resolver)
 
   do
     {
-      id = resolver->next_query_id++;
-      if (resolver->next_query_id == 0)
-        resolver->next_query_id = 1;
+      /* Use getrandom() for cryptographic randomness (RFC 5452 Section 4) */
+      ssize_t ret = getrandom (&id, sizeof (id), 0);
+      if (ret != (ssize_t)sizeof (id))
+        {
+          /* Fallback: XOR monotonic time bits for some entropy */
+          uint64_t t = (uint64_t)get_monotonic_ms ();
+          id = (uint16_t)((t ^ (t >> 16) ^ (t >> 32)) & 0xFFFF);
+        }
+
+      /* Avoid ID 0 (reserved in some implementations) */
+      if (id == 0)
+        id = 1;
 
       /* Check if ID is already in use */
       unsigned h = hash_query_id (id);
@@ -309,8 +335,8 @@ generate_unique_id (T resolver)
     }
   while (attempts < max_attempts);
 
-  /* Fallback: just use the ID (collision will be handled) */
-  return resolver->next_query_id++;
+  /* Extremely unlikely: fallback to any ID (collision handled at response) */
+  return id;
 }
 
 static struct SocketDNSResolver_Query *
@@ -611,6 +637,42 @@ build_query_message (struct SocketDNSResolver_Query *q, int query_type)
 }
 
 /*
+ * Response Validation (RFC 5452)
+ */
+
+/**
+ * Validate response question section matches query per RFC 5452 Section 3.
+ *
+ * Prevents cache poisoning by verifying the response is for our query.
+ */
+static int
+validate_response_question (const unsigned char *response, size_t len,
+                            struct SocketDNSResolver_Query *q)
+{
+  SocketDNS_Question question;
+  size_t consumed;
+
+  /* Decode first question from response */
+  if (SocketDNS_question_decode (response, len, DNS_HEADER_SIZE,
+                                  &question, &consumed) != 0)
+    return RESOLVER_ERROR_INVALID;
+
+  /* QNAME must match (case-insensitive per RFC 1035 Section 2.3.3) */
+  if (!SocketDNS_name_equal (question.qname, q->current_name))
+    return RESOLVER_ERROR_VALIDATION_QNAME;
+
+  /* QTYPE must match query type */
+  if (question.qtype != (uint16_t)q->query_type)
+    return RESOLVER_ERROR_VALIDATION_QTYPE;
+
+  /* QCLASS must be IN (1) */
+  if (question.qclass != DNS_CLASS_IN)
+    return RESOLVER_ERROR_VALIDATION_QCLASS;
+
+  return RESOLVER_OK;
+}
+
+/*
  * Response Parsing
  */
 
@@ -636,6 +698,14 @@ parse_response (T resolver, struct SocketDNSResolver_Query *q,
     return RESOLVER_ERROR_INVALID;
   if (header.id != q->id)
     return RESOLVER_ERROR_INVALID;
+
+  /* Validate question section matches query (RFC 5452 Section 3) */
+  if (header.qdcount >= 1)
+    {
+      int vret = validate_response_question (response, len, q);
+      if (vret != RESOLVER_OK)
+        return vret;
+    }
 
   /* Check RCODE */
   switch (header.rcode)
@@ -694,14 +764,19 @@ parse_response (T resolver, struct SocketDNSResolver_Query *q,
       /* Handle A record */
       if (rr.type == DNS_TYPE_A && q->address_count < RESOLVER_MAX_ADDRESSES)
         {
+          /* Bailiwick check: skip out-of-zone records (RFC 5452) */
+          if (!SocketDNS_name_in_bailiwick (rr.name, q->hostname))
+            continue;
+
           struct in_addr addr;
           if (SocketDNS_rdata_parse_a (&rr, &addr) == 0)
             {
+              uint32_t capped_ttl = cap_ttl (rr.ttl);
               q->addresses[q->address_count].family = AF_INET;
               q->addresses[q->address_count].addr.v4 = addr;
-              q->addresses[q->address_count].ttl = rr.ttl;
-              if (q->min_ttl == 0 || rr.ttl < q->min_ttl)
-                q->min_ttl = rr.ttl;
+              q->addresses[q->address_count].ttl = capped_ttl;
+              if (q->min_ttl == 0 || capped_ttl < q->min_ttl)
+                q->min_ttl = capped_ttl;
               q->address_count++;
             }
         }
@@ -709,14 +784,19 @@ parse_response (T resolver, struct SocketDNSResolver_Query *q,
       /* Handle AAAA record */
       if (rr.type == DNS_TYPE_AAAA && q->address_count < RESOLVER_MAX_ADDRESSES)
         {
+          /* Bailiwick check: skip out-of-zone records (RFC 5452) */
+          if (!SocketDNS_name_in_bailiwick (rr.name, q->hostname))
+            continue;
+
           struct in6_addr addr;
           if (SocketDNS_rdata_parse_aaaa (&rr, &addr) == 0)
             {
+              uint32_t capped_ttl = cap_ttl (rr.ttl);
               q->addresses[q->address_count].family = AF_INET6;
               q->addresses[q->address_count].addr.v6 = addr;
-              q->addresses[q->address_count].ttl = rr.ttl;
-              if (q->min_ttl == 0 || rr.ttl < q->min_ttl)
-                q->min_ttl = rr.ttl;
+              q->addresses[q->address_count].ttl = capped_ttl;
+              if (q->min_ttl == 0 || capped_ttl < q->min_ttl)
+                q->min_ttl = capped_ttl;
               q->address_count++;
             }
         }
@@ -861,14 +941,19 @@ transport_callback (SocketDNSQuery_T query, const unsigned char *response,
           if (rr.type == DNS_TYPE_A
               && q->address_count < RESOLVER_MAX_ADDRESSES)
             {
+              /* Bailiwick check: skip out-of-zone records (RFC 5452) */
+              if (!SocketDNS_name_in_bailiwick (rr.name, q->hostname))
+                continue;
+
               struct in_addr addr;
               if (SocketDNS_rdata_parse_a (&rr, &addr) == 0)
                 {
+                  uint32_t capped_ttl = cap_ttl (rr.ttl);
                   q->addresses[q->address_count].family = AF_INET;
                   q->addresses[q->address_count].addr.v4 = addr;
-                  q->addresses[q->address_count].ttl = rr.ttl;
-                  if (q->min_ttl == 0 || rr.ttl < q->min_ttl)
-                    q->min_ttl = rr.ttl;
+                  q->addresses[q->address_count].ttl = capped_ttl;
+                  if (q->min_ttl == 0 || capped_ttl < q->min_ttl)
+                    q->min_ttl = capped_ttl;
                   q->address_count++;
                 }
             }
@@ -877,14 +962,19 @@ transport_callback (SocketDNSQuery_T query, const unsigned char *response,
           if (rr.type == DNS_TYPE_AAAA
               && q->address_count < RESOLVER_MAX_ADDRESSES)
             {
+              /* Bailiwick check: skip out-of-zone records (RFC 5452) */
+              if (!SocketDNS_name_in_bailiwick (rr.name, q->hostname))
+                continue;
+
               struct in6_addr addr;
               if (SocketDNS_rdata_parse_aaaa (&rr, &addr) == 0)
                 {
+                  uint32_t capped_ttl = cap_ttl (rr.ttl);
                   q->addresses[q->address_count].family = AF_INET6;
                   q->addresses[q->address_count].addr.v6 = addr;
-                  q->addresses[q->address_count].ttl = rr.ttl;
-                  if (q->min_ttl == 0 || rr.ttl < q->min_ttl)
-                    q->min_ttl = rr.ttl;
+                  q->addresses[q->address_count].ttl = capped_ttl;
+                  if (q->min_ttl == 0 || capped_ttl < q->min_ttl)
+                    q->min_ttl = capped_ttl;
                   q->address_count++;
                 }
             }
@@ -1059,11 +1149,7 @@ SocketDNSResolver_new (Arena_T arena)
   }
   END_TRY;
 
-  /* Initialize query ID generator with random seed */
-  resolver->id_seed = (uint16_t)(get_monotonic_ms () & 0xFFFF);
-  resolver->next_query_id = resolver->id_seed;
-  if (resolver->next_query_id == 0)
-    resolver->next_query_id = 1;
+  /* Note: Query IDs are now generated cryptographically per RFC 5452 */
 
   /* Set defaults */
   resolver->timeout_ms = RESOLVER_DEFAULT_TIMEOUT_MS;
@@ -1556,6 +1642,14 @@ SocketDNSResolver_strerror (int error)
       return "Invalid response";
     case RESOLVER_ERROR_NOMEM:
       return "Out of memory";
+    case RESOLVER_ERROR_VALIDATION_QNAME:
+      return "Response QNAME mismatch (RFC 5452)";
+    case RESOLVER_ERROR_VALIDATION_QTYPE:
+      return "Response QTYPE mismatch (RFC 5452)";
+    case RESOLVER_ERROR_VALIDATION_QCLASS:
+      return "Response QCLASS mismatch (RFC 5452)";
+    case RESOLVER_ERROR_VALIDATION_BAILIWICK:
+      return "Answer outside queried zone (RFC 5452)";
     default:
       return "Unknown error";
     }
