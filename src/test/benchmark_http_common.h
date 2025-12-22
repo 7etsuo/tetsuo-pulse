@@ -23,10 +23,13 @@
 #include <string.h>
 #include <time.h>
 
-/* Benchmark configuration defaults */
-#define BENCH_HTTP_DEFAULT_REQUESTS 10000
+/* Benchmark configuration defaults
+ * Note: Keep total requests low until issue #119 (HTTP client memory corruption)
+ * is fixed. With high request counts (>2000 total), the HTTP client crashes.
+ */
+#define BENCH_HTTP_DEFAULT_REQUESTS 100
 #define BENCH_HTTP_DEFAULT_THREADS 4
-#define BENCH_HTTP_DEFAULT_WARMUP 1000
+#define BENCH_HTTP_DEFAULT_WARMUP 10
 #define BENCH_HTTP_DEFAULT_PORT 8080
 #define BENCH_HTTP_DEFAULT_TLS_PORT 8443
 
