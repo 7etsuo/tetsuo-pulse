@@ -9,24 +9,26 @@
 
 /**
  * @file SocketDNSTransport.h
- * @brief DNS UDP transport layer (RFC 1035 Section 4.2.1).
+ * @brief DNS UDP and TCP transport layer (RFC 1035 Section 4.2).
  * @ingroup dns
  *
- * Provides async UDP transport for DNS queries with automatic retry,
+ * Provides async UDP and TCP transport for DNS queries with automatic retry,
  * timeout handling, and nameserver rotation. Integrates with SocketPoll
  * for event-driven operation.
  *
  * ## RFC References
  *
  * - RFC 1035 Section 4.2.1: UDP usage (port 53, 512 byte limit)
- * - RFC 1035 Section 4.2.2: TCP usage (for truncated responses)
+ * - RFC 1035 Section 4.2.2: TCP usage (2-byte length prefix, for truncated responses)
  *
  * ## Features
  *
  * - Non-blocking async queries with callbacks
  * - Automatic retry with exponential backoff
  * - Nameserver rotation on failure
- * - Truncation detection (TC bit)
+ * - Truncation detection (TC bit) with TCP fallback
+ * - TCP transport with 2-byte length prefix per RFC 1035
+ * - TCP connection reuse for multiple queries
  * - IPv4 and IPv6 nameserver support
  *
  * @see SocketDNSWire.h for message encoding/decoding.
@@ -68,6 +70,15 @@
 /** Maximum pending queries (resource limit). */
 #define DNS_MAX_PENDING_QUERIES 1000
 
+/** Maximum TCP message size (64KB - 2 byte length field can address). */
+#define DNS_TCP_MAX_SIZE 65535
+
+/** TCP connection timeout in milliseconds. */
+#define DNS_TCP_CONNECT_TIMEOUT_MS 5000
+
+/** TCP idle timeout before closing connection (RFC 1035 recommends ~2 minutes). */
+#define DNS_TCP_IDLE_TIMEOUT_MS 120000
+
 /* Error codes for callback */
 #define DNS_ERROR_SUCCESS 0    /**< Query completed successfully */
 #define DNS_ERROR_TIMEOUT -1   /**< All retries exhausted */
@@ -80,6 +91,7 @@
 #define DNS_ERROR_NXDOMAIN -8  /**< Domain does not exist */
 #define DNS_ERROR_REFUSED -9   /**< Server refused query */
 #define DNS_ERROR_NONS -10     /**< No nameservers configured */
+#define DNS_ERROR_CONNFAIL -11 /**< TCP connection failed */
 
 /**
  * @brief DNS transport operation failure exception.
@@ -253,6 +265,68 @@ extern void SocketDNSTransport_configure (T transport,
 extern SocketDNSQuery_T SocketDNSTransport_query_udp (
     T transport, const unsigned char *query, size_t len,
     SocketDNSTransport_Callback callback, void *userdata);
+
+/**
+ * @brief Send a DNS query asynchronously via TCP.
+ * @ingroup dns_transport
+ *
+ * Establishes a TCP connection to the nameserver if not already connected,
+ * then sends the query with a 2-byte length prefix per RFC 1035 Section 4.2.2.
+ *
+ * TCP is typically used when:
+ * - UDP response was truncated (TC bit set)
+ * - Query/response exceeds 512 bytes
+ * - Zone transfers (AXFR/IXFR)
+ *
+ * @param transport Transport instance.
+ * @param query     Encoded DNS query message (header + question).
+ * @param len       Query length in bytes (must be <= DNS_TCP_MAX_SIZE).
+ * @param callback  Completion callback (required).
+ * @param userdata  User data passed to callback.
+ * @return Query handle on success, NULL on error.
+ *
+ * @note TCP connections may be reused for subsequent queries to same nameserver.
+ * @note Use SocketDNSTransport_tcp_close() to explicitly close idle connections.
+ *
+ * @code{.c}
+ * // Retry truncated query via TCP
+ * void my_callback(SocketDNSQuery_T q, const unsigned char *resp,
+ *                  size_t len, int error, void *data) {
+ *     if (error == DNS_ERROR_TRUNCATED) {
+ *         // Retry via TCP
+ *         SocketDNSTransport_query_tcp(transport, original_query,
+ *                                      original_len, my_callback, data);
+ *     }
+ * }
+ * @endcode
+ */
+extern SocketDNSQuery_T SocketDNSTransport_query_tcp (
+    T transport, const unsigned char *query, size_t len,
+    SocketDNSTransport_Callback callback, void *userdata);
+
+/**
+ * @brief Close all idle TCP connections.
+ * @ingroup dns_transport
+ *
+ * Closes any cached TCP connections to nameservers. This is useful for
+ * releasing resources or forcing fresh connections.
+ *
+ * @param transport Transport instance.
+ */
+extern void SocketDNSTransport_tcp_close_all (T transport);
+
+/**
+ * @brief Get the TCP socket file descriptor for a nameserver.
+ * @ingroup dns_transport
+ *
+ * For external poll integration. Returns the TCP socket fd if connected,
+ * or -1 if not connected.
+ *
+ * @param transport Transport instance.
+ * @param ns_index  Nameserver index (0 to nameserver_count-1).
+ * @return File descriptor (>= 0) or -1 if not connected.
+ */
+extern int SocketDNSTransport_tcp_fd (T transport, int ns_index);
 
 /**
  * @brief Cancel a pending query.
