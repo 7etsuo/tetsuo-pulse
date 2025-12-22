@@ -4,9 +4,7 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * SocketHTTP2-connection.c - HTTP/2 Connection Management (RFC 9113)
- */
+/* SocketHTTP2-connection.c - HTTP/2 Connection Management (RFC 9113) */
 
 #include "http/SocketHTTP2-private.h"
 #include "http/SocketHTTP2.h"

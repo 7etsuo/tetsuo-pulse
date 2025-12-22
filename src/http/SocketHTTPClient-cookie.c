@@ -4,9 +4,7 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * SocketHTTPClient-cookie.c - HTTP Cookie Implementation (RFC 6265)
- */
+/* SocketHTTPClient-cookie.c - HTTP Cookie Implementation (RFC 6265) */
 
 #include <assert.h>
 #include <limits.h>
@@ -54,15 +52,7 @@ static const char COOKIE_ATTR_SAMESITE_STR[] = "SameSite";
 #define COOKIE_ATTR_PATH_LEN (sizeof (COOKIE_ATTR_PATH_STR) - 1)
 #define COOKIE_ATTR_SAMESITE_LEN (sizeof (COOKIE_ATTR_SAMESITE_STR) - 1)
 
-/**
- * is_valid_cookie_octet - Check if char is valid in cookie name/value
- * @c: Character to check
- *
- * Returns: 1 if valid, 0 if invalid
- *
- * Per RFC 6265 §3.1, cookie-octet excludes CTL chars (0-31, 127-159).
- * SECURITY: Also rejects CRLF characters to prevent header injection.
- */
+/* RFC 6265 §3.1 cookie-octet validation (rejects CTL/CRLF for security) */
 static int
 validate_cookie_octets (const unsigned char *data, size_t len)
 {
@@ -106,13 +96,7 @@ cookie_hash (const char *domain, const char *path, const char *name,
   return hash;
 }
 
-/**
- * domain_matches - Check if domain matches cookie domain (RFC 6265 §5.1.3)
- * @request_domain: Domain from request URL
- * @cookie_domain: Domain from cookie
- *
- * Returns: 1 if matches, 0 otherwise
- */
+/* RFC 6265 §5.1.3 domain matching */
 static int
 domain_matches (const char *request_domain, const char *cookie_domain)
 {
@@ -141,13 +125,7 @@ domain_matches (const char *request_domain, const char *cookie_domain)
   return 0;
 }
 
-/**
- * path_matches - Check if path matches cookie path (RFC 6265 §5.1.4)
- * @request_path: Path from request URL
- * @cookie_path: Path from cookie
- *
- * Returns: 1 if matches, 0 otherwise
- */
+/* RFC 6265 §5.1.4 path matching */
 static int
 path_matches (const char *request_path, const char *cookie_path)
 {
@@ -174,17 +152,7 @@ path_matches (const char *request_path, const char *cookie_path)
   return 0;
 }
 
-/**
- * parse_max_age - Parse Max-Age attribute value from cookie
- * @value: String value of Max-Age (e.g. "3600")
- * @len: Length of value string
- *
- * Returns: Unix timestamp of expiration, or 0 if invalid/session cookie
- *
- * Per RFC 6265: Non-positive Max-Age means delete cookie (return 1 for
- * immediate expiry). Positive values are capped at HTTPCLIENT_MAX_COOKIE_AGE_SEC.
- * SECURITY: Fixed overflow handling - checks overflow before sign application.
- */
+/* Parse Max-Age with overflow protection */
 static time_t
 parse_max_age (const char *value, const size_t len)
 {
@@ -258,14 +226,7 @@ parse_max_age (const char *value, const size_t len)
   return expires;
 }
 
-/**
- * parse_same_site - Parse SameSite attribute value
- * @value: String value ("Strict", "Lax", "None", case-insensitive)
- * @len: Length of value string
- *
- * Returns: Parsed SameSite enum, defaults to LAX if unknown per RFC 6265bis
- * Thread-safe: Yes (stateless)
- */
+/* Parse SameSite attribute (defaults to LAX per RFC 6265bis) */
 static SocketHTTPClient_SameSite
 parse_same_site (const char *value, const size_t len)
 {
@@ -297,12 +258,7 @@ cookie_expiry_is_valid (time_t expires, time_t now)
 
 
 
-/**
- * get_default_path - Get default path from request URI (RFC 6265 §5.1.4)
- * @request_path: Request URI path
- * @output: Output buffer for default path
- * @output_size: Size of output buffer
- */
+/* RFC 6265 §5.1.4 default path derivation */
 static void
 get_default_path (const char *request_path, char *output, size_t output_size)
 {

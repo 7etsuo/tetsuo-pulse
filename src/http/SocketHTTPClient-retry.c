@@ -4,9 +4,7 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * SocketHTTPClient-retry.c - HTTP Client Retry Logic with Exponential Backoff
- */
+/* SocketHTTPClient-retry.c - HTTP Client Retry Logic with Exponential Backoff */
 
 #include <errno.h>
 #include <string.h>
@@ -29,31 +27,6 @@
     }                                                                         \
   while (0)
 
-/**
- * httpclient_calculate_retry_delay - Calculate backoff delay for retry attempt
- * @client: HTTP client with retry config (read-only)
- * @attempt: Current attempt number (1-based, must be >=1)
- *
- * Returns: Delay in milliseconds with jitter applied, or
- * HTTPCLIENT_MIN_DELAY_MS if invalid input Thread-safe: Yes
- *
- * Uses SocketRetry_calculate_delay for consistent exponential backoff with
- * jitter. Backoff formula: initial * multiplier^(attempt-1), capped at
- * max_delay.
- *
- * Parameters from client config:
- * - retry_initial_delay_ms: Starting delay
- * - retry_max_delay_ms: Maximum cap
- *
- * Fixed parameters:
- * - multiplier: HTTPCLIENT_RETRY_MULTIPLIER (2.0)
- * - jitter: HTTPCLIENT_RETRY_JITTER_FACTOR (0.25)
- *
- * Handles FP overflow/NaN by clamping to max_delay.
- *
- * @see SocketRetry_calculate_delay() for underlying computation.
- * @see SocketHTTPClient_Config for retry settings.
- */
 int
 httpclient_calculate_retry_delay (const SocketHTTPClient_T client, int attempt)
 {
@@ -80,21 +53,6 @@ httpclient_calculate_retry_delay (const SocketHTTPClient_T client, int attempt)
   return SocketRetry_calculate_delay (&policy, attempt);
 }
 
-/**
- * httpclient_retry_sleep_ms - Sleep for specified milliseconds using nanosleep
- * @ms: Milliseconds to sleep (0 or negative = no sleep)
- *
- * Thread-safe: Yes
- *
- * Implements precise sleep with EINTR retry loop per POSIX.1-2008.
- * Nanosleep provides relative sleep not affected by clock changes,
- * suitable for backoff delays.
- *
- * Conversion: tv_sec = ms / 1000, tv_nsec = (ms % 1000) * 1e6.
- *
- * @see nanosleep(2) for underlying system call.
- * @see httpclient_calculate_retry_delay() for delay value source.
- */
 void
 httpclient_retry_sleep_ms (int ms)
 {
@@ -115,24 +73,6 @@ httpclient_retry_sleep_ms (int ms)
     }
 }
 
-/**
- * httpclient_should_retry_error - Check if error code should trigger retry
- * @client: HTTP client with retry config (read-only)
- * @error: Error code to check
- *
- * Returns: 1 if should retry based on config, 0 otherwise
- * Thread-safe: Yes
- *
- * Checks config flags:
- * - retry_on_connection_error for DNS/CONNECT errors
- * - retry_on_timeout for TIMEOUT errors
- *
- * Other errors (TLS, protocol, redirects, size, cancelled, OOM) are
- * non-retryable by design.
- *
- * @see SocketHTTPClient_Error for error code definitions.
- * @see SocketHTTPClient_error_is_retryable() for public API.
- */
 int
 httpclient_should_retry_error (const SocketHTTPClient_T client,
                                SocketHTTPClient_Error error)
@@ -154,16 +94,7 @@ httpclient_should_retry_error (const SocketHTTPClient_T client,
     }
 }
 
-/**
- * is_idempotent_method - Check if HTTP method is idempotent
- * @method: HTTP method to check
- *
- * Returns: 1 if idempotent (safe to retry), 0 otherwise
- * Thread-safe: Yes
- *
- * Idempotent methods per RFC 7231: GET, HEAD, PUT, DELETE, OPTIONS, TRACE.
- * POST and PATCH are not idempotent and should not be retried on 5xx.
- */
+/* RFC 7231: GET, HEAD, PUT, DELETE, OPTIONS, TRACE are idempotent */
 static int
 is_idempotent_method (SocketHTTP_Method method)
 {
@@ -181,30 +112,6 @@ is_idempotent_method (SocketHTTP_Method method)
     }
 }
 
-/**
- * httpclient_should_retry_status - Check if HTTP status should trigger retry
- * @client: HTTP client with retry config (read-only)
- * @status: HTTP status code
- * @method: HTTP method from request
- *
- * Returns: 1 if should retry, 0 otherwise
- * Thread-safe: Yes
- *
- * Retries server errors (HTTP status category 5) only if config.retry_on_5xx
- * is enabled AND the HTTP method is idempotent. Uses SocketHTTP_status_category
- * for accurate classification.
- *
- * SECURITY: Only retries idempotent requests (GET, HEAD, OPTIONS, PUT, DELETE)
- * to avoid duplicate side effects. Non-idempotent methods (POST, PATCH) are
- * never retried to prevent unintended duplicate actions.
- *
- * Non-server-error status codes (including 4xx client errors) are never
- * retried as they indicate permanent failures or client-side issues.
- *
- * @see SocketHTTP_status_category() for status classification.
- * @see SocketHTTPClient_Config::retry_on_5xx for enabling.
- * @see is_idempotent_method() for method classification.
- */
 int
 httpclient_should_retry_status_with_method (const SocketHTTPClient_T client,
                                              int status,
@@ -229,19 +136,7 @@ httpclient_should_retry_status_with_method (const SocketHTTPClient_T client,
   return 0;
 }
 
-/**
- * httpclient_should_retry_status - Check if HTTP status should trigger retry
- * @client: HTTP client with retry config (read-only)
- * @status: HTTP status code
- *
- * Returns: 1 if should retry, 0 otherwise
- * Thread-safe: Yes
- *
- * Legacy function - assumes GET method for backward compatibility.
- * Use httpclient_should_retry_status_with_method() for proper method checking.
- *
- * @see httpclient_should_retry_status_with_method() for method-aware version.
- */
+/* Legacy wrapper - assumes GET for backward compat */
 int
 httpclient_should_retry_status (const SocketHTTPClient_T client, int status)
 {
@@ -250,23 +145,6 @@ httpclient_should_retry_status (const SocketHTTPClient_T client, int status)
                                                       HTTP_METHOD_GET);
 }
 
-/**
- * httpclient_clear_response_for_retry - Clear SocketHTTPClient_Response for
- * retry
- * @response: Client response to clear (modified)
- *
- * Clears headers and zeros the structure for reuse in retry attempts.
- * Caller responsible for managing arena and body memory separately.
- *
- * Thread-safe: No (modifies response)
- *
- * Operates on SocketHTTPClient_Response, which includes client-specific fields (arena, body).
- *
- * @note Handles NULL response gracefully (no-op).
- * @note Clears headers and zeros fields (status, body=NULL, len=0, version=0, arena=NULL) for reuse.
- * Caller must manage arena disposal and body freeing if needed before reuse.
- * @see SocketHTTPClient_Response for structure definition.
- */
 void
 httpclient_clear_response_for_retry (SocketHTTPClient_Response *response)
 {

@@ -5,26 +5,15 @@
  */
 
 /**
- * SocketHPACK.c - HPACK Header Compression Implementation
+ * SocketHPACK.c - HPACK Header Compression (RFC 7541)
  *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
- *
- * Implements RFC 7541 HPACK:
- * - Integer encoding/decoding (Section 5.1)
- * - String literal encoding/decoding (Section 5.2)
- * - Indexed header field (Section 6.1)
- * - Literal header field (Section 6.2)
- * - Dynamic table size update (Section 6.3)
- * - Encoder and decoder state machines
+ * Integer/string encoding, indexed/literal header fields, dynamic table updates.
  */
 
-/* System headers first (per C Interfaces and Implementations style) */
 #include <assert.h>
 #include <stdbool.h>
 #include <string.h>
 
-/* Project headers */
 #include "http/SocketHPACK-private.h"
 #include "http/SocketHPACK.h"
 
@@ -37,43 +26,39 @@
  */
 
 /* Field type identification masks (RFC 7541 Section 6) */
-#define HPACK_INDEXED_MASK 0x80         /* 1xxxxxxx - Indexed Header Field */
-#define HPACK_LITERAL_INDEXED_MASK 0xC0 /* 01xxxxxx - Literal with Indexing */
+#define HPACK_INDEXED_MASK 0x80
+#define HPACK_LITERAL_INDEXED_MASK 0xC0
 #define HPACK_LITERAL_INDEXED_VAL 0x40
-#define HPACK_LITERAL_NO_INDEX_MASK 0xF0 /* 0000xxxx - Literal without Indexing \
-                                          */
-#define HPACK_LITERAL_NEVER_MASK 0xF0    /* 0001xxxx - Literal Never Indexed */
+#define HPACK_LITERAL_NO_INDEX_MASK 0xF0
+#define HPACK_LITERAL_NEVER_MASK 0xF0
 #define HPACK_LITERAL_NEVER_VAL 0x10
-#define HPACK_TABLE_UPDATE_MASK 0xE0 /* 001xxxxx - Table Size Update */
+#define HPACK_TABLE_UPDATE_MASK 0xE0
 #define HPACK_TABLE_UPDATE_VAL 0x20
 
 /* Prefix bits for integer encoding (RFC 7541 Section 5.1) */
-#define HPACK_PREFIX_INDEXED 7       /* For indexed header field */
-#define HPACK_PREFIX_LITERAL_INDEX 6 /* For literal with indexing */
-#define HPACK_PREFIX_LITERAL_OTHER 4 /* For literal without/never indexed */
-#define HPACK_PREFIX_TABLE_UPDATE 5  /* For table size update */
-#define HPACK_PREFIX_STRING 7        /* For string literal length */
+#define HPACK_PREFIX_INDEXED 7
+#define HPACK_PREFIX_LITERAL_INDEX 6
+#define HPACK_PREFIX_LITERAL_OTHER 4
+#define HPACK_PREFIX_TABLE_UPDATE 5
+#define HPACK_PREFIX_STRING 7
 
-#define HPACK_STRING_HUFFMAN_FLAG 0x80 /* Huffman flag for string literals */
-#define HPACK_STRING_LITERAL_FLAG 0x00 /* Literal string (no Huffman) flag */
+#define HPACK_STRING_HUFFMAN_FLAG 0x80
+#define HPACK_STRING_LITERAL_FLAG 0x00
 
-#define HPACK_INT_CONTINUATION_MASK 0x80 /* Continuation bit */
-#define HPACK_INT_PAYLOAD_MASK 0x7F      /* 7-bit payload mask */
-#define HPACK_INT_CONTINUATION_VALUE 128 /* Value requiring continuation */
+#define HPACK_INT_CONTINUATION_MASK 0x80
+#define HPACK_INT_PAYLOAD_MASK 0x7F
+#define HPACK_INT_CONTINUATION_VALUE 128
 
-/* Buffer sizes */
-#define HPACK_INT_BUF_SIZE 16 /* Buffer for integer encoding */
-#define HPACK_HUFFMAN_RATIO 2 /* Estimated decode expansion ratio */
+#define HPACK_INT_BUF_SIZE 16
+#define HPACK_HUFFMAN_RATIO 2
 
-#define HPACK_UINT64_SHIFT_LIMIT 63 /* Maximum shift before uint64_t overflow */
-#define HPACK_MAX_INT_CONTINUATION_BYTES 10 /* Limit continuation bytes for integer decoding */
+#define HPACK_UINT64_SHIFT_LIMIT 63
+#define HPACK_MAX_INT_CONTINUATION_BYTES 10
 
-/* Literal encoding mode flags */
 #define HPACK_LITERAL_WITH_INDEXING 0x40
 #define HPACK_LITERAL_WITHOUT_INDEX 0x00
 #define HPACK_LITERAL_NEVER_INDEX 0x10
 
-/* Literal type values for dispatch */
 #define HPACK_LITERAL_WITHOUT_INDEX_VAL 0x00
 
 /* ============================================================================
@@ -130,10 +115,6 @@ SocketHPACK_result_string (SocketHPACK_Result result)
  * ============================================================================
  */
 
-/**
- * Encode integer continuation and final byte for multi-byte encoding.
- * Returns new position on success, 0 on buffer full.
- */
 static size_t
 encode_int_continuation (uint64_t value, unsigned char *output, size_t pos,
                          size_t output_size)
@@ -169,15 +150,10 @@ SocketHPACK_int_encode (uint64_t value, int prefix_bits, unsigned char *output,
       return 1;
     }
 
-  /* Value requires continuation bytes - first byte is max_prefix */
   output[0] = (unsigned char)max_prefix;
   return encode_int_continuation (value - max_prefix, output, 1, output_size);
 }
 
-/**
- * Decode continuation bytes for HPACK multi-byte integer encoding.
- * Handles overflow checks and updates result and position.
- */
 static SocketHPACK_Result
 decode_int_continuation (const unsigned char *input, size_t input_len,
                          size_t *pos, uint64_t *result, unsigned int *shift)
@@ -196,7 +172,6 @@ decode_int_continuation (const unsigned char *input, size_t input_len,
 
       byte_val = input[(*pos)++];
 
-      /* SECURITY: Limit shift to 56 bits to prevent overflow (56 + 7 = 63 bits max) */
       if (*shift > 56)
         return HPACK_ERROR_INTEGER;
 
@@ -240,7 +215,6 @@ SocketHPACK_int_decode (const unsigned char *input, size_t input_len,
       return HPACK_OK;
     }
 
-  /* Value requires continuation bytes */
   SocketHPACK_Result cont_result
       = decode_int_continuation (input, input_len, &pos, &result, &shift);
   if (cont_result != HPACK_OK)
@@ -256,10 +230,6 @@ SocketHPACK_int_decode (const unsigned char *input, size_t input_len,
  * ============================================================================
  */
 
-/**
- * Encode integer with flag bit in prefix byte.
- * Returns bytes written, or -1 on error.
- */
 static ssize_t
 hpack_encode_int_with_flag (uint64_t value, int prefix_bits,
                             unsigned char flag, unsigned char *output,
@@ -280,10 +250,7 @@ hpack_encode_int_with_flag (uint64_t value, int prefix_bits,
   return (ssize_t)int_len;
 }
 
-/**
- * Encode a string literal with optional Huffman compression.
- * Chooses Huffman if it produces smaller output.
- */
+/* Encode string with optional Huffman compression (uses smaller output) */
 static ssize_t
 hpack_encode_string (const char *str, size_t len, int use_huffman,
                      unsigned char *output, size_t output_size)
@@ -294,7 +261,6 @@ hpack_encode_string (const char *str, size_t len, int use_huffman,
   unsigned char flag = HPACK_STRING_LITERAL_FLAG;
   int use_huffman_actual = 0;
 
-  /* Check if Huffman encoding would be smaller */
   if (use_huffman)
     {
       size_t huffman_size
@@ -307,14 +273,12 @@ hpack_encode_string (const char *str, size_t len, int use_huffman,
         }
     }
 
-  /* Encode length with flag */
   encoded = hpack_encode_int_with_flag (data_len, HPACK_PREFIX_STRING, flag,
                                         output, output_size);
   if (encoded < 0)
     return -1;
   pos = (size_t)encoded;
 
-  /* Encode data */
   if (use_huffman_actual)
     {
       encoded = SocketHPACK_huffman_encode ((const unsigned char *)str, len,
@@ -334,9 +298,6 @@ hpack_encode_string (const char *str, size_t len, int use_huffman,
   return (ssize_t)pos;
 }
 
-/**
- * Decode string header (length prefix and Huffman flag).
- */
 static SocketHPACK_Result
 decode_string_header (const unsigned char *input, size_t input_len,
                       size_t *pos, int *huffman, uint64_t *str_len)
@@ -349,20 +310,6 @@ decode_string_header (const unsigned char *input, size_t input_len,
                                  str_len, pos);
 }
 
-/**
- * Decode literal string data.
- */
-/**
- * @brief Allocate a buffer for a null-terminated string from the arena.
- *
- * Performs security-checked allocation for buf_size + 1 bytes.
- * Does not initialize or null-terminate; caller must fill and set terminator.
- *
- * @param arena Arena for allocation.
- * @param buf_size Bytes for content (excluding null terminator).
- * @param[out] buf_out Pointer to receive allocated buffer (set to NULL on error? No, but error if fail).
- * @return HPACK_OK on success, HPACK_ERROR_BOMB on size check fail, HPACK_ERROR on alloc fail.
- */
 static SocketHPACK_Result
 allocate_string_buffer (Arena_T arena, size_t buf_size, char **buf_out)
 {
@@ -392,9 +339,6 @@ decode_string_data_literal (const unsigned char *input, size_t str_len,
   return HPACK_OK;
 }
 
-/**
- * Decode Huffman-encoded string data.
- */
 static SocketHPACK_Result
 decode_string_data_huffman (const unsigned char *input, size_t encoded_len,
                             size_t pos, char **str_out, size_t *str_len_out,
@@ -419,9 +363,6 @@ decode_string_data_huffman (const unsigned char *input, size_t encoded_len,
   return HPACK_OK;
 }
 
-/**
- * Decode a string literal (with optional Huffman decompression).
- */
 static SocketHPACK_Result
 hpack_decode_string (const unsigned char *input, size_t input_len,
                      char **str_out, size_t *str_len_out, size_t *consumed,
@@ -454,8 +395,6 @@ hpack_decode_string (const unsigned char *input, size_t input_len,
   *consumed = pos + len;
   return HPACK_OK;
 }
-
-
 
 /* ============================================================================
  * Encoder Configuration
@@ -522,17 +461,14 @@ SocketHPACK_Encoder_set_table_size (SocketHPACK_Encoder_T encoder,
 {
   assert (encoder != NULL);
 
-  /* RFC 7541 §4.2: Multiple size changes between header blocks
-   * Emit smallest size first, then final size (at most two updates) */
+  /* RFC 7541 §4.2: Multiple size changes - emit smallest first, then final */
   if (encoder->pending_table_size_count == 0)
     {
-      /* First pending update */
       encoder->pending_table_sizes[0] = max_size;
       encoder->pending_table_size_count = 1;
     }
   else if (encoder->pending_table_size_count == 1)
     {
-      /* Second pending update - order smallest first, then final */
       if (max_size < encoder->pending_table_sizes[0])
         {
           encoder->pending_table_sizes[1] = encoder->pending_table_sizes[0];
@@ -546,17 +482,14 @@ SocketHPACK_Encoder_set_table_size (SocketHPACK_Encoder_T encoder,
     }
   else
     {
-      /* Already have 2 pending - replace final with new size */
       if (max_size < encoder->pending_table_sizes[0])
         {
-          /* New size is smaller than first - replace both */
           encoder->pending_table_sizes[0] = max_size;
-          encoder->pending_table_sizes[1] = 0; /* Only one update needed */
+          encoder->pending_table_sizes[1] = 0;
           encoder->pending_table_size_count = 1;
         }
       else
         {
-          /* Replace final size */
           encoder->pending_table_sizes[1] = max_size;
         }
     }
@@ -569,9 +502,6 @@ SocketHPACK_Encoder_get_table (SocketHPACK_Encoder_T encoder)
   return encoder->table;
 }
 
-/**
- * Encode indexed header field (RFC 7541 Section 6.1).
- */
 static ssize_t
 hpack_encode_indexed (size_t index, unsigned char *output, size_t output_size)
 {
@@ -579,10 +509,6 @@ hpack_encode_indexed (size_t index, unsigned char *output, size_t output_size)
                                      HPACK_INDEXED_MASK, output, output_size);
 }
 
-/**
- * Encode header name for literal field.
- * Returns bytes written, or -1 on error.
- */
 static ssize_t
 encode_header_name (unsigned char mode, size_t name_index, const char *name,
                     size_t name_len, int use_huffman, unsigned char *output,
@@ -597,7 +523,6 @@ encode_header_name (unsigned char mode, size_t name_index, const char *name,
 
   if (name_index > 0)
     {
-      /* Name is in table */
       encoded = hpack_encode_int_with_flag (name_index, prefix_bits, mode,
                                             output, output_size);
       if (encoded < 0)
@@ -605,7 +530,6 @@ encode_header_name (unsigned char mode, size_t name_index, const char *name,
       return encoded;
     }
 
-  /* New name - write mode byte then encode name string */
   if (output_size == 0)
     return -1;
   output[pos++] = mode;
@@ -618,10 +542,6 @@ encode_header_name (unsigned char mode, size_t name_index, const char *name,
   return (ssize_t)(pos + (size_t)encoded);
 }
 
-/**
- * Encode literal header field (RFC 7541 Section 6.2).
- * Handles with indexing, without indexing, and never indexed modes.
- */
 static ssize_t
 hpack_encode_literal (unsigned char mode, size_t name_index, const char *name,
                       size_t name_len, const char *value, size_t value_len,
@@ -634,7 +554,6 @@ hpack_encode_literal (unsigned char mode, size_t name_index, const char *name,
     return -1;
   size_t pos = (size_t)encoded;
 
-  /* Encode value */
   encoded = hpack_encode_string (value, value_len, use_huffman, output + pos,
                                  output_size - pos);
   if (encoded < 0)
@@ -643,9 +562,6 @@ hpack_encode_literal (unsigned char mode, size_t name_index, const char *name,
   return (ssize_t)(pos + (size_t)encoded);
 }
 
-/**
- * Encode dynamic table size update.
- */
 static ssize_t
 hpack_encode_table_size_update (size_t max_size, unsigned char *output,
                                 size_t output_size)
@@ -655,10 +571,6 @@ hpack_encode_table_size_update (size_t max_size, unsigned char *output,
                                      output_size);
 }
 
-/**
- * Emit pending dynamic table size updates at start of header block.
- * RFC 7541 §4.2: Emit smallest size first, then final size (at most two updates).
- */
 static ssize_t
 emit_pending_table_updates (SocketHPACK_Encoder_T encoder,
                             unsigned char *output, size_t output_size)
@@ -670,7 +582,7 @@ emit_pending_table_updates (SocketHPACK_Encoder_T encoder,
     {
       size_t update_size = encoder->pending_table_sizes[i];
       if (update_size == 0)
-        continue; /* Skip empty slots */
+        continue;
 
       ssize_t encoded = hpack_encode_table_size_update (
           update_size, output + pos, output_size - pos);
@@ -680,7 +592,6 @@ emit_pending_table_updates (SocketHPACK_Encoder_T encoder,
       pos += (size_t)encoded;
     }
 
-  /* Apply the final size to the table */
   if (encoder->pending_table_size_count > 0)
     {
       size_t final_size = encoder->pending_table_sizes[encoder->pending_table_size_count - 1];
@@ -691,11 +602,8 @@ emit_pending_table_updates (SocketHPACK_Encoder_T encoder,
   return (ssize_t)pos;
 }
 
-/**
- * Find exact match or name-only index in static and dynamic tables.
- * Returns positive index for exact match, 0 for no exact match.
- * Sets *name_index to name-only match index if found.
- */
+/* Find exact match or name-only index in static and dynamic tables.
+ * Returns positive index for exact match, 0 for none. Sets *name_index for name-only. */
 static int
 find_header_index (SocketHPACK_Encoder_T encoder,
                    const SocketHPACK_Header *hdr, size_t *name_index)
@@ -710,7 +618,6 @@ find_header_index (SocketHPACK_Encoder_T encoder,
   if (dynamic_idx > 0)
     return SOCKETHPACK_STATIC_TABLE_SIZE + dynamic_idx;
 
-  /* No exact match - set name_index for literal */
   *name_index = 0;
   if (static_idx < 0)
     *name_index = (size_t)(-static_idx);
@@ -720,10 +627,6 @@ find_header_index (SocketHPACK_Encoder_T encoder,
   return 0;
 }
 
-/**
- * Encode a single header.
- * Returns bytes written, or -1 on error.
- */
 static ssize_t
 hpack_encode_header (SocketHPACK_Encoder_T encoder,
                      const SocketHPACK_Header *hdr, unsigned char *output,
@@ -735,7 +638,6 @@ hpack_encode_header (SocketHPACK_Encoder_T encoder,
   if (exact_index > 0)
     return hpack_encode_indexed ((size_t)exact_index, output, output_size);
 
-  /* No exact match - literal encoding */
   unsigned char mode;
   int add_to_table = 0;
 
@@ -775,13 +677,11 @@ SocketHPACK_Encoder_encode (SocketHPACK_Encoder_T encoder,
   if ((headers == NULL && count > 0) || (output == NULL && output_size > 0))
     return -1;
 
-  /* Emit pending table size updates */
   encoded = emit_pending_table_updates (encoder, output, output_size);
   if (encoded < 0)
     return -1;
   pos = (size_t)encoded;
 
-  /* Encode each header */
   for (size_t i = 0; i < count; i++)
     {
       encoded = hpack_encode_header (encoder, &headers[i], output + pos,
@@ -870,9 +770,6 @@ SocketHPACK_Decoder_get_table (SocketHPACK_Decoder_T decoder)
   return decoder->table;
 }
 
-/**
- * Validate header size limits.
- */
 static SocketHPACK_Result
 validate_header (SocketHPACK_Decoder_T decoder,
                  const SocketHPACK_Header *header, size_t *total_size)
@@ -892,9 +789,6 @@ validate_header (SocketHPACK_Decoder_T decoder,
   return HPACK_OK;
 }
 
-/**
- * Get header from combined static + dynamic table index.
- */
 static SocketHPACK_Result
 hpack_get_indexed (SocketHPACK_Decoder_T decoder, size_t index,
                    SocketHPACK_Header *header)
@@ -909,9 +803,6 @@ hpack_get_indexed (SocketHPACK_Decoder_T decoder, size_t index,
   return SocketHPACK_Table_get (decoder->table, dyn_index, header);
 }
 
-/**
- * Copy name from indexed header.
- */
 static SocketHPACK_Result
 hpack_copy_indexed_name (SocketHPACK_Decoder_T decoder, size_t index,
                          SocketHPACK_Header *header, Arena_T arena)
@@ -936,9 +827,6 @@ hpack_copy_indexed_name (SocketHPACK_Decoder_T decoder, size_t index,
   return HPACK_OK;
 }
 
-/**
- * Decode literal header field (all modes).
- */
 static SocketHPACK_Result
 hpack_decode_literal (SocketHPACK_Decoder_T decoder,
                       const unsigned char *input, size_t input_len,
@@ -980,7 +868,6 @@ hpack_decode_literal (SocketHPACK_Decoder_T decoder,
       header->name_len = name_len;
     }
 
-  /* Decode value */
   result = hpack_decode_string (input + *pos, input_len - *pos, &value,
                                 &value_len, &consumed, arena);
   if (result != HPACK_OK)
@@ -1000,9 +887,6 @@ hpack_decode_literal (SocketHPACK_Decoder_T decoder,
   return HPACK_OK;
 }
 
-/**
- * Decode indexed header field (Section 6.1).
- */
 static SocketHPACK_Result
 hpack_decode_indexed_field (SocketHPACK_Decoder_T decoder,
                             const unsigned char *input, size_t input_len,
@@ -1021,9 +905,6 @@ hpack_decode_indexed_field (SocketHPACK_Decoder_T decoder,
   return hpack_get_indexed (decoder, (size_t)index, header);
 }
 
-/**
- * Decode dynamic table size update (Section 6.3).
- */
 static SocketHPACK_Result
 hpack_decode_table_update (SocketHPACK_Decoder_T decoder,
                            const unsigned char *input, size_t input_len,
@@ -1070,7 +951,6 @@ SocketHPACK_Decoder_decode (SocketHPACK_Decoder_T decoder,
 
   *header_count = 0;
 
-  /* Track input bytes for expansion ratio enforcement */
   decoder->decode_input_bytes += input_len;
 
   while (pos < input_len)
@@ -1080,7 +960,6 @@ SocketHPACK_Decoder_decode (SocketHPACK_Decoder_T decoder,
 
       if (byte & HPACK_INDEXED_MASK)
         {
-          /* Indexed Header Field (Section 6.1): 1xxxxxxx */
           table_update_allowed = 0;
           result = hpack_decode_indexed_field (decoder, input, input_len, &pos,
                                                &header);
@@ -1090,7 +969,6 @@ SocketHPACK_Decoder_decode (SocketHPACK_Decoder_T decoder,
       else if ((byte & HPACK_LITERAL_INDEXED_MASK)
                == HPACK_LITERAL_INDEXED_VAL)
         {
-          /* Literal with Incremental Indexing (Section 6.2.1): 01xxxxxx */
           table_update_allowed = 0;
           result = hpack_decode_literal (decoder, input, input_len,
                                          HPACK_PREFIX_LITERAL_INDEX, &pos,
@@ -1101,7 +979,6 @@ SocketHPACK_Decoder_decode (SocketHPACK_Decoder_T decoder,
       else if ((byte & HPACK_LITERAL_NO_INDEX_MASK)
                == HPACK_LITERAL_WITHOUT_INDEX_VAL)
         {
-          /* Literal without Indexing (Section 6.2.2): 0000xxxx */
           table_update_allowed = 0;
           result = hpack_decode_literal (decoder, input, input_len,
                                          HPACK_PREFIX_LITERAL_OTHER, &pos,
@@ -1111,7 +988,6 @@ SocketHPACK_Decoder_decode (SocketHPACK_Decoder_T decoder,
         }
       else if ((byte & HPACK_LITERAL_NEVER_MASK) == HPACK_LITERAL_NEVER_VAL)
         {
-          /* Literal Never Indexed (Section 6.2.3): 0001xxxx */
           table_update_allowed = 0;
           result = hpack_decode_literal (decoder, input, input_len,
                                          HPACK_PREFIX_LITERAL_OTHER, &pos,
@@ -1121,7 +997,6 @@ SocketHPACK_Decoder_decode (SocketHPACK_Decoder_T decoder,
         }
       else if ((byte & HPACK_TABLE_UPDATE_MASK) == HPACK_TABLE_UPDATE_VAL)
         {
-          /* Dynamic Table Size Update (Section 6.3): 001xxxxx */
           if (!table_update_allowed)
             return HPACK_ERROR_TABLE_SIZE;
 
@@ -1135,19 +1010,17 @@ SocketHPACK_Decoder_decode (SocketHPACK_Decoder_T decoder,
           return HPACK_ERROR;
         }
 
-      /* Validate and update size */
       result = validate_header (decoder, &header, &total_size);
       if (result != HPACK_OK)
         return result;
 
-      /* Store header */
       if (hdr_count >= max_headers)
-        return HPACK_ERROR_LIST_SIZE; /* Too many headers */
+        return HPACK_ERROR_LIST_SIZE;
 
       headers[hdr_count] = header;
       hdr_count++;
 
-      /* Track output bytes and check expansion ratio to prevent HPACK bombs */
+      /* Check expansion ratio to prevent HPACK bombs */
       decoder->decode_output_bytes += header.name_len + header.value_len;
       if (decoder->decode_input_bytes > 0)
         {

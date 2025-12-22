@@ -7,25 +7,17 @@
 /**
  * SocketHTTP-uri.c - URI Parsing (RFC 3986)
  *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
- *
- * Implements URI parsing using a single-pass state machine parser.
- * Handles absolute URIs, relative references, and IPv6 addresses.
- *
- * Thread-safe: Yes (all functions are pure, no global state)
+ * Single-pass state machine parser for absolute URIs, relative references, IPv6.
  */
 
 #include <assert.h>
 #include <ctype.h>
 #include <stdlib.h>
 
-
 #include "core/SocketUtil.h"
 #include "http/SocketHTTP-private.h"
 #include "http/SocketHTTP.h"
 
-/* Suppress warning for unused DetailedException (errors use return codes) */
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -35,7 +27,11 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP);
 #pragma GCC diagnostic pop
 #endif
 
-/* URI component length limits (RFC 3986 + security) */
+/* ============================================================================
+ * Constants
+ * ============================================================================
+ */
+
 #define URI_MAX_USERINFO_LEN 128
 #define URI_MAX_HOST_LEN 255
 #define URI_MAX_PATH_LEN 4096
@@ -47,24 +43,24 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP);
 #define URI_SCHEME_WSS_LEN 3
 #define URI_IPV6_MIN_LEN 4
 #define URI_MAX_SCHEME_LEN 64
-
-/* Media type parsing constants */
 #define MEDIATYPE_CHARSET_LEN 7
 #define MEDIATYPE_BOUNDARY_LEN 8
 
-/* Forward declarations for validation functions */
+/* ============================================================================
+ * Validation Forward Declarations
+ * ============================================================================
+ */
+
 static SocketHTTP_URIResult validate_reg_name (const char *host, size_t len);
-
-static SocketHTTP_URIResult validate_userinfo (const char *userinfo,
-                                               size_t len);
-
-static SocketHTTP_URIResult validate_host (const char *host, size_t len,
-                                           int *out_is_ipv6);
-
-static SocketHTTP_URIResult validate_path_query (const char *s, size_t len,
-                                                 int is_path);
-
+static SocketHTTP_URIResult validate_userinfo (const char *userinfo, size_t len);
+static SocketHTTP_URIResult validate_host (const char *host, size_t len, int *out_is_ipv6);
+static SocketHTTP_URIResult validate_path_query (const char *s, size_t len, int is_path);
 static SocketHTTP_URIResult validate_fragment (const char *s, size_t len);
+
+/* ============================================================================
+ * Character Classification
+ * ============================================================================
+ */
 
 static inline int
 is_scheme_char (char c, int first)
@@ -83,10 +79,11 @@ validate_scheme (const char *s, size_t len)
   if (!is_scheme_char (s[0], 1))
     return URI_PARSE_INVALID_SCHEME;
 
-  for (size_t i = 1; i < len; i++) {
-    if (!is_scheme_char (s[i], 0))
-      return URI_PARSE_INVALID_SCHEME;
-  }
+  for (size_t i = 1; i < len; i++)
+    {
+      if (!is_scheme_char (s[i], 0))
+        return URI_PARSE_INVALID_SCHEME;
+    }
 
   return URI_PARSE_OK;
 }
@@ -97,6 +94,11 @@ is_control_char (char c)
   unsigned char uc = (unsigned char)c;
   return uc < 0x20 || uc == 0x7F;
 }
+
+/* ============================================================================
+ * Arena String Allocation
+ * ============================================================================
+ */
 
 static inline char *
 uri_arena_copy (Arena_T arena, const char *src, size_t len)
@@ -136,38 +138,40 @@ uri_alloc_component (Arena_T arena, const char *start, const char *end,
   return URI_PARSE_OK;
 }
 
-typedef SocketHTTP_URIResult (*ComponentValidator)(const char *s, size_t len);
+typedef SocketHTTP_URIResult (*ComponentValidator) (const char *s, size_t len);
 
 static SocketHTTP_URIResult
 alloc_and_validate (Arena_T arena, const char *start, const char *end,
                     size_t max_len, ComponentValidator validator,
-                    void (*post_process)(char *str, size_t len),
+                    void (*post_process) (char *str, size_t len),
                     const char **out_str, size_t *out_len, int alloc_empty)
 {
   *out_str = NULL;
   *out_len = 0;
 
-  if (!start || end <= start) {
-    if (alloc_empty) {
-      char *empty = uri_arena_copy (arena, "", 0);
-      if (!empty)
-        return URI_PARSE_ERROR;
-      *out_str = empty;
-      *out_len = 0;
+  if (!start || end <= start)
+    {
+      if (alloc_empty)
+        {
+          char *empty = uri_arena_copy (arena, "", 0);
+          if (!empty)
+            return URI_PARSE_ERROR;
+          *out_str = empty;
+          *out_len = 0;
+        }
+      return URI_PARSE_OK;
     }
-    return URI_PARSE_OK;
-  }
 
   size_t len = (size_t)(end - start);
   if (len > max_len)
     return URI_PARSE_TOO_LONG;
 
-  // Pre-validate before allocation
-  if (validator) {
-    SocketHTTP_URIResult vr = validator (start, len);
-    if (vr != URI_PARSE_OK)
-      return vr;
-  }
+  if (validator)
+    {
+      SocketHTTP_URIResult vr = validator (start, len);
+      if (vr != URI_PARSE_OK)
+        return vr;
+    }
 
   char *copy = uri_arena_copy (arena, start, len);
   if (!copy)
@@ -180,6 +184,11 @@ alloc_and_validate (Arena_T arena, const char *start, const char *end,
   *out_len = len;
   return URI_PARSE_OK;
 }
+
+/* ============================================================================
+ * URI Parser State Machine
+ * ============================================================================
+ */
 
 typedef struct
 {
@@ -455,7 +464,6 @@ uri_run_state_machine (const char *uri, size_t len, URIParseContext *ctx)
           break;
 
         case URI_STATE_FRAGMENT:
-          /* Control chars already rejected above */
           break;
         }
 
@@ -527,8 +535,6 @@ uri_parse_port (const char *start, const char *end, int *port_out)
         return URI_PARSE_INVALID_PORT;
 
       int digit = *pp - '0';
-
-      /* Check for overflow before multiplication: port * 10 + digit > MAX */
       if (port > (URI_MAX_PORT - digit) / 10)
         return URI_PARSE_INVALID_PORT;
 
@@ -545,9 +551,8 @@ uri_alloc_all_components (const URIParseContext *ctx, SocketHTTP_URI *result,
 {
   SocketHTTP_URIResult r;
 
-  /* Scheme (with lowercase conversion) */
-  if (ctx->scheme_start && ctx->scheme_end
-      && ctx->scheme_end > ctx->scheme_start)
+  /* Scheme */
+  if (ctx->scheme_start && ctx->scheme_end && ctx->scheme_end > ctx->scheme_start)
     {
       size_t slen = (size_t)(ctx->scheme_end - ctx->scheme_start);
       char *s = uri_arena_copy (arena, ctx->scheme_start, slen);
@@ -570,7 +575,6 @@ uri_alloc_all_components (const URIParseContext *ctx, SocketHTTP_URI *result,
   if (r != URI_PARSE_OK)
     return r;
 
-  /* Validate userinfo syntax (RFC 3986 3.2.1) */
   if (result->userinfo && result->userinfo_len > 0)
     {
       r = validate_userinfo (result->userinfo, result->userinfo_len);
@@ -590,7 +594,6 @@ uri_alloc_all_components (const URIParseContext *ctx, SocketHTTP_URI *result,
   if (r != URI_PARSE_OK)
     return r;
 
-  /* Validate host syntax (RFC 3986 3.2.2) */
   if (result->host && result->host_len > 0)
     {
       int is_ipv6_dummy;
@@ -604,7 +607,7 @@ uri_alloc_all_components (const URIParseContext *ctx, SocketHTTP_URI *result,
   if (r != URI_PARSE_OK)
     return r;
 
-  /* Path (always present, may be empty) */
+  /* Path */
   if (ctx->path_start)
     {
       const char *path_end = ctx->path_end ? ctx->path_end : end;
@@ -616,7 +619,6 @@ uri_alloc_all_components (const URIParseContext *ctx, SocketHTTP_URI *result,
       if (r != URI_PARSE_OK)
         return r;
 
-      /* Validate path syntax (RFC 3986 3.3) */
       if (result->path && result->path_len > 0)
         {
           r = validate_path_query (result->path, result->path_len, 1);
@@ -645,7 +647,6 @@ uri_alloc_all_components (const URIParseContext *ctx, SocketHTTP_URI *result,
       if (r != URI_PARSE_OK)
         return r;
 
-      /* Validate query syntax (RFC 3986 3.4) */
       if (result->query && result->query_len > 0)
         {
           r = validate_path_query (result->query, result->query_len, 0);
@@ -666,7 +667,6 @@ uri_alloc_all_components (const URIParseContext *ctx, SocketHTTP_URI *result,
       if (r != URI_PARSE_OK)
         return r;
 
-      /* Validate fragment syntax (RFC 3986 3.5) */
       if (result->fragment && result->fragment_len > 0)
         {
           r = validate_fragment (result->fragment, result->fragment_len);
@@ -677,6 +677,11 @@ uri_alloc_all_components (const URIParseContext *ctx, SocketHTTP_URI *result,
 
   return URI_PARSE_OK;
 }
+
+/* ============================================================================
+ * Public API
+ * ============================================================================
+ */
 
 const char *
 SocketHTTP_URI_result_string (SocketHTTP_URIResult result)
@@ -819,7 +824,6 @@ SocketHTTP_URI_decode (const char *input, size_t len, char *output,
           if (hi == 255 || lo == 255)
             return -1;
 
-          /* SECURITY: Check bounds BEFORE writing to prevent buffer overflow */
           if (out_len + 1 > output_size)
             return -1;
 
@@ -828,7 +832,6 @@ SocketHTTP_URI_decode (const char *input, size_t len, char *output,
         }
       else if (input[i] == '+')
         {
-          /* SECURITY: Check bounds BEFORE writing to prevent buffer overflow */
           if (out_len + 1 > output_size)
             return -1;
 
@@ -836,7 +839,6 @@ SocketHTTP_URI_decode (const char *input, size_t len, char *output,
         }
       else
         {
-          /* SECURITY: Check bounds BEFORE writing to prevent buffer overflow */
           if (out_len + 1 > output_size)
             return -1;
 
@@ -871,15 +873,13 @@ SocketHTTP_URI_decode (const char *input, size_t len, char *output,
   while (0)
 
 ssize_t
-SocketHTTP_URI_build (const SocketHTTP_URI *uri, char *output,
-                      size_t output_size)
+SocketHTTP_URI_build (const SocketHTTP_URI *uri, char *output, size_t output_size)
 {
   if (!uri || !output || output_size == 0)
     return -1;
 
   size_t pos = 0;
 
-  /* Scheme */
   if (uri->scheme && uri->scheme_len > 0)
     {
       URI_APPEND_STR (output, pos, output_size, uri->scheme, uri->scheme_len);
@@ -892,13 +892,11 @@ SocketHTTP_URI_build (const SocketHTTP_URI *uri, char *output,
         }
     }
 
-  /* Authority */
   if (uri->host && uri->host_len > 0)
     {
       if (uri->userinfo && uri->userinfo_len > 0)
         {
-          URI_APPEND_STR (output, pos, output_size, uri->userinfo,
-                          uri->userinfo_len);
+          URI_APPEND_STR (output, pos, output_size, uri->userinfo, uri->userinfo_len);
           URI_APPEND_CHAR (output, pos, output_size, '@');
         }
 
@@ -907,31 +905,25 @@ SocketHTTP_URI_build (const SocketHTTP_URI *uri, char *output,
       if (uri->port >= 0)
         {
           char port_buf[URI_PORT_BUFSIZE];
-          int port_len
-              = snprintf (port_buf, sizeof (port_buf), ":%d", uri->port);
+          int port_len = snprintf (port_buf, sizeof (port_buf), ":%d", uri->port);
           if (port_len > 0 && (size_t)port_len < sizeof (port_buf))
-            URI_APPEND_STR (output, pos, output_size, port_buf,
-                            (size_t)port_len);
+            URI_APPEND_STR (output, pos, output_size, port_buf, (size_t)port_len);
         }
     }
 
-  /* Path */
   if (uri->path && uri->path_len > 0)
     URI_APPEND_STR (output, pos, output_size, uri->path, uri->path_len);
 
-  /* Query */
   if (uri->query && uri->query_len > 0)
     {
       URI_APPEND_CHAR (output, pos, output_size, '?');
       URI_APPEND_STR (output, pos, output_size, uri->query, uri->query_len);
     }
 
-  /* Fragment */
   if (uri->fragment && uri->fragment_len > 0)
     {
       URI_APPEND_CHAR (output, pos, output_size, '#');
-      URI_APPEND_STR (output, pos, output_size, uri->fragment,
-                      uri->fragment_len);
+      URI_APPEND_STR (output, pos, output_size, uri->fragment, uri->fragment_len);
     }
 
   output[pos] = '\0';
@@ -940,6 +932,11 @@ SocketHTTP_URI_build (const SocketHTTP_URI *uri, char *output,
 
 #undef URI_APPEND_STR
 #undef URI_APPEND_CHAR
+
+/* ============================================================================
+ * Validation Helpers
+ * ============================================================================
+ */
 
 static inline int
 validate_token_span (const char *start, size_t len)
@@ -956,8 +953,7 @@ static inline int
 is_unreserved (unsigned char c)
 {
   return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
-         || (c >= '0' && c <= '9') || c == '-' || c == '.' || c == '_'
-         || c == '~';
+         || (c >= '0' && c <= '9') || c == '-' || c == '.' || c == '_' || c == '~';
 }
 
 static inline int
@@ -1034,8 +1030,8 @@ validate_reg_name (const char *host, size_t len)
 static SocketHTTP_URIResult
 validate_userinfo (const char *userinfo, size_t len)
 {
-  SocketHTTP_URIResult r = validate_string_chars (
-      userinfo, len, is_userinfo_raw, URI_PARSE_ERROR);
+  SocketHTTP_URIResult r = validate_string_chars (userinfo, len, is_userinfo_raw,
+                                                  URI_PARSE_ERROR);
   if (r != URI_PARSE_OK)
     return r;
   return validate_pct_encoded (userinfo, len);
@@ -1057,13 +1053,12 @@ validate_ipv6_literal (const char *host, size_t len)
   if (inner_len == 0)
     return URI_PARSE_INVALID_HOST;
 
-  /* Basic char check inside brackets */
-  SocketHTTP_URIResult r = validate_string_chars (
-      host + 1, inner_len, is_ipv6_char, URI_PARSE_INVALID_HOST);
+  SocketHTTP_URIResult r = validate_string_chars (host + 1, inner_len,
+                                                  is_ipv6_char,
+                                                  URI_PARSE_INVALID_HOST);
   if (r != URI_PARSE_OK)
     return r;
 
-  /* Check no extra closing bracket */
   if (strchr (host + 1, ']') != host + len - 1)
     return URI_PARSE_INVALID_HOST;
 
@@ -1074,7 +1069,7 @@ static SocketHTTP_URIResult
 validate_host (const char *host, size_t len, int *out_is_ipv6)
 {
   if (!host || len == 0)
-    return URI_PARSE_OK; /* Empty host allowed in some URI contexts */
+    return URI_PARSE_OK;
 
   *out_is_ipv6 = 0;
 
@@ -1084,41 +1079,25 @@ validate_host (const char *host, size_t len, int *out_is_ipv6)
       return validate_ipv6_literal (host, len);
     }
 
-  /*
-   * Reg-name or IPv4 address - validate as reg-name since IPv4 digit
-   * format passes reg-name validation. Full IPv4 validation deferred
-   * to socket address resolution.
-   */
   return validate_reg_name (host, len);
 }
 
-static SocketHTTP_URIResult
-validate_host_wrap (const char *host, size_t len)
-{
-  int dummy = 0;
-  return validate_host (host, len, &dummy);
-}
-
-/* SECURITY: Detect path traversal attacks (.. and encoded %2e%2e) */
+/* SECURITY: Detect path traversal attacks */
 static SocketHTTP_URIResult
 check_path_traversal (const char *path, size_t len)
 {
-  /* Check for .. sequences that could escape the root */
   for (size_t i = 0; i + 1 < len; i++)
     {
       if (path[i] == '.' && path[i + 1] == '.')
         {
-          /* Check if preceded by / or start of string */
           if (i == 0 || path[i - 1] == '/')
             {
-              /* Check if followed by / or end of string or ? */
               if (i + 2 >= len || path[i + 2] == '/' || path[i + 2] == '?')
                 return URI_PARSE_INVALID_PATH;
             }
         }
     }
 
-  /* Check for encoded traversal: %2e%2e or %2E%2E */
   for (size_t i = 0; i + 5 < len; i++)
     {
       if (path[i] == '%' && (path[i + 1] == '2')
@@ -1136,8 +1115,7 @@ check_path_traversal (const char *path, size_t len)
 static SocketHTTP_URIResult
 validate_path_query (const char *s, size_t len, int is_path)
 {
-  SocketHTTP_URIResult err
-      = is_path ? URI_PARSE_INVALID_PATH : URI_PARSE_INVALID_QUERY;
+  SocketHTTP_URIResult err = is_path ? URI_PARSE_INVALID_PATH : URI_PARSE_INVALID_QUERY;
   size_t i = 0;
   while (i < len)
     {
@@ -1147,7 +1125,6 @@ validate_path_query (const char *s, size_t len, int is_path)
           SocketHTTP_URIResult r = validate_pct_encoded (s + i, len - i);
           if (r != URI_PARSE_OK)
             return err;
-          // Advance past %XX (handle consecutive)
           i += 3;
           while (i + 2 < len && s[i] == '%')
             i += 3;
@@ -1159,13 +1136,10 @@ validate_path_query (const char *s, size_t len, int is_path)
           continue;
         }
       if (!is_pchar_raw ((unsigned char)c))
-        {
-          return err;
-        }
+        return err;
       i++;
     }
 
-  /* Check for path traversal before returning OK */
   if (is_path)
     {
       SocketHTTP_URIResult traversal = check_path_traversal (s, len);
@@ -1177,22 +1151,15 @@ validate_path_query (const char *s, size_t len, int is_path)
 }
 
 static SocketHTTP_URIResult
-validate_path_query_path (const char *s, size_t len)
-{
-  return validate_path_query (s, len, 1);
-}
-
-static SocketHTTP_URIResult
-validate_path_query_nonpath (const char *s, size_t len)
+validate_fragment (const char *s, size_t len)
 {
   return validate_path_query (s, len, 0);
 }
 
-static SocketHTTP_URIResult
-validate_fragment (const char *s, size_t len)
-{
-  return validate_path_query (s, len, 0); // Treat as query-like
-}
+/* ============================================================================
+ * Media Type Parsing
+ * ============================================================================
+ */
 
 static const char *
 skip_whitespace (const char *p, const char *end)
@@ -1207,8 +1174,7 @@ find_token_end (const char *p, const char *end, const char *delims)
 {
   while (p < end)
     {
-      char c = *p;
-      if (strchr (delims, c))
+      if (strchr (delims, *p))
         break;
       p++;
     }
@@ -1226,15 +1192,11 @@ parse_quoted_value (const char *p, const char *end, const char **value_start,
         {
           if (p + 1 >= end)
             {
-              // Incomplete escape sequence
               *value_start = NULL;
               *value_len = 0;
               return end;
             }
-
-          p++; /* Move to escaped character */
-
-          /* Reject control characters in escape sequences */
+          p++;
           unsigned char esc = (unsigned char)*p;
           if (esc < 0x20 || esc == 0x7F)
             {
@@ -1264,8 +1226,6 @@ mediatype_parse_type_subtype (const char *p, const char *end,
     return NULL;
 
   size_t type_len = (size_t)(p - type_start);
-
-  /* Validate type is valid token characters (RFC 7230) */
   if (!validate_token_span (type_start, type_len))
     return NULL;
 
@@ -1284,8 +1244,6 @@ mediatype_parse_type_subtype (const char *p, const char *end,
     return NULL;
 
   size_t subtype_len = (size_t)(p - subtype_start);
-
-  /* Validate subtype is valid token characters (RFC 7230) */
   if (!validate_token_span (subtype_start, subtype_len))
     return NULL;
 
@@ -1312,16 +1270,13 @@ mediatype_parse_parameter (const char *p, const char *end,
   p = find_token_end (p, end, "=; \t");
 
   if (p >= end || *p != '=')
-    return NULL; /* Missing '=' - invalid parameter */
+    return NULL;
 
   size_t param_len = (size_t)(p - param_start);
-
   if (param_len == 0)
-    return NULL; /* Empty parameter name */
-
-  /* Validate parameter name is valid token characters (RFC 7230) */
+    return NULL;
   if (!validate_token_span (param_start, param_len))
-    return NULL; /* Invalid character in parameter name */
+    return NULL;
 
   p++;
 
@@ -1332,7 +1287,6 @@ mediatype_parse_parameter (const char *p, const char *end,
     {
       p++;
       p = parse_quoted_value (p, end, &value_start, &value_len);
-      /* Check for error from parse_quoted_value (incomplete escape) */
       if (value_start == NULL)
         return NULL;
     }
@@ -1343,14 +1297,11 @@ mediatype_parse_parameter (const char *p, const char *end,
       value_len = (size_t)(p - value_start);
 
       if (value_len == 0)
-        return NULL; /* Empty unquoted value */
-
-      /* Validate unquoted parameter value is valid token characters (RFC 7230) */
+        return NULL;
       if (!validate_token_span (value_start, value_len))
-        return NULL; /* Invalid character in parameter value */
+        return NULL;
     }
 
-  /* Check for known parameters */
   if (param_len == MEDIATYPE_CHARSET_LEN
       && strncasecmp (param_start, "charset", MEDIATYPE_CHARSET_LEN) == 0)
     {
@@ -1362,8 +1313,7 @@ mediatype_parse_parameter (const char *p, const char *end,
         }
     }
   else if (param_len == MEDIATYPE_BOUNDARY_LEN
-           && strncasecmp (param_start, "boundary", MEDIATYPE_BOUNDARY_LEN)
-                  == 0)
+           && strncasecmp (param_start, "boundary", MEDIATYPE_BOUNDARY_LEN) == 0)
     {
       char *bd = uri_arena_copy (arena, value_start, value_len);
       if (bd)
@@ -1399,15 +1349,14 @@ SocketHTTP_MediaType_parse (const char *value, size_t len,
     {
       p = mediatype_parse_parameter (p, end, result, arena);
       if (p == NULL)
-        return -1; /* Parameter parsing error */
+        return -1;
     }
 
   return 0;
 }
 
 int
-SocketHTTP_MediaType_matches (const SocketHTTP_MediaType *type,
-                              const char *pattern)
+SocketHTTP_MediaType_matches (const SocketHTTP_MediaType *type, const char *pattern)
 {
   if (!type || !pattern)
     return 0;
@@ -1437,6 +1386,11 @@ SocketHTTP_MediaType_matches (const SocketHTTP_MediaType *type,
   return 1;
 }
 
+/* ============================================================================
+ * Accept Header Parsing
+ * ============================================================================
+ */
+
 static int
 qvalue_compare (const void *a, const void *b)
 {
@@ -1450,21 +1404,18 @@ qvalue_compare (const void *a, const void *b)
   return 0;
 }
 
-/* Locale-independent quality parameter parsing */
 static float
 accept_parse_quality (const char *p, const char *end, const char **out_pos)
 {
   float quality = 0.0f;
   const char *start = p;
 
-  /* Parse integer part */
   while (p < end && *p >= '0' && *p <= '9')
     {
       quality = quality * 10.0f + (*p - '0');
       p++;
     }
 
-  /* Parse decimal part */
   if (p < end && *p == '.')
     {
       p++;
@@ -1479,7 +1430,6 @@ accept_parse_quality (const char *p, const char *end, const char **out_pos)
 
   *out_pos = (p > start) ? p : start;
 
-  /* Clamp to valid range [0.0, 1.0] */
   if (quality < 0.0f)
     quality = 0.0f;
   if (quality > 1.0f)
@@ -1503,8 +1453,7 @@ accept_parse_single (const char *p, const char *end,
     p++;
 
   const char *value_end = p;
-  while (value_end > value_start
-         && (value_end[-1] == ' ' || value_end[-1] == '\t'))
+  while (value_end > value_start && (value_end[-1] == ' ' || value_end[-1] == '\t'))
     value_end--;
 
   if (value_end == value_start)

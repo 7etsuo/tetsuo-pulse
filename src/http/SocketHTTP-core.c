@@ -7,13 +7,8 @@
 /**
  * SocketHTTP-core.c - HTTP Core Utilities
  *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
- *
- * Implements HTTP methods, status codes, versions, and character tables.
+ * HTTP methods, status codes, versions, and character tables.
  */
-
-
 
 #include <stdbool.h>
 #include "http/SocketHTTP-private.h"
@@ -37,6 +32,7 @@
 #define SOCKETHTTP_CODING_LEN_DEFLATE 7
 #define SOCKETHTTP_CODING_LEN_COMPRESS 8
 #define SOCKETHTTP_CODING_LEN_BR 2
+
 /* Exception Definitions */
 const Except_T SocketHTTP_Failed = { &SocketHTTP_Failed, "HTTP core failure" };
 const Except_T SocketHTTP_ParseError = { &SocketHTTP_Failed, "HTTP core parse error" };
@@ -44,30 +40,20 @@ const Except_T SocketHTTP_InvalidURI = { &SocketHTTP_Failed, "Invalid URI syntax
 const Except_T SocketHTTP_InvalidHeader = { &SocketHTTP_Failed, "Invalid HTTP header" };
 
 /* ============================================================================
- * Character Classification Tables
+ * Character Classification Tables (RFC 9110 / RFC 3986)
  * ============================================================================
  */
 
-/**
- * Token character table for RFC 9110
- * tchar = "!" / "#" / "$" / "%" / "&" / "'" / "*" / "+" / "-" / "." /
- *         "^" / "_" / "`" / "|" / "~" / DIGIT / ALPHA
- */
+/* Token characters: tchar = "!" / "#" / "$" / ... / DIGIT / ALPHA */
 const unsigned char sockethttp_tchar_table[256] = {
   /* 0x00-0x0F */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   /* 0x10-0x1F */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   /* 0x20-0x2F */ 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0,
-  /*             sp  !  "  #  $  %  &  '  (  )  *  +  ,  -  .  / */
   /* 0x30-0x3F */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,
-  /*              0  1  2  3  4  5  6  7  8  9  :  ;  <  =  >  ? */
   /* 0x40-0x4F */ 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  /*              @  A  B  C  D  E  F  G  H  I  J  K  L  M  N  O */
   /* 0x50-0x5F */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1,
-  /*              P  Q  R  S  T  U  V  W  X  Y  Z  [  \  ]  ^  _ */
   /* 0x60-0x6F */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  /*              `  a  b  c  d  e  f  g  h  i  j  k  l  m  n  o */
   /* 0x70-0x7F */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0,
-  /*              p  q  r  s  t  u  v  w  x  y  z  {  |  }  ~ DEL */
   /* 0x80-0xFF */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -76,25 +62,16 @@ const unsigned char sockethttp_tchar_table[256] = {
   0, 0, 0, 0
 };
 
-/**
- * Unreserved characters for URI per RFC 3986
- * unreserved = ALPHA / DIGIT / "-" / "." / "_" / "~"
- */
+/* URI unreserved: ALPHA / DIGIT / "-" / "." / "_" / "~" */
 const unsigned char sockethttp_uri_unreserved[256] = {
   /* 0x00-0x0F */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   /* 0x10-0x1F */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   /* 0x20-0x2F */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0,
-  /*             sp  !  "  #  $  %  &  '  (  )  *  +  ,  -  .  / */
   /* 0x30-0x3F */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,
-  /*              0  1  2  3  4  5  6  7  8  9  :  ;  <  =  >  ? */
   /* 0x40-0x4F */ 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  /*              @  A  B  C  D  E  F  G  H  I  J  K  L  M  N  O */
   /* 0x50-0x5F */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
-  /*              P  Q  R  S  T  U  V  W  X  Y  Z  [  \  ]  ^  _ */
   /* 0x60-0x6F */ 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  /*              `  a  b  c  d  e  f  g  h  i  j  k  l  m  n  o */
   /* 0x70-0x7F */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0,
-  /*              p  q  r  s  t  u  v  w  x  y  z  {  |  }  ~ DEL */
   /* 0x80-0xFF */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -110,39 +87,43 @@ const unsigned char sockethttp_hex_value[256] = {
   /* 0x00-0x0F */ X, X, X, X, X, X, X, X, X, X, X, X, X, X, X, X,
   /* 0x10-0x1F */ X, X, X, X, X, X, X, X, X, X, X, X, X, X, X, X,
   /* 0x20-0x2F */ X, X, X, X, X, X, X, X, X, X, X, X, X, X, X, X,
-  /*             sp  !  "  #  $  %  &  '  (  )  *  +  ,  -  .  / */
   /* 0x30-0x3F */ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, X, X, X, X, X, X,
-  /*              0  1  2  3  4  5  6  7  8  9  :  ;  <  =  >  ? */
   /* 0x40-0x4F */ X,10,11,12,13,14,15, X, X, X, X, X, X, X, X, X,
-  /*              @  A  B  C  D  E  F  G  H  I  J  K  L  M  N  O */
   /* 0x50-0x5F */ X, X, X, X, X, X, X, X, X, X, X, X, X, X, X, X,
-  /*              P  Q  R  S  T  U  V  W  X  Y  Z  [  \  ]  ^  _ */
   /* 0x60-0x6F */ X,10,11,12,13,14,15, X, X, X, X, X, X, X, X, X,
-  /*              `  a  b  c  d  e  f  g  h  i  j  k  l  m  n  o */
   /* 0x70-0x7F */ X, X, X, X, X, X, X, X, X, X, X, X, X, X, X, X,
-  /*              p  q  r  s  t  u  v  w  x  y  z  {  |  }  ~ DEL */
-  /* 0x80-0x8F */ X, X, X, X, X, X, X, X, X, X, X, X, X, X, X, X,
-  /* 0x90-0x9F */ X, X, X, X, X, X, X, X, X, X, X, X, X, X, X, X,
-  /* 0xA0-0xAF */ X, X, X, X, X, X, X, X, X, X, X, X, X, X, X, X,
-  /* 0xB0-0xBF */ X, X, X, X, X, X, X, X, X, X, X, X, X, X, X, X,
-  /* 0xC0-0xCF */ X, X, X, X, X, X, X, X, X, X, X, X, X, X, X, X,
-  /* 0xD0-0xDF */ X, X, X, X, X, X, X, X, X, X, X, X, X, X, X, X,
-  /* 0xE0-0xEF */ X, X, X, X, X, X, X, X, X, X, X, X, X, X, X, X,
-  /* 0xF0-0xFF */ X, X, X, X, X, X, X, X, X, X, X, X, X, X, X, X
+  /* 0x80-0xFF */ X, X, X, X, X, X, X, X, X, X, X, X, X, X, X, X,
+  X, X, X, X, X, X, X, X, X, X, X, X, X, X, X, X,
+  X, X, X, X, X, X, X, X, X, X, X, X, X, X, X, X,
+  X, X, X, X, X, X, X, X, X, X, X, X, X, X, X, X,
+  X, X, X, X, X, X, X, X, X, X, X, X, X, X, X, X,
+  X, X, X, X, X, X, X, X, X, X, X, X, X, X, X, X,
+  X, X, X, X, X, X, X, X, X, X, X, X, X, X, X, X,
+  X, X, X, X, X, X, X, X, X, X, X, X, X, X, X, X
 };
-
 #undef X
 
-/* Forward declaration */
-static size_t sockethttp_effective_length (const char *str, size_t len);
+/* ============================================================================
+ * Internal Helpers
+ * ============================================================================
+ */
 
-/* Parse entry for enum string mapping */
 struct ParseEntry {
   size_t len;
   const char *str;
   int val;
   bool case_insens;
 };
+
+static size_t
+sockethttp_effective_length (const char *str, size_t len)
+{
+  if (!str)
+    return 0;
+  if (len == 0)
+    return strlen (str);
+  return len;
+}
 
 static int
 sockethttp_parse_enum(const char *str, size_t len, const struct ParseEntry *table, size_t table_size, int default_val)
@@ -160,18 +141,6 @@ sockethttp_parse_enum(const char *str, size_t len, const struct ParseEntry *tabl
   return default_val;
 }
 
-/* Get effective string length (use strlen if len==0) */
-static size_t
-sockethttp_effective_length (const char *str, size_t len)
-{
-  if (!str)
-    return 0;
-  if (len == 0)
-    return strlen (str);
-  return len;
-}
-
-/* Validate token characters per RFC 9110 */
 static int
 sockethttp_is_token (const char *s, size_t len)
 {
@@ -183,7 +152,7 @@ sockethttp_is_token (const char *s, size_t len)
   return 1;
 }
 
-/* Check header value for injection chars (NUL, CR, LF) */
+/* SECURITY: Check for NUL/CR/LF to prevent header injection (CWE-113) */
 static int
 sockethttp_header_value_is_safe (const char *s, size_t len)
 {
@@ -195,6 +164,11 @@ sockethttp_header_value_is_safe (const char *s, size_t len)
     }
   return 1;
 }
+
+/* ============================================================================
+ * HTTP Version
+ * ============================================================================
+ */
 
 const char *
 SocketHTTP_version_string (SocketHTTP_Version version)
@@ -230,6 +204,11 @@ SocketHTTP_version_parse (const char *str, size_t len)
   return (SocketHTTP_Version)sockethttp_parse_enum(str, len, version_table,
     sizeof(version_table) / sizeof(version_table[0]), HTTP_VERSION_0_9);
 }
+
+/* ============================================================================
+ * HTTP Methods
+ * ============================================================================
+ */
 
 const char *
 SocketHTTP_method_name (SocketHTTP_Method method)
@@ -317,7 +296,11 @@ SocketHTTP_method_valid (const char *str, size_t len)
   return sockethttp_is_token (str, len);
 }
 
-/* Status code reason phrases (indexed by code - 100) */
+/* ============================================================================
+ * HTTP Status Codes
+ * ============================================================================
+ */
+
 static const char
     *status_reasons[HTTP_STATUS_CODE_MAX - HTTP_STATUS_CODE_MIN + 1]
     = { NULL };
@@ -396,18 +379,6 @@ static const struct {
     {0, NULL}
 };
 
-const char *
-SocketHTTP_status_reason (int code)
-{
-  if (code < HTTP_STATUS_CODE_MIN || code > HTTP_STATUS_CODE_MAX)
-    {
-      return "Unknown";
-    }
-  const char *reason = status_reasons[code - HTTP_STATUS_CODE_MIN];
-  return reason ? reason : "Unknown";
-}
-
-/* Static initializer for status_reasons (compile-time) */
 static void sockethttp_status_reasons_init (void)
     __attribute__ ((constructor));
 static void
@@ -419,6 +390,15 @@ sockethttp_status_reasons_init (void)
       status_reasons[idx] = status_phrases_static[i].phrase;
     }
   }
+}
+
+const char *
+SocketHTTP_status_reason (int code)
+{
+  if (code < HTTP_STATUS_CODE_MIN || code > HTTP_STATUS_CODE_MAX)
+    return "Unknown";
+  const char *reason = status_reasons[code - HTTP_STATUS_CODE_MIN];
+  return reason ? reason : "Unknown";
 }
 
 SocketHTTP_StatusCategory
@@ -443,6 +423,11 @@ SocketHTTP_status_valid (int code)
   return code >= HTTP_STATUS_CODE_MIN && code <= HTTP_STATUS_CODE_MAX;
 }
 
+/* ============================================================================
+ * Header Validation
+ * ============================================================================
+ */
+
 int
 SocketHTTP_header_name_valid (const char *name, size_t len)
 {
@@ -454,7 +439,6 @@ SocketHTTP_header_name_valid (const char *name, size_t len)
   return sockethttp_is_token (name, len);
 }
 
-/* SECURITY: Rejects NUL/CR/LF to prevent header injection (CWE-113) */
 int
 SocketHTTP_header_value_valid (const char *value, size_t len)
 {
@@ -465,6 +449,11 @@ SocketHTTP_header_value_valid (const char *value, size_t len)
     return 0;
   return sockethttp_header_value_is_safe (value, len);
 }
+
+/* ============================================================================
+ * Transfer-Encoding / Content-Encoding
+ * ============================================================================
+ */
 
 static const struct ParseEntry coding_table[] = {
     {SOCKETHTTP_CODING_LEN_BR, "br", HTTP_CODING_BR, true},

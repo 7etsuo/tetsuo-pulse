@@ -4,9 +4,7 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * SocketHTTPClient.c - HTTP Client with HTTP/1.1 and HTTP/2 Support
- */
+/* SocketHTTPClient.c - HTTP Client with HTTP/1.1 and HTTP/2 Support */
 
 #include <assert.h>
 #include <string.h>
@@ -57,15 +55,6 @@ static const char *error_strings[]
         [HTTPCLIENT_ERROR_CANCELLED] = "Request cancelled",
         [HTTPCLIENT_ERROR_OUT_OF_MEMORY] = "Out of memory" };
 
-/**
- * SocketHTTPClient_error_is_retryable - Check if error code is retryable
- * @error: Error code from async operation
- *
- * Returns: 1 if error is typically retryable, 0 if fatal
- * Thread-safe: Yes (pure function)
- *
- * Determines if a failed request should be retried based on error type.
- */
 int
 SocketHTTPClient_error_is_retryable (SocketHTTPClient_Error error)
 {
@@ -416,9 +405,7 @@ send_http1_body (HTTPPoolEntry *conn, const void *body, size_t body_len)
   return 0;
 }
 
-/**
- * HTTP/1.1 response body accumulator state
- */
+/* HTTP/1.1 response body accumulator state */
 typedef struct
 {
   char *body_buf;
@@ -467,29 +454,7 @@ calculate_new_capacity (HTTP1BodyAccumulator *acc, size_t needed_size)
   return new_cap;
 }
 
-/**
- * grow_body_buffer - Grow accumulator buffer if needed
- * @acc: Body accumulator
- * @needed_size: Minimum required size
- *
- * Returns: 0 on success, -1 on allocation failure
- */
-/**
- * httpclient_grow_body_buffer - Grow arena buffer for body accumulation
- * @arena: Arena for allocation
- * @buf: Pointer to buffer pointer (updated)
- * @capacity: Pointer to capacity (updated)
- * @total: Pointer to current total bytes (updated to needed)
- * @needed_size: New required total size
- * @max_size: Maximum allowed size (0=unlimited)
- *
- * Common implementation for HTTP/1 and HTTP/2 body buffer growth.
- * Exponential doubling with safe math, clamp to max_size.
- * Reallocates via Arena_alloc, copies existing data.
- * Replaces redundant growth logic in HTTP1 and HTTP2.
- *
- * Returns: 0 success, -1 alloc fail or overflow
- */
+/* Grow arena buffer for body accumulation (exponential doubling) */
 int
 httpclient_grow_body_buffer (Arena_T arena, char **buf, size_t *capacity, size_t *total, size_t needed_size, size_t max_size)
 {

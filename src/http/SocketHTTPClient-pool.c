@@ -4,9 +4,7 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * SocketHTTPClient-pool.c - HTTP Connection Pooling with Happy Eyeballs
- */
+/* SocketHTTPClient-pool.c - HTTP Connection Pooling with Happy Eyeballs */
 
 #include "core/Arena.h"
 #include "core/SocketConfig.h"
@@ -976,27 +974,7 @@ setup_tls_connection (SocketHTTPClient_T client, Socket_T *socket,
 }
 #endif /* SOCKET_HAS_TLS */
 
-/**
- * create_temp_entry - Create temporary entry for non-pooled connections
- * @socket: Connected socket
- * @host: Target hostname
- * @port: Target port
- * @is_secure: 1 for HTTPS, 0 for HTTP
- *
- * Returns: Thread-local pool entry
- *
- * Uses thread-local storage for non-pooled case. The thread-local arena
- * is reused across calls within the same thread, with previous allocations
- * cleaned up on each new call.
- *
- * MEMORY NOTE: The thread-local arena is freed on each subsequent call,
- * but will not be freed if the thread exits without making another call.
- * This is acceptable because:
- * 1. Non-pooled mode is rare (pooling is enabled by default)
- * 2. Memory is small (~8KB per thread)
- * 3. Thread exit typically means process exit or thread pool reuse
- * For long-running servers, always use connection pooling.
- */
+/* Create temporary thread-local entry for non-pooled connections */
 static HTTPPoolEntry *
 create_temp_entry (Socket_T socket, const char *host, int port, int is_secure)
 {
@@ -1086,19 +1064,6 @@ create_pooled_entry (SocketHTTPClient_T client, Socket_T socket,
   return entry;
 }
 
-/**
- * httpclient_connect - Get or create connection to host
- * @client: HTTP client
- * @uri: Target URI
- *
- * Returns: Pool entry for connection, or NULL on failure
- *
- * Orchestrates connection establishment:
- * 1. Try existing pool connection (supports HTTP/2 multiplexing)
- * 2. Establish TCP via Happy Eyeballs
- * 3. Set up TLS if needed (with ALPN for HTTP/2 negotiation)
- * 4. Create pool entry (HTTP/2 or HTTP/1.1 based on ALPN result)
- */
 HTTPPoolEntry *
 httpclient_connect (SocketHTTPClient_T client, const SocketHTTP_URI *uri)
 {
