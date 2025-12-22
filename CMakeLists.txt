@@ -666,6 +666,9 @@ if(SOCKET_HAS_TLS)
         test_tls_crl_integration
         test_tls_ktls
         test_tls_reconnect
+        # HTTP/2 and WebSocket-over-HTTP/2 tests
+        test_http2_server_push
+        test_websocket_h2
     )
 endif()
 
