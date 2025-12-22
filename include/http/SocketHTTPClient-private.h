@@ -309,4 +309,12 @@ extern int httpclient_grow_body_buffer (Arena_T arena, char **buf,
 extern void
 httpclient_clear_response_for_retry (SocketHTTPClient_Response *response);
 
+/* Thread-local arena cache functions (SocketHTTPClient-arena.c)
+ * Eliminate per-request malloc/pthread_mutex_init overhead by caching
+ * arenas in thread-local storage and using Arena_clear() for reset. */
+extern Arena_T httpclient_acquire_request_arena (void);
+extern void httpclient_release_request_arena (Arena_T *arena_ptr);
+extern Arena_T httpclient_acquire_response_arena (void);
+extern void httpclient_release_response_arena (Arena_T *arena_ptr);
+
 #endif /* SOCKETHTTPCLIENT_PRIVATE_INCLUDED */

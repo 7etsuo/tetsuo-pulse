@@ -42,6 +42,7 @@ struct T
   char *avail;
   char *limit;
   pthread_mutex_t mutex;
+  int locked; /* 0 = unlocked (TLS), 1 = locked (normal) */
 };
 
 static inline size_t
@@ -404,6 +405,26 @@ Arena_new (void)
   arena->prev = NULL;
   arena->avail = NULL;
   arena->limit = NULL;
+  arena->locked = 1;
+
+  return arena;
+}
+
+T
+Arena_new_unlocked (void)
+{
+  T arena;
+
+  arena = malloc (sizeof (*arena));
+  if (arena == NULL)
+    SOCKET_RAISE_MSG (Arena, Arena_Failed,
+                      ARENA_ENOMEM ": Cannot allocate arena structure");
+
+  /* No mutex initialization for unlocked arenas */
+  arena->prev = NULL;
+  arena->avail = NULL;
+  arena->limit = NULL;
+  arena->locked = 0;
 
   return arena;
 }
@@ -415,7 +436,8 @@ Arena_dispose (T *ap)
     return;
 
   Arena_clear (*ap);
-  pthread_mutex_destroy (&(*ap)->mutex);
+  if ((*ap)->locked)
+    pthread_mutex_destroy (&(*ap)->mutex);
   free (*ap);
   *ap = NULL;
 }
@@ -440,14 +462,17 @@ Arena_alloc (T arena, size_t nbytes, const char *file, int line)
         "Invalid allocation size: %zu bytes (overflow or exceeds limit)",
         nbytes);
 
-  pthread_mutex_lock (&arena->mutex);
+  if (arena->locked)
+    pthread_mutex_lock (&arena->mutex);
+
   while (arena->avail == NULL || arena->limit == NULL
          || (size_t)(arena->limit - arena->avail) < aligned_size)
     {
 
       if (arena_get_chunk (arena, aligned_size) != ARENA_SUCCESS)
         {
-          pthread_mutex_unlock (&arena->mutex);
+          if (arena->locked)
+            pthread_mutex_unlock (&arena->mutex);
           SOCKET_RAISE_MSG (
               Arena, Arena_Failed,
               "Failed to allocate chunk for %zu bytes (out of memory)",
@@ -456,7 +481,9 @@ Arena_alloc (T arena, size_t nbytes, const char *file, int line)
     }
   void *result = arena->avail;
   arena->avail += aligned_size;
-  pthread_mutex_unlock (&arena->mutex);
+
+  if (arena->locked)
+    pthread_mutex_unlock (&arena->mutex);
 
   return result;
 }
@@ -498,9 +525,57 @@ Arena_clear (T arena)
   if (arena == NULL)
     return;
 
-  pthread_mutex_lock (&arena->mutex);
+  if (arena->locked)
+    pthread_mutex_lock (&arena->mutex);
   arena_release_all_chunks (arena);
-  pthread_mutex_unlock (&arena->mutex);
+  if (arena->locked)
+    pthread_mutex_unlock (&arena->mutex);
+}
+
+void
+Arena_reset (T arena)
+{
+  struct ChunkHeader *first_chunk;
+  struct ChunkHeader *chunk;
+
+  if (arena == NULL)
+    return;
+
+  if (arena->locked)
+    pthread_mutex_lock (&arena->mutex);
+
+  /* Find the first (oldest) chunk by walking the prev chain */
+  first_chunk = arena->prev;
+  if (first_chunk == NULL)
+    {
+      /* No chunks allocated yet - nothing to reset */
+      if (arena->locked)
+        pthread_mutex_unlock (&arena->mutex);
+      return;
+    }
+
+  /* Walk to find the first chunk (where saved.prev == NULL) */
+  while (first_chunk->prev != NULL)
+    first_chunk = first_chunk->prev;
+
+  /* Release all chunks except the first one to the global cache.
+   * Start from the current chunk and work backwards. */
+  chunk = arena->prev;
+  while (chunk != first_chunk)
+    {
+      struct ChunkHeader *prev_chunk = chunk->prev;
+      chunk_cache_return (chunk);
+      chunk = prev_chunk;
+    }
+
+  /* Reset arena to use just the first chunk from the beginning.
+   * The first chunk's saved state has the original arena state (all NULL). */
+  arena->prev = first_chunk;
+  arena->avail = (char *)((union header *)first_chunk + 1);
+  arena->limit = chunk_limit (first_chunk);
+
+  if (arena->locked)
+    pthread_mutex_unlock (&arena->mutex);
 }
 
 #undef T

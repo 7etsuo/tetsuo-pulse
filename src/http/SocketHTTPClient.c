@@ -652,11 +652,11 @@ receive_http1_response (HTTPPoolEntry *conn,
   assert (conn != NULL);
   assert (response != NULL);
 
-  /* Create arena for response */
-  resp_arena = Arena_new ();
+  /* Acquire arena for response from thread-local cache */
+  resp_arena = httpclient_acquire_response_arena ();
   if (resp_arena == NULL)
     {
-      HTTPCLIENT_ERROR_MSG ("Failed to create response arena");
+      HTTPCLIENT_ERROR_MSG ("Failed to acquire response arena");
       return -1;
     }
 
@@ -676,7 +676,7 @@ receive_http1_response (HTTPPoolEntry *conn,
           = parse_http1_chunk (conn, buf, (size_t)n, &parsed_resp, &acc);
       if (parse_result < 0)
         {
-          Arena_dispose (&resp_arena);
+          httpclient_release_response_arena (&resp_arena);
           return parse_result;
         }
       if (parse_result == 1)
@@ -686,7 +686,7 @@ receive_http1_response (HTTPPoolEntry *conn,
   if (parsed_resp == NULL)
     {
       HTTPCLIENT_ERROR_MSG ("No response received");
-      Arena_dispose (&resp_arena);
+      httpclient_release_response_arena (&resp_arena);
       return -1;
     }
 
@@ -1606,7 +1606,7 @@ SocketHTTPClient_Response_free (SocketHTTPClient_Response *response)
 
   if (response->arena != NULL)
     {
-      Arena_dispose (&response->arena);
+      httpclient_release_response_arena (&response->arena);
     }
 
   memset (response, 0, sizeof (*response));
@@ -1623,7 +1623,7 @@ SocketHTTPClient_Request_new (SocketHTTPClient_T client,
   assert (client != NULL);
   assert (url != NULL);
 
-  arena = Arena_new ();
+  arena = httpclient_acquire_request_arena ();
   if (arena == NULL)
     {
       client->last_error = HTTPCLIENT_ERROR_OUT_OF_MEMORY;
@@ -1684,7 +1684,7 @@ SocketHTTPClient_Request_free (SocketHTTPClient_Request_T *req)
 
   if (arena != NULL)
     {
-      Arena_dispose (&arena);
+      httpclient_release_request_arena (&arena);
     }
 }
 

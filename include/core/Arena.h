@@ -59,6 +59,19 @@ extern const Except_T Arena_Failed;
 extern T Arena_new (void);
 
 /**
+ * @brief Create a new unlocked memory arena for single-threaded use.
+ *
+ * Returns: New arena instance without mutex protection
+ * Raises: Arena_Failed on malloc failure
+ *
+ * WARNING: Only use when arena is exclusively accessed by one thread
+ * (e.g., thread-local storage). Using from multiple threads is undefined.
+ *
+ * @threadsafe No - arena must only be used by creating thread
+ */
+extern T Arena_new_unlocked (void);
+
+/**
  * @brief Dispose arena and free all allocations.
  *
  * @param ap  Pointer to arena (set to NULL after)
@@ -119,6 +132,24 @@ extern void *Arena_calloc (T arena, size_t count, size_t nbytes,
  * @complexity O(chunks)
  */
 extern void Arena_clear (T arena);
+
+/**
+ * @brief Reset arena for reuse without global mutex contention.
+ *
+ * Unlike Arena_clear(), this keeps one chunk allocated and simply resets
+ * the allocation pointer to the beginning. This avoids returning chunks
+ * to the global free list (which requires global mutex), making it ideal
+ * for high-performance scenarios with thread-local arenas.
+ *
+ * @param arena  Arena to reset
+ *
+ * @note Previous allocations become invalid.
+ * @note Memory usage stays at one chunk (not freed until Arena_dispose).
+ *
+ * @threadsafe Yes
+ * @complexity O(chunks) for first reset, O(1) for subsequent resets
+ */
+extern void Arena_reset (T arena);
 
 /**
  * @brief Allocate with automatic source location tracking.
