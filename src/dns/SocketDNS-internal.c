@@ -4,7 +4,6 @@
  * https://x.com/tetsuoai
  */
 
-/* All includes before T macro definition to avoid redefinition warnings */
 #include <errno.h>
 #include <fcntl.h>
 #include <stddef.h>
@@ -22,20 +21,14 @@
 #include <resolv.h>
 #endif
 
-/* Redefine T after all includes (Arena.h and SocketDNS.h both undef T at end)
- */
 #undef T
 #define T SocketDNS_T
-/* Request_T is now properly typedef'd in SocketDNS.h */
 
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "SocketDNS-internal"
 
-/* Thread-local exception for formatted error messages (per-thread for safety)
- */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketDNS);
 
-/* Helper macro for pthread init with cleanup on failure */
 #define INIT_PTHREAD_PRIMITIVE(dns, init_func, ptr, cleanup_level, error_msg) \
   do                                                                          \
     {                                                                         \
@@ -47,7 +40,6 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketDNS);
     }                                                                         \
   while (0)
 
-/* GCC cleanup attribute to auto-unlock mutex when scope exits */
 static inline void
 mutex_unlock_cleanup (pthread_mutex_t **mutex)
 {
@@ -55,14 +47,12 @@ mutex_unlock_cleanup (pthread_mutex_t **mutex)
     pthread_mutex_unlock (*mutex);
 }
 
-/* Scoped mutex lock - auto-unlocks on scope exit via GCC cleanup attribute */
 #define SCOPED_MUTEX_LOCK(mutex_ptr)                                          \
   pthread_mutex_lock (mutex_ptr);                                             \
   pthread_mutex_t *SOCKET_CONCAT (_scoped_mutex_, __LINE__)                   \
       __attribute__ ((cleanup (mutex_unlock_cleanup), unused))                \
       = (mutex_ptr)
 
-/* Helper for unique variable names */
 #define SOCKET_CONCAT_INNER(a, b) a##b
 #define SOCKET_CONCAT(a, b) SOCKET_CONCAT_INNER (a, b)
 
@@ -81,8 +71,6 @@ initialize_queue_condition (struct SocketDNS_T *dns)
                           "Failed to initialize DNS resolver queue condition");
 }
 
-/* Security: Uses CLOCK_MONOTONIC to prevent timing attacks via clock
- * manipulation */
 void
 initialize_result_condition (struct SocketDNS_T *dns)
 {
@@ -97,7 +85,6 @@ initialize_result_condition (struct SocketDNS_T *dns)
                         "Failed to initialize condition attributes");
     }
 
-  /* Use CLOCK_MONOTONIC for immunity to system clock changes */
   rc = pthread_condattr_setclock (&attr, CLOCK_MONOTONIC);
   if (rc != 0)
     {
@@ -137,7 +124,6 @@ create_completion_pipe (struct SocketDNS_T *dns)
                         "Failed to create completion pipe");
     }
 
-  /* Set CLOEXEC on both pipe ends */
   if (SocketCommon_setcloexec (dns->pipefd[0], 1) < 0
       || SocketCommon_setcloexec (dns->pipefd[1], 1) < 0)
     {
@@ -191,21 +177,17 @@ allocate_dns_resolver (void)
   return dns;
 }
 
-/* Only non-zero defaults; calloc zeroed the rest */
 void
 initialize_dns_fields (struct SocketDNS_T *dns)
 {
-  /* Thread pool configuration */
   dns->num_workers = SOCKET_DNS_THREAD_COUNT;
   dns->max_pending = SOCKET_DNS_MAX_PENDING;
   dns->request_timeout_ms = SOCKET_DEFAULT_DNS_TIMEOUT_MS;
 
-  /* Cache configuration - only non-zero defaults */
   dns->cache_max_entries = SOCKET_DNS_DEFAULT_CACHE_MAX_ENTRIES;
   dns->cache_ttl_seconds = SOCKET_DNS_DEFAULT_CACHE_TTL_SECONDS;
 
-  /* DNS preferences */
-  dns->prefer_ipv6 = 1; /* Prefer IPv6 per RFC 6724 */
+  dns->prefer_ipv6 = 1;
 }
 
 void
@@ -256,11 +238,9 @@ set_worker_thread_name (struct SocketDNS_T *dns, int thread_index)
   char thread_name[SOCKET_DNS_THREAD_NAME_SIZE];
   snprintf (thread_name, sizeof (thread_name), "dns-worker-%d", thread_index);
 #if defined(__APPLE__)
-  /* macOS: pthread_setname_np takes only one argument (sets current thread) */
   (void)dns;
   pthread_setname_np (thread_name);
 #else
-  /* Linux: pthread_setname_np takes thread id and name */
   pthread_setname_np (dns->workers[thread_index], thread_name);
 #endif
 #else
@@ -273,11 +253,11 @@ int
 create_single_worker_thread (struct SocketDNS_T *dns, int thread_index)
 {
   pthread_attr_t attr;
+  int result;
 
   setup_thread_attributes (&attr);
-
-  int result = pthread_create (&dns->workers[thread_index], &attr,
-                               worker_thread, dns);
+  result = pthread_create (&dns->workers[thread_index], &attr, worker_thread,
+                           dns);
   pthread_attr_destroy (&attr);
 
   if (result != 0)
@@ -297,7 +277,6 @@ create_worker_threads (struct SocketDNS_T *dns)
     {
       if (create_single_worker_thread (dns, i) != 0)
         {
-          /* Thread creation failed - cleanup and raise error */
           cleanup_on_init_failure (dns, DNS_CLEAN_ARENA);
           SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,
                             "Failed to create DNS worker thread %d", i);
@@ -380,7 +359,6 @@ drain_completion_pipe (struct SocketDNS_T *dns)
   while (n > 0);
 }
 
-/* Security: Prevents hostname/IP strings from lingering in memory */
 static void
 secure_clear_memory (void *ptr, size_t len)
 {
@@ -390,14 +368,12 @@ secure_clear_memory (void *ptr, size_t len)
 #ifdef __linux__
   explicit_bzero (ptr, len);
 #else
-  /* Volatile pointer prevents compiler from optimizing away the memset */
   volatile unsigned char *vptr = (volatile unsigned char *)ptr;
   while (len--)
     *vptr++ = 0;
 #endif
 }
 
-/* Security: Securely clears hostname strings before arena disposal */
 static void
 free_request_list_results (Request_T head, size_t next_offset)
 {
@@ -407,7 +383,6 @@ free_request_list_results (Request_T head, size_t next_offset)
     {
       Request_T next = *(Request_T *)((char *)curr + next_offset);
 
-      /* Securely clear hostname before arena disposal */
       if (curr->host)
         {
           secure_clear_memory (curr->host, strlen (curr->host));
@@ -425,11 +400,9 @@ free_request_list_results (Request_T head, size_t next_offset)
 void
 free_all_requests (T d)
 {
-  /* Free queue-linked requests */
   free_request_list_results (
       d->queue_head, offsetof (struct SocketDNS_Request_T, queue_next));
 
-  /* Free hash-linked requests */
   for (int i = 0; i < SOCKET_DNS_REQUEST_HASH_SIZE; i++)
     free_request_list_results (
         d->request_hash[i], offsetof (struct SocketDNS_Request_T, hash_next));
@@ -488,7 +461,6 @@ allocate_request_hostname (struct SocketDNS_T *dns,
       return;
     }
 
-  /* Overflow check - defensive (already limited by validate_hostname) */
   if (host_len > SIZE_MAX - 1)
     {
       SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
@@ -545,7 +517,6 @@ hash_table_insert (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
   dns->request_hash[hash] = req;
 }
 
-/* Security: Bounds-checks hash_value to prevent out-of-bounds access */
 void
 hash_table_remove (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 {
@@ -554,8 +525,6 @@ hash_table_remove (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 
   hash = req->hash_value;
 
-  /* Defensive bounds check - prevent out-of-bounds access if
-   * hash_value is corrupted or request is from different resolver */
   if (hash >= SOCKET_DNS_REQUEST_HASH_SIZE)
     {
       SOCKET_LOG_DEBUG_MSG (
@@ -668,7 +637,6 @@ request_timed_out (const struct SocketDNS_T *dns,
   int64_t now_ms = Socket_get_monotonic_ms ();
   long long elapsed_ms = now_ms - req->submit_time_ms;
 
-  /* Defensive: unlikely but handle clock anomaly */
   if (elapsed_ms < 0)
     elapsed_ms = 0;
 
@@ -720,14 +688,11 @@ dequeue_request (struct SocketDNS_T *dns)
     return NULL;
 
   req = dns->queue_head;
-
-  /* Pop from queue head */
   dns->queue_head = req->queue_next;
   if (!dns->queue_head)
     dns->queue_tail = NULL;
   dns->queue_size--;
 
-  /* Prepare for processing */
   req->queue_next = NULL;
   req->state = REQ_PROCESSING;
 
@@ -755,7 +720,7 @@ signal_completion (struct SocketDNS_T *dns)
   ssize_t n;
 
   n = write (dns->pipefd[1], &byte, 1);
-  (void)n; /* Ignore result - pipe may be full, that's OK */
+  (void)n;
 }
 
 int
@@ -798,10 +763,6 @@ copy_and_store_result (struct SocketDNS_Request_T *req,
   req->state = REQ_COMPLETE;
   req->result = SocketCommon_copy_addrinfo (result);
 
-  /* Determine final error code:
-   * - Use provided error if non-zero (timeout, DNS failure, etc.)
-   * - Use EAI_MEMORY if copy failed and no prior error
-   * - Use 0 if copy succeeded and no error */
   if (error != 0)
     req->error = error;
   else if (!req->result && result)
@@ -883,8 +844,6 @@ handle_resolution_result (struct SocketDNS_T *dns,
   store_resolution_result (dns, req, result, res);
 }
 
-/* Security: Clears callback after invocation to prevent double-invoke or
- * use-after-free */
 void
 invoke_callback (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 {
@@ -893,8 +852,6 @@ invoke_callback (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
   struct addrinfo *result;
   int error;
 
-  /* Extract callback info under mutex for safe concurrent access.
-   * Another thread could be calling SocketDNS_cancel concurrently. */
   pthread_mutex_lock (&dns->mutex);
   if (!req->callback || req->state != REQ_COMPLETE)
     {
@@ -902,19 +859,14 @@ invoke_callback (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
       return;
     }
 
-  /* Copy callback info while holding mutex */
   callback = req->callback;
   callback_data = req->callback_data;
   result = req->result;
   error = req->error;
   pthread_mutex_unlock (&dns->mutex);
 
-  /* Invoke callback without mutex held (callback may take arbitrary time) */
   callback (req, result, error, callback_data);
 
-  /* Clear result and callback after invocation to prevent use-after-free or
-   * double invocation. Callback has taken ownership of result and freed it.
-   * Clearing callback prevents potential double calls in race conditions. */
   pthread_mutex_lock (&dns->mutex);
   req->result = NULL;
   req->callback = NULL;
@@ -928,8 +880,6 @@ check_pre_processing_timeout (struct SocketDNS_T *dns,
   SCOPED_MUTEX_LOCK (&dns->mutex);
   if (request_timed_out (dns, req))
     {
-      /* Call mark_request_timeout directly since we already hold mutex
-       * (handle_request_timeout would deadlock by trying to lock again) */
       mark_request_timeout (dns, req);
       return 1;
     }
@@ -956,7 +906,6 @@ process_single_request (struct SocketDNS_T *dns,
 }
 
 #ifdef __linux__
-/* Security: Uses inet_pton() for safe address parsing */
 static void
 apply_custom_resolver_config (struct __res_state *res_state,
                               struct SocketDNS_T *dns)
@@ -965,7 +914,6 @@ apply_custom_resolver_config (struct __res_state *res_state,
     {
       res_state->nscount = 0;
 
-      /* Static storage for IPv6 addresses (thread-local, one per worker) */
       static __thread struct sockaddr_in6 ipv6_addrs[MAXNS];
       static __thread struct sockaddr_in6 *ipv6_ptrs[MAXNS];
       int ipv6_count = 0;
@@ -977,7 +925,6 @@ apply_custom_resolver_config (struct __res_state *res_state,
           struct in_addr addr4;
           struct in6_addr addr6;
 
-          /* Try IPv4 first */
           if (inet_pton (AF_INET, ip, &addr4) == 1)
             {
               int idx = res_state->nscount;
@@ -986,7 +933,6 @@ apply_custom_resolver_config (struct __res_state *res_state,
               res_state->nsaddr_list[idx].sin_port = htons (53);
               res_state->nscount++;
             }
-          /* Try IPv6 */
           else if (inet_pton (AF_INET6, ip, &addr6) == 1)
             {
               if (ipv6_count < MAXNS)
@@ -1009,25 +955,14 @@ apply_custom_resolver_config (struct __res_state *res_state,
             }
         }
 
-      /* Apply IPv6 nameservers if any were configured */
       if (ipv6_count > 0)
         {
-          /* The _u._ext structure holds IPv6 nameserver pointers.
-           * Note: This is a glibc extension and may not be portable. */
           res_state->_u._ext.nscount6 = ipv6_count;
           for (int j = 0; j < ipv6_count; j++)
-            {
-              res_state->_u._ext.nsaddrs[j] = ipv6_ptrs[j];
-            }
+            res_state->_u._ext.nsaddrs[j] = ipv6_ptrs[j];
         }
     }
 
-  /* Note: Search domains are not applied here because res_state->dnsrch
-   * is an array of pointers into defdname buffer, not char arrays.
-   * Implementing proper search domain support requires managing the
-   * defdname buffer layout. For now, only nameservers are applied.
-   * TODO: Implement search domain support with defdname buffer management.
-   */
   (void)dns->search_domains;
   (void)dns->search_domain_count;
 }
