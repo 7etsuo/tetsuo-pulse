@@ -4,11 +4,7 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * SocketWS.c - WebSocket Protocol Core (RFC 6455)
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
+/* SocketWS.c - WebSocket Protocol Core (RFC 6455)
  *
  * Core WebSocket lifecycle, configuration, state management, and I/O.
  * Frame parsing and handshake logic are in separate files.
@@ -50,18 +46,6 @@
 
 #define T SocketWS_T
 
-/* ============================================================================
- * Poll Event Translation
- * ============================================================================
- */
-
-/**
- * ws_translate_poll_revents - Translate poll(2) revents to library events
- * @revents: poll(2) revents bitmask
- *
- * Returns: Library POLL_* event bitmask
- * Thread-safe: Yes - pure function
- */
 static unsigned
 ws_translate_poll_revents (short revents)
 {
@@ -79,30 +63,11 @@ ws_translate_poll_revents (short revents)
   return ev;
 }
 
-/* ============================================================================
- * Module Constants
- * ============================================================================
- */
-
-/** Initial message assembly buffer capacity */
 #define SOCKETWS_INITIAL_MESSAGE_CAPACITY 4096
-
-/** Buffer growth factor for message assembly */
 #define SOCKETWS_MESSAGE_BUFFER_GROWTH_FACTOR 2
-
-/** Maximum iterations for buffer growth loop (overflow protection) */
 #define SOCKETWS_MAX_GROWTH_ITERATIONS 64
-
-/** Default zlib compression level */
 #define SOCKETWS_DEFAULT_COMPRESSION_LEVEL 6
-
-/** Default zlib window bits (maximum) */
 #define SOCKETWS_DEFAULT_WINDOW_BITS 15
-
-/* ============================================================================
- * Exception Definitions
- * ============================================================================
- */
 
 const Except_T SocketWS_Failed
     = { &SocketWS_Failed, "WebSocket operation failed" };
@@ -111,13 +76,7 @@ const Except_T SocketWS_ProtocolError
 const Except_T SocketWS_Closed
     = { &SocketWS_Closed, "WebSocket connection closed" };
 
-/* Thread-local exception for detailed error messages */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketWS);
-
-/* ============================================================================
- * Configuration Defaults
- * ============================================================================
- */
 
 void
 SocketWS_config_defaults (SocketWS_Config *config)
@@ -139,24 +98,6 @@ SocketWS_config_defaults (SocketWS_Config *config)
   config->ping_timeout_ms = SOCKETWS_DEFAULT_PING_TIMEOUT_MS;
 }
 
-/* ============================================================================
- * Internal Helpers
- * ============================================================================
- */
-
-/**
- * ws_alloc_context - Allocate and initialize WebSocket context
- * @arena: Memory arena
- * @config: Configuration (NULL for defaults)
- *
- * Returns: Allocated context, or NULL on error
- */
-/**
- * ws_alloc_struct - Allocate and zero WebSocket structure
- * @arena: Memory arena
- *
- * Returns: Allocated structure or NULL
- */
 static SocketWS_T
 ws_alloc_struct (Arena_T arena)
 {
@@ -172,11 +113,6 @@ ws_alloc_struct (Arena_T arena)
   return ws;
 }
 
-/**
- * ws_init_config - Initialize configuration
- * @ws: WebSocket context
- * @config: Input config or NULL for defaults
- */
 static void
 ws_init_config (SocketWS_T ws, const SocketWS_Config *config)
 {
@@ -189,12 +125,6 @@ ws_init_config (SocketWS_T ws, const SocketWS_Config *config)
   ws->state = WS_STATE_CONNECTING;
 }
 
-/**
- * ws_init_buffers - Allocate receive and send buffers
- * @ws: WebSocket context
- *
- * Returns: 0 on success, -1 on failure (previous buffers freed)
- */
 static int
 ws_init_buffers (SocketWS_T ws)
 {
@@ -212,10 +142,6 @@ ws_init_buffers (SocketWS_T ws)
   return 0;
 }
 
-/**
- * ws_init_parsers - Initialize frame and message parsers
- * @ws: WebSocket context
- */
 static void
 ws_init_parsers (SocketWS_T ws)
 {
@@ -248,11 +174,6 @@ ws_alloc_context (Arena_T arena, const SocketWS_Config *config)
 /* ws_copy_string is declared in private header and defined in
  * SocketWS-handshake.c */
 
-/* ============================================================================
- * Error Handling
- * ============================================================================
- */
-
 void
 ws_set_error (SocketWS_T ws, SocketWS_Error error, const char *fmt, ...)
 {
@@ -276,14 +197,6 @@ ws_set_error (SocketWS_T ws, SocketWS_Error error, const char *fmt, ...)
     }
 }
 
-/**
- * ws_ensure_open - Ensure WebSocket is in open state for data/control frames
- * @ws: WebSocket context
- *
- * Returns: 1 if open and ready, 0 otherwise (error set)
- * Raises: None
- * Thread-safe: No
- */
 static int
 ws_ensure_open (SocketWS_T ws)
 {
@@ -295,11 +208,6 @@ ws_ensure_open (SocketWS_T ws)
   return 1;
 }
 
-/* ============================================================================
- * Frame State Management
- * ============================================================================
- */
-
 void
 ws_frame_reset (SocketWS_FrameParse *frame)
 {
@@ -309,11 +217,6 @@ ws_frame_reset (SocketWS_FrameParse *frame)
   frame->state = WS_FRAME_STATE_HEADER;
   frame->header_needed = 2; /* Minimum header size */
 }
-
-/* ============================================================================
- * Message Assembly Management
- * ============================================================================
- */
 
 void
 ws_message_reset (SocketWS_MessageAssembly *message)
@@ -328,13 +231,6 @@ ws_message_reset (SocketWS_MessageAssembly *message)
   message->utf8_initialized = 0;
 }
 
-/**
- * ws_message_check_limits - Check fragment and size limits
- * @ws: WebSocket context
- * @additional_len: Length to add
- *
- * Returns: 0 if OK, -1 if limit exceeded (sets error)
- */
 static int
 ws_message_check_limits (SocketWS_T ws, size_t additional_len)
 {
@@ -365,13 +261,6 @@ ws_message_check_limits (SocketWS_T ws, size_t additional_len)
   return 0;
 }
 
-/**
- * ws_message_grow_buffer - Grow message buffer if needed
- * @ws: WebSocket context
- * @required_len: Required total length
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 ws_message_grow_buffer (SocketWS_T ws, size_t required_len)
 {
@@ -416,14 +305,6 @@ ws_message_grow_buffer (SocketWS_T ws, size_t required_len)
   return 0;
 }
 
-/**
- * ws_message_validate_utf8 - Validate UTF-8 incrementally
- * @ws: WebSocket context
- * @data: Data to validate
- * @len: Data length
- *
- * Returns: 0 if valid, -1 if invalid
- */
 static int
 ws_message_validate_utf8 (SocketWS_T ws, const unsigned char *data, size_t len)
 {
@@ -511,20 +392,6 @@ ws_message_finalize (SocketWS_T ws)
   return 0;
 }
 
-/* ============================================================================
- * Message Finalization Helpers
- * ============================================================================
- */
-
-/**
- * ws_finalize_assembled_message - Apply post-processing to an assembled message
- * @ws: WebSocket context
- *
- * Handles permessage-deflate decompression when negotiated. Leaves
- * ws->message.* populated for consumption by SocketWS_recv_message().
- *
- * Returns: 0 on success, -1 on error (ws->last_error set)
- */
 static int
 ws_finalize_assembled_message (SocketWS_T ws)
 {
@@ -559,20 +426,6 @@ ws_finalize_assembled_message (SocketWS_T ws)
   return 0;
 }
 
-/* ============================================================================
- * Transport Helpers
- * ============================================================================
- */
-
-/**
- * ws_requires_masking - Check if frames require client masking
- * @ws: WebSocket context
- *
- * Per RFC 6455, client frames over TCP must be masked.
- * Per RFC 8441, HTTP/2 WebSocket frames do not use masking.
- *
- * Returns: 1 if masking required, 0 otherwise
- */
 int
 ws_requires_masking (SocketWS_T ws)
 {
@@ -588,22 +441,6 @@ ws_requires_masking (SocketWS_T ws)
   return ws->role == WS_ROLE_CLIENT;
 }
 
-/* ============================================================================
- * I/O Helpers
- * ============================================================================
- */
-
-/**
- * ws_send_contiguous - Send contiguous data from send buffer
- * @ws: WebSocket context
- * @ptr: Data pointer
- * @available: Available length
- *
- * Uses transport abstraction if available, falls back to direct socket I/O.
- *
- * Returns: Bytes sent, 0 would block/empty, -1 error
- * Raises: None (sets ws error)
- */
 static ssize_t
 ws_send_contiguous (SocketWS_T ws, const void *ptr, size_t available)
 {
@@ -686,17 +523,6 @@ ws_flush_send_buffer (SocketWS_T ws)
   return ws_send_contiguous (ws, ptr, available);
 }
 
-/**
- * ws_recv_contiguous - Receive into contiguous buffer space
- * @ws: WebSocket context
- * @ptr: Write pointer
- * @space: Available space
- *
- * Uses transport abstraction if available, falls back to direct socket I/O.
- *
- * Returns: Bytes received, 0 EOF/would block, -1 error
- * Raises: None (sets ws error)
- */
 static ssize_t
 ws_recv_contiguous (SocketWS_T ws, void *ptr, size_t space)
 {
@@ -779,19 +605,6 @@ ws_fill_recv_buffer (SocketWS_T ws)
   return ws_recv_contiguous (ws, ptr, space);
 }
 
-/* ============================================================================
- * Control Frame Handling
- * ============================================================================
- */
-
-/**
- * ws_store_close_reason - Store close reason in context
- * @ws: WebSocket context
- * @reason: Reason string (may be NULL)
- * @reason_len: Reason length
- *
- * Truncates reason to SOCKETWS_MAX_CLOSE_REASON if needed.
- */
 static void
 ws_store_close_reason (SocketWS_T ws, const char *reason, size_t reason_len)
 {
@@ -809,16 +622,6 @@ ws_store_close_reason (SocketWS_T ws, const char *reason, size_t reason_len)
     }
 }
 
-/**
- * ws_build_close_payload - Build CLOSE frame payload
- * @payload: Output buffer
- * @payload_len: Output length
- * @code: Close code
- * @reason: Reason string or NULL
- *
- * Fills payload with code + reason (truncated if needed)
- * Returns: 0 on success
- */
 static int
 ws_build_close_payload (unsigned char *payload, size_t *payload_len,
                         SocketWS_CloseCode code, const char *reason)
@@ -850,17 +653,6 @@ ws_build_close_payload (unsigned char *payload, size_t *payload_len,
   return 0;
 }
 
-/**
- * ws_prepare_close_state - Prepare close state and info
- * @ws: WebSocket context
- * @code: Close code
- * @reason: Reason or NULL
- * @payload: Payload buffer
- * @payload_len: Payload length output
- *
- * Updates state, stores info, builds payload
- * Returns: 0 on success, -1 if invalid code/reason
- */
 static int
 ws_prepare_close_state (SocketWS_T ws, SocketWS_CloseCode code,
                         const char *reason, unsigned char *payload,
@@ -949,25 +741,6 @@ ws_send_pong (SocketWS_T ws, const unsigned char *payload, size_t len)
   return ws_send_control_frame (ws, WS_OPCODE_PONG, payload, len);
 }
 
-/**
- * ws_handle_close_frame - Handle received CLOSE frame
- * @ws: WebSocket context
- * @payload: Close frame payload
- * @len: Payload length
- *
- * Returns: 0 on success, -1 on error
- */
-/**
- * ws_parse_close_payload - Parse CLOSE frame payload
- * @payload: Input payload
- * @len: Payload length
- * @code_out: Output close code
- * @reason_out: Output reason string
- * @reason_len_out: Output reason length
- *
- * Parses code (first 2 bytes) and reason (rest).
- * Returns: 1 if parsed, 0 if invalid (<2 bytes)
- */
 static int
 ws_parse_close_payload (const unsigned char *payload, size_t len,
                         SocketWS_CloseCode *code_out, const char **reason_out,
@@ -990,15 +763,6 @@ ws_parse_close_payload (const unsigned char *payload, size_t len,
   return 1;
 }
 
-/**
- * ws_validate_and_store_close_reason - Validate and store close reason
- * @ws: WebSocket context
- * @reason: Reason string
- * @reason_len: Length
- *
- * Validates UTF-8 if enabled, truncates if too long, stores.
- * Returns: 0 on success, -1 invalid UTF-8
- */
 static int
 ws_validate_and_store_close_reason (SocketWS_T ws, const char *reason,
                                     size_t reason_len)
@@ -1105,11 +869,6 @@ ws_handle_control_frame (SocketWS_T ws, SocketWS_Opcode opcode,
     }
 }
 
-/* ============================================================================
- * Auto-Ping Timer Integration
- * ============================================================================
- */
-
 void
 ws_auto_ping_callback (void *userdata)
 {
@@ -1178,17 +937,6 @@ ws_auto_ping_stop (SocketWS_T ws)
     }
 }
 
-/* ============================================================================
- * Public API - Lifecycle
- * ============================================================================
- */
-
-/**
- * ws_prepare_config - Prepare configuration with role
- * @cfg: Output configuration
- * @config: Input configuration (may be NULL)
- * @role: Role to set
- */
 static void
 ws_prepare_config (SocketWS_Config *cfg, const SocketWS_Config *config,
                    SocketWS_Role role)
@@ -1201,13 +949,6 @@ ws_prepare_config (SocketWS_Config *cfg, const SocketWS_Config *config,
   cfg->role = role;
 }
 
-/**
- * ws_create_context - Create WebSocket context with arena
- * @config: Prepared configuration
- *
- * Returns: New WebSocket context (caller owns arena on error)
- * Raises: SocketWS_Failed on error
- */
 static SocketWS_T
 ws_create_context (const SocketWS_Config *config)
 {
@@ -1347,11 +1088,6 @@ SocketWS_free (SocketWS_T *wsp)
   *wsp = NULL;
 }
 
-/* ============================================================================
- * Public API - State Accessors
- * ============================================================================
- */
-
 SocketWS_State
 SocketWS_state (SocketWS_T ws)
 {
@@ -1438,11 +1174,6 @@ SocketWS_error_string (SocketWS_Error error)
     }
 }
 
-/* ============================================================================
- * Public API - Handshake
- * ============================================================================
- */
-
 int
 SocketWS_handshake (SocketWS_T ws)
 {
@@ -1469,11 +1200,6 @@ SocketWS_handshake (SocketWS_T ws)
 
   return result;
 }
-
-/* ============================================================================
- * Public API - Event Loop Integration
- * ============================================================================
- */
 
 int
 SocketWS_pollfd (SocketWS_T ws)
@@ -1508,17 +1234,6 @@ SocketWS_poll_events (SocketWS_T ws)
   return events;
 }
 
-/**
- * ws_process_frames - Drain receive buffer into frames/messages
- * @ws: WebSocket context
- *
- * Parses available frames, handling control frames inline and assembling data
- * frames into ws->message. Stops when a complete data message is ready or no
- * more data is available.
- *
- * Returns: 1 if a complete message became available, 0 if no complete message,
- *          -1 on error.
- */
 static int
 ws_process_frames (SocketWS_T ws)
 {
@@ -1590,11 +1305,6 @@ SocketWS_process (SocketWS_T ws, unsigned events)
 
   return 0;
 }
-
-/* ============================================================================
- * Public API - Sending
- * ============================================================================
- */
 
 int
 SocketWS_send_text (SocketWS_T ws, const char *data, size_t len)
@@ -1668,11 +1378,6 @@ SocketWS_close (SocketWS_T ws, int code, const char *reason)
 
   return ws_send_close (ws, (SocketWS_CloseCode)code, reason);
 }
-
-/* ============================================================================
- * Convenience Functions
- * ============================================================================
- */
 
 SocketWS_T
 SocketWS_connect (const char *url, const char *protocols)

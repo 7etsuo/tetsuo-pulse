@@ -4,11 +4,7 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * SocketWS-handshake.c - WebSocket Handshake (RFC 6455 Section 4)
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
+/* SocketWS-handshake.c - WebSocket Handshake (RFC 6455 Section 4)
  *
  * HTTP upgrade handshake for WebSocket connections.
  *
@@ -46,20 +42,6 @@
 #include "socket/SocketBuf.h"
 #include "socket/SocketWS-private.h"
 
-/* ============================================================================
- * Safe snprintf Helper
- * ============================================================================
- */
-
-/**
- * ws_snprintf_checked - Write formatted string with overflow check
- * @buf: Output buffer
- * @size: Buffer size
- * @offset: Current offset (updated on success)
- * @fmt: Format string
- *
- * Returns: 0 on success, -1 if buffer overflow would occur
- */
 static int ws_snprintf_checked (char *buf, size_t size, size_t *offset,
                                 const char *fmt, ...)
     __attribute__ ((format (printf, 4, 5)));
@@ -89,17 +71,6 @@ ws_snprintf_checked (char *buf, size_t size, size_t *offset, const char *fmt,
   return 0;
 }
 
-/* ============================================================================
- * Client Request Building - Helper Functions
- * ============================================================================
- */
-
-/**
- * ws_generate_handshake_keys - Generate client key and expected accept
- * @ws: WebSocket context
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 ws_generate_handshake_keys (SocketWS_T ws)
 {
@@ -124,15 +95,6 @@ ws_generate_handshake_keys (SocketWS_T ws)
   return 0;
 }
 
-/**
- * ws_write_request_line - Write HTTP GET request line
- * @buf: Output buffer
- * @size: Buffer size
- * @offset: Current offset
- * @path: Request path
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 ws_write_request_line (char *buf, size_t size, size_t *offset,
                        const char *path)
@@ -141,16 +103,6 @@ ws_write_request_line (char *buf, size_t size, size_t *offset,
                               path ? path : "/");
 }
 
-/**
- * ws_write_host_header - Write Host header with optional port
- * @buf: Output buffer
- * @size: Buffer size
- * @offset: Current offset
- * @host: Hostname
- * @port: Port number
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 ws_write_host_header (char *buf, size_t size, size_t *offset, const char *host,
                       int port)
@@ -170,15 +122,6 @@ ws_write_host_header (char *buf, size_t size, size_t *offset, const char *host,
                               port);
 }
 
-/**
- * ws_write_websocket_headers - Write required WebSocket upgrade headers
- * @buf: Output buffer
- * @size: Buffer size
- * @offset: Current offset
- * @client_key: Generated Sec-WebSocket-Key
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 ws_write_websocket_headers (char *buf, size_t size, size_t *offset,
                             const char *client_key)
@@ -193,15 +136,6 @@ ws_write_websocket_headers (char *buf, size_t size, size_t *offset,
                               SOCKETWS_PROTOCOL_VERSION);
 }
 
-/**
- * ws_write_subprotocol_header - Write Sec-WebSocket-Protocol header
- * @buf: Output buffer
- * @size: Buffer size
- * @offset: Current offset
- * @subprotocols: NULL-terminated array of subprotocols
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 ws_write_subprotocol_header (char *buf, size_t size, size_t *offset,
                              const char *const *subprotocols)
@@ -229,15 +163,6 @@ ws_write_subprotocol_header (char *buf, size_t size, size_t *offset,
   return ws_snprintf_checked (buf, size, offset, "\r\n");
 }
 
-/**
- * ws_write_compression_header - Write permessage-deflate extension header
- * @buf: Output buffer
- * @size: Buffer size
- * @offset: Current offset
- * @config: WebSocket configuration
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 ws_write_compression_header (char *buf, size_t size, size_t *offset,
                              const SocketWS_Config *config)
@@ -270,12 +195,6 @@ ws_write_compression_header (char *buf, size_t size, size_t *offset,
   return ws_snprintf_checked (buf, size, offset, "\r\n");
 }
 
-/**
- * ws_build_client_request - Build HTTP upgrade request
- * @ws: WebSocket context
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 ws_build_client_request (SocketWS_T ws)
 {
@@ -350,18 +269,6 @@ ws_build_client_request (SocketWS_T ws)
   return 0;
 }
 
-/* ============================================================================
- * Client Response Validation - Helper Functions
- * ============================================================================
- */
-
-/**
- * ws_validate_status_101 - Validate HTTP 101 status code
- * @ws: WebSocket context
- * @response: HTTP response
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 ws_validate_status_101 (SocketWS_T ws, const SocketHTTP_Response *response)
 {
@@ -375,16 +282,6 @@ ws_validate_status_101 (SocketWS_T ws, const SocketHTTP_Response *response)
   return 0;
 }
 
-/**
- * ws_validate_websocket_upgrade_header - Validate Upgrade: websocket header (shared for req/res)
- * @ws: WebSocket context
- * @headers: HTTP headers from request or response
- * @include_value: If true, include actual header value in error message for debugging
- *
- * Returns: 0 on success, -1 on error. Sets error via ws_set_error.
- *
- * @note Used for both client response validation and server request validation.
- */
 static int
 ws_validate_websocket_upgrade_header (SocketWS_T ws, SocketHTTP_Headers_T headers, bool include_value)
 {
@@ -407,16 +304,6 @@ ws_validate_websocket_upgrade_header (SocketWS_T ws, SocketHTTP_Headers_T header
   return 0;
 }
 
-/**
- * ws_validate_connection_upgrade_header - Validate Connection header contains "Upgrade" (shared for req/res)
- * @ws: WebSocket context
- * @headers: HTTP headers from request or response
- * @include_value: If true, include actual header value in error message for debugging
- *
- * Returns: 0 on success, -1 on error. Sets error via ws_set_error.
- *
- * @note Used for both client response validation and server request validation.
- */
 static int
 ws_validate_connection_upgrade_header (SocketWS_T ws, SocketHTTP_Headers_T headers, bool include_value)
 {
@@ -439,23 +326,6 @@ ws_validate_connection_upgrade_header (SocketWS_T ws, SocketHTTP_Headers_T heade
   return 0;
 }
 
-/**
- * ws_validate_base64_decoding - Shared helper to validate WebSocket base64 values
- * @ws: WebSocket context
- * @b64str: Input base64 string
- * @b64_len: Length of b64str
- * @expected_decoded_len: Expected length after base64 decode
- * @field_desc: Field name for error messages (e.g., "Sec-WebSocket-Key")
- *
- * Validates base64 decoding without retaining decoded data. Uses secure clear on temp buffer.
- * Does NOT check b64_len; caller must validate length first.
- *
- * Returns: 0 on success, -1 on error (sets error via ws_set_error)
- *
- * @note Used internally for Sec-WebSocket-Key and Sec-WebSocket-Accept validation.
- * @security Clears temporary decode buffer to prevent sensitive data leaks.
- * @complexity O(n) where n is decoded length
- */
 static int
 ws_validate_base64_decoding (SocketWS_T ws, const char *b64str, size_t b64_len,
                              size_t expected_decoded_len, const char *field_desc)
@@ -481,19 +351,6 @@ ws_validate_base64_decoding (SocketWS_T ws, const char *b64str, size_t b64_len,
   return 0;
 }
 
-/**
- * ws_init_compression_if_negotiated - Initialize compression if negotiated (shared helper)
- * @ws: WebSocket context
- *
- * Initializes per-message deflate compression context if negotiated during handshake.
- * Called after successful handshake validation on both client and server sides.
- * Logs warning if init fails but continues without compression.
- *
- * @note Only effective if SOCKETWS_HAS_DEFLATE defined and compression_negotiated true.
- * @note Idempotent: safe to call multiple times.
- * @threadsafe No - assumes single-threaded handshake completion.
- * @see ws_compression_init() for low-level init
- */
 static void
 ws_init_compression_if_negotiated (SocketWS_T ws)
 {
@@ -515,13 +372,6 @@ ws_init_compression_if_negotiated (SocketWS_T ws)
 #endif
 }
 
-/**
- * ws_validate_accept_value - Validate Sec-WebSocket-Accept header
- * @ws: WebSocket context
- * @headers: HTTP headers
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 ws_validate_accept_value (SocketWS_T ws, SocketHTTP_Headers_T headers)
 {
@@ -563,13 +413,6 @@ ws_validate_accept_value (SocketWS_T ws, SocketHTTP_Headers_T headers)
   return 0;
 }
 
-/**
- * ws_validate_negotiated_subprotocol - Validate server-selected subprotocol
- * @ws: WebSocket context
- * @headers: HTTP headers
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 ws_validate_negotiated_subprotocol (SocketWS_T ws,
                                     SocketHTTP_Headers_T headers)
@@ -606,13 +449,6 @@ ws_validate_negotiated_subprotocol (SocketWS_T ws,
   return 0;
 }
 
-/**
- * ws_parse_window_bits - Parse window bits parameter from extension string
- * @extensions: Extension header value
- * @param_name: Parameter name to look for
- *
- * Returns: Parsed value (8-15), or default if not found
- */
 static int
 ws_parse_window_bits (const char *extensions, const char *param_name)
 {
@@ -640,19 +476,6 @@ ws_parse_window_bits (const char *extensions, const char *param_name)
   return value;
 }
 
-/**
- * ws_parse_permessage_deflate_params - Parse permessage-deflate extension parameters (shared)
- * @ws: WebSocket context
- * @extensions: Sec-WebSocket-Extensions header value string
- *
- * Parses permessage-deflate parameters from extensions string.
- * Sets handshake flags only if "permessage-deflate" found.
- * Used by both client (server response) and server (client request) negotiation.
- *
- * @note Does not check config.enable_permessage_deflate; caller must handle.
- * @note Window bits default to SOCKETWS_DEFAULT_DEFLATE_WINDOW_BITS if not specified.
- * @see ws_negotiate_server_compression() for server-specific overrides.
- */
 static void
 ws_parse_permessage_deflate_params (SocketWS_T ws, const char *extensions)
 {
@@ -674,11 +497,6 @@ ws_parse_permessage_deflate_params (SocketWS_T ws, const char *extensions)
       = ws_parse_window_bits (extensions, "client_max_window_bits");
 }
 
-/**
- * ws_parse_negotiated_extensions - Parse extension negotiation results
- * @ws: WebSocket context
- * @headers: HTTP headers
- */
 static void
 ws_parse_negotiated_extensions (SocketWS_T ws, SocketHTTP_Headers_T headers)
 {
@@ -691,13 +509,6 @@ ws_parse_negotiated_extensions (SocketWS_T ws, SocketHTTP_Headers_T headers)
   ws_parse_permessage_deflate_params (ws, extensions);
 }
 
-/**
- * ws_validate_upgrade_response - Validate server's upgrade response
- * @ws: WebSocket context
- * @response: Parsed HTTP response
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 ws_validate_upgrade_response (SocketWS_T ws,
                               const SocketHTTP_Response *response)
@@ -732,11 +543,6 @@ ws_validate_upgrade_response (SocketWS_T ws,
   return 0;
 }
 
-/* ============================================================================
- * Client Handshake - State Machine
- * ============================================================================
- */
-
 int
 ws_handshake_client_init (SocketWS_T ws)
 {
@@ -760,12 +566,6 @@ ws_handshake_client_init (SocketWS_T ws)
   return 0;
 }
 
-/**
- * ws_send_request_data - Send pending request data
- * @ws: WebSocket context
- *
- * Returns: 0 if complete, 1 if would block, -1 on error
- */
 static int
 ws_send_request_data (SocketWS_T ws)
 {
@@ -788,12 +588,6 @@ ws_send_request_data (SocketWS_T ws)
   return 0;
 }
 
-/**
- * ws_read_and_parse_response - Read and parse HTTP response
- * @ws: WebSocket context
- *
- * Returns: 0 if complete, 1 if need more data, -1 on error
- */
 static int
 ws_read_and_parse_response (SocketWS_T ws)
 {
@@ -832,14 +626,6 @@ ws_read_and_parse_response (SocketWS_T ws)
   return 0;
 }
 
-/**
- * ws_finalize_client_handshake - Finalize successful client handshake
- * @ws: WebSocket context
- *
- * Returns: 0 on success, -1 on error
- *
- * Note: Compression initialization is handled in ws_validate_upgrade_response()
- */
 static int
 ws_finalize_client_handshake (SocketWS_T ws)
 {
@@ -906,20 +692,6 @@ ws_handshake_client_process (SocketWS_T ws)
     }
 }
 
-/* ============================================================================
- * Server Response Building - Helper Functions
- * ============================================================================
- */
-
-/**
- * ws_write_101_status_line - Write HTTP 101 status and core headers
- * @buf: Output buffer
- * @size: Buffer size
- * @offset: Current offset
- * @accept_value: Computed Sec-WebSocket-Accept value
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 ws_write_101_status_line (char *buf, size_t size, size_t *offset,
                           const char *accept_value)
@@ -933,15 +705,6 @@ ws_write_101_status_line (char *buf, size_t size, size_t *offset,
                               SOCKETWS_CONNECTION_VALUE, accept_value);
 }
 
-/**
- * ws_write_negotiated_subprotocol - Write selected subprotocol header
- * @buf: Output buffer
- * @size: Buffer size
- * @offset: Current offset
- * @subprotocol: Selected subprotocol (may be NULL)
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 ws_write_negotiated_subprotocol (char *buf, size_t size, size_t *offset,
                                  const char *subprotocol)
@@ -953,15 +716,6 @@ ws_write_negotiated_subprotocol (char *buf, size_t size, size_t *offset,
                               "Sec-WebSocket-Protocol: %s\r\n", subprotocol);
 }
 
-/**
- * ws_write_negotiated_compression - Write compression extension header
- * @buf: Output buffer
- * @size: Buffer size
- * @offset: Current offset
- * @handshake: Handshake state with compression params
- *
- * Returns: 0 on success, -1 on error
- */
 #ifdef SOCKETWS_HAS_DEFLATE
 static int
 ws_write_negotiated_compression (char *buf, size_t size, size_t *offset,
@@ -995,13 +749,6 @@ ws_write_negotiated_compression (char *buf, size_t size, size_t *offset,
 }
 #endif
 
-/**
- * ws_build_server_response - Build HTTP 101 response
- * @ws: WebSocket context
- * @client_key: Sec-WebSocket-Key from client
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 ws_build_server_response (SocketWS_T ws, const char *client_key)
 {
@@ -1069,23 +816,10 @@ ws_build_server_response (SocketWS_T ws, const char *client_key)
   return 0;
 }
 
-/* ============================================================================
- * Server Handshake - Validation Helper Functions
- * ============================================================================
- */
 
 
 
 
-
-/**
- * ws_validate_client_key - Validate Sec-WebSocket-Key from client
- * @ws: WebSocket context
- * @headers: HTTP headers
- * @key_out: Output - pointer to key value
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 ws_validate_client_key (SocketWS_T ws, SocketHTTP_Headers_T headers,
                         const char **key_out)
@@ -1115,13 +849,6 @@ ws_validate_client_key (SocketWS_T ws, SocketHTTP_Headers_T headers,
   return 0;
 }
 
-/**
- * ws_validate_client_version - Validate Sec-WebSocket-Version from client
- * @ws: WebSocket context
- * @headers: HTTP headers
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 ws_validate_client_version (SocketWS_T ws, SocketHTTP_Headers_T headers)
 {
@@ -1138,14 +865,6 @@ ws_validate_client_version (SocketWS_T ws, SocketHTTP_Headers_T headers)
   return 0;
 }
 
-/**
- * ws_validate_client_upgrade_request - Validate all required upgrade headers
- * @ws: WebSocket context
- * @request: HTTP request
- * @key_out: Output - pointer to client key
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 ws_validate_client_upgrade_request (SocketWS_T ws,
                                     const SocketHTTP_Request *request,
@@ -1166,11 +885,6 @@ ws_validate_client_upgrade_request (SocketWS_T ws,
   return 0;
 }
 
-/**
- * ws_negotiate_server_subprotocol - Negotiate subprotocol with client
- * @ws: WebSocket context
- * @headers: HTTP headers
- */
 static void
 ws_negotiate_server_subprotocol (SocketWS_T ws, SocketHTTP_Headers_T headers)
 {
@@ -1204,11 +918,6 @@ ws_negotiate_server_subprotocol (SocketWS_T ws, SocketHTTP_Headers_T headers)
     }
 }
 
-/**
- * ws_negotiate_server_compression - Negotiate compression with client
- * @ws: WebSocket context
- * @headers: HTTP headers
- */
 static void
 ws_negotiate_server_compression (SocketWS_T ws, SocketHTTP_Headers_T headers)
 {
@@ -1253,10 +962,6 @@ ws_handshake_server_init (SocketWS_T ws, const SocketHTTP_Request *request)
   return 0;
 }
 
-/**
- * ws_finalize_server_handshake - Finalize successful server handshake
- * @ws: WebSocket context
- */
 static void
 ws_finalize_server_handshake (SocketWS_T ws)
 {
@@ -1310,11 +1015,6 @@ ws_handshake_validate_accept (SocketWS_T ws, const char *accept)
                                       strlen (accept));
 }
 
-/* ============================================================================
- * Helper - Copy String to Arena
- * ============================================================================
- */
-
 char *
 ws_copy_string (Arena_T arena, const char *str)
 {
@@ -1332,17 +1032,6 @@ ws_copy_string (Arena_T arena, const char *str)
   return copy;
 }
 
-/* ============================================================================
- * Public API - Check WebSocket Upgrade
- * ============================================================================
- */
-
-/**
- * SocketWS_is_upgrade - Check if HTTP request is WebSocket upgrade
- * @request: Parsed HTTP request
- *
- * Returns: 1 if WebSocket upgrade request, 0 otherwise
- */
 int
 SocketWS_is_upgrade (const SocketHTTP_Request *request)
 {
@@ -1369,13 +1058,6 @@ SocketWS_is_upgrade (const SocketHTTP_Request *request)
   return 1;
 }
 
-/**
- * ws_copy_status_phrase - Safely copy status phrase with length limit
- * @dest: Destination buffer
- * @dest_size: Size of destination buffer
- * @reason: Source string (may be NULL)
- * @default_phrase: Default phrase if reason is NULL or too long
- */
 static void
 ws_copy_status_phrase (char *dest, size_t dest_size, const char *reason,
                        const char *default_phrase)
@@ -1396,12 +1078,6 @@ ws_copy_status_phrase (char *dest, size_t dest_size, const char *reason,
   snprintf (dest, dest_size, "%s", source);
 }
 
-/**
- * SocketWS_server_reject - Reject WebSocket upgrade with HTTP response
- * @socket: TCP socket
- * @status_code: HTTP status code (e.g., 400, 403)
- * @reason: Rejection reason
- */
 void
 SocketWS_server_reject (Socket_T socket, int status_code, const char *reason)
 {

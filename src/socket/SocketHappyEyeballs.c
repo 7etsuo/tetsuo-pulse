@@ -4,16 +4,6 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * SocketHappyEyeballs.c - Happy Eyeballs (RFC 8305) Implementation
- *
- * Part of the Socket Library
- *
- * Implements the Happy Eyeballs algorithm for fast dual-stack connection
- * establishment. Races IPv6 and IPv4 connection attempts with a 250ms
- * delay between attempts to minimize latency when one family is slow.
- */
-
 #include "socket/SocketHappyEyeballs-private.h"
 #include "socket/SocketHappyEyeballs.h"
 
@@ -44,11 +34,6 @@
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "HappyEyeballs"
 
-/* ============================================================================
- * Exception Definition
- * ============================================================================
- */
-
 const Except_T SocketHE_Failed
     = { &SocketHE_Failed, "Happy Eyeballs connection failed" };
 
@@ -56,21 +41,11 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHE);
 
 #define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketHE, e)
 
-/* ============================================================================
- * Forward Declarations - DNS and Address Management
- * ============================================================================
- */
-
 static void he_cancel_dns (T he);
 static int he_start_dns_resolution (T he);
 static void he_process_dns_completion (T he);
 static void he_sort_addresses (T he);
 static SocketHE_AddressEntry_T *he_get_next_address (T he);
-
-/* ============================================================================
- * Forward Declarations - Connection Attempt Management
- * ============================================================================
- */
 
 static int he_start_attempt (T he, SocketHE_AddressEntry_T *entry);
 static int he_initiate_connect (T he, SocketHE_Attempt_T *attempt,
@@ -81,26 +56,10 @@ static void he_declare_winner (T he, SocketHE_Attempt_T *attempt);
 static void he_fail_attempt (T he, SocketHE_Attempt_T *attempt, int error);
 static int he_all_attempts_done (const T he);
 
-/* ============================================================================
- * Forward Declarations - State and Timeout Management
- * ============================================================================
- */
-
 static void he_transition_to_failed (T he, const char *reason);
 static int he_should_start_fallback (const T he);
 static int he_check_total_timeout (const T he);
 
-/* ============================================================================
- * Configuration Defaults
- * ============================================================================
- */
-
-/**
- * SocketHappyEyeballs_config_defaults - Initialize config with defaults
- * @config: Configuration to initialize
- *
- * Thread-safe: Yes
- */
 void
 SocketHappyEyeballs_config_defaults (SocketHE_Config_T *config)
 {
@@ -113,16 +72,6 @@ SocketHappyEyeballs_config_defaults (SocketHE_Config_T *config)
   config->max_attempts = SOCKET_HE_DEFAULT_MAX_ATTEMPTS;
 }
 
-/* ============================================================================
- * Context Initialization Helpers
- * ============================================================================
- */
-
-/**
- * he_init_config - Initialize context configuration
- * @he: Context to initialize
- * @config: User config or NULL for defaults
- */
 static void
 he_init_config (T he, const SocketHE_Config_T *config)
 {
@@ -139,13 +88,6 @@ he_init_config (T he, const SocketHE_Config_T *config)
     he->config.max_attempts = SOCKET_HE_MAX_ATTEMPTS;
 }
 
-/**
- * he_copy_hostname - Copy hostname into context arena
- * @he: Context (must not be NULL)
- * @host: Hostname to copy (must not be NULL)
- *
- * Returns: 0 on success, -1 on failure
- */
 static int
 he_copy_hostname (T he, const char *host)
 {
@@ -165,15 +107,6 @@ he_copy_hostname (T he, const char *host)
   return 0;
 }
 
-/**
- * he_init_context_fields - Initialize context fields after allocation
- * @he: Context to initialize
- * @dns: DNS resolver (may be NULL for sync API)
- * @poll: Poll instance (may be NULL for sync API)
- * @port: Target port (1-65535)
- *
- * Sets initial field values including start timestamp for timeout tracking.
- */
 static void
 he_init_context_fields (T he, const SocketDNS_T dns, const SocketPoll_T poll,
                         const int port)
@@ -185,11 +118,6 @@ he_init_context_fields (T he, const SocketDNS_T dns, const SocketPoll_T poll,
   he->start_time_ms = Socket_get_monotonic_ms ();
 }
 
-/**
- * he_alloc_base_context - Allocate and initialize base context
- *
- * Returns: New context or NULL on failure
- */
 static T
 he_alloc_base_context (void)
 {
@@ -207,19 +135,6 @@ he_alloc_base_context (void)
   return he;
 }
 
-/**
- * he_create_context - Create Happy Eyeballs context
- * @dns: DNS resolver (may be NULL for sync API)
- * @poll: Poll instance (may be NULL for sync API)
- * @host: Target hostname (will be copied into context)
- * @port: Target port (1-65535)
- * @config: Configuration options (NULL for defaults)
- *
- * Returns: New context or NULL on allocation failure
- *
- * Allocates context and arena, copies hostname, initializes fields.
- * Caller owns the returned context and must free with SocketHappyEyeballs_free.
- */
 static T
 he_create_context (const SocketDNS_T dns, const SocketPoll_T poll,
                    const char *host, const int port,
@@ -242,15 +157,6 @@ he_create_context (const SocketDNS_T dns, const SocketPoll_T poll,
   return he;
 }
 
-/* ============================================================================
- * Context Destruction
- * ============================================================================
- */
-
-/**
- * he_free_resolved - Free resolved address list
- * @he: Context
- */
 static void
 he_free_resolved (T he)
 {
@@ -261,10 +167,6 @@ he_free_resolved (T he)
     }
 }
 
-/**
- * he_free_owned_resources - Free resources we created
- * @he: Context
- */
 static void
 he_free_owned_resources (T he)
 {
@@ -289,12 +191,6 @@ he_free_owned_resources (T he)
     Arena_dispose (&he->arena);
 }
 
-/**
- * SocketHappyEyeballs_free - Free Happy Eyeballs context
- * @he: Pointer to context (will be set to NULL)
- *
- * Thread-safe: No
- */
 void
 SocketHappyEyeballs_free (T *he)
 {
@@ -324,12 +220,6 @@ SocketHappyEyeballs_free (T *he)
   *he = NULL;
 }
 
-/**
- * SocketHappyEyeballs_cancel - Cancel in-progress operation
- * @he: Happy Eyeballs context
- *
- * Thread-safe: No
- */
 void
 SocketHappyEyeballs_cancel (T he)
 {
@@ -347,15 +237,6 @@ SocketHappyEyeballs_cancel (T he)
                    "Happy Eyeballs cancelled for %s:%d", he->host, he->port);
 }
 
-/* ============================================================================
- * DNS Resolution
- * ============================================================================
- */
-
-/**
- * he_cancel_dns - Cancel active DNS request
- * @he: Happy Eyeballs context
- */
 static void
 he_cancel_dns (T he)
 {
@@ -366,15 +247,6 @@ he_cancel_dns (T he)
     }
 }
 
-/**
- * he_calculate_dns_timeout - Calculate effective DNS timeout
- * @he: Happy Eyeballs context (read-only access)
- *
- * Returns: DNS timeout in milliseconds (0 = no timeout)
- *
- * Uses dns_timeout_ms if set, otherwise limits by total_timeout_ms.
- * Prioritizes explicit DNS timeout over total timeout when both are set.
- */
 static int
 he_calculate_dns_timeout (const T he)
 {
@@ -391,12 +263,6 @@ he_calculate_dns_timeout (const T he)
   return 0; /* No timeout */
 }
 
-/**
- * he_start_dns_resolution - Start async DNS resolution
- * @he: Happy Eyeballs context
- *
- * Returns: 0 on success, -1 on failure
- */
 static int
 he_start_dns_resolution (T he)
 {
@@ -462,10 +328,6 @@ he_start_dns_resolution (T he)
   return 0;
 }
 
-/**
- * he_setup_dns_hints - Setup addrinfo hints for DNS resolution
- * @hints: Pointer to hints structure to initialize
- */
 static void
 he_setup_dns_hints (struct addrinfo *hints)
 {
@@ -475,28 +337,12 @@ he_setup_dns_hints (struct addrinfo *hints)
   hints->ai_flags = AI_ADDRCONFIG;
 }
 
-/**
- * he_format_port_string - Format port number as string
- * @port: Port number (1-65535)
- * @port_str: Output buffer (must be at least SOCKET_HE_PORT_STR_SIZE)
- * @port_str_size: Size of output buffer
- *
- * Formats the port number for use with getaddrinfo() which requires
- * a string representation of the service/port.
- */
 static void
 he_format_port_string (const int port, char *port_str, const size_t port_str_size)
 {
   snprintf (port_str, port_str_size, "%d", port);
 }
 
-/**
- * he_set_dns_error - Set DNS error in context
- * @he: Happy Eyeballs context
- * @error: Error code from DNS resolution (EAI_* constants)
- *
- * Formats the DNS error using gai_strerror() for human-readable output.
- */
 static void
 he_set_dns_error (T he, const int error)
 {
@@ -511,13 +357,6 @@ he_set_dns_error (T he, const int error)
  * Uses SocketDNS integration for both sync and async modes.
  */
 
-/**
- * he_handle_dns_error - Handle DNS resolution error
- * @he: Happy Eyeballs context
- * @error: Error code from DNS (EAI_* constants)
- *
- * Sets DNS error state and transitions to FAILED state.
- */
 static void
 he_handle_dns_error (T he, const int error)
 {
@@ -527,11 +366,6 @@ he_handle_dns_error (T he, const int error)
   he_transition_to_failed (he, he->error_buf);
 }
 
-/**
- * he_handle_dns_success - Handle DNS resolution success
- * @he: Happy Eyeballs context
- * @result: Resolved addresses
- */
 static void
 he_handle_dns_success (T he, struct addrinfo *result)
 {
@@ -555,12 +389,6 @@ he_handle_dns_success (T he, struct addrinfo *result)
   }
 }
 
-/**
- * he_process_dns_completion - Check and process DNS completion
- * @he: Happy Eyeballs context
- *
- * Shared implementation for both DNS completion callback and event processing.
- */
 static void
 he_process_dns_completion (T he)
 {
@@ -584,20 +412,6 @@ he_process_dns_completion (T he)
 /* he_process_dns_event is identical to he_process_dns_completion - use alias */
 #define he_process_dns_event he_process_dns_completion
 
-/* ============================================================================
- * Address Sorting (RFC 8305)
- * ============================================================================
- */
-
-/**
- * he_count_addresses_by_family - Count addresses of each family
- * @res: Address list (read-only)
- * @ipv6_count: Output for IPv6 count
- * @ipv4_count: Output for IPv4 count
- *
- * Iterates through the resolved address list and counts IPv6 and IPv4
- * addresses separately for RFC 8305 interleaving logic.
- */
 static void
 he_count_addresses_by_family (const struct addrinfo *res, int *ipv6_count,
                               int *ipv4_count)
@@ -614,13 +428,6 @@ he_count_addresses_by_family (const struct addrinfo *res, int *ipv6_count,
     }
 }
 
-/**
- * he_create_address_entry - Create address entry from addrinfo
- * @he: Happy Eyeballs context
- * @rp: Address info to wrap
- *
- * Returns: New entry or NULL on allocation failure
- */
 static SocketHE_AddressEntry_T *
 he_create_address_entry (T he, struct addrinfo *rp)
 {
@@ -638,11 +445,6 @@ he_create_address_entry (T he, struct addrinfo *rp)
   return entry;
 }
 
-/**
- * he_append_to_family_list - Append entry to family-specific list
- * @entry: Entry to append
- * @tail: Pointer to tail pointer (updated)
- */
 static void
 he_append_to_family_list (SocketHE_AddressEntry_T *entry,
                           SocketHE_AddressEntry_T ***tail)
@@ -651,12 +453,6 @@ he_append_to_family_list (SocketHE_AddressEntry_T *entry,
   *tail = &entry->next;
 }
 
-/**
- * he_build_family_lists - Build separate IPv6 and IPv4 lists
- * @he: Happy Eyeballs context
- * @ipv6_list: Output for IPv6 list head
- * @ipv4_list: Output for IPv4 list head
- */
 static void
 he_build_family_lists (T he, SocketHE_AddressEntry_T **ipv6_list,
                        SocketHE_AddressEntry_T **ipv4_list)
@@ -680,12 +476,6 @@ he_build_family_lists (T he, SocketHE_AddressEntry_T **ipv6_list,
     }
 }
 
-/**
- * he_setup_interleave_order - Setup interleave pointers per RFC 8305
- * @he: Happy Eyeballs context
- * @ipv6_list: IPv6 address list
- * @ipv4_list: IPv4 address list
- */
 static void
 he_setup_interleave_order (T he, SocketHE_AddressEntry_T *ipv6_list,
                            SocketHE_AddressEntry_T *ipv4_list)
@@ -706,10 +496,6 @@ he_setup_interleave_order (T he, SocketHE_AddressEntry_T *ipv6_list,
   he->addresses = he->next_ipv6 ? he->next_ipv6 : he->next_ipv4;
 }
 
-/**
- * he_sort_addresses - Sort addresses per RFC 8305
- * @he: Happy Eyeballs context
- */
 static void
 he_sort_addresses (T he)
 {
@@ -726,17 +512,6 @@ he_sort_addresses (T he)
   he_setup_interleave_order (he, ipv6_list, ipv4_list);
 }
 
-/* ============================================================================
- * Address Selection (RFC 8305 Interleaving)
- * ============================================================================
- */
-
-/**
- * he_get_from_preferred - Get next address from preferred family
- * @he: Happy Eyeballs context
- *
- * Returns: Address entry or NULL
- */
 static SocketHE_AddressEntry_T *
 he_get_from_preferred (T he)
 {
@@ -761,12 +536,6 @@ he_get_from_preferred (T he)
   return NULL;
 }
 
-/**
- * he_get_from_remaining - Get next address from remaining family
- * @he: Happy Eyeballs context
- *
- * Returns: Address entry or NULL
- */
 static SocketHE_AddressEntry_T *
 he_get_from_remaining (T he)
 {
@@ -789,12 +558,6 @@ he_get_from_remaining (T he)
   return NULL;
 }
 
-/**
- * he_get_next_address - Get next address to try
- * @he: Happy Eyeballs context
- *
- * Returns: Next address entry, or NULL if none available
- */
 static SocketHE_AddressEntry_T *
 he_get_next_address (T he)
 {
@@ -806,22 +569,6 @@ he_get_next_address (T he)
   return entry;
 }
 
-/* ============================================================================
- * Socket Creation
- * ============================================================================
- */
-
-/**
- * he_clear_nonblocking - Clear non-blocking mode from socket
- * @fd: File descriptor
- *
- * Note: No public API exists for clearing non-blocking mode on Socket_T,
- * so we use direct fcntl here. Socket_setnonblocking() only enables it.
- *
- * This restores the socket to blocking mode after the Happy Eyeballs
- * racing is complete, providing the expected behavior for callers who
- * want a regular blocking socket.
- */
 static void
 he_clear_nonblocking (const int fd)
 {
@@ -831,15 +578,6 @@ he_clear_nonblocking (const int fd)
     fcntl (fd, F_SETFL, flags & ~O_NONBLOCK);
 }
 
-/**
- * he_create_socket_for_address - Create non-blocking socket for address
- * @addr: Address to create socket for
- *
- * Creates a socket matching the address family and sets it to non-blocking
- * mode for async connection attempts.
- *
- * Returns: New non-blocking socket or NULL on failure
- */
 static Socket_T
 he_create_socket_for_address (const struct addrinfo *addr)
 {
@@ -863,19 +601,6 @@ he_create_socket_for_address (const struct addrinfo *addr)
   return sock;
 }
 
-/* ============================================================================
- * Connection Attempt Management
- * ============================================================================
- */
-
-/**
- * he_allocate_attempt - Allocate attempt structure
- * @he: Happy Eyeballs context
- * @sock: Socket for this attempt
- * @entry: Address entry being tried
- *
- * Returns: New attempt or NULL on failure
- */
 static SocketHE_Attempt_T *
 he_allocate_attempt (T he, Socket_T sock, const SocketHE_AddressEntry_T *entry)
 {
@@ -895,11 +620,6 @@ he_allocate_attempt (T he, Socket_T sock, const SocketHE_AddressEntry_T *entry)
   return attempt;
 }
 
-/**
- * he_add_attempt_to_list - Add attempt to context's attempt list
- * @he: Happy Eyeballs context
- * @attempt: Attempt to add
- */
 static void
 he_add_attempt_to_list (T he, SocketHE_Attempt_T *attempt)
 {
@@ -908,13 +628,6 @@ he_add_attempt_to_list (T he, SocketHE_Attempt_T *attempt)
   he->attempt_count++;
 }
 
-/**
- * he_add_attempt_to_poll - Register attempt with poll
- * @he: Happy Eyeballs context
- * @attempt: Attempt to monitor
- *
- * Returns: 0 on success, -1 on failure
- */
 static int
 he_add_attempt_to_poll (T he, SocketHE_Attempt_T *attempt)
 {
@@ -928,24 +641,12 @@ he_add_attempt_to_poll (T he, SocketHE_Attempt_T *attempt)
   return 0;
 }
 
-/**
- * he_family_name - Get address family name string
- * @family: Address family (AF_INET or AF_INET6)
- *
- * Returns: "IPv6" for AF_INET6, "IPv4" otherwise
- *
- * Used for logging connection attempts with human-readable family names.
- */
 static const char *
 he_family_name (const int family)
 {
   return (family == AF_INET6) ? "IPv6" : "IPv4";
 }
 
-/**
- * he_log_attempt_start - Log connection attempt start
- * @entry: Address entry being tried
- */
 static void
 he_log_attempt_start (const SocketHE_AddressEntry_T *entry)
 {
@@ -954,11 +655,6 @@ he_log_attempt_start (const SocketHE_AddressEntry_T *entry)
                    he_family_name (entry->family));
 }
 
-/**
- * he_log_attempt_fail - Log connection attempt failure
- * @entry: Address entry that failed
- * @error: Error code
- */
 static void
 he_log_attempt_fail (const SocketHE_AddressEntry_T *entry, int error)
 {
@@ -967,15 +663,6 @@ he_log_attempt_fail (const SocketHE_AddressEntry_T *entry, int error)
                    strerror (error));
 }
 
-/**
- * he_handle_connect_result - Handle connect() result
- * @he: Happy Eyeballs context
- * @attempt: Attempt structure
- * @entry: Address entry
- * @result: Result from connect()
- *
- * Returns: 0 on success or in-progress, -1 on failure
- */
 static int
 he_handle_connect_result (T he, SocketHE_Attempt_T *attempt,
                           const SocketHE_AddressEntry_T *entry, int result)
@@ -999,14 +686,6 @@ he_handle_connect_result (T he, SocketHE_Attempt_T *attempt,
   return 0;
 }
 
-/**
- * he_register_attempt - Register attempt with poll and list
- * @he: Happy Eyeballs context
- * @attempt: Attempt to register
- * @entry: Address entry
- *
- * Returns: 0 on success, -1 on failure
- */
 static int
 he_register_attempt (T he, SocketHE_Attempt_T *attempt,
                      const SocketHE_AddressEntry_T *entry)
@@ -1025,14 +704,6 @@ he_register_attempt (T he, SocketHE_Attempt_T *attempt,
   return 0;
 }
 
-/**
- * he_initiate_connect - Initiate non-blocking connect
- * @he: Happy Eyeballs context
- * @attempt: Attempt structure
- * @entry: Address entry
- *
- * Returns: 0 on success/in-progress, -1 on failure
- */
 static int
 he_initiate_connect (T he, SocketHE_Attempt_T *attempt,
                      SocketHE_AddressEntry_T *entry)
@@ -1049,12 +720,6 @@ he_initiate_connect (T he, SocketHE_Attempt_T *attempt,
   return he_register_attempt (he, attempt, entry);
 }
 
-/**
- * he_create_attempt_socket - Create socket for connection attempt
- * @entry: Address entry to connect to
- *
- * Returns: Socket on success, NULL on failure
- */
 static Socket_T
 he_create_attempt_socket (const SocketHE_AddressEntry_T *entry)
 {
@@ -1064,13 +729,6 @@ he_create_attempt_socket (const SocketHE_AddressEntry_T *entry)
   return sock;
 }
 
-/**
- * he_start_attempt - Start connection attempt for address
- * @he: Happy Eyeballs context
- * @entry: Address entry to connect to
- *
- * Returns: 0 on success, -1 on failure
- */
 static int
 he_start_attempt (T he, SocketHE_AddressEntry_T *entry)
 {
@@ -1102,16 +760,6 @@ he_start_attempt (T he, SocketHE_AddressEntry_T *entry)
   return he_initiate_connect (he, attempt, entry);
 }
 
-/* ============================================================================
- * Attempt Cleanup
- * ============================================================================
- */
-
-/**
- * he_close_attempt - Close single attempt socket
- * @he: Happy Eyeballs context
- * @attempt: Attempt to close
- */
 static void
 he_close_attempt (T he, SocketHE_Attempt_T *attempt)
 {
@@ -1125,10 +773,6 @@ he_close_attempt (T he, SocketHE_Attempt_T *attempt)
     Socket_free (&attempt->socket);
 }
 
-/**
- * he_cleanup_attempts - Close all pending connection attempts
- * @he: Happy Eyeballs context
- */
 static void
 he_cleanup_attempts (T he)
 {
@@ -1139,16 +783,6 @@ he_cleanup_attempts (T he)
   he->attempt_count = 0;
 }
 
-/* ============================================================================
- * Winner Declaration
- * ============================================================================
- */
-
-/**
- * he_cancel_losing_attempts - Cancel all non-winning attempts
- * @he: Happy Eyeballs context
- * @winner: The winning attempt
- */
 static void
 he_cancel_losing_attempts (T he, const SocketHE_Attempt_T *winner)
 {
@@ -1164,11 +798,6 @@ he_cancel_losing_attempts (T he, const SocketHE_Attempt_T *winner)
   }
 }
 
-/**
- * he_declare_winner - Handle successful connection
- * @he: Happy Eyeballs context
- * @attempt: Winning attempt
- */
 static void
 he_declare_winner (T he, SocketHE_Attempt_T *attempt)
 {
@@ -1187,12 +816,6 @@ he_declare_winner (T he, SocketHE_Attempt_T *attempt)
                    he->port, he_family_name (attempt->addr->ai_family));
 }
 
-/**
- * he_fail_attempt - Mark attempt as failed
- * @he: Happy Eyeballs context
- * @attempt: Failed attempt
- * @error: Error code
- */
 static void
 he_fail_attempt (T he, SocketHE_Attempt_T *attempt, int error)
 {
@@ -1213,21 +836,6 @@ he_fail_attempt (T he, SocketHE_Attempt_T *attempt, int error)
       he_family_name (attempt->addr->ai_family), strerror (error));
 }
 
-/* ============================================================================
- * Attempt Completion Checking
- * ============================================================================
- */
-
-/**
- * he_poll_attempt_status - Poll single attempt for completion
- * @fd: File descriptor to check
- * @revents: Output for poll results
- *
- * Returns: 1 if ready, 0 if pending, -1 on error
- *
- * Uses poll() with zero timeout for non-blocking status check.
- * EINTR is handled gracefully by returning 0 (still pending).
- */
 static int
 he_poll_attempt_status (const int fd, short *revents)
 {
@@ -1246,15 +854,6 @@ he_poll_attempt_status (const int fd, short *revents)
   return result;
 }
 
-/**
- * he_check_socket_error - Check socket for connection error
- * @fd: File descriptor to check
- *
- * Returns: 0 if connected, error code otherwise
- *
- * Uses getsockopt(SO_ERROR) to retrieve the pending socket error,
- * which is the standard POSIX way to check async connect() result.
- */
 static int
 he_check_socket_error (const int fd)
 {
@@ -1267,13 +866,6 @@ he_check_socket_error (const int fd)
   return error;
 }
 
-/**
- * he_check_attempt_timeout - Check if attempt has timed out
- * @he: Happy Eyeballs context
- * @attempt: Attempt to check
- *
- * Returns: 1 if timed out, 0 otherwise
- */
 static int
 he_check_attempt_timeout (const T he, const SocketHE_Attempt_T *attempt)
 {
@@ -1289,14 +881,6 @@ he_check_attempt_timeout (const T he, const SocketHE_Attempt_T *attempt)
   return elapsed >= he->config.attempt_timeout_ms;
 }
 
-/**
- * he_handle_poll_error - Handle poll error for attempt
- * @he: Happy Eyeballs context
- * @attempt: Attempt with error
- * @fd: File descriptor
- *
- * Returns: -1 always (indicates failure)
- */
 static int
 he_handle_poll_error (T he, SocketHE_Attempt_T *attempt, int fd)
 {
@@ -1305,14 +889,6 @@ he_handle_poll_error (T he, SocketHE_Attempt_T *attempt, int fd)
   return -1;
 }
 
-/**
- * he_handle_poll_success - Handle successful poll for attempt
- * @he: Happy Eyeballs context
- * @attempt: Attempt to check
- * @fd: File descriptor
- *
- * Returns: 1 if connected, -1 if error
- */
 static int
 he_handle_poll_success (T he, SocketHE_Attempt_T *attempt, int fd)
 {
@@ -1327,13 +903,6 @@ he_handle_poll_success (T he, SocketHE_Attempt_T *attempt, int fd)
   return 1;
 }
 
-/**
- * he_handle_pending_poll - Handle pending poll state
- * @he: Happy Eyeballs context
- * @attempt: Attempt being checked
- *
- * Returns: 0 if still pending, -1 if timed out
- */
 static int
 he_handle_pending_poll (T he, SocketHE_Attempt_T *attempt)
 {
@@ -1345,16 +914,6 @@ he_handle_pending_poll (T he, SocketHE_Attempt_T *attempt)
   return 0;
 }
 
-/**
- * he_process_poll_result - Process poll result for attempt
- * @he: Happy Eyeballs context
- * @attempt: Attempt being checked
- * @fd: File descriptor
- * @poll_result: Result from poll (0=pending, >0=ready, <0=error)
- * @revents: Poll events if ready
- *
- * Returns: 1 if connected, 0 if pending, -1 if failed
- */
 static int
 he_process_poll_result (T he, SocketHE_Attempt_T *attempt, int fd,
                         int poll_result, short revents)
@@ -1374,13 +933,6 @@ he_process_poll_result (T he, SocketHE_Attempt_T *attempt, int fd,
   return he_handle_poll_success (he, attempt, fd);
 }
 
-/**
- * he_check_attempt_completion - Check if attempt has completed
- * @he: Happy Eyeballs context
- * @attempt: Attempt to check
- *
- * Returns: 1 if connected, 0 if still pending, -1 if failed
- */
 static int
 he_check_attempt_completion_with_events (T he, SocketHE_Attempt_T *attempt, unsigned poll_events)
 {
@@ -1417,10 +969,6 @@ he_check_attempt_completion (T he, SocketHE_Attempt_T *attempt)
   return he_check_attempt_completion_with_events (he, attempt, 0);
 }
 
-/**
- * he_check_attempts - Check all active connection attempts
- * @he: Happy Eyeballs context
- */
 static void
 he_check_attempts (T he)
 {
@@ -1434,12 +982,6 @@ he_check_attempts (T he)
   }
 }
 
-/**
- * he_all_attempts_done - Check if all attempts are complete
- * @he: Happy Eyeballs context
- *
- * Returns: 1 if all done, 0 if some still pending
- */
 static int
 he_all_attempts_done (const T he)
 {
@@ -1455,22 +997,6 @@ he_all_attempts_done (const T he)
   return 1;
 }
 
-/* ============================================================================
- * State Transitions
- * ============================================================================
- */
-
-/**
- * he_set_error - Set error message in context
- * @he: Happy Eyeballs context
- * @reason: Error message
- *
- * Checks if reason already points to error_buf to avoid self-copy which
- * triggers -Wrestrict warnings with GCC 13's aggressive inlining + fortify.
- *
- * Uses snprintf with "%s" format for safety against format string injection
- * if reason contains user-influenced data from DNS or socket errors.
- */
 static void
 he_set_error (T he, const char *reason)
 {
@@ -1482,11 +1008,6 @@ he_set_error (T he, const char *reason)
   snprintf (he->error_buf, sizeof (he->error_buf), "%s", reason);
 }
 
-/**
- * he_transition_to_failed - Mark operation as failed
- * @he: Happy Eyeballs context
- * @reason: Failure reason
- */
 static void
 he_transition_to_failed (T he, const char *reason)
 {
@@ -1500,17 +1021,6 @@ he_transition_to_failed (T he, const char *reason)
                    he->error_buf);
 }
 
-/* ============================================================================
- * Timer and Timeout Checks
- * ============================================================================
- */
-
-/**
- * he_should_start_fallback - Check if fallback attempt should start
- * @he: Happy Eyeballs context
- *
- * Returns: 1 if should start fallback, 0 otherwise
- */
 static int
 he_should_start_fallback (const T he)
 {
@@ -1526,12 +1036,6 @@ he_should_start_fallback (const T he)
   return elapsed >= he->config.first_attempt_delay_ms;
 }
 
-/**
- * he_check_total_timeout - Check for total operation timeout
- * @he: Happy Eyeballs context
- *
- * Returns: 1 if timed out, 0 otherwise
- */
 static int
 he_check_total_timeout (const T he)
 {
@@ -1550,21 +1054,6 @@ he_check_total_timeout (const T he)
   return elapsed >= total;
 }
 
-/* ============================================================================
- * Timeout Calculation Helpers
- * ============================================================================
- */
-
-/**
- * he_apply_timeout_limit - Apply a remaining time limit to timeout
- * @current_timeout: Current timeout value (-1 for infinite)
- * @remaining_ms: Remaining time in milliseconds
- *
- * Returns: Updated timeout value (minimum of current and remaining)
- *
- * Clamps remaining_ms to INT_MAX to avoid overflow when casting to int.
- * A negative or zero remaining_ms returns 0 (immediate timeout).
- */
 static int
 he_apply_timeout_limit (const int current_timeout, const int64_t remaining_ms)
 {
@@ -1579,13 +1068,6 @@ he_apply_timeout_limit (const int current_timeout, const int64_t remaining_ms)
   return current_timeout;
 }
 
-/**
- * he_calculate_total_timeout_remaining - Calculate remaining total timeout
- * @he: Happy Eyeballs context
- * @current_timeout: Current timeout value
- *
- * Returns: Updated timeout accounting for total timeout
- */
 static int
 he_calculate_total_timeout_remaining (const T he, int current_timeout)
 {
@@ -1610,13 +1092,6 @@ he_calculate_total_timeout_remaining (const T he, int current_timeout)
   return he_apply_timeout_limit (current_timeout, remaining);
 }
 
-/**
- * he_calculate_fallback_timeout_remaining - Calculate remaining fallback timer
- * @he: Happy Eyeballs context
- * @current_timeout: Current timeout value
- *
- * Returns: Updated timeout accounting for fallback timer
- */
 static int
 he_calculate_fallback_timeout_remaining (const T he, int current_timeout)
 {
@@ -1642,13 +1117,6 @@ he_calculate_fallback_timeout_remaining (const T he, int current_timeout)
   return he_apply_timeout_limit (current_timeout, remaining);
 }
 
-/**
- * he_calculate_next_timeout - Calculate next timeout for poll
- * @he: Happy Eyeballs context
- * @timeout: Current timeout (or -1)
- *
- * Returns: Updated timeout value
- */
 static int
 he_calculate_next_timeout (const T he, int timeout)
 {
@@ -1657,15 +1125,6 @@ he_calculate_next_timeout (const T he, int timeout)
   return timeout;
 }
 
-/* ============================================================================
- * Async State Machine Processing
- * ============================================================================
- */
-
-/**
- * he_start_first_attempt - Start first connection attempt
- * @he: Happy Eyeballs context
- */
 static void
 he_start_first_attempt (T he)
 {
@@ -1683,10 +1142,6 @@ he_start_first_attempt (T he)
   he->fallback_timer_armed = 1;
 }
 
-/**
- * he_start_fallback_attempt - Start fallback family attempt
- * @he: Happy Eyeballs context
- */
 static void
 he_start_fallback_attempt (T he)
 {
@@ -1705,10 +1160,6 @@ he_start_fallback_attempt (T he)
   he->fallback_timer_armed = 0;
 }
 
-/**
- * he_check_complete_failure - Check if all attempts have failed
- * @he: Happy Eyeballs context
- */
 static void
 he_check_complete_failure (T he)
 {
@@ -1720,10 +1171,6 @@ he_check_complete_failure (T he)
   he_transition_to_failed (he, he->error_buf);
 }
 
-/**
- * he_handle_total_timeout - Handle total timeout expiry
- * @he: Happy Eyeballs context
- */
 static void
 he_handle_total_timeout (T he)
 {
@@ -1732,10 +1179,6 @@ he_handle_total_timeout (T he)
   he_transition_to_failed (he, he->error_buf);
 }
 
-/**
- * he_process_connecting_state - Process connections in CONNECTING state
- * @he: Happy Eyeballs context
- */
 static void
 he_process_connecting_state (T he)
 {
@@ -1755,10 +1198,6 @@ he_process_connecting_state (T he)
   he_check_complete_failure (he);
 }
 
-/**
- * he_process_idle_state - Process IDLE state
- * @he: Happy Eyeballs context
- */
 static void
 he_process_idle_state (T he)
 {
@@ -1766,10 +1205,6 @@ he_process_idle_state (T he)
     he_start_dns_resolution (he);
 }
 
-/**
- * he_process_resolving_state - Process RESOLVING state
- * @he: Happy Eyeballs context
- */
 static void
 he_process_resolving_state (T he)
 {
@@ -1780,12 +1215,6 @@ he_process_resolving_state (T he)
     }
 }
 
-/**
- * SocketHappyEyeballs_process - Process events and advance state machine
- * @he: Happy Eyeballs context
- *
- * Thread-safe: No
- */
 void
 SocketHappyEyeballs_process (T he)
 {
@@ -1836,22 +1265,6 @@ SocketHappyEyeballs_process_events (T he, SocketEvent_T *events, int num_events)
   }
 }
 
-/* ============================================================================
- * Asynchronous API
- * ============================================================================
- */
-
-/**
- * he_validate_start_params - Validate parameters for start
- * @dns: DNS resolver
- * @poll: Poll instance
- * @host: Hostname
- * @port: Port number
- *
- * Validates all input parameters for the async start API.
- * Uses asserts for development-time checks; parameters are
- * marked as used to avoid warnings in release builds.
- */
 static void
 he_validate_start_params (const SocketDNS_T dns, const SocketPoll_T poll,
                           const char *host, int port)
@@ -1866,18 +1279,6 @@ he_validate_start_params (const SocketDNS_T dns, const SocketPoll_T poll,
   (void)port;
 }
 
-/**
- * SocketHappyEyeballs_start - Start async Happy Eyeballs connection
- * @dns: DNS resolver instance
- * @poll: Poll instance for connection monitoring
- * @host: Hostname or IP address
- * @port: Port number (1-65535)
- * @config: Configuration options (NULL for defaults)
- *
- * Returns: Happy Eyeballs context handle
- * Raises: SocketHE_Failed on initialization failure
- * Thread-safe: No
- */
 T
 SocketHappyEyeballs_start (SocketDNS_T dns, SocketPoll_T poll,
                            const char *host, int port,
@@ -1905,13 +1306,6 @@ SocketHappyEyeballs_start (SocketDNS_T dns, SocketPoll_T poll,
   return he;
 }
 
-/**
- * SocketHappyEyeballs_poll - Check if operation is complete
- * @he: Happy Eyeballs context
- *
- * Returns: 1 if complete (success or failure), 0 if still in progress
- * Thread-safe: No
- */
 int
 SocketHappyEyeballs_poll (T he)
 {
@@ -1920,13 +1314,6 @@ SocketHappyEyeballs_poll (T he)
          || he->state == HE_STATE_CANCELLED;
 }
 
-/**
- * SocketHappyEyeballs_result - Get connected socket from completed operation
- * @he: Happy Eyeballs context
- *
- * Returns: Connected socket, or NULL if failed/cancelled/pending
- * Thread-safe: No
- */
 Socket_T
 SocketHappyEyeballs_result (T he)
 {
@@ -1958,13 +1345,6 @@ SocketHappyEyeballs_result (T he)
   return result;
 }
 
-/**
- * SocketHappyEyeballs_state - Get current operation state
- * @he: Happy Eyeballs context
- *
- * Returns: Current state
- * Thread-safe: No
- */
 SocketHE_State
 SocketHappyEyeballs_state (T he)
 {
@@ -1972,13 +1352,6 @@ SocketHappyEyeballs_state (T he)
   return he->state;
 }
 
-/**
- * SocketHappyEyeballs_error - Get error message for failed operation
- * @he: Happy Eyeballs context
- *
- * Returns: Error message string, or NULL if no error
- * Thread-safe: No
- */
 const char *
 SocketHappyEyeballs_error (T he)
 {
@@ -1990,13 +1363,6 @@ SocketHappyEyeballs_error (T he)
   return he->error_buf[0] ? he->error_buf : "Unknown error";
 }
 
-/**
- * SocketHappyEyeballs_next_timeout_ms - Get time until next timer expiry
- * @he: Happy Eyeballs context
- *
- * Returns: Milliseconds until next timeout, or -1 if no pending timers
- * Thread-safe: No
- */
 int
 SocketHappyEyeballs_next_timeout_ms (T he)
 {
@@ -2008,19 +1374,6 @@ SocketHappyEyeballs_next_timeout_ms (T he)
   return he_calculate_next_timeout (he, -1);
 }
 
-/* ============================================================================
- * Synchronous API Helpers
- * ============================================================================
- */
-
-/**
- * sync_build_poll_set - Build poll array for active attempts
- * @he: Happy Eyeballs context
- * @pfds: Poll file descriptor array (output)
- * @attempt_map: Attempt pointer array (output)
- *
- * Returns: Number of descriptors added
- */
 static int
 sync_build_poll_set (const T he, struct pollfd *pfds,
                      SocketHE_Attempt_T **attempt_map)
@@ -2043,12 +1396,6 @@ sync_build_poll_set (const T he, struct pollfd *pfds,
   return nfds;
 }
 
-/**
- * sync_calculate_poll_timeout - Calculate timeout for sync poll
- * @he: Happy Eyeballs context
- *
- * Returns: Timeout in milliseconds
- */
 static int
 sync_calculate_poll_timeout (const T he)
 {
@@ -2060,16 +1407,6 @@ sync_calculate_poll_timeout (const T he)
   return he_calculate_fallback_timeout_remaining (he, timeout);
 }
 
-/**
- * sync_process_poll_results - Process poll results for sync API
- * @he: Happy Eyeballs context
- * @pfds: Poll file descriptor array (read-only)
- * @attempt_map: Attempt pointer array
- * @nfds: Number of descriptors
- *
- * Iterates poll results and checks each attempt for completion.
- * Stops early if a connection succeeds.
- */
 static void
 sync_process_poll_results (T he, const struct pollfd *pfds,
                            SocketHE_Attempt_T **attempt_map, const int nfds)
@@ -2081,10 +1418,6 @@ sync_process_poll_results (T he, const struct pollfd *pfds,
     }
 }
 
-/**
- * sync_check_attempt_timeouts - Check timeouts for all attempts
- * @he: Happy Eyeballs context
- */
 static void
 sync_check_attempt_timeouts (T he)
 {
@@ -2100,12 +1433,6 @@ sync_check_attempt_timeouts (T he)
   }
 }
 
-/**
- * sync_try_start_fallback - Try to start fallback attempt
- * @he: Happy Eyeballs context
- *
- * Returns: 1 if connected immediately, 0 otherwise
- */
 static int
 sync_try_start_fallback (T he)
 {
@@ -2128,15 +1455,6 @@ sync_try_start_fallback (T he)
   return 0;
 }
 
-/**
- * sync_should_exit_loop - Check if sync loop should exit
- * @he: Happy Eyeballs context (read-only)
- * @nfds: Number of poll descriptors
- *
- * Returns: 1 if should exit, 0 otherwise
- *
- * Exit conditions: no fds to poll, no pending fallback, all attempts done.
- */
 static int
 sync_should_exit_loop (const T he, const int nfds)
 {
@@ -2144,10 +1462,6 @@ sync_should_exit_loop (const T he, const int nfds)
          && he_all_attempts_done (he);
 }
 
-/**
- * sync_check_all_failed - Check if all attempts failed
- * @he: Happy Eyeballs context
- */
 static void
 sync_check_all_failed (T he)
 {
@@ -2158,12 +1472,6 @@ sync_check_all_failed (T he)
     }
 }
 
-/**
- * sync_handle_timeout_check - Check for total timeout in sync loop
- * @he: Happy Eyeballs context
- *
- * Returns: 1 if timed out, 0 otherwise
- */
 static int
 sync_handle_timeout_check (T he)
 {
@@ -2174,17 +1482,6 @@ sync_handle_timeout_check (T he)
   return 1;
 }
 
-/**
- * sync_do_poll - Execute poll syscall with error handling
- * @pfds: Poll file descriptors
- * @nfds: Number of descriptors
- * @timeout: Timeout in milliseconds
- *
- * Returns: poll() result, or 0 on EINTR
- *
- * Handles EINTR gracefully by returning 0 (continue polling).
- * Other errors return negative values.
- */
 static int
 sync_do_poll (struct pollfd *pfds, const int nfds, const int timeout)
 {
@@ -2204,11 +1501,6 @@ sync_do_poll (struct pollfd *pfds, const int nfds, const int timeout)
 
 /* REMOVED: Result retrieval and failure handling now unified in connect() loop and SocketHappyEyeballs_result(). */
 
-/* ============================================================================
- * Synchronous API
- * ============================================================================
- */
-
 /* REMOVED: Sync mode now uses unified async state machine with internal DNS and poll resources. No separate creation needed. */
 
 /* REMOVED: Address sorting and state transition now handled in unified he_handle_dns_success(). */
@@ -2217,16 +1509,6 @@ sync_do_poll (struct pollfd *pfds, const int nfds, const int timeout)
 
 /* REMOVED: Error raising now inlined in connect() using SOCKET_RAISE_FMT for formatted messages. */
 
-/**
- * SocketHappyEyeballs_connect - Connect using Happy Eyeballs (blocking)
- * @host: Hostname or IP address to connect to
- * @port: Port number (1-65535)
- * @config: Configuration options (NULL for defaults)
- *
- * Returns: Connected socket
- * Raises: SocketHE_Failed on connection failure or timeout
- * Thread-safe: Yes
- */
 Socket_T
 SocketHappyEyeballs_connect (const char *host, int port,
                              const SocketHE_Config_T *config)

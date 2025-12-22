@@ -4,26 +4,6 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * SocketReconnect.c - Automatic Reconnection Framework Implementation
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
- *
- * Implements automatic reconnection with exponential backoff, circuit breaker
- * pattern, and health monitoring.
- *
- * Backoff Algorithm:
- *   delay = min(initial_delay * multiplier^attempt, max_delay)
- *   jittered_delay = delay * (1.0 + jitter * (2*random - 1))
- *
- * Circuit Breaker:
- *   CLOSED -> OPEN: After circuit_failure_threshold consecutive failures
- *   OPEN -> HALF_OPEN: After circuit_reset_timeout_ms
- *   HALF_OPEN -> CLOSED: On successful connection
- *   HALF_OPEN -> OPEN: On failed probe
- */
-
 /* System headers first (alphabetical order) */
 #include <assert.h>
 #include <errno.h>
@@ -68,20 +48,9 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketReconnect);
 #define RAISE_RECONNECT_ERROR_MSG(exception, fmt, ...)                        \
   SOCKET_RAISE_FMT (SocketReconnect, exception, fmt, ##__VA_ARGS__)
 
-/**
- * @brief Minimum poll timeout for health check when user specifies 0 or
- * negative.
- *
- * A minimum timeout ensures we don't spin too fast when checking socket health.
- */
 #ifndef SOCKET_RECONNECT_MIN_HEALTH_POLL_MS
 #define SOCKET_RECONNECT_MIN_HEALTH_POLL_MS 100
 #endif
-
-/* ============================================================================
- * State Names
- * ============================================================================
- */
 
 static const char *state_names[]
     = { "DISCONNECTED", "CONNECTING", "CONNECTED", "BACKOFF", "CIRCUIT_OPEN" };
@@ -134,11 +103,6 @@ reconnect_set_tls_error (T conn, const char *operation)
  * inline functions for use across split files if needed.
  */
 
-/* ============================================================================
- * Policy Defaults
- * ============================================================================
- */
-
 void
 SocketReconnect_policy_defaults (SocketReconnect_Policy_T *policy)
 {
@@ -156,11 +120,6 @@ SocketReconnect_policy_defaults (SocketReconnect_Policy_T *policy)
   policy->health_check_timeout_ms = SOCKET_RECONNECT_DEFAULT_HEALTH_TIMEOUT_MS;
 }
 
-/* ============================================================================
- * Forward Declarations
- * ============================================================================
- */
-
 static void handle_connect_failure (T conn);
 
 #if SOCKET_HAS_TLS
@@ -168,16 +127,6 @@ static void save_tls_session (T conn);
 static int restore_tls_session (T conn);
 #endif /* SOCKET_HAS_TLS */
 
-/* ============================================================================
- * Internal State Machine Helpers
- * ============================================================================
- */
-
-/**
- * transition_state - Transition to new state with callback
- * @conn: Reconnection context
- * @new_state: Target state
- */
 static void
 transition_state (T conn, SocketReconnect_State new_state)
 {
@@ -200,12 +149,6 @@ transition_state (T conn, SocketReconnect_State new_state)
     }
 }
 
-/**
- * calculate_backoff_delay - Calculate next backoff delay with jitter
- * @conn: Reconnection context
- *
- * Returns: Delay in milliseconds
- */
 static int
 calculate_backoff_delay (T conn)
 {
@@ -234,11 +177,6 @@ calculate_backoff_delay (T conn)
   return (int)delay;
 }
 
-/**
- * update_circuit_breaker - Update circuit breaker state based on result
- * @conn: Reconnection context
- * @success: 1 if connection succeeded, 0 if failed
- */
 static void
 update_circuit_breaker (T conn, int success)
 {
@@ -283,12 +221,6 @@ update_circuit_breaker (T conn, int success)
     }
 }
 
-/**
- * circuit_allows_attempt - Check if circuit breaker allows connection attempt
- * @conn: Reconnection context
- *
- * Returns: 1 if attempt allowed, 0 if blocked
- */
 static int
 circuit_allows_attempt (T conn)
 {
@@ -315,14 +247,6 @@ circuit_allows_attempt (T conn)
   return 1;
 }
 
-/**
- * close_socket - Close and free current socket
- * @conn: Reconnection context
- *
- * Performs graceful TLS shutdown if TLS was enabled before closing
- * the underlying socket. Ignores errors during shutdown to ensure
- * cleanup always succeeds.
- */
 static void
 close_socket (T conn)
 {
@@ -364,17 +288,6 @@ close_socket (T conn)
   conn->connect_in_progress = 0;
 }
 
-/* ============================================================================
- * Connection Handling
- * ============================================================================
- */
-
-/**
- * start_connect - Initiate connection attempt
- * @conn: Reconnection context
- *
- * Returns: 1 if connection started/completed, 0 if failed
- */
 static int
 start_connect (T conn)
 {
@@ -469,14 +382,6 @@ start_connect (T conn)
   return 1;
 }
 
-/**
- * check_connect_completion - Check if async connect has completed
- * @conn: Reconnection context
- *
- * Returns: 1 if connected, 0 if still pending, -1 if failed
- *
- * LCOV_EXCL_START - requires non-routable address to trigger EINPROGRESS
- */
 static int
 check_connect_completion (T conn)
 {
@@ -542,15 +447,7 @@ check_connect_completion (T conn)
 /* LCOV_EXCL_STOP */
 
 #if SOCKET_HAS_TLS
-/**
- * start_tls_handshake - Initialize TLS on connected socket
- * @conn: Reconnection context with TCP connection established
- *
- * Returns: 1 if TLS started successfully, 0 on error
- *
- * Called after TCP connect succeeds when TLS is configured.
- * Enables TLS, sets hostname, restores session, and initiates handshake.
- */
+
 static int
 start_tls_handshake (T conn)
 {
@@ -587,15 +484,6 @@ start_tls_handshake (T conn)
   return 1;
 }
 
-/**
- * perform_tls_handshake_step - Execute one step of TLS handshake
- * @conn: Reconnection context with TLS handshake in progress
- *
- * Returns: 1 if handshake complete, 0 if in progress, -1 on error
- *
- * Drives the TLS handshake state machine. Should be called from process()
- * when socket events indicate readiness.
- */
 static int
 perform_tls_handshake_step (T conn)
 {
@@ -653,10 +541,6 @@ perform_tls_handshake_step (T conn)
     }
 }
 
-/**
- * complete_tls_connection - Finalize connection after TLS handshake success
- * @conn: Reconnection context
- */
 static void
 complete_tls_connection (T conn)
 {
@@ -678,13 +562,6 @@ complete_tls_connection (T conn)
 }
 #endif /* SOCKET_HAS_TLS */
 
-/**
- * handle_connect_success - Process successful TCP connection
- * @conn: Reconnection context
- *
- * For plain TCP: Transitions to CONNECTED immediately.
- * For TLS: Initiates TLS handshake; CONNECTED transition deferred.
- */
 static void
 handle_connect_success (T conn)
 {
@@ -739,10 +616,6 @@ handle_connect_success (T conn)
                    "%s:%d connected successfully", conn->host, conn->port);
 }
 
-/**
- * handle_connect_failure - Process connection failure
- * @conn: Reconnection context
- */
 static void
 handle_connect_failure (T conn)
 {
@@ -780,22 +653,6 @@ handle_connect_failure (T conn)
   transition_state (conn, RECONNECT_BACKOFF);
 }
 
-/* ============================================================================
- * Health Check
- * ============================================================================
- */
-
-/**
- * default_health_check - Default health check implementation
- * @conn: Reconnection context
- * @socket: Connected socket
- * @userdata: User data (unused)
- *
- * Returns: 1 if healthy, 0 if unhealthy
- *
- * Checks if socket is still connected by polling for read with timeout.
- * EOF (0 bytes readable) indicates disconnection.
- */
 static int
 default_health_check (const T conn, const Socket_T socket, int timeout_ms,
                       void *userdata)
@@ -859,10 +716,6 @@ default_health_check (const T conn, const Socket_T socket, int timeout_ms,
   return 1;
 }
 
-/**
- * perform_health_check - Run health check and handle result
- * @conn: Reconnection context
- */
 static void
 perform_health_check (T conn)
 {
@@ -887,11 +740,6 @@ perform_health_check (T conn)
       handle_connect_failure (conn);
     }
 }
-
-/* ============================================================================
- * Context Creation and Destruction
- * ============================================================================
- */
 
 T
 SocketReconnect_new (const char *host, int port,
@@ -1021,11 +869,6 @@ SocketReconnect_free (T *conn)
   *conn = NULL;
 }
 
-/* ============================================================================
- * Connection Control
- * ============================================================================
- */
-
 void
 SocketReconnect_connect (T conn)
 {
@@ -1091,11 +934,6 @@ SocketReconnect_reset (T conn)
                    conn->port);
 }
 
-/* ============================================================================
- * Socket Access
- * ============================================================================
- */
-
 Socket_T
 SocketReconnect_socket (T conn)
 {
@@ -1106,11 +944,6 @@ SocketReconnect_socket (T conn)
 
   return conn->socket;
 }
-
-/* ============================================================================
- * State Query
- * ============================================================================
- */
 
 SocketReconnect_State
 SocketReconnect_state (T conn)
@@ -1139,11 +972,6 @@ SocketReconnect_failures (T conn)
   assert (conn);
   return conn->consecutive_failures;
 }
-
-/* ============================================================================
- * Event Loop Integration
- * ============================================================================
- */
 
 int
 SocketReconnect_pollfd (T conn)
@@ -1314,22 +1142,12 @@ SocketReconnect_tick (T conn)
     }
 }
 
-/* ============================================================================
- * Health Check Configuration
- * ============================================================================
- */
-
 void
 SocketReconnect_set_health_check (T conn, SocketReconnect_HealthCheck check)
 {
   assert (conn);
   conn->health_check = check;
 }
-
-/* ============================================================================
- * I/O Passthrough
- * ============================================================================
- */
 
 ssize_t
 SocketReconnect_send (T conn, const void *buf, size_t len)
@@ -1456,11 +1274,6 @@ SocketReconnect_recv (T conn, void *buf, size_t len)
   return result;
 }
 
-/* ============================================================================
- * TLS Integration Functions (Conditional)
- * ============================================================================
- */
-
 #if SOCKET_HAS_TLS
 
 void
@@ -1579,13 +1392,6 @@ SocketReconnect_is_session_reused (T conn)
   return SocketTLS_is_session_reused (conn->socket);
 }
 
-/**
- * save_tls_session - Save TLS session for future resumption
- * @conn: Reconnection context
- *
- * Saves the current TLS session data to the arena for use on reconnect.
- * Called after successful TLS handshake if session resumption is enabled.
- */
 static void
 save_tls_session (T conn)
 {
@@ -1623,15 +1429,6 @@ save_tls_session (T conn)
     }
 }
 
-/**
- * restore_tls_session - Restore saved TLS session for resumption
- * @conn: Reconnection context
- *
- * Attempts to restore a previously saved session. Called after TLS enable
- * but before handshake.
- *
- * Returns: 1 if session restored, 0 if no session or restore failed
- */
 static int
 restore_tls_session (T conn)
 {

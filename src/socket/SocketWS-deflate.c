@@ -4,10 +4,7 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * SocketWS-deflate.c - WebSocket Compression Extension (RFC 7692)
- *
- * Part of the Socket Library
+/* SocketWS-deflate.c - WebSocket Compression Extension (RFC 7692)
  *
  * Implements permessage-deflate compression extension for WebSocket.
  * Only compiled when SOCKETWS_HAS_DEFLATE is defined (requires zlib).
@@ -18,20 +15,12 @@
  * - Context takeover (optional) for better compression
  * - Configurable window bits (8-15)
  *
- * Pattern follows SocketHTTP1-compress.c for consistency.
- *
  * Security Notes:
  * - Decompression bounded by config.max_message_size to prevent bombs
- * (security.md §24).
- * - Integer overflows prevented with SocketSecurity safe ops (.cursorrules
- * §653).
- * - BFINAL=1 block ensured with Z_FINISH when no context takeover (RFC §9.3
- * compliance improved).
+ * - Integer overflows prevented with SocketSecurity safe ops
+ * - BFINAL=1 block ensured with Z_FINISH when no context takeover
  * - Trailer hack used for zlib compatibility; app responsible for BREACH
- * mitigation (random padding).
- * - Query limits with SocketSecurity_get_ws_limits(); validate inputs per
- * security.md §2.
- * - Tested against fuzz_ws_deflate.c; run sanitizers/valgrind for mem safety.
+ *   mitigation (random padding)
  */
 
 #include "socket/SocketWS-private.h"
@@ -47,11 +36,6 @@
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "SocketWS"
 #include "core/SocketUtil.h"
-
-/* ============================================================================
- * Constants
- * ============================================================================
- */
 
 /** Default compression level */
 #define WS_DEFLATE_LEVEL Z_DEFAULT_COMPRESSION
@@ -80,24 +64,11 @@
 /** Decompression expansion estimate multiplier */
 #define WS_DEFLATE_EXPANSION_FACTOR 4
 
-/**
- * RFC 7692: The trailer bytes (0x00 0x00 0xff 0xff) MUST be removed
- * from the compressed data before sending, and added back on receiving.
- */
+/* RFC 7692: The trailer bytes (0x00 0x00 0xff 0xff) MUST be removed
+ * from the compressed data before sending, and added back on receiving. */
 static const unsigned char WS_DEFLATE_TRAILER[WS_DEFLATE_TRAILER_SIZE]
     = { 0x00, 0x00, 0xFF, 0xFF };
 
-/* ============================================================================
- * Static Helper Functions - Validation
- * ============================================================================
- */
-
-/**
- * validate_window_bits - Validate and clamp window bits to valid range
- * @bits: Window bits value from negotiation
- *
- * Returns: Valid window bits (clamped to 8-15 range)
- */
 static int
 validate_window_bits (int bits)
 {
@@ -106,19 +77,6 @@ validate_window_bits (int bits)
   return bits;
 }
 
-/* ============================================================================
- * Static Helper Functions - Stream Initialization
- * ============================================================================
- */
-
-/**
- * init_zlib_stream - Initialize zlib stream (deflate or inflate)
- * @strm: Stream to initialize
- * @window_bits: Window bits (8-15)
- * @is_deflate: 1 for deflate, 0 for inflate
- *
- * Returns: Z_OK on success, zlib error code on failure
- */
 static int
 init_zlib_stream (z_stream *strm, int window_bits, int is_deflate)
 {
@@ -142,18 +100,6 @@ init_zlib_stream (z_stream *strm, int window_bits, int is_deflate)
 
 
 
-/* ============================================================================
- * Static Helper Functions - Buffer Management
- * ============================================================================
- */
-
-/**
- * calculate_zlib_buffer_size - Calculate initial output buffer size for zlib operation
- * @input_len: Input data length to zlib
- * @is_decompress: 1 for decompress operation (multiply expansion), 0 for compress (add padding)
- *
- * Returns: Appropriate initial buffer size with security checks
- */
 static size_t
 calculate_zlib_buffer_size (size_t input_len, int is_decompress)
 {
@@ -176,16 +122,6 @@ calculate_zlib_buffer_size (size_t input_len, int is_decompress)
 
 
 
-/**
- * grow_arena_buffer - Grow buffer allocated from arena
- * @arena: Memory arena
- * @old_buf: Current buffer
- * @old_size: Current buffer size
- * @used: Bytes already used in buffer
- * @new_size: New buffer size
- *
- * Returns: New buffer pointer, or NULL on failure
- */
 static unsigned char *
 grow_arena_buffer (Arena_T arena, unsigned char *old_buf, size_t old_size,
                    size_t used, size_t new_size)
@@ -206,18 +142,6 @@ grow_arena_buffer (Arena_T arena, unsigned char *old_buf, size_t old_size,
   return new_buf;
 }
 
-/* ============================================================================
- * Static Helper Functions - RFC 7692 Trailer
- * ============================================================================
- */
-
-/**
- * remove_deflate_trailer - Remove RFC 7692 trailer from compressed data
- * @buf: Compressed data buffer
- * @len: Data length (modified on output)
- *
- * Removes trailing 0x00 0x00 0xFF 0xFF if present.
- */
 static void
 remove_deflate_trailer (unsigned char *buf, size_t *len)
 {
@@ -233,15 +157,6 @@ remove_deflate_trailer (unsigned char *buf, size_t *len)
     }
 }
 
-/**
- * append_deflate_trailer - Append RFC 7692 trailer for decompression
- * @arena: Memory arena
- * @input: Original compressed input
- * @input_len: Input length
- * @output_len: Output length (set to input_len + trailer)
- *
- * Returns: New buffer with trailer appended, or NULL on failure
- */
 static unsigned char *
 append_deflate_trailer (Arena_T arena, const unsigned char *input,
                         size_t input_len, size_t *output_len)
@@ -259,18 +174,6 @@ append_deflate_trailer (Arena_T arena, const unsigned char *input,
   return buf;
 }
 
-/* ============================================================================
- * Static Helper Functions - Context Takeover
- * ============================================================================
- */
-
-/**
- * should_reset_zlib_context - Check if zlib context should reset
- * @ws: WebSocket context
- * @is_deflate: 1 for deflate context, 0 for inflate
- *
- * Returns: 1 if should reset (no context takeover), 0 otherwise
- */
 static int
 should_reset_zlib_context (const SocketWS_T ws, int is_deflate)
 {
@@ -288,25 +191,6 @@ should_reset_zlib_context (const SocketWS_T ws, int is_deflate)
 
 
 
-/* ============================================================================
- * Static Helper Functions - Compression Core
- * ============================================================================
- */
-
-/**
- * try_grow_zlib_buffer - Attempt to grow zlib output buffer
- * @ws: WebSocket context
- * @strm: zlib stream
- * @buf: Output buffer pointer (updated on success)
- * @buf_size: Buffer size pointer (updated on success)
- * @total_out: Bytes already written
- * @is_decompress: 1 if decompress buffer (cap to max_message_size), 0 for compress
- *
- * Validates new size against security limits (and max_message_size for decompress),
- * allocates new buffer from arena, and updates zlib stream output pointers.
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 try_grow_zlib_buffer (SocketWS_T ws, z_stream *strm, unsigned char **buf,
                       size_t *buf_size, size_t total_out, int is_decompress)
@@ -361,16 +245,6 @@ try_grow_zlib_buffer (SocketWS_T ws, z_stream *strm, unsigned char **buf,
 
 
 
-/**
- * compress_loop - Perform deflate compression loop
- * @ws: WebSocket context
- * @strm: zlib stream
- * @buf: Output buffer (may be grown)
- * @buf_size: Buffer size (updated on growth)
- * @total_out: Total bytes output
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 compress_loop (SocketWS_T ws, z_stream *strm, unsigned char **buf,
                size_t *buf_size, size_t *total_out)
@@ -445,16 +319,6 @@ compress_loop (SocketWS_T ws, z_stream *strm, unsigned char **buf,
 
 
 
-/**
- * decompress_loop - Perform inflate decompression loop
- * @ws: WebSocket context
- * @strm: zlib stream
- * @buf: Output buffer (may be grown)
- * @buf_size: Buffer size (updated on growth)
- * @total_out: Total bytes output
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 decompress_loop (SocketWS_T ws, z_stream *strm, unsigned char **buf,
                  size_t *buf_size, size_t *total_out)
@@ -497,19 +361,6 @@ decompress_loop (SocketWS_T ws, z_stream *strm, unsigned char **buf,
   return 0;
 }
 
-/* ============================================================================
- * Public Functions - Initialization
- * ============================================================================
- */
-
-/**
- * ws_compression_init - Initialize compression context
- * @ws: WebSocket context
- *
- * Initializes zlib deflate and inflate streams with negotiated parameters.
- *
- * Returns: 0 on success, -1 on error
- */
 int
 ws_compression_init (SocketWS_T ws)
 {
@@ -577,10 +428,6 @@ ws_compression_init (SocketWS_T ws)
   return 0;
 }
 
-/**
- * ws_compression_free - Free compression context
- * @ws: WebSocket context
- */
 void
 ws_compression_free (SocketWS_T ws)
 {
@@ -609,24 +456,6 @@ ws_compression_free (SocketWS_T ws)
   /* Buffers not allocated; no action needed */
 }
 
-/* ============================================================================
- * Public Functions - Compression
- * ============================================================================
- */
-
-/**
- * ws_compress_message - Compress message data
- * @ws: WebSocket context
- * @input: Input data
- * @input_len: Input length
- * @output: Output buffer (arena allocated)
- * @output_len: Output length
- *
- * Compresses data using DEFLATE and removes the trailing 4 bytes
- * (0x00 0x00 0xFF 0xFF) per RFC 7692.
- *
- * Returns: 0 on success, -1 on error
- */
 int
 ws_compress_message (SocketWS_T ws, const unsigned char *input,
                      size_t input_len, unsigned char **output,
@@ -689,24 +518,6 @@ ws_compress_message (SocketWS_T ws, const unsigned char *input,
   return 0;
 }
 
-/* ============================================================================
- * Public Functions - Decompression
- * ============================================================================
- */
-
-/**
- * ws_decompress_message - Decompress message data
- * @ws: WebSocket context
- * @input: Compressed input
- * @input_len: Input length
- * @output: Output buffer (arena allocated)
- * @output_len: Output length
- *
- * Appends the trailing 4 bytes (0x00 0x00 0xFF 0xFF) before decompression
- * per RFC 7692.
- *
- * Returns: 0 on success, -1 on error
- */
 int
 ws_decompress_message (SocketWS_T ws, const unsigned char *input,
                        size_t input_len, unsigned char **output,
