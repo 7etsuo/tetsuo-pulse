@@ -40,41 +40,62 @@
  * ============================================================================
  */
 
-/* Random hash seed for DoS protection */
+/* Random hash seed for DoS protection - initialized once at startup */
 static uint32_t header_hash_seed = 0;
-static int header_hash_seed_initialized = 0;
 
-static uint32_t
-get_header_hash_seed (void)
+__attribute__ ((constructor)) static void
+init_header_hash_seed (void)
 {
-  if (!header_hash_seed_initialized)
+  if (SocketCrypto_random_bytes (&header_hash_seed, sizeof (header_hash_seed))
+      != 0)
     {
-      if (SocketCrypto_random_bytes (&header_hash_seed,
-                                     sizeof (header_hash_seed))
-          != 0)
-        {
-          header_hash_seed = (uint32_t)time (NULL) ^ (uint32_t)getpid ();
-        }
-      header_hash_seed_initialized = 1;
+      header_hash_seed = (uint32_t)time (NULL) ^ (uint32_t)getpid ();
     }
-  return header_hash_seed;
 }
 
-static unsigned
-hash_header_name_seeded (const char *name, size_t len, unsigned buckets)
+/**
+ * Fast case-insensitive header name hash.
+ * Uses power-of-2 bucket count for fast modulo via bitwise AND.
+ */
+static inline unsigned
+hash_header_name_seeded (const char *name, size_t len, unsigned bucket_mask)
 {
-  uint32_t seed = get_header_hash_seed ();
-  unsigned long hash = 5381 ^ seed;
+  uint32_t hash = 5381 ^ header_hash_seed;
 
-  for (size_t i = 0; i < len; i++)
+  /* Process 4 bytes at a time when possible */
+  while (len >= 4)
     {
-      unsigned char c = (unsigned char)name[i];
-      if (c >= 'A' && c <= 'Z')
-        c += 32;
-      hash = ((hash << 5) + hash) ^ c;
+      uint32_t c0 = (unsigned char)name[0];
+      uint32_t c1 = (unsigned char)name[1];
+      uint32_t c2 = (unsigned char)name[2];
+      uint32_t c3 = (unsigned char)name[3];
+
+      /* ASCII lowercase conversion */
+      c0 += (c0 >= 'A' && c0 <= 'Z') ? 32 : 0;
+      c1 += (c1 >= 'A' && c1 <= 'Z') ? 32 : 0;
+      c2 += (c2 >= 'A' && c2 <= 'Z') ? 32 : 0;
+      c3 += (c3 >= 'A' && c3 <= 'Z') ? 32 : 0;
+
+      hash = ((hash << 5) + hash) ^ c0;
+      hash = ((hash << 5) + hash) ^ c1;
+      hash = ((hash << 5) + hash) ^ c2;
+      hash = ((hash << 5) + hash) ^ c3;
+
+      name += 4;
+      len -= 4;
     }
 
-  return (unsigned)(hash % buckets);
+  /* Handle remaining bytes */
+  while (len > 0)
+    {
+      uint32_t c = (unsigned char)*name;
+      c += (c >= 'A' && c <= 'Z') ? 32 : 0;
+      hash = ((hash << 5) + hash) ^ c;
+      name++;
+      len--;
+    }
+
+  return hash & bucket_mask;
 }
 
 static HeaderEntry *
@@ -82,7 +103,7 @@ find_entry_with_prev (SocketHTTP_Headers_T headers, const char *name,
                       size_t name_len, HeaderEntry ***prev_ptr_out)
 {
   unsigned bucket = hash_header_name_seeded (name, name_len,
-                                             SOCKETHTTP_HEADER_BUCKETS);
+                                             SOCKETHTTP_HEADER_BUCKET_MASK);
   HeaderEntry **pp = &headers->buckets[bucket];
 
   int chain_len = 0;
@@ -366,7 +387,7 @@ SocketHTTP_Headers_add_n (SocketHTTP_Headers_T headers, const char *name,
     return -1;
 
   entry->hash = hash_header_name_seeded (name, name_len,
-                                         SOCKETHTTP_HEADER_BUCKETS);
+                                         SOCKETHTTP_HEADER_BUCKET_MASK);
 
   if (allocate_entry_value (headers->arena, entry, value, value_len) < 0)
     return -1;
