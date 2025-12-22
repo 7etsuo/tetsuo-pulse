@@ -26,6 +26,7 @@
  */
 
 #include "core/Except.h"
+#include <netinet/in.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -578,6 +579,77 @@ extern int SocketDNS_rr_skip (const unsigned char *msg, size_t msglen,
                               size_t offset, size_t *consumed);
 
 /** @} */ /* End of dns_rr group */
+
+/**
+ * @defgroup dns_rdata DNS RDATA Parsing
+ * @brief Type-specific RDATA parsing functions.
+ * @ingroup dns_wire
+ * @{
+ */
+
+/** Size of A record RDATA in bytes (IPv4 address, RFC 1035 Section 3.4.1). */
+#define DNS_RDATA_A_SIZE 4
+
+/** Size of AAAA record RDATA in bytes (IPv6 address, RFC 3596). */
+#define DNS_RDATA_AAAA_SIZE 16
+
+/**
+ * @brief Parse A record RDATA (IPv4 address).
+ * @ingroup dns_rdata
+ *
+ * Extracts an IPv4 address from an A record's RDATA field.
+ * The address is returned in network byte order.
+ *
+ * @param[in]  rr   Resource record with TYPE=A.
+ * @param[out] addr Output IPv4 address (network byte order).
+ * @return 0 on success, -1 on error (wrong type, wrong rdlength, or NULL).
+ *
+ * @code{.c}
+ * SocketDNS_RR rr;
+ * if (SocketDNS_rr_decode(msg, msglen, offset, &rr, NULL) == 0) {
+ *     if (rr.type == DNS_TYPE_A) {
+ *         struct in_addr addr;
+ *         if (SocketDNS_rdata_parse_a(&rr, &addr) == 0) {
+ *             char str[INET_ADDRSTRLEN];
+ *             inet_ntop(AF_INET, &addr, str, sizeof(str));
+ *             printf("IPv4: %s\n", str);
+ *         }
+ *     }
+ * }
+ * @endcode
+ */
+extern int SocketDNS_rdata_parse_a (const SocketDNS_RR *rr,
+                                    struct in_addr *addr);
+
+/**
+ * @brief Parse AAAA record RDATA (IPv6 address).
+ * @ingroup dns_rdata
+ *
+ * Extracts an IPv6 address from an AAAA record's RDATA field.
+ * The address is returned in network byte order.
+ *
+ * @param[in]  rr   Resource record with TYPE=AAAA.
+ * @param[out] addr Output IPv6 address (network byte order).
+ * @return 0 on success, -1 on error (wrong type, wrong rdlength, or NULL).
+ *
+ * @code{.c}
+ * SocketDNS_RR rr;
+ * if (SocketDNS_rr_decode(msg, msglen, offset, &rr, NULL) == 0) {
+ *     if (rr.type == DNS_TYPE_AAAA) {
+ *         struct in6_addr addr;
+ *         if (SocketDNS_rdata_parse_aaaa(&rr, &addr) == 0) {
+ *             char str[INET6_ADDRSTRLEN];
+ *             inet_ntop(AF_INET6, &addr, str, sizeof(str));
+ *             printf("IPv6: %s\n", str);
+ *         }
+ *     }
+ * }
+ * @endcode
+ */
+extern int SocketDNS_rdata_parse_aaaa (const SocketDNS_RR *rr,
+                                       struct in6_addr *addr);
+
+/** @} */ /* End of dns_rdata group */
 
 /** @} */ /* End of dns_wire group */
 

@@ -773,3 +773,61 @@ SocketDNS_rr_skip (const unsigned char *msg, size_t msglen, size_t offset,
 
   return 0;
 }
+
+/*
+ * A and AAAA RDATA Parsing (RFC 1035 Section 3.4.1, RFC 3596)
+ *
+ * A Record:
+ *   4 bytes - 32-bit IPv4 address in network byte order
+ *
+ * AAAA Record:
+ *   16 bytes - 128-bit IPv6 address in network byte order
+ */
+
+int
+SocketDNS_rdata_parse_a (const SocketDNS_RR *rr, struct in_addr *addr)
+{
+  if (!rr || !addr)
+    return -1;
+
+  /* Validate RR type */
+  if (rr->type != DNS_TYPE_A)
+    return -1;
+
+  /* A record RDATA must be exactly 4 bytes (RFC 1035 Section 3.4.1) */
+  if (rr->rdlength != DNS_RDATA_A_SIZE)
+    return -1;
+
+  /* Ensure RDATA pointer is valid */
+  if (!rr->rdata)
+    return -1;
+
+  /* Copy 4 bytes directly - already in network byte order */
+  memcpy (&addr->s_addr, rr->rdata, DNS_RDATA_A_SIZE);
+
+  return 0;
+}
+
+int
+SocketDNS_rdata_parse_aaaa (const SocketDNS_RR *rr, struct in6_addr *addr)
+{
+  if (!rr || !addr)
+    return -1;
+
+  /* Validate RR type */
+  if (rr->type != DNS_TYPE_AAAA)
+    return -1;
+
+  /* AAAA record RDATA must be exactly 16 bytes (RFC 3596) */
+  if (rr->rdlength != DNS_RDATA_AAAA_SIZE)
+    return -1;
+
+  /* Ensure RDATA pointer is valid */
+  if (!rr->rdata)
+    return -1;
+
+  /* Copy 16 bytes directly - already in network byte order */
+  memcpy (addr->s6_addr, rr->rdata, DNS_RDATA_AAAA_SIZE);
+
+  return 0;
+}
