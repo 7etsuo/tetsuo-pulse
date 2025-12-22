@@ -17,6 +17,11 @@
  * - Used when UDP response truncated (TC bit)
  * - Non-blocking connect and I/O
  * - Connection reuse for multiple queries
+ *
+ * EDNS0 support (RFC 6891):
+ * - UDP receive buffer supports up to 4096 bytes
+ * - Queries with OPT record can request larger payload sizes
+ * - FORMERR fallback for non-EDNS0 servers handled at higher layer
  */
 
 #include <arpa/inet.h>
@@ -111,8 +116,8 @@ struct T
   struct SocketDNSQuery *pending_tail;
   int pending_count;
 
-  /* Receive buffer (for UDP) */
-  unsigned char recv_buf[DNS_UDP_MAX_SIZE];
+  /* Receive buffer (for UDP, sized for EDNS0 per RFC 6891) */
+  unsigned char recv_buf[DNS_EDNS0_DEFAULT_UDPSIZE];
 };
 
 const Except_T SocketDNSTransport_Failed

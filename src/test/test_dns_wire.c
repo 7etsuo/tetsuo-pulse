@@ -2565,6 +2565,275 @@ TEST (dns_rdata_parse_soa_verify_values)
   ASSERT_EQ (soa.minimum, 0x00000001U);
 }
 
+/*
+ * EDNS0 OPT Record Tests (RFC 6891)
+ */
+
+/* Test SocketDNS_opt_init() sets default values correctly */
+TEST (dns_opt_init_defaults)
+{
+  SocketDNS_OPT opt;
+
+  SocketDNS_opt_init (&opt, 4096);
+
+  ASSERT_EQ (opt.udp_payload_size, 4096);
+  ASSERT_EQ (opt.extended_rcode, 0);
+  ASSERT_EQ (opt.version, DNS_EDNS0_VERSION);
+  ASSERT_EQ (opt.do_bit, 0);
+  ASSERT_EQ (opt.z, 0);
+  ASSERT_EQ (opt.rdlength, 0);
+  ASSERT (opt.rdata == NULL);
+}
+
+/* Test SocketDNS_opt_init() enforces minimum 512 bytes */
+TEST (dns_opt_init_min_size)
+{
+  SocketDNS_OPT opt;
+
+  /* Request 256, should get 512 */
+  SocketDNS_opt_init (&opt, 256);
+  ASSERT_EQ (opt.udp_payload_size, DNS_EDNS0_MIN_UDPSIZE);
+
+  /* Request 0, should get 512 */
+  SocketDNS_opt_init (&opt, 0);
+  ASSERT_EQ (opt.udp_payload_size, DNS_EDNS0_MIN_UDPSIZE);
+
+  /* Request 512, should get 512 */
+  SocketDNS_opt_init (&opt, 512);
+  ASSERT_EQ (opt.udp_payload_size, 512);
+
+  /* Request 513, should get 513 */
+  SocketDNS_opt_init (&opt, 513);
+  ASSERT_EQ (opt.udp_payload_size, 513);
+}
+
+/* Test basic OPT encoding (minimal, no options) */
+TEST (dns_opt_encode_basic)
+{
+  SocketDNS_OPT opt;
+  unsigned char buf[DNS_OPT_FIXED_SIZE + 16];
+  int len;
+
+  SocketDNS_opt_init (&opt, 4096);
+
+  len = SocketDNS_opt_encode (&opt, buf, sizeof (buf));
+  ASSERT_EQ (len, DNS_OPT_FIXED_SIZE);
+
+  /* Verify wire format */
+  ASSERT_EQ (buf[0], 0x00);       /* NAME = root */
+  ASSERT_EQ (buf[1], 0x00);       /* TYPE high byte */
+  ASSERT_EQ (buf[2], 41);         /* TYPE = OPT (41) */
+  ASSERT_EQ (buf[3], 0x10);       /* CLASS high byte (4096 >> 8 = 16) */
+  ASSERT_EQ (buf[4], 0x00);       /* CLASS low byte */
+  ASSERT_EQ (buf[5], 0x00);       /* TTL byte 0 (extended RCODE) */
+  ASSERT_EQ (buf[6], 0x00);       /* TTL byte 1 (version) */
+  ASSERT_EQ (buf[7], 0x00);       /* TTL byte 2 (flags high) */
+  ASSERT_EQ (buf[8], 0x00);       /* TTL byte 3 (flags low) */
+  ASSERT_EQ (buf[9], 0x00);       /* RDLENGTH high */
+  ASSERT_EQ (buf[10], 0x00);      /* RDLENGTH low */
+}
+
+/* Test OPT encoding with DO bit set */
+TEST (dns_opt_encode_with_do)
+{
+  SocketDNS_OPT opt;
+  unsigned char buf[DNS_OPT_FIXED_SIZE + 16];
+  int len;
+
+  SocketDNS_opt_init (&opt, 1232);
+  opt.do_bit = 1;
+
+  len = SocketDNS_opt_encode (&opt, buf, sizeof (buf));
+  ASSERT_EQ (len, DNS_OPT_FIXED_SIZE);
+
+  /* CLASS = 1232 = 0x04D0 */
+  ASSERT_EQ (buf[3], 0x04);
+  ASSERT_EQ (buf[4], 0xD0);
+
+  /* TTL byte 2 should have DO bit (0x80) */
+  ASSERT_EQ (buf[7], 0x80);
+}
+
+/* Test encoding with extended RCODE and version */
+TEST (dns_opt_encode_extended_rcode)
+{
+  SocketDNS_OPT opt;
+  unsigned char buf[DNS_OPT_FIXED_SIZE + 16];
+  int len;
+
+  SocketDNS_opt_init (&opt, 4096);
+  opt.extended_rcode = 0x01;  /* BADVERS upper bits */
+  opt.version = 0;
+
+  len = SocketDNS_opt_encode (&opt, buf, sizeof (buf));
+  ASSERT_EQ (len, DNS_OPT_FIXED_SIZE);
+
+  /* TTL byte 0 = extended RCODE = 0x01 */
+  ASSERT_EQ (buf[5], 0x01);
+  /* TTL byte 1 = version = 0 */
+  ASSERT_EQ (buf[6], 0x00);
+}
+
+/* Test basic OPT decoding */
+TEST (dns_opt_decode_basic)
+{
+  SocketDNS_OPT opt;
+  unsigned char buf[DNS_OPT_FIXED_SIZE] = {
+    0x00,             /* NAME = root */
+    0x00, 0x29,       /* TYPE = 41 (OPT) */
+    0x10, 0x00,       /* CLASS = 4096 */
+    0x00, 0x00, 0x00, 0x00,  /* TTL = 0 */
+    0x00, 0x00        /* RDLENGTH = 0 */
+  };
+  int consumed;
+
+  consumed = SocketDNS_opt_decode (buf, sizeof (buf), &opt);
+  ASSERT_EQ (consumed, DNS_OPT_FIXED_SIZE);
+
+  ASSERT_EQ (opt.udp_payload_size, 4096);
+  ASSERT_EQ (opt.extended_rcode, 0);
+  ASSERT_EQ (opt.version, 0);
+  ASSERT_EQ (opt.do_bit, 0);
+  ASSERT_EQ (opt.z, 0);
+  ASSERT_EQ (opt.rdlength, 0);
+}
+
+/* Test OPT decoding with options data */
+TEST (dns_opt_decode_with_options)
+{
+  SocketDNS_OPT opt;
+  unsigned char buf[] = {
+    0x00,             /* NAME = root */
+    0x00, 0x29,       /* TYPE = 41 (OPT) */
+    0x04, 0xD0,       /* CLASS = 1232 */
+    0x00, 0x00, 0x80, 0x00,  /* TTL: extended=0, ver=0, DO=1, Z=0 */
+    0x00, 0x04,       /* RDLENGTH = 4 */
+    0xDE, 0xAD, 0xBE, 0xEF  /* RDATA (dummy options) */
+  };
+  int consumed;
+
+  consumed = SocketDNS_opt_decode (buf, sizeof (buf), &opt);
+  ASSERT_EQ (consumed, DNS_OPT_FIXED_SIZE + 4);
+
+  ASSERT_EQ (opt.udp_payload_size, 1232);
+  ASSERT_EQ (opt.do_bit, 1);
+  ASSERT_EQ (opt.rdlength, 4);
+  ASSERT (opt.rdata != NULL);
+  ASSERT_EQ (opt.rdata[0], 0xDE);
+  ASSERT_EQ (opt.rdata[3], 0xEF);
+}
+
+/* Test OPT decode rejects non-root NAME */
+TEST (dns_opt_decode_invalid_name)
+{
+  SocketDNS_OPT opt;
+  unsigned char buf[] = {
+    0x03, 'f', 'o', 'o', 0x00,  /* NAME = "foo" (not root) */
+    0x00, 0x29,       /* TYPE = 41 */
+    0x10, 0x00,       /* CLASS */
+    0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00
+  };
+  int consumed;
+
+  consumed = SocketDNS_opt_decode (buf, sizeof (buf), &opt);
+  ASSERT_EQ (consumed, -1);  /* Should fail */
+}
+
+/* Test OPT decode rejects wrong TYPE */
+TEST (dns_opt_decode_invalid_type)
+{
+  SocketDNS_OPT opt;
+  unsigned char buf[] = {
+    0x00,             /* NAME = root */
+    0x00, 0x01,       /* TYPE = 1 (A, not OPT) */
+    0x10, 0x00,
+    0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00
+  };
+  int consumed;
+
+  consumed = SocketDNS_opt_decode (buf, sizeof (buf), &opt);
+  ASSERT_EQ (consumed, -1);  /* Should fail */
+}
+
+/* Test OPT decode handles truncated buffer */
+TEST (dns_opt_decode_truncated)
+{
+  SocketDNS_OPT opt;
+  unsigned char buf[5] = { 0x00, 0x00, 0x29, 0x10, 0x00 };
+  int consumed;
+
+  /* Buffer too short for full OPT */
+  consumed = SocketDNS_opt_decode (buf, sizeof (buf), &opt);
+  ASSERT_EQ (consumed, -1);
+
+  /* Buffer too short for declared RDLENGTH */
+  unsigned char buf2[] = {
+    0x00, 0x00, 0x29, 0x10, 0x00,
+    0x00, 0x00, 0x00, 0x00,
+    0x00, 0x10  /* RDLENGTH = 16, but no RDATA */
+  };
+  consumed = SocketDNS_opt_decode (buf2, sizeof (buf2), &opt);
+  ASSERT_EQ (consumed, -1);
+}
+
+/* Test encode/decode roundtrip */
+TEST (dns_opt_roundtrip)
+{
+  SocketDNS_OPT orig, decoded;
+  unsigned char buf[DNS_OPT_FIXED_SIZE + 32];
+  int encoded, consumed;
+
+  /* Set up original with various values */
+  SocketDNS_opt_init (&orig, 1280);
+  orig.do_bit = 1;
+  orig.extended_rcode = 0x02;
+  orig.version = 0;
+
+  encoded = SocketDNS_opt_encode (&orig, buf, sizeof (buf));
+  ASSERT (encoded > 0);
+
+  consumed = SocketDNS_opt_decode (buf, encoded, &decoded);
+  ASSERT_EQ (consumed, encoded);
+
+  /* Verify all fields match */
+  ASSERT_EQ (decoded.udp_payload_size, orig.udp_payload_size);
+  ASSERT_EQ (decoded.extended_rcode, orig.extended_rcode);
+  ASSERT_EQ (decoded.version, orig.version);
+  ASSERT_EQ (decoded.do_bit, orig.do_bit);
+  ASSERT_EQ (decoded.z, orig.z);
+  ASSERT_EQ (decoded.rdlength, orig.rdlength);
+}
+
+/* Test extended RCODE calculation */
+TEST (dns_opt_extended_rcode_calc)
+{
+  SocketDNS_Header hdr;
+  SocketDNS_OPT opt;
+  uint16_t rcode;
+
+  memset (&hdr, 0, sizeof (hdr));
+  memset (&opt, 0, sizeof (opt));
+
+  /* Standard RCODE (no extension) */
+  hdr.rcode = 5;  /* REFUSED */
+  rcode = SocketDNS_opt_extended_rcode (&hdr, NULL);
+  ASSERT_EQ (rcode, 5);
+
+  /* Extended RCODE = 16 (BADVERS) = (1 << 4) | 0 */
+  hdr.rcode = 0;
+  opt.extended_rcode = 1;
+  rcode = SocketDNS_opt_extended_rcode (&hdr, &opt);
+  ASSERT_EQ (rcode, 16);
+
+  /* Extended RCODE with both parts set */
+  hdr.rcode = 3;  /* NXDOMAIN in lower bits */
+  opt.extended_rcode = 2;  /* 2 << 4 = 32 */
+  rcode = SocketDNS_opt_extended_rcode (&hdr, &opt);
+  ASSERT_EQ (rcode, 35);  /* (2 << 4) | 3 = 32 + 3 */
+}
+
 int
 main (void)
 {
