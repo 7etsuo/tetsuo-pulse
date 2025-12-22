@@ -1674,12 +1674,18 @@ SocketHTTPClient_Request_free (SocketHTTPClient_Request_T *req)
 
   SocketHTTPClient_Request_T r = *req;
 
-  if (r->arena != NULL)
-    {
-      Arena_dispose (&r->arena);
-    }
+  /* Save arena pointer before freeing.
+   * The request struct is allocated from its own arena, so after
+   * Arena_dispose frees the chunks, r becomes invalid. We must not
+   * access r->arena after the dispose. */
+  Arena_T arena = r->arena;
 
   *req = NULL;
+
+  if (arena != NULL)
+    {
+      Arena_dispose (&arena);
+    }
 }
 
 int
