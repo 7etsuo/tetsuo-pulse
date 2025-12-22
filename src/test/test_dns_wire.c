@@ -803,6 +803,270 @@ TEST (dns_name_decode_nested_pointers)
   ASSERT (strcmp (name, "www.example.com") == 0);
 }
 
+/* ==================== Question Section Tests ==================== */
+
+/* Test type constant values (RFC 1035, RFC 3596) */
+TEST (dns_question_type_constants)
+{
+  ASSERT_EQ (DNS_TYPE_A, 1);
+  ASSERT_EQ (DNS_TYPE_NS, 2);
+  ASSERT_EQ (DNS_TYPE_CNAME, 5);
+  ASSERT_EQ (DNS_TYPE_SOA, 6);
+  ASSERT_EQ (DNS_TYPE_PTR, 12);
+  ASSERT_EQ (DNS_TYPE_MX, 15);
+  ASSERT_EQ (DNS_TYPE_TXT, 16);
+  ASSERT_EQ (DNS_TYPE_AAAA, 28);
+  ASSERT_EQ (DNS_TYPE_SRV, 33);
+  ASSERT_EQ (DNS_TYPE_OPT, 41);
+  ASSERT_EQ (DNS_TYPE_ANY, 255);
+}
+
+/* Test class constant values (RFC 1035) */
+TEST (dns_question_class_constants)
+{
+  ASSERT_EQ (DNS_CLASS_IN, 1);
+  ASSERT_EQ (DNS_CLASS_CH, 3);
+  ASSERT_EQ (DNS_CLASS_HS, 4);
+  ASSERT_EQ (DNS_CLASS_ANY, 255);
+}
+
+/* Test question init helper */
+TEST (dns_question_init_basic)
+{
+  SocketDNS_Question q;
+
+  SocketDNS_question_init (&q, "example.com", DNS_TYPE_A);
+  ASSERT (strcmp (q.qname, "example.com") == 0);
+  ASSERT_EQ (q.qtype, DNS_TYPE_A);
+  ASSERT_EQ (q.qclass, DNS_CLASS_IN);
+
+  SocketDNS_question_init (&q, "ipv6.example.org", DNS_TYPE_AAAA);
+  ASSERT (strcmp (q.qname, "ipv6.example.org") == 0);
+  ASSERT_EQ (q.qtype, DNS_TYPE_AAAA);
+  ASSERT_EQ (q.qclass, DNS_CLASS_IN);
+}
+
+/* Test basic question encoding */
+TEST (dns_question_encode_basic)
+{
+  SocketDNS_Question q;
+  unsigned char buf[128];
+  size_t written;
+  int ret;
+
+  SocketDNS_question_init (&q, "example.com", DNS_TYPE_A);
+  ret = SocketDNS_question_encode (&q, buf, sizeof (buf), &written);
+  ASSERT_EQ (ret, 0);
+
+  /* Wire format: [7]example[3]com[0] + QTYPE(2) + QCLASS(2) = 13 + 4 = 17 */
+  ASSERT_EQ (written, 17);
+
+  /* Verify name encoding */
+  ASSERT_EQ (buf[0], 7);
+  ASSERT (memcmp (buf + 1, "example", 7) == 0);
+  ASSERT_EQ (buf[8], 3);
+  ASSERT (memcmp (buf + 9, "com", 3) == 0);
+  ASSERT_EQ (buf[12], 0);
+
+  /* Verify QTYPE = 1 (A) big-endian */
+  ASSERT_EQ (buf[13], 0);
+  ASSERT_EQ (buf[14], 1);
+
+  /* Verify QCLASS = 1 (IN) big-endian */
+  ASSERT_EQ (buf[15], 0);
+  ASSERT_EQ (buf[16], 1);
+}
+
+/* Test AAAA query encoding */
+TEST (dns_question_encode_aaaa)
+{
+  SocketDNS_Question q;
+  unsigned char buf[128];
+  size_t written;
+  int ret;
+
+  SocketDNS_question_init (&q, "ipv6.test.com", DNS_TYPE_AAAA);
+  ret = SocketDNS_question_encode (&q, buf, sizeof (buf), &written);
+  ASSERT_EQ (ret, 0);
+
+  /* QTYPE = 28 (AAAA) big-endian at end - 4 bytes */
+  size_t qtype_offset = written - 4;
+  ASSERT_EQ (buf[qtype_offset], 0);
+  ASSERT_EQ (buf[qtype_offset + 1], 28);
+}
+
+/* Test question decoding */
+TEST (dns_question_decode_basic)
+{
+  /* Wire format for "example.com" A IN query */
+  unsigned char wire[] = {
+    7, 'e', 'x', 'a', 'm', 'p', 'l', 'e',
+    3, 'c', 'o', 'm',
+    0,        /* Name terminator */
+    0, 1,     /* QTYPE = A (1) */
+    0, 1      /* QCLASS = IN (1) */
+  };
+  SocketDNS_Question q;
+  size_t consumed;
+  int ret;
+
+  ret = SocketDNS_question_decode (wire, sizeof (wire), 0, &q, &consumed);
+  ASSERT_EQ (ret, 0);
+  ASSERT_EQ (consumed, sizeof (wire));
+  ASSERT (strcmp (q.qname, "example.com") == 0);
+  ASSERT_EQ (q.qtype, DNS_TYPE_A);
+  ASSERT_EQ (q.qclass, DNS_CLASS_IN);
+}
+
+/* Test question decode with AAAA type */
+TEST (dns_question_decode_aaaa)
+{
+  /* Wire format for "test.org" AAAA IN query */
+  unsigned char wire[] = {
+    4, 't', 'e', 's', 't',
+    3, 'o', 'r', 'g',
+    0,        /* Name terminator */
+    0, 28,    /* QTYPE = AAAA (28) */
+    0, 1      /* QCLASS = IN (1) */
+  };
+  SocketDNS_Question q;
+  size_t consumed;
+  int ret;
+
+  ret = SocketDNS_question_decode (wire, sizeof (wire), 0, &q, &consumed);
+  ASSERT_EQ (ret, 0);
+  ASSERT (strcmp (q.qname, "test.org") == 0);
+  ASSERT_EQ (q.qtype, DNS_TYPE_AAAA);
+  ASSERT_EQ (q.qclass, DNS_CLASS_IN);
+}
+
+/* Test question encode/decode roundtrip */
+TEST (dns_question_roundtrip)
+{
+  const struct {
+    const char *name;
+    uint16_t qtype;
+  } tests[] = {
+    { "example.com", DNS_TYPE_A },
+    { "ipv6.example.org", DNS_TYPE_AAAA },
+    { "mail.domain.net", DNS_TYPE_MX },
+    { "ns1.provider.com", DNS_TYPE_NS },
+    { "_srv._tcp.example.com", DNS_TYPE_SRV },
+    { "", DNS_TYPE_A },  /* Root domain */
+  };
+  size_t i;
+
+  for (i = 0; i < sizeof (tests) / sizeof (tests[0]); i++)
+    {
+      SocketDNS_Question orig, decoded;
+      unsigned char wire[512];
+      size_t written, consumed;
+
+      SocketDNS_question_init (&orig, tests[i].name, tests[i].qtype);
+      ASSERT_EQ (SocketDNS_question_encode (&orig, wire, sizeof (wire), &written), 0);
+      ASSERT_EQ (SocketDNS_question_decode (wire, written, 0, &decoded, &consumed), 0);
+      ASSERT_EQ (consumed, written);
+      ASSERT (SocketDNS_name_equal (orig.qname, decoded.qname) == 1);
+      ASSERT_EQ (decoded.qtype, orig.qtype);
+      ASSERT_EQ (decoded.qclass, orig.qclass);
+    }
+}
+
+/* Test question decoding at non-zero offset (after header) */
+TEST (dns_question_decode_offset)
+{
+  unsigned char msg[64];
+  SocketDNS_Question q;
+  size_t consumed;
+
+  memset (msg, 0, 12); /* Header */
+
+  /* Question at offset 12: "test.com" A IN */
+  msg[12] = 4;
+  memcpy (msg + 13, "test", 4);
+  msg[17] = 3;
+  memcpy (msg + 18, "com", 3);
+  msg[21] = 0;
+  msg[22] = 0; msg[23] = 1;  /* QTYPE = A */
+  msg[24] = 0; msg[25] = 1;  /* QCLASS = IN */
+
+  ASSERT_EQ (SocketDNS_question_decode (msg, 26, 12, &q, &consumed), 0);
+  ASSERT_EQ (consumed, 14); /* 10 (name) + 4 (type+class) */
+  ASSERT (strcmp (q.qname, "test.com") == 0);
+  ASSERT_EQ (q.qtype, DNS_TYPE_A);
+}
+
+/* Test question encode buffer too small */
+TEST (dns_question_encode_buffer_small)
+{
+  SocketDNS_Question q;
+  unsigned char buf[10]; /* Too small */
+
+  SocketDNS_question_init (&q, "example.com", DNS_TYPE_A);
+  ASSERT_EQ (SocketDNS_question_encode (&q, buf, sizeof (buf), NULL), -1);
+}
+
+/* Test question decode truncated */
+TEST (dns_question_decode_truncated)
+{
+  /* Wire format missing QCLASS bytes */
+  unsigned char wire[] = {
+    3, 'c', 'o', 'm',
+    0,        /* Name terminator */
+    0, 1      /* QTYPE = A, but QCLASS missing */
+  };
+  SocketDNS_Question q;
+
+  ASSERT_EQ (SocketDNS_question_decode (wire, sizeof (wire), 0, &q, NULL), -1);
+}
+
+/* Test question NULL pointer handling */
+TEST (dns_question_null_handling)
+{
+  SocketDNS_Question q;
+  unsigned char buf[64];
+
+  ASSERT_EQ (SocketDNS_question_encode (NULL, buf, sizeof (buf), NULL), -1);
+  ASSERT_EQ (SocketDNS_question_encode (&q, NULL, sizeof (buf), NULL), -1);
+  ASSERT_EQ (SocketDNS_question_decode (NULL, 64, 0, &q, NULL), -1);
+  ASSERT_EQ (SocketDNS_question_decode (buf, 64, 0, NULL, NULL), -1);
+
+  /* Init with NULL should not crash */
+  SocketDNS_question_init (NULL, "test", DNS_TYPE_A);
+  SocketDNS_question_init (&q, NULL, DNS_TYPE_A);
+  ASSERT_EQ (q.qname[0], '\0');
+}
+
+/* Test question with compression pointer in name */
+TEST (dns_question_decode_compressed)
+{
+  unsigned char msg[64];
+  SocketDNS_Question q;
+  size_t consumed;
+
+  memset (msg, 0, 12);
+
+  /* "example.com" at offset 12 */
+  msg[12] = 7;
+  memcpy (msg + 13, "example", 7);
+  msg[20] = 3;
+  memcpy (msg + 21, "com", 3);
+  msg[24] = 0;
+
+  /* Question at offset 25: "www" + pointer to offset 12 */
+  msg[25] = 3;
+  memcpy (msg + 26, "www", 3);
+  msg[29] = 0xC0;
+  msg[30] = 12;  /* Pointer to "example.com" */
+  msg[31] = 0; msg[32] = 1;  /* QTYPE = A */
+  msg[33] = 0; msg[34] = 1;  /* QCLASS = IN */
+
+  ASSERT_EQ (SocketDNS_question_decode (msg, 35, 25, &q, &consumed), 0);
+  ASSERT_EQ (consumed, 10); /* 1+3+2 (name with pointer) + 4 (type+class) */
+  ASSERT (strcmp (q.qname, "www.example.com") == 0);
+  ASSERT_EQ (q.qtype, DNS_TYPE_A);
+}
+
 int
 main (void)
 {

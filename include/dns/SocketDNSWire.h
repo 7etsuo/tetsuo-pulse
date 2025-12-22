@@ -330,6 +330,145 @@ extern size_t SocketDNS_name_wire_length (const char *name);
 
 /** @} */ /* End of dns_name group */
 
+/**
+ * @defgroup dns_question DNS Question Section
+ * @brief Question section encoding and decoding.
+ * @ingroup dns_wire
+ * @{
+ */
+
+/**
+ * @brief DNS record types (RFC 1035 Section 3.2.2, RFC 3596).
+ *
+ * TYPE field values for resource records and QTYPE values for questions.
+ */
+typedef enum
+{
+  DNS_TYPE_A = 1,      /**< IPv4 host address (RFC 1035) */
+  DNS_TYPE_NS = 2,     /**< Authoritative name server (RFC 1035) */
+  DNS_TYPE_CNAME = 5,  /**< Canonical name for alias (RFC 1035) */
+  DNS_TYPE_SOA = 6,    /**< Start of authority (RFC 1035) */
+  DNS_TYPE_PTR = 12,   /**< Domain name pointer (RFC 1035) */
+  DNS_TYPE_MX = 15,    /**< Mail exchange (RFC 1035) */
+  DNS_TYPE_TXT = 16,   /**< Text strings (RFC 1035) */
+  DNS_TYPE_AAAA = 28,  /**< IPv6 host address (RFC 3596) */
+  DNS_TYPE_SRV = 33,   /**< Service locator (RFC 2782) */
+  DNS_TYPE_OPT = 41,   /**< EDNS0 option (RFC 6891) */
+  DNS_TYPE_ANY = 255   /**< Any type (QTYPE only, RFC 1035) */
+} SocketDNS_Type;
+
+/**
+ * @brief DNS query classes (RFC 1035 Section 3.2.4).
+ *
+ * CLASS field values for resource records and QCLASS values for questions.
+ */
+typedef enum
+{
+  DNS_CLASS_IN = 1,   /**< Internet (RFC 1035) */
+  DNS_CLASS_CH = 3,   /**< CHAOS (RFC 1035) */
+  DNS_CLASS_HS = 4,   /**< Hesiod (RFC 1035) */
+  DNS_CLASS_ANY = 255 /**< Any class (QCLASS only, RFC 1035) */
+} SocketDNS_Class;
+
+/**
+ * @brief DNS question section structure.
+ *
+ * Represents a single question entry from the question section.
+ *
+ * ## Wire Format (RFC 1035 Section 4.1.2)
+ *
+ * ```
+ * +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+ * |                     QNAME                     |
+ * +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+ * |                     QTYPE                     |
+ * +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+ * |                     QCLASS                    |
+ * +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+ * ```
+ */
+typedef struct
+{
+  char qname[DNS_MAX_NAME_LEN]; /**< Query domain name */
+  uint16_t qtype;               /**< Query type (SocketDNS_Type) */
+  uint16_t qclass;              /**< Query class (SocketDNS_Class) */
+} SocketDNS_Question;
+
+/**
+ * @brief Encode a DNS question to wire format.
+ * @ingroup dns_question
+ *
+ * Serializes a question structure to the wire format as specified in
+ * RFC 1035 Section 4.1.2. The QNAME is encoded as labels, followed by
+ * QTYPE and QCLASS in network byte order (big-endian).
+ *
+ * @param[in]  question Question structure to encode.
+ * @param[out] buf      Output buffer for wire format.
+ * @param[in]  buflen   Size of output buffer.
+ * @param[out] written  Number of bytes written (may be NULL).
+ * @return 0 on success, -1 on error (invalid name, buffer too small).
+ *
+ * @code{.c}
+ * SocketDNS_Question q;
+ * SocketDNS_question_init(&q, "example.com", DNS_TYPE_A);
+ * unsigned char buf[512];
+ * size_t len;
+ * if (SocketDNS_question_encode(&q, buf, sizeof(buf), &len) == 0) {
+ *     // buf contains: [7]example[3]com[0] + QTYPE(2) + QCLASS(2)
+ * }
+ * @endcode
+ */
+extern int SocketDNS_question_encode (const SocketDNS_Question *question,
+                                      unsigned char *buf, size_t buflen,
+                                      size_t *written);
+
+/**
+ * @brief Decode a DNS question from wire format.
+ * @ingroup dns_question
+ *
+ * Parses a question entry from wire format. Handles domain name
+ * compression as specified in RFC 1035 Section 4.1.4.
+ *
+ * @param[in]  msg      Full DNS message buffer (for compression pointers).
+ * @param[in]  msglen   Total length of the DNS message.
+ * @param[in]  offset   Offset within msg where question starts.
+ * @param[out] question Output question structure.
+ * @param[out] consumed Bytes consumed from offset position (may be NULL).
+ * @return 0 on success, -1 on error.
+ *
+ * @code{.c}
+ * SocketDNS_Question q;
+ * size_t consumed;
+ * if (SocketDNS_question_decode(msg, msglen, 12, &q, &consumed) == 0) {
+ *     printf("Query for %s type %d\n", q.qname, q.qtype);
+ * }
+ * @endcode
+ */
+extern int SocketDNS_question_decode (const unsigned char *msg, size_t msglen,
+                                      size_t offset, SocketDNS_Question *question,
+                                      size_t *consumed);
+
+/**
+ * @brief Initialize a DNS question for a standard query.
+ * @ingroup dns_question
+ *
+ * Convenience function to set up a question with QCLASS=IN.
+ *
+ * @param[out] question Question structure to initialize.
+ * @param[in]  name     Domain name to query.
+ * @param[in]  qtype    Query type (e.g., DNS_TYPE_A, DNS_TYPE_AAAA).
+ *
+ * @code{.c}
+ * SocketDNS_Question q;
+ * SocketDNS_question_init(&q, "example.com", DNS_TYPE_AAAA);
+ * // q.qname = "example.com", q.qtype = 28, q.qclass = 1
+ * @endcode
+ */
+extern void SocketDNS_question_init (SocketDNS_Question *question,
+                                     const char *name, uint16_t qtype);
+
+/** @} */ /* End of dns_question group */
+
 /** @} */ /* End of dns_wire group */
 
 #endif /* SOCKETDNSWIRE_INCLUDED */

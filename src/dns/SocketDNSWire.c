@@ -528,3 +528,111 @@ SocketDNS_name_equal (const char *name1, const char *name2)
 
   return (*p1 == '\0' && *p2 == '\0');
 }
+
+/*
+ * Question Section Encoding/Decoding (RFC 1035 Section 4.1.2)
+ *
+ * Each question has three fields:
+ *   QNAME  - variable length domain name
+ *   QTYPE  - 2 bytes, query type
+ *   QCLASS - 2 bytes, query class
+ */
+
+int
+SocketDNS_question_encode (const SocketDNS_Question *question,
+                           unsigned char *buf, size_t buflen, size_t *written)
+{
+  size_t name_len;
+  size_t pos;
+
+  if (!question || !buf)
+    return -1;
+
+  /* Encode the domain name first */
+  if (SocketDNS_name_encode (question->qname, buf, buflen, &name_len) != 0)
+    return -1;
+
+  pos = name_len;
+
+  /* Need 4 more bytes for QTYPE and QCLASS */
+  if (pos + 4 > buflen)
+    return -1;
+
+  /* QTYPE (2 bytes, big-endian) */
+  dns_pack_be16 (buf + pos, question->qtype);
+  pos += 2;
+
+  /* QCLASS (2 bytes, big-endian) */
+  dns_pack_be16 (buf + pos, question->qclass);
+  pos += 2;
+
+  if (written)
+    *written = pos;
+
+  return 0;
+}
+
+int
+SocketDNS_question_decode (const unsigned char *msg, size_t msglen,
+                           size_t offset, SocketDNS_Question *question,
+                           size_t *consumed)
+{
+  size_t name_consumed;
+  int name_len;
+  size_t pos;
+
+  if (!msg || !question)
+    return -1;
+
+  if (offset >= msglen)
+    return -1;
+
+  /* Decode the domain name */
+  name_len = SocketDNS_name_decode (msg, msglen, offset, question->qname,
+                                    sizeof (question->qname), &name_consumed);
+  if (name_len < 0)
+    return -1;
+
+  pos = offset + name_consumed;
+
+  /* Need 4 more bytes for QTYPE and QCLASS */
+  if (pos + 4 > msglen)
+    return -1;
+
+  /* QTYPE (2 bytes, big-endian) */
+  question->qtype = dns_unpack_be16 (msg + pos);
+  pos += 2;
+
+  /* QCLASS (2 bytes, big-endian) */
+  question->qclass = dns_unpack_be16 (msg + pos);
+  pos += 2;
+
+  if (consumed)
+    *consumed = pos - offset;
+
+  return 0;
+}
+
+void
+SocketDNS_question_init (SocketDNS_Question *question, const char *name,
+                         uint16_t qtype)
+{
+  size_t name_len;
+
+  if (!question)
+    return;
+
+  memset (question, 0, sizeof (*question));
+
+  if (name)
+    {
+      name_len = strlen (name);
+      if (name_len >= sizeof (question->qname))
+        name_len = sizeof (question->qname) - 1;
+      memcpy (question->qname, name, name_len);
+      question->qname[name_len] = '\0';
+    }
+
+  question->qtype = qtype;
+  question->qclass = DNS_CLASS_IN; /* Default to Internet class */
+}
