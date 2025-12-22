@@ -25,11 +25,6 @@
 #include <pthread.h>
 #include <stdatomic.h>
 
-/* ============================================================================
- * Per-Server Instance Metrics
- * ============================================================================
- */
-
 typedef struct SocketHTTPServer_InstanceMetrics
 {
   _Atomic uint64_t connections_total;
@@ -43,11 +38,6 @@ typedef struct SocketHTTPServer_InstanceMetrics
   _Atomic uint64_t errors_4xx;
   _Atomic uint64_t errors_5xx;
 } SocketHTTPServer_InstanceMetrics;
-
-/* ============================================================================
- * Metrics Macros - Update both global and per-server metrics
- * ============================================================================
- */
 
 #define SERVER_METRICS_INC(server, global_metric, instance_field)              \
   do                                                                           \
@@ -85,12 +75,6 @@ typedef struct SocketHTTPServer_InstanceMetrics
     }                                                                          \
   while (0)
 
-/* ============================================================================
- * Internal Types
- * ============================================================================
- */
-
-/** Per-path rate limiter entry. */
 typedef struct RateLimitEntry
 {
   char *path_prefix;
@@ -98,7 +82,6 @@ typedef struct RateLimitEntry
   struct RateLimitEntry *next;
 } RateLimitEntry;
 
-/** Static file serving route. */
 typedef struct StaticRoute
 {
   char *prefix;
@@ -109,7 +92,6 @@ typedef struct StaticRoute
   struct StaticRoute *next;
 } StaticRoute;
 
-/** Middleware chain entry. */
 typedef struct MiddlewareEntry
 {
   SocketHTTPServer_Middleware func;
@@ -117,7 +99,6 @@ typedef struct MiddlewareEntry
   struct MiddlewareEntry *next;
 } MiddlewareEntry;
 
-/** Connection state machine states. */
 typedef enum
 {
   CONN_STATE_TLS_HANDSHAKE,
@@ -130,14 +111,12 @@ typedef enum
   CONN_STATE_CLOSED
 } ServerConnState;
 
-/** Per-stream state for HTTP/2 connections. */
 typedef struct ServerHTTP2Stream
 {
   SocketHTTP2_Stream_T stream;
   Arena_T arena;
   struct ServerHTTP2Stream *next;
 
-  /* Request data */
   SocketHTTP_Request *request;
   char *h2_protocol;
   SocketHTTP_Headers_T request_trailers;
@@ -151,13 +130,11 @@ typedef struct ServerHTTP2Stream
   size_t body_received;
   int body_uses_buf;
 
-  /* Request body streaming */
   SocketHTTPServer_BodyCallback body_callback;
   void *body_callback_userdata;
   int body_streaming;
   int ws_over_h2;
 
-  /* Response data */
   int response_status;
   SocketHTTP_Headers_T response_headers;
   SocketHTTP_Headers_T response_trailers;
@@ -167,13 +144,11 @@ typedef struct ServerHTTP2Stream
   int response_finished;
   int response_end_stream_sent;
 
-  /* Response streaming */
   int response_streaming;
   int response_headers_sent;
   SocketBuf_T response_outbuf;
 } ServerHTTP2Stream;
 
-/** Active HTTP client connection state. */
 typedef struct ServerConnection
 {
   Socket_T socket;
@@ -184,7 +159,6 @@ typedef struct ServerConnection
   SocketBuf_T inbuf;
   SocketBuf_T outbuf;
 
-  /* TLS / HTTP/2 mode */
   int tls_enabled;
   int tls_handshake_done;
   int is_http2;
@@ -192,7 +166,6 @@ typedef struct ServerConnection
   int http2_callback_set;
   ServerHTTP2Stream *http2_streams;
 
-  /* Request data */
   const SocketHTTP_Request *request;
   void *body;
   SocketBuf_T body_buf;
@@ -202,23 +175,19 @@ typedef struct ServerConnection
   size_t body_received;
   int body_uses_buf;
 
-  /* Request body streaming */
   SocketHTTPServer_BodyCallback body_callback;
   void *body_callback_userdata;
   int body_streaming;
 
-  /* Response data */
   int response_status;
   SocketHTTP_Headers_T response_headers;
   void *response_body;
   size_t response_body_len;
   int response_finished;
 
-  /* Response streaming */
   int response_streaming;
   int response_headers_sent;
 
-  /* Connection metadata */
   int64_t created_at_ms;
   int64_t last_activity_ms;
   int64_t request_start_ms;
@@ -226,7 +195,6 @@ typedef struct ServerConnection
   size_t request_count;
   size_t active_requests;
 
-  /* Memory tracking */
   size_t memory_used;
 
   Arena_T arena;
@@ -235,7 +203,6 @@ typedef struct ServerConnection
   struct ServerConnection *prev;
 } ServerConnection;
 
-/** Request context passed to handlers. */
 struct SocketHTTPServer_Request
 {
   SocketHTTPServer_T server;
@@ -245,7 +212,6 @@ struct SocketHTTPServer_Request
   int64_t start_time_ms;
 };
 
-/** HTTP server instance. */
 struct SocketHTTPServer
 {
   SocketHTTPServer_Config config;
@@ -253,7 +219,6 @@ struct SocketHTTPServer
   Socket_T listen_socket;
   SocketPoll_T poll;
 
-  /* Callbacks */
   SocketHTTPServer_Handler handler;
   void *handler_userdata;
   SocketHTTPServer_Validator validator;
@@ -263,80 +228,51 @@ struct SocketHTTPServer
   SocketHTTPServer_ErrorHandler error_handler;
   void *error_handler_userdata;
 
-  /* Middleware chain */
   MiddlewareEntry *middleware_chain;
 
-  /* Connections */
   ServerConnection *connections;
   size_t connection_count;
 
-  /* Rate limiting */
   RateLimitEntry *rate_limiters;
   SocketRateLimit_T global_rate_limiter;
 
-  /* Static file serving */
   StaticRoute *static_routes;
 
-  /* Per-client limiting */
   SocketIPTracker_T ip_tracker;
 
-  /* Graceful shutdown */
   volatile int state;
   int64_t drain_start_ms;
   int drain_timeout_ms;
 
-  /* Per-server stats tracking for RPS calculation */
   uint64_t stats_prev_requests;
   int64_t stats_prev_time_ms;
   pthread_mutex_t stats_mutex;
 
-  /* Per-server metrics (optional, enabled via config.per_server_metrics) */
   SocketHTTPServer_InstanceMetrics instance_metrics;
 
   int running;
   Arena_T arena;
 };
 
-/* ============================================================================
- * Error Handling Macros
- * ============================================================================
- */
-
 #define HTTPSERVER_ERROR_FMT(fmt, ...) SOCKET_ERROR_FMT (fmt, ##__VA_ARGS__)
 #define HTTPSERVER_ERROR_MSG(fmt, ...) SOCKET_ERROR_MSG (fmt, ##__VA_ARGS__)
 #define RAISE_HTTPSERVER_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketHTTPServer, e)
-
-/* ============================================================================
- * Connection Helper Functions (implemented in SocketHTTPServer-connections.c)
- * ============================================================================
- */
 
 void connection_send_error (SocketHTTPServer_T server,
                             ServerConnection *conn,
                             int status_code,
                             const char *reason);
-
 int connection_send_data (SocketHTTPServer_T server,
                           ServerConnection *conn,
                           const void *data,
                           size_t len);
-
 void connection_send_response (SocketHTTPServer_T server,
                                ServerConnection *conn);
-
 void connection_finish_request (SocketHTTPServer_T server,
                                 ServerConnection *conn);
-
 int connection_read (SocketHTTPServer_T server, ServerConnection *conn);
-
 int connection_parse_request (SocketHTTPServer_T server, ServerConnection *conn);
-
 void connection_close (SocketHTTPServer_T server, ServerConnection *conn);
-
-/* ============================================================================
- * Early Validator Support (implemented in SocketHTTPServer.c)
- * ============================================================================
- */
 
 int server_run_validator_early (SocketHTTPServer_T server,
                                 ServerConnection *conn);
