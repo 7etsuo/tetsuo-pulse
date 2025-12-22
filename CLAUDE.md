@@ -189,6 +189,19 @@ HTTP modules require Foundation + Core I/O + Security (optional)
 - Include guards use `_INCLUDED` suffix: `#ifndef SOCKET_INCLUDED`
 - Doxygen-style comments for public APIs
 
+## Automated Hooks
+
+The project uses Claude Code hooks (`.claude/settings.json`) that run automatically:
+
+| Hook | Trigger | Action |
+|------|---------|--------|
+| `git-safety-check.sh` | Before `git` commands | Blocks commits to main, force push to main |
+| `pre-commit-sanitizer.sh` | Before `git commit` | Runs full test suite with ASan/UBSan |
+| `volatile-check.sh` | After C file edits | Warns about exception safety issues |
+| `build-check.sh` | After C file edits | Quick syntax check with gcc |
+
+These hooks enforce the git workflow and catch common issues early.
+
 ## Testing
 
 All PRs must pass with sanitizers enabled:
@@ -196,15 +209,28 @@ All PRs must pass with sanitizers enabled:
 cmake -B build -DENABLE_SANITIZERS=ON
 cmake --build build -j
 cd build && ASAN_OPTIONS=detect_leaks=1:abort_on_error=1 ctest --output-on-failure
+
+# Run a single test by name
+cd build && ./test_socket
+
+# Run with verbose output
+cd build && ctest -V -R test_socket
+
+# List all available tests
+cd build && ctest -N
 ```
 
-Key test files map to modules:
-- `test_socket` - TCP socket operations
-- `test_socketdgram` - UDP sockets
-- `test_socketpool` - Connection pooling
-- `test_tls_integration` - TLS/SSL (when TLS enabled)
-- `test_http2` - HTTP/2 protocol
-- `test_websocket` - WebSocket (RFC 6455)
+Test files are in `src/test/` and map to modules:
+- `test_socket.c` - TCP socket operations
+- `test_socketdgram.c` - UDP sockets
+- `test_socketpool.c` - Connection pooling
+- `test_tls_*.c` - TLS/SSL tests (integration, handshake, pinning, CRL, OCSP, kTLS, etc.)
+- `test_dtls_*.c` - DTLS tests (basic, cookie exchange, MTU, integration)
+- `test_http*.c` - HTTP/1.1 parser, HTTP/2, HPACK, client, server
+- `test_websocket*.c` - WebSocket (RFC 6455), WebSocket-over-HTTP/2
+- `test_proxy*.c` - SOCKS4/5, HTTP CONNECT proxy
+- `test_except.c` - Exception handling framework
+- `test_arena.c` - Memory arena management
 
 ## Thread Safety
 
