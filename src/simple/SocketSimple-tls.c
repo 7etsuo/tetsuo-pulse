@@ -318,6 +318,94 @@ Socket_simple_get_cert_cn (SocketSimple_Socket_T sock, char *buf, size_t len)
 }
 
 /* ============================================================================
+ * TLS Cipher Information
+ * ============================================================================
+ */
+
+const char *
+Socket_simple_get_cipher (SocketSimple_Socket_T sock)
+{
+  if (!sock || !sock->socket || !sock->is_tls)
+    {
+      return NULL;
+    }
+  return SocketTLS_get_cipher (sock->socket);
+}
+
+/* ============================================================================
+ * TLS Session Resumption
+ * ============================================================================
+ */
+
+int
+Socket_simple_is_session_reused (SocketSimple_Socket_T sock)
+{
+  if (!sock || !sock->socket || !sock->is_tls)
+    {
+      return -1;
+    }
+  return SocketTLS_is_session_reused (sock->socket);
+}
+
+int
+Socket_simple_session_save (SocketSimple_Socket_T sock, unsigned char *buf,
+                            size_t *len)
+{
+  Socket_simple_clear_error ();
+
+  if (!sock || !len)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
+      return -1;
+    }
+
+  if (!sock->socket || !sock->is_tls)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_TLS, "TLS not enabled");
+      return -1;
+    }
+
+  int ret = SocketTLS_session_save (sock->socket, buf, len);
+  if (ret == -1)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_TLS,
+                        "No session available or handshake incomplete");
+    }
+  return ret;
+}
+
+int
+Socket_simple_session_restore (SocketSimple_Socket_T sock,
+                               const unsigned char *buf, size_t len)
+{
+  Socket_simple_clear_error ();
+
+  if (!sock || !buf || len == 0)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
+      return -1;
+    }
+
+  if (!sock->socket || !sock->is_tls)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_TLS, "TLS not enabled");
+      return -1;
+    }
+
+  int ret = SocketTLS_session_restore (sock->socket, buf, len);
+  if (ret == -1)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_TLS,
+                        "Failed to restore session (handshake already done?)");
+    }
+  else if (ret == 0)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_TLS, "Session expired or invalid");
+    }
+  return ret;
+}
+
+/* ============================================================================
  * TLS Server Functions
  * ============================================================================
  */
@@ -573,6 +661,42 @@ Socket_simple_get_cert_info (SocketSimple_Socket_T sock, char *buf, size_t len)
 
 int
 Socket_simple_get_cert_cn (SocketSimple_Socket_T sock, char *buf, size_t len)
+{
+  (void)sock;
+  (void)buf;
+  (void)len;
+  simple_set_error (SOCKET_SIMPLE_ERR_UNSUPPORTED, "TLS not enabled in build");
+  return -1;
+}
+
+const char *
+Socket_simple_get_cipher (SocketSimple_Socket_T sock)
+{
+  (void)sock;
+  return NULL;
+}
+
+int
+Socket_simple_is_session_reused (SocketSimple_Socket_T sock)
+{
+  (void)sock;
+  return -1;
+}
+
+int
+Socket_simple_session_save (SocketSimple_Socket_T sock, unsigned char *buf,
+                            size_t *len)
+{
+  (void)sock;
+  (void)buf;
+  (void)len;
+  simple_set_error (SOCKET_SIMPLE_ERR_UNSUPPORTED, "TLS not enabled in build");
+  return -1;
+}
+
+int
+Socket_simple_session_restore (SocketSimple_Socket_T sock,
+                               const unsigned char *buf, size_t len)
 {
   (void)sock;
   (void)buf;

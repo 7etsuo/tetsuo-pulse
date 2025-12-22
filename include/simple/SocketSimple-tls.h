@@ -190,6 +190,72 @@ extern int Socket_simple_get_cert_cn(SocketSimple_Socket_T sock,
                                       char *buf,
                                       size_t len);
 
+/*============================================================================
+ * TLS Cipher Information
+ *============================================================================*/
+
+/**
+ * @brief Get negotiated cipher suite name.
+ *
+ * @param sock TLS socket handle.
+ * @return Cipher name string (e.g., "TLS_AES_256_GCM_SHA384"), or NULL on error.
+ */
+extern const char *Socket_simple_get_cipher(SocketSimple_Socket_T sock);
+
+/*============================================================================
+ * TLS Session Resumption
+ *============================================================================*/
+
+/**
+ * @brief Check if TLS session was reused (abbreviated handshake).
+ *
+ * @param sock TLS socket handle after handshake.
+ * @return 1 if session was reused, 0 if full handshake, -1 on error.
+ */
+extern int Socket_simple_is_session_reused(SocketSimple_Socket_T sock);
+
+/**
+ * @brief Export TLS session for later resumption.
+ *
+ * Exports the current TLS session in DER format. This can be saved and
+ * restored later for abbreviated handshakes.
+ *
+ * @param sock TLS socket after successful handshake.
+ * @param buf Output buffer (NULL to query required size).
+ * @param len On input: buffer size. On output: actual/required size.
+ * @return 1 on success, 0 if buffer too small, -1 on error.
+ *
+ * Example:
+ * @code
+ * // Query required size
+ * size_t len = 0;
+ * Socket_simple_session_save(sock, NULL, &len);
+ *
+ * // Allocate and save
+ * unsigned char *session = malloc(len);
+ * if (Socket_simple_session_save(sock, session, &len) == 1) {
+ *     // Store session for later use
+ * }
+ * @endcode
+ */
+extern int Socket_simple_session_save(SocketSimple_Socket_T sock,
+                                       unsigned char *buf,
+                                       size_t *len);
+
+/**
+ * @brief Restore TLS session for resumption.
+ *
+ * Must be called after Socket_simple_enable_tls() but BEFORE handshake.
+ *
+ * @param sock TLS socket with TLS enabled, before handshake.
+ * @param buf Previously saved session data.
+ * @param len Session data length.
+ * @return 1 on success, 0 if session invalid/expired, -1 on error.
+ */
+extern int Socket_simple_session_restore(SocketSimple_Socket_T sock,
+                                          const unsigned char *buf,
+                                          size_t len);
+
 #ifdef __cplusplus
 }
 #endif

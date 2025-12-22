@@ -310,6 +310,7 @@ set(LIB_SOURCES
     src/simple/SocketSimple.c
     src/simple/SocketSimple-tcp.c
     src/simple/SocketSimple-tls.c
+    src/simple/SocketSimple-dtls.c
     src/simple/SocketSimple-dns.c
     src/simple/SocketSimple-http.c
     src/simple/SocketSimple-ws.c
