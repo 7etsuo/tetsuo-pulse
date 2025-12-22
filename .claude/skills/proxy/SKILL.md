@@ -401,6 +401,7 @@ const char *socks5_strerror(uint8_t code) {
 |------|---------|
 | `include/socket/SocketProxy.h` | Proxy API |
 | `src/socket/SocketProxy.c` | Main implementation |
-| `src/socket/SocketProxy-socks.c` | SOCKS4/5 protocols |
+| `src/socket/SocketProxy-socks4.c` | SOCKS4/4a protocol |
+| `src/socket/SocketProxy-socks5.c` | SOCKS5 protocol |
 | `src/socket/SocketProxy-http.c` | HTTP CONNECT |
 | `src/test/test_proxy.c` | Proxy tests |

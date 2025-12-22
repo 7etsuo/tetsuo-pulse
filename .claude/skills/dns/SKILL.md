@@ -272,6 +272,5 @@ TRY {
 |------|---------|
 | `include/dns/SocketDNS.h` | DNS resolver API |
 | `src/dns/SocketDNS.c` | Main implementation |
-| `src/dns/SocketDNS-cache.c` | DNS caching |
-| `src/dns/SocketDNS-pool.c` | Thread pool |
-| `src/test/test_dns.c` | DNS tests |
+| `src/dns/SocketDNS-internal.c` | Internal helpers |
+| `src/test/test_socketdns.c` | DNS tests |

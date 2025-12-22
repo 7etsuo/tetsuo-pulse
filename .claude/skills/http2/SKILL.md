@@ -188,8 +188,10 @@ if (stream->send_window > MAX_WINDOW_SIZE) {
 |------|---------|
 | `include/http/SocketHTTP2.h` | HTTP/2 API |
 | `include/http/SocketHPACK.h` | HPACK API |
-| `src/http/SocketHTTP2-frames.c` | Frame processing |
-| `src/http/SocketHTTP2-streams.c` | Stream state machine |
+| `src/http/SocketHTTP2-frame.c` | Frame processing |
+| `src/http/SocketHTTP2-stream.c` | Stream state machine |
+| `src/http/SocketHTTP2-connection.c` | Connection management |
+| `src/http/SocketHTTP2-flow.c` | Flow control |
 | `src/http/SocketHPACK.c` | Header compression |
 | `src/http/SocketHPACK-huffman.c` | Huffman codec |
 | `src/test/test_http2.c` | Test patterns |
