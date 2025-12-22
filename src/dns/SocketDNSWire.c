@@ -873,3 +873,107 @@ SocketDNS_rdata_parse_cname (const unsigned char *msg, size_t msglen,
   return SocketDNS_name_decode (msg, msglen, rdata_offset, cname, cnamelen,
                                 NULL);
 }
+
+/*
+ * SOA RDATA Parsing (RFC 1035 Section 3.3.13)
+ *
+ * SOA Record (Start of Authority):
+ *   MNAME   - domain name of primary nameserver
+ *   RNAME   - domain name of responsible person mailbox
+ *   SERIAL  - 32-bit zone version number
+ *   REFRESH - 32-bit refresh interval (seconds)
+ *   RETRY   - 32-bit retry interval (seconds)
+ *   EXPIRE  - 32-bit expire time (seconds)
+ *   MINIMUM - 32-bit negative cache TTL (seconds)
+ *
+ * Both MNAME and RNAME may use compression pointers, requiring
+ * full message context for resolution.
+ */
+
+int
+SocketDNS_rdata_parse_soa (const unsigned char *msg, size_t msglen,
+                           const SocketDNS_RR *rr, SocketDNS_SOA *soa)
+{
+  size_t rdata_offset;
+  size_t offset;
+  size_t consumed;
+  int name_len;
+
+  if (!msg || !rr || !soa)
+    return -1;
+
+  /* Validate RR type */
+  if (rr->type != DNS_TYPE_SOA)
+    return -1;
+
+  /* RDATA must be present and non-empty */
+  if (!rr->rdata || rr->rdlength == 0)
+    return -1;
+
+  /* Calculate offset of RDATA within message */
+  rdata_offset = (size_t)(rr->rdata - msg);
+
+  /* Validate offset is within message bounds */
+  if (rdata_offset >= msglen || rdata_offset + rr->rdlength > msglen)
+    return -1;
+
+  offset = rdata_offset;
+
+  /* Decode MNAME (primary nameserver) */
+  name_len = SocketDNS_name_decode (msg, msglen, offset, soa->mname,
+                                    sizeof (soa->mname), &consumed);
+  if (name_len < 0)
+    return -1;
+  offset += consumed;
+
+  /* Decode RNAME (responsible person mailbox) */
+  name_len = SocketDNS_name_decode (msg, msglen, offset, soa->rname,
+                                    sizeof (soa->rname), &consumed);
+  if (name_len < 0)
+    return -1;
+  offset += consumed;
+
+  /* Verify enough bytes remain for fixed fields (20 bytes) */
+  if (offset + DNS_SOA_FIXED_SIZE > rdata_offset + rr->rdlength)
+    return -1;
+
+  /* Also verify we don't read past message end */
+  if (offset + DNS_SOA_FIXED_SIZE > msglen)
+    return -1;
+
+  /* Extract SERIAL (32-bit, network byte order) */
+  soa->serial = ((uint32_t)msg[offset] << 24) |
+                ((uint32_t)msg[offset + 1] << 16) |
+                ((uint32_t)msg[offset + 2] << 8) |
+                ((uint32_t)msg[offset + 3]);
+  offset += 4;
+
+  /* Extract REFRESH (32-bit, network byte order) */
+  soa->refresh = ((uint32_t)msg[offset] << 24) |
+                 ((uint32_t)msg[offset + 1] << 16) |
+                 ((uint32_t)msg[offset + 2] << 8) |
+                 ((uint32_t)msg[offset + 3]);
+  offset += 4;
+
+  /* Extract RETRY (32-bit, network byte order) */
+  soa->retry = ((uint32_t)msg[offset] << 24) |
+               ((uint32_t)msg[offset + 1] << 16) |
+               ((uint32_t)msg[offset + 2] << 8) |
+               ((uint32_t)msg[offset + 3]);
+  offset += 4;
+
+  /* Extract EXPIRE (32-bit, network byte order) */
+  soa->expire = ((uint32_t)msg[offset] << 24) |
+                ((uint32_t)msg[offset + 1] << 16) |
+                ((uint32_t)msg[offset + 2] << 8) |
+                ((uint32_t)msg[offset + 3]);
+  offset += 4;
+
+  /* Extract MINIMUM (32-bit, network byte order) */
+  soa->minimum = ((uint32_t)msg[offset] << 24) |
+                 ((uint32_t)msg[offset + 1] << 16) |
+                 ((uint32_t)msg[offset + 2] << 8) |
+                 ((uint32_t)msg[offset + 3]);
+
+  return 0;
+}

@@ -1949,6 +1949,622 @@ TEST (dns_rdata_parse_cname_subdomain)
   ASSERT (strcmp (cname, "redirect.cdn.cloudflare.net") == 0);
 }
 
+/*
+ * SOA RDATA Parsing Tests (RFC 1035 Section 3.3.13)
+ */
+
+/* Test parsing valid SOA record with all fields */
+TEST (dns_rdata_parse_soa_valid)
+{
+  unsigned char msg[256];
+  SocketDNS_RR rr;
+  SocketDNS_SOA soa;
+  size_t offset = 0;
+
+  /* Build minimal header */
+  memset (msg, 0, 12);
+  offset = 12;
+
+  /* "example.com" at offset 12 */
+  msg[offset++] = 7;
+  memcpy (msg + offset, "example", 7); offset += 7;
+  msg[offset++] = 3;
+  memcpy (msg + offset, "com", 3); offset += 3;
+  msg[offset++] = 0;
+
+  /* SOA RR */
+  size_t rr_start = offset;
+  msg[offset++] = 0xC0;
+  msg[offset++] = 12;  /* Name pointer to example.com */
+  msg[offset++] = 0; msg[offset++] = 6;   /* TYPE = SOA */
+  msg[offset++] = 0; msg[offset++] = 1;   /* CLASS = IN */
+  msg[offset++] = 0; msg[offset++] = 0;
+  msg[offset++] = 0x0E; msg[offset++] = 0x10; /* TTL = 3600 */
+
+  /* RDLENGTH - calculated after building RDATA */
+  size_t rdlen_offset = offset;
+  msg[offset++] = 0; msg[offset++] = 0; /* placeholder */
+
+  size_t rdata_start = offset;
+
+  /* MNAME: "ns1.example.com" */
+  msg[offset++] = 3;
+  memcpy (msg + offset, "ns1", 3); offset += 3;
+  msg[offset++] = 0xC0;
+  msg[offset++] = 12; /* pointer to example.com */
+
+  /* RNAME: "hostmaster.example.com" */
+  msg[offset++] = 10;
+  memcpy (msg + offset, "hostmaster", 10); offset += 10;
+  msg[offset++] = 0xC0;
+  msg[offset++] = 12; /* pointer to example.com */
+
+  /* SERIAL = 2024010101 (0x78A3F175) */
+  msg[offset++] = 0x78;
+  msg[offset++] = 0xA3;
+  msg[offset++] = 0xF1;
+  msg[offset++] = 0x75;
+
+  /* REFRESH = 7200 (0x1C20) */
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x1C;
+  msg[offset++] = 0x20;
+
+  /* RETRY = 1800 (0x0708) */
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x07;
+  msg[offset++] = 0x08;
+
+  /* EXPIRE = 604800 (0x00093A80) */
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x09;
+  msg[offset++] = 0x3A;
+  msg[offset++] = 0x80;
+
+  /* MINIMUM = 86400 (0x00015180) */
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x01;
+  msg[offset++] = 0x51;
+  msg[offset++] = 0x80;
+
+  /* Fill in RDLENGTH */
+  size_t rdlen = offset - rdata_start;
+  msg[rdlen_offset] = (rdlen >> 8) & 0xFF;
+  msg[rdlen_offset + 1] = rdlen & 0xFF;
+
+  ASSERT_EQ (SocketDNS_rr_decode (msg, offset, rr_start, &rr, NULL), 0);
+  ASSERT_EQ (rr.type, DNS_TYPE_SOA);
+
+  ASSERT_EQ (SocketDNS_rdata_parse_soa (msg, offset, &rr, &soa), 0);
+  ASSERT (strcmp (soa.mname, "ns1.example.com") == 0);
+  ASSERT (strcmp (soa.rname, "hostmaster.example.com") == 0);
+  ASSERT_EQ (soa.serial, 2024010101U);
+  ASSERT_EQ (soa.refresh, 7200U);
+  ASSERT_EQ (soa.retry, 1800U);
+  ASSERT_EQ (soa.expire, 604800U);
+  ASSERT_EQ (soa.minimum, 86400U);
+}
+
+/* Test SOA with compressed MNAME */
+TEST (dns_rdata_parse_soa_compressed_mname)
+{
+  unsigned char msg[256];
+  SocketDNS_RR rr;
+  SocketDNS_SOA soa;
+  size_t offset = 0;
+
+  memset (msg, 0, 12);
+  offset = 12;
+
+  /* "dns.google" at offset 12 */
+  msg[offset++] = 3;
+  memcpy (msg + offset, "dns", 3); offset += 3;
+  msg[offset++] = 6;
+  memcpy (msg + offset, "google", 6); offset += 6;
+  msg[offset++] = 0;
+
+  /* SOA RR */
+  size_t rr_start = offset;
+  msg[offset++] = 0xC0;
+  msg[offset++] = 12;
+  msg[offset++] = 0; msg[offset++] = 6;   /* TYPE = SOA */
+  msg[offset++] = 0; msg[offset++] = 1;   /* CLASS = IN */
+  msg[offset++] = 0; msg[offset++] = 0;
+  msg[offset++] = 0; msg[offset++] = 60;  /* TTL = 60 */
+
+  size_t rdlen_offset = offset;
+  msg[offset++] = 0; msg[offset++] = 0;
+
+  size_t rdata_start = offset;
+
+  /* MNAME: pointer to dns.google (offset 12) */
+  msg[offset++] = 0xC0;
+  msg[offset++] = 12;
+
+  /* RNAME: "admin.google" (uncompressed) */
+  msg[offset++] = 5;
+  memcpy (msg + offset, "admin", 5); offset += 5;
+  msg[offset++] = 6;
+  memcpy (msg + offset, "google", 6); offset += 6;
+  msg[offset++] = 0;
+
+  /* Fixed fields (20 bytes) */
+  msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x01; /* SERIAL */
+  msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x03; msg[offset++] = 0x84; /* REFRESH */
+  msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x3C; /* RETRY */
+  msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x07; msg[offset++] = 0x08; /* EXPIRE */
+  msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x3C; /* MINIMUM */
+
+  size_t rdlen = offset - rdata_start;
+  msg[rdlen_offset] = (rdlen >> 8) & 0xFF;
+  msg[rdlen_offset + 1] = rdlen & 0xFF;
+
+  ASSERT_EQ (SocketDNS_rr_decode (msg, offset, rr_start, &rr, NULL), 0);
+  ASSERT_EQ (SocketDNS_rdata_parse_soa (msg, offset, &rr, &soa), 0);
+  ASSERT (strcmp (soa.mname, "dns.google") == 0);
+  ASSERT (strcmp (soa.rname, "admin.google") == 0);
+}
+
+/* Test SOA with compressed RNAME */
+TEST (dns_rdata_parse_soa_compressed_rname)
+{
+  unsigned char msg[256];
+  SocketDNS_RR rr;
+  SocketDNS_SOA soa;
+  size_t offset = 0;
+
+  memset (msg, 0, 12);
+  offset = 12;
+
+  /* "example.org" at offset 12 */
+  msg[offset++] = 7;
+  memcpy (msg + offset, "example", 7); offset += 7;
+  msg[offset++] = 3;
+  memcpy (msg + offset, "org", 3); offset += 3;
+  msg[offset++] = 0;
+
+  /* SOA RR */
+  size_t rr_start = offset;
+  msg[offset++] = 0xC0;
+  msg[offset++] = 12;
+  msg[offset++] = 0; msg[offset++] = 6;   /* TYPE = SOA */
+  msg[offset++] = 0; msg[offset++] = 1;   /* CLASS = IN */
+  msg[offset++] = 0; msg[offset++] = 0;
+  msg[offset++] = 0; msg[offset++] = 120; /* TTL */
+
+  size_t rdlen_offset = offset;
+  msg[offset++] = 0; msg[offset++] = 0;
+
+  size_t rdata_start = offset;
+
+  /* MNAME: "ns.example.org" (uncompressed) */
+  msg[offset++] = 2;
+  memcpy (msg + offset, "ns", 2); offset += 2;
+  msg[offset++] = 7;
+  memcpy (msg + offset, "example", 7); offset += 7;
+  msg[offset++] = 3;
+  memcpy (msg + offset, "org", 3); offset += 3;
+  msg[offset++] = 0;
+
+  /* RNAME: "admin" + pointer to example.org */
+  msg[offset++] = 5;
+  memcpy (msg + offset, "admin", 5); offset += 5;
+  msg[offset++] = 0xC0;
+  msg[offset++] = 12;
+
+  /* Fixed fields */
+  msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x64; /* SERIAL = 100 */
+  msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x01; msg[offset++] = 0x2C; /* REFRESH = 300 */
+  msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x64; /* RETRY = 100 */
+  msg[offset++] = 0x00; msg[offset++] = 0x01; msg[offset++] = 0x51; msg[offset++] = 0x80; /* EXPIRE = 86400 */
+  msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x01; msg[offset++] = 0x2C; /* MINIMUM = 300 */
+
+  size_t rdlen = offset - rdata_start;
+  msg[rdlen_offset] = (rdlen >> 8) & 0xFF;
+  msg[rdlen_offset + 1] = rdlen & 0xFF;
+
+  ASSERT_EQ (SocketDNS_rr_decode (msg, offset, rr_start, &rr, NULL), 0);
+  ASSERT_EQ (SocketDNS_rdata_parse_soa (msg, offset, &rr, &soa), 0);
+  ASSERT (strcmp (soa.mname, "ns.example.org") == 0);
+  ASSERT (strcmp (soa.rname, "admin.example.org") == 0);
+  ASSERT_EQ (soa.serial, 100U);
+  ASSERT_EQ (soa.minimum, 300U);
+}
+
+/* Test SOA with both MNAME and RNAME compressed */
+TEST (dns_rdata_parse_soa_both_compressed)
+{
+  unsigned char msg[128];
+  SocketDNS_RR rr;
+  SocketDNS_SOA soa;
+  size_t offset = 0;
+
+  memset (msg, 0, 12);
+  offset = 12;
+
+  /* "test.net" at offset 12 */
+  msg[offset++] = 4;
+  memcpy (msg + offset, "test", 4); offset += 4;
+  msg[offset++] = 3;
+  memcpy (msg + offset, "net", 3); offset += 3;
+  msg[offset++] = 0;
+
+  /* SOA RR */
+  size_t rr_start = offset;
+  msg[offset++] = 0xC0;
+  msg[offset++] = 12;
+  msg[offset++] = 0; msg[offset++] = 6;
+  msg[offset++] = 0; msg[offset++] = 1;
+  msg[offset++] = 0; msg[offset++] = 0;
+  msg[offset++] = 0; msg[offset++] = 0;
+
+  size_t rdlen_offset = offset;
+  msg[offset++] = 0; msg[offset++] = 0;
+
+  size_t rdata_start = offset;
+
+  /* MNAME: pointer to test.net */
+  msg[offset++] = 0xC0;
+  msg[offset++] = 12;
+
+  /* RNAME: pointer to test.net */
+  msg[offset++] = 0xC0;
+  msg[offset++] = 12;
+
+  /* Fixed fields */
+  msg[offset++] = 0x12; msg[offset++] = 0x34; msg[offset++] = 0x56; msg[offset++] = 0x78;
+  msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x01;
+  msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x02;
+  msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x03;
+  msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x00; msg[offset++] = 0x04;
+
+  size_t rdlen = offset - rdata_start;
+  msg[rdlen_offset] = (rdlen >> 8) & 0xFF;
+  msg[rdlen_offset + 1] = rdlen & 0xFF;
+
+  ASSERT_EQ (SocketDNS_rr_decode (msg, offset, rr_start, &rr, NULL), 0);
+  ASSERT_EQ (SocketDNS_rdata_parse_soa (msg, offset, &rr, &soa), 0);
+  ASSERT (strcmp (soa.mname, "test.net") == 0);
+  ASSERT (strcmp (soa.rname, "test.net") == 0);
+  ASSERT_EQ (soa.serial, 0x12345678U);
+  ASSERT_EQ (soa.refresh, 1U);
+  ASSERT_EQ (soa.retry, 2U);
+  ASSERT_EQ (soa.expire, 3U);
+  ASSERT_EQ (soa.minimum, 4U);
+}
+
+/* Test SOA parsing rejects wrong RR type */
+TEST (dns_rdata_parse_soa_wrong_type)
+{
+  SocketDNS_RR rr;
+  SocketDNS_SOA soa;
+  unsigned char msg[64];
+
+  memset (msg, 0, sizeof (msg));
+  memset (&rr, 0, sizeof (rr));
+
+  rr.type = DNS_TYPE_A;  /* Wrong type */
+  rr.rclass = DNS_CLASS_IN;
+  rr.rdlength = 40;
+  rr.rdata = msg + 12;
+
+  ASSERT_EQ (SocketDNS_rdata_parse_soa (msg, sizeof (msg), &rr, &soa), -1);
+
+  rr.type = DNS_TYPE_CNAME;
+  ASSERT_EQ (SocketDNS_rdata_parse_soa (msg, sizeof (msg), &rr, &soa), -1);
+}
+
+/* Test SOA parsing handles NULL parameters */
+TEST (dns_rdata_parse_soa_null_handling)
+{
+  unsigned char msg[64];
+  SocketDNS_RR rr;
+  SocketDNS_SOA soa;
+
+  memset (msg, 0, sizeof (msg));
+  memset (&rr, 0, sizeof (rr));
+  rr.type = DNS_TYPE_SOA;
+  rr.rdlength = 40;
+  rr.rdata = msg + 12;
+
+  /* NULL msg */
+  ASSERT_EQ (SocketDNS_rdata_parse_soa (NULL, sizeof (msg), &rr, &soa), -1);
+
+  /* NULL rr */
+  ASSERT_EQ (SocketDNS_rdata_parse_soa (msg, sizeof (msg), NULL, &soa), -1);
+
+  /* NULL soa */
+  ASSERT_EQ (SocketDNS_rdata_parse_soa (msg, sizeof (msg), &rr, NULL), -1);
+}
+
+/* Test SOA parsing handles truncated fixed fields */
+TEST (dns_rdata_parse_soa_truncated_fixed)
+{
+  unsigned char msg[128];
+  SocketDNS_RR rr;
+  SocketDNS_SOA soa;
+  size_t offset = 0;
+
+  memset (msg, 0, 12);
+  offset = 12;
+
+  /* "a.b" at offset 12 */
+  msg[offset++] = 1;
+  msg[offset++] = 'a';
+  msg[offset++] = 1;
+  msg[offset++] = 'b';
+  msg[offset++] = 0;
+
+  /* SOA RR */
+  size_t rr_start = offset;
+  msg[offset++] = 0xC0;
+  msg[offset++] = 12;
+  msg[offset++] = 0; msg[offset++] = 6;
+  msg[offset++] = 0; msg[offset++] = 1;
+  msg[offset++] = 0; msg[offset++] = 0;
+  msg[offset++] = 0; msg[offset++] = 0;
+
+  /* RDLENGTH = 10 (only enough for 2 pointers + partial fixed fields) */
+  msg[offset++] = 0; msg[offset++] = 10;
+
+  size_t rdata_start = offset;
+  msg[offset++] = 0xC0; msg[offset++] = 12;  /* MNAME pointer */
+  msg[offset++] = 0xC0; msg[offset++] = 12;  /* RNAME pointer */
+  /* Only 6 bytes of fixed fields (need 20) */
+  msg[offset++] = 0x00; msg[offset++] = 0x00;
+  msg[offset++] = 0x00; msg[offset++] = 0x01;
+  msg[offset++] = 0x00; msg[offset++] = 0x00;
+
+  ASSERT_EQ (SocketDNS_rr_decode (msg, offset, rr_start, &rr, NULL), 0);
+  ASSERT_EQ (rr.type, DNS_TYPE_SOA);
+
+  /* Should fail - not enough bytes for fixed fields */
+  ASSERT_EQ (SocketDNS_rdata_parse_soa (msg, offset, &rr, &soa), -1);
+}
+
+/* Test SOA parsing handles empty RDATA */
+TEST (dns_rdata_parse_soa_empty_rdata)
+{
+  SocketDNS_RR rr;
+  SocketDNS_SOA soa;
+  unsigned char msg[64];
+
+  memset (msg, 0, sizeof (msg));
+  memset (&rr, 0, sizeof (rr));
+
+  rr.type = DNS_TYPE_SOA;
+  rr.rclass = DNS_CLASS_IN;
+  rr.rdlength = 0;
+  rr.rdata = msg + 12;
+
+  ASSERT_EQ (SocketDNS_rdata_parse_soa (msg, sizeof (msg), &rr, &soa), -1);
+
+  /* NULL rdata */
+  rr.rdlength = 40;
+  rr.rdata = NULL;
+  ASSERT_EQ (SocketDNS_rdata_parse_soa (msg, sizeof (msg), &rr, &soa), -1);
+}
+
+/* Test SOA full integration: header -> question -> RR -> SOA */
+TEST (dns_rdata_parse_soa_integration)
+{
+  unsigned char msg[256];
+  SocketDNS_Header header;
+  SocketDNS_Question question;
+  SocketDNS_RR rr;
+  SocketDNS_SOA soa;
+  size_t offset = 0;
+  size_t consumed;
+
+  /* Build header */
+  memset (&header, 0, sizeof (header));
+  header.id = 0xABCD;
+  header.qr = 1;
+  header.aa = 1;
+  header.rd = 1;
+  header.ra = 1;
+  header.qdcount = 1;
+  header.ancount = 1;
+
+  ASSERT_EQ (SocketDNS_header_encode (&header, msg, sizeof (msg)), 0);
+  offset = DNS_HEADER_SIZE;
+
+  /* Build question for "example.net" SOA */
+  SocketDNS_question_init (&question, "example.net", DNS_TYPE_SOA);
+  size_t qwritten;
+  ASSERT_EQ (SocketDNS_question_encode (&question, msg + offset, sizeof (msg) - offset, &qwritten), 0);
+  size_t name_offset = offset; /* Remember where name starts for compression */
+  offset += qwritten;
+
+  /* Build SOA answer RR */
+  size_t rr_start = offset;
+
+  /* Name: pointer to question */
+  msg[offset++] = 0xC0;
+  msg[offset++] = (unsigned char)name_offset;
+
+  /* TYPE = SOA (6) */
+  msg[offset++] = 0;
+  msg[offset++] = 6;
+
+  /* CLASS = IN (1) */
+  msg[offset++] = 0;
+  msg[offset++] = 1;
+
+  /* TTL = 3600 */
+  msg[offset++] = 0;
+  msg[offset++] = 0;
+  msg[offset++] = 0x0E;
+  msg[offset++] = 0x10;
+
+  /* RDLENGTH placeholder */
+  size_t rdlen_offset = offset;
+  msg[offset++] = 0;
+  msg[offset++] = 0;
+
+  size_t rdata_start = offset;
+
+  /* MNAME: "ns1" + pointer to example.net */
+  msg[offset++] = 3;
+  memcpy (msg + offset, "ns1", 3);
+  offset += 3;
+  msg[offset++] = 0xC0;
+  msg[offset++] = (unsigned char)name_offset;
+
+  /* RNAME: "dns-admin" + pointer to example.net */
+  msg[offset++] = 9;
+  memcpy (msg + offset, "dns-admin", 9);
+  offset += 9;
+  msg[offset++] = 0xC0;
+  msg[offset++] = (unsigned char)name_offset;
+
+  /* SERIAL = 2025122201 (0x78B4E999) */
+  msg[offset++] = 0x78;
+  msg[offset++] = 0xB4;
+  msg[offset++] = 0xE9;
+  msg[offset++] = 0x99;
+
+  /* REFRESH = 10800 (0x2A30) */
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x2A;
+  msg[offset++] = 0x30;
+
+  /* RETRY = 3600 (0x0E10) */
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x0E;
+  msg[offset++] = 0x10;
+
+  /* EXPIRE = 1209600 (0x00127500) */
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x12;
+  msg[offset++] = 0x75;
+  msg[offset++] = 0x00;
+
+  /* MINIMUM = 300 (0x012C) */
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x01;
+  msg[offset++] = 0x2C;
+
+  /* Fill in RDLENGTH */
+  size_t rdlen = offset - rdata_start;
+  msg[rdlen_offset] = (rdlen >> 8) & 0xFF;
+  msg[rdlen_offset + 1] = rdlen & 0xFF;
+
+  /* Decode and verify header */
+  SocketDNS_Header decoded_header;
+  ASSERT_EQ (SocketDNS_header_decode (msg, offset, &decoded_header), 0);
+  ASSERT_EQ (decoded_header.id, 0xABCD);
+  ASSERT_EQ (decoded_header.qdcount, 1);
+  ASSERT_EQ (decoded_header.ancount, 1);
+
+  /* Decode and verify question */
+  SocketDNS_Question decoded_question;
+  ASSERT_EQ (SocketDNS_question_decode (msg, offset, DNS_HEADER_SIZE, &decoded_question, &consumed), 0);
+  ASSERT (strcmp (decoded_question.qname, "example.net") == 0);
+  ASSERT_EQ (decoded_question.qtype, DNS_TYPE_SOA);
+
+  /* Decode and verify RR */
+  ASSERT_EQ (SocketDNS_rr_decode (msg, offset, rr_start, &rr, &consumed), 0);
+  ASSERT (strcmp (rr.name, "example.net") == 0);
+  ASSERT_EQ (rr.type, DNS_TYPE_SOA);
+  ASSERT_EQ (rr.ttl, 3600U);
+
+  /* Parse and verify SOA */
+  ASSERT_EQ (SocketDNS_rdata_parse_soa (msg, offset, &rr, &soa), 0);
+  ASSERT (strcmp (soa.mname, "ns1.example.net") == 0);
+  ASSERT (strcmp (soa.rname, "dns-admin.example.net") == 0);
+  ASSERT_EQ (soa.serial, 2025122201U);
+  ASSERT_EQ (soa.refresh, 10800U);
+  ASSERT_EQ (soa.retry, 3600U);
+  ASSERT_EQ (soa.expire, 1209600U);
+  ASSERT_EQ (soa.minimum, 300U);
+}
+
+/* Test SOA verifies all 5 integer fields are extracted correctly */
+TEST (dns_rdata_parse_soa_verify_values)
+{
+  unsigned char msg[128];
+  SocketDNS_RR rr;
+  SocketDNS_SOA soa;
+  size_t offset = 0;
+
+  memset (msg, 0, 12);
+  offset = 12;
+
+  /* Root zone "." */
+  msg[offset++] = 0;
+
+  /* SOA RR for root */
+  size_t rr_start = offset;
+  msg[offset++] = 0;  /* Root name */
+  msg[offset++] = 0; msg[offset++] = 6;
+  msg[offset++] = 0; msg[offset++] = 1;
+  msg[offset++] = 0; msg[offset++] = 0;
+  msg[offset++] = 0; msg[offset++] = 0;
+
+  size_t rdlen_offset = offset;
+  msg[offset++] = 0; msg[offset++] = 0;
+
+  size_t rdata_start = offset;
+
+  /* MNAME: "a.root-servers.net" (simplified as just root for test) */
+  msg[offset++] = 0;
+
+  /* RNAME: root */
+  msg[offset++] = 0;
+
+  /* Test boundary values for 32-bit integers */
+
+  /* SERIAL = 0xFFFFFFFF (max uint32) */
+  msg[offset++] = 0xFF;
+  msg[offset++] = 0xFF;
+  msg[offset++] = 0xFF;
+  msg[offset++] = 0xFF;
+
+  /* REFRESH = 0x80000000 (high bit set) */
+  msg[offset++] = 0x80;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+
+  /* RETRY = 0x00000000 (zero) */
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+
+  /* EXPIRE = 0x12345678 */
+  msg[offset++] = 0x12;
+  msg[offset++] = 0x34;
+  msg[offset++] = 0x56;
+  msg[offset++] = 0x78;
+
+  /* MINIMUM = 0x00000001 */
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x00;
+  msg[offset++] = 0x01;
+
+  size_t rdlen = offset - rdata_start;
+  msg[rdlen_offset] = (rdlen >> 8) & 0xFF;
+  msg[rdlen_offset + 1] = rdlen & 0xFF;
+
+  ASSERT_EQ (SocketDNS_rr_decode (msg, offset, rr_start, &rr, NULL), 0);
+  ASSERT_EQ (SocketDNS_rdata_parse_soa (msg, offset, &rr, &soa), 0);
+
+  /* Verify boundary values */
+  ASSERT_EQ (soa.serial, 0xFFFFFFFFU);
+  ASSERT_EQ (soa.refresh, 0x80000000U);
+  ASSERT_EQ (soa.retry, 0x00000000U);
+  ASSERT_EQ (soa.expire, 0x12345678U);
+  ASSERT_EQ (soa.minimum, 0x00000001U);
+}
+
 int
 main (void)
 {
