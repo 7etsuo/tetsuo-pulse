@@ -18,8 +18,8 @@
 #include "dns/SocketDNS.h"
 
 #ifdef __linux__
-#include <resolv.h>
 #include <arpa/inet.h>
+#include <resolv.h>
 #endif
 
 /* Redefine T after all includes (Arena.h and SocketDNS.h both undef T at end)
@@ -31,7 +31,8 @@
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "SocketDNS-internal"
 
-/* Thread-local exception for formatted error messages (per-thread for safety) */
+/* Thread-local exception for formatted error messages (per-thread for safety)
+ */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketDNS);
 
 /* Helper macro for pthread init with cleanup on failure */
@@ -58,7 +59,8 @@ mutex_unlock_cleanup (pthread_mutex_t **mutex)
 #define SCOPED_MUTEX_LOCK(mutex_ptr)                                          \
   pthread_mutex_lock (mutex_ptr);                                             \
   pthread_mutex_t *SOCKET_CONCAT (_scoped_mutex_, __LINE__)                   \
-      __attribute__ ((cleanup (mutex_unlock_cleanup), unused)) = (mutex_ptr)
+      __attribute__ ((cleanup (mutex_unlock_cleanup), unused))                \
+      = (mutex_ptr)
 
 /* Helper for unique variable names */
 #define SOCKET_CONCAT_INNER(a, b) a##b
@@ -79,7 +81,8 @@ initialize_queue_condition (struct SocketDNS_T *dns)
                           "Failed to initialize DNS resolver queue condition");
 }
 
-/* Security: Uses CLOCK_MONOTONIC to prevent timing attacks via clock manipulation */
+/* Security: Uses CLOCK_MONOTONIC to prevent timing attacks via clock
+ * manipulation */
 void
 initialize_result_condition (struct SocketDNS_T *dns)
 {
@@ -100,8 +103,9 @@ initialize_result_condition (struct SocketDNS_T *dns)
     {
       pthread_condattr_destroy (&attr);
       cleanup_on_init_failure (dns, DNS_CLEAN_CONDS);
-      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
-                        "Failed to set CLOCK_MONOTONIC for condition variable");
+      SOCKET_RAISE_MSG (
+          SocketDNS, SocketDNS_Failed,
+          "Failed to set CLOCK_MONOTONIC for condition variable");
     }
 
   rc = pthread_cond_init (&dns->result_cond, &attr);
@@ -653,9 +657,6 @@ request_effective_timeout_ms (const struct SocketDNS_T *dns,
   return dns->request_timeout_ms;
 }
 
-
-
-
 int
 request_timed_out (const struct SocketDNS_T *dns,
                    const struct SocketDNS_Request_T *req)
@@ -882,7 +883,8 @@ handle_resolution_result (struct SocketDNS_T *dns,
   store_resolution_result (dns, req, result, res);
 }
 
-/* Security: Clears callback after invocation to prevent double-invoke or use-after-free */
+/* Security: Clears callback after invocation to prevent double-invoke or
+ * use-after-free */
 void
 invoke_callback (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 {
@@ -968,8 +970,8 @@ apply_custom_resolver_config (struct __res_state *res_state,
       static __thread struct sockaddr_in6 *ipv6_ptrs[MAXNS];
       int ipv6_count = 0;
 
-      for (size_t i = 0; i < dns->nameserver_count && res_state->nscount < MAXNS;
-           i++)
+      for (size_t i = 0;
+           i < dns->nameserver_count && res_state->nscount < MAXNS; i++)
         {
           const char *ip = dns->custom_nameservers[i];
           struct in_addr addr4;
@@ -1000,10 +1002,10 @@ apply_custom_resolver_config (struct __res_state *res_state,
             }
           else
             {
-              SOCKET_LOG_WARN_MSG (
-                  "Invalid nameserver IP (should not happen after validation): "
-                  "%s",
-                  ip);
+              SOCKET_LOG_WARN_MSG ("Invalid nameserver IP (should not happen "
+                                   "after validation): "
+                                   "%s",
+                                   ip);
             }
         }
 

@@ -46,7 +46,8 @@
 const Except_T SocketDNS_Failed
     = { &SocketDNS_Failed, "SocketDNS operation failed" };
 
-/* Thread-local exception for formatted error messages (per-thread for safety) */
+/* Thread-local exception for formatted error messages (per-thread for safety)
+ */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketDNS);
 
 /* Validate hostname and port for DNS resolution. NULL host ok for bind. */
@@ -509,7 +510,8 @@ SocketDNS_geterror (struct SocketDNS_T *dns,
   return error;
 }
 
-/* Internal API for fast-path resolution. Copies result to arena, signals completion. */
+/* Internal API for fast-path resolution. Copies result to arena, signals
+ * completion. */
 Request_T
 SocketDNS_create_completed_request (struct SocketDNS_T *dns,
                                     struct addrinfo *result, int port)
@@ -548,7 +550,8 @@ SocketDNS_request_settimeout (struct SocketDNS_T *dns,
   pthread_mutex_unlock (&dns->mutex);
 }
 
-/* Security: Uses CLOCK_MONOTONIC to prevent timing attacks via clock manipulation */
+/* Security: Uses CLOCK_MONOTONIC to prevent timing attacks via clock
+ * manipulation */
 static void
 compute_deadline (int timeout_ms, struct timespec *deadline)
 {
@@ -565,7 +568,8 @@ compute_deadline (int timeout_ms, struct timespec *deadline)
     }
 }
 
-/* Wait for request completion. Returns 0 on completion, ETIMEDOUT on timeout. */
+/* Wait for request completion. Returns 0 on completion, ETIMEDOUT on timeout.
+ */
 static int
 wait_for_completion (struct SocketDNS_T *dns,
                      const struct SocketDNS_Request_T *req, int timeout_ms)
@@ -743,9 +747,11 @@ cache_hash_remove (struct SocketDNS_T *dns, struct SocketDNS_CacheEntry *entry)
     }
 }
 
-/* Remove entry from LRU + hash, free resources, update size. Does NOT update eviction counter. */
+/* Remove entry from LRU + hash, free resources, update size. Does NOT update
+ * eviction counter. */
 static void
-cache_remove_entry (struct SocketDNS_T *dns, struct SocketDNS_CacheEntry *entry)
+cache_remove_entry (struct SocketDNS_T *dns,
+                    struct SocketDNS_CacheEntry *entry)
 {
   cache_lru_remove (dns, entry);
   cache_hash_remove (dns, entry);
@@ -1087,18 +1093,17 @@ SocketDNS_set_nameservers (T dns, const char **servers, size_t count)
       return 0;
     }
 
-  result = copy_string_array_to_arena (dns, servers, count,
-                                       &dns->custom_nameservers,
-                                       &dns->nameserver_count);
+  result = copy_string_array_to_arena (
+      dns, servers, count, &dns->custom_nameservers, &dns->nameserver_count);
   pthread_mutex_unlock (&dns->mutex);
 
   if (result < 0)
     return -1;
 
-  /* Note: Actually using custom nameservers requires platform-specific
-   * resolver configuration (e.g., res_init() on Linux). Since getaddrinfo()
-   * doesn't support this directly, we store the config but don't apply it.
-   * Future: Could implement with res_query() or a custom DNS client. */
+    /* Note: Actually using custom nameservers requires platform-specific
+     * resolver configuration (e.g., res_init() on Linux). Since getaddrinfo()
+     * doesn't support this directly, we store the config but don't apply it.
+     * Future: Could implement with res_query() or a custom DNS client. */
 
 #ifdef __linux__
   return 0; /* Successfully configured - will be applied in worker threads */
@@ -1128,9 +1133,8 @@ SocketDNS_set_search_domains (T dns, const char **domains, size_t count)
       return 0;
     }
 
-  result = copy_string_array_to_arena (dns, domains, count,
-                                       &dns->search_domains,
-                                       &dns->search_domain_count);
+  result = copy_string_array_to_arena (
+      dns, domains, count, &dns->search_domains, &dns->search_domain_count);
   pthread_mutex_unlock (&dns->mutex);
 
   if (result < 0)
@@ -1139,8 +1143,8 @@ SocketDNS_set_search_domains (T dns, const char **domains, size_t count)
   /* Search domains are stored but not applied. On Linux, the res_state->dnsrch
    * array contains pointers into the defdname buffer, making it non-trivial
    * to set custom search domains. Only nameservers are currently supported. */
-  SOCKET_LOG_WARN_MSG (
-      "Custom search domains configured but not applied (platform limitation)");
+  SOCKET_LOG_WARN_MSG ("Custom search domains configured but not applied "
+                       "(platform limitation)");
   return -1;
 }
 

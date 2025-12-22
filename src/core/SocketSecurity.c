@@ -52,14 +52,12 @@
 #include "tls/SocketTLSConfig.h"
 #endif
 
-
 const Except_T SocketSecurity_SizeExceeded
     = { &SocketSecurity_SizeExceeded,
         "Allocation or buffer size exceeds security limits" };
 
 const Except_T SocketSecurity_ValidationFailed
     = { &SocketSecurity_ValidationFailed, "Input validation failed" };
-
 
 static void
 populate_memory_limits (SocketSecurityLimits *limits)
@@ -149,7 +147,6 @@ populate_timeout_limits (SocketSecurityLimits *limits)
   limits->timeout_request_ms = SOCKET_SECURITY_MAX_REQUEST_TIMEOUT_MS;
 }
 
-
 /* Set optional output parameter if not NULL */
 #define set_size_ptr(ptr, val)                                                \
   do                                                                          \
@@ -212,7 +209,6 @@ SocketSecurity_get_hpack_limits (size_t *max_table)
 {
   set_size_ptr (max_table, SOCKETHPACK_MAX_TABLE_SIZE);
 }
-
 
 int
 SocketSecurity_check_size (size_t size)

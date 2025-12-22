@@ -4,8 +4,6 @@
  * https://x.com/tetsuoai
  */
 
-
-
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,7 +34,8 @@
 
 #define EXCEPT_UNKNOWN_FILE "unknown"
 
-/* In release builds, only log basename to prevent leaking directory structure */
+/* In release builds, only log basename to prevent leaking directory structure
+ */
 #ifndef SOCKET_EXCEPT_VERBOSE_UNCAUGHT
 #ifdef NDEBUG
 #define SOCKET_EXCEPT_VERBOSE_UNCAUGHT 0
@@ -129,7 +128,6 @@ except_finish_abort (void)
   abort ();
 }
 
-
 EXCEPT_COLD static void
 except_validate_not_null (const Except_T *e)
 {
@@ -141,10 +139,9 @@ except_validate_not_null (const Except_T *e)
   except_finish_abort ();
 }
 
-
-EXCEPT_COLD EXCEPT_NORETURN EXCEPT_NONNULL (1)
-static void
-except_abort_uncaught (const Except_T *e, const char *file, int line)
+EXCEPT_COLD EXCEPT_NORETURN EXCEPT_NONNULL (
+    1) static void except_abort_uncaught (const Except_T *e, const char *file,
+                                          int line)
 {
   fprintf (stderr, "%s", EXCEPT_UNCAUGHT_FMT);
   except_emit_reason (e);
@@ -173,9 +170,8 @@ except_pop_frame (Except_Frame *frame)
   Except_stack = frame->prev;
 }
 
-EXCEPT_NORETURN EXCEPT_NONNULL (1)
-static void
-except_jump_to_handler (Except_Frame *frame)
+EXCEPT_NORETURN
+    EXCEPT_NONNULL (1) static void except_jump_to_handler (Except_Frame *frame)
 {
   assert (frame != NULL);
 

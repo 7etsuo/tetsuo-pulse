@@ -16,9 +16,8 @@
 #include <time.h>
 
 #include "core/SocketConfig.h"
-#include "core/SocketUtil.h"
 #include "core/SocketMetrics.h"
-
+#include "core/SocketUtil.h"
 
 /* Flag for one-time CLOCK_MONOTONIC fallback warning */
 static volatile int monotonic_fallback_warned = 0;
@@ -108,7 +107,6 @@ Socket_get_monotonic_ms (void)
 #endif
 }
 
-
 typedef struct SocketErrorMapping
 {
   int err;
@@ -190,7 +188,6 @@ socket_find_error_mapping (const int err)
   return NULL;
 }
 
-
 static SocketErrorCode
 socket_errno_to_errorcode (int errno_val)
 {
@@ -246,7 +243,6 @@ Socket_safe_strerror (int errnum)
 #endif
 }
 
-
 static const char *const socket_error_category_names[] = {
   "NETWORK", "PROTOCOL", "APPLICATION", "TIMEOUT", "RESOURCE", "UNKNOWN"
 };
@@ -272,7 +268,6 @@ SocketError_is_retryable_errno (int err)
   const SocketErrorMapping *m = socket_find_error_mapping (err);
   return m ? m->retryable : 0;
 }
-
 
 /* Mutex protecting callback, userdata, and log level */
 static pthread_mutex_t socketlog_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -421,7 +416,8 @@ SocketLog_emit (SocketLogLevel level, const char *component,
   all.fallback_callback (all.fallback_userdata, level, component, message);
 }
 
-/* WARNING: fmt must be a compile-time literal to prevent format string attacks */
+/* WARNING: fmt must be a compile-time literal to prevent format string attacks
+ */
 void
 SocketLog_emitf (SocketLogLevel level, const char *component, const char *fmt,
                  ...)
@@ -444,7 +440,8 @@ socketlog_apply_truncation (char *buffer, size_t bufsize)
     }
 }
 
-/* WARNING: fmt must be a compile-time literal to prevent format string attacks */
+/* WARNING: fmt must be a compile-time literal to prevent format string attacks
+ */
 void
 SocketLog_emitfv (SocketLogLevel level, const char *component, const char *fmt,
                   va_list args)
@@ -465,7 +462,6 @@ SocketLog_emitfv (SocketLogLevel level, const char *component, const char *fmt,
 
   SocketLog_emit (level, component, buffer);
 }
-
 
 #ifdef _WIN32
 static __declspec (thread) SocketLogContext socketlog_context = { "", "", -1 };
@@ -509,7 +505,6 @@ SocketLog_clearcontext (void)
   socketlog_context.connection_fd = -1;
   socketlog_context_set = 0;
 }
-
 
 void
 SocketLog_setstructuredcallback (SocketLogStructuredCallback callback,
@@ -651,25 +646,28 @@ SocketLog_emit_structured (SocketLogLevel level, const char *component,
 /* NOTE: Legacy system for backward compatibility. Prefer SocketMetrics.h. */
 
 static const SocketCounterMetric legacy_to_counter[SOCKET_METRIC_COUNT] = {
-    [SOCKET_METRIC_SOCKET_CONNECT_SUCCESS] = SOCKET_CTR_SOCKET_CONNECT_SUCCESS,
-    [SOCKET_METRIC_SOCKET_CONNECT_FAILURE] = SOCKET_CTR_SOCKET_CONNECT_FAILED,
-    [SOCKET_METRIC_SOCKET_SHUTDOWN_CALL] = SOCKET_CTR_SOCKET_CLOSED, /* approximate */
-    [SOCKET_METRIC_DNS_REQUEST_SUBMITTED] = SOCKET_CTR_DNS_QUERIES_TOTAL,
-    [SOCKET_METRIC_DNS_REQUEST_COMPLETED] = SOCKET_CTR_DNS_QUERIES_COMPLETED,
-    [SOCKET_METRIC_DNS_REQUEST_FAILED] = SOCKET_CTR_DNS_QUERIES_FAILED,
-    [SOCKET_METRIC_DNS_REQUEST_CANCELLED] = SOCKET_CTR_DNS_QUERIES_CANCELLED,
-    [SOCKET_METRIC_DNS_REQUEST_TIMEOUT] = SOCKET_CTR_DNS_QUERIES_TIMEOUT,
-    [SOCKET_METRIC_POLL_WAKEUPS] = SOCKET_CTR_POLL_WAKEUPS,
-    [SOCKET_METRIC_POLL_EVENTS_DISPATCHED] = SOCKET_CTR_POLL_EVENTS_DISPATCHED,
-    [SOCKET_METRIC_POOL_CONNECTIONS_ADDED] = SOCKET_CTR_POOL_CONNECTIONS_CREATED,
-    [SOCKET_METRIC_POOL_CONNECTIONS_REMOVED] = SOCKET_CTR_POOL_CONNECTIONS_DESTROYED,
-    [SOCKET_METRIC_POOL_CONNECTIONS_REUSED] = SOCKET_CTR_POOL_CONNECTIONS_REUSED,
-    [SOCKET_METRIC_POOL_DRAIN_INITIATED] = SOCKET_CTR_POOL_DRAIN_STARTED,
-    [SOCKET_METRIC_POOL_DRAIN_COMPLETED] = SOCKET_CTR_POOL_DRAIN_COMPLETED,
-    [SOCKET_METRIC_POOL_HEALTH_CHECKS] = (SocketCounterMetric)-1, /* unmapped, add if needed */
-    [SOCKET_METRIC_POOL_HEALTH_FAILURES] = (SocketCounterMetric)-1,
-    [SOCKET_METRIC_POOL_VALIDATION_FAILURES] = (SocketCounterMetric)-1,
-    [SOCKET_METRIC_POOL_IDLE_CLEANUPS] = (SocketCounterMetric)-1,
+  [SOCKET_METRIC_SOCKET_CONNECT_SUCCESS] = SOCKET_CTR_SOCKET_CONNECT_SUCCESS,
+  [SOCKET_METRIC_SOCKET_CONNECT_FAILURE] = SOCKET_CTR_SOCKET_CONNECT_FAILED,
+  [SOCKET_METRIC_SOCKET_SHUTDOWN_CALL]
+  = SOCKET_CTR_SOCKET_CLOSED, /* approximate */
+  [SOCKET_METRIC_DNS_REQUEST_SUBMITTED] = SOCKET_CTR_DNS_QUERIES_TOTAL,
+  [SOCKET_METRIC_DNS_REQUEST_COMPLETED] = SOCKET_CTR_DNS_QUERIES_COMPLETED,
+  [SOCKET_METRIC_DNS_REQUEST_FAILED] = SOCKET_CTR_DNS_QUERIES_FAILED,
+  [SOCKET_METRIC_DNS_REQUEST_CANCELLED] = SOCKET_CTR_DNS_QUERIES_CANCELLED,
+  [SOCKET_METRIC_DNS_REQUEST_TIMEOUT] = SOCKET_CTR_DNS_QUERIES_TIMEOUT,
+  [SOCKET_METRIC_POLL_WAKEUPS] = SOCKET_CTR_POLL_WAKEUPS,
+  [SOCKET_METRIC_POLL_EVENTS_DISPATCHED] = SOCKET_CTR_POLL_EVENTS_DISPATCHED,
+  [SOCKET_METRIC_POOL_CONNECTIONS_ADDED] = SOCKET_CTR_POOL_CONNECTIONS_CREATED,
+  [SOCKET_METRIC_POOL_CONNECTIONS_REMOVED]
+  = SOCKET_CTR_POOL_CONNECTIONS_DESTROYED,
+  [SOCKET_METRIC_POOL_CONNECTIONS_REUSED] = SOCKET_CTR_POOL_CONNECTIONS_REUSED,
+  [SOCKET_METRIC_POOL_DRAIN_INITIATED] = SOCKET_CTR_POOL_DRAIN_STARTED,
+  [SOCKET_METRIC_POOL_DRAIN_COMPLETED] = SOCKET_CTR_POOL_DRAIN_COMPLETED,
+  [SOCKET_METRIC_POOL_HEALTH_CHECKS]
+  = (SocketCounterMetric)-1, /* unmapped, add if needed */
+  [SOCKET_METRIC_POOL_HEALTH_FAILURES] = (SocketCounterMetric)-1,
+  [SOCKET_METRIC_POOL_VALIDATION_FAILURES] = (SocketCounterMetric)-1,
+  [SOCKET_METRIC_POOL_IDLE_CLEANUPS] = (SocketCounterMetric)-1,
 };
 
 static const char *const socketmetrics_legacy_names[SOCKET_METRIC_COUNT]
@@ -713,14 +711,17 @@ SocketMetrics_increment (SocketMetric metric, unsigned long value)
     }
 
   SocketCounterMetric new_metric = legacy_to_counter[metric];
-  if (new_metric != (SocketCounterMetric)-1) {
-    SocketMetrics_counter_add (new_metric, (uint64_t)value);
-  } else {
-    SocketLog_emitf (SOCKET_LOG_WARN, "SocketMetrics",
-                     "Unmapped legacy metric %s (%d) ignored; consider migrating to new API",
-                     socketmetrics_legacy_names[metric], (int)metric);
-
-  }
+  if (new_metric != (SocketCounterMetric)-1)
+    {
+      SocketMetrics_counter_add (new_metric, (uint64_t)value);
+    }
+  else
+    {
+      SocketLog_emitf (SOCKET_LOG_WARN, "SocketMetrics",
+                       "Unmapped legacy metric %s (%d) ignored; consider "
+                       "migrating to new API",
+                       socketmetrics_legacy_names[metric], (int)metric);
+    }
 }
 
 /* NOTE: Legacy API. For new code, use SocketMetrics_get() */
@@ -744,7 +745,7 @@ SocketMetrics_getsnapshot (SocketMetricsSnapshot *snapshot)
         }
       else
         {
-          snapshot->values[i] = 0ULL;  /* Unmapped legacy metrics return 0 */
+          snapshot->values[i] = 0ULL; /* Unmapped legacy metrics return 0 */
         }
     }
 }
@@ -766,7 +767,8 @@ SocketMetrics_name (SocketMetric metric)
   if (new_metric != (SocketCounterMetric)-1)
     return SocketMetrics_counter_name (new_metric);
   else
-    return socketmetrics_legacy_names[metric];  /* Keep legacy name for unmapped */
+    return socketmetrics_legacy_names[metric]; /* Keep legacy name for unmapped
+                                                */
 }
 
 size_t
@@ -774,7 +776,6 @@ SocketMetrics_count (void)
 {
   return SOCKET_METRIC_COUNT;
 }
-
 
 typedef struct SocketEventHandler
 {

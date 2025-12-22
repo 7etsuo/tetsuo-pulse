@@ -77,8 +77,8 @@ ip_addresses_equal (const char *ip1, const char *ip2)
   if (family1 != family2)
     return 0;
 
-  cmp_len = (family1 == AF_INET) ? SOCKET_IPV4_ADDR_BYTES
-                                 : SOCKET_IPV6_ADDR_BYTES;
+  cmp_len
+      = (family1 == AF_INET) ? SOCKET_IPV4_ADDR_BYTES : SOCKET_IPV6_ADDR_BYTES;
   return memcmp (bytes1, bytes2, cmp_len) == 0;
 }
 
@@ -139,8 +139,8 @@ whitelist_check_bucket_bytes (const SocketSYN_WhitelistEntry *entry,
 {
   size_t cmp_len;
 
-  cmp_len = (family == AF_INET) ? SOCKET_IPV4_ADDR_BYTES
-                                : SOCKET_IPV6_ADDR_BYTES;
+  cmp_len
+      = (family == AF_INET) ? SOCKET_IPV4_ADDR_BYTES : SOCKET_IPV6_ADDR_BYTES;
 
   while (entry != NULL)
     {
@@ -194,7 +194,8 @@ whitelist_check_all_cidrs_bytes (SocketSYNProtect_T protect, int family,
 }
 
 static int
-whitelist_check_all_cidrs (SocketSYNProtect_T protect, const char *ip, unsigned skip_bucket)
+whitelist_check_all_cidrs (SocketSYNProtect_T protect, const char *ip,
+                           unsigned skip_bucket)
 {
   uint8_t ip_bytes[16];
   int family = parse_ip_address (ip, ip_bytes, sizeof (ip_bytes));
@@ -228,7 +229,8 @@ whitelist_check (SocketSYNProtect_T protect, const char *ip)
 }
 
 void
-remove_ip_entry_from_hash (SocketSYNProtect_T protect, SocketSYN_IPEntry *entry)
+remove_ip_entry_from_hash (SocketSYNProtect_T protect,
+                           SocketSYN_IPEntry *entry)
 {
   unsigned bucket
       = synprotect_hash_ip (protect, entry->state.ip, protect->ip_table_size);

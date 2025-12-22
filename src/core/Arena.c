@@ -4,8 +4,6 @@
  * https://x.com/tetsuoai
  */
 
-
-
 #include <assert.h>
 #include <limits.h>
 #include <pthread.h>
@@ -23,9 +21,6 @@
 
 #define T Arena_T
 
-
-
-
 struct ChunkHeader
 {
   struct ChunkHeader *prev;
@@ -34,14 +29,12 @@ struct ChunkHeader
   size_t chunk_size;
 };
 
-
 union header
 {
   struct ChunkHeader b;
   /* cppcheck-suppress unusedStructMember */
   union align a;
 };
-
 
 struct T
 {
@@ -50,8 +43,6 @@ struct T
   char *limit;
   pthread_mutex_t mutex;
 };
-
-
 
 static inline size_t
 chunk_total_size (const struct ChunkHeader *chunk)
@@ -74,14 +65,10 @@ arena_link_chunk (T arena, struct ChunkHeader *ptr, char *limit)
   ptr->avail = arena->avail;
   ptr->limit = arena->limit;
 
-
   arena->avail = (char *)((union header *)ptr + 1);
   arena->limit = limit;
   arena->prev = ptr;
 }
-
-
-
 
 const Except_T Arena_Failed = { &Arena_Failed, "Arena operation failed" };
 
@@ -112,7 +99,6 @@ SocketConfig_get_memory_used (void)
 {
   return atomic_load_explicit (&global_memory_used, memory_order_acquire);
 }
-
 
 static int check_alloc_allowed (size_t current, size_t nbytes, size_t limit);
 
@@ -152,7 +138,6 @@ global_memory_try_alloc (size_t nbytes)
   size_t limit
       = atomic_load_explicit (&global_memory_limit, memory_order_acquire);
 
-
   if (limit == 0)
     return global_memory_try_unlimited (nbytes);
 
@@ -165,8 +150,6 @@ global_memory_release (size_t nbytes)
   atomic_fetch_sub_explicit (&global_memory_used, nbytes,
                              memory_order_relaxed);
 }
-
-
 
 static int
 check_alloc_allowed (size_t current, size_t nbytes, size_t limit)
@@ -181,13 +164,9 @@ check_alloc_allowed (size_t current, size_t nbytes, size_t limit)
   return 1;
 }
 
-
-
 #define ARENA_VALID_PTR_ARITH(ptr, offset, max)                               \
   (((uintptr_t)(ptr) <= UINTPTR_MAX - (offset))                               \
    && ((uintptr_t)(ptr) + (offset) <= (uintptr_t)(max)))
-
-
 
 static int
 validate_chunk_size (size_t chunk_size, size_t *total_out)
@@ -252,8 +231,6 @@ allocate_raw_chunk (size_t total)
   return ptr;
 }
 
-
-
 static int
 chunk_cache_get (struct ChunkHeader **ptr_out, char **limit_out)
 {
@@ -302,8 +279,6 @@ chunk_cache_return (struct ChunkHeader *chunk)
     }
 }
 
-
-
 static size_t
 arena_align_size (size_t nbytes)
 {
@@ -341,12 +316,6 @@ arena_calculate_aligned_size (size_t nbytes)
   return final_size;
 }
 
-
-
-
-
-
-
 static int
 arena_allocate_new_chunk (size_t chunk_size, struct ChunkHeader **ptr_out,
                           char **limit_out)
@@ -379,13 +348,11 @@ arena_get_chunk (T arena, size_t min_size)
   char *limit;
   size_t chunk_size;
 
-
   if (chunk_cache_get (&ptr, &limit) == ARENA_CHUNK_REUSED)
     {
       arena_link_chunk (arena, ptr, limit);
       return ARENA_SUCCESS;
     }
-
 
   chunk_size = (ARENA_CHUNK_SIZE < min_size) ? min_size : ARENA_CHUNK_SIZE;
 
@@ -395,8 +362,6 @@ arena_get_chunk (T arena, size_t min_size)
   arena_link_chunk (arena, ptr, limit);
   return ARENA_SUCCESS;
 }
-
-
 
 /* Must hold arena->mutex */
 static void
@@ -418,21 +383,6 @@ arena_release_all_chunks (T arena)
   assert (arena->avail == NULL);
   assert (arena->limit == NULL);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 T
 Arena_new (void)
@@ -473,9 +423,11 @@ Arena_dispose (T *ap)
 void *
 Arena_alloc (T arena, size_t nbytes, const char *file, int line)
 {
-  (void)file; (void)line;
+  (void)file;
+  (void)line;
   if (arena == NULL)
-    SOCKET_RAISE_MSG (Arena, Arena_Failed, "NULL arena pointer in %s", "Arena_alloc");
+    SOCKET_RAISE_MSG (Arena, Arena_Failed, "NULL arena pointer in %s",
+                      "Arena_alloc");
 
   if (nbytes == 0)
     SOCKET_RAISE_MSG (Arena, Arena_Failed,
@@ -496,9 +448,10 @@ Arena_alloc (T arena, size_t nbytes, const char *file, int line)
       if (arena_get_chunk (arena, aligned_size) != ARENA_SUCCESS)
         {
           pthread_mutex_unlock (&arena->mutex);
-          SOCKET_RAISE_MSG (Arena, Arena_Failed,
-                            "Failed to allocate chunk for %zu bytes (out of memory)",
-                            aligned_size);
+          SOCKET_RAISE_MSG (
+              Arena, Arena_Failed,
+              "Failed to allocate chunk for %zu bytes (out of memory)",
+              aligned_size);
         }
     }
   void *result = arena->avail;
@@ -511,9 +464,11 @@ Arena_alloc (T arena, size_t nbytes, const char *file, int line)
 void *
 Arena_calloc (T arena, size_t count, size_t nbytes, const char *file, int line)
 {
-  (void)file; (void)line;
+  (void)file;
+  (void)line;
   if (arena == NULL)
-    SOCKET_RAISE_MSG (Arena, Arena_Failed, "NULL arena pointer in %s", "Arena_calloc");
+    SOCKET_RAISE_MSG (Arena, Arena_Failed, "NULL arena pointer in %s",
+                      "Arena_calloc");
   if (count == 0 || nbytes == 0)
     SOCKET_RAISE_MSG (Arena, Arena_Failed,
                       "Invalid count (%zu) or nbytes (%zu) in %s", count,
@@ -528,7 +483,8 @@ Arena_calloc (T arena, size_t count, size_t nbytes, const char *file, int line)
   if (!SocketSecurity_check_size (total))
     SOCKET_RAISE_MSG (Arena, Arena_Failed,
                       "calloc size exceeds maximum: %zu (limit=%zu) in %s",
-                      total, SocketSecurity_get_max_allocation (), "Arena_calloc");
+                      total, SocketSecurity_get_max_allocation (),
+                      "Arena_calloc");
 
   void *ptr = Arena_alloc (arena, count * nbytes, file, line);
   memset (ptr, 0, count * nbytes);

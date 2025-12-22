@@ -9,8 +9,8 @@
 #include "core/SocketSYNProtect-private.h"
 #include "core/SocketSYNProtect.h"
 
-#include "core/SocketUtil.h"
 #include "core/SocketMetrics.h"
+#include "core/SocketUtil.h"
 #include <assert.h>
 #include <stdlib.h>
 

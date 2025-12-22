@@ -4,8 +4,6 @@
  * https://x.com/tetsuoai
  */
 
-
-
 #include <assert.h>
 #include <math.h>
 #include <pthread.h>
@@ -18,7 +16,6 @@
 #include "core/SocketConfig.h"
 #include "core/SocketMetrics.h"
 #include "core/SocketUtil.h"
-
 
 #define PERCENTILE_P50 50.0
 #define PERCENTILE_P75 75.0
@@ -35,7 +32,6 @@ static const char *const STATSD_PCT_P50 = "p50";
 static const char *const STATSD_PCT_P95 = "p95";
 static const char *const STATSD_PCT_P99 = "p99";
 
-
 #define METRICS_LOG_DEBUG_MSG(fmt, ...)                                       \
   SocketLog_emitf (SOCKET_LOG_DEBUG, "metrics", fmt, ##__VA_ARGS__)
 
@@ -45,12 +41,9 @@ static const char *const STATSD_PCT_P99 = "p99";
 #define METRICS_LOG_DEBUG(msg) ((void)0)
 #endif
 
-
 #define COUNTER_VALID(m) ((m) >= 0 && (m) < SOCKET_COUNTER_METRIC_COUNT)
 #define GAUGE_VALID(m) ((m) >= 0 && (m) < SOCKET_GAUGE_METRIC_COUNT)
 #define HISTOGRAM_VALID(m) ((m) >= 0 && (m) < SOCKET_HISTOGRAM_METRIC_COUNT)
-
-
 
 typedef struct Histogram
 {
@@ -64,14 +57,12 @@ typedef struct Histogram
   int initialized;
 } Histogram;
 
-
 static _Atomic int metrics_initialized = 0;
 static _Atomic uint64_t counter_values[SOCKET_COUNTER_METRIC_COUNT];
 static _Atomic int64_t gauge_values[SOCKET_GAUGE_METRIC_COUNT];
 static Histogram histogram_values[SOCKET_HISTOGRAM_METRIC_COUNT];
 static pthread_mutex_t metrics_global_mutex = PTHREAD_MUTEX_INITIALIZER;
 static _Atomic int peak_socket_count = 0;
-
 
 static const char *const counter_names[SOCKET_COUNTER_METRIC_COUNT] = {
   /* Pool */
@@ -95,8 +86,8 @@ static const char *const counter_names[SOCKET_COUNTER_METRIC_COUNT] = {
   "tls_cert_verify_failures", "tls_renegotiations", "tls_pinning_failures",
   "tls_ct_verification_failures", "tls_crl_check_failures",
   /* DTLS */
-  "dtls_handshakes_total", "dtls_handshakes_complete", "dtls_handshakes_failed",
-  "dtls_cookies_generated", "dtls_cookies_verified",
+  "dtls_handshakes_total", "dtls_handshakes_complete",
+  "dtls_handshakes_failed", "dtls_cookies_generated", "dtls_cookies_verified",
   "dtls_cookie_verification_failures", "dtls_replay_packets_detected",
   "dtls_fragment_failures",
   /* DNS */
@@ -131,8 +122,9 @@ static const char *const counter_help[SOCKET_COUNTER_METRIC_COUNT] = {
   "Total bytes received by HTTP client", "HTTP request retry count",
   /* HTTP Server */
   "Total HTTP requests received", "Failed request processing",
-  "HTTP requests that timed out on server", "HTTP requests rejected by rate limiter",
-  "Total bytes sent by HTTP server", "Total bytes received by HTTP server",
+  "HTTP requests that timed out on server",
+  "HTTP requests rejected by rate limiter", "Total bytes sent by HTTP server",
+  "Total bytes received by HTTP server",
   "Total connections accepted by server",
   /* HTTP Responses */
   "Informational HTTP responses (1xx)", "Successful HTTP responses (2xx)",
@@ -146,8 +138,7 @@ static const char *const counter_help[SOCKET_COUNTER_METRIC_COUNT] = {
   "TLS CRL/OCSP revocation check failures",
   /* DTLS */
   "Total DTLS handshakes initiated", "Completed DTLS handshakes",
-  "Failed DTLS handshakes",
-  "DTLS hello cookies generated for SYN protection",
+  "Failed DTLS handshakes", "DTLS hello cookies generated for SYN protection",
   "DTLS cookies verified successfully", "Invalid or expired DTLS cookies",
   "DTLS packets rejected due to replay detection",
   "DTLS fragmented message reassembly failures",
@@ -256,7 +247,6 @@ static const char *const histogram_help[SOCKET_HISTOGRAM_METRIC_COUNT] = {
 static const char *const category_names[SOCKET_METRIC_CAT_COUNT]
     = { "pool", "http_client", "http_server", "tls", "dns", "socket", "poll" };
 
-
 static inline int
 histogram_is_valid (SocketHistogramMetric metric)
 {
@@ -264,7 +254,6 @@ histogram_is_valid (SocketHistogramMetric metric)
     return 0;
   return histogram_values[metric].initialized;
 }
-
 
 static int
 compare_double (const void *a, const void *b)
@@ -301,7 +290,6 @@ percentile_from_sorted (const double *sorted, size_t n, double percentile)
 
   return sorted[lower] * (1.0 - frac) + sorted[upper] * frac;
 }
-
 
 static void
 histogram_init (Histogram *h)
@@ -437,31 +425,22 @@ histogram_compute_derived_stats (SocketMetrics_HistogramSnapshot *snap)
     }
 }
 
-static const double percentile_levels[] = {
-    PERCENTILE_P50,
-    PERCENTILE_P75,
-    PERCENTILE_P90,
-    PERCENTILE_P95,
-    PERCENTILE_P99,
-    PERCENTILE_P999
-};
+static const double percentile_levels[]
+    = { PERCENTILE_P50, PERCENTILE_P75, PERCENTILE_P90,
+        PERCENTILE_P95, PERCENTILE_P99, PERCENTILE_P999 };
 
 static void
 histogram_calculate_percentiles (const double *sorted, size_t n,
                                  SocketMetrics_HistogramSnapshot *snap)
 {
-  double *pfields[] = {
-    &snap->p50,
-    &snap->p75,
-    &snap->p90,
-    &snap->p95,
-    &snap->p99,
-    &snap->p999
-  };
+  double *pfields[] = { &snap->p50, &snap->p75, &snap->p90,
+                        &snap->p95, &snap->p99, &snap->p999 };
 
-  for (size_t k = 0; k < sizeof(percentile_levels)/sizeof(percentile_levels[0]); k++) {
-    *pfields[k] = percentile_from_sorted (sorted, n, percentile_levels[k]);
-  }
+  for (size_t k = 0;
+       k < sizeof (percentile_levels) / sizeof (percentile_levels[0]); k++)
+    {
+      *pfields[k] = percentile_from_sorted (sorted, n, percentile_levels[k]);
+    }
 }
 
 static void
@@ -503,7 +482,6 @@ histogram_reset (Histogram *h)
 
   atomic_store (&h->count, 0);
 }
-
 
 int
 SocketMetrics_init (void)
@@ -548,7 +526,6 @@ SocketMetrics_shutdown (void)
   METRICS_LOG_DEBUG ("Metrics subsystem shutdown");
 }
 
-
 void
 SocketMetrics_counter_inc (SocketCounterMetric metric)
 {
@@ -572,7 +549,6 @@ SocketMetrics_counter_get (SocketCounterMetric metric)
     return 0;
   return atomic_load (&counter_values[metric]);
 }
-
 
 void
 SocketMetrics_gauge_set (SocketGaugeMetric metric, int64_t value)
@@ -613,7 +589,6 @@ SocketMetrics_gauge_get (SocketGaugeMetric metric)
     return 0;
   return atomic_load (&gauge_values[metric]);
 }
-
 
 void
 SocketMetrics_histogram_observe (SocketHistogramMetric metric, double value)
@@ -676,7 +651,6 @@ SocketMetrics_histogram_snapshot (SocketHistogramMetric metric,
 
   histogram_fill_snapshot (&histogram_values[metric], snapshot);
 }
-
 
 void
 SocketMetrics_get (SocketMetrics_Snapshot *snapshot)
@@ -743,7 +717,6 @@ SocketMetrics_reset_histograms (void)
         histogram_reset (&histogram_values[i]);
     }
 }
-
 
 static size_t
 export_append (char *buffer, size_t buffer_size, size_t *pos, const char *fmt,
@@ -847,7 +820,6 @@ export_histogram_prometheus (char *buffer, size_t buffer_size, size_t *pos,
   export_prometheus_quantiles (buffer, buffer_size, pos, name, h);
   export_prometheus_histogram_summary (buffer, buffer_size, pos, name, h);
 }
-
 
 size_t
 SocketMetrics_export_prometheus (char *buffer, size_t buffer_size)
@@ -1063,7 +1035,6 @@ SocketMetrics_export_json (char *buffer, size_t buffer_size)
   return pos;
 }
 
-
 const char *
 SocketMetrics_counter_name (SocketCounterMetric metric)
 {
@@ -1120,7 +1091,6 @@ SocketMetrics_category_name (SocketMetricCategory category)
   return category_names[category];
 }
 
-
 int
 SocketMetrics_get_socket_count (void)
 {
@@ -1145,14 +1115,14 @@ SocketMetrics_reset_peaks (void)
 void
 SocketMetrics_update_peak_if_needed (int current_count)
 {
-  int old_peak = atomic_load_explicit (&peak_socket_count, memory_order_relaxed);
+  int old_peak
+      = atomic_load_explicit (&peak_socket_count, memory_order_relaxed);
 
   while (current_count > old_peak)
     {
-      if (atomic_compare_exchange_weak_explicit (&peak_socket_count, &old_peak,
-                                                 current_count,
-                                                 memory_order_relaxed,
-                                                 memory_order_relaxed))
+      if (atomic_compare_exchange_weak_explicit (
+              &peak_socket_count, &old_peak, current_count,
+              memory_order_relaxed, memory_order_relaxed))
         break;
     }
 }

@@ -6,7 +6,6 @@
 
 /* UTF-8 validation using Hoehrmann DFA algorithm */
 
-
 #include <string.h>
 
 #include "core/SocketUTF8.h"
@@ -29,57 +28,164 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketUTF8);
 #define UTF8_NUM_CHAR_CLASSES 12
 #define UTF8_NUM_DFA_STATES 9
 
-
 /* Maps each byte (0x00-0xFF) to a character class (0-11) */
 static const uint8_t utf8_class[256] = {
   /*      0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F */
-  /* 0 */ 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-  /* 1 */ 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-  /* 2 */ 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-  /* 3 */ 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-  /* 4 */ 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-  /* 5 */ 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-  /* 6 */ 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-  /* 7 */ 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-  /* 8 */ 1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
-  /* 9 */ 2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,
-  /* A */ 3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,
-  /* B */ 3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,
-  /* C */ 4,  4,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,
-  /* D */ 5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,
-  /* E */ 6,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  8,  7,  7,
-  /* F */ 9, 10, 10, 10, 11,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4
+  /* 0 */ 0, 0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  /* 1 */ 0, 0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  /* 2 */ 0, 0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  /* 3 */ 0, 0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  /* 4 */ 0, 0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  /* 5 */ 0, 0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  /* 6 */ 0, 0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  /* 7 */ 0, 0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  /* 8 */ 1, 1,  1,  1,  1,  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  /* 9 */ 2, 2,  2,  2,  2,  2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+  /* A */ 3, 3,  3,  3,  3,  3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+  /* B */ 3, 3,  3,  3,  3,  3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+  /* C */ 4, 4,  5,  5,  5,  5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+  /* D */ 5, 5,  5,  5,  5,  5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+  /* E */ 6, 7,  7,  7,  7,  7, 7, 7, 7, 7, 7, 7, 7, 8, 7, 7,
+  /* F */ 9, 10, 10, 10, 11, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4
 };
 
 /* DFA state transitions: utf8_state[state * UTF8_NUM_CHAR_CLASSES + class] */
 static const uint8_t utf8_state[] = {
-  /* State UTF8_STATE_ACCEPT: From accept state (initial or complete sequence) */
-  /*        ASCII 80-8F 90-9F A0-BF C0-C1 C2-DF  E0  E1-EC/EE-EF ED  F0 F1-F3 F4 */
-  /* ACCEPT*/  0,    1,    1,    1,    1,    2,   3,    4,    5,  6,   7,   8,
+  /* State UTF8_STATE_ACCEPT: From accept state (initial or complete sequence)
+   */
+  /*        ASCII 80-8F 90-9F A0-BF C0-C1 C2-DF  E0  E1-EC/EE-EF ED  F0 F1-F3
+     F4 */
+  /* ACCEPT*/ 0,
+  1,
+  1,
+  1,
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
 
-  /* State UTF8_STATE_REJECT: Sink state for invalid sequences - stay rejected */
-  /* REJECT*/  1,    1,    1,    1,    1,    1,   1,    1,    1,  1,   1,   1,
+  /* State UTF8_STATE_REJECT: Sink state for invalid sequences - stay rejected
+   */
+  /* REJECT*/ 1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
 
-  /* State UTF8_STATE_2BYTE_EXPECT: Expecting 1 continuation byte (2-byte final) */
-  /* 2BYTE */  1,    0,    0,    0,    1,    1,   1,    1,    1,  1,   1,   1,
+  /* State UTF8_STATE_2BYTE_EXPECT: Expecting 1 continuation byte (2-byte
+     final) */
+  /* 2BYTE */ 1,
+  0,
+  0,
+  0,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
 
-  /* State UTF8_STATE_E0_SPECIAL: After E0, expect A0-BF (avoid overlong), then cont */
-  /* E0_SP  */  1,    1,    1,    2,    1,    1,   1,    1,    1,  1,   1,   1,
+  /* State UTF8_STATE_E0_SPECIAL: After E0, expect A0-BF (avoid overlong), then
+     cont */
+  /* E0_SP  */ 1,
+  1,
+  1,
+  2,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
 
-  /* State UTF8_STATE_3BYTE_EXPECT: Expecting 2 continuation bytes (3-byte or 4-byte mid) */
-  /* 3BYTE */  1,    2,    2,    2,    1,    1,   1,    1,    1,  1,   1,   1,
+  /* State UTF8_STATE_3BYTE_EXPECT: Expecting 2 continuation bytes (3-byte or
+     4-byte mid) */
+  /* 3BYTE */ 1,
+  2,
+  2,
+  2,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
 
-  /* State UTF8_STATE_ED_SPECIAL: After ED, expect 80-9F (avoid surrogates), then cont */
-  /* ED_SP  */  1,    2,    2,    1,    1,    1,   1,    1,    1,  1,   1,   1,
+  /* State UTF8_STATE_ED_SPECIAL: After ED, expect 80-9F (avoid surrogates),
+     then cont */
+  /* ED_SP  */ 1,
+  2,
+  2,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
 
-  /* State UTF8_STATE_F0_SPECIAL: After F0, expect 90-BF (avoid overlong), then 2 cont */
-  /* F0_SP  */  1,    1,    4,    4,    1,    1,   1,    1,    1,  1,   1,   1,
+  /* State UTF8_STATE_F0_SPECIAL: After F0, expect 90-BF (avoid overlong), then
+     2 cont */
+  /* F0_SP  */ 1,
+  1,
+  4,
+  4,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
 
   /* State UTF8_STATE_4BYTE_EXPECT: Expecting 3 continuation bytes (4-byte) */
-  /* 4BYTE */  1,    4,    4,    4,    1,    1,   1,    1,    1,  1,   1,   1,
+  /* 4BYTE */ 1,
+  4,
+  4,
+  4,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
 
-  /* State UTF8_STATE_F4_SPECIAL: After F4, expect 80-8F (avoid >U+10FFFF), then 2 cont */
-  /* F4_SP  */  1,    4,    1,    1,    1,    1,   1,    1,    1,  1,   1,   1,
+  /* State UTF8_STATE_F4_SPECIAL: After F4, expect 80-8F (avoid >U+10FFFF),
+     then 2 cont */
+  /* F4_SP  */ 1,
+  4,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
 };
 
 /* clang-format on */
@@ -388,11 +494,9 @@ SocketUTF8_sequence_len (unsigned char first_byte)
   return 0;
 }
 
-static const uint8_t utf8_lead_start[5] =
-  { 0x00, 0x00, 0xC0, 0xE0, 0xF0 };
+static const uint8_t utf8_lead_start[5] = { 0x00, 0x00, 0xC0, 0xE0, 0xF0 };
 
-static const uint8_t utf8_lead_mask[5] =
-  { 0x00, 0x7F, 0x1F, 0x0F, 0x07 };
+static const uint8_t utf8_lead_mask[5] = { 0x00, 0x7F, 0x1F, 0x0F, 0x07 };
 
 int
 SocketUTF8_encode (uint32_t codepoint, unsigned char *output)
@@ -408,22 +512,25 @@ SocketUTF8_encode (uint32_t codepoint, unsigned char *output)
 
   if (len == 1)
     {
-      output[0] = (unsigned char) codepoint;
+      output[0] = (unsigned char)codepoint;
       return 1;
     }
 
   uint32_t temp_cp = codepoint;
   int pos = len - 1;
-  output[pos] = (unsigned char) (UTF8_CONTINUATION_START | (temp_cp & UTF8_CONTINUATION_MASK_VAL));
+  output[pos] = (unsigned char)(UTF8_CONTINUATION_START
+                                | (temp_cp & UTF8_CONTINUATION_MASK_VAL));
   temp_cp >>= 6;
   pos--;
   while (pos > 0)
     {
-      output[pos] = (unsigned char) (UTF8_CONTINUATION_START | (temp_cp & UTF8_CONTINUATION_MASK_VAL));
+      output[pos] = (unsigned char)(UTF8_CONTINUATION_START
+                                    | (temp_cp & UTF8_CONTINUATION_MASK_VAL));
       temp_cp >>= 6;
       pos--;
     }
-  output[0] = (unsigned char) (utf8_lead_start[len] | (temp_cp & utf8_lead_mask[len]));
+  output[0] = (unsigned char)(utf8_lead_start[len]
+                              | (temp_cp & utf8_lead_mask[len]));
 
   return len;
 }
@@ -438,7 +545,7 @@ decode_2byte (const unsigned char *data, uint32_t *codepoint, size_t *consumed)
 
   if (!validate_continuations (data, 1, &fail_idx))
     {
-      bytes_used = (size_t) fail_idx;
+      bytes_used = (size_t)fail_idx;
       result = UTF8_INVALID;
       goto done;
     }
@@ -632,7 +739,7 @@ SocketUTF8_count_codepoints (const unsigned char *data, size_t len,
       result = SocketUTF8_decode (data + pos, len - pos, NULL, &consumed);
       if (result != UTF8_VALID)
         {
-          *count = cp_count;  /* Report partial count on error */
+          *count = cp_count; /* Report partial count on error */
           return result;
         }
 

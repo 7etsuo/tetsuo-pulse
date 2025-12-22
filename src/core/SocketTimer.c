@@ -4,8 +4,6 @@
  * https://x.com/tetsuoai
  */
 
-
-
 #include <assert.h>
 #include <inttypes.h>
 #include <pthread.h>
@@ -21,17 +19,12 @@
 #include "core/SocketTimer.h"
 #include "core/SocketUtil.h"
 
-
-
-
 const Except_T SocketTimer_Failed
     = { &SocketTimer_Failed, "Timer operation failed" };
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketTimer);
 
 struct SocketTimer_heap_T *socketpoll_get_timer_heap (SocketPoll_T poll);
-
-
 
 static SocketTimer_heap_T *
 sockettimer_validate_heap (SocketPoll_T poll)
@@ -79,8 +72,6 @@ sockettimer_validate_timer_params (int64_t delay_ms, int64_t interval_ms,
                                  max_delay_ms, "delay");
     }
 }
-
-
 
 static void *
 sockettimer_calloc_with_raise (Arena_T arena, size_t nmemb, size_t size,
@@ -134,8 +125,6 @@ sockettimer_create_timer (Arena_T arena, int64_t delay_ms, int64_t interval_ms,
   return timer;
 }
 
-
-
 static size_t
 sockettimer_heap_parent (size_t index)
 {
@@ -164,8 +153,6 @@ sockettimer_heap_swap (struct SocketTimer_T **timers, size_t i, size_t j)
   timers[i]->heap_index = i;
   timers[j]->heap_index = j;
 }
-
-
 
 static void
 sockettimer_heap_sift_up (struct SocketTimer_T **timers, size_t index)
@@ -215,7 +202,6 @@ sockettimer_heap_sift_down (struct SocketTimer_T **timers, size_t count,
     }
 }
 
-
 static void
 sockettimer_heap_move_last_to_root (struct SocketTimer_T **timers,
                                     size_t *count)
@@ -258,7 +244,6 @@ sockettimer_skip_cancelled (SocketTimer_heap_T *heap)
     sockettimer_remove_cancelled_root (heap);
 }
 
-
 static ssize_t
 sockettimer_find_in_heap (const SocketTimer_heap_T *heap,
                           const struct SocketTimer_T *timer)
@@ -275,9 +260,8 @@ static int
 sockettimer_check_capacity_overflow (size_t current_capacity)
 {
   size_t new_capacity;
-  if (!SocketSecurity_check_multiply (current_capacity,
-                                      SOCKET_TIMER_HEAP_GROWTH_FACTOR,
-                                      &new_capacity))
+  if (!SocketSecurity_check_multiply (
+          current_capacity, SOCKET_TIMER_HEAP_GROWTH_FACTOR, &new_capacity))
     return 1; /* Would overflow */
   return 0;
 }
@@ -372,8 +356,6 @@ sockettimer_handle_expired (SocketTimer_heap_T *heap,
   return 1;
 }
 
-
-
 static SocketTimer_heap_T *
 sockettimer_heap_alloc_structure (Arena_T arena)
 {
@@ -422,16 +404,12 @@ sockettimer_heap_unlock (SocketTimer_heap_T *heap)
                       "pthread_mutex_unlock failed: %d", ret);
 }
 
-
-
 static struct SocketTimer_T *
 sockettimer_peek_unlocked (SocketTimer_heap_T *heap)
 {
   sockettimer_skip_cancelled (heap);
   return (heap->count > 0) ? heap->timers[0] : NULL;
 }
-
-
 
 /* Returns NULL instead of raising on failure */
 static SocketTimer_heap_T *
@@ -463,8 +441,6 @@ sockettimer_add_timer_internal (SocketPoll_T poll, int64_t delay_ms,
 
   return timer;
 }
-
-
 
 /* Partial allocations remain in arena until Arena_dispose() */
 SocketTimer_heap_T *
@@ -632,7 +608,8 @@ SocketTimer_heap_remaining (SocketTimer_heap_T *heap,
   return remaining > 0 ? remaining : 0;
 }
 
-/* Callbacks invoked outside mutex; repeating timers rescheduled after firing */
+/* Callbacks invoked outside mutex; repeating timers rescheduled after firing
+ */
 int
 SocketTimer_process_expired (SocketTimer_heap_T *heap)
 {
@@ -657,8 +634,6 @@ SocketTimer_process_expired (SocketTimer_heap_T *heap)
   return fired_count;
 }
 
-
-
 SocketTimer_T
 SocketTimer_add (SocketPoll_T poll, int64_t delay_ms,
                  SocketTimerCallback callback, void *userdata)
@@ -674,8 +649,6 @@ SocketTimer_add_repeating (SocketPoll_T poll, int64_t interval_ms,
   return sockettimer_add_timer_internal (poll, interval_ms, interval_ms,
                                          callback, userdata, 1);
 }
-
-
 
 int
 SocketTimer_cancel (SocketPoll_T poll, SocketTimer_T timer)
@@ -719,10 +692,8 @@ sockettimer_calculate_safe_expiry (int64_t now_ms, int64_t delay_ms)
 {
   int64_t clamped_delay = delay_ms;
 
-
   if (delay_ms > SOCKET_MAX_TIMER_DELAY_MS)
     clamped_delay = SOCKET_MAX_TIMER_DELAY_MS;
-
 
   if (clamped_delay > 0 && now_ms > INT64_MAX - clamped_delay)
     return INT64_MAX;

@@ -21,7 +21,6 @@
 #include "core/SocketSecurity.h"
 #include "core/SocketUtil.h"
 
-
 #define RETRY_MIN_DELAY_MS 1.0
 #define SOCKET_RETRY_MAX_MULTIPLIER 16.0
 #define SOCKET_RETRY_MAX_DELAY_VALUE_MS 3600000
@@ -40,14 +39,12 @@ const Except_T SocketRetry_Failed
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketRetry);
 
-
 struct T
 {
   SocketRetry_Policy policy;
   SocketRetry_Stats stats;
   unsigned int random_state; /* xorshift32 PRNG state */
 };
-
 
 static int
 try_crypto_random (unsigned int *out)
@@ -83,7 +80,6 @@ retry_random_double (unsigned int *state)
 
   return (double)*state / UINT32_MAX_DOUBLE;
 }
-
 
 void
 SocketRetry_policy_defaults (SocketRetry_Policy *policy)
@@ -129,7 +125,6 @@ validate_policy (const SocketRetry_Policy *policy)
 
   return 1;
 }
-
 
 /* Compute base^exp iteratively to avoid pow() overhead */
 static double
@@ -248,7 +243,6 @@ SocketRetry_calculate_delay (const SocketRetry_Policy *policy, int attempt)
   return calculate_backoff_delay (policy, attempt, &state);
 }
 
-
 /* Sleep with EINTR handling via nanosleep */
 static void
 retry_sleep_ms (int ms)
@@ -269,7 +263,6 @@ retry_sleep_ms (int ms)
       req = rem;
     }
 }
-
 
 static unsigned int
 init_random_state (void)
@@ -322,7 +315,6 @@ SocketRetry_free (T *retry)
   free (*retry);
   *retry = NULL;
 }
-
 
 static void
 reset_retry_stats (T retry)
@@ -389,7 +381,6 @@ perform_single_attempt (T retry, SocketRetry_Operation operation,
   return result;
 }
 
-
 int
 SocketRetry_execute (T retry, SocketRetry_Operation operation,
                      SocketRetry_ShouldRetry should_retry, void *context)
@@ -429,7 +420,6 @@ SocketRetry_execute_simple (T retry, SocketRetry_Operation operation,
 {
   return SocketRetry_execute (retry, operation, NULL, context);
 }
-
 
 void
 SocketRetry_get_stats (const T retry, SocketRetry_Stats *stats)

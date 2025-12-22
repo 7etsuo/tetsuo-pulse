@@ -27,14 +27,13 @@
 #include <unistd.h>
 #endif
 
-
 #define WEBSOCKET_KEY_RANDOM_BYTES 16 /* 16 bytes = 128 bits per RFC 6455 */
 #define WEBSOCKET_KEY_BASE64_LEN (SOCKET_CRYPTO_WEBSOCKET_KEY_SIZE - 1)
-#define WEBSOCKET_CONCAT_BUFFER_SIZE 64 /* key(24) + GUID(36) + null(1), rounded */
+#define WEBSOCKET_CONCAT_BUFFER_SIZE                                          \
+  64 /* key(24) + GUID(36) + null(1), rounded */
 #define BASE64_BLOCK_SIZE 4
 #define BASE64_INVALID_CHAR 255
 #define BASE64_MAX_PADDING 2
-
 
 const Except_T SocketCrypto_Failed
     = { &SocketCrypto_Failed, "Cryptographic operation failed" };
@@ -62,7 +61,6 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketCrypto);
 #define SOCKET_CRYPTO_RAISE_FAILED(name)                                      \
   SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,                        \
                     "%s computation failed", name)
-
 
 static const char base64_alphabet[]
     = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -92,7 +90,6 @@ static const unsigned char base64_decode_table[256] = {
 
 static const char hex_lower[] = "0123456789abcdef";
 static const char hex_upper[] = "0123456789ABCDEF";
-
 
 #if SOCKET_HAS_TLS
 static void
@@ -179,7 +176,6 @@ SocketCrypto_md5 (const void *input, size_t input_len,
 #endif
 }
 
-
 void
 SocketCrypto_hmac_sha256 (const void *key, size_t key_len, const void *data,
                           size_t data_len,
@@ -227,7 +223,6 @@ SocketCrypto_hmac_sha256 (const void *key, size_t key_len, const void *data,
   SOCKET_CRYPTO_REQUIRE_TLS;
 #endif
 }
-
 
 size_t
 SocketCrypto_base64_encoded_size (size_t input_len)
@@ -362,7 +357,8 @@ base64_decode_block (const unsigned char *buffer, int padding_count,
   return 0;
 }
 
-/* Decode incomplete final block without padding (handles non-conformant input) */
+/* Decode incomplete final block without padding (handles non-conformant input)
+ */
 static int
 base64_decode_partial_block (unsigned char *buffer, int buffer_pos,
                              unsigned char *output, size_t *out_pos,
@@ -390,7 +386,8 @@ base64_decode_partial_block (unsigned char *buffer, int buffer_pos,
   return 0;
 }
 
-/* Process one Base64 character: returns 0 (success), 1 (skip whitespace), -1 (error) */
+/* Process one Base64 character: returns 0 (success), 1 (skip whitespace), -1
+ * (error) */
 static int
 base64_decode_char (unsigned char c, unsigned char *buffer, int *buffer_pos,
                     int *padding_count, unsigned char *output, size_t *out_pos,
@@ -481,7 +478,6 @@ SocketCrypto_base64_decode (const char *input, size_t input_len,
   return (ssize_t)out_pos;
 }
 
-
 void
 SocketCrypto_hex_encode (const void *input, size_t input_len, char *output,
                          int lowercase)
@@ -565,7 +561,6 @@ SocketCrypto_hex_decode (const char *input, size_t input_len,
 
   return (ssize_t)(input_len / 2);
 }
-
 
 #if !SOCKET_HAS_TLS
 static pthread_mutex_t urand_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -661,7 +656,6 @@ SocketCrypto_cleanup (void)
 #endif
 }
 
-
 int
 SocketCrypto_websocket_accept (
     const char *client_key, char output[SOCKET_CRYPTO_WEBSOCKET_ACCEPT_SIZE])
@@ -699,10 +693,7 @@ SocketCrypto_websocket_accept (
         >= 0)
       result = 0;
   }
-  EXCEPT (SocketCrypto_Failed)
-  {
-    result = -1;
-  }
+  EXCEPT (SocketCrypto_Failed) { result = -1; }
   FINALLY
   {
     SocketCrypto_secure_clear (concat_buffer, sizeof (concat_buffer));
@@ -735,7 +726,6 @@ SocketCrypto_websocket_key (char output[SOCKET_CRYPTO_WEBSOCKET_KEY_SIZE])
   SocketCrypto_secure_clear (random_bytes, sizeof (random_bytes));
   return 0;
 }
-
 
 int
 SocketCrypto_secure_compare (const void *a, const void *b, size_t len)

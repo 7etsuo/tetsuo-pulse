@@ -26,12 +26,10 @@
 
 #define T SocketIPTracker_T
 
-
 const Except_T SocketIPTracker_Failed
     = { &SocketIPTracker_Failed, "IP tracker operation failed" };
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketIPTracker);
-
 
 typedef struct IPEntry
 {
@@ -52,18 +50,34 @@ struct T
   int initialized;
 };
 
-#define TRACKER_LOCK(t)     do { pthread_mutex_lock (&(t)->mutex); } while (0)
-#define TRACKER_UNLOCK(t)   do { pthread_mutex_unlock (&(t)->mutex); } while (0)
-#define TRACKER_READ_FIELD(t, field, var) do { \
-  TRACKER_LOCK(t); \
-  var = (t)->field; \
-  TRACKER_UNLOCK(t); \
-} while (0)
-#define TRACKER_WRITE_FIELD(t, field, val) do { \
-  TRACKER_LOCK(t); \
-  (t)->field = (val); \
-  TRACKER_UNLOCK(t); \
-} while (0)
+#define TRACKER_LOCK(t)                                                       \
+  do                                                                          \
+    {                                                                         \
+      pthread_mutex_lock (&(t)->mutex);                                       \
+    }                                                                         \
+  while (0)
+#define TRACKER_UNLOCK(t)                                                     \
+  do                                                                          \
+    {                                                                         \
+      pthread_mutex_unlock (&(t)->mutex);                                     \
+    }                                                                         \
+  while (0)
+#define TRACKER_READ_FIELD(t, field, var)                                     \
+  do                                                                          \
+    {                                                                         \
+      TRACKER_LOCK (t);                                                       \
+      var = (t)->field;                                                       \
+      TRACKER_UNLOCK (t);                                                     \
+    }                                                                         \
+  while (0)
+#define TRACKER_WRITE_FIELD(t, field, val)                                    \
+  do                                                                          \
+    {                                                                         \
+      TRACKER_LOCK (t);                                                       \
+      (t)->field = (val);                                                     \
+      TRACKER_UNLOCK (t);                                                     \
+    }                                                                         \
+  while (0)
 
 static inline int
 clamp_max_per_ip (int val)
@@ -71,7 +85,8 @@ clamp_max_per_ip (int val)
   return val < 0 ? 0 : val;
 }
 
-typedef enum {
+typedef enum
+{
   IP_VALID,
   IP_BASIC_INVALID,
   IP_ADVANCED_INVALID
@@ -88,7 +103,8 @@ validate_ip (const char *ip, const char *caller)
   if (ip_len >= (size_t)SOCKET_IP_MAX_LEN)
     {
       if (caller != NULL)
-        SOCKET_LOG_WARN_MSG ("Invalid IP for %s: %s (len=%zu)", caller, ip, ip_len);
+        SOCKET_LOG_WARN_MSG ("Invalid IP for %s: %s (len=%zu)", caller, ip,
+                             ip_len);
       return IP_ADVANCED_INVALID;
     }
 
@@ -101,10 +117,10 @@ validate_ip (const char *ip, const char *caller)
     return IP_VALID;
 
   if (caller != NULL)
-    SOCKET_LOG_WARN_MSG ("Invalid IP format for %s: %s (len=%zu)", caller, ip, ip_len);
+    SOCKET_LOG_WARN_MSG ("Invalid IP format for %s: %s (len=%zu)", caller, ip,
+                         ip_len);
   return IP_ADVANCED_INVALID;
 }
-
 
 /* Uses DJB2 string hash with seed for DoS resistance */
 static unsigned
@@ -160,7 +176,6 @@ tracker_free_raw (const T tracker, void *ptr)
     free (ptr);
 }
 
-
 static IPEntry *
 allocate_entry (const T tracker)
 {
@@ -200,7 +215,6 @@ create_and_insert_entry (T tracker, const char *ip, int initial_count)
   return entry;
 }
 
-
 /* O(1) removal with prev pointer, caller must hold mutex */
 static void
 unlink_entry (T tracker, IPEntry *entry, IPEntry *prev)
@@ -213,7 +227,6 @@ unlink_entry (T tracker, IPEntry *entry, IPEntry *prev)
 
   tracker_free_raw (tracker, entry);
 }
-
 
 static int
 free_entry_callback (void *entry, void *context)
@@ -229,7 +242,6 @@ free_all_entries (T tracker)
   if (tracker->arena == NULL && tracker->table != NULL)
     HashTable_foreach (tracker->table, free_entry_callback, tracker);
 }
-
 
 static T
 allocate_tracker (Arena_T arena)
@@ -284,10 +296,7 @@ init_tracker_table (T tracker)
                               .compare = iptracker_compare,
                               .next_ptr = iptracker_next_ptr };
 
-  TRY
-  {
-    tracker->table = HashTable_new (tracker->arena, &config);
-  }
+  TRY { tracker->table = HashTable_new (tracker->arena, &config); }
   EXCEPT (HashTable_Failed)
   {
     SOCKET_ERROR_MSG ("Failed to allocate IP tracker hash table");
@@ -325,14 +334,14 @@ cleanup_failed_tracker (T tracker)
     }
 }
 
-
 static bool
 is_unlimited_mode (const T tracker)
 {
   return tracker->max_per_ip <= 0;
 }
 
-/* Handles allocation failure: allows in unlimited mode, caller must hold mutex */
+/* Handles allocation failure: allows in unlimited mode, caller must hold mutex
+ */
 static int
 create_new_entry_and_track (T tracker, const char *ip)
 {
@@ -385,7 +394,6 @@ track_internal (T tracker, const char *ip)
     }
   return increment_existing_entry (tracker, entry);
 }
-
 
 T
 SocketIPTracker_new (Arena_T arena, int max_per_ip)

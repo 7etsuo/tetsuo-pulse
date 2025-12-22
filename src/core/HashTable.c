@@ -15,12 +15,10 @@
 
 #define T HashTable_T
 
-
 const Except_T HashTable_Failed
     = { &HashTable_Failed, "Hash table operation failed" };
 
 SOCKET_DECLARE_MODULE_EXCEPTION (HashTable);
-
 
 struct T
 {
@@ -33,7 +31,6 @@ struct T
   Arena_T arena; /* NULL=malloc */
 };
 
-
 static void
 validate_config (const HashTable_Config *config)
 {
@@ -41,8 +38,7 @@ validate_config (const HashTable_Config *config)
     SOCKET_RAISE_MSG (HashTable, HashTable_Failed, "NULL configuration");
 
   if (config->bucket_count == 0)
-    SOCKET_RAISE_MSG (HashTable, HashTable_Failed,
-                      "bucket_count must be > 0");
+    SOCKET_RAISE_MSG (HashTable, HashTable_Failed, "bucket_count must be > 0");
 
   if (config->hash == NULL)
     SOCKET_RAISE_MSG (HashTable, HashTable_Failed, "hash function required");
@@ -88,7 +84,6 @@ set_next (T table, void *entry, void *next)
   void **next_ptr = table->next_ptr (entry);
   *next_ptr = next;
 }
-
 
 T
 HashTable_new (Arena_T arena, const HashTable_Config *config)
@@ -144,7 +139,6 @@ HashTable_free (T *table)
   *table = NULL;
 }
 
-
 void *
 HashTable_find (T table, const void *key, void **prev_out)
 {
@@ -186,7 +180,8 @@ HashTable_insert (T table, void *entry, const void *key)
 
   bucket = compute_bucket (table, key);
 
-  set_next (table, entry, table->buckets[bucket]); /* Insert at head for O(1) */
+  set_next (table, entry,
+            table->buckets[bucket]); /* Insert at head for O(1) */
   table->buckets[bucket] = entry;
 }
 
@@ -224,7 +219,8 @@ HashTable_foreach (T table, HashTable_IterFunc func, void *context)
       entry = table->buckets[i];
       while (entry != NULL)
         {
-          next = get_next (table, entry); /* Get next before callback modifies entry */
+          next = get_next (
+              table, entry); /* Get next before callback modifies entry */
 
           if (func (entry, context) != 0)
             return;
