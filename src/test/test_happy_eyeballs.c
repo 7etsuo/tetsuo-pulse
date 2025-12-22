@@ -21,8 +21,9 @@
 
 /* cppcheck-suppress-file unreadVariable ; intentional test patterns */
 
+#include "core/Arena.h"
 #include "core/Except.h"
-#include "dns/SocketDNS.h"
+#include "dns/SocketDNSResolver.h"
 #include "poll/SocketPoll.h"
 #include "socket/Socket.h"
 #include "socket/SocketHappyEyeballs.h"
@@ -206,7 +207,8 @@ TEST (he_async_connect_localhost)
 {
   Socket_T server = NULL;
   Socket_T client = NULL;
-  SocketDNS_T dns = NULL;
+  Arena_T arena = NULL;
+  SocketDNSResolver_T resolver = NULL;
   SocketPoll_T poll = NULL;
   SocketHE_T he = NULL;
   SocketHE_Config_T config;
@@ -234,17 +236,21 @@ TEST (he_async_connect_localhost)
   }
   END_TRY;
 
-  /* Create DNS and poll */
+  /* Create arena, resolver and poll */
   TRY
   {
-    dns = SocketDNS_new ();
+    arena = Arena_new ();
+    resolver = SocketDNSResolver_new (arena);
+    SocketDNSResolver_load_resolv_conf (resolver);
     poll = SocketPoll_new (64);
   }
-  EXCEPT (SocketDNS_Failed)
+  EXCEPT (SocketDNSResolver_Failed)
   EXCEPT (SocketPoll_Failed)
   {
-    if (dns)
-      SocketDNS_free (&dns);
+    if (resolver)
+      SocketDNSResolver_free (&resolver);
+    if (arena)
+      Arena_dispose (&arena);
     if (poll)
       SocketPoll_free (&poll);
     Socket_free (&server);
@@ -259,11 +265,12 @@ TEST (he_async_connect_localhost)
 
   TRY
   {
-    he = SocketHappyEyeballs_start (dns, poll, "127.0.0.1", port, &config);
+    he = SocketHappyEyeballs_start (resolver, poll, "127.0.0.1", port, &config);
   }
   EXCEPT (SocketHE_Failed)
   {
-    SocketDNS_free (&dns);
+    SocketDNSResolver_free (&resolver);
+    Arena_dispose (&arena);
     SocketPoll_free (&poll);
     Socket_free (&server);
     ASSERT (0);
@@ -272,7 +279,9 @@ TEST (he_async_connect_localhost)
   END_TRY;
 
   ASSERT_NOT_NULL (he);
-  ASSERT_EQ (HE_STATE_RESOLVING, SocketHappyEyeballs_state (he));
+  /* IP address resolves immediately, so state may already be CONNECTING */
+  ASSERT (SocketHappyEyeballs_state (he) == HE_STATE_RESOLVING
+          || SocketHappyEyeballs_state (he) == HE_STATE_CONNECTING);
 
   /* Process until complete */
   while (!SocketHappyEyeballs_poll (he) && iterations < max_iterations)
@@ -284,7 +293,7 @@ TEST (he_async_connect_localhost)
         timeout = 100;
       (void)timeout; /* Suppress unused - testing API, using fixed sleep */
 
-      SocketDNS_check (dns);
+      SocketDNSResolver_process (resolver, 0);
       SocketHappyEyeballs_process (he);
 
       usleep (10000); /* 10ms */
@@ -301,14 +310,16 @@ TEST (he_async_connect_localhost)
     }
 
   SocketHappyEyeballs_free (&he);
-  SocketDNS_free (&dns);
+  SocketDNSResolver_free (&resolver);
+  Arena_dispose (&arena);
   SocketPoll_free (&poll);
   Socket_free (&server);
 }
 
 TEST (he_async_cancel)
 {
-  SocketDNS_T dns = NULL;
+  Arena_T arena = NULL;
+  SocketDNSResolver_T resolver = NULL;
   SocketPoll_T poll = NULL;
   SocketHE_T he = NULL;
   SocketHE_Config_T config;
@@ -317,14 +328,18 @@ TEST (he_async_cancel)
 
   TRY
   {
-    dns = SocketDNS_new ();
+    arena = Arena_new ();
+    resolver = SocketDNSResolver_new (arena);
+    SocketDNSResolver_load_resolv_conf (resolver);
     poll = SocketPoll_new (64);
   }
-  EXCEPT (SocketDNS_Failed)
+  EXCEPT (SocketDNSResolver_Failed)
   EXCEPT (SocketPoll_Failed)
   {
-    if (dns)
-      SocketDNS_free (&dns);
+    if (resolver)
+      SocketDNSResolver_free (&resolver);
+    if (arena)
+      Arena_dispose (&arena);
     if (poll)
       SocketPoll_free (&poll);
     ASSERT (0);
@@ -337,11 +352,12 @@ TEST (he_async_cancel)
 
   TRY
   {
-    he = SocketHappyEyeballs_start (dns, poll, "example.com", 80, &config);
+    he = SocketHappyEyeballs_start (resolver, poll, "example.com", 80, &config);
   }
   EXCEPT (SocketHE_Failed)
   {
-    SocketDNS_free (&dns);
+    SocketDNSResolver_free (&resolver);
+    Arena_dispose (&arena);
     SocketPoll_free (&poll);
     ASSERT (0);
     return;
@@ -356,14 +372,16 @@ TEST (he_async_cancel)
   ASSERT_NULL (SocketHappyEyeballs_result (he));
 
   SocketHappyEyeballs_free (&he);
-  SocketDNS_free (&dns);
+  SocketDNSResolver_free (&resolver);
+  Arena_dispose (&arena);
   SocketPoll_free (&poll);
 }
 
 TEST (he_state_transitions)
 {
   SocketHE_T he = NULL;
-  SocketDNS_T dns = NULL;
+  Arena_T arena = NULL;
+  SocketDNSResolver_T resolver = NULL;
   SocketPoll_T poll = NULL;
   SocketHE_Config_T config;
   Socket_T server = NULL;
@@ -391,14 +409,18 @@ TEST (he_state_transitions)
 
   TRY
   {
-    dns = SocketDNS_new ();
+    arena = Arena_new ();
+    resolver = SocketDNSResolver_new (arena);
+    SocketDNSResolver_load_resolv_conf (resolver);
     poll = SocketPoll_new (64);
   }
-  EXCEPT (SocketDNS_Failed)
+  EXCEPT (SocketDNSResolver_Failed)
   EXCEPT (SocketPoll_Failed)
   {
-    if (dns)
-      SocketDNS_free (&dns);
+    if (resolver)
+      SocketDNSResolver_free (&resolver);
+    if (arena)
+      Arena_dispose (&arena);
     if (poll)
       SocketPoll_free (&poll);
     Socket_free (&server);
@@ -411,11 +433,12 @@ TEST (he_state_transitions)
 
   TRY
   {
-    he = SocketHappyEyeballs_start (dns, poll, "127.0.0.1", port, &config);
+    he = SocketHappyEyeballs_start (resolver, poll, "127.0.0.1", port, &config);
   }
   EXCEPT (SocketHE_Failed)
   {
-    SocketDNS_free (&dns);
+    SocketDNSResolver_free (&resolver);
+    Arena_dispose (&arena);
     SocketPoll_free (&poll);
     Socket_free (&server);
     ASSERT (0);
@@ -423,14 +446,15 @@ TEST (he_state_transitions)
   }
   END_TRY;
 
-  /* Initial state should be RESOLVING */
-  ASSERT_EQ (HE_STATE_RESOLVING, SocketHappyEyeballs_state (he));
+  /* IP address resolves immediately, so state may already be CONNECTING */
+  ASSERT (SocketHappyEyeballs_state (he) == HE_STATE_RESOLVING
+          || SocketHappyEyeballs_state (he) == HE_STATE_CONNECTING);
 
   /* Process to completion */
   int iterations = 0;
   while (!SocketHappyEyeballs_poll (he) && iterations < 100)
     {
-      SocketDNS_check (dns);
+      SocketDNSResolver_process (resolver, 0);
       SocketHappyEyeballs_process (he);
       usleep (10000);
       iterations++;
@@ -448,7 +472,8 @@ TEST (he_state_transitions)
     }
 
   SocketHappyEyeballs_free (&he);
-  SocketDNS_free (&dns);
+  SocketDNSResolver_free (&resolver);
+  Arena_dispose (&arena);
   SocketPoll_free (&poll);
   Socket_free (&server);
 }

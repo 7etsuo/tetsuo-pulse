@@ -71,7 +71,7 @@
  */
 
 #include "core/Except.h"
-#include "dns/SocketDNS.h"
+#include "dns/SocketDNSResolver.h"
 #include "poll/SocketPoll.h"
 #include "socket/Socket.h"
 
@@ -291,7 +291,7 @@ extern Socket_T SocketHappyEyeballs_connect (const char *host, int port,
 /**
  * @brief Start asynchronous Happy Eyeballs connection.
  * @ingroup async_io
- * @param[in] dns DNS resolver instance (caller-owned, must outlive operation).
+ * @param[in] resolver Async DNS resolver instance (caller-owned, must outlive operation).
  * @param[in] poll Poll instance for connection monitoring (caller-owned).
  * @param[in] host Hostname or IP address to connect to.
  * @param[in] port Port number (1-65535).
@@ -346,10 +346,10 @@ extern Socket_T SocketHappyEyeballs_connect (const char *host, int port,
  *
  * @see SocketHappyEyeballs_connect() for synchronous version.
  * @see SocketHappyEyeballs_config_defaults() for config setup.
- * @see @ref SocketDNS_T "SocketDNS" for DNS integration.
+ * @see @ref SocketDNSResolver_T "SocketDNSResolver" for DNS integration.
  * @see @ref SocketPoll_T "SocketPoll" for event loop integration.
  */
-extern T SocketHappyEyeballs_start (SocketDNS_T dns, SocketPoll_T poll,
+extern T SocketHappyEyeballs_start (SocketDNSResolver_T resolver, SocketPoll_T poll,
                                     const char *host, int port,
                                     const SocketHE_Config_T *config);
 

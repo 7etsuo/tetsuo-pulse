@@ -28,8 +28,7 @@
  */
 
 #include "core/Arena.h"
-#include "dns/SocketDNS-private.h"
-#include "dns/SocketDNS.h"
+#include "dns/SocketDNSResolver.h"
 #include "poll/SocketPoll.h"
 #include "socket/Socket.h"
 #include "socket/SocketHappyEyeballs.h"
@@ -390,25 +389,26 @@ struct SocketHE_T
   int port;   /**< Target service port number. */
 
   /* === External Dependencies (Borrowed) === */
-  SocketDNS_T
-      dns; /**< Optional DNS resolver for async resolution (NULL=blocking). */
+  SocketDNSResolver_T
+      resolver; /**< Async DNS resolver for resolution (NULL=create internal). */
   SocketPoll_T
       poll; /**< Optional event poll for async progress (NULL=sync). */
 
   /* === Owned Resources === */
   Arena_T arena; /**< Arena for all internal allocations. */
-  int owns_dns;  /**< Flag: 1 if this context created and owns ::dns. */
-  int owns_poll; /**< Flag: 1 if this context created and owns ::poll. */
-
-  Socket_T dns_poll_wrapper; /**< Internal wrapper for DNS poll FD (non-owning dup fd). */
+  Arena_T resolver_arena; /**< Arena for resolver (only when owns_resolver=1). */
+  int owns_resolver; /**< Flag: 1 if this context created and owns ::resolver. */
+  int owns_poll;     /**< Flag: 1 if this context created and owns ::poll. */
 
   /* === DNS State === */
-  Request_T dns_request;     /**< Active asynchronous DNS request handle
-                                (SocketDNS_Request_T *). */
+  SocketDNSResolver_Query_T
+      dns_query; /**< Active asynchronous DNS query handle. */
   struct addrinfo *resolved; /**< Owned list of resolved addresses
                                 (freeaddrinfo on cleanup). */
-  int dns_complete; /**< Flag: 1 if DNS resolution succeeded or failed. */
-  int dns_error;    /**< SocketDNS error code if resolution failed. */
+  volatile int dns_complete; /**< Flag: 1 if DNS resolution succeeded or failed. */
+  int dns_error;             /**< Resolver error code if resolution failed. */
+  volatile int
+      dns_callback_pending; /**< Flag: 1 if callback has fired, result pending. */
 
   /* === Address Management === */
   SocketHE_AddressEntry_T *addresses; /**< Head of preference-sorted address
