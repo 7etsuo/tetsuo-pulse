@@ -919,6 +919,38 @@ extern uint16_t SocketDNS_opt_extended_rcode (const SocketDNS_Header *hdr,
 
 /** @} */ /* End of dns_edns0 group */
 
+/**
+ * @defgroup dns_security DNS Security Utilities
+ * @brief Security-related validation functions (RFC 5452).
+ * @ingroup dns
+ * @{
+ */
+
+/**
+ * @brief Check if a name is within the bailiwick of a zone (RFC 5452).
+ * @ingroup dns_security
+ *
+ * A name is in-bailiwick if it equals the zone or is a subdomain of it.
+ * For example, "www.example.com" is in-bailiwick of "example.com".
+ * This prevents cache poisoning via out-of-zone answer injection.
+ *
+ * @param record_name Name from the answer record.
+ * @param query_name  Original query name (defines the bailiwick).
+ * @return 1 if in-bailiwick, 0 if out-of-bailiwick.
+ *
+ * @code{.c}
+ * // Accept: subdomain of queried name
+ * assert(SocketDNS_name_in_bailiwick("www.example.com", "example.com") == 1);
+ *
+ * // Reject: unrelated domain
+ * assert(SocketDNS_name_in_bailiwick("attacker.com", "example.com") == 0);
+ * @endcode
+ */
+extern int SocketDNS_name_in_bailiwick (const char *record_name,
+                                        const char *query_name);
+
+/** @} */ /* End of dns_security group */
+
 /** @} */ /* End of dns_wire group */
 
 #endif /* SOCKETDNSWIRE_INCLUDED */

@@ -1128,3 +1128,52 @@ SocketDNS_opt_extended_rcode (const SocketDNS_Header *hdr,
 
   return rcode;
 }
+
+/*
+ * Security Utilities (RFC 5452)
+ */
+
+int
+SocketDNS_name_in_bailiwick (const char *record_name, const char *query_name)
+{
+  size_t rec_len, qry_len;
+
+  if (!record_name || !query_name)
+    return 0;
+
+  /* Exact match is always in-bailiwick */
+  if (SocketDNS_name_equal (record_name, query_name))
+    return 1;
+
+  rec_len = strlen (record_name);
+  qry_len = strlen (query_name);
+
+  /* Strip trailing dots for comparison */
+  while (rec_len > 0 && record_name[rec_len - 1] == '.')
+    rec_len--;
+  while (qry_len > 0 && query_name[qry_len - 1] == '.')
+    qry_len--;
+
+  /* Record must be longer (subdomain check) */
+  if (rec_len <= qry_len)
+    return 0;
+
+  /* Must have '.' separator before the suffix */
+  if (record_name[rec_len - qry_len - 1] != '.')
+    return 0;
+
+  /* Compare suffix case-insensitively */
+  const char *suffix = record_name + (rec_len - qry_len);
+  for (size_t i = 0; i < qry_len; i++)
+    {
+      char a = suffix[i], b = query_name[i];
+      if (a >= 'A' && a <= 'Z')
+        a = (char)(a + 32);
+      if (b >= 'A' && b <= 'Z')
+        b = (char)(b + 32);
+      if (a != b)
+        return 0;
+    }
+
+  return 1;
+}

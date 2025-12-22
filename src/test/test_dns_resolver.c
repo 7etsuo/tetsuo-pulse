@@ -10,6 +10,7 @@
  */
 
 #include "dns/SocketDNSResolver.h"
+#include "dns/SocketDNSWire.h"
 #include "core/Arena.h"
 #include "test/Test.h"
 
@@ -581,6 +582,69 @@ TEST (dns_resolver_cancel_invalid)
 
   SocketDNSResolver_free (&resolver);
   Arena_dispose (&arena);
+}
+
+/*
+ * RFC 5452 / RFC 8767 Security Tests
+ */
+
+/* Test: Bailiwick checking accepts valid names (RFC 5452) */
+TEST (dns_bailiwick_valid)
+{
+  /* Exact match */
+  ASSERT (SocketDNS_name_in_bailiwick ("example.com", "example.com"));
+  ASSERT (SocketDNS_name_in_bailiwick ("EXAMPLE.COM", "example.com"));
+  ASSERT (SocketDNS_name_in_bailiwick ("example.com.", "example.com"));
+
+  /* Subdomain matches */
+  ASSERT (SocketDNS_name_in_bailiwick ("www.example.com", "example.com"));
+  ASSERT (SocketDNS_name_in_bailiwick ("a.b.c.example.com", "example.com"));
+  ASSERT (SocketDNS_name_in_bailiwick ("WWW.EXAMPLE.COM", "example.com"));
+}
+
+/* Test: Bailiwick checking rejects invalid names (RFC 5452) */
+TEST (dns_bailiwick_invalid)
+{
+  /* Different domain */
+  ASSERT (!SocketDNS_name_in_bailiwick ("attacker.com", "example.com"));
+  ASSERT (!SocketDNS_name_in_bailiwick ("evil.org", "example.com"));
+
+  /* Similar suffix but not subdomain */
+  ASSERT (!SocketDNS_name_in_bailiwick ("fakeexample.com", "example.com"));
+  ASSERT (!SocketDNS_name_in_bailiwick ("notexample.com", "example.com"));
+
+  /* Domain embedded in attacker domain */
+  ASSERT (!SocketDNS_name_in_bailiwick ("example.com.attacker.com", "example.com"));
+
+  /* NULL handling */
+  ASSERT (!SocketDNS_name_in_bailiwick (NULL, "example.com"));
+  ASSERT (!SocketDNS_name_in_bailiwick ("example.com", NULL));
+}
+
+/* Test: TTL capping constant per RFC 8767 */
+TEST (dns_ttl_max_constant)
+{
+  /* DNS_TTL_MAX should be 7 days = 604800 seconds per RFC 8767 */
+  ASSERT_EQ (DNS_TTL_MAX, 604800);
+}
+
+/* Test: Validation error strings */
+TEST (dns_validation_error_strings)
+{
+  const char *s;
+
+  s = SocketDNSResolver_strerror (RESOLVER_ERROR_VALIDATION_QNAME);
+  ASSERT_NOT_NULL (s);
+  ASSERT (strstr (s, "QNAME") != NULL || strstr (s, "5452") != NULL);
+
+  s = SocketDNSResolver_strerror (RESOLVER_ERROR_VALIDATION_QTYPE);
+  ASSERT_NOT_NULL (s);
+
+  s = SocketDNSResolver_strerror (RESOLVER_ERROR_VALIDATION_QCLASS);
+  ASSERT_NOT_NULL (s);
+
+  s = SocketDNSResolver_strerror (RESOLVER_ERROR_VALIDATION_BAILIWICK);
+  ASSERT_NOT_NULL (s);
 }
 
 /* Main function */

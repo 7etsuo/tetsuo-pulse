@@ -124,6 +124,23 @@
 /** Memory allocation failed. */
 #define RESOLVER_ERROR_NOMEM -10
 
+/** Response QNAME does not match query (RFC 5452). */
+#define RESOLVER_ERROR_VALIDATION_QNAME -11
+
+/** Response QTYPE does not match query (RFC 5452). */
+#define RESOLVER_ERROR_VALIDATION_QTYPE -12
+
+/** Response QCLASS does not match query (RFC 5452). */
+#define RESOLVER_ERROR_VALIDATION_QCLASS -13
+
+/** Answer record outside queried zone (RFC 5452 bailiwick check). */
+#define RESOLVER_ERROR_VALIDATION_BAILIWICK -14
+
+/* TTL limits per RFC 8767 */
+
+/** Maximum TTL in seconds (7 days per RFC 8767). */
+#define DNS_TTL_MAX 604800
+
 /* Configuration defaults */
 
 /** Default query timeout in milliseconds. */
