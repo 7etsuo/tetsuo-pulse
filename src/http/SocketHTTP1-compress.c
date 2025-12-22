@@ -68,14 +68,7 @@
 
 #endif /* SOCKETHTTP1_HAS_BROTLI */
 
-/**
- * struct SocketHTTP1_Decoder - Internal decoder state for content decoding
- *
- * Manages decompression state for gzip, deflate, or brotli content.
- * Tracks total decompressed bytes to enforce zip bomb protection limits.
- *
- * Thread-safe: No - single-threaded use per instance
- */
+/* Decoder state for gzip/deflate/brotli decompression */
 struct SocketHTTP1_Decoder
 {
   SocketHTTP_Coding coding;         /**< Content coding type (gzip/deflate/br) */
@@ -98,14 +91,7 @@ struct SocketHTTP1_Decoder
   size_t max_decompressed_size;     /**< Limit for zip bomb protection */
 };
 
-/**
- * struct SocketHTTP1_Encoder - Internal encoder state for content encoding
- *
- * Manages compression state for gzip, deflate, or brotli output.
- * Tracks total encoded bytes for optional output size limiting.
- *
- * Thread-safe: No - single-threaded use per instance
- */
+/* Encoder state for gzip/deflate/brotli compression */
 struct SocketHTTP1_Encoder
 {
   SocketHTTP_Coding coding;             /**< Content coding type */

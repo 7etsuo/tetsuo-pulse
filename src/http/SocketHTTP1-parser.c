@@ -65,33 +65,7 @@
 
 
 
-/**
- * Character classification table (256 bytes)
- *
- * Maps each byte to its HTTP1_CharClass. Designed for O(1) lookup
- * in the parsing hot loop. Classes are chosen to minimize table size
- * while capturing all HTTP/1.1 grammar distinctions.
- *
- * Key classes:
- * - CTL (0): Control chars except HTAB - invalid in most contexts
- * - SP (1): Space - field separator
- * - HTAB (2): Tab - OWS (optional whitespace)
- * - CR (3): Carriage return - line ending
- * - LF (4): Line feed - line ending
- * - COLON (5): Header name/value separator
- * - SLASH (6): Version separator (HTTP/x.y)
- * - DOT (7): Version separator
- * - DIGIT (8): 0-9
- * - HEX (9): a-f, A-F (for chunk sizes)
- * - ALPHA (10): Letters except H, T, P
- * - H (11): 'H' - HTTP version start
- * - T (12): 'T' - HTTP version
- * - P (13): 'P' - HTTP version
- * - TCHAR (14): Other token chars
- * - VCHAR (15): Other visible chars
- * - OBS (16): obs-text (0x80-0xFF)
- * - INVALID (17): NUL, DEL, etc.
- */
+/* Character classification table for O(1) lookup in parsing hot loop */
 const uint8_t http1_char_class[256] = {
   /* 0x00-0x0F: Control characters */
   /*      NUL   SOH   STX   ETX   EOT   ENQ   ACK   BEL */
@@ -190,16 +164,7 @@ const uint8_t http1_char_class[256] = {
 #define HR HTTP1_PS_HEADER_CR
 #define HL HTTP1_PS_HEADERS_END_LF
 
-/**
- * State transition table for REQUEST parsing
- *
- * Indexed by [current_state][char_class] -> next_state
- * Uses HTTP1_PS_ERROR (__) for invalid transitions
- *
- * Row order matches HTTP1_InternalState enum
- * Column order matches HTTP1_CharClass enum:
- *   CTL  SP  HTAB  CR  LF  COLON SLASH DOT DIGIT HEX ALPHA  H    T    P  TCHAR VCHAR OBS INVALID
- */
+/* State transition table for REQUEST parsing: [current_state][char_class] -> next_state */
 const uint8_t http1_req_state[HTTP1_NUM_STATES][HTTP1_NUM_CLASSES] = {
   /*                    CTL  SP  HTAB  CR   LF COLON SLASH DOT DIGIT HEX ALPHA   H    T    P TCHAR VCHAR  OBS INVLD */
   /* START         */ {  __,  __,  __,  __,  __,  __,  __,  __,  __,  ME,  ME,  ME,  ME,  ME,  ME,  __,  __,  __ },
@@ -231,12 +196,7 @@ const uint8_t http1_req_state[HTTP1_NUM_STATES][HTTP1_NUM_CLASSES] = {
   /* remaining states use default error - body states handled separately */
 };
 
-/**
- * State transition table for RESPONSE parsing
- *
- * Similar to request table but starts with HTTP version
- * and includes status code parsing.
- */
+/* State transition table for RESPONSE parsing */
 const uint8_t http1_resp_state[HTTP1_NUM_STATES][HTTP1_NUM_CLASSES] = {
   /*                    CTL  SP  HTAB  CR   LF COLON SLASH DOT DIGIT HEX ALPHA   H    T    P TCHAR VCHAR  OBS INVLD */
   /* START         */ {  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  __,  VH,  __,  __,  __,  __,  __,  __ },
@@ -283,14 +243,7 @@ const uint8_t http1_resp_state[HTTP1_NUM_STATES][HTTP1_NUM_CLASSES] = {
 #define HD HTTP1_ACT_HEADERS_DONE
 #define _E HTTP1_ACT_ERROR
 
-/**
- * Action table for REQUEST parsing
- *
- * Maps [state][char_class] -> action to execute
- *
- * IMPORTANT: Header is added only in HEADER_CR+LF or directly on bare LF.
- * When HEADER_VALUE/COLON sees CR, we just transition (no action).
- */
+/* Action table for REQUEST parsing: [state][char_class] -> action */
 const uint8_t http1_req_action[HTTP1_NUM_STATES][HTTP1_NUM_CLASSES] = {
   /*                    CTL  SP  HTAB  CR   LF COLON SLASH DOT DIGIT HEX ALPHA   H    T    P TCHAR VCHAR  OBS INVLD */
   /* START         */ {  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _M,  _M,  _M,  _M,  _M,  _M,  _E,  _E,  _E },
@@ -321,12 +274,7 @@ const uint8_t http1_req_action[HTTP1_NUM_STATES][HTTP1_NUM_CLASSES] = {
   /* HEADERS_END   */ {  _E,  _E,  _E,  _E,  HD,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E },
 };
 
-/**
- * Action table for RESPONSE parsing
- *
- * IMPORTANT: Header is added only in HEADER_CR+LF or directly on bare LF.
- * When HEADER_VALUE/COLON sees CR, we just transition (no action).
- */
+/* Action table for RESPONSE parsing */
 const uint8_t http1_resp_action[HTTP1_NUM_STATES][HTTP1_NUM_CLASSES] = {
   /*                    CTL  SP  HTAB  CR   LF COLON SLASH DOT DIGIT HEX ALPHA   H    T    P TCHAR VCHAR  OBS INVLD */
   /* START         */ {  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _E,  _N,  _E,  _E,  _E,  _E,  _E,  _E },
@@ -675,16 +623,8 @@ cl_validator (const char *name, size_t name_len, const char *value,
   return 0;
 }
 
-/**
- * parse_content_length - Parse and validate Content-Length header
- * @headers: Headers collection to search
- *
- * Validates ALL Content-Length headers parse to identical value
- * per RFC 9112 Section 6.3 for request smuggling prevention.
- *
- * Returns: Value on success, -1 on error (invalid or mismatch), -2 if not
- * present
- */
+/* Parse and validate Content-Length (RFC 9112 Section 6.3)
+ * Returns: value on success, -1 on error, -2 if not present */
 static int64_t
 parse_content_length (SocketHTTP_Headers_T headers)
 {
@@ -752,14 +692,7 @@ http1_contains_token (const char *value, const char *token)
   return 0;
 }
 
-/**
- * te_chunked_is_last - Validate that chunked is the last transfer coding
- * @te_value: Transfer-Encoding header value
- *
- * Per RFC 9112, chunked must be the final transfer coding if present.
- *
- * Returns: 1 if chunked is last or not present, 0 if violation detected
- */
+/* Validate chunked is last transfer coding per RFC 9112 */
 static int
 te_chunked_is_last (const char *te_value)
 {
@@ -805,16 +738,7 @@ has_chunked_encoding (SocketHTTP_Headers_T headers)
   return 0;
 }
 
-/**
- * has_other_transfer_coding - Check for unsupported/non-chunked transfer
- * codings
- * @headers: Headers collection
- *
- * Scans Transfer-Encoding headers for known unsupported codings
- * (gzip, compress, deflate, etc.). Used for strict RFC 9112 validation.
- *
- * Returns: 1 if unsupported found, 0 otherwise
- */
+/* Check for unsupported transfer codings */
 static int
 has_other_transfer_coding (SocketHTTP_Headers_T headers)
 {
@@ -1106,11 +1030,6 @@ set_error (SocketHTTP1_Parser_T parser, SocketHTTP1_Result error)
   parser->error = error;
 }
 
-/**
- * Macro to set error and return from parse loop
- *
- * Eliminates repeated error return pattern throughout the parser.
- */
 #define RETURN_PARSE_ERROR(parser, err, p, data, consumed)                    \
   do                                                                          \
     {                                                                         \
@@ -1520,18 +1439,6 @@ parse_headers_loop (SocketHTTP1_Parser_T parser, const char *data, size_t len,
   return HTTP1_INCOMPLETE;
 }
 
-/**
- * SocketHTTP1_Parser_execute - Main DFA parsing function
- * @parser: Parser instance
- * @data: Input data buffer
- * @len: Input data length
- * @consumed: Output - bytes consumed
- *
- * Returns: Parse result (HTTP1_OK, HTTP1_INCOMPLETE, or error)
- *
- * Uses precomputed state transition and action tables for O(1) per-byte
- * processing with minimal branch misprediction.
- */
 SocketHTTP1_Result
 SocketHTTP1_Parser_execute (SocketHTTP1_Parser_T parser, const char *data,
                             size_t len, size_t *consumed)

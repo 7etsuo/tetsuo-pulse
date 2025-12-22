@@ -4,9 +4,7 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * SocketHTTPClient-auth.c - HTTP Authentication (RFC 7617 Basic, RFC 7616 Digest, RFC 6750 Bearer)
- */
+/* SocketHTTPClient-auth.c - HTTP Authentication (RFC 7617 Basic, RFC 7616 Digest, RFC 6750 Bearer) */
 
 #include <assert.h>
 #include <stdint.h>
@@ -259,16 +257,7 @@ compute_response_with_qop (const char *ha1_hex, const char *nonce,
   return 0;
 }
 
-/**
- * compute_response_no_qop - Compute response without qop (RFC 2617 compat)
- * @ha1_hex: H(A1) as hex
- * @nonce: Server nonce
- * @ha2_hex: H(A2) as hex
- * @use_sha256: Use SHA-256 or MD5
- * @response_hex: Output buffer
- *
- * Returns: 0 on success, -1 on error
- */
+/* Compute response without qop (RFC 2617 compat) */
 static int
 compute_response_no_qop (const char *ha1_hex, const char *nonce,
                          const char *ha2_hex, int use_sha256,
@@ -543,14 +532,7 @@ generate_cnonce (char *cnonce, size_t size)
   SocketCrypto_secure_clear (random_bytes, sizeof (random_bytes));
 }
 
-/**
- * find_auth_qop - Find "auth" token in qop list
- * @qop_list: Comma-separated qop values
- *
- * Returns: "auth" if found, NULL otherwise
- *
- * NOTE: qop=auth-int is NOT supported (requires request body hash).
- */
+/* Find "auth" token in qop list (qop=auth-int not supported) */
 static const char *
 find_auth_qop (const char *qop_list)
 {

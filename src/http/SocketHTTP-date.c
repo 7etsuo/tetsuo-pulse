@@ -7,7 +7,7 @@
 /**
  * SocketHTTP-date.c - HTTP Date Parsing and Formatting (RFC 9110 Section 5.6.7)
  *
- * Implements HTTP-date parsing for IMF-fixdate, RFC 850, and asctime formats.
+ * Parses IMF-fixdate, RFC 850, and asctime formats.
  */
 
 #include <ctype.h>
@@ -22,7 +22,11 @@
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "SocketHTTP"
 
-/* Parsing constants */
+/* ============================================================================
+ * Constants
+ * ============================================================================
+ */
+
 #define SHORT_NAME_LEN 3
 #define GMT_LEN 3
 #define IMF_FIXDATE_MIN_LEN 29
@@ -40,7 +44,11 @@
 #define LOG_DATE_TRUNCATE_LEN 50
 #define MAX_YEAR 9999
 
-/* Lookup tables */
+/* ============================================================================
+ * Lookup Tables
+ * ============================================================================
+ */
+
 static const char *const day_names_short[]
     = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
 
@@ -63,7 +71,6 @@ static const struct
 static const int days_per_month[MONTHS_PER_YEAR]
     = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 
-/* Temporary structure for parsed date/time components */
 typedef struct DateParts
 {
   int year;
@@ -73,6 +80,12 @@ typedef struct DateParts
   int minute;
   int second;
 } DateParts;
+
+/* ============================================================================
+ * Validation Helpers
+ * ============================================================================
+ */
+
 static int
 is_leap_year (int year)
 {
@@ -90,7 +103,7 @@ valid_date_parts (const DateParts *parts)
     return 0;
 
   int dmax = days_per_month[parts->month];
-  if (parts->month == 1 && is_leap_year (parts->year)) /* February */
+  if (parts->month == 1 && is_leap_year (parts->year))
     ++dmax;
 
   if (parts->day > dmax)
@@ -105,12 +118,16 @@ valid_date_parts (const DateParts *parts)
   if (parts->second < 0 || parts->second > MAX_SECOND)
     return 0;
 
-  /* Year range check (e.g., AD 1 to MAX_YEAR) */
   if (parts->year <= 0 || parts->year > MAX_YEAR)
     return 0;
 
   return 1;
 }
+
+/* ============================================================================
+ * Parsing Helpers
+ * ============================================================================
+ */
 
 static int
 parse_day_short (const char *s)
@@ -210,14 +227,13 @@ expect_space_gmt (const char **p, const char *end)
     return -1;
   if (*p + GMT_LEN > end || strncmp (*p, "GMT", GMT_LEN) != 0)
     return -1;
-  (*p) += GMT_LEN; /* Advance past "GMT" */
+  (*p) += GMT_LEN;
   return 0;
 }
 
 static int
 parse_time_hms (const char **p, const char *end, DateParts *parts)
 {
-  /* Parse hour HH */
   if (*p + 2 > end)
     return -1;
   parts->hour = parse_2digit (*p);
@@ -228,7 +244,6 @@ parse_time_hms (const char **p, const char *end, DateParts *parts)
   if (expect_char (p, end, ':') < 0)
     return -1;
 
-  /* Parse minute MM */
   if (*p + 2 > end)
     return -1;
   parts->minute = parse_2digit (*p);
@@ -239,7 +254,6 @@ parse_time_hms (const char **p, const char *end, DateParts *parts)
   if (expect_char (p, end, ':') < 0)
     return -1;
 
-  /* Parse second SS */
   if (*p + 2 > end)
     return -1;
   parts->second = parse_2digit (*p);
@@ -250,7 +264,11 @@ parse_time_hms (const char **p, const char *end, DateParts *parts)
   return 0;
 }
 
-/* Mutex for TZ manipulation in fallback path */
+/* ============================================================================
+ * Time Conversion
+ * ============================================================================
+ */
+
 static pthread_mutex_t tz_mutex __attribute__ ((unused))
     = PTHREAD_MUTEX_INITIALIZER;
 
@@ -259,13 +277,11 @@ tm_to_time_t (struct tm *tm)
 {
 #if defined(_GNU_SOURCE) || defined(__linux__) || defined(__APPLE__)          \
     || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
-  /* Use timegm for efficient UTC conversion on supported platforms */
   return timegm (tm);
 #else
-  /* Thread-safe fallback: lock around TZ manipulation */
   pthread_mutex_lock (&tz_mutex);
   char *saved_tz = getenv ("TZ");
-  setenv ("TZ", "", 1); /* "" means UTC */
+  setenv ("TZ", "", 1);
   tzset ();
   time_t result = mktime (tm);
   if (saved_tz != NULL)
@@ -281,18 +297,16 @@ tm_to_time_t (struct tm *tm)
 static int
 convert_parts_to_time (const DateParts *parts, time_t *out)
 {
-  /* Validate date components first */
   if (!valid_date_parts (parts))
     return -1;
 
-  struct tm tm_utc = { 0 }; /* Zero-initialized UTC tm */
+  struct tm tm_utc = { 0 };
   tm_utc.tm_year = parts->year - 1900;
   tm_utc.tm_mon = parts->month;
   tm_utc.tm_mday = parts->day;
   tm_utc.tm_hour = parts->hour;
   tm_utc.tm_min = parts->minute;
   tm_utc.tm_sec = parts->second;
-  /* tm_isdst = 0 (UTC, no DST) */
 
   *out = tm_to_time_t (&tm_utc);
   if (*out == (time_t)-1)
@@ -300,6 +314,11 @@ convert_parts_to_time (const DateParts *parts, time_t *out)
 
   return 0;
 }
+
+/* ============================================================================
+ * Format Parsers
+ * ============================================================================
+ */
 
 static const char *
 find_comma (const char *s, const char *end)
@@ -312,7 +331,6 @@ find_comma (const char *s, const char *end)
 static int
 parse_imf_date_part (const char **p, const char *end, DateParts *parts)
 {
-  /* Parse day DD (leading zero optional) */
   if (*p + 2 > end)
     return -1;
   parts->day = parse_2digit (*p);
@@ -323,7 +341,6 @@ parse_imf_date_part (const char **p, const char *end, DateParts *parts)
   if (expect_char (p, end, ' ') < 0)
     return -1;
 
-  /* Parse month MMM */
   if (*p + SHORT_NAME_LEN > end)
     return -1;
   parts->month = parse_month (*p);
@@ -334,7 +351,6 @@ parse_imf_date_part (const char **p, const char *end, DateParts *parts)
   if (expect_char (p, end, ' ') < 0)
     return -1;
 
-  /* Parse year YYYY */
   if (*p + 4 > end)
     return -1;
   parts->year = parse_4digit (*p);
@@ -348,7 +364,6 @@ parse_imf_date_part (const char **p, const char *end, DateParts *parts)
   return 0;
 }
 
-/* Parse IMF-fixdate: "Day, DD Mon YYYY HH:MM:SS GMT" */
 static int
 parse_imf_fixdate (const char *s, size_t len, time_t *out)
 {
@@ -360,11 +375,10 @@ parse_imf_fixdate (const char *s, size_t len, time_t *out)
   if (!comma_pos || comma_pos - s != SHORT_NAME_LEN)
     return -1;
 
-  /* Validate short day name */
   if (parse_day_short (s) < 0)
     return -1;
 
-  const char *p = comma_pos + 1; /* Skip comma */
+  const char *p = comma_pos + 1;
 
   if (expect_char (&p, end, ' ') < 0)
     return -1;
@@ -379,7 +393,6 @@ parse_imf_fixdate (const char *s, size_t len, time_t *out)
   if (expect_space_gmt (&p, end) < 0)
     return -1;
 
-  /* Ensure exact match (no trailing garbage) */
   if (p != end)
     return -1;
 
@@ -389,7 +402,6 @@ parse_imf_fixdate (const char *s, size_t len, time_t *out)
 static int
 parse_rfc850_date_part (const char **p, const char *end, DateParts *parts)
 {
-  /* Parse day DD */
   if (*p + 2 > end)
     return -1;
   parts->day = parse_2digit (*p);
@@ -400,7 +412,6 @@ parse_rfc850_date_part (const char **p, const char *end, DateParts *parts)
   if (expect_char (p, end, '-') < 0)
     return -1;
 
-  /* Parse month MMM */
   if (*p + SHORT_NAME_LEN > end)
     return -1;
   parts->month = parse_month (*p);
@@ -411,7 +422,6 @@ parse_rfc850_date_part (const char **p, const char *end, DateParts *parts)
   if (expect_char (p, end, '-') < 0)
     return -1;
 
-  /* Parse 2-digit year YY */
   if (*p + 2 > end)
     return -1;
   int year2 = parse_2digit (*p);
@@ -419,7 +429,7 @@ parse_rfc850_date_part (const char **p, const char *end, DateParts *parts)
     return -1;
   *p += 2;
 
-  /* Map 2-digit year (Y2K convention: 00-68=2000-2068, 69-99=1969-1999) */
+  /* Y2K convention: 00-68=2000-2068, 69-99=1969-1999 */
   parts->year = (year2 >= YEAR_2DIGIT_CUTOFF) ? 1900 + year2 : 2000 + year2;
 
   if (expect_char (p, end, ' ') < 0)
@@ -428,7 +438,6 @@ parse_rfc850_date_part (const char **p, const char *end, DateParts *parts)
   return 0;
 }
 
-/* Parse RFC 850: "Dayname, DD-MMM-YY HH:MM:SS GMT" */
 static int
 parse_rfc850 (const char *s, size_t len, time_t *out)
 {
@@ -444,11 +453,10 @@ parse_rfc850 (const char *s, size_t len, time_t *out)
   if (day_len < LONG_DAY_MIN_LEN || day_len > LONG_DAY_MAX_LEN)
     return -1;
 
-  /* Validate long day name */
   if (parse_day_long (s, day_len) < 0)
     return -1;
 
-  const char *p = comma_pos + 1; /* Skip comma */
+  const char *p = comma_pos + 1;
 
   if (expect_char (&p, end, ' ') < 0)
     return -1;
@@ -463,7 +471,6 @@ parse_rfc850 (const char *s, size_t len, time_t *out)
   if (expect_space_gmt (&p, end) < 0)
     return -1;
 
-  /* Ensure exact match (no trailing garbage) */
   if (p != end)
     return -1;
 
@@ -473,7 +480,6 @@ parse_rfc850 (const char *s, size_t len, time_t *out)
 static int
 parse_asctime_day_month (const char **p, const char *end, DateParts *parts)
 {
-  /* Parse short day name (exactly 3 chars) */
   if (*p + SHORT_NAME_LEN > end)
     return -1;
   if (parse_day_short (*p) < 0)
@@ -483,7 +489,6 @@ parse_asctime_day_month (const char **p, const char *end, DateParts *parts)
   if (expect_char (p, end, ' ') < 0)
     return -1;
 
-  /* Parse month MMM */
   if (*p + SHORT_NAME_LEN > end)
     return -1;
   parts->month = parse_month (*p);
@@ -508,16 +513,12 @@ parse_asctime (const char *s, size_t len, time_t *out)
 
   DateParts parts = { 0 };
 
-  /* Parse day name and month */
   if (parse_asctime_day_month (&p, end, &parts) < 0)
     return -1;
 
-  /* Skip additional whitespace before day (asctime pads single-digit with
-   * spaces) */
   size_t ws = skip_whitespace (p, (size_t)(end - p));
   p += ws;
 
-  /* Parse day (1 or 2 digits) */
   int consumed;
   parts.day = parse_1or2digit (p, (size_t)(end - p), &consumed);
   if (parts.day < 1 || parts.day > MAX_DAY)
@@ -527,27 +528,29 @@ parse_asctime (const char *s, size_t len, time_t *out)
   if (expect_char (&p, end, ' ') < 0)
     return -1;
 
-  /* Parse time HH:MM:SS */
   if (parse_time_hms (&p, end, &parts) < 0)
     return -1;
 
   if (expect_char (&p, end, ' ') < 0)
     return -1;
 
-  /* Parse year YYYY */
   if (p + 4 > end)
     return -1;
   parts.year = parse_4digit (p);
   if (parts.year < 0)
     return -1;
-  p += 4; /* Advance past year */
+  p += 4;
 
-  /* Ensure exact match (no trailing characters, asctime has no timezone) */
   if (p != end)
     return -1;
 
   return convert_parts_to_time (&parts, out);
 }
+
+/* ============================================================================
+ * Format Detection
+ * ============================================================================
+ */
 
 static int
 is_imf_fixdate (const char *s, size_t len)
@@ -560,7 +563,6 @@ is_rfc850 (const char *s, size_t len)
 {
   if (len < RFC850_MIN_LEN)
     return 0;
-  /* Check for comma after long day name (min 6 chars to max 9) */
   for (size_t i = LONG_DAY_MIN_LEN; i <= LONG_DAY_MAX_LEN && i < len; i++)
     {
       if (s[i] == ',')
@@ -575,6 +577,11 @@ is_asctime (const char *s, size_t len)
   return (len >= ASCTIME_MIN_LEN && s[SHORT_NAME_LEN] == ' ');
 }
 
+/* ============================================================================
+ * Public API
+ * ============================================================================
+ */
+
 int
 SocketHTTP_date_parse (const char *date_str, size_t len, time_t *time_out)
 {
@@ -587,19 +594,16 @@ SocketHTTP_date_parse (const char *date_str, size_t len, time_t *time_out)
   if (len == 0)
     len = strlen (date_str);
 
-  /* Skip leading whitespace (SP / HTAB) */
   size_t skipped = skip_whitespace (date_str, len);
   date_str += skipped;
   len -= skipped;
 
-  /* Reject empty string after trim */
   if (len == 0)
     {
       SOCKET_LOG_WARN_MSG ("Empty HTTP date string");
       return -1;
     }
 
-  /* Try formats in preference order (IMF first) */
   if (is_imf_fixdate (date_str, len))
     {
       if (parse_imf_fixdate (date_str, len, time_out) == 0)
@@ -618,7 +622,6 @@ SocketHTTP_date_parse (const char *date_str, size_t len, time_t *time_out)
         return 0;
     }
 
-  /* All formats failed - use %.*s to handle non-null-terminated input */
   int print_len = (len > LOG_DATE_TRUNCATE_LEN) ? LOG_DATE_TRUNCATE_LEN
                                                 : (int)len;
   SOCKET_LOG_WARN_MSG ("Invalid HTTP date format (len=%zu): %.*s...", len,
@@ -637,8 +640,6 @@ SocketHTTP_date_format (time_t t, char *output)
   if (!tm)
     return -1;
 
-  /* Clamp invalid fields (defense-in-depth, though gmtime_r should produce
-   * valid) */
   int wday = tm->tm_wday;
   if (wday < 0 || wday > (DAYS_PER_WEEK - 1))
     wday = 0;
@@ -647,7 +648,6 @@ SocketHTTP_date_format (time_t t, char *output)
   if (mon < 0 || mon > (MONTHS_PER_YEAR - 1))
     mon = 0;
 
-  /* Format IMF-fixdate (29 chars + null) */
   int n = snprintf (
       output, SOCKETHTTP_DATE_BUFSIZE, "%s, %02d %s %04d %02d:%02d:%02d GMT",
       day_names_short[wday], (int)tm->tm_mday, month_table[mon].name,

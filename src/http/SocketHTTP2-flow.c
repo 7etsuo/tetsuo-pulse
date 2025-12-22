@@ -4,9 +4,7 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * SocketHTTP2-flow.c - HTTP/2 Flow Control (RFC 9113 Section 5.2)
- */
+/* SocketHTTP2-flow.c - HTTP/2 Flow Control (RFC 9113 Section 5.2) */
 
 #include <assert.h>
 #include <stdint.h>

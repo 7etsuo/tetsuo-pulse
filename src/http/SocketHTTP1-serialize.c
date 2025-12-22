@@ -183,12 +183,6 @@ append_content_length_header (char **buf, size_t *remaining,
   return safe_append_crlf (buf, remaining);
 }
 
-/**
- * validate_request_target - Validate request target for forbidden chars
- * @target: Request target string
- *
- * Raises: SocketHTTP1_SerializeError if invalid
- */
 static int
 serialize_request_line (const SocketHTTP_Request *request, char **buf,
                         size_t *remaining)
