@@ -73,6 +73,27 @@
 
 /* Rate Limiting (DoS protection, CVE-2023-44487) */
 
+/* Sliding window stream creation rate limiting */
+#ifndef SOCKETHTTP2_STREAM_WINDOW_SIZE_MS
+#define SOCKETHTTP2_STREAM_WINDOW_SIZE_MS 60000  /* 1 minute sliding window */
+#endif
+
+#ifndef SOCKETHTTP2_STREAM_MAX_PER_WINDOW
+#define SOCKETHTTP2_STREAM_MAX_PER_WINDOW 1000   /* Max streams per window */
+#endif
+
+#ifndef SOCKETHTTP2_STREAM_BURST_THRESHOLD
+#define SOCKETHTTP2_STREAM_BURST_THRESHOLD 50    /* Max streams per burst interval */
+#endif
+
+#ifndef SOCKETHTTP2_STREAM_BURST_INTERVAL_MS
+#define SOCKETHTTP2_STREAM_BURST_INTERVAL_MS 1000  /* Burst detection interval */
+#endif
+
+#ifndef SOCKETHTTP2_STREAM_CHURN_THRESHOLD
+#define SOCKETHTTP2_STREAM_CHURN_THRESHOLD 100   /* Max rapid create+close cycles per window */
+#endif
+
 #ifndef SOCKETHTTP2_RST_RATE_LIMIT
 #define SOCKETHTTP2_RST_RATE_LIMIT 100
 #endif
@@ -240,6 +261,13 @@ typedef struct
 
   /* Connection-level flow control */
   uint32_t connection_window_size;
+
+  /* Sliding window stream rate limiting (CVE-2023-44487 protection) */
+  uint32_t stream_window_size_ms;     /* Sliding window duration (default: 60000) */
+  uint32_t stream_max_per_window;     /* Max creations per window (default: 1000) */
+  uint32_t stream_burst_threshold;    /* Max per burst interval (default: 50) */
+  uint32_t stream_burst_interval_ms;  /* Burst detection interval (default: 1000) */
+  uint32_t stream_churn_threshold;    /* Max rapid create+close cycles (default: 100) */
 
   /* Timeouts (milliseconds) */
   int settings_timeout_ms;

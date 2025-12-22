@@ -616,6 +616,7 @@ set(TEST_SOURCES
     test_http1_parser
     test_hpack
     test_http2
+    test_http2_rate_limit
     test_http_client
     test_proxy
     test_websocket
