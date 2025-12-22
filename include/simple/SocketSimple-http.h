@@ -142,6 +142,194 @@ extern int Socket_simple_http_put(const char *url,
 extern int Socket_simple_http_delete(const char *url,
                                       SocketSimple_HTTPResponse *response);
 
+/**
+ * @brief Perform HTTP HEAD request.
+ *
+ * @param url Full URL.
+ * @param response Output response structure (body will be empty).
+ * @return 0 on success, -1 on error.
+ */
+extern int Socket_simple_http_head(const char *url,
+                                    SocketSimple_HTTPResponse *response);
+
+/**
+ * @brief Perform HTTP PATCH request.
+ *
+ * @param url Full URL.
+ * @param content_type Content-Type header value.
+ * @param body Request body.
+ * @param body_len Body length.
+ * @param response Output response structure.
+ * @return 0 on success, -1 on error.
+ */
+extern int Socket_simple_http_patch(const char *url,
+                                     const char *content_type,
+                                     const void *body,
+                                     size_t body_len,
+                                     SocketSimple_HTTPResponse *response);
+
+/**
+ * @brief Perform HTTP OPTIONS request.
+ *
+ * @param url Full URL.
+ * @param response Output response structure.
+ * @return 0 on success, -1 on error.
+ */
+extern int Socket_simple_http_options(const char *url,
+                                       SocketSimple_HTTPResponse *response);
+
+/*============================================================================
+ * Extended Functions with Custom Headers
+ *============================================================================*/
+
+/**
+ * @brief Perform HTTP POST with custom headers.
+ *
+ * @param url Full URL.
+ * @param headers NULL-terminated array of headers (e.g., {"X-Custom: value", NULL}).
+ * @param content_type Content-Type header value (NULL for default).
+ * @param body Request body.
+ * @param body_len Body length.
+ * @param response Output response structure.
+ * @return 0 on success, -1 on error.
+ */
+extern int Socket_simple_http_post_ex(const char *url,
+                                       const char **headers,
+                                       const char *content_type,
+                                       const void *body,
+                                       size_t body_len,
+                                       SocketSimple_HTTPResponse *response);
+
+/**
+ * @brief Perform HTTP PUT with custom headers.
+ *
+ * @param url Full URL.
+ * @param headers NULL-terminated array of headers.
+ * @param content_type Content-Type header value (NULL for default).
+ * @param body Request body.
+ * @param body_len Body length.
+ * @param response Output response structure.
+ * @return 0 on success, -1 on error.
+ */
+extern int Socket_simple_http_put_ex(const char *url,
+                                      const char **headers,
+                                      const char *content_type,
+                                      const void *body,
+                                      size_t body_len,
+                                      SocketSimple_HTTPResponse *response);
+
+/**
+ * @brief Perform HTTP DELETE with custom headers.
+ *
+ * @param url Full URL.
+ * @param headers NULL-terminated array of headers.
+ * @param response Output response structure.
+ * @return 0 on success, -1 on error.
+ */
+extern int Socket_simple_http_delete_ex(const char *url,
+                                         const char **headers,
+                                         SocketSimple_HTTPResponse *response);
+
+/**
+ * @brief Perform HTTP HEAD with custom headers.
+ *
+ * @param url Full URL.
+ * @param headers NULL-terminated array of headers.
+ * @param response Output response structure.
+ * @return 0 on success, -1 on error.
+ */
+extern int Socket_simple_http_head_ex(const char *url,
+                                       const char **headers,
+                                       SocketSimple_HTTPResponse *response);
+
+/**
+ * @brief Perform HTTP PATCH with custom headers.
+ *
+ * @param url Full URL.
+ * @param headers NULL-terminated array of headers.
+ * @param content_type Content-Type header value (NULL for default).
+ * @param body Request body.
+ * @param body_len Body length.
+ * @param response Output response structure.
+ * @return 0 on success, -1 on error.
+ */
+extern int Socket_simple_http_patch_ex(const char *url,
+                                        const char **headers,
+                                        const char *content_type,
+                                        const void *body,
+                                        size_t body_len,
+                                        SocketSimple_HTTPResponse *response);
+
+/**
+ * @brief Perform HTTP OPTIONS with custom headers.
+ *
+ * @param url Full URL.
+ * @param headers NULL-terminated array of headers.
+ * @param response Output response structure.
+ * @return 0 on success, -1 on error.
+ */
+extern int Socket_simple_http_options_ex(const char *url,
+                                          const char **headers,
+                                          SocketSimple_HTTPResponse *response);
+
+/*============================================================================
+ * Generic Request Function
+ *============================================================================*/
+
+/**
+ * @brief HTTP method types for generic request.
+ */
+typedef enum {
+    SIMPLE_HTTP_GET,
+    SIMPLE_HTTP_POST,
+    SIMPLE_HTTP_PUT,
+    SIMPLE_HTTP_DELETE,
+    SIMPLE_HTTP_HEAD,
+    SIMPLE_HTTP_PATCH,
+    SIMPLE_HTTP_OPTIONS
+} SocketSimple_HTTPMethod;
+
+/**
+ * @brief Perform generic HTTP request with all options.
+ *
+ * This is the most flexible function, allowing any combination of
+ * method, headers, body, and client options.
+ *
+ * @param method HTTP method.
+ * @param url Full URL.
+ * @param headers NULL-terminated array of headers (NULL for none).
+ * @param body Request body (NULL for none).
+ * @param body_len Body length.
+ * @param opts Client options (NULL for defaults).
+ * @param response Output response structure.
+ * @return 0 on success, -1 on error.
+ *
+ * Example:
+ * @code
+ * SocketSimple_HTTPOptions opts;
+ * Socket_simple_http_options_init(&opts);
+ * opts.connect_timeout_ms = 5000;
+ * opts.auth_user = "user";
+ * opts.auth_pass = "pass";
+ *
+ * const char *headers[] = {"X-Custom: value", "Accept: application/json", NULL};
+ * SocketSimple_HTTPResponse resp;
+ *
+ * if (Socket_simple_http_request(SIMPLE_HTTP_POST, "https://api.example.com/data",
+ *                                 headers, "{\"key\":\"value\"}", 15, &opts, &resp) == 0) {
+ *     printf("Status: %d\n", resp.status_code);
+ *     Socket_simple_http_response_free(&resp);
+ * }
+ * @endcode
+ */
+extern int Socket_simple_http_request(SocketSimple_HTTPMethod method,
+                                       const char *url,
+                                       const char **headers,
+                                       const void *body,
+                                       size_t body_len,
+                                       const SocketSimple_HTTPOptions *opts,
+                                       SocketSimple_HTTPResponse *response);
+
 /*============================================================================
  * JSON Convenience Functions
  *============================================================================*/
