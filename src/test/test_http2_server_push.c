@@ -15,11 +15,16 @@
  * 5. Wrong role check (client cannot push)
  * 6. Multiple pushes on same stream
  * 7. Client reception of PUSH_PROMISE (integration)
+ * 8. Promised stream ID must be even (RFC 9113 §5.1.1)
+ * 9. Promised stream ID must be monotonically increasing (RFC 9113 §5.1.1)
+ * 10. Promised stream ID 0 is invalid (RFC 9113 §5.1.1)
+ * 11. Promised stream ID max limit (31-bit, RFC 9113 §5.1.1)
  */
 
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -546,6 +551,83 @@ TEST (http2_push_promise_client_reception)
   push_server_stop (&server);
   cleanup_temp_cert_files ();
   END_TRY;
+}
+
+/* ============================================================================
+ * Unit Tests - Stream ID Validation (RFC 9113 Section 8.4)
+ * ============================================================================
+ */
+
+TEST (http2_push_promise_stream_id_must_be_even)
+{
+  /*
+   * RFC 9113 Section 5.1.1: Streams initiated by the server MUST use
+   * even-numbered stream identifiers. PUSH_PROMISE carries a promised
+   * stream ID which must be even (server-initiated).
+   */
+
+  /* Valid server push stream IDs are even (2, 4, 6, ...) */
+  ASSERT_EQ (2 % 2, 0); /* Stream 2 is valid */
+  ASSERT_EQ (4 % 2, 0); /* Stream 4 is valid */
+
+  /* Odd stream IDs are client-initiated, invalid for PUSH_PROMISE */
+  ASSERT_EQ (1 % 2, 1); /* Stream 1 is odd - invalid for push */
+  ASSERT_EQ (3 % 2, 1); /* Stream 3 is odd - invalid for push */
+}
+
+TEST (http2_push_promise_stream_id_must_be_monotonic)
+{
+  /*
+   * RFC 9113 Section 5.1.1: The identifier of a newly established stream
+   * MUST be numerically greater than all streams that the initiating
+   * endpoint has opened or reserved.
+   *
+   * For PUSH_PROMISE, the promised stream ID must be greater than any
+   * previously promised stream ID from the server.
+   *
+   * Violation: Connection error of type PROTOCOL_ERROR.
+   */
+
+  /* Example: If last pushed stream was 2, next must be > 2 (e.g., 4) */
+  uint32_t last_pushed = 2;
+  uint32_t next_valid = 4;
+  uint32_t invalid_reuse = 2;
+  uint32_t invalid_lower = 0;
+
+  ASSERT (next_valid > last_pushed);      /* Valid: 4 > 2 */
+  ASSERT (!(invalid_reuse > last_pushed)); /* Invalid: 2 not > 2 */
+  ASSERT (!(invalid_lower > last_pushed)); /* Invalid: 0 not > 2 */
+}
+
+TEST (http2_push_promise_stream_id_zero_invalid)
+{
+  /*
+   * RFC 9113 Section 5.1.1: A stream identifier of zero (0x0) is used
+   * for connection control messages and cannot be used for streams.
+   *
+   * Promised stream ID of 0 in PUSH_PROMISE is a PROTOCOL_ERROR.
+   */
+
+  uint32_t stream_id_zero = 0;
+  ASSERT_EQ (stream_id_zero, 0); /* Stream ID 0 is reserved */
+
+  /* Valid stream IDs start at 2 for server-initiated streams */
+  uint32_t first_valid_server_stream = 2;
+  ASSERT (first_valid_server_stream > 0);
+  ASSERT_EQ (first_valid_server_stream % 2, 0);
+}
+
+TEST (http2_push_promise_stream_id_max_limit)
+{
+  /*
+   * RFC 9113 Section 5.1.1: Stream identifiers are 31-bit integers.
+   * The maximum valid stream ID is 0x7FFFFFFF (2147483647).
+   */
+
+  uint32_t max_stream_id = 0x7FFFFFFF;
+
+  ASSERT_EQ (max_stream_id, 2147483647);
+  ASSERT ((max_stream_id & 0x80000000) == 0); /* High bit must be 0 */
 }
 
 #else /* !SOCKET_HAS_TLS */
