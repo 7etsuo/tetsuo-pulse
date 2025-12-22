@@ -29,6 +29,9 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP2);
 #define HTTP2_MAX_DECODED_HEADERS SOCKETHTTP2_MAX_DECODED_HEADERS
 #define HTTP2_MAX_STREAM_ID 0x7FFFFFFF
 
+/* Forward declaration for RFC 9113 §8.4 push method validation */
+static int validate_push_request_method (SocketHTTP2_Stream_T stream);
+
 static inline int
 http2_is_end_stream (uint8_t flags)
 {
@@ -1923,6 +1926,13 @@ process_complete_header_block (SocketHTTP2_Conn_T conn,
   if (http2_decode_headers (conn, stream, block, len) < 0)
     return -1;
 
+  /* RFC 9113 §8.4: For push streams, validate method is safe (GET/HEAD) */
+  if (stream->is_push_stream && validate_push_request_method (stream) < 0)
+    {
+      http2_send_stream_error (conn, stream->id, HTTP2_PROTOCOL_ERROR);
+      return -1;
+    }
+
   emit_header_event (conn, stream);
 
   if (stream->pending_end_stream)
@@ -2111,6 +2121,46 @@ validate_push_promise (SocketHTTP2_Conn_T conn,
 }
 
 /**
+ * Validate PUSH_PROMISE request method per RFC 9113 Section 8.4.
+ *
+ * Promised requests MUST be safe (GET, HEAD) per RFC 9110 Section 9.2.1.
+ * This prevents servers from pushing responses for unsafe methods like
+ * POST, PUT, DELETE which could have side effects.
+ *
+ * @param stream The push stream with decoded headers.
+ * @return 0 if method is safe (GET/HEAD), -1 otherwise.
+ */
+static int
+validate_push_request_method (SocketHTTP2_Stream_T stream)
+{
+  for (size_t i = 0; i < stream->header_count; i++)
+    {
+      const SocketHPACK_Header *h = &stream->headers[i];
+
+      /* Check for :method pseudo-header */
+      if (h->name_len == 7 && memcmp (h->name, ":method", 7) == 0)
+        {
+          /* RFC 9113 §8.4: Only GET and HEAD are valid for pushed requests */
+          if ((h->value_len == 3 && memcmp (h->value, "GET", 3) == 0)
+              || (h->value_len == 4 && memcmp (h->value, "HEAD", 4) == 0))
+            {
+              return 0; /* Valid safe method */
+            }
+
+          SOCKET_LOG_WARN_MSG (
+              "PUSH_PROMISE rejected: unsafe method '%.*s' (RFC 9113 §8.4)",
+              (int)h->value_len, h->value);
+          return -1; /* Invalid/unsafe method */
+        }
+    }
+
+  /* :method pseudo-header not found - this is also a protocol error */
+  SOCKET_LOG_WARN_MSG (
+      "PUSH_PROMISE rejected: missing :method pseudo-header (RFC 9113 §8.4)");
+  return -1;
+}
+
+/**
  * Validate promised stream ID per RFC 9113 Section 6.6/8.4.
  *
  * The promised stream identifier MUST be a valid choice for the next
@@ -2239,6 +2289,13 @@ http2_process_push_promise (SocketHTTP2_Conn_T conn,
       if (http2_decode_headers (conn, promised, header_block, header_block_len)
           < 0)
         return -1;
+
+      /* RFC 9113 §8.4: Validate pushed request uses safe method (GET/HEAD) */
+      if (validate_push_request_method (promised) < 0)
+        {
+          http2_send_stream_error (conn, promised_id, HTTP2_PROTOCOL_ERROR);
+          return -1;
+        }
 
       emit_header_event (conn, promised);
 
