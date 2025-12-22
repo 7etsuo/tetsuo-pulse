@@ -634,6 +634,149 @@ test_encoder_encode_indexed (void)
   printf ("PASS\n");
 }
 
+/**
+ * Test RFC 9113 §8.2 - Header names converted to lowercase during encoding
+ */
+static void
+test_encoder_lowercase_header_names (void)
+{
+  Arena_T arena;
+  SocketHPACK_Encoder_T encoder;
+  SocketHPACK_Decoder_T decoder;
+  SocketHPACK_Header headers[1];
+  SocketHPACK_Header decoded_headers[16];
+  unsigned char output[256];
+  ssize_t len;
+  size_t header_count;
+  SocketHPACK_Result result;
+
+  printf ("  Encoder lowercase header names (RFC 9113 §8.2)... ");
+
+  arena = Arena_new ();
+  encoder = SocketHPACK_Encoder_new (NULL, arena);
+  decoder = SocketHPACK_Decoder_new (NULL, arena);
+
+  /* Encode a header with uppercase letters */
+  headers[0].name = "Content-Type";
+  headers[0].name_len = 12;
+  headers[0].value = "text/html";
+  headers[0].value_len = 9;
+  headers[0].never_index = 0;
+
+  len = SocketHPACK_Encoder_encode (encoder, headers, 1, output,
+                                    sizeof (output));
+  TEST_ASSERT (len > 0, "Encode should succeed");
+
+  /* Decode and verify the name is lowercase */
+  result = SocketHPACK_Decoder_decode (decoder, output, (size_t)len,
+                                       decoded_headers, 16, &header_count,
+                                       arena);
+  TEST_ASSERT (result == HPACK_OK, "Decode should succeed");
+  TEST_ASSERT (header_count == 1, "Should decode 1 header");
+  TEST_ASSERT (strcmp (decoded_headers[0].name, "content-type") == 0,
+               "Name should be lowercase");
+  TEST_ASSERT (strcmp (decoded_headers[0].value, "text/html") == 0,
+               "Value should be unchanged");
+
+  SocketHPACK_Decoder_free (&decoder);
+  SocketHPACK_Encoder_free (&encoder);
+  Arena_dispose (&arena);
+
+  printf ("PASS\n");
+}
+
+/**
+ * Test that uppercase header names still match static table entries
+ */
+static void
+test_encoder_uppercase_matches_static_table (void)
+{
+  Arena_T arena;
+  SocketHPACK_Encoder_T encoder;
+  SocketHPACK_Header headers[1];
+  unsigned char output[256];
+  ssize_t len;
+
+  printf ("  Encoder uppercase matches static table... ");
+
+  arena = Arena_new ();
+  encoder = SocketHPACK_Encoder_new (NULL, arena);
+
+  /* content-type is in static table at index 31 */
+  /* Using uppercase should still match after normalization */
+  headers[0].name = "CONTENT-TYPE";
+  headers[0].name_len = 12;
+  headers[0].value = "application/json";
+  headers[0].value_len = 16;
+  headers[0].never_index = 0;
+
+  len = SocketHPACK_Encoder_encode (encoder, headers, 1, output,
+                                    sizeof (output));
+  TEST_ASSERT (len > 0, "Encode should succeed");
+
+  /* Should use name index from static table (literal with name index) */
+  /* First byte should be 0x5f (literal with indexing, index 31) */
+  TEST_ASSERT ((output[0] & 0xC0) == 0x40,
+               "Should encode as literal with indexing");
+
+  SocketHPACK_Encoder_free (&encoder);
+  Arena_dispose (&arena);
+
+  printf ("PASS\n");
+}
+
+/**
+ * Test mixed case header name encoding
+ */
+static void
+test_encoder_mixed_case_header (void)
+{
+  Arena_T arena;
+  SocketHPACK_Encoder_T encoder;
+  SocketHPACK_Decoder_T decoder;
+  SocketHPACK_Header headers[1];
+  SocketHPACK_Header decoded_headers[16];
+  unsigned char output[256];
+  ssize_t len;
+  size_t header_count;
+  SocketHPACK_Result result;
+
+  printf ("  Encoder mixed case header... ");
+
+  arena = Arena_new ();
+  encoder = SocketHPACK_Encoder_new (NULL, arena);
+  decoder = SocketHPACK_Decoder_new (NULL, arena);
+
+  /* Encode a header with mixed case */
+  headers[0].name = "X-CuStOm-HeAdEr";
+  headers[0].name_len = 15;
+  headers[0].value = "SomeValue";
+  headers[0].value_len = 9;
+  headers[0].never_index = 0;
+
+  len = SocketHPACK_Encoder_encode (encoder, headers, 1, output,
+                                    sizeof (output));
+  TEST_ASSERT (len > 0, "Encode should succeed");
+
+  /* Decode and verify the name is fully lowercase */
+  result = SocketHPACK_Decoder_decode (decoder, output, (size_t)len,
+                                       decoded_headers, 16, &header_count,
+                                       arena);
+  TEST_ASSERT (result == HPACK_OK, "Decode should succeed");
+  TEST_ASSERT (header_count == 1, "Should decode 1 header");
+  TEST_ASSERT (strcmp (decoded_headers[0].name, "x-custom-header") == 0,
+               "Name should be all lowercase");
+  /* Value should remain unchanged */
+  TEST_ASSERT (strcmp (decoded_headers[0].value, "SomeValue") == 0,
+               "Value should be unchanged");
+
+  SocketHPACK_Decoder_free (&decoder);
+  SocketHPACK_Encoder_free (&encoder);
+  Arena_dispose (&arena);
+
+  printf ("PASS\n");
+}
+
 /* ============================================================================
  * Decoder Tests
  * ============================================================================
@@ -1126,6 +1269,9 @@ main (void)
   printf ("\nEncoder Tests:\n");
   test_encoder_new ();
   test_encoder_encode_indexed ();
+  test_encoder_lowercase_header_names ();
+  test_encoder_uppercase_matches_static_table ();
+  test_encoder_mixed_case_header ();
 
   printf ("\nDecoder Tests:\n");
   test_decoder_new ();
