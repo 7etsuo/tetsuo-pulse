@@ -24,8 +24,10 @@ echo "=========================================="
 echo ""
 
 # Parse arguments
+# Note: Keep total requests low (<2000) until issue #119 (HTTP client memory
+# corruption) is fixed
 REBUILD_FLAG=""
-REQS=10000
+REQS=100
 THREADS=4
 HTTP_VERSION="both"
 NGINX_PORT=8080

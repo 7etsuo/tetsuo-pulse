@@ -41,6 +41,7 @@ handle_signal (int sig)
 static size_t
 write_callback (void *contents, size_t size, size_t nmemb, void *userp)
 {
+  (void)contents; /* Data is discarded, only tracking size */
   size_t *bytes_received = (size_t *)userp;
   size_t total = size * nmemb;
   *bytes_received += total;
