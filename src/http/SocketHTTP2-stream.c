@@ -501,7 +501,8 @@ SocketHTTP2_Stream_new (SocketHTTP2_Conn_T conn)
 
   assert (conn);
 
-  if (conn->goaway_received)
+  /* After GOAWAY (sent or received), no new streams allowed */
+  if (conn->goaway_received || conn->goaway_sent)
     return NULL;
 
   stream_id = conn->next_stream_id;
@@ -1882,6 +1883,11 @@ validate_new_stream_id (SocketHTTP2_Conn_T conn, uint32_t stream_id)
 
   /* After receiving GOAWAY, reject streams beyond the peer's last stream ID */
   if (conn->goaway_received && stream_id > conn->max_peer_stream_id)
+    return -1;
+
+  /* After sending GOAWAY, reject streams beyond our advertised last stream ID
+   * (RFC 9113 §6.8: sender can discard frames for streams > last_stream_id) */
+  if (conn->goaway_sent && stream_id > conn->last_peer_stream_id)
     return -1;
 
   return 0;
