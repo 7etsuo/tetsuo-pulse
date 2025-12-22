@@ -12,10 +12,12 @@
 #include "core/SocketUTF8.h"
 #include "core/SocketUtil.h"
 
+const Except_T SocketUTF8_Failed
     = { &SocketUTF8_Failed, "UTF-8 validation failed" };
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketUTF8);
 
+#define UTF8_STATE_ACCEPT 0
 #define UTF8_STATE_REJECT 1
 #define UTF8_STATE_2BYTE_EXPECT 2
 #define UTF8_STATE_E0_SPECIAL 3
@@ -95,6 +97,7 @@ static const uint8_t utf8_state_bytes[] = {
   4, /* UTF8_STATE_F4_SPECIAL: 4-byte total (after F4) */
 };
 
+static const char *const utf8_result_strings[UTF8_TOO_LARGE + 1] = {
   "Valid UTF-8",                            /* UTF8_VALID */
   "Invalid byte sequence",                  /* UTF8_INVALID */
   "Incomplete sequence (needs more bytes)", /* UTF8_INCOMPLETE */
@@ -104,6 +107,7 @@ static const uint8_t utf8_state_bytes[] = {
 };
 
 #define UTF8_CONTINUATION_START 0x80
+#define UTF8_CONTINUATION_MASK 0xC0
 #define UTF8_ASCII_HIGH_BIT 0x80
 
 #define UTF8_2BYTE_MASK 0xE0
@@ -141,6 +145,7 @@ static const uint8_t utf8_state_bytes[] = {
 #define UTF8_F4_TOO_LARGE_MIN 0x90
 #define UTF8_F4_TOO_LARGE_MAX 0xBF
 
+static inline uint32_t
 dfa_transition (uint32_t state, uint8_t char_class)
 {
   return utf8_state[state * UTF8_NUM_CHAR_CLASSES + char_class];
@@ -177,6 +182,7 @@ update_sequence_tracking (SocketUTF8_State *state, uint32_t prev_state,
     }
 }
 
+static void
 raise_arg_error (const char *msg)
 {
   SOCKET_RAISE_MSG (SocketUTF8, SocketUTF8_Failed, "%s", msg);
@@ -243,6 +249,7 @@ classify_first_byte_error (unsigned char byte)
   return UTF8_INVALID;
 }
 
+SocketUTF8_Result
 SocketUTF8_validate (const unsigned char *data, size_t len)
 {
   if (len > 0 && !data)
@@ -273,6 +280,7 @@ SocketUTF8_validate_str (const char *str)
   return SocketUTF8_validate ((const unsigned char *)str, strlen (str));
 }
 
+void
 SocketUTF8_init (SocketUTF8_State *state)
 {
   if (!state)
@@ -342,6 +350,7 @@ SocketUTF8_reset (SocketUTF8_State *state)
   SocketUTF8_init (state);
 }
 
+int
 SocketUTF8_codepoint_len (uint32_t codepoint)
 {
   if (codepoint >= SOCKET_UTF8_SURROGATE_MIN

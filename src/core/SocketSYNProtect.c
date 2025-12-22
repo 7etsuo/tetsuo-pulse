@@ -26,14 +26,12 @@
 
 #define T SocketSYNProtect_T
 
- */
 
 const Except_T SocketSYNProtect_Failed
     = { &SocketSYNProtect_Failed, "SYN protection operation failed" };
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketSYNProtect);
 
- */
 
 static const char *const action_names[]
     = { "ALLOW", "THROTTLE", "CHALLENGE", "BLOCK" };
@@ -45,7 +43,6 @@ static const char *const reputation_names[]
 #define REPUTATION_NAMES_COUNT                                                \
   (sizeof (reputation_names) / sizeof (reputation_names[0]))
 
- */
 
 /* Generate fallback seed from multiple entropy sources */
 static unsigned
@@ -77,7 +74,6 @@ synprotect_get_fallback_seed (void)
   return seed;
 }
 
- */
 
 static void
 safe_copy_ip (char *dest, const char *src)
@@ -85,7 +81,6 @@ safe_copy_ip (char *dest, const char *src)
   socket_util_safe_copy_ip (dest, src, SOCKET_IP_MAX_LEN);
 }
 
- */
 
 static void *
 alloc_zeroed (T protect, size_t count, size_t size)
@@ -97,7 +92,6 @@ alloc_zeroed (T protect, size_t count, size_t size)
 
 
 
- */
 
 static void
 lru_push_front (T protect, SocketSYN_IPEntry *entry)
@@ -123,7 +117,6 @@ lru_touch (T protect, SocketSYN_IPEntry *entry)
     }
 }
 
- */
 
 static SocketSYN_IPEntry *
 find_ip_entry (T protect, const char *ip)
@@ -213,7 +206,6 @@ get_or_create_ip_entry (T protect, const char *ip, int64_t now_ms)
   return create_ip_entry (protect, ip, now_ms);
 }
 
- */
 
 static void
 rotate_window_if_needed (SocketSYN_IPState *state, int64_t now_ms,
@@ -268,7 +260,6 @@ calculate_effective_attempts (const SocketSYN_IPState *state, int64_t now_ms,
          + (uint32_t)(state->attempts_previous * previous_weight);
 }
 
- */
 
 static void
 apply_score_decay (SocketSYN_IPState *state,
@@ -327,7 +318,6 @@ reward_success (SocketSYN_IPState *state,
   update_reputation_from_score (state, config);
 }
 
- */
 
 static int
 is_currently_blocked (const SocketSYN_IPState *state, int64_t now_ms)
@@ -358,7 +348,6 @@ determine_action (const SocketSYN_IPState *state,
   return SYN_ACTION_ALLOW;
 }
 
- */
 
 static int
 parse_ipv4_address (const char *ip, uint8_t *addr_bytes)
@@ -402,7 +391,6 @@ parse_ip_address (const char *ip, uint8_t *addr_bytes, size_t addr_size)
   return 0;
 }
 
- */
 
 static int
 cidr_full_bytes_match (const uint8_t *ip_bytes, const uint8_t *entry_bytes,
@@ -453,7 +441,6 @@ ip_matches_cidr (const char *ip, const SocketSYN_WhitelistEntry *entry)
   return ip_matches_cidr_bytes (family, ip_bytes, entry);
 }
 
- */
 
 static int
 whitelist_check_bucket_bytes (const SocketSYN_WhitelistEntry *entry,
@@ -541,7 +528,6 @@ whitelist_check (T protect, const char *ip)
   return whitelist_check_all_cidrs_bytes (protect, family, ip_bytes, bucket);
 }
 
- */
 
 static int
 blacklist_check (T protect, const char *ip, int64_t now_ms)
@@ -568,7 +554,6 @@ blacklist_check (T protect, const char *ip, int64_t now_ms)
   return 0;
 }
 
- */
 
 static void
 fill_ip_state_out (SocketSYN_IPState *state_out, const char *ip,
@@ -684,7 +669,6 @@ check_whitelist_blacklist (T protect, const char *client_ip, int64_t now_ms,
   return 0;
 }
 
- */
 
 typedef enum
 {
@@ -724,7 +708,6 @@ cleanup_synprotect_init (T protect, SYN_CleanupStage stage)
     }
 }
 
- */
 
 static int
 init_ip_hash_table (T protect)
@@ -776,7 +759,6 @@ init_atomic_stats (T protect)
   atomic_store (&protect->stat_lru_evictions, 0);
 }
 
- */
 
 static void
 free_ip_entries (T protect)
@@ -823,7 +805,6 @@ free_blacklist_entries (T protect)
     }
 }
 
- */
 
 static int
 parse_cidr_notation (const char *cidr, char *ip_out, size_t ip_out_size,
@@ -855,7 +836,6 @@ parse_cidr_notation (const char *cidr, char *ip_out, size_t ip_out_size,
   return 1;
 }
 
- */
 
 static SocketSYN_WhitelistEntry *
 find_whitelist_entry_exact (SocketSYN_WhitelistEntry *bucket_head,
@@ -931,7 +911,6 @@ create_blacklist_entry (T protect, const char *ip, int64_t expires_ms)
   return entry;
 }
 
- */
 
 static int
 check_global_rate_limit (T protect)
@@ -967,7 +946,6 @@ process_tracked_ip (T protect, const char *client_ip, int64_t now_ms,
   return action;
 }
 
- */
 
 void
 SocketSYNProtect_config_defaults (SocketSYNProtect_Config *config)
@@ -1233,7 +1211,6 @@ SocketSYNProtect_configure (T protect, const SocketSYNProtect_Config *config)
   pthread_mutex_unlock (&protect->mutex);
 }
 
- */
 
 SocketSYN_Action
 SocketSYNProtect_check (T protect, const char *client_ip,
@@ -1334,7 +1311,6 @@ SocketSYNProtect_report_failure (T protect, const char *client_ip,
   pthread_mutex_unlock (&protect->mutex);
 }
 
- */
 
 int
 SocketSYNProtect_whitelist_add (T protect, const char *ip)
@@ -1517,7 +1493,6 @@ SocketSYNProtect_whitelist_clear (T protect)
   pthread_mutex_unlock (&protect->mutex);
 }
 
- */
 
 static int64_t
 calculate_expiry_time (int64_t now_ms, int duration_ms)
@@ -1662,7 +1637,6 @@ SocketSYNProtect_blacklist_clear (T protect)
   pthread_mutex_unlock (&protect->mutex);
 }
 
- */
 
 static size_t
 count_currently_blocked (T protect, int64_t now_ms)
@@ -1789,7 +1763,6 @@ SocketSYNProtect_reputation_name (SocketSYN_Reputation rep)
   return "UNKNOWN";
 }
 
- */
 
 static size_t
 cleanup_expired_blacklist (T protect, int64_t now_ms)

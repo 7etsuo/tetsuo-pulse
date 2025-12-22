@@ -14,8 +14,6 @@
 #include <assert.h>
 #include <stdlib.h>
 
- */
-
 void
 lru_remove (SocketSYNProtect_T protect, SocketSYN_IPEntry *entry)
 {

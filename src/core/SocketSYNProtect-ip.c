@@ -13,8 +13,6 @@
 #include <arpa/inet.h>
 #include <string.h>
 
- */
-
 static int
 parse_ipv4_address (const char *ip, uint8_t *addr_bytes)
 {
@@ -84,8 +82,6 @@ ip_addresses_equal (const char *ip1, const char *ip2)
   return memcmp (bytes1, bytes2, cmp_len) == 0;
 }
 
- */
-
 static int
 cidr_full_bytes_match (const uint8_t *ip_bytes, const uint8_t *entry_bytes,
                        int bytes)
@@ -134,8 +130,6 @@ ip_matches_cidr (const char *ip, const SocketSYN_WhitelistEntry *entry)
     return 0;
   return ip_matches_cidr_bytes (family, ip_bytes, entry);
 }
-
- */
 
 /* Compares parsed bytes to prevent bypass via alternate IP formats */
 static int
@@ -232,8 +226,6 @@ whitelist_check (SocketSYNProtect_T protect, const char *ip)
 
   return whitelist_check_all_cidrs_bytes (protect, family, ip_bytes, bucket);
 }
-
- */
 
 void
 remove_ip_entry_from_hash (SocketSYNProtect_T protect, SocketSYN_IPEntry *entry)

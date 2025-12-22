@@ -12,8 +12,6 @@
 
 #include "core/Except.h"
 
- */
-
 /* Mark function as never returning */
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
 #define EXCEPT_NORETURN _Noreturn
@@ -39,8 +37,6 @@
 #define EXCEPT_NONNULL(...)
 #endif
 
- */
-
 /* Default string for unknown file locations */
 #define EXCEPT_UNKNOWN_FILE "unknown"
 
@@ -60,8 +56,6 @@
   "This indicates a programming error in exception usage"
 #define EXCEPT_ABORTING_FMT "aborting..."
 
- */
-
 /* Thread-local exception stack - each thread maintains its own */
 #ifdef _WIN32
 __declspec (thread) Except_Frame *Except_stack = NULL;
@@ -69,11 +63,7 @@ __declspec (thread) Except_Frame *Except_stack = NULL;
 __thread Except_Frame *Except_stack = NULL;
 #endif
 
- */
-
 const Except_T Assert_Failed = { &Assert_Failed, "Assertion failed" };
-
- */
 
 static inline void
 except_flush_stderr (void)
@@ -144,7 +134,6 @@ except_finish_abort (void)
   abort ();
 }
 
- */
 
 EXCEPT_COLD static void
 except_validate_not_null (const Except_T *e)
@@ -157,7 +146,6 @@ except_validate_not_null (const Except_T *e)
   except_finish_abort ();
 }
 
- */
 
 EXCEPT_COLD EXCEPT_NORETURN EXCEPT_NONNULL (1)
 static void
@@ -168,8 +156,6 @@ except_abort_uncaught (const Except_T *e, const char *file, int line)
   except_emit_location (file, line);
   except_finish_abort ();
 }
-
- */
 
 EXCEPT_NONNULL (1, 2)
 static inline void
@@ -201,8 +187,6 @@ except_jump_to_handler (Except_Frame *frame)
   /* Cast away volatile - jmp_buf contents already saved by setjmp */
   longjmp (*(jmp_buf *)&frame->env, Except_raised);
 }
-
- */
 
 EXCEPT_NORETURN void
 Except_raise (const Except_T *e, const char *file, int line)

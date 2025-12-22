@@ -15,14 +15,12 @@
 
 #define T HashTable_T
 
- */
 
 const Except_T HashTable_Failed
     = { &HashTable_Failed, "Hash table operation failed" };
 
 SOCKET_DECLARE_MODULE_EXCEPTION (HashTable);
 
- */
 
 struct T
 {
@@ -35,7 +33,6 @@ struct T
   Arena_T arena; /* NULL=malloc */
 };
 
- */
 
 static void
 validate_config (const HashTable_Config *config)
@@ -92,7 +89,6 @@ set_next (T table, void *entry, void *next)
   *next_ptr = next;
 }
 
- */
 
 T
 HashTable_new (Arena_T arena, const HashTable_Config *config)
@@ -148,7 +144,6 @@ HashTable_free (T *table)
   *table = NULL;
 }
 
- */
 
 void *
 HashTable_find (T table, const void *key, void **prev_out)

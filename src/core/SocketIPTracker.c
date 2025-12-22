@@ -26,14 +26,12 @@
 
 #define T SocketIPTracker_T
 
- */
 
 const Except_T SocketIPTracker_Failed
     = { &SocketIPTracker_Failed, "IP tracker operation failed" };
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketIPTracker);
 
- */
 
 typedef struct IPEntry
 {
@@ -108,7 +106,6 @@ validate_ip (const char *ip, const char *caller)
   return IP_ADVANCED_INVALID;
 }
 
- */
 
 /* Uses DJB2 string hash with seed for DoS resistance */
 static unsigned
@@ -146,7 +143,6 @@ find_entry (const T tracker, const char *ip, IPEntry **prev_out)
 
   return (IPEntry *)HashTable_find (tracker->table, ip, (void **)prev_out);
 }
- */
 
 static void *
 tracker_alloc_raw (const T tracker, size_t size)
@@ -165,7 +161,6 @@ tracker_free_raw (const T tracker, void *ptr)
     free (ptr);
 }
 
- */
 
 static IPEntry *
 allocate_entry (const T tracker)
@@ -206,7 +201,6 @@ create_and_insert_entry (T tracker, const char *ip, int initial_count)
   return entry;
 }
 
- */
 
 /* O(1) removal with prev pointer, caller must hold mutex */
 static void
@@ -221,7 +215,6 @@ unlink_entry (T tracker, IPEntry *entry, IPEntry *prev)
   tracker_free_raw (tracker, entry);
 }
 
- */
 
 static int
 free_entry_callback (void *entry, void *context)
@@ -238,7 +231,6 @@ free_all_entries (T tracker)
     HashTable_foreach (tracker->table, free_entry_callback, tracker);
 }
 
- */
 
 static T
 allocate_tracker (Arena_T arena)
@@ -334,7 +326,6 @@ cleanup_failed_tracker (T tracker)
     }
 }
 
- */
 
 static bool
 is_unlimited_mode (const T tracker)
@@ -396,7 +387,6 @@ track_internal (T tracker, const char *ip)
   return increment_existing_entry (tracker, entry);
 }
 
- */
 
 T
 SocketIPTracker_new (Arena_T arena, int max_per_ip)
