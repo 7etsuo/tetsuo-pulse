@@ -156,6 +156,62 @@ C Interfaces and Implementations patterns and GNU C style guidelines.
 
 **Use when**: Writing new code, refactoring existing code, or ensuring style compliance.
 
+### 7. fuzzing-patterns.md
+Implementation patterns for libFuzzer harnesses.
+
+**Contents**:
+- File structure template (license, docstring, includes, entry point)
+- Operation enum pattern (multi-operation fuzzers)
+- Byte extraction helpers (read_u16, read_u32, get_op)
+- Input format documentation
+- Arena memory pattern (lifecycle management)
+- Exception handling pattern (catching all module exceptions)
+- Volatile variables for exception safety
+- GCC clobbered warning suppression
+- SIGPIPE handling for network fuzzers
+- Conditional compilation for optional features
+- Accessor coverage pattern (exercising all getters)
+- Incremental parsing pattern (variable chunk sizes)
+- Known input testing pattern (valid/invalid baselines)
+- Security attack vector pattern (explicit attack tests)
+- Configuration variation pattern (strict/lenient modes)
+- Fuzzed configuration pattern (fuzz-driven config)
+- Error/result string coverage
+- Multi-test organization (section headers)
+- Limits and bounds (fuzzing-specific constants)
+- Parser reset and reuse
+- Body reading pattern
+- Build commands (cmake, libFuzzer options)
+
+**Use when**: Creating new fuzzers, improving fuzzing coverage, or understanding fuzzer patterns.
+
+### 8. fuzzing-harnesses.md
+Complete harness templates for different fuzzer types.
+
+**Contents**:
+- Parser fuzzer template (HTTP, HPACK, WebSocket parsers)
+- Buffer fuzzer template (SocketBuf, circular buffers)
+- State machine fuzzer template (TLS handshake, connection lifecycle)
+- Codec fuzzer template (HPACK, UTF-8, Base64 encoding/decoding)
+- Security attack fuzzer template (HTTP smuggling, injection)
+- Frame parsing fuzzer template (WebSocket, HTTP/2 frames)
+- Validation fuzzer template (UTF-8, DNS, IP, URL validation)
+
+**Use when**: Creating new fuzzers from scratch, need a starting template for a specific fuzzer category.
+
+### 9. fuzzing-coverage.md
+Fuzzer coverage mapping and attack vector documentation.
+
+**Contents**:
+- Fuzzer index (all 95+ fuzzers with target modules and categories)
+- Coverage by module (detailed breakdown per module)
+- Attack vector coverage (buffer attacks, injection, smuggling, DoS, protocol, encoding)
+- Running fuzzers (quick start, recommended parameters)
+- Adding new fuzzers (checklist, CMakeLists.txt entry, initial corpus)
+- Fuzzer dependencies (required features, conditional compilation)
+
+**Use when**: Understanding what fuzzers exist, what they test, identifying coverage gaps, adding new fuzzers.
+
 ## Usage in Commands
 
 Command files can now reference these shared materials instead of duplicating content:
@@ -168,6 +224,9 @@ For protocol implementation patterns, see `.claude/references/protocol-patterns.
 For security limits, see `.claude/references/security-limits.md`
 For security patterns, see `.claude/references/security-patterns.md`
 For style guidelines, see `.claude/references/style-guide.md`
+For fuzzing patterns, see `.claude/references/fuzzing-patterns.md`
+For fuzzing harness templates, see `.claude/references/fuzzing-harnesses.md`
+For fuzzing coverage map, see `.claude/references/fuzzing-coverage.md`
 ```
 
 ## Benefits
@@ -195,5 +254,8 @@ When updating shared content:
 - `security-limits.md`: ~9.5KB (limits and constants)
 - `security-patterns.md`: ~16KB (security best practices)
 - `style-guide.md`: ~14KB (coding standards)
+- `fuzzing-patterns.md`: ~18KB (fuzzer implementation patterns)
+- `fuzzing-harnesses.md`: ~28KB (complete harness templates)
+- `fuzzing-coverage.md`: ~16KB (coverage mapping and attack vectors)
 
-Total: ~96KB of shared reference material extracted from commands
+Total: ~158KB of shared reference material
