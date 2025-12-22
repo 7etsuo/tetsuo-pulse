@@ -682,6 +682,86 @@ extern int SocketDNS_rdata_parse_cname (const unsigned char *msg, size_t msglen,
                                         const SocketDNS_RR *rr, char *cname,
                                         size_t cnamelen);
 
+/** Size of SOA fixed fields in bytes (SERIAL + REFRESH + RETRY + EXPIRE + MINIMUM). */
+#define DNS_SOA_FIXED_SIZE 20
+
+/**
+ * @brief SOA record RDATA structure (RFC 1035 Section 3.3.13).
+ *
+ * Represents the parsed contents of a Start of Authority record.
+ * SOA records appear in zone apex and in authority section of
+ * NXDOMAIN/NODATA responses for negative caching.
+ *
+ * ## Wire Format (RFC 1035 Section 3.3.13)
+ *
+ * ```
+ * +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+ * /                     MNAME                     /
+ * +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+ * /                     RNAME                     /
+ * +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+ * |                    SERIAL                     |
+ * |                                               |
+ * +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+ * |                    REFRESH                    |
+ * |                                               |
+ * +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+ * |                     RETRY                     |
+ * |                                               |
+ * +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+ * |                    EXPIRE                     |
+ * |                                               |
+ * +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+ * |                    MINIMUM                    |
+ * |                                               |
+ * +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+ * ```
+ */
+typedef struct
+{
+  char mname[DNS_MAX_NAME_LEN]; /**< Primary nameserver domain name */
+  char rname[DNS_MAX_NAME_LEN]; /**< Responsible person mailbox (@ as .) */
+  uint32_t serial;              /**< Zone version number */
+  uint32_t refresh;             /**< Refresh interval (seconds) */
+  uint32_t retry;               /**< Retry interval (seconds) */
+  uint32_t expire;              /**< Expire time (seconds) */
+  uint32_t minimum;             /**< Negative cache TTL (seconds) */
+} SocketDNS_SOA;
+
+/**
+ * @brief Parse SOA record RDATA (Start of Authority).
+ * @ingroup dns_rdata
+ *
+ * Extracts SOA record data including primary nameserver, responsible
+ * person mailbox, and zone timing parameters. MNAME and RNAME may use
+ * compression pointers, so full message context is required.
+ *
+ * The MINIMUM field is particularly important for negative caching
+ * as specified in RFC 2308 - it determines how long NXDOMAIN and
+ * NODATA responses should be cached.
+ *
+ * @param[in]  msg    Full DNS message buffer (for compression pointers).
+ * @param[in]  msglen Total length of the DNS message.
+ * @param[in]  rr     Resource record with TYPE=SOA.
+ * @param[out] soa    Output SOA structure.
+ * @return 0 on success, -1 on error.
+ *
+ * @code{.c}
+ * SocketDNS_RR rr;
+ * if (SocketDNS_rr_decode(msg, msglen, offset, &rr, NULL) == 0) {
+ *     if (rr.type == DNS_TYPE_SOA) {
+ *         SocketDNS_SOA soa;
+ *         if (SocketDNS_rdata_parse_soa(msg, msglen, &rr, &soa) == 0) {
+ *             printf("Primary NS: %s\n", soa.mname);
+ *             printf("Negative TTL: %u\n", soa.minimum);
+ *         }
+ *     }
+ * }
+ * @endcode
+ */
+extern int SocketDNS_rdata_parse_soa (const unsigned char *msg, size_t msglen,
+                                      const SocketDNS_RR *rr, SocketDNS_SOA *soa);
+
 /** @} */ /* End of dns_rdata group */
 
 /** @} */ /* End of dns_wire group */
