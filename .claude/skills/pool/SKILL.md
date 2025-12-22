@@ -299,7 +299,10 @@ TRY {
 |------|---------|
 | `include/pool/SocketPool.h` | Pool API |
 | `include/pool/SocketPoolHealth.h` | Health monitoring |
-| `src/pool/SocketPool.c` | Pool implementation |
+| `src/pool/SocketPool-core.c` | Core pool implementation |
+| `src/pool/SocketPool-connections.c` | Connection management |
 | `src/pool/SocketPool-drain.c` | Drain state machine |
-| `src/pool/SocketPoolHealth.c` | Health metrics |
+| `src/pool/SocketPool-health.c` | Health metrics |
+| `src/pool/SocketPool-ops.c` | Pool operations |
+| `src/pool/SocketPool-ratelimit.c` | Rate limiting |
 | `src/test/test_socketpool.c` | Pool tests |

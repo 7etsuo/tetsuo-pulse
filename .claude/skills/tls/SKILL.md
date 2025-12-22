@@ -169,6 +169,7 @@ Note: Some servers (e.g., httpbin.org) only support TLS 1.2, so TLS 1.3-only pol
 | `include/tls/SocketTLS.h` | Main TLS API |
 | `include/tls/SocketTLSContext.h` | Context configuration |
 | `include/tls/SocketDTLS.h` | DTLS for UDP |
-| `src/tls/SocketTLS.c` | TLS implementation |
-| `src/tls/SocketTLS-handshake.c` | Handshake state machine |
+| `src/tls/SocketTLS.c` | TLS implementation (includes handshake) |
+| `src/tls/SocketTLS-ktls.c` | Kernel TLS offload |
+| `src/tls/SocketTLSContext-*.c` | Context modules (certs, session, pinning, etc.) |
 | `src/test/test_tls_*.c` | Test patterns to follow |

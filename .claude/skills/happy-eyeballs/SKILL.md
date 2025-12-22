@@ -327,7 +327,5 @@ void connect_async(const char *host, int port, ConnectCallback cb) {
 | File | Purpose |
 |------|---------|
 | `include/socket/SocketHappyEyeballs.h` | Happy Eyeballs API |
-| `src/socket/SocketHappyEyeballs.c` | Main implementation |
-| `src/socket/SocketHappyEyeballs-sort.c` | Address sorting (RFC 6724) |
-| `src/socket/SocketHappyEyeballs-cache.c` | Family caching |
+| `src/socket/SocketHappyEyeballs.c` | Implementation (sorting, racing, caching) |
 | `src/test/test_happy_eyeballs.c` | Racing tests |
