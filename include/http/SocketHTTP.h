@@ -461,6 +461,27 @@ extern int SocketHTTP_Headers_add_n (SocketHTTP_Headers_T headers,
                                      const char *value, size_t value_len);
 
 /**
+ * @brief Add header as zero-copy reference (no string allocation).
+ * @return 0 on success, -1 on error
+ *
+ * Stores pointers directly without copying. The name and value buffers
+ * must remain valid until headers are freed or materialize() is called.
+ * Used internally by parser for performance.
+ */
+extern int SocketHTTP_Headers_add_ref (SocketHTTP_Headers_T headers,
+                                       const char *name, size_t name_len,
+                                       const char *value, size_t value_len);
+
+/**
+ * @brief Materialize all reference headers by copying strings to arena.
+ * @return 0 on success, -1 on error
+ *
+ * Converts zero-copy reference headers to owned copies. Call this before
+ * the source buffers are reused or freed.
+ */
+extern int SocketHTTP_Headers_materialize (SocketHTTP_Headers_T headers);
+
+/**
  * @brief Set header (replace if exists).
  * @return 0 on success, -1 on error
  *

@@ -185,6 +185,16 @@ http1_tokenbuf_reset (HTTP1_TokenBuf *buf)
   buf->len = 0;
 }
 
+static inline void
+http1_tokenbuf_release (HTTP1_TokenBuf *buf)
+{
+  /* Release ownership - data stays in arena, will be used by header */
+  buf->data = NULL;
+  buf->len = 0;
+  buf->capacity = 0;
+  /* Next append will allocate fresh buffer */
+}
+
 static inline int
 http1_tokenbuf_append (HTTP1_TokenBuf *buf, Arena_T arena, char c,
                        size_t max_size)
@@ -194,7 +204,9 @@ http1_tokenbuf_append (HTTP1_TokenBuf *buf, Arena_T arena, char c,
 
   if (buf->len >= buf->capacity)
     {
-      size_t new_capacity = buf->capacity * 2;
+      /* After release, capacity is 0 - use default initial size */
+      size_t new_capacity
+          = (buf->capacity == 0) ? 64 : (buf->capacity * 2);
       if (new_capacity > max_size)
         new_capacity = max_size;
 
@@ -202,7 +214,8 @@ http1_tokenbuf_append (HTTP1_TokenBuf *buf, Arena_T arena, char c,
       if (!new_data)
         return -1;
 
-      memmove (new_data, buf->data, buf->len);
+      if (buf->data && buf->len > 0)
+        memmove (new_data, buf->data, buf->len);
       buf->data = new_data;
       buf->capacity = new_capacity;
     }
