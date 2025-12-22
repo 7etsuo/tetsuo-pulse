@@ -177,7 +177,6 @@ exponential_backoff (const SocketRetry_Policy *policy, int attempt)
   multiplier_pow = power_double (policy->multiplier, attempt - 1);
   base_delay = (double)policy->initial_delay_ms * multiplier_pow;
 
-  /* Handle FP overflow/NaN */
   if (isinf (base_delay) || isnan (base_delay))
     base_delay = (double)policy->max_delay_ms;
 
@@ -202,7 +201,6 @@ apply_jitter_to_delay (double base_delay, const SocketRetry_Policy *policy,
       jittered_delay += jitter_offset;
     }
 
-  /* Handle FP overflow/NaN after jitter */
   if (isinf (jittered_delay) || isnan (jittered_delay) || jittered_delay < 0.0)
     jittered_delay = (double)policy->max_delay_ms;
 
@@ -212,7 +210,6 @@ apply_jitter_to_delay (double base_delay, const SocketRetry_Policy *policy,
 static double
 clamp_final_delay (double delay)
 {
-  /* Ensure positive delay after jitter */
   if (delay < RETRY_MIN_DELAY_MS)
     delay = RETRY_MIN_DELAY_MS;
 
@@ -291,7 +288,6 @@ SocketRetry_new (const SocketRetry_Policy *policy)
 {
   T retry;
 
-  /* Use calloc for zero-initialization of stats */
   retry = calloc (1, sizeof (*retry));
   if (retry == NULL)
     SOCKET_RAISE_MSG (SocketRetry, SocketRetry_Failed,
@@ -338,7 +334,6 @@ static int
 should_continue_retry (const T retry, int result, int attempt,
                        SocketRetry_ShouldRetry should_retry, void *context)
 {
-  /* Check user callback */
   if (should_retry != NULL && !should_retry (result, attempt, context))
     {
       SOCKET_LOG_DEBUG_MSG ("Retry aborted by callback for error %d", result);

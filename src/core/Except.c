@@ -12,7 +12,6 @@
 
 #include "core/Except.h"
 
-/* Mark function as never returning */
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
 #define EXCEPT_NORETURN _Noreturn
 #elif defined(__GNUC__) || defined(__clang__)
@@ -23,14 +22,12 @@
 #define EXCEPT_NORETURN
 #endif
 
-/* Mark function as unlikely to be called */
 #if defined(__GNUC__) || defined(__clang__)
 #define EXCEPT_COLD __attribute__ ((cold))
 #else
 #define EXCEPT_COLD
 #endif
 
-/* Mark pointer parameters as non-null */
 #if defined(__GNUC__) || defined(__clang__)
 #define EXCEPT_NONNULL(...) __attribute__ ((nonnull (__VA_ARGS__)))
 #else
@@ -87,7 +84,6 @@ except_emit_reason (const Except_T *e)
            e->reason != NULL ? e->reason : "(no reason provided)");
 }
 
-/* Extract filename from full path to prevent leaking directory structure */
 static const char *
 except_basename (const char *path)
 {
