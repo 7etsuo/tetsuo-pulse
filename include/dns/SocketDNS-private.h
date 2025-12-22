@@ -14,7 +14,6 @@
  * @warning INTERNAL USE ONLY - unstable ABI, may change without notice.
  */
 
-/* System headers */
 #include <netdb.h>
 #include <pthread.h>
 #include <stdbool.h>
@@ -274,7 +273,6 @@ struct SocketDNS_T
     }                                                                         \
   while (0)
 
-/* Thread-local exception - extern declaration (defined in SocketDNS.c) */
 extern const Except_T SocketDNS_Failed;
 
 /* NOTE: Error raising uses SOCKET_RAISE_MSG/FMT directly (combined
