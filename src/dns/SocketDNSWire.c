@@ -186,3 +186,345 @@ SocketDNS_header_init_query (SocketDNS_Header *header, uint16_t id,
   header->rd = 1;                 /* Request recursion */
   header->qdcount = qdcount;
 }
+
+/*
+ * Domain Name Encoding/Decoding (RFC 1035 Section 4.1.2, 4.1.4)
+ *
+ * Domain names are encoded as a sequence of labels:
+ *   [length][label data][length][label data]...[0]
+ *
+ * Each label is preceded by a length byte (1-63).
+ * The sequence ends with a zero-length byte.
+ *
+ * Compression pointers (RFC 1035 Section 4.1.4):
+ *   [11xxxxxx][xxxxxxxx] - 14-bit offset from message start
+ */
+
+/* Case-insensitive character comparison for ASCII (RFC 1035 Section 2.3.3) */
+static inline int
+dns_char_equal_ci (unsigned char a, unsigned char b)
+{
+  if (a >= 'A' && a <= 'Z')
+    a = (unsigned char)(a + 32);
+  if (b >= 'A' && b <= 'Z')
+    b = (unsigned char)(b + 32);
+  return a == b;
+}
+
+int
+SocketDNS_name_valid (const char *name)
+{
+  size_t wire_len;
+  size_t label_len;
+  const char *p;
+
+  if (!name)
+    return 0;
+
+  /* Empty string or just "." = root domain, valid */
+  if (name[0] == '\0' || (name[0] == '.' && name[1] == '\0'))
+    return 1;
+
+  wire_len = 0;
+  label_len = 0;
+  p = name;
+
+  while (*p)
+    {
+      if (*p == '.')
+        {
+          /* Empty label (consecutive dots or leading dot) */
+          if (label_len == 0)
+            return 0;
+          /* Label too long */
+          if (label_len > DNS_MAX_LABEL_LEN)
+            return 0;
+          wire_len += 1 + label_len; /* length byte + label */
+          label_len = 0;
+        }
+      else
+        {
+          label_len++;
+        }
+      p++;
+    }
+
+  /* Handle final label (unless trailing dot) */
+  if (label_len > 0)
+    {
+      if (label_len > DNS_MAX_LABEL_LEN)
+        return 0;
+      wire_len += 1 + label_len;
+    }
+
+  /* Add terminating zero byte */
+  wire_len += 1;
+
+  /* Total length check */
+  if (wire_len > DNS_MAX_NAME_LEN)
+    return 0;
+
+  return 1;
+}
+
+size_t
+SocketDNS_name_wire_length (const char *name)
+{
+  size_t wire_len;
+  size_t label_len;
+  const char *p;
+
+  if (!name)
+    return 0;
+
+  /* Empty string or root domain */
+  if (name[0] == '\0' || (name[0] == '.' && name[1] == '\0'))
+    return 1; /* Just the terminating zero byte */
+
+  wire_len = 0;
+  label_len = 0;
+  p = name;
+
+  while (*p)
+    {
+      if (*p == '.')
+        {
+          if (label_len == 0 || label_len > DNS_MAX_LABEL_LEN)
+            return 0; /* Invalid */
+          wire_len += 1 + label_len;
+          label_len = 0;
+        }
+      else
+        {
+          label_len++;
+        }
+      p++;
+    }
+
+  /* Final label */
+  if (label_len > 0)
+    {
+      if (label_len > DNS_MAX_LABEL_LEN)
+        return 0;
+      wire_len += 1 + label_len;
+    }
+
+  /* Terminating zero */
+  wire_len += 1;
+
+  if (wire_len > DNS_MAX_NAME_LEN)
+    return 0;
+
+  return wire_len;
+}
+
+int
+SocketDNS_name_encode (const char *name, unsigned char *buf, size_t buflen,
+                       size_t *written)
+{
+  const char *label_start;
+  const char *p;
+  size_t pos;
+  size_t label_len;
+
+  if (!name || !buf)
+    return -1;
+
+  /* Validate first */
+  if (!SocketDNS_name_valid (name))
+    return -1;
+
+  pos = 0;
+
+  /* Handle empty string (root domain) */
+  if (name[0] == '\0' || (name[0] == '.' && name[1] == '\0'))
+    {
+      if (buflen < 1)
+        return -1;
+      buf[0] = 0;
+      if (written)
+        *written = 1;
+      return 0;
+    }
+
+  label_start = name;
+  p = name;
+
+  while (*p)
+    {
+      if (*p == '.')
+        {
+          label_len = (size_t)(p - label_start);
+
+          /* Need space for length byte + label data */
+          if (pos + 1 + label_len > buflen)
+            return -1;
+
+          buf[pos++] = (unsigned char)label_len;
+          memcpy (buf + pos, label_start, label_len);
+          pos += label_len;
+
+          label_start = p + 1;
+        }
+      p++;
+    }
+
+  /* Final label (if no trailing dot) */
+  label_len = (size_t)(p - label_start);
+  if (label_len > 0)
+    {
+      if (pos + 1 + label_len > buflen)
+        return -1;
+      buf[pos++] = (unsigned char)label_len;
+      memcpy (buf + pos, label_start, label_len);
+      pos += label_len;
+    }
+
+  /* Terminating zero byte */
+  if (pos >= buflen)
+    return -1;
+  buf[pos++] = 0;
+
+  if (written)
+    *written = pos;
+
+  return 0;
+}
+
+int
+SocketDNS_name_decode (const unsigned char *msg, size_t msglen, size_t offset,
+                       char *buf, size_t buflen, size_t *consumed)
+{
+  size_t out_pos;
+  size_t wire_pos;
+  size_t first_end;
+  int hops;
+  int jumped;
+
+  if (!msg || !buf || buflen == 0)
+    return -1;
+
+  if (offset >= msglen)
+    return -1;
+
+  out_pos = 0;
+  wire_pos = offset;
+  first_end = 0;
+  hops = 0;
+  jumped = 0;
+
+  while (1)
+    {
+      unsigned char len_byte;
+
+      if (wire_pos >= msglen)
+        return -1;
+
+      len_byte = msg[wire_pos];
+
+      /* Check for compression pointer */
+      if ((len_byte & DNS_COMPRESSION_FLAG) == DNS_COMPRESSION_FLAG)
+        {
+          uint16_t ptr_offset;
+
+          /* Need two bytes for pointer */
+          if (wire_pos + 1 >= msglen)
+            return -1;
+
+          ptr_offset
+              = ((uint16_t)(len_byte & 0x3F) << 8) | msg[wire_pos + 1];
+
+          /* Pointer must be valid */
+          if (ptr_offset >= msglen)
+            return -1;
+
+          /* Track first end position for consumed calculation */
+          if (!jumped)
+            {
+              first_end = wire_pos + 2;
+              jumped = 1;
+            }
+
+          /* Prevent infinite loops */
+          if (++hops > DNS_MAX_POINTER_HOPS)
+            return -1;
+
+          wire_pos = ptr_offset;
+          continue;
+        }
+
+      /* Check for reserved bits (10 or 01) - invalid */
+      if ((len_byte & 0xC0) != 0 && (len_byte & DNS_COMPRESSION_FLAG) != DNS_COMPRESSION_FLAG)
+        return -1;
+
+      /* Zero length = end of name */
+      if (len_byte == 0)
+        {
+          /* Move past the zero byte if not jumped */
+          if (!jumped)
+            first_end = wire_pos + 1;
+          break;
+        }
+
+      /* Validate label length */
+      if (len_byte > DNS_MAX_LABEL_LEN)
+        return -1;
+
+      /* Check there's enough data for the label */
+      if (wire_pos + 1 + len_byte > msglen)
+        return -1;
+
+      /* Add dot separator (except for first label) */
+      if (out_pos > 0)
+        {
+          if (out_pos >= buflen - 1)
+            return -1;
+          buf[out_pos++] = '.';
+        }
+
+      /* Check output buffer space */
+      if (out_pos + len_byte >= buflen)
+        return -1;
+
+      /* Copy label data */
+      memcpy (buf + out_pos, msg + wire_pos + 1, len_byte);
+      out_pos += len_byte;
+      wire_pos += 1 + len_byte;
+    }
+
+  /* Null terminate */
+  buf[out_pos] = '\0';
+
+  if (consumed)
+    *consumed = first_end - offset;
+
+  return (int)out_pos;
+}
+
+int
+SocketDNS_name_equal (const char *name1, const char *name2)
+{
+  const char *p1, *p2;
+
+  if (!name1 || !name2)
+    return 0;
+
+  p1 = name1;
+  p2 = name2;
+
+  while (*p1 && *p2)
+    {
+      if (!dns_char_equal_ci ((unsigned char)*p1, (unsigned char)*p2))
+        return 0;
+      p1++;
+      p2++;
+    }
+
+  /* Handle trailing dots: "example.com" == "example.com." */
+  while (*p1 == '.')
+    p1++;
+  while (*p2 == '.')
+    p2++;
+
+  return (*p1 == '\0' && *p2 == '\0');
+}

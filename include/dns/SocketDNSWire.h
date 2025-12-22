@@ -212,6 +212,124 @@ extern int SocketDNS_header_decode (const unsigned char *data, size_t datalen,
 extern void SocketDNS_header_init_query (SocketDNS_Header *header, uint16_t id,
                                          uint16_t qdcount);
 
+/**
+ * @defgroup dns_name DNS Domain Name Encoding
+ * @brief Domain name wire format encoding and decoding.
+ * @ingroup dns_wire
+ * @{
+ */
+
+/** Maximum length of a single DNS label (RFC 1035 Section 2.3.4). */
+#define DNS_MAX_LABEL_LEN 63
+
+/** Maximum total length of a domain name in wire format (RFC 1035 Section 2.3.4). */
+#define DNS_MAX_NAME_LEN 255
+
+/** Compression pointer flag (high 2 bits = 11, RFC 1035 Section 4.1.4). */
+#define DNS_COMPRESSION_FLAG 0xC0
+
+/** Mask for compression pointer offset (14 bits). */
+#define DNS_COMPRESSION_OFFSET_MASK 0x3FFF
+
+/** Maximum depth for following compression pointers (prevents infinite loops). */
+#define DNS_MAX_POINTER_HOPS 16
+
+/**
+ * @brief Encode a domain name to DNS wire format.
+ * @ingroup dns_name
+ *
+ * Converts a human-readable domain name (e.g., "www.example.com") to the
+ * wire format specified in RFC 1035 Section 4.1.2. Each label is encoded
+ * as a length byte followed by the label data, terminated by a zero byte.
+ *
+ * @param[in]  name    NUL-terminated domain name string.
+ * @param[out] buf     Output buffer for wire format.
+ * @param[in]  buflen  Size of output buffer.
+ * @param[out] written Number of bytes written (may be NULL).
+ * @return 0 on success, -1 on error (invalid name, buffer too small).
+ *
+ * @code{.c}
+ * unsigned char wire[DNS_MAX_NAME_LEN];
+ * size_t len;
+ * if (SocketDNS_name_encode("www.example.com", wire, sizeof(wire), &len) == 0) {
+ *     // wire contains: [3]www[7]example[3]com[0]
+ *     // len = 17
+ * }
+ * @endcode
+ */
+extern int SocketDNS_name_encode (const char *name, unsigned char *buf,
+                                  size_t buflen, size_t *written);
+
+/**
+ * @brief Decode a domain name from DNS wire format (with compression support).
+ * @ingroup dns_name
+ *
+ * Parses a domain name from wire format, handling both regular labels and
+ * compression pointers as specified in RFC 1035 Sections 4.1.2 and 4.1.4.
+ *
+ * @param[in]  msg      Full DNS message buffer (needed for pointer resolution).
+ * @param[in]  msglen   Total length of the DNS message.
+ * @param[in]  offset   Offset within msg where the name starts.
+ * @param[out] buf      Output buffer for decoded domain name.
+ * @param[in]  buflen   Size of output buffer.
+ * @param[out] consumed Bytes consumed from offset position (may be NULL).
+ *                      This is the actual wire size, not the expanded size.
+ * @return Length of decoded name on success, -1 on error.
+ *
+ * @code{.c}
+ * char name[DNS_MAX_NAME_LEN];
+ * size_t consumed;
+ * int len = SocketDNS_name_decode(msg, msglen, 12, name, sizeof(name), &consumed);
+ * if (len >= 0) {
+ *     printf("Domain: %s (consumed %zu bytes)\n", name, consumed);
+ * }
+ * @endcode
+ */
+extern int SocketDNS_name_decode (const unsigned char *msg, size_t msglen,
+                                  size_t offset, char *buf, size_t buflen,
+                                  size_t *consumed);
+
+/**
+ * @brief Compare two domain names case-insensitively.
+ * @ingroup dns_name
+ *
+ * Performs case-insensitive comparison as specified in RFC 1035 Section 2.3.3.
+ * Non-alphabetic characters must match exactly. Trailing dots are normalized.
+ *
+ * @param[in] name1 First domain name.
+ * @param[in] name2 Second domain name.
+ * @return 1 if names are equal, 0 if different.
+ */
+extern int SocketDNS_name_equal (const char *name1, const char *name2);
+
+/**
+ * @brief Validate a domain name string.
+ * @ingroup dns_name
+ *
+ * Checks that the domain name conforms to RFC 1035 constraints:
+ * - Each label is 63 octets or less
+ * - Total wire length is 255 octets or less
+ * - No empty labels (except for root)
+ *
+ * @param[in] name Domain name to validate.
+ * @return 1 if valid, 0 if invalid.
+ */
+extern int SocketDNS_name_valid (const char *name);
+
+/**
+ * @brief Calculate the wire format length of a domain name.
+ * @ingroup dns_name
+ *
+ * Returns the number of bytes needed to encode the domain name in wire format.
+ * This includes all length bytes and the terminating zero byte.
+ *
+ * @param[in] name Domain name string.
+ * @return Wire format length, or 0 if name is invalid.
+ */
+extern size_t SocketDNS_name_wire_length (const char *name);
+
+/** @} */ /* End of dns_name group */
+
 /** @} */ /* End of dns_wire group */
 
 #endif /* SOCKETDNSWIRE_INCLUDED */
