@@ -702,7 +702,7 @@ cache_evict_oldest (struct SocketDNS_T *dns)
   dns->cache_evictions++;
 }
 
-static struct SocketDNS_CacheEntry *
+struct SocketDNS_CacheEntry *
 cache_lookup (struct SocketDNS_T *dns, const char *hostname)
 {
   unsigned hash;
@@ -722,6 +722,7 @@ cache_lookup (struct SocketDNS_T *dns, const char *hostname)
             {
               cache_remove_entry (dns, entry);
               dns->cache_evictions++;
+              dns->cache_misses++; /* Expired entry counts as miss */
               return NULL;
             }
 
@@ -767,7 +768,7 @@ cache_allocate_entry (struct SocketDNS_T *dns, const char *hostname,
   return entry;
 }
 
-static void
+void
 cache_insert (struct SocketDNS_T *dns, const char *hostname,
               struct addrinfo *result)
 {
@@ -794,7 +795,7 @@ cache_insert (struct SocketDNS_T *dns, const char *hostname,
   dns->cache_insertions++;
 }
 
-static void
+void
 cache_clear_locked (struct SocketDNS_T *dns)
 {
   size_t i;
