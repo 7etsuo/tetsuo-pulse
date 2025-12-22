@@ -298,6 +298,7 @@ read_u31_be (const unsigned char *buf)
 extern int http2_is_connection_header_forbidden (const SocketHPACK_Header *header);
 extern int http2_field_has_uppercase (const char *name, size_t len);
 extern int http2_field_has_prohibited_chars (const char *data, size_t len);
+extern int http2_field_name_has_prohibited_chars (const char *name, size_t len);
 extern int http2_field_has_boundary_whitespace (const char *value, size_t len);
 extern int http2_validate_te_header (const char *value, size_t len);
 extern int http2_validate_regular_header (const SocketHPACK_Header *header);
