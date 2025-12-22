@@ -655,8 +655,7 @@ SocketLog_emit_structured (SocketLogLevel level, const char *component,
                                       field_count);
 }
 
- * NOTE: Legacy system for backward compatibility. Prefer SocketMetrics.h.
- */
+/* NOTE: Legacy system for backward compatibility. Prefer SocketMetrics.h. */
 
 static const SocketCounterMetric legacy_to_counter[SOCKET_METRIC_COUNT] = {
     [SOCKET_METRIC_SOCKET_CONNECT_SUCCESS] = SOCKET_CTR_SOCKET_CONNECT_SUCCESS,

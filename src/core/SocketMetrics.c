@@ -19,7 +19,6 @@
 #include "core/SocketMetrics.h"
 #include "core/SocketUtil.h"
 
- */
 
 #define PERCENTILE_P50 50.0
 #define PERCENTILE_P75 75.0
@@ -36,7 +35,6 @@ static const char *const STATSD_PCT_P50 = "p50";
 static const char *const STATSD_PCT_P95 = "p95";
 static const char *const STATSD_PCT_P99 = "p99";
 
- */
 
 #define METRICS_LOG_DEBUG_MSG(fmt, ...)                                       \
   SocketLog_emitf (SOCKET_LOG_DEBUG, "metrics", fmt, ##__VA_ARGS__)
@@ -47,13 +45,11 @@ static const char *const STATSD_PCT_P99 = "p99";
 #define METRICS_LOG_DEBUG(msg) ((void)0)
 #endif
 
- */
 
 #define COUNTER_VALID(m) ((m) >= 0 && (m) < SOCKET_COUNTER_METRIC_COUNT)
 #define GAUGE_VALID(m) ((m) >= 0 && (m) < SOCKET_GAUGE_METRIC_COUNT)
 #define HISTOGRAM_VALID(m) ((m) >= 0 && (m) < SOCKET_HISTOGRAM_METRIC_COUNT)
 
- */
 
 
 typedef struct Histogram
@@ -68,7 +64,6 @@ typedef struct Histogram
   int initialized;
 } Histogram;
 
- */
 
 static _Atomic int metrics_initialized = 0;
 static _Atomic uint64_t counter_values[SOCKET_COUNTER_METRIC_COUNT];
@@ -77,7 +72,6 @@ static Histogram histogram_values[SOCKET_HISTOGRAM_METRIC_COUNT];
 static pthread_mutex_t metrics_global_mutex = PTHREAD_MUTEX_INITIALIZER;
 static _Atomic int peak_socket_count = 0;
 
- */
 
 static const char *const counter_names[SOCKET_COUNTER_METRIC_COUNT] = {
   /* Pool */
@@ -262,7 +256,6 @@ static const char *const histogram_help[SOCKET_HISTOGRAM_METRIC_COUNT] = {
 static const char *const category_names[SOCKET_METRIC_CAT_COUNT]
     = { "pool", "http_client", "http_server", "tls", "dns", "socket", "poll" };
 
- */
 
 static inline int
 histogram_is_valid (SocketHistogramMetric metric)
@@ -272,7 +265,6 @@ histogram_is_valid (SocketHistogramMetric metric)
   return histogram_values[metric].initialized;
 }
 
- */
 
 static int
 compare_double (const void *a, const void *b)
@@ -310,7 +302,6 @@ percentile_from_sorted (const double *sorted, size_t n, double percentile)
   return sorted[lower] * (1.0 - frac) + sorted[upper] * frac;
 }
 
- */
 
 static void
 histogram_init (Histogram *h)
@@ -514,7 +505,6 @@ histogram_reset (Histogram *h)
   atomic_store (&h->count, 0);
 }
 
- */
 
 int
 SocketMetrics_init (void)
@@ -559,7 +549,6 @@ SocketMetrics_shutdown (void)
   METRICS_LOG_DEBUG ("Metrics subsystem shutdown");
 }
 
- */
 
 void
 SocketMetrics_counter_inc (SocketCounterMetric metric)
@@ -585,7 +574,6 @@ SocketMetrics_counter_get (SocketCounterMetric metric)
   return atomic_load (&counter_values[metric]);
 }
 
- */
 
 void
 SocketMetrics_gauge_set (SocketGaugeMetric metric, int64_t value)
@@ -627,7 +615,6 @@ SocketMetrics_gauge_get (SocketGaugeMetric metric)
   return atomic_load (&gauge_values[metric]);
 }
 
- */
 
 void
 SocketMetrics_histogram_observe (SocketHistogramMetric metric, double value)
@@ -691,7 +678,6 @@ SocketMetrics_histogram_snapshot (SocketHistogramMetric metric,
   histogram_fill_snapshot (&histogram_values[metric], snapshot);
 }
 
- */
 
 void
 SocketMetrics_get (SocketMetrics_Snapshot *snapshot)
@@ -759,7 +745,6 @@ SocketMetrics_reset_histograms (void)
     }
 }
 
- */
 
 static size_t
 export_append (char *buffer, size_t buffer_size, size_t *pos, const char *fmt,
@@ -864,7 +849,6 @@ export_histogram_prometheus (char *buffer, size_t buffer_size, size_t *pos,
   export_prometheus_histogram_summary (buffer, buffer_size, pos, name, h);
 }
 
- */
 
 size_t
 SocketMetrics_export_prometheus (char *buffer, size_t buffer_size)
@@ -1080,7 +1064,6 @@ SocketMetrics_export_json (char *buffer, size_t buffer_size)
   return pos;
 }
 
- */
 
 const char *
 SocketMetrics_counter_name (SocketCounterMetric metric)
@@ -1138,7 +1121,6 @@ SocketMetrics_category_name (SocketMetricCategory category)
   return category_names[category];
 }
 
- */
 
 int
 SocketMetrics_get_socket_count (void)

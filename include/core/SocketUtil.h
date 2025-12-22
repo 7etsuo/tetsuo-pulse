@@ -81,438 +81,101 @@ typedef void (*SocketLogCallback) (void *userdata, SocketLogLevel level,
  * @brief Register a custom callback for all library log emissions.
  * @ingroup foundation
  *
- * Allows applications to override the default stdout/stderr logging with a
- custom
- * handler for integration with file systems, syslog, structured logging
- (JSON),
- * or monitoring tools like ELK or Splunk. The callback receives every log
- message
- * emitted by the library across all modules and threads.
+ * @param callback Callback function or NULL for default logger.
+ * @param userdata Opaque user data passed to callback.
  *
- * Key behaviors:
- * - Global effect: Affects all SocketLog_emit*() calls after registration.
- * - Synchronous invocation: Called directly from emitting thread; must be
- non-blocking.
- * - Filtering integration: Respects global SocketLog_getlevel() threshold.
- * - Context enrichment: Callbacks can access thread-local SocketLogContext for
- *   trace IDs, request IDs, and connection FDs to correlate logs.
+ * Overrides default stdout/stderr logging. Callback invoked synchronously
+ * from emitting thread after level filtering. Keep callbacks non-blocking.
  *
- * Edge cases and best practices:
- * - Heavy callbacks may block event loops; use async queues or batching for
- production.
- * - No reentrancy guarantee; avoid logging from within callback to prevent
- recursion.
- * - Userdata is passed verbatim; application owns memory management and
- lifetime.
- * - Default fallback: If NULL, uses timestamped console output with level
- prefixes.
- *
- * Typical usage: Register early in application init after parsing config
- (e.g., log file path).
- * For structured logging, also set SocketLog_setstructuredcallback() for field
- support.
-
- * @param[in] callback Callback function or NULL for default logger.
- * @param[in] userdata Opaque user data passed unchanged to callback on every
- invocation.
- *
- * @threadsafe Yes - internal lock protects registration; effective immediately
- across threads.
- *
- * @return void
- *
- * @threadsafe Yes - internal lock protects registration; effective immediately
- across threads.
- *
- * ## Usage Example
- *
- * @code{.c}
- * // Custom logger to file with timestamps
- * static void file_logger(void *userdata, SocketLogLevel level,
- *                         const char *component, const char *message) {
- *   FILE *logfile = (FILE *)userdata;
- *   if (!logfile) return;  // Safety check
- *
- *   time_t now = time(NULL);
- *   struct tm *tm_info = localtime(&now);
- *   char timebuf[32];
- *   strftime(timebuf, sizeof(timebuf), "%Y-%m-%d %H:%M:%S", tm_info);
- *
- *   const SocketLogContext *ctx = SocketLog_getcontext();
- *   fprintf(logfile, "[%s] [%s] %s %s: %s", timebuf,
- SocketLog_levelname(level),
- *           component ? component : "unknown", ctx && ctx->trace_id[0] ?
- ctx->trace_id : "no-trace",
- *           message ? message : "(null)");
- *   fputc('\n', logfile);
- *   fflush(logfile);
- * }
- *
- * // Registration in application startup
- * TRY {
- *   FILE *logf = fopen("app_socket.log", "a");
- *   if (logf) {
- *     SocketLog_setcallback(file_logger, logf);
- *     SocketLog_setlevel(SOCKET_LOG_INFO);  // Production level
- *     SOCKET_LOG_INFO_MSG("Custom logging initialized to file");
- *   }
- * } EXCEPT (Socket_Failed) {
- *   // Handle file open failure
- *   fprintf(stderr, "Failed to open log file: %s\n", Socket_GetLastError());
- * } END_TRY;
- * @endcode
- *
- * ## Advanced Usage with Error Handling and Cleanup
- *
- * @code{.c}
- * // With cleanup in shutdown
- * static FILE *g_logfile = NULL;
- *
- * static void shutdown_logger(void) {
- *   if (g_logfile) {
- *     SocketLog_setcallback(NULL, NULL);  // Restore default
- *     fclose(g_logfile);
- *     g_logfile = NULL;
- *   }
- * }
- *
- * // In main: atexit(shutdown_logger);
- * // Register as above
- * @endcode
- *
- * @note The default logger outputs to stderr for ERROR/FATAL, stdout for
- others.
- * @note Callback invoked even for filtered levels? No, filtered before
- callback.
- * @warning Manage userdata lifetime; library won't free it or track ownership.
- * @warning Synchronous calls: Slow callbacks can impact library performance.
- * @complexity O(1) - constant time registration, no allocation or loops.
- *
- * @see SocketLogCallback for the exact function signature and parameters.
- * @see SocketLog_getcallback() to retrieve or verify the current registered
- callback.
- * @see SocketLogContext for accessing trace and connection info inside
- callback.
- * @see SocketLog_setlevel() to control which levels reach the callback.
- * @see SocketLog_setstructuredcallback() for separate handling of structured
- logs.
- * @see SocketLog_emitf() and SOCKET_LOG_*_MSG macros that trigger the
- callback.
- * @see docs/LOGGING.md for full logging subsystem guide and best practices.
- * @see @ref foundation for metrics and error utilities integrated with
- logging.
+ * @threadsafe Yes
  */
 void SocketLog_setcallback (SocketLogCallback callback, void *userdata);
 
 /**
- * @brief Retrieve the currently registered custom logging callback and its
- * userdata.
+ * @brief Retrieve the currently registered logging callback and userdata.
  * @ingroup foundation
  *
- * Queries the global logging callback previously set via
- * SocketLog_setcallback(). Useful for verification, dynamic reconfiguration,
- * or integration with config systems. Returns the active callback function and
- * optionally populates userdata pointer. If no custom callback set, returns
- * the internal default logger reference.
+ * @param userdata Output for userdata (may be NULL).
+ * @return Current SocketLogCallback, or internal default if none registered.
  *
- * Behavior details:
- * - Thread-safe read: Safe to call from any thread without blocking.
- * - Default return: Points to static default_logger; do not free or modify.
- * - Userdata output: If provided, sets to the userdata passed in
- * setcallback(); may be NULL.
- * - Immediate reflection: Sees changes from SocketLog_setcallback()
- * atomically.
- *
- * Edge cases: Calling before any setcallback() returns default. Userdata NULL
- * if not set. Typical use: In config reload to check/restore state, or logging
- * system introspection.
- *
- * @param[out] userdata Pointer to receive the userdata associated with current
- * callback (may be NULL; not modified if param NULL).
- *
- * @return Pointer to current SocketLogCallback, or internal default if none
- * registered.
- *
- * @throws None - pure query function, no allocations or side effects.
- *
- * @threadsafe Yes - atomic read or lock-free; no blocking or state change.
- *
- * ## Usage Example
- *
- * @code{.c}
- * // Verify logging configuration at startup or reload
- * void verify_logging_config(void) {
- *   void **ud_ptr = NULL;  // Not interested in userdata
- *   SocketLogCallback cb = SocketLog_getcallback(&ud_ptr);
- *   if (cb == default_logger) {  // Assume default_logger defined or check
- *     SOCKET_LOG_WARN_MSG("No custom logger set; using default console
- * output");
- *     // Optionally set one
- *     SocketLog_setcallback(custom_logger, some_ud);
- *   } else {
- *     void *ud = ud_ptr ? *ud_ptr : NULL;
- *     SOCKET_LOG_INFO_MSG("Custom logger active with userdata %p", ud);
- *   }
- * }
- *
- * // In main after potential config changes
- * verify_logging_config();
- * @endcode
- *
- * ## Retrieving Userdata for Dynamic Behavior
- *
- * @code{.c}
- * // Get userdata to access logger-specific config
- * void *logger_ud = NULL;
- * SocketLogCallback cb = SocketLog_getcallback(&logger_ud);
- * if (logger_ud) {
- *   // Cast to app-specific struct, e.g., LoggerConfig *cfg = logger_ud;
- *   // Adjust levels or rotate files based on cfg
- *   if (cfg->max_size_reached) rotate_log_file(cfg);
- * }
- * @endcode
- *
- * @note Returned callback pointer remains valid until next setcallback(); do
- * not free.
- * @note Default logger is static internal; applications should not call it
- * directly.
- * @note Userdata is exactly as passed to setcallback(); may be NULL even if cb
- * custom.
- * @warning Do not modify userdata through output param; it's read-only view.
- * @complexity O(1) - direct access to global state, no loops or allocations.
- *
- * @see SocketLog_setcallback() complementary setter function.
- * @see SocketLogCallback type definition for signature.
- * @see default_logger internal fallback (not public).
- * @see SocketLogContext usable in callbacks retrieved this way.
- * @see docs/LOGGING.md for logging configuration management.
+ * @threadsafe Yes
  */
 SocketLogCallback SocketLog_getcallback (void **userdata);
 
 /**
- * @brief SocketLog_levelname - Human-readable string for SocketLogLevel enum.
+ * @brief Get human-readable string for a log level.
  * @ingroup foundation
-
- *
- * Converts log level enum to static string for logging, UI display, or config
- * parsing. Enables readable output in logs, metrics labels, or error messages.
- *
- * Returns:
- * - "TRACE" for SOCKET_LOG_TRACE
- * - "DEBUG" for SOCKET_LOG_DEBUG
- * - "INFO" for SOCKET_LOG_INFO
- * - "WARN" for SOCKET_LOG_WARN
- * - "ERROR" for SOCKET_LOG_ERROR
- * - "FATAL" for SOCKET_LOG_FATAL
- *
- * Usage:
- *   SocketLogLevel lvl = SocketLog_getlevel();
- *   const char *name = SocketLog_levelname(lvl);
- *   SocketLog_emit_structured(SOCKET_LOG_INFO, "Config", "Log level set",
- *                             SOCKET_LOG_FIELDS({"level", name}));
  *
  * @param level Log level enum value.
- * @return Static const string (e.g., "INFO"); never NULL.
- * @threadsafe Yes - returns static readonly data.
- * @note Strings are uppercase English; extend for i18n if needed.
- * @see SocketLogLevel enum for values and semantics.
- * @see SocketLog_setlevel() for level configuration.
- * @see SocketLog_getlevel() to get current level.
- * @see SocketLog_emit*() functions that may use level names internally.
- * @see docs/LOGGING.md for logging configuration and levels.
+ * @return Static string ("TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL").
+ *
+ * @threadsafe Yes
  */
 const char *SocketLog_levelname (SocketLogLevel level);
 
 /**
- * @brief Emit a log message.
-
- * @param level Log level.
- * @param component Component name (may be NULL).
- * @param message Log message (may be NULL).
- * @threadsafe Yes
- */
-/**
- * @brief Emit a plain log message without formatting or variable arguments.
+ * @brief Emit a plain log message.
  * @ingroup foundation
  *
- * @param level Log severity level (e.g., SOCKET_LOG_INFO).
- * @param component Component or module name for categorization (may be NULL
- * for default "Socket").
- * @param message Fixed log message string (may be NULL, logged as empty
- * string).
- * @threadsafe Yes - synchronized emission to callback or default handler.
+ * @param level Log severity level.
+ * @param component Module name (may be NULL).
+ * @param message Log message (may be NULL).
  *
- * Dispatches the message to the registered SocketLogCallback or default stdout
- * logger. Automatically filtered by global minimum level from
- * SocketLog_setlevel(). Includes thread-local SocketLogContext data if set,
- * for correlation.
- *
- * Best for static messages; use SocketLog_emitf() for dynamic content.
- *
- * @return void
- * @see SocketLog_emitf() for formatted variant.
- * @see SocketLog_emit_structured() for key-value metadata.
- * @see SocketLog_setlevel() to control filtering.
- * @see SocketLogCallback for custom handling.
- * @see SocketLogContext for auto-included thread metadata.
- * @see docs/LOGGING.md for subsystem overview and examples.
- * @note No formatting performed; message should be pre-formatted if needed.
- * @note Integrates with SocketMetrics for log-related counters if emitted.
+ * @threadsafe Yes
  */
 void SocketLog_emit (SocketLogLevel level, const char *component,
                      const char *message);
 
 /**
- * @brief Emit a formatted log message using printf-style variable arguments.
+ * @brief Emit a formatted log message (printf-style).
  * @ingroup foundation
-
+ *
  * @param level Log level.
  * @param component Component name.
  * @param fmt Printf-style format string.
  * @param ... Format arguments.
+ *
+ * @warning fmt must be a compile-time literal to prevent format string attacks.
  * @threadsafe Yes
- * @return void
- *
- * Performs safe formatting using internal buffer, then emits to registered
- callback
- * or default logger. Supports common printf specifiers; limits length to
- prevent
- * DoS from excessive args. Automatically includes thread-local
- SocketLogContext
- * for tracing and correlation IDs.
- *
- * Use via convenience macros like SOCKET_LOG_INFO_MSG() which define component
- * and expand to this function. Essential for dynamic logging in hot paths.
- *
- * @warning fmt must be a compile-time literal string to prevent format string
- * vulnerabilities (e.g., %x, %n exploits with user input). Validate or escape
- * user data in arguments, not fmt.
- * @note Truncates long messages; failure in formatting logs internal error.
- * @note Filtered by global SocketLog_getlevel(); lower levels suppressed.
- * @see SocketLog_emit() for non-formatted logs.
- * @see SocketLog_emitfv() va_list variant for wrappers.
- * @see SocketLog_emit_structured() for structured/metadata logs.
- * @see SOCKET_LOG_*_MSG macros for module-specific usage.
- * @see SocketLog_setcallback() for output customization.
- * @see SocketLogContext auto-appended metadata.
- * @see docs/LOGGING.md security and performance guidelines.
- * @see @ref foundation for related utilities like SocketMetrics.
  */
 void SocketLog_emitf (SocketLogLevel level, const char *component,
                       const char *fmt, ...)
     __attribute__ ((format (printf, 3, 4)));
 
 /**
- * @brief Emit formatted log message using va_list for arguments.
+ * @brief Emit formatted log message using va_list.
  * @ingroup foundation
-
+ *
  * @param level Log level.
  * @param component Component name.
  * @param fmt Printf-style format string.
  * @param args Format arguments as va_list.
+ *
  * @threadsafe Yes
- * @return void
- *
- * Identical to SocketLog_emitf() but accepts pre-prepared va_list for
- * functions that need to forward variable arguments (e.g., logging wrappers,
- * error handlers). Performs formatting and emission with same safety checks,
- * filtering, and context integration.
- *
- * Use when va_list is available from caller; avoids variadic overhead.
- * Same security requirement: fmt literal only.
- *
- * @warning fmt must be compile-time literal; same risks as emitf().
- * @note Does not consume or modify args; valid until callback completes.
- * @see SocketLog_emitf() primary variadic version.
- * @see SocketLog_emit() non-formatted.
- * @see SocketLog_emit_structured() structured alternative.
- * @see docs/LOGGING.md for advanced usage.
- * @see SocketLog_setcallback() for output routing.
  */
 void SocketLog_emitfv (SocketLogLevel level, const char *component,
                        const char *fmt, va_list args)
     __attribute__ ((format (printf, 3, 0)));
 
 /**
- * @brief SocketLog_setlevel - Configure global minimum log level threshold.
+ * @brief Configure global minimum log level threshold.
  * @ingroup foundation
-
  *
- * Filters log emissions by severity, suppressing verbose messages in
- production
- * while enabling detailed tracing in development. Thread-safe update with
- * immediate effect on all subsequent logs across threads (via atomic or
- mutex).
+ * @param min_level Minimum level (SOCKET_LOG_TRACE = most verbose).
  *
- * Levels from verbose to critical:
- * - SOCKET_LOG_TRACE: Ultra-verbose (internal state changes)
- * - SOCKET_LOG_DEBUG: Debugging info (function entry/exit, params)
- * - SOCKET_LOG_INFO: Normal operations (connections, requests)
- * - SOCKET_LOG_WARN: Recoverable issues (retries, timeouts)
- * - SOCKET_LOG_ERROR: Errors (failed ops, exceptions)
- * - SOCKET_LOG_FATAL: Critical failures (abort imminent)
+ * Logs below this level are suppressed. Default: SOCKET_LOG_INFO.
  *
- * Global effect: Applies to all modules using SocketLog_emit*(). Change via
- * config file, env var, or runtime API. Persists until changed or process
- exit.
- *
- * Best Practices:
- * - Production: SOCKET_LOG_WARN or higher to reduce noise.
- * - Development: SOCKET_LOG_DEBUG for troubleshooting.
- * - Use SocketLog_getlevel() to read current for conditional logging.
- * - Integrate with SocketHTTPClient_config for per-client levels if needed.
- *
- * Example:
- *   // Runtime adjustment
- *   SocketLog_setlevel(SOCKET_LOG_DEBUG);  // Verbose mode
- *   // Or from config/env
- *   if (getenv("SOCKET_LOG_LEVEL")) {
- *     SocketLogLevel lvl = SocketLog_method_parse(getenv("SOCKET_LOG_LEVEL"));
- // Assume parse func
- *     SocketLog_setlevel(lvl);
- *   }
- *   const char *current = SocketLog_levelname(SocketLog_getlevel());
- *   SocketLog_emit(SOCKET_LOG_INFO, "Config", "Log level set to %s", current);
- *
- * @param min_level New minimum level (SOCKET_LOG_TRACE = most verbose).
- * @threadsafe Yes - atomic update or mutex-protected.
- * @return void (no return; errors logged internally).
- * @note Default: SOCKET_LOG_INFO; set early in main() or init.
- * @note Dynamic change safe; no restart needed.
- * @see SocketLog_getlevel() to query current threshold.
- * @see SocketLog_levelname() for string representation.
- * @see SocketLogLevel enum for level definitions.
- * @see SocketLog_emit*() functions affected by this setting.
- * @see docs/LOGGING.md for advanced configuration and integration.
- * @see @ref SocketConfig for global config management including logs.
- * @note Affects SocketLog_emit*() calls after invocation; pending buffered
- logs unaffected.
+ * @threadsafe Yes
  */
 extern void SocketLog_setlevel (SocketLogLevel min_level);
 
 /**
- * @brief Retrieve the active global minimum log level threshold.
+ * @brief Get the current global minimum log level threshold.
  * @ingroup foundation
-
- * @return Current global SocketLogLevel threshold (e.g., SOCKET_LOG_WARN).
- * @threadsafe Yes - atomic or mutex-protected read.
- * @return Current global SocketLogLevel threshold (e.g., SOCKET_LOG_WARN).
  *
- * Queries the minimum severity for log emission. Logs below this level are
- suppressed.
- * Useful for runtime configuration checks or conditional detailed logging.
- * Reflects last call to SocketLog_setlevel() or default (SOCKET_LOG_INFO).
+ * @return Current SocketLogLevel threshold.
  *
- * Example:
- *   if (SocketLog_getlevel() <= SOCKET_LOG_DEBUG) {
- *     SOCKET_LOG_DEBUG_MSG("Detailed state: %d", state);
- *   }
- *
- * @see SocketLog_setlevel() to configure.
- * @see SocketLogLevel enum definitions.
- * @see SocketLog_levelname() for string conversion.
- * @see docs/LOGGING.md configuration details.
- * @note Global value; changes affect all threads immediately.
+ * @threadsafe Yes
  */
 extern SocketLogLevel SocketLog_getlevel (void);
 
@@ -623,29 +286,8 @@ extern SocketLogLevel SocketLog_getlevel (void);
 #define SOCKET_LOG_ID_SIZE 37
 
 /**
- * @brief SocketLogContext - Thread-local logging context for correlation.
+ * @brief Thread-local logging context for distributed tracing.
  * @ingroup foundation
-
- *
- * Thread-local structure for adding correlation data to logs, enabling
- * distributed tracing, request tracking, and connection-specific logging.
- * Custom logging callbacks (SocketLogCallback or SocketLogStructuredCallback)
- * can access this structure via SocketLog_getcontext() to include fields
- * like trace_id, request_id, and connection_fd in log output (e.g., as JSON).
- *
- * Usage pattern:
- *   SocketLogContext ctx = {0};
- *   strncpy(ctx.trace_id, trace_uuid, sizeof(ctx.trace_id) - 1);
- *   ctx.connection_fd = sock_fd;
- *   SocketLog_setcontext(&ctx);
- *   // ... perform operations - logs now include context ...
- *   SocketLog_clearcontext();  // Or let it persist for thread lifetime
- *
- * @see SocketLog_setcontext() to establish context for current thread.
- * @see SocketLog_getcontext() to retrieve current context in callbacks.
- * @see SocketLog_clearcontext() to reset context.
- * @see SocketLogStructuredCallback for structured logging integration.
- * @see SocketEvent_emit_*() functions automatically set connection_fd.
  */
 typedef struct SocketLogContext
 {
@@ -655,88 +297,30 @@ typedef struct SocketLogContext
 } SocketLogContext;
 
 /**
- * @brief Set thread-local logging context for request tracing and metadata.
+ * @brief Set thread-local logging context.
  * @ingroup foundation
-
+ *
  * @param ctx Context to copy (NULL clears context).
- * @threadsafe Yes - thread-local storage (TLS), no locks or races.
- * @return void
  *
- * Copies ctx into per-thread storage for use by subsequent SocketLog_emit*()
- * calls in this thread. Custom callbacks can access via SocketLog_getcontext()
- * to enrich logs with trace_id (e.g., UUID), request_id, or connection_fd.
- * NULL ctx clears to defaults (empty strings, fd=-1).
- *
- * Pattern for request handling:
- *   SocketLogContext ctx = { .connection_fd = sock_fd };
- *   snprintf(ctx.trace_id, sizeof(ctx.trace_id), "%llx", generate_trace());
- *   SocketLog_setcontext(&ctx);
- *   // ... process request with contextual logs ...
- *   SocketLog_clearcontext(); // Or let persist per thread
- *
- * @note Fixed-size strings; caller must null-terminate and fit within limits.
- * @note Context visible only to current thread; inter-thread via app logic.
- * @see SocketLog_getcontext() retrieval in callbacks.
- * @see SocketLog_clearcontext() reset equivalent to set(NULL).
- * @see SocketLogContext fields details.
- * @see SocketLogStructuredCallback for field usage in structured logs.
- * @see docs/LOGGING.md tracing integration.
- * @see SocketEvent_emit_* auto-setting connection_fd for events.
+ * @threadsafe Yes (thread-local storage)
  */
 extern void SocketLog_setcontext (const SocketLogContext *ctx);
 
 /**
- * @brief Retrieve pointer to current thread's logging context.
+ * @brief Get current thread's logging context.
  * @ingroup foundation
-
- * @return Const pointer to thread-local SocketLogContext or NULL if unset.
- * @threadsafe Yes - direct read from TLS, read-only access.
- * @return Const pointer to thread-local SocketLogContext or NULL if unset.
  *
- * For use in custom SocketLogCallback or SocketLogStructuredCallback to
- * append context fields (trace_id, request_id, connection_fd) to log output.
- * Enables distributed tracing, request correlation, and per-connection
- logging.
- * Returned pointer remains valid until next set/clear in this thread.
- * Do not free or mutate; structure owned by logging subsystem.
+ * @return Pointer to thread-local SocketLogContext or NULL if unset.
  *
- * Example in callback:
- *   const SocketLogContext *ctx = SocketLog_getcontext();
- *   if (ctx) {
- *     fprintf(stream, "[%s] fd=%d %s\n", ctx->trace_id ?: "none",
- *             ctx->connection_fd, message);
- *   }
- *
- * @note NULL if never set or cleared; check before deref.
- * @note Fields may be empty strings or -1; validate as needed.
- * @see SocketLog_setcontext() to populate.
- * @see SocketLog_clearcontext() to NULLify.
- * @see SocketLogContext field semantics.
- * @see docs/LOGGING.md for callback patterns.
- * @see SocketLogStructuredCallback context param.
+ * @threadsafe Yes
  */
 extern const SocketLogContext *SocketLog_getcontext (void);
 
 /**
- * @brief Reset thread-local logging context to default state.
+ * @brief Clear thread-local logging context.
  * @ingroup foundation
-
- * @threadsafe Yes - local TLS update, no synchronization.
- * @return void
  *
- * Clears current thread's logging context by setting all fields to defaults:
- * trace_id and request_id to empty strings, connection_fd to -1.
- * Ensures no leakage of previous request data to subsequent logs.
- * Idempotent; safe to call multiple times.
- *
- * Recommended after completing request/connection handling to isolate logs.
- * Alternative to SocketLog_setcontext(NULL); slightly more explicit.
- *
- * @see SocketLog_setcontext(NULL) functional equivalent.
- * @see SocketLog_getcontext() to verify cleared (returns non-NULL but empty).
- * @see SocketLogContext default values.
- * @see docs/LOGGING.md context management patterns.
- * @note Does not affect global log level or callbacks.
+ * @threadsafe Yes
  */
 extern void SocketLog_clearcontext (void);
 
@@ -767,36 +351,8 @@ extern void SocketLog_clearcontext (void);
  */
 
 /**
- * @brief SocketLogField - Key-value pair for structured logging.
+ * @brief Key-value pair for structured logging.
  * @ingroup foundation
-
- *
- * Simple key-value structure for attaching metadata to log messages.
- * Used by SocketLog_emit_structured() to enable machine-readable output.
- * Keys are field names (e.g., "status_code", "response_time_ms", "user_id").
- * Values are pre-formatted strings (numbers as strings, escaped JSON if
- needed).
- *
- * Lifetime: Keys and values must remain valid until the structured log
- callback
- * completes. Do not pass stack strings that may go out of scope.
- *
- * Example usage with SOCKET_LOG_FIELDS macro:
- *   SocketLog_emit_structured(SOCKET_LOG_INFO, "HTTP", "Request processed",
- *                             SOCKET_LOG_FIELDS(
- *                                 {"method", "GET"},
- *                                 {"status", "200"},
- *                                 {"bytes", "1024"},
- *                                 {"user_agent", ua_str}
- *                             ));
- *
- * @see SocketLog_emit_structured() for emitting structured logs.
- * @see SocketLogStructuredCallback for processing fields in callbacks.
- * @see SOCKET_LOG_FIELDS() convenience macro for array initialization.
- * @see SocketLogContext for additional thread-local metadata.
- * @note For security, avoid logging sensitive data in fields (use
- secureclear).
- * @note Integrates with SocketMetrics for performance fields like latencies.
  */
 typedef struct SocketLogField
 {
@@ -805,44 +361,16 @@ typedef struct SocketLogField
 } SocketLogField;
 
 /**
- * @brief Typedef for callback handling structured logs with key-value fields
- and context.
+ * @brief Callback for structured logging with key-value fields.
  * @ingroup foundation
-
  *
- * Extended variant of SocketLogCallback that receives metadata fields
- separately
- * for machine-readable output formats like JSON or logfmt. Invoked by
- * SocketLog_emit_structured() when registered via
- SocketLog_setstructuredcallback().
- *
- * @param userdata User-provided opaque context passed during registration.
- * @param level Log severity level (SOCKET_LOG_TRACE to SOCKET_LOG_FATAL).
- * @param component String identifying emitting module or subsystem (non-NULL).
- * @param message Descriptive event string (non-NULL, may be empty).
- * @param fields Pointer to array of SocketLogField structs or NULL if none.
- * @param field_count Number of valid fields in array (0 if fields NULL).
- * @param context Pointer to current thread's SocketLogContext or NULL.
- * @threadsafe Conditional - implementor must handle concurrency if userdata
- shared.
- *
- * Guidelines:
- * - Validate NULL fields/context before access to avoid crashes.
- * - Fields values are caller-provided strings; lifetime until callback
- returns.
- * - Format output as needed (JSON, key=value pairs, etc.); no default
- formatting.
- * - Integrate with external systems like ELK stack or Prometheus for
- observability.
- *
- * @see SocketLog_setstructuredcallback() to register this callback.
- * @see SocketLog_emit_structured() emission trigger.
- * @see SocketLogField for field structure.
- * @see SocketLogContext for context details.
- * @see SocketLogCallback base callback fallback.
- * @see docs/LOGGING.md for examples and integration.
- * @note Fields array not copied; valid only during call.
- * @note Prefer for new code; enables better tooling and analysis.
+ * @param userdata User-provided context.
+ * @param level Log severity level.
+ * @param component Module name.
+ * @param message Log message.
+ * @param fields Array of key-value pairs (may be NULL).
+ * @param field_count Number of fields.
+ * @param context Thread logging context (may be NULL).
  */
 typedef void (*SocketLogStructuredCallback) (
     void *userdata, SocketLogLevel level, const char *component,
@@ -908,33 +436,10 @@ extern void SocketLog_emit_structured (SocketLogLevel level,
  */
 
 /**
- * @brief SocketMetric - Enumeration of library-wide performance and
- operational metrics.
+ * @brief Library-wide performance metrics.
  * @ingroup foundation
-
  *
- * These metrics track key events across all modules for monitoring, alerting,
- * and performance analysis. Use SocketMetrics_increment() to update counters
- * from module code. Snapshots via SocketMetrics_getsnapshot() provide atomic
- * reads for reporting.
- *
- * Categories:
- * - Socket connections (success/failure, shutdowns)
- * - DNS resolution (requests, completions, failures, timeouts)
- * - Event polling (wakeups, dispatched events)
- * - Connection pooling (adds, removes, reuses, health checks, drains)
- *
- * Integration: Emit metrics in hot paths with minimal overhead (atomic ops).
- * Export snapshots to Prometheus, StatsD, or custom telemetry systems.
- *
- * @see SocketMetrics_increment() to update counters.
- * @see SocketMetrics_getsnapshot() for atomic reads.
- * @see SocketMetrics_name() for human-readable labels.
- * @see SocketMetrics_count() for enum size.
- * @see @ref utilities for related retry and rate-limit metrics.
- * @see docs/METRICS.md for usage guidelines and best practices.
- * @note Thread-safe; use in async callbacks and worker threads.
- * @note SOCKET_METRIC_COUNT must match values[] size in snapshot.
+ * @threadsafe Yes (atomic operations)
  */
 typedef enum SocketMetric
 {
@@ -963,37 +468,8 @@ typedef enum SocketMetric
 } SocketMetric;
 
 /**
- * @brief SocketMetricsSnapshot - Thread-safe snapshot of all library metrics.
+ * @brief Thread-safe snapshot of all library metrics.
  * @ingroup foundation
-
- *
- * Structure holding atomic copies of all SocketMetric counters. Obtained via
- * SocketMetrics_getsnapshot() for reporting without contention. Array values[]
- * indexed by SocketMetric enum (size SOCKET_METRIC_COUNT).
- *
- * Usage:
- *   SocketMetricsSnapshot snap;
- *   SocketMetrics_getsnapshot(&snap);
- *   // Export snap.values[SOCKET_METRIC_SOCKET_CONNECT_SUCCESS] etc.
- *   // Or use SocketMetrics_snapshot_value(&snap, metric) helper.
- *
- * Thread Safety: Snapshot is atomic read; safe to access from any thread
- * after acquisition. No locking needed for reading snapshot contents.
- *
- * Export Patterns:
- * - Prometheus: Counter metrics with labels for module/component.
- * - StatsD: Increment during runtime, flush snapshots periodically.
- * - Logging: Structured logs with snapshot deltas for audits.
- *
- * @see SocketMetrics_getsnapshot() to capture current state.
- * @see SocketMetrics_snapshot_value() inline accessor.
- * @see SocketMetric for counter indices and descriptions.
- * @see SocketMetrics_increment() for updating underlying counters.
- * @see docs/METRICS.md for integration examples and best practices.
- * @note Size fixed by SOCKET_METRIC_COUNT; adding metrics requires
- recompilation.
- * @note Use unsigned long long for 64-bit counters supporting high-volume
- systems.
  */
 typedef struct SocketMetricsSnapshot
 {
@@ -1147,55 +623,31 @@ void SocketEvent_unregister (SocketEventCallback callback,
                              const void *userdata);
 
 /**
- * @brief Event emission functions - Thread-safe notification of key socket
- * events.
+ * @brief Emit connection accept event.
  * @ingroup foundation
  *
- * These functions emit events to registered callbacks for observability,
- * metrics, tracing, and alerting integration. Events are dispatched
- * asynchronously from worker threads or main event loops to avoid blocking.
+ * @param fd Client file descriptor.
+ * @param peer_addr Peer IP address.
+ * @param peer_port Peer port.
+ * @param local_addr Local IP address.
+ * @param local_port Local port.
  *
- * @see SocketEvent_register() to register global event handlers.
- * @see SocketEventCallback for the callback signature.
- * @see SocketEventRecord for the event data structure.
- * @see SocketEvent_unregister() to remove handlers.
- * @see SocketLogContext for correlating events with per-connection logs.
- */
-
-/**
- * @brief Emit new connection accept event.
- * @ingroup foundation
- * @param fd Newly accepted client file descriptor.
- * @param peer_addr Peer IP address as null-terminated C string (IPv4/IPv6).
- * @param peer_port Peer port number (host byte order).
- * @param local_addr Local bound IP address as null-terminated C string.
- * @param local_port Local listening port number (host byte order).
- * @threadsafe Yes - invokes callbacks with mutex protection.
- * @note Caller must ensure strings remain valid until all callbacks complete.
- * @note Automatically sets SocketLogContext.connection_fd for the event.
- * @see SocketEvent_register() to handle accept events (e.g., for metrics).
- * @see SocketPool_add() to immediately add connection to managed pool.
- * @see Socket_accept() for the underlying accept operation.
- * @see Socket_getpeeraddr() and Socket_getpeerport() for address queries.
+ * @threadsafe Yes
  */
 void SocketEvent_emit_accept (int fd, const char *peer_addr, int peer_port,
                               const char *local_addr, int local_port);
 
 /**
- * @brief Emit successful outbound connection event.
+ * @brief Emit outbound connection event.
  * @ingroup foundation
- * @param fd Connected socket file descriptor.
- * @param peer_addr Remote peer IP address as null-terminated C string.
- * @param peer_port Remote peer port number (host byte order).
- * @param local_addr Local source IP address as null-terminated C string.
- * @param local_port Local ephemeral source port (host byte order).
- * @threadsafe Yes - invokes callbacks with mutex protection.
- * @note Caller must ensure strings remain valid until callbacks complete.
- * @note Sets SocketLogContext.connection_fd for event correlation.
- * @see SocketEvent_register() to handle connect events.
- * @see SocketReconnect_state() integration for auto-reconnect scenarios.
- * @see Socket_connect() or SocketTLS_handshake() for connection establishment.
- * @see Socket_getlocaladdr() for local address retrieval.
+ *
+ * @param fd Socket file descriptor.
+ * @param peer_addr Peer IP address.
+ * @param peer_port Peer port.
+ * @param local_addr Local IP address.
+ * @param local_port Local port.
+ *
+ * @threadsafe Yes
  */
 void SocketEvent_emit_connect (int fd, const char *peer_addr, int peer_port,
                                const char *local_addr, int local_port);
@@ -1203,31 +655,22 @@ void SocketEvent_emit_connect (int fd, const char *peer_addr, int peer_port,
 /**
  * @brief Emit DNS resolution timeout event.
  * @ingroup foundation
- * @param host Hostname or address that timed out during resolution.
- * @param port Destination port associated with the DNS request (for context).
+ *
+ * @param host Hostname that timed out.
+ * @param port Destination port.
+ *
  * @threadsafe Yes
- * @see SocketEvent_register() to handle DNS timeout events.
- * @see SocketDNS_resolve() for initiating async DNS lookups.
- * @see SocketDNS_settimeout() to configure DNS operation timeouts.
- * @see SocketHappyEyeballs for parallel resolution strategies.
- * @see SocketMetrics_increment(SOCKET_METRIC_DNS_REQUEST_TIMEOUT) for metrics.
  */
 void SocketEvent_emit_dns_timeout (const char *host, int port);
 
 /**
- * @brief Emit poll/epoll/kqueue wakeup event (for performance monitoring).
+ * @brief Emit poll wakeup event.
  * @ingroup foundation
- * @param nfds Number of file descriptors monitored in the poll set.
- * @param timeout_ms Timeout value passed to poll() or equivalent ( -1 =
- * infinite).
+ *
+ * @param nfds Number of monitored file descriptors.
+ * @param timeout_ms Poll timeout (-1 = infinite).
+ *
  * @threadsafe Yes
- * @note Primarily for debugging high-frequency wakeups or timeout tuning.
- * @see SocketEvent_register() to monitor poll performance.
- * @see SocketPoll_wait() for the underlying polling mechanism.
- * @see SocketPoll_getregisteredcount() to correlate with registered FDs.
- * @see SocketTimer for timer-driven wakeups.
- * @see SocketMetrics_increment(SOCKET_METRIC_POLL_WAKEUPS) for metrics
- * tracking.
  */
 void SocketEvent_emit_poll_wakeup (int nfds, int timeout_ms);
 
@@ -1237,40 +680,8 @@ void SocketEvent_emit_poll_wakeup (int nfds, int timeout_ms);
  */
 
 /**
- * @brief SocketErrorCode - Normalized error codes mapping POSIX errno values.
+ * @brief Normalized error codes mapping POSIX errno values.
  * @ingroup foundation
-
- *
- * Enumeration providing a library-specific abstraction over platform errno
- * values. Maps common socket-related errors to consistent codes for uniform
- * handling across modules. Enables retry logic, categorization, and logging
- * without direct errno dependencies.
- *
- * Key Mappings:
- * - SOCKET_ERROR_EAGAIN / SOCKET_ERROR_EWOULDBLOCK: Non-blocking operation
- would block (retryable)
- * - SOCKET_ERROR_ECONNREFUSED: Connection refused (network/transient)
- * - SOCKET_ERROR_ETIMEDOUT: Operation timed out (retryable with backoff)
- * - SOCKET_ERROR_ENOMEM: Memory allocation failed (resource exhaustion)
- * - SOCKET_ERROR_EADDRINUSE: Address already in use (configuration)
- * - SOCKET_ERROR_EINVAL: Invalid argument (programming error)
- * - And others for network, protocol, resource errors.
- *
- * Usage:
- *   if (Socket_geterrorcode() == SOCKET_ERROR_ECONNREFUSED) {
- *       // Implement exponential backoff retry
- *   }
- *   SocketErrorCategory cat = SocketError_categorize_errno(errno);
- *
- * @see Socket_geterrorcode() to retrieve normalized code from last error.
- * @see SocketError_categorize_errno() for high-level classification.
- * @see SocketError_is_retryable_errno() to check retry eligibility.
- * @see Socket_safe_strerror() for safe error string conversion.
- * @see docs/ERROR_HANDLING.md for error patterns and exception raising.
- * @note Extensible: Add new codes for library-specific errors (e.g., TLS
- errors).
- * @note Platform-agnostic: Abstracts Windows WSA errors to POSIX equivalents.
- * @note Integrates with SOCKET_RAISE_* macros for exception throwing.
  */
 typedef enum SocketErrorCode
 {
@@ -1383,164 +794,43 @@ extern __thread int socket_last_errno;
   while (0)
 
 /**
- * @brief Socket_GetLastError - Retrieve the most recent formatted error
- message.
+ * @brief Get the last formatted error message.
  * @ingroup foundation
-
  *
- * Returns pointer to thread-local buffer containing the last error
- description,
- * formatted via SOCKET_ERROR_FMT() or SOCKET_ERROR_MSG() macros. Includes
- errno
- * details, system messages, and custom context (e.g., "bind failed on fd=3:
- Address in use").
+ * @return Thread-local error string (never NULL).
  *
- * Buffer Management:
- * - Thread-local: Each thread has independent buffer, no synchronization
- needed.
- * - Overwritten on next error: Capture immediately after error condition.
- * - Truncation-safe: Long messages append "[truncated]" marker.
- * - Lifetime: Buffer valid until next error in same thread.
- *
- * Typical Usage:
- *   if (some_socket_op() < 0) {
- *       const char *err = Socket_GetLastError();
- *       SocketLog_emit(SOCKET_LOG_ERROR, MODULE, "%s", err);
- *       // Or raise exception with SOCKET_RAISE_MSG()
- *   }
- *
- * @return Const pointer to null-terminated error string (never NULL, empty on
- no error).
- * @threadsafe Yes - returns thread-local static buffer.
- * @note Do not free or modify returned string.
- * @note Integrates with Except_T for detailed exception reasons.
- * @see Socket_geterrno() for raw errno value.
- * @see Socket_geterrorcode() for normalized SocketErrorCode.
- * @see Socket_safe_strerror() for raw errno strings.
- * @see SOCKET_ERROR_FMT() / SOCKET_ERROR_MSG() macros for formatting.
- * @see SOCKET_RAISE_FMT() / SOCKET_RAISE_MSG() for exception integration.
- * @see docs/ERROR_HANDLING.md for full error patterns.
+ * @threadsafe Yes
  */
 extern const char *Socket_GetLastError (void);
 
-#if defined(__GNUC__) && !defined(__clang__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wcomment"
-#endif
 /**
- * @brief Socket_geterrno - Retrieve the raw POSIX errno from the last system
- * call error.
+ * @brief Get the raw errno from the last error.
  * @ingroup foundation
- * Returns the errno value captured at the last error condition (via
- * SOCKET_ERROR_* macros or manual socket_last_errno = errno). Thread-local
- * storage ensures per-thread isolation without locks.
  *
- * Use after failed system calls, library functions, or when errno is set.
- * Example:
- *   int err = Socket_geterrno();
- *   if (err == EAGAIN) {
- *     // Handle non-blocking case (retryable)
- *   } else {
- *     SocketLog_error("Error: %s", Socket_safe_strerror(err));
- *   }
+ * @return Last errno value.
  *
- * @return Last errno (platform-specific, 0 if no error recorded).
- * @threadsafe Yes - thread-local.
- * @note Persists until overwritten; not auto-reset.
- * @note Windows: Maps WSAGetLastError() to POSIX errno equivalents.
- * @see Socket_GetLastError() for descriptive message.
- * @see Socket_geterrorcode() for SocketErrorCode mapping.
- * @see Socket_safe_strerror(err) for string conversion.
- * @see SocketError_categorize_errno(err) for category.
- * @see SocketError_is_retryable_errno(err) for retry logic.
- * @see docs/ERROR_HANDLING.md for errno best practices.
+ * @threadsafe Yes
  */
-#if defined(__GNUC__) && !defined(__clang__)
-#pragma GCC diagnostic pop
-#endif
 extern int Socket_geterrno (void);
 
 /**
- * @brief Socket_geterrorcode - Convert last errno to normalized
- SocketErrorCode.
+ * @brief Convert last errno to normalized SocketErrorCode.
  * @ingroup foundation
-
  *
- * Maps the raw errno from Socket_geterrno() to SocketErrorCode enum for
- * platform-agnostic error handling. Facilitates switch statements, policy
- * decisions, and logging without errno-specific code.
+ * @return Mapped SocketErrorCode (SOCKET_ERROR_UNKNOWN if unmapped).
  *
- * Example policy logic:
- *   SocketErrorCode code = Socket_geterrorcode();
- *   switch (code) {
- *     case SOCKET_ERROR_ETIMEDOUT:
- *       // Exponential backoff retry via SocketRetry
- *       break;
- *     case SOCKET_ERROR_EINVAL:
- *       RAISE(Socket_InvalidArg);  // Using SOCKET_RAISE_MSG
- *       break;
- *     case SOCKET_ERROR_ENOMEM:
- *       Arena_clear(global_arena); // Mitigate resource issue
- *       break;
- *     default:
- *       SocketLog_emitf(SOCKET_LOG_WARN, "Unhandled error code %d", code);
- *   }
- *
- * @return Mapped SocketErrorCode (SOCKET_ERROR_UNKNOWN if no mapping).
- * @threadsafe Yes - stateless mapping.
- * @see Socket_geterrno() source of raw errno.
- * @see SocketErrorCode for enum values and errno mappings.
- * @see SocketError_categorize_errno() higher-level abstraction.
- * @see SocketError_is_retryable_errno() quick retry check.
- * @see SOCKET_RAISE_FMT() macros that integrate error codes.
- * @see @ref SocketHTTP and @ref SocketTLS for protocol-specific extensions.
- * @see docs/ERROR_HANDLING.md for mapping tables and patterns.
- * @note Covers 90%+ of socket errnos; unmapped fall to UNKNOWN.
- * @note Windows compatibility: WSA to POSIX translation.
+ * @threadsafe Yes
  */
-
 extern SocketErrorCode Socket_geterrorcode (void);
 
 /**
- * @brief Socket_safe_strerror - Secure, thread-safe errno to string
- conversion.
+ * @brief Thread-safe errno to string conversion.
  * @ingroup foundation
-
  *
- * Provides strerror_r-like functionality with thread-local buffer to prevent
- * races and buffer overflows common in strerror(). Handles invalid/unknown
- * errnos gracefully, supports Windows WSA errors, and avoids locale
- dependencies.
+ * @param errnum errno value to convert.
+ * @return Descriptive error string.
  *
- * Key Features:
- * - Thread-safe: Per-thread buffer, no shared state or locks.
- * - Overflow-safe: Fixed buffer with truncation handling.
- * - Portable: POSIX errno + Windows WSA error translation.
- * - Defensive: Returns "Unknown error" for invalid errnum (<0 or excessive).
- *
- * Example:
- *   int err = errno;
- *   const char *msg = Socket_safe_strerror(err);
- *   SocketLog_emitf(SOCKET_LOG_ERROR, "Operation failed: %s (errno=%d)", msg,
- err);
- *   // Safe in multi-threaded servers, signal handlers (if no malloc needed).
- *
- * Performance: Faster than strerror_r in contended scenarios; suitable for hot
- paths.
- *
- * @param errnum errno or WSA error code to convert (0 = "Success").
- * @return Const pointer to descriptive string (e.g., "No such file or
- directory").
- * @threadsafe Yes - thread-local buffer.
- * @note Buffer overwritten on next call in thread; copy if needed.
- * @note Does not modify errno; pure function.
- * @see Socket_GetLastError() for rich, contextual messages.
- * @see Socket_geterrno() to obtain current errno.
- * @see Socket_geterrorcode() for enum abstraction.
- * @see SocketError_categorize_errno(errnum) for error type.
- * @see docs/ERROR_HANDLING.md for strerror patterns and alternatives.
- * @note Avoid dynamic allocation in signal-safe contexts on some platforms.
- * @note Customizable buffer size via SOCKET_ERROR_BUFSIZE (default 256).
+ * @threadsafe Yes
  */
 const char *Socket_safe_strerror (int errnum);
 
@@ -1572,54 +862,8 @@ const char *Socket_safe_strerror (int errnum);
  */
 
 /**
- * @brief SocketErrorCategory - High-level classification of error types for
- policy decisions.
+ * @brief High-level classification of error types.
  * @ingroup foundation
-
- *
- * Abstracts errno and SocketErrorCode into semantic categories to guide error
- * handling, retry policies, alerting, and logging strategies across modules.
- * Enables uniform treatment of similar errors regardless of platform or cause.
- *
- * Category Behaviors:
- * - @ref SOCKET_ERROR_CATEGORY_NETWORK: Transient network issues (e.g.,
- ECONNRESET,
- *   ENETUNREACH) - usually retryable with backoff.
- * - @ref SOCKET_ERROR_CATEGORY_PROTOCOL: Malformed data or unsupported
- protocols
- *   (e.g., EINVAL in parsing) - typically fatal or requires client fix.
- * - @ref SOCKET_ERROR_CATEGORY_APPLICATION: Business logic errors (e.g., auth
- failures,
- *   4xx HTTP) - propagate to app layer.
- * - @ref SOCKET_ERROR_CATEGORY_TIMEOUT: Time-bound operations exceeded
- (ETIMEDOUT)
- *   - retryable, but watch for cascading failures.
- * - @ref SOCKET_ERROR_CATEGORY_RESOURCE: System limits hit (ENOMEM, EMFILE) -
- may
- *   self-resolve or require scaling.
- * - @ref SOCKET_ERROR_CATEGORY_UNKNOWN: Uncategorized (log and handle
- conservatively).
- *
- * Usage in Modules:
- *   SocketErrorCategory cat = SocketError_categorize_errno(errno);
- *   if (cat == SOCKET_ERROR_CATEGORY_NETWORK) {
- *       SocketRetry_attempt_with_backoff(...);
- *   } else if (cat == SOCKET_ERROR_CATEGORY_RESOURCE) {
- *       SocketLog_emit(SOCKET_LOG_WARN, "Resource limit hit", fields);
- *       // Trigger pool drain or config alert
- *   }
- *
- * @see SocketError_categorize_errno() to classify raw errno values.
- * @see SocketError_is_retryable_errno() for quick retry checks.
- * @see Socket_geterrorcode() for normalized error codes.
- * @see SOCKET_RAISE_* macros to raise categorized exceptions.
- * @see @ref SocketRetry for backoff policies based on category.
- * @see docs/ERROR_HANDLING.md for comprehensive error strategies.
- * @see docs/SECURITY.md for security implications of error categories.
- * @note Categories are conservative; custom modules can extend via
- SocketErrorCode.
- * @note Thread-safe pure functions; use in signal handlers if needed.
- * @note Maps Windows WSA errors to equivalent POSIX categories.
  */
 typedef enum SocketErrorCategory
 {
@@ -1636,59 +880,13 @@ typedef enum SocketErrorCategory
 } SocketErrorCategory;
 
 /**
- * @brief SocketError_categorize_errno - Classify errno into
- SocketErrorCategory.
+ * @brief Classify errno into SocketErrorCategory.
  * @ingroup foundation
-
  *
- * Pure function mapping raw errno to high-level SocketErrorCategory for policy
- * decisions like retry, alert, or propagate. Conservative classification
- * prioritizing safety and observability.
+ * @param err errno value to classify.
+ * @return Appropriate SocketErrorCategory.
  *
- * Detailed Mappings (POSIX errno examples):
- * - NETWORK (retryable/transient): ECONNREFUSED, ECONNRESET, ECONNABORTED,
- *   ENETUNREACH, EHOSTUNREACH, ENETDOWN, EPIPE, ENOTCONN, EHOSTDOWN
- * - TIMEOUT (backoff retry): ETIMEDOUT, operation deadline exceeded
- * - RESOURCE (scale/relieve): ENOMEM, EMFILE, ENFILE, ENOBUFS, ENOSPC, EAGAIN
- (resource form)
- * - PROTOCOL (fix input/config): EINVAL, EPROTO, EPROTONOSUPPORT,
- EAFNOSUPPORT, EISCONN, EALREADY
- * - APPLICATION: Passed through for module-specific (e.g., HTTP 4xx)
- * - UNKNOWN: Rare or platform-specific; log for analysis
- *
- * Usage in Error Handling:
- *   int err = errno;  // Or Socket_geterrno()
- *   SocketErrorCategory cat = SocketError_categorize_errno(err);
- *   if (cat == SOCKET_ERROR_CATEGORY_NETWORK || cat ==
- SOCKET_ERROR_CATEGORY_TIMEOUT) {
- *     // Retry with backoff using SocketRetry_policy
- *   } else if (cat == SOCKET_ERROR_CATEGORY_RESOURCE) {
- *     SocketMetrics_increment(SOCKET_METRIC_RESOURCE_EXHAUSTED);
- *     // Alert or drain pools
- *   }
- *   SocketLog_emit_structured(SOCKET_LOG_WARN, MODULE, "Error categorized",
- *                             SOCKET_LOG_FIELDS({"category",
- SocketError_category_name(cat)},
- *                                               {"errno", "%d", err}));
- *
- * Extension: Modules can use category in custom exceptions or rate limiting.
- *
- * @param err errno value to classify (0 or positive; negative treated as
- UNKNOWN).
- * @return Appropriate SocketErrorCategory (UNKNOWN for unmapped).
- * @threadsafe Yes - pure function, no state.
- * @note Optimizes common cases with switch or table lookup for speed.
- * @note Windows: Translates WSA errors to POSIX errno before classification.
- * @see SocketErrorCategory for category behaviors and retry guidelines.
- * @see SocketError_is_retryable_errno(err) complementary check.
- * @see Socket_geterrorcode() for finer-grained enum.
- * @see SocketError_category_name(cat) for string representation.
- * @see @ref SocketRateLimit for category-based throttling.
- * @see @ref SocketPool for resource error handling in pools.
- * @see docs/ERROR_HANDLING.md for full categorization table and strategies.
- * @see docs/SECURITY.md for secure error handling (avoid info leaks).
- * @note Pure function: Deterministic, side-effect free, suitable for
- fuzzing/tests.
+ * @threadsafe Yes
  */
 extern SocketErrorCategory SocketError_categorize_errno (int err);
 

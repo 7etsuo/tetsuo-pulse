@@ -27,7 +27,6 @@
 #include <unistd.h>
 #endif
 
- */
 
 #define WEBSOCKET_KEY_RANDOM_BYTES 16 /* 16 bytes = 128 bits per RFC 6455 */
 #define WEBSOCKET_KEY_BASE64_LEN (SOCKET_CRYPTO_WEBSOCKET_KEY_SIZE - 1)
@@ -36,7 +35,6 @@
 #define BASE64_INVALID_CHAR 255
 #define BASE64_MAX_PADDING 2
 
- */
 
 const Except_T SocketCrypto_Failed
     = { &SocketCrypto_Failed, "Cryptographic operation failed" };
@@ -65,7 +63,6 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketCrypto);
   SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,                        \
                     "%s computation failed", name)
 
- */
 
 static const char base64_alphabet[]
     = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -96,7 +93,6 @@ static const unsigned char base64_decode_table[256] = {
 static const char hex_lower[] = "0123456789abcdef";
 static const char hex_upper[] = "0123456789ABCDEF";
 
- */
 
 #if SOCKET_HAS_TLS
 /* Common EVP digest computation: init, update, final */
@@ -184,7 +180,6 @@ SocketCrypto_md5 (const void *input, size_t input_len,
 #endif
 }
 
- */
 
 void
 SocketCrypto_hmac_sha256 (const void *key, size_t key_len, const void *data,
@@ -234,7 +229,6 @@ SocketCrypto_hmac_sha256 (const void *key, size_t key_len, const void *data,
 #endif
 }
 
- */
 
 size_t
 SocketCrypto_base64_encoded_size (size_t input_len)
@@ -491,7 +485,6 @@ SocketCrypto_base64_decode (const char *input, size_t input_len,
   return (ssize_t)out_pos;
 }
 
- */
 
 void
 SocketCrypto_hex_encode (const void *input, size_t input_len, char *output,
@@ -577,7 +570,6 @@ SocketCrypto_hex_decode (const char *input, size_t input_len,
   return (ssize_t)(input_len / 2);
 }
 
- */
 
 #if !SOCKET_HAS_TLS
 static pthread_mutex_t urand_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -673,7 +665,6 @@ SocketCrypto_cleanup (void)
 #endif
 }
 
- */
 
 int
 SocketCrypto_websocket_accept (
@@ -749,7 +740,6 @@ SocketCrypto_websocket_key (char output[SOCKET_CRYPTO_WEBSOCKET_KEY_SIZE])
   return 0;
 }
 
- */
 
 int
 SocketCrypto_secure_compare (const void *a, const void *b, size_t len)

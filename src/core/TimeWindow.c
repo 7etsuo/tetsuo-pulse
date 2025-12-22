@@ -13,8 +13,6 @@
 
 #define T TimeWindow_T
 
- */
-
 /* Clamp elapsed time to [0, duration] to handle clock skew */
 static inline int64_t
 timewindow_clamp_to_duration(int64_t elapsed, int duration) {
@@ -27,8 +25,6 @@ timewindow_clamp_to_duration(int64_t elapsed, int duration) {
         return d;
     return elapsed;
 }
-
- */
 
 void
 TimeWindow_init (T *tw, int duration_ms, int64_t now_ms)
