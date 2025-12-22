@@ -1606,6 +1606,349 @@ TEST (dns_rdata_parse_aaaa_loopback)
   ASSERT (strcmp (str, "::1") == 0);
 }
 
+/* ==================== CNAME RDATA Parsing Tests ==================== */
+
+/* Test valid CNAME record parsing */
+TEST (dns_rdata_parse_cname_valid)
+{
+  /* Build a DNS response with CNAME record:
+   * alias.example.com CNAME www.example.com
+   */
+  unsigned char msg[128];
+  SocketDNS_RR rr;
+  char cname[DNS_MAX_NAME_LEN];
+  int len;
+  size_t offset = 0;
+
+  memset (msg, 0, 12); /* Header */
+  offset = 12;
+
+  /* Query name "alias.example.com" at offset 12 */
+  msg[offset++] = 5;
+  memcpy (msg + offset, "alias", 5); offset += 5;
+  msg[offset++] = 7;
+  memcpy (msg + offset, "example", 7); offset += 7;
+  msg[offset++] = 3;
+  memcpy (msg + offset, "com", 3); offset += 3;
+  msg[offset++] = 0;
+
+  /* CNAME RR header */
+  size_t rr_start = offset;
+  msg[offset++] = 0xC0; /* Compression pointer */
+  msg[offset++] = 12;   /* Points back to "alias.example.com" */
+  msg[offset++] = 0; msg[offset++] = 5;   /* TYPE = CNAME */
+  msg[offset++] = 0; msg[offset++] = 1;   /* CLASS = IN */
+  msg[offset++] = 0; msg[offset++] = 0;
+  msg[offset++] = 0x0E; msg[offset++] = 0x10; /* TTL = 3600 */
+  msg[offset++] = 0; msg[offset++] = 15;  /* RDLENGTH = 15 */
+
+  /* CNAME RDATA: "www.example.com" */
+  msg[offset++] = 3;
+  memcpy (msg + offset, "www", 3); offset += 3;
+  msg[offset++] = 7;
+  memcpy (msg + offset, "example", 7); offset += 7;
+  msg[offset++] = 3;
+  memcpy (msg + offset, "com", 3); offset += 3;
+  msg[offset++] = 0;
+
+  ASSERT_EQ (SocketDNS_rr_decode (msg, offset, rr_start, &rr, NULL), 0);
+  ASSERT_EQ (rr.type, DNS_TYPE_CNAME);
+
+  len = SocketDNS_rdata_parse_cname (msg, offset, &rr, cname, sizeof (cname));
+  ASSERT (len >= 0);
+  ASSERT (strcmp (cname, "www.example.com") == 0);
+}
+
+/* Test CNAME with compression pointer in RDATA */
+TEST (dns_rdata_parse_cname_compressed)
+{
+  unsigned char msg[128];
+  SocketDNS_RR rr;
+  char cname[DNS_MAX_NAME_LEN];
+  int len;
+  size_t offset = 0;
+
+  memset (msg, 0, 12);
+  offset = 12;
+
+  /* "example.com" at offset 12 */
+  msg[offset++] = 7;
+  memcpy (msg + offset, "example", 7); offset += 7;
+  msg[offset++] = 3;
+  memcpy (msg + offset, "com", 3); offset += 3;
+  msg[offset++] = 0;
+
+  /* CNAME RR with "www" + pointer */
+  size_t rr_start = offset;
+  msg[offset++] = 3;
+  memcpy (msg + offset, "foo", 3); offset += 3;
+  msg[offset++] = 0xC0;
+  msg[offset++] = 12; /* ptr to "example.com" */
+  msg[offset++] = 0; msg[offset++] = 5;   /* TYPE = CNAME */
+  msg[offset++] = 0; msg[offset++] = 1;   /* CLASS = IN */
+  msg[offset++] = 0; msg[offset++] = 0;
+  msg[offset++] = 0; msg[offset++] = 60;  /* TTL = 60 */
+  msg[offset++] = 0; msg[offset++] = 6;   /* RDLENGTH = 6 (www + ptr) */
+
+  /* CNAME RDATA: "www" + pointer to offset 12 */
+  msg[offset++] = 3;
+  memcpy (msg + offset, "www", 3); offset += 3;
+  msg[offset++] = 0xC0;
+  msg[offset++] = 12;
+
+  ASSERT_EQ (SocketDNS_rr_decode (msg, offset, rr_start, &rr, NULL), 0);
+  ASSERT_EQ (rr.type, DNS_TYPE_CNAME);
+
+  len = SocketDNS_rdata_parse_cname (msg, offset, &rr, cname, sizeof (cname));
+  ASSERT (len >= 0);
+  ASSERT (strcmp (cname, "www.example.com") == 0);
+}
+
+/* Test CNAME parser rejects wrong type */
+TEST (dns_rdata_parse_cname_wrong_type)
+{
+  unsigned char msg[64];
+  SocketDNS_RR rr;
+  char cname[DNS_MAX_NAME_LEN];
+  unsigned char fake_rdata[4] = {1, 2, 3, 4};
+
+  memset (msg, 0, sizeof (msg));
+  memset (&rr, 0, sizeof (rr));
+  rr.type = DNS_TYPE_A;  /* Wrong type - should be CNAME */
+  rr.rdlength = 4;
+  rr.rdata = fake_rdata;
+
+  ASSERT_EQ (SocketDNS_rdata_parse_cname (msg, sizeof (msg), &rr,
+                                           cname, sizeof (cname)), -1);
+}
+
+/* Test NULL pointer handling */
+TEST (dns_rdata_parse_cname_null_handling)
+{
+  unsigned char msg[64];
+  SocketDNS_RR rr;
+  char cname[DNS_MAX_NAME_LEN];
+  unsigned char fake_rdata[16];
+
+  memset (msg, 0, sizeof (msg));
+  memset (&rr, 0, sizeof (rr));
+  memset (fake_rdata, 0, sizeof (fake_rdata));
+  rr.type = DNS_TYPE_CNAME;
+  rr.rdlength = 10;
+  rr.rdata = msg + 20;  /* Point somewhere in msg */
+
+  /* NULL msg */
+  ASSERT_EQ (SocketDNS_rdata_parse_cname (NULL, sizeof (msg), &rr,
+                                           cname, sizeof (cname)), -1);
+
+  /* NULL rr */
+  ASSERT_EQ (SocketDNS_rdata_parse_cname (msg, sizeof (msg), NULL,
+                                           cname, sizeof (cname)), -1);
+
+  /* NULL cname buffer */
+  ASSERT_EQ (SocketDNS_rdata_parse_cname (msg, sizeof (msg), &rr,
+                                           NULL, sizeof (cname)), -1);
+
+  /* Zero cnamelen */
+  ASSERT_EQ (SocketDNS_rdata_parse_cname (msg, sizeof (msg), &rr,
+                                           cname, 0), -1);
+}
+
+/* Test CNAME with empty RDATA */
+TEST (dns_rdata_parse_cname_empty_rdata)
+{
+  unsigned char msg[64];
+  SocketDNS_RR rr;
+  char cname[DNS_MAX_NAME_LEN];
+
+  memset (msg, 0, sizeof (msg));
+  memset (&rr, 0, sizeof (rr));
+  rr.type = DNS_TYPE_CNAME;
+  rr.rdlength = 0;  /* Empty */
+  rr.rdata = NULL;
+
+  ASSERT_EQ (SocketDNS_rdata_parse_cname (msg, sizeof (msg), &rr,
+                                           cname, sizeof (cname)), -1);
+}
+
+/* Test full integration: header -> question -> CNAME RR -> parse */
+TEST (dns_rdata_parse_cname_integration)
+{
+  unsigned char msg[256];
+  SocketDNS_Header header;
+  SocketDNS_Question question;
+  SocketDNS_RR rr;
+  char cname[DNS_MAX_NAME_LEN];
+  size_t offset;
+  size_t consumed;
+
+  memset (msg, 0, sizeof (msg));
+
+  /* Build header: QR=1, ANCOUNT=1 */
+  header.id = 0x1234;
+  header.qr = 1;
+  header.opcode = DNS_OPCODE_QUERY;
+  header.aa = 0;
+  header.tc = 0;
+  header.rd = 1;
+  header.ra = 1;
+  header.z = 0;
+  header.rcode = DNS_RCODE_NOERROR;
+  header.qdcount = 1;
+  header.ancount = 1;
+  header.nscount = 0;
+  header.arcount = 0;
+
+  ASSERT_EQ (SocketDNS_header_encode (&header, msg, sizeof (msg)), 0);
+
+  /* Build question at offset 12: "alias.test.com" CNAME */
+  offset = 12;
+  msg[offset++] = 5;
+  memcpy (msg + offset, "alias", 5); offset += 5;
+  msg[offset++] = 4;
+  memcpy (msg + offset, "test", 4); offset += 4;
+  msg[offset++] = 3;
+  memcpy (msg + offset, "com", 3); offset += 3;
+  msg[offset++] = 0;
+  msg[offset++] = 0; msg[offset++] = 5;  /* QTYPE = CNAME */
+  msg[offset++] = 0; msg[offset++] = 1;  /* QCLASS = IN */
+
+  /* Build answer RR with compressed name */
+  size_t rr_start = offset;
+  msg[offset++] = 0xC0;
+  msg[offset++] = 12;   /* Pointer to "alias.test.com" */
+  msg[offset++] = 0; msg[offset++] = 5;   /* TYPE = CNAME */
+  msg[offset++] = 0; msg[offset++] = 1;   /* CLASS = IN */
+  msg[offset++] = 0; msg[offset++] = 0;
+  msg[offset++] = 0; msg[offset++] = 120; /* TTL = 120 */
+  msg[offset++] = 0; msg[offset++] = 12;  /* RDLENGTH = 12 */
+
+  /* CNAME RDATA: "real.test.com" */
+  msg[offset++] = 4;
+  memcpy (msg + offset, "real", 4); offset += 4;
+  msg[offset++] = 4;
+  memcpy (msg + offset, "test", 4); offset += 4;
+  msg[offset++] = 3;
+  memcpy (msg + offset, "com", 3); offset += 3;
+  msg[offset++] = 0;
+
+  /* Parse header */
+  SocketDNS_Header decoded_header;
+  ASSERT_EQ (SocketDNS_header_decode (msg, offset, &decoded_header), 0);
+  ASSERT_EQ (decoded_header.ancount, 1);
+
+  /* Parse question */
+  ASSERT_EQ (SocketDNS_question_decode (msg, offset, 12, &question, &consumed), 0);
+  ASSERT (strcmp (question.qname, "alias.test.com") == 0);
+
+  /* Parse CNAME RR */
+  ASSERT_EQ (SocketDNS_rr_decode (msg, offset, rr_start, &rr, NULL), 0);
+  ASSERT_EQ (rr.type, DNS_TYPE_CNAME);
+  ASSERT_EQ (rr.ttl, 120);
+
+  /* Parse CNAME RDATA */
+  int len = SocketDNS_rdata_parse_cname (msg, offset, &rr, cname, sizeof (cname));
+  ASSERT (len >= 0);
+  ASSERT (strcmp (cname, "real.test.com") == 0);
+}
+
+/* Test deeply nested compression in CNAME */
+TEST (dns_rdata_parse_cname_deep_compression)
+{
+  unsigned char msg[128];
+  SocketDNS_RR rr;
+  char cname[DNS_MAX_NAME_LEN];
+  int len;
+  size_t offset = 0;
+
+  memset (msg, 0, 12);
+  offset = 12;
+
+  /* "com" at offset 12 */
+  msg[offset++] = 3;
+  memcpy (msg + offset, "com", 3); offset += 3;
+  msg[offset++] = 0;
+
+  /* "example" + ptr to "com" at offset 17 */
+  msg[offset++] = 7;
+  memcpy (msg + offset, "example", 7); offset += 7;
+  msg[offset++] = 0xC0;
+  msg[offset++] = 12;
+
+  /* RR with name "foo" + ptr to "example.com" */
+  size_t rr_start = offset;
+  msg[offset++] = 3;
+  memcpy (msg + offset, "foo", 3); offset += 3;
+  msg[offset++] = 0xC0;
+  msg[offset++] = 17;
+  msg[offset++] = 0; msg[offset++] = 5;   /* TYPE = CNAME */
+  msg[offset++] = 0; msg[offset++] = 1;   /* CLASS = IN */
+  msg[offset++] = 0; msg[offset++] = 0;
+  msg[offset++] = 0; msg[offset++] = 60;  /* TTL */
+  msg[offset++] = 0; msg[offset++] = 6;   /* RDLENGTH */
+
+  /* CNAME RDATA: "bar" + ptr to "example.com" */
+  msg[offset++] = 3;
+  memcpy (msg + offset, "bar", 3); offset += 3;
+  msg[offset++] = 0xC0;
+  msg[offset++] = 17;
+
+  ASSERT_EQ (SocketDNS_rr_decode (msg, offset, rr_start, &rr, NULL), 0);
+  ASSERT_EQ (rr.type, DNS_TYPE_CNAME);
+
+  len = SocketDNS_rdata_parse_cname (msg, offset, &rr, cname, sizeof (cname));
+  ASSERT (len >= 0);
+  ASSERT (strcmp (cname, "bar.example.com") == 0);
+}
+
+/* Test CNAME pointing to subdomain */
+TEST (dns_rdata_parse_cname_subdomain)
+{
+  unsigned char msg[128];
+  SocketDNS_RR rr;
+  char cname[DNS_MAX_NAME_LEN];
+  int len;
+  size_t offset = 0;
+
+  memset (msg, 0, 12);
+  offset = 12;
+
+  /* "short.io" at offset 12 */
+  msg[offset++] = 5;
+  memcpy (msg + offset, "short", 5); offset += 5;
+  msg[offset++] = 2;
+  memcpy (msg + offset, "io", 2); offset += 2;
+  msg[offset++] = 0;
+
+  /* CNAME RR */
+  size_t rr_start = offset;
+  msg[offset++] = 0xC0;
+  msg[offset++] = 12;
+  msg[offset++] = 0; msg[offset++] = 5;   /* TYPE = CNAME */
+  msg[offset++] = 0; msg[offset++] = 1;   /* CLASS = IN */
+  msg[offset++] = 0; msg[offset++] = 0;
+  msg[offset++] = 0; msg[offset++] = 300 & 0xFF; /* TTL = 300 */
+  msg[offset++] = 0; msg[offset++] = 22;  /* RDLENGTH */
+
+  /* CNAME RDATA: "redirect.cdn.cloudflare.net" */
+  msg[offset++] = 8;
+  memcpy (msg + offset, "redirect", 8); offset += 8;
+  msg[offset++] = 3;
+  memcpy (msg + offset, "cdn", 3); offset += 3;
+  msg[offset++] = 10;
+  memcpy (msg + offset, "cloudflare", 10); offset += 10;
+  msg[offset++] = 3;
+  memcpy (msg + offset, "net", 3); offset += 3;
+  msg[offset++] = 0;
+
+  ASSERT_EQ (SocketDNS_rr_decode (msg, offset, rr_start, &rr, NULL), 0);
+  ASSERT_EQ (rr.type, DNS_TYPE_CNAME);
+
+  len = SocketDNS_rdata_parse_cname (msg, offset, &rr, cname, sizeof (cname));
+  ASSERT (len >= 0);
+  ASSERT (strcmp (cname, "redirect.cdn.cloudflare.net") == 0);
+}
+
 int
 main (void)
 {

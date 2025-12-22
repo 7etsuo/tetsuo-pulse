@@ -649,6 +649,39 @@ extern int SocketDNS_rdata_parse_a (const SocketDNS_RR *rr,
 extern int SocketDNS_rdata_parse_aaaa (const SocketDNS_RR *rr,
                                        struct in6_addr *addr);
 
+/**
+ * @brief Parse CNAME record RDATA (canonical name).
+ * @ingroup dns_rdata
+ *
+ * Extracts the canonical domain name from a CNAME record's RDATA field.
+ * The domain name may use compression pointers, so the full message
+ * context is required for pointer resolution.
+ *
+ * @param[in]  msg      Full DNS message buffer (for compression pointers).
+ * @param[in]  msglen   Total length of the DNS message.
+ * @param[in]  rr       Resource record with TYPE=CNAME.
+ * @param[out] cname    Output buffer for canonical name.
+ * @param[in]  cnamelen Size of output buffer.
+ * @return Length of canonical name on success, -1 on error.
+ *
+ * @code{.c}
+ * SocketDNS_RR rr;
+ * if (SocketDNS_rr_decode(msg, msglen, offset, &rr, NULL) == 0) {
+ *     if (rr.type == DNS_TYPE_CNAME) {
+ *         char cname[DNS_MAX_NAME_LEN];
+ *         int len = SocketDNS_rdata_parse_cname(msg, msglen, &rr,
+ *                                                cname, sizeof(cname));
+ *         if (len >= 0) {
+ *             printf("Canonical name: %s\n", cname);
+ *         }
+ *     }
+ * }
+ * @endcode
+ */
+extern int SocketDNS_rdata_parse_cname (const unsigned char *msg, size_t msglen,
+                                        const SocketDNS_RR *rr, char *cname,
+                                        size_t cnamelen);
+
 /** @} */ /* End of dns_rdata group */
 
 /** @} */ /* End of dns_wire group */
