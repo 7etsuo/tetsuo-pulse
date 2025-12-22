@@ -52,7 +52,6 @@ struct T
   int initialized;
 };
 
-/* Mutex helpers for atomic field access */
 #define TRACKER_LOCK(t)     do { pthread_mutex_lock (&(t)->mutex); } while (0)
 #define TRACKER_UNLOCK(t)   do { pthread_mutex_unlock (&(t)->mutex); } while (0)
 #define TRACKER_READ_FIELD(t, field, var) do { \

@@ -28,7 +28,6 @@ static volatile int monotonic_fallback_warned = 0;
 #define SOCKET_MONOTONIC_STRICT 0
 #endif
 
-/* Preferred monotonic clock sources in priority order */
 static const clockid_t preferred_clocks[] = {
 #ifdef CLOCK_MONOTONIC_RAW
   CLOCK_MONOTONIC_RAW,
@@ -199,7 +198,6 @@ socket_errno_to_errorcode (int errno_val)
   return m ? m->code : SOCKET_ERROR_UNKNOWN;
 }
 
-/* Thread-local error buffer for detailed error messages */
 #ifdef _WIN32
 __declspec (thread) char socket_error_buf[SOCKET_ERROR_BUFSIZE] = { 0 };
 __declspec (thread) int socket_last_errno = 0;
@@ -435,7 +433,6 @@ SocketLog_emitf (SocketLogLevel level, const char *component, const char *fmt,
   va_end (args);
 }
 
-/* Appends "..." to indicate message was truncated */
 static void
 socketlog_apply_truncation (char *buffer, size_t bufsize)
 {
@@ -524,7 +521,6 @@ SocketLog_setstructuredcallback (SocketLogStructuredCallback callback,
   pthread_mutex_unlock (&socketlog_mutex);
 }
 
-/* Appends " key=value" if field valid and space available */
 static int
 socketlog_append_field_if_space (char *buffer, size_t *pos, size_t bufsize,
                                  const SocketLogField *field)
@@ -549,7 +545,6 @@ socketlog_append_field_if_space (char *buffer, size_t *pos, size_t bufsize,
   return 1;
 }
 
-/* Formats fields as " key1=value1 key2=value2" (with leading space) */
 static size_t
 socketlog_format_fields (char *buffer, size_t bufsize,
                          const SocketLogField *fields, size_t field_count)
@@ -587,7 +582,6 @@ socketlog_call_fallback (const SocketLogAllInfo *all, SocketLogLevel level,
   all->fallback_callback (all->fallback_userdata, level, component, message);
 }
 
-/* Formats fields as " key=value" appended to message copy, then calls fallback */
 static void
 socketlog_format_and_call_fallback (const SocketLogAllInfo *all,
                                     SocketLogLevel level,
@@ -618,7 +612,6 @@ socketlog_format_and_call_fallback (const SocketLogAllInfo *all,
   socketlog_call_fallback (all, level, component, buffer);
 }
 
-/* Dispatches to structured callback if available, else formats fields into fallback */
 static void
 socketlog_emit_structured_with_all (const SocketLogAllInfo *all,
                                     SocketLogLevel level,
@@ -927,7 +920,6 @@ SocketEvent_unregister (SocketEventCallback callback, const void *userdata)
   pthread_mutex_unlock (&socketevent_mutex);
 }
 
-/* Helper to eliminate duplication in emit_accept and emit_connect */
 static void
 socketevent_init_connection (SocketEventRecord *event, SocketEventType type,
                              const char *component, int fd,

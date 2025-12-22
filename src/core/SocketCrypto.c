@@ -95,7 +95,6 @@ static const char hex_upper[] = "0123456789ABCDEF";
 
 
 #if SOCKET_HAS_TLS
-/* Common EVP digest computation: init, update, final */
 static void
 crypto_evp_digest (const EVP_MD *md, const void *input, size_t input_len,
                    unsigned char *output, const char *algo_name)
@@ -265,7 +264,6 @@ SocketCrypto_base64_decoded_size (size_t input_len)
   return groups * 3;
 }
 
-/* Encode 3 input bytes to 4 base64 characters */
 static void
 base64_encode_triplet (const unsigned char *in, char *out)
 {
@@ -275,7 +273,6 @@ base64_encode_triplet (const unsigned char *in, char *out)
   out[3] = base64_alphabet[in[2] & 0x3F];
 }
 
-/* Encode final 1-2 bytes with '=' padding */
 static void
 base64_encode_remainder (const unsigned char *in, size_t remaining, char *out)
 {
@@ -346,7 +343,6 @@ base64_is_whitespace (unsigned char c)
   return (c == ' ' || c == '\t' || c == '\n' || c == '\r');
 }
 
-/* Decode 4-character Base64 block (outputs 3-padding_count bytes) */
 static int
 base64_decode_block (const unsigned char *buffer, int padding_count,
                      unsigned char *output, size_t *out_pos,

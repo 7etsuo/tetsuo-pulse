@@ -174,17 +174,13 @@ exponential_backoff (const SocketRetry_Policy *policy, int attempt)
   if (attempt < 1)
     return 0.0;
 
-  /* Compute multiplier^(attempt-1) iteratively for precision */
   multiplier_pow = power_double (policy->multiplier, attempt - 1);
-
-  /* Exponential backoff: initial * multiplier^(attempt-1) */
   base_delay = (double)policy->initial_delay_ms * multiplier_pow;
 
   /* Handle FP overflow/NaN */
   if (isinf (base_delay) || isnan (base_delay))
     base_delay = (double)policy->max_delay_ms;
 
-  /* Cap at max delay */
   if (base_delay > (double)policy->max_delay_ms)
     base_delay = (double)policy->max_delay_ms;
 
@@ -220,7 +216,6 @@ clamp_final_delay (double delay)
   if (delay < RETRY_MIN_DELAY_MS)
     delay = RETRY_MIN_DELAY_MS;
 
-  /* Clamp to safe int range */
   if (delay > INT_MAX)
     delay = INT_MAX;
 
@@ -350,7 +345,6 @@ should_continue_retry (const T retry, int result, int attempt,
       return 0;
     }
 
-  /* Check if we've exhausted attempts */
   if (attempt >= retry->policy.max_attempts)
     {
       SOCKET_LOG_DEBUG_MSG ("Max attempts (%d) reached",

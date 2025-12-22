@@ -161,7 +161,6 @@ sockettimer_heap_swap (struct SocketTimer_T **timers, size_t i, size_t j)
   timers[i] = timers[j];
   timers[j] = temp;
 
-  /* Update heap indices after swap */
   timers[i]->heap_index = i;
   timers[j]->heap_index = j;
 }
@@ -477,20 +476,17 @@ SocketTimer_heap_new (Arena_T arena)
   if (!arena)
     return NULL;
 
-  /* Allocations from arena - freed only when arena is disposed */
   heap = sockettimer_heap_alloc_structure (arena);
   if (!heap)
     return NULL;
 
   timers = sockettimer_heap_alloc_timers (arena);
   if (!timers)
-    /* heap allocation remains in arena until Arena_dispose() */
     return NULL;
 
   sockettimer_heap_init_state (heap, timers, arena);
 
   if (sockettimer_heap_init_mutex (heap) != 0)
-    /* heap + timers remain in arena until Arena_dispose() */
     return NULL;
 
   return heap;

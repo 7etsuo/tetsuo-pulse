@@ -37,7 +37,6 @@
 #define EXCEPT_NONNULL(...)
 #endif
 
-/* Default string for unknown file locations */
 #define EXCEPT_UNKNOWN_FILE "unknown"
 
 /* In release builds, only log basename to prevent leaking directory structure */

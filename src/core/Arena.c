@@ -85,17 +85,12 @@ arena_link_chunk (T arena, struct ChunkHeader *ptr, char *limit)
 
 const Except_T Arena_Failed = { &Arena_Failed, "Arena operation failed" };
 
-/* Thread-local exception using centralized infrastructure */
 SOCKET_DECLARE_MODULE_EXCEPTION (Arena);
 
-/* Global free chunk cache for efficient memory reuse */
 static struct ChunkHeader *freechunks = NULL;
 static int nfree = 0;
 static pthread_mutex_t arena_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-
-
-/* Atomic counters for global memory tracking */
 static _Atomic size_t global_memory_used = 0;
 static _Atomic size_t global_memory_limit = 0; /* 0 = unlimited */
 
@@ -419,7 +414,6 @@ arena_release_all_chunks (T arena)
       chunk_cache_return (chunk);
     }
 
-  /* Verify arena is now empty */
   assert (arena->prev == NULL);
   assert (arena->avail == NULL);
   assert (arena->limit == NULL);
@@ -536,7 +530,6 @@ Arena_calloc (T arena, size_t count, size_t nbytes, const char *file, int line)
                       "calloc size exceeds maximum: %zu (limit=%zu) in %s",
                       total, SocketSecurity_get_max_allocation (), "Arena_calloc");
 
-  /* Allocate via Arena_alloc (reuses validation and alignment logic) */
   void *ptr = Arena_alloc (arena, count * nbytes, file, line);
   memset (ptr, 0, count * nbytes);
 
