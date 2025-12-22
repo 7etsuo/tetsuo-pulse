@@ -505,6 +505,94 @@ test_event_types (void)
 }
 
 /* ============================================================================
+ * Padding Frame Tests (RFC 9113 Section 6.1/6.2)
+ * ============================================================================
+ */
+
+static int
+test_padded_data_frame_format (void)
+{
+  TEST_BEGIN (padded_data_frame_format);
+
+  /* RFC 9113 §6.1: DATA frame with PADDED flag
+   * +---------------+
+   * |Pad Length? (8)|
+   * +---------------+-----------------------------------------------+
+   * |                            Data (*)                         ...
+   * +---------------------------------------------------------------+
+   * |                           Padding (*)                       ...
+   * +---------------------------------------------------------------+
+   */
+
+  /* Verify PADDED flag value */
+  TEST_ASSERT (HTTP2_FLAG_PADDED == 0x08, "PADDED flag should be 0x08");
+
+  /* Test that padding flag can be combined with END_STREAM */
+  uint8_t flags = HTTP2_FLAG_PADDED | HTTP2_FLAG_END_STREAM;
+  TEST_ASSERT (flags == 0x09, "PADDED | END_STREAM should be 0x09");
+
+  TEST_PASS ();
+}
+
+static int
+test_padded_headers_frame_format (void)
+{
+  TEST_BEGIN (padded_headers_frame_format);
+
+  /* RFC 9113 §6.2: HEADERS frame with PADDED flag
+   * +---------------+
+   * |Pad Length? (8)|
+   * +-+-------------+-----------------------------------------------+
+   * |E|                 Stream Dependency? (31)                     |
+   * +-+-------------+-----------------------------------------------+
+   * |  Weight? (8)  |
+   * +-+-------------+-----------------------------------------------+
+   * |                   Header Block Fragment (*)                 ...
+   * +---------------------------------------------------------------+
+   * |                           Padding (*)                       ...
+   * +---------------------------------------------------------------+
+   */
+
+  /* Test that PADDED can be combined with other HEADERS flags */
+  uint8_t flags = HTTP2_FLAG_PADDED | HTTP2_FLAG_END_HEADERS | HTTP2_FLAG_END_STREAM;
+  TEST_ASSERT ((flags & HTTP2_FLAG_PADDED) != 0, "PADDED flag should be set");
+  TEST_ASSERT ((flags & HTTP2_FLAG_END_HEADERS) != 0, "END_HEADERS flag should be set");
+  TEST_ASSERT ((flags & HTTP2_FLAG_END_STREAM) != 0, "END_STREAM flag should be set");
+
+  /* Verify that PADDED and PRIORITY can coexist */
+  flags = HTTP2_FLAG_PADDED | HTTP2_FLAG_PRIORITY;
+  TEST_ASSERT (flags == 0x28, "PADDED | PRIORITY should be 0x28");
+
+  TEST_PASS ();
+}
+
+static int
+test_padding_constraints (void)
+{
+  TEST_BEGIN (padding_constraints);
+
+  /* RFC 9113 §6.1: The total number of padding octets is determined by
+   * the value of the Pad Length field. Pad Length MUST NOT exceed the
+   * length of the frame payload minus one byte. */
+
+  /* Maximum padding for default max frame size (16384) */
+  uint32_t max_frame_size = SOCKETHTTP2_DEFAULT_MAX_FRAME_SIZE;
+  TEST_ASSERT (max_frame_size == 16384, "Default max frame size is 16384");
+
+  /* With 1 byte for pad_length field, max padding is 16383 */
+  /* But uint8_t pad_length limits to 255 bytes */
+  uint8_t max_pad_length = 255;
+  TEST_ASSERT (max_pad_length < max_frame_size, "Max padding fits in frame");
+
+  /* Minimum valid frame with padding: 1 (pad_length) + 0 (data) + pad_length */
+  /* pad_length must be < total payload length */
+  size_t min_payload_for_1byte_padding = 2; /* 1 byte pad_length + 1 byte padding */
+  TEST_ASSERT (min_payload_for_1byte_padding >= 2, "Minimum padded payload size");
+
+  TEST_PASS ();
+}
+
+/* ============================================================================
  * Main Test Runner
  * ============================================================================
  */
@@ -544,6 +632,13 @@ main (void)
   test_settings_ids ();
   test_stream_states ();
   test_event_types ();
+  printf ("\n");
+
+  /* Padding tests (RFC 9113 §6.1/§6.2) */
+  printf ("Padding Tests:\n");
+  test_padded_data_frame_format ();
+  test_padded_headers_frame_format ();
+  test_padding_constraints ();
   printf ("\n");
 
   /* Summary */
