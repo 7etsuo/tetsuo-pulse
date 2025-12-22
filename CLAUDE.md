@@ -33,13 +33,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 <body>
 
 Fixes #<issue>
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>
 ```
 
 Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`
+
+**IMPORTANT**: Do NOT add "Generated with Claude Code", "Co-Authored-By: Claude", or any AI attribution to commit messages. Keep commits clean and professional.
 
 ## Build Commands
 
