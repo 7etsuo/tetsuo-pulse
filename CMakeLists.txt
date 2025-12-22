@@ -784,6 +784,35 @@ else()
 endif()
 
 # =============================================================================
+# HTTP Client Benchmarks (tetsuo-socket vs libcurl)
+# =============================================================================
+# Build with: cmake -B build -DBUILD_HTTP_BENCHMARKS=ON
+# Run with: ./run_http_benchmarks.sh
+# =============================================================================
+
+option(BUILD_HTTP_BENCHMARKS "Build HTTP client benchmark suite (tetsuo-socket vs libcurl)" OFF)
+
+if(BUILD_HTTP_BENCHMARKS)
+    # tetsuo-socket HTTP client benchmark (always builds)
+    add_executable(benchmark_http_tetsuo src/test/benchmark_http_tetsuo.c)
+    target_link_libraries(benchmark_http_tetsuo socket_static pthread)
+    message(STATUS "HTTP Benchmarks: Building tetsuo-socket benchmark")
+
+    # libcurl HTTP client benchmark (optional, requires libcurl)
+    find_package(CURL QUIET)
+    if(CURL_FOUND)
+        add_executable(benchmark_http_curl src/test/benchmark_http_curl.c)
+        target_link_libraries(benchmark_http_curl CURL::libcurl pthread)
+        message(STATUS "HTTP Benchmarks: Building libcurl benchmark (curl ${CURL_VERSION_STRING})")
+    else()
+        message(STATUS "HTTP Benchmarks: libcurl not found - skipping curl benchmark")
+        message(STATUS "  Install libcurl-dev to enable: apt install libcurl4-openssl-dev")
+    endif()
+else()
+    message(STATUS "HTTP Benchmarks: Disabled (use -DBUILD_HTTP_BENCHMARKS=ON to enable)")
+endif()
+
+# =============================================================================
 # Fuzzing Targets (libFuzzer)
 # =============================================================================
 # Build with: CC=clang cmake .. -DENABLE_FUZZING=ON -DCMAKE_BUILD_TYPE=Debug
