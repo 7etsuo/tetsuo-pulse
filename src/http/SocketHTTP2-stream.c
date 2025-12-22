@@ -12,6 +12,7 @@
 #include "http/SocketHTTP2.h"
 
 #include "core/SocketUtil.h"
+#include "socket/Socket.h"
 #include "socket/SocketBuf.h"
 
 #include <assert.h>
@@ -145,6 +146,83 @@ get_initiated_count (SocketHTTP2_Conn_T conn, int is_local)
                   : &conn->client_initiated_count;
 }
 
+/**
+ * Check sliding window stream creation rate limits.
+ *
+ * Implements CVE-2023-44487 (HTTP/2 Rapid Reset Attack) protection using
+ * sliding window counters for:
+ * 1. Total stream creations over window period
+ * 2. Short-term burst detection
+ * 3. Rapid create+close cycle detection (churn)
+ *
+ * @return 0 if allowed, -1 if rate limited
+ */
+static int
+http2_stream_rate_check (SocketHTTP2_Conn_T conn)
+{
+  int64_t now_ms = Socket_get_monotonic_ms ();
+
+  /* Check sliding window: total creations over window period */
+  uint32_t window_count = TimeWindow_effective_count (&conn->stream_create_window, now_ms);
+  if (window_count >= conn->stream_max_per_window)
+    {
+      SOCKET_LOG_WARN_MSG ("SECURITY: HTTP/2 stream creation window limit exceeded: "
+                           "%" PRIu32 " >= %" PRIu32 " in %d ms - potential DoS attack",
+                           window_count, conn->stream_max_per_window,
+                           conn->stream_create_window.duration_ms);
+      return -1;
+    }
+
+  /* Check burst: short-term rate spike detection */
+  uint32_t burst_count = TimeWindow_effective_count (&conn->stream_burst_window, now_ms);
+  if (burst_count >= conn->stream_burst_threshold)
+    {
+      SOCKET_LOG_WARN_MSG ("SECURITY: HTTP/2 stream creation burst detected: "
+                           "%" PRIu32 " >= %" PRIu32 " in %d ms - potential DoS attack",
+                           burst_count, conn->stream_burst_threshold,
+                           conn->stream_burst_window.duration_ms);
+      return -1;
+    }
+
+  /* Check churn: rapid create+close cycles (CVE-2023-44487 specific) */
+  uint32_t churn_count = TimeWindow_effective_count (&conn->stream_churn_window, now_ms);
+  if (churn_count >= conn->stream_churn_threshold)
+    {
+      SOCKET_LOG_WARN_MSG ("SECURITY: HTTP/2 stream churn limit exceeded: "
+                           "%" PRIu32 " >= %" PRIu32 " in %d ms - "
+                           "CVE-2023-44487 Rapid Reset Attack detected",
+                           churn_count, conn->stream_churn_threshold,
+                           conn->stream_churn_window.duration_ms);
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * Record stream creation in sliding windows.
+ */
+static void
+http2_stream_rate_record (SocketHTTP2_Conn_T conn)
+{
+  int64_t now_ms = Socket_get_monotonic_ms ();
+  TimeWindow_record (&conn->stream_create_window, now_ms);
+  TimeWindow_record (&conn->stream_burst_window, now_ms);
+}
+
+/**
+ * Record stream close for churn detection.
+ *
+ * When a stream is closed shortly after creation, this contributes
+ * to the churn counter for CVE-2023-44487 protection.
+ */
+static void
+http2_stream_close_record (SocketHTTP2_Conn_T conn)
+{
+  int64_t now_ms = Socket_get_monotonic_ms ();
+  TimeWindow_record (&conn->stream_churn_window, now_ms);
+}
+
 SocketHTTP2_Stream_T
 http2_stream_create (SocketHTTP2_Conn_T conn, uint32_t stream_id,
                      int is_local_initiated)
@@ -154,10 +232,18 @@ http2_stream_create (SocketHTTP2_Conn_T conn, uint32_t stream_id,
   assert (conn);
   assert (stream_id > 0);
 
-  /* Rate limit stream creations */
+  /* Sliding window rate limiting (CVE-2023-44487 protection) */
+  if (http2_stream_rate_check (conn) < 0)
+    {
+      SOCKET_LOG_DEBUG_MSG ("Stream creation rate limited (sliding window) for conn %p",
+                            (void *)conn);
+      return NULL;
+    }
+
+  /* Token bucket rate limit (legacy, provides complementary protection) */
   if (!SocketRateLimit_try_acquire (conn->stream_open_rate_limit, 1))
     {
-      SOCKET_LOG_DEBUG_MSG ("Stream creation rate limited for conn %p",
+      SOCKET_LOG_DEBUG_MSG ("Stream creation rate limited (token bucket) for conn %p",
                             (void *)conn);
       return NULL;
     }
@@ -204,6 +290,9 @@ http2_stream_create (SocketHTTP2_Conn_T conn, uint32_t stream_id,
   add_stream_to_hash (conn, stream);
   (*get_initiated_count (conn, stream->is_local_initiated))++;
 
+  /* Record stream creation in sliding windows for rate limiting */
+  http2_stream_rate_record (conn);
+
   return stream;
 }
 
@@ -218,6 +307,9 @@ http2_stream_destroy (SocketHTTP2_Stream_T stream)
 
   if (*count > 0)
     (*count)--; /* Defensive >0 */
+
+  /* Record stream close for churn detection (CVE-2023-44487) */
+  http2_stream_close_record (conn);
 
   remove_stream_from_hash (conn, stream);
 
@@ -543,6 +635,8 @@ SocketHTTP2_Stream_close (SocketHTTP2_Stream_T stream,
       SOCKET_LOG_DEBUG_MSG ("Stream close rate limited for stream %u",
                             stream->id);
       stream->state = HTTP2_STREAM_STATE_CLOSED; /* Close locally anyway */
+      /* Still record for churn detection even if rate limited */
+      http2_stream_close_record (stream->conn);
       return;
     }
 
@@ -550,6 +644,8 @@ SocketHTTP2_Stream_close (SocketHTTP2_Stream_T stream,
     {
       http2_send_stream_error (stream->conn, stream->id, error_code);
       stream->state = HTTP2_STREAM_STATE_CLOSED;
+      /* Record stream close for churn detection (CVE-2023-44487) */
+      http2_stream_close_record (stream->conn);
     }
 }
 

@@ -141,6 +141,14 @@ struct SocketHTTP2_Conn
   TimeWindow_T rst_window;
   TimeWindow_T ping_window;
   TimeWindow_T settings_window;
+
+  /* Sliding window stream creation rate limiting (CVE-2023-44487 protection) */
+  TimeWindow_T stream_create_window;  /* Tracks creations over window period */
+  TimeWindow_T stream_burst_window;   /* Short-term burst detection */
+  TimeWindow_T stream_churn_window;   /* Rapid create+close cycle detection */
+  uint32_t stream_max_per_window;     /* Max creations per window */
+  uint32_t stream_burst_threshold;    /* Max per burst interval */
+  uint32_t stream_churn_threshold;    /* Max rapid cycles per window */
 };
 extern SocketHTTP2_ErrorCode
 http2_frame_validate (SocketHTTP2_Conn_T conn,

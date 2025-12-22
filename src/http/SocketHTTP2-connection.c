@@ -65,6 +65,13 @@ SocketHTTP2_config_defaults (SocketHTTP2_Config *config, SocketHTTP2_Role role)
   config->max_stream_close_rate = 200; /* closes/sec, higher as natural */
   config->max_stream_close_burst = 20;
 
+  /* Sliding window stream rate limiting (CVE-2023-44487 protection) */
+  config->stream_window_size_ms = SOCKETHTTP2_STREAM_WINDOW_SIZE_MS;
+  config->stream_max_per_window = SOCKETHTTP2_STREAM_MAX_PER_WINDOW;
+  config->stream_burst_threshold = SOCKETHTTP2_STREAM_BURST_THRESHOLD;
+  config->stream_burst_interval_ms = SOCKETHTTP2_STREAM_BURST_INTERVAL_MS;
+  config->stream_churn_threshold = SOCKETHTTP2_STREAM_CHURN_THRESHOLD;
+
   config->connection_window_size = SOCKETHTTP2_CONNECTION_WINDOW_SIZE;
 
   /* Default timeouts */
@@ -326,6 +333,14 @@ SocketHTTP2_Conn_new (Socket_T socket, const SocketHTTP2_Config *config,
     TimeWindow_init(&conn->settings_window, SOCKETHTTP2_SETTINGS_RATE_WINDOW_MS, conn->last_activity_time);
     TimeWindow_init(&conn->ping_window, SOCKETHTTP2_PING_RATE_WINDOW_MS, conn->last_activity_time);
     TimeWindow_init(&conn->rst_window, SOCKETHTTP2_RST_RATE_WINDOW_MS, conn->last_activity_time);
+
+    /* Initialize sliding window stream rate limiters (CVE-2023-44487 protection) */
+    TimeWindow_init(&conn->stream_create_window, (int)cfg->stream_window_size_ms, conn->last_activity_time);
+    TimeWindow_init(&conn->stream_burst_window, (int)cfg->stream_burst_interval_ms, conn->last_activity_time);
+    TimeWindow_init(&conn->stream_churn_window, (int)cfg->stream_window_size_ms, conn->last_activity_time);
+    conn->stream_max_per_window = cfg->stream_max_per_window;
+    conn->stream_burst_threshold = cfg->stream_burst_threshold;
+    conn->stream_churn_threshold = cfg->stream_churn_threshold;
   }
   EXCEPT (SocketHTTP2)
   {
