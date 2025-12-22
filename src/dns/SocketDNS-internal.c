@@ -31,34 +31,10 @@
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "SocketDNS-internal"
 
-/**
- * Thread-local exception for detailed error messages.
- *
- * Each compilation unit that uses SOCKET_RAISE_MSG/FMT/MODULE_ERROR macros
- * with a module name must declare its own thread-local exception variable.
- * The 'static __thread' storage class ensures:
- * - Internal linkage (no symbol conflicts between files)
- * - Thread-local storage (safe for concurrent exception raising)
- *
- * Both SocketDNS.c and SocketDNS-internal.c need this declaration because
- * they each use SOCKET_RAISE_MSG(SocketDNS, ...) which expands to use
- * SocketDNS_DetailedException.
- */
+/* Thread-local exception for formatted error messages (per-thread for safety) */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketDNS);
 
-/**
- * @brief Helper macro for pthread primitive initialization with cleanup on
- * failure.
- * @param dns DNS resolver instance
- * @param init_func pthread init function (pthread_mutex_init or
- * pthread_cond_init)
- * @param ptr Pointer to the primitive to initialize
- * @param cleanup_level Cleanup level to use on failure
- * @param error_msg Error message to include in exception
- *
- * Reduces boilerplate in pthread initialization functions by handling the
- * common pattern of: init, check result, cleanup on failure, raise exception.
- */
+/* Helper macro for pthread init with cleanup on failure */
 #define INIT_PTHREAD_PRIMITIVE(dns, init_func, ptr, cleanup_level, error_msg) \
   do                                                                          \
     {                                                                         \
@@ -70,13 +46,7 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketDNS);
     }                                                                         \
   while (0)
 
-/**
- * @brief Cleanup function for SCOPED_MUTEX_LOCK.
- * @param mutex Pointer to mutex pointer to unlock
- *
- * Uses GCC cleanup attribute to automatically unlock mutex when variable
- * goes out of scope.
- */
+/* GCC cleanup attribute to auto-unlock mutex when scope exits */
 static inline void
 mutex_unlock_cleanup (pthread_mutex_t **mutex)
 {
@@ -84,21 +54,7 @@ mutex_unlock_cleanup (pthread_mutex_t **mutex)
     pthread_mutex_unlock (*mutex);
 }
 
-/**
- * @brief Scoped mutex lock with automatic unlock via cleanup attribute.
- * @param mutex_ptr Pointer to mutex to lock
- *
- * Usage: SCOPED_MUTEX_LOCK(&dns->mutex);
- * The mutex will be automatically unlocked when the enclosing scope exits,
- * including on early returns. Uses GCC's cleanup attribute (GNU extension).
- *
- * Example:
- *   void foo(struct SocketDNS_T *dns) {
- *     SCOPED_MUTEX_LOCK(&dns->mutex);
- *     if (error) return;  // mutex auto-unlocks
- *     // ... work ...
- *   }  // mutex auto-unlocks here too
- */
+/* Scoped mutex lock - auto-unlocks on scope exit via GCC cleanup attribute */
 #define SCOPED_MUTEX_LOCK(mutex_ptr)                                          \
   pthread_mutex_lock (mutex_ptr);                                             \
   pthread_mutex_t *SOCKET_CONCAT (_scoped_mutex_, __LINE__)                   \
@@ -108,18 +64,6 @@ mutex_unlock_cleanup (pthread_mutex_t **mutex)
 #define SOCKET_CONCAT_INNER(a, b) a##b
 #define SOCKET_CONCAT(a, b) SOCKET_CONCAT_INNER (a, b)
 
-/*
- * =============================================================================
- * Synchronization - Mutex and Condition Variables
- * =============================================================================
- */
-
-/**
- * initialize_mutex - Initialize mutex for DNS resolver
- * @dns: DNS resolver instance
- *
- * Raises: SocketDNS_Failed on initialization failure
- */
 void
 initialize_mutex (struct SocketDNS_T *dns)
 {
@@ -127,12 +71,6 @@ initialize_mutex (struct SocketDNS_T *dns)
                           "Failed to initialize DNS resolver mutex");
 }
 
-/**
- * initialize_queue_condition - Initialize queue condition variable
- * @dns: DNS resolver instance
- *
- * Raises: SocketDNS_Failed on initialization failure
- */
 void
 initialize_queue_condition (struct SocketDNS_T *dns)
 {
@@ -141,16 +79,7 @@ initialize_queue_condition (struct SocketDNS_T *dns)
                           "Failed to initialize DNS resolver queue condition");
 }
 
-/**
- * initialize_result_condition - Initialize result condition variable
- * @dns: DNS resolver instance
- *
- * Raises: SocketDNS_Failed on initialization failure
- *
- * Security: Uses CLOCK_MONOTONIC to prevent timing attacks via system clock
- * manipulation. This ensures pthread_cond_timedwait() deadlines are immune
- * to NTP adjustments or malicious clock changes.
- */
+/* Security: Uses CLOCK_MONOTONIC to prevent timing attacks via clock manipulation */
 void
 initialize_result_condition (struct SocketDNS_T *dns)
 {
@@ -186,11 +115,6 @@ initialize_result_condition (struct SocketDNS_T *dns)
     }
 }
 
-/**
- * initialize_synchronization - Initialize mutex and condition variables
- * @dns: DNS resolver instance
- * Raises: SocketDNS_Failed on initialization failure
- */
 void
 initialize_synchronization (struct SocketDNS_T *dns)
 {
@@ -199,12 +123,6 @@ initialize_synchronization (struct SocketDNS_T *dns)
   initialize_result_condition (dns);
 }
 
-/**
- * create_completion_pipe - Create pipe for completion signaling
- * @dns: DNS resolver instance
- * Raises: SocketDNS_Failed on pipe creation failure
- * Note: Both pipe ends are created with close-on-exec flag set.
- */
 void
 create_completion_pipe (struct SocketDNS_T *dns)
 {
@@ -228,11 +146,6 @@ create_completion_pipe (struct SocketDNS_T *dns)
     }
 }
 
-/**
- * set_pipe_nonblocking - Set pipe read end to non-blocking mode
- * @dns: DNS resolver instance
- * Raises: SocketDNS_Failed on fcntl failure
- */
 void
 set_pipe_nonblocking (struct SocketDNS_T *dns)
 {
@@ -252,11 +165,6 @@ set_pipe_nonblocking (struct SocketDNS_T *dns)
     }
 }
 
-/**
- * initialize_pipe - Create pipe for completion signaling
- * @dns: DNS resolver instance
- * Raises: SocketDNS_Failed on pipe creation failure
- */
 void
 initialize_pipe (struct SocketDNS_T *dns)
 {
@@ -264,11 +172,6 @@ initialize_pipe (struct SocketDNS_T *dns)
   set_pipe_nonblocking (dns);
 }
 
-/*
- * =============================================================================
- * Initialization - Resolver Allocation and Setup
- * =============================================================================
- */
 T
 allocate_dns_resolver (void)
 {
@@ -284,14 +187,7 @@ allocate_dns_resolver (void)
   return dns;
 }
 
-/**
- * initialize_dns_fields - Set default field values for DNS resolver
- * @dns: DNS resolver instance
- *
- * Initializes configuration fields to non-zero default values.
- * Note: dns was allocated with calloc, so zero/NULL fields are already set.
- * Only non-zero defaults need explicit initialization here.
- */
+/* Only non-zero defaults; calloc zeroed the rest */
 void
 initialize_dns_fields (struct SocketDNS_T *dns)
 {
@@ -308,13 +204,6 @@ initialize_dns_fields (struct SocketDNS_T *dns)
   dns->prefer_ipv6 = 1; /* Prefer IPv6 per RFC 6724 */
 }
 
-/**
- * initialize_dns_components - Initialize arena and synchronization primitives
- * @dns: DNS resolver instance
- * Raises: SocketDNS_Failed on initialization failure
- * Sets up arena, mutex, condition variables, and pipe for completion
- * signaling.
- */
 void
 initialize_dns_components (struct SocketDNS_T *dns)
 {
@@ -330,11 +219,6 @@ initialize_dns_components (struct SocketDNS_T *dns)
   initialize_pipe (dns);
 }
 
-/**
- * setup_thread_attributes - Configure pthread attributes for worker threads
- * @attr: Thread attributes to configure
- * Raises: SocketDNS_Failed on attribute setup failure
- */
 void
 setup_thread_attributes (pthread_attr_t *attr)
 {
@@ -343,22 +227,6 @@ setup_thread_attributes (pthread_attr_t *attr)
   pthread_attr_setstacksize (attr, SOCKET_DNS_WORKER_STACK_SIZE);
 }
 
-/**
- * cleanup_partial_workers - Join partially created workers on init failure
- * @dns: DNS resolver instance
- * @created_count: Number of threads already created before failure
- *
- * Thread-safe: Partial - calls signal_shutdown_and_broadcast() with mutex (safe),
- * but joins without full synchronization (init phase).
- * Called when thread creation partially fails during SocketDNS_new().
- *
- * Signals shutdown to wake any started workers, then joins created threads.
- * Followed by cleanup_on_init_failure() for resources.
- *
- * @see signal_shutdown_and_broadcast() for safe signaling.
- * @see create_single_worker_thread() for failure path.
- * @see cleanup_on_init_failure() for resource cleanup.
- */
 static void
 signal_shutdown_and_broadcast (struct SocketDNS_T *dns)
 {
@@ -377,14 +245,6 @@ cleanup_partial_workers (struct SocketDNS_T *dns, int created_count)
     pthread_join (dns->workers[i], NULL);
 }
 
-/**
- * set_worker_thread_name - Set thread name for debugging
- * @dns: DNS resolver instance
- * @thread_index: Index of thread to name
- *
- * Uses pthread_setname_np() on supported platforms (Linux, macOS).
- * Thread names aid debugging in tools like gdb, htop, and ps.
- */
 static void
 set_worker_thread_name (struct SocketDNS_T *dns, int thread_index)
 {
@@ -405,13 +265,6 @@ set_worker_thread_name (struct SocketDNS_T *dns, int thread_index)
 #endif
 }
 
-/**
- * create_single_worker_thread - Create a single worker thread
- * @dns: DNS resolver instance
- * @thread_index: Index of thread to create
- * Returns: 0 on success, -1 on failure
- * Creates one worker thread and handles partial cleanup on failure.
- */
 int
 create_single_worker_thread (struct SocketDNS_T *dns, int thread_index)
 {
@@ -433,12 +286,6 @@ create_single_worker_thread (struct SocketDNS_T *dns, int thread_index)
   return 0;
 }
 
-/**
- * create_worker_threads - Create worker thread pool
- * @dns: DNS resolver instance
- * Raises: SocketDNS_Failed on thread creation failure
- * Creates all worker threads, with proper cleanup on partial failure.
- */
 void
 create_worker_threads (struct SocketDNS_T *dns)
 {
@@ -454,12 +301,6 @@ create_worker_threads (struct SocketDNS_T *dns)
     }
 }
 
-/**
- * start_dns_workers - Create and start worker thread pool
- * @dns: DNS resolver instance
- * Raises: SocketDNS_Failed on thread creation failure
- * Creates worker threads and allocates thread array from arena.
- */
 void
 start_dns_workers (struct SocketDNS_T *dns)
 {
@@ -473,17 +314,6 @@ start_dns_workers (struct SocketDNS_T *dns)
   create_worker_threads (dns);
 }
 
-/*
- * =============================================================================
- * Cleanup - Shutdown and Resource Deallocation
- * =============================================================================
- */
-
-/**
- * cleanup_mutex_cond - Cleanup mutex and condition variables
- * @dns: DNS resolver instance
- * Destroys mutex and condition variables in reverse order of creation.
- */
 void
 cleanup_mutex_cond (struct SocketDNS_T *dns)
 {
@@ -492,12 +322,6 @@ cleanup_mutex_cond (struct SocketDNS_T *dns)
   pthread_mutex_destroy (&dns->mutex);
 }
 
-/**
- * cleanup_pipe - Close pipe file descriptors
- * @dns: DNS resolver instance
- *
- * Safely closes both pipe file descriptors and marks them invalid.
- */
 void
 cleanup_pipe (struct SocketDNS_T *dns)
 {
@@ -508,13 +332,6 @@ cleanup_pipe (struct SocketDNS_T *dns)
     }
 }
 
-/**
- * cleanup_on_init_failure - Cleanup resources on initialization failure
- * @dns: DNS resolver instance
- * @cleanup_level: How much cleanup needed (0=none, 1=mutex, 2=cond, 3=pipe,
- * 4=arena) Cleans up partially initialized resolver. cleanup_level indicates
- * how far initialization got before failure.
- */
 void
 cleanup_on_init_failure (struct SocketDNS_T *dns,
                          enum DnsCleanupLevel cleanup_level)
@@ -534,32 +351,6 @@ cleanup_on_init_failure (struct SocketDNS_T *dns,
   free (dns);
 }
 
-/**
- * signal_shutdown_and_broadcast - Signal shutdown to workers and broadcast condition
- * @dns: DNS resolver instance
- *
- * Thread-safe: Yes - acquires mutex, sets shutdown flag, broadcasts queue_cond to wake waiting workers.
- * Unlocks before return. Used during normal shutdown and partial init failure recovery.
- *
- * @see shutdown_workers() for full shutdown sequence including joins.
- * @see cleanup_partial_workers() for init failure case.
- */
-/**
- * shutdown_workers - Gracefully shutdown worker threads
- * @d: DNS resolver instance
- *
- * Thread-safe: Yes - uses signal_shutdown_and_broadcast() which protects with mutex.
- *
- * Signals all workers to exit via shutdown flag and condition broadcast, then
- * blocks until all threads have joined. Called during SocketDNS_free() after
- * state reset and before resource destruction.
- *
- * @note Blocks caller until all workers terminate.
- * @note Called after drain_completion_pipe() to avoid stuck workers.
- * @see signal_shutdown_and_broadcast() for low-level signaling.
- * @see reset_dns_state() for preceding state cleanup.
- * @see destroy_dns_resources() for following resource cleanup.
- */
 void
 shutdown_workers (T d)
 {
@@ -569,12 +360,6 @@ shutdown_workers (T d)
     pthread_join (d->workers[i], NULL);
 }
 
-/**
- * drain_completion_pipe - Drain completion pipe before cleanup
- * @dns: DNS resolver instance
- * Reads and discards any remaining completion notifications so that
- * subsequent close operations do not leave unread data in the pipe.
- */
 void
 drain_completion_pipe (struct SocketDNS_T *dns)
 {
@@ -591,17 +376,7 @@ drain_completion_pipe (struct SocketDNS_T *dns)
   while (n > 0);
 }
 
-/**
- * secure_clear_memory - Securely clear memory to prevent information leakage
- * @ptr: Pointer to memory to clear
- * @len: Number of bytes to clear
- *
- * Uses explicit_bzero on Linux/glibc to prevent compiler optimization from
- * removing the clear operation. Falls back to volatile memset otherwise.
- *
- * Security: Prevents hostname/IP strings from lingering in memory after
- * DNS resolver disposal, defending against memory disclosure attacks.
- */
+/* Security: Prevents hostname/IP strings from lingering in memory */
 static void
 secure_clear_memory (void *ptr, size_t len)
 {
@@ -618,19 +393,7 @@ secure_clear_memory (void *ptr, size_t len)
 #endif
 }
 
-/**
- * free_request_list_results - Free addrinfo results for linked request list
- * @head: Head of request list
- * @next_offset: Offset of next-pointer field within SocketDNS_Request_T
- *               (use offsetof(struct SocketDNS_Request_T, queue_next) or
- *               offsetof(struct SocketDNS_Request_T, hash_next))
- *
- * Generic traversal that works with either queue_next or hash_next linkage.
- * Frees getaddrinfo results; request structures are in Arena, not freed here.
- *
- * Security: Securely clears hostname strings before arena disposal to prevent
- * information leakage from deallocated memory.
- */
+/* Security: Securely clears hostname strings before arena disposal */
 static void
 free_request_list_results (Request_T head, size_t next_offset)
 {
@@ -655,13 +418,6 @@ free_request_list_results (Request_T head, size_t next_offset)
     }
 }
 
-/**
- * free_all_requests - Free all pending requests
- * @d: DNS resolver instance
- *
- * Thread-safe: Must be called with mutex locked.
- * Frees getaddrinfo results from both queue and hash table.
- */
 void
 free_all_requests (T d)
 {
@@ -675,12 +431,6 @@ free_all_requests (T d)
         d->request_hash[i], offsetof (struct SocketDNS_Request_T, hash_next));
 }
 
-/**
- * reset_dns_state - Reset internal DNS resolver state for shutdown
- * @d: DNS resolver instance
- * Thread-safe: Uses mutex to protect shared state
- * Frees all requests (including their results), resets queue and hash table.
- */
 void
 reset_dns_state (T d)
 {
@@ -693,12 +443,6 @@ reset_dns_state (T d)
     d->request_hash[i] = NULL;
 }
 
-/**
- * destroy_dns_resources - Destroy DNS resolver resources
- * @d: DNS resolver instance
- * Frees synchronization primitives, arena, and resolver structure itself.
- * Called after state reset and worker shutdown.
- */
 void
 destroy_dns_resources (T d)
 {
@@ -708,34 +452,12 @@ destroy_dns_resources (T d)
   free (d);
 }
 
-/*
- * =============================================================================
- * Request Management - Allocation, Queue, and Hash Table
- * =============================================================================
- */
-
-/**
- * request_hash_function - Calculate hash for request pointer
- * @req: Request pointer to hash (read-only, const)
- *
- * Returns: Hash value in range [0, SOCKET_DNS_REQUEST_HASH_SIZE)
- * Thread-safe: Yes - no shared state modified, pure function
- *
- * Uses socket_util_hash_ptr() for golden ratio multiplicative hashing.
- */
 unsigned
 request_hash_function (const struct SocketDNS_Request_T *req)
 {
   return socket_util_hash_ptr (req, SOCKET_DNS_REQUEST_HASH_SIZE);
 }
 
-/**
- * allocate_request_structure - Allocate request structure
- * @dns: DNS resolver instance
- * Returns: Allocated request structure
- * Raises: SocketDNS_Failed on allocation failure
- * Allocates memory for the request structure from arena.
- */
 Request_T
 allocate_request_structure (struct SocketDNS_T *dns)
 {
@@ -751,16 +473,6 @@ allocate_request_structure (struct SocketDNS_T *dns)
   return req;
 }
 
-/**
- * allocate_request_hostname - Allocate and copy hostname
- * @dns: DNS resolver instance
- * @req: Request structure to initialize
- * @host: Hostname to copy (NULL allowed for wildcard bind)
- * @host_len: Length of hostname (0 if host is NULL)
- * Raises: SocketDNS_Failed on allocation failure or overflow
- * Allocates memory for hostname and copies it. Sets req->host to NULL if host
- * is NULL.
- */
 void
 allocate_request_hostname (struct SocketDNS_T *dns,
                            struct SocketDNS_Request_T *req, const char *host,
@@ -790,14 +502,6 @@ allocate_request_hostname (struct SocketDNS_T *dns,
   req->host[host_len] = '\0';
 }
 
-/**
- * initialize_request_fields - Initialize request fields
- * @req: Request structure to initialize
- * @port: Port number
- * @callback: Completion callback
- * @data: User data for callback
- * Sets all request fields to initial values.
- */
 void
 initialize_request_fields (struct SocketDNS_Request_T *req, int port,
                            SocketDNS_Callback callback, void *data)
@@ -814,18 +518,6 @@ initialize_request_fields (struct SocketDNS_Request_T *req, int port,
   req->timeout_override_ms = -1;
 }
 
-/**
- * allocate_request - Allocate and initialize request structure
- * @dns: DNS resolver instance
- * @host: Hostname to resolve
- * @host_len: Length of hostname
- * @port: Port number
- * @callback: Completion callback
- * @data: User data for callback
- * Returns: Allocated request structure
- * Raises: SocketDNS_Failed on allocation failure
- * Allocates and fully initializes a DNS request structure.
- */
 Request_T
 allocate_request (struct SocketDNS_T *dns, const char *host, size_t host_len,
                   int port, SocketDNS_Callback callback, void *data)
@@ -838,12 +530,6 @@ allocate_request (struct SocketDNS_T *dns, const char *host, size_t host_len,
   return req;
 }
 
-/**
- * hash_table_insert - Insert request into hash table
- * @dns: DNS resolver instance
- * @req: Request to insert
- * Thread-safe: Must be called with mutex locked
- */
 void
 hash_table_insert (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 {
@@ -855,15 +541,7 @@ hash_table_insert (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
   dns->request_hash[hash] = req;
 }
 
-/**
- * hash_table_remove - Remove request from hash table
- * @dns: DNS resolver instance
- * @req: Request to remove
- * Thread-safe: Must be called with mutex locked
- *
- * Security: Bounds-checks hash_value to prevent out-of-bounds access
- * from corrupted request handles or use-after-free scenarios.
- */
+/* Security: Bounds-checks hash_value to prevent out-of-bounds access */
 void
 hash_table_remove (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 {
@@ -893,12 +571,6 @@ hash_table_remove (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
     }
 }
 
-/**
- * queue_append - Append request to queue
- * @dns: DNS resolver instance
- * @req: Request to append
- * Thread-safe: Must be called with mutex locked
- */
 void
 queue_append (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 {
@@ -915,11 +587,6 @@ queue_append (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
   dns->queue_size++;
 }
 
-/**
- * remove_from_queue_head - Remove request from queue head
- * @dns: DNS resolver instance
- * @req: Request to remove
- */
 void
 remove_from_queue_head (struct SocketDNS_T *dns,
                         struct SocketDNS_Request_T *req)
@@ -929,11 +596,6 @@ remove_from_queue_head (struct SocketDNS_T *dns,
     dns->queue_tail = NULL;
 }
 
-/**
- * remove_from_queue_middle - Remove request from queue middle/tail
- * @dns: DNS resolver instance
- * @req: Request to remove
- */
 void
 remove_from_queue_middle (struct SocketDNS_T *dns,
                           struct SocketDNS_Request_T *req)
@@ -949,12 +611,6 @@ remove_from_queue_middle (struct SocketDNS_T *dns,
     }
 }
 
-/**
- * queue_remove - Remove request from queue
- * @dns: DNS resolver instance
- * @req: Request to remove
- * Thread-safe: Must be called with mutex locked
- */
 void
 queue_remove (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 {
@@ -965,26 +621,12 @@ queue_remove (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
   dns->queue_size--;
 }
 
-/**
- * check_queue_limit - Check if queue has reached limit
- * @dns: DNS resolver instance
- * Returns: 1 if queue is full, 0 otherwise
- * Thread-safe: Must be called with mutex locked
- * Note: Does NOT unlock mutex - caller is responsible for cleanup
- */
 int
 check_queue_limit (const struct SocketDNS_T *dns)
 {
   return dns->queue_size >= dns->max_pending;
 }
 
-/**
- * submit_dns_request - Submit request to queue and hash table
- * @dns: DNS resolver instance
- * @req: Request to submit
- * Thread-safe: Must be called with mutex locked
- * Inserts request into hash table, appends to queue, and signals workers.
- */
 void
 submit_dns_request (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 {
@@ -993,12 +635,6 @@ submit_dns_request (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
   pthread_cond_signal (&dns->queue_cond);
 }
 
-/**
- * cancel_pending_request - Cancel a pending request
- * @dns: DNS resolver instance
- * @req: Request to cancel
- * Thread-safe: Must be called with mutex locked
- */
 void
 cancel_pending_request (struct SocketDNS_T *dns,
                         struct SocketDNS_Request_T *req)
@@ -1008,24 +644,6 @@ cancel_pending_request (struct SocketDNS_T *dns,
   req->state = REQ_CANCELLED;
 }
 
-/*
- * =============================================================================
- * Timeout Handling
- * =============================================================================
- */
-
-/**
- * request_effective_timeout_ms - Get effective timeout for request
- * @dns: DNS resolver instance (read-only for default timeout)
- * @req: Request to check (read-only)
- *
- * Returns: Per-request timeout override if >= 0, else default resolver timeout
- * Thread-safe: Must be called with mutex locked (reads
- * dns->request_timeout_ms)
- *
- * Allows per-request timeout customization while falling back to resolver-wide
- * default when no override is specified (timeout_override_ms < 0).
- */
 int
 request_effective_timeout_ms (const struct SocketDNS_T *dns,
                               const struct SocketDNS_Request_T *req)
@@ -1038,21 +656,6 @@ request_effective_timeout_ms (const struct SocketDNS_T *dns,
 
 
 
-/**
- * request_timed_out - Check if request has timed out
- * @dns: DNS resolver instance (read-only for timeout config)
- * @req: Request to check (read-only)
- *
- * Returns: 1 if timed out, 0 otherwise (including when timeout disabled)
- * Thread-safe: Yes - read-only access to req state; uses thread-safe Socket_get_monotonic_ms()
- *
- * Computes elapsed time using Socket_get_monotonic_ms() for reliable monotonic timing
- * immune to system clock adjustments. Returns 0 if effective timeout <= 0 (disabled).
- * Negative elapsed (rare clock anomaly) treated as 0 for safety.
- *
- * @see Socket_get_monotonic_ms() for timestamp acquisition details.
- * @see SocketUtil.h for timing utilities.
- */
 int
 request_timed_out (const struct SocketDNS_T *dns,
                    const struct SocketDNS_Request_T *req)
@@ -1074,13 +677,6 @@ request_timed_out (const struct SocketDNS_T *dns,
   return 0;
 }
 
-/**
- * mark_request_timeout - Mark request as timed out
- * @dns: DNS resolver instance
- * @req: Request to mark as timed out
- * Sets state to complete with timeout error, frees result if any, signals
- * completion. Thread-safe: Must be called with mutex locked.
- */
 void
 mark_request_timeout (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 {
@@ -1097,13 +693,6 @@ mark_request_timeout (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
                                 req->port);
 }
 
-/**
- * handle_request_timeout - Handle request timeout case
- * @dns: DNS resolver instance
- * @req: Request that timed out
- * Thread-safe: Uses mutex internally
- * Marks request as timed out, signals completion, emits event.
- */
 void
 handle_request_timeout (struct SocketDNS_T *dns,
                         struct SocketDNS_Request_T *req)
@@ -1112,18 +701,6 @@ handle_request_timeout (struct SocketDNS_T *dns,
   mark_request_timeout (dns, req);
 }
 
-/*
- * =============================================================================
- * Worker Thread Implementation
- * =============================================================================
- */
-
-/**
- * initialize_addrinfo_hints - Initialize getaddrinfo hints structure
- * @hints: Hints structure to initialize
- * Sets up hints for DNS resolution with AF_UNSPEC (IPv4/IPv6).
- * Thread-safe: Yes - no shared state
- */
 void
 initialize_addrinfo_hints (struct addrinfo *hints)
 {
@@ -1133,15 +710,6 @@ initialize_addrinfo_hints (struct addrinfo *hints)
   hints->ai_protocol = 0;
 }
 
-/**
- * dequeue_request - Dequeue next request from queue
- * @dns: DNS resolver instance
- *
- * Returns: Next request or NULL if queue empty
- * Thread-safe: Must be called with mutex locked
- *
- * Pops the head request and transitions it to REQ_PROCESSING state.
- */
 Request_T
 dequeue_request (struct SocketDNS_T *dns)
 {
@@ -1165,15 +733,6 @@ dequeue_request (struct SocketDNS_T *dns)
   return req;
 }
 
-/**
- * wait_for_request - Wait for next request or shutdown
- * @dns: DNS resolver instance
- * Returns: Request to process, or NULL if shutdown
- * Thread-safe: Must be called with mutex locked, returns with mutex locked
- *
- * NOTE: Caller is responsible for unlocking the mutex after this returns.
- * This function does NOT unlock the mutex on any path.
- */
 Request_T
 wait_for_request (struct SocketDNS_T *dns)
 {
@@ -1188,13 +747,6 @@ wait_for_request (struct SocketDNS_T *dns)
   return dequeue_request (dns);
 }
 
-/**
- * signal_completion - Signal completion via pipe
- * @dns: DNS resolver instance
- * Writes completion signal to pipe. Non-blocking best-effort operation.
- * Pipe may be full, which is acceptable - signals are cumulative.
- * Thread-safe: Yes - write to pipe[1] is atomic for 1 byte
- */
 void
 signal_completion (struct SocketDNS_T *dns)
 {
@@ -1205,11 +757,6 @@ signal_completion (struct SocketDNS_T *dns)
   (void)n; /* Ignore result - pipe may be full, that's OK */
 }
 
-/**
- * dns_cancellation_error - Get appropriate error code for cancelled request
- * Returns: EAI_CANCELLED if defined, else EAI_AGAIN
- * Used for consistent error reporting on cancellation.
- */
 int
 dns_cancellation_error (void)
 {
@@ -1220,19 +767,6 @@ dns_cancellation_error (void)
 #endif
 }
 
-/**
- * perform_dns_resolution - Perform actual DNS lookup
- * @req: Request containing hostname and port (read-only)
- * @hints: getaddrinfo hints structure (read-only)
- * @result: Output - set to resolved addresses (caller owns) or NULL on error
- *
- * Returns: getaddrinfo result code (0 on success, EAI_* on failure)
- * Thread-safe: Yes - getaddrinfo is thread-safe per POSIX
- *
- * Performs DNS resolution with optional port parameter. Handles NULL
- * host (wildcard bind) by passing NULL to getaddrinfo with AI_PASSIVE flag.
- * Note: getaddrinfo() is a blocking call and is not interruptible.
- */
 int
 perform_dns_resolution (const struct SocketDNS_Request_T *req,
                         const struct addrinfo *hints, struct addrinfo **result)
@@ -1256,17 +790,6 @@ perform_dns_resolution (const struct SocketDNS_Request_T *req,
   return res;
 }
 
-/**
- * copy_and_store_result - Copy result and store in request
- * @req: Request to store result in
- * @result: Original result to copy and free
- * @error: Error code from resolution (preserved if non-zero)
- *
- * Thread-safe: Must be called with mutex locked
- *
- * Error handling: Preserves non-zero error codes (e.g., EAI_AGAIN for timeout).
- * Sets EAI_MEMORY only if copy fails with no prior error.
- */
 static void
 copy_and_store_result (struct SocketDNS_Request_T *req,
                        struct addrinfo *result, int error)
@@ -1289,10 +812,6 @@ copy_and_store_result (struct SocketDNS_Request_T *req,
     freeaddrinfo (result);
 }
 
-/**
- * update_completion_metrics - Update metrics for completed request
- * @error: Error code (0 on success)
- */
 static void
 update_completion_metrics (int error)
 {
@@ -1302,14 +821,6 @@ update_completion_metrics (int error)
     SocketMetrics_increment (SOCKET_METRIC_DNS_REQUEST_FAILED, 1);
 }
 
-/**
- * handle_cancelled_result - Handle result for cancelled request
- * @dns: DNS resolver instance
- * @req: Cancelled request
- * @result: Result to free
- *
- * Thread-safe: Must be called with mutex locked
- */
 static void
 handle_cancelled_result (struct SocketDNS_T *dns,
                          struct SocketDNS_Request_T *req,
@@ -1324,15 +835,6 @@ handle_cancelled_result (struct SocketDNS_T *dns,
   SIGNAL_DNS_COMPLETION (dns);
 }
 
-/**
- * store_resolution_result - Store completed DNS resolution result
- * @dns: DNS resolver instance
- * @req: Request being completed
- * @result: Resolution result from getaddrinfo (ownership transferred)
- * @error: Error code from getaddrinfo (0 on success)
- *
- * Thread-safe: Must be called with mutex locked
- */
 void
 store_resolution_result (struct SocketDNS_T *dns,
                          struct SocketDNS_Request_T *req,
@@ -1350,17 +852,6 @@ store_resolution_result (struct SocketDNS_T *dns,
     }
 }
 
-/**
- * prepare_local_hints - Prepare local hints copy with request-specific flags
- * @local_hints: Output - local hints structure to initialize
- * @base_hints: Base hints to copy from (read-only)
- * @req: Request determining flags (read-only)
- *
- * Thread-safe: Yes - no shared state
- *
- * Copies base hints and adds AI_PASSIVE flag when host is NULL (wildcard
- * bind).
- */
 void
 prepare_local_hints (struct addrinfo *local_hints,
                      const struct addrinfo *base_hints,
@@ -1373,16 +864,6 @@ prepare_local_hints (struct addrinfo *local_hints,
     }
 }
 
-/**
- * handle_resolution_result - Handle post-resolution logic under mutex
- * @dns: DNS resolver instance
- * @req: Request to update
- * @result: Resolution result (may be freed if timed out)
- * @res: Resolution error code (may be overridden if timed out)
- * Thread-safe: Locks mutex internally.
- * Checks for timeout after resolution, frees result if timed out, stores
- * result.
- */
 void
 handle_resolution_result (struct SocketDNS_T *dns,
                           struct SocketDNS_Request_T *req,
@@ -1401,20 +882,7 @@ handle_resolution_result (struct SocketDNS_T *dns,
   store_resolution_result (dns, req, result, res);
 }
 
-/**
- * invoke_callback - Invoke completion callback if provided
- * @dns: DNS resolver instance
- * @req: Completed request
- *
- * Thread-safe: Acquires mutex briefly to safely extract callback info,
- * releases before invoking callback (which may take arbitrary time),
- * then re-acquires to clear result pointer.
- *
- * Security: Callback receives ownership of result and callback pointer is
- * cleared after invocation to prevent use-after-free or double invocation.
- * Both result and callback are NULLed post-invoke. SocketDNS_getresult()
- * returns NULL if callback was provided (ownership transferred).
- */
+/* Security: Clears callback after invocation to prevent double-invoke or use-after-free */
 void
 invoke_callback (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 {
@@ -1451,20 +919,6 @@ invoke_callback (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
   pthread_mutex_unlock (&dns->mutex);
 }
 
-/**
- * check_pre_processing_timeout - Check timeout before starting DNS resolution
- * processing
- * @dns: DNS resolver instance
- * @req: Request to check
- *
- * Returns: 1 if timed out (marked and signaled), 0 if should proceed
- * Thread-safe: Locks mutex internally, caller does not need to hold it
- *
- * Acquires mutex, checks timeout using request_timed_out(), marks/signals if
- * timed out. Unlocks mutex before returning. Prevents race with
- * SocketDNS_request_settimeout(). Directly calls mark_request_timeout() to
- * avoid deadlock (already holds mutex).
- */
 static int
 check_pre_processing_timeout (struct SocketDNS_T *dns,
                               struct SocketDNS_Request_T *req)
@@ -1480,17 +934,6 @@ check_pre_processing_timeout (struct SocketDNS_T *dns,
   return 0;
 }
 
-/**
- * process_single_request - Process one DNS resolution request
- * @dns: DNS resolver instance
- * @req: Request to process
- * @base_hints: Base getaddrinfo hints structure
- *
- * Performs DNS resolution for one request: timeout check, hints prep,
- * resolution, result handling, callback invocation.
- * Thread-safe: No - called from worker thread, uses mutex for shared state.
- * @see check_pre_processing_timeout() for initial timeout check.
- */
 void
 process_single_request (struct SocketDNS_T *dns,
                         struct SocketDNS_Request_T *req,
@@ -1511,15 +954,7 @@ process_single_request (struct SocketDNS_T *dns,
 }
 
 #ifdef __linux__
-/**
- * apply_custom_resolver_config - Apply custom nameservers/search domains
- * @res_state: Thread-local resolver state
- * @dns: DNS resolver instance (must hold mutex when calling)
- *
- * Security: Supports both IPv4 and IPv6 nameservers using inet_pton()
- * for safe address parsing. IPv6 addresses use the resolver extension
- * structure (_u._ext.nsaddrs).
- */
+/* Security: Uses inet_pton() for safe address parsing */
 static void
 apply_custom_resolver_config (struct __res_state *res_state,
                               struct SocketDNS_T *dns)
@@ -1596,14 +1031,6 @@ apply_custom_resolver_config (struct __res_state *res_state,
 }
 #endif
 
-/**
- * worker_thread - Worker thread for DNS resolution
- * @arg: DNS resolver instance
- * Returns: NULL
- * Worker thread that processes DNS resolution requests from queue.
- * Blocks waiting for requests, performs resolution, stores results.
- * Thread-safe: Uses mutex/cond for synchronization
- */
 void *
 worker_thread (void *arg)
 {
