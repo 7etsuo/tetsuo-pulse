@@ -922,6 +922,346 @@ TEST (dtls_handshake_metrics)
 #endif
 }
 
+/* ==================== Edge Case Tests ==================== */
+
+TEST (dtls_cookie_lifetime_constant)
+{
+#if SOCKET_HAS_TLS
+  /* Verify cookie lifetime constant is defined and reasonable */
+  ASSERT (SOCKET_DTLS_COOKIE_LIFETIME_SEC > 0);
+  ASSERT (SOCKET_DTLS_COOKIE_LIFETIME_SEC <= 300); /* Max 5 minutes */
+
+  /* Default is 60 seconds per implementation */
+  ASSERT_EQ (SOCKET_DTLS_COOKIE_LIFETIME_SEC, 60);
+#else
+  (void)0;
+#endif
+}
+
+TEST (dtls_cookie_secret_len)
+{
+#if SOCKET_HAS_TLS
+  /* Cookie secret should be at least 32 bytes for HMAC-SHA256 */
+  ASSERT (SOCKET_DTLS_COOKIE_SECRET_LEN >= 32);
+#else
+  (void)0;
+#endif
+}
+
+TEST (dtls_session_timeout_default)
+{
+#if SOCKET_HAS_TLS
+  /* Verify session timeout constant (for session resumption) */
+  ASSERT (SOCKET_DTLS_SESSION_TIMEOUT_DEFAULT > 0);
+  /* Typical default is 300 seconds (5 minutes) */
+  ASSERT_EQ (SOCKET_DTLS_SESSION_TIMEOUT_DEFAULT, 300);
+#else
+  (void)0;
+#endif
+}
+
+TEST (dtls_max_retransmits)
+{
+#if SOCKET_HAS_TLS
+  /* Verify max retransmits constant exists */
+  ASSERT (SOCKET_DTLS_MAX_RETRANSMITS > 0);
+  /* RFC 6347 recommends exponential backoff with max attempts */
+  ASSERT (SOCKET_DTLS_MAX_RETRANSMITS <= 20);
+#else
+  (void)0;
+#endif
+}
+
+TEST (dtls_initial_timeout)
+{
+#if SOCKET_HAS_TLS
+  /* Verify initial handshake timeout */
+  ASSERT (SOCKET_DTLS_INITIAL_TIMEOUT_MS > 0);
+  /* Typical initial timeout is 1 second */
+  ASSERT (SOCKET_DTLS_INITIAL_TIMEOUT_MS >= 500);
+  ASSERT (SOCKET_DTLS_INITIAL_TIMEOUT_MS <= 5000);
+#else
+  (void)0;
+#endif
+}
+
+TEST (dtls_max_record_size)
+{
+#if SOCKET_HAS_TLS
+  /* DTLS max record size per RFC 6347 */
+  ASSERT (SOCKET_DTLS_MAX_RECORD_SIZE > 0);
+  /* Maximum is 16KB + overhead */
+  ASSERT (SOCKET_DTLS_MAX_RECORD_SIZE <= 16384 + 256);
+#else
+  (void)0;
+#endif
+}
+
+TEST (dtls_record_overhead)
+{
+#if SOCKET_HAS_TLS
+  /* DTLS record layer overhead (header + MAC + padding) */
+  ASSERT (SOCKET_DTLS_RECORD_OVERHEAD > 0);
+  /* Typical overhead is 64 bytes or less */
+  ASSERT (SOCKET_DTLS_RECORD_OVERHEAD <= 128);
+#else
+  (void)0;
+#endif
+}
+
+TEST (dtls_context_session_cache_config)
+{
+#if SOCKET_HAS_TLS
+  const char *cert_file = "test_dtls_cache_edge.crt";
+  const char *key_file = "test_dtls_cache_edge.key";
+  SocketDTLSContext_T ctx = NULL;
+
+  if (generate_dtls_test_certs (cert_file, key_file) != 0)
+    return;
+
+  TRY
+  {
+    ctx = SocketDTLSContext_new_server (cert_file, key_file, NULL);
+    ASSERT_NOT_NULL (ctx);
+
+    /* Enable session cache with specific parameters */
+    size_t max_sessions = 50;
+    size_t timeout_sec = 120;
+    SocketDTLSContext_enable_session_cache (ctx, max_sessions, timeout_sec);
+
+    /* Verify cache is operational (stats should be zero initially) */
+    size_t hits = 0, misses = 0, stores = 0;
+    SocketDTLSContext_get_cache_stats (ctx, &hits, &misses, &stores);
+    ASSERT_EQ (hits, 0);
+    ASSERT_EQ (misses, 0);
+    ASSERT_EQ (stores, 0);
+
+    SocketDTLSContext_free (&ctx);
+  }
+  FINALLY
+  {
+    if (ctx)
+      SocketDTLSContext_free (&ctx);
+    remove_dtls_test_certs (cert_file, key_file);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+TEST (dtls_handshake_state_transitions)
+{
+#if SOCKET_HAS_TLS
+  SocketDgram_T socket = NULL;
+  SocketDTLSContext_T ctx = NULL;
+
+  TRY
+  {
+    socket = SocketDgram_new (AF_INET, 0);
+    ctx = SocketDTLSContext_new_client (NULL);
+
+    /* Initial state before enable */
+    DTLSHandshakeState initial_state = SocketDTLS_get_last_state (socket);
+    ASSERT_EQ (initial_state, DTLS_HANDSHAKE_NOT_STARTED);
+
+    /* Enable DTLS */
+    SocketDTLS_enable (socket, ctx);
+
+    /* State after enable but before handshake attempt */
+    DTLSHandshakeState post_enable = SocketDTLS_get_last_state (socket);
+    ASSERT (post_enable == DTLS_HANDSHAKE_NOT_STARTED
+            || post_enable == DTLS_HANDSHAKE_IN_PROGRESS);
+
+    /* Attempt a handshake step (will fail on unconnected socket) */
+    TRY
+    {
+      DTLSHandshakeState step_state = SocketDTLS_handshake (socket);
+      /* State should be tracked */
+      ASSERT_EQ (SocketDTLS_get_last_state (socket), step_state);
+    }
+    EXCEPT (SocketDTLS_Failed) { /* Expected */ }
+    EXCEPT (SocketDTLS_HandshakeFailed) { /* Expected */ }
+    END_TRY;
+  }
+  FINALLY
+  {
+    if (socket)
+      SocketDgram_free (&socket);
+    if (ctx)
+      SocketDTLSContext_free (&ctx);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+TEST (dtls_multiple_context_creation)
+{
+#if SOCKET_HAS_TLS
+  SocketDTLSContext_T ctx1 = NULL;
+  SocketDTLSContext_T ctx2 = NULL;
+  SocketDTLSContext_T ctx3 = NULL;
+
+  TRY
+  {
+    /* Create multiple client contexts - should not interfere */
+    ctx1 = SocketDTLSContext_new_client (NULL);
+    ASSERT_NOT_NULL (ctx1);
+
+    ctx2 = SocketDTLSContext_new_client (NULL);
+    ASSERT_NOT_NULL (ctx2);
+
+    ctx3 = SocketDTLSContext_new_client (NULL);
+    ASSERT_NOT_NULL (ctx3);
+
+    /* All should be independent */
+    ASSERT (ctx1 != ctx2);
+    ASSERT (ctx2 != ctx3);
+    ASSERT (ctx1 != ctx3);
+
+    /* Configure one, verify others unaffected */
+    SocketDTLSContext_set_mtu (ctx1, 1000);
+    ASSERT_EQ (SocketDTLSContext_get_mtu (ctx1), 1000);
+    ASSERT_EQ (SocketDTLSContext_get_mtu (ctx2),
+               (size_t)SOCKET_DTLS_DEFAULT_MTU);
+    ASSERT_EQ (SocketDTLSContext_get_mtu (ctx3),
+               (size_t)SOCKET_DTLS_DEFAULT_MTU);
+  }
+  FINALLY
+  {
+    if (ctx1)
+      SocketDTLSContext_free (&ctx1);
+    if (ctx2)
+      SocketDTLSContext_free (&ctx2);
+    if (ctx3)
+      SocketDTLSContext_free (&ctx3);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+TEST (dtls_mtu_boundary_values)
+{
+#if SOCKET_HAS_TLS
+  SocketDTLSContext_T ctx = NULL;
+
+  TRY
+  {
+    ctx = SocketDTLSContext_new_client (NULL);
+    ASSERT_NOT_NULL (ctx);
+
+    /* Test minimum MTU boundary */
+    SocketDTLSContext_set_mtu (ctx, SOCKET_DTLS_MIN_MTU);
+    ASSERT_EQ (SocketDTLSContext_get_mtu (ctx), (size_t)SOCKET_DTLS_MIN_MTU);
+
+    /* Test maximum MTU boundary */
+    SocketDTLSContext_set_mtu (ctx, SOCKET_DTLS_MAX_MTU);
+    ASSERT_EQ (SocketDTLSContext_get_mtu (ctx), (size_t)SOCKET_DTLS_MAX_MTU);
+
+    /* Test MTU just above minimum */
+    SocketDTLSContext_set_mtu (ctx, SOCKET_DTLS_MIN_MTU + 1);
+    ASSERT_EQ (SocketDTLSContext_get_mtu (ctx),
+               (size_t)(SOCKET_DTLS_MIN_MTU + 1));
+
+    /* Test MTU just below maximum */
+    SocketDTLSContext_set_mtu (ctx, SOCKET_DTLS_MAX_MTU - 1);
+    ASSERT_EQ (SocketDTLSContext_get_mtu (ctx),
+               (size_t)(SOCKET_DTLS_MAX_MTU - 1));
+  }
+  FINALLY
+  {
+    if (ctx)
+      SocketDTLSContext_free (&ctx);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+TEST (dtls_socket_mtu_inheritance)
+{
+#if SOCKET_HAS_TLS
+  SocketDgram_T socket = NULL;
+  SocketDTLSContext_T ctx = NULL;
+
+  TRY
+  {
+    socket = SocketDgram_new (AF_INET, 0);
+    ctx = SocketDTLSContext_new_client (NULL);
+    ASSERT_NOT_NULL (ctx);
+
+    /* Set custom MTU on context */
+    SocketDTLSContext_set_mtu (ctx, 1200);
+
+    /* Enable DTLS - socket should inherit MTU from context */
+    SocketDTLS_enable (socket, ctx);
+
+    /* Socket should have inherited MTU */
+    ASSERT_EQ (SocketDTLS_get_mtu (socket), 1200);
+
+    /* Override with socket-specific MTU */
+    SocketDTLS_set_mtu (socket, 1100);
+    ASSERT_EQ (SocketDTLS_get_mtu (socket), 1100);
+
+    /* Context MTU should be unchanged */
+    ASSERT_EQ (SocketDTLSContext_get_mtu (ctx), 1200);
+  }
+  FINALLY
+  {
+    if (socket)
+      SocketDgram_free (&socket);
+    if (ctx)
+      SocketDTLSContext_free (&ctx);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+TEST (dtls_cookie_rotation_multiple)
+{
+#if SOCKET_HAS_TLS
+  const char *cert_file = "test_dtls_rotation.crt";
+  const char *key_file = "test_dtls_rotation.key";
+  SocketDTLSContext_T ctx = NULL;
+
+  if (generate_dtls_test_certs (cert_file, key_file) != 0)
+    return;
+
+  TRY
+  {
+    ctx = SocketDTLSContext_new_server (cert_file, key_file, NULL);
+    ASSERT_NOT_NULL (ctx);
+
+    /* Enable cookie exchange */
+    SocketDTLSContext_enable_cookie_exchange (ctx);
+    ASSERT_EQ (SocketDTLSContext_has_cookie_exchange (ctx), 1);
+
+    /* Multiple rotations should be safe */
+    for (int i = 0; i < 10; i++)
+      {
+        SocketDTLSContext_rotate_cookie_secret (ctx);
+        ASSERT_EQ (SocketDTLSContext_has_cookie_exchange (ctx), 1);
+      }
+  }
+  FINALLY
+  {
+    if (ctx)
+      SocketDTLSContext_free (&ctx);
+    remove_dtls_test_certs (cert_file, key_file);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
 #endif /* SOCKET_HAS_TLS */
 
 /* ==================== Main ==================== */
