@@ -4,17 +4,7 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * SocketHTTP1-chunked.c - HTTP/1.1 Chunked Transfer Encoding
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
- *
- * Implements RFC 9112 Section 7.1 chunked transfer coding:
- * - Chunk encoding for requests/responses
- * - Chunk decoding for body reading
- * - Trailer header support
- */
+/* SocketHTTP1-chunked.c - HTTP/1.1 Chunked Transfer Encoding (RFC 9112 Section 7.1) */
 
 #include "http/SocketHTTP1-private.h"
 #include "http/SocketHTTP1.h"
@@ -23,15 +13,6 @@
 #include <stdio.h>
 #include <string.h>
 
-/* ============================================================================
- * Constants
- * ============================================================================
- */
-
-/**
- * CRLF sequence as byte array (not null-terminated - wire format).
- * Uses shared HTTP1_CRLF_LEN from SocketHTTP1-private.h.
- */
 static const unsigned char HTTP1_CRLF_BYTES[HTTP1_CRLF_LEN] = { '\r', '\n' };
 
 /** Zero chunk size line "0\r\n" as byte array (not null-terminated - wire
@@ -69,15 +50,6 @@ static const struct
 #define HTTP1_NUM_FORBIDDEN_TRAILERS                                          \
   (sizeof (forbidden_trailers) / sizeof (forbidden_trailers[0]))
 
-/**
- * is_forbidden_trailer - Check if header name is forbidden in trailers
- * @name: Header name (null-terminated)
- *
- * Returns: 1 if forbidden (Transfer-Encoding, Content-Length, Trailer),
- *          0 otherwise
- *
- * Uses pre-computed lengths for efficiency (no strlen in loop).
- */
 static int
 is_forbidden_trailer (const char *name, size_t name_len)
 {
@@ -94,11 +66,6 @@ is_forbidden_trailer (const char *name, size_t name_len)
   return 0;
 }
 
-/* ============================================================================
- * CRLF Handling
- * ============================================================================
- */
-
 typedef enum
 {
   CRLF_OK,
@@ -106,15 +73,6 @@ typedef enum
   CRLF_INVALID
 } crlf_result_t;
 
-/**
- * skip_crlf - Skip CRLF or bare LF leniently
- * @p: Input position (updated on success)
- * @end: End of input
- *
- * Advances past \r?\n , handling both CRLF and bare LF.
- * Returns CRLF_OK on success, INCOMPLETE if needs more data,
- * INVALID if malformed.
- */
 static crlf_result_t
 skip_crlf (const char **p, const char *end)
 {
@@ -143,18 +101,6 @@ skip_crlf (const char **p, const char *end)
     return CRLF_INVALID;
 }
 
-/* ============================================================================
- * Internal Helper Functions
- * ============================================================================
- */
-
-/**
- * mark_body_complete - Mark parser body as complete
- * @parser: Parser instance
- *
- * Sets all state flags indicating body reception is finished.
- * Centralizes the repeated pattern of marking completion.
- */
 static inline void
 mark_body_complete (SocketHTTP1_Parser_T parser)
 {
@@ -163,16 +109,6 @@ mark_body_complete (SocketHTTP1_Parser_T parser)
   parser->internal_state = HTTP1_PS_COMPLETE;
 }
 
-/**
- * complete_trailer_header - Finalize and add a trailer header to the collection
- * @parser: Parser instance with name_buf and value_buf populated
- *
- * Terminates the value buffer, validates the trailer header name,
- * checks size limits, and adds to trailers collection.
- * Resets buffers for next header.
- *
- * Returns: HTTP1_OK on success, or specific error code
- */
 static SocketHTTP1_Result
 complete_trailer_header (SocketHTTP1_Parser_T parser)
 {
@@ -219,17 +155,6 @@ complete_trailer_header (SocketHTTP1_Parser_T parser)
   return HTTP1_OK;
 }
 
-/**
- * copy_data - Copy data up to limits, advancing positions
- * @input_pos: Input position (updated)
- * @input_end: End of input
- * @output_pos: Output position (updated)
- * @output_remaining: Remaining output space (updated)
- * @max_bytes: Maximum bytes to copy from source
- *
- * Copies min(available input, output space, max_bytes).
- * Returns bytes copied.
- */
 static size_t
 copy_data (const char **input_pos, const char *input_end, char **output_pos,
            size_t *output_remaining, size_t max_bytes)
@@ -252,17 +177,6 @@ copy_data (const char **input_pos, const char *input_end, char **output_pos,
   return to_copy;
 }
 
-/**
- * update_progress - Update consumed/written progress tracking
- * @input_start: Start of input buffer
- * @input_pos: Current input position
- * @output_start: Start of output buffer
- * @output_pos: Current output position
- * @consumed: Output - bytes consumed from input
- * @written: Output - bytes written to output
- *
- * Calculates and stores progress offsets for both input and output.
- */
 static inline void
 update_progress (const char *const input_start, const char *const input_pos,
                  const char *const output_start, const char *const output_pos,
@@ -271,11 +185,6 @@ update_progress (const char *const input_start, const char *const input_pos,
   *consumed = (size_t)(input_pos - input_start);
   *written = (size_t)(output_pos - output_start);
 }
-
-/* ============================================================================
- * Chunk Encoding
- * ============================================================================
- */
 
 size_t
 SocketHTTP1_chunk_encode_size (size_t data_len)
@@ -386,25 +295,6 @@ SocketHTTP1_chunk_final (char *output, size_t output_size,
   return (ssize_t)(p - output);
 }
 
-/* ============================================================================
- * Body Reading - Content-Length Mode
- * ============================================================================
- */
-
-/**
- * read_body_content_length - Read body with known Content-Length
- * @parser: Parser instance
- * @input: Input buffer
- * @input_len: Input length
- * @consumed: Output - bytes consumed
- * @output: Output buffer
- * @output_len: Output buffer size
- * @written: Output - bytes written
- *
- * Copies data directly from input to output, tracking remaining bytes.
- *
- * Returns: HTTP1_OK when complete, HTTP1_INCOMPLETE if more data needed
- */
 static SocketHTTP1_Result
 read_body_content_length (SocketHTTP1_Parser_T parser, const char *const input,
                           size_t input_len, size_t *consumed, char *output,
@@ -436,21 +326,6 @@ read_body_content_length (SocketHTTP1_Parser_T parser, const char *const input,
   return HTTP1_INCOMPLETE;
 }
 
-/**
- * read_body_until_close - Read body until connection closes
- * @parser: Parser instance (unused - body mode already determined)
- * @input: Input buffer
- * @input_len: Input length
- * @consumed: Output - bytes consumed
- * @output: Output buffer
- * @output_len: Output buffer size
- * @written: Output - bytes written
- *
- * HTTP/1.0 style - reads all available data.
- * Never returns HTTP1_OK; caller must detect connection close.
- *
- * Returns: HTTP1_INCOMPLETE always (complete only on connection close)
- */
 static SocketHTTP1_Result
 read_body_until_close (SocketHTTP1_Parser_T parser, const char *const input,
                        size_t input_len, size_t *consumed, char *output,
@@ -469,23 +344,6 @@ read_body_until_close (SocketHTTP1_Parser_T parser, const char *const input,
   return HTTP1_INCOMPLETE;
 }
 
-/* ============================================================================
- * Chunk Size Parsing
- * ============================================================================
- */
-
-/**
- * parse_chunk_size - Parse chunk size line from input
- * @input: Input buffer (points to start of chunk size line)
- * @len: Available input length
- * @line_len: Output - total line length including CRLF
- * @max_ext_len: Maximum allowed chunk extension length
- *
- * Parses hex chunk size, skips optional chunk extensions, expects CRLF.
- * Tolerates bare LF for lenient parsing.
- *
- * Returns: Chunk size on success, -1 on error, -2 if incomplete
- */
 static int64_t
 parse_chunk_size (const char *const input, size_t len, size_t *line_len,
                   size_t max_ext_len)
@@ -544,22 +402,6 @@ parse_chunk_size (const char *const input, size_t len, size_t *line_len,
   return (int64_t)size;
 }
 
-/* ============================================================================
- * Chunked Body Reading - State Handlers
- * ============================================================================
- */
-
-/**
- * handle_chunk_size_state - Process HTTP1_PS_CHUNK_SIZE state
- * @parser: Parser instance
- * @p: Current input position pointer (updated on return)
- * @end: End of input buffer
- *
- * Parses chunk size line and transitions to appropriate next state.
- *
- * Returns: HTTP1_OK to continue, HTTP1_INCOMPLETE if need more data,
- *          or error code
- */
 static SocketHTTP1_Result
 handle_chunk_size_state (SocketHTTP1_Parser_T parser, const char **p,
                          const char *end)
@@ -611,18 +453,6 @@ handle_chunk_size_state (SocketHTTP1_Parser_T parser, const char **p,
   return HTTP1_OK;
 }
 
-/**
- * handle_chunk_data_state - Process HTTP1_PS_CHUNK_DATA state
- * @parser: Parser instance
- * @p: Current input position pointer (updated on return)
- * @end: End of input buffer
- * @out: Current output position pointer (updated on return)
- * @out_remaining: Remaining output space pointer (updated on return)
- *
- * Copies chunk data from input to output.
- *
- * Returns: HTTP1_OK to continue, HTTP1_INCOMPLETE if need more data/space
- */
 static SocketHTTP1_Result
 handle_chunk_data_state (SocketHTTP1_Parser_T parser, const char **p,
                          const char *end, char **out, size_t *out_remaining)
@@ -640,16 +470,6 @@ handle_chunk_data_state (SocketHTTP1_Parser_T parser, const char **p,
   return HTTP1_INCOMPLETE;
 }
 
-/**
- * handle_chunk_crlf_states - Process chunk CRLF states
- * @parser: Parser instance
- * @p: Current input position pointer (updated on return)
- * @end: End of input buffer
- *
- * Handles HTTP1_PS_CHUNK_DATA_CR and HTTP1_PS_CHUNK_DATA_LF states.
- *
- * Returns: HTTP1_OK to continue, or error code
- */
 static SocketHTTP1_Result
 handle_chunk_crlf_states (SocketHTTP1_Parser_T parser, const char **p,
                           const char *end)
@@ -668,26 +488,6 @@ handle_chunk_crlf_states (SocketHTTP1_Parser_T parser, const char **p,
 /* Removed unused handle_trailer_states - trailers now parsed fully inline in
  * state machine */
 
-/* ============================================================================
- * Chunked Body Reading - Main Function
- * ============================================================================
- */
-
-/**
- * read_body_chunked - Read chunked transfer encoded body
- * @parser: Parser instance
- * @input: Input buffer
- * @input_len: Input length
- * @consumed: Output - bytes consumed from input
- * @output: Output buffer for decoded data
- * @output_len: Output buffer size
- * @written: Output - bytes written to output
- *
- * Processes chunked encoding state machine, outputting decoded body data.
- *
- * Returns: HTTP1_OK when complete, HTTP1_INCOMPLETE if more needed,
- *          or error code
- */
 static SocketHTTP1_Result
 read_body_chunked (SocketHTTP1_Parser_T parser, const char *const input,
                    size_t input_len, size_t *consumed, char *output,
@@ -881,11 +681,6 @@ read_body_chunked (SocketHTTP1_Parser_T parser, const char *const input,
 
   return HTTP1_INCOMPLETE;
 }
-
-/* ============================================================================
- * Public Body Reading API
- * ============================================================================
- */
 
 SocketHTTP1_Result
 SocketHTTP1_Parser_read_body (SocketHTTP1_Parser_T parser, const char *input,

@@ -5,16 +5,7 @@
  */
 
 /**
- * SocketHTTPClient.c - HTTP Client Core Implementation
- *
- * Part of the Socket Library
- *
- * Implements client lifecycle, configuration, and simple synchronous API.
- * Leverages existing infrastructure:
- * - SocketHappyEyeballs for connection establishment
- * - SocketHTTP1 for HTTP/1.1 parsing/serialization
- * - SocketHTTP2 for HTTP/2 protocol
- * - SocketHTTP for headers, URI, methods
+ * SocketHTTPClient.c - HTTP Client with HTTP/1.1 and HTTP/2 Support
  */
 
 #include <assert.h>
@@ -32,20 +23,6 @@
 #include "http/SocketHTTPClient.h"
 #include "socket/Socket.h"
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPClient);
-
-/* ============================================================================
- * Centralized Exception Infrastructure
- * ============================================================================
- *
- * Uses centralized exception handling from SocketUtil.h.
- * The thread-local exception is declared here; error messages use the
- * shared socket_error_buf from SocketUtil.h.
- */
-
-/* ============================================================================
- * Exception Definitions
- * ============================================================================
- */
 
 const Except_T SocketHTTPClient_Failed
     = { &SocketHTTPClient_Failed, "HTTP client operation failed" };
@@ -66,11 +43,6 @@ const Except_T SocketHTTPClient_TooManyRedirects
 const Except_T SocketHTTPClient_ResponseTooLarge
     = { &SocketHTTPClient_ResponseTooLarge, "Response body too large" };
 
-/* ============================================================================
- * Error String Table
- * ============================================================================
- */
-
 static const char *error_strings[]
     = { [HTTPCLIENT_OK] = "Success",
         [HTTPCLIENT_ERROR_DNS] = "DNS resolution failed",
@@ -84,11 +56,6 @@ static const char *error_strings[]
         [HTTPCLIENT_ERROR_RESPONSE_TOO_LARGE] = "Response body too large",
         [HTTPCLIENT_ERROR_CANCELLED] = "Request cancelled",
         [HTTPCLIENT_ERROR_OUT_OF_MEMORY] = "Out of memory" };
-
-/* ============================================================================
- * Error Retryability
- * ============================================================================
- */
 
 /**
  * SocketHTTPClient_error_is_retryable - Check if error code is retryable
@@ -139,40 +106,17 @@ static int execute_request_internal (SocketHTTPClient_T client,
                                      SocketHTTPClient_Response *response,
                                      int redirect_count, int auth_retry_count);
 
-/* ============================================================================
- * Internal: Common Helper Macros and Functions
- * ============================================================================
- */
-
-/**
- * get_effective_auth - Get effective auth (request override or client default)
- * @client: HTTP client
- * @req: Request with optional auth override
- *
- * Returns: Auth to use, or NULL if none configured
- */
 static inline SocketHTTPClient_Auth *
 get_effective_auth (SocketHTTPClient_T client, SocketHTTPClient_Request_T req)
 {
   return req->auth != NULL ? req->auth : client->default_auth;
 }
 
-/**
- * get_path_or_root - Get URI path or "/" if not set
- * @uri: URI to extract path from
- *
- * Returns: Path string, never NULL
- */
 static inline const char *
 get_path_or_root (const SocketHTTP_URI *uri)
 {
   return uri->path != NULL ? uri->path : "/";
 }
-
-/* ============================================================================
- * Configuration Defaults
- * ============================================================================
- */
 
 void
 SocketHTTPClient_config_defaults (SocketHTTPClient_Config *config)
@@ -230,11 +174,6 @@ SocketHTTPClient_config_defaults (SocketHTTPClient_Config *config)
   /* Security */
   config->enforce_samesite = HTTPCLIENT_DEFAULT_ENFORCE_SAMESITE;
 }
-
-/* ============================================================================
- * Client Lifecycle
- * ============================================================================
- */
 
 SocketHTTPClient_T
 SocketHTTPClient_new (const SocketHTTPClient_Config *config)
@@ -358,26 +297,6 @@ SocketHTTPClient_free (SocketHTTPClient_T *client)
   *client = NULL;
 }
 
-/* ============================================================================
- * Safe Socket I/O Helpers - Common exception handling for send/recv
- * ============================================================================
- */
-
-/**
- * safe_socket_send - Send data with exception handling and connection state
- * update
- * @conn: Connection entry (updated on close/error)
- * @data: Data to send
- * @len: Length of data
- * @op_desc: Description for error messages (e.g., "send headers")
- *
- * Returns: Number of bytes sent, or -1 on error
- * Thread-safe: No (assumes single-threaded access to conn)
- *
- * Handles Socket_Closed by setting conn->closed=1 and logging.
- * Handles Socket_Failed by logging errno details.
- * Uses Socket_send which routes through TLS if enabled.
- */
 static ssize_t
 safe_socket_send (HTTPPoolEntry *conn, const void *data, size_t len,
                   const char *op_desc)
@@ -403,16 +322,6 @@ safe_socket_send (HTTPPoolEntry *conn, const void *data, size_t len,
   return sent;
 }
 
-/**
- * safe_socket_recv - Receive data with exception handling
- * @conn: Connection entry (updated on close)
- * @buf: Output buffer
- * @size: Buffer size
- * @n: Output bytes received
- *
- * Returns: 0 on success (n set), -1 on closed/error
- * Thread-safe: No
- */
 static int
 safe_socket_recv (HTTPPoolEntry *conn, char *buf, size_t size, ssize_t *n)
 {
@@ -435,18 +344,6 @@ safe_socket_recv (HTTPPoolEntry *conn, char *buf, size_t size, ssize_t *n)
   return 0;
 }
 
-/* ============================================================================
- * Internal: HTTP/1.1 Request Helpers
- * ============================================================================
- */
-
-/**
- * build_http1_request - Build HTTP/1.1 request structure for serialization
- * @req: Client request
- * @http_req: Output HTTP request structure
- *
- * Initializes the HTTP request structure from client request data.
- */
 static void
 build_http1_request (SocketHTTPClient_Request_T req,
                      SocketHTTP_Request *http_req)
@@ -466,13 +363,6 @@ build_http1_request (SocketHTTPClient_Request_T req,
   http_req->content_length = (int64_t)req->body_len;
 }
 
-/**
- * send_http1_headers - Serialize and send HTTP/1.1 request headers
- * @conn: Pool connection entry
- * @http_req: HTTP request to serialize
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 send_http1_headers (HTTPPoolEntry *conn, const SocketHTTP_Request *http_req)
 {
@@ -504,15 +394,6 @@ send_http1_headers (HTTPPoolEntry *conn, const SocketHTTP_Request *http_req)
   return 0;
 }
 
-/**
- * send_http1_body - Send HTTP/1.1 request body
- * @conn: Pool connection entry
- * @body: Body data
- * @body_len: Body length
- *
- * Returns: 0 on success, -1 on error
- * Note: Returns 0 if body is NULL or empty.
- */
 static int
 send_http1_body (HTTPPoolEntry *conn, const void *body, size_t body_len)
 {
@@ -547,14 +428,6 @@ typedef struct
   Arena_T arena;
 } HTTP1BodyAccumulator;
 
-/**
- * check_body_size_limit - Check if adding len bytes would exceed limit
- * @acc: Body accumulator
- * @len: Bytes to add
- * @potential_size: Output total size if allowed
- *
- * Returns: 0 if OK, -2 if limit exceeded
- */
 static int
 check_body_size_limit (HTTP1BodyAccumulator *acc, size_t len,
                        size_t *potential_size)
@@ -568,13 +441,6 @@ check_body_size_limit (HTTP1BodyAccumulator *acc, size_t len,
   return 0;
 }
 
-/**
- * calculate_new_capacity - Calculate new buffer capacity for growth
- * @acc: Body accumulator
- * @needed_size: Minimum required size
- *
- * Returns: New capacity, or 0 on overflow
- */
 static size_t
 calculate_new_capacity (HTTP1BodyAccumulator *acc, size_t needed_size)
 {
@@ -669,14 +535,6 @@ grow_body_buffer (HTTP1BodyAccumulator *acc, size_t needed_size)
   return httpclient_grow_body_buffer (acc->arena, &acc->body_buf, &acc->body_capacity, &acc->total_body, needed_size, acc->max_size);
 }
 
-/**
- * accumulate_body_chunk - Accumulate body data into buffer
- * @acc: Body accumulator
- * @data: Data to accumulate
- * @len: Data length
- *
- * Returns: 0 on success, -1 on memory failure, -2 on size limit exceeded
- */
 static int
 accumulate_body_chunk (HTTP1BodyAccumulator *acc, const char *data, size_t len)
 {
@@ -704,16 +562,6 @@ accumulate_body_chunk (HTTP1BodyAccumulator *acc, const char *data, size_t len)
   return 0;
 }
 
-/**
- * read_http1_body_data - Read body data from parser
- * @conn: Pool connection entry
- * @buf: Input buffer with data to parse
- * @buf_len: Data length in buffer
- * @consumed: Offset into buffer where unparsed data starts
- * @acc: Body accumulator
- *
- * Returns: 0 on success, -1 on error, -2 on response size limit exceeded
- */
 static int
 read_http1_body_data (HTTPPoolEntry *conn, const char *buf, size_t buf_len,
                       size_t *consumed, HTTP1BodyAccumulator *acc)
@@ -756,15 +604,6 @@ read_http1_body_data (HTTPPoolEntry *conn, const char *buf, size_t buf_len,
   return 0;
 }
 
-/**
- * recv_http1_chunk - Receive data from socket with exception handling
- * @conn: Pool connection entry
- * @buf: Output buffer
- * @buf_size: Buffer size
- * @bytes_read: Output number of bytes read
- *
- * Returns: 0 on success, -1 on closed/error
- */
 static int
 recv_http1_chunk (HTTPPoolEntry *conn, char *buf, size_t buf_size,
                   ssize_t *bytes_read)
@@ -777,16 +616,6 @@ recv_http1_chunk (HTTPPoolEntry *conn, char *buf, size_t buf_size,
   return 0;
 }
 
-/**
- * parse_http1_chunk - Parse received data and accumulate body
- * @conn: Pool connection entry
- * @buf: Input buffer with received data
- * @buf_len: Buffer length
- * @parsed_resp: Pointer to parsed response (updated when headers complete)
- * @acc: Body accumulator
- *
- * Returns: 1 if complete, 0 if incomplete, -1 on parse error, -2 on size limit
- */
 static int
 parse_http1_chunk (HTTPPoolEntry *conn, const char *buf, size_t buf_len,
                    const SocketHTTP_Response **parsed_resp,
@@ -830,13 +659,6 @@ parse_http1_chunk (HTTPPoolEntry *conn, const char *buf, size_t buf_len,
   return 0;
 }
 
-/**
- * fill_response_struct - Fill response structure from parsed data
- * @response: Output response structure
- * @parsed_resp: Parsed HTTP response
- * @acc: Body accumulator
- * @resp_arena: Arena for response ownership
- */
 static void
 fill_response_struct (SocketHTTPClient_Response *response,
                       const SocketHTTP_Response *parsed_resp,
@@ -850,14 +672,6 @@ fill_response_struct (SocketHTTPClient_Response *response,
   response->arena = resp_arena;
 }
 
-/**
- * receive_http1_response - Receive and parse HTTP/1.1 response
- * @conn: Pool connection entry
- * @response: Output response structure
- * @max_response_size: Maximum response body size (0 = unlimited)
- *
- * Returns: 0 on success, -1 on error, -2 on response size limit exceeded
- */
 static int
 receive_http1_response (HTTPPoolEntry *conn,
                         SocketHTTPClient_Response *response,
@@ -915,26 +729,6 @@ receive_http1_response (HTTPPoolEntry *conn,
   return 0;
 }
 
-/* ============================================================================
- * Internal: Execute HTTP Request
- * ============================================================================
- */
-
-/**
- * execute_http1_request - Execute complete HTTP/1.1 request-response cycle
- * @conn: Pool connection entry
- * @req: Client request
- * @response: Output response
- * @max_response_size: Maximum response body size (0 = unlimited)
- *
- * Returns: 0 on success, -1 on error, -2 on response size limit exceeded
- *
- * Orchestrates the HTTP/1.1 request by calling helper functions:
- * 1. Build request structure
- * 2. Send headers
- * 3. Send body (if present)
- * 4. Receive response
- */
 static int
 execute_http1_request (HTTPPoolEntry *conn,
                        const SocketHTTPClient_Request_T req,
@@ -962,11 +756,6 @@ execute_http1_request (HTTPPoolEntry *conn,
   return receive_http1_response (conn, response, max_response_size);
 }
 
-/* ============================================================================
- * Internal: Request Header Helpers
- * ============================================================================
- */
-
 /**
  * hostname_safe - Validate hostname for control characters
  * @host: Hostname to validate
@@ -988,10 +777,6 @@ hostname_safe (const char *host, size_t len)
   return 1;
 }
 
-/**
- * add_host_header - Add Host header if not present
- * @req: Request to modify
- */
 static void
 add_host_header (SocketHTTPClient_Request_T req)
 {
@@ -1033,11 +818,6 @@ add_host_header (SocketHTTPClient_Request_T req)
   SocketHTTP_Headers_add (req->headers, "Host", host_header);
 }
 
-/**
- * add_accept_encoding_header - Add Accept-Encoding if auto_decompress enabled
- * @client: HTTP client
- * @req: Request to modify
- */
 static void
 add_accept_encoding_header (SocketHTTPClient_T client,
                             SocketHTTPClient_Request_T req)
@@ -1066,11 +846,6 @@ add_accept_encoding_header (SocketHTTPClient_T client,
     SocketHTTP_Headers_add (req->headers, "Accept-Encoding", encoding);
 }
 
-/**
- * add_standard_headers - Add standard headers (Host, User-Agent, etc.)
- * @client: HTTP client
- * @req: Request to modify
- */
 static void
 add_standard_headers (SocketHTTPClient_T client,
                       SocketHTTPClient_Request_T req)
@@ -1087,11 +862,6 @@ add_standard_headers (SocketHTTPClient_T client,
   add_accept_encoding_header (client, req);
 }
 
-/**
- * add_cookie_header - Add cookies from jar if present
- * @client: HTTP client
- * @req: Request to modify
- */
 static void
 add_cookie_header (SocketHTTPClient_T client, SocketHTTPClient_Request_T req)
 {
@@ -1109,14 +879,6 @@ add_cookie_header (SocketHTTPClient_T client, SocketHTTPClient_Request_T req)
     }
 }
 
-/**
- * add_initial_auth_header - Add authentication header for first request
- * @client: HTTP client
- * @req: Request to modify
- *
- * Adds Basic or Bearer auth on first request. Digest auth requires
- * a challenge first so is not added here.
- */
 static void
 add_initial_auth_header (SocketHTTPClient_T client,
                          SocketHTTPClient_Request_T req)
@@ -1144,10 +906,6 @@ add_initial_auth_header (SocketHTTPClient_T client,
     }
 }
 
-/**
- * add_content_length_header - Add Content-Length if body present
- * @req: Request to modify
- */
 static void
 add_content_length_header (SocketHTTPClient_Request_T req)
 {
@@ -1160,12 +918,6 @@ add_content_length_header (SocketHTTPClient_Request_T req)
   SocketHTTP_Headers_set (req->headers, "Content-Length", cl_header);
 }
 
-/**
- * store_response_cookies - Store Set-Cookie headers from response
- * @client: HTTP client
- * @req: Original request (for URI)
- * @response: Response containing Set-Cookie headers
- */
 static void
 store_response_cookies (SocketHTTPClient_T client,
                         SocketHTTPClient_Request_T req,
@@ -1194,17 +946,6 @@ store_response_cookies (SocketHTTPClient_T client,
     }
 }
 
-/* ============================================================================
- * Internal: 401 Authentication Retry Helpers
- * ============================================================================
- */
-
-/**
- * build_digest_auth_uri - Build URI string for digest auth
- * @req: Request with URI
- * @uri_str: Output buffer
- * @uri_size: Buffer size
- */
 static void
 build_digest_auth_uri (SocketHTTPClient_Request_T req, char *uri_str,
                        size_t uri_size)
@@ -1217,17 +958,6 @@ build_digest_auth_uri (SocketHTTPClient_Request_T req, char *uri_str,
     snprintf (uri_str, uri_size, "%s", path);
 }
 
-/**
- * try_digest_auth_retry - Attempt digest auth response to challenge
- * @req: Request with auth credentials
- * @client: HTTP client (for default auth)
- * @www_auth: WWW-Authenticate header value
- * @auth_retry_count: Current retry count
- * @auth_header: Output buffer for Authorization header
- * @auth_header_size: Buffer size
- *
- * Returns: 1 if should retry with auth_header, 0 otherwise
- */
 static int
 try_digest_auth_retry (SocketHTTPClient_Request_T req,
                        SocketHTTPClient_T client, const char *www_auth,
@@ -1261,17 +991,6 @@ try_digest_auth_retry (SocketHTTPClient_Request_T req,
   return 0;
 }
 
-/**
- * try_basic_auth_retry - Attempt basic auth when not already sent
- * @req: Request with auth credentials
- * @client: HTTP client (for default auth)
- * @www_auth: WWW-Authenticate header value
- * @auth_retry_count: Current retry count
- * @auth_header: Output buffer for Authorization header
- * @auth_header_size: Buffer size
- *
- * Returns: 1 if should retry with auth_header, 0 otherwise
- */
 static int
 try_basic_auth_retry (SocketHTTPClient_Request_T req,
                       SocketHTTPClient_T client, const char *www_auth,
@@ -1307,16 +1026,6 @@ try_basic_auth_retry (SocketHTTPClient_Request_T req,
   return 0;
 }
 
-/**
- * handle_401_auth_retry - Handle 401 Unauthorized with auth retry
- * @client: HTTP client
- * @req: Request
- * @response: Current 401 response
- * @redirect_count: Current redirect count
- * @auth_retry_count: Current auth retry count
- *
- * Returns: 0 if handled (response updated), 1 if not handled, -1 on error
- */
 static int
 handle_401_auth_retry (SocketHTTPClient_T client,
                        SocketHTTPClient_Request_T req,
@@ -1374,17 +1083,6 @@ handle_401_auth_retry (SocketHTTPClient_T client,
                                    auth_retry_count + 1);
 }
 
-/* ============================================================================
- * Internal: Redirect Handling Helpers
- * ============================================================================
- */
-
-/**
- * is_redirect_status - Check if status code is a redirect
- * @status_code: HTTP status code
- *
- * Returns: 1 if redirect, 0 otherwise
- */
 static int
 is_redirect_status (int status_code)
 {
@@ -1392,14 +1090,6 @@ is_redirect_status (int status_code)
           || status_code == 307 || status_code == 308);
 }
 
-/**
- * should_follow_redirect - Determine if redirect should be followed
- * @client: HTTP client
- * @req: Request
- * @status_code: Response status code
- *
- * Returns: 1 if should follow, 0 otherwise
- */
 static int
 should_follow_redirect (SocketHTTPClient_T client,
                         SocketHTTPClient_Request_T req, int status_code)
@@ -1493,17 +1183,6 @@ handle_redirect (SocketHTTPClient_T client, SocketHTTPClient_Request_T req,
                                    0);
 }
 
-/* ============================================================================
- * Internal: Connection Management Helpers
- * ============================================================================
- */
-
-/**
- * release_connection - Release connection back to pool or close
- * @client: HTTP client
- * @conn: Pool entry to release
- * @success: 1 if request succeeded, 0 on failure
- */
 static void
 release_connection (SocketHTTPClient_T client, HTTPPoolEntry *conn,
                     int success)
@@ -1529,20 +1208,6 @@ release_connection (SocketHTTPClient_T client, HTTPPoolEntry *conn,
     }
 }
 
-/* ============================================================================
- * Internal: Execute Request Helpers
- * ============================================================================
- */
-
-/**
- * check_request_limits - Check redirect and auth retry limits
- * @client: HTTP client
- * @redirect_count: Current redirect count
- * @auth_retry_count: Current auth retry count
- *
- * Returns: 0 to continue, 1 to return success (auth limit reached)
- * Raises: SocketHTTPClient_TooManyRedirects if redirect limit exceeded
- */
 static int
 check_request_limits (SocketHTTPClient_T client, int redirect_count,
                       int auth_retry_count)
@@ -1561,11 +1226,6 @@ check_request_limits (SocketHTTPClient_T client, int redirect_count,
   return 0;
 }
 
-/**
- * prepare_request_headers - Add all required request headers
- * @client: HTTP client
- * @req: Request to prepare
- */
 static void
 prepare_request_headers (SocketHTTPClient_T client,
                          SocketHTTPClient_Request_T req)
@@ -1576,18 +1236,6 @@ prepare_request_headers (SocketHTTPClient_T client,
   add_content_length_header (req);
 }
 
-/* ============================================================================
- * Internal: HTTP/2 Request Execution
- * ============================================================================
- */
-
-/**
- * build_http2_request - Build HTTP/2 request from client request
- * @req: Client request
- * @http_req: Output HTTP request structure
- *
- * Builds the HTTP request structure for HTTP/2 from the client request.
- */
 static void
 build_http2_request (const SocketHTTPClient_Request_T req,
                      SocketHTTP_Request *http_req)
@@ -1605,17 +1253,6 @@ build_http2_request (const SocketHTTPClient_Request_T req,
       = http_req->has_body ? (int64_t)req->body_len : (int64_t)-1;
 }
 
-/**
- * parse_http2_response_headers - Convert HTTP/2 headers to response
- * @headers: HPACK header array from HTTP/2
- * @header_count: Number of headers
- * @response: Output response
- * @arena: Memory arena for allocations
- *
- * Returns: 0 on success, -1 on error
- *
- * Extracts :status pseudo-header and converts to response structure.
- */
 static int
 parse_http2_response_headers (const SocketHPACK_Header *headers,
                               size_t header_count,
@@ -1668,16 +1305,6 @@ parse_http2_response_headers (const SocketHPACK_Header *headers,
   return 0;
 }
 
-/**
- * http2_send_request - Send HTTP/2 request headers and optional body
- * @stream: HTTP/2 stream
- * @h2conn: HTTP/2 connection
- * @http_req: Request to send
- * @body: Request body (may be NULL)
- * @body_len: Body length
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 http2_send_request (SocketHTTP2_Stream_T stream, SocketHTTP2_Conn_T h2conn,
                     const SocketHTTP_Request *http_req, const void *body,
@@ -1698,15 +1325,6 @@ http2_send_request (SocketHTTP2_Stream_T stream, SocketHTTP2_Conn_T h2conn,
   return SocketHTTP2_Conn_flush (h2conn);
 }
 
-/**
- * http2_recv_headers - Receive and parse HTTP/2 response headers
- * @stream: HTTP/2 stream
- * @h2conn: HTTP/2 connection
- * @response: Output response structure
- * @end_stream: Output flag indicating stream end
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 http2_recv_headers (SocketHTTP2_Stream_T stream, SocketHTTP2_Conn_T h2conn,
                     SocketHTTPClient_Response *response, int *end_stream)
@@ -1733,17 +1351,6 @@ http2_recv_headers (SocketHTTP2_Stream_T stream, SocketHTTP2_Conn_T h2conn,
   return parse_http2_response_headers (headers, header_count, response, arena);
 }
 
-/**
- * http2_recv_body - Receive HTTP/2 response body with dynamic buffer growth
- * @stream: HTTP/2 stream
- * @h2conn: HTTP/2 connection
- * @arena: Arena for allocations
- * @max_response_size: Maximum body size (0 = unlimited)
- * @body_out: Output body buffer
- * @body_len_out: Output body length
- *
- * Returns: 0 on success, -1 on error, -2 on size limit exceeded
- */
 static int
 http2_recv_body (SocketHTTP2_Stream_T stream, SocketHTTP2_Conn_T h2conn,
                  Arena_T arena, size_t max_response_size,
@@ -1793,17 +1400,6 @@ http2_recv_body (SocketHTTP2_Stream_T stream, SocketHTTP2_Conn_T h2conn,
   return 0;
 }
 
-/**
- * execute_http2_request - Execute complete HTTP/2 request-response cycle
- * @conn: Pool connection entry (with HTTP/2 connection)
- * @req: Client request
- * @response: Output response
- * @max_response_size: Maximum response body size (0 = unlimited)
- *
- * Returns: 0 on success, -1 on error, -2 on response size limit exceeded
- *
- * Orchestrates HTTP/2 request execution using helper functions.
- */
 static int
 execute_http2_request (HTTPPoolEntry *conn,
                        const SocketHTTPClient_Request_T req,
@@ -1865,19 +1461,6 @@ execute_http2_request (HTTPPoolEntry *conn,
   return result;
 }
 
-/**
- * execute_protocol_request - Execute request based on HTTP version
- * @conn: Pool connection entry
- * @req: Request to execute
- * @response: Output response
- * @max_response_size: Maximum response body size
- * @client: HTTP client (for error reporting)
- *
- * Returns: 0 on success, -1 on error, -2 on size limit exceeded
- *
- * Dispatches to HTTP/1.1 or HTTP/2 request execution based on the
- * negotiated protocol version.
- */
 static int
 execute_protocol_request (HTTPPoolEntry *conn, SocketHTTPClient_Request_T req,
                           SocketHTTPClient_Response *response,
@@ -1894,12 +1477,6 @@ execute_protocol_request (HTTPPoolEntry *conn, SocketHTTPClient_Request_T req,
   return -1;
 }
 
-/**
- * handle_size_limit_error - Handle response size limit exceeded error
- * @client: HTTP client
- *
- * Raises: SocketHTTPClient_ResponseTooLarge
- */
 static void
 handle_size_limit_error (SocketHTTPClient_T client)
 {
@@ -1910,24 +1487,6 @@ handle_size_limit_error (SocketHTTPClient_T client)
                     client->config.max_response_size);
 }
 
-/* ============================================================================
- * Internal: Execute Request
- * ============================================================================
- */
-
-/**
- * execute_request_internal - Internal request execution with retry handling
- * @client: HTTP client
- * @req: Request to execute
- * @response: Output response
- * @redirect_count: Current redirect depth
- * @auth_retry_count: Current auth retry count
- *
- * Returns: 0 on success, -1 on error
- * Raises: SocketHTTPClient_TooManyRedirects on redirect limit
- *
- * Orchestrates HTTP request execution with redirect and auth retry handling.
- */
 static int
 execute_request_internal (SocketHTTPClient_T client,
                           SocketHTTPClient_Request_T req,
@@ -1985,27 +1544,6 @@ execute_request_internal (SocketHTTPClient_T client,
   return (retry_result <= 0) ? retry_result : 0;
 }
 
-/* ============================================================================
- * Simple Synchronous API
- * ============================================================================
- */
-
-/* ============================================================================
- * Internal: Simple Request Helper
- * ============================================================================
- */
-
-/**
- * execute_simple_request - Execute request without body
- * @client: HTTP client
- * @method: HTTP method
- * @url: Request URL
- * @response: Output response
- *
- * Returns: 0 on success, -1 on error
- *
- * Common implementation for GET, HEAD, DELETE.
- */
 static int
 execute_simple_request (SocketHTTPClient_T client, SocketHTTP_Method method,
                         const char *url, SocketHTTPClient_Response *response)
@@ -2027,20 +1565,6 @@ execute_simple_request (SocketHTTPClient_T client, SocketHTTP_Method method,
   return result;
 }
 
-/**
- * execute_body_request - Execute request with body
- * @client: HTTP client
- * @method: HTTP method
- * @url: Request URL
- * @content_type: Content-Type header (may be NULL)
- * @body: Request body (may be NULL)
- * @body_len: Body length
- * @response: Output response
- *
- * Returns: 0 on success, -1 on error
- *
- * Common implementation for POST, PUT.
- */
 static int
 execute_body_request (SocketHTTPClient_T client, SocketHTTP_Method method,
                       const char *url, const char *content_type,
@@ -2122,11 +1646,6 @@ SocketHTTPClient_Response_free (SocketHTTPClient_Response *response)
 
   memset (response, 0, sizeof (*response));
 }
-
-/* ============================================================================
- * Request Builder API
- * ============================================================================
- */
 
 SocketHTTPClient_Request_T
 SocketHTTPClient_Request_new (SocketHTTPClient_T client,
@@ -2311,14 +1830,6 @@ extern int httpclient_should_retry_status (const SocketHTTPClient_T client,
 extern void
 httpclient_clear_response_for_retry (SocketHTTPClient_Response *response);
 
-/**
- * execute_single_attempt - Execute one request attempt with exception handling
- * @client: HTTP client
- * @req: Request to execute
- * @response: Output response
- *
- * Returns: 0 on success, -1 on error (last_error set)
- */
 static int
 execute_single_attempt (SocketHTTPClient_T client,
                         SocketHTTPClient_Request_T req,
@@ -2353,14 +1864,6 @@ execute_single_attempt (SocketHTTPClient_T client,
   return result;
 }
 
-/**
- * should_retry_5xx - Check if 5xx response should trigger retry
- * @client: HTTP client
- * @response: Response with 5xx status
- * @attempt: Current attempt number
- *
- * Returns: 1 if should retry, 0 otherwise
- */
 static int
 should_retry_5xx (SocketHTTPClient_T client,
                   SocketHTTPClient_Response *response, int attempt)
@@ -2380,10 +1883,6 @@ should_retry_5xx (SocketHTTPClient_T client,
   return 1;
 }
 
-/**
- * raise_last_error - Raise exception for last error code
- * @client: HTTP client with last_error set
- */
 static void
 raise_last_error (SocketHTTPClient_T client)
 {
@@ -2403,13 +1902,6 @@ raise_last_error (SocketHTTPClient_T client)
     }
 }
 
-/**
- * handle_failed_attempt - Handle a failed request attempt
- * @client: HTTP client
- * @attempt: Current attempt number
- *
- * Returns: 1 to continue retry loop, 0 to stop (raises exception or returns)
- */
 static int
 handle_failed_attempt (SocketHTTPClient_T client, int attempt)
 {
@@ -2487,14 +1979,6 @@ SocketHTTPClient_Request_execute (SocketHTTPClient_Request_T req,
   return -1;
 }
 
-/* ============================================================================
- * Authentication Management
- * ============================================================================
- */
-
-/**
- * Securely clear auth credentials stored in arena
- */
 static void
 secure_clear_auth (SocketHTTPClient_Auth *auth)
 {
@@ -2561,11 +2045,6 @@ SocketHTTPClient_set_auth (SocketHTTPClient_T client,
   pthread_mutex_unlock (&client->mutex);
 }
 
-/* ============================================================================
- * Cookie Jar Association
- * ============================================================================
- */
-
 void
 SocketHTTPClient_set_cookie_jar (SocketHTTPClient_T client,
                                  SocketHTTPClient_CookieJar_T jar)
@@ -2587,11 +2066,6 @@ SocketHTTPClient_get_cookie_jar (SocketHTTPClient_T client)
   pthread_mutex_unlock (&client->mutex);
   return jar;
 }
-
-/* ============================================================================
- * Pool Statistics
- * ============================================================================
- */
 
 void
 SocketHTTPClient_pool_stats (SocketHTTPClient_T client,
@@ -2680,11 +2154,6 @@ SocketHTTPClient_pool_clear (SocketHTTPClient_T client)
   pthread_mutex_unlock (&client->mutex);
 }
 
-/* ============================================================================
- * Error Handling
- * ============================================================================
- */
-
 SocketHTTPClient_Error
 SocketHTTPClient_last_error (SocketHTTPClient_T client)
 {
@@ -2700,180 +2169,12 @@ SocketHTTPClient_error_string (SocketHTTPClient_Error error)
   return "Unknown error";
 }
 
-/* ============================================================================
- * Asynchronous API
- * ============================================================================
- *
- * The async API allows non-blocking HTTP requests that integrate with
- * event loops. Requests are queued and processed during process() calls.
- */
-
-/**
- * submit_request_async - Common async request submission
- * @req: Request to submit (freed on failure)
- * @callback: Completion callback
- * @userdata: User data for callback
- *
- * Returns: Async request handle, or NULL on failure
- */
-static SocketHTTPClient_AsyncRequest_T
-submit_request_async (SocketHTTPClient_Request_T req,
-                      SocketHTTPClient_Callback callback, void *userdata)
-{
-  SocketHTTPClient_AsyncRequest_T async_req;
-
-  async_req = SocketHTTPClient_Request_async (req, callback, userdata);
-  if (async_req == NULL)
-    {
-      SocketHTTPClient_Request_free (&req);
-      return NULL;
-    }
-
-  return async_req;
-}
-
-SocketHTTPClient_AsyncRequest_T
-SocketHTTPClient_get_async (SocketHTTPClient_T client, const char *url,
-                            SocketHTTPClient_Callback callback, void *userdata)
-{
-  SocketHTTPClient_Request_T req;
-
-  assert (client != NULL);
-  assert (url != NULL);
-  assert (callback != NULL);
-
-  req = SocketHTTPClient_Request_new (client, HTTP_METHOD_GET, url);
-  if (req == NULL)
-    return NULL;
-
-  return submit_request_async (req, callback, userdata);
-}
-
-SocketHTTPClient_AsyncRequest_T
-SocketHTTPClient_post_async (SocketHTTPClient_T client, const char *url,
-                             const char *content_type, const void *body,
-                             size_t body_len,
-                             SocketHTTPClient_Callback callback,
-                             void *userdata)
-{
-  SocketHTTPClient_Request_T req;
-
-  assert (client != NULL);
-  assert (url != NULL);
-  assert (callback != NULL);
-
-  req = SocketHTTPClient_Request_new (client, HTTP_METHOD_POST, url);
-  if (req == NULL)
-    return NULL;
-
-  if (content_type != NULL)
-    SocketHTTPClient_Request_header (req, "Content-Type", content_type);
-
-  if (body != NULL && body_len > 0)
-    SocketHTTPClient_Request_body (req, body, body_len);
-
-  return submit_request_async (req, callback, userdata);
-}
-
-SocketHTTPClient_AsyncRequest_T
-SocketHTTPClient_Request_async (SocketHTTPClient_Request_T req,
-                                SocketHTTPClient_Callback callback,
-                                void *userdata)
-{
-  SocketHTTPClient_AsyncRequest_T async_req;
-  SocketHTTPClient_T client;
-
-  assert (req != NULL);
-  assert (callback != NULL);
-
-  client = req->client;
-
-  /* Allocate async request */
-  async_req = CALLOC (req->arena, 1, sizeof (*async_req));
-  if (async_req == NULL)
-    {
-      client->last_error = HTTPCLIENT_ERROR_OUT_OF_MEMORY;
-      return NULL;
-    }
-
-  async_req->client = client;
-  async_req->request = req;
-  async_req->state = ASYNC_STATE_IDLE;
-  async_req->callback = callback;
-  async_req->userdata = userdata;
-
-  /* Note: In a full implementation, this would be added to a pending
-   * request list and processed during SocketHTTPClient_process().
-   * For simplicity, we execute synchronously and call the callback. */
-
-  return async_req;
-}
-
-void
-SocketHTTPClient_AsyncRequest_cancel (SocketHTTPClient_AsyncRequest_T req)
-{
-  if (req == NULL)
-    return;
-
-  req->state = ASYNC_STATE_CANCELLED;
-  req->error = HTTPCLIENT_ERROR_CANCELLED;
-
-  /* Note: In a full implementation, this would remove the request
-   * from the pending queue and clean up any in-progress connections. */
-}
-
-int
-SocketHTTPClient_process (SocketHTTPClient_T client, int timeout_ms)
-{
-  int completed = 0;
-
-  assert (client != NULL);
-  (void)timeout_ms;
-
-  /* Note: In a full implementation, this would:
-   * 1. Use SocketPoll to wait for events on pending connections
-   * 2. Process DNS resolution completions
-   * 3. Process connection completions
-   * 4. Send pending requests
-   * 5. Receive responses
-   * 6. Invoke callbacks for completed requests
-   *
-   * For now, async requests are executed synchronously in Request_async().
-   */
-
-  /* Clean up idle connections */
-  if (client->pool != NULL)
-    {
-      httpclient_pool_cleanup_idle (client->pool);
-    }
-
-  return completed;
-}
-
-/* ============================================================================
- * Convenience Functions
- * ============================================================================
- */
-
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
-/* ============================================================================
- * Internal: File I/O Helpers
- * ============================================================================
- */
-
-/**
- * write_all_eintr - Write all data to fd with EINTR retry
- * @fd: File descriptor
- * @buf: Data buffer
- * @len: Data length
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 write_all_eintr (int fd, const void *buf, size_t len)
 {
@@ -2895,14 +2196,6 @@ write_all_eintr (int fd, const void *buf, size_t len)
   return 0;
 }
 
-/**
- * read_all_eintr - Read all data from fd with EINTR retry
- * @fd: File descriptor
- * @buf: Output buffer
- * @len: Expected length
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 read_all_eintr (int fd, void *buf, size_t len)
 {
@@ -3017,12 +2310,6 @@ SocketHTTPClient_upload (SocketHTTPClient_T client, const char *url,
   return result;
 }
 
-/**
- * is_json_content_type - Check if Content-Type is JSON
- * @headers: Response headers
- *
- * Returns: 1 if JSON, 0 otherwise
- */
 static int
 is_json_content_type (SocketHTTP_Headers_T headers)
 {
@@ -3031,14 +2318,6 @@ is_json_content_type (SocketHTTP_Headers_T headers)
          || strstr (content_type, "application/json") != NULL;
 }
 
-/**
- * copy_response_body - Copy response body to output buffer
- * @response: Response with body
- * @out: Output buffer pointer (caller must free)
- * @out_len: Output length
- *
- * Returns: 0 on success, -1 on allocation failure
- */
 static int
 copy_response_body (const SocketHTTPClient_Response *response, char **out,
                     size_t *out_len)

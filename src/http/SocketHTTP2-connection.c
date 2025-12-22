@@ -5,16 +5,7 @@
  */
 
 /**
- * SocketHTTP2-connection.c - HTTP/2 Connection Management
- *
- * Part of the Socket Library
- *
- * Implements:
- * - Connection lifecycle (new, free)
- * - Connection preface exchange
- * - SETTINGS frame handling
- * - PING/GOAWAY handling
- * - Frame processing dispatch
+ * SocketHTTP2-connection.c - HTTP/2 Connection Management (RFC 9113)
  */
 
 #include "http/SocketHTTP2-private.h"
@@ -46,30 +37,10 @@ const Except_T SocketHTTP2_StreamError
 const Except_T SocketHTTP2_FlowControlError
     = { &SocketHTTP2, "HTTP/2 flow control error" };
 
-/* ============================================================================
- * Module Exception Setup
- * ============================================================================
- */
-
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "HTTP2"
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP2);
-
-
-/* ============================================================================
- * Configuration Constants
- * ============================================================================
- */
-
-/* I/O buffer size defined in SocketHTTP2.h */
-
-/* Timeouts and max window defined in SocketHTTP2.h */
-
-/* ============================================================================
- * Default Configuration
- * ============================================================================
- */
 
 void
 SocketHTTP2_config_defaults (SocketHTTP2_Config *config, SocketHTTP2_Role role)
@@ -104,22 +75,6 @@ SocketHTTP2_config_defaults (SocketHTTP2_Config *config, SocketHTTP2_Role role)
   config->idle_timeout_ms = 0; /* No idle timeout by default */
 }
 
-/* ============================================================================
- * Connection Creation Helpers
- * ============================================================================
- */
-
-/**
- * init_local_settings - Copy configuration settings to local settings array
- * @conn: Connection structure containing local_settings array
- * @config: Source configuration with desired settings values
- *
- * Initializes the connection's local settings array with values from the
- * provided configuration. These settings will be sent to the peer during
- * the initial SETTINGS frame exchange.
- *
- * Thread-safe: No - connection must not be accessed concurrently
- */
 static void
 init_local_settings (SocketHTTP2_Conn_T conn, const SocketHTTP2_Config *config)
 {
@@ -147,16 +102,7 @@ static const uint32_t peer_setting_defaults[HTTP2_SETTINGS_COUNT] = {
   0           /* SETTINGS_ENABLE_CONNECT_PROTOCOL: disabled by default */
 };
 
-/**
- * init_peer_settings - Set peer settings to RFC 9113 default values
- * @conn: Connection structure containing peer_settings array
- *
- * Initializes the peer settings array to default values as specified in
- * RFC 9113 Section 6.5.2. These values are used until the peer sends
- * their SETTINGS frame. UINT32_MAX is used for unbounded settings.
- *
- * Thread-safe: No - connection must not be accessed concurrently
- */
+/* RFC 9113 Section 6.5.2: UINT32_MAX used for unbounded settings */
 static void
 init_peer_settings (SocketHTTP2_Conn_T conn)
 {
@@ -164,11 +110,6 @@ init_peer_settings (SocketHTTP2_Conn_T conn)
           sizeof (peer_setting_defaults));
 }
 
-/**
- * init_flow_control - Initialize flow control windows
- * @conn: Connection to initialize
- * @config: Configuration source
- */
 static void
 init_flow_control (SocketHTTP2_Conn_T conn, const SocketHTTP2_Config *config)
 {
@@ -187,12 +128,6 @@ init_flow_control (SocketHTTP2_Conn_T conn, const SocketHTTP2_Config *config)
   conn->initial_send_window = SOCKETHTTP2_DEFAULT_INITIAL_WINDOW_SIZE;
 }
 
-/**
- * create_io_buffers - Create send and receive buffers
- * @conn: Connection to initialize
- *
- * Raises: SocketHTTP2_ProtocolError on allocation failure
- */
 static void
 create_io_buffers (SocketHTTP2_Conn_T conn)
 {
@@ -217,13 +152,6 @@ create_io_buffers (SocketHTTP2_Conn_T conn)
   conn->send_buf = send_temp;
 }
 
-/**
- * create_hpack_encoder - Create HPACK encoder
- * @conn: Connection to initialize
- * @header_table_size: Maximum dynamic table size
- *
- * Raises: SocketHTTP2_ProtocolError on creation failure
- */
 static void
 create_hpack_encoder (SocketHTTP2_Conn_T conn, uint32_t header_table_size)
 {
@@ -239,14 +167,6 @@ create_hpack_encoder (SocketHTTP2_Conn_T conn, uint32_t header_table_size)
     }
 }
 
-/**
- * create_hpack_decoder - Create HPACK decoder
- * @conn: Connection to initialize
- * @header_table_size: Maximum dynamic table size
- * @max_header_list_size: Maximum header list size
- *
- * Raises: SocketHTTP2_ProtocolError on creation failure
- */
 static void
 create_hpack_decoder (SocketHTTP2_Conn_T conn, uint32_t header_table_size,
                       uint32_t max_header_list_size)
@@ -264,12 +184,6 @@ create_hpack_decoder (SocketHTTP2_Conn_T conn, uint32_t header_table_size,
     }
 }
 
-/**
- * create_stream_hash_table - Allocate stream hash table
- * @conn: Connection to initialize
- *
- * Raises: SocketHTTP2_ProtocolError on allocation failure
- */
 static void
 create_stream_hash_table (SocketHTTP2_Conn_T conn)
 {
@@ -282,21 +196,6 @@ create_stream_hash_table (SocketHTTP2_Conn_T conn)
     }
 }
 
-/**
- * init_connection_components - Initialize internal components (I/O buffers,
- * HPACK encoder/decoder, stream hash table)
- * @conn: Connection to initialize
- * @config: Configuration source for HPACK settings
- *
- * Raises: SocketHTTP2_ProtocolError on any allocation or creation failure
- */
-/**
- * alloc_conn - Allocate and zero-initialize connection structure
- * @arena: Memory arena
- *
- * Returns: Allocated connection, raises on failure
- * Raises: SocketHTTP2_ProtocolError on allocation failure
- */
 static SocketHTTP2_Conn_T
 alloc_conn (Arena_T arena)
 {
@@ -323,13 +222,8 @@ init_connection_components (SocketHTTP2_Conn_T conn,
   create_hpack_decoder (conn, config->header_table_size,
                         config->max_header_list_size);
 
-  create_stream_hash_table (conn); /* Now raises internally */
+  create_stream_hash_table (conn);
 }
-
-/* ============================================================================
- * Connection Creation
- * ============================================================================
- */
 
 /* Suppress GCC-specific clobbered warning (doesn't exist in Clang) */
 #if defined(__GNUC__) && !defined(__clang__)
@@ -337,12 +231,6 @@ init_connection_components (SocketHTTP2_Conn_T conn,
 #pragma GCC diagnostic ignored "-Wclobbered"
 #endif
 
-/**
- * generate_hash_seed - Generate random seed for stream hash table
- * @conn: Connection to initialize seed for
- *
- * Returns: 0 on success, -1 on failure
- */
 static int
 generate_hash_seed (SocketHTTP2_Conn_T conn)
 {
@@ -356,13 +244,6 @@ generate_hash_seed (SocketHTTP2_Conn_T conn)
   return 0;
 }
 
-/**
- * init_rate_limiters - Initialize stream rate limiters
- * @conn: Connection to initialize
- * @cfg: Configuration with rate parameters
- *
- * Returns: 0 on success, -1 on failure
- */
 static int
 init_rate_limiters (SocketHTTP2_Conn_T conn, const SocketHTTP2_Config *cfg)
 {
@@ -490,11 +371,6 @@ SocketHTTP2_Conn_free (SocketHTTP2_Conn_T *conn)
   *conn = NULL;
 }
 
-/* ============================================================================
- * Connection Accessors
- * ============================================================================
- */
-
 Socket_T
 SocketHTTP2_Conn_socket (SocketHTTP2_Conn_T conn)
 {
@@ -548,11 +424,6 @@ SocketHTTP2_Conn_last_stream_id (SocketHTTP2_Conn_T conn)
   return conn->last_peer_stream_id;
 }
 
-/* ============================================================================
- * Flow Control Accessors
- * ============================================================================
- */
-
 int32_t
 SocketHTTP2_Conn_send_window (SocketHTTP2_Conn_T conn)
 {
@@ -566,11 +437,6 @@ SocketHTTP2_Conn_recv_window (SocketHTTP2_Conn_T conn)
   assert (conn);
   return conn->recv_window;
 }
-
-/* ============================================================================
- * Callbacks
- * ============================================================================
- */
 
 void
 SocketHTTP2_Conn_set_stream_callback (SocketHTTP2_Conn_T conn,
@@ -592,18 +458,6 @@ SocketHTTP2_Conn_set_conn_callback (SocketHTTP2_Conn_T conn,
   conn->conn_callback_data = userdata;
 }
 
-/* ============================================================================
- * SETTINGS Frame Building
- * ============================================================================
- */
-
-/**
- * should_send_setting - Check if setting differs from default
- * @id: Setting identifier (1-based)
- * @value: Setting value
- *
- * Returns: 1 if setting should be sent, 0 to skip
- */
 static int
 should_send_setting (uint16_t id, uint32_t value)
 {
@@ -628,14 +482,6 @@ should_send_setting (uint16_t id, uint32_t value)
     }
 }
 
-/**
- * build_settings_payload - Build SETTINGS frame payload
- * @conn: Connection with local settings
- * @payload: Output buffer (must be at least HTTP2_SETTINGS_COUNT *
- * HTTP2_SETTING_ENTRY_SIZE)
- *
- * Returns: Payload length in bytes
- */
 static size_t
 build_settings_payload (SocketHTTP2_Conn_T conn, unsigned char *payload)
 {
@@ -657,12 +503,6 @@ build_settings_payload (SocketHTTP2_Conn_T conn, unsigned char *payload)
   return payload_len;
 }
 
-/**
- * send_initial_settings - Send our SETTINGS frame
- * @conn: Connection
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 send_initial_settings (SocketHTTP2_Conn_T conn)
 {
@@ -680,17 +520,6 @@ send_initial_settings (SocketHTTP2_Conn_T conn)
   return http2_frame_send (conn, &header, payload, payload_len);
 }
 
-/* ============================================================================
- * Connection Preface and Handshake
- * ============================================================================
- */
-
-/**
- * handshake_send_client_preface - Send client connection preface
- * @conn: Connection
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 handshake_send_client_preface (SocketHTTP2_Conn_T conn)
 {
@@ -703,12 +532,6 @@ handshake_send_client_preface (SocketHTTP2_Conn_T conn)
   return 0;
 }
 
-/**
- * handshake_send_settings - Send initial SETTINGS and optional WINDOW_UPDATE
- * @conn: Connection
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 handshake_send_settings (SocketHTTP2_Conn_T conn)
 {
@@ -763,11 +586,6 @@ SocketHTTP2_Conn_handshake (SocketHTTP2_Conn_T conn)
     }
 }
 
-/* ============================================================================
- * SETTINGS Frame
- * ============================================================================
- */
-
 int
 SocketHTTP2_Conn_settings (SocketHTTP2_Conn_T conn,
                            const SocketHTTP2_Setting *settings, size_t count)
@@ -813,11 +631,6 @@ SocketHTTP2_Conn_settings (SocketHTTP2_Conn_T conn,
   return 0;
 }
 
-/* ============================================================================
- * PING Frame
- * ============================================================================
- */
-
 int
 SocketHTTP2_Conn_ping (SocketHTTP2_Conn_T conn, const unsigned char opaque[8])
 {
@@ -849,11 +662,6 @@ SocketHTTP2_Conn_ping (SocketHTTP2_Conn_T conn, const unsigned char opaque[8])
 
   return http2_frame_send (conn, &header, payload, HTTP2_PING_PAYLOAD_SIZE);
 }
-
-/* ============================================================================
- * GOAWAY Frame
- * ============================================================================
- */
 
 int
 SocketHTTP2_Conn_goaway (SocketHTTP2_Conn_T conn,
@@ -890,11 +698,6 @@ SocketHTTP2_Conn_goaway (SocketHTTP2_Conn_T conn,
   return http2_frame_send (conn, &header, payload, payload_len);
 }
 
-/* ============================================================================
- * WINDOW_UPDATE Frame
- * ============================================================================
- */
-
 int
 SocketHTTP2_Conn_window_update (SocketHTTP2_Conn_T conn, uint32_t increment)
 {
@@ -914,18 +717,6 @@ SocketHTTP2_Conn_window_update (SocketHTTP2_Conn_T conn, uint32_t increment)
   return http2_frame_send (conn, &header, payload, HTTP2_WINDOW_UPDATE_SIZE);
 }
 
-/* ============================================================================
- * Frame Processing Helpers
- * ============================================================================
- */
-
-/**
- * read_socket_to_buffer - Read data from socket into receive buffer
- * @conn: Connection
- *
- * Returns: 0 on success, -1 on error
- * Thread-safe: No
- */
 static int
 read_socket_to_buffer (SocketHTTP2_Conn_T conn)
 {
@@ -946,12 +737,6 @@ read_socket_to_buffer (SocketHTTP2_Conn_T conn)
   return 0;
 }
 
-/**
- * verify_client_preface - Verify client connection preface (server only)
- * @conn: Connection
- *
- * Returns: 1 if verified, 0 if need more data, -1 on error
- */
 static int
 verify_client_preface (SocketHTTP2_Conn_T conn)
 {
@@ -973,12 +758,6 @@ verify_client_preface (SocketHTTP2_Conn_T conn)
   return 1;
 }
 
-/**
- * process_single_frame - Parse and process one frame from buffer
- * @conn: Connection
- *
- * Returns: 1 if frame processed, 0 if need more data, -1 on error
- */
 static int
 process_single_frame (SocketHTTP2_Conn_T conn)
 {
@@ -1030,11 +809,6 @@ process_single_frame (SocketHTTP2_Conn_T conn)
   SocketBuf_consume (conn->recv_buf, HTTP2_FRAME_HEADER_SIZE + header.length);
   return 1;
 }
-
-/* ============================================================================
- * Frame Processing
- * ============================================================================
- */
 
 int
 SocketHTTP2_Conn_process (SocketHTTP2_Conn_T conn, unsigned events)
@@ -1105,11 +879,6 @@ SocketHTTP2_Conn_process (SocketHTTP2_Conn_T conn, unsigned events)
   return result;
 }
 
-/* ============================================================================
- * Flush Output
- * ============================================================================
- */
-
 int
 SocketHTTP2_Conn_flush (SocketHTTP2_Conn_T conn)
 {
@@ -1136,11 +905,6 @@ SocketHTTP2_Conn_flush (SocketHTTP2_Conn_T conn)
 
   return 0;
 }
-
-/* ============================================================================
- * Frame Processing Dispatch
- * ============================================================================
- */
 
 int
 http2_process_frame (SocketHTTP2_Conn_T conn,
@@ -1178,17 +942,6 @@ http2_process_frame (SocketHTTP2_Conn_T conn,
     }
 }
 
-/* ============================================================================
- * SETTINGS Processing
- * ============================================================================
- */
-
-/**
- * send_settings_ack - Send SETTINGS acknowledgement frame
- * @conn: Connection
- *
- * Returns: 0 on success, -1 on error
- */
 static int
 send_settings_ack (SocketHTTP2_Conn_T conn)
 {
@@ -1202,10 +955,6 @@ send_settings_ack (SocketHTTP2_Conn_T conn)
   return http2_frame_send (conn, &ack_header, NULL, 0);
 }
 
-/**
- * process_settings_ack - Handle SETTINGS ACK frame
- * @conn: Connection
- */
 static void
 process_settings_ack (SocketHTTP2_Conn_T conn)
 {
@@ -1218,16 +967,7 @@ process_settings_ack (SocketHTTP2_Conn_T conn)
     }
 }
 
-/**
- * setting_id_to_index - Map HTTP/2 setting ID to internal array index
- * @id: Setting identifier (1-based per RFC 9113)
- *
- * Maps RFC 9113 setting IDs to our internal 0-based array indices.
- * SETTINGS_ENABLE_CONNECT_PROTOCOL (0x8) maps to index 6 despite gap.
- *
- * Returns: Array index (0-6) on success, SIZE_MAX for unknown settings
- * Thread-safe: Yes - pure function with no side effects
- */
+/* Maps RFC 9113 setting IDs to 0-based array indices; SETTINGS_ENABLE_CONNECT_PROTOCOL (0x8) maps to index 6 */
 static inline size_t
 setting_id_to_index (uint16_t id)
 {
@@ -1243,13 +983,6 @@ setting_id_to_index (uint16_t id)
   return SIZE_MAX;
 }
 
-/**
- * validate_enable_push - Validate SETTINGS_ENABLE_PUSH value
- * @conn: Connection
- * @value: Setting value (must be 0 or 1)
- *
- * Returns: 0 on success, -1 on error (sends connection error)
- */
 static int
 validate_enable_push (SocketHTTP2_Conn_T conn, uint32_t value)
 {
@@ -1261,15 +994,6 @@ validate_enable_push (SocketHTTP2_Conn_T conn, uint32_t value)
   return 0;
 }
 
-/**
- * validate_initial_window_size - Validate and apply SETTINGS_INITIAL_WINDOW_SIZE
- * @conn: Connection
- * @value: New initial window size
- *
- * Validates the window size and adjusts all existing stream windows.
- *
- * Returns: 0 on success, -1 on error (sends connection error)
- */
 static int
 validate_initial_window_size (SocketHTTP2_Conn_T conn, uint32_t value)
 {
@@ -1302,13 +1026,6 @@ validate_initial_window_size (SocketHTTP2_Conn_T conn, uint32_t value)
   return 0;
 }
 
-/**
- * validate_max_frame_size - Validate SETTINGS_MAX_FRAME_SIZE value
- * @conn: Connection
- * @value: Max frame size (must be 16384 to 16777215)
- *
- * Returns: 0 on success, -1 on error (sends connection error)
- */
 static int
 validate_max_frame_size (SocketHTTP2_Conn_T conn, uint32_t value)
 {
@@ -1321,15 +1038,7 @@ validate_max_frame_size (SocketHTTP2_Conn_T conn, uint32_t value)
   return 0;
 }
 
-/**
- * validate_enable_connect_protocol - Validate SETTINGS_ENABLE_CONNECT_PROTOCOL
- * @conn: Connection
- * @value: Setting value (must be 0 or 1, cannot revert from 1 to 0)
- *
- * RFC 8441 Section 3: Once enabled, cannot be disabled.
- *
- * Returns: 0 on success, -1 on error (sends connection error)
- */
+/* RFC 8441 Section 3: Once enabled, cannot be disabled */
 static int
 validate_enable_connect_protocol (SocketHTTP2_Conn_T conn, uint32_t value)
 {
@@ -1354,18 +1063,7 @@ validate_enable_connect_protocol (SocketHTTP2_Conn_T conn, uint32_t value)
   return 0;
 }
 
-/**
- * validate_and_apply_setting - Validate and apply a single setting
- * @conn: Connection
- * @id: Setting identifier
- * @value: Setting value
- *
- * Validates the setting per RFC 9113 rules and applies it to the connection.
- * Unknown settings are silently ignored per RFC 9113 Section 6.5.2.
- *
- * Returns: 0 on success, -1 on error (sends connection error)
- * Thread-safe: No - modifies connection state
- */
+/* Unknown settings ignored per RFC 9113 Section 6.5.2 */
 static int
 validate_and_apply_setting (SocketHTTP2_Conn_T conn, uint16_t id,
                             uint32_t value)
@@ -1415,11 +1113,6 @@ validate_and_apply_setting (SocketHTTP2_Conn_T conn, uint16_t id,
   return 0;
 }
 
-/**
- * update_conn_state_after_settings - Update connection state after processing
- * SETTINGS
- * @conn: Connection
- */
 static void
 update_conn_state_after_settings (SocketHTTP2_Conn_T conn)
 {
@@ -1432,21 +1125,6 @@ update_conn_state_after_settings (SocketHTTP2_Conn_T conn)
     }
 }
 
-/**
- * parse_and_apply_all_settings - Parse SETTINGS frame payload and apply each
- * setting
- * @conn: Connection
- * @payload: SETTINGS payload data
- * @length: Payload length
- *
- * Parses the SETTINGS payload into individual setting entries and applies each
- * to the connection. Validates payload length must be multiple of entry size.
- * Calls validate_and_apply_setting for each, propagating errors.
- *
- * Returns: 0 on success, -1 on error (sends connection error and returns)
- * Raises: None - errors handled by sending GOAWAY
- * Thread-safe: No
- */
 static int
 parse_and_apply_all_settings (SocketHTTP2_Conn_T conn,
                               const unsigned char *payload, size_t length)
@@ -1511,11 +1189,6 @@ http2_process_settings (SocketHTTP2_Conn_T conn,
   return 0;
 }
 
-/* ============================================================================
- * PING Processing
- * ============================================================================
- */
-
 int
 http2_process_ping (SocketHTTP2_Conn_T conn,
                     const SocketHTTP2_FrameHeader *header,
@@ -1557,11 +1230,6 @@ http2_process_ping (SocketHTTP2_Conn_T conn,
   return http2_frame_send (conn, &response, payload, HTTP2_PING_PAYLOAD_SIZE);
 }
 
-/* ============================================================================
- * GOAWAY Processing
- * ============================================================================
- */
-
 int
 http2_process_goaway (SocketHTTP2_Conn_T conn,
                       const SocketHTTP2_FrameHeader *header,
@@ -1579,21 +1247,6 @@ http2_process_goaway (SocketHTTP2_Conn_T conn,
   return 0;
 }
 
-/* ============================================================================
- * WINDOW_UPDATE Processing
- * ============================================================================
- */
-
-/**
- * process_connection_window_update - Handle connection-level WINDOW_UPDATE
- * @conn: Connection
- * @increment: Window increment value
- *
- * Updates the connection send window. Sends FLOW_CONTROL_ERROR if overflow.
- *
- * Returns: 0 on success, -1 on error (sends GOAWAY)
- * Thread-safe: No
- */
 static int
 process_connection_window_update (SocketHTTP2_Conn_T conn, uint32_t increment)
 {
@@ -1605,19 +1258,7 @@ process_connection_window_update (SocketHTTP2_Conn_T conn, uint32_t increment)
   return 0;
 }
 
-/**
- * process_stream_window_update - Handle stream-level WINDOW_UPDATE
- * @conn: Connection
- * @stream_id: Stream ID
- * @increment: Window increment value
- *
- * Looks up stream and updates its send window. Emits event if successful.
- * Ignores unknown streams per RFC (may be closed).
- * Sends RST_STREAM if overflow on existing stream.
- *
- * Returns: 0 on success, -1 on error (sends RST_STREAM)
- * Thread-safe: No
- */
+/* Ignores unknown streams per RFC 9113 (may be closed) */
 static int
 process_stream_window_update (SocketHTTP2_Conn_T conn, uint32_t stream_id,
                               uint32_t increment)
@@ -1661,24 +1302,7 @@ http2_process_window_update (SocketHTTP2_Conn_T conn,
     return process_stream_window_update (conn, header->stream_id, increment);
 }
 
-/* ============================================================================
- * RST_STREAM Processing
- * ============================================================================
- */
-
-/**
- * http2_process_rst_stream - Process RST_STREAM frame with rate limiting
- * @conn: HTTP/2 connection
- * @header: Frame header
- * @payload: Frame payload (4 bytes error code)
- *
- * Returns: 0 on success, -1 on error (connection closed)
- *
- * Security: Implements rate limiting to protect against CVE-2023-44487
- * (HTTP/2 Rapid Reset Attack). If a client sends RST_STREAM frames
- * faster than SOCKETHTTP2_RST_RATE_LIMIT per SOCKETHTTP2_RST_RATE_WINDOW_MS,
- * the connection is terminated with ENHANCE_YOUR_CALM.
- */
+/* SECURITY: CVE-2023-44487 protection - rate limits RST_STREAM frames to prevent Rapid Reset DoS */
 int
 http2_process_rst_stream (SocketHTTP2_Conn_T conn,
                           const SocketHTTP2_FrameHeader *header,
@@ -1714,11 +1338,6 @@ http2_process_rst_stream (SocketHTTP2_Conn_T conn,
   (void)error_code; /* Could log or store for debugging */
   return 0;
 }
-
-/* ============================================================================
- * h2c Upgrade Support
- * ============================================================================
- */
 
 SocketHTTP2_Conn_T
 SocketHTTP2_Conn_upgrade_client (Socket_T socket,
@@ -1821,11 +1440,6 @@ SocketHTTP2_Conn_get_stream (SocketHTTP2_Conn_T conn, uint32_t stream_id)
 
   return http2_stream_lookup (conn, stream_id);
 }
-
-/* ============================================================================
- * Extended PING and Stream Management
- * ============================================================================
- */
 
 int
 SocketHTTP2_Conn_ping_wait (SocketHTTP2_Conn_T conn, int timeout_ms)

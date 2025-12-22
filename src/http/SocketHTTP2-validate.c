@@ -4,20 +4,8 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * @file SocketHTTP2-validate.c
- * @brief Shared HTTP/2 header validation functions per RFC 9113.
- * @ingroup http
- *
- * This module provides shared header validation routines used by both
- * the HTTP/2 client (SocketHTTP2-stream.c) and server (SocketHTTPServer.c).
- *
- * Validation rules implemented:
- * - RFC 9113 Section 8.2.1: Field name/value validity
- * - RFC 9113 Section 8.2.2: Connection-specific header prohibition
- * - RFC 9113 Section 8.3: Pseudo-header requirements
- *
- * @see SocketHTTP2-private.h for function declarations.
+/*
+ * SocketHTTP2-validate.c - HTTP/2 Header Validation (RFC 9113)
  */
 
 #include <string.h>
@@ -26,17 +14,6 @@
 #include "http/SocketHPACK.h"
 #include "http/SocketHTTP2-private.h"
 
-/* ============================================================================
- * Forbidden Connection-Specific Headers
- * ============================================================================
- */
-
-/**
- * @brief List of connection-specific headers forbidden in HTTP/2.
- *
- * Pre-computed lengths for O(1) comparison without strlen() per check.
- * Per RFC 9113 Section 8.2.2.
- */
 static const struct
 {
   const char *name;
@@ -54,11 +31,6 @@ static const struct
 
 #define HTTP2_FORBIDDEN_HEADER_COUNT \
   (sizeof (http2_forbidden_headers) / sizeof (http2_forbidden_headers[0]))
-
-/* ============================================================================
- * Field Validation Helpers
- * ============================================================================
- */
 
 int
 http2_field_has_uppercase (const char *name, size_t len)
@@ -104,11 +76,6 @@ http2_field_has_boundary_whitespace (const char *value, size_t len)
   return 0;
 }
 
-/* ============================================================================
- * Connection-Specific Header Check
- * ============================================================================
- */
-
 int
 http2_is_connection_header_forbidden (const SocketHPACK_Header *header)
 {
@@ -136,11 +103,6 @@ http2_is_connection_header_forbidden (const SocketHPACK_Header *header)
   return 0;
 }
 
-/* ============================================================================
- * TE Header Validation
- * ============================================================================
- */
-
 int
 http2_validate_te_header (const char *value, size_t len)
 {
@@ -155,11 +117,6 @@ http2_validate_te_header (const char *value, size_t len)
   /* Any other value is invalid in HTTP/2 */
   return -1;
 }
-
-/* ============================================================================
- * Comprehensive Regular Header Validation
- * ============================================================================
- */
 
 int
 http2_validate_regular_header (const SocketHPACK_Header *header)

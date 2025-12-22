@@ -5,18 +5,7 @@
  */
 
 /**
- * SocketHTTPClient-retry.c - HTTP Client Retry Logic
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
- *
- * Centralized retry helpers for HTTP client: delay calculation, sleeping,
- * retry decisions. Integrates SocketRetry module for validated exponential
- * backoff with jitter and improved RNG. Handles config-based retry decisions
- * for errors and 5xx status codes.
- *
- * Exported via SocketHTTPClient-private.h for use in core client
- * implementation.
+ * SocketHTTPClient-retry.c - HTTP Client Retry Logic with Exponential Backoff
  */
 
 #include <errno.h>
@@ -26,39 +15,9 @@
 #include "core/SocketRetry.h"
 #include "http/SocketHTTPClient-private.h"
 
-/* ============================================================================
- * Time Conversion Constants
- * ============================================================================
- *
- * Note: HTTPCLIENT_MIN_DELAY_MS, HTTPCLIENT_RETRY_MULTIPLIER, and
- * HTTPCLIENT_RETRY_JITTER_FACTOR are defined in SocketHTTPClient-config.h
- * for compile-time configuration consistency.
- */
-
-/** Time conversion: milliseconds per second */
 #define MILLISECONDS_PER_SECOND 1000
-
-/** Time conversion: nanoseconds per millisecond */
 #define NANOSECONDS_PER_MILLISECOND 1000000L
 
-/* ============================================================================
- * Response Clearing
- * ============================================================================
- *
- * httpclient_clear_response_for_retry: Clears SocketHTTPClient_Response for retry attempts.
- *
- * Uses CLEAR_RESPONSE macro to clear headers and zero structure fields for reuse.
- * The SocketHTTPClient_Response includes client-specific fields like arena and body.
- */
-
-/**
- * CLEAR_RESPONSE - Clear response structure for retry reuse
- * @r: Pointer to response structure (SocketHTTP_Response or
- * SocketHTTPClient_Response)
- *
- * Clears headers collection and zeros the structure for reuse.
- * Handles NULL gracefully (no-op).
- */
 #define CLEAR_RESPONSE(r)                                                     \
   do                                                                          \
     {                                                                         \
@@ -69,11 +28,6 @@
         }                                                                     \
     }                                                                         \
   while (0)
-
-/* ============================================================================
- * Retry Delay Calculation
- * ============================================================================
- */
 
 /**
  * httpclient_calculate_retry_delay - Calculate backoff delay for retry attempt
@@ -126,11 +80,6 @@ httpclient_calculate_retry_delay (const SocketHTTPClient_T client, int attempt)
   return SocketRetry_calculate_delay (&policy, attempt);
 }
 
-/* ============================================================================
- * Sleep Helper
- * ============================================================================
- */
-
 /**
  * httpclient_retry_sleep_ms - Sleep for specified milliseconds using nanosleep
  * @ms: Milliseconds to sleep (0 or negative = no sleep)
@@ -165,11 +114,6 @@ httpclient_retry_sleep_ms (int ms)
       req = rem;
     }
 }
-
-/* ============================================================================
- * Retry Decision Logic
- * ============================================================================
- */
 
 /**
  * httpclient_should_retry_error - Check if error code should trigger retry
@@ -305,11 +249,6 @@ httpclient_should_retry_status (const SocketHTTPClient_T client, int status)
   return httpclient_should_retry_status_with_method (client, status,
                                                       HTTP_METHOD_GET);
 }
-
-/* ============================================================================
- * Response Clearing Functions
- * ============================================================================
- */
 
 /**
  * httpclient_clear_response_for_retry - Clear SocketHTTPClient_Response for

@@ -6,22 +6,6 @@
 
 /**
  * SocketHTTPClient-cookie.c - HTTP Cookie Implementation (RFC 6265)
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
- *
- * Implements cookie storage and management:
- * - Cookie parsing from Set-Cookie headers
- * - Cookie storage with domain/path matching
- * - Cookie expiration handling
- * - Secure and HttpOnly flags
- * - SameSite attribute (Lax/Strict/None)
- * - File persistence (Netscape format)
- *
- * Leverages:
- * - SocketHTTP_date_parse() for Expires parsing
- * - Arena for memory management
- * - socket_util_arena_strdup() for string duplication
  */
 
 #include <assert.h>
@@ -47,18 +31,8 @@
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPClient);
 
-/* ============================================================================
- * Constants
- * ============================================================================
- */
-
-/** Seconds per day for cookie expiry validation */
 #define SECONDS_PER_DAY 86400
-
-/** Maximum reasonable cookie expiry: 1 year in future */
 #define MAX_COOKIE_EXPIRY_FUTURE (365LL * SECONDS_PER_DAY)
-
-/* SameSite attribute string constants */
 static const char COOKIE_SAMESITE_STRICT_STR[] = "Strict";
 static const char COOKIE_SAMESITE_LAX_STR[] = "Lax";
 static const char COOKIE_SAMESITE_NONE_STR[] = "None";
@@ -79,11 +53,6 @@ static const char COOKIE_ATTR_SAMESITE_STR[] = "SameSite";
 #define COOKIE_ATTR_DOMAIN_LEN (sizeof (COOKIE_ATTR_DOMAIN_STR) - 1)
 #define COOKIE_ATTR_PATH_LEN (sizeof (COOKIE_ATTR_PATH_STR) - 1)
 #define COOKIE_ATTR_SAMESITE_LEN (sizeof (COOKIE_ATTR_SAMESITE_STR) - 1)
-
-/* ============================================================================
- * Internal Helper Functions
- * ============================================================================
- */
 
 /**
  * is_valid_cookie_octet - Check if char is valid in cookie name/value
@@ -111,12 +80,6 @@ validate_cookie_octets (const unsigned char *data, size_t len)
   return 1;
 }
 
-/**
- * warn_long_hash_chain - Log warning for potential hash DoS
- * @chain_len: Current chain length
- *
- * Thread-safe: Yes
- */
 static void
 warn_long_hash_chain (int chain_len)
 {
@@ -128,16 +91,6 @@ warn_long_hash_chain (int chain_len)
     }
 }
 
-/**
- * cookie_hash - Hash function for cookie lookup (domain:path:name)
- * @domain: Cookie domain (case-insensitive)
- * @path: Cookie path (case-sensitive)
- * @name: Cookie name (case-sensitive)
- * @table_size: Hash table size
- * @seed: Random seed for collision resistance
- *
- * Returns: Hash bucket index
- */
 static unsigned
 cookie_hash (const char *domain, const char *path, const char *name,
              size_t table_size, unsigned seed)
@@ -334,15 +287,6 @@ parse_same_site (const char *value, const size_t len)
   return COOKIE_SAMESITE_LAX;
 }
 
-/**
- * cookie_expiry_is_valid - Check if cookie expiry time is reasonable
- * @expires: Proposed expiry timestamp
- * @now: Current time
- *
- * Returns: 1 if valid (session or reasonable future/past), 0 otherwise
- *
- * Does not log; used by validation functions.
- */
 static int
 cookie_expiry_is_valid (time_t expires, time_t now)
 {
@@ -383,19 +327,6 @@ get_default_path (const char *request_path, char *output, size_t output_size)
   output[len] = '\0';
 }
 
-/* ============================================================================
- * Cookie Entry Helpers
- * ============================================================================
- */
-
-/**
- * cookie_entry_update_value_flags - Update cookie value and flags
- * @entry: Cookie entry to update
- * @cookie: New cookie data
- * @arena: Arena for strdup
- *
- * Thread-safe: No (caller must hold mutex)
- */
 static void
 cookie_entry_update_value_flags (CookieEntry *entry,
                                  const SocketHTTPClient_Cookie *cookie,
@@ -410,16 +341,6 @@ cookie_entry_update_value_flags (CookieEntry *entry,
   entry->cookie.same_site = cookie->same_site;
 }
 
-/**
- * evict_oldest_cookie - Remove the oldest cookie from jar by creation time
- * @jar: Cookie jar to evict from
- *
- * Scans all cookies to find oldest by creation timestamp and removes it.
- * Used when jar reaches max_cookies limit before adding new cookie.
- *
- * Thread-safe: No (caller must hold mutex)
- * Complexity: O(n) where n is total cookie count
- */
 static void
 evict_oldest_cookie (SocketHTTPClient_CookieJar_T jar)
 {
@@ -449,15 +370,6 @@ evict_oldest_cookie (SocketHTTPClient_CookieJar_T jar)
     }
 }
 
-/**
- * cookie_entry_init_full - Initialize new cookie entry with full data
- * @entry: Pre-allocated entry to initialize
- * @cookie: Source cookie data
- * @effective_path: Path to store (already resolved NULL to "/")
- * @arena: Arena for allocations
- *
- * Thread-safe: No (caller must hold mutex)
- */
 static void
 cookie_entry_init_full (CookieEntry *entry,
                         const SocketHTTPClient_Cookie *cookie,
@@ -485,16 +397,6 @@ cookie_entry_init_full (CookieEntry *entry,
   entry->cookie.same_site = cookie->same_site;
 }
 
-/**
- * cookie_jar_find_entry - Find cookie entry by domain, path, name
- * @jar: Cookie jar
- * @domain: Domain to match (case-insensitive)
- * @path: Path to match (case-sensitive, NULL defaults to "/")
- * @name: Name to match (case-sensitive)
- *
- * Returns: Matching entry or NULL
- * Thread-safe: No (caller must hold mutex)
- */
 static CookieEntry *
 cookie_jar_find_entry (SocketHTTPClient_CookieJar_T jar, const char *domain,
                        const char *path, const char *name)
@@ -523,11 +425,6 @@ cookie_jar_find_entry (SocketHTTPClient_CookieJar_T jar, const char *domain,
   warn_long_hash_chain (chain_len);
   return NULL;
 }
-
-/* ============================================================================
- * Cookie Jar Lifecycle
- * ============================================================================
- */
 
 SocketHTTPClient_CookieJar_T
 SocketHTTPClient_CookieJar_new (void)
@@ -597,11 +494,6 @@ SocketHTTPClient_CookieJar_free (SocketHTTPClient_CookieJar_T *jar)
 
   *jar = NULL;
 }
-
-/* ============================================================================
- * Cookie Storage Operations
- * ============================================================================
- */
 
 int
 SocketHTTPClient_CookieJar_set (SocketHTTPClient_CookieJar_T jar,
@@ -818,24 +710,6 @@ SocketHTTPClient_CookieJar_clear_expired (SocketHTTPClient_CookieJar_T jar)
   pthread_mutex_unlock (&jar->mutex);
 }
 
-/* ============================================================================
- * Cookie File Persistence - Validation Helpers
- * ============================================================================
- */
-
-
-
-
-
-
-
-
-
-/* ============================================================================
- * Cookie File Persistence
- * ============================================================================
- */
-
 int
 SocketHTTPClient_CookieJar_load (SocketHTTPClient_CookieJar_T jar,
                                  const char *filename)
@@ -988,26 +862,6 @@ SocketHTTPClient_CookieJar_save (SocketHTTPClient_CookieJar_T jar,
   return 0;
 }
 
-/* ============================================================================
- * Cookie Request/Response Integration
- * ============================================================================
- */
-
-/**
- * cookie_matches_request - Check if cookie matches request context
- * @cookie: Cookie to check (read-only)
- * @host: Request hostname for domain matching
- * @path: Request path for path matching
- * @is_secure: 1 if HTTPS connection, 0 if HTTP
- * @now: Current time for expiry check
- * @enforce_samesite: 1 to enforce SameSite policy
- * @is_cross_site: 1 if cross-site request context
- * @is_top_level_nav: 1 if top-level navigation (for Lax)
- * @is_safe_method: 1 if safe HTTP method (GET/HEAD/OPTIONS)
- *
- * Returns: 1 if cookie should be sent, 0 otherwise
- * Thread-safe: Yes (read-only access to cookie)
- */
 static int
 cookie_matches_request (const SocketHTTPClient_Cookie *cookie,
                         const char *host, const char *path, const int is_secure,
@@ -1112,18 +966,6 @@ httpclient_cookies_for_request (SocketHTTPClient_CookieJar_T jar,
   return (int)written;
 }
 
-/* ============================================================================
- * Set-Cookie Parsing Helpers
- * ============================================================================
- */
-
-/**
- * skip_whitespace - Skip leading whitespace in cookie attributes
- * @p: Current position pointer
- * @end: End of string
- *
- * Returns: Pointer to first non-whitespace character
- */
 static const char *
 skip_whitespace (const char *p, const char *end)
 {
@@ -1132,13 +974,6 @@ skip_whitespace (const char *p, const char *end)
   return p;
 }
 
-/**
- * trim_trailing_whitespace - Trim trailing whitespace from string
- * @start: Start of string
- * @end: Current end position
- *
- * Returns: New end position after trimming
- */
 static const char *
 trim_trailing_whitespace (const char *start, const char *end)
 {
@@ -1147,15 +982,6 @@ trim_trailing_whitespace (const char *start, const char *end)
   return end;
 }
 
-/**
- * parse_token - Parse a token (non-quoted name or attribute)
- * @p: Current position (updated)
- * @end: End of string
- * @token_start: Output start of token
- * @token_end: Output end of token
- *
- * Returns: 0 on success, -1 if empty or invalid
- */
 static int
 parse_token (const char **p, const char *end, const char **token_start,
              const char **token_end)
@@ -1181,15 +1007,6 @@ parse_token (const char **p, const char *end, const char **token_start,
   return 0;
 }
 
-/**
- * parse_value - Parse cookie value (quoted or unquoted)
- * @p: Current position (updated)
- * @end: End of string
- * @value_start: Output start of value
- * @value_end: Output end of value
- *
- * Returns: 0 on success, -1 on invalid (unclosed quote)
- */
 static int
 parse_value (const char **p, const char *end, const char **value_start,
              const char **value_end)
@@ -1228,15 +1045,6 @@ parse_value (const char **p, const char *end, const char **value_start,
   return 0;
 }
 
-/**
- * parse_cookie_name_value - Parse name=value from Set-Cookie header
- * @p: Start of cookie string (modified to point past value)
- * @end: End of cookie string
- * @cookie: Cookie to populate with name and value
- * @arena: Arena for allocation
- *
- * Returns: 0 on success, -1 on failure
- */
 static int
 parse_cookie_name_value (const char **p, const char *end,
                          SocketHTTPClient_Cookie *cookie, Arena_T arena)
@@ -1306,15 +1114,6 @@ parse_cookie_name_value (const char **p, const char *end,
   return 0;
 }
 
-/**
- * parse_cookie_attribute - Parse and apply a single cookie attribute
- * @attr_start: Start of attribute name
- * @attr_len: Length of attribute name
- * @attr_value_start: Start of attribute value (NULL if flag-only)
- * @attr_val_len: Length of attribute value
- * @cookie: Cookie to update
- * @arena: Arena for allocation
- */
 static void
 parse_cookie_attribute (const char *attr_start, size_t attr_len,
                         const char *attr_value_start, size_t attr_val_len,
@@ -1374,13 +1173,6 @@ parse_cookie_attribute (const char *attr_start, size_t attr_len,
     }
 }
 
-/**
- * parse_cookie_attributes - Parse all attributes from Set-Cookie header
- * @p: Position after name=value (modified during parsing)
- * @end: End of cookie string
- * @cookie: Cookie to update with attributes
- * @arena: Arena for allocation
- */
 static void
 parse_cookie_attributes (const char **p, const char *end,
                          SocketHTTPClient_Cookie *cookie, Arena_T arena)
@@ -1421,12 +1213,6 @@ parse_cookie_attributes (const char **p, const char *end,
   *p = ptr;
 }
 
-/**
- * apply_cookie_defaults - Apply default values from request URI
- * @cookie: Cookie to update
- * @request_uri: Request URI for defaults
- * @arena: Arena for allocation
- */
 static void
 apply_cookie_defaults (SocketHTTPClient_Cookie *cookie,
                        const SocketHTTP_URI *request_uri, Arena_T arena)
@@ -1453,11 +1239,6 @@ apply_cookie_defaults (SocketHTTPClient_Cookie *cookie,
         }
     }
 }
-
-/* ============================================================================
- * Set-Cookie Parsing Main Function
- * ============================================================================
- */
 
 int
 httpclient_parse_set_cookie (const char *value, size_t len,

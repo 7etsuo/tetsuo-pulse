@@ -4,16 +4,8 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * SocketHTTP2-frame.c - HTTP/2 Frame Parsing and Serialization
- *
- * Part of the Socket Library
- *
- * Implements:
- * - Frame header parsing (9 bytes)
- * - Frame header serialization
- * - Frame validation per RFC 9113
- * - Utility functions for error codes and frame types
+/*
+ * SocketHTTP2-frame.c - HTTP/2 Frame Parsing and Serialization (RFC 9113)
  */
 
 #include "http/SocketHTTP2-private.h"
@@ -23,26 +15,8 @@
 
 #include <assert.h>
 
-/* ============================================================================
- * Module Setup
- * ============================================================================
- */
-
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "HTTP2"
-
-/* ============================================================================
- * Frame Validation Helper Macros
- * ============================================================================
- */
-
-/**
- * REQUIRE_STREAM - Validate frame requires a stream association
- * @header: Frame header to validate
- *
- * Returns HTTP2_PROTOCOL_ERROR if stream_id is 0.
- * Used for DATA, HEADERS, PRIORITY, RST_STREAM, PUSH_PROMISE, CONTINUATION.
- */
 #define REQUIRE_STREAM(header)                                                \
   do                                                                          \
     {                                                                         \
@@ -50,14 +24,6 @@
         return HTTP2_PROTOCOL_ERROR;                                          \
     }                                                                         \
   while (0)
-
-/**
- * REQUIRE_CONNECTION_ONLY - Validate frame must NOT have stream association
- * @header: Frame header to validate
- *
- * Returns HTTP2_PROTOCOL_ERROR if stream_id is non-zero.
- * Used for SETTINGS, PING, GOAWAY.
- */
 #define REQUIRE_CONNECTION_ONLY(header)                                       \
   do                                                                          \
     {                                                                         \
@@ -65,14 +31,6 @@
         return HTTP2_PROTOCOL_ERROR;                                          \
     }                                                                         \
   while (0)
-
-/**
- * REQUIRE_EXACT_LENGTH - Validate exact payload length
- * @header: Frame header to validate
- * @expected: Expected payload length
- *
- * Returns HTTP2_FRAME_SIZE_ERROR if length doesn't match.
- */
 #define REQUIRE_EXACT_LENGTH(header, expected)                                \
   do                                                                          \
     {                                                                         \
@@ -81,13 +39,6 @@
     }                                                                         \
   while (0)
 
-/**
- * REQUIRE_VALID_FLAGS - Validate frame flags are valid for frame type
- * @header: Frame header to validate
- * @valid_flags: Bitmask of allowed flags for this frame type
- *
- * Returns HTTP2_PROTOCOL_ERROR if any invalid flags are set.
- */
 #define REQUIRE_VALID_FLAGS(header, valid_flags)                             \
   do                                                                          \
     {                                                                         \
@@ -96,20 +47,8 @@
     }                                                                         \
   while (0)
 
-/**
- * STRING_LOOKUP - Lookup string from static array with bounds check
- * @array: Static string array
- * @count: Number of elements in array
- * @index: Index to lookup
- * @unknown: String to return if out of bounds
- */
 #define STRING_LOOKUP(array, count, index, unknown)                           \
   (((size_t)(index) < (count)) ? (array)[(index)] : (unknown))
-
-/* ============================================================================
- * Frame Validator Dispatch Table
- * ============================================================================
- */
 
 typedef SocketHTTP2_ErrorCode (*FrameValidator) (
     const SocketHTTP2_FrameHeader *header, SocketHTTP2_Conn_T conn);
@@ -152,11 +91,6 @@ static FrameValidator frame_validators[]
         validate_settings_frame,      validate_push_promise_frame,
         validate_ping_frame,          validate_goaway_frame,
         validate_window_update_frame, validate_continuation_frame };
-
-/* ============================================================================
- * String Lookup Tables
- * ============================================================================
- */
 
 static const char *frame_type_names[] = {
   "DATA",          /* 0x0 */
@@ -202,11 +136,6 @@ static const char *stream_state_names[]
 #define STREAM_STATE_COUNT                                                    \
   (sizeof (stream_state_names) / sizeof (stream_state_names[0]))
 
-/* ============================================================================
- * Big-Endian Packing Helpers
- * ============================================================================
- */
-
 static inline uint32_t
 http2_unpack_be24 (const unsigned char *data)
 {
@@ -247,22 +176,6 @@ http2_pack_uint32_be (unsigned char *data, uint32_t value)
   data[3] = (unsigned char)(value & 0xFF);
 }
 
-/* ============================================================================
- * Frame Header Parsing/Serialization
- * ============================================================================
- */
-
-/**
- * SocketHTTP2_frame_header_parse - Parse 9-byte frame header
- * @data: Input buffer containing frame header
- * @input_len: Available bytes in data (must >= HTTP2_FRAME_HEADER_SIZE=9)
- * @header: Output structure (populated on success)
- *
- * Returns: 0 on success, -1 on invalid input (null pointers, insufficient
- * length)
- *
- * Thread-safe: Yes
- */
 int
 SocketHTTP2_frame_header_parse (const unsigned char *data, size_t input_len,
                                 SocketHTTP2_FrameHeader *header)
@@ -282,13 +195,6 @@ SocketHTTP2_frame_header_parse (const unsigned char *data, size_t input_len,
   return 0;
 }
 
-/**
- * SocketHTTP2_frame_header_serialize - Serialize frame header to 9 bytes
- * @header: Header structure
- * @data: Output buffer (at least HTTP2_FRAME_HEADER_SIZE bytes)
- *
- * Thread-safe: Yes
- */
 void
 SocketHTTP2_frame_header_serialize (const SocketHTTP2_FrameHeader *header,
                                     unsigned char *data)
@@ -306,17 +212,6 @@ SocketHTTP2_frame_header_serialize (const SocketHTTP2_FrameHeader *header,
   http2_pack_stream_id (data + 5, header->stream_id);
 }
 
-/* ============================================================================
- * Per-Frame-Type Validators (RFC 9113 Section 6)
- * ============================================================================
- */
-
-/**
- * validate_data_frame - Validate DATA frame (Section 6.1)
- *
- * DATA frames MUST be associated with a stream (stream_id != 0).
- * Valid flags: END_STREAM (0x01), PADDED (0x08).
- */
 static SocketHTTP2_ErrorCode
 validate_data_frame (const SocketHTTP2_FrameHeader *header,
                      SocketHTTP2_Conn_T conn)
@@ -327,13 +222,6 @@ validate_data_frame (const SocketHTTP2_FrameHeader *header,
   return HTTP2_NO_ERROR;
 }
 
-/**
- * validate_headers_frame - Validate HEADERS frame (Section 6.2)
- *
- * HEADERS frames MUST be associated with a stream (stream_id != 0).
- * Valid flags: END_STREAM (0x01), END_HEADERS (0x04), PADDED (0x08),
- * PRIORITY (0x20).
- */
 static SocketHTTP2_ErrorCode
 validate_headers_frame (const SocketHTTP2_FrameHeader *header,
                         SocketHTTP2_Conn_T conn)
@@ -345,12 +233,6 @@ validate_headers_frame (const SocketHTTP2_FrameHeader *header,
   return HTTP2_NO_ERROR;
 }
 
-/**
- * validate_priority_frame - Validate PRIORITY frame (Section 6.3)
- *
- * PRIORITY has fixed 5-byte payload and requires stream association.
- * Valid flags: None (PRIORITY frames must not have any flags set).
- */
 static SocketHTTP2_ErrorCode
 validate_priority_frame (const SocketHTTP2_FrameHeader *header,
                          SocketHTTP2_Conn_T conn)
@@ -362,12 +244,6 @@ validate_priority_frame (const SocketHTTP2_FrameHeader *header,
   return HTTP2_NO_ERROR;
 }
 
-/**
- * validate_rst_stream_frame - Validate RST_STREAM frame (Section 6.4)
- *
- * RST_STREAM has fixed 4-byte payload and requires stream association.
- * Valid flags: None (RST_STREAM frames must not have any flags set).
- */
 static SocketHTTP2_ErrorCode
 validate_rst_stream_frame (const SocketHTTP2_FrameHeader *header,
                            SocketHTTP2_Conn_T conn)
@@ -379,13 +255,6 @@ validate_rst_stream_frame (const SocketHTTP2_FrameHeader *header,
   return HTTP2_NO_ERROR;
 }
 
-/**
- * validate_settings_frame - Validate SETTINGS frame (Section 6.5)
- *
- * SETTINGS applies to connection, not stream. ACK must have empty payload.
- * Non-ACK payload must be divisible by 6 (each setting is 6 bytes).
- * Valid flags: ACK (0x01).
- */
 static SocketHTTP2_ErrorCode
 validate_settings_frame (const SocketHTTP2_FrameHeader *header,
                          SocketHTTP2_Conn_T conn)
@@ -402,13 +271,6 @@ validate_settings_frame (const SocketHTTP2_FrameHeader *header,
   return HTTP2_NO_ERROR;
 }
 
-/**
- * validate_push_promise_frame - Validate PUSH_PROMISE frame (Section 6.6)
- *
- * PUSH_PROMISE requires stream association. Clients must have push enabled.
- * Servers must not receive PUSH_PROMISE.
- * Valid flags: END_HEADERS (0x04), PADDED (0x08).
- */
 static SocketHTTP2_ErrorCode
 validate_push_promise_frame (const SocketHTTP2_FrameHeader *header,
                              SocketHTTP2_Conn_T conn)
@@ -425,12 +287,6 @@ validate_push_promise_frame (const SocketHTTP2_FrameHeader *header,
   return HTTP2_NO_ERROR;
 }
 
-/**
- * validate_ping_frame - Validate PING frame (Section 6.7)
- *
- * PING has fixed 8-byte payload and must be connection-level (stream_id=0).
- * Valid flags: ACK (0x01).
- */
 static SocketHTTP2_ErrorCode
 validate_ping_frame (const SocketHTTP2_FrameHeader *header,
                      SocketHTTP2_Conn_T conn)
@@ -442,12 +298,6 @@ validate_ping_frame (const SocketHTTP2_FrameHeader *header,
   return HTTP2_NO_ERROR;
 }
 
-/**
- * validate_goaway_frame - Validate GOAWAY frame (Section 6.8)
- *
- * GOAWAY must be connection-level with minimum 8-byte payload.
- * Valid flags: None (GOAWAY frames must not have any flags set).
- */
 static SocketHTTP2_ErrorCode
 validate_goaway_frame (const SocketHTTP2_FrameHeader *header,
                        SocketHTTP2_Conn_T conn)
@@ -460,12 +310,6 @@ validate_goaway_frame (const SocketHTTP2_FrameHeader *header,
   return HTTP2_NO_ERROR;
 }
 
-/**
- * validate_window_update_frame - Validate WINDOW_UPDATE frame (Section 6.9)
- *
- * WINDOW_UPDATE has fixed 4-byte payload. Can be connection or stream level.
- * Valid flags: None (WINDOW_UPDATE frames must not have any flags set).
- */
 static SocketHTTP2_ErrorCode
 validate_window_update_frame (const SocketHTTP2_FrameHeader *header,
                               SocketHTTP2_Conn_T conn)
@@ -476,13 +320,6 @@ validate_window_update_frame (const SocketHTTP2_FrameHeader *header,
   return HTTP2_NO_ERROR;
 }
 
-/**
- * validate_continuation_frame - Validate CONTINUATION frame (Section 6.10)
- *
- * CONTINUATION must follow HEADERS/PUSH_PROMISE/CONTINUATION and must be
- * for the same stream that started the header block.
- * Valid flags: END_HEADERS (0x04).
- */
 static SocketHTTP2_ErrorCode
 validate_continuation_frame (const SocketHTTP2_FrameHeader *header,
                              SocketHTTP2_Conn_T conn)
@@ -497,18 +334,6 @@ validate_continuation_frame (const SocketHTTP2_FrameHeader *header,
   return HTTP2_NO_ERROR;
 }
 
-/* ============================================================================
- * Frame Validation Entry Point
- * ============================================================================
- */
-
-/**
- * http2_frame_validate - Validate frame against RFC 9113 rules
- * @conn: Connection context
- * @header: Frame header to validate
- *
- * Returns: HTTP2_NO_ERROR if valid, error code otherwise
- */
 SocketHTTP2_ErrorCode
 http2_frame_validate (SocketHTTP2_Conn_T conn,
                       const SocketHTTP2_FrameHeader *header)
@@ -533,21 +358,6 @@ http2_frame_validate (SocketHTTP2_Conn_T conn,
   return frame_validators[header->type](header, conn);
 }
 
-/* ============================================================================
- * Frame Sending
- * ============================================================================
- */
-
-/**
- * http2_frame_send - Queue frame for sending
- * @conn: Connection
- * @header: Frame header
- * @payload: Payload data (may be NULL)
- * @payload_len: Payload length
- *
- * Returns: 0 on success, -1 on error (buffer full or invalid input)
- * Thread-safe: No
- */
 int
 http2_frame_send (SocketHTTP2_Conn_T conn,
                   const SocketHTTP2_FrameHeader *header, const void *payload,
@@ -587,18 +397,6 @@ http2_frame_send (SocketHTTP2_Conn_T conn,
   return 0;
 }
 
-/* ============================================================================
- * Utility Functions
- * ============================================================================
- */
-
-/**
- * SocketHTTP2_error_string - Get error code description
- * @code: Error code
- *
- * Returns: Static string describing the error
- * Thread-safe: Yes
- */
 const char *
 SocketHTTP2_error_string (SocketHTTP2_ErrorCode code)
 {
@@ -606,13 +404,6 @@ SocketHTTP2_error_string (SocketHTTP2_ErrorCode code)
                         "UNKNOWN_ERROR");
 }
 
-/**
- * SocketHTTP2_frame_type_string - Get frame type name
- * @type: Frame type
- *
- * Returns: Static string with frame type name
- * Thread-safe: Yes
- */
 const char *
 SocketHTTP2_frame_type_string (SocketHTTP2_FrameType type)
 {
@@ -620,13 +411,6 @@ SocketHTTP2_frame_type_string (SocketHTTP2_FrameType type)
                         "UNKNOWN_FRAME");
 }
 
-/**
- * SocketHTTP2_stream_state_string - Get stream state name
- * @state: Stream state
- *
- * Returns: Static string with state name
- * Thread-safe: Yes
- */
 const char *
 SocketHTTP2_stream_state_string (SocketHTTP2_StreamState state)
 {
@@ -634,19 +418,6 @@ SocketHTTP2_stream_state_string (SocketHTTP2_StreamState state)
                         "UNKNOWN_STATE");
 }
 
-/* ============================================================================
- * Error Emission Helpers
- * ============================================================================
- */
-
-/**
- * http2_send_connection_error - Send GOAWAY and prepare for close
- * @conn: Connection
- * @error_code: HTTP/2 error code
- *
- * Only sends GOAWAY once per connection.
- * Thread-safe: No
- */
 void
 http2_send_connection_error (SocketHTTP2_Conn_T conn,
                              SocketHTTP2_ErrorCode error_code)
@@ -658,14 +429,6 @@ http2_send_connection_error (SocketHTTP2_Conn_T conn,
     SocketHTTP2_Conn_goaway (conn, error_code, NULL, 0);
 }
 
-/**
- * http2_send_stream_error - Send RST_STREAM frame
- * @conn: Connection
- * @stream_id: Target stream ID
- * @error_code: HTTP/2 error code
- *
- * Thread-safe: No
- */
 void
 http2_send_stream_error (SocketHTTP2_Conn_T conn, uint32_t stream_id,
                          SocketHTTP2_ErrorCode error_code)
@@ -705,19 +468,6 @@ http2_send_stream_error (SocketHTTP2_Conn_T conn, uint32_t stream_id,
     }
 }
 
-/* ============================================================================
- * Event Emission Helpers
- * ============================================================================
- */
-
-/**
- * http2_emit_stream_event - Invoke stream event callback
- * @conn: Connection
- * @stream: Target stream
- * @event: Event type (HTTP2_EVENT_*)
- *
- * Thread-safe: No
- */
 void
 http2_emit_stream_event (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
                          int event)
@@ -729,13 +479,6 @@ http2_emit_stream_event (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
     conn->stream_callback (conn, stream, event, conn->stream_callback_data);
 }
 
-/**
- * http2_emit_conn_event - Invoke connection event callback
- * @conn: Connection
- * @event: Event type (HTTP2_EVENT_*)
- *
- * Thread-safe: No
- */
 void
 http2_emit_conn_event (SocketHTTP2_Conn_T conn, int event)
 {

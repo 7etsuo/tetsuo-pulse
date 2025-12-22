@@ -4,29 +4,7 @@
  * https://x.com/tetsuoai
  */
 
-/**
- * SocketHTTPServer.c - HTTP Server Implementation
- *
- * Part of the Socket Library
- * Following C Interfaces and Implementations patterns
- *
- * Production-ready HTTP server with:
- * - Non-blocking I/O with SocketPoll integration
- * - Keep-alive connection handling
- * - Request/response body streaming
- * - Rate limiting per endpoint
- * - Per-client connection limiting
- * - Request validation middleware
- * - Graceful shutdown (drain)
- *
- * Leverages existing modules (no duplication):
- * - SocketHTTP for headers, methods, status codes
- * - SocketHTTP1 for HTTP/1.1 parsing/serialization
- * - SocketRateLimit for rate limiting
- * - SocketIPTracker for per-client limits
- * - SocketPoll for event loop
- * - SocketMetrics for statistics
- */
+/* SocketHTTPServer.c - HTTP/1.1 and HTTP/2 server with TLS, rate limiting, and connection pooling */
 
 #include <arpa/inet.h>
 #include <assert.h>
@@ -57,19 +35,12 @@
 #include "tls/SocketTLS.h"
 #endif
 
-/* Override log component for this module */
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "HTTPServer"
 
-/* Server-specific logging macros */
 #define SERVER_LOG_ERROR(fmt, ...) SOCKET_LOG_ERROR_MSG(fmt, ##__VA_ARGS__)
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPServer);
-
-/* ============================================================================
- * Exception Definitions
- * ============================================================================
- */
 
 const Except_T SocketHTTPServer_Failed
     = { &SocketHTTPServer_Failed, "HTTP server operation failed" };
@@ -78,38 +49,14 @@ const Except_T SocketHTTPServer_BindFailed
 const Except_T SocketHTTPServer_ProtocolError
     = { &SocketHTTPServer_ProtocolError, "HTTP protocol error" };
 
-/* ============================================================================
- * Per-Server Metrics Helpers
- * ============================================================================
- *
- * These macros update both global SocketMetrics and per-server instance metrics
- * when per_server_metrics is enabled. Global metrics are always updated for
- * aggregation; per-server metrics provide instance-specific views.
- */
-
-/* Metrics macros defined in SocketHTTPServer-private.h for shared use */
-
-/* ============================================================================
- * Internal Helper Functions
- * ============================================================================
- */
-
-/* Forward declaration for connection management (impl in connections.c) */
 ServerConnection *connection_new (SocketHTTPServer_T server, Socket_T socket);
 
-/* Forward declarations for static file serving (impl below) */
 static StaticRoute *find_static_route (SocketHTTPServer_T server,
                                        const char *path);
 static int serve_static_file (SocketHTTPServer_T server, ServerConnection *conn,
                               StaticRoute *route, const char *file_path);
 
-/**
- * find_rate_limiter - Find most specific rate limiter for path
- * @server: HTTP server
- * @path: Request path (NULL returns global limiter)
- *
- * Returns: Rate limiter for path prefix, or global limiter, or NULL
- */
+/* Find most specific rate limiter for path prefix */
 static SocketRateLimit_T
 find_rate_limiter (SocketHTTPServer_T server, const char *path)
 {
@@ -137,11 +84,6 @@ find_rate_limiter (SocketHTTPServer_T server, const char *path)
     return best->limiter;
   return server->global_rate_limiter;
 }
-
-/* ============================================================================
- * Configuration Defaults
- * ============================================================================
- */
 
 void
 SocketHTTPServer_config_defaults (SocketHTTPServer_Config *config)
@@ -177,18 +119,11 @@ SocketHTTPServer_config_defaults (SocketHTTPServer_Config *config)
       = HTTPSERVER_DEFAULT_MAX_CONNECTIONS_PER_CLIENT;
   config->max_concurrent_requests = HTTPSERVER_DEFAULT_MAX_CONCURRENT_REQUESTS;
 
-  /* WebSocket configuration - set server role by default */
   SocketWS_config_defaults (&config->ws_config);
   config->ws_config.role = WS_ROLE_SERVER;
 
-  /* Per-server metrics disabled by default (use global metrics) */
   config->per_server_metrics = 0;
 }
-
-/* ============================================================================
- * Server Lifecycle
- * ============================================================================
- */
 
 SocketHTTPServer_T
 SocketHTTPServer_new (const SocketHTTPServer_Config *config)
@@ -459,18 +394,7 @@ SocketHTTPServer_set_handler (SocketHTTPServer_T server,
   server->handler_userdata = userdata;
 }
 
-/* ============================================================================
- * Event Loop - Helper Functions
- * ============================================================================
- */
-
-/**
- * server_accept_clients - Accept new client connections
- * @server: HTTP server
- *
- * Accepts up to HTTPSERVER_MAX_CLIENTS_PER_ACCEPT clients per call.
- * Skips acceptance if server is draining or at connection limit.
- */
+/* Accept new client connections up to max limit */
 static void
 server_accept_clients (SocketHTTPServer_T server)
 {
@@ -1748,13 +1672,7 @@ server_try_http2_prior_knowledge (SocketHTTPServer_T server, ServerConnection *c
   return 1;
 }
 
-/**
- * server_check_rate_limit - Check rate limit for request path
- * @server: HTTP server
- * @conn: Connection with parsed request
- *
- * Returns: 1 if allowed, 0 if rate limited (sends 429 error)
- */
+/* Check rate limit for request path. Returns 1 if allowed, 0 if rate limited (sends 429) */
 static int
 server_check_rate_limit (SocketHTTPServer_T server, ServerConnection *conn)
 {
@@ -1770,13 +1688,7 @@ server_check_rate_limit (SocketHTTPServer_T server, ServerConnection *conn)
   return 1;
 }
 
-/**
- * server_run_validator_impl - Internal validator execution
- * @server: HTTP server
- * @conn: Connection with parsed request
- *
- * Returns: 1 if allowed, 0 if rejected (sends error)
- */
+/* Run validator callback. Returns 1 if allowed, 0 if rejected */
 static int
 server_run_validator_impl (SocketHTTPServer_T server, ServerConnection *conn)
 {
@@ -1817,34 +1729,14 @@ server_run_validator (SocketHTTPServer_T server, ServerConnection *conn)
   return server_run_validator_impl (server, conn);
 }
 
-/**
- * server_run_validator_early - Run validator early (after headers, before body)
- * @server: HTTP server
- * @conn: Connection with parsed headers
- *
- * This is called from connection_parse_request() after headers are parsed
- * but before body buffering starts. Allows the validator to set up body
- * streaming mode via SocketHTTPServer_Request_body_stream().
- *
- * Returns: 1 if allowed, 0 if rejected (error sent)
- */
+/* Run validator early (after headers, before body). Allows setting up body streaming */
 int
 server_run_validator_early (SocketHTTPServer_T server, ServerConnection *conn)
 {
   return server_run_validator_impl (server, conn);
 }
 
-/**
- * server_invoke_handler - Invoke middleware chain and request handler
- * @server: HTTP server
- * @conn: Connection with parsed request
- *
- * Executes middleware chain in order of addition. If any middleware returns
- * non-zero, the chain stops and the request is considered handled.
- * If all middleware returns 0 (continue), the main handler is invoked.
- *
- * Returns: 1 if handler/middleware was invoked, 0 if no handler or request
- */
+/* Invoke middleware chain and request handler. Middleware can short-circuit by returning non-zero */
 static int
 server_invoke_handler (SocketHTTPServer_T server, ServerConnection *conn)
 {
@@ -2390,11 +2282,6 @@ server_cleanup_timed_out (SocketHTTPServer_T server)
     }
 }
 
-/* ============================================================================
- * Event Loop - Public API
- * ============================================================================
- */
-
 int
 SocketHTTPServer_fd (SocketHTTPServer_T server)
 {
@@ -2411,16 +2298,7 @@ SocketHTTPServer_poll (SocketHTTPServer_T server)
   return server->poll;
 }
 
-/**
- * SocketHTTPServer_process - Process server events
- * @server: HTTP server
- * @timeout_ms: Poll timeout in milliseconds
- *
- * Returns: Number of requests processed
- *
- * Main event loop iteration. Accepts new connections, processes client
- * events, and cleans up timed-out connections.
- */
+/* Process server events. Returns number of requests processed */
 int
 SocketHTTPServer_process (SocketHTTPServer_T server, int timeout_ms)
 {
@@ -2459,11 +2337,6 @@ SocketHTTPServer_process (SocketHTTPServer_T server, int timeout_ms)
 
   return requests_processed;
 }
-
-/* ============================================================================
- * Request Accessors
- * ============================================================================
- */
 
 SocketHTTP_Method
 SocketHTTPServer_Request_method (SocketHTTPServer_Request_T req)
@@ -2635,10 +2508,6 @@ SocketHTTPServer_Request_memory_used (SocketHTTPServer_Request_T req)
   return req->conn->memory_used;
 }
 
-/* ============================================================================
- * Response Building
- * ============================================================================
- */
 
 /* Validate header for CRLF injection */
 static int
@@ -2779,10 +2648,6 @@ SocketHTTPServer_Request_finish (SocketHTTPServer_Request_T req)
     req->conn->response_finished = 1;
 }
 
-/* ============================================================================
- * Request Body Streaming
- * ============================================================================
- */
 
 void
 SocketHTTPServer_Request_body_stream (SocketHTTPServer_Request_T req,
@@ -2824,10 +2689,6 @@ SocketHTTPServer_Request_is_chunked (SocketHTTPServer_Request_T req)
          == HTTP1_BODY_CHUNKED;
 }
 
-/* ============================================================================
- * Response Body Streaming
- * ============================================================================
- */
 
 int
 SocketHTTPServer_Request_begin_stream (SocketHTTPServer_Request_T req)
@@ -2990,10 +2851,6 @@ SocketHTTPServer_Request_end_stream (SocketHTTPServer_Request_T req)
   return 0;
 }
 
-/* ============================================================================
- * HTTP/2 Server Push
- * ============================================================================
- */
 
 int
 SocketHTTPServer_Request_push (SocketHTTPServer_Request_T req,
@@ -3108,10 +2965,6 @@ SocketHTTPServer_Request_is_http2 (SocketHTTPServer_Request_T req)
   return req->conn->request->version == HTTP_VERSION_2;
 }
 
-/* ============================================================================
- * WebSocket Upgrade
- * ============================================================================
- */
 
 int
 SocketHTTPServer_Request_is_websocket (SocketHTTPServer_Request_T req)
@@ -3251,10 +3104,6 @@ SocketHTTPServer_Request_accept_websocket_h2 (SocketHTTPServer_Request_T req,
   return s->stream;
 }
 
-/* ============================================================================
- * Rate Limiting
- * ============================================================================
- */
 
 void
 SocketHTTPServer_set_rate_limit (SocketHTTPServer_T server,
@@ -3299,10 +3148,6 @@ SocketHTTPServer_set_rate_limit (SocketHTTPServer_T server,
     }
 }
 
-/* ============================================================================
- * Request Validation Middleware
- * ============================================================================
- */
 
 void
 SocketHTTPServer_set_validator (SocketHTTPServer_T server,
@@ -3314,10 +3159,6 @@ SocketHTTPServer_set_validator (SocketHTTPServer_T server,
   server->validator_userdata = userdata;
 }
 
-/* ============================================================================
- * Graceful Shutdown
- * ============================================================================
- */
 
 int
 SocketHTTPServer_drain (SocketHTTPServer_T server, int timeout_ms)
@@ -3469,10 +3310,6 @@ SocketHTTPServer_state (SocketHTTPServer_T server)
   return (SocketHTTPServer_State)server->state;
 }
 
-/* ============================================================================
- * Statistics
- * ============================================================================
- */
 
 void
 SocketHTTPServer_stats (SocketHTTPServer_T server,
@@ -3596,10 +3433,6 @@ SocketHTTPServer_stats_reset (SocketHTTPServer_T server)
   SocketMetrics_reset ();
 }
 
-/* ============================================================================
- * Static File Serving
- * ============================================================================
- */
 
 #include <dirent.h>
 #include <fcntl.h>
@@ -4234,10 +4067,6 @@ SocketHTTPServer_add_static_dir (SocketHTTPServer_T server, const char *prefix,
   return 0;
 }
 
-/* ============================================================================
- * Middleware
- * ============================================================================
- */
 
 int
 SocketHTTPServer_add_middleware (SocketHTTPServer_T server,
