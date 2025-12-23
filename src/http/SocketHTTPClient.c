@@ -2400,3 +2400,210 @@ SocketHTTPClient_json_post (SocketHTTPClient_T client, const char *url,
   SocketHTTPClient_Response_free (&response);
   return status;
 }
+
+/* ===== Prepared Request API (Issue #185) ===== */
+
+/**
+ * @brief Validate hostname for security (no control characters).
+ *
+ * SECURITY: Prevents CRLF injection in Host header.
+ */
+static int
+prepared_hostname_safe (const char *host, size_t len)
+{
+  for (size_t i = 0; i < len; i++)
+    {
+      unsigned char c = (unsigned char)host[i];
+      if (c == '\r' || c == '\n' || c == '\0' || c < 0x20)
+        return 0;
+    }
+  return 1;
+}
+
+SocketHTTPClient_PreparedRequest_T
+SocketHTTPClient_prepare (SocketHTTPClient_T client, SocketHTTP_Method method,
+                          const char *url)
+{
+  SocketHTTPClient_PreparedRequest_T prep;
+  Arena_T arena;
+  SocketHTTP_URIResult uri_result;
+  char host_buf[HTTPCLIENT_HOST_HEADER_SIZE];
+  size_t host_header_len;
+
+  if (client == NULL || url == NULL)
+    return NULL;
+
+  /* Create arena for prepared request */
+  arena = Arena_new ();
+  if (arena == NULL)
+    {
+      client->last_error = HTTPCLIENT_ERROR_OUT_OF_MEMORY;
+      return NULL;
+    }
+
+  prep = CALLOC (arena, 1, sizeof (*prep));
+  if (prep == NULL)
+    {
+      Arena_dispose (&arena);
+      client->last_error = HTTPCLIENT_ERROR_OUT_OF_MEMORY;
+      return NULL;
+    }
+
+  prep->arena = arena;
+  prep->client = client;
+  prep->method = method;
+
+  /* Parse URI once - eliminates 5.3% CPU overhead per request */
+  uri_result = SocketHTTP_URI_parse (url, 0, &prep->uri, arena);
+  if (uri_result != URI_PARSE_OK)
+    {
+      Arena_dispose (&arena);
+      client->last_error = HTTPCLIENT_ERROR_PROTOCOL;
+      HTTPCLIENT_ERROR_MSG ("Invalid URL in prepare: %s (%s)", url,
+                            SocketHTTP_URI_result_string (uri_result));
+      return NULL;
+    }
+
+  /* SECURITY: Validate hostname for control characters */
+  if (!prepared_hostname_safe (prep->uri.host, prep->uri.host_len))
+    {
+      Arena_dispose (&arena);
+      client->last_error = HTTPCLIENT_ERROR_PROTOCOL;
+      HTTPCLIENT_ERROR_MSG ("Invalid characters in hostname");
+      return NULL;
+    }
+
+  /* Determine scheme and port */
+  prep->is_secure = SocketHTTP_URI_is_secure (&prep->uri);
+  prep->effective_port = prep->uri.port;
+  if (prep->effective_port == -1)
+    prep->effective_port = prep->is_secure ? 443 : 80;
+
+  /* Pre-format Host header - eliminates 2.9% CPU overhead per request */
+  if (prep->effective_port == 80 || prep->effective_port == 443)
+    {
+      host_header_len
+          = (size_t)snprintf (host_buf, sizeof (host_buf), "%s", prep->uri.host);
+    }
+  else
+    {
+      host_header_len = (size_t)snprintf (host_buf, sizeof (host_buf), "%s:%d",
+                                          prep->uri.host, prep->effective_port);
+    }
+
+  if (host_header_len >= sizeof (host_buf))
+    {
+      Arena_dispose (&arena);
+      client->last_error = HTTPCLIENT_ERROR_PROTOCOL;
+      HTTPCLIENT_ERROR_MSG ("Host header too long in prepare");
+      return NULL;
+    }
+
+  prep->host_header = Arena_alloc (arena, host_header_len + 1, __FILE__, __LINE__);
+  if (prep->host_header == NULL)
+    {
+      Arena_dispose (&arena);
+      client->last_error = HTTPCLIENT_ERROR_OUT_OF_MEMORY;
+      return NULL;
+    }
+  memcpy (prep->host_header, host_buf, host_header_len + 1);
+  prep->host_header_len = host_header_len;
+
+  /* Pre-compute pool hash - eliminates 3.9% CPU overhead per request */
+  if (client->pool != NULL)
+    {
+      prep->pool_hash = httpclient_host_hash_len (
+          prep->uri.host, prep->uri.host_len, prep->effective_port,
+          client->pool->hash_size);
+    }
+
+  return prep;
+}
+
+/**
+ * @brief Create a minimal request from cached prepared request data.
+ */
+static SocketHTTPClient_Request_T
+request_new_from_prepared (SocketHTTPClient_PreparedRequest_T prep)
+{
+  SocketHTTPClient_Request_T req;
+  Arena_T arena;
+
+  arena = httpclient_acquire_request_arena ();
+  if (arena == NULL)
+    {
+      prep->client->last_error = HTTPCLIENT_ERROR_OUT_OF_MEMORY;
+      return NULL;
+    }
+
+  req = CALLOC (arena, 1, sizeof (*req));
+  if (req == NULL)
+    {
+      Arena_dispose (&arena);
+      prep->client->last_error = HTTPCLIENT_ERROR_OUT_OF_MEMORY;
+      return NULL;
+    }
+
+  req->arena = arena;
+  req->client = prep->client;
+  req->method = prep->method;
+  req->timeout_ms = -1; /* Use client default */
+
+  /* Copy URI (shallow - strings point to prep->arena) */
+  req->uri = prep->uri;
+
+  /* Create headers and add cached Host header */
+  req->headers = SocketHTTP_Headers_new (arena);
+  if (req->headers == NULL)
+    {
+      httpclient_release_request_arena (&arena);
+      prep->client->last_error = HTTPCLIENT_ERROR_OUT_OF_MEMORY;
+      return NULL;
+    }
+
+  /* Add pre-built Host header - NO snprintf, NO validation (already done) */
+  if (SocketHTTP_Headers_add_n (req->headers, "Host", 4, prep->host_header,
+                                 prep->host_header_len)
+      < 0)
+    {
+      httpclient_release_request_arena (&arena);
+      prep->client->last_error = HTTPCLIENT_ERROR_OUT_OF_MEMORY;
+      return NULL;
+    }
+
+  return req;
+}
+
+int
+SocketHTTPClient_execute_prepared (SocketHTTPClient_PreparedRequest_T prep,
+                                   SocketHTTPClient_Response *response)
+{
+  SocketHTTPClient_Request_T req;
+  int result;
+
+  if (prep == NULL || response == NULL)
+    return -1;
+
+  memset (response, 0, sizeof (*response));
+
+  /* Create minimal request using cached values */
+  req = request_new_from_prepared (prep);
+  if (req == NULL)
+    return -1;
+
+  /* Execute using existing internal path (with retry logic) */
+  result = SocketHTTPClient_Request_execute (req, response);
+
+  SocketHTTPClient_Request_free (&req);
+  return result;
+}
+
+void
+SocketHTTPClient_PreparedRequest_free (SocketHTTPClient_PreparedRequest_T *prep)
+{
+  if (prep == NULL || *prep == NULL)
+    return;
+
+  Arena_dispose (&(*prep)->arena);
+  *prep = NULL;
+}

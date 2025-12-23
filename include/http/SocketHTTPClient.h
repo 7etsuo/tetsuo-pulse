@@ -189,6 +189,51 @@ extern int
 SocketHTTPClient_Request_execute (SocketHTTPClient_Request_T req,
                                   SocketHTTPClient_Response *response);
 
+/**
+ * @brief Opaque prepared request handle for high-throughput use cases.
+ *
+ * Caches parsed URI, pre-built Host header, and pool lookup key to eliminate
+ * per-request parsing overhead. Use for repeated requests to the same URL.
+ */
+typedef struct SocketHTTPClient_PreparedRequest
+    *SocketHTTPClient_PreparedRequest_T;
+
+/**
+ * @brief Prepare a request for repeated execution.
+ *
+ * Parses URL once and caches Host header and pool key. Returns NULL on error.
+ * Call SocketHTTPClient_PreparedRequest_free() when done.
+ *
+ * @param client HTTP client
+ * @param method HTTP method (GET, POST, etc.)
+ * @param url Full URL to request
+ * @return Prepared request handle, or NULL on error
+ */
+extern SocketHTTPClient_PreparedRequest_T
+SocketHTTPClient_prepare (SocketHTTPClient_T client, SocketHTTP_Method method,
+                          const char *url);
+
+/**
+ * @brief Execute a prepared request.
+ *
+ * Uses cached URI and headers - no re-parsing. Thread-safe.
+ *
+ * @param prep Prepared request handle
+ * @param response Output response (caller must free)
+ * @return 0 on success, -1 on error
+ */
+extern int SocketHTTPClient_execute_prepared (
+    SocketHTTPClient_PreparedRequest_T prep,
+    SocketHTTPClient_Response *response);
+
+/**
+ * @brief Free a prepared request.
+ *
+ * @param prep Pointer to prepared request handle (set to NULL after free)
+ */
+extern void SocketHTTPClient_PreparedRequest_free (
+    SocketHTTPClient_PreparedRequest_T *prep);
+
 typedef void (*SocketHTTPClient_Callback) (SocketHTTPClient_AsyncRequest_T req,
                                            SocketHTTPClient_Response *response,
                                            SocketHTTPClient_Error error,

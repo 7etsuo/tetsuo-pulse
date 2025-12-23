@@ -417,6 +417,64 @@ httpclient_pool_get (HTTPPool *pool, const char *host, int port, int is_secure)
   return 0;
 }
 
+HTTPPoolEntry *
+httpclient_pool_get_prepared (HTTPPool *pool, const char *host, size_t host_len,
+                              int port, int is_secure, unsigned precomputed_hash)
+{
+  HTTPPoolEntry *entry;
+
+  assert (pool != NULL);
+  assert (host != NULL);
+
+  (void)host_len; /* Used for consistency; comparison uses strcasecmp */
+
+  pthread_mutex_lock (&pool->mutex);
+
+  /* Use pre-computed hash directly - avoids strlen + hash computation */
+  size_t chain_len = 0;
+  entry = pool->hash_table[precomputed_hash];
+  while (entry != NULL && chain_len < POOL_MAX_HASH_CHAIN_LEN)
+    {
+      ++chain_len;
+      if (host_port_secure_match (entry, host, port, is_secure)
+          && entry_can_handle_request (entry))
+        {
+          /* SECURITY: Verify TLS hostname matches for secure connections */
+          if (entry->is_secure && host)
+            {
+              if (strcasecmp (entry->sni_hostname, host) != 0)
+                {
+                  entry = entry->hash_next;
+                  continue;
+                }
+            }
+
+          /* SECURITY: Clear buffers before reuse */
+          if (entry->version == HTTP_VERSION_1_1
+              || entry->version == HTTP_VERSION_1_0)
+            {
+              if (entry->proto.h1.inbuf)
+                SocketBuf_clear (entry->proto.h1.inbuf);
+              if (entry->proto.h1.outbuf)
+                SocketBuf_clear (entry->proto.h1.outbuf);
+              if (entry->proto.h1.parser)
+                SocketHTTP1_Parser_reset (entry->proto.h1.parser);
+            }
+
+          entry_mark_in_use (entry);
+          pool->reused_connections++;
+          pthread_mutex_unlock (&pool->mutex);
+          return entry;
+        }
+      entry = entry->hash_next;
+    }
+  if (chain_len >= POOL_MAX_HASH_CHAIN_LEN)
+    raise_chain_too_long (chain_len, "in pool lookup", host, port);
+
+  pthread_mutex_unlock (&pool->mutex);
+  return NULL;
+}
+
 void
 httpclient_pool_release (HTTPPool *pool, HTTPPoolEntry *entry)
 {

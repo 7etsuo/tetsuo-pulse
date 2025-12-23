@@ -149,6 +149,27 @@ struct SocketHTTPClient_Request
 };
 
 /**
+ * @brief Cached request data for high-throughput execution.
+ *
+ * Pre-computed values to eliminate per-request overhead:
+ * - Parsed URI (eliminates SocketHTTP_URI_parse call)
+ * - Host header string (eliminates snprintf formatting)
+ * - Pool hash key (eliminates strlen + hash computation)
+ */
+struct SocketHTTPClient_PreparedRequest
+{
+  SocketHTTPClient_T client;
+  SocketHTTP_Method method;
+  SocketHTTP_URI uri;
+  char *host_header;
+  size_t host_header_len;
+  unsigned pool_hash;
+  int is_secure;
+  int effective_port;
+  Arena_T arena;
+};
+
+/**
  * @brief States for asynchronous HTTP requests.
  * @ingroup http
  */
@@ -217,6 +238,11 @@ extern HTTPPool *httpclient_pool_new (Arena_T arena,
 extern void httpclient_pool_free (HTTPPool *pool);
 extern HTTPPoolEntry *httpclient_pool_get (HTTPPool *pool, const char *host,
                                            int port, int is_secure);
+extern HTTPPoolEntry *httpclient_pool_get_prepared (HTTPPool *pool,
+                                                    const char *host,
+                                                    size_t host_len, int port,
+                                                    int is_secure,
+                                                    unsigned precomputed_hash);
 extern void httpclient_pool_release (HTTPPool *pool, HTTPPoolEntry *entry);
 extern void httpclient_pool_close (HTTPPool *pool, HTTPPoolEntry *entry);
 extern void httpclient_pool_cleanup_idle (HTTPPool *pool);
@@ -287,6 +313,22 @@ static inline unsigned
 httpclient_host_hash (const char *host, int port, size_t table_size)
 {
   size_t host_len = strlen (host);
+  unsigned host_hash
+      = socket_util_hash_djb2_ci_len (host, host_len, table_size);
+  unsigned port_hash = socket_util_hash_uint ((unsigned)port, table_size);
+  unsigned combined = host_hash ^ port_hash;
+  return socket_util_hash_uint (combined, table_size);
+}
+
+/**
+ * @brief Compute pool hash with pre-known host length (no strlen).
+ *
+ * Used by prepared requests to avoid strlen() on every request.
+ */
+static inline unsigned
+httpclient_host_hash_len (const char *host, size_t host_len, int port,
+                          size_t table_size)
+{
   unsigned host_hash
       = socket_util_hash_djb2_ci_len (host, host_len, table_size);
   unsigned port_hash = socket_util_hash_uint ((unsigned)port, table_size);

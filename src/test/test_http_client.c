@@ -1220,6 +1220,153 @@ test_timeout_configuration (void)
 }
 
 /* ============================================================================
+ * Prepared Request Tests (Issue #185)
+ * ============================================================================
+ */
+
+static void
+test_prepared_request_basic (void)
+{
+  SocketHTTPClient_T client;
+  SocketHTTPClient_PreparedRequest_T prep;
+
+  TEST_START ("prepared request basic");
+
+  client = SocketHTTPClient_new (NULL);
+  ASSERT_NOT_NULL (client, "client should not be NULL");
+
+  prep = SocketHTTPClient_prepare (client, HTTP_METHOD_GET,
+                                   "http://example.com/path?query=value");
+  ASSERT_NOT_NULL (prep, "prepared request should not be NULL");
+
+  SocketHTTPClient_PreparedRequest_free (&prep);
+  ASSERT_NULL (prep, "prepared request should be NULL after free");
+
+  SocketHTTPClient_free (&client);
+  TEST_PASS ();
+}
+
+static void
+test_prepared_request_https (void)
+{
+  SocketHTTPClient_T client;
+  SocketHTTPClient_PreparedRequest_T prep;
+
+  TEST_START ("prepared request https");
+
+  client = SocketHTTPClient_new (NULL);
+
+  prep = SocketHTTPClient_prepare (client, HTTP_METHOD_GET,
+                                   "https://secure.example.com/api/v1/data");
+  ASSERT_NOT_NULL (prep, "prepared https request should not be NULL");
+
+  SocketHTTPClient_PreparedRequest_free (&prep);
+  SocketHTTPClient_free (&client);
+  TEST_PASS ();
+}
+
+static void
+test_prepared_request_methods (void)
+{
+  SocketHTTPClient_T client;
+  SocketHTTPClient_PreparedRequest_T prep;
+
+  TEST_START ("prepared request methods");
+
+  client = SocketHTTPClient_new (NULL);
+
+  /* Test GET */
+  prep = SocketHTTPClient_prepare (client, HTTP_METHOD_GET,
+                                   "http://example.com/get");
+  ASSERT_NOT_NULL (prep, "GET prepared should succeed");
+  SocketHTTPClient_PreparedRequest_free (&prep);
+
+  /* Test POST */
+  prep = SocketHTTPClient_prepare (client, HTTP_METHOD_POST,
+                                   "http://example.com/post");
+  ASSERT_NOT_NULL (prep, "POST prepared should succeed");
+  SocketHTTPClient_PreparedRequest_free (&prep);
+
+  /* Test PUT */
+  prep = SocketHTTPClient_prepare (client, HTTP_METHOD_PUT,
+                                   "http://example.com/put");
+  ASSERT_NOT_NULL (prep, "PUT prepared should succeed");
+  SocketHTTPClient_PreparedRequest_free (&prep);
+
+  /* Test DELETE */
+  prep = SocketHTTPClient_prepare (client, HTTP_METHOD_DELETE,
+                                   "http://example.com/delete");
+  ASSERT_NOT_NULL (prep, "DELETE prepared should succeed");
+  SocketHTTPClient_PreparedRequest_free (&prep);
+
+  SocketHTTPClient_free (&client);
+  TEST_PASS ();
+}
+
+static void
+test_prepared_request_with_port (void)
+{
+  SocketHTTPClient_T client;
+  SocketHTTPClient_PreparedRequest_T prep;
+
+  TEST_START ("prepared request with custom port");
+
+  client = SocketHTTPClient_new (NULL);
+
+  /* Non-standard port */
+  prep = SocketHTTPClient_prepare (client, HTTP_METHOD_GET,
+                                   "http://example.com:8080/api");
+  ASSERT_NOT_NULL (prep, "prepared with custom port should succeed");
+  SocketHTTPClient_PreparedRequest_free (&prep);
+
+  /* HTTPS with custom port */
+  prep = SocketHTTPClient_prepare (client, HTTP_METHOD_GET,
+                                   "https://example.com:8443/secure");
+  ASSERT_NOT_NULL (prep, "prepared https with custom port should succeed");
+  SocketHTTPClient_PreparedRequest_free (&prep);
+
+  SocketHTTPClient_free (&client);
+  TEST_PASS ();
+}
+
+static void
+test_prepared_request_invalid (void)
+{
+  SocketHTTPClient_T client;
+  SocketHTTPClient_PreparedRequest_T prep;
+
+  TEST_START ("prepared request invalid inputs");
+
+  client = SocketHTTPClient_new (NULL);
+
+  /* NULL client - must fail */
+  prep = SocketHTTPClient_prepare (NULL, HTTP_METHOD_GET,
+                                   "http://example.com/");
+  ASSERT_NULL (prep, "NULL client should return NULL");
+
+  /* NULL URL - must fail */
+  prep = SocketHTTPClient_prepare (client, HTTP_METHOD_GET, NULL);
+  ASSERT_NULL (prep, "NULL URL should return NULL");
+
+  SocketHTTPClient_free (&client);
+  TEST_PASS ();
+}
+
+static void
+test_prepared_request_free_null (void)
+{
+  SocketHTTPClient_PreparedRequest_T prep = NULL;
+
+  TEST_START ("prepared request free NULL");
+
+  /* Should not crash */
+  SocketHTTPClient_PreparedRequest_free (NULL);
+  SocketHTTPClient_PreparedRequest_free (&prep);
+
+  TEST_PASS ();
+}
+
+/* ============================================================================
  * Main Test Runner
  * ============================================================================
  */
@@ -1308,6 +1455,14 @@ main (void)
   test_url_parsing_http ();
   test_url_parsing_https ();
   test_url_parsing_various ();
+
+  printf ("\nPrepared Request Tests (Issue #185):\n");
+  test_prepared_request_basic ();
+  test_prepared_request_https ();
+  test_prepared_request_methods ();
+  test_prepared_request_with_port ();
+  test_prepared_request_invalid ();
+  test_prepared_request_free_null ();
 
   printf ("\n============================================================\n");
   printf ("Test Results: %d passed, %d failed, %d total\n", tests_passed,
