@@ -127,11 +127,18 @@ check_nginx() {
     fi
 }
 
-# Rebuild if needed
+# Rebuild if needed - always use Release mode for benchmarks
 if [ -n "$REBUILD_FLAG" ] || [ ! -f "$BUILD_DIR/benchmark_http_tetsuo" ]; then
-    echo "=== Building benchmarks ==="
+    echo "=== Building benchmarks (Release mode) ==="
+
+    # Create build-release directory if it doesn't exist
+    if [ ! -d "$SCRIPT_DIR/build-release" ]; then
+        mkdir -p "$SCRIPT_DIR/build-release"
+        BUILD_DIR="$SCRIPT_DIR/build-release"
+    fi
+
     cd "$BUILD_DIR"
-    cmake .. -DBUILD_HTTP_BENCHMARKS=ON
+    cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_HTTP_BENCHMARKS=ON -DENABLE_SANITIZERS=OFF
     make -j$(nproc 2>/dev/null || sysctl -n hw.ncpu) benchmark_http_tetsuo benchmark_http_curl 2>/dev/null || \
         make benchmark_http_tetsuo  # curl benchmark may not be available
     cd "$SCRIPT_DIR"

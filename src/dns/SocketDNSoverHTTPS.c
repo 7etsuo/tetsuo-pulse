@@ -540,6 +540,7 @@ int
 SocketDNSoverHTTPS_cancel (T transport, SocketDNSoverHTTPS_Query_T query)
 {
   assert (transport);
+  (void)transport;
 
   if (!query)
     return -1;
@@ -567,6 +568,7 @@ int
 SocketDNSoverHTTPS_process (T transport, int timeout_ms)
 {
   assert (transport);
+  (void)transport;
   (void)timeout_ms;
 
   /* For synchronous implementation, all queries are completed immediately
@@ -579,6 +581,7 @@ int
 SocketDNSoverHTTPS_pending_count (T transport)
 {
   assert (transport);
+  (void)transport;
   /* For synchronous implementation, there are never pending queries */
   return 0;
 }
