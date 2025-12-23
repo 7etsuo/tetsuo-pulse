@@ -44,24 +44,28 @@ Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`
 ```bash
 # Standard build (Debug)
 cmake -S . -B build
-cmake --build build -j
+cmake --build build -j$(nproc)
 
 # Release build (optimized)
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build -j
+cmake --build build -j$(nproc)
 
-# Run tests
-cd build && ctest --output-on-failure
+# Run tests (parallel)
+cd build && ctest -j$(nproc) --output-on-failure
 
 # Build with TLS support (auto-detects OpenSSL/LibreSSL)
 cmake -S . -B build -DENABLE_TLS=ON
 
 # Build with sanitizers (required for PRs)
 cmake -S . -B build -DENABLE_SANITIZERS=ON
-cd build && ASAN_OPTIONS=detect_leaks=1:abort_on_error=1 ctest --output-on-failure
+cmake --build build -j$(nproc)
+cd build && ASAN_OPTIONS=detect_leaks=1:abort_on_error=1 ctest -j$(nproc) --output-on-failure
 
 # Build with fuzzing (requires Clang)
 CC=clang cmake -S . -B build -DENABLE_FUZZING=ON
+
+# Build with io_uring (Linux only, requires liburing-dev)
+cmake -S . -B build -DENABLE_IO_URING=ON
 
 # Run single test
 cd build && ./test_socket
@@ -70,7 +74,7 @@ cd build && ./test_socket
 cd build && ./fuzz_socketbuf corpus/socketbuf/ -fork=16 -max_len=4096
 
 # Generate documentation
-cd build && make doc
+cd build && make -j$(nproc) doc
 ```
 
 ## Build Options
@@ -82,6 +86,7 @@ cd build && make doc
 | `ENABLE_TSAN` | Enable ThreadSanitizer (incompatible with ASan) |
 | `ENABLE_COVERAGE` | Enable gcov code coverage |
 | `ENABLE_FUZZING` | Enable libFuzzer harnesses (requires Clang) |
+| `ENABLE_IO_URING` | Enable io_uring async I/O backend (Linux 5.1+, requires liburing) |
 | `ENABLE_HTTP_COMPRESSION` | Enable gzip/deflate/brotli for HTTP |
 | `BUILD_EXAMPLES` | Build example programs |
 
@@ -97,7 +102,7 @@ This is a high-performance C socket library for POSIX systems with two API style
 include/
 ├── core/       # Foundation: Arena (memory), Except (exceptions), utilities
 ├── socket/     # TCP/UDP/Unix sockets, buffers, async I/O, reconnection
-├── dns/        # Async DNS resolution with thread pool
+├── dns/        # Async DNS resolver (RFC 1035), DNS-over-TLS (RFC 7858), DNS-over-HTTPS (RFC 8484)
 ├── poll/       # Event polling (epoll/kqueue/poll backends)
 ├── pool/       # Connection pooling with rate limiting
 ├── tls/        # TLS/DTLS support (OpenSSL/LibreSSL)
@@ -108,7 +113,7 @@ include/
 src/
 ├── core/       # Arena, Except, timers, rate limiting, crypto, UTF-8
 ├── socket/     # Socket ops, WebSocket (RFC 6455), proxy (SOCKS4/5, HTTP CONNECT)
-├── dns/        # Async DNS internals
+├── dns/        # Wire format, transport (UDP/TCP/DoT/DoH), cache, resolver
 ├── poll/       # Platform backends (SocketPoll_epoll.c, SocketPoll_kqueue.c)
 ├── pool/       # Connection pool, drain state machine
 ├── tls/        # TLS context, kTLS, DTLS, certificate pinning
@@ -169,6 +174,7 @@ typedef struct T *T;
 
 The poll backend is auto-selected at build time:
 - **Linux**: epoll (`src/poll/SocketPoll_epoll.c`)
+- **Linux (optional)**: io_uring for async I/O (`-DENABLE_IO_URING=ON`, requires kernel 5.1+)
 - **BSD/macOS**: kqueue (`src/poll/SocketPoll_kqueue.c`)
 - **Fallback**: poll(2) (`src/poll/SocketPoll_poll.c`)
 
@@ -211,8 +217,8 @@ These hooks enforce the git workflow and catch common issues early.
 All PRs must pass with sanitizers enabled:
 ```bash
 cmake -B build -DENABLE_SANITIZERS=ON
-cmake --build build -j
-cd build && ASAN_OPTIONS=detect_leaks=1:abort_on_error=1 ctest --output-on-failure
+cmake --build build -j$(nproc)
+cd build && ASAN_OPTIONS=detect_leaks=1:abort_on_error=1 ctest -j$(nproc) --output-on-failure
 
 # Run a single test by name
 cd build && ./test_socket
@@ -233,6 +239,7 @@ Test files are in `src/test/` and map to modules:
 - `test_http*.c` - HTTP/1.1 parser, HTTP/2, HPACK, client, server
 - `test_websocket*.c` - WebSocket (RFC 6455), WebSocket-over-HTTP/2
 - `test_proxy*.c` - SOCKS4/5, HTTP CONNECT proxy
+- `test_dns_*.c` - DNS wire format, cache, transport, resolver, DoT, DoH
 - `test_except.c` - Exception handling framework
 - `test_arena.c` - Memory arena management
 

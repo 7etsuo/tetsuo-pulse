@@ -14,7 +14,7 @@ Complete API reference for the Simple API layer - return-code-based convenience 
 - TLS functions (connect_tls, enable_tls, session resumption)
 - HTTP client (GET, POST, PUT, DELETE, JSON convenience)
 - WebSocket client and server (connect, send, recv)
-- DNS resolution (sync and async with caching)
+- DNS resolution (sync, async with callback/polling, cache control)
 - Poll event loop (add, mod, del, wait)
 - Connection pool (rate limiting, graceful shutdown)
 - Proxy tunneling (SOCKS4/5, HTTP CONNECT)
@@ -44,7 +44,7 @@ Complete API reference for all Socket library modules, extracted from command fi
 - SocketReconnect functions (auto-reconnection with backoff)
 - SocketHappyEyeballs functions (dual-stack connection racing)
 - SocketPool functions (connection pool management)
-- SocketDNS functions (async DNS resolution)
+- SocketDNS functions (async DNS resolver, DNS-over-TLS, DNS-over-HTTPS)
 - SocketPoll functions (event polling abstraction)
 - SocketSYNProtect functions (SYN flood protection)
 - SocketHTTPClient functions (HTTP client)
@@ -76,6 +76,7 @@ Implementation patterns for TLS, HTTP, WebSocket, and other protocols.
 - Proxy tunneling patterns (HTTP CONNECT, SOCKS4/5, sync/async)
 - WebSocket protocol patterns (handshake, messaging, control frames, event loop)
 - UTF-8 validation patterns (one-shot and incremental)
+- DNS resolution patterns (async resolver, DoT, DoH, cache configuration)
 
 **Use when**: Implementing protocol handlers, optimizing performance, or ensuring secure patterns.
 
