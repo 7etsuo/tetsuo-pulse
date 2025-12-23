@@ -129,6 +129,8 @@ typedef struct
   int retry_on_5xx;
 
   int enforce_samesite;
+
+  int discard_body; /**< Discard response body (benchmark mode) */
 } SocketHTTPClient_Config;
 
 typedef struct SocketHTTPClient *SocketHTTPClient_T;

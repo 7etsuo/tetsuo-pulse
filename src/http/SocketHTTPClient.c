@@ -162,6 +162,9 @@ SocketHTTPClient_config_defaults (SocketHTTPClient_Config *config)
 
   /* Security */
   config->enforce_samesite = HTTPCLIENT_DEFAULT_ENFORCE_SAMESITE;
+
+  /* Benchmark mode (default: disabled) */
+  config->discard_body = 0;
 }
 
 SocketHTTPClient_T
@@ -411,7 +414,8 @@ typedef struct
   char *body_buf;
   size_t total_body;
   size_t body_capacity;
-  size_t max_size; /**< Maximum allowed size (0 = unlimited) */
+  size_t max_size;    /**< Maximum allowed size (0 = unlimited) */
+  int discard_body;   /**< Benchmark mode: count bytes, skip memcpy */
   Arena_T arena;
 } HTTP1BodyAccumulator;
 
@@ -507,6 +511,7 @@ accumulate_body_chunk (HTTP1BodyAccumulator *acc, const char *data, size_t len)
   int result;
 
   assert (acc != NULL);
+  (void)data; /* May be unused in discard mode */
 
   if (len == 0)
     return 0;
@@ -515,6 +520,13 @@ accumulate_body_chunk (HTTP1BodyAccumulator *acc, const char *data, size_t len)
   result = check_body_size_limit (acc, len, &needed_size);
   if (result != 0)
     return result;
+
+  /* Benchmark mode: just count bytes, skip allocation and copy */
+  if (acc->discard_body)
+    {
+      acc->total_body = needed_size;
+      return 0;
+    }
 
   /* Grow buffer if needed */
   if (grow_body_buffer (acc, needed_size) != 0)
@@ -640,13 +652,13 @@ fill_response_struct (SocketHTTPClient_Response *response,
 static int
 receive_http1_response (HTTPPoolEntry *conn,
                         SocketHTTPClient_Response *response,
-                        size_t max_response_size)
+                        size_t max_response_size, int discard_body)
 {
   char buf[HTTPCLIENT_REQUEST_BUFFER_SIZE];
   ssize_t n;
   Arena_T resp_arena;
   const SocketHTTP_Response *parsed_resp = NULL;
-  HTTP1BodyAccumulator acc = { NULL, 0, 0, 0, NULL };
+  HTTP1BodyAccumulator acc = { NULL, 0, 0, 0, 0, NULL };
   int parse_result;
 
   assert (conn != NULL);
@@ -662,6 +674,7 @@ receive_http1_response (HTTPPoolEntry *conn,
 
   acc.arena = resp_arena;
   acc.max_size = max_response_size;
+  acc.discard_body = discard_body;
 
   /* Reset parser for response */
   SocketHTTP1_Parser_reset (conn->proto.h1.parser);
@@ -698,7 +711,7 @@ static int
 execute_http1_request (HTTPPoolEntry *conn,
                        const SocketHTTPClient_Request_T req,
                        SocketHTTPClient_Response *response,
-                       size_t max_response_size)
+                       size_t max_response_size, int discard_body)
 {
   SocketHTTP_Request http_req;
 
@@ -718,7 +731,8 @@ execute_http1_request (HTTPPoolEntry *conn,
     return -1;
 
   /* Receive and parse response */
-  return receive_http1_response (conn, response, max_response_size);
+  return receive_http1_response (conn, response, max_response_size,
+                                 discard_body);
 }
 
 /**
@@ -1319,18 +1333,34 @@ http2_recv_headers (SocketHTTP2_Stream_T stream, SocketHTTP2_Conn_T h2conn,
 static int
 http2_recv_body (SocketHTTP2_Stream_T stream, SocketHTTP2_Conn_T h2conn,
                  Arena_T arena, size_t max_response_size,
-                 unsigned char **body_out, size_t *body_len_out)
+                 unsigned char **body_out, size_t *body_len_out,
+                 int discard_body)
 {
-  size_t body_cap = (max_response_size > 0) ? max_response_size
-                                            : HTTPCLIENT_H2_BODY_INITIAL_CAPACITY;
-  unsigned char *body_buf = Arena_alloc (arena, body_cap, __FILE__, __LINE__);
+  size_t body_cap;
+  unsigned char *body_buf;
+  unsigned char discard_buf[HTTPCLIENT_BODY_CHUNK_SIZE];
   size_t total_body = 0;
   int end_stream = 0;
 
+  /* Benchmark mode: use stack buffer and discard data */
+  if (discard_body)
+    {
+      body_buf = discard_buf;
+      body_cap = sizeof (discard_buf);
+    }
+  else
+    {
+      body_cap = (max_response_size > 0) ? max_response_size
+                                         : HTTPCLIENT_H2_BODY_INITIAL_CAPACITY;
+      body_buf = Arena_alloc (arena, body_cap, __FILE__, __LINE__);
+    }
+
   while (!end_stream)
     {
+      size_t recv_offset = discard_body ? 0 : total_body;
+      size_t recv_cap = discard_body ? body_cap : (body_cap - total_body);
       ssize_t recv_len = SocketHTTP2_Stream_recv_data (
-          stream, body_buf + total_body, body_cap - total_body, &end_stream);
+          stream, body_buf + recv_offset, recv_cap, &end_stream);
 
       if (recv_len < 0)
         return -1;
@@ -1350,17 +1380,22 @@ http2_recv_body (SocketHTTP2_Stream_T stream, SocketHTTP2_Conn_T h2conn,
           return -2;
         }
 
-      /* Grow if full and unlimited size */
-      if (total_body >= body_cap && max_response_size == 0) {
-        size_t needed = total_body + HTTPCLIENT_BODY_CHUNK_SIZE; /* Ensure space for next chunk */
-        if (httpclient_grow_body_buffer (arena, (char **)&body_buf, &body_cap, &total_body, needed, max_response_size) != 0) {
-          SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
-          return -1;
+      /* Grow if full and unlimited size (only when not discarding) */
+      if (!discard_body && total_body >= body_cap && max_response_size == 0)
+        {
+          size_t needed = total_body + HTTPCLIENT_BODY_CHUNK_SIZE;
+          if (httpclient_grow_body_buffer (arena, (char **)&body_buf, &body_cap,
+                                           &total_body, needed,
+                                           max_response_size)
+              != 0)
+            {
+              SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
+              return -1;
+            }
         }
-      }
     }
 
-  *body_out = body_buf;
+  *body_out = discard_body ? NULL : body_buf;
   *body_len_out = total_body;
   return 0;
 }
@@ -1369,7 +1404,7 @@ static int
 execute_http2_request (HTTPPoolEntry *conn,
                        const SocketHTTPClient_Request_T req,
                        SocketHTTPClient_Response *response,
-                       size_t max_response_size)
+                       size_t max_response_size, int discard_body)
 {
   SocketHTTP2_Conn_T h2conn = conn->proto.h2.conn;
   SocketHTTP2_Stream_T stream;
@@ -1421,7 +1456,7 @@ execute_http2_request (HTTPPoolEntry *conn,
   result
       = http2_recv_body (stream, h2conn, SocketHTTP2_Conn_arena (h2conn),
                          max_response_size, (unsigned char **)&response->body,
-                         &response->body_len);
+                         &response->body_len, discard_body);
   conn->proto.h2.active_streams--;
   return result;
 }
@@ -1431,11 +1466,15 @@ execute_protocol_request (HTTPPoolEntry *conn, SocketHTTPClient_Request_T req,
                           SocketHTTPClient_Response *response,
                           size_t max_response_size, SocketHTTPClient_T client)
 {
+  int discard_body = client->config.discard_body;
+
   if (conn->version == HTTP_VERSION_1_1 || conn->version == HTTP_VERSION_1_0)
-    return execute_http1_request (conn, req, response, max_response_size);
+    return execute_http1_request (conn, req, response, max_response_size,
+                                  discard_body);
 
   if (conn->version == HTTP_VERSION_2)
-    return execute_http2_request (conn, req, response, max_response_size);
+    return execute_http2_request (conn, req, response, max_response_size,
+                                  discard_body);
 
   client->last_error = HTTPCLIENT_ERROR_PROTOCOL;
   HTTPCLIENT_ERROR_FMT ("HTTP version %d not supported", conn->version);
