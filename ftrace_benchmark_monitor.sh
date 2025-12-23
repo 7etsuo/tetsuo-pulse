@@ -17,7 +17,7 @@
 #
 # Requires: root/sudo, CONFIG_FTRACE enabled kernel
 
-set -e
+# Note: Do NOT use 'set -e' here - we need explicit error handling for ftrace ops
 
 # Colors for output
 RED='\033[0;31m'
@@ -116,7 +116,16 @@ fi
 # Check ftrace availability
 if [ ! -d "$TRACEFS" ]; then
     echo -e "${RED}Error: ftrace not available${NC}"
+    echo "Tracefs not found at /sys/kernel/tracing or /sys/kernel/debug/tracing"
     echo "Ensure CONFIG_FTRACE is enabled in kernel config"
+    exit 1
+fi
+
+# Check we can write to ftrace (pre-flight check)
+if [ ! -w "$TRACEFS/tracing_on" ]; then
+    echo -e "${RED}Error: Cannot write to ftrace${NC}"
+    echo "File $TRACEFS/tracing_on is not writable"
+    echo "Make sure you're running with sudo"
     exit 1
 fi
 
@@ -152,34 +161,57 @@ setup_ftrace() {
     echo -e "${CYAN}Setting up ftrace monitoring...${NC}"
 
     # Stop tracing and clear buffer
-    echo 0 > "$TRACEFS/tracing_on"
-    echo > "$TRACEFS/trace"
+    if ! echo 0 > "$TRACEFS/tracing_on" 2>/dev/null; then
+        echo -e "${RED}Error: Failed to disable tracing${NC}"
+        exit 1
+    fi
+
+    if ! echo > "$TRACEFS/trace" 2>/dev/null; then
+        echo -e "${RED}Error: Failed to clear trace buffer${NC}"
+        exit 1
+    fi
 
     # Set tracer to nop (we'll use events)
-    echo nop > "$TRACEFS/current_tracer"
+    if ! echo nop > "$TRACEFS/current_tracer" 2>/dev/null; then
+        echo -e "${RED}Error: Failed to set tracer to nop${NC}"
+        exit 1
+    fi
 
     # Enable syscall events
     local enabled=0
     for syscall in "${SYSCALLS[@]}"; do
         if [ -f "$TRACEFS/events/syscalls/$syscall/enable" ]; then
-            echo 1 > "$TRACEFS/events/syscalls/$syscall/enable"
-            ((enabled++))
+            if echo 1 > "$TRACEFS/events/syscalls/$syscall/enable" 2>/dev/null; then
+                ((enabled++))
+            fi
         fi
     done
+
+    if [ $enabled -eq 0 ]; then
+        echo -e "${RED}Error: No syscall events could be enabled${NC}"
+        echo "Check that /sys/kernel/tracing/events/syscalls/ contains event directories"
+        exit 1
+    fi
 
     echo -e "  Enabled $enabled syscall events"
 
     # Set PID filter if specified
     if [ -n "$MONITOR_PID" ]; then
-        echo "$MONITOR_PID" > "$TRACEFS/set_event_pid"
-        echo -e "  Filtering to PID: $MONITOR_PID"
+        if echo "$MONITOR_PID" > "$TRACEFS/set_event_pid" 2>/dev/null; then
+            echo -e "  Filtering to PID: $MONITOR_PID"
+        else
+            echo -e "${YELLOW}Warning: Could not set PID filter${NC}"
+        fi
     fi
 
     # Increase buffer size for high-throughput monitoring
-    echo 32768 > "$TRACEFS/buffer_size_kb"
+    echo 32768 > "$TRACEFS/buffer_size_kb" 2>/dev/null || true
 
     # Enable tracing
-    echo 1 > "$TRACEFS/tracing_on"
+    if ! echo 1 > "$TRACEFS/tracing_on" 2>/dev/null; then
+        echo -e "${RED}Error: Failed to enable tracing${NC}"
+        exit 1
+    fi
 
     echo -e "${GREEN}Ftrace monitoring active${NC}"
     echo ""
