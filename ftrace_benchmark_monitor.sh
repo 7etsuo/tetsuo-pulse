@@ -39,14 +39,13 @@ SUMMARY_MODE=0
 VERBOSE=0
 
 # Syscalls to monitor (network I/O related)
+# Note: recv/send don't exist as separate syscalls on Linux - they use recvfrom/sendto
 SYSCALLS=(
     "sys_enter_connect"
     "sys_enter_accept"
     "sys_enter_accept4"
     "sys_enter_read"
     "sys_enter_write"
-    "sys_enter_recv"
-    "sys_enter_send"
     "sys_enter_recvfrom"
     "sys_enter_sendto"
     "sys_enter_recvmsg"
@@ -133,9 +132,11 @@ cleanup() {
     echo > "$TRACEFS/set_ftrace_filter" 2>/dev/null || true
     echo > "$TRACEFS/set_event_pid" 2>/dev/null || true
 
-    # Disable syscall events
+    # Disable syscall events (silently ignore missing ones)
     for syscall in "${SYSCALLS[@]}"; do
-        echo 0 > "$TRACEFS/events/syscalls/$syscall/enable" 2>/dev/null || true
+        if [ -f "$TRACEFS/events/syscalls/$syscall/enable" ]; then
+            echo 0 > "$TRACEFS/events/syscalls/$syscall/enable"
+        fi
     done
 
     # Clear buffer
