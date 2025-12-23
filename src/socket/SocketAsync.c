@@ -44,6 +44,10 @@
 #define SOCKET_IO_URING_TEST_ENTRIES 32
 #endif
 
+#ifndef SOCKET_DEFAULT_IO_URING_ENTRIES
+#define SOCKET_DEFAULT_IO_URING_ENTRIES 256
+#endif
+
 /* Key fields for partial completion and timeout support:
  * - size_t completed in AsyncRequest - tracks bytes transferred so far
  * - int64_t submitted_at in AsyncRequest - submission timestamp for timeout
@@ -551,7 +555,7 @@ detect_async_backend (T async)
     {
       io_uring_queue_exit (&test_ring);
 
-      async->ring = Arena_calloc (async->arena, 1, sizeof (struct io_uring));
+      async->ring = CALLOC (async->arena, 1, sizeof (struct io_uring));
       if (!async->ring)
         {
           async->backend_name = "io_uring (allocation failed)";
