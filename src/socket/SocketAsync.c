@@ -13,7 +13,7 @@
 
 #include <unistd.h>
 
-#ifdef SOCKET_HAS_IO_URING
+#if SOCKET_HAS_IO_URING
 #include <liburing.h>
 #include <sys/eventfd.h>
 #endif
@@ -158,7 +158,7 @@ process_request_completion (T async, struct AsyncRequest *req, ssize_t result, i
   socket_async_free_request (async, req);
 }
 
-#ifdef SOCKET_HAS_IO_URING
+#if SOCKET_HAS_IO_URING
 static void
 handle_completion (T async, unsigned request_id, ssize_t result, int err)
 {
@@ -338,7 +338,7 @@ submit_and_track_request (T async, struct AsyncRequest *req)
   return req->request_id;
 }
 
-#ifdef SOCKET_HAS_IO_URING
+#if SOCKET_HAS_IO_URING
 static int
 submit_io_uring_op (T async, struct AsyncRequest *req)
 {
@@ -545,7 +545,7 @@ detect_async_backend (T async)
 {
   assert (async);
 
-#ifdef SOCKET_HAS_IO_URING
+#if SOCKET_HAS_IO_URING
   struct io_uring test_ring;
   if (io_uring_queue_init (SOCKET_IO_URING_TEST_ENTRIES, &test_ring, 0) == 0)
     {
@@ -612,7 +612,7 @@ submit_async_operation (T async, struct AsyncRequest *req)
 {
   assert (async && req);
 
-#ifdef SOCKET_HAS_IO_URING
+#if SOCKET_HAS_IO_URING
   if (async->ring)
     return submit_io_uring_op (async, req);
 #endif
@@ -640,7 +640,7 @@ process_async_completions_internal (T async,
 
   if (async->available)
     {
-#ifdef SOCKET_HAS_IO_URING
+#if SOCKET_HAS_IO_URING
       if (async->ring)
         {
           uint64_t val;
@@ -766,7 +766,7 @@ SocketAsync_free (T *async)
   (*async)->next_request_id = 1;
   pthread_mutex_unlock (&(*async)->mutex);
 
-#ifdef SOCKET_HAS_IO_URING
+#if SOCKET_HAS_IO_URING
   if ((*async)->ring)
     {
       if ((*async)->io_uring_fd >= 0)
@@ -927,7 +927,7 @@ SocketAsync_backend_available (SocketAsync_Backend backend)
       return 1;
 
     case ASYNC_BACKEND_IO_URING:
-#ifdef SOCKET_HAS_IO_URING
+#if SOCKET_HAS_IO_URING
       {
         struct io_uring test_ring;
         if (io_uring_queue_init (SOCKET_IO_URING_TEST_ENTRIES, &test_ring, 0)
@@ -1274,6 +1274,126 @@ SocketAsync_recv_timeout (T async, Socket_T socket, void *buf, size_t len,
   return socket_async_submit_with_timeout (async, socket, REQ_RECV, NULL, buf,
                                            len, cb, user_data, flags,
                                            timeout_ms);
+}
+
+
+/* ==================== io_uring Availability Check ==================== */
+
+#ifdef __linux__
+#include <sys/utsname.h>
+#endif
+
+/**
+ * Parse kernel version from uname().release string.
+ * Returns 1 on success, 0 on failure.
+ */
+static int
+parse_kernel_version (int *major, int *minor, int *patch)
+{
+#ifdef __linux__
+  struct utsname uts;
+  if (uname (&uts) != 0)
+    return 0;
+
+  /* Parse release string like "5.10.0-generic" or "6.2.15" */
+  *major = *minor = *patch = 0;
+  if (sscanf (uts.release, "%d.%d.%d", major, minor, patch) >= 2)
+    return 1;
+
+  return 0;
+#else
+  /* Not Linux - io_uring not available */
+  *major = *minor = *patch = 0;
+  return 0;
+#endif
+}
+
+/**
+ * Check if kernel version is >= required (major.minor).
+ */
+static int
+kernel_version_at_least (int major, int minor, int req_major, int req_minor)
+{
+  if (major > req_major)
+    return 1;
+  if (major == req_major && minor >= req_minor)
+    return 1;
+  return 0;
+}
+
+int
+SocketAsync_io_uring_available (SocketAsync_IOUringInfo *info)
+{
+  static int cached = -1;
+  static SocketAsync_IOUringInfo cached_info;
+
+  /* Return cached result if available */
+  if (cached >= 0)
+    {
+      if (info)
+        *info = cached_info;
+      return cached;
+    }
+
+  /* Initialize info structure */
+  cached_info.major = 0;
+  cached_info.minor = 0;
+  cached_info.patch = 0;
+  cached_info.supported = 0;
+  cached_info.full_support = 0;
+  cached_info.compiled = SOCKET_HAS_IO_URING;
+
+  /* Check compile-time support */
+  if (!SOCKET_HAS_IO_URING)
+    {
+      cached = 0;
+      if (info)
+        *info = cached_info;
+      return 0;
+    }
+
+  /* Parse kernel version */
+  if (!parse_kernel_version (&cached_info.major, &cached_info.minor,
+                             &cached_info.patch))
+    {
+      cached = 0;
+      if (info)
+        *info = cached_info;
+      return 0;
+    }
+
+  /* Check kernel version requirements:
+   * - 5.1+: Basic io_uring support
+   * - 5.6+: Full features (multi-shot, SQPOLL, registered buffers)
+   */
+  if (kernel_version_at_least (cached_info.major, cached_info.minor, 5, 1))
+    cached_info.supported = 1;
+
+  if (kernel_version_at_least (cached_info.major, cached_info.minor, 5, 6))
+    cached_info.full_support = 1;
+
+#if SOCKET_HAS_IO_URING
+  /* Additional runtime probe: try to create a small ring */
+  if (cached_info.supported)
+    {
+      struct io_uring ring;
+      if (io_uring_queue_init (SOCKET_IO_URING_TEST_ENTRIES, &ring, 0) == 0)
+        {
+          io_uring_queue_exit (&ring);
+        }
+      else
+        {
+          /* Ring creation failed - io_uring not usable */
+          cached_info.supported = 0;
+          cached_info.full_support = 0;
+        }
+    }
+#endif
+
+  cached = cached_info.supported;
+  if (info)
+    *info = cached_info;
+  return cached;
 }
 
 #undef T
