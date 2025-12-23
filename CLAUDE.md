@@ -44,21 +44,22 @@ Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`
 ```bash
 # Standard build (Debug)
 cmake -S . -B build
-cmake --build build -j
+cmake --build build -j$(nproc)
 
 # Release build (optimized)
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build -j
+cmake --build build -j$(nproc)
 
-# Run tests
-cd build && ctest --output-on-failure
+# Run tests (parallel)
+cd build && ctest -j$(nproc) --output-on-failure
 
 # Build with TLS support (auto-detects OpenSSL/LibreSSL)
 cmake -S . -B build -DENABLE_TLS=ON
 
 # Build with sanitizers (required for PRs)
 cmake -S . -B build -DENABLE_SANITIZERS=ON
-cd build && ASAN_OPTIONS=detect_leaks=1:abort_on_error=1 ctest --output-on-failure
+cmake --build build -j$(nproc)
+cd build && ASAN_OPTIONS=detect_leaks=1:abort_on_error=1 ctest -j$(nproc) --output-on-failure
 
 # Build with fuzzing (requires Clang)
 CC=clang cmake -S . -B build -DENABLE_FUZZING=ON
@@ -73,7 +74,7 @@ cd build && ./test_socket
 cd build && ./fuzz_socketbuf corpus/socketbuf/ -fork=16 -max_len=4096
 
 # Generate documentation
-cd build && make doc
+cd build && make -j$(nproc) doc
 ```
 
 ## Build Options
@@ -216,8 +217,8 @@ These hooks enforce the git workflow and catch common issues early.
 All PRs must pass with sanitizers enabled:
 ```bash
 cmake -B build -DENABLE_SANITIZERS=ON
-cmake --build build -j
-cd build && ASAN_OPTIONS=detect_leaks=1:abort_on_error=1 ctest --output-on-failure
+cmake --build build -j$(nproc)
+cd build && ASAN_OPTIONS=detect_leaks=1:abort_on_error=1 ctest -j$(nproc) --output-on-failure
 
 # Run a single test by name
 cd build && ./test_socket
