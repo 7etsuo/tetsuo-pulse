@@ -1719,10 +1719,15 @@ SocketHappyEyeballs_connect (const char *host, int port,
           he_handle_total_timeout (he);
           break;
         }
+      /* If no active attempts yet but we're in CONNECTING state (e.g., DNS
+       * just resolved for an IP literal), don't wait - process immediately
+       * to start the first connection attempt. */
+      if (he->attempt_count == 0 && he->state == HE_STATE_CONNECTING)
+        timeout = 0;
       /* Cap to shorter interval for frequent DNS/state checking.
        * Without poll integration for DNS, we need to poll frequently
        * to detect DNS completion and start connection attempts. */
-      if (timeout < 0 || timeout > SOCKET_HE_SYNC_POLL_INTERVAL_MS)
+      else if (timeout < 0 || timeout > SOCKET_HE_SYNC_POLL_INTERVAL_MS)
         timeout = SOCKET_HE_SYNC_POLL_INTERVAL_MS;
 
       events = NULL;

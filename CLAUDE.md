@@ -42,8 +42,12 @@ Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`
 ## Build Commands
 
 ```bash
-# Standard build
+# Standard build (Debug)
 cmake -S . -B build
+cmake --build build -j
+
+# Release build (optimized)
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j
 
 # Run tests
