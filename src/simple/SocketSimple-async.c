@@ -176,6 +176,8 @@ Socket_simple_async_send_timeout (SocketSimple_Async_T async,
                                   void *user_data, SocketSimple_AsyncFlags flags,
                                   int64_t timeout_ms)
 {
+  /* Volatile copy to survive potential longjmp in TRY/EXCEPT */
+  SocketSimple_Socket_T volatile safe_socket = socket;
   Socket_T core_socket;
   struct CallbackContext *ctx;
   volatile unsigned request_id = 0;
@@ -188,7 +190,7 @@ Socket_simple_async_send_timeout (SocketSimple_Async_T async,
       return 0;
     }
 
-  core_socket = get_core_socket (socket);
+  core_socket = get_core_socket ((SocketSimple_Socket_T)safe_socket);
   if (!core_socket)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
@@ -213,7 +215,7 @@ Socket_simple_async_send_timeout (SocketSimple_Async_T async,
 
   ctx->user_cb = cb;
   ctx->user_data = user_data;
-  ctx->simple_socket = socket;
+  ctx->simple_socket = (SocketSimple_Socket_T)safe_socket;
 
   TRY
   {
@@ -249,6 +251,8 @@ Socket_simple_async_recv_timeout (SocketSimple_Async_T async,
                                   void *user_data, SocketSimple_AsyncFlags flags,
                                   int64_t timeout_ms)
 {
+  /* Volatile copy to survive potential longjmp in TRY/EXCEPT */
+  SocketSimple_Socket_T volatile safe_socket = socket;
   Socket_T core_socket;
   struct CallbackContext *ctx;
   volatile unsigned request_id = 0;
@@ -261,7 +265,7 @@ Socket_simple_async_recv_timeout (SocketSimple_Async_T async,
       return 0;
     }
 
-  core_socket = get_core_socket (socket);
+  core_socket = get_core_socket ((SocketSimple_Socket_T)safe_socket);
   if (!core_socket)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
@@ -286,7 +290,7 @@ Socket_simple_async_recv_timeout (SocketSimple_Async_T async,
 
   ctx->user_cb = cb;
   ctx->user_data = user_data;
-  ctx->simple_socket = socket;
+  ctx->simple_socket = (SocketSimple_Socket_T)safe_socket;
 
   TRY
   {
