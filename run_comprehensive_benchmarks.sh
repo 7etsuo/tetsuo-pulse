@@ -303,16 +303,17 @@ print_table_header() {
         echo "| Scenario | tetsuo | curl | libevent | beast | Best |"
         echo "|----------|--------|------|----------|-------|------|"
     else
-        echo -e "${BOLD}                         │             Throughput (requests/sec)              │        │${NC}"
-        echo -e "${BOLD}  Scenario               │     tetsuo │       curl │   libevent │      beast │   Best │${NC}"
-        echo "  ───────────────────────┼────────────┼────────────┼────────────┼────────────┼────────┤"
+        echo -e "                              ${BOLD}Throughput (requests/sec)${NC}"
+        echo "  ┌───────────────────────┬────────────┬────────────┬────────────┬────────────┬────────┐"
+        echo -e "  │ ${BOLD}Scenario${NC}              │ ${BOLD}    tetsuo${NC} │ ${BOLD}      curl${NC} │ ${BOLD}  libevent${NC} │ ${BOLD}     beast${NC} │ ${BOLD}  Best${NC} │"
+        echo "  ├───────────────────────┼────────────┼────────────┼────────────┼────────────┼────────┤"
     fi
 }
 
 # Print table footer
 print_table_footer() {
     if [ $MARKDOWN_OUTPUT -ne 1 ]; then
-        echo "  ───────────────────────┴────────────┴────────────┴────────────┴────────────┴────────┘"
+        echo "  └───────────────────────┴────────────┴────────────┴────────────┴────────────┴────────┘"
     fi
 }
 
@@ -382,7 +383,7 @@ run_scenario() {
         [ "$best" = "libevent" ] && e_str="${GREEN}${e_str}${NC}"
         [ "$best" = "beast" ] && b_str="${GREEN}${b_str}${NC}"
 
-        printf "  %-23s │ ${t_str} │ ${c_str} │ ${e_str} │ ${b_str} │ %6s │\n" \
+        printf "  │ %-21s │ ${t_str} │ ${c_str} │ ${e_str} │ ${b_str} │ %6s │\n" \
             "$name" "$best"
     fi
 }
