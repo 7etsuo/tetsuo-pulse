@@ -354,6 +354,8 @@ if(SOCKET_HAS_TLS)
         src/tls/SocketDTLS-cookie.c
         # DNS-over-TLS (RFC 7858)
         src/dns/SocketDNSoverTLS.c
+        # DNS-over-HTTPS (RFC 8484)
+        src/dns/SocketDNSoverHTTPS.c
     )
 endif()
 
@@ -491,6 +493,7 @@ set(DNS_HEADERS
     include/dns/SocketDNSConfig.h
     include/dns/SocketDNSResolver.h
     include/dns/SocketDNSoverTLS.h
+    include/dns/SocketDNSoverHTTPS.h
 )
 
 set(POLL_HEADERS
@@ -691,6 +694,8 @@ if(SOCKET_HAS_TLS)
         test_websocket_h2
         # DNS-over-TLS (RFC 7858)
         test_dns_over_tls
+        # DNS-over-HTTPS (RFC 8484)
+        test_dns_over_https
     )
 endif()
 
