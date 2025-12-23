@@ -28,6 +28,7 @@
 
 #include "core/Arena.h"
 #include "core/Except.h"
+#include "core/SocketConfig.h"
 #include "socket/Socket.h"
 #include "socket/SocketAsync.h"
 #include "test/Test.h"
@@ -974,6 +975,228 @@ TEST (async_recv_timeout_basic)
   Socket_free (&socket);
   SocketAsync_free (&async);
   Arena_dispose (&arena);
+}
+
+/* ==================== io_uring-Specific Tests ==================== */
+
+TEST (async_iouring_available_api)
+{
+  setup_signals ();
+
+  SocketAsync_IOUringInfo info;
+  memset (&info, 0, sizeof (info));
+
+  int available = SocketAsync_io_uring_available (&info);
+
+  /* Check compiled flag is set correctly */
+#if SOCKET_HAS_IO_URING
+  ASSERT_EQ (1, info.compiled);
+#else
+  ASSERT_EQ (0, info.compiled);
+#endif
+
+  /* Kernel version should be populated on Linux when io_uring is compiled */
+#if defined(__linux__) && SOCKET_HAS_IO_URING
+  ASSERT (info.major > 0);
+#endif
+
+  /* available should match supported flag */
+  ASSERT_EQ (info.supported, available);
+}
+
+TEST (async_iouring_backend_detection)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketAsync_T async = NULL;
+
+  TRY { async = SocketAsync_new (arena); }
+  EXCEPT (SocketAsync_Failed)
+  {
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  const char *name = SocketAsync_backend_name (async);
+  int available = SocketAsync_is_available (async);
+
+  /* On Linux with io_uring available, backend should be io_uring */
+#if SOCKET_HAS_IO_URING
+  SocketAsync_IOUringInfo info;
+  if (SocketAsync_io_uring_available (&info) && info.supported)
+    {
+      /* io_uring is available - verify it's being used */
+      ASSERT (available == 1);
+      ASSERT (strcmp (name, "io_uring") == 0);
+    }
+#endif
+
+  SocketAsync_free (&async);
+  Arena_dispose (&arena);
+}
+
+TEST (async_iouring_submit_and_cancel)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketAsync_T async = NULL;
+  Socket_T socket = NULL;
+
+  TRY { async = SocketAsync_new (arena); }
+  EXCEPT (SocketAsync_Failed)
+  {
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  /* Skip if io_uring not available */
+  if (!SocketAsync_is_available (async))
+    {
+      SocketAsync_free (&async);
+      Arena_dispose (&arena);
+      return;
+    }
+
+  /* Verify we're using io_uring backend */
+  const char *backend = SocketAsync_backend_name (async);
+  ASSERT (strcmp (backend, "io_uring") == 0);
+
+  /* Create a socket for testing */
+  TRY { socket = Socket_new (AF_INET, SOCK_STREAM, 0); }
+  EXCEPT (Socket_Failed)
+  {
+    SocketAsync_free (&async);
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  /* Test data */
+  const char *test_data = "Hello io_uring!";
+  size_t test_len = strlen (test_data);
+  char recv_buf[64];
+  memset (recv_buf, 0, sizeof (recv_buf));
+
+  /* Submit send request (will fail since socket not connected, but tests io_uring path) */
+  volatile unsigned send_id = 0;
+  TRY
+  {
+    send_id = SocketAsync_send (async, socket, test_data, test_len,
+                                 async_test_callback, NULL, ASYNC_FLAG_NONE);
+  }
+  EXCEPT (SocketAsync_Failed) { send_id = 0; }
+  END_TRY;
+
+  /* Submit recv request */
+  volatile unsigned recv_id = 0;
+  TRY
+  {
+    recv_id = SocketAsync_recv (async, socket, recv_buf, sizeof (recv_buf),
+                                 async_test_callback, NULL, ASYNC_FLAG_NONE);
+  }
+  EXCEPT (SocketAsync_Failed) { recv_id = 0; }
+  END_TRY;
+
+  /* Verify requests were submitted successfully */
+  if (send_id > 0)
+    {
+      size_t completed, total;
+      int found = SocketAsync_get_progress (async, send_id, &completed, &total);
+      ASSERT_EQ (1, found);
+      ASSERT_EQ (test_len, total);
+    }
+
+  /* Process completions briefly (may fail since socket not connected) */
+  SocketAsync_process_completions (async, 10);
+
+  /* Cancel remaining requests */
+  if (send_id > 0)
+    SocketAsync_cancel (async, send_id);
+  if (recv_id > 0)
+    SocketAsync_cancel (async, recv_id);
+
+  Socket_free (&socket);
+  SocketAsync_free (&async);
+  Arena_dispose (&arena);
+}
+
+TEST (async_iouring_high_concurrency)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketAsync_T async = NULL;
+
+#define HIGH_CONCURRENCY_COUNT 100
+
+  Socket_T socks[HIGH_CONCURRENCY_COUNT];
+  volatile unsigned request_ids[HIGH_CONCURRENCY_COUNT];
+  const char *test_data = "X";
+  size_t created = 0;
+
+  memset (socks, 0, sizeof (socks));
+  memset ((void *)request_ids, 0, sizeof (request_ids));
+
+  TRY { async = SocketAsync_new (arena); }
+  EXCEPT (SocketAsync_Failed)
+  {
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  /* Skip if io_uring not available */
+  if (!SocketAsync_is_available (async))
+    {
+      SocketAsync_free (&async);
+      Arena_dispose (&arena);
+      return;
+    }
+
+  /* Create sockets and submit send requests */
+  for (size_t i = 0; i < HIGH_CONCURRENCY_COUNT; i++)
+    {
+      TRY
+      {
+        socks[i] = Socket_new (AF_INET, SOCK_STREAM, 0);
+        created++;
+
+        request_ids[i] = SocketAsync_send (async, socks[i], test_data, 1,
+                                            async_test_callback, NULL,
+                                            ASYNC_FLAG_NONE);
+      }
+      EXCEPT (Socket_Failed) { break; }
+      EXCEPT (SocketAsync_Failed) { break; }
+      END_TRY;
+    }
+
+  /* Verify we submitted many requests */
+  ASSERT (created >= 50);
+
+  /* Process some completions */
+  for (int round = 0; round < 10; round++)
+    {
+      int completed = SocketAsync_process_completions (async, 10);
+      if (completed == 0)
+        break;
+    }
+
+  /* Cancel all pending requests */
+  int cancelled = SocketAsync_cancel_all (async);
+  ASSERT (cancelled >= 0);
+
+  /* Cleanup sockets */
+  for (size_t i = 0; i < created; i++)
+    {
+      if (socks[i])
+        Socket_free (&socks[i]);
+    }
+
+  SocketAsync_free (&async);
+  Arena_dispose (&arena);
+
+#undef HIGH_CONCURRENCY_COUNT
 }
 
 /* ==================== Main ==================== */
