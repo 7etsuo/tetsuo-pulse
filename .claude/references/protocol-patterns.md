@@ -475,3 +475,138 @@ while (more_data) {
 }
 SocketUTF8_Result final = SocketUTF8_finish(&state);
 ```
+
+## DNS Resolution Pattern
+
+```c
+/* Create async resolver */
+Arena_T arena = Arena_new();
+SocketDNSResolver_T resolver = SocketDNSResolver_new(arena);
+
+/* Load system nameservers or add manually */
+SocketDNSResolver_load_resolv_conf(resolver);
+/* Or: SocketDNSResolver_add_nameserver(resolver, "8.8.8.8", 53); */
+
+/* Async resolution callback */
+void on_resolved(SocketDNSResolver_Query_T query,
+                 const SocketDNSResolver_Result *result,
+                 int error, void *userdata) {
+    if (error == RESOLVER_OK) {
+        for (size_t i = 0; i < result->count; i++) {
+            if (result->addresses[i].family == AF_INET) {
+                /* Use IPv4 address */
+            } else {
+                /* Use IPv6 address */
+            }
+        }
+    } else {
+        fprintf(stderr, "DNS error: %s\n", SocketDNSResolver_strerror(error));
+    }
+}
+
+/* Start resolution */
+SocketDNSResolver_resolve(resolver, "example.com", RESOLVER_FLAG_BOTH,
+                          on_resolved, userdata);
+
+/* Event loop */
+while (SocketDNSResolver_pending_count(resolver) > 0) {
+    SocketDNSResolver_process(resolver, 100);
+}
+
+SocketDNSResolver_free(&resolver);
+```
+
+## DNS-over-TLS Pattern (RFC 7858)
+
+```c
+Arena_T arena = Arena_new();
+SocketDNSoverTLS_T dot = SocketDNSoverTLS_new(arena);
+
+/* Add well-known server with strict privacy */
+SocketDNSoverTLS_add_server(dot, "cloudflare", DOT_MODE_STRICT);
+
+/* Or configure manually with SPKI pinning */
+SocketDNSoverTLS_Config config = {
+    .server_address = "1.1.1.1",
+    .port = 853,
+    .server_name = "cloudflare-dns.com",
+    .mode = DOT_MODE_STRICT,
+    .spki_pin = NULL  /* Optional SPKI pin for out-of-band key pinning */
+};
+SocketDNSoverTLS_configure(dot, &config);
+
+/* Query callback */
+void on_dot_response(SocketDNSoverTLS_Query_T query,
+                     const unsigned char *response, size_t len,
+                     int error, void *userdata) {
+    if (error == DOT_ERROR_SUCCESS) {
+        /* Parse DNS response */
+    }
+}
+
+/* Send query (2-byte length prefix added automatically) */
+SocketDNSoverTLS_query(dot, query_buf, query_len, on_dot_response, userdata);
+
+/* Event loop */
+while (SocketDNSoverTLS_pending_count(dot) > 0) {
+    SocketDNSoverTLS_process(dot, 100);
+}
+
+SocketDNSoverTLS_free(&dot);
+```
+
+## DNS-over-HTTPS Pattern (RFC 8484)
+
+```c
+Arena_T arena = Arena_new();
+SocketDNSoverHTTPS_T doh = SocketDNSoverHTTPS_new(arena);
+
+/* Add well-known server (uses HTTPS POST by default) */
+SocketDNSoverHTTPS_add_server(doh, "google");
+
+/* Or configure with custom options */
+SocketDNSoverHTTPS_Config config = {
+    .url = "https://dns.google/dns-query",
+    .method = DOH_METHOD_POST,  /* Or DOH_METHOD_GET for caching */
+    .prefer_http2 = 1,
+    .timeout_ms = 5000
+};
+SocketDNSoverHTTPS_configure(doh, &config);
+
+/* Query callback */
+void on_doh_response(SocketDNSoverHTTPS_Query_T query,
+                     const unsigned char *response, size_t len,
+                     int error, void *userdata) {
+    if (error == DOH_ERROR_SUCCESS) {
+        /* Parse DNS response from application/dns-message body */
+    }
+}
+
+/* Send query */
+SocketDNSoverHTTPS_query(doh, query_buf, query_len, on_doh_response, userdata);
+
+/* Event loop */
+while (SocketDNSoverHTTPS_pending_count(doh) > 0) {
+    SocketDNSoverHTTPS_process(doh, 100);
+}
+
+SocketDNSoverHTTPS_free(&doh);
+```
+
+## DNS Cache Configuration Pattern
+
+```c
+SocketDNSResolver_T resolver = SocketDNSResolver_new(arena);
+
+/* Configure cache */
+SocketDNSResolver_cache_set_ttl(resolver, 300);     /* 5 min TTL */
+SocketDNSResolver_cache_set_max(resolver, 1000);    /* 1000 entries max */
+
+/* Monitor cache performance */
+SocketDNSResolver_CacheStats stats;
+SocketDNSResolver_cache_stats(resolver, &stats);
+printf("Cache hit rate: %.2f%%\n", stats.hit_rate * 100);
+
+/* Clear cache if needed */
+SocketDNSResolver_cache_clear(resolver);
+```

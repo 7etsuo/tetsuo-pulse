@@ -511,17 +511,112 @@ Connection pool management (from `include/pool/SocketPool.h`):
 
 ## SocketDNS Functions
 
-Asynchronous DNS resolution (from `include/dns/SocketDNS.h`):
+### SocketDNSResolver (Async Resolver, RFC 1035)
 
-- `SocketDNS_init(worker_count)` - Initialize DNS resolver with worker threads
-- `SocketDNS_request(hostname, port, callback, userdata)` - Async DNS lookup
-- `SocketDNS_request_settimeout(request, timeout_ms)` - Set request timeout
-- `SocketDNS_cancel(request)` - Cancel pending request
-- `SocketDNS_pollfd()` - Get file descriptor for poll integration
-- `SocketDNS_process()` - Process completed requests (invoke callbacks)
-- `SocketDNS_settimeout(timeout_ms)` - Set default timeout
-- `SocketDNS_setmaxpending(max_pending)` - Set maximum pending requests
-- `SocketDNS_shutdown()` - Shutdown DNS resolver
+Async DNS resolver with query multiplexing (from `include/dns/SocketDNSResolver.h`):
+
+#### Lifecycle:
+- `SocketDNSResolver_new(arena)` - Create resolver instance
+- `SocketDNSResolver_free(&resolver)` - Dispose of resolver
+
+#### Configuration:
+- `SocketDNSResolver_load_resolv_conf(resolver)` - Load nameservers from /etc/resolv.conf
+- `SocketDNSResolver_add_nameserver(resolver, address, port)` - Add nameserver manually
+- `SocketDNSResolver_clear_nameservers(resolver)` - Remove all nameservers
+- `SocketDNSResolver_nameserver_count(resolver)` - Get nameserver count
+- `SocketDNSResolver_set_timeout(resolver, timeout_ms)` - Set query timeout (default: 5000)
+- `SocketDNSResolver_set_retries(resolver, max_retries)` - Set max retries (default: 3)
+
+#### Resolution:
+- `SocketDNSResolver_resolve(resolver, hostname, flags, callback, userdata)` - Start async resolution
+- `SocketDNSResolver_cancel(resolver, query)` - Cancel pending query
+- `SocketDNSResolver_query_hostname(query)` - Get hostname from query handle
+
+#### Resolution Flags:
+- `RESOLVER_FLAG_IPV4` - Query for A records
+- `RESOLVER_FLAG_IPV6` - Query for AAAA records
+- `RESOLVER_FLAG_BOTH` - Query for both A and AAAA
+- `RESOLVER_FLAG_NO_CACHE` - Bypass cache
+- `RESOLVER_FLAG_TCP` - Force TCP transport
+
+#### Event Loop:
+- `SocketDNSResolver_fd_v4(resolver)` - Get IPv4 socket fd for poll
+- `SocketDNSResolver_fd_v6(resolver)` - Get IPv6 socket fd for poll
+- `SocketDNSResolver_process(resolver, timeout_ms)` - Process pending queries
+- `SocketDNSResolver_pending_count(resolver)` - Get pending query count
+
+#### Cache:
+- `SocketDNSResolver_cache_clear(resolver)` - Clear all cached entries
+- `SocketDNSResolver_cache_set_ttl(resolver, ttl_seconds)` - Set cache TTL
+- `SocketDNSResolver_cache_set_max(resolver, max_entries)` - Set max cache size
+- `SocketDNSResolver_cache_stats(resolver, &stats)` - Get cache statistics
+
+#### Utility:
+- `SocketDNSResolver_result_free(&result)` - Free resolution result
+- `SocketDNSResolver_strerror(error)` - Convert error code to string
+
+### SocketDNSoverTLS (RFC 7858, RFC 8310)
+
+DNS-over-TLS encrypted transport (from `include/dns/SocketDNSoverTLS.h`):
+
+#### Lifecycle:
+- `SocketDNSoverTLS_new(arena)` - Create DoT transport
+- `SocketDNSoverTLS_free(&transport)` - Dispose of transport
+
+#### Configuration:
+- `SocketDNSoverTLS_configure(transport, &config)` - Configure server
+- `SocketDNSoverTLS_add_server(transport, "google", mode)` - Add well-known server
+- `SocketDNSoverTLS_clear_servers(transport)` - Clear servers
+- `SocketDNSoverTLS_server_count(transport)` - Get server count
+
+#### Privacy Modes (RFC 8310):
+- `DOT_MODE_OPPORTUNISTIC` - Encrypt without authentication
+- `DOT_MODE_STRICT` - Require certificate validation
+
+#### Query:
+- `SocketDNSoverTLS_query(transport, query, len, callback, userdata)` - Send query
+- `SocketDNSoverTLS_cancel(transport, query)` - Cancel query
+- `SocketDNSoverTLS_query_id(query)` - Get DNS message ID
+
+#### Event Loop:
+- `SocketDNSoverTLS_process(transport, timeout_ms)` - Process queries
+- `SocketDNSoverTLS_fd(transport)` - Get socket fd for poll
+- `SocketDNSoverTLS_pending_count(transport)` - Get pending count
+
+#### Connection:
+- `SocketDNSoverTLS_close_all(transport)` - Close all connections
+- `SocketDNSoverTLS_is_connected(transport)` - Check connection status
+- `SocketDNSoverTLS_stats(transport, &stats)` - Get statistics
+- `SocketDNSoverTLS_strerror(error)` - Convert error to string
+
+### SocketDNSoverHTTPS (RFC 8484)
+
+DNS-over-HTTPS encrypted transport (from `include/dns/SocketDNSoverHTTPS.h`):
+
+#### Lifecycle:
+- `SocketDNSoverHTTPS_new(arena)` - Create DoH transport
+- `SocketDNSoverHTTPS_free(&transport)` - Dispose of transport
+
+#### Configuration:
+- `SocketDNSoverHTTPS_configure(transport, &config)` - Configure server
+- `SocketDNSoverHTTPS_add_server(transport, "cloudflare")` - Add well-known server
+- `SocketDNSoverHTTPS_clear_servers(transport)` - Clear servers
+- `SocketDNSoverHTTPS_server_count(transport)` - Get server count
+
+#### HTTP Methods:
+- `DOH_METHOD_POST` - POST with binary body (default, recommended)
+- `DOH_METHOD_GET` - GET with base64url query parameter
+
+#### Query:
+- `SocketDNSoverHTTPS_query(transport, query, len, callback, userdata)` - Send query
+- `SocketDNSoverHTTPS_cancel(transport, query)` - Cancel query
+- `SocketDNSoverHTTPS_query_id(query)` - Get DNS message ID
+
+#### Event Loop:
+- `SocketDNSoverHTTPS_process(transport, timeout_ms)` - Process queries
+- `SocketDNSoverHTTPS_pending_count(transport)` - Get pending count
+- `SocketDNSoverHTTPS_stats(transport, &stats)` - Get statistics
+- `SocketDNSoverHTTPS_strerror(error)` - Convert error to string
 
 ## SocketPoll Functions
 
