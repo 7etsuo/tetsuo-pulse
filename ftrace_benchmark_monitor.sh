@@ -188,6 +188,11 @@ setup_ftrace() {
 # Summary mode: count syscalls
 run_summary_mode() {
     echo -e "${CYAN}Running in summary mode - press Ctrl+C to stop${NC}"
+    if [ -n "$MONITOR_NAME" ]; then
+        echo -e "Filtering for processes matching: ${GREEN}$MONITOR_NAME${NC}"
+    fi
+    echo ""
+    echo -e "${YELLOW}Waiting for syscalls... (start benchmark in another terminal)${NC}"
     echo ""
 
     declare -A syscall_counts
@@ -195,15 +200,23 @@ run_summary_mode() {
     local start_time=$(date +%s)
 
     # Monitor trace_pipe and count syscalls
+    # Read directly from trace_pipe (blocking) and filter in the loop
     while IFS= read -r line; do
+        # Filter by name if specified
+        if [ -n "$MONITOR_NAME" ]; then
+            if [[ ! "$line" =~ $MONITOR_NAME ]]; then
+                continue
+            fi
+        fi
+
         # Extract syscall name
         if [[ "$line" =~ sys_([a-z_]+) ]]; then
             syscall="${BASH_REMATCH[1]}"
             ((syscall_counts[$syscall]++))
             ((total_count++))
 
-            # Print summary every 1000 syscalls
-            if ((total_count % 1000 == 0)); then
+            # Print summary every 100 syscalls (more responsive)
+            if ((total_count % 100 == 0)); then
                 local elapsed=$(($(date +%s) - start_time))
                 elapsed=$((elapsed > 0 ? elapsed : 1))
                 local rate=$((total_count / elapsed))
@@ -216,74 +229,72 @@ run_summary_mode() {
                 echo -ne "recvfrom:${syscall_counts[recvfrom]:-0}${NC}"
             fi
         fi
-    done < <(
-        if [ -n "$MONITOR_NAME" ]; then
-            cat "$TRACEFS/trace_pipe" | grep -E "$MONITOR_NAME"
-        else
-            cat "$TRACEFS/trace_pipe"
-        fi
-    )
+    done < "$TRACEFS/trace_pipe"
 }
 
 # Verbose mode: show syscall details
 run_verbose_mode() {
     echo -e "${CYAN}Running in verbose mode - press Ctrl+C to stop${NC}"
+    if [ -n "$MONITOR_NAME" ]; then
+        echo -e "Filtering for processes matching: ${GREEN}$MONITOR_NAME${NC}"
+    fi
     echo ""
     echo "Format: PROCESS-PID [CPU] TIMESTAMP: SYSCALL(args)"
     echo "---------------------------------------------------"
+    echo -e "${YELLOW}Waiting for syscalls... (start benchmark in another terminal)${NC}"
     echo ""
 
-    if [ -n "$MONITOR_NAME" ]; then
-        cat "$TRACEFS/trace_pipe" | grep -E --line-buffered "$MONITOR_NAME" | while read -r line; do
-            # Colorize different syscalls
-            if [[ "$line" =~ connect ]]; then
-                echo -e "${GREEN}$line${NC}"
-            elif [[ "$line" =~ (read|recv|recvfrom|recvmsg) ]]; then
-                echo -e "${CYAN}$line${NC}"
-            elif [[ "$line" =~ (write|send|sendto|sendmsg) ]]; then
-                echo -e "${YELLOW}$line${NC}"
-            elif [[ "$line" =~ (epoll|poll) ]]; then
-                echo -e "${NC}$line${NC}"
-            else
-                echo "$line"
+    while IFS= read -r line; do
+        # Filter by name if specified
+        if [ -n "$MONITOR_NAME" ]; then
+            if [[ ! "$line" =~ $MONITOR_NAME ]]; then
+                continue
             fi
-        done
-    else
-        cat "$TRACEFS/trace_pipe" | while read -r line; do
-            # Colorize different syscalls
-            if [[ "$line" =~ connect ]]; then
-                echo -e "${GREEN}$line${NC}"
-            elif [[ "$line" =~ (read|recv|recvfrom|recvmsg) ]]; then
-                echo -e "${CYAN}$line${NC}"
-            elif [[ "$line" =~ (write|send|sendto|sendmsg) ]]; then
-                echo -e "${YELLOW}$line${NC}"
-            elif [[ "$line" =~ (epoll|poll) ]]; then
-                echo -e "${NC}$line${NC}"
-            else
-                echo "$line"
-            fi
-        done
-    fi
+        fi
+
+        # Colorize different syscalls
+        if [[ "$line" =~ connect ]]; then
+            echo -e "${GREEN}$line${NC}"
+        elif [[ "$line" =~ (read|recv|recvfrom|recvmsg) ]]; then
+            echo -e "${CYAN}$line${NC}"
+        elif [[ "$line" =~ (write|send|sendto|sendmsg) ]]; then
+            echo -e "${YELLOW}$line${NC}"
+        elif [[ "$line" =~ (epoll|poll) ]]; then
+            echo -e "${NC}$line${NC}"
+        else
+            echo "$line"
+        fi
+    done < "$TRACEFS/trace_pipe"
 }
 
 # Default mode: show filtered syscalls
 run_default_mode() {
     echo -e "${CYAN}Monitoring syscalls - press Ctrl+C to stop${NC}"
+    if [ -n "$MONITOR_NAME" ]; then
+        echo -e "Filtering for processes matching: ${GREEN}$MONITOR_NAME${NC}"
+    fi
     echo ""
     echo -e "  ${GREEN}GREEN${NC}  = connect (new connections)"
     echo -e "  ${CYAN}CYAN${NC}   = read/recv (incoming data)"
     echo -e "  ${YELLOW}YELLOW${NC} = write/send (outgoing data)"
     echo ""
     echo "---------------------------------------------------"
+    echo -e "${YELLOW}Waiting for syscalls... (start benchmark in another terminal)${NC}"
     echo ""
 
-    local filter_cmd="cat"
-    if [ -n "$MONITOR_NAME" ]; then
-        filter_cmd="grep -E --line-buffered $MONITOR_NAME"
-    fi
+    while IFS= read -r line; do
+        # Filter by name if specified
+        if [ -n "$MONITOR_NAME" ]; then
+            if [[ ! "$line" =~ $MONITOR_NAME ]]; then
+                continue
+            fi
+        fi
 
-    # Show only key syscalls, not poll/epoll spam
-    cat "$TRACEFS/trace_pipe" | $filter_cmd | grep -vE "(epoll_wait|poll)" | while read -r line; do
+        # Skip poll/epoll spam
+        if [[ "$line" =~ (epoll_wait|poll) ]]; then
+            continue
+        fi
+
         # Colorize different syscalls
         if [[ "$line" =~ connect ]]; then
             echo -e "${GREEN}$line${NC}"
@@ -294,7 +305,7 @@ run_default_mode() {
         else
             echo "$line"
         fi
-    done
+    done < "$TRACEFS/trace_pipe"
 }
 
 # Main
