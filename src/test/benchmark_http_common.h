@@ -155,7 +155,7 @@ bench_ns_to_ms (uint64_t ns)
 static inline int
 bench_thread_result_init (BenchHTTPThreadResult *result, size_t capacity)
 {
-  result->latencies_ns = calloc (capacity, sizeof (uint64_t));
+  result->latencies_ns = (uint64_t *)calloc (capacity, sizeof (uint64_t));
   if (!result->latencies_ns)
     return -1;
   result->latency_count = 0;
@@ -247,7 +247,7 @@ bench_compute_stats (BenchHTTPThreadResult *results, int num_threads,
     return;
 
   /* Merge all latency samples */
-  uint64_t *all_latencies = calloc (total_samples, sizeof (uint64_t));
+  uint64_t *all_latencies = (uint64_t *)calloc (total_samples, sizeof (uint64_t));
   if (!all_latencies)
     return;
 
