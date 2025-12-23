@@ -134,6 +134,9 @@ create_client (const BenchHTTPConfig *config)
   /* Disable retry for raw benchmark */
   client_config.enable_retry = 0;
 
+  /* Benchmark mode: discard body data like curl does */
+  client_config.discard_body = 1;
+
   return SocketHTTPClient_new (&client_config);
 }
 
