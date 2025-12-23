@@ -25,6 +25,7 @@
 #include "core/Arena.h"
 #include "core/SocketConfig.h"
 #include "poll/SocketPoll_backend.h"
+#include "socket/Socket.h" /* For Socket_get_monotonic_ms */
 
 /* Backend instance structure */
 #define T PollBackend_T
@@ -281,10 +282,11 @@ backend_del (PollBackend_T backend, int fd)
  * @backend: Poll backend instance (modifies internal events array for output)
  * @timeout_ms: Timeout in milliseconds (-1 for infinite, 0 for non-blocking)
  *
- * Returns: Number of ready events (0 on timeout/interrupt), -1 on error.
+ * Returns: Number of ready events (0 on timeout), -1 on error.
  *
- * Blocks until events are ready or timeout expires. Returns 0 if
- * interrupted by signal (EINTR) for seamless signal handling.
+ * Blocks until events are ready or timeout expires. Retries on EINTR
+ * (signal interrupt) to ensure full timeout is honored - this is critical
+ * for timer-based operations that depend on the timeout completing.
  *
  * Note: No memset of events array is needed because backend_get_event()
  * bounds-checks via last_nev, preventing access to stale data.
@@ -295,17 +297,55 @@ int
 backend_wait (PollBackend_T backend, int timeout_ms)
 {
   int nev;
+  int64_t deadline_ms = 0;
+  int remaining_ms = timeout_ms;
 
   assert (backend);
 
-  nev = epoll_wait (backend->epfd, backend->events, backend->maxevents,
-                    timeout_ms);
+  /* Calculate deadline for positive timeouts to handle EINTR retries */
+  if (timeout_ms > 0)
+    deadline_ms = Socket_get_monotonic_ms () + timeout_ms;
 
-  if (nev < 0)
-    return HANDLE_POLL_ERROR (backend);
+  while (1)
+    {
+      nev = epoll_wait (backend->epfd, backend->events, backend->maxevents,
+                        remaining_ms);
 
-  backend->last_nev = nev;
-  return nev;
+      if (nev >= 0)
+        {
+          backend->last_nev = nev;
+          return nev;
+        }
+
+      /* Handle errors */
+      if (errno != EINTR)
+        return HANDLE_POLL_ERROR (backend);
+
+      /* EINTR: Retry with remaining timeout */
+      if (timeout_ms == 0)
+        {
+          /* Non-blocking: return immediately */
+          backend->last_nev = 0;
+          return 0;
+        }
+      else if (timeout_ms < 0)
+        {
+          /* Infinite timeout: keep waiting */
+          remaining_ms = -1;
+        }
+      else
+        {
+          /* Positive timeout: recalculate remaining time */
+          int64_t now_ms = Socket_get_monotonic_ms ();
+          if (now_ms >= deadline_ms)
+            {
+              /* Timeout expired during EINTR handling */
+              backend->last_nev = 0;
+              return 0;
+            }
+          remaining_ms = (int)(deadline_ms - now_ms);
+        }
+    }
 }
 
 /**
@@ -327,30 +367,12 @@ int
 backend_get_event (const PollBackend_T backend, int index, int *fd_out,
                    unsigned *events_out)
 {
-  struct epoll_event *ev;
-
   assert (backend);
-  assert (fd_out);
-  assert (events_out);
 
-  /* Note: last_nev is always <= maxevents (bounded by epoll_wait return) */
-  if (index < 0 || index >= backend->last_nev)
+  if (index < 0 || index >= backend->last_nev || index >= backend->maxevents)
     return -1;
 
-  ev = &backend->events[index];
-  *fd_out = ev->data.fd;
-  *events_out = translate_from_epoll (ev->events);
-
+  *fd_out = backend->events[index].data.fd;
+  *events_out = translate_from_epoll (backend->events[index].events);
   return 0;
-}
-
-/**
- * backend_name - Get backend name string
- *
- * Returns: Static string "epoll" identifying this backend.
- */
-const char *
-backend_name (void)
-{
-  return "epoll";
 }
