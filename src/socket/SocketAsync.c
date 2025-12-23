@@ -1326,6 +1326,20 @@ kernel_version_at_least (int major, int minor, int req_major, int req_minor)
 }
 
 int
+SocketAsync_get_notification_fd (const T async)
+{
+  if (!async || !async->available)
+    return -1;
+
+#if SOCKET_HAS_IO_URING
+  if (async->ring && async->io_uring_fd >= 0)
+    return async->io_uring_fd;
+#endif
+
+  return -1;
+}
+
+int
 SocketAsync_io_uring_available (SocketAsync_IOUringInfo *info)
 {
   static int cached = -1;
