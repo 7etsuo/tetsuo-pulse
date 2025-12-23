@@ -1346,6 +1346,67 @@ extern unsigned SocketAsync_recv_timeout (T async, Socket_T socket, void *buf,
                                           SocketAsync_Flags flags,
                                           int64_t timeout_ms);
 
+/* ==================== io_uring Availability API ==================== */
+
+/**
+ * @brief io_uring kernel version information.
+ * @ingroup async_io
+ *
+ * Contains kernel version info and io_uring feature availability.
+ */
+typedef struct SocketAsync_IOUringInfo
+{
+  int major;        /**< Kernel major version (e.g., 5) */
+  int minor;        /**< Kernel minor version (e.g., 10) */
+  int patch;        /**< Kernel patch version (e.g., 0) */
+  int supported;    /**< 1 if io_uring is supported (kernel 5.1+) */
+  int full_support; /**< 1 if full features available (kernel 5.6+) */
+  int compiled;     /**< 1 if library was compiled with io_uring support */
+} SocketAsync_IOUringInfo;
+
+/**
+ * @brief Check io_uring availability and kernel version.
+ * @ingroup async_io
+ * @param[out] info Optional: filled with version info (may be NULL).
+ * @return 1 if io_uring is available and usable, 0 otherwise.
+ *
+ * Checks both compile-time support (SOCKET_HAS_IO_URING) and runtime kernel
+ * version. io_uring requires Linux kernel 5.1+ for basic support and 5.6+
+ * for full features (multi-shot, SQPOLL, registered buffers).
+ *
+ * When info is provided, fills in kernel version and feature flags.
+ *
+ * @threadsafe Yes - read-only system call.
+ * @complexity O(1) - single uname() call, cached after first invocation.
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * SocketAsync_IOUringInfo info;
+ * if (SocketAsync_io_uring_available(&info)) {
+ *     printf("io_uring available: kernel %d.%d.%d\n",
+ *            info.major, info.minor, info.patch);
+ *     if (info.full_support) {
+ *         printf("Full io_uring features (5.6+)\n");
+ *     } else {
+ *         printf("Basic io_uring (5.1-5.5)\n");
+ *     }
+ * } else {
+ *     if (!info.compiled) {
+ *         printf("Library built without io_uring support\n");
+ *     } else {
+ *         printf("Kernel %d.%d.%d too old for io_uring\n",
+ *                info.major, info.minor, info.patch);
+ *     }
+ * }
+ * @endcode
+ *
+ * @note This checks kernel capability, not actual io_uring ring creation.
+ * @see SOCKET_HAS_IO_URING - Compile-time flag in SocketConfig.h.
+ * @see SocketAsync_backend_available() - General backend availability check.
+ */
+extern int SocketAsync_io_uring_available (SocketAsync_IOUringInfo *info);
+
 #undef T
 
 /** @} */ // end of async_io group

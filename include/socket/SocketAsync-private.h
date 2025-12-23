@@ -432,7 +432,7 @@ struct SocketAsync_T
    * @see SocketAsync_backend_name()
    */
   /* Platform-specific async context */
-#ifdef SOCKET_HAS_IO_URING
+#if SOCKET_HAS_IO_URING
   /**
    * @brief io_uring instance for kernel async I/O.
    *

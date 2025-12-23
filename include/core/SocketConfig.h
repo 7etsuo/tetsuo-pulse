@@ -1311,6 +1311,23 @@ extern const char *Socket_safe_strerror (int errnum);
 #endif
 
 /**
+ * @brief io_uring async I/O support flag (Linux only).
+ *
+ * Enables high-performance asynchronous I/O using Linux io_uring interface.
+ * Requires kernel 5.1+ (5.6+ for full features like multi-shot operations).
+ * When disabled, falls back to epoll-based async I/O.
+ *
+ * Set to 1 by CMake -DENABLE_IO_URING=ON when liburing is available.
+ * Default 0 (disabled) for compatibility.
+ *
+ * Runtime check: Use SocketAsync_io_uring_available() to verify kernel support.
+ *
+ */
+#ifndef SOCKET_HAS_IO_URING
+#define SOCKET_HAS_IO_URING 0
+#endif
+
+/**
  * @brief Fallback definition for IOV_MAX if not provided by system headers.
  *
  * Maximum number of I/O vectors supported for scatter/gather operations
