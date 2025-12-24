@@ -2443,6 +2443,12 @@ typedef struct TLSBufferPool *TLSBufferPool_T;
  * Creates a pool of reusable TLS buffers to reduce per-connection
  * allocation overhead.
  *
+ * Arena ownership:
+ * - If @p arena is NULL, pool creates and owns its own arena; TLSBufferPool_free()
+ *   will dispose it.
+ * - If @p arena is provided, caller retains ownership; TLSBufferPool_free() will
+ *   NOT dispose it, and caller must ensure arena outlives the pool.
+ *
  * @return New buffer pool, or NULL on error
  *
  * @threadsafe Yes - fully thread-safe once created
@@ -2491,6 +2497,10 @@ extern void TLSBufferPool_stats (TLSBufferPool_T pool, size_t *total,
  * @brief Destroy a buffer pool
  * @ingroup security
  * @param[in,out] pool Pointer to pool (set to NULL on success)
+ *
+ * Frees pool resources. If pool was created with arena=NULL, the internal
+ * arena is disposed. If pool was created with a caller-provided arena,
+ * the arena is NOT disposed (caller must manage arena lifecycle).
  *
  * @threadsafe No - ensure all buffers are released first
  */
