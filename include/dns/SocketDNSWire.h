@@ -1599,6 +1599,68 @@ extern int SocketDNS_name_in_bailiwick (const char *record_name,
 
 /** @} */ /* End of dns_security group */
 
+/**
+ * @defgroup dns_negative_cache DNS Negative Cache TTL
+ * @brief Extract TTL for negative caching from DNS responses (RFC 2308).
+ * @ingroup dns_wire
+ * @{
+ */
+
+/** Default negative cache TTL when no SOA is present (seconds). */
+#define DNS_NEGATIVE_TTL_DEFAULT 300
+
+/** Maximum negative cache TTL (1 hour per RFC 2308 recommendation). */
+#define DNS_NEGATIVE_TTL_MAX 3600
+
+/**
+ * @brief Extract negative cache TTL from a DNS response.
+ * @ingroup dns_negative_cache
+ *
+ * Scans the authority section of a DNS response for an SOA record and
+ * calculates the negative cache TTL as specified in RFC 2308 Section 5:
+ *
+ *     TTL = min(SOA_record_TTL, SOA.MINIMUM)
+ *
+ * This function is used to determine how long NXDOMAIN and NODATA
+ * responses should be cached.
+ *
+ * ## RFC 2308 Compliance
+ *
+ * Per RFC 2308 Section 3, authoritative servers MUST include an SOA
+ * record in the authority section when reporting NXDOMAIN or NODATA.
+ * However, some servers may not comply. This function returns a
+ * default TTL (300 seconds) if no SOA is found.
+ *
+ * ## TTL Calculation (RFC 2308 Section 5)
+ *
+ * The negative cache TTL is the minimum of:
+ * - The TTL field of the SOA resource record
+ * - The MINIMUM field in the SOA RDATA
+ *
+ * @param[in]  msg     Complete DNS response message.
+ * @param[in]  msglen  Length of the DNS message.
+ * @param[out] soa_out Optional output for the parsed SOA record (may be NULL).
+ * @return Negative cache TTL in seconds, or DNS_NEGATIVE_TTL_DEFAULT if
+ *         no SOA record is found in the authority section.
+ *
+ * @code{.c}
+ * // After receiving NXDOMAIN or NODATA response
+ * SocketDNS_SOA soa;
+ * uint32_t neg_ttl = SocketDNS_extract_negative_ttl(response, len, &soa);
+ *
+ * // Cache the negative response with the extracted TTL
+ * SocketDNSNegCache_insert_nxdomain(cache, qname, qclass, neg_ttl);
+ * @endcode
+ *
+ * @see SocketDNS_rdata_parse_soa() for SOA record parsing.
+ * @see RFC 2308 Section 5 for negative caching requirements.
+ */
+extern uint32_t SocketDNS_extract_negative_ttl (const unsigned char *msg,
+                                                 size_t msglen,
+                                                 SocketDNS_SOA *soa_out);
+
+/** @} */ /* End of dns_negative_cache group */
+
 /** @} */ /* End of dns_wire group */
 
 #endif /* SOCKETDNSWIRE_INCLUDED */

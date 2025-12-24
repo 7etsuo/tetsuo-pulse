@@ -1756,3 +1756,88 @@ SocketDNS_name_in_bailiwick (const char *record_name, const char *query_name)
 
   return 1;
 }
+
+/*
+ * Negative Cache TTL Extraction (RFC 2308)
+ *
+ * Per RFC 2308 Section 5, the negative cache TTL is calculated as:
+ *   TTL = min(SOA_record_TTL, SOA.MINIMUM)
+ *
+ * This function scans the authority section of a DNS response to find
+ * an SOA record and extracts the appropriate TTL for negative caching.
+ */
+
+uint32_t
+SocketDNS_extract_negative_ttl (const unsigned char *msg, size_t msglen,
+                                 SocketDNS_SOA *soa_out)
+{
+  SocketDNS_Header header;
+  SocketDNS_Question question;
+  SocketDNS_RR rr;
+  SocketDNS_SOA soa;
+  size_t offset;
+  size_t consumed;
+  uint16_t i;
+  uint32_t neg_ttl;
+
+  if (!msg || msglen < DNS_HEADER_SIZE)
+    return DNS_NEGATIVE_TTL_DEFAULT;
+
+  /* Decode header */
+  if (SocketDNS_header_decode (msg, msglen, &header) != 0)
+    return DNS_NEGATIVE_TTL_DEFAULT;
+
+  /* Skip question section */
+  offset = DNS_HEADER_SIZE;
+  for (i = 0; i < header.qdcount; i++)
+    {
+      if (SocketDNS_question_decode (msg, msglen, offset, &question, &consumed)
+          != 0)
+        return DNS_NEGATIVE_TTL_DEFAULT;
+      offset += consumed;
+    }
+
+  /* Skip answer section */
+  for (i = 0; i < header.ancount; i++)
+    {
+      if (SocketDNS_rr_skip (msg, msglen, offset, &consumed) != 0)
+        return DNS_NEGATIVE_TTL_DEFAULT;
+      offset += consumed;
+    }
+
+  /* Scan authority section for SOA record */
+  for (i = 0; i < header.nscount; i++)
+    {
+      if (SocketDNS_rr_decode (msg, msglen, offset, &rr, &consumed) != 0)
+        return DNS_NEGATIVE_TTL_DEFAULT;
+
+      if (rr.type == DNS_TYPE_SOA)
+        {
+          /* Found SOA - parse RDATA */
+          if (SocketDNS_rdata_parse_soa (msg, msglen, &rr, &soa) != 0)
+            {
+              /* SOA parsing failed, continue to next RR */
+              offset += consumed;
+              continue;
+            }
+
+          /* Copy SOA to output if requested */
+          if (soa_out)
+            *soa_out = soa;
+
+          /* RFC 2308 Section 5: TTL = min(SOA_TTL, MINIMUM) */
+          neg_ttl = (rr.ttl < soa.minimum) ? rr.ttl : soa.minimum;
+
+          /* Cap at maximum recommended TTL */
+          if (neg_ttl > DNS_NEGATIVE_TTL_MAX)
+            neg_ttl = DNS_NEGATIVE_TTL_MAX;
+
+          return neg_ttl;
+        }
+
+      offset += consumed;
+    }
+
+  /* No SOA found - return default */
+  return DNS_NEGATIVE_TTL_DEFAULT;
+}
