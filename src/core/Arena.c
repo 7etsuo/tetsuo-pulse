@@ -429,16 +429,27 @@ Arena_new_unlocked (void)
   return arena;
 }
 
+
 void
 Arena_dispose (T *ap)
 {
+  T arena;
+  int locked;
+
   if (!ap || !*ap)
     return;
 
-  Arena_clear (*ap);
-  if ((*ap)->locked)
-    pthread_mutex_destroy (&(*ap)->mutex);
-  free (*ap);
+  /* Save arena pointer and locked flag before clearing, because ap itself
+   * may point into memory allocated from this arena (e.g., if ap points to
+   * a field within a structure that was arena-allocated). After Arena_clear
+   * frees all chunks, dereferencing ap would be use-after-free. */
+  arena = *ap;
+  locked = arena->locked;
+
+  Arena_clear (arena);
+  if (locked)
+    pthread_mutex_destroy (&arena->mutex);
+  free (arena);
   *ap = NULL;
 }
 
