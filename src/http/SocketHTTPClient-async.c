@@ -157,9 +157,23 @@ httpclient_io_send (SocketHTTPClient_T client, Socket_T socket,
   unsigned req_id;
   volatile ssize_t result = 0;
 
-  assert (client != NULL);
-  assert (socket != NULL);
-  assert (data != NULL || len == 0);
+  /* Validate required inputs */
+  if (client == NULL || socket == NULL)
+    {
+      errno = EINVAL;
+      return -1;
+    }
+
+  /* NULL data with non-zero length is invalid */
+  if (data == NULL && len > 0)
+    {
+      errno = EINVAL;
+      return -1;
+    }
+
+  /* Zero-length send is a no-op */
+  if (len == 0)
+    return 0;
 
   /* Fast path: use sync I/O if async not available */
   if (!client->async_available || client->async == NULL)
@@ -226,9 +240,23 @@ httpclient_io_recv (SocketHTTPClient_T client, Socket_T socket,
   unsigned req_id;
   volatile ssize_t result = 0;
 
-  assert (client != NULL);
-  assert (socket != NULL);
-  assert (buf != NULL || len == 0);
+  /* Validate required inputs */
+  if (client == NULL || socket == NULL)
+    {
+      errno = EINVAL;
+      return -1;
+    }
+
+  /* NULL buffer with non-zero length is invalid */
+  if (buf == NULL && len > 0)
+    {
+      errno = EINVAL;
+      return -1;
+    }
+
+  /* Zero-length recv is a no-op */
+  if (len == 0)
+    return 0;
 
   /* Fast path: use sync I/O if async not available */
   if (!client->async_available || client->async == NULL)
