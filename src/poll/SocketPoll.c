@@ -481,16 +481,40 @@ initialize_poll_timer_heap (T poll)
  *
  * Async context is optional - graceful degradation if unavailable.
  * Does not raise exceptions on failure.
+ *
+ * When io_uring is available, registers its notification eventfd with
+ * the poll backend so that async completions trigger immediate wakeup
+ * of the event loop, ensuring timely timer processing and callback delivery.
  */
 static void
 initialize_poll_async (T poll)
 {
+  int notify_fd;
+
   /* async starts NULL from calloc; only set if init succeeds */
   TRY
   poll->async = SocketAsync_new (poll->arena);
   EXCEPT (SocketAsync_Failed)
-  poll->async = NULL; /* Graceful degradation - async is optional */
+  {
+    poll->async = NULL; /* Graceful degradation - async is optional */
+    return;
+  }
   END_TRY;
+
+  /* Register io_uring notification fd with poll backend for immediate wakeup.
+   * This ensures timer callbacks fire promptly when async operations complete,
+   * rather than waiting for the poll timeout to expire. */
+  notify_fd = SocketAsync_get_notification_fd (poll->async);
+  if (notify_fd >= 0)
+    {
+      if (backend_add (poll->backend, notify_fd, POLL_READ) < 0)
+        {
+          /* Non-fatal: async still works, just with delayed timer processing */
+          SOCKET_LOG_WARN_MSG ("Failed to register io_uring eventfd with poll "
+                               "(fd=%d): timers may be delayed",
+                               notify_fd);
+        }
+    }
 }
 
 /**

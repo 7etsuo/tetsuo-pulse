@@ -1407,6 +1407,39 @@ typedef struct SocketAsync_IOUringInfo
  */
 extern int SocketAsync_io_uring_available (SocketAsync_IOUringInfo *info);
 
+/**
+ * @brief Get the notification file descriptor for async completion events.
+ * @ingroup async_io
+ * @param[in] async Async context.
+ * @return File descriptor for completion notifications, or -1 if unavailable.
+ *
+ * Returns the eventfd used by io_uring to signal operation completions.
+ * This fd can be registered with a poll backend (epoll/kqueue) to wake up
+ * the event loop when async operations complete, enabling timely timer
+ * processing and callback delivery.
+ *
+ * When the returned fd becomes readable, call SocketAsync_process_completions()
+ * to process pending completions and invoke callbacks.
+ *
+ * @threadsafe Yes - read-only access.
+ * @complexity O(1)
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * int notify_fd = SocketAsync_get_notification_fd(async);
+ * if (notify_fd >= 0) {
+ *     // Register with epoll for POLLIN events
+ *     epoll_ctl(epfd, EPOLL_CTL_ADD, notify_fd, &ev);
+ * }
+ * @endcode
+ *
+ * @note Returns -1 if async is NULL, not available, or backend doesn't use eventfd.
+ * @see SocketAsync_process_completions() to handle notifications.
+ * @see SocketPoll_wait() automatically integrates this for poll-managed async.
+ */
+extern int SocketAsync_get_notification_fd (const T async);
+
 #undef T
 
 /** @} */ // end of async_io group

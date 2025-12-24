@@ -376,3 +376,14 @@ backend_get_event (const PollBackend_T backend, int index, int *fd_out,
   *events_out = translate_from_epoll (backend->events[index].events);
   return 0;
 }
+
+/**
+ * backend_name - Get human-readable name of this backend
+ *
+ * Returns: Static string "epoll" identifying this backend.
+ */
+const char *
+backend_name (void)
+{
+  return "epoll";
+}
