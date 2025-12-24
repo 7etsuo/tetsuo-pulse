@@ -1125,3 +1125,58 @@ if(ENABLE_FUZZING)
     message(STATUS "  Run example: ./fuzz_socketbuf corpus/socketbuf/ -fork=16")
 endif()
 
+# ============================================================================
+# Protocol Fuzz Harnesses (for external fuzzers like http2fuzz, tlsfuzzer)
+# ============================================================================
+option(BUILD_PROTOCOL_FUZZ_HARNESSES "Build protocol-level fuzzing harnesses" OFF)
+
+if(BUILD_PROTOCOL_FUZZ_HARNESSES)
+    message(STATUS "Building protocol fuzz harnesses")
+
+    # HTTP/2 server harness (requires TLS)
+    if(SOCKET_HAS_TLS)
+        add_executable(http2_server_harness
+            tests/protocol-fuzz/http2/server_harness.c
+        )
+        target_link_libraries(http2_server_harness socket_static)
+        target_include_directories(http2_server_harness PRIVATE
+            ${CMAKE_SOURCE_DIR}/include
+            ${OPENSSL_INCLUDE_DIR}
+        )
+        target_compile_definitions(http2_server_harness PRIVATE SOCKET_HAS_TLS=1)
+        message(STATUS "  http2_server_harness: enabled")
+
+        # TLS server harness
+        add_executable(tls_server_harness
+            tests/protocol-fuzz/tls/server_harness.c
+        )
+        target_link_libraries(tls_server_harness socket_static)
+        target_include_directories(tls_server_harness PRIVATE
+            ${CMAKE_SOURCE_DIR}/include
+            ${OPENSSL_INCLUDE_DIR}
+        )
+        target_compile_definitions(tls_server_harness PRIVATE SOCKET_HAS_TLS=1)
+        message(STATUS "  tls_server_harness: enabled")
+    else()
+        message(STATUS "  http2_server_harness: disabled (requires TLS)")
+        message(STATUS "  tls_server_harness: disabled (requires TLS)")
+    endif()
+
+    # DNS resolver harness (no TLS required)
+    add_executable(dns_resolver_harness
+        tests/protocol-fuzz/dns/resolver_harness.c
+    )
+    target_link_libraries(dns_resolver_harness socket_static)
+    target_include_directories(dns_resolver_harness PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+    )
+    if(SOCKET_HAS_TLS)
+        target_compile_definitions(dns_resolver_harness PRIVATE SOCKET_HAS_TLS=1)
+        target_include_directories(dns_resolver_harness PRIVATE ${OPENSSL_INCLUDE_DIR})
+    endif()
+    message(STATUS "  dns_resolver_harness: enabled")
+
+    message(STATUS "Protocol Fuzz Harnesses:")
+    message(STATUS "  See tests/protocol-fuzz/README.md for usage")
+endif()
+
