@@ -322,6 +322,7 @@ set(LIB_SOURCES
     src/dns/SocketDNSTransport.c
     src/dns/SocketDNSConfig.c
     src/dns/SocketDNSResolver.c
+    src/dns/SocketDNSSEC.c
 
     # Poll module (consolidated)
     src/poll/SocketPoll.c
@@ -551,6 +552,7 @@ set(DNS_HEADERS
     include/dns/SocketDNSResolver.h
     include/dns/SocketDNSoverTLS.h
     include/dns/SocketDNSoverHTTPS.h
+    include/dns/SocketDNSSEC.h
 )
 
 set(POLL_HEADERS
@@ -685,6 +687,7 @@ set(TEST_SOURCES
     test_dns_config
     test_dns_cache
     test_dns_resolver
+    test_dnssec
     test_integration
     test_threadsafety
     test_happy_eyeballs
