@@ -449,6 +449,19 @@ struct SocketAsync_T
    * @see eventfd(2)
    */
   int io_uring_fd; /* Eventfd for completion notifications */
+
+  /**
+   * @brief Count of pending SQEs not yet submitted to kernel.
+   *
+   * Tracks operations submitted with ASYNC_FLAG_NOSYNC that have been
+   * prepared in the SQ but not yet submitted via io_uring_submit().
+   * Reset to 0 after SocketAsync_flush() or auto-flush.
+   *
+   * @see SocketAsync_flush()
+   * @see SocketAsync_pending_count()
+   * @see ASYNC_FLAG_NOSYNC
+   */
+  unsigned pending_sqe_count;
 #elif defined(__APPLE__) || defined(__FreeBSD__)
   /**
    * @brief kqueue file descriptor for AIO events.
