@@ -41,6 +41,8 @@
  * Run:   ./fuzz_dns_deadserver -fork=16 -max_len=4096
  */
 
+#include <stdlib.h>
+#include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>

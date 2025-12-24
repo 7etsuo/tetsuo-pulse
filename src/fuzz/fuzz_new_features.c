@@ -29,6 +29,7 @@
  * Run:   ./fuzz_new_features corpus/new_features/ -fork=16 -max_len=4096
  */
 
+#include <stdio.h>
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>

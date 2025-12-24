@@ -32,6 +32,7 @@
  * Run:   ./fuzz_dns_transport corpus/dns_transport/ -fork=16 -max_len=8192
  */
 
+#include <stdlib.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>

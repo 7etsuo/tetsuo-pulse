@@ -16,6 +16,7 @@
  * - Operation sequences
  */
 
+#include <stdio.h>
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "core/SocketSYNProtect.h"

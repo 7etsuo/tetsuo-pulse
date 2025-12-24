@@ -32,6 +32,7 @@
  * Run:   ./fuzz_except_unwind corpus/except_unwind/ -fork=16 -max_len=512
  */
 
+#include <stdlib.h>
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>

@@ -31,6 +31,7 @@ S packet sequencing and reordering
 
 #if SOCKET_HAS_TLS
 
+#include <stdio.h>
 #include <assert.h>
 #include <errno.h>
 #include <signal.h>

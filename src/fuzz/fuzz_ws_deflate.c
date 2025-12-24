@@ -11,6 +11,7 @@
  * Only compiled when SOCKETWS_HAS_DEFLATE is defined.
  */
 
+#include <stdlib.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>

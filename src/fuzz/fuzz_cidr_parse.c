@@ -18,6 +18,7 @@
  * Run:   ./fuzz_cidr_parse corpus/cidr_parse/ -fork=16 -max_len=512
  */
 
+#include <stdio.h>
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>

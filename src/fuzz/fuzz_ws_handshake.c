@@ -10,6 +10,7 @@
  * Tests handshake validation with random HTTP responses.
  */
 
+#include <stdlib.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>

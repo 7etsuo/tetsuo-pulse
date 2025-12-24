@@ -19,6 +19,7 @@
  * Run:   ./fuzz_iptracker corpus/iptracker/ -fork=16 -max_len=8192
  */
 
+#include <stdlib.h>
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>

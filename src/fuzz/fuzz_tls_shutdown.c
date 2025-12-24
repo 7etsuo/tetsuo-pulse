@@ -22,6 +22,7 @@
 
 #if SOCKET_HAS_TLS
 
+#include <stdlib.h>
 #include <assert.h>
 #include <errno.h>
 #include <stddef.h>

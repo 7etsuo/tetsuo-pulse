@@ -34,6 +34,7 @@
  * ./fuzz_http1_request corpus/http1_request/ -fork=16 -max_len=65536
  */
 
+#include <stdio.h>
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "core/SocketSecurity.h"

@@ -38,6 +38,7 @@
  * Run:   ./fuzz_dns_cookie_client corpus/dns_cookie_client/ -fork=16 -max_len=1024
  */
 
+#include <stdlib.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>

@@ -24,6 +24,7 @@
  * ./fuzz_hpack corpus/hpack/ -fork=16 -max_len=32768
  */
 
+#include <stdlib.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
