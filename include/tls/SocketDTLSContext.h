@@ -424,6 +424,28 @@ extern T SocketDTLSContext_new_client (const char *ca_file);
  */
 extern void SocketDTLSContext_free (T *ctx_p);
 
+/**
+ * @brief Increment the reference count on a DTLS context.
+ * @ingroup dtls_context
+ *
+ * Increments the internal reference count, allowing the context to be shared
+ * safely across multiple sockets. Each call to SocketDTLSContext_ref() must be
+ * balanced by a call to SocketDTLSContext_free() when the socket no longer
+ * needs the context.
+ *
+ * This function is called automatically by SocketDTLS_enable() when a context
+ * is attached to a socket. Manual calls are typically not needed unless
+ * implementing custom context sharing patterns.
+ *
+ * @param[in] ctx The context to retain. If NULL, this is a no-op.
+ *
+ * @threadsafe Yes - Uses atomic operations for the reference count.
+ *
+ * @see SocketDTLSContext_free() to release a reference.
+ * @see SocketDTLS_enable() which automatically retains the context.
+ */
+extern void SocketDTLSContext_ref (T ctx);
+
 /* ============================================================================
  * Certificate Management
  * ============================================================================
