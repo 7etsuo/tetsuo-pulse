@@ -201,6 +201,12 @@ typedef struct ServerConnection
 
   struct ServerConnection *next;
   struct ServerConnection *prev;
+
+  /* Deferred deletion: connection marked for close but not yet freed.
+   * This prevents use-after-free when multiple events for same connection
+   * arrive in a single poll batch (common with io_uring multishot polls). */
+  int pending_close;
+  struct ServerConnection *next_pending;
 } ServerConnection;
 
 struct SocketHTTPServer_Request
@@ -232,6 +238,10 @@ struct SocketHTTPServer
 
   ServerConnection *connections;
   size_t connection_count;
+
+  /* Connections pending deletion (deferred until end of event loop).
+   * Prevents use-after-free when same connection has multiple events. */
+  ServerConnection *pending_close_list;
 
   RateLimitEntry *rate_limiters;
   SocketRateLimit_T global_rate_limiter;
@@ -273,6 +283,7 @@ void connection_finish_request (SocketHTTPServer_T server,
 int connection_read (SocketHTTPServer_T server, ServerConnection *conn);
 int connection_parse_request (SocketHTTPServer_T server, ServerConnection *conn);
 void connection_close (SocketHTTPServer_T server, ServerConnection *conn);
+void connection_free_pending (SocketHTTPServer_T server);
 
 int server_run_validator_early (SocketHTTPServer_T server,
                                 ServerConnection *conn);

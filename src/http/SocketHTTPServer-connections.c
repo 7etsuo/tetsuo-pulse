@@ -709,12 +709,29 @@ connection_new (SocketHTTPServer_T server, Socket_T socket)
   return NULL;
 }
 
-/* Close and cleanup connection. Releases all resources in proper order. Safe to call with NULL */
+/**
+ * connection_close - Mark connection for deferred deletion
+ *
+ * Releases all resources (socket, arena, buffers) but defers the actual
+ * free() until end of event loop iteration. This prevents use-after-free
+ * when multiple events for the same connection arrive in a single poll
+ * batch (common with io_uring multishot polls).
+ *
+ * Safe to call multiple times - subsequent calls are no-ops.
+ */
 void
 connection_close (SocketHTTPServer_T server, ServerConnection *conn)
 {
   if (conn == NULL)
     return;
+
+  /* Already marked for close - prevent double cleanup */
+  if (conn->pending_close)
+    return;
+
+  /* Mark as pending close FIRST to prevent use-after-free.
+   * This flag is checked before processing any event for this connection. */
+  conn->pending_close = 1;
 
   /* Free HTTP/2 connection (does not close underlying socket). */
   if (conn->http2_conn != NULL)
@@ -750,6 +767,10 @@ connection_close (SocketHTTPServer_T server, ServerConnection *conn)
   if (conn->next != NULL)
     conn->next->prev = conn->prev;
 
+  /* Clear list pointers to prevent accidental traversal */
+  conn->next = NULL;
+  conn->prev = NULL;
+
   /* Update global + per-server metrics */
   SERVER_GAUGE_DEC (server, SOCKET_GAU_HTTP_SERVER_ACTIVE_CONNECTIONS,
                     active_connections);
@@ -764,5 +785,27 @@ connection_close (SocketHTTPServer_T server, ServerConnection *conn)
   if (conn->arena != NULL)
     Arena_dispose (&conn->arena);
 
-  free (conn);
+  /* Add to pending close list for deferred free() at end of event loop */
+  conn->next_pending = server->pending_close_list;
+  server->pending_close_list = conn;
+}
+
+/**
+ * connection_free_pending - Free all connections marked for close
+ *
+ * Called at end of event loop iteration to actually free() connections
+ * that were closed during event processing. This ensures no events
+ * in the current batch can reference freed memory.
+ */
+void
+connection_free_pending (SocketHTTPServer_T server)
+{
+  ServerConnection *conn = server->pending_close_list;
+  while (conn != NULL)
+    {
+      ServerConnection *next = conn->next_pending;
+      free (conn);
+      conn = next;
+    }
+  server->pending_close_list = NULL;
 }
