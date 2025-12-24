@@ -673,9 +673,9 @@ SocketDNSTransport_query_udp (T transport, const unsigned char *query_data,
   struct SocketDNSQuery *query;
   SocketDNS_Header hdr;
 
-  assert (transport);
-  assert (query_data);
-  assert (callback);
+  /* Validate parameters - return NULL for invalid inputs */
+  if (!transport || !query_data || !callback)
+    return NULL;
 
   /* Validate size - return NULL for invalid parameters */
   if (len < DNS_HEADER_SIZE || len > DNS_UDP_MAX_SIZE)
@@ -1306,9 +1306,9 @@ SocketDNSTransport_query_tcp (T transport, const unsigned char *query_data,
   struct SocketDNSQuery *query;
   SocketDNS_Header hdr;
 
-  assert (transport);
-  assert (query_data);
-  assert (callback);
+  /* Validate parameters - return NULL for invalid inputs */
+  if (!transport || !query_data || !callback)
+    return NULL;
 
   /* Validate size */
   if (len < DNS_HEADER_SIZE || len > DNS_TCP_MAX_SIZE)
