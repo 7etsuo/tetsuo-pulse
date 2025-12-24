@@ -380,8 +380,8 @@ SocketDNSNegCache_lookup (T cache, const char *qname, uint16_t qtype,
       entry->soa.has_soa = found->has_soa;
       if (found->has_soa)
         {
-          strncpy (entry->soa.name, found->soa_name, DNS_NEGCACHE_MAX_SOA_NAME);
-          entry->soa.name[DNS_NEGCACHE_MAX_SOA_NAME] = '\0';
+          snprintf (entry->soa.name, sizeof (entry->soa.name), "%s",
+                    found->soa_name);
           entry->soa.rdlen = found->soa_rdlen;
           if (found->soa_rdlen > 0 && found->soa_rdlen <= DNS_NEGCACHE_MAX_SOA_RDATA)
             memcpy (entry->soa.rdata, found->soa_rdata, found->soa_rdlen);
@@ -450,8 +450,7 @@ SocketDNSNegCache_insert_nxdomain (T cache, const char *qname, uint16_t qclass,
     }
 
   memset (entry, 0, sizeof (*entry));
-  strncpy (entry->name, normalized, DNS_NEGCACHE_MAX_NAME);
-  entry->name[DNS_NEGCACHE_MAX_NAME] = '\0';
+  snprintf (entry->name, sizeof (entry->name), "%s", normalized);
   entry->qtype = 0; /* NXDOMAIN uses qtype=0 */
   entry->qclass = qclass;
   entry->type = DNS_NEG_NXDOMAIN;
@@ -522,8 +521,7 @@ SocketDNSNegCache_insert_nodata (T cache, const char *qname, uint16_t qtype,
     }
 
   memset (entry, 0, sizeof (*entry));
-  strncpy (entry->name, normalized, DNS_NEGCACHE_MAX_NAME);
-  entry->name[DNS_NEGCACHE_MAX_NAME] = '\0';
+  snprintf (entry->name, sizeof (entry->name), "%s", normalized);
   entry->qtype = qtype;
   entry->qclass = qclass;
   entry->type = DNS_NEG_NODATA;
@@ -553,8 +551,7 @@ copy_soa_to_entry (struct NegCacheEntry *entry, const SocketDNS_CachedSOA *soa)
     }
 
   entry->has_soa = 1;
-  strncpy (entry->soa_name, soa->name, DNS_NEGCACHE_MAX_SOA_NAME);
-  entry->soa_name[DNS_NEGCACHE_MAX_SOA_NAME] = '\0';
+  snprintf (entry->soa_name, sizeof (entry->soa_name), "%s", soa->name);
 
   size_t rdlen = soa->rdlen;
   if (rdlen > DNS_NEGCACHE_MAX_SOA_RDATA)
@@ -618,8 +615,7 @@ SocketDNSNegCache_insert_nxdomain_with_soa (T cache, const char *qname,
     }
 
   memset (entry, 0, sizeof (*entry));
-  strncpy (entry->name, normalized, DNS_NEGCACHE_MAX_NAME);
-  entry->name[DNS_NEGCACHE_MAX_NAME] = '\0';
+  snprintf (entry->name, sizeof (entry->name), "%s", normalized);
   entry->qtype = 0; /* NXDOMAIN uses qtype=0 */
   entry->qclass = qclass;
   entry->type = DNS_NEG_NXDOMAIN;
@@ -694,8 +690,7 @@ SocketDNSNegCache_insert_nodata_with_soa (T cache, const char *qname,
     }
 
   memset (entry, 0, sizeof (*entry));
-  strncpy (entry->name, normalized, DNS_NEGCACHE_MAX_NAME);
-  entry->name[DNS_NEGCACHE_MAX_NAME] = '\0';
+  snprintf (entry->name, sizeof (entry->name), "%s", normalized);
   entry->qtype = qtype;
   entry->qclass = qclass;
   entry->type = DNS_NEG_NODATA;
