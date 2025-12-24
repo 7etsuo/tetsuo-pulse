@@ -105,9 +105,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     return 0;
 
   volatile uint8_t op = get_op (data, size);
-  SocketDgram_T socket = NULL;
-  SocketDTLSContext_T ctx = NULL;
-  SocketDTLSContext_T ctx2 = NULL;
+  /* volatile required: modified in TRY, accessed after END_TRY (longjmp safety) */
+  SocketDgram_T volatile socket = NULL;
+  SocketDTLSContext_T volatile ctx = NULL;
+  SocketDTLSContext_T volatile ctx2 = NULL;
 
   /* Single TRY block - no nesting per ASan requirements */
   TRY
@@ -141,7 +142,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         socket = SocketDgram_new (AF_INET, 0);
         ctx = SocketDTLSContext_new_client (NULL);
         SocketDTLS_enable (socket, ctx);
-        ctx = NULL; /* Owned by socket */
+        /* Note: socket takes its own ref, we still need to free ours in cleanup */
 
         /* Set peer with localhost IP - should succeed without DNS */
         SocketDTLS_set_peer (socket, "127.0.0.1", 4433);
@@ -152,7 +153,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         socket = SocketDgram_new (AF_INET, 0);
         ctx = SocketDTLSContext_new_client (NULL);
         SocketDTLS_enable (socket, ctx);
-        ctx = NULL; /* Owned by socket */
+        /* Note: socket takes its own ref, we still need to free ours in cleanup */
 
         /* set_peer with "localhost" - will do DNS resolution */
         SocketDTLS_set_peer (socket, "localhost", 4433);
@@ -266,7 +267,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         /* Second enable should fail */
         ctx2 = SocketDTLSContext_new_client (NULL);
         SocketDTLS_enable (socket, ctx2); /* Should raise */
-        SocketDTLSContext_free (&ctx2);   /* Won't reach here */
+        SocketDTLSContext_free ((SocketDTLSContext_T *)&ctx2);   /* Won't reach here */
         abort (); /* Double enable should fail */
 
       case OP_COMBINED_CONFIG:
@@ -310,11 +311,11 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
   /* Cleanup */
   if (socket)
-    SocketDgram_free (&socket);
+    SocketDgram_free ((SocketDgram_T *)&socket);
   if (ctx)
-    SocketDTLSContext_free (&ctx);
+    SocketDTLSContext_free ((SocketDTLSContext_T *)&ctx);
   if (ctx2)
-    SocketDTLSContext_free (&ctx2);
+    SocketDTLSContext_free ((SocketDTLSContext_T *)&ctx2);
 
   return 0;
 }

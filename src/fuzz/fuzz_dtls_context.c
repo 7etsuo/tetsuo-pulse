@@ -201,7 +201,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     return 0;
 
   volatile uint8_t op = get_op (data, size);
-  SocketDTLSContext_T ctx = NULL;
+  /* volatile required: modified in TRY, accessed after END_TRY (longjmp safety) */
+  SocketDTLSContext_T volatile ctx = NULL;
 
   /* Single TRY block - no nesting */
   TRY
@@ -215,7 +216,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           {
             /* Verify DTLS 1.2 enforcement even on client */
             (void)verify_dtls12_enforcement (ctx);
-            SocketDTLSContext_free (&ctx);
+            SocketDTLSContext_free ((SocketDTLSContext_T *)&ctx);
           }
         break;
 
@@ -227,7 +228,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             if (ctx)
               {
                 (void)verify_dtls12_enforcement (ctx);
-                SocketDTLSContext_free (&ctx);
+                SocketDTLSContext_free ((SocketDTLSContext_T *)&ctx);
               }
           }
         break;
@@ -245,7 +246,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                   {
                     /* Server flag should be set */
                   }
-                SocketDTLSContext_free (&ctx);
+                SocketDTLSContext_free ((SocketDTLSContext_T *)&ctx);
               }
           }
         break;
@@ -263,7 +264,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                   {
                     /* DTLS 1.2 enforcement should always be set */
                   }
-                SocketDTLSContext_free (&ctx);
+                SocketDTLSContext_free ((SocketDTLSContext_T *)&ctx);
               }
           }
         break;
@@ -345,7 +346,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               {
                 test_cookie_secret_cleanup (ctx);
                 /* Cookie secrets should be cleared on free */
-                SocketDTLSContext_free (&ctx);
+                SocketDTLSContext_free ((SocketDTLSContext_T *)&ctx);
               }
           }
         break;
@@ -379,7 +380,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                  * - Cookie secrets (securely cleared)
                  * - Mutexes
                  */
-                SocketDTLSContext_free (&ctx);
+                SocketDTLSContext_free ((SocketDTLSContext_T *)&ctx);
 
                 /* Verify ctx is NULL after free */
                 if (ctx != NULL)
@@ -405,7 +406,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
   /* Cleanup */
   if (ctx)
-    SocketDTLSContext_free (&ctx);
+    SocketDTLSContext_free ((SocketDTLSContext_T *)&ctx);
 
   return 0;
 }
