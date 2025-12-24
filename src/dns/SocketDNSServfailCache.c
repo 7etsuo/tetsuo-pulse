@@ -15,6 +15,7 @@
 
 #include <ctype.h>
 #include <pthread.h>
+#include <stdio.h>
 #include <string.h>
 #include <strings.h>
 
@@ -414,10 +415,8 @@ SocketDNSServfailCache_insert (T cache, const char *qname, uint16_t qtype,
     }
 
   memset (entry, 0, sizeof (*entry));
-  strncpy (entry->name, normalized, DNS_SERVFAIL_MAX_NAME);
-  entry->name[DNS_SERVFAIL_MAX_NAME] = '\0';
-  strncpy (entry->nameserver, nameserver, DNS_SERVFAIL_MAX_NS);
-  entry->nameserver[DNS_SERVFAIL_MAX_NS] = '\0';
+  snprintf (entry->name, sizeof (entry->name), "%s", normalized);
+  snprintf (entry->nameserver, sizeof (entry->nameserver), "%s", nameserver);
   entry->qtype = qtype;
   entry->qclass = qclass;
   entry->ttl = ttl;
