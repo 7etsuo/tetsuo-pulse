@@ -16,6 +16,7 @@
 #if SOCKET_HAS_IO_URING
 #include <liburing.h>
 #include <sys/eventfd.h>
+#include <sys/uio.h>
 #endif
 
 #if defined(__APPLE__) || defined(__FreeBSD__)
@@ -606,12 +607,22 @@ process_kqueue_completions (T async, int timeout_ms, int max_completions)
 
 
 static int
-detect_async_backend (T async)
+detect_async_backend_with_config (T async, const SocketAsync_Config *config)
 {
   assert (async);
 
 #if SOCKET_HAS_IO_URING
   struct io_uring test_ring;
+  struct io_uring_params params;
+  unsigned ring_size;
+  int sqpoll_requested;
+
+  /* Use config values or defaults */
+  ring_size = (config && config->ring_size > 0) ? config->ring_size
+                                                 : SOCKET_DEFAULT_IO_URING_ENTRIES;
+  sqpoll_requested = config && config->enable_sqpoll;
+
+  /* Test if io_uring is available */
   if (io_uring_queue_init (SOCKET_IO_URING_TEST_ENTRIES, &test_ring, 0) == 0)
     {
       io_uring_queue_exit (&test_ring);
@@ -623,8 +634,24 @@ detect_async_backend (T async)
           return 0;
         }
 
-      if (io_uring_queue_init (SOCKET_DEFAULT_IO_URING_ENTRIES, async->ring, 0)
-          == 0)
+      /* Initialize params for SQPOLL if requested */
+      memset (&params, 0, sizeof (params));
+
+      if (sqpoll_requested)
+        {
+          params.flags = IORING_SETUP_SQPOLL;
+          params.sq_thread_idle = config->sqpoll_idle_ms;
+
+          if (config->sqpoll_cpu >= 0)
+            {
+              params.flags |= IORING_SETUP_SQ_AFF;
+              params.sq_thread_cpu = (unsigned)config->sqpoll_cpu;
+            }
+        }
+
+      /* Try with SQPOLL if requested */
+      if (sqpoll_requested
+          && io_uring_queue_init_params (ring_size, async->ring, &params) == 0)
         {
           async->io_uring_fd = eventfd (0, EFD_NONBLOCK | EFD_CLOEXEC);
           if (async->io_uring_fd >= 0)
@@ -633,6 +660,29 @@ detect_async_backend (T async)
                   == 0)
                 {
                   async->available = 1;
+                  async->sqpoll_active = 1;
+                  async->ring_size = ring_size;
+                  async->backend_name = "io_uring (SQPOLL)";
+                  return 1;
+                }
+              close (async->io_uring_fd);
+            }
+          io_uring_queue_exit (async->ring);
+          /* Fall through to try without SQPOLL */
+        }
+
+      /* Try without SQPOLL (default or fallback) */
+      if (io_uring_queue_init (ring_size, async->ring, 0) == 0)
+        {
+          async->io_uring_fd = eventfd (0, EFD_NONBLOCK | EFD_CLOEXEC);
+          if (async->io_uring_fd >= 0)
+            {
+              if (io_uring_register_eventfd (async->ring, async->io_uring_fd)
+                  == 0)
+                {
+                  async->available = 1;
+                  async->sqpoll_active = 0;
+                  async->ring_size = ring_size;
                   async->backend_name = "io_uring";
                   return 1;
                 }
@@ -665,10 +715,18 @@ detect_async_backend (T async)
   return 0;
 
 #else
+  (void)config;
   async->available = 0;
   async->backend_name = "unavailable (platform not supported)";
   return 0;
 #endif
+}
+
+/* Backward-compatible wrapper */
+static int
+detect_async_backend (T async)
+{
+  return detect_async_backend_with_config (async, NULL);
 }
 
 /* LCOV_EXCL_START */
@@ -810,6 +868,52 @@ SocketAsync_new (Arena_T arena)
   return (T)async;
 }
 
+T
+SocketAsync_new_with_config (Arena_T arena, const SocketAsync_Config *config)
+{
+  volatile T async = NULL;
+
+  assert (arena);
+
+  TRY { async = CALLOC (arena, 1, sizeof (*async)); }
+  EXCEPT (Arena_Failed)
+  {
+    /* LCOV_EXCL_START */
+    SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate async context");
+    RAISE_MODULE_ERROR (SocketAsync_Failed);
+    /* LCOV_EXCL_STOP */
+  }
+  END_TRY;
+
+  ((T)async)->arena = arena;
+  ((T)async)->next_request_id = 1;
+
+  if (pthread_mutex_init (&((T)async)->mutex, NULL) != 0)
+    {
+      /* LCOV_EXCL_START */
+      SOCKET_ERROR_MSG ("Failed to initialize async mutex");
+      RAISE_MODULE_ERROR (SocketAsync_Failed);
+      /* LCOV_EXCL_STOP */
+    }
+
+  detect_async_backend_with_config ((T)async, config);
+
+  return (T)async;
+}
+
+int
+SocketAsync_is_sqpoll_active (const T async)
+{
+#if SOCKET_HAS_IO_URING
+  if (!async)
+    return 0;
+  return async->sqpoll_active;
+#else
+  (void)async;
+  return 0;
+#endif
+}
+
 void
 SocketAsync_free (T *async)
 {
@@ -834,6 +938,22 @@ SocketAsync_free (T *async)
 #if SOCKET_HAS_IO_URING
   if ((*async)->ring)
     {
+      /* Unregister buffers if registered */
+      if ((*async)->registered_buf_count > 0)
+        {
+          io_uring_unregister_buffers ((*async)->ring);
+          (*async)->registered_buf_count = 0;
+          (*async)->registered_bufs = NULL;
+        }
+
+      /* Unregister files if registered */
+      if ((*async)->registered_fd_count > 0)
+        {
+          io_uring_unregister_files ((*async)->ring);
+          (*async)->registered_fd_count = 0;
+          (*async)->registered_fds = NULL;
+        }
+
       if ((*async)->io_uring_fd >= 0)
         {
           io_uring_register_eventfd ((*async)->ring, -1);
@@ -1526,6 +1646,476 @@ SocketAsync_pending_count (const T async)
   pthread_mutex_unlock (&((T)async)->mutex);
 
   return count;
+#else
+  (void)async;
+  return 0;
+#endif
+}
+
+
+/* ==================== Registered Buffers Implementation ==================== */
+
+int
+SocketAsync_register_buffers (T async, void **bufs, size_t *lens, unsigned count)
+{
+#if SOCKET_HAS_IO_URING
+  struct iovec *iovs;
+  int ret;
+
+  if (!async || !async->ring || !bufs || !lens || count == 0)
+    {
+      errno = EINVAL;
+      return -1;
+    }
+
+  /* Unregister any existing buffers first */
+  if (async->registered_buf_count > 0)
+    {
+      io_uring_unregister_buffers (async->ring);
+      async->registered_buf_count = 0;
+      async->registered_bufs = NULL;
+    }
+
+  /* Allocate iovec array from arena */
+  iovs = CALLOC (async->arena, count, sizeof (struct iovec));
+  if (!iovs)
+    {
+      errno = ENOMEM;
+      return -1;
+    }
+
+  /* Populate iovec array */
+  for (unsigned i = 0; i < count; i++)
+    {
+      iovs[i].iov_base = bufs[i];
+      iovs[i].iov_len = lens[i];
+    }
+
+  pthread_mutex_lock (&async->mutex);
+  ret = io_uring_register_buffers (async->ring, iovs, count);
+  if (ret == 0)
+    {
+      async->registered_bufs = iovs;
+      async->registered_buf_count = count;
+    }
+  pthread_mutex_unlock (&async->mutex);
+
+  if (ret < 0)
+    {
+      errno = -ret;
+      return -1;
+    }
+
+  return 0;
+#else
+  (void)async;
+  (void)bufs;
+  (void)lens;
+  (void)count;
+  errno = ENOTSUP;
+  return -1;
+#endif
+}
+
+int
+SocketAsync_unregister_buffers (T async)
+{
+#if SOCKET_HAS_IO_URING
+  int ret;
+
+  if (!async || !async->ring)
+    {
+      errno = EINVAL;
+      return -1;
+    }
+
+  if (async->registered_buf_count == 0)
+    return 0;
+
+  pthread_mutex_lock (&async->mutex);
+  ret = io_uring_unregister_buffers (async->ring);
+  async->registered_buf_count = 0;
+  async->registered_bufs = NULL;
+  pthread_mutex_unlock (&async->mutex);
+
+  if (ret < 0)
+    {
+      errno = -ret;
+      return -1;
+    }
+
+  return 0;
+#else
+  (void)async;
+  errno = ENOTSUP;
+  return -1;
+#endif
+}
+
+unsigned
+SocketAsync_registered_buffer_count (const T async)
+{
+#if SOCKET_HAS_IO_URING
+  if (!async)
+    return 0;
+  return async->registered_buf_count;
+#else
+  (void)async;
+  return 0;
+#endif
+}
+
+unsigned
+SocketAsync_send_fixed (T async, Socket_T socket, unsigned buf_index,
+                        size_t offset, size_t len, SocketAsync_Callback cb,
+                        void *user_data, SocketAsync_Flags flags)
+{
+#if SOCKET_HAS_IO_URING
+  struct AsyncRequest *req;
+  struct io_uring_sqe *sqe;
+  int fd;
+  unsigned request_id;
+  char *buf_ptr;
+
+  if (!async || !async->ring || !socket || !cb)
+    {
+      errno = EINVAL;
+      RAISE_MODULE_ERROR (SocketAsync_Failed);
+    }
+
+  if (buf_index >= async->registered_buf_count)
+    {
+      errno = EINVAL;
+      SOCKET_ERROR_FMT ("Buffer index %u out of range (count=%u)", buf_index,
+                        async->registered_buf_count);
+      RAISE_MODULE_ERROR (SocketAsync_Failed);
+    }
+
+  if (offset + len > async->registered_bufs[buf_index].iov_len)
+    {
+      errno = EINVAL;
+      SOCKET_ERROR_MSG ("Offset + len exceeds buffer size");
+      RAISE_MODULE_ERROR (SocketAsync_Failed);
+    }
+
+  fd = Socket_fd (socket);
+  buf_ptr = (char *)async->registered_bufs[buf_index].iov_base + offset;
+
+  /* Set up request with fixed buffer flag */
+  req = setup_async_request (async, socket, cb, user_data, REQ_SEND, buf_ptr,
+                             NULL, len, flags | ASYNC_FLAG_FIXED_BUFFER);
+
+  pthread_mutex_lock (&async->mutex);
+  req->request_id = generate_request_id_unlocked (async);
+
+  /* Insert into hash table */
+  unsigned hash = request_hash (req->request_id);
+  req->next = async->requests[hash];
+  async->requests[hash] = req;
+  req->submitted_at = Socket_get_monotonic_ms ();
+
+  /* Submit fixed buffer operation */
+  sqe = io_uring_get_sqe (async->ring);
+  if (!sqe)
+    {
+      /* Try flushing pending operations */
+      if (async->pending_sqe_count > 0)
+        flush_io_uring_unlocked (async);
+      sqe = io_uring_get_sqe (async->ring);
+    }
+
+  if (!sqe)
+    {
+      remove_request_unlocked (async, req);
+      pthread_mutex_unlock (&async->mutex);
+      socket_async_free_request (async, req);
+      errno = EAGAIN;
+      return 0;
+    }
+
+  io_uring_prep_write_fixed (sqe, fd, buf_ptr, len, 0, buf_index);
+  sqe->user_data = (uintptr_t)req->request_id;
+
+  request_id = req->request_id;
+
+  /* Submit immediately for fixed buffer ops */
+  io_uring_submit (async->ring);
+
+  pthread_mutex_unlock (&async->mutex);
+
+  return request_id;
+#else
+  (void)async;
+  (void)socket;
+  (void)buf_index;
+  (void)offset;
+  (void)len;
+  (void)cb;
+  (void)user_data;
+  (void)flags;
+  errno = ENOTSUP;
+  RAISE_MODULE_ERROR (SocketAsync_Failed);
+  return 0;
+#endif
+}
+
+unsigned
+SocketAsync_recv_fixed (T async, Socket_T socket, unsigned buf_index,
+                        size_t offset, size_t len, SocketAsync_Callback cb,
+                        void *user_data, SocketAsync_Flags flags)
+{
+#if SOCKET_HAS_IO_URING
+  struct AsyncRequest *req;
+  struct io_uring_sqe *sqe;
+  int fd;
+  unsigned request_id;
+  char *buf_ptr;
+
+  if (!async || !async->ring || !socket || !cb)
+    {
+      errno = EINVAL;
+      RAISE_MODULE_ERROR (SocketAsync_Failed);
+    }
+
+  if (buf_index >= async->registered_buf_count)
+    {
+      errno = EINVAL;
+      SOCKET_ERROR_FMT ("Buffer index %u out of range (count=%u)", buf_index,
+                        async->registered_buf_count);
+      RAISE_MODULE_ERROR (SocketAsync_Failed);
+    }
+
+  if (offset + len > async->registered_bufs[buf_index].iov_len)
+    {
+      errno = EINVAL;
+      SOCKET_ERROR_MSG ("Offset + len exceeds buffer size");
+      RAISE_MODULE_ERROR (SocketAsync_Failed);
+    }
+
+  fd = Socket_fd (socket);
+  buf_ptr = (char *)async->registered_bufs[buf_index].iov_base + offset;
+
+  /* Set up request with fixed buffer flag */
+  req = setup_async_request (async, socket, cb, user_data, REQ_RECV, NULL,
+                             buf_ptr, len, flags | ASYNC_FLAG_FIXED_BUFFER);
+
+  pthread_mutex_lock (&async->mutex);
+  req->request_id = generate_request_id_unlocked (async);
+
+  /* Insert into hash table */
+  unsigned hash = request_hash (req->request_id);
+  req->next = async->requests[hash];
+  async->requests[hash] = req;
+  req->submitted_at = Socket_get_monotonic_ms ();
+
+  /* Submit fixed buffer operation */
+  sqe = io_uring_get_sqe (async->ring);
+  if (!sqe)
+    {
+      /* Try flushing pending operations */
+      if (async->pending_sqe_count > 0)
+        flush_io_uring_unlocked (async);
+      sqe = io_uring_get_sqe (async->ring);
+    }
+
+  if (!sqe)
+    {
+      remove_request_unlocked (async, req);
+      pthread_mutex_unlock (&async->mutex);
+      socket_async_free_request (async, req);
+      errno = EAGAIN;
+      return 0;
+    }
+
+  io_uring_prep_read_fixed (sqe, fd, buf_ptr, len, 0, buf_index);
+  sqe->user_data = (uintptr_t)req->request_id;
+
+  request_id = req->request_id;
+
+  /* Submit immediately for fixed buffer ops */
+  io_uring_submit (async->ring);
+
+  pthread_mutex_unlock (&async->mutex);
+
+  return request_id;
+#else
+  (void)async;
+  (void)socket;
+  (void)buf_index;
+  (void)offset;
+  (void)len;
+  (void)cb;
+  (void)user_data;
+  (void)flags;
+  errno = ENOTSUP;
+  RAISE_MODULE_ERROR (SocketAsync_Failed);
+  return 0;
+#endif
+}
+
+
+/* ==================== Fixed Files Implementation ==================== */
+
+int
+SocketAsync_register_files (T async, int *fds, unsigned count)
+{
+#if SOCKET_HAS_IO_URING
+  int *fd_copy;
+  int ret;
+
+  if (!async || !async->ring || !fds || count == 0)
+    {
+      errno = EINVAL;
+      return -1;
+    }
+
+  /* Unregister any existing files first */
+  if (async->registered_fd_count > 0)
+    {
+      io_uring_unregister_files (async->ring);
+      async->registered_fd_count = 0;
+      async->registered_fds = NULL;
+    }
+
+  /* Allocate fd array copy from arena */
+  fd_copy = CALLOC (async->arena, count, sizeof (int));
+  if (!fd_copy)
+    {
+      errno = ENOMEM;
+      return -1;
+    }
+
+  /* Copy fd array */
+  memcpy (fd_copy, fds, count * sizeof (int));
+
+  pthread_mutex_lock (&async->mutex);
+  ret = io_uring_register_files (async->ring, fds, count);
+  if (ret == 0)
+    {
+      async->registered_fds = fd_copy;
+      async->registered_fd_count = count;
+    }
+  pthread_mutex_unlock (&async->mutex);
+
+  if (ret < 0)
+    {
+      errno = -ret;
+      return -1;
+    }
+
+  return 0;
+#else
+  (void)async;
+  (void)fds;
+  (void)count;
+  errno = ENOTSUP;
+  return -1;
+#endif
+}
+
+int
+SocketAsync_unregister_files (T async)
+{
+#if SOCKET_HAS_IO_URING
+  int ret;
+
+  if (!async || !async->ring)
+    {
+      errno = EINVAL;
+      return -1;
+    }
+
+  if (async->registered_fd_count == 0)
+    return 0;
+
+  pthread_mutex_lock (&async->mutex);
+  ret = io_uring_unregister_files (async->ring);
+  async->registered_fd_count = 0;
+  async->registered_fds = NULL;
+  pthread_mutex_unlock (&async->mutex);
+
+  if (ret < 0)
+    {
+      errno = -ret;
+      return -1;
+    }
+
+  return 0;
+#else
+  (void)async;
+  errno = ENOTSUP;
+  return -1;
+#endif
+}
+
+int
+SocketAsync_update_registered_fd (T async, unsigned index, int new_fd)
+{
+#if SOCKET_HAS_IO_URING
+  int ret;
+
+  if (!async || !async->ring)
+    {
+      errno = EINVAL;
+      return -1;
+    }
+
+  if (index >= async->registered_fd_count)
+    {
+      errno = EINVAL;
+      return -1;
+    }
+
+  pthread_mutex_lock (&async->mutex);
+  ret = io_uring_register_files_update (async->ring, index, &new_fd, 1);
+  if (ret >= 0)
+    async->registered_fds[index] = new_fd;
+  pthread_mutex_unlock (&async->mutex);
+
+  if (ret < 0)
+    {
+      errno = -ret;
+      return -1;
+    }
+
+  return 0;
+#else
+  (void)async;
+  (void)index;
+  (void)new_fd;
+  errno = ENOTSUP;
+  return -1;
+#endif
+}
+
+int
+SocketAsync_get_fixed_fd_index (const T async, int fd)
+{
+#if SOCKET_HAS_IO_URING
+  if (!async || async->registered_fd_count == 0)
+    return -1;
+
+  for (unsigned i = 0; i < async->registered_fd_count; i++)
+    {
+      if (async->registered_fds[i] == fd)
+        return (int)i;
+    }
+
+  return -1;
+#else
+  (void)async;
+  (void)fd;
+  return -1;
+#endif
+}
+
+unsigned
+SocketAsync_registered_file_count (const T async)
+{
+#if SOCKET_HAS_IO_URING
+  if (!async)
+    return 0;
+  return async->registered_fd_count;
 #else
   (void)async;
   return 0;

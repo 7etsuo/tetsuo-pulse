@@ -462,6 +462,54 @@ struct SocketAsync_T
    * @see ASYNC_FLAG_NOSYNC
    */
   unsigned pending_sqe_count;
+
+  /**
+   * @brief SQPOLL mode active flag.
+   *
+   * Non-zero if SQPOLL kernel thread polling is active.
+   * When active, io_uring_submit() is not needed - kernel polls SQ.
+   *
+   * @see SocketAsync_Config::enable_sqpoll
+   * @see SocketAsync_is_sqpoll_active()
+   */
+  int sqpoll_active;
+
+  /**
+   * @brief Ring size used for this io_uring instance.
+   *
+   * Number of SQ entries, used for flush threshold calculation.
+   */
+  unsigned ring_size;
+
+  /* === Registered Buffers === */
+
+  /**
+   * @brief Array of registered buffer iovecs.
+   *
+   * Points to iovec array registered with IORING_REGISTER_BUFFERS.
+   * NULL if no buffers registered.
+   */
+  struct iovec *registered_bufs;
+
+  /**
+   * @brief Number of registered buffers.
+   */
+  unsigned registered_buf_count;
+
+  /* === Fixed Files === */
+
+  /**
+   * @brief Array of registered file descriptors.
+   *
+   * Copy of fds registered with IORING_REGISTER_FILES.
+   * Used for fd-to-index lookup.
+   */
+  int *registered_fds;
+
+  /**
+   * @brief Number of registered file descriptors.
+   */
+  unsigned registered_fd_count;
 #elif defined(__APPLE__) || defined(__FreeBSD__)
   /**
    * @brief kqueue file descriptor for AIO events.
