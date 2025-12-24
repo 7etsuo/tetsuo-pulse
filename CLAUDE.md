@@ -63,6 +63,9 @@ cd build && ASAN_OPTIONS=detect_leaks=1:abort_on_error=1 ctest -j$(nproc) --outp
 
 # Build with fuzzing (requires Clang)
 CC=clang cmake -S . -B build -DENABLE_FUZZING=ON
+cmake --build build --target fuzzers -j$(nproc)  # Build ALL fuzzers
+# Or build individual fuzzer:
+cmake --build build --target fuzz_socketbuf -j$(nproc)
 
 # Build with io_uring (Linux only, requires liburing-dev)
 cmake -S . -B build -DENABLE_IO_URING=ON
@@ -72,6 +75,9 @@ cd build && ./test_socket
 
 # Run fuzzers (after ENABLE_FUZZING build)
 cd build && ./fuzz_socketbuf corpus/socketbuf/ -fork=16 -max_len=4096
+
+# List all available fuzzers (~100 harnesses)
+ls build/fuzz_*
 
 # Generate documentation
 cd build && make -j$(nproc) doc
@@ -313,4 +319,21 @@ SocketAsync_enable_sqpoll(async);  /* Enable SQPOLL if available */
 SocketAsync_send(async, sock1, data1, len1, 0, cb1, ud1);
 SocketAsync_send(async, sock2, data2, len2, 0, cb2, ud2);
 SocketAsync_submit_batch(async);  /* Submit all at once */
+```
+
+## GitHub CLI Workaround
+
+The `gh issue view` command may fail with a GraphQL error about "Projects (classic)" deprecation:
+```
+GraphQL: Projects (classic) is being deprecated in favor of the new Projects experience
+```
+
+**Workaround**: Use `gh issue list --search` instead:
+```bash
+# Instead of: gh issue view 141 --repo 7etsuo/tetsuo-socket
+# Use:
+gh issue list --repo 7etsuo/tetsuo-socket --state all --search "141" --limit 5
+
+# Or search by keyword:
+gh issue list --repo 7etsuo/tetsuo-socket --state all --search "fuzz" --limit 20
 ```

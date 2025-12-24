@@ -657,9 +657,17 @@ LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 Standard fuzzer build and run commands:
 
 ```bash
-# Build fuzzers
+# Configure with fuzzing enabled (requires Clang)
 CC=clang cmake -S . -B build -DENABLE_FUZZING=ON
-cmake --build build -j
+
+# Build ALL fuzzers (~100 harnesses)
+cmake --build build --target fuzzers -j$(nproc)
+
+# Or build a single fuzzer
+cmake --build build --target fuzz_socketbuf -j$(nproc)
+
+# List available fuzzers
+ls build/fuzz_*
 
 # Run single fuzzer
 cd build && ./fuzz_module corpus/module/ -fork=16 -max_len=4096
