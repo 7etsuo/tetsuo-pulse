@@ -691,12 +691,18 @@ generate_client_cookie (T cache, const struct sockaddr *server_addr,
   if (server_addr->sa_family == AF_INET)
     {
       const struct sockaddr_in *sin = (const struct sockaddr_in *)server_addr;
+      /* Bounds check: IPv4 address is 4 bytes */
+      if (data_len + sizeof (sin->sin_addr) > sizeof (data))
+        return -1;
       memcpy (data + data_len, &sin->sin_addr, sizeof (sin->sin_addr));
       data_len += sizeof (sin->sin_addr);
     }
   else if (server_addr->sa_family == AF_INET6)
     {
       const struct sockaddr_in6 *sin6 = (const struct sockaddr_in6 *)server_addr;
+      /* Bounds check: IPv6 address is 16 bytes */
+      if (data_len + sizeof (sin6->sin6_addr) > sizeof (data))
+        return -1;
       memcpy (data + data_len, &sin6->sin6_addr, sizeof (sin6->sin6_addr));
       data_len += sizeof (sin6->sin6_addr);
     }
@@ -710,6 +716,9 @@ generate_client_cookie (T cache, const struct sockaddr *server_addr,
       if (client_addr->sa_family == AF_INET)
         {
           const struct sockaddr_in *sin = (const struct sockaddr_in *)client_addr;
+          /* Bounds check before copy */
+          if (data_len + sizeof (sin->sin_addr) > sizeof (data))
+            return -1;
           memcpy (data + data_len, &sin->sin_addr, sizeof (sin->sin_addr));
           data_len += sizeof (sin->sin_addr);
         }
@@ -717,6 +726,9 @@ generate_client_cookie (T cache, const struct sockaddr *server_addr,
         {
           const struct sockaddr_in6 *sin6
               = (const struct sockaddr_in6 *)client_addr;
+          /* Bounds check before copy */
+          if (data_len + sizeof (sin6->sin6_addr) > sizeof (data))
+            return -1;
           memcpy (data + data_len, &sin6->sin6_addr, sizeof (sin6->sin6_addr));
           data_len += sizeof (sin6->sin6_addr);
         }
@@ -728,6 +740,10 @@ generate_client_cookie (T cache, const struct sockaddr *server_addr,
 
   HMAC (EVP_sha256 (), cache->secret, SECRET_SIZE, data, data_len, hmac_out,
         &hmac_len);
+
+  /* Verify HMAC succeeded and produced expected length */
+  if (hmac_len < DNS_CLIENT_COOKIE_SIZE)
+    return -1;
 
   memcpy (cookie, hmac_out, DNS_CLIENT_COOKIE_SIZE);
   return 0;
