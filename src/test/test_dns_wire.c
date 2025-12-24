@@ -3183,6 +3183,260 @@ TEST (dns_edns_option_large_data)
   ASSERT_EQ (memcmp (decoded.data, data, 256), 0);
 }
 
+/*
+ * EDNS0 Version Negotiation Tests (RFC 6891 Section 6.1.3)
+ */
+
+/* Test OPT TTL encode/decode roundtrip with version 0 */
+TEST (dns_opt_ttl_roundtrip_version0)
+{
+  SocketDNS_OPT_Flags orig = { 0 };
+  SocketDNS_OPT_Flags decoded = { 0 };
+  uint32_t ttl;
+
+  /* EDNS0 with no special flags */
+  orig.extended_rcode = 0;
+  orig.version = 0;
+  orig.do_bit = 0;
+  orig.z = 0;
+
+  ttl = SocketDNS_opt_ttl_encode (&orig);
+  ASSERT_EQ (ttl, 0U);
+
+  SocketDNS_opt_ttl_decode (ttl, &decoded);
+  ASSERT_EQ (decoded.extended_rcode, 0);
+  ASSERT_EQ (decoded.version, 0);
+  ASSERT_EQ (decoded.do_bit, 0);
+  ASSERT_EQ (decoded.z, 0);
+}
+
+/* Test OPT TTL with DO bit set */
+TEST (dns_opt_ttl_do_bit)
+{
+  SocketDNS_OPT_Flags flags = { 0 };
+  SocketDNS_OPT_Flags decoded = { 0 };
+  uint32_t ttl;
+
+  flags.version = 0;
+  flags.do_bit = 1;
+
+  ttl = SocketDNS_opt_ttl_encode (&flags);
+  /* DO bit is bit 15: 0x8000 */
+  ASSERT_EQ (ttl, 0x00008000U);
+
+  SocketDNS_opt_ttl_decode (ttl, &decoded);
+  ASSERT_EQ (decoded.version, 0);
+  ASSERT_EQ (decoded.do_bit, 1);
+  ASSERT_EQ (decoded.z, 0);
+}
+
+/* Test OPT TTL with extended RCODE (BADVERS) */
+TEST (dns_opt_ttl_extended_rcode)
+{
+  SocketDNS_OPT_Flags flags = { 0 };
+  SocketDNS_OPT_Flags decoded = { 0 };
+  uint32_t ttl;
+
+  /* BADVERS = extended RCODE 16 = header RCODE 0 + OPT extended_rcode 1 */
+  flags.extended_rcode = 1;
+  flags.version = 0;
+
+  ttl = SocketDNS_opt_ttl_encode (&flags);
+  ASSERT_EQ (ttl, 0x01000000U);
+
+  SocketDNS_opt_ttl_decode (ttl, &decoded);
+  ASSERT_EQ (decoded.extended_rcode, 1);
+  ASSERT_EQ (decoded.version, 0);
+}
+
+/* Test OPT TTL with version > 0 */
+TEST (dns_opt_ttl_version_negotiation)
+{
+  SocketDNS_OPT_Flags flags = { 0 };
+  SocketDNS_OPT_Flags decoded = { 0 };
+  uint32_t ttl;
+
+  /* Simulate a server responding with version 1 */
+  flags.version = 1;
+
+  ttl = SocketDNS_opt_ttl_encode (&flags);
+  ASSERT_EQ (ttl, 0x00010000U);
+
+  SocketDNS_opt_ttl_decode (ttl, &decoded);
+  ASSERT_EQ (decoded.version, 1);
+}
+
+/* Test OPT TTL with all fields set */
+TEST (dns_opt_ttl_all_fields)
+{
+  SocketDNS_OPT_Flags flags = { 0 };
+  SocketDNS_OPT_Flags decoded = { 0 };
+  uint32_t ttl;
+
+  flags.extended_rcode = 0x12;
+  flags.version = 0x34;
+  flags.do_bit = 1;
+  flags.z = 0x5678 & 0x7FFF;  /* Only 15 bits */
+
+  ttl = SocketDNS_opt_ttl_encode (&flags);
+
+  /* Expected: 0x12 << 24 | 0x34 << 16 | 0x8000 | 0x5678 */
+  ASSERT_EQ (ttl, 0x1234D678U);
+
+  SocketDNS_opt_ttl_decode (ttl, &decoded);
+  ASSERT_EQ (decoded.extended_rcode, 0x12);
+  ASSERT_EQ (decoded.version, 0x34);
+  ASSERT_EQ (decoded.do_bit, 1);
+  ASSERT_EQ (decoded.z, 0x5678);
+}
+
+/* Test BADVERS detection from header + OPT */
+TEST (dns_opt_is_badvers)
+{
+  SocketDNS_Header hdr = { 0 };
+  SocketDNS_OPT opt = { 0 };
+
+  /* BADVERS = extended RCODE 16 = (1 << 4) | 0 */
+  hdr.rcode = 0;  /* Lower 4 bits */
+  opt.extended_rcode = 1;  /* Upper 8 bits: 1 << 4 = 16 */
+
+  ASSERT (SocketDNS_opt_is_badvers (&hdr, &opt) == 1);
+
+  /* NOERROR should not be BADVERS */
+  hdr.rcode = 0;
+  opt.extended_rcode = 0;
+  ASSERT (SocketDNS_opt_is_badvers (&hdr, &opt) == 0);
+
+  /* NXDOMAIN should not be BADVERS */
+  hdr.rcode = DNS_RCODE_NXDOMAIN;
+  opt.extended_rcode = 0;
+  ASSERT (SocketDNS_opt_is_badvers (&hdr, &opt) == 0);
+}
+
+/* Test extended RCODE calculation (12-bit) */
+TEST (dns_opt_extended_rcode_12bit)
+{
+  SocketDNS_Header hdr = { 0 };
+  SocketDNS_OPT opt = { 0 };
+  uint16_t rcode;
+
+  /* NOERROR: header=0, ext=0 => 0 */
+  hdr.rcode = 0;
+  opt.extended_rcode = 0;
+  rcode = SocketDNS_opt_extended_rcode (&hdr, &opt);
+  ASSERT_EQ (rcode, 0);
+
+  /* SERVFAIL: header=2, ext=0 => 2 */
+  hdr.rcode = DNS_RCODE_SERVFAIL;
+  opt.extended_rcode = 0;
+  rcode = SocketDNS_opt_extended_rcode (&hdr, &opt);
+  ASSERT_EQ (rcode, (uint16_t)DNS_RCODE_SERVFAIL);
+
+  /* BADVERS: header=0, ext=1 => (1 << 4) | 0 = 16 */
+  hdr.rcode = 0;
+  opt.extended_rcode = 1;
+  rcode = SocketDNS_opt_extended_rcode (&hdr, &opt);
+  ASSERT_EQ (rcode, (uint16_t)DNS_RCODE_EXT_BADVERS);
+
+  /* BADCOOKIE: header=7, ext=1 => (1 << 4) | 7 = 23 */
+  hdr.rcode = 7;
+  opt.extended_rcode = 1;
+  rcode = SocketDNS_opt_extended_rcode (&hdr, &opt);
+  ASSERT_EQ (rcode, (uint16_t)DNS_RCODE_EXT_BADCOOKIE);
+
+  /* Maximum 12-bit value: header=15, ext=255 => 4095 */
+  hdr.rcode = 15;
+  opt.extended_rcode = 255;
+  rcode = SocketDNS_opt_extended_rcode (&hdr, &opt);
+  ASSERT_EQ (rcode, 4095);
+}
+
+/* Test get version from OPT */
+TEST (dns_opt_get_version)
+{
+  SocketDNS_OPT opt = { 0 };
+
+  opt.version = 0;
+  ASSERT_EQ (SocketDNS_opt_get_version (&opt), 0);
+
+  opt.version = 1;
+  ASSERT_EQ (SocketDNS_opt_get_version (&opt), 1);
+
+  opt.version = 255;
+  ASSERT_EQ (SocketDNS_opt_get_version (&opt), 255);
+
+  /* NULL should return -1 */
+  ASSERT_EQ (SocketDNS_opt_get_version (NULL), -1);
+}
+
+/* Test extended RCODE constants */
+TEST (dns_extended_rcode_constants)
+{
+  /* Verify extended RCODE values match IANA registry */
+  ASSERT_EQ (DNS_RCODE_EXT_BADVERS, 16);
+  ASSERT_EQ (DNS_RCODE_EXT_BADSIG, 16);  /* Same as BADVERS */
+  ASSERT_EQ (DNS_RCODE_EXT_BADKEY, 17);
+  ASSERT_EQ (DNS_RCODE_EXT_BADTIME, 18);
+  ASSERT_EQ (DNS_RCODE_EXT_BADMODE, 19);
+  ASSERT_EQ (DNS_RCODE_EXT_BADNAME, 20);
+  ASSERT_EQ (DNS_RCODE_EXT_BADALG, 21);
+  ASSERT_EQ (DNS_RCODE_EXT_BADTRUNC, 22);
+  ASSERT_EQ (DNS_RCODE_EXT_BADCOOKIE, 23);
+}
+
+/* Test TTL decode/encode with NULL handling */
+TEST (dns_opt_ttl_null_handling)
+{
+  SocketDNS_OPT_Flags flags = { 0 };
+
+  /* Decode with NULL should not crash */
+  SocketDNS_opt_ttl_decode (0x12345678, NULL);
+
+  /* Encode with NULL should return 0 */
+  ASSERT_EQ (SocketDNS_opt_ttl_encode (NULL), 0U);
+
+  /* Decode valid value */
+  SocketDNS_opt_ttl_decode (0x12345678, &flags);
+  ASSERT_EQ (flags.extended_rcode, 0x12);
+  ASSERT_EQ (flags.version, 0x34);
+}
+
+/* Test BADVERS detection without OPT record */
+TEST (dns_opt_is_badvers_no_opt)
+{
+  SocketDNS_Header hdr = { 0 };
+
+  /* Without OPT, only header RCODE matters, max is 15 */
+  hdr.rcode = 0;
+  ASSERT (SocketDNS_opt_is_badvers (&hdr, NULL) == 0);
+
+  /* NULL header should return 0 */
+  ASSERT (SocketDNS_opt_is_badvers (NULL, NULL) == 0);
+}
+
+/* Test Z bits are preserved */
+TEST (dns_opt_ttl_z_bits)
+{
+  SocketDNS_OPT_Flags flags = { 0 };
+  SocketDNS_OPT_Flags decoded = { 0 };
+  uint32_t ttl;
+
+  /* Set Z bits (15 bits maximum) */
+  flags.z = 0x7FFF;  /* Maximum valid Z value */
+
+  ttl = SocketDNS_opt_ttl_encode (&flags);
+  ASSERT_EQ (ttl, 0x7FFFU);
+
+  SocketDNS_opt_ttl_decode (ttl, &decoded);
+  ASSERT_EQ (decoded.z, 0x7FFF);
+
+  /* Z bits should be masked to 15 bits */
+  flags.z = 0xFFFF;  /* Overflow */
+  ttl = SocketDNS_opt_ttl_encode (&flags);
+  SocketDNS_opt_ttl_decode (ttl, &decoded);
+  ASSERT_EQ (decoded.z, 0x7FFF);  /* Only 15 bits preserved */
+}
+
 int
 main (void)
 {

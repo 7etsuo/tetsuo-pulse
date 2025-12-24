@@ -1130,6 +1130,64 @@ SocketDNS_opt_extended_rcode (const SocketDNS_Header *hdr,
 }
 
 /*
+ * OPT TTL Field Encoding/Decoding (RFC 6891 Section 6.1.3)
+ *
+ * The TTL field in OPT records is repurposed as follows:
+ *
+ *   Bits 31-24: EXTENDED-RCODE (8 bits) - Upper 8 bits of 12-bit RCODE
+ *   Bits 23-16: VERSION (8 bits) - EDNS version (0 for EDNS0)
+ *   Bit 15:     DO (1 bit) - DNSSEC OK flag
+ *   Bits 14-0:  Z (15 bits) - Reserved, must be zero
+ */
+
+void
+SocketDNS_opt_ttl_decode (uint32_t ttl, SocketDNS_OPT_Flags *flags)
+{
+  if (!flags)
+    return;
+
+  flags->extended_rcode = (uint8_t)((ttl >> 24) & 0xFF);
+  flags->version = (uint8_t)((ttl >> 16) & 0xFF);
+  flags->do_bit = (uint8_t)((ttl >> 15) & 0x01);
+  flags->z = (uint16_t)(ttl & 0x7FFF);
+}
+
+uint32_t
+SocketDNS_opt_ttl_encode (const SocketDNS_OPT_Flags *flags)
+{
+  if (!flags)
+    return 0;
+
+  return ((uint32_t)flags->extended_rcode << 24)
+         | ((uint32_t)flags->version << 16)
+         | ((uint32_t)(flags->do_bit ? 0x8000 : 0))
+         | ((uint32_t)(flags->z & 0x7FFF));
+}
+
+int
+SocketDNS_opt_get_version (const SocketDNS_OPT *opt)
+{
+  if (!opt)
+    return -1;
+
+  return (int)opt->version;
+}
+
+int
+SocketDNS_opt_is_badvers (const SocketDNS_Header *hdr,
+                          const SocketDNS_OPT *opt)
+{
+  uint16_t ext_rcode;
+
+  if (!hdr)
+    return 0;
+
+  ext_rcode = SocketDNS_opt_extended_rcode (hdr, opt);
+
+  return (ext_rcode == DNS_RCODE_EXT_BADVERS) ? 1 : 0;
+}
+
+/*
  * EDNS0 Option Parsing (RFC 6891 Section 6.1.2)
  *
  * Options are encoded as tuples in the OPT RDATA:

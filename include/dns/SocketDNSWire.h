@@ -828,6 +828,53 @@ typedef struct
 } SocketDNS_OPT;
 
 /**
+ * @brief OPT pseudo-RR TTL field flags (RFC 6891 Section 6.1.3).
+ *
+ * Parsed representation of the 32-bit TTL field in OPT records.
+ * The TTL field is repurposed to carry extended RCODE, version, and flags.
+ *
+ * ## TTL Field Structure (32 bits)
+ *
+ * ```
+ *                +0 (MSB)                            +1 (LSB)
+ *   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+ * 0: |         EXTENDED-RCODE        |            VERSION            |
+ *   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+ * 2: | DO|                           Z                               |
+ *   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+ * ```
+ */
+typedef struct
+{
+  uint8_t extended_rcode; /**< Upper 8 bits of 12-bit RCODE */
+  uint8_t version;        /**< EDNS version (0 for EDNS0) */
+  uint8_t do_bit;         /**< DNSSEC OK flag */
+  uint16_t z;             /**< Reserved, must be zero */
+} SocketDNS_OPT_Flags;
+
+/**
+ * @brief Extended DNS response codes (12-bit, RFC 6891).
+ *
+ * Extended RCODEs combine the 4-bit header RCODE with the 8-bit
+ * extended RCODE from the OPT record to form a 12-bit value.
+ *
+ * Values 0-15 are the same as SocketDNS_Rcode.
+ * Values 16+ require EDNS0 OPT record for transport.
+ */
+typedef enum
+{
+  DNS_RCODE_EXT_BADVERS = 16,  /**< BADVERS - Server doesn't support EDNS version */
+  DNS_RCODE_EXT_BADSIG = 16,   /**< BADSIG - TSIG signature failure (same as BADVERS) */
+  DNS_RCODE_EXT_BADKEY = 17,   /**< BADKEY - Key not recognized */
+  DNS_RCODE_EXT_BADTIME = 18,  /**< BADTIME - Signature out of time window */
+  DNS_RCODE_EXT_BADMODE = 19,  /**< BADMODE - Bad TKEY mode */
+  DNS_RCODE_EXT_BADNAME = 20,  /**< BADNAME - Duplicate key name */
+  DNS_RCODE_EXT_BADALG = 21,   /**< BADALG - Algorithm not supported */
+  DNS_RCODE_EXT_BADTRUNC = 22, /**< BADTRUNC - Bad truncation */
+  DNS_RCODE_EXT_BADCOOKIE = 23 /**< BADCOOKIE - Bad/missing server cookie */
+} SocketDNS_ExtendedRcode;
+
+/**
  * @brief Initialize an OPT record with default values.
  * @ingroup dns_edns0
  *
@@ -922,6 +969,89 @@ extern int SocketDNS_opt_decode (const unsigned char *buf, size_t len,
  */
 extern uint16_t SocketDNS_opt_extended_rcode (const SocketDNS_Header *hdr,
                                                const SocketDNS_OPT *opt);
+
+/**
+ * @brief Decode OPT TTL field into flags structure.
+ * @ingroup dns_edns0
+ *
+ * Parses the 32-bit TTL field from an OPT record into its component parts:
+ * extended RCODE, version, DO bit, and Z flags.
+ *
+ * @param[in]  ttl   32-bit TTL value from OPT record.
+ * @param[out] flags Output flags structure.
+ *
+ * @code{.c}
+ * SocketDNS_OPT_Flags flags;
+ * SocketDNS_opt_ttl_decode(opt_rr.ttl, &flags);
+ * if (flags.version != 0) {
+ *     // Server uses different EDNS version
+ * }
+ * @endcode
+ */
+extern void SocketDNS_opt_ttl_decode (uint32_t ttl, SocketDNS_OPT_Flags *flags);
+
+/**
+ * @brief Encode flags structure into OPT TTL field.
+ * @ingroup dns_edns0
+ *
+ * Packs extended RCODE, version, DO bit, and Z flags into a 32-bit TTL value
+ * suitable for use in an OPT record.
+ *
+ * @param[in] flags Flags structure to encode.
+ * @return 32-bit TTL value for OPT record.
+ *
+ * @code{.c}
+ * SocketDNS_OPT_Flags flags = {
+ *     .extended_rcode = 0,
+ *     .version = 0,
+ *     .do_bit = 1,  // Enable DNSSEC
+ *     .z = 0
+ * };
+ * uint32_t ttl = SocketDNS_opt_ttl_encode(&flags);
+ * @endcode
+ */
+extern uint32_t SocketDNS_opt_ttl_encode (const SocketDNS_OPT_Flags *flags);
+
+/**
+ * @brief Get EDNS version from OPT record.
+ * @ingroup dns_edns0
+ *
+ * Convenience function to extract the VERSION field from an OPT record.
+ * Per RFC 6891, version 0 indicates EDNS0 conformance.
+ *
+ * @param[in] opt OPT record structure.
+ * @return EDNS version (0 for EDNS0), or -1 if opt is NULL.
+ *
+ * @code{.c}
+ * int version = SocketDNS_opt_get_version(&opt);
+ * if (version > DNS_EDNS0_VERSION) {
+ *     // Server uses newer EDNS version
+ * }
+ * @endcode
+ */
+extern int SocketDNS_opt_get_version (const SocketDNS_OPT *opt);
+
+/**
+ * @brief Check if response indicates BADVERS (version negotiation failure).
+ * @ingroup dns_edns0
+ *
+ * Detects BADVERS response (extended RCODE 16) which indicates the server
+ * does not support the EDNS version in the request. Per RFC 6891 Section 6.1.3,
+ * the client should retry with a lower version or fall back to non-EDNS.
+ *
+ * @param[in] hdr DNS response header.
+ * @param[in] opt OPT record from response (may be NULL).
+ * @return 1 if BADVERS, 0 otherwise.
+ *
+ * @code{.c}
+ * if (SocketDNS_opt_is_badvers(&header, &opt)) {
+ *     int server_version = SocketDNS_opt_get_version(&opt);
+ *     // Retry with server_version or fall back to non-EDNS
+ * }
+ * @endcode
+ */
+extern int SocketDNS_opt_is_badvers (const SocketDNS_Header *hdr,
+                                      const SocketDNS_OPT *opt);
 
 /**
  * @defgroup dns_edns0_options EDNS0 Option Parsing
