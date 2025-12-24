@@ -418,7 +418,7 @@ SocketDNSSEC_name_canonical_compare (const char *name1, const char *name2)
         }
       labels1++;
     }
-  if (*p)
+  if (*p && labels1 < 128)
     labels1++;
 
   p = name2;
@@ -438,7 +438,7 @@ SocketDNSSEC_name_canonical_compare (const char *name1, const char *name2)
         }
       labels2++;
     }
-  if (*p)
+  if (*p && labels2 < 128)
     labels2++;
 
   /* Compare from rightmost label */
