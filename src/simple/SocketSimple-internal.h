@@ -20,6 +20,7 @@
 #include <string.h>
 
 #include "core/Except.h"
+#include "core/SocketUtil.h"
 #include "dns/SocketDNS.h"
 #include "http/SocketHTTPClient.h"
 #include "socket/Socket.h"

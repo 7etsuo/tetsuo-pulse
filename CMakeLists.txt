@@ -10,7 +10,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)  # Enable GNU extensions (_GNU_SOURCE)
 
 # Compiler flags
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Werror -Wno-unused-function -Wno-unused-variable -Wno-comment -Wno-implicit-int -Wno-implicit-function-declaration -Wno-ignored-qualifiers -Wno-return-type -Wno-error=return-type -D_GNU_SOURCE -pthread -fno-strict-aliasing -fPIC")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Werror -Wno-unused-function -Wno-unused-variable -Wno-comment -Wno-implicit-int -Wno-ignored-qualifiers -Wno-return-type -Wno-error=return-type -D_GNU_SOURCE -pthread -fno-strict-aliasing -fPIC")
 
 # Executable stack warning is expected and harmless:
 # - Caused by setjmp/longjmp in TRY/EXCEPT/FINALLY exception handling

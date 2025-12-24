@@ -1008,6 +1008,21 @@ SocketWS_Error ws_frame_parse_header (SocketWS_FrameParse *frame,
                                       size_t *consumed);
 
 /**
+ * @brief Receives and processes a complete WebSocket frame.
+ * @internal
+ * @ingroup websocket
+ * @param ws The WebSocket context.
+ * @param[out] frame_out Frame parse structure to populate.
+ * @return 1 if data message completed, 0 if control frame handled,
+ *         -1 on error, -2 if would block / need more data.
+ * @note Handles incremental frame reception for non-blocking I/O.
+ * @note Processes control frames internally (PING/PONG/CLOSE).
+ * @see ws_frame_parse_header() for header parsing details.
+ * @see ws_process_frames() caller loop.
+ */
+int ws_recv_frame (SocketWS_T ws, SocketWS_FrameParse *frame_out);
+
+/**
  * @brief Builds the binary WebSocket frame header into output buffer.
  * @internal
  * @ingroup websocket

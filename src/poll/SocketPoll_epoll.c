@@ -24,8 +24,9 @@
 
 #include "core/Arena.h"
 #include "core/SocketConfig.h"
+#include "core/SocketUtil.h" /* For Socket_get_monotonic_ms */
 #include "poll/SocketPoll_backend.h"
-#include "socket/Socket.h" /* For Socket_get_monotonic_ms */
+#include "socket/Socket.h"
 
 /* Backend instance structure */
 #define T PollBackend_T
