@@ -624,6 +624,13 @@ alpn_select_cb (SSL *ssl, const unsigned char **out, unsigned char *outlen,
       if (client_proto + client_len > client_end)
         break;
 
+      /* Skip malformed protocol entries with excessive length */
+      if (client_len > SOCKET_DTLS_MAX_ALPN_LEN || client_len > 255)
+        {
+          client_proto += client_len;
+          continue;
+        }
+
       /* Check against our protocols using cached lengths */
       for (size_t i = 0; i < ctx->alpn.count; i++)
         {
