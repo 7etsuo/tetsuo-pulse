@@ -49,6 +49,8 @@ Complete API reference for all Socket library modules, extracted from command fi
 - SocketDNSCookie functions (DNS Cookies, RFC 7873)
 - SocketDNSError functions (Extended DNS Errors, RFC 8914)
 - SocketDNSNegCache functions (Negative caching, RFC 2308)
+- SocketDNSDeadServer functions (Dead server tracking, RFC 2308 §7.2)
+- SocketDNSWire EDNS0 functions (OPT record, option framework, RFC 6891)
 - SocketPoll functions (event polling abstraction)
 - SocketSYNProtect functions (SYN flood protection)
 - SocketHTTPClient functions (HTTP client)
@@ -85,6 +87,8 @@ Implementation patterns for TLS, HTTP, WebSocket, and other protocols.
 - DNS Cookies patterns (RFC 7873, client/server cookie handling)
 - Extended DNS Errors patterns (RFC 8914, error categorization)
 - DNS Negative caching patterns (RFC 2308, NXDOMAIN/NODATA key tuples)
+- Dead server tracking patterns (RFC 2308 §7.2, 5-minute blacklist)
+- EDNS0 OPT record patterns (RFC 6891, option framework, UDP fallback)
 - io_uring async I/O patterns (SQPOLL, registered buffers, batch submissions)
 - HTTP prepared request patterns (high-throughput optimization)
 
