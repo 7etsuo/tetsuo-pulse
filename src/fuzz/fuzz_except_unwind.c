@@ -320,7 +320,16 @@ test_early_return_helper (int should_return, uint8_t exc_idx)
 static void
 test_early_return (uint8_t variant, uint8_t exc_idx)
 {
-  int result = test_early_return_helper (variant % 3, exc_idx);
+  volatile int result = 0;
+  TRY
+  {
+    result = test_early_return_helper (variant % 3, exc_idx);
+  }
+  EXCEPT (Test_Exception_A) { }
+  EXCEPT (Test_Exception_B) { }
+  EXCEPT (Test_Exception_C) { }
+  EXCEPT (Test_Exception_D) { }
+  END_TRY;
   (void)result;
 }
 
