@@ -26,8 +26,11 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <openssl/err.h>
+#include <openssl/bio.h>
+#include <openssl/pem.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #define T SocketDTLSContext_T
 
@@ -331,35 +334,89 @@ open_and_stat_file (const char *path, const char *desc, struct stat *st)
 }
 
 /**
- * dtls_reject_if_invalid_file - Validate file is regular and within size limit
+ * dtls_read_file_contents - Securely read file contents into memory
  * @path: File path
  * @max_size: Maximum allowed file size
  * @desc: Description for error messages
+ * @out_data: Output pointer to allocated buffer (caller must free)
+ * @out_size: Output file size
+ *
+ * Opens file with O_NOFOLLOW, validates via fstat, reads contents into
+ * memory buffer. Keeps file descriptor open throughout to prevent TOCTOU.
+ * Returns allocated buffer that caller must free with OPENSSL_free.
  */
 static void
-dtls_reject_if_invalid_file (const char *path, size_t max_size,
-                             const char *desc)
+dtls_read_file_contents (const char *path, size_t max_size, const char *desc,
+                         unsigned char **out_data, size_t *out_size)
 {
   struct stat st;
   int fd = open_and_stat_file (path, desc, &st);
+  volatile unsigned char *data = NULL;
 
-  if (!S_ISREG (st.st_mode))
-    {
-      close (fd);
-      RAISE_DTLS_CTX_ERROR_FMT (SocketDTLS_Failed,
-                                "%s '%s' must be a regular file", desc, path);
-    }
+  TRY
+  {
+    if (!S_ISREG (st.st_mode))
+      {
+        RAISE_DTLS_CTX_ERROR_FMT (SocketDTLS_Failed,
+                                  "%s '%s' must be a regular file", desc, path);
+      }
 
-  size_t file_size = (size_t)st.st_size;
-  if (file_size <= 0 || file_size > max_size)
-    {
-      close (fd);
-      RAISE_DTLS_CTX_ERROR_FMT (SocketDTLS_Failed,
-                                "%s '%s' size invalid (max %zu bytes)", desc,
-                                path, max_size);
-    }
+    size_t file_size = (size_t)st.st_size;
+    if (file_size <= 0 || file_size > max_size)
+      {
+        RAISE_DTLS_CTX_ERROR_FMT (SocketDTLS_Failed,
+                                  "%s '%s' size invalid (max %zu bytes)", desc,
+                                  path, max_size);
+      }
 
-  close (fd);
+    /* Allocate buffer for file contents using OpenSSL allocator */
+    data = OPENSSL_malloc (file_size);
+    if (!data)
+      {
+        RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
+                                  "Failed to allocate memory for file");
+      }
+
+    /* Read entire file - no TOCTOU since fd is still open */
+    size_t bytes_read = 0;
+    while (bytes_read < file_size)
+      {
+        ssize_t ret = read (fd, (unsigned char *)data + bytes_read,
+                            file_size - bytes_read);
+        if (ret <= 0)
+          {
+            if (ret == 0)
+              {
+                RAISE_DTLS_CTX_ERROR_FMT (
+                    SocketDTLS_Failed, "Unexpected EOF reading %s '%s'", desc,
+                    path);
+              }
+            else if (errno != EINTR)
+              {
+                int saved_errno = errno;
+                DTLS_ERROR_FMT ("Failed to read %s '%s': %s", desc, path,
+                                strerror (saved_errno));
+                RAISE_DTLS_CTX_ERROR (SocketDTLS_Failed);
+              }
+            /* EINTR: retry */
+          }
+        else
+          {
+            bytes_read += (size_t)ret;
+          }
+      }
+
+    *out_data = (unsigned char *)data;
+    *out_size = file_size;
+    data = NULL; /* Transfer ownership to caller */
+  }
+  FINALLY
+  {
+    close (fd);
+    if (data)
+      OPENSSL_free ((void *)data);
+  }
+  END_TRY;
 }
 
 void
@@ -373,27 +430,101 @@ SocketDTLSContext_load_certificate (T ctx, const char *cert_file,
   if (!dtls_validate_file_path (cert_file))
     RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed, "Invalid certificate path");
 
-  dtls_reject_if_invalid_file (cert_file, SOCKET_DTLS_MAX_FILE_SIZE,
-                               "certificate file");
-
   if (!dtls_validate_file_path (key_file))
     RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed, "Invalid key path");
 
-  dtls_reject_if_invalid_file (key_file, SOCKET_DTLS_MAX_FILE_SIZE,
-                               "private key file");
+  /* Read cert and key files into memory to prevent TOCTOU */
+  unsigned char *cert_data = NULL;
+  unsigned char *key_data = NULL;
+  size_t cert_size = 0;
+  size_t key_size = 0;
+  BIO *cert_bio = NULL;
+  BIO *key_bio = NULL;
 
-  /* Load certificate */
-  if (SSL_CTX_use_certificate_chain_file (ctx->ssl_ctx, cert_file) != 1)
-    raise_openssl_error ("Failed to load certificate");
+  TRY
+  {
+    /* Read certificate file contents */
+    dtls_read_file_contents (cert_file, SOCKET_DTLS_MAX_FILE_SIZE,
+                             "certificate file", &cert_data, &cert_size);
 
-  /* Load private key */
-  if (SSL_CTX_use_PrivateKey_file (ctx->ssl_ctx, key_file, SSL_FILETYPE_PEM)
-      != 1)
-    raise_openssl_error ("Failed to load private key");
+    /* Read private key file contents */
+    dtls_read_file_contents (key_file, SOCKET_DTLS_MAX_FILE_SIZE,
+                             "private key file", &key_data, &key_size);
 
-  /* Verify key matches certificate */
-  if (SSL_CTX_check_private_key (ctx->ssl_ctx) != 1)
-    raise_openssl_error ("Certificate and private key mismatch");
+    /* Create BIO from certificate data */
+    cert_bio = BIO_new_mem_buf (cert_data, (int)cert_size);
+    if (!cert_bio)
+      raise_openssl_error ("Failed to create BIO for certificate");
+
+    /* Load certificate chain from memory */
+    X509 *cert = PEM_read_bio_X509 (cert_bio, NULL, NULL, NULL);
+    if (!cert)
+      raise_openssl_error ("Failed to parse certificate");
+
+    if (SSL_CTX_use_certificate (ctx->ssl_ctx, cert) != 1)
+      {
+        X509_free (cert);
+        raise_openssl_error ("Failed to load certificate");
+      }
+    X509_free (cert);
+
+    /* Load additional chain certificates if present */
+    X509 *ca_cert = NULL;
+    while ((ca_cert = PEM_read_bio_X509 (cert_bio, NULL, NULL, NULL)) != NULL)
+      {
+        if (SSL_CTX_add1_chain_cert (ctx->ssl_ctx, ca_cert) != 1)
+          {
+            X509_free (ca_cert);
+            raise_openssl_error ("Failed to add chain certificate");
+          }
+        X509_free (ca_cert);
+      }
+    ERR_clear_error (); /* Clear expected end-of-file error */
+
+    /* Create BIO from key data */
+    key_bio = BIO_new_mem_buf (key_data, (int)key_size);
+    if (!key_bio)
+      raise_openssl_error ("Failed to create BIO for private key");
+
+    /* Load private key from memory */
+    EVP_PKEY *pkey = PEM_read_bio_PrivateKey (key_bio, NULL, NULL, NULL);
+    if (!pkey)
+      raise_openssl_error ("Failed to parse private key");
+
+    if (SSL_CTX_use_PrivateKey (ctx->ssl_ctx, pkey) != 1)
+      {
+        EVP_PKEY_free (pkey);
+        raise_openssl_error ("Failed to load private key");
+      }
+    EVP_PKEY_free (pkey);
+
+    /* Verify key matches certificate */
+    if (SSL_CTX_check_private_key (ctx->ssl_ctx) != 1)
+      raise_openssl_error ("Certificate and private key mismatch");
+  }
+  FINALLY
+  {
+    /* Securely clear and free certificate data */
+    if (cert_data)
+      {
+        SocketCrypto_secure_clear (cert_data, cert_size);
+        OPENSSL_free (cert_data);
+      }
+
+    /* Securely clear and free key data */
+    if (key_data)
+      {
+        SocketCrypto_secure_clear (key_data, key_size);
+        OPENSSL_free (key_data);
+      }
+
+    /* Free BIOs */
+    if (cert_bio)
+      BIO_free (cert_bio);
+    if (key_bio)
+      BIO_free (key_bio);
+  }
+  END_TRY;
 }
 
 void
