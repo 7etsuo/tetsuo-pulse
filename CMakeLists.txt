@@ -1045,6 +1045,23 @@ if(ENABLE_FUZZING)
         fuzz_metrics
         fuzz_security
         # fuzz_new_features  # TODO: Fix compilation errors - references removed APIs
+        # DNS advanced fuzzers
+        fuzz_dns_config
+        fuzz_dns_cookie_client
+        fuzz_dns_deadserver
+        fuzz_dns_encode
+        fuzz_dns_resolver
+        fuzz_dns_transport
+        fuzz_dnssec
+        # Exception/Core fuzzers
+        fuzz_except_unwind
+        # HTTP client advanced fuzzers
+        fuzz_http_client_async
+        fuzz_http_client_pool
+        fuzz_http_client_retry
+        # SYN protection fuzzers
+        fuzz_synprotect_ip
+        fuzz_synprotect_list
     )
     
     # TLS fuzz harnesses (require SOCKET_HAS_TLS)
@@ -1077,6 +1094,21 @@ if(ENABLE_FUZZING)
             fuzz_tls_ct
             fuzz_dtls_handshake
             fuzz_dtls_replay  # DTLS Anti-Replay Window (Issue #275)
+            fuzz_dtls_enable_config  # DTLS Enable Configuration
+            # TLS internal fuzzers (Issue #275, #277)
+            fuzz_tls_handshake
+            fuzz_tls_records
+            fuzz_tls_config
+            fuzz_tls_ktls
+            fuzz_tls_key_update
+            fuzz_tls_buffer_pool
+            fuzz_tls_cert_lookup
+            fuzz_ssl_path_validation
+            fuzz_certificate_parsing
+            fuzz_pin_hex_parsing
+            # DNS-over-TLS/HTTPS fuzzers
+            fuzz_dns_doh
+            fuzz_dns_dot
         )
     endif()
     

@@ -76,7 +76,7 @@ cd build && ./test_socket
 # Run fuzzers (after ENABLE_FUZZING build)
 cd build && ./fuzz_socketbuf corpus/socketbuf/ -fork=16 -max_len=4096
 
-# List all available fuzzers (~100 harnesses)
+# List all available fuzzers (~130 harnesses)
 ls build/fuzz_*
 
 # Generate documentation
