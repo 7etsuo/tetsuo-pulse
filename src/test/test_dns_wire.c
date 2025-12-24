@@ -3756,6 +3756,376 @@ TEST (dns_payload_reset_preserves_timestamps)
   ASSERT_EQ (tracker.last_working_size, 0);
 }
 
+/* ========================================================================== */
+/* OPT Record Validation Tests (RFC 6891 Section 6.1.1) */
+/* ========================================================================== */
+
+/* Test SocketDNS_opt_is_valid_name */
+TEST (dns_opt_is_valid_name)
+{
+  /* Root domain (0x00) is valid for OPT */
+  ASSERT (SocketDNS_opt_is_valid_name (0x00) == 1);
+
+  /* Any non-zero value is invalid */
+  ASSERT (SocketDNS_opt_is_valid_name (0x01) == 0);
+  ASSERT (SocketDNS_opt_is_valid_name (0x07) == 0);
+  ASSERT (SocketDNS_opt_is_valid_name (0xFF) == 0);
+  ASSERT (SocketDNS_opt_is_valid_name (0x80) == 0);
+  ASSERT (SocketDNS_opt_is_valid_name ('e') == 0);
+}
+
+/* Test SocketDNS_opt_validate with valid OPT record */
+TEST (dns_opt_validate_valid)
+{
+  SocketDNS_OPT opt;
+  SocketDNS_OPT_ValidationResult result;
+
+  /* Valid OPT with empty RDATA */
+  opt.udp_payload_size = 4096;
+  opt.extended_rcode = 0;
+  opt.version = 0;
+  opt.do_bit = 0;
+  opt.z = 0;
+  opt.rdlength = 0;
+  opt.rdata = NULL;
+
+  result = SocketDNS_opt_validate (&opt, 0);
+  ASSERT_EQ (result, DNS_OPT_VALID);
+}
+
+/* Test SocketDNS_opt_validate with valid options in RDATA */
+TEST (dns_opt_validate_with_options)
+{
+  SocketDNS_OPT opt;
+  SocketDNS_OPT_ValidationResult result;
+
+  /* Valid NSID option: code=3, length=4, data="test" */
+  unsigned char rdata[] = { 0x00, 0x03, 0x00, 0x04, 't', 'e', 's', 't' };
+
+  opt.udp_payload_size = 4096;
+  opt.extended_rcode = 0;
+  opt.version = 0;
+  opt.do_bit = 0;
+  opt.z = 0;
+  opt.rdlength = sizeof (rdata);
+  opt.rdata = rdata;
+
+  result = SocketDNS_opt_validate (&opt, sizeof (rdata));
+  ASSERT_EQ (result, DNS_OPT_VALID);
+}
+
+/* Test SocketDNS_opt_validate with truncated RDATA */
+TEST (dns_opt_validate_truncated)
+{
+  SocketDNS_OPT opt;
+  SocketDNS_OPT_ValidationResult result;
+
+  unsigned char rdata[] = { 0x00, 0x03, 0x00, 0x04, 't', 'e', 's', 't' };
+
+  opt.udp_payload_size = 4096;
+  opt.extended_rcode = 0;
+  opt.version = 0;
+  opt.do_bit = 0;
+  opt.z = 0;
+  opt.rdlength = sizeof (rdata);
+  opt.rdata = rdata;
+
+  /* RDLEN exceeds available data */
+  result = SocketDNS_opt_validate (&opt, 4);
+  ASSERT_EQ (result, DNS_OPT_TRUNCATED);
+}
+
+/* Test SocketDNS_opt_validate with malformed option */
+TEST (dns_opt_validate_malformed_option)
+{
+  SocketDNS_OPT opt;
+  SocketDNS_OPT_ValidationResult result;
+
+  /* Malformed: option claims 10 bytes but only 4 available */
+  unsigned char rdata[] = { 0x00, 0x03, 0x00, 0x0A, 't', 'e', 's', 't' };
+
+  opt.udp_payload_size = 4096;
+  opt.extended_rcode = 0;
+  opt.version = 0;
+  opt.do_bit = 0;
+  opt.z = 0;
+  opt.rdlength = sizeof (rdata);
+  opt.rdata = rdata;
+
+  result = SocketDNS_opt_validate (&opt, sizeof (rdata));
+  ASSERT_EQ (result, DNS_OPT_MALFORMED_OPTION);
+}
+
+/* Test SocketDNS_opt_validate with NULL pointer */
+TEST (dns_opt_validate_null)
+{
+  SocketDNS_OPT_ValidationResult result;
+
+  result = SocketDNS_opt_validate (NULL, 100);
+  ASSERT_EQ (result, DNS_OPT_INVALID_RDATA);
+}
+
+/* Test SocketDNS_opt_validate with NULL rdata but non-zero length */
+TEST (dns_opt_validate_null_rdata)
+{
+  SocketDNS_OPT opt;
+  SocketDNS_OPT_ValidationResult result;
+
+  opt.udp_payload_size = 4096;
+  opt.extended_rcode = 0;
+  opt.version = 0;
+  opt.do_bit = 0;
+  opt.z = 0;
+  opt.rdlength = 10;
+  opt.rdata = NULL;
+
+  result = SocketDNS_opt_validate (&opt, 10);
+  ASSERT_EQ (result, DNS_OPT_INVALID_RDATA);
+}
+
+/* Test SocketDNS_opt_validate with multiple valid options */
+TEST (dns_opt_validate_multiple_options)
+{
+  SocketDNS_OPT opt;
+  SocketDNS_OPT_ValidationResult result;
+
+  /* Two options: NSID (code=3) and COOKIE (code=10) */
+  unsigned char rdata[] = {
+    0x00, 0x03, 0x00, 0x02, 'A', 'B',      /* NSID: "AB" */
+    0x00, 0x0A, 0x00, 0x08,                /* COOKIE: 8 bytes */
+    0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08
+  };
+
+  opt.udp_payload_size = 4096;
+  opt.extended_rcode = 0;
+  opt.version = 0;
+  opt.do_bit = 0;
+  opt.z = 0;
+  opt.rdlength = sizeof (rdata);
+  opt.rdata = rdata;
+
+  result = SocketDNS_opt_validate (&opt, sizeof (rdata));
+  ASSERT_EQ (result, DNS_OPT_VALID);
+}
+
+/* Test SocketDNS_response_count_opt with no OPT records */
+TEST (dns_response_count_opt_none)
+{
+  int count;
+  SocketDNS_Header hdr;
+  unsigned char msg[512];
+  size_t len;
+
+  /* Build a simple response with no additional records */
+  memset (msg, 0, sizeof (msg));
+  memset (&hdr, 0, sizeof (hdr));
+  hdr.id = 0x1234;
+  hdr.qr = 1;  /* Response */
+  hdr.qdcount = 1;
+  hdr.ancount = 0;
+  hdr.nscount = 0;
+  hdr.arcount = 0;
+  len = SocketDNS_header_encode (&hdr, msg, sizeof (msg));
+
+  /* Add question: example.com A */
+  unsigned char *p = msg + len;
+  *p++ = 7; memcpy (p, "example", 7); p += 7;
+  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 0;
+  *p++ = 0; *p++ = 1;  /* TYPE A */
+  *p++ = 0; *p++ = 1;  /* CLASS IN */
+  len = (size_t)(p - msg);
+
+  count = SocketDNS_response_count_opt (msg, len, &hdr);
+  ASSERT_EQ (count, 0);
+}
+
+/* Test SocketDNS_response_count_opt with one OPT record */
+TEST (dns_response_count_opt_one)
+{
+  int count;
+  SocketDNS_Header hdr;
+  unsigned char msg[512];
+  size_t len;
+
+  /* Build a response with one OPT in additional section */
+  memset (msg, 0, sizeof (msg));
+  memset (&hdr, 0, sizeof (hdr));
+  hdr.id = 0x1234;
+  hdr.qr = 1;  /* Response */
+  hdr.qdcount = 1;
+  hdr.ancount = 0;
+  hdr.nscount = 0;
+  hdr.arcount = 1;
+  len = SocketDNS_header_encode (&hdr, msg, sizeof (msg));
+
+  /* Add question: example.com A */
+  unsigned char *p = msg + len;
+  *p++ = 7; memcpy (p, "example", 7); p += 7;
+  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 0;
+  *p++ = 0; *p++ = 1;  /* TYPE A */
+  *p++ = 0; *p++ = 1;  /* CLASS IN */
+
+  /* Add OPT record: NAME=0, TYPE=41, CLASS=4096, TTL=0, RDLEN=0 */
+  *p++ = 0;            /* NAME: root */
+  *p++ = 0; *p++ = 41; /* TYPE: OPT */
+  *p++ = 0x10; *p++ = 0x00; /* CLASS: 4096 (UDP payload) */
+  *p++ = 0; *p++ = 0; *p++ = 0; *p++ = 0; /* TTL */
+  *p++ = 0; *p++ = 0;  /* RDLEN: 0 */
+
+  len = (size_t)(p - msg);
+
+  count = SocketDNS_response_count_opt (msg, len, &hdr);
+  ASSERT_EQ (count, 1);
+}
+
+/* Test SocketDNS_response_count_opt with multiple OPT records */
+TEST (dns_response_count_opt_multiple)
+{
+  int count;
+  SocketDNS_Header hdr;
+  unsigned char msg[512];
+  size_t len;
+
+  /* Build a response with two OPT records (invalid per RFC) */
+  memset (msg, 0, sizeof (msg));
+  memset (&hdr, 0, sizeof (hdr));
+  hdr.id = 0x1234;
+  hdr.qr = 1;  /* Response */
+  hdr.qdcount = 1;
+  hdr.ancount = 0;
+  hdr.nscount = 0;
+  hdr.arcount = 2;
+  len = SocketDNS_header_encode (&hdr, msg, sizeof (msg));
+
+  /* Add question: example.com A */
+  unsigned char *p = msg + len;
+  *p++ = 7; memcpy (p, "example", 7); p += 7;
+  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 0;
+  *p++ = 0; *p++ = 1;  /* TYPE A */
+  *p++ = 0; *p++ = 1;  /* CLASS IN */
+
+  /* First OPT record */
+  *p++ = 0;            /* NAME: root */
+  *p++ = 0; *p++ = 41; /* TYPE: OPT */
+  *p++ = 0x10; *p++ = 0x00; /* CLASS: 4096 */
+  *p++ = 0; *p++ = 0; *p++ = 0; *p++ = 0; /* TTL */
+  *p++ = 0; *p++ = 0;  /* RDLEN: 0 */
+
+  /* Second OPT record */
+  *p++ = 0;            /* NAME: root */
+  *p++ = 0; *p++ = 41; /* TYPE: OPT */
+  *p++ = 0x08; *p++ = 0x00; /* CLASS: 2048 */
+  *p++ = 0; *p++ = 0; *p++ = 0; *p++ = 0; /* TTL */
+  *p++ = 0; *p++ = 0;  /* RDLEN: 0 */
+
+  len = (size_t)(p - msg);
+
+  count = SocketDNS_response_count_opt (msg, len, &hdr);
+  ASSERT_EQ (count, 2);
+}
+
+/* Test SocketDNS_response_count_opt with NULL message */
+TEST (dns_response_count_opt_null)
+{
+  int count;
+  SocketDNS_Header hdr;
+
+  memset (&hdr, 0, sizeof (hdr));
+  hdr.id = 0x1234;
+  hdr.qr = 1;  /* Response */
+  hdr.qdcount = 1;
+
+  count = SocketDNS_response_count_opt (NULL, 100, &hdr);
+  ASSERT_EQ (count, -1);
+}
+
+/* Test SocketDNS_response_count_opt with NULL header */
+TEST (dns_response_count_opt_null_header)
+{
+  int count;
+  unsigned char msg[12] = {0};
+
+  count = SocketDNS_response_count_opt (msg, sizeof (msg), NULL);
+  ASSERT_EQ (count, -1);
+}
+
+/* Test SocketDNS_response_count_opt with truncated message */
+TEST (dns_response_count_opt_truncated)
+{
+  int count;
+  SocketDNS_Header hdr;
+  unsigned char msg[20];
+
+  /* Message too short to contain question */
+  memset (msg, 0, sizeof (msg));
+  memset (&hdr, 0, sizeof (hdr));
+  hdr.id = 0x1234;
+  hdr.qr = 1;  /* Response */
+  hdr.qdcount = 1;
+  hdr.arcount = 1;
+  SocketDNS_header_encode (&hdr, msg, sizeof (msg));
+
+  count = SocketDNS_response_count_opt (msg, 12, &hdr);
+  ASSERT_EQ (count, -1);
+}
+
+/* Test SocketDNS_opt_validation_str */
+TEST (dns_opt_validation_str)
+{
+  ASSERT (strcmp (SocketDNS_opt_validation_str (DNS_OPT_VALID), "valid") == 0);
+  ASSERT (strcmp (SocketDNS_opt_validation_str (DNS_OPT_INVALID_NAME), "invalid NAME (must be root)") == 0);
+  ASSERT (strcmp (SocketDNS_opt_validation_str (DNS_OPT_INVALID_TYPE), "invalid TYPE (must be 41)") == 0);
+  ASSERT (strcmp (SocketDNS_opt_validation_str (DNS_OPT_MULTIPLE), "multiple OPT records") == 0);
+  ASSERT (strcmp (SocketDNS_opt_validation_str (DNS_OPT_TRUNCATED), "truncated RDATA") == 0);
+  ASSERT (strcmp (SocketDNS_opt_validation_str (DNS_OPT_MALFORMED_OPTION), "malformed option in RDATA") == 0);
+  ASSERT (strcmp (SocketDNS_opt_validation_str (DNS_OPT_INVALID_RDATA), "invalid RDATA") == 0);
+  ASSERT (strcmp (SocketDNS_opt_validation_str ((SocketDNS_OPT_ValidationResult)99), "unknown error") == 0);
+}
+
+/* Test OPT record in answer section is still counted */
+TEST (dns_response_count_opt_in_answer)
+{
+  int count;
+  SocketDNS_Header hdr;
+  unsigned char msg[512];
+  size_t len;
+
+  /* OPT in answer section (unusual but should be counted) */
+  memset (msg, 0, sizeof (msg));
+  memset (&hdr, 0, sizeof (hdr));
+  hdr.id = 0x1234;
+  hdr.qr = 1;  /* Response */
+  hdr.qdcount = 1;
+  hdr.ancount = 1;
+  hdr.nscount = 0;
+  hdr.arcount = 0;
+  len = SocketDNS_header_encode (&hdr, msg, sizeof (msg));
+
+  /* Add question: example.com A */
+  unsigned char *p = msg + len;
+  *p++ = 7; memcpy (p, "example", 7); p += 7;
+  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 0;
+  *p++ = 0; *p++ = 1;  /* TYPE A */
+  *p++ = 0; *p++ = 1;  /* CLASS IN */
+
+  /* Add OPT in answer section (unusual) */
+  *p++ = 0;            /* NAME: root */
+  *p++ = 0; *p++ = 41; /* TYPE: OPT */
+  *p++ = 0x10; *p++ = 0x00; /* CLASS: 4096 */
+  *p++ = 0; *p++ = 0; *p++ = 0; *p++ = 0; /* TTL */
+  *p++ = 0; *p++ = 0;  /* RDLEN: 0 */
+
+  len = (size_t)(p - msg);
+
+  /* Should not count OPT in answer section - only additional */
+  count = SocketDNS_response_count_opt (msg, len, &hdr);
+  ASSERT_EQ (count, 0);
+}
+
 int
 main (void)
 {
