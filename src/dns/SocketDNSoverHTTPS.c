@@ -43,6 +43,9 @@
 /** Maximum URL length for GET requests. */
 #define DOH_MAX_URL_LENGTH 2048
 
+/** Maximum query size for GET method (to prevent base64 explosion). */
+#define DOH_MAX_GET_QUERY_SIZE 512
+
 /* Well-known DoH servers */
 static const struct
 {
@@ -291,6 +294,18 @@ SocketDNSoverHTTPS_configure (T transport,
   if (url_len >= sizeof (s->url))
     return -1;
 
+  /* SECURITY: Validate URL scheme is https:// to prevent SSRF */
+  if (strncmp (config->url, "https://", 8) != 0)
+    return -1;
+
+  /* SECURITY: Reject control characters in URL to prevent injection */
+  for (size_t i = 0; i < url_len; i++)
+    {
+      unsigned char c = (unsigned char)config->url[i];
+      if (c < 0x20 || c == 0x7F)
+        return -1;
+    }
+
   strcpy (s->url, config->url);
   s->method = config->method;
   s->prefer_http2 = config->prefer_http2 ? 1 : 1; /* Default to HTTP/2 */
@@ -390,34 +405,45 @@ SocketDNSoverHTTPS_query (T transport, const unsigned char *query, size_t len,
 
     if (s->method == DOH_METHOD_GET)
       {
-        /* Base64URL encode the DNS query */
-        size_t b64_size = SocketCrypto_base64_encoded_size (len);
-        char *b64 = ALLOC (transport->arena, b64_size);
-        size_t b64_len = base64url_encode (query, len, b64, b64_size);
-
-        if (b64_len == 0)
+        /* SECURITY: Enforce maximum query size for GET method to prevent
+         * memory exhaustion via base64 encoding. Use POST for large queries. */
+        if (len > DOH_MAX_GET_QUERY_SIZE)
           {
             http_error = DOH_ERROR_INVALID;
             request_ok = 0;
           }
         else
           {
-            /* Build URL with query parameter */
-            char *url = ALLOC (transport->arena, DOH_MAX_URL_LENGTH);
-            int url_len
-                = snprintf (url, DOH_MAX_URL_LENGTH, "%s?dns=%s", s->url, b64);
+            /* Base64URL encode the DNS query */
+            size_t b64_size = SocketCrypto_base64_encoded_size (len);
+            char *b64 = ALLOC (transport->arena, b64_size);
+            size_t b64_len = base64url_encode (query, len, b64, b64_size);
 
-            if (url_len < 0 || url_len >= DOH_MAX_URL_LENGTH)
+            if (b64_len == 0)
               {
                 http_error = DOH_ERROR_INVALID;
                 request_ok = 0;
               }
             else
               {
-                /* Execute GET request */
-                ret = SocketHTTPClient_get (transport->http_client, url,
-                                            &response);
-                request_ok = (ret == 0) ? 1 : 0;
+                /* Build URL with query parameter */
+                char *url = ALLOC (transport->arena, DOH_MAX_URL_LENGTH);
+                int url_len
+                    = snprintf (url, DOH_MAX_URL_LENGTH, "%s?dns=%s", s->url,
+                                b64);
+
+                if (url_len < 0 || url_len >= DOH_MAX_URL_LENGTH)
+                  {
+                    http_error = DOH_ERROR_INVALID;
+                    request_ok = 0;
+                  }
+                else
+                  {
+                    /* Execute GET request */
+                    ret = SocketHTTPClient_get (transport->http_client, url,
+                                                &response);
+                    request_ok = (ret == 0) ? 1 : 0;
+                  }
               }
           }
       }
@@ -489,6 +515,18 @@ SocketDNSoverHTTPS_query (T transport, const unsigned char *query, size_t len,
 
   /* Check minimum response size */
   if (response.body_len < DNS_HEADER_SIZE)
+    {
+      callback ((SocketDNSoverHTTPS_Query_T)q, NULL, 0, DOH_ERROR_INVALID,
+                userdata);
+      SocketHTTPClient_Response_free (&response);
+      transport->stats.queries_sent++;
+      transport->stats.queries_failed++;
+      return NULL;
+    }
+
+  /* SECURITY: Validate response size before allocation to prevent memory
+   * exhaustion. DNS messages are limited to 65535 bytes. */
+  if (response.body_len > DOH_MAX_MESSAGE_SIZE)
     {
       callback ((SocketDNSoverHTTPS_Query_T)q, NULL, 0, DOH_ERROR_INVALID,
                 userdata);
