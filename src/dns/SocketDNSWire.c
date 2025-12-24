@@ -1130,6 +1130,167 @@ SocketDNS_opt_extended_rcode (const SocketDNS_Header *hdr,
 }
 
 /*
+ * EDNS0 Option Parsing (RFC 6891 Section 6.1.2)
+ *
+ * Options are encoded as tuples in the OPT RDATA:
+ *   OPTION-CODE   - 2 bytes (uint16_t, big-endian)
+ *   OPTION-LENGTH - 2 bytes (uint16_t, big-endian)
+ *   OPTION-DATA   - variable length (OPTION-LENGTH bytes)
+ *
+ * Multiple options can appear consecutively. Order is undefined.
+ * Unknown option codes MUST be ignored per RFC 6891.
+ */
+
+int
+SocketDNS_edns_option_encode (const SocketDNS_EDNSOption *option,
+                              unsigned char *buf, size_t buflen)
+{
+  size_t total;
+
+  if (!option || !buf)
+    return -1;
+
+  /* Calculate total size: 2 (code) + 2 (length) + data */
+  total = DNS_EDNS_OPTION_HEADER_SIZE + option->length;
+
+  if (buflen < total)
+    return -1;
+
+  /* OPTION-CODE (2 bytes, big-endian) */
+  dns_pack_be16 (buf, option->code);
+
+  /* OPTION-LENGTH (2 bytes, big-endian) */
+  dns_pack_be16 (buf + 2, option->length);
+
+  /* OPTION-DATA (variable length) */
+  if (option->length > 0)
+    {
+      if (!option->data)
+        return -1;
+      memcpy (buf + 4, option->data, option->length);
+    }
+
+  return (int)total;
+}
+
+void
+SocketDNS_edns_option_iter_init (SocketDNS_EDNSOptionIter *iter,
+                                  const unsigned char *rdata, size_t rdlen)
+{
+  if (!iter)
+    return;
+
+  if (rdata && rdlen > 0)
+    {
+      iter->pos = rdata;
+      iter->end = rdata + rdlen;
+    }
+  else
+    {
+      iter->pos = NULL;
+      iter->end = NULL;
+    }
+}
+
+int
+SocketDNS_edns_option_iter_next (SocketDNS_EDNSOptionIter *iter,
+                                  SocketDNS_EDNSOption *option)
+{
+  uint16_t code;
+  uint16_t length;
+  size_t remaining;
+
+  if (!iter || !option)
+    return 0;
+
+  /* Check if we've reached the end or iterator is invalid */
+  if (!iter->pos || !iter->end || iter->pos >= iter->end)
+    return 0;
+
+  remaining = (size_t)(iter->end - iter->pos);
+
+  /* Need at least 4 bytes for option header (code + length) */
+  if (remaining < DNS_EDNS_OPTION_HEADER_SIZE)
+    return 0;
+
+  /* Parse OPTION-CODE (2 bytes, big-endian) */
+  code = dns_unpack_be16 (iter->pos);
+
+  /* Parse OPTION-LENGTH (2 bytes, big-endian) */
+  length = dns_unpack_be16 (iter->pos + 2);
+
+  /* Validate that option data fits in remaining buffer */
+  if (remaining < (size_t)DNS_EDNS_OPTION_HEADER_SIZE + (size_t)length)
+    return 0;
+
+  /* Fill in the option structure */
+  option->code = code;
+  option->length = length;
+  option->data = (length > 0) ? (iter->pos + 4) : NULL;
+
+  /* Advance iterator past this option */
+  iter->pos += (size_t)DNS_EDNS_OPTION_HEADER_SIZE + (size_t)length;
+
+  return 1;
+}
+
+int
+SocketDNS_edns_option_find (const unsigned char *rdata, size_t rdlen,
+                             uint16_t code, SocketDNS_EDNSOption *option)
+{
+  SocketDNS_EDNSOptionIter iter;
+  SocketDNS_EDNSOption opt;
+
+  if (!option)
+    return 0;
+
+  /* Initialize iterator */
+  SocketDNS_edns_option_iter_init (&iter, rdata, rdlen);
+
+  /* Iterate through all options looking for matching code */
+  while (SocketDNS_edns_option_iter_next (&iter, &opt))
+    {
+      if (opt.code == code)
+        {
+          *option = opt;
+          return 1;
+        }
+    }
+
+  return 0;
+}
+
+int
+SocketDNS_edns_options_encode (const SocketDNS_EDNSOption *options,
+                                size_t count, unsigned char *buf, size_t buflen)
+{
+  size_t pos;
+  size_t i;
+  int encoded;
+
+  if (!buf)
+    return -1;
+
+  /* Empty options array is valid - just returns 0 bytes */
+  if (!options || count == 0)
+    return 0;
+
+  pos = 0;
+
+  for (i = 0; i < count; i++)
+    {
+      encoded = SocketDNS_edns_option_encode (&options[i], buf + pos,
+                                               buflen - pos);
+      if (encoded < 0)
+        return -1;
+
+      pos += (size_t)encoded;
+    }
+
+  return (int)pos;
+}
+
+/*
  * Security Utilities (RFC 5452)
  */
 

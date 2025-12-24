@@ -2834,6 +2834,355 @@ TEST (dns_opt_extended_rcode_calc)
   ASSERT_EQ (rcode, 35);  /* (2 << 4) | 3 = 32 + 3 */
 }
 
+/* ==================== EDNS Option Tests (RFC 6891 §6.1.2) ==================== */
+
+/* Test encode/decode single option */
+TEST (dns_edns_option_encode_decode)
+{
+  SocketDNS_EDNSOption orig, decoded;
+  SocketDNS_EDNSOptionIter iter;
+  unsigned char data[] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
+  unsigned char buf[32];
+  int encoded;
+
+  /* Set up a COOKIE option (code 10) */
+  orig.code = DNS_EDNS_OPT_COOKIE;
+  orig.length = 8;
+  orig.data = data;
+
+  /* Encode */
+  encoded = SocketDNS_edns_option_encode (&orig, buf, sizeof (buf));
+  ASSERT_EQ (encoded, 12);  /* 4 (header) + 8 (data) */
+
+  /* Verify wire format */
+  ASSERT_EQ (buf[0], 0x00);  /* Code high byte */
+  ASSERT_EQ (buf[1], 0x0A);  /* Code low byte (10) */
+  ASSERT_EQ (buf[2], 0x00);  /* Length high byte */
+  ASSERT_EQ (buf[3], 0x08);  /* Length low byte (8) */
+  ASSERT_EQ (memcmp (buf + 4, data, 8), 0);
+
+  /* Decode via iterator */
+  SocketDNS_edns_option_iter_init (&iter, buf, (size_t)encoded);
+  ASSERT (SocketDNS_edns_option_iter_next (&iter, &decoded) == 1);
+
+  ASSERT_EQ (decoded.code, orig.code);
+  ASSERT_EQ (decoded.length, orig.length);
+  ASSERT_NOT_NULL (decoded.data);
+  ASSERT_EQ (memcmp (decoded.data, data, 8), 0);
+
+  /* No more options */
+  ASSERT_EQ (SocketDNS_edns_option_iter_next (&iter, &decoded), 0);
+}
+
+/* Test encode/decode multiple options */
+TEST (dns_edns_options_multiple)
+{
+  unsigned char cookie_data[] = { 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x11, 0x22 };
+  unsigned char padding_data[] = { 0x00, 0x00, 0x00, 0x00 };
+  SocketDNS_EDNSOption opts[] = {
+    { DNS_EDNS_OPT_COOKIE, 8, cookie_data },
+    { DNS_EDNS_OPT_PADDING, 4, padding_data }
+  };
+  SocketDNS_EDNSOption decoded;
+  SocketDNS_EDNSOptionIter iter;
+  unsigned char buf[64];
+  int encoded;
+  int count = 0;
+
+  /* Encode multiple options */
+  encoded = SocketDNS_edns_options_encode (opts, 2, buf, sizeof (buf));
+  ASSERT_EQ (encoded, 20);  /* (4+8) + (4+4) = 12 + 8 = 20 */
+
+  /* Decode and count options */
+  SocketDNS_edns_option_iter_init (&iter, buf, (size_t)encoded);
+  while (SocketDNS_edns_option_iter_next (&iter, &decoded))
+    {
+      if (count == 0)
+        {
+          ASSERT_EQ (decoded.code, DNS_EDNS_OPT_COOKIE);
+          ASSERT_EQ (decoded.length, 8);
+        }
+      else if (count == 1)
+        {
+          ASSERT_EQ (decoded.code, DNS_EDNS_OPT_PADDING);
+          ASSERT_EQ (decoded.length, 4);
+        }
+      count++;
+    }
+  ASSERT_EQ (count, 2);
+}
+
+/* Test zero-length option data */
+TEST (dns_edns_option_zero_length)
+{
+  SocketDNS_EDNSOption orig, decoded;
+  SocketDNS_EDNSOptionIter iter;
+  unsigned char buf[16];
+  int encoded;
+
+  /* TCP Keepalive with no data (RFC 7828 - client query form) */
+  orig.code = DNS_EDNS_OPT_TCP_KEEPALIVE;
+  orig.length = 0;
+  orig.data = NULL;
+
+  encoded = SocketDNS_edns_option_encode (&orig, buf, sizeof (buf));
+  ASSERT_EQ (encoded, 4);  /* Just header, no data */
+
+  /* Verify wire format */
+  ASSERT_EQ (buf[0], 0x00);
+  ASSERT_EQ (buf[1], 0x0B);  /* Code 11 */
+  ASSERT_EQ (buf[2], 0x00);
+  ASSERT_EQ (buf[3], 0x00);  /* Length 0 */
+
+  /* Decode */
+  SocketDNS_edns_option_iter_init (&iter, buf, (size_t)encoded);
+  ASSERT (SocketDNS_edns_option_iter_next (&iter, &decoded) == 1);
+  ASSERT_EQ (decoded.code, DNS_EDNS_OPT_TCP_KEEPALIVE);
+  ASSERT_EQ (decoded.length, 0);
+  ASSERT_NULL (decoded.data);
+}
+
+/* Test find option by code (present) */
+TEST (dns_edns_option_find_present)
+{
+  unsigned char cookie_data[] = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88 };
+  unsigned char nsid_data[] = { 'n', 's', '1' };
+  SocketDNS_EDNSOption opts[] = {
+    { DNS_EDNS_OPT_NSID, 3, nsid_data },
+    { DNS_EDNS_OPT_COOKIE, 8, cookie_data }
+  };
+  SocketDNS_EDNSOption found;
+  unsigned char buf[64];
+  int encoded;
+
+  encoded = SocketDNS_edns_options_encode (opts, 2, buf, sizeof (buf));
+  ASSERT (encoded > 0);
+
+  /* Find COOKIE (second option) */
+  ASSERT (SocketDNS_edns_option_find (buf, (size_t)encoded, DNS_EDNS_OPT_COOKIE, &found) == 1);
+  ASSERT_EQ (found.code, DNS_EDNS_OPT_COOKIE);
+  ASSERT_EQ (found.length, 8);
+  ASSERT_EQ (memcmp (found.data, cookie_data, 8), 0);
+
+  /* Find NSID (first option) */
+  ASSERT (SocketDNS_edns_option_find (buf, (size_t)encoded, DNS_EDNS_OPT_NSID, &found) == 1);
+  ASSERT_EQ (found.code, DNS_EDNS_OPT_NSID);
+  ASSERT_EQ (found.length, 3);
+  ASSERT_EQ (memcmp (found.data, nsid_data, 3), 0);
+}
+
+/* Test find option by code (not present) */
+TEST (dns_edns_option_find_not_present)
+{
+  unsigned char nsid_data[] = { 'n', 's', '1' };
+  SocketDNS_EDNSOption opts[] = {
+    { DNS_EDNS_OPT_NSID, 3, nsid_data }
+  };
+  SocketDNS_EDNSOption found;
+  unsigned char buf[32];
+  int encoded;
+
+  encoded = SocketDNS_edns_options_encode (opts, 1, buf, sizeof (buf));
+  ASSERT (encoded > 0);
+
+  /* Try to find COOKIE (not present) */
+  ASSERT_EQ (SocketDNS_edns_option_find (buf, (size_t)encoded, DNS_EDNS_OPT_COOKIE, &found), 0);
+
+  /* Try to find Extended Error (not present) */
+  ASSERT_EQ (SocketDNS_edns_option_find (buf, (size_t)encoded, DNS_EDNS_OPT_EXTENDED_ERROR, &found), 0);
+}
+
+/* Test iterate over empty RDATA */
+TEST (dns_edns_option_iter_empty)
+{
+  SocketDNS_EDNSOptionIter iter;
+  SocketDNS_EDNSOption opt;
+
+  /* NULL RDATA */
+  SocketDNS_edns_option_iter_init (&iter, NULL, 0);
+  ASSERT_EQ (SocketDNS_edns_option_iter_next (&iter, &opt), 0);
+
+  /* Zero-length RDATA */
+  unsigned char buf[1] = { 0 };
+  SocketDNS_edns_option_iter_init (&iter, buf, 0);
+  ASSERT_EQ (SocketDNS_edns_option_iter_next (&iter, &opt), 0);
+}
+
+/* Test iterate over malformed RDATA (truncated header) */
+TEST (dns_edns_option_iter_truncated_header)
+{
+  SocketDNS_EDNSOptionIter iter;
+  SocketDNS_EDNSOption opt;
+  unsigned char buf[] = { 0x00, 0x0A, 0x00 };  /* Only 3 bytes, need 4 for header */
+
+  SocketDNS_edns_option_iter_init (&iter, buf, sizeof (buf));
+  ASSERT_EQ (SocketDNS_edns_option_iter_next (&iter, &opt), 0);
+}
+
+/* Test iterate over malformed RDATA (truncated data) */
+TEST (dns_edns_option_iter_truncated_data)
+{
+  SocketDNS_EDNSOptionIter iter;
+  SocketDNS_EDNSOption opt;
+  /* Header says 8 bytes of data, but only 4 provided */
+  unsigned char buf[] = { 0x00, 0x0A, 0x00, 0x08, 0x11, 0x22, 0x33, 0x44 };
+
+  SocketDNS_edns_option_iter_init (&iter, buf, sizeof (buf));
+  ASSERT_EQ (SocketDNS_edns_option_iter_next (&iter, &opt), 0);
+}
+
+/* Test encode with buffer too small */
+TEST (dns_edns_option_encode_buffer_small)
+{
+  SocketDNS_EDNSOption opt;
+  unsigned char data[] = { 0x01, 0x02, 0x03, 0x04 };
+  unsigned char buf[4];  /* Too small for 4-byte header + 4-byte data */
+
+  opt.code = DNS_EDNS_OPT_PADDING;
+  opt.length = 4;
+  opt.data = data;
+
+  ASSERT_EQ (SocketDNS_edns_option_encode (&opt, buf, sizeof (buf)), -1);
+}
+
+/* Test encode with data NULL but length > 0 */
+TEST (dns_edns_option_encode_null_data)
+{
+  SocketDNS_EDNSOption opt;
+  unsigned char buf[32];
+
+  opt.code = DNS_EDNS_OPT_PADDING;
+  opt.length = 4;  /* Says 4 bytes, but... */
+  opt.data = NULL; /* No data pointer */
+
+  ASSERT_EQ (SocketDNS_edns_option_encode (&opt, buf, sizeof (buf)), -1);
+}
+
+/* Test encode empty array */
+TEST (dns_edns_options_encode_empty)
+{
+  unsigned char buf[32];
+  int encoded;
+
+  /* Empty array (NULL) */
+  encoded = SocketDNS_edns_options_encode (NULL, 0, buf, sizeof (buf));
+  ASSERT_EQ (encoded, 0);
+
+  /* Count = 0 */
+  SocketDNS_EDNSOption opts[1] = { { 0, 0, NULL } };
+  encoded = SocketDNS_edns_options_encode (opts, 0, buf, sizeof (buf));
+  ASSERT_EQ (encoded, 0);
+}
+
+/* Test NULL pointer handling */
+TEST (dns_edns_option_null_handling)
+{
+  SocketDNS_EDNSOption opt;
+  SocketDNS_EDNSOptionIter iter;
+  unsigned char buf[32];
+
+  memset (&opt, 0, sizeof (opt));
+  memset (buf, 0, sizeof (buf));
+
+  ASSERT_EQ (SocketDNS_edns_option_encode (NULL, buf, sizeof (buf)), -1);
+  ASSERT_EQ (SocketDNS_edns_option_encode (&opt, NULL, 32), -1);
+
+  /* iter_init with NULL should not crash */
+  SocketDNS_edns_option_iter_init (NULL, buf, 32);
+  SocketDNS_edns_option_iter_init (&iter, NULL, 32);
+
+  /* iter_next with NULL should return 0 */
+  ASSERT_EQ (SocketDNS_edns_option_iter_next (NULL, &opt), 0);
+  ASSERT_EQ (SocketDNS_edns_option_iter_next (&iter, NULL), 0);
+
+  /* find with NULL should return 0 */
+  ASSERT_EQ (SocketDNS_edns_option_find (buf, 32, DNS_EDNS_OPT_COOKIE, NULL), 0);
+}
+
+/* Test option codes enum values */
+TEST (dns_edns_option_codes)
+{
+  /* Verify known option codes match IANA registry */
+  ASSERT_EQ (DNS_EDNS_OPT_RESERVED, 0);
+  ASSERT_EQ (DNS_EDNS_OPT_NSID, 3);
+  ASSERT_EQ (DNS_EDNS_OPT_CLIENT_SUBNET, 8);
+  ASSERT_EQ (DNS_EDNS_OPT_COOKIE, 10);
+  ASSERT_EQ (DNS_EDNS_OPT_TCP_KEEPALIVE, 11);
+  ASSERT_EQ (DNS_EDNS_OPT_PADDING, 12);
+  ASSERT_EQ (DNS_EDNS_OPT_EXTENDED_ERROR, 15);
+  ASSERT_EQ (DNS_EDNS_OPT_LOCAL_MIN, 65001);
+  ASSERT_EQ (DNS_EDNS_OPT_LOCAL_MAX, 65534);
+  ASSERT_EQ (DNS_EDNS_OPT_RESERVED_MAX, 65535);
+}
+
+/* Test roundtrip with known wire data */
+TEST (dns_edns_option_roundtrip_wire)
+{
+  /* Manually crafted EDNS options (two options):
+   * Option 1: NSID (3), length 4, data "ns42"
+   * Option 2: Padding (12), length 2, data 0x00 0x00
+   */
+  unsigned char wire[] = {
+    0x00, 0x03,             /* Code: NSID (3) */
+    0x00, 0x04,             /* Length: 4 */
+    'n', 's', '4', '2',     /* Data: "ns42" */
+    0x00, 0x0C,             /* Code: Padding (12) */
+    0x00, 0x02,             /* Length: 2 */
+    0x00, 0x00              /* Data: padding bytes */
+  };
+  SocketDNS_EDNSOption opt;
+  SocketDNS_EDNSOptionIter iter;
+  int count = 0;
+
+  SocketDNS_edns_option_iter_init (&iter, wire, sizeof (wire));
+
+  while (SocketDNS_edns_option_iter_next (&iter, &opt))
+    {
+      if (count == 0)
+        {
+          ASSERT_EQ (opt.code, DNS_EDNS_OPT_NSID);
+          ASSERT_EQ (opt.length, 4);
+          ASSERT_EQ (memcmp (opt.data, "ns42", 4), 0);
+        }
+      else if (count == 1)
+        {
+          ASSERT_EQ (opt.code, DNS_EDNS_OPT_PADDING);
+          ASSERT_EQ (opt.length, 2);
+        }
+      count++;
+    }
+
+  ASSERT_EQ (count, 2);
+}
+
+/* Test large option encoding/decoding */
+TEST (dns_edns_option_large_data)
+{
+  unsigned char data[256];
+  unsigned char buf[300];
+  SocketDNS_EDNSOption opt, decoded;
+  SocketDNS_EDNSOptionIter iter;
+  int encoded;
+  size_t i;
+
+  /* Fill with pattern */
+  for (i = 0; i < sizeof (data); i++)
+    data[i] = (unsigned char)(i & 0xFF);
+
+  opt.code = DNS_EDNS_OPT_CLIENT_SUBNET;
+  opt.length = 256;
+  opt.data = data;
+
+  encoded = SocketDNS_edns_option_encode (&opt, buf, sizeof (buf));
+  ASSERT_EQ (encoded, 260);  /* 4 + 256 */
+
+  SocketDNS_edns_option_iter_init (&iter, buf, (size_t)encoded);
+  ASSERT (SocketDNS_edns_option_iter_next (&iter, &decoded) == 1);
+  ASSERT_EQ (decoded.code, DNS_EDNS_OPT_CLIENT_SUBNET);
+  ASSERT_EQ (decoded.length, 256);
+  ASSERT_EQ (memcmp (decoded.data, data, 256), 0);
+}
+
 int
 main (void)
 {
