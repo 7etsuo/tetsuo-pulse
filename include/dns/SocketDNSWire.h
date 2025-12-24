@@ -71,7 +71,8 @@ typedef enum
   DNS_RCODE_YXRRSET = 7,  /**< RR set exists when it should not (RFC 2136) */
   DNS_RCODE_NXRRSET = 8,  /**< RR set does not exist (RFC 2136) */
   DNS_RCODE_NOTAUTH = 9,  /**< Server not authoritative (RFC 2136) */
-  DNS_RCODE_NOTZONE = 10  /**< Name not in zone (RFC 2136) */
+  DNS_RCODE_NOTZONE = 10,  /**< Name not in zone (RFC 2136) */
+  DNS_RCODE_BADCOOKIE = 23 /**< Bad/missing Server Cookie (RFC 7873) */
 } SocketDNS_Rcode;
 
 /**
