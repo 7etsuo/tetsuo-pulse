@@ -789,8 +789,170 @@ Asynchronous I/O with native backends (from `include/socket/SocketAsync.h`):
 ### Backend Info:
 - `SocketAsync_backend(async)` - Get backend name ("io_uring", "kqueue", "poll")
 - `SocketAsync_capabilities(async)` - Get capability flags (ZEROCOPY, LINKED, etc.)
+- `SocketAsync_is_available()` - Check if native async I/O is available
 
 ### Flags:
 - `SOCKETASYNC_URGENT` - High priority operation
 - `SOCKETASYNC_LINKED` - Link with next operation (io_uring)
 - `SOCKETASYNC_ZEROCOPY` - Enable zero-copy if supported
+
+### io_uring Advanced Features (Linux 5.1+, requires `-DENABLE_IO_URING=ON`):
+- `SocketAsync_enable_sqpoll(async)` - Enable SQPOLL kernel thread for reduced syscalls
+- `SocketAsync_register_buffers(async, bufs, count)` - Register fixed buffers for zero-copy
+- `SocketAsync_unregister_buffers(async)` - Unregister fixed buffers
+- `SocketAsync_submit_batch(async)` - Batch multiple submissions for efficiency
+- Automatic eventfd integration with poll backends for timer processing
+
+## SocketDNSSEC Functions
+
+DNSSEC validation (RFC 4033, 4034, 4035) (from `include/dns/SocketDNSSEC.h`):
+
+### Validation:
+- `SocketDNSSEC_validate(response, trust_anchors, result, arena)` - Validate DNS response
+- `SocketDNSSEC_validate_rrset(rrset, rrsig, dnskey, &result)` - Validate individual RRset
+- `SocketDNSSEC_verify_signature(rrsig, dnskey, rrset)` - Verify RRSIG against DNSKEY
+
+### Trust Anchors:
+- `SocketDNSSEC_TrustAnchor_new(arena)` - Create trust anchor store
+- `SocketDNSSEC_TrustAnchor_add_root(anchors)` - Add IANA root trust anchors
+- `SocketDNSSEC_TrustAnchor_add_ds(anchors, zone, ds)` - Add DS trust anchor
+- `SocketDNSSEC_TrustAnchor_add_dnskey(anchors, zone, dnskey)` - Add DNSKEY trust anchor
+- `SocketDNSSEC_TrustAnchor_free(&anchors)` - Free trust anchor store
+
+### Key Operations:
+- `SocketDNSSEC_parse_dnskey(rdata, len, &dnskey, arena)` - Parse DNSKEY RDATA
+- `SocketDNSSEC_parse_rrsig(rdata, len, &rrsig, arena)` - Parse RRSIG RDATA
+- `SocketDNSSEC_parse_ds(rdata, len, &ds, arena)` - Parse DS RDATA
+- `SocketDNSSEC_compute_keytag(dnskey)` - Compute key tag from DNSKEY
+- `SocketDNSSEC_compute_ds(dnskey, digest_type, &ds, arena)` - Compute DS from DNSKEY
+
+### NSEC/NSEC3:
+- `SocketDNSSEC_parse_nsec(rdata, len, &nsec, arena)` - Parse NSEC RDATA
+- `SocketDNSSEC_parse_nsec3(rdata, len, &nsec3, arena)` - Parse NSEC3 RDATA
+- `SocketDNSSEC_nsec_covers(nsec, name)` - Check if NSEC covers a name
+- `SocketDNSSEC_nsec3_hash(name, algorithm, iterations, salt, &hash)` - Compute NSEC3 hash
+
+### Validation States:
+- `DNSSEC_SECURE` - Validated via chain of trust from trust anchor
+- `DNSSEC_INSECURE` - Provably unsigned (no DS at parent)
+- `DNSSEC_BOGUS` - Validation failed (bad signature, expired, etc.)
+- `DNSSEC_INDETERMINATE` - Cannot determine (network error, missing data)
+
+### Algorithms:
+- `DNSSEC_ALGO_RSASHA256` (8) - RSA/SHA-256 (recommended)
+- `DNSSEC_ALGO_RSASHA512` (10) - RSA/SHA-512
+- `DNSSEC_ALGO_ECDSAP256SHA256` (13) - ECDSA P-256/SHA-256
+- `DNSSEC_ALGO_ECDSAP384SHA384` (14) - ECDSA P-384/SHA-384
+- `DNSSEC_ALGO_ED25519` (15) - Ed25519
+- `DNSSEC_ALGO_ED448` (16) - Ed448
+
+## SocketDNSCookie Functions
+
+DNS Cookies for spoofing protection (RFC 7873) (from `include/dns/SocketDNSCookie.h`):
+
+### Cookie Cache:
+- `SocketDNSCookie_new(arena)` - Create cookie cache
+- `SocketDNSCookie_free(&cache)` - Free cookie cache
+- `SocketDNSCookie_set_max_entries(cache, max)` - Set max cache entries (default: 64)
+- `SocketDNSCookie_set_secret_lifetime(cache, seconds)` - Set client secret lifetime (default: 86400)
+
+### Client Cookie Generation:
+- `SocketDNSCookie_generate_client(cache, server_addr, addr_len, cookie)` - Generate client cookie
+- `SocketDNSCookie_rotate_secret(cache)` - Rotate client secret (recommended every 24 hours)
+
+### Server Cookie Handling:
+- `SocketDNSCookie_cache_server(cache, server_addr, addr_len, &cookie)` - Cache server cookie
+- `SocketDNSCookie_lookup(cache, server_addr, addr_len, &cookie)` - Look up cached cookies
+- `SocketDNSCookie_invalidate(cache, server_addr, addr_len)` - Invalidate cached entry
+
+### EDNS0 Integration:
+- `SocketDNSCookie_encode(cookie, buf, len)` - Encode COOKIE option for EDNS0
+- `SocketDNSCookie_parse(buf, len, &cookie)` - Parse COOKIE option from EDNS0
+- `DNS_COOKIE_OPTION_CODE` (10) - EDNS0 option code for cookies
+
+### Constants:
+- `DNS_CLIENT_COOKIE_SIZE` (8) - Fixed client cookie size
+- `DNS_SERVER_COOKIE_MIN_SIZE` (8) - Minimum server cookie size
+- `DNS_SERVER_COOKIE_MAX_SIZE` (32) - Maximum server cookie size
+
+## SocketDNSError Functions
+
+Extended DNS Errors (RFC 8914) (from `include/dns/SocketDNSError.h`):
+
+### Parsing:
+- `SocketDNSError_parse(buf, len, &ede)` - Parse EDE option from EDNS0
+- `SocketDNSError_has_ede(response)` - Check if response contains EDE option
+- `SocketDNSError_get_ede(response, &ede)` - Extract EDE from parsed response
+
+### Error Information:
+- `SocketDNSError_code_string(code)` - Get human-readable error code description
+- `SocketDNSError_category(code)` - Get error category (DNSSEC, Policy, Server, etc.)
+
+### EDE Structure:
+- `info_code` - 16-bit INFO-CODE value
+- `extra_text` - Optional UTF-8 EXTRA-TEXT string
+- `extra_text_len` - Length of extra text
+
+### Error Codes (RFC 8914 Section 4):
+- `DNS_EDE_OTHER` (0) - Other Error
+- `DNS_EDE_UNSUPPORTED_DNSKEY_ALGORITHM` (1) - DNSKEY algorithm not supported
+- `DNS_EDE_UNSUPPORTED_DS_DIGEST_TYPE` (2) - DS digest type not supported
+- `DNS_EDE_STALE_ANSWER` (3) - Stale Answer
+- `DNS_EDE_FORGED_ANSWER` (4) - Forged Answer
+- `DNS_EDE_DNSSEC_INDETERMINATE` (5) - DNSSEC Indeterminate
+- `DNS_EDE_DNSSEC_BOGUS` (6) - DNSSEC Bogus
+- `DNS_EDE_SIGNATURE_EXPIRED` (7) - Signature Expired
+- `DNS_EDE_SIGNATURE_NOT_YET_VALID` (8) - Signature Not Yet Valid
+- `DNS_EDE_DNSKEY_MISSING` (9) - DNSKEY Missing
+- `DNS_EDE_RRSIGS_MISSING` (10) - RRSIGs Missing
+- `DNS_EDE_NO_ZONE_KEY_BIT_SET` (11) - No Zone Key Bit Set
+- `DNS_EDE_NSEC_MISSING` (12) - NSEC Missing
+- `DNS_EDE_CACHED_ERROR` (13) - Cached Error
+- `DNS_EDE_NOT_READY` (14) - Not Ready
+- `DNS_EDE_BLOCKED` (15) - Blocked
+- `DNS_EDE_CENSORED` (16) - Censored
+- `DNS_EDE_FILTERED` (17) - Filtered
+- `DNS_EDE_PROHIBITED` (18) - Prohibited
+- `DNS_EDE_STALE_NXDOMAIN_ANSWER` (19) - Stale NXDOMAIN Answer
+- `DNS_EDE_NOT_AUTHORITATIVE` (20) - Not Authoritative
+- `DNS_EDE_NOT_SUPPORTED` (21) - Not Supported
+- `DNS_EDE_NO_REACHABLE_AUTHORITY` (22) - No Reachable Authority
+- `DNS_EDE_NETWORK_ERROR` (23) - Network Error
+- `DNS_EDE_INVALID_DATA` (24) - Invalid Data
+
+## SocketDNSNegCache Functions
+
+DNS Negative Response Cache (RFC 2308) (from `include/dns/SocketDNSNegCache.h`):
+
+### Cache Management:
+- `SocketDNSNegCache_new(arena)` - Create negative cache
+- `SocketDNSNegCache_free(&cache)` - Free negative cache
+- `SocketDNSNegCache_set_max_entries(cache, max)` - Set max entries (default: 1000)
+- `SocketDNSNegCache_set_max_ttl(cache, seconds)` - Set max TTL (default: 3600)
+- `SocketDNSNegCache_clear(cache)` - Clear all entries
+
+### Insertion:
+- `SocketDNSNegCache_insert_nxdomain(cache, qname, qclass, ttl)` - Cache NXDOMAIN (matches any type)
+- `SocketDNSNegCache_insert_nodata(cache, qname, qtype, qclass, ttl)` - Cache NODATA (type-specific)
+- `SocketDNSNegCache_insert_from_soa(cache, type, qname, qtype, qclass, soa)` - Insert using SOA MINIMUM TTL
+
+### Lookup:
+- `SocketDNSNegCache_lookup(cache, qname, qtype, qclass, &entry)` - Look up negative entry
+- `SocketDNSNegCache_lookup_nxdomain(cache, qname, qclass)` - Check for NXDOMAIN only
+- `SocketDNSNegCache_lookup_nodata(cache, qname, qtype, qclass)` - Check for NODATA only
+
+### Statistics:
+- `SocketDNSNegCache_stats(cache, &stats)` - Get cache statistics
+
+### RFC 2308 Key Tuples:
+- **NXDOMAIN**: Cached against `<QNAME, QCLASS>` - domain doesn't exist
+- **NODATA**: Cached against `<QNAME, QTYPE, QCLASS>` - name exists but no records of type
+
+### Cache Entry Types:
+- `DNS_NEG_NXDOMAIN` - Name Error (RCODE 3)
+- `DNS_NEG_NODATA` - Name exists but no data of requested type
+
+### Lookup Results:
+- `DNS_NEG_MISS` - No cached entry found
+- `DNS_NEG_HIT_NXDOMAIN` - Cached NXDOMAIN found
+- `DNS_NEG_HIT_NODATA` - Cached NODATA found

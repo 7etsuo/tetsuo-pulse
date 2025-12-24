@@ -610,3 +610,286 @@ printf("Cache hit rate: %.2f%%\n", stats.hit_rate * 100);
 /* Clear cache if needed */
 SocketDNSResolver_cache_clear(resolver);
 ```
+
+## DNSSEC Validation Pattern (RFC 4033-4035)
+
+```c
+/* Create trust anchor store with IANA root keys */
+SocketDNSSEC_TrustAnchor_T anchors = SocketDNSSEC_TrustAnchor_new(arena);
+SocketDNSSEC_TrustAnchor_add_root(anchors);  /* IANA root trust anchors */
+
+/* Optional: add custom trust anchors */
+SocketDNSSEC_TrustAnchor_add_ds(anchors, "example.com", &ds_record);
+
+/* Validate a DNS response */
+SocketDNSSEC_ValidationResult result;
+int status = SocketDNSSEC_validate(response, anchors, &result, arena);
+
+switch (result.state) {
+    case DNSSEC_SECURE:
+        /* Validated via chain of trust */
+        printf("DNSSEC: Secure - verified by %s\n", result.signer);
+        break;
+    case DNSSEC_INSECURE:
+        /* Domain is provably unsigned */
+        printf("DNSSEC: Insecure - no DS at parent\n");
+        break;
+    case DNSSEC_BOGUS:
+        /* Validation failed */
+        printf("DNSSEC: Bogus - %s\n", result.reason);
+        /* REJECT THIS RESPONSE */
+        break;
+    case DNSSEC_INDETERMINATE:
+        /* Cannot determine - network/data issue */
+        printf("DNSSEC: Indeterminate\n");
+        break;
+}
+
+SocketDNSSEC_TrustAnchor_free(&anchors);
+```
+
+## DNS Cookies Pattern (RFC 7873)
+
+```c
+/* Create cookie cache */
+SocketDNSCookie_T cookie_cache = SocketDNSCookie_new(arena);
+SocketDNSCookie_set_max_entries(cookie_cache, 64);
+
+/* Generate client cookie for a server */
+struct sockaddr_in server_addr;
+server_addr.sin_family = AF_INET;
+server_addr.sin_port = htons(53);
+inet_pton(AF_INET, "8.8.8.8", &server_addr.sin_addr);
+
+SocketDNSCookie_Cookie cookie;
+SocketDNSCookie_generate_client(cookie_cache,
+    (struct sockaddr *)&server_addr, sizeof(server_addr),
+    &cookie);
+
+/* Add cookie to DNS query via EDNS0 */
+/* cookie.client_cookie is 8 bytes to include in OPT record */
+
+/* When receiving response, cache server cookie */
+SocketDNSCookie_cache_server(cookie_cache,
+    (struct sockaddr *)&server_addr, sizeof(server_addr),
+    &received_cookie);
+
+/* Future queries: look up cached cookie */
+if (SocketDNSCookie_lookup(cookie_cache,
+        (struct sockaddr *)&server_addr, sizeof(server_addr),
+        &cookie) == 0) {
+    /* Include both client and cached server cookie */
+}
+
+/* Rotate client secret periodically (recommended every 24 hours) */
+SocketDNSCookie_rotate_secret(cookie_cache);
+
+SocketDNSCookie_free(&cookie_cache);
+```
+
+## Extended DNS Errors Pattern (RFC 8914)
+
+```c
+/* Check if response contains EDE */
+if (SocketDNSError_has_ede(response)) {
+    SocketDNS_EDE ede;
+    SocketDNSError_get_ede(response, &ede);
+
+    printf("Extended DNS Error: %s (code %u)\n",
+           SocketDNSError_code_string(ede.info_code),
+           ede.info_code);
+
+    if (ede.extra_text_len > 0) {
+        printf("Extra info: %.*s\n",
+               (int)ede.extra_text_len, ede.extra_text);
+    }
+
+    /* Handle specific error categories */
+    switch (SocketDNSError_category(ede.info_code)) {
+        case DNS_EDE_CATEGORY_DNSSEC:
+            /* DNSSEC-related failure */
+            handle_dnssec_error(ede.info_code);
+            break;
+        case DNS_EDE_CATEGORY_POLICY:
+            /* Policy/filtering blocked */
+            handle_policy_block(ede.info_code);
+            break;
+        case DNS_EDE_CATEGORY_SERVER:
+            /* Server-side issue */
+            retry_with_different_server();
+            break;
+    }
+}
+```
+
+## DNS Negative Caching Pattern (RFC 2308)
+
+```c
+/* Create negative cache */
+SocketDNSNegCache_T neg_cache = SocketDNSNegCache_new(arena);
+SocketDNSNegCache_set_max_entries(neg_cache, 1000);
+SocketDNSNegCache_set_max_ttl(neg_cache, 3600);  /* 1 hour max */
+
+/* When receiving NXDOMAIN (RCODE 3) */
+/* Cache against <QNAME, QCLASS> - applies to all query types */
+SocketDNSNegCache_insert_nxdomain(neg_cache,
+    "nonexistent.example.com", DNS_CLASS_IN,
+    soa_minimum_ttl);
+
+/* When receiving NODATA (RCODE 0, but no answer) */
+/* Cache against <QNAME, QTYPE, QCLASS> - type-specific */
+SocketDNSNegCache_insert_nodata(neg_cache,
+    "example.com", DNS_TYPE_AAAA, DNS_CLASS_IN,
+    soa_minimum_ttl);
+
+/* Before making DNS query, check negative cache */
+SocketDNS_NegCacheEntry entry;
+SocketDNS_NegCacheResult result = SocketDNSNegCache_lookup(
+    neg_cache, "example.com", DNS_TYPE_AAAA, DNS_CLASS_IN, &entry);
+
+switch (result) {
+    case DNS_NEG_MISS:
+        /* No cached entry - proceed with query */
+        break;
+    case DNS_NEG_HIT_NXDOMAIN:
+        /* Cached NXDOMAIN - return error without query */
+        printf("NXDOMAIN (cached, TTL remaining: %u)\n", entry.ttl_remaining);
+        return DNS_ERROR_NXDOMAIN;
+    case DNS_NEG_HIT_NODATA:
+        /* Cached NODATA - return empty result without query */
+        printf("NODATA (cached, TTL remaining: %u)\n", entry.ttl_remaining);
+        return DNS_ERROR_NODATA;
+}
+
+/* Get cache statistics */
+SocketDNS_NegCacheStats stats;
+SocketDNSNegCache_stats(neg_cache, &stats);
+printf("Negative cache: %lu hits, %lu misses\n", stats.hits, stats.misses);
+
+SocketDNSNegCache_free(&neg_cache);
+```
+
+## io_uring Async I/O Pattern (Linux 5.1+)
+
+```c
+/* Check if io_uring is available */
+if (!SocketAsync_is_available()) {
+    /* Fall back to poll-based I/O */
+    return use_poll_fallback();
+}
+
+/* Create async context */
+SocketAsync_T async = SocketAsync_new(arena, 256);  /* 256 queue entries */
+
+/* Enable SQPOLL for kernel-side submission (reduces syscalls) */
+SocketAsync_enable_sqpoll(async);
+
+/* Register fixed buffers for zero-copy I/O */
+struct iovec bufs[16];
+for (int i = 0; i < 16; i++) {
+    bufs[i].iov_base = malloc(4096);
+    bufs[i].iov_len = 4096;
+}
+SocketAsync_register_buffers(async, bufs, 16);
+
+/* Submit async operations */
+SocketAsync_recv(async, socket, buffer, sizeof(buffer),
+                 SOCKETASYNC_ZEROCOPY, on_recv_complete, userdata);
+
+/* Batch multiple submissions for efficiency */
+SocketAsync_send(async, sock1, data1, len1, 0, callback1, ud1);
+SocketAsync_send(async, sock2, data2, len2, 0, callback2, ud2);
+SocketAsync_send(async, sock3, data3, len3, 0, callback3, ud3);
+SocketAsync_submit_batch(async);  /* Submit all at once */
+
+/* Process completions in event loop */
+while (running) {
+    int fd = SocketAsync_pollfd(async);
+    struct pollfd pfd = { fd, POLLIN, 0 };
+    poll(&pfd, 1, timeout_ms);
+
+    if (pfd.revents & POLLIN) {
+        SocketAsync_process(async);  /* Invokes callbacks */
+    }
+}
+
+/* Cleanup */
+SocketAsync_unregister_buffers(async);
+SocketAsync_free(&async);
+for (int i = 0; i < 16; i++) {
+    free(bufs[i].iov_base);
+}
+```
+
+## io_uring with Poll Integration Pattern
+
+```c
+/* Create poll instance with io_uring backend */
+SocketPoll_T poll = SocketPoll_new();
+
+/* Get the integrated async context */
+SocketAsync_T async = SocketPoll_get_async(poll);
+
+if (async && SocketAsync_backend(async) == "io_uring") {
+    printf("Using io_uring backend\n");
+
+    /* Enable advanced features */
+    SocketAsync_enable_sqpoll(async);
+}
+
+/* Add sockets to poll normally */
+SocketPoll_add(poll, socket, POLL_READ | POLL_WRITE, userdata);
+
+/* Submit async I/O (io_uring handles completion) */
+SocketAsync_send(async, socket, data, len, 0, on_complete, userdata);
+
+/* Unified event loop - processes both poll and async events */
+SocketPoll_Event events[64];
+while (running) {
+    int n = SocketPoll_wait(poll, events, 64, 1000);
+
+    /* io_uring completions are automatically processed */
+    /* Timer callbacks work correctly via eventfd integration */
+
+    for (int i = 0; i < n; i++) {
+        handle_event(&events[i]);
+    }
+}
+
+SocketPoll_free(&poll);
+```
+
+## HTTP Client Prepared Request Pattern (High Throughput)
+
+```c
+/* Create HTTP client with arena pooling */
+SocketHTTPClient_Config config;
+SocketHTTPClient_config_defaults(&config);
+config.enable_arena_pooling = 1;  /* Reuse arenas across requests */
+config.arena_pool_size = 16;      /* Pool of 16 arenas */
+
+SocketHTTPClient_T client = SocketHTTPClient_new(&config, arena);
+
+/* Prepare a request template (parsed once, reused many times) */
+SocketHTTPClient_PreparedRequest_T prepared;
+SocketHTTPClient_prepare(client, "GET", "https://api.example.com/data",
+                         headers, header_count, &prepared);
+
+/* Execute prepared request many times */
+for (int i = 0; i < 100000; i++) {
+    SocketHTTPClient_Response response;
+
+    /* Fast path: no URL parsing, minimal allocation */
+    int status = SocketHTTPClient_execute_prepared(client, prepared, &response);
+
+    if (status == 0) {
+        process_response(&response);
+    }
+
+    SocketHTTPClient_response_free(&response);
+}
+
+/* Cleanup */
+SocketHTTPClient_prepared_free(&prepared);
+SocketHTTPClient_free(&client);
+```

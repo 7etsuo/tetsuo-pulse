@@ -102,7 +102,7 @@ This is a high-performance C socket library for POSIX systems with two API style
 include/
 ├── core/       # Foundation: Arena (memory), Except (exceptions), utilities
 ├── socket/     # TCP/UDP/Unix sockets, buffers, async I/O, reconnection
-├── dns/        # Async DNS resolver (RFC 1035), DNS-over-TLS (RFC 7858), DNS-over-HTTPS (RFC 8484)
+├── dns/        # Async DNS resolver (RFC 1035), DoT (RFC 7858), DoH (RFC 8484), DNSSEC (RFC 4033-4035)
 ├── poll/       # Event polling (epoll/kqueue/poll backends)
 ├── pool/       # Connection pooling with rate limiting
 ├── tls/        # TLS/DTLS support (OpenSSL/LibreSSL)
@@ -113,7 +113,7 @@ include/
 src/
 ├── core/       # Arena, Except, timers, rate limiting, crypto, UTF-8
 ├── socket/     # Socket ops, WebSocket (RFC 6455), proxy (SOCKS4/5, HTTP CONNECT)
-├── dns/        # Wire format, transport (UDP/TCP/DoT/DoH), cache, resolver
+├── dns/        # Wire format, transport (UDP/TCP/DoT/DoH), cache, resolver, DNSSEC, cookies
 ├── poll/       # Platform backends (SocketPoll_epoll.c, SocketPoll_kqueue.c)
 ├── pool/       # Connection pool, drain state machine
 ├── tls/        # TLS context, kTLS, DTLS, certificate pinning
@@ -239,9 +239,10 @@ Test files are in `src/test/` and map to modules:
 - `test_http*.c` - HTTP/1.1 parser, HTTP/2, HPACK, client, server
 - `test_websocket*.c` - WebSocket (RFC 6455), WebSocket-over-HTTP/2
 - `test_proxy*.c` - SOCKS4/5, HTTP CONNECT proxy
-- `test_dns_*.c` - DNS wire format, cache, transport, resolver, DoT, DoH
+- `test_dns_*.c` - DNS wire format, cache, transport, resolver, DoT, DoH, DNSSEC, cookies
 - `test_except.c` - Exception handling framework
 - `test_arena.c` - Memory arena management
+- `test_async*.c` - Async I/O and io_uring tests
 
 ## Thread Safety
 
@@ -259,3 +260,56 @@ When writing code with `TRY/EXCEPT/FINALLY`:
 - `FINALLY` always executes, even after `RERAISE`
 - Avoid raising exceptions inside `FINALLY` blocks
 - Use `RERAISE` to propagate caught exceptions to outer handlers
+
+## DNS Module Features
+
+The DNS module (`include/dns/`, `src/dns/`) provides comprehensive DNS resolution:
+
+### Core Resolution (RFC 1035)
+- Async resolver with query multiplexing
+- UDP and TCP transport with automatic fallback
+- Response caching with TTL support
+- `/etc/resolv.conf` parsing
+
+### Encrypted DNS
+- **DNS-over-TLS (DoT)** - RFC 7858, RFC 8310 (opportunistic/strict modes)
+- **DNS-over-HTTPS (DoH)** - RFC 8484 (POST/GET methods)
+
+### Security Features
+- **DNSSEC Validation** - RFC 4033, 4034, 4035 (chain of trust, NSEC/NSEC3)
+- **DNS Cookies** - RFC 7873 (spoofing protection via EDNS0 option 10)
+- **Extended DNS Errors** - RFC 8914 (25 detailed error codes via EDNS0 option 15)
+- **Negative Caching** - RFC 2308 (proper NXDOMAIN/NODATA key tuples)
+
+### EDNS0 Support (RFC 6891)
+- OPT record validation (§6.1.1)
+- Version negotiation and BADVERS handling (§6.1.3)
+- UDP payload size fallback (§6.2.5)
+- Option parsing framework for extensions
+
+## io_uring Support (Linux 5.1+)
+
+The async I/O module supports io_uring for high-performance networking:
+
+### Build
+```bash
+cmake -S . -B build -DENABLE_IO_URING=ON
+```
+
+### Features
+- **SQPOLL mode** - Kernel-side submission thread for reduced syscalls
+- **Registered buffers** - Zero-copy I/O with fixed buffer sets
+- **Batch submissions** - Amortize submission overhead across multiple ops
+- **Poll integration** - Automatic eventfd integration with SocketPoll for timers
+- **Graceful fallback** - Transparent degradation on unsupported systems
+
+### Usage Pattern
+```c
+SocketAsync_T async = SocketAsync_new(arena, 256);
+SocketAsync_enable_sqpoll(async);  /* Enable SQPOLL if available */
+
+/* Batch multiple operations */
+SocketAsync_send(async, sock1, data1, len1, 0, cb1, ud1);
+SocketAsync_send(async, sock2, data2, len2, 0, cb2, ud2);
+SocketAsync_submit_batch(async);  /* Submit all at once */
+```
