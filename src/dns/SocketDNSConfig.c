@@ -16,10 +16,21 @@
 #include <arpa/inet.h>
 #include <assert.h>
 #include <ctype.h>
+#include <errno.h>
+#include <limits.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+
+/**
+ * @brief Maximum size for config content to prevent integer overflow.
+ *
+ * 1MB is a reasonable upper bound for resolv.conf content.
+ * This prevents integer overflow in malloc(len + 1).
+ */
+#define MAX_CONFIG_SIZE (1024 * 1024)
 
 /**
  * @brief Skip whitespace in a string.
@@ -93,7 +104,8 @@ parse_options (SocketDNSConfig_T *config, char *line)
 {
   char *token;
   char *colon;
-  int value;
+  char *endptr;
+  long value;
 
   while ((token = next_token (&line)) != NULL)
     {
@@ -102,7 +114,16 @@ parse_options (SocketDNSConfig_T *config, char *line)
       if (colon)
         {
           *colon = '\0';
-          value = atoi (colon + 1);
+          errno = 0;
+          value = strtol (colon + 1, &endptr, 10);
+
+          /* Validate parsing: check for conversion errors and range */
+          if (errno != 0 || endptr == colon + 1 || *endptr != '\0'
+              || value < INT_MIN || value > INT_MAX)
+            {
+              /* Invalid integer, skip this option */
+              continue;
+            }
 
           if (strcmp (token, "timeout") == 0)
             {
@@ -110,7 +131,7 @@ parse_options (SocketDNSConfig_T *config, char *line)
                 value = 1;
               if (value > DNS_CONFIG_MAX_TIMEOUT)
                 value = DNS_CONFIG_MAX_TIMEOUT;
-              config->timeout_secs = value;
+              config->timeout_secs = (int)value;
             }
           else if (strcmp (token, "attempts") == 0)
             {
@@ -118,7 +139,7 @@ parse_options (SocketDNSConfig_T *config, char *line)
                 value = 1;
               if (value > DNS_CONFIG_MAX_ATTEMPTS)
                 value = DNS_CONFIG_MAX_ATTEMPTS;
-              config->attempts = value;
+              config->attempts = (int)value;
             }
           else if (strcmp (token, "ndots") == 0)
             {
@@ -126,7 +147,7 @@ parse_options (SocketDNSConfig_T *config, char *line)
                 value = 0;
               if (value > DNS_CONFIG_MAX_NDOTS)
                 value = DNS_CONFIG_MAX_NDOTS;
-              config->ndots = value;
+              config->ndots = (int)value;
             }
         }
       else
@@ -261,6 +282,11 @@ SocketDNSConfig_parse (SocketDNSConfig_T *config, const char *content)
   SocketDNSConfig_init (config);
 
   len = strlen (content);
+
+  /* Check for integer overflow in malloc(len + 1) and reasonable size limit */
+  if (len > SIZE_MAX - 1 || len > MAX_CONFIG_SIZE)
+    return -1;
+
   copy = malloc (len + 1);
   if (copy == NULL)
     return -1;
@@ -315,6 +341,51 @@ SocketDNSConfig_add_nameserver (SocketDNSConfig_T *config, const char *address)
   return 0;
 }
 
+/**
+ * @brief Validate domain name against RFC 1035 character set.
+ *
+ * Valid DNS domain names contain only:
+ * - Letters (a-z, A-Z)
+ * - Digits (0-9)
+ * - Hyphens (-)
+ * - Dots (.)
+ *
+ * This prevents shell metacharacters and control characters from being
+ * injected into search domains.
+ *
+ * @param domain Domain name to validate.
+ * @return 1 if valid, 0 if invalid.
+ */
+static int
+is_valid_domain_name (const char *domain)
+{
+  const char *p;
+
+  if (domain == NULL || *domain == '\0')
+    return 0;
+
+  for (p = domain; *p != '\0'; p++)
+    {
+      /* Allow alphanumeric, hyphen, and dot only (RFC 1035) */
+      if (!isalnum ((unsigned char)*p) && *p != '-' && *p != '.')
+        return 0;
+
+      /* Reject control characters explicitly */
+      if (iscntrl ((unsigned char)*p))
+        return 0;
+    }
+
+  /* Additional checks: no leading/trailing dots or hyphens */
+  if (domain[0] == '.' || domain[0] == '-')
+    return 0;
+
+  p = domain + strlen (domain) - 1;
+  if (*p == '.' || *p == '-')
+    return 0;
+
+  return 1;
+}
+
 int
 SocketDNSConfig_add_search (SocketDNSConfig_T *config, const char *domain)
 {
@@ -328,6 +399,10 @@ SocketDNSConfig_add_search (SocketDNSConfig_T *config, const char *domain)
 
   len = strlen (domain);
   if (len == 0 || len > DNS_CONFIG_MAX_DOMAIN_LEN)
+    return -1;
+
+  /* Validate domain name against RFC 1035 character set */
+  if (!is_valid_domain_name (domain))
     return -1;
 
   strncpy (config->search[config->search_count], domain,
