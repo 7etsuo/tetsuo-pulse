@@ -48,6 +48,7 @@
 #include "http/SocketHTTPClient-private.h"
 #include "socket/Socket.h"
 
+#include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
@@ -81,6 +82,8 @@ test_async_init_cleanup(Arena_T arena, const FuzzInput *input)
 {
     SocketHTTPClient_Config config;
     SocketHTTPClient_T client;
+
+    (void)arena; /* Not used in this test */
 
     SocketHTTPClient_config_defaults(&config);
     config.enable_async_io = input->enable_async_io;
@@ -122,12 +125,14 @@ create_socketpair(Socket_T *sock1_out, Socket_T *sock2_out, Arena_T arena)
     Socket_T sock1 = NULL;
     Socket_T sock2 = NULL;
 
+    (void)arena; /* Not used with Socket_new_from_fd */
+
     if (socketpair(AF_UNIX, SOCK_STREAM, 0, fds) < 0)
         return -1;
 
     TRY {
-        sock1 = Socket_wrap(fds[0], SOCKET_TYPE_STREAM, arena);
-        sock2 = Socket_wrap(fds[1], SOCKET_TYPE_STREAM, arena);
+        sock1 = Socket_new_from_fd(fds[0]);
+        sock2 = Socket_new_from_fd(fds[1]);
 
         *sock1_out = sock1;
         *sock2_out = sock2;
@@ -334,6 +339,8 @@ test_cleanup_during_operations(Arena_T arena, const FuzzInput *input)
     SocketHTTPClient_Config config;
     SocketHTTPClient_T client;
 
+    (void)arena; /* Not used in this test */
+
     SocketHTTPClient_config_defaults(&config);
     config.enable_async_io = input->enable_async_io;
 
@@ -456,10 +463,6 @@ LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
         Arena_dispose((Arena_T *)&arena);
     }
     EXCEPT(Arena_Failed) {
-        if (arena)
-            Arena_dispose((Arena_T *)&arena);
-    }
-    EXCEPT(Except_T) {
         if (arena)
             Arena_dispose((Arena_T *)&arena);
     }

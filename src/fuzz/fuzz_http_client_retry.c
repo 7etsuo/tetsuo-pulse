@@ -77,6 +77,8 @@ test_retry_delay_calculation(Arena_T arena, const FuzzInput *input)
     SocketHTTPClient_T client;
     volatile int delay = 0;
 
+    (void)arena; /* Not used in this test */
+
     /* Initialize config with fuzzer input */
     SocketHTTPClient_config_defaults(&config);
     config.enable_retry = input->enable_retry;
@@ -128,6 +130,8 @@ test_retry_error_decision(Arena_T arena, const FuzzInput *input)
     SocketHTTPClient_Config config;
     SocketHTTPClient_T client;
     volatile int should_retry = 0;
+
+    (void)arena; /* Not used in this test */
 
     SocketHTTPClient_config_defaults(&config);
     config.enable_retry = input->enable_retry;
@@ -182,6 +186,8 @@ test_retry_status_with_method(Arena_T arena, const FuzzInput *input)
     SocketHTTPClient_Config config;
     SocketHTTPClient_T client;
     volatile int should_retry = 0;
+
+    (void)arena; /* Not used in this test */
 
     SocketHTTPClient_config_defaults(&config);
     config.enable_retry = input->enable_retry;
@@ -253,6 +259,8 @@ test_retry_combinations(Arena_T arena, const FuzzInput *input)
 {
     SocketHTTPClient_Config config;
     SocketHTTPClient_T client;
+
+    (void)arena; /* Not used in this test */
 
     SocketHTTPClient_config_defaults(&config);
     config.enable_retry = input->enable_retry;
@@ -328,11 +336,6 @@ LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
         Arena_dispose((Arena_T *)&arena);
     }
     EXCEPT(Arena_Failed) {
-        if (arena)
-            Arena_dispose((Arena_T *)&arena);
-    }
-    EXCEPT(Except_T) {
-        /* Catch any other exceptions */
         if (arena)
             Arena_dispose((Arena_T *)&arena);
     }

@@ -409,8 +409,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                       {
                         /* OPT record (EDNS0) */
                         SocketDNS_OPT opt;
-                        (void)SocketDNS_opt_decode (body, body_len, offset,
-                                                    &opt, &consumed);
+                        (void)SocketDNS_opt_decode (body + offset,
+                                                    body_len - offset, &opt);
                         break;
                       }
                     default:

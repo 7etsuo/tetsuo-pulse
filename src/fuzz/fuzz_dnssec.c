@@ -299,8 +299,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           int opt_out = (nsec3.flags & NSEC3_FLAG_OPT_OUT) != 0;
           (void)opt_out;
 
-          /* Test iterations count (should be reasonable) */
-          (void)(nsec3.iterations < 65536);
+          /* Test iterations count (should be reasonable, RFC 5155 recommends <= 100) */
+          (void)(nsec3.iterations <= 2500);
 
           /* Test salt length */
           (void)(nsec3.salt_len <= 255);
