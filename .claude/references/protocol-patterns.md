@@ -722,6 +722,122 @@ if (SocketDNSError_has_ede(response)) {
 }
 ```
 
+## Dead Server Tracking Pattern (RFC 2308 §7.2)
+
+```c
+/* Create dead server tracker */
+SocketDNSDeadServer_T tracker = SocketDNSDeadServer_new(arena);
+SocketDNSDeadServer_set_threshold(tracker, 2);  /* 2 consecutive timeouts */
+
+/* Before sending DNS query, check if server is dead */
+if (SocketDNSDeadServer_is_dead(tracker, server_addr)) {
+    /* Skip this server - try next nameserver */
+    SocketDNS_DeadServerEntry entry;
+    SocketDNSDeadServer_lookup(tracker, server_addr, &entry);
+    printf("Server dead for %u more seconds\n", entry.ttl_remaining);
+    return try_next_server();
+}
+
+/* Send query and handle response */
+int result = send_dns_query(server_addr, query);
+
+if (result == DNS_TIMEOUT) {
+    /* Record timeout - may mark server as dead after threshold */
+    SocketDNSDeadServer_record_timeout(tracker, server_addr);
+} else {
+    /* Server responded - clear any failure state */
+    SocketDNSDeadServer_record_success(tracker, server_addr);
+}
+
+/* Get statistics */
+SocketDNS_DeadServerStats stats;
+SocketDNSDeadServer_stats(tracker, &stats);
+printf("Dead servers: %u, Total timeouts: %lu\n",
+       stats.current_dead_count, stats.total_timeouts);
+
+SocketDNSDeadServer_free(&tracker);
+```
+
+## EDNS0 OPT Record Pattern (RFC 6891)
+
+```c
+/* Build query with EDNS0 OPT record */
+SocketDNSWire_OPT opt;
+memset(&opt, 0, sizeof(opt));
+opt.udp_payload_size = 4096;  /* Request up to 4KB responses */
+opt.version = 0;              /* EDNS version 0 */
+opt.do_bit = 1;               /* Request DNSSEC if available */
+
+/* Add DNS Cookie option (RFC 7873) */
+SocketDNSCookie_Cookie cookie;
+SocketDNSCookie_generate_client(cookie_cache, server_addr, sizeof_addr, &cookie);
+SocketDNSWire_opt_add_option(&opt, DNS_OPT_COOKIE,
+    cookie.client_cookie, DNS_CLIENT_COOKIE_SIZE);
+
+/* Encode and append to query */
+uint8_t opt_rdata[512];
+ssize_t opt_len = SocketDNSWire_encode_opt(&opt, opt_rdata, sizeof(opt_rdata));
+/* ... append to additional section ... */
+
+/* Parse EDNS0 from response */
+if (SocketDNSWire_has_opt(response)) {
+    SocketDNSWire_OPT resp_opt;
+    SocketDNSWire_parse_opt(response->opt_rdata, response->opt_len, &resp_opt);
+
+    /* Check for version mismatch (BADVERS) */
+    if (response->rcode == DNS_RCODE_BADVERS) {
+        printf("Server supports EDNS version %u (we sent %u)\n",
+               resp_opt.version, 0);
+        /* Retry with lower version or without EDNS */
+    }
+
+    /* Extract options */
+    const uint8_t *cookie_data;
+    size_t cookie_len;
+    if (SocketDNSWire_opt_get_option(&resp_opt, DNS_OPT_COOKIE,
+            &cookie_data, &cookie_len) == 0) {
+        /* Cache server cookie for future queries */
+        SocketDNSCookie_Cookie recv_cookie;
+        SocketDNSCookie_parse(cookie_data, cookie_len, &recv_cookie);
+        SocketDNSCookie_cache_server(cookie_cache, server_addr, addr_len, &recv_cookie);
+    }
+
+    /* Check for Extended DNS Error */
+    if (SocketDNSWire_opt_get_option(&resp_opt, DNS_OPT_EDE,
+            &ede_data, &ede_len) == 0) {
+        SocketDNS_EDE ede;
+        SocketDNSError_parse(ede_data, ede_len, &ede);
+        printf("EDE: %s\n", SocketDNSError_code_string(ede.info_code));
+    }
+}
+```
+
+## EDNS0 UDP Fallback Pattern (RFC 6891 §6.2.5)
+
+```c
+/* Initial query with large UDP payload size */
+size_t udp_size = 4096;
+int truncated = 0;
+int formerr = 0;
+
+retry:
+    SocketDNSWire_OPT opt = { .udp_payload_size = udp_size };
+    result = send_udp_query_with_edns(query, &opt, &response);
+
+    if (response.truncated) {
+        /* Try TCP fallback */
+        result = send_tcp_query(query, &response);
+    } else if (response.rcode == DNS_RCODE_FORMERR && udp_size > 512) {
+        /* Server may not support EDNS - fall back to 512 bytes */
+        udp_size = 512;
+        formerr = 1;
+        goto retry;
+    } else if (response.rcode == DNS_RCODE_FORMERR && formerr) {
+        /* Server doesn't support EDNS at all - retry without OPT */
+        result = send_query_without_edns(query, &response);
+    }
+```
+
 ## DNS Negative Caching Pattern (RFC 2308)
 
 ```c

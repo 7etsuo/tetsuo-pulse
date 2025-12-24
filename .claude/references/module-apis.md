@@ -956,3 +956,73 @@ DNS Negative Response Cache (RFC 2308) (from `include/dns/SocketDNSNegCache.h`):
 - `DNS_NEG_MISS` - No cached entry found
 - `DNS_NEG_HIT_NXDOMAIN` - Cached NXDOMAIN found
 - `DNS_NEG_HIT_NODATA` - Cached NODATA found
+
+## SocketDNSDeadServer Functions
+
+Dead Server Tracking (RFC 2308 Section 7.2) (from `include/dns/SocketDNSDeadServer.h`):
+
+### Tracker Management:
+- `SocketDNSDeadServer_new(arena)` - Create dead server tracker
+- `SocketDNSDeadServer_free(&tracker)` - Free tracker
+- `SocketDNSDeadServer_set_threshold(tracker, count)` - Set consecutive failure threshold (default: 2)
+- `SocketDNSDeadServer_clear(tracker)` - Clear all tracked servers
+
+### Recording Failures:
+- `SocketDNSDeadServer_record_timeout(tracker, server_addr)` - Record a timeout
+- `SocketDNSDeadServer_record_success(tracker, server_addr)` - Record success (clears failure count)
+
+### Checking Status:
+- `SocketDNSDeadServer_is_dead(tracker, server_addr)` - Check if server is blacklisted
+- `SocketDNSDeadServer_lookup(tracker, server_addr, &entry)` - Get detailed entry info
+- `SocketDNSDeadServer_get_ttl(tracker, server_addr)` - Get remaining blacklist TTL
+
+### Statistics:
+- `SocketDNSDeadServer_stats(tracker, &stats)` - Get tracker statistics
+- `SocketDNSDeadServer_count(tracker)` - Get number of tracked dead servers
+
+### Constants:
+- `DNS_DEAD_SERVER_MAX_TTL` (300) - RFC 2308 §7.2: 5-minute maximum blacklist
+- `DNS_DEAD_SERVER_DEFAULT_THRESHOLD` (2) - Consecutive timeouts before marking dead
+- `DNS_DEAD_SERVER_MAX_TRACKED` (32) - Maximum tracked servers
+
+### Entry Structure:
+- `ttl_remaining` - Seconds until server is retried
+- `consecutive_failures` - Number of consecutive failures
+- `marked_dead_ms` - Timestamp when marked dead
+
+### Difference from SERVFAIL Caching:
+| Condition | Detection | Cache Scope |
+|-----------|-----------|-------------|
+| SERVFAIL | RCODE=2 in response | Per query + nameserver |
+| Dead Server | Timeout / no response | Per nameserver (all queries) |
+
+## SocketDNSWire EDNS0 Functions
+
+EDNS0 support (RFC 6891) (from `include/dns/SocketDNSWire.h`):
+
+### OPT Record Handling (§6.1.1):
+- `SocketDNSWire_parse_opt(rdata, len, &opt)` - Parse OPT pseudo-record
+- `SocketDNSWire_validate_opt(opt)` - Validate OPT record constraints
+- `SocketDNSWire_encode_opt(opt, buf, len)` - Encode OPT record
+
+### Option Parsing Framework (§6.1.2):
+- `SocketDNSWire_opt_get_option(opt, code, &data, &len)` - Get specific option
+- `SocketDNSWire_opt_iterate(opt, callback, userdata)` - Iterate all options
+- `SocketDNSWire_opt_add_option(opt, code, data, len)` - Add option to OPT
+
+### Version Negotiation (§6.1.3):
+- `SocketDNSWire_opt_get_version(opt)` - Get EDNS version from OPT
+- `SocketDNSWire_check_version(response)` - Check for BADVERS (RCODE=16)
+- Version mismatch handling: respond with highest supported version
+
+### UDP Payload Size (§6.2.5):
+- `SocketDNSWire_opt_get_udp_size(opt)` - Get requestor's UDP payload size
+- `SocketDNSWire_opt_set_udp_size(opt, size)` - Set UDP payload size
+- Automatic fallback to 512 bytes on truncation or FORMERR
+
+### Common Option Codes:
+- `DNS_OPT_NSID` (3) - Name Server Identifier
+- `DNS_OPT_COOKIE` (10) - DNS Cookies (RFC 7873)
+- `DNS_OPT_KEEPALIVE` (11) - TCP Keepalive
+- `DNS_OPT_PADDING` (12) - Padding (RFC 7830)
+- `DNS_OPT_EDE` (15) - Extended DNS Errors (RFC 8914)

@@ -280,6 +280,7 @@ The DNS module (`include/dns/`, `src/dns/`) provides comprehensive DNS resolutio
 - **DNS Cookies** - RFC 7873 (spoofing protection via EDNS0 option 10)
 - **Extended DNS Errors** - RFC 8914 (25 detailed error codes via EDNS0 option 15)
 - **Negative Caching** - RFC 2308 (proper NXDOMAIN/NODATA key tuples)
+- **Dead Server Tracking** - RFC 2308 §7.2 (5-minute blacklist for unresponsive servers)
 
 ### EDNS0 Support (RFC 6891)
 - OPT record validation (§6.1.1)
