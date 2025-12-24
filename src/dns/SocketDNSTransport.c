@@ -37,6 +37,7 @@
 
 #include "core/Arena.h"
 #include "core/SocketTimer.h"
+#include "dns/SocketDNSDeadServer.h"
 #include "dns/SocketDNSTransport.h"
 #include "dns/SocketDNSWire.h"
 #include "socket/SocketDgram.h"
@@ -115,6 +116,9 @@ struct T
   struct SocketDNSQuery *pending_head;
   struct SocketDNSQuery *pending_tail;
   int pending_count;
+
+  /* Dead server tracker (RFC 2308 Section 7.2) */
+  SocketDNSDeadServer_T dead_server_tracker;
 
   /* Receive buffer (for UDP, sized for EDNS0 per RFC 6891) */
   unsigned char recv_buf[DNS_EDNS0_DEFAULT_UDPSIZE];
@@ -305,6 +309,14 @@ process_response (T transport, const unsigned char *data, size_t len,
   /* Map RCODE to error */
   error = rcode_to_error (hdr.rcode);
 
+  /* Mark server as alive - it responded (RFC 2308 Section 7.2) */
+  if (transport->dead_server_tracker != NULL)
+    {
+      SocketDNS_Nameserver *ns = &transport->nameservers[query->current_ns];
+      SocketDNSDeadServer_mark_alive (transport->dead_server_tracker,
+                                      ns->address);
+    }
+
   /* Complete the query */
   complete_query (transport, query, data, len, error);
   return 1;
@@ -348,6 +360,32 @@ receive_responses (T transport, SocketDgram_T sock)
   return processed;
 }
 
+/* Find next non-dead nameserver, starting from given index */
+static int
+find_next_alive_ns (T transport, int start_ns)
+{
+  int i;
+  int ns_count = transport->nameserver_count;
+
+  if (transport->dead_server_tracker == NULL)
+    return start_ns; /* No tracker, use as-is */
+
+  /* Try each nameserver starting from start_ns */
+  for (i = 0; i < ns_count; i++)
+    {
+      int ns_idx = (start_ns + i) % ns_count;
+      SocketDNS_Nameserver *ns = &transport->nameservers[ns_idx];
+
+      if (!SocketDNSDeadServer_is_dead (transport->dead_server_tracker,
+                                         ns->address, NULL))
+        return ns_idx;
+    }
+
+  /* All servers are dead - return start_ns anyway (they'll be retried
+     as dead markings expire per RFC 2308 5-minute limit) */
+  return start_ns;
+}
+
 /* Check for timed out queries */
 static int
 check_timeouts (T transport)
@@ -367,6 +405,15 @@ check_timeouts (T transport)
       /* Check if timed out */
       if (now_ms - query->sent_time_ms >= query->timeout_ms)
         {
+          /* Mark this nameserver as having failed (RFC 2308 Section 7.2) */
+          if (transport->dead_server_tracker != NULL)
+            {
+              SocketDNS_Nameserver *ns
+                  = &transport->nameservers[query->current_ns];
+              SocketDNSDeadServer_mark_failure (transport->dead_server_tracker,
+                                                ns->address);
+            }
+
           /* Check if we should retry */
           if (query->retry_count < transport->max_retries)
             {
@@ -377,12 +424,13 @@ check_timeouts (T transport)
               if (query->timeout_ms > transport->max_timeout_ms)
                 query->timeout_ms = transport->max_timeout_ms;
 
-              /* Rotate nameserver if enabled */
+              /* Rotate nameserver if enabled, skipping dead servers */
               if (transport->rotate_nameservers
                   && transport->nameserver_count > 1)
                 {
-                  query->current_ns
+                  int next_ns
                       = (query->current_ns + 1) % transport->nameserver_count;
+                  query->current_ns = find_next_alive_ns (transport, next_ns);
                 }
 
               /* Resend */
@@ -602,6 +650,21 @@ SocketDNSTransport_configure (T transport,
   transport->rotate_nameservers = config->rotate_nameservers;
 }
 
+void
+SocketDNSTransport_set_dead_server_tracker (T transport,
+                                            SocketDNSDeadServer_T tracker)
+{
+  assert (transport);
+  transport->dead_server_tracker = tracker;
+}
+
+SocketDNSDeadServer_T
+SocketDNSTransport_get_dead_server_tracker (T transport)
+{
+  assert (transport);
+  return transport->dead_server_tracker;
+}
+
 SocketDNSQuery_T
 SocketDNSTransport_query_udp (T transport, const unsigned char *query_data,
                               size_t len, SocketDNSTransport_Callback callback,
@@ -642,7 +705,8 @@ SocketDNSTransport_query_udp (T transport, const unsigned char *query_data,
   memcpy (query->query, query_data, len);
   query->query_len = len;
   query->is_tcp = 0;
-  query->current_ns = transport->current_ns;
+  /* Select first non-dead nameserver (RFC 2308 Section 7.2) */
+  query->current_ns = find_next_alive_ns (transport, transport->current_ns);
   query->retry_count = 0;
   query->timeout_ms = transport->initial_timeout_ms;
   query->callback = callback;
@@ -1140,6 +1204,14 @@ process_tcp_queries (T transport)
           int status = tcp_conn_check_connect (transport, query->current_ns);
           if (status < 0)
             {
+              /* Mark server as having failed (RFC 2308 Section 7.2) */
+              if (transport->dead_server_tracker != NULL)
+                {
+                  SocketDNS_Nameserver *ns
+                      = &transport->nameservers[query->current_ns];
+                  SocketDNSDeadServer_mark_failure (
+                      transport->dead_server_tracker, ns->address);
+                }
               complete_query (transport, query, NULL, 0, DNS_ERROR_CONNFAIL);
               processed++;
               continue;
@@ -1174,6 +1246,15 @@ process_tcp_queries (T transport)
                 }
               if (ret > 0)
                 {
+                  /* Mark server as alive - it responded (RFC 2308 Section 7.2) */
+                  if (transport->dead_server_tracker != NULL)
+                    {
+                      SocketDNS_Nameserver *ns
+                          = &transport->nameservers[query->current_ns];
+                      SocketDNSDeadServer_mark_alive (
+                          transport->dead_server_tracker, ns->address);
+                    }
+
                   /* Validate response */
                   SocketDNS_Header hdr;
                   if (response_len >= DNS_HEADER_SIZE
@@ -1201,6 +1282,14 @@ process_tcp_queries (T transport)
       /* Check for timeout */
       if (now_ms - query->sent_time_ms >= query->timeout_ms)
         {
+          /* Mark server as having failed (RFC 2308 Section 7.2) */
+          if (transport->dead_server_tracker != NULL)
+            {
+              SocketDNS_Nameserver *ns
+                  = &transport->nameservers[query->current_ns];
+              SocketDNSDeadServer_mark_failure (transport->dead_server_tracker,
+                                                ns->address);
+            }
           complete_query (transport, query, NULL, 0, DNS_ERROR_TIMEOUT);
           processed++;
         }
@@ -1249,7 +1338,8 @@ SocketDNSTransport_query_tcp (T transport, const unsigned char *query_data,
   memcpy (query->query, query_data, len);
   query->query_len = len;
   query->is_tcp = 1;
-  query->current_ns = transport->current_ns;
+  /* Select first non-dead nameserver (RFC 2308 Section 7.2) */
+  query->current_ns = find_next_alive_ns (transport, transport->current_ns);
   query->retry_count = 0;
   query->timeout_ms = transport->tcp_connect_timeout_ms;
   query->callback = callback;
