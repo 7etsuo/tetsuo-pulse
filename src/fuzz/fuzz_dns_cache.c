@@ -93,7 +93,11 @@ extract_string (const uint8_t *data, size_t size, size_t *offset, char *out,
                 size_t max_len)
 {
   if (*offset >= size)
-    return 0;
+    {
+      if (max_len > 0)
+        out[0] = '\0';
+      return 0;
+    }
 
   uint8_t len = data[(*offset)++];
   if (len == 0 || len > max_len - 1)

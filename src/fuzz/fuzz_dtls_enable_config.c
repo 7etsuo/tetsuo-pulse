@@ -275,7 +275,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         socket = SocketDgram_new (AF_INET, 0);
         ctx = SocketDTLSContext_new_client (NULL);
         SocketDTLS_enable (socket, ctx);
-        ctx = NULL; /* Owned by socket */
+        /* Note: socket takes its own ref, we still need to free ours in cleanup */
 
         /* Set various configurations */
         SocketDTLS_set_mtu (socket, 1400);
