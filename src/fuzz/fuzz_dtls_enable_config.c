@@ -146,10 +146,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         socket = SocketDgram_new (AF_INET, 0);
         ctx = SocketDTLSContext_new_client (NULL);
         SocketDTLS_enable (socket, ctx);
+        ctx = NULL; /* Owned by socket */
 
         /* Set peer with localhost IP - should succeed without DNS */
         SocketDTLS_set_peer (socket, "127.0.0.1", 4433);
-        ctx = NULL; /* Owned by socket */
         break;
 
       case OP_SET_PEER_HOSTNAME:
@@ -157,10 +157,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         socket = SocketDgram_new (AF_INET, 0);
         ctx = SocketDTLSContext_new_client (NULL);
         SocketDTLS_enable (socket, ctx);
+        ctx = NULL; /* Owned by socket */
 
         /* set_peer with "localhost" - will do DNS resolution */
         SocketDTLS_set_peer (socket, "localhost", 4433);
-        ctx = NULL;
         break;
 
       case OP_SET_HOSTNAME_VALID:
@@ -287,6 +287,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         socket = SocketDgram_new (AF_INET, 0);
         ctx = SocketDTLSContext_new_client (NULL);
         SocketDTLS_enable (socket, ctx);
+        ctx = NULL; /* Owned by socket */
 
         /* Set various configurations */
         SocketDTLS_set_mtu (socket, 1400);
@@ -297,7 +298,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         (void)SocketDTLS_get_mtu (socket);
         (void)SocketDTLS_get_last_state (socket);
 
-        ctx = NULL;
         break;
 
       default:
