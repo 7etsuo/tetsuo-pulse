@@ -29,6 +29,7 @@
 #include "core/SocketCrypto.h"
 #include "tls/SocketDTLS.h"
 #include "tls/SocketDTLSConfig.h"
+#include "tls/SocketDTLSContext.h"
 #include "tls/SocketTLS-private.h" /* For shared tls_cleanup_alpn_temp (if DTLS uses ALPN) */
 #include <openssl/ssl.h>
 #endif
@@ -111,6 +112,10 @@ SocketDgram_free (T *socket)
       tls_cleanup_alpn_temp ((SSL *)s->dtls_ssl);
       SSL_free ((SSL *)s->dtls_ssl);
       s->dtls_ssl = NULL;
+    }
+  if (s->dtls_ctx)
+    {
+      SocketDTLSContext_free ((SocketDTLSContext_T *)&s->dtls_ctx);
       s->dtls_ctx = NULL;
     }
   if (s->dtls_read_buf)
