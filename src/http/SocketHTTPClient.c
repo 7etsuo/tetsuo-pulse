@@ -165,6 +165,9 @@ SocketHTTPClient_config_defaults (SocketHTTPClient_Config *config)
 
   /* Benchmark mode (default: disabled) */
   config->discard_body = 0;
+
+  /* Async I/O (io_uring) - disabled by default for backward compatibility */
+  config->enable_async_io = HTTPCLIENT_DEFAULT_ENABLE_ASYNC_IO;
 }
 
 SocketHTTPClient_T
@@ -240,6 +243,13 @@ SocketHTTPClient_new (const SocketHTTPClient_Config *config)
         }
     }
 
+  /* Initialize async I/O if requested */
+  if (config->enable_async_io)
+    {
+      /* httpclient_async_init handles graceful fallback if io_uring unavailable */
+      httpclient_async_init (client);
+    }
+
   client->last_error = HTTPCLIENT_OK;
 
   return client;
@@ -264,6 +274,9 @@ SocketHTTPClient_free (SocketHTTPClient_T *client)
       httpclient_pool_free (c->pool);
       c->pool = NULL;
     }
+
+  /* Cleanup async I/O context */
+  httpclient_async_cleanup (c);
 
   /* Securely clear credentials before arena disposal */
   if (c->default_auth != NULL)
@@ -290,12 +303,29 @@ SocketHTTPClient_free (SocketHTTPClient_T *client)
 }
 
 static ssize_t
-safe_socket_send (HTTPPoolEntry *conn, const void *data, size_t len,
-                  const char *op_desc)
+safe_socket_send (SocketHTTPClient_T client, HTTPPoolEntry *conn,
+                  const void *data, size_t len, const char *op_desc)
 {
-  volatile ssize_t sent = 0;
+  ssize_t sent;
 
-  TRY { sent = Socket_send (conn->proto.h1.socket, data, len); }
+  /* Use async I/O if available */
+  if (client != NULL && client->async_available)
+    {
+      sent = httpclient_io_send (client, conn->proto.h1.socket, data, len);
+      if (sent < 0)
+        {
+          conn->closed = 1;
+          HTTPCLIENT_ERROR_FMT ("Failed to %s: %s",
+                                op_desc ? op_desc : "send data",
+                                Socket_safe_strerror (errno));
+        }
+      return sent;
+    }
+
+  /* Fallback to synchronous I/O */
+  volatile ssize_t vsent = 0;
+
+  TRY { vsent = Socket_send (conn->proto.h1.socket, data, len); }
   EXCEPT (Socket_Closed)
   {
     conn->closed = 1;
@@ -311,12 +341,26 @@ safe_socket_send (HTTPPoolEntry *conn, const void *data, size_t len,
   }
   END_TRY;
 
-  return sent;
+  return vsent;
 }
 
 static int
-safe_socket_recv (HTTPPoolEntry *conn, char *buf, size_t size, ssize_t *n)
+safe_socket_recv (SocketHTTPClient_T client, HTTPPoolEntry *conn, char *buf,
+                  size_t size, ssize_t *n)
 {
+  /* Use async I/O if available */
+  if (client != NULL && client->async_available)
+    {
+      *n = httpclient_io_recv (client, conn->proto.h1.socket, buf, size);
+      if (*n <= 0)
+        {
+          conn->closed = 1;
+          return -1;
+        }
+      return 0;
+    }
+
+  /* Fallback to synchronous I/O */
   volatile int closed = 0;
 
   TRY { *n = Socket_recv (conn->proto.h1.socket, buf, size); }
@@ -356,7 +400,8 @@ build_http1_request (SocketHTTPClient_Request_T req,
 }
 
 static int
-send_http1_headers (HTTPPoolEntry *conn, const SocketHTTP_Request *http_req)
+send_http1_headers (SocketHTTPClient_T client, HTTPPoolEntry *conn,
+                    const SocketHTTP_Request *http_req)
 {
   char buf[HTTPCLIENT_REQUEST_BUFFER_SIZE];
   ssize_t n;
@@ -374,7 +419,8 @@ send_http1_headers (HTTPPoolEntry *conn, const SocketHTTP_Request *http_req)
     }
 
   /* Send request headers */
-  sent = safe_socket_send (conn, buf, (size_t)n, "send request headers");
+  sent = safe_socket_send (client, conn, buf, (size_t)n,
+                           "send request headers");
   if (sent < 0 || (size_t)sent != (size_t)n)
     {
       HTTPCLIENT_ERROR_FMT (
@@ -387,7 +433,8 @@ send_http1_headers (HTTPPoolEntry *conn, const SocketHTTP_Request *http_req)
 }
 
 static int
-send_http1_body (HTTPPoolEntry *conn, const void *body, size_t body_len)
+send_http1_body (SocketHTTPClient_T client, HTTPPoolEntry *conn,
+                 const void *body, size_t body_len)
 {
   volatile ssize_t sent = -1;
 
@@ -396,7 +443,7 @@ send_http1_body (HTTPPoolEntry *conn, const void *body, size_t body_len)
   if (body == NULL || body_len == 0)
     return 0;
 
-  sent = safe_socket_send (conn, body, body_len, "send request body");
+  sent = safe_socket_send (client, conn, body, body_len, "send request body");
   if (sent < 0 || (size_t)sent != body_len)
     {
       HTTPCLIENT_ERROR_FMT (
@@ -582,11 +629,11 @@ read_http1_body_data (HTTPPoolEntry *conn, const char *buf, size_t buf_len,
 }
 
 static int
-recv_http1_chunk (HTTPPoolEntry *conn, char *buf, size_t buf_size,
-                  ssize_t *bytes_read)
+recv_http1_chunk (SocketHTTPClient_T client, HTTPPoolEntry *conn, char *buf,
+                  size_t buf_size, ssize_t *bytes_read)
 {
   ssize_t recv_n;
-  if (safe_socket_recv (conn, buf, buf_size, &recv_n) < 0)
+  if (safe_socket_recv (client, conn, buf, buf_size, &recv_n) < 0)
     return -1;
 
   *bytes_read = recv_n;
@@ -650,7 +697,7 @@ fill_response_struct (SocketHTTPClient_Response *response,
 }
 
 static int
-receive_http1_response (HTTPPoolEntry *conn,
+receive_http1_response (SocketHTTPClient_T client, HTTPPoolEntry *conn,
                         SocketHTTPClient_Response *response,
                         size_t max_response_size, int discard_body)
 {
@@ -682,7 +729,7 @@ receive_http1_response (HTTPPoolEntry *conn,
   /* Receive and parse response loop */
   while (1)
     {
-      if (recv_http1_chunk (conn, buf, sizeof (buf), &n) < 0)
+      if (recv_http1_chunk (client, conn, buf, sizeof (buf), &n) < 0)
         break;
 
       parse_result
@@ -714,6 +761,7 @@ execute_http1_request (HTTPPoolEntry *conn,
                        size_t max_response_size, int discard_body)
 {
   SocketHTTP_Request http_req;
+  SocketHTTPClient_T client = req->client;
 
   assert (conn != NULL);
   assert (req != NULL);
@@ -723,15 +771,15 @@ execute_http1_request (HTTPPoolEntry *conn,
   build_http1_request (req, &http_req);
 
   /* Send headers */
-  if (send_http1_headers (conn, &http_req) < 0)
+  if (send_http1_headers (client, conn, &http_req) < 0)
     return -1;
 
   /* Send body if present */
-  if (send_http1_body (conn, req->body, req->body_len) < 0)
+  if (send_http1_body (client, conn, req->body, req->body_len) < 0)
     return -1;
 
   /* Receive and parse response */
-  return receive_http1_response (conn, response, max_response_size,
+  return receive_http1_response (client, conn, response, max_response_size,
                                  discard_body);
 }
 
