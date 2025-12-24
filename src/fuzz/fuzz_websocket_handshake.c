@@ -25,6 +25,7 @@
  * ./fuzz_websocket_handshake corpus/websocket_handshake/ -fork=16 -max_len=8192
  */
 
+#include <stdio.h>
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "http/SocketHTTP.h"

@@ -26,6 +26,8 @@
  * Run:   ./fuzz_synprotect_list corpus/synprotect_list/ -fork=16 -max_len=2048
  */
 
+#include <stdlib.h>
+#include <stdio.h>
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>

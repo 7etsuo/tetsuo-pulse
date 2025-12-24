@@ -56,6 +56,7 @@
  * ./fuzz_http_smuggling corpus/http_smug/ -fork=16 -max_len=65536
  */
 
+#include <stdio.h>
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "http/SocketHTTP.h"

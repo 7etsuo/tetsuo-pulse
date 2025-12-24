@@ -42,6 +42,7 @@
  * Run: ./build/fuzz_http_client_async corpus/http_client_async/ -fork=8 -max_len=4096
  */
 
+#include <stdlib.h>
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "http/SocketHTTPClient.h"

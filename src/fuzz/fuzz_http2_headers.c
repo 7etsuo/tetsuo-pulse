@@ -15,6 +15,7 @@
  * - Creates new decoder per invocation (HPACK has state that can't be reset)
  */
 
+#include <stdlib.h>
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "http/SocketHPACK.h"

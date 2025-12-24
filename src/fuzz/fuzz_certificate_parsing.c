@@ -21,6 +21,7 @@
 
 #if SOCKET_HAS_TLS
 
+#include <stdio.h>
 #include <signal.h>
 #include <stdint.h>
 #include <stdlib.h>

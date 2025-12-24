@@ -33,6 +33,7 @@
  * ./fuzz_http_cookies_simple corpus/http_cookies/ -fork=16 -max_len=8192
  */
 
+#include <stdio.h>
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "http/SocketHTTP.h"

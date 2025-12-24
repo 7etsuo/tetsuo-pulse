@@ -22,6 +22,7 @@
  * Run:   ./fuzz_timer corpus/timer/ -fork=16 -max_len=4096
  */
 
+#include <stdlib.h>
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>

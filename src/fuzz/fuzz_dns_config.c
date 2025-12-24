@@ -47,6 +47,7 @@
  * Run:   ./fuzz_dns_config corpus/dns_config/ -fork=16 -max_len=8192
  */
 
+#include <stdlib.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>

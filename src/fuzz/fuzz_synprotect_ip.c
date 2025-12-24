@@ -25,6 +25,8 @@
  * Run:   ./fuzz_synprotect_ip corpus/synprotect_ip/ -fork=16 -max_len=1024
  */
 
+#include <stdlib.h>
+#include <stdio.h>
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>

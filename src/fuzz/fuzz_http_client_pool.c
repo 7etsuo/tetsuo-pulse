@@ -48,6 +48,8 @@
  * Run: ./build/fuzz_http_client_pool corpus/http_client_pool/ -fork=8 -max_len=2048
  */
 
+#include <stdlib.h>
+#include <stdio.h>
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "http/SocketHTTPClient.h"

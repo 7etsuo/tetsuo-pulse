@@ -53,6 +53,7 @@
  * ./fuzz_http_server corpus/http_server/ -fork=16 -max_len=65536
  */
 
+#include <stdio.h>
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "core/SocketRateLimit.h"

@@ -58,6 +58,7 @@
  * ./fuzz_pool_dos corpus/pool_dos/ -fork=16 -max_len=4096
  */
 
+#include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>

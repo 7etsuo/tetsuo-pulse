@@ -24,6 +24,7 @@
  * - Requires OpenSSL 1.1.0+ without OPENSSL_NO_CT
  */
 
+#include <stdlib.h>
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>

@@ -19,6 +19,7 @@
  * Run:   ./fuzz_ratelimit corpus/ratelimit/ -fork=16 -max_len=4096
  */
 
+#include <stdlib.h>
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>

@@ -24,6 +24,7 @@
  * Run: ./fuzz_http2_connection corpus/http2_conn/ -fork=16 -max_len=65536
  */
 
+#include <stdio.h>
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "http/SocketHPACK.h"

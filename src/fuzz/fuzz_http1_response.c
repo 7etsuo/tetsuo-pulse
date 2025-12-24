@@ -37,6 +37,7 @@
  * ./fuzz_http1_response corpus/http1_response/ -fork=16 -max_len=65536
  */
 
+#include <stdio.h>
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "http/SocketHTTP.h"
