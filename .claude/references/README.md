@@ -45,13 +45,17 @@ Complete API reference for all Socket library modules, extracted from command fi
 - SocketHappyEyeballs functions (dual-stack connection racing)
 - SocketPool functions (connection pool management)
 - SocketDNS functions (async DNS resolver, DNS-over-TLS, DNS-over-HTTPS)
+- SocketDNSSEC functions (DNSSEC validation, RFC 4033-4035)
+- SocketDNSCookie functions (DNS Cookies, RFC 7873)
+- SocketDNSError functions (Extended DNS Errors, RFC 8914)
+- SocketDNSNegCache functions (Negative caching, RFC 2308)
 - SocketPoll functions (event polling abstraction)
 - SocketSYNProtect functions (SYN flood protection)
 - SocketHTTPClient functions (HTTP client)
 - SocketHTTPServer functions (HTTP server)
 - SocketBuf functions (circular buffer for efficient I/O)
 - SocketDgram functions (UDP/datagram, multicast, broadcast)
-- SocketAsync functions (async I/O with io_uring/kqueue)
+- SocketAsync functions (async I/O with io_uring/kqueue, SQPOLL, registered buffers, batch submissions)
 
 **Use when**: Writing code that uses these modules, documenting APIs, or creating examples.
 
@@ -77,6 +81,12 @@ Implementation patterns for TLS, HTTP, WebSocket, and other protocols.
 - WebSocket protocol patterns (handshake, messaging, control frames, event loop)
 - UTF-8 validation patterns (one-shot and incremental)
 - DNS resolution patterns (async resolver, DoT, DoH, cache configuration)
+- DNSSEC validation patterns (RFC 4033-4035, trust anchors, validation states)
+- DNS Cookies patterns (RFC 7873, client/server cookie handling)
+- Extended DNS Errors patterns (RFC 8914, error categorization)
+- DNS Negative caching patterns (RFC 2308, NXDOMAIN/NODATA key tuples)
+- io_uring async I/O patterns (SQPOLL, registered buffers, batch submissions)
+- HTTP prepared request patterns (high-throughput optimization)
 
 **Use when**: Implementing protocol handlers, optimizing performance, or ensuring secure patterns.
 
@@ -249,14 +259,14 @@ When updating shared content:
 
 ## File Sizes
 
-- `simple-api.md`: ~12KB (Simple API reference)
-- `module-apis.md`: ~30KB (comprehensive API reference)
-- `protocol-patterns.md`: ~14KB (implementation patterns)
+- `simple-api.md`: ~20KB (Simple API reference)
+- `module-apis.md`: ~43KB (comprehensive API reference with DNSSEC, DNS Cookies, EDE, NegCache)
+- `protocol-patterns.md`: ~27KB (implementation patterns including io_uring, DNSSEC, DNS security)
 - `security-limits.md`: ~9.5KB (limits and constants)
-- `security-patterns.md`: ~16KB (security best practices)
+- `security-patterns.md`: ~17KB (security best practices)
 - `style-guide.md`: ~14KB (coding standards)
-- `fuzzing-patterns.md`: ~18KB (fuzzer implementation patterns)
-- `fuzzing-harnesses.md`: ~28KB (complete harness templates)
+- `fuzzing-patterns.md`: ~16KB (fuzzer implementation patterns)
+- `fuzzing-harnesses.md`: ~38KB (complete harness templates)
 - `fuzzing-coverage.md`: ~16KB (coverage mapping and attack vectors)
 
-Total: ~158KB of shared reference material
+Total: ~214KB of shared reference material
