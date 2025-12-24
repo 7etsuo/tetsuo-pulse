@@ -30,6 +30,7 @@
 #include "core/Except.h"
 #include "core/SocketConfig.h"
 #include "core/SocketTimer.h"
+#include "core/SocketUtil.h"
 #include "poll/SocketPoll.h"
 #include "socket/Socket.h"
 #include "socket/SocketAsync.h"

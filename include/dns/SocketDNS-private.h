@@ -295,6 +295,8 @@ extern void initialize_synchronization (struct SocketDNS_T *dns);
 extern void create_completion_pipe (struct SocketDNS_T *dns);
 extern void set_pipe_nonblocking (struct SocketDNS_T *dns);
 extern void initialize_pipe (struct SocketDNS_T *dns);
+extern void initialize_dns_fields (struct SocketDNS_T *dns);
+extern void initialize_dns_components (struct SocketDNS_T *dns);
 
 /* Cleanup and shutdown */
 extern void cleanup_mutex_cond (struct SocketDNS_T *dns);
