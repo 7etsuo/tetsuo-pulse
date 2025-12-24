@@ -47,6 +47,9 @@ TARGETS_CORE=(
     fuzz_metrics
     fuzz_security
     fuzz_new_features
+    fuzz_except_unwind
+    fuzz_synprotect_ip
+    fuzz_synprotect_list
 )
 
 TARGETS_CRYPTO=(
@@ -87,6 +90,15 @@ TARGETS_DNS=(
     fuzz_dns_cookie
     fuzz_dns_soa
     fuzz_dns_cache
+    fuzz_dns_config
+    fuzz_dns_cookie_client
+    fuzz_dns_deadserver
+    fuzz_dns_doh
+    fuzz_dns_dot
+    fuzz_dns_encode
+    fuzz_dns_resolver
+    fuzz_dns_transport
+    fuzz_dnssec
 )
 
 TARGETS_TLS=(
@@ -157,6 +169,9 @@ TARGETS_HTTP=(
     fuzz_http_smuggling
     fuzz_http_client
     fuzz_http_server
+    fuzz_http_client_async
+    fuzz_http_client_pool
+    fuzz_http_client_retry
 )
 
 TARGETS_HTTP1=(
@@ -182,6 +197,8 @@ TARGETS_HTTP2=(
     fuzz_http2_headers
     fuzz_http2_settings
     fuzz_http2_connection
+    fuzz_http2_flow
+    fuzz_http2_stream
 )
 
 # Build target list from selected groups
