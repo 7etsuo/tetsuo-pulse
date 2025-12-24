@@ -1198,7 +1198,7 @@ async_connect_dns_callback (Request_T req, struct addrinfo *result,
 
   SocketCommon_free_addrinfo (result);
 
-invoke_callback:
+invoke_callback:;
   /* Save callback and data before removing context (removal clears them) */
   SocketPool_ConnectCallback user_cb = ctx->cb;
   void *user_data = ctx->user_data;
