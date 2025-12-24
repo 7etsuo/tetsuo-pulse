@@ -24,6 +24,12 @@
 #include "socket/Socket.h"
 #include "socket/SocketBuf.h"
 
+/* Forward declare SocketAsync_T to avoid circular includes */
+#ifndef SOCKETASYNC_INCLUDED
+struct SocketAsync_T;
+typedef struct SocketAsync_T *SocketAsync_T;
+#endif
+
 #include <pthread.h>
 #include <time.h>
 
@@ -122,6 +128,22 @@ struct SocketHTTPClient
   pthread_mutex_t mutex;
 
   Arena_T arena;
+
+  /**
+   * @brief Async I/O context for io_uring operations (optional).
+   *
+   * Non-NULL when config.enable_async_io is set and io_uring is available.
+   * Used by httpclient_send_async() and httpclient_recv_async().
+   */
+  SocketAsync_T async;
+
+  /**
+   * @brief Tracks whether async I/O is actually available.
+   *
+   * Set to 1 if async != NULL and SocketAsync_is_available() returns true.
+   * Used for fast path checking in I/O functions.
+   */
+  int async_available;
 };
 
 /**
@@ -358,5 +380,59 @@ extern Arena_T httpclient_acquire_request_arena (void);
 extern void httpclient_release_request_arena (Arena_T *arena_ptr);
 extern Arena_T httpclient_acquire_response_arena (void);
 extern void httpclient_release_response_arena (Arena_T *arena_ptr);
+
+/* Async I/O wrapper functions (SocketHTTPClient-async.c)
+ * Provide synchronous-looking I/O that uses io_uring internally
+ * when enabled. Falls back to standard Socket_send/recv if unavailable. */
+
+/**
+ * @brief Send data using async I/O if available, otherwise sync.
+ *
+ * When client->async_available is true, submits send to io_uring
+ * and blocks until completion. Otherwise falls back to Socket_send().
+ *
+ * @param client HTTP client with optional async context
+ * @param socket Socket to send on
+ * @param data Data buffer to send
+ * @param len Number of bytes to send
+ * @return Bytes sent on success, -1 on error (errno set)
+ */
+extern ssize_t httpclient_io_send (SocketHTTPClient_T client, Socket_T socket,
+                                   const void *data, size_t len);
+
+/**
+ * @brief Receive data using async I/O if available, otherwise sync.
+ *
+ * When client->async_available is true, submits recv to io_uring
+ * and blocks until completion. Otherwise falls back to Socket_recv().
+ *
+ * @param client HTTP client with optional async context
+ * @param socket Socket to receive from
+ * @param buf Buffer for received data
+ * @param len Maximum bytes to receive
+ * @return Bytes received on success, 0 on EOF, -1 on error (errno set)
+ */
+extern ssize_t httpclient_io_recv (SocketHTTPClient_T client, Socket_T socket,
+                                   void *buf, size_t len);
+
+/**
+ * @brief Initialize async I/O context for HTTP client.
+ *
+ * Called from SocketHTTPClient_new() when config.enable_async_io is set.
+ * Creates SocketAsync context and checks if io_uring is available.
+ *
+ * @param client HTTP client to initialize
+ * @return 0 on success, -1 on failure (falls back to sync I/O)
+ */
+extern int httpclient_async_init (SocketHTTPClient_T client);
+
+/**
+ * @brief Cleanup async I/O context for HTTP client.
+ *
+ * Called from SocketHTTPClient_free().
+ *
+ * @param client HTTP client to cleanup
+ */
+extern void httpclient_async_cleanup (SocketHTTPClient_T client);
 
 #endif /* SOCKETHTTPCLIENT_PRIVATE_INCLUDED */

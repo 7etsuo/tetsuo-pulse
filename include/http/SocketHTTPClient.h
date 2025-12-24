@@ -131,6 +131,16 @@ typedef struct
   int enforce_samesite;
 
   int discard_body; /**< Discard response body (benchmark mode) */
+
+  /**
+   * @brief Enable io_uring async I/O for send/recv operations.
+   *
+   * When enabled and io_uring is available, HTTP client I/O operations
+   * use SocketAsync with io_uring backend for improved throughput.
+   * Falls back to synchronous I/O if io_uring is unavailable.
+   * Default: 0 (disabled for backward compatibility)
+   */
+  int enable_async_io;
 } SocketHTTPClient_Config;
 
 typedef struct SocketHTTPClient *SocketHTTPClient_T;
