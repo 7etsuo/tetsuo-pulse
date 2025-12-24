@@ -1062,6 +1062,8 @@ if(ENABLE_FUZZING)
             fuzz_cert_pinning
             fuzz_tls_crl  # CRL Management (Section 2.5)
             fuzz_tls_error  # OpenSSL Error Formatting (Section 7.2)
+            fuzz_tls_record  # TLS Record Layer Parsing (Issue #275)
+            fuzz_tls_alert   # TLS Alert Message Processing (Issue #275)
             # DTLS fuzz harnesses
             fuzz_dtls_context
             fuzz_dtls_io
@@ -1071,6 +1073,7 @@ if(ENABLE_FUZZING)
             fuzz_hpack
             fuzz_tls_ct
             fuzz_dtls_handshake
+            fuzz_dtls_replay  # DTLS Anti-Replay Window (Issue #275)
         )
     endif()
     
