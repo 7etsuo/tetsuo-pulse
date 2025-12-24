@@ -16,6 +16,12 @@ This document maps all fuzzers to their target modules, attack vectors, and cove
 | `fuzz_connect` | Socket | Core | 4096 |
 | `fuzz_dns_inj` | SocketDNS | Security | 4096 |
 | `fuzz_dns_validate` | SocketDNS | Validation | 4096 |
+| `fuzz_dns_header` | SocketDNSWire | DNS | 4096 |
+| `fuzz_dns_name` | SocketDNSWire | DNS | 4096 |
+| `fuzz_dns_response` | SocketDNSWire | DNS | 4096 |
+| `fuzz_dns_edns0` | SocketDNSWire | DNS | 4096 |
+| `fuzz_dns_cookie` | SocketDNSCookie | DNS | 4096 |
+| `fuzz_dns_soa` | SocketDNSWire | DNS | 4096 |
 | `fuzz_dtls_config` | SocketDTLS | TLS | 4096 |
 | `fuzz_dtls_context` | SocketDTLS | TLS | 4096 |
 | `fuzz_dtls_cookie` | SocketDTLS | TLS | 4096 |
@@ -151,6 +157,45 @@ This document maps all fuzzers to their target modules, attack vectors, and cove
 - Vectored I/O
 - Partial reads/writes
 - Scatter/gather operations
+
+### DNS Wire Format (Issue #141, #251)
+
+**SocketDNSWire Header** (`fuzz_dns_header`):
+- DNS message header parsing (RFC 1035 §4.1.1)
+- ID, flags, and count field validation
+- Opcode and RCODE handling
+- Truncation bit (TC) edge cases
+
+**SocketDNSWire Name** (`fuzz_dns_name`):
+- Domain name compression (RFC 1035 §4.1.4)
+- Label length validation
+- Pointer loop detection
+- Maximum name length (255 bytes)
+- Label compression attacks
+
+**SocketDNSWire Response** (`fuzz_dns_response`):
+- Full DNS response parsing
+- Question/Answer/Authority/Additional sections
+- Resource record parsing
+- RDATA validation per record type
+
+**SocketDNSWire EDNS0** (`fuzz_dns_edns0`):
+- OPT record parsing (RFC 6891)
+- Extended RCODE and flags
+- UDP payload size handling
+- Option parsing (client subnet, cookies, EDE)
+
+**SocketDNS Cookie** (`fuzz_dns_cookie`):
+- DNS Cookie option parsing (RFC 7873)
+- Client cookie validation (8 bytes)
+- Server cookie validation (8-32 bytes)
+- Cookie regeneration
+
+**SocketDNSWire SOA** (`fuzz_dns_soa`):
+- SOA record parsing for negative caching
+- MNAME/RNAME domain name parsing
+- Serial, refresh, retry, expire, minimum fields
+- TTL calculation for NXDOMAIN/NODATA
 
 ### HTTP/1.1 Parsing
 
@@ -455,9 +500,17 @@ This document maps all fuzzers to their target modules, attack vectors, and cove
 
 ### Quick Start
 ```bash
-# Build all fuzzers
+# Configure with fuzzing enabled (requires Clang)
 CC=clang cmake -S . -B build -DENABLE_FUZZING=ON
-cmake --build build -j
+
+# Build ALL fuzzers (~100 harnesses)
+cmake --build build --target fuzzers -j$(nproc)
+
+# Or build a single fuzzer
+cmake --build build --target fuzz_http1_request -j$(nproc)
+
+# List available fuzzers
+ls build/fuzz_*
 
 # Run single fuzzer
 cd build && ./fuzz_http1_request corpus/http1_request/ -fork=16 -max_len=65536
