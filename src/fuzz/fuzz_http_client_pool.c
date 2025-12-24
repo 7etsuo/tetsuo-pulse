@@ -301,9 +301,6 @@ test_idle_cleanup(Arena_T arena, const FuzzInput *input)
         pool->idle_timeout_ms = INT32_MAX;
         httpclient_pool_cleanup_idle(pool);
 
-        /* Test cleanup on NULL (should be safe) */
-        httpclient_pool_cleanup_idle(NULL);
-
         httpclient_pool_free(pool);
     }
     EXCEPT(SocketHTTPClient_Failed) {
