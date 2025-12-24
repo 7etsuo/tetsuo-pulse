@@ -39,6 +39,7 @@
 
 #include "core/Arena.h"
 #include "core/Except.h"
+#include "dns/SocketDNSDeadServer.h"
 #include "dns/SocketDNSWire.h"
 #include "poll/SocketPoll.h"
 #include <stddef.h>
@@ -233,6 +234,35 @@ extern int SocketDNSTransport_nameserver_count (T transport);
  */
 extern void SocketDNSTransport_configure (T transport,
                                           const SocketDNSTransport_Config *config);
+
+/**
+ * @brief Set the dead server tracker for this transport.
+ * @ingroup dns_transport
+ *
+ * Enables RFC 2308 Section 7.2 dead server tracking. When set, the transport
+ * will skip nameservers that are marked as dead (unresponsive) and mark
+ * servers as dead/alive based on query results.
+ *
+ * @param transport Transport instance.
+ * @param tracker   Dead server tracker (may be NULL to disable tracking).
+ *
+ * @code{.c}
+ * SocketDNSDeadServer_T tracker = SocketDNSDeadServer_new(arena);
+ * SocketDNSTransport_set_dead_server_tracker(transport, tracker);
+ * @endcode
+ */
+extern void SocketDNSTransport_set_dead_server_tracker (
+    T transport, SocketDNSDeadServer_T tracker);
+
+/**
+ * @brief Get the dead server tracker for this transport.
+ * @ingroup dns_transport
+ *
+ * @param transport Transport instance.
+ * @return Dead server tracker, or NULL if not set.
+ */
+extern SocketDNSDeadServer_T SocketDNSTransport_get_dead_server_tracker (
+    T transport);
 
 /**
  * @brief Send a DNS query asynchronously via UDP.
