@@ -104,8 +104,7 @@ test_async_init_cleanup(Arena_T arena, const FuzzInput *input)
         /* Test cleanup with NULL (should be safe) */
         httpclient_async_cleanup(NULL);
 
-        /* Test init with NULL (should be safe) */
-        (void)httpclient_async_init(NULL);
+        /* Note: httpclient_async_init(NULL) is not safe - has assertion */
 
         SocketHTTPClient_free(&client);
     }
