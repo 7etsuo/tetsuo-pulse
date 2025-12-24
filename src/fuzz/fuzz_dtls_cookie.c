@@ -194,7 +194,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     return 0; /* Skip if certs not available */
 
   volatile uint8_t op = get_op (data, size);
-  SocketDTLSContext_T ctx = NULL;
+  /* volatile required: modified in TRY, accessed after END_TRY (longjmp safety) */
+  SocketDTLSContext_T volatile ctx = NULL;
   volatile int exception_caught = 0;
 
   /* Single TRY block - no nesting */
@@ -366,7 +367,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
   /* Cleanup */
   if (ctx)
-    SocketDTLSContext_free (&ctx);
+    SocketDTLSContext_free ((SocketDTLSContext_T *)&ctx);
 
   return 0;
 }

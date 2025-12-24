@@ -434,30 +434,33 @@ SocketDTLSContext_load_certificate (T ctx, const char *cert_file,
     RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed, "Invalid key path");
 
   /* Read cert and key files into memory to prevent TOCTOU */
-  unsigned char *cert_data = NULL;
-  unsigned char *key_data = NULL;
-  size_t cert_size = 0;
-  size_t key_size = 0;
-  BIO *cert_bio = NULL;
-  BIO *key_bio = NULL;
+  /* volatile required: modified in TRY, accessed in FINALLY (longjmp safety) */
+  unsigned char *volatile cert_data = NULL;
+  unsigned char *volatile key_data = NULL;
+  volatile size_t cert_size = 0;
+  volatile size_t key_size = 0;
+  BIO *volatile cert_bio = NULL;
+  BIO *volatile key_bio = NULL;
 
   TRY
   {
     /* Read certificate file contents */
     dtls_read_file_contents (cert_file, SOCKET_DTLS_MAX_FILE_SIZE,
-                             "certificate file", &cert_data, &cert_size);
+                             "certificate file",
+                             (unsigned char **)&cert_data, (size_t *)&cert_size);
 
     /* Read private key file contents */
     dtls_read_file_contents (key_file, SOCKET_DTLS_MAX_FILE_SIZE,
-                             "private key file", &key_data, &key_size);
+                             "private key file",
+                             (unsigned char **)&key_data, (size_t *)&key_size);
 
     /* Create BIO from certificate data */
-    cert_bio = BIO_new_mem_buf (cert_data, (int)cert_size);
+    cert_bio = BIO_new_mem_buf ((void *)cert_data, (int)cert_size);
     if (!cert_bio)
       raise_openssl_error ("Failed to create BIO for certificate");
 
     /* Load certificate chain from memory */
-    X509 *cert = PEM_read_bio_X509 (cert_bio, NULL, NULL, NULL);
+    X509 *cert = PEM_read_bio_X509 ((BIO *)cert_bio, NULL, NULL, NULL);
     if (!cert)
       raise_openssl_error ("Failed to parse certificate");
 
@@ -470,7 +473,7 @@ SocketDTLSContext_load_certificate (T ctx, const char *cert_file,
 
     /* Load additional chain certificates if present */
     X509 *ca_cert = NULL;
-    while ((ca_cert = PEM_read_bio_X509 (cert_bio, NULL, NULL, NULL)) != NULL)
+    while ((ca_cert = PEM_read_bio_X509 ((BIO *)cert_bio, NULL, NULL, NULL)) != NULL)
       {
         if (SSL_CTX_add1_chain_cert (ctx->ssl_ctx, ca_cert) != 1)
           {
@@ -482,12 +485,12 @@ SocketDTLSContext_load_certificate (T ctx, const char *cert_file,
     ERR_clear_error (); /* Clear expected end-of-file error */
 
     /* Create BIO from key data */
-    key_bio = BIO_new_mem_buf (key_data, (int)key_size);
+    key_bio = BIO_new_mem_buf ((void *)key_data, (int)key_size);
     if (!key_bio)
       raise_openssl_error ("Failed to create BIO for private key");
 
     /* Load private key from memory */
-    EVP_PKEY *pkey = PEM_read_bio_PrivateKey (key_bio, NULL, NULL, NULL);
+    EVP_PKEY *pkey = PEM_read_bio_PrivateKey ((BIO *)key_bio, NULL, NULL, NULL);
     if (!pkey)
       raise_openssl_error ("Failed to parse private key");
 
@@ -507,22 +510,22 @@ SocketDTLSContext_load_certificate (T ctx, const char *cert_file,
     /* Securely clear and free certificate data */
     if (cert_data)
       {
-        SocketCrypto_secure_clear (cert_data, cert_size);
-        OPENSSL_free (cert_data);
+        SocketCrypto_secure_clear ((void *)cert_data, cert_size);
+        OPENSSL_free ((void *)cert_data);
       }
 
     /* Securely clear and free key data */
     if (key_data)
       {
-        SocketCrypto_secure_clear (key_data, key_size);
-        OPENSSL_free (key_data);
+        SocketCrypto_secure_clear ((void *)key_data, key_size);
+        OPENSSL_free ((void *)key_data);
       }
 
     /* Free BIOs */
     if (cert_bio)
-      BIO_free (cert_bio);
+      BIO_free ((BIO *)cert_bio);
     if (key_bio)
-      BIO_free (key_bio);
+      BIO_free ((BIO *)key_bio);
   }
   END_TRY;
 }
