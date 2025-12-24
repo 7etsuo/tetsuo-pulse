@@ -82,6 +82,7 @@ TEST (dtls_enable_on_dgram_socket)
     ASSERT_NOT_NULL (ctx);
 
     SocketDTLS_enable (socket, ctx);
+    ctx = NULL; /* Ownership transferred to socket */
     ASSERT_EQ (SocketDTLS_is_enabled (socket), 1);
     ASSERT_EQ (SocketDTLS_is_handshake_done (socket), 0);
   }
@@ -163,6 +164,7 @@ TEST (dtls_state_queries_before_handshake)
 
     /* After enable */
     SocketDTLS_enable (socket, ctx);
+    ctx = NULL; /* Ownership transferred to socket */
     ASSERT_EQ (SocketDTLS_is_enabled (socket), 1);
     ASSERT_EQ (SocketDTLS_is_handshake_done (socket), 0);
     ASSERT_EQ (SocketDTLS_is_shutdown (socket), 0);
@@ -189,6 +191,7 @@ TEST (dtls_info_queries_before_handshake)
     socket = SocketDgram_new (AF_INET, 0);
     ctx = SocketDTLSContext_new_client (NULL);
     SocketDTLS_enable (socket, ctx);
+    ctx = NULL; /* Ownership transferred to socket */
 
     /* Info before handshake */
     const char *cipher = SocketDTLS_get_cipher (socket);
@@ -226,6 +229,7 @@ TEST (dtls_set_hostname)
     socket = SocketDgram_new (AF_INET, 0);
     ctx = SocketDTLSContext_new_client (NULL);
     SocketDTLS_enable (socket, ctx);
+    ctx = NULL; /* Ownership transferred to socket */
 
     /* Set hostname for SNI */
     SocketDTLS_set_hostname (socket, "example.com");
@@ -250,6 +254,7 @@ TEST (dtls_set_peer)
     socket = SocketDgram_new (AF_INET, 0);
     ctx = SocketDTLSContext_new_client (NULL);
     SocketDTLS_enable (socket, ctx);
+    ctx = NULL; /* Ownership transferred to socket */
 
     /* Set peer address */
     SocketDTLS_set_peer (socket, "127.0.0.1", 4433);
@@ -276,6 +281,7 @@ TEST (dtls_handshake_single_step)
     socket = SocketDgram_new (AF_INET, 0);
     ctx = SocketDTLSContext_new_client (NULL);
     SocketDTLS_enable (socket, ctx);
+    ctx = NULL; /* Ownership transferred to socket */
 
     /* Single handshake step on unconnected socket */
     TRY
@@ -311,6 +317,7 @@ TEST (dtls_handshake_loop_zero_timeout)
     socket = SocketDgram_new (AF_INET, 0);
     ctx = SocketDTLSContext_new_client (NULL);
     SocketDTLS_enable (socket, ctx);
+    ctx = NULL; /* Ownership transferred to socket */
 
     /* Zero timeout = non-blocking */
     TRY
@@ -346,6 +353,7 @@ TEST (dtls_send_before_handshake_fails)
     socket = SocketDgram_new (AF_INET, 0);
     ctx = SocketDTLSContext_new_client (NULL);
     SocketDTLS_enable (socket, ctx);
+    ctx = NULL; /* Ownership transferred to socket */
 
     char buf[] = "test";
     TRY { SocketDTLS_send (socket, buf, sizeof (buf)); }
@@ -375,6 +383,7 @@ TEST (dtls_recv_before_handshake_fails)
     socket = SocketDgram_new (AF_INET, 0);
     ctx = SocketDTLSContext_new_client (NULL);
     SocketDTLS_enable (socket, ctx);
+    ctx = NULL; /* Ownership transferred to socket */
 
     char buf[64];
     TRY { SocketDTLS_recv (socket, buf, sizeof (buf)); }
@@ -405,6 +414,7 @@ TEST (dtls_shutdown_before_handshake)
     socket = SocketDgram_new (AF_INET, 0);
     ctx = SocketDTLSContext_new_client (NULL);
     SocketDTLS_enable (socket, ctx);
+    ctx = NULL; /* Ownership transferred to socket */
 
     /* Shutdown before handshake */
     TRY { SocketDTLS_shutdown (socket); }
@@ -433,6 +443,7 @@ TEST (dtls_socket_free_with_dtls_enabled)
     socket = SocketDgram_new (AF_INET, 0);
     ctx = SocketDTLSContext_new_client (NULL);
     SocketDTLS_enable (socket, ctx);
+    ctx = NULL; /* Ownership transferred to socket */
 
     /* Free should cleanup properly */
     SocketDgram_free (&socket);

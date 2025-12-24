@@ -363,6 +363,7 @@ TEST (dtls_listen_with_cookie)
 
     /* Enable DTLS */
     SocketDTLS_enable (socket, ctx);
+    ctx = NULL; /* Ownership transferred to socket */
 
     /* Listen - returns immediately without client */
     TRY
