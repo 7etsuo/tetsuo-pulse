@@ -151,6 +151,9 @@ test_sequence_out_of_order (SocketDgram_T socket, const uint8_t *data,
   for (size_t i = 0; i < count && offset < size; i++)
     {
       size_t idx = pkt_order[i];
+      /* Bounds check: ensure offset + idx is within valid range */
+      if (offset + idx >= size)
+        break;
       size_t pkt_len = (data[offset + idx] % 64) + 1;
 
       TRY
