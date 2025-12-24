@@ -370,8 +370,116 @@ typedef enum
    * @see SocketAsync_flush()
    * @see SocketAsync_submit_batch()
    */
-  ASYNC_FLAG_NOSYNC = 1 << 2
+  ASYNC_FLAG_NOSYNC = 1 << 2,
+
+  /**
+   * @brief Use pre-registered fixed buffer for I/O.
+   *
+   * When set, the operation uses a pre-registered buffer from the buffer pool
+   * registered via SocketAsync_register_buffers(). The buffer index is encoded
+   * in the operation's buffer pointer.
+   *
+   * Benefits:
+   * - Eliminates per-operation buffer mapping overhead (10-20% improvement)
+   * - Reduces kernel memory pressure for high-throughput scenarios
+   *
+   * Requirements:
+   * - Buffer must be registered via SocketAsync_register_buffers() first
+   * - io_uring backend only; ignored on other backends
+   *
+   * @note Use SocketAsync_send_fixed() / SocketAsync_recv_fixed() for cleaner API.
+   * @see SocketAsync_register_buffers()
+   * @see SocketAsync_send_fixed()
+   * @see SocketAsync_recv_fixed()
+   */
+  ASYNC_FLAG_FIXED_BUFFER = 1 << 3
 } SocketAsync_Flags;
+
+/* ==================== Advanced io_uring Configuration ==================== */
+
+/**
+ * @brief Configuration options for advanced io_uring features.
+ * @ingroup async_io
+ *
+ * Controls optional io_uring performance features that may require elevated
+ * privileges or specific kernel versions. Use with SocketAsync_new_with_config().
+ *
+ * All options default to disabled (0) for maximum compatibility.
+ */
+typedef struct SocketAsync_Config
+{
+  /**
+   * @brief Enable SQPOLL mode for kernel-side submission polling.
+   *
+   * When enabled, the kernel spawns a dedicated thread that polls the SQ for
+   * new submissions, eliminating the need for io_uring_submit() syscalls.
+   *
+   * Trade-offs:
+   * - Pro: Eliminates submit syscall entirely (5-15% throughput improvement)
+   * - Con: Dedicates a CPU core to polling
+   * - Con: Requires CAP_SYS_ADMIN or io_uring credential registration
+   *
+   * The kernel thread will idle after idle_ms milliseconds without submissions
+   * (see sqpoll_idle_ms). Set to 0 to disable SQPOLL mode.
+   *
+   * @note Requires Linux kernel 5.4+ for SQPOLL support.
+   * @note Falls back gracefully to standard submission if privileges insufficient.
+   */
+  int enable_sqpoll;
+
+  /**
+   * @brief SQPOLL idle timeout in milliseconds.
+   *
+   * Time the kernel polling thread waits before going to sleep when no
+   * submissions are pending. Lower values save CPU but increase latency
+   * for sporadic workloads.
+   *
+   * Recommended values:
+   * - High-throughput: 0 (never sleep) - requires dedicated CPU
+   * - Balanced: 1000 (1 second)
+   * - Power-saving: 100-500 ms
+   *
+   * Only used when enable_sqpoll is non-zero. Default: 1000 ms.
+   */
+  unsigned sqpoll_idle_ms;
+
+  /**
+   * @brief CPU affinity for SQPOLL kernel thread.
+   *
+   * Pin the kernel polling thread to a specific CPU core. Use -1 to allow
+   * kernel scheduling (default). Setting this can improve cache locality
+   * but reduces flexibility.
+   *
+   * Only used when enable_sqpoll is non-zero. Default: -1 (no affinity).
+   */
+  int sqpoll_cpu;
+
+  /**
+   * @brief Number of entries in the submission queue.
+   *
+   * Size of the io_uring submission ring. Must be a power of 2.
+   * Larger values allow more concurrent operations but consume more memory.
+   *
+   * Recommended: 256-1024 for most applications, 4096+ for high-throughput.
+   * Default: 256 (SOCKET_DEFAULT_IO_URING_ENTRIES).
+   */
+  unsigned ring_size;
+
+} SocketAsync_Config;
+
+/**
+ * @brief Default configuration for standard io_uring operation.
+ * @ingroup async_io
+ *
+ * Use this to initialize a config struct before customizing:
+ * @code{.c}
+ * SocketAsync_Config config = SOCKETASYNC_CONFIG_DEFAULT;
+ * config.enable_sqpoll = 1;
+ * SocketAsync_T async = SocketAsync_new_with_config(arena, &config);
+ * @endcode
+ */
+#define SOCKETASYNC_CONFIG_DEFAULT \
+  { 0, 1000, -1, 256 }
 
 /**
  * @brief Create a new standalone asynchronous I/O context.
@@ -467,6 +575,53 @@ typedef enum
  * tuning.
  */
 extern T SocketAsync_new (Arena_T arena);
+
+/**
+ * @brief Create async I/O context with advanced configuration.
+ * @ingroup async_io
+ *
+ * Creates an async context with optional advanced io_uring features like SQPOLL
+ * mode. Falls back gracefully when features unavailable or insufficient privileges.
+ *
+ * @param[in] arena Arena_T for internal allocations.
+ * @param[in] config Configuration options (NULL for defaults).
+ * @return New SocketAsync_T instance.
+ *
+ * @throws SocketAsync_Failed On backend initialization failure.
+ * @threadsafe Yes.
+ *
+ * ## Example: Enable SQPOLL
+ *
+ * @code{.c}
+ * SocketAsync_Config config = SOCKETASYNC_CONFIG_DEFAULT;
+ * config.enable_sqpoll = 1;
+ * config.sqpoll_idle_ms = 0;  // Never idle (max performance)
+ *
+ * SocketAsync_T async = SocketAsync_new_with_config(arena, &config);
+ * if (SocketAsync_is_sqpoll_active(async)) {
+ *     printf("SQPOLL mode enabled - no submit syscalls needed\n");
+ * }
+ * @endcode
+ *
+ * @note SQPOLL requires CAP_SYS_ADMIN or unprivileged io_uring setup (kernel 5.12+).
+ * @see SocketAsync_new() for simple creation with defaults.
+ * @see SocketAsync_Config for configuration options.
+ * @see SocketAsync_is_sqpoll_active() to verify SQPOLL activation.
+ */
+extern T SocketAsync_new_with_config (Arena_T arena, const SocketAsync_Config *config);
+
+/**
+ * @brief Check if SQPOLL mode is active.
+ * @ingroup async_io
+ * @param[in] async Async context.
+ * @return 1 if SQPOLL kernel polling is active, 0 otherwise.
+ *
+ * SQPOLL may not be active even if requested due to insufficient privileges
+ * or kernel version requirements.
+ *
+ * @threadsafe Yes - read-only query.
+ */
+extern int SocketAsync_is_sqpoll_active (const T async);
 
 /**
  * @brief Destroy an asynchronous I/O context and release associated resources.
@@ -1420,6 +1575,213 @@ extern unsigned SocketAsync_recv_timeout (T async, Socket_T socket, void *buf,
                                           void *user_data,
                                           SocketAsync_Flags flags,
                                           int64_t timeout_ms);
+
+/* ==================== Registered Buffers API ==================== */
+
+/**
+ * @brief Register a buffer pool for fixed buffer I/O operations.
+ * @ingroup async_io
+ * @param[in] async Async context.
+ * @param[in] bufs Array of buffer pointers (must remain valid until unregistered).
+ * @param[in] lens Array of buffer lengths corresponding to bufs.
+ * @param[in] count Number of buffers to register.
+ * @return 0 on success, -1 on failure (check errno).
+ *
+ * Pre-registers buffers with the kernel for use with IORING_OP_READ_FIXED
+ * and IORING_OP_WRITE_FIXED operations. Eliminates per-operation buffer
+ * mapping overhead for 10-20% improvement with small I/O operations.
+ *
+ * After registration, use SocketAsync_send_fixed() and SocketAsync_recv_fixed()
+ * with buffer indices instead of pointers.
+ *
+ * @note io_uring only; returns -1 with ENOTSUP on other backends.
+ * @note Buffers must remain valid and at the same address until unregistered.
+ * @note Maximum buffers limited by system (typically UIO_MAXIOV = 1024).
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * #define NUM_BUFFERS 64
+ * #define BUF_SIZE 4096
+ *
+ * void *bufs[NUM_BUFFERS];
+ * size_t lens[NUM_BUFFERS];
+ *
+ * for (int i = 0; i < NUM_BUFFERS; i++) {
+ *     bufs[i] = aligned_alloc(4096, BUF_SIZE);  // Page-aligned for DMA
+ *     lens[i] = BUF_SIZE;
+ * }
+ *
+ * if (SocketAsync_register_buffers(async, bufs, lens, NUM_BUFFERS) == 0) {
+ *     printf("Registered %d buffers for fixed I/O\n", NUM_BUFFERS);
+ * }
+ * @endcode
+ *
+ * @threadsafe Yes - internal mutex protects registration.
+ * @see SocketAsync_unregister_buffers() to release registration.
+ * @see SocketAsync_send_fixed() for fixed buffer send.
+ * @see SocketAsync_recv_fixed() for fixed buffer receive.
+ */
+extern int SocketAsync_register_buffers (T async, void **bufs, size_t *lens,
+                                         unsigned count);
+
+/**
+ * @brief Unregister previously registered buffer pool.
+ * @ingroup async_io
+ * @param[in] async Async context.
+ * @return 0 on success, -1 on failure.
+ *
+ * Unregisters all buffers previously registered with SocketAsync_register_buffers().
+ * After this call, fixed buffer operations will fail until new buffers are registered.
+ *
+ * @note Ensure no fixed buffer operations are in-flight before unregistering.
+ * @threadsafe Yes.
+ * @see SocketAsync_register_buffers()
+ */
+extern int SocketAsync_unregister_buffers (T async);
+
+/**
+ * @brief Check if buffers are currently registered.
+ * @ingroup async_io
+ * @param[in] async Async context.
+ * @return Number of registered buffers, or 0 if none.
+ * @threadsafe Yes - read-only query.
+ */
+extern unsigned SocketAsync_registered_buffer_count (const T async);
+
+/**
+ * @brief Send using a pre-registered fixed buffer.
+ * @ingroup async_io
+ * @param[in] async Async context.
+ * @param[in] socket Target socket.
+ * @param[in] buf_index Index into registered buffer array.
+ * @param[in] offset Offset within the buffer to start sending from.
+ * @param[in] len Number of bytes to send.
+ * @param[in] cb Completion callback.
+ * @param[in] user_data User data for callback.
+ * @param[in] flags Operation flags (ASYNC_FLAG_FIXED_BUFFER added automatically).
+ * @return Request ID on success, 0 on failure.
+ *
+ * Uses IORING_OP_SEND_FIXED for zero-copy send from registered buffer.
+ * Eliminates per-operation buffer mapping for improved throughput.
+ *
+ * @throws SocketAsync_Failed if buf_index out of range or buffers not registered.
+ * @threadsafe Yes.
+ * @see SocketAsync_register_buffers() to register buffer pool.
+ */
+extern unsigned SocketAsync_send_fixed (T async, Socket_T socket,
+                                        unsigned buf_index, size_t offset,
+                                        size_t len, SocketAsync_Callback cb,
+                                        void *user_data, SocketAsync_Flags flags);
+
+/**
+ * @brief Receive into a pre-registered fixed buffer.
+ * @ingroup async_io
+ * @param[in] async Async context.
+ * @param[in] socket Target socket.
+ * @param[in] buf_index Index into registered buffer array.
+ * @param[in] offset Offset within the buffer to receive into.
+ * @param[in] len Maximum bytes to receive.
+ * @param[in] cb Completion callback.
+ * @param[in] user_data User data for callback.
+ * @param[in] flags Operation flags (ASYNC_FLAG_FIXED_BUFFER added automatically).
+ * @return Request ID on success, 0 on failure.
+ *
+ * Uses IORING_OP_RECV_FIXED for zero-copy receive into registered buffer.
+ *
+ * @throws SocketAsync_Failed if buf_index out of range or buffers not registered.
+ * @threadsafe Yes.
+ * @see SocketAsync_register_buffers() to register buffer pool.
+ */
+extern unsigned SocketAsync_recv_fixed (T async, Socket_T socket,
+                                        unsigned buf_index, size_t offset,
+                                        size_t len, SocketAsync_Callback cb,
+                                        void *user_data, SocketAsync_Flags flags);
+
+/* ==================== Fixed Files API ==================== */
+
+/**
+ * @brief Register file descriptors for faster kernel lookup.
+ * @ingroup async_io
+ * @param[in] async Async context.
+ * @param[in] fds Array of file descriptors to register.
+ * @param[in] count Number of file descriptors.
+ * @return 0 on success, -1 on failure.
+ *
+ * Pre-registers file descriptors with io_uring using IORING_REGISTER_FILES.
+ * Subsequent operations can use fixed file indices for 5-10% faster fd lookup
+ * in the kernel, beneficial for connection pools with stable fd sets.
+ *
+ * Use SocketAsync_get_fixed_fd_index() to get the index for a registered fd,
+ * then pass that index to SocketAsync_send/recv with ASYNC_FLAG_FIXED_FD.
+ *
+ * @note io_uring only; returns -1 with ENOTSUP on other backends.
+ * @note File descriptors must remain open until unregistered.
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Register pool connection fds
+ * int fds[MAX_POOL_SIZE];
+ * for (int i = 0; i < pool_size; i++) {
+ *     fds[i] = Socket_fd(pool_connections[i]);
+ * }
+ *
+ * if (SocketAsync_register_files(async, fds, pool_size) == 0) {
+ *     printf("Registered %d fds for fixed file operations\n", pool_size);
+ * }
+ * @endcode
+ *
+ * @threadsafe Yes.
+ * @see SocketAsync_unregister_files()
+ * @see SocketAsync_update_registered_fd()
+ */
+extern int SocketAsync_register_files (T async, int *fds, unsigned count);
+
+/**
+ * @brief Unregister previously registered file descriptors.
+ * @ingroup async_io
+ * @param[in] async Async context.
+ * @return 0 on success, -1 on failure.
+ * @threadsafe Yes.
+ */
+extern int SocketAsync_unregister_files (T async);
+
+/**
+ * @brief Update a single registered file descriptor.
+ * @ingroup async_io
+ * @param[in] async Async context.
+ * @param[in] index Index in the registered fd array to update.
+ * @param[in] new_fd New file descriptor to register at this index (-1 to clear).
+ * @return 0 on success, -1 on failure.
+ *
+ * Allows dynamic updating of the registered fd table without re-registering
+ * the entire set. Useful for connection pool fd recycling.
+ *
+ * @threadsafe Yes.
+ * @see SocketAsync_register_files()
+ */
+extern int SocketAsync_update_registered_fd (T async, unsigned index, int new_fd);
+
+/**
+ * @brief Get the fixed file index for a registered fd.
+ * @ingroup async_io
+ * @param[in] async Async context.
+ * @param[in] fd File descriptor to look up.
+ * @return Fixed file index (>=0) if found, -1 if not registered.
+ *
+ * @threadsafe Yes - read-only lookup.
+ */
+extern int SocketAsync_get_fixed_fd_index (const T async, int fd);
+
+/**
+ * @brief Check if files are currently registered.
+ * @ingroup async_io
+ * @param[in] async Async context.
+ * @return Number of registered file descriptors, or 0 if none.
+ * @threadsafe Yes.
+ */
+extern unsigned SocketAsync_registered_file_count (const T async);
 
 /* ==================== io_uring Availability API ==================== */
 
