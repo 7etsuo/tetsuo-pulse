@@ -895,6 +895,7 @@ struct TLSBufferPool
   size_t in_use;                  /**< Buffers currently allocated */
   pthread_mutex_t mutex;          /**< Pool lock */
   Arena_T arena;                  /**< Memory arena for the pool */
+  int owns_arena;                 /**< 1 if pool owns arena, 0 if caller owns */
 };
 
 typedef struct TLSBufferPool *TLSBufferPool_T;
@@ -917,6 +918,7 @@ TLSBufferPool_new (size_t buffer_size, size_t num_buffers, Arena_T arena)
 {
   Arena_T pool_arena = arena;
   int owns_arena = 0;
+  TLSBufferPool_T pool;
 
   if (!pool_arena)
     {
@@ -926,17 +928,34 @@ TLSBufferPool_new (size_t buffer_size, size_t num_buffers, Arena_T arena)
       owns_arena = 1;
     }
 
-  TLSBufferPool_T pool
-      = Arena_alloc (pool_arena, sizeof (struct TLSBufferPool), __FILE__,
-                     __LINE__);
-  if (!pool)
+  /*
+   * CRITICAL: When pool owns the arena, we must NOT allocate the pool struct
+   * from the arena. Otherwise, TLSBufferPool_free() would call
+   * Arena_dispose(&p->arena) where &p->arena points into arena-allocated
+   * memory, causing heap-use-after-free when Arena_dispose writes *ap = NULL.
+   *
+   * When caller provides arena: pool struct is arena-allocated, caller manages
+   * arena lifetime, pool does NOT dispose the arena.
+   */
+  if (owns_arena)
     {
-      if (owns_arena)
-        Arena_dispose (&pool_arena);
-      return NULL;
+      pool = malloc (sizeof (struct TLSBufferPool));
+      if (!pool)
+        {
+          Arena_dispose (&pool_arena);
+          return NULL;
+        }
+    }
+  else
+    {
+      pool = Arena_alloc (pool_arena, sizeof (struct TLSBufferPool), __FILE__,
+                         __LINE__);
+      if (!pool)
+        return NULL;
     }
 
   pool->arena = pool_arena;
+  pool->owns_arena = owns_arena;
   pool->buffer_size = buffer_size;
   pool->total_buffers = num_buffers;
   pool->in_use = 0;
@@ -945,7 +964,10 @@ TLSBufferPool_new (size_t buffer_size, size_t num_buffers, Arena_T arena)
   if (pthread_mutex_init (&pool->mutex, NULL) != 0)
     {
       if (owns_arena)
-        Arena_dispose (&pool_arena);
+        {
+          free (pool);
+          Arena_dispose (&pool_arena);
+        }
       return NULL;
     }
 
@@ -956,7 +978,10 @@ TLSBufferPool_new (size_t buffer_size, size_t num_buffers, Arena_T arena)
     {
       pthread_mutex_destroy (&pool->mutex);
       if (owns_arena)
-        Arena_dispose (&pool_arena);
+        {
+          free (pool);
+          Arena_dispose (&pool_arena);
+        }
       return NULL;
     }
 
@@ -970,7 +995,10 @@ TLSBufferPool_new (size_t buffer_size, size_t num_buffers, Arena_T arena)
           /* Partial allocation - clean up */
           pthread_mutex_destroy (&pool->mutex);
           if (owns_arena)
-            Arena_dispose (&pool_arena);
+            {
+              free (pool);
+              Arena_dispose (&pool_arena);
+            }
           return NULL;
         }
       pool->buffers[i].size = buffer_size;
@@ -1093,6 +1121,10 @@ TLSBufferPool_stats (TLSBufferPool_T pool, size_t *total, size_t *in_use,
  *
  * Frees all pool resources. Any buffers still in use become invalid.
  *
+ * If the pool was created with its own arena (arena=NULL passed to _new),
+ * the arena is disposed. If the pool was created with a caller-provided
+ * arena, the caller remains responsible for disposing the arena.
+ *
  * Thread-safe: No - ensure all buffers are released first
  */
 void
@@ -1102,13 +1134,29 @@ TLSBufferPool_free (TLSBufferPool_T *pool)
     return;
 
   TLSBufferPool_T p = *pool;
+  int owns_arena = p->owns_arena;
+  Arena_T arena = p->arena;
 
   pthread_mutex_destroy (&p->mutex);
 
-  /* Arena handles all memory cleanup */
-  Arena_dispose (&p->arena);
-
+  /* Clear caller's pointer first (always safe - points to caller's stack/heap) */
   *pool = NULL;
+
+  if (owns_arena)
+    {
+      /*
+       * Pool owns arena: pool struct was malloc'd (not arena-allocated).
+       * Free the pool struct first, then dispose the arena.
+       * This avoids UAF because &p->arena is not in the arena's memory.
+       */
+      free (p);
+      Arena_dispose (&arena);
+    }
+  /*
+   * If !owns_arena: caller provided arena and is responsible for its lifecycle.
+   * The pool struct was arena-allocated, so it will be freed when the caller
+   * disposes the arena. We only destroyed the mutex above.
+   */
 }
 
 /**
