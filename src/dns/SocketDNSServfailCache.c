@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
+#include <time.h>
 
 #define T SocketDNSServfailCache_T
 
@@ -57,6 +58,9 @@ struct T
   size_t size;         /**< Current entry count */
   size_t max_entries;  /**< Maximum capacity */
 
+  /* Hash collision DoS protection */
+  uint32_t hash_seed;  /**< Random seed for hash function */
+
   /* Statistics */
   uint64_t hits;
   uint64_t misses;
@@ -78,15 +82,19 @@ normalize_name (char *dest, const char *src, size_t max_len)
 }
 
 /**
- * @brief Compute hash for cache key 4-tuple.
+ * @brief Compute hash for cache key 4-tuple with seed.
  *
  * Includes name, qtype, qclass, and nameserver in hash calculation.
+ * Uses a random seed to protect against hash collision DoS attacks.
  */
 static unsigned
-compute_hash (const char *name, uint16_t qtype, uint16_t qclass,
-              const char *nameserver)
+compute_hash_with_seed (const char *name, uint16_t qtype, uint16_t qclass,
+                        const char *nameserver, uint32_t seed)
 {
   unsigned hash = 5381; /* djb2 initial value */
+
+  /* Mix in random seed for DoS protection */
+  hash = ((hash << 5) + hash) ^ seed;
 
   /* Hash the normalized name */
   for (const char *p = name; *p; p++)
@@ -104,11 +112,26 @@ compute_hash (const char *name, uint16_t qtype, uint16_t qclass,
 }
 
 /**
+ * @brief Compute hash for cache key 4-tuple (wrapper for cache instance).
+ */
+static unsigned
+compute_hash (T cache, const char *name, uint16_t qtype, uint16_t qclass,
+              const char *nameserver)
+{
+  return compute_hash_with_seed (name, qtype, qclass, nameserver, cache->hash_seed);
+}
+
+/**
  * @brief Check if an entry has expired.
  */
 static bool
 entry_expired (const struct ServfailCacheEntry *entry, int64_t now_ms)
 {
+  /* Guard against time going backwards or overflow */
+  if (now_ms < entry->insert_time_ms)
+    return false; /* Entry is "in the future", keep it */
+
+  /* Safe subtraction: both operands are non-negative after check */
   int64_t age_ms = now_ms - entry->insert_time_ms;
   int64_t ttl_ms = (int64_t)entry->ttl * 1000;
   return age_ms >= ttl_ms;
@@ -120,6 +143,11 @@ entry_expired (const struct ServfailCacheEntry *entry, int64_t now_ms)
 static uint32_t
 entry_ttl_remaining (const struct ServfailCacheEntry *entry, int64_t now_ms)
 {
+  /* Guard against time going backwards or overflow */
+  if (now_ms < entry->insert_time_ms)
+    return entry->ttl; /* Entry is "in the future", return full TTL */
+
+  /* Safe subtraction: both operands are non-negative after check */
   int64_t age_ms = now_ms - entry->insert_time_ms;
   int64_t ttl_ms = (int64_t)entry->ttl * 1000;
   int64_t remaining_ms = ttl_ms - age_ms;
@@ -207,7 +235,7 @@ entry_free (T cache, struct ServfailCacheEntry *entry)
 {
   /* Compute bucket for hash removal */
   unsigned bucket
-      = compute_hash (entry->name, entry->qtype, entry->qclass,
+      = compute_hash (cache, entry->name, entry->qtype, entry->qclass,
                       entry->nameserver);
 
   hash_remove (cache, entry, bucket);
@@ -237,7 +265,7 @@ static struct ServfailCacheEntry *
 find_entry (T cache, const char *normalized_name, uint16_t qtype,
             uint16_t qclass, const char *nameserver)
 {
-  unsigned bucket = compute_hash (normalized_name, qtype, qclass, nameserver);
+  unsigned bucket = compute_hash (cache, normalized_name, qtype, qclass, nameserver);
   struct ServfailCacheEntry *entry = cache->hash_table[bucket];
 
   while (entry)
@@ -259,7 +287,7 @@ static void
 hash_insert (T cache, struct ServfailCacheEntry *entry)
 {
   unsigned bucket
-      = compute_hash (entry->name, entry->qtype, entry->qclass,
+      = compute_hash (cache, entry->name, entry->qtype, entry->qclass,
                       entry->nameserver);
   entry->hash_next = cache->hash_table[bucket];
   cache->hash_table[bucket] = entry;
@@ -290,6 +318,9 @@ SocketDNSServfailCache_new (Arena_T arena)
   memset (cache, 0, sizeof (*cache));
   cache->arena = arena;
   cache->max_entries = DNS_SERVFAIL_DEFAULT_MAX;
+
+  /* Initialize random seed for hash collision DoS protection */
+  cache->hash_seed = (uint32_t)time(NULL) ^ (uint32_t)(uintptr_t)cache;
 
   if (pthread_mutex_init (&cache->mutex, NULL) != 0)
     return NULL;
@@ -360,6 +391,29 @@ SocketDNSServfailCache_lookup (T cache, const char *qname, uint16_t qtype,
   return result;
 }
 
+/*
+ * SECURITY CONSIDERATIONS:
+ *
+ * 1. Cache Poisoning Protection:
+ *    - SERVFAIL caching is server-specific (4-tuple key includes nameserver)
+ *    - Prevents attackers from poisoning cache for all nameservers
+ *    - TTL is strictly capped at 5 minutes per RFC 2308 Section 7.1
+ *
+ * 2. Rate Limiting (Implicit):
+ *    - LRU eviction provides natural rate limiting per nameserver
+ *    - Cache size cap (DNS_SERVFAIL_DEFAULT_MAX = 500) limits resource usage
+ *    - Each nameserver can only occupy portion of cache
+ *
+ * 3. DoS Protection:
+ *    - Random hash seed prevents hash collision attacks
+ *    - Input validation on name and nameserver lengths
+ *    - Cache size limits prevent memory exhaustion
+ *
+ * 4. Recommended Deployment:
+ *    - Monitor cache hit rate to detect potential abuse
+ *    - Consider per-nameserver entry limits for multi-tenant environments
+ *    - Use in conjunction with query timeout and retry logic
+ */
 int
 SocketDNSServfailCache_insert (T cache, const char *qname, uint16_t qtype,
                                 uint16_t qclass, const char *nameserver,

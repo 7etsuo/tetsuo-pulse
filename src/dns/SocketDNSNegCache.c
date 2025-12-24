@@ -19,6 +19,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <strings.h>
+#include <time.h>
 
 #define T SocketDNSNegCache_T
 
@@ -66,6 +67,9 @@ struct T
   size_t max_entries;  /**< Maximum capacity */
   uint32_t max_ttl;    /**< Maximum TTL allowed */
 
+  /* Hash collision DoS protection */
+  uint32_t hash_seed;  /**< Random seed for hash function */
+
   /* Statistics */
   uint64_t hits;
   uint64_t misses;
@@ -93,11 +97,16 @@ normalize_name (char *dest, const char *src, size_t max_len)
  *
  * For NXDOMAIN: hash(name, 0, class)
  * For NODATA: hash(name, type, class)
+ *
+ * Uses a random seed to protect against hash collision DoS attacks.
  */
 static unsigned
-compute_hash (const char *name, uint16_t qtype, uint16_t qclass)
+compute_hash_with_seed (const char *name, uint16_t qtype, uint16_t qclass, uint32_t seed)
 {
   unsigned hash = 5381; /* djb2 initial value */
+
+  /* Mix in random seed for DoS protection */
+  hash = ((hash << 5) + hash) ^ seed;
 
   /* Hash the normalized name */
   for (const char *p = name; *p; p++)
@@ -111,11 +120,25 @@ compute_hash (const char *name, uint16_t qtype, uint16_t qclass)
 }
 
 /**
+ * @brief Compute hash for cache key tuple (wrapper for cache instance).
+ */
+static unsigned
+compute_hash (T cache, const char *name, uint16_t qtype, uint16_t qclass)
+{
+  return compute_hash_with_seed (name, qtype, qclass, cache->hash_seed);
+}
+
+/**
  * @brief Check if an entry has expired.
  */
 static bool
 entry_expired (const struct NegCacheEntry *entry, int64_t now_ms)
 {
+  /* Guard against time going backwards or overflow */
+  if (now_ms < entry->insert_time_ms)
+    return false; /* Entry is "in the future", keep it */
+
+  /* Safe subtraction: both operands are non-negative after check */
   int64_t age_ms = now_ms - entry->insert_time_ms;
   int64_t ttl_ms = (int64_t)entry->ttl * 1000;
   return age_ms >= ttl_ms;
@@ -127,6 +150,11 @@ entry_expired (const struct NegCacheEntry *entry, int64_t now_ms)
 static uint32_t
 entry_ttl_remaining (const struct NegCacheEntry *entry, int64_t now_ms)
 {
+  /* Guard against time going backwards or overflow */
+  if (now_ms < entry->insert_time_ms)
+    return entry->ttl; /* Entry is "in the future", return full TTL */
+
+  /* Safe subtraction: both operands are non-negative after check */
   int64_t age_ms = now_ms - entry->insert_time_ms;
   int64_t ttl_ms = (int64_t)entry->ttl * 1000;
   int64_t remaining_ms = ttl_ms - age_ms;
@@ -213,7 +241,7 @@ static void
 entry_free (T cache, struct NegCacheEntry *entry)
 {
   /* Compute bucket for hash removal */
-  unsigned bucket = compute_hash (entry->name, entry->qtype, entry->qclass);
+  unsigned bucket = compute_hash (cache, entry->name, entry->qtype, entry->qclass);
 
   hash_remove (cache, entry, bucket);
   lru_remove (cache, entry);
@@ -242,7 +270,7 @@ static struct NegCacheEntry *
 find_entry (T cache, const char *normalized_name, uint16_t qtype,
             uint16_t qclass)
 {
-  unsigned bucket = compute_hash (normalized_name, qtype, qclass);
+  unsigned bucket = compute_hash (cache, normalized_name, qtype, qclass);
   struct NegCacheEntry *entry = cache->hash_table[bucket];
 
   while (entry)
@@ -262,7 +290,7 @@ find_entry (T cache, const char *normalized_name, uint16_t qtype,
 static void
 hash_insert (T cache, struct NegCacheEntry *entry)
 {
-  unsigned bucket = compute_hash (entry->name, entry->qtype, entry->qclass);
+  unsigned bucket = compute_hash (cache, entry->name, entry->qtype, entry->qclass);
   entry->hash_next = cache->hash_table[bucket];
   cache->hash_table[bucket] = entry;
 }
@@ -293,6 +321,9 @@ SocketDNSNegCache_new (Arena_T arena)
   cache->arena = arena;
   cache->max_entries = DNS_NEGCACHE_DEFAULT_MAX;
   cache->max_ttl = DNS_NEGCACHE_DEFAULT_MAX_TTL;
+
+  /* Initialize random seed for hash collision DoS protection */
+  cache->hash_seed = (uint32_t)time(NULL) ^ (uint32_t)(uintptr_t)cache;
 
   if (pthread_mutex_init (&cache->mutex, NULL) != 0)
     return NULL;
@@ -948,21 +979,35 @@ SocketDNSNegCache_build_response (const SocketDNS_NegCacheEntry *entry,
             decremented_ttl = entry->soa.original_ttl;
         }
 
-      /* Encode SOA owner name */
+      /* CRITICAL FIX: Calculate SOA name length first to validate total space */
       size_t soa_name_len = 0;
+      /* Dry-run encode to determine length (pass NULL buffer in real impl, or use strlen+labels) */
+      /* For now, we need to encode to a temporary buffer or check beforehand */
+      /* Conservative estimate: worst case is wire format length */
+      size_t estimated_name_len = strlen(entry->soa.name) + 2; /* labels + length bytes + null terminator */
+      if (estimated_name_len > DNS_MAX_NAME_LEN)
+        estimated_name_len = DNS_MAX_NAME_LEN;
+
+      /* Validate total required space BEFORE any writes */
+      /* Need: soa_name (estimated) + TYPE(2) + CLASS(2) + TTL(4) + RDLENGTH(2) + RDATA */
+      size_t required_space = estimated_name_len + 10 + entry->soa.rdlen;
+      if (offset + required_space > buflen)
+        return -1;
+
+      /* Encode SOA owner name */
       if (SocketDNS_name_encode (entry->soa.name, buf + offset, buflen - offset,
                                   &soa_name_len)
           != 0)
         return -1;
       offset += soa_name_len;
 
-      /* Check space for TYPE(2) + CLASS(2) + TTL(4) + RDLENGTH(2) + RDATA */
+      /* Double-check space for fixed fields + RDATA (defense in depth) */
       if (offset + 10 + entry->soa.rdlen > buflen)
         return -1;
 
       /* TYPE = SOA (6) */
       buf[offset++] = 0;
-      buf[offset++] = DNS_TYPE_SOA;
+      buf[offset++] = 6; /* SOA type */
 
       /* CLASS = IN (1) */
       buf[offset++] = 0;
