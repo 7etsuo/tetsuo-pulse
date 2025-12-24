@@ -232,22 +232,41 @@ create_dgram_bio (int fd)
 static void
 finalize_dtls_state (SocketDgram_T socket, SSL *ssl, SocketDTLSContext_T ctx)
 {
-  socket->dtls_ssl = (void *)ssl;
-  socket->dtls_ctx = (void *)ctx;
-  SocketDTLSContext_ref (ctx); /* Retain context for this socket */
-  SSL_set_app_data (ssl, socket);
-  allocate_dtls_buffers (socket);
+  volatile int ref_added = 0;
 
-  /* Initialize peer cache */
-  socket->dtls_peer_host = NULL;
-  socket->dtls_peer_port = 0;
-  socket->dtls_peer_res = NULL;
-  socket->dtls_peer_cache_ts = 0;
+  TRY
+    {
+      socket->dtls_ssl = (void *)ssl;
+      socket->dtls_ctx = (void *)ctx;
+      SocketDTLSContext_ref (ctx); /* Retain context for this socket */
+      ref_added = 1;
 
-  socket->dtls_enabled = 1;
-  socket->dtls_handshake_done = 0;
-  socket->dtls_shutdown_done = 0;
-  socket->dtls_mtu = SocketDTLSContext_get_mtu (ctx);
+      SSL_set_app_data (ssl, socket);
+      allocate_dtls_buffers (socket);
+
+      /* Initialize peer cache */
+      socket->dtls_peer_host = NULL;
+      socket->dtls_peer_port = 0;
+      socket->dtls_peer_res = NULL;
+      socket->dtls_peer_cache_ts = 0;
+
+      socket->dtls_enabled = 1;
+      socket->dtls_handshake_done = 0;
+      socket->dtls_shutdown_done = 0;
+      socket->dtls_mtu = SocketDTLSContext_get_mtu (ctx);
+
+      ref_added = 0; /* Success - keep the reference */
+    }
+  ELSE
+    {
+      if (ref_added)
+        {
+          SocketDTLSContext_T ctx_temp = ctx;
+          SocketDTLSContext_free (&ctx_temp);
+        }
+      RERAISE;
+    }
+  END_TRY;
 }
 
 /**
@@ -413,29 +432,54 @@ SocketDTLS_enable (SocketDgram_T socket, SocketDTLSContext_T ctx)
 
   SocketMetrics_counter_inc (SOCKET_CTR_DTLS_HANDSHAKES_TOTAL);
 
-  SSL *ssl = create_dtls_ssl_object (ctx);
-  int fd = SocketBase_fd (socket->base);
+  volatile SSL *ssl = NULL;
+  volatile BIO *bio = NULL;
 
-  /* Create datagram BIO and attach to SSL */
-  BIO *bio = create_dgram_bio (fd);
-  SSL_set_bio (ssl, bio, bio);
+  TRY
+    {
+      ssl = create_dtls_ssl_object (ctx);
+      int fd = SocketBase_fd (socket->base);
 
-  /* Set MTU hint */
-  SSL_set_mtu (ssl, (long)SocketDTLSContext_get_mtu (ctx));
-  SSL_set_options (ssl, SSL_OP_NO_QUERY_MTU | SSL_OP_NO_RENEGOTIATION
-                            | SSL_OP_NO_COMPRESSION);
-  DTLS_set_link_mtu (ssl, (long)SocketDTLSContext_get_mtu (ctx));
+      /* Create datagram BIO and attach to SSL */
+      bio = create_dgram_bio (fd);
+      SSL_set_bio ((SSL *)ssl, (BIO *)bio, (BIO *)bio);
+      bio = NULL; /* Ownership transferred to SSL */
 
-  /* Enable read-ahead for efficient DTLS record reassembly */
-  SSL_set_read_ahead (ssl, 1);
+      /* Set MTU hint */
+      SSL_set_mtu ((SSL *)ssl, (long)SocketDTLSContext_get_mtu (ctx));
+      SSL_set_options ((SSL *)ssl, SSL_OP_NO_QUERY_MTU | SSL_OP_NO_RENEGOTIATION
+                                       | SSL_OP_NO_COMPRESSION);
+      DTLS_set_link_mtu ((SSL *)ssl, (long)SocketDTLSContext_get_mtu (ctx));
 
-  /* Enable timer-based retransmission for DTLS */
-  const struct timeval DTLS_INITIAL_RETRANS_TIMEOUT
-      = { .tv_sec = 1, .tv_usec = 0 };
-  BIO_ctrl (bio, BIO_CTRL_DGRAM_SET_RECV_TIMEOUT, 0,
-            (void *)&DTLS_INITIAL_RETRANS_TIMEOUT);
+      /* Enable read-ahead for efficient DTLS record reassembly */
+      SSL_set_read_ahead ((SSL *)ssl, 1);
 
-  finalize_dtls_state (socket, ssl, ctx);
+      /* Enable timer-based retransmission for DTLS */
+      const struct timeval DTLS_INITIAL_RETRANS_TIMEOUT
+          = { .tv_sec = 1, .tv_usec = 0 };
+      BIO *rbio = SSL_get_rbio ((SSL *)ssl);
+      if (rbio)
+        BIO_ctrl (rbio, BIO_CTRL_DGRAM_SET_RECV_TIMEOUT, 0,
+                  (void *)&DTLS_INITIAL_RETRANS_TIMEOUT);
+
+      /* This may raise on allocation failure - will cleanup properly */
+      finalize_dtls_state (socket, (SSL *)ssl, ctx);
+
+      ssl = NULL; /* Success - ownership transferred to socket */
+    }
+  ELSE
+    {
+      if (ssl)
+        {
+          SSL_free ((SSL *)ssl);
+        }
+      if (bio)
+        {
+          BIO_free ((BIO *)bio);
+        }
+      RERAISE;
+    }
+  END_TRY;
 }
 
 void
