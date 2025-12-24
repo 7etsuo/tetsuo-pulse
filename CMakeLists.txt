@@ -1031,6 +1031,7 @@ if(ENABLE_FUZZING)
         fuzz_dns_edns0
         fuzz_dns_cookie
         fuzz_dns_soa
+        fuzz_dns_cache
         fuzz_pool_dos
         fuzz_ws_frame
         fuzz_ws_handshake

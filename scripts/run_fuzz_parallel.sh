@@ -80,6 +80,13 @@ TARGETS_DNS=(
     fuzz_happy_eyeballs
     fuzz_reconnect
     fuzz_async
+    fuzz_dns_header
+    fuzz_dns_name
+    fuzz_dns_response
+    fuzz_dns_edns0
+    fuzz_dns_cookie
+    fuzz_dns_soa
+    fuzz_dns_cache
 )
 
 TARGETS_TLS=(
