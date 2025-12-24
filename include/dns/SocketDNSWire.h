@@ -923,6 +923,211 @@ extern int SocketDNS_opt_decode (const unsigned char *buf, size_t len,
 extern uint16_t SocketDNS_opt_extended_rcode (const SocketDNS_Header *hdr,
                                                const SocketDNS_OPT *opt);
 
+/**
+ * @defgroup dns_edns0_options EDNS0 Option Parsing
+ * @brief EDNS0 option encoding and decoding (RFC 6891 Section 6.1.2).
+ * @ingroup dns_edns0
+ * @{
+ */
+
+/** Minimum size of an EDNS option (code + length, no data). */
+#define DNS_EDNS_OPTION_HEADER_SIZE 4
+
+/**
+ * @brief Known EDNS option codes (IANA registry).
+ *
+ * Option codes assigned by IANA for EDNS options.
+ * Unknown codes MUST be ignored per RFC 6891.
+ */
+typedef enum
+{
+  DNS_EDNS_OPT_RESERVED = 0,         /**< Reserved (RFC 6891) */
+  DNS_EDNS_OPT_NSID = 3,             /**< Name Server Identifier (RFC 5001) */
+  DNS_EDNS_OPT_CLIENT_SUBNET = 8,    /**< Client Subnet (RFC 7871) */
+  DNS_EDNS_OPT_COOKIE = 10,          /**< DNS Cookie (RFC 7873) */
+  DNS_EDNS_OPT_TCP_KEEPALIVE = 11,   /**< TCP Keepalive (RFC 7828) */
+  DNS_EDNS_OPT_PADDING = 12,         /**< Padding (RFC 7830) */
+  DNS_EDNS_OPT_EXTENDED_ERROR = 15,  /**< Extended DNS Error (RFC 8914) */
+  DNS_EDNS_OPT_LOCAL_MIN = 65001,    /**< Local/Experimental minimum */
+  DNS_EDNS_OPT_LOCAL_MAX = 65534,    /**< Local/Experimental maximum */
+  DNS_EDNS_OPT_RESERVED_MAX = 65535  /**< Reserved (RFC 6891) */
+} SocketDNS_EDNSOptionCode;
+
+/**
+ * @brief Single EDNS option structure (RFC 6891 Section 6.1.2).
+ *
+ * Represents a single option from the OPT record RDATA section.
+ * Options are encoded as {OPTION-CODE, OPTION-LENGTH, OPTION-DATA}.
+ *
+ * ## Wire Format
+ *
+ * ```
+ *                +0 (MSB)                            +1 (LSB)
+ *   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+ * 0: |                          OPTION-CODE                         |
+ *   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+ * 2: |                         OPTION-LENGTH                        |
+ *   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+ * 4: |                          OPTION-DATA                         |
+ *   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+ * ```
+ *
+ * @note The `data` field points into the original buffer and is not owned.
+ */
+typedef struct
+{
+  uint16_t code;               /**< Option code (IANA assigned) */
+  uint16_t length;             /**< Length of option data in bytes */
+  const unsigned char *data;   /**< Option data (not owned, may be NULL if length=0) */
+} SocketDNS_EDNSOption;
+
+/**
+ * @brief Iterator for parsing EDNS options from OPT RDATA.
+ *
+ * Used to iterate over multiple options in an OPT record's RDATA section.
+ * Initialize with SocketDNS_edns_option_iter_init() and retrieve options
+ * with SocketDNS_edns_option_iter_next().
+ */
+typedef struct
+{
+  const unsigned char *pos;   /**< Current position in RDATA */
+  const unsigned char *end;   /**< End of RDATA */
+} SocketDNS_EDNSOptionIter;
+
+/**
+ * @brief Encode a single EDNS option to wire format.
+ * @ingroup dns_edns0_options
+ *
+ * Serializes an EDNS option to the wire format as specified in
+ * RFC 6891 Section 6.1.2.
+ *
+ * @param[in]  option  Option structure to encode.
+ * @param[out] buf     Output buffer for wire format.
+ * @param[in]  buflen  Size of output buffer.
+ * @return Number of bytes written on success, -1 on error (buffer too small).
+ *
+ * @code{.c}
+ * SocketDNS_EDNSOption opt = {
+ *     .code = DNS_EDNS_OPT_PADDING,
+ *     .length = 12,
+ *     .data = padding_bytes
+ * };
+ * unsigned char buf[16];
+ * int len = SocketDNS_edns_option_encode(&opt, buf, sizeof(buf));
+ * @endcode
+ */
+extern int SocketDNS_edns_option_encode (const SocketDNS_EDNSOption *option,
+                                          unsigned char *buf, size_t buflen);
+
+/**
+ * @brief Initialize an iterator for parsing EDNS options.
+ * @ingroup dns_edns0_options
+ *
+ * Sets up an iterator to parse options from OPT record RDATA.
+ * The iterator points into the provided buffer and does not copy data.
+ *
+ * @param[out] iter    Iterator to initialize.
+ * @param[in]  rdata   OPT record RDATA buffer.
+ * @param[in]  rdlen   Length of RDATA in bytes.
+ *
+ * @code{.c}
+ * SocketDNS_EDNSOptionIter iter;
+ * SocketDNS_edns_option_iter_init(&iter, opt.rdata, opt.rdlength);
+ * @endcode
+ */
+extern void SocketDNS_edns_option_iter_init (SocketDNS_EDNSOptionIter *iter,
+                                              const unsigned char *rdata,
+                                              size_t rdlen);
+
+/**
+ * @brief Get next option from the iterator.
+ * @ingroup dns_edns0_options
+ *
+ * Retrieves the next option from the RDATA and advances the iterator.
+ * Returns 0 when no more options are available or on parse error.
+ *
+ * Per RFC 6891, unknown option codes MUST be ignored. This function
+ * returns all options; the caller should ignore unknown codes.
+ *
+ * @param[in,out] iter   Iterator (advanced on success).
+ * @param[out]    option Output option structure.
+ * @return 1 if option retrieved, 0 if no more options or parse error.
+ *
+ * @code{.c}
+ * SocketDNS_EDNSOptionIter iter;
+ * SocketDNS_EDNSOption opt;
+ * SocketDNS_edns_option_iter_init(&iter, rdata, rdlen);
+ * while (SocketDNS_edns_option_iter_next(&iter, &opt)) {
+ *     switch (opt.code) {
+ *     case DNS_EDNS_OPT_COOKIE:
+ *         // Process cookie option
+ *         break;
+ *     default:
+ *         // Ignore unknown options per RFC 6891
+ *         break;
+ *     }
+ * }
+ * @endcode
+ */
+extern int SocketDNS_edns_option_iter_next (SocketDNS_EDNSOptionIter *iter,
+                                             SocketDNS_EDNSOption *option);
+
+/**
+ * @brief Find an option by code in OPT RDATA.
+ * @ingroup dns_edns0_options
+ *
+ * Searches for the first option with the specified code in the RDATA.
+ * If multiple options with the same code exist, only the first is returned.
+ *
+ * @param[in]  rdata   OPT record RDATA buffer.
+ * @param[in]  rdlen   Length of RDATA in bytes.
+ * @param[in]  code    Option code to search for.
+ * @param[out] option  Output option structure (filled if found).
+ * @return 1 if option found, 0 if not found or parse error.
+ *
+ * @code{.c}
+ * SocketDNS_EDNSOption cookie;
+ * if (SocketDNS_edns_option_find(opt.rdata, opt.rdlength,
+ *                                 DNS_EDNS_OPT_COOKIE, &cookie)) {
+ *     // Process cookie
+ * }
+ * @endcode
+ */
+extern int SocketDNS_edns_option_find (const unsigned char *rdata, size_t rdlen,
+                                        uint16_t code, SocketDNS_EDNSOption *option);
+
+/**
+ * @brief Encode an array of options to RDATA format.
+ * @ingroup dns_edns0_options
+ *
+ * Serializes multiple EDNS options to a buffer suitable for use as
+ * OPT record RDATA. Options are encoded consecutively.
+ *
+ * @param[in]  options Array of options to encode.
+ * @param[in]  count   Number of options in array.
+ * @param[out] buf     Output buffer for RDATA.
+ * @param[in]  buflen  Size of output buffer.
+ * @return Total bytes written on success, -1 on error (buffer too small).
+ *
+ * @code{.c}
+ * SocketDNS_EDNSOption opts[] = {
+ *     { .code = DNS_EDNS_OPT_COOKIE, .length = 8, .data = cookie },
+ *     { .code = DNS_EDNS_OPT_PADDING, .length = 4, .data = padding }
+ * };
+ * unsigned char rdata[256];
+ * int rdlen = SocketDNS_edns_options_encode(opts, 2, rdata, sizeof(rdata));
+ * if (rdlen > 0) {
+ *     opt.rdata = rdata;
+ *     opt.rdlength = rdlen;
+ * }
+ * @endcode
+ */
+extern int SocketDNS_edns_options_encode (const SocketDNS_EDNSOption *options,
+                                           size_t count, unsigned char *buf,
+                                           size_t buflen);
+
+/** @} */ /* End of dns_edns0_options group */
+
 /** @} */ /* End of dns_edns0 group */
 
 /**
