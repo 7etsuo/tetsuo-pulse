@@ -1259,6 +1259,224 @@ extern int SocketDNS_edns_options_encode (const SocketDNS_EDNSOption *options,
 
 /** @} */ /* End of dns_edns0_options group */
 
+/**
+ * @defgroup dns_edns0_payload EDNS0 UDP Payload Size Selection
+ * @brief Intelligent UDP payload size fallback (RFC 6891 Section 6.2.5).
+ * @ingroup dns_edns0
+ * @{
+ */
+
+/** Initial/optimal UDP payload size (RFC 6891 Section 6.2.5). */
+#define DNS_PAYLOAD_INITIAL 4096
+
+/** First fallback size: safe for most paths (IPv6 min MTU area). */
+#define DNS_PAYLOAD_FALLBACK1 1400
+
+/** Last resort UDP size: RFC 1035 guaranteed minimum. */
+#define DNS_PAYLOAD_FALLBACK2 512
+
+/** Default timeout (seconds) before resetting to initial size. */
+#define DNS_PAYLOAD_RESET_TIMEOUT 300
+
+/**
+ * @brief UDP payload size state for progressive fallback.
+ *
+ * Per RFC 6891 Section 6.2.5, implementations should start with a large
+ * size (4096) and progressively fall back on failures:
+ *
+ * ```
+ * PAYLOAD_4096 (start) → timeout/failure
+ *        ↓
+ * PAYLOAD_1400 (first fallback) → timeout/failure
+ *        ↓
+ * PAYLOAD_512 (last resort UDP) → timeout/failure
+ *        ↓
+ * PAYLOAD_TCP (give up on UDP)
+ * ```
+ */
+typedef enum
+{
+  DNS_PAYLOAD_STATE_4096 = 0, /**< Start with 4096 bytes */
+  DNS_PAYLOAD_STATE_1400,     /**< First fallback: ~1400 bytes */
+  DNS_PAYLOAD_STATE_512,      /**< Last resort: 512 bytes (RFC 1035 min) */
+  DNS_PAYLOAD_STATE_TCP       /**< UDP exhausted, must use TCP */
+} SocketDNS_PayloadState;
+
+/**
+ * @brief Per-nameserver payload size tracking.
+ *
+ * Tracks the current payload state and history for a nameserver.
+ * This allows learning which payload sizes work for each server.
+ */
+typedef struct
+{
+  SocketDNS_PayloadState state; /**< Current fallback state */
+  uint16_t last_working_size;   /**< Cached size that last succeeded (0=none) */
+  uint64_t last_failure_time;   /**< Unix timestamp of last failure (0=none) */
+  uint64_t last_success_time;   /**< Unix timestamp of last success (0=none) */
+  uint32_t failure_count;       /**< Consecutive failures at current state */
+} SocketDNS_PayloadTracker;
+
+/**
+ * @brief Configuration for payload size selection.
+ */
+typedef struct
+{
+  uint16_t initial_size;     /**< Initial payload size (default: 4096) */
+  uint16_t fallback1_size;   /**< First fallback size (default: 1400) */
+  uint16_t fallback2_size;   /**< Second fallback size (default: 512) */
+  uint32_t reset_timeout_sec; /**< Seconds before resetting to initial (default: 300) */
+} SocketDNS_PayloadConfig;
+
+/**
+ * @brief Initialize a payload tracker with default state.
+ * @ingroup dns_edns0_payload
+ *
+ * Sets tracker to initial state (4096 bytes, no history).
+ *
+ * @param[out] tracker Tracker to initialize.
+ *
+ * @code{.c}
+ * SocketDNS_PayloadTracker tracker;
+ * SocketDNS_payload_init(&tracker);
+ * // tracker.state = DNS_PAYLOAD_STATE_4096
+ * @endcode
+ */
+extern void SocketDNS_payload_init (SocketDNS_PayloadTracker *tracker);
+
+/**
+ * @brief Initialize payload configuration with defaults.
+ * @ingroup dns_edns0_payload
+ *
+ * Sets config to RFC 6891 recommended values:
+ * - initial_size: 4096
+ * - fallback1_size: 1400
+ * - fallback2_size: 512
+ * - reset_timeout_sec: 300
+ *
+ * @param[out] config Configuration to initialize.
+ */
+extern void SocketDNS_payload_config_init (SocketDNS_PayloadConfig *config);
+
+/**
+ * @brief Get the current UDP payload size for a tracker.
+ * @ingroup dns_edns0_payload
+ *
+ * Returns the appropriate payload size based on current state.
+ * If a previous size worked, returns that cached value.
+ * Values less than 512 are normalized to 512 per RFC 6891.
+ *
+ * @param[in] tracker Payload tracker.
+ * @param[in] config  Configuration (NULL for defaults).
+ * @return UDP payload size in bytes, or 0 if TCP required.
+ *
+ * @code{.c}
+ * uint16_t size = SocketDNS_payload_get_size(&tracker, NULL);
+ * if (size == 0) {
+ *     // Must use TCP
+ * } else {
+ *     opt.udp_payload_size = size;
+ * }
+ * @endcode
+ */
+extern uint16_t SocketDNS_payload_get_size (const SocketDNS_PayloadTracker *tracker,
+                                             const SocketDNS_PayloadConfig *config);
+
+/**
+ * @brief Record a payload-related failure and advance state.
+ * @ingroup dns_edns0_payload
+ *
+ * Called when a query times out or fails in a way that suggests
+ * payload size issues (e.g., consistent timeouts, fragmentation).
+ * Advances to the next fallback state.
+ *
+ * @param[in,out] tracker Payload tracker to update.
+ * @param[in]     now     Current Unix timestamp.
+ *
+ * @code{.c}
+ * if (error == DNS_ERROR_TIMEOUT) {
+ *     SocketDNS_payload_failed(&tracker, time(NULL));
+ *     // Retry with smaller payload
+ * }
+ * @endcode
+ */
+extern void SocketDNS_payload_failed (SocketDNS_PayloadTracker *tracker,
+                                       uint64_t now);
+
+/**
+ * @brief Record a successful query and cache the working size.
+ * @ingroup dns_edns0_payload
+ *
+ * Called when a query succeeds. Caches the payload size that worked.
+ * Resets failure count but does NOT change state (we want to remember
+ * the minimum working size for this server).
+ *
+ * @param[in,out] tracker Payload tracker to update.
+ * @param[in]     size    Payload size that succeeded.
+ * @param[in]     now     Current Unix timestamp.
+ *
+ * @code{.c}
+ * if (response_received) {
+ *     SocketDNS_payload_succeeded(&tracker, opt.udp_payload_size, time(NULL));
+ * }
+ * @endcode
+ */
+extern void SocketDNS_payload_succeeded (SocketDNS_PayloadTracker *tracker,
+                                          uint16_t size, uint64_t now);
+
+/**
+ * @brief Check if tracker should be reset to initial state.
+ * @ingroup dns_edns0_payload
+ *
+ * After a period of time (reset_timeout_sec), it's worth retrying
+ * larger payload sizes as network conditions may have changed.
+ *
+ * @param[in] tracker Payload tracker.
+ * @param[in] config  Configuration (NULL for defaults).
+ * @param[in] now     Current Unix timestamp.
+ * @return 1 if should reset, 0 otherwise.
+ */
+extern int SocketDNS_payload_should_reset (const SocketDNS_PayloadTracker *tracker,
+                                            const SocketDNS_PayloadConfig *config,
+                                            uint64_t now);
+
+/**
+ * @brief Reset tracker to initial state.
+ * @ingroup dns_edns0_payload
+ *
+ * Resets to 4096 bytes. Call periodically to retry larger sizes
+ * after network conditions may have improved.
+ *
+ * @param[in,out] tracker Payload tracker to reset.
+ *
+ * @code{.c}
+ * if (SocketDNS_payload_should_reset(&tracker, NULL, time(NULL))) {
+ *     SocketDNS_payload_reset(&tracker);
+ * }
+ * @endcode
+ */
+extern void SocketDNS_payload_reset (SocketDNS_PayloadTracker *tracker);
+
+/**
+ * @brief Check if UDP is exhausted and TCP is required.
+ * @ingroup dns_edns0_payload
+ *
+ * @param[in] tracker Payload tracker.
+ * @return 1 if must use TCP, 0 if UDP still viable.
+ */
+extern int SocketDNS_payload_needs_tcp (const SocketDNS_PayloadTracker *tracker);
+
+/**
+ * @brief Get human-readable state name.
+ * @ingroup dns_edns0_payload
+ *
+ * @param[in] state Payload state.
+ * @return State name string.
+ */
+extern const char *SocketDNS_payload_state_name (SocketDNS_PayloadState state);
+
+/** @} */ /* End of dns_edns0_payload group */
+
 /** @} */ /* End of dns_edns0 group */
 
 /**
