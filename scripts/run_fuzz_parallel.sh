@@ -102,6 +102,8 @@ TARGETS_TLS=(
     fuzz_tls_ocsp
     fuzz_tls_ktls
     fuzz_tls_key_update
+    fuzz_tls_record
+    fuzz_tls_alert
     fuzz_tls_protocol_version
     fuzz_tls_buffer_pool
     fuzz_tls_cert_lookup
@@ -118,6 +120,7 @@ TARGETS_DTLS=(
     fuzz_dtls_io
     fuzz_dtls_config
     fuzz_dtls_enable_config
+    fuzz_dtls_replay
 )
 
 TARGETS_PROXY=(
