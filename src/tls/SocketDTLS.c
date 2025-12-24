@@ -225,12 +225,16 @@ create_dgram_bio (int fd)
  * @socket: Socket to configure
  * @ssl: SSL object to associate
  * @ctx: DTLS context
+ *
+ * Increments the context refcount so the context remains valid while the
+ * socket is in use. The refcount is decremented when the socket is freed.
  */
 static void
 finalize_dtls_state (SocketDgram_T socket, SSL *ssl, SocketDTLSContext_T ctx)
 {
   socket->dtls_ssl = (void *)ssl;
   socket->dtls_ctx = (void *)ctx;
+  SocketDTLSContext_ref (ctx); /* Retain context for this socket */
   SSL_set_app_data (ssl, socket);
   allocate_dtls_buffers (socket);
 

@@ -200,7 +200,6 @@ TEST (dtls_mtu_socket_default)
     ASSERT_NOT_NULL (ctx);
 
     SocketDTLS_enable (socket, ctx);
-    ctx = NULL; /* Ownership transferred to socket */
 
     /* Socket MTU should inherit from context default */
     size_t mtu = SocketDTLS_get_mtu (socket);
@@ -226,7 +225,6 @@ TEST (dtls_mtu_socket_set_custom)
     socket = SocketDgram_new (AF_INET, 0);
     ctx = SocketDTLSContext_new_client (NULL);
     SocketDTLS_enable (socket, ctx);
-    ctx = NULL; /* Ownership transferred to socket */
 
     /* Set custom MTU on socket */
     SocketDTLS_set_mtu (socket, 1200);
@@ -256,7 +254,6 @@ TEST (dtls_mtu_socket_inherits_context)
     SocketDTLSContext_set_mtu (ctx, 1500);
 
     SocketDTLS_enable (socket, ctx);
-    ctx = NULL; /* Ownership transferred to socket */
 
     /* Socket should have context's MTU */
     ASSERT_EQ (SocketDTLS_get_mtu (socket), 1500);
@@ -337,7 +334,6 @@ TEST (dtls_mtu_update_after_enable)
     socket = SocketDgram_new (AF_INET, 0);
     ctx = SocketDTLSContext_new_client (NULL);
     SocketDTLS_enable (socket, ctx);
-    ctx = NULL; /* Ownership transferred to socket */
 
     /* Update MTU multiple times */
     SocketDTLS_set_mtu (socket, 1000);

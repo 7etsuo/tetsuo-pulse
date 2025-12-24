@@ -26,6 +26,7 @@
 #if SOCKET_HAS_TLS
 
 #include <pthread.h>
+#include <stdatomic.h>
 #include <string.h>
 
 #include "core/Arena.h"
@@ -805,6 +806,7 @@ struct T
 {
   SSL_CTX *ssl_ctx;            /**< OpenSSL context */
   Arena_T arena;               /**< Arena for allocations */
+  atomic_int refcount;         /**< Reference count for shared ownership */
   int is_server;               /**< 1 for server, 0 for client */
   size_t mtu;                  /**< Configured MTU */
   int session_cache_enabled;   /**< Session cache flag */

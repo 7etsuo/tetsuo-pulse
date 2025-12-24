@@ -126,6 +126,7 @@ alloc_context (SSL_CTX *ssl_ctx, int is_server)
 
   ctx->arena = Arena_new(); /* Raises Arena_Failed on failure; no NULL check needed */
 
+  atomic_init (&ctx->refcount, 1); /* Initialize refcount to 1 */
   ctx->ssl_ctx = ssl_ctx;
   ctx->is_server = is_server;
   ctx->mtu = SOCKET_DTLS_DEFAULT_MTU;
@@ -241,12 +242,31 @@ SocketDTLSContext_new_client (const char *ca_file)
 }
 
 void
+SocketDTLSContext_ref (T ctx)
+{
+  if (!ctx)
+    return;
+
+  atomic_fetch_add (&ctx->refcount, 1);
+}
+
+void
 SocketDTLSContext_free (T *ctx_p)
 {
   if (!ctx_p || !*ctx_p)
     return;
 
   T ctx = *ctx_p;
+  *ctx_p = NULL;
+
+  /*
+   * Decrement refcount atomically. If we're not the last reference,
+   * just return - the context is still in use by other sockets.
+   */
+  if (atomic_fetch_sub (&ctx->refcount, 1) != 1)
+    return;
+
+  /* We're the last reference - perform actual cleanup */
 
   /* Securely clear cookie secrets using SocketCrypto */
   SocketCrypto_secure_clear (ctx->cookie.secret, sizeof (ctx->cookie.secret));
@@ -275,7 +295,6 @@ SocketDTLSContext_free (T *ctx_p)
     }
 
   free (ctx);
-  *ctx_p = NULL;
 }
 
 /**
