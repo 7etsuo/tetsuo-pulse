@@ -3437,6 +3437,325 @@ TEST (dns_opt_ttl_z_bits)
   ASSERT_EQ (decoded.z, 0x7FFF);  /* Only 15 bits preserved */
 }
 
+/*
+ * EDNS0 UDP Payload Size Fallback Tests (RFC 6891 Section 6.2.5)
+ */
+
+/* Test payload tracker initialization */
+TEST (dns_payload_init)
+{
+  SocketDNS_PayloadTracker tracker;
+
+  SocketDNS_payload_init (&tracker);
+
+  ASSERT_EQ (tracker.state, DNS_PAYLOAD_STATE_4096);
+  ASSERT_EQ (tracker.last_working_size, 0);
+  ASSERT_EQ (tracker.last_failure_time, 0U);
+  ASSERT_EQ (tracker.last_success_time, 0U);
+  ASSERT_EQ (tracker.failure_count, 0U);
+}
+
+/* Test payload config initialization */
+TEST (dns_payload_config_init)
+{
+  SocketDNS_PayloadConfig config;
+
+  SocketDNS_payload_config_init (&config);
+
+  ASSERT_EQ (config.initial_size, DNS_PAYLOAD_INITIAL);
+  ASSERT_EQ (config.fallback1_size, DNS_PAYLOAD_FALLBACK1);
+  ASSERT_EQ (config.fallback2_size, DNS_PAYLOAD_FALLBACK2);
+  ASSERT_EQ (config.reset_timeout_sec, DNS_PAYLOAD_RESET_TIMEOUT);
+}
+
+/* Test starting with 4096 byte payload */
+TEST (dns_payload_start_4096)
+{
+  SocketDNS_PayloadTracker tracker;
+  uint16_t size;
+
+  SocketDNS_payload_init (&tracker);
+  size = SocketDNS_payload_get_size (&tracker, NULL);
+
+  ASSERT_EQ (size, 4096);
+}
+
+/* Test fallback to 1400 on first timeout */
+TEST (dns_payload_fallback_to_1400)
+{
+  SocketDNS_PayloadTracker tracker;
+  uint16_t size;
+
+  SocketDNS_payload_init (&tracker);
+
+  /* Simulate timeout */
+  SocketDNS_payload_failed (&tracker, 1000);
+
+  ASSERT_EQ (tracker.state, DNS_PAYLOAD_STATE_1400);
+  size = SocketDNS_payload_get_size (&tracker, NULL);
+  ASSERT_EQ (size, 1400);
+}
+
+/* Test fallback to 512 on second timeout */
+TEST (dns_payload_fallback_to_512)
+{
+  SocketDNS_PayloadTracker tracker;
+  uint16_t size;
+
+  SocketDNS_payload_init (&tracker);
+
+  /* First timeout: 4096 -> 1400 */
+  SocketDNS_payload_failed (&tracker, 1000);
+  /* Second timeout: 1400 -> 512 */
+  SocketDNS_payload_failed (&tracker, 2000);
+
+  ASSERT_EQ (tracker.state, DNS_PAYLOAD_STATE_512);
+  size = SocketDNS_payload_get_size (&tracker, NULL);
+  ASSERT_EQ (size, 512);
+}
+
+/* Test fallback to TCP on third timeout */
+TEST (dns_payload_fallback_to_tcp)
+{
+  SocketDNS_PayloadTracker tracker;
+  uint16_t size;
+
+  SocketDNS_payload_init (&tracker);
+
+  /* Three timeouts: 4096 -> 1400 -> 512 -> TCP */
+  SocketDNS_payload_failed (&tracker, 1000);
+  SocketDNS_payload_failed (&tracker, 2000);
+  SocketDNS_payload_failed (&tracker, 3000);
+
+  ASSERT_EQ (tracker.state, DNS_PAYLOAD_STATE_TCP);
+  size = SocketDNS_payload_get_size (&tracker, NULL);
+  ASSERT_EQ (size, 0);  /* 0 means TCP required */
+  ASSERT (SocketDNS_payload_needs_tcp (&tracker) == 1);
+}
+
+/* Test success caches working size */
+TEST (dns_payload_success_caches_size)
+{
+  SocketDNS_PayloadTracker tracker;
+  uint16_t size;
+
+  SocketDNS_payload_init (&tracker);
+
+  /* Fall back to 1400 */
+  SocketDNS_payload_failed (&tracker, 1000);
+
+  /* Success at 1400 */
+  SocketDNS_payload_succeeded (&tracker, 1400, 2000);
+
+  ASSERT_EQ (tracker.last_working_size, 1400);
+  ASSERT_EQ (tracker.failure_count, 0U);
+
+  /* Should return cached size */
+  size = SocketDNS_payload_get_size (&tracker, NULL);
+  ASSERT_EQ (size, 1400);
+}
+
+/* Test payload < 512 treated as 512 per RFC 6891 */
+TEST (dns_payload_min_512)
+{
+  SocketDNS_PayloadTracker tracker;
+  SocketDNS_PayloadConfig config;
+  uint16_t size;
+
+  SocketDNS_payload_init (&tracker);
+
+  /* Configure with size below minimum */
+  config.initial_size = 256;
+  config.fallback1_size = 200;
+  config.fallback2_size = 100;
+  config.reset_timeout_sec = 300;
+
+  /* Should enforce 512 minimum */
+  size = SocketDNS_payload_get_size (&tracker, &config);
+  ASSERT_EQ (size, 512);
+
+  /* Fallback also enforces minimum */
+  SocketDNS_payload_failed (&tracker, 1000);
+  size = SocketDNS_payload_get_size (&tracker, &config);
+  ASSERT_EQ (size, 512);
+}
+
+/* Test timeout resets payload to initial */
+TEST (dns_payload_timeout_reset)
+{
+  SocketDNS_PayloadTracker tracker;
+  SocketDNS_PayloadConfig config;
+
+  SocketDNS_payload_init (&tracker);
+  config.initial_size = 4096;
+  config.fallback1_size = 1400;
+  config.fallback2_size = 512;
+  config.reset_timeout_sec = 300;
+
+  /* Fall back to 1400 */
+  SocketDNS_payload_failed (&tracker, 1000);
+  ASSERT_EQ (tracker.state, DNS_PAYLOAD_STATE_1400);
+
+  /* After timeout period, should suggest reset */
+  ASSERT (SocketDNS_payload_should_reset (&tracker, &config, 1301) == 1);
+
+  /* Perform reset */
+  SocketDNS_payload_reset (&tracker);
+  ASSERT_EQ (tracker.state, DNS_PAYLOAD_STATE_4096);
+}
+
+/* Test per-nameserver payload tracking concept */
+TEST (dns_payload_per_nameserver)
+{
+  SocketDNS_PayloadTracker ns1, ns2;
+
+  SocketDNS_payload_init (&ns1);
+  SocketDNS_payload_init (&ns2);
+
+  /* NS1 has issues, falls back */
+  SocketDNS_payload_failed (&ns1, 1000);
+  SocketDNS_payload_failed (&ns1, 2000);
+
+  /* NS2 works fine */
+  SocketDNS_payload_succeeded (&ns2, 4096, 3000);
+
+  /* Each tracker is independent */
+  ASSERT_EQ (ns1.state, DNS_PAYLOAD_STATE_512);
+  ASSERT_EQ (ns2.state, DNS_PAYLOAD_STATE_4096);
+  ASSERT_EQ (ns2.last_working_size, 4096);
+}
+
+/* Test success normalizes size to minimum */
+TEST (dns_payload_success_normalizes)
+{
+  SocketDNS_PayloadTracker tracker;
+
+  SocketDNS_payload_init (&tracker);
+
+  /* Success with size below minimum */
+  SocketDNS_payload_succeeded (&tracker, 256, 1000);
+
+  /* Should be normalized to 512 */
+  ASSERT_EQ (tracker.last_working_size, 512);
+}
+
+/* Test NULL handling */
+TEST (dns_payload_null_handling)
+{
+  SocketDNS_PayloadTracker tracker;
+  uint16_t size;
+
+  /* NULL tracker returns default */
+  size = SocketDNS_payload_get_size (NULL, NULL);
+  ASSERT_EQ (size, DNS_PAYLOAD_INITIAL);
+
+  /* NULL tracker for other functions should not crash */
+  SocketDNS_payload_init (NULL);
+  SocketDNS_payload_config_init (NULL);
+  SocketDNS_payload_failed (NULL, 1000);
+  SocketDNS_payload_succeeded (NULL, 4096, 1000);
+  SocketDNS_payload_reset (NULL);
+  ASSERT (SocketDNS_payload_should_reset (NULL, NULL, 1000) == 0);
+  ASSERT (SocketDNS_payload_needs_tcp (NULL) == 0);
+
+  /* Basic init should work */
+  SocketDNS_payload_init (&tracker);
+  ASSERT_EQ (tracker.state, DNS_PAYLOAD_STATE_4096);
+}
+
+/* Test state name strings */
+TEST (dns_payload_state_names)
+{
+  ASSERT (strcmp (SocketDNS_payload_state_name (DNS_PAYLOAD_STATE_4096), "4096") == 0);
+  ASSERT (strcmp (SocketDNS_payload_state_name (DNS_PAYLOAD_STATE_1400), "1400") == 0);
+  ASSERT (strcmp (SocketDNS_payload_state_name (DNS_PAYLOAD_STATE_512), "512") == 0);
+  ASSERT (strcmp (SocketDNS_payload_state_name (DNS_PAYLOAD_STATE_TCP), "TCP") == 0);
+  ASSERT (strcmp (SocketDNS_payload_state_name ((SocketDNS_PayloadState)99), "unknown") == 0);
+}
+
+/* Test custom config */
+TEST (dns_payload_custom_config)
+{
+  SocketDNS_PayloadTracker tracker;
+  SocketDNS_PayloadConfig config;
+  uint16_t size;
+
+  config.initial_size = 2048;
+  config.fallback1_size = 1024;
+  config.fallback2_size = 512;
+  config.reset_timeout_sec = 60;
+
+  SocketDNS_payload_init (&tracker);
+
+  size = SocketDNS_payload_get_size (&tracker, &config);
+  ASSERT_EQ (size, 2048);
+
+  SocketDNS_payload_failed (&tracker, 1000);
+  size = SocketDNS_payload_get_size (&tracker, &config);
+  ASSERT_EQ (size, 1024);
+}
+
+/* Test further failures at TCP state don't crash */
+TEST (dns_payload_tcp_state_stable)
+{
+  SocketDNS_PayloadTracker tracker;
+
+  SocketDNS_payload_init (&tracker);
+
+  /* Go to TCP state */
+  SocketDNS_payload_failed (&tracker, 1000);
+  SocketDNS_payload_failed (&tracker, 2000);
+  SocketDNS_payload_failed (&tracker, 3000);
+
+  ASSERT_EQ (tracker.state, DNS_PAYLOAD_STATE_TCP);
+
+  /* Further failures should not change state */
+  SocketDNS_payload_failed (&tracker, 4000);
+  SocketDNS_payload_failed (&tracker, 5000);
+
+  ASSERT_EQ (tracker.state, DNS_PAYLOAD_STATE_TCP);
+  ASSERT (SocketDNS_payload_needs_tcp (&tracker) == 1);
+}
+
+/* Test failure clears cached working size */
+TEST (dns_payload_failure_clears_cache)
+{
+  SocketDNS_PayloadTracker tracker;
+
+  SocketDNS_payload_init (&tracker);
+
+  /* Success at 4096 */
+  SocketDNS_payload_succeeded (&tracker, 4096, 1000);
+  ASSERT_EQ (tracker.last_working_size, 4096);
+
+  /* Failure clears cached size */
+  SocketDNS_payload_failed (&tracker, 2000);
+  ASSERT_EQ (tracker.last_working_size, 0);
+}
+
+/* Test reset preserves timestamps */
+TEST (dns_payload_reset_preserves_timestamps)
+{
+  SocketDNS_PayloadTracker tracker;
+
+  SocketDNS_payload_init (&tracker);
+
+  SocketDNS_payload_failed (&tracker, 1000);
+  SocketDNS_payload_succeeded (&tracker, 1400, 2000);
+
+  uint64_t fail_time = tracker.last_failure_time;
+  uint64_t success_time = tracker.last_success_time;
+
+  SocketDNS_payload_reset (&tracker);
+
+  /* Timestamps preserved for debugging/metrics */
+  ASSERT_EQ (tracker.last_failure_time, fail_time);
+  ASSERT_EQ (tracker.last_success_time, success_time);
+  /* But state and working size are reset */
+  ASSERT_EQ (tracker.state, DNS_PAYLOAD_STATE_4096);
+  ASSERT_EQ (tracker.last_working_size, 0);
+}
+
 int
 main (void)
 {

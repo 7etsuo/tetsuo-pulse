@@ -1349,6 +1349,232 @@ SocketDNS_edns_options_encode (const SocketDNS_EDNSOption *options,
 }
 
 /*
+ * EDNS0 UDP Payload Size Selection (RFC 6891 Section 6.2.5)
+ *
+ * Progressive fallback sequence:
+ *   4096 (initial) → 1400 (safe for most paths) → 512 (guaranteed) → TCP
+ */
+
+void
+SocketDNS_payload_init (SocketDNS_PayloadTracker *tracker)
+{
+  if (!tracker)
+    return;
+
+  tracker->state = DNS_PAYLOAD_STATE_4096;
+  tracker->last_working_size = 0;
+  tracker->last_failure_time = 0;
+  tracker->last_success_time = 0;
+  tracker->failure_count = 0;
+}
+
+void
+SocketDNS_payload_config_init (SocketDNS_PayloadConfig *config)
+{
+  if (!config)
+    return;
+
+  config->initial_size = DNS_PAYLOAD_INITIAL;
+  config->fallback1_size = DNS_PAYLOAD_FALLBACK1;
+  config->fallback2_size = DNS_PAYLOAD_FALLBACK2;
+  config->reset_timeout_sec = DNS_PAYLOAD_RESET_TIMEOUT;
+}
+
+uint16_t
+SocketDNS_payload_get_size (const SocketDNS_PayloadTracker *tracker,
+                             const SocketDNS_PayloadConfig *config)
+{
+  SocketDNS_PayloadConfig defaults;
+  const SocketDNS_PayloadConfig *cfg;
+  uint16_t size;
+
+  if (!tracker)
+    return DNS_PAYLOAD_INITIAL;
+
+  /* Use provided config or defaults */
+  if (config)
+    {
+      cfg = config;
+    }
+  else
+    {
+      SocketDNS_payload_config_init (&defaults);
+      cfg = &defaults;
+    }
+
+  /* If we have a known working size, use it */
+  if (tracker->last_working_size > 0)
+    {
+      /* Ensure minimum of 512 per RFC 6891 */
+      size = tracker->last_working_size;
+      if (size < DNS_EDNS0_MIN_UDPSIZE)
+        size = DNS_EDNS0_MIN_UDPSIZE;
+      return size;
+    }
+
+  /* Otherwise, return size based on current state */
+  switch (tracker->state)
+    {
+    case DNS_PAYLOAD_STATE_4096:
+      size = cfg->initial_size;
+      break;
+    case DNS_PAYLOAD_STATE_1400:
+      size = cfg->fallback1_size;
+      break;
+    case DNS_PAYLOAD_STATE_512:
+      size = cfg->fallback2_size;
+      break;
+    case DNS_PAYLOAD_STATE_TCP:
+      return 0;  /* Signal that TCP is required */
+    default:
+      size = cfg->initial_size;
+      break;
+    }
+
+  /* Enforce minimum per RFC 6891 Section 6.2.3 */
+  if (size < DNS_EDNS0_MIN_UDPSIZE)
+    size = DNS_EDNS0_MIN_UDPSIZE;
+
+  return size;
+}
+
+void
+SocketDNS_payload_failed (SocketDNS_PayloadTracker *tracker, uint64_t now)
+{
+  if (!tracker)
+    return;
+
+  tracker->last_failure_time = now;
+  tracker->failure_count++;
+
+  /* Clear cached working size - it's no longer reliable */
+  tracker->last_working_size = 0;
+
+  /* Advance to next fallback state */
+  switch (tracker->state)
+    {
+    case DNS_PAYLOAD_STATE_4096:
+      tracker->state = DNS_PAYLOAD_STATE_1400;
+      tracker->failure_count = 0;  /* Reset count for new state */
+      break;
+    case DNS_PAYLOAD_STATE_1400:
+      tracker->state = DNS_PAYLOAD_STATE_512;
+      tracker->failure_count = 0;
+      break;
+    case DNS_PAYLOAD_STATE_512:
+      tracker->state = DNS_PAYLOAD_STATE_TCP;
+      tracker->failure_count = 0;
+      break;
+    case DNS_PAYLOAD_STATE_TCP:
+      /* Already at TCP, can't fall back further */
+      break;
+    }
+}
+
+void
+SocketDNS_payload_succeeded (SocketDNS_PayloadTracker *tracker,
+                              uint16_t size, uint64_t now)
+{
+  if (!tracker)
+    return;
+
+  tracker->last_success_time = now;
+  tracker->failure_count = 0;
+
+  /* Cache the working size (normalized to minimum) */
+  if (size < DNS_EDNS0_MIN_UDPSIZE)
+    size = DNS_EDNS0_MIN_UDPSIZE;
+  tracker->last_working_size = size;
+}
+
+int
+SocketDNS_payload_should_reset (const SocketDNS_PayloadTracker *tracker,
+                                 const SocketDNS_PayloadConfig *config,
+                                 uint64_t now)
+{
+  SocketDNS_PayloadConfig defaults;
+  const SocketDNS_PayloadConfig *cfg;
+  uint64_t elapsed;
+
+  if (!tracker)
+    return 0;
+
+  /* Already at initial state, no reset needed */
+  if (tracker->state == DNS_PAYLOAD_STATE_4096
+      && tracker->last_working_size == 0)
+    return 0;
+
+  /* Use provided config or defaults */
+  if (config)
+    {
+      cfg = config;
+    }
+  else
+    {
+      SocketDNS_payload_config_init (&defaults);
+      cfg = &defaults;
+    }
+
+  /* Check if enough time has passed since last success */
+  if (tracker->last_success_time > 0)
+    {
+      elapsed = now - tracker->last_success_time;
+      if (elapsed >= cfg->reset_timeout_sec)
+        return 1;
+    }
+
+  /* Also reset if enough time since last failure and we're not at initial */
+  if (tracker->last_failure_time > 0
+      && tracker->state != DNS_PAYLOAD_STATE_4096)
+    {
+      elapsed = now - tracker->last_failure_time;
+      if (elapsed >= cfg->reset_timeout_sec)
+        return 1;
+    }
+
+  return 0;
+}
+
+void
+SocketDNS_payload_reset (SocketDNS_PayloadTracker *tracker)
+{
+  if (!tracker)
+    return;
+
+  tracker->state = DNS_PAYLOAD_STATE_4096;
+  tracker->last_working_size = 0;
+  tracker->failure_count = 0;
+  /* Preserve timestamps for debugging/metrics */
+}
+
+int
+SocketDNS_payload_needs_tcp (const SocketDNS_PayloadTracker *tracker)
+{
+  if (!tracker)
+    return 0;
+
+  return (tracker->state == DNS_PAYLOAD_STATE_TCP) ? 1 : 0;
+}
+
+const char *
+SocketDNS_payload_state_name (SocketDNS_PayloadState state)
+{
+  switch (state)
+    {
+    case DNS_PAYLOAD_STATE_4096:
+      return "4096";
+    case DNS_PAYLOAD_STATE_1400:
+      return "1400";
+    case DNS_PAYLOAD_STATE_512:
+      return "512";
+    case DNS_PAYLOAD_STATE_TCP:
+      return "TCP";
+    default:
+      return "unknown";
+    }
+}
+
+/*
  * Security Utilities (RFC 5452)
  */
 
