@@ -1024,6 +1024,13 @@ if(ENABLE_FUZZING)
         fuzz_proxy_http
         fuzz_proxy_url
         fuzz_dns_inj
+        # DNS wire format fuzzing harnesses (issue #141)
+        fuzz_dns_header
+        fuzz_dns_name
+        fuzz_dns_response
+        fuzz_dns_edns0
+        fuzz_dns_cookie
+        fuzz_dns_soa
         fuzz_pool_dos
         fuzz_ws_frame
         fuzz_ws_handshake
