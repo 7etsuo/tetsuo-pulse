@@ -441,8 +441,10 @@ SocketDTLS_enable (SocketDgram_T socket, SocketDTLSContext_T ctx)
 void
 SocketDTLS_set_peer (SocketDgram_T socket, const char *host, int port)
 {
-  assert (socket);
-  assert (host);
+  if (!socket)
+    RAISE (SocketDTLS_Failed);
+  if (!host)
+    RAISE (SocketDTLS_Failed);
 
   SSL *ssl = REQUIRE_DTLS_SSL (socket, SocketDTLS_Failed);
 
@@ -472,8 +474,10 @@ SocketDTLS_set_peer (SocketDgram_T socket, const char *host, int port)
 void
 SocketDTLS_set_hostname (SocketDgram_T socket, const char *hostname)
 {
-  assert (socket);
-  assert (hostname);
+  if (!socket)
+    RAISE (SocketDTLS_Failed);
+  if (!hostname)
+    RAISE (SocketDTLS_Failed);
 
   REQUIRE_DTLS_ENABLED (socket, SocketDTLS_Failed);
 
@@ -832,9 +836,12 @@ SocketDTLS_listen (SocketDgram_T socket)
 ssize_t
 SocketDTLS_send (SocketDgram_T socket, const void *buf, size_t len)
 {
-  assert (socket);
-  assert (buf);
-  assert (len > 0);
+  if (!socket)
+    RAISE (SocketDTLS_Failed);
+  if (!buf)
+    RAISE (SocketDTLS_Failed);
+  if (len == 0)
+    RAISE (SocketDTLS_Failed);
 
   SSL *ssl = VALIDATE_DTLS_IO_READY (socket, SocketDTLS_Failed);
 
@@ -858,9 +865,12 @@ SocketDTLS_send (SocketDgram_T socket, const void *buf, size_t len)
 ssize_t
 SocketDTLS_recv (SocketDgram_T socket, void *buf, size_t len)
 {
-  assert (socket);
-  assert (buf);
-  assert (len > 0);
+  if (!socket)
+    RAISE (SocketDTLS_Failed);
+  if (!buf)
+    RAISE (SocketDTLS_Failed);
+  if (len == 0)
+    RAISE (SocketDTLS_Failed);
 
   SSL *ssl = VALIDATE_DTLS_IO_READY (socket, SocketDTLS_Failed);
 
@@ -891,9 +901,12 @@ ssize_t
 SocketDTLS_sendto (SocketDgram_T socket, const void *buf, size_t len,
                    const char *host, int port)
 {
-  assert (socket);
-  assert (buf);
-  assert (host);
+  if (!socket)
+    RAISE (SocketDTLS_Failed);
+  if (!buf)
+    RAISE (SocketDTLS_Failed);
+  if (!host)
+    RAISE (SocketDTLS_Failed);
 
   /* Set peer address then send */
   SocketDTLS_set_peer (socket, host, port);
@@ -976,8 +989,10 @@ ssize_t
 SocketDTLS_recvfrom (SocketDgram_T socket, void *buf, size_t len, char *host,
                      size_t host_len, int *port)
 {
-  assert (socket);
-  assert (buf);
+  if (!socket)
+    RAISE (SocketDTLS_Failed);
+  if (!buf)
+    RAISE (SocketDTLS_Failed);
 
   SSL *ssl = VALIDATE_DTLS_IO_READY (socket, SocketDTLS_Failed);
 
