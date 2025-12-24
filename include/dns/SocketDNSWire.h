@@ -355,6 +355,12 @@ typedef enum
   DNS_TYPE_AAAA = 28,  /**< IPv6 host address (RFC 3596) */
   DNS_TYPE_SRV = 33,   /**< Service locator (RFC 2782) */
   DNS_TYPE_OPT = 41,   /**< EDNS0 option (RFC 6891) */
+  DNS_TYPE_DS = 43,    /**< Delegation Signer (RFC 4034) */
+  DNS_TYPE_RRSIG = 46, /**< RRSIG signature (RFC 4034) */
+  DNS_TYPE_NSEC = 47,  /**< Next Secure (RFC 4034) */
+  DNS_TYPE_DNSKEY = 48, /**< DNS Public Key (RFC 4034) */
+  DNS_TYPE_NSEC3 = 50, /**< NSEC3 hashed denial (RFC 5155) */
+  DNS_TYPE_NSEC3PARAM = 51, /**< NSEC3 parameters (RFC 5155) */
   DNS_TYPE_ANY = 255   /**< Any type (QTYPE only, RFC 1035) */
 } SocketDNS_Type;
 
