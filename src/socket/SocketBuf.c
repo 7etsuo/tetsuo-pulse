@@ -70,6 +70,9 @@ struct T
   size_t tail;
   size_t size;
   Arena_T arena;
+  /* Async I/O support (optional) */
+  struct SocketAsync_T *async;
+  struct Socket_T *socket;
 };
 
 
@@ -135,6 +138,8 @@ SocketBuf_new (Arena_T arena, size_t capacity)
   buf->tail = 0;
   buf->size = 0;
   buf->arena = arena;
+  buf->async = NULL;
+  buf->socket = NULL;
 
   return buf;
 }
@@ -816,4 +821,184 @@ SocketBuf_writev (T buf, const struct iovec *iov, int iovcnt)
   return (ssize_t)total_written;
 }
 
+/* ============================================================================
+ * Async I/O Operations
+ * ============================================================================
+ */
+
+/* Undef T before including SocketAsync.h to avoid macro conflicts */
 #undef T
+#include "socket/SocketAsync.h"
+
+void
+SocketBuf_set_async (SocketBuf_T buf, SocketAsync_T async)
+{
+  VALIDATE_BUF (buf);
+  buf->async = async;
+}
+
+SocketAsync_T
+SocketBuf_get_async (const SocketBuf_T buf)
+{
+  VALIDATE_BUF_CONST (buf, NULL);
+  return buf->async;
+}
+
+void
+SocketBuf_set_socket (SocketBuf_T buf, Socket_T socket)
+{
+  VALIDATE_BUF (buf);
+  buf->socket = socket;
+}
+
+Socket_T
+SocketBuf_get_socket (const SocketBuf_T buf)
+{
+  VALIDATE_BUF_CONST (buf, NULL);
+  return buf->socket;
+}
+
+int
+SocketBuf_async_available (const SocketBuf_T buf)
+{
+  if (!buf || !buf->async)
+    return 0;
+  return SocketAsync_is_available (buf->async);
+}
+
+/**
+ * Internal state for async callback bridging.
+ * Bridges SocketAsync_Callback to SocketBuf_AsyncCallback.
+ */
+typedef struct AsyncBufState
+{
+  SocketBuf_T buf;
+  SocketBuf_AsyncCallback user_cb;
+  void *user_data;
+  int is_fill; /* 1 = fill operation, 0 = flush operation */
+} AsyncBufState;
+
+/**
+ * Internal callback that bridges SocketAsync completion to SocketBuf callback.
+ */
+static void
+async_buf_callback (Socket_T socket, ssize_t bytes, int err, void *user_data)
+{
+  (void)socket; /* Unused - we have buf->socket */
+
+  AsyncBufState *state = (AsyncBufState *)user_data;
+  if (!state)
+    return;
+
+  SocketBuf_T buf = state->buf;
+  SocketBuf_AsyncCallback cb = state->user_cb;
+  void *ud = state->user_data;
+
+  /* For fill operations, commit the received bytes to the buffer */
+  if (state->is_fill && bytes > 0 && err == 0)
+    {
+      /* Commit received data by advancing tail */
+      SocketBuf_written (buf, (size_t)bytes);
+    }
+
+  /* Invoke user callback */
+  if (cb)
+    cb (buf, bytes, err, ud);
+
+  /* State was arena-allocated - no explicit free needed */
+}
+
+unsigned
+SocketBuf_flush_async (SocketBuf_T buf, SocketBuf_AsyncCallback cb,
+                       void *user_data, int flags)
+{
+  VALIDATE_BUF (buf);
+
+  if (!buf->async)
+    RAISE_MSG (SocketBuf_Failed,
+               "SocketBuf_flush_async: async context not set");
+
+  if (!buf->socket)
+    RAISE_MSG (SocketBuf_Failed, "SocketBuf_flush_async: socket not set");
+
+  if (!cb)
+    RAISE_MSG (SocketBuf_Failed, "SocketBuf_flush_async: callback required");
+
+  /* Get readable data from buffer */
+  size_t avail;
+  const void *data = SocketBuf_readptr (buf, &avail);
+
+  if (!data || avail == 0)
+    {
+      /* Nothing to flush - invoke callback immediately with 0 bytes */
+      cb (buf, 0, 0, user_data);
+      return 0;
+    }
+
+  /* Allocate state for callback bridging */
+  AsyncBufState *state = Arena_alloc (buf->arena, sizeof (*state), __FILE__,
+                                      __LINE__);
+  if (!state)
+    RAISE_MSG (SocketBuf_Failed, SOCKET_ENOMEM ": Failed to allocate async state");
+
+  state->buf = buf;
+  state->user_cb = cb;
+  state->user_data = user_data;
+  state->is_fill = 0;
+
+  /* Submit async send */
+  unsigned req_id = SocketAsync_send (buf->async, buf->socket, data, avail,
+                                      async_buf_callback, state,
+                                      (SocketAsync_Flags)flags);
+
+  return req_id;
+}
+
+unsigned
+SocketBuf_fill_async (SocketBuf_T buf, size_t max_fill,
+                      SocketBuf_AsyncCallback cb, void *user_data, int flags)
+{
+  VALIDATE_BUF (buf);
+
+  if (!buf->async)
+    RAISE_MSG (SocketBuf_Failed, "SocketBuf_fill_async: async context not set");
+
+  if (!buf->socket)
+    RAISE_MSG (SocketBuf_Failed, "SocketBuf_fill_async: socket not set");
+
+  if (!cb)
+    RAISE_MSG (SocketBuf_Failed, "SocketBuf_fill_async: callback required");
+
+  /* Get writable space in buffer */
+  size_t space;
+  void *write_ptr = SocketBuf_writeptr (buf, &space);
+
+  if (!write_ptr || space == 0)
+    {
+      /* No space to fill */
+      SOCKET_LOG_DEBUG_MSG ("SocketBuf_fill_async: no write space available");
+      return 0;
+    }
+
+  /* Limit to max_fill if specified */
+  if (max_fill > 0 && max_fill < space)
+    space = max_fill;
+
+  /* Allocate state for callback bridging */
+  AsyncBufState *state = Arena_alloc (buf->arena, sizeof (*state), __FILE__,
+                                      __LINE__);
+  if (!state)
+    RAISE_MSG (SocketBuf_Failed, SOCKET_ENOMEM ": Failed to allocate async state");
+
+  state->buf = buf;
+  state->user_cb = cb;
+  state->user_data = user_data;
+  state->is_fill = 1;
+
+  /* Submit async recv */
+  unsigned req_id = SocketAsync_recv (buf->async, buf->socket, write_ptr, space,
+                                      async_buf_callback, state,
+                                      (SocketAsync_Flags)flags);
+
+  return req_id;
+}

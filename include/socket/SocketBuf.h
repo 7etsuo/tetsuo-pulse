@@ -694,5 +694,201 @@ extern ssize_t SocketBuf_readv (T buf, const struct iovec *iov, int iovcnt);
  */
 extern ssize_t SocketBuf_writev (T buf, const struct iovec *iov, int iovcnt);
 
+/* ============================================================================
+ * Async I/O Operations (requires SocketAsync backend)
+ * ============================================================================
+ */
+
+/* Forward declarations for async types - use actual struct names */
+#ifndef SOCKET_INCLUDED
+struct Socket_T;
+typedef struct Socket_T *Socket_T;
+#endif
+
+#ifndef SOCKETASYNC_INCLUDED
+struct SocketAsync_T;
+typedef struct SocketAsync_T *SocketAsync_T;
+#endif
+
+/**
+ * @brief Callback invoked when async buffer I/O operation completes.
+ * @ingroup core_io
+ *
+ * This callback is invoked from the event loop context when an async
+ * flush or fill operation completes.
+ *
+ * @param[in] buf The buffer that completed the operation.
+ * @param[in] bytes Number of bytes transferred (>0 success, 0 EOF, <0 error).
+ * @param[in] err 0 on success, errno value on failure.
+ * @param[in] user_data User-provided context from the original call.
+ *
+ * @threadsafe Invoked serially from event loop thread.
+ */
+typedef void (*SocketBuf_AsyncCallback) (T buf, ssize_t bytes, int err,
+                                         void *user_data);
+
+/**
+ * @brief Associate an async I/O context with this buffer.
+ * @ingroup core_io
+ * @param[in] buf The buffer to configure.
+ * @param[in] async The async context (may be NULL to disable async).
+ *
+ * Required before using SocketBuf_flush_async() or SocketBuf_fill_async().
+ * The async context must outlive the buffer.
+ *
+ * @throws SocketBuf_Failed if buffer is invalid.
+ * @threadsafe No - configure before concurrent use.
+ *
+ * @see SocketBuf_get_async() to query current context.
+ * @see SocketAsync_new() or SocketPoll_get_async() to obtain context.
+ */
+extern void SocketBuf_set_async (T buf, SocketAsync_T async);
+
+/**
+ * @brief Get the associated async I/O context.
+ * @ingroup core_io
+ * @param[in] buf The buffer to query.
+ * @return The async context, or NULL if not set.
+ *
+ * @threadsafe Yes - read-only.
+ */
+extern SocketAsync_T SocketBuf_get_async (const T buf);
+
+/**
+ * @brief Associate a socket with this buffer for I/O operations.
+ * @ingroup core_io
+ * @param[in] buf The buffer to configure.
+ * @param[in] socket The socket for read/write operations.
+ *
+ * Required before using SocketBuf_flush_async() or SocketBuf_fill_async().
+ * The socket must be non-blocking and outlive the buffer.
+ *
+ * @throws SocketBuf_Failed if buffer is invalid.
+ * @threadsafe No - configure before concurrent use.
+ *
+ * @see SocketBuf_get_socket() to query current socket.
+ */
+extern void SocketBuf_set_socket (T buf, Socket_T socket);
+
+/**
+ * @brief Get the associated socket.
+ * @ingroup core_io
+ * @param[in] buf The buffer to query.
+ * @return The associated socket, or NULL if not set.
+ *
+ * @threadsafe Yes - read-only.
+ */
+extern Socket_T SocketBuf_get_socket (const T buf);
+
+/**
+ * @brief Asynchronously flush buffer data to the associated socket.
+ * @ingroup core_io
+ * @param[in] buf The buffer containing data to send.
+ * @param[in] cb Completion callback (required).
+ * @param[in] user_data User context passed to callback.
+ * @param[in] flags Async operation flags (e.g., ASYNC_FLAG_ZERO_COPY).
+ * @return Request ID (>0) on success, 0 on failure.
+ *
+ * Submits the buffer's readable data for async transmission to the socket.
+ * On completion, the callback receives the number of bytes sent. The caller
+ * must call SocketBuf_consume() in the callback to remove sent data.
+ *
+ * Requires prior calls to SocketBuf_set_async() and SocketBuf_set_socket().
+ *
+ * @throws SocketBuf_Failed if buffer/socket/async not configured.
+ * @threadsafe No - caller must synchronize buffer access.
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * void flush_complete(SocketBuf_T buf, ssize_t bytes, int err, void *ud) {
+ *     if (err != 0) {
+ *         fprintf(stderr, "Flush error: %s\n", strerror(err));
+ *         return;
+ *     }
+ *     if (bytes > 0) {
+ *         SocketBuf_consume(buf, (size_t)bytes);  // Remove sent data
+ *     }
+ * }
+ *
+ * // Submit async flush
+ * unsigned req = SocketBuf_flush_async(buf, flush_complete, NULL, 0);
+ * @endcode
+ *
+ * @see SocketBuf_fill_async() for async receive.
+ * @see SocketAsync_Flags for available flags.
+ */
+extern unsigned SocketBuf_flush_async (T buf, SocketBuf_AsyncCallback cb,
+                                       void *user_data, int flags);
+
+/**
+ * @brief Asynchronously fill buffer from the associated socket.
+ * @ingroup core_io
+ * @param[in] buf The buffer to receive data into.
+ * @param[in] max_fill Maximum bytes to receive (0 = fill available space).
+ * @param[in] cb Completion callback (required).
+ * @param[in] user_data User context passed to callback.
+ * @param[in] flags Async operation flags.
+ * @return Request ID (>0) on success, 0 on failure.
+ *
+ * Submits an async receive request to fill the buffer's writable space.
+ * On completion, the callback receives the number of bytes received.
+ * The received data is automatically committed to the buffer (no action needed
+ * in callback for data commitment, but buffer is ready for reading).
+ *
+ * Returns 0 (failure) if buffer has no write space - call SocketBuf_ensure()
+ * first if needed.
+ *
+ * Requires prior calls to SocketBuf_set_async() and SocketBuf_set_socket().
+ *
+ * @throws SocketBuf_Failed if buffer/socket/async not configured.
+ * @threadsafe No - caller must synchronize buffer access.
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * void fill_complete(SocketBuf_T buf, ssize_t bytes, int err, void *ud) {
+ *     if (err != 0) {
+ *         fprintf(stderr, "Fill error: %s\n", strerror(err));
+ *         return;
+ *     }
+ *     if (bytes == 0) {
+ *         printf("EOF - connection closed\n");
+ *         return;
+ *     }
+ *     // Data already committed - read it
+ *     char line[256];
+ *     if (SocketBuf_readline(buf, line, sizeof(line)) > 0) {
+ *         printf("Received: %s\n", line);
+ *     }
+ * }
+ *
+ * // Submit async fill (up to buffer capacity)
+ * unsigned req = SocketBuf_fill_async(buf, 0, fill_complete, NULL, 0);
+ * @endcode
+ *
+ * @see SocketBuf_flush_async() for async send.
+ * @see SocketBuf_ensure() to guarantee write space.
+ */
+extern unsigned SocketBuf_fill_async (T buf, size_t max_fill,
+                                      SocketBuf_AsyncCallback cb,
+                                      void *user_data, int flags);
+
+/**
+ * @brief Check if async I/O is available and configured for this buffer.
+ * @ingroup core_io
+ * @param[in] buf The buffer to check.
+ * @return 1 if async I/O is available (async context set and functional),
+ *         0 otherwise.
+ *
+ * Use this to determine whether to use async or synchronous I/O paths.
+ *
+ * @threadsafe Yes - read-only.
+ *
+ * @see SocketBuf_set_async() to configure async context.
+ * @see SocketAsync_is_available() for backend availability.
+ */
+extern int SocketBuf_async_available (const T buf);
+
 #undef T
 #endif /* SOCKETBUF_INCLUDED */
