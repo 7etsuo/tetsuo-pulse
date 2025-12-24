@@ -4126,6 +4126,458 @@ TEST (dns_response_count_opt_in_answer)
   ASSERT_EQ (count, 0);
 }
 
+/*
+ * Negative Cache TTL Extraction Tests (RFC 2308)
+ */
+
+/* Helper to build SOA RDATA */
+static size_t
+build_soa_rdata (unsigned char *buf, uint32_t serial, uint32_t refresh,
+                 uint32_t retry, uint32_t expire, uint32_t minimum)
+{
+  unsigned char *p = buf;
+
+  /* MNAME: ns1.example.com */
+  *p++ = 3; memcpy (p, "ns1", 3); p += 3;
+  *p++ = 7; memcpy (p, "example", 7); p += 7;
+  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 0;
+
+  /* RNAME: admin.example.com */
+  *p++ = 5; memcpy (p, "admin", 5); p += 5;
+  *p++ = 7; memcpy (p, "example", 7); p += 7;
+  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 0;
+
+  /* SERIAL (32-bit, big-endian) */
+  *p++ = (unsigned char)((serial >> 24) & 0xFF);
+  *p++ = (unsigned char)((serial >> 16) & 0xFF);
+  *p++ = (unsigned char)((serial >> 8) & 0xFF);
+  *p++ = (unsigned char)(serial & 0xFF);
+
+  /* REFRESH */
+  *p++ = (unsigned char)((refresh >> 24) & 0xFF);
+  *p++ = (unsigned char)((refresh >> 16) & 0xFF);
+  *p++ = (unsigned char)((refresh >> 8) & 0xFF);
+  *p++ = (unsigned char)(refresh & 0xFF);
+
+  /* RETRY */
+  *p++ = (unsigned char)((retry >> 24) & 0xFF);
+  *p++ = (unsigned char)((retry >> 16) & 0xFF);
+  *p++ = (unsigned char)((retry >> 8) & 0xFF);
+  *p++ = (unsigned char)(retry & 0xFF);
+
+  /* EXPIRE */
+  *p++ = (unsigned char)((expire >> 24) & 0xFF);
+  *p++ = (unsigned char)((expire >> 16) & 0xFF);
+  *p++ = (unsigned char)((expire >> 8) & 0xFF);
+  *p++ = (unsigned char)(expire & 0xFF);
+
+  /* MINIMUM */
+  *p++ = (unsigned char)((minimum >> 24) & 0xFF);
+  *p++ = (unsigned char)((minimum >> 16) & 0xFF);
+  *p++ = (unsigned char)((minimum >> 8) & 0xFF);
+  *p++ = (unsigned char)(minimum & 0xFF);
+
+  return (size_t)(p - buf);
+}
+
+/* Test extract negative TTL with no SOA - returns default */
+TEST (dns_extract_negative_ttl_no_soa)
+{
+  unsigned char msg[512];
+  SocketDNS_Header hdr;
+  uint32_t ttl;
+  unsigned char *p;
+
+  /* Build NXDOMAIN response with no authority section */
+  memset (msg, 0, sizeof (msg));
+  memset (&hdr, 0, sizeof (hdr));
+  hdr.id = 0x1234;
+  hdr.qr = 1;
+  hdr.rcode = DNS_RCODE_NXDOMAIN;
+  hdr.qdcount = 1;
+  hdr.ancount = 0;
+  hdr.nscount = 0;
+  hdr.arcount = 0;
+  SocketDNS_header_encode (&hdr, msg, sizeof (msg));
+
+  /* Add question */
+  p = msg + 12;
+  *p++ = 11; memcpy (p, "nonexistent", 11); p += 11;
+  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 0;
+  *p++ = 0; *p++ = 1;  /* TYPE A */
+  *p++ = 0; *p++ = 1;  /* CLASS IN */
+
+  ttl = SocketDNS_extract_negative_ttl (msg, (size_t)(p - msg), NULL);
+  ASSERT_EQ (ttl, DNS_NEGATIVE_TTL_DEFAULT);
+}
+
+/* Test extract negative TTL with SOA - TTL < MINIMUM */
+TEST (dns_extract_negative_ttl_ttl_less_than_minimum)
+{
+  unsigned char msg[512];
+  SocketDNS_Header hdr;
+  SocketDNS_SOA soa;
+  uint32_t ttl;
+  unsigned char *p;
+  size_t soa_rdata_len;
+  unsigned char soa_rdata[256];
+
+  /* Build NXDOMAIN response with SOA in authority section */
+  memset (msg, 0, sizeof (msg));
+  memset (&hdr, 0, sizeof (hdr));
+  hdr.id = 0x1234;
+  hdr.qr = 1;
+  hdr.rcode = DNS_RCODE_NXDOMAIN;
+  hdr.qdcount = 1;
+  hdr.ancount = 0;
+  hdr.nscount = 1;  /* One SOA in authority */
+  hdr.arcount = 0;
+  SocketDNS_header_encode (&hdr, msg, sizeof (msg));
+
+  /* Add question */
+  p = msg + 12;
+  *p++ = 11; memcpy (p, "nonexistent", 11); p += 11;
+  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 0;
+  *p++ = 0; *p++ = 1;  /* TYPE A */
+  *p++ = 0; *p++ = 1;  /* CLASS IN */
+
+  /* Add SOA RR in authority section */
+  /* Owner: com */
+  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 0;
+
+  /* TYPE: SOA (6) */
+  *p++ = 0; *p++ = 6;
+
+  /* CLASS: IN (1) */
+  *p++ = 0; *p++ = 1;
+
+  /* TTL: 100 seconds (lower than MINIMUM) */
+  *p++ = 0; *p++ = 0; *p++ = 0; *p++ = 100;
+
+  /* Build SOA RDATA: MINIMUM = 300 */
+  soa_rdata_len = build_soa_rdata (soa_rdata, 2024010101, 3600, 900, 604800, 300);
+
+  /* RDLENGTH */
+  *p++ = (unsigned char)((soa_rdata_len >> 8) & 0xFF);
+  *p++ = (unsigned char)(soa_rdata_len & 0xFF);
+
+  /* RDATA */
+  memcpy (p, soa_rdata, soa_rdata_len);
+  p += soa_rdata_len;
+
+  /* TTL should be min(100, 300) = 100 */
+  ttl = SocketDNS_extract_negative_ttl (msg, (size_t)(p - msg), &soa);
+  ASSERT_EQ (ttl, 100U);
+  ASSERT_EQ (soa.minimum, 300U);
+}
+
+/* Test extract negative TTL with SOA - MINIMUM < TTL */
+TEST (dns_extract_negative_ttl_minimum_less_than_ttl)
+{
+  unsigned char msg[512];
+  SocketDNS_Header hdr;
+  SocketDNS_SOA soa;
+  uint32_t ttl;
+  unsigned char *p;
+  size_t soa_rdata_len;
+  unsigned char soa_rdata[256];
+
+  /* Build NXDOMAIN response with SOA in authority section */
+  memset (msg, 0, sizeof (msg));
+  memset (&hdr, 0, sizeof (hdr));
+  hdr.id = 0x1234;
+  hdr.qr = 1;
+  hdr.rcode = DNS_RCODE_NXDOMAIN;
+  hdr.qdcount = 1;
+  hdr.ancount = 0;
+  hdr.nscount = 1;
+  hdr.arcount = 0;
+  SocketDNS_header_encode (&hdr, msg, sizeof (msg));
+
+  /* Add question */
+  p = msg + 12;
+  *p++ = 11; memcpy (p, "nonexistent", 11); p += 11;
+  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 0;
+  *p++ = 0; *p++ = 1;
+  *p++ = 0; *p++ = 1;
+
+  /* Add SOA RR */
+  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 0;
+  *p++ = 0; *p++ = 6;  /* TYPE: SOA */
+  *p++ = 0; *p++ = 1;  /* CLASS: IN */
+
+  /* TTL: 600 seconds (higher than MINIMUM) */
+  *p++ = 0; *p++ = 0; *p++ = 0x02; *p++ = 0x58;  /* 600 */
+
+  /* Build SOA RDATA: MINIMUM = 120 */
+  soa_rdata_len = build_soa_rdata (soa_rdata, 2024010101, 3600, 900, 604800, 120);
+
+  *p++ = (unsigned char)((soa_rdata_len >> 8) & 0xFF);
+  *p++ = (unsigned char)(soa_rdata_len & 0xFF);
+  memcpy (p, soa_rdata, soa_rdata_len);
+  p += soa_rdata_len;
+
+  /* TTL should be min(600, 120) = 120 */
+  ttl = SocketDNS_extract_negative_ttl (msg, (size_t)(p - msg), &soa);
+  ASSERT_EQ (ttl, 120U);
+  ASSERT_EQ (soa.minimum, 120U);
+}
+
+/* Test extract negative TTL with SOA - equal values */
+TEST (dns_extract_negative_ttl_equal_values)
+{
+  unsigned char msg[512];
+  SocketDNS_Header hdr;
+  uint32_t ttl;
+  unsigned char *p;
+  size_t soa_rdata_len;
+  unsigned char soa_rdata[256];
+
+  memset (msg, 0, sizeof (msg));
+  memset (&hdr, 0, sizeof (hdr));
+  hdr.id = 0x1234;
+  hdr.qr = 1;
+  hdr.rcode = DNS_RCODE_NXDOMAIN;
+  hdr.qdcount = 1;
+  hdr.nscount = 1;
+  SocketDNS_header_encode (&hdr, msg, sizeof (msg));
+
+  p = msg + 12;
+  *p++ = 4; memcpy (p, "test", 4); p += 4;
+  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 0;
+  *p++ = 0; *p++ = 1;
+  *p++ = 0; *p++ = 1;
+
+  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 0;
+  *p++ = 0; *p++ = 6;
+  *p++ = 0; *p++ = 1;
+
+  /* TTL: 300 seconds (same as MINIMUM) */
+  *p++ = 0; *p++ = 0; *p++ = 0x01; *p++ = 0x2C;  /* 300 */
+
+  /* MINIMUM = 300 */
+  soa_rdata_len = build_soa_rdata (soa_rdata, 2024010101, 3600, 900, 604800, 300);
+
+  *p++ = (unsigned char)((soa_rdata_len >> 8) & 0xFF);
+  *p++ = (unsigned char)(soa_rdata_len & 0xFF);
+  memcpy (p, soa_rdata, soa_rdata_len);
+  p += soa_rdata_len;
+
+  ttl = SocketDNS_extract_negative_ttl (msg, (size_t)(p - msg), NULL);
+  ASSERT_EQ (ttl, 300U);
+}
+
+/* Test extract negative TTL with NULL message */
+TEST (dns_extract_negative_ttl_null)
+{
+  uint32_t ttl = SocketDNS_extract_negative_ttl (NULL, 100, NULL);
+  ASSERT_EQ (ttl, DNS_NEGATIVE_TTL_DEFAULT);
+}
+
+/* Test extract negative TTL with message too short */
+TEST (dns_extract_negative_ttl_too_short)
+{
+  unsigned char msg[10] = {0};
+  uint32_t ttl = SocketDNS_extract_negative_ttl (msg, 5, NULL);
+  ASSERT_EQ (ttl, DNS_NEGATIVE_TTL_DEFAULT);
+}
+
+/* Test TTL is capped at maximum */
+TEST (dns_extract_negative_ttl_capped_at_max)
+{
+  unsigned char msg[512];
+  SocketDNS_Header hdr;
+  uint32_t ttl;
+  unsigned char *p;
+  size_t soa_rdata_len;
+  unsigned char soa_rdata[256];
+
+  memset (msg, 0, sizeof (msg));
+  memset (&hdr, 0, sizeof (hdr));
+  hdr.id = 0x1234;
+  hdr.qr = 1;
+  hdr.rcode = DNS_RCODE_NXDOMAIN;
+  hdr.qdcount = 1;
+  hdr.nscount = 1;
+  SocketDNS_header_encode (&hdr, msg, sizeof (msg));
+
+  p = msg + 12;
+  *p++ = 4; memcpy (p, "test", 4); p += 4;
+  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 0;
+  *p++ = 0; *p++ = 1;
+  *p++ = 0; *p++ = 1;
+
+  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 0;
+  *p++ = 0; *p++ = 6;
+  *p++ = 0; *p++ = 1;
+
+  /* TTL: 86400 seconds (1 day - exceeds max) */
+  *p++ = 0; *p++ = 0x01; *p++ = 0x51; *p++ = 0x80;  /* 86400 */
+
+  /* MINIMUM = 86400 (also exceeds max) */
+  soa_rdata_len = build_soa_rdata (soa_rdata, 2024010101, 3600, 900, 604800, 86400);
+
+  *p++ = (unsigned char)((soa_rdata_len >> 8) & 0xFF);
+  *p++ = (unsigned char)(soa_rdata_len & 0xFF);
+  memcpy (p, soa_rdata, soa_rdata_len);
+  p += soa_rdata_len;
+
+  /* Should be capped at DNS_NEGATIVE_TTL_MAX (3600) */
+  ttl = SocketDNS_extract_negative_ttl (msg, (size_t)(p - msg), NULL);
+  ASSERT_EQ (ttl, DNS_NEGATIVE_TTL_MAX);
+}
+
+/* Test NODATA response (RCODE=0, no answers but SOA in authority) */
+TEST (dns_extract_negative_ttl_nodata)
+{
+  unsigned char msg[512];
+  SocketDNS_Header hdr;
+  uint32_t ttl;
+  unsigned char *p;
+  size_t soa_rdata_len;
+  unsigned char soa_rdata[256];
+
+  /* NODATA: RCODE=NOERROR, ANCOUNT=0, NSCOUNT=1 with SOA */
+  memset (msg, 0, sizeof (msg));
+  memset (&hdr, 0, sizeof (hdr));
+  hdr.id = 0x1234;
+  hdr.qr = 1;
+  hdr.rcode = DNS_RCODE_NOERROR;  /* NODATA has NOERROR */
+  hdr.qdcount = 1;
+  hdr.ancount = 0;
+  hdr.nscount = 1;
+  SocketDNS_header_encode (&hdr, msg, sizeof (msg));
+
+  p = msg + 12;
+  *p++ = 7; memcpy (p, "example", 7); p += 7;
+  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 0;
+  *p++ = 0; *p++ = 28;  /* TYPE AAAA */
+  *p++ = 0; *p++ = 1;
+
+  *p++ = 7; memcpy (p, "example", 7); p += 7;
+  *p++ = 3; memcpy (p, "com", 3); p += 3;
+  *p++ = 0;
+  *p++ = 0; *p++ = 6;
+  *p++ = 0; *p++ = 1;
+
+  /* TTL: 200 */
+  *p++ = 0; *p++ = 0; *p++ = 0; *p++ = 200;
+
+  /* MINIMUM = 180 */
+  soa_rdata_len = build_soa_rdata (soa_rdata, 2024010101, 3600, 900, 604800, 180);
+
+  *p++ = (unsigned char)((soa_rdata_len >> 8) & 0xFF);
+  *p++ = (unsigned char)(soa_rdata_len & 0xFF);
+  memcpy (p, soa_rdata, soa_rdata_len);
+  p += soa_rdata_len;
+
+  /* min(200, 180) = 180 */
+  ttl = SocketDNS_extract_negative_ttl (msg, (size_t)(p - msg), NULL);
+  ASSERT_EQ (ttl, 180U);
+}
+
+/* Test SOA with zero MINIMUM (edge case) */
+TEST (dns_extract_negative_ttl_zero_minimum)
+{
+  unsigned char msg[512];
+  SocketDNS_Header hdr;
+  uint32_t ttl;
+  unsigned char *p;
+  size_t soa_rdata_len;
+  unsigned char soa_rdata[256];
+
+  memset (msg, 0, sizeof (msg));
+  memset (&hdr, 0, sizeof (hdr));
+  hdr.id = 0x1234;
+  hdr.qr = 1;
+  hdr.rcode = DNS_RCODE_NXDOMAIN;
+  hdr.qdcount = 1;
+  hdr.nscount = 1;
+  SocketDNS_header_encode (&hdr, msg, sizeof (msg));
+
+  p = msg + 12;
+  *p++ = 4; memcpy (p, "test", 4); p += 4;
+  *p++ = 0;
+  *p++ = 0; *p++ = 1;
+  *p++ = 0; *p++ = 1;
+
+  *p++ = 0;  /* Root zone */
+  *p++ = 0; *p++ = 6;
+  *p++ = 0; *p++ = 1;
+
+  /* TTL: 300 */
+  *p++ = 0; *p++ = 0; *p++ = 0x01; *p++ = 0x2C;
+
+  /* MINIMUM = 0 */
+  soa_rdata_len = build_soa_rdata (soa_rdata, 2024010101, 3600, 900, 604800, 0);
+
+  *p++ = (unsigned char)((soa_rdata_len >> 8) & 0xFF);
+  *p++ = (unsigned char)(soa_rdata_len & 0xFF);
+  memcpy (p, soa_rdata, soa_rdata_len);
+  p += soa_rdata_len;
+
+  /* min(300, 0) = 0 */
+  ttl = SocketDNS_extract_negative_ttl (msg, (size_t)(p - msg), NULL);
+  ASSERT_EQ (ttl, 0U);
+}
+
+/* Test SOA with zero TTL in record */
+TEST (dns_extract_negative_ttl_zero_record_ttl)
+{
+  unsigned char msg[512];
+  SocketDNS_Header hdr;
+  uint32_t ttl;
+  unsigned char *p;
+  size_t soa_rdata_len;
+  unsigned char soa_rdata[256];
+
+  memset (msg, 0, sizeof (msg));
+  memset (&hdr, 0, sizeof (hdr));
+  hdr.id = 0x1234;
+  hdr.qr = 1;
+  hdr.rcode = DNS_RCODE_NXDOMAIN;
+  hdr.qdcount = 1;
+  hdr.nscount = 1;
+  SocketDNS_header_encode (&hdr, msg, sizeof (msg));
+
+  p = msg + 12;
+  *p++ = 4; memcpy (p, "test", 4); p += 4;
+  *p++ = 0;
+  *p++ = 0; *p++ = 1;
+  *p++ = 0; *p++ = 1;
+
+  *p++ = 0;  /* Root zone */
+  *p++ = 0; *p++ = 6;
+  *p++ = 0; *p++ = 1;
+
+  /* TTL: 0 */
+  *p++ = 0; *p++ = 0; *p++ = 0; *p++ = 0;
+
+  /* MINIMUM = 300 */
+  soa_rdata_len = build_soa_rdata (soa_rdata, 2024010101, 3600, 900, 604800, 300);
+
+  *p++ = (unsigned char)((soa_rdata_len >> 8) & 0xFF);
+  *p++ = (unsigned char)(soa_rdata_len & 0xFF);
+  memcpy (p, soa_rdata, soa_rdata_len);
+  p += soa_rdata_len;
+
+  /* min(0, 300) = 0 */
+  ttl = SocketDNS_extract_negative_ttl (msg, (size_t)(p - msg), NULL);
+  ASSERT_EQ (ttl, 0U);
+}
+
 int
 main (void)
 {
