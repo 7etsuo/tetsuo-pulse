@@ -99,7 +99,16 @@ entry_expired (const struct DeadServerEntry *entry, int64_t now_ms)
   if (entry->marked_dead_ms == 0)
     return false; /* Not marked dead */
 
+  /* Guard against time wraparound */
+  if (now_ms < entry->marked_dead_ms)
+    return false; /* Clock jumped backwards */
+
   int64_t age_ms = now_ms - entry->marked_dead_ms;
+
+  /* Safe multiplication: DNS_DEAD_SERVER_MAX_TTL is 300 seconds max */
+  if (DNS_DEAD_SERVER_MAX_TTL > INT64_MAX / 1000)
+    return false; /* Overflow would occur */
+
   int64_t max_ttl_ms = (int64_t)DNS_DEAD_SERVER_MAX_TTL * 1000;
 
   return age_ms >= max_ttl_ms;
@@ -114,8 +123,22 @@ entry_ttl_remaining (const struct DeadServerEntry *entry, int64_t now_ms)
   if (entry->marked_dead_ms == 0)
     return 0;
 
+  /* Guard against time wraparound */
+  if (now_ms < entry->marked_dead_ms)
+    return 0; /* Clock jumped backwards */
+
   int64_t age_ms = now_ms - entry->marked_dead_ms;
+
+  /* Safe multiplication check */
+  if (DNS_DEAD_SERVER_MAX_TTL > INT64_MAX / 1000)
+    return 0;
+
   int64_t max_ttl_ms = (int64_t)DNS_DEAD_SERVER_MAX_TTL * 1000;
+
+  /* Guard against overflow in subtraction */
+  if (age_ms > max_ttl_ms)
+    return 0;
+
   int64_t remaining_ms = max_ttl_ms - age_ms;
 
   if (remaining_ms <= 0)

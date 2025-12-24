@@ -12,6 +12,7 @@
 #include "dns/SocketDNSError.h"
 #include "dns/SocketDNSWire.h"
 
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -235,7 +236,20 @@ SocketDNS_ede_encode (const SocketDNS_ExtendedError *ede, unsigned char *buf,
   if (ede == NULL || buf == NULL)
     return -1;
 
+  /* Validate extra_text_len to prevent overflow */
+  if (ede->extra_text_len > DNS_EDE_MAX_EXTRA_TEXT)
+    return -1;
+
+  /* Check for size_t overflow before addition */
+  if (ede->extra_text_len > SIZE_MAX - DNS_EDE_MIN_SIZE)
+    return -1;
+
   size_t required = DNS_EDE_MIN_SIZE + ede->extra_text_len;
+
+  /* Ensure result fits in uint16_t for EDNS option length field */
+  if (required > UINT16_MAX)
+    return -1;
+
   if (buflen < required)
     return -1;
 
