@@ -29,6 +29,8 @@
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "core/SocketConfig.h"
+#include "core/SocketTimer.h"
+#include "poll/SocketPoll.h"
 #include "socket/Socket.h"
 #include "socket/SocketAsync.h"
 #include "test/Test.h"
@@ -1197,6 +1199,224 @@ TEST (async_iouring_high_concurrency)
   Arena_dispose (&arena);
 
 #undef HIGH_CONCURRENCY_COUNT
+}
+
+/* ==================== Timer Integration Tests ==================== */
+
+/* Callback context for tracking timer invocations */
+typedef struct
+{
+  volatile int call_count;
+  volatile int64_t last_call_time_ms;
+} AsyncTimerContext;
+
+static void
+async_timer_test_callback (void *userdata)
+{
+  AsyncTimerContext *ctx = (AsyncTimerContext *)userdata;
+  if (ctx)
+    {
+      ctx->call_count++;
+      ctx->last_call_time_ms = Socket_get_monotonic_ms ();
+    }
+}
+
+/**
+ * async_timer_fires - Verify timer fires during SocketPoll_wait with async
+ *
+ * This test verifies that timer callbacks are invoked correctly when
+ * SocketPoll is used with io_uring async operations.
+ */
+TEST (async_timer_fires)
+{
+  setup_signals ();
+  SocketPoll_T poll = NULL;
+  SocketTimer_T timer = NULL;
+  AsyncTimerContext ctx = { 0, 0 };
+  SocketEvent_T *events = NULL;
+  int64_t start_time;
+  int nfds;
+
+  /* Create poll with timer support */
+  TRY { poll = SocketPoll_new (10); }
+  EXCEPT (SocketPoll_Failed)
+  {
+    ASSERT (0); /* Should not fail */
+    return;
+  }
+  END_TRY;
+
+  /* Skip if async/io_uring not available */
+  SocketAsync_T async = SocketPoll_get_async (poll);
+  if (!async || !SocketAsync_is_available (async))
+    {
+      SocketPoll_free (&poll);
+      return; /* Skip test - async not available */
+    }
+
+  /* Verify we're using io_uring backend for async */
+  const char *backend = SocketAsync_backend_name (async);
+  if (strcmp (backend, "io_uring") != 0
+      && strstr (backend, "io_uring") == NULL)
+    {
+      /* Not io_uring - skip test */
+      SocketPoll_free (&poll);
+      return;
+    }
+
+  /* Add a timer to fire in 50ms */
+  timer = SocketTimer_add (poll, 50, async_timer_test_callback, &ctx);
+  ASSERT_NOT_NULL (timer);
+
+  /* Record start time */
+  start_time = Socket_get_monotonic_ms ();
+
+  /* Wait for events - should wake up when timer fires */
+  nfds = SocketPoll_wait (poll, &events, 200);
+
+  /* Timer should have fired (nfds = 0 means timeout, which is fine) */
+  (void)nfds;
+
+  /* Verify callback was invoked */
+  ASSERT_EQ (1, ctx.call_count);
+
+  /* Verify timing (should fire after ~50ms, allow some slack) */
+  int64_t elapsed = ctx.last_call_time_ms - start_time;
+  ASSERT (elapsed >= 40); /* At least 40ms */
+  ASSERT (elapsed < 150); /* Not too much delay */
+
+  SocketPoll_free (&poll);
+}
+
+/**
+ * async_timer_cancel - Verify cancelled timer doesn't fire with async
+ */
+TEST (async_timer_cancel)
+{
+  setup_signals ();
+  SocketPoll_T poll = NULL;
+  SocketTimer_T timer = NULL;
+  AsyncTimerContext ctx = { 0, 0 };
+  SocketEvent_T *events = NULL;
+
+  TRY { poll = SocketPoll_new (10); }
+  EXCEPT (SocketPoll_Failed)
+  {
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  /* Skip if async/io_uring not available */
+  SocketAsync_T async = SocketPoll_get_async (poll);
+  if (!async || !SocketAsync_is_available (async))
+    {
+      SocketPoll_free (&poll);
+      return;
+    }
+
+  const char *backend = SocketAsync_backend_name (async);
+  if (strcmp (backend, "io_uring") != 0
+      && strstr (backend, "io_uring") == NULL)
+    {
+      SocketPoll_free (&poll);
+      return;
+    }
+
+  /* Add timer and immediately cancel it */
+  timer = SocketTimer_add (poll, 50, async_timer_test_callback, &ctx);
+  ASSERT_NOT_NULL (timer);
+
+  int cancel_result = SocketTimer_cancel (poll, timer);
+  ASSERT_EQ (0, cancel_result);
+
+  /* Wait past when timer would have fired */
+  SocketPoll_wait (poll, &events, 100);
+
+  /* Timer should NOT have fired */
+  ASSERT_EQ (0, ctx.call_count);
+
+  SocketPoll_free (&poll);
+}
+
+/**
+ * async_timer_multiple - Verify multiple timers fire in order with async
+ */
+TEST (async_timer_multiple)
+{
+  setup_signals ();
+  SocketPoll_T poll = NULL;
+  SocketTimer_T timer1 = NULL;
+  SocketTimer_T timer2 = NULL;
+  SocketTimer_T timer3 = NULL;
+  AsyncTimerContext ctx1 = { 0, 0 };
+  AsyncTimerContext ctx2 = { 0, 0 };
+  AsyncTimerContext ctx3 = { 0, 0 };
+  SocketEvent_T *events = NULL;
+  int64_t start_time;
+
+  TRY { poll = SocketPoll_new (10); }
+  EXCEPT (SocketPoll_Failed)
+  {
+    ASSERT (0);
+    return;
+  }
+  END_TRY;
+
+  /* Skip if async/io_uring not available */
+  SocketAsync_T async = SocketPoll_get_async (poll);
+  if (!async || !SocketAsync_is_available (async))
+    {
+      SocketPoll_free (&poll);
+      return;
+    }
+
+  const char *backend = SocketAsync_backend_name (async);
+  if (strcmp (backend, "io_uring") != 0
+      && strstr (backend, "io_uring") == NULL)
+    {
+      SocketPoll_free (&poll);
+      return;
+    }
+
+  /* Add multiple timers with different delays */
+  timer1 = SocketTimer_add (poll, 30, async_timer_test_callback, &ctx1);
+  timer2 = SocketTimer_add (poll, 60, async_timer_test_callback, &ctx2);
+  timer3 = SocketTimer_add (poll, 90, async_timer_test_callback, &ctx3);
+
+  ASSERT_NOT_NULL (timer1);
+  ASSERT_NOT_NULL (timer2);
+  ASSERT_NOT_NULL (timer3);
+
+  start_time = Socket_get_monotonic_ms ();
+
+  /* Wait long enough for all timers */
+  for (int i = 0; i < 5 && (ctx1.call_count == 0 || ctx2.call_count == 0
+                            || ctx3.call_count == 0);
+       i++)
+    {
+      SocketPoll_wait (poll, &events, 50);
+    }
+
+  /* All timers should have fired */
+  ASSERT_EQ (1, ctx1.call_count);
+  ASSERT_EQ (1, ctx2.call_count);
+  ASSERT_EQ (1, ctx3.call_count);
+
+  /* Verify timers fired in order */
+  ASSERT (ctx1.last_call_time_ms <= ctx2.last_call_time_ms);
+  ASSERT (ctx2.last_call_time_ms <= ctx3.last_call_time_ms);
+
+  /* Verify timing is roughly correct */
+  int64_t elapsed1 = ctx1.last_call_time_ms - start_time;
+  int64_t elapsed2 = ctx2.last_call_time_ms - start_time;
+  int64_t elapsed3 = ctx3.last_call_time_ms - start_time;
+
+  ASSERT (elapsed1 >= 20 && elapsed1 < 100);
+  ASSERT (elapsed2 >= 50 && elapsed2 < 150);
+  ASSERT (elapsed3 >= 80 && elapsed3 < 200);
+
+  SocketPoll_free (&poll);
 }
 
 /* ==================== Main ==================== */
