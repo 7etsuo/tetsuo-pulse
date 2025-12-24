@@ -48,6 +48,15 @@
 #define SOCKET_DEFAULT_IO_URING_ENTRIES 256
 #endif
 
+/* Auto-flush threshold: submit when SQ is this percentage full */
+#ifndef SOCKET_IO_URING_FLUSH_THRESHOLD_PCT
+#define SOCKET_IO_URING_FLUSH_THRESHOLD_PCT 75
+#endif
+
+/* Calculate flush threshold from ring size */
+#define SOCKET_IO_URING_FLUSH_THRESHOLD \
+  ((SOCKET_DEFAULT_IO_URING_ENTRIES * SOCKET_IO_URING_FLUSH_THRESHOLD_PCT) / 100)
+
 /* Key fields for partial completion and timeout support:
  * - size_t completed in AsyncRequest - tracks bytes transferred so far
  * - int64_t submitted_at in AsyncRequest - submission timestamp for timeout
@@ -343,21 +352,57 @@ submit_and_track_request (T async, struct AsyncRequest *req)
 }
 
 #if SOCKET_HAS_IO_URING
+/**
+ * @brief Flush pending io_uring submissions to kernel.
+ * @internal
+ * @param async Async context with pending SQEs.
+ * @return Number of SQEs submitted, or -1 on error.
+ *
+ * Submits all pending SQEs in one syscall and resets pending count.
+ */
+static int
+flush_io_uring_unlocked (T async)
+{
+  int submitted;
+
+  if (!async || !async->ring || async->pending_sqe_count == 0)
+    return 0;
+
+  submitted = io_uring_submit (async->ring);
+  if (submitted < 0)
+    {
+      /* Submission failed - pending SQEs are lost */
+      async->pending_sqe_count = 0;
+      return -1;
+    }
+
+  async->pending_sqe_count = 0;
+  return submitted;
+}
+
 static int
 submit_io_uring_op (T async, struct AsyncRequest *req)
 {
   struct io_uring_sqe *sqe;
   int fd = Socket_fd (req->socket);
   int submitted;
-  uint64_t val = 1;
 
   assert (async && async->ring && req);
 
   sqe = io_uring_get_sqe (async->ring);
   if (!sqe)
     {
-      errno = EAGAIN;
-      return -1;
+      /* SQ full - try flushing first */
+      if (async->pending_sqe_count > 0)
+        {
+          flush_io_uring_unlocked (async);
+          sqe = io_uring_get_sqe (async->ring);
+        }
+      if (!sqe)
+        {
+          errno = EAGAIN;
+          return -1;
+        }
     }
 
   if (req->type == REQ_SEND)
@@ -370,6 +415,22 @@ submit_io_uring_op (T async, struct AsyncRequest *req)
   if (req->flags & ASYNC_FLAG_URGENT)
     sqe->flags |= IOSQE_IO_LINK;
 
+  /* Check for deferred submission (NOSYNC flag) */
+  if (req->flags & ASYNC_FLAG_NOSYNC)
+    {
+      async->pending_sqe_count++;
+
+      /* Auto-flush if near capacity to prevent SQ overflow */
+      if (async->pending_sqe_count >= SOCKET_IO_URING_FLUSH_THRESHOLD)
+        {
+          submitted = flush_io_uring_unlocked (async);
+          if (submitted < 0)
+            return -1;
+        }
+      return 0;
+    }
+
+  /* Immediate submission (default behavior) */
   submitted = io_uring_submit (async->ring);
   if (submitted < 0)
     return -1;
@@ -855,28 +916,39 @@ SocketAsync_submit_batch (T async, SocketAsync_Op *ops, size_t count)
 {
   volatile size_t submitted = 0;
   volatile size_t i;
+  int use_deferred = 0;
 
   if (!async || !ops || count == 0)
     return 0;
 
+#if SOCKET_HAS_IO_URING
+  /* Use deferred submission for io_uring to batch all SQEs */
+  use_deferred = (async->ring != NULL && async->available);
+#endif
+
   for (i = 0; i < count; i++)
     {
       SocketAsync_Op *op = &ops[i];
-      unsigned req_id;
+      volatile SocketAsync_Flags flags = op->flags;
+      volatile unsigned req_id = 0;
+
+      /* Add NOSYNC flag for deferred submission on io_uring */
+      if (use_deferred)
+        flags |= ASYNC_FLAG_NOSYNC;
 
       TRY
       {
         if (op->is_send)
           {
             req_id = SocketAsync_send (async, op->socket, op->send_buf, op->len,
-                                       op->cb, op->user_data, op->flags);
+                                       op->cb, op->user_data, (SocketAsync_Flags)flags);
           }
         else
           {
             req_id = SocketAsync_recv (async, op->socket, op->recv_buf, op->len,
-                                       op->cb, op->user_data, op->flags);
+                                       op->cb, op->user_data, (SocketAsync_Flags)flags);
           }
-        op->request_id = req_id;
+        op->request_id = (unsigned)req_id;
         submitted++;
       }
       EXCEPT (SocketAsync_Failed)
@@ -885,6 +957,10 @@ SocketAsync_submit_batch (T async, SocketAsync_Op *ops, size_t count)
       }
       END_TRY;
     }
+
+  /* Flush all pending SQEs in one syscall */
+  if (use_deferred && submitted > 0)
+    SocketAsync_flush (async);
 
   return (int)submitted;
 }
@@ -1412,6 +1488,48 @@ SocketAsync_io_uring_available (SocketAsync_IOUringInfo *info)
   if (info)
     *info = cached_info;
   return cached;
+}
+
+
+int
+SocketAsync_flush (T async)
+{
+#if SOCKET_HAS_IO_URING
+  int submitted;
+
+  if (!async || !async->ring)
+    return 0;
+
+  pthread_mutex_lock (&async->mutex);
+  submitted = flush_io_uring_unlocked (async);
+  pthread_mutex_unlock (&async->mutex);
+
+  return submitted;
+#else
+  (void)async;
+  return 0;
+#endif
+}
+
+
+unsigned
+SocketAsync_pending_count (const T async)
+{
+#if SOCKET_HAS_IO_URING
+  unsigned count;
+
+  if (!async || !async->ring)
+    return 0;
+
+  pthread_mutex_lock (&((T)async)->mutex);
+  count = async->pending_sqe_count;
+  pthread_mutex_unlock (&((T)async)->mutex);
+
+  return count;
+#else
+  (void)async;
+  return 0;
+#endif
 }
 
 #undef T

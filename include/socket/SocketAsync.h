@@ -353,7 +353,24 @@ typedef enum
    * high-throughput scenarios.
    * @note Semantics backend-dependent; may be noop if unsupported.
    */
-  ASYNC_FLAG_URGENT = 1 << 1
+  ASYNC_FLAG_URGENT = 1 << 1,
+
+  /**
+   * @brief Defer io_uring submission until flush.
+   *
+   * When set, the SQE is prepared but io_uring_submit() is not called
+   * immediately. This enables batching multiple operations before a single
+   * submit syscall, reducing overhead for high-throughput scenarios.
+   *
+   * Use SocketAsync_flush() to submit all pending operations, or let
+   * SocketAsync_submit_batch() handle it automatically.
+   *
+   * @note io_uring only; ignored on other backends.
+   * @note SQ will auto-submit when nearly full to prevent blocking.
+   * @see SocketAsync_flush()
+   * @see SocketAsync_submit_batch()
+   */
+  ASYNC_FLAG_NOSYNC = 1 << 2
 } SocketAsync_Flags;
 
 /**
@@ -1005,7 +1022,9 @@ typedef struct SocketAsync_Op
  * @return Number of operations successfully submitted (0 to count).
  *
  * Enables efficient batch submission of multiple async operations, reducing
- * syscall overhead. Each operation in the array is submitted in order.
+ * syscall overhead. For io_uring, all operations are prepared as SQEs first,
+ * then submitted with a single io_uring_submit() call at the end.
+ *
  * Successfully submitted operations have their request_id field populated.
  *
  * @throws None - Returns count of successful submissions.
@@ -1027,12 +1046,68 @@ typedef struct SocketAsync_Op
  * }
  * @endcode
  *
- * @note io_uring backend benefits most from batching (ring submission).
+ * @note io_uring backend uses deferred submission for batching efficiency.
  * @see SocketAsync_send() for single send operation.
  * @see SocketAsync_recv() for single recv operation.
  * @see SocketAsync_cancel() to cancel by request_id.
  */
 extern int SocketAsync_submit_batch (T async, SocketAsync_Op *ops, size_t count);
+
+/**
+ * @brief Flush all pending io_uring submissions.
+ * @ingroup async_io
+ * @param[in] async Async context.
+ * @return Number of SQEs submitted to kernel, or -1 on error.
+ *
+ * Submits all pending SQEs that were prepared with ASYNC_FLAG_NOSYNC.
+ * This function is called automatically by SocketAsync_submit_batch()
+ * after preparing all operations.
+ *
+ * For non-io_uring backends, this is a no-op that returns 0.
+ *
+ * @throws None - Errors returned via return value.
+ * @threadsafe Yes - Internal mutex protects submission.
+ * @complexity O(1) - Single syscall to io_uring_submit().
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Submit multiple operations with deferred submission
+ * SocketAsync_send(async, sock1, buf1, len1, cb, ud1, ASYNC_FLAG_NOSYNC);
+ * SocketAsync_send(async, sock2, buf2, len2, cb, ud2, ASYNC_FLAG_NOSYNC);
+ * SocketAsync_recv(async, sock3, buf3, len3, cb, ud3, ASYNC_FLAG_NOSYNC);
+ *
+ * // Now flush all pending to kernel in one syscall
+ * int submitted = SocketAsync_flush(async);
+ * printf("Flushed %d operations\n", submitted);
+ * @endcode
+ *
+ * @note Pending operations are auto-flushed when SQ is nearly full.
+ * @see ASYNC_FLAG_NOSYNC for deferred submission flag.
+ * @see SocketAsync_submit_batch() for batch submission.
+ * @see SocketAsync_pending_count() to check pending count.
+ */
+extern int SocketAsync_flush (T async);
+
+/**
+ * @brief Get count of pending (unflushed) io_uring operations.
+ * @ingroup async_io
+ * @param[in] async Async context.
+ * @return Number of SQEs prepared but not yet submitted to kernel.
+ *
+ * Returns the count of operations submitted with ASYNC_FLAG_NOSYNC that
+ * have not yet been flushed to the kernel via io_uring_submit().
+ *
+ * For non-io_uring backends, always returns 0.
+ *
+ * @throws None.
+ * @threadsafe Yes - Read-only query with internal locking.
+ * @complexity O(1).
+ *
+ * @see SocketAsync_flush() to submit pending operations.
+ * @see ASYNC_FLAG_NOSYNC for deferred submission flag.
+ */
+extern unsigned SocketAsync_pending_count (const T async);
 
 /**
  * @brief Cancel all pending async operations.
