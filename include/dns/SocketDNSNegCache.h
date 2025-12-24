@@ -66,6 +66,12 @@
 /** Maximum hostname length in cache key. */
 #define DNS_NEGCACHE_MAX_NAME 255
 
+/** Maximum SOA RDATA length (typical SOA is ~100 bytes). */
+#define DNS_NEGCACHE_MAX_SOA_RDATA 512
+
+/** Maximum SOA owner name length. */
+#define DNS_NEGCACHE_MAX_SOA_NAME 255
+
 /** Default maximum cache entries. */
 #define DNS_NEGCACHE_DEFAULT_MAX 1000
 
@@ -117,10 +123,37 @@ typedef enum
 } SocketDNS_NegCacheResult;
 
 /**
+ * @brief Cached SOA record data for RFC 2308 Section 6 compliance.
+ * @ingroup dns_negcache
+ *
+ * When serving cached negative responses, RFC 2308 Section 6 requires
+ * including the SOA record in the authority section with decremented TTL.
+ * This structure holds the cached SOA data needed to reconstruct the response.
+ */
+typedef struct
+{
+  /** SOA owner name (e.g., "example.com"). */
+  char name[DNS_NEGCACHE_MAX_SOA_NAME + 1];
+
+  /** Raw SOA RDATA (MNAME, RNAME, SERIAL, REFRESH, RETRY, EXPIRE, MINIMUM). */
+  unsigned char rdata[DNS_NEGCACHE_MAX_SOA_RDATA];
+
+  /** Length of SOA RDATA. */
+  size_t rdlen;
+
+  /** Original TTL from SOA record (for decrement calculation). */
+  uint32_t original_ttl;
+
+  /** Whether SOA data is present (1) or not (0). */
+  int has_soa;
+} SocketDNS_CachedSOA;
+
+/**
  * @brief Negative cache entry information.
  * @ingroup dns_negcache
  *
  * Returned by lookup functions to provide details about cached entries.
+ * Includes SOA data for RFC 2308 Section 6 compliant response serving.
  */
 typedef struct
 {
@@ -135,6 +168,9 @@ typedef struct
 
   /** Timestamp when entry was inserted (monotonic ms). */
   int64_t insert_time_ms;
+
+  /** Cached SOA data for authority section (RFC 2308 Section 6). */
+  SocketDNS_CachedSOA soa;
 } SocketDNS_NegCacheEntry;
 
 /**
@@ -281,6 +317,103 @@ extern int SocketDNSNegCache_insert_nxdomain (T cache, const char *qname,
 extern int SocketDNSNegCache_insert_nodata (T cache, const char *qname,
                                              uint16_t qtype, uint16_t qclass,
                                              uint32_t ttl);
+
+/**
+ * @brief Insert an NXDOMAIN entry with SOA data (RFC 2308 Section 6).
+ * @ingroup dns_negcache
+ *
+ * Caches an NXDOMAIN response with associated SOA record data.
+ * The SOA data is stored for RFC 2308 Section 6 compliant response serving.
+ *
+ * @param cache      Cache instance.
+ * @param qname      Query name (normalized to lowercase internally).
+ * @param qclass     Query class (typically DNS_CLASS_IN = 1).
+ * @param ttl        TTL from SOA MINIMUM field.
+ * @param soa        Cached SOA data (may be NULL if no SOA available).
+ * @return 0 on success, -1 on error.
+ *
+ * @code{.c}
+ * SocketDNS_CachedSOA soa = {0};
+ * strncpy(soa.name, "example.com", sizeof(soa.name) - 1);
+ * // ... fill soa.rdata from parsed response ...
+ * soa.original_ttl = 3600;
+ * soa.has_soa = 1;
+ *
+ * SocketDNSNegCache_insert_nxdomain_with_soa(cache, "nonexistent.example.com",
+ *                                             DNS_CLASS_IN, 300, &soa);
+ * @endcode
+ */
+extern int SocketDNSNegCache_insert_nxdomain_with_soa (
+    T cache, const char *qname, uint16_t qclass, uint32_t ttl,
+    const SocketDNS_CachedSOA *soa);
+
+/**
+ * @brief Insert a NODATA entry with SOA data (RFC 2308 Section 6).
+ * @ingroup dns_negcache
+ *
+ * Caches a NODATA response with associated SOA record data.
+ * The SOA data is stored for RFC 2308 Section 6 compliant response serving.
+ *
+ * @param cache      Cache instance.
+ * @param qname      Query name (normalized to lowercase internally).
+ * @param qtype      Query type that returned NODATA.
+ * @param qclass     Query class (typically DNS_CLASS_IN = 1).
+ * @param ttl        TTL from SOA MINIMUM field.
+ * @param soa        Cached SOA data (may be NULL if no SOA available).
+ * @return 0 on success, -1 on error.
+ */
+extern int SocketDNSNegCache_insert_nodata_with_soa (
+    T cache, const char *qname, uint16_t qtype, uint16_t qclass, uint32_t ttl,
+    const SocketDNS_CachedSOA *soa);
+
+/* Response Building (RFC 2308 Section 6) */
+
+/**
+ * @brief Build a DNS response for a cached negative entry.
+ * @ingroup dns_negcache
+ *
+ * Constructs a proper DNS response message for a cached negative entry,
+ * including the SOA record in the authority section with decremented TTL
+ * as required by RFC 2308 Section 6.
+ *
+ * ## RFC 2308 Section 6 Compliance
+ *
+ * > "A cached SOA record MUST be added to the authority section when
+ * > serving the negative answer. The TTL of this record MUST be decremented
+ * > from its original value."
+ *
+ * @param entry      Cached entry from lookup (must include SOA data).
+ * @param qname      Original query name.
+ * @param qtype      Original query type.
+ * @param qclass     Original query class.
+ * @param query_id   ID from original query (for response matching).
+ * @param buf        Output buffer for DNS response.
+ * @param buflen     Size of output buffer.
+ * @param written    Number of bytes written (may be NULL).
+ * @return 0 on success, -1 on error (buffer too small, no SOA data).
+ *
+ * @code{.c}
+ * SocketDNS_NegCacheEntry entry;
+ * SocketDNS_NegCacheResult result = SocketDNSNegCache_lookup(
+ *     cache, "nonexistent.example.com", DNS_TYPE_A, DNS_CLASS_IN, &entry);
+ *
+ * if (result == DNS_NEG_HIT_NXDOMAIN && entry.soa.has_soa) {
+ *     unsigned char response[512];
+ *     size_t resplen;
+ *     if (SocketDNSNegCache_build_response(&entry, "nonexistent.example.com",
+ *                                           DNS_TYPE_A, DNS_CLASS_IN,
+ *                                           query_id, response, sizeof(response),
+ *                                           &resplen) == 0) {
+ *         // Send response with SOA in authority section
+ *     }
+ * }
+ * @endcode
+ */
+extern int SocketDNSNegCache_build_response (const SocketDNS_NegCacheEntry *entry,
+                                              const char *qname, uint16_t qtype,
+                                              uint16_t qclass, uint16_t query_id,
+                                              unsigned char *buf, size_t buflen,
+                                              size_t *written);
 
 /**
  * @brief Remove all entries for a specific name.

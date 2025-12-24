@@ -606,6 +606,382 @@ TEST (negcache_null_entry)
   Arena_dispose (&arena);
 }
 
+/* ========================================================================= */
+/* RFC 2308 Section 6 Tests - SOA in Authority Section */
+/* ========================================================================= */
+
+/* Helper to create sample SOA RDATA for testing */
+static void
+create_sample_soa_rdata (unsigned char *rdata, size_t *rdlen)
+{
+  /* Simple SOA RDATA: ns1.example.com. admin.example.com. with fixed values */
+  size_t offset = 0;
+
+  /* Encode MNAME as labels (ns1.example.com) */
+  rdata[offset++] = 3;
+  memcpy (rdata + offset, "ns1", 3);
+  offset += 3;
+  rdata[offset++] = 7;
+  memcpy (rdata + offset, "example", 7);
+  offset += 7;
+  rdata[offset++] = 3;
+  memcpy (rdata + offset, "com", 3);
+  offset += 3;
+  rdata[offset++] = 0;
+
+  /* Encode RNAME as labels */
+  rdata[offset++] = 5;
+  memcpy (rdata + offset, "admin", 5);
+  offset += 5;
+  rdata[offset++] = 7;
+  memcpy (rdata + offset, "example", 7);
+  offset += 7;
+  rdata[offset++] = 3;
+  memcpy (rdata + offset, "com", 3);
+  offset += 3;
+  rdata[offset++] = 0;
+
+  /* SERIAL (network byte order) */
+  rdata[offset++] = 0;
+  rdata[offset++] = 0;
+  rdata[offset++] = 0;
+  rdata[offset++] = 1;
+
+  /* REFRESH = 3600 */
+  rdata[offset++] = 0;
+  rdata[offset++] = 0;
+  rdata[offset++] = 0x0E;
+  rdata[offset++] = 0x10;
+
+  /* RETRY = 1800 */
+  rdata[offset++] = 0;
+  rdata[offset++] = 0;
+  rdata[offset++] = 0x07;
+  rdata[offset++] = 0x08;
+
+  /* EXPIRE = 604800 */
+  rdata[offset++] = 0;
+  rdata[offset++] = 0x09;
+  rdata[offset++] = 0x3A;
+  rdata[offset++] = 0x80;
+
+  /* MINIMUM = 300 */
+  rdata[offset++] = 0;
+  rdata[offset++] = 0;
+  rdata[offset++] = 0x01;
+  rdata[offset++] = 0x2C;
+
+  *rdlen = offset;
+}
+
+/* Test insert NXDOMAIN with SOA data */
+TEST (negcache_insert_nxdomain_with_soa)
+{
+  Arena_T arena = Arena_new ();
+  SocketDNSNegCache_T cache = SocketDNSNegCache_new (arena);
+
+  /* Create SOA data */
+  SocketDNS_CachedSOA soa;
+  memset (&soa, 0, sizeof (soa));
+  strncpy (soa.name, "example.com", sizeof (soa.name) - 1);
+  create_sample_soa_rdata (soa.rdata, &soa.rdlen);
+  soa.original_ttl = 3600;
+  soa.has_soa = 1;
+
+  /* Insert NXDOMAIN with SOA */
+  int ret = SocketDNSNegCache_insert_nxdomain_with_soa (
+      cache, "nonexistent.example.com", DNS_CLASS_IN, 300, &soa);
+  ASSERT_EQ (ret, 0);
+
+  /* Lookup and verify SOA data is present */
+  SocketDNS_NegCacheEntry entry;
+  SocketDNS_NegCacheResult result;
+  result = SocketDNSNegCache_lookup (cache, "nonexistent.example.com",
+                                     DNS_TYPE_A, DNS_CLASS_IN, &entry);
+  ASSERT_EQ (result, DNS_NEG_HIT_NXDOMAIN);
+  ASSERT (entry.soa.has_soa);
+  ASSERT (strcmp (entry.soa.name, "example.com") == 0);
+  ASSERT (entry.soa.rdlen > 0);
+  ASSERT_EQ (entry.soa.original_ttl, 3600);
+
+  SocketDNSNegCache_free (&cache);
+  Arena_dispose (&arena);
+}
+
+/* Test insert NODATA with SOA data */
+TEST (negcache_insert_nodata_with_soa)
+{
+  Arena_T arena = Arena_new ();
+  SocketDNSNegCache_T cache = SocketDNSNegCache_new (arena);
+
+  /* Create SOA data */
+  SocketDNS_CachedSOA soa;
+  memset (&soa, 0, sizeof (soa));
+  strncpy (soa.name, "example.com", sizeof (soa.name) - 1);
+  create_sample_soa_rdata (soa.rdata, &soa.rdlen);
+  soa.original_ttl = 3600;
+  soa.has_soa = 1;
+
+  /* Insert NODATA with SOA */
+  int ret = SocketDNSNegCache_insert_nodata_with_soa (
+      cache, "example.com", DNS_TYPE_AAAA, DNS_CLASS_IN, 300, &soa);
+  ASSERT_EQ (ret, 0);
+
+  /* Lookup and verify SOA data is present */
+  SocketDNS_NegCacheEntry entry;
+  SocketDNS_NegCacheResult result;
+  result = SocketDNSNegCache_lookup (cache, "example.com", DNS_TYPE_AAAA,
+                                     DNS_CLASS_IN, &entry);
+  ASSERT_EQ (result, DNS_NEG_HIT_NODATA);
+  ASSERT (entry.soa.has_soa);
+  ASSERT (strcmp (entry.soa.name, "example.com") == 0);
+  ASSERT (entry.soa.rdlen > 0);
+
+  SocketDNSNegCache_free (&cache);
+  Arena_dispose (&arena);
+}
+
+/* Test insert without SOA (NULL soa parameter) */
+TEST (negcache_insert_without_soa)
+{
+  Arena_T arena = Arena_new ();
+  SocketDNSNegCache_T cache = SocketDNSNegCache_new (arena);
+
+  /* Insert NXDOMAIN without SOA */
+  int ret = SocketDNSNegCache_insert_nxdomain_with_soa (
+      cache, "nosoa.example.com", DNS_CLASS_IN, 300, NULL);
+  ASSERT_EQ (ret, 0);
+
+  /* Lookup and verify no SOA data */
+  SocketDNS_NegCacheEntry entry;
+  SocketDNS_NegCacheResult result;
+  result = SocketDNSNegCache_lookup (cache, "nosoa.example.com", DNS_TYPE_A,
+                                     DNS_CLASS_IN, &entry);
+  ASSERT_EQ (result, DNS_NEG_HIT_NXDOMAIN);
+  ASSERT (!entry.soa.has_soa);
+
+  SocketDNSNegCache_free (&cache);
+  Arena_dispose (&arena);
+}
+
+/* Test build response for NXDOMAIN (RFC 2308 Section 6) */
+TEST (negcache_build_response_nxdomain)
+{
+  Arena_T arena = Arena_new ();
+  SocketDNSNegCache_T cache = SocketDNSNegCache_new (arena);
+
+  /* Create SOA data */
+  SocketDNS_CachedSOA soa;
+  memset (&soa, 0, sizeof (soa));
+  strncpy (soa.name, "example.com", sizeof (soa.name) - 1);
+  create_sample_soa_rdata (soa.rdata, &soa.rdlen);
+  soa.original_ttl = 3600;
+  soa.has_soa = 1;
+
+  /* Insert NXDOMAIN with SOA */
+  SocketDNSNegCache_insert_nxdomain_with_soa (
+      cache, "nxdom.example.com", DNS_CLASS_IN, 300, &soa);
+
+  /* Lookup entry */
+  SocketDNS_NegCacheEntry entry;
+  SocketDNSNegCache_lookup (cache, "nxdom.example.com", DNS_TYPE_A,
+                            DNS_CLASS_IN, &entry);
+
+  /* Build response */
+  unsigned char response[512];
+  size_t resplen = 0;
+  int ret = SocketDNSNegCache_build_response (&entry, "nxdom.example.com",
+                                               DNS_TYPE_A, DNS_CLASS_IN, 0x1234,
+                                               response, sizeof (response),
+                                               &resplen);
+  ASSERT_EQ (ret, 0);
+  ASSERT (resplen > 12); /* At least header */
+
+  /* Verify header */
+  ASSERT_EQ (response[0], 0x12); /* ID high */
+  ASSERT_EQ (response[1], 0x34); /* ID low */
+  ASSERT (response[2] & 0x80);   /* QR = 1 (response) */
+  ASSERT_EQ (response[3] & 0x0F, 3); /* RCODE = 3 (NXDOMAIN) */
+
+  /* Verify QDCOUNT = 1 */
+  ASSERT_EQ (response[4], 0);
+  ASSERT_EQ (response[5], 1);
+
+  /* Verify ANCOUNT = 0 */
+  ASSERT_EQ (response[6], 0);
+  ASSERT_EQ (response[7], 0);
+
+  /* Verify NSCOUNT = 1 (SOA in authority section) */
+  ASSERT_EQ (response[8], 0);
+  ASSERT_EQ (response[9], 1);
+
+  SocketDNSNegCache_free (&cache);
+  Arena_dispose (&arena);
+}
+
+/* Test build response for NODATA (RFC 2308 Section 6) */
+TEST (negcache_build_response_nodata)
+{
+  Arena_T arena = Arena_new ();
+  SocketDNSNegCache_T cache = SocketDNSNegCache_new (arena);
+
+  /* Create SOA data */
+  SocketDNS_CachedSOA soa;
+  memset (&soa, 0, sizeof (soa));
+  strncpy (soa.name, "example.com", sizeof (soa.name) - 1);
+  create_sample_soa_rdata (soa.rdata, &soa.rdlen);
+  soa.original_ttl = 3600;
+  soa.has_soa = 1;
+
+  /* Insert NODATA with SOA */
+  SocketDNSNegCache_insert_nodata_with_soa (cache, "nodata.example.com",
+                                             DNS_TYPE_AAAA, DNS_CLASS_IN, 300,
+                                             &soa);
+
+  /* Lookup entry */
+  SocketDNS_NegCacheEntry entry;
+  SocketDNSNegCache_lookup (cache, "nodata.example.com", DNS_TYPE_AAAA,
+                            DNS_CLASS_IN, &entry);
+
+  /* Build response */
+  unsigned char response[512];
+  size_t resplen = 0;
+  int ret = SocketDNSNegCache_build_response (
+      &entry, "nodata.example.com", DNS_TYPE_AAAA, DNS_CLASS_IN, 0xABCD,
+      response, sizeof (response), &resplen);
+  ASSERT_EQ (ret, 0);
+  ASSERT (resplen > 12); /* At least header */
+
+  /* Verify header */
+  ASSERT_EQ (response[0], 0xAB); /* ID high */
+  ASSERT_EQ (response[1], 0xCD); /* ID low */
+  ASSERT (response[2] & 0x80);   /* QR = 1 (response) */
+  ASSERT_EQ (response[3] & 0x0F, 0); /* RCODE = 0 (NOERROR for NODATA) */
+
+  /* Verify QDCOUNT = 1 */
+  ASSERT_EQ (response[4], 0);
+  ASSERT_EQ (response[5], 1);
+
+  /* Verify ANCOUNT = 0 */
+  ASSERT_EQ (response[6], 0);
+  ASSERT_EQ (response[7], 0);
+
+  /* Verify NSCOUNT = 1 (SOA in authority section) */
+  ASSERT_EQ (response[8], 0);
+  ASSERT_EQ (response[9], 1);
+
+  SocketDNSNegCache_free (&cache);
+  Arena_dispose (&arena);
+}
+
+/* Test build response without SOA */
+TEST (negcache_build_response_no_soa)
+{
+  Arena_T arena = Arena_new ();
+  SocketDNSNegCache_T cache = SocketDNSNegCache_new (arena);
+
+  /* Insert NXDOMAIN without SOA */
+  SocketDNSNegCache_insert_nxdomain_with_soa (cache, "nosoa.example.com",
+                                               DNS_CLASS_IN, 300, NULL);
+
+  /* Lookup entry */
+  SocketDNS_NegCacheEntry entry;
+  SocketDNSNegCache_lookup (cache, "nosoa.example.com", DNS_TYPE_A,
+                            DNS_CLASS_IN, &entry);
+
+  /* Build response - should still work, just no SOA in authority */
+  unsigned char response[512];
+  size_t resplen = 0;
+  int ret = SocketDNSNegCache_build_response (&entry, "nosoa.example.com",
+                                               DNS_TYPE_A, DNS_CLASS_IN, 0x5678,
+                                               response, sizeof (response),
+                                               &resplen);
+  ASSERT_EQ (ret, 0);
+
+  /* Verify NSCOUNT = 0 (no SOA) */
+  ASSERT_EQ (response[8], 0);
+  ASSERT_EQ (response[9], 0);
+
+  SocketDNSNegCache_free (&cache);
+  Arena_dispose (&arena);
+}
+
+/* Test TTL decrement in served response */
+TEST (negcache_ttl_decrement)
+{
+  Arena_T arena = Arena_new ();
+  SocketDNSNegCache_T cache = SocketDNSNegCache_new (arena);
+
+  /* Create SOA data with original TTL of 3600 */
+  SocketDNS_CachedSOA soa;
+  memset (&soa, 0, sizeof (soa));
+  strncpy (soa.name, "example.com", sizeof (soa.name) - 1);
+  create_sample_soa_rdata (soa.rdata, &soa.rdlen);
+  soa.original_ttl = 3600;
+  soa.has_soa = 1;
+
+  /* Insert with TTL of 300 */
+  SocketDNSNegCache_insert_nxdomain_with_soa (cache, "ttl.example.com",
+                                               DNS_CLASS_IN, 300, &soa);
+
+  /* Wait a bit to let TTL decrement */
+  usleep (100000); /* 100ms */
+
+  /* Lookup - TTL should be slightly less than 300 */
+  SocketDNS_NegCacheEntry entry;
+  SocketDNSNegCache_lookup (cache, "ttl.example.com", DNS_TYPE_A, DNS_CLASS_IN,
+                            &entry);
+
+  /* Remaining TTL should be <= 300 */
+  ASSERT (entry.ttl_remaining <= 300);
+  ASSERT (entry.ttl_remaining > 0);
+
+  SocketDNSNegCache_free (&cache);
+  Arena_dispose (&arena);
+}
+
+/* Test update existing entry with SOA */
+TEST (negcache_update_with_soa)
+{
+  Arena_T arena = Arena_new ();
+  SocketDNSNegCache_T cache = SocketDNSNegCache_new (arena);
+
+  /* Insert without SOA first */
+  SocketDNSNegCache_insert_nxdomain_with_soa (cache, "update.example.com",
+                                               DNS_CLASS_IN, 100, NULL);
+
+  /* Lookup - should have no SOA */
+  SocketDNS_NegCacheEntry entry;
+  SocketDNSNegCache_lookup (cache, "update.example.com", DNS_TYPE_A,
+                            DNS_CLASS_IN, &entry);
+  ASSERT (!entry.soa.has_soa);
+
+  /* Update with SOA */
+  SocketDNS_CachedSOA soa;
+  memset (&soa, 0, sizeof (soa));
+  strncpy (soa.name, "example.com", sizeof (soa.name) - 1);
+  create_sample_soa_rdata (soa.rdata, &soa.rdlen);
+  soa.original_ttl = 3600;
+  soa.has_soa = 1;
+
+  SocketDNSNegCache_insert_nxdomain_with_soa (cache, "update.example.com",
+                                               DNS_CLASS_IN, 300, &soa);
+
+  /* Lookup - should now have SOA */
+  SocketDNSNegCache_lookup (cache, "update.example.com", DNS_TYPE_A,
+                            DNS_CLASS_IN, &entry);
+  ASSERT (entry.soa.has_soa);
+  ASSERT_EQ (entry.soa.original_ttl, 3600);
+
+  /* Size should still be 1 (update, not new entry) */
+  SocketDNS_NegCacheStats stats;
+  SocketDNSNegCache_stats (cache, &stats);
+  ASSERT_EQ (stats.current_size, 1);
+
+  SocketDNSNegCache_free (&cache);
+  Arena_dispose (&arena);
+}
+
 /* Main function - run all tests */
 int
 main (void)
