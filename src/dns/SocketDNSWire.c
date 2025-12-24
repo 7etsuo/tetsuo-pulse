@@ -1110,6 +1110,140 @@ SocketDNS_opt_decode (const unsigned char *buf, size_t len, SocketDNS_OPT *opt)
   return DNS_OPT_FIXED_SIZE + (int)opt->rdlength;
 }
 
+/*
+ * OPT Record Validation (RFC 6891 Section 6.1.1)
+ */
+
+int
+SocketDNS_opt_is_valid_name (unsigned char name_byte)
+{
+  /* Per RFC 6891, OPT NAME MUST be 0 (root domain) */
+  return (name_byte == 0x00) ? 1 : 0;
+}
+
+SocketDNS_OPT_ValidationResult
+SocketDNS_opt_validate (const SocketDNS_OPT *opt, size_t rdata_len)
+{
+  SocketDNS_EDNSOptionIter iter;
+  SocketDNS_EDNSOption option;
+
+  if (!opt)
+    return DNS_OPT_INVALID_RDATA;
+
+  /* Check RDLEN doesn't exceed available data */
+  if (opt->rdlength > rdata_len)
+    return DNS_OPT_TRUNCATED;
+
+  /* Empty RDATA is valid */
+  if (opt->rdlength == 0)
+    return DNS_OPT_VALID;
+
+  /* Validate all options in RDATA can be parsed */
+  if (opt->rdata == NULL && opt->rdlength > 0)
+    return DNS_OPT_INVALID_RDATA;
+
+  SocketDNS_edns_option_iter_init (&iter, opt->rdata, opt->rdlength);
+
+  /* Iterate through all options to verify they're well-formed */
+  while (SocketDNS_edns_option_iter_next (&iter, &option))
+    {
+      /* Option parsed successfully, continue */
+    }
+
+  /* Check if we consumed all RDATA - if not, there's trailing garbage
+   * or a malformed option that caused early termination */
+  if (iter.pos != iter.end)
+    return DNS_OPT_MALFORMED_OPTION;
+
+  return DNS_OPT_VALID;
+}
+
+int
+SocketDNS_response_count_opt (const unsigned char *msg, size_t msg_len,
+                               const SocketDNS_Header *hdr)
+{
+  size_t offset;
+  int opt_count;
+  uint16_t i;
+  uint16_t qdcount, ancount, nscount, arcount;
+  SocketDNS_Question q;
+  SocketDNS_RR rr;
+  size_t consumed;
+
+  if (!msg || !hdr || msg_len < DNS_HEADER_SIZE)
+    return -1;
+
+  qdcount = hdr->qdcount;
+  ancount = hdr->ancount;
+  nscount = hdr->nscount;
+  arcount = hdr->arcount;
+
+  offset = DNS_HEADER_SIZE;
+
+  /* Skip question section */
+  for (i = 0; i < qdcount; i++)
+    {
+      if (SocketDNS_question_decode (msg, msg_len, offset, &q, &consumed) < 0)
+        return -1;
+      offset += consumed;
+    }
+
+  /* Skip answer section */
+  for (i = 0; i < ancount; i++)
+    {
+      if (SocketDNS_rr_decode (msg, msg_len, offset, &rr, &consumed) < 0)
+        return -1;
+      offset += consumed;
+    }
+
+  /* Skip authority section */
+  for (i = 0; i < nscount; i++)
+    {
+      if (SocketDNS_rr_decode (msg, msg_len, offset, &rr, &consumed) < 0)
+        return -1;
+      offset += consumed;
+    }
+
+  /* Count OPT records in additional section */
+  opt_count = 0;
+  for (i = 0; i < arcount; i++)
+    {
+      if (SocketDNS_rr_decode (msg, msg_len, offset, &rr, &consumed) < 0)
+        return -1;
+
+      if (rr.type == DNS_TYPE_OPT)
+        opt_count++;
+
+      offset += consumed;
+    }
+
+  return opt_count;
+}
+
+const char *
+SocketDNS_opt_validation_str (SocketDNS_OPT_ValidationResult result)
+{
+  switch (result)
+    {
+    case DNS_OPT_VALID:
+      return "valid";
+    case DNS_OPT_INVALID_NAME:
+      return "invalid NAME (must be root)";
+    case DNS_OPT_INVALID_TYPE:
+      return "invalid TYPE (must be 41)";
+    case DNS_OPT_MULTIPLE:
+      return "multiple OPT records";
+    case DNS_OPT_TRUNCATED:
+      return "truncated RDATA";
+    case DNS_OPT_MALFORMED_OPTION:
+      return "malformed option in RDATA";
+    case DNS_OPT_INVALID_RDATA:
+      return "invalid RDATA";
+    default:
+      return "unknown error";
+    }
+}
+
 uint16_t
 SocketDNS_opt_extended_rcode (const SocketDNS_Header *hdr,
                               const SocketDNS_OPT *opt)

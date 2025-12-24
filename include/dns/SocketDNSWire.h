@@ -876,6 +876,23 @@ typedef enum
 } SocketDNS_ExtendedRcode;
 
 /**
+ * @brief OPT record validation result (RFC 6891 Section 6.1.1).
+ *
+ * Used to report validation errors for incoming OPT records.
+ * Per RFC 6891, malformed OPT records should trigger FORMERR.
+ */
+typedef enum
+{
+  DNS_OPT_VALID = 0,        /**< OPT record is well-formed */
+  DNS_OPT_INVALID_NAME,     /**< NAME is not root (must be 0x00) */
+  DNS_OPT_INVALID_TYPE,     /**< TYPE is not 41 */
+  DNS_OPT_MULTIPLE,         /**< More than one OPT in message */
+  DNS_OPT_TRUNCATED,        /**< RDLEN exceeds available data */
+  DNS_OPT_MALFORMED_OPTION, /**< Option within RDATA is malformed */
+  DNS_OPT_INVALID_RDATA     /**< RDATA structure is invalid */
+} SocketDNS_OPT_ValidationResult;
+
+/**
  * @brief Initialize an OPT record with default values.
  * @ingroup dns_edns0
  *
@@ -945,6 +962,77 @@ extern int SocketDNS_opt_encode (const SocketDNS_OPT *opt, unsigned char *buf,
  */
 extern int SocketDNS_opt_decode (const unsigned char *buf, size_t len,
                                   SocketDNS_OPT *opt);
+
+/**
+ * @brief Validate an OPT record per RFC 6891 Section 6.1.1.
+ * @ingroup dns_edns0
+ *
+ * Checks that an OPT record is well-formed:
+ * - NAME must be root (0x00)
+ * - TYPE must be 41 (already ensured by decode)
+ * - RDLEN must not exceed available data
+ * - Options in RDATA must be parseable
+ *
+ * @param[in] opt       OPT record to validate.
+ * @param[in] rdata_len Actual length of RDATA buffer available.
+ * @return DNS_OPT_VALID if valid, or specific error code.
+ *
+ * @code{.c}
+ * SocketDNS_OPT opt;
+ * if (SocketDNS_opt_decode(buf, len, &opt) > 0) {
+ *     SocketDNS_OPT_ValidationResult result = SocketDNS_opt_validate(&opt, len);
+ *     if (result != DNS_OPT_VALID) {
+ *         // Return FORMERR
+ *     }
+ * }
+ * @endcode
+ */
+extern SocketDNS_OPT_ValidationResult SocketDNS_opt_validate (
+    const SocketDNS_OPT *opt, size_t rdata_len);
+
+/**
+ * @brief Check if OPT NAME is the root domain.
+ * @ingroup dns_edns0
+ *
+ * Per RFC 6891 Section 6.1.1, the NAME field of an OPT record
+ * MUST be 0 (the root domain). This is already validated during
+ * decoding, but this function allows explicit checking.
+ *
+ * @param[in] name_byte First byte of NAME field in wire format.
+ * @return 1 if valid (0x00), 0 if invalid.
+ */
+extern int SocketDNS_opt_is_valid_name (unsigned char name_byte);
+
+/**
+ * @brief Count OPT records in a DNS message's additional section.
+ * @ingroup dns_edns0
+ *
+ * Per RFC 6891 Section 6.1.1, a DNS message MUST contain at most one
+ * OPT record. This function counts OPT records to detect violations.
+ *
+ * @param[in] msg      Complete DNS message buffer.
+ * @param[in] msg_len  Length of message buffer.
+ * @param[in] hdr      Parsed DNS header (for ARCOUNT).
+ * @return Number of OPT records found (0, 1, or more), or -1 on error.
+ *
+ * @code{.c}
+ * int opt_count = SocketDNS_response_count_opt(msg, msg_len, &hdr);
+ * if (opt_count > 1) {
+ *     // RFC 6891 violation - FORMERR
+ * }
+ * @endcode
+ */
+extern int SocketDNS_response_count_opt (const unsigned char *msg, size_t msg_len,
+                                          const SocketDNS_Header *hdr);
+
+/**
+ * @brief Get human-readable string for OPT validation result.
+ * @ingroup dns_edns0
+ *
+ * @param[in] result Validation result code.
+ * @return Static string describing the result.
+ */
+extern const char *SocketDNS_opt_validation_str (SocketDNS_OPT_ValidationResult result);
 
 /**
  * @brief Calculate the 12-bit extended RCODE from header and OPT.
