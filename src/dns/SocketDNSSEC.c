@@ -1045,16 +1045,93 @@ SocketDNSSEC_verify_rrsig (const SocketDNSSEC_RRSIG *rrsig,
     }
 
   /*
-   * 2. RRset in canonical form
+   * 2. RRset in canonical form (RFC 4035 Section 5.3.2)
    * For each RR: owner name | type | class | TTL | RDLENGTH | RDATA
    *
-   * TODO: This requires iterating through the actual RRset
-   * For now, we'll skip the full implementation as it requires
-   * more context about the message structure
+   * All RRs in the RRset must be included in canonical order.
+   * Owner names are converted to lowercase (canonical form).
    */
 
-  (void)rrset_offset;
-  (void)rrset_count;
+  /* Iterate through RRset and add each RR to the signature data */
+  size_t current_offset = rrset_offset;
+  for (size_t i = 0; i < rrset_count; i++)
+    {
+      SocketDNS_RR rr;
+      size_t consumed;
+
+      /* Decode the resource record */
+      if (SocketDNS_rr_decode (msg, msglen, current_offset, &rr, &consumed) != 0)
+        {
+          EVP_MD_CTX_free (ctx);
+          EVP_PKEY_free (pkey);
+          return DNSSEC_INDETERMINATE;
+        }
+
+      /* Verify this RR is part of the covered RRset */
+      if (rr.type != rrsig->type_covered)
+        {
+          /* Skip RRs not covered by this signature (e.g., RRSIG records) */
+          current_offset += consumed;
+          continue;
+        }
+
+      /* Build canonical RR data: owner | type | class | TTL | RDLENGTH | RDATA */
+      unsigned char rr_canonical[DNS_MAX_NAME_LEN + 10 + DNS_MAX_RDATA_LEN];
+      size_t rr_len = 0;
+
+      /* Owner name in canonical (lowercase) wire format */
+      int owner_len = encode_canonical_name (rr.name, rr_canonical, sizeof (rr_canonical));
+      if (owner_len < 0)
+        {
+          EVP_MD_CTX_free (ctx);
+          EVP_PKEY_free (pkey);
+          return DNSSEC_INDETERMINATE;
+        }
+      rr_len += owner_len;
+
+      /* Check buffer space for fixed fields + RDATA */
+      if (rr_len + 10 + rr.rdlength > sizeof (rr_canonical))
+        {
+          EVP_MD_CTX_free (ctx);
+          EVP_PKEY_free (pkey);
+          return DNSSEC_INDETERMINATE;
+        }
+
+      /* Type (2 bytes, network order) */
+      rr_canonical[rr_len++] = (rr.type >> 8) & 0xFF;
+      rr_canonical[rr_len++] = rr.type & 0xFF;
+
+      /* Class (2 bytes, network order) */
+      rr_canonical[rr_len++] = (rr.rclass >> 8) & 0xFF;
+      rr_canonical[rr_len++] = rr.rclass & 0xFF;
+
+      /* TTL - use original TTL from RRSIG, not current RR TTL (RFC 4035 5.3.2) */
+      rr_canonical[rr_len++] = (rrsig->original_ttl >> 24) & 0xFF;
+      rr_canonical[rr_len++] = (rrsig->original_ttl >> 16) & 0xFF;
+      rr_canonical[rr_len++] = (rrsig->original_ttl >> 8) & 0xFF;
+      rr_canonical[rr_len++] = rrsig->original_ttl & 0xFF;
+
+      /* RDLENGTH (2 bytes, network order) */
+      rr_canonical[rr_len++] = (rr.rdlength >> 8) & 0xFF;
+      rr_canonical[rr_len++] = rr.rdlength & 0xFF;
+
+      /* RDATA (raw bytes from wire format) */
+      if (rr.rdata != NULL && rr.rdlength > 0)
+        {
+          memcpy (rr_canonical + rr_len, rr.rdata, rr.rdlength);
+          rr_len += rr.rdlength;
+        }
+
+      /* Add this canonical RR to the signature verification data */
+      if (EVP_DigestVerifyUpdate (ctx, rr_canonical, rr_len) != 1)
+        {
+          EVP_MD_CTX_free (ctx);
+          EVP_PKEY_free (pkey);
+          return DNSSEC_INDETERMINATE;
+        }
+
+      current_offset += consumed;
+    }
 
   /* Verify signature */
   const unsigned char *sig = rrsig->signature;
