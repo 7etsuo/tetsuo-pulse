@@ -107,6 +107,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   volatile uint8_t op = get_op (data, size);
   SocketDgram_T socket = NULL;
   SocketDTLSContext_T ctx = NULL;
+  SocketDTLSContext_T ctx2 = NULL;
 
   /* Single TRY block - no nesting per ASan requirements */
   TRY
@@ -118,6 +119,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         socket = SocketDgram_new (AF_INET, 0);
         ctx = SocketDTLSContext_new_client (NULL);
         SocketDTLS_enable (socket, ctx);
+        ctx = NULL; /* Owned by socket */
 
         /* Verify enabled state */
         if (SocketDTLS_is_enabled (socket) != 1)
@@ -166,9 +168,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         socket = SocketDgram_new (AF_INET, 0);
         ctx = SocketDTLSContext_new_client (NULL);
         SocketDTLS_enable (socket, ctx);
+        ctx = NULL; /* Owned by socket */
 
         SocketDTLS_set_hostname (socket, "example.com");
-        ctx = NULL;
         break;
 
       case OP_SET_HOSTNAME_FUZZ:
@@ -176,6 +178,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         socket = SocketDgram_new (AF_INET, 0);
         ctx = SocketDTLSContext_new_client (NULL);
         SocketDTLS_enable (socket, ctx);
+        ctx = NULL; /* Owned by socket */
 
         if (size > 2)
           {
@@ -184,7 +187,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             if (hostname[0] != '\0')
               SocketDTLS_set_hostname (socket, hostname);
           }
-        ctx = NULL;
         break;
 
       case OP_SET_MTU_VALID_MIN:
@@ -192,6 +194,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         socket = SocketDgram_new (AF_INET, 0);
         ctx = SocketDTLSContext_new_client (NULL);
         SocketDTLS_enable (socket, ctx);
+        ctx = NULL; /* Owned by socket */
 
         SocketDTLS_set_mtu (socket, SOCKET_DTLS_MIN_MTU);
 
@@ -199,7 +202,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         if (SocketDTLS_get_mtu (socket) != SOCKET_DTLS_MIN_MTU)
           abort (); /* MTU not set correctly */
 
-        ctx = NULL;
         break;
 
       case OP_SET_MTU_VALID_MAX:
@@ -207,6 +209,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         socket = SocketDgram_new (AF_INET, 0);
         ctx = SocketDTLSContext_new_client (NULL);
         SocketDTLS_enable (socket, ctx);
+        ctx = NULL; /* Owned by socket */
 
         SocketDTLS_set_mtu (socket, SOCKET_DTLS_MAX_MTU);
 
@@ -214,7 +217,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         if (SocketDTLS_get_mtu (socket) != SOCKET_DTLS_MAX_MTU)
           abort ();
 
-        ctx = NULL;
         break;
 
       case OP_SET_MTU_INVALID_LOW:
@@ -222,6 +224,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         socket = SocketDgram_new (AF_INET, 0);
         ctx = SocketDTLSContext_new_client (NULL);
         SocketDTLS_enable (socket, ctx);
+        ctx = NULL; /* Owned by socket */
 
         /* This should raise SocketDTLS_Failed */
         SocketDTLS_set_mtu (socket, SOCKET_DTLS_MIN_MTU - 1);
@@ -234,6 +237,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         socket = SocketDgram_new (AF_INET, 0);
         ctx = SocketDTLSContext_new_client (NULL);
         SocketDTLS_enable (socket, ctx);
+        ctx = NULL; /* Owned by socket */
 
         /* This should raise SocketDTLS_Failed */
         SocketDTLS_set_mtu (socket, SOCKET_DTLS_MAX_MTU + 1);
@@ -250,6 +254,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         size_t ctx_mtu = SocketDTLSContext_get_mtu (ctx);
 
         SocketDTLS_enable (socket, ctx);
+        ctx = NULL; /* Owned by socket now */
 
         /* Socket should inherit context MTU */
         size_t socket_mtu = SocketDTLS_get_mtu (socket);
@@ -262,7 +267,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         if (SocketDTLS_get_mtu (socket) != custom_mtu)
           abort ();
 
-        ctx = NULL;
         break;
 
       case OP_ENABLE_DOUBLE:
@@ -273,12 +277,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         ctx = NULL;
 
         /* Second enable should fail */
-        {
-          SocketDTLSContext_T ctx2 = SocketDTLSContext_new_client (NULL);
-          SocketDTLS_enable (socket, ctx2); /* Should raise */
-          SocketDTLSContext_free (&ctx2);   /* Won't reach here */
-          abort (); /* Double enable should fail */
-        }
+        ctx2 = SocketDTLSContext_new_client (NULL);
+        SocketDTLS_enable (socket, ctx2); /* Should raise */
+        SocketDTLSContext_free (&ctx2);   /* Won't reach here */
+        abort (); /* Double enable should fail */
 
       case OP_COMBINED_CONFIG:
         /* Combined configuration sequence */
@@ -324,6 +326,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     SocketDgram_free (&socket);
   if (ctx)
     SocketDTLSContext_free (&ctx);
+  if (ctx2)
+    SocketDTLSContext_free (&ctx2);
 
   return 0;
 }
