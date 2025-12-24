@@ -784,7 +784,7 @@ TEST(socketpoll_get_backend_name_basic)
   ASSERT(strlen(backend) > 0);
 
   /* Should be one of the known backends */
-  ASSERT(strstr(backend, "epoll") || strstr(backend, "kqueue") || strstr(backend, "poll"));
+  ASSERT(strstr(backend, "epoll") || strstr(backend, "kqueue") || strstr(backend, "poll") || strstr(backend, "io_uring"));
 
   SocketPoll_free(&poll);
 }

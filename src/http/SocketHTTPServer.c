@@ -206,6 +206,9 @@ SocketHTTPServer_free (SocketHTTPServer_T *server)
       connection_close (s, s->connections);
     }
 
+  /* Free any connections that were closed but deferred deletion */
+  connection_free_pending (s);
+
   /* Free rate limit entries */
   RateLimitEntry *e = s->rate_limiters;
   while (e != NULL)
@@ -2325,7 +2328,11 @@ SocketHTTPServer_process (SocketHTTPServer_T server, int timeout_ms)
       else
         {
           ServerConnection *conn = (ServerConnection *)ev->data;
-          if (conn != NULL)
+          /* Skip connections marked for deferred deletion.
+           * This can happen when io_uring or other backends return
+           * multiple events for the same connection in a single batch,
+           * and an earlier event closed the connection. */
+          if (conn != NULL && !conn->pending_close)
             {
               requests_processed
                   += server_process_client_event (server, conn, ev->events);
@@ -2334,6 +2341,11 @@ SocketHTTPServer_process (SocketHTTPServer_T server, int timeout_ms)
     }
 
   server_cleanup_timed_out (server);
+
+  /* Free connections that were closed during this event loop iteration.
+   * Deferred deletion prevents use-after-free when multiple events
+   * for the same connection arrive in a single poll batch. */
+  connection_free_pending (server);
 
   return requests_processed;
 }

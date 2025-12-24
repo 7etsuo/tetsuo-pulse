@@ -1989,10 +1989,11 @@ TEST (integration_event_poll_backend_and_sockets)
   /* Test SocketPoll_get_backend_name */
   const char *backend_name = SocketPoll_get_backend_name (poll);
   ASSERT_NOT_NULL (backend_name);
-  /* Backend name should be one of: epoll, kqueue, poll */
+  /* Backend name should be one of: epoll, kqueue, poll, io_uring */
   ASSERT (strcmp (backend_name, "epoll") == 0 ||
           strcmp (backend_name, "kqueue") == 0 ||
-          strcmp (backend_name, "poll") == 0);
+          strcmp (backend_name, "poll") == 0 ||
+          strcmp (backend_name, "io_uring") == 0);
 
   /* Create some sockets to register */
   Socket_T sockets[3];
