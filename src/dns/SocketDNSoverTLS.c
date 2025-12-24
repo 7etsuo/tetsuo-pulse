@@ -509,6 +509,12 @@ queue_query (T transport, struct SocketDNSoverTLS_Query *query)
   struct Connection *conn = &transport->conn;
   size_t total_len;
 
+  /* Validate query length fits in 16-bit length prefix (CWE-681) */
+  if (query->query_len > 65535)
+    {
+      return -1; /* Query too large for wire format */
+    }
+
   /* Need 2-byte length prefix + query */
   total_len = 2 + query->query_len;
 
@@ -518,8 +524,8 @@ queue_query (T transport, struct SocketDNSoverTLS_Query *query)
       conn->send_buf = ALLOC (transport->arena, DOT_MAX_MESSAGE_SIZE + 2);
     }
 
-  /* Check if there's room */
-  if (conn->send_len + total_len > DOT_MAX_MESSAGE_SIZE + 2)
+  /* Check if there's room - avoid integer overflow (CWE-190) */
+  if (total_len > DOT_MAX_MESSAGE_SIZE + 2 - conn->send_len)
     {
       return -1; /* Buffer full */
     }
@@ -589,7 +595,8 @@ receive_data (T transport)
           conn->msg_len
               = ((size_t)conn->len_buf[0] << 8) | (size_t)conn->len_buf[1];
 
-          if (conn->msg_len > DOT_MAX_MESSAGE_SIZE)
+          /* Validate length - reject zero-length messages (CWE-476, CWE-400) */
+          if (conn->msg_len == 0 || conn->msg_len > DOT_MAX_MESSAGE_SIZE)
             {
               /* Invalid length */
               close_connection (transport, conn);
@@ -812,6 +819,7 @@ SocketDNSoverTLS_configure (T transport, const SocketDNSoverTLS_Config *config)
   memset (server, 0, sizeof (*server));
 
   strncpy (server->address, config->server_address, sizeof (server->address) - 1);
+  server->address[sizeof (server->address) - 1] = '\0'; /* Ensure null termination (CWE-170) */
   server->port = (config->port > 0) ? config->port : DOT_PORT;
   server->family = family;
   server->mode = config->mode;
@@ -820,23 +828,27 @@ SocketDNSoverTLS_configure (T transport, const SocketDNSoverTLS_Config *config)
     {
       strncpy (server->server_name, config->server_name,
                sizeof (server->server_name) - 1);
+      server->server_name[sizeof (server->server_name) - 1] = '\0';
     }
   else
     {
       /* Use address as SNI if no server name provided */
       strncpy (server->server_name, config->server_address,
                sizeof (server->server_name) - 1);
+      server->server_name[sizeof (server->server_name) - 1] = '\0';
     }
 
   if (config->spki_pin)
     {
       strncpy (server->spki_pin, config->spki_pin, sizeof (server->spki_pin) - 1);
+      server->spki_pin[sizeof (server->spki_pin) - 1] = '\0';
     }
 
   if (config->spki_pin_backup)
     {
       strncpy (server->spki_pin_backup, config->spki_pin_backup,
                sizeof (server->spki_pin_backup) - 1);
+      server->spki_pin_backup[sizeof (server->spki_pin_backup) - 1] = '\0';
     }
 
   transport->server_count++;
@@ -904,6 +916,12 @@ SocketDNSoverTLS_query (T transport, const unsigned char *query, size_t len,
       return NULL;
     }
 
+  /* Validate query length to prevent memory exhaustion (CWE-770) */
+  if (len > DOT_MAX_MESSAGE_SIZE)
+    {
+      return NULL;
+    }
+
   if (transport->pending_count >= DOT_MAX_PENDING_QUERIES)
     {
       return NULL;
@@ -943,9 +961,12 @@ SocketDNSoverTLS_query (T transport, const unsigned char *query, size_t len,
     {
       if (start_connection (transport, transport->current_server) < 0)
         {
-          /* Try next server */
-          transport->current_server
-              = (transport->current_server + 1) % transport->server_count;
+          /* Try next server - protect against division by zero (CWE-369) */
+          if (transport->server_count > 0)
+            {
+              transport->current_server
+                  = (transport->current_server + 1) % transport->server_count;
+            }
           if (start_connection (transport, transport->current_server) < 0)
             {
               complete_query (transport, q, NULL, 0, DOT_ERROR_NETWORK);
