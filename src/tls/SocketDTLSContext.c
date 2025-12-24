@@ -643,6 +643,15 @@ SocketDTLSContext_set_cookie_secret (T ctx, const unsigned char *secret,
                                 "Cookie secret only for server contexts");
     }
 
+  /* Reject all-zeros secret to prevent weak DoS protection */
+  static const unsigned char zeros[SOCKET_DTLS_COOKIE_SECRET_LEN] = { 0 };
+  if (SocketCrypto_secure_compare (secret, zeros, SOCKET_DTLS_COOKIE_SECRET_LEN)
+      == 0)
+    {
+      RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
+                                "Cookie secret cannot be all zeros");
+    }
+
   if (pthread_mutex_lock (&ctx->cookie.secret_mutex) != 0)
     {
       RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
