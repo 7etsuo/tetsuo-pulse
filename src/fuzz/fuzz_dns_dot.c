@@ -288,7 +288,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
             SocketDNSoverTLS_Config config = {
               .server_address = addr_buf,
-              .port = op_size > 4 ? ((op_data[4] << 8) | op_data[5]) : DOT_PORT,
+              .port = op_size > 5 ? ((op_data[4] << 8) | op_data[5]) : DOT_PORT,
               .server_name = name_buf,
               .mode = (op_size > 6 && (op_data[6] & 1)) ? DOT_MODE_STRICT
                                                          : DOT_MODE_OPPORTUNISTIC,
