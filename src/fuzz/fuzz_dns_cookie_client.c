@@ -348,7 +348,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         (void)is_bad;
 
         /* Specifically test RCODE 23 (BADCOOKIE) */
-        is_bad = SocketDNSCookie_is_badcookie (DNS_RCODE_BADCOOKIE);
+        is_bad = SocketDNSCookie_is_badcookie (23);
         (void)is_bad;
       }
 

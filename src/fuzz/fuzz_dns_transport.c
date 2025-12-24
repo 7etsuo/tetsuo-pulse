@@ -121,6 +121,8 @@ build_query (const struct fuzz_input *input, size_t input_size,
   SocketDNS_Header hdr;
   size_t offset = 0;
 
+  (void)input_size; /* Used for struct size, not runtime validation */
+
   if (query_buf_size < DNS_HEADER_SIZE)
     return -1;
 
@@ -358,21 +360,16 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   /* Enable dead server tracking if requested */
   if (input->flags & FLAG_ENABLE_DEAD_TRACKER)
     {
-      TRY
-      {
-        SocketDNSDeadServer_T tracker = SocketDNSDeadServer_new (arena);
-        SocketDNSTransport_set_dead_server_tracker (transport, tracker);
+      SocketDNSDeadServer_T tracker = SocketDNSDeadServer_new (arena);
+      if (tracker)
+        {
+          SocketDNSTransport_set_dead_server_tracker (transport, tracker);
 
-        /* Verify getter */
-        SocketDNSDeadServer_T retrieved
-            = SocketDNSTransport_get_dead_server_tracker (transport);
-        (void)(retrieved == tracker);
-      }
-      EXCEPT (SocketDNSDeadServer_Failed)
-      {
-        /* Continue without tracker */
-      }
-      END_TRY;
+          /* Verify getter */
+          SocketDNSDeadServer_T retrieved
+              = SocketDNSTransport_get_dead_server_tracker (transport);
+          (void)(retrieved == tracker);
+        }
     }
 
   /* Build query message */

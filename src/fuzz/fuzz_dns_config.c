@@ -174,51 +174,43 @@ fuzz_search_domain_addition (const uint8_t *data, size_t size)
 static void
 fuzz_ede_parsing (const uint8_t *data, size_t size)
 {
-  SocketDNSError_Info ede_info;
-  uint16_t info_code;
-  const uint8_t *extra_text;
-  size_t extra_text_len;
+  SocketDNS_ExtendedError ede;
 
   if (size < 2)
     return;
 
-  /* Extract INFO-CODE (first 2 bytes, network byte order) */
-  info_code = (data[0] << 8) | data[1];
-
-  /* EXTRA-TEXT is the rest */
-  extra_text = (size > 2) ? &data[2] : NULL;
-  extra_text_len = (size > 2) ? (size - 2) : 0;
-
-  /* Cap EXTRA-TEXT to reasonable size */
-  if (extra_text_len > MAX_EDE_EXTRA_TEXT)
-    extra_text_len = MAX_EDE_EXTRA_TEXT;
-
-  /* Test EDE info extraction */
-  if (SocketDNSError_from_ede (info_code, extra_text, extra_text_len,
-                               &ede_info)
-      == 0)
+  /* Parse EDE option using correct API */
+  if (SocketDNS_ede_parse (data, size, &ede) == 0)
     {
-      /* Test accessors */
-      (void)SocketDNSError_get_info_code (&ede_info);
-      (void)SocketDNSError_get_extra_text (&ede_info);
-      (void)SocketDNSError_get_category (&ede_info);
-      (void)SocketDNSError_is_dnssec_related (&ede_info);
+      /* Test accessors via struct fields */
+      (void)ede.info_code;
+      (void)ede.extra_text;
+      (void)ede.extra_text_len;
+      (void)ede.present;
+
+      /* Test category and type checks */
+      (void)SocketDNS_ede_category (ede.info_code);
+      (void)SocketDNS_ede_is_dnssec_error (ede.info_code);
+      (void)SocketDNS_ede_is_stale (ede.info_code);
+      (void)SocketDNS_ede_is_filtered (ede.info_code);
+      (void)SocketDNS_ede_is_retriable (ede.info_code);
 
       /* Test formatting */
       char error_buf[512];
-      (void)SocketDNSError_format_error (&ede_info, error_buf,
-                                         sizeof (error_buf));
+      (void)SocketDNS_ede_format (&ede, error_buf, sizeof (error_buf));
+
+      /* Test name and description */
+      (void)SocketDNS_ede_code_name (ede.info_code);
+      (void)SocketDNS_ede_code_description (ede.info_code);
     }
 
   /* Test all defined EDE codes (0-24) */
   for (int code = 0; code <= DNS_EDE_MAX_DEFINED; code++)
     {
-      if (SocketDNSError_from_ede (code, extra_text, extra_text_len, &ede_info)
-          == 0)
-        {
-          (void)SocketDNSError_get_name (&ede_info);
-          (void)SocketDNSError_get_description (&ede_info);
-        }
+      (void)SocketDNS_ede_code_name (code);
+      (void)SocketDNS_ede_code_description (code);
+      (void)SocketDNS_ede_category (code);
+      (void)SocketDNS_ede_category_name (SocketDNS_ede_category (code));
     }
 }
 

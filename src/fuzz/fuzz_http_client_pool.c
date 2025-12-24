@@ -111,6 +111,8 @@ test_pool_creation_limits(Arena_T arena, const FuzzInput *input)
     SocketHTTPClient_Config config;
     SocketHTTPClient_T client;
 
+    (void)arena; /* Not used in this test */
+
     SocketHTTPClient_config_defaults(&config);
     config.enable_connection_pool = input->enable_pool;
     config.max_connections_per_host = input->max_per_host;
@@ -410,6 +412,8 @@ test_pool_free(Arena_T arena, const FuzzInput *input)
     SocketHTTPClient_Config config;
     HTTPPool *pool;
 
+    (void)input; /* Not used in this test */
+
     SocketHTTPClient_config_defaults(&config);
     config.enable_connection_pool = 1;
     config.max_connections_per_host = 5;
@@ -540,10 +544,6 @@ LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
         Arena_dispose((Arena_T *)&arena);
     }
     EXCEPT(Arena_Failed) {
-        if (arena)
-            Arena_dispose((Arena_T *)&arena);
-    }
-    EXCEPT(Except_T) {
         if (arena)
             Arena_dispose((Arena_T *)&arena);
     }

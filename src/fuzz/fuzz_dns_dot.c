@@ -385,7 +385,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                                         DOT_MODE_OPPORTUNISTIC);
 
             /* Submit multiple queries */
-            for (int i = 0; i < 3 && op_size >= (i + 1) * 12; i++)
+            for (size_t i = 0; i < 3 && op_size >= (i + 1) * 12; i++)
               {
                 query_len = build_dns_query (op_data + i * 12,
                                             op_size - i * 12,
@@ -621,14 +621,6 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   EXCEPT (SocketDNSoverTLS_Failed)
   {
     /* Expected for some malformed inputs */
-    if (transport)
-      SocketDNSoverTLS_free (&transport);
-    if (arena)
-      Arena_dispose (&arena);
-  }
-  EXCEPT (Socket_Failed)
-  {
-    /* Socket operations may fail */
     if (transport)
       SocketDNSoverTLS_free (&transport);
     if (arena)
