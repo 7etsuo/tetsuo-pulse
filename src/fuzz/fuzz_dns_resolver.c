@@ -48,6 +48,7 @@
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "dns/SocketDNSResolver.h"
+#include "dns/SocketDNSTransport.h"
 #include "dns/SocketDNSWire.h"
 
 /* Suppress GCC clobbered warnings for volatile variables */
@@ -646,6 +647,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   EXCEPT (SocketDNSResolver_Failed)
   {
     /* Expected for some invalid inputs */
+  }
+  EXCEPT (SocketDNSTransport_Failed)
+  {
+    /* Expected for network transport failures during fuzzing */
   }
   FINALLY
   {
