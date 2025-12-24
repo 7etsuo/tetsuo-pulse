@@ -10,9 +10,11 @@
  */
 
 #include "dns/SocketDNSNegCache.h"
+#include "dns/SocketDNSWire.h"
 #include "core/Arena.h"
 #include "core/SocketUtil.h"
 
+#include <arpa/inet.h>
 #include <ctype.h>
 #include <pthread.h>
 #include <string.h>
@@ -25,6 +27,8 @@
 
 /**
  * @brief Internal cache entry structure.
+ *
+ * Extended for RFC 2308 Section 6 compliance with cached SOA data.
  */
 struct NegCacheEntry
 {
@@ -37,6 +41,13 @@ struct NegCacheEntry
   struct NegCacheEntry *hash_next; /**< Hash chain pointer */
   struct NegCacheEntry *lru_prev;  /**< LRU list prev */
   struct NegCacheEntry *lru_next;  /**< LRU list next */
+
+  /* RFC 2308 Section 6: Cached SOA for authority section */
+  int has_soa;       /**< Whether SOA data is present */
+  char soa_name[DNS_NEGCACHE_MAX_SOA_NAME + 1];    /**< SOA owner name */
+  unsigned char soa_rdata[DNS_NEGCACHE_MAX_SOA_RDATA]; /**< Raw SOA RDATA */
+  size_t soa_rdlen;  /**< SOA RDATA length */
+  uint32_t soa_ttl;  /**< Original SOA record TTL */
 };
 
 /**
@@ -364,6 +375,22 @@ SocketDNSNegCache_lookup (T cache, const char *qname, uint16_t qtype,
       entry->original_ttl = found->ttl;
       entry->ttl_remaining = entry_ttl_remaining (found, now_ms);
       entry->insert_time_ms = found->insert_time_ms;
+
+      /* Copy SOA data for RFC 2308 Section 6 compliance */
+      entry->soa.has_soa = found->has_soa;
+      if (found->has_soa)
+        {
+          strncpy (entry->soa.name, found->soa_name, DNS_NEGCACHE_MAX_SOA_NAME);
+          entry->soa.name[DNS_NEGCACHE_MAX_SOA_NAME] = '\0';
+          entry->soa.rdlen = found->soa_rdlen;
+          if (found->soa_rdlen > 0 && found->soa_rdlen <= DNS_NEGCACHE_MAX_SOA_RDATA)
+            memcpy (entry->soa.rdata, found->soa_rdata, found->soa_rdlen);
+          entry->soa.original_ttl = found->soa_ttl;
+        }
+      else
+        {
+          memset (&entry->soa, 0, sizeof (entry->soa));
+        }
     }
 
   if (result == DNS_NEG_MISS)
@@ -502,6 +529,179 @@ SocketDNSNegCache_insert_nodata (T cache, const char *qname, uint16_t qtype,
   entry->type = DNS_NEG_NODATA;
   entry->ttl = ttl;
   entry->insert_time_ms = Socket_get_monotonic_ms ();
+
+  hash_insert (cache, entry);
+  lru_add_head (cache, entry);
+  cache->size++;
+  cache->insertions++;
+
+  pthread_mutex_unlock (&cache->mutex);
+
+  return 0;
+}
+
+/**
+ * @brief Helper to copy SOA data to internal entry.
+ */
+static void
+copy_soa_to_entry (struct NegCacheEntry *entry, const SocketDNS_CachedSOA *soa)
+{
+  if (soa == NULL || !soa->has_soa)
+    {
+      entry->has_soa = 0;
+      return;
+    }
+
+  entry->has_soa = 1;
+  strncpy (entry->soa_name, soa->name, DNS_NEGCACHE_MAX_SOA_NAME);
+  entry->soa_name[DNS_NEGCACHE_MAX_SOA_NAME] = '\0';
+
+  size_t rdlen = soa->rdlen;
+  if (rdlen > DNS_NEGCACHE_MAX_SOA_RDATA)
+    rdlen = DNS_NEGCACHE_MAX_SOA_RDATA;
+
+  entry->soa_rdlen = rdlen;
+  if (rdlen > 0)
+    memcpy (entry->soa_rdata, soa->rdata, rdlen);
+
+  entry->soa_ttl = soa->original_ttl;
+}
+
+int
+SocketDNSNegCache_insert_nxdomain_with_soa (T cache, const char *qname,
+                                             uint16_t qclass, uint32_t ttl,
+                                             const SocketDNS_CachedSOA *soa)
+{
+  if (cache == NULL || qname == NULL)
+    return -1;
+
+  /* Reject if cache is disabled */
+  if (cache->max_entries == 0)
+    return -1;
+
+  /* Validate name length before normalizing */
+  size_t qname_len = strlen (qname);
+  if (qname_len > DNS_NEGCACHE_MAX_NAME)
+    return -1;
+
+  char normalized[DNS_NEGCACHE_MAX_NAME + 1];
+  normalize_name (normalized, qname, DNS_NEGCACHE_MAX_NAME);
+
+  /* Cap TTL */
+  if (ttl > cache->max_ttl)
+    ttl = cache->max_ttl;
+
+  pthread_mutex_lock (&cache->mutex);
+
+  /* Check if already exists and update */
+  struct NegCacheEntry *existing = find_entry (cache, normalized, 0, qclass);
+  if (existing)
+    {
+      existing->ttl = ttl;
+      existing->insert_time_ms = Socket_get_monotonic_ms ();
+      copy_soa_to_entry (existing, soa);
+      lru_touch (cache, existing);
+      pthread_mutex_unlock (&cache->mutex);
+      return 0;
+    }
+
+  /* Evict if at capacity */
+  if (cache->max_entries > 0 && cache->size >= cache->max_entries)
+    evict_lru (cache);
+
+  /* Allocate new entry */
+  struct NegCacheEntry *entry = entry_alloc (cache);
+  if (entry == NULL)
+    {
+      pthread_mutex_unlock (&cache->mutex);
+      return -1;
+    }
+
+  memset (entry, 0, sizeof (*entry));
+  strncpy (entry->name, normalized, DNS_NEGCACHE_MAX_NAME);
+  entry->name[DNS_NEGCACHE_MAX_NAME] = '\0';
+  entry->qtype = 0; /* NXDOMAIN uses qtype=0 */
+  entry->qclass = qclass;
+  entry->type = DNS_NEG_NXDOMAIN;
+  entry->ttl = ttl;
+  entry->insert_time_ms = Socket_get_monotonic_ms ();
+  copy_soa_to_entry (entry, soa);
+
+  hash_insert (cache, entry);
+  lru_add_head (cache, entry);
+  cache->size++;
+  cache->insertions++;
+
+  pthread_mutex_unlock (&cache->mutex);
+
+  return 0;
+}
+
+int
+SocketDNSNegCache_insert_nodata_with_soa (T cache, const char *qname,
+                                           uint16_t qtype, uint16_t qclass,
+                                           uint32_t ttl,
+                                           const SocketDNS_CachedSOA *soa)
+{
+  if (cache == NULL || qname == NULL)
+    return -1;
+
+  /* qtype=0 is reserved for NXDOMAIN */
+  if (qtype == 0)
+    return -1;
+
+  /* Reject if cache is disabled */
+  if (cache->max_entries == 0)
+    return -1;
+
+  /* Validate name length before normalizing */
+  size_t qname_len = strlen (qname);
+  if (qname_len > DNS_NEGCACHE_MAX_NAME)
+    return -1;
+
+  char normalized[DNS_NEGCACHE_MAX_NAME + 1];
+  normalize_name (normalized, qname, DNS_NEGCACHE_MAX_NAME);
+
+  /* Cap TTL */
+  if (ttl > cache->max_ttl)
+    ttl = cache->max_ttl;
+
+  pthread_mutex_lock (&cache->mutex);
+
+  /* Check if already exists and update */
+  struct NegCacheEntry *existing
+      = find_entry (cache, normalized, qtype, qclass);
+  if (existing)
+    {
+      existing->ttl = ttl;
+      existing->insert_time_ms = Socket_get_monotonic_ms ();
+      copy_soa_to_entry (existing, soa);
+      lru_touch (cache, existing);
+      pthread_mutex_unlock (&cache->mutex);
+      return 0;
+    }
+
+  /* Evict if at capacity */
+  if (cache->max_entries > 0 && cache->size >= cache->max_entries)
+    evict_lru (cache);
+
+  /* Allocate new entry */
+  struct NegCacheEntry *entry = entry_alloc (cache);
+  if (entry == NULL)
+    {
+      pthread_mutex_unlock (&cache->mutex);
+      return -1;
+    }
+
+  memset (entry, 0, sizeof (*entry));
+  strncpy (entry->name, normalized, DNS_NEGCACHE_MAX_NAME);
+  entry->name[DNS_NEGCACHE_MAX_NAME] = '\0';
+  entry->qtype = qtype;
+  entry->qclass = qclass;
+  entry->type = DNS_NEG_NODATA;
+  entry->ttl = ttl;
+  entry->insert_time_ms = Socket_get_monotonic_ms ();
+  copy_soa_to_entry (entry, soa);
 
   hash_insert (cache, entry);
   lru_add_head (cache, entry);
@@ -677,6 +877,121 @@ SocketDNSNegCache_result_name (SocketDNS_NegCacheResult result)
     default:
       return "UNKNOWN";
     }
+}
+
+/* RFC 2308 Section 6: Response Building */
+
+int
+SocketDNSNegCache_build_response (const SocketDNS_NegCacheEntry *entry,
+                                   const char *qname, uint16_t qtype,
+                                   uint16_t qclass, uint16_t query_id,
+                                   unsigned char *buf, size_t buflen,
+                                   size_t *written)
+{
+  if (entry == NULL || qname == NULL || buf == NULL)
+    return -1;
+
+  /* Need at least header + question + SOA RR space */
+  if (buflen < DNS_HEADER_SIZE + 4 + DNS_MAX_NAME_LEN)
+    return -1;
+
+  size_t offset = 0;
+
+  /* Build DNS response header */
+  SocketDNS_Header header;
+  memset (&header, 0, sizeof (header));
+  header.id = query_id;
+  header.qr = 1;     /* Response */
+  header.opcode = 0; /* Standard query */
+  header.aa = 0;     /* Not authoritative (cached) */
+  header.tc = 0;     /* Not truncated */
+  header.rd = 1;     /* Recursion desired (echo from query) */
+  header.ra = 1;     /* Recursion available */
+  header.z = 0;
+  header.qdcount = 1; /* One question */
+  header.ancount = 0; /* No answer records */
+  header.arcount = 0; /* No additional records */
+
+  /* Set RCODE based on entry type */
+  if (entry->type == DNS_NEG_NXDOMAIN)
+    header.rcode = DNS_RCODE_NXDOMAIN; /* NXDOMAIN = 3 */
+  else
+    header.rcode = DNS_RCODE_NOERROR; /* NODATA = 0 with empty answer */
+
+  /* Set NSCOUNT based on whether we have SOA */
+  header.nscount = entry->soa.has_soa ? 1 : 0;
+
+  /* Encode header */
+  if (SocketDNS_header_encode (&header, buf, buflen) != 0)
+    return -1;
+  offset += DNS_HEADER_SIZE;
+
+  /* Encode question section */
+  SocketDNS_Question question;
+  SocketDNS_question_init (&question, qname, qtype);
+  question.qclass = qclass;
+
+  size_t question_len = 0;
+  if (SocketDNS_question_encode (&question, buf + offset, buflen - offset,
+                                  &question_len)
+      != 0)
+    return -1;
+  offset += question_len;
+
+  /* Add SOA to authority section if available (RFC 2308 Section 6) */
+  if (entry->soa.has_soa && entry->soa.rdlen > 0)
+    {
+      /* Calculate decremented TTL per RFC 2308 Section 6 */
+      uint32_t decremented_ttl = entry->ttl_remaining;
+
+      /* Also cap at SOA's remaining TTL if it was higher originally */
+      /* Use the minimum of entry TTL and SOA record TTL */
+      if (entry->soa.original_ttl > 0)
+        {
+          /* SOA TTL should decrease at same rate as entry TTL */
+          if (decremented_ttl > entry->soa.original_ttl)
+            decremented_ttl = entry->soa.original_ttl;
+        }
+
+      /* Encode SOA owner name */
+      size_t soa_name_len = 0;
+      if (SocketDNS_name_encode (entry->soa.name, buf + offset, buflen - offset,
+                                  &soa_name_len)
+          != 0)
+        return -1;
+      offset += soa_name_len;
+
+      /* Check space for TYPE(2) + CLASS(2) + TTL(4) + RDLENGTH(2) + RDATA */
+      if (offset + 10 + entry->soa.rdlen > buflen)
+        return -1;
+
+      /* TYPE = SOA (6) */
+      buf[offset++] = 0;
+      buf[offset++] = DNS_TYPE_SOA;
+
+      /* CLASS = IN (1) */
+      buf[offset++] = 0;
+      buf[offset++] = (uint8_t)qclass;
+
+      /* TTL - decremented per RFC 2308 Section 6 */
+      buf[offset++] = (uint8_t)(decremented_ttl >> 24);
+      buf[offset++] = (uint8_t)(decremented_ttl >> 16);
+      buf[offset++] = (uint8_t)(decremented_ttl >> 8);
+      buf[offset++] = (uint8_t)(decremented_ttl);
+
+      /* RDLENGTH */
+      buf[offset++] = (uint8_t)(entry->soa.rdlen >> 8);
+      buf[offset++] = (uint8_t)(entry->soa.rdlen);
+
+      /* RDATA (raw SOA data) */
+      memcpy (buf + offset, entry->soa.rdata, entry->soa.rdlen);
+      offset += entry->soa.rdlen;
+    }
+
+  if (written != NULL)
+    *written = offset;
+
+  return 0;
 }
 
 #undef T
