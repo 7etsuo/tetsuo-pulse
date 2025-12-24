@@ -335,8 +335,8 @@ generate_unique_id (T resolver)
     }
   while (attempts < max_attempts);
 
-  /* Extremely unlikely: fallback to any ID (collision handled at response) */
-  return id;
+  /* ID space exhausted - refuse to send query to prevent cache poisoning */
+  RAISE (SocketDNSResolver_Failed);
 }
 
 static struct SocketDNSResolver_Query *
@@ -1054,9 +1054,9 @@ complete_query (T resolver, struct SocketDNSResolver_Query *q, int error)
 
   if (error == RESOLVER_OK && q->address_count > 0)
     {
-      /* Build result */
-      result.addresses = malloc (q->address_count
-                                 * sizeof (SocketDNSResolver_Address));
+      /* Build result - use reallocarray to prevent integer overflow */
+      result.addresses = reallocarray (NULL, q->address_count,
+                                       sizeof (SocketDNSResolver_Address));
       if (result.addresses)
         {
           memcpy (result.addresses, q->addresses,
@@ -1373,10 +1373,10 @@ SocketDNSResolver_resolve (T resolver, const char *hostname, int flags,
       struct CacheEntry *cached = cache_lookup (resolver, hostname);
       if (cached)
         {
-          /* Build result from cache */
+          /* Build result from cache - use reallocarray to prevent integer overflow */
           SocketDNSResolver_Result result = { 0 };
-          result.addresses = malloc (cached->address_count
-                                     * sizeof (SocketDNSResolver_Address));
+          result.addresses = reallocarray (NULL, cached->address_count,
+                                           sizeof (SocketDNSResolver_Address));
           if (result.addresses)
             {
               memcpy (result.addresses, cached->addresses,

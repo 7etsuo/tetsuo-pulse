@@ -464,10 +464,11 @@ allocate_request_hostname (struct SocketDNS_T *dns,
       return;
     }
 
-  if (host_len > SIZE_MAX - 1)
+  /* Check for overflow: host_len == SIZE_MAX would cause host_len + 1 to wrap to 0 */
+  if (host_len >= SIZE_MAX || host_len > 255)
     {
       SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
-                        "Hostname length overflow");
+                        "Hostname length overflow or exceeds DNS maximum (255)");
     }
 
   req->host = ALLOC (dns->arena, host_len + 1);
@@ -814,7 +815,12 @@ store_resolution_result (struct SocketDNS_T *dns,
       if (error == 0 && req->host != NULL && req->result != NULL
           && !socketcommon_is_ip_address (req->host))
         {
-          cache_insert (dns, req->host, req->result);
+          /* Validate hostname length before caching to prevent poisoning */
+          size_t host_len = strnlen (req->host, 256);
+          if (host_len > 0 && host_len <= 255)
+            {
+              cache_insert (dns, req->host, req->result);
+            }
         }
 
       SIGNAL_DNS_COMPLETION (dns);
