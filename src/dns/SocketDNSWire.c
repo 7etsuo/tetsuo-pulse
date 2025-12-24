@@ -423,6 +423,9 @@ SocketDNS_name_decode (const unsigned char *msg, size_t msglen, size_t offset,
   size_t first_end;
   int hops;
   int jumped;
+  /* Track visited offsets to detect compression loops */
+  uint16_t visited[DNS_MAX_POINTER_HOPS];
+  int visited_count;
 
   if (!msg || !buf || buflen == 0)
     return -1;
@@ -435,6 +438,7 @@ SocketDNS_name_decode (const unsigned char *msg, size_t msglen, size_t offset,
   first_end = 0;
   hops = 0;
   jumped = 0;
+  visited_count = 0;
 
   while (1)
     {
@@ -449,6 +453,7 @@ SocketDNS_name_decode (const unsigned char *msg, size_t msglen, size_t offset,
       if ((len_byte & DNS_COMPRESSION_FLAG) == DNS_COMPRESSION_FLAG)
         {
           uint16_t ptr_offset;
+          int i;
 
           /* Need two bytes for pointer */
           if (wire_pos + 1 >= msglen)
@@ -457,8 +462,8 @@ SocketDNS_name_decode (const unsigned char *msg, size_t msglen, size_t offset,
           ptr_offset
               = ((uint16_t)(len_byte & 0x3F) << 8) | msg[wire_pos + 1];
 
-          /* Pointer must be valid */
-          if (ptr_offset >= msglen)
+          /* Pointer must be valid and point backwards (RFC 1035 Section 4.1.4) */
+          if (ptr_offset >= msglen || ptr_offset >= wire_pos)
             return -1;
 
           /* Track first end position for consumed calculation */
@@ -468,7 +473,18 @@ SocketDNS_name_decode (const unsigned char *msg, size_t msglen, size_t offset,
               jumped = 1;
             }
 
-          /* Prevent infinite loops */
+          /* Prevent infinite loops by checking visited offsets */
+          for (i = 0; i < visited_count; i++)
+            {
+              if (visited[i] == ptr_offset)
+                return -1; /* Loop detected */
+            }
+
+          /* Record this offset as visited */
+          if (visited_count < DNS_MAX_POINTER_HOPS)
+            visited[visited_count++] = (uint16_t)wire_pos;
+
+          /* Prevent excessive pointer hops */
           if (++hops > DNS_MAX_POINTER_HOPS)
             return -1;
 
@@ -500,12 +516,13 @@ SocketDNS_name_decode (const unsigned char *msg, size_t msglen, size_t offset,
       /* Add dot separator (except for first label) */
       if (out_pos > 0)
         {
-          if (out_pos >= buflen - 1)
+          /* Need space for dot + label + null terminator */
+          if (out_pos + 1 + len_byte >= buflen)
             return -1;
           buf[out_pos++] = '.';
         }
 
-      /* Check output buffer space */
+      /* Check output buffer space (must leave room for null terminator) */
       if (out_pos + len_byte >= buflen)
         return -1;
 
@@ -719,9 +736,11 @@ SocketDNS_rr_decode (const unsigned char *msg, size_t msglen, size_t offset,
   rdlength = dns_unpack_be16 (msg + pos);
   pos += 2;
 
-  /* Verify RDATA fits in message */
-  if (pos + rdlength > msglen)
-    return -1;
+  /* Verify RDATA fits in message - check for integer overflow first */
+  if (rdlength > msglen)
+    return -1; /* rdlength larger than entire message */
+  if (pos > msglen - rdlength)
+    return -1; /* Would overflow: check (pos + rdlength <= msglen) safely */
 
   rr->rdlength = rdlength;
   rr->rdata = (rdlength > 0) ? (msg + pos) : NULL;
@@ -764,9 +783,11 @@ SocketDNS_rr_skip (const unsigned char *msg, size_t msglen, size_t offset,
   /* Skip TYPE, CLASS, TTL to get RDLENGTH at offset+6 */
   rdlength = dns_unpack_be16 (msg + pos + 8);
 
-  /* Verify RDATA fits */
-  if (pos + DNS_RR_FIXED_SIZE + rdlength > msglen)
-    return -1;
+  /* Verify RDATA fits - check for integer overflow first */
+  if (rdlength > msglen)
+    return -1; /* rdlength larger than entire message */
+  if (pos + DNS_RR_FIXED_SIZE > msglen - rdlength)
+    return -1; /* Would overflow: check (pos + DNS_RR_FIXED_SIZE + rdlength <= msglen) safely */
 
   if (consumed)
     *consumed = name_consumed + DNS_RR_FIXED_SIZE + rdlength;
