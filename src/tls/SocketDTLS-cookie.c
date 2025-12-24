@@ -154,7 +154,7 @@ compute_cookie_hmac (const unsigned char *secret,
   uint32_t ts_net;
   volatile int result = -1;
 
-  if (peer_len > sizeof (struct sockaddr_storage))
+  if (peer_len == 0 || peer_len > sizeof (struct sockaddr_storage))
     return -1;
 
   memcpy (input, peer_addr, peer_len);
@@ -268,10 +268,8 @@ dtls_cookie_verify_cb (SSL *ssl, const unsigned char *cookie,
   timestamp = get_time_bucket ();
 
   if (pthread_mutex_lock (&ctx->cookie.secret_mutex) != 0)
-    {
-      SocketCrypto_secure_clear (expected, sizeof (expected));
-      return 0;
-    }
+    return 0;
+
 
   const unsigned char *secrets[COOKIE_SECRET_COUNT] = {
     ctx->cookie.secret,
