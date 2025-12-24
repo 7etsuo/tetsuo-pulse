@@ -488,13 +488,13 @@
         DTLS_ERROR_MSG ("DTLS handshake not complete");                       \
         RAISE_DTLS_ERROR (exception);                                         \
       }                                                                       \
-    SSL *_ssl = dtls_socket_get_ssl (socket);                                 \
-    if (!_ssl)                                                                \
+    SSL *ssl_conn = dtls_socket_get_ssl (socket);                                 \
+    if (!ssl_conn)                                                                \
       {                                                                       \
         DTLS_ERROR_MSG ("SSL object not available");                          \
         RAISE_DTLS_ERROR (exception);                                         \
       }                                                                       \
-    _ssl;                                                                     \
+    ssl_conn;                                                                     \
   })
 
 /* ============================================================================
@@ -880,10 +880,10 @@ struct T
   ({                                                                          \
     if (!(socket)->dtls_enabled)                                              \
       RAISE_DTLS_ERROR_MSG (exception, "DTLS not enabled on socket");         \
-    SSL *_ssl = dtls_socket_get_ssl (socket);                                 \
-    if (!_ssl)                                                                \
+    SSL *ssl_conn = dtls_socket_get_ssl (socket);                                 \
+    if (!ssl_conn)                                                                \
       RAISE_DTLS_ERROR_MSG (exception, "SSL object not available");           \
-    _ssl;                                                                     \
+    ssl_conn;                                                                     \
   })
 
 /* ============================================================================
