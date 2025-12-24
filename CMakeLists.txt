@@ -1019,6 +1019,8 @@ if(ENABLE_FUZZING)
         fuzz_http2_frames_full
         fuzz_http2_headers
         fuzz_http2_settings
+        fuzz_http2_stream
+        fuzz_http2_flow
         fuzz_proxy_socks5
         fuzz_proxy_socks4
         fuzz_proxy_http
