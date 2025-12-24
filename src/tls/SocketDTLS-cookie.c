@@ -46,14 +46,17 @@ static void
 init_bucket_offset (void)
 {
   unsigned char rand_bytes[4];
-  if (SocketCrypto_random_bytes (rand_bytes, sizeof (rand_bytes)) == 0)
+  /* SECURITY: Fail on RNG failure instead of using predictable offset */
+  if (SocketCrypto_random_bytes (rand_bytes, sizeof (rand_bytes)) != 0)
     {
-      uint32_t rand_val = ((uint32_t)rand_bytes[0] << 24)
-                          | ((uint32_t)rand_bytes[1] << 16)
-                          | ((uint32_t)rand_bytes[2] << 8)
-                          | (uint32_t)rand_bytes[3];
-      bucket_offset = rand_val % (SOCKET_DTLS_COOKIE_LIFETIME_SEC * 1000);
+      /* RNG failure - this is a critical security issue */
+      RAISE (SocketCrypto_Failed);
     }
+  uint32_t rand_val = ((uint32_t)rand_bytes[0] << 24)
+                      | ((uint32_t)rand_bytes[1] << 16)
+                      | ((uint32_t)rand_bytes[2] << 8)
+                      | (uint32_t)rand_bytes[3];
+  bucket_offset = rand_val % (SOCKET_DTLS_COOKIE_LIFETIME_SEC * 1000);
 }
 
 static uint32_t
@@ -223,7 +226,9 @@ dtls_cookie_generate_cb (SSL *ssl, unsigned char *cookie,
   if (get_peer_address_from_ssl (ssl, &peer_addr, &peer_len) != 0)
     return 0;
 
-  pthread_mutex_lock (&ctx->cookie.secret_mutex);
+  if (pthread_mutex_lock (&ctx->cookie.secret_mutex) != 0)
+    return 0;
+
   result = dtls_generate_cookie_hmac (ctx->cookie.secret,
                                       (struct sockaddr *)&peer_addr, peer_len,
                                       cookie);
@@ -262,7 +267,11 @@ dtls_cookie_verify_cb (SSL *ssl, const unsigned char *cookie,
   addr = (const struct sockaddr *)&peer_addr;
   timestamp = get_time_bucket ();
 
-  pthread_mutex_lock (&ctx->cookie.secret_mutex);
+  if (pthread_mutex_lock (&ctx->cookie.secret_mutex) != 0)
+    {
+      SocketCrypto_secure_clear (expected, sizeof (expected));
+      return 0;
+    }
 
   const unsigned char *secrets[COOKIE_SECRET_COUNT] = {
     ctx->cookie.secret,
@@ -276,7 +285,10 @@ dtls_cookie_verify_cb (SSL *ssl, const unsigned char *cookie,
   verified = 0;
   for (int s = 0; s < num_secrets; s++) {
     for (int t = 0; t < COOKIE_TIMESTAMP_WINDOW; t++) {
-      uint32_t ts = timestamp - t;
+      /* Prevent underflow: only subtract if t <= timestamp */
+      if ((uint32_t)t > timestamp)
+        continue;
+      uint32_t ts = timestamp - (uint32_t)t;
       if (try_verify_cookie (cookie, secrets[s], addr, peer_len, ts, expected)) {
         verified = 1;
         goto cleanup;

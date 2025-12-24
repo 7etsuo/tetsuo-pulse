@@ -512,7 +512,12 @@ SocketDTLSContext_set_cookie_secret (T ctx, const unsigned char *secret,
                                 "Cookie secret only for server contexts");
     }
 
-  pthread_mutex_lock (&ctx->cookie.secret_mutex);
+  if (pthread_mutex_lock (&ctx->cookie.secret_mutex) != 0)
+    {
+      RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
+                                "Failed to acquire mutex for cookie secret");
+    }
+
   memcpy (ctx->cookie.secret, secret, len);
   pthread_mutex_unlock (&ctx->cookie.secret_mutex);
 
@@ -527,7 +532,12 @@ SocketDTLSContext_rotate_cookie_secret (T ctx)
 {
   assert (ctx);
 
-  pthread_mutex_lock (&ctx->cookie.secret_mutex);
+  if (pthread_mutex_lock (&ctx->cookie.secret_mutex) != 0)
+    {
+      RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
+                                "Failed to acquire mutex for secret rotation");
+    }
+
 
   /* Move current to previous */
   memcpy (ctx->cookie.prev_secret, ctx->cookie.secret,
@@ -538,6 +548,9 @@ SocketDTLSContext_rotate_cookie_secret (T ctx)
                                  SOCKET_DTLS_COOKIE_SECRET_LEN)
       != 0)
     {
+      /* Ensure sensitive data cleared before raising exception */
+      SocketCrypto_secure_clear (ctx->cookie.prev_secret,
+                                 sizeof (ctx->cookie.prev_secret));
       pthread_mutex_unlock (&ctx->cookie.secret_mutex);
       RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
                                 "Failed to generate new cookie secret");
@@ -784,7 +797,9 @@ SocketDTLSContext_get_cache_stats (T ctx, size_t *hits, size_t *misses,
   if (!ctx)
     return;
 
-  pthread_mutex_lock (&ctx->stats_mutex);
+  if (pthread_mutex_lock (&ctx->stats_mutex) != 0)
+    return;
+
 
   if (hits)
     *hits = ctx->cache_hits;
