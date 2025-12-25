@@ -613,6 +613,7 @@ set(TEST_HEADERS
 set(QUIC_HEADERS
     include/quic/SocketQUICVarInt.h
     include/quic/SocketQUICError.h
+    include/quic/SocketQUICVersion.h
 )
 
 set(SIMPLE_HEADERS
@@ -753,6 +754,7 @@ set(TEST_SOURCES
     # QUIC tests (RFC 9000)
     test_quic_varint
     test_quic_error
+    test_quic_version
 )
 
 # TLS tests (only built when TLS is enabled)
@@ -1078,6 +1080,7 @@ if(ENABLE_FUZZING)
         # QUIC fuzzers (RFC 9000)
         fuzz_quic_varint
         fuzz_quic_error
+        fuzz_quic_version
     )
     
     # TLS fuzz harnesses (require SOCKET_HAS_TLS)
