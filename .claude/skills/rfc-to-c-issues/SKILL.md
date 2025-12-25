@@ -1,30 +1,43 @@
 ---
 name: rfc-to-c-issues
-description: RFC to Git Issues Pipeline. Auto-activates when user provides an RFC document. Parses RFC into sections, spawns parallel analyzer subagents, builds dependency graph, and creates ordered GitHub issues for C implementation.
+description: Document to Git Issues Pipeline. Auto-activates when user provides an RFC document OR a Markdown project description. Parses document into sections, spawns parallel analyzer subagents, builds dependency graph, and creates ordered GitHub issues for C implementation.
 ---
 
-You are the RFC to Git Issues Pipeline orchestrator. Your job is to transform an RFC document into a set of properly ordered GitHub issues for C implementation.
+You are the Document to Git Issues Pipeline orchestrator. Your job is to transform an RFC document OR Markdown project description into a set of properly ordered GitHub issues for C implementation.
 
 ## Activation
 
 This skill activates when:
 - User provides an RFC document (file path or URL)
+- User provides a Markdown (.md) project description
 - User mentions "convert RFC to issues" or similar
+- User mentions "convert project to issues" or similar
 - User asks to "implement RFC XXXX"
+- User asks to "implement this project"
 
 ## Pipeline Overview
 
 ```
-RFC Document -> Parse Sections -> Parallel Analysis -> Dependency Sort -> Parallel Issue Creation
+Document (RFC or .md) -> Detect Type -> Parse Sections -> Parallel Analysis -> Dependency Sort -> Parallel Issue Creation
 ```
 
-## Phase 1: Parse RFC
+## Phase 1: Parse Document
 
-First, obtain and parse the RFC into implementable sections.
+First, obtain and parse the document into implementable sections.
+
+### Document Type Detection
+
+Detect document type automatically:
+
+| File Extension | First 50 Lines | Document Type |
+|----------------|----------------|---------------|
+| `.txt` | Contains "RFC" or "Request for Comments" | RFC mode |
+| `.md` | Any | Markdown mode |
+| `.txt` | No RFC markers | Plain text mode (treat as Markdown) |
 
 ### If given a file path:
 ```
-Use Read tool to load the RFC content
+Use Read tool to load the content
 ```
 
 ### If given an RFC number:
@@ -32,9 +45,9 @@ Use Read tool to load the RFC content
 Use WebFetch to retrieve from https://www.rfc-editor.org/rfc/rfcXXXX.txt
 ```
 
-### Section Extraction
+### Section Extraction (RFC Mode)
 
-Identify sections that require C implementation. Skip:
+For RFC documents, identify sections that require C implementation. Skip:
 - Abstract
 - Table of Contents
 - Introduction (unless it defines terms/constants)
@@ -49,14 +62,36 @@ For each implementable section, extract:
 - Full section text
 - Any subsections
 
+### Section Extraction (Markdown Mode)
+
+For Markdown documents, parse headers as sections:
+- `#` = Top-level section (project name, skip unless defines constants)
+- `##` = Major section (primary implementation units)
+- `###` = Subsection (implementation details within parent)
+- `####` = Sub-subsection (fine-grained details)
+
+Skip Markdown sections titled:
+- "Overview", "Introduction", "About" (unless defines terms/constants)
+- "Contributing", "License", "Authors"
+- "References", "See Also", "Links"
+- "Changelog", "History", "Version History"
+
+For each implementable section, extract:
+- Section ID (generate from header hierarchy, e.g., "2.1", "3.2.1")
+- Section title (the header text)
+- Full section text (content until next header of same or higher level)
+- Any subsections
+
 ### Output a Section List
 
 Create a structured list:
 
+**RFC Mode:**
 ```json
 {
-  "rfc_id": "RFC 9113",
-  "rfc_title": "HTTP/2",
+  "doc_type": "rfc",
+  "doc_id": "RFC 9113",
+  "doc_title": "HTTP/2",
   "sections": [
     {
       "id": "4",
@@ -69,6 +104,29 @@ Create a structured list:
       "title": "Frame Format",
       "text": "...",
       "parent": "4"
+    }
+  ]
+}
+```
+
+**Markdown Mode:**
+```json
+{
+  "doc_type": "markdown",
+  "doc_id": "project-name",
+  "doc_title": "Project Name",
+  "sections": [
+    {
+      "id": "1",
+      "title": "Core Components",
+      "text": "...",
+      "subsections": ["1.1", "1.2"]
+    },
+    {
+      "id": "1.1",
+      "title": "Memory Manager",
+      "text": "...",
+      "parent": "1"
     }
   ]
 }
@@ -284,7 +342,7 @@ If `gh` commands are rate-limited:
 ### Before Starting
 
 Confirm with user:
-- RFC to process
+- Document to process (RFC or Markdown)
 - Repository to create issues in
 - Any sections to skip
 - Label preferences
@@ -292,7 +350,7 @@ Confirm with user:
 ### During Processing
 
 Report progress:
-- "Parsed X sections from RFC"
+- "Parsed X sections from document"
 - "Analyzing sections... (batch 1/3)"
 - "Creating issues... (5/15 complete)"
 
@@ -304,11 +362,12 @@ Summarize:
 - Any failures to address
 - Suggested implementation order
 
-## Example Session
+## Example Sessions
+
+### RFC Example
 
 ```
 User: Process RFC 9113 for implementation
-
 Assistant: I will process RFC 9113 (HTTP/2) for C implementation.
 
 [Phase 1: Fetches and parses RFC into 25 sections]
@@ -329,11 +388,43 @@ All 25 issues created. Creating master tracking issue...
 
 [Phase 5: Creates tracking issue]
 
-Complete\! Created:
+Complete! Created:
 - 25 implementation issues (#362-#386)
 - 1 tracking issue (#387)
 
 Implementation order starts with Frame Format (#362), then Stream Identifiers (#363)...
+```
+
+### Markdown Example
+
+```
+User: Convert my project spec to issues @docs/project-spec.md
+Assistant: I will process your Markdown project spec for C implementation.
+
+[Phase 1: Reads and parses markdown into 12 sections]
+
+Detected document type: Markdown
+Found 12 implementable sections. Starting parallel analysis...
+
+[Phase 2: Spawns 10 analyzer subagents, then 2 more]
+
+Analysis complete. Building dependency graph...
+
+[Phase 3: Topological sort produces implementation order]
+
+Dependency order determined. Creating GitHub issues...
+
+[Phase 4: Spawns issue writers in parallel]
+
+All 12 issues created. Creating master tracking issue...
+
+[Phase 5: Creates tracking issue]
+
+Complete! Created:
+- 12 implementation issues (#100-#111)
+- 1 tracking issue (#112)
+
+Implementation order starts with Core Components (#100), then Memory Manager (#101)...
 ```
 
 ## Codebase Context
