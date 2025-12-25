@@ -376,6 +376,9 @@ set(LIB_SOURCES
     src/http/SocketHTTPServer.c
     src/http/SocketHTTPServer-connections.c
 
+    # QUIC foundational module (RFC 9000)
+    src/quic/SocketQUICVarInt.c
+
     # Simple convenience API
     src/simple/SocketSimple.c
     src/simple/SocketSimple-tcp.c
@@ -606,6 +609,10 @@ set(TEST_HEADERS
     include/test/Test.h
 )
 
+set(QUIC_HEADERS
+    include/quic/SocketQUICVarInt.h
+)
+
 set(SIMPLE_HEADERS
     include/simple/SocketSimple.h
     include/simple/SocketSimple-tcp.h
@@ -638,6 +645,7 @@ install(FILES ${POOL_HEADERS} DESTINATION include/pool)
 install(FILES ${TLS_HEADERS} DESTINATION include/tls)
 install(FILES ${HTTP_HEADERS} DESTINATION include/http)
 install(FILES ${TEST_HEADERS} DESTINATION include/test)
+install(FILES ${QUIC_HEADERS} DESTINATION include/quic)
 install(FILES ${SIMPLE_HEADERS} DESTINATION include/simple)
 
 # Print build configuration
@@ -740,6 +748,8 @@ set(TEST_SOURCES
     test_timer
     test_metrics
     test_httpserver
+    # QUIC tests (RFC 9000)
+    test_quic_varint
 )
 
 # TLS tests (only built when TLS is enabled)
@@ -1062,6 +1072,8 @@ if(ENABLE_FUZZING)
         # SYN protection fuzzers
         fuzz_synprotect_ip
         fuzz_synprotect_list
+        # QUIC fuzzers (RFC 9000)
+        fuzz_quic_varint
     )
     
     # TLS fuzz harnesses (require SOCKET_HAS_TLS)
