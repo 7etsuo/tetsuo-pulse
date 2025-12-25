@@ -379,6 +379,7 @@ set(LIB_SOURCES
     # QUIC foundational module (RFC 9000)
     src/quic/SocketQUICVarInt.c
     src/quic/SocketQUICError.c
+    src/quic/SocketQUICConnectionID.c
 
     # Simple convenience API
     src/simple/SocketSimple.c
@@ -614,6 +615,7 @@ set(QUIC_HEADERS
     include/quic/SocketQUICVarInt.h
     include/quic/SocketQUICError.h
     include/quic/SocketQUICVersion.h
+    include/quic/SocketQUICConnectionID.h
 )
 
 set(SIMPLE_HEADERS
@@ -755,6 +757,7 @@ set(TEST_SOURCES
     test_quic_varint
     test_quic_error
     test_quic_version
+    test_quic_connid
 )
 
 # TLS tests (only built when TLS is enabled)
@@ -1081,6 +1084,7 @@ if(ENABLE_FUZZING)
         fuzz_quic_varint
         fuzz_quic_error
         fuzz_quic_version
+        fuzz_quic_connid
     )
     
     # TLS fuzz harnesses (require SOCKET_HAS_TLS)
