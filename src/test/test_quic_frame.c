@@ -306,6 +306,223 @@ TEST (frame_null_pointers)
              SocketQUICFrame_parse (data, 1, &frame, NULL));
 }
 
+/* ============================================================================
+ * Flow Control Frame Encoding Tests (RFC 9000 §19.12-19.14)
+ * ============================================================================
+ */
+
+TEST (frame_encode_data_blocked_basic)
+{
+  uint8_t buf[16];
+  size_t len;
+
+  /* Encode DATA_BLOCKED with max_data = 1000 */
+  len = SocketQUICFrame_encode_data_blocked (1000, buf, sizeof (buf));
+
+  ASSERT (len > 0);
+  ASSERT_EQ (0x14, buf[0]); /* Frame type */
+
+  /* Verify by parsing back */
+  SocketQUICFrame_T frame;
+  size_t consumed;
+  SocketQUICFrame_Result res
+      = SocketQUICFrame_parse (buf, len, &frame, &consumed);
+
+  ASSERT_EQ (QUIC_FRAME_OK, res);
+  ASSERT_EQ (QUIC_FRAME_DATA_BLOCKED, frame.type);
+  ASSERT_EQ (1000, frame.data.data_blocked.limit);
+  ASSERT_EQ (len, consumed);
+}
+
+TEST (frame_encode_data_blocked_large)
+{
+  uint8_t buf[16];
+  size_t len;
+
+  /* Encode with large value requiring 4-byte varint */
+  uint64_t max_data = 100000;
+  len = SocketQUICFrame_encode_data_blocked (max_data, buf, sizeof (buf));
+
+  ASSERT (len > 0);
+  ASSERT_EQ (0x14, buf[0]);
+
+  /* Verify by parsing */
+  SocketQUICFrame_T frame;
+  size_t consumed;
+  SocketQUICFrame_Result res
+      = SocketQUICFrame_parse (buf, len, &frame, &consumed);
+
+  ASSERT_EQ (QUIC_FRAME_OK, res);
+  ASSERT_EQ (max_data, frame.data.data_blocked.limit);
+}
+
+TEST (frame_encode_data_blocked_buffer_too_small)
+{
+  uint8_t buf[2];
+  size_t len;
+
+  /* Try encoding with insufficient buffer */
+  len = SocketQUICFrame_encode_data_blocked (1000, buf, sizeof (buf));
+
+  ASSERT_EQ (0, len); /* Should fail */
+}
+
+TEST (frame_encode_data_blocked_null)
+{
+  size_t len = SocketQUICFrame_encode_data_blocked (100, NULL, 16);
+  ASSERT_EQ (0, len);
+}
+
+TEST (frame_encode_stream_data_blocked_basic)
+{
+  uint8_t buf[16];
+  size_t len;
+
+  /* Encode STREAM_DATA_BLOCKED with stream_id = 4, max_data = 2000 */
+  len = SocketQUICFrame_encode_stream_data_blocked (4, 2000, buf, sizeof (buf));
+
+  ASSERT (len > 0);
+  ASSERT_EQ (0x15, buf[0]); /* Frame type */
+
+  /* Verify by parsing */
+  SocketQUICFrame_T frame;
+  size_t consumed;
+  SocketQUICFrame_Result res
+      = SocketQUICFrame_parse (buf, len, &frame, &consumed);
+
+  ASSERT_EQ (QUIC_FRAME_OK, res);
+  ASSERT_EQ (QUIC_FRAME_STREAM_DATA_BLOCKED, frame.type);
+  ASSERT_EQ (4, frame.data.stream_data_blocked.stream_id);
+  ASSERT_EQ (2000, frame.data.stream_data_blocked.limit);
+  ASSERT_EQ (len, consumed);
+}
+
+TEST (frame_encode_stream_data_blocked_large_stream_id)
+{
+  uint8_t buf[32];
+  size_t len;
+
+  /* Encode with large stream ID and max_data */
+  uint64_t stream_id = 1000000;
+  uint64_t max_data = 5000000;
+  len = SocketQUICFrame_encode_stream_data_blocked (stream_id, max_data, buf,
+                                                     sizeof (buf));
+
+  ASSERT (len > 0);
+
+  /* Verify by parsing */
+  SocketQUICFrame_T frame;
+  size_t consumed;
+  SocketQUICFrame_Result res
+      = SocketQUICFrame_parse (buf, len, &frame, &consumed);
+
+  ASSERT_EQ (QUIC_FRAME_OK, res);
+  ASSERT_EQ (stream_id, frame.data.stream_data_blocked.stream_id);
+  ASSERT_EQ (max_data, frame.data.stream_data_blocked.limit);
+}
+
+TEST (frame_encode_stream_data_blocked_buffer_too_small)
+{
+  uint8_t buf[2];
+  size_t len;
+
+  len = SocketQUICFrame_encode_stream_data_blocked (4, 2000, buf, sizeof (buf));
+
+  ASSERT_EQ (0, len); /* Should fail */
+}
+
+TEST (frame_encode_stream_data_blocked_null)
+{
+  size_t len = SocketQUICFrame_encode_stream_data_blocked (4, 2000, NULL, 16);
+  ASSERT_EQ (0, len);
+}
+
+TEST (frame_encode_streams_blocked_bidi)
+{
+  uint8_t buf[16];
+  size_t len;
+
+  /* Encode STREAMS_BLOCKED (bidirectional) with max_streams = 100 */
+  len = SocketQUICFrame_encode_streams_blocked (1, 100, buf, sizeof (buf));
+
+  ASSERT (len > 0);
+  ASSERT_EQ (0x16, buf[0]); /* Bidirectional type */
+
+  /* Verify by parsing */
+  SocketQUICFrame_T frame;
+  size_t consumed;
+  SocketQUICFrame_Result res
+      = SocketQUICFrame_parse (buf, len, &frame, &consumed);
+
+  ASSERT_EQ (QUIC_FRAME_OK, res);
+  ASSERT_EQ (QUIC_FRAME_STREAMS_BLOCKED_BIDI, frame.type);
+  ASSERT_EQ (100, frame.data.streams_blocked.limit);
+  ASSERT_EQ (1, frame.data.streams_blocked.is_bidi);
+  ASSERT_EQ (len, consumed);
+}
+
+TEST (frame_encode_streams_blocked_uni)
+{
+  uint8_t buf[16];
+  size_t len;
+
+  /* Encode STREAMS_BLOCKED (unidirectional) with max_streams = 50 */
+  len = SocketQUICFrame_encode_streams_blocked (0, 50, buf, sizeof (buf));
+
+  ASSERT (len > 0);
+  ASSERT_EQ (0x17, buf[0]); /* Unidirectional type */
+
+  /* Verify by parsing */
+  SocketQUICFrame_T frame;
+  size_t consumed;
+  SocketQUICFrame_Result res
+      = SocketQUICFrame_parse (buf, len, &frame, &consumed);
+
+  ASSERT_EQ (QUIC_FRAME_OK, res);
+  ASSERT_EQ (QUIC_FRAME_STREAMS_BLOCKED_UNI, frame.type);
+  ASSERT_EQ (50, frame.data.streams_blocked.limit);
+  ASSERT_EQ (0, frame.data.streams_blocked.is_bidi);
+  ASSERT_EQ (len, consumed);
+}
+
+TEST (frame_encode_streams_blocked_large)
+{
+  uint8_t buf[16];
+  size_t len;
+
+  /* Encode with large max_streams value */
+  uint64_t max_streams = 1000000;
+  len = SocketQUICFrame_encode_streams_blocked (1, max_streams, buf, sizeof (buf));
+
+  ASSERT (len > 0);
+
+  /* Verify by parsing */
+  SocketQUICFrame_T frame;
+  size_t consumed;
+  SocketQUICFrame_Result res
+      = SocketQUICFrame_parse (buf, len, &frame, &consumed);
+
+  ASSERT_EQ (QUIC_FRAME_OK, res);
+  ASSERT_EQ (max_streams, frame.data.streams_blocked.limit);
+  ASSERT_EQ (1, frame.data.streams_blocked.is_bidi);
+}
+
+TEST (frame_encode_streams_blocked_buffer_too_small)
+{
+  uint8_t buf[2];
+  size_t len;
+
+  len = SocketQUICFrame_encode_streams_blocked (1, 100, buf, sizeof (buf));
+
+  ASSERT_EQ (0, len); /* Should fail */
+}
+
+TEST (frame_encode_streams_blocked_null)
+{
+  size_t len = SocketQUICFrame_encode_streams_blocked (1, 100, NULL, 16);
+  ASSERT_EQ (0, len);
+}
+
 int
 main (void)
 {
