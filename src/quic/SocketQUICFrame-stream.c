@@ -59,7 +59,6 @@ SocketQUICFrame_encode_reset_stream (uint64_t stream_id, uint64_t error_code,
 
   if (stream_id_len == 0 || error_code_len == 0 || final_size_len == 0)
     return 0; /* Value exceeds varint maximum */
-    return 0;
 
   size_t total_len = type_len + stream_id_len + error_code_len + final_size_len;
 
@@ -72,11 +71,6 @@ SocketQUICFrame_encode_reset_stream (uint64_t stream_id, uint64_t error_code,
   out[pos++] = QUIC_FRAME_RESET_STREAM;
 
   /* Stream ID */
-    return 0;
-
-  pos = 0;
-  out[pos++] = QUIC_FRAME_RESET_STREAM;
-
   encoded = SocketQUICVarInt_encode (stream_id, out + pos, out_size - pos);
   if (encoded == 0)
     return 0;
@@ -139,7 +133,6 @@ SocketQUICFrame_encode_stop_sending (uint64_t stream_id, uint64_t error_code,
 
   if (stream_id_len == 0 || error_code_len == 0)
     return 0; /* Value exceeds varint maximum */
-    return 0;
 
   size_t total_len = type_len + stream_id_len + error_code_len;
 
@@ -152,11 +145,6 @@ SocketQUICFrame_encode_stop_sending (uint64_t stream_id, uint64_t error_code,
   out[pos++] = QUIC_FRAME_STOP_SENDING;
 
   /* Stream ID */
-    return 0;
-
-  pos = 0;
-  out[pos++] = QUIC_FRAME_STOP_SENDING;
-
   encoded = SocketQUICVarInt_encode (stream_id, out + pos, out_size - pos);
   if (encoded == 0)
     return 0;
@@ -226,19 +214,6 @@ SocketQUICFrame_encode_stream (uint64_t stream_id, uint64_t offset,
     frame_type |= QUIC_FRAME_STREAM_OFF; /* Bit 2: OFF */
 
   /* Calculate required buffer size */
-  if (!data && len > 0)
-    return 0;
-
-  uint8_t frame_type = QUIC_FRAME_STREAM;
-
-  if (fin)
-    frame_type |= QUIC_FRAME_STREAM_FIN;
-
-  frame_type |= QUIC_FRAME_STREAM_LEN;
-
-  if (offset > 0)
-    frame_type |= QUIC_FRAME_STREAM_OFF;
-
   size_t type_len = 1;
   size_t stream_id_len = SocketQUICVarInt_size (stream_id);
   size_t offset_len = (offset > 0) ? SocketQUICVarInt_size (offset) : 0;
@@ -249,10 +224,6 @@ SocketQUICFrame_encode_stream (uint64_t stream_id, uint64_t offset,
 
   if (offset > 0 && offset_len == 0)
     return 0; /* Offset exceeds varint maximum */
-    return 0;
-
-  if (offset > 0 && offset_len == 0)
-    return 0;
 
   size_t total_len = type_len + stream_id_len + offset_len + length_len + len;
 
@@ -265,11 +236,6 @@ SocketQUICFrame_encode_stream (uint64_t stream_id, uint64_t offset,
   out[pos++] = frame_type;
 
   /* Stream ID */
-    return 0;
-
-  pos = 0;
-  out[pos++] = frame_type;
-
   encoded = SocketQUICVarInt_encode (stream_id, out + pos, out_len - pos);
   if (encoded == 0)
     return 0;
@@ -333,9 +299,6 @@ SocketQUICFrame_decode_stream (const uint8_t *data, size_t len,
     return -1;
 
   /* Use the full parser to decode the frame */
-  if (!SocketQUICFrame_is_stream (data[0]))
-    return -1;
-
   SocketQUICFrame_T full_frame;
   size_t consumed;
 
