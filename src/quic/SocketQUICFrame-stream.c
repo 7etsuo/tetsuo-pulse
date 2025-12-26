@@ -6,6 +6,7 @@
 
 /**
  * @file SocketQUICFrame-stream.c
+ * @brief QUIC Stream Termination Frame Encoding (RFC 9000 §19.4-19.5).
  * @brief QUIC Stream Frame Encoding/Decoding (RFC 9000 §19.4-19.5, §19.8).
  *
  * Implements encoding/decoding for:
