@@ -384,6 +384,7 @@ set(LIB_SOURCES
     src/quic/SocketQUICPacket.c
     src/quic/SocketQUICPacket-initial.c
     src/quic/SocketQUICWire.c
+    src/quic/SocketQUICFrame.c
     src/quic/SocketQUICConnection-demux.c
     src/quic/SocketQUICTransportParams.c
 
@@ -624,6 +625,7 @@ set(QUIC_HEADERS
     include/quic/SocketQUICConnectionID.h
     include/quic/SocketQUICStream.h
     include/quic/SocketQUICPacket.h
+    include/quic/SocketQUICFrame.h
     include/quic/SocketQUICConnection.h
     include/quic/SocketQUICTransportParams.h
 )
@@ -771,6 +773,7 @@ set(TEST_SOURCES
     test_quic_stream
     test_quic_packet
     test_quic_wire
+    test_quic_frame
     test_quic_connection
     test_quic_transport_params
 )
