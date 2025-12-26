@@ -393,6 +393,7 @@ set(LIB_SOURCES
     src/quic/SocketQUICConnection-demux.c
     src/quic/SocketQUICConnection-termination.c
     src/quic/SocketQUICTransportParams.c
+    src/quic/SocketQUICMigration.c
     src/quic/SocketQUICHandshake.c
 
     # Simple convenience API
@@ -784,6 +785,7 @@ set(TEST_SOURCES
     test_quic_frame
     test_quic_connection
     test_quic_transport_params
+    test_quic_migration
     test_quic_handshake
     test_quic_termination
 )
