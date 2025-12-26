@@ -387,6 +387,7 @@ set(LIB_SOURCES
     src/quic/SocketQUICFrame.c
     src/quic/SocketQUICConnection-demux.c
     src/quic/SocketQUICTransportParams.c
+    src/quic/SocketQUICHandshake.c
 
     # Simple convenience API
     src/simple/SocketSimple.c
@@ -628,6 +629,7 @@ set(QUIC_HEADERS
     include/quic/SocketQUICFrame.h
     include/quic/SocketQUICConnection.h
     include/quic/SocketQUICTransportParams.h
+    include/quic/SocketQUICHandshake.h
 )
 
 set(SIMPLE_HEADERS
@@ -776,6 +778,7 @@ set(TEST_SOURCES
     test_quic_frame
     test_quic_connection
     test_quic_transport_params
+    test_quic_handshake
 )
 
 # TLS tests (only built when TLS is enabled)
