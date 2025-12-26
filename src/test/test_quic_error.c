@@ -14,7 +14,12 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "core/Arena.h"
+#include "quic/SocketQUICConnection.h"
 #include "quic/SocketQUICError.h"
+#include "quic/SocketQUICFrame.h"
+#include "quic/SocketQUICStream.h"
+#include "quic/SocketQUICVarInt.h"
 #include "test/Test.h"
 
 /* ============================================================================
@@ -308,6 +313,288 @@ TEST (quic_error_category_string_invalid)
   /* Invalid category should return "UNKNOWN" */
   const char *str = SocketQUIC_error_category_string (99);
   ASSERT (strcmp (str, "UNKNOWN") == 0);
+}
+
+/* ============================================================================
+ * Error Handling Tests (RFC 9000 Section 11)
+ * ============================================================================
+ */
+
+TEST (quic_error_is_connection_fatal_transport)
+{
+  /* All transport errors are connection-fatal */
+  ASSERT (SocketQUIC_error_is_connection_fatal (QUIC_NO_ERROR));
+  ASSERT (SocketQUIC_error_is_connection_fatal (QUIC_INTERNAL_ERROR));
+  ASSERT (SocketQUIC_error_is_connection_fatal (QUIC_PROTOCOL_VIOLATION));
+  ASSERT (SocketQUIC_error_is_connection_fatal (QUIC_NO_VIABLE_PATH));
+}
+
+TEST (quic_error_is_connection_fatal_crypto)
+{
+  /* All crypto errors are connection-fatal */
+  ASSERT (SocketQUIC_error_is_connection_fatal (0x0100));
+  ASSERT (SocketQUIC_error_is_connection_fatal (0x0128));
+  ASSERT (SocketQUIC_error_is_connection_fatal (0x01ff));
+}
+
+TEST (quic_error_is_connection_fatal_application)
+{
+  /* Application errors may be connection-fatal */
+  ASSERT (SocketQUIC_error_is_connection_fatal (0x0200));
+  ASSERT (SocketQUIC_error_is_connection_fatal (0x1000));
+}
+
+TEST (quic_error_is_connection_fatal_unknown)
+{
+  /* Unknown error codes in reserved range */
+  ASSERT (!SocketQUIC_error_is_connection_fatal (0x11));
+  ASSERT (!SocketQUIC_error_is_connection_fatal (0xff));
+}
+
+TEST (quic_error_send_connection_close_transport)
+{
+  volatile Arena_T arena = NULL;
+  volatile SocketQUICConnection_T conn = NULL;
+  uint8_t buf[256];
+  size_t len;
+  uint64_t frame_type, error_code, reason_len;
+  const uint8_t *p;
+  size_t consumed;
+
+  TRY
+    {
+      arena = Arena_new ();
+      conn = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
+
+      /* Send CONNECTION_CLOSE for transport error */
+      len = SocketQUIC_send_connection_close (
+          conn, QUIC_PROTOCOL_VIOLATION, "test reason", buf, sizeof (buf));
+
+      ASSERT (len > 0);
+
+      /* Parse and verify frame */
+      p = buf;
+
+      /* Frame type should be 0x1c (CONNECTION_CLOSE) */
+      ASSERT_EQ (SocketQUICVarInt_decode (p, len, &frame_type, &consumed),
+                 QUIC_VARINT_OK);
+      ASSERT_EQ (frame_type, QUIC_FRAME_CONNECTION_CLOSE);
+      p += consumed;
+      len -= consumed;
+
+      /* Error code */
+      ASSERT_EQ (SocketQUICVarInt_decode (p, len, &error_code, &consumed),
+                 QUIC_VARINT_OK);
+      ASSERT_EQ (error_code, QUIC_PROTOCOL_VIOLATION);
+      p += consumed;
+      len -= consumed;
+
+      /* Frame type field (for transport errors) */
+      uint64_t trigger_frame;
+      ASSERT_EQ (SocketQUICVarInt_decode (p, len, &trigger_frame, &consumed),
+                 QUIC_VARINT_OK);
+      p += consumed;
+      len -= consumed;
+
+      /* Reason phrase length */
+      ASSERT_EQ (SocketQUICVarInt_decode (p, len, &reason_len, &consumed),
+                 QUIC_VARINT_OK);
+      ASSERT_EQ (reason_len, 11); /* strlen("test reason") */
+      p += consumed;
+      len -= consumed;
+
+      /* Reason phrase */
+      ASSERT_EQ (memcmp (p, "test reason", 11), 0);
+    }
+  FINALLY { Arena_dispose ((Arena_T *)&arena); }
+  END_TRY;
+}
+
+TEST (quic_error_send_connection_close_application)
+{
+  volatile Arena_T arena = NULL;
+  volatile SocketQUICConnection_T conn = NULL;
+  uint8_t buf[256];
+  size_t len;
+  uint64_t frame_type, error_code;
+  const uint8_t *p;
+  size_t consumed;
+
+  TRY
+    {
+      arena = Arena_new ();
+      conn = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
+
+      /* Send CONNECTION_CLOSE for application error */
+      len = SocketQUIC_send_connection_close (conn, 0x0200, NULL, buf,
+                                               sizeof (buf));
+
+      ASSERT (len > 0);
+
+      /* Parse and verify frame */
+      p = buf;
+
+      /* Frame type should be 0x1d (CONNECTION_CLOSE for app errors) */
+      ASSERT_EQ (SocketQUICVarInt_decode (p, len, &frame_type, &consumed),
+                 QUIC_VARINT_OK);
+      ASSERT_EQ (frame_type, QUIC_FRAME_CONNECTION_CLOSE_APP);
+      p += consumed;
+      len -= consumed;
+
+      /* Error code */
+      ASSERT_EQ (SocketQUICVarInt_decode (p, len, &error_code, &consumed),
+                 QUIC_VARINT_OK);
+      ASSERT_EQ (error_code, 0x0200);
+    }
+  FINALLY { Arena_dispose ((Arena_T *)&arena); }
+  END_TRY;
+}
+
+TEST (quic_error_send_stream_reset)
+{
+  volatile Arena_T arena = NULL;
+  volatile SocketQUICStream_T stream = NULL;
+  uint8_t buf[256];
+  size_t len;
+  uint64_t frame_type, stream_id, error_code, final_size;
+  const uint8_t *p;
+  size_t consumed;
+
+  TRY
+    {
+      arena = Arena_new ();
+      stream = SocketQUICStream_new (arena, 0); /* Stream ID 0 */
+
+      /* Send RESET_STREAM */
+      len = SocketQUIC_send_stream_reset (stream, 0x0200, 1234, buf,
+                                           sizeof (buf));
+
+      ASSERT (len > 0);
+
+      /* Parse and verify frame */
+      p = buf;
+
+      /* Frame type should be 0x04 (RESET_STREAM) */
+      ASSERT_EQ (SocketQUICVarInt_decode (p, len, &frame_type, &consumed),
+                 QUIC_VARINT_OK);
+      ASSERT_EQ (frame_type, QUIC_FRAME_RESET_STREAM);
+      p += consumed;
+      len -= consumed;
+
+      /* Stream ID */
+      ASSERT_EQ (SocketQUICVarInt_decode (p, len, &stream_id, &consumed),
+                 QUIC_VARINT_OK);
+      ASSERT_EQ (stream_id, 0);
+      p += consumed;
+      len -= consumed;
+
+      /* Error code */
+      ASSERT_EQ (SocketQUICVarInt_decode (p, len, &error_code, &consumed),
+                 QUIC_VARINT_OK);
+      ASSERT_EQ (error_code, 0x0200);
+      p += consumed;
+      len -= consumed;
+
+      /* Final size */
+      ASSERT_EQ (SocketQUICVarInt_decode (p, len, &final_size, &consumed),
+                 QUIC_VARINT_OK);
+      ASSERT_EQ (final_size, 1234);
+    }
+  FINALLY { Arena_dispose ((Arena_T *)&arena); }
+  END_TRY;
+}
+
+TEST (quic_error_send_stop_sending)
+{
+  volatile Arena_T arena = NULL;
+  volatile SocketQUICStream_T stream = NULL;
+  uint8_t buf[256];
+  size_t len;
+  uint64_t frame_type, stream_id, error_code;
+  const uint8_t *p;
+  size_t consumed;
+
+  TRY
+    {
+      arena = Arena_new ();
+      stream = SocketQUICStream_new (arena, 4); /* Stream ID 4 */
+
+      /* Send STOP_SENDING */
+      len = SocketQUIC_send_stop_sending (stream, 0x0300, buf, sizeof (buf));
+
+      ASSERT (len > 0);
+
+      /* Parse and verify frame */
+      p = buf;
+
+      /* Frame type should be 0x05 (STOP_SENDING) */
+      ASSERT_EQ (SocketQUICVarInt_decode (p, len, &frame_type, &consumed),
+                 QUIC_VARINT_OK);
+      ASSERT_EQ (frame_type, QUIC_FRAME_STOP_SENDING);
+      p += consumed;
+      len -= consumed;
+
+      /* Stream ID */
+      ASSERT_EQ (SocketQUICVarInt_decode (p, len, &stream_id, &consumed),
+                 QUIC_VARINT_OK);
+      ASSERT_EQ (stream_id, 4);
+      p += consumed;
+      len -= consumed;
+
+      /* Error code */
+      ASSERT_EQ (SocketQUICVarInt_decode (p, len, &error_code, &consumed),
+                 QUIC_VARINT_OK);
+      ASSERT_EQ (error_code, 0x0300);
+    }
+  FINALLY { Arena_dispose ((Arena_T *)&arena); }
+  END_TRY;
+}
+
+TEST (quic_error_send_connection_close_null)
+{
+  uint8_t buf[256];
+
+  /* NULL connection should return 0 */
+  ASSERT_EQ (SocketQUIC_send_connection_close (NULL, QUIC_NO_ERROR, NULL, buf,
+                                                sizeof (buf)),
+             0);
+
+  /* NULL buffer should return 0 */
+  volatile Arena_T arena = NULL;
+  volatile SocketQUICConnection_T conn = NULL;
+
+  TRY
+    {
+      arena = Arena_new ();
+      conn = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
+      ASSERT_EQ (
+          SocketQUIC_send_connection_close (conn, QUIC_NO_ERROR, NULL, NULL, 100),
+          0);
+    }
+  FINALLY { Arena_dispose ((Arena_T *)&arena); }
+  END_TRY;
+}
+
+TEST (quic_error_send_stream_reset_null)
+{
+  uint8_t buf[256];
+
+  /* NULL stream should return 0 */
+  ASSERT_EQ (SocketQUIC_send_stream_reset (NULL, 0x0200, 0, buf, sizeof (buf)),
+             0);
+
+  /* NULL buffer should return 0 */
+  volatile Arena_T arena = NULL;
+  volatile SocketQUICStream_T stream = NULL;
+
+  TRY
+    {
+      arena = Arena_new ();
+      stream = SocketQUICStream_new (arena, 0);
+      ASSERT_EQ (SocketQUIC_send_stream_reset (stream, 0x0200, 0, NULL, 100), 0);
+    }
+  FINALLY { Arena_dispose ((Arena_T *)&arena); }
+  END_TRY;
 }
 
 /* ============================================================================
