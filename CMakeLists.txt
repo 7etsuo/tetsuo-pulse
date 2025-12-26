@@ -379,6 +379,7 @@ set(LIB_SOURCES
     # QUIC foundational module (RFC 9000)
     src/quic/SocketQUICVarInt.c
     src/quic/SocketQUICError.c
+    src/quic/SocketQUICVersion.c
     src/quic/SocketQUICError-handling.c
     src/quic/SocketQUICConnectionID.c
     src/quic/SocketQUICStream.c
