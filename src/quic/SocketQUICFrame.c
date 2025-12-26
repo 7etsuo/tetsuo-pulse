@@ -1,0 +1,956 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
+/**
+ * @file SocketQUICFrame.c
+ * @brief QUIC Frame Parsing and Validation (RFC 9000 Section 12).
+ */
+
+#include "quic/SocketQUICFrame.h"
+#include "quic/SocketQUICVarInt.h"
+
+#include <stdlib.h>
+#include <string.h>
+
+/* ============================================================================
+ * Frame Validation Table (RFC 9000 Table 3)
+ * ============================================================================
+ * Maps frame types to allowed packet types.
+ */
+
+/* All packet types */
+#define PKT_ALL (QUIC_PKT_INITIAL | QUIC_PKT_0RTT | QUIC_PKT_HANDSHAKE | QUIC_PKT_1RTT)
+
+/* Initial, Handshake, 1-RTT (not 0-RTT) */
+#define PKT_IH1 (QUIC_PKT_INITIAL | QUIC_PKT_HANDSHAKE | QUIC_PKT_1RTT)
+
+/* 0-RTT and 1-RTT only */
+#define PKT_01 (QUIC_PKT_0RTT | QUIC_PKT_1RTT)
+
+/* 1-RTT only */
+#define PKT_1 (QUIC_PKT_1RTT)
+
+/**
+ * @brief Frame type to allowed packet types mapping.
+ */
+static const struct
+{
+  uint64_t type;
+  int allowed;
+} frame_validation_table[] = {
+  { QUIC_FRAME_PADDING,               PKT_ALL },
+  { QUIC_FRAME_PING,                  PKT_ALL },
+  { QUIC_FRAME_ACK,                   PKT_IH1 },
+  { QUIC_FRAME_ACK_ECN,               PKT_IH1 },
+  { QUIC_FRAME_RESET_STREAM,          PKT_01  },
+  { QUIC_FRAME_STOP_SENDING,          PKT_01  },
+  { QUIC_FRAME_CRYPTO,                PKT_ALL & ~QUIC_PKT_0RTT },
+  { QUIC_FRAME_NEW_TOKEN,             PKT_1   },
+  { QUIC_FRAME_STREAM,                PKT_01  },
+  { QUIC_FRAME_MAX_DATA,              PKT_01  },
+  { QUIC_FRAME_MAX_STREAM_DATA,       PKT_01  },
+  { QUIC_FRAME_MAX_STREAMS_BIDI,      PKT_01  },
+  { QUIC_FRAME_MAX_STREAMS_UNI,       PKT_01  },
+  { QUIC_FRAME_DATA_BLOCKED,          PKT_01  },
+  { QUIC_FRAME_STREAM_DATA_BLOCKED,   PKT_01  },
+  { QUIC_FRAME_STREAMS_BLOCKED_BIDI,  PKT_01  },
+  { QUIC_FRAME_STREAMS_BLOCKED_UNI,   PKT_01  },
+  { QUIC_FRAME_NEW_CONNECTION_ID,     PKT_01  },
+  { QUIC_FRAME_RETIRE_CONNECTION_ID,  PKT_01  },
+  { QUIC_FRAME_PATH_CHALLENGE,        PKT_01  },
+  { QUIC_FRAME_PATH_RESPONSE,         PKT_1   },
+  { QUIC_FRAME_CONNECTION_CLOSE,      PKT_ALL },
+  { QUIC_FRAME_CONNECTION_CLOSE_APP,  PKT_01  },
+  { QUIC_FRAME_HANDSHAKE_DONE,        PKT_1   },
+  { QUIC_FRAME_DATAGRAM,              PKT_01  },
+  { QUIC_FRAME_DATAGRAM_LEN,          PKT_01  },
+  { 0, 0 } /* Sentinel */
+};
+
+/* ============================================================================
+ * Helper: Decode varint with bounds check
+ * ============================================================================
+ */
+
+static SocketQUICFrame_Result
+decode_varint (const uint8_t *data, size_t len, size_t *pos,
+               uint64_t *value)
+{
+  if (*pos >= len)
+    return QUIC_FRAME_ERROR_TRUNCATED;
+
+  size_t consumed;
+  SocketQUICVarInt_Result res
+      = SocketQUICVarInt_decode (data + *pos, len - *pos, value, &consumed);
+
+  if (res == QUIC_VARINT_INCOMPLETE)
+    return QUIC_FRAME_ERROR_TRUNCATED;
+  if (res != QUIC_VARINT_OK)
+    return QUIC_FRAME_ERROR_VARINT;
+
+  *pos += consumed;
+  return QUIC_FRAME_OK;
+}
+
+/* ============================================================================
+ * Parse PADDING frames
+ * ============================================================================
+ */
+
+static SocketQUICFrame_Result
+parse_padding (const uint8_t *data, size_t len, size_t *pos,
+               SocketQUICFrame_T *frame)
+{
+  (void)data;
+  (void)len;
+  (void)pos;
+  (void)frame;
+
+  /* PADDING is just the type byte, already consumed */
+  return QUIC_FRAME_OK;
+}
+
+/* ============================================================================
+ * Parse PING frames
+ * ============================================================================
+ */
+
+static SocketQUICFrame_Result
+parse_ping (const uint8_t *data, size_t len, size_t *pos,
+            SocketQUICFrame_T *frame)
+{
+  (void)data;
+  (void)len;
+  (void)pos;
+  (void)frame;
+
+  /* PING is just the type byte, already consumed */
+  return QUIC_FRAME_OK;
+}
+
+/* ============================================================================
+ * Parse ACK frames
+ * ============================================================================
+ */
+
+static SocketQUICFrame_Result
+parse_ack_internal (const uint8_t *data, size_t len, size_t *pos,
+                    SocketQUICFrame_T *frame, Arena_T arena)
+{
+  SocketQUICFrameAck_T *ack = &frame->data.ack;
+  SocketQUICFrame_Result res;
+
+  /* Largest Acknowledged */
+  res = decode_varint (data, len, pos, &ack->largest_ack);
+  if (res != QUIC_FRAME_OK)
+    return res;
+
+  /* ACK Delay */
+  res = decode_varint (data, len, pos, &ack->ack_delay);
+  if (res != QUIC_FRAME_OK)
+    return res;
+
+  /* ACK Range Count */
+  res = decode_varint (data, len, pos, &ack->range_count);
+  if (res != QUIC_FRAME_OK)
+    return res;
+
+  /* First ACK Range */
+  res = decode_varint (data, len, pos, &ack->first_range);
+  if (res != QUIC_FRAME_OK)
+    return res;
+
+  /* Validate first range */
+  if (ack->first_range > ack->largest_ack)
+    return QUIC_FRAME_ERROR_ACK_RANGE;
+
+  /* Parse additional ACK ranges */
+  if (ack->range_count > 0)
+    {
+      if (ack->range_count > QUIC_FRAME_ACK_MAX_RANGES)
+        return QUIC_FRAME_ERROR_ACK_RANGE;
+
+      size_t range_size = (size_t)ack->range_count * sizeof (SocketQUICFrameAckRange_T);
+      if (arena)
+        ack->ranges = Arena_alloc (arena, range_size, __FILE__, __LINE__);
+      else
+        ack->ranges = malloc (range_size);
+
+      if (!ack->ranges)
+        return QUIC_FRAME_ERROR_INVALID;
+
+      ack->ranges_capacity = (size_t)ack->range_count;
+
+      for (uint64_t i = 0; i < ack->range_count; i++)
+        {
+          res = decode_varint (data, len, pos, &ack->ranges[i].gap);
+          if (res != QUIC_FRAME_OK)
+            return res;
+          res = decode_varint (data, len, pos, &ack->ranges[i].length);
+          if (res != QUIC_FRAME_OK)
+            return res;
+        }
+    }
+
+  /* Parse ECN counts if ACK_ECN */
+  if (frame->type == QUIC_FRAME_ACK_ECN)
+    {
+      res = decode_varint (data, len, pos, &ack->ect0_count);
+      if (res != QUIC_FRAME_OK)
+        return res;
+      res = decode_varint (data, len, pos, &ack->ect1_count);
+      if (res != QUIC_FRAME_OK)
+        return res;
+      res = decode_varint (data, len, pos, &ack->ecn_ce_count);
+      if (res != QUIC_FRAME_OK)
+        return res;
+    }
+
+  return QUIC_FRAME_OK;
+}
+
+static SocketQUICFrame_Result
+parse_ack (const uint8_t *data, size_t len, size_t *pos,
+           SocketQUICFrame_T *frame)
+{
+  return parse_ack_internal (data, len, pos, frame, NULL);
+}
+
+/* ============================================================================
+ * Parse RESET_STREAM frames
+ * ============================================================================
+ */
+
+static SocketQUICFrame_Result
+parse_reset_stream (const uint8_t *data, size_t len, size_t *pos,
+                    SocketQUICFrame_T *frame)
+{
+  SocketQUICFrameResetStream_T *rs = &frame->data.reset_stream;
+  SocketQUICFrame_Result res;
+
+  res = decode_varint (data, len, pos, &rs->stream_id);
+  if (res != QUIC_FRAME_OK)
+    return res;
+
+  res = decode_varint (data, len, pos, &rs->error_code);
+  if (res != QUIC_FRAME_OK)
+    return res;
+
+  res = decode_varint (data, len, pos, &rs->final_size);
+  if (res != QUIC_FRAME_OK)
+    return res;
+
+  return QUIC_FRAME_OK;
+}
+
+/* ============================================================================
+ * Parse STOP_SENDING frames
+ * ============================================================================
+ */
+
+static SocketQUICFrame_Result
+parse_stop_sending (const uint8_t *data, size_t len, size_t *pos,
+                    SocketQUICFrame_T *frame)
+{
+  SocketQUICFrameStopSending_T *ss = &frame->data.stop_sending;
+  SocketQUICFrame_Result res;
+
+  res = decode_varint (data, len, pos, &ss->stream_id);
+  if (res != QUIC_FRAME_OK)
+    return res;
+
+  res = decode_varint (data, len, pos, &ss->error_code);
+  if (res != QUIC_FRAME_OK)
+    return res;
+
+  return QUIC_FRAME_OK;
+}
+
+/* ============================================================================
+ * Parse CRYPTO frames
+ * ============================================================================
+ */
+
+static SocketQUICFrame_Result
+parse_crypto (const uint8_t *data, size_t len, size_t *pos,
+              SocketQUICFrame_T *frame)
+{
+  SocketQUICFrameCrypto_T *crypto = &frame->data.crypto;
+  SocketQUICFrame_Result res;
+
+  res = decode_varint (data, len, pos, &crypto->offset);
+  if (res != QUIC_FRAME_OK)
+    return res;
+
+  res = decode_varint (data, len, pos, &crypto->length);
+  if (res != QUIC_FRAME_OK)
+    return res;
+
+  /* Validate data length */
+  if (*pos + crypto->length > len)
+    return QUIC_FRAME_ERROR_TRUNCATED;
+
+  crypto->data = data + *pos;
+  *pos += (size_t)crypto->length;
+
+  return QUIC_FRAME_OK;
+}
+
+/* ============================================================================
+ * Parse NEW_TOKEN frames
+ * ============================================================================
+ */
+
+static SocketQUICFrame_Result
+parse_new_token (const uint8_t *data, size_t len, size_t *pos,
+                 SocketQUICFrame_T *frame)
+{
+  SocketQUICFrameNewToken_T *nt = &frame->data.new_token;
+  SocketQUICFrame_Result res;
+
+  res = decode_varint (data, len, pos, &nt->token_length);
+  if (res != QUIC_FRAME_OK)
+    return res;
+
+  /* Empty token is invalid */
+  if (nt->token_length == 0)
+    return QUIC_FRAME_ERROR_INVALID;
+
+  if (*pos + nt->token_length > len)
+    return QUIC_FRAME_ERROR_TRUNCATED;
+
+  nt->token = data + *pos;
+  *pos += (size_t)nt->token_length;
+
+  return QUIC_FRAME_OK;
+}
+
+/* ============================================================================
+ * Parse STREAM frames
+ * ============================================================================
+ */
+
+static SocketQUICFrame_Result
+parse_stream (const uint8_t *data, size_t len, size_t *pos,
+              SocketQUICFrame_T *frame)
+{
+  SocketQUICFrameStream_T *stream = &frame->data.stream;
+  SocketQUICFrame_Result res;
+  int flags = SocketQUICFrame_stream_flags (frame->type);
+
+  stream->has_fin = (flags & QUIC_FRAME_STREAM_FIN) != 0;
+  stream->has_length = (flags & QUIC_FRAME_STREAM_LEN) != 0;
+  stream->has_offset = (flags & QUIC_FRAME_STREAM_OFF) != 0;
+
+  res = decode_varint (data, len, pos, &stream->stream_id);
+  if (res != QUIC_FRAME_OK)
+    return res;
+
+  if (stream->has_offset)
+    {
+      res = decode_varint (data, len, pos, &stream->offset);
+      if (res != QUIC_FRAME_OK)
+        return res;
+    }
+  else
+    stream->offset = 0;
+
+  if (stream->has_length)
+    {
+      res = decode_varint (data, len, pos, &stream->length);
+      if (res != QUIC_FRAME_OK)
+        return res;
+
+      if (*pos + stream->length > len)
+        return QUIC_FRAME_ERROR_TRUNCATED;
+    }
+  else
+    stream->length = len - *pos;
+
+  stream->data = data + *pos;
+  *pos += (size_t)stream->length;
+
+  return QUIC_FRAME_OK;
+}
+
+/* ============================================================================
+ * Parse MAX_DATA frames
+ * ============================================================================
+ */
+
+static SocketQUICFrame_Result
+parse_max_data (const uint8_t *data, size_t len, size_t *pos,
+                SocketQUICFrame_T *frame)
+{
+  return decode_varint (data, len, pos, &frame->data.max_data.max_data);
+}
+
+/* ============================================================================
+ * Parse MAX_STREAM_DATA frames
+ * ============================================================================
+ */
+
+static SocketQUICFrame_Result
+parse_max_stream_data (const uint8_t *data, size_t len, size_t *pos,
+                       SocketQUICFrame_T *frame)
+{
+  SocketQUICFrameMaxStreamData_T *msd = &frame->data.max_stream_data;
+  SocketQUICFrame_Result res;
+
+  res = decode_varint (data, len, pos, &msd->stream_id);
+  if (res != QUIC_FRAME_OK)
+    return res;
+
+  return decode_varint (data, len, pos, &msd->max_data);
+}
+
+/* ============================================================================
+ * Parse MAX_STREAMS frames
+ * ============================================================================
+ */
+
+static SocketQUICFrame_Result
+parse_max_streams (const uint8_t *data, size_t len, size_t *pos,
+                   SocketQUICFrame_T *frame)
+{
+  SocketQUICFrameMaxStreams_T *ms = &frame->data.max_streams;
+  ms->is_bidi = (frame->type == QUIC_FRAME_MAX_STREAMS_BIDI);
+  return decode_varint (data, len, pos, &ms->max_streams);
+}
+
+/* ============================================================================
+ * Parse DATA_BLOCKED frames
+ * ============================================================================
+ */
+
+static SocketQUICFrame_Result
+parse_data_blocked (const uint8_t *data, size_t len, size_t *pos,
+                    SocketQUICFrame_T *frame)
+{
+  return decode_varint (data, len, pos, &frame->data.data_blocked.limit);
+}
+
+/* ============================================================================
+ * Parse STREAM_DATA_BLOCKED frames
+ * ============================================================================
+ */
+
+static SocketQUICFrame_Result
+parse_stream_data_blocked (const uint8_t *data, size_t len, size_t *pos,
+                           SocketQUICFrame_T *frame)
+{
+  SocketQUICFrameStreamDataBlocked_T *sdb = &frame->data.stream_data_blocked;
+  SocketQUICFrame_Result res;
+
+  res = decode_varint (data, len, pos, &sdb->stream_id);
+  if (res != QUIC_FRAME_OK)
+    return res;
+
+  return decode_varint (data, len, pos, &sdb->limit);
+}
+
+/* ============================================================================
+ * Parse STREAMS_BLOCKED frames
+ * ============================================================================
+ */
+
+static SocketQUICFrame_Result
+parse_streams_blocked (const uint8_t *data, size_t len, size_t *pos,
+                       SocketQUICFrame_T *frame)
+{
+  SocketQUICFrameStreamsBlocked_T *sb = &frame->data.streams_blocked;
+  sb->is_bidi = (frame->type == QUIC_FRAME_STREAMS_BLOCKED_BIDI);
+  return decode_varint (data, len, pos, &sb->limit);
+}
+
+/* ============================================================================
+ * Parse NEW_CONNECTION_ID frames
+ * ============================================================================
+ */
+
+static SocketQUICFrame_Result
+parse_new_connection_id (const uint8_t *data, size_t len, size_t *pos,
+                         SocketQUICFrame_T *frame)
+{
+  SocketQUICFrameNewConnectionID_T *ncid = &frame->data.new_connection_id;
+  SocketQUICFrame_Result res;
+  uint64_t cid_len;
+
+  res = decode_varint (data, len, pos, &ncid->sequence);
+  if (res != QUIC_FRAME_OK)
+    return res;
+
+  res = decode_varint (data, len, pos, &ncid->retire_prior_to);
+  if (res != QUIC_FRAME_OK)
+    return res;
+
+  /* Validate retire_prior_to <= sequence */
+  if (ncid->retire_prior_to > ncid->sequence)
+    return QUIC_FRAME_ERROR_INVALID;
+
+  /* Connection ID length (1 byte) */
+  if (*pos >= len)
+    return QUIC_FRAME_ERROR_TRUNCATED;
+  cid_len = data[*pos];
+  (*pos)++;
+
+  /* Validate CID length (1-20 bytes, 0 not allowed for NEW_CONNECTION_ID) */
+  if (cid_len < 1 || cid_len > 20)
+    return QUIC_FRAME_ERROR_INVALID;
+
+  ncid->cid_length = (uint8_t)cid_len;
+
+  /* Connection ID */
+  if (*pos + cid_len > len)
+    return QUIC_FRAME_ERROR_TRUNCATED;
+  memcpy (ncid->cid, data + *pos, (size_t)cid_len);
+  *pos += (size_t)cid_len;
+
+  /* Stateless Reset Token (16 bytes) */
+  if (*pos + 16 > len)
+    return QUIC_FRAME_ERROR_TRUNCATED;
+  memcpy (ncid->stateless_reset_token, data + *pos, 16);
+  *pos += 16;
+
+  return QUIC_FRAME_OK;
+}
+
+/* ============================================================================
+ * Parse RETIRE_CONNECTION_ID frames
+ * ============================================================================
+ */
+
+static SocketQUICFrame_Result
+parse_retire_connection_id (const uint8_t *data, size_t len, size_t *pos,
+                            SocketQUICFrame_T *frame)
+{
+  return decode_varint (data, len, pos,
+                        &frame->data.retire_connection_id.sequence);
+}
+
+/* ============================================================================
+ * Parse PATH_CHALLENGE frames
+ * ============================================================================
+ */
+
+static SocketQUICFrame_Result
+parse_path_challenge (const uint8_t *data, size_t len, size_t *pos,
+                      SocketQUICFrame_T *frame)
+{
+  if (*pos + 8 > len)
+    return QUIC_FRAME_ERROR_TRUNCATED;
+
+  memcpy (frame->data.path_challenge.data, data + *pos, 8);
+  *pos += 8;
+
+  return QUIC_FRAME_OK;
+}
+
+/* ============================================================================
+ * Parse PATH_RESPONSE frames
+ * ============================================================================
+ */
+
+static SocketQUICFrame_Result
+parse_path_response (const uint8_t *data, size_t len, size_t *pos,
+                     SocketQUICFrame_T *frame)
+{
+  if (*pos + 8 > len)
+    return QUIC_FRAME_ERROR_TRUNCATED;
+
+  memcpy (frame->data.path_response.data, data + *pos, 8);
+  *pos += 8;
+
+  return QUIC_FRAME_OK;
+}
+
+/* ============================================================================
+ * Parse CONNECTION_CLOSE frames
+ * ============================================================================
+ */
+
+static SocketQUICFrame_Result
+parse_connection_close (const uint8_t *data, size_t len, size_t *pos,
+                        SocketQUICFrame_T *frame)
+{
+  SocketQUICFrameConnectionClose_T *cc = &frame->data.connection_close;
+  SocketQUICFrame_Result res;
+
+  cc->is_app_error = (frame->type == QUIC_FRAME_CONNECTION_CLOSE_APP);
+
+  res = decode_varint (data, len, pos, &cc->error_code);
+  if (res != QUIC_FRAME_OK)
+    return res;
+
+  /* QUIC layer close includes frame type */
+  if (!cc->is_app_error)
+    {
+      res = decode_varint (data, len, pos, &cc->frame_type);
+      if (res != QUIC_FRAME_OK)
+        return res;
+    }
+  else
+    cc->frame_type = 0;
+
+  res = decode_varint (data, len, pos, &cc->reason_length);
+  if (res != QUIC_FRAME_OK)
+    return res;
+
+  if (*pos + cc->reason_length > len)
+    return QUIC_FRAME_ERROR_TRUNCATED;
+
+  cc->reason = (cc->reason_length > 0) ? (data + *pos) : NULL;
+  *pos += (size_t)cc->reason_length;
+
+  return QUIC_FRAME_OK;
+}
+
+/* ============================================================================
+ * Parse HANDSHAKE_DONE frames
+ * ============================================================================
+ */
+
+static SocketQUICFrame_Result
+parse_handshake_done (const uint8_t *data, size_t len, size_t *pos,
+                      SocketQUICFrame_T *frame)
+{
+  (void)data;
+  (void)len;
+  (void)pos;
+  (void)frame;
+
+  /* HANDSHAKE_DONE is just the type byte */
+  return QUIC_FRAME_OK;
+}
+
+/* ============================================================================
+ * Parse DATAGRAM frames
+ * ============================================================================
+ */
+
+static SocketQUICFrame_Result
+parse_datagram (const uint8_t *data, size_t len, size_t *pos,
+                SocketQUICFrame_T *frame)
+{
+  SocketQUICFrameDatagram_T *dg = &frame->data.datagram;
+
+  dg->has_length = (frame->type == QUIC_FRAME_DATAGRAM_LEN);
+
+  if (dg->has_length)
+    {
+      SocketQUICFrame_Result res = decode_varint (data, len, pos, &dg->length);
+      if (res != QUIC_FRAME_OK)
+        return res;
+
+      if (*pos + dg->length > len)
+        return QUIC_FRAME_ERROR_TRUNCATED;
+    }
+  else
+    dg->length = len - *pos;
+
+  dg->data = data + *pos;
+  *pos += (size_t)dg->length;
+
+  return QUIC_FRAME_OK;
+}
+
+/* ============================================================================
+ * Public Functions
+ * ============================================================================
+ */
+
+void
+SocketQUICFrame_init (SocketQUICFrame_T *frame)
+{
+  if (frame)
+    memset (frame, 0, sizeof (*frame));
+}
+
+SocketQUICFrame_Result
+SocketQUICFrame_parse (const uint8_t *data, size_t len,
+                       SocketQUICFrame_T *frame, size_t *consumed)
+{
+  if (!data || !frame || !consumed)
+    return QUIC_FRAME_ERROR_NULL;
+
+  SocketQUICFrame_init (frame);
+  size_t pos = 0;
+
+  /* Decode frame type */
+  SocketQUICFrame_Result res = decode_varint (data, len, &pos, &frame->type);
+  if (res != QUIC_FRAME_OK)
+    return res;
+
+  /* Dispatch to type-specific parser */
+  uint64_t type = frame->type;
+
+  if (type == QUIC_FRAME_PADDING)
+    res = parse_padding (data, len, &pos, frame);
+  else if (type == QUIC_FRAME_PING)
+    res = parse_ping (data, len, &pos, frame);
+  else if (type == QUIC_FRAME_ACK || type == QUIC_FRAME_ACK_ECN)
+    res = parse_ack (data, len, &pos, frame);
+  else if (type == QUIC_FRAME_RESET_STREAM)
+    res = parse_reset_stream (data, len, &pos, frame);
+  else if (type == QUIC_FRAME_STOP_SENDING)
+    res = parse_stop_sending (data, len, &pos, frame);
+  else if (type == QUIC_FRAME_CRYPTO)
+    res = parse_crypto (data, len, &pos, frame);
+  else if (type == QUIC_FRAME_NEW_TOKEN)
+    res = parse_new_token (data, len, &pos, frame);
+  else if (SocketQUICFrame_is_stream (type))
+    res = parse_stream (data, len, &pos, frame);
+  else if (type == QUIC_FRAME_MAX_DATA)
+    res = parse_max_data (data, len, &pos, frame);
+  else if (type == QUIC_FRAME_MAX_STREAM_DATA)
+    res = parse_max_stream_data (data, len, &pos, frame);
+  else if (type == QUIC_FRAME_MAX_STREAMS_BIDI
+           || type == QUIC_FRAME_MAX_STREAMS_UNI)
+    res = parse_max_streams (data, len, &pos, frame);
+  else if (type == QUIC_FRAME_DATA_BLOCKED)
+    res = parse_data_blocked (data, len, &pos, frame);
+  else if (type == QUIC_FRAME_STREAM_DATA_BLOCKED)
+    res = parse_stream_data_blocked (data, len, &pos, frame);
+  else if (type == QUIC_FRAME_STREAMS_BLOCKED_BIDI
+           || type == QUIC_FRAME_STREAMS_BLOCKED_UNI)
+    res = parse_streams_blocked (data, len, &pos, frame);
+  else if (type == QUIC_FRAME_NEW_CONNECTION_ID)
+    res = parse_new_connection_id (data, len, &pos, frame);
+  else if (type == QUIC_FRAME_RETIRE_CONNECTION_ID)
+    res = parse_retire_connection_id (data, len, &pos, frame);
+  else if (type == QUIC_FRAME_PATH_CHALLENGE)
+    res = parse_path_challenge (data, len, &pos, frame);
+  else if (type == QUIC_FRAME_PATH_RESPONSE)
+    res = parse_path_response (data, len, &pos, frame);
+  else if (type == QUIC_FRAME_CONNECTION_CLOSE
+           || type == QUIC_FRAME_CONNECTION_CLOSE_APP)
+    res = parse_connection_close (data, len, &pos, frame);
+  else if (type == QUIC_FRAME_HANDSHAKE_DONE)
+    res = parse_handshake_done (data, len, &pos, frame);
+  else if (type == QUIC_FRAME_DATAGRAM || type == QUIC_FRAME_DATAGRAM_LEN)
+    res = parse_datagram (data, len, &pos, frame);
+  else
+    return QUIC_FRAME_ERROR_TYPE;
+
+  if (res == QUIC_FRAME_OK)
+    {
+      frame->wire_length = pos;
+      *consumed = pos;
+    }
+
+  return res;
+}
+
+SocketQUICFrame_Result
+SocketQUICFrame_parse_arena (Arena_T arena, const uint8_t *data, size_t len,
+                             SocketQUICFrame_T *frame, size_t *consumed)
+{
+  if (!data || !frame || !consumed)
+    return QUIC_FRAME_ERROR_NULL;
+
+  SocketQUICFrame_init (frame);
+  size_t pos = 0;
+
+  /* Decode frame type */
+  SocketQUICFrame_Result res = decode_varint (data, len, &pos, &frame->type);
+  if (res != QUIC_FRAME_OK)
+    return res;
+
+  /* Only ACK needs special arena handling */
+  uint64_t type = frame->type;
+
+  if (type == QUIC_FRAME_ACK || type == QUIC_FRAME_ACK_ECN)
+    res = parse_ack_internal (data, len, &pos, frame, arena);
+  else
+    {
+      /* Use standard parser for non-ACK frames */
+      size_t temp_consumed;
+      res = SocketQUICFrame_parse (data, len, frame, &temp_consumed);
+      if (res == QUIC_FRAME_OK)
+        pos = temp_consumed;
+      return res;
+    }
+
+  if (res == QUIC_FRAME_OK)
+    {
+      frame->wire_length = pos;
+      *consumed = pos;
+    }
+
+  return res;
+}
+
+void
+SocketQUICFrame_free (SocketQUICFrame_T *frame)
+{
+  if (!frame)
+    return;
+
+  /* Free ACK ranges if heap-allocated */
+  if ((frame->type == QUIC_FRAME_ACK || frame->type == QUIC_FRAME_ACK_ECN)
+      && frame->data.ack.ranges)
+    {
+      free (frame->data.ack.ranges);
+      frame->data.ack.ranges = NULL;
+    }
+}
+
+SocketQUICFrame_Result
+SocketQUICFrame_validate (const SocketQUICFrame_T *frame, int pkt_flags)
+{
+  if (!frame)
+    return QUIC_FRAME_ERROR_NULL;
+
+  int allowed = SocketQUICFrame_allowed_packets (frame->type);
+  if ((allowed & pkt_flags) == 0)
+    return QUIC_FRAME_ERROR_PACKET_TYPE;
+
+  return QUIC_FRAME_OK;
+}
+
+int
+SocketQUICFrame_packet_type_to_flags (SocketQUICPacket_Type pkt_type)
+{
+  switch (pkt_type)
+    {
+    case QUIC_PACKET_TYPE_INITIAL:
+      return QUIC_PKT_INITIAL;
+    case QUIC_PACKET_TYPE_0RTT:
+      return QUIC_PKT_0RTT;
+    case QUIC_PACKET_TYPE_HANDSHAKE:
+      return QUIC_PKT_HANDSHAKE;
+    case QUIC_PACKET_TYPE_1RTT:
+      return QUIC_PKT_1RTT;
+    default:
+      return 0;
+    }
+}
+
+int
+SocketQUICFrame_is_ack_eliciting (uint64_t frame_type)
+{
+  /* ACK, PADDING, and CONNECTION_CLOSE are not ACK-eliciting */
+  if (frame_type == QUIC_FRAME_ACK || frame_type == QUIC_FRAME_ACK_ECN)
+    return 0;
+  if (frame_type == QUIC_FRAME_PADDING)
+    return 0;
+  if (frame_type == QUIC_FRAME_CONNECTION_CLOSE
+      || frame_type == QUIC_FRAME_CONNECTION_CLOSE_APP)
+    return 0;
+
+  return 1;
+}
+
+int
+SocketQUICFrame_allowed_packets (uint64_t frame_type)
+{
+  /* Handle STREAM range */
+  if (SocketQUICFrame_is_stream (frame_type))
+    return PKT_01;
+
+  /* Look up in validation table */
+  for (size_t i = 0; frame_validation_table[i].allowed != 0; i++)
+    {
+      if (frame_validation_table[i].type == frame_type)
+        return frame_validation_table[i].allowed;
+    }
+
+  /* Unknown frame type - not allowed anywhere */
+  return 0;
+}
+
+const char *
+SocketQUICFrame_type_string (uint64_t frame_type)
+{
+  if (SocketQUICFrame_is_stream (frame_type))
+    return "STREAM";
+
+  switch (frame_type)
+    {
+    case QUIC_FRAME_PADDING:
+      return "PADDING";
+    case QUIC_FRAME_PING:
+      return "PING";
+    case QUIC_FRAME_ACK:
+      return "ACK";
+    case QUIC_FRAME_ACK_ECN:
+      return "ACK_ECN";
+    case QUIC_FRAME_RESET_STREAM:
+      return "RESET_STREAM";
+    case QUIC_FRAME_STOP_SENDING:
+      return "STOP_SENDING";
+    case QUIC_FRAME_CRYPTO:
+      return "CRYPTO";
+    case QUIC_FRAME_NEW_TOKEN:
+      return "NEW_TOKEN";
+    case QUIC_FRAME_MAX_DATA:
+      return "MAX_DATA";
+    case QUIC_FRAME_MAX_STREAM_DATA:
+      return "MAX_STREAM_DATA";
+    case QUIC_FRAME_MAX_STREAMS_BIDI:
+      return "MAX_STREAMS_BIDI";
+    case QUIC_FRAME_MAX_STREAMS_UNI:
+      return "MAX_STREAMS_UNI";
+    case QUIC_FRAME_DATA_BLOCKED:
+      return "DATA_BLOCKED";
+    case QUIC_FRAME_STREAM_DATA_BLOCKED:
+      return "STREAM_DATA_BLOCKED";
+    case QUIC_FRAME_STREAMS_BLOCKED_BIDI:
+      return "STREAMS_BLOCKED_BIDI";
+    case QUIC_FRAME_STREAMS_BLOCKED_UNI:
+      return "STREAMS_BLOCKED_UNI";
+    case QUIC_FRAME_NEW_CONNECTION_ID:
+      return "NEW_CONNECTION_ID";
+    case QUIC_FRAME_RETIRE_CONNECTION_ID:
+      return "RETIRE_CONNECTION_ID";
+    case QUIC_FRAME_PATH_CHALLENGE:
+      return "PATH_CHALLENGE";
+    case QUIC_FRAME_PATH_RESPONSE:
+      return "PATH_RESPONSE";
+    case QUIC_FRAME_CONNECTION_CLOSE:
+      return "CONNECTION_CLOSE";
+    case QUIC_FRAME_CONNECTION_CLOSE_APP:
+      return "CONNECTION_CLOSE_APP";
+    case QUIC_FRAME_HANDSHAKE_DONE:
+      return "HANDSHAKE_DONE";
+    case QUIC_FRAME_DATAGRAM:
+      return "DATAGRAM";
+    case QUIC_FRAME_DATAGRAM_LEN:
+      return "DATAGRAM_LEN";
+    default:
+      return "UNKNOWN";
+    }
+}
+
+const char *
+SocketQUICFrame_result_string (SocketQUICFrame_Result result)
+{
+  switch (result)
+    {
+    case QUIC_FRAME_OK:
+      return "OK";
+    case QUIC_FRAME_ERROR_NULL:
+      return "NULL pointer";
+    case QUIC_FRAME_ERROR_TRUNCATED:
+      return "Truncated input";
+    case QUIC_FRAME_ERROR_INVALID:
+      return "Invalid frame format";
+    case QUIC_FRAME_ERROR_TYPE:
+      return "Unknown frame type";
+    case QUIC_FRAME_ERROR_PACKET_TYPE:
+      return "Frame not allowed in packet type";
+    case QUIC_FRAME_ERROR_VARINT:
+      return "Variable integer decode error";
+    case QUIC_FRAME_ERROR_STREAM_ID:
+      return "Invalid stream ID";
+    case QUIC_FRAME_ERROR_OVERFLOW:
+      return "Integer overflow";
+    case QUIC_FRAME_ERROR_ACK_RANGE:
+      return "Invalid ACK range";
+    default:
+      return "Unknown error";
+    }
+}
