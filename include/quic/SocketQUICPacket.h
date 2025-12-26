@@ -517,6 +517,259 @@ extern uint64_t SocketQUICPacket_decode_pn (uint32_t truncated_pn,
                                             uint8_t pn_length,
                                             uint64_t largest_pn);
 
+/* ============================================================================
+ * Initial Packet Constants (RFC 9000 Section 17.2.2, RFC 9001)
+ * ============================================================================
+ */
+
+/**
+ * @brief Minimum size for client Initial packets (RFC 9000 Section 14.1).
+ *
+ * Client Initial packets MUST be padded to at least 1200 bytes to prevent
+ * amplification attacks and ensure path MTU discovery.
+ */
+#define QUIC_INITIAL_MIN_SIZE 1200
+
+/**
+ * @brief Initial salt for QUIC v1 key derivation (RFC 9001 Section 5.2).
+ *
+ * This 20-byte salt is used with HKDF-Extract to derive the Initial secret.
+ */
+#define QUIC_V1_INITIAL_SALT_LEN 20
+
+/**
+ * @brief AES-128-GCM key length for Initial packet protection.
+ */
+#define QUIC_INITIAL_KEY_LEN 16
+
+/**
+ * @brief AES-128-GCM IV length for Initial packet protection.
+ */
+#define QUIC_INITIAL_IV_LEN 12
+
+/**
+ * @brief Header protection key length.
+ */
+#define QUIC_INITIAL_HP_KEY_LEN 16
+
+/**
+ * @brief AEAD authentication tag length (AES-128-GCM).
+ */
+#define QUIC_INITIAL_TAG_LEN 16
+
+/**
+ * @brief Header protection sample length (RFC 9001 Section 5.4.3).
+ */
+#define QUIC_HP_SAMPLE_LEN 16
+
+/* ============================================================================
+ * Initial Packet Key Structure (RFC 9001 Section 5)
+ * ============================================================================
+ */
+
+/**
+ * @brief Keys for Initial packet encryption/decryption.
+ *
+ * Contains derived keys for both client and server sides.
+ * Keys are derived from the client's Destination Connection ID using
+ * HKDF-Extract and HKDF-Expand-Label (RFC 9001 Section 5.2).
+ */
+typedef struct SocketQUICInitialKeys
+{
+  /* Client secrets and keys */
+  uint8_t client_key[QUIC_INITIAL_KEY_LEN];     /**< Client AEAD key */
+  uint8_t client_iv[QUIC_INITIAL_IV_LEN];       /**< Client AEAD IV */
+  uint8_t client_hp_key[QUIC_INITIAL_HP_KEY_LEN]; /**< Client header protection key */
+
+  /* Server secrets and keys */
+  uint8_t server_key[QUIC_INITIAL_KEY_LEN];     /**< Server AEAD key */
+  uint8_t server_iv[QUIC_INITIAL_IV_LEN];       /**< Server AEAD IV */
+  uint8_t server_hp_key[QUIC_INITIAL_HP_KEY_LEN]; /**< Server header protection key */
+
+  int is_client;    /**< 1 if keys for client, 0 for server */
+  int initialized;  /**< 1 if keys have been derived */
+
+} SocketQUICInitialKeys_T;
+
+/* ============================================================================
+ * Initial Packet Result Codes
+ * ============================================================================
+ */
+
+/**
+ * @brief Result codes for Initial packet operations.
+ */
+typedef enum
+{
+  QUIC_INITIAL_OK = 0,              /**< Operation succeeded */
+  QUIC_INITIAL_ERROR_NULL,          /**< NULL pointer argument */
+  QUIC_INITIAL_ERROR_CRYPTO,        /**< Cryptographic operation failed */
+  QUIC_INITIAL_ERROR_BUFFER,        /**< Buffer too small */
+  QUIC_INITIAL_ERROR_TRUNCATED,     /**< Packet too short */
+  QUIC_INITIAL_ERROR_INVALID,       /**< Invalid packet format */
+  QUIC_INITIAL_ERROR_AUTH,          /**< AEAD authentication failed */
+  QUIC_INITIAL_ERROR_SIZE,          /**< Packet size below minimum */
+  QUIC_INITIAL_ERROR_TOKEN,         /**< Server Initial has non-zero token */
+  QUIC_INITIAL_ERROR_VERSION        /**< Unsupported QUIC version */
+} SocketQUICInitial_Result;
+
+/* ============================================================================
+ * Initial Key Derivation (RFC 9001 Section 5.2)
+ * ============================================================================
+ */
+
+/**
+ * @brief Initialize Initial keys structure.
+ *
+ * Zeros all key material. Call before deriving keys.
+ *
+ * @param keys Keys structure to initialize.
+ */
+extern void SocketQUICInitialKeys_init (SocketQUICInitialKeys_T *keys);
+
+/**
+ * @brief Securely clear Initial keys from memory.
+ *
+ * Uses secure memory clearing to prevent key material from
+ * remaining in memory after use.
+ *
+ * @param keys Keys structure to clear.
+ */
+extern void SocketQUICInitialKeys_clear (SocketQUICInitialKeys_T *keys);
+
+/**
+ * @brief Derive Initial packet keys from connection ID.
+ *
+ * Derives the Initial encryption keys per RFC 9001 Section 5.2.
+ * The keys are derived from the client's Destination Connection ID
+ * using HKDF-Extract with a version-specific salt.
+ *
+ * @param dcid    Client's Destination Connection ID.
+ * @param version QUIC version (must support Initial packet protection).
+ * @param keys    Output: derived Initial keys.
+ *
+ * @return QUIC_INITIAL_OK on success, error code otherwise.
+ *
+ * @note Keys should be cleared with SocketQUICInitialKeys_clear() when done.
+ */
+extern SocketQUICInitial_Result
+SocketQUICInitial_derive_keys (const SocketQUICConnectionID_T *dcid,
+                               uint32_t version,
+                               SocketQUICInitialKeys_T *keys);
+
+/* ============================================================================
+ * Initial Packet Protection (RFC 9001 Section 5.4)
+ * ============================================================================
+ */
+
+/**
+ * @brief Apply header and payload protection to Initial packet.
+ *
+ * Performs AEAD encryption on the payload and applies header protection.
+ * The packet must already have the complete header with unprotected
+ * packet number.
+ *
+ * @param packet    Packet buffer (modified in-place).
+ * @param packet_len Current packet length (input) and new length (output).
+ * @param header_len Length of the packet header (up to and including PN).
+ * @param keys      Derived Initial keys.
+ * @param is_client 1 if sending as client, 0 if as server.
+ *
+ * @return QUIC_INITIAL_OK on success, error code otherwise.
+ */
+extern SocketQUICInitial_Result
+SocketQUICInitial_protect (uint8_t *packet, size_t *packet_len,
+                           size_t header_len,
+                           const SocketQUICInitialKeys_T *keys,
+                           int is_client);
+
+/**
+ * @brief Remove header and payload protection from Initial packet.
+ *
+ * Removes header protection to reveal the packet number, then
+ * performs AEAD decryption on the payload.
+ *
+ * @param packet    Packet buffer (modified in-place).
+ * @param packet_len Input packet length.
+ * @param pn_offset Offset of the packet number in the header.
+ * @param keys      Derived Initial keys.
+ * @param is_client 1 if receiving as client, 0 if as server.
+ * @param pn_length Output: revealed packet number length.
+ *
+ * @return QUIC_INITIAL_OK on success, error code otherwise.
+ */
+extern SocketQUICInitial_Result
+SocketQUICInitial_unprotect (uint8_t *packet, size_t packet_len,
+                             size_t pn_offset,
+                             const SocketQUICInitialKeys_T *keys,
+                             int is_client,
+                             uint8_t *pn_length);
+
+/* ============================================================================
+ * Initial Packet Validation (RFC 9000 Section 17.2.2)
+ * ============================================================================
+ */
+
+/**
+ * @brief Validate Initial packet constraints.
+ *
+ * Checks RFC-mandated constraints:
+ * - Client Initial must be at least 1200 bytes
+ * - Server Initial must have zero-length token
+ * - Token length must be within limits
+ *
+ * @param header    Parsed Initial packet header.
+ * @param total_len Total packet length (including payload).
+ * @param is_client 1 if packet is from client, 0 if from server.
+ *
+ * @return QUIC_INITIAL_OK if valid, error code otherwise.
+ */
+extern SocketQUICInitial_Result
+SocketQUICInitial_validate (const SocketQUICPacketHeader_T *header,
+                            size_t total_len, int is_client);
+
+/**
+ * @brief Calculate padding needed for client Initial packet.
+ *
+ * Returns the number of PADDING frame bytes needed to meet
+ * the 1200-byte minimum requirement for client Initial packets.
+ *
+ * @param current_len Current packet length.
+ *
+ * @return Number of padding bytes needed (0 if already sufficient).
+ */
+extern size_t SocketQUICInitial_padding_needed (size_t current_len);
+
+/* ============================================================================
+ * Utility Functions
+ * ============================================================================
+ */
+
+/**
+ * @brief Get string representation of Initial result code.
+ *
+ * @param result Result code.
+ *
+ * @return Static string describing the result.
+ */
+extern const char *
+SocketQUICInitial_result_string (SocketQUICInitial_Result result);
+
+/**
+ * @brief Get the Initial salt for a QUIC version.
+ *
+ * Returns the version-specific Initial salt used in key derivation.
+ *
+ * @param version QUIC version.
+ * @param salt    Output: pointer to salt bytes.
+ * @param salt_len Output: salt length.
+ *
+ * @return QUIC_INITIAL_OK if version is supported, error otherwise.
+ */
+extern SocketQUICInitial_Result
+SocketQUICInitial_get_salt (uint32_t version, const uint8_t **salt,
+                            size_t *salt_len);
+
 /** @} */
 
 #endif /* SOCKETQUICPACKET_INCLUDED */

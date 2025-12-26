@@ -382,6 +382,7 @@ set(LIB_SOURCES
     src/quic/SocketQUICConnectionID.c
     src/quic/SocketQUICStream.c
     src/quic/SocketQUICPacket.c
+    src/quic/SocketQUICPacket-initial.c
     src/quic/SocketQUICWire.c
 
     # Simple convenience API
@@ -771,6 +772,8 @@ set(TEST_SOURCES
 # TLS tests (only built when TLS is enabled)
 if(SOCKET_HAS_TLS)
     list(APPEND TEST_SOURCES
+        # QUIC Initial packet tests (requires TLS for crypto)
+        test_quic_initial
         test_tls_ct
         test_tls_integration
         test_tls_ocsp
