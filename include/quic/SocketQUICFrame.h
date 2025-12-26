@@ -174,4 +174,9 @@ extern const char *SocketQUICFrame_type_string(uint64_t frame_type);
 extern const char *SocketQUICFrame_result_string(SocketQUICFrame_Result result);
 extern int SocketQUICFrame_allowed_packets(uint64_t frame_type);
 
+/* Flow Control Frame Encoding (RFC 9000 Sections 19.9-19.11) */
+extern size_t SocketQUICFrame_encode_max_data(uint64_t max_data, uint8_t *out, size_t out_size);
+extern size_t SocketQUICFrame_encode_max_stream_data(uint64_t stream_id, uint64_t max_data, uint8_t *out, size_t out_size);
+extern size_t SocketQUICFrame_encode_max_streams(int bidirectional, uint64_t max_streams, uint8_t *out, size_t out_size);
+
 #endif /* SOCKETQUICFRAME_INCLUDED */
