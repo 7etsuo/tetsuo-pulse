@@ -27,6 +27,7 @@
 #ifndef SOCKETQUICVERSION_INCLUDED
 #define SOCKETQUICVERSION_INCLUDED
 
+#include <stddef.h>
 #include <stdint.h>
 
 /* ============================================================================
@@ -247,6 +248,89 @@ SocketQUIC_supported_versions (size_t *count)
 
   return versions;
 }
+
+/* ============================================================================
+ * Version Negotiation Packet (RFC 9000 Section 6)
+ * ============================================================================
+ */
+
+/* Forward declarations for ConnectionID type */
+struct SocketQUICConnectionID;
+typedef struct SocketQUICConnectionID SocketQUICConnectionID_T;
+
+/**
+ * @brief Result codes for Version Negotiation operations.
+ */
+typedef enum
+{
+  QUIC_VERSION_NEG_OK = 0,       /**< Operation succeeded */
+  QUIC_VERSION_NEG_ERROR_NULL,   /**< NULL pointer argument */
+  QUIC_VERSION_NEG_ERROR_BUFFER, /**< Output buffer too small */
+  QUIC_VERSION_NEG_ERROR_LENGTH, /**< Invalid length or count */
+  QUIC_VERSION_NEG_ERROR_PARSE   /**< Parse error */
+} SocketQUICVersion_NegResult;
+
+/**
+ * @brief Create a Version Negotiation packet.
+ *
+ * Generates a Version Negotiation packet containing the list of versions
+ * supported by the server. This packet is sent in response to an Initial
+ * packet with an unsupported version.
+ *
+ * Packet format (RFC 9000 Section 17.2.1):
+ *   - First byte: 0x80 | random bits (long header, no fixed bit)
+ *   - Version: 0x00000000 (4 bytes)
+ *   - DCID Length: 1 byte
+ *   - DCID: dcid->len bytes (from client's SCID)
+ *   - SCID Length: 1 byte
+ *   - SCID: scid->len bytes (from client's DCID)
+ *   - Supported Versions: count * 4 bytes
+ *
+ * @param dcid        Destination CID (copied from client's source CID).
+ * @param scid        Source CID (copied from client's destination CID).
+ * @param versions    Array of supported version numbers.
+ * @param count       Number of versions in array.
+ * @param output      Output buffer for the packet.
+ * @param output_size Size of output buffer.
+ *
+ * @return Number of bytes written, or negative error code.
+ *
+ * @note The first byte will have random bits in positions 0-5 for greasing.
+ * @note Version Negotiation packets are NOT cryptographically protected.
+ */
+extern int
+SocketQUICVersion_create_negotiation (const SocketQUICConnectionID_T *dcid,
+                                       const SocketQUICConnectionID_T *scid,
+                                       const uint32_t *versions, size_t count,
+                                       uint8_t *output, size_t output_size);
+
+/**
+ * @brief Parse a Version Negotiation packet.
+ *
+ * Extracts the list of supported versions from a Version Negotiation packet.
+ * The caller must first verify this is a Version Negotiation packet by
+ * checking that the version field is 0x00000000.
+ *
+ * @param data         Input packet data (starting at first byte).
+ * @param len          Length of input data.
+ * @param dcid         Output: Destination Connection ID from packet.
+ * @param scid         Output: Source Connection ID from packet.
+ * @param versions_out Output buffer for version numbers.
+ * @param max_versions Maximum number of versions to store.
+ * @param count_out    Output: number of versions extracted.
+ *
+ * @return QUIC_VERSION_NEG_OK on success, error code otherwise.
+ *
+ * @note Connection IDs in Version Negotiation are copied from the triggering
+ *       Initial packet (swapped: DCID <- client SCID, SCID <- client DCID).
+ * @note Client MUST verify the CIDs match before accepting the packet.
+ */
+extern SocketQUICVersion_NegResult
+SocketQUICVersion_parse_negotiation (const uint8_t *data, size_t len,
+                                      SocketQUICConnectionID_T *dcid,
+                                      SocketQUICConnectionID_T *scid,
+                                      uint32_t *versions_out,
+                                      size_t max_versions, size_t *count_out);
 
 /** @} */
 
