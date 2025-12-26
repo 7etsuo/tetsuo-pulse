@@ -174,6 +174,14 @@ extern const char *SocketQUICFrame_type_string(uint64_t frame_type);
 extern const char *SocketQUICFrame_result_string(SocketQUICFrame_Result result);
 extern int SocketQUICFrame_allowed_packets(uint64_t frame_type);
 
+/* CONNECTION_CLOSE frame encoding (RFC 9000 Section 19.19) */
+extern size_t SocketQUICFrame_encode_connection_close_transport(
+    uint64_t error_code, uint64_t frame_type,
+    const char *reason, uint8_t *out, size_t out_len);
+
+extern size_t SocketQUICFrame_encode_connection_close_app(
+    uint64_t error_code, const char *reason,
+    uint8_t *out, size_t out_len);
 /* Encoding functions (RFC 9000 Section 19.15-19.16) */
 extern size_t SocketQUICFrame_encode_new_connection_id(
     uint64_t sequence, uint64_t retire_prior_to,
