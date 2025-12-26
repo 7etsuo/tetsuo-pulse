@@ -33,6 +33,11 @@ TEST (frame_stream_encode_basic)
   ASSERT_EQ (0x0a, buf[0]); /* Frame type: STREAM | LEN (no OFF, no FIN) */
 
   /* Verify by parsing back */
+  len = SocketQUICFrame_encode_stream (0, 0, data, 5, 0, buf, sizeof (buf));
+
+  ASSERT (len > 0);
+  ASSERT_EQ (0x0a, buf[0]);
+
   SocketQUICFrameStream_T frame;
   int consumed = SocketQUICFrame_decode_stream (buf, len, &frame);
 
@@ -148,6 +153,15 @@ TEST (frame_stream_encode_buffer_too_small)
                                                sizeof (buf));
 
   ASSERT_EQ (0, len); /* Should fail gracefully */
+
+  size_t len = SocketQUICFrame_encode_stream (8, 0, data, 3, 1, buf, sizeof (buf));
+
+  ASSERT (len > 0);
+  ASSERT_EQ (0x0b, buf[0]);
+
+  SocketQUICFrameStream_T frame;
+  ASSERT (SocketQUICFrame_decode_stream (buf, len, &frame) > 0);
+  ASSERT_EQ (1, frame.has_fin);
 }
 
 TEST (frame_stream_encode_null_buffer)
@@ -171,6 +185,8 @@ TEST (frame_stream_decode_null_params)
   ASSERT_EQ (-1, SocketQUICFrame_decode_stream (buf, sizeof (buf), NULL));
 
   /* Zero length */
+  ASSERT_EQ (-1, SocketQUICFrame_decode_stream (NULL, sizeof (buf), &frame));
+  ASSERT_EQ (-1, SocketQUICFrame_decode_stream (buf, sizeof (buf), NULL));
   ASSERT_EQ (-1, SocketQUICFrame_decode_stream (buf, 0, &frame));
 }
 

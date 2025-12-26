@@ -391,6 +391,7 @@ set(LIB_SOURCES
     src/quic/SocketQUICFrame-close.c
     src/quic/SocketQUICFrame-connid.c
     src/quic/SocketQUICFrame-path.c
+    src/quic/SocketQUICFrame-stream.c
     src/quic/SocketQUICConnection-demux.c
     src/quic/SocketQUICConnection-termination.c
     src/quic/SocketQUICTransportParams.c
