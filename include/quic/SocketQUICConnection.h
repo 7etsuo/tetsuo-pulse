@@ -71,6 +71,15 @@ struct SocketQUICConnection {
   int is_ipv6;
   struct SocketQUICConnection *hash_next;
   void *user_data;
+  uint64_t local_max_idle_timeout_ms;
+  uint64_t peer_max_idle_timeout_ms;
+  uint64_t idle_timeout_deadline_ms;
+  uint64_t last_packet_sent_ms;
+  uint64_t last_packet_received_ms;
+  uint64_t closing_deadline_ms;
+  uint64_t draining_deadline_ms;
+  uint8_t stateless_reset_token[16];
+  int has_stateless_reset_token;
 };
 
 extern SocketQUICConnTable_T SocketQUICConnTable_new(Arena_T arena, size_t bucket_count);
@@ -97,5 +106,15 @@ extern int SocketQUICConnection_uses_zero_dcid(SocketQUICConnection_T conn);
 extern const char *SocketQUICConnection_result_string(SocketQUICConnection_Result result);
 extern const char *SocketQUICConnection_state_string(SocketQUICConnection_State state);
 extern const char *SocketQUICConnection_role_string(SocketQUICConnection_Role role);
+
+extern void SocketQUICConnection_set_idle_timeout(SocketQUICConnection_T conn, uint64_t local_timeout_ms, uint64_t peer_timeout_ms);
+extern void SocketQUICConnection_reset_idle_timer(SocketQUICConnection_T conn, uint64_t now_ms);
+extern int SocketQUICConnection_check_idle_timeout(SocketQUICConnection_T conn, uint64_t now_ms);
+extern void SocketQUICConnection_initiate_close(SocketQUICConnection_T conn, uint64_t error_code, uint64_t now_ms, uint64_t pto_ms);
+extern void SocketQUICConnection_enter_draining(SocketQUICConnection_T conn, uint64_t now_ms, uint64_t pto_ms);
+extern int SocketQUICConnection_is_closing_or_draining(SocketQUICConnection_T conn);
+extern int SocketQUICConnection_check_termination_deadline(SocketQUICConnection_T conn, uint64_t now_ms);
+extern void SocketQUICConnection_set_stateless_reset_token(SocketQUICConnection_T conn, const uint8_t *token);
+extern int SocketQUICConnection_verify_stateless_reset(const uint8_t *packet, size_t packet_len, const uint8_t *expected_token);
 
 #endif /* SOCKETQUICCONNECTION_INCLUDED */
