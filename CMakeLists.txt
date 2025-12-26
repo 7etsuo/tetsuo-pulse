@@ -393,6 +393,7 @@ set(LIB_SOURCES
     src/quic/SocketQUICConnection-demux.c
     src/quic/SocketQUICConnection-termination.c
     src/quic/SocketQUICTransportParams.c
+    src/quic/SocketQUICPMTU.c
     src/quic/SocketQUICAddrValidation.c
     src/quic/SocketQUICMigration.c
     src/quic/SocketQUICHandshake.c
@@ -786,6 +787,7 @@ set(TEST_SOURCES
     test_quic_frame
     test_quic_connection
     test_quic_transport_params
+    test_quic_pmtu
     test_quic_addr_validation
     test_quic_migration
     test_quic_handshake
