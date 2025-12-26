@@ -385,6 +385,7 @@ set(LIB_SOURCES
     src/quic/SocketQUICPacket-initial.c
     src/quic/SocketQUICWire.c
     src/quic/SocketQUICFrame.c
+    src/quic/SocketQUICFrame-path.c
     src/quic/SocketQUICConnection-demux.c
     src/quic/SocketQUICTransportParams.c
 
