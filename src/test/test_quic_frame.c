@@ -160,6 +160,131 @@ TEST (frame_path_challenge)
                   "\x01\x02\x03\x04\x05\x06\x07\x08", 8) == 0);
 }
 
+TEST (frame_path_response)
+{
+  uint8_t data[] = { 0x1b, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88 };
+  SocketQUICFrame_T frame;
+  size_t consumed;
+
+  SocketQUICFrame_Result res
+      = SocketQUICFrame_parse (data, sizeof (data), &frame, &consumed);
+
+  ASSERT_EQ (QUIC_FRAME_OK, res);
+  ASSERT_EQ (QUIC_FRAME_PATH_RESPONSE, frame.type);
+  ASSERT (memcmp (frame.data.path_response.data,
+                  "\x11\x22\x33\x44\x55\x66\x77\x88", 8) == 0);
+  ASSERT_EQ (9, consumed);
+}
+
+TEST (frame_path_challenge_encode)
+{
+  uint8_t challenge_data[8] = { 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x00, 0x11 };
+  uint8_t encoded[9];
+
+  size_t len = SocketQUICFrame_encode_path_challenge (challenge_data, encoded);
+
+  ASSERT_EQ (9, len);
+  ASSERT_EQ (0x1a, encoded[0]);
+  ASSERT (memcmp (encoded + 1, challenge_data, 8) == 0);
+}
+
+TEST (frame_path_response_encode)
+{
+  uint8_t response_data[8] = { 0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0 };
+  uint8_t encoded[9];
+
+  size_t len = SocketQUICFrame_encode_path_response (response_data, encoded);
+
+  ASSERT_EQ (9, len);
+  ASSERT_EQ (0x1b, encoded[0]);
+  ASSERT (memcmp (encoded + 1, response_data, 8) == 0);
+}
+
+TEST (frame_path_challenge_decode)
+{
+  uint8_t wire_data[] = { 0x1a, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
+  uint8_t decoded[8];
+
+  int consumed = SocketQUICFrame_decode_path_challenge (wire_data, sizeof (wire_data), decoded);
+
+  ASSERT_EQ (9, consumed);
+  ASSERT (memcmp (decoded, "\x01\x02\x03\x04\x05\x06\x07\x08", 8) == 0);
+}
+
+TEST (frame_path_response_decode)
+{
+  uint8_t wire_data[] = { 0x1b, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x00, 0x11 };
+  uint8_t decoded[8];
+
+  int consumed = SocketQUICFrame_decode_path_response (wire_data, sizeof (wire_data), decoded);
+
+  ASSERT_EQ (9, consumed);
+  ASSERT (memcmp (decoded, "\xaa\xbb\xcc\xdd\xee\xff\x00\x11", 8) == 0);
+}
+
+TEST (frame_path_encode_decode_roundtrip)
+{
+  uint8_t original[8] = { 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49 };
+  uint8_t encoded[9];
+  uint8_t decoded[8];
+
+  /* Encode */
+  size_t enc_len = SocketQUICFrame_encode_path_challenge (original, encoded);
+  ASSERT_EQ (9, enc_len);
+
+  /* Decode */
+  int dec_len = SocketQUICFrame_decode_path_challenge (encoded, enc_len, decoded);
+  ASSERT_EQ (9, dec_len);
+
+  /* Verify roundtrip */
+  ASSERT (memcmp (original, decoded, 8) == 0);
+}
+
+TEST (frame_path_encode_null_checks)
+{
+  uint8_t data[8] = { 0 };
+  uint8_t out[9];
+
+  /* Null data pointer */
+  ASSERT_EQ (0, SocketQUICFrame_encode_path_challenge (NULL, out));
+  ASSERT_EQ (0, SocketQUICFrame_encode_path_response (NULL, out));
+
+  /* Null output pointer */
+  ASSERT_EQ (0, SocketQUICFrame_encode_path_challenge (data, NULL));
+  ASSERT_EQ (0, SocketQUICFrame_encode_path_response (data, NULL));
+}
+
+TEST (frame_path_decode_null_checks)
+{
+  uint8_t wire[9] = { 0x1a, 0, 0, 0, 0, 0, 0, 0, 0 };
+  uint8_t data[8];
+
+  /* Null input pointer */
+  ASSERT_EQ (-1, SocketQUICFrame_decode_path_challenge (NULL, 9, data));
+  ASSERT_EQ (-1, SocketQUICFrame_decode_path_response (NULL, 9, data));
+
+  /* Null data pointer */
+  ASSERT_EQ (-1, SocketQUICFrame_decode_path_challenge (wire, 9, NULL));
+  ASSERT_EQ (-1, SocketQUICFrame_decode_path_response (wire, 9, NULL));
+
+  /* Truncated input */
+  ASSERT_EQ (-1, SocketQUICFrame_decode_path_challenge (wire, 8, data));
+  ASSERT_EQ (-1, SocketQUICFrame_decode_path_response (wire, 8, data));
+}
+
+TEST (frame_path_decode_wrong_type)
+{
+  uint8_t wrong_type[9] = { 0x1b, 0, 0, 0, 0, 0, 0, 0, 0 };  /* PATH_RESPONSE type */
+  uint8_t data[8];
+
+  /* Try to decode PATH_RESPONSE as PATH_CHALLENGE */
+  ASSERT_EQ (-1, SocketQUICFrame_decode_path_challenge (wrong_type, 9, data));
+
+  /* Try to decode PATH_CHALLENGE as PATH_RESPONSE */
+  wrong_type[0] = 0x1a;
+  ASSERT_EQ (-1, SocketQUICFrame_decode_path_response (wrong_type, 9, data));
+}
+
 TEST (frame_connection_close)
 {
   uint8_t data[] = { 0x1c, 0x0a, 0x06, 0x04, 't', 'e', 's', 't' };
@@ -304,6 +429,407 @@ TEST (frame_null_pointers)
              SocketQUICFrame_parse (data, 1, NULL, &consumed));
   ASSERT_EQ (QUIC_FRAME_ERROR_NULL,
              SocketQUICFrame_parse (data, 1, &frame, NULL));
+}
+
+/* ============================================================================
+ * Connection ID Frame Tests (RFC 9000 §19.15-19.16)
+ * ============================================================================
+ */
+
+TEST (frame_new_connection_id_encode_basic)
+{
+  uint8_t cid[] = { 0x01, 0x02, 0x03, 0x04 };
+  uint8_t token[16] = { 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+                        0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f };
+  uint8_t buf[128];
+  size_t len;
+
+  /* Encode NEW_CONNECTION_ID frame */
+  len = SocketQUICFrame_encode_new_connection_id (
+      5,    /* sequence */
+      2,    /* retire_prior_to */
+      4,    /* cid_length */
+      cid, token, buf, sizeof (buf));
+
+  ASSERT (len > 0);
+  ASSERT_EQ (0x18, buf[0]); /* Frame type */
+
+  /* Parse it back */
+ * Flow Control Frame Encoding Tests (RFC 9000 §19.12-19.14)
+ * ============================================================================
+ */
+
+TEST (frame_encode_data_blocked_basic)
+{
+  uint8_t buf[16];
+  size_t len;
+
+  /* Encode DATA_BLOCKED with max_data = 1000 */
+  len = SocketQUICFrame_encode_data_blocked (1000, buf, sizeof (buf));
+
+  ASSERT (len > 0);
+  ASSERT_EQ (0x14, buf[0]); /* Frame type */
+
+  /* Verify by parsing back */
+  SocketQUICFrame_T frame;
+  size_t consumed;
+  SocketQUICFrame_Result res
+      = SocketQUICFrame_parse (buf, len, &frame, &consumed);
+
+  ASSERT_EQ (QUIC_FRAME_OK, res);
+  ASSERT_EQ (QUIC_FRAME_NEW_CONNECTION_ID, frame.type);
+  ASSERT_EQ (5, frame.data.new_connection_id.sequence);
+  ASSERT_EQ (2, frame.data.new_connection_id.retire_prior_to);
+  ASSERT_EQ (4, frame.data.new_connection_id.cid_length);
+  ASSERT (memcmp (frame.data.new_connection_id.cid, cid, 4) == 0);
+  ASSERT (memcmp (frame.data.new_connection_id.stateless_reset_token, token,
+                  16) == 0);
+  ASSERT_EQ (len, consumed);
+}
+
+TEST (frame_new_connection_id_encode_max_length)
+{
+  uint8_t cid[20];
+  uint8_t token[16];
+  uint8_t buf[128];
+
+  /* Fill with test data */
+  for (int i = 0; i < 20; i++)
+    cid[i] = (uint8_t)i;
+  for (int i = 0; i < 16; i++)
+    token[i] = (uint8_t)(0xf0 + i);
+
+  /* Encode with maximum CID length (20 bytes) */
+  size_t len = SocketQUICFrame_encode_new_connection_id (
+      100, 50, 20, cid, token, buf, sizeof (buf));
+
+  ASSERT (len > 0);
+
+  /* Verify round-trip */
+  ASSERT_EQ (QUIC_FRAME_DATA_BLOCKED, frame.type);
+  ASSERT_EQ (1000, frame.data.data_blocked.limit);
+  ASSERT_EQ (len, consumed);
+}
+
+TEST (frame_encode_data_blocked_large)
+{
+  uint8_t buf[16];
+  size_t len;
+
+  /* Encode with large value requiring 4-byte varint */
+  uint64_t max_data = 100000;
+  len = SocketQUICFrame_encode_data_blocked (max_data, buf, sizeof (buf));
+
+  ASSERT (len > 0);
+  ASSERT_EQ (0x14, buf[0]);
+
+  /* Verify by parsing */
+  SocketQUICFrame_T frame;
+  size_t consumed;
+  SocketQUICFrame_Result res
+      = SocketQUICFrame_parse (buf, len, &frame, &consumed);
+
+  ASSERT_EQ (QUIC_FRAME_OK, res);
+  ASSERT_EQ (max_data, frame.data.data_blocked.limit);
+}
+
+TEST (frame_encode_data_blocked_buffer_too_small)
+{
+  uint8_t buf[2];
+  size_t len;
+
+  /* Try encoding with insufficient buffer */
+  len = SocketQUICFrame_encode_data_blocked (1000, buf, sizeof (buf));
+
+  ASSERT_EQ (0, len); /* Should fail */
+}
+
+TEST (frame_encode_data_blocked_null)
+{
+  size_t len = SocketQUICFrame_encode_data_blocked (100, NULL, 16);
+  ASSERT_EQ (0, len);
+}
+
+TEST (frame_encode_stream_data_blocked_basic)
+{
+  uint8_t buf[16];
+  size_t len;
+
+  /* Encode STREAM_DATA_BLOCKED with stream_id = 4, max_data = 2000 */
+  len = SocketQUICFrame_encode_stream_data_blocked (4, 2000, buf, sizeof (buf));
+
+  ASSERT (len > 0);
+  ASSERT_EQ (0x15, buf[0]); /* Frame type */
+
+  /* Verify by parsing */
+  SocketQUICFrame_T frame;
+  size_t consumed;
+  SocketQUICFrame_Result res
+      = SocketQUICFrame_parse (buf, len, &frame, &consumed);
+
+  ASSERT_EQ (QUIC_FRAME_OK, res);
+  ASSERT_EQ (100, frame.data.new_connection_id.sequence);
+  ASSERT_EQ (50, frame.data.new_connection_id.retire_prior_to);
+  ASSERT_EQ (20, frame.data.new_connection_id.cid_length);
+  ASSERT (memcmp (frame.data.new_connection_id.cid, cid, 20) == 0);
+}
+
+TEST (frame_new_connection_id_encode_min_length)
+{
+  uint8_t cid[] = { 0xab };
+  uint8_t token[16] = { 0 };
+  uint8_t buf[128];
+
+  /* Encode with minimum CID length (1 byte) */
+  size_t len = SocketQUICFrame_encode_new_connection_id (
+      0, 0, 1, cid, token, buf, sizeof (buf));
+
+  ASSERT (len > 0);
+
+  /* Verify round-trip */
+  ASSERT_EQ (QUIC_FRAME_STREAM_DATA_BLOCKED, frame.type);
+  ASSERT_EQ (4, frame.data.stream_data_blocked.stream_id);
+  ASSERT_EQ (2000, frame.data.stream_data_blocked.limit);
+  ASSERT_EQ (len, consumed);
+}
+
+TEST (frame_encode_stream_data_blocked_large_stream_id)
+{
+  uint8_t buf[32];
+  size_t len;
+
+  /* Encode with large stream ID and max_data */
+  uint64_t stream_id = 1000000;
+  uint64_t max_data = 5000000;
+  len = SocketQUICFrame_encode_stream_data_blocked (stream_id, max_data, buf,
+                                                     sizeof (buf));
+
+  ASSERT (len > 0);
+
+  /* Verify by parsing */
+  SocketQUICFrame_T frame;
+  size_t consumed;
+  SocketQUICFrame_Result res
+      = SocketQUICFrame_parse (buf, len, &frame, &consumed);
+
+  ASSERT_EQ (QUIC_FRAME_OK, res);
+  ASSERT_EQ (0, frame.data.new_connection_id.sequence);
+  ASSERT_EQ (0, frame.data.new_connection_id.retire_prior_to);
+  ASSERT_EQ (1, frame.data.new_connection_id.cid_length);
+  ASSERT_EQ (0xab, frame.data.new_connection_id.cid[0]);
+}
+
+TEST (frame_new_connection_id_encode_invalid_length)
+{
+  uint8_t cid[20] = { 0 };
+  uint8_t token[16] = { 0 };
+  uint8_t buf[128];
+
+  /* CID length 0 is invalid for NEW_CONNECTION_ID */
+  ASSERT_EQ (0, SocketQUICFrame_encode_new_connection_id (
+                    0, 0, 0, cid, token, buf, sizeof (buf)));
+
+  /* CID length > 20 is invalid */
+  ASSERT_EQ (0, SocketQUICFrame_encode_new_connection_id (
+                    0, 0, 21, cid, token, buf, sizeof (buf)));
+}
+
+TEST (frame_new_connection_id_encode_retire_validation)
+{
+  uint8_t cid[] = { 0x01 };
+  uint8_t token[16] = { 0 };
+  uint8_t buf[128];
+
+  /* retire_prior_to must be <= sequence */
+  ASSERT_EQ (0, SocketQUICFrame_encode_new_connection_id (
+                    5, 10, /* retire > sequence */
+                    1, cid, token, buf, sizeof (buf)));
+
+  /* Equal is valid */
+  ASSERT (SocketQUICFrame_encode_new_connection_id (
+              5, 5, 1, cid, token, buf, sizeof (buf)) > 0);
+}
+
+TEST (frame_new_connection_id_encode_buffer_size)
+{
+  uint8_t cid[] = { 0x01 };
+  uint8_t token[16] = { 0 };
+  uint8_t buf[10];
+
+  /* Buffer too small should return 0 */
+  ASSERT_EQ (0, SocketQUICFrame_encode_new_connection_id (
+                    0, 0, 1, cid, token, buf, 5));
+}
+
+TEST (frame_retire_connection_id_encode_basic)
+{
+  uint8_t buf[128];
+
+  /* Encode RETIRE_CONNECTION_ID frame */
+  size_t len
+      = SocketQUICFrame_encode_retire_connection_id (42, buf, sizeof (buf));
+
+  ASSERT (len > 0);
+  ASSERT_EQ (0x19, buf[0]); /* Frame type */
+
+  /* Parse it back */
+  ASSERT_EQ (stream_id, frame.data.stream_data_blocked.stream_id);
+  ASSERT_EQ (max_data, frame.data.stream_data_blocked.limit);
+}
+
+TEST (frame_encode_stream_data_blocked_buffer_too_small)
+{
+  uint8_t buf[2];
+  size_t len;
+
+  len = SocketQUICFrame_encode_stream_data_blocked (4, 2000, buf, sizeof (buf));
+
+  ASSERT_EQ (0, len); /* Should fail */
+}
+
+TEST (frame_encode_stream_data_blocked_null)
+{
+  size_t len = SocketQUICFrame_encode_stream_data_blocked (4, 2000, NULL, 16);
+  ASSERT_EQ (0, len);
+}
+
+TEST (frame_encode_streams_blocked_bidi)
+{
+  uint8_t buf[16];
+  size_t len;
+
+  /* Encode STREAMS_BLOCKED (bidirectional) with max_streams = 100 */
+  len = SocketQUICFrame_encode_streams_blocked (1, 100, buf, sizeof (buf));
+
+  ASSERT (len > 0);
+  ASSERT_EQ (0x16, buf[0]); /* Bidirectional type */
+
+  /* Verify by parsing */
+  SocketQUICFrame_T frame;
+  size_t consumed;
+  SocketQUICFrame_Result res
+      = SocketQUICFrame_parse (buf, len, &frame, &consumed);
+
+  ASSERT_EQ (QUIC_FRAME_OK, res);
+  ASSERT_EQ (QUIC_FRAME_STREAMS_BLOCKED_BIDI, frame.type);
+  ASSERT_EQ (100, frame.data.streams_blocked.limit);
+  ASSERT_EQ (1, frame.data.streams_blocked.is_bidi);
+  ASSERT_EQ (len, consumed);
+}
+
+TEST (frame_encode_streams_blocked_uni)
+{
+  uint8_t buf[16];
+  size_t len;
+
+  /* Encode STREAMS_BLOCKED (unidirectional) with max_streams = 50 */
+  len = SocketQUICFrame_encode_streams_blocked (0, 50, buf, sizeof (buf));
+
+  ASSERT (len > 0);
+  ASSERT_EQ (0x17, buf[0]); /* Unidirectional type */
+
+  /* Verify by parsing */
+  SocketQUICFrame_T frame;
+  size_t consumed;
+  SocketQUICFrame_Result res
+      = SocketQUICFrame_parse (buf, len, &frame, &consumed);
+
+  ASSERT_EQ (QUIC_FRAME_OK, res);
+  ASSERT_EQ (QUIC_FRAME_RETIRE_CONNECTION_ID, frame.type);
+  ASSERT_EQ (42, frame.data.retire_connection_id.sequence);
+  ASSERT_EQ (len, consumed);
+}
+
+TEST (frame_retire_connection_id_encode_large_sequence)
+{
+  uint8_t buf[128];
+
+  /* Large sequence number */
+  size_t len = SocketQUICFrame_encode_retire_connection_id (
+      0x123456789abcdef, buf, sizeof (buf));
+
+  ASSERT (len > 0);
+
+  /* Verify round-trip */
+  ASSERT_EQ (QUIC_FRAME_STREAMS_BLOCKED_UNI, frame.type);
+  ASSERT_EQ (50, frame.data.streams_blocked.limit);
+  ASSERT_EQ (0, frame.data.streams_blocked.is_bidi);
+  ASSERT_EQ (len, consumed);
+}
+
+TEST (frame_encode_streams_blocked_large)
+{
+  uint8_t buf[16];
+  size_t len;
+
+  /* Encode with large max_streams value */
+  uint64_t max_streams = 1000000;
+  len = SocketQUICFrame_encode_streams_blocked (1, max_streams, buf, sizeof (buf));
+
+  ASSERT (len > 0);
+
+  /* Verify by parsing */
+  SocketQUICFrame_T frame;
+  size_t consumed;
+  SocketQUICFrame_Result res
+      = SocketQUICFrame_parse (buf, len, &frame, &consumed);
+
+  ASSERT_EQ (QUIC_FRAME_OK, res);
+  ASSERT_EQ (0x123456789abcdef, frame.data.retire_connection_id.sequence);
+}
+
+TEST (frame_retire_connection_id_encode_buffer_size)
+{
+  uint8_t buf[2];
+
+  /* Buffer too small should return 0 */
+  ASSERT_EQ (0, SocketQUICFrame_encode_retire_connection_id (
+                    1000000, buf, sizeof (buf)));
+}
+
+TEST (frame_connection_id_validation)
+{
+  SocketQUICFrame_T frame;
+
+  /* NEW_CONNECTION_ID allowed in 0-RTT and 1-RTT */
+  frame.type = QUIC_FRAME_NEW_CONNECTION_ID;
+  ASSERT_EQ (QUIC_FRAME_ERROR_PACKET_TYPE,
+             SocketQUICFrame_validate (&frame, QUIC_PKT_INITIAL));
+  ASSERT_EQ (QUIC_FRAME_OK,
+             SocketQUICFrame_validate (&frame, QUIC_PKT_0RTT));
+  ASSERT_EQ (QUIC_FRAME_ERROR_PACKET_TYPE,
+             SocketQUICFrame_validate (&frame, QUIC_PKT_HANDSHAKE));
+  ASSERT_EQ (QUIC_FRAME_OK,
+             SocketQUICFrame_validate (&frame, QUIC_PKT_1RTT));
+
+  /* RETIRE_CONNECTION_ID allowed in 0-RTT and 1-RTT */
+  frame.type = QUIC_FRAME_RETIRE_CONNECTION_ID;
+  ASSERT_EQ (QUIC_FRAME_ERROR_PACKET_TYPE,
+             SocketQUICFrame_validate (&frame, QUIC_PKT_INITIAL));
+  ASSERT_EQ (QUIC_FRAME_OK,
+             SocketQUICFrame_validate (&frame, QUIC_PKT_0RTT));
+  ASSERT_EQ (QUIC_FRAME_ERROR_PACKET_TYPE,
+             SocketQUICFrame_validate (&frame, QUIC_PKT_HANDSHAKE));
+  ASSERT_EQ (QUIC_FRAME_OK,
+             SocketQUICFrame_validate (&frame, QUIC_PKT_1RTT));
+  ASSERT_EQ (max_streams, frame.data.streams_blocked.limit);
+  ASSERT_EQ (1, frame.data.streams_blocked.is_bidi);
+}
+
+TEST (frame_encode_streams_blocked_buffer_too_small)
+{
+  uint8_t buf[2];
+  size_t len;
+
+  len = SocketQUICFrame_encode_streams_blocked (1, 100, buf, sizeof (buf));
+
+  ASSERT_EQ (0, len); /* Should fail */
+}
+
+TEST (frame_encode_streams_blocked_null)
+{
+  size_t len = SocketQUICFrame_encode_streams_blocked (1, 100, NULL, 16);
+  ASSERT_EQ (0, len);
 }
 
 int

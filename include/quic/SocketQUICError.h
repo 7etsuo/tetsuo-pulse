@@ -26,7 +26,12 @@
 #ifndef SOCKETQUICERROR_INCLUDED
 #define SOCKETQUICERROR_INCLUDED
 
+#include <stddef.h>
 #include <stdint.h>
+
+/* Forward declarations */
+typedef struct SocketQUICConnection *SocketQUICConnection_T;
+typedef struct SocketQUICStream *SocketQUICStream_T;
 
 /* ============================================================================
  * Transport Error Codes (RFC 9000 Section 20.1)
@@ -318,6 +323,94 @@ SocketQUIC_error_category_string (SocketQUIC_ErrorCategory category)
 
   return names[category];
 }
+
+/* ============================================================================
+ * Error Handling (RFC 9000 Section 11)
+ * ============================================================================
+ */
+
+/**
+ * @brief Check if an error code causes connection-level termination.
+ *
+ * Transport errors and crypto errors are connection-fatal and require
+ * sending a CONNECTION_CLOSE frame and closing the entire connection.
+ * Application errors may be connection-fatal depending on the application
+ * protocol.
+ *
+ * @param code Error code to check.
+ * @return 1 if error is connection-fatal, 0 if stream-level only.
+ *
+ * @note Application errors (>= 0x0200) are treated as potentially
+ *       connection-fatal. The application should escalate appropriately.
+ */
+extern int SocketQUIC_error_is_connection_fatal (uint64_t code);
+
+/**
+ * @brief Send CONNECTION_CLOSE frame and terminate connection.
+ *
+ * Constructs and sends a CONNECTION_CLOSE frame with the specified error
+ * code and reason phrase. This closes the entire connection and all
+ * associated streams.
+ *
+ * @param conn   Connection to close.
+ * @param code   Error code (transport or application).
+ * @param reason Human-readable reason phrase (may be NULL).
+ * @param out    Output buffer for encoded frame.
+ * @param out_len Size of output buffer.
+ *
+ * @return Number of bytes written to out, or 0 on error.
+ *
+ * @note The connection state should be set to CLOSING after calling this.
+ *       Transport errors use frame type 0x1c, application errors use 0x1d.
+ */
+extern size_t SocketQUIC_send_connection_close (SocketQUICConnection_T conn,
+                                                 uint64_t code,
+                                                 const char *reason,
+                                                 uint8_t *out,
+                                                 size_t out_len);
+
+/**
+ * @brief Send RESET_STREAM frame to terminate a stream.
+ *
+ * Constructs and sends a RESET_STREAM frame with the specified error code
+ * and final size. This abruptly terminates the sending side of the stream.
+ * The connection continues to operate normally.
+ *
+ * @param stream     Stream to reset.
+ * @param code       Application error code.
+ * @param final_size Final size of the stream in bytes.
+ * @param out        Output buffer for encoded frame.
+ * @param out_len    Size of output buffer.
+ *
+ * @return Number of bytes written to out, or 0 on error.
+ *
+ * @note After sending RESET_STREAM, the stream state should transition
+ *       to RESET_SENT. No further data can be sent on this stream.
+ */
+extern size_t SocketQUIC_send_stream_reset (SocketQUICStream_T stream,
+                                             uint64_t code,
+                                             uint64_t final_size,
+                                             uint8_t *out,
+                                             size_t out_len);
+
+/**
+ * @brief Send STOP_SENDING frame to request peer stop sending.
+ *
+ * Constructs and sends a STOP_SENDING frame requesting the peer to stop
+ * sending on the specified stream. This is used when the receiver does
+ * not want to receive more data.
+ *
+ * @param stream  Stream to stop receiving.
+ * @param code    Application error code.
+ * @param out     Output buffer for encoded frame.
+ * @param out_len Size of output buffer.
+ *
+ * @return Number of bytes written to out, or 0 on error.
+ */
+extern size_t SocketQUIC_send_stop_sending (SocketQUICStream_T stream,
+                                             uint64_t code,
+                                             uint8_t *out,
+                                             size_t out_len);
 
 /** @} */
 
