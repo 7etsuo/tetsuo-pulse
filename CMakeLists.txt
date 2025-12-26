@@ -386,6 +386,7 @@ set(LIB_SOURCES
     src/quic/SocketQUICWire.c
     src/quic/SocketQUICFrame.c
     src/quic/SocketQUICConnection-demux.c
+    src/quic/SocketQUICConnection-termination.c
     src/quic/SocketQUICTransportParams.c
 
     # Simple convenience API
@@ -776,6 +777,7 @@ set(TEST_SOURCES
     test_quic_frame
     test_quic_connection
     test_quic_transport_params
+    test_quic_termination
 )
 
 # TLS tests (only built when TLS is enabled)
