@@ -383,6 +383,7 @@ set(LIB_SOURCES
     src/quic/SocketQUICStream.c
     src/quic/SocketQUICPacket.c
     src/quic/SocketQUICWire.c
+    src/quic/SocketQUICConnection-demux.c
 
     # Simple convenience API
     src/simple/SocketSimple.c
@@ -621,6 +622,7 @@ set(QUIC_HEADERS
     include/quic/SocketQUICConnectionID.h
     include/quic/SocketQUICStream.h
     include/quic/SocketQUICPacket.h
+    include/quic/SocketQUICConnection.h
 )
 
 set(SIMPLE_HEADERS
@@ -766,6 +768,7 @@ set(TEST_SOURCES
     test_quic_stream
     test_quic_packet
     test_quic_wire
+    test_quic_connection
 )
 
 # TLS tests (only built when TLS is enabled)
