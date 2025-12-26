@@ -306,6 +306,174 @@ TEST (frame_null_pointers)
              SocketQUICFrame_parse (data, 1, &frame, NULL));
 }
 
+/* CONNECTION_CLOSE frame encoding tests (RFC 9000 Section 19.19) */
+
+TEST (frame_encode_connection_close_transport_basic)
+{
+  uint8_t buf[256];
+  size_t len = SocketQUICFrame_encode_connection_close_transport (
+      0x0a,   /* error_code: PROTOCOL_VIOLATION */
+      0x06,   /* frame_type: CRYPTO */
+      "test", /* reason */
+      buf, sizeof (buf));
+
+  ASSERT (len > 0);
+
+  /* Parse it back to verify encoding */
+  SocketQUICFrame_T frame;
+  size_t consumed;
+  SocketQUICFrame_Result res
+      = SocketQUICFrame_parse (buf, len, &frame, &consumed);
+
+  ASSERT_EQ (QUIC_FRAME_OK, res);
+  ASSERT_EQ (QUIC_FRAME_CONNECTION_CLOSE, frame.type);
+  ASSERT_EQ (0x0a, frame.data.connection_close.error_code);
+  ASSERT_EQ (0x06, frame.data.connection_close.frame_type);
+  ASSERT_EQ (4, frame.data.connection_close.reason_length);
+  ASSERT_EQ (0, frame.data.connection_close.is_app_error);
+  ASSERT (memcmp (frame.data.connection_close.reason, "test", 4) == 0);
+  ASSERT_EQ (len, consumed);
+}
+
+TEST (frame_encode_connection_close_transport_no_reason)
+{
+  uint8_t buf[256];
+  size_t len = SocketQUICFrame_encode_connection_close_transport (
+      0x01,  /* error_code: INTERNAL_ERROR */
+      0x00,  /* frame_type: none */
+      NULL,  /* no reason */
+      buf, sizeof (buf));
+
+  ASSERT (len > 0);
+
+  /* Parse it back */
+  SocketQUICFrame_T frame;
+  size_t consumed;
+  SocketQUICFrame_Result res
+      = SocketQUICFrame_parse (buf, len, &frame, &consumed);
+
+  ASSERT_EQ (QUIC_FRAME_OK, res);
+  ASSERT_EQ (QUIC_FRAME_CONNECTION_CLOSE, frame.type);
+  ASSERT_EQ (0x01, frame.data.connection_close.error_code);
+  ASSERT_EQ (0x00, frame.data.connection_close.frame_type);
+  ASSERT_EQ (0, frame.data.connection_close.reason_length);
+  ASSERT_EQ (0, frame.data.connection_close.is_app_error);
+}
+
+TEST (frame_encode_connection_close_transport_long_reason)
+{
+  uint8_t buf[512];
+  const char *reason = "This is a longer error message to test handling of "
+                       "variable-length reason phrases in CONNECTION_CLOSE";
+
+  size_t len = SocketQUICFrame_encode_connection_close_transport (
+      0x0c,   /* error_code: FLOW_CONTROL_ERROR */
+      0x10,   /* frame_type: MAX_DATA */
+      reason, buf, sizeof (buf));
+
+  ASSERT (len > 0);
+
+  /* Parse it back */
+  SocketQUICFrame_T frame;
+  size_t consumed;
+  SocketQUICFrame_Result res
+      = SocketQUICFrame_parse (buf, len, &frame, &consumed);
+
+  ASSERT_EQ (QUIC_FRAME_OK, res);
+  ASSERT_EQ (strlen (reason), (size_t)frame.data.connection_close.reason_length);
+  ASSERT (
+      memcmp (frame.data.connection_close.reason, reason, strlen (reason))
+      == 0);
+}
+
+TEST (frame_encode_connection_close_app_basic)
+{
+  uint8_t buf[256];
+  size_t len = SocketQUICFrame_encode_connection_close_app (
+      1000,          /* error_code: application-defined */
+      "user abort",  /* reason */
+      buf, sizeof (buf));
+
+  ASSERT (len > 0);
+
+  /* Parse it back */
+  SocketQUICFrame_T frame;
+  size_t consumed;
+  SocketQUICFrame_Result res
+      = SocketQUICFrame_parse (buf, len, &frame, &consumed);
+
+  ASSERT_EQ (QUIC_FRAME_OK, res);
+  ASSERT_EQ (QUIC_FRAME_CONNECTION_CLOSE_APP, frame.type);
+  ASSERT_EQ (1000, frame.data.connection_close.error_code);
+  ASSERT_EQ (10, frame.data.connection_close.reason_length);
+  ASSERT_EQ (1, frame.data.connection_close.is_app_error);
+  ASSERT (memcmp (frame.data.connection_close.reason, "user abort", 10) == 0);
+}
+
+TEST (frame_encode_connection_close_app_no_reason)
+{
+  uint8_t buf[256];
+  size_t len = SocketQUICFrame_encode_connection_close_app (
+      42,   /* error_code */
+      NULL, /* no reason */
+      buf, sizeof (buf));
+
+  ASSERT (len > 0);
+
+  /* Parse it back */
+  SocketQUICFrame_T frame;
+  size_t consumed;
+  SocketQUICFrame_Result res
+      = SocketQUICFrame_parse (buf, len, &frame, &consumed);
+
+  ASSERT_EQ (QUIC_FRAME_OK, res);
+  ASSERT_EQ (QUIC_FRAME_CONNECTION_CLOSE_APP, frame.type);
+  ASSERT_EQ (42, frame.data.connection_close.error_code);
+  ASSERT_EQ (0, frame.data.connection_close.reason_length);
+  ASSERT_EQ (1, frame.data.connection_close.is_app_error);
+}
+
+TEST (frame_encode_connection_close_buffer_too_small)
+{
+  uint8_t buf[8]; /* Too small */
+  size_t len = SocketQUICFrame_encode_connection_close_transport (
+      0x01, 0x00, "this reason is too long for the buffer", buf,
+      sizeof (buf));
+
+  /* Should fail gracefully */
+  ASSERT_EQ (0, len);
+}
+
+TEST (frame_encode_connection_close_null_buffer)
+{
+  size_t len = SocketQUICFrame_encode_connection_close_transport (
+      0x01, 0x00, "test", NULL, 256);
+
+  ASSERT_EQ (0, len);
+}
+
+TEST (frame_encode_connection_close_large_error_code)
+{
+  uint8_t buf[256];
+  /* Use a large error code that requires multi-byte varint encoding */
+  uint64_t large_code = 0x123456;
+
+  size_t len = SocketQUICFrame_encode_connection_close_transport (
+      large_code, 0x1a, /* PATH_CHALLENGE */
+      "large code", buf, sizeof (buf));
+
+  ASSERT (len > 0);
+
+  /* Parse it back */
+  SocketQUICFrame_T frame;
+  size_t consumed;
+  SocketQUICFrame_Result res
+      = SocketQUICFrame_parse (buf, len, &frame, &consumed);
+
+  ASSERT_EQ (QUIC_FRAME_OK, res);
+  ASSERT_EQ (large_code, frame.data.connection_close.error_code);
+}
+
 int
 main (void)
 {
