@@ -380,6 +380,7 @@ set(LIB_SOURCES
     src/quic/SocketQUICVarInt.c
     src/quic/SocketQUICError.c
     src/quic/SocketQUICConnectionID.c
+    src/quic/SocketQUICWire.c
 
     # Simple convenience API
     src/simple/SocketSimple.c
@@ -758,6 +759,7 @@ set(TEST_SOURCES
     test_quic_error
     test_quic_version
     test_quic_connid
+    test_quic_wire
 )
 
 # TLS tests (only built when TLS is enabled)
