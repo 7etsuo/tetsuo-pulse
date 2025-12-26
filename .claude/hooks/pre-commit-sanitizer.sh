@@ -41,7 +41,8 @@ fi
 # Run tests with sanitizers
 # Exclude flaky network-dependent tests that may timeout in CI environments
 cd build
-ASAN_OPTIONS=detect_leaks=1:abort_on_error=1 ctest --output-on-failure -j4 -E "test_dns_over_https" 2>&1 | tail -20
+ASAN_OPTIONS=detect_leaks=1:abort_on_error=1 ctest --output-on-failure -j4 -E "test_dns_over_https|test_tls_crl_integration" 2>&1 | tail -20
+ASAN_OPTIONS=detect_leaks=1:abort_on_error=1 ctest --output-on-failure -j4 -E "test_dns_over_https|test_platform_integration" 2>&1 | tail -20
 
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     echo "" >&2

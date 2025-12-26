@@ -1,0 +1,238 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2025 Tetsuo AI
+ * https://x.com/tetsuoai
+ */
+
+/**
+ * @file SocketQUICError-handling.c
+ * @brief QUIC Error Handling (RFC 9000 Section 11).
+ *
+ * Implements connection-level and stream-level error handling with
+ * appropriate frame generation for CONNECTION_CLOSE, RESET_STREAM,
+ * and STOP_SENDING.
+ */
+
+#include "quic/SocketQUICError.h"
+#include "quic/SocketQUICConnection.h"
+#include "quic/SocketQUICFrame.h"
+#include "quic/SocketQUICStream.h"
+#include "quic/SocketQUICVarInt.h"
+
+#include <string.h>
+
+/* ============================================================================
+ * Error Classification (RFC 9000 Section 11)
+ * ============================================================================
+ */
+
+int
+SocketQUIC_error_is_connection_fatal (uint64_t code)
+{
+  /* Transport errors (0x00-0x10) are always connection-fatal */
+  if (SocketQUIC_is_transport_error (code))
+    return 1;
+
+  /* Crypto errors (0x0100-0x01ff) are always connection-fatal */
+  if (QUIC_IS_CRYPTO_ERROR (code))
+    return 1;
+
+  /* Application errors (>= 0x0200) may be connection-fatal */
+  /* The application should decide whether to escalate to connection error */
+  /* For now, we treat them as potentially fatal (return 1) */
+  /* The caller can choose to send CONNECTION_CLOSE or use stream-level reset */
+  if (code >= QUIC_APPLICATION_ERROR_BASE)
+    return 1;
+
+  /* Unknown error codes in reserved range (0x11-0xff) */
+  return 0;
+}
+
+/* ============================================================================
+ * Connection Close (RFC 9000 Section 19.19)
+ * ============================================================================
+ */
+
+size_t
+SocketQUIC_send_connection_close (SocketQUICConnection_T conn, uint64_t code,
+                                   const char *reason, uint8_t *out,
+                                   size_t out_len)
+{
+  size_t offset;
+  size_t reason_len;
+  uint64_t frame_type;
+  int is_app_error;
+
+  if (!conn || !out)
+    return 0;
+
+  /* Determine if this is an application error (0x1d) or transport error (0x1c) */
+  is_app_error
+      = (code >= QUIC_APPLICATION_ERROR_BASE) || (code == QUIC_APPLICATION_ERROR);
+
+  /* Frame type */
+  frame_type = is_app_error ? QUIC_FRAME_CONNECTION_CLOSE_APP
+                            : QUIC_FRAME_CONNECTION_CLOSE;
+
+  /* Calculate required space */
+  reason_len = reason ? strlen (reason) : 0;
+  if (reason_len > 0xFFFF)
+    reason_len = 0xFFFF; /* Limit reason phrase length */
+
+  /* Estimate minimum required buffer size:
+   * - Frame type: 1 byte (varint)
+   * - Error code: up to 8 bytes (varint)
+   * - Frame type field (for transport errors): up to 8 bytes (varint)
+   * - Reason length: up to 8 bytes (varint)
+   * - Reason phrase: reason_len bytes
+   */
+  size_t min_size = 1 + 8 + (is_app_error ? 0 : 8) + 8 + reason_len;
+  if (out_len < min_size)
+    return 0;
+
+  offset = 0;
+
+  /* Encode frame type */
+  offset += SocketQUICVarInt_encode (frame_type, out + offset,
+                                     out_len - offset);
+  if (offset == 0)
+    return 0;
+
+  /* Encode error code */
+  offset += SocketQUICVarInt_encode (code, out + offset, out_len - offset);
+  if (offset == 0)
+    return 0;
+
+  /* For transport errors (0x1c), include triggering frame type field */
+  /* For application errors (0x1d), skip frame type field */
+  if (!is_app_error)
+    {
+      /* Frame type field - use 0 for "no specific frame" */
+      offset
+          += SocketQUICVarInt_encode (0, out + offset, out_len - offset);
+      if (offset == 0)
+        return 0;
+    }
+
+  /* Encode reason phrase length */
+  offset += SocketQUICVarInt_encode (reason_len, out + offset,
+                                     out_len - offset);
+  if (offset == 0)
+    return 0;
+
+  /* Copy reason phrase */
+  if (reason_len > 0)
+    {
+      if (offset + reason_len > out_len)
+        return 0;
+
+      memcpy (out + offset, reason, reason_len);
+      offset += reason_len;
+    }
+
+  return offset;
+}
+
+/* ============================================================================
+ * Stream Reset (RFC 9000 Section 19.4)
+ * ============================================================================
+ */
+
+size_t
+SocketQUIC_send_stream_reset (SocketQUICStream_T stream, uint64_t code,
+                               uint64_t final_size, uint8_t *out,
+                               size_t out_len)
+{
+  size_t offset;
+  uint64_t stream_id;
+
+  if (!stream || !out)
+    return 0;
+
+  stream_id = SocketQUICStream_get_id (stream);
+
+  /* RESET_STREAM frame format:
+   * - Frame type (0x04): 1 byte
+   * - Stream ID: varint
+   * - Application error code: varint
+   * - Final size: varint
+   */
+  size_t min_size = 1 + 8 + 8 + 8; /* Conservative estimate */
+  if (out_len < min_size)
+    return 0;
+
+  offset = 0;
+
+  /* Encode frame type (RESET_STREAM = 0x04) */
+  offset += SocketQUICVarInt_encode (QUIC_FRAME_RESET_STREAM, out + offset,
+                                     out_len - offset);
+  if (offset == 0)
+    return 0;
+
+  /* Encode stream ID */
+  offset
+      += SocketQUICVarInt_encode (stream_id, out + offset, out_len - offset);
+  if (offset == 0)
+    return 0;
+
+  /* Encode application error code */
+  offset += SocketQUICVarInt_encode (code, out + offset, out_len - offset);
+  if (offset == 0)
+    return 0;
+
+  /* Encode final size */
+  offset
+      += SocketQUICVarInt_encode (final_size, out + offset, out_len - offset);
+  if (offset == 0)
+    return 0;
+
+  return offset;
+}
+
+/* ============================================================================
+ * Stop Sending (RFC 9000 Section 19.5)
+ * ============================================================================
+ */
+
+size_t
+SocketQUIC_send_stop_sending (SocketQUICStream_T stream, uint64_t code,
+                               uint8_t *out, size_t out_len)
+{
+  size_t offset;
+  uint64_t stream_id;
+
+  if (!stream || !out)
+    return 0;
+
+  stream_id = SocketQUICStream_get_id (stream);
+
+  /* STOP_SENDING frame format:
+   * - Frame type (0x05): 1 byte
+   * - Stream ID: varint
+   * - Application error code: varint
+   */
+  size_t min_size = 1 + 8 + 8; /* Conservative estimate */
+  if (out_len < min_size)
+    return 0;
+
+  offset = 0;
+
+  /* Encode frame type (STOP_SENDING = 0x05) */
+  offset += SocketQUICVarInt_encode (QUIC_FRAME_STOP_SENDING, out + offset,
+                                     out_len - offset);
+  if (offset == 0)
+    return 0;
+
+  /* Encode stream ID */
+  offset
+      += SocketQUICVarInt_encode (stream_id, out + offset, out_len - offset);
+  if (offset == 0)
+    return 0;
+
+  /* Encode application error code */
+  offset += SocketQUICVarInt_encode (code, out + offset, out_len - offset);
+  if (offset == 0)
+    return 0;
+
+  return offset;
+}

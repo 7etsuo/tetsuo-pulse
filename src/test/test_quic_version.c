@@ -14,6 +14,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "quic/SocketQUICConnectionID.h"
 #include "quic/SocketQUICVersion.h"
 #include "test/Test.h"
 
@@ -359,6 +360,377 @@ TEST (quic_supported_versions_null_count)
   /* Should not crash with NULL count */
   const uint32_t *versions = SocketQUIC_supported_versions (NULL);
   ASSERT_NOT_NULL (versions);
+}
+
+/* ============================================================================
+ * Version Negotiation Packet Creation Tests (RFC 9000 Section 6)
+ * ============================================================================
+ */
+
+TEST (quic_version_neg_create_basic)
+{
+  SocketQUICConnectionID_T dcid, scid;
+  uint8_t output[256];
+
+  /* Setup CIDs */
+  SocketQUICConnectionID_init (&dcid);
+  SocketQUICConnectionID_init (&scid);
+  dcid.len = 8;
+  scid.len = 8;
+  memset (dcid.data, 0xAA, 8);
+  memset (scid.data, 0xBB, 8);
+
+  /* Create negotiation packet with 2 versions */
+  uint32_t versions[] = { QUIC_VERSION_1, QUIC_VERSION_2 };
+  int result = SocketQUICVersion_create_negotiation (&dcid, &scid, versions, 2,
+                                                      output, sizeof (output));
+
+  /* Expected size: 1 (header) + 4 (version) + 1 (dcid len) + 8 (dcid) +
+   *                1 (scid len) + 8 (scid) + 8 (2 versions) = 31 */
+  ASSERT_EQ (result, 31);
+
+  /* Verify first byte has long header form */
+  ASSERT_EQ (output[0] & 0x80, 0x80);
+
+  /* Verify version is 0x00000000 */
+  ASSERT_EQ (output[1], 0x00);
+  ASSERT_EQ (output[2], 0x00);
+  ASSERT_EQ (output[3], 0x00);
+  ASSERT_EQ (output[4], 0x00);
+
+  /* Verify DCID length and data */
+  ASSERT_EQ (output[5], 8);
+  ASSERT_EQ (output[6], 0xAA);
+
+  /* Verify SCID length and data */
+  ASSERT_EQ (output[14], 8);
+  ASSERT_EQ (output[15], 0xBB);
+
+  /* Verify version 1 */
+  ASSERT_EQ (output[23], 0x00);
+  ASSERT_EQ (output[24], 0x00);
+  ASSERT_EQ (output[25], 0x00);
+  ASSERT_EQ (output[26], 0x01);
+
+  /* Verify version 2 */
+  ASSERT_EQ (output[27], 0x6b);
+  ASSERT_EQ (output[28], 0x33);
+  ASSERT_EQ (output[29], 0x43);
+  ASSERT_EQ (output[30], 0xcf);
+}
+
+TEST (quic_version_neg_create_zero_length_cids)
+{
+  SocketQUICConnectionID_T dcid, scid;
+  uint8_t output[256];
+
+  /* Zero-length CIDs */
+  SocketQUICConnectionID_init (&dcid);
+  SocketQUICConnectionID_init (&scid);
+
+  uint32_t versions[] = { QUIC_VERSION_1 };
+  int result = SocketQUICVersion_create_negotiation (&dcid, &scid, versions, 1,
+                                                      output, sizeof (output));
+
+  /* Expected: 1 + 4 + 1 + 0 + 1 + 0 + 4 = 11 bytes */
+  ASSERT_EQ (result, 11);
+
+  /* Verify DCID length is 0 */
+  ASSERT_EQ (output[5], 0);
+
+  /* Verify SCID length is 0 */
+  ASSERT_EQ (output[6], 0);
+}
+
+TEST (quic_version_neg_create_null_inputs)
+{
+  SocketQUICConnectionID_T dcid, scid;
+  uint8_t output[256];
+  uint32_t versions[] = { QUIC_VERSION_1 };
+
+  SocketQUICConnectionID_init (&dcid);
+  SocketQUICConnectionID_init (&scid);
+
+  /* NULL dcid */
+  int result = SocketQUICVersion_create_negotiation (NULL, &scid, versions, 1,
+                                                      output, sizeof (output));
+  ASSERT (result < 0);
+
+  /* NULL scid */
+  result = SocketQUICVersion_create_negotiation (&dcid, NULL, versions, 1,
+                                                  output, sizeof (output));
+  ASSERT (result < 0);
+
+  /* NULL versions */
+  result = SocketQUICVersion_create_negotiation (&dcid, &scid, NULL, 1, output,
+                                                  sizeof (output));
+  ASSERT (result < 0);
+
+  /* NULL output */
+  result
+      = SocketQUICVersion_create_negotiation (&dcid, &scid, versions, 1, NULL,
+                                               sizeof (output));
+  ASSERT (result < 0);
+}
+
+TEST (quic_version_neg_create_buffer_too_small)
+{
+  SocketQUICConnectionID_T dcid, scid;
+  uint8_t output[10]; /* Too small */
+
+  SocketQUICConnectionID_init (&dcid);
+  SocketQUICConnectionID_init (&scid);
+  dcid.len = 8;
+  scid.len = 8;
+
+  uint32_t versions[] = { QUIC_VERSION_1, QUIC_VERSION_2 };
+  int result = SocketQUICVersion_create_negotiation (&dcid, &scid, versions, 2,
+                                                      output, sizeof (output));
+
+  ASSERT (result < 0);
+}
+
+TEST (quic_version_neg_create_zero_versions)
+{
+  SocketQUICConnectionID_T dcid, scid;
+  uint8_t output[256];
+  uint32_t versions[] = { QUIC_VERSION_1 };
+
+  SocketQUICConnectionID_init (&dcid);
+  SocketQUICConnectionID_init (&scid);
+
+  /* Zero version count */
+  int result = SocketQUICVersion_create_negotiation (&dcid, &scid, versions, 0,
+                                                      output, sizeof (output));
+  ASSERT (result < 0);
+}
+
+/* ============================================================================
+ * Version Negotiation Packet Parsing Tests
+ * ============================================================================
+ */
+
+TEST (quic_version_neg_parse_basic)
+{
+  /* Construct a valid Version Negotiation packet */
+  uint8_t packet[] = {
+    0x80,                   /* Long header, no fixed bit */
+    0x00, 0x00, 0x00, 0x00, /* Version = 0 */
+    0x04,                   /* DCID length = 4 */
+    0x01, 0x02, 0x03, 0x04, /* DCID */
+    0x04,                   /* SCID length = 4 */
+    0x05, 0x06, 0x07, 0x08, /* SCID */
+    0x00, 0x00, 0x00, 0x01, /* Version 1 */
+    0x6b, 0x33, 0x43, 0xcf  /* Version 2 */
+  };
+
+  SocketQUICConnectionID_T dcid, scid;
+  uint32_t versions[10];
+  size_t count;
+
+  SocketQUICVersion_NegResult result = SocketQUICVersion_parse_negotiation (
+      packet, sizeof (packet), &dcid, &scid, versions, 10, &count);
+
+  ASSERT_EQ (result, QUIC_VERSION_NEG_OK);
+  ASSERT_EQ (count, 2);
+
+  /* Verify DCID */
+  ASSERT_EQ (dcid.len, 4);
+  ASSERT_EQ (dcid.data[0], 0x01);
+  ASSERT_EQ (dcid.data[1], 0x02);
+  ASSERT_EQ (dcid.data[2], 0x03);
+  ASSERT_EQ (dcid.data[3], 0x04);
+
+  /* Verify SCID */
+  ASSERT_EQ (scid.len, 4);
+  ASSERT_EQ (scid.data[0], 0x05);
+  ASSERT_EQ (scid.data[1], 0x06);
+  ASSERT_EQ (scid.data[2], 0x07);
+  ASSERT_EQ (scid.data[3], 0x08);
+
+  /* Verify versions */
+  ASSERT_EQ (versions[0], QUIC_VERSION_1);
+  ASSERT_EQ (versions[1], QUIC_VERSION_2);
+}
+
+TEST (quic_version_neg_parse_zero_length_cids)
+{
+  uint8_t packet[] = {
+    0x80,                   /* Long header */
+    0x00, 0x00, 0x00, 0x00, /* Version = 0 */
+    0x00,                   /* DCID length = 0 */
+    0x00,                   /* SCID length = 0 */
+    0x00, 0x00, 0x00, 0x01  /* Version 1 */
+  };
+
+  SocketQUICConnectionID_T dcid, scid;
+  uint32_t versions[10];
+  size_t count;
+
+  SocketQUICVersion_NegResult result = SocketQUICVersion_parse_negotiation (
+      packet, sizeof (packet), &dcid, &scid, versions, 10, &count);
+
+  ASSERT_EQ (result, QUIC_VERSION_NEG_OK);
+  ASSERT_EQ (dcid.len, 0);
+  ASSERT_EQ (scid.len, 0);
+  ASSERT_EQ (count, 1);
+  ASSERT_EQ (versions[0], QUIC_VERSION_1);
+}
+
+TEST (quic_version_neg_parse_null_inputs)
+{
+  uint8_t packet[20];
+  SocketQUICConnectionID_T dcid, scid;
+  uint32_t versions[10];
+  size_t count;
+
+  /* NULL data */
+  SocketQUICVersion_NegResult result = SocketQUICVersion_parse_negotiation (
+      NULL, sizeof (packet), &dcid, &scid, versions, 10, &count);
+  ASSERT_EQ (result, QUIC_VERSION_NEG_ERROR_NULL);
+
+  /* NULL dcid */
+  result = SocketQUICVersion_parse_negotiation (packet, sizeof (packet), NULL,
+                                                 &scid, versions, 10, &count);
+  ASSERT_EQ (result, QUIC_VERSION_NEG_ERROR_NULL);
+
+  /* NULL scid */
+  result = SocketQUICVersion_parse_negotiation (packet, sizeof (packet), &dcid,
+                                                 NULL, versions, 10, &count);
+  ASSERT_EQ (result, QUIC_VERSION_NEG_ERROR_NULL);
+
+  /* NULL versions_out */
+  result = SocketQUICVersion_parse_negotiation (packet, sizeof (packet), &dcid,
+                                                 &scid, NULL, 10, &count);
+  ASSERT_EQ (result, QUIC_VERSION_NEG_ERROR_NULL);
+
+  /* NULL count_out */
+  result = SocketQUICVersion_parse_negotiation (packet, sizeof (packet), &dcid,
+                                                 &scid, versions, 10, NULL);
+  ASSERT_EQ (result, QUIC_VERSION_NEG_ERROR_NULL);
+}
+
+TEST (quic_version_neg_parse_truncated_packet)
+{
+  uint8_t packet[] = {
+    0x80, /* Long header */
+    0x00, 0x00
+    /* Incomplete */
+  };
+
+  SocketQUICConnectionID_T dcid, scid;
+  uint32_t versions[10];
+  size_t count;
+
+  SocketQUICVersion_NegResult result = SocketQUICVersion_parse_negotiation (
+      packet, sizeof (packet), &dcid, &scid, versions, 10, &count);
+
+  ASSERT_EQ (result, QUIC_VERSION_NEG_ERROR_PARSE);
+}
+
+TEST (quic_version_neg_parse_wrong_version_field)
+{
+  uint8_t packet[] = {
+    0x80,                   /* Long header */
+    0x00, 0x00, 0x00, 0x01, /* Version = 1 (not 0) */
+    0x00,                   /* DCID length */
+    0x00,                   /* SCID length */
+    0x00, 0x00, 0x00, 0x01  /* Version 1 */
+  };
+
+  SocketQUICConnectionID_T dcid, scid;
+  uint32_t versions[10];
+  size_t count;
+
+  SocketQUICVersion_NegResult result = SocketQUICVersion_parse_negotiation (
+      packet, sizeof (packet), &dcid, &scid, versions, 10, &count);
+
+  ASSERT_EQ (result, QUIC_VERSION_NEG_ERROR_PARSE);
+}
+
+TEST (quic_version_neg_parse_invalid_cid_length)
+{
+  uint8_t packet[] = {
+    0x80,                   /* Long header */
+    0x00, 0x00, 0x00, 0x00, /* Version = 0 */
+    0x15,                   /* DCID length = 21 (too long) */
+    0x00                    /* Add padding to avoid truncation check */
+  };
+
+  SocketQUICConnectionID_T dcid, scid;
+  uint32_t versions[10];
+  size_t count;
+
+  SocketQUICVersion_NegResult result = SocketQUICVersion_parse_negotiation (
+      packet, sizeof (packet), &dcid, &scid, versions, 10, &count);
+
+  ASSERT_EQ (result, QUIC_VERSION_NEG_ERROR_LENGTH);
+}
+
+TEST (quic_version_neg_parse_incomplete_version_list)
+{
+  uint8_t packet[] = {
+    0x80,                   /* Long header */
+    0x00, 0x00, 0x00, 0x00, /* Version = 0 */
+    0x00,                   /* DCID length = 0 */
+    0x00,                   /* SCID length = 0 */
+    0x00, 0x00, 0x00        /* Incomplete version (only 3 bytes) */
+  };
+
+  SocketQUICConnectionID_T dcid, scid;
+  uint32_t versions[10];
+  size_t count;
+
+  SocketQUICVersion_NegResult result = SocketQUICVersion_parse_negotiation (
+      packet, sizeof (packet), &dcid, &scid, versions, 10, &count);
+
+  ASSERT_EQ (result, QUIC_VERSION_NEG_ERROR_PARSE);
+}
+
+TEST (quic_version_neg_roundtrip)
+{
+  /* Create a packet and parse it back */
+  SocketQUICConnectionID_T dcid_orig, scid_orig;
+  uint8_t output[256];
+
+  SocketQUICConnectionID_init (&dcid_orig);
+  SocketQUICConnectionID_init (&scid_orig);
+  dcid_orig.len = 8;
+  scid_orig.len = 8;
+  memset (dcid_orig.data, 0x11, 8);
+  memset (scid_orig.data, 0x22, 8);
+
+  uint32_t versions_orig[] = { QUIC_VERSION_1, QUIC_VERSION_2 };
+  int create_result
+      = SocketQUICVersion_create_negotiation (&dcid_orig, &scid_orig,
+                                               versions_orig, 2, output,
+                                               sizeof (output));
+  ASSERT (create_result > 0);
+
+  /* Parse it back */
+  SocketQUICConnectionID_T dcid_parsed, scid_parsed;
+  uint32_t versions_parsed[10];
+  size_t count_parsed;
+
+  SocketQUICVersion_NegResult parse_result
+      = SocketQUICVersion_parse_negotiation (output, create_result,
+                                              &dcid_parsed, &scid_parsed,
+                                              versions_parsed, 10,
+                                              &count_parsed);
+
+  ASSERT_EQ (parse_result, QUIC_VERSION_NEG_OK);
+  ASSERT_EQ (count_parsed, 2);
+
+  /* Verify CIDs match */
+  ASSERT_EQ (dcid_parsed.len, dcid_orig.len);
+  ASSERT_EQ (memcmp (dcid_parsed.data, dcid_orig.data, dcid_orig.len), 0);
+
+  ASSERT_EQ (scid_parsed.len, scid_orig.len);
+  ASSERT_EQ (memcmp (scid_parsed.data, scid_orig.data, scid_orig.len), 0);
+
+  /* Verify versions match */
+  ASSERT_EQ (versions_parsed[0], versions_orig[0]);
+  ASSERT_EQ (versions_parsed[1], versions_orig[1]);
 }
 
 /* ============================================================================
