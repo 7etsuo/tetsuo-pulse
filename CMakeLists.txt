@@ -379,14 +379,16 @@ set(LIB_SOURCES
     # QUIC foundational module (RFC 9000)
     src/quic/SocketQUICVarInt.c
     src/quic/SocketQUICError.c
+    src/quic/SocketQUICError-handling.c
     src/quic/SocketQUICConnectionID.c
     src/quic/SocketQUICStream.c
     src/quic/SocketQUICPacket.c
     src/quic/SocketQUICPacket-initial.c
     src/quic/SocketQUICWire.c
     src/quic/SocketQUICFrame.c
-    src/quic/SocketQUICFrame-flow.c
+    src/quic/SocketQUICFrame-path.c
     src/quic/SocketQUICConnection-demux.c
+    src/quic/SocketQUICConnection-termination.c
     src/quic/SocketQUICTransportParams.c
 
     # Simple convenience API
@@ -777,6 +779,7 @@ set(TEST_SOURCES
     test_quic_frame
     test_quic_connection
     test_quic_transport_params
+    test_quic_termination
 )
 
 # TLS tests (only built when TLS is enabled)
