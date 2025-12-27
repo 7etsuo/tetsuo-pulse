@@ -44,7 +44,11 @@
 #undef T
 #define T SocketDNSoverTLS_T
 
-/** Maximum DNS message size (64KB minus length prefix). */
+/**
+ * Maximum DNS message size (65535 bytes).
+ * RFC 1035 §4.2.2: TCP messages have a 16-bit length field,
+ * limiting message size to 2^16 - 1 bytes (excluding the length prefix itself).
+ */
 #define DOT_MAX_MESSAGE_SIZE 65535
 
 /** Receive buffer size. */
