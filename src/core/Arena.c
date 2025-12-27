@@ -237,7 +237,7 @@ chunk_cache_get (struct ChunkHeader **ptr_out, char **limit_out)
 {
   int result = ARENA_CHUNK_NOT_REUSED;
 
-  pthread_mutex_lock (&arena_mutex);
+  SOCKET_MUTEX_LOCK_OR_RAISE (&arena_mutex, Arena, Arena_Failed);
 
   if (freechunks != NULL)
     {
@@ -248,7 +248,7 @@ chunk_cache_get (struct ChunkHeader **ptr_out, char **limit_out)
       result = ARENA_CHUNK_REUSED;
     }
 
-  pthread_mutex_unlock (&arena_mutex);
+  SOCKET_MUTEX_UNLOCK (&arena_mutex);
 
   return result;
 }
@@ -260,7 +260,7 @@ chunk_cache_return (struct ChunkHeader *chunk)
 
   assert (chunk);
 
-  pthread_mutex_lock (&arena_mutex);
+  SOCKET_MUTEX_LOCK_OR_RAISE (&arena_mutex, Arena, Arena_Failed);
 
   if (nfree < ARENA_MAX_FREE_CHUNKS)
     {
@@ -270,7 +270,7 @@ chunk_cache_return (struct ChunkHeader *chunk)
       added = 1;
     }
 
-  pthread_mutex_unlock (&arena_mutex);
+  SOCKET_MUTEX_UNLOCK (&arena_mutex);
 
   if (!added)
     {
@@ -474,7 +474,7 @@ Arena_alloc (T arena, size_t nbytes, const char *file, int line)
         nbytes);
 
   if (arena->locked)
-    pthread_mutex_lock (&arena->mutex);
+    SOCKET_MUTEX_LOCK_OR_RAISE (&arena->mutex, Arena, Arena_Failed);
 
   while (arena->avail == NULL || arena->limit == NULL
          || (size_t)(arena->limit - arena->avail) < aligned_size)
@@ -483,7 +483,7 @@ Arena_alloc (T arena, size_t nbytes, const char *file, int line)
       if (arena_get_chunk (arena, aligned_size) != ARENA_SUCCESS)
         {
           if (arena->locked)
-            pthread_mutex_unlock (&arena->mutex);
+            SOCKET_MUTEX_UNLOCK (&arena->mutex);
           SOCKET_RAISE_MSG (
               Arena, Arena_Failed,
               "Failed to allocate chunk for %zu bytes (out of memory)",
@@ -494,7 +494,7 @@ Arena_alloc (T arena, size_t nbytes, const char *file, int line)
   arena->avail += aligned_size;
 
   if (arena->locked)
-    pthread_mutex_unlock (&arena->mutex);
+    SOCKET_MUTEX_UNLOCK (&arena->mutex);
 
   return result;
 }
@@ -537,10 +537,10 @@ Arena_clear (T arena)
     return;
 
   if (arena->locked)
-    pthread_mutex_lock (&arena->mutex);
+    SOCKET_MUTEX_LOCK_OR_RAISE (&arena->mutex, Arena, Arena_Failed);
   arena_release_all_chunks (arena);
   if (arena->locked)
-    pthread_mutex_unlock (&arena->mutex);
+    SOCKET_MUTEX_UNLOCK (&arena->mutex);
 }
 
 void
@@ -553,7 +553,7 @@ Arena_reset (T arena)
     return;
 
   if (arena->locked)
-    pthread_mutex_lock (&arena->mutex);
+    SOCKET_MUTEX_LOCK_OR_RAISE (&arena->mutex, Arena, Arena_Failed);
 
   /* Find the first (oldest) chunk by walking the prev chain */
   first_chunk = arena->prev;
@@ -561,7 +561,7 @@ Arena_reset (T arena)
     {
       /* No chunks allocated yet - nothing to reset */
       if (arena->locked)
-        pthread_mutex_unlock (&arena->mutex);
+        SOCKET_MUTEX_UNLOCK (&arena->mutex);
       return;
     }
 
@@ -586,7 +586,7 @@ Arena_reset (T arena)
   arena->limit = chunk_limit (first_chunk);
 
   if (arena->locked)
-    pthread_mutex_unlock (&arena->mutex);
+    SOCKET_MUTEX_UNLOCK (&arena->mutex);
 }
 
 #undef T
