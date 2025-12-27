@@ -434,6 +434,24 @@ base64_decode_char (unsigned char c, unsigned char *buffer, int *buffer_pos,
   return 0;
 }
 
+static int
+base64_validate_input (const char *input, size_t *input_len)
+{
+  if (!input)
+    return 0;
+
+  if (*input_len == 0)
+    *input_len = strlen (input);
+
+  if (*input_len == 0)
+    return 0;
+
+  if (!SOCKET_SECURITY_VALID_SIZE (*input_len))
+    return -1;
+
+  return 1;
+}
+
 ssize_t
 SocketCrypto_base64_decode (const char *input, size_t input_len,
                             unsigned char *output, size_t output_size)
@@ -443,21 +461,15 @@ SocketCrypto_base64_decode (const char *input, size_t input_len,
   int buffer_pos = 0;
   int padding_count = 0;
   size_t i;
+  int valid;
 
   if (!output)
     return -1;
 
-  if (!input)
-    return (output_size >= 1) ? 0 : -1;
+  valid = base64_validate_input (input, &input_len);
+  if (valid <= 0)
+    return valid;
 
-  if (input_len == 0)
-    input_len = strlen (input);
-
-  if (input_len == 0)
-    return 0;
-
-  if (!SOCKET_SECURITY_VALID_SIZE (input_len))
-    return -1;
   for (i = 0; i < input_len; i++)
     {
       int result
