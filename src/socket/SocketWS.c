@@ -1574,7 +1574,17 @@ SocketWS_recv_json (SocketWS_T ws, char **json_out, size_t *json_len)
       return WS_ERROR_PROTOCOL;
     }
 
-  *json_out = malloc (msg.len + 1);
+  /* Check for overflow before malloc(msg.len + 1) */
+  size_t alloc_size;
+  if (!SocketSecurity_check_add (msg.len, 1, &alloc_size))
+    {
+      if (msg.data)
+        free (msg.data);
+      ws_set_error (ws, WS_ERROR, "Message size overflow");
+      return WS_ERROR;
+    }
+
+  *json_out = malloc (alloc_size);
   if (!*json_out)
     {
       if (msg.data)
