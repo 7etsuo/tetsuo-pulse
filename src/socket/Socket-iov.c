@@ -66,6 +66,12 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketIOV);
 
 /* ==================== Scatter/Gather I/O ==================== */
 
+/**
+ * Note: socket_sendv_internal() and socket_recvv_internal() are TLS-aware
+ * internal functions defined in SocketIO.c and declared in SocketIO.h.
+ * They handle routing I/O through TLS when enabled, or raw sockets otherwise.
+ */
+
 ssize_t
 Socket_sendv (T socket, const struct iovec *iov, int iovcnt)
 {
