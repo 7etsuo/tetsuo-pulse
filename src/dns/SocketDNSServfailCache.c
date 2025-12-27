@@ -13,7 +13,6 @@
 #include "core/Arena.h"
 #include "core/SocketUtil.h"
 
-#include <ctype.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <string.h>
@@ -76,6 +75,11 @@ struct T
  *
  * Includes name, qtype, qclass, and nameserver in hash calculation.
  * Uses a random seed to protect against hash collision DoS attacks.
+ *
+ * Implementation follows the DJB2 XOR pattern from socket_util_hash_djb2_seeded_ci()
+ * but extends it to incorporate all four tuple components in a single hash chain.
+ * This avoids the overhead of calling the utility function and then continuing
+ * the hash, while maintaining consistency with the project's hash utilities.
  */
 static unsigned
 compute_hash_with_seed (const char *name, uint16_t qtype, uint16_t qclass,
@@ -83,18 +87,23 @@ compute_hash_with_seed (const char *name, uint16_t qtype, uint16_t qclass,
 {
   unsigned hash = SOCKET_UTIL_DJB2_SEED;
 
-  /* Mix in random seed for DoS protection */
+  /* Mix in random seed for DoS protection (pattern from SocketUtil.h) */
   hash = ((hash << 5) + hash) ^ seed;
 
-  /* Hash the normalized name */
+  /* Hash name (case-insensitive, matching socket_util_hash_djb2_seeded_ci) */
   for (const char *p = name; *p; p++)
-    hash = ((hash << 5) + hash) ^ (unsigned char)tolower ((unsigned char)*p);
+    {
+      unsigned char c = (unsigned char)*p;
+      if (c >= 'A' && c <= 'Z')
+        c += 32; /* Convert to lowercase using ASCII offset */
+      hash = ((hash << 5) + hash) ^ c;
+    }
 
-  /* Include qtype and qclass */
+  /* Mix in qtype and qclass */
   hash = ((hash << 5) + hash) ^ qtype;
   hash = ((hash << 5) + hash) ^ qclass;
 
-  /* Include nameserver */
+  /* Mix in nameserver (case-sensitive) */
   for (const char *p = nameserver; *p; p++)
     hash = ((hash << 5) + hash) ^ (unsigned char)*p;
 
