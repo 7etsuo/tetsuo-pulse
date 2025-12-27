@@ -15,6 +15,7 @@
 
 #include "quic/SocketQUICTransportParams.h"
 #include "quic/SocketQUICVarInt.h"
+#include "quic/SocketQUICConstants.h"
 
 /* ============================================================================
  * Result Strings
@@ -33,13 +34,7 @@ static const char *result_strings[] = {
   [QUIC_TP_ERROR_ENCODING] = "Encoding error",
 };
 
-const char *
-SocketQUICTransportParams_result_string (SocketQUICTransportParams_Result result)
-{
-  if (result < 0 || result > QUIC_TP_ERROR_ENCODING)
-    return "Unknown error";
-  return result_strings[result];
-}
+DEFINE_RESULT_STRING_FUNC (SocketQUICTransportParams, QUIC_TP_ERROR_ENCODING)
 
 /* ============================================================================
  * Parameter ID Strings

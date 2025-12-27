@@ -12,6 +12,7 @@
  */
 
 #include "quic/SocketQUICWire.h"
+#include "quic/SocketQUICConstants.h"
 
 /* ============================================================================
  * Result Strings
@@ -26,13 +27,7 @@ static const char *result_strings[] = {
   [QUIC_PN_ERROR_BITS] = "Invalid bit count (must be 8, 16, 24, or 32)",
 };
 
-const char *
-SocketQUICWire_result_string (SocketQUICWire_Result result)
-{
-  if (result < 0 || result > QUIC_PN_ERROR_BITS)
-    return "Unknown error";
-  return result_strings[result];
-}
+DEFINE_RESULT_STRING_FUNC (SocketQUICWire, QUIC_PN_ERROR_BITS)
 
 /* ============================================================================
  * Internal Helpers

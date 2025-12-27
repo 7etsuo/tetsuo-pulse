@@ -15,6 +15,7 @@
 
 #include "quic/SocketQUICPacket.h"
 #include "quic/SocketQUICVarInt.h"
+#include "quic/SocketQUICConstants.h"
 
 /* ============================================================================
  * Result String Table
@@ -42,13 +43,7 @@ static const char *type_strings[] = {
   [QUIC_PACKET_TYPE_1RTT] = "1-RTT",
 };
 
-const char *
-SocketQUICPacket_result_string (SocketQUICPacket_Result result)
-{
-  if (result < 0 || result > QUIC_PACKET_ERROR_PNLEN)
-    return "Unknown error";
-  return result_strings[result];
-}
+DEFINE_RESULT_STRING_FUNC (SocketQUICPacket, QUIC_PACKET_ERROR_PNLEN)
 
 const char *
 SocketQUICPacket_type_string (SocketQUICPacket_Type type)
