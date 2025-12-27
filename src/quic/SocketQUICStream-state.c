@@ -49,7 +49,7 @@ static const char *event_strings[] = {
 const char *
 SocketQUICStream_event_string (SocketQUICStreamEvent event)
 {
-  if (event > QUIC_STREAM_EVENT_RECV_STOP_SENDING)
+  if (event < 0 || event > QUIC_STREAM_EVENT_RECV_STOP_SENDING)
     return "Unknown";
   return event_strings[event];
 }

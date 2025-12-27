@@ -474,6 +474,56 @@ TEST (quic_stream_result_string)
           == 0);
 }
 
+TEST (quic_stream_event_string)
+{
+  /* Send-side events */
+  ASSERT (strcmp (SocketQUICStream_event_string (QUIC_STREAM_EVENT_SEND_DATA),
+                  "SendData")
+          == 0);
+  ASSERT (strcmp (SocketQUICStream_event_string (QUIC_STREAM_EVENT_SEND_FIN),
+                  "SendFin")
+          == 0);
+  ASSERT (strcmp (SocketQUICStream_event_string (QUIC_STREAM_EVENT_ALL_DATA_ACKED),
+                  "AllDataAcked")
+          == 0);
+  ASSERT (strcmp (SocketQUICStream_event_string (QUIC_STREAM_EVENT_SEND_RESET),
+                  "SendReset")
+          == 0);
+  ASSERT (strcmp (SocketQUICStream_event_string (QUIC_STREAM_EVENT_RESET_ACKED),
+                  "ResetAcked")
+          == 0);
+
+  /* Receive-side events */
+  ASSERT (strcmp (SocketQUICStream_event_string (QUIC_STREAM_EVENT_RECV_DATA),
+                  "RecvData")
+          == 0);
+  ASSERT (strcmp (SocketQUICStream_event_string (QUIC_STREAM_EVENT_RECV_FIN),
+                  "RecvFin")
+          == 0);
+  ASSERT (strcmp (SocketQUICStream_event_string (QUIC_STREAM_EVENT_ALL_DATA_RECVD),
+                  "AllDataRecvd")
+          == 0);
+  ASSERT (strcmp (SocketQUICStream_event_string (QUIC_STREAM_EVENT_APP_READ_DATA),
+                  "AppReadData")
+          == 0);
+  ASSERT (strcmp (SocketQUICStream_event_string (QUIC_STREAM_EVENT_RECV_RESET),
+                  "RecvReset")
+          == 0);
+  ASSERT (strcmp (SocketQUICStream_event_string (QUIC_STREAM_EVENT_APP_READ_RESET),
+                  "AppReadReset")
+          == 0);
+
+  /* Bidirectional events */
+  ASSERT (strcmp (SocketQUICStream_event_string (QUIC_STREAM_EVENT_RECV_STOP_SENDING),
+                  "RecvStopSending")
+          == 0);
+
+  /* Invalid event */
+  ASSERT (strcmp (SocketQUICStream_event_string ((SocketQUICStreamEvent)99),
+                  "Unknown")
+          == 0);
+}
+
 /* ============================================================================
  * Combined Type and Sequence Tests
  * ============================================================================
