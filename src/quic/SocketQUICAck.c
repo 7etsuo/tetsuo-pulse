@@ -15,7 +15,18 @@
 #include "core/SocketUtil.h"
 
 #include <inttypes.h>
+#include <stdint.h>
 #include <string.h>
+
+/* Compile-time check that QUIC_ACK_MAX_RANGES won't overflow in CALLOC.
+ * This ensures that (QUIC_ACK_MAX_RANGES * sizeof(SocketQUICAckRange_T))
+ * fits within SIZE_MAX, preventing integer overflow in allocation.
+ *
+ * CWE-190: Integer Overflow or Wraparound
+ * CERT C: MEM35-C
+ */
+_Static_assert (QUIC_ACK_MAX_RANGES <= SIZE_MAX / sizeof (SocketQUICAckRange_T),
+                "QUIC_ACK_MAX_RANGES too large for safe allocation");
 
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "QUIC-ACK"
@@ -59,8 +70,17 @@ SocketQUICAck_new (Arena_T arena, int is_handshake, uint64_t max_ack_delay_us)
   state->max_ack_delay_us
       = (max_ack_delay_us > 0) ? max_ack_delay_us : QUIC_ACK_DEFAULT_MAX_DELAY_US;
 
-  /* Pre-allocate some range capacity */
+  /* Pre-allocate some range capacity.
+   * Overflow check: Verify capacity * sizeof won't overflow before allocation.
+   * While Arena_calloc() has internal overflow checks via SocketSecurity_check_multiply(),
+   * this explicit check provides defense-in-depth and clear intent.
+   */
   state->range_capacity = QUIC_ACK_INITIAL_RANGE_CAPACITY;
+  if (state->range_capacity > SIZE_MAX / sizeof (*state->ranges))
+    {
+      SOCKET_LOG_ERROR_MSG ("ACK initial range allocation would overflow");
+      return NULL;
+    }
   state->ranges = CALLOC (arena, state->range_capacity, sizeof (*state->ranges));
   if (state->ranges == NULL)
     return NULL;
@@ -108,6 +128,16 @@ grow_ranges (SocketQUICAckState_T state)
   new_capacity = state->range_capacity * 2;
   if (new_capacity > QUIC_ACK_MAX_RANGES)
     new_capacity = QUIC_ACK_MAX_RANGES;
+
+  /* Overflow check: Verify new_capacity * sizeof won't overflow.
+   * Defense-in-depth: Arena_calloc() already checks via SocketSecurity_check_multiply(),
+   * but explicit check guards against future changes and documents intent.
+   */
+  if (new_capacity > SIZE_MAX / sizeof (*new_ranges))
+    {
+      SOCKET_LOG_ERROR_MSG ("ACK range growth allocation would overflow");
+      return 0;
+    }
 
   new_ranges = CALLOC (state->arena, new_capacity, sizeof (*new_ranges));
   if (new_ranges == NULL)
