@@ -65,38 +65,23 @@ SocketQUICFrame_encode_connection_close_transport (uint64_t error_code,
     return 0;
 
   size_t pos = 0;
-  uint8_t temp[SOCKETQUICVARINT_MAX_SIZE];
-  size_t len;
 
   /* Frame type (0x1c) */
-  len = SocketQUICVarInt_encode (QUIC_FRAME_CONNECTION_CLOSE, temp,
-                                 sizeof (temp));
-  if (len == 0 || pos + len > out_len)
+  if (!encode_varint_field (QUIC_FRAME_CONNECTION_CLOSE, out, &pos, out_len))
     return 0;
-  memcpy (out + pos, temp, len);
-  pos += len;
 
   /* Error Code */
-  len = SocketQUICVarInt_encode (error_code, temp, sizeof (temp));
-  if (len == 0 || pos + len > out_len)
+  if (!encode_varint_field (error_code, out, &pos, out_len))
     return 0;
-  memcpy (out + pos, temp, len);
-  pos += len;
 
   /* Frame Type */
-  len = SocketQUICVarInt_encode (frame_type, temp, sizeof (temp));
-  if (len == 0 || pos + len > out_len)
+  if (!encode_varint_field (frame_type, out, &pos, out_len))
     return 0;
-  memcpy (out + pos, temp, len);
-  pos += len;
 
   /* Reason Phrase Length */
   size_t reason_len = reason ? strlen (reason) : 0;
-  len = SocketQUICVarInt_encode (reason_len, temp, sizeof (temp));
-  if (len == 0 || pos + len > out_len)
+  if (!encode_varint_field (reason_len, out, &pos, out_len))
     return 0;
-  memcpy (out + pos, temp, len);
-  pos += len;
 
   /* Reason Phrase */
   if (reason_len > 0)
@@ -152,31 +137,19 @@ SocketQUICFrame_encode_connection_close_app (uint64_t error_code,
     return 0;
 
   size_t pos = 0;
-  uint8_t temp[SOCKETQUICVARINT_MAX_SIZE];
-  size_t len;
 
   /* Frame type (0x1d) */
-  len = SocketQUICVarInt_encode (QUIC_FRAME_CONNECTION_CLOSE_APP, temp,
-                                 sizeof (temp));
-  if (len == 0 || pos + len > out_len)
+  if (!encode_varint_field (QUIC_FRAME_CONNECTION_CLOSE_APP, out, &pos, out_len))
     return 0;
-  memcpy (out + pos, temp, len);
-  pos += len;
 
   /* Error Code */
-  len = SocketQUICVarInt_encode (error_code, temp, sizeof (temp));
-  if (len == 0 || pos + len > out_len)
+  if (!encode_varint_field (error_code, out, &pos, out_len))
     return 0;
-  memcpy (out + pos, temp, len);
-  pos += len;
 
   /* Reason Phrase Length */
   size_t reason_len = reason ? strlen (reason) : 0;
-  len = SocketQUICVarInt_encode (reason_len, temp, sizeof (temp));
-  if (len == 0 || pos + len > out_len)
+  if (!encode_varint_field (reason_len, out, &pos, out_len))
     return 0;
-  memcpy (out + pos, temp, len);
-  pos += len;
 
   /* Reason Phrase */
   if (reason_len > 0)
