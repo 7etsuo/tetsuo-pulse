@@ -370,7 +370,7 @@ histogram_get_sorted_copy (Histogram *h, size_t *out_count)
       return NULL;
     }
 
-  sorted = malloc (SOCKET_METRICS_HISTOGRAM_BUCKETS * sizeof (double));
+  sorted = calloc (SOCKET_METRICS_HISTOGRAM_BUCKETS, sizeof (double));
   if (!sorted)
     {
       *out_count = 0;
