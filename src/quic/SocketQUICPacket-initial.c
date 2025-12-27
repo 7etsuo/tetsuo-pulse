@@ -451,7 +451,7 @@ apply_header_protection (uint8_t *packet, size_t header_len,
                          const uint8_t *sample, const uint8_t *hp_key)
 {
   EVP_CIPHER_CTX *ctx = NULL;
-  uint8_t mask[16];
+  uint8_t mask[QUIC_HP_SAMPLE_LEN];
   int outlen;
   uint8_t pn_length;
   int result = -1;
@@ -466,7 +466,7 @@ apply_header_protection (uint8_t *packet, size_t header_len,
 
   EVP_CIPHER_CTX_set_padding (ctx, 0);
 
-  if (EVP_EncryptUpdate (ctx, mask, &outlen, sample, 16) <= 0)
+  if (EVP_EncryptUpdate (ctx, mask, &outlen, sample, QUIC_HP_SAMPLE_LEN) <= 0)
     goto cleanup;
 
   /* Apply mask to first byte */
@@ -645,7 +645,7 @@ SocketQUICInitial_unprotect (uint8_t *packet, size_t packet_len,
   size_t header_len;
   uint32_t pn;
   const uint8_t *sample;
-  uint8_t mask[16];
+  uint8_t mask[QUIC_HP_SAMPLE_LEN];
   int outlen;
   int result_code = QUIC_INITIAL_ERROR_CRYPTO;
 
@@ -688,7 +688,7 @@ SocketQUICInitial_unprotect (uint8_t *packet, size_t packet_len,
 
   EVP_CIPHER_CTX_set_padding (ctx, 0);
 
-  if (EVP_EncryptUpdate (ctx, mask, &outlen, sample, 16) <= 0)
+  if (EVP_EncryptUpdate (ctx, mask, &outlen, sample, QUIC_HP_SAMPLE_LEN) <= 0)
     goto cleanup;
 
   EVP_CIPHER_CTX_free (ctx);
