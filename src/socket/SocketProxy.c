@@ -278,85 +278,130 @@ socketproxy_parse_userinfo (const char *start, SocketProxy_Config *config,
   return 0;
 }
 
+/**
+ * socketproxy_parse_ipv6_hostport - Parse IPv6 bracket notation [host]:port
+ *
+ * Extracts host and optional port from IPv6 bracket format.
+ */
+static int
+socketproxy_parse_ipv6_hostport (const char *start,
+                                 SocketProxy_Config *config,
+                                 const char **host_start_out,
+                                 const char **host_end_out,
+                                 const char **authority_end_out)
+{
+  const char *bracket_close;
+  const char *port_start;
+  const char *authority_end;
+
+  bracket_close = strchr (start, ']');
+  if (bracket_close == NULL)
+    return -1;
+
+  *host_start_out = start + 1;
+  *host_end_out = bracket_close;
+  port_start = bracket_close + 1;
+  authority_end = bracket_close + 1;
+
+  if (*port_start == ':')
+    {
+      char *endptr;
+      long p = strtol (port_start + 1, &endptr, 10);
+
+      if (endptr == port_start + 1)
+        return -1;
+
+      if (*endptr != '\0' && *endptr != '/' && *endptr != '?' && *endptr != '#')
+        return -1;
+
+      if (p < 1 || p > 65535)
+        return -1;
+
+      config->port = (int)p;
+      authority_end = endptr;
+    }
+
+  *authority_end_out = authority_end;
+  return 0;
+}
+
+/**
+ * socketproxy_parse_ipv4_hostport - Parse regular host:port format
+ *
+ * Extracts host and optional port from standard format.
+ */
+static int
+socketproxy_parse_ipv4_hostport (const char *start,
+                                 SocketProxy_Config *config,
+                                 const char **host_start_out,
+                                 const char **host_end_out,
+                                 const char **authority_end_out)
+{
+  const char *authority_end;
+  const char *host_end;
+  const char *colon;
+
+  *host_start_out = start;
+
+  authority_end = start;
+  while (*authority_end && *authority_end != '/' && *authority_end != '?'
+         && *authority_end != '#')
+    authority_end++;
+
+  host_end = authority_end;
+
+  colon = NULL;
+  for (const char *p = start; p < authority_end; p++)
+    {
+      if (*p == ':')
+        colon = p;
+    }
+
+  if (colon != NULL)
+    {
+      host_end = colon;
+      char *endptr;
+      long p = strtol (colon + 1, &endptr, 10);
+      if (endptr <= colon + 1 || p < 1 || p > 65535)
+        {
+          return -1;
+        }
+      config->port = (int)p;
+      if (endptr > authority_end)
+        authority_end = endptr;
+      if (config->port <= 0 || config->port > 65535)
+        return -1;
+    }
+
+  *host_end_out = host_end;
+  *authority_end_out = authority_end;
+  return 0;
+}
+
 int
 socketproxy_parse_hostport (const char *start, SocketProxy_Config *config,
                             Arena_T arena, size_t *consumed_out)
 {
   const char *bracket_open;
-  const char *bracket_close;
-  const char *colon;
   const char *host_start;
   const char *host_end;
-  const char *port_start;
   const char *authority_end;
   size_t host_len;
 
   bracket_open = strchr (start, '[');
   if (bracket_open == start)
     {
-      bracket_close = strchr (start, ']');
-      if (bracket_close == NULL)
+      if (socketproxy_parse_ipv6_hostport (start, config, &host_start,
+                                           &host_end, &authority_end)
+          < 0)
         return -1;
-
-      host_start = start + 1;
-      host_end = bracket_close;
-      port_start = bracket_close + 1;
-      authority_end = bracket_close + 1;
-
-      if (*port_start == ':')
-        {
-          char *endptr;
-          long p = strtol (port_start + 1, &endptr, 10);
-
-          if (endptr == port_start + 1)
-            return -1;
-
-          if (*endptr != '\0' && *endptr != '/' && *endptr != '?'
-              && *endptr != '#')
-            return -1;
-
-          if (p < 1 || p > 65535)
-            return -1;
-
-          config->port = (int)p;
-          authority_end = endptr;
-        }
     }
   else
     {
-      host_start = start;
-
-      authority_end = start;
-      while (*authority_end && *authority_end != '/' && *authority_end != '?'
-             && *authority_end != '#')
-        authority_end++;
-
-      host_end = authority_end;
-
-      colon = NULL;
-      for (const char *p = start; p < authority_end; p++)
-        {
-          if (*p == ':')
-            colon = p;
-        }
-
-      if (colon != NULL)
-        {
-          host_end = colon;
-          {
-            char *endptr;
-            long p = strtol (colon + 1, &endptr, 10);
-            if (endptr <= colon + 1 || p < 1 || p > 65535)
-              {
-                return -1;
-              }
-            config->port = (int)p;
-            if (endptr > authority_end)
-              authority_end = endptr;
-          }
-          if (config->port <= 0 || config->port > 65535)
-            return -1;
-        }
+      if (socketproxy_parse_ipv4_hostport (start, config, &host_start,
+                                           &host_end, &authority_end)
+          < 0)
+        return -1;
     }
 
   host_len = (size_t)(host_end - host_start);
@@ -1583,6 +1628,92 @@ proxy_run_poll_loop (struct SocketProxy_Conn_T *conn, int fd)
  * ============================================================================
  */
 
+#if SOCKET_HAS_TLS
+/**
+ * proxy_tunnel_tls_handshake - Perform TLS handshake for HTTPS proxy
+ *
+ * Handles TLS context creation and handshake loop with timeout.
+ */
+static SocketProxy_Result
+proxy_tunnel_tls_handshake (SocketProxy_Conn_T conn, int fd)
+{
+  (void)fd; /* Unused - kept for potential future use */
+
+  if (conn->tls_ctx == NULL)
+    {
+      TRY
+      {
+        conn->tls_ctx = SocketTLSContext_new_client (NULL);
+
+        const char *alpn_protos[] = { "http/1.1" };
+        SocketTLSContext_set_alpn_protos (conn->tls_ctx, alpn_protos, 1);
+      }
+      EXCEPT (SocketTLS_Failed)
+      {
+        socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                               "Failed to create TLS context: %s",
+                               Socket_GetLastError ());
+        return conn->result;
+      }
+      END_TRY;
+    }
+
+  SocketTLS_set_hostname (conn->socket, conn->proxy_host);
+
+  conn->state = PROXY_STATE_TLS_TO_PROXY;
+  conn->handshake_start_time_ms = socketproxy_get_time_ms ();
+
+  int64_t deadline_ms
+      = conn->handshake_start_time_ms + conn->handshake_timeout_ms;
+  while (1)
+    {
+      TLSHandshakeState hs = SocketTLS_handshake (conn->socket);
+      if (hs == TLS_HANDSHAKE_COMPLETE)
+        {
+          conn->tls_enabled = 1;
+          break;
+        }
+      else if (hs == TLS_HANDSHAKE_ERROR)
+        {
+          socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                                 "TLS handshake failed: %s",
+                                 Socket_GetLastError ());
+          return conn->result;
+        }
+      else
+        {
+          unsigned events
+              = (hs == TLS_HANDSHAKE_WANT_READ ? POLLIN : POLLOUT);
+          struct pollfd pfd = { fd, (short)events, 0 };
+          int64_t now_ms = socketproxy_get_time_ms ();
+          int poll_to = (int)SocketTimeout_remaining_ms (deadline_ms - now_ms);
+          if (poll_to <= 0)
+            {
+              socketproxy_set_error (conn, PROXY_ERROR_TIMEOUT,
+                                     "TLS handshake timeout");
+              return PROXY_ERROR_TIMEOUT;
+            }
+          int ret = poll (&pfd, 1, poll_to);
+          if (ret < 0)
+            {
+              if (errno == EINTR)
+                continue;
+              socketproxy_set_error (conn, PROXY_ERROR,
+                                     "poll failed during TLS: %s",
+                                     strerror (errno));
+              return PROXY_ERROR;
+            }
+          if (ret == 0)
+            {
+              return PROXY_ERROR_TIMEOUT;
+            }
+        }
+    }
+
+  return PROXY_OK;
+}
+#endif
+
 SocketProxy_Result
 SocketProxy_tunnel (Socket_T socket, const SocketProxy_Config *proxy,
                     const char *target_host, int target_port,
@@ -1623,84 +1754,12 @@ SocketProxy_tunnel (Socket_T socket, const SocketProxy_Config *proxy,
 #if SOCKET_HAS_TLS
   if (conn->type == SOCKET_PROXY_HTTPS)
     {
-      if (conn->tls_ctx == NULL)
+      SocketProxy_Result tls_result = proxy_tunnel_tls_handshake (conn, fd);
+      if (tls_result != PROXY_OK)
         {
-          TRY
-          {
-            conn->tls_ctx = SocketTLSContext_new_client (NULL);
-
-            const char *alpn_protos[] = { "http/1.1" };
-            SocketTLSContext_set_alpn_protos (conn->tls_ctx, alpn_protos, 1);
-          }
-          EXCEPT (SocketTLS_Failed)
-          {
-            socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                                   "Failed to create TLS context: %s",
-                                   Socket_GetLastError ());
-            if (!was_nonblocking)
-              proxy_clear_nonblocking (fd);
-            return conn->result;
-          }
-          END_TRY;
-        }
-
-      SocketTLS_set_hostname (conn->socket, proxy->host);
-
-      conn->state = PROXY_STATE_TLS_TO_PROXY;
-      conn->handshake_start_time_ms = socketproxy_get_time_ms ();
-
-      int64_t deadline_ms
-          = conn->handshake_start_time_ms + conn->handshake_timeout_ms;
-      while (1)
-        {
-          TLSHandshakeState hs = SocketTLS_handshake (conn->socket);
-          if (hs == TLS_HANDSHAKE_COMPLETE)
-            {
-              conn->tls_enabled = 1;
-              break;
-            }
-          else if (hs == TLS_HANDSHAKE_ERROR)
-            {
-              socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                                     "TLS handshake failed: %s",
-                                     Socket_GetLastError ());
-              if (!was_nonblocking)
-                proxy_clear_nonblocking (fd);
-              return conn->result;
-            }
-          else
-            {
-              unsigned events
-                  = (hs == TLS_HANDSHAKE_WANT_READ ? POLLIN : POLLOUT);
-              struct pollfd pfd = { fd, (short)events, 0 };
-              int64_t now_ms = socketproxy_get_time_ms ();
-              int poll_to
-                  = (int)SocketTimeout_remaining_ms (deadline_ms - now_ms);
-              if (poll_to <= 0)
-                {
-                  socketproxy_set_error (conn, PROXY_ERROR_TIMEOUT,
-                                         "TLS handshake timeout");
-                  if (!was_nonblocking)
-                    proxy_clear_nonblocking (fd);
-                  return PROXY_ERROR_TIMEOUT;
-                }
-              int ret = poll (&pfd, 1, poll_to);
-              if (ret < 0)
-                {
-                  if (errno == EINTR)
-                    continue;
-                  socketproxy_set_error (conn, PROXY_ERROR,
-                                         "poll failed during TLS: %s",
-                                         strerror (errno));
-                  if (!was_nonblocking)
-                    proxy_clear_nonblocking (fd);
-                  return PROXY_ERROR;
-                }
-              if (ret == 0)
-                {
-                  return PROXY_ERROR_TIMEOUT;
-                }
-            }
+          if (!was_nonblocking)
+            proxy_clear_nonblocking (fd);
+          return tls_result;
         }
     }
 #endif

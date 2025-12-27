@@ -1210,6 +1210,106 @@ socketcommon_parse_port_number (const char *port_str)
 }
 
 /**
+ * socketcommon_getaddrinfo_fallback - Fallback getaddrinfo when resolver
+ * unavailable
+ *
+ * Performs direct getaddrinfo call and copies result for consistent
+ * allocation.
+ */
+static int
+socketcommon_getaddrinfo_fallback (const char *host, const char *port_str,
+                                   const struct addrinfo *hints,
+                                   struct addrinfo **res, int use_exceptions,
+                                   Except_T exception_type)
+{
+  struct addrinfo *tmp = NULL;
+  int result = getaddrinfo (host, port_str, hints, &tmp);
+  if (result != 0)
+    {
+      const char *safe_host = socketcommon_get_safe_host (host);
+      if (use_exceptions)
+        {
+          SOCKET_RAISE_MSG (SocketCommon, exception_type,
+                            "Invalid host/IP address: %.*s (%s)",
+                            SOCKET_ERROR_MAX_HOSTNAME, safe_host,
+                            gai_strerror (result));
+        }
+      else
+        {
+          SOCKET_ERROR_MSG ("Invalid host/IP address: %.*s (%s)",
+                            SOCKET_ERROR_MAX_HOSTNAME, safe_host,
+                            gai_strerror (result));
+        }
+      return -1;
+    }
+
+  /* Copy to ensure consistent allocation for SocketCommon_free_addrinfo */
+  *res = SocketCommon_copy_addrinfo (tmp);
+  freeaddrinfo (tmp);
+
+  if (!*res)
+    {
+      if (use_exceptions)
+        {
+          SOCKET_RAISE_MSG (SocketCommon, exception_type,
+                            "Failed to copy address info");
+        }
+      else
+        {
+          SOCKET_ERROR_MSG ("Failed to copy address info");
+        }
+      return -1;
+    }
+  return 0;
+}
+
+/**
+ * socketcommon_resolve_ip_direct - Fast path for IP address resolution
+ *
+ * Directly resolves IP addresses without DNS lookup.
+ */
+static int
+socketcommon_resolve_ip_direct (const char *host, const char *port_str,
+                                const struct addrinfo *hints,
+                                struct addrinfo **res, int use_exceptions,
+                                Except_T exception_type)
+{
+  struct addrinfo *tmp_res = NULL;
+  int gai_err = getaddrinfo (host, port_str, hints, &tmp_res);
+  if (gai_err != 0)
+    {
+      const char *err_msg = gai_strerror (gai_err);
+      const char *safe_host = host ? host : "<any>";
+      if (use_exceptions)
+        {
+          SOCKET_RAISE_MSG (SocketCommon, exception_type,
+                            "getaddrinfo failed for %s:%s: %s", safe_host,
+                            port_str, err_msg);
+        }
+      else
+        {
+          SOCKET_ERROR_MSG ("getaddrinfo failed for %s:%s: %s", safe_host,
+                            port_str, err_msg);
+          return -1;
+        }
+    }
+  *res = SocketCommon_copy_addrinfo (tmp_res);
+  freeaddrinfo (tmp_res);
+  if (!*res)
+    {
+      if (use_exceptions)
+        SOCKET_RAISE_MSG (SocketCommon, exception_type,
+                          "Failed to copy addrinfo from getaddrinfo");
+      else
+        {
+          SOCKET_ERROR_MSG ("Failed to copy addrinfo from getaddrinfo");
+          return -1;
+        }
+    }
+  return 0;
+}
+
+/**
  * socketcommon_perform_getaddrinfo - Perform DNS resolution with timeout
  * @host: Hostname or IP address (NULL for wildcard)
  * @port_str: Port number as string
@@ -1243,83 +1343,15 @@ socketcommon_perform_getaddrinfo (const char *host, const char *port_str,
   if (!dns)
     {
       /* Fallback to direct getaddrinfo if resolver unavailable */
-      struct addrinfo *tmp = NULL;
-      int result = getaddrinfo (host, port_str, hints, &tmp);
-      if (result != 0)
-        {
-          const char *safe_host = socketcommon_get_safe_host (host);
-          if (use_exceptions)
-            {
-              SOCKET_RAISE_MSG (SocketCommon, exception_type,
-                                "Invalid host/IP address: %.*s (%s)",
-                                SOCKET_ERROR_MAX_HOSTNAME, safe_host,
-                                gai_strerror (result));
-            }
-          else
-            {
-              SOCKET_ERROR_MSG ("Invalid host/IP address: %.*s (%s)",
-                                SOCKET_ERROR_MAX_HOSTNAME, safe_host,
-                                gai_strerror (result));
-            }
-          return -1;
-        }
-
-      /* Copy to ensure consistent allocation for SocketCommon_free_addrinfo */
-      *res = SocketCommon_copy_addrinfo (tmp);
-      freeaddrinfo (tmp);
-
-      if (!*res)
-        {
-          if (use_exceptions)
-            {
-              SOCKET_RAISE_MSG (SocketCommon, exception_type,
-                                "Failed to copy address info");
-            }
-          else
-            {
-              SOCKET_ERROR_MSG ("Failed to copy address info");
-            }
-          return -1;
-        }
-      return 0;
+      return socketcommon_getaddrinfo_fallback (host, port_str, hints, res,
+                                                use_exceptions, exception_type);
     }
 
   /* Fast path for IP addresses and NULL host: direct getaddrinfo with copy */
   if (host == NULL || socketcommon_is_ip_address (host))
     {
-      struct addrinfo *tmp_res = NULL;
-      int gai_err = getaddrinfo (host, port_str, hints, &tmp_res);
-      if (gai_err != 0)
-        {
-          const char *err_msg = gai_strerror (gai_err);
-          const char *safe_host = host ? host : "<any>";
-          if (use_exceptions)
-            {
-              SOCKET_RAISE_MSG (SocketCommon, exception_type,
-                                "getaddrinfo failed for %s:%s: %s", safe_host,
-                                port_str, err_msg);
-            }
-          else
-            {
-              SOCKET_ERROR_MSG ("getaddrinfo failed for %s:%s: %s", safe_host,
-                                port_str, err_msg);
-              return -1;
-            }
-        }
-      *res = SocketCommon_copy_addrinfo (tmp_res);
-      freeaddrinfo (tmp_res);
-      if (!*res)
-        {
-          if (use_exceptions)
-            SOCKET_RAISE_MSG (SocketCommon, exception_type,
-                              "Failed to copy addrinfo from getaddrinfo");
-          else
-            {
-              SOCKET_ERROR_MSG ("Failed to copy addrinfo from getaddrinfo");
-              return -1;
-            }
-        }
-      return 0;
+      return socketcommon_resolve_ip_direct (host, port_str, hints, res,
+                                             use_exceptions, exception_type);
     }
 
   /* Hostname resolution: use DNS resolver with timeout */
