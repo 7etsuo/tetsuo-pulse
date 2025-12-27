@@ -28,6 +28,7 @@
 #ifdef SOCKETWS_HAS_DEFLATE
 
 #include <assert.h>
+#include <limits.h>
 #include <string.h>
 #include <zlib.h>
 
@@ -238,7 +239,16 @@ try_grow_zlib_buffer (SocketWS_T ws, z_stream *strm, unsigned char **buf,
   *buf = new_buf;
   *buf_size = new_size;
   strm->next_out = *buf + total_out;
-  strm->avail_out = (uInt)(*buf_size - total_out);
+
+  /* Check for overflow before casting size_t to uInt (issue #566) */
+  size_t avail = *buf_size - total_out;
+  if (avail > UINT_MAX)
+    {
+      ws_set_error (ws, WS_ERROR_COMPRESSION,
+                    "Buffer size %zu exceeds zlib limit %u", avail, UINT_MAX);
+      return -1;
+    }
+  strm->avail_out = (uInt)avail;
 
   return 0;
 }
@@ -497,8 +507,26 @@ ws_compress_message (SocketWS_T ws, const unsigned char *input,
 
   /* Set up zlib stream */
   strm->next_in = (Bytef *)input;
+
+  /* Check for overflow before casting size_t to uInt (issue #566) */
+  if (input_len > UINT_MAX)
+    {
+      ws_set_error (ws, WS_ERROR_COMPRESSION,
+                    "Input length %zu exceeds zlib limit %u", input_len,
+                    UINT_MAX);
+      return -1;
+    }
   strm->avail_in = (uInt)input_len;
+
   strm->next_out = buf;
+
+  if (buf_size > UINT_MAX)
+    {
+      ws_set_error (ws, WS_ERROR_COMPRESSION,
+                    "Buffer size %zu exceeds zlib limit %u", buf_size,
+                    UINT_MAX);
+      return -1;
+    }
   strm->avail_out = (uInt)buf_size;
 
   /* Compress with Z_SYNC_FLUSH */
@@ -579,8 +607,26 @@ ws_decompress_message (SocketWS_T ws, const unsigned char *input,
 
   /* Set up zlib stream */
   strm->next_in = input_with_trailer;
+
+  /* Check for overflow before casting size_t to uInt (issue #566) */
+  if (input_with_trailer_len > UINT_MAX)
+    {
+      ws_set_error (ws, WS_ERROR_COMPRESSION,
+                    "Input length %zu exceeds zlib limit %u",
+                    input_with_trailer_len, UINT_MAX);
+      return -1;
+    }
   strm->avail_in = (uInt)input_with_trailer_len;
+
   strm->next_out = buf;
+
+  if (buf_size > UINT_MAX)
+    {
+      ws_set_error (ws, WS_ERROR_COMPRESSION,
+                    "Buffer size %zu exceeds zlib limit %u", buf_size,
+                    UINT_MAX);
+      return -1;
+    }
   strm->avail_out = (uInt)buf_size;
 
   /* Decompress */
