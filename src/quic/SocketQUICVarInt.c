@@ -34,10 +34,10 @@
 #define VARINT_VALUE_MASK_8BYTE 0x3F /* 62 bits total */
 
 /* Maximum values per encoding length */
-#define VARINT_MAX_1BYTE 63ULL
-#define VARINT_MAX_2BYTE 16383ULL
-#define VARINT_MAX_4BYTE 1073741823ULL
-#define VARINT_MAX_8BYTE SOCKETQUICVARINT_MAX
+#define VARINT_MAX_1BYTE 63ULL              /* (1ULL << 6) - 1 = 63 */
+#define VARINT_MAX_2BYTE 16383ULL           /* (1ULL << 14) - 1 = 16383 */
+#define VARINT_MAX_4BYTE 1073741823ULL      /* (1ULL << 30) - 1 = 1073741823 */
+#define VARINT_MAX_8BYTE SOCKETQUICVARINT_MAX /* (1ULL << 62) - 1 = 4611686018427387903 */
 
 /* ============================================================================
  * Exception Definition
