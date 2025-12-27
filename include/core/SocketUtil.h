@@ -1586,6 +1586,157 @@ SocketTimeout_elapsed_ms (int64_t start_ms)
  * ============================================================================
  */
 
+/* ============================================================================
+ * DNS NAME UTILITIES
+ * ============================================================================
+ */
+
+/**
+ * @brief Normalize hostname to lowercase for case-insensitive comparison.
+ * @ingroup foundation
+ * @param dest Destination buffer.
+ * @param src Source hostname.
+ * @param max_len Maximum length of destination buffer.
+ * @threadsafe Yes (pure function)
+ *
+ * DNS names are case-insensitive per RFC 1035. This function normalizes
+ * names for consistent hashing and comparison in caches.
+ */
+static inline void
+socket_util_normalize_hostname (char *dest, const char *src, size_t max_len)
+{
+  size_t i;
+  for (i = 0; src[i] && i < max_len - 1; i++)
+    dest[i] = (char)((src[i] >= 'A' && src[i] <= 'Z') ? src[i] + 32 : src[i]);
+  dest[i] = '\0';
+}
+
+/**
+ * @brief Seeded DJB2 hash for DoS-resistant string hashing.
+ * @ingroup foundation
+ * @param str String to hash (must not be NULL).
+ * @param table_size Hash table size (should be prime).
+ * @param seed Per-instance random seed for collision resistance.
+ * @return Hash value in range [0, table_size).
+ * @threadsafe Yes (pure function)
+ *
+ * Adds a random seed to DJB2 to prevent predictable hash collisions.
+ * Use for caches and hash tables where attacker may control keys.
+ * Seed should come from SocketCrypto_random_uint32() or similar.
+ */
+static inline unsigned
+socket_util_hash_djb2_seeded (const char *str, unsigned table_size,
+                              uint32_t seed)
+{
+  unsigned hash = SOCKET_UTIL_DJB2_SEED;
+
+  /* Mix in random seed for DoS protection */
+  hash = ((hash << 5) + hash) ^ seed;
+
+  /* Hash the string */
+  for (const char *p = str; *p; p++)
+    hash = ((hash << 5) + hash) ^ (unsigned char)*p;
+
+  return hash % table_size;
+}
+
+/**
+ * @brief Case-insensitive seeded DJB2 hash.
+ * @ingroup foundation
+ * @param str String to hash (must not be NULL).
+ * @param table_size Hash table size (should be prime).
+ * @param seed Per-instance random seed for collision resistance.
+ * @return Hash value in range [0, table_size).
+ * @threadsafe Yes (pure function)
+ *
+ * Combines case-insensitive hashing with DoS resistance seed.
+ * Ideal for DNS name hashing in caches.
+ */
+static inline unsigned
+socket_util_hash_djb2_seeded_ci (const char *str, unsigned table_size,
+                                 uint32_t seed)
+{
+  unsigned hash = SOCKET_UTIL_DJB2_SEED;
+
+  /* Mix in random seed for DoS protection */
+  hash = ((hash << 5) + hash) ^ seed;
+
+  /* Hash the string with case folding */
+  for (const char *p = str; *p; p++)
+    {
+      unsigned char c = (unsigned char)*p;
+      if (c >= 'A' && c <= 'Z')
+        c += 32;
+      hash = ((hash << 5) + hash) ^ c;
+    }
+
+  return hash % table_size;
+}
+
+/* ============================================================================
+ * TTL EXPIRY UTILITIES
+ * ============================================================================
+ */
+
+/**
+ * @brief Check if a TTL-based entry has expired.
+ * @ingroup foundation
+ * @param insert_time_ms Insertion time in milliseconds (from monotonic clock).
+ * @param ttl_sec TTL in seconds.
+ * @param now_ms Current time in milliseconds (from monotonic clock).
+ * @return 1 if expired, 0 if still valid.
+ * @threadsafe Yes (pure function)
+ *
+ * Handles time wraparound and backward time jumps safely.
+ * Returns "not expired" if time appears to go backwards.
+ */
+static inline int
+socket_util_ttl_expired (int64_t insert_time_ms, uint32_t ttl_sec,
+                         int64_t now_ms)
+{
+  /* Guard against time going backwards */
+  if (now_ms < insert_time_ms)
+    return 0;
+
+  int64_t age_ms = now_ms - insert_time_ms;
+  int64_t ttl_ms = (int64_t)ttl_sec * 1000;
+  return age_ms >= ttl_ms;
+}
+
+/**
+ * @brief Calculate remaining TTL in seconds.
+ * @ingroup foundation
+ * @param insert_time_ms Insertion time in milliseconds.
+ * @param ttl_sec Original TTL in seconds.
+ * @param now_ms Current time in milliseconds.
+ * @return Remaining TTL in seconds (0 if expired).
+ * @threadsafe Yes (pure function)
+ *
+ * Returns full TTL if time appears to go backwards.
+ */
+static inline uint32_t
+socket_util_ttl_remaining (int64_t insert_time_ms, uint32_t ttl_sec,
+                           int64_t now_ms)
+{
+  /* Guard against time going backwards */
+  if (now_ms < insert_time_ms)
+    return ttl_sec;
+
+  int64_t age_ms = now_ms - insert_time_ms;
+  int64_t ttl_ms = (int64_t)ttl_sec * 1000;
+  int64_t remaining_ms = ttl_ms - age_ms;
+
+  if (remaining_ms <= 0)
+    return 0;
+
+  return (uint32_t)(remaining_ms / 1000);
+}
+
+/* ============================================================================
+ * IP ADDRESS UTILITY FUNCTIONS
+ * ============================================================================
+ */
+
 /**
  * @brief Safely copy IP address string with null termination
  * @ingroup utilities

@@ -690,7 +690,8 @@ SocketDNSSEC_verify_ds (const SocketDNSSEC_DS *ds,
     return 0;
 
 #ifdef SOCKET_HAS_TLS
-  /* Reconstruct DNSKEY RDATA for hashing */
+  /* Reconstruct DNSKEY RDATA for hashing.
+   * Note: pubkey_len is uint16_t (max 65535), so adding 4 bytes cannot overflow. */
   size_t rdata_len = DNSSEC_DNSKEY_FIXED_SIZE + dnskey->pubkey_len;
   unsigned char *rdata = malloc (rdata_len);
   if (rdata == NULL)
