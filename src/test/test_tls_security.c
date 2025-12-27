@@ -478,6 +478,197 @@ TEST (security_sni_length_limit)
   END_TRY;
 }
 
+/* ==================== Certificate Chain Depth Limit ==================== */
+
+static int
+generate_cert_chain (const char *chain_file, const char *key_file, int num_certs)
+{
+  FILE *fp;
+  char cmd[2048];
+  int i;
+
+  /* Generate root CA */
+  snprintf (cmd, sizeof (cmd),
+            "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s "
+            "-days 1 -nodes -subj '/CN=Root CA' -batch 2>/dev/null",
+            key_file, chain_file);
+  if (system (cmd) != 0)
+    return -1;
+
+  /* Append additional certificates to create a chain */
+  fp = fopen (chain_file, "a");
+  if (!fp)
+    return -1;
+
+  for (i = 1; i < num_certs; i++)
+    {
+      char tmp_cert[256];
+      char tmp_key[256];
+      snprintf (tmp_cert, sizeof (tmp_cert), "/tmp/test_chain_%d.crt", i);
+      snprintf (tmp_key, sizeof (tmp_key), "/tmp/test_chain_%d.key", i);
+
+      snprintf (cmd, sizeof (cmd),
+                "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s "
+                "-days 1 -nodes -subj '/CN=Intermediate %d' -batch 2>/dev/null",
+                tmp_key, tmp_cert, i);
+      if (system (cmd) != 0)
+        {
+          fclose (fp);
+          return -1;
+        }
+
+      /* Append certificate to chain file */
+      FILE *tmp_fp = fopen (tmp_cert, "r");
+      if (tmp_fp)
+        {
+          char buf[4096];
+          size_t n;
+          while ((n = fread (buf, 1, sizeof (buf), tmp_fp)) > 0)
+            fwrite (buf, 1, n, fp);
+          fclose (tmp_fp);
+        }
+
+      unlink (tmp_cert);
+      unlink (tmp_key);
+    }
+
+  fclose (fp);
+  return 0;
+}
+
+TEST (security_cert_chain_at_max_depth)
+{
+  const char *cert_file = "test_chain_max.crt";
+  const char *key_file = "test_chain_max.key";
+  const char *dummy_cert = "test_dummy_max.crt";
+  const char *dummy_key = "test_dummy_max.key";
+  SocketTLSContext_T ctx = NULL;
+
+  /* Generate a dummy cert for initial server context */
+  if (generate_test_certs (dummy_cert, dummy_key) != 0)
+    return;
+
+  /* Generate a chain at exactly the maximum depth (10 certs) */
+  if (generate_cert_chain (cert_file, key_file, 10) != 0)
+    {
+      remove_test_certs (cert_file, key_file);
+      remove_test_certs (dummy_cert, dummy_key);
+      return; /* Skip test if cert generation fails */
+    }
+
+  TRY
+  {
+    /* Create server context first with dummy cert */
+    ctx = SocketTLSContext_new_server (dummy_cert, dummy_key, NULL);
+    ASSERT_NOT_NULL (ctx);
+
+    /* This should succeed - exactly at the limit */
+    /* Use SNI path which calls load_chain_from_file */
+    SocketTLSContext_add_certificate (ctx, NULL, cert_file, key_file);
+  }
+  FINALLY
+  {
+    if (ctx)
+      SocketTLSContext_free (&ctx);
+    remove_test_certs (cert_file, key_file);
+    remove_test_certs (dummy_cert, dummy_key);
+  }
+  END_TRY;
+}
+
+TEST (security_cert_chain_exceeds_max_depth)
+{
+  const char *cert_file = "test_chain_exceed.crt";
+  const char *key_file = "test_chain_exceed.key";
+  const char *dummy_cert = "test_dummy_exceed.crt";
+  const char *dummy_key = "test_dummy_exceed.key";
+  SocketTLSContext_T ctx = NULL;
+  volatile int caught = 0;
+
+  /* Generate a dummy cert for initial server context */
+  if (generate_test_certs (dummy_cert, dummy_key) != 0)
+    return;
+
+  /* Generate a chain exceeding the maximum depth (11 certs) */
+  if (generate_cert_chain (cert_file, key_file, 11) != 0)
+    {
+      remove_test_certs (cert_file, key_file);
+      remove_test_certs (dummy_cert, dummy_key);
+      return; /* Skip test if cert generation fails */
+    }
+
+  TRY
+  {
+    ctx = SocketTLSContext_new_server (dummy_cert, dummy_key, NULL);
+    ASSERT_NOT_NULL (ctx);
+
+    /* This should fail - exceeds the limit */
+    TRY
+    {
+      SocketTLSContext_add_certificate (ctx, NULL, cert_file, key_file);
+    }
+    EXCEPT (SocketTLS_Failed) { caught = 1; }
+    END_TRY;
+
+    ASSERT_EQ (caught, 1);
+  }
+  FINALLY
+  {
+    if (ctx)
+      SocketTLSContext_free (&ctx);
+    remove_test_certs (cert_file, key_file);
+    remove_test_certs (dummy_cert, dummy_key);
+  }
+  END_TRY;
+}
+
+TEST (security_cert_chain_way_over_max_depth)
+{
+  const char *cert_file = "test_chain_way_over.crt";
+  const char *key_file = "test_chain_way_over.key";
+  const char *dummy_cert = "test_dummy_way_over.crt";
+  const char *dummy_key = "test_dummy_way_over.key";
+  SocketTLSContext_T ctx = NULL;
+  volatile int caught = 0;
+
+  /* Generate a dummy cert for initial server context */
+  if (generate_test_certs (dummy_cert, dummy_key) != 0)
+    return;
+
+  /* Generate a chain way over the maximum depth (50 certs) to test DoS
+   * protection */
+  if (generate_cert_chain (cert_file, key_file, 50) != 0)
+    {
+      remove_test_certs (cert_file, key_file);
+      remove_test_certs (dummy_cert, dummy_key);
+      return; /* Skip test if cert generation fails */
+    }
+
+  TRY
+  {
+    ctx = SocketTLSContext_new_server (dummy_cert, dummy_key, NULL);
+    ASSERT_NOT_NULL (ctx);
+
+    /* This should fail - way over the limit */
+    TRY
+    {
+      SocketTLSContext_add_certificate (ctx, NULL, cert_file, key_file);
+    }
+    EXCEPT (SocketTLS_Failed) { caught = 1; }
+    END_TRY;
+
+    ASSERT_EQ (caught, 1);
+  }
+  FINALLY
+  {
+    if (ctx)
+      SocketTLSContext_free (&ctx);
+    remove_test_certs (cert_file, key_file);
+    remove_test_certs (dummy_cert, dummy_key);
+  }
+  END_TRY;
+}
+
 #endif /* SOCKET_HAS_TLS */
 
 int

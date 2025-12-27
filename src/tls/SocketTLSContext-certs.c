@@ -273,6 +273,17 @@ static STACK_OF (X509) * load_chain_from_file (const char *cert_file)
 
   while ((cert = PEM_read_X509 (fp, NULL, NULL, NULL)) != NULL)
     {
+      /* Security: Limit certificate chain depth to prevent DoS */
+      if (num_certs >= SOCKET_TLS_MAX_CERT_CHAIN_DEPTH)
+        {
+          X509_free ((X509 *)cert);
+          fclose (fp);
+          sk_X509_pop_free (chain, X509_free);
+          ctx_raise_error_fmt (
+              "Certificate chain exceeds maximum depth of %d",
+              SOCKET_TLS_MAX_CERT_CHAIN_DEPTH);
+        }
+
       if (sk_X509_push (chain, (X509 *)cert) > 0)
         num_certs++;
       else
