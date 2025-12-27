@@ -30,6 +30,22 @@
 #include "quic/SocketQUICConnection.h"
 
 /**
+ * @brief Calculate effective idle timeout as minimum of local and peer values.
+ * @param local_timeout_ms Local max_idle_timeout in milliseconds.
+ * @param peer_timeout_ms Peer's max_idle_timeout in milliseconds.
+ * @return Minimum of the two timeout values.
+ *
+ * RFC 9000 Section 10.1: The effective timeout is the minimum of both values.
+ */
+static inline uint64_t
+get_effective_idle_timeout(uint64_t local_timeout_ms, uint64_t peer_timeout_ms)
+{
+  return local_timeout_ms < peer_timeout_ms
+         ? local_timeout_ms
+         : peer_timeout_ms;
+}
+
+/**
  * @brief Set idle timeout parameters for connection.
  * @param conn Connection instance.
  * @param local_timeout_ms Local max_idle_timeout in milliseconds.
@@ -56,9 +72,8 @@ SocketQUICConnection_set_idle_timeout(SocketQUICConnection_T conn,
       return;
     }
 
-  uint64_t effective_timeout = local_timeout_ms < peer_timeout_ms
-                                   ? local_timeout_ms
-                                   : peer_timeout_ms;
+  uint64_t effective_timeout = get_effective_idle_timeout(local_timeout_ms,
+                                                           peer_timeout_ms);
 
   /* Set initial deadline (will be updated on packet activity) */
   conn->idle_timeout_deadline_ms = effective_timeout;
@@ -93,10 +108,9 @@ SocketQUICConnection_reset_idle_timer(SocketQUICConnection_T conn,
     conn->last_packet_received_ms = now_ms;
 
   /* Recalculate deadline */
-  uint64_t effective_timeout = conn->local_max_idle_timeout_ms
-                                   < conn->peer_max_idle_timeout_ms
-                                   ? conn->local_max_idle_timeout_ms
-                                   : conn->peer_max_idle_timeout_ms;
+  uint64_t effective_timeout = get_effective_idle_timeout(
+      conn->local_max_idle_timeout_ms,
+      conn->peer_max_idle_timeout_ms);
 
   /* Prevent overflow */
   if (now_ms > UINT64_MAX - effective_timeout)
