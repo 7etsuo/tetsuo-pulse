@@ -42,8 +42,7 @@ health_monotonic_ms (void)
 {
   struct timespec ts;
   clock_gettime (CLOCK_MONOTONIC, &ts);
-  /* Cast before multiplication to prevent overflow on 32-bit time_t */
-  return ((int64_t)ts.tv_sec) * 1000 + ts.tv_nsec / 1000000;
+  return (int64_t)socket_util_timespec_to_ms (ts);
 }
 
 /* ============================================================================
