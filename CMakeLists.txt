@@ -393,6 +393,7 @@ set(LIB_SOURCES
     src/quic/SocketQUICFrame-path.c
     src/quic/SocketQUICFrame-stream.c
     src/quic/SocketQUICFrame-handshake.c
+    src/quic/SocketQUICFrame-token.c
     src/quic/SocketQUICConnection-demux.c
     src/quic/SocketQUICConnection-termination.c
     src/quic/SocketQUICTransportParams.c
@@ -788,6 +789,8 @@ set(TEST_SOURCES
     test_quic_packet
     test_quic_wire
     test_quic_frame
+    test_quic_stream_frame_encode
+    test_quic_new_token_frame
     test_quic_connection
     test_quic_transport_params
     test_quic_pmtu
