@@ -1,6 +1,6 @@
 # Code Analysis Pipeline
 
-Multi-agent code analysis pipeline for C codebases. Orchestrates parallel security, redundancy, and refactoring analysis with consolidation and fix application.
+Multi-agent code analysis pipeline for C codebases. Spawns per-file analysis agents, verifies findings, and creates GitHub issues for confirmed problems.
 
 ## Usage
 
@@ -15,9 +15,37 @@ Examples:
 /pipeline src/
 ```
 
-## Pipeline Phases
+## Pipeline Architecture
 
-This pipeline executes in 5 phases with checkpoints for user confirmation.
+```
+Phase 1: Discovery
+    │
+    ▼
+Phase 2: Per-File Analysis (parallel agents)
+    │ ┌──────────────────────────────────┐
+    │ │ file-analyzer-agent (file1.c)   │──┐
+    │ │ file-analyzer-agent (file2.c)   │──┼── All run in parallel
+    │ │ file-analyzer-agent (file3.c)   │──┤
+    │ │ ...                              │──┘
+    │ └──────────────────────────────────┘
+    ▼
+Phase 3: Group & Aggregate
+    │
+    ▼
+Phase 4: Verification (parallel agents)
+    │ ┌──────────────────────────────────┐
+    │ │ issue-verifier-agent (pattern1) │──┐
+    │ │ issue-verifier-agent (pattern2) │──┼── Verify each pattern
+    │ │ issue-verifier-agent (pattern3) │──┤
+    │ └──────────────────────────────────┘
+    ▼
+Phase 5: Issue Creation
+    │ ┌──────────────────────────────────┐
+    │ │ pipeline-issue-writer            │── Create GitHub issues
+    │ └──────────────────────────────────┘
+    ▼
+Phase 6: Report
+```
 
 ---
 
@@ -36,9 +64,7 @@ This pipeline executes in 5 phases with checkpoints for user confirmation.
 
 2. **List files found** with count
 
-3. **Batch if needed**: If more than 30 files, split into batches of 10-15 files each for analysis
-
-4. **CHECKPOINT**: Display file list and ask user to confirm analysis targets
+3. **CHECKPOINT**: Display file list and ask user to confirm analysis targets
 
 ### Output
 
@@ -57,204 +83,237 @@ Found [N] source files in <directory>:
 - path/to/file2.h
 ...
 
-**Proceed with analysis?** (Files will be analyzed in [N] batch(es))
+**Proceed with per-file analysis?** ([N] agents will be spawned in parallel)
 ```
 
 ---
 
-## PHASE 2: Parallel Analysis
+## PHASE 2: Per-File Analysis
 
-**Goal**: Run security, redundancy, and refactoring analysis IN PARALLEL.
+**Goal**: Analyze each file independently using parallel agents.
 
 ### CRITICAL: Parallel Execution
 
-**YOU MUST spawn all 3 agents in a SINGLE message with 3 Task tool calls.**
+**Spawn one `file-analyzer-agent` per source file, ALL IN A SINGLE MESSAGE.**
 
 Do NOT:
-- Run agents sequentially
+- Analyze files sequentially
+- Run agents one at a time
 - Analyze files yourself without agents
-- Call one Task, wait, then call another
 
 DO:
-- Send one message with exactly 3 Task tool invocations
-- Wait for all 3 to complete
-- Collect results from each
+- Send ONE message with N Task tool invocations (one per file)
+- Run all agents in background if >10 files
+- Collect all results when complete
 
 ### Task Invocations
 
-In a single message, invoke these 3 tasks:
+For each file, spawn:
 
 ```
-Task 1 (security-agent):
-  subagent_type: security-agent
+Task:
+  subagent_type: file-analyzer-agent
+  run_in_background: true  (if many files)
   prompt: |
-    Analyze these C source files for security vulnerabilities:
+    Analyze this C source file for security, redundancy, and refactoring issues:
 
-    Files:
-    [list all .c and .h files]
+    File: [FILEPATH]
 
-    Focus on:
-    - Buffer overflows and unsafe functions
-    - Integer overflows in allocations
-    - Input validation gaps
-    - Injection risks
-    - Race conditions
-    - Memory safety issues
+    Return structured findings with:
+    - Pattern IDs for grouping
+    - Exact line numbers
+    - Severity levels
+    - Specific recommendations
 
-    Return structured findings in the format specified in your instructions.
-
-Task 2 (redundancy-agent):
-  subagent_type: redundancy-agent
-  prompt: |
-    Find code duplication in these C source files:
-
-    Files:
-    [list all .c and .h files]
-
-    Focus on:
-    - Re-implemented helper functions (check against SocketUtil, SocketCrypto, etc.)
-    - Duplicate code blocks across files
-    - Repeated magic numbers
-    - Copy-pasted patterns
-
-    Return structured findings in the format specified in your instructions.
-
-Task 3 (refactor-agent):
-  subagent_type: refactor-agent
-  prompt: |
-    Identify refactoring opportunities in these C source files:
-
-    Files:
-    [list all .c and .h files]
-
-    Focus on:
-    - Long functions (>50 lines)
-    - Magic numbers needing constants
-    - Style violations
-    - Naming issues
-    - Missing error handling
-    - Complex conditionals
-
-    Return structured findings in the format specified in your instructions.
+    Reference .claude/references/module-apis.md for existing utilities.
 ```
+
+### Batching Strategy
+
+If more than 20 files:
+1. Split into batches of 15-20 files
+2. Run each batch, wait for completion
+3. Aggregate results across batches
 
 ### Collecting Results
 
-After all 3 tasks complete, collect their outputs. Each agent returns markdown-formatted findings.
+Wait for all agents to complete using `TaskOutput` with blocking.
 
 ---
 
-## PHASE 3: Consolidation
+## PHASE 3: Group & Aggregate
 
-**Goal**: Analyze cross-file patterns and determine extraction candidates.
+**Goal**: Combine per-file findings into grouped patterns.
 
 ### Steps
 
 1. **Parse all agent outputs** into structured findings
 
-2. **Cross-reference findings**:
-   - Security issues that redundancy also flagged (duplicated unsafe code)
-   - Magic numbers appearing in redundancy AND refactor findings
-   - Patterns that multiple agents identified
+2. **Group by Pattern ID**:
+   - Collect all instances of `UNSAFE_STRCPY` across files
+   - Collect all instances of `MAGIC_BUFFER_4096` across files
+   - etc.
 
-3. **Apply consolidation skill logic**:
-   - Use the decision framework from `.claude/skills/consolidation/SKILL.md`
-   - Determine what to extract vs keep inline
-   - Identify target locations for extracted code
+3. **Create pattern groups**:
+   ```
+   Pattern: UNSAFE_STRCPY
+   Category: security
+   Severity: CRITICAL
+   Locations:
+     - file1.c:42
+     - file2.c:100
+     - file3.c:55
+   ```
 
-4. **Generate consolidated plan**:
-   - Group findings by file
-   - Prioritize by severity
-   - Create actionable fix list
+4. **Prioritize patterns**:
+   - CRITICAL security issues first
+   - HIGH issues next
+   - Group by category within severity
 
-5. **CHECKPOINT**: Present consolidated findings and extraction plan
+5. **CHECKPOINT**: Display grouped findings summary
 
 ### Output
 
 ```markdown
-## Phase 3: Consolidation Complete
+## Phase 3: Grouping Complete
 
-### Cross-File Patterns Identified
+### Patterns Found
 
-1. **[Pattern Name]**
-   - Files: [list]
-   - Type: constant/function/pattern
-   - Recommendation: Extract to [location]
+| Pattern ID | Category | Severity | Locations |
+|------------|----------|----------|-----------|
+| UNSAFE_STRCPY | security | CRITICAL | 5 files |
+| MAGIC_BUFFER_4096 | redundancy | HIGH | 8 files |
+| LONG_FUNCTION_100 | refactor | HIGH | 3 files |
+| STYLE_RETURN_LINE | refactor | MEDIUM | 12 files |
 
-### Fixes by File
+**Total Patterns**: [N]
+**Total Findings**: [M across all files]
 
-#### path/to/file1.c
-| Priority | Category | Issue | Fix |
-|----------|----------|-------|-----|
-| CRITICAL | Security | Buffer overflow at line 42 | Use strncpy with bounds |
-| HIGH | Redundancy | Magic number 4096 | Use SOCKET_BUFFER_SIZE constant |
-
-#### path/to/file2.c
-...
-
-### Extraction Plan
-
-| Target | New Location | Files Affected |
-|--------|--------------|----------------|
-| BUFFER_SIZE = 4096 | SocketConfig.h | file1.c, file2.c, file3.c |
-| validate_port() | SocketCommon.h | file1.c, file4.c |
-
-**Proceed with applying fixes?**
+**Proceed with verification?** ([N] verification agents will be spawned)
 ```
 
 ---
 
-## PHASE 4: Apply Fixes
+## PHASE 4: Verification
 
-**Goal**: Apply fixes to each file with user confirmation.
+**Goal**: Verify each pattern group to filter false positives.
 
-### Steps
+### CRITICAL: Parallel Execution
 
-1. **For each file** with fixes:
+**Spawn one `issue-verifier-agent` per pattern group, ALL IN A SINGLE MESSAGE.**
 
-   a. **Show proposed changes**:
-      ```markdown
-      ### Fixing: path/to/file.c
+### Task Invocations
 
-      **Changes to apply:**
-      1. Line 42: Replace `strcpy(dst, src)` with `strncpy(dst, src, sizeof(dst)-1)`
-      2. Line 100: Replace `4096` with `SOCKET_BUFFER_SIZE`
-      3. Line 150: Add include for SocketConfig.h
+For each pattern group:
 
-      **Apply these changes?** [Yes/No/Skip file]
-      ```
+```
+Task:
+  subagent_type: issue-verifier-agent
+  run_in_background: true
+  prompt: |
+    Verify this code analysis finding:
 
-   b. **Wait for user confirmation**
+    Pattern ID: [PATTERN_ID]
+    Category: [category]
+    Severity: [severity]
 
-   c. **Apply using Edit tool** if approved
+    Locations to verify:
+    - [file1.c:line1] - [code snippet]
+    - [file2.c:line2] - [code snippet]
+    - [file3.c:line3] - [code snippet]
 
-   d. **Hooks auto-run**: `build-check.sh` verifies syntax, `volatile-check.sh` checks exception safety
+    Original Issue: [description]
+    Recommendation: [recommendation]
 
-2. **For extracted code** (new constants/functions):
+    For each location:
+    1. Read the code at that line
+    2. Confirm the issue exists (not a false positive)
+    3. Validate the recommendation is applicable
 
-   a. Show what will be added to target files (SocketConfig.h, etc.)
-   b. Get confirmation
-   c. Apply additions
+    Return VERIFIED, REJECTED, or NEEDS_MANUAL_REVIEW for each location.
+```
 
-3. **Track results**:
-   - Files modified
-   - Changes applied
-   - Changes skipped
+### Collecting Results
+
+Wait for all verification agents. Aggregate into:
+- **Verified patterns** (at least one valid location)
+- **Rejected patterns** (all locations were false positives)
+- **Uncertain patterns** (needs manual review)
 
 ---
 
-## PHASE 5: Report Generation
+## PHASE 5: Issue Creation
+
+**Goal**: Create GitHub issues for verified findings.
+
+### Steps
+
+1. **For each verified pattern**, spawn issue writer:
+
+```
+Task:
+  subagent_type: pipeline-issue-writer
+  prompt: |
+    Create a GitHub issue for this verified finding:
+
+    Pattern: [PATTERN_ID]
+    Category: [category]
+    Severity: [severity]
+
+    Verified Locations:
+    - [file1.c:42] - Confirmed: [reason]
+    - [file2.c:100] - Confirmed: [reason]
+
+    Issue: [description]
+    Recommendation: [fix]
+
+    Repository: 7etsuo/tetsuo-socket
+
+    Create ONE issue grouping all locations.
+    Apply appropriate labels.
+    Return the issue URL when done.
+```
+
+2. **Collect issue URLs** as they're created
+
+3. **For UNCERTAIN patterns**, note for manual review
+
+### Output
+
+```markdown
+## Phase 5: Issues Created
+
+### Created Issues
+
+| Issue | Pattern | Severity | Files |
+|-------|---------|----------|-------|
+| #142 | UNSAFE_STRCPY | CRITICAL | 5 |
+| #143 | MAGIC_BUFFER_4096 | HIGH | 8 |
+| #144 | LONG_FUNCTION_100 | HIGH | 3 |
+
+### Needs Manual Review
+
+| Pattern | Locations | Reason |
+|---------|-----------|--------|
+| STYLE_RETURN_LINE | 12 files | Uncertain if intentional |
+
+**Continue with report generation?**
+```
+
+---
+
+## PHASE 6: Report Generation
 
 **Goal**: Generate comprehensive analysis report.
 
 ### Report Location
 
-Save to: `<directory>/ANALYSIS_REPORT.md`
+Save to: `<directory>/PIPELINE_ANALYSIS.md`
 
 ### Report Template
 
 ```markdown
-# Code Analysis Report
+# Pipeline Analysis Report
 
 **Generated**: [timestamp]
 **Directory**: <directory>
@@ -262,58 +321,56 @@ Save to: `<directory>/ANALYSIS_REPORT.md`
 
 ## Executive Summary
 
-- **Security Issues**: [count] (CRITICAL: X, HIGH: Y, MEDIUM: Z)
-- **Redundancies**: [count] (estimated [N] lines saveable)
-- **Refactoring Opportunities**: [count]
-- **Fixes Applied**: [count]
-- **Fixes Skipped**: [count]
+- **Patterns Identified**: [count]
+- **Findings Total**: [count across all files]
+- **Verified Issues**: [count]
+- **Issues Created**: [count]
+- **False Positives Filtered**: [count]
+- **Needs Manual Review**: [count]
 
-## Security Analysis
+## Issues Created
 
-### Critical Issues
-[findings from security-agent, CRITICAL severity]
+| Issue # | Title | Severity | Files Affected |
+|---------|-------|----------|----------------|
+| #142 | [title] | CRITICAL | 5 |
+| #143 | [title] | HIGH | 8 |
 
-### High Priority Issues
-[findings from security-agent, HIGH severity]
+## Analysis by Category
 
-### Other Issues
-[remaining security findings]
+### Security ([count] issues)
 
-## Redundancy Analysis
+[List security issues with brief descriptions]
 
-### Code Duplication
-[findings from redundancy-agent]
+### Redundancy ([count] issues)
 
-### Consolidation Actions Taken
-[what was extracted, where]
+[List redundancy issues with brief descriptions]
 
-## Refactoring Analysis
+### Refactoring ([count] issues)
 
-### Priority Improvements
-[HIGH priority findings from refactor-agent]
+[List refactoring issues with brief descriptions]
 
-### Style and Naming
-[MEDIUM/LOW findings]
+## Needs Manual Review
 
-## Changes Applied
+These patterns require human judgment:
 
-### Files Modified
-| File | Changes |
-|------|---------|
-| path/file.c | [list of changes] |
+| Pattern | Files | Reason |
+|---------|-------|--------|
+| [pattern] | [count] | [reason verification was uncertain] |
 
-### Code Extracted
-| Item | Location |
-|------|----------|
-| BUFFER_SIZE constant | SocketConfig.h |
+## Files Analyzed
 
-## Remaining Items
+| File | Issues Found | Patterns |
+|------|--------------|----------|
+| path/file1.c | 3 | UNSAFE_STRCPY, MAGIC_BUFFER_4096 |
+| path/file2.c | 1 | LONG_FUNCTION_100 |
 
-### Not Applied (User Skipped)
-[list of skipped fixes with reasons]
+## False Positives Filtered
 
-### Manual Review Recommended
-[issues that need human judgment]
+These findings were rejected during verification:
+
+| Pattern | Location | Reason |
+|---------|----------|--------|
+| [pattern] | [file:line] | [why it was a false positive] |
 
 ---
 *Report generated by /pipeline command*
@@ -322,95 +379,121 @@ Save to: `<directory>/ANALYSIS_REPORT.md`
 ### Final Output
 
 ```markdown
-## Phase 5: Report Complete
+## Phase 6: Report Complete
 
-Analysis report saved to: <directory>/ANALYSIS_REPORT.md
+Analysis report saved to: <directory>/PIPELINE_ANALYSIS.md
 
 ### Summary
 - Files analyzed: [N]
-- Issues found: [N]
-- Fixes applied: [N]
-- Fixes skipped: [N]
+- Patterns identified: [N]
+- Issues created: [N]
+- False positives filtered: [N]
+- Needs manual review: [N]
+
+### Issue Links
+- #142: fix(security): Replace unsafe strcpy calls
+- #143: refactor(socket): Define SOCKET_BUFFER_SIZE constant
+- #144: refactor(http): Split long parse_request function
 
 **Pipeline complete.**
 ```
 
 ---
 
-## Batching Strategy
-
-When analyzing >30 files:
-
-1. **Split files into batches** of 10-15 files each
-2. **Run Phase 2 for each batch** (3 parallel agents per batch)
-3. **Accumulate results** across batches
-4. **Single Phase 3-5** consolidation and fix application
-
-This prevents context overflow while maintaining parallelism within batches.
-
----
-
 ## Error Handling
 
-- **Agent timeout**: If any agent takes >5 minutes, report partial results and continue
-- **Parse errors**: If agent output doesn't match expected format, include raw output in report
-- **Fix failures**: If Edit tool fails (syntax check), rollback and note in report
-- **Missing files**: If referenced file doesn't exist, skip and note
+- **Agent timeout**: If any agent takes >5 minutes, report partial results
+- **Parse errors**: If agent output doesn't match expected format, include raw output
+- **Issue creation failure**: Log error, continue with remaining issues
+- **All locations rejected**: Don't create issue, note pattern was fully filtered
 
 ---
 
 ## Example Session
 
 ```
-User: /pipeline src/core/
+User: /pipeline src/socket/
 
 Claude: [Executes Phase 1 - Discovery]
 
 ## Phase 1: Discovery Complete
 
-Found 12 source files in src/core/:
+Found 15 source files in src/socket/:
 
-### C Files (8)
-- src/core/Arena.c
-- src/core/Except.c
-- src/core/SocketCrypto.c
-- src/core/SocketRateLimit.c
-- src/core/SocketTimer.c
-- src/core/SocketUTF8.c
-- src/core/SocketUtil.c
-- src/core/SocketSecurity.c
+### C Files (12)
+- src/socket/Socket.c
+- src/socket/SocketBuf.c
+- src/socket/SocketCommon.c
+...
 
-### Header Files (4)
-- include/core/Arena.h
-- include/core/Except.h
-- include/core/SocketConfig.h
-- include/core/SocketUtil.h
+### Header Files (3)
+- include/socket/Socket.h
+- include/socket/SocketBuf.h
+...
 
-**Proceed with analysis?** (Files will be analyzed in 1 batch)
+**Proceed with per-file analysis?** (12 agents will be spawned)
 
 User: Yes
 
-Claude: [Spawns 3 Task agents IN PARALLEL - security-agent, redundancy-agent, refactor-agent]
-        [Waits for all 3 to complete]
-        [Executes Phase 3 - Consolidation]
-        [Presents consolidated findings]
-        [Asks for fix confirmation]
+Claude: [Spawns 12 file-analyzer-agent tasks IN PARALLEL]
+        [Waits for all to complete]
+        [Executes Phase 3 - Grouping]
 
-User: Apply all
+## Phase 3: Grouping Complete
 
-Claude: [Executes Phase 4 - Applies fixes with Edit tool]
-        [Executes Phase 5 - Generates report]
+### Patterns Found
 
-Analysis report saved to: src/core/ANALYSIS_REPORT.md
+| Pattern ID | Category | Severity | Locations |
+|------------|----------|----------|-----------|
+| UNSAFE_SPRINTF | security | CRITICAL | 3 files |
+| MAGIC_BUFFER_4096 | redundancy | HIGH | 5 files |
+| MANUAL_DJB2 | redundancy | CRITICAL | 2 files |
+
+**Proceed with verification?**
+
+User: Yes
+
+Claude: [Spawns 3 issue-verifier-agent tasks IN PARALLEL]
+        [Waits for all to complete]
+
+## Phase 4: Verification Complete
+
+### Verified: 2 patterns
+- UNSAFE_SPRINTF: 3/3 locations confirmed
+- MANUAL_DJB2: 2/2 locations confirmed
+
+### Filtered: 1 pattern
+- MAGIC_BUFFER_4096: All 5 locations were protocol constants
+
+**Create issues for verified findings?**
+
+User: Yes
+
+Claude: [Spawns pipeline-issue-writer]
+        [Creates 2 GitHub issues]
+
+## Phase 5: Issues Created
+
+- #150: fix(security): Replace sprintf with snprintf in socket code
+- #151: refactor(socket): Use socket_util_hash_djb2 instead of manual implementation
+
+**Generate report?**
+
+User: Yes
+
+Claude: [Executes Phase 6 - Report]
+
+Analysis report saved to: src/socket/PIPELINE_ANALYSIS.md
+
+**Pipeline complete.**
 ```
 
 ---
 
 ## Notes
 
-- This command orchestrates multiple specialized agents
-- Each agent focuses on one dimension of code quality
-- Parallel execution significantly speeds up analysis
-- Interactive confirmation prevents unwanted changes
-- The consolidation skill provides extraction decision logic
-- Existing hooks (build-check.sh, volatile-check.sh) validate changes
+- Each file gets its own analyzer agent for thorough per-file analysis
+- Pattern grouping enables consolidated issues (one issue per pattern, not per file)
+- Full verification filters false positives before issue creation
+- Interactive checkpoints let user control the process
+- Parallel execution maximizes performance
