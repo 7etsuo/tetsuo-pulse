@@ -954,10 +954,17 @@ SocketDNSNegCache_build_response (const SocketDNS_NegCacheEntry *entry,
 
       /* CRITICAL FIX: Calculate SOA name length first to validate total space */
       size_t soa_name_len = 0;
-      /* Dry-run encode to determine length (pass NULL buffer in real impl, or use strlen+labels) */
-      /* For now, we need to encode to a temporary buffer or check beforehand */
-      /* Conservative estimate: worst case is wire format length */
-      size_t estimated_name_len = strlen(entry->soa.name) + 2; /* labels + length bytes + null terminator */
+      /* Conservative estimate: account for label encoding in wire format
+       * Each label needs a length byte, plus null terminator
+       * Wire length = strlen + label_count + 1 (null terminator) */
+      size_t label_count = 1;  /* At least one label for non-empty name */
+      for (const char *p = entry->soa.name; *p; p++)
+        {
+          if (*p == '.')
+            label_count++;
+        }
+      /* Wire format: string chars + length byte per label + null terminator */
+      size_t estimated_name_len = strlen(entry->soa.name) + label_count + 1;
       if (estimated_name_len > DNS_MAX_NAME_LEN)
         estimated_name_len = DNS_MAX_NAME_LEN;
 
