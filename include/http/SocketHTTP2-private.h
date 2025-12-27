@@ -49,6 +49,9 @@ static const unsigned char HTTP2_CLIENT_PREFACE[HTTP2_PREFACE_SIZE]
 #define HTTP2_GOAWAY_HEADER_SIZE 8
 #define HTTP2_WINDOW_UPDATE_SIZE 4
 #define HTTP2_RST_STREAM_PAYLOAD_SIZE 4
+
+/* SECURITY: Limit to prevent DoS via hash collision attacks */
+#define HTTP2_STREAM_MAX_HASH_CHAIN_LEN 32
 typedef enum
 {
   HTTP2_CONN_STATE_INIT = 0,

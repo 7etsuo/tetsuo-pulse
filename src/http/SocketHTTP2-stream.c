@@ -78,7 +78,7 @@ http2_stream_lookup (const SocketHTTP2_Conn_T conn, uint32_t stream_id)
   while (stream)
     {
       chain_len++;
-      if (chain_len > 32)
+      if (chain_len > HTTP2_STREAM_MAX_HASH_CHAIN_LEN)
         { /* Prevent DoS from hash collision chains */
           SOCKET_LOG_WARN_MSG (
               "Long hash chain in stream lookup: %d (potential DoS)",
