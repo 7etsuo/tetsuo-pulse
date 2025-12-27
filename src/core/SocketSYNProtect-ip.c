@@ -13,7 +13,7 @@
 #include <arpa/inet.h>
 #include <string.h>
 
-static int
+int
 parse_ipv4_address (const char *ip, uint8_t *addr_bytes)
 {
   struct in_addr addr4;
@@ -27,7 +27,7 @@ parse_ipv4_address (const char *ip, uint8_t *addr_bytes)
   return 0;
 }
 
-static int
+int
 parse_ipv6_address (const char *ip, uint8_t *addr_bytes)
 {
   struct in6_addr addr6;
@@ -41,7 +41,7 @@ parse_ipv6_address (const char *ip, uint8_t *addr_bytes)
 }
 
 /* Returns AF_INET, AF_INET6, or 0 on error */
-static int
+int
 parse_ip_address (const char *ip, uint8_t *addr_bytes, size_t addr_size)
 {
   if (addr_size < SOCKET_IPV6_ADDR_BYTES)
@@ -57,7 +57,7 @@ parse_ip_address (const char *ip, uint8_t *addr_bytes, size_t addr_size)
 }
 
 /* Compares parsed bytes to prevent bypass via alternate IP formats */
-static int
+int
 ip_addresses_equal (const char *ip1, const char *ip2)
 {
   uint8_t bytes1[SOCKET_IPV6_ADDR_BYTES];
@@ -82,14 +82,14 @@ ip_addresses_equal (const char *ip1, const char *ip2)
   return memcmp (bytes1, bytes2, cmp_len) == 0;
 }
 
-static int
+int
 cidr_full_bytes_match (const uint8_t *ip_bytes, const uint8_t *entry_bytes,
                        int bytes)
 {
   return (memcmp (ip_bytes, entry_bytes, (size_t)bytes) == 0);
 }
 
-static int
+int
 cidr_partial_byte_match (const uint8_t *ip_bytes, const uint8_t *entry_bytes,
                          int byte_index, int remaining_bits)
 {
@@ -97,7 +97,7 @@ cidr_partial_byte_match (const uint8_t *ip_bytes, const uint8_t *entry_bytes,
   return ((ip_bytes[byte_index] & mask) == (entry_bytes[byte_index] & mask));
 }
 
-static int
+int
 ip_matches_cidr_bytes (int family, const uint8_t *ip_bytes,
                        const SocketSYN_WhitelistEntry *entry)
 {
@@ -121,7 +121,7 @@ ip_matches_cidr_bytes (int family, const uint8_t *ip_bytes,
 }
 
 /* Avoid in loops; use ip_matches_cidr_bytes for efficiency */
-static int
+int
 ip_matches_cidr (const char *ip, const SocketSYN_WhitelistEntry *entry)
 {
   uint8_t ip_bytes[16];
@@ -132,7 +132,7 @@ ip_matches_cidr (const char *ip, const SocketSYN_WhitelistEntry *entry)
 }
 
 /* Compares parsed bytes to prevent bypass via alternate IP formats */
-static int
+int
 whitelist_check_bucket_bytes (const SocketSYN_WhitelistEntry *entry,
                               const char *ip_str, int family,
                               const uint8_t *ip_bytes)
@@ -164,7 +164,7 @@ whitelist_check_bucket_bytes (const SocketSYN_WhitelistEntry *entry,
   return 0;
 }
 
-static int
+int
 whitelist_check_bucket (const SocketSYN_WhitelistEntry *entry, const char *ip)
 {
   uint8_t ip_bytes[16];
@@ -172,7 +172,7 @@ whitelist_check_bucket (const SocketSYN_WhitelistEntry *entry, const char *ip)
   return whitelist_check_bucket_bytes (entry, ip, family, ip_bytes);
 }
 
-static int
+int
 whitelist_check_all_cidrs_bytes (SocketSYNProtect_T protect, int family,
                                  const uint8_t *ip_bytes, unsigned skip_bucket)
 {
@@ -193,7 +193,7 @@ whitelist_check_all_cidrs_bytes (SocketSYNProtect_T protect, int family,
   return 0;
 }
 
-static int
+int
 whitelist_check_all_cidrs (SocketSYNProtect_T protect, const char *ip,
                            unsigned skip_bucket)
 {
@@ -205,7 +205,7 @@ whitelist_check_all_cidrs (SocketSYNProtect_T protect, const char *ip,
                                           skip_bucket);
 }
 
-static int
+int
 whitelist_check (SocketSYNProtect_T protect, const char *ip)
 {
   unsigned bucket;
@@ -248,7 +248,7 @@ remove_ip_entry_from_hash (SocketSYNProtect_T protect,
 }
 
 /* Uses binary IP comparison to prevent bypass via alternate IP formats */
-static int
+int
 blacklist_check (SocketSYNProtect_T protect, const char *ip, int64_t now_ms)
 {
   unsigned bucket;
