@@ -21,6 +21,7 @@
 #include "core/SocketSecurity.h"
 #include "core/SocketUtil.h"
 #include "tls/SocketTLS-private.h"
+#include "tls/SocketSSL-internal.h"
 #include <assert.h>
 
 /* Thread-local exception for SocketTLSContext module */
@@ -1218,8 +1219,8 @@ SocketTLSContext_ocsp_stapling_enabled (T ctx)
 }
 
 /* X509_STORE_set_lookup_certs_cb is only available in OpenSSL 3.0.0+
- * Check for OPENSSL_VERSION_NUMBER >= 0x30000000L */
-#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+ * Check for OPENSSL_VERSION_NUMBER >= SOCKET_OPENSSL_VERSION_3_0 */
+#if OPENSSL_VERSION_NUMBER >= SOCKET_OPENSSL_VERSION_3_0
 
 /* Security: Dynamically allocated ex_data index to avoid conflicts with
  * other libraries using X509_STORE ex_data. Using hardcoded index 0

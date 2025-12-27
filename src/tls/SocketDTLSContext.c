@@ -22,6 +22,7 @@
 #include "core/SocketCrypto.h"
 #include "core/SocketSecurity.h"
 #include "tls/SocketDTLS-private.h"
+#include "tls/SocketSSL-internal.h"
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -283,7 +284,7 @@ SocketDTLSContext_free (T *ctx_p)
   /* Free SSL_CTX */
   if (ctx->ssl_ctx)
     {
-#if OPENSSL_VERSION_NUMBER < 0x30000000L
+#if OPENSSL_VERSION_NUMBER < SOCKET_OPENSSL_VERSION_3_0
       /* Flush session cache to prevent memory leaks (OpenSSL < 3.0) */
       SSL_CTX_flush_sessions (ctx->ssl_ctx, 0);
 #endif

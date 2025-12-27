@@ -51,6 +51,24 @@
  */
 #define SOCKET_SSL_UNUSED(x) (void)(x)
 
+/**
+ * @brief OpenSSL 3.0.0 version number for conditional compilation.
+ * @ingroup security
+ *
+ * Used to check for OpenSSL 3.0+ features and deprecations at compile time.
+ * OpenSSL version format: MNNFFPPS (major/minor/fix/patch/status).
+ *
+ * Version breakdown for 0x30000000L:
+ * - Major: 0x30 = 3
+ * - Minor: 0x00 = 0
+ * - Fix:   0x00 = 0
+ * - Patch: 0x00 = 0
+ * - Status: 0x0 = release
+ *
+ * @see OPENSSL_VERSION_NUMBER for runtime OpenSSL version
+ */
+#define SOCKET_OPENSSL_VERSION_3_0 0x30000000L
+
 /* ============================================================================
  * Common File Path Validation
  * ============================================================================
