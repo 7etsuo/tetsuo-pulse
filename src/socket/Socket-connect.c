@@ -389,7 +389,7 @@ Socket_connect (T socket, const char *host, int port)
     if (!res)
       {
         errno = EAI_FAIL;
-        return;
+        RETURN;
       }
     connect_execute ((T)vsock, res, socket_family);
     SocketCommon_free_addrinfo (res);
