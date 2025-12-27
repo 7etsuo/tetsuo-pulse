@@ -184,13 +184,28 @@ parse_client_protos (const unsigned char *in, unsigned int inlen,
       /* Grow array if needed */
       if (count >= capacity)
         {
-          capacity *= 2;
-          const char **new_protos = realloc (protos, capacity * sizeof (char *));
+          size_t new_capacity;
+          size_t alloc_size;
+          /* Check for capacity doubling overflow */
+          if (!SocketSecurity_check_multiply (capacity, 2, &new_capacity))
+            {
+              free_client_protos (protos, count);
+              return NULL;
+            }
+          /* Check for allocation size overflow */
+          if (!SocketSecurity_check_multiply (new_capacity, sizeof (char *),
+                                              &alloc_size))
+            {
+              free_client_protos (protos, count);
+              return NULL;
+            }
+          const char **new_protos = realloc (protos, alloc_size);
           if (!new_protos)
             {
               free_client_protos (protos, count);
               return NULL;
             }
+          capacity = new_capacity;
           protos = new_protos;
         }
 
