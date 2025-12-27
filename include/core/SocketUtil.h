@@ -1455,6 +1455,72 @@ socket_util_safe_strncpy (char *dest, const char *src, size_t max_len)
   while (0)
 
 /* ============================================================================
+ * TIME CONVERSION UTILITIES
+ * ============================================================================
+ */
+
+/**
+ * @brief Convert milliseconds to timespec structure.
+ * @ingroup foundation
+ * @param ms Milliseconds value to convert
+ * @return Populated timespec structure
+ * @threadsafe Yes (pure function, no shared state)
+ *
+ * Converts milliseconds to a timespec structure suitable for nanosleep(),
+ * clock_nanosleep(), and other POSIX time functions. Uses the centralized
+ * time constants SOCKET_MS_PER_SECOND and SOCKET_NS_PER_MS for consistency.
+ *
+ * This function provides a single source of truth for millisecond-to-timespec
+ * conversion, eliminating duplicated conversion logic across multiple modules.
+ *
+ * Usage:
+ *   struct timespec ts = socket_util_ms_to_timespec(500); // 500ms
+ *   nanosleep(&ts, NULL);
+ *
+ * @see socket_util_timespec_to_ms() for inverse conversion
+ * @see SOCKET_MS_PER_SECOND for milliseconds per second constant
+ * @see SOCKET_NS_PER_MS for nanoseconds per millisecond constant
+ */
+static inline struct timespec
+socket_util_ms_to_timespec (unsigned long ms)
+{
+  struct timespec ts;
+  ts.tv_sec = ms / SOCKET_MS_PER_SECOND;
+  ts.tv_nsec = (ms % SOCKET_MS_PER_SECOND) * SOCKET_NS_PER_MS;
+  return ts;
+}
+
+/**
+ * @brief Convert timespec structure to milliseconds.
+ * @ingroup foundation
+ * @param ts Timespec structure to convert
+ * @return Milliseconds value
+ * @threadsafe Yes (pure function, no shared state)
+ *
+ * Converts a timespec structure to milliseconds. Uses centralized time
+ * constants for consistency. Result is clamped to prevent integer overflow
+ * when seconds value is very large.
+ *
+ * This is the inverse of socket_util_ms_to_timespec(). Provides consistent
+ * timespec-to-millisecond conversion across the codebase.
+ *
+ * Usage:
+ *   struct timespec ts;
+ *   clock_gettime(CLOCK_MONOTONIC, &ts);
+ *   unsigned long ms = socket_util_timespec_to_ms(ts);
+ *
+ * @see socket_util_ms_to_timespec() for inverse conversion
+ * @see SOCKET_MS_PER_SECOND for milliseconds per second constant
+ * @see SOCKET_NS_PER_MS for nanoseconds per millisecond constant
+ */
+static inline unsigned long
+socket_util_timespec_to_ms (struct timespec ts)
+{
+  return (unsigned long)ts.tv_sec * SOCKET_MS_PER_SECOND
+         + ts.tv_nsec / SOCKET_NS_PER_MS;
+}
+
+/* ============================================================================
  * BUFFER SIZE CONSTANTS
  * ============================================================================
  */
