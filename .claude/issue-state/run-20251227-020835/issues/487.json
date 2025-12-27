@@ -1,0 +1,8 @@
+{
+  "number": 487,
+  "title": "refactor(proxy): fix brace style in HTTPS proxy functions",
+  "body": "## Summary\n\nThree functions in `src/socket/SocketProxy.c` use inconsistent K&R brace style (opening brace on same line) instead of the project's GNU style (opening brace on new line).\n\n## Style Issues\n\n- [ ] `proxy_setup_tls_to_proxy` (lines 814-842) - K&R style braces\n- [ ] `proxy_perform_sync_tls_handshake` (lines 844-893) - K&R style braces  \n- [ ] `proxy_setup_after_tcp_connect` (lines 895-918) - K&R style braces\n\n### Examples\n\n**Current style (K&R):**\n```c\nif (conn->tls_ctx == NULL) {\n    TRY {\n      ...\n    } EXCEPT (SocketTLS_Failed) {\n```\n\n**Project style (GNU):**\n```c\nif (conn->tls_ctx == NULL)\n  {\n    TRY\n    {\n      ...\n    }\n    EXCEPT (SocketTLS_Failed)\n    {\n```\n\nThe same file contains the correct style at lines 1260-1278 for the same code pattern.\n\n## Scope\n\n12 instances of same-line braces vs 75 instances of new-line braces in this file.\n\n## Category\n\nRefactoring - Code Style",
+  "labels": [],
+  "state": "OPEN",
+  "dependencies": []
+}

@@ -1,0 +1,8 @@
+{
+  "number": 478,
+  "title": "refactor(quic): consolidate duplicate patterns across module",
+  "body": "## Summary\n\nConsolidate 3 major duplication patterns identified in the QUIC module analysis:\n\n1. **Varint encoding** - 36 duplicate blocks across 7 Frame-*.c files\n2. **Flow control** - 6 duplicate function pairs in SocketQUICFlow.c\n3. **Result strings** - 12 files with identical lookup pattern\n\n## Changes\n\n### Phase 1: Varint Encoding Helper\n- Add `encode_varint_field()` static inline helper\n- Refactor 7 files to use the helper instead of repeated 5-line blocks\n\n### Phase 2: Flow Control Helpers\n- Add 4 internal helpers (`flow_window`, `flow_can_consume`, `flow_consume`, `flow_update_max`)\n- Refactor 12 public functions to use helpers\n\n### Phase 3: Result String Macro\n- Add `DEFINE_RESULT_STRING_FUNC` macro to SocketQUICConstants.h\n- Refactor 12 files with result_strings pattern\n\n## Expected Impact\n\n| Phase | Files Modified | Lines Saved |\n|-------|---------------|-------------|\n| 1 | 7 Frame-*.c | ~160 |\n| 2 | 1 SocketQUICFlow.c | ~55 |\n| 3 | 13 files | ~74 |\n| **Total** | **21 files** | **~289** |\n\n## Test Plan\n- [ ] Build succeeds with sanitizers\n- [ ] All existing tests pass\n- [ ] No memory leaks (ASan)\n- [ ] No undefined behavior (UBSan)",
+  "labels": [],
+  "state": "OPEN",
+  "dependencies": []
+}

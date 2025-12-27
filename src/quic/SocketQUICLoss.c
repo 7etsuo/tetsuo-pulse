@@ -33,13 +33,7 @@ static const char *result_strings[] = {
     [QUIC_LOSS_ERROR_INVALID] = "Invalid packet number or state",
 };
 
-const char *
-SocketQUICLoss_result_string (SocketQUICLoss_Result result)
-{
-  if (result < 0 || result > QUIC_LOSS_ERROR_INVALID)
-    return "Unknown error";
-  return result_strings[result];
-}
+DEFINE_RESULT_STRING_FUNC (SocketQUICLoss, QUIC_LOSS_ERROR_INVALID)
 
 /* ============================================================================
  * Internal Hash Functions

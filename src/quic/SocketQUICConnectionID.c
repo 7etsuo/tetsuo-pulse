@@ -15,6 +15,7 @@
 #include <string.h>
 
 #include "quic/SocketQUICConnectionID.h"
+#include "quic/SocketQUICConstants.h"
 #include "core/SocketCrypto.h"
 
 /* Use SocketCrypto_random_bytes() for platform-independent secure random */
@@ -34,13 +35,7 @@ static const char *result_strings[] = {
   [QUIC_CONNID_ERROR_RANDOM] = "Random generation failed",
 };
 
-const char *
-SocketQUICConnectionID_result_string (SocketQUICConnectionID_Result result)
-{
-  if (result < 0 || result > QUIC_CONNID_ERROR_RANDOM)
-    return "Unknown error";
-  return result_strings[result];
-}
+DEFINE_RESULT_STRING_FUNC (SocketQUICConnectionID, QUIC_CONNID_ERROR_RANDOM)
 
 /* ============================================================================
  * Initialization Functions

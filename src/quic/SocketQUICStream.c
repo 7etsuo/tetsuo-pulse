@@ -15,6 +15,7 @@
 #include <string.h>
 
 #include "quic/SocketQUICStream.h"
+#include "quic/SocketQUICConstants.h"
 
 /* ============================================================================
  * String Tables
@@ -239,10 +240,4 @@ SocketQUICStream_state_string (SocketQUICStreamState state)
   return state_strings[state];
 }
 
-const char *
-SocketQUICStream_result_string (SocketQUICStream_Result result)
-{
-  if (result > QUIC_STREAM_ERROR_LIMIT)
-    return "Unknown error";
-  return result_strings[result];
-}
+DEFINE_RESULT_STRING_FUNC (SocketQUICStream, QUIC_STREAM_ERROR_LIMIT)

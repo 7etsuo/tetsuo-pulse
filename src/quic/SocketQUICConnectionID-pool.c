@@ -55,13 +55,7 @@ static const char *result_strings[] = {
     [QUIC_CONNID_POOL_NOT_FOUND] = "Connection ID not found",
 };
 
-const char *
-SocketQUICConnectionIDPool_result_string (SocketQUICConnectionIDPool_Result result)
-{
-  if (result < 0 || result > QUIC_CONNID_POOL_NOT_FOUND)
-    return "Unknown error";
-  return result_strings[result];
-}
+DEFINE_RESULT_STRING_FUNC (SocketQUICConnectionIDPool, QUIC_CONNID_POOL_NOT_FOUND)
 
 /* ============================================================================
  * Internal Hash Functions

@@ -339,4 +339,31 @@ SocketSecurity_has_compression (void)
 #endif
 }
 
+/**
+ * @brief Check if string contains prohibited control characters.
+ *
+ * Detects NUL (0x00), CR (0x0D), and LF (0x0A) which are prohibited in
+ * HTTP header values and other protocol contexts. Used for header injection
+ * prevention.
+ *
+ * @param data  String to check (must not be NULL).
+ * @param len   Length of string to check.
+ *
+ * Returns: 1 if control characters found, 0 if clean.
+ *
+ * @threadsafe Yes (pure function)
+ * @complexity O(n) where n is len
+ */
+static inline int
+SocketSecurity_has_control_chars (const char *data, size_t len)
+{
+  for (size_t i = 0; i < len; i++)
+    {
+      unsigned char c = (unsigned char)data[i];
+      if (c == 0x00 || c == 0x0D || c == 0x0A)
+        return 1;
+    }
+  return 0;
+}
+
 #endif /* SOCKETSECURITY_INCLUDED */

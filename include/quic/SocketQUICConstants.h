@@ -236,6 +236,33 @@
 #define QUIC_HASH_FNV1A_STEP(hash, byte) \
   (((hash) ^ (uint8_t)(byte)) * QUIC_HASH_FNV1A_PRIME)
 
+/**
+ * @brief Define result string lookup function from static array.
+ *
+ * Generates a standard result_string function that looks up error strings
+ * from a static const array named `result_strings[]`.
+ *
+ * Usage:
+ * @code
+ * static const char *result_strings[] = {
+ *   [QUIC_FOO_OK] = "OK",
+ *   [QUIC_FOO_ERROR_NULL] = "NULL pointer",
+ *   // ...
+ * };
+ * DEFINE_RESULT_STRING_FUNC(SocketQUICFoo, QUIC_FOO_ERROR_LAST)
+ * @endcode
+ *
+ * @param prefix   Module prefix (e.g., SocketQUICAck)
+ * @param max_val  Maximum valid result enum value
+ */
+#define DEFINE_RESULT_STRING_FUNC(prefix, max_val)                            \
+  const char *prefix##_result_string (prefix##_Result result)                 \
+  {                                                                           \
+    if (result < 0 || result > (max_val))                                     \
+      return "Unknown error";                                                 \
+    return result_strings[result];                                            \
+  }
+
 /** @} */
 
 #endif /* SOCKETQUICCONSTANTS_INCLUDED */

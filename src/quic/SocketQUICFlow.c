@@ -10,6 +10,7 @@
  */
 
 #include "quic/SocketQUICFlow.h"
+#include "quic/SocketQUICConstants.h"
 
 #include <assert.h>
 #include <string.h>
@@ -442,22 +443,12 @@ SocketQUICFlow_close_stream_uni (SocketQUICFlow_T fc)
  * ============================================================================
  */
 
-const char *
-SocketQUICFlow_result_string (SocketQUICFlow_Result result)
-{
-  switch (result)
-    {
-    case QUIC_FLOW_OK:
-      return "QUIC_FLOW_OK";
-    case QUIC_FLOW_ERROR_NULL:
-      return "QUIC_FLOW_ERROR_NULL";
-    case QUIC_FLOW_ERROR_BLOCKED:
-      return "QUIC_FLOW_ERROR_BLOCKED";
-    case QUIC_FLOW_ERROR_OVERFLOW:
-      return "QUIC_FLOW_ERROR_OVERFLOW";
-    case QUIC_FLOW_ERROR_INVALID:
-      return "QUIC_FLOW_ERROR_INVALID";
-    default:
-      return "UNKNOWN";
-    }
-}
+static const char *result_strings[] = {
+    [QUIC_FLOW_OK] = "QUIC_FLOW_OK",
+    [QUIC_FLOW_ERROR_NULL] = "QUIC_FLOW_ERROR_NULL",
+    [QUIC_FLOW_ERROR_BLOCKED] = "QUIC_FLOW_ERROR_BLOCKED",
+    [QUIC_FLOW_ERROR_OVERFLOW] = "QUIC_FLOW_ERROR_OVERFLOW",
+    [QUIC_FLOW_ERROR_INVALID] = "QUIC_FLOW_ERROR_INVALID",
+};
+
+DEFINE_RESULT_STRING_FUNC (SocketQUICFlow, QUIC_FLOW_ERROR_INVALID)

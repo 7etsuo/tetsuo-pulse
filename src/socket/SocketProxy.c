@@ -209,34 +209,7 @@ socketproxy_parse_userinfo (const char *start, SocketProxy_Config *config,
       return -1;
     }
 
-  colon = strchr (start, ':');
-  if (colon != NULL && colon > at_sign)
-    {
-      colon = NULL;
-      for (const char *p = start; p < at_sign; p++)
-        {
-          if (*p == ':')
-            {
-              colon = p;
-              break;
-            }
-        }
-    }
-  else if (colon != NULL && colon < at_sign)
-    {
-    }
-  else
-    {
-      colon = NULL;
-      for (const char *p = start; p < at_sign; p++)
-        {
-          if (*p == ':')
-            {
-              colon = p;
-              break;
-            }
-        }
-    }
+  colon = memchr (start, ':', (size_t)(at_sign - start));
 
   if (colon != NULL && colon < at_sign)
     {
@@ -334,30 +307,18 @@ socketproxy_parse_ipv6_hostport (const char *start,
     {
       char *endptr;
       long p = strtol (port_start + 1, &endptr, 10);
-      if (endptr > port_start + 1 && p >= 1 && p <= 65535)
-        {
-          config->port = (int)p;
-          authority_end = endptr;
-        }
-      else if (*endptr == '\0' || *endptr == '/' || *endptr == '?'
-               || *endptr == '#')
-        {
-          if (endptr > port_start + 1 && p >= 1 && p <= 65535)
-            {
-              config->port = (int)p;
-              authority_end = endptr;
-            }
-          else
-            {
-              return -1;
-            }
-        }
-      else
-        {
-          return -1;
-        }
-      if (config->port <= 0 || config->port > 65535)
+
+      if (endptr == port_start + 1)
         return -1;
+
+      if (*endptr != '\0' && *endptr != '/' && *endptr != '?' && *endptr != '#')
+        return -1;
+
+      if (p < 1 || p > 65535)
+        return -1;
+
+      config->port = (int)p;
+      authority_end = endptr;
     }
 
   *authority_end_out = authority_end;

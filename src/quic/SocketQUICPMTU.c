@@ -18,6 +18,7 @@
  */
 
 #include "quic/SocketQUICPMTU.h"
+#include "quic/SocketQUICConstants.h"
 #include <assert.h>
 #include <string.h>
 
@@ -26,7 +27,7 @@
  * ============================================================================
  */
 
-static const char *pmtu_result_strings[] = {
+static const char *result_strings[] = {
   [QUIC_PMTU_OK] = "OK",
   [QUIC_PMTU_ERROR_NULL] = "NULL pointer argument",
   [QUIC_PMTU_ERROR_SIZE] = "Invalid size (< 1200 bytes)",
@@ -36,13 +37,7 @@ static const char *pmtu_result_strings[] = {
   [QUIC_PMTU_ERROR_ARENA] = "Arena allocation failed"
 };
 
-const char *
-SocketQUICPMTU_result_string (SocketQUICPMTU_Result result)
-{
-  if (result > QUIC_PMTU_ERROR_ARENA)
-    return "Unknown error";
-  return pmtu_result_strings[result];
-}
+DEFINE_RESULT_STRING_FUNC (SocketQUICPMTU, QUIC_PMTU_ERROR_ARENA)
 
 /* ============================================================================
  * PMTU Context Management

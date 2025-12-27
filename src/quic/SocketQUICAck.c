@@ -10,6 +10,7 @@
  */
 
 #include "quic/SocketQUICAck.h"
+#include "quic/SocketQUICConstants.h"
 #include "quic/SocketQUICVarInt.h"
 #include "core/SocketUtil.h"
 
@@ -34,13 +35,7 @@ static const char *result_strings[] = {
     [QUIC_ACK_ERROR_BUFFER] = "Output buffer too small",
 };
 
-const char *
-SocketQUICAck_result_string (SocketQUICAck_Result result)
-{
-  if (result < 0 || result > QUIC_ACK_ERROR_BUFFER)
-    return "Unknown error";
-  return result_strings[result];
-}
+DEFINE_RESULT_STRING_FUNC (SocketQUICAck, QUIC_ACK_ERROR_BUFFER)
 
 /* ============================================================================
  * Lifecycle Functions

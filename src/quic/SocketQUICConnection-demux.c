@@ -37,10 +37,7 @@ struct SocketQUICConnTable {
 
 static const char *result_strings[] = { "OK", "NULL pointer argument", "Connection table is full", "Connection ID already registered", "Connection not found", "Too many CIDs for connection", "Hash chain too long (DoS protection)", "Zero-length DCID conflict", "Memory allocation failed" };
 
-const char *SocketQUICConnection_result_string(SocketQUICConnection_Result result) {
-  if (result > QUIC_CONN_ERROR_MEMORY) return "Unknown error";
-  return result_strings[result];
-}
+DEFINE_RESULT_STRING_FUNC (SocketQUICConnection, QUIC_CONN_ERROR_MEMORY)
 
 static const char *state_strings[] = { "IDLE", "HANDSHAKE", "ESTABLISHED", "CLOSING", "DRAINING", "CLOSED" };
 
