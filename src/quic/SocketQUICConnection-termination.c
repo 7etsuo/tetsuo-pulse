@@ -270,7 +270,7 @@ SocketQUICConnection_set_stateless_reset_token(SocketQUICConnection_T conn,
   if (!conn || !token)
     return;
 
-  memcpy(conn->stateless_reset_token, token, 16);
+  memcpy(conn->stateless_reset_token, token, QUIC_STATELESS_RESET_TOKEN_LEN);
   conn->has_stateless_reset_token = 1;
 }
 
@@ -298,6 +298,6 @@ SocketQUICConnection_verify_stateless_reset(const uint8_t *packet,
     return 0;
 
   /* Compare final 16 bytes with expected token */
-  const uint8_t *actual_token = packet + packet_len - 16;
-  return memcmp(actual_token, expected_token, 16) == 0;
+  const uint8_t *actual_token = packet + packet_len - QUIC_STATELESS_RESET_TOKEN_LEN;
+  return memcmp(actual_token, expected_token, QUIC_STATELESS_RESET_TOKEN_LEN) == 0;
 }

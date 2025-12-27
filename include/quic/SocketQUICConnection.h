@@ -23,6 +23,7 @@
 #define QUIC_CONNTABLE_MAX_CHAIN_LEN 32
 #define QUIC_CONNECTION_MAX_CIDS 8
 #define QUIC_CONNECTION_MIN_CID_LIMIT 2
+#define QUIC_STATELESS_RESET_TOKEN_LEN 16
 
 typedef struct SocketQUICConnection *SocketQUICConnection_T;
 typedef struct SocketQUICConnTable *SocketQUICConnTable_T;
@@ -78,7 +79,7 @@ struct SocketQUICConnection {
   uint64_t last_packet_received_ms;
   uint64_t closing_deadline_ms;
   uint64_t draining_deadline_ms;
-  uint8_t stateless_reset_token[16];
+  uint8_t stateless_reset_token[QUIC_STATELESS_RESET_TOKEN_LEN];
   int has_stateless_reset_token;
 };
 
