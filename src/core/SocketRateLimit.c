@@ -26,7 +26,7 @@
   while (0)
 
 #define RATELIMIT_IS_VALID(_l)                                                \
-  ((_l)->initialized == SOCKET_RATELIMIT_MUTEX_INITIALIZED)
+  ((_l)->initialized == SOCKET_MUTEX_INITIALIZED)
 
 static struct SocketLiveCount ratelimit_live_tracker
     = SOCKETLIVECOUNT_STATIC_INIT;
@@ -283,7 +283,7 @@ ratelimit_init_fields (T limiter, size_t tokens_per_sec, size_t bucket_size,
   limiter->tokens = bucket_size;
   limiter->last_refill_ms = Socket_get_monotonic_ms ();
   limiter->arena = arena;
-  limiter->initialized = SOCKET_RATELIMIT_MUTEX_UNINITIALIZED;
+  limiter->initialized = SOCKET_MUTEX_UNINITIALIZED;
 }
 
 static void
@@ -349,11 +349,11 @@ SocketRateLimit_free (T *limiter)
 
   l = *limiter;
 
-  if (l->initialized == SOCKET_RATELIMIT_MUTEX_INITIALIZED)
+  if (l->initialized == SOCKET_MUTEX_INITIALIZED)
     {
       /* Set shutdown flag while holding lock to synchronize and prevent new
        * operations */
-      WITH_LOCK (l, l->initialized = SOCKET_RATELIMIT_SHUTDOWN;);
+      WITH_LOCK (l, l->initialized = SOCKET_MUTEX_SHUTDOWN;);
 
       /* Wait for concurrent operations to complete before destroying mutex */
       int retries = SOCKET_RATELIMIT_FREE_MAX_RETRIES;
