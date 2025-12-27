@@ -139,6 +139,26 @@ calculate_socks5_connect_response_length (struct SocketProxy_Conn_T *conn,
   return PROXY_OK;
 }
 
+/**
+ * validate_credential_utf8 - Validate UTF-8 encoding for SOCKS5 credentials
+ * @conn: Proxy connection context for error reporting
+ * @credential: The credential string to validate
+ * @field_name: Human-readable field name for error message
+ *
+ * Returns: 0 on success, -1 if UTF-8 validation fails
+ */
+static int
+validate_credential_utf8 (struct SocketProxy_Conn_T *conn,
+                          const char *credential, const char *field_name)
+{
+  if (SocketUTF8_validate_str (credential) != UTF8_VALID)
+    {
+      socketproxy_set_error (conn, PROXY_ERROR, "Invalid UTF-8 in %s",
+                             field_name);
+      return -1;
+    }
+  return 0;
+}
 /* ============================================================================
  * SOCKS5 Greeting (RFC 1928 Section 3)
  * ============================================================================
@@ -319,16 +339,10 @@ validate_socks5_auth_credentials (struct SocketProxy_Conn_T *conn,
     }
 
   /* Validate UTF-8 encoding */
-  if (SocketUTF8_validate_str (conn->username) != UTF8_VALID)
-    {
-      socketproxy_set_error (conn, PROXY_ERROR, "Invalid UTF-8 in username");
-      return -1;
-    }
-  if (SocketUTF8_validate_str (conn->password) != UTF8_VALID)
-    {
-      socketproxy_set_error (conn, PROXY_ERROR, "Invalid UTF-8 in password");
-      return -1;
-    }
+  if (validate_credential_utf8 (conn, conn->username, "username") != 0)
+    return -1;
+  if (validate_credential_utf8 (conn, conn->password, "password") != 0)
+    return -1;
 
   return 0;
 }
