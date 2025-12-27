@@ -15,31 +15,10 @@
 #include <string.h>
 
 #include "quic/SocketQUICConnectionID.h"
+#include "core/SocketCrypto.h"
 
-/* Use getrandom() on Linux, arc4random_buf() on BSD/macOS */
-#ifdef __linux__
-#include <sys/random.h>
-#define SECURE_RANDOM(buf, len) (getrandom ((buf), (len), 0) == (ssize_t)(len))
-#elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__)
-#include <stdlib.h>
-#define SECURE_RANDOM(buf, len)                                               \
-  (arc4random_buf ((buf), (len)), 1) /* Always succeeds */
-#else
-/* Fallback to /dev/urandom */
-#include <fcntl.h>
-#include <unistd.h>
-static int
-secure_random_fallback (void *buf, size_t len)
-{
-  int fd = open ("/dev/urandom", O_RDONLY);
-  if (fd < 0)
-    return 0;
-  ssize_t n = read (fd, buf, len);
-  close (fd);
-  return (n == (ssize_t)len);
-}
-#define SECURE_RANDOM(buf, len) secure_random_fallback ((buf), (len))
-#endif
+/* Use SocketCrypto_random_bytes() for platform-independent secure random */
+#define SECURE_RANDOM(buf, len) (SocketCrypto_random_bytes ((buf), (len)) == 0)
 
 /* ============================================================================
  * Result Strings

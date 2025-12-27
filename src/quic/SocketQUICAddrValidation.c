@@ -135,8 +135,20 @@ SocketQUICAddrValidation_check_amplification_limit (
     }
 
   /* Check 3x amplification limit (RFC 9000 §8.1) */
+  /* Overflow check: if bytes_received is huge, allow sending (conservative) */
+  if (state->bytes_received > UINT64_MAX / QUIC_ADDR_VALIDATION_AMPLIFICATION_LIMIT)
+    {
+      return 1;  /* No practical limit when overflow would occur */
+    }
+
   uint64_t max_allowed
       = state->bytes_received * QUIC_ADDR_VALIDATION_AMPLIFICATION_LIMIT;
+
+  /* Also check for overflow in addition */
+  if (state->bytes_sent > UINT64_MAX - bytes_to_send)
+    {
+      return 0;  /* Overflow in bytes_sent + bytes_to_send */
+    }
 
   return (state->bytes_sent + bytes_to_send) <= max_allowed;
 }
