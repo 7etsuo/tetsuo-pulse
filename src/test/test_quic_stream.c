@@ -363,6 +363,50 @@ TEST (quic_stream_get_state_null)
   ASSERT_EQ (SocketQUICStream_get_state (NULL), QUIC_STREAM_STATE_READY);
 }
 
+TEST (quic_stream_get_send_state_null)
+{
+  ASSERT_EQ (SocketQUICStream_get_send_state (NULL), QUIC_STREAM_STATE_READY);
+}
+
+TEST (quic_stream_get_recv_state_null)
+{
+  ASSERT_EQ (SocketQUICStream_get_recv_state (NULL), QUIC_STREAM_STATE_RECV);
+}
+
+TEST (quic_stream_get_send_state)
+{
+  struct SocketQUICStream stream;
+
+  SocketQUICStream_init (&stream, 0);
+  ASSERT_EQ (SocketQUICStream_get_send_state (&stream),
+             QUIC_STREAM_STATE_READY);
+
+  stream.send_state = QUIC_STREAM_STATE_SEND;
+  ASSERT_EQ (SocketQUICStream_get_send_state (&stream),
+             QUIC_STREAM_STATE_SEND);
+
+  stream.send_state = QUIC_STREAM_STATE_DATA_SENT;
+  ASSERT_EQ (SocketQUICStream_get_send_state (&stream),
+             QUIC_STREAM_STATE_DATA_SENT);
+}
+
+TEST (quic_stream_get_recv_state)
+{
+  struct SocketQUICStream stream;
+
+  SocketQUICStream_init (&stream, 0);
+  ASSERT_EQ (SocketQUICStream_get_recv_state (&stream),
+             QUIC_STREAM_STATE_RECV);
+
+  stream.recv_state = QUIC_STREAM_STATE_SIZE_KNOWN;
+  ASSERT_EQ (SocketQUICStream_get_recv_state (&stream),
+             QUIC_STREAM_STATE_SIZE_KNOWN);
+
+  stream.recv_state = QUIC_STREAM_STATE_DATA_READ;
+  ASSERT_EQ (SocketQUICStream_get_recv_state (&stream),
+             QUIC_STREAM_STATE_DATA_READ);
+}
+
 TEST (quic_stream_is_local_null)
 {
   ASSERT_EQ (SocketQUICStream_is_local (NULL), 0);
