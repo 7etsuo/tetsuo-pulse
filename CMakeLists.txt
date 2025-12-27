@@ -400,6 +400,7 @@ set(LIB_SOURCES
     src/quic/SocketQUICAddrValidation.c
     src/quic/SocketQUICMigration.c
     src/quic/SocketQUICHandshake.c
+    src/quic/SocketQUICFlow.c
 
     # Simple convenience API
     src/simple/SocketSimple.c
@@ -795,6 +796,7 @@ set(TEST_SOURCES
     test_quic_migration
     test_quic_handshake
     test_quic_termination
+    test_quic_flow
 )
 
 # TLS tests (only built when TLS is enabled)
