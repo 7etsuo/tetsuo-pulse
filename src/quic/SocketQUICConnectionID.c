@@ -21,6 +21,10 @@
 /* Use SocketCrypto_random_bytes() for platform-independent secure random */
 #define SECURE_RANDOM(buf, len) (SocketCrypto_random_bytes ((buf), (len)) == 0)
 
+/* FNV-1a 32-bit hash constants */
+#define FNV1A_OFFSET_BASIS 2166136261u
+#define FNV1A_PRIME        16777619u
+
 /* ============================================================================
  * Result Strings
  * ============================================================================
@@ -286,12 +290,12 @@ SocketQUICConnectionID_hash (const SocketQUICConnectionID_T *cid)
     return 0;
 
   /* FNV-1a hash */
-  hash = 2166136261u;
+  hash = FNV1A_OFFSET_BASIS;
 
   for (i = 0; i < cid->len; i++)
     {
       hash ^= cid->data[i];
-      hash *= 16777619u;
+      hash *= FNV1A_PRIME;
     }
 
   return hash;
