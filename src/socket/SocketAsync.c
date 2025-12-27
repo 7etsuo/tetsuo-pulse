@@ -707,6 +707,7 @@ detect_io_uring_backend (T async, const SocketAsync_Config *config)
   if (try_io_uring_default (async, ring_size))
     return 1;
 
+  async->ring = NULL;
   async->available = 0;
   async->backend_name = "unavailable (io_uring unavailable)";
   return 0;
