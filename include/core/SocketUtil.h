@@ -1704,6 +1704,45 @@ socket_util_hash_djb2_seeded_ci (const char *str, unsigned table_size,
   return hash % table_size;
 }
 
+/**
+ * @brief Seeded case-insensitive length-aware DJB2 hash.
+ * @ingroup foundation
+ * @param str String to hash (may not be null-terminated).
+ * @param len Length of string.
+ * @param table_size Hash table size (should be prime for best distribution).
+ * @param seed Per-instance random seed for DoS resistance.
+ * @return Hash value in range [0, table_size).
+ * @threadsafe Yes (pure function)
+ *
+ * Combines all three features needed for HTTP header hashing:
+ * - Seeded: DoS protection via randomized hash seed
+ * - Case-insensitive: HTTP header names are case-insensitive per RFC
+ * - Length-aware: Header names in parsing buffers aren't null-terminated
+ *
+ * Uses XOR variant of DJB2 for character mixing (vs. addition in other variants).
+ * Seed is mixed using XOR with the initial hash value for simplicity.
+ *
+ * Use for security-sensitive tables where keys may be attacker-controlled
+ * and need case-insensitive comparison with known length.
+ */
+static inline unsigned
+socket_util_hash_djb2_seeded_ci_len (const char *str, size_t len,
+                                     unsigned table_size, uint32_t seed)
+{
+  unsigned hash = SOCKET_UTIL_DJB2_SEED ^ seed;
+
+  /* Hash the string with case folding */
+  for (size_t i = 0; i < len; i++)
+    {
+      unsigned char c = (unsigned char)str[i];
+      if (c >= 'A' && c <= 'Z')
+        c += 32;
+      hash = ((hash << 5) + hash) ^ c;
+    }
+
+  return hash % table_size;
+}
+
 /* ============================================================================
  * TTL EXPIRY UTILITIES
  * ============================================================================
