@@ -618,7 +618,7 @@ cache_entry_expired (const struct SocketDNS_T *dns,
   now_ms = Socket_get_monotonic_ms ();
   age_ms = now_ms - entry->insert_time_ms;
 
-  return age_ms >= (int64_t)dns->cache_ttl_seconds * 1000;
+  return age_ms >= (int64_t)dns->cache_ttl_seconds * SOCKET_MS_PER_SECOND;
 }
 
 static void
