@@ -356,6 +356,36 @@ TEST (quic_pmtu_check_timeouts)
   Arena_dispose (&arena);
 }
 
+TEST (quic_pmtu_check_timeouts_clock_backwards)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICPMTU_T pmtu;
+  SocketQUICPMTU_Result result;
+  size_t probe_size;
+  size_t initial_pmtu;
+
+  pmtu = SocketQUICPMTU_new (arena, 1200, 1500);
+  initial_pmtu = SocketQUICPMTU_get_current (pmtu);
+
+  SocketQUICPMTU_start_discovery (pmtu);
+  SocketQUICPMTU_get_next_probe_size (pmtu, &probe_size);
+
+  /* Send probe at time 5000ms */
+  result = SocketQUICPMTU_send_probe (pmtu, 100, probe_size, 5000);
+  ASSERT_EQ (result, QUIC_PMTU_OK);
+
+  /* Check timeouts with clock adjustment backwards (current_time < sent_time)
+   * This tests the integer underflow fix - should not timeout */
+  result = SocketQUICPMTU_check_timeouts (pmtu, 1000);
+  ASSERT_EQ (result, QUIC_PMTU_OK);
+
+  /* PMTU should remain unchanged (probe not timed out) */
+  ASSERT_EQ (SocketQUICPMTU_get_current (pmtu), initial_pmtu);
+
+  SocketQUICPMTU_free (&pmtu);
+  Arena_dispose (&arena);
+}
+
 /* ============================================================================
  * Test: Probe Limit
  * ============================================================================
