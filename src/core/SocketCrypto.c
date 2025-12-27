@@ -446,7 +446,7 @@ base64_validate_input (const char *input, size_t *input_len)
   if (*input_len == 0)
     return 0;
 
-  if (!SOCKET_SECURITY_VALID_SIZE (*input_len))
+  if (!SocketSecurity_check_size (*input_len))
     return -1;
 
   return 1;
