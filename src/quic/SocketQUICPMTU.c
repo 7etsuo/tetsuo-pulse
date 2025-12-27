@@ -147,8 +147,8 @@ SocketQUICPMTU_start_discovery (SocketQUICPMTU_T pmtu)
   /* Transition to SEARCHING */
   pmtu->state = QUIC_PMTU_STATE_SEARCHING;
 
-  /* Start with current PMTU + 100 bytes as initial probe target */
-  pmtu->target_pmtu = pmtu->current_pmtu + 100;
+  /* Start with current PMTU + increment as initial probe target */
+  pmtu->target_pmtu = pmtu->current_pmtu + QUIC_PMTU_PROBE_INCREMENT;
   if (pmtu->target_pmtu > pmtu->max_pmtu)
     pmtu->target_pmtu = pmtu->max_pmtu;
 
@@ -261,7 +261,7 @@ SocketQUICPMTU_probe_acked (SocketQUICPMTU_T pmtu, uint64_t packet_number)
   /* Prepare next probe (binary search approach) */
   if (pmtu->state == QUIC_PMTU_STATE_SEARCHING)
     {
-      size_t next_target = pmtu->current_pmtu + 100;
+      size_t next_target = pmtu->current_pmtu + QUIC_PMTU_PROBE_INCREMENT;
       if (next_target > pmtu->max_pmtu)
         next_target = pmtu->max_pmtu;
 
