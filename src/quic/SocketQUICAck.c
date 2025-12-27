@@ -469,6 +469,18 @@ encode_additional_ranges (uint8_t **out, size_t *remaining,
       uint64_t ack_range_len;
 
       /* Gap = prev_start - current_end - 2 */
+      /* Validate range ordering to prevent integer underflow.
+       * Ranges must be in descending order with proper spacing.
+       * For this to be valid (non-negative), we need: prev_start >= current_end + 2
+       */
+      if (ranges[i - 1].start < ranges[i].end + 2)
+        {
+          SOCKET_LOG_ERROR_MSG (
+              "Invalid ACK range ordering: ranges[%zu].start=%" PRIu64
+              " < ranges[%zu].end=%" PRIu64 " + 2",
+              i - 1, ranges[i - 1].start, i, ranges[i].end);
+          return QUIC_ACK_ERROR_RANGE;
+        }
       gap = ranges[i - 1].start - ranges[i].end - 2;
       n = SocketQUICVarInt_encode (gap, *out, *remaining);
       if (n == 0)
