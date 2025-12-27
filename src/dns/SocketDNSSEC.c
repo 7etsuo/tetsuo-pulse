@@ -12,11 +12,49 @@
 #include "dns/SocketDNSSEC.h"
 #include "core/Arena.h"
 #include "core/Except.h"
+#include "core/SocketCrypto.h"
 #include "dns/SocketDNSWire.h"
 #include <arpa/inet.h>
 #include <ctype.h>
 #include <string.h>
 #include <time.h>
+
+/*
+ * DNSSEC digest and key size constants (RFC 4034, 5702, 6605, 8080)
+ */
+
+/** SHA-1 digest length (RFC 4034). */
+#define DNSSEC_DIGEST_LEN_SHA1 20
+
+/** SHA-256 digest length (RFC 4509). */
+#define DNSSEC_DIGEST_LEN_SHA256 32
+
+/** SHA-384 digest length (RFC 6605). */
+#define DNSSEC_DIGEST_LEN_SHA384 48
+
+/** GOST R 34.11-94 digest length (RFC 5933). */
+#define DNSSEC_DIGEST_LEN_GOST 32
+
+/** ECDSA P-256 coordinate size in bytes (RFC 6605). */
+#define DNSSEC_ECDSA_P256_COORD_SIZE 32
+
+/** ECDSA P-384 coordinate size in bytes (RFC 6605). */
+#define DNSSEC_ECDSA_P384_COORD_SIZE 48
+
+/** Ed25519 public key size in bytes (RFC 8080). */
+#define DNSSEC_ED25519_PUBKEY_SIZE 32
+
+/** Ed448 public key size in bytes (RFC 8080). */
+#define DNSSEC_ED448_PUBKEY_SIZE 57
+
+/** Minimum RSA public key RDATA size (exponent length byte + min exponent). */
+#define DNSSEC_RSA_MIN_PUBKEY_SIZE 3
+
+/** Maximum label count in domain name comparison. */
+#define DNSSEC_MAX_LABELS 128
+
+/** DNSSEC protocol field value (RFC 4034 Section 2.1.2). */
+#define DNSSEC_PROTOCOL_VALUE 3
 
 #ifdef SOCKET_HAS_TLS
 #include <openssl/evp.h>
@@ -26,6 +64,39 @@
 #include <openssl/rsa.h>
 #include <openssl/bn.h>
 #endif
+
+/*
+ * Helper macros for network byte order (big-endian) field extraction.
+ * These read multi-byte fields from wire format data.
+ */
+
+/** Read big-endian 16-bit value from buffer. */
+#define READ_BE16(p) (((uint16_t)(p)[0] << 8) | (p)[1])
+
+/** Read big-endian 32-bit value from buffer. */
+#define READ_BE32(p)                                                          \
+  (((uint32_t)(p)[0] << 24) | ((uint32_t)(p)[1] << 16) |                      \
+   ((uint32_t)(p)[2] << 8) | (p)[3])
+
+/** Write big-endian 16-bit value to buffer. */
+#define WRITE_BE16(p, v)                                                      \
+  do                                                                          \
+    {                                                                         \
+      (p)[0] = ((v) >> 8) & 0xFF;                                             \
+      (p)[1] = (v) & 0xFF;                                                    \
+    }                                                                         \
+  while (0)
+
+/** Write big-endian 32-bit value to buffer. */
+#define WRITE_BE32(p, v)                                                      \
+  do                                                                          \
+    {                                                                         \
+      (p)[0] = ((v) >> 24) & 0xFF;                                            \
+      (p)[1] = ((v) >> 16) & 0xFF;                                            \
+      (p)[2] = ((v) >> 8) & 0xFF;                                             \
+      (p)[3] = (v) & 0xFF;                                                    \
+    }                                                                         \
+  while (0)
 
 const Except_T SocketDNSSEC_Failed
     = {&SocketDNSSEC_Failed, "DNSSEC operation failed"};
@@ -45,16 +116,12 @@ SocketDNSSEC_calculate_keytag (const unsigned char *rdata, size_t rdlen)
     return 0;
 
   /*
-   * RFC 4034 Appendix B.1: Algorithm 1 (RSA/MD5) uses different calculation
-   * For Algorithm 1, key tag = lower 16 bits of modulus
-   * But Algorithm 1 is deprecated, so we use the general formula
+   * RFC 4034 Appendix B.1: Algorithm 1 (RSA/MD5) uses different calculation.
+   * For Algorithm 1, key tag = lower 16 bits of RSA public key modulus.
+   * Algorithm 1 is deprecated but we maintain compatibility.
    */
-  if (rdlen >= 4 && rdata[3] == DNSSEC_ALGO_RSAMD5)
-    {
-      /* For RSA/MD5, return last 2 bytes of public key */
-      if (rdlen >= 4)
-        return ((uint16_t)rdata[rdlen - 3] << 8) | rdata[rdlen - 2];
-    }
+  if (rdata[3] == DNSSEC_ALGO_RSAMD5)
+    return READ_BE16 (rdata + rdlen - 3);
 
   /* General key tag algorithm (RFC 4034 Appendix B) */
   for (size_t i = 0; i < rdlen; i++)
@@ -87,13 +154,13 @@ SocketDNSSEC_parse_dnskey (const SocketDNS_RR *rr, SocketDNSSEC_DNSKEY *dnskey)
   const unsigned char *p = rr->rdata;
 
   /* Flags: 2 bytes (network order) */
-  dnskey->flags = ((uint16_t)p[0] << 8) | p[1];
+  dnskey->flags = READ_BE16 (p);
   p += 2;
 
-  /* Protocol: 1 byte (must be 3 for DNSSEC) */
+  /* Protocol: 1 byte (must be 3 for DNSSEC per RFC 4034 Section 2.1.2) */
   dnskey->protocol = *p++;
-  if (dnskey->protocol != 3)
-    return -1; /* Invalid protocol */
+  if (dnskey->protocol != DNSSEC_PROTOCOL_VALUE)
+    return -1;
 
   /* Algorithm: 1 byte */
   dnskey->algorithm = *p++;
@@ -128,7 +195,7 @@ SocketDNSSEC_parse_rrsig (const unsigned char *msg, size_t msglen,
   const unsigned char *end = rr->rdata + rr->rdlength;
 
   /* Type Covered: 2 bytes */
-  rrsig->type_covered = ((uint16_t)p[0] << 8) | p[1];
+  rrsig->type_covered = READ_BE16 (p);
   p += 2;
 
   /* Algorithm: 1 byte */
@@ -138,22 +205,19 @@ SocketDNSSEC_parse_rrsig (const unsigned char *msg, size_t msglen,
   rrsig->labels = *p++;
 
   /* Original TTL: 4 bytes */
-  rrsig->original_ttl = ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) |
-                        ((uint32_t)p[2] << 8) | p[3];
+  rrsig->original_ttl = READ_BE32 (p);
   p += 4;
 
   /* Signature Expiration: 4 bytes */
-  rrsig->sig_expiration = ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) |
-                          ((uint32_t)p[2] << 8) | p[3];
+  rrsig->sig_expiration = READ_BE32 (p);
   p += 4;
 
   /* Signature Inception: 4 bytes */
-  rrsig->sig_inception = ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) |
-                         ((uint32_t)p[2] << 8) | p[3];
+  rrsig->sig_inception = READ_BE32 (p);
   p += 4;
 
   /* Key Tag: 2 bytes */
-  rrsig->key_tag = ((uint16_t)p[0] << 8) | p[1];
+  rrsig->key_tag = READ_BE16 (p);
   p += 2;
 
   /* Signer's Name: variable length, may use compression */
@@ -192,7 +256,7 @@ SocketDNSSEC_parse_ds (const SocketDNS_RR *rr, SocketDNSSEC_DS *ds)
   const unsigned char *p = rr->rdata;
 
   /* Key Tag: 2 bytes */
-  ds->key_tag = ((uint16_t)p[0] << 8) | p[1];
+  ds->key_tag = READ_BE16 (p);
   p += 2;
 
   /* Algorithm: 1 byte */
@@ -205,23 +269,23 @@ SocketDNSSEC_parse_ds (const SocketDNS_RR *rr, SocketDNSSEC_DS *ds)
   ds->digest = p;
   ds->digest_len = rr->rdlength - DNSSEC_DS_FIXED_SIZE;
 
-  /* Validate digest length based on type */
+  /* Validate digest length based on type (RFC 4034, 4509, 5933, 6605) */
   switch (ds->digest_type)
     {
     case DNSSEC_DIGEST_SHA1:
-      if (ds->digest_len != 20)
+      if (ds->digest_len != DNSSEC_DIGEST_LEN_SHA1)
         return -1;
       break;
     case DNSSEC_DIGEST_SHA256:
-      if (ds->digest_len != 32)
+      if (ds->digest_len != DNSSEC_DIGEST_LEN_SHA256)
         return -1;
       break;
     case DNSSEC_DIGEST_SHA384:
-      if (ds->digest_len != 48)
+      if (ds->digest_len != DNSSEC_DIGEST_LEN_SHA384)
         return -1;
       break;
     case DNSSEC_DIGEST_GOST:
-      if (ds->digest_len != 32)
+      if (ds->digest_len != DNSSEC_DIGEST_LEN_GOST)
         return -1;
       break;
     default:
@@ -290,7 +354,7 @@ SocketDNSSEC_parse_nsec3 (const SocketDNS_RR *rr, SocketDNSSEC_NSEC3 *nsec3)
   nsec3->flags = *p++;
 
   /* Iterations: 2 bytes */
-  nsec3->iterations = ((uint16_t)p[0] << 8) | p[1];
+  nsec3->iterations = READ_BE16 (p);
   p += 2;
 
   /* Salt Length: 1 byte */
@@ -398,11 +462,11 @@ SocketDNSSEC_name_canonical_compare (const char *name1, const char *name2)
 
   /* Count labels */
   int labels1 = 0, labels2 = 0;
-  const char *label1[128], *label2[128];
-  size_t labellen1[128], labellen2[128];
+  const char *label1[DNSSEC_MAX_LABELS], *label2[DNSSEC_MAX_LABELS];
+  size_t labellen1[DNSSEC_MAX_LABELS], labellen2[DNSSEC_MAX_LABELS];
 
   const char *p = name1;
-  while (*p && labels1 < 128)
+  while (*p && labels1 < DNSSEC_MAX_LABELS)
     {
       label1[labels1] = p;
       const char *dot = strchr (p, '.');
@@ -418,11 +482,11 @@ SocketDNSSEC_name_canonical_compare (const char *name1, const char *name2)
         }
       labels1++;
     }
-  if (*p && labels1 < 128)
+  if (*p && labels1 < DNSSEC_MAX_LABELS)
     labels1++;
 
   p = name2;
-  while (*p && labels2 < 128)
+  while (*p && labels2 < DNSSEC_MAX_LABELS)
     {
       label2[labels2] = p;
       const char *dot = strchr (p, '.');
@@ -438,7 +502,7 @@ SocketDNSSEC_name_canonical_compare (const char *name1, const char *name2)
         }
       labels2++;
     }
-  if (*p && labels2 < 128)
+  if (*p && labels2 < DNSSEC_MAX_LABELS)
     labels2++;
 
   /* Compare from rightmost label */
@@ -697,8 +761,7 @@ SocketDNSSEC_verify_ds (const SocketDNSSEC_DS *ds,
   if (rdata == NULL)
     return -1;
 
-  rdata[0] = (dnskey->flags >> 8) & 0xFF;
-  rdata[1] = dnskey->flags & 0xFF;
+  WRITE_BE16 (rdata, dnskey->flags);
   rdata[2] = dnskey->protocol;
   rdata[3] = dnskey->algorithm;
   memcpy (rdata + DNSSEC_DNSKEY_FIXED_SIZE, dnskey->pubkey, dnskey->pubkey_len);
@@ -717,12 +780,11 @@ SocketDNSSEC_verify_ds (const SocketDNSSEC_DS *ds,
   if (computed_len != ds->digest_len)
     return 0;
 
-  /* Constant-time comparison */
-  unsigned char diff = 0;
-  for (size_t i = 0; i < computed_len; i++)
-    diff |= computed_digest[i] ^ ds->digest[i];
-
-  return (diff == 0) ? 1 : 0;
+  /* Constant-time comparison to prevent timing attacks */
+  return (SocketCrypto_secure_compare (computed_digest, ds->digest, computed_len)
+          == 0)
+             ? 1
+             : 0;
 
 #else
   /* No crypto support */
@@ -895,14 +957,16 @@ SocketDNSSEC_verify_rrsig (const SocketDNSSEC_RRSIG *rrsig,
         int nid = (dnskey->algorithm == DNSSEC_ALGO_ECDSAP256SHA256)
                       ? NID_X9_62_prime256v1
                       : NID_secp384r1;
-        size_t coord_size = (dnskey->algorithm == DNSSEC_ALGO_ECDSAP256SHA256) ? 32 : 48;
+        size_t coord_size = (dnskey->algorithm == DNSSEC_ALGO_ECDSAP256SHA256)
+                                ? DNSSEC_ECDSA_P256_COORD_SIZE
+                                : DNSSEC_ECDSA_P384_COORD_SIZE;
 
         if (dnskey->pubkey_len != 2 * coord_size)
           return DNSSEC_BOGUS;
 
 #if OPENSSL_VERSION_NUMBER >= 0x30000000L
         /* OpenSSL 3.0+ */
-        unsigned char pubkey_uncompressed[1 + 2 * 48];
+        unsigned char pubkey_uncompressed[1 + 2 * DNSSEC_ECDSA_P384_COORD_SIZE];
         pubkey_uncompressed[0] = 0x04; /* Uncompressed point */
         memcpy (pubkey_uncompressed + 1, dnskey->pubkey, 2 * coord_size);
 
@@ -930,7 +994,7 @@ SocketDNSSEC_verify_rrsig (const SocketDNSSEC_RRSIG *rrsig,
           return DNSSEC_INDETERMINATE;
 
         /* Create uncompressed public key point */
-        unsigned char pubkey_uncompressed[1 + 2 * 48];
+        unsigned char pubkey_uncompressed[1 + 2 * DNSSEC_ECDSA_P384_COORD_SIZE];
         pubkey_uncompressed[0] = 0x04; /* Uncompressed */
         memcpy (pubkey_uncompressed + 1, dnskey->pubkey, 2 * coord_size);
 
@@ -957,7 +1021,9 @@ SocketDNSSEC_verify_rrsig (const SocketDNSSEC_RRSIG *rrsig,
       {
         int type = (dnskey->algorithm == DNSSEC_ALGO_ED25519) ? EVP_PKEY_ED25519
                                                                : EVP_PKEY_ED448;
-        size_t key_len = (dnskey->algorithm == DNSSEC_ALGO_ED25519) ? 32 : 57;
+        size_t key_len = (dnskey->algorithm == DNSSEC_ALGO_ED25519)
+                             ? DNSSEC_ED25519_PUBKEY_SIZE
+                             : DNSSEC_ED448_PUBKEY_SIZE;
 
         if (dnskey->pubkey_len != key_len)
           return DNSSEC_BOGUS;
@@ -995,8 +1061,8 @@ SocketDNSSEC_verify_rrsig (const SocketDNSSEC_RRSIG *rrsig,
   size_t rrsig_rdata_len = 0;
 
   /* Type Covered */
-  rrsig_rdata[rrsig_rdata_len++] = (rrsig->type_covered >> 8) & 0xFF;
-  rrsig_rdata[rrsig_rdata_len++] = rrsig->type_covered & 0xFF;
+  WRITE_BE16 (rrsig_rdata + rrsig_rdata_len, rrsig->type_covered);
+  rrsig_rdata_len += 2;
 
   /* Algorithm */
   rrsig_rdata[rrsig_rdata_len++] = rrsig->algorithm;
@@ -1005,26 +1071,20 @@ SocketDNSSEC_verify_rrsig (const SocketDNSSEC_RRSIG *rrsig,
   rrsig_rdata[rrsig_rdata_len++] = rrsig->labels;
 
   /* Original TTL */
-  rrsig_rdata[rrsig_rdata_len++] = (rrsig->original_ttl >> 24) & 0xFF;
-  rrsig_rdata[rrsig_rdata_len++] = (rrsig->original_ttl >> 16) & 0xFF;
-  rrsig_rdata[rrsig_rdata_len++] = (rrsig->original_ttl >> 8) & 0xFF;
-  rrsig_rdata[rrsig_rdata_len++] = rrsig->original_ttl & 0xFF;
+  WRITE_BE32 (rrsig_rdata + rrsig_rdata_len, rrsig->original_ttl);
+  rrsig_rdata_len += 4;
 
   /* Signature Expiration */
-  rrsig_rdata[rrsig_rdata_len++] = (rrsig->sig_expiration >> 24) & 0xFF;
-  rrsig_rdata[rrsig_rdata_len++] = (rrsig->sig_expiration >> 16) & 0xFF;
-  rrsig_rdata[rrsig_rdata_len++] = (rrsig->sig_expiration >> 8) & 0xFF;
-  rrsig_rdata[rrsig_rdata_len++] = rrsig->sig_expiration & 0xFF;
+  WRITE_BE32 (rrsig_rdata + rrsig_rdata_len, rrsig->sig_expiration);
+  rrsig_rdata_len += 4;
 
   /* Signature Inception */
-  rrsig_rdata[rrsig_rdata_len++] = (rrsig->sig_inception >> 24) & 0xFF;
-  rrsig_rdata[rrsig_rdata_len++] = (rrsig->sig_inception >> 16) & 0xFF;
-  rrsig_rdata[rrsig_rdata_len++] = (rrsig->sig_inception >> 8) & 0xFF;
-  rrsig_rdata[rrsig_rdata_len++] = rrsig->sig_inception & 0xFF;
+  WRITE_BE32 (rrsig_rdata + rrsig_rdata_len, rrsig->sig_inception);
+  rrsig_rdata_len += 4;
 
   /* Key Tag */
-  rrsig_rdata[rrsig_rdata_len++] = (rrsig->key_tag >> 8) & 0xFF;
-  rrsig_rdata[rrsig_rdata_len++] = rrsig->key_tag & 0xFF;
+  WRITE_BE16 (rrsig_rdata + rrsig_rdata_len, rrsig->key_tag);
+  rrsig_rdata_len += 2;
 
   /* Signer's Name in canonical wire format */
   int name_len = encode_canonical_name (rrsig->signer_name,
@@ -1099,22 +1159,20 @@ SocketDNSSEC_verify_rrsig (const SocketDNSSEC_RRSIG *rrsig,
         }
 
       /* Type (2 bytes, network order) */
-      rr_canonical[rr_len++] = (rr.type >> 8) & 0xFF;
-      rr_canonical[rr_len++] = rr.type & 0xFF;
+      WRITE_BE16 (rr_canonical + rr_len, rr.type);
+      rr_len += 2;
 
       /* Class (2 bytes, network order) */
-      rr_canonical[rr_len++] = (rr.rclass >> 8) & 0xFF;
-      rr_canonical[rr_len++] = rr.rclass & 0xFF;
+      WRITE_BE16 (rr_canonical + rr_len, rr.rclass);
+      rr_len += 2;
 
       /* TTL - use original TTL from RRSIG, not current RR TTL (RFC 4035 5.3.2) */
-      rr_canonical[rr_len++] = (rrsig->original_ttl >> 24) & 0xFF;
-      rr_canonical[rr_len++] = (rrsig->original_ttl >> 16) & 0xFF;
-      rr_canonical[rr_len++] = (rrsig->original_ttl >> 8) & 0xFF;
-      rr_canonical[rr_len++] = rrsig->original_ttl & 0xFF;
+      WRITE_BE32 (rr_canonical + rr_len, rrsig->original_ttl);
+      rr_len += 4;
 
       /* RDLENGTH (2 bytes, network order) */
-      rr_canonical[rr_len++] = (rr.rdlength >> 8) & 0xFF;
-      rr_canonical[rr_len++] = rr.rdlength & 0xFF;
+      WRITE_BE16 (rr_canonical + rr_len, rr.rdlength);
+      rr_len += 2;
 
       /* RDATA (raw bytes from wire format) */
       if (rr.rdata != NULL && rr.rdlength > 0)
@@ -1145,7 +1203,9 @@ SocketDNSSEC_verify_rrsig (const SocketDNSSEC_RRSIG *rrsig,
   if (dnskey->algorithm == DNSSEC_ALGO_ECDSAP256SHA256 ||
       dnskey->algorithm == DNSSEC_ALGO_ECDSAP384SHA384)
     {
-      size_t coord_size = (dnskey->algorithm == DNSSEC_ALGO_ECDSAP256SHA256) ? 32 : 48;
+      size_t coord_size = (dnskey->algorithm == DNSSEC_ALGO_ECDSAP256SHA256)
+                              ? DNSSEC_ECDSA_P256_COORD_SIZE
+                              : DNSSEC_ECDSA_P384_COORD_SIZE;
       if (sig_len != 2 * coord_size)
         {
           EVP_MD_CTX_free (ctx);
@@ -1222,22 +1282,6 @@ struct SocketDNSSEC_Validator
   int anchor_count;
 };
 
-/*
- * Built-in root trust anchor (KSK-2017, id 20326)
- * This is the current root zone KSK as of 2017
- */
-static const unsigned char root_ksk_2017[] = {
-    /* Flags: 257 (KSK) */
-    0x01, 0x01,
-    /* Protocol: 3 */
-    0x03,
-    /* Algorithm: 8 (RSA/SHA-256) */
-    0x08,
-    /* Public Key (RSA exponent + modulus) */
-    0x03, 0x01, 0x00, 0x01, /* Exponent: 65537 */
-    /* Modulus follows... (truncated for brevity - full key in production) */
-};
-
 SocketDNSSEC_Validator_T
 SocketDNSSEC_validator_new (Arena_T arena)
 {
@@ -1254,8 +1298,6 @@ SocketDNSSEC_validator_new (Arena_T arena)
   v->arena = arena;
   v->anchors = NULL;
   v->anchor_count = 0;
-
-  /* TODO: Add built-in root trust anchor */
 
   return v;
 }
