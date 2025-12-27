@@ -633,8 +633,10 @@ extern ssize_t SocketDgram_recv (T socket, void *buf, size_t len);
  * @throws SocketDgram_Failed on error.
  * @threadsafe Yes (operates on single socket).
  * @note Loops until all data is sent or an error occurs.
- * @note For non-blocking sockets, returns 0 if would block
- * (EAGAIN/EWOULDBLOCK).
+ * @note This function requires a BLOCKING socket. On non-blocking sockets,
+ * it will return early with partial data if EAGAIN/EWOULDBLOCK occurs.
+ * @warning For UDP sockets, partial sends may result in fragmented messages.
+ * Ensure len <= 1472 bytes (safe UDP size) to avoid fragmentation.
  * @note Use SocketDgram_isconnected() to verify connection state before
  * calling.
  * @see SocketDgram_send() for partial send operations.
@@ -652,8 +654,8 @@ extern ssize_t SocketDgram_sendall (T socket, const void *buf, size_t len);
  * @throws SocketDgram_Failed on error.
  * @threadsafe Yes (operates on single socket).
  * @note Loops until len bytes are received or an error occurs.
- * @note For non-blocking sockets, returns 0 if would block
- * (EAGAIN/EWOULDBLOCK).
+ * @note This function requires a BLOCKING socket. On non-blocking sockets,
+ * it will return early with partial data if EAGAIN/EWOULDBLOCK occurs.
  * @note Use SocketDgram_isconnected() to verify connection state before
  * calling.
  * @see SocketDgram_recv() for partial receive operations.
