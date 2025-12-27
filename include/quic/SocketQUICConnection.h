@@ -24,6 +24,9 @@
 #define QUIC_CONNECTION_MAX_CIDS 8
 #define QUIC_CONNECTION_MIN_CID_LIMIT 2
 
+/* RFC 9000 Section 10.2: Closing/draining timeout = 3 * PTO */
+#define QUIC_TERMINATION_PTO_MULTIPLIER 3
+
 typedef struct SocketQUICConnection *SocketQUICConnection_T;
 typedef struct SocketQUICConnTable *SocketQUICConnTable_T;
 
