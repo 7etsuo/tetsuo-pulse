@@ -143,6 +143,40 @@ extern size_t SocketQUICVarInt_size (uint64_t value);
 extern const char *
 SocketQUICVarInt_result_string (SocketQUICVarInt_Result result);
 
+/**
+ * @brief Encode a varint field and advance position pointer.
+ *
+ * This is a convenience helper for the common pattern of encoding a varint,
+ * checking for errors, and advancing the position pointer. It reduces
+ * boilerplate in frame encoding functions.
+ *
+ * @param value     Value to encode.
+ * @param out       Output buffer base pointer.
+ * @param pos       Current position in buffer (updated on success).
+ * @param out_size  Total output buffer size.
+ *
+ * @return 1 on success, 0 on error (value exceeds max or buffer too small).
+ *
+ * Example:
+ * @code
+ * size_t pos = 0;
+ * if (!encode_varint_field(stream_id, out, &pos, out_size))
+ *   return 0;
+ * if (!encode_varint_field(offset, out, &pos, out_size))
+ *   return 0;
+ * @endcode
+ */
+static inline int
+encode_varint_field (uint64_t value, uint8_t *out, size_t *pos,
+                     size_t out_size)
+{
+  size_t encoded = SocketQUICVarInt_encode (value, out + *pos, out_size - *pos);
+  if (encoded == 0)
+    return 0;
+  *pos += encoded;
+  return 1;
+}
+
 /** @} */
 
 #endif /* SOCKETQUICVARINT_INCLUDED */

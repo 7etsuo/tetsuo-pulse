@@ -75,7 +75,6 @@ SocketQUICFrame_encode_new_token (const uint8_t *token, size_t token_len,
                                    uint8_t *out, size_t out_len)
 {
   size_t pos;
-  size_t encoded;
 
   /* Validate arguments */
   if (!out)
@@ -107,10 +106,8 @@ SocketQUICFrame_encode_new_token (const uint8_t *token, size_t token_len,
   out[pos++] = QUIC_FRAME_NEW_TOKEN;
 
   /* Token Length */
-  encoded = SocketQUICVarInt_encode (token_len, out + pos, out_len - pos);
-  if (encoded == 0)
+  if (!encode_varint_field (token_len, out, &pos, out_len))
     return 0;
-  pos += encoded;
 
   /* Token */
   memcpy (out + pos, token, token_len);
