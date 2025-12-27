@@ -14,6 +14,8 @@
 #include "socket/SocketCommon.h"
 #include "test/Test.h"
 
+#include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -361,6 +363,40 @@ TEST (dns_cache_ip_bypass)
   if (res3)
     SocketCommon_free_addrinfo (res3);
   SocketDNS_free (&dns);
+}
+
+/* Test SocketDNS_CacheStats structure ABI stability */
+TEST (dns_cache_stats_abi)
+{
+  /* Verify structure size (64 bytes for ABI stability) */
+  ASSERT_EQ (sizeof (SocketDNS_CacheStats), 64);
+
+  /* Verify field offsets for ABI compatibility */
+  ASSERT_EQ (offsetof (SocketDNS_CacheStats, hits), 0);
+  ASSERT_EQ (offsetof (SocketDNS_CacheStats, misses), 8);
+  ASSERT_EQ (offsetof (SocketDNS_CacheStats, evictions), 16);
+  ASSERT_EQ (offsetof (SocketDNS_CacheStats, insertions), 24);
+  ASSERT_EQ (offsetof (SocketDNS_CacheStats, current_size), 32);
+  ASSERT_EQ (offsetof (SocketDNS_CacheStats, max_entries), 40);
+  ASSERT_EQ (offsetof (SocketDNS_CacheStats, hit_rate), 48);
+  ASSERT_EQ (offsetof (SocketDNS_CacheStats, ttl_seconds), 56);
+  ASSERT_EQ (offsetof (SocketDNS_CacheStats, _reserved), 60);
+
+  /* Verify all fields use fixed-width types */
+  SocketDNS_CacheStats stats = { 0 };
+  stats.hits = UINT64_MAX;
+  stats.misses = UINT64_MAX;
+  stats.evictions = UINT64_MAX;
+  stats.insertions = UINT64_MAX;
+  stats.current_size = UINT64_MAX;
+  stats.max_entries = UINT64_MAX;
+  stats.hit_rate = 1.0;
+  stats.ttl_seconds = INT32_MAX;
+
+  /* Verify structure can be zeroed safely */
+  memset (&stats, 0, sizeof (stats));
+  ASSERT_EQ (stats.hits, 0);
+  ASSERT_EQ (stats.ttl_seconds, 0);
 }
 
 /* Main function - run all tests */
