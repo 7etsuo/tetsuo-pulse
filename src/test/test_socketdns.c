@@ -1184,6 +1184,66 @@ TEST (socketdns_pipe_has_cloexec)
   SocketDNS_free (&dns);
 }
 
+/* ==================== Security Tests (Issue #716) ==================== */
+
+/* Test: SocketDNS_resolve_sync rejects NULL dns parameter */
+TEST (socketdns_resolve_sync_null_dns_rejected)
+{
+  volatile int exception_raised = 0;
+  volatile struct addrinfo *result = NULL;
+
+  TRY
+  {
+    /* Attempt to call SocketDNS_resolve_sync with NULL dns
+     * This should raise SocketDNS_Failed exception to prevent
+     * bypassing timeout protection (DoS vulnerability). */
+    result = SocketDNS_resolve_sync (NULL, "example.com", 80, NULL, 5000);
+
+    /* Should not reach here */
+    ASSERT (0);
+  }
+  EXCEPT (SocketDNS_Failed)
+  {
+    /* Expected exception - NULL dns must be rejected for security */
+    exception_raised = 1;
+  }
+  END_TRY;
+
+  ASSERT_EQ (exception_raised, 1);
+  ASSERT_NULL (result);
+}
+
+/* Test: SocketDNS_resolve_sync works with valid dns resolver */
+TEST (socketdns_resolve_sync_with_timeout_protection)
+{
+  SocketDNS_T dns = SocketDNS_new ();
+  struct addrinfo *result = NULL;
+
+  TRY
+  {
+    /* Resolve IP address - should succeed quickly with timeout protection */
+    result = SocketDNS_resolve_sync (dns, "127.0.0.1", 80, NULL, 5000);
+    ASSERT_NOT_NULL (result);
+
+    /* Verify it's a valid result */
+    ASSERT_EQ (result->ai_family, AF_INET);
+
+    SocketCommon_free_addrinfo (result);
+    result = NULL;
+  }
+  EXCEPT (SocketDNS_Failed)
+  {
+    ASSERT (0); /* Should not fail with valid parameters */
+  }
+  FINALLY
+  {
+    if (result)
+      SocketCommon_free_addrinfo (result);
+    SocketDNS_free (&dns);
+  }
+  END_TRY;
+}
+
 int
 main (void)
 {
