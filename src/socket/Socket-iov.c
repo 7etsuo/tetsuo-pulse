@@ -605,9 +605,27 @@ wait_for_socket (int fd, short events, int timeout_ms)
 {
   struct pollfd pfd;
   int ret;
+  int safe_timeout;
 
   if (timeout_ms == 0)
     return 1; /* No timeout, proceed immediately */
+
+  /* Validate timeout range for poll()
+   * -1 = block indefinitely (valid)
+   * 0 = no wait (handled above)
+   * >0 = wait for specified milliseconds
+   * Extreme positive values could overflow or cause undefined behavior
+   */
+  if (timeout_ms < -1)
+    {
+      errno = EINVAL;
+      return -1;
+    }
+
+  /* Clamp to INT_MAX to prevent overflow in poll() implementations */
+  safe_timeout = timeout_ms;
+  if (timeout_ms > INT_MAX)
+    safe_timeout = INT_MAX;
 
   pfd.fd = fd;
   pfd.events = events;
@@ -615,7 +633,7 @@ wait_for_socket (int fd, short events, int timeout_ms)
 
   do
     {
-      ret = poll (&pfd, 1, timeout_ms);
+      ret = poll (&pfd, 1, safe_timeout);
     }
   while (ret < 0 && errno == EINTR);
 
