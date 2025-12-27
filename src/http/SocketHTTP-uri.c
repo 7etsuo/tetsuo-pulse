@@ -1075,6 +1075,7 @@ validate_host (const char *host, size_t len, int *out_is_ipv6)
 static SocketHTTP_URIResult
 check_path_traversal (const char *path, size_t len)
 {
+  /* Check 1: Literal ".." */
   for (size_t i = 0; i + 1 < len; i++)
     {
       if (path[i] == '.' && path[i + 1] == '.')
@@ -1087,6 +1088,7 @@ check_path_traversal (const char *path, size_t len)
         }
     }
 
+  /* Check 2: Fully encoded "%2e%2e" or "%2E%2E" */
   for (size_t i = 0; i + 5 < len; i++)
     {
       if (path[i] == '%' && (path[i + 1] == '2')
@@ -1095,6 +1097,34 @@ check_path_traversal (const char *path, size_t len)
           && (path[i + 5] == 'e' || path[i + 5] == 'E'))
         {
           return URI_PARSE_INVALID_PATH;
+        }
+    }
+
+  /* Check 3: Mixed encoding ".%2e" or ".%2E" */
+  for (size_t i = 0; i + 3 < len; i++)
+    {
+      if (path[i] == '.' && path[i + 1] == '%' && path[i + 2] == '2'
+          && (path[i + 3] == 'e' || path[i + 3] == 'E'))
+        {
+          if (i == 0 || path[i - 1] == '/')
+            {
+              if (i + 4 >= len || path[i + 4] == '/' || path[i + 4] == '?')
+                return URI_PARSE_INVALID_PATH;
+            }
+        }
+    }
+
+  /* Check 4: Mixed encoding "%2e." or "%2E." */
+  for (size_t i = 0; i + 3 < len; i++)
+    {
+      if (path[i] == '%' && path[i + 1] == '2'
+          && (path[i + 2] == 'e' || path[i + 2] == 'E') && path[i + 3] == '.')
+        {
+          if (i == 0 || path[i - 1] == '/')
+            {
+              if (i + 4 >= len || path[i + 4] == '/' || path[i + 4] == '?')
+                return URI_PARSE_INVALID_PATH;
+            }
         }
     }
 
