@@ -71,22 +71,62 @@ static unsigned hash_addr_pair(const uint8_t *local_addr, const uint8_t *peer_ad
 
 SocketQUICConnTable_T SocketQUICConnTable_new(Arena_T arena, size_t bucket_count) {
   SocketQUICConnTable_T table;
-  if (bucket_count == 0) bucket_count = QUIC_CONNTABLE_DEFAULT_SIZE;
-  if (arena) table = Arena_calloc(arena, 1, sizeof(*table), __FILE__, __LINE__);
-  else table = calloc(1, sizeof(*table));
-  if (!table) RAISE(SocketQUICConnTable_Failed);
-  table->arena = arena; table->bucket_count = bucket_count; table->addr_bucket_count = bucket_count;
-  if (arena) {
+  int using_arena;
+
+  if (bucket_count == 0) {
+    bucket_count = QUIC_CONNTABLE_DEFAULT_SIZE;
+  }
+
+  using_arena = (arena != NULL);
+
+  /* Allocate table structure */
+  if (using_arena) {
+    table = Arena_calloc(arena, 1, sizeof(*table), __FILE__, __LINE__);
+  } else {
+    table = calloc(1, sizeof(*table));
+  }
+  if (!table) {
+    RAISE(SocketQUICConnTable_Failed);
+  }
+
+  table->arena = arena;
+  table->bucket_count = bucket_count;
+  table->addr_bucket_count = bucket_count;
+
+  /* Allocate hash table buckets */
+  if (using_arena) {
     table->buckets = Arena_calloc(arena, bucket_count, sizeof(SocketQUICConnection_T), __FILE__, __LINE__);
     table->addr_buckets = Arena_calloc(arena, bucket_count, sizeof(SocketQUICConnection_T), __FILE__, __LINE__);
   } else {
     table->buckets = calloc(bucket_count, sizeof(SocketQUICConnection_T));
     table->addr_buckets = calloc(bucket_count, sizeof(SocketQUICConnection_T));
   }
-  if (!table->buckets || !table->addr_buckets) { if (!arena) { free(table->buckets); free(table->addr_buckets); free(table); } RAISE(SocketQUICConnTable_Failed); }
-  if (pthread_mutex_init(&table->mutex, NULL) != 0) { if (!arena) { free(table->buckets); free(table->addr_buckets); free(table); } RAISE(SocketQUICConnTable_Failed); }
+
+  if (!table->buckets || !table->addr_buckets) {
+    if (!using_arena) {
+      free(table->buckets);
+      free(table->addr_buckets);
+      free(table);
+    }
+    RAISE(SocketQUICConnTable_Failed);
+  }
+
+  /* Initialize mutex */
+  if (pthread_mutex_init(&table->mutex, NULL) != 0) {
+    if (!using_arena) {
+      free(table->buckets);
+      free(table->addr_buckets);
+      free(table);
+    }
+    RAISE(SocketQUICConnTable_Failed);
+  }
   table->mutex_initialized = 1;
-  if (!SECURE_RANDOM(&table->hash_seed, sizeof(table->hash_seed))) table->hash_seed = (uint32_t)((size_t)table ^ (size_t)table->buckets);
+
+  /* Initialize hash seed with secure random or fallback */
+  if (!SECURE_RANDOM(&table->hash_seed, sizeof(table->hash_seed))) {
+    table->hash_seed = (uint32_t)((size_t)table ^ (size_t)table->buckets);
+  }
+
   return table;
 }
 
