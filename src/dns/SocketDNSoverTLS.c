@@ -787,7 +787,7 @@ SocketDNSoverTLS_new (Arena_T arena)
 
   transport->arena = arena;
   transport->handshake_timeout_ms = DOT_HANDSHAKE_TIMEOUT_MS;
-  transport->query_timeout_ms = 5000;
+  transport->query_timeout_ms = DOT_DEFAULT_QUERY_TIMEOUT_MS;
   transport->idle_timeout_ms = DOT_IDLE_TIMEOUT_MS;
 
   init_connection (&transport->conn);
