@@ -17,6 +17,13 @@
 #define QUIC_FRAME_ACK_MAX_RANGES 256
 #define QUIC_FRAME_HEADER_MAX_SIZE 32
 
+/* Conservative buffer size estimates for QUIC frame encoding.
+ * These assume maximum varint encoding (8 bytes) for all variable-length fields.
+ * Used for pre-flight buffer size checks in frame encoding functions.
+ */
+#define QUIC_FRAME_MIN_SIZE_RESET_STREAM (1 + 8 + 8 + 8)  /* frame_type + stream_id + error_code + final_size */
+#define QUIC_FRAME_MIN_SIZE_STOP_SENDING (1 + 8 + 8)      /* frame_type + stream_id + error_code */
+
 typedef enum {
   QUIC_FRAME_PADDING = 0x00, QUIC_FRAME_PING = 0x01,
   QUIC_FRAME_ACK = 0x02, QUIC_FRAME_ACK_ECN = 0x03,
