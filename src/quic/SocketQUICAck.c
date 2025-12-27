@@ -28,6 +28,19 @@
 _Static_assert (QUIC_ACK_MAX_RANGES <= SIZE_MAX / sizeof (SocketQUICAckRange_T),
                 "QUIC_ACK_MAX_RANGES too large for safe allocation");
 
+/* Compile-time check that QUIC_ACK_MAX_RANGES won't overflow during capacity doubling.
+ * The grow_ranges() function doubles capacity with: new_capacity = state->range_capacity * 2
+ * This assertion ensures that even if range_capacity reaches QUIC_ACK_MAX_RANGES,
+ * doubling it won't overflow size_t before being clamped to the limit.
+ *
+ * Defense-in-depth: Prevents theoretical overflow in capacity growth calculation.
+ *
+ * CWE-190: Integer Overflow or Wraparound
+ * CERT C: INT30-C
+ */
+_Static_assert (QUIC_ACK_MAX_RANGES <= SIZE_MAX / 2,
+                "QUIC_ACK_MAX_RANGES too large for safe capacity doubling");
+
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "QUIC-ACK"
 
