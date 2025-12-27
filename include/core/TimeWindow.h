@@ -57,7 +57,7 @@ typedef struct TimeWindow_T
   int64_t window_start_ms;   /**< Start time of current window */
   uint32_t current_count;    /**< Events in current window */
   uint32_t previous_count;   /**< Events in previous window */
-  int duration_ms;           /**< Window duration in milliseconds */
+  int64_t duration_ms;       /**< Window duration in milliseconds */
 } TimeWindow_T;
 
 /**
@@ -66,7 +66,7 @@ typedef struct TimeWindow_T
  * Sets up the window with zero counts starting at the given time.
  * Duration is clamped to minimum of 1ms if invalid.
  */
-extern void TimeWindow_init (TimeWindow_T *tw, int duration_ms, int64_t now_ms);
+extern void TimeWindow_init (TimeWindow_T *tw, int64_t duration_ms, int64_t now_ms);
 
 /**
  * @brief Record an event in the time window

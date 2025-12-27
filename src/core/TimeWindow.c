@@ -16,20 +16,19 @@
 
 /* Clamp elapsed time to [0, duration] to handle clock skew */
 static inline int64_t
-timewindow_clamp_to_duration (int64_t elapsed, int duration)
+timewindow_clamp_to_duration (int64_t elapsed, int64_t duration)
 {
   if (duration <= 0)
     return 0;
   if (elapsed < 0)
     return 0;
-  int64_t d = duration;
-  if (elapsed > d)
-    return d;
+  if (elapsed > duration)
+    return duration;
   return elapsed;
 }
 
 void
-TimeWindow_init (T *tw, int duration_ms, int64_t now_ms)
+TimeWindow_init (T *tw, int64_t duration_ms, int64_t now_ms)
 {
   assert (tw != NULL);
 
@@ -73,7 +72,7 @@ TimeWindow_effective_count (const T *tw, int64_t now_ms)
 {
   assert (tw != NULL);
 
-  int duration_ms = tw->duration_ms;
+  int64_t duration_ms = tw->duration_ms;
   if (duration_ms <= 0)
     return tw->current_count;
 
@@ -81,7 +80,7 @@ TimeWindow_effective_count (const T *tw, int64_t now_ms)
   int64_t clamped_elapsed
       = timewindow_clamp_to_duration (elapsed, duration_ms);
 
-  int64_t remaining = (int64_t)duration_ms - clamped_elapsed;
+  int64_t remaining = duration_ms - clamped_elapsed;
   uint32_t weighted_previous = 0;
   if (remaining > 0)
     {
@@ -108,7 +107,7 @@ TimeWindow_progress (const T *tw, int64_t now_ms)
 {
   assert (tw != NULL);
 
-  int duration_ms = tw->duration_ms;
+  int64_t duration_ms = tw->duration_ms;
   if (duration_ms <= 0)
     return 1.0f;
 
