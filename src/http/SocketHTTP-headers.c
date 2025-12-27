@@ -16,6 +16,7 @@
 #include "http/SocketHTTP-private.h"
 #include "http/SocketHTTP.h"
 
+#include <stdint.h>
 #include <time.h>
 
 /* ============================================================================
@@ -26,6 +27,7 @@
 #define HEADER_ENTRY_NULL_OVERHEAD 2
 #define SOCKETHTTP_MAX_CHAIN_LEN 10
 #define SOCKETHTTP_MAX_CHAIN_SEARCH_LEN (SOCKETHTTP_MAX_CHAIN_LEN * 2)
+#define SOCKETHTTP_MAX_DOS_WARNINGS 3 /* Hard fail after this many warnings */
 
 #define VALIDATE_HEADERS_NAME(headers, name, retval)                          \
   do                                                                          \
@@ -49,7 +51,17 @@ init_header_hash_seed (void)
   if (SocketCrypto_random_bytes (&header_hash_seed, sizeof (header_hash_seed))
       != 0)
     {
-      header_hash_seed = (uint32_t)time (NULL) ^ (uint32_t)getpid ();
+      /* Fallback: combine multiple entropy sources for better unpredictability */
+      uint32_t time_seed = (uint32_t)time (NULL);
+      uint32_t pid_seed = (uint32_t)getpid ();
+      /* Use stack address for ASLR entropy */
+      uintptr_t stack_addr = (uintptr_t)&header_hash_seed;
+      uint32_t stack_seed = (uint32_t)(stack_addr ^ (stack_addr >> 32));
+
+      header_hash_seed = time_seed ^ pid_seed ^ stack_seed;
+
+      SOCKET_LOG_WARN_MSG (
+          "Crypto RNG unavailable - using weaker entropy sources for hash seed");
     }
 }
 
@@ -70,9 +82,20 @@ find_entry_with_prev (SocketHTTP_Headers_T headers, const char *name,
       chain_len++;
       if (chain_len > SOCKETHTTP_MAX_CHAIN_SEARCH_LEN)
         {
+          headers->dos_chain_warnings++;
           SOCKET_LOG_WARN_MSG (
-              "Excessive hash chain length %d in bucket %u - potential DoS",
-              chain_len, bucket);
+              "Excessive hash chain length %d in bucket %u - potential DoS "
+              "(warning %d/%d)",
+              chain_len, bucket, headers->dos_chain_warnings,
+              SOCKETHTTP_MAX_DOS_WARNINGS);
+
+          /* Hard fail after threshold to prevent resource exhaustion */
+          if (headers->dos_chain_warnings >= SOCKETHTTP_MAX_DOS_WARNINGS)
+            {
+              SOCKET_LOG_ERROR_MSG (
+                  "DoS threshold exceeded - rejecting connection");
+              return NULL;
+            }
           return NULL;
         }
       if (sockethttp_name_equal ((*pp)->name, (*pp)->name_len, name, name_len))
@@ -295,6 +318,7 @@ SocketHTTP_Headers_clear (SocketHTTP_Headers_T headers)
   headers->last = NULL;
   headers->count = 0;
   headers->total_size = 0;
+  headers->dos_chain_warnings = 0;
 }
 
 /* ============================================================================

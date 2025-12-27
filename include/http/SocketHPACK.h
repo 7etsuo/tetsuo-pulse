@@ -141,6 +141,7 @@ typedef struct
   size_t max_header_size;
   size_t max_header_list_size;
   double max_expansion_ratio;
+  size_t max_output_bytes; /* Absolute decompression output limit */
 } SocketHPACK_DecoderConfig;
 
 extern void

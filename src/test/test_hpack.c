@@ -1228,6 +1228,108 @@ test_invalid_index (void)
   printf ("PASS\n");
 }
 
+/**
+ * Test HPACK bomb detection with absolute size limit
+ * Issue #508: Ensure absolute output size limit prevents bombs
+ */
+static void
+test_hpack_bomb_absolute_limit (void)
+{
+  Arena_T arena;
+  SocketHPACK_Decoder_T decoder;
+  SocketHPACK_DecoderConfig config;
+  SocketHPACK_Header headers[256];
+  size_t header_count;
+  SocketHPACK_Result result;
+
+  printf ("  HPACK bomb absolute size limit... ");
+
+  arena = Arena_new ();
+
+  /* Configure with small absolute limit but high list size */
+  SocketHPACK_decoder_config_defaults (&config);
+  config.max_output_bytes = 1024; /* Only allow 1KB output */
+  config.max_expansion_ratio = 100.0; /* High ratio, but absolute limit wins */
+  config.max_header_list_size = 128 * 1024; /* High list size */
+
+  decoder = SocketHPACK_Decoder_new (&config, arena);
+
+  /* Create input that would expand beyond absolute limit */
+  /* Need to be careful about available buffer space */
+  unsigned char input[2048];
+  size_t pos = 0;
+
+  /* Generate headers with 50 byte names and 50 byte values = 100 bytes each */
+  /* 11 headers * 100 = 1100 bytes > 1024 limit */
+  int generated = 0;
+  for (int i = 0; i < 15; i++)
+    {
+      /* Each header needs 2 + 50 + 2 + 50 = 104 bytes */
+      if (pos + 104 > sizeof (input))
+        break;
+
+      input[pos++] = 0x00; /* Literal without indexing, new name */
+      input[pos++] = 0x32; /* Name length = 50 */
+      for (int j = 0; j < 50; j++)
+        input[pos++] = 'x';
+      input[pos++] = 0x32; /* Value length = 50 */
+      for (int j = 0; j < 50; j++)
+        input[pos++] = 'y';
+      generated++;
+    }
+
+  result = SocketHPACK_Decoder_decode (decoder, input, pos, headers, 256,
+                                       &header_count, arena);
+  TEST_ASSERT (result == HPACK_ERROR_BOMB,
+               "Should fail with BOMB error when exceeding absolute limit");
+
+  SocketHPACK_Decoder_free (&decoder);
+  Arena_dispose (&arena);
+
+  printf ("PASS\n");
+}
+
+/**
+ * Test HPACK bomb detection with ratio limit
+ * Issue #508: Ensure ratio check still works
+ */
+static void
+test_hpack_bomb_ratio_limit (void)
+{
+  Arena_T arena;
+  SocketHPACK_Decoder_T decoder;
+  SocketHPACK_DecoderConfig config;
+  SocketHPACK_Header headers[16];
+  size_t header_count;
+  SocketHPACK_Result result;
+
+  printf ("  HPACK bomb expansion ratio limit... ");
+
+  arena = Arena_new ();
+
+  /* Configure with tight ratio but high absolute limit */
+  SocketHPACK_decoder_config_defaults (&config);
+  config.max_expansion_ratio = 2.0; /* Only allow 2x expansion */
+  config.max_output_bytes = 1024 * 1024; /* High absolute limit */
+
+  decoder = SocketHPACK_Decoder_new (&config, arena);
+
+  /* Create input with high expansion ratio */
+  /* Use indexed header (1 byte input) which expands to ":method: GET" (11 bytes) */
+  /* Ratio = 11/1 = 11x, exceeds 2x limit */
+  unsigned char input[] = { 0x82 }; /* :method: GET from static table */
+
+  result = SocketHPACK_Decoder_decode (decoder, input, sizeof (input), headers,
+                                       16, &header_count, arena);
+  TEST_ASSERT (result == HPACK_ERROR_BOMB,
+               "Should fail with BOMB error when exceeding ratio");
+
+  SocketHPACK_Decoder_free (&decoder);
+  Arena_dispose (&arena);
+
+  printf ("PASS\n");
+}
+
 /* ============================================================================
  * Main Test Runner
  * ============================================================================
@@ -1290,6 +1392,8 @@ main (void)
   printf ("\nSecurity Tests:\n");
   test_header_size_limit ();
   test_invalid_index ();
+  test_hpack_bomb_absolute_limit ();
+  test_hpack_bomb_ratio_limit ();
 
   printf ("\n================\n");
   printf ("All HPACK tests passed!\n");
