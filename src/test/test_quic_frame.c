@@ -1408,7 +1408,7 @@ TEST (frame_new_token_overflow_32bit)
 #endif
 }
 
-TEST (frame_stream_overflow_32bit)
+TEST (frame_stream_with_offset_overflow_32bit)
 {
   /* Test STREAM frame with length > SIZE_MAX on 32-bit */
   uint8_t buf[512];

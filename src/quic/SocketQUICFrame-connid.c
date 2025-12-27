@@ -27,6 +27,7 @@
 
 #include "quic/SocketQUICFrame.h"
 #include "quic/SocketQUICVarInt.h"
+#include "quic/SocketQUICConstants.h"
 
 #include <string.h>
 
@@ -85,7 +86,7 @@ SocketQUICFrame_encode_new_connection_id (uint64_t sequence,
   size_t type_len = SocketQUICVarInt_size (QUIC_FRAME_NEW_CONNECTION_ID);
   size_t seq_len = SocketQUICVarInt_size (sequence);
   size_t retire_len = SocketQUICVarInt_size (retire_prior_to);
-  size_t total_len = type_len + seq_len + retire_len + 1 + cid_length + 16;
+  size_t total_len = type_len + seq_len + retire_len + 1 + cid_length + QUIC_STATELESS_RESET_TOKEN_LEN;
 
   if (out_size < total_len)
     return 0;
@@ -110,8 +111,8 @@ SocketQUICFrame_encode_new_connection_id (uint64_t sequence,
   pos += cid_length;
 
   /* Encode stateless reset token (16 bytes) */
-  memcpy (out + pos, reset_token, 16);
-  pos += 16;
+  memcpy (out + pos, reset_token, QUIC_STATELESS_RESET_TOKEN_LEN);
+  pos += QUIC_STATELESS_RESET_TOKEN_LEN;
 
   return pos;
 }

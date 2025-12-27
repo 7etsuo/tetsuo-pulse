@@ -15,8 +15,12 @@
 
 #include "core/Arena.h"
 #include "core/Except.h"
+#include "core/SocketUtil.h"
 #include "dns/SocketDNS-private.h"
 #include "test/Test.h"
+
+/* Declare thread-local exception storage for SocketDNS module */
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketDNS);
 
 /* Suppress longjmp clobbering warnings for test variables used with TRY/EXCEPT
  */
