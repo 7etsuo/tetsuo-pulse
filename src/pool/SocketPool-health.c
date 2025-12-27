@@ -341,10 +341,12 @@ health_worker_thread (void *arg)
       pthread_mutex_lock (&health->worker_mutex);
       if (!atomic_load (&health->shutdown))
         {
+          struct timespec interval;
           interval_ms = health->config.probe_interval_ms;
           clock_gettime (CLOCK_REALTIME, &ts);
-          ts.tv_sec += interval_ms / 1000;
-          ts.tv_nsec += (interval_ms % 1000) * 1000000;
+          socket_util_ms_to_timespec (interval_ms, &interval);
+          ts.tv_sec += interval.tv_sec;
+          ts.tv_nsec += interval.tv_nsec;
           if (ts.tv_nsec >= 1000000000)
             {
               ts.tv_sec++;

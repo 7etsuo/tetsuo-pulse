@@ -19,6 +19,7 @@
 
 #include "core/Arena.h"
 #include "core/Except.h"
+#include "core/SocketUtil.h"
 #include "pool/SocketPool.h"
 #include "pool/SocketPoolHealth.h"
 #include "socket/Socket.h"
@@ -47,8 +48,7 @@ static void
 sleep_ms(int ms)
 {
     struct timespec ts;
-    ts.tv_sec = ms / 1000;
-    ts.tv_nsec = (ms % 1000) * 1000000;
+    socket_util_ms_to_timespec(ms, &ts);
     nanosleep(&ts, NULL);
 }
 

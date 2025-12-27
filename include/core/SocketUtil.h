@@ -804,6 +804,30 @@ SocketTimeout_elapsed_ms (int64_t start_ms)
   return SocketTimeout_now_ms () - start_ms;
 }
 
+/**
+ * @brief Convert milliseconds to timespec structure.
+ * @ingroup foundation
+ * @param ms Milliseconds to convert.
+ * @param ts Output timespec structure.
+ * @threadsafe Yes (pure function)
+ *
+ * Converts a millisecond value to a timespec structure for use with
+ * functions like nanosleep(), pthread_cond_timedwait(), etc.
+ *
+ * This helper eliminates duplicate conversion code across modules.
+ *
+ * Usage:
+ *   struct timespec req;
+ *   socket_util_ms_to_timespec(100, &req);  // 100ms
+ *   nanosleep(&req, NULL);
+ */
+static inline void
+socket_util_ms_to_timespec (int ms, struct timespec *ts)
+{
+  ts->tv_sec = ms / 1000;
+  ts->tv_nsec = (ms % 1000) * 1000000L;
+}
+
 /* ============================================================================
  * MUTEX + ARENA MANAGER PATTERN
  * ============================================================================

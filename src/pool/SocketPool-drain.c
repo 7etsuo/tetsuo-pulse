@@ -614,8 +614,7 @@ SocketPool_drain_wait (T pool, int timeout_ms)
   while ((result = SocketPool_drain_poll (pool)) > 0)
     {
       /* Sleep with exponential backoff */
-      ts.tv_sec = backoff_ms / 1000;
-      ts.tv_nsec = (backoff_ms % 1000) * NSEC_PER_MSEC;
+      socket_util_ms_to_timespec (backoff_ms, &ts);
       nanosleep (&ts, NULL);
 
       /* Increase backoff up to max */

@@ -253,8 +253,7 @@ retry_sleep_ms (int ms)
   if (ms <= 0)
     return;
 
-  req.tv_sec = ms / MILLISECONDS_PER_SECOND;
-  req.tv_nsec = (ms % MILLISECONDS_PER_SECOND) * NANOSECONDS_PER_MILLISECOND;
+  socket_util_ms_to_timespec (ms, &req);
 
   while (nanosleep (&req, &rem) == -1)
     {
