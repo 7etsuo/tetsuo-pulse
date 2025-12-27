@@ -1136,6 +1136,115 @@ socket_util_ttl_remaining (int64_t insert_time_ms, uint32_t ttl_sec,
 }
 
 /* ============================================================================
+ * BIG-ENDIAN BYTE MANIPULATION UTILITIES
+ * ============================================================================
+ */
+
+/**
+ * @brief Unpack 16-bit big-endian value.
+ * @ingroup foundation
+ * @param p Pointer to 2-byte buffer.
+ * @return Decoded 16-bit value in host byte order.
+ * @threadsafe Yes (pure function)
+ *
+ * Converts 2 bytes from big-endian (network) byte order to host byte order.
+ * Used for parsing network protocols (DNS, HTTP/2, QUIC).
+ */
+static inline uint16_t
+socket_util_unpack_be16 (const unsigned char *p)
+{
+  return ((uint16_t)p[0] << 8) | (uint16_t)p[1];
+}
+
+/**
+ * @brief Pack 16-bit value to big-endian.
+ * @ingroup foundation
+ * @param p Pointer to 2-byte buffer.
+ * @param v 16-bit value in host byte order.
+ * @threadsafe Yes (pure function)
+ *
+ * Converts 16-bit value from host byte order to big-endian (network) byte order.
+ * Used for serializing network protocols (DNS, HTTP/2, QUIC).
+ */
+static inline void
+socket_util_pack_be16 (unsigned char *p, uint16_t v)
+{
+  p[0] = (unsigned char)((v >> 8) & 0xFF);
+  p[1] = (unsigned char)(v & 0xFF);
+}
+
+/**
+ * @brief Unpack 24-bit big-endian value.
+ * @ingroup foundation
+ * @param p Pointer to 3-byte buffer.
+ * @return Decoded 24-bit value in host byte order (stored in uint32_t).
+ * @threadsafe Yes (pure function)
+ *
+ * Converts 3 bytes from big-endian byte order to host byte order.
+ * Used for HTTP/2 frame length fields (24-bit).
+ */
+static inline uint32_t
+socket_util_unpack_be24 (const unsigned char *p)
+{
+  return ((uint32_t)p[0] << 16) | ((uint32_t)p[1] << 8) | (uint32_t)p[2];
+}
+
+/**
+ * @brief Pack 24-bit value to big-endian.
+ * @ingroup foundation
+ * @param p Pointer to 3-byte buffer.
+ * @param v 24-bit value in host byte order (lower 24 bits used).
+ * @threadsafe Yes (pure function)
+ *
+ * Converts 24-bit value from host byte order to big-endian byte order.
+ * Used for HTTP/2 frame length fields (24-bit).
+ * Only the lower 24 bits of v are encoded.
+ */
+static inline void
+socket_util_pack_be24 (unsigned char *p, uint32_t v)
+{
+  p[0] = (unsigned char)((v >> 16) & 0xFF);
+  p[1] = (unsigned char)((v >> 8) & 0xFF);
+  p[2] = (unsigned char)(v & 0xFF);
+}
+
+/**
+ * @brief Unpack 32-bit big-endian value.
+ * @ingroup foundation
+ * @param p Pointer to 4-byte buffer.
+ * @return Decoded 32-bit value in host byte order.
+ * @threadsafe Yes (pure function)
+ *
+ * Converts 4 bytes from big-endian (network) byte order to host byte order.
+ * Used for parsing network protocols (DNS, HTTP/2, QUIC).
+ */
+static inline uint32_t
+socket_util_unpack_be32 (const unsigned char *p)
+{
+  return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16)
+         | ((uint32_t)p[2] << 8) | (uint32_t)p[3];
+}
+
+/**
+ * @brief Pack 32-bit value to big-endian.
+ * @ingroup foundation
+ * @param p Pointer to 4-byte buffer.
+ * @param v 32-bit value in host byte order.
+ * @threadsafe Yes (pure function)
+ *
+ * Converts 32-bit value from host byte order to big-endian (network) byte order.
+ * Used for serializing network protocols (DNS, HTTP/2, QUIC).
+ */
+static inline void
+socket_util_pack_be32 (unsigned char *p, uint32_t v)
+{
+  p[0] = (unsigned char)((v >> 24) & 0xFF);
+  p[1] = (unsigned char)((v >> 16) & 0xFF);
+  p[2] = (unsigned char)((v >> 8) & 0xFF);
+  p[3] = (unsigned char)(v & 0xFF);
+}
+
+/* ============================================================================
  * IP ADDRESS UTILITY FUNCTIONS
  * ============================================================================
  */

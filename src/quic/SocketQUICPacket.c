@@ -16,6 +16,7 @@
 #include "quic/SocketQUICPacket.h"
 #include "quic/SocketQUICVarInt.h"
 #include "quic/SocketQUICConstants.h"
+#include "core/SocketUtil.h"
 
 /* ============================================================================
  * Result String Table
@@ -72,22 +73,11 @@ SocketQUICPacketHeader_init (SocketQUICPacketHeader_T *header)
  * ============================================================================
  */
 
-static inline uint32_t
-unpack_be32 (const uint8_t *data)
-{
-  return ((uint32_t)data[0] << 24) | ((uint32_t)data[1] << 16)
-         | ((uint32_t)data[2] << 8) | (uint32_t)data[3];
-}
+/* Big-endian pack/unpack helpers - using shared utilities from SocketUtil.h */
+#define unpack_be32(data) socket_util_unpack_be32(data)
+#define pack_be32(data, value) socket_util_pack_be32(data, value)
 
-static inline void
-pack_be32 (uint8_t *data, uint32_t value)
-{
-  data[0] = (uint8_t)((value >> 24) & 0xFF);
-  data[1] = (uint8_t)((value >> 16) & 0xFF);
-  data[2] = (uint8_t)((value >> 8) & 0xFF);
-  data[3] = (uint8_t)(value & 0xFF);
-}
-
+/* Variable-length packet number encoding - QUIC specific */
 static inline uint32_t
 unpack_pn (const uint8_t *data, uint8_t pn_length)
 {
