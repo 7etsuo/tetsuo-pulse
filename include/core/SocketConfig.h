@@ -408,14 +408,6 @@ extern const char *Socket_safe_strerror (int errnum);
 #endif
 
 /**
- * @brief Initial capacity when buffer reserve grows from zero.
- *
- */
-#ifndef SOCKETBUF_INITIAL_CAPACITY
-#define SOCKETBUF_INITIAL_CAPACITY 1024
-#endif
-
-/**
  * @brief Allocation overhead for arena bookkeeping during buffer resize.
  *
  */
