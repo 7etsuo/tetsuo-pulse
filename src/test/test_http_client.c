@@ -1376,7 +1376,11 @@ main (void)
 {
   /* Ignore SIGPIPE - library handles this internally, but explicit for tests
    */
-  Socket_ignore_sigpipe ();
+  if (Socket_ignore_sigpipe () != 0)
+    {
+      perror ("Socket_ignore_sigpipe");
+      return 1;
+    }
 
   printf ("\n");
   printf ("============================================================\n");

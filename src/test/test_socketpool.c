@@ -3368,7 +3368,11 @@ int
 main (void)
 {
   /* Ignore SIGPIPE once at startup */
-  Socket_ignore_sigpipe ();
+  if (Socket_ignore_sigpipe () != 0)
+    {
+      perror ("Socket_ignore_sigpipe");
+      return 1;
+    }
 
   Test_run_all ();
   return Test_get_failures () > 0 ? 1 : 0;

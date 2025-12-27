@@ -7257,7 +7257,11 @@ main (void)
 {
   /* Ignore SIGPIPE once at startup - library handles this internally,
    * but we call it explicitly for defense-in-depth in tests. */
-  Socket_ignore_sigpipe ();
+  if (Socket_ignore_sigpipe () != 0)
+    {
+      perror ("Socket_ignore_sigpipe");
+      return 1;
+    }
 
   Test_run_all ();
   return Test_get_failures () > 0 ? 1 : 0;

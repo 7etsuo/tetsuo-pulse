@@ -534,7 +534,11 @@ main (void)
   printf ("=== Signal Handling Tests ===\n\n");
 
   /* Ensure SIGPIPE is ignored for all tests */
-  Socket_ignore_sigpipe ();
+  if (Socket_ignore_sigpipe () != 0)
+    {
+      perror ("Socket_ignore_sigpipe");
+      return 1;
+    }
 
   Test_run_all ();
 
