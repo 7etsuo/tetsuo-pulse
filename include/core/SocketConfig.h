@@ -436,6 +436,21 @@ extern const char *Socket_safe_strerror (int errnum);
 #define SOCKETBUF_MAX_CAPACITY (SIZE_MAX / 2)
 #endif
 
+/**
+ * @brief Standard 16KB buffer size for WebSocket and HTTP/2 streams.
+ *
+ * Optimized for HTTP/2 multiplexing scenarios where many concurrent streams
+ * may exist on a single connection. Smaller than standard WebSocket buffers
+ * (64KB) to reduce memory footprint while maintaining good performance.
+ *
+ * Used by:
+ * - WebSocket-over-HTTP/2 (RFC 8441)
+ * - HTTP/2 stream buffers
+ */
+#ifndef SOCKET_BUFFER_SIZE_16KB
+#define SOCKET_BUFFER_SIZE_16KB (16 * 1024)
+#endif
+
 /* ============================================================================
  * DNS Configuration
  * ============================================================================

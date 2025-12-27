@@ -34,9 +34,22 @@
 
 #include "core/SocketUtil.h"
 
-/** Buffer sizes for WebSocket-over-HTTP/2 */
-#define WSH2_RECV_BUFFER_SIZE 16384
-#define WSH2_SEND_BUFFER_SIZE 16384
+/**
+ * Buffer sizes for WebSocket-over-HTTP/2
+ *
+ * Uses smaller buffers (16KB) compared to standard WebSocket (64KB) to optimize
+ * memory usage in HTTP/2 multiplexing scenarios where many concurrent WebSocket
+ * streams may exist on a single connection.
+ *
+ * References SOCKET_BUFFER_SIZE_16KB from SocketConfig.h for consistency.
+ */
+#ifndef SOCKETWSH2_RECV_BUFFER_SIZE
+#define SOCKETWSH2_RECV_BUFFER_SIZE SOCKET_BUFFER_SIZE_16KB
+#endif
+
+#ifndef SOCKETWSH2_SEND_BUFFER_SIZE
+#define SOCKETWSH2_SEND_BUFFER_SIZE SOCKET_BUFFER_SIZE_16KB
+#endif
 
 static SocketWS_T
 wsh2_create_ws_context (Arena_T arena, SocketHTTP2_Stream_T stream,
@@ -71,14 +84,14 @@ wsh2_create_ws_context (Arena_T arena, SocketHTTP2_Stream_T stream,
   ws->role = role;
 
   /* Create I/O buffers */
-  ws->recv_buf = SocketBuf_new (arena, WSH2_RECV_BUFFER_SIZE);
+  ws->recv_buf = SocketBuf_new (arena, SOCKETWSH2_RECV_BUFFER_SIZE);
   if (!ws->recv_buf)
     {
       SOCKET_LOG_ERROR_MSG ("Failed to create recv buffer");
       return NULL;
     }
 
-  ws->send_buf = SocketBuf_new (arena, WSH2_SEND_BUFFER_SIZE);
+  ws->send_buf = SocketBuf_new (arena, SOCKETWSH2_SEND_BUFFER_SIZE);
   if (!ws->send_buf)
     {
       SocketBuf_release (&ws->recv_buf);
