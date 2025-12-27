@@ -1806,6 +1806,29 @@ SocketCommon_calculate_total_iov_len (const struct iovec *iov, int iovcnt)
 }
 
 void
+SocketCommon_validate_iov_bases (const struct iovec *iov, int iovcnt)
+{
+  int i;
+
+  if (!iov || iovcnt <= 0 || iovcnt > IOV_MAX)
+    {
+      SOCKET_RAISE_FMT (SocketCommon, SocketCommon_Failed,
+                        "Invalid iov params: iov=%p iovcnt=%d", (void *)iov,
+                        iovcnt);
+    }
+
+  for (i = 0; i < iovcnt; i++)
+    {
+      if (iov[i].iov_len > 0 && iov[i].iov_base == NULL)
+        {
+          SOCKET_RAISE_FMT (SocketCommon, SocketCommon_Failed,
+                            "iov[%d].iov_base is NULL with iov_len=%zu", i,
+                            iov[i].iov_len);
+        }
+    }
+}
+
+void
 SocketCommon_advance_iov (struct iovec *iov, int iovcnt, size_t bytes)
 {
   size_t remaining = bytes;
