@@ -319,7 +319,9 @@ SocketQUICConnectionID_to_hex (const SocketQUICConnectionID_T *cid, char *buf,
       return 5;
     }
 
-  /* Format: "XX:XX:XX..." requires 3*len-1 chars + null */
+  /* Format: "XX:XX:XX..." requires 3*len-1 chars + null terminator.
+   * Each byte: 2 hex chars + 1 colon separator = 3 chars per byte.
+   * Last byte has no trailing colon: (3*len - 1) + 1 null = 3*len total. */
   if (size < (size_t)(cid->len * 3))
     {
       buf[0] = '\0';
