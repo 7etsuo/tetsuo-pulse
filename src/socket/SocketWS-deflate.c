@@ -518,6 +518,21 @@ ws_compress_message (SocketWS_T ws, const unsigned char *input,
     }
 
   /* Set up zlib stream */
+  /* Check for overflow before casting size_t to uInt (zlib limitation) */
+  if (input_len > UINT_MAX)
+    {
+      ws_set_error (ws, WS_ERROR_COMPRESSION,
+                    "Input size %zu exceeds zlib limit %u", input_len,
+                    UINT_MAX);
+      return -1;
+    }
+  if (buf_size > UINT_MAX)
+    {
+      ws_set_error (ws, WS_ERROR_COMPRESSION,
+                    "Buffer size %zu exceeds zlib limit %u", buf_size,
+                    UINT_MAX);
+      return -1;
+    }
   strm->next_in = (Bytef *)input;
 
   /* Check for overflow before casting size_t to uInt (issue #566) */
@@ -618,6 +633,21 @@ ws_decompress_message (SocketWS_T ws, const unsigned char *input,
     }
 
   /* Set up zlib stream */
+  /* Check for overflow before casting size_t to uInt (zlib limitation) */
+  if (input_with_trailer_len > UINT_MAX)
+    {
+      ws_set_error (ws, WS_ERROR_COMPRESSION,
+                    "Input size %zu exceeds zlib limit %u",
+                    input_with_trailer_len, UINT_MAX);
+      return -1;
+    }
+  if (buf_size > UINT_MAX)
+    {
+      ws_set_error (ws, WS_ERROR_COMPRESSION,
+                    "Buffer size %zu exceeds zlib limit %u", buf_size,
+                    UINT_MAX);
+      return -1;
+    }
   strm->next_in = input_with_trailer;
 
   /* Check for overflow before casting size_t to uInt (issue #566) */
