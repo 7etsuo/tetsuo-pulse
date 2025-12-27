@@ -417,8 +417,15 @@ check_connect_completion (T conn)
     {
       error = 0;
       len = sizeof (error);
-      getsockopt (fd, SOL_SOCKET, SO_ERROR, &error, &len);
-      int connect_err = error ? error : ECONNREFUSED;
+      int connect_err;
+      if (getsockopt (fd, SOL_SOCKET, SO_ERROR, &error, &len) < 0)
+        {
+          connect_err = errno;
+        }
+      else
+        {
+          connect_err = error ? error : ECONNREFUSED;
+        }
       reconnect_set_socket_error (conn, "Connect poll error", connect_err);
       return -1;
     }
