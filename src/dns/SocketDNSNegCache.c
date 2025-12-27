@@ -103,7 +103,7 @@ normalize_name (char *dest, const char *src, size_t max_len)
 static unsigned
 compute_hash_with_seed (const char *name, uint16_t qtype, uint16_t qclass, uint32_t seed)
 {
-  unsigned hash = 5381; /* djb2 initial value */
+  unsigned hash = SOCKET_UTIL_DJB2_SEED;
 
   /* Mix in random seed for DoS protection */
   hash = ((hash << 5) + hash) ^ seed;
