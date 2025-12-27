@@ -212,7 +212,15 @@ SocketQUICFrame_encode_stream (uint64_t stream_id, uint64_t offset,
   if (offset > 0 && offset_len == 0)
     return 0; /* Offset exceeds varint maximum */
 
-  size_t total_len = type_len + stream_id_len + offset_len + length_len + len;
+  /* Check for overflow in total length calculation (CWE-190)
+   * The user-controlled 'len' parameter could cause integer overflow if
+   * close to SIZE_MAX. This could bypass the buffer size check and lead
+   * to buffer overflow during memcpy at line 243. */
+  size_t header_len = type_len + stream_id_len + offset_len + length_len;
+  if (len > SIZE_MAX - header_len)
+    return 0; /* Overflow would occur */
+
+  size_t total_len = header_len + len;
 
   if (total_len > out_len)
     return 0; /* Insufficient buffer */
