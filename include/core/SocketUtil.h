@@ -1409,4 +1409,41 @@ socket_util_safe_strncpy (char *dest, const char *src, size_t max_len)
     }                                                                         \
   while (0)
 
+/* ============================================================================
+ * BUFFER SIZE CONSTANTS
+ * ============================================================================
+ */
+
+/**
+ * @brief Standard initial buffer capacity for protocol message assembly.
+ * @ingroup foundation
+ *
+ * Default size for initial message buffers in WebSocket and other protocol
+ * implementations. Sized to accommodate typical messages while allowing
+ * growth for larger payloads.
+ *
+ * Used for:
+ * - WebSocket message reassembly initial capacity
+ * - Protocol message parsing buffers
+ * - Initial allocation for dynamic buffers
+ *
+ * @see SocketBuf_T for dynamic buffer implementation
+ */
+#define SOCKET_INITIAL_MESSAGE_CAPACITY 4096
+
+/**
+ * @brief Standard buffer growth factor for dynamic buffers.
+ * @ingroup foundation
+ *
+ * Multiplicative factor for buffer capacity growth when resizing.
+ * Value of 2 provides good balance between memory usage and reallocation
+ * frequency (amortized O(1) appends).
+ *
+ * Used for:
+ * - SocketBuf dynamic resizing
+ * - WebSocket message buffer growth
+ * - General dynamic buffer expansion
+ */
+#define SOCKET_BUFFER_GROWTH_FACTOR 2
+
 #endif /* SOCKETUTIL_INCLUDED */
