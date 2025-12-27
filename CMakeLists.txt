@@ -382,6 +382,7 @@ set(LIB_SOURCES
     src/quic/SocketQUICVersion.c
     src/quic/SocketQUICError-handling.c
     src/quic/SocketQUICConnectionID.c
+    src/quic/SocketQUICConnectionID-pool.c
     src/quic/SocketQUICStream.c
     src/quic/SocketQUICStream-state.c
     src/quic/SocketQUICPacket.c
@@ -640,6 +641,7 @@ set(QUIC_HEADERS
     include/quic/SocketQUICError.h
     include/quic/SocketQUICVersion.h
     include/quic/SocketQUICConnectionID.h
+    include/quic/SocketQUICConnectionID-pool.h
     include/quic/SocketQUICStream.h
     include/quic/SocketQUICPacket.h
     include/quic/SocketQUICFrame.h
@@ -788,6 +790,7 @@ set(TEST_SOURCES
     test_quic_error
     test_quic_version
     test_quic_connid
+    test_quic_connid_pool
     test_quic_stream
     test_quic_stream_state
     test_quic_packet
