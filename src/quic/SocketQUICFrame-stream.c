@@ -46,7 +46,6 @@ SocketQUICFrame_encode_reset_stream (uint64_t stream_id, uint64_t error_code,
                                      size_t out_size)
 {
   size_t pos;
-  size_t encoded;
 
   if (!out)
     return 0;
@@ -71,22 +70,16 @@ SocketQUICFrame_encode_reset_stream (uint64_t stream_id, uint64_t error_code,
   out[pos++] = QUIC_FRAME_RESET_STREAM;
 
   /* Stream ID */
-  encoded = SocketQUICVarInt_encode (stream_id, out + pos, out_size - pos);
-  if (encoded == 0)
+  if (!encode_varint_field (stream_id, out, &pos, out_size))
     return 0;
-  pos += encoded;
 
   /* Application Protocol Error Code */
-  encoded = SocketQUICVarInt_encode (error_code, out + pos, out_size - pos);
-  if (encoded == 0)
+  if (!encode_varint_field (error_code, out, &pos, out_size))
     return 0;
-  pos += encoded;
 
   /* Final Size */
-  encoded = SocketQUICVarInt_encode (final_size, out + pos, out_size - pos);
-  if (encoded == 0)
+  if (!encode_varint_field (final_size, out, &pos, out_size))
     return 0;
-  pos += encoded;
 
   return pos;
 }
@@ -121,7 +114,6 @@ SocketQUICFrame_encode_stop_sending (uint64_t stream_id, uint64_t error_code,
                                      uint8_t *out, size_t out_size)
 {
   size_t pos;
-  size_t encoded;
 
   if (!out)
     return 0;
@@ -145,16 +137,12 @@ SocketQUICFrame_encode_stop_sending (uint64_t stream_id, uint64_t error_code,
   out[pos++] = QUIC_FRAME_STOP_SENDING;
 
   /* Stream ID */
-  encoded = SocketQUICVarInt_encode (stream_id, out + pos, out_size - pos);
-  if (encoded == 0)
+  if (!encode_varint_field (stream_id, out, &pos, out_size))
     return 0;
-  pos += encoded;
 
   /* Application Protocol Error Code */
-  encoded = SocketQUICVarInt_encode (error_code, out + pos, out_size - pos);
-  if (encoded == 0)
+  if (!encode_varint_field (error_code, out, &pos, out_size))
     return 0;
-  pos += encoded;
 
   return pos;
 }
@@ -193,7 +181,6 @@ SocketQUICFrame_encode_stream (uint64_t stream_id, uint64_t offset,
                                uint8_t *out, size_t out_len)
 {
   size_t pos;
-  size_t encoded;
 
   if (!out || out_len == 0)
     return 0;
@@ -236,25 +223,19 @@ SocketQUICFrame_encode_stream (uint64_t stream_id, uint64_t offset,
   out[pos++] = frame_type;
 
   /* Stream ID */
-  encoded = SocketQUICVarInt_encode (stream_id, out + pos, out_len - pos);
-  if (encoded == 0)
+  if (!encode_varint_field (stream_id, out, &pos, out_len))
     return 0;
-  pos += encoded;
 
   /* Offset (if present) */
   if (offset > 0)
     {
-      encoded = SocketQUICVarInt_encode (offset, out + pos, out_len - pos);
-      if (encoded == 0)
+      if (!encode_varint_field (offset, out, &pos, out_len))
         return 0;
-      pos += encoded;
     }
 
   /* Length */
-  encoded = SocketQUICVarInt_encode (len, out + pos, out_len - pos);
-  if (encoded == 0)
+  if (!encode_varint_field (len, out, &pos, out_len))
     return 0;
-  pos += encoded;
 
   /* Stream Data */
   if (len > 0 && data)

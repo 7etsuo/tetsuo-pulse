@@ -91,15 +91,16 @@ SocketQUICFrame_encode_new_connection_id (uint64_t sequence,
     return 0;
 
   /* Encode frame type */
-  pos += SocketQUICVarInt_encode (QUIC_FRAME_NEW_CONNECTION_ID, out + pos,
-                                  out_size - pos);
+  if (!encode_varint_field (QUIC_FRAME_NEW_CONNECTION_ID, out, &pos, out_size))
+    return 0;
 
   /* Encode sequence number */
-  pos += SocketQUICVarInt_encode (sequence, out + pos, out_size - pos);
+  if (!encode_varint_field (sequence, out, &pos, out_size))
+    return 0;
 
   /* Encode retire_prior_to */
-  pos
-      += SocketQUICVarInt_encode (retire_prior_to, out + pos, out_size - pos);
+  if (!encode_varint_field (retire_prior_to, out, &pos, out_size))
+    return 0;
 
   /* Encode CID length (1 byte) */
   out[pos++] = cid_length;
@@ -154,11 +155,12 @@ SocketQUICFrame_encode_retire_connection_id (uint64_t sequence, uint8_t *out,
     return 0;
 
   /* Encode frame type */
-  pos += SocketQUICVarInt_encode (QUIC_FRAME_RETIRE_CONNECTION_ID, out + pos,
-                                  out_size - pos);
+  if (!encode_varint_field (QUIC_FRAME_RETIRE_CONNECTION_ID, out, &pos, out_size))
+    return 0;
 
   /* Encode sequence number */
-  pos += SocketQUICVarInt_encode (sequence, out + pos, out_size - pos);
+  if (!encode_varint_field (sequence, out, &pos, out_size))
+    return 0;
 
   return pos;
 }

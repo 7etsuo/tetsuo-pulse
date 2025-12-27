@@ -59,7 +59,6 @@ SocketQUICFrame_encode_crypto (uint64_t offset, const uint8_t *data,
                                 size_t len, uint8_t *out, size_t out_len)
 {
   size_t pos;
-  size_t encoded;
 
   if (!out || out_len == 0)
     return 0;
@@ -87,16 +86,12 @@ SocketQUICFrame_encode_crypto (uint64_t offset, const uint8_t *data,
   out[pos++] = QUIC_FRAME_CRYPTO;
 
   /* Offset */
-  encoded = SocketQUICVarInt_encode (offset, out + pos, out_len - pos);
-  if (encoded == 0)
+  if (!encode_varint_field (offset, out, &pos, out_len))
     return 0;
-  pos += encoded;
 
   /* Length */
-  encoded = SocketQUICVarInt_encode (len, out + pos, out_len - pos);
-  if (encoded == 0)
+  if (!encode_varint_field (len, out, &pos, out_len))
     return 0;
-  pos += encoded;
 
   /* Crypto Data */
   if (len > 0 && data)
