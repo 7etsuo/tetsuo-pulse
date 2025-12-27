@@ -136,7 +136,7 @@ ip_matches_cidr_bytes (int family, const uint8_t *ip_bytes,
 int
 ip_matches_cidr (const char *ip, const SocketSYN_WhitelistEntry *entry)
 {
-  uint8_t ip_bytes[16];
+  uint8_t ip_bytes[SOCKET_IPV6_ADDR_BYTES];
   int family;
 
   if (!ip)
@@ -184,7 +184,7 @@ whitelist_check_bucket_bytes (const SocketSYN_WhitelistEntry *entry,
 int
 whitelist_check_bucket (const SocketSYN_WhitelistEntry *entry, const char *ip)
 {
-  uint8_t ip_bytes[16];
+  uint8_t ip_bytes[SOCKET_IPV6_ADDR_BYTES];
   int family;
 
   if (!ip)
@@ -219,7 +219,7 @@ int
 whitelist_check_all_cidrs (SocketSYNProtect_T protect, const char *ip,
                            unsigned skip_bucket)
 {
-  uint8_t ip_bytes[16];
+  uint8_t ip_bytes[SOCKET_IPV6_ADDR_BYTES];
   int family;
 
   if (!ip)
@@ -236,7 +236,7 @@ int
 whitelist_check (SocketSYNProtect_T protect, const char *ip)
 {
   unsigned bucket;
-  uint8_t ip_bytes[16];
+  uint8_t ip_bytes[SOCKET_IPV6_ADDR_BYTES];
   int family;
 
   if (!ip || protect->whitelist_count == 0)
