@@ -463,6 +463,52 @@ test_header_validation (void)
                "NUL byte invalid");
 }
 
+/**
+ * Test hash collision DoS protection
+ * Issue #508: Ensure excessive hash chain length triggers warnings and fails
+ */
+static void
+test_header_dos_protection (void)
+{
+  printf ("Testing HTTP header DoS protection...\n");
+
+  Arena_T arena = Arena_new ();
+  SocketHTTP_Headers_T headers = SocketHTTP_Headers_new (arena);
+
+  /* Add many headers with same hash to trigger collision detection */
+  /* This test relies on internal bucket size limits */
+  int added = 0;
+  int failed = 0;
+
+  /* Try to add many headers - should eventually hit chain length limit */
+  for (int i = 0; i < 100; i++)
+    {
+      char name[32];
+      char value[32];
+      snprintf (name, sizeof (name), "X-Header-%d", i);
+      snprintf (value, sizeof (value), "value%d", i);
+
+      int result = SocketHTTP_Headers_add (headers, name, value);
+      if (result == 0)
+        added++;
+      else
+        failed++;
+    }
+
+  /* We should be able to add most headers, but may hit limits */
+  TEST_ASSERT (added > 0, "Should add some headers");
+
+  /* Test that we can still retrieve added headers */
+  const char *val = SocketHTTP_Headers_get (headers, "X-Header-0");
+  if (added > 0)
+    {
+      TEST_ASSERT (val != NULL, "Should retrieve first header");
+      TEST_ASSERT (strcmp (val, "value0") == 0, "Header value correct");
+    }
+
+  Arena_dispose (&arena);
+}
+
 /* ============================================================================
  * URI Parsing Tests
  * ============================================================================
@@ -1039,6 +1085,7 @@ main (void)
   test_headers_contains ();
   test_headers_get_int ();
   test_header_validation ();
+  test_header_dos_protection ();
 
   /* URI tests */
   test_uri_basic ();

@@ -68,6 +68,7 @@ struct SocketHPACK_Decoder
   uint64_t decode_input_bytes;
   uint64_t decode_output_bytes;
   double max_expansion_ratio;
+  size_t max_output_bytes;
 };
 typedef struct
 {

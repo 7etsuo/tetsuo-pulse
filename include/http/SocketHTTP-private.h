@@ -45,6 +45,7 @@ struct SocketHTTP_Headers
   HeaderEntry *last;
   size_t count;
   size_t total_size;
+  int dos_chain_warnings; /* Count of hash collision DoS warnings */
 };
 
 static inline int

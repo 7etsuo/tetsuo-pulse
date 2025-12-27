@@ -763,6 +763,11 @@ SocketHPACK_decoder_config_defaults (SocketHPACK_DecoderConfig *config)
   config->max_header_size = SOCKETHPACK_MAX_HEADER_SIZE;
   config->max_header_list_size = SOCKETHPACK_MAX_HEADER_LIST_SIZE;
   config->max_expansion_ratio = 10.0;
+  /* Default: 1MB or 10x header_list_size, whichever is smaller */
+  config->max_output_bytes
+      = (SOCKETHPACK_MAX_HEADER_LIST_SIZE * 10 < (1024 * 1024))
+            ? SOCKETHPACK_MAX_HEADER_LIST_SIZE * 10
+            : (1024 * 1024);
 }
 
 /* ============================================================================
@@ -792,6 +797,7 @@ SocketHPACK_Decoder_new (const SocketHPACK_DecoderConfig *config,
   decoder->max_header_list_size = config->max_header_list_size;
   decoder->settings_max_table_size = config->max_table_size;
   decoder->max_expansion_ratio = config->max_expansion_ratio;
+  decoder->max_output_bytes = config->max_output_bytes;
   decoder->decode_input_bytes = 0;
   decoder->decode_output_bytes = 0;
   decoder->arena = arena;
@@ -1083,6 +1089,12 @@ SocketHPACK_Decoder_decode (SocketHPACK_Decoder_T decoder,
 
       /* Check expansion ratio to prevent HPACK bombs */
       decoder->decode_output_bytes += header.name_len + header.value_len;
+
+      /* Check absolute output size limit first */
+      if (decoder->decode_output_bytes > decoder->max_output_bytes)
+        return HPACK_ERROR_BOMB;
+
+      /* Then check expansion ratio */
       if (decoder->decode_input_bytes > 0)
         {
           double current_ratio = (double)decoder->decode_output_bytes /
