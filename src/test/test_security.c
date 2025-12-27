@@ -1114,6 +1114,137 @@ TEST (security_cookie_file_load_large_rejected)
 }
 
 /* ============================================================================
+ * Control Character Detection Tests
+ * ============================================================================
+ */
+
+TEST (security_control_chars_clean_string)
+{
+  /* Test normal ASCII strings without control characters */
+  const char *clean = "Hello, World!";
+  ASSERT_EQ (0, SocketSecurity_has_control_chars (clean, strlen (clean)));
+
+  /* Test string with various printable characters */
+  const char *printable = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+                          "0123456789!@#$%^&*()-_=+[]{}|;:,.<>?/`~";
+  ASSERT_EQ (0,
+             SocketSecurity_has_control_chars (printable, strlen (printable)));
+
+  /* Test empty string */
+  ASSERT_EQ (0, SocketSecurity_has_control_chars ("", 0));
+}
+
+TEST (security_control_chars_detects_nul)
+{
+  /* Test NUL byte (0x00) detection */
+  const char nul_string[] = { 'H', 'e', 'l', 'l', 'o', 0x00, 'W', 'o', 'r',
+                              'l',  'd',  0 };
+  ASSERT_EQ (1, SocketSecurity_has_control_chars (nul_string, 11));
+
+  /* NUL at beginning */
+  const char nul_start[] = { 0x00, 'h', 'e', 'l', 'l', 'o', 0 };
+  ASSERT_EQ (1, SocketSecurity_has_control_chars (nul_start, 6));
+
+  /* NUL at end (explicit length, not using terminator) */
+  const char nul_end[] = { 'h', 'e', 'l', 'l', 'o', 0x00 };
+  ASSERT_EQ (1, SocketSecurity_has_control_chars (nul_end, 6));
+}
+
+TEST (security_control_chars_detects_cr)
+{
+  /* Test CR (0x0D) detection - header injection vector */
+  const char *cr_string = "Header-Name: value\rInjected: evil";
+  ASSERT_EQ (1, SocketSecurity_has_control_chars (cr_string, strlen (cr_string)));
+
+  /* CR at beginning */
+  const char *cr_start = "\rHeader: value";
+  ASSERT_EQ (1, SocketSecurity_has_control_chars (cr_start, strlen (cr_start)));
+
+  /* CR at end */
+  const char *cr_end = "Header: value\r";
+  ASSERT_EQ (1, SocketSecurity_has_control_chars (cr_end, strlen (cr_end)));
+}
+
+TEST (security_control_chars_detects_lf)
+{
+  /* Test LF (0x0A) detection - header injection vector */
+  const char *lf_string = "Header-Name: value\nInjected: evil";
+  ASSERT_EQ (1, SocketSecurity_has_control_chars (lf_string, strlen (lf_string)));
+
+  /* LF at beginning */
+  const char *lf_start = "\nHeader: value";
+  ASSERT_EQ (1, SocketSecurity_has_control_chars (lf_start, strlen (lf_start)));
+
+  /* LF at end */
+  const char *lf_end = "Header: value\n";
+  ASSERT_EQ (1, SocketSecurity_has_control_chars (lf_end, strlen (lf_end)));
+}
+
+TEST (security_control_chars_detects_crlf)
+{
+  /* Test CRLF (0x0D 0x0A) sequence - HTTP header injection */
+  const char *crlf_string = "Header-Name: value\r\nInjected: evil";
+  ASSERT_EQ (
+      1, SocketSecurity_has_control_chars (crlf_string, strlen (crlf_string)));
+
+  /* Multiple CRLF sequences */
+  const char *multi_crlf = "Line1\r\nLine2\r\nLine3";
+  ASSERT_EQ (1,
+             SocketSecurity_has_control_chars (multi_crlf, strlen (multi_crlf)));
+}
+
+TEST (security_control_chars_usage_pattern)
+{
+  /* Test the documented usage pattern: validate before calling */
+  const char *header_value = "Valid-Header-Value";
+  const char *injected_value = "Evil\r\nInjected: header";
+
+  /* Safe header value */
+  if (header_value
+      && SocketSecurity_has_control_chars (header_value, strlen (header_value)))
+    {
+      ASSERT (0); /* Should not reach here */
+    }
+
+  /* Unsafe header value */
+  if (injected_value && SocketSecurity_has_control_chars (
+                            injected_value, strlen (injected_value)))
+    {
+      /* Expected: should detect injection attempt */
+      ASSERT (1);
+    }
+  else
+    {
+      ASSERT (0); /* Should not reach here */
+    }
+}
+
+TEST (security_control_chars_allows_other_control_chars)
+{
+  /* Function only checks for NUL, CR, LF - other control chars allowed */
+  /* This matches HTTP header field-content specification */
+
+  /* Tab (0x09) is allowed in HTTP header values */
+  const char *with_tab = "Header\tValue";
+  ASSERT_EQ (0, SocketSecurity_has_control_chars (with_tab, strlen (with_tab)));
+
+  /* Other control characters are allowed (though uncommon) */
+  const char with_ctrl[] = { 'H', 'e', 'l', 'l', 'o', 0x01, 'W', 'o', 'r',
+                             'l',  'd',  0 };
+  /* 0x01 is a control char but not NUL/CR/LF, so allowed */
+  ASSERT_EQ (0, SocketSecurity_has_control_chars (with_ctrl, 11));
+}
+
+TEST (security_control_chars_high_ascii)
+{
+  /* Test that high ASCII values (> 0x7F) are allowed */
+  const unsigned char high_ascii[]
+      = { 0xC0, 0xC1, 0xFF, 0x80, 0xFE, 0 }; /* Various high bytes */
+  ASSERT_EQ (
+      0, SocketSecurity_has_control_chars ((const char *)high_ascii, 5));
+}
+
+/* ============================================================================
  * TLS Utility Macro Tests
  * ============================================================================
  */
