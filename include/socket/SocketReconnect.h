@@ -128,6 +128,15 @@ typedef struct SocketReconnect_Policy
 #define SOCKET_RECONNECT_DEFAULT_HEALTH_TIMEOUT_MS 5000
 #endif
 
+/* Minimum validation thresholds */
+#ifndef SOCKET_RECONNECT_MIN_CIRCUIT_RESET_MS
+#define SOCKET_RECONNECT_MIN_CIRCUIT_RESET_MS 1000
+#endif
+
+#ifndef SOCKET_RECONNECT_MIN_HEALTH_TIMEOUT_MS
+#define SOCKET_RECONNECT_MIN_HEALTH_TIMEOUT_MS 100
+#endif
+
 /* ============================================================================
  * Event Callbacks
  * ============================================================================
