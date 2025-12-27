@@ -277,14 +277,6 @@ proxy_socks4a_send_connect (struct SocketProxy_Conn_T *conn)
   buf[len++] = 0x00;
   buf[len++] = SOCKS4A_MARKER_IP_BYTE;
 
-  /* Check total buffer capacity before writing variable-length fields */
-  if (len + SOCKET_PROXY_MAX_USERNAME_LEN + 1 + host_len + 1
-      > sizeof (conn->send_buf))
-    {
-      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL, "Request too large");
-      return -1;
-    }
-
   /* Write userid with null terminator */
   if (socks4_write_userid (buf + len, sizeof (conn->send_buf) - len,
                            conn->username, &userid_written)
