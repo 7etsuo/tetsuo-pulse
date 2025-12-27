@@ -22,10 +22,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#ifndef SOCKET_RATELIMIT_MIN_WAIT_MS
-#define SOCKET_RATELIMIT_MIN_WAIT_MS 1
-#endif
-
 #ifndef SOCKET_RATELIMIT_IMPOSSIBLE_WAIT
 #define SOCKET_RATELIMIT_IMPOSSIBLE_WAIT (-1)
 #endif
