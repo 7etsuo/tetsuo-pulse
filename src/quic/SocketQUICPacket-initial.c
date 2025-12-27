@@ -225,6 +225,54 @@ cleanup:
 }
 
 /**
+ * @brief Build HkdfLabel structure per RFC 8446 Section 7.1.
+ *
+ * Constructs the HKDF label structure used in TLS 1.3 and QUIC:
+ * - Length (2 bytes, big-endian)
+ * - Label length and "tls13 " prefix + actual label
+ * - Context length and context
+ *
+ * @param label Label string (e.g., "quic key")
+ * @param label_len Length of label
+ * @param context Context data (may be NULL if context_len is 0)
+ * @param context_len Length of context
+ * @param output_len Desired output length (for length field)
+ * @param hkdf_label Buffer to store constructed label
+ * @param hkdf_label_len Output: length of constructed label
+ * @return 0 on success, -1 on error
+ */
+static int
+build_hkdf_label (const char *label, size_t label_len,
+                  const uint8_t *context, size_t context_len,
+                  size_t output_len,
+                  uint8_t *hkdf_label, size_t *hkdf_label_len)
+{
+  *hkdf_label_len = 0;
+
+  /* Length (2 bytes, big-endian) */
+  hkdf_label[(*hkdf_label_len)++] = (uint8_t)((output_len >> 8) & 0xFF);
+  hkdf_label[(*hkdf_label_len)++] = (uint8_t)(output_len & 0xFF);
+
+  /* Label length and "tls13 " prefix + actual label */
+  size_t full_label_len = 6 + label_len;
+  hkdf_label[(*hkdf_label_len)++] = (uint8_t)full_label_len;
+  memcpy (hkdf_label + *hkdf_label_len, "tls13 ", 6);
+  *hkdf_label_len += 6;
+  memcpy (hkdf_label + *hkdf_label_len, label, label_len);
+  *hkdf_label_len += label_len;
+
+  /* Context length and context */
+  hkdf_label[(*hkdf_label_len)++] = (uint8_t)context_len;
+  if (context_len > 0)
+    {
+      memcpy (hkdf_label + *hkdf_label_len, context, context_len);
+      *hkdf_label_len += context_len;
+    }
+
+  return 0;
+}
+
+/**
  * @brief HKDF-Expand-Label for TLS 1.3 / QUIC (OpenSSL 3.x EVP_KDF API).
  *
  * Implements the TLS 1.3 HKDF-Expand-Label function per RFC 8446 Section 7.1.
@@ -239,30 +287,14 @@ hkdf_expand_label (const uint8_t *secret, size_t secret_len,
   EVP_KDF_CTX *kctx = NULL;
   OSSL_PARAM params[6];
   uint8_t hkdf_label[512];
-  size_t hkdf_label_len = 0;
+  size_t hkdf_label_len;
   int result = -1;
   int mode = EVP_KDF_HKDF_MODE_EXPAND_ONLY;
 
-  /* Build HkdfLabel structure per RFC 8446 */
-  /* Length (2 bytes, big-endian) */
-  hkdf_label[hkdf_label_len++] = (uint8_t)((output_len >> 8) & 0xFF);
-  hkdf_label[hkdf_label_len++] = (uint8_t)(output_len & 0xFF);
-
-  /* Label length and "tls13 " prefix + actual label */
-  size_t full_label_len = 6 + label_len;
-  hkdf_label[hkdf_label_len++] = (uint8_t)full_label_len;
-  memcpy (hkdf_label + hkdf_label_len, "tls13 ", 6);
-  hkdf_label_len += 6;
-  memcpy (hkdf_label + hkdf_label_len, label, label_len);
-  hkdf_label_len += label_len;
-
-  /* Context length and context */
-  hkdf_label[hkdf_label_len++] = (uint8_t)context_len;
-  if (context_len > 0)
-    {
-      memcpy (hkdf_label + hkdf_label_len, context, context_len);
-      hkdf_label_len += context_len;
-    }
+  /* Build HkdfLabel structure */
+  if (build_hkdf_label (label, label_len, context, context_len,
+                        output_len, hkdf_label, &hkdf_label_len) < 0)
+    return -1;
 
   kdf = EVP_KDF_fetch (NULL, "HKDF", NULL);
   if (kdf == NULL)
