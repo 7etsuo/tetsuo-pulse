@@ -4032,12 +4032,12 @@ TEST (socketcommon_validate_hostname_internal_no_exceptions)
   long_hostname[sizeof (long_hostname) - 1] = '\0';
 
   int result = socketcommon_validate_hostname_internal (long_hostname, 0,
-                                                        Socket_Failed);
+                                                        Socket_Failed, NULL);
   ASSERT_EQ (-1, result);
 
   /* Test invalid characters without exceptions */
   result = socketcommon_validate_hostname_internal ("host name", 0,
-                                                    Socket_Failed);
+                                                    Socket_Failed, NULL);
   ASSERT_EQ (-1, result);
 }
 
@@ -5340,7 +5340,7 @@ TEST (socketcommon_validate_hostname_null)
 {
   /* NULL hostname should be valid (any address) */
   int result
-      = socketcommon_validate_hostname_internal (NULL, 0, Socket_Failed);
+      = socketcommon_validate_hostname_internal (NULL, 0, Socket_Failed, NULL);
   /* NULL is valid for bind - returns success */
   ASSERT (result >= 0
           || result == -1); /* May accept or reject depending on impl */

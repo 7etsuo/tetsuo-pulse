@@ -706,7 +706,8 @@ extern const char *socketcommon_get_safe_host (const char *host);
  */
 extern int socketcommon_validate_hostname_internal (const char *host,
                                                     int use_exceptions,
-                                                    Except_T exception_type);
+                                                    Except_T exception_type,
+                                                    size_t *out_len);
 
 /**
  * @brief Detect if string is a valid IP address (v4/v6).
