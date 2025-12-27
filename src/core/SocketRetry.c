@@ -128,7 +128,7 @@ validate_policy (const SocketRetry_Policy *policy)
 
 /* Compute base^exp iteratively to avoid pow() overhead */
 static double
-power_double (double base, int exp)
+retry_power_double (double base, int exp)
 {
   double result = 1.0;
 
@@ -169,7 +169,7 @@ exponential_backoff (const SocketRetry_Policy *policy, int attempt)
   if (attempt < 1)
     return 0.0;
 
-  multiplier_pow = power_double (policy->multiplier, attempt - 1);
+  multiplier_pow = retry_power_double (policy->multiplier, attempt - 1);
   base_delay = (double)policy->initial_delay_ms * multiplier_pow;
 
   if (isinf (base_delay) || isnan (base_delay))

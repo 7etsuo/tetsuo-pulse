@@ -256,7 +256,7 @@ histogram_is_valid (SocketHistogramMetric metric)
 }
 
 static int
-compare_double (const void *a, const void *b)
+metrics_compare_double (const void *a, const void *b)
 {
   const double da = *(const double *)a;
   const double db = *(const double *)b;
@@ -378,7 +378,7 @@ histogram_get_sorted_copy (Histogram *h, size_t *out_count)
     }
 
   n = histogram_copy_values (h, sorted, count);
-  qsort (sorted, n, sizeof (double), compare_double);
+  qsort (sorted, n, sizeof (double), metrics_compare_double);
 
   *out_count = n;
   return sorted;
