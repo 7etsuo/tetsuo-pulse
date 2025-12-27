@@ -1197,6 +1197,79 @@ extern void SocketCommon_set_dns_timeout (int timeout_ms);
 extern int SocketCommon_get_dns_timeout (void);
 
 /**
+ * @brief Wait for a file descriptor to be ready for I/O with timeout
+ * @ingroup core_io
+ *
+ * Polls a file descriptor for readiness (read or write) with an optional
+ * timeout. Automatically retries on EINTR interruption. This is a utility
+ * function commonly used for implementing timeout-based socket operations.
+ *
+ * Purpose: Provides a reusable mechanism for waiting on file descriptors
+ * with timeout support, eliminating code duplication across timeout-based
+ * I/O operations in Socket and SocketDgram modules.
+ *
+ * Edge cases:
+ * - timeout_ms == 0: Returns 1 immediately (no wait, proceed immediately)
+ * - timeout_ms < 0: Blocks indefinitely until ready or error
+ * - timeout_ms > 0: Waits up to timeout_ms milliseconds
+ * - EINTR: Automatically retries poll() call
+ * - POLLERR/POLLHUP/POLLNVAL: Returns -1 (error condition)
+ *
+ * @param[in] fd File descriptor to poll (must be valid).
+ * @param[in] events Poll events mask (POLLIN for read, POLLOUT for write).
+ * @param[in] timeout_ms Timeout in milliseconds:
+ *                       - 0 = no wait (return immediately)
+ *                       - -1 = block indefinitely
+ *                       - >0 = wait up to this many milliseconds
+ *
+ * @return 1 if fd is ready for requested operation,
+ *         0 if timeout occurred (no events within timeout_ms),
+ *         -1 on error (poll failure or POLLERR/POLLHUP/POLLNVAL detected).
+ *
+ * @throws None - returns error code instead of raising.
+ *
+ * @threadsafe Yes - uses local variables only, poll(2) is thread-safe.
+ *
+ * ## Usage Example (Timeout-based send)
+ *
+ * @code{.c}
+ * int fd = socket(AF_INET, SOCK_STREAM, 0);
+ * int ready = SocketCommon_wait_for_fd(fd, POLLOUT, 5000); // 5 sec timeout
+ * if (ready == 1) {
+ *     ssize_t sent = send(fd, buf, len, 0);
+ *     // Process send result
+ * } else if (ready == 0) {
+ *     // Timeout - socket not ready for write
+ * } else {
+ *     // Error during poll
+ * }
+ * @endcode
+ *
+ * ## Usage Example (Indefinite wait)
+ *
+ * @code{.c}
+ * // Block until readable or error
+ * int ready = SocketCommon_wait_for_fd(fd, POLLIN, -1);
+ * if (ready < 0) {
+ *     perror("poll failed");
+ * } else {
+ *     ssize_t n = recv(fd, buf, sizeof(buf), 0);
+ * }
+ * @endcode
+ *
+ * @note This function does NOT set errno. Check return value only.
+ * @note For timeout_ms == 0, always returns 1 (no actual polling).
+ * @note EINTR handling ensures robust behavior in signal-heavy environments.
+ *
+ * @complexity O(1) - single poll() system call (retried on EINTR).
+ *
+ * @see poll(2) for low-level polling semantics
+ * @see Socket_sendall_timeout() for usage in timeout-based operations
+ * @see Socket_recvall_timeout() for usage in timeout-based operations
+ */
+extern int SocketCommon_wait_for_fd (int fd, short events, int timeout_ms);
+
+/**
  * @brief Shutdown global resources (e.g., DNS resolver) to prevent leaks in tests
  * @ingroup core_io
  * Call at program exit after all operations complete.

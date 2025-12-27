@@ -578,42 +578,6 @@ get_remaining_timeout_ms (int64_t deadline_ms)
   return deadline_ms - Socket_get_monotonic_ms ();
 }
 
-/**
- * wait_for_socket - Wait for socket to be ready with timeout
- * @fd: File descriptor
- * @events: POLLIN or POLLOUT
- * @timeout_ms: Timeout in ms (0 = no wait, -1 = block)
- *
- * Returns: 1 if ready, 0 if timeout, -1 on error
- */
-static int
-wait_for_socket (int fd, short events, int timeout_ms)
-{
-  struct pollfd pfd;
-  int ret;
-
-  if (timeout_ms == 0)
-    return 1; /* No timeout, proceed immediately */
-
-  pfd.fd = fd;
-  pfd.events = events;
-  pfd.revents = 0;
-
-  do
-    {
-      ret = poll (&pfd, 1, timeout_ms);
-    }
-  while (ret < 0 && errno == EINTR);
-
-  if (ret < 0)
-    return -1;
-  if (ret == 0)
-    return 0; /* Timeout */
-  if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL))
-    return -1;
-
-  return 1;
-}
 
 /**
  * Socket_sendall_timeout - Send all data with timeout
@@ -656,13 +620,13 @@ Socket_sendall_timeout (T socket, const void *buf, size_t len, int timeout_ms)
             if (remaining_ms <= 0)
               break; /* Timeout */
 
-            if (wait_for_socket (fd, POLLOUT, (int)remaining_ms) <= 0)
+            if (SocketCommon_wait_for_fd (fd, POLLOUT, (int)remaining_ms) <= 0)
               break; /* Timeout or error */
           }
         else if (timeout_ms == -1)
           {
             /* Block indefinitely */
-            if (wait_for_socket (fd, POLLOUT, -1) < 0)
+            if (SocketCommon_wait_for_fd (fd, POLLOUT, -1) < 0)
               {
                 SOCKET_ERROR_FMT ("poll() failed during send");
                 RAISE_MODULE_ERROR (Socket_Failed);
@@ -726,13 +690,13 @@ Socket_recvall_timeout (T socket, void *buf, size_t len, int timeout_ms)
             if (remaining_ms <= 0)
               break; /* Timeout */
 
-            if (wait_for_socket (fd, POLLIN, (int)remaining_ms) <= 0)
+            if (SocketCommon_wait_for_fd (fd, POLLIN, (int)remaining_ms) <= 0)
               break; /* Timeout or error */
           }
         else if (timeout_ms == -1)
           {
             /* Block indefinitely */
-            if (wait_for_socket (fd, POLLIN, -1) < 0)
+            if (SocketCommon_wait_for_fd (fd, POLLIN, -1) < 0)
               {
                 SOCKET_ERROR_FMT ("poll() failed during recv");
                 RAISE_MODULE_ERROR (Socket_Failed);
@@ -782,7 +746,7 @@ Socket_sendv_timeout (T socket, const struct iovec *iov, int iovcnt,
   /* Wait for socket to be writable */
   if (timeout_ms != 0)
     {
-      int ready = wait_for_socket (fd, POLLOUT, timeout_ms);
+      int ready = SocketCommon_wait_for_fd (fd, POLLOUT, timeout_ms);
       if (ready == 0)
         return 0; /* Timeout */
       if (ready < 0)
@@ -820,7 +784,7 @@ Socket_recvv_timeout (T socket, struct iovec *iov, int iovcnt, int timeout_ms)
   /* Wait for socket to be readable */
   if (timeout_ms != 0)
     {
-      int ready = wait_for_socket (fd, POLLIN, timeout_ms);
+      int ready = SocketCommon_wait_for_fd (fd, POLLIN, timeout_ms);
       if (ready == 0)
         return 0; /* Timeout */
       if (ready < 0)
