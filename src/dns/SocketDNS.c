@@ -21,6 +21,7 @@
 #include <arpa/inet.h>
 #include <assert.h>
 #include <errno.h>
+#include <stddef.h>
 #include <string.h>
 #include <strings.h>
 
@@ -1056,6 +1057,14 @@ SocketDNS_set_search_domains (T dns, const char **domains, size_t count)
       "Custom search domains configured but not applied (platform limitation)");
   return -1;
 }
+
+/* Verify ABI stability of SocketDNS_CacheStats structure */
+_Static_assert (sizeof (SocketDNS_CacheStats) == 64,
+                "SocketDNS_CacheStats size changed - ABI break");
+_Static_assert (offsetof (SocketDNS_CacheStats, hits) == 0,
+                "SocketDNS_CacheStats.hits offset changed");
+_Static_assert (offsetof (SocketDNS_CacheStats, hit_rate) == 48,
+                "SocketDNS_CacheStats.hit_rate offset changed");
 
 #undef T
 #undef Request_T

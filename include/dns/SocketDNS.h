@@ -420,19 +420,24 @@ extern struct addrinfo *SocketDNS_resolve_sync (T dns, const char *host,
  * Statistics about DNS resolution cache performance. Used to monitor
  * cache efficiency and tune TTL/size parameters.
  *
+ * @note ABI Stability: This structure uses fixed-width types for cross-platform
+ * compatibility. Fields are ordered to ensure natural alignment on all platforms.
+ * Binary layout is guaranteed stable across compiler versions and architectures.
+ *
  * @see SocketDNS_cache_stats() to retrieve statistics.
  * @see SocketDNS_cache_clear() to reset cache.
  */
 typedef struct SocketDNS_CacheStats
 {
-  uint64_t hits;        /**< Cache hits (result found in cache) */
-  uint64_t misses;      /**< Cache misses (resolution required) */
-  uint64_t evictions;   /**< Entries evicted due to TTL or size limits */
-  uint64_t insertions;  /**< Total entries inserted into cache */
-  size_t current_size;  /**< Current number of cached entries */
-  size_t max_entries;   /**< Maximum cache capacity */
-  int ttl_seconds;      /**< Current TTL setting */
-  double hit_rate;      /**< Calculated hit rate (hits / (hits + misses)) */
+  uint64_t hits;         /**< Cache hits (result found in cache) */
+  uint64_t misses;       /**< Cache misses (resolution required) */
+  uint64_t evictions;    /**< Entries evicted due to TTL or size limits */
+  uint64_t insertions;   /**< Total entries inserted into cache */
+  uint64_t current_size; /**< Current number of cached entries */
+  uint64_t max_entries;  /**< Maximum cache capacity */
+  double hit_rate;       /**< Calculated hit rate (hits / (hits + misses)) */
+  int32_t ttl_seconds;   /**< Current TTL setting */
+  int32_t _reserved;     /**< Reserved for future use; ensures 8-byte alignment */
 } SocketDNS_CacheStats;
 
 /**
