@@ -1329,6 +1329,25 @@ SocketSYNProtect_blacklist_contains (T protect, const char *ip)
   return result;
 }
 
+static size_t
+count_currently_blocked (T protect, int64_t now_ms)
+{
+  size_t blocked_count = 0;
+
+  for (size_t i = 0; i < protect->ip_table_size; i++)
+    {
+      const SocketSYN_IPEntry *entry = protect->ip_table[i];
+      while (entry != NULL)
+        {
+          if (entry->state.block_until_ms > now_ms)
+            blocked_count++;
+          entry = entry->hash_next;
+        }
+    }
+
+  return blocked_count;
+}
+
 void
 SocketSYNProtect_blacklist_clear (T protect)
 {
@@ -1350,40 +1369,11 @@ SocketSYNProtect_blacklist_clear (T protect)
 
   protect->blacklist_count = 0;
 
-  size_t timed_blocked = 0;
   int64_t now_ms = Socket_get_monotonic_ms ();
-  for (size_t i = 0; i < protect->ip_table_size; i++)
-    {
-      const SocketSYN_IPEntry *entry = protect->ip_table[i];
-      while (entry != NULL)
-        {
-          if (entry->state.block_until_ms > now_ms)
-            timed_blocked++;
-          entry = entry->hash_next;
-        }
-    }
+  size_t timed_blocked = count_currently_blocked (protect, now_ms);
   SocketMetrics_gauge_set (SOCKET_GAU_SYNPROTECT_BLOCKED_IPS, timed_blocked);
 
   pthread_mutex_unlock (&protect->mutex);
-}
-
-static size_t
-count_currently_blocked (T protect, int64_t now_ms)
-{
-  size_t blocked_count = 0;
-
-  for (size_t i = 0; i < protect->ip_table_size; i++)
-    {
-      const SocketSYN_IPEntry *entry = protect->ip_table[i];
-      while (entry != NULL)
-        {
-          if (entry->state.block_until_ms > now_ms)
-            blocked_count++;
-          entry = entry->hash_next;
-        }
-    }
-
-  return blocked_count;
 }
 
 static size_t
