@@ -709,27 +709,18 @@ SocketSYNProtect_config_defaults (SocketSYNProtect_Config *config)
   config->hash_seed = 0;
 }
 
-static const SocketSYNProtect_Config *
-synprotect_get_config (const SocketSYNProtect_Config *config,
-                       SocketSYNProtect_Config *local_config)
+static void
+validate_window_config (SocketSYNProtect_Config *cfg)
 {
-  if (config == NULL)
-    {
-      SocketSYNProtect_config_defaults (local_config);
-    }
-  else
-    {
-      *local_config = *config;
-    }
-
-  /* Harden config: Clamp invalid values to prevent misconfig DoS/OOM */
-  SocketSYNProtect_Config *cfg = local_config;
-
   if (cfg->window_duration_ms <= 0)
     cfg->window_duration_ms = SOCKET_SYN_DEFAULT_WINDOW_MS;
   if (cfg->window_duration_ms > SOCKET_SYN_MAX_WINDOW_MS)
     cfg->window_duration_ms = SOCKET_SYN_MAX_WINDOW_MS;
+}
 
+static void
+validate_rate_limits (SocketSYNProtect_Config *cfg)
+{
   if (cfg->max_attempts_per_window <= 0)
     cfg->max_attempts_per_window = SOCKET_SYN_DEFAULT_MAX_PER_WINDOW;
   if (cfg->max_attempts_per_window > SOCKET_SYN_MAX_ATTEMPTS_CAP)
@@ -739,7 +730,11 @@ synprotect_get_config (const SocketSYNProtect_Config *config,
     cfg->max_global_per_second = SOCKET_SYN_DEFAULT_GLOBAL_PER_SEC;
   if (cfg->max_global_per_second > SOCKET_SYN_MAX_GLOBAL_PER_SEC_CAP)
     cfg->max_global_per_second = SOCKET_SYN_MAX_GLOBAL_PER_SEC_CAP;
+}
 
+static void
+validate_score_thresholds (SocketSYNProtect_Config *cfg)
+{
   /* Ensure logical order: 1.0 >= throttle >= challenge >= block >= 0.0 */
   cfg->score_throttle = synprotect_clamp_score (cfg->score_throttle);
   cfg->score_challenge = synprotect_clamp_score (cfg->score_challenge);
@@ -749,7 +744,11 @@ synprotect_get_config (const SocketSYNProtect_Config *config,
         = cfg->score_throttle * SOCKET_SYN_CHALLENGE_ADJUST_FACTOR;
   if (cfg->score_block > cfg->score_challenge)
     cfg->score_block = cfg->score_challenge * SOCKET_SYN_BLOCK_ADJUST_FACTOR;
+}
 
+static void
+validate_capacity_limits (SocketSYNProtect_Config *cfg)
+{
   if (cfg->max_tracked_ips == 0)
     cfg->max_tracked_ips = SOCKET_SYN_DEFAULT_MAX_TRACKED_IPS;
   if (cfg->max_tracked_ips > SOCKET_SYN_MAX_TRACKED_IPS_CAP)
@@ -764,7 +763,11 @@ synprotect_get_config (const SocketSYNProtect_Config *config,
     cfg->max_blacklist = SOCKET_SYN_DEFAULT_MAX_BLACKLIST;
   if (cfg->max_blacklist > SOCKET_SYN_MAX_LIST_CAP)
     cfg->max_blacklist = SOCKET_SYN_MAX_LIST_CAP;
+}
 
+static void
+validate_score_adjustments (SocketSYNProtect_Config *cfg)
+{
   if (cfg->score_decay_per_sec < 0.0f)
     cfg->score_decay_per_sec = SOCKET_SYN_DEFAULT_SCORE_DECAY;
   if (cfg->score_penalty_attempt < 0.0f)
@@ -773,6 +776,22 @@ synprotect_get_config (const SocketSYNProtect_Config *config,
     cfg->score_penalty_failure = SOCKET_SYN_DEFAULT_PENALTY_FAILURE;
   if (cfg->score_reward_success < 0.0f)
     cfg->score_reward_success = SOCKET_SYN_DEFAULT_REWARD_SUCCESS;
+}
+
+static const SocketSYNProtect_Config *
+synprotect_get_config (const SocketSYNProtect_Config *config,
+                       SocketSYNProtect_Config *local_config)
+{
+  if (config == NULL)
+    SocketSYNProtect_config_defaults (local_config);
+  else
+    *local_config = *config;
+
+  validate_window_config (local_config);
+  validate_rate_limits (local_config);
+  validate_score_thresholds (local_config);
+  validate_capacity_limits (local_config);
+  validate_score_adjustments (local_config);
 
   return local_config;
 }
