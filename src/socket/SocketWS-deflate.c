@@ -478,6 +478,55 @@ ws_compression_free (SocketWS_T ws)
   /* Buffers not allocated; no action needed */
 }
 
+static unsigned char *
+setup_compress_buffer (SocketWS_T ws, size_t input_len, size_t *buf_size)
+{
+  unsigned char *buf;
+
+  *buf_size = calculate_zlib_buffer_size (input_len, 0 /* compress */);
+  if (!SocketSecurity_check_size (*buf_size))
+    {
+      ws_set_error (ws, WS_ERROR_COMPRESSION,
+                    "Compress buffer size exceeds security limit: %zu",
+                    *buf_size);
+      return NULL;
+    }
+  buf = ALLOC (ws->arena, *buf_size);
+  if (!buf)
+    {
+      ws_set_error (ws, WS_ERROR_COMPRESSION,
+                    "Failed to allocate output buffer");
+    }
+  return buf;
+}
+
+static int
+setup_deflate_stream (SocketWS_T ws, z_stream *strm, const unsigned char *input,
+                      size_t input_len, unsigned char *output,
+                      size_t output_size)
+{
+  /* Check for overflow before casting size_t to uInt (zlib limitation) */
+  if (input_len > UINT_MAX)
+    {
+      ws_set_error (ws, WS_ERROR_COMPRESSION,
+                    "Input size %zu exceeds zlib limit %u", input_len,
+                    UINT_MAX);
+      return -1;
+    }
+  if (output_size > UINT_MAX)
+    {
+      ws_set_error (ws, WS_ERROR_COMPRESSION,
+                    "Buffer size %zu exceeds zlib limit %u", output_size,
+                    UINT_MAX);
+      return -1;
+    }
+  strm->next_in = (Bytef *)input;
+  strm->avail_in = (uInt)input_len;
+  strm->next_out = output;
+  strm->avail_out = (uInt)output_size;
+  return 0;
+}
+
 int
 ws_compress_message (SocketWS_T ws, const unsigned char *input,
                      size_t input_len, unsigned char **output,
@@ -501,60 +550,13 @@ ws_compress_message (SocketWS_T ws, const unsigned char *input,
   strm = &ws->compression.deflate_stream;
 
   /* Allocate output buffer */
-  buf_size = calculate_zlib_buffer_size (input_len, 0 /* compress */);
-  if (!SocketSecurity_check_size (buf_size))
-    {
-      ws_set_error (ws, WS_ERROR_COMPRESSION,
-                    "Compress buffer size exceeds security limit: %zu",
-                    buf_size);
-      return -1;
-    }
-  buf = ALLOC (ws->arena, buf_size);
+  buf = setup_compress_buffer (ws, input_len, &buf_size);
   if (!buf)
-    {
-      ws_set_error (ws, WS_ERROR_COMPRESSION,
-                    "Failed to allocate output buffer");
-      return -1;
-    }
+    return -1;
 
   /* Set up zlib stream */
-  /* Check for overflow before casting size_t to uInt (zlib limitation) */
-  if (input_len > UINT_MAX)
-    {
-      ws_set_error (ws, WS_ERROR_COMPRESSION,
-                    "Input size %zu exceeds zlib limit %u", input_len,
-                    UINT_MAX);
-      return -1;
-    }
-  if (buf_size > UINT_MAX)
-    {
-      ws_set_error (ws, WS_ERROR_COMPRESSION,
-                    "Buffer size %zu exceeds zlib limit %u", buf_size,
-                    UINT_MAX);
-      return -1;
-    }
-  strm->next_in = (Bytef *)input;
-
-  /* Check for overflow before casting size_t to uInt (issue #566) */
-  if (input_len > UINT_MAX)
-    {
-      ws_set_error (ws, WS_ERROR_COMPRESSION,
-                    "Input length %zu exceeds zlib limit %u", input_len,
-                    UINT_MAX);
-      return -1;
-    }
-  strm->avail_in = (uInt)input_len;
-
-  strm->next_out = buf;
-
-  if (buf_size > UINT_MAX)
-    {
-      ws_set_error (ws, WS_ERROR_COMPRESSION,
-                    "Buffer size %zu exceeds zlib limit %u", buf_size,
-                    UINT_MAX);
-      return -1;
-    }
-  strm->avail_out = (uInt)buf_size;
+  if (setup_deflate_stream (ws, strm, input, input_len, buf, buf_size) < 0)
+    return -1;
 
   /* Compress with Z_SYNC_FLUSH */
   if (compress_loop (ws, strm, &buf, &buf_size, &total_out) < 0)
