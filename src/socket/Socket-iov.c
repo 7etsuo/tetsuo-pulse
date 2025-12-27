@@ -567,22 +567,8 @@ Socket_recvvall (T socket, struct iovec *iov, int iovcnt)
 /* ==================== I/O Operations with Timeout ==================== */
 
 /**
- * calculate_deadline_ms - Calculate deadline from timeout
- * @timeout_ms: Timeout in milliseconds (>0 for deadline, <=0 for none)
- *
- * Returns: Deadline timestamp in milliseconds, or 0 if no deadline
- */
-static int64_t
-calculate_deadline_ms (int timeout_ms)
-{
-  if (timeout_ms > 0)
-    return Socket_get_monotonic_ms () + timeout_ms;
-  return 0;
-}
-
-/**
  * get_remaining_timeout_ms - Get remaining time until deadline
- * @deadline_ms: Deadline timestamp from calculate_deadline_ms()
+ * @deadline_ms: Deadline timestamp from SocketTimeout_deadline_ms()
  *
  * Returns: Remaining milliseconds (may be negative if past deadline)
  */
@@ -657,7 +643,7 @@ Socket_sendall_timeout (T socket, const void *buf, size_t len, int timeout_ms)
 
   fd = SocketBase_fd (socket->base);
   ptr = (const char *)buf;
-  deadline_ms = calculate_deadline_ms (timeout_ms);
+  deadline_ms = SocketTimeout_deadline_ms (timeout_ms);
 
   TRY
   {
@@ -727,7 +713,7 @@ Socket_recvall_timeout (T socket, void *buf, size_t len, int timeout_ms)
 
   fd = SocketBase_fd (socket->base);
   ptr = (char *)buf;
-  deadline_ms = calculate_deadline_ms (timeout_ms);
+  deadline_ms = SocketTimeout_deadline_ms (timeout_ms);
 
   TRY
   {
