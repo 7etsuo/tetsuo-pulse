@@ -69,12 +69,6 @@ synprotect_get_fallback_seed (void)
   return seed;
 }
 
-static void
-safe_copy_ip (char *dest, const char *src)
-{
-  socket_util_safe_copy_ip (dest, src, SOCKET_IP_MAX_LEN);
-}
-
 static void *
 alloc_zeroed (T protect, size_t count, size_t size)
 {
@@ -103,7 +97,7 @@ static void
 init_ip_state (SocketSYN_IPState *state, const char *ip, int64_t now_ms)
 {
   memset (state, 0, sizeof (*state));
-  safe_copy_ip (state->ip, ip);
+  socket_util_safe_copy_ip (state->ip, ip, SOCKET_IP_MAX_LEN);
   state->window_start_ms = now_ms;
   state->last_attempt_ms = now_ms;
   state->rep = SYN_REP_NEUTRAL;
@@ -300,7 +294,7 @@ fill_ip_state_out (SocketSYN_IPState *state_out, const char *ip,
     return;
 
   memset (state_out, 0, sizeof (*state_out));
-  safe_copy_ip (state_out->ip, ip);
+  socket_util_safe_copy_ip (state_out->ip, ip, SOCKET_IP_MAX_LEN);
   state_out->rep = rep;
   state_out->score = score;
 }
@@ -625,7 +619,7 @@ create_whitelist_entry (T protect, const char *ip, int is_cidr)
   if (entry == NULL)
     return NULL;
 
-  safe_copy_ip (entry->ip, ip);
+  socket_util_safe_copy_ip (entry->ip, ip, SOCKET_IP_MAX_LEN);
   entry->is_cidr = is_cidr;
   return entry;
 }
@@ -639,7 +633,7 @@ create_blacklist_entry (T protect, const char *ip, int64_t expires_ms)
   if (entry == NULL)
     return NULL;
 
-  safe_copy_ip (entry->ip, ip);
+  socket_util_safe_copy_ip (entry->ip, ip, SOCKET_IP_MAX_LEN);
   entry->expires_ms = expires_ms;
   return entry;
 }
