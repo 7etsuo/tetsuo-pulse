@@ -453,15 +453,7 @@ copy_iov_to_buffer (const struct iovec *iov, int iovcnt, void *buffer,
                buffer_size);
 
   /* Validate iov_base non-NULL for positive lengths */
-  for (int i = 0; i < iovcnt; i++)
-    {
-      if (iov[i].iov_len > 0 && iov[i].iov_base == NULL)
-        {
-          RAISE_FMT (Socket_Failed,
-                     "iov[%d].iov_base is NULL with iov_len=%zu", i,
-                     iov[i].iov_len);
-        }
-    }
+  SocketCommon_validate_iov_bases (iov, iovcnt);
 
   for (int i = 0; i < iovcnt; i++)
     {
@@ -491,15 +483,7 @@ distribute_buffer_to_iov (const void *buffer, size_t buffer_len,
       RAISE_FMT (Socket_Failed, "buffer_len %zu exceeds iov capacity %zu",
                  buffer_len, total_capacity);
     }
-  for (int j = 0; j < iovcnt; j++)
-    {
-      if (iov[j].iov_len > 0 && iov[j].iov_base == NULL)
-        {
-          RAISE_FMT (Socket_Failed,
-                     "iov[%d].iov_base is NULL with iov_len=%zu", j,
-                     iov[j].iov_len);
-        }
-    }
+  SocketCommon_validate_iov_bases (iov, iovcnt);
 
   for (int i = 0; i < iovcnt && remaining > 0; i++)
     {

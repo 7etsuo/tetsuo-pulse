@@ -766,6 +766,18 @@ extern size_t SocketCommon_calculate_total_iov_len (const struct iovec *iov,
                                                     int iovcnt);
 
 /**
+ * @brief Validate iovec array base pointers are non-NULL for positive lengths
+ * @ingroup core_io
+ * @param iov Array of iovec structures to validate
+ * @param iovcnt Number of iovec structures
+ * @throws SocketCommon_Failed if any iov_base is NULL with positive iov_len
+ * @note Thread-safe: Yes (read-only validation)
+ * @note Unifies duplicated NULL validation in SocketIO sendv/recvv operations
+ */
+extern void SocketCommon_validate_iov_bases (const struct iovec *iov,
+                                             int iovcnt);
+
+/**
  * @brief Advance iovec array past sent/received bytes (modifies in place)
  * @ingroup core_io
  * @param iov Array of iovec structures to advance
