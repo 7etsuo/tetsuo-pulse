@@ -163,7 +163,10 @@ alloc_context (SSL_CTX *ssl_ctx, int is_server)
   pthread_once (&dtls_exdata_once, init_exdata_index);
   if (dtls_context_exdata_idx >= 0)
     {
-      SSL_CTX_set_ex_data (ssl_ctx, dtls_context_exdata_idx, ctx);
+      if (SSL_CTX_set_ex_data (ssl_ctx, dtls_context_exdata_idx, ctx) != 1)
+        {
+          SOCKET_LOG_WARN_MSG ("Failed to set SSL_CTX ex_data for DTLS context");
+        }
     }
 
   return ctx;
