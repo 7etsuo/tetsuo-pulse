@@ -818,10 +818,16 @@ synprotect_init_base (T protect, Arena_T arena,
 }
 
 static int
-synprotect_init_mutex (T protect)
+synprotect_init_mutex (T protect, int *error_code)
 {
-  if (pthread_mutex_init (&protect->mutex, NULL) != 0)
-    return 0;
+  int rc;
+
+  rc = pthread_mutex_init (&protect->mutex, NULL);
+  if (rc != 0)
+    {
+      *error_code = rc;
+      return 0;
+    }
 
   protect->initialized = SOCKET_MUTEX_INITIALIZED;
   return 1;
@@ -871,12 +877,16 @@ SocketSYNProtect_new (Arena_T arena, const SocketSYNProtect_Config *config)
 
   synprotect_init_base (protect, arena, cfg);
 
-  if (!synprotect_init_mutex (protect))
-    {
-      cleanup_synprotect_init (protect, SYN_CLEANUP_NONE);
-      SOCKET_RAISE_FMT (SocketSYNProtect, SocketSYNProtect_Failed,
-                        "Failed to initialize mutex");
-    }
+  {
+    int mutex_error = 0;
+    if (!synprotect_init_mutex (protect, &mutex_error))
+      {
+        cleanup_synprotect_init (protect, SYN_CLEANUP_NONE);
+        SOCKET_RAISE_MSG (SocketSYNProtect, SocketSYNProtect_Failed,
+                          "Failed to initialize mutex: %s",
+                          strerror (mutex_error));
+      }
+  }
 
   init_result = synprotect_init_tables (protect, cfg);
   if (init_result >= 0)
