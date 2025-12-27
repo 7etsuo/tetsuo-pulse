@@ -305,34 +305,21 @@ socketproxy_parse_hostport (const char *start, SocketProxy_Config *config,
 
       if (*port_start == ':')
         {
-          {
-            char *endptr;
-            long p = strtol (port_start + 1, &endptr, 10);
-            if (endptr > port_start + 1 && p >= 1 && p <= 65535)
-              {
-                config->port = (int)p;
-                authority_end = endptr;
-              }
-            else if (*endptr == '\0' || *endptr == '/' || *endptr == '?'
-                     || *endptr == '#')
-              {
-                if (endptr > port_start + 1 && p >= 1 && p <= 65535)
-                  {
-                    config->port = (int)p;
-                    authority_end = endptr;
-                  }
-                else
-                  {
-                    return -1;
-                  }
-              }
-            else
-              {
-                return -1;
-              }
-          }
-          if (config->port <= 0 || config->port > 65535)
+          char *endptr;
+          long p = strtol (port_start + 1, &endptr, 10);
+
+          if (endptr == port_start + 1)
             return -1;
+
+          if (*endptr != '\0' && *endptr != '/' && *endptr != '?'
+              && *endptr != '#')
+            return -1;
+
+          if (p < 1 || p > 65535)
+            return -1;
+
+          config->port = (int)p;
+          authority_end = endptr;
         }
     }
   else
