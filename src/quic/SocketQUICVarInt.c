@@ -60,11 +60,20 @@ static const char *result_strings[] = {
   [QUIC_VARINT_ERROR_NULL] = "NULL pointer argument",
 };
 
+/* Compile-time check: ensure array size matches enum count */
+_Static_assert (sizeof (result_strings) / sizeof (result_strings[0])
+                    == QUIC_VARINT_ERROR_NULL + 1,
+                "result_strings array size must match enum count");
+
 const char *
 SocketQUICVarInt_result_string (SocketQUICVarInt_Result result)
 {
-  if (result < 0 || result > QUIC_VARINT_ERROR_NULL)
+  const size_t num_results
+      = sizeof (result_strings) / sizeof (result_strings[0]);
+
+  if (result < 0 || (size_t)result >= num_results)
     return "Unknown error";
+
   return result_strings[result];
 }
 
