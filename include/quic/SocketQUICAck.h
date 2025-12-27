@@ -69,6 +69,18 @@
  */
 #define QUIC_ACK_INITIAL_RANGE_CAPACITY 16
 
+/**
+ * @brief Default ACK delay exponent per RFC 9000 Section 18.2.
+ *
+ * The ack_delay field in ACK frames uses units of 2^ack_delay_exponent
+ * microseconds. Default value is 3, meaning units of 8 microseconds (2^3).
+ * This value can be negotiated via the ack_delay_exponent transport parameter.
+ *
+ * @see RFC 9000 Section 13.2.5 (ACK Delay)
+ * @see RFC 9000 Section 18.2 (Transport Parameters)
+ */
+#define QUIC_ACK_DELAY_EXPONENT_DEFAULT 3
+
 /* ============================================================================
  * Data Structures
  * ============================================================================
