@@ -514,8 +514,8 @@ Socket_sendvall (T socket, const struct iovec *iov, int iovcnt)
 {
   struct iovec *iov_copy = NULL;
   volatile size_t total_sent = 0;
-  size_t total_len;
-  ssize_t sent;
+  volatile size_t total_len;
+  volatile ssize_t sent;
 
   assert (socket);
   assert (iov);
@@ -528,7 +528,7 @@ Socket_sendvall (T socket, const struct iovec *iov, int iovcnt)
   TRY
   {
     while (total_sent < total_len
-           && sendvall_iteration (socket, iov_copy, iovcnt, &sent))
+           && sendvall_iteration (socket, iov_copy, iovcnt, (ssize_t *)&sent))
       total_sent += (size_t)sent;
   }
   EXCEPT (Socket_Closed)
@@ -546,8 +546,8 @@ Socket_recvvall (T socket, struct iovec *iov, int iovcnt)
 {
   struct iovec *iov_copy = NULL;
   volatile size_t total_received = 0;
-  size_t total_len;
-  ssize_t received;
+  volatile size_t total_len;
+  volatile ssize_t received;
 
   assert (socket);
   assert (iov);
@@ -560,7 +560,7 @@ Socket_recvvall (T socket, struct iovec *iov, int iovcnt)
   TRY
   {
     while (total_received < total_len
-           && recvvall_iteration (socket, iov_copy, iovcnt, &received))
+           && recvvall_iteration (socket, iov_copy, iovcnt, (ssize_t *)&received))
       total_received += (size_t)received;
   }
   EXCEPT (Socket_Closed)
