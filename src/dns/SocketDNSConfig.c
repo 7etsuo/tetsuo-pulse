@@ -379,8 +379,8 @@ is_valid_domain_name (const char *domain)
   if (domain[0] == '.' || domain[0] == '-')
     return 0;
 
-  p = domain + strlen (domain) - 1;
-  if (*p == '.' || *p == '-')
+  /* p now points to '\0', so p-1 is the last character */
+  if (p > domain && (*(p - 1) == '.' || *(p - 1) == '-'))
     return 0;
 
   return 1;
