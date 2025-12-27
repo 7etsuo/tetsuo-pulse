@@ -8,6 +8,8 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+#include <unistd.h>
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "quic/SocketQUICConnection.h"
@@ -125,7 +127,14 @@ SocketQUICConnTable_T SocketQUICConnTable_new(Arena_T arena, size_t bucket_count
 
   /* Initialize hash seed with secure random or fallback */
   if (!SECURE_RANDOM(&table->hash_seed, sizeof(table->hash_seed))) {
-    table->hash_seed = (uint32_t)((size_t)table ^ (size_t)table->buckets);
+    /* Enhanced fallback combines multiple entropy sources */
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    table->hash_seed = (uint32_t)(
+        ((size_t)table ^ (size_t)table->buckets) ^
+        ((uint64_t)ts.tv_sec * 1000000000ULL + ts.tv_nsec) ^
+        ((uint64_t)getpid() << 32)
+    );
   }
 
   return table;
