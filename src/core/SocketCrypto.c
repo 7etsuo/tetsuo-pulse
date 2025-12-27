@@ -625,11 +625,11 @@ SocketCrypto_random_bytes (void *output, size_t len)
 #else
   int result = -1;
 
-  pthread_mutex_lock (&urand_mutex);
+  SOCKET_MUTEX_LOCK_OR_RAISE (&urand_mutex, SocketCrypto, SocketCrypto_Failed);
   int fd = urandom_ensure_open ();
   if (fd >= 0)
     result = urandom_read_all (fd, (unsigned char *)output, len);
-  pthread_mutex_unlock (&urand_mutex);
+  SOCKET_MUTEX_UNLOCK (&urand_mutex);
 
   return result;
 #endif
@@ -651,13 +651,13 @@ void
 SocketCrypto_cleanup (void)
 {
 #if !SOCKET_HAS_TLS
-  pthread_mutex_lock (&urand_mutex);
+  SOCKET_MUTEX_LOCK_OR_RAISE (&urand_mutex, SocketCrypto, SocketCrypto_Failed);
   if (urand_fd >= 0)
     {
       close (urand_fd);
       urand_fd = -1;
     }
-  pthread_mutex_unlock (&urand_mutex);
+  SOCKET_MUTEX_UNLOCK (&urand_mutex);
 #endif
 }
 
