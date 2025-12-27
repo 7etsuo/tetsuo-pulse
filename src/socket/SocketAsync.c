@@ -581,8 +581,7 @@ process_kqueue_completions (T async, int timeout_ms, int max_completions)
   if (max_completions > SOCKET_MAX_EVENT_BATCH)
     max_completions = SOCKET_MAX_EVENT_BATCH;
 
-  timeout.tv_sec = timeout_ms / SOCKET_MS_PER_SECOND;
-  timeout.tv_nsec = (timeout_ms % SOCKET_MS_PER_SECOND) * SOCKET_NS_PER_MS;
+  timeout = socket_util_ms_to_timespec ((unsigned long)timeout_ms);
 
   n = kevent (async->kqueue_fd, NULL, 0, events, max_completions, &timeout);
   if (n < 0)

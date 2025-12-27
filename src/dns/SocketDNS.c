@@ -499,10 +499,11 @@ SocketDNS_request_settimeout (struct SocketDNS_T *dns,
 static void
 compute_deadline (int timeout_ms, struct timespec *deadline)
 {
+  struct timespec timeout;
   clock_gettime (CLOCK_MONOTONIC, deadline);
-  deadline->tv_sec += timeout_ms / SOCKET_MS_PER_SECOND;
-  deadline->tv_nsec += (timeout_ms % SOCKET_MS_PER_SECOND)
-                       * (SOCKET_NS_PER_SECOND / SOCKET_MS_PER_SECOND);
+  timeout = socket_util_ms_to_timespec ((unsigned long)timeout_ms);
+  deadline->tv_sec += timeout.tv_sec;
+  deadline->tv_nsec += timeout.tv_nsec;
 
   if (deadline->tv_nsec >= SOCKET_NS_PER_SECOND)
     {
