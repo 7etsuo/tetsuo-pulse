@@ -590,6 +590,66 @@ get_remaining_timeout_ms (int64_t deadline_ms)
 typedef ssize_t (*SocketTransferStepFn) (T socket, void *buf, size_t len);
 
 /**
+ * check_timeout_expired - Check if timeout deadline has been reached
+ * @timeout_ms: Original timeout value (>0 for deadline, -1 for block, 0 for none)
+ * @deadline_ms: Deadline timestamp from SocketTimeout_deadline_ms()
+ * @remaining_ms: Output parameter for remaining milliseconds
+ *
+ * Returns: 1 if timeout expired, 0 otherwise
+ *
+ * Helper function to centralize timeout expiration logic.
+ */
+static int
+check_timeout_expired (int timeout_ms, int64_t deadline_ms, int64_t *remaining_ms)
+{
+  if (timeout_ms <= 0)
+    return 0;
+
+  *remaining_ms = get_remaining_timeout_ms (deadline_ms);
+  return (*remaining_ms <= 0);
+}
+
+/**
+ * wait_for_io_ready - Wait for socket to be ready for I/O
+ * @fd: File descriptor to wait on
+ * @poll_event: POLLIN or POLLOUT
+ * @timeout_ms: Original timeout value (>0 for deadline, -1 for block, 0 for none)
+ * @deadline_ms: Deadline timestamp from SocketTimeout_deadline_ms()
+ *
+ * Returns: 1 if ready, 0 on timeout, -1 on error
+ * Raises: Socket_Failed on poll error with blocking timeout
+ *
+ * Helper function to centralize I/O readiness waiting logic.
+ * Handles three timeout modes: timed, blocking, and non-blocking.
+ */
+static int
+wait_for_io_ready (int fd, short poll_event, int timeout_ms, int64_t deadline_ms)
+{
+  int64_t remaining_ms;
+
+  if (timeout_ms > 0)
+    {
+      if (check_timeout_expired (timeout_ms, deadline_ms, &remaining_ms))
+        return 0; /* Timeout */
+
+      return SocketCommon_wait_for_fd (fd, poll_event, (int)remaining_ms);
+    }
+  else if (timeout_ms == -1)
+    {
+      /* Block indefinitely */
+      if (SocketCommon_wait_for_fd (fd, poll_event, -1) < 0)
+        {
+          SOCKET_ERROR_FMT ("poll() failed during transfer");
+          RAISE_MODULE_ERROR (Socket_Failed);
+        }
+      return 1;
+    }
+
+  /* timeout_ms == 0: no waiting */
+  return 1;
+}
+
+/**
  * socket_transfer_with_timeout - Generic timeout-based data transfer
  * @socket: Connected socket
  * @buf: Buffer for data (send or recv)
@@ -613,8 +673,8 @@ socket_transfer_with_timeout (T socket, void *buf, size_t len, int timeout_ms,
   char *ptr;
   int fd;
   volatile int64_t deadline_ms;
-  int64_t remaining_ms;
   ssize_t result;
+  int ready;
 
   assert (socket);
   assert (buf || len == 0);
@@ -630,25 +690,9 @@ socket_transfer_with_timeout (T socket, void *buf, size_t len, int timeout_ms,
   {
     while (total_transferred < len)
       {
-        /* Check remaining time */
-        if (timeout_ms > 0)
-          {
-            remaining_ms = get_remaining_timeout_ms (deadline_ms);
-            if (remaining_ms <= 0)
-              break; /* Timeout */
-
-            if (SocketCommon_wait_for_fd (fd, poll_event, (int)remaining_ms) <= 0)
-              break; /* Timeout or error */
-          }
-        else if (timeout_ms == -1)
-          {
-            /* Block indefinitely */
-            if (SocketCommon_wait_for_fd (fd, poll_event, -1) < 0)
-              {
-                SOCKET_ERROR_FMT ("poll() failed during transfer");
-                RAISE_MODULE_ERROR (Socket_Failed);
-              }
-          }
+        ready = wait_for_io_ready (fd, poll_event, timeout_ms, deadline_ms);
+        if (ready <= 0)
+          break; /* Timeout or error */
 
         result = transfer_fn (socket, ptr + total_transferred,
                               len - total_transferred);
