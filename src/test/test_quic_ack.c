@@ -449,6 +449,77 @@ TEST (ack_encode_multiple_ranges)
   Arena_dispose (&arena);
 }
 
+TEST (ack_encode_invalid_range_ordering)
+{
+  Arena_T arena;
+  SocketQUICAckState_T state;
+  uint8_t buf[256];
+  size_t len;
+  SocketQUICAck_Result res;
+
+  arena = Arena_new ();
+  state = SocketQUICAck_new (arena, 0, 0);
+
+  /* Manually create invalid range ordering to test overflow protection.
+   * Normal operation should never create this state, but corrupted
+   * state or logic errors could trigger it.
+   */
+  state->range_count = 2;
+
+  /* Invalid: ranges[0].start (5) < ranges[1].end (4) + 2 = 6
+   * This would cause underflow: gap = 5 - 4 - 2 = -1 (wraps to large uint64_t)
+   */
+  state->ranges[0].start = 5;
+  state->ranges[0].end = 5;
+  state->ranges[1].start = 3;
+  state->ranges[1].end = 4;
+
+  state->largest_received = 5;
+  state->largest_recv_time = 1000;
+
+  /* Should detect invalid ordering and return QUIC_ACK_ERROR_RANGE */
+  res = SocketQUICAck_encode (state, 2000, buf, sizeof (buf), &len);
+  ASSERT_EQ (QUIC_ACK_ERROR_RANGE, res);
+
+  Arena_dispose (&arena);
+}
+
+TEST (ack_encode_valid_range_spacing)
+{
+  Arena_T arena;
+  SocketQUICAckState_T state;
+  uint8_t buf[256];
+  size_t len;
+  SocketQUICAck_Result res;
+
+  arena = Arena_new ();
+  state = SocketQUICAck_new (arena, 0, 0);
+
+  /* Create properly spaced ranges where gap calculation is valid.
+   * For gap = prev_start - current_end - 2 to be >= 0:
+   * prev_start must be > current_end + 2
+   */
+  state->range_count = 2;
+
+  /* Valid: ranges[0].start (10) > ranges[1].end (5) + 2 = 7
+   * gap = 10 - 5 - 2 = 3
+   */
+  state->ranges[0].start = 10;
+  state->ranges[0].end = 10;
+  state->ranges[1].start = 5;
+  state->ranges[1].end = 5;
+
+  state->largest_received = 10;
+  state->largest_recv_time = 1000;
+
+  /* Should encode successfully */
+  res = SocketQUICAck_encode (state, 2000, buf, sizeof (buf), &len);
+  ASSERT_EQ (QUIC_ACK_OK, res);
+  ASSERT (len > 0);
+
+  Arena_dispose (&arena);
+}
+
 /* ============================================================================
  * Mark Sent Tests
  * ============================================================================
