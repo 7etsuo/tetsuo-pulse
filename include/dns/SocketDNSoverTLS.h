@@ -93,6 +93,9 @@
 /** TLS handshake timeout in milliseconds. */
 #define DOT_HANDSHAKE_TIMEOUT_MS 5000
 
+/** Default query timeout in milliseconds. */
+#define DOT_DEFAULT_QUERY_TIMEOUT_MS 5000
+
 /** Connection idle timeout before closing (per RFC 7858 Section 3.4). */
 #define DOT_IDLE_TIMEOUT_MS 120000
 
