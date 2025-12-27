@@ -1,0 +1,32 @@
+{
+  "issue": 697,
+  "status": "already_resolved",
+  "pr_url": null,
+  "error": null,
+  "details": {
+    "summary": "Issue #697 is already resolved in the current codebase",
+    "analysis": "Both helper functions Socket_get_monotonic_ms() and SocketTimeout_deadline_ms() are properly declared and implemented",
+    "evidence": {
+      "Socket_get_monotonic_ms": {
+        "declaration": "include/core/SocketUtil.h:334",
+        "implementation": "src/core/SocketUtil.c:82-111",
+        "usage": "src/socket/Socket-iov.c:595"
+      },
+      "SocketTimeout_deadline_ms": {
+        "declaration": "include/core/SocketUtil.h:756",
+        "implementation": "include/core/SocketUtil.h:756-761 (static inline)",
+        "usage": "src/socket/Socket-iov.c:629"
+      }
+    },
+    "verification": {
+      "compilation": "SUCCESS - Socket-iov.c compiles without errors",
+      "library_build": "SUCCESS - libsocket.a built successfully (33M)",
+      "tests_run": "NOT_RUN - Build failed on unrelated test_quic_frame.c duplicate test issue"
+    },
+    "git_history": {
+      "relevant_commit": "8876b43a - refactor(socket): use SocketTimeout_deadline_ms helper in Socket-iov.c (#626)",
+      "note": "Functions were added in previous commits and are fully functional"
+    },
+    "conclusion": "No changes needed. The issue appears to be a false positive from an automated scanner or was already fixed in a previous commit."
+  }
+}

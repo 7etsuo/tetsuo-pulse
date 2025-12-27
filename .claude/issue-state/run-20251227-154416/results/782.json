@@ -1,0 +1,25 @@
+{
+  "issue": 782,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/905",
+  "pr_number": 905,
+  "branch": "issue-782-refactor-hkdf-expand-label",
+  "files_changed": [
+    "src/quic/SocketQUICPacket-initial.c",
+    "src/test/test_quic_frame.c"
+  ],
+  "tests_passed": true,
+  "commit_sha": "c5ff2007",
+  "summary": "Refactored hkdf_expand_label by extracting label building logic into build_hkdf_label helper function. This reduces complexity, improves separation of concerns, and makes the code more testable and maintainable. Also fixed duplicate test definition in test_quic_frame.c that was preventing compilation.",
+  "test_results": {
+    "total_tests": 112,
+    "passed": 112,
+    "failed": 0,
+    "sanitizers_enabled": true,
+    "specific_quic_tests": {
+      "test_quic_initial": "19/19 passed",
+      "test_quic_packet": "35/35 passed",
+      "test_quic_frame": "81/81 passed"
+    }
+  }
+}

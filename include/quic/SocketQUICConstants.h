@@ -45,6 +45,26 @@
 #define QUIC_HASH_FNV1A_PRIME 16777619u
 
 /* ============================================================================
+ * HKDF Label Constants (RFC 8446)
+ * ============================================================================
+ */
+
+/**
+ * @brief Maximum size of HKDF label buffer.
+ *
+ * Per RFC 8446 Section 7.1, the HkdfLabel structure is:
+ *   2 bytes: length (big-endian)
+ *   1 byte: label length
+ *   6 bytes: "tls13 " prefix
+ *   variable: label (max 255 bytes)
+ *   1 byte: context length
+ *   variable: context (max 255 bytes)
+ *
+ * Maximum: 2 + 1 + 6 + 255 + 1 + 255 = 520 bytes
+ */
+#define QUIC_HKDF_LABEL_MAX_SIZE 520
+
+/* ============================================================================
  * Congestion Control Constants (RFC 9002)
  * ============================================================================
  */

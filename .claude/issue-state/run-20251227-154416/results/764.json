@@ -1,0 +1,17 @@
+{
+  "issue": 764,
+  "status": "already_resolved",
+  "pr_url": null,
+  "error": null,
+  "details": "Issue #764 requested implementation of SocketQUICStream_transition_send() and SocketQUICStream_transition_recv(). These functions are already implemented in src/quic/SocketQUICStream-state.c as of commits aade4b30 and 21c7fc12. The functions use table-driven state machines and all tests pass. No new PR needed - issue is already resolved on main branch.",
+  "resolved_by_commits": [
+    "aade4b30: refactor(quic): extract SocketQUICStream_transition_recv to table-driven state machine",
+    "21c7fc12: refactor(quic): extract SocketQUICStream_transition_send to table-driven state machine"
+  ],
+  "verification": {
+    "file_exists": "src/quic/SocketQUICStream-state.c",
+    "functions_implemented": true,
+    "tests_pass": true,
+    "sanitizer_tests_pass": true
+  }
+}
