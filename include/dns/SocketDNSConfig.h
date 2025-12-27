@@ -97,6 +97,13 @@
 #define DNS_CONFIG_FALLBACK_NAMESERVER_ALT "127.0.0.1"
 
 /**
+ * Maximum length of IP address string buffer.
+ * Sized to accommodate IPv6 addresses with null terminator.
+ * (INET6_ADDRSTRLEN is 46, we use 64 for alignment and future-proofing)
+ */
+#define DNS_CONFIG_MAX_ADDRESS_LEN 64
+
+/**
  * @brief Resolver option flags.
  * @ingroup dns_config
  */
