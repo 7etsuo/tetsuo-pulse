@@ -64,11 +64,27 @@ SocketQUICFrame_encode_connection_close_transport (uint64_t error_code,
   if (!out || out_len == 0)
     return 0;
 
+  /* Calculate required size: type + error_code + frame_type + reason_len +
+   * reason */
+  size_t type_len = 1;
+  size_t error_code_len = SocketQUICVarInt_size (error_code);
+  size_t frame_type_len = SocketQUICVarInt_size (frame_type);
+  size_t reason_len = reason ? strlen (reason) : 0;
+  size_t reason_len_size = SocketQUICVarInt_size (reason_len);
+
+  if (error_code_len == 0 || frame_type_len == 0 || reason_len_size == 0)
+    return 0; /* Value exceeds varint maximum */
+
+  size_t total_len
+      = type_len + error_code_len + frame_type_len + reason_len_size + reason_len;
+
+  if (out_len < total_len)
+    return 0; /* Buffer too small */
+
   size_t pos = 0;
 
   /* Frame type (0x1c) */
-  if (!encode_varint_field (QUIC_FRAME_CONNECTION_CLOSE, out, &pos, out_len))
-    return 0;
+  out[pos++] = QUIC_FRAME_CONNECTION_CLOSE;
 
   /* Error Code */
   if (!encode_varint_field (error_code, out, &pos, out_len))
@@ -79,15 +95,12 @@ SocketQUICFrame_encode_connection_close_transport (uint64_t error_code,
     return 0;
 
   /* Reason Phrase Length */
-  size_t reason_len = reason ? strlen (reason) : 0;
   if (!encode_varint_field (reason_len, out, &pos, out_len))
     return 0;
 
   /* Reason Phrase */
   if (reason_len > 0)
     {
-      if (pos + reason_len > out_len)
-        return 0;
       memcpy (out + pos, reason, reason_len);
       pos += reason_len;
     }
@@ -136,26 +149,36 @@ SocketQUICFrame_encode_connection_close_app (uint64_t error_code,
   if (!out || out_len == 0)
     return 0;
 
+  /* Calculate required size: type + error_code + reason_len + reason */
+  size_t type_len = 1;
+  size_t error_code_len = SocketQUICVarInt_size (error_code);
+  size_t reason_len = reason ? strlen (reason) : 0;
+  size_t reason_len_size = SocketQUICVarInt_size (reason_len);
+
+  if (error_code_len == 0 || reason_len_size == 0)
+    return 0; /* Value exceeds varint maximum */
+
+  size_t total_len = type_len + error_code_len + reason_len_size + reason_len;
+
+  if (out_len < total_len)
+    return 0; /* Buffer too small */
+
   size_t pos = 0;
 
   /* Frame type (0x1d) */
-  if (!encode_varint_field (QUIC_FRAME_CONNECTION_CLOSE_APP, out, &pos, out_len))
-    return 0;
+  out[pos++] = QUIC_FRAME_CONNECTION_CLOSE_APP;
 
   /* Error Code */
   if (!encode_varint_field (error_code, out, &pos, out_len))
     return 0;
 
   /* Reason Phrase Length */
-  size_t reason_len = reason ? strlen (reason) : 0;
   if (!encode_varint_field (reason_len, out, &pos, out_len))
     return 0;
 
   /* Reason Phrase */
   if (reason_len > 0)
     {
-      if (pos + reason_len > out_len)
-        return 0;
       memcpy (out + pos, reason, reason_len);
       pos += reason_len;
     }
