@@ -103,8 +103,9 @@ SocketQUICVarInt_decode (const uint8_t *data, size_t len, uint64_t *value,
       required_len = 8;
       break;
     default:
-      /* Should not reach here - prefix is masked to 2 bits */
-      return QUIC_VARINT_ERROR_NULL;
+      /* Unreachable - prefix is masked to 2 bits (only 4 possible values) */
+      assert (0 && "Unreachable: prefix masked to 2 bits");
+      return QUIC_VARINT_INCOMPLETE;
     }
 
   if (len < required_len)
