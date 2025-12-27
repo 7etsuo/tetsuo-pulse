@@ -435,8 +435,8 @@ SocketDNSServfailCache_insert (T cache, const char *qname, uint16_t qtype,
     }
 
   memset (entry, 0, sizeof (*entry));
-  snprintf (entry->name, sizeof (entry->name), "%s", normalized);
-  snprintf (entry->nameserver, sizeof (entry->nameserver), "%s", nameserver);
+  socket_util_safe_strncpy (entry->name, normalized, sizeof (entry->name));
+  socket_util_safe_strncpy (entry->nameserver, nameserver, sizeof (entry->nameserver));
   entry->qtype = qtype;
   entry->qclass = qclass;
   entry->ttl = ttl;
