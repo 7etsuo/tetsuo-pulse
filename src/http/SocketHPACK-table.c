@@ -251,27 +251,6 @@ hpack_match_entry (const char *entry_name, size_t entry_name_len,
   return 0;
 }
 
-static char *
-hpack_arena_alloc_dup (Arena_T arena, const char *src, size_t len,
-                       const char *what)
-{
-  char *dup = ALLOC (arena, len + 1);
-
-  if (dup == NULL)
-    {
-      SOCKET_LOG_ERROR_MSG (
-          "SocketHPACK: failed to allocate header %s copy (length=%zu)", what,
-          len);
-      return NULL;
-    }
-
-  if (len > 0)
-    memcpy (dup, src, len);
-  dup[len] = '\0';
-
-  return dup;
-}
-
 static SocketHPACK_Result
 hpack_duplicate_header_strings (Arena_T arena, const char *name,
                                 size_t name_len, const char *value,
@@ -282,13 +261,23 @@ hpack_duplicate_header_strings (Arena_T arena, const char *name,
   assert (name_out != NULL);
   assert (value_out != NULL);
 
-  *name_out = hpack_arena_alloc_dup (arena, name, name_len, "name");
+  *name_out = arena_strndup (arena, name, name_len);
   if (*name_out == NULL)
-    return HPACK_ERROR;
+    {
+      SOCKET_LOG_ERROR_MSG (
+          "SocketHPACK: failed to allocate header name copy (length=%zu)",
+          name_len);
+      return HPACK_ERROR;
+    }
 
-  *value_out = hpack_arena_alloc_dup (arena, value, value_len, "value");
+  *value_out = arena_strndup (arena, value, value_len);
   if (*value_out == NULL)
-    return HPACK_ERROR;
+    {
+      SOCKET_LOG_ERROR_MSG (
+          "SocketHPACK: failed to allocate header value copy (length=%zu)",
+          value_len);
+      return HPACK_ERROR;
+    }
 
   return HPACK_OK;
 }

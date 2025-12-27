@@ -100,17 +100,6 @@ is_control_char (char c)
  * ============================================================================
  */
 
-static inline char *
-uri_arena_copy (Arena_T arena, const char *src, size_t len)
-{
-  char *copy = ALLOC (arena, len + 1);
-  if (!copy)
-    return NULL;
-  memcpy (copy, src, len);
-  copy[len] = '\0';
-  return copy;
-}
-
 static void
 scheme_to_lower (char *scheme, size_t len)
 {
@@ -129,7 +118,7 @@ uri_alloc_component (Arena_T arena, const char *start, const char *end,
     return URI_PARSE_OK;
 
   size_t len = (size_t)(end - start);
-  char *copy = uri_arena_copy (arena, start, len);
+  char *copy = arena_strndup (arena, start, len);
   if (!copy)
     return URI_PARSE_ERROR;
 
@@ -153,7 +142,7 @@ alloc_and_validate (Arena_T arena, const char *start, const char *end,
     {
       if (alloc_empty)
         {
-          char *empty = uri_arena_copy (arena, "", 0);
+          char *empty = arena_strndup (arena, "", 0);
           if (!empty)
             return URI_PARSE_ERROR;
           *out_str = empty;
@@ -173,7 +162,7 @@ alloc_and_validate (Arena_T arena, const char *start, const char *end,
         return vr;
     }
 
-  char *copy = uri_arena_copy (arena, start, len);
+  char *copy = arena_strndup (arena, start, len);
   if (!copy)
     return URI_PARSE_ERROR;
 
@@ -555,7 +544,7 @@ uri_alloc_all_components (const URIParseContext *ctx, SocketHTTP_URI *result,
   if (ctx->scheme_start && ctx->scheme_end && ctx->scheme_end > ctx->scheme_start)
     {
       size_t slen = (size_t)(ctx->scheme_end - ctx->scheme_start);
-      char *s = uri_arena_copy (arena, ctx->scheme_start, slen);
+      char *s = arena_strndup (arena, ctx->scheme_start, slen);
       if (!s)
         return URI_PARSE_ERROR;
       scheme_to_lower (s, slen);
@@ -628,7 +617,7 @@ uri_alloc_all_components (const URIParseContext *ctx, SocketHTTP_URI *result,
     }
   else
     {
-      char *path = uri_arena_copy (arena, "", 0);
+      char *path = arena_strndup (arena, "", 0);
       if (!path)
         return URI_PARSE_ERROR;
       result->path = path;
@@ -1162,14 +1151,6 @@ validate_fragment (const char *s, size_t len)
  */
 
 static const char *
-skip_whitespace (const char *p, const char *end)
-{
-  while (p < end && (*p == ' ' || *p == '\t'))
-    p++;
-  return p;
-}
-
-static const char *
 find_token_end (const char *p, const char *end, const char *delims)
 {
   while (p < end)
@@ -1217,7 +1198,7 @@ static const char *
 mediatype_parse_type_subtype (const char *p, const char *end,
                               SocketHTTP_MediaType *result, Arena_T arena)
 {
-  p = skip_whitespace (p, end);
+  p = skip_ows (p, end);
 
   const char *type_start = p;
   p = find_token_end (p, end, "/; \t");
@@ -1229,7 +1210,7 @@ mediatype_parse_type_subtype (const char *p, const char *end,
   if (!validate_token_span (type_start, type_len))
     return NULL;
 
-  char *type = uri_arena_copy (arena, type_start, type_len);
+  char *type = arena_strndup (arena, type_start, type_len);
   if (!type)
     return NULL;
   result->type = type;
@@ -1247,7 +1228,7 @@ mediatype_parse_type_subtype (const char *p, const char *end,
   if (!validate_token_span (subtype_start, subtype_len))
     return NULL;
 
-  char *subtype = uri_arena_copy (arena, subtype_start, subtype_len);
+  char *subtype = arena_strndup (arena, subtype_start, subtype_len);
   if (!subtype)
     return NULL;
   result->subtype = subtype;
@@ -1305,7 +1286,7 @@ mediatype_parse_parameter (const char *p, const char *end,
   if (param_len == MEDIATYPE_CHARSET_LEN
       && strncasecmp (param_start, "charset", MEDIATYPE_CHARSET_LEN) == 0)
     {
-      char *cs = uri_arena_copy (arena, value_start, value_len);
+      char *cs = arena_strndup (arena, value_start, value_len);
       if (cs)
         {
           result->charset = cs;
@@ -1315,7 +1296,7 @@ mediatype_parse_parameter (const char *p, const char *end,
   else if (param_len == MEDIATYPE_BOUNDARY_LEN
            && strncasecmp (param_start, "boundary", MEDIATYPE_BOUNDARY_LEN) == 0)
     {
-      char *bd = uri_arena_copy (arena, value_start, value_len);
+      char *bd = arena_strndup (arena, value_start, value_len);
       if (bd)
         {
           result->boundary = bd;
@@ -1478,7 +1459,7 @@ accept_parse_single (const char *p, const char *end,
     }
 
   size_t vlen = (size_t)(value_end - value_start);
-  char *v = uri_arena_copy (arena, value_start, vlen);
+  char *v = arena_strndup (arena, value_start, vlen);
   if (!v)
     return p;
 
