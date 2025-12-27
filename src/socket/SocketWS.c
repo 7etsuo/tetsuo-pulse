@@ -1512,7 +1512,7 @@ SocketWS_connect (const char *url, const char *protocols)
     while ((result = SocketWS_handshake (ws)) > 0)
       {
         struct pollfd pfd = { .fd = Socket_fd (sock), .events = POLLIN | POLLOUT };
-        poll (&pfd, 1, 5000);
+        poll (&pfd, 1, SOCKETWS_HANDSHAKE_TIMEOUT_MS);
         SocketWS_process (ws, ws_translate_poll_revents (pfd.revents));
       }
 

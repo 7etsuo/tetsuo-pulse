@@ -281,6 +281,9 @@
 /** Default ping timeout */
 #define SOCKETWS_DEFAULT_PING_TIMEOUT_MS 30000
 
+/** Handshake timeout in milliseconds */
+#define SOCKETWS_HANDSHAKE_TIMEOUT_MS 5000
+
 /** Default deflate window bits */
 #define SOCKETWS_DEFAULT_DEFLATE_WINDOW_BITS 15
 
