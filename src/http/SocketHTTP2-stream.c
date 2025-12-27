@@ -174,7 +174,7 @@ http2_stream_rate_check (SocketHTTP2_Conn_T conn)
   if (window_count >= conn->stream_max_per_window)
     {
       SOCKET_LOG_WARN_MSG ("SECURITY: HTTP/2 stream creation window limit exceeded: "
-                           "%" PRIu32 " >= %" PRIu32 " in %d ms - potential DoS attack",
+                           "%" PRIu32 " >= %" PRIu32 " in %" PRId64 " ms - potential DoS attack",
                            window_count, conn->stream_max_per_window,
                            conn->stream_create_window.duration_ms);
       return -1;
@@ -185,7 +185,7 @@ http2_stream_rate_check (SocketHTTP2_Conn_T conn)
   if (burst_count >= conn->stream_burst_threshold)
     {
       SOCKET_LOG_WARN_MSG ("SECURITY: HTTP/2 stream creation burst detected: "
-                           "%" PRIu32 " >= %" PRIu32 " in %d ms - potential DoS attack",
+                           "%" PRIu32 " >= %" PRIu32 " in %" PRId64 " ms - potential DoS attack",
                            burst_count, conn->stream_burst_threshold,
                            conn->stream_burst_window.duration_ms);
       return -1;
@@ -196,7 +196,7 @@ http2_stream_rate_check (SocketHTTP2_Conn_T conn)
   if (churn_count >= conn->stream_churn_threshold)
     {
       SOCKET_LOG_WARN_MSG ("SECURITY: HTTP/2 stream churn limit exceeded: "
-                           "%" PRIu32 " >= %" PRIu32 " in %d ms - "
+                           "%" PRIu32 " >= %" PRIu32 " in %" PRId64 " ms - "
                            "CVE-2023-44487 Rapid Reset Attack detected",
                            churn_count, conn->stream_churn_threshold,
                            conn->stream_churn_window.duration_ms);
