@@ -408,14 +408,6 @@ extern const char *Socket_safe_strerror (int errnum);
 #endif
 
 /**
- * @brief Allocation overhead for arena bookkeeping during buffer resize.
- *
- */
-#ifndef SOCKETBUF_ALLOC_OVERHEAD
-#define SOCKETBUF_ALLOC_OVERHEAD 64
-#endif
-
-/**
  * @brief SOCKETBUF_MAX_CAPACITY - Maximum buffer capacity (SIZE_MAX/2)
  *
  * Conservative limit providing guaranteed safety:
