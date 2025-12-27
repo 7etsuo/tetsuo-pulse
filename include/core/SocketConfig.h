@@ -945,6 +945,17 @@ extern const char *Socket_safe_strerror (int errnum);
 #endif
 
 /**
+ * @brief Minimum duration for TimeWindow to prevent division by zero.
+ *
+ * Enforces a minimum window duration of 1ms in TimeWindow_init.
+ * This prevents division by zero in rate calculations.
+ *
+ */
+#ifndef TIMEWINDOW_MIN_DURATION_MS
+#define TIMEWINDOW_MIN_DURATION_MS 1
+#endif
+
+/**
  * @brief Maximum allowed window duration for SYN protection.
  *
  * Caps config.window_duration_ms to prevent excessive memory usage.

@@ -93,7 +93,7 @@ int
 cidr_partial_byte_match (const uint8_t *ip_bytes, const uint8_t *entry_bytes,
                          int byte_index, int remaining_bits)
 {
-  uint8_t mask = (uint8_t)(0xFF << (8 - remaining_bits));
+  uint8_t mask = (uint8_t)(0xFF << (SOCKET_BITS_PER_BYTE - remaining_bits));
   return ((ip_bytes[byte_index] & mask) == (entry_bytes[byte_index] & mask));
 }
 
@@ -107,8 +107,8 @@ ip_matches_cidr_bytes (int family, const uint8_t *ip_bytes,
     return 0;
 
   bits = entry->prefix_len;
-  bytes_to_match = bits / 8;
-  remaining_bits = bits % 8;
+  bytes_to_match = bits / SOCKET_BITS_PER_BYTE;
+  remaining_bits = bits % SOCKET_BITS_PER_BYTE;
 
   if (!cidr_full_bytes_match (ip_bytes, entry->addr_bytes, bytes_to_match))
     return 0;
