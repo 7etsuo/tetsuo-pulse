@@ -37,6 +37,9 @@
 /* RFC 9000 Section 12.12-12.13: PATH_CHALLENGE/RESPONSE data size */
 #define QUIC_PATH_DATA_SIZE 8
 
+/* RFC 9000 Section 10.3: Stateless Reset Token size */
+#define QUIC_STATELESS_RESET_TOKEN_SIZE 16
+
 /**
  * @brief Frame type to allowed packet types mapping.
  */
@@ -533,11 +536,11 @@ parse_new_connection_id (const uint8_t *data, size_t len, size_t *pos,
   memcpy (ncid->cid, data + *pos, (size_t)cid_len);
   *pos += (size_t)cid_len;
 
-  /* Stateless Reset Token (16 bytes) */
-  if (*pos + 16 > len)
+  /* Stateless Reset Token */
+  if (*pos + QUIC_STATELESS_RESET_TOKEN_SIZE > len)
     return QUIC_FRAME_ERROR_TRUNCATED;
-  memcpy (ncid->stateless_reset_token, data + *pos, 16);
-  *pos += 16;
+  memcpy (ncid->stateless_reset_token, data + *pos, QUIC_STATELESS_RESET_TOKEN_SIZE);
+  *pos += QUIC_STATELESS_RESET_TOKEN_SIZE;
 
   return QUIC_FRAME_OK;
 }
