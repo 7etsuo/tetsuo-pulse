@@ -45,9 +45,19 @@
  * ============================================================================
  */
 
+/** Length of ':' separator in "username:password" format */
+#define SOCKET_PROXY_CREDS_SEPARATOR_LEN 1
+
+/** Length of null terminator for credential string */
+#define SOCKET_PROXY_CREDS_NULL_TERM 1
+
+/** Overhead for credential formatting (separator + null terminator) */
+#define SOCKET_PROXY_CREDS_OVERHEAD \
+  (SOCKET_PROXY_CREDS_SEPARATOR_LEN + SOCKET_PROXY_CREDS_NULL_TERM)
+
 /** Buffer size for Basic auth credentials (username:password) */
 #define SOCKET_PROXY_CREDENTIALS_BUFSIZE                                      \
-  (SOCKET_PROXY_MAX_USERNAME_LEN + SOCKET_PROXY_MAX_PASSWORD_LEN + 2)
+  (SOCKET_PROXY_MAX_USERNAME_LEN + SOCKET_PROXY_MAX_PASSWORD_LEN + SOCKET_PROXY_CREDS_OVERHEAD)
 
 /** Length of "Basic " prefix for Proxy-Authorization header */
 #define SOCKET_PROXY_BASIC_AUTH_PREFIX_LEN (sizeof ("Basic ") - 1)
