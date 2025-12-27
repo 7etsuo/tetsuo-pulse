@@ -103,6 +103,26 @@ sockethttp_is_token_boundary (char c)
   return c == '\0' || c == ',' || c == ' ' || c == '\t';
 }
 
+/**
+ * @brief Validate that a string contains only valid HTTP token characters.
+ * @param s String to validate.
+ * @param len Length of the string.
+ * @return 1 if all characters are valid token characters, 0 otherwise.
+ *
+ * Used for validating HTTP methods, header names, media types, and other
+ * token-based fields as defined by RFC 7230.
+ */
+static inline int
+sockethttp_is_token_valid (const char *s, size_t len)
+{
+  for (size_t i = 0; i < len; i++)
+    {
+      if (!SOCKETHTTP_IS_TCHAR (s[i]))
+        return 0;
+    }
+  return 1;
+}
+
 /* ============================================================================
  * HTTP PORT UTILITIES
  * ============================================================================

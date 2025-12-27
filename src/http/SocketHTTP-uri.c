@@ -928,17 +928,6 @@ SocketHTTP_URI_build (const SocketHTTP_URI *uri, char *output, size_t output_siz
  */
 
 static inline int
-validate_token_span (const char *start, size_t len)
-{
-  for (size_t i = 0; i < len; i++)
-    {
-      if (!SOCKETHTTP_IS_TCHAR (start[i]))
-        return 0;
-    }
-  return 1;
-}
-
-static inline int
 is_unreserved (unsigned char c)
 {
   return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
@@ -1207,7 +1196,7 @@ mediatype_parse_type_subtype (const char *p, const char *end,
     return NULL;
 
   size_t type_len = (size_t)(p - type_start);
-  if (!validate_token_span (type_start, type_len))
+  if (!sockethttp_is_token_valid (type_start, type_len))
     return NULL;
 
   char *type = arena_strndup (arena, type_start, type_len);
@@ -1225,7 +1214,7 @@ mediatype_parse_type_subtype (const char *p, const char *end,
     return NULL;
 
   size_t subtype_len = (size_t)(p - subtype_start);
-  if (!validate_token_span (subtype_start, subtype_len))
+  if (!sockethttp_is_token_valid (subtype_start, subtype_len))
     return NULL;
 
   char *subtype = arena_strndup (arena, subtype_start, subtype_len);
@@ -1256,7 +1245,7 @@ mediatype_parse_parameter (const char *p, const char *end,
   size_t param_len = (size_t)(p - param_start);
   if (param_len == 0)
     return NULL;
-  if (!validate_token_span (param_start, param_len))
+  if (!sockethttp_is_token_valid (param_start, param_len))
     return NULL;
 
   p++;
@@ -1279,7 +1268,7 @@ mediatype_parse_parameter (const char *p, const char *end,
 
       if (value_len == 0)
         return NULL;
-      if (!validate_token_span (value_start, value_len))
+      if (!sockethttp_is_token_valid (value_start, value_len))
         return NULL;
     }
 
