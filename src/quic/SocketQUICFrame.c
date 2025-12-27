@@ -173,6 +173,10 @@ parse_ack_internal (const uint8_t *data, size_t len, size_t *pos,
       if (ack->range_count > QUIC_FRAME_ACK_MAX_RANGES)
         return QUIC_FRAME_ERROR_ACK_RANGE;
 
+      /* Overflow check: ensure range_count * sizeof doesn't wrap */
+      if (ack->range_count > SIZE_MAX / sizeof (SocketQUICFrameAckRange_T))
+        return QUIC_FRAME_ERROR_OVERFLOW;
+
       size_t range_size = (size_t)ack->range_count * sizeof (SocketQUICFrameAckRange_T);
       if (arena)
         ack->ranges = Arena_alloc (arena, range_size, __FILE__, __LINE__);
