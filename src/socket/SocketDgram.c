@@ -691,7 +691,7 @@ SocketDgram_connect (T socket, const char *host, int port)
   dgram_perform_address_operation (socket, host, port, DGRAM_OP_CONNECT);
 }
 
-static void
+static inline void
 dgram_validate_iov (const struct iovec *iov, int iovcnt)
 {
   (void)iov;    /* Used only in assertions */
