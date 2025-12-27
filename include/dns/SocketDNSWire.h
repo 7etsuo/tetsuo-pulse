@@ -340,6 +340,9 @@ extern size_t SocketDNS_name_wire_length (const char *name);
  * @{
  */
 
+/** Fixed fields size in question section: QTYPE(2) + QCLASS(2) bytes (RFC 1035 Section 4.1.2). */
+#define DNS_QUESTION_FIXED_SIZE 4
+
 /**
  * @brief DNS record types (RFC 1035 Section 3.2.2, RFC 3596).
  *
