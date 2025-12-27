@@ -602,6 +602,10 @@ SocketBuf_compact (T buf)
             }
           else
             {
+              SOCKET_LOG_DEBUG_MSG (
+                  "Arena_alloc failed in compact, using in-place rotation "
+                  "(size=%zu)",
+                  buf->size);
               compact_rotate_in_place (buf->data, buf->capacity, buf->head,
                                        buf->size);
             }
