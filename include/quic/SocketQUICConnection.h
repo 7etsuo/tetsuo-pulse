@@ -24,6 +24,9 @@
 #define QUIC_CONNECTION_MAX_CIDS 8
 #define QUIC_CONNECTION_MIN_CID_LIMIT 2
 
+/* RFC 9000 Section 10.3.1: Minimum packet size to avoid false positives */
+#define QUIC_STATELESS_RESET_MIN_PACKET_LEN 38
+
 typedef struct SocketQUICConnection *SocketQUICConnection_T;
 typedef struct SocketQUICConnTable *SocketQUICConnTable_T;
 
