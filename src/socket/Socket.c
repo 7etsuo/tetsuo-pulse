@@ -341,6 +341,28 @@ unix_is_abstract_path (const char *path)
   return path && path[0] == '@';
 }
 
+static inline bool
+contains_parent_dir_traversal (const char *path, size_t path_len)
+{
+  /* Check for "/../" anywhere in path */
+  if (strstr (path, "/../"))
+    return true;
+
+  /* Check for ".." as the entire path */
+  if (strcmp (path, "..") == 0)
+    return true;
+
+  /* Check for "../" at the start */
+  if (strncmp (path, "../", 3) == 0)
+    return true;
+
+  /* Check for "/.." at the end */
+  if (path_len >= 3 && strcmp (path + path_len - 3, "/..") == 0)
+    return true;
+
+  return false;
+}
+
 static int
 unix_validate_path (const char *path, size_t path_len)
 {
@@ -353,9 +375,7 @@ unix_validate_path (const char *path, size_t path_len)
       return -1;
     }
 
-  if (strstr (path, "/../") || strcmp (path, "..") == 0
-      || strncmp (path, "../", 3) == 0
-      || (path_len >= 3 && strcmp (path + path_len - 3, "/..") == 0))
+  if (contains_parent_dir_traversal (path, path_len))
     {
       SOCKET_ERROR_MSG (
           "Invalid Unix socket path: directory traversal detected");

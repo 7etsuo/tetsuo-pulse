@@ -30,6 +30,13 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketConvenience);
 
 #define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketConvenience, e)
 
+static inline int
+is_connect_in_progress_error (int err)
+{
+  return err == EINPROGRESS || err == EINTR || err == EAGAIN
+         || err == EWOULDBLOCK;
+}
+
 static int
 get_socket_flags (int fd, int *flags_out)
 {
@@ -368,7 +375,7 @@ Socket_connect_unix_timeout (T socket, const char *path, int timeout_ms)
                 return;
         }
 
-        if (errno != EINPROGRESS && errno != EINTR && errno != EAGAIN && errno != EWOULDBLOCK) {
+        if (!is_connect_in_progress_error (errno)) {
                 with_nonblocking_scope (fd, 0, (int *)&original_flags, &need_restore);
                 SOCKET_ERROR_FMT ("Unix connect to %.*s failed",
                                   SOCKET_ERROR_MAX_HOSTNAME, path);
