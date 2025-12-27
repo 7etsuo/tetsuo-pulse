@@ -769,13 +769,13 @@ socketreconnect_validate_policy (SocketReconnect_Policy_T *policy)
   if (policy->circuit_failure_threshold < 1)
     policy->circuit_failure_threshold
         = SOCKET_RECONNECT_DEFAULT_CIRCUIT_THRESHOLD;
-  if (policy->circuit_reset_timeout_ms < 1000)
+  if (policy->circuit_reset_timeout_ms < SOCKET_RECONNECT_MIN_CIRCUIT_RESET_MS)
     policy->circuit_reset_timeout_ms
         = SOCKET_RECONNECT_DEFAULT_CIRCUIT_RESET_MS;
   if (policy->health_check_interval_ms < 0)
     policy->health_check_interval_ms
         = SOCKET_RECONNECT_DEFAULT_HEALTH_INTERVAL_MS;
-  if (policy->health_check_timeout_ms < 100)
+  if (policy->health_check_timeout_ms < SOCKET_RECONNECT_MIN_HEALTH_TIMEOUT_MS)
     policy->health_check_timeout_ms
         = SOCKET_RECONNECT_DEFAULT_HEALTH_TIMEOUT_MS;
 }
