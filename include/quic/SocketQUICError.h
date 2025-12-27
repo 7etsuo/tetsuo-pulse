@@ -301,8 +301,11 @@ SocketQUIC_is_transport_error (uint64_t code)
  * @param code Error code to convert.
  * @return Static string describing the error. Never returns NULL.
  *
- * @note For crypto errors, a static buffer is used. Not thread-safe
- *       for crypto errors if called concurrently with different codes.
+ * @note Thread-safe: Uses thread-local storage for crypto error formatting.
+ *       Each thread maintains its own buffer, so concurrent calls from
+ *       different threads are safe. However, the returned pointer is only
+ *       valid until the next call to this function in the same thread.
+ *       Copy the result if you need to preserve it across multiple calls.
  */
 extern const char *SocketQUIC_error_string (uint64_t code);
 
