@@ -383,6 +383,68 @@ decompress_loop (SocketWS_T ws, z_stream *strm, unsigned char **buf,
   return 0;
 }
 
+static unsigned char *
+prepare_decompress_input (SocketWS_T ws, const unsigned char *input,
+                          size_t input_len, size_t *output_len)
+{
+  size_t trailer_len;
+  unsigned char *input_with_trailer;
+
+  if (!SocketSecurity_check_add (input_len, WS_DEFLATE_TRAILER_SIZE,
+                                 &trailer_len)
+      || !SocketSecurity_check_size (trailer_len))
+    {
+      ws_set_error (ws, WS_ERROR_COMPRESSION,
+                    "Trailer size invalid/overflow: input_len=%zu", input_len);
+      return NULL;
+    }
+
+  input_with_trailer = append_deflate_trailer (ws->arena, input, input_len,
+                                               output_len);
+  if (!input_with_trailer || *output_len != trailer_len)
+    {
+      ws_set_error (ws, WS_ERROR_COMPRESSION, "Failed to append trailer");
+      return NULL;
+    }
+
+  return input_with_trailer;
+}
+
+static unsigned char *
+setup_decompress_buffer (SocketWS_T ws, size_t input_len, size_t *buf_size)
+{
+  unsigned char *buf;
+
+  *buf_size = calculate_zlib_buffer_size (input_len, 1 /* decompress */);
+  if (!SocketSecurity_check_size (*buf_size))
+    {
+      ws_set_error (ws, WS_ERROR_COMPRESSION,
+                    "Decompress buffer size exceeds security limit: %zu",
+                    *buf_size);
+      return NULL;
+    }
+
+  buf = ALLOC (ws->arena, *buf_size);
+  if (!buf)
+    {
+      ws_set_error (ws, WS_ERROR_COMPRESSION,
+                    "Failed to allocate output buffer");
+      return NULL;
+    }
+
+  return buf;
+}
+
+static void
+setup_inflate_stream (z_stream *strm, const unsigned char *input,
+                     size_t input_len, unsigned char *output, size_t output_size)
+{
+  strm->next_in = (unsigned char *)input;
+  strm->avail_in = (uInt)input_len;
+  strm->next_out = output;
+  strm->avail_out = (uInt)output_size;
+}
+
 int
 ws_compression_init (SocketWS_T ws)
 {
@@ -598,42 +660,18 @@ ws_decompress_message (SocketWS_T ws, const unsigned char *input,
   strm = &ws->compression.inflate_stream;
 
   /* Append RFC 7692 trailer */
-  size_t trailer_len;
-  if (!SocketSecurity_check_add (input_len, WS_DEFLATE_TRAILER_SIZE,
-                                 &trailer_len)
-      || !SocketSecurity_check_size (trailer_len))
-    {
-      ws_set_error (ws, WS_ERROR_COMPRESSION,
-                    "Trailer size invalid/overflow: input_len=%zu", input_len);
-      return -1;
-    }
-  input_with_trailer = append_deflate_trailer (ws->arena, input, input_len,
-                                               &input_with_trailer_len);
-  if (!input_with_trailer || input_with_trailer_len != trailer_len)
-    {
-      ws_set_error (ws, WS_ERROR_COMPRESSION, "Failed to append trailer");
-      return -1;
-    }
+  input_with_trailer = prepare_decompress_input (ws, input, input_len,
+                                                 &input_with_trailer_len);
+  if (!input_with_trailer)
+    return -1;
 
   /* Allocate output buffer */
-  buf_size = calculate_zlib_buffer_size (input_len, 1 /* decompress */);
-  if (!SocketSecurity_check_size (buf_size))
-    {
-      ws_set_error (ws, WS_ERROR_COMPRESSION,
-                    "Decompress buffer size exceeds security limit: %zu",
-                    buf_size);
-      return -1;
-    }
-  buf = ALLOC (ws->arena, buf_size);
+  buf = setup_decompress_buffer (ws, input_len, &buf_size);
   if (!buf)
-    {
-      ws_set_error (ws, WS_ERROR_COMPRESSION,
-                    "Failed to allocate output buffer");
-      return -1;
-    }
+    return -1;
 
   /* Set up zlib stream */
-  /* Check for overflow before casting size_t to uInt (zlib limitation) */
+  /* Check for overflow before casting size_t to uInt (zlib limitation, issue #566) */
   if (input_with_trailer_len > UINT_MAX)
     {
       ws_set_error (ws, WS_ERROR_COMPRESSION,
@@ -648,28 +686,8 @@ ws_decompress_message (SocketWS_T ws, const unsigned char *input,
                     UINT_MAX);
       return -1;
     }
-  strm->next_in = input_with_trailer;
-
-  /* Check for overflow before casting size_t to uInt (issue #566) */
-  if (input_with_trailer_len > UINT_MAX)
-    {
-      ws_set_error (ws, WS_ERROR_COMPRESSION,
-                    "Input length %zu exceeds zlib limit %u",
-                    input_with_trailer_len, UINT_MAX);
-      return -1;
-    }
-  strm->avail_in = (uInt)input_with_trailer_len;
-
-  strm->next_out = buf;
-
-  if (buf_size > UINT_MAX)
-    {
-      ws_set_error (ws, WS_ERROR_COMPRESSION,
-                    "Buffer size %zu exceeds zlib limit %u", buf_size,
-                    UINT_MAX);
-      return -1;
-    }
-  strm->avail_out = (uInt)buf_size;
+  setup_inflate_stream (strm, input_with_trailer, input_with_trailer_len,
+                       buf, buf_size);
 
   /* Decompress */
   if (decompress_loop (ws, strm, &buf, &buf_size, &total_out) < 0)
