@@ -1,0 +1,12 @@
+{
+  "number": 401,
+  "title": "feat(quic): implement Connection ID Operations (RFC 9000 \u00a75.1.1-5.1.2)",
+  "body": "## RFC 9000 Sections 5.1.1-5.1.2: Connection ID Lifecycle Operations\n\n### Overview\nImplement connection ID pool management with sequence numbering and retirement.\n\n### Complexity: HIGH (~600 lines)\nHash table with lifecycle tracking.\n\n### Key Requirements\n- Sequence numbers start at 0 for initial CID\n- preferred_address CID gets sequence 1\n- Track active_connection_id_limit\n- Retire Prior To bulk retirement\n- Ensure supply for migration\n\n### Implementation\n**Files:**\n- `include/quic/SocketQUICConnectionID.h`\n- `src/quic/SocketQUICConnectionID-pool.c`\n\n**Data Structures:**\n```c\ntypedef struct {\n    Arena_T arena;\n    SocketQUICConnectionID_T *ids[HASH_SIZE];\n    uint64_t next_sequence;\n    size_t active_count;\n    size_t peer_limit;\n} SocketQUICConnectionIDPool_T;\n```\n\n**Functions:**\n```c\nSocketQUICConnectionIDPool_T SocketQUICConnectionIDPool_new(Arena_T arena);\nint SocketQUICConnectionIDPool_add(SocketQUICConnectionIDPool_T pool,\n                                    const SocketQUICConnectionID_T *cid);\nvoid SocketQUICConnectionIDPool_retire_prior_to(SocketQUICConnectionIDPool_T pool,\n                                                 uint64_t sequence);\nSocketQUICConnectionID_T *SocketQUICConnectionIDPool_lookup(\n    SocketQUICConnectionIDPool_T pool, const uint8_t *id, size_t len);\n```\n\n### Dependencies\n- #380 (Section 5.1 - Connection ID structure)\n- #395 (Section 19.15-19.16 - NEW_CONNECTION_ID/RETIRE_CONNECTION_ID)\n\n### Reference\n- Pattern: HTTP/2 stream hash table in `src/http/SocketHTTP2-stream.c`",
+  "labels": [
+    "enhancement",
+    "quic",
+    "rfc-9000"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}
