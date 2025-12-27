@@ -204,20 +204,36 @@ synprotect_max (int64_t a, int64_t b)
   return (a > b) ? a : b;
 }
 
+/* IP parsing - implemented in SocketSYNProtect-ip.c */
+int parse_ipv4_address (const char *ip, uint8_t *addr_bytes);
+int parse_ipv6_address (const char *ip, uint8_t *addr_bytes);
+int parse_ip_address (const char *ip, uint8_t *addr_bytes, size_t addr_size);
+int ip_addresses_equal (const char *ip1, const char *ip2);
+
+/* CIDR matching - implemented in SocketSYNProtect-ip.c */
+int cidr_full_bytes_match (const uint8_t *ip_bytes, const uint8_t *entry_bytes, int bytes);
+int cidr_partial_byte_match (const uint8_t *ip_bytes, const uint8_t *entry_bytes, int byte_index, int remaining_bits);
+int ip_matches_cidr_bytes (int family, const uint8_t *ip_bytes, const SocketSYN_WhitelistEntry *entry);
+int ip_matches_cidr (const char *ip, const SocketSYN_WhitelistEntry *entry);
+
+/* Whitelist/blacklist checks - implemented in SocketSYNProtect-ip.c */
+int whitelist_check_bucket_bytes (const SocketSYN_WhitelistEntry *entry, const char *ip_str, int family, const uint8_t *ip_bytes);
+int whitelist_check_bucket (const SocketSYN_WhitelistEntry *entry, const char *ip);
+int whitelist_check_all_cidrs_bytes (T protect, int family, const uint8_t *ip_bytes, unsigned skip_bucket);
+int whitelist_check_all_cidrs (T protect, const char *ip, unsigned skip_bucket);
+int whitelist_check (T protect, const char *ip);
+int blacklist_check (T protect, const char *ip, int64_t now_ms);
+
+/* LRU operations - implemented in SocketSYNProtect-list.c */
+void lru_remove (T protect, SocketSYN_IPEntry *entry);
+void lru_push_front (T protect, SocketSYN_IPEntry *entry);
+void lru_touch (T protect, SocketSYN_IPEntry *entry);
+void evict_lru_entry (T protect);
+void free_memory (T protect, void *ptr);
+void remove_ip_entry_from_hash (T protect, SocketSYN_IPEntry *entry);
+
+/* Local to main file */
 static void safe_copy_ip (char *dest, const char *src);
-static int parse_ipv4_address (const char *ip, uint8_t *addr_bytes);
-static int parse_ipv6_address (const char *ip, uint8_t *addr_bytes);
-static int parse_ip_address (const char *ip, uint8_t *addr_bytes, size_t addr_size);
-static int cidr_full_bytes_match (const uint8_t *ip_bytes, const uint8_t *entry_bytes, int bytes);
-static int cidr_partial_byte_match (const uint8_t *ip_bytes, const uint8_t *entry_bytes, int byte_index, int remaining_bits);
-static int ip_matches_cidr_bytes (int family, const uint8_t *ip_bytes, const SocketSYN_WhitelistEntry *entry);
-static int ip_matches_cidr (const char *ip, const SocketSYN_WhitelistEntry *entry);
-static int whitelist_check_bucket_bytes (const SocketSYN_WhitelistEntry *entry, const char *ip_str, int family, const uint8_t *ip_bytes);
-static int whitelist_check_bucket (const SocketSYN_WhitelistEntry *entry, const char *ip);
-static int whitelist_check_all_cidrs_bytes (T protect, int family, const uint8_t *ip_bytes, unsigned skip_bucket);
-static int whitelist_check_all_cidrs (T protect, const char *ip, unsigned skip_bucket);
-static int whitelist_check (T protect, const char *ip);
-static int blacklist_check (T protect, const char *ip, int64_t now_ms);
 static SocketSYN_WhitelistEntry * find_whitelist_entry_exact (SocketSYN_WhitelistEntry *bucket_head, const char *ip);
 static SocketSYN_BlacklistEntry * find_blacklist_entry (SocketSYN_BlacklistEntry *bucket_head, const char *ip);
 static void insert_whitelist_entry (T protect, SocketSYN_WhitelistEntry *entry, unsigned bucket);
@@ -228,16 +244,10 @@ static int setup_cidr_entry (SocketSYN_WhitelistEntry *entry, const char *ip_par
 static int parse_cidr_notation (const char *cidr, char *ip_out, size_t ip_out_size, int *prefix_out);
 static size_t cleanup_expired_blacklist (T protect, int64_t now_ms);
 static size_t count_active_blacklists (T protect, int64_t now_ms);
-
 static SocketSYN_IPEntry * find_ip_entry (T protect, const char *ip);
-void remove_ip_entry_from_hash (T protect, SocketSYN_IPEntry *entry);
-static void evict_lru_entry (T protect);
 static void init_ip_state (SocketSYN_IPState *state, const char *ip, int64_t now_ms);
 static SocketSYN_IPEntry * create_ip_entry (T protect, const char *ip, int64_t now_ms);
 static SocketSYN_IPEntry * get_or_create_ip_entry (T protect, const char *ip, int64_t now_ms);
-void lru_remove (T protect, SocketSYN_IPEntry *entry);
-static void lru_push_front (T protect, SocketSYN_IPEntry *entry);
-static void lru_touch (T protect, SocketSYN_IPEntry *entry);
 static void rotate_window_if_needed (SocketSYN_IPState *state, int64_t now_ms, int window_ms);
 static float calculate_window_progress (int64_t elapsed, int window_ms);
 static uint32_t calculate_effective_attempts (const SocketSYN_IPState *state, int64_t now_ms, int window_ms);
@@ -259,6 +269,5 @@ static int check_whitelist_blacklist (T protect, const char *client_ip, int64_t 
 static void cleanup_expired_ip_blocks (T protect, int64_t now_ms);
 static size_t count_currently_blocked (T protect, int64_t now_ms);
 static void * alloc_zeroed (T protect, size_t count, size_t size);
-void free_memory (T protect, void *ptr);
 
 #endif /* SOCKETSYNPROTECT_PRIVATE_INCLUDED */

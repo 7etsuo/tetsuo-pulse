@@ -1016,6 +1016,16 @@ extern const char *Socket_safe_strerror (int errnum);
 #define SOCKET_SYN_MAX_LIST_CAP 10000
 #endif
 
+/**
+ * @brief Fallback hash seed when cryptographic random fails.
+ *
+ * MurmurHash2 mixing constant; ensures deterministic fallback behavior
+ * while still providing reasonable hash distribution.
+ */
+#ifndef SOCKET_SYN_FALLBACK_SEED
+#define SOCKET_SYN_FALLBACK_SEED 0x5bd1e995U
+#endif
+
 /* ============================================================================
  * Pool Health Check Configuration
  * ============================================================================

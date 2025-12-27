@@ -614,6 +614,11 @@ SocketCrypto_random_bytes (void *output, size_t len)
     return -1;
 
 #if SOCKET_HAS_TLS
+  /* OpenSSL RAND_bytes takes int; ensure len fits even if MAX_ALLOCATION is
+   * overridden to exceed INT_MAX */
+  if (len > (size_t)INT_MAX)
+    return -1;
+
   if (RAND_bytes ((unsigned char *)output, (int)len) != 1)
     return -1;
   return 0;

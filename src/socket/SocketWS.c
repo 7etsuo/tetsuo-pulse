@@ -1421,7 +1421,17 @@ SocketWS_connect (const char *url, const char *protocols)
         host_len = sizeof (host) - 1;
       strncpy (host, url, host_len);
       host[host_len] = '\0';
-      port = atoi (port_start + 1);
+      {
+        char *endptr;
+        long p = strtol (port_start + 1, &endptr, 10);
+        if (endptr == port_start + 1 || p < 1 || p > 65535)
+          {
+            SOCKET_ERROR_MSG ("Invalid port in WebSocket URL");
+            RAISE_WS_ERROR (SocketWS_Failed);
+            return NULL;
+          }
+        port = (int)p;
+      }
     }
   else if (path_start)
     {
@@ -1439,7 +1449,10 @@ SocketWS_connect (const char *url, const char *protocols)
   if (path_start)
     strncpy (path, path_start, sizeof (path) - 1);
   else
-    strcpy (path, "/");
+    {
+      path[0] = '/';
+      path[1] = '\0';
+    }
 
   /* Create and connect socket */
   TRY
