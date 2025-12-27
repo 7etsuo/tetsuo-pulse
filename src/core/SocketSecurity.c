@@ -225,7 +225,7 @@ SocketSecurity_check_size (size_t size)
 int
 SocketSecurity_check_multiply (size_t a, size_t b, size_t *result)
 {
-  if (!SOCKET_SECURITY_CHECK_OVERFLOW_MUL (a, b))
+  if (b != 0 && a > SIZE_MAX / b)
     return 0;
   if (result != NULL)
     *result = a * b;
@@ -235,7 +235,7 @@ SocketSecurity_check_multiply (size_t a, size_t b, size_t *result)
 int
 SocketSecurity_check_add (size_t a, size_t b, size_t *result)
 {
-  if (!SOCKET_SECURITY_CHECK_OVERFLOW_ADD (a, b))
+  if (a > SIZE_MAX - b)
     return 0;
   if (result != NULL)
     *result = a + b;

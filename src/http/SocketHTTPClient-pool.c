@@ -72,7 +72,7 @@ pool_entry_alloc (HTTPPool *pool)
 
   /* Allocate new entry from arena (already zeroed by calloc pattern) */
   size_t entry_size = sizeof (*entry);
-  if (!SOCKET_SECURITY_VALID_SIZE (entry_size))
+  if (!SocketSecurity_check_size (entry_size))
     {
       SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed,
                         "Pool entry size invalid: %zu", entry_size);
@@ -236,7 +236,7 @@ httpclient_pool_new (Arena_T arena, const SocketHTTPClient_Config *config)
   assert (config != NULL);
 
   size_t pool_size = sizeof (*pool);
-  if (!SOCKET_SECURITY_VALID_SIZE (pool_size))
+  if (!SocketSecurity_check_size (pool_size))
     {
       SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed,
                         "HTTP pool size invalid: %zu", pool_size);
@@ -573,7 +573,7 @@ init_http1_entry_fields (HTTPPoolEntry *entry, Socket_T socket,
   size_t host_len = strlen (host);
 
   size_t alloc_size = host_len + 1;
-  if (!SOCKET_SECURITY_VALID_SIZE (alloc_size))
+  if (!SocketSecurity_check_size (alloc_size))
     {
       SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed,
                         "Hostname too long: %zu bytes", host_len);
@@ -666,7 +666,7 @@ init_http2_entry_fields (HTTPPoolEntry *entry, Socket_T socket,
   size_t host_len = strlen (host);
   size_t alloc_size = host_len + 1;
 
-  if (!SOCKET_SECURITY_VALID_SIZE (alloc_size))
+  if (!SocketSecurity_check_size (alloc_size))
     {
       SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed,
                         "Hostname too long: %zu bytes", host_len);
@@ -1061,7 +1061,7 @@ create_temp_entry (Socket_T socket, const char *host, int port, int is_secure)
     }
   size_t host_len = strlen (host);
   size_t alloc_size = host_len + 1;
-  if (!SOCKET_SECURITY_VALID_SIZE (alloc_size))
+  if (!SocketSecurity_check_size (alloc_size))
     {
       Arena_dispose (&temp_arena);
       SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed,

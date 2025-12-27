@@ -93,7 +93,7 @@ static void
 new_validate_capacity (size_t capacity)
 {
   if (capacity == 0 || !SOCKET_VALID_BUFFER_SIZE (capacity)
-      || !SOCKET_SECURITY_VALID_SIZE (capacity))
+      || !SocketSecurity_check_size (capacity))
     RAISE_MSG (SocketBuf_Failed,
                "SocketBuf_new: invalid capacity (0 < size <= %u bytes and "
                "valid allocation)",
@@ -346,7 +346,7 @@ SocketBuf_secureclear (T buf)
 static size_t
 reserve_calc_new_capacity (size_t current_cap, size_t total_needed)
 {
-  if (!SOCKET_SECURITY_VALID_SIZE (total_needed)
+  if (!SocketSecurity_check_size (total_needed)
       || !SOCKET_VALID_BUFFER_SIZE (total_needed))
     return 0;
 
@@ -425,7 +425,7 @@ SocketBuf_reserve (T buf, size_t min_space)
 
   SOCKETBUF_INVARIANTS (buf);
 
-  if (!SOCKET_SECURITY_VALID_SIZE (min_space))
+  if (!SocketSecurity_check_size (min_space))
     RAISE_MSG (SocketBuf_Failed,
                "min_space exceeds security allocation limit");
 

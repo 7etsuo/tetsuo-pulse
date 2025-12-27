@@ -303,8 +303,8 @@ ratelimit_validate_params (size_t tokens_per_sec, size_t *bucket_size)
   if (*bucket_size == 0)
     *bucket_size = tokens_per_sec;
 
-  if (!SOCKET_SECURITY_VALID_SIZE (tokens_per_sec)
-      || !SOCKET_SECURITY_VALID_SIZE (*bucket_size))
+  if (!SocketSecurity_check_size (tokens_per_sec)
+      || !SocketSecurity_check_size (*bucket_size))
     SOCKET_RAISE_MSG (SocketRateLimit, SocketRateLimit_Failed,
                       "Rate limiter parameters exceed security limits");
 }
@@ -419,7 +419,7 @@ ratelimit_update_rate_locked (T limiter, size_t new_rate)
 {
   if (new_rate > 0)
     {
-      if (!SOCKET_SECURITY_VALID_SIZE (new_rate))
+      if (!SocketSecurity_check_size (new_rate))
         SOCKET_RAISE_MSG (SocketRateLimit, SocketRateLimit_Failed,
                           "Invalid tokens_per_sec - exceeds security limits");
       limiter->tokens_per_sec = new_rate;
@@ -431,7 +431,7 @@ ratelimit_update_bucket_locked (T limiter, size_t new_size)
 {
   if (new_size > 0)
     {
-      if (!SOCKET_SECURITY_VALID_SIZE (new_size))
+      if (!SocketSecurity_check_size (new_size))
         SOCKET_RAISE_MSG (SocketRateLimit, SocketRateLimit_Failed,
                           "Invalid bucket_size - exceeds security limits");
       limiter->bucket_size = new_size;

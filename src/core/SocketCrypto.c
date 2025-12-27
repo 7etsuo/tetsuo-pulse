@@ -125,7 +125,7 @@ SocketCrypto_sha1 (const void *input, size_t input_len,
 {
   assert (output);
   SOCKET_CRYPTO_CHECK_INPUT (input, input_len, "SHA-1");
-  if (input_len > 0 && !SOCKET_SECURITY_VALID_SIZE (input_len))
+  if (input_len > 0 && !SocketSecurity_check_size (input_len))
     SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,
                       "SHA-1: input too large: %zu > %zu", (size_t)input_len,
                       (size_t)SOCKET_SECURITY_MAX_ALLOCATION);
@@ -144,7 +144,7 @@ SocketCrypto_sha256 (const void *input, size_t input_len,
 {
   assert (output);
   SOCKET_CRYPTO_CHECK_INPUT (input, input_len, "SHA-256");
-  if (input_len > 0 && !SOCKET_SECURITY_VALID_SIZE (input_len))
+  if (input_len > 0 && !SocketSecurity_check_size (input_len))
     SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,
                       "SHA-256: input too large: %zu > %zu", (size_t)input_len,
                       (size_t)SOCKET_SECURITY_MAX_ALLOCATION);
@@ -163,7 +163,7 @@ SocketCrypto_md5 (const void *input, size_t input_len,
 {
   assert (output);
   SOCKET_CRYPTO_CHECK_INPUT (input, input_len, "MD5");
-  if (input_len > 0 && !SOCKET_SECURITY_VALID_SIZE (input_len))
+  if (input_len > 0 && !SocketSecurity_check_size (input_len))
     SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,
                       "MD5: input too large: %zu > %zu", (size_t)input_len,
                       (size_t)SOCKET_SECURITY_MAX_ALLOCATION);
@@ -185,7 +185,7 @@ SocketCrypto_hmac_sha256 (const void *key, size_t key_len, const void *data,
 
   SOCKET_CRYPTO_CHECK_INPUT (key, key_len, "HMAC-SHA256 key");
   SOCKET_CRYPTO_CHECK_INPUT (data, data_len, "HMAC-SHA256 data");
-  if (!SOCKET_SECURITY_VALID_SIZE (data_len))
+  if (!SocketSecurity_check_size (data_len))
     {
       SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,
                         "HMAC-SHA256: data too large: %zu > %zu",
@@ -200,7 +200,7 @@ SocketCrypto_hmac_sha256 (const void *key, size_t key_len, const void *data,
    * weakening the MAC. In practice, HMAC keys should be 32-64 bytes;
    * longer keys are internally hashed anyway.
    */
-  if (!SOCKET_SECURITY_VALID_SIZE (key_len))
+  if (!SocketSecurity_check_size (key_len))
     {
       SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,
                         "HMAC-SHA256: key too large: %zu > %zu",
@@ -309,7 +309,7 @@ SocketCrypto_base64_encode (const void *input, size_t input_len, char *output,
       return 0;
     }
 
-  if (!SOCKET_SECURITY_VALID_SIZE (input_len))
+  if (!SocketSecurity_check_size (input_len))
     return -1;
 
   required_size = SocketCrypto_base64_encoded_size (input_len);
@@ -506,7 +506,7 @@ SocketCrypto_hex_encode (const void *input, size_t input_len, char *output,
       return;
     }
 
-  if (!SOCKET_SECURITY_VALID_SIZE (input_len))
+  if (!SocketSecurity_check_size (input_len))
     {
       SOCKET_RAISE_MSG (SocketCrypto, SocketCrypto_Failed,
                         "hex_encode: input too large: %zu > %zu",
@@ -551,7 +551,7 @@ SocketCrypto_hex_decode (const char *input, size_t input_len,
   if (!input || !output)
     return -1;
 
-  if (!SOCKET_SECURITY_VALID_SIZE (input_len))
+  if (!SocketSecurity_check_size (input_len))
     return -1;
 
   if (output_size < input_len / 2)
@@ -622,7 +622,7 @@ SocketCrypto_random_bytes (void *output, size_t len)
   if (len == 0)
     return 0;
 
-  if (!SOCKET_SECURITY_VALID_SIZE (len))
+  if (!SocketSecurity_check_size (len))
     return -1;
 
 #if SOCKET_HAS_TLS
