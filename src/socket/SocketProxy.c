@@ -1013,7 +1013,17 @@ SocketProxy_Conn_new (const SocketProxy_Config *proxy, const char *target_host,
   if (proxy_connect_to_server_sync (conn) < 0)
     return conn;
 
-  Socket_setnonblocking (conn->socket);
+  TRY
+  {
+    Socket_setnonblocking (conn->socket);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    socketproxy_set_error (conn, PROXY_ERROR_CONNECT,
+                           "Failed to set socket non-blocking");
+    return conn;
+  }
+  END_TRY;
 
   conn->state = PROXY_STATE_HANDSHAKE_SEND;
   conn->handshake_start_time_ms = socketproxy_get_time_ms ();
