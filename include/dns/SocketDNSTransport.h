@@ -141,9 +141,9 @@ typedef void (*SocketDNSTransport_Callback) (SocketDNSQuery_T query,
  */
 typedef struct
 {
-  char address[64]; /**< IPv4 or IPv6 address string */
-  int port;         /**< Port number (default: 53) */
-  int family;       /**< AF_INET or AF_INET6 (0 for auto-detect) */
+  char address[DNS_ADDR_STR_MAX]; /**< IPv4 or IPv6 address string */
+  int port;                       /**< Port number (default: 53) */
+  int family;                     /**< AF_INET or AF_INET6 (0 for auto-detect) */
 } SocketDNS_Nameserver;
 
 /**

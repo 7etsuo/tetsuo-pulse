@@ -41,6 +41,7 @@
  */
 
 #include "core/Arena.h"
+#include "dns/SocketDNSDeadServer.h"
 #include <stddef.h>
 
 /**
@@ -109,8 +110,8 @@ typedef enum
  */
 typedef struct
 {
-  char address[64]; /**< IPv4 or IPv6 address string */
-  int family;       /**< AF_INET or AF_INET6 (0 if not detected) */
+  char address[DNS_ADDR_STR_MAX]; /**< IPv4 or IPv6 address string */
+  int family;                     /**< AF_INET or AF_INET6 (0 if not detected) */
 } SocketDNSConfig_Nameserver;
 
 /**

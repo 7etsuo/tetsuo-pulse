@@ -61,8 +61,14 @@
  * @{
  */
 
+/**
+ * Maximum length for IPv4/IPv6 address string.
+ * INET6_ADDRSTRLEN is 46 bytes, padded to 64 for null termination and extensibility.
+ */
+#define DNS_ADDR_STR_MAX 64
+
 /** Maximum nameserver address length (IPv6 + scope). */
-#define DNS_DEAD_SERVER_MAX_ADDR 64
+#define DNS_DEAD_SERVER_MAX_ADDR DNS_ADDR_STR_MAX
 
 /** Maximum tracked dead servers. */
 #define DNS_DEAD_SERVER_MAX_TRACKED 32
