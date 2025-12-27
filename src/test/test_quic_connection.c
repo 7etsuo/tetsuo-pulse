@@ -360,6 +360,174 @@ TEST (quic_connection_update_dcid)
 }
 
 /* ============================================================================
+ * Bounds Validation Tests for retire_cid (Issue #788)
+ * ============================================================================
+ */
+
+TEST (quic_conntable_retire_cid_from_middle)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICConnTable_T table = SocketQUICConnTable_new (arena, 0);
+  SocketQUICConnection_T conn
+      = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_SERVER);
+
+  /* Add multiple CIDs */
+  for (int i = 0; i < 5; i++)
+    {
+      SocketQUICConnectionID_T cid;
+      uint8_t data[8];
+      for (int j = 0; j < 8; j++)
+        data[j] = (uint8_t)(i * 10 + j);
+      SocketQUICConnectionID_set (&cid, data, sizeof (data));
+      cid.sequence = i + 1;
+      SocketQUICConnection_add_local_cid (conn, &cid);
+    }
+
+  SocketQUICConnTable_add (table, conn);
+  ASSERT_EQ (conn->local_cid_count, 5);
+
+  /* Retire CID from middle (sequence 3) */
+  SocketQUICConnection_Result result
+      = SocketQUICConnTable_retire_cid (table, conn, 3);
+
+  ASSERT_EQ (result, QUIC_CONN_OK);
+  ASSERT_EQ (conn->local_cid_count, 4);
+
+  /* Verify remaining CIDs are correct */
+  ASSERT_EQ (conn->local_cids[0].sequence, (uint64_t)1);
+  ASSERT_EQ (conn->local_cids[1].sequence, (uint64_t)2);
+  ASSERT_EQ (conn->local_cids[2].sequence, (uint64_t)4);
+  ASSERT_EQ (conn->local_cids[3].sequence, (uint64_t)5);
+
+  Arena_dispose (&arena);
+}
+
+TEST (quic_conntable_retire_last_cid)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICConnTable_T table = SocketQUICConnTable_new (arena, 0);
+  SocketQUICConnection_T conn
+      = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
+
+  /* Add 3 CIDs */
+  for (int i = 0; i < 3; i++)
+    {
+      SocketQUICConnectionID_T cid;
+      uint8_t data[4];
+      for (int j = 0; j < 4; j++)
+        data[j] = (uint8_t)(i + j);
+      SocketQUICConnectionID_set (&cid, data, sizeof (data));
+      cid.sequence = i + 10;
+      SocketQUICConnection_add_local_cid (conn, &cid);
+    }
+
+  SocketQUICConnTable_add (table, conn);
+  ASSERT_EQ (conn->local_cid_count, 3);
+
+  /* Retire last CID (sequence 12) */
+  SocketQUICConnection_Result result
+      = SocketQUICConnTable_retire_cid (table, conn, 12);
+
+  ASSERT_EQ (result, QUIC_CONN_OK);
+  ASSERT_EQ (conn->local_cid_count, 2);
+
+  /* Verify no memmove occurred for last element */
+  ASSERT_EQ (conn->local_cids[0].sequence, (uint64_t)10);
+  ASSERT_EQ (conn->local_cids[1].sequence, (uint64_t)11);
+
+  Arena_dispose (&arena);
+}
+
+TEST (quic_conntable_retire_only_cid)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICConnTable_T table = SocketQUICConnTable_new (arena, 0);
+  SocketQUICConnection_T conn
+      = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_SERVER);
+  const uint8_t cid_data[] = { 0x01, 0x02, 0x03, 0x04 };
+  SocketQUICConnectionID_T cid;
+
+  SocketQUICConnectionID_set (&cid, cid_data, sizeof (cid_data));
+  cid.sequence = 100;
+
+  SocketQUICConnection_add_local_cid (conn, &cid);
+  SocketQUICConnTable_add (table, conn);
+  ASSERT_EQ (conn->local_cid_count, 1);
+
+  /* Retire the only CID */
+  SocketQUICConnection_Result result
+      = SocketQUICConnTable_retire_cid (table, conn, 100);
+
+  ASSERT_EQ (result, QUIC_CONN_OK);
+  ASSERT_EQ (conn->local_cid_count, 0);
+
+  Arena_dispose (&arena);
+}
+
+TEST (quic_conntable_retire_nonexistent_cid)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICConnTable_T table = SocketQUICConnTable_new (arena, 0);
+  SocketQUICConnection_T conn
+      = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
+  const uint8_t cid_data[] = { 0xAB, 0xCD, 0xEF };
+  SocketQUICConnectionID_T cid;
+
+  SocketQUICConnectionID_set (&cid, cid_data, sizeof (cid_data));
+  cid.sequence = 5;
+
+  SocketQUICConnection_add_local_cid (conn, &cid);
+  SocketQUICConnTable_add (table, conn);
+
+  /* Try to retire non-existent sequence */
+  SocketQUICConnection_Result result
+      = SocketQUICConnTable_retire_cid (table, conn, 999);
+
+  ASSERT_EQ (result, QUIC_CONN_ERROR_NOT_FOUND);
+  ASSERT_EQ (conn->local_cid_count, 1);
+
+  Arena_dispose (&arena);
+}
+
+TEST (quic_conntable_retire_first_of_max_cids)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICConnTable_T table = SocketQUICConnTable_new (arena, 0);
+  SocketQUICConnection_T conn
+      = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_SERVER);
+
+  /* Fill to maximum CIDs */
+  for (int i = 0; i < QUIC_CONNECTION_MAX_CIDS; i++)
+    {
+      SocketQUICConnectionID_T cid;
+      uint8_t data[8];
+      for (int j = 0; j < 8; j++)
+        data[j] = (uint8_t)(i * 8 + j);
+      SocketQUICConnectionID_set (&cid, data, sizeof (data));
+      cid.sequence = i + 1;
+      SocketQUICConnection_add_local_cid (conn, &cid);
+    }
+
+  SocketQUICConnTable_add (table, conn);
+  ASSERT_EQ (conn->local_cid_count, QUIC_CONNECTION_MAX_CIDS);
+
+  /* Retire first CID - maximum memmove operation */
+  SocketQUICConnection_Result result
+      = SocketQUICConnTable_retire_cid (table, conn, 1);
+
+  ASSERT_EQ (result, QUIC_CONN_OK);
+  ASSERT_EQ (conn->local_cid_count, QUIC_CONNECTION_MAX_CIDS - 1);
+
+  /* Verify all remaining CIDs shifted correctly */
+  for (int i = 0; i < QUIC_CONNECTION_MAX_CIDS - 1; i++)
+    {
+      ASSERT_EQ (conn->local_cids[i].sequence, (uint64_t)(i + 2));
+    }
+
+  Arena_dispose (&arena);
+}
+
+/* ============================================================================
  * Default Size Test
  * ============================================================================
  */
