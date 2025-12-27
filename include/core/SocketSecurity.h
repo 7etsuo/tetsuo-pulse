@@ -273,38 +273,6 @@ SocketSecurity_safe_add (size_t a, size_t b)
 }
 
 /**
- * @brief Inline macro for validating a size against allocation security
- * limits.
- *
- * @param s  Size value to validate
- *
- * Returns: Non-zero if valid (size_t)s > 0 && <= max_allocation, else zero
- */
-#define SOCKET_SECURITY_VALID_SIZE(s)                                         \
-  ((size_t)(s) > 0 && (size_t)(s) <= SOCKET_SECURITY_MAX_ALLOCATION)
-
-/**
- * @brief Inline macro to check size multiplication for overflow risk.
- *
- * @param a  First operand for multiplication
- * @param b  Second operand for multiplication
- *
- * Returns: Non-zero if safe to multiply, zero if overflow risk
- */
-#define SOCKET_SECURITY_CHECK_OVERFLOW_MUL(a, b)                              \
-  ((b) == 0 || (a) <= SIZE_MAX / (b))
-
-/**
- * @brief Inline macro to check size addition for overflow risk.
- *
- * @param a  First addend
- * @param b  Second addend
- *
- * Returns: Non-zero if safe to add, zero if overflow
- */
-#define SOCKET_SECURITY_CHECK_OVERFLOW_ADD(a, b) ((a) <= SIZE_MAX - (b))
-
-/**
  * @brief Determine if the library was compiled with TLS support.
  *
  * Returns: 1 if TLS enabled (SOCKET_HAS_TLS=1), 0 if disabled

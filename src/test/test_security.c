@@ -310,21 +310,21 @@ TEST (security_check_size_invalid)
   ASSERT (!SocketSecurity_check_size (SIZE_MAX / 2 + 1));
 }
 
-TEST (security_validation_macros)
+TEST (security_validation_functions)
 {
-  /* SOCKET_SECURITY_VALID_SIZE */
-  ASSERT (SOCKET_SECURITY_VALID_SIZE (1024));
-  ASSERT (!SOCKET_SECURITY_VALID_SIZE (0));
-  ASSERT (!SOCKET_SECURITY_VALID_SIZE (SOCKET_SECURITY_MAX_ALLOCATION + 1));
+  /* SocketSecurity_check_size */
+  ASSERT (SocketSecurity_check_size (1024));
+  ASSERT (!SocketSecurity_check_size (0));
+  ASSERT (!SocketSecurity_check_size (SOCKET_SECURITY_MAX_ALLOCATION + 1));
 
-  /* SOCKET_SECURITY_CHECK_OVERFLOW_MUL */
-  ASSERT (SOCKET_SECURITY_CHECK_OVERFLOW_MUL (100, 200));
-  ASSERT (SOCKET_SECURITY_CHECK_OVERFLOW_MUL (SIZE_MAX, 0));
-  ASSERT (!SOCKET_SECURITY_CHECK_OVERFLOW_MUL (SIZE_MAX, 2));
+  /* SocketSecurity_check_multiply */
+  ASSERT (SocketSecurity_check_multiply (100, 200, NULL));
+  ASSERT (SocketSecurity_check_multiply (SIZE_MAX, 0, NULL));
+  ASSERT (!SocketSecurity_check_multiply (SIZE_MAX, 2, NULL));
 
-  /* SOCKET_SECURITY_CHECK_OVERFLOW_ADD */
-  ASSERT (SOCKET_SECURITY_CHECK_OVERFLOW_ADD (100, 200));
-  ASSERT (!SOCKET_SECURITY_CHECK_OVERFLOW_ADD (SIZE_MAX, 1));
+  /* SocketSecurity_check_add */
+  ASSERT (SocketSecurity_check_add (100, 200, NULL));
+  ASSERT (!SocketSecurity_check_add (SIZE_MAX, 1, NULL));
 }
 
 /* ============================================================================
