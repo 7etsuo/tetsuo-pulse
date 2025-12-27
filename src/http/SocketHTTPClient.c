@@ -170,6 +170,30 @@ SocketHTTPClient_config_defaults (SocketHTTPClient_Config *config)
   config->enable_async_io = HTTPCLIENT_DEFAULT_ENABLE_ASYNC_IO;
 }
 
+/**
+ * @brief Validate and duplicate user agent string.
+ * @return 0 on success, -1 on error (raises exception)
+ *
+ * SECURITY: Validates user agent for control characters to prevent header injection.
+ */
+static int
+httpclient_validate_user_agent (SocketHTTPClient_T client, Arena_T arena,
+                                 const char *user_agent)
+{
+  /* Validate user agent for control characters */
+  for (const char *p = user_agent; *p; p++)
+    {
+      if (*p == '\r' || *p == '\n')
+        {
+          Arena_dispose (&arena);
+          SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed,
+                            "Invalid characters in User-Agent config");
+        }
+    }
+  client->config.user_agent = socket_util_arena_strdup (arena, user_agent);
+  return 0;
+}
+
 SocketHTTPClient_T
 SocketHTTPClient_new (const SocketHTTPClient_Config *config)
 {
@@ -214,21 +238,10 @@ SocketHTTPClient_new (const SocketHTTPClient_Config *config)
   /* Copy configuration */
   client->config = *config;
 
-  /* SECURITY: Validate and duplicate user agent string */
+  /* Validate and duplicate user agent string */
   if (config->user_agent != NULL)
     {
-      /* Validate user agent for control characters */
-      for (const char *p = config->user_agent; *p; p++)
-        {
-          if (*p == '\r' || *p == '\n')
-            {
-              Arena_dispose (&arena);
-              SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed,
-                                "Invalid characters in User-Agent config");
-            }
-        }
-      client->config.user_agent
-          = socket_util_arena_strdup (arena, config->user_agent);
+      httpclient_validate_user_agent (client, arena, config->user_agent);
     }
 
   /* Create connection pool */
@@ -2507,15 +2520,102 @@ prepared_hostname_safe (const char *host, size_t len)
   return 1;
 }
 
+/**
+ * @brief Parse URI and validate hostname safety.
+ * @return 0 on success, -1 on error (sets client->last_error)
+ */
+static int
+prepare_parse_and_validate_uri (SocketHTTPClient_T client, const char *url,
+                                 SocketHTTP_URI *uri, Arena_T arena)
+{
+  SocketHTTP_URIResult uri_result;
+
+  /* Parse URI once - eliminates 5.3% CPU overhead per request */
+  uri_result = SocketHTTP_URI_parse (url, 0, uri, arena);
+  if (uri_result != URI_PARSE_OK)
+    {
+      client->last_error = HTTPCLIENT_ERROR_PROTOCOL;
+      HTTPCLIENT_ERROR_MSG ("Invalid URL in prepare: %s (%s)", url,
+                            SocketHTTP_URI_result_string (uri_result));
+      return -1;
+    }
+
+  /* SECURITY: Validate hostname for control characters */
+  if (!prepared_hostname_safe (uri->host, uri->host_len))
+    {
+      client->last_error = HTTPCLIENT_ERROR_PROTOCOL;
+      HTTPCLIENT_ERROR_MSG ("Invalid characters in hostname");
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Pre-format Host header for prepared request.
+ * @return 0 on success, -1 on error (sets client->last_error)
+ */
+static int
+prepare_format_host_header (SocketHTTPClient_T client,
+                             SocketHTTPClient_PreparedRequest_T prep,
+                             Arena_T arena)
+{
+  char host_buf[HTTPCLIENT_HOST_HEADER_SIZE];
+  size_t host_header_len;
+
+  /* Pre-format Host header - eliminates 2.9% CPU overhead per request */
+  if (prep->effective_port == 80 || prep->effective_port == 443)
+    {
+      host_header_len
+          = (size_t)snprintf (host_buf, sizeof (host_buf), "%s", prep->uri.host);
+    }
+  else
+    {
+      host_header_len = (size_t)snprintf (host_buf, sizeof (host_buf), "%s:%d",
+                                          prep->uri.host, prep->effective_port);
+    }
+
+  if (host_header_len >= sizeof (host_buf))
+    {
+      client->last_error = HTTPCLIENT_ERROR_PROTOCOL;
+      HTTPCLIENT_ERROR_MSG ("Host header too long in prepare");
+      return -1;
+    }
+
+  prep->host_header = Arena_alloc (arena, host_header_len + 1, __FILE__, __LINE__);
+  if (prep->host_header == NULL)
+    {
+      client->last_error = HTTPCLIENT_ERROR_OUT_OF_MEMORY;
+      return -1;
+    }
+  memcpy (prep->host_header, host_buf, host_header_len + 1);
+  prep->host_header_len = host_header_len;
+
+  return 0;
+}
+
+/**
+ * @brief Pre-compute connection pool hash for prepared request.
+ */
+static void
+prepare_compute_pool_hash (SocketHTTPClient_T client,
+                            SocketHTTPClient_PreparedRequest_T prep)
+{
+  /* Pre-compute pool hash - eliminates 3.9% CPU overhead per request */
+  if (client->pool != NULL)
+    {
+      prep->pool_hash = httpclient_host_hash_len (
+          prep->uri.host, prep->uri.host_len, prep->effective_port,
+          client->pool->hash_size);
+    }
+}
+
 SocketHTTPClient_PreparedRequest_T
 SocketHTTPClient_prepare (SocketHTTPClient_T client, SocketHTTP_Method method,
                           const char *url)
 {
   SocketHTTPClient_PreparedRequest_T prep;
   Arena_T arena;
-  SocketHTTP_URIResult uri_result;
-  char host_buf[HTTPCLIENT_HOST_HEADER_SIZE];
-  size_t host_header_len;
 
   if (client == NULL || url == NULL)
     return NULL;
@@ -2540,23 +2640,10 @@ SocketHTTPClient_prepare (SocketHTTPClient_T client, SocketHTTP_Method method,
   prep->client = client;
   prep->method = method;
 
-  /* Parse URI once - eliminates 5.3% CPU overhead per request */
-  uri_result = SocketHTTP_URI_parse (url, 0, &prep->uri, arena);
-  if (uri_result != URI_PARSE_OK)
+  /* Parse and validate URI */
+  if (prepare_parse_and_validate_uri (client, url, &prep->uri, arena) != 0)
     {
       Arena_dispose (&arena);
-      client->last_error = HTTPCLIENT_ERROR_PROTOCOL;
-      HTTPCLIENT_ERROR_MSG ("Invalid URL in prepare: %s (%s)", url,
-                            SocketHTTP_URI_result_string (uri_result));
-      return NULL;
-    }
-
-  /* SECURITY: Validate hostname for control characters */
-  if (!prepared_hostname_safe (prep->uri.host, prep->uri.host_len))
-    {
-      Arena_dispose (&arena);
-      client->last_error = HTTPCLIENT_ERROR_PROTOCOL;
-      HTTPCLIENT_ERROR_MSG ("Invalid characters in hostname");
       return NULL;
     }
 
@@ -2566,43 +2653,15 @@ SocketHTTPClient_prepare (SocketHTTPClient_T client, SocketHTTP_Method method,
   if (prep->effective_port == -1)
     prep->effective_port = prep->is_secure ? 443 : 80;
 
-  /* Pre-format Host header - eliminates 2.9% CPU overhead per request */
-  if (prep->effective_port == 80 || prep->effective_port == 443)
-    {
-      host_header_len
-          = (size_t)snprintf (host_buf, sizeof (host_buf), "%s", prep->uri.host);
-    }
-  else
-    {
-      host_header_len = (size_t)snprintf (host_buf, sizeof (host_buf), "%s:%d",
-                                          prep->uri.host, prep->effective_port);
-    }
-
-  if (host_header_len >= sizeof (host_buf))
+  /* Format Host header */
+  if (prepare_format_host_header (client, prep, arena) != 0)
     {
       Arena_dispose (&arena);
-      client->last_error = HTTPCLIENT_ERROR_PROTOCOL;
-      HTTPCLIENT_ERROR_MSG ("Host header too long in prepare");
       return NULL;
     }
 
-  prep->host_header = Arena_alloc (arena, host_header_len + 1, __FILE__, __LINE__);
-  if (prep->host_header == NULL)
-    {
-      Arena_dispose (&arena);
-      client->last_error = HTTPCLIENT_ERROR_OUT_OF_MEMORY;
-      return NULL;
-    }
-  memcpy (prep->host_header, host_buf, host_header_len + 1);
-  prep->host_header_len = host_header_len;
-
-  /* Pre-compute pool hash - eliminates 3.9% CPU overhead per request */
-  if (client->pool != NULL)
-    {
-      prep->pool_hash = httpclient_host_hash_len (
-          prep->uri.host, prep->uri.host_len, prep->effective_port,
-          client->pool->hash_size);
-    }
+  /* Compute pool hash */
+  prepare_compute_pool_hash (client, prep);
 
   return prep;
 }
