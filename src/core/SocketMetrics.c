@@ -309,7 +309,8 @@ histogram_destroy (Histogram *h)
 {
   if (h->initialized)
     {
-      pthread_mutex_destroy (&h->mutex);
+      int rc = pthread_mutex_destroy (&h->mutex);
+      assert (rc == 0 && "pthread_mutex_destroy failed - mutex may be locked");
       h->initialized = 0;
     }
 }
