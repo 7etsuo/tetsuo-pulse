@@ -34,6 +34,9 @@
 /* 1-RTT only */
 #define PKT_1 (QUIC_PKT_1RTT)
 
+/* RFC 9000 Section 12.12-12.13: PATH_CHALLENGE/RESPONSE data size */
+#define QUIC_PATH_DATA_SIZE 8
+
 /**
  * @brief Frame type to allowed packet types mapping.
  */
@@ -561,11 +564,11 @@ static SocketQUICFrame_Result
 parse_path_challenge (const uint8_t *data, size_t len, size_t *pos,
                       SocketQUICFrame_T *frame)
 {
-  if (*pos + 8 > len)
+  if (*pos + QUIC_PATH_DATA_SIZE > len)
     return QUIC_FRAME_ERROR_TRUNCATED;
 
-  memcpy (frame->data.path_challenge.data, data + *pos, 8);
-  *pos += 8;
+  memcpy (frame->data.path_challenge.data, data + *pos, QUIC_PATH_DATA_SIZE);
+  *pos += QUIC_PATH_DATA_SIZE;
 
   return QUIC_FRAME_OK;
 }
@@ -579,11 +582,11 @@ static SocketQUICFrame_Result
 parse_path_response (const uint8_t *data, size_t len, size_t *pos,
                      SocketQUICFrame_T *frame)
 {
-  if (*pos + 8 > len)
+  if (*pos + QUIC_PATH_DATA_SIZE > len)
     return QUIC_FRAME_ERROR_TRUNCATED;
 
-  memcpy (frame->data.path_response.data, data + *pos, 8);
-  *pos += 8;
+  memcpy (frame->data.path_response.data, data + *pos, QUIC_PATH_DATA_SIZE);
+  *pos += QUIC_PATH_DATA_SIZE;
 
   return QUIC_FRAME_OK;
 }
