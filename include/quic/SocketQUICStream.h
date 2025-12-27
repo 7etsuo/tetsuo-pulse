@@ -130,6 +130,32 @@ typedef enum
 } SocketQUICStream_Result;
 
 /**
+ * @brief Stream state transition events (RFC 9000 Section 3).
+ *
+ * Events that trigger state transitions in the send and receive state machines.
+ */
+typedef enum
+{
+  /* Send-side events */
+  QUIC_STREAM_EVENT_SEND_DATA,        /**< Application sends data on stream */
+  QUIC_STREAM_EVENT_SEND_FIN,         /**< Application signals end of stream */
+  QUIC_STREAM_EVENT_ALL_DATA_ACKED,   /**< All sent data acknowledged by peer */
+  QUIC_STREAM_EVENT_SEND_RESET,       /**< Application resets sending part */
+  QUIC_STREAM_EVENT_RESET_ACKED,      /**< Peer acknowledged RESET_STREAM */
+
+  /* Receive-side events */
+  QUIC_STREAM_EVENT_RECV_DATA,        /**< Received STREAM frame with data */
+  QUIC_STREAM_EVENT_RECV_FIN,         /**< Received STREAM frame with FIN bit */
+  QUIC_STREAM_EVENT_ALL_DATA_RECVD,   /**< All data up to FIN received */
+  QUIC_STREAM_EVENT_APP_READ_DATA,    /**< Application consumed all data */
+  QUIC_STREAM_EVENT_RECV_RESET,       /**< Received RESET_STREAM frame */
+  QUIC_STREAM_EVENT_APP_READ_RESET,   /**< Application notified of reset */
+
+  /* Bidirectional events */
+  QUIC_STREAM_EVENT_RECV_STOP_SENDING /**< Received STOP_SENDING frame */
+} SocketQUICStreamEvent;
+
+/**
  * @brief Opaque stream handle.
  */
 typedef struct SocketQUICStream *SocketQUICStream_T;
@@ -138,12 +164,18 @@ typedef struct SocketQUICStream *SocketQUICStream_T;
  * @brief QUIC Stream structure.
  *
  * Represents a single QUIC stream with its state and flow control data.
+ * RFC 9000 Section 3 defines dual state machines: one for sending and
+ * one for receiving.
  */
 struct SocketQUICStream
 {
   uint64_t id;                    /**< Stream ID (62-bit) */
   SocketQUICStreamType type;      /**< Stream type (derived from ID) */
-  SocketQUICStreamState state;    /**< Current stream state */
+
+  /* Dual state machines (RFC 9000 Section 3) */
+  SocketQUICStreamState send_state; /**< Send-side state machine */
+  SocketQUICStreamState recv_state; /**< Receive-side state machine */
+  SocketQUICStreamState state;      /**< Legacy: combined state (deprecated) */
 
   /* Flow control */
   uint64_t max_data;              /**< Maximum data peer can send */
@@ -352,6 +384,75 @@ SocketQUICStream_get_state (const SocketQUICStream_T stream);
  */
 extern int SocketQUICStream_is_local (const SocketQUICStream_T stream);
 
+/**
+ * @brief Get send-side state.
+ *
+ * @param stream Stream handle.
+ *
+ * @return Send state, or QUIC_STREAM_STATE_READY if stream is NULL.
+ */
+extern SocketQUICStreamState
+SocketQUICStream_get_send_state (const SocketQUICStream_T stream);
+
+/**
+ * @brief Get receive-side state.
+ *
+ * @param stream Stream handle.
+ *
+ * @return Receive state, or QUIC_STREAM_STATE_RECV if stream is NULL.
+ */
+extern SocketQUICStreamState
+SocketQUICStream_get_recv_state (const SocketQUICStream_T stream);
+
+/* ============================================================================
+ * State Transition Functions (RFC 9000 Section 3)
+ * ============================================================================
+ */
+
+/**
+ * @brief Transition the send-side state machine.
+ *
+ * Implements the sending part of the stream state machine (RFC 9000 Section 3.1).
+ *
+ * Send states:
+ *   Ready -> Send (on SEND_DATA)
+ *   Send -> DataSent (on SEND_FIN)
+ *   Send -> ResetSent (on SEND_RESET or RECV_STOP_SENDING)
+ *   DataSent -> DataRecvd (on ALL_DATA_ACKED)
+ *   DataSent -> ResetSent (on SEND_RESET or RECV_STOP_SENDING)
+ *   ResetSent -> ResetRecvd (on RESET_ACKED)
+ *
+ * @param stream Stream to transition.
+ * @param event  Event triggering the transition.
+ *
+ * @return QUIC_STREAM_OK on success, QUIC_STREAM_ERROR_STATE on invalid transition.
+ */
+extern SocketQUICStream_Result
+SocketQUICStream_transition_send (SocketQUICStream_T stream,
+                                  SocketQUICStreamEvent event);
+
+/**
+ * @brief Transition the receive-side state machine.
+ *
+ * Implements the receiving part of the stream state machine (RFC 9000 Section 3.2).
+ *
+ * Receive states:
+ *   Recv -> SizeKnown (on RECV_FIN)
+ *   Recv -> ResetRecvd (on RECV_RESET)
+ *   SizeKnown -> DataRecvd (on ALL_DATA_RECVD)
+ *   SizeKnown -> ResetRecvd (on RECV_RESET)
+ *   DataRecvd -> DataRead (on APP_READ_DATA)
+ *   ResetRecvd -> ResetRead (on APP_READ_RESET)
+ *
+ * @param stream Stream to transition.
+ * @param event  Event triggering the transition.
+ *
+ * @return QUIC_STREAM_OK on success, QUIC_STREAM_ERROR_STATE on invalid transition.
+ */
+extern SocketQUICStream_Result
+SocketQUICStream_transition_recv (SocketQUICStream_T stream,
+                                  SocketQUICStreamEvent event);
+
 /* ============================================================================
  * Utility Functions
  * ============================================================================
@@ -384,6 +485,15 @@ extern const char *SocketQUICStream_state_string (SocketQUICStreamState state);
  */
 extern const char *
 SocketQUICStream_result_string (SocketQUICStream_Result result);
+
+/**
+ * @brief Get string representation of stream event.
+ *
+ * @param event Stream event.
+ *
+ * @return Human-readable string.
+ */
+extern const char *SocketQUICStream_event_string (SocketQUICStreamEvent event);
 
 /** @} */
 

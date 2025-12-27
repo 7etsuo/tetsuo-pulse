@@ -383,6 +383,7 @@ set(LIB_SOURCES
     src/quic/SocketQUICError-handling.c
     src/quic/SocketQUICConnectionID.c
     src/quic/SocketQUICStream.c
+    src/quic/SocketQUICStream-state.c
     src/quic/SocketQUICPacket.c
     src/quic/SocketQUICPacket-initial.c
     src/quic/SocketQUICWire.c
@@ -786,6 +787,7 @@ set(TEST_SOURCES
     test_quic_version
     test_quic_connid
     test_quic_stream
+    test_quic_stream_state
     test_quic_packet
     test_quic_wire
     test_quic_frame
