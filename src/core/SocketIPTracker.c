@@ -17,6 +17,11 @@
 #include <time.h>
 #include <unistd.h>
 
+/* Platform-specific secure random sources */
+#ifdef __linux__
+#include <sys/syscall.h>
+#endif
+
 #include "core/Except.h"
 #include "core/HashTable.h"
 #include "core/SocketConfig.h"
@@ -256,25 +261,64 @@ init_tracker_fields (T tracker, Arena_T arena, int max_per_ip)
   tracker->initialized = SOCKET_MUTEX_UNINITIALIZED;
 }
 
-/* Generate secure random seed, fallback to time+PID if crypto fails */
+/* Generate secure random seed with fallback hierarchy for DoS resistance */
 static unsigned
 generate_hash_seed (void)
 {
   unsigned char seed_bytes[sizeof (unsigned)];
   unsigned seed;
 
+  /* Try SocketCrypto_random_bytes first (OpenSSL/LibreSSL RAND_bytes) */
   int result = SocketCrypto_random_bytes (seed_bytes, sizeof (seed_bytes));
   if (result == 0)
     {
       memcpy (&seed, seed_bytes, sizeof (seed));
+      return seed;
     }
-  else
+
+  /* Try getrandom() on Linux (kernel 3.17+) */
+#ifdef __linux__
+#ifndef SYS_getrandom
+#define SYS_getrandom 318
+#endif
+#ifndef GRND_NONBLOCK
+#define GRND_NONBLOCK 0x0001
+#endif
+  ssize_t n = syscall (SYS_getrandom, seed_bytes, sizeof (seed_bytes),
+                       GRND_NONBLOCK);
+  if (n == (ssize_t)sizeof (seed_bytes))
     {
-      seed = (unsigned)time (NULL) ^ (unsigned)getpid ();
+      memcpy (&seed, seed_bytes, sizeof (seed));
       SOCKET_LOG_WARN_MSG (
-          "SocketIPTracker: fallback hash seed (crypto random failed: %d)",
+          "SocketIPTracker: using getrandom fallback (crypto random failed: "
+          "%d)",
           result);
+      return seed;
     }
+#endif
+
+  /* Try getentropy() on BSD/macOS */
+#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__APPLE__)
+  if (getentropy (seed_bytes, sizeof (seed_bytes)) == 0)
+    {
+      memcpy (&seed, seed_bytes, sizeof (seed));
+      SOCKET_LOG_WARN_MSG (
+          "SocketIPTracker: using getentropy fallback (crypto random failed: "
+          "%d)",
+          result);
+      return seed;
+    }
+#endif
+
+  /* Last resort - weak but logged heavily */
+  seed = (unsigned)time (NULL) ^ (unsigned)getpid ();
+  SOCKET_LOG_ERROR_MSG (
+      "SocketIPTracker: CRITICAL - all secure random sources failed (code: "
+      "%d), using weak fallback",
+      result);
+  SOCKET_LOG_ERROR_MSG (
+      "SocketIPTracker: hash DoS protection may be compromised - investigate "
+      "random source failure");
 
   return seed;
 }
