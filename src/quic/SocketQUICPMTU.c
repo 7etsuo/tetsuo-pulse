@@ -275,17 +275,12 @@ SocketQUICPMTU_probe_acked (SocketQUICPMTU_T pmtu, uint64_t packet_number)
   return QUIC_PMTU_OK;
 }
 
-SocketQUICPMTU_Result
-SocketQUICPMTU_probe_lost (SocketQUICPMTU_T pmtu, uint64_t packet_number)
+static void
+update_pmtu_on_probe_failure (SocketQUICPMTU_T pmtu,
+                               SocketQUICPMTU_Probe_T *probe)
 {
-  SocketQUICPMTU_Probe_T *probe;
-
   assert (pmtu);
-
-  /* Find and remove probe */
-  probe = find_and_remove_probe (pmtu, packet_number);
-  if (!probe)
-    return QUIC_PMTU_OK; /* Not a probe packet */
+  assert (probe);
 
   /* Probe lost - do NOT update current_pmtu */
   /* RFC 9000 Section 14.3: Probe loss does NOT trigger congestion response */
@@ -305,6 +300,22 @@ SocketQUICPMTU_probe_lost (SocketQUICPMTU_T pmtu, uint64_t packet_number)
           pmtu->state = QUIC_PMTU_STATE_COMPLETE;
         }
     }
+}
+
+SocketQUICPMTU_Result
+SocketQUICPMTU_probe_lost (SocketQUICPMTU_T pmtu, uint64_t packet_number)
+{
+  SocketQUICPMTU_Probe_T *probe;
+
+  assert (pmtu);
+
+  /* Find and remove probe */
+  probe = find_and_remove_probe (pmtu, packet_number);
+  if (!probe)
+    return QUIC_PMTU_OK; /* Not a probe packet */
+
+  /* Update state machine based on probe failure */
+  update_pmtu_on_probe_failure (pmtu, probe);
 
   return QUIC_PMTU_OK;
 }
@@ -382,8 +393,8 @@ SocketQUICPMTU_check_timeouts (SocketQUICPMTU_T pmtu, uint64_t current_time_ms)
           *prev_ptr = next;
           pmtu->probes_in_flight--;
 
-          /* Mark as lost (no congestion response) */
-          SocketQUICPMTU_probe_lost (pmtu, probe->packet_number);
+          /* Update state machine based on probe failure */
+          update_pmtu_on_probe_failure (pmtu, probe);
         }
       else
         {

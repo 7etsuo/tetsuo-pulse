@@ -356,6 +356,86 @@ TEST (quic_pmtu_check_timeouts)
   Arena_dispose (&arena);
 }
 
+TEST (quic_pmtu_timeout_updates_state_machine)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICPMTU_T pmtu;
+  SocketQUICPMTU_Result result;
+  size_t probe_size;
+  size_t target_before_timeout;
+  size_t target_after_timeout;
+
+  /* Initialize with 1200 byte PMTU, max 1500 */
+  pmtu = SocketQUICPMTU_new (arena, 1200, 1500);
+  SocketQUICPMTU_start_discovery (pmtu);
+
+  /* Get probe size (should be 1300 = 1200 + 100) */
+  SocketQUICPMTU_get_next_probe_size (pmtu, &probe_size);
+  ASSERT_EQ (probe_size, 1300);
+  target_before_timeout = probe_size;
+
+  /* Send probe at time 1000ms */
+  result = SocketQUICPMTU_send_probe (pmtu, 100, probe_size, 1000);
+  ASSERT_EQ (result, QUIC_PMTU_OK);
+  ASSERT_EQ (SocketQUICPMTU_get_state (pmtu), QUIC_PMTU_STATE_SEARCHING);
+
+  /* Trigger timeout at 5000ms (> 3000ms timeout) */
+  result = SocketQUICPMTU_check_timeouts (pmtu, 5000);
+  ASSERT_EQ (result, QUIC_PMTU_OK);
+
+  /*
+   * CRITICAL: State machine MUST be updated on timeout
+   * Before the fix (issue #789), state machine was NOT updated
+   * because probe was removed before calling update logic
+   */
+
+  /* Get next probe size - should be adjusted based on failure */
+  result = SocketQUICPMTU_get_next_probe_size (pmtu, &target_after_timeout);
+  ASSERT_EQ (result, QUIC_PMTU_OK);
+
+  /*
+   * Target should be halfway between current (1200) and failed (1300)
+   * new_target = 1200 + (1300 - 1200) / 2 = 1200 + 50 = 1250
+   */
+  ASSERT_EQ (target_after_timeout, 1250);
+  ASSERT (target_after_timeout < target_before_timeout);
+  ASSERT (target_after_timeout > 1200);
+
+  /* State should still be SEARCHING (not stuck) */
+  ASSERT_EQ (SocketQUICPMTU_get_state (pmtu), QUIC_PMTU_STATE_SEARCHING);
+
+  SocketQUICPMTU_free (&pmtu);
+  Arena_dispose (&arena);
+}
+
+TEST (quic_pmtu_timeout_completes_when_no_increment)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICPMTU_T pmtu;
+  SocketQUICPMTU_Result result;
+
+  /* Start with very narrow range to force completion */
+  pmtu = SocketQUICPMTU_new (arena, 1200, 1500);
+  SocketQUICPMTU_start_discovery (pmtu);
+
+  /* Send probe just 1 byte larger than current */
+  result = SocketQUICPMTU_send_probe (pmtu, 100, 1201, 1000);
+  ASSERT_EQ (result, QUIC_PMTU_OK);
+
+  /* Trigger timeout */
+  result = SocketQUICPMTU_check_timeouts (pmtu, 5000);
+  ASSERT_EQ (result, QUIC_PMTU_OK);
+
+  /*
+   * new_target = 1200 + (1201 - 1200) / 2 = 1200 + 0 = 1200
+   * Since new_target == current_pmtu, state should transition to COMPLETE
+   */
+  ASSERT_EQ (SocketQUICPMTU_get_state (pmtu), QUIC_PMTU_STATE_COMPLETE);
+
+  SocketQUICPMTU_free (&pmtu);
+  Arena_dispose (&arena);
+}
+
 /* ============================================================================
  * Test: Probe Limit
  * ============================================================================
