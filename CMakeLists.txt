@@ -270,6 +270,9 @@ set(LIB_SOURCES
     # Core foundation (consolidated)
     src/core/Arena.c
     src/core/Except.c
+    src/core/SocketError.c
+    src/core/SocketLog.c
+    src/core/SocketEvent.c
     src/core/SocketUtil.c
     src/core/SocketTimer.c
     src/core/SocketRateLimit.c
