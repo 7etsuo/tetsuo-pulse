@@ -522,7 +522,87 @@ proxy_http_recv_response (struct SocketProxy_Conn_T *conn)
  * ============================================================================
  */
 
+/**
+ * handle_client_error_status - Map 4xx HTTP status codes to proxy results
+ * @status: HTTP status code in the 400-499 range
+ *
+ * Returns: SocketProxy_Result corresponding to the 4xx client error
+ * Thread-safe: No (uses thread-local error buffer for error messages)
+ *
+ * Handles specific client error codes:
+ * - 400 Bad Request -> PROXY_ERROR_PROTOCOL
+ * - 403 Forbidden -> PROXY_ERROR_FORBIDDEN
+ * - 404 Not Found -> PROXY_ERROR_HOST_UNREACHABLE
+ * - 407 Proxy Auth Required -> PROXY_ERROR_AUTH_REQUIRED
+ * - Other 4xx -> PROXY_ERROR
+ */
+static SocketProxy_Result
+handle_client_error_status (int status)
+{
+  switch (status)
+    {
+    case HTTP_STATUS_BAD_REQUEST:
+      PROXY_ERROR_MSG ("HTTP 400 Bad Request");
+      return PROXY_ERROR_PROTOCOL;
 
+    case HTTP_STATUS_FORBIDDEN:
+      PROXY_ERROR_MSG ("HTTP 403 Forbidden");
+      return PROXY_ERROR_FORBIDDEN;
+
+    case HTTP_STATUS_NOT_FOUND:
+      PROXY_ERROR_MSG ("HTTP 404 Not Found");
+      return PROXY_ERROR_HOST_UNREACHABLE;
+
+    case HTTP_STATUS_PROXY_AUTH_REQUIRED:
+      PROXY_ERROR_MSG ("HTTP 407 Proxy Authentication Required");
+      return PROXY_ERROR_AUTH_REQUIRED;
+
+    default:
+      PROXY_ERROR_MSG ("HTTP %d Client Error", status);
+      return PROXY_ERROR;
+    }
+}
+
+/**
+ * handle_server_error_status - Map 5xx HTTP status codes to proxy results
+ * @status: HTTP status code >= 500
+ *
+ * Returns: SocketProxy_Result corresponding to the 5xx server error
+ * Thread-safe: No (uses thread-local error buffer for error messages)
+ *
+ * Handles specific server error codes:
+ * - 500 Internal Server Error -> PROXY_ERROR
+ * - 502 Bad Gateway -> PROXY_ERROR_HOST_UNREACHABLE
+ * - 503 Service Unavailable -> PROXY_ERROR
+ * - 504 Gateway Timeout -> PROXY_ERROR_TIMEOUT
+ * - Other 5xx -> PROXY_ERROR
+ */
+static SocketProxy_Result
+handle_server_error_status (int status)
+{
+  switch (status)
+    {
+    case HTTP_STATUS_INTERNAL_SERVER_ERROR:
+      PROXY_ERROR_MSG ("HTTP 500 Internal Server Error");
+      return PROXY_ERROR;
+
+    case HTTP_STATUS_BAD_GATEWAY:
+      PROXY_ERROR_MSG ("HTTP 502 Bad Gateway");
+      return PROXY_ERROR_HOST_UNREACHABLE;
+
+    case HTTP_STATUS_SERVICE_UNAVAILABLE:
+      PROXY_ERROR_MSG ("HTTP 503 Service Unavailable");
+      return PROXY_ERROR;
+
+    case HTTP_STATUS_GATEWAY_TIMEOUT:
+      PROXY_ERROR_MSG ("HTTP 504 Gateway Timeout");
+      return PROXY_ERROR_TIMEOUT;
+
+    default:
+      PROXY_ERROR_MSG ("HTTP %d Server Error", status);
+      return PROXY_ERROR;
+    }
+}
 
 /**
  * proxy_http_status_to_result - Convert HTTP status code to proxy result
@@ -547,57 +627,11 @@ proxy_http_status_to_result (int status)
   /* 4xx Client Error */
   if (status >= HTTP_STATUS_CLIENT_ERROR_MIN
       && status <= HTTP_STATUS_CLIENT_ERROR_MAX)
-    {
-      switch (status)
-        {
-        case HTTP_STATUS_BAD_REQUEST:
-          PROXY_ERROR_MSG ("HTTP 400 Bad Request");
-          return PROXY_ERROR_PROTOCOL;
-
-        case HTTP_STATUS_FORBIDDEN:
-          PROXY_ERROR_MSG ("HTTP 403 Forbidden");
-          return PROXY_ERROR_FORBIDDEN;
-
-        case HTTP_STATUS_NOT_FOUND:
-          PROXY_ERROR_MSG ("HTTP 404 Not Found");
-          return PROXY_ERROR_HOST_UNREACHABLE;
-
-        case HTTP_STATUS_PROXY_AUTH_REQUIRED:
-          PROXY_ERROR_MSG ("HTTP 407 Proxy Authentication Required");
-          return PROXY_ERROR_AUTH_REQUIRED;
-
-        default:
-          PROXY_ERROR_MSG ("HTTP %d Client Error", status);
-          return PROXY_ERROR;
-        }
-    }
+    return handle_client_error_status (status);
 
   /* 5xx Server Error */
   if (status >= HTTP_STATUS_SERVER_ERROR_MIN)
-    {
-      switch (status)
-        {
-        case HTTP_STATUS_INTERNAL_SERVER_ERROR:
-          PROXY_ERROR_MSG ("HTTP 500 Internal Server Error");
-          return PROXY_ERROR;
-
-        case HTTP_STATUS_BAD_GATEWAY:
-          PROXY_ERROR_MSG ("HTTP 502 Bad Gateway");
-          return PROXY_ERROR_HOST_UNREACHABLE;
-
-        case HTTP_STATUS_SERVICE_UNAVAILABLE:
-          PROXY_ERROR_MSG ("HTTP 503 Service Unavailable");
-          return PROXY_ERROR;
-
-        case HTTP_STATUS_GATEWAY_TIMEOUT:
-          PROXY_ERROR_MSG ("HTTP 504 Gateway Timeout");
-          return PROXY_ERROR_TIMEOUT;
-
-        default:
-          PROXY_ERROR_MSG ("HTTP %d Server Error", status);
-          return PROXY_ERROR;
-        }
-    }
+    return handle_server_error_status (status);
 
   /* Unexpected status (1xx, 3xx, or invalid) */
   PROXY_ERROR_MSG ("Unexpected HTTP status: %d", status);
