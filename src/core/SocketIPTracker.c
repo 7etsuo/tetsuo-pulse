@@ -51,17 +51,9 @@ struct T
 };
 
 #define TRACKER_LOCK(t)                                                       \
-  do                                                                          \
-    {                                                                         \
-      pthread_mutex_lock (&(t)->mutex);                                       \
-    }                                                                         \
-  while (0)
-#define TRACKER_UNLOCK(t)                                                     \
-  do                                                                          \
-    {                                                                         \
-      pthread_mutex_unlock (&(t)->mutex);                                     \
-    }                                                                         \
-  while (0)
+  SOCKET_MUTEX_LOCK_OR_RAISE (&(t)->mutex, SocketIPTracker,                  \
+                              SocketIPTracker_Failed)
+#define TRACKER_UNLOCK(t) SOCKET_MUTEX_UNLOCK (&(t)->mutex)
 #define TRACKER_READ_FIELD(t, field, var)                                     \
   do                                                                          \
     {                                                                         \
@@ -458,11 +450,11 @@ SocketIPTracker_track (T tracker, const char *ip)
   if (res != IP_VALID)
     return 0;
 
-  pthread_mutex_lock (&tracker->mutex);
+  TRACKER_LOCK (tracker);
 
   result = track_internal (tracker, ip);
 
-  pthread_mutex_unlock (&tracker->mutex);
+  TRACKER_UNLOCK (tracker);
   return result;
 }
 
@@ -478,7 +470,7 @@ SocketIPTracker_release (T tracker, const char *ip)
   if (res != IP_VALID)
     return;
 
-  pthread_mutex_lock (&tracker->mutex);
+  TRACKER_LOCK (tracker);
 
   entry = find_entry (tracker, ip, &prev);
 
@@ -491,7 +483,7 @@ SocketIPTracker_release (T tracker, const char *ip)
         unlink_entry (tracker, entry, prev);
     }
 
-  pthread_mutex_unlock (&tracker->mutex);
+  TRACKER_UNLOCK (tracker);
 }
 
 int
@@ -506,13 +498,13 @@ SocketIPTracker_count (T tracker, const char *ip)
   if (res != IP_VALID)
     return 0;
 
-  pthread_mutex_lock (&tracker->mutex);
+  TRACKER_LOCK (tracker);
 
   entry = find_entry (tracker, ip, NULL);
   if (entry != NULL)
     count = entry->count;
 
-  pthread_mutex_unlock (&tracker->mutex);
+  TRACKER_UNLOCK (tracker);
   return count;
 }
 
@@ -551,9 +543,9 @@ SocketIPTracker_getmaxunique (T tracker)
 
   assert (tracker != NULL);
 
-  pthread_mutex_lock (&tracker->mutex);
+  TRACKER_LOCK (tracker);
   maxu = tracker->max_unique_ips;
-  pthread_mutex_unlock (&tracker->mutex);
+  TRACKER_UNLOCK (tracker);
 
   return maxu;
 }
@@ -587,7 +579,7 @@ SocketIPTracker_clear (T tracker)
 {
   assert (tracker != NULL);
 
-  pthread_mutex_lock (&tracker->mutex);
+  TRACKER_LOCK (tracker);
 
   if (tracker->arena == NULL)
     free_all_entries (tracker);
@@ -597,7 +589,7 @@ SocketIPTracker_clear (T tracker)
   tracker->total_conns = 0;
   tracker->unique_ips = 0;
 
-  pthread_mutex_unlock (&tracker->mutex);
+  TRACKER_UNLOCK (tracker);
 }
 
 #undef T
