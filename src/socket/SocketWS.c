@@ -1374,6 +1374,165 @@ SocketWS_close (SocketWS_T ws, int code, const char *reason)
   return ws_send_close (ws, (SocketWS_CloseCode)code, reason);
 }
 
+/**
+ * @brief Parse WebSocket URL into host, port, path, and TLS flag.
+ * @internal
+ * @param url The WebSocket URL (ws:// or wss://)
+ * @param[out] host Buffer for hostname (size NI_MAXHOST)
+ * @param[out] port Port number (default 80/443)
+ * @param[out] path Buffer for path (size 1024)
+ * @param[out] use_tls TLS flag (1 for wss://, 0 for ws://)
+ * @return 0 on success, -1 on error
+ */
+static int
+ws_parse_url (const char *url, char *host, int *port, char *path, int *use_tls)
+{
+  assert (url);
+  assert (host);
+  assert (port);
+  assert (path);
+  assert (use_tls);
+
+  /* Parse URL scheme: ws://host[:port][/path] or wss://... */
+  if (strncmp (url, "wss://", 6) == 0)
+    {
+      *use_tls = 1;
+      *port = 443;
+      url += 6;
+    }
+  else if (strncmp (url, "ws://", 5) == 0)
+    {
+      *use_tls = 0;
+      *port = 80;
+      url += 5;
+    }
+  else
+    {
+      SOCKET_ERROR_MSG ("Invalid WebSocket URL scheme (expected ws:// or wss://)");
+      return -1;
+    }
+
+  /* Extract host and path */
+  const char *path_start = strchr (url, '/');
+  const char *port_start = strchr (url, ':');
+
+  if (port_start && (!path_start || port_start < path_start))
+    {
+      size_t host_len = (size_t)(port_start - url);
+      if (host_len >= NI_MAXHOST)
+        host_len = NI_MAXHOST - 1;
+      strncpy (host, url, host_len);
+      host[host_len] = '\0';
+      {
+        char *endptr;
+        long p = strtol (port_start + 1, &endptr, 10);
+        if (endptr == port_start + 1 || p < 1 || p > 65535)
+          {
+            SOCKET_ERROR_MSG ("Invalid port in WebSocket URL");
+            return -1;
+          }
+        *port = (int)p;
+      }
+    }
+  else if (path_start)
+    {
+      size_t host_len = (size_t)(path_start - url);
+      if (host_len >= NI_MAXHOST)
+        host_len = NI_MAXHOST - 1;
+      strncpy (host, url, host_len);
+      host[host_len] = '\0';
+    }
+  else
+    {
+      strncpy (host, url, NI_MAXHOST - 1);
+    }
+
+  if (path_start)
+    strncpy (path, path_start, 1024 - 1);
+  else
+    {
+      path[0] = '/';
+      path[1] = '\0';
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Create and connect socket with optional TLS.
+ * @internal
+ * @param host Hostname to connect to
+ * @param port Port number
+ * @param use_tls Enable TLS if non-zero
+ * @return Socket_T on success, NULL on error (raises exception)
+ */
+static Socket_T
+ws_create_and_connect_socket (const char *host, int port, int use_tls)
+{
+  Socket_T sock = NULL;
+
+  assert (host);
+
+  sock = Socket_new (AF_INET, SOCK_STREAM, 0);
+  Socket_connect (sock, host, port);
+
+#if SOCKET_HAS_TLS
+  if (use_tls)
+    {
+      extern void SocketTLS_enable (Socket_T, void *);
+      extern int SocketTLS_handshake_loop (Socket_T, int);
+      extern void SocketTLS_set_hostname (Socket_T, const char *);
+
+      /* Enable TLS with default context */
+      SocketTLS_enable (sock, NULL);
+      SocketTLS_set_hostname (sock, host);
+      if (SocketTLS_handshake_loop (sock, 10000) < 0)
+        {
+          SOCKET_ERROR_MSG ("TLS handshake failed");
+          RAISE_WS_ERROR (SocketWS_Failed);
+        }
+    }
+#else
+  if (use_tls)
+    {
+      Socket_free (&sock);
+      SOCKET_ERROR_MSG ("TLS not available (compile with -DENABLE_TLS=ON)");
+      RAISE_WS_ERROR (SocketWS_Failed);
+      return NULL;
+    }
+#endif
+
+  return sock;
+}
+
+/**
+ * @brief Complete WebSocket handshake with polling.
+ * @internal
+ * @param ws WebSocket context
+ * @param sock Underlying socket
+ * @return 0 on success, -1 on error
+ */
+static int
+ws_complete_handshake (SocketWS_T ws, Socket_T sock)
+{
+  int result;
+
+  assert (ws);
+  assert (sock);
+
+  while ((result = SocketWS_handshake (ws)) > 0)
+    {
+      struct pollfd pfd = { .fd = Socket_fd (sock), .events = POLLIN | POLLOUT };
+      poll (&pfd, 1, SOCKETWS_HANDSHAKE_TIMEOUT_MS);
+      SocketWS_process (ws, ws_translate_poll_revents (pfd.revents));
+    }
+
+  if (result < 0 || ws->state != WS_STATE_OPEN)
+    return -1;
+
+  return 0;
+}
+
 SocketWS_T
 SocketWS_connect (const char *url, const char *protocols)
 {
@@ -1387,99 +1546,17 @@ SocketWS_connect (const char *url, const char *protocols)
 
   assert (url);
 
-  /* Parse URL: ws://host[:port][/path] or wss://... */
-  if (strncmp (url, "wss://", 6) == 0)
+  /* Parse URL */
+  if (ws_parse_url (url, host, (int *)&port, path, (int *)&use_tls) != 0)
     {
-      use_tls = 1;
-      port = 443;
-      url += 6;
-    }
-  else if (strncmp (url, "ws://", 5) == 0)
-    {
-      url += 5;
-    }
-  else
-    {
-      SOCKET_ERROR_MSG ("Invalid WebSocket URL scheme (expected ws:// or wss://)");
       RAISE_WS_ERROR (SocketWS_Failed);
       return NULL;
-    }
-
-  /* Extract host and path */
-  const char *path_start = strchr (url, '/');
-  const char *port_start = strchr (url, ':');
-
-  if (port_start && (!path_start || port_start < path_start))
-    {
-      size_t host_len = (size_t)(port_start - url);
-      if (host_len >= sizeof (host))
-        host_len = sizeof (host) - 1;
-      strncpy (host, url, host_len);
-      host[host_len] = '\0';
-      {
-        char *endptr;
-        long p = strtol (port_start + 1, &endptr, 10);
-        if (endptr == port_start + 1 || p < 1 || p > 65535)
-          {
-            SOCKET_ERROR_MSG ("Invalid port in WebSocket URL");
-            RAISE_WS_ERROR (SocketWS_Failed);
-            return NULL;
-          }
-        port = (int)p;
-      }
-    }
-  else if (path_start)
-    {
-      size_t host_len = (size_t)(path_start - url);
-      if (host_len >= sizeof (host))
-        host_len = sizeof (host) - 1;
-      strncpy (host, url, host_len);
-      host[host_len] = '\0';
-    }
-  else
-    {
-      strncpy (host, url, sizeof (host) - 1);
-    }
-
-  if (path_start)
-    strncpy (path, path_start, sizeof (path) - 1);
-  else
-    {
-      path[0] = '/';
-      path[1] = '\0';
     }
 
   /* Create and connect socket */
   TRY
   {
-    sock = Socket_new (AF_INET, SOCK_STREAM, 0);
-    Socket_connect (sock, host, port);
-
-#if SOCKET_HAS_TLS
-    if (use_tls)
-      {
-        extern void SocketTLS_enable (Socket_T, void *);
-        extern int SocketTLS_handshake_loop (Socket_T, int);
-        extern void SocketTLS_set_hostname (Socket_T, const char *);
-
-        /* Enable TLS with default context */
-        SocketTLS_enable (sock, NULL);
-        SocketTLS_set_hostname (sock, host);
-        if (SocketTLS_handshake_loop (sock, 10000) < 0)
-          {
-            SOCKET_ERROR_MSG ("TLS handshake failed");
-            RAISE_WS_ERROR (SocketWS_Failed);
-          }
-      }
-#else
-    if (use_tls)
-      {
-        Socket_free (&sock);
-        SOCKET_ERROR_MSG ("TLS not available (compile with -DENABLE_TLS=ON)");
-        RAISE_WS_ERROR (SocketWS_Failed);
-        return NULL;
-      }
-#endif
+    sock = ws_create_and_connect_socket (host, port, use_tls);
 
     /* Create WebSocket config */
     SocketWS_config_defaults (&config);
@@ -1502,15 +1579,7 @@ SocketWS_connect (const char *url, const char *protocols)
       }
 
     /* Complete handshake */
-    int result;
-    while ((result = SocketWS_handshake (ws)) > 0)
-      {
-        struct pollfd pfd = { .fd = Socket_fd (sock), .events = POLLIN | POLLOUT };
-        poll (&pfd, 1, SOCKETWS_HANDSHAKE_TIMEOUT_MS);
-        SocketWS_process (ws, ws_translate_poll_revents (pfd.revents));
-      }
-
-    if (result < 0 || ws->state != WS_STATE_OPEN)
+    if (ws_complete_handshake (ws, sock) != 0)
       {
         SocketWS_free (&ws);
         return NULL;
