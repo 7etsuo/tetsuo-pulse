@@ -13,6 +13,7 @@
 #include "quic/SocketQUICVarInt.h"
 #include "test/Test.h"
 
+#include <stdint.h>
 #include <string.h>
 
 /* ============================================================================
@@ -189,6 +190,28 @@ TEST (frame_stream_decode_null_params)
   ASSERT_EQ (-1, SocketQUICFrame_decode_stream (NULL, sizeof (buf), &frame));
   ASSERT_EQ (-1, SocketQUICFrame_decode_stream (buf, sizeof (buf), NULL));
   ASSERT_EQ (-1, SocketQUICFrame_decode_stream (buf, 0, &frame));
+}
+
+TEST (frame_stream_encode_overflow_protection)
+{
+  uint8_t buf[128];
+  const uint8_t data[] = "test";
+
+  /* Test integer overflow protection - SIZE_MAX should cause overflow check to
+   * fail */
+  size_t len = SocketQUICFrame_encode_stream (0, 0, data, SIZE_MAX, 0, buf,
+                                               sizeof (buf));
+  ASSERT_EQ (0, len); /* Should fail due to overflow */
+
+  /* Test near-overflow case: SIZE_MAX - small value */
+  len = SocketQUICFrame_encode_stream (0, 0, data, SIZE_MAX - 10, 0, buf,
+                                        sizeof (buf));
+  ASSERT_EQ (0, len); /* Should fail due to overflow */
+
+  /* Test with offset to ensure header_size calculation works */
+  len = SocketQUICFrame_encode_stream (100, 500, data, SIZE_MAX - 20, 0, buf,
+                                        sizeof (buf));
+  ASSERT_EQ (0, len); /* Should fail due to overflow */
 }
 
 int

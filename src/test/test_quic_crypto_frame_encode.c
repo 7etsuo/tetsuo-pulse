@@ -13,6 +13,7 @@
 #include "quic/SocketQUICVarInt.h"
 #include "test/Test.h"
 
+#include <stdint.h>
 #include <string.h>
 
 /* ============================================================================
@@ -163,6 +164,23 @@ TEST (frame_crypto_encode_null_data_with_length)
   /* NULL data with non-zero length should fail */
   size_t len = SocketQUICFrame_encode_crypto (0, NULL, 10, buf, sizeof (buf));
   ASSERT_EQ (0, len);
+}
+
+TEST (frame_crypto_encode_overflow_protection)
+{
+  uint8_t buf[128];
+  const uint8_t data[] = "test";
+
+  /* Test integer overflow protection - SIZE_MAX should cause overflow check to
+   * fail */
+  size_t len = SocketQUICFrame_encode_crypto (0, data, SIZE_MAX, buf,
+                                               sizeof (buf));
+  ASSERT_EQ (0, len); /* Should fail due to overflow */
+
+  /* Test near-overflow case: SIZE_MAX - small value */
+  len = SocketQUICFrame_encode_crypto (0, data, SIZE_MAX - 10, buf,
+                                        sizeof (buf));
+  ASSERT_EQ (0, len); /* Should fail due to overflow */
 }
 
 TEST (frame_crypto_encode_roundtrip_multiple)
