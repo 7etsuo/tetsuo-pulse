@@ -81,6 +81,64 @@ proxy_socks5_ensure_data (struct SocketProxy_Conn_T *conn, size_t needed)
   return PROXY_OK;
 }
 
+/**
+ * calculate_socks5_connect_response_length - Calculate expected SOCKS5 CONNECT
+ * response length
+ * @conn: Proxy connection context for error reporting
+ * @buf: Receive buffer containing at least CONNECT header (4 bytes)
+ * @needed_out: Output parameter for calculated response length
+ *
+ * Parses the ATYP field (buf[3]) from SOCKS5 CONNECT response header and
+ * calculates total expected response length. For domain addresses, may call
+ * proxy_socks5_ensure_data() to read domain length byte.
+ *
+ * Returns: PROXY_OK on success with needed_out set,
+ *          PROXY_IN_PROGRESS if more data needed for domain length,
+ *          PROXY_ERROR_PROTOCOL if unknown address type
+ */
+static SocketProxy_Result
+calculate_socks5_connect_response_length (struct SocketProxy_Conn_T *conn,
+                                          unsigned char *buf, size_t *needed_out)
+{
+  size_t needed;
+  size_t addr_len;
+
+  switch (buf[3]) /* ATYP field */
+    {
+    case SOCKS5_ATYP_IPV4:
+      /* header + IPv4 + port */
+      needed = SOCKS5_CONNECT_IPV4_RESPONSE_SIZE;
+      break;
+
+    case SOCKS5_ATYP_DOMAIN:
+      /* Need header + length byte to read domain length */
+      {
+        SocketProxy_Result res
+            = proxy_socks5_ensure_data (conn, SOCKS5_CONNECT_HEADER_SIZE + 1);
+        if (res != PROXY_OK)
+          return res;
+      }
+      addr_len = buf[4];
+      /* header + len byte + domain + port */
+      needed = SOCKS5_CONNECT_HEADER_SIZE + 1 + addr_len + SOCKS5_PORT_SIZE;
+      break;
+
+    case SOCKS5_ATYP_IPV6:
+      /* header + IPv6 + port */
+      needed = SOCKS5_CONNECT_IPV6_RESPONSE_SIZE;
+      break;
+
+    default:
+      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                             "Unknown address type in response: 0x%02X",
+                             buf[3]);
+      return PROXY_ERROR_PROTOCOL;
+    }
+
+  *needed_out = needed;
+  return PROXY_OK;
+}
+
 /* ============================================================================
  * SOCKS5 Greeting (RFC 1928 Section 3)
  * ============================================================================
@@ -482,7 +540,6 @@ proxy_socks5_recv_connect (struct SocketProxy_Conn_T *conn)
 {
   unsigned char *buf = conn->recv_buf;
   size_t needed;
-  size_t addr_len;
 
   /* Need at least VER + REP + RSV + ATYP bytes for header */
   {
@@ -507,37 +564,12 @@ proxy_socks5_recv_connect (struct SocketProxy_Conn_T *conn)
     }
 
   /* Calculate total response length based on address type */
-  switch (buf[3])
-    {
-    case SOCKS5_ATYP_IPV4:
-      /* header + IPv4 + port */
-      needed = SOCKS5_CONNECT_IPV4_RESPONSE_SIZE;
-      break;
-
-    case SOCKS5_ATYP_DOMAIN:
-      /* Need header + length byte to read domain length */
-      {
-        SocketProxy_Result res
-            = proxy_socks5_ensure_data (conn, SOCKS5_CONNECT_HEADER_SIZE + 1);
-        if (res != PROXY_OK)
-          return res;
-      }
-      addr_len = buf[4];
-      /* header + len byte + domain + port */
-      needed = SOCKS5_CONNECT_HEADER_SIZE + 1 + addr_len + SOCKS5_PORT_SIZE;
-      break;
-
-    case SOCKS5_ATYP_IPV6:
-      /* header + IPv6 + port */
-      needed = SOCKS5_CONNECT_IPV6_RESPONSE_SIZE;
-      break;
-
-    default:
-      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                             "Unknown address type in response: 0x%02X",
-                             buf[3]);
-      return PROXY_ERROR_PROTOCOL;
-    }
+  {
+    SocketProxy_Result res
+        = calculate_socks5_connect_response_length (conn, buf, &needed);
+    if (res != PROXY_OK)
+      return res;
+  }
 
   /* Wait for complete response */
   {
