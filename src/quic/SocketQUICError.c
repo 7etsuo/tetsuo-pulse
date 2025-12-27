@@ -47,11 +47,17 @@ static const char *transport_error_names[] = {
  * ============================================================================
  */
 
+/**
+ * Buffer size for crypto error string formatting.
+ * Format "CRYPTO_ERROR(0x%02x)" produces at most 19 bytes + null terminator.
+ */
+#define QUIC_CRYPTO_ERROR_STRING_MAX 32
+
 const char *
 SocketQUIC_error_string (uint64_t code)
 {
   /* Thread-local buffer for crypto error formatting */
-  static __thread char crypto_buf[32];
+  static __thread char crypto_buf[QUIC_CRYPTO_ERROR_STRING_MAX];
 
   /* Transport errors: 0x00-0x10 */
   if (code < TRANSPORT_ERROR_COUNT)
@@ -60,8 +66,16 @@ SocketQUIC_error_string (uint64_t code)
   /* Crypto errors: 0x0100-0x01ff */
   if (QUIC_IS_CRYPTO_ERROR (code))
     {
-      snprintf (crypto_buf, sizeof (crypto_buf), "CRYPTO_ERROR(0x%02x)",
-                (unsigned int)QUIC_CRYPTO_ALERT (code));
+      int ret = snprintf (crypto_buf, sizeof (crypto_buf), "CRYPTO_ERROR(0x%02x)",
+                          (unsigned int)QUIC_CRYPTO_ALERT (code));
+
+      /* Defensive check: should never happen with current format */
+      if (ret < 0 || (size_t)ret >= sizeof (crypto_buf))
+        {
+          /* Fallback to safe default on truncation or error */
+          return "CRYPTO_ERROR(UNKNOWN)";
+        }
+
       return crypto_buf;
     }
 
