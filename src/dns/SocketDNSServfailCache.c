@@ -11,13 +11,13 @@
 
 #include "dns/SocketDNSServfailCache.h"
 #include "core/Arena.h"
+#include "core/SocketCrypto.h"
 #include "core/SocketUtil.h"
 
 #include <pthread.h>
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
-#include <time.h>
 
 #define T SocketDNSServfailCache_T
 
@@ -285,8 +285,8 @@ SocketDNSServfailCache_new (Arena_T arena)
   cache->arena = arena;
   cache->max_entries = DNS_SERVFAIL_DEFAULT_MAX;
 
-  /* Initialize random seed for hash collision DoS protection */
-  cache->hash_seed = (uint32_t)time(NULL) ^ (uint32_t)(uintptr_t)cache;
+  /* Initialize cryptographically secure random seed for hash collision DoS protection */
+  cache->hash_seed = SocketCrypto_random_uint32 ();
 
   if (pthread_mutex_init (&cache->mutex, NULL) != 0)
     return NULL;
