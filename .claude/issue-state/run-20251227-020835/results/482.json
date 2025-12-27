@@ -1,0 +1,11 @@
+{
+  "issue": 482,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/491",
+  "pr_number": 491,
+  "branch": "issue-482-simplify-colon-search",
+  "files_changed": ["src/socket/SocketProxy.c"],
+  "tests_passed": true,
+  "commit_sha": "4e171478a55e6b5bba764ce889b5c0392394197d",
+  "summary": "Replaced 28 lines of duplicate loop logic with single memchr call in URL parsing colon search"
+}

@@ -820,19 +820,24 @@ static int
 proxy_setup_tls_to_proxy (struct SocketProxy_Conn_T *conn)
 {
 #if SOCKET_HAS_TLS
-  if (conn->tls_ctx == NULL) {
-    TRY {
-      conn->tls_ctx = SocketTLSContext_new_client (NULL);
+  if (conn->tls_ctx == NULL)
+    {
+      TRY
+      {
+        conn->tls_ctx = SocketTLSContext_new_client (NULL);
 
-      const char *alpn_protos[] = { "http/1.1" };
-      SocketTLSContext_set_alpn_protos (conn->tls_ctx, alpn_protos, 1);
-    } EXCEPT (SocketTLS_Failed) {
-      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                             "Failed to create TLS context for HTTPS proxy: %s",
-                             Socket_GetLastError ());
-      return -1;
-    } END_TRY;
-  }
+        const char *alpn_protos[] = { "http/1.1" };
+        SocketTLSContext_set_alpn_protos (conn->tls_ctx, alpn_protos, 1);
+      }
+      EXCEPT (SocketTLS_Failed)
+      {
+        socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                               "Failed to create TLS context for HTTPS proxy: %s",
+                               Socket_GetLastError ());
+        return -1;
+      }
+      END_TRY;
+    }
 
   SocketTLS_set_hostname (conn->socket, conn->proxy_host);
 
@@ -852,46 +857,53 @@ proxy_perform_sync_tls_handshake (struct SocketProxy_Conn_T *conn)
 #if SOCKET_HAS_TLS
   int64_t deadline_ms = conn->handshake_start_time_ms + (int64_t)conn->handshake_timeout_ms;
 
-  while (1) {
-    /* Check timeout before each attempt */
-    if (proxy_check_timeout (conn) < 0) {
-      return -1;
+  while (1)
+    {
+      /* Check timeout before each attempt */
+      if (proxy_check_timeout (conn) < 0)
+        {
+          return -1;
+        }
+
+      TLSHandshakeState hs = SocketTLS_handshake (conn->socket);
+
+      if (hs == TLS_HANDSHAKE_COMPLETE)
+        {
+          conn->tls_enabled = 1;
+          return 0;
+        }
+      else if (hs == TLS_HANDSHAKE_ERROR)
+        {
+          socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                                 "TLS handshake to proxy failed: %s",
+                                 Socket_GetLastError ());
+          return -1;
+        }
+
+      unsigned events = (hs == TLS_HANDSHAKE_WANT_READ ? POLL_READ : POLL_WRITE);
+      short poll_events = (events == POLL_READ ? POLLIN : POLLOUT);
+      struct pollfd pfd = { .fd = Socket_fd (conn->socket), .events = poll_events, .revents = 0 };
+
+      int64_t now_ms = socketproxy_get_time_ms ();
+      int poll_to = (int)SocketTimeout_remaining_ms (deadline_ms - now_ms);
+
+      int ret = poll (&pfd, 1, poll_to);
+      if (ret < 0)
+        {
+          if (errno == EINTR) continue;
+          socketproxy_set_error (conn, PROXY_ERROR,
+                                 "poll failed during TLS handshake to proxy: %s",
+                                 strerror (errno));
+          return -1;
+        }
+      if (ret == 0)
+        {
+          socketproxy_set_error (conn, PROXY_ERROR_TIMEOUT,
+                                 "TLS handshake to proxy timeout (%d ms)",
+                                 conn->handshake_timeout_ms);
+          return -1;
+        }
     }
-
-    TLSHandshakeState hs = SocketTLS_handshake (conn->socket);
-
-    if (hs == TLS_HANDSHAKE_COMPLETE) {
-      conn->tls_enabled = 1;
-      return 0;
-    } else if (hs == TLS_HANDSHAKE_ERROR) {
-      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                             "TLS handshake to proxy failed: %s",
-                             Socket_GetLastError ());
-      return -1;
-    }
-
-    unsigned events = (hs == TLS_HANDSHAKE_WANT_READ ? POLL_READ : POLL_WRITE);
-    short poll_events = (events == POLL_READ ? POLLIN : POLLOUT);
-    struct pollfd pfd = { .fd = Socket_fd (conn->socket), .events = poll_events, .revents = 0 };
-
-    int64_t now_ms = socketproxy_get_time_ms ();
-    int poll_to = (int)SocketTimeout_remaining_ms (deadline_ms - now_ms);
-
-    int ret = poll (&pfd, 1, poll_to);
-    if (ret < 0) {
-      if (errno == EINTR) continue;
-      socketproxy_set_error (conn, PROXY_ERROR,
-                             "poll failed during TLS handshake to proxy: %s",
-                             strerror (errno));
-      return -1;
-    }
-    if (ret == 0) {
-      socketproxy_set_error (conn, PROXY_ERROR_TIMEOUT,
-                             "TLS handshake to proxy timeout (%d ms)",
-                             conn->handshake_timeout_ms);
-      return -1;
-    }
-  }
 #else
   return -1;
 #endif
@@ -900,24 +912,28 @@ proxy_perform_sync_tls_handshake (struct SocketProxy_Conn_T *conn)
 static int
 proxy_setup_after_tcp_connect (struct SocketProxy_Conn_T *conn, int sync_mode)
 {
-  if (conn->type != SOCKET_PROXY_HTTPS) {
-    conn->state = PROXY_STATE_HANDSHAKE_SEND;
-    conn->handshake_start_time_ms = socketproxy_get_time_ms ();
-    return (proxy_build_initial_request (conn) == 0 ? 0 : -1);
-  }
+  if (conn->type != SOCKET_PROXY_HTTPS)
+    {
+      conn->state = PROXY_STATE_HANDSHAKE_SEND;
+      conn->handshake_start_time_ms = socketproxy_get_time_ms ();
+      return (proxy_build_initial_request (conn) == 0 ? 0 : -1);
+    }
 
-  if (proxy_setup_tls_to_proxy (conn) < 0) {
-    return -1;
-  }
-
-  if (sync_mode) {
-    if (proxy_perform_sync_tls_handshake (conn) < 0) {
+  if (proxy_setup_tls_to_proxy (conn) < 0)
+    {
       return -1;
     }
-    conn->state = PROXY_STATE_HANDSHAKE_SEND;
-    conn->handshake_start_time_ms = socketproxy_get_time_ms ();
-    return (proxy_build_initial_request (conn) == 0 ? 0 : -1);
-  }
+
+  if (sync_mode)
+    {
+      if (proxy_perform_sync_tls_handshake (conn) < 0)
+        {
+          return -1;
+        }
+      conn->state = PROXY_STATE_HANDSHAKE_SEND;
+      conn->handshake_start_time_ms = socketproxy_get_time_ms ();
+      return (proxy_build_initial_request (conn) == 0 ? 0 : -1);
+    }
 
   return 0;
 }
