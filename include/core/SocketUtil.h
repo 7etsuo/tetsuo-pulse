@@ -1206,4 +1206,98 @@ socket_util_safe_strncpy (char *dest, const char *src, size_t max_len)
   dest[max_len - 1] = '\0';
 }
 
+/* ============================================================================
+ * MUTEX LOCK/UNLOCK MACROS (Standardized Error Handling)
+ * ============================================================================
+ *
+ * Provides consistent mutex locking patterns across the codebase:
+ * - SOCKET_MUTEX_LOCK_OR_RAISE: Lock with error handling via exception
+ * - SOCKET_MUTEX_UNLOCK: Unlock (ignores errors per POSIX recommendation)
+ * - SOCKET_WITH_MUTEX: Exception-safe scoped locking with TRY/FINALLY
+ *
+ * Why unlock ignores errors:
+ * Per POSIX, pthread_mutex_unlock() errors indicate programming bugs:
+ * - EPERM: Calling thread does not own the mutex
+ * - EINVAL: Mutex is invalid or uninitialized
+ *
+ * Raising exceptions in cleanup paths (FINALLY blocks, destructors) causes
+ * cascading failures that mask the original error. Production code should
+ * log unlock errors in debug builds but not abort.
+ *
+ * See issue #512 for background and migration plan.
+ */
+
+/**
+ * @brief SOCKET_MUTEX_LOCK_OR_RAISE - Lock mutex with error handling
+ * @param mutex_ptr Pointer to pthread_mutex_t
+ * @param module Module name for exception (e.g., SocketTimer)
+ * @param exc Exception to raise (e.g., SocketTimer_Failed)
+ *
+ * Locks the mutex and raises an exception if lock fails. Uses
+ * Socket_safe_strerror() for human-readable error messages.
+ *
+ * Thread-safe: Yes (pthread_mutex_lock is thread-safe)
+ *
+ * Example:
+ *   SOCKET_MUTEX_LOCK_OR_RAISE(&pool->mutex, SocketPool, SocketPool_Failed);
+ *   // ... critical section ...
+ *   SOCKET_MUTEX_UNLOCK(&pool->mutex);
+ */
+#define SOCKET_MUTEX_LOCK_OR_RAISE(mutex_ptr, module, exc)                    \
+  do                                                                          \
+    {                                                                         \
+      int _lock_err = pthread_mutex_lock (mutex_ptr);                         \
+      if (_lock_err != 0)                                                     \
+        SOCKET_RAISE_MSG (module, exc, "pthread_mutex_lock failed: %s",       \
+                          Socket_safe_strerror (_lock_err));                  \
+    }                                                                         \
+  while (0)
+
+/**
+ * @brief SOCKET_MUTEX_UNLOCK - Unlock mutex (ignores errors)
+ * @param mutex_ptr Pointer to pthread_mutex_t
+ *
+ * Unlocks the mutex. Ignores return value per POSIX recommendation.
+ * Unlock errors indicate programming bugs (double-unlock, unowned mutex).
+ * Raising exceptions on unlock causes cascading failures in cleanup paths.
+ *
+ * Thread-safe: Yes (pthread_mutex_unlock is thread-safe)
+ *
+ * Example:
+ *   SOCKET_MUTEX_LOCK_OR_RAISE(&pool->mutex, SocketPool, SocketPool_Failed);
+ *   // ... critical section ...
+ *   SOCKET_MUTEX_UNLOCK(&pool->mutex);
+ */
+#define SOCKET_MUTEX_UNLOCK(mutex_ptr) (void)pthread_mutex_unlock (mutex_ptr)
+
+/**
+ * @brief SOCKET_WITH_MUTEX - Execute code block with mutex protection
+ * @param mutex_ptr Pointer to pthread_mutex_t
+ * @param module Module name for exception
+ * @param exc Exception to raise on lock failure
+ * @param code Code block to execute under lock
+ *
+ * Exception-safe scoped locking. The mutex is unlocked via FINALLY
+ * even if the code block raises an exception.
+ *
+ * Thread-safe: Yes
+ *
+ * Example:
+ *   SOCKET_WITH_MUTEX(&cache->mutex, SocketDNS, SocketDNS_Failed, {
+ *     cache->hit_count++;
+ *     result = lookup_entry(cache, key);
+ *   });
+ *
+ * Warning: Do not use 'return' inside the code block. Use exception
+ * handling (RAISE) or restructure code to avoid early returns.
+ */
+#define SOCKET_WITH_MUTEX(mutex_ptr, module, exc, code)                       \
+  do                                                                          \
+    {                                                                         \
+      SOCKET_MUTEX_LOCK_OR_RAISE (mutex_ptr, module, exc);                    \
+      TRY{ code } FINALLY { SOCKET_MUTEX_UNLOCK (mutex_ptr); }                \
+      END_TRY;                                                                \
+    }                                                                         \
+  while (0)
+
 #endif /* SOCKETUTIL_INCLUDED */

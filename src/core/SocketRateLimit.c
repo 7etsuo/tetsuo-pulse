@@ -20,13 +20,8 @@
   do                                                                          \
     {                                                                         \
       T _l = (T)(limiter);                                                    \
-      int lock_err = pthread_mutex_lock (&_l->mutex);                         \
-      if (lock_err != 0)                                                      \
-        SOCKET_RAISE_MSG (SocketRateLimit, SocketRateLimit_Failed,            \
-                          "pthread_mutex_lock failed: %s",                    \
-                          Socket_safe_strerror (lock_err));                   \
-      TRY{ code } FINALLY { (void)pthread_mutex_unlock (&_l->mutex); }        \
-      END_TRY;                                                                \
+      SOCKET_WITH_MUTEX (&_l->mutex, SocketRateLimit, SocketRateLimit_Failed,\
+                         code);                                               \
     }                                                                         \
   while (0)
 

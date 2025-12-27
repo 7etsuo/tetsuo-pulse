@@ -389,19 +389,13 @@ sockettimer_heap_init_mutex (SocketTimer_heap_T *heap)
 static inline void
 sockettimer_heap_lock (SocketTimer_heap_T *heap)
 {
-  int ret = pthread_mutex_lock (&heap->mutex);
-  if (ret != 0)
-    SOCKET_RAISE_MSG (SocketTimer, SocketTimer_Failed,
-                      "pthread_mutex_lock failed: %d", ret);
+  SOCKET_MUTEX_LOCK_OR_RAISE (&heap->mutex, SocketTimer, SocketTimer_Failed);
 }
 
 static inline void
 sockettimer_heap_unlock (SocketTimer_heap_T *heap)
 {
-  int ret = pthread_mutex_unlock (&heap->mutex);
-  if (ret != 0)
-    SOCKET_RAISE_MSG (SocketTimer, SocketTimer_Failed,
-                      "pthread_mutex_unlock failed: %d", ret);
+  SOCKET_MUTEX_UNLOCK (&heap->mutex);
 }
 
 static struct SocketTimer_T *
