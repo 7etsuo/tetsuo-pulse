@@ -25,6 +25,7 @@
 
 #include "quic/SocketQUICPacket.h"
 #include "quic/SocketQUICVersion.h"
+#include "quic/SocketQUICConstants.h"
 #include "core/SocketCrypto.h"
 
 #ifdef SOCKET_HAS_TLS
@@ -72,7 +73,7 @@ static const char label_quic_hp[] = "quic hp";
  * ============================================================================
  */
 
-static const char *initial_result_strings[] = {
+static const char *result_strings[] = {
   [QUIC_INITIAL_OK] = "OK",
   [QUIC_INITIAL_ERROR_NULL] = "NULL pointer argument",
   [QUIC_INITIAL_ERROR_CRYPTO] = "Cryptographic operation failed",
@@ -85,13 +86,7 @@ static const char *initial_result_strings[] = {
   [QUIC_INITIAL_ERROR_VERSION] = "Unsupported QUIC version"
 };
 
-const char *
-SocketQUICInitial_result_string (SocketQUICInitial_Result result)
-{
-  if (result > QUIC_INITIAL_ERROR_VERSION)
-    return "Unknown error";
-  return initial_result_strings[result];
-}
+DEFINE_RESULT_STRING_FUNC (SocketQUICInitial, QUIC_INITIAL_ERROR_VERSION)
 
 /* ============================================================================
  * Key Structure Functions
