@@ -38,6 +38,11 @@
 /* Thread-local exception for this translation unit */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLS);
 
+/* Sharded session cache configuration constants */
+#define SOCKET_TLS_SHARDED_BUCKET_COUNT     64   /* Power-of-2 for efficient modulo operations */
+#define SOCKET_TLS_SHARDED_MIN_SHARDS       2    /* Minimum for meaningful sharding */
+#define SOCKET_TLS_SHARDED_MAX_SHARDS       256  /* Maximum for reasonable memory usage */
+
 /* Ex-data index for associating SocketTLSContext_T with SSL_CTX
  * Thread-safe initialization using pthread_once to prevent race conditions
  * when multiple threads create sharded caches concurrently. */
@@ -622,7 +627,7 @@ sharded_session_next_ptr (void *entry)
 
 /* Static config for sharded session hash table */
 static const HashTable_Config sharded_session_config = {
-    .bucket_count = 64,
+    .bucket_count = SOCKET_TLS_SHARDED_BUCKET_COUNT,
     .hash_seed = SOCKET_UTIL_DJB2_SEED,
     .hash = sharded_session_hash,
     .compare = sharded_session_compare,
@@ -767,12 +772,12 @@ SocketTLSContext_create_sharded_cache (SocketTLSContext_T ctx,
   assert (ctx);
   assert (ctx->ssl_ctx);
 
-  /* Round up to power of 2 and cap at 256 for efficient hashing */
+  /* Round up to power of 2 and cap at max for efficient hashing */
   size_t actual_shards = socket_util_round_up_pow2 (num_shards);
-  if (actual_shards < 2)
-    actual_shards = 2;
-  if (actual_shards > 256)
-    actual_shards = 256;
+  if (actual_shards < SOCKET_TLS_SHARDED_MIN_SHARDS)
+    actual_shards = SOCKET_TLS_SHARDED_MIN_SHARDS;
+  if (actual_shards > SOCKET_TLS_SHARDED_MAX_SHARDS)
+    actual_shards = SOCKET_TLS_SHARDED_MAX_SHARDS;
 
   TRY
   {
