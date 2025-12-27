@@ -25,10 +25,9 @@
 #include <sys/socket.h>
 
 /**
- * @brief Maximum size for config content to prevent integer overflow.
+ * @brief Maximum size for config content.
  *
  * 1MB is a reasonable upper bound for resolv.conf content.
- * This prevents integer overflow in malloc(len + 1).
  */
 #define MAX_CONFIG_SIZE (1024 * 1024)
 
@@ -283,8 +282,8 @@ SocketDNSConfig_parse (SocketDNSConfig_T *config, const char *content)
 
   len = strlen (content);
 
-  /* Check for integer overflow in malloc(len + 1) and reasonable size limit */
-  if (len > SIZE_MAX - 1 || len > MAX_CONFIG_SIZE)
+  /* Check for reasonable size limit */
+  if (len > MAX_CONFIG_SIZE)
     return -1;
 
   copy = malloc (len + 1);
