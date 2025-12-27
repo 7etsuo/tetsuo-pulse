@@ -689,15 +689,14 @@ arena_strndup (Arena_T arena, const char *src, size_t len)
 /**
  * @brief Get current monotonic time in milliseconds.
  * @ingroup foundation
- * @return Current time in milliseconds from monotonic clock.
+ * @return Current time in milliseconds from monotonic clock, or 0 on failure.
  * @threadsafe Yes
+ * @note Delegates to Socket_get_monotonic_ms() for proper error handling.
  */
 static inline int64_t
 SocketTimeout_now_ms (void)
 {
-  struct timespec ts;
-  clock_gettime (CLOCK_MONOTONIC, &ts);
-  return (int64_t)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+  return Socket_get_monotonic_ms ();
 }
 
 /**
