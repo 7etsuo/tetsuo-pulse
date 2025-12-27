@@ -1,0 +1,27 @@
+{
+  "issue": 398,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/446",
+  "pr_number": 446,
+  "branch": "issue-398-handshake-done-frame",
+  "files_changed": [
+    "src/quic/SocketQUICFrame-handshake.c",
+    "include/quic/SocketQUICFrame.h",
+    "src/test/test_quic_frame.c",
+    "CMakeLists.txt"
+  ],
+  "tests_passed": true,
+  "commit_sha": "acf3b193739f9a3490099b3660b66c99dc505db1",
+  "implementation_details": {
+    "function_added": "SocketQUICFrame_encode_handshake_done",
+    "frame_type": "0x1e",
+    "frame_size": "1 byte (type only)",
+    "rfc_section": "RFC 9000 §19.20",
+    "tests_added": [
+      "frame_handshake_done_encode",
+      "frame_handshake_done_encode_null_check"
+    ],
+    "quic_tests_passed": "16/16",
+    "sanitizers_enabled": true
+  }
+}

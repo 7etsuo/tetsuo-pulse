@@ -1,0 +1,36 @@
+{
+  "issue": 400,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/449",
+  "pr_number": 449,
+  "branch": "issue-400-quic-flow-control",
+  "files_changed": [
+    "include/quic/SocketQUICFlow.h",
+    "src/quic/SocketQUICFlow.c",
+    "src/test/test_quic_flow.c",
+    "CMakeLists.txt"
+  ],
+  "tests_passed": true,
+  "commit_sha": "85d4bb18d5379c76cecec8678440786156653709",
+  "lines_added": 1608,
+  "test_count": 35,
+  "implementation_details": {
+    "header_file": "include/quic/SocketQUICFlow.h",
+    "source_file": "src/quic/SocketQUICFlow.c",
+    "test_file": "src/test/test_quic_flow.c",
+    "api_functions": 28,
+    "features": [
+      "Connection-level flow control (MAX_DATA)",
+      "Stream-level flow control (MAX_STREAM_DATA)",
+      "Stream count management (MAX_STREAMS)",
+      "Send/receive window tracking",
+      "Overflow protection",
+      "RFC 9000 Section 4 compliance"
+    ]
+  },
+  "sanitizers": {
+    "asan": "passed",
+    "ubsan": "passed",
+    "memory_leaks": "none_detected"
+  }
+}

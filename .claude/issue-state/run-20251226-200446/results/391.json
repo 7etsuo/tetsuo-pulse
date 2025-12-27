@@ -1,0 +1,36 @@
+{
+  "issue": 391,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/447",
+  "pr_number": 447,
+  "branch": "issue-391-new-token-frame",
+  "files_changed": [
+    "src/quic/SocketQUICFrame-token.c",
+    "src/test/test_quic_new_token_frame.c",
+    "include/quic/SocketQUICFrame.h",
+    "CMakeLists.txt",
+    "src/test/test_quic_stream_frame_encode.c"
+  ],
+  "tests_passed": true,
+  "commit_sha": "9b4e5ebd",
+  "implementation_details": {
+    "functions_added": [
+      "SocketQUICFrame_encode_new_token",
+      "SocketQUICFrame_decode_new_token"
+    ],
+    "test_count": 14,
+    "total_tests_run": 105,
+    "all_tests_passed": true,
+    "sanitizers_enabled": true,
+    "memory_leaks": false
+  },
+  "rfc_compliance": {
+    "rfc": "RFC 9000",
+    "section": "19.7",
+    "frame_type": "0x07",
+    "description": "NEW_TOKEN frame for server-provided address validation tokens"
+  },
+  "bug_fixes": [
+    "Fixed variable redefinition in test_quic_stream_frame_encode.c"
+  ]
+}
