@@ -9,6 +9,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <sys/types.h>
 
 #include "core/Arena.h"
 #include "core/Except.h"
@@ -208,8 +209,8 @@ extern int SocketQUICFrame_decode_path_response(const uint8_t *in, size_t len, u
 extern size_t SocketQUICFrame_encode_stream(uint64_t stream_id, uint64_t offset,
                                              const uint8_t *data, size_t len,
                                              int fin, uint8_t *out, size_t out_len);
-extern int SocketQUICFrame_decode_stream(const uint8_t *data, size_t len,
-                                          SocketQUICFrameStream_T *frame);
+extern ssize_t SocketQUICFrame_decode_stream(const uint8_t *data, size_t len,
+                                              SocketQUICFrameStream_T *frame);
 
 /* Stream termination frame encoding (RFC 9000 §19.4-19.5) */
 extern size_t SocketQUICFrame_encode_reset_stream(uint64_t stream_id, uint64_t error_code, uint64_t final_size, uint8_t *out, size_t out_size);
@@ -227,7 +228,7 @@ extern int SocketQUICFrame_decode_new_token(const uint8_t *data, size_t len,
 /* CRYPTO frame encoding/decoding (RFC 9000 §19.6) */
 extern size_t SocketQUICFrame_encode_crypto(uint64_t offset, const uint8_t *data,
                                              size_t len, uint8_t *out, size_t out_len);
-extern int SocketQUICFrame_decode_crypto(const uint8_t *data, size_t len,
-                                          SocketQUICFrameCrypto_T *frame);
+extern ssize_t SocketQUICFrame_decode_crypto(const uint8_t *data, size_t len,
+                                              SocketQUICFrameCrypto_T *frame);
 
 #endif /* SOCKETQUICFRAME_INCLUDED */

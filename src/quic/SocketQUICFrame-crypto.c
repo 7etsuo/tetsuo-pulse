@@ -23,6 +23,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#include <sys/types.h>
 
 /* ============================================================================
  * CRYPTO Frame Encoding (RFC 9000 Section 19.6)
@@ -122,7 +123,7 @@ SocketQUICFrame_encode_crypto (uint64_t offset, const uint8_t *data,
  * @return Number of bytes consumed on success, or -1 on error
  */
 
-int
+ssize_t
 SocketQUICFrame_decode_crypto (const uint8_t *data, size_t len,
                                 SocketQUICFrameCrypto_T *frame)
 {
@@ -146,5 +147,5 @@ SocketQUICFrame_decode_crypto (const uint8_t *data, size_t len,
   /* Copy crypto-specific data */
   *frame = full_frame.data.crypto;
 
-  return (int)consumed;
+  return (ssize_t)consumed;
 }

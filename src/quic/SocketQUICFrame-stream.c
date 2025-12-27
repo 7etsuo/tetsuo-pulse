@@ -21,6 +21,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#include <sys/types.h>
 
 /* ============================================================================
  * RESET_STREAM Frame Encoding (RFC 9000 Section 19.4)
@@ -268,7 +269,7 @@ SocketQUICFrame_encode_stream (uint64_t stream_id, uint64_t offset,
  * @return Number of bytes consumed on success, or -1 on error
  */
 
-int
+ssize_t
 SocketQUICFrame_decode_stream (const uint8_t *data, size_t len,
                                SocketQUICFrameStream_T *frame)
 {
@@ -292,5 +293,5 @@ SocketQUICFrame_decode_stream (const uint8_t *data, size_t len,
   /* Copy stream-specific data */
   *frame = full_frame.data.stream;
 
-  return (int)consumed;
+  return (ssize_t)consumed;
 }

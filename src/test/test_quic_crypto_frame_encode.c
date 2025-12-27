@@ -34,7 +34,7 @@ TEST (frame_crypto_encode_basic)
 
   /* Verify by parsing back */
   SocketQUICFrameCrypto_T frame;
-  int consumed = SocketQUICFrame_decode_crypto (buf, len, &frame);
+  ssize_t consumed = SocketQUICFrame_decode_crypto (buf, len, &frame);
 
   ASSERT (consumed > 0);
   ASSERT_EQ (0, frame.offset);
@@ -56,7 +56,7 @@ TEST (frame_crypto_encode_with_offset)
 
   /* Verify by parsing */
   SocketQUICFrameCrypto_T frame;
-  int consumed = SocketQUICFrame_decode_crypto (buf, len, &frame);
+  ssize_t consumed = SocketQUICFrame_decode_crypto (buf, len, &frame);
 
   ASSERT (consumed > 0);
   ASSERT_EQ (256, frame.offset);
@@ -80,7 +80,7 @@ TEST (frame_crypto_encode_large_offset)
 
   /* Verify by parsing */
   SocketQUICFrameCrypto_T frame;
-  int consumed = SocketQUICFrame_decode_crypto (buf, len, &frame);
+  ssize_t consumed = SocketQUICFrame_decode_crypto (buf, len, &frame);
 
   ASSERT (consumed > 0);
   ASSERT_EQ (large_offset, frame.offset);
@@ -101,7 +101,7 @@ TEST (frame_crypto_encode_zero_length)
 
   /* Verify by parsing */
   SocketQUICFrameCrypto_T frame;
-  int consumed = SocketQUICFrame_decode_crypto (buf, len, &frame);
+  ssize_t consumed = SocketQUICFrame_decode_crypto (buf, len, &frame);
 
   ASSERT (consumed > 0);
   ASSERT_EQ (0, frame.offset);
@@ -127,7 +127,7 @@ TEST (frame_crypto_encode_large_data)
 
   /* Verify by parsing */
   SocketQUICFrameCrypto_T frame;
-  int consumed = SocketQUICFrame_decode_crypto (buf, len, &frame);
+  ssize_t consumed = SocketQUICFrame_decode_crypto (buf, len, &frame);
 
   ASSERT (consumed > 0);
   ASSERT_EQ (100, frame.offset);
@@ -172,7 +172,7 @@ TEST (frame_crypto_encode_roundtrip_multiple)
   const uint8_t data2[] = "Second fragment";
   const uint8_t data3[] = "Third fragment";
   size_t len1, len2, len3;
-  int consumed1, consumed2, consumed3;
+  ssize_t consumed1, consumed2, consumed3;
   SocketQUICFrameCrypto_T frame;
 
   /* Encode and verify first fragment */
@@ -283,7 +283,7 @@ TEST (frame_crypto_offset_encoding)
       ASSERT (len > 0);
 
       SocketQUICFrameCrypto_T frame;
-      int consumed = SocketQUICFrame_decode_crypto (buf, len, &frame);
+      ssize_t consumed = SocketQUICFrame_decode_crypto (buf, len, &frame);
 
       ASSERT (consumed > 0);
       ASSERT_EQ (offsets[i], frame.offset);
@@ -300,7 +300,7 @@ TEST (frame_crypto_no_data_pointer_copy)
   ASSERT (len > 0);
 
   SocketQUICFrameCrypto_T frame;
-  int consumed = SocketQUICFrame_decode_crypto (buf, len, &frame);
+  ssize_t consumed = SocketQUICFrame_decode_crypto (buf, len, &frame);
   ASSERT (consumed > 0);
 
   /* Verify that frame.data points into buf, not a separate allocation */
