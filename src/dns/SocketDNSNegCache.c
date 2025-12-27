@@ -12,6 +12,7 @@
 #include "dns/SocketDNSNegCache.h"
 #include "dns/SocketDNSWire.h"
 #include "core/Arena.h"
+#include "core/SocketCrypto.h"
 #include "core/SocketUtil.h"
 
 #include <arpa/inet.h>
@@ -280,7 +281,22 @@ SocketDNSNegCache_new (Arena_T arena)
   cache->max_ttl = DNS_NEGCACHE_DEFAULT_MAX_TTL;
 
   /* Initialize random seed for hash collision DoS protection */
-  cache->hash_seed = (uint32_t)time(NULL) ^ (uint32_t)(uintptr_t)cache;
+  volatile int seed_initialized = 0;
+  TRY
+  {
+    cache->hash_seed = SocketCrypto_random_uint32 ();
+    seed_initialized = 1;
+  }
+  EXCEPT (SocketCrypto_Failed)
+  {
+    /* Fallback to weaker entropy if crypto RNG fails */
+    cache->hash_seed = (uint32_t)time (NULL) ^ (uint32_t)(uintptr_t)cache;
+    seed_initialized = 1;
+  }
+  END_TRY;
+
+  if (!seed_initialized)
+    return NULL;
 
   if (pthread_mutex_init (&cache->mutex, NULL) != 0)
     return NULL;

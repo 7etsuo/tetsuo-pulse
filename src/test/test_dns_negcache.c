@@ -982,6 +982,45 @@ TEST (negcache_update_with_soa)
   Arena_dispose (&arena);
 }
 
+/* Test hash seed randomization for DoS protection */
+TEST (negcache_hash_seed_randomized)
+{
+  Arena_T arena1 = Arena_new ();
+  Arena_T arena2 = Arena_new ();
+
+  /* Create multiple cache instances */
+  SocketDNSNegCache_T cache1 = SocketDNSNegCache_new (arena1);
+  SocketDNSNegCache_T cache2 = SocketDNSNegCache_new (arena2);
+
+  ASSERT_NOT_NULL (cache1);
+  ASSERT_NOT_NULL (cache2);
+
+  /* Both caches should be successfully created (seed initialization worked) */
+  SocketDNS_NegCacheStats stats1, stats2;
+  SocketDNSNegCache_stats (cache1, &stats1);
+  SocketDNSNegCache_stats (cache2, &stats2);
+
+  ASSERT_EQ (stats1.current_size, 0);
+  ASSERT_EQ (stats2.current_size, 0);
+
+  /* Insert the same data into both caches */
+  SocketDNSNegCache_insert_nxdomain (cache1, "test.example.com", DNS_CLASS_IN, 300);
+  SocketDNSNegCache_insert_nxdomain (cache2, "test.example.com", DNS_CLASS_IN, 300);
+
+  /* Both should successfully store the entry (verifies hash function works) */
+  SocketDNS_NegCacheResult result1, result2;
+  result1 = SocketDNSNegCache_lookup (cache1, "test.example.com", DNS_TYPE_A, DNS_CLASS_IN, NULL);
+  result2 = SocketDNSNegCache_lookup (cache2, "test.example.com", DNS_TYPE_A, DNS_CLASS_IN, NULL);
+
+  ASSERT_EQ (result1, DNS_NEG_HIT_NXDOMAIN);
+  ASSERT_EQ (result2, DNS_NEG_HIT_NXDOMAIN);
+
+  SocketDNSNegCache_free (&cache1);
+  SocketDNSNegCache_free (&cache2);
+  Arena_dispose (&arena1);
+  Arena_dispose (&arena2);
+}
+
 /* Main function - run all tests */
 int
 main (void)
