@@ -225,6 +225,18 @@ typedef enum
  */
 #define QUIC_ERROR_CODE_MAX ((uint64_t)0x3FFFFFFFFFFFFFFFULL)
 
+/**
+ * @brief Maximum length of reason phrase in CONNECTION_CLOSE frames.
+ *
+ * CONNECTION_CLOSE frames can include a variable-length reason phrase
+ * to provide additional diagnostic information. The length field is
+ * encoded as a VarInt, but practical implementations limit the size
+ * to prevent excessive memory usage. This limit (65535 bytes) ensures
+ * the reason phrase fits within reasonable network packet sizes while
+ * still allowing detailed error messages.
+ */
+#define QUIC_MAX_REASON_LENGTH 0xFFFF
+
 /* ============================================================================
  * Error Code Classification
  * ============================================================================
