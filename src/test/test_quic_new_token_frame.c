@@ -300,6 +300,90 @@ TEST (frame_new_token_integration_with_parser)
   ASSERT_EQ (encoded_len, consumed);
 }
 
+/* ============================================================================
+ * Integer Overflow Protection Tests (Issue #766)
+ * ============================================================================
+ */
+
+TEST (frame_new_token_encode_overflow_size_max)
+{
+  uint8_t buf[128];
+  const uint8_t token[] = "test";
+
+  /* Attempt to encode with SIZE_MAX token length should fail gracefully.
+   * This tests the overflow protection added to prevent:
+   *   total_len = 1 + 8 + SIZE_MAX  (would overflow to small value)
+   */
+  size_t len = SocketQUICFrame_encode_new_token (token, SIZE_MAX, buf,
+                                                  sizeof (buf));
+
+  ASSERT_EQ (0, len); /* Should reject due to overflow check */
+}
+
+TEST (frame_new_token_encode_overflow_near_size_max)
+{
+  uint8_t buf[128];
+  const uint8_t token[] = "test";
+
+  /* Try with SIZE_MAX - 5, which would overflow when adding type_len (1)
+   * and token_len_varint (max 8):
+   *   total_len = 1 + 8 + (SIZE_MAX - 5) = SIZE_MAX + 4 (overflows to 3)
+   */
+  size_t len = SocketQUICFrame_encode_new_token (token, SIZE_MAX - 5, buf,
+                                                  sizeof (buf));
+
+  ASSERT_EQ (0, len); /* Should reject due to overflow check */
+}
+
+TEST (frame_new_token_encode_overflow_boundary)
+{
+  uint8_t buf[128];
+  const uint8_t token[] = "test";
+
+  /* Test the exact boundary: SIZE_MAX - 9 should still be rejected
+   * because when we add type_len (1) + token_len_varint (8 max):
+   *   SIZE_MAX - 9 + 1 + 8 = SIZE_MAX (boundary case)
+   *
+   * The check is: token_len > SIZE_MAX - (type_len + token_len_varint)
+   * For token_len = SIZE_MAX - 9, type_len = 1, varint = 8:
+   *   SIZE_MAX - 9 > SIZE_MAX - 9? No, so this should pass the overflow check.
+   *
+   * However, it will fail the varint encoding check because SIZE_MAX - 9
+   * exceeds the maximum varint value (2^62 - 1).
+   */
+  size_t len = SocketQUICFrame_encode_new_token (token, SIZE_MAX - 9, buf,
+                                                  sizeof (buf));
+
+  ASSERT_EQ (0, len); /* Should fail (either overflow or varint limit) */
+}
+
+TEST (frame_new_token_encode_large_valid_token_len)
+{
+  uint8_t buf[256];
+  uint8_t token[200];
+  size_t len;
+
+  /* Fill token with pattern */
+  for (size_t i = 0; i < sizeof (token); i++)
+    token[i] = (uint8_t)(i & 0xff);
+
+  /* This should succeed - large but valid token length */
+  len = SocketQUICFrame_encode_new_token (token, sizeof (token), buf,
+                                           sizeof (buf));
+
+  ASSERT (len > 0); /* Should succeed */
+  ASSERT_EQ (QUIC_FRAME_NEW_TOKEN, buf[0]);
+
+  /* Verify the encoded data is correct */
+  uint8_t decoded_token[256];
+  size_t decoded_len = sizeof (decoded_token);
+
+  ASSERT_EQ (0, SocketQUICFrame_decode_new_token (buf, len, decoded_token,
+                                                   &decoded_len));
+  ASSERT_EQ (sizeof (token), decoded_len);
+  ASSERT (memcmp (decoded_token, token, sizeof (token)) == 0);
+}
+
 int
 main (void)
 {
