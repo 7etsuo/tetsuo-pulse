@@ -11,6 +11,7 @@
 
 #include "quic/SocketQUICMigration.h"
 #include "quic/SocketQUICConstants.h"
+#include "core/SocketUtil.h"
 #include <string.h>
 #include <stdio.h>
 #include <arpa/inet.h>
@@ -217,8 +218,8 @@ SocketQUICMigration_probe_path (SocketQUICMigration_T *migration,
   path->state = QUIC_PATH_VALIDATING;
   path->challenge_count = 1;
 
-  /* Record timestamp (placeholder - would use actual timer in real impl) */
-  current_time_ms = 0; /* TODO: get actual timestamp */
+  /* Record timestamp using monotonic clock */
+  current_time_ms = Socket_get_monotonic_ms ();
   path->challenge_sent_time = current_time_ms;
 
   /* Initialize congestion control for this path */
