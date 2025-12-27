@@ -16,6 +16,7 @@
  */
 
 #include "quic/SocketQUICConnectionID-pool.h"
+#include "quic/SocketQUICConstants.h"
 #include "core/SocketUtil.h"
 
 #include <inttypes.h>
@@ -74,13 +75,10 @@ hash_cid_bytes (const uint8_t *id, size_t len, uint32_t seed)
     return 0;
 
   /* FNV-1a hash with seed mixing */
-  uint32_t hash = 2166136261u ^ seed;
+  uint32_t hash = QUIC_HASH_FNV1A_OFFSET_BASIS ^ seed;
 
   for (size_t i = 0; i < len; i++)
-    {
-      hash ^= id[i];
-      hash *= 16777619u;
-    }
+    hash = QUIC_HASH_FNV1A_STEP (hash, id[i]);
 
   return hash % QUIC_CONNID_POOL_HASH_SIZE;
 }

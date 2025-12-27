@@ -11,6 +11,7 @@
 #include "core/Except.h"
 #include "quic/SocketQUICConnection.h"
 #include "quic/SocketQUICConnectionID.h"
+#include "quic/SocketQUICConstants.h"
 
 const Except_T SocketQUICConnTable_Failed = { &SocketQUICConnTable_Failed, "QUIC connection table operation failed" };
 const Except_T SocketQUICConnection_Failed = { &SocketQUICConnection_Failed, "QUIC connection operation failed" };
@@ -53,18 +54,18 @@ const char *SocketQUICConnection_role_string(SocketQUICConnection_Role role) {
 }
 
 static unsigned hash_cid(const uint8_t *data, size_t len, size_t bucket_count, uint32_t seed) {
-  uint32_t hash = 2166136261u ^ seed;
-  for (size_t i = 0; i < len; i++) { hash ^= data[i]; hash *= 16777619u; }
+  uint32_t hash = QUIC_HASH_FNV1A_OFFSET_BASIS ^ seed;
+  for (size_t i = 0; i < len; i++) { hash = QUIC_HASH_FNV1A_STEP(hash, data[i]); }
   return hash % bucket_count;
 }
 
 static unsigned hash_addr_pair(const uint8_t *local_addr, const uint8_t *peer_addr, uint16_t local_port, uint16_t peer_port, int is_ipv6, size_t bucket_count, uint32_t seed) {
-  uint32_t hash = 2166136261u ^ seed;
+  uint32_t hash = QUIC_HASH_FNV1A_OFFSET_BASIS ^ seed;
   size_t addr_len = is_ipv6 ? 16 : 4;
-  for (size_t i = 0; i < addr_len; i++) { hash ^= local_addr[i]; hash *= 16777619u; }
-  for (size_t i = 0; i < addr_len; i++) { hash ^= peer_addr[i]; hash *= 16777619u; }
-  hash ^= (local_port & 0xFF); hash *= 16777619u; hash ^= ((local_port >> 8) & 0xFF); hash *= 16777619u;
-  hash ^= (peer_port & 0xFF); hash *= 16777619u; hash ^= ((peer_port >> 8) & 0xFF); hash *= 16777619u;
+  for (size_t i = 0; i < addr_len; i++) { hash = QUIC_HASH_FNV1A_STEP(hash, local_addr[i]); }
+  for (size_t i = 0; i < addr_len; i++) { hash = QUIC_HASH_FNV1A_STEP(hash, peer_addr[i]); }
+  hash = QUIC_HASH_FNV1A_STEP(hash, local_port & 0xFF); hash = QUIC_HASH_FNV1A_STEP(hash, (local_port >> 8) & 0xFF);
+  hash = QUIC_HASH_FNV1A_STEP(hash, peer_port & 0xFF); hash = QUIC_HASH_FNV1A_STEP(hash, (peer_port >> 8) & 0xFF);
   return hash % bucket_count;
 }
 

@@ -10,6 +10,7 @@
  */
 
 #include "quic/SocketQUICMigration.h"
+#include "quic/SocketQUICConstants.h"
 #include <string.h>
 #include <stdio.h>
 #include <arpa/inet.h>
@@ -21,23 +22,6 @@
 #elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__)
 #include <stdlib.h>
 #endif
-
-/* ============================================================================
- * Constants
- * ============================================================================
- */
-
-/** Initial congestion window in bytes (RFC 9002 Section 7.2) */
-#define QUIC_INITIAL_CWND 10 * 1200  /* 10 max datagrams */
-
-/** Maximum congestion window in bytes */
-#define QUIC_MAX_CWND (1024 * 1024)  /* 1 MB */
-
-/** Initial RTT estimate in microseconds (500ms) */
-#define QUIC_INITIAL_RTT_US 500000
-
-/** RTT smoothing factor (alpha = 1/8 as per RFC 6298) */
-#define QUIC_RTT_ALPHA 0.125
 
 /* ============================================================================
  * Exception Definition
