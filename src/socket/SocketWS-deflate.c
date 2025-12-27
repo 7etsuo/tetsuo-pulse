@@ -259,36 +259,10 @@ try_grow_zlib_buffer (SocketWS_T ws, z_stream *strm, unsigned char **buf,
 
 
 static int
-compress_loop (SocketWS_T ws, z_stream *strm, unsigned char **buf,
-               size_t *buf_size, size_t *total_out)
+compress_flush_phase (SocketWS_T ws, z_stream *strm, unsigned char **buf,
+                      size_t *buf_size, size_t *total_out, int flush_type)
 {
   int ret;
-
-  /* Data compression phase with Z_NO_FLUSH */
-  do
-    {
-      ret = deflate (strm, Z_NO_FLUSH);
-      if (ret == Z_STREAM_ERROR)
-        {
-          ws_set_error (ws, WS_ERROR_COMPRESSION,
-                        "deflate data phase failed: %d", ret);
-          return -1;
-        }
-
-      *total_out = *buf_size - strm->avail_out;
-
-      /* Grow buffer if needed */
-      if (strm->avail_out == 0 && strm->avail_in > 0)
-        {
-          if (try_grow_zlib_buffer (ws, strm, buf, buf_size, *total_out, 0 /* compress */)
-              < 0)
-            return -1;
-        }
-    }
-  while (strm->avail_in > 0);
-
-  /* Flush phase to output remaining data and end block for BFINAL=1 */
-  int flush_type = should_reset_zlib_context (ws, 1 /* deflate */) ? Z_FINISH : Z_SYNC_FLUSH;
   int finished = 0;
 
   while (!finished)
@@ -328,6 +302,41 @@ compress_loop (SocketWS_T ws, z_stream *strm, unsigned char **buf,
 
   *total_out = *buf_size - strm->avail_out;
   return 0;
+}
+
+
+static int
+compress_loop (SocketWS_T ws, z_stream *strm, unsigned char **buf,
+               size_t *buf_size, size_t *total_out)
+{
+  int ret;
+
+  /* Data compression phase with Z_NO_FLUSH */
+  do
+    {
+      ret = deflate (strm, Z_NO_FLUSH);
+      if (ret == Z_STREAM_ERROR)
+        {
+          ws_set_error (ws, WS_ERROR_COMPRESSION,
+                        "deflate data phase failed: %d", ret);
+          return -1;
+        }
+
+      *total_out = *buf_size - strm->avail_out;
+
+      /* Grow buffer if needed */
+      if (strm->avail_out == 0 && strm->avail_in > 0)
+        {
+          if (try_grow_zlib_buffer (ws, strm, buf, buf_size, *total_out, 0 /* compress */)
+              < 0)
+            return -1;
+        }
+    }
+  while (strm->avail_in > 0);
+
+  /* Flush phase to output remaining data and end block for BFINAL=1 */
+  int flush_type = should_reset_zlib_context (ws, 1 /* deflate */) ? Z_FINISH : Z_SYNC_FLUSH;
+  return compress_flush_phase (ws, strm, buf, buf_size, total_out, flush_type);
 }
 
 
