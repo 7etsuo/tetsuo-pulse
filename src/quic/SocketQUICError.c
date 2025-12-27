@@ -51,7 +51,7 @@ const char *
 SocketQUIC_error_string (uint64_t code)
 {
   /* Thread-local buffer for crypto error formatting */
-  static __thread char crypto_buf[32];
+  static __thread char crypto_buf[QUIC_CRYPTO_ERROR_STRING_MAX];
 
   /* Transport errors: 0x00-0x10 */
   if (code < TRANSPORT_ERROR_COUNT)
