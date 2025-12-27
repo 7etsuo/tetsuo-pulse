@@ -4,6 +4,7 @@
  * https://x.com/tetsuoai
  */
 
+#include <assert.h>
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
@@ -192,7 +193,16 @@ SocketQUICConnection_Result SocketQUICConnTable_retire_cid(SocketQUICConnTable_T
   for (size_t i = 0; i < conn->local_cid_count; i++) {
     if (conn->local_cids[i].sequence == sequence) {
       if (conn->local_cids[i].len > 0) remove_from_cid_bucket(table, conn, conn->local_cids[i].data, conn->local_cids[i].len);
-      if (i < conn->local_cid_count - 1) memmove(&conn->local_cids[i], &conn->local_cids[i + 1], (conn->local_cid_count - i - 1) * sizeof(SocketQUICConnectionID_T));
+      /* Explicit bounds validation for defensive programming (issue #788) */
+      if (i < conn->local_cid_count - 1) {
+        /* Assert invariants to catch programming errors early */
+        assert(conn->local_cid_count <= QUIC_CONNECTION_MAX_CIDS);
+        assert(i + 1 < QUIC_CONNECTION_MAX_CIDS);
+        assert(conn->local_cid_count > 0);  /* Prevent underflow */
+        /* Safe to proceed with memmove */
+        size_t move_count = conn->local_cid_count - i - 1;
+        memmove(&conn->local_cids[i], &conn->local_cids[i + 1], move_count * sizeof(SocketQUICConnectionID_T));
+      }
       conn->local_cid_count--; found = 1; break;
     }
   }
