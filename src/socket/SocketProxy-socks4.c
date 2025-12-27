@@ -30,6 +30,7 @@
 
 #include "core/SocketUTF8.h"
 #include "socket/SocketCommon.h"
+#include "socket/SocketCommon-private.h"
 #include "socket/SocketProxy-private.h"
 #include "socket/SocketProxy.h"
 
@@ -110,21 +111,34 @@ socks4_write_userid (unsigned char *buf, size_t buf_remaining,
 /**
  * socks4_validate_inputs - Common input validation for SOCKS4/4a requests
  * @conn: Proxy connection context
+ * @out_host_len: Optional output for target_host length (may be NULL)
  *
  * Returns: 0 on success, -1 on validation failure (error set in conn)
  *
  * Validates port (1-65535), hostname (RFC 1123 syntax, UTF-8, length <=255),
  * and optional username (length <=255, UTF-8) for SOCKS4/4a requests.
  *
+ * If out_host_len is non-NULL, sets it to strlen(target_host), avoiding
+ * redundant strlen() calls in the caller.
+ *
  * Sets PROXY_ERROR_PROTOCOL on validation failures.
  */
 static int
-socks4_validate_inputs (struct SocketProxy_Conn_T *conn)
+socks4_validate_inputs (struct SocketProxy_Conn_T *conn, size_t *out_host_len)
 {
+  size_t host_len = 0;
+
   TRY
   {
     SocketCommon_validate_port (conn->target_port, SocketProxy_Failed);
-    SocketCommon_validate_hostname (conn->target_host, SocketProxy_Failed);
+
+    /* Validate hostname and optionally get its length */
+    if (socketcommon_validate_hostname_internal (conn->target_host, 1,
+                                                  SocketProxy_Failed, &host_len)
+        != 0)
+      {
+        RETURN -1;
+      }
 
     /* UTF-8 validation for target host (hostnames may be internationalized) */
     if (SocketUTF8_validate_str (conn->target_host) != UTF8_VALID)
@@ -159,6 +173,10 @@ socks4_validate_inputs (struct SocketProxy_Conn_T *conn)
   }
   END_TRY;
 
+  /* Return computed host length if requested */
+  if (out_host_len)
+    *out_host_len = host_len;
+
   return 0;
 }
 
@@ -192,8 +210,8 @@ proxy_socks4_send_connect (struct SocketProxy_Conn_T *conn)
 
   assert (conn != NULL);
 
-  /* Validate inputs using common helper */
-  if (socks4_validate_inputs (conn) < 0)
+  /* Validate inputs using common helper (don't need length for SOCKS4) */
+  if (socks4_validate_inputs (conn, NULL) < 0)
     return -1;
 
   /* Parse target as IPv4 address */
@@ -257,15 +275,15 @@ proxy_socks4a_send_connect (struct SocketProxy_Conn_T *conn)
 
   assert (conn != NULL);
 
-  /* Validate inputs using common helper */
-  if (socks4_validate_inputs (conn) < 0)
+  /* Validate inputs and cache hostname length (avoids redundant strlen) */
+  if (socks4_validate_inputs (conn, &host_len) < 0)
     return -1;
 
   /* Check if target is already an IPv4 address - delegate to plain SOCKS4 */
   if (inet_pton (AF_INET, conn->target_host, &ipv4) == 1)
     return proxy_socks4_send_connect (conn);
 
-  host_len = strlen (conn->target_host);
+  /* host_len already computed by socks4_validate_inputs() above */
   /* Additional validation (UTF-8, etc.) already performed in socks4_validate_inputs() */
 
   /* Write header: version + command + port */

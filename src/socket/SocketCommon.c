@@ -595,8 +595,13 @@ socketcommon_is_ip_address (const char *host)
  * @host: Hostname to validate (NULL allowed for wildcard bind)
  * @use_exceptions: If true, raise exception on invalid; if false, return -1
  * @exception_type: Exception type to raise on failure
+ * @out_len: Optional output parameter to receive strlen(host) (may be NULL)
  *
  * Returns: 0 on success, -1 on failure
+ *
+ * If out_len is non-NULL and validation succeeds, *out_len is set to the
+ * length of the hostname (0 if host is NULL). This allows callers to avoid
+ * redundant strlen() calls.
  *
  * WARNING: This function only validates hostname SYNTAX per RFC 1123.
  * It does NOT prevent DNS resolution delays for non-existent domains.
@@ -609,13 +614,18 @@ socketcommon_is_ip_address (const char *host)
  */
 int
 socketcommon_validate_hostname_internal (const char *host, int use_exceptions,
-                                         Except_T exception_type)
+                                         Except_T exception_type,
+                                         size_t *out_len)
 {
   size_t host_len;
 
   /* NULL is valid - used for wildcard bind with AI_PASSIVE */
   if (!host)
-    return 0;
+    {
+      if (out_len)
+        *out_len = 0;
+      return 0;
+    }
 
   host_len = strlen (host);
 
@@ -638,7 +648,11 @@ socketcommon_validate_hostname_internal (const char *host, int use_exceptions,
 
   /* Skip validation for IP addresses - they bypass DNS resolution */
   if (socketcommon_is_ip_address (host))
-    return 0;
+    {
+      if (out_len)
+        *out_len = host_len;
+      return 0;
+    }
 
   /* RFC 1123 hostname validation */
   if (!socketcommon_validate_hostname_labels (host))
@@ -655,13 +669,18 @@ socketcommon_validate_hostname_internal (const char *host, int use_exceptions,
       return -1;
     }
 
+  /* Validation succeeded - return computed length if requested */
+  if (out_len)
+    *out_len = host_len;
+
   return 0;
 }
 
 void
 SocketCommon_validate_hostname (const char *host, Except_T exception_type)
 {
-  if (socketcommon_validate_hostname_internal (host, 1, exception_type) != 0)
+  if (socketcommon_validate_hostname_internal (host, 1, exception_type, NULL)
+      != 0)
     return;
 }
 
@@ -1445,7 +1464,7 @@ resolve_prepare_params (const char *host, int port, char *port_str,
                         Except_T exception_type)
 {
   if (socketcommon_validate_hostname_internal (host, use_exceptions,
-                                               exception_type)
+                                               exception_type, NULL)
       != 0)
     return -1;
 
