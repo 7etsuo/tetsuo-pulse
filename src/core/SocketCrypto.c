@@ -434,6 +434,9 @@ base64_decode_char (unsigned char c, unsigned char *buffer, int *buffer_pos,
   return 0;
 }
 
+/* Maximum Base64 scan length to prevent unbounded strlen on untrusted input */
+#define BASE64_MAX_SCAN_LENGTH 65536
+
 static int
 base64_validate_input (const char *input, size_t *input_len)
 {
@@ -441,7 +444,14 @@ base64_validate_input (const char *input, size_t *input_len)
     return 0;
 
   if (*input_len == 0)
-    *input_len = strlen (input);
+    {
+      /* Use strnlen to prevent unbounded strlen scan on potentially
+       * untrusted or non-NUL-terminated input */
+      *input_len = strnlen (input, BASE64_MAX_SCAN_LENGTH);
+
+      if (*input_len >= BASE64_MAX_SCAN_LENGTH)
+        return -1; /* Likely not NUL-terminated or excessively long */
+    }
 
   if (*input_len == 0)
     return 0;

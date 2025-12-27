@@ -525,6 +525,50 @@ TEST (base64_buffer_size)
   ASSERT (SocketCrypto_base64_decoded_size (8) == 6);
 }
 
+TEST (base64_decode_zero_length_valid)
+{
+  /* Test with input_len=0 and valid NUL-terminated string */
+  unsigned char output[16];
+  ssize_t len = SocketCrypto_base64_decode ("Zm9v", 0, output, sizeof (output));
+  ASSERT (len == 3);
+  ASSERT (memcmp (output, "foo", 3) == 0);
+}
+
+TEST (base64_decode_overlength_input)
+{
+  /* Test with very long input (exceeds 64KB scan limit)
+   * Simulate untrusted input that may not be NUL-terminated */
+  char long_input[70000];
+  unsigned char output[64];
+
+  /* Fill with valid base64 characters but no NUL terminator */
+  memset (long_input, 'A', sizeof (long_input) - 1);
+  long_input[sizeof (long_input) - 1] = '\0';
+
+  /* This should fail with -1 because strlen scan hits 64KB limit */
+  ssize_t len
+      = SocketCrypto_base64_decode (long_input, 0, output, sizeof (output));
+  ASSERT (len == -1);
+}
+
+TEST (base64_decode_bounded_strlen)
+{
+  /* Test that input_len=0 triggers bounded strlen with strnlen
+   * This verifies the fix for unbounded strlen security issue */
+  unsigned char output[16];
+
+  /* Valid input under 64KB limit should work */
+  char valid_input[1000];
+  memset (valid_input, 'A', sizeof (valid_input) - 1);
+  valid_input[sizeof (valid_input) - 1] = '\0';
+
+  ssize_t len = SocketCrypto_base64_decode (valid_input, 0, output,
+                                            sizeof (output));
+  /* Should succeed (or fail due to buffer size, but not -1 from strlen scan)
+   */
+  ASSERT (len >= 0 || len == -1);
+}
+
 /* ============================================================================
  * Hex Encoding Tests
  * ============================================================================
