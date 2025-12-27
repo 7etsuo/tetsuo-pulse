@@ -524,8 +524,8 @@ Arena_calloc (T arena, size_t count, size_t nbytes, const char *file, int line)
                       total, SocketSecurity_get_max_allocation (),
                       "Arena_calloc");
 
-  void *ptr = Arena_alloc (arena, count * nbytes, file, line);
-  memset (ptr, 0, count * nbytes);
+  void *ptr = Arena_alloc (arena, total, file, line);
+  memset (ptr, 0, total);
 
   return ptr;
 }
