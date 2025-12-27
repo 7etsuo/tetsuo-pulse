@@ -91,6 +91,15 @@
  */
 #define QUIC_MAX_PMTU_PROBES_IN_FLIGHT 3
 
+/**
+ * @brief PMTU probe increment in bytes.
+ *
+ * RFC 8899 Section 5.3: Probe size should increase incrementally.
+ * 100 bytes provides reasonable granularity for path MTU discovery
+ * between the minimum (1200) and typical maximum (1500) PMTU values.
+ */
+#define QUIC_PMTU_PROBE_INCREMENT 100
+
 /* ============================================================================
  * DPLPMTUD States (RFC 8899 Section 5.2)
  * ============================================================================

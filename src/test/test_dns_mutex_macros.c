@@ -27,6 +27,9 @@
 /* Test exception type */
 static const Except_T TestException = { &TestException, "Test exception" };
 
+/* Thread-local exception storage required by SOCKET_RAISE_FMT macro */
+static __thread Except_T SocketDNS_DetailedException;
+
 /* Helper to create a minimal DNS resolver structure for testing */
 static struct SocketDNS_T *
 create_test_dns_resolver (Arena_T arena)
