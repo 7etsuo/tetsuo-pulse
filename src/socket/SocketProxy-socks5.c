@@ -448,14 +448,81 @@ proxy_socks5_recv_auth (struct SocketProxy_Conn_T *conn)
  * - 0x04: IPv6 (16 bytes)
  */
 
+/**
+ * encode_socks5_destination_address - Encode destination address for SOCKS5
+ * @buf: Buffer to write encoded address
+ * @len_inout: Current buffer length (input), updated length (output)
+ * @target_host: Target hostname or IP address
+ * @conn: Connection context for error reporting
+ *
+ * Encodes the destination address in SOCKS5 format. Determines address type
+ * (IPv4, IPv6, or domain) and writes the appropriate ATYP byte followed by
+ * the address data.
+ *
+ * Returns: 0 on success, -1 on error (with conn error set)
+ */
+static int
+encode_socks5_destination_address (unsigned char *buf, size_t *len_inout,
+                                   const char *target_host,
+                                   struct SocketProxy_Conn_T *conn)
+{
+  size_t len = *len_inout;
+  struct in_addr ipv4;
+  struct in6_addr ipv6;
+  size_t host_len;
+
+  /* Determine address type */
+  if (inet_pton (AF_INET, target_host, &ipv4) == 1)
+    {
+      /* IPv4 address */
+      buf[len++] = SOCKS5_ATYP_IPV4;
+      memcpy (buf + len, &ipv4, SOCKS5_IPV4_ADDR_SIZE);
+      len += SOCKS5_IPV4_ADDR_SIZE;
+    }
+  else if (inet_pton (AF_INET6, target_host, &ipv6) == 1)
+    {
+      /* IPv6 address */
+      buf[len++] = SOCKS5_ATYP_IPV6;
+      memcpy (buf + len, &ipv6, SOCKS5_IPV6_ADDR_SIZE);
+      len += SOCKS5_IPV6_ADDR_SIZE;
+    }
+  else
+    {
+      /* Domain name */
+      host_len = strlen (target_host);
+
+      /* Validate length and content */
+      if (host_len == 0 || host_len > SOCKET_PROXY_MAX_HOSTNAME_LEN)
+        {
+          socketproxy_set_error (
+              conn, PROXY_ERROR,
+              "Hostname invalid length: %zu bytes (must be 1-%d)", host_len,
+              SOCKET_PROXY_MAX_HOSTNAME_LEN);
+          return -1;
+        }
+      if (strpbrk (target_host, "\r\n") != NULL)
+        {
+          socketproxy_set_error (
+              conn, PROXY_ERROR,
+              "Hostname contains forbidden characters (CR or LF)");
+          return -1;
+        }
+
+      buf[len++] = SOCKS5_ATYP_DOMAIN;
+      buf[len++] = (unsigned char)host_len;
+      memcpy (buf + len, target_host, host_len);
+      len += host_len;
+    }
+
+  *len_inout = len;
+  return 0;
+}
+
 int
 proxy_socks5_send_connect (struct SocketProxy_Conn_T *conn)
 {
   unsigned char *buf = conn->send_buf;
   size_t len = 0;
-  struct in_addr ipv4;
-  struct in6_addr ipv6;
-  size_t host_len;
 
   /* Validate target port range */
   if (conn->target_port < 1 || conn->target_port > 65535)
@@ -483,47 +550,11 @@ proxy_socks5_send_connect (struct SocketProxy_Conn_T *conn)
   buf[len++] = SOCKS5_CMD_CONNECT; /* CMD = CONNECT */
   buf[len++] = 0x00;               /* RSV */
 
-  /* Determine address type */
-  if (inet_pton (AF_INET, conn->target_host, &ipv4) == 1)
+  /* Encode destination address */
+  if (encode_socks5_destination_address (buf, &len, conn->target_host, conn)
+      < 0)
     {
-      /* IPv4 address */
-      buf[len++] = SOCKS5_ATYP_IPV4;
-      memcpy (buf + len, &ipv4, SOCKS5_IPV4_ADDR_SIZE);
-      len += SOCKS5_IPV4_ADDR_SIZE;
-    }
-  else if (inet_pton (AF_INET6, conn->target_host, &ipv6) == 1)
-    {
-      /* IPv6 address */
-      buf[len++] = SOCKS5_ATYP_IPV6;
-      memcpy (buf + len, &ipv6, SOCKS5_IPV6_ADDR_SIZE);
-      len += SOCKS5_IPV6_ADDR_SIZE;
-    }
-  else
-    {
-      /* Domain name */
-      host_len = strlen (conn->target_host);
-
-      /* Validate length and content */
-      if (host_len == 0 || host_len > SOCKET_PROXY_MAX_HOSTNAME_LEN)
-        {
-          socketproxy_set_error (
-              conn, PROXY_ERROR,
-              "Hostname invalid length: %zu bytes (must be 1-%d)", host_len,
-              SOCKET_PROXY_MAX_HOSTNAME_LEN);
-          return -1;
-        }
-      if (strpbrk (conn->target_host, "\r\n") != NULL)
-        {
-          socketproxy_set_error (
-              conn, PROXY_ERROR,
-              "Hostname contains forbidden characters (CR or LF)");
-          return -1;
-        }
-
-      buf[len++] = SOCKS5_ATYP_DOMAIN;
-      buf[len++] = (unsigned char)host_len;
-      memcpy (buf + len, conn->target_host, host_len);
-      len += host_len;
+      return -1;
     }
 
   /* Port (network byte order) */
