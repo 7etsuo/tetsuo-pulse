@@ -360,6 +360,7 @@ proxy_socks5_send_auth (struct SocketProxy_Conn_T *conn)
 
   ulen = strlen (conn->username);
   plen = strlen (conn->password);
+  conn->password_len = plen; /* Cache for later secure_clear */
 
   /* Validate credentials */
   if (validate_socks5_auth_credentials (conn, ulen, plen) != 0)
@@ -428,7 +429,7 @@ proxy_socks5_recv_auth (struct SocketProxy_Conn_T *conn)
   /* Clear password from memory after successful auth */
   if (conn->password != NULL)
     {
-      SocketCrypto_secure_clear (conn->password, strlen (conn->password));
+      SocketCrypto_secure_clear (conn->password, conn->password_len);
     }
 
   conn->proto_state = PROTO_STATE_SOCKS5_AUTH_RECEIVED;

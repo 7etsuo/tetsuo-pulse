@@ -654,6 +654,7 @@ struct SocketProxy_Conn_T
   /* SOCKS5 state */
   int socks5_auth_method; /**< Selected auth method */
   int socks5_need_auth;   /**< 1 if auth required */
+  size_t password_len;    /**< Cached password length for secure_clear */
 
   /* Timing */
   int64_t start_time_ms;           /**< When operation started */
