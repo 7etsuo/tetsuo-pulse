@@ -62,7 +62,26 @@
 /** Length of "Basic " prefix for Proxy-Authorization header */
 #define SOCKET_PROXY_BASIC_AUTH_PREFIX_LEN (sizeof ("Basic ") - 1)
 
-/** Base64 encoding padding allowance for header value */
+/**
+ * Base64 encoding padding allowance for header value.
+ *
+ * Rationale for 32-byte value:
+ * - Base64 encodes to multiples of 4 bytes, requiring up to 3 bytes rounding
+ *   overhead for input alignment
+ * - Base64 adds up to 2 '=' padding characters at end of encoded output
+ * - The (CREDENTIALS_BUFSIZE * 4 / 3) calculation uses integer division,
+ *   which truncates and may underestimate by up to 2 bytes
+ * - Additional safety margin for potential encoder variations or future
+ *   format changes
+ *
+ * Maximum theoretical overhead: 3 (alignment) + 2 (padding chars) + 2
+ * (truncation) = 7 bytes. The value of 32 provides generous headroom (4x
+ * safety margin) to ensure buffer sufficiency across all Base64
+ * implementations while maintaining reasonable memory usage.
+ *
+ * For context: CREDENTIALS_BUFSIZE=512 → Base64 output ≈682 bytes, making
+ * this 32-byte allowance represent <5% overhead.
+ */
 #define SOCKET_PROXY_BASE64_PADDING 32
 
 /** Buffer size for Base64-encoded auth header value */
