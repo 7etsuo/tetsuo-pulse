@@ -117,6 +117,9 @@ Socket_get_monotonic_ms (void)
 
 /* NOTE: Legacy system for backward compatibility. Prefer SocketMetrics.h. */
 
+/* Sentinel value for unmapped legacy metrics */
+#define SOCKET_COUNTER_UNMAPPED ((SocketCounterMetric)-1)
+
 static const SocketCounterMetric legacy_to_counter[SOCKET_METRIC_COUNT] = {
   [SOCKET_METRIC_SOCKET_CONNECT_SUCCESS] = SOCKET_CTR_SOCKET_CONNECT_SUCCESS,
   [SOCKET_METRIC_SOCKET_CONNECT_FAILURE] = SOCKET_CTR_SOCKET_CONNECT_FAILED,
@@ -136,10 +139,10 @@ static const SocketCounterMetric legacy_to_counter[SOCKET_METRIC_COUNT] = {
   [SOCKET_METRIC_POOL_DRAIN_INITIATED] = SOCKET_CTR_POOL_DRAIN_STARTED,
   [SOCKET_METRIC_POOL_DRAIN_COMPLETED] = SOCKET_CTR_POOL_DRAIN_COMPLETED,
   [SOCKET_METRIC_POOL_HEALTH_CHECKS]
-  = (SocketCounterMetric)-1, /* unmapped, add if needed */
-  [SOCKET_METRIC_POOL_HEALTH_FAILURES] = (SocketCounterMetric)-1,
-  [SOCKET_METRIC_POOL_VALIDATION_FAILURES] = (SocketCounterMetric)-1,
-  [SOCKET_METRIC_POOL_IDLE_CLEANUPS] = (SocketCounterMetric)-1,
+  = SOCKET_COUNTER_UNMAPPED, /* unmapped, add if needed */
+  [SOCKET_METRIC_POOL_HEALTH_FAILURES] = SOCKET_COUNTER_UNMAPPED,
+  [SOCKET_METRIC_POOL_VALIDATION_FAILURES] = SOCKET_COUNTER_UNMAPPED,
+  [SOCKET_METRIC_POOL_IDLE_CLEANUPS] = SOCKET_COUNTER_UNMAPPED,
 };
 
 static const char *const socketmetrics_legacy_names[SOCKET_METRIC_COUNT]
@@ -183,7 +186,7 @@ SocketMetrics_increment (SocketMetric metric, unsigned long value)
     }
 
   SocketCounterMetric new_metric = legacy_to_counter[metric];
-  if (new_metric != (SocketCounterMetric)-1)
+  if (new_metric != SOCKET_COUNTER_UNMAPPED)
     {
       SocketMetrics_counter_add (new_metric, (uint64_t)value);
     }
@@ -211,7 +214,7 @@ SocketMetrics_getsnapshot (SocketMetricsSnapshot *snapshot)
   for (i = 0; i < SOCKET_METRIC_COUNT; i++)
     {
       SocketCounterMetric new_metric = legacy_to_counter[i];
-      if (new_metric != (SocketCounterMetric)-1)
+      if (new_metric != SOCKET_COUNTER_UNMAPPED)
         {
           snapshot->values[i] = SocketMetrics_counter_get (new_metric);
         }
@@ -236,7 +239,7 @@ SocketMetrics_name (SocketMetric metric)
     return "unknown";
 
   SocketCounterMetric new_metric = legacy_to_counter[metric];
-  if (new_metric != (SocketCounterMetric)-1)
+  if (new_metric != SOCKET_COUNTER_UNMAPPED)
     return SocketMetrics_counter_name (new_metric);
   else
     return socketmetrics_legacy_names[metric]; /* Keep legacy name for unmapped
