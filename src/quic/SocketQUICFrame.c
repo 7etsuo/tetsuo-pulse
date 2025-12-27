@@ -12,6 +12,7 @@
 #include "quic/SocketQUICFrame.h"
 #include "quic/SocketQUICVarInt.h"
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -370,6 +371,10 @@ parse_stream (const uint8_t *data, size_t len, size_t *pos,
 
       if (*pos + stream->length > len)
         return QUIC_FRAME_ERROR_TRUNCATED;
+
+      /* Prevent overflow on 32-bit systems (CWE-190, CWE-681) */
+      if (stream->length > SIZE_MAX)
+        return QUIC_FRAME_ERROR_OVERFLOW;
     }
   else
     stream->length = len - *pos;

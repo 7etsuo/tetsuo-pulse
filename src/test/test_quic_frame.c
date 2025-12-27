@@ -116,6 +116,39 @@ TEST (frame_stream_all_flags)
   ASSERT_EQ (2, frame.data.stream.length);
 }
 
+TEST (frame_stream_overflow_32bit)
+{
+  /* Craft a STREAM frame with length > SIZE_MAX on 32-bit systems.
+   * Frame format: type (1 byte) | stream_id (varint) | length (varint)
+   * Type 0x0a = STREAM with LEN flag set
+   * Stream ID = 0 (1 byte: 0x00)
+   * Length = 0x100000000 (5 bytes as 8-byte varint: 0xc0 0x00 0x00 0x01 0x00 0x00 0x00 0x00)
+   *
+   * This value is 2^32, which exceeds SIZE_MAX (0xFFFFFFFF) on 32-bit systems
+   * but fits in uint64_t. This tests the overflow check added for issue #741.
+   */
+  uint8_t data[] = {
+    0x0a,                                           /* STREAM with LEN flag */
+    0x00,                                           /* stream_id = 0 */
+    0xc0, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00  /* length = 2^32 */
+  };
+  SocketQUICFrame_T frame;
+  size_t consumed;
+
+  SocketQUICFrame_Result res
+      = SocketQUICFrame_parse (data, sizeof (data), &frame, &consumed);
+
+  /* On 32-bit systems where SIZE_MAX < 2^32, should return overflow error.
+   * On 64-bit systems, will return TRUNCATED (not enough data in buffer).
+   * Both are acceptable - the key is no silent truncation occurs. */
+#if SIZE_MAX < UINT64_MAX
+  ASSERT_EQ (QUIC_FRAME_ERROR_OVERFLOW, res);
+#else
+  /* On 64-bit, length is valid but buffer is too small */
+  ASSERT_EQ (QUIC_FRAME_ERROR_TRUNCATED, res);
+#endif
+}
+
 TEST (frame_new_token)
 {
   uint8_t data[] = { 0x07, 0x04, 't', 'e', 's', 't' };
