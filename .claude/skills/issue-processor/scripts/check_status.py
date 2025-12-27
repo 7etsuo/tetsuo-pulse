@@ -7,11 +7,13 @@ Usage:
     python check_status.py --state-dir DIR
 
 Output (one of):
-    READY:5/20           - Setup complete, ready to start
-    RUNNING:5/20         - Processing in progress
-    CHECKPOINT:batch_3   - Coordinator needs respawn
-    COMPLETED:20/20:18_success:2_failed
-    ERROR:message
+    READY:5/20                        - Setup complete, ready to start
+    RUNNING:5/20                      - Processing in progress
+    COMPLETED:20/20:18_success:2_fail - All issues processed
+    ERROR:message                     - Error occurred
+
+Note: CHECKPOINT status was removed as coordinator respawn is handled
+via manifest.json state rather than status.txt signaling.
 """
 
 import argparse

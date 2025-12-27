@@ -105,15 +105,16 @@ python3 .claude/skills/issue-processor/scripts/check_status.py --state-dir {STAT
 |--------|--------|
 | `READY:N/M` | Coordinator hasn't started yet |
 | `RUNNING:N/M` | In progress, report to user |
-| `CHECKPOINT:batch_X` | Spawn new coordinator with RESUME=true |
 | `COMPLETED:N/M:X_success:Y_failed` | Done, go to summary |
 | `ERROR:message` | Report error |
 
 **IMPORTANT**: Do NOT use TaskOutput to check coordinator status. Only read status.txt.
 
-### Step 5: Handle Checkpoint
+For coordinator respawn on context exhaustion, check manifest.json for in_progress issues.
 
-If status is `CHECKPOINT`:
+### Step 5: Handle Resume
+
+If there are in_progress issues in manifest.json but no active coordinator:
 
 ```
 Task tool:
@@ -124,12 +125,25 @@ Task tool:
     RESUME: true
     BATCH_SIZE: {BATCH_SIZE}
 
-    Continue from checkpoint. Read manifest.json for progress.
+    Continue from previous state. Read manifest.json for progress.
   run_in_background: true
   timeout: 600000
 ```
 
 Then continue monitoring (Step 4).
+
+### Step 5b: Get Next Batch
+
+Use `next_batch.py` to get the next batch of ready issues with optional worktree creation:
+
+```bash
+python3 .claude/skills/issue-processor/scripts/next_batch.py \
+  --state-dir {STATE_DIR} \
+  --batch-size 5 \
+  --create-worktrees
+```
+
+This returns JSON with worktree paths for parallel development.
 
 ### Step 6: Generate Summary
 
@@ -181,11 +195,16 @@ If user says "continue":
 ├── status.txt       # Simple status for polling
 ├── graph.json       # Dependency graph
 ├── frontier.json    # Ready/blocked lists
+├── worktrees.json   # Worktree paths (if --create-worktrees used)
 ├── issues/          # Issue details
 │   └── 391.json
 └── results/         # Implementation results
     └── 391.json
 ```
+
+## Result Format
+
+See `scripts/RESULT_FORMAT.md` for the expected JSON structure when writing result files.
 
 ## What NOT to Do
 

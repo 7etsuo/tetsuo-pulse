@@ -199,12 +199,90 @@ def find_frontier(graph: dict) -> tuple[list[int], dict[int, list[int]]]:
     return sorted(ready), blocked
 
 
+def run_git(args: list[str], cwd: str | None = None) -> tuple[bool, str]:
+    """Run git command and return (success, output)."""
+    result = subprocess.run(
+        ["git"] + args,
+        capture_output=True,
+        text=True,
+        cwd=cwd
+    )
+    return result.returncode == 0, result.stdout.strip() or result.stderr.strip()
+
+
+def get_repo_root() -> Path:
+    """Get the git repository root directory."""
+    success, output = run_git(["rev-parse", "--show-toplevel"])
+    if not success:
+        return None
+    return Path(output)
+
+
+def create_worktrees(ready_issues: list[int], state_dir: Path) -> dict[int, str]:
+    """
+    Create git worktrees for parallel issue implementation.
+
+    Args:
+        ready_issues: List of issue numbers ready for implementation
+        state_dir: State directory for storing worktree info
+
+    Returns:
+        Dict mapping issue number to worktree path
+    """
+    repo_root = get_repo_root()
+    if not repo_root:
+        print("Warning: Not in a git repository, skipping worktree creation", file=sys.stderr)
+        return {}
+
+    worktrees = {}
+
+    # Fetch latest from origin
+    run_git(["fetch", "origin"], cwd=str(repo_root))
+
+    for issue_num in ready_issues:
+        branch_name = f"issue-{issue_num}"
+        worktree_dir = repo_root.parent / f"{repo_root.name}-issue-{issue_num}"
+
+        # Skip if worktree already exists
+        if worktree_dir.exists():
+            worktrees[issue_num] = str(worktree_dir)
+            continue
+
+        # Create worktree with new branch from origin/main
+        success, output = run_git(
+            ["worktree", "add", str(worktree_dir), "-b", branch_name, "origin/main"],
+            cwd=str(repo_root)
+        )
+
+        if not success:
+            # Branch might already exist, try without -b
+            success, output = run_git(
+                ["worktree", "add", str(worktree_dir), branch_name],
+                cwd=str(repo_root)
+            )
+
+        if success:
+            worktrees[issue_num] = str(worktree_dir)
+            print(f"Created worktree for #{issue_num}: {worktree_dir}", file=sys.stderr)
+        else:
+            print(f"Warning: Failed to create worktree for #{issue_num}: {output}", file=sys.stderr)
+
+    # Save worktree mapping
+    worktrees_file = state_dir / "worktrees.json"
+    with open(worktrees_file, "w") as f:
+        json.dump(worktrees, f, indent=2)
+
+    return worktrees
+
+
 def main():
     parser = argparse.ArgumentParser(description="Setup issue processing pipeline")
     parser.add_argument("--repo", required=True, help="Repository (owner/repo)")
     parser.add_argument("--label", help="Filter by label")
     parser.add_argument("--max", type=int, help="Maximum issues to process")
     parser.add_argument("--state-dir", required=True, help="State directory path")
+    parser.add_argument("--create-worktrees", action="store_true",
+                        help="Create git worktrees for ready issues")
     args = parser.parse_args()
 
     owner, repo = args.repo.split("/")
@@ -231,18 +309,13 @@ def main():
         deps = parse_dependencies(issue["body"])
         all_deps.update(deps)
 
-    # Check which dependencies are closed
-    print(f"Checking {len(all_deps)} dependency references...", file=sys.stderr)
+    # Check which dependencies are satisfied (closed)
+    # A dependency is satisfied when the referenced issue is CLOSED
     open_issue_nums = {i["number"] for i in issues}
-    deps_to_check = all_deps - open_issue_nums  # Only check deps that aren't in our open set
-    closed_issues = fetch_closed_issues(owner, repo, deps_to_check)
-    # Issues in our open set are obviously not closed
-    # Issues that are closed
-    closed_issues.update(deps_to_check - closed_issues)  # Wait, this is wrong
+    deps_to_check = all_deps - open_issue_nums  # Only check deps not in our open set
 
-    # Actually: check which deps are satisfied
-    # A dep is satisfied if it's closed
-    closed_issues = fetch_closed_issues(owner, repo, all_deps)
+    print(f"Checking {len(deps_to_check)} external dependency references...", file=sys.stderr)
+    closed_issues = fetch_closed_issues(owner, repo, deps_to_check)
 
     # Build graph
     graph = build_graph(issues, closed_issues)
@@ -295,6 +368,12 @@ def main():
     # Write initial status
     with open(state_dir / "status.txt", "w") as f:
         f.write(f"READY:{len(ready)}/{len(issues)}\n")
+
+    # Create worktrees if requested
+    worktrees = {}
+    if args.create_worktrees and ready:
+        print(f"Creating worktrees for {len(ready)} ready issues...", file=sys.stderr)
+        worktrees = create_worktrees(ready, state_dir)
 
     # Print summary (this is what the skill sees)
     print(f"Ready: {len(ready)} issues")
