@@ -1381,7 +1381,7 @@ SocketWS_connect (const char *url, const char *protocols)
   Socket_T sock = NULL;
   SocketWS_Config config;
   char host[NI_MAXHOST] = { 0 };
-  char path[1024] = { 0 };
+  char path[SOCKETWS_MAX_PATH_SIZE] = { 0 };
   volatile int port = 80;
   volatile int use_tls = 0;
 

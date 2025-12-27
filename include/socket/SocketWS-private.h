@@ -122,6 +122,9 @@
 /** No port specified (for Host header logic) */
 #define SOCKETWS_NO_PORT 0
 
+/** Maximum size for URL path buffer in SocketWS_connect() */
+#define SOCKETWS_MAX_PATH_SIZE 1024
+
 /**
  * @section masking_constants XOR Masking Constants
  * @internal
