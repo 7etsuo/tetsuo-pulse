@@ -12,6 +12,7 @@ Output:
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -69,8 +70,18 @@ def main():
         print("|-------|-------|-----|")
         for s in successes:
             issue_num = s.get("issue", "?")
-            pr_num = s.get("pr_number", "?")
             pr_url = s.get("pr_url", "")
+
+            # Extract PR number from URL if not provided directly
+            pr_num = s.get("pr_number")
+            if not pr_num and pr_url:
+                # URL format: https://github.com/owner/repo/pull/123
+                match = re.search(r'/pull/(\d+)', pr_url)
+                if match:
+                    pr_num = match.group(1)
+            if not pr_num:
+                pr_num = "?"
+
             # Try to get title from issue file
             issue_file = state_dir / "issues" / f"{issue_num}.json"
             title = "—"
@@ -81,7 +92,11 @@ def main():
                     # Truncate long titles
                     if len(title) > 50:
                         title = title[:47] + "..."
-            print(f"| #{issue_num} | {title} | [#{pr_num}]({pr_url}) |")
+
+            if pr_url:
+                print(f"| #{issue_num} | {title} | [#{pr_num}]({pr_url}) |")
+            else:
+                print(f"| #{issue_num} | {title} | #{pr_num} |")
         print()
 
     if failures:
