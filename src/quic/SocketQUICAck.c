@@ -350,7 +350,7 @@ static uint64_t
 calculate_ack_delay (uint64_t current_time, uint64_t recv_time)
 {
   if (current_time > recv_time)
-    return (current_time - recv_time) >> 3;
+    return (current_time - recv_time) >> QUIC_ACK_DELAY_EXPONENT_DEFAULT;
   return 0;
 }
 
