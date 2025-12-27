@@ -69,17 +69,7 @@ struct T
   uint64_t expirations;
 };
 
-/**
- * @brief Normalize name to lowercase for case-insensitive lookup.
- */
-static void
-normalize_name (char *dest, const char *src, size_t max_len)
-{
-  size_t i;
-  for (i = 0; src[i] && i < max_len; i++)
-    dest[i] = (char)tolower ((unsigned char)src[i]);
-  dest[i] = '\0';
-}
+/* normalize_name() replaced by socket_util_normalize_hostname() from SocketUtil.h */
 
 /**
  * @brief Compute hash for cache key 4-tuple with seed.
@@ -121,42 +111,9 @@ compute_hash (T cache, const char *name, uint16_t qtype, uint16_t qclass,
   return compute_hash_with_seed (name, qtype, qclass, nameserver, cache->hash_seed);
 }
 
-/**
- * @brief Check if an entry has expired.
- */
-static bool
-entry_expired (const struct ServfailCacheEntry *entry, int64_t now_ms)
-{
-  /* Guard against time going backwards or overflow */
-  if (now_ms < entry->insert_time_ms)
-    return false; /* Entry is "in the future", keep it */
+/* entry_expired() replaced by socket_util_ttl_expired() from SocketUtil.h */
 
-  /* Safe subtraction: both operands are non-negative after check */
-  int64_t age_ms = now_ms - entry->insert_time_ms;
-  int64_t ttl_ms = (int64_t)entry->ttl * 1000;
-  return age_ms >= ttl_ms;
-}
-
-/**
- * @brief Calculate remaining TTL.
- */
-static uint32_t
-entry_ttl_remaining (const struct ServfailCacheEntry *entry, int64_t now_ms)
-{
-  /* Guard against time going backwards or overflow */
-  if (now_ms < entry->insert_time_ms)
-    return entry->ttl; /* Entry is "in the future", return full TTL */
-
-  /* Safe subtraction: both operands are non-negative after check */
-  int64_t age_ms = now_ms - entry->insert_time_ms;
-  int64_t ttl_ms = (int64_t)entry->ttl * 1000;
-  int64_t remaining_ms = ttl_ms - age_ms;
-
-  if (remaining_ms <= 0)
-    return 0;
-
-  return (uint32_t)(remaining_ms / 1000);
-}
+/* entry_ttl_remaining() replaced by socket_util_ttl_remaining() from SocketUtil.h */
 
 /**
  * @brief Remove entry from LRU list.
@@ -349,7 +306,7 @@ SocketDNSServfailCache_lookup (T cache, const char *qname, uint16_t qtype,
     return DNS_SERVFAIL_MISS;
 
   char normalized[DNS_SERVFAIL_MAX_NAME + 1];
-  normalize_name (normalized, qname, DNS_SERVFAIL_MAX_NAME);
+  socket_util_normalize_hostname (normalized, qname, DNS_SERVFAIL_MAX_NAME + 1);
 
   int64_t now_ms = Socket_get_monotonic_ms ();
   SocketDNS_ServfailCacheResult result = DNS_SERVFAIL_MISS;
@@ -361,7 +318,7 @@ SocketDNSServfailCache_lookup (T cache, const char *qname, uint16_t qtype,
 
   if (found)
     {
-      if (entry_expired (found, now_ms))
+      if (socket_util_ttl_expired (found->insert_time_ms, found->ttl, now_ms))
         {
           entry_free (cache, found);
           cache->expirations++;
@@ -379,7 +336,7 @@ SocketDNSServfailCache_lookup (T cache, const char *qname, uint16_t qtype,
   if (entry != NULL && found != NULL)
     {
       entry->original_ttl = found->ttl;
-      entry->ttl_remaining = entry_ttl_remaining (found, now_ms);
+      entry->ttl_remaining = socket_util_ttl_remaining (found->insert_time_ms, found->ttl, now_ms);
       entry->insert_time_ms = found->insert_time_ms;
     }
 
@@ -436,7 +393,7 @@ SocketDNSServfailCache_insert (T cache, const char *qname, uint16_t qtype,
     return -1;
 
   char normalized[DNS_SERVFAIL_MAX_NAME + 1];
-  normalize_name (normalized, qname, DNS_SERVFAIL_MAX_NAME);
+  socket_util_normalize_hostname (normalized, qname, DNS_SERVFAIL_MAX_NAME + 1);
 
   /* Cap TTL at RFC 2308 mandated maximum of 5 minutes */
   if (ttl > DNS_SERVFAIL_MAX_TTL)
@@ -494,7 +451,7 @@ SocketDNSServfailCache_remove (T cache, const char *qname, uint16_t qtype,
     return 0;
 
   char normalized[DNS_SERVFAIL_MAX_NAME + 1];
-  normalize_name (normalized, qname, DNS_SERVFAIL_MAX_NAME);
+  socket_util_normalize_hostname (normalized, qname, DNS_SERVFAIL_MAX_NAME + 1);
 
   pthread_mutex_lock (&cache->mutex);
 
