@@ -18,6 +18,9 @@ parse_ipv4_address (const char *ip, uint8_t *addr_bytes)
 {
   struct in_addr addr4;
 
+  if (!ip || !addr_bytes)
+    return 0;
+
   if (inet_pton (AF_INET, ip, &addr4) == 1)
     {
       memset (addr_bytes, 0, SOCKET_IPV6_ADDR_BYTES);
@@ -32,6 +35,9 @@ parse_ipv6_address (const char *ip, uint8_t *addr_bytes)
 {
   struct in6_addr addr6;
 
+  if (!ip || !addr_bytes)
+    return 0;
+
   if (inet_pton (AF_INET6, ip, &addr6) == 1)
     {
       memcpy (addr_bytes, addr6.s6_addr, SOCKET_IPV6_ADDR_BYTES);
@@ -44,6 +50,9 @@ parse_ipv6_address (const char *ip, uint8_t *addr_bytes)
 int
 parse_ip_address (const char *ip, uint8_t *addr_bytes, size_t addr_size)
 {
+  if (!ip || !addr_bytes)
+    return 0;
+
   if (addr_size < SOCKET_IPV6_ADDR_BYTES)
     return 0;
 
@@ -64,6 +73,9 @@ ip_addresses_equal (const char *ip1, const char *ip2)
   uint8_t bytes2[SOCKET_IPV6_ADDR_BYTES];
   int family1, family2;
   size_t cmp_len;
+
+  if (!ip1 || !ip2)
+    return 0;
 
   if (strcmp (ip1, ip2) == 0)
     return 1;
@@ -125,7 +137,12 @@ int
 ip_matches_cidr (const char *ip, const SocketSYN_WhitelistEntry *entry)
 {
   uint8_t ip_bytes[16];
-  int family = parse_ip_address (ip, ip_bytes, sizeof (ip_bytes));
+  int family;
+
+  if (!ip)
+    return 0;
+
+  family = parse_ip_address (ip, ip_bytes, sizeof (ip_bytes));
   if (family == 0)
     return 0;
   return ip_matches_cidr_bytes (family, ip_bytes, entry);
@@ -168,7 +185,12 @@ int
 whitelist_check_bucket (const SocketSYN_WhitelistEntry *entry, const char *ip)
 {
   uint8_t ip_bytes[16];
-  int family = parse_ip_address (ip, ip_bytes, sizeof (ip_bytes));
+  int family;
+
+  if (!ip)
+    return 0;
+
+  family = parse_ip_address (ip, ip_bytes, sizeof (ip_bytes));
   return whitelist_check_bucket_bytes (entry, ip, family, ip_bytes);
 }
 
@@ -198,7 +220,12 @@ whitelist_check_all_cidrs (SocketSYNProtect_T protect, const char *ip,
                            unsigned skip_bucket)
 {
   uint8_t ip_bytes[16];
-  int family = parse_ip_address (ip, ip_bytes, sizeof (ip_bytes));
+  int family;
+
+  if (!ip)
+    return 0;
+
+  family = parse_ip_address (ip, ip_bytes, sizeof (ip_bytes));
   if (family == 0)
     return 0;
   return whitelist_check_all_cidrs_bytes (protect, family, ip_bytes,
@@ -212,7 +239,7 @@ whitelist_check (SocketSYNProtect_T protect, const char *ip)
   uint8_t ip_bytes[16];
   int family;
 
-  if (protect->whitelist_count == 0)
+  if (!ip || protect->whitelist_count == 0)
     return 0;
 
   family = parse_ip_address (ip, ip_bytes, sizeof (ip_bytes));
@@ -254,7 +281,7 @@ blacklist_check (SocketSYNProtect_T protect, const char *ip, int64_t now_ms)
   unsigned bucket;
   const SocketSYN_BlacklistEntry *entry;
 
-  if (protect->blacklist_count == 0)
+  if (!ip || protect->blacklist_count == 0)
     return 0;
 
   bucket = synprotect_hash_ip (protect, ip, SOCKET_SYN_LIST_HASH_SIZE);
