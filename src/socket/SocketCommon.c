@@ -35,7 +35,7 @@
 #include <limits.h>
 #include <netdb.h>
 #include <netinet/in.h>
-
+#include <poll.h>
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -2229,4 +2229,33 @@ SocketCommon_set_ttl (SocketBase_T base, int family, int ttl,
     }
 
   SocketCommon_set_option_int (base, level, opt, ttl, exc_type);
+}
+
+int
+SocketCommon_wait_for_fd (int fd, short events, int timeout_ms)
+{
+  struct pollfd pfd;
+  int ret;
+
+  if (timeout_ms == 0)
+    return 1; /* No timeout, proceed immediately */
+
+  pfd.fd = fd;
+  pfd.events = events;
+  pfd.revents = 0;
+
+  do
+    {
+      ret = poll (&pfd, 1, timeout_ms);
+    }
+  while (ret < 0 && errno == EINTR);
+
+  if (ret < 0)
+    return -1;
+  if (ret == 0)
+    return 0; /* Timeout */
+  if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL))
+    return -1;
+
+  return 1;
 }
