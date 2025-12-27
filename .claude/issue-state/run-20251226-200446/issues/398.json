@@ -1,0 +1,12 @@
+{
+  "number": 398,
+  "title": "feat(quic): implement HANDSHAKE_DONE frame (RFC 9000 \u00a719.20)",
+  "body": "## RFC 9000 Section 19.20: HANDSHAKE_DONE Frame\n\n### Overview\nImplement handshake completion signal frame.\n\n### Complexity: LOW (~50 lines)\nSingle-byte frame sent by server to confirm handshake.\n\n### Key Requirements\n- Frame Type: 0x1e\n- No fields (empty frame)\n- Server-only: MUST NOT be sent by client\n- Signals handshake keys can be discarded\n\n### Implementation\n**Files:**\n- `include/quic/SocketQUICFrame.h`\n\n**Functions:**\n```c\nsize_t SocketQUICFrame_encode_handshake_done(uint8_t *out);\n// Returns 1 (just the type byte)\n```\n\n### Dependencies\n- #384 (Section 12 - Frame infrastructure)",
+  "labels": [
+    "enhancement",
+    "quic",
+    "rfc-9000"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

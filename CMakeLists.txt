@@ -802,13 +802,8 @@ set(TEST_SOURCES
     test_quic_migration
     test_quic_handshake
     test_quic_termination
-<<<<<<< HEAD
     test_quic_flow
-||||||| parent of 9d3e778d (feat(quic): implement CRYPTO frame encoding/decoding (RFC 9000 §19.6))
-=======
-    test_quic_stream_frame_encode
     test_quic_crypto_frame_encode
->>>>>>> 9d3e778d (feat(quic): implement CRYPTO frame encoding/decoding (RFC 9000 §19.6))
 )
 
 # TLS tests (only built when TLS is enabled)
