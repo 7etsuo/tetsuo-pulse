@@ -1,0 +1,12 @@
+{
+  "issue_number": 486,
+  "status": "already_fixed",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/491",
+  "pr_number": 491,
+  "branch": null,
+  "commit_sha": "635d6f0d16b555638ad14cfc5be4e575ff7c48b9",
+  "error": null,
+  "details": "Issue #486 is a duplicate of issue #482, which was already fixed in PR #491 (commit 635d6f0d). The fix replaced 28 lines of redundant if-else-if-else logic with a single memchr() call, exactly as requested in issue #486. The problematic code at src/socket/SocketProxy.c:212-239 no longer exists in main branch.",
+  "duplicate_of_issue": 482,
+  "files_already_changed": ["src/socket/SocketProxy.c"]
+}
