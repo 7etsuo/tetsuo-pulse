@@ -76,8 +76,8 @@ SocketQUIC_send_connection_close (SocketQUICConnection_T conn, uint64_t code,
 
   /* Calculate required space */
   reason_len = reason ? strlen (reason) : 0;
-  if (reason_len > 0xFFFF)
-    reason_len = 0xFFFF; /* Limit reason phrase length */
+  if (reason_len > QUIC_MAX_REASON_LENGTH)
+    reason_len = QUIC_MAX_REASON_LENGTH; /* Limit reason phrase length */
 
   /* Estimate minimum required buffer size:
    * - Frame type: 1 byte (varint)
