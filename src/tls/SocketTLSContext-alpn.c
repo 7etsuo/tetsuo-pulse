@@ -387,7 +387,16 @@ alpn_select_cb (SSL *ssl, const unsigned char **out, unsigned char *outlen,
   /* Store for cleanup; prevents leak */
   int idx = tls_get_alpn_ex_idx ();
   if (idx != -1)
-    SSL_set_ex_data (ssl, idx, (void *)selected_copy);
+    {
+      if (SSL_set_ex_data (ssl, idx, (void *)selected_copy) != 1)
+        {
+          SOCKET_LOG_WARN_MSG ("Failed to set SSL ex_data for ALPN selected protocol");
+          /* Cleanup allocated memory on failure to prevent leak */
+          free (selected_copy);
+          free_client_protos (client_protos, client_count);
+          return SSL_TLSEXT_ERR_NOACK;
+        }
+    }
 
   free_client_protos (client_protos, client_count);
 

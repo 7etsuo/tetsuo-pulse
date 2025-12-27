@@ -367,12 +367,17 @@ alloc_context_struct (SSL_CTX *ssl_ctx)
  *
  * Uses pthread_once for thread-safe one-time initialization of the
  * global ex_data index.
+ *
+ * Raises: SocketTLS_Failed if ex_data registration fails
  */
 static void
 register_exdata (T ctx)
 {
   pthread_once (&exdata_init_once, init_exdata_idx);
-  SSL_CTX_set_ex_data (ctx->ssl_ctx, tls_context_exdata_idx, ctx);
+  if (SSL_CTX_set_ex_data (ctx->ssl_ctx, tls_context_exdata_idx, ctx) != 1)
+    {
+      ctx_raise_openssl_error ("Failed to set SSL_CTX ex_data for TLS context");
+    }
 }
 
 /**

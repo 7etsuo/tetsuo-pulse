@@ -812,7 +812,10 @@ SocketTLSContext_create_sharded_cache (SocketTLSContext_T ctx,
     ctx->sharded_enabled = 1;
 
     ensure_ex_data_index();
-    SSL_CTX_set_ex_data(ctx->ssl_ctx, tls_ctx_ex_data_index, ctx);
+    if (SSL_CTX_set_ex_data(ctx->ssl_ctx, tls_ctx_ex_data_index, ctx) != 1)
+      {
+        SOCKET_LOG_WARN_MSG ("Failed to set SSL_CTX ex_data for sharded session cache");
+      }
     SSL_CTX_sess_set_get_cb(ctx->ssl_ctx, sharded_get_session_cb);
     SSL_CTX_sess_set_new_cb(ctx->ssl_ctx, sharded_new_session_cb);
     SSL_CTX_sess_set_remove_cb(ctx->ssl_ctx, sharded_remove_session_cb);
