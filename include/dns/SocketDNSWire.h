@@ -785,8 +785,11 @@ extern int SocketDNS_rdata_parse_soa (const unsigned char *msg, size_t msglen,
 /** Default UDP payload size for EDNS0 (RFC 6891 Section 6.2.5). */
 #define DNS_EDNS0_DEFAULT_UDPSIZE 4096
 
+/** RFC 1035 minimum UDP payload size. */
+#define DNS_UDP_PAYLOAD_MIN 512
+
 /** Minimum UDP payload size (values below treated as 512, RFC 6891 Section 6.2.3). */
-#define DNS_EDNS0_MIN_UDPSIZE 512
+#define DNS_EDNS0_MIN_UDPSIZE DNS_UDP_PAYLOAD_MIN
 
 /** Fixed size of OPT pseudo-RR in bytes (1 + 2 + 2 + 4 + 2 = 11). */
 #define DNS_OPT_FIXED_SIZE 11
@@ -1362,7 +1365,7 @@ extern int SocketDNS_edns_options_encode (const SocketDNS_EDNSOption *options,
 #define DNS_PAYLOAD_FALLBACK1 1400
 
 /** Last resort UDP size: RFC 1035 guaranteed minimum. */
-#define DNS_PAYLOAD_FALLBACK2 512
+#define DNS_PAYLOAD_FALLBACK2 DNS_UDP_PAYLOAD_MIN
 
 /** Default timeout (seconds) before resetting to initial size. */
 #define DNS_PAYLOAD_RESET_TIMEOUT 300
