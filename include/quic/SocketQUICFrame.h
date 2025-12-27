@@ -215,4 +215,7 @@ extern int SocketQUICFrame_decode_stream(const uint8_t *data, size_t len,
 extern size_t SocketQUICFrame_encode_reset_stream(uint64_t stream_id, uint64_t error_code, uint64_t final_size, uint8_t *out, size_t out_size);
 extern size_t SocketQUICFrame_encode_stop_sending(uint64_t stream_id, uint64_t error_code, uint8_t *out, size_t out_size);
 
+/* HANDSHAKE_DONE frame encoding (RFC 9000 §19.20) */
+extern size_t SocketQUICFrame_encode_handshake_done(uint8_t *out);
+
 #endif /* SOCKETQUICFRAME_INCLUDED */
