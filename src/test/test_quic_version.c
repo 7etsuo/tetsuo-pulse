@@ -505,6 +505,46 @@ TEST (quic_version_neg_create_zero_versions)
   ASSERT (result < 0);
 }
 
+TEST (quic_version_neg_create_overflow_count)
+{
+  SocketQUICConnectionID_T dcid, scid;
+  uint8_t output[256];
+  uint32_t versions[] = { QUIC_VERSION_1 };
+
+  SocketQUICConnectionID_init (&dcid);
+  SocketQUICConnectionID_init (&scid);
+
+  /* Count that would overflow when multiplied by 4 (issue #778) */
+  size_t overflow_count = SIZE_MAX / 4 + 1;
+  int result = SocketQUICVersion_create_negotiation (&dcid, &scid, versions,
+                                                      overflow_count, output,
+                                                      sizeof (output));
+
+  /* Should reject with length error, not overflow silently */
+  ASSERT (result < 0);
+}
+
+TEST (quic_version_neg_create_max_safe_count)
+{
+  SocketQUICConnectionID_T dcid, scid;
+  uint8_t output[256];
+  uint32_t versions[] = { QUIC_VERSION_1 };
+
+  SocketQUICConnectionID_init (&dcid);
+  SocketQUICConnectionID_init (&scid);
+
+  /* Maximum safe count (just at the overflow boundary) */
+  size_t max_safe_count = SIZE_MAX / 4;
+
+  /* Should fail due to buffer size, not overflow */
+  int result = SocketQUICVersion_create_negotiation (&dcid, &scid, versions,
+                                                      max_safe_count, output,
+                                                      sizeof (output));
+
+  /* Expected to fail with buffer size error, proving overflow check passed */
+  ASSERT (result < 0);
+}
+
 /* ============================================================================
  * Version Negotiation Packet Parsing Tests
  * ============================================================================
