@@ -522,6 +522,10 @@ Socket_sendvall (T socket, const struct iovec *iov, int iovcnt)
   assert (iovcnt > 0);
   assert (iovcnt <= IOV_MAX);
 
+  /* SocketCommon_calculate_total_iov_len includes overflow protection and
+   * raises SocketCommon_Failed if the sum of iov_len values would overflow
+   * SIZE_MAX. This protects against integer overflow attacks where an attacker
+   * crafts iovec arrays with very large iov_len values. */
   total_len = SocketCommon_calculate_total_iov_len (iov, iovcnt);
   iov_copy = SocketCommon_alloc_iov_copy (iov, iovcnt, Socket_Failed);
 
@@ -554,6 +558,10 @@ Socket_recvvall (T socket, struct iovec *iov, int iovcnt)
   assert (iovcnt > 0);
   assert (iovcnt <= IOV_MAX);
 
+  /* SocketCommon_calculate_total_iov_len includes overflow protection and
+   * raises SocketCommon_Failed if the sum of iov_len values would overflow
+   * SIZE_MAX. This protects against integer overflow attacks where an attacker
+   * crafts iovec arrays with very large iov_len values. */
   total_len = SocketCommon_calculate_total_iov_len (iov, iovcnt);
   iov_copy = SocketCommon_alloc_iov_copy (iov, iovcnt, Socket_Failed);
 
