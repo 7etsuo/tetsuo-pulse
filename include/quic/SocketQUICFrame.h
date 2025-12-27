@@ -224,4 +224,10 @@ extern size_t SocketQUICFrame_encode_new_token(const uint8_t *token, size_t toke
 extern int SocketQUICFrame_decode_new_token(const uint8_t *data, size_t len,
                                              uint8_t *token_out, size_t *token_len);
 
+/* CRYPTO frame encoding/decoding (RFC 9000 §19.6) */
+extern size_t SocketQUICFrame_encode_crypto(uint64_t offset, const uint8_t *data,
+                                             size_t len, uint8_t *out, size_t out_len);
+extern int SocketQUICFrame_decode_crypto(const uint8_t *data, size_t len,
+                                          SocketQUICFrameCrypto_T *frame);
+
 #endif /* SOCKETQUICFRAME_INCLUDED */
