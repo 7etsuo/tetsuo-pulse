@@ -273,9 +273,9 @@ TEST (security_safe_multiply_inline)
   ASSERT_EQ (0, SocketSecurity_safe_multiply (0, 1000));
   ASSERT_EQ (0, SocketSecurity_safe_multiply (1000, 0));
 
-  /* Overflow returns 0 */
-  ASSERT_EQ (0, SocketSecurity_safe_multiply (SIZE_MAX, 2));
-  ASSERT_EQ (0, SocketSecurity_safe_multiply (SIZE_MAX / 2 + 1, 2));
+  /* Overflow returns SIZE_MAX (consistent with safe_add) */
+  ASSERT_EQ (SIZE_MAX, SocketSecurity_safe_multiply (SIZE_MAX, 2));
+  ASSERT_EQ (SIZE_MAX, SocketSecurity_safe_multiply (SIZE_MAX / 2 + 1, 2));
 }
 
 TEST (security_safe_add_inline)

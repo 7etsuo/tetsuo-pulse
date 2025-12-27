@@ -236,7 +236,8 @@ extern int SocketSecurity_check_add (size_t a, size_t b, size_t *result);
  * @param a  First size_t operand
  * @param b  Second size_t operand
  *
- * Returns: a * b if safe and both non-zero, else 0 (overflow or zero input)
+ * Returns: a * b if safe and both non-zero, 0 if either operand is zero,
+ *          SIZE_MAX if overflow would occur
  *
  * @threadsafe Yes
  * @complexity O(1)
@@ -247,7 +248,7 @@ SocketSecurity_safe_multiply (size_t a, size_t b)
   if (a == 0 || b == 0)
     return 0;
   if (a > SIZE_MAX / b)
-    return 0; /* Would overflow */
+    return SIZE_MAX; /* Would overflow */
   return a * b;
 }
 
