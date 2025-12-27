@@ -157,7 +157,7 @@ SocketQUICConnection_initiate_close(SocketQUICConnection_T conn,
   conn->state = QUIC_CONN_STATE_CLOSING;
 
   /* Calculate closing deadline: 3 * PTO */
-  uint64_t timeout = pto_ms * 3;
+  uint64_t timeout = pto_ms * QUIC_TERMINATION_PTO_MULTIPLIER;
   if (now_ms > UINT64_MAX - timeout)
     conn->closing_deadline_ms = UINT64_MAX;
   else
@@ -194,7 +194,7 @@ SocketQUICConnection_enter_draining(SocketQUICConnection_T conn,
   conn->state = QUIC_CONN_STATE_DRAINING;
 
   /* Calculate draining deadline: 3 * PTO */
-  uint64_t timeout = pto_ms * 3;
+  uint64_t timeout = pto_ms * QUIC_TERMINATION_PTO_MULTIPLIER;
   if (now_ms > UINT64_MAX - timeout)
     conn->draining_deadline_ms = UINT64_MAX;
   else
