@@ -5,8 +5,11 @@
  */
 
 #include <pthread.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+#include <unistd.h>
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "quic/SocketQUICConnection.h"
@@ -31,9 +34,44 @@ struct SocketQUICConnTable {
 #ifdef __linux__
 #include <sys/random.h>
 #define SECURE_RANDOM(buf, len) (getrandom((buf), (len), 0) == (ssize_t)(len))
+#elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
+#include <stdlib.h>
+static inline int secure_random_bsd(void *buf, size_t len) {
+  arc4random_buf(buf, len);
+  return 1;
+}
+#define SECURE_RANDOM(buf, len) secure_random_bsd((buf), (len))
+#elif defined(_WIN32)
+#include <windows.h>
+#include <bcrypt.h>
+static inline int secure_random_win(void *buf, size_t len) {
+  return BCRYPT_SUCCESS(BCryptGenRandom(NULL, (PUCHAR)(buf), (ULONG)(len), BCRYPT_USE_SYSTEM_PREFERRED_RNG));
+}
+#define SECURE_RANDOM(buf, len) secure_random_win((buf), (len))
 #else
 #define SECURE_RANDOM(buf, len) 0
 #endif
+
+static int fallback_random_urandom(void *buf, size_t len) {
+  FILE *f = fopen("/dev/urandom", "rb");
+  if (!f) return 0;
+  size_t n = fread(buf, 1, len, f);
+  fclose(f);
+  return (n == len);
+}
+
+static void fallback_random_enhanced(uint32_t *seed, size_t table_ptr, size_t buckets_ptr) {
+  struct timespec ts;
+  if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) {
+    ts.tv_sec = 0;
+    ts.tv_nsec = 0;
+  }
+  *seed = (uint32_t)(
+    (table_ptr ^ buckets_ptr) ^
+    ((uint64_t)ts.tv_sec * 1000000000ULL + (uint64_t)ts.tv_nsec) ^
+    ((uint64_t)getpid() << 32)
+  );
+}
 
 static const char *result_strings[] = { "OK", "NULL pointer argument", "Connection table is full", "Connection ID already registered", "Connection not found", "Too many CIDs for connection", "Hash chain too long (DoS protection)", "Zero-length DCID conflict", "Memory allocation failed" };
 
@@ -83,7 +121,11 @@ SocketQUICConnTable_T SocketQUICConnTable_new(Arena_T arena, size_t bucket_count
   if (!table->buckets || !table->addr_buckets) { if (!arena) { free(table->buckets); free(table->addr_buckets); free(table); } RAISE(SocketQUICConnTable_Failed); }
   if (pthread_mutex_init(&table->mutex, NULL) != 0) { if (!arena) { free(table->buckets); free(table->addr_buckets); free(table); } RAISE(SocketQUICConnTable_Failed); }
   table->mutex_initialized = 1;
-  if (!SECURE_RANDOM(&table->hash_seed, sizeof(table->hash_seed))) table->hash_seed = (uint32_t)((size_t)table ^ (size_t)table->buckets);
+  if (!SECURE_RANDOM(&table->hash_seed, sizeof(table->hash_seed))) {
+    if (!fallback_random_urandom(&table->hash_seed, sizeof(table->hash_seed))) {
+      fallback_random_enhanced(&table->hash_seed, (size_t)table, (size_t)table->buckets);
+    }
+  }
   return table;
 }
 
