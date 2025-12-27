@@ -43,6 +43,7 @@ def main():
 
     # Collect results
     successes = []
+    already_resolved = []
     failures = []
 
     if results_dir.exists():
@@ -50,17 +51,21 @@ def main():
             with open(result_file) as f:
                 result = json.load(f)
 
-            if result.get("status") == "success":
+            status = result.get("status", "")
+            if status == "success":
                 successes.append(result)
+            elif status == "already_resolved":
+                already_resolved.append(result)
             else:
                 failures.append(result)
 
     # Print summary
     print("## Issue Processing Results\n")
 
-    total = len(successes) + len(failures)
+    total = len(successes) + len(already_resolved) + len(failures)
     print(f"**Total processed**: {total}")
-    print(f"**Successful**: {len(successes)}")
+    print(f"**PRs created**: {len(successes)}")
+    print(f"**Already resolved**: {len(already_resolved)}")
     print(f"**Failed**: {len(failures)}")
     print()
 
@@ -99,15 +104,28 @@ def main():
                 print(f"| #{issue_num} | {title} | #{pr_num} |")
         print()
 
+    if already_resolved:
+        print("### Already Resolved (No Action Needed)\n")
+        print("| Issue | Reason |")
+        print("|-------|--------|")
+        for ar in already_resolved:
+            issue_num = ar.get("issue", "?")
+            resolution = ar.get("resolution", "Already implemented")
+            # Truncate long resolutions
+            if resolution and len(resolution) > 60:
+                resolution = resolution[:57] + "..."
+            print(f"| #{issue_num} | {resolution} |")
+        print()
+
     if failures:
         print("### Failures\n")
         print("| Issue | Error |")
         print("|-------|-------|")
         for f_result in failures:
             issue_num = f_result.get("issue", "?")
-            error = f_result.get("error", "Unknown error")
+            error = f_result.get("error") or "Unknown error"
             # Truncate long errors
-            if len(error) > 60:
+            if error and len(error) > 60:
                 error = error[:57] + "..."
             print(f"| #{issue_num} | {error} |")
         print()
