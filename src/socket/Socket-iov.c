@@ -582,6 +582,92 @@ get_remaining_timeout_ms (int64_t deadline_ms)
 
 
 /**
+ * SocketTransferStepFn - Generic transfer function pointer type
+ *
+ * Function pointer type for send/recv operations. This allows
+ * socket_transfer_with_timeout() to work with both send and recv.
+ */
+typedef ssize_t (*SocketTransferStepFn) (T socket, void *buf, size_t len);
+
+/**
+ * socket_transfer_with_timeout - Generic timeout-based data transfer
+ * @socket: Connected socket
+ * @buf: Buffer for data (send or recv)
+ * @len: Number of bytes to transfer
+ * @timeout_ms: Timeout in milliseconds (>0 for deadline, -1 for block, 0 for none)
+ * @poll_event: POLLIN or POLLOUT
+ * @transfer_fn: Transfer function (Socket_send or Socket_recv)
+ *
+ * Returns: Total bytes transferred (may be < len on timeout or EOF)
+ * Raises: Socket_Closed, Socket_Failed
+ *
+ * Generic helper that implements timeout logic for both send and recv.
+ * Eliminates duplicate code between Socket_sendall_timeout and
+ * Socket_recvall_timeout.
+ */
+static ssize_t
+socket_transfer_with_timeout (T socket, void *buf, size_t len, int timeout_ms,
+                               short poll_event, SocketTransferStepFn transfer_fn)
+{
+  volatile size_t total_transferred = 0;
+  char *ptr;
+  int fd;
+  volatile int64_t deadline_ms;
+  int64_t remaining_ms;
+  ssize_t result;
+
+  assert (socket);
+  assert (buf || len == 0);
+
+  if (len == 0)
+    return 0;
+
+  fd = SocketBase_fd (socket->base);
+  ptr = (char *)buf;
+  deadline_ms = SocketTimeout_deadline_ms (timeout_ms);
+
+  TRY
+  {
+    while (total_transferred < len)
+      {
+        /* Check remaining time */
+        if (timeout_ms > 0)
+          {
+            remaining_ms = get_remaining_timeout_ms (deadline_ms);
+            if (remaining_ms <= 0)
+              break; /* Timeout */
+
+            if (SocketCommon_wait_for_fd (fd, poll_event, (int)remaining_ms) <= 0)
+              break; /* Timeout or error */
+          }
+        else if (timeout_ms == -1)
+          {
+            /* Block indefinitely */
+            if (SocketCommon_wait_for_fd (fd, poll_event, -1) < 0)
+              {
+                SOCKET_ERROR_FMT ("poll() failed during transfer");
+                RAISE_MODULE_ERROR (Socket_Failed);
+              }
+          }
+
+        result = transfer_fn (socket, ptr + total_transferred,
+                              len - total_transferred);
+        if (result > 0)
+          total_transferred += (size_t)result;
+        else if (result == 0)
+          break; /* Would block or EOF */
+      }
+  }
+  EXCEPT (Socket_Closed)
+  RERAISE;
+  EXCEPT (Socket_Failed)
+  RERAISE;
+  END_TRY;
+
+  return (ssize_t)total_transferred;
+}
+
+/**
  * Socket_sendall_timeout - Send all data with timeout
  * @socket: Connected socket
  * @buf: Data to send
@@ -594,61 +680,9 @@ get_remaining_timeout_ms (int64_t deadline_ms)
 ssize_t
 Socket_sendall_timeout (T socket, const void *buf, size_t len, int timeout_ms)
 {
-  volatile size_t total_sent = 0;
-  const char *ptr;
-  int fd;
-  volatile int64_t deadline_ms;
-  int64_t remaining_ms;
-  ssize_t sent;
-
-  assert (socket);
-  assert (buf || len == 0);
-
-  if (len == 0)
-    return 0;
-
-  fd = SocketBase_fd (socket->base);
-  ptr = (const char *)buf;
-  deadline_ms = SocketTimeout_deadline_ms (timeout_ms);
-
-  TRY
-  {
-    while (total_sent < len)
-      {
-        /* Check remaining time */
-        if (timeout_ms > 0)
-          {
-            remaining_ms = get_remaining_timeout_ms (deadline_ms);
-            if (remaining_ms <= 0)
-              break; /* Timeout */
-
-            if (SocketCommon_wait_for_fd (fd, POLLOUT, (int)remaining_ms) <= 0)
-              break; /* Timeout or error */
-          }
-        else if (timeout_ms == -1)
-          {
-            /* Block indefinitely */
-            if (SocketCommon_wait_for_fd (fd, POLLOUT, -1) < 0)
-              {
-                SOCKET_ERROR_FMT ("poll() failed during send");
-                RAISE_MODULE_ERROR (Socket_Failed);
-              }
-          }
-
-        sent = Socket_send (socket, ptr + total_sent, len - total_sent);
-        if (sent > 0)
-          total_sent += (size_t)sent;
-        else if (sent == 0)
-          break; /* Would block */
-      }
-  }
-  EXCEPT (Socket_Closed)
-  RERAISE;
-  EXCEPT (Socket_Failed)
-  RERAISE;
-  END_TRY;
-
-  return (ssize_t)total_sent;
+  return socket_transfer_with_timeout (socket, (void *)buf, len, timeout_ms,
+                                        POLLOUT,
+                                        (SocketTransferStepFn)Socket_send);
 }
 
 /**
@@ -664,62 +698,9 @@ Socket_sendall_timeout (T socket, const void *buf, size_t len, int timeout_ms)
 ssize_t
 Socket_recvall_timeout (T socket, void *buf, size_t len, int timeout_ms)
 {
-  volatile size_t total_received = 0;
-  char *ptr;
-  int fd;
-  volatile int64_t deadline_ms;
-  int64_t remaining_ms;
-  ssize_t received;
-
-  assert (socket);
-  assert (buf || len == 0);
-
-  if (len == 0)
-    return 0;
-
-  fd = SocketBase_fd (socket->base);
-  ptr = (char *)buf;
-  deadline_ms = SocketTimeout_deadline_ms (timeout_ms);
-
-  TRY
-  {
-    while (total_received < len)
-      {
-        /* Check remaining time */
-        if (timeout_ms > 0)
-          {
-            remaining_ms = get_remaining_timeout_ms (deadline_ms);
-            if (remaining_ms <= 0)
-              break; /* Timeout */
-
-            if (SocketCommon_wait_for_fd (fd, POLLIN, (int)remaining_ms) <= 0)
-              break; /* Timeout or error */
-          }
-        else if (timeout_ms == -1)
-          {
-            /* Block indefinitely */
-            if (SocketCommon_wait_for_fd (fd, POLLIN, -1) < 0)
-              {
-                SOCKET_ERROR_FMT ("poll() failed during recv");
-                RAISE_MODULE_ERROR (Socket_Failed);
-              }
-          }
-
-        received = Socket_recv (socket, ptr + total_received,
-                                len - total_received);
-        if (received > 0)
-          total_received += (size_t)received;
-        else if (received == 0)
-          break; /* EOF or would block */
-      }
-  }
-  EXCEPT (Socket_Closed)
-  RERAISE;
-  EXCEPT (Socket_Failed)
-  RERAISE;
-  END_TRY;
-
-  return (ssize_t)total_received;
+  return socket_transfer_with_timeout (socket, buf, len, timeout_ms,
+                                        POLLIN,
+                                        (SocketTransferStepFn)Socket_recv);
 }
 
 /**
