@@ -25,8 +25,6 @@
 #define SOCKET_RETRY_MAX_MULTIPLIER 16.0
 #define SOCKET_RETRY_MAX_DELAY_VALUE_MS 3600000
 #define RETRY_MAX_EXPONENT 1000 /* Prevent CPU DoS from excessive loops */
-#define MILLISECONDS_PER_SECOND 1000
-#define NANOSECONDS_PER_MILLISECOND 1000000L
 #define UINT32_MAX_DOUBLE ((double)0xFFFFFFFFU)
 
 #define T SocketRetry_T
@@ -253,8 +251,8 @@ retry_sleep_ms (int ms)
   if (ms <= 0)
     return;
 
-  req.tv_sec = ms / MILLISECONDS_PER_SECOND;
-  req.tv_nsec = (ms % MILLISECONDS_PER_SECOND) * NANOSECONDS_PER_MILLISECOND;
+  req.tv_sec = ms / SOCKET_MS_PER_SECOND;
+  req.tv_nsec = (ms % SOCKET_MS_PER_SECOND) * SOCKET_NS_PER_MS;
 
   while (nanosleep (&req, &rem) == -1)
     {
