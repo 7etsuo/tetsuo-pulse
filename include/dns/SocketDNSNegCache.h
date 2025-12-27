@@ -63,13 +63,13 @@
  * @{
  */
 
-/** Maximum hostname length in cache key. */
+/** Maximum hostname length in cache key (RFC 1035 §2.3.4). */
 #define DNS_NEGCACHE_MAX_NAME 255
 
 /** Maximum SOA RDATA length (typical SOA is ~100 bytes). */
 #define DNS_NEGCACHE_MAX_SOA_RDATA 512
 
-/** Maximum SOA owner name length. */
+/** Maximum SOA owner name length (RFC 1035 §2.3.4). */
 #define DNS_NEGCACHE_MAX_SOA_NAME 255
 
 /** Default maximum cache entries. */
