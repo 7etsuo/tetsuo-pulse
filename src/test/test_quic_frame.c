@@ -1289,6 +1289,203 @@ TEST (frame_encode_streams_blocked_null)
   ASSERT_EQ (0, len);
 }
 
+/* ============================================================================
+ * Overflow Protection Tests (32-bit safety)
+ * ============================================================================
+ */
+
+TEST (frame_crypto_overflow_32bit)
+{
+  /* On 32-bit systems, a uint64_t length > SIZE_MAX should be rejected.
+   * We simulate this by creating a frame with length that would overflow
+   * when cast to size_t on 32-bit (SIZE_MAX = 0xFFFFFFFF).
+   * On 64-bit systems this test will pass trivially since SIZE_MAX == UINT64_MAX.
+   */
+  uint8_t buf[512];
+  size_t pos = 0;
+
+  /* Encode CRYPTO frame type */
+  buf[pos++] = 0x06;
+
+  /* Encode offset = 0 (varint) */
+  buf[pos++] = 0x00;
+
+  /* Encode length as 8-byte varint with value > 32-bit SIZE_MAX
+   * Format: 11xxxxxx ... (8 bytes total)
+   * Value: 0x0000000100000000 (4GB + 1)
+   */
+  buf[pos++] = 0xc0;  /* 11000000 - 8-byte varint marker */
+  buf[pos++] = 0x00;
+  buf[pos++] = 0x00;
+  buf[pos++] = 0x00;
+  buf[pos++] = 0x01;  /* High 32 bits = 1 */
+  buf[pos++] = 0x00;
+  buf[pos++] = 0x00;
+  buf[pos++] = 0x00;
+  buf[pos++] = 0x00;  /* Low 32 bits = 0 */
+
+  SocketQUICFrame_T frame;
+  size_t consumed;
+
+  SocketQUICFrame_Result res
+      = SocketQUICFrame_parse (buf, pos, &frame, &consumed);
+
+  /* On 32-bit systems, this should return OVERFLOW error.
+   * On 64-bit systems with SIZE_MAX == UINT64_MAX, it will return TRUNCATED
+   * because we don't have 4GB of actual data in the buffer.
+   */
+#if SIZE_MAX < UINT64_MAX
+  ASSERT_EQ (QUIC_FRAME_ERROR_OVERFLOW, res);
+#else
+  /* On 64-bit, truncation check happens first */
+  ASSERT_EQ (QUIC_FRAME_ERROR_TRUNCATED, res);
+#endif
+}
+
+TEST (frame_new_token_overflow_32bit)
+{
+  /* Similar test for NEW_TOKEN frame */
+  uint8_t buf[512];
+  size_t pos = 0;
+
+  /* Encode NEW_TOKEN frame type */
+  buf[pos++] = 0x07;
+
+  /* Encode token_length as 8-byte varint > SIZE_MAX on 32-bit */
+  buf[pos++] = 0xc0;  /* 8-byte varint */
+  buf[pos++] = 0x00;
+  buf[pos++] = 0x00;
+  buf[pos++] = 0x00;
+  buf[pos++] = 0x01;
+  buf[pos++] = 0x00;
+  buf[pos++] = 0x00;
+  buf[pos++] = 0x00;
+  buf[pos++] = 0x00;
+
+  SocketQUICFrame_T frame;
+  size_t consumed;
+
+  SocketQUICFrame_Result res
+      = SocketQUICFrame_parse (buf, pos, &frame, &consumed);
+
+#if SIZE_MAX < UINT64_MAX
+  ASSERT_EQ (QUIC_FRAME_ERROR_OVERFLOW, res);
+#else
+  ASSERT_EQ (QUIC_FRAME_ERROR_TRUNCATED, res);
+#endif
+}
+
+TEST (frame_stream_overflow_32bit)
+{
+  /* Test STREAM frame with length > SIZE_MAX on 32-bit */
+  uint8_t buf[512];
+  size_t pos = 0;
+
+  /* STREAM frame with FIN, LEN, and OFF flags (0x0f) */
+  buf[pos++] = 0x0f;
+
+  /* Stream ID = 0 */
+  buf[pos++] = 0x00;
+
+  /* Offset = 0 */
+  buf[pos++] = 0x00;
+
+  /* Length as 8-byte varint > SIZE_MAX on 32-bit */
+  buf[pos++] = 0xc0;
+  buf[pos++] = 0x00;
+  buf[pos++] = 0x00;
+  buf[pos++] = 0x00;
+  buf[pos++] = 0x01;
+  buf[pos++] = 0x00;
+  buf[pos++] = 0x00;
+  buf[pos++] = 0x00;
+  buf[pos++] = 0x00;
+
+  SocketQUICFrame_T frame;
+  size_t consumed;
+
+  SocketQUICFrame_Result res
+      = SocketQUICFrame_parse (buf, pos, &frame, &consumed);
+
+#if SIZE_MAX < UINT64_MAX
+  ASSERT_EQ (QUIC_FRAME_ERROR_OVERFLOW, res);
+#else
+  ASSERT_EQ (QUIC_FRAME_ERROR_TRUNCATED, res);
+#endif
+}
+
+TEST (frame_connection_close_overflow_32bit)
+{
+  /* Test CONNECTION_CLOSE with reason_length > SIZE_MAX on 32-bit */
+  uint8_t buf[512];
+  size_t pos = 0;
+
+  /* CONNECTION_CLOSE frame type */
+  buf[pos++] = 0x1c;
+
+  /* Error code = 0 */
+  buf[pos++] = 0x00;
+
+  /* Frame type = 0 */
+  buf[pos++] = 0x00;
+
+  /* Reason length as 8-byte varint > SIZE_MAX on 32-bit */
+  buf[pos++] = 0xc0;
+  buf[pos++] = 0x00;
+  buf[pos++] = 0x00;
+  buf[pos++] = 0x00;
+  buf[pos++] = 0x01;
+  buf[pos++] = 0x00;
+  buf[pos++] = 0x00;
+  buf[pos++] = 0x00;
+  buf[pos++] = 0x00;
+
+  SocketQUICFrame_T frame;
+  size_t consumed;
+
+  SocketQUICFrame_Result res
+      = SocketQUICFrame_parse (buf, pos, &frame, &consumed);
+
+#if SIZE_MAX < UINT64_MAX
+  ASSERT_EQ (QUIC_FRAME_ERROR_OVERFLOW, res);
+#else
+  ASSERT_EQ (QUIC_FRAME_ERROR_TRUNCATED, res);
+#endif
+}
+
+TEST (frame_datagram_overflow_32bit)
+{
+  /* Test DATAGRAM frame with length > SIZE_MAX on 32-bit */
+  uint8_t buf[512];
+  size_t pos = 0;
+
+  /* DATAGRAM_LEN frame type (with explicit length) */
+  buf[pos++] = 0x31;
+
+  /* Length as 8-byte varint > SIZE_MAX on 32-bit */
+  buf[pos++] = 0xc0;
+  buf[pos++] = 0x00;
+  buf[pos++] = 0x00;
+  buf[pos++] = 0x00;
+  buf[pos++] = 0x01;
+  buf[pos++] = 0x00;
+  buf[pos++] = 0x00;
+  buf[pos++] = 0x00;
+  buf[pos++] = 0x00;
+
+  SocketQUICFrame_T frame;
+  size_t consumed;
+
+  SocketQUICFrame_Result res
+      = SocketQUICFrame_parse (buf, pos, &frame, &consumed);
+
+#if SIZE_MAX < UINT64_MAX
+  ASSERT_EQ (QUIC_FRAME_ERROR_OVERFLOW, res);
+#else
+  ASSERT_EQ (QUIC_FRAME_ERROR_TRUNCATED, res);
+#endif
+}
+
 int
 main (void)
 {

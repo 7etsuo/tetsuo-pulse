@@ -297,6 +297,10 @@ parse_crypto (const uint8_t *data, size_t len, size_t *pos,
   if (*pos + crypto->length > len)
     return QUIC_FRAME_ERROR_TRUNCATED;
 
+  /* Prevent overflow on 32-bit systems */
+  if (crypto->length > SIZE_MAX)
+    return QUIC_FRAME_ERROR_OVERFLOW;
+
   crypto->data = data + *pos;
   *pos += (size_t)crypto->length;
 
@@ -325,6 +329,10 @@ parse_new_token (const uint8_t *data, size_t len, size_t *pos,
 
   if (*pos + nt->token_length > len)
     return QUIC_FRAME_ERROR_TRUNCATED;
+
+  /* Prevent overflow on 32-bit systems */
+  if (nt->token_length > SIZE_MAX)
+    return QUIC_FRAME_ERROR_OVERFLOW;
 
   nt->token = data + *pos;
   *pos += (size_t)nt->token_length;
@@ -373,6 +381,10 @@ parse_stream (const uint8_t *data, size_t len, size_t *pos,
     }
   else
     stream->length = len - *pos;
+
+  /* Prevent overflow on 32-bit systems */
+  if (stream->length > SIZE_MAX)
+    return QUIC_FRAME_ERROR_OVERFLOW;
 
   stream->data = data + *pos;
   *pos += (size_t)stream->length;
@@ -606,6 +618,10 @@ parse_connection_close (const uint8_t *data, size_t len, size_t *pos,
   if (*pos + cc->reason_length > len)
     return QUIC_FRAME_ERROR_TRUNCATED;
 
+  /* Prevent overflow on 32-bit systems */
+  if (cc->reason_length > SIZE_MAX)
+    return QUIC_FRAME_ERROR_OVERFLOW;
+
   cc->reason = (cc->reason_length > 0) ? (data + *pos) : NULL;
   *pos += (size_t)cc->reason_length;
 
@@ -654,6 +670,10 @@ parse_datagram (const uint8_t *data, size_t len, size_t *pos,
     }
   else
     dg->length = len - *pos;
+
+  /* Prevent overflow on 32-bit systems */
+  if (dg->length > SIZE_MAX)
+    return QUIC_FRAME_ERROR_OVERFLOW;
 
   dg->data = data + *pos;
   *pos += (size_t)dg->length;
