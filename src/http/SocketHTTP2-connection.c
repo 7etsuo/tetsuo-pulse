@@ -265,6 +265,43 @@ init_rate_limiters (SocketHTTP2_Conn_T conn, const SocketHTTP2_Config *cfg)
   return 0;
 }
 
+static void
+init_stream_id_and_timeouts (SocketHTTP2_Conn_T conn,
+                             const SocketHTTP2_Config *cfg)
+{
+  conn->next_stream_id = (cfg->role == HTTP2_ROLE_CLIENT) ? 1 : 2;
+  conn->settings_timeout_ms = cfg->settings_timeout_ms;
+  conn->ping_timeout_ms = cfg->ping_timeout_ms;
+  conn->idle_timeout_ms = cfg->idle_timeout_ms;
+  conn->settings_sent_time = 0;
+  conn->ping_sent_time = 0;
+  conn->last_activity_time = Socket_get_monotonic_ms ();
+}
+
+static void
+init_rate_limiting_windows (SocketHTTP2_Conn_T conn,
+                            const SocketHTTP2_Config *cfg)
+{
+  int64_t now = conn->last_activity_time;
+
+  /* Frame rate limiters */
+  TimeWindow_init (&conn->settings_window, SOCKETHTTP2_SETTINGS_RATE_WINDOW_MS,
+                   now);
+  TimeWindow_init (&conn->ping_window, SOCKETHTTP2_PING_RATE_WINDOW_MS, now);
+  TimeWindow_init (&conn->rst_window, SOCKETHTTP2_RST_RATE_WINDOW_MS, now);
+
+  /* Sliding window stream rate limiters (CVE-2023-44487 protection) */
+  TimeWindow_init (&conn->stream_create_window,
+                   (int)cfg->stream_window_size_ms, now);
+  TimeWindow_init (&conn->stream_burst_window,
+                   (int)cfg->stream_burst_interval_ms, now);
+  TimeWindow_init (&conn->stream_churn_window, (int)cfg->stream_window_size_ms,
+                   now);
+  conn->stream_max_per_window = cfg->stream_max_per_window;
+  conn->stream_burst_threshold = cfg->stream_burst_threshold;
+  conn->stream_churn_threshold = cfg->stream_churn_threshold;
+}
+
 SocketHTTP2_Conn_T
 SocketHTTP2_Conn_new (Socket_T socket, const SocketHTTP2_Config *config,
                       Arena_T arena)
@@ -326,31 +363,11 @@ SocketHTTP2_Conn_new (Socket_T socket, const SocketHTTP2_Config *config,
     /* Initialize internal components (buffers, HPACK, streams) */
     init_connection_components (conn, cfg);
 
-    /* Initialize stream IDs based on role */
-    conn->next_stream_id = (cfg->role == HTTP2_ROLE_CLIENT) ? 1 : 2;
+    /* Initialize stream IDs and timeouts */
+    init_stream_id_and_timeouts (conn, cfg);
 
-    /* Store timeouts */
-    conn->settings_timeout_ms = cfg->settings_timeout_ms;
-    conn->ping_timeout_ms = cfg->ping_timeout_ms;
-    conn->idle_timeout_ms = cfg->idle_timeout_ms;
-
-    /* Initialize timeout tracking */
-    conn->settings_sent_time = 0;
-    conn->ping_sent_time = 0;
-    conn->last_activity_time = Socket_get_monotonic_ms ();
-
-    /* Initialize frame rate limiters using TimeWindow module */
-    TimeWindow_init(&conn->settings_window, SOCKETHTTP2_SETTINGS_RATE_WINDOW_MS, conn->last_activity_time);
-    TimeWindow_init(&conn->ping_window, SOCKETHTTP2_PING_RATE_WINDOW_MS, conn->last_activity_time);
-    TimeWindow_init(&conn->rst_window, SOCKETHTTP2_RST_RATE_WINDOW_MS, conn->last_activity_time);
-
-    /* Initialize sliding window stream rate limiters (CVE-2023-44487 protection) */
-    TimeWindow_init(&conn->stream_create_window, (int)cfg->stream_window_size_ms, conn->last_activity_time);
-    TimeWindow_init(&conn->stream_burst_window, (int)cfg->stream_burst_interval_ms, conn->last_activity_time);
-    TimeWindow_init(&conn->stream_churn_window, (int)cfg->stream_window_size_ms, conn->last_activity_time);
-    conn->stream_max_per_window = cfg->stream_max_per_window;
-    conn->stream_burst_threshold = cfg->stream_burst_threshold;
-    conn->stream_churn_threshold = cfg->stream_churn_threshold;
+    /* Initialize TimeWindow-based rate limiters */
+    init_rate_limiting_windows (conn, cfg);
   }
   EXCEPT (SocketHTTP2)
   {

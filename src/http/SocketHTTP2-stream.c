@@ -269,13 +269,6 @@ http2_stream_create (SocketHTTP2_Conn_T conn, uint32_t stream_id,
       return NULL;
     }
 
-  /* Legacy total count check (deprecate later) */
-  if (conn->stream_count
-      >= conn->local_settings[SETTINGS_IDX_MAX_CONCURRENT_STREAMS])
-    {
-      return NULL;
-    }
-
   stream = Arena_calloc (conn->arena, 1, sizeof (struct SocketHTTP2_Stream),
                          __FILE__, __LINE__);
   if (!stream)

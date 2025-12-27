@@ -1,0 +1,8 @@
+{
+  "number": 488,
+  "title": "refactor(http): extract helpers and consolidate redundancy",
+  "body": "## Summary\n\nImplement refactoring opportunities identified in HTTP module pipeline analysis. This is a behavior-preserving refactor to improve maintainability.\n\n## Function Extraction\n\n1. **`read_body_chunked`** (SocketHTTP1-chunked.c) - Extract trailer state handler (~120 lines)\n2. **`SocketHTTP2_Conn_new`** (SocketHTTP2-connection.c) - Extract 2 init helpers (~24 lines)\n3. **`http2_stream_create`** (SocketHTTP2-stream.c) - Remove legacy redundant check (~6 lines)\n\n## Redundancy Consolidation\n\n1. Add `socket_util_arena_strdup_len()` to SocketUtil.h\n2. Add `SocketSecurity_has_control_chars()` to SocketSecurity.h\n3. Update call sites to use new utilities\n\n## Files to Modify\n\n- `src/http/SocketHTTP1-chunked.c`\n- `src/http/SocketHTTP2-connection.c`\n- `src/http/SocketHTTP2-stream.c`\n- `include/core/SocketUtil.h`\n- `include/core/SocketSecurity.h`\n- `src/http/SocketHTTP-headers.c`\n- `src/http/SocketHPACK-table.c`\n- `src/http/SocketHTTP2-validate.c`\n- `src/http/SocketHTTP-core.c`\n\n## Expected Impact\n\n- ~150 lines of code savings\n- 2 new reusable utility functions\n- Improved code maintainability",
+  "labels": [],
+  "state": "OPEN",
+  "dependencies": []
+}
