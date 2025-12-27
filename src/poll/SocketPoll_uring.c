@@ -366,8 +366,7 @@ backend_wait (PollBackend_T backend, int timeout_ms)
       /* Convert timeout to kernel timespec */
       if (remaining_ms >= 0)
         {
-          ts.tv_sec = remaining_ms / SOCKET_MS_PER_SECOND;
-          ts.tv_nsec = (remaining_ms % SOCKET_MS_PER_SECOND) * SOCKET_NS_PER_MS;
+          ts = socket_util_ms_to_timespec ((unsigned long)remaining_ms);
           ts_ptr = &ts;
         }
       else

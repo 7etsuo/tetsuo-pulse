@@ -11,6 +11,7 @@
 #include <time.h>
 
 #include "core/SocketRetry.h"
+#include "core/SocketUtil.h"
 #include "http/SocketHTTPClient-private.h"
 
 #define CLEAR_RESPONSE(r)                                                     \
@@ -59,8 +60,7 @@ httpclient_retry_sleep_ms (int ms)
   if (ms <= 0)
     return;
 
-  req.tv_sec = ms / SOCKET_MS_PER_SECOND;
-  req.tv_nsec = (ms % SOCKET_MS_PER_SECOND) * SOCKET_NS_PER_MS;
+  req = socket_util_ms_to_timespec ((unsigned long)ms);
 
   while (nanosleep (&req, &rem) == -1)
     {
