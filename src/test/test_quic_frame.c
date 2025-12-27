@@ -316,6 +316,22 @@ TEST (frame_handshake_done)
   ASSERT_EQ (1, consumed);
 }
 
+TEST (frame_handshake_done_encode)
+{
+  uint8_t encoded[1];
+
+  size_t len = SocketQUICFrame_encode_handshake_done (encoded);
+
+  ASSERT_EQ (1, len);
+  ASSERT_EQ (0x1e, encoded[0]);
+}
+
+TEST (frame_handshake_done_encode_null_check)
+{
+  /* Null output pointer */
+  ASSERT_EQ (0, SocketQUICFrame_encode_handshake_done (NULL));
+}
+
 TEST (frame_validation_padding)
 {
   SocketQUICFrame_T frame = { .type = QUIC_FRAME_PADDING };
