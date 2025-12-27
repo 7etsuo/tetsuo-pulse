@@ -442,7 +442,7 @@ SocketDNS_getresult (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 
 int
 SocketDNS_geterror (struct SocketDNS_T *dns,
-                    const struct SocketDNS_Request_T *req)
+                    struct SocketDNS_Request_T *req)
 {
   int error = 0;
 
