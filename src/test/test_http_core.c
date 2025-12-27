@@ -627,6 +627,68 @@ test_uri_security_invalid (void)
   result = SocketHTTP_URI_parse ("http://example.com/pat%G1h", 0, &uri, arena);
   TEST_ASSERT (result == URI_PARSE_INVALID_PATH, "Reject invalid %XX in path");
 
+  // Path traversal - literal ".."
+  result = SocketHTTP_URI_parse ("http://example.com/../foo", 0, &uri, arena);
+  TEST_ASSERT (result == URI_PARSE_INVALID_PATH, "Reject literal ../foo");
+
+  result = SocketHTTP_URI_parse ("http://example.com/foo/../bar", 0, &uri, arena);
+  TEST_ASSERT (result == URI_PARSE_INVALID_PATH, "Reject foo/../bar");
+
+  result = SocketHTTP_URI_parse ("http://example.com/..", 0, &uri, arena);
+  TEST_ASSERT (result == URI_PARSE_INVALID_PATH, "Reject .. at end");
+
+  result = SocketHTTP_URI_parse ("http://example.com/..?query", 0, &uri, arena);
+  TEST_ASSERT (result == URI_PARSE_INVALID_PATH, "Reject .. before query");
+
+  // Path traversal - fully encoded "%2e%2e"
+  result = SocketHTTP_URI_parse ("http://example.com/%2e%2e/foo", 0, &uri, arena);
+  TEST_ASSERT (result == URI_PARSE_INVALID_PATH, "Reject %2e%2e/foo (lowercase)");
+
+  result = SocketHTTP_URI_parse ("http://example.com/%2E%2E/foo", 0, &uri, arena);
+  TEST_ASSERT (result == URI_PARSE_INVALID_PATH, "Reject %2E%2E/foo (uppercase)");
+
+  // Path traversal - mixed encoding ".%2e"
+  result = SocketHTTP_URI_parse ("http://example.com/.%2e/foo", 0, &uri, arena);
+  TEST_ASSERT (result == URI_PARSE_INVALID_PATH, "Reject .%2e/foo (lowercase)");
+
+  result = SocketHTTP_URI_parse ("http://example.com/.%2E/foo", 0, &uri, arena);
+  TEST_ASSERT (result == URI_PARSE_INVALID_PATH, "Reject .%2E/foo (uppercase)");
+
+  result = SocketHTTP_URI_parse ("http://example.com/foo/.%2e/", 0, &uri, arena);
+  TEST_ASSERT (result == URI_PARSE_INVALID_PATH, "Reject foo/.%2e/ (mid-path)");
+
+  result = SocketHTTP_URI_parse ("http://example.com/.%2e", 0, &uri, arena);
+  TEST_ASSERT (result == URI_PARSE_INVALID_PATH, "Reject .%2e (at end)");
+
+  result = SocketHTTP_URI_parse ("http://example.com/.%2e?query", 0, &uri, arena);
+  TEST_ASSERT (result == URI_PARSE_INVALID_PATH, "Reject .%2e?query (before query)");
+
+  // Path traversal - mixed encoding "%2e."
+  result = SocketHTTP_URI_parse ("http://example.com/%2e./foo", 0, &uri, arena);
+  TEST_ASSERT (result == URI_PARSE_INVALID_PATH, "Reject %2e./foo (lowercase)");
+
+  result = SocketHTTP_URI_parse ("http://example.com/%2E./foo", 0, &uri, arena);
+  TEST_ASSERT (result == URI_PARSE_INVALID_PATH, "Reject %2E./foo (uppercase)");
+
+  result = SocketHTTP_URI_parse ("http://example.com/foo/%2e./", 0, &uri, arena);
+  TEST_ASSERT (result == URI_PARSE_INVALID_PATH, "Reject foo/%2e./ (mid-path)");
+
+  result = SocketHTTP_URI_parse ("http://example.com/%2e.", 0, &uri, arena);
+  TEST_ASSERT (result == URI_PARSE_INVALID_PATH, "Reject %2e. (at end)");
+
+  result = SocketHTTP_URI_parse ("http://example.com/%2e.?query", 0, &uri, arena);
+  TEST_ASSERT (result == URI_PARSE_INVALID_PATH, "Reject %2e.?query (before query)");
+
+  // Valid paths with single dots (should pass)
+  result = SocketHTTP_URI_parse ("http://example.com/.", 0, &uri, arena);
+  TEST_ASSERT (result == URI_PARSE_OK, "Accept single dot /.");
+
+  result = SocketHTTP_URI_parse ("http://example.com/./foo", 0, &uri, arena);
+  TEST_ASSERT (result == URI_PARSE_OK, "Accept single dot /./foo");
+
+  result = SocketHTTP_URI_parse ("http://example.com/foo.bar", 0, &uri, arena);
+  TEST_ASSERT (result == URI_PARSE_OK, "Accept foo.bar (non-traversal)");
+
   Arena_dispose (&arena);
 }
 
