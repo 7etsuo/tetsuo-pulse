@@ -816,6 +816,7 @@ set(TEST_SOURCES
     test_quic_termination
     test_quic_flow
     test_quic_crypto_frame_encode
+    test_quic_connection_close_utf8
     test_quic_ack
     test_quic_loss
 )

@@ -18,6 +18,7 @@
 
 #include "quic/SocketQUICFrame.h"
 #include "quic/SocketQUICVarInt.h"
+#include "core/SocketUTF8.h"
 
 #include <string.h>
 
@@ -38,9 +39,10 @@
  * @param out          Output buffer for encoded frame.
  * @param out_len      Size of output buffer in bytes.
  *
- * @return Number of bytes written on success, 0 on error (buffer too small).
+ * @return Number of bytes written on success, 0 on error (buffer too small or invalid UTF-8).
  *
- * @note The reason phrase should be UTF-8 encoded. No validation is performed.
+ * @note The reason phrase MUST be valid UTF-8 per RFC 9000 §19.19.
+ * @note Invalid UTF-8 sequences will cause encoding to fail and return 0.
  * @note Error code should be from the transport error code space (Section 20).
  *
  * Example:
@@ -64,6 +66,16 @@ SocketQUICFrame_encode_connection_close_transport (uint64_t error_code,
   if (!out || out_len == 0)
     return 0;
 
+  /* Validate UTF-8 if reason phrase is provided */
+  size_t reason_len = reason ? strlen (reason) : 0;
+  if (reason_len > 0)
+    {
+      SocketUTF8_Result utf8_result
+          = SocketUTF8_validate ((const unsigned char *)reason, reason_len);
+      if (utf8_result != UTF8_VALID)
+        return 0; /* Invalid UTF-8 sequence */
+    }
+
   size_t pos = 0;
 
   /* Frame type (0x1c) */
@@ -79,7 +91,6 @@ SocketQUICFrame_encode_connection_close_transport (uint64_t error_code,
     return 0;
 
   /* Reason Phrase Length */
-  size_t reason_len = reason ? strlen (reason) : 0;
   if (!encode_varint_field (reason_len, out, &pos, out_len))
     return 0;
 
@@ -113,9 +124,10 @@ SocketQUICFrame_encode_connection_close_transport (uint64_t error_code,
  * @param out          Output buffer for encoded frame.
  * @param out_len      Size of output buffer in bytes.
  *
- * @return Number of bytes written on success, 0 on error (buffer too small).
+ * @return Number of bytes written on success, 0 on error (buffer too small or invalid UTF-8).
  *
- * @note The reason phrase should be UTF-8 encoded. No validation is performed.
+ * @note The reason phrase MUST be valid UTF-8 per RFC 9000 §19.19.
+ * @note Invalid UTF-8 sequences will cause encoding to fail and return 0.
  * @note Error code is application-defined and not from the transport space.
  *
  * Example:
@@ -136,6 +148,16 @@ SocketQUICFrame_encode_connection_close_app (uint64_t error_code,
   if (!out || out_len == 0)
     return 0;
 
+  /* Validate UTF-8 if reason phrase is provided */
+  size_t reason_len = reason ? strlen (reason) : 0;
+  if (reason_len > 0)
+    {
+      SocketUTF8_Result utf8_result
+          = SocketUTF8_validate ((const unsigned char *)reason, reason_len);
+      if (utf8_result != UTF8_VALID)
+        return 0; /* Invalid UTF-8 sequence */
+    }
+
   size_t pos = 0;
 
   /* Frame type (0x1d) */
@@ -147,7 +169,6 @@ SocketQUICFrame_encode_connection_close_app (uint64_t error_code,
     return 0;
 
   /* Reason Phrase Length */
-  size_t reason_len = reason ? strlen (reason) : 0;
   if (!encode_varint_field (reason_len, out, &pos, out_len))
     return 0;
 
