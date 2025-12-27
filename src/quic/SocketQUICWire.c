@@ -11,6 +11,8 @@
  * Based on the pseudocode in RFC 9000 Appendix A.2 and A.3.
  */
 
+#include <assert.h>
+
 #include "quic/SocketQUICWire.h"
 #include "quic/SocketQUICConstants.h"
 
@@ -242,6 +244,11 @@ SocketQUICWire_pn_read (const uint8_t *data, size_t len, unsigned pn_len,
       *value = ((uint64_t)data[0] << 24) | ((uint64_t)data[1] << 16)
                | ((uint64_t)data[2] << 8) | (uint64_t)data[3];
       break;
+
+    default:
+      /* Should never reach here due to validation above */
+      assert (0 && "Invalid pn_len passed validation");
+      return QUIC_PN_ERROR_BITS;
     }
 
   return QUIC_PN_OK;
@@ -284,6 +291,11 @@ SocketQUICWire_pn_write (uint64_t value, unsigned pn_len, uint8_t *output,
       output[2] = (uint8_t)((value >> 8) & 0xFF);
       output[3] = (uint8_t)(value & 0xFF);
       break;
+
+    default:
+      /* Should never reach here due to validation above */
+      assert (0 && "Invalid pn_len passed validation");
+      return 0;
     }
 
   return pn_len;
