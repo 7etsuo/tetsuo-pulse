@@ -26,6 +26,9 @@ struct SocketQUICConnTable {
   uint32_t hash_seed;
   SocketQUICConnection_T *addr_buckets;
   size_t addr_bucket_count;
+  uint64_t chain_limit_hits_cid;
+  uint64_t chain_limit_hits_addr;
+  uint64_t max_chain_len_seen;
 };
 
 #ifdef __linux__
@@ -101,7 +104,12 @@ SocketQUICConnection_T SocketQUICConnTable_lookup(SocketQUICConnTable_T table, c
   SocketQUICConnection_T conn = table->buckets[idx];
   int chain_len = 0;
   while (conn) {
-    if (++chain_len > QUIC_CONNTABLE_MAX_CHAIN_LEN) { pthread_mutex_unlock(&table->mutex); return NULL; }
+    if (++chain_len > QUIC_CONNTABLE_MAX_CHAIN_LEN) {
+      table->chain_limit_hits_cid++;
+      if ((uint64_t)chain_len > table->max_chain_len_seen) { table->max_chain_len_seen = (uint64_t)chain_len; }
+      pthread_mutex_unlock(&table->mutex);
+      return NULL;
+    }
     for (size_t i = 0; i < conn->local_cid_count; i++)
       if (SocketQUICConnectionID_equal_raw(&conn->local_cids[i], dcid, dcid_len)) { pthread_mutex_unlock(&table->mutex); return conn; }
     conn = conn->hash_next;
@@ -118,7 +126,12 @@ SocketQUICConnection_T SocketQUICConnTable_lookup_by_addr(SocketQUICConnTable_T 
   SocketQUICConnection_T conn = table->addr_buckets[idx];
   int chain_len = 0;
   while (conn) {
-    if (++chain_len > QUIC_CONNTABLE_MAX_CHAIN_LEN) { pthread_mutex_unlock(&table->mutex); return NULL; }
+    if (++chain_len > QUIC_CONNTABLE_MAX_CHAIN_LEN) {
+      table->chain_limit_hits_addr++;
+      if ((uint64_t)chain_len > table->max_chain_len_seen) { table->max_chain_len_seen = (uint64_t)chain_len; }
+      pthread_mutex_unlock(&table->mutex);
+      return NULL;
+    }
     if (conn->local_port == local_port && conn->peer_port == peer_port && conn->is_ipv6 == is_ipv6 && memcmp(conn->local_addr, local_addr, addr_len) == 0 && memcmp(conn->peer_addr, peer_addr, addr_len) == 0) { pthread_mutex_unlock(&table->mutex); return conn; }
     conn = conn->hash_next;
   }
@@ -250,4 +263,14 @@ SocketQUICConnection_Result SocketQUICConnection_set_addresses(SocketQUICConnect
 int SocketQUICConnection_uses_zero_dcid(SocketQUICConnection_T conn) {
   if (!conn) return 0;
   return (conn->local_cid_count == 0) || (conn->local_cid_count == 1 && conn->local_cids[0].len == 0);
+}
+
+void SocketQUICConnTable_get_stats(SocketQUICConnTable_T table, uint64_t *chain_limit_hits_cid, uint64_t *chain_limit_hits_addr, uint64_t *max_chain_len_seen, size_t *conn_count) {
+  if (!table) return;
+  pthread_mutex_lock(&table->mutex);
+  if (chain_limit_hits_cid) *chain_limit_hits_cid = table->chain_limit_hits_cid;
+  if (chain_limit_hits_addr) *chain_limit_hits_addr = table->chain_limit_hits_addr;
+  if (max_chain_len_seen) *max_chain_len_seen = table->max_chain_len_seen;
+  if (conn_count) *conn_count = table->conn_count;
+  pthread_mutex_unlock(&table->mutex);
 }
