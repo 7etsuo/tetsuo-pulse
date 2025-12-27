@@ -29,8 +29,6 @@
 #include <stdint.h>
 #include "quic/SocketQUICConnection.h"
 
-#define UINT64_MAX_VAL ((uint64_t)-1)
-
 /**
  * @brief Set idle timeout parameters for connection.
  * @param conn Connection instance.
@@ -101,8 +99,8 @@ SocketQUICConnection_reset_idle_timer(SocketQUICConnection_T conn,
                                    : conn->peer_max_idle_timeout_ms;
 
   /* Prevent overflow */
-  if (now_ms > UINT64_MAX_VAL - effective_timeout)
-    conn->idle_timeout_deadline_ms = UINT64_MAX_VAL;
+  if (now_ms > UINT64_MAX - effective_timeout)
+    conn->idle_timeout_deadline_ms = UINT64_MAX;
   else
     conn->idle_timeout_deadline_ms = now_ms + effective_timeout;
 }
@@ -160,8 +158,8 @@ SocketQUICConnection_initiate_close(SocketQUICConnection_T conn,
 
   /* Calculate closing deadline: 3 * PTO */
   uint64_t timeout = pto_ms * 3;
-  if (now_ms > UINT64_MAX_VAL - timeout)
-    conn->closing_deadline_ms = UINT64_MAX_VAL;
+  if (now_ms > UINT64_MAX - timeout)
+    conn->closing_deadline_ms = UINT64_MAX;
   else
     conn->closing_deadline_ms = now_ms + timeout;
 
@@ -197,8 +195,8 @@ SocketQUICConnection_enter_draining(SocketQUICConnection_T conn,
 
   /* Calculate draining deadline: 3 * PTO */
   uint64_t timeout = pto_ms * 3;
-  if (now_ms > UINT64_MAX_VAL - timeout)
-    conn->draining_deadline_ms = UINT64_MAX_VAL;
+  if (now_ms > UINT64_MAX - timeout)
+    conn->draining_deadline_ms = UINT64_MAX;
   else
     conn->draining_deadline_ms = now_ms + timeout;
 }
