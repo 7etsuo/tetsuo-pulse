@@ -709,13 +709,21 @@ sockaddr_to_string (const struct sockaddr_storage *addr, char *buf,
   if (addr->ss_family == AF_INET)
     {
       addr4 = (const struct sockaddr_in *)addr;
-      inet_ntop (AF_INET, &addr4->sin_addr, ip, sizeof (ip));
+      if (inet_ntop (AF_INET, &addr4->sin_addr, ip, sizeof (ip)) == NULL)
+        {
+          snprintf (buf, size, "invalid:0");
+          return;
+        }
       snprintf (buf, size, "%s:%u", ip, ntohs (addr4->sin_port));
     }
   else if (addr->ss_family == AF_INET6)
     {
       addr6 = (const struct sockaddr_in6 *)addr;
-      inet_ntop (AF_INET6, &addr6->sin6_addr, ip, sizeof (ip));
+      if (inet_ntop (AF_INET6, &addr6->sin6_addr, ip, sizeof (ip)) == NULL)
+        {
+          snprintf (buf, size, "[invalid]:0");
+          return;
+        }
       snprintf (buf, size, "[%s]:%u", ip, ntohs (addr6->sin6_port));
     }
   else
