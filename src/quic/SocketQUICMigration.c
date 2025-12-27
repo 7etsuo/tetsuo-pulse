@@ -570,9 +570,9 @@ int
 SocketQUICMigration_path_to_string (const SocketQUICPath_T *path, char *buf,
                                     size_t size)
 {
-  char local_str[64];
-  char peer_str[64];
-  char cid_str[64];
+  char local_str[QUIC_SOCKADDR_STRING_MAX];
+  char peer_str[QUIC_SOCKADDR_STRING_MAX];
+  char cid_str[QUIC_SOCKADDR_STRING_MAX];
   int written;
 
   if (path == NULL || buf == NULL || size == 0)
