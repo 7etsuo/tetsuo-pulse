@@ -147,14 +147,15 @@ TEST (frame_stream_encode_buffer_too_small)
 {
   uint8_t buf[8];
   const uint8_t data[100] = { 0 };
+  size_t len;
 
   /* Try to encode frame larger than buffer */
-  size_t len = SocketQUICFrame_encode_stream (0, 0, data, 100, 0, buf,
-                                               sizeof (buf));
+  len = SocketQUICFrame_encode_stream (0, 0, data, 100, 0, buf,
+                                        sizeof (buf));
 
   ASSERT_EQ (0, len); /* Should fail gracefully */
 
-  size_t len = SocketQUICFrame_encode_stream (8, 0, data, 3, 1, buf, sizeof (buf));
+  len = SocketQUICFrame_encode_stream (8, 0, data, 3, 1, buf, sizeof (buf));
 
   ASSERT (len > 0);
   ASSERT_EQ (0x0b, buf[0]);
