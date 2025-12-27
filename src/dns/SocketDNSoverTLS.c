@@ -36,6 +36,7 @@
 #include <unistd.h>
 
 #include "core/Arena.h"
+#include "core/SocketUtil.h"
 #include "dns/SocketDNSWire.h"
 #include "socket/Socket.h"
 #include "tls/SocketTLS.h"
@@ -822,37 +823,32 @@ SocketDNSoverTLS_configure (T transport, const SocketDNSoverTLS_Config *config)
   server = &transport->servers[transport->server_count];
   memset (server, 0, sizeof (*server));
 
-  strncpy (server->address, config->server_address, sizeof (server->address) - 1);
-  server->address[sizeof (server->address) - 1] = '\0'; /* Ensure null termination (CWE-170) */
+  socket_util_safe_strncpy (server->address, config->server_address, sizeof (server->address));
   server->port = (config->port > 0) ? config->port : DOT_PORT;
   server->family = family;
   server->mode = config->mode;
 
   if (config->server_name)
     {
-      strncpy (server->server_name, config->server_name,
-               sizeof (server->server_name) - 1);
-      server->server_name[sizeof (server->server_name) - 1] = '\0';
+      socket_util_safe_strncpy (server->server_name, config->server_name,
+                                sizeof (server->server_name));
     }
   else
     {
       /* Use address as SNI if no server name provided */
-      strncpy (server->server_name, config->server_address,
-               sizeof (server->server_name) - 1);
-      server->server_name[sizeof (server->server_name) - 1] = '\0';
+      socket_util_safe_strncpy (server->server_name, config->server_address,
+                                sizeof (server->server_name));
     }
 
   if (config->spki_pin)
     {
-      strncpy (server->spki_pin, config->spki_pin, sizeof (server->spki_pin) - 1);
-      server->spki_pin[sizeof (server->spki_pin) - 1] = '\0';
+      socket_util_safe_strncpy (server->spki_pin, config->spki_pin, sizeof (server->spki_pin));
     }
 
   if (config->spki_pin_backup)
     {
-      strncpy (server->spki_pin_backup, config->spki_pin_backup,
-               sizeof (server->spki_pin_backup) - 1);
-      server->spki_pin_backup[sizeof (server->spki_pin_backup) - 1] = '\0';
+      socket_util_safe_strncpy (server->spki_pin_backup, config->spki_pin_backup,
+                                sizeof (server->spki_pin_backup));
     }
 
   transport->server_count++;
