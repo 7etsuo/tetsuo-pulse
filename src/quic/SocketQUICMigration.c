@@ -39,7 +39,7 @@ const Except_T SocketQUICMigration_Failed = { &SocketQUICMigration_Failed,
 static int generate_random_bytes (uint8_t *buf, size_t len);
 static int sockaddr_equal (const struct sockaddr_storage *a,
                           const struct sockaddr_storage *b);
-static void sockaddr_to_string (const struct sockaddr_storage *addr, char *buf,
+static int sockaddr_to_string (const struct sockaddr_storage *addr, char *buf,
                                 size_t size);
 static SocketQUICPath_T *find_path_by_challenge (
     SocketQUICMigration_T *migration, const uint8_t challenge[8]);
@@ -578,9 +578,14 @@ SocketQUICMigration_path_to_string (const SocketQUICPath_T *path, char *buf,
   if (path == NULL || buf == NULL || size == 0)
     return -1;
 
-  sockaddr_to_string (&path->local_addr, local_str, sizeof (local_str));
-  sockaddr_to_string (&path->peer_addr, peer_str, sizeof (peer_str));
-  SocketQUICConnectionID_to_hex (&path->cid, cid_str, sizeof (cid_str));
+  if (sockaddr_to_string (&path->local_addr, local_str, sizeof (local_str))
+      < 0)
+    return -1;
+  if (sockaddr_to_string (&path->peer_addr, peer_str, sizeof (peer_str)) < 0)
+    return -1;
+  if (SocketQUICConnectionID_to_hex (&path->cid, cid_str, sizeof (cid_str))
+      < 0)
+    return -1;
 
   written = snprintf (buf, size,
                       "Path[%s -> %s, CID=%s, state=%s, cwnd=%lu, "
@@ -690,37 +695,51 @@ sockaddr_equal (const struct sockaddr_storage *a,
  * @param addr Address to convert.
  * @param buf  Output buffer.
  * @param size Size of output buffer.
+ *
+ * @return Number of characters written (excluding null), or -1 on error/truncation.
  */
-static void
+static int
 sockaddr_to_string (const struct sockaddr_storage *addr, char *buf,
                     size_t size)
 {
   const struct sockaddr_in *addr4;
   const struct sockaddr_in6 *addr6;
   char ip[INET6_ADDRSTRLEN];
+  int written;
 
   if (addr == NULL || buf == NULL || size == 0)
     {
       if (buf != NULL && size > 0)
         buf[0] = '\0';
-      return;
+      return -1;
     }
 
   if (addr->ss_family == AF_INET)
     {
       addr4 = (const struct sockaddr_in *)addr;
-      inet_ntop (AF_INET, &addr4->sin_addr, ip, sizeof (ip));
-      snprintf (buf, size, "%s:%u", ip, ntohs (addr4->sin_port));
+      if (inet_ntop (AF_INET, &addr4->sin_addr, ip, sizeof (ip)) == NULL)
+        {
+          snprintf (buf, size, "invalid:0");
+          return -1;
+        }
+      written = snprintf (buf, size, "%s:%u", ip, ntohs (addr4->sin_port));
+      return (written < 0 || (size_t)written >= size) ? -1 : written;
     }
   else if (addr->ss_family == AF_INET6)
     {
       addr6 = (const struct sockaddr_in6 *)addr;
-      inet_ntop (AF_INET6, &addr6->sin6_addr, ip, sizeof (ip));
-      snprintf (buf, size, "[%s]:%u", ip, ntohs (addr6->sin6_port));
+      if (inet_ntop (AF_INET6, &addr6->sin6_addr, ip, sizeof (ip)) == NULL)
+        {
+          snprintf (buf, size, "invalid:0");
+          return -1;
+        }
+      written = snprintf (buf, size, "[%s]:%u", ip, ntohs (addr6->sin6_port));
+      return (written < 0 || (size_t)written >= size) ? -1 : written;
     }
   else
     {
-      snprintf (buf, size, "unknown");
+      written = snprintf (buf, size, "unknown");
+      return (written < 0 || (size_t)written >= size) ? -1 : written;
     }
 }
 
