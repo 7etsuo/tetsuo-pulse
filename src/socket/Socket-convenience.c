@@ -66,17 +66,6 @@ set_nonblocking_mode (int fd, int original_flags)
         return 0;
 }
 
-static void
-restore_blocking_mode (int fd, int original_flags)
-{
-        if (fcntl (fd, F_SETFL, original_flags) < 0)
-                {
-                        SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-                                         "Failed to restore blocking mode "
-                                         "(fd=%d, errno=%d): %s",
-                                         fd, errno, Socket_safe_strerror (errno));
-                }
-}
 
 static int
 check_connect_result (int fd, const char *context_path)
@@ -138,7 +127,8 @@ with_nonblocking_scope (int fd, int enable, volatile int *original_flags, volati
 
         if (!enable) {
                 if (*need_restore) {
-                        restore_blocking_mode (fd, (int)*original_flags);
+                        socket_common_restore_blocking_mode (fd, (int)*original_flags,
+                                                             SOCKET_LOG_COMPONENT);
                         *need_restore = 0;
                 }
                 return;

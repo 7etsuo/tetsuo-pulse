@@ -62,19 +62,6 @@ socket_wait_for_connect (T socket, int timeout_ms)
   return socket_check_so_error (fd);
 }
 
-static void
-socket_restore_blocking_mode (T socket, int original_flags,
-                              const char *operation)
-{
-  int fd = SocketBase_fd (socket->base);
-  if (fcntl (fd, F_SETFL, original_flags) < 0)
-    {
-      SocketLog_emitf (SOCKET_LOG_WARN, "SocketConnect",
-                       "Failed to restore blocking mode after %s "
-                       "(fd=%d, errno=%d): %s",
-                       operation, fd, errno, Socket_safe_strerror (errno));
-    }
-}
 
 static int
 socket_connect_with_poll_wait (T socket, const struct sockaddr *addr,
@@ -199,8 +186,8 @@ connect_wait_completion (T socket, const struct sockaddr *addr,
       = socket_connect_with_poll_wait (socket, addr, addrlen, timeout_ms);
 
   if (restore_blocking)
-    socket_restore_blocking_mode (socket, original_flags,
-                                  result == 0 ? "connect" : "connect failure");
+    socket_common_restore_blocking_mode (SocketBase_fd (socket->base),
+                                         original_flags, "SocketConnect");
 
   return result;
 }

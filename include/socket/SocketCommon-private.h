@@ -1008,4 +1008,48 @@ socket_check_so_error (int fd)
   return 0;
 }
 
+/**
+ * @brief Restore blocking mode on socket file descriptor with error logging.
+ * @internal
+ * @ingroup core_io
+ *
+ * Attempts to restore original file descriptor flags, typically used to restore
+ * blocking mode after temporary non-blocking operation (e.g., timed connect).
+ * On failure, logs warning but does not raise exception - best-effort cleanup.
+ *
+ * @param[in] fd File descriptor to restore
+ * @param[in] original_flags Original flags from fcntl(F_GETFL) to restore
+ * @param[in] component Component name for logging context (e.g., "SocketConnect")
+ *
+ * @throws None - logs warning on failure but continues
+ * @threadsafe Yes - operates on single fd, no shared state
+ * @complexity O(1) - single fcntl call
+ *
+ *  Usage Example
+ *
+ * @code{.c}
+ * int original_flags = fcntl(fd, F_GETFL);
+ * fcntl(fd, F_SETFL, original_flags | O_NONBLOCK);
+ * // ... perform non-blocking operation ...
+ * socket_common_restore_blocking_mode(fd, original_flags, "SocketConnect");
+ * @endcode
+ *
+ * @note Failure to restore is non-fatal - socket remains in modified state
+ * @note Used in cleanup/finally blocks where exceptions would be problematic
+ * @note Logs at WARN level with fd, errno, and strerror for debugging
+ * @see fcntl(2) F_SETFL for flag restoration
+ * @see socket_poll_eintr_retry() for typical usage context
+ */
+static inline void
+socket_common_restore_blocking_mode (int fd, int original_flags,
+                                     const char *component)
+{
+  if (fcntl (fd, F_SETFL, original_flags) < 0)
+    {
+      SocketLog_emitf (SOCKET_LOG_WARN, component,
+                       "Failed to restore blocking mode (fd=%d, errno=%d): %s",
+                       fd, errno, Socket_safe_strerror (errno));
+    }
+}
+
 #endif /* SOCKETCOMMON_PRIVATE_INCLUDED */
