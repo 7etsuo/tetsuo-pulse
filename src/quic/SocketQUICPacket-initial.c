@@ -251,8 +251,16 @@ hkdf_expand_label (const uint8_t *secret, size_t secret_len,
   /* Label length and "tls13 " prefix + actual label */
   size_t full_label_len = 6 + label_len;
   hkdf_label[hkdf_label_len++] = (uint8_t)full_label_len;
+
+  /* Check space for "tls13 " prefix */
+  if (hkdf_label_len + 6 > sizeof (hkdf_label))
+    goto cleanup;
   memcpy (hkdf_label + hkdf_label_len, "tls13 ", 6);
   hkdf_label_len += 6;
+
+  /* Check space for label */
+  if (hkdf_label_len + label_len > sizeof (hkdf_label))
+    goto cleanup;
   memcpy (hkdf_label + hkdf_label_len, label, label_len);
   hkdf_label_len += label_len;
 
@@ -260,6 +268,9 @@ hkdf_expand_label (const uint8_t *secret, size_t secret_len,
   hkdf_label[hkdf_label_len++] = (uint8_t)context_len;
   if (context_len > 0)
     {
+      /* Check space for context */
+      if (hkdf_label_len + context_len > sizeof (hkdf_label))
+        goto cleanup;
       memcpy (hkdf_label + hkdf_label_len, context, context_len);
       hkdf_label_len += context_len;
     }
