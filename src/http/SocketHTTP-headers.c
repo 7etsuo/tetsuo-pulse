@@ -53,57 +53,15 @@ init_header_hash_seed (void)
     }
 }
 
-/**
- * Fast case-insensitive header name hash.
- * Uses power-of-2 bucket count for fast modulo via bitwise AND.
- */
-static inline unsigned
-hash_header_name_seeded (const char *name, size_t len, unsigned bucket_mask)
-{
-  uint32_t hash = 5381 ^ header_hash_seed;
-
-  /* Process 4 bytes at a time when possible */
-  while (len >= 4)
-    {
-      uint32_t c0 = (unsigned char)name[0];
-      uint32_t c1 = (unsigned char)name[1];
-      uint32_t c2 = (unsigned char)name[2];
-      uint32_t c3 = (unsigned char)name[3];
-
-      /* ASCII lowercase conversion */
-      c0 += (c0 >= 'A' && c0 <= 'Z') ? 32 : 0;
-      c1 += (c1 >= 'A' && c1 <= 'Z') ? 32 : 0;
-      c2 += (c2 >= 'A' && c2 <= 'Z') ? 32 : 0;
-      c3 += (c3 >= 'A' && c3 <= 'Z') ? 32 : 0;
-
-      hash = ((hash << 5) + hash) ^ c0;
-      hash = ((hash << 5) + hash) ^ c1;
-      hash = ((hash << 5) + hash) ^ c2;
-      hash = ((hash << 5) + hash) ^ c3;
-
-      name += 4;
-      len -= 4;
-    }
-
-  /* Handle remaining bytes */
-  while (len > 0)
-    {
-      uint32_t c = (unsigned char)*name;
-      c += (c >= 'A' && c <= 'Z') ? 32 : 0;
-      hash = ((hash << 5) + hash) ^ c;
-      name++;
-      len--;
-    }
-
-  return hash & bucket_mask;
-}
-
 static HeaderEntry *
 find_entry_with_prev (SocketHTTP_Headers_T headers, const char *name,
                       size_t name_len, HeaderEntry ***prev_ptr_out)
 {
-  unsigned bucket = hash_header_name_seeded (name, name_len,
-                                             SOCKETHTTP_HEADER_BUCKET_MASK);
+  unsigned bucket
+      = socket_util_hash_djb2_seeded_ci_len (name, name_len,
+                                             SOCKETHTTP_HEADER_BUCKETS,
+                                             header_hash_seed)
+        & SOCKETHTTP_HEADER_BUCKET_MASK;
   HeaderEntry **pp = &headers->buckets[bucket];
 
   int chain_len = 0;
@@ -386,8 +344,11 @@ SocketHTTP_Headers_add_n (SocketHTTP_Headers_T headers, const char *name,
   if (allocate_entry_name (headers->arena, entry, name, name_len) < 0)
     return -1;
 
-  entry->hash = hash_header_name_seeded (name, name_len,
-                                         SOCKETHTTP_HEADER_BUCKET_MASK);
+  entry->hash
+      = socket_util_hash_djb2_seeded_ci_len (name, name_len,
+                                             SOCKETHTTP_HEADER_BUCKETS,
+                                             header_hash_seed)
+        & SOCKETHTTP_HEADER_BUCKET_MASK;
 
   if (allocate_entry_value (headers->arena, entry, value, value_len) < 0)
     return -1;
@@ -438,8 +399,11 @@ SocketHTTP_Headers_add_ref (SocketHTTP_Headers_T headers, const char *name,
   entry->value_len = value_len;
   entry->is_ref = 1;
 
-  entry->hash = hash_header_name_seeded (name, name_len,
-                                         SOCKETHTTP_HEADER_BUCKET_MASK);
+  entry->hash
+      = socket_util_hash_djb2_seeded_ci_len (name, name_len,
+                                             SOCKETHTTP_HEADER_BUCKETS,
+                                             header_hash_seed)
+        & SOCKETHTTP_HEADER_BUCKET_MASK;
 
   if (add_to_bucket (headers, entry) < 0)
     return -1;
