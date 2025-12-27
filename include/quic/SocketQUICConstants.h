@@ -222,6 +222,25 @@
 #define QUIC_STATELESS_RESET_MIN_SIZE 38
 
 /* ============================================================================
+ * String Formatting Constants
+ * ============================================================================
+ */
+
+/**
+ * @brief Maximum length for formatted socket address string.
+ *
+ * Format: "[IPv6]:port"
+ * - IPv6 address: up to INET6_ADDRSTRLEN (46 bytes including null)
+ * - Brackets for IPv6: 2 characters '[' ']'
+ * - Port separator: 1 character ':'
+ * - Port number: up to 5 characters (65535)
+ * - Null terminator: 1 character
+ *
+ * Total: 46 + 2 + 1 + 5 + 1 = 55 bytes minimum, rounded to 64 for alignment.
+ */
+#define QUIC_SOCKADDR_STRING_MAX 64
+
+/* ============================================================================
  * Utility Macros
  * ============================================================================
  */
