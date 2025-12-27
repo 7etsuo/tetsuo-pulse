@@ -112,23 +112,27 @@ socketevent_can_register_unlocked (SocketEventCallback callback,
   return 1;
 }
 
-void
+int
 SocketEvent_register (SocketEventCallback callback, void *userdata)
 {
+  int result;
+
   if (callback == NULL)
     {
       SocketLog_emit (SOCKET_LOG_WARN, "SocketEvents",
                       "NULL callback in register ignored");
-      return;
+      return -1;
     }
 
   SOCKET_MUTEX_LOCK_OR_RAISE (&socketevent_mutex, SocketEvent,
                               SocketEvent_Failed);
 
-  if (socketevent_can_register_unlocked (callback, userdata))
+  result = socketevent_can_register_unlocked (callback, userdata) ? 0 : -1;
+  if (result == 0)
     socketevent_add_handler_unlocked (callback, userdata);
 
   SOCKET_MUTEX_UNLOCK (&socketevent_mutex);
+  return result;
 }
 
 /* Caller must hold socketevent_mutex */
@@ -145,26 +149,29 @@ socketevent_remove_at_index_unlocked (size_t index)
   socketevent_handler_count--;
 }
 
-void
+int
 SocketEvent_unregister (SocketEventCallback callback, const void *userdata)
 {
   ssize_t idx;
+  int result;
 
   if (callback == NULL)
     {
       SocketLog_emit (SOCKET_LOG_WARN, "SocketEvents",
                       "NULL callback in unregister ignored");
-      return;
+      return -1;
     }
 
   SOCKET_MUTEX_LOCK_OR_RAISE (&socketevent_mutex, SocketEvent,
                               SocketEvent_Failed);
 
   idx = socketevent_find_handler_unlocked (callback, userdata);
+  result = (idx >= 0) ? 0 : -1;
   if (idx >= 0)
     socketevent_remove_at_index_unlocked ((size_t)idx);
 
   SOCKET_MUTEX_UNLOCK (&socketevent_mutex);
+  return result;
 }
 
 static void
