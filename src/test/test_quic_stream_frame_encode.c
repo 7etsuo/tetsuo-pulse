@@ -40,7 +40,7 @@ TEST (frame_stream_encode_basic)
   ASSERT_EQ (0x0a, buf[0]);
 
   SocketQUICFrameStream_T frame;
-  int consumed = SocketQUICFrame_decode_stream (buf, len, &frame);
+  ssize_t consumed = SocketQUICFrame_decode_stream (buf, len, &frame);
 
   ASSERT (consumed > 0);
   ASSERT_EQ (0, frame.stream_id);
@@ -64,7 +64,7 @@ TEST (frame_stream_encode_with_offset)
 
   /* Verify by parsing */
   SocketQUICFrameStream_T frame;
-  int consumed = SocketQUICFrame_decode_stream (buf, len, &frame);
+  ssize_t consumed = SocketQUICFrame_decode_stream (buf, len, &frame);
 
   ASSERT (consumed > 0);
   ASSERT_EQ (4, frame.stream_id);
@@ -88,7 +88,7 @@ TEST (frame_stream_encode_with_fin)
 
   /* Verify by parsing */
   SocketQUICFrameStream_T frame;
-  int consumed = SocketQUICFrame_decode_stream (buf, len, &frame);
+  ssize_t consumed = SocketQUICFrame_decode_stream (buf, len, &frame);
 
   ASSERT (consumed > 0);
   ASSERT_EQ (8, frame.stream_id);
@@ -112,7 +112,7 @@ TEST (frame_stream_encode_all_flags)
 
   /* Verify by parsing */
   SocketQUICFrameStream_T frame;
-  int consumed = SocketQUICFrame_decode_stream (buf, len, &frame);
+  ssize_t consumed = SocketQUICFrame_decode_stream (buf, len, &frame);
 
   ASSERT (consumed > 0);
   ASSERT_EQ (12, frame.stream_id);
@@ -135,7 +135,7 @@ TEST (frame_stream_encode_zero_length_with_fin)
 
   /* Verify by parsing */
   SocketQUICFrameStream_T frame;
-  int consumed = SocketQUICFrame_decode_stream (buf, len, &frame);
+  ssize_t consumed = SocketQUICFrame_decode_stream (buf, len, &frame);
 
   ASSERT (consumed > 0);
   ASSERT_EQ (16, frame.stream_id);
