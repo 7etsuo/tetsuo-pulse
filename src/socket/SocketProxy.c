@@ -209,34 +209,7 @@ socketproxy_parse_userinfo (const char *start, SocketProxy_Config *config,
       return -1;
     }
 
-  colon = strchr (start, ':');
-  if (colon != NULL && colon > at_sign)
-    {
-      colon = NULL;
-      for (const char *p = start; p < at_sign; p++)
-        {
-          if (*p == ':')
-            {
-              colon = p;
-              break;
-            }
-        }
-    }
-  else if (colon != NULL && colon < at_sign)
-    {
-    }
-  else
-    {
-      colon = NULL;
-      for (const char *p = start; p < at_sign; p++)
-        {
-          if (*p == ':')
-            {
-              colon = p;
-              break;
-            }
-        }
-    }
+  colon = memchr (start, ':', (size_t)(at_sign - start));
 
   if (colon != NULL && colon < at_sign)
     {
