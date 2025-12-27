@@ -141,17 +141,6 @@ sockethttp_parse_enum(const char *str, size_t len, const struct ParseEntry *tabl
   return default_val;
 }
 
-static int
-sockethttp_is_token (const char *s, size_t len)
-{
-  for (size_t i = 0; i < len; i++)
-    {
-      if (!SOCKETHTTP_IS_TCHAR (s[i]))
-        return 0;
-    }
-  return 1;
-}
-
 /* SECURITY: Check for NUL/CR/LF to prevent header injection (CWE-113) */
 static int
 sockethttp_header_value_is_safe (const char *s, size_t len)
@@ -293,7 +282,7 @@ SocketHTTP_method_valid (const char *str, size_t len)
   len = sockethttp_effective_length (str, len);
   if (len == 0)
     return 0;
-  return sockethttp_is_token (str, len);
+  return sockethttp_is_token_valid (str, len);
 }
 
 /* ============================================================================
@@ -436,7 +425,7 @@ SocketHTTP_header_name_valid (const char *name, size_t len)
   len = sockethttp_effective_length (name, len);
   if (len == 0 || len > SOCKETHTTP_MAX_HEADER_NAME)
     return 0;
-  return sockethttp_is_token (name, len);
+  return sockethttp_is_token_valid (name, len);
 }
 
 int
