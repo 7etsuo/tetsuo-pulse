@@ -623,11 +623,13 @@ dgram_try_addresses (T socket, struct addrinfo *res, int socket_family,
           /* Cache address in appropriate field based on operation type */
           if (op == DGRAM_OP_CONNECT)
             {
+              assert (rp->ai_addrlen <= sizeof (struct sockaddr_storage));
               memcpy (&socket->base->remote_addr, rp->ai_addr, rp->ai_addrlen);
               socket->base->remote_addrlen = rp->ai_addrlen;
             }
           else
             {
+              assert (rp->ai_addrlen <= sizeof (struct sockaddr_storage));
               memcpy (&socket->base->local_addr, rp->ai_addr, rp->ai_addrlen);
               socket->base->local_addrlen = rp->ai_addrlen;
             }
