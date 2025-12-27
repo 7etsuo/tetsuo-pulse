@@ -377,6 +377,34 @@ Socket_recvmsg (T socket, struct msghdr *msg, int flags)
 /* ==================== Guaranteed Completion Functions ==================== */
 
 /**
+ * sendv_wrapper - Wrapper for Socket_sendv matching SocketIovStepFn signature
+ * @socket: Socket to send on
+ * @iov: Array of iovec structures (const cast away for typedef compatibility)
+ * @iovcnt: Number of iovec structures
+ *
+ * Returns: Bytes sent or 0 on would-block
+ */
+static ssize_t
+sendv_wrapper (T socket, struct iovec *iov, int iovcnt)
+{
+  return Socket_sendv (socket, (const struct iovec *)iov, iovcnt);
+}
+
+/**
+ * recvv_wrapper - Wrapper for Socket_recvv matching SocketIovStepFn signature
+ * @socket: Socket to receive on
+ * @iov: Array of iovec structures
+ * @iovcnt: Number of iovec structures
+ *
+ * Returns: Bytes received or 0 on would-block
+ */
+static ssize_t
+recvv_wrapper (T socket, struct iovec *iov, int iovcnt)
+{
+  return Socket_recvv (socket, iov, iovcnt);
+}
+
+/**
  * Socket_sendall - Send all data (handles partial sends)
  * @socket: Connected socket
  * @buf: Data to send
@@ -445,30 +473,31 @@ Socket_recvall (T socket, void *buf, size_t len)
 }
 
 /**
- * sendvall_iteration - Perform one sendv iteration
- * @socket: Socket to send on
+ * iovall_iteration - Perform one iov iteration (generic)
+ * @socket: Socket to operate on
  * @iov_copy: Copy of iovec array (modified)
  * @iovcnt: Number of iovec structures
- * @bytes_sent: Output for bytes sent this iteration
+ * @bytes_processed: Output for bytes processed this iteration
+ * @step_fn: Function to perform I/O (Socket_sendv or Socket_recvv)
  *
  * Returns: 1 to continue, 0 to stop (would block or no active iov)
  */
 static int
-sendvall_iteration (T socket, struct iovec *iov_copy, int iovcnt,
-                    ssize_t *bytes_sent)
+iovall_iteration (T socket, struct iovec *iov_copy, int iovcnt,
+                  ssize_t *bytes_processed, SocketIovStepFn step_fn)
 {
   int active_iovcnt = 0;
-  const struct iovec *active_iov
+  struct iovec *active_iov
       = SocketCommon_find_active_iov (iov_copy, iovcnt, &active_iovcnt);
 
   if (active_iov == NULL)
     return 0;
 
-  *bytes_sent = Socket_sendv (socket, active_iov, active_iovcnt);
-  if (*bytes_sent == 0)
+  *bytes_processed = step_fn (socket, active_iov, active_iovcnt);
+  if (*bytes_processed == 0)
     return 0;
 
-  SocketCommon_advance_iov (iov_copy, iovcnt, (size_t)*bytes_sent);
+  SocketCommon_advance_iov (iov_copy, iovcnt, (size_t)*bytes_processed);
   return 1;
 }
 
@@ -491,7 +520,7 @@ Socket_sendvall (T socket, const struct iovec *iov, int iovcnt)
   TRY
   {
     while (total_sent < total_len
-           && sendvall_iteration (socket, iov_copy, iovcnt, &sent))
+           && iovall_iteration (socket, iov_copy, iovcnt, &sent, sendv_wrapper))
       total_sent += (size_t)sent;
   }
   EXCEPT (Socket_Closed)
@@ -502,34 +531,6 @@ Socket_sendvall (T socket, const struct iovec *iov, int iovcnt)
   END_TRY;
 
   return (ssize_t)total_sent;
-}
-
-/**
- * recvvall_iteration - Perform one recvv iteration
- * @socket: Socket to receive on
- * @iov_copy: Copy of iovec array (modified)
- * @iovcnt: Number of iovec structures
- * @bytes_received: Output for bytes received this iteration
- *
- * Returns: 1 to continue, 0 to stop (would block or no active iov)
- */
-static int
-recvvall_iteration (T socket, struct iovec *iov_copy, int iovcnt,
-                    ssize_t *bytes_received)
-{
-  int active_iovcnt = 0;
-  struct iovec *active_iov
-      = SocketCommon_find_active_iov (iov_copy, iovcnt, &active_iovcnt);
-
-  if (active_iov == NULL)
-    return 0;
-
-  *bytes_received = Socket_recvv (socket, active_iov, active_iovcnt);
-  if (*bytes_received == 0)
-    return 0;
-
-  SocketCommon_advance_iov (iov_copy, iovcnt, (size_t)*bytes_received);
-  return 1;
 }
 
 ssize_t
@@ -551,7 +552,8 @@ Socket_recvvall (T socket, struct iovec *iov, int iovcnt)
   TRY
   {
     while (total_received < total_len
-           && recvvall_iteration (socket, iov_copy, iovcnt, &received))
+           && iovall_iteration (socket, iov_copy, iovcnt, &received,
+                                recvv_wrapper))
       total_received += (size_t)received;
   }
   EXCEPT (Socket_Closed)
