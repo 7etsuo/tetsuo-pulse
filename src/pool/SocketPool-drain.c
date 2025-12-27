@@ -53,9 +53,6 @@
 /** Infinite timeout sentinel */
 #define SOCKET_POOL_DRAIN_TIMEOUT_INFINITE (-1)
 
-/** Nanoseconds per millisecond (for nanosleep conversion) */
-#define NSEC_PER_MSEC 1000000L
-
 /* ============================================================================
  * Internal Helpers
  * ============================================================================
@@ -614,8 +611,8 @@ SocketPool_drain_wait (T pool, int timeout_ms)
   while ((result = SocketPool_drain_poll (pool)) > 0)
     {
       /* Sleep with exponential backoff */
-      ts.tv_sec = backoff_ms / 1000;
-      ts.tv_nsec = (backoff_ms % 1000) * NSEC_PER_MSEC;
+      ts.tv_sec = backoff_ms / SOCKET_MS_PER_SECOND;
+      ts.tv_nsec = (backoff_ms % SOCKET_MS_PER_SECOND) * SOCKET_NS_PER_MS;
       nanosleep (&ts, NULL);
 
       /* Increase backoff up to max */
