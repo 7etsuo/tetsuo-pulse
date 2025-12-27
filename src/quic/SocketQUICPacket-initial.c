@@ -510,6 +510,133 @@ construct_nonce (const uint8_t *iv, uint64_t pn, uint8_t *nonce)
     nonce[QUIC_INITIAL_IV_LEN - 1 - i] ^= (uint8_t)((pn >> (8 * i)) & 0xFF);
 }
 
+/**
+ * @brief Remove header protection from QUIC Initial packet.
+ *
+ * @param packet Packet buffer (modified in place)
+ * @param pn_offset Offset to packet number field
+ * @param packet_len Total packet length
+ * @param hp_key Header protection key
+ * @param mask Output buffer for generated mask
+ * @param pn_length Output for extracted packet number length
+ * @return 0 on success, -1 on error
+ */
+static int
+remove_header_protection (uint8_t *packet, size_t pn_offset,
+                          size_t packet_len, const uint8_t *hp_key,
+                          uint8_t *mask, uint8_t *pn_length)
+{
+  EVP_CIPHER_CTX *ctx = NULL;
+  const uint8_t *sample;
+  int outlen;
+  int result = -1;
+
+  /* Sample location: 4 bytes after the start of PN field */
+  sample = packet + pn_offset + 4;
+
+  /* Ensure we have enough bytes for the sample */
+  if (pn_offset + 4 + QUIC_HP_SAMPLE_LEN > packet_len)
+    return -1;
+
+  /* Generate mask using AES-ECB */
+  ctx = EVP_CIPHER_CTX_new ();
+  if (ctx == NULL)
+    goto cleanup;
+
+  if (EVP_EncryptInit_ex (ctx, EVP_aes_128_ecb (), NULL, hp_key, NULL) <= 0)
+    goto cleanup;
+
+  EVP_CIPHER_CTX_set_padding (ctx, 0);
+
+  if (EVP_EncryptUpdate (ctx, mask, &outlen, sample, QUIC_HP_SAMPLE_LEN) <= 0)
+    goto cleanup;
+
+  /* Remove header protection from first byte */
+  if (packet[0] & 0x80)
+    packet[0] ^= (mask[0] & 0x0F);
+  else
+    packet[0] ^= (mask[0] & 0x1F);
+
+  /* Get packet number length */
+  *pn_length = (packet[0] & 0x03) + 1;
+
+  /* Remove header protection from packet number */
+  for (uint8_t i = 0; i < *pn_length; i++)
+    packet[pn_offset + i] ^= mask[1 + i];
+
+  result = 0;
+
+cleanup:
+  if (ctx)
+    EVP_CIPHER_CTX_free (ctx);
+  return result;
+}
+
+/**
+ * @brief Decrypt AEAD-protected payload of QUIC Initial packet.
+ *
+ * @param packet Packet buffer containing header (used as AAD)
+ * @param header_len Length of packet header
+ * @param payload Payload buffer (modified in place)
+ * @param payload_len Length of payload (excluding auth tag)
+ * @param key AEAD encryption key
+ * @param nonce AEAD nonce
+ * @return QUIC_INITIAL_OK on success, error code on failure
+ */
+static SocketQUICInitial_Result
+decrypt_aead_payload (const uint8_t *packet, size_t header_len,
+                      uint8_t *payload, size_t payload_len,
+                      const uint8_t *key, const uint8_t *nonce)
+{
+  EVP_CIPHER_CTX *ctx = NULL;
+  int outlen;
+  SocketQUICInitial_Result result = QUIC_INITIAL_ERROR_CRYPTO;
+
+  /* Create cipher context for decryption */
+  ctx = EVP_CIPHER_CTX_new ();
+  if (ctx == NULL)
+    goto cleanup;
+
+  if (EVP_DecryptInit_ex (ctx, EVP_aes_128_gcm (), NULL, NULL, NULL) <= 0)
+    goto cleanup;
+
+  if (EVP_CIPHER_CTX_ctrl (ctx, EVP_CTRL_GCM_SET_IVLEN,
+                            QUIC_INITIAL_IV_LEN, NULL) <= 0)
+    goto cleanup;
+
+  if (EVP_DecryptInit_ex (ctx, NULL, NULL, key, nonce) <= 0)
+    goto cleanup;
+
+  /* Add header as AAD */
+  if (EVP_DecryptUpdate (ctx, NULL, &outlen, packet, (int)header_len) <= 0)
+    goto cleanup;
+
+  /* Decrypt payload in-place */
+  if (EVP_DecryptUpdate (ctx, payload, &outlen, payload, (int)payload_len) <= 0)
+    goto cleanup;
+
+  /* Set expected tag */
+  if (EVP_CIPHER_CTX_ctrl (ctx, EVP_CTRL_GCM_SET_TAG,
+                            QUIC_INITIAL_TAG_LEN,
+                            payload + payload_len) <= 0)
+    goto cleanup;
+
+  /* Verify tag and finalize */
+  int final_len;
+  if (EVP_DecryptFinal_ex (ctx, payload + outlen, &final_len) <= 0)
+    {
+      result = QUIC_INITIAL_ERROR_AUTH;
+      goto cleanup;
+    }
+
+  result = QUIC_INITIAL_OK;
+
+cleanup:
+  if (ctx)
+    EVP_CIPHER_CTX_free (ctx);
+  return result;
+}
+
 #endif /* SOCKET_HAS_TLS */
 
 SocketQUICInitial_Result
@@ -635,19 +762,16 @@ SocketQUICInitial_unprotect (uint8_t *packet, size_t packet_len,
                              uint8_t *pn_length)
 {
 #ifdef SOCKET_HAS_TLS
-  EVP_CIPHER_CTX *ctx = NULL;
   const uint8_t *key;
   const uint8_t *iv;
   const uint8_t *hp_key;
   uint8_t nonce[QUIC_INITIAL_IV_LEN];
+  uint8_t mask[QUIC_HP_SAMPLE_LEN];
   uint8_t *payload;
   size_t payload_len;
   size_t header_len;
   uint32_t pn;
-  const uint8_t *sample;
-  uint8_t mask[QUIC_HP_SAMPLE_LEN];
-  int outlen;
-  int result_code = QUIC_INITIAL_ERROR_CRYPTO;
+  SocketQUICInitial_Result result;
 
   if (packet == NULL || keys == NULL || pn_length == NULL)
     return QUIC_INITIAL_ERROR_NULL;
@@ -671,102 +795,36 @@ SocketQUICInitial_unprotect (uint8_t *packet, size_t packet_len,
       hp_key = keys->client_hp_key;
     }
 
-  /* Sample location: 4 bytes after the start of PN field */
-  sample = packet + pn_offset + 4;
-
-  /* Ensure we have enough bytes for the sample */
-  if (pn_offset + 4 + QUIC_HP_SAMPLE_LEN > packet_len)
-    return QUIC_INITIAL_ERROR_TRUNCATED;
-
-  /* Generate mask using AES-ECB */
-  ctx = EVP_CIPHER_CTX_new ();
-  if (ctx == NULL)
-    goto cleanup;
-
-  if (EVP_EncryptInit_ex (ctx, EVP_aes_128_ecb (), NULL, hp_key, NULL) <= 0)
-    goto cleanup;
-
-  EVP_CIPHER_CTX_set_padding (ctx, 0);
-
-  if (EVP_EncryptUpdate (ctx, mask, &outlen, sample, QUIC_HP_SAMPLE_LEN) <= 0)
-    goto cleanup;
-
-  EVP_CIPHER_CTX_free (ctx);
-  ctx = NULL;
-
-  /* Remove header protection from first byte */
-  if (packet[0] & 0x80)
-    packet[0] ^= (mask[0] & 0x0F);
-  else
-    packet[0] ^= (mask[0] & 0x1F);
-
-  /* Get packet number length */
-  *pn_length = (packet[0] & 0x03) + 1;
-
-  /* Remove header protection from packet number */
-  for (uint8_t i = 0; i < *pn_length; i++)
-    packet[pn_offset + i] ^= mask[1 + i];
+  /* Remove header protection and extract packet number length */
+  if (remove_header_protection (packet, pn_offset, packet_len,
+                                 hp_key, mask, pn_length) < 0)
+    {
+      SocketCrypto_secure_clear (mask, sizeof (mask));
+      return QUIC_INITIAL_ERROR_TRUNCATED;
+    }
 
   /* Extract packet number */
   pn = 0;
   for (uint8_t i = 0; i < *pn_length; i++)
     pn = (pn << 8) | packet[pn_offset + i];
 
-  /* Calculate header length (pn_offset + pn_length) */
+  /* Calculate header length and payload bounds */
   header_len = pn_offset + *pn_length;
-
-  /* Payload is after header, minus auth tag */
   payload = packet + header_len;
   payload_len = packet_len - header_len - QUIC_INITIAL_TAG_LEN;
 
-  /* Construct nonce */
+  /* Construct nonce from IV and packet number */
   construct_nonce (iv, pn, nonce);
 
-  /* Create cipher context for decryption */
-  ctx = EVP_CIPHER_CTX_new ();
-  if (ctx == NULL)
-    goto cleanup;
+  /* Decrypt and authenticate payload */
+  result = decrypt_aead_payload (packet, header_len, payload, payload_len,
+                                 key, nonce);
 
-  if (EVP_DecryptInit_ex (ctx, EVP_aes_128_gcm (), NULL, NULL, NULL) <= 0)
-    goto cleanup;
-
-  if (EVP_CIPHER_CTX_ctrl (ctx, EVP_CTRL_GCM_SET_IVLEN,
-                            QUIC_INITIAL_IV_LEN, NULL) <= 0)
-    goto cleanup;
-
-  if (EVP_DecryptInit_ex (ctx, NULL, NULL, key, nonce) <= 0)
-    goto cleanup;
-
-  /* Add header as AAD */
-  if (EVP_DecryptUpdate (ctx, NULL, &outlen, packet, (int)header_len) <= 0)
-    goto cleanup;
-
-  /* Decrypt payload in-place */
-  if (EVP_DecryptUpdate (ctx, payload, &outlen, payload, (int)payload_len) <= 0)
-    goto cleanup;
-
-  /* Set expected tag */
-  if (EVP_CIPHER_CTX_ctrl (ctx, EVP_CTRL_GCM_SET_TAG,
-                            QUIC_INITIAL_TAG_LEN,
-                            payload + payload_len) <= 0)
-    goto cleanup;
-
-  /* Verify tag and finalize */
-  int final_len;
-  if (EVP_DecryptFinal_ex (ctx, payload + outlen, &final_len) <= 0)
-    {
-      result_code = QUIC_INITIAL_ERROR_AUTH;
-      goto cleanup;
-    }
-
-  result_code = QUIC_INITIAL_OK;
-
-cleanup:
-  if (ctx)
-    EVP_CIPHER_CTX_free (ctx);
+  /* Clear sensitive data */
   SocketCrypto_secure_clear (nonce, sizeof (nonce));
   SocketCrypto_secure_clear (mask, sizeof (mask));
-  return result_code;
+
+  return result;
 
 #else
   (void)packet;
