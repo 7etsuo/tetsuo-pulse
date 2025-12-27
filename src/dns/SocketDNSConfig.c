@@ -94,6 +94,45 @@ detect_address_family (const char *address)
 }
 
 /**
+ * @brief Parse and clamp an integer option value.
+ *
+ * Parses a string as a base-10 integer and clamps it to a given range.
+ * Handles validation of strtol conversion errors and overflow checking.
+ *
+ * @param value_str String representation of the integer value.
+ * @param min_val Minimum allowed value (inclusive).
+ * @param max_val Maximum allowed value (inclusive).
+ * @param out_value Pointer to receive the clamped integer value.
+ * @return 1 if successfully parsed and clamped, 0 on error.
+ */
+static int
+parse_int_option (const char *value_str, int min_val, int max_val,
+                  int *out_value)
+{
+  char *endptr;
+  long value;
+
+  errno = 0;
+  value = strtol (value_str, &endptr, 10);
+
+  /* Validate parsing: check for conversion errors and range */
+  if (errno != 0 || endptr == value_str || *endptr != '\0'
+      || value < INT_MIN || value > INT_MAX)
+    {
+      return 0;
+    }
+
+  /* Clamp to range */
+  if (value < min_val)
+    value = min_val;
+  if (value > max_val)
+    value = max_val;
+
+  *out_value = (int)value;
+  return 1;
+}
+
+/**
  * @brief Parse options from options line.
  *
  * @param config Configuration to update.
@@ -104,8 +143,6 @@ parse_options (SocketDNSConfig_T *config, char *line)
 {
   char *token;
   char *colon;
-  char *endptr;
-  long value;
 
   while ((token = next_token (&line)) != NULL)
     {
@@ -114,41 +151,16 @@ parse_options (SocketDNSConfig_T *config, char *line)
       if (colon)
         {
           *colon = '\0';
-          errno = 0;
-          value = strtol (colon + 1, &endptr, 10);
-
-          /* Validate parsing: check for conversion errors and range */
-          if (errno != 0 || endptr == colon + 1 || *endptr != '\0'
-              || value < INT_MIN || value > INT_MAX)
-            {
-              /* Invalid integer, skip this option */
-              continue;
-            }
 
           if (strcmp (token, "timeout") == 0)
-            {
-              if (value < 1)
-                value = 1;
-              if (value > DNS_CONFIG_MAX_TIMEOUT)
-                value = DNS_CONFIG_MAX_TIMEOUT;
-              config->timeout_secs = (int)value;
-            }
+            parse_int_option (colon + 1, 1, DNS_CONFIG_MAX_TIMEOUT,
+                              &config->timeout_secs);
           else if (strcmp (token, "attempts") == 0)
-            {
-              if (value < 1)
-                value = 1;
-              if (value > DNS_CONFIG_MAX_ATTEMPTS)
-                value = DNS_CONFIG_MAX_ATTEMPTS;
-              config->attempts = (int)value;
-            }
+            parse_int_option (colon + 1, 1, DNS_CONFIG_MAX_ATTEMPTS,
+                              &config->attempts);
           else if (strcmp (token, "ndots") == 0)
-            {
-              if (value < 0)
-                value = 0;
-              if (value > DNS_CONFIG_MAX_NDOTS)
-                value = DNS_CONFIG_MAX_NDOTS;
-              config->ndots = (int)value;
-            }
+            parse_int_option (colon + 1, 0, DNS_CONFIG_MAX_NDOTS,
+                              &config->ndots);
         }
       else
         {
