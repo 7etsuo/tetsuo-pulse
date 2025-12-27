@@ -292,6 +292,15 @@ SocketQUIC_is_transport_error (uint64_t code)
  */
 
 /**
+ * @brief Maximum buffer size for crypto error string formatting.
+ *
+ * The buffer is used to format strings like "CRYPTO_ERROR(0x%02x)",
+ * which requires at most 19 bytes plus null terminator. 32 bytes
+ * provides adequate headroom.
+ */
+#define QUIC_CRYPTO_ERROR_STRING_MAX 32
+
+/**
  * @brief Get human-readable string for a QUIC error code.
  *
  * Returns the RFC-defined name for transport errors, a formatted
