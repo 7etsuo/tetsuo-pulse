@@ -1,0 +1,15 @@
+{
+  "issue": 759,
+  "status": "blocked",
+  "error": "Pre-existing test failure in test_quic_frame.c blocks all commits",
+  "details": "Implementation complete and verified:\n- Added QUIC_HKDF_LABEL_MAX_SIZE constant (520 bytes) to include/quic/SocketQUICConstants.h\n- Replaced magic number 512 with constant in src/quic/SocketQUICPacket-initial.c\n- test_quic_initial passes all 19 tests\n- Changes staged but cannot commit due to unrelated duplicate test definition in test_quic_frame.c (lines 119 and 1411)\n- Branch: issue-759-hkdf-buffer-constant",
+  "partial_work": {
+    "branch": "issue-759-hkdf-buffer-constant",
+    "files_modified": [
+      "include/quic/SocketQUICConstants.h",
+      "src/quic/SocketQUICPacket-initial.c"
+    ],
+    "tests_passed_locally": true,
+    "blocked_by": "duplicate test definition: frame_stream_overflow_32bit in test_quic_frame.c"
+  }
+}

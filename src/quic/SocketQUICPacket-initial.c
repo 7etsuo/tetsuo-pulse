@@ -239,7 +239,7 @@ cleanup:
  * @param context Context data (may be NULL if context_len is 0)
  * @param context_len Length of context
  * @param output_len Desired output length for HKDF
- * @param hkdf_label Buffer to store constructed label (must be at least 512 bytes)
+ * @param hkdf_label Buffer to store constructed label (must be at least QUIC_HKDF_LABEL_MAX_SIZE bytes)
  * @param hkdf_label_len Output: actual length of constructed label
  * @return 0 on success, -1 on error
  */
@@ -260,13 +260,13 @@ build_hkdf_label (const char *label, size_t label_len,
   hkdf_label[(*hkdf_label_len)++] = (uint8_t)full_label_len;
 
   /* Check space for "tls13 " prefix */
-  if (*hkdf_label_len + 6 > 512)
+  if (*hkdf_label_len + 6 > QUIC_HKDF_LABEL_MAX_SIZE)
     return -1;
   memcpy (hkdf_label + *hkdf_label_len, "tls13 ", 6);
   *hkdf_label_len += 6;
 
   /* Check space for label */
-  if (*hkdf_label_len + label_len > 512)
+  if (*hkdf_label_len + label_len > QUIC_HKDF_LABEL_MAX_SIZE)
     return -1;
   memcpy (hkdf_label + *hkdf_label_len, label, label_len);
   *hkdf_label_len += label_len;
@@ -276,7 +276,7 @@ build_hkdf_label (const char *label, size_t label_len,
   if (context_len > 0)
     {
       /* Check space for context */
-      if (*hkdf_label_len + context_len > 512)
+      if (*hkdf_label_len + context_len > QUIC_HKDF_LABEL_MAX_SIZE)
         return -1;
       memcpy (hkdf_label + *hkdf_label_len, context, context_len);
       *hkdf_label_len += context_len;
@@ -299,7 +299,7 @@ hkdf_expand_label (const uint8_t *secret, size_t secret_len,
   EVP_KDF *kdf = NULL;
   EVP_KDF_CTX *kctx = NULL;
   OSSL_PARAM params[6];
-  uint8_t hkdf_label[512];
+  uint8_t hkdf_label[QUIC_HKDF_LABEL_MAX_SIZE];
   size_t hkdf_label_len = 0;
   int result = -1;
   int mode = EVP_KDF_HKDF_MODE_EXPAND_ONLY;

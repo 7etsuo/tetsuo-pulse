@@ -1,0 +1,14 @@
+{
+  "issue": 794,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/907",
+  "pr_number": 907,
+  "branch": "issue-794-extract-legacy-state-update",
+  "files_changed": [
+    "src/quic/SocketQUICStream-state.c",
+    "src/test/test_quic_frame.c"
+  ],
+  "tests_passed": true,
+  "commit_sha": "6e848c02237715cef3397ee39c65ce36b5d23339",
+  "summary": "Extracted duplicate legacy state update pattern into helper functions update_legacy_state_send and update_legacy_state_recv. Also fixed duplicate test name in test_quic_frame.c."
+}

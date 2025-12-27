@@ -1,0 +1,16 @@
+{
+  "issue": 769,
+  "status": "already_fixed",
+  "issue_closed": true,
+  "message": "Issue was already resolved by commit e8dda2e4ad5bde32ff3b740bc3d0c6a0c6819f44",
+  "fix_commit": "e8dda2e4ad5bde32ff3b740bc3d0c6a0c6819f44",
+  "fix_commit_message": "refactor(quic): use encode_varint_field helper to reduce code duplication",
+  "fix_commit_date": "2025-12-27 15:34:13 -0700",
+  "related_issue": 785,
+  "details": "The security bug described in issue #769 was fixed as part of issue #785. The commit replaced the buggy pattern 'offset += SocketQUICVarInt_encode(...); if (offset == 0) return 0;' with the correct 'encode_varint_field' helper function that properly checks return values before updating the offset. All three affected functions (SocketQUIC_send_connection_close, SocketQUIC_send_stream_reset, SocketQUIC_send_stop_sending) have been fixed.",
+  "files_affected": [
+    "src/quic/SocketQUICError-handling.c"
+  ],
+  "action_taken": "Commented on issue #769 explaining it was already fixed by commit e8dda2e4 and closed the issue as completed",
+  "comment_url": "https://github.com/7etsuo/tetsuo-socket/issues/769#issuecomment-3694275747"
+}

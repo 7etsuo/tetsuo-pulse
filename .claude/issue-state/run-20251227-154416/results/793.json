@@ -1,0 +1,13 @@
+{
+  "issue": 793,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/903",
+  "pr_number": 903,
+  "branch": "issue-793-snprintf-truncation-checks",
+  "files_changed": [
+    "src/quic/SocketQUICMigration.c"
+  ],
+  "tests_passed": true,
+  "commit_sha": "794822f2",
+  "summary": "Added snprintf truncation checks to sockaddr_to_string() function in SocketQUICMigration.c. Changed function signature to return int (0 on success, -1 on error/truncation) instead of void. Updated all 5 snprintf calls to check return value. Updated callers to propagate errors. All 108 tests passed with sanitizers enabled."
+}

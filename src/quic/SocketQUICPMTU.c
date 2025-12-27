@@ -386,8 +386,9 @@ SocketQUICPMTU_check_timeouts (SocketQUICPMTU_T pmtu, uint64_t current_time_ms)
     {
       next = probe->next;
 
-      /* Check if probe has timed out */
-      if (current_time_ms - probe->sent_time_ms > QUIC_PMTU_PROBE_TIMEOUT_MS)
+      /* Check if probe has timed out (guard against underflow) */
+      if (current_time_ms >= probe->sent_time_ms
+          && current_time_ms - probe->sent_time_ms > QUIC_PMTU_PROBE_TIMEOUT_MS)
         {
           /* Remove from list */
           *prev_ptr = next;

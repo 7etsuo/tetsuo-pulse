@@ -1,0 +1,28 @@
+{
+  "issue": 781,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/901",
+  "pr_number": 901,
+  "branch": "issue-781-platform-secure-random",
+  "files_changed": [
+    "src/quic/SocketQUICConnection-demux.c"
+  ],
+  "tests_passed": true,
+  "tests_run": [
+    "test_quic_connection (27 tests)",
+    "test_quic_connid (56 tests)",
+    "test_arena (25 tests)"
+  ],
+  "commit_sha": "c893b98c",
+  "implementation_summary": "Added platform-specific cryptographically secure random implementations for QUIC connection table hash seeds",
+  "platforms_supported": [
+    "Linux (getrandom)",
+    "macOS (arc4random_buf)",
+    "FreeBSD (arc4random_buf)",
+    "OpenBSD (arc4random_buf)",
+    "NetBSD (arc4random_buf)",
+    "Windows (BCryptGenRandom)",
+    "Fallback (/dev/urandom)"
+  ],
+  "notes": "Pre-existing test_quic_frame.c compilation issue (duplicate test definitions) exists on main branch but is unrelated to these changes. All QUIC connection tests pass with ASan/UBSan enabled."
+}

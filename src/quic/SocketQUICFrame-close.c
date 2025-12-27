@@ -18,6 +18,7 @@
 
 #include "quic/SocketQUICFrame.h"
 #include "quic/SocketQUICVarInt.h"
+#include "core/SocketUTF8.h"
 
 #include <string.h>
 
@@ -40,7 +41,7 @@
  *
  * @return Number of bytes written on success, 0 on error (buffer too small).
  *
- * @note The reason phrase should be UTF-8 encoded. No validation is performed.
+ * @note The reason phrase must be valid UTF-8. Returns 0 if validation fails.
  * @note Error code should be from the transport error code space (Section 20).
  *
  * Example:
@@ -64,12 +65,18 @@ SocketQUICFrame_encode_connection_close_transport (uint64_t error_code,
   if (!out || out_len == 0)
     return 0;
 
+  /* Validate UTF-8 encoding of reason phrase per RFC 9000 Section 19.19 */
+  size_t reason_len = reason ? strlen (reason) : 0;
+  if (reason_len > 0
+      && SocketUTF8_validate ((const unsigned char *)reason, reason_len)
+             != UTF8_VALID)
+    return 0;
+
   /* Calculate required size: type + error_code + frame_type + reason_len +
    * reason */
   size_t type_len = 1;
   size_t error_code_len = SocketQUICVarInt_size (error_code);
   size_t frame_type_len = SocketQUICVarInt_size (frame_type);
-  size_t reason_len = reason ? strlen (reason) : 0;
   size_t reason_len_size = SocketQUICVarInt_size (reason_len);
 
   if (error_code_len == 0 || frame_type_len == 0 || reason_len_size == 0)
@@ -128,7 +135,7 @@ SocketQUICFrame_encode_connection_close_transport (uint64_t error_code,
  *
  * @return Number of bytes written on success, 0 on error (buffer too small).
  *
- * @note The reason phrase should be UTF-8 encoded. No validation is performed.
+ * @note The reason phrase must be valid UTF-8. Returns 0 if validation fails.
  * @note Error code is application-defined and not from the transport space.
  *
  * Example:
@@ -149,10 +156,16 @@ SocketQUICFrame_encode_connection_close_app (uint64_t error_code,
   if (!out || out_len == 0)
     return 0;
 
+  /* Validate UTF-8 encoding of reason phrase per RFC 9000 Section 19.19 */
+  size_t reason_len = reason ? strlen (reason) : 0;
+  if (reason_len > 0
+      && SocketUTF8_validate ((const unsigned char *)reason, reason_len)
+             != UTF8_VALID)
+    return 0;
+
   /* Calculate required size: type + error_code + reason_len + reason */
   size_t type_len = 1;
   size_t error_code_len = SocketQUICVarInt_size (error_code);
-  size_t reason_len = reason ? strlen (reason) : 0;
   size_t reason_len_size = SocketQUICVarInt_size (reason_len);
 
   if (error_code_len == 0 || reason_len_size == 0)
