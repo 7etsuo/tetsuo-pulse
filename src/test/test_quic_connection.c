@@ -395,6 +395,120 @@ TEST (quic_connection_arena_allocation)
 }
 
 /* ============================================================================
+ * DoS Protection Observability Tests
+ * ============================================================================
+ */
+
+TEST (quic_conntable_stats_initial)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICConnTable_T table = SocketQUICConnTable_new (arena, 0);
+  uint64_t cid_hits = 1, addr_hits = 1, max_chain = 1;
+  size_t count = 1;
+
+  SocketQUICConnTable_get_stats (table, &cid_hits, &addr_hits, &max_chain,
+                                 &count);
+
+  ASSERT_EQ (cid_hits, 0);
+  ASSERT_EQ (addr_hits, 0);
+  ASSERT_EQ (max_chain, 0);
+  ASSERT_EQ (count, 0);
+
+  Arena_dispose (&arena);
+}
+
+TEST (quic_conntable_chain_limit_cid)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICConnTable_T table = SocketQUICConnTable_new (arena, 1);
+  const int num_conns = QUIC_CONNTABLE_MAX_CHAIN_LEN + 5;
+
+  for (int i = 0; i < num_conns; i++)
+    {
+      SocketQUICConnection_T conn
+          = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_SERVER);
+      SocketQUICConnectionID_T cid;
+      uint8_t data[8];
+      for (int j = 0; j < 8; j++)
+        data[j] = (uint8_t) (i * 10 + j);
+
+      SocketQUICConnectionID_set (&cid, data, sizeof (data));
+      SocketQUICConnection_add_local_cid (conn, &cid);
+      SocketQUICConnTable_add (table, conn);
+    }
+
+  const uint8_t lookup_data[] = { 0xFF, 0xFF, 0xFF, 0xFF,
+                                  0xFF, 0xFF, 0xFF, 0xFF };
+  SocketQUICConnection_T found
+      = SocketQUICConnTable_lookup (table, lookup_data, sizeof (lookup_data));
+
+  ASSERT_NULL (found);
+
+  uint64_t cid_hits = 0, addr_hits = 0, max_chain = 0;
+  size_t count = 0;
+  SocketQUICConnTable_get_stats (table, &cid_hits, &addr_hits, &max_chain,
+                                 &count);
+
+  ASSERT (cid_hits > 0);
+  ASSERT_EQ (addr_hits, 0);
+  ASSERT (max_chain > QUIC_CONNTABLE_MAX_CHAIN_LEN);
+  ASSERT_EQ (count, num_conns);
+
+  Arena_dispose (&arena);
+}
+
+TEST (quic_conntable_chain_limit_addr)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICConnTable_T table = SocketQUICConnTable_new (arena, 1);
+  const int num_conns = QUIC_CONNTABLE_MAX_CHAIN_LEN + 3;
+  const uint8_t local_addr[] = { 127, 0, 0, 1 };
+
+  for (int i = 0; i < num_conns; i++)
+    {
+      SocketQUICConnection_T conn
+          = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_SERVER);
+      uint8_t peer_addr[] = { 192, 168, 1, (uint8_t) (i + 1) };
+
+      SocketQUICConnection_set_addresses (conn, local_addr, peer_addr, 443,
+                                          (uint16_t) (5000 + i), 0);
+      SocketQUICConnTable_add (table, conn);
+    }
+
+  const uint8_t peer_lookup[] = { 10, 0, 0, 1 };
+  SocketQUICConnection_T found = SocketQUICConnTable_lookup_by_addr (
+      table, local_addr, peer_lookup, 443, 9999, 0);
+
+  ASSERT_NULL (found);
+
+  uint64_t cid_hits = 0, addr_hits = 0, max_chain = 0;
+  size_t count = 0;
+  SocketQUICConnTable_get_stats (table, &cid_hits, &addr_hits, &max_chain,
+                                 &count);
+
+  ASSERT_EQ (cid_hits, 0);
+  ASSERT (addr_hits > 0);
+  ASSERT (max_chain > QUIC_CONNTABLE_MAX_CHAIN_LEN);
+  ASSERT_EQ (count, num_conns);
+
+  Arena_dispose (&arena);
+}
+
+TEST (quic_conntable_stats_null_params)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICConnTable_T table = SocketQUICConnTable_new (arena, 0);
+
+  SocketQUICConnTable_get_stats (table, NULL, NULL, NULL, NULL);
+
+  uint64_t cid_hits = 99;
+  SocketQUICConnTable_get_stats (table, &cid_hits, NULL, NULL, NULL);
+  ASSERT_EQ (cid_hits, 0);
+
+  Arena_dispose (&arena);
+}
+
+/* ============================================================================
  * Main Entry Point
  * ============================================================================
  */

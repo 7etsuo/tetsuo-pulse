@@ -91,6 +91,7 @@ extern SocketQUICConnection_Result SocketQUICConnTable_remove(SocketQUICConnTabl
 extern size_t SocketQUICConnTable_count(SocketQUICConnTable_T table);
 extern SocketQUICConnection_Result SocketQUICConnTable_add_cid(SocketQUICConnTable_T table, SocketQUICConnection_T conn, const SocketQUICConnectionID_T *new_cid);
 extern SocketQUICConnection_Result SocketQUICConnTable_retire_cid(SocketQUICConnTable_T table, SocketQUICConnection_T conn, uint64_t sequence);
+extern void SocketQUICConnTable_get_stats(SocketQUICConnTable_T table, uint64_t *chain_limit_hits_cid, uint64_t *chain_limit_hits_addr, uint64_t *max_chain_len_seen, size_t *conn_count);
 
 extern SocketQUICConnection_T SocketQUICConnection_new(Arena_T arena, SocketQUICConnection_Role role);
 extern void SocketQUICConnection_init(SocketQUICConnection_T conn, SocketQUICConnection_Role role);
