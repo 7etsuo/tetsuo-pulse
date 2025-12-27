@@ -880,6 +880,99 @@ SocketDNSNegCache_result_name (SocketDNS_NegCacheResult result)
 
 /* RFC 2308 Section 6: Response Building */
 
+/**
+ * @brief Encode SOA record to DNS authority section.
+ *
+ * @param entry Negative cache entry containing SOA data
+ * @param qclass Query class (IN=1)
+ * @param buf Output buffer for DNS message
+ * @param buflen Total buffer size
+ * @param offset Current write offset in buffer
+ * @param bytes_written Output: number of bytes written for SOA section
+ * @return 0 on success, -1 on error
+ */
+static int
+encode_soa_authority (const SocketDNS_NegCacheEntry *entry, uint16_t qclass,
+                      unsigned char *buf, size_t buflen, size_t offset,
+                      size_t *bytes_written)
+{
+  if (entry == NULL || buf == NULL || bytes_written == NULL)
+    return -1;
+
+  size_t start_offset = offset;
+
+  /* Calculate decremented TTL per RFC 2308 Section 6 */
+  uint32_t decremented_ttl = entry->ttl_remaining;
+
+  /* Also cap at SOA's remaining TTL if it was higher originally */
+  /* Use the minimum of entry TTL and SOA record TTL */
+  if (entry->soa.original_ttl > 0)
+    {
+      /* SOA TTL should decrease at same rate as entry TTL */
+      if (decremented_ttl > entry->soa.original_ttl)
+        decremented_ttl = entry->soa.original_ttl;
+    }
+
+  /* CRITICAL FIX: Calculate SOA name length first to validate total space */
+  size_t soa_name_len = 0;
+  /* Conservative estimate: account for label encoding in wire format
+   * Each label needs a length byte, plus null terminator
+   * Wire length = strlen + label_count + 1 (null terminator) */
+  size_t label_count = 1; /* At least one label for non-empty name */
+  for (const char *p = entry->soa.name; *p; p++)
+    {
+      if (*p == '.')
+        label_count++;
+    }
+  /* Wire format: string chars + length byte per label + null terminator */
+  size_t estimated_name_len = strlen (entry->soa.name) + label_count + 1;
+  if (estimated_name_len > DNS_MAX_NAME_LEN)
+    estimated_name_len = DNS_MAX_NAME_LEN;
+
+  /* Validate total required space BEFORE any writes */
+  /* Need: soa_name (estimated) + TYPE(2) + CLASS(2) + TTL(4) + RDLENGTH(2) +
+   * RDATA */
+  size_t required_space = estimated_name_len + 10 + entry->soa.rdlen;
+  if (offset + required_space > buflen)
+    return -1;
+
+  /* Encode SOA owner name */
+  if (SocketDNS_name_encode (entry->soa.name, buf + offset, buflen - offset,
+                              &soa_name_len)
+      != 0)
+    return -1;
+  offset += soa_name_len;
+
+  /* Double-check space for fixed fields + RDATA (defense in depth) */
+  if (offset + 10 + entry->soa.rdlen > buflen)
+    return -1;
+
+  /* TYPE = SOA (6) */
+  buf[offset++] = 0;
+  buf[offset++] = 6; /* SOA type */
+
+  /* CLASS = IN (1) */
+  buf[offset++] = 0;
+  buf[offset++] = (uint8_t)qclass;
+
+  /* TTL - decremented per RFC 2308 Section 6 */
+  buf[offset++] = (uint8_t)(decremented_ttl >> 24);
+  buf[offset++] = (uint8_t)(decremented_ttl >> 16);
+  buf[offset++] = (uint8_t)(decremented_ttl >> 8);
+  buf[offset++] = (uint8_t)(decremented_ttl);
+
+  /* RDLENGTH */
+  buf[offset++] = (uint8_t)(entry->soa.rdlen >> 8);
+  buf[offset++] = (uint8_t)(entry->soa.rdlen);
+
+  /* RDATA (raw SOA data) */
+  memcpy (buf + offset, entry->soa.rdata, entry->soa.rdlen);
+  offset += entry->soa.rdlen;
+
+  *bytes_written = offset - start_offset;
+  return 0;
+}
+
 int
 SocketDNSNegCache_build_response (const SocketDNS_NegCacheEntry *entry,
                                    const char *qname, uint16_t qtype,
@@ -940,72 +1033,11 @@ SocketDNSNegCache_build_response (const SocketDNS_NegCacheEntry *entry,
   /* Add SOA to authority section if available (RFC 2308 Section 6) */
   if (entry->soa.has_soa && entry->soa.rdlen > 0)
     {
-      /* Calculate decremented TTL per RFC 2308 Section 6 */
-      uint32_t decremented_ttl = entry->ttl_remaining;
-
-      /* Also cap at SOA's remaining TTL if it was higher originally */
-      /* Use the minimum of entry TTL and SOA record TTL */
-      if (entry->soa.original_ttl > 0)
-        {
-          /* SOA TTL should decrease at same rate as entry TTL */
-          if (decremented_ttl > entry->soa.original_ttl)
-            decremented_ttl = entry->soa.original_ttl;
-        }
-
-      /* CRITICAL FIX: Calculate SOA name length first to validate total space */
-      size_t soa_name_len = 0;
-      /* Conservative estimate: account for label encoding in wire format
-       * Each label needs a length byte, plus null terminator
-       * Wire length = strlen + label_count + 1 (null terminator) */
-      size_t label_count = 1;  /* At least one label for non-empty name */
-      for (const char *p = entry->soa.name; *p; p++)
-        {
-          if (*p == '.')
-            label_count++;
-        }
-      /* Wire format: string chars + length byte per label + null terminator */
-      size_t estimated_name_len = strlen(entry->soa.name) + label_count + 1;
-      if (estimated_name_len > DNS_MAX_NAME_LEN)
-        estimated_name_len = DNS_MAX_NAME_LEN;
-
-      /* Validate total required space BEFORE any writes */
-      /* Need: soa_name (estimated) + TYPE(2) + CLASS(2) + TTL(4) + RDLENGTH(2) + RDATA */
-      size_t required_space = estimated_name_len + 10 + entry->soa.rdlen;
-      if (offset + required_space > buflen)
-        return -1;
-
-      /* Encode SOA owner name */
-      if (SocketDNS_name_encode (entry->soa.name, buf + offset, buflen - offset,
-                                  &soa_name_len)
+      size_t soa_bytes = 0;
+      if (encode_soa_authority (entry, qclass, buf, buflen, offset, &soa_bytes)
           != 0)
         return -1;
-      offset += soa_name_len;
-
-      /* Double-check space for fixed fields + RDATA (defense in depth) */
-      if (offset + 10 + entry->soa.rdlen > buflen)
-        return -1;
-
-      /* TYPE = SOA (6) */
-      buf[offset++] = 0;
-      buf[offset++] = 6; /* SOA type */
-
-      /* CLASS = IN (1) */
-      buf[offset++] = 0;
-      buf[offset++] = (uint8_t)qclass;
-
-      /* TTL - decremented per RFC 2308 Section 6 */
-      buf[offset++] = (uint8_t)(decremented_ttl >> 24);
-      buf[offset++] = (uint8_t)(decremented_ttl >> 16);
-      buf[offset++] = (uint8_t)(decremented_ttl >> 8);
-      buf[offset++] = (uint8_t)(decremented_ttl);
-
-      /* RDLENGTH */
-      buf[offset++] = (uint8_t)(entry->soa.rdlen >> 8);
-      buf[offset++] = (uint8_t)(entry->soa.rdlen);
-
-      /* RDATA (raw SOA data) */
-      memcpy (buf + offset, entry->soa.rdata, entry->soa.rdlen);
-      offset += entry->soa.rdlen;
+      offset += soa_bytes;
     }
 
   if (written != NULL)
