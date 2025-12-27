@@ -87,18 +87,20 @@ typedef void (*SocketEventCallback) (void *userdata,
  * @ingroup foundation
  * @param callback Callback function to register
  * @param userdata User data passed to callback
+ * @return 0 on success, -1 on failure (NULL callback, duplicate, or limit reached)
  * @threadsafe Yes
  */
-void SocketEvent_register (SocketEventCallback callback, void *userdata);
+int SocketEvent_register (SocketEventCallback callback, void *userdata);
 
 /**
  * @brief SocketEvent_unregister - Unregister an event handler
  * @ingroup foundation
  * @param callback Callback function to unregister
  * @param userdata User data that was passed to register
+ * @return 0 on success, -1 on failure (NULL callback or handler not found)
  * @threadsafe Yes
  */
-void SocketEvent_unregister (SocketEventCallback callback,
+int SocketEvent_unregister (SocketEventCallback callback,
                              const void *userdata);
 
 /**
