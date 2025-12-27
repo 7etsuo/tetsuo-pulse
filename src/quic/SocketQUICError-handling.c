@@ -93,14 +93,11 @@ SocketQUIC_send_connection_close (SocketQUICConnection_T conn, uint64_t code,
   offset = 0;
 
   /* Encode frame type */
-  offset += SocketQUICVarInt_encode (frame_type, out + offset,
-                                     out_len - offset);
-  if (offset == 0)
+  if (!encode_varint_field (frame_type, out, &offset, out_len))
     return 0;
 
   /* Encode error code */
-  offset += SocketQUICVarInt_encode (code, out + offset, out_len - offset);
-  if (offset == 0)
+  if (!encode_varint_field (code, out, &offset, out_len))
     return 0;
 
   /* For transport errors (0x1c), include triggering frame type field */
@@ -108,16 +105,12 @@ SocketQUIC_send_connection_close (SocketQUICConnection_T conn, uint64_t code,
   if (!is_app_error)
     {
       /* Frame type field - use 0 for "no specific frame" */
-      offset
-          += SocketQUICVarInt_encode (0, out + offset, out_len - offset);
-      if (offset == 0)
+      if (!encode_varint_field (0, out, &offset, out_len))
         return 0;
     }
 
   /* Encode reason phrase length */
-  offset += SocketQUICVarInt_encode (reason_len, out + offset,
-                                     out_len - offset);
-  if (offset == 0)
+  if (!encode_varint_field (reason_len, out, &offset, out_len))
     return 0;
 
   /* Copy reason phrase */
@@ -164,26 +157,19 @@ SocketQUIC_send_stream_reset (SocketQUICStream_T stream, uint64_t code,
   offset = 0;
 
   /* Encode frame type (RESET_STREAM = 0x04) */
-  offset += SocketQUICVarInt_encode (QUIC_FRAME_RESET_STREAM, out + offset,
-                                     out_len - offset);
-  if (offset == 0)
+  if (!encode_varint_field (QUIC_FRAME_RESET_STREAM, out, &offset, out_len))
     return 0;
 
   /* Encode stream ID */
-  offset
-      += SocketQUICVarInt_encode (stream_id, out + offset, out_len - offset);
-  if (offset == 0)
+  if (!encode_varint_field (stream_id, out, &offset, out_len))
     return 0;
 
   /* Encode application error code */
-  offset += SocketQUICVarInt_encode (code, out + offset, out_len - offset);
-  if (offset == 0)
+  if (!encode_varint_field (code, out, &offset, out_len))
     return 0;
 
   /* Encode final size */
-  offset
-      += SocketQUICVarInt_encode (final_size, out + offset, out_len - offset);
-  if (offset == 0)
+  if (!encode_varint_field (final_size, out, &offset, out_len))
     return 0;
 
   return offset;
@@ -218,20 +204,15 @@ SocketQUIC_send_stop_sending (SocketQUICStream_T stream, uint64_t code,
   offset = 0;
 
   /* Encode frame type (STOP_SENDING = 0x05) */
-  offset += SocketQUICVarInt_encode (QUIC_FRAME_STOP_SENDING, out + offset,
-                                     out_len - offset);
-  if (offset == 0)
+  if (!encode_varint_field (QUIC_FRAME_STOP_SENDING, out, &offset, out_len))
     return 0;
 
   /* Encode stream ID */
-  offset
-      += SocketQUICVarInt_encode (stream_id, out + offset, out_len - offset);
-  if (offset == 0)
+  if (!encode_varint_field (stream_id, out, &offset, out_len))
     return 0;
 
   /* Encode application error code */
-  offset += SocketQUICVarInt_encode (code, out + offset, out_len - offset);
-  if (offset == 0)
+  if (!encode_varint_field (code, out, &offset, out_len))
     return 0;
 
   return offset;
