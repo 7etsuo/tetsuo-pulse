@@ -5,7 +5,7 @@ Perform a comprehensive security analysis specifically tailored for the socket l
 **Key Security References:**
 - `include/core/SocketSecurity.h` - Centralized security limits and validation utilities
 - `src/test/test_security.c` - Comprehensive security test suite (33 tests)
-- `src/fuzz/` - Fuzzing harnesses (60+) for attack surface testing
+- `src/fuzz/` - Fuzzing harnesses (130+) for attack surface testing
 - `.claude/references/security-limits.md` - Complete security limits table
 - `.claude/references/security-patterns.md` - Established security patterns
 
@@ -15,7 +15,7 @@ Perform a comprehensive security analysis specifically tailored for the socket l
 2. **Control Flow Analysis**: Trace all error paths for resource leaks, verify all input validation points, check all bounds checks
 3. **Data Flow Analysis**: Track network-controlled data through the codebase, identify all uses of network input, verify sanitization at input boundaries
 4. **Attack Surface Mapping**: Identify all external interfaces, map input sources to processing functions, identify potential injection points
-5. **Protocol-Specific Analysis**: HTTP/1.1 smuggling, HPACK bombs, HTTP/2 flow control, TLS validation, WebSocket masking
+5. **Protocol-Specific Analysis**: HTTP/1.1 smuggling, HPACK bombs, HTTP/2 flow control, TLS validation, WebSocket masking, QUIC packet protection, DNS spoofing/poisoning
 6. **Concurrency Analysis**: Identify shared mutable state, check mutex acquisition order, verify callback safety
 7. **Resource Exhaustion Analysis**: Identify unbounded allocations, check for maximum limits, verify timeouts
 
@@ -443,6 +443,8 @@ See `.claude/references/security-limits.md` for configurable limits.
 
 **Modules with State Machines**:
 - SocketHappyEyeballs, SocketReconnect, SocketTLS, SocketSYNProtect, SocketPool, SocketHTTP1_Parser, SocketHTTP2, SocketProxy, SocketWS
+- SocketQUICConnection, SocketQUICStream, SocketQUICHandshake, SocketQUICMigration
+- SocketDNSResolver, SocketDNSTransport
 
 ### 22. Callback Security
 
@@ -484,7 +486,106 @@ See `.claude/references/security-limits.md` for configurable limits.
 **Supported Algorithms**:
 - gzip/deflate (zlib), Brotli (libbrotli)
 
-### 25. Centralized Security Configuration (SocketSecurity.h)
+### 25. QUIC Security (RFC 9000, 9001, 9002)
+
+**Packet Protection Security**:
+- Initial Packet Protection: Verify salt and key derivation correct (RFC 9001 §5.2)
+- Header Protection: Verify sample extraction and mask application
+- Key Update Security: Verify old keys cleared, timing attack prevention
+
+**Variable-Length Integer Security**:
+- Integer Overflow Prevention: Verify `SocketQUICVarInt` bounds checks
+- Maximum Value Enforcement: Verify 2^62-1 limit enforced
+- Continuation Byte Limits: Verify maximum 8 bytes for encoding
+
+**Connection ID Security**:
+- CID Collision Prevention: Verify random generation, uniqueness checks
+- CID Pool Exhaustion: Verify pool size limits, NEW_CONNECTION_ID rate limiting
+- Retire Prior To: Verify sequence number handling, no double-retire
+
+**Stream Security**:
+- Stream ID Validation: Verify odd/even rules for client/server
+- Stream Limit Enforcement: Verify MAX_STREAMS respected
+- FIN Handling: Verify data offset doesn't exceed final size
+
+**Flow Control Security**:
+- Window Overflow Prevention: Verify 2^62-1 limits enforced
+- Blocked Stream Handling: Verify BLOCKED frames rate-limited
+- Initial Window Validation: Verify transport parameter bounds
+
+**Handshake Security**:
+- Retry Token Validation: Verify AEAD integrity check
+- Address Validation: Verify token-based validation for 0-RTT
+- Version Downgrade Prevention: Verify version negotiation integrity
+
+**Loss Detection Security (RFC 9002)**:
+- ACK Delay Manipulation: Verify max_ack_delay enforced
+- Spurious Retransmission: Verify PTO calculation correct
+- Amplification Attack Prevention: Verify 3x limit before address validation
+
+**Migration Security**:
+- Path Challenge/Response: Verify `SocketCrypto_random_bytes()` for challenges
+- Connection Migration Validation: Verify path validation before use
+- NAT Rebinding: Verify proper handling of address changes
+
+**Error Handling Security**:
+- Error Code Validation: Verify valid error codes (0-0x1ff for QUIC)
+- CONNECTION_CLOSE Handling: Verify reason phrase length limits
+- Immediate Close: Verify draining period respected
+
+### 26. DNS Security (RFC 1035, 4033-4035, 7858, 8484)
+
+**DNS Wire Format Security**:
+- Name Compression Security: Verify pointer loop detection
+- Label Length Validation: Verify 63-byte label limit, 255-byte name limit
+- EDNS0 Buffer Size: Verify advertised size reasonable
+
+**DNS Cache Poisoning Prevention**:
+- Transaction ID Randomization: Verify `SocketCrypto_random_bytes()` for TXID
+- Source Port Randomization: Verify random ephemeral ports
+- QNAME Validation: Verify response matches query
+
+**DNSSEC Validation Security (RFC 4033-4035)**:
+- Chain of Trust: Verify trust anchor validation, DS/DNSKEY chaining
+- Signature Verification: Verify RRSIG algorithm support, expiration checks
+- NSEC/NSEC3 Security: Verify denial of existence proofs
+- Algorithm Support: Verify RSA, ECDSA, Ed25519 support
+
+**DNS-over-TLS Security (RFC 7858)**:
+- Certificate Validation: Verify TLS certificate checks
+- Opportunistic vs Strict Mode: Verify mode enforcement (RFC 8310)
+- Connection Pooling: Verify idle timeout, connection limits
+
+**DNS-over-HTTPS Security (RFC 8484)**:
+- HTTPS Validation: Verify TLS/certificate requirements
+- Content-Type Validation: Verify `application/dns-message`
+- POST vs GET Security: Verify method handling
+- HTTP/2 Multiplexing: Verify stream limits respected
+
+**DNS Cookies Security (RFC 7873)**:
+- Client Cookie Generation: Verify random 8-byte cookies
+- Server Cookie Validation: Verify HMAC verification
+- Cookie Freshness: Verify timestamp validation
+
+**Negative Caching Security (RFC 2308)**:
+- NXDOMAIN Caching: Verify SOA minimum TTL handling
+- NODATA Caching: Verify correct key tuple (QNAME, QTYPE, QCLASS)
+- Aggressive Negative Caching: Verify NSEC/NSEC3 range validation
+
+**Extended DNS Errors Security (RFC 8914)**:
+- Error Code Validation: Verify valid EDE codes (0-24)
+- Extra Text Handling: Verify length limits on EXTRA-TEXT
+
+**Dead Server Tracking (RFC 2308 §7.2)**:
+- Blacklist Duration: Verify 5-minute default timeout
+- Recovery Detection: Verify successful query clears blacklist
+
+**Resolver DoS Prevention**:
+- Query Rate Limiting: Verify queries-per-second limits
+- Outstanding Query Limits: Verify maximum pending queries
+- Response Size Limits: Verify maximum DNS message size
+
+### 27. Centralized Security Configuration (SocketSecurity.h)
 
 See `.claude/references/security-limits.md` for complete security limits table.
 
@@ -516,14 +617,17 @@ For each security issue found, provide:
    - Buffer overflows, HTTP request smuggling, TLS configuration errors, Injection vulnerabilities
    - Integer overflows in network operations, HPACK bombs, HTTP/2 flow control attacks
    - Rapid reset attacks (CVE-2023-44487), WebSocket masking violations, Compression bombs
+   - QUIC packet protection failures, QUIC amplification attacks, DNS cache poisoning
 
 2. **High**:
    - Input validation gaps, DNS security issues, Thread safety / race conditions
    - Rate limiting bypass, Timing attacks, State machine manipulation, Callback re-entrancy
+   - QUIC connection ID exhaustion, DNSSEC validation bypass, DoT/DoH downgrade attacks
 
 3. **Medium**:
    - Resource leaks, Unsafe string functions, Missing bounds checks
    - Secure memory clearing, Hash collision DoS, UTF-8 validation bypasses
+   - QUIC flow control manipulation, DNS negative cache poisoning
 
 4. **Low**:
    - Style issues, Minor validation improvements, Defensive programming
