@@ -7287,6 +7287,69 @@ TEST (socketcommon_wait_for_fd_timeout_validation)
   close (pipefd[1]);
 }
 
+TEST (iovec_overflow_protection_in_calculate_total_len)
+{
+  struct iovec iov[3];
+  volatile int exception_raised = 0;
+
+  /* Test 1: Normal case - should not overflow */
+  iov[0].iov_base = (void *)"test1";
+  iov[0].iov_len = 100;
+  iov[1].iov_base = (void *)"test2";
+  iov[1].iov_len = 200;
+  iov[2].iov_base = (void *)"test3";
+  iov[2].iov_len = 300;
+
+  TRY
+  {
+    size_t total = SocketCommon_calculate_total_iov_len (iov, 3);
+    ASSERT_EQ (600, total);
+    exception_raised = 0;
+  }
+  EXCEPT (SocketCommon_Failed)
+  {
+    exception_raised = 1;
+  }
+  END_TRY;
+  ASSERT_EQ (0, exception_raised);
+
+  /* Test 2: Overflow case - should raise exception
+   * Create iovec with values that would overflow SIZE_MAX */
+  exception_raised = 0;
+  iov[0].iov_len = SIZE_MAX / 2;
+  iov[1].iov_len = SIZE_MAX / 2;
+  iov[2].iov_len = 100; /* This pushes it over SIZE_MAX */
+
+  TRY
+  {
+    (void)SocketCommon_calculate_total_iov_len (iov, 3);
+    exception_raised = 0; /* Should not reach here */
+  }
+  EXCEPT (SocketCommon_Failed)
+  {
+    exception_raised = 1;
+  }
+  END_TRY;
+  ASSERT_EQ (1, exception_raised);
+
+  /* Test 3: Edge case - exactly at SIZE_MAX boundary should be allowed */
+  exception_raised = 0;
+  iov[0].iov_len = SIZE_MAX;
+
+  TRY
+  {
+    size_t total = SocketCommon_calculate_total_iov_len (iov, 1);
+    ASSERT_EQ (SIZE_MAX, total);
+    exception_raised = 0;
+  }
+  EXCEPT (SocketCommon_Failed)
+  {
+    exception_raised = 1;
+  }
+  END_TRY;
+  ASSERT_EQ (0, exception_raised);
+}
+
 int
 main (void)
 {
