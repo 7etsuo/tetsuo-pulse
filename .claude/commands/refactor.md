@@ -120,6 +120,8 @@ See `.claude/references/protocol-patterns.md` for detailed patterns:
 - **WebSocket**: Frame masking, UTF-8 validation, fragmentation, control frames
 - **TLS/DTLS**: Handshake, session resumption, certificate validation, kTLS
 - **Proxy**: HTTP CONNECT, SOCKS4/5, state machine, credential handling
+- **QUIC**: Variable-length integers, connection IDs, packet protection, stream management
+- **DNS**: Wire format encoding, DNSSEC validation, DoT/DoH transport, caching
 
 ### 11. Available Helper Functions
 See `.claude/references/module-apis.md` for complete listing. Common categories:
@@ -132,10 +134,26 @@ See `.claude/references/module-apis.md` for complete listing. Common categories:
 - **SocketHTTP1.h**: HTTP/1.1 parsing, serialization, chunked encoding
 - **SocketHPACK.h**: HPACK encoder/decoder, Huffman, integer coding
 - **SocketHTTP2.h**: HTTP/2 connection, streams, flow control
+- **SocketHTTPClient.h**: HTTP client API (connection pooling, redirects)
+- **SocketHTTPServer.h**: HTTP server API (request handling, routing)
 - **SocketProxy.h**: Proxy tunneling (HTTP CONNECT, SOCKS4/5)
 - **SocketWS.h**: WebSocket protocol (RFC 6455)
+- **SocketWSH2.h**: WebSocket over HTTP/2 (RFC 8441)
 - **SocketTLS.h**: TLS/SSL operations
+- **SocketDTLS.h**: DTLS operations (UDP-based TLS)
 - **SocketPool.h**: Connection pooling, graceful drain
+- **SocketPoolHealth.h**: Pool health monitoring, connection validation
+- **SocketDNS.h**: Async DNS resolution, caching
+- **SocketDNSSEC.h**: DNSSEC validation (RFC 4033-4035)
+- **SocketDNSoverTLS.h**: DNS-over-TLS (RFC 7858)
+- **SocketDNSoverHTTPS.h**: DNS-over-HTTPS (RFC 8484)
+- **SocketQUICVarInt.h**: QUIC variable-length integer encoding (RFC 9000)
+- **SocketQUICFrame.h**: QUIC frame encoding/decoding
+- **SocketQUICPacket.h**: QUIC packet protection and parsing
+- **SocketQUICStream.h**: QUIC stream management
+- **SocketQUICConnection.h**: QUIC connection lifecycle
+- **HashTable.h**: Generic hash table implementation
+- **TimeWindow.h**: Sliding time window for rate limiting
 
 ## Focus Areas by File Type
 
@@ -144,6 +162,9 @@ See `.claude/references/module-apis.md` for complete listing. Common categories:
 - **Except.c**: Exception handling foundation, thread-local stack
 - **SocketCrypto.c**: Cryptographic primitives (OpenSSL wrappers)
 - **SocketUtil.c**: Utilities (logging, metrics, events, error handling)
+- **HashTable.c**: Generic hash table with configurable hash/compare
+- **SocketTimer.c**: Timer heap management for timeouts
+- **SocketMetrics.c**: Performance metrics collection
 
 ### Socket Modules
 - **Socket.c**: Core lifecycle, bind, accept, state logic
@@ -151,6 +172,8 @@ See `.claude/references/module-apis.md` for complete listing. Common categories:
 - **Socket-iov.c**: Scatter/gather I/O
 - **SocketDgram.c**: UDP-specific patterns
 - **SocketCommon.c**: Shared utilities
+- **SocketAsync.c**: io_uring async I/O backend
+- **SocketHappyEyeballs.c**: RFC 8305 dual-stack connection racing
 
 ### Event System
 - **SocketPoll.c**: Frontend event loop
@@ -158,20 +181,56 @@ See `.claude/references/module-apis.md` for complete listing. Common categories:
 
 ### Connection Management
 - **SocketPool-*.c**: Pool operations, connections, drain state machine
+- **SocketPoolHealth.c**: Health checks, connection validation
+- **SocketReconnect.c**: Circuit breaker pattern, exponential backoff
 
 ### TLS/SSL Modules
 - **SocketTLS.c**: TLS operations
 - **SocketTLSContext-*.c**: Context configuration, certificates, ALPN, session
+- **SocketDTLS*.c**: DTLS operations, cookie exchange, MTU discovery
+
+### DNS Modules
+- **SocketDNS.c**: Async resolver, query multiplexing
+- **SocketDNSWire.c**: Wire format encoding/decoding (RFC 1035)
+- **SocketDNSTransport.c**: UDP/TCP transport with fallback
+- **SocketDNSCache.c**: Response caching with TTL
+- **SocketDNSoverTLS.c**: DoT transport (RFC 7858)
+- **SocketDNSoverHTTPS.c**: DoH transport (RFC 8484)
+- **SocketDNSSEC.c**: DNSSEC validation (RFC 4033-4035)
+- **SocketDNSCookie.c**: DNS Cookies (RFC 7873)
+- **SocketDNSNegCache.c**: Negative caching (RFC 2308)
 
 ### HTTP Modules
 - **SocketHTTP-*.c**: Core types, headers, URI, dates
 - **SocketHTTP1-*.c**: HTTP/1.1 parser, serialization, chunked encoding
 - **SocketHPACK-*.c**: HPACK encoder, decoder, Huffman, table
 - **SocketHTTP2-*.c**: HTTP/2 frames, connection, streams, flow control
+- **SocketHTTPClient.c**: HTTP client with connection pooling
+- **SocketHTTPServer.c**: HTTP server with request routing
 
 ### Proxy/WebSocket
 - **SocketProxy-*.c**: Proxy protocols (HTTP CONNECT, SOCKS4/5)
 - **SocketWS-*.c**: WebSocket handshake, frames, deflate
+- **SocketWSH2.c**: WebSocket over HTTP/2 (RFC 8441)
+
+### QUIC Modules (RFC 9000, 9001, 9002)
+- **SocketQUICVarInt.c**: Variable-length integer encoding
+- **SocketQUICWire.c**: Wire format primitives
+- **SocketQUICFrame*.c**: Frame encoding/decoding by type
+- **SocketQUICPacket*.c**: Packet parsing, protection, initial packets
+- **SocketQUICStream*.c**: Stream management, state machine
+- **SocketQUICConnection*.c**: Connection lifecycle, demux, termination
+- **SocketQUICConnectionID*.c**: Connection ID management, CID pool
+- **SocketQUICAck.c**: ACK frame generation (RFC 9002)
+- **SocketQUICLoss.c**: Loss detection and recovery (RFC 9002)
+- **SocketQUICFlow.c**: Flow control (RFC 9000 §4)
+- **SocketQUICHandshake.c**: Handshake state machine
+- **SocketQUICMigration.c**: Connection migration
+- **SocketQUICPMTU.c**: Path MTU discovery
+- **SocketQUICAddrValidation.c**: Address validation tokens
+- **SocketQUICTransportParams.c**: Transport parameter encoding
+- **SocketQUICVersion.c**: Version negotiation
+- **SocketQUICError.c**: Error codes and handling
 
 ## Output Format for Refactored Code
 

@@ -171,24 +171,71 @@ SOCKET_DECLARE_MODULE_EXCEPTION(Module);
 **DO NOT re-implement functionality that exists in the codebase.**
 
 See `.claude/references/module-apis.md` for comprehensive listing of available helper functions from:
+
+**Core:**
 - `SocketConfig.h` - Constants, macros, SAFE_CLOSE
 - `SocketUtil.h` - Error formatting, logging, hash functions, monotonic time
+- `SocketCrypto.h` - Cryptographic primitives (hashes, HMAC, Base64, random)
+- `SocketUTF8.h` - UTF-8 validation
+- `HashTable.h` - Generic hash table implementation
+- `TimeWindow.h` - Sliding time window for rate limiting
+- `SocketTimer.h` - Timer management
+- `SocketMetrics.h` - Performance metrics collection
+- `SocketRateLimit.h` - Token bucket rate limiting
+- `SocketIPTracker.h` - Per-IP connection tracking
+- `SocketSecurity.h` - Overflow-safe arithmetic, security limits
+
+**Socket:**
 - `SocketCommon.h` - Socket base, address resolution, validation, iovec helpers
 - `SocketIO.h` - TLS-aware I/O abstraction
 - `SocketBuf.h` - Circular buffer operations
-- `SocketCrypto.h` - Cryptographic primitives (hashes, HMAC, Base64, random)
-- `SocketUTF8.h` - UTF-8 validation
+- `SocketAsync.h` - io_uring async I/O backend
+- `SocketHappyEyeballs.h` - RFC 8305 dual-stack connection racing
+- `SocketReconnect.h` - Circuit breaker pattern, exponential backoff
+
+**Pool:**
+- `SocketPool.h` - Connection pooling with graceful shutdown
+- `SocketPoolHealth.h` - Pool health monitoring, connection validation
+
+**TLS:**
+- `SocketTLS.h` / `SocketTLSContext.h` - TLS/SSL support
+- `SocketDTLS.h` / `SocketDTLSContext.h` - DTLS support
+
+**DNS:**
+- `SocketDNS.h` - Async DNS resolution, caching
+- `SocketDNSWire.h` - Wire format encoding (RFC 1035)
+- `SocketDNSSEC.h` - DNSSEC validation (RFC 4033-4035)
+- `SocketDNSoverTLS.h` - DNS-over-TLS (RFC 7858)
+- `SocketDNSoverHTTPS.h` - DNS-over-HTTPS (RFC 8484)
+- `SocketDNSCookie.h` - DNS Cookies (RFC 7873)
+- `SocketDNSNegCache.h` - Negative caching (RFC 2308)
+
+**HTTP:**
 - `SocketHTTP.h` - HTTP types (methods, status, headers, URI, dates)
 - `SocketHTTP1.h` - HTTP/1.1 parsing, serialization, chunked encoding
 - `SocketHPACK.h` - HPACK header compression
 - `SocketHTTP2.h` - HTTP/2 protocol implementation
-- `SocketProxy.h` - Proxy tunneling (HTTP CONNECT, SOCKS4/5)
+- `SocketHTTPClient.h` - HTTP client API
+- `SocketHTTPServer.h` - HTTP server API
+
+**WebSocket/Proxy:**
 - `SocketWS.h` - WebSocket protocol (RFC 6455)
-- `SocketTLS.h` / `SocketTLSContext.h` - TLS/SSL support
-- `SocketRateLimit.h` - Token bucket rate limiting
-- `SocketIPTracker.h` - Per-IP connection tracking
-- `SocketTimer.h` - Timer management
-- `SocketPool.h` - Connection pooling with graceful shutdown
+- `SocketWSH2.h` - WebSocket over HTTP/2 (RFC 8441)
+- `SocketProxy.h` - Proxy tunneling (HTTP CONNECT, SOCKS4/5)
+
+**QUIC (RFC 9000, 9001, 9002):**
+- `SocketQUICVarInt.h` - Variable-length integer encoding
+- `SocketQUICFrame.h` - Frame encoding/decoding
+- `SocketQUICPacket.h` - Packet protection and parsing
+- `SocketQUICStream.h` - Stream management
+- `SocketQUICConnection.h` - Connection lifecycle
+- `SocketQUICConnectionID.h` - Connection ID management
+- `SocketQUICAck.h` - ACK generation (RFC 9002)
+- `SocketQUICLoss.h` - Loss detection (RFC 9002)
+- `SocketQUICFlow.h` - Flow control
+- `SocketQUICHandshake.h` - Handshake state machine
+- `SocketQUICMigration.h` - Connection migration
+- `SocketQUICTransportParams.h` - Transport parameters
 
 **Examples of Common Redundancies**:
 
