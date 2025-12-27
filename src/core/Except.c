@@ -111,13 +111,24 @@ except_emit_location (const char *file, int line)
 #endif
 
   if (display_file != NULL && line > 0)
-    fprintf (stderr, " raised at %s:%d\n", display_file, line);
-  else if (display_file != NULL)
-    fprintf (stderr, " raised at %s\n", display_file);
-  else if (line > 0)
-    fprintf (stderr, " raised at line %d\n", line);
-  else
-    fprintf (stderr, " (location unknown)\n");
+    {
+      fprintf (stderr, " raised at %s:%d\n", display_file, line);
+      return;
+    }
+
+  if (display_file != NULL)
+    {
+      fprintf (stderr, " raised at %s\n", display_file);
+      return;
+    }
+
+  if (line > 0)
+    {
+      fprintf (stderr, " raised at line %d\n", line);
+      return;
+    }
+
+  fprintf (stderr, " (location unknown)\n");
 }
 
 EXCEPT_COLD EXCEPT_NORETURN static void
