@@ -75,7 +75,12 @@ SocketQUICFrame_encode_crypto (uint64_t offset, const uint8_t *data,
   if (offset_len == 0 || length_len == 0)
     return 0; /* Value exceeds varint maximum */
 
-  size_t total_len = type_len + offset_len + length_len + len;
+  /* Prevent integer overflow in size calculation */
+  size_t header_size = type_len + offset_len + length_len;
+  if (len > SIZE_MAX - header_size)
+    return 0; /* Would overflow */
+
+  size_t total_len = header_size + len;
 
   if (total_len > out_len)
     return 0; /* Insufficient buffer */

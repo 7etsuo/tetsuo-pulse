@@ -212,7 +212,12 @@ SocketQUICFrame_encode_stream (uint64_t stream_id, uint64_t offset,
   if (offset > 0 && offset_len == 0)
     return 0; /* Offset exceeds varint maximum */
 
-  size_t total_len = type_len + stream_id_len + offset_len + length_len + len;
+  /* Prevent integer overflow in size calculation */
+  size_t header_size = type_len + stream_id_len + offset_len + length_len;
+  if (len > SIZE_MAX - header_size)
+    return 0; /* Would overflow */
+
+  size_t total_len = header_size + len;
 
   if (total_len > out_len)
     return 0; /* Insufficient buffer */
