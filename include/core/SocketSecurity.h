@@ -24,6 +24,7 @@
 #ifndef SOCKETSECURITY_INCLUDED
 #define SOCKETSECURITY_INCLUDED
 
+#include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -353,10 +354,23 @@ SocketSecurity_has_compression (void)
  *
  * @threadsafe Yes (pure function)
  * @complexity O(n) where n is len
+ *
+ * @note This is a performance-critical inline function. The data parameter
+ *       MUST NOT be NULL - this is validated by assertion in debug builds only.
+ *       Callers are responsible for NULL validation in production code.
+ *
+ * Example usage:
+ * @code{.c}
+ * // Always validate data pointer before calling
+ * if (header_value && SocketSecurity_has_control_chars(header_value, len)) {
+ *     return HTTP_400_BAD_REQUEST;
+ * }
+ * @endcode
  */
 static inline int
 SocketSecurity_has_control_chars (const char *data, size_t len)
 {
+  assert (data != NULL);
   for (size_t i = 0; i < len; i++)
     {
       unsigned char c = (unsigned char)data[i];
