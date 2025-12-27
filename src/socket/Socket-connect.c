@@ -401,7 +401,7 @@ Socket_connect (T socket, const char *host, int port)
     if (SocketError_is_retryable_errno(saved_errno))
       {
         errno = saved_errno;
-        return;
+        RETURN;
       }
     errno = saved_errno;
     RERAISE;
