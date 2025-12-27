@@ -7,6 +7,7 @@
 /* Generic intrusive hash table with chained collision handling */
 
 #include <assert.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -91,6 +92,11 @@ HashTable_new (Arena_T arena, const HashTable_Config *config)
   T table;
 
   validate_config (config);
+
+  /* Prevent integer overflow in compute_bucket() cast */
+  if (config->bucket_count > UINT_MAX)
+    SOCKET_RAISE_MSG (HashTable, HashTable_Failed,
+                      "bucket_count exceeds maximum of %u", UINT_MAX);
 
   if (arena != NULL)
     table = Arena_alloc (arena, sizeof (*table), __FILE__, __LINE__);
