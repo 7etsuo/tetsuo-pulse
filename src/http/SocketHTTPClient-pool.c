@@ -47,10 +47,6 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPClient);
 #define POOL_MAX_HASH_CHAIN_LEN 1024
 #endif
 
-#ifndef POOL_MS_PER_SECOND
-#define POOL_MS_PER_SECOND 1000
-#endif
-
 /* Forward declarations */
 static void pool_entry_remove_and_recycle (HTTPPool *pool, HTTPPoolEntry *entry);
 
@@ -537,7 +533,7 @@ httpclient_pool_cleanup_idle (HTTPPool *pool)
   pthread_mutex_lock (&pool->mutex);
 
   now = pool_time ();
-  idle_threshold = pool->idle_timeout_ms / POOL_MS_PER_SECOND;
+  idle_threshold = pool->idle_timeout_ms / SOCKET_MS_PER_SECOND;
 
   HTTPPoolEntry *entry = pool->all_conns;
   while (entry != NULL)
