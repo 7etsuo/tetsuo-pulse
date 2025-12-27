@@ -13,12 +13,18 @@
 #include "core/SocketConfig.h"
 #include "core/SocketEvent.h"
 #include "core/SocketLog.h"
+#include "core/SocketUtil.h"
 
 typedef struct SocketEventHandler
 {
   SocketEventCallback callback;
   void *userdata;
 } SocketEventHandler;
+
+static const Except_T SocketEvent_Failed
+    = { &SocketEvent_Failed, "SocketEvent operation failed" };
+
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketEvent);
 
 static pthread_mutex_t socketevent_mutex = PTHREAD_MUTEX_INITIALIZER;
 static SocketEventHandler socketevent_handlers[SOCKET_EVENT_MAX_HANDLERS];
@@ -55,9 +61,10 @@ socketevent_dispatch (const SocketEventRecord *event)
 
   assert (event);
 
-  pthread_mutex_lock (&socketevent_mutex);
+  SOCKET_MUTEX_LOCK_OR_RAISE (&socketevent_mutex, SocketEvent,
+                              SocketEvent_Failed);
   count = socketevent_copy_handlers_unlocked (local_handlers);
-  pthread_mutex_unlock (&socketevent_mutex);
+  SOCKET_MUTEX_UNLOCK (&socketevent_mutex);
 
   socketevent_invoke_handlers (local_handlers, count, event);
 }
@@ -115,12 +122,13 @@ SocketEvent_register (SocketEventCallback callback, void *userdata)
       return;
     }
 
-  pthread_mutex_lock (&socketevent_mutex);
+  SOCKET_MUTEX_LOCK_OR_RAISE (&socketevent_mutex, SocketEvent,
+                              SocketEvent_Failed);
 
   if (socketevent_can_register_unlocked (callback, userdata))
     socketevent_add_handler_unlocked (callback, userdata);
 
-  pthread_mutex_unlock (&socketevent_mutex);
+  SOCKET_MUTEX_UNLOCK (&socketevent_mutex);
 }
 
 /* Caller must hold socketevent_mutex */
@@ -149,13 +157,14 @@ SocketEvent_unregister (SocketEventCallback callback, const void *userdata)
       return;
     }
 
-  pthread_mutex_lock (&socketevent_mutex);
+  SOCKET_MUTEX_LOCK_OR_RAISE (&socketevent_mutex, SocketEvent,
+                              SocketEvent_Failed);
 
   idx = socketevent_find_handler_unlocked (callback, userdata);
   if (idx >= 0)
     socketevent_remove_at_index_unlocked ((size_t)idx);
 
-  pthread_mutex_unlock (&socketevent_mutex);
+  SOCKET_MUTEX_UNLOCK (&socketevent_mutex);
 }
 
 static void
