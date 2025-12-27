@@ -47,7 +47,18 @@
 /** Maximum DNS message size (64KB minus length prefix). */
 #define DOT_MAX_MESSAGE_SIZE 65535
 
-/** Receive buffer size. */
+/**
+ * Receive buffer size for chunked reads from TLS socket.
+ *
+ * Set to 4096 bytes (typical page size) for optimal I/O performance:
+ * - Matches common system page size on x86/x86_64/ARM
+ * - Allows kernel to efficiently transfer data between user/kernel space
+ * - Small enough to avoid stack allocation issues
+ * - Large enough to minimize system call overhead for typical DNS responses
+ *
+ * Note: Full DNS messages up to DOT_MAX_MESSAGE_SIZE are assembled from
+ * multiple chunks using dynamically allocated buffers (see receive_data()).
+ */
 #define DOT_RECV_BUFFER_SIZE 4096
 
 /* Well-known DoT servers */
