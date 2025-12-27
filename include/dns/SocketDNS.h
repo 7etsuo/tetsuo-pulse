@@ -353,7 +353,7 @@ extern struct addrinfo *SocketDNS_getresult (T dns, Request_T req);
  * @see SocketDNS_getresult() for retrieving successful results.
  * @see SocketDNS_resolve() for creating requests.
  */
-extern int SocketDNS_geterror (T dns, const struct SocketDNS_Request_T *req);
+extern int SocketDNS_geterror (T dns, Request_T req);
 
 /**
  * @brief Override timeout for specific request.
