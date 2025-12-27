@@ -21,6 +21,9 @@
 #include <sys/random.h>
 #elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__)
 #include <stdlib.h>
+#else
+#include <fcntl.h>
+#include <unistd.h>
 #endif
 
 /* ============================================================================
@@ -623,17 +626,29 @@ generate_random_bytes (uint8_t *buf, size_t len)
   arc4random_buf (buf, len);
   return 0;
 #else
-  /* Fallback: use /dev/urandom */
-  FILE *f = fopen ("/dev/urandom", "rb");
-  size_t count;
+  /* Fallback: use /dev/urandom with retry logic for partial reads */
+  int fd = open ("/dev/urandom", O_RDONLY);
+  size_t total = 0;
 
-  if (f == NULL)
+  if (fd < 0)
     return -1;
 
-  count = fread (buf, 1, len, f);
-  fclose (f);
+  /* Retry loop to handle partial reads */
+  while (total < len)
+    {
+      ssize_t n = read (fd, buf + total, len - total);
+      if (n <= 0)
+        {
+          close (fd);
+          /* Zero buffer to avoid leaving weak cryptographic material */
+          memset (buf, 0, len);
+          return -1;
+        }
+      total += n;
+    }
 
-  return (count == len) ? 0 : -1;
+  close (fd);
+  return 0;
 #endif
 }
 
