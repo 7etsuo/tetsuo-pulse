@@ -64,12 +64,6 @@ ws_translate_poll_revents (short revents)
   return ev;
 }
 
-#define SOCKETWS_INITIAL_MESSAGE_CAPACITY 4096
-#define SOCKETWS_MESSAGE_BUFFER_GROWTH_FACTOR 2
-#define SOCKETWS_MAX_GROWTH_ITERATIONS 64
-#define SOCKETWS_DEFAULT_COMPRESSION_LEVEL 6
-#define SOCKETWS_DEFAULT_WINDOW_BITS 15
-
 const Except_T SocketWS_Failed
     = { &SocketWS_Failed, "WebSocket operation failed" };
 const Except_T SocketWS_ProtocolError
@@ -273,13 +267,13 @@ ws_message_grow_buffer (SocketWS_T ws, size_t required_len)
     return 0;
 
   new_capacity
-      = msg->capacity ? msg->capacity : SOCKETWS_INITIAL_MESSAGE_CAPACITY;
+      = msg->capacity ? msg->capacity : SOCKET_INITIAL_MESSAGE_CAPACITY;
   size_t iterations = 0;
   while (new_capacity < required_len && iterations < SOCKETWS_MAX_GROWTH_ITERATIONS)
     { /* Prevent potential loop on overflow */
       size_t temp;
       if (!SocketSecurity_check_multiply (
-              new_capacity, SOCKETWS_MESSAGE_BUFFER_GROWTH_FACTOR, &temp))
+              new_capacity, SOCKET_BUFFER_GROWTH_FACTOR, &temp))
         {
           new_capacity = required_len > new_capacity ? required_len : SIZE_MAX;
           break;
@@ -1727,11 +1721,11 @@ SocketWS_compression_options_defaults (SocketWS_CompressionOptions *options)
   assert (options);
 
   memset (options, 0, sizeof (*options));
-  options->level = SOCKETWS_DEFAULT_COMPRESSION_LEVEL;
+  options->level = SOCKETWS_DEFAULT_DEFLATE_COMPRESSION_LEVEL;
   options->server_no_context_takeover = 0;
   options->client_no_context_takeover = 0;
-  options->server_max_window_bits = SOCKETWS_DEFAULT_WINDOW_BITS;
-  options->client_max_window_bits = SOCKETWS_DEFAULT_WINDOW_BITS;
+  options->server_max_window_bits = SOCKETWS_DEFAULT_DEFLATE_WINDOW_BITS;
+  options->client_max_window_bits = SOCKETWS_DEFAULT_DEFLATE_WINDOW_BITS;
 }
 
 int

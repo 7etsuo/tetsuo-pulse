@@ -284,6 +284,12 @@
 /** Default deflate window bits */
 #define SOCKETWS_DEFAULT_DEFLATE_WINDOW_BITS 15
 
+/** Default deflate compression level (6 = balanced speed/ratio) */
+#define SOCKETWS_DEFAULT_DEFLATE_COMPRESSION_LEVEL 6
+
+/** Maximum iterations for message buffer growth (DoS protection) */
+#define SOCKETWS_MAX_GROWTH_ITERATIONS 64
+
 /* SocketWS_Config is defined in public header (SocketWS.h) */
 
 /* ============================================================================
