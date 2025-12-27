@@ -66,7 +66,15 @@
 /** Maximum hostname length in cache key. */
 #define DNS_NEGCACHE_MAX_NAME 255
 
-/** Maximum SOA RDATA length (typical SOA is ~100 bytes). */
+/**
+ * Maximum SOA RDATA length (typical SOA is ~100 bytes).
+ *
+ * While worst-case SOA (2x255 byte names + 20 byte fields) = 530 bytes,
+ * practical SOA records are much smaller. 512 bytes chosen to match
+ * standard DNS UDP message size (RFC 1035) and accommodate typical use.
+ *
+ * If larger SOA needed, increase this constant.
+ */
 #define DNS_NEGCACHE_MAX_SOA_RDATA 512
 
 /** Maximum SOA owner name length. */
