@@ -239,24 +239,11 @@ validate_header_limits (SocketHTTP_Headers_T headers, size_t entry_size)
   return 0;
 }
 
-static char *
-allocate_string_copy (Arena_T arena, const char *src, size_t len)
-{
-  size_t alloc_size = (src && len > 0) ? len + 1 : 1;
-  char *copy = ALLOC (arena, alloc_size);
-  if (!copy)
-    return NULL;
-  if (src && len > 0)
-    memcpy (copy, src, len);
-  copy[alloc_size - 1] = '\0';
-  return copy;
-}
-
 static int
 allocate_entry_name (Arena_T arena, HeaderEntry *entry, const char *name,
                      size_t name_len)
 {
-  char *name_copy = allocate_string_copy (arena, name, name_len);
+  char *name_copy = arena_strndup (arena, name, name_len);
   if (!name_copy)
     return -1;
   entry->name = name_copy;
@@ -268,7 +255,7 @@ static int
 allocate_entry_value (Arena_T arena, HeaderEntry *entry, const char *value,
                       size_t value_len)
 {
-  char *value_copy = allocate_string_copy (arena, value, value_len);
+  char *value_copy = arena_strndup (arena, value, value_len);
   if (!value_copy)
     return -1;
   entry->value = value_copy;
@@ -427,14 +414,12 @@ SocketHTTP_Headers_materialize (SocketHTTP_Headers_T headers)
         continue;
 
       /* Copy name */
-      char *name_copy = allocate_string_copy (headers->arena, e->name,
-                                              e->name_len);
+      char *name_copy = arena_strndup (headers->arena, e->name, e->name_len);
       if (!name_copy)
         return -1;
 
       /* Copy value */
-      char *value_copy = allocate_string_copy (headers->arena, e->value,
-                                               e->value_len);
+      char *value_copy = arena_strndup (headers->arena, e->value, e->value_len);
       if (!value_copy)
         return -1;
 

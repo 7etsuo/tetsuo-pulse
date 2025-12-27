@@ -17,6 +17,7 @@
 #include "http/SocketHTTP.h"
 #include "http/SocketHTTP1.h"
 #include "http/SocketHTTP2.h"
+#include "http/SocketHTTP-private.h"
 #include "http/SocketHTTPClient-private.h"
 #include "http/SocketHTTPClient.h"
 #include "socket/Socket.h"
@@ -827,11 +828,10 @@ add_host_header (SocketHTTPClient_Request_T req)
 
   /* Validate host length before formatting */
   size_t host_len = strlen (req->uri.host);
+  bool is_https = (strcmp (req->uri.scheme, "https") == 0);
   size_t needed_len
-      = host_len
-        + (req->uri.port == -1 || req->uri.port == 80 || req->uri.port == 443
-               ? 1
-               : 10); /* +1 NUL, +port digits */
+      = host_len + (is_default_http_port (req->uri.port, is_https) ? 1 : 10);
+  /* +1 NUL, +port digits */
   if (needed_len > sizeof (host_header) - 1)
     {
       /* Truncate or raise error; here log and skip */
@@ -846,7 +846,7 @@ add_host_header (SocketHTTPClient_Request_T req)
       return;
     }
 
-  if (req->uri.port == -1 || req->uri.port == 80 || req->uri.port == 443)
+  if (is_default_http_port (req->uri.port, is_https))
     {
       snprintf (host_header, sizeof (host_header), "%s", req->uri.host);
     }
@@ -2653,7 +2653,7 @@ SocketHTTPClient_prepare (SocketHTTPClient_T client, SocketHTTP_Method method,
   if (prep->effective_port == -1)
     prep->effective_port = prep->is_secure ? 443 : 80;
 
-  /* Format Host header */
+/* Format Host header */
   if (prepare_format_host_header (client, prep, arena) != 0)
     {
       Arena_dispose (&arena);

@@ -17,6 +17,7 @@
 #include <time.h>
 
 #include "core/SocketUtil.h"
+#include "http/SocketHTTP-private.h"
 #include "http/SocketHTTP.h"
 
 #undef SOCKET_LOG_COMPONENT
@@ -214,10 +215,9 @@ expect_char (const char **p, const char *end, char expected)
 static size_t
 skip_whitespace (const char *s, size_t max)
 {
-  size_t n = 0;
-  while (n < max && (s[n] == ' ' || s[n] == '\t'))
-    n++;
-  return n;
+  const char *end = s + max;
+  const char *result = skip_ows (s, end);
+  return (size_t)(result - s);
 }
 
 static int

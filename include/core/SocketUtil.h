@@ -646,6 +646,37 @@ socket_util_arena_strdup_len (Arena_T arena, const char *str, size_t len)
   return copy;
 }
 
+/**
+ * @brief Duplicate string with length into arena (simplified alias).
+ * @ingroup foundation
+ * @param arena Arena for allocation.
+ * @param src String to duplicate (may not be null-terminated).
+ * @param len Exact length of string to copy.
+ * @return Null-terminated copy in arena, or NULL if src is NULL or alloc fails.
+ * @threadsafe Yes (if arena is thread-safe)
+ *
+ * Simplified wrapper consolidating duplicate string duplication logic.
+ * Handles null source gracefully and always null-terminates result.
+ */
+static inline char *
+arena_strndup (Arena_T arena, const char *src, size_t len)
+{
+  char *copy;
+
+  if (src == NULL)
+    return NULL;
+
+  copy = Arena_alloc (arena, len + 1, __FILE__, __LINE__);
+  if (copy != NULL)
+    {
+      if (len > 0)
+        memcpy (copy, src, len);
+      copy[len] = '\0';
+    }
+
+  return copy;
+}
+
 /* ============================================================================
  * TIMEOUT CALCULATION HELPERS
  * ============================================================================

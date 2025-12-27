@@ -103,4 +103,53 @@ sockethttp_is_token_boundary (char c)
   return c == '\0' || c == ',' || c == ' ' || c == '\t';
 }
 
+/* ============================================================================
+ * HTTP PORT UTILITIES
+ * ============================================================================
+ */
+
+/**
+ * @brief Check if port is default for HTTP/HTTPS scheme.
+ * @param port Port number (-1 for default, or explicit port).
+ * @param is_https True if HTTPS/secure scheme, false for HTTP.
+ * @return True if port is default (omit from Host header), false otherwise.
+ *
+ * Default ports:
+ * - HTTP: 80 or -1 (unspecified)
+ * - HTTPS: 443 or -1 (unspecified)
+ *
+ * Used to determine whether to include port in Host header per RFC 7230:
+ * "A sender MUST NOT generate the port subcomponent in Host if the port
+ *  is the default port for the request's scheme."
+ */
+static inline int
+is_default_http_port (int port, int is_https)
+{
+  return port == -1 || port == (is_https ? 443 : 80);
+}
+
+/* ============================================================================
+ * RFC 7230 WHITESPACE HANDLING
+ * ============================================================================
+ */
+
+/**
+ * @brief Skip optional whitespace (OWS) as defined by RFC 7230.
+ * @param p Current position in string.
+ * @param end End of string (exclusive).
+ * @return New position after skipping SP (0x20) and HTAB (0x09) characters.
+ *
+ * OWS (Optional WhiteSpace) from RFC 7230 Section 3.2.3:
+ *   OWS = *( SP / HTAB )
+ *
+ * Used for parsing HTTP headers and other protocol elements.
+ */
+static inline const char *
+skip_ows (const char *p, const char *end)
+{
+  while (p < end && (*p == ' ' || *p == '\t'))
+    p++;
+  return p;
+}
+
 #endif /* SOCKETHTTP_PRIVATE_INCLUDED */
