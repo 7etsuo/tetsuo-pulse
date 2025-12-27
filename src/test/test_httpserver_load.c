@@ -875,7 +875,11 @@ int
 main (void)
 {
   /* Ignore SIGPIPE once at startup */
-  Socket_ignore_sigpipe ();
+  if (Socket_ignore_sigpipe () != 0)
+    {
+      perror ("Socket_ignore_sigpipe");
+      return 1;
+    }
 
   printf ("HTTP Server Load Tests\n");
   printf ("======================\n\n");

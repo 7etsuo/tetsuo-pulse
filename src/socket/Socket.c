@@ -76,7 +76,15 @@ Socket_ignore_sigpipe (void)
   sigemptyset (&sa.sa_mask);
   sa.sa_flags = 0;
 
-  return sigaction (SIGPIPE, &sa, NULL);
+  int ret = sigaction (SIGPIPE, &sa, NULL);
+  if (ret != 0)
+    {
+      /* Log error - this should never happen with valid SIGPIPE */
+      SocketLog_emitf (SOCKET_LOG_ERROR, SOCKET_LOG_COMPONENT,
+                       "sigaction(SIGPIPE, SIG_IGN) failed: %s",
+                       strerror (errno));
+    }
+  return ret;
 }
 
 static void
