@@ -95,6 +95,15 @@ SocketQUICFrame_encode_new_token (const uint8_t *token, size_t token_len,
   if (token_len_varint == 0)
     return 0; /* Token length exceeds varint maximum */
 
+  /* Check for integer overflow in size calculation (CWE-190).
+   * If token_len is very large (approaching SIZE_MAX), adding even small
+   * values like type_len (1) + token_len_varint (max 8) could overflow.
+   * This would make the subsequent buffer size check unreliable and could
+   * lead to buffer overflows during memcpy.
+   */
+  if (token_len > SIZE_MAX - (type_len + token_len_varint))
+    return 0; /* Would overflow */
+
   size_t total_len = type_len + token_len_varint + token_len;
 
   if (out_len < total_len)
