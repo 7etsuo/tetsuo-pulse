@@ -294,7 +294,10 @@ percentile_from_sorted (const double *sorted, size_t n, double percentile)
 static void
 histogram_init (Histogram *h)
 {
-  pthread_mutex_init (&h->mutex, NULL);
+  int rc;
+
+  rc = pthread_mutex_init (&h->mutex, NULL);
+  assert (rc == 0 && "pthread_mutex_init failed");
   memset (h->values, 0, sizeof (h->values));
   h->write_index = 0;
   atomic_store (&h->count, 0);
