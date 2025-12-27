@@ -62,6 +62,9 @@
 /** Maximum total search list length (glibc <= 2.25 limit). */
 #define DNS_CONFIG_MAX_SEARCH_LEN 256
 
+/** Maximum line length when reading resolv.conf. */
+#define DNS_CONFIG_MAX_LINE_LEN 1024
+
 /** Default query timeout in seconds (RES_TIMEOUT). */
 #define DNS_CONFIG_DEFAULT_TIMEOUT 5
 
