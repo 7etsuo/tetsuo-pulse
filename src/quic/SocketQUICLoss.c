@@ -10,6 +10,7 @@
  */
 
 #include "quic/SocketQUICLoss.h"
+#include "quic/SocketQUICConstants.h"
 #include "core/SocketUtil.h"
 
 #include <inttypes.h>
@@ -17,9 +18,6 @@
 
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "QUIC-LOSS"
-
-/* Hash table size for sent packets (power of 2) */
-#define SENT_PACKET_HASH_SIZE 128
 
 /* ============================================================================
  * Result Strings
@@ -51,7 +49,7 @@ SocketQUICLoss_result_string (SocketQUICLoss_Result result)
 static unsigned
 hash_pn (uint64_t pn)
 {
-  return (unsigned)(pn % SENT_PACKET_HASH_SIZE);
+  return (unsigned)(pn % QUIC_SENT_PACKET_HASH_SIZE);
 }
 
 static SocketQUICLossSentPacket_T *
@@ -158,7 +156,7 @@ SocketQUICLoss_new (Arena_T arena, int is_handshake, uint64_t max_ack_delay)
   state->max_ack_delay_us = max_ack_delay;
 
   /* Allocate hash table */
-  state->sent_packets_size = SENT_PACKET_HASH_SIZE;
+  state->sent_packets_size = QUIC_SENT_PACKET_HASH_SIZE;
   state->sent_packets
       = CALLOC (arena, state->sent_packets_size, sizeof (*state->sent_packets));
   if (state->sent_packets == NULL)
