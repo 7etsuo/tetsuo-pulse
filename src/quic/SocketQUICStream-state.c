@@ -81,106 +81,122 @@ SocketQUICStream_get_recv_state (const SocketQUICStream_T stream)
  */
 
 /**
+ * @brief State transition table entry.
+ *
+ * Defines a single valid state transition: from_state + event -> to_state.
+ */
+typedef struct
+{
+  SocketQUICStreamState from_state; /**< Source state */
+  SocketQUICStreamEvent event;      /**< Triggering event */
+  SocketQUICStreamState to_state;   /**< Destination state */
+} StateTransition;
+
+/**
+ * @brief Send-side state transition table (RFC 9000 Section 3.1).
+ *
+ * This table defines all valid state transitions for the sending part
+ * of a QUIC stream. Each entry represents: (from_state, event) -> to_state.
+ *
+ * Valid transitions:
+ *   Ready -> Send (on SEND_DATA)
+ *   Ready -> ResetSent (on SEND_RESET or RECV_STOP_SENDING)
+ *   Send -> Send (on SEND_DATA, stay in state)
+ *   Send -> DataSent (on SEND_FIN)
+ *   Send -> ResetSent (on SEND_RESET or RECV_STOP_SENDING)
+ *   DataSent -> DataRecvd (on ALL_DATA_ACKED, terminal)
+ *   DataSent -> ResetSent (on SEND_RESET or RECV_STOP_SENDING)
+ *   ResetSent -> ResetRecvd (on RESET_ACKED, terminal)
+ *
+ * Terminal states (DataRecvd, ResetRecvd) have no transitions.
+ */
+static const StateTransition send_transitions[] = {
+  /* From Ready */
+  { QUIC_STREAM_STATE_READY, QUIC_STREAM_EVENT_SEND_DATA,
+    QUIC_STREAM_STATE_SEND },
+  { QUIC_STREAM_STATE_READY, QUIC_STREAM_EVENT_SEND_RESET,
+    QUIC_STREAM_STATE_RESET_SENT },
+  { QUIC_STREAM_STATE_READY, QUIC_STREAM_EVENT_RECV_STOP_SENDING,
+    QUIC_STREAM_STATE_RESET_SENT },
+
+  /* From Send */
+  { QUIC_STREAM_STATE_SEND, QUIC_STREAM_EVENT_SEND_DATA,
+    QUIC_STREAM_STATE_SEND }, /* Stay in Send */
+  { QUIC_STREAM_STATE_SEND, QUIC_STREAM_EVENT_SEND_FIN,
+    QUIC_STREAM_STATE_DATA_SENT },
+  { QUIC_STREAM_STATE_SEND, QUIC_STREAM_EVENT_SEND_RESET,
+    QUIC_STREAM_STATE_RESET_SENT },
+  { QUIC_STREAM_STATE_SEND, QUIC_STREAM_EVENT_RECV_STOP_SENDING,
+    QUIC_STREAM_STATE_RESET_SENT },
+
+  /* From DataSent */
+  { QUIC_STREAM_STATE_DATA_SENT, QUIC_STREAM_EVENT_ALL_DATA_ACKED,
+    QUIC_STREAM_STATE_DATA_RECVD },
+  { QUIC_STREAM_STATE_DATA_SENT, QUIC_STREAM_EVENT_SEND_RESET,
+    QUIC_STREAM_STATE_RESET_SENT },
+  { QUIC_STREAM_STATE_DATA_SENT, QUIC_STREAM_EVENT_RECV_STOP_SENDING,
+    QUIC_STREAM_STATE_RESET_SENT },
+
+  /* From ResetSent */
+  { QUIC_STREAM_STATE_RESET_SENT, QUIC_STREAM_EVENT_RESET_ACKED,
+    QUIC_STREAM_STATE_RESET_RECVD }
+};
+
+#define SEND_TRANSITIONS_COUNT                                                \
+  (sizeof (send_transitions) / sizeof (send_transitions[0]))
+
+/**
  * @brief Validate and execute send-side state transition.
  *
- * State transition table:
+ * Uses a table-driven approach for clarity and maintainability.
+ * All valid transitions are defined in the send_transitions[] table.
  *
- *   Ready:
- *     - SEND_DATA -> Send
- *     - SEND_RESET -> ResetSent
- *     - RECV_STOP_SENDING -> ResetSent
+ * Terminal states (DataRecvd, ResetRecvd) have no valid transitions.
  *
- *   Send:
- *     - SEND_DATA -> Send (stay in state)
- *     - SEND_FIN -> DataSent
- *     - SEND_RESET -> ResetSent
- *     - RECV_STOP_SENDING -> ResetSent
+ * @param stream Stream to transition.
+ * @param event  Event triggering the transition.
  *
- *   DataSent:
- *     - ALL_DATA_ACKED -> DataRecvd (terminal)
- *     - SEND_RESET -> ResetSent
- *     - RECV_STOP_SENDING -> ResetSent
- *
- *   ResetSent:
- *     - RESET_ACKED -> ResetRecvd (terminal)
- *
- *   DataRecvd: Terminal state (no transitions)
- *   ResetRecvd: Terminal state (no transitions)
+ * @return QUIC_STREAM_OK on success, error code otherwise.
  */
 SocketQUICStream_Result
 SocketQUICStream_transition_send (SocketQUICStream_T stream,
                                   SocketQUICStreamEvent event)
 {
   SocketQUICStreamState current;
-  SocketQUICStreamState next;
+  size_t i;
 
   if (stream == NULL)
     return QUIC_STREAM_ERROR_NULL;
 
   current = stream->send_state;
 
-  /* Terminal states */
+  /* Terminal states have no valid transitions */
   if (current == QUIC_STREAM_STATE_DATA_RECVD
       || current == QUIC_STREAM_STATE_RESET_RECVD)
     {
-      return QUIC_STREAM_ERROR_STATE; /* No transitions from terminal states */
+      return QUIC_STREAM_ERROR_STATE;
     }
 
-  /* State transition logic */
-  switch (current)
+  /* Search transition table for valid transition */
+  for (i = 0; i < SEND_TRANSITIONS_COUNT; i++)
     {
-    case QUIC_STREAM_STATE_READY:
-      if (event == QUIC_STREAM_EVENT_SEND_DATA)
-        next = QUIC_STREAM_STATE_SEND;
-      else if (event == QUIC_STREAM_EVENT_SEND_RESET
-               || event == QUIC_STREAM_EVENT_RECV_STOP_SENDING)
-        next = QUIC_STREAM_STATE_RESET_SENT;
-      else
-        return QUIC_STREAM_ERROR_STATE;
-      break;
+      if (send_transitions[i].from_state == current
+          && send_transitions[i].event == event)
+        {
+          /* Valid transition found - execute it */
+          stream->send_state = send_transitions[i].to_state;
 
-    case QUIC_STREAM_STATE_SEND:
-      if (event == QUIC_STREAM_EVENT_SEND_DATA)
-        next = QUIC_STREAM_STATE_SEND; /* Stay in Send */
-      else if (event == QUIC_STREAM_EVENT_SEND_FIN)
-        next = QUIC_STREAM_STATE_DATA_SENT;
-      else if (event == QUIC_STREAM_EVENT_SEND_RESET
-               || event == QUIC_STREAM_EVENT_RECV_STOP_SENDING)
-        next = QUIC_STREAM_STATE_RESET_SENT;
-      else
-        return QUIC_STREAM_ERROR_STATE;
-      break;
+          /* Update legacy combined state for backwards compatibility */
+          if (stream->send_state == QUIC_STREAM_STATE_SEND
+              || stream->send_state == QUIC_STREAM_STATE_DATA_SENT)
+            stream->state = stream->send_state;
 
-    case QUIC_STREAM_STATE_DATA_SENT:
-      if (event == QUIC_STREAM_EVENT_ALL_DATA_ACKED)
-        next = QUIC_STREAM_STATE_DATA_RECVD;
-      else if (event == QUIC_STREAM_EVENT_SEND_RESET
-               || event == QUIC_STREAM_EVENT_RECV_STOP_SENDING)
-        next = QUIC_STREAM_STATE_RESET_SENT;
-      else
-        return QUIC_STREAM_ERROR_STATE;
-      break;
-
-    case QUIC_STREAM_STATE_RESET_SENT:
-      if (event == QUIC_STREAM_EVENT_RESET_ACKED)
-        next = QUIC_STREAM_STATE_RESET_RECVD;
-      else
-        return QUIC_STREAM_ERROR_STATE;
-      break;
-
-    default:
-      return QUIC_STREAM_ERROR_STATE; /* Invalid state */
+          return QUIC_STREAM_OK;
+        }
     }
 
-  /* Execute transition */
-  stream->send_state = next;
-
-  /* Update legacy combined state for backwards compatibility */
-  if (stream->send_state == QUIC_STREAM_STATE_SEND
-      || stream->send_state == QUIC_STREAM_STATE_DATA_SENT)
-    stream->state = stream->send_state;
-
-  return QUIC_STREAM_OK;
+  /* No valid transition found */
+  return QUIC_STREAM_ERROR_STATE;
 }
 
 /* ============================================================================
