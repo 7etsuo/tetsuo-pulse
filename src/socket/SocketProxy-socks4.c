@@ -305,6 +305,13 @@ proxy_socks4a_send_connect (struct SocketProxy_Conn_T *conn)
     }
   len += userid_written;
 
+  /* Validate buffer space for hostname + null terminator */
+  if (len + host_len + 1 > sizeof (conn->send_buf))
+    {
+      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL, "Request too large");
+      return -1;
+    }
+
   /* Write hostname with null terminator */
   memcpy (buf + len, conn->target_host, host_len);
   len += host_len;
