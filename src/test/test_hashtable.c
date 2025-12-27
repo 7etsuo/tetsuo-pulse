@@ -11,6 +11,7 @@
  */
 
 #include <assert.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -453,6 +454,25 @@ TEST (hashtable_null_hash_raises)
   volatile int raised = 0;
   HashTable_Config config = make_config (16);
   config.hash = NULL;
+
+  TRY
+  {
+    HashTable_new (NULL, &config);
+  }
+  EXCEPT (HashTable_Failed)
+  {
+    raised = 1;
+  }
+  END_TRY;
+  ASSERT_EQ (raised, 1);
+}
+
+TEST (hashtable_bucket_count_overflow_raises)
+{
+  volatile int raised = 0;
+  HashTable_Config config = make_config (16);
+  /* Set bucket_count to exceed UINT_MAX (4,294,967,295) */
+  config.bucket_count = (size_t)UINT_MAX + 1;
 
   TRY
   {
