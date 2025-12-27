@@ -226,9 +226,21 @@ struct SocketDNS_T
 #define DNS_LOCKED_INT_GETTER(dns, field)                                     \
   ({                                                                          \
     int _value;                                                               \
-    pthread_mutex_lock (&(dns)->mutex);                                       \
+    int _lock_err = pthread_mutex_lock (&(dns)->mutex);                       \
+    if (_lock_err != 0)                                                       \
+      {                                                                       \
+        SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,                        \
+                          "Mutex lock failed for " #field ": %s",             \
+                          strerror (_lock_err));                              \
+      }                                                                       \
     _value = (dns)->field;                                                    \
-    pthread_mutex_unlock (&(dns)->mutex);                                     \
+    int _unlock_err = pthread_mutex_unlock (&(dns)->mutex);                   \
+    if (_unlock_err != 0)                                                     \
+      {                                                                       \
+        SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,                        \
+                          "Mutex unlock failed for " #field ": %s",           \
+                          strerror (_unlock_err));                            \
+      }                                                                       \
     _value;                                                                   \
   })
 
@@ -246,9 +258,21 @@ struct SocketDNS_T
 #define DNS_LOCKED_SIZE_GETTER(dns, field)                                    \
   ({                                                                          \
     size_t _value;                                                            \
-    pthread_mutex_lock (&(dns)->mutex);                                       \
+    int _lock_err = pthread_mutex_lock (&(dns)->mutex);                       \
+    if (_lock_err != 0)                                                       \
+      {                                                                       \
+        SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,                        \
+                          "Mutex lock failed for " #field ": %s",             \
+                          strerror (_lock_err));                              \
+      }                                                                       \
     _value = (dns)->field;                                                    \
-    pthread_mutex_unlock (&(dns)->mutex);                                     \
+    int _unlock_err = pthread_mutex_unlock (&(dns)->mutex);                   \
+    if (_unlock_err != 0)                                                     \
+      {                                                                       \
+        SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,                        \
+                          "Mutex unlock failed for " #field ": %s",           \
+                          strerror (_unlock_err));                            \
+      }                                                                       \
     _value;                                                                   \
   })
 
@@ -267,9 +291,21 @@ struct SocketDNS_T
 #define DNS_LOCKED_INT_SETTER(dns, field, value)                              \
   do                                                                          \
     {                                                                         \
-      pthread_mutex_lock (&(dns)->mutex);                                     \
+      int _lock_err = pthread_mutex_lock (&(dns)->mutex);                     \
+      if (_lock_err != 0)                                                     \
+        {                                                                     \
+          SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,                      \
+                            "Mutex lock failed for " #field ": %s",           \
+                            strerror (_lock_err));                            \
+        }                                                                     \
       (dns)->field = (value);                                                 \
-      pthread_mutex_unlock (&(dns)->mutex);                                   \
+      int _unlock_err = pthread_mutex_unlock (&(dns)->mutex);                 \
+      if (_unlock_err != 0)                                                   \
+        {                                                                     \
+          SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,                      \
+                            "Mutex unlock failed for " #field ": %s",         \
+                            strerror (_unlock_err));                          \
+        }                                                                     \
     }                                                                         \
   while (0)
 
