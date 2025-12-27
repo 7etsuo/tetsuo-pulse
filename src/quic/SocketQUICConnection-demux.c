@@ -35,8 +35,37 @@ struct SocketQUICConnTable {
 #ifdef __linux__
 #include <sys/random.h>
 #define SECURE_RANDOM(buf, len) (getrandom((buf), (len), 0) == (ssize_t)(len))
+
+#elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
+#include <stdlib.h>
+static inline int secure_random_bsd(void *buf, size_t len) {
+    arc4random_buf(buf, len);
+    return 1;  // arc4random_buf never fails
+}
+#define SECURE_RANDOM(buf, len) secure_random_bsd((buf), (len))
+
+#elif defined(_WIN32)
+#include <windows.h>
+#include <bcrypt.h>
+#pragma comment(lib, "bcrypt.lib")
+static inline int secure_random_win(void *buf, size_t len) {
+    return BCRYPT_SUCCESS(BCryptGenRandom(NULL, (PUCHAR)(buf), (ULONG)(len),
+                                          BCRYPT_USE_SYSTEM_PREFERRED_RNG));
+}
+#define SECURE_RANDOM(buf, len) secure_random_win((buf), (len))
+
 #else
-#define SECURE_RANDOM(buf, len) 0
+// Portable fallback using /dev/urandom
+#include <stdio.h>
+static inline int secure_random_fallback(void *buf, size_t len) {
+    FILE *f = fopen("/dev/urandom", "rb");
+    if (!f) return 0;
+    size_t n = fread(buf, 1, len, f);
+    fclose(f);
+    return (n == len);
+}
+#define SECURE_RANDOM(buf, len) secure_random_fallback((buf), (len))
+#warning "Using /dev/urandom for SECURE_RANDOM - consider platform-specific implementation"
 #endif
 
 static const char *result_strings[] = { "OK", "NULL pointer argument", "Connection table is full", "Connection ID already registered", "Connection not found", "Too many CIDs for connection", "Hash chain too long (DoS protection)", "Zero-length DCID conflict", "Memory allocation failed" };
