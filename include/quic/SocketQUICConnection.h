@@ -28,6 +28,9 @@
 /* RFC 9000 Section 10.2: Closing/draining timeout = 3 * PTO */
 #define QUIC_TERMINATION_PTO_MULTIPLIER 3
 
+/* RFC 9000 Section 10.3.1: Minimum packet size to avoid false positives */
+#define QUIC_STATELESS_RESET_MIN_PACKET_LEN 38
+
 typedef struct SocketQUICConnection *SocketQUICConnection_T;
 typedef struct SocketQUICConnTable *SocketQUICConnTable_T;
 

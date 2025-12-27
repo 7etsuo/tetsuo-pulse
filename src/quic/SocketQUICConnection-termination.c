@@ -294,7 +294,7 @@ SocketQUICConnection_verify_stateless_reset(const uint8_t *packet,
     return 0;
 
   /* RFC 9000 Section 10.3.1: Minimum size to avoid collisions */
-  if (packet_len < 38)
+  if (packet_len < QUIC_STATELESS_RESET_MIN_PACKET_LEN)
     return 0;
 
   /* Compare final 16 bytes with expected token */
