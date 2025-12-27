@@ -61,6 +61,14 @@
  */
 #define QUIC_ACK_PACKET_THRESHOLD 2
 
+/**
+ * @brief Initial capacity for ACK range storage.
+ *
+ * Pre-allocated range capacity to avoid frequent reallocations.
+ * The capacity will grow dynamically if more ranges are needed.
+ */
+#define QUIC_ACK_INITIAL_RANGE_CAPACITY 16
+
 /* ============================================================================
  * Data Structures
  * ============================================================================

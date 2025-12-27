@@ -60,7 +60,7 @@ SocketQUICAck_new (Arena_T arena, int is_handshake, uint64_t max_ack_delay_us)
       = (max_ack_delay_us > 0) ? max_ack_delay_us : QUIC_ACK_DEFAULT_MAX_DELAY_US;
 
   /* Pre-allocate some range capacity */
-  state->range_capacity = 16;
+  state->range_capacity = QUIC_ACK_INITIAL_RANGE_CAPACITY;
   state->ranges = CALLOC (arena, state->range_capacity, sizeof (*state->ranges));
   if (state->ranges == NULL)
     return NULL;
