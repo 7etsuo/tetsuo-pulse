@@ -467,6 +467,9 @@ ws_parse_window_bits (const char *extensions, const char *param_name)
   {
     char *endptr;
     long v = strtol (eq + 1, &endptr, 10);
+    /* Validate endptr: must have consumed digits and hit separator or end */
+    if (endptr == eq + 1 || (*endptr != '\0' && *endptr != ';' && *endptr != ',' && *endptr != ' '))
+      return SOCKETWS_DEFAULT_DEFLATE_WINDOW_BITS;
     value
         = (v >= 8 && v <= 15) ? (int)v : SOCKETWS_DEFAULT_DEFLATE_WINDOW_BITS;
   }
