@@ -300,16 +300,213 @@ SocketQUICAck_should_send (const SocketQUICAckState_T state,
   return 0;
 }
 
+/* ============================================================================
+ * Internal Encoding Helpers
+ * ============================================================================
+ */
+
+/**
+ * @brief Calculate ACK delay from timestamps.
+ *
+ * Per RFC 9000, ack_delay is in units of ack_delay_exponent microseconds.
+ * Default exponent is 3, so divide by 8 (2^3).
+ *
+ * @param current_time    Current time in microseconds.
+ * @param recv_time       Time when largest packet was received.
+ *
+ * @return Encoded ACK delay value.
+ */
+static uint64_t
+calculate_ack_delay (uint64_t current_time, uint64_t recv_time)
+{
+  if (current_time > recv_time)
+    return (current_time - recv_time) >> 3;
+  return 0;
+}
+
+/**
+ * @brief Determine if ECN counts should be included.
+ *
+ * @param state ACK state with ECN information.
+ *
+ * @return Non-zero if ECN frame should be used.
+ */
+static int
+should_include_ecn (const SocketQUICAckState_T state)
+{
+  return state->ecn_validated
+         && (state->ecn_counts.ect0_count > 0
+             || state->ecn_counts.ect1_count > 0
+             || state->ecn_counts.ce_count > 0);
+}
+
+/**
+ * @brief Encode ACK frame header (type, largest, delay, range count).
+ *
+ * @param out          Output buffer pointer (updated).
+ * @param remaining    Remaining buffer size (updated).
+ * @param largest      Largest acknowledged packet number.
+ * @param ack_delay    Encoded ACK delay value.
+ * @param range_count  Number of additional ACK ranges.
+ * @param has_ecn      Non-zero to use ECN frame type.
+ *
+ * @return QUIC_ACK_OK on success, error code otherwise.
+ */
+static SocketQUICAck_Result
+encode_ack_header (uint8_t **out, size_t *remaining, uint64_t largest,
+                   uint64_t ack_delay, uint64_t range_count, int has_ecn)
+{
+  size_t n;
+
+  /* Frame type: 0x02 for ACK, 0x03 for ACK_ECN */
+  if (*remaining < 1)
+    return QUIC_ACK_ERROR_BUFFER;
+  *(*out)++ = has_ecn ? 0x03 : 0x02;
+  (*remaining)--;
+
+  /* Largest Acknowledged */
+  n = SocketQUICVarInt_encode (largest, *out, *remaining);
+  if (n == 0)
+    return QUIC_ACK_ERROR_BUFFER;
+  *out += n;
+  *remaining -= n;
+
+  /* ACK Delay */
+  n = SocketQUICVarInt_encode (ack_delay, *out, *remaining);
+  if (n == 0)
+    return QUIC_ACK_ERROR_BUFFER;
+  *out += n;
+  *remaining -= n;
+
+  /* ACK Range Count */
+  n = SocketQUICVarInt_encode (range_count, *out, *remaining);
+  if (n == 0)
+    return QUIC_ACK_ERROR_BUFFER;
+  *out += n;
+  *remaining -= n;
+
+  return QUIC_ACK_OK;
+}
+
+/**
+ * @brief Encode first ACK range.
+ *
+ * @param out        Output buffer pointer (updated).
+ * @param remaining  Remaining buffer size (updated).
+ * @param range      First ACK range to encode.
+ *
+ * @return QUIC_ACK_OK on success, error code otherwise.
+ */
+static SocketQUICAck_Result
+encode_first_range (uint8_t **out, size_t *remaining,
+                    const SocketQUICAckRange_T *range)
+{
+  uint64_t first_ack_range;
+  size_t n;
+
+  /* First ACK Range = end - start */
+  first_ack_range = range->end - range->start;
+  n = SocketQUICVarInt_encode (first_ack_range, *out, *remaining);
+  if (n == 0)
+    return QUIC_ACK_ERROR_BUFFER;
+
+  *out += n;
+  *remaining -= n;
+  return QUIC_ACK_OK;
+}
+
+/**
+ * @brief Encode additional ACK ranges as gap/range pairs.
+ *
+ * @param out          Output buffer pointer (updated).
+ * @param remaining    Remaining buffer size (updated).
+ * @param ranges       Array of ACK ranges (sorted descending).
+ * @param range_count  Total number of ranges.
+ *
+ * @return QUIC_ACK_OK on success, error code otherwise.
+ */
+static SocketQUICAck_Result
+encode_additional_ranges (uint8_t **out, size_t *remaining,
+                          const SocketQUICAckRange_T *ranges,
+                          size_t range_count)
+{
+  size_t n;
+
+  /* Encode gap+range pairs for additional ranges */
+  for (size_t i = 1; i < range_count; i++)
+    {
+      uint64_t gap;
+      uint64_t ack_range_len;
+
+      /* Gap = prev_start - current_end - 2 */
+      gap = ranges[i - 1].start - ranges[i].end - 2;
+      n = SocketQUICVarInt_encode (gap, *out, *remaining);
+      if (n == 0)
+        return QUIC_ACK_ERROR_BUFFER;
+      *out += n;
+      *remaining -= n;
+
+      /* ACK Range length */
+      ack_range_len = ranges[i].end - ranges[i].start;
+      n = SocketQUICVarInt_encode (ack_range_len, *out, *remaining);
+      if (n == 0)
+        return QUIC_ACK_ERROR_BUFFER;
+      *out += n;
+      *remaining -= n;
+    }
+
+  return QUIC_ACK_OK;
+}
+
+/**
+ * @brief Encode ECN counts.
+ *
+ * @param out        Output buffer pointer (updated).
+ * @param remaining  Remaining buffer size (updated).
+ * @param ecn        ECN counts to encode.
+ *
+ * @return QUIC_ACK_OK on success, error code otherwise.
+ */
+static SocketQUICAck_Result
+encode_ecn_counts (uint8_t **out, size_t *remaining,
+                   const SocketQUICAckECN_T *ecn)
+{
+  size_t n;
+
+  /* ECT(0) count */
+  n = SocketQUICVarInt_encode (ecn->ect0_count, *out, *remaining);
+  if (n == 0)
+    return QUIC_ACK_ERROR_BUFFER;
+  *out += n;
+  *remaining -= n;
+
+  /* ECT(1) count */
+  n = SocketQUICVarInt_encode (ecn->ect1_count, *out, *remaining);
+  if (n == 0)
+    return QUIC_ACK_ERROR_BUFFER;
+  *out += n;
+  *remaining -= n;
+
+  /* CE count */
+  n = SocketQUICVarInt_encode (ecn->ce_count, *out, *remaining);
+  if (n == 0)
+    return QUIC_ACK_ERROR_BUFFER;
+  *out += n;
+  *remaining -= n;
+
+  return QUIC_ACK_OK;
+}
+
 SocketQUICAck_Result
 SocketQUICAck_encode (SocketQUICAckState_T state, uint64_t current_time,
                        uint8_t *out, size_t out_size, size_t *out_len)
 {
   uint8_t *p;
   size_t remaining;
-  size_t n;
   uint64_t ack_delay;
-  uint64_t first_ack_range;
+  uint64_t range_count;
   int has_ecn;
+  SocketQUICAck_Result res;
 
   if (state == NULL || out == NULL || out_len == NULL)
     return QUIC_ACK_ERROR_NULL;
@@ -323,103 +520,37 @@ SocketQUICAck_encode (SocketQUICAckState_T state, uint64_t current_time,
   p = out;
   remaining = out_size;
 
-  /* Calculate ack_delay in microseconds, then convert to frame format.
-   * Per RFC 9000, ack_delay is in units of ack_delay_exponent microseconds.
-   * Default exponent is 3, so divide by 8 (2^3).
-   */
-  if (current_time > state->largest_recv_time)
-    ack_delay = (current_time - state->largest_recv_time) >> 3;
-  else
-    ack_delay = 0;
+  /* Calculate encoding parameters */
+  ack_delay = calculate_ack_delay (current_time, state->largest_recv_time);
+  has_ecn = should_include_ecn (state);
+  range_count = state->range_count > 0 ? state->range_count - 1 : 0;
 
-  /* Determine if we should include ECN */
-  has_ecn = state->ecn_validated
-            && (state->ecn_counts.ect0_count > 0
-                || state->ecn_counts.ect1_count > 0
-                || state->ecn_counts.ce_count > 0);
+  /* Encode ACK frame header */
+  res = encode_ack_header (&p, &remaining, state->largest_received, ack_delay,
+                           range_count, has_ecn);
+  if (res != QUIC_ACK_OK)
+    return res;
 
-  /* Frame type: 0x02 for ACK, 0x03 for ACK_ECN */
-  if (remaining < 1)
-    return QUIC_ACK_ERROR_BUFFER;
-  *p++ = has_ecn ? 0x03 : 0x02;
-  remaining--;
+  /* Encode first ACK range */
+  res = encode_first_range (&p, &remaining, &state->ranges[0]);
+  if (res != QUIC_ACK_OK)
+    return res;
 
-  /* Largest Acknowledged */
-  n = SocketQUICVarInt_encode (state->largest_received, p, remaining);
-  if (n == 0)
-    return QUIC_ACK_ERROR_BUFFER;
-  p += n;
-  remaining -= n;
-
-  /* ACK Delay */
-  n = SocketQUICVarInt_encode (ack_delay, p, remaining);
-  if (n == 0)
-    return QUIC_ACK_ERROR_BUFFER;
-  p += n;
-  remaining -= n;
-
-  /* ACK Range Count (number of gap+range pairs after first range) */
-  n = SocketQUICVarInt_encode (
-      state->range_count > 0 ? state->range_count - 1 : 0, p, remaining);
-  if (n == 0)
-    return QUIC_ACK_ERROR_BUFFER;
-  p += n;
-  remaining -= n;
-
-  /* First ACK Range (largest - first range start) */
-  first_ack_range = state->ranges[0].end - state->ranges[0].start;
-  n = SocketQUICVarInt_encode (first_ack_range, p, remaining);
-  if (n == 0)
-    return QUIC_ACK_ERROR_BUFFER;
-  p += n;
-  remaining -= n;
-
-  /* Additional ranges (Gap, ACK Range pairs) */
-  for (size_t i = 1; i < state->range_count; i++)
+  /* Encode additional ACK ranges (if any) */
+  if (state->range_count > 1)
     {
-      uint64_t gap;
-      uint64_t ack_range_len;
-
-      /* Gap = prev_start - current_end - 2
-       * (since prev_start is exclusive and we subtract one for each endpoint)
-       */
-      gap = state->ranges[i - 1].start - state->ranges[i].end - 2;
-
-      n = SocketQUICVarInt_encode (gap, p, remaining);
-      if (n == 0)
-        return QUIC_ACK_ERROR_BUFFER;
-      p += n;
-      remaining -= n;
-
-      /* ACK Range length */
-      ack_range_len = state->ranges[i].end - state->ranges[i].start;
-      n = SocketQUICVarInt_encode (ack_range_len, p, remaining);
-      if (n == 0)
-        return QUIC_ACK_ERROR_BUFFER;
-      p += n;
-      remaining -= n;
+      res = encode_additional_ranges (&p, &remaining, state->ranges,
+                                      state->range_count);
+      if (res != QUIC_ACK_OK)
+        return res;
     }
 
-  /* ECN counts (if ECN frame type) */
+  /* Encode ECN counts (if applicable) */
   if (has_ecn)
     {
-      n = SocketQUICVarInt_encode (state->ecn_counts.ect0_count, p, remaining);
-      if (n == 0)
-        return QUIC_ACK_ERROR_BUFFER;
-      p += n;
-      remaining -= n;
-
-      n = SocketQUICVarInt_encode (state->ecn_counts.ect1_count, p, remaining);
-      if (n == 0)
-        return QUIC_ACK_ERROR_BUFFER;
-      p += n;
-      remaining -= n;
-
-      n = SocketQUICVarInt_encode (state->ecn_counts.ce_count, p, remaining);
-      if (n == 0)
-        return QUIC_ACK_ERROR_BUFFER;
-      p += n;
-      remaining -= n;
+      res = encode_ecn_counts (&p, &remaining, &state->ecn_counts);
+      if (res != QUIC_ACK_OK)
+        return res;
     }
 
   *out_len = (size_t)(p - out);
