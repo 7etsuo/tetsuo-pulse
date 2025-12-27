@@ -397,13 +397,13 @@ SocketDNS_create_completed_request (T dns, struct addrinfo *result, int port);
  * Performs blocking DNS resolution with configurable timeout. Uses async
  * machinery internally to enforce timeout, preventing unbounded blocking.
  *
- * @param[in] dns Resolver (NULL = direct getaddrinfo, no timeout protection).
+ * @param[in] dns Resolver (must be non-NULL for timeout protection).
  * @param[in] host Host/IP or NULL (wildcard bind).
  * @param[in] port Port number.
  * @param[in] hints getaddrinfo hints or NULL for defaults.
  * @param[in] timeout_ms Max wait (0 = use resolver default).
  * @return addrinfo (caller must freeaddrinfo()).
- * @throws SocketDNS_Failed on resolution failure or timeout.
+ * @throws SocketDNS_Failed on resolution failure, timeout, or NULL dns.
  * @threadsafe Yes.
  *
  * @see SocketDNS_resolve() for asynchronous resolution.
