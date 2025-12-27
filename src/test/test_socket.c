@@ -7252,6 +7252,41 @@ TEST (socket_connect_timeout_enforcement)
   Socket_free (&socket);
 }
 
+TEST (socketcommon_wait_for_fd_timeout_validation)
+{
+  int pipefd[2];
+  int result;
+
+  /* Create a pipe for testing - read end will block, write end is ready */
+  ASSERT_EQ (0, pipe (pipefd));
+
+  /* Test 1: Normal timeout should work */
+  result = SocketCommon_wait_for_fd (pipefd[1], POLLOUT, 100);
+  ASSERT_EQ (1, result); /* Should be ready for write */
+
+  /* Test 2: Zero timeout should return immediately */
+  result = SocketCommon_wait_for_fd (pipefd[0], POLLIN, 0);
+  ASSERT_EQ (1, result); /* Returns 1 for zero timeout */
+
+  /* Test 3: Negative timeout less than -1 should be normalized to -1 (infinite) */
+  /* We can't test infinite wait without blocking, but we verify it doesn't crash */
+  /* Use write end with timeout to verify normalization doesn't break functionality */
+  result = SocketCommon_wait_for_fd (pipefd[1], POLLOUT, -5);
+  ASSERT_EQ (1, result); /* Should still work (normalized to -1, write is ready) */
+
+  /* Test 4: Extremely large timeout should be capped */
+  /* INT_MAX would be capped to INT_MAX/2, but we just verify it doesn't crash */
+  result = SocketCommon_wait_for_fd (pipefd[1], POLLOUT, INT_MAX);
+  ASSERT_EQ (1, result); /* Should still work with capped value */
+
+  /* Test 5: Timeout on non-ready descriptor */
+  result = SocketCommon_wait_for_fd (pipefd[0], POLLIN, 50);
+  ASSERT_EQ (0, result); /* Should timeout (no data to read) */
+
+  close (pipefd[0]);
+  close (pipefd[1]);
+}
+
 int
 main (void)
 {

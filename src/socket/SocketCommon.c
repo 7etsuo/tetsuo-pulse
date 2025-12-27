@@ -2259,6 +2259,14 @@ SocketCommon_wait_for_fd (int fd, short events, int timeout_ms)
   if (timeout_ms == 0)
     return 1; /* No timeout, proceed immediately */
 
+  /* Validate timeout range */
+  if (timeout_ms < -1)
+    timeout_ms = -1; /* Normalize invalid negative to infinite wait */
+
+  /* Cap at reasonable maximum (INT_MAX could cause overflow in some implementations) */
+  if (timeout_ms > INT_MAX / 2)
+    timeout_ms = INT_MAX / 2;
+
   pfd.fd = fd;
   pfd.events = events;
   pfd.revents = 0;
