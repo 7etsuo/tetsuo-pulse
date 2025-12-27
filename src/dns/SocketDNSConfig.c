@@ -239,7 +239,7 @@ int
 SocketDNSConfig_load_file (SocketDNSConfig_T *config, const char *path)
 {
   FILE *fp;
-  char line[1024];
+  char line[DNS_CONFIG_MAX_LINE_LEN];
 
   assert (config != NULL);
   assert (path != NULL);

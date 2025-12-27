@@ -80,6 +80,9 @@
 /** Maximum ndots value (resolv.conf cap). */
 #define DNS_CONFIG_MAX_NDOTS 15
 
+/** Maximum line length in resolv.conf (typical limit is 256-1024 bytes). */
+#define DNS_CONFIG_MAX_LINE_LEN 1024
+
 /** Default resolv.conf path. */
 #define DNS_CONFIG_DEFAULT_PATH "/etc/resolv.conf"
 
