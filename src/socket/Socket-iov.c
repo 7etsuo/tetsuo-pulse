@@ -910,7 +910,15 @@ Socket_splice (T socket_in, T socket_out, size_t len)
   /* Create pipe for intermediate buffer */
   if (pipe (pipe_fds) < 0)
     {
-      SOCKET_ERROR_FMT ("pipe() failed for splice");
+      int saved_errno = errno;
+      if (saved_errno == EMFILE || saved_errno == ENFILE)
+        SOCKET_ERROR_FMT ("pipe() failed: too many open file descriptors "
+                          "(consider increasing ulimit)");
+      else if (saved_errno == ENOMEM)
+        SOCKET_ERROR_FMT ("pipe() failed: insufficient kernel memory");
+      else
+        SOCKET_ERROR_FMT ("pipe() failed for splice");
+      errno = saved_errno;
       RAISE_MODULE_ERROR (Socket_Failed);
     }
 
