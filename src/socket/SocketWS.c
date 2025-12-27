@@ -24,6 +24,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <netdb.h>
 #include <poll.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -1385,7 +1386,7 @@ SocketWS_connect (const char *url, const char *protocols)
   SocketWS_T ws = NULL;
   Socket_T sock = NULL;
   SocketWS_Config config;
-  char host[256] = { 0 };
+  char host[NI_MAXHOST] = { 0 };
   char path[1024] = { 0 };
   volatile int port = 80;
   volatile int use_tls = 0;
