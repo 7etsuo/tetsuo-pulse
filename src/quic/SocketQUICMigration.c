@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <arpa/inet.h>
 #include <assert.h>
+#include <errno.h>
 
 /* For random challenge generation */
 #ifdef __linux__
@@ -615,9 +616,20 @@ generate_random_bytes (uint8_t *buf, size_t len)
     return -1;
 
 #ifdef __linux__
-  /* Use getrandom() on Linux */
-  ssize_t ret = getrandom (buf, len, 0);
-  return (ret == (ssize_t)len) ? 0 : -1;
+  /* Use getrandom() on Linux with retry loop for EINTR and partial reads */
+  size_t total = 0;
+  while (total < len)
+    {
+      ssize_t ret = getrandom (buf + total, len - total, 0);
+      if (ret < 0)
+        {
+          if (errno == EINTR)
+            continue; /* Retry on signal interruption */
+          return -1;  /* Real error */
+        }
+      total += (size_t)ret;
+    }
+  return 0;
 #elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__)
   /* Use arc4random_buf() on BSD/macOS */
   arc4random_buf (buf, len);
