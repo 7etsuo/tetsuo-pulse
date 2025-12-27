@@ -286,20 +286,24 @@ proxy_socks5_recv_method (struct SocketProxy_Conn_T *conn)
  * PASSWD: Password
  */
 
-int
-proxy_socks5_send_auth (struct SocketProxy_Conn_T *conn)
+/**
+ * validate_socks5_auth_credentials - Validate username/password credentials
+ * @conn: Proxy connection context for error reporting
+ * @ulen: Username length in bytes
+ * @plen: Password length in bytes
+ *
+ * Validates that:
+ * - Username length does not exceed SOCKET_PROXY_MAX_USERNAME_LEN
+ * - Password length does not exceed SOCKET_PROXY_MAX_PASSWORD_LEN
+ * - Username contains valid UTF-8
+ * - Password contains valid UTF-8
+ *
+ * Returns: 0 on success, -1 on validation failure (with error set in conn)
+ */
+static int
+validate_socks5_auth_credentials (struct SocketProxy_Conn_T *conn,
+                                   size_t ulen, size_t plen)
 {
-  unsigned char *buf = conn->send_buf;
-  size_t len = 0;
-  size_t ulen;
-  size_t plen;
-
-  assert (conn->username != NULL);
-  assert (conn->password != NULL);
-
-  ulen = strlen (conn->username);
-  plen = strlen (conn->password);
-
   /* Validate lengths */
   if (ulen > SOCKET_PROXY_MAX_USERNAME_LEN)
     {
@@ -314,7 +318,7 @@ proxy_socks5_send_auth (struct SocketProxy_Conn_T *conn)
       return -1;
     }
 
-  /* Additional validation: UTF-8 check for username and password */
+  /* Validate UTF-8 encoding */
   if (SocketUTF8_validate_str (conn->username) != UTF8_VALID)
     {
       socketproxy_set_error (conn, PROXY_ERROR, "Invalid UTF-8 in username");
@@ -325,6 +329,27 @@ proxy_socks5_send_auth (struct SocketProxy_Conn_T *conn)
       socketproxy_set_error (conn, PROXY_ERROR, "Invalid UTF-8 in password");
       return -1;
     }
+
+  return 0;
+}
+
+int
+proxy_socks5_send_auth (struct SocketProxy_Conn_T *conn)
+{
+  unsigned char *buf = conn->send_buf;
+  size_t len = 0;
+  size_t ulen;
+  size_t plen;
+
+  assert (conn->username != NULL);
+  assert (conn->password != NULL);
+
+  ulen = strlen (conn->username);
+  plen = strlen (conn->password);
+
+  /* Validate credentials */
+  if (validate_socks5_auth_credentials (conn, ulen, plen) != 0)
+    return -1;
 
   /* Build auth request */
   buf[len++] = SOCKS5_AUTH_VERSION; /* VER = 0x01 */
