@@ -237,9 +237,11 @@ extract_sender_info (const struct sockaddr_storage *addr, socklen_t addrlen,
   if (result == 0)
     {
       char *endptr;
+      errno = 0;
       long port_long = strtol (serv, &endptr, 10);
       *port
-          = (*endptr == '\0' && port_long > 0 && port_long <= SOCKET_MAX_PORT)
+          = (*endptr == '\0' && errno != ERANGE && port_long > 0
+             && port_long <= SOCKET_MAX_PORT)
                 ? (int)port_long
                 : 0;
     }
