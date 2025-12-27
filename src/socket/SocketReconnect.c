@@ -741,13 +741,77 @@ perform_health_check (T conn)
     }
 }
 
+/**
+ * socketreconnect_validate_policy - Validate and apply policy defaults
+ *
+ * Ensures all policy parameters are within valid ranges.
+ */
+static void
+socketreconnect_validate_policy (SocketReconnect_Policy_T *policy)
+{
+  if (policy->initial_delay_ms < 1)
+    policy->initial_delay_ms = SOCKET_RECONNECT_DEFAULT_INITIAL_DELAY_MS;
+  if (policy->max_delay_ms < policy->initial_delay_ms)
+    policy->max_delay_ms = SOCKET_RECONNECT_DEFAULT_MAX_DELAY_MS;
+  if (policy->multiplier < 1.0)
+    policy->multiplier = SOCKET_RECONNECT_DEFAULT_MULTIPLIER;
+  if (policy->jitter < 0.0 || policy->jitter > 1.0)
+    policy->jitter = SOCKET_RECONNECT_DEFAULT_JITTER;
+  if (policy->max_attempts < 0)
+    policy->max_attempts = SOCKET_RECONNECT_DEFAULT_MAX_ATTEMPTS;
+  if (policy->circuit_failure_threshold < 1)
+    policy->circuit_failure_threshold
+        = SOCKET_RECONNECT_DEFAULT_CIRCUIT_THRESHOLD;
+  if (policy->circuit_reset_timeout_ms < 1000)
+    policy->circuit_reset_timeout_ms
+        = SOCKET_RECONNECT_DEFAULT_CIRCUIT_RESET_MS;
+  if (policy->health_check_interval_ms < 0)
+    policy->health_check_interval_ms
+        = SOCKET_RECONNECT_DEFAULT_HEALTH_INTERVAL_MS;
+  if (policy->health_check_timeout_ms < 100)
+    policy->health_check_timeout_ms
+        = SOCKET_RECONNECT_DEFAULT_HEALTH_TIMEOUT_MS;
+}
+
+/**
+ * socketreconnect_copy_hostname - Validate and copy hostname to arena
+ *
+ * Validates hostname length and allocates copy in arena.
+ */
+static char *
+socketreconnect_copy_hostname (const char *host, Arena_T arena)
+{
+  size_t host_len = strlen (host) + 1;
+  char *hostname;
+
+  if (!SocketSecurity_check_size (host_len))
+    {
+      RAISE_RECONNECT_ERROR_MSG (SocketReconnect_Failed,
+                                 "Hostname too long for allocation");
+    }
+  if (host_len > SOCKET_ERROR_MAX_HOSTNAME + 1)
+    {
+      SOCKET_ERROR_FMT ("Hostname too long (%zu > %d max)", host_len - 1,
+                        SOCKET_ERROR_MAX_HOSTNAME);
+      RAISE_MODULE_ERROR (SocketReconnect_Failed);
+    }
+
+  hostname = Arena_alloc (arena, host_len, __FILE__, __LINE__);
+  if (!hostname)
+    {
+      SOCKET_ERROR_MSG ("Failed to allocate hostname"); /* LCOV_EXCL_LINE */
+      RAISE_MODULE_ERROR (SocketReconnect_Failed);      /* LCOV_EXCL_LINE */
+    }
+  memcpy (hostname, host, host_len);
+  return hostname;
+}
+
 T
 SocketReconnect_new (const char *host, int port,
                      const SocketReconnect_Policy_T *policy,
                      SocketReconnect_Callback callback, void *userdata)
 {
   T conn;
-  size_t host_len;
 
   if (!host)
     {
@@ -785,54 +849,18 @@ SocketReconnect_new (const char *host, int port,
     SocketReconnect_policy_defaults (&conn->policy);
 
   /* Validate policy parameters */
-  if (conn->policy.initial_delay_ms < 1)
-    conn->policy.initial_delay_ms = SOCKET_RECONNECT_DEFAULT_INITIAL_DELAY_MS;
-  if (conn->policy.max_delay_ms < conn->policy.initial_delay_ms)
-    conn->policy.max_delay_ms = SOCKET_RECONNECT_DEFAULT_MAX_DELAY_MS;
-  if (conn->policy.multiplier < 1.0)
-    conn->policy.multiplier = SOCKET_RECONNECT_DEFAULT_MULTIPLIER;
-  if (conn->policy.jitter < 0.0 || conn->policy.jitter > 1.0)
-    conn->policy.jitter = SOCKET_RECONNECT_DEFAULT_JITTER;
-  if (conn->policy.max_attempts < 0)
-    conn->policy.max_attempts = SOCKET_RECONNECT_DEFAULT_MAX_ATTEMPTS;
-  if (conn->policy.circuit_failure_threshold < 1)
-    conn->policy.circuit_failure_threshold
-        = SOCKET_RECONNECT_DEFAULT_CIRCUIT_THRESHOLD;
-  if (conn->policy.circuit_reset_timeout_ms < 1000)
-    conn->policy.circuit_reset_timeout_ms
-        = SOCKET_RECONNECT_DEFAULT_CIRCUIT_RESET_MS;
-  if (conn->policy.health_check_interval_ms < 0)
-    conn->policy.health_check_interval_ms
-        = SOCKET_RECONNECT_DEFAULT_HEALTH_INTERVAL_MS;
-  if (conn->policy.health_check_timeout_ms < 100)
-    conn->policy.health_check_timeout_ms
-        = SOCKET_RECONNECT_DEFAULT_HEALTH_TIMEOUT_MS;
+  socketreconnect_validate_policy (&conn->policy);
 
   /* Copy hostname with length validation */
-  host_len = strlen (host) + 1;
-  if (!SocketSecurity_check_size (host_len))
-    {
-      RAISE_RECONNECT_ERROR_MSG (SocketReconnect_Failed,
-                                 "Hostname too long for allocation");
-    }
-  if (host_len > SOCKET_ERROR_MAX_HOSTNAME + 1)
-    {
-      Arena_dispose (&conn->arena);
-      free (conn);
-      SOCKET_ERROR_FMT ("Hostname too long (%zu > %d max)", host_len - 1,
-                        SOCKET_ERROR_MAX_HOSTNAME);
-      RAISE_MODULE_ERROR (SocketReconnect_Failed);
-    }
+  TRY conn->host = socketreconnect_copy_hostname (host, conn->arena);
+  EXCEPT (SocketReconnect_Failed)
+  {
+    Arena_dispose (&conn->arena);
+    free (conn);
+    RERAISE;
+  }
+  END_TRY;
 
-  conn->host = Arena_alloc (conn->arena, host_len, __FILE__, __LINE__);
-  if (!conn->host)
-    {
-      Arena_dispose (&conn->arena);                     /* LCOV_EXCL_LINE */
-      free (conn);                                      /* LCOV_EXCL_LINE */
-      SOCKET_ERROR_MSG ("Failed to allocate hostname"); /* LCOV_EXCL_LINE */
-      RAISE_MODULE_ERROR (SocketReconnect_Failed);      /* LCOV_EXCL_LINE */
-    }
-  memcpy (conn->host, host, host_len);
   conn->port = port;
 
   /* Set callbacks */
