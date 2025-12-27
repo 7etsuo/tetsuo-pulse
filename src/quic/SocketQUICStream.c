@@ -155,7 +155,9 @@ SocketQUICStream_init (SocketQUICStream_T stream, uint64_t stream_id)
 
   stream->id = stream_id;
   stream->type = SocketQUICStream_type (stream_id);
-  stream->state = QUIC_STREAM_STATE_READY;
+  stream->state = QUIC_STREAM_STATE_READY; /* Legacy */
+  stream->send_state = QUIC_STREAM_STATE_READY;
+  stream->recv_state = QUIC_STREAM_STATE_RECV;
 
   return QUIC_STREAM_OK;
 }
@@ -172,7 +174,9 @@ SocketQUICStream_reset (SocketQUICStream_T stream)
   memset (stream, 0, sizeof (*stream));
   stream->id = id;
   stream->type = SocketQUICStream_type (id);
-  stream->state = QUIC_STREAM_STATE_READY;
+  stream->state = QUIC_STREAM_STATE_READY; /* Legacy */
+  stream->send_state = QUIC_STREAM_STATE_READY;
+  stream->recv_state = QUIC_STREAM_STATE_RECV;
 
   return QUIC_STREAM_OK;
 }
