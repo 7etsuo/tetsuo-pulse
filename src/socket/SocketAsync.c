@@ -606,102 +606,117 @@ process_kqueue_completions (T async, int timeout_ms, int max_completions)
 #endif /* __APPLE__ || __FreeBSD__ */
 
 
-static int
-detect_async_backend_with_config (T async, const SocketAsync_Config *config)
-{
-  assert (async);
-
 #if SOCKET_HAS_IO_URING
-  struct io_uring test_ring;
+static int
+io_uring_register_and_activate (T async, unsigned ring_size, int sqpoll_active,
+                                const char *backend_name)
+{
+  async->io_uring_fd = eventfd (0, EFD_NONBLOCK | EFD_CLOEXEC);
+  if (async->io_uring_fd < 0)
+    return 0;
+
+  if (io_uring_register_eventfd (async->ring, async->io_uring_fd) != 0)
+    {
+      close (async->io_uring_fd);
+      return 0;
+    }
+
+  async->available = 1;
+  async->sqpoll_active = sqpoll_active;
+  async->ring_size = ring_size;
+  async->backend_name = backend_name;
+  return 1;
+}
+
+static int
+try_io_uring_sqpoll (T async, const SocketAsync_Config *config,
+                     unsigned ring_size)
+{
   struct io_uring_params params;
+
+  memset (&params, 0, sizeof (params));
+  params.flags = IORING_SETUP_SQPOLL;
+  params.sq_thread_idle = config->sqpoll_idle_ms;
+
+  if (config->sqpoll_cpu >= 0)
+    {
+      params.flags |= IORING_SETUP_SQ_AFF;
+      params.sq_thread_cpu = (unsigned)config->sqpoll_cpu;
+    }
+
+  if (io_uring_queue_init_params (ring_size, async->ring, &params) != 0)
+    return 0;
+
+  if (io_uring_register_and_activate (async, ring_size, 1, "io_uring (SQPOLL)"))
+    return 1;
+
+  io_uring_queue_exit (async->ring);
+  return 0;
+}
+
+static int
+try_io_uring_default (T async, unsigned ring_size)
+{
+  if (io_uring_queue_init (ring_size, async->ring, 0) != 0)
+    {
+      async->ring = NULL;
+      return 0;
+    }
+
+  if (io_uring_register_and_activate (async, ring_size, 0, "io_uring"))
+    return 1;
+
+  io_uring_queue_exit (async->ring);
+  async->ring = NULL;
+  return 0;
+}
+
+static int
+detect_io_uring_backend (T async, const SocketAsync_Config *config)
+{
+  struct io_uring test_ring;
   unsigned ring_size;
   int sqpoll_requested;
 
-  /* Use config values or defaults */
   ring_size = (config && config->ring_size > 0) ? config->ring_size
                                                  : SOCKET_DEFAULT_IO_URING_ENTRIES;
   sqpoll_requested = config && config->enable_sqpoll;
 
   /* Test if io_uring is available */
-  if (io_uring_queue_init (SOCKET_IO_URING_TEST_ENTRIES, &test_ring, 0) == 0)
+  if (io_uring_queue_init (SOCKET_IO_URING_TEST_ENTRIES, &test_ring, 0) != 0)
     {
-      io_uring_queue_exit (&test_ring);
-
-      async->ring = CALLOC (async->arena, 1, sizeof (struct io_uring));
-      if (!async->ring)
-        {
-          async->backend_name = "io_uring (allocation failed)";
-          return 0;
-        }
-
-      /* Initialize params for SQPOLL if requested */
-      memset (&params, 0, sizeof (params));
-
-      if (sqpoll_requested)
-        {
-          params.flags = IORING_SETUP_SQPOLL;
-          params.sq_thread_idle = config->sqpoll_idle_ms;
-
-          if (config->sqpoll_cpu >= 0)
-            {
-              params.flags |= IORING_SETUP_SQ_AFF;
-              params.sq_thread_cpu = (unsigned)config->sqpoll_cpu;
-            }
-        }
-
-      /* Try with SQPOLL if requested */
-      if (sqpoll_requested
-          && io_uring_queue_init_params (ring_size, async->ring, &params) == 0)
-        {
-          async->io_uring_fd = eventfd (0, EFD_NONBLOCK | EFD_CLOEXEC);
-          if (async->io_uring_fd >= 0)
-            {
-              if (io_uring_register_eventfd (async->ring, async->io_uring_fd)
-                  == 0)
-                {
-                  async->available = 1;
-                  async->sqpoll_active = 1;
-                  async->ring_size = ring_size;
-                  async->backend_name = "io_uring (SQPOLL)";
-                  return 1;
-                }
-              close (async->io_uring_fd);
-            }
-          io_uring_queue_exit (async->ring);
-          /* Fall through to try without SQPOLL */
-        }
-
-      /* Try without SQPOLL (default or fallback) */
-      if (io_uring_queue_init (ring_size, async->ring, 0) == 0)
-        {
-          async->io_uring_fd = eventfd (0, EFD_NONBLOCK | EFD_CLOEXEC);
-          if (async->io_uring_fd >= 0)
-            {
-              if (io_uring_register_eventfd (async->ring, async->io_uring_fd)
-                  == 0)
-                {
-                  async->available = 1;
-                  async->sqpoll_active = 0;
-                  async->ring_size = ring_size;
-                  async->backend_name = "io_uring";
-                  return 1;
-                }
-              close (async->io_uring_fd);
-            }
-          io_uring_queue_exit (async->ring);
-          async->ring = NULL;
-        }
-      else
-        {
-          async->ring = NULL;
-        }
+      async->available = 0;
+      async->backend_name = "unavailable (io_uring unavailable)";
+      return 0;
     }
+  io_uring_queue_exit (&test_ring);
+
+  /* Allocate ring structure */
+  async->ring = CALLOC (async->arena, 1, sizeof (struct io_uring));
+  if (!async->ring)
+    {
+      async->backend_name = "io_uring (allocation failed)";
+      return 0;
+    }
+
+  /* Try SQPOLL mode first if requested */
+  if (sqpoll_requested && try_io_uring_sqpoll (async, config, ring_size))
+    return 1;
+
+  /* Fall back to default mode */
+  if (try_io_uring_default (async, ring_size))
+    return 1;
 
   async->available = 0;
   async->backend_name = "unavailable (io_uring unavailable)";
   return 0;
+}
+#endif /* SOCKET_HAS_IO_URING */
 
-#elif defined(__APPLE__) || defined(__FreeBSD__)
+#if defined(__APPLE__) || defined(__FreeBSD__)
+static int
+detect_kqueue_backend (T async)
+{
   async->kqueue_fd = kqueue ();
   if (async->kqueue_fd >= 0)
     {
@@ -713,7 +728,19 @@ detect_async_backend_with_config (T async, const SocketAsync_Config *config)
   async->available = 0;
   async->backend_name = "unavailable (kqueue unavailable)";
   return 0;
+}
+#endif /* __APPLE__ || __FreeBSD__ */
 
+static int
+detect_async_backend_with_config (T async, const SocketAsync_Config *config)
+{
+  assert (async);
+
+#if SOCKET_HAS_IO_URING
+  return detect_io_uring_backend (async, config);
+#elif defined(__APPLE__) || defined(__FreeBSD__)
+  (void)config;
+  return detect_kqueue_backend (async);
 #else
   (void)config;
   async->available = 0;
