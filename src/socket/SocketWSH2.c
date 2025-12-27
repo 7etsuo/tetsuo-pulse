@@ -200,42 +200,15 @@ SocketWSH2_is_supported (SocketHTTP2_Conn_T conn)
   return conn->peer_settings[SETTINGS_IDX_ENABLE_CONNECT_PROTOCOL] != 0;
 }
 
-SocketWS_T
-SocketWSH2_client_connect (SocketHTTP2_Conn_T conn, const char *path,
-                           const SocketWS_Config *config)
+static int
+send_connect_request (SocketHTTP2_Stream_T stream, const char *path)
 {
-  SocketHTTP2_Stream_T stream;
-  Arena_T arena;
-  SocketWS_T ws;
   SocketHPACK_Header request_headers[5];
   size_t header_count;
   int send_result;
-  SocketHPACK_Header response_headers[16];
-  size_t response_count;
-  int end_stream;
-  int recv_result;
-  const char *status;
-  size_t i;
 
-  assert (conn);
+  assert (stream);
   assert (path);
-
-  /* Verify peer supports Extended CONNECT */
-  if (!SocketWSH2_is_supported (conn))
-    {
-      SOCKET_LOG_ERROR_MSG ("Peer does not support Extended CONNECT");
-      return NULL;
-    }
-
-  arena = conn->arena;
-
-  /* Create new stream for WebSocket */
-  stream = SocketHTTP2_Stream_new (conn);
-  if (!stream)
-    {
-      SOCKET_LOG_ERROR_MSG ("Failed to create HTTP/2 stream");
-      return NULL;
-    }
 
   /* Build Extended CONNECT request headers (RFC 8441 Section 4) */
   header_count = 0;
@@ -277,30 +250,53 @@ SocketWSH2_client_connect (SocketHTTP2_Conn_T conn, const char *path,
   if (send_result < 0)
     {
       SOCKET_LOG_ERROR_MSG ("Failed to send WebSocket connect request");
-      SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
-      return NULL;
+      return -1;
     }
+
+  return 0;
+}
+
+static int
+receive_connect_response (SocketHTTP2_Stream_T stream,
+                          SocketHPACK_Header *headers, size_t max_headers,
+                          size_t *header_count)
+{
+  int recv_result;
+  int end_stream;
+
+  assert (stream);
+  assert (headers);
+  assert (header_count);
 
   /* Wait for response headers (blocking for simplicity) */
   /* In production, this should be integrated with event loop */
-  recv_result
-      = SocketHTTP2_Stream_recv_headers (stream, response_headers, 16,
-                                         &response_count, &end_stream);
+  recv_result = SocketHTTP2_Stream_recv_headers (stream, headers, max_headers,
+                                                 header_count, &end_stream);
   if (recv_result <= 0)
     {
       SOCKET_LOG_ERROR_MSG ("Failed to receive WebSocket connect response");
-      SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
-      return NULL;
+      return -1;
     }
+
+  return 0;
+}
+
+static const char *
+validate_websocket_response (SocketHPACK_Header *headers, size_t header_count)
+{
+  const char *status;
+  size_t i;
+
+  assert (headers);
 
   /* Check for 200 response */
   status = NULL;
-  for (i = 0; i < response_count; i++)
+  for (i = 0; i < header_count; i++)
     {
-      if (response_headers[i].name_len == 7
-          && memcmp (response_headers[i].name, ":status", 7) == 0)
+      if (headers[i].name_len == 7
+          && memcmp (headers[i].name, ":status", 7) == 0)
         {
-          status = response_headers[i].value;
+          status = headers[i].value;
           break;
         }
     }
@@ -309,6 +305,63 @@ SocketWSH2_client_connect (SocketHTTP2_Conn_T conn, const char *path,
     {
       SOCKET_LOG_ERROR_MSG ("WebSocket connect rejected: status=%s",
                             status ? status : "missing");
+      return NULL;
+    }
+
+  return status;
+}
+
+SocketWS_T
+SocketWSH2_client_connect (SocketHTTP2_Conn_T conn, const char *path,
+                           const SocketWS_Config *config)
+{
+  SocketHTTP2_Stream_T stream;
+  Arena_T arena;
+  SocketWS_T ws;
+  SocketHPACK_Header response_headers[16];
+  size_t response_count;
+  const char *status;
+
+  assert (conn);
+  assert (path);
+
+  /* Verify peer supports Extended CONNECT */
+  if (!SocketWSH2_is_supported (conn))
+    {
+      SOCKET_LOG_ERROR_MSG ("Peer does not support Extended CONNECT");
+      return NULL;
+    }
+
+  arena = conn->arena;
+
+  /* Create new stream for WebSocket */
+  stream = SocketHTTP2_Stream_new (conn);
+  if (!stream)
+    {
+      SOCKET_LOG_ERROR_MSG ("Failed to create HTTP/2 stream");
+      return NULL;
+    }
+
+  /* Send Extended CONNECT request */
+  if (send_connect_request (stream, path) < 0)
+    {
+      SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
+      return NULL;
+    }
+
+  /* Receive response headers */
+  if (receive_connect_response (stream, response_headers, 16,
+                                &response_count)
+      < 0)
+    {
+      SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
+      return NULL;
+    }
+
+  /* Validate 200 status response */
+  status = validate_websocket_response (response_headers, response_count);
+  if (!status)
+    {
       SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);
       return NULL;
     }
