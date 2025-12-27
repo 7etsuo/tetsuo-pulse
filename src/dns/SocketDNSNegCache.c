@@ -875,7 +875,7 @@ SocketDNSNegCache_build_response (const SocketDNS_NegCacheEntry *entry,
     return -1;
 
   /* Need at least header + question + SOA RR space */
-  if (buflen < DNS_HEADER_SIZE + 4 + DNS_MAX_NAME_LEN)
+  if (buflen < DNS_HEADER_SIZE + DNS_QUESTION_FIXED_SIZE + DNS_MAX_NAME_LEN)
     return -1;
 
   size_t offset = 0;
