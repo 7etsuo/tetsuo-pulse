@@ -56,7 +56,8 @@
 /* Generic step function typedefs to reduce code duplication in loop implementations */
 typedef ssize_t (*SocketSendStepFn)(T socket, const void *buf, size_t len);
 typedef ssize_t (*SocketRecvStepFn)(T socket, void *buf, size_t len);
-typedef ssize_t (*SocketIovStepFn)(T socket, struct iovec *iov, int iovcnt);
+typedef ssize_t (*SocketSendvStepFn)(T socket, const struct iovec *iov, int iovcnt);
+typedef ssize_t (*SocketRecvvStepFn)(T socket, struct iovec *iov, int iovcnt);
 
 /* Declare module-specific exception using centralized macros */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketIOV);
@@ -382,33 +383,7 @@ Socket_recvmsg (T socket, struct msghdr *msg, int flags)
 
 /* ==================== Guaranteed Completion Functions ==================== */
 
-/**
- * sendv_wrapper - Wrapper for Socket_sendv matching SocketIovStepFn signature
- * @socket: Socket to send on
- * @iov: Array of iovec structures (const cast away for typedef compatibility)
- * @iovcnt: Number of iovec structures
- *
- * Returns: Bytes sent or 0 on would-block
- */
-static ssize_t
-sendv_wrapper (T socket, struct iovec *iov, int iovcnt)
-{
-  return Socket_sendv (socket, (const struct iovec *)iov, iovcnt);
-}
-
-/**
- * recvv_wrapper - Wrapper for Socket_recvv matching SocketIovStepFn signature
- * @socket: Socket to receive on
- * @iov: Array of iovec structures
- * @iovcnt: Number of iovec structures
- *
- * Returns: Bytes received or 0 on would-block
- */
-static ssize_t
-recvv_wrapper (T socket, struct iovec *iov, int iovcnt)
-{
-  return Socket_recvv (socket, iov, iovcnt);
-}
+/* Wrapper functions removed - using type-specific iteration functions instead */
 
 /**
  * Socket_sendall - Send all data (handles partial sends)
@@ -479,18 +454,17 @@ Socket_recvall (T socket, void *buf, size_t len)
 }
 
 /**
- * iovall_iteration - Perform one iov iteration (generic)
- * @socket: Socket to operate on
+ * sendvall_iteration - Perform one sendv iteration
+ * @socket: Socket to send on
  * @iov_copy: Copy of iovec array (modified)
  * @iovcnt: Number of iovec structures
- * @bytes_processed: Output for bytes processed this iteration
- * @step_fn: Function to perform I/O (Socket_sendv or Socket_recvv)
+ * @bytes_sent: Output for bytes sent this iteration
  *
  * Returns: 1 to continue, 0 to stop (would block or no active iov)
  */
 static int
-iovall_iteration (T socket, struct iovec *iov_copy, int iovcnt,
-                  ssize_t *bytes_processed, SocketIovStepFn step_fn)
+sendvall_iteration (T socket, struct iovec *iov_copy, int iovcnt,
+                    ssize_t *bytes_sent)
 {
   int active_iovcnt = 0;
   struct iovec *active_iov
@@ -499,11 +473,39 @@ iovall_iteration (T socket, struct iovec *iov_copy, int iovcnt,
   if (active_iov == NULL)
     return 0;
 
-  *bytes_processed = step_fn (socket, active_iov, active_iovcnt);
-  if (*bytes_processed == 0)
+  *bytes_sent = Socket_sendv (socket, (const struct iovec *)active_iov, active_iovcnt);
+  if (*bytes_sent == 0)
     return 0;
 
-  SocketCommon_advance_iov (iov_copy, iovcnt, (size_t)*bytes_processed);
+  SocketCommon_advance_iov (iov_copy, iovcnt, (size_t)*bytes_sent);
+  return 1;
+}
+
+/**
+ * recvvall_iteration - Perform one recvv iteration
+ * @socket: Socket to receive on
+ * @iov_copy: Copy of iovec array (modified)
+ * @iovcnt: Number of iovec structures
+ * @bytes_received: Output for bytes received this iteration
+ *
+ * Returns: 1 to continue, 0 to stop (would block or no active iov)
+ */
+static int
+recvvall_iteration (T socket, struct iovec *iov_copy, int iovcnt,
+                    ssize_t *bytes_received)
+{
+  int active_iovcnt = 0;
+  struct iovec *active_iov
+      = SocketCommon_find_active_iov (iov_copy, iovcnt, &active_iovcnt);
+
+  if (active_iov == NULL)
+    return 0;
+
+  *bytes_received = Socket_recvv (socket, active_iov, active_iovcnt);
+  if (*bytes_received == 0)
+    return 0;
+
+  SocketCommon_advance_iov (iov_copy, iovcnt, (size_t)*bytes_received);
   return 1;
 }
 
@@ -526,7 +528,7 @@ Socket_sendvall (T socket, const struct iovec *iov, int iovcnt)
   TRY
   {
     while (total_sent < total_len
-           && iovall_iteration (socket, iov_copy, iovcnt, &sent, sendv_wrapper))
+           && sendvall_iteration (socket, iov_copy, iovcnt, &sent))
       total_sent += (size_t)sent;
   }
   EXCEPT (Socket_Closed)
@@ -558,8 +560,7 @@ Socket_recvvall (T socket, struct iovec *iov, int iovcnt)
   TRY
   {
     while (total_received < total_len
-           && iovall_iteration (socket, iov_copy, iovcnt, &received,
-                                recvv_wrapper))
+           && recvvall_iteration (socket, iov_copy, iovcnt, &received))
       total_received += (size_t)received;
   }
   EXCEPT (Socket_Closed)
@@ -588,34 +589,93 @@ get_remaining_timeout_ms (int64_t deadline_ms)
 
 
 /**
- * SocketTransferStepFn - Generic transfer function pointer type
- *
- * Function pointer type for send/recv operations. This allows
- * socket_transfer_with_timeout() to work with both send and recv.
- */
-typedef ssize_t (*SocketTransferStepFn) (T socket, void *buf, size_t len);
-
-/**
- * socket_transfer_with_timeout - Generic timeout-based data transfer
+ * socket_send_with_timeout - Send with timeout helper
  * @socket: Connected socket
- * @buf: Buffer for data (send or recv)
- * @len: Number of bytes to transfer
+ * @buf: Data to send (const)
+ * @len: Number of bytes to send
  * @timeout_ms: Timeout in milliseconds (>0 for deadline, -1 for block, 0 for none)
- * @poll_event: POLLIN or POLLOUT
- * @transfer_fn: Transfer function (Socket_send or Socket_recv)
  *
- * Returns: Total bytes transferred (may be < len on timeout or EOF)
+ * Returns: Total bytes sent (may be < len on timeout)
  * Raises: Socket_Closed, Socket_Failed
  *
- * Generic helper that implements timeout logic for both send and recv.
- * Eliminates duplicate code between Socket_sendall_timeout and
- * Socket_recvall_timeout.
+ * Type-safe send helper with proper const handling.
  */
 static ssize_t
-socket_transfer_with_timeout (T socket, void *buf, size_t len, int timeout_ms,
-                               short poll_event, SocketTransferStepFn transfer_fn)
+socket_send_with_timeout (T socket, const void *buf, size_t len, int timeout_ms)
 {
-  volatile size_t total_transferred = 0;
+  volatile size_t total_sent = 0;
+  const char *ptr;
+  int fd;
+  volatile int64_t deadline_ms;
+  int64_t remaining_ms;
+  ssize_t result;
+
+  assert (socket);
+  assert (buf || len == 0);
+
+  if (len == 0)
+    return 0;
+
+  fd = SocketBase_fd (socket->base);
+  ptr = (const char *)buf;
+  deadline_ms = SocketTimeout_deadline_ms (timeout_ms);
+
+  TRY
+  {
+    while (total_sent < len)
+      {
+        /* Check remaining time */
+        if (timeout_ms > 0)
+          {
+            remaining_ms = get_remaining_timeout_ms (deadline_ms);
+            if (remaining_ms <= 0)
+              break; /* Timeout */
+
+            if (SocketCommon_wait_for_fd (fd, POLLOUT, (int)remaining_ms) <= 0)
+              break; /* Timeout or error */
+          }
+        else if (timeout_ms == -1)
+          {
+            /* Block indefinitely */
+            if (SocketCommon_wait_for_fd (fd, POLLOUT, -1) < 0)
+              {
+                SOCKET_ERROR_FMT ("poll() failed during send");
+                RAISE_MODULE_ERROR (Socket_Failed);
+              }
+          }
+
+        result = Socket_send (socket, ptr + total_sent, len - total_sent);
+        if (result > 0)
+          total_sent += (size_t)result;
+        else if (result == 0)
+          break; /* Would block */
+      }
+  }
+  EXCEPT (Socket_Closed)
+  RERAISE;
+  EXCEPT (Socket_Failed)
+  RERAISE;
+  END_TRY;
+
+  return (ssize_t)total_sent;
+}
+
+/**
+ * socket_recv_with_timeout - Receive with timeout helper
+ * @socket: Connected socket
+ * @buf: Buffer for received data (non-const)
+ * @len: Number of bytes to receive
+ * @timeout_ms: Timeout in milliseconds (>0 for deadline, -1 for block, 0 for none)
+ *
+ * Returns: Total bytes received (may be < len on timeout or EOF)
+ * Raises: Socket_Closed, Socket_Failed
+ *
+ * Type-safe receive helper with proper non-const handling.
+ */
+static ssize_t
+socket_recv_with_timeout (T socket, void *buf, size_t len, int timeout_ms)
+{
+  volatile size_t total_received = 0;
   char *ptr;
   int fd;
   volatile int64_t deadline_ms;
@@ -634,7 +694,7 @@ socket_transfer_with_timeout (T socket, void *buf, size_t len, int timeout_ms,
 
   TRY
   {
-    while (total_transferred < len)
+    while (total_received < len)
       {
         /* Check remaining time */
         if (timeout_ms > 0)
@@ -643,23 +703,22 @@ socket_transfer_with_timeout (T socket, void *buf, size_t len, int timeout_ms,
             if (remaining_ms <= 0)
               break; /* Timeout */
 
-            if (SocketCommon_wait_for_fd (fd, poll_event, (int)remaining_ms) <= 0)
+            if (SocketCommon_wait_for_fd (fd, POLLIN, (int)remaining_ms) <= 0)
               break; /* Timeout or error */
           }
         else if (timeout_ms == -1)
           {
             /* Block indefinitely */
-            if (SocketCommon_wait_for_fd (fd, poll_event, -1) < 0)
+            if (SocketCommon_wait_for_fd (fd, POLLIN, -1) < 0)
               {
-                SOCKET_ERROR_FMT ("poll() failed during transfer");
+                SOCKET_ERROR_FMT ("poll() failed during recv");
                 RAISE_MODULE_ERROR (Socket_Failed);
               }
           }
 
-        result = transfer_fn (socket, ptr + total_transferred,
-                              len - total_transferred);
+        result = Socket_recv (socket, ptr + total_received, len - total_received);
         if (result > 0)
-          total_transferred += (size_t)result;
+          total_received += (size_t)result;
         else if (result == 0)
           break; /* Would block or EOF */
       }
@@ -670,7 +729,7 @@ socket_transfer_with_timeout (T socket, void *buf, size_t len, int timeout_ms,
   RERAISE;
   END_TRY;
 
-  return (ssize_t)total_transferred;
+  return (ssize_t)total_received;
 }
 
 /**
@@ -686,9 +745,7 @@ socket_transfer_with_timeout (T socket, void *buf, size_t len, int timeout_ms,
 ssize_t
 Socket_sendall_timeout (T socket, const void *buf, size_t len, int timeout_ms)
 {
-  return socket_transfer_with_timeout (socket, (void *)buf, len, timeout_ms,
-                                        POLLOUT,
-                                        (SocketTransferStepFn)Socket_send);
+  return socket_send_with_timeout (socket, buf, len, timeout_ms);
 }
 
 /**
@@ -704,9 +761,7 @@ Socket_sendall_timeout (T socket, const void *buf, size_t len, int timeout_ms)
 ssize_t
 Socket_recvall_timeout (T socket, void *buf, size_t len, int timeout_ms)
 {
-  return socket_transfer_with_timeout (socket, buf, len, timeout_ms,
-                                        POLLIN,
-                                        (SocketTransferStepFn)Socket_recv);
+  return socket_recv_with_timeout (socket, buf, len, timeout_ms);
 }
 
 /**
