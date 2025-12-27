@@ -189,35 +189,66 @@ SocketQUICStream_transition_send (SocketQUICStream_T stream,
  */
 
 /**
+ * @brief State transition entry for receive-side state machine.
+ */
+typedef struct
+{
+  SocketQUICStreamState from_state;
+  SocketQUICStreamEvent event;
+  SocketQUICStreamState to_state;
+} RecvStateTransition;
+
+/**
+ * @brief Receive-side state transition table (RFC 9000 Section 3.2).
+ *
+ * Encodes all valid state transitions for the receive side of a QUIC stream:
+ *
+ *   Recv -> Recv (on RECV_DATA)
+ *   Recv -> SizeKnown (on RECV_FIN)
+ *   Recv -> ResetRecvd (on RECV_RESET)
+ *   SizeKnown -> SizeKnown (on RECV_DATA)
+ *   SizeKnown -> DataRecvd (on ALL_DATA_RECVD)
+ *   SizeKnown -> ResetRecvd (on RECV_RESET)
+ *   DataRecvd -> DataRead (on APP_READ_DATA, terminal)
+ *   ResetRecvd -> ResetRead (on APP_READ_RESET, terminal)
+ */
+static const RecvStateTransition recv_transitions[] = {
+  {QUIC_STREAM_STATE_RECV, QUIC_STREAM_EVENT_RECV_DATA,
+   QUIC_STREAM_STATE_RECV},
+  {QUIC_STREAM_STATE_RECV, QUIC_STREAM_EVENT_RECV_FIN,
+   QUIC_STREAM_STATE_SIZE_KNOWN},
+  {QUIC_STREAM_STATE_RECV, QUIC_STREAM_EVENT_RECV_RESET,
+   QUIC_STREAM_STATE_RESET_RECVD},
+
+  {QUIC_STREAM_STATE_SIZE_KNOWN, QUIC_STREAM_EVENT_RECV_DATA,
+   QUIC_STREAM_STATE_SIZE_KNOWN},
+  {QUIC_STREAM_STATE_SIZE_KNOWN, QUIC_STREAM_EVENT_ALL_DATA_RECVD,
+   QUIC_STREAM_STATE_DATA_RECVD},
+  {QUIC_STREAM_STATE_SIZE_KNOWN, QUIC_STREAM_EVENT_RECV_RESET,
+   QUIC_STREAM_STATE_RESET_RECVD},
+
+  {QUIC_STREAM_STATE_DATA_RECVD, QUIC_STREAM_EVENT_APP_READ_DATA,
+   QUIC_STREAM_STATE_DATA_READ},
+
+  {QUIC_STREAM_STATE_RESET_RECVD, QUIC_STREAM_EVENT_APP_READ_RESET,
+   QUIC_STREAM_STATE_RESET_READ}
+};
+
+#define RECV_TRANSITIONS_COUNT                                                \
+  (sizeof (recv_transitions) / sizeof (recv_transitions[0]))
+
+/**
  * @brief Validate and execute receive-side state transition.
  *
- * State transition table:
- *
- *   Recv:
- *     - RECV_DATA -> Recv (stay in state)
- *     - RECV_FIN -> SizeKnown
- *     - RECV_RESET -> ResetRecvd
- *
- *   SizeKnown:
- *     - RECV_DATA -> SizeKnown (stay in state)
- *     - ALL_DATA_RECVD -> DataRecvd
- *     - RECV_RESET -> ResetRecvd
- *
- *   DataRecvd:
- *     - APP_READ_DATA -> DataRead (terminal)
- *
- *   ResetRecvd:
- *     - APP_READ_RESET -> ResetRead (terminal)
- *
- *   DataRead: Terminal state (no transitions)
- *   ResetRead: Terminal state (no transitions)
+ * Uses table-driven lookup to find valid transitions from current state
+ * given an event. Terminal states (DataRead, ResetRead) are checked
+ * before table lookup.
  */
 SocketQUICStream_Result
 SocketQUICStream_transition_recv (SocketQUICStream_T stream,
                                   SocketQUICStreamEvent event)
 {
   SocketQUICStreamState current;
-  SocketQUICStreamState next;
 
   if (stream == NULL)
     return QUIC_STREAM_ERROR_NULL;
@@ -228,59 +259,25 @@ SocketQUICStream_transition_recv (SocketQUICStream_T stream,
   if (current == QUIC_STREAM_STATE_DATA_READ
       || current == QUIC_STREAM_STATE_RESET_READ)
     {
-      return QUIC_STREAM_ERROR_STATE; /* No transitions from terminal states */
+      return QUIC_STREAM_ERROR_STATE;
     }
 
-  /* State transition logic */
-  switch (current)
+  /* Table-driven transition lookup */
+  for (size_t i = 0; i < RECV_TRANSITIONS_COUNT; i++)
     {
-    case QUIC_STREAM_STATE_RECV:
-      if (event == QUIC_STREAM_EVENT_RECV_DATA)
-        next = QUIC_STREAM_STATE_RECV; /* Stay in Recv */
-      else if (event == QUIC_STREAM_EVENT_RECV_FIN)
-        next = QUIC_STREAM_STATE_SIZE_KNOWN;
-      else if (event == QUIC_STREAM_EVENT_RECV_RESET)
-        next = QUIC_STREAM_STATE_RESET_RECVD;
-      else
-        return QUIC_STREAM_ERROR_STATE;
-      break;
+      if (recv_transitions[i].from_state == current
+          && recv_transitions[i].event == event)
+        {
+          stream->recv_state = recv_transitions[i].to_state;
 
-    case QUIC_STREAM_STATE_SIZE_KNOWN:
-      if (event == QUIC_STREAM_EVENT_RECV_DATA)
-        next = QUIC_STREAM_STATE_SIZE_KNOWN; /* Stay in SizeKnown */
-      else if (event == QUIC_STREAM_EVENT_ALL_DATA_RECVD)
-        next = QUIC_STREAM_STATE_DATA_RECVD;
-      else if (event == QUIC_STREAM_EVENT_RECV_RESET)
-        next = QUIC_STREAM_STATE_RESET_RECVD;
-      else
-        return QUIC_STREAM_ERROR_STATE;
-      break;
+          /* Update legacy combined state for backwards compatibility */
+          if (stream->recv_state == QUIC_STREAM_STATE_RECV
+              || stream->recv_state == QUIC_STREAM_STATE_SIZE_KNOWN)
+            stream->state = stream->recv_state;
 
-    case QUIC_STREAM_STATE_DATA_RECVD:
-      if (event == QUIC_STREAM_EVENT_APP_READ_DATA)
-        next = QUIC_STREAM_STATE_DATA_READ;
-      else
-        return QUIC_STREAM_ERROR_STATE;
-      break;
-
-    case QUIC_STREAM_STATE_RESET_RECVD:
-      if (event == QUIC_STREAM_EVENT_APP_READ_RESET)
-        next = QUIC_STREAM_STATE_RESET_READ;
-      else
-        return QUIC_STREAM_ERROR_STATE;
-      break;
-
-    default:
-      return QUIC_STREAM_ERROR_STATE; /* Invalid state */
+          return QUIC_STREAM_OK;
+        }
     }
 
-  /* Execute transition */
-  stream->recv_state = next;
-
-  /* Update legacy combined state for backwards compatibility */
-  if (stream->recv_state == QUIC_STREAM_STATE_RECV
-      || stream->recv_state == QUIC_STREAM_STATE_SIZE_KNOWN)
-    stream->state = stream->recv_state;
-
-  return QUIC_STREAM_OK;
+  return QUIC_STREAM_ERROR_STATE; /* No valid transition found */
 }
