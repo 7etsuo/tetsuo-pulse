@@ -16,6 +16,7 @@
 #include "quic/SocketQUICVersion.h"
 #include "quic/SocketQUICConnectionID.h"
 
+#include <stdint.h>
 #include <string.h>
 
 /* ============================================================================
@@ -48,14 +49,24 @@ SocketQUICVersion_create_negotiation (const SocketQUICConnectionID_T *dcid,
   if (count == 0)
     return -QUIC_VERSION_NEG_ERROR_LENGTH;
 
-  /* Calculate required size */
-  size_t required = 1           /* first byte */
-                    + 4         /* version (0x00000000) */
-                    + 1         /* DCID length */
-                    + dcid->len /* DCID */
-                    + 1         /* SCID length */
-                    + scid->len /* SCID */
-                    + (count * 4); /* version list */
+  /* Validate count to prevent overflow in size calculation (issue #778) */
+  if (count > SIZE_MAX / 4)
+    return -QUIC_VERSION_NEG_ERROR_LENGTH;
+
+  /* Calculate fixed overhead */
+  size_t fixed_overhead = 1           /* first byte */
+                          + 4         /* version (0x00000000) */
+                          + 1         /* DCID length */
+                          + dcid->len /* DCID */
+                          + 1         /* SCID length */
+                          + scid->len; /* SCID */
+
+  /* Check if adding version list size would overflow (issue #778) */
+  size_t version_list_size = count * 4;
+  if (fixed_overhead > SIZE_MAX - version_list_size)
+    return -QUIC_VERSION_NEG_ERROR_LENGTH;
+
+  size_t required = fixed_overhead + version_list_size;
 
   if (output_size < required)
     return -QUIC_VERSION_NEG_ERROR_BUFFER;
