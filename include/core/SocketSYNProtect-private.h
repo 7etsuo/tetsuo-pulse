@@ -18,6 +18,7 @@
  */
 
 #include "core/Arena.h"
+#include "core/SocketConfig.h"
 #include "core/SocketRateLimit.h"
 #include "core/SocketSYNProtect.h"
 #include "core/SocketUtil.h"

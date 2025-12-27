@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <stddef.h>
 
+#include "core/SocketConfig.h"
 #include "core/TimeWindow.h"
 
 #define T TimeWindow_T
@@ -32,7 +33,7 @@ TimeWindow_init (T *tw, int duration_ms, int64_t now_ms)
 {
   assert (tw != NULL);
 
-  tw->duration_ms = (duration_ms > 0) ? duration_ms : 1;
+  tw->duration_ms = (duration_ms > 0) ? duration_ms : TIMEWINDOW_MIN_DURATION_MS;
   tw->window_start_ms = now_ms;
   tw->current_count = 0;
   tw->previous_count = 0;
