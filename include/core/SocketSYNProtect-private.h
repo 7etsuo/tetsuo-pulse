@@ -234,7 +234,6 @@ void free_memory (T protect, void *ptr);
 void remove_ip_entry_from_hash (T protect, SocketSYN_IPEntry *entry);
 
 /* Local to main file */
-static void safe_copy_ip (char *dest, const char *src);
 static SocketSYN_WhitelistEntry * find_whitelist_entry_exact (SocketSYN_WhitelistEntry *bucket_head, const char *ip);
 static SocketSYN_BlacklistEntry * find_blacklist_entry (SocketSYN_BlacklistEntry *bucket_head, const char *ip);
 static void insert_whitelist_entry (T protect, SocketSYN_WhitelistEntry *entry, unsigned bucket);
