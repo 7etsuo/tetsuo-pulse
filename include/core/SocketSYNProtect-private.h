@@ -177,34 +177,6 @@ synprotect_clamp_score (float score)
   return score;
 }
 
-/**
- * @brief Compute the minimum of two int64_t values.
- * @internal
- *
- * @param a  First value
- * @param b  Second value
- * Returns: Minimum value
- */
-static inline int64_t
-synprotect_min (int64_t a, int64_t b)
-{
-  return (a < b) ? a : b;
-}
-
-/**
- * @brief Compute the maximum of two int64_t values.
- * @internal
- *
- * @param a  First value
- * @param b  Second value
- * Returns: Maximum value
- */
-static inline int64_t
-synprotect_max (int64_t a, int64_t b)
-{
-  return (a > b) ? a : b;
-}
-
 /* IP parsing - implemented in SocketSYNProtect-ip.c */
 int parse_ipv4_address (const char *ip, uint8_t *addr_bytes);
 int parse_ipv6_address (const char *ip, uint8_t *addr_bytes);

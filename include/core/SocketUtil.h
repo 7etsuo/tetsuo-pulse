@@ -549,6 +549,65 @@ socket_util_round_up_pow2 (size_t n)
 }
 
 /* ============================================================================
+ * MIN/MAX UTILITIES
+ * ============================================================================
+ */
+
+/**
+ * @brief MIN - Compute minimum of two values
+ * @ingroup foundation
+ * @param a First value
+ * @param b Second value
+ * @return Minimum value
+ * @threadsafe Yes (macro expansion, no shared state)
+ *
+ * Type-generic min macro. Works with any numeric types.
+ * Evaluates arguments once (no side-effect issues).
+ *
+ * Note: Uses GNU statement expression extension for type safety.
+ * Arguments are evaluated exactly once to avoid side effects.
+ *
+ * Example:
+ *   int64_t timeout = MIN(user_timeout, max_timeout);
+ *   size_t len = MIN(buf_size, data_len);
+ */
+#ifndef MIN
+#define MIN(a, b)                                                             \
+  ({                                                                          \
+    __typeof__ (a) _a = (a);                                                  \
+    __typeof__ (b) _b = (b);                                                  \
+    _a < _b ? _a : _b;                                                        \
+  })
+#endif
+
+/**
+ * @brief MAX - Compute maximum of two values
+ * @ingroup foundation
+ * @param a First value
+ * @param b Second value
+ * @return Maximum value
+ * @threadsafe Yes (macro expansion, no shared state)
+ *
+ * Type-generic max macro. Works with any numeric types.
+ * Evaluates arguments once (no side-effect issues).
+ *
+ * Note: Uses GNU statement expression extension for type safety.
+ * Arguments are evaluated exactly once to avoid side effects.
+ *
+ * Example:
+ *   size_t capacity = MAX(min_capacity, requested_size);
+ *   int64_t delay = MAX(0, computed_delay);
+ */
+#ifndef MAX
+#define MAX(a, b)                                                             \
+  ({                                                                          \
+    __typeof__ (a) _a = (a);                                                  \
+    __typeof__ (b) _b = (b);                                                  \
+    _a > _b ? _a : _b;                                                        \
+  })
+#endif
+
+/* ============================================================================
  * String Utilities
  * ============================================================================
  */
