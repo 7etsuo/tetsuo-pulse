@@ -150,7 +150,7 @@ SocketQUIC_send_stream_reset (SocketQUICStream_T stream, uint64_t code,
    * - Application error code: varint
    * - Final size: varint
    */
-  size_t min_size = 1 + 8 + 8 + 8; /* Conservative estimate */
+  size_t min_size = QUIC_FRAME_MIN_SIZE_RESET_STREAM;
   if (out_len < min_size)
     return 0;
 
@@ -197,7 +197,7 @@ SocketQUIC_send_stop_sending (SocketQUICStream_T stream, uint64_t code,
    * - Stream ID: varint
    * - Application error code: varint
    */
-  size_t min_size = 1 + 8 + 8; /* Conservative estimate */
+  size_t min_size = QUIC_FRAME_MIN_SIZE_STOP_SENDING;
   if (out_len < min_size)
     return 0;
 
