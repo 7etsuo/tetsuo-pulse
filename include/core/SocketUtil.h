@@ -1313,6 +1313,37 @@ socket_util_arena_strndup (Arena_T arena, const char *str, size_t maxlen)
   return copy;
 }
 
+/**
+ * @brief Duplicate string with known length into arena.
+ * @ingroup foundation
+ * @param arena Arena for allocation.
+ * @param str String to duplicate (may not be null-terminated).
+ * @param len Exact length of string to copy.
+ * @return Null-terminated copy in arena, or NULL if str is NULL or alloc fails.
+ * @threadsafe Yes (if arena is thread-safe)
+ *
+ * For non-null-terminated strings where the length is already known.
+ * More efficient than strndup when length is pre-computed.
+ */
+static inline char *
+socket_util_arena_strdup_len (Arena_T arena, const char *str, size_t len)
+{
+  char *copy;
+
+  if (str == NULL)
+    return NULL;
+
+  copy = Arena_alloc (arena, len + 1, __FILE__, __LINE__);
+  if (copy != NULL)
+    {
+      if (len > 0)
+        memcpy (copy, str, len);
+      copy[len] = '\0';
+    }
+
+  return copy;
+}
+
 /* ============================================================================
  * TIMEOUT CALCULATION HELPERS
  * ============================================================================

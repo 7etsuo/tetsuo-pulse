@@ -485,8 +485,169 @@ handle_chunk_crlf_states (SocketHTTP1_Parser_T parser, const char **p,
   return HTTP1_OK;
 }
 
-/* Removed unused handle_trailer_states - trailers now parsed fully inline in
- * state machine */
+/**
+ * Handle trailer parsing states in chunked transfer encoding.
+ *
+ * Processes trailer headers after the final zero-size chunk (RFC 9112 Section
+ * 7.1.3). States handled: HTTP1_PS_TRAILER_START through HTTP1_PS_COMPLETE.
+ *
+ * @param parser Parser instance with current state
+ * @param p Pointer to current input position (modified as data consumed)
+ * @param end End of input buffer
+ * @return HTTP1_OK when trailers complete, HTTP1_INCOMPLETE for more data,
+ *         or error code
+ */
+static SocketHTTP1_Result
+handle_trailer_states (SocketHTTP1_Parser_T parser, const char **p,
+                       const char *end)
+{
+  while (*p < end)
+    {
+      switch (parser->internal_state)
+        {
+        case HTTP1_PS_TRAILER_START:
+          {
+            crlf_result_t res = skip_crlf (p, end);
+            if (res == CRLF_OK)
+              {
+                mark_body_complete (parser);
+                parser->internal_state = HTTP1_PS_COMPLETE;
+                return HTTP1_OK;
+              }
+            if (res == CRLF_INCOMPLETE)
+              return HTTP1_INCOMPLETE;
+            if (!http1_is_tchar (**p))
+              return HTTP1_ERROR_INVALID_TRAILER;
+            http1_tokenbuf_reset (&parser->name_buf);
+            parser->line_length = 0;
+            parser->internal_state = HTTP1_PS_TRAILER_NAME;
+            break;
+          }
+
+        case HTTP1_PS_TRAILER_NAME:
+          {
+            char c = **p;
+            if (c == ':')
+              {
+                char *name_str = http1_tokenbuf_terminate (
+                    &parser->name_buf, parser->arena,
+                    parser->config.max_header_name);
+                if (name_str == NULL)
+                  return HTTP1_ERROR_HEADER_TOO_LARGE;
+                if (parser->name_buf.len == 0)
+                  return HTTP1_ERROR_INVALID_HEADER_NAME;
+                parser->internal_state = HTTP1_PS_TRAILER_COLON;
+                (*p)++;
+                break;
+              }
+            if (!http1_is_tchar (c))
+              return HTTP1_ERROR_INVALID_HEADER_NAME;
+            if (http1_tokenbuf_append (&parser->name_buf, parser->arena, c,
+                                       parser->config.max_header_name)
+                < 0)
+              return HTTP1_ERROR_HEADER_TOO_LARGE;
+            parser->line_length++;
+            if (parser->line_length > parser->config.max_header_name)
+              return HTTP1_ERROR_HEADER_TOO_LARGE;
+            (*p)++;
+            break;
+          }
+
+        case HTTP1_PS_TRAILER_COLON:
+          {
+            char c = **p;
+            if (http1_is_ows (c))
+              {
+                (*p)++;
+                break;
+              }
+            http1_tokenbuf_reset (&parser->value_buf);
+            parser->line_length = 0;
+            parser->internal_state = HTTP1_PS_TRAILER_VALUE;
+            if (c == '\r' || c == '\n')
+              {
+                parser->internal_state
+                    = (c == '\r') ? HTTP1_PS_TRAILER_CR : HTTP1_PS_TRAILER_LF;
+                (*p)++;
+                break;
+              }
+            if (!(http1_is_field_vchar (c) || http1_is_ows (c)))
+              return HTTP1_ERROR_INVALID_HEADER_VALUE;
+            if (http1_tokenbuf_append (&parser->value_buf, parser->arena, c,
+                                       parser->config.max_header_value)
+                < 0)
+              return HTTP1_ERROR_HEADER_TOO_LARGE;
+            parser->line_length++;
+            if (parser->line_length > parser->config.max_header_value)
+              return HTTP1_ERROR_HEADER_TOO_LARGE;
+            (*p)++;
+            break;
+          }
+
+        case HTTP1_PS_TRAILER_VALUE:
+          {
+            char c = **p;
+            if (c == '\r')
+              {
+                parser->internal_state = HTTP1_PS_TRAILER_CR;
+                (*p)++;
+                break;
+              }
+            if (c == '\n')
+              {
+                parser->internal_state = HTTP1_PS_TRAILER_LF;
+                (*p)++;
+                break;
+              }
+            if (!(http1_is_field_vchar (c) || http1_is_ows (c)))
+              return HTTP1_ERROR_INVALID_HEADER_VALUE;
+            if (http1_tokenbuf_append (&parser->value_buf, parser->arena, c,
+                                       parser->config.max_header_value)
+                < 0)
+              return HTTP1_ERROR_HEADER_TOO_LARGE;
+            parser->line_length++;
+            if (parser->line_length > parser->config.max_header_value)
+              return HTTP1_ERROR_HEADER_TOO_LARGE;
+            (*p)++;
+            break;
+          }
+
+        case HTTP1_PS_TRAILER_CR:
+          {
+            if (**p == '\n')
+              {
+                SocketHTTP1_Result res = complete_trailer_header (parser);
+                if (res != HTTP1_OK)
+                  return res;
+                (*p)++;
+                break;
+              }
+            return HTTP1_ERROR_INVALID_TRAILER;
+          }
+
+        case HTTP1_PS_TRAILER_LF:
+          {
+            SocketHTTP1_Result res = complete_trailer_header (parser);
+            if (res != HTTP1_OK)
+              return res;
+            break;
+          }
+
+        case HTTP1_PS_TRAILERS_END_LF:
+          mark_body_complete (parser);
+          parser->internal_state = HTTP1_PS_COMPLETE;
+          return HTTP1_OK;
+
+        case HTTP1_PS_COMPLETE:
+          return HTTP1_OK;
+
+        default:
+          return HTTP1_ERROR;
+        }
+    }
+
+  return HTTP1_INCOMPLETE;
+}
 
 static SocketHTTP1_Result
 read_body_chunked (SocketHTTP1_Parser_T parser, const char *const input,
@@ -499,19 +660,13 @@ read_body_chunked (SocketHTTP1_Parser_T parser, const char *const input,
   size_t out_remaining = output_len;
   SocketHTTP1_Result result;
 
-  /* Macros to reduce redundancy in state machine error handling and appends */
-#define UPDATE_PROGRESS_AND_RETURN(r) do { \
-  update_progress (input, p, output, out, consumed, written); \
-  return (r); \
-} while (0)
-
-#define APPEND_CHAR(buf, arena, max_len, line_len_var, c) do { \
-  if (http1_tokenbuf_append (buf, arena, c, max_len) < 0) \
-    UPDATE_PROGRESS_AND_RETURN (HTTP1_ERROR_HEADER_TOO_LARGE); \
-  (line_len_var)++; \
-  if ((line_len_var) > max_len) \
-    UPDATE_PROGRESS_AND_RETURN (HTTP1_ERROR_HEADER_TOO_LARGE); \
-} while (0)
+#define UPDATE_PROGRESS_AND_RETURN(r)                                         \
+  do                                                                          \
+    {                                                                         \
+      update_progress (input, p, output, out, consumed, written);             \
+      return (r);                                                             \
+    }                                                                         \
+  while (0)
 
   *consumed = 0;
   *written = 0;
@@ -540,134 +695,15 @@ read_body_chunked (SocketHTTP1_Parser_T parser, const char *const input,
           break;
 
         case HTTP1_PS_TRAILER_START:
-          {
-            crlf_result_t res = skip_crlf (&p, end);
-            if (res == CRLF_OK)
-              {
-                mark_body_complete (parser);
-                parser->internal_state = HTTP1_PS_COMPLETE;
-                UPDATE_PROGRESS_AND_RETURN (HTTP1_OK);
-              }
-            if (res == CRLF_INCOMPLETE)
-              UPDATE_PROGRESS_AND_RETURN (HTTP1_INCOMPLETE);
-            /* res == CRLF_INVALID - possible start of header name */
-            if (!http1_is_tchar (*p))
-              UPDATE_PROGRESS_AND_RETURN (HTTP1_ERROR_INVALID_TRAILER);
-            http1_tokenbuf_reset (&parser->name_buf);
-            parser->line_length = 0;
-            parser->internal_state = HTTP1_PS_TRAILER_NAME;
-            break; /* Next iteration will process first *p as name char */
-          }
-
         case HTTP1_PS_TRAILER_NAME:
-          {
-            char c = *p;
-            if (c == ':')
-              {
-                char *name_str = http1_tokenbuf_terminate (&parser->name_buf, parser->arena,
-                                                           parser->config.max_header_name);
-                if (name_str == NULL)
-                  UPDATE_PROGRESS_AND_RETURN (HTTP1_ERROR_HEADER_TOO_LARGE);
-                if (parser->name_buf.len == 0)
-                  UPDATE_PROGRESS_AND_RETURN (HTTP1_ERROR_INVALID_HEADER_NAME);
-                parser->internal_state = HTTP1_PS_TRAILER_COLON;
-                p++;
-                break;
-              }
-            if (!http1_is_tchar (c))
-              UPDATE_PROGRESS_AND_RETURN (HTTP1_ERROR_INVALID_HEADER_NAME);
-            APPEND_CHAR (&parser->name_buf, parser->arena, parser->config.max_header_name,
-                         parser->line_length, c);
-            p++;
-            break;
-          }
-
         case HTTP1_PS_TRAILER_COLON:
-          {
-            char c = *p;
-            if (http1_is_ows (c))
-              {
-                p++;
-                break;
-              }
-            /* Start value or empty value */
-            http1_tokenbuf_reset (&parser->value_buf);
-            parser->line_length = 0; /* Reset for value field length check */
-            parser->internal_state = HTTP1_PS_TRAILER_VALUE;
-            /* Process current char as value */
-            if (c == '\r' || c == '\n')
-              {
-                parser->internal_state
-                    = (c == '\r') ? HTTP1_PS_TRAILER_CR : HTTP1_PS_TRAILER_LF;
-                p++;
-                break;
-              }
-            if (! (http1_is_field_vchar (c) || http1_is_ows (c)))
-              UPDATE_PROGRESS_AND_RETURN (HTTP1_ERROR_INVALID_HEADER_VALUE);
-            APPEND_CHAR (&parser->value_buf, parser->arena, parser->config.max_header_value,
-                         parser->line_length, c);
-            p++;
-            break;
-          }
-
         case HTTP1_PS_TRAILER_VALUE:
-          {
-            char c = *p;
-            if (c == '\r')
-              {
-                parser->internal_state = HTTP1_PS_TRAILER_CR;
-                p++;
-                break;
-              }
-            if (c == '\n')
-              {
-                parser->internal_state = HTTP1_PS_TRAILER_LF;
-                p++;
-                break;
-              }
-            if (! (http1_is_field_vchar (c) || http1_is_ows (c)))
-              UPDATE_PROGRESS_AND_RETURN (HTTP1_ERROR_INVALID_HEADER_VALUE);
-            APPEND_CHAR (&parser->value_buf, parser->arena, parser->config.max_header_value,
-                         parser->line_length, c);
-            p++;
-            break;
-          }
-
         case HTTP1_PS_TRAILER_CR:
-          {
-            if (*p == '\n')
-              {
-                /* End of header line - complete the trailer */
-                SocketHTTP1_Result trailer_result = complete_trailer_header (parser);
-                if (trailer_result != HTTP1_OK)
-                  UPDATE_PROGRESS_AND_RETURN (trailer_result);
-                p++; /* Advance past \n (p was already past \r) */
-                break;
-              }
-            /* Invalid character after CR */
-            UPDATE_PROGRESS_AND_RETURN (HTTP1_ERROR_INVALID_TRAILER);
-          }
-
         case HTTP1_PS_TRAILER_LF:
-          {
-            /* Bare LF (lenient parsing) - complete the trailer.
-             * p already advanced past LF when state was set. */
-            SocketHTTP1_Result trailer_result = complete_trailer_header (parser);
-            if (trailer_result != HTTP1_OK)
-              UPDATE_PROGRESS_AND_RETURN (trailer_result);
-            /* No p++ - already advanced when setting state=LF */
-            break;
-          }
-
         case HTTP1_PS_TRAILERS_END_LF:
-          {
-            mark_body_complete (parser);
-            parser->internal_state = HTTP1_PS_COMPLETE;
-            UPDATE_PROGRESS_AND_RETURN (HTTP1_OK);
-          }
-
         case HTTP1_PS_COMPLETE:
-          UPDATE_PROGRESS_AND_RETURN (HTTP1_OK);
+          result = handle_trailer_states (parser, &p, end);
+          UPDATE_PROGRESS_AND_RETURN (result);
 
         default:
           return HTTP1_ERROR;
@@ -680,6 +716,8 @@ read_body_chunked (SocketHTTP1_Parser_T parser, const char *const input,
     return HTTP1_OK;
 
   return HTTP1_INCOMPLETE;
+
+#undef UPDATE_PROGRESS_AND_RETURN
 }
 
 SocketHTTP1_Result
