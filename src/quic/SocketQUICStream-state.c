@@ -76,6 +76,43 @@ SocketQUICStream_get_recv_state (const SocketQUICStream_T stream)
 }
 
 /* ============================================================================
+ * Legacy State Update Helpers
+ * ============================================================================
+ */
+
+/**
+ * @brief Update legacy combined state based on send state.
+ *
+ * For backwards compatibility, maintains the legacy `stream->state` field
+ * by mirroring send-side states (Send, DataSent).
+ *
+ * @param stream Stream to update.
+ */
+static void
+update_legacy_state_send (SocketQUICStream_T stream)
+{
+  if (stream->send_state == QUIC_STREAM_STATE_SEND
+      || stream->send_state == QUIC_STREAM_STATE_DATA_SENT)
+    stream->state = stream->send_state;
+}
+
+/**
+ * @brief Update legacy combined state based on receive state.
+ *
+ * For backwards compatibility, maintains the legacy `stream->state` field
+ * by mirroring receive-side states (Recv, SizeKnown).
+ *
+ * @param stream Stream to update.
+ */
+static void
+update_legacy_state_recv (SocketQUICStream_T stream)
+{
+  if (stream->recv_state == QUIC_STREAM_STATE_RECV
+      || stream->recv_state == QUIC_STREAM_STATE_SIZE_KNOWN)
+    stream->state = stream->recv_state;
+}
+
+/* ============================================================================
  * Send-Side State Machine (RFC 9000 Section 3.1)
  * ============================================================================
  */
@@ -187,9 +224,7 @@ SocketQUICStream_transition_send (SocketQUICStream_T stream,
           stream->send_state = send_transitions[i].to_state;
 
           /* Update legacy combined state for backwards compatibility */
-          if (stream->send_state == QUIC_STREAM_STATE_SEND
-              || stream->send_state == QUIC_STREAM_STATE_DATA_SENT)
-            stream->state = stream->send_state;
+          update_legacy_state_send (stream);
 
           return QUIC_STREAM_OK;
         }
@@ -287,9 +322,7 @@ SocketQUICStream_transition_recv (SocketQUICStream_T stream,
           stream->recv_state = recv_transitions[i].to_state;
 
           /* Update legacy combined state for backwards compatibility */
-          if (stream->recv_state == QUIC_STREAM_STATE_RECV
-              || stream->recv_state == QUIC_STREAM_STATE_SIZE_KNOWN)
-            stream->state = stream->recv_state;
+          update_legacy_state_recv (stream);
 
           return QUIC_STREAM_OK;
         }
