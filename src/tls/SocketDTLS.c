@@ -459,8 +459,14 @@ SocketDTLS_enable (SocketDgram_T socket, SocketDTLSContext_T ctx)
           = { .tv_sec = 1, .tv_usec = 0 };
       BIO *rbio = SSL_get_rbio ((SSL *)ssl);
       if (rbio)
-        BIO_ctrl (rbio, BIO_CTRL_DGRAM_SET_RECV_TIMEOUT, 0,
-                  (void *)&DTLS_INITIAL_RETRANS_TIMEOUT);
+        {
+          long ret = BIO_ctrl (rbio, BIO_CTRL_DGRAM_SET_RECV_TIMEOUT, 0,
+                               (void *)&DTLS_INITIAL_RETRANS_TIMEOUT);
+          /* Non-fatal: handshake will still work with default timing.
+           * BIO_ctrl return value depends on the control command; <= 0 may
+           * indicate failure for some BIO types (e.g., unsupported operation). */
+          (void)ret; /* Explicitly ignore - continue with default timing */
+        }
 
       /* This may raise on allocation failure - will cleanup properly */
       finalize_dtls_state (socket, (SSL *)ssl, ctx);
