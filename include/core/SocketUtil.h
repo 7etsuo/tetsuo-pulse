@@ -307,7 +307,7 @@ SocketMetrics_snapshot_value (const SocketMetricsSnapshot *snapshot,
 {
   if (!snapshot)
     return 0ULL;
-  if (metric < 0 || metric >= SOCKET_METRIC_COUNT)
+  if (metric >= SOCKET_METRIC_COUNT)
     return 0ULL;
   return snapshot->values[metric];
 }
