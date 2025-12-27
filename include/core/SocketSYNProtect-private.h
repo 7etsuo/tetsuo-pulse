@@ -150,11 +150,13 @@ struct SocketSYNProtect_T
  * @brief Compute hash index for an IP address using instance-specific seed.
  * @internal
  *
- * @param protect  The SYN protection instance
- * @param ip       IP address string
+ * @param protect  The SYN protection instance (must not be NULL)
+ * @param ip       IP address string (must not be NULL)
  * @param table_size  Number of buckets in hash table
  * Returns: Hash index in range [0, table_size)
  *
+ * @pre ip != NULL
+ * @pre protect != NULL
  * @threadsafe Yes
  */
 unsigned synprotect_hash_ip (SocketSYNProtect_T protect, const char *ip,

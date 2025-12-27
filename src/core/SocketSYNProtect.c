@@ -182,6 +182,9 @@ calculate_window_progress (int64_t elapsed, int window_ms)
 unsigned
 synprotect_hash_ip (T protect, const char *ip, unsigned table_size)
 {
+  assert (ip != NULL);
+  assert (protect != NULL);
+
   unsigned h = socket_util_hash_djb2 (ip, table_size);
   h ^= protect->hash_seed;
   h = socket_util_hash_uint (h, table_size);
