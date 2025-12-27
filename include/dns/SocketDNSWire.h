@@ -782,8 +782,11 @@ extern int SocketDNS_rdata_parse_soa (const unsigned char *msg, size_t msglen,
 /** EDNS0 version number (RFC 6891 Section 6.1.3). */
 #define DNS_EDNS0_VERSION 0
 
+/** RFC 6891 Section 6.2.5 recommended UDP payload size. */
+#define DNS_UDP_PAYLOAD_OPTIMAL 4096
+
 /** Default UDP payload size for EDNS0 (RFC 6891 Section 6.2.5). */
-#define DNS_EDNS0_DEFAULT_UDPSIZE 4096
+#define DNS_EDNS0_DEFAULT_UDPSIZE DNS_UDP_PAYLOAD_OPTIMAL
 
 /** Minimum UDP payload size (values below treated as 512, RFC 6891 Section 6.2.3). */
 #define DNS_EDNS0_MIN_UDPSIZE 512
@@ -1356,7 +1359,7 @@ extern int SocketDNS_edns_options_encode (const SocketDNS_EDNSOption *options,
  */
 
 /** Initial/optimal UDP payload size (RFC 6891 Section 6.2.5). */
-#define DNS_PAYLOAD_INITIAL 4096
+#define DNS_PAYLOAD_INITIAL DNS_UDP_PAYLOAD_OPTIMAL
 
 /** First fallback size: safe for most paths (IPv6 min MTU area). */
 #define DNS_PAYLOAD_FALLBACK1 1400
