@@ -64,6 +64,9 @@
 /** Decompression expansion estimate multiplier */
 #define WS_DEFLATE_EXPANSION_FACTOR 4
 
+/** Fallback buffer size when decompression size estimation overflows */
+#define WS_DEFLATE_OVERFLOW_FALLBACK_MAX (SIZE_MAX / 2)
+
 /* RFC 7692: The trailer bytes (0x00 0x00 0xff 0xff) MUST be removed
  * from the compressed data before sending, and added back on receiving. */
 static const unsigned char WS_DEFLATE_TRAILER[WS_DEFLATE_TRAILER_SIZE]
@@ -107,12 +110,12 @@ calculate_zlib_buffer_size (size_t input_len, int is_decompress)
   if (is_decompress) {
     if (!SocketSecurity_check_multiply (input_len, WS_DEFLATE_EXPANSION_FACTOR,
                                         &buf_size)) {
-      buf_size = SIZE_MAX / 2; // fallback on overflow
+      buf_size = WS_DEFLATE_OVERFLOW_FALLBACK_MAX;
     }
   } else {
     if (!SocketSecurity_check_add (input_len, WS_DEFLATE_HEADER_PADDING,
                                    &buf_size)) {
-      buf_size = input_len; // fallback
+      buf_size = input_len;
     }
   }
   if (buf_size < WS_DEFLATE_INITIAL_BUF_SIZE)
