@@ -16,46 +16,13 @@ const Except_T SocketDNS_WireError
     = { &SocketDNS_WireError, "DNS wire format error" };
 
 /*
- * Big-endian pack/unpack helpers.
- * Following the pattern from SocketHTTP2-frame.c for explicit byte
- * manipulation rather than relying on htons/ntohs macros.
+ * Big-endian pack/unpack helpers - now using shared utilities from SocketUtil.h
  */
 
-static inline uint16_t
-dns_unpack_be16 (const unsigned char *p)
-{
-  return ((uint16_t)p[0] << 8) | (uint16_t)p[1];
-}
-
-static inline void
-dns_pack_be16 (unsigned char *p, uint16_t v)
-{
-  p[0] = (unsigned char)((v >> 8) & 0xFF);
-  p[1] = (unsigned char)(v & 0xFF);
-}
-
-static inline uint32_t
-dns_unpack_be32 (const unsigned char *p)
-{
-  return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16)
-         | ((uint32_t)p[2] << 8) | (uint32_t)p[3];
-}
-
-static inline void
-dns_pack_be32 (unsigned char *p, uint32_t v)
-{
-  p[0] = (unsigned char)((v >> 24) & 0xFF);
-  p[1] = (unsigned char)((v >> 16) & 0xFF);
-  p[2] = (unsigned char)((v >> 8) & 0xFF);
-  p[3] = (unsigned char)(v & 0xFF);
-}
-
-/* Silence compiler warning for unused static inline */
-static inline void
-dns_pack_be32_unused_check (void)
-{
-  (void)dns_pack_be32;
-}
+#define dns_unpack_be16(p) socket_util_unpack_be16(p)
+#define dns_pack_be16(p, v) socket_util_pack_be16(p, v)
+#define dns_unpack_be32(p) socket_util_unpack_be32(p)
+#define dns_pack_be32(p, v) socket_util_pack_be32(p, v)
 
 /*
  * Flags word layout (16 bits):

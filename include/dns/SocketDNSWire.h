@@ -26,6 +26,7 @@
  */
 
 #include "core/Except.h"
+#include "core/SocketUtil.h"
 #include <netinet/in.h>
 #include <stddef.h>
 #include <stdint.h>

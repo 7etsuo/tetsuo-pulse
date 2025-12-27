@@ -136,21 +136,12 @@ static const char *stream_state_names[]
 #define STREAM_STATE_COUNT                                                    \
   (sizeof (stream_state_names) / sizeof (stream_state_names[0]))
 
-static inline uint32_t
-http2_unpack_be24 (const unsigned char *data)
-{
-  return ((uint32_t)data[0] << 16) | ((uint32_t)data[1] << 8)
-         | (uint32_t)data[2];
-}
+/* Big-endian pack/unpack helpers - using shared utilities from SocketUtil.h */
+#define http2_unpack_be24(data) socket_util_unpack_be24(data)
+#define http2_pack_be24(data, value) socket_util_pack_be24(data, value)
+#define http2_pack_uint32_be(data, value) socket_util_pack_be32(data, value)
 
-static inline void
-http2_pack_be24 (unsigned char *data, uint32_t value)
-{
-  data[0] = (unsigned char)((value >> 16) & 0xFF);
-  data[1] = (unsigned char)((value >> 8) & 0xFF);
-  data[2] = (unsigned char)(value & 0xFF);
-}
-
+/* Stream ID helpers with reserved bit masking (bit 31) - HTTP/2 specific */
 static inline uint32_t
 http2_unpack_stream_id (const unsigned char *data)
 {
@@ -165,15 +156,6 @@ http2_pack_stream_id (unsigned char *data, uint32_t stream_id)
   data[1] = (unsigned char)((stream_id >> 16) & 0xFF);
   data[2] = (unsigned char)((stream_id >> 8) & 0xFF);
   data[3] = (unsigned char)(stream_id & 0xFF);
-}
-
-static inline void
-http2_pack_uint32_be (unsigned char *data, uint32_t value)
-{
-  data[0] = (unsigned char)((value >> 24) & 0xFF);
-  data[1] = (unsigned char)((value >> 16) & 0xFF);
-  data[2] = (unsigned char)((value >> 8) & 0xFF);
-  data[3] = (unsigned char)(value & 0xFF);
 }
 
 int
