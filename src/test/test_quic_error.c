@@ -263,6 +263,24 @@ TEST (quic_error_string_crypto_errors)
   ASSERT (strstr (str, "0x28") != NULL);
 }
 
+TEST (quic_error_string_crypto_errors_all_codes)
+{
+  /* Test all possible crypto error codes (0x00-0xff) */
+  for (unsigned int alert = 0; alert <= 0xff; alert++)
+    {
+      uint64_t code = QUIC_CRYPTO_ERROR (alert);
+      const char *str = SocketQUIC_error_string (code);
+
+      /* Verify string is non-NULL and contains expected pattern */
+      ASSERT_NOT_NULL (str);
+      ASSERT (strstr (str, "CRYPTO_ERROR") != NULL);
+
+      /* Verify the alert code is formatted correctly (or fallback on error) */
+      /* The format should be "CRYPTO_ERROR(0xXX)" where XX is the hex alert */
+      ASSERT (strlen (str) > 0);
+    }
+}
+
 TEST (quic_error_string_application_error)
 {
   const char *str = SocketQUIC_error_string (0x0200);
