@@ -103,10 +103,10 @@ SocketQUICWire_pn_length (uint64_t full_pn, uint64_t largest_acked)
   num_bytes = (min_bits + 7) / 8;
 
   /* Clamp to valid range 1-4 */
-  if (num_bytes < 1)
-    num_bytes = 1;
-  if (num_bytes > 4)
-    num_bytes = 4;
+  if (num_bytes < QUIC_PN_MIN_SIZE)
+    num_bytes = QUIC_PN_MIN_SIZE;
+  if (num_bytes > QUIC_PN_MAX_SIZE)
+    num_bytes = QUIC_PN_MAX_SIZE;
 
   return num_bytes;
 }
@@ -218,7 +218,7 @@ SocketQUICWire_pn_read (const uint8_t *data, size_t len, unsigned pn_len,
   if (data == NULL || value == NULL)
     return QUIC_PN_ERROR_NULL;
 
-  if (pn_len < 1 || pn_len > 4)
+  if (pn_len < QUIC_PN_MIN_SIZE || pn_len > QUIC_PN_MAX_SIZE)
     return QUIC_PN_ERROR_BITS;
 
   if (len < pn_len)
@@ -261,7 +261,7 @@ SocketQUICWire_pn_write (uint64_t value, unsigned pn_len, uint8_t *output,
   if (output == NULL)
     return 0;
 
-  if (pn_len < 1 || pn_len > 4)
+  if (pn_len < QUIC_PN_MIN_SIZE || pn_len > QUIC_PN_MAX_SIZE)
     return 0;
 
   if (output_size < pn_len)
