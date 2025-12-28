@@ -212,7 +212,14 @@ SocketQUICConnection_T SocketQUICConnTable_lookup_by_addr(SocketQUICConnTable_T 
       pthread_mutex_unlock(&table->mutex);
       return NULL;
     }
-    if (conn->local_port == local_port && conn->peer_port == peer_port && conn->is_ipv6 == is_ipv6 && SocketCrypto_secure_compare(conn->local_addr, local_addr, addr_len) == 0 && SocketCrypto_secure_compare(conn->peer_addr, peer_addr, addr_len) == 0) { pthread_mutex_unlock(&table->mutex); return conn; }
+    if (conn->local_port == local_port &&
+        conn->peer_port == peer_port &&
+        conn->is_ipv6 == is_ipv6 &&
+        SocketCrypto_secure_compare(conn->local_addr, local_addr, addr_len) == 0 &&
+        SocketCrypto_secure_compare(conn->peer_addr, peer_addr, addr_len) == 0) {
+      pthread_mutex_unlock(&table->mutex);
+      return conn;
+    }
     conn = conn->hash_next;
   }
   pthread_mutex_unlock(&table->mutex);
@@ -221,12 +228,14 @@ SocketQUICConnection_T SocketQUICConnTable_lookup_by_addr(SocketQUICConnTable_T 
 
 static void insert_into_cid_bucket(SocketQUICConnTable_T table, SocketQUICConnection_T conn, const uint8_t *cid_data, size_t cid_len) {
   unsigned idx = hash_cid(cid_data, cid_len, table->bucket_count, table->hash_seed);
-  conn->hash_next = table->buckets[idx]; table->buckets[idx] = conn;
+  conn->hash_next = table->buckets[idx];
+  table->buckets[idx] = conn;
 }
 
 static void insert_into_addr_bucket(SocketQUICConnTable_T table, SocketQUICConnection_T conn) {
   unsigned idx = hash_addr_pair(conn->local_addr, conn->peer_addr, conn->local_port, conn->peer_port, conn->is_ipv6, table->addr_bucket_count, table->hash_seed);
-  conn->hash_next = table->addr_buckets[idx]; table->addr_buckets[idx] = conn;
+  conn->hash_next = table->addr_buckets[idx];
+  table->addr_buckets[idx] = conn;
 }
 
 SocketQUICConnection_Result SocketQUICConnTable_add(SocketQUICConnTable_T table, SocketQUICConnection_T conn) {
