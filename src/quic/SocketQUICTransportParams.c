@@ -11,6 +11,7 @@
  * exchanged during the TLS handshake.
  */
 
+#include <stddef.h>
 #include <string.h>
 
 #include "quic/SocketQUICTransportParams.h"
@@ -354,6 +355,77 @@ preferred_address_size (const SocketQUICPreferredAddress_T *paddr)
   return id_size + len_size + content_size;
 }
 
+/* ============================================================================
+ * Table-Driven Parameter Encoding
+ * ============================================================================
+ */
+
+/**
+ * @brief Metadata for varint-type transport parameters.
+ *
+ * This table drives the encoding and size calculation for parameters that
+ * are simple variable-length integers with default values.
+ */
+typedef struct
+{
+  uint64_t param_id;      /* Transport parameter ID */
+  size_t offset;          /* offsetof() into SocketQUICTransportParams_T */
+  uint64_t default_value; /* Default value (skip encoding if equal) */
+} VarIntParamMetadata;
+
+/**
+ * @brief Table of varint parameters with their metadata.
+ *
+ * This table eliminates repetitive code by consolidating parameter
+ * definitions. Adding new varint parameters requires only a table entry.
+ */
+static const VarIntParamMetadata varint_params[] = {
+  { QUIC_TP_MAX_IDLE_TIMEOUT,
+    offsetof (SocketQUICTransportParams_T, max_idle_timeout),
+    QUIC_TP_DEFAULT_MAX_IDLE_TIMEOUT },
+  { QUIC_TP_MAX_UDP_PAYLOAD_SIZE,
+    offsetof (SocketQUICTransportParams_T, max_udp_payload_size),
+    QUIC_TP_DEFAULT_MAX_UDP_PAYLOAD_SIZE },
+  { QUIC_TP_INITIAL_MAX_DATA,
+    offsetof (SocketQUICTransportParams_T, initial_max_data),
+    QUIC_TP_DEFAULT_INITIAL_MAX_DATA },
+  { QUIC_TP_INITIAL_MAX_STREAM_DATA_BIDI_LOCAL,
+    offsetof (SocketQUICTransportParams_T, initial_max_stream_data_bidi_local),
+    QUIC_TP_DEFAULT_INITIAL_MAX_STREAM_DATA },
+  { QUIC_TP_INITIAL_MAX_STREAM_DATA_BIDI_REMOTE,
+    offsetof (SocketQUICTransportParams_T, initial_max_stream_data_bidi_remote),
+    QUIC_TP_DEFAULT_INITIAL_MAX_STREAM_DATA },
+  { QUIC_TP_INITIAL_MAX_STREAM_DATA_UNI,
+    offsetof (SocketQUICTransportParams_T, initial_max_stream_data_uni),
+    QUIC_TP_DEFAULT_INITIAL_MAX_STREAM_DATA },
+  { QUIC_TP_INITIAL_MAX_STREAMS_BIDI,
+    offsetof (SocketQUICTransportParams_T, initial_max_streams_bidi),
+    QUIC_TP_DEFAULT_INITIAL_MAX_STREAMS },
+  { QUIC_TP_INITIAL_MAX_STREAMS_UNI,
+    offsetof (SocketQUICTransportParams_T, initial_max_streams_uni),
+    QUIC_TP_DEFAULT_INITIAL_MAX_STREAMS },
+  { QUIC_TP_ACK_DELAY_EXPONENT,
+    offsetof (SocketQUICTransportParams_T, ack_delay_exponent),
+    QUIC_TP_DEFAULT_ACK_DELAY_EXPONENT },
+  { QUIC_TP_MAX_ACK_DELAY,
+    offsetof (SocketQUICTransportParams_T, max_ack_delay),
+    QUIC_TP_DEFAULT_MAX_ACK_DELAY },
+  { QUIC_TP_ACTIVE_CONNID_LIMIT,
+    offsetof (SocketQUICTransportParams_T, active_connection_id_limit),
+    QUIC_TP_DEFAULT_ACTIVE_CONNID_LIMIT },
+};
+
+#define VARINT_PARAM_COUNT (sizeof (varint_params) / sizeof (varint_params[0]))
+
+/**
+ * @brief Get value of a uint64_t field by offset.
+ */
+static inline uint64_t
+get_param_value (const SocketQUICTransportParams_T *params, size_t offset)
+{
+  return *(const uint64_t *)((const uint8_t *)params + offset);
+}
+
 size_t
 SocketQUICTransportParams_encoded_size (const SocketQUICTransportParams_T *params,
                                         SocketQUICRole role)
@@ -378,49 +450,13 @@ SocketQUICTransportParams_encoded_size (const SocketQUICTransportParams_T *param
     size += token_param_size (QUIC_TP_STATELESS_RESET_TOKEN,
                               QUIC_STATELESS_RESET_TOKEN_LEN);
 
-  /* Variable integer parameters (only encode non-default values) */
-  if (params->max_idle_timeout != QUIC_TP_DEFAULT_MAX_IDLE_TIMEOUT)
-    size += varint_param_size (QUIC_TP_MAX_IDLE_TIMEOUT,
-                               params->max_idle_timeout);
-
-  if (params->max_udp_payload_size != QUIC_TP_DEFAULT_MAX_UDP_PAYLOAD_SIZE)
-    size += varint_param_size (QUIC_TP_MAX_UDP_PAYLOAD_SIZE,
-                               params->max_udp_payload_size);
-
-  if (params->initial_max_data != QUIC_TP_DEFAULT_INITIAL_MAX_DATA)
-    size += varint_param_size (QUIC_TP_INITIAL_MAX_DATA,
-                               params->initial_max_data);
-
-  if (params->initial_max_stream_data_bidi_local != QUIC_TP_DEFAULT_INITIAL_MAX_STREAM_DATA)
-    size += varint_param_size (QUIC_TP_INITIAL_MAX_STREAM_DATA_BIDI_LOCAL,
-                               params->initial_max_stream_data_bidi_local);
-
-  if (params->initial_max_stream_data_bidi_remote != QUIC_TP_DEFAULT_INITIAL_MAX_STREAM_DATA)
-    size += varint_param_size (QUIC_TP_INITIAL_MAX_STREAM_DATA_BIDI_REMOTE,
-                               params->initial_max_stream_data_bidi_remote);
-
-  if (params->initial_max_stream_data_uni != QUIC_TP_DEFAULT_INITIAL_MAX_STREAM_DATA)
-    size += varint_param_size (QUIC_TP_INITIAL_MAX_STREAM_DATA_UNI,
-                               params->initial_max_stream_data_uni);
-
-  if (params->initial_max_streams_bidi != QUIC_TP_DEFAULT_INITIAL_MAX_STREAMS)
-    size += varint_param_size (QUIC_TP_INITIAL_MAX_STREAMS_BIDI,
-                               params->initial_max_streams_bidi);
-
-  if (params->initial_max_streams_uni != QUIC_TP_DEFAULT_INITIAL_MAX_STREAMS)
-    size += varint_param_size (QUIC_TP_INITIAL_MAX_STREAMS_UNI,
-                               params->initial_max_streams_uni);
-
-  if (params->ack_delay_exponent != QUIC_TP_DEFAULT_ACK_DELAY_EXPONENT)
-    size += varint_param_size (QUIC_TP_ACK_DELAY_EXPONENT,
-                               params->ack_delay_exponent);
-
-  if (params->max_ack_delay != QUIC_TP_DEFAULT_MAX_ACK_DELAY)
-    size += varint_param_size (QUIC_TP_MAX_ACK_DELAY, params->max_ack_delay);
-
-  if (params->active_connection_id_limit != QUIC_TP_DEFAULT_ACTIVE_CONNID_LIMIT)
-    size += varint_param_size (QUIC_TP_ACTIVE_CONNID_LIMIT,
-                               params->active_connection_id_limit);
+  /* Variable integer parameters (table-driven, only encode non-defaults) */
+  for (size_t i = 0; i < VARINT_PARAM_COUNT; i++)
+    {
+      uint64_t value = get_param_value (params, varint_params[i].offset);
+      if (value != varint_params[i].default_value)
+        size += varint_param_size (varint_params[i].param_id, value);
+    }
 
   /* Boolean parameter */
   if (params->disable_active_migration)
@@ -494,116 +530,18 @@ SocketQUICTransportParams_encode (const SocketQUICTransportParams_T *params,
       pos += len;
     }
 
-  /* Variable integer parameters (only encode non-default values) */
-  if (params->max_idle_timeout != QUIC_TP_DEFAULT_MAX_IDLE_TIMEOUT)
+  /* Variable integer parameters (table-driven, only encode non-defaults) */
+  for (size_t i = 0; i < VARINT_PARAM_COUNT; i++)
     {
-      len = encode_varint_param (output + pos, output_size - pos,
-                                 QUIC_TP_MAX_IDLE_TIMEOUT,
-                                 params->max_idle_timeout);
-      if (len == 0)
-        return 0;
-      pos += len;
-    }
-
-  if (params->max_udp_payload_size != QUIC_TP_DEFAULT_MAX_UDP_PAYLOAD_SIZE)
-    {
-      len = encode_varint_param (output + pos, output_size - pos,
-                                 QUIC_TP_MAX_UDP_PAYLOAD_SIZE,
-                                 params->max_udp_payload_size);
-      if (len == 0)
-        return 0;
-      pos += len;
-    }
-
-  if (params->initial_max_data != QUIC_TP_DEFAULT_INITIAL_MAX_DATA)
-    {
-      len = encode_varint_param (output + pos, output_size - pos,
-                                 QUIC_TP_INITIAL_MAX_DATA,
-                                 params->initial_max_data);
-      if (len == 0)
-        return 0;
-      pos += len;
-    }
-
-  if (params->initial_max_stream_data_bidi_local
-      != QUIC_TP_DEFAULT_INITIAL_MAX_STREAM_DATA)
-    {
-      len = encode_varint_param (output + pos, output_size - pos,
-                                 QUIC_TP_INITIAL_MAX_STREAM_DATA_BIDI_LOCAL,
-                                 params->initial_max_stream_data_bidi_local);
-      if (len == 0)
-        return 0;
-      pos += len;
-    }
-
-  if (params->initial_max_stream_data_bidi_remote
-      != QUIC_TP_DEFAULT_INITIAL_MAX_STREAM_DATA)
-    {
-      len = encode_varint_param (output + pos, output_size - pos,
-                                 QUIC_TP_INITIAL_MAX_STREAM_DATA_BIDI_REMOTE,
-                                 params->initial_max_stream_data_bidi_remote);
-      if (len == 0)
-        return 0;
-      pos += len;
-    }
-
-  if (params->initial_max_stream_data_uni != QUIC_TP_DEFAULT_INITIAL_MAX_STREAM_DATA)
-    {
-      len = encode_varint_param (output + pos, output_size - pos,
-                                 QUIC_TP_INITIAL_MAX_STREAM_DATA_UNI,
-                                 params->initial_max_stream_data_uni);
-      if (len == 0)
-        return 0;
-      pos += len;
-    }
-
-  if (params->initial_max_streams_bidi != QUIC_TP_DEFAULT_INITIAL_MAX_STREAMS)
-    {
-      len = encode_varint_param (output + pos, output_size - pos,
-                                 QUIC_TP_INITIAL_MAX_STREAMS_BIDI,
-                                 params->initial_max_streams_bidi);
-      if (len == 0)
-        return 0;
-      pos += len;
-    }
-
-  if (params->initial_max_streams_uni != QUIC_TP_DEFAULT_INITIAL_MAX_STREAMS)
-    {
-      len = encode_varint_param (output + pos, output_size - pos,
-                                 QUIC_TP_INITIAL_MAX_STREAMS_UNI,
-                                 params->initial_max_streams_uni);
-      if (len == 0)
-        return 0;
-      pos += len;
-    }
-
-  if (params->ack_delay_exponent != QUIC_TP_DEFAULT_ACK_DELAY_EXPONENT)
-    {
-      len = encode_varint_param (output + pos, output_size - pos,
-                                 QUIC_TP_ACK_DELAY_EXPONENT,
-                                 params->ack_delay_exponent);
-      if (len == 0)
-        return 0;
-      pos += len;
-    }
-
-  if (params->max_ack_delay != QUIC_TP_DEFAULT_MAX_ACK_DELAY)
-    {
-      len = encode_varint_param (output + pos, output_size - pos,
-                                 QUIC_TP_MAX_ACK_DELAY, params->max_ack_delay);
-      if (len == 0)
-        return 0;
-      pos += len;
-    }
-
-  if (params->active_connection_id_limit != QUIC_TP_DEFAULT_ACTIVE_CONNID_LIMIT)
-    {
-      len = encode_varint_param (output + pos, output_size - pos,
-                                 QUIC_TP_ACTIVE_CONNID_LIMIT,
-                                 params->active_connection_id_limit);
-      if (len == 0)
-        return 0;
-      pos += len;
+      uint64_t value = get_param_value (params, varint_params[i].offset);
+      if (value != varint_params[i].default_value)
+        {
+          len = encode_varint_param (output + pos, output_size - pos,
+                                     varint_params[i].param_id, value);
+          if (len == 0)
+            return 0;
+          pos += len;
+        }
     }
 
   /* Boolean parameter */
