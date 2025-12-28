@@ -836,7 +836,7 @@ ws_recv_frame (SocketWS_T ws, SocketWS_FrameParse *frame_out)
     }
 
   *frame_out = ws->frame;
-  bool is_control_frame = ws_is_control_opcode (ws->frame.opcode);
+  int is_control_frame = ws_is_control_opcode (ws->frame.opcode);
 
   /* Validate masking:
    * RFC 6455 (TCP): Client -> Server MUST be masked, Server -> Client MUST NOT
