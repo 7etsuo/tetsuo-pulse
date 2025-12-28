@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <math.h>
 #include <poll.h>
 #include <stdio.h>
@@ -173,6 +174,10 @@ calculate_backoff_delay (T conn)
   /* Ensure minimum 1ms */
   if (delay < 1.0)
     delay = 1.0;
+
+  /* Check for INT_MAX overflow before casting to int */
+  if (delay > (double)INT_MAX)
+    delay = (double)INT_MAX;
 
   return (int)delay;
 }
