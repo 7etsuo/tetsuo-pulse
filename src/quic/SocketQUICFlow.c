@@ -16,6 +16,38 @@
 #include <string.h>
 
 /* ============================================================================
+ * Internal Macros
+ * ============================================================================
+ */
+
+/**
+ * @brief Helper macro for consume_send flow control logic.
+ *
+ * Eliminates duplication between connection-level and stream-level
+ * consume_send functions. Validates pointer, checks for overflow,
+ * and enforces flow control limits.
+ *
+ * @param ptr Pointer to flow control structure (fc or fs)
+ * @param consumed_field Name of consumed counter field
+ * @param max_field Name of maximum data field
+ * @param bytes Number of bytes to consume
+ * @return Returns early with appropriate error code on failure
+ */
+#define CONSUME_FLOW_SEND(ptr, consumed_field, max_field, bytes)              \
+  do                                                                           \
+    {                                                                          \
+      if (!(ptr))                                                              \
+        return QUIC_FLOW_ERROR_NULL;                                           \
+      if ((bytes) > UINT64_MAX - (ptr)->consumed_field)                        \
+        return QUIC_FLOW_ERROR_OVERFLOW;                                       \
+      uint64_t new_consumed = (ptr)->consumed_field + (bytes);                 \
+      if (new_consumed > (ptr)->max_field)                                     \
+        return QUIC_FLOW_ERROR_BLOCKED;                                        \
+      (ptr)->consumed_field = new_consumed;                                    \
+    }                                                                          \
+  while (0)
+
+/* ============================================================================
  * Connection-Level Flow Control
  * ============================================================================
  */
@@ -81,20 +113,7 @@ SocketQUICFlow_can_send (const SocketQUICFlow_T fc, size_t bytes)
 SocketQUICFlow_Result
 SocketQUICFlow_consume_send (SocketQUICFlow_T fc, size_t bytes)
 {
-  if (!fc)
-    return QUIC_FLOW_ERROR_NULL;
-
-  /* Check for overflow */
-  if (bytes > UINT64_MAX - fc->send_consumed)
-    return QUIC_FLOW_ERROR_OVERFLOW;
-
-  uint64_t new_consumed = fc->send_consumed + bytes;
-
-  /* Check flow control limit */
-  if (new_consumed > fc->send_max_data)
-    return QUIC_FLOW_ERROR_BLOCKED;
-
-  fc->send_consumed = new_consumed;
+  CONSUME_FLOW_SEND (fc, send_consumed, send_max_data, bytes);
   return QUIC_FLOW_OK;
 }
 
@@ -234,20 +253,7 @@ SocketQUICFlowStream_can_send (const SocketQUICFlowStream_T fs, size_t bytes)
 SocketQUICFlow_Result
 SocketQUICFlowStream_consume_send (SocketQUICFlowStream_T fs, size_t bytes)
 {
-  if (!fs)
-    return QUIC_FLOW_ERROR_NULL;
-
-  /* Check for overflow */
-  if (bytes > UINT64_MAX - fs->send_consumed)
-    return QUIC_FLOW_ERROR_OVERFLOW;
-
-  uint64_t new_consumed = fs->send_consumed + bytes;
-
-  /* Check flow control limit */
-  if (new_consumed > fs->send_max_data)
-    return QUIC_FLOW_ERROR_BLOCKED;
-
-  fs->send_consumed = new_consumed;
+  CONSUME_FLOW_SEND (fs, send_consumed, send_max_data, bytes);
   return QUIC_FLOW_OK;
 }
 
