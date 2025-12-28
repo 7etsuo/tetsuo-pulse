@@ -24,6 +24,7 @@
  *   async - Asynchronous resolution with timeout
  */
 
+#include <arpa/inet.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>

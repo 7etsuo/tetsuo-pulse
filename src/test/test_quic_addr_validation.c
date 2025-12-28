@@ -121,6 +121,7 @@ test_token_generation_and_validation (void)
   result = SocketQUICAddrValidation_validate_token (
       token, token_len, (struct sockaddr *)&addr, secret);
   assert (result == QUIC_ADDR_VALIDATION_OK);
+  (void)result; /* Suppress unused warning when NDEBUG defined */
 
   printf ("PASS: test_token_generation_and_validation\n");
 }
@@ -148,6 +149,7 @@ test_token_validation_wrong_address (void)
   result = SocketQUICAddrValidation_validate_token (
       token, token_len, (struct sockaddr *)&addr2, secret);
   assert (result == QUIC_ADDR_VALIDATION_ERROR_INVALID);
+  (void)result;
 
   printf ("PASS: test_token_validation_wrong_address\n");
 }
@@ -175,6 +177,7 @@ test_token_validation_wrong_secret (void)
   result = SocketQUICAddrValidation_validate_token (
       token, token_len, (struct sockaddr *)&addr, secret2);
   assert (result == QUIC_ADDR_VALIDATION_ERROR_INVALID);
+  (void)result;
 
   printf ("PASS: test_token_validation_wrong_secret\n");
 }
@@ -201,6 +204,7 @@ test_token_ipv6 (void)
   result = SocketQUICAddrValidation_validate_token (
       token, token_len, (struct sockaddr *)&addr, secret);
   assert (result == QUIC_ADDR_VALIDATION_OK);
+  (void)result;
 
   printf ("PASS: test_token_ipv6\n");
 }
@@ -240,6 +244,8 @@ test_path_challenge_generation (void)
         }
     }
   assert (all_zeros == 0);
+  (void)result;
+  (void)all_zeros;
 
   printf ("PASS: test_path_challenge_generation\n");
 }
@@ -312,6 +318,7 @@ test_path_challenge_ipv6 (void)
   assert (result == QUIC_ADDR_VALIDATION_OK);
   assert (challenge.is_ipv6 == 1);
   assert (challenge.peer_port == 4433);
+  (void)result;
 
   printf ("PASS: test_path_challenge_ipv6\n");
 }
@@ -391,6 +398,7 @@ test_result_strings (void)
   str = SocketQUICAddrValidation_result_string (
       QUIC_ADDR_VALIDATION_ERROR_INVALID);
   assert (str != NULL && strlen (str) > 0);
+  (void)str;
 
   printf ("PASS: test_result_strings\n");
 }

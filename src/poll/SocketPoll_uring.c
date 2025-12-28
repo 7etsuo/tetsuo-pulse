@@ -25,7 +25,7 @@
 
 #include "core/Arena.h"
 #include "core/SocketConfig.h"
-#include "core/SocketUtil.h" /* For socket_util_ms_to_timespec and other utilities */
+#include "core/SocketUtil.h" /* For SOCKET_MS_PER_SECOND, SOCKET_NS_PER_MS */
 #include "poll/SocketPoll_backend.h"
 #include "socket/Socket.h" /* For Socket_get_monotonic_ms */
 
@@ -85,6 +85,24 @@ static const struct
     { POLLHUP, POLL_HANGUP },
     { 0, 0 }
 };
+
+/**
+ * ms_to_kernel_timespec - Convert milliseconds to kernel timespec
+ * @ms: Timeout in milliseconds
+ *
+ * Returns: struct __kernel_timespec suitable for io_uring timeout operations.
+ *
+ * io_uring requires __kernel_timespec (with long long fields) rather than
+ * the standard struct timespec (which uses time_t and long).
+ */
+static struct __kernel_timespec
+ms_to_kernel_timespec (unsigned long ms)
+{
+  struct __kernel_timespec ts;
+  ts.tv_sec = ms / SOCKET_MS_PER_SECOND;
+  ts.tv_nsec = (ms % SOCKET_MS_PER_SECOND) * SOCKET_NS_PER_MS;
+  return ts;
+}
 
 /**
  * translate_to_uring - Convert abstract poll events to io_uring poll mask
@@ -409,7 +427,7 @@ wait_for_cqe (PollBackend_T backend, int timeout_ms,
       /* Convert timeout to kernel timespec */
       if (remaining_ms >= 0)
         {
-          ts = socket_util_ms_to_timespec ((unsigned long)remaining_ms);
+          ts = ms_to_kernel_timespec ((unsigned long)remaining_ms);
           ts_ptr = &ts;
         }
       else

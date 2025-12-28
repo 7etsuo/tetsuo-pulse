@@ -298,6 +298,7 @@ histogram_init (Histogram *h)
 
   rc = pthread_mutex_init (&h->mutex, NULL);
   assert (rc == 0 && "pthread_mutex_init failed");
+  (void)rc; /* Suppress unused warning when NDEBUG is defined */
   memset (h->values, 0, sizeof (h->values));
   h->write_index = 0;
   atomic_store (&h->count, 0);
