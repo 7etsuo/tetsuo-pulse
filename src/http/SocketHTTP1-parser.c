@@ -17,6 +17,9 @@
 #include <assert.h>
 #include <string.h>
 
+/* Compile-time string literal length (avoids strlen at runtime) */
+#define STRLEN_LIT(s) (sizeof (s) - 1)
+
 /* clang-format off */
 
 /* Common row macros for state tables to reduce duplication */
@@ -631,7 +634,9 @@ parse_content_length (SocketHTTP_Headers_T headers)
   if (!headers)
     return -1;
 
-  const char *first_cl = SocketHTTP_Headers_get (headers, "Content-Length");
+  const char *first_cl
+      = SocketHTTP_Headers_get_n (headers, "Content-Length",
+                                  STRLEN_LIT ("Content-Length"));
   if (!first_cl)
     return -2; /* Not present */
 
@@ -726,8 +731,9 @@ has_chunked_encoding (SocketHTTP_Headers_T headers)
     return 0;
 
   const char *te_values[SOCKETHTTP_MAX_HEADERS];
-  size_t count = SocketHTTP_Headers_get_all (
-      headers, "Transfer-Encoding", te_values, SOCKETHTTP_MAX_HEADERS);
+  size_t count = SocketHTTP_Headers_get_all_n (
+      headers, "Transfer-Encoding", STRLEN_LIT ("Transfer-Encoding"),
+      te_values, SOCKETHTTP_MAX_HEADERS);
 
   for (size_t i = 0; i < count; i++)
     {
@@ -748,8 +754,9 @@ has_other_transfer_coding (SocketHTTP_Headers_T headers)
     return 0;
 
   const char *te_values[SOCKETHTTP_MAX_HEADERS];
-  size_t count = SocketHTTP_Headers_get_all (
-      headers, "Transfer-Encoding", te_values, SOCKETHTTP_MAX_HEADERS);
+  size_t count = SocketHTTP_Headers_get_all_n (
+      headers, "Transfer-Encoding", STRLEN_LIT ("Transfer-Encoding"),
+      te_values, SOCKETHTTP_MAX_HEADERS);
 
   for (size_t i = 0; i < count; i++)
     {
@@ -806,7 +813,8 @@ determine_body_mode (SocketHTTP1_Parser_T parser)
   int64_t cl_value;
   int has_cl;
 
-  has_te = SocketHTTP_Headers_has (parser->headers, "Transfer-Encoding");
+  has_te = SocketHTTP_Headers_has_n (parser->headers, "Transfer-Encoding",
+                                     STRLEN_LIT ("Transfer-Encoding"));
   cl_value = parse_content_length (parser->headers);
   has_cl = (cl_value >= -1); /* -1 = invalid, -2 = not present */
 
@@ -838,8 +846,9 @@ determine_body_mode (SocketHTTP1_Parser_T parser)
 
           /* Validate chunked is last per RFC 9112 */
           const char *te_values[SOCKETHTTP_MAX_HEADERS];
-          size_t count = SocketHTTP_Headers_get_all (
-              parser->headers, "Transfer-Encoding", te_values,
+          size_t count = SocketHTTP_Headers_get_all_n (
+              parser->headers, "Transfer-Encoding",
+              STRLEN_LIT ("Transfer-Encoding"), te_values,
               SOCKETHTTP_MAX_HEADERS);
           for (size_t i = 0; i < count; i++)
             {
@@ -886,21 +895,27 @@ determine_keepalive (SocketHTTP_Version version,
   if (version == HTTP_VERSION_1_1)
     {
       /* HTTP/1.1: keep-alive by default unless "Connection: close" */
-      return !SocketHTTP_Headers_contains (headers, "Connection", "close");
+      return !SocketHTTP_Headers_contains_n (headers, "Connection",
+                                             STRLEN_LIT ("Connection"), "close",
+                                             STRLEN_LIT ("close"));
     }
 
   /* HTTP/1.0: close by default unless "Connection: keep-alive" */
-  return SocketHTTP_Headers_contains (headers, "Connection", "keep-alive");
+  return SocketHTTP_Headers_contains_n (headers, "Connection",
+                                        STRLEN_LIT ("Connection"), "keep-alive",
+                                        STRLEN_LIT ("keep-alive"));
 }
 
 static void
 check_upgrade (SocketHTTP1_Parser_T parser)
 {
-  if (SocketHTTP_Headers_has (parser->headers, "Upgrade"))
+  if (SocketHTTP_Headers_has_n (parser->headers, "Upgrade",
+                                STRLEN_LIT ("Upgrade")))
     {
       parser->is_upgrade = 1;
       parser->upgrade_protocol
-          = SocketHTTP_Headers_get (parser->headers, "Upgrade");
+          = SocketHTTP_Headers_get_n (parser->headers, "Upgrade",
+                                      STRLEN_LIT ("Upgrade"));
     }
 }
 
@@ -954,7 +969,8 @@ finalize_request (SocketHTTP1_Parser_T parser)
     return HTTP1_ERROR_INVALID_URI;
 
   /* Extract authority from Host header */
-  req->authority = SocketHTTP_Headers_get (parser->headers, "Host");
+  req->authority
+      = SocketHTTP_Headers_get_n (parser->headers, "Host", STRLEN_LIT ("Host"));
 
   /* Set headers */
   req->headers = parser->headers;
@@ -967,7 +983,9 @@ finalize_request (SocketHTTP1_Parser_T parser)
   req->content_length = parser->content_length;
 
   /* Check for Expect: 100-continue */
-  if (SocketHTTP_Headers_contains (parser->headers, "Expect", "100-continue"))
+  if (SocketHTTP_Headers_contains_n (parser->headers, "Expect",
+                                     STRLEN_LIT ("Expect"), "100-continue",
+                                     STRLEN_LIT ("100-continue")))
     parser->expects_continue = 1;
 
   return HTTP1_OK;
