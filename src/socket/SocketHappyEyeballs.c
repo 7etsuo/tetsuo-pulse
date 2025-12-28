@@ -23,6 +23,7 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <poll.h>
+#include <stdint.h> /* For SIZE_MAX */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -315,6 +316,10 @@ he_convert_resolver_result (const SocketDNSResolver_Result *result, int port)
         addrlen = sizeof (struct sockaddr_in6);
       else
         continue; /* Skip unsupported families */
+
+      /* Defensive overflow check - should never happen with AF_INET/AF_INET6 */
+      if (addrlen > SIZE_MAX - sizeof (struct addrinfo))
+        continue; /* Skip this address if allocation would overflow */
 
       ai = calloc (1, sizeof (struct addrinfo) + addrlen);
       if (!ai)
