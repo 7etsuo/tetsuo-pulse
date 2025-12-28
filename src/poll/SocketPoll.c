@@ -1058,15 +1058,8 @@ SocketPoll_del (T poll, Socket_T socket)
 int
 SocketPoll_getdefaulttimeout (T poll)
 {
-  int current;
-
   assert (poll);
-
-  pthread_mutex_lock (&poll->mutex);
-  current = poll->default_timeout_ms;
-  pthread_mutex_unlock (&poll->mutex);
-
-  return current;
+  return LOCKED_INT_GETTER (poll, default_timeout_ms);
 }
 
 void
@@ -1262,15 +1255,8 @@ socketpoll_get_timer_heap (T poll)
 int
 SocketPoll_getmaxregistered (T poll)
 {
-  int max;
-
   assert (poll);
-
-  pthread_mutex_lock (&poll->mutex);
-  max = poll->max_registered;
-  pthread_mutex_unlock (&poll->mutex);
-
-  return max;
+  return LOCKED_INT_GETTER (poll, max_registered);
 }
 
 void
@@ -1299,15 +1285,8 @@ SocketPoll_setmaxregistered (T poll, int max)
 int
 SocketPoll_getregisteredcount (T poll)
 {
-  int count;
-
   assert (poll);
-
-  pthread_mutex_lock (&poll->mutex);
-  count = poll->registered_count;
-  pthread_mutex_unlock (&poll->mutex);
-
-  return count;
+  return LOCKED_INT_GETTER (poll, registered_count);
 }
 
 /* ==================== New Accessors ==================== */
