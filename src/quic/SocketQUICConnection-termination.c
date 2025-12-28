@@ -46,6 +46,20 @@ get_effective_idle_timeout(uint64_t local_timeout_ms, uint64_t peer_timeout_ms)
 }
 
 /**
+ * @brief Calculate termination timeout for closing/draining states.
+ * @param pto_ms Probe Timeout (PTO) value in milliseconds.
+ * @return Termination timeout in milliseconds (3 * PTO).
+ *
+ * RFC 9000 Section 10.2: An endpoint remains in the closing or draining
+ * state for a period equal to three times the current PTO.
+ */
+static inline uint64_t
+calculate_termination_timeout(uint64_t pto_ms)
+{
+  return pto_ms * QUIC_TERMINATION_PTO_MULTIPLIER;
+}
+
+/**
  * @brief Set idle timeout parameters for connection.
  * @param conn Connection instance.
  * @param local_timeout_ms Local max_idle_timeout in milliseconds.
@@ -171,7 +185,7 @@ SocketQUICConnection_initiate_close(SocketQUICConnection_T conn,
   conn->state = QUIC_CONN_STATE_CLOSING;
 
   /* Calculate closing deadline: 3 * PTO */
-  uint64_t timeout = pto_ms * QUIC_TERMINATION_PTO_MULTIPLIER;
+  uint64_t timeout = calculate_termination_timeout(pto_ms);
   if (now_ms > UINT64_MAX - timeout)
     conn->closing_deadline_ms = UINT64_MAX;
   else
@@ -208,7 +222,7 @@ SocketQUICConnection_enter_draining(SocketQUICConnection_T conn,
   conn->state = QUIC_CONN_STATE_DRAINING;
 
   /* Calculate draining deadline: 3 * PTO */
-  uint64_t timeout = pto_ms * QUIC_TERMINATION_PTO_MULTIPLIER;
+  uint64_t timeout = calculate_termination_timeout(pto_ms);
   if (now_ms > UINT64_MAX - timeout)
     conn->draining_deadline_ms = UINT64_MAX;
   else
