@@ -140,6 +140,15 @@ struct SocketDNS_CacheEntry
 };
 
 /**
+ * @brief Forward declaration of SocketDNSResolver_T from resolver module.
+ * @ingroup dns
+ *
+ * Used for SocketDNSResolver backend integration.
+ * @see SocketDNSResolver.h for resolver API details.
+ */
+typedef struct SocketDNSResolver_T *SocketDNSResolver_T;
+
+/**
  * @brief Async DNS resolver structure.
  * @ingroup dns
  */
@@ -174,6 +183,10 @@ struct SocketDNS_T
   size_t nameserver_count;  /**< Number of custom nameservers */
   char **search_domains;   /**< Custom search domains (NULL = use system) */
   size_t search_domain_count; /**< Number of search domains */
+
+  /* SocketDNSResolver Backend (Phase 2.2) */
+  SocketDNSResolver_T resolver;    /**< Backend resolver instance */
+  Arena_T resolver_arena;          /**< Separate arena for resolver lifecycle */
 };
 
 /* Internal macros - use centralized constant */
