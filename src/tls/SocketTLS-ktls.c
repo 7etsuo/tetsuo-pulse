@@ -317,9 +317,12 @@ SocketTLS_sendfile (Socket_T socket, int file_fd, off_t offset, size_t size)
       size_t sent_chunk = 0;
       while (sent_chunk < (size_t)nread)
         {
-          int to_send = (int)(nread - sent_chunk);
-          if (to_send > INT_MAX)
+          ssize_t remaining = nread - sent_chunk;
+          int to_send;
+          if (remaining > INT_MAX)
             to_send = INT_MAX;
+          else
+            to_send = (int)remaining;
 
           int ret_raw = SSL_write (ssl, buf + sent_chunk, to_send);
           ssize_t ret = tls_handle_ssl_write_result (ssl, ret_raw, "SSL_write in sendfile fallback");
