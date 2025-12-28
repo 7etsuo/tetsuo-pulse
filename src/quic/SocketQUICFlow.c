@@ -95,6 +95,24 @@
                                                        + (bytes))             \
                                                           <= (ptr)->max_field)
 
+/**
+ * @brief Calculate available flow control window.
+ *
+ * This macro implements the common window calculation pattern used by both
+ * connection-level and stream-level flow control functions. It returns 0
+ * if the pointer is NULL or if consumed >= max, otherwise returns the
+ * difference (max - consumed).
+ *
+ * @param ptr Pointer to flow control structure (connection or stream)
+ * @param consumed_field Name of the consumed bytes field
+ * @param max_field Name of the maximum bytes field
+ * @return Available window in bytes, or 0 if blocked/invalid
+ */
+#define GET_FLOW_WINDOW(ptr, consumed_field, max_field) \
+  (!(ptr) ? 0 : \
+   ((ptr)->consumed_field >= (ptr)->max_field) ? 0 : \
+   ((ptr)->max_field - (ptr)->consumed_field))
+
 /* ============================================================================
  * Connection-Level Flow Control
  * ============================================================================
@@ -198,25 +216,13 @@ SocketQUICFlow_update_recv_max (SocketQUICFlow_T fc, uint64_t max_data)
 uint64_t
 SocketQUICFlow_send_window (const SocketQUICFlow_T fc)
 {
-  if (!fc)
-    return 0;
-
-  if (fc->send_consumed >= fc->send_max_data)
-    return 0;
-
-  return fc->send_max_data - fc->send_consumed;
+  return GET_FLOW_WINDOW (fc, send_consumed, send_max_data);
 }
 
 uint64_t
 SocketQUICFlow_recv_window (const SocketQUICFlow_T fc)
 {
-  if (!fc)
-    return 0;
-
-  if (fc->recv_consumed >= fc->recv_max_data)
-    return 0;
-
-  return fc->recv_max_data - fc->recv_consumed;
+  return GET_FLOW_WINDOW (fc, recv_consumed, recv_max_data);
 }
 
 /* ============================================================================
@@ -320,25 +326,13 @@ SocketQUICFlowStream_update_recv_max (SocketQUICFlowStream_T fs,
 uint64_t
 SocketQUICFlowStream_send_window (const SocketQUICFlowStream_T fs)
 {
-  if (!fs)
-    return 0;
-
-  if (fs->send_consumed >= fs->send_max_data)
-    return 0;
-
-  return fs->send_max_data - fs->send_consumed;
+  return GET_FLOW_WINDOW (fs, send_consumed, send_max_data);
 }
 
 uint64_t
 SocketQUICFlowStream_recv_window (const SocketQUICFlowStream_T fs)
 {
-  if (!fs)
-    return 0;
-
-  if (fs->recv_consumed >= fs->recv_max_data)
-    return 0;
-
-  return fs->recv_max_data - fs->recv_consumed;
+  return GET_FLOW_WINDOW (fs, recv_consumed, recv_max_data);
 }
 
 /* ============================================================================
