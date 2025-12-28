@@ -11,7 +11,6 @@
  * and utility functions.
  */
 
-#include <stdio.h>
 #include <string.h>
 
 #include "quic/SocketQUICConnectionID.h"
