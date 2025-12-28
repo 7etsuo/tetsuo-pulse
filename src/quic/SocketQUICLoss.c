@@ -378,6 +378,21 @@ get_loss_time_threshold (const SocketQUICLossRTT_T *rtt)
 }
 
 static void
+mark_packet_lost (SocketQUICLossState_T state, SocketQUICLossSentPacket_T *p,
+                  SocketQUICLoss_LostCallback lost_callback, void *context,
+                  size_t *count)
+{
+  if (p->in_flight)
+    state->bytes_in_flight -= p->sent_bytes;
+
+  if (lost_callback)
+    lost_callback (p, context);
+  (*count)++;
+
+  remove_sent_packet (state, p->packet_number);
+}
+
+static void
 detect_lost_packets (SocketQUICLossState_T state, const SocketQUICLossRTT_T *rtt,
                      uint64_t current_time,
                      SocketQUICLoss_LostCallback lost_callback, void *context,
@@ -425,14 +440,7 @@ detect_lost_packets (SocketQUICLossState_T state, const SocketQUICLossRTT_T *rtt
           if (p->packet_number <= pn_threshold)
             {
               /* Lost by packet threshold */
-              if (p->in_flight)
-                state->bytes_in_flight -= p->sent_bytes;
-
-              if (lost_callback)
-                lost_callback (p, context);
-              count++;
-
-              remove_sent_packet (state, p->packet_number);
+              mark_packet_lost (state, p, lost_callback, context, &count);
               p = next;
               continue;
             }
@@ -441,14 +449,7 @@ detect_lost_packets (SocketQUICLossState_T state, const SocketQUICLossRTT_T *rtt
           if (current_time >= p->sent_time_us + loss_delay)
             {
               /* Lost by time threshold */
-              if (p->in_flight)
-                state->bytes_in_flight -= p->sent_bytes;
-
-              if (lost_callback)
-                lost_callback (p, context);
-              count++;
-
-              remove_sent_packet (state, p->packet_number);
+              mark_packet_lost (state, p, lost_callback, context, &count);
             }
           else
             {
