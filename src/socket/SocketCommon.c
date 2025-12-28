@@ -91,6 +91,7 @@ init_global_dns_resolver (void)
   {
     g_dns_resolver = SocketDNS_new ();
     SocketDNS_settimeout (g_dns_resolver, g_dns_timeout_ms);
+    atexit (SocketCommon_shutdown_globals);
   }
   EXCEPT (SocketDNS_Failed)
   {

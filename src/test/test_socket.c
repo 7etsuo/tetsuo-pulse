@@ -2617,7 +2617,7 @@ TEST (socket_bind_with_addrinfo_ipv4)
   if (result == 0 && res)
     {
       Socket_bind_with_addrinfo (socket, res);
-      freeaddrinfo (res);
+      freeaddrinfo (res);  /* From direct getaddrinfo */
     }
   EXCEPT (Socket_Failed) (void) 0;
   FINALLY
@@ -2651,7 +2651,7 @@ TEST (socket_connect_with_addrinfo_ipv4)
   if (result == 0 && res)
     {
       Socket_connect_with_addrinfo (client, res);
-      freeaddrinfo (res);
+      freeaddrinfo (res);  /* From direct getaddrinfo */
     }
   EXCEPT (Socket_Failed) (void) 0;
   FINALLY
@@ -4608,7 +4608,7 @@ TEST (socketcommon_resolve_address_invalid_host)
 
   ASSERT_EQ (1, raised);
   if (res)
-    freeaddrinfo (res);
+    SocketCommon_free_addrinfo (res);
 }
 
 TEST (socketcommon_resolve_address_family_mismatch)
@@ -4634,7 +4634,7 @@ TEST (socketcommon_resolve_address_family_mismatch)
   /* May or may not raise depending on system - just covers code path */
   (void)raised;
   if (res)
-    freeaddrinfo (res);
+    SocketCommon_free_addrinfo (res);
 }
 
 TEST (socketcommon_resolve_address_no_exceptions)
@@ -4651,7 +4651,7 @@ TEST (socketcommon_resolve_address_no_exceptions)
       Socket_Failed, AF_UNSPEC, 0);
   ASSERT_EQ (-1, result);
   if (res)
-    freeaddrinfo (res);
+    SocketCommon_free_addrinfo (res);
 }
 
 TEST (socketcommon_reverse_lookup_failure)
@@ -5136,7 +5136,7 @@ TEST (socketcommon_try_bind_resolved_addresses_all_fail)
     int port = ntohs (((struct sockaddr_in *)&local)->sin_port);
 
     /* Create new resolution for same port */
-    freeaddrinfo (res);
+    freeaddrinfo (res);  /* From direct getaddrinfo */
     res = NULL;
     char port_str[16];
     snprintf (port_str, sizeof (port_str), "%d", port);
@@ -5160,7 +5160,7 @@ TEST (socketcommon_try_bind_resolved_addresses_all_fail)
   (void)raised;
 
   if (res)
-    freeaddrinfo (res);
+    freeaddrinfo (res);  /* From direct getaddrinfo */
   if (base2)
     SocketCommon_free_base (&base2);
   if (base1)
@@ -5187,7 +5187,7 @@ TEST (socketcommon_resolve_address_family_strict_mismatch)
 
   ASSERT_EQ (1, raised);
   if (res)
-    freeaddrinfo (res);
+    SocketCommon_free_addrinfo (res);
 }
 
 TEST (socketcommon_copy_addrinfo_empty_addr)
@@ -6383,7 +6383,7 @@ TEST (socket_bind_with_addrinfo_failure)
   /* Cleanup */
   (void)raised;
   if (res)
-    freeaddrinfo (res);
+    freeaddrinfo (res);  /* From direct getaddrinfo, not copy */
   Socket_free (&socket1);
   Socket_free (&socket2);
 }
