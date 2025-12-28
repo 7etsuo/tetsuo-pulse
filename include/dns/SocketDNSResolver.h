@@ -380,6 +380,37 @@ extern SocketDNSResolver_Query_T SocketDNSResolver_resolve (
     SocketDNSResolver_Callback callback, void *userdata);
 
 /**
+ * @brief Resolve a hostname synchronously with timeout.
+ * @ingroup dns_resolver
+ *
+ * Blocking wrapper around the async API. Runs an internal event loop until
+ * resolution completes or timeout expires. For IP address literals, returns
+ * immediately without DNS query.
+ *
+ * @param resolver Resolver instance.
+ * @param hostname Hostname to resolve (must not be NULL).
+ * @param flags    Resolution flags (RESOLVER_FLAG_*).
+ * @param timeout_ms Timeout in milliseconds (-1 for infinite, 0 for default).
+ * @return POSIX struct addrinfo* chain on success, NULL on error/timeout.
+ *         Must be freed with freeaddrinfo().
+ *
+ * @note This function blocks the calling thread until complete.
+ * @note Uses CLOCK_MONOTONIC for timeout tracking.
+ * @note IP literals (e.g., "127.0.0.1", "::1") return immediately.
+ *
+ * @code{.c}
+ * struct addrinfo *res = SocketDNSResolver_resolve_sync(
+ *     resolver, "example.com", RESOLVER_FLAG_BOTH, 5000);
+ * if (res) {
+ *     // Use addresses
+ *     freeaddrinfo(res);
+ * }
+ * @endcode
+ */
+extern struct addrinfo *SocketDNSResolver_resolve_sync (
+    T resolver, const char *hostname, int flags, int timeout_ms);
+
+/**
  * @brief Cancel a pending query.
  * @ingroup dns_resolver
  *

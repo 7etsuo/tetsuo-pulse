@@ -1655,4 +1655,156 @@ SocketDNSResolver_strerror (int error)
     }
 }
 
+/*
+ * Synchronous Resolution Wrapper
+ */
+
+/* Include socket common for conversion utility */
+#include "socket/SocketCommon.h"
+
+/* Context for sync callback */
+struct sync_context
+{
+  volatile int completed;
+  volatile int error_code;
+  SocketDNSResolver_Result *result_copy;
+};
+
+/**
+ * @brief Callback for synchronous resolution.
+ *
+ * Sets completion flag and copies result for sync wrapper.
+ */
+static void
+sync_callback (SocketDNSResolver_Query_T query,
+               const SocketDNSResolver_Result *result, int error, void *userdata)
+{
+  struct sync_context *ctx = (struct sync_context *)userdata;
+
+  (void)query; /* unused */
+
+  ctx->error_code = error;
+
+  if (error == RESOLVER_OK && result && result->count > 0)
+    {
+      /* Allocate and copy result */
+      ctx->result_copy = malloc (sizeof (SocketDNSResolver_Result));
+      if (ctx->result_copy)
+        {
+          ctx->result_copy->addresses
+              = malloc (result->count * sizeof (SocketDNSResolver_Address));
+          if (ctx->result_copy->addresses)
+            {
+              memcpy (ctx->result_copy->addresses, result->addresses,
+                      result->count * sizeof (SocketDNSResolver_Address));
+              ctx->result_copy->count = result->count;
+              ctx->result_copy->min_ttl = result->min_ttl;
+            }
+          else
+            {
+              free (ctx->result_copy);
+              ctx->result_copy = NULL;
+              ctx->error_code = RESOLVER_ERROR_NOMEM;
+            }
+        }
+      else
+        {
+          ctx->error_code = RESOLVER_ERROR_NOMEM;
+        }
+    }
+
+  ctx->completed = 1;
+}
+
+struct addrinfo *
+SocketDNSResolver_resolve_sync (T resolver, const char *hostname, int flags,
+                                int timeout_ms)
+{
+  struct sync_context ctx = { 0 };
+  struct addrinfo *result_addrinfo = NULL;
+  SocketDNSResolver_Query_T query;
+  int64_t start_time;
+  int64_t deadline;
+  int64_t now;
+  int remaining_ms;
+
+  assert (resolver);
+  assert (hostname);
+
+  /* Use default timeout if not specified */
+  if (timeout_ms == 0)
+    timeout_ms = RESOLVER_DEFAULT_TIMEOUT_MS;
+
+  /* Get start time for timeout tracking */
+  start_time = get_monotonic_ms ();
+  deadline = (timeout_ms > 0) ? start_time + timeout_ms : INT64_MAX;
+
+  /* Start async resolution */
+  query = SocketDNSResolver_resolve (resolver, hostname, flags, sync_callback,
+                                     &ctx);
+
+  /* If query is NULL, the callback was invoked immediately (IP literal or
+   * cached) Check if completed */
+  if (!query)
+    {
+      if (ctx.completed && ctx.error_code == RESOLVER_OK && ctx.result_copy)
+        {
+          /* Convert result to addrinfo - need port, use 0 as placeholder */
+          result_addrinfo
+              = SocketCommon_resolver_to_addrinfo ((const void *)ctx.result_copy, 0);
+
+          /* Free the result copy */
+          if (ctx.result_copy->addresses)
+            free (ctx.result_copy->addresses);
+          free (ctx.result_copy);
+
+          return result_addrinfo;
+        }
+      return NULL; /* Error or no results */
+    }
+
+  /* Event loop - wait for completion or timeout */
+  while (!ctx.completed)
+    {
+      /* Calculate remaining timeout */
+      now = get_monotonic_ms ();
+      if (timeout_ms > 0)
+        {
+          if (now >= deadline)
+            {
+              /* Timeout expired */
+              SocketDNSResolver_cancel (resolver, query);
+              /* Process to invoke cancelled callback */
+              SocketDNSResolver_process (resolver, 0);
+              break;
+            }
+          remaining_ms = (int)(deadline - now);
+          if (remaining_ms > 100)
+            remaining_ms = 100; /* Cap poll interval */
+        }
+      else
+        {
+          remaining_ms = 100; /* Infinite timeout, use 100ms poll */
+        }
+
+      /* Process DNS events */
+      SocketDNSResolver_process (resolver, remaining_ms);
+    }
+
+  /* Check result */
+  if (ctx.completed && ctx.error_code == RESOLVER_OK && ctx.result_copy)
+    {
+      /* Convert result to addrinfo */
+      result_addrinfo
+          = SocketCommon_resolver_to_addrinfo ((const void *)ctx.result_copy, 0);
+
+      /* Free the result copy */
+      if (ctx.result_copy->addresses)
+        free (ctx.result_copy->addresses);
+      free (ctx.result_copy);
+    }
+
+  return result_addrinfo;
+}
+
 #undef T

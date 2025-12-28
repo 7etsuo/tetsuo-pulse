@@ -1290,4 +1290,51 @@ extern int SocketCommon_wait_for_fd (int fd, short events, int timeout_ms);
  */
 extern void SocketCommon_shutdown_globals (void);
 
+/*
+ * =============================================================================
+ * DNS Resolver Result Conversion Utilities
+ *
+ * These functions convert SocketDNSResolver_Result to POSIX struct addrinfo
+ * for compatibility with existing code that uses getaddrinfo().
+ *
+ * Note: Include dns/SocketDNSResolver.h to use these functions.
+ * =============================================================================
+ */
+
+/**
+ * @brief Convert SocketDNSResolver_Result to struct addrinfo linked list.
+ * @ingroup core_io
+ *
+ * Creates a POSIX addrinfo chain from DNS resolver results for compatibility
+ * with code expecting getaddrinfo() output. Uses embedded sockaddr allocation
+ * where sockaddr is in the same block as addrinfo for efficiency.
+ *
+ * @param[in] result DNS resolver result containing addresses (opaque pointer).
+ * @param[in] port Port number to set in sockaddr (host byte order).
+ *
+ * @return Newly allocated addrinfo chain, or NULL if result is empty.
+ *         Must be freed with SocketCommon_free_resolver_addrinfo().
+ *
+ * @note NOT compatible with freeaddrinfo() - must use custom free function.
+ * @note Thread-safe: Yes (allocates new memory, no shared state).
+ *
+ * @see SocketCommon_free_resolver_addrinfo() for cleanup.
+ */
+extern struct addrinfo *
+SocketCommon_resolver_to_addrinfo (const void *result, int port);
+
+/**
+ * @brief Free addrinfo chain created by SocketCommon_resolver_to_addrinfo().
+ * @ingroup core_io
+ *
+ * Frees the custom addrinfo chain with embedded sockaddr allocation.
+ * Safe to call with NULL.
+ *
+ * @param[in] ai Addrinfo chain to free (may be NULL).
+ *
+ * @note Do NOT use freeaddrinfo() on chains from resolver_to_addrinfo().
+ * @note Thread-safe: Yes.
+ */
+extern void SocketCommon_free_resolver_addrinfo (struct addrinfo *ai);
+
 #endif /* SOCKETCOMMON_INCLUDED */
