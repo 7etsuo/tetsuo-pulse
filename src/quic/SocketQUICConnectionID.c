@@ -316,13 +316,13 @@ SocketQUICConnectionID_to_hex (const SocketQUICConnectionID_T *cid, char *buf,
 
   if (cid == NULL || cid->len == 0)
     {
-      if (size < 6)
+      if (size < sizeof ("empty"))
         {
           buf[0] = '\0';
           return -1;
         }
-      memcpy (buf, "empty", 6);
-      return 5;
+      memcpy (buf, "empty", sizeof ("empty"));
+      return sizeof ("empty") - 1;
     }
 
   /* Format: "XX:XX:XX..." requires 3*len-1 chars + null terminator.
