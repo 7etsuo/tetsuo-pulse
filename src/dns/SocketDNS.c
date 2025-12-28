@@ -352,6 +352,37 @@ hash_table_remove (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
     }
 }
 
+/* Utility Functions (migrated from SocketDNS-internal.c - Phase 2.6d) */
+
+void
+signal_completion (struct SocketDNS_T *dns)
+{
+  char byte = COMPLETION_SIGNAL_BYTE;
+  ssize_t n;
+
+  n = write (dns->pipefd[1], &byte, 1);
+  (void)n;
+}
+
+int
+dns_cancellation_error (void)
+{
+#ifdef EAI_CANCELLED
+  return EAI_CANCELLED;
+#else
+  return EAI_AGAIN;
+#endif
+}
+
+void
+cancel_pending_request (struct SocketDNS_T *dns,
+                        struct SocketDNS_Request_T *req)
+{
+  /* No queue_remove - queue removed */
+  hash_table_remove (dns, req);
+  req->state = REQ_CANCELLED;
+}
+
 void
 validate_resolve_params (const char *host, int port)
 {
