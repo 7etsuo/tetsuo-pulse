@@ -340,6 +340,64 @@
  * ============================================================================
  */
 
+/* ============================================================================
+ * Transport Parameters: Typical/Recommended Defaults
+ * ============================================================================
+ *
+ * These values represent sensible production defaults for transport parameters,
+ * distinct from the RFC 9000 protocol defaults (which are mostly 0).
+ * Used by SocketQUICTransportParams_set_defaults() to configure a typical
+ * connection with reasonable limits.
+ */
+
+/**
+ * @brief Typical idle timeout in milliseconds (30 seconds).
+ *
+ * RFC 9000 default is 0 (disabled), but 30 seconds is a reasonable
+ * production value to detect dead connections while allowing for
+ * temporary network issues.
+ */
+#define QUIC_TP_TYPICAL_IDLE_TIMEOUT_MS 30000
+
+/**
+ * @brief Typical initial max data (1 MB).
+ *
+ * RFC 9000 default is 0 (no data allowed), but 1 MB provides a
+ * good starting point for connection-level flow control.
+ */
+#define QUIC_TP_TYPICAL_INITIAL_MAX_DATA (1024 * 1024)
+
+/**
+ * @brief Typical initial max stream data (256 KB).
+ *
+ * RFC 9000 default is 0 (no data allowed), but 256 KB allows
+ * reasonable stream buffering for both bidirectional and
+ * unidirectional streams.
+ */
+#define QUIC_TP_TYPICAL_INITIAL_MAX_STREAM_DATA (256 * 1024)
+
+/**
+ * @brief Typical initial max streams limit (100 streams).
+ *
+ * RFC 9000 default is 0 (no streams allowed), but 100 concurrent
+ * streams is sufficient for most applications while preventing
+ * resource exhaustion.
+ */
+#define QUIC_TP_TYPICAL_INITIAL_MAX_STREAMS 100
+
+/**
+ * @brief Typical active connection ID limit (8 CIDs).
+ *
+ * RFC 9000 default is 2 (minimum), but 8 provides flexibility for
+ * connection migration and load balancing scenarios.
+ */
+#define QUIC_TP_TYPICAL_ACTIVE_CONNID_LIMIT 8
+
+/* ============================================================================
+ * Utility Macros
+ * ============================================================================
+ */
+
 /**
  * @brief Compute FNV-1a hash step.
  *
