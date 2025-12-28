@@ -15,6 +15,7 @@
 
 #include "quic/SocketQUICVersion.h"
 #include "quic/SocketQUICConnectionID.h"
+#include "core/SocketUtil.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -103,11 +104,8 @@ SocketQUICVersion_create_negotiation (const SocketQUICConnectionID_T *dcid,
   /* Supported Versions (4 bytes each, network byte order) */
   for (size_t i = 0; i < count; i++)
     {
-      uint32_t version = versions[i];
-      output[pos++] = (version >> 24) & 0xFF;
-      output[pos++] = (version >> 16) & 0xFF;
-      output[pos++] = (version >> 8) & 0xFF;
-      output[pos++] = version & 0xFF;
+      socket_util_pack_be32 (&output[pos], versions[i]);
+      pos += 4;
     }
 
   return (int)pos;
@@ -147,8 +145,7 @@ SocketQUICVersion_parse_negotiation (const uint8_t *data, size_t len,
     return QUIC_VERSION_NEG_ERROR_PARSE;
 
   /* Version field: Must be 0x00000000 */
-  uint32_t version = ((uint32_t)data[pos] << 24) | ((uint32_t)data[pos + 1] << 16)
-                     | ((uint32_t)data[pos + 2] << 8) | data[pos + 3];
+  uint32_t version = socket_util_unpack_be32 (&data[pos]);
   pos += 4;
 
   if (version != QUIC_VERSION_NEGOTIATION)
@@ -204,9 +201,7 @@ SocketQUICVersion_parse_negotiation (const uint8_t *data, size_t len,
 
   for (size_t i = 0; i < versions_to_copy; i++)
     {
-      versions_out[i] = ((uint32_t)data[pos] << 24)
-                        | ((uint32_t)data[pos + 1] << 16)
-                        | ((uint32_t)data[pos + 2] << 8) | data[pos + 3];
+      versions_out[i] = socket_util_unpack_be32 (&data[pos]);
       pos += 4;
     }
 
