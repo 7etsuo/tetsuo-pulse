@@ -18,23 +18,10 @@
 #include "quic/SocketQUICConnectionID-pool.h"
 #include "quic/SocketQUICConstants.h"
 #include "core/SocketUtil.h"
+#include "core/SocketCrypto.h"
 
 #include <inttypes.h>
 #include <string.h>
-#include <time.h>
-
-/* Secure random for hash seed - copied from SocketQUICConnectionID.c */
-#ifdef __linux__
-#include <sys/random.h>
-#define SECURE_RANDOM(buf, len) (getrandom ((buf), (len), 0) == (ssize_t)(len))
-#elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__)
-#include <stdlib.h>
-#define SECURE_RANDOM(buf, len)                                               \
-  (arc4random_buf ((buf), (len)), 1) /* Always succeeds */
-#else
-/* Fallback: just use time-based seed (not cryptographic, just for hash) */
-#define SECURE_RANDOM(buf, len) 0
-#endif
 
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "QUIC-CID"
@@ -105,11 +92,12 @@ SocketQUICConnectionIDPool_new (Arena_T arena, size_t peer_limit)
   pool->active_count = 0;
   pool->total_count = 0;
 
-  /* Generate random hash seed for collision resistance */
-  if (!SECURE_RANDOM (&pool->hash_seed, sizeof (pool->hash_seed)))
+  /* Generate cryptographically secure random hash seed for collision resistance
+   * Fail initialization rather than using a weak seed (defense against hash collision DoS) */
+  if (SocketCrypto_random_bytes (&pool->hash_seed, sizeof (pool->hash_seed)) != 0)
     {
-      /* Fallback seed if random fails - use time-based */
-      pool->hash_seed = (uint32_t)time (NULL) ^ (uint32_t)(uintptr_t)pool;
+      SOCKET_LOG_ERROR_MSG ("Failed to generate secure hash seed");
+      return NULL;
     }
 
   return pool;
