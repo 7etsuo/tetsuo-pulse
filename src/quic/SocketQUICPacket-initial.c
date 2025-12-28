@@ -256,14 +256,14 @@ build_hkdf_label (const char *label, size_t label_len,
   hkdf_label[(*hkdf_label_len)++] = (uint8_t)(output_len & 0xFF);
 
   /* Label length and "tls13 " prefix + actual label */
-  size_t full_label_len = 6 + label_len;
+  size_t full_label_len = QUIC_HKDF_TLS13_PREFIX_LEN + label_len;
   hkdf_label[(*hkdf_label_len)++] = (uint8_t)full_label_len;
 
   /* Check space for "tls13 " prefix */
-  if (*hkdf_label_len + 6 > QUIC_HKDF_LABEL_MAX_SIZE)
+  if (*hkdf_label_len + QUIC_HKDF_TLS13_PREFIX_LEN > QUIC_HKDF_LABEL_MAX_SIZE)
     return -1;
-  memcpy (hkdf_label + *hkdf_label_len, "tls13 ", 6);
-  *hkdf_label_len += 6;
+  memcpy (hkdf_label + *hkdf_label_len, "tls13 ", QUIC_HKDF_TLS13_PREFIX_LEN);
+  *hkdf_label_len += QUIC_HKDF_TLS13_PREFIX_LEN;
 
   /* Check space for label */
   if (*hkdf_label_len + label_len > QUIC_HKDF_LABEL_MAX_SIZE)
