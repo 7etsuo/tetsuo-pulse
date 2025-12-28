@@ -693,6 +693,30 @@ SocketTLSContext_new_client (const char *ca_file)
   return ctx;
 }
 
+/**
+ * free_sharded_session_cache - Free sharded session cache resources
+ * @ctx: Context with sharded cache to free
+ *
+ * Iterates through all shards, freeing hash tables and destroying mutexes.
+ * Resets sharded_enabled flag after cleanup.
+ */
+static void
+free_sharded_session_cache (T ctx)
+{
+  if (!ctx->sharded_enabled)
+    return;
+
+  for (size_t i = 0; i < ctx->sharded_session_cache.num_shards; i++)
+    {
+      TLSSessionShard_T *shard = &ctx->sharded_session_cache.shards[i];
+      if (shard->session_table)
+        HashTable_free (&shard->session_table);
+      pthread_mutex_destroy (&shard->mutex);
+    }
+
+  ctx->sharded_enabled = 0;
+}
+
 void
 SocketTLSContext_free (T *ctx)
 {
@@ -710,19 +734,7 @@ SocketTLSContext_free (T *ctx)
     }
 
   secure_clear_sensitive_data (c);
-
-  /* Cleanup sharded session cache if enabled */
-  if (c->sharded_enabled)
-    {
-      for (size_t i = 0; i < c->sharded_session_cache.num_shards; i++)
-        {
-          TLSSessionShard_T *shard = &c->sharded_session_cache.shards[i];
-          if (shard->session_table)
-            HashTable_free (&shard->session_table);
-          pthread_mutex_destroy (&shard->mutex);
-        }
-      c->sharded_enabled = 0;
-    }
+  free_sharded_session_cache (c);
 
   if (c->arena)
     Arena_dispose (&c->arena);
