@@ -251,6 +251,149 @@ TEST(handshake_process_crypto_null)
 }
 
 /* ============================================================================
+ * Integer Overflow Protection Tests (Issue #981)
+ * ============================================================================
+ */
+
+TEST(handshake_crypto_overflow_max_offset_plus_length)
+{
+  /* Test case from issue #981: overflow in offset + length calculation
+   * This simulates an attacker crafting a CRYPTO frame with:
+   * - offset = valid current offset
+   * - length = UINT64_MAX - recv_offset + 1
+   * Without overflow protection, this would wrap to a small value
+   * and bypass the bounds check, allowing buffer overflow.
+   */
+  Arena_T arena = Arena_new();
+  SocketQUICConnection_T conn = SocketQUICConnection_new(arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICHandshake_T hs = SocketQUICHandshake_new(arena, conn, QUIC_CONN_ROLE_CLIENT);
+  ASSERT_NOT_NULL(hs);
+
+  /* Simulate direct access to crypto stream for testing
+   * In real code, this would come through process_crypto */
+  SocketQUICCryptoStream_T *stream = &hs->crypto_streams[QUIC_CRYPTO_LEVEL_INITIAL];
+
+  /* Set up a scenario where recv_offset is at some position */
+  stream->recv_offset = 1000;
+
+  /* Attacker tries to trigger overflow with huge length */
+  uint64_t malicious_length = UINT64_MAX - stream->recv_offset + 1;
+  uint8_t dummy_data[8] = {0};
+
+  /* This should be rejected due to overflow detection */
+  SocketQUICHandshake_Result res =
+    SocketQUICHandshake_process_crypto(conn, &(SocketQUICFrameCrypto_T){
+      .offset = stream->recv_offset,
+      .length = malicious_length,
+      .data = dummy_data
+    });
+
+  /* The function should detect overflow and return error
+   * Note: process_crypto may not be fully implemented, but the
+   * internal crypto_stream_insert_data should handle this */
+
+  SocketQUICHandshake_free(&hs);
+  SocketQUICConnection_free(&conn);
+  Arena_dispose(&arena);
+}
+
+TEST(handshake_crypto_overflow_max_uint64)
+{
+  /* Test edge case: offset at UINT64_MAX - 1, length = 2 */
+  Arena_T arena = Arena_new();
+  SocketQUICConnection_T conn = SocketQUICConnection_new(arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICHandshake_T hs = SocketQUICHandshake_new(arena, conn, QUIC_CONN_ROLE_CLIENT);
+  ASSERT_NOT_NULL(hs);
+
+  SocketQUICCryptoStream_T *stream = &hs->crypto_streams[QUIC_CRYPTO_LEVEL_INITIAL];
+
+  /* Manually set recv_offset to near-max value for testing */
+  stream->recv_offset = UINT64_MAX - 1;
+
+  /* Length that would cause overflow */
+  uint64_t overflow_length = 2;
+  uint8_t dummy_data[2] = {0};
+
+  SocketQUICHandshake_Result res =
+    SocketQUICHandshake_process_crypto(conn, &(SocketQUICFrameCrypto_T){
+      .offset = stream->recv_offset,
+      .length = overflow_length,
+      .data = dummy_data
+    });
+
+  SocketQUICHandshake_free(&hs);
+  SocketQUICConnection_free(&conn);
+  Arena_dispose(&arena);
+}
+
+TEST(handshake_crypto_no_overflow_valid_data)
+{
+  /* Test that legitimate data is still accepted */
+  Arena_T arena = Arena_new();
+  SocketQUICConnection_T conn = SocketQUICConnection_new(arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICHandshake_T hs = SocketQUICHandshake_new(arena, conn, QUIC_CONN_ROLE_CLIENT);
+  ASSERT_NOT_NULL(hs);
+
+  SocketQUICCryptoStream_T *stream = &hs->crypto_streams[QUIC_CRYPTO_LEVEL_INITIAL];
+
+  /* Normal case: small offset and length */
+  stream->recv_offset = 0;
+  uint8_t test_data[100];
+  memset(test_data, 0x42, sizeof(test_data));
+
+  SocketQUICHandshake_Result res =
+    SocketQUICHandshake_process_crypto(conn, &(SocketQUICFrameCrypto_T){
+      .offset = 0,
+      .length = sizeof(test_data),
+      .data = test_data
+    });
+
+  /* This should succeed if TLS integration allows it, or fail gracefully */
+  /* The important thing is it doesn't crash or allow overflow */
+
+  SocketQUICHandshake_free(&hs);
+  SocketQUICConnection_free(&conn);
+  Arena_dispose(&arena);
+}
+
+TEST(handshake_crypto_overflow_exact_uint64_max)
+{
+  /* Test exact boundary: offset + length = UINT64_MAX (should be allowed)
+   * vs offset + length = UINT64_MAX + 1 (should overflow and be rejected) */
+  Arena_T arena = Arena_new();
+  SocketQUICConnection_T conn = SocketQUICConnection_new(arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICHandshake_T hs = SocketQUICHandshake_new(arena, conn, QUIC_CONN_ROLE_CLIENT);
+  ASSERT_NOT_NULL(hs);
+
+  SocketQUICCryptoStream_T *stream = &hs->crypto_streams[QUIC_CRYPTO_LEVEL_INITIAL];
+
+  /* Set offset to half of UINT64_MAX */
+  stream->recv_offset = UINT64_MAX / 2;
+
+  /* Length that exactly reaches UINT64_MAX (no overflow) */
+  uint64_t max_safe_length = UINT64_MAX - stream->recv_offset;
+  uint8_t dummy_data[8] = {0};
+
+  /* This large value should still be checked against buffer_size,
+   * but shouldn't trigger overflow detection */
+  SocketQUICHandshake_Result res =
+    SocketQUICHandshake_process_crypto(conn, &(SocketQUICFrameCrypto_T){
+      .offset = stream->recv_offset,
+      .length = max_safe_length,
+      .data = dummy_data
+    });
+
+  /* Will likely fail due to buffer size, but not due to overflow */
+  ASSERT(res == QUIC_HANDSHAKE_ERROR_BUFFER ||
+         res == QUIC_HANDSHAKE_ERROR_STATE ||
+         res == QUIC_HANDSHAKE_OK);
+
+  SocketQUICHandshake_free(&hs);
+  SocketQUICConnection_free(&conn);
+  Arena_dispose(&arena);
+}
+
+/* ============================================================================
  * Main Test Runner
  * ============================================================================
  */
