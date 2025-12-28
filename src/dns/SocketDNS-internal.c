@@ -305,14 +305,7 @@ submit_dns_request (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
   /* No queue_append or cond signal - worker threads removed */
 }
 
-void
-cancel_pending_request (struct SocketDNS_T *dns,
-                        struct SocketDNS_Request_T *req)
-{
-  /* No queue_remove - queue removed */
-  hash_table_remove (dns, req);
-  req->state = REQ_CANCELLED;
-}
+/* cancel_pending_request() migrated to SocketDNS.c (Phase 2.6d) */
 
 int
 request_effective_timeout_ms (const struct SocketDNS_T *dns,
@@ -392,25 +385,9 @@ wait_for_request (struct SocketDNS_T *dns)
   return NULL;
 }
 
-void
-signal_completion (struct SocketDNS_T *dns)
-{
-  char byte = COMPLETION_SIGNAL_BYTE;
-  ssize_t n;
+/* signal_completion() migrated to SocketDNS.c (Phase 2.6d) */
 
-  n = write (dns->pipefd[1], &byte, 1);
-  (void)n;
-}
-
-int
-dns_cancellation_error (void)
-{
-#ifdef EAI_CANCELLED
-  return EAI_CANCELLED;
-#else
-  return EAI_AGAIN;
-#endif
-}
+/* dns_cancellation_error() migrated to SocketDNS.c (Phase 2.6d) */
 
 int
 perform_dns_resolution (const struct SocketDNS_Request_T *req,
