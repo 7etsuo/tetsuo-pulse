@@ -121,13 +121,14 @@ update_legacy_state_recv (SocketQUICStream_T stream)
  * @brief State transition table entry.
  *
  * Defines a single valid state transition: from_state + event -> to_state.
+ * Used by both send-side and receive-side state machines.
  */
 typedef struct
 {
   SocketQUICStreamState from_state; /**< Source state */
   SocketQUICStreamEvent event;      /**< Triggering event */
   SocketQUICStreamState to_state;   /**< Destination state */
-} StateTransition;
+} SocketQUICStreamTransition;
 
 /**
  * @brief Send-side state transition table (RFC 9000 Section 3.1).
@@ -147,7 +148,7 @@ typedef struct
  *
  * Terminal states (DataRecvd, ResetRecvd) have no transitions.
  */
-static const StateTransition send_transitions[] = {
+static const SocketQUICStreamTransition send_transitions[] = {
   /* From Ready */
   { QUIC_STREAM_STATE_READY, QUIC_STREAM_EVENT_SEND_DATA,
     QUIC_STREAM_STATE_SEND },
@@ -240,16 +241,6 @@ SocketQUICStream_transition_send (SocketQUICStream_T stream,
  */
 
 /**
- * @brief State transition entry for receive-side state machine.
- */
-typedef struct
-{
-  SocketQUICStreamState from_state;
-  SocketQUICStreamEvent event;
-  SocketQUICStreamState to_state;
-} RecvStateTransition;
-
-/**
  * @brief Receive-side state transition table (RFC 9000 Section 3.2).
  *
  * Encodes all valid state transitions for the receive side of a QUIC stream:
@@ -263,7 +254,7 @@ typedef struct
  *   DataRecvd -> DataRead (on APP_READ_DATA, terminal)
  *   ResetRecvd -> ResetRead (on APP_READ_RESET, terminal)
  */
-static const RecvStateTransition recv_transitions[] = {
+static const SocketQUICStreamTransition recv_transitions[] = {
   {QUIC_STREAM_STATE_RECV, QUIC_STREAM_EVENT_RECV_DATA,
    QUIC_STREAM_STATE_RECV},
   {QUIC_STREAM_STATE_RECV, QUIC_STREAM_EVENT_RECV_FIN,
