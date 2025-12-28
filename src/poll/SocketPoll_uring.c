@@ -181,6 +181,19 @@ backend_free (PollBackend_T backend)
 }
 
 /**
+ * @brief Store file descriptor in io_uring SQE user_data field
+ * @param sqe SQE to modify
+ * @param fd File descriptor to store
+ *
+ * Centralizes the fd-to-user_data cast pattern used throughout the backend.
+ */
+static inline void
+set_sqe_fd (struct io_uring_sqe *sqe, int fd)
+{
+  io_uring_sqe_set_data64 (sqe, (uint64_t)(uintptr_t)fd);
+}
+
+/**
  * submit_poll_add - Submit a POLL_ADD operation to the ring
  * @backend: Backend instance
  * @fd: File descriptor to monitor
@@ -212,7 +225,7 @@ submit_poll_add (PollBackend_T backend, int fd, unsigned poll_mask)
 #endif
 
   /* Store fd in user_data for retrieval in CQE */
-  io_uring_sqe_set_data64 (sqe, (uint64_t) (uintptr_t)fd);
+  set_sqe_fd (sqe, fd);
 
   ret = io_uring_submit (&backend->ring);
   if (ret < 0)
@@ -274,7 +287,7 @@ backend_mod (PollBackend_T backend, int fd, unsigned events)
     }
 
   io_uring_prep_poll_remove (sqe, (__u64)(uintptr_t)fd);
-  io_uring_sqe_set_data64 (sqe, 0); /* Mark as internal operation */
+  set_sqe_fd (sqe, 0); /* Mark as internal operation */
 
   ret = io_uring_submit (&backend->ring);
   if (ret < 0)
@@ -315,7 +328,7 @@ backend_del (PollBackend_T backend, int fd)
     return 0; /* Best-effort removal */
 
   io_uring_prep_poll_remove (sqe, (__u64)(uintptr_t)fd);
-  io_uring_sqe_set_data64 (sqe, 0); /* Mark as internal operation */
+  set_sqe_fd (sqe, 0); /* Mark as internal operation */
 
   ret = io_uring_submit (&backend->ring);
   if (ret < 0)
@@ -453,7 +466,7 @@ backend_wait (PollBackend_T backend, int timeout_ms)
         {
           unsigned poll_mask = (cqe->res > 0) ? (unsigned)cqe->res : POLLIN;
           io_uring_prep_poll_add (sqe, fd, poll_mask);
-          io_uring_sqe_set_data64 (sqe, (uint64_t)(uintptr_t)fd);
+          set_sqe_fd (sqe, fd);
         }
     }
 #endif
