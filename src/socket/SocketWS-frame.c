@@ -105,6 +105,9 @@ static int ws_recv_data_payload (SocketWS_T ws, size_t to_read);
 static int ws_finalize_frame (SocketWS_T ws, SocketWS_FrameParse *frame_out);
 static int ws_check_payload_size (SocketWS_T ws);
 static int ws_process_payload (SocketWS_T ws);
+static int ws_validate_frame_masking (SocketWS_T ws);
+static int ws_parse_frame_header_if_needed (SocketWS_T ws,
+                                            SocketWS_FrameParse *frame_out);
 
 static uint64_t
 ws_build_mask64 (const unsigned char mask[SOCKETWS_MASK_KEY_SIZE])
@@ -797,53 +800,16 @@ ws_process_payload (SocketWS_T ws)
   return ws_recv_data_payload (ws, to_read);
 }
 
-int
-ws_recv_frame (SocketWS_T ws, SocketWS_FrameParse *frame_out)
+static int
+ws_validate_frame_masking (SocketWS_T ws)
 {
-  size_t available;
-  const unsigned char *data;
-  size_t consumed;
-  SocketWS_Error err;
-  int result;
-
-  assert (ws);
-  assert (frame_out);
-
-  ws_fill_recv_buffer (ws);
-
-  available = SocketBuf_available (ws->recv_buf);
-  if (available == 0)
-    return -2;
-
-  data = SocketBuf_readptr (ws->recv_buf, &available);
-  if (!data)
-    return -2;
-
-  /* Parse header if not complete */
-  if (ws->frame.state != WS_FRAME_STATE_PAYLOAD
-      && ws->frame.state != WS_FRAME_STATE_COMPLETE)
-    {
-      err = ws_frame_parse_header (&ws->frame, data, available, &consumed);
-      SocketBuf_consume (ws->recv_buf, consumed);
-
-      if (err == WS_ERROR_WOULD_BLOCK)
-        return -2;
-      if (err != WS_OK)
-        {
-          ws_set_error (ws, err, "Frame header parse error");
-          return -1;
-        }
-    }
-
-  *frame_out = ws->frame;
-  bool is_control_frame = ws_is_control_opcode (ws->frame.opcode);
+  int skip_masking_validation = 0;
 
   /* Validate masking:
    * RFC 6455 (TCP): Client -> Server MUST be masked, Server -> Client MUST NOT
    * RFC 8441 (HTTP/2): No masking required (transport provides security)
    *
    * Check if using H2 transport - if so, skip masking validation entirely */
-  int skip_masking_validation = 0;
   if (ws->transport
       && SocketWS_Transport_type (ws->transport) == SOCKETWS_TRANSPORT_H2STREAM)
     skip_masking_validation = 1;
@@ -864,6 +830,65 @@ ws_recv_frame (SocketWS_T ws, SocketWS_FrameParse *frame_out)
           return -1;
         }
     }
+
+  return 0;
+}
+
+static int
+ws_parse_frame_header_if_needed (SocketWS_T ws, SocketWS_FrameParse *frame_out)
+{
+  size_t available;
+  const unsigned char *data;
+  size_t consumed;
+  SocketWS_Error err;
+
+  /* Parse header if not complete */
+  if (ws->frame.state != WS_FRAME_STATE_PAYLOAD
+      && ws->frame.state != WS_FRAME_STATE_COMPLETE)
+    {
+      available = SocketBuf_available (ws->recv_buf);
+      if (available == 0)
+        return -2;
+
+      data = SocketBuf_readptr (ws->recv_buf, &available);
+      if (!data)
+        return -2;
+
+      err = ws_frame_parse_header (&ws->frame, data, available, &consumed);
+      SocketBuf_consume (ws->recv_buf, consumed);
+
+      if (err == WS_ERROR_WOULD_BLOCK)
+        return -2;
+      if (err != WS_OK)
+        {
+          ws_set_error (ws, err, "Frame header parse error");
+          return -1;
+        }
+    }
+
+  *frame_out = ws->frame;
+  return 0;
+}
+
+int
+ws_recv_frame (SocketWS_T ws, SocketWS_FrameParse *frame_out)
+{
+  int result;
+  bool is_control_frame;
+
+  assert (ws);
+  assert (frame_out);
+
+  ws_fill_recv_buffer (ws);
+
+  result = ws_parse_frame_header_if_needed (ws, frame_out);
+  if (result != 0)
+    return result;
+
+  is_control_frame = ws_is_control_opcode (ws->frame.opcode);
+
+  if (ws_validate_frame_masking (ws) < 0)
+    return -1;
 
   if (ws_check_payload_size (ws) < 0)
     return -1;
