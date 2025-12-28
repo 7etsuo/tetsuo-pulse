@@ -478,29 +478,6 @@ he_start_dns_resolution (T he)
   return 0;
 }
 
-static void
-he_setup_dns_hints (struct addrinfo *hints)
-{
-  memset (hints, 0, sizeof (*hints));
-  hints->ai_family = AF_UNSPEC;
-  hints->ai_socktype = SOCK_STREAM;
-  hints->ai_flags = AI_ADDRCONFIG;
-}
-
-static void
-he_format_port_string (const int port, char *port_str, const size_t port_str_size)
-{
-  snprintf (port_str, port_str_size, "%d", port);
-}
-
-static void
-he_set_dns_error (T he, const int error)
-{
-  snprintf (he->error_buf, sizeof (he->error_buf), "DNS resolution failed: %s",
-            gai_strerror (error));
-  he->dns_error = error;
-}
-
 /* REMOVED: DNS error handling unified in he_handle_dns_error; no separate getaddrinfo error handler. */
 
 /* REMOVED: DNS resolution unified with async path in process(); no separate blocking resolve needed.
