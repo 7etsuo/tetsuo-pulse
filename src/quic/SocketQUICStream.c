@@ -122,6 +122,24 @@ SocketQUICStream_sequence (uint64_t stream_id)
  * ============================================================================
  */
 
+/**
+ * stream_set_defaults - Initialize stream fields to default values
+ * @stream: Stream structure to initialize
+ * @stream_id: Stream ID to assign
+ *
+ * Sets the stream's ID, type, and initial states. Should be called after
+ * memset() to zero the structure.
+ */
+static void
+stream_set_defaults (SocketQUICStream_T stream, uint64_t stream_id)
+{
+  stream->id = stream_id;
+  stream->type = SocketQUICStream_type (stream_id);
+  stream->state = QUIC_STREAM_STATE_READY; /* Legacy */
+  stream->send_state = QUIC_STREAM_STATE_READY;
+  stream->recv_state = QUIC_STREAM_STATE_RECV;
+}
+
 SocketQUICStream_T
 SocketQUICStream_new (Arena_T arena, uint64_t stream_id)
 {
@@ -153,12 +171,7 @@ SocketQUICStream_init (SocketQUICStream_T stream, uint64_t stream_id)
     return QUIC_STREAM_ERROR_INVALID_ID;
 
   memset (stream, 0, sizeof (*stream));
-
-  stream->id = stream_id;
-  stream->type = SocketQUICStream_type (stream_id);
-  stream->state = QUIC_STREAM_STATE_READY; /* Legacy */
-  stream->send_state = QUIC_STREAM_STATE_READY;
-  stream->recv_state = QUIC_STREAM_STATE_RECV;
+  stream_set_defaults (stream, stream_id);
 
   return QUIC_STREAM_OK;
 }
@@ -173,11 +186,7 @@ SocketQUICStream_reset (SocketQUICStream_T stream)
 
   id = stream->id;
   memset (stream, 0, sizeof (*stream));
-  stream->id = id;
-  stream->type = SocketQUICStream_type (id);
-  stream->state = QUIC_STREAM_STATE_READY; /* Legacy */
-  stream->send_state = QUIC_STREAM_STATE_READY;
-  stream->recv_state = QUIC_STREAM_STATE_RECV;
+  stream_set_defaults (stream, id);
 
   return QUIC_STREAM_OK;
 }
