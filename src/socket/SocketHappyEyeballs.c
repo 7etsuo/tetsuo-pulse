@@ -50,9 +50,6 @@ static SocketHE_AddressEntry_T *he_get_next_address (T he);
 static void he_dns_callback (SocketDNSResolver_Query_T query,
                              const SocketDNSResolver_Result *result, int error,
                              void *userdata);
-static struct addrinfo *
-he_convert_resolver_result (const SocketDNSResolver_Result *result, int port);
-static void he_free_converted_addrinfo (struct addrinfo *ai);
 
 static int he_start_attempt (T he, SocketHE_AddressEntry_T *entry);
 static int he_initiate_connect (T he, SocketHE_Attempt_T *attempt,
@@ -169,7 +166,7 @@ he_free_resolved (T he)
 {
   if (he->resolved)
     {
-      he_free_converted_addrinfo (he->resolved);
+      SocketCommon_free_resolver_addrinfo (he->resolved);
       he->resolved = NULL;
     }
 }
@@ -267,96 +264,6 @@ he_calculate_dns_timeout (const T he)
   return 0; /* No timeout */
 }
 
-/**
- * @brief Free addrinfo list created by he_convert_resolver_result.
- *
- * Our allocation pattern embeds sockaddr in the same allocation as addrinfo,
- * so we need a custom free function instead of freeaddrinfo().
- */
-static void
-he_free_converted_addrinfo (struct addrinfo *ai)
-{
-  while (ai)
-    {
-      struct addrinfo *next = ai->ai_next;
-      free (ai); /* sockaddr is embedded, single free */
-      ai = next;
-    }
-}
-
-/**
- * @brief Convert SocketDNSResolver_Result to struct addrinfo linked list.
- *
- * Creates a POSIX addrinfo chain from resolver results for compatibility
- * with existing address iteration code. Uses a custom allocation pattern
- * where sockaddr is embedded in the same block as addrinfo.
- *
- * @note Must be freed with he_free_converted_addrinfo(), NOT freeaddrinfo().
- */
-static struct addrinfo *
-he_convert_resolver_result (const SocketDNSResolver_Result *result, int port)
-{
-  struct addrinfo *head = NULL;
-  struct addrinfo **tail = &head;
-  size_t i;
-
-  if (!result || result->count == 0)
-    return NULL;
-
-  for (i = 0; i < result->count; i++)
-    {
-      const SocketDNSResolver_Address *addr = &result->addresses[i];
-      struct addrinfo *ai;
-      size_t addrlen;
-
-      /* Allocate addrinfo structure */
-      if (addr->family == AF_INET)
-        addrlen = sizeof (struct sockaddr_in);
-      else if (addr->family == AF_INET6)
-        addrlen = sizeof (struct sockaddr_in6);
-      else
-        continue; /* Skip unsupported families */
-
-      /* Defensive overflow check - should never happen with AF_INET/AF_INET6 */
-      if (addrlen > SIZE_MAX - sizeof (struct addrinfo))
-        continue; /* Skip this address if allocation would overflow */
-
-      ai = calloc (1, sizeof (struct addrinfo) + addrlen);
-      if (!ai)
-        {
-          /* Free already allocated entries on failure */
-          he_free_converted_addrinfo (head);
-          return NULL;
-        }
-
-      ai->ai_family = addr->family;
-      ai->ai_socktype = SOCK_STREAM;
-      ai->ai_protocol = IPPROTO_TCP;
-      ai->ai_addrlen = addrlen;
-      ai->ai_addr = (struct sockaddr *)(ai + 1);
-
-      if (addr->family == AF_INET)
-        {
-          struct sockaddr_in *sin = (struct sockaddr_in *)ai->ai_addr;
-          sin->sin_family = AF_INET;
-          sin->sin_port = htons ((uint16_t)port);
-          memcpy (&sin->sin_addr, &addr->addr.v4, sizeof (struct in_addr));
-        }
-      else
-        {
-          struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)ai->ai_addr;
-          sin6->sin6_family = AF_INET6;
-          sin6->sin6_port = htons ((uint16_t)port);
-          memcpy (&sin6->sin6_addr, &addr->addr.v6, sizeof (struct in6_addr));
-        }
-
-      /* Append to list */
-      *tail = ai;
-      tail = &ai->ai_next;
-    }
-
-  return head;
-}
 
 /**
  * @brief DNS resolution callback from SocketDNSResolver.
@@ -407,7 +314,8 @@ he_dns_callback (SocketDNSResolver_Query_T query,
     }
 
   /* Convert resolver result to addrinfo format */
-  struct addrinfo *resolved = he_convert_resolver_result (result, he->port);
+  struct addrinfo *resolved
+      = SocketCommon_resolver_to_addrinfo (result, he->port);
   if (!resolved)
     {
       snprintf (he->error_buf, sizeof (he->error_buf),
