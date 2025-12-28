@@ -13,7 +13,6 @@
  * Contains validation functions, resolver lifecycle management,
  * and async resolution coordination.
  *
- * @see SocketDNS-internal.c for internal implementation details.
  * @see SocketDNS.h for public API declarations.
  * @see SocketDNS-private.h for internal structures.
  */
@@ -49,7 +48,7 @@ static void cleanup_on_init_failure (struct SocketDNS_T *dns,
                                      enum DnsCleanupLevel cleanup_level);
 static void cleanup_pipe (struct SocketDNS_T *dns);
 
-/* Initialization/Cleanup Helper Macro (migrated from SocketDNS-internal.c) */
+/* Initialization/Cleanup Helper Macro */
 #define INIT_PTHREAD_PRIMITIVE(dns, init_func, ptr, cleanup_level, error_msg) \
   do                                                                          \
     {                                                                         \
@@ -61,7 +60,7 @@ static void cleanup_pipe (struct SocketDNS_T *dns);
     }                                                                         \
   while (0)
 
-/* Initialization Functions (migrated from SocketDNS-internal.c) */
+/* Initialization Functions */
 
 static T
 allocate_dns_resolver (void)
@@ -210,7 +209,7 @@ initialize_dns_components (struct SocketDNS_T *dns)
   END_TRY;
 }
 
-/* Cleanup Functions (migrated from SocketDNS-internal.c) */
+/* Cleanup Functions */
 
 static void
 cleanup_pipe (struct SocketDNS_T *dns)
@@ -291,7 +290,7 @@ destroy_dns_resources (T d)
   free (d);
 }
 
-/* Request Management Functions (migrated from SocketDNS-internal.c - Phase 2.6b) */
+/* Request Management Functions */
 
 static void
 secure_clear_memory (void *ptr, size_t len)
@@ -473,7 +472,7 @@ hash_table_remove (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
     }
 }
 
-/* Utility Functions (migrated from SocketDNS-internal.c - Phase 2.6d) */
+/* Utility Functions */
 
 void
 signal_completion (struct SocketDNS_T *dns)

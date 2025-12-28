@@ -317,28 +317,9 @@ extern const Except_T SocketDNS_Failed;
 
 /* NOTE: Error raising uses SOCKET_RAISE_MSG/FMT directly (combined
  * format+raise). Each .c file that raises exceptions must include
- * SOCKET_DECLARE_MODULE_EXCEPTION. See SocketDNS.c and SocketDNS-internal.c
- * for the pattern. */
+ * SOCKET_DECLARE_MODULE_EXCEPTION. See SocketDNS.c for the pattern. */
 
-/* Forward Declarations - SocketDNS-internal.c */
-
-/* Synchronization primitives - migrated to SocketDNS.c (Phase 2.6c):
- * - initialize_mutex()
- * - create_completion_pipe()
- * - set_pipe_nonblocking()
- * - initialize_pipe()
- * - initialize_dns_fields()
- * - initialize_dns_components()
- */
-
-/* Cleanup and shutdown - migrated to SocketDNS.c (Phase 2.6c):
- * - cleanup_mutex_cond()
- * - cleanup_pipe()
- * - cleanup_on_init_failure()
- * - drain_completion_pipe()
- * - reset_dns_state()
- * - destroy_dns_resources()
- */
+/* Forward Declarations */
 
 extern void free_request_list (struct SocketDNS_Request_T *head,
                                int use_hash_next);
@@ -383,21 +364,20 @@ extern void invoke_callback (struct SocketDNS_T *dns,
 
 /* Forward Declarations - SocketDNS.c */
 extern void validate_resolve_params (const char *host, int port);
-/* allocate_dns_resolver() migrated to static in SocketDNS.c (Phase 2.6c) */
 
-/* Hash table operations - defined in SocketDNS.c, used by SocketDNS-internal.c */
+/* Hash table operations */
 extern void hash_table_insert (struct SocketDNS_T *dns,
                                struct SocketDNS_Request_T *req);
 extern void hash_table_remove (struct SocketDNS_T *dns,
                                struct SocketDNS_Request_T *req);
 
-/* Utility functions - migrated to SocketDNS.c (Phase 2.6d) */
+/* Utility functions */
 extern void signal_completion (struct SocketDNS_T *dns);
 extern int dns_cancellation_error (void);
 extern void cancel_pending_request (struct SocketDNS_T *dns,
                                     struct SocketDNS_Request_T *req);
 
-/* Cache functions - defined in SocketDNS.c, used by SocketDNS-internal.c */
+/* Cache functions */
 extern struct SocketDNS_CacheEntry *cache_lookup (struct SocketDNS_T *dns,
                                                    const char *hostname);
 extern void cache_insert (struct SocketDNS_T *dns, const char *hostname,
