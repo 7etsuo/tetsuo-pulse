@@ -167,20 +167,10 @@ static int
 resolve_sendto_address (const char *host, int port, struct addrinfo **res)
 {
   struct addrinfo hints;
-  char port_str[SOCKET_PORT_STR_BUFSIZE];
-  int result;
-
-  snprintf (port_str, sizeof (port_str), "%d", port);
 
   SocketCommon_setup_hints (&hints, SOCKET_DGRAM_TYPE, 0);
-  result = getaddrinfo (host, port_str, &hints, res);
-  if (result != 0)
-    {
-      SOCKET_ERROR_MSG ("Invalid host/IP address: %.*s (%s)",
-                        SOCKET_ERROR_MAX_HOSTNAME, host,
-                        gai_strerror (result));
-      RAISE_MODULE_ERROR (SocketDgram_Failed);
-    }
+  SocketCommon_resolve_address (host, port, &hints, res, SocketDgram_Failed,
+                                SOCKET_AF_UNSPEC, 1);
   return 0;
 }
 
