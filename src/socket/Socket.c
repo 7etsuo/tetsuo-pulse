@@ -155,20 +155,26 @@ socket_cleanup_tls (Socket_T s)
 #endif /* SOCKET_HAS_TLS */
 
 static void
+socket_init_stats (SocketStats_T *stats)
+{
+  stats->create_time_ms = Socket_get_monotonic_ms ();
+  stats->connect_time_ms = 0;
+  stats->last_recv_time_ms = 0;
+  stats->last_send_time_ms = 0;
+  stats->bytes_sent = 0;
+  stats->bytes_received = 0;
+  stats->packets_sent = 0;
+  stats->packets_received = 0;
+  stats->send_errors = 0;
+  stats->recv_errors = 0;
+  stats->rtt_us = -1;
+  stats->rtt_var_us = -1;
+}
+
+static void
 socket_init_after_alloc (T sock)
 {
-  sock->base->stats.create_time_ms = Socket_get_monotonic_ms ();
-  sock->base->stats.connect_time_ms = 0;
-  sock->base->stats.last_recv_time_ms = 0;
-  sock->base->stats.last_send_time_ms = 0;
-  sock->base->stats.bytes_sent = 0;
-  sock->base->stats.bytes_received = 0;
-  sock->base->stats.packets_sent = 0;
-  sock->base->stats.packets_received = 0;
-  sock->base->stats.send_errors = 0;
-  sock->base->stats.recv_errors = 0;
-  sock->base->stats.rtt_us = -1;
-  sock->base->stats.rtt_var_us = -1;
+  socket_init_stats (&sock->base->stats);
 
 #if SOCKET_HAS_TLS
   socket_init_tls_fields (sock);
