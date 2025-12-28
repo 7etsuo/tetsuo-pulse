@@ -1398,7 +1398,15 @@ socket_util_safe_strncpy (char *dest, const char *src, size_t max_len)
 {
   if (max_len == 0)
     return;
+/* Suppress GCC false positive: we explicitly null-terminate below */
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+#endif
   strncpy (dest, src, max_len - 1);
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
   dest[max_len - 1] = '\0';
 }
 

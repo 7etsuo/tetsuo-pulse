@@ -39,6 +39,8 @@
 
 #include "core/Arena.h"
 #include "core/Except.h"
+#include "core/SocketMetrics.h"
+#include "core/SocketUtil.h"
 #include "poll/SocketPoll.h"
 #include "pool/SocketPool.h"
 #include "socket/Socket.h"
