@@ -24,6 +24,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "core/SocketCrypto.h"
 #include "pool/SocketPool-private.h"
 #include "pool/SocketPoolHealth-private.h"
 
@@ -450,8 +451,8 @@ health_create (struct SocketPool_T *pool, Arena_T arena)
   health->arena = arena;
 
   /* Security: Initialize hash seed for hash collision DoS prevention.
-   * Uses time + pid for per-instance uniqueness. */
-  health->hash_seed = (unsigned int)time (NULL) ^ (unsigned int)getpid ();
+   * Uses cryptographically secure random number generator. */
+  health->hash_seed = SocketCrypto_random_uint32 ();
 
   if (pthread_mutex_init (&health->circuit_mutex, NULL) != 0)
     return NULL;
