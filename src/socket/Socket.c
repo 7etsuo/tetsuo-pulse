@@ -1376,6 +1376,10 @@ Socket_is_writable (const T socket)
 }
 
 #ifdef __linux__
+/* Macro to copy TCP info field from kernel struct to our struct */
+#define COPY_TCP_FIELD(field, kernel_field) \
+  do { info->field = kernel_info.kernel_field; } while (0)
+
 int
 Socket_get_tcp_info (const T socket, SocketTCPInfo *info)
 {
@@ -1397,74 +1401,86 @@ Socket_get_tcp_info (const T socket, SocketTCPInfo *info)
 
   memset (info, 0, sizeof (*info));
 
-  info->state = kernel_info.tcpi_state;
-  info->ca_state = kernel_info.tcpi_ca_state;
-  info->retransmits = kernel_info.tcpi_retransmits;
-  info->probes = kernel_info.tcpi_probes;
-  info->backoff = kernel_info.tcpi_backoff;
+  /* Connection state */
+  COPY_TCP_FIELD (state, tcpi_state);
+  COPY_TCP_FIELD (ca_state, tcpi_ca_state);
+  COPY_TCP_FIELD (retransmits, tcpi_retransmits);
+  COPY_TCP_FIELD (probes, tcpi_probes);
+  COPY_TCP_FIELD (backoff, tcpi_backoff);
 
-  info->options = kernel_info.tcpi_options;
-  info->snd_wscale = kernel_info.tcpi_snd_wscale;
-  info->rcv_wscale = kernel_info.tcpi_rcv_wscale;
+  /* Options */
+  COPY_TCP_FIELD (options, tcpi_options);
+  COPY_TCP_FIELD (snd_wscale, tcpi_snd_wscale);
+  COPY_TCP_FIELD (rcv_wscale, tcpi_rcv_wscale);
 
-  info->rto_us = kernel_info.tcpi_rto;
-  info->ato_us = kernel_info.tcpi_ato;
-  info->snd_mss = kernel_info.tcpi_snd_mss;
-  info->rcv_mss = kernel_info.tcpi_rcv_mss;
+  /* RTT estimation */
+  COPY_TCP_FIELD (rto_us, tcpi_rto);
+  COPY_TCP_FIELD (ato_us, tcpi_ato);
+  COPY_TCP_FIELD (snd_mss, tcpi_snd_mss);
+  COPY_TCP_FIELD (rcv_mss, tcpi_rcv_mss);
 
-  info->unacked = kernel_info.tcpi_unacked;
-  info->sacked = kernel_info.tcpi_sacked;
-  info->lost = kernel_info.tcpi_lost;
-  info->retrans = kernel_info.tcpi_retrans;
-  info->fackets = kernel_info.tcpi_fackets;
+  /* Counters */
+  COPY_TCP_FIELD (unacked, tcpi_unacked);
+  COPY_TCP_FIELD (sacked, tcpi_sacked);
+  COPY_TCP_FIELD (lost, tcpi_lost);
+  COPY_TCP_FIELD (retrans, tcpi_retrans);
+  COPY_TCP_FIELD (fackets, tcpi_fackets);
 
-  info->last_data_sent_ms = kernel_info.tcpi_last_data_sent;
-  info->last_ack_sent_ms = kernel_info.tcpi_last_ack_sent;
-  info->last_data_recv_ms = kernel_info.tcpi_last_data_recv;
-  info->last_ack_recv_ms = kernel_info.tcpi_last_ack_recv;
+  /* Timing */
+  COPY_TCP_FIELD (last_data_sent_ms, tcpi_last_data_sent);
+  COPY_TCP_FIELD (last_ack_sent_ms, tcpi_last_ack_sent);
+  COPY_TCP_FIELD (last_data_recv_ms, tcpi_last_data_recv);
+  COPY_TCP_FIELD (last_ack_recv_ms, tcpi_last_ack_recv);
 
-  info->pmtu = kernel_info.tcpi_pmtu;
-  info->rcv_ssthresh = kernel_info.tcpi_rcv_ssthresh;
-  info->rtt_us = kernel_info.tcpi_rtt;
-  info->rttvar_us = kernel_info.tcpi_rttvar;
-  info->snd_ssthresh = kernel_info.tcpi_snd_ssthresh;
-  info->snd_cwnd = kernel_info.tcpi_snd_cwnd;
-  info->advmss = kernel_info.tcpi_advmss;
-  info->reordering = kernel_info.tcpi_reordering;
+  /* Metrics */
+  COPY_TCP_FIELD (pmtu, tcpi_pmtu);
+  COPY_TCP_FIELD (rcv_ssthresh, tcpi_rcv_ssthresh);
+  COPY_TCP_FIELD (rtt_us, tcpi_rtt);
+  COPY_TCP_FIELD (rttvar_us, tcpi_rttvar);
+  COPY_TCP_FIELD (snd_ssthresh, tcpi_snd_ssthresh);
+  COPY_TCP_FIELD (snd_cwnd, tcpi_snd_cwnd);
+  COPY_TCP_FIELD (advmss, tcpi_advmss);
+  COPY_TCP_FIELD (reordering, tcpi_reordering);
 
-  info->rcv_rtt_us = kernel_info.tcpi_rcv_rtt;
-  info->rcv_space = kernel_info.tcpi_rcv_space;
+  /* Extended (Linux 2.6.10+) */
+  COPY_TCP_FIELD (rcv_rtt_us, tcpi_rcv_rtt);
+  COPY_TCP_FIELD (rcv_space, tcpi_rcv_space);
+  COPY_TCP_FIELD (total_retrans, tcpi_total_retrans);
 
-  info->total_retrans = kernel_info.tcpi_total_retrans;
-
+  /* Pacing (Linux 3.16+) */
 #ifdef HAVE_TCP_INFO_PACING_RATE
-  info->pacing_rate = kernel_info.tcpi_pacing_rate;
-  info->max_pacing_rate = kernel_info.tcpi_max_pacing_rate;
+  COPY_TCP_FIELD (pacing_rate, tcpi_pacing_rate);
+  COPY_TCP_FIELD (max_pacing_rate, tcpi_max_pacing_rate);
 #endif
 
+  /* Bytes in flight (Linux 4.0+) */
 #ifdef HAVE_TCP_INFO_BYTES_ACKED
-  info->bytes_acked = kernel_info.tcpi_bytes_acked;
-  info->bytes_received = kernel_info.tcpi_bytes_received;
+  COPY_TCP_FIELD (bytes_acked, tcpi_bytes_acked);
+  COPY_TCP_FIELD (bytes_received, tcpi_bytes_received);
 #endif
 
+  /* Segments (Linux 4.2+) */
 #ifdef HAVE_TCP_INFO_SEGS_OUT
-  info->segs_out = kernel_info.tcpi_segs_out;
-  info->segs_in = kernel_info.tcpi_segs_in;
+  COPY_TCP_FIELD (segs_out, tcpi_segs_out);
+  COPY_TCP_FIELD (segs_in, tcpi_segs_in);
 #endif
 
+  /* Delivery (Linux 4.6+) */
 #ifdef HAVE_TCP_INFO_NOTSENT_BYTES
-  info->notsent_bytes = kernel_info.tcpi_notsent_bytes;
-  info->min_rtt_us = kernel_info.tcpi_min_rtt;
-  info->data_segs_in = kernel_info.tcpi_data_segs_in;
-  info->data_segs_out = kernel_info.tcpi_data_segs_out;
+  COPY_TCP_FIELD (notsent_bytes, tcpi_notsent_bytes);
+  COPY_TCP_FIELD (min_rtt_us, tcpi_min_rtt);
+  COPY_TCP_FIELD (data_segs_in, tcpi_data_segs_in);
+  COPY_TCP_FIELD (data_segs_out, tcpi_data_segs_out);
 #endif
 
 #ifdef HAVE_TCP_INFO_DELIVERY_RATE
-  info->delivery_rate = kernel_info.tcpi_delivery_rate;
+  COPY_TCP_FIELD (delivery_rate, tcpi_delivery_rate);
 #endif
 
   return 0;
 }
+
+#undef COPY_TCP_FIELD
 #endif /* __linux__ */
 
 int32_t
