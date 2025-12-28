@@ -607,6 +607,68 @@ cleanup:
 }
 
 /**
+ * @brief Encrypt AEAD-protected payload of QUIC Initial packet.
+ *
+ * @param packet Packet buffer containing header (used as AAD)
+ * @param header_len Length of packet header
+ * @param payload Payload buffer (modified in place)
+ * @param payload_len Length of payload (excluding auth tag)
+ * @param key AEAD encryption key
+ * @param nonce AEAD nonce
+ * @return QUIC_INITIAL_OK on success, error code on failure
+ */
+static SocketQUICInitial_Result
+encrypt_aead_payload (const uint8_t *packet, size_t header_len,
+                      uint8_t *payload, size_t payload_len,
+                      const uint8_t *key, const uint8_t *nonce)
+{
+  EVP_CIPHER_CTX *ctx = NULL;
+  int outlen;
+  SocketQUICInitial_Result result = QUIC_INITIAL_ERROR_CRYPTO;
+
+  /* Create cipher context for encryption */
+  ctx = EVP_CIPHER_CTX_new ();
+  if (ctx == NULL)
+    goto cleanup;
+
+  /* Initialize AES-128-GCM encryption */
+  if (EVP_EncryptInit_ex (ctx, EVP_aes_128_gcm (), NULL, NULL, NULL) <= 0)
+    goto cleanup;
+
+  if (EVP_CIPHER_CTX_ctrl (ctx, EVP_CTRL_GCM_SET_IVLEN,
+                            QUIC_INITIAL_IV_LEN, NULL) <= 0)
+    goto cleanup;
+
+  if (EVP_EncryptInit_ex (ctx, NULL, NULL, key, nonce) <= 0)
+    goto cleanup;
+
+  /* Add header as AAD (Associated Data) */
+  if (EVP_EncryptUpdate (ctx, NULL, &outlen, packet, (int)header_len) <= 0)
+    goto cleanup;
+
+  /* Encrypt payload in-place */
+  if (EVP_EncryptUpdate (ctx, payload, &outlen, payload, (int)payload_len) <= 0)
+    goto cleanup;
+
+  /* Finalize encryption */
+  int final_len;
+  if (EVP_EncryptFinal_ex (ctx, payload + outlen, &final_len) <= 0)
+    goto cleanup;
+
+  /* Get authentication tag and append to payload */
+  if (EVP_CIPHER_CTX_ctrl (ctx, EVP_CTRL_GCM_GET_TAG,
+                            QUIC_INITIAL_TAG_LEN, payload + payload_len) <= 0)
+    goto cleanup;
+
+  result = QUIC_INITIAL_OK;
+
+cleanup:
+  if (ctx)
+    EVP_CIPHER_CTX_free (ctx);
+  return result;
+}
+
+/**
  * @brief Decrypt AEAD-protected payload of QUIC Initial packet.
  *
  * @param packet Packet buffer containing header (used as AAD)
@@ -680,7 +742,6 @@ SocketQUICInitial_protect (uint8_t *packet, size_t *packet_len,
                            int is_client)
 {
 #ifdef SOCKET_HAS_TLS
-  EVP_CIPHER_CTX *ctx = NULL;
   const uint8_t *key;
   const uint8_t *iv;
   const uint8_t *hp_key;
@@ -690,8 +751,7 @@ SocketQUICInitial_protect (uint8_t *packet, size_t *packet_len,
   uint8_t pn_length;
   uint32_t pn;
   const uint8_t *sample;
-  int outlen;
-  int result_code = QUIC_INITIAL_ERROR_CRYPTO;
+  SocketQUICInitial_Result result;
 
   if (packet == NULL || packet_len == NULL || keys == NULL)
     return QUIC_INITIAL_ERROR_NULL;
@@ -726,39 +786,14 @@ SocketQUICInitial_protect (uint8_t *packet, size_t *packet_len,
   /* Construct nonce */
   construct_nonce (iv, pn, nonce);
 
-  /* Create cipher context */
-  ctx = EVP_CIPHER_CTX_new ();
-  if (ctx == NULL)
-    goto cleanup;
-
-  /* Initialize AES-128-GCM encryption */
-  if (EVP_EncryptInit_ex (ctx, EVP_aes_128_gcm (), NULL, NULL, NULL) <= 0)
-    goto cleanup;
-
-  if (EVP_CIPHER_CTX_ctrl (ctx, EVP_CTRL_GCM_SET_IVLEN,
-                            QUIC_INITIAL_IV_LEN, NULL) <= 0)
-    goto cleanup;
-
-  if (EVP_EncryptInit_ex (ctx, NULL, NULL, key, nonce) <= 0)
-    goto cleanup;
-
-  /* Add header as AAD (Associated Data) */
-  if (EVP_EncryptUpdate (ctx, NULL, &outlen, packet, (int)header_len) <= 0)
-    goto cleanup;
-
-  /* Encrypt payload in-place */
-  if (EVP_EncryptUpdate (ctx, payload, &outlen, payload, (int)payload_len) <= 0)
-    goto cleanup;
-
-  /* Finalize encryption */
-  int final_len;
-  if (EVP_EncryptFinal_ex (ctx, payload + outlen, &final_len) <= 0)
-    goto cleanup;
-
-  /* Get authentication tag and append to payload */
-  if (EVP_CIPHER_CTX_ctrl (ctx, EVP_CTRL_GCM_GET_TAG,
-                            QUIC_INITIAL_TAG_LEN, payload + payload_len) <= 0)
-    goto cleanup;
+  /* Encrypt payload with AEAD */
+  result = encrypt_aead_payload (packet, header_len, payload, payload_len,
+                                 key, nonce);
+  if (result != QUIC_INITIAL_OK)
+    {
+      SocketCrypto_secure_clear (nonce, sizeof (nonce));
+      return result;
+    }
 
   /* Update packet length to include tag */
   *packet_len += QUIC_INITIAL_TAG_LEN;
@@ -768,15 +803,13 @@ SocketQUICInitial_protect (uint8_t *packet, size_t *packet_len,
 
   /* Apply header protection */
   if (apply_header_protection (packet, header_len, sample, hp_key) < 0)
-    goto cleanup;
+    {
+      SocketCrypto_secure_clear (nonce, sizeof (nonce));
+      return QUIC_INITIAL_ERROR_CRYPTO;
+    }
 
-  result_code = QUIC_INITIAL_OK;
-
-cleanup:
-  if (ctx)
-    EVP_CIPHER_CTX_free (ctx);
   SocketCrypto_secure_clear (nonce, sizeof (nonce));
-  return result_code;
+  return QUIC_INITIAL_OK;
 
 #else
   (void)packet;
