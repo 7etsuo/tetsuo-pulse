@@ -403,9 +403,14 @@ TEST (socketdns_getresult_before_completion)
   SocketDNS_T dns = SocketDNS_new ();
   Request_T req = NULL;
 
+  /* Note: With the new resolver architecture (Phase 2.x), localhost resolution
+   * is synchronous - the callback is invoked immediately during resolve().
+   * This test now verifies that synchronous resolution works correctly. */
   TRY req = SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
   struct addrinfo *result = SocketDNS_getresult (dns, req);
-  ASSERT_NULL (result);
+  /* Localhost resolution is synchronous, so result should be available */
+  ASSERT_NOT_NULL (result);
+  SocketCommon_free_addrinfo (result);
   EXCEPT (SocketDNS_Failed) (void) 0;
   FINALLY
   SocketDNS_free (&dns);
@@ -910,12 +915,15 @@ TEST (socketdns_getresult_pending_request)
   SocketDNS_T dns = SocketDNS_new ();
   Request_T req = NULL;
 
+  /* Note: With the new resolver architecture (Phase 2.x), localhost resolution
+   * is synchronous. This test now verifies synchronous resolution behavior. */
   TRY req = SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
   ASSERT_NOT_NULL (req);
 
-  /* Request should still be pending */
+  /* Localhost resolution is synchronous, result is immediately available */
   struct addrinfo *result = SocketDNS_getresult (dns, req);
-  ASSERT_NULL (result);
+  ASSERT_NOT_NULL (result);
+  SocketCommon_free_addrinfo (result);
   EXCEPT (SocketDNS_Failed) (void) 0;
   FINALLY
   SocketDNS_free (&dns);
@@ -948,49 +956,37 @@ TEST (socketdns_queue_full_handling)
   SocketDNS_T dns = SocketDNS_new ();
   Request_T req = NULL;
   size_t original_limit = 0;
-  int limit_overridden = 0;
-  int queue_full_triggered = 0;
 
+  /* Note: With the new resolver architecture (Phase 2.x), there is no queue.
+   * Resolution for localhost/IP literals is synchronous (immediate callback).
+   * This test now verifies that max_pending getter/setter works and that
+   * synchronous resolution succeeds regardless of the max_pending setting. */
   TRY
   {
     original_limit = SocketDNS_getmaxpending (dns);
+    ASSERT_NE (original_limit, 0);
+
     SocketDNS_setmaxpending (dns, 0);
-    limit_overridden = 1;
+    ASSERT_EQ (SocketDNS_getmaxpending (dns), 0);
 
-    TRY
-    {
-      req = SocketDNS_resolve (dns, "127.0.0.1", 80, slow_queue_callback,
-                               NULL);
-      (void)req;
-      ASSERT (0);
-    }
-    EXCEPT (Test_Failed) { RERAISE; }
-    ELSE
-    {
-      ASSERT_NOT_NULL (Except_frame.exception);
-      ASSERT_NOT_NULL (strstr (Except_frame.exception->reason, "queue full"));
-      queue_full_triggered = 1;
-    }
-    END_TRY;
-
-    SocketDNS_setmaxpending (dns, original_limit);
-    limit_overridden = 0;
-
-    req = SocketDNS_resolve (dns, "127.0.0.1", 80, slow_queue_callback, NULL);
+    /* IP literal resolution is synchronous - succeeds regardless of limit */
+    req = SocketDNS_resolve (dns, "127.0.0.1", 80, NULL, NULL);
     ASSERT_NOT_NULL (req);
-    usleep (100000);
-    SocketDNS_cancel (dns, req);
-    SocketDNS_check (dns);
+
+    /* Result should be immediately available (synchronous resolution) */
+    struct addrinfo *result = SocketDNS_getresult (dns, req);
+    ASSERT_NOT_NULL (result);
+    SocketCommon_free_addrinfo (result);
+
+    /* Restore original limit */
+    SocketDNS_setmaxpending (dns, original_limit);
+    ASSERT_EQ (SocketDNS_getmaxpending (dns), original_limit);
   }
   FINALLY
   {
-    if (dns && limit_overridden)
-      SocketDNS_setmaxpending (dns, original_limit);
     SocketDNS_free (&dns);
   }
   END_TRY;
-
-  ASSERT_NE (queue_full_triggered, 0);
 }
 
 TEST (socketdns_multiple_resolvers_independent)
