@@ -25,9 +25,14 @@
  */
 
 size_t
-SocketQUICFrame_encode_path_challenge (const uint8_t data[8], uint8_t *out)
+SocketQUICFrame_encode_path_challenge (const uint8_t data[8], uint8_t *out,
+                                        size_t out_size)
 {
   if (!data || !out)
+    return 0;
+
+  /* Need 9 bytes: 1 byte type + 8 bytes data */
+  if (out_size < 9)
     return 0;
 
   /* Frame type */
@@ -53,9 +58,14 @@ SocketQUICFrame_encode_path_challenge (const uint8_t data[8], uint8_t *out)
  */
 
 size_t
-SocketQUICFrame_encode_path_response (const uint8_t data[8], uint8_t *out)
+SocketQUICFrame_encode_path_response (const uint8_t data[8], uint8_t *out,
+                                       size_t out_size)
 {
   if (!data || !out)
+    return 0;
+
+  /* Need 9 bytes: 1 byte type + 8 bytes data */
+  if (out_size < 9)
     return 0;
 
   /* Frame type */

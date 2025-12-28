@@ -214,7 +214,8 @@ TEST (frame_path_challenge_encode)
   uint8_t challenge_data[8] = { 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x00, 0x11 };
   uint8_t encoded[9];
 
-  size_t len = SocketQUICFrame_encode_path_challenge (challenge_data, encoded);
+  size_t len = SocketQUICFrame_encode_path_challenge (challenge_data, encoded,
+                                                       sizeof (encoded));
 
   ASSERT_EQ (9, len);
   ASSERT_EQ (0x1a, encoded[0]);
@@ -226,7 +227,8 @@ TEST (frame_path_response_encode)
   uint8_t response_data[8] = { 0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0 };
   uint8_t encoded[9];
 
-  size_t len = SocketQUICFrame_encode_path_response (response_data, encoded);
+  size_t len = SocketQUICFrame_encode_path_response (response_data, encoded,
+                                                      sizeof (encoded));
 
   ASSERT_EQ (9, len);
   ASSERT_EQ (0x1b, encoded[0]);
@@ -262,7 +264,8 @@ TEST (frame_path_encode_decode_roundtrip)
   uint8_t decoded[8];
 
   /* Encode */
-  size_t enc_len = SocketQUICFrame_encode_path_challenge (original, encoded);
+  size_t enc_len = SocketQUICFrame_encode_path_challenge (original, encoded,
+                                                           sizeof (encoded));
   ASSERT_EQ (9, enc_len);
 
   /* Decode */
@@ -279,12 +282,14 @@ TEST (frame_path_encode_null_checks)
   uint8_t out[9];
 
   /* Null data pointer */
-  ASSERT_EQ (0, SocketQUICFrame_encode_path_challenge (NULL, out));
-  ASSERT_EQ (0, SocketQUICFrame_encode_path_response (NULL, out));
+  ASSERT_EQ (0, SocketQUICFrame_encode_path_challenge (NULL, out,
+                                                        sizeof (out)));
+  ASSERT_EQ (0, SocketQUICFrame_encode_path_response (NULL, out,
+                                                       sizeof (out)));
 
   /* Null output pointer */
-  ASSERT_EQ (0, SocketQUICFrame_encode_path_challenge (data, NULL));
-  ASSERT_EQ (0, SocketQUICFrame_encode_path_response (data, NULL));
+  ASSERT_EQ (0, SocketQUICFrame_encode_path_challenge (data, NULL, 9));
+  ASSERT_EQ (0, SocketQUICFrame_encode_path_response (data, NULL, 9));
 }
 
 TEST (frame_path_decode_null_checks)

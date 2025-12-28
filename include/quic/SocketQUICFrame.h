@@ -207,8 +207,8 @@ extern size_t SocketQUICFrame_encode_data_blocked(uint64_t max_data, uint8_t *ou
 extern size_t SocketQUICFrame_encode_stream_data_blocked(uint64_t stream_id, uint64_t max_data, uint8_t *out, size_t out_size);
 extern size_t SocketQUICFrame_encode_streams_blocked(int bidirectional, uint64_t max_streams, uint8_t *out, size_t out_size);
 /* PATH frame encoding/decoding (RFC 9000 §19.17-19.18) */
-extern size_t SocketQUICFrame_encode_path_challenge(const uint8_t data[8], uint8_t *out);
-extern size_t SocketQUICFrame_encode_path_response(const uint8_t data[8], uint8_t *out);
+extern size_t SocketQUICFrame_encode_path_challenge(const uint8_t data[8], uint8_t *out, size_t out_size);
+extern size_t SocketQUICFrame_encode_path_response(const uint8_t data[8], uint8_t *out, size_t out_size);
 extern int SocketQUICFrame_decode_path_challenge(const uint8_t *in, size_t len, uint8_t data[8]);
 extern int SocketQUICFrame_decode_path_response(const uint8_t *in, size_t len, uint8_t data[8]);
 
