@@ -1759,10 +1759,15 @@ SocketHappyEyeballs_connect (const char *host, int port,
       const char *tmp_err = SocketHappyEyeballs_error (he);
       if (tmp_err)
         {
-          static _Thread_local char err_buf[512];
+          static _Thread_local char err_buf[SOCKET_HE_CONNECT_ERROR_BUFSIZE];
           size_t len = strlen (tmp_err);
           if (len >= sizeof (err_buf))
-            len = sizeof (err_buf) - 1;
+            {
+              SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                               "Error message truncated from %zu to %zu bytes",
+                               len, sizeof (err_buf) - 1);
+              len = sizeof (err_buf) - 1;
+            }
           memcpy (err_buf, tmp_err, len);
           err_buf[len] = '\0';
           err_msg = err_buf;

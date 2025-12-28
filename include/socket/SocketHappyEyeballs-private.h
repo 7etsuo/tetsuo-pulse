@@ -62,6 +62,19 @@
 #define SOCKET_HE_ERROR_BUFSIZE 256
 #endif
 
+/**
+ * @brief Size of thread-local error buffer for SocketHappyEyeballs_connect().
+ * @ingroup async_io
+ * @note Used to preserve error messages across SocketHappyEyeballs_free() in
+ * synchronous blocking mode. Must be large enough to accommodate detailed
+ * multi-attempt failure messages. Value of 512 chosen to balance memory usage
+ * (per-thread stack) with comprehensive error reporting for connection races.
+ * @see SocketHappyEyeballs_connect() for usage context.
+ */
+#ifndef SOCKET_HE_CONNECT_ERROR_BUFSIZE
+#define SOCKET_HE_CONNECT_ERROR_BUFSIZE 512
+#endif
+
 /* ============================================================================
  * Connection Attempt State
  * ============================================================================
