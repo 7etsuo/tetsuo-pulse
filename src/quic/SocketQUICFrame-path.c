@@ -13,6 +13,69 @@
 #include <string.h>
 
 /* ============================================================================
+ * Internal helper functions
+ * ============================================================================
+ *
+ * These helpers eliminate code duplication between PATH_CHALLENGE and
+ * PATH_RESPONSE frame encode/decode operations, which differ only in the
+ * frame type constant used.
+ */
+
+/**
+ * Internal helper for encoding PATH frames.
+ *
+ * @param frame_type  The frame type byte (0x1a for CHALLENGE, 0x1b for RESPONSE)
+ * @param data        8-byte data payload
+ * @param out         Output buffer (at least QUIC_PATH_FRAME_SIZE bytes)
+ * @param out_size    Size of output buffer
+ * @return            Number of bytes written, or 0 on error
+ */
+static size_t
+encode_path_frame (uint8_t frame_type, const uint8_t data[QUIC_PATH_DATA_SIZE],
+                   uint8_t *out, size_t out_size)
+{
+  if (!data || !out)
+    return 0;
+
+  if (out_size < QUIC_PATH_FRAME_SIZE)
+    return 0;
+
+  /* Frame type */
+  out[0] = frame_type;
+
+  /* Copy data payload */
+  memcpy (out + 1, data, QUIC_PATH_DATA_SIZE);
+
+  return QUIC_PATH_FRAME_SIZE;
+}
+
+/**
+ * Internal helper for decoding PATH frames.
+ *
+ * @param expected_type  The expected frame type byte
+ * @param in             Input buffer
+ * @param len            Length of input buffer
+ * @param data           Output buffer for 8-byte data payload
+ * @return               Number of bytes consumed, or -1 on error
+ */
+static int
+decode_path_frame (uint8_t expected_type, const uint8_t *in, size_t len,
+                   uint8_t data[QUIC_PATH_DATA_SIZE])
+{
+  if (!in || !data || len < QUIC_PATH_FRAME_SIZE)
+    return -1;
+
+  /* Verify frame type */
+  if (in[0] != expected_type)
+    return -1;
+
+  /* Copy data payload */
+  memcpy (data, in + 1, QUIC_PATH_DATA_SIZE);
+
+  return QUIC_PATH_FRAME_SIZE;
+}
+
+/* ============================================================================
  * Encode PATH_CHALLENGE frames (RFC 9000 §19.17)
  * ============================================================================
  *
@@ -28,20 +91,7 @@ size_t
 SocketQUICFrame_encode_path_challenge (const uint8_t data[QUIC_PATH_DATA_SIZE], uint8_t *out,
                                         size_t out_size)
 {
-  if (!data || !out)
-    return 0;
-
-  /* Need 9 bytes: 1 byte type + 8 bytes data */
-  if (out_size < 9)
-    return 0;
-
-  /* Frame type */
-  out[0] = QUIC_FRAME_PATH_CHALLENGE;
-
-  /* Copy challenge data */
-  memcpy (out + 1, data, QUIC_PATH_DATA_SIZE);
-
-  return QUIC_PATH_FRAME_SIZE;
+  return encode_path_frame (QUIC_FRAME_PATH_CHALLENGE, data, out, out_size);
 }
 
 /* ============================================================================
@@ -61,20 +111,7 @@ size_t
 SocketQUICFrame_encode_path_response (const uint8_t data[QUIC_PATH_DATA_SIZE], uint8_t *out,
                                        size_t out_size)
 {
-  if (!data || !out)
-    return 0;
-
-  /* Need 9 bytes: 1 byte type + 8 bytes data */
-  if (out_size < 9)
-    return 0;
-
-  /* Frame type */
-  out[0] = QUIC_FRAME_PATH_RESPONSE;
-
-  /* Copy response data (echoed from challenge) */
-  memcpy (out + 1, data, QUIC_PATH_DATA_SIZE);
-
-  return QUIC_PATH_FRAME_SIZE;
+  return encode_path_frame (QUIC_FRAME_PATH_RESPONSE, data, out, out_size);
 }
 
 /* ============================================================================
@@ -89,17 +126,7 @@ int
 SocketQUICFrame_decode_path_challenge (const uint8_t *in, size_t len,
                                        uint8_t data[QUIC_PATH_DATA_SIZE])
 {
-  if (!in || !data || len < QUIC_PATH_FRAME_SIZE)
-    return -1;
-
-  /* Verify frame type */
-  if (in[0] != QUIC_FRAME_PATH_CHALLENGE)
-    return -1;
-
-  /* Copy challenge data */
-  memcpy (data, in + 1, QUIC_PATH_DATA_SIZE);
-
-  return QUIC_PATH_FRAME_SIZE;
+  return decode_path_frame (QUIC_FRAME_PATH_CHALLENGE, in, len, data);
 }
 
 /* ============================================================================
@@ -114,15 +141,5 @@ int
 SocketQUICFrame_decode_path_response (const uint8_t *in, size_t len,
                                       uint8_t data[QUIC_PATH_DATA_SIZE])
 {
-  if (!in || !data || len < QUIC_PATH_FRAME_SIZE)
-    return -1;
-
-  /* Verify frame type */
-  if (in[0] != QUIC_FRAME_PATH_RESPONSE)
-    return -1;
-
-  /* Copy response data */
-  memcpy (data, in + 1, QUIC_PATH_DATA_SIZE);
-
-  return QUIC_PATH_FRAME_SIZE;
+  return decode_path_frame (QUIC_FRAME_PATH_RESPONSE, in, len, data);
 }
