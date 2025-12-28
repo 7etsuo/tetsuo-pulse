@@ -1276,7 +1276,7 @@ socketcommon_resolve_ip_direct (const char *host, const char *port_str,
 }
 
 /**
- * socketcommon_perform_getaddrinfo - Perform DNS resolution with timeout
+ * socketcommon_perform_dns_resolution - Perform DNS resolution with timeout
  * @host: Hostname or IP address (NULL for wildcard)
  * @port_str: Port number as string
  * @hints: Address resolution hints
@@ -1287,15 +1287,14 @@ socketcommon_resolve_ip_direct (const char *host, const char *port_str,
  * Returns: 0 on success, -1 on failure
  * Thread-safe: Yes
  *
- * Uses the global DNS resolver with timeout guarantees. This prevents
- * unbounded blocking on DNS failures (which could block for 30+ seconds
- * with direct getaddrinfo calls).
+ * Uses SocketDNS_resolve_sync() exclusively for hostname resolution.
+ * IP literals and NULL hosts use fast path with direct getaddrinfo().
  */
 static int
-socketcommon_perform_getaddrinfo (const char *host, const char *port_str,
-                                  const struct addrinfo *hints,
-                                  struct addrinfo **res, int use_exceptions,
-                                  Except_T exception_type)
+socketcommon_perform_dns_resolution (const char *host, const char *port_str,
+                                     const struct addrinfo *hints,
+                                     struct addrinfo **res, int use_exceptions,
+                                     Except_T exception_type)
 {
   SocketDNS_T dns;
   volatile int port;
@@ -1439,8 +1438,8 @@ SocketCommon_resolve_address (const char *host, int port,
       != 0)
     return -1;
 
-  if (socketcommon_perform_getaddrinfo (host, port_str, hints, res,
-                                        use_exceptions, exception_type)
+  if (socketcommon_perform_dns_resolution (host, port_str, hints, res,
+                                           use_exceptions, exception_type)
       != 0)
     return -1;
 
