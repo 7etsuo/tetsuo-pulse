@@ -159,6 +159,9 @@ SocketQUICConnectionID_copy (SocketQUICConnectionID_T *dst,
   if (dst == NULL || src == NULL)
     return QUIC_CONNID_ERROR_NULL;
 
+  /* Safe: struct padding (3 bytes between len and sequence, 4 bytes at end)
+   * is always zeroed by SocketQUICConnectionID_init() before use, ensuring
+   * deterministic memcpy behavior and avoiding uninitialized memory issues. */
   memcpy (dst, src, sizeof (*dst));
   return QUIC_CONNID_OK;
 }
