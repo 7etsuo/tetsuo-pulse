@@ -975,15 +975,17 @@ process_connection_for_cleanup (T pool, Connection_T conn, time_t idle_timeout,
  *
  * Returns: Number of sockets collected
  * Thread-safe: Call with mutex held
+ * Complexity: O(active_connections) instead of O(maxconns)
  */
 static size_t
 collect_idle_sockets (T pool, time_t idle_timeout, time_t now)
 {
   size_t close_count = 0;
 
-  for (size_t i = 0; i < pool->maxconns; i++)
-    process_connection_for_cleanup (pool, &pool->connections[i], idle_timeout,
-                                    now, &close_count);
+  for (Connection_T conn = pool->active_head; conn != NULL;
+       conn = conn->active_next)
+    process_connection_for_cleanup (pool, conn, idle_timeout, now,
+                                    &close_count);
 
   return close_count;
 }
@@ -1008,7 +1010,8 @@ close_collected_sockets (T pool, size_t close_count)
  * @param pool Pool instance.
  * @param idle_timeout Seconds idle before removal (0 = remove all).
  * @threadsafe Yes.
- * @complexity O(n) scan of all connection slots.
+ * @complexity O(active_connections) - scans only active connections via active
+ * list.
  *
  * Collects idle sockets under mutex, then closes them outside mutex
  * to avoid deadlock with socket operations.
