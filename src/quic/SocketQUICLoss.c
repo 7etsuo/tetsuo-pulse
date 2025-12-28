@@ -258,9 +258,7 @@ SocketQUICLoss_update_rtt (SocketQUICLossRTT_T *rtt, uint64_t latest_rtt_us,
    * rttvar = (1 - 1/4) * rttvar + 1/4 * |smoothed_rtt - rtt_sample|
    * smoothed_rtt = (1 - 1/8) * smoothed_rtt + 1/8 * rtt_sample
    */
-  diff = (int64_t)rtt->smoothed_rtt - (int64_t)rtt_sample;
-  if (diff < 0)
-    diff = -diff;
+  diff = llabs((int64_t)rtt->smoothed_rtt - (int64_t)rtt_sample);
 
   rtt->rtt_var = (3 * rtt->rtt_var + (uint64_t)diff) / 4;
   rtt->smoothed_rtt = (7 * rtt->smoothed_rtt + rtt_sample) / 8;
