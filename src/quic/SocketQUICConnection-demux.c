@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include "core/Arena.h"
 #include "core/Except.h"
+#include "core/SocketCrypto.h"
 #include "quic/SocketQUICConnection.h"
 #include "quic/SocketQUICConnectionID.h"
 #include "quic/SocketQUICConstants.h"
@@ -211,7 +212,7 @@ SocketQUICConnection_T SocketQUICConnTable_lookup_by_addr(SocketQUICConnTable_T 
       pthread_mutex_unlock(&table->mutex);
       return NULL;
     }
-    if (conn->local_port == local_port && conn->peer_port == peer_port && conn->is_ipv6 == is_ipv6 && memcmp(conn->local_addr, local_addr, addr_len) == 0 && memcmp(conn->peer_addr, peer_addr, addr_len) == 0) { pthread_mutex_unlock(&table->mutex); return conn; }
+    if (conn->local_port == local_port && conn->peer_port == peer_port && conn->is_ipv6 == is_ipv6 && SocketCrypto_secure_compare(conn->local_addr, local_addr, addr_len) == 0 && SocketCrypto_secure_compare(conn->peer_addr, peer_addr, addr_len) == 0) { pthread_mutex_unlock(&table->mutex); return conn; }
     conn = conn->hash_next;
   }
   pthread_mutex_unlock(&table->mutex);
