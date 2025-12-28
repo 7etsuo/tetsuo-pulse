@@ -320,7 +320,6 @@ set(LIB_SOURCES
     
     # DNS module (consolidated)
     src/dns/SocketDNS.c
-    src/dns/SocketDNS-internal.c
     src/dns/SocketDNSWire.c
     src/dns/SocketDNSTransport.c
     src/dns/SocketDNSConfig.c
