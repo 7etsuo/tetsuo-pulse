@@ -258,21 +258,37 @@ test_overflow_protection(void)
   SocketQUICConnection_T conn
       = SocketQUICConnection_new(arena, QUIC_CONN_ROLE_SERVER);
 
-  /* Set timeout with large value */
-  SocketQUICConnection_set_idle_timeout(conn, 1000000000, 1000000000);
+  /* Test normal addition (no overflow) */
+  SocketQUICConnection_set_idle_timeout(conn, 200, 200);
+  SocketQUICConnection_reset_idle_timer(conn, 100);
+  /* Deadline should be 100 + 200 = 300 */
+  assert(conn->idle_timeout_deadline_ms == 300);
 
-  /* Reset timer near UINT64_MAX */
-  uint64_t near_max = UINT64_MAX - 100;
-  SocketQUICConnection_reset_idle_timer(conn, near_max);
-
+  /* Test overflow protection: base + offset > UINT64_MAX */
+  SocketQUICConnection_set_idle_timeout(conn, 100, 100);
+  SocketQUICConnection_reset_idle_timer(conn, UINT64_MAX - 50);
   /* Should saturate to UINT64_MAX, not wrap around */
   assert(conn->idle_timeout_deadline_ms == UINT64_MAX);
 
-  /* Closing deadline overflow protection */
+  /* Test edge case: UINT64_MAX + any value */
+  SocketQUICConnection_set_idle_timeout(conn, 1, 1);
+  SocketQUICConnection_reset_idle_timer(conn, UINT64_MAX);
+  assert(conn->idle_timeout_deadline_ms == UINT64_MAX);
+
+  /* Test closing deadline overflow */
+  uint64_t near_max = UINT64_MAX - 100;
   SocketQUICConnection_initiate_close(conn, 0, near_max, 1000);
   assert(conn->closing_deadline_ms == UINT64_MAX);
 
+  /* Test draining deadline overflow */
+  Arena_T arena2 = Arena_new();
+  SocketQUICConnection_T conn2
+      = SocketQUICConnection_new(arena2, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICConnection_enter_draining(conn2, near_max, 1000);
+  assert(conn2->draining_deadline_ms == UINT64_MAX);
+
   Arena_dispose(&arena);
+  Arena_dispose(&arena2);
   printf("test_overflow_protection: PASS\n");
 }
 

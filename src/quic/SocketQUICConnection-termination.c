@@ -30,6 +30,20 @@
 #include "quic/SocketQUICConnection.h"
 
 /**
+ * @brief Safely add two uint64_t values with overflow protection.
+ * @param base Base timestamp value.
+ * @param offset Offset to add.
+ * @return base + offset, or UINT64_MAX if overflow would occur.
+ */
+static inline uint64_t
+safe_add_timeout(uint64_t base, uint64_t offset)
+{
+  if (base > UINT64_MAX - offset)
+    return UINT64_MAX;
+  return base + offset;
+}
+
+/**
  * @brief Calculate effective idle timeout as minimum of local and peer values.
  * @param local_timeout_ms Local max_idle_timeout in milliseconds.
  * @param peer_timeout_ms Peer's max_idle_timeout in milliseconds.
@@ -126,11 +140,7 @@ SocketQUICConnection_reset_idle_timer(SocketQUICConnection_T conn,
       conn->local_max_idle_timeout_ms,
       conn->peer_max_idle_timeout_ms);
 
-  /* Prevent overflow */
-  if (now_ms > UINT64_MAX - effective_timeout)
-    conn->idle_timeout_deadline_ms = UINT64_MAX;
-  else
-    conn->idle_timeout_deadline_ms = now_ms + effective_timeout;
+  conn->idle_timeout_deadline_ms = safe_add_timeout(now_ms, effective_timeout);
 }
 
 /**
@@ -186,10 +196,7 @@ SocketQUICConnection_initiate_close(SocketQUICConnection_T conn,
 
   /* Calculate closing deadline: 3 * PTO */
   uint64_t timeout = calculate_termination_timeout(pto_ms);
-  if (now_ms > UINT64_MAX - timeout)
-    conn->closing_deadline_ms = UINT64_MAX;
-  else
-    conn->closing_deadline_ms = now_ms + timeout;
+  conn->closing_deadline_ms = safe_add_timeout(now_ms, timeout);
 
   /* Store error code in user_data for CONNECTION_CLOSE frame generation */
   /* Note: Actual frame sending is caller's responsibility */
@@ -223,10 +230,7 @@ SocketQUICConnection_enter_draining(SocketQUICConnection_T conn,
 
   /* Calculate draining deadline: 3 * PTO */
   uint64_t timeout = calculate_termination_timeout(pto_ms);
-  if (now_ms > UINT64_MAX - timeout)
-    conn->draining_deadline_ms = UINT64_MAX;
-  else
-    conn->draining_deadline_ms = now_ms + timeout;
+  conn->draining_deadline_ms = safe_add_timeout(now_ms, timeout);
 }
 
 /**
