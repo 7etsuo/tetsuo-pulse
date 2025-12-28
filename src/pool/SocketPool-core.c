@@ -210,6 +210,10 @@ pool_alloc (Arena_T arena, size_t count, size_t elem_size, const char *what)
   if (arena != NULL) {
     ptr = CALLOC (arena, count, elem_size);
   } else {
+    /* Check for multiplication overflow before calloc */
+    if (count > 0 && elem_size > SIZE_MAX / count)
+      RAISE_POOL_MSG (SocketPool_Failed,
+                      "Integer overflow in allocation size for %s", what);
     ptr = calloc (count, elem_size);
   }
   if (!ptr)
