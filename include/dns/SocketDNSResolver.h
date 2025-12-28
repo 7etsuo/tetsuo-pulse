@@ -380,6 +380,39 @@ extern SocketDNSResolver_Query_T SocketDNSResolver_resolve (
     SocketDNSResolver_Callback callback, void *userdata);
 
 /**
+ * @brief Resolve a hostname synchronously (blocking).
+ * @ingroup dns_resolver
+ *
+ * Blocking wrapper around the async API. Uses an internal event loop
+ * to wait for completion or timeout.
+ *
+ * @param resolver   Resolver instance.
+ * @param hostname   Hostname to resolve (must not be NULL).
+ * @param flags      Resolution flags (RESOLVER_FLAG_*).
+ * @param timeout_ms Maximum time to wait in milliseconds.
+ * @param result     Output result (caller must free with SocketDNSResolver_result_free).
+ * @return RESOLVER_OK on success, error code on failure.
+ *
+ * @note The result must be freed by the caller using SocketDNSResolver_result_free().
+ * @note This function blocks the calling thread until resolution completes or times out.
+ *
+ * @code{.c}
+ * SocketDNSResolver_Result result = {0};
+ * int err = SocketDNSResolver_resolve_sync(resolver, "example.com",
+ *                                          RESOLVER_FLAG_BOTH, 5000, &result);
+ * if (err == RESOLVER_OK) {
+ *     for (size_t i = 0; i < result.count; i++) {
+ *         // Use result.addresses[i]
+ *     }
+ *     SocketDNSResolver_result_free(&result);
+ * }
+ * @endcode
+ */
+extern int SocketDNSResolver_resolve_sync (T resolver, const char *hostname,
+                                           int flags, int timeout_ms,
+                                           SocketDNSResolver_Result *result);
+
+/**
  * @brief Cancel a pending query.
  * @ingroup dns_resolver
  *

@@ -1430,6 +1430,118 @@ SocketDNSResolver_resolve (T resolver, const char *hostname, int flags,
   return q;
 }
 
+/*
+ * Synchronous Resolution Context
+ */
+
+struct resolve_sync_context
+{
+  volatile int done;
+  volatile int error;
+  SocketDNSResolver_Result result;
+};
+
+static void
+resolve_sync_callback (SocketDNSResolver_Query_T query,
+                       const SocketDNSResolver_Result *result, int error,
+                       void *userdata)
+{
+  struct resolve_sync_context *ctx = userdata;
+
+  (void)query;
+
+  ctx->error = error;
+
+  if (error == RESOLVER_OK && result && result->count > 0)
+    {
+      /* Copy result - caller must free */
+      ctx->result.addresses
+          = reallocarray (NULL, result->count, sizeof (SocketDNSResolver_Address));
+      if (ctx->result.addresses)
+        {
+          memcpy (ctx->result.addresses, result->addresses,
+                  result->count * sizeof (SocketDNSResolver_Address));
+          ctx->result.count = result->count;
+          ctx->result.min_ttl = result->min_ttl;
+        }
+      else
+        {
+          ctx->error = RESOLVER_ERROR_NOMEM;
+        }
+    }
+
+  ctx->done = 1;
+}
+
+int
+SocketDNSResolver_resolve_sync (T resolver, const char *hostname, int flags,
+                                int timeout_ms,
+                                SocketDNSResolver_Result *result)
+{
+  struct resolve_sync_context ctx = { 0 };
+  SocketDNSResolver_Query_T query;
+  int64_t start_time;
+  int64_t elapsed;
+
+  assert (resolver);
+  assert (hostname);
+  assert (result);
+
+  /* Initialize result */
+  memset (result, 0, sizeof (*result));
+
+  /* Use default timeout if not specified */
+  if (timeout_ms <= 0)
+    timeout_ms = RESOLVER_DEFAULT_TIMEOUT_MS;
+
+  /* Start async resolution */
+  query = SocketDNSResolver_resolve (resolver, hostname, flags,
+                                     resolve_sync_callback, &ctx);
+
+  /* Check for immediate completion (cached, localhost, IP literal) */
+  if (ctx.done)
+    {
+      if (ctx.error == RESOLVER_OK)
+        *result = ctx.result;
+      return ctx.error;
+    }
+
+  /* Query failed to start */
+  if (!query && !ctx.done)
+    {
+      return ctx.error != 0 ? ctx.error : RESOLVER_ERROR_NETWORK;
+    }
+
+  /* Event loop until done or timeout */
+  start_time = get_monotonic_ms ();
+
+  while (!ctx.done)
+    {
+      elapsed = get_monotonic_ms () - start_time;
+      if (elapsed >= timeout_ms)
+        {
+          /* Cancel pending query */
+          SocketDNSResolver_cancel (resolver, query);
+          /* Process to fire cancellation callback */
+          SocketDNSResolver_process (resolver, 0);
+          return RESOLVER_ERROR_TIMEOUT;
+        }
+
+      /* Calculate remaining time for this poll iteration */
+      int poll_timeout = (int)(timeout_ms - elapsed);
+      if (poll_timeout > 100)
+        poll_timeout = 100; /* Poll in 100ms increments */
+
+      SocketDNSResolver_process (resolver, poll_timeout);
+    }
+
+  /* Copy result to caller */
+  if (ctx.error == RESOLVER_OK)
+    *result = ctx.result;
+
+  return ctx.error;
+}
+
 int
 SocketDNSResolver_cancel (T resolver, SocketDNSResolver_Query_T query)
 {
