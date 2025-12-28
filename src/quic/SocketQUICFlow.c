@@ -47,6 +47,38 @@
     }                                                                          \
   while (0)
 
+/**
+ * @brief Helper macro to consume received bytes with overflow and bounds checking.
+ *
+ * This macro eliminates code duplication between connection-level and stream-level
+ * flow control consume_recv functions. It performs:
+ * 1. NULL pointer check
+ * 2. Overflow detection (addition would exceed UINT64_MAX)
+ * 3. Flow control bounds check (new_consumed <= max_field)
+ * 4. Updates consumed field if checks pass
+ *
+ * @param ptr Pointer to flow control structure (fc or fs)
+ * @param consumed_field Name of the consumed bytes field (recv_consumed)
+ * @param max_field Name of the maximum data field (recv_max_data)
+ * @param bytes Number of bytes to consume
+ *
+ * @note Caller must return QUIC_FLOW_OK after macro succeeds.
+ * @note Macro returns error codes directly on failure.
+ */
+#define CONSUME_FLOW_RECV(ptr, consumed_field, max_field, bytes)              \
+  do                                                                           \
+    {                                                                          \
+      if (!(ptr))                                                              \
+        return QUIC_FLOW_ERROR_NULL;                                           \
+      if ((bytes) > UINT64_MAX - (ptr)->consumed_field)                        \
+        return QUIC_FLOW_ERROR_OVERFLOW;                                       \
+      uint64_t new_consumed = (ptr)->consumed_field + (bytes);                 \
+      if (new_consumed > (ptr)->max_field)                                     \
+        return QUIC_FLOW_ERROR_BLOCKED;                                        \
+      (ptr)->consumed_field = new_consumed;                                    \
+    }                                                                          \
+  while (0)
+
 /* ============================================================================
  * Connection-Level Flow Control
  * ============================================================================
@@ -120,20 +152,7 @@ SocketQUICFlow_consume_send (SocketQUICFlow_T fc, size_t bytes)
 SocketQUICFlow_Result
 SocketQUICFlow_consume_recv (SocketQUICFlow_T fc, size_t bytes)
 {
-  if (!fc)
-    return QUIC_FLOW_ERROR_NULL;
-
-  /* Check for overflow */
-  if (bytes > UINT64_MAX - fc->recv_consumed)
-    return QUIC_FLOW_ERROR_OVERFLOW;
-
-  uint64_t new_consumed = fc->recv_consumed + bytes;
-
-  /* Check flow control limit */
-  if (new_consumed > fc->recv_max_data)
-    return QUIC_FLOW_ERROR_BLOCKED;
-
-  fc->recv_consumed = new_consumed;
+  CONSUME_FLOW_RECV (fc, recv_consumed, recv_max_data, bytes);
   return QUIC_FLOW_OK;
 }
 
@@ -260,20 +279,7 @@ SocketQUICFlowStream_consume_send (SocketQUICFlowStream_T fs, size_t bytes)
 SocketQUICFlow_Result
 SocketQUICFlowStream_consume_recv (SocketQUICFlowStream_T fs, size_t bytes)
 {
-  if (!fs)
-    return QUIC_FLOW_ERROR_NULL;
-
-  /* Check for overflow */
-  if (bytes > UINT64_MAX - fs->recv_consumed)
-    return QUIC_FLOW_ERROR_OVERFLOW;
-
-  uint64_t new_consumed = fs->recv_consumed + bytes;
-
-  /* Check flow control limit */
-  if (new_consumed > fs->recv_max_data)
-    return QUIC_FLOW_ERROR_BLOCKED;
-
-  fs->recv_consumed = new_consumed;
+  CONSUME_FLOW_RECV (fs, recv_consumed, recv_max_data, bytes);
   return QUIC_FLOW_OK;
 }
 
