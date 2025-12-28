@@ -549,19 +549,23 @@ perform_tls_handshake_step (T conn)
 }
 
 static void
-complete_tls_connection (T conn)
+record_connection_success (T conn)
 {
   conn->consecutive_failures = 0;
   conn->attempt_count = 0;
   conn->total_successes++;
   conn->last_success_time_ms = socketreconnect_now_ms ();
   conn->last_health_check_ms = conn->last_success_time_ms;
-
   conn->error_buf[0] = '\0';
   conn->last_error = 0;
-
   update_circuit_breaker (conn, 1);
   transition_state (conn, RECONNECT_CONNECTED);
+}
+
+static void
+complete_tls_connection (T conn)
+{
+  record_connection_success (conn);
 
   SocketLog_emitf (SOCKET_LOG_INFO, SOCKET_LOG_COMPONENT,
                    "%s:%d TLS connection established successfully", conn->host,
@@ -606,18 +610,7 @@ handle_connect_success (T conn)
 #endif /* SOCKET_HAS_TLS */
 
   /* Plain TCP connection success */
-  conn->consecutive_failures = 0;
-  conn->attempt_count = 0;
-  conn->total_successes++;
-  conn->last_success_time_ms = socketreconnect_now_ms ();
-  conn->last_health_check_ms = conn->last_success_time_ms;
-
-  /* Clear error buffer on success to prevent stale error messages */
-  conn->error_buf[0] = '\0';
-  conn->last_error = 0;
-
-  update_circuit_breaker (conn, 1);
-  transition_state (conn, RECONNECT_CONNECTED);
+  record_connection_success (conn);
 
   SocketLog_emitf (SOCKET_LOG_INFO, SOCKET_LOG_COMPONENT,
                    "%s:%d connected successfully", conn->host, conn->port);
