@@ -392,12 +392,6 @@ destroy_dns_resources (T d)
   free (d);
 }
 
-unsigned
-request_hash_function (const struct SocketDNS_Request_T *req)
-{
-  return socket_util_hash_ptr (req, SOCKET_DNS_REQUEST_HASH_SIZE);
-}
-
 Request_T
 allocate_request_structure (struct SocketDNS_T *dns)
 {
@@ -468,44 +462,6 @@ allocate_request (struct SocketDNS_T *dns, const char *host, size_t host_len,
   req->dns_resolver = dns;
 
   return req;
-}
-
-void
-hash_table_insert (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
-{
-  unsigned hash;
-
-  hash = request_hash_function (req);
-  req->hash_value = hash;
-  req->hash_next = dns->request_hash[hash];
-  dns->request_hash[hash] = req;
-}
-
-void
-hash_table_remove (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
-{
-  unsigned hash;
-  Request_T *pp;
-
-  hash = req->hash_value;
-
-  if (hash >= SOCKET_DNS_REQUEST_HASH_SIZE)
-    {
-      SOCKET_LOG_DEBUG_MSG (
-          "Invalid hash_value=%u for req=%p in hash_table_remove", hash, req);
-      return;
-    }
-
-  pp = &dns->request_hash[hash];
-  while (*pp)
-    {
-      if (*pp == req)
-        {
-          *pp = req->hash_next;
-          break;
-        }
-      pp = &(*pp)->hash_next;
-    }
 }
 
 void

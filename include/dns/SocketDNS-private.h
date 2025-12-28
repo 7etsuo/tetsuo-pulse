@@ -343,8 +343,7 @@ extern void free_request_list (struct SocketDNS_Request_T *head,
 extern void free_hash_table_requests (struct SocketDNS_T *dns);
 extern void free_all_requests (struct SocketDNS_T *dns);
 
-/* Request allocation and hash table management */
-extern unsigned request_hash_function (const struct SocketDNS_Request_T *req);
+/* Request allocation and queue management */
 extern struct SocketDNS_Request_T *
 allocate_request_structure (struct SocketDNS_T *dns);
 extern void allocate_request_hostname (struct SocketDNS_T *dns,
@@ -356,10 +355,6 @@ extern void initialize_request_fields (struct SocketDNS_Request_T *req,
 extern struct SocketDNS_Request_T *
 allocate_request (struct SocketDNS_T *dns, const char *host, size_t host_len,
                   int port, SocketDNS_Callback cb, void *data);
-extern void hash_table_insert (struct SocketDNS_T *dns,
-                               struct SocketDNS_Request_T *req);
-extern void hash_table_remove (struct SocketDNS_T *dns,
-                               struct SocketDNS_Request_T *req);
 extern int check_queue_limit (const struct SocketDNS_T *dns);
 extern void cancel_pending_request (struct SocketDNS_T *dns,
                                     struct SocketDNS_Request_T *req);
@@ -391,6 +386,12 @@ extern void invoke_callback (struct SocketDNS_T *dns,
 /* Forward Declarations - SocketDNS.c */
 extern void validate_resolve_params (const char *host, int port);
 extern struct SocketDNS_T *allocate_dns_resolver (void);
+
+/* Hash table operations - defined in SocketDNS.c, used by SocketDNS-internal.c */
+extern void hash_table_insert (struct SocketDNS_T *dns,
+                               struct SocketDNS_Request_T *req);
+extern void hash_table_remove (struct SocketDNS_T *dns,
+                               struct SocketDNS_Request_T *req);
 
 /* Cache functions - defined in SocketDNS.c, used by SocketDNS-internal.c */
 extern struct SocketDNS_CacheEntry *cache_lookup (struct SocketDNS_T *dns,
