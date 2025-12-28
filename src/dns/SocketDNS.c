@@ -352,6 +352,127 @@ hash_table_remove (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
     }
 }
 
+/* Request management functions */
+
+static void
+secure_clear_memory (void *ptr, size_t len)
+{
+  if (!ptr || len == 0)
+    return;
+
+#ifdef __linux__
+  explicit_bzero (ptr, len);
+#else
+  volatile unsigned char *vptr = (volatile unsigned char *)ptr;
+  while (len--)
+    *vptr++ = 0;
+#endif
+}
+
+static void
+free_request_list_results (Request_T head, size_t next_offset)
+{
+  Request_T curr = head;
+
+  while (curr)
+    {
+      Request_T next = *(Request_T *)((char *)curr + next_offset);
+
+      if (curr->host)
+        {
+          secure_clear_memory (curr->host, strlen (curr->host));
+        }
+
+      if (curr->result)
+        {
+          SocketCommon_free_addrinfo (curr->result);
+          curr->result = NULL;
+        }
+      curr = next;
+    }
+}
+
+void
+free_all_requests (T d)
+{
+  /* No queue_head anymore - only free hash table requests */
+  for (int i = 0; i < SOCKET_DNS_REQUEST_HASH_SIZE; i++)
+    free_request_list_results (
+        d->request_hash[i], offsetof (struct SocketDNS_Request_T, hash_next));
+}
+
+Request_T
+allocate_request_structure (struct SocketDNS_T *dns)
+{
+  Request_T req;
+
+  req = ALLOC (dns->arena, sizeof (*req));
+  if (!req)
+    {
+      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+                        SOCKET_ENOMEM ": Cannot allocate DNS request");
+    }
+
+  return req;
+}
+
+void
+allocate_request_hostname (struct SocketDNS_T *dns,
+                           struct SocketDNS_Request_T *req, const char *host,
+                           size_t host_len)
+{
+  if (host == NULL)
+    {
+      req->host = NULL;
+      return;
+    }
+
+  /* Check for overflow: host_len == SIZE_MAX would cause host_len + 1 to wrap to 0 */
+  if (host_len >= SIZE_MAX || host_len > 255)
+    {
+      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+                        "Hostname length overflow or exceeds DNS maximum (255)");
+    }
+
+  req->host = ALLOC (dns->arena, host_len + 1);
+  if (!req->host)
+    {
+      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+                        SOCKET_ENOMEM ": Cannot allocate hostname");
+    }
+
+  memcpy (req->host, host, host_len);
+  req->host[host_len] = '\0';
+}
+
+void
+initialize_request_fields (struct SocketDNS_Request_T *req, int port,
+                           SocketDNS_Callback callback, void *data)
+{
+  req->port = port;
+  req->callback = callback;
+  req->callback_data = data;
+  req->state = REQ_PENDING;
+  req->result = NULL;
+  req->error = 0;
+  req->queue_next = NULL;
+  req->hash_next = NULL;
+  req->submit_time_ms = Socket_get_monotonic_ms ();
+  req->timeout_override_ms = -1;
+}
+
+Request_T
+allocate_request (struct SocketDNS_T *dns, const char *host, size_t host_len,
+                  int port, SocketDNS_Callback callback, void *data)
+{
+  Request_T req = allocate_request_structure (dns);
+  allocate_request_hostname (dns, req, host, host_len);
+  initialize_request_fields (req, port, callback, data);
+  req->dns_resolver = dns;
+
+  return req;
+}
+
 void
 validate_resolve_params (const char *host, int port)
 {
