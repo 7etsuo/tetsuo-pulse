@@ -1637,6 +1637,60 @@ sync_do_poll (struct pollfd *pfds, const int nfds, const int timeout)
 
 /* REMOVED: Error raising now inlined in connect() using SOCKET_RAISE_FMT for formatted messages. */
 
+/**
+ * @brief Perform one iteration of synchronous poll-and-process loop.
+ *
+ * Handles timeout calculation, poll waiting, event processing, and error
+ * handling for the blocking connection loop. Extracted to reduce complexity
+ * and improve testability.
+ *
+ * @param he Happy Eyeballs context
+ * @return 0 to continue iteration, non-zero to break loop
+ */
+static int
+sync_poll_and_process_iteration (T he)
+{
+  SocketEvent_T *events = NULL;
+  int timeout;
+  int n;
+
+  timeout = SocketHappyEyeballs_next_timeout_ms (he);
+  if (timeout == 0)
+    {
+      he_handle_total_timeout (he);
+      return 1;
+    }
+
+  /* If no active attempts yet but we're in CONNECTING state (e.g., DNS
+   * just resolved for an IP literal), don't wait - process immediately
+   * to start the first connection attempt. */
+  if (he->attempt_count == 0 && he->state == HE_STATE_CONNECTING)
+    timeout = 0;
+  /* Cap to shorter interval for frequent DNS/state checking.
+   * Without poll integration for DNS, we need to poll frequently
+   * to detect DNS completion and start connection attempts. */
+  else if (timeout < 0 || timeout > SOCKET_HE_SYNC_POLL_INTERVAL_MS)
+    timeout = SOCKET_HE_SYNC_POLL_INTERVAL_MS;
+
+  n = SocketPoll_wait (he->poll, &events, timeout);
+  if (n < 0)
+    {
+      if (errno == EINTR)
+        return 0;
+      char tmp_err[256];
+      snprintf (tmp_err, sizeof (tmp_err),
+                "Internal poll failed during connect: %s", strerror (errno));
+      he_transition_to_failed (he, tmp_err);
+      return 1;
+    }
+
+  SocketHappyEyeballs_process_events (he, events, n);
+  SocketHappyEyeballs_process (he);
+
+  /* Note: events is internal to poll, no free needed */
+  return 0;
+}
+
 Socket_T
 SocketHappyEyeballs_connect (const char *host, int port,
                              const SocketHE_Config_T *config)
@@ -1713,40 +1767,8 @@ SocketHappyEyeballs_connect (const char *host, int port,
   // Blocking loop until complete
   while (he->state == HE_STATE_RESOLVING || he->state == HE_STATE_CONNECTING)
     {
-      int timeout = SocketHappyEyeballs_next_timeout_ms (he);
-      if (timeout == 0)
-        {
-          he_handle_total_timeout (he);
-          break;
-        }
-      /* If no active attempts yet but we're in CONNECTING state (e.g., DNS
-       * just resolved for an IP literal), don't wait - process immediately
-       * to start the first connection attempt. */
-      if (he->attempt_count == 0 && he->state == HE_STATE_CONNECTING)
-        timeout = 0;
-      /* Cap to shorter interval for frequent DNS/state checking.
-       * Without poll integration for DNS, we need to poll frequently
-       * to detect DNS completion and start connection attempts. */
-      else if (timeout < 0 || timeout > SOCKET_HE_SYNC_POLL_INTERVAL_MS)
-        timeout = SOCKET_HE_SYNC_POLL_INTERVAL_MS;
-
-      events = NULL;
-      int n = SocketPoll_wait (he->poll, &events, timeout);
-      if (n < 0)
-        {
-          if (errno == EINTR)
-            continue;
-          char tmp_err[256];
-          snprintf (tmp_err, sizeof (tmp_err), "Internal poll failed during connect: %s", strerror (errno));
-          he_transition_to_failed (he, tmp_err);
-          break;
-        }
-
-      SocketHappyEyeballs_process_events (he, events, n);
-
-      SocketHappyEyeballs_process (he);
-
-      // Note: events is internal to poll, no free needed
+      if (sync_poll_and_process_iteration (he) != 0)
+        break;
     }
 
   if (he->state == HE_STATE_CONNECTED)
