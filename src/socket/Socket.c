@@ -762,6 +762,9 @@ static int accept_connection (T socket, struct sockaddr_storage *addr,
 static T create_accepted_socket (int newfd,
                                  const struct sockaddr_storage *addr,
                                  socklen_t addrlen);
+static void finalize_accepted_socket (T newsocket,
+                                       const struct sockaddr_storage *addr,
+                                       socklen_t addrlen);
 
 static Arena_T
 accept_create_arena (int newfd)
@@ -895,6 +898,18 @@ create_accepted_socket (int newfd, const struct sockaddr_storage *addr,
   return newsocket;
 }
 
+static void
+finalize_accepted_socket (T newsocket, const struct sockaddr_storage *addr,
+                          socklen_t addrlen)
+{
+  cache_remote_endpoint (newsocket->base, (struct sockaddr *)addr, addrlen);
+  SocketCommon_update_local_endpoint (newsocket->base);
+  SocketEvent_emit_accept (
+      SocketBase_fd (newsocket->base), newsocket->base->remoteaddr,
+      newsocket->base->remoteport, newsocket->base->localaddr,
+      newsocket->base->localport);
+}
+
 T
 Socket_accept (T socket)
 {
@@ -913,13 +928,7 @@ Socket_accept (T socket)
       RETURN NULL;
 
     newsocket = create_accepted_socket (newfd, &addr, addrlen);
-    cache_remote_endpoint (newsocket->base, (struct sockaddr *)&addr, addrlen);
-
-    SocketCommon_update_local_endpoint (newsocket->base);
-    SocketEvent_emit_accept (
-        SocketBase_fd (newsocket->base), newsocket->base->remoteaddr,
-        newsocket->base->remoteport, newsocket->base->localaddr,
-        newsocket->base->localport);
+    finalize_accepted_socket (newsocket, &addr, addrlen);
 
     RETURN newsocket;
   }
