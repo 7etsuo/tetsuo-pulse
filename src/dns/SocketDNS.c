@@ -28,6 +28,7 @@
 #include "core/Arena.h"
 #include "dns/SocketDNS-private.h"
 #include "dns/SocketDNS.h"
+#include "dns/SocketDNSResolver.h"
 #include "socket/SocketCommon-private.h"
 
 #undef T
@@ -280,29 +281,358 @@ prepare_resolve_request (struct SocketDNS_T *dns, const char *host, int port,
   return allocate_request (dns, host, host_len, port, callback, data);
 }
 
-static void
-submit_resolve_request (struct SocketDNS_T *dns, Request_T req)
+/**
+ * @brief Callback context for SocketDNSResolver to SocketDNS bridging.
+ * @ingroup dns
+ */
+struct SocketDNS_ResolverContext
 {
-  /* TODO(Phase 2.x): Implement request submission using new architecture */
+  struct SocketDNS_T *dns;
+  struct SocketDNS_Request_T *req;
+};
+
+/**
+ * @brief Convert SocketDNSResolver_Result to addrinfo.
+ * @ingroup dns
+ */
+static struct addrinfo *
+resolver_result_to_addrinfo (const SocketDNSResolver_Result *result, int port)
+{
+  struct addrinfo *head = NULL;
+  struct addrinfo *tail = NULL;
+  size_t i;
+
+  if (!result || result->count == 0)
+    return NULL;
+
+  for (i = 0; i < result->count; i++)
+    {
+      struct addrinfo *ai = calloc (1, sizeof (*ai));
+      if (!ai)
+        {
+          SocketCommon_free_addrinfo (head);
+          return NULL;
+        }
+
+      ai->ai_family = result->addresses[i].family;
+      ai->ai_socktype = SOCK_STREAM;
+      ai->ai_protocol = IPPROTO_TCP;
+
+      if (ai->ai_family == AF_INET)
+        {
+          struct sockaddr_in *sin = calloc (1, sizeof (*sin));
+          if (!sin)
+            {
+              free (ai);
+              SocketCommon_free_addrinfo (head);
+              return NULL;
+            }
+          sin->sin_family = AF_INET;
+          sin->sin_port = htons (port);
+          sin->sin_addr = result->addresses[i].addr.v4;
+          ai->ai_addr = (struct sockaddr *)sin;
+          ai->ai_addrlen = sizeof (*sin);
+        }
+      else if (ai->ai_family == AF_INET6)
+        {
+          struct sockaddr_in6 *sin6 = calloc (1, sizeof (*sin6));
+          if (!sin6)
+            {
+              free (ai);
+              SocketCommon_free_addrinfo (head);
+              return NULL;
+            }
+          sin6->sin6_family = AF_INET6;
+          sin6->sin6_port = htons (port);
+          sin6->sin6_addr = result->addresses[i].addr.v6;
+          ai->ai_addr = (struct sockaddr *)sin6;
+          ai->ai_addrlen = sizeof (*sin6);
+        }
+      else
+        {
+          free (ai);
+          continue;
+        }
+
+      if (!head)
+        head = ai;
+      else
+        tail->ai_next = ai;
+      tail = ai;
+      ai->ai_next = NULL;
+    }
+
+  return head;
+}
+
+/**
+ * @brief Convert SocketDNSResolver error to getaddrinfo error.
+ * @ingroup dns
+ */
+static int
+resolver_error_to_gai (int resolver_error)
+{
+  switch (resolver_error)
+    {
+    case RESOLVER_OK:
+      return 0;
+    case RESOLVER_ERROR_TIMEOUT:
+      return EAI_AGAIN;
+    case RESOLVER_ERROR_CANCELLED:
+#ifdef EAI_CANCELLED
+      return EAI_CANCELLED;
+#else
+      return EAI_AGAIN;
+#endif
+    case RESOLVER_ERROR_NXDOMAIN:
+      return EAI_NONAME;
+    case RESOLVER_ERROR_SERVFAIL:
+    case RESOLVER_ERROR_REFUSED:
+      return EAI_FAIL;
+    case RESOLVER_ERROR_NO_NS:
+    case RESOLVER_ERROR_NETWORK:
+      return EAI_AGAIN;
+    case RESOLVER_ERROR_NOMEM:
+      return EAI_MEMORY;
+    default:
+      return EAI_FAIL;
+    }
+}
+
+/**
+ * @brief SocketDNSResolver callback that bridges to SocketDNS.
+ * @ingroup dns
+ */
+static void
+socketdns_resolver_callback (SocketDNSResolver_Query_T query,
+                              const SocketDNSResolver_Result *result,
+                              int error, void *userdata)
+{
+  struct SocketDNS_ResolverContext *ctx
+      = (struct SocketDNS_ResolverContext *)userdata;
+  struct SocketDNS_T *dns = ctx->dns;
+  struct SocketDNS_Request_T *req = ctx->req;
+  struct addrinfo *ai_result = NULL;
+  int gai_error;
+
+  (void)query;
+
   pthread_mutex_lock (&dns->mutex);
-  /* submit_dns_request removed - no worker thread queue */
+
+  /* Check if request was cancelled while resolver was working */
+  if (req->state == REQ_CANCELLED)
+    {
+      pthread_mutex_unlock (&dns->mutex);
+      return;
+    }
+
+  /* Convert resolver result to addrinfo */
+  if (error == RESOLVER_OK && result)
+    {
+      ai_result = resolver_result_to_addrinfo (result, req->port);
+      gai_error = ai_result ? 0 : EAI_MEMORY;
+
+      /* Populate L1 cache on success */
+      if (ai_result && req->host)
+        cache_insert (dns, req->host, ai_result);
+    }
+  else
+    {
+      gai_error = resolver_error_to_gai (error);
+    }
+
+  /* Store result in request */
+  req->result = ai_result;
+  req->error = gai_error;
+  req->state = REQ_COMPLETE;
+
+  /* Signal completion for SocketPoll integration */
+  SIGNAL_DNS_COMPLETION (dns);
+
+  /* Invoke user callback if provided */
+  if (req->callback)
+    {
+      SocketDNS_Callback user_cb = req->callback;
+      void *user_data = req->callback_data;
+      struct addrinfo *cb_result = req->result;
+      req->result = NULL; /* Transfer ownership to callback */
+
+      pthread_mutex_unlock (&dns->mutex);
+
+      /* Invoke callback outside mutex to avoid deadlock */
+      user_cb (req, cb_result, gai_error, user_data);
+
+      pthread_mutex_lock (&dns->mutex);
+      hash_table_remove (dns, req);
+      pthread_mutex_unlock (&dns->mutex);
+    }
+  else
+    {
+      /* Polling mode - leave result for user to retrieve */
+      SocketMetrics_increment (SOCKET_METRIC_DNS_REQUEST_COMPLETED, 1);
+      pthread_mutex_unlock (&dns->mutex);
+    }
+}
+
+/**
+ * @brief Check L1 cache and return immediately if hit.
+ * @ingroup dns
+ * @return 1 if cache hit (request completed), 0 if cache miss.
+ */
+static int
+check_l1_cache_and_complete (struct SocketDNS_T *dns, Request_T req)
+{
+  struct SocketDNS_CacheEntry *entry;
+
+  if (!req->host)
+    return 0; /* Wildcard bind - no cache */
+
+  pthread_mutex_lock (&dns->mutex);
+  entry = cache_lookup (dns, req->host);
+  pthread_mutex_unlock (&dns->mutex);
+
+  if (entry)
+    {
+      /* Cache hit - complete request immediately */
+      pthread_mutex_lock (&dns->mutex);
+
+      req->result = SocketCommon_copy_addrinfo (entry->result);
+      req->error = req->result ? 0 : EAI_MEMORY;
+      req->state = REQ_COMPLETE;
+
+      hash_table_insert (dns, req);
+      SIGNAL_DNS_COMPLETION (dns);
+
+      if (req->callback)
+        {
+          SocketDNS_Callback user_cb = req->callback;
+          void *user_data = req->callback_data;
+          struct addrinfo *cb_result = req->result;
+          int cb_error = req->error;
+          req->result = NULL; /* Transfer ownership to callback */
+
+          pthread_mutex_unlock (&dns->mutex);
+
+          /* Invoke callback outside mutex */
+          user_cb (req, cb_result, cb_error, user_data);
+
+          pthread_mutex_lock (&dns->mutex);
+          hash_table_remove (dns, req);
+          pthread_mutex_unlock (&dns->mutex);
+        }
+      else
+        {
+          SocketMetrics_increment (SOCKET_METRIC_DNS_REQUEST_COMPLETED, 1);
+          pthread_mutex_unlock (&dns->mutex);
+        }
+
+      return 1;
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Submit request to SocketDNSResolver backend.
+ * @ingroup dns
+ */
+static void
+submit_to_resolver (struct SocketDNS_T *dns, Request_T req)
+{
+  struct SocketDNS_ResolverContext *ctx;
+  int flags = RESOLVER_FLAG_BOTH;
+
+  /* Allocate callback context on dns arena */
+  ctx = ALLOC (dns->arena, sizeof (*ctx));
+  if (!ctx)
+    {
+      pthread_mutex_lock (&dns->mutex);
+      req->error = EAI_MEMORY;
+      req->state = REQ_COMPLETE;
+      hash_table_insert (dns, req);
+      SIGNAL_DNS_COMPLETION (dns);
+      pthread_mutex_unlock (&dns->mutex);
+      return;
+    }
+
+  ctx->dns = dns;
+  ctx->req = req;
+
+  /* Set IPv4/IPv6 preference */
+  pthread_mutex_lock (&dns->mutex);
+  if (dns->prefer_ipv6)
+    flags = RESOLVER_FLAG_IPV6 | RESOLVER_FLAG_IPV4;
+  else
+    flags = RESOLVER_FLAG_IPV4 | RESOLVER_FLAG_IPV6;
+  pthread_mutex_unlock (&dns->mutex);
+
+  /* Insert request into hash table before async resolution */
+  pthread_mutex_lock (&dns->mutex);
   hash_table_insert (dns, req);
-  req->state = REQ_PENDING;
+  req->state = REQ_PROCESSING;
   SocketMetrics_increment (SOCKET_METRIC_DNS_REQUEST_SUBMITTED, 1);
   pthread_mutex_unlock (&dns->mutex);
+
+  /* Submit to resolver backend */
+  TRY
+    {
+      SocketDNSResolver_resolve (dns->resolver, req->host, flags,
+                                 socketdns_resolver_callback, ctx);
+    }
+  EXCEPT (SocketDNSResolver_Failed)
+    {
+      /* Resolver submission failed */
+      pthread_mutex_lock (&dns->mutex);
+      req->error = EAI_FAIL;
+      req->state = REQ_COMPLETE;
+      SIGNAL_DNS_COMPLETION (dns);
+
+      if (req->callback)
+        {
+          SocketDNS_Callback user_cb = req->callback;
+          void *user_data = req->callback_data;
+
+          pthread_mutex_unlock (&dns->mutex);
+
+          user_cb (req, NULL, EAI_FAIL, user_data);
+
+          pthread_mutex_lock (&dns->mutex);
+          hash_table_remove (dns, req);
+          pthread_mutex_unlock (&dns->mutex);
+        }
+      else
+        {
+          pthread_mutex_unlock (&dns->mutex);
+        }
+    }
+  END_TRY;
 }
+
 Request_T
 SocketDNS_resolve (struct SocketDNS_T *dns, const char *host, int port,
                    SocketDNS_Callback callback, void *data)
 {
+  Request_T req;
+
   validate_dns_instance (dns);
 
   /* Check queue capacity BEFORE allocation to prevent arena memory leak.
    * If queue is full, we raise exception without allocating. */
   check_queue_capacity (dns);
 
-  Request_T req = prepare_resolve_request (dns, host, port, callback, data);
-  submit_resolve_request (dns, req);
+  /* Allocate and prepare request */
+  req = prepare_resolve_request (dns, host, port, callback, data);
+
+  /* Fast path: check L1 cache first */
+  if (check_l1_cache_and_complete (dns, req))
+    {
+      /* Cache hit - request already completed */
+      return req;
+    }
+
+  /* Cache miss: submit to SocketDNSResolver backend */
+  submit_to_resolver (dns, req);
+
   return req;
 }
 
@@ -395,6 +725,13 @@ SocketDNS_check (struct SocketDNS_T *dns)
   if (dns->pipefd[0] < 0)
     return 0;
 
+  /* Process SocketDNSResolver to drive async queries */
+  if (dns->resolver)
+    {
+      SocketDNSResolver_process (dns->resolver, 0);
+    }
+
+  /* Drain completion pipe signals */
   while ((n = read (dns->pipefd[0], buffer, sizeof (buffer))) > 0)
     count += n;
 
