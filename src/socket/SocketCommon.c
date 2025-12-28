@@ -1229,60 +1229,6 @@ socketcommon_parse_port_number (const char *port_str)
 }
 
 /**
- * socketcommon_getaddrinfo_fallback - Fallback getaddrinfo when resolver
- * unavailable
- *
- * Performs direct getaddrinfo call and copies result for consistent
- * allocation.
- */
-static int
-socketcommon_getaddrinfo_fallback (const char *host, const char *port_str,
-                                   const struct addrinfo *hints,
-                                   struct addrinfo **res, int use_exceptions,
-                                   Except_T exception_type)
-{
-  struct addrinfo *tmp = NULL;
-  int result = getaddrinfo (host, port_str, hints, &tmp);
-  if (result != 0)
-    {
-      const char *safe_host = socketcommon_get_safe_host (host);
-      if (use_exceptions)
-        {
-          SOCKET_RAISE_MSG (SocketCommon, exception_type,
-                            "Invalid host/IP address: %.*s (%s)",
-                            SOCKET_ERROR_MAX_HOSTNAME, safe_host,
-                            gai_strerror (result));
-        }
-      else
-        {
-          SOCKET_ERROR_MSG ("Invalid host/IP address: %.*s (%s)",
-                            SOCKET_ERROR_MAX_HOSTNAME, safe_host,
-                            gai_strerror (result));
-        }
-      return -1;
-    }
-
-  /* Copy to ensure consistent allocation for SocketCommon_free_addrinfo */
-  *res = SocketCommon_copy_addrinfo (tmp);
-  freeaddrinfo (tmp);
-
-  if (!*res)
-    {
-      if (use_exceptions)
-        {
-          SOCKET_RAISE_MSG (SocketCommon, exception_type,
-                            "Failed to copy address info");
-        }
-      else
-        {
-          SOCKET_ERROR_MSG ("Failed to copy address info");
-        }
-      return -1;
-    }
-  return 0;
-}
-
-/**
  * socketcommon_resolve_ip_direct - Fast path for IP address resolution
  *
  * Directly resolves IP addresses without DNS lookup.
@@ -1361,9 +1307,16 @@ socketcommon_perform_getaddrinfo (const char *host, const char *port_str,
   dns = SocketCommon_get_dns_resolver ();
   if (!dns)
     {
-      /* Fallback to direct getaddrinfo if resolver unavailable */
-      return socketcommon_getaddrinfo_fallback (host, port_str, hints, res,
-                                                use_exceptions, exception_type);
+      if (use_exceptions)
+        {
+          SOCKET_RAISE_MSG (SocketCommon, exception_type,
+                            "DNS resolver unavailable");
+        }
+      else
+        {
+          SOCKET_ERROR_MSG ("DNS resolver unavailable");
+          return -1;
+        }
     }
 
   /* Fast path for IP addresses and NULL host: direct getaddrinfo with copy */
