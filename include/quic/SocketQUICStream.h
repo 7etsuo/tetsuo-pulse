@@ -152,7 +152,9 @@ typedef enum
   QUIC_STREAM_EVENT_APP_READ_RESET,   /**< Application notified of reset */
 
   /* Bidirectional events */
-  QUIC_STREAM_EVENT_RECV_STOP_SENDING /**< Received STOP_SENDING frame */
+  QUIC_STREAM_EVENT_RECV_STOP_SENDING, /**< Received STOP_SENDING frame */
+
+  QUIC_STREAM_EVENT_MAX = QUIC_STREAM_EVENT_RECV_STOP_SENDING /**< Maximum event value for bounds checking */
 } SocketQUICStreamEvent;
 
 /**
