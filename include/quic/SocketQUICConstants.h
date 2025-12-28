@@ -50,6 +50,14 @@
  */
 
 /**
+ * @brief TLS 1.3 label prefix length.
+ *
+ * Per RFC 8446 Section 7.1, all HKDF-Expand-Label operations use the
+ * "tls13 " prefix (6 bytes including the space).
+ */
+#define QUIC_HKDF_TLS13_PREFIX_LEN 6
+
+/**
  * @brief Maximum size of HKDF label buffer.
  *
  * Per RFC 8446 Section 7.1, the HkdfLabel structure is:
