@@ -525,6 +525,24 @@ extern void SocketDNSResolver_cache_set_max (T resolver, size_t max_entries);
 extern void SocketDNSResolver_cache_stats (T resolver,
                                            SocketDNSResolver_CacheStats *stats);
 
+/**
+ * @brief Lookup hostname in L2 cache directly (no resolution).
+ * @ingroup dns_resolver
+ *
+ * Checks the L2 (SocketDNSResolver) cache for a cached entry.
+ * Used by SocketDNS for two-tier cache coherence.
+ *
+ * @param resolver Resolver instance.
+ * @param hostname Hostname to lookup.
+ * @param result   Output result (caller must free with SocketDNSResolver_result_free).
+ * @return RESOLVER_OK if cached entry found, RESOLVER_ERROR_NXDOMAIN if not cached.
+ *
+ * @note Does not trigger resolution - pure cache query.
+ * @note TTL expiration is checked; expired entries return miss.
+ */
+extern int SocketDNSResolver_cache_lookup (T resolver, const char *hostname,
+                                           SocketDNSResolver_Result *result);
+
 /* Utility functions */
 
 /**

@@ -1716,6 +1716,38 @@ SocketDNSResolver_cache_stats (T resolver, SocketDNSResolver_CacheStats *stats)
   stats->hit_rate = (total > 0) ? (double)stats->hits / (double)total : 0.0;
 }
 
+int
+SocketDNSResolver_cache_lookup (T resolver, const char *hostname,
+                                SocketDNSResolver_Result *result)
+{
+  struct CacheEntry *cached;
+
+  assert (resolver);
+  assert (hostname);
+  assert (result);
+
+  /* Initialize result */
+  memset (result, 0, sizeof (*result));
+
+  /* Check cache */
+  cached = cache_lookup (resolver, hostname);
+  if (!cached)
+    return RESOLVER_ERROR_NXDOMAIN; /* Not in cache */
+
+  /* Build result from cache - use reallocarray to prevent integer overflow */
+  result->addresses = reallocarray (NULL, cached->address_count,
+                                    sizeof (SocketDNSResolver_Address));
+  if (!result->addresses)
+    return RESOLVER_ERROR_NOMEM;
+
+  memcpy (result->addresses, cached->addresses,
+          cached->address_count * sizeof (SocketDNSResolver_Address));
+  result->count = cached->address_count;
+  result->min_ttl = cached->ttl;
+
+  return RESOLVER_OK;
+}
+
 void
 SocketDNSResolver_result_free (SocketDNSResolver_Result *result)
 {
