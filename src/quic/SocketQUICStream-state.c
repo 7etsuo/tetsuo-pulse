@@ -224,6 +224,13 @@ SocketQUICStream_transition_send (SocketQUICStream_T stream,
           /* Valid transition found - execute it */
           stream->send_state = send_transitions[i].to_state;
 
+          /* Update flags based on transition */
+          if (event == QUIC_STREAM_EVENT_SEND_FIN)
+            stream->fin_sent = 1;
+          else if (event == QUIC_STREAM_EVENT_SEND_RESET ||
+                   event == QUIC_STREAM_EVENT_RECV_STOP_SENDING)
+            stream->reset_sent = 1;
+
           /* Update legacy combined state for backwards compatibility */
           update_legacy_state_send (stream);
 
@@ -311,6 +318,12 @@ SocketQUICStream_transition_recv (SocketQUICStream_T stream,
           && recv_transitions[i].event == event)
         {
           stream->recv_state = recv_transitions[i].to_state;
+
+          /* Update flags based on transition */
+          if (event == QUIC_STREAM_EVENT_RECV_FIN)
+            stream->fin_received = 1;
+          else if (event == QUIC_STREAM_EVENT_RECV_RESET)
+            stream->reset_received = 1;
 
           /* Update legacy combined state for backwards compatibility */
           update_legacy_state_recv (stream);
