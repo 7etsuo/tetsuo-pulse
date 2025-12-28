@@ -361,12 +361,12 @@ Socket_connect_unix_timeout (T socket, const char *path, int timeout_ms)
         result = connect (fd, (struct sockaddr *)&addr, sizeof (addr));
 
         if (result == 0 || errno == EISCONN) {
-                with_nonblocking_scope (fd, 0, (int *)&original_flags, &need_restore);
+                with_nonblocking_scope (fd, 0, &original_flags, &need_restore);
                 return;
         }
 
         if (!is_connect_in_progress_error (errno)) {
-                with_nonblocking_scope (fd, 0, (int *)&original_flags, &need_restore);
+                with_nonblocking_scope (fd, 0, &original_flags, &need_restore);
                 SOCKET_ERROR_FMT ("Unix connect to %.*s failed",
                                   SOCKET_ERROR_MAX_HOSTNAME, path);
                 RAISE_MODULE_ERROR (Socket_Failed);
@@ -391,7 +391,7 @@ Socket_connect_unix_timeout (T socket, const char *path, int timeout_ms)
                 check_connect_result (fd, path);
         }
         FINALLY {
-                with_nonblocking_scope (fd, 0, (int *)&original_flags, &need_restore);
+                with_nonblocking_scope (fd, 0, &original_flags, &need_restore);
         }
         END_TRY;
 }
