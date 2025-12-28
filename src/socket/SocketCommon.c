@@ -96,7 +96,7 @@ init_global_dns_resolver (void)
   {
     SOCKET_LOG_ERROR_MSG ("Failed to initialize global DNS resolver: %s",
                           Except_frame.exception->reason);
-    g_dns_resolver = NULL;
+    RERAISE;
   }
   END_TRY;
 }
