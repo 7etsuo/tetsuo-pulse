@@ -63,7 +63,7 @@ Socket_simple_dns_resolve_timeout (const char *hostname,
     /* Cleanup res on exception - normal path handles it below */
     if (exception_occurred && res)
       {
-        freeaddrinfo ((struct addrinfo *)res);
+        SocketCommon_free_addrinfo ((struct addrinfo *)res);
         res = NULL;
       }
   }
@@ -86,7 +86,7 @@ Socket_simple_dns_resolve_timeout (const char *hostname,
 
   if (count == 0)
     {
-      freeaddrinfo ((struct addrinfo *)res);
+      SocketCommon_free_addrinfo ((struct addrinfo *)res);
       simple_set_error (SOCKET_SIMPLE_ERR_DNS, "No addresses found");
       return -1;
     }
@@ -94,7 +94,7 @@ Socket_simple_dns_resolve_timeout (const char *hostname,
   result->addresses = calloc ((size_t)count + 1, sizeof (char *));
   if (!result->addresses)
     {
-      freeaddrinfo ((struct addrinfo *)res);
+      SocketCommon_free_addrinfo ((struct addrinfo *)res);
       simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
       return -1;
     }
@@ -119,7 +119,7 @@ Socket_simple_dns_resolve_timeout (const char *hostname,
 
   result->count = i;
   result->family = ((struct addrinfo *)res)->ai_family;
-  freeaddrinfo ((struct addrinfo *)res);
+  SocketCommon_free_addrinfo ((struct addrinfo *)res);
 
   if (result->count == 0)
     {
@@ -194,7 +194,7 @@ Socket_simple_dns_lookup4 (const char *hostname, char *buf, size_t len)
   {
     if (exception_occurred && res)
       {
-        freeaddrinfo ((struct addrinfo *)res);
+        SocketCommon_free_addrinfo ((struct addrinfo *)res);
         res = NULL;
       }
   }
@@ -224,7 +224,7 @@ Socket_simple_dns_lookup4 (const char *hostname, char *buf, size_t len)
       simple_set_error (SOCKET_SIMPLE_ERR_DNS, "Failed to get address string");
     }
 
-  freeaddrinfo ((struct addrinfo *)res);
+  SocketCommon_free_addrinfo ((struct addrinfo *)res);
   return ret;
 }
 
@@ -264,7 +264,7 @@ Socket_simple_dns_lookup6 (const char *hostname, char *buf, size_t len)
   {
     if (exception_occurred && res)
       {
-        freeaddrinfo ((struct addrinfo *)res);
+        SocketCommon_free_addrinfo ((struct addrinfo *)res);
         res = NULL;
       }
   }
@@ -294,7 +294,7 @@ Socket_simple_dns_lookup6 (const char *hostname, char *buf, size_t len)
       simple_set_error (SOCKET_SIMPLE_ERR_DNS, "Failed to get address string");
     }
 
-  freeaddrinfo ((struct addrinfo *)res);
+  SocketCommon_free_addrinfo ((struct addrinfo *)res);
   return ret;
 }
 
@@ -343,7 +343,7 @@ Socket_simple_dns_reverse (const char *ip, char *hostname, size_t len)
       simple_set_error (SOCKET_SIMPLE_ERR_DNS, "Reverse lookup failed");
     }
 
-  freeaddrinfo (res);
+  SocketCommon_free_addrinfo (res);
   return ret;
 }
 
@@ -446,7 +446,7 @@ simple_dns_callback_wrapper (SocketDNS_Request_T *req, struct addrinfo *result,
   /* Cleanup */
   Socket_simple_dns_result_free (&simple_result);
   if (result)
-    freeaddrinfo (result);
+    SocketCommon_free_addrinfo (result);
   free (ctx);
 }
 
@@ -804,7 +804,7 @@ Socket_simple_dns_request_free (SocketSimple_DNSRequest_T *req)
   struct SocketSimple_DNSRequest *handle = *req;
 
   if (handle->result)
-    freeaddrinfo (handle->result);
+    SocketCommon_free_addrinfo (handle->result);
 
   free (handle);
   *req = NULL;

@@ -260,7 +260,7 @@ SocketDgram_sendto (T socket, const void *buf, size_t len, const char *host,
   resolve_sendto_address (host, port, &res);
 
   TRY sent = perform_sendto (socket, buf, len, res);
-  FINALLY freeaddrinfo (res);
+  FINALLY SocketCommon_free_addrinfo (res);
   END_TRY;
 
   return (ssize_t)sent;

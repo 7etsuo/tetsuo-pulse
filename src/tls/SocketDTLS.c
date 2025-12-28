@@ -132,7 +132,7 @@ free_dtls_resources (SocketDgram_T socket)
   /* Invalidate peer cache */
   if (socket->dtls_peer_res)
     {
-      freeaddrinfo (socket->dtls_peer_res);
+      SocketCommon_free_addrinfo (socket->dtls_peer_res);
       socket->dtls_peer_res = NULL;
     }
   socket->dtls_peer_host = NULL;
@@ -274,7 +274,7 @@ finalize_dtls_state (SocketDgram_T socket, SSL *ssl, SocketDTLSContext_T ctx)
  * @host: Hostname or IP
  * @port: Port number
  *
- * Returns: Resolved addrinfo list (caller must freeaddrinfo)
+ * Returns: Resolved addrinfo list (caller must SocketCommon_free_addrinfo)
  * Raises: SocketDTLS_Failed on resolution failure
  * Thread-safe: Yes
  */
@@ -319,7 +319,7 @@ dtls_invalidate_peer_cache (SocketDgram_T socket)
 {
   if (socket->dtls_peer_res)
     {
-      freeaddrinfo (socket->dtls_peer_res);
+      SocketCommon_free_addrinfo (socket->dtls_peer_res);
       socket->dtls_peer_res = NULL;
     }
   socket->dtls_peer_host = NULL;
@@ -344,7 +344,7 @@ dtls_cache_peer_resolution (SocketDgram_T socket, const char *host, int port,
   socket->dtls_peer_host = socket_util_arena_strdup (arena, host);
   if (!socket->dtls_peer_host)
     {
-      freeaddrinfo (result);
+      SocketCommon_free_addrinfo (result);
       RAISE_DTLS_ERROR_MSG (SocketDTLS_Failed, "Failed to cache peer hostname");
     }
   socket->dtls_peer_port = port;

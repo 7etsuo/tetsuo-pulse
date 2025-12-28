@@ -279,11 +279,15 @@ destroy_dns_resources (T d)
   cleanup_pipe (d);
   cleanup_mutex_cond (d);
 
-  /* Free resolver backend (Phase 2.2) */
+  /* Free resolver backend - must call _free before Arena_dispose
+   * so it can clean up transport sockets which have their own arenas */
+  if (d->resolver)
+    {
+      SocketDNSResolver_free (&d->resolver);
+    }
   if (d->resolver_arena)
     {
       Arena_dispose (&d->resolver_arena);
-      d->resolver = NULL;
     }
 
   Arena_dispose (&d->arena);
