@@ -87,34 +87,6 @@ hash_address (const struct sockaddr *addr, uint8_t hash[16])
   memcpy (hash, sha256_output, 16);
 }
 
-/**
- * @brief Write uint64 in network byte order.
- */
-static void
-write_uint64_be (uint8_t *buf, uint64_t value)
-{
-  buf[0] = (value >> 56) & 0xFF;
-  buf[1] = (value >> 48) & 0xFF;
-  buf[2] = (value >> 40) & 0xFF;
-  buf[3] = (value >> 32) & 0xFF;
-  buf[4] = (value >> 24) & 0xFF;
-  buf[5] = (value >> 16) & 0xFF;
-  buf[6] = (value >> 8) & 0xFF;
-  buf[7] = value & 0xFF;
-}
-
-/**
- * @brief Read uint64 in network byte order.
- */
-static uint64_t
-read_uint64_be (const uint8_t *buf)
-{
-  return ((uint64_t)buf[0] << 56) | ((uint64_t)buf[1] << 48)
-         | ((uint64_t)buf[2] << 40) | ((uint64_t)buf[3] << 32)
-         | ((uint64_t)buf[4] << 24) | ((uint64_t)buf[5] << 16)
-         | ((uint64_t)buf[6] << 8) | (uint64_t)buf[7];
-}
-
 /* ============================================================================
  * Amplification Limit Functions
  * ============================================================================
@@ -215,7 +187,7 @@ SocketQUICAddrValidation_generate_token (const struct sockaddr *addr,
   hash_address (addr, addr_hash);
 
   /* Build HMAC input: timestamp || addr_hash */
-  write_uint64_be (hmac_input, timestamp);
+  socket_util_pack_be64 (hmac_input, timestamp);
   memcpy (hmac_input + 8, addr_hash, 16);
 
   /* Compute HMAC-SHA256 */
@@ -230,7 +202,7 @@ SocketQUICAddrValidation_generate_token (const struct sockaddr *addr,
   END_TRY;
 
   /* Build token: timestamp || addr_hash || HMAC */
-  write_uint64_be (token, timestamp);
+  socket_util_pack_be64 (token, timestamp);
   memcpy (token + 8, addr_hash, 16);
   memcpy (token + 24, hmac_output, 32);
 
@@ -263,7 +235,7 @@ SocketQUICAddrValidation_validate_token (const uint8_t *token,
     }
 
   /* Extract timestamp */
-  token_timestamp = read_uint64_be (token);
+  token_timestamp = socket_util_unpack_be64 (token);
 
   /* Check expiration */
   current_time = get_monotonic_ms ();
@@ -284,7 +256,7 @@ SocketQUICAddrValidation_validate_token (const uint8_t *token,
     }
 
   /* Rebuild HMAC input */
-  write_uint64_be (hmac_input, token_timestamp);
+  socket_util_pack_be64 (hmac_input, token_timestamp);
   memcpy (hmac_input + 8, addr_hash, 16);
 
   /* Compute expected HMAC */

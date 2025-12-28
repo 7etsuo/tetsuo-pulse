@@ -1289,6 +1289,48 @@ socket_util_pack_be32 (unsigned char *p, uint32_t v)
   p[3] = (unsigned char)(v & 0xFF);
 }
 
+/**
+ * @brief Unpack 64-bit big-endian value.
+ * @ingroup foundation
+ * @param p Pointer to 8-byte buffer.
+ * @return Decoded 64-bit value in host byte order.
+ * @threadsafe Yes (pure function)
+ *
+ * Converts 8 bytes from big-endian (network) byte order to host byte order.
+ * Used for parsing network protocols (DNS, HTTP/2, QUIC).
+ */
+static inline uint64_t
+socket_util_unpack_be64 (const unsigned char *p)
+{
+  return ((uint64_t)p[0] << 56) | ((uint64_t)p[1] << 48)
+         | ((uint64_t)p[2] << 40) | ((uint64_t)p[3] << 32)
+         | ((uint64_t)p[4] << 24) | ((uint64_t)p[5] << 16)
+         | ((uint64_t)p[6] << 8) | (uint64_t)p[7];
+}
+
+/**
+ * @brief Pack 64-bit value to big-endian.
+ * @ingroup foundation
+ * @param p Pointer to 8-byte buffer.
+ * @param v 64-bit value in host byte order.
+ * @threadsafe Yes (pure function)
+ *
+ * Converts 64-bit value from host byte order to big-endian (network) byte order.
+ * Used for serializing network protocols (DNS, HTTP/2, QUIC).
+ */
+static inline void
+socket_util_pack_be64 (unsigned char *p, uint64_t v)
+{
+  p[0] = (unsigned char)((v >> 56) & 0xFF);
+  p[1] = (unsigned char)((v >> 48) & 0xFF);
+  p[2] = (unsigned char)((v >> 40) & 0xFF);
+  p[3] = (unsigned char)((v >> 32) & 0xFF);
+  p[4] = (unsigned char)((v >> 24) & 0xFF);
+  p[5] = (unsigned char)((v >> 16) & 0xFF);
+  p[6] = (unsigned char)((v >> 8) & 0xFF);
+  p[7] = (unsigned char)(v & 0xFF);
+}
+
 /* ============================================================================
  * IP ADDRESS UTILITY FUNCTIONS
  * ============================================================================
