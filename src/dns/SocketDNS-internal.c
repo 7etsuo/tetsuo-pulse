@@ -15,6 +15,7 @@
 
 #include "dns/SocketDNS-private.h"
 #include "dns/SocketDNS.h"
+#include "dns/SocketDNSResolver.h"
 #include "socket/SocketCommon-private.h"
 #include "socket/SocketCommon.h"
 
@@ -161,6 +162,10 @@ initialize_dns_fields (struct SocketDNS_T *dns)
   dns->cache_ttl_seconds = SOCKET_DNS_DEFAULT_CACHE_TTL_SECONDS;
 
   dns->prefer_ipv6 = 1;
+
+  /* Initialize resolver fields to NULL (Phase 2.2) */
+  dns->resolver = NULL;
+  dns->resolver_arena = NULL;
 }
 
 void
@@ -176,6 +181,29 @@ initialize_dns_components (struct SocketDNS_T *dns)
 
   initialize_synchronization (dns);
   initialize_pipe (dns);
+
+  /* Initialize SocketDNSResolver backend (Phase 2.2) */
+  dns->resolver_arena = Arena_new ();
+  if (!dns->resolver_arena)
+    {
+      cleanup_on_init_failure (dns, DNS_CLEAN_PIPE);
+      SOCKET_RAISE_MSG (
+          SocketDNS, SocketDNS_Failed,
+          SOCKET_ENOMEM ": Cannot allocate resolver arena");
+    }
+
+  TRY
+    {
+      dns->resolver = SocketDNSResolver_new (dns->resolver_arena);
+      SocketDNSResolver_load_resolv_conf (dns->resolver);
+    }
+  EXCEPT (SocketDNSResolver_Failed)
+    {
+      Arena_dispose (&dns->resolver_arena);
+      cleanup_on_init_failure (dns, DNS_CLEAN_PIPE);
+      RERAISE;
+    }
+  END_TRY;
 }
 
 void
@@ -352,6 +380,14 @@ destroy_dns_resources (T d)
 {
   cleanup_pipe (d);
   cleanup_mutex_cond (d);
+
+  /* Free resolver backend (Phase 2.2) */
+  if (d->resolver_arena)
+    {
+      Arena_dispose (&d->resolver_arena);
+      d->resolver = NULL;
+    }
+
   Arena_dispose (&d->arena);
   free (d);
 }
