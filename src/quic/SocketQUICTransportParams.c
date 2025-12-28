@@ -259,7 +259,9 @@ encode_preferred_address (uint8_t *buf, size_t buf_size,
   size_t len;
 
   /* Calculate content size */
-  size_t content_size = 4 + 2 + 16 + 2 + 1 + paddr->connection_id.len + 16;
+  size_t content_size = QUIC_IPV4_ADDR_LEN + QUIC_PORT_LEN +
+                        QUIC_IPV6_ADDR_LEN + QUIC_PORT_LEN + 1 +
+                        paddr->connection_id.len + QUIC_STATELESS_RESET_TOKEN_LEN;
 
   /* Encode parameter ID */
   len = SocketQUICVarInt_encode (QUIC_TP_PREFERRED_ADDRESS, buf + pos,
@@ -344,7 +346,9 @@ empty_param_size (uint64_t id)
 static size_t
 preferred_address_size (const SocketQUICPreferredAddress_T *paddr)
 {
-  size_t content_size = 4 + 2 + 16 + 2 + 1 + paddr->connection_id.len + 16;
+  size_t content_size = QUIC_IPV4_ADDR_LEN + QUIC_PORT_LEN +
+                        QUIC_IPV6_ADDR_LEN + QUIC_PORT_LEN + 1 +
+                        paddr->connection_id.len + QUIC_STATELESS_RESET_TOKEN_LEN;
   size_t id_size = SocketQUICVarInt_size (QUIC_TP_PREFERRED_ADDRESS);
   size_t len_size = SocketQUICVarInt_size (content_size);
   return id_size + len_size + content_size;
@@ -678,8 +682,8 @@ decode_preferred_address (const uint8_t *data, size_t len,
 {
   size_t pos = 0;
 
-  /* Minimum size: 4+2+16+2+1+0+16 = 41 bytes */
-  if (len < 41)
+  /* Minimum size when CID length is 0 */
+  if (len < QUIC_PREFERRED_ADDR_MIN_SIZE)
     return QUIC_TP_ERROR_INCOMPLETE;
 
   /* IPv4 address */

@@ -274,6 +274,41 @@
 #define QUIC_STATELESS_RESET_MIN_SIZE 38
 
 /* ============================================================================
+ * Preferred Address Field Sizes (RFC 9000 Section 18.2)
+ * ============================================================================
+ */
+
+/**
+ * @brief IPv4 address length in bytes.
+ *
+ * Standard IPv4 address size for preferred address encoding.
+ */
+#define QUIC_IPV4_ADDR_LEN 4
+
+/**
+ * @brief IPv6 address length in bytes.
+ *
+ * Standard IPv6 address size for preferred address encoding.
+ */
+#define QUIC_IPV6_ADDR_LEN 16
+
+/**
+ * @brief Port number length in bytes.
+ *
+ * Port encoded as big-endian uint16_t.
+ */
+#define QUIC_PORT_LEN 2
+
+/**
+ * @brief Minimum preferred address size in bytes.
+ *
+ * Minimum size when connection_id.len = 0:
+ * IPv4 (4) + IPv4 port (2) + IPv6 (16) + IPv6 port (2) +
+ * CID length (1) + CID (0) + Stateless Reset Token (16) = 41 bytes
+ */
+#define QUIC_PREFERRED_ADDR_MIN_SIZE 41
+
+/* ============================================================================
  * String Formatting Constants
  * ============================================================================
  */
