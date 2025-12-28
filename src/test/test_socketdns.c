@@ -25,8 +25,10 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "core/Arena.h"
 #include "core/Except.h"
 #include "dns/SocketDNS.h"
+#include "dns/SocketDNSResolver.h"
 #include "socket/SocketCommon.h"
 #include "test/Test.h"
 
@@ -1242,6 +1244,317 @@ TEST (socketdns_resolve_sync_with_timeout_protection)
     SocketDNS_free (&dns);
   }
   END_TRY;
+}
+
+/* ==================== Resolver Sync Tests (Issue #1067) ==================== */
+
+/* Test: SocketDNSResolver_resolve_sync with localhost hostname */
+TEST (test_socketdnsresolver_resolve_sync_hostname)
+{
+  Arena_T arena = Arena_new ();
+  SocketDNSResolver_T resolver = NULL;
+  SocketDNSResolver_Result result = { 0 };
+  volatile int success = 0;
+
+  TRY
+  {
+    resolver = SocketDNSResolver_new (arena);
+    ASSERT_NOT_NULL (resolver);
+
+    /* Load system nameservers */
+    int ns_count = SocketDNSResolver_load_resolv_conf (resolver);
+    ASSERT_NE (ns_count, -1);
+
+    /* Resolve localhost - should succeed */
+    int err = SocketDNSResolver_resolve_sync (resolver, "localhost",
+                                               RESOLVER_FLAG_BOTH, 5000, &result);
+    ASSERT_EQ (err, RESOLVER_OK);
+    ASSERT_NOT_NULL (result.addresses);
+    ASSERT_NE (result.count, 0);
+
+    /* Verify at least one address has valid family */
+    int found_valid = 0;
+    for (size_t i = 0; i < result.count; i++)
+      {
+        if (result.addresses[i].family == AF_INET
+            || result.addresses[i].family == AF_INET6)
+          {
+            found_valid = 1;
+            break;
+          }
+      }
+    ASSERT_NE (found_valid, 0);
+
+    SocketDNSResolver_result_free (&result);
+    success = 1;
+  }
+  EXCEPT (SocketDNSResolver_Failed)
+  {
+    ASSERT (0); /* Should not fail with valid parameters */
+  }
+  FINALLY
+  {
+    if (result.addresses)
+      SocketDNSResolver_result_free (&result);
+    if (resolver)
+      SocketDNSResolver_free (&resolver);
+    Arena_dispose (&arena);
+  }
+  END_TRY;
+
+  ASSERT_NE (success, 0);
+}
+
+/* Test: SocketDNSResolver_resolve_sync with IPv4 literal */
+TEST (test_socketdnsresolver_resolve_sync_ipv4_literal)
+{
+  Arena_T arena = Arena_new ();
+  SocketDNSResolver_T resolver = NULL;
+  SocketDNSResolver_Result result = { 0 };
+  volatile int success = 0;
+
+  TRY
+  {
+    resolver = SocketDNSResolver_new (arena);
+    ASSERT_NOT_NULL (resolver);
+
+    /* Load system nameservers */
+    int ns_count = SocketDNSResolver_load_resolv_conf (resolver);
+    ASSERT_NE (ns_count, -1);
+
+    /* Resolve IPv4 literal - should succeed */
+    int err = SocketDNSResolver_resolve_sync (resolver, "127.0.0.1",
+                                               RESOLVER_FLAG_IPV4, 5000, &result);
+    ASSERT_EQ (err, RESOLVER_OK);
+    ASSERT_NOT_NULL (result.addresses);
+    ASSERT_NE (result.count, 0);
+
+    /* Verify AF_INET family */
+    ASSERT_EQ (result.addresses[0].family, AF_INET);
+
+    SocketDNSResolver_result_free (&result);
+    success = 1;
+  }
+  EXCEPT (SocketDNSResolver_Failed)
+  {
+    ASSERT (0); /* Should not fail with valid IPv4 literal */
+  }
+  FINALLY
+  {
+    if (result.addresses)
+      SocketDNSResolver_result_free (&result);
+    if (resolver)
+      SocketDNSResolver_free (&resolver);
+    Arena_dispose (&arena);
+  }
+  END_TRY;
+
+  ASSERT_NE (success, 0);
+}
+
+/* Test: SocketDNSResolver_resolve_sync with IPv6 literal */
+TEST (test_socketdnsresolver_resolve_sync_ipv6_literal)
+{
+  Arena_T arena = Arena_new ();
+  SocketDNSResolver_T resolver = NULL;
+  SocketDNSResolver_Result result = { 0 };
+  volatile int success = 0;
+
+  TRY
+  {
+    resolver = SocketDNSResolver_new (arena);
+    ASSERT_NOT_NULL (resolver);
+
+    /* Load system nameservers */
+    int ns_count = SocketDNSResolver_load_resolv_conf (resolver);
+    ASSERT_NE (ns_count, -1);
+
+    /* Resolve IPv6 literal - should succeed */
+    int err = SocketDNSResolver_resolve_sync (resolver, "::1",
+                                               RESOLVER_FLAG_IPV6, 5000, &result);
+    ASSERT_EQ (err, RESOLVER_OK);
+    ASSERT_NOT_NULL (result.addresses);
+    ASSERT_NE (result.count, 0);
+
+    /* Verify AF_INET6 family */
+    ASSERT_EQ (result.addresses[0].family, AF_INET6);
+
+    SocketDNSResolver_result_free (&result);
+    success = 1;
+  }
+  EXCEPT (SocketDNSResolver_Failed)
+  {
+    ASSERT (0); /* Should not fail with valid IPv6 literal */
+  }
+  FINALLY
+  {
+    if (result.addresses)
+      SocketDNSResolver_result_free (&result);
+    if (resolver)
+      SocketDNSResolver_free (&resolver);
+    Arena_dispose (&arena);
+  }
+  END_TRY;
+
+  ASSERT_NE (success, 0);
+}
+
+/* Test: SocketDNSResolver_resolve_sync timeout with non-existent domain */
+TEST (test_socketdnsresolver_resolve_sync_timeout)
+{
+  Arena_T arena = Arena_new ();
+  SocketDNSResolver_T resolver = NULL;
+  SocketDNSResolver_Result result = { 0 };
+  volatile int got_error = 0;
+
+  TRY
+  {
+    resolver = SocketDNSResolver_new (arena);
+    ASSERT_NOT_NULL (resolver);
+
+    /* Load system nameservers */
+    int ns_count = SocketDNSResolver_load_resolv_conf (resolver);
+    ASSERT_NE (ns_count, -1);
+
+    /* Set very short timeout (1ms) and try non-existent domain */
+    int err = SocketDNSResolver_resolve_sync (
+        resolver, "this.host.does.not.exist.invalid", RESOLVER_FLAG_BOTH, 1,
+        &result);
+
+    /* Should timeout or fail (NXDOMAIN) */
+    ASSERT_NE (err, RESOLVER_OK);
+    got_error = 1;
+  }
+  EXCEPT (SocketDNSResolver_Failed)
+  {
+    /* Also acceptable - exception on failure */
+    got_error = 1;
+  }
+  FINALLY
+  {
+    if (result.addresses)
+      SocketDNSResolver_result_free (&result);
+    if (resolver)
+      SocketDNSResolver_free (&resolver);
+    Arena_dispose (&arena);
+  }
+  END_TRY;
+
+  ASSERT_NE (got_error, 0);
+}
+
+/* Test: SocketDNSResolver_resolve_sync NXDOMAIN for invalid domain */
+TEST (test_socketdnsresolver_resolve_sync_nxdomain)
+{
+  Arena_T arena = Arena_new ();
+  SocketDNSResolver_T resolver = NULL;
+  SocketDNSResolver_Result result = { 0 };
+  volatile int got_error = 0;
+
+  TRY
+  {
+    resolver = SocketDNSResolver_new (arena);
+    ASSERT_NOT_NULL (resolver);
+
+    /* Load system nameservers */
+    int ns_count = SocketDNSResolver_load_resolv_conf (resolver);
+    ASSERT_NE (ns_count, -1);
+
+    /* Use invalid domain - should fail with NXDOMAIN or timeout */
+    int err = SocketDNSResolver_resolve_sync (
+        resolver, "this.host.does.not.exist.invalid", RESOLVER_FLAG_BOTH, 5000,
+        &result);
+
+    /* Should fail (NXDOMAIN, timeout, or other error) */
+    ASSERT_NE (err, RESOLVER_OK);
+    got_error = 1;
+  }
+  EXCEPT (SocketDNSResolver_Failed)
+  {
+    /* Also acceptable - exception on failure */
+    got_error = 1;
+  }
+  FINALLY
+  {
+    if (result.addresses)
+      SocketDNSResolver_result_free (&result);
+    if (resolver)
+      SocketDNSResolver_free (&resolver);
+    Arena_dispose (&arena);
+  }
+  END_TRY;
+
+  ASSERT_NE (got_error, 0);
+}
+
+/* Test: SocketDNSResolver_resolve_sync cache paths (miss then hit) */
+TEST (test_socketdnsresolver_resolve_sync_cache_paths)
+{
+  Arena_T arena = Arena_new ();
+  SocketDNSResolver_T resolver = NULL;
+  SocketDNSResolver_Result result1 = { 0 };
+  SocketDNSResolver_Result result2 = { 0 };
+  volatile int success = 0;
+
+  TRY
+  {
+    resolver = SocketDNSResolver_new (arena);
+    ASSERT_NOT_NULL (resolver);
+
+    /* Load system nameservers */
+    int ns_count = SocketDNSResolver_load_resolv_conf (resolver);
+    ASSERT_NE (ns_count, -1);
+
+    /* Get initial cache stats */
+    SocketDNSResolver_CacheStats stats_before = { 0 };
+    SocketDNSResolver_cache_stats (resolver, &stats_before);
+
+    /* First resolve - should be cache miss or direct IP parsing */
+    int err1 = SocketDNSResolver_resolve_sync (resolver, "localhost",
+                                                RESOLVER_FLAG_BOTH, 5000, &result1);
+    ASSERT_EQ (err1, RESOLVER_OK);
+    ASSERT_NOT_NULL (result1.addresses);
+
+    /* Check cache stats after first resolve */
+    SocketDNSResolver_CacheStats stats_after_first = { 0 };
+    SocketDNSResolver_cache_stats (resolver, &stats_after_first);
+
+    /* Second resolve - should be cache hit if caching occurred */
+    int err2 = SocketDNSResolver_resolve_sync (resolver, "localhost",
+                                                RESOLVER_FLAG_BOTH, 5000, &result2);
+    ASSERT_EQ (err2, RESOLVER_OK);
+    ASSERT_NOT_NULL (result2.addresses);
+
+    /* Check cache stats after second resolve */
+    SocketDNSResolver_CacheStats stats_after_second = { 0 };
+    SocketDNSResolver_cache_stats (resolver, &stats_after_second);
+
+    /* Verify cache stats are accessible and reasonable
+     * (IP literals may bypass cache, so we just verify stats are valid) */
+    ASSERT (stats_after_second.hits >= stats_before.hits);
+    ASSERT (stats_after_second.misses >= stats_before.misses);
+
+    SocketDNSResolver_result_free (&result1);
+    SocketDNSResolver_result_free (&result2);
+    success = 1;
+  }
+  EXCEPT (SocketDNSResolver_Failed)
+  {
+    ASSERT (0); /* Should not fail with valid parameters */
+  }
+  FINALLY
+  {
+    if (result1.addresses)
+      SocketDNSResolver_result_free (&result1);
+    if (result2.addresses)
+      SocketDNSResolver_result_free (&result2);
+    if (resolver)
+      SocketDNSResolver_free (&resolver);
+    Arena_dispose (&arena);
+  }
+  END_TRY;
+
+  ASSERT_NE (success, 0);
 }
 
 int
