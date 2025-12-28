@@ -39,6 +39,25 @@
 #include "core/Except.h"  /* For Except_T and module exception macros */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLS);
 
+/**
+ * TLS_CHECK_WRITE_ERROR - Check and raise appropriate exception for SSL write errors
+ * @result: Return value from tls_handle_ssl_write_result()
+ *
+ * Interprets the encoded error result and raises the appropriate exception:
+ * - result < -1: Clean close (raises Socket_Closed)
+ * - result < 0:  Generic error (raises SocketTLS_Failed)
+ * - result >= 0: Success (no exception)
+ *
+ * Thread-safe: Yes (uses thread-local exception handling)
+ */
+#define TLS_CHECK_WRITE_ERROR(result) \
+  do { \
+    if ((result) < -1) \
+      RAISE (Socket_Closed); \
+    else if ((result) < 0) \
+      RAISE_TLS_ERROR (SocketTLS_Failed); \
+  } while (0)
+
 /* Linux kTLS headers - only available on Linux with kTLS support */
 #ifdef __linux__
 #include <linux/version.h>
@@ -272,14 +291,7 @@ SocketTLS_sendfile (Socket_T socket, int file_fd, off_t offset, size_t size)
     {
       ossl_ssize_t sent_raw = SSL_sendfile (ssl, file_fd, offset, size, 0);
       ssize_t sent = tls_handle_ssl_write_result (ssl, sent_raw, "SSL_sendfile");
-      if (sent < -1)
-        {
-          RAISE (Socket_Closed);
-        }
-      else if (sent < 0)
-        {
-          RAISE_TLS_ERROR (SocketTLS_Failed);
-        }
+      TLS_CHECK_WRITE_ERROR (sent);
       return sent;
     }
 #endif
@@ -323,14 +335,7 @@ SocketTLS_sendfile (Socket_T socket, int file_fd, off_t offset, size_t size)
 
           int ret_raw = SSL_write (ssl, buf + sent_chunk, to_send);
           ssize_t ret = tls_handle_ssl_write_result (ssl, ret_raw, "SSL_write in sendfile fallback");
-          if (ret < -1)
-            {
-              RAISE (Socket_Closed);
-            }
-          else if (ret < 0)
-            {
-              RAISE_TLS_ERROR (SocketTLS_Failed);
-            }
+          TLS_CHECK_WRITE_ERROR (ret);
           sent_chunk += (size_t)ret;
           if (ret == 0)
             {
