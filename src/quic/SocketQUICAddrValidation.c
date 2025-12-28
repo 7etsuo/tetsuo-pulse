@@ -13,7 +13,6 @@
 
 #include <arpa/inet.h>
 #include <string.h>
-#include <time.h>
 
 #include "core/SocketCrypto.h"
 #include "core/SocketUtil.h"
@@ -31,19 +30,6 @@ const Except_T SocketQUICAddrValidation_Failed
  * ============================================================================
  */
 
-/**
- * @brief Get current monotonic timestamp in milliseconds.
- */
-static uint64_t
-get_monotonic_ms (void)
-{
-  struct timespec ts;
-  if (clock_gettime (CLOCK_MONOTONIC, &ts) != 0)
-    {
-      return 0;
-    }
-  return (uint64_t)ts.tv_sec * 1000 + (uint64_t)ts.tv_nsec / 1000000;
-}
 
 /**
  * @brief Hash sockaddr into fixed-size buffer.
@@ -208,7 +194,7 @@ SocketQUICAddrValidation_generate_token (const struct sockaddr *addr,
     }
 
   /* Get current timestamp */
-  timestamp = get_monotonic_ms ();
+  timestamp = (uint64_t)Socket_get_monotonic_ms ();
 
   /* Hash the address */
   hash_address (addr, addr_hash);
@@ -265,7 +251,7 @@ SocketQUICAddrValidation_validate_token (const uint8_t *token,
   token_timestamp = read_uint64_be (token);
 
   /* Check expiration */
-  current_time = get_monotonic_ms ();
+  current_time = (uint64_t)Socket_get_monotonic_ms ();
   if (current_time > token_timestamp
       && (current_time - token_timestamp)
              > (QUIC_ADDR_VALIDATION_TOKEN_LIFETIME * 1000))
