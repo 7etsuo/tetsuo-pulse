@@ -120,6 +120,38 @@
  */
 #define QUIC_RTT_BETA 0.25
 
+/**
+ * @brief RTT smoothing using integer arithmetic (RFC 6298/RFC 9002).
+ *
+ * Integer-based constants for EWMA smoothing without floating-point arithmetic:
+ * - smoothed_rtt = (1 - 1/8) * smoothed_rtt + 1/8 * rtt_sample
+ *                = (7 * smoothed_rtt + rtt_sample) / 8
+ * - rtt_var = (1 - 1/4) * rtt_var + 1/4 * |smoothed_rtt - rtt_sample|
+ *           = (3 * rtt_var + |smoothed_rtt - rtt_sample|) / 4
+ *
+ * These constants map to floating-point equivalents QUIC_RTT_ALPHA and QUIC_RTT_BETA.
+ */
+
+/**
+ * @brief Numerator for smoothed RTT: (1 - alpha) = 7/8.
+ */
+#define QUIC_RTT_SMOOTH_WEIGHT 7
+
+/**
+ * @brief Denominator for smoothed RTT calculation.
+ */
+#define QUIC_RTT_SMOOTH_DENOM 8
+
+/**
+ * @brief Numerator for RTT variance: (1 - beta) = 3/4.
+ */
+#define QUIC_RTT_VAR_WEIGHT 3
+
+/**
+ * @brief Denominator for RTT variance calculation.
+ */
+#define QUIC_RTT_VAR_DENOM 4
+
 /* ============================================================================
  * Loss Detection Constants (RFC 9002)
  * ============================================================================
