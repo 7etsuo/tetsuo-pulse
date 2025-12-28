@@ -184,13 +184,41 @@ expand_sni_capacity (T ctx)
       || !SocketSecurity_check_size (alloc_size))
     ctx_raise_openssl_error ("SNI capacity overflow");
 
-  if (!sni_realloc_array ((void **)&ctx->sni_certs.hostnames, alloc_size)
-      || !sni_realloc_array ((void **)&ctx->sni_certs.cert_files, alloc_size)
-      || !sni_realloc_array ((void **)&ctx->sni_certs.key_files, alloc_size)
-      || !sni_realloc_array ((void **)&ctx->sni_certs.chains, alloc_size)
-      || !sni_realloc_array ((void **)&ctx->sni_certs.pkeys, alloc_size))
-    ctx_raise_openssl_error ("Failed to allocate SNI certificate arrays");
+  /* Pre-allocate all arrays atomically to prevent partial failure state
+   * corruption. If any allocation fails, rollback successful allocations
+   * before raising exception. This ensures context remains consistent. */
+  void *new_hostnames = realloc (ctx->sni_certs.hostnames, alloc_size);
+  void *new_cert_files = realloc (ctx->sni_certs.cert_files, alloc_size);
+  void *new_key_files = realloc (ctx->sni_certs.key_files, alloc_size);
+  void *new_chains = realloc (ctx->sni_certs.chains, alloc_size);
+  void *new_pkeys = realloc (ctx->sni_certs.pkeys, alloc_size);
 
+  /* Verify all allocations succeeded before committing state */
+  if (!new_hostnames || !new_cert_files || !new_key_files || !new_chains
+      || !new_pkeys)
+    {
+      /* Rollback successful allocations: only free if pointer changed
+       * (realloc may return same pointer if shrinking or in-place resize) */
+      if (new_hostnames && new_hostnames != ctx->sni_certs.hostnames)
+        free (new_hostnames);
+      if (new_cert_files && new_cert_files != ctx->sni_certs.cert_files)
+        free (new_cert_files);
+      if (new_key_files && new_key_files != ctx->sni_certs.key_files)
+        free (new_key_files);
+      if (new_chains && new_chains != ctx->sni_certs.chains)
+        free (new_chains);
+      if (new_pkeys && new_pkeys != ctx->sni_certs.pkeys)
+        free (new_pkeys);
+
+      ctx_raise_openssl_error ("Failed to allocate SNI certificate arrays");
+    }
+
+  /* All allocations succeeded - atomically commit new state */
+  ctx->sni_certs.hostnames = new_hostnames;
+  ctx->sni_certs.cert_files = new_cert_files;
+  ctx->sni_certs.key_files = new_key_files;
+  ctx->sni_certs.chains = new_chains;
+  ctx->sni_certs.pkeys = new_pkeys;
   ctx->sni_certs.capacity = new_cap;
 }
 
