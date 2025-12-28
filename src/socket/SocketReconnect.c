@@ -569,38 +569,49 @@ complete_tls_connection (T conn)
 }
 #endif /* SOCKET_HAS_TLS */
 
+#if SOCKET_HAS_TLS
+static int
+handle_tls_connect (T conn)
+{
+  /* TLS enabled - start handshake instead of completing connection */
+  if (!start_tls_handshake (conn))
+    return -1;
+
+  /* Stay in CONNECTING state while TLS handshake proceeds */
+  SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                   "%s:%d TCP connected, TLS handshake pending", conn->host,
+                   conn->port);
+
+  /* Immediately try first handshake step */
+  int hs_result = perform_tls_handshake_step (conn);
+  if (hs_result == 1)
+    {
+      /* Handshake completed immediately (unlikely but possible) */
+      complete_tls_connection (conn);
+    }
+  else if (hs_result < 0)
+    {
+      /* Handshake failed */
+      return -1;
+    }
+  /* hs_result == 0: handshake in progress, wait for events */
+  return 0;
+}
+#endif /* SOCKET_HAS_TLS */
+
 static void
 handle_connect_success (T conn)
 {
 #if SOCKET_HAS_TLS
+  if (conn->tls_ctx && handle_tls_connect (conn) != 0)
+    {
+      /* TLS setup failed - treat as connection failure */
+      handle_connect_failure (conn);
+      return;
+    }
   if (conn->tls_ctx)
     {
-      /* TLS enabled - start handshake instead of completing connection */
-      if (!start_tls_handshake (conn))
-        {
-          /* TLS setup failed - treat as connection failure */
-          handle_connect_failure (conn);
-          return;
-        }
-
-      /* Stay in CONNECTING state while TLS handshake proceeds */
-      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                       "%s:%d TCP connected, TLS handshake pending",
-                       conn->host, conn->port);
-
-      /* Immediately try first handshake step */
-      int hs_result = perform_tls_handshake_step (conn);
-      if (hs_result == 1)
-        {
-          /* Handshake completed immediately (unlikely but possible) */
-          complete_tls_connection (conn);
-        }
-      else if (hs_result < 0)
-        {
-          /* Handshake failed */
-          handle_connect_failure (conn);
-        }
-      /* hs_result == 0: handshake in progress, wait for events */
+      /* TLS handshake in progress or complete */
       return;
     }
 #endif /* SOCKET_HAS_TLS */
