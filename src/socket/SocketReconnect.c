@@ -289,10 +289,8 @@ close_socket (T conn)
 }
 
 static int
-start_connect (T conn)
+check_can_attempt (T conn)
 {
-  int fd, flags;
-
   /* Check max attempts */
   if (conn->policy.max_attempts > 0
       && conn->attempt_count >= conn->policy.max_attempts)
@@ -312,37 +310,48 @@ start_connect (T conn)
       return 0;
     }
 
-  /* Clean up any existing socket */
-  close_socket (conn);
+  return 1;
+}
+
+static Socket_T
+create_nonblocking_socket (T conn)
+{
+  volatile Socket_T socket = NULL;
 
   /* Create new socket - use AF_INET for IPv4, resolve actual address family
    * later */
-  TRY { conn->socket = Socket_new (AF_INET, SOCK_STREAM, 0); }
+  TRY { socket = Socket_new (AF_INET, SOCK_STREAM, 0); }
   EXCEPT (Socket_Failed)
   {
     int err = Socket_geterrno ();
     reconnect_set_socket_error (conn, "Failed to create socket", err);
-    return 0;
+    return NULL;
   }
   END_TRY;
 
-  if (!conn->socket)
-    return 0;
+  if (!socket)
+    return NULL;
 
   /* Set non-blocking for async connect */
   TRY
   {
-    Socket_setnonblocking (conn->socket);
+    Socket_setnonblocking (socket);
   }
   EXCEPT (Socket_Failed)
   {
     int err = Socket_geterrno ();
     reconnect_set_socket_error (conn, "Failed to set non-blocking mode", err);
-    close_socket (conn);
-    return 0;
+    Socket_free ((Socket_T *)&socket);
+    return NULL;
   }
   END_TRY;
 
+  return socket;
+}
+
+static int
+initiate_async_connect (T conn)
+{
   /* Update attempt tracking */
   conn->attempt_count++;
   conn->total_attempts++;
@@ -374,10 +383,34 @@ start_connect (T conn)
 
     /* Real failure */
     reconnect_set_socket_error (conn, "Connect failed", err);
-    close_socket (conn);
     return 0;
   }
   END_TRY;
+
+  return 1;
+}
+
+static int
+start_connect (T conn)
+{
+  /* Check if we can attempt connection */
+  if (!check_can_attempt (conn))
+    return 0;
+
+  /* Clean up any existing socket */
+  close_socket (conn);
+
+  /* Create and configure new socket */
+  conn->socket = create_nonblocking_socket (conn);
+  if (!conn->socket)
+    return 0;
+
+  /* Initiate connection */
+  if (!initiate_async_connect (conn))
+    {
+      close_socket (conn);
+      return 0;
+    }
 
   return 1;
 }
