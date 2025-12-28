@@ -53,6 +53,7 @@
 #include "core/SocketSecurity.h"
 #include "core/SocketUtil.h"
 #include "dns/SocketDNS.h"
+#include "dns/SocketDNSResolver.h"
 #include "socket/SocketCommon-private.h"
 #include "socket/SocketCommon.h"
 
@@ -2261,4 +2262,113 @@ SocketCommon_wait_for_fd (int fd, short events, int timeout_ms)
     return -1;
 
   return 1;
+}
+
+/* ==================== DNS Resolver to Addrinfo Conversion ==================== */
+
+/**
+ * SocketCommon_free_resolver_addrinfo - Free addrinfo list created by
+ * resolver_to_addrinfo
+ * @ai: Addrinfo chain to free (may be NULL)
+ *
+ * Frees an addrinfo chain allocated by SocketCommon_resolver_to_addrinfo.
+ * Uses custom allocation pattern where sockaddr is embedded in the same
+ * allocation as addrinfo, so single free per node is sufficient.
+ *
+ * Thread-safe: Yes - operates on caller-provided chain only
+ */
+void
+SocketCommon_free_resolver_addrinfo (struct addrinfo *ai)
+{
+  while (ai)
+    {
+      struct addrinfo *next = ai->ai_next;
+      free (ai); /* sockaddr is embedded, single free */
+      ai = next;
+    }
+}
+
+/**
+ * SocketCommon_resolver_to_addrinfo - Convert SocketDNSResolver_Result to
+ * addrinfo
+ * @result: DNS resolver result containing addresses (void* for header
+ * independence)
+ * @port: Port number in host byte order
+ *
+ * Creates a POSIX addrinfo chain from resolver results for compatibility
+ * with existing address iteration code. Uses custom allocation pattern
+ * where sockaddr is embedded in the same block as addrinfo.
+ *
+ * Returns: Newly allocated addrinfo chain, or NULL if result is NULL/empty
+ * or allocation fails Thread-safe: Yes - no shared state
+ *
+ * Note: Must be freed with SocketCommon_free_resolver_addrinfo(), NOT
+ * freeaddrinfo()
+ */
+struct addrinfo *
+SocketCommon_resolver_to_addrinfo (const void *result_ptr, int port)
+{
+  const SocketDNSResolver_Result *result
+      = (const SocketDNSResolver_Result *)result_ptr;
+  struct addrinfo *head = NULL;
+  struct addrinfo **tail = &head;
+  size_t i;
+
+  if (!result || result->count == 0)
+    return NULL;
+
+  for (i = 0; i < result->count; i++)
+    {
+      const SocketDNSResolver_Address *addr = &result->addresses[i];
+      struct addrinfo *ai;
+      size_t addrlen;
+
+      /* Allocate addrinfo structure */
+      if (addr->family == AF_INET)
+        addrlen = sizeof (struct sockaddr_in);
+      else if (addr->family == AF_INET6)
+        addrlen = sizeof (struct sockaddr_in6);
+      else
+        continue; /* Skip unsupported families */
+
+      /* Defensive overflow check - should never happen with AF_INET/AF_INET6
+       */
+      if (addrlen > SIZE_MAX - sizeof (struct addrinfo))
+        continue; /* Skip this address if allocation would overflow */
+
+      ai = calloc (1, sizeof (struct addrinfo) + addrlen);
+      if (!ai)
+        {
+          /* Free already allocated entries on failure */
+          SocketCommon_free_resolver_addrinfo (head);
+          return NULL;
+        }
+
+      ai->ai_family = addr->family;
+      ai->ai_socktype = SOCK_STREAM;
+      ai->ai_protocol = IPPROTO_TCP;
+      ai->ai_addrlen = addrlen;
+      ai->ai_addr = (struct sockaddr *)(ai + 1);
+
+      if (addr->family == AF_INET)
+        {
+          struct sockaddr_in *sin = (struct sockaddr_in *)ai->ai_addr;
+          sin->sin_family = AF_INET;
+          sin->sin_port = htons ((uint16_t)port);
+          memcpy (&sin->sin_addr, &addr->addr.v4, sizeof (struct in_addr));
+        }
+      else
+        {
+          struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)ai->ai_addr;
+          sin6->sin6_family = AF_INET6;
+          sin6->sin6_port = htons ((uint16_t)port);
+          memcpy (&sin6->sin6_addr, &addr->addr.v6, sizeof (struct in6_addr));
+        }
+
+      /* Append to list */
+      *tail = ai;
+      tail = &ai->ai_next;
+    }
+
+  return head;
 }

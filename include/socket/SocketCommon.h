@@ -1282,6 +1282,99 @@ extern int SocketCommon_get_dns_timeout (void);
 extern int SocketCommon_wait_for_fd (int fd, short events, int timeout_ms);
 
 /**
+ * @brief Convert DNS resolver result to addrinfo linked list
+ * @ingroup core_io
+ *
+ * Creates a POSIX addrinfo chain from DNS resolver results for compatibility
+ * with existing address iteration code. Uses a custom allocation pattern
+ * where sockaddr is embedded in the same block as addrinfo.
+ *
+ * This function handles both IPv4 (AF_INET) and IPv6 (AF_INET6) addresses,
+ * skipping any unsupported address families. The port is set in network byte
+ * order (htons). Overflow validation is performed when allocating the combined
+ * addrinfo+sockaddr structure.
+ *
+ * @param[in] result DNS resolver result containing addresses (may be NULL or
+ * empty). Type: const SocketDNSResolver_Result* from dns/SocketDNSResolver.h
+ * @param[in] port Port number in host byte order to set in each sockaddr
+ *
+ * @return Newly allocated addrinfo chain (caller must free with
+ * SocketCommon_free_resolver_addrinfo), or NULL if result is NULL/empty or
+ * allocation fails
+ *
+ * @throws None - returns NULL on allocation failure
+ *
+ * @threadsafe Yes - no shared state
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * #include "dns/SocketDNSResolver.h"
+ * SocketDNSResolver_Result result;
+ * // ... populate result from DNS resolver ...
+ * struct addrinfo *ai = SocketCommon_resolver_to_addrinfo(&result, 80);
+ * if (ai) {
+ *     // Use addrinfo chain for connection attempts
+ *     for (struct addrinfo *rp = ai; rp; rp = rp->ai_next) {
+ *         int fd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+ *         // ... connect using rp->ai_addr ...
+ *     }
+ *     SocketCommon_free_resolver_addrinfo(ai);
+ * }
+ * @endcode
+ *
+ * @note Must be freed with SocketCommon_free_resolver_addrinfo(), NOT
+ * freeaddrinfo()
+ * @note Sockaddr is embedded in addrinfo allocation, requiring single free
+ * @note Returns NULL for empty result (count=0) - not an error
+ * @note Requires dns/SocketDNSResolver.h to be included for type definition
+ *
+ * @complexity O(n) where n is result->count
+ *
+ * @see SocketCommon_free_resolver_addrinfo() for cleanup
+ * @see SocketHappyEyeballs for usage in connection racing
+ * @see dns/SocketDNSResolver.h for SocketDNSResolver_Result type
+ */
+extern struct addrinfo *SocketCommon_resolver_to_addrinfo (const void *result,
+                                                           int port);
+
+/**
+ * @brief Free addrinfo list created by SocketCommon_resolver_to_addrinfo
+ * @ingroup core_io
+ *
+ * Frees an addrinfo chain created by SocketCommon_resolver_to_addrinfo. Uses
+ * custom allocation pattern where sockaddr is embedded in the same allocation
+ * as addrinfo, requiring single free per node instead of separate frees.
+ *
+ * Safe to call with NULL pointer (no-op).
+ *
+ * @param[in] ai Addrinfo chain to free (may be NULL)
+ *
+ * @return None (void function)
+ *
+ * @throws None
+ *
+ * @threadsafe Yes - no shared state
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * struct addrinfo *ai = SocketCommon_resolver_to_addrinfo(&result, 443);
+ * // ... use ai ...
+ * SocketCommon_free_resolver_addrinfo(ai);  // Safe even if ai is NULL
+ * @endcode
+ *
+ * @note Do NOT use freeaddrinfo() on chains from
+ * SocketCommon_resolver_to_addrinfo
+ * @note NULL-safe - calling with NULL is valid and does nothing
+ *
+ * @complexity O(n) where n is chain length
+ *
+ * @see SocketCommon_resolver_to_addrinfo() for allocation
+ */
+extern void SocketCommon_free_resolver_addrinfo (struct addrinfo *ai);
+
+/**
  * @brief Shutdown global resources (e.g., DNS resolver) to prevent leaks in tests
  * @ingroup core_io
  * Call at program exit after all operations complete.
