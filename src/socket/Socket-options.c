@@ -569,7 +569,6 @@ void
 Socket_setcongestion (T socket, const char *algorithm)
 {
   assert (socket);
-  assert (algorithm);
 
 #if SOCKET_HAS_TCP_CONGESTION
   if (algorithm == NULL || *algorithm == '\0')
