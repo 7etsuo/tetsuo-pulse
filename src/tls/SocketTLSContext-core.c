@@ -534,25 +534,23 @@ tls_context_get_from_ssl (const SSL *ssl)
 static int
 try_load_user_ca (T ctx, const char *ca_file)
 {
-  volatile int loaded = 0;
-
   TRY
   {
     SocketTLSContext_load_ca (ctx, ca_file);
     SOCKET_LOG_INFO_MSG ("Loaded user-provided CA '%s' for client context %p",
                          ca_file, (void *)ctx);
-    loaded = 1;
+    RETURN 1;
   }
   EXCEPT (SocketTLS_Failed)
   {
     SOCKET_LOG_WARN_MSG ("Failed to load user-provided CA '%s' for client "
                          "context %p - attempting system CA fallback",
                          ca_file, (void *)ctx);
-    loaded = 0;
+    RETURN 0;
   }
   END_TRY;
 
-  return loaded;
+  return 0;  /* Unreachable, but required for -Werror=return-type */
 }
 
 /**
