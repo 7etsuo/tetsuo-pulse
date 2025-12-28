@@ -340,14 +340,6 @@ Socket_timeouts_get_extended (const T socket,
  * ============================================================================
  */
 
-/**
- * socket_shutdown_mode_valid - Validate shutdown mode argument
- * @how: Shutdown mode (SHUT_RD, SHUT_WR, or SHUT_RDWR)
- *
- * Returns: Non-zero if valid, 0 if invalid
- */
-
-
 void
 Socket_shutdown (T socket, int how)
 {
