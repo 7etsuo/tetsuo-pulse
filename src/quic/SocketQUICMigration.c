@@ -491,9 +491,8 @@ SocketQUICMigration_update_rtt (SocketQUICPath_T *path, uint64_t rtt_us)
     }
   else
     {
-      /* Smoothed RTT = (1 - alpha) * SRTT + alpha * RTT */
-      path->rtt_us = (uint64_t) ((1.0 - QUIC_RTT_ALPHA) * path->rtt_us
-                                 + QUIC_RTT_ALPHA * rtt_us);
+      /* Smoothed RTT = (7 * SRTT + rtt_sample) / 8 */
+      path->rtt_us = (QUIC_RTT_SMOOTH_WEIGHT * path->rtt_us + rtt_us) / QUIC_RTT_SMOOTH_DENOM;
     }
 }
 
