@@ -13,9 +13,26 @@
 #include "quic/SocketQUICVarInt.h"
 #include "core/Arena.h"
 #include "core/Except.h"
+#include "core/SocketCrypto.h"
 
 #include <assert.h>
 #include <string.h>
+
+/* ============================================================================
+ * Constants
+ * ============================================================================
+ */
+
+/**
+ * @brief Maximum QUIC packet protection key material size.
+ *
+ * Based on RFC 9001 with AES-256-GCM or ChaCha20-Poly1305:
+ * - Packet protection key: 32 bytes
+ * - IV: 12 bytes
+ * - Header protection key: 32 bytes
+ * Total: 76 bytes (rounded to 128 for safety margin)
+ */
+#define QUIC_MAX_KEY_MATERIAL_SIZE 128
 
 /* ============================================================================
  * Exceptions
@@ -212,10 +229,11 @@ SocketQUICHandshake_free(SocketQUICHandshake_T *handshake)
   /* TODO: Free TLS context and SSL objects */
   /* This requires OpenSSL/LibreSSL integration */
 
-  /* Free keys */
+  /* Securely zero and free keys */
   for (int i = 0; i < QUIC_CRYPTO_LEVEL_COUNT; i++) {
     if (hs->keys[i]) {
-      /* TODO: Free key material securely */
+      /* Securely zero key material before freeing (CWE-226, CWE-244) */
+      SocketCrypto_secure_clear(hs->keys[i], QUIC_MAX_KEY_MATERIAL_SIZE);
       hs->keys[i] = NULL;
     }
   }
@@ -411,7 +429,8 @@ SocketQUICHandshake_discard_keys(SocketQUICHandshake_T handshake,
   }
 
   if (handshake->keys[level]) {
-    /* TODO: Securely zero and free key material */
+    /* Securely zero key material before discarding (CWE-226, CWE-244) */
+    SocketCrypto_secure_clear(handshake->keys[level], QUIC_MAX_KEY_MATERIAL_SIZE);
     handshake->keys[level] = NULL;
     handshake->keys_available[level] = 0;
   }
