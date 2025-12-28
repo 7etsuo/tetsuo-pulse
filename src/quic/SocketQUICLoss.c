@@ -260,8 +260,10 @@ SocketQUICLoss_update_rtt (SocketQUICLossRTT_T *rtt, uint64_t latest_rtt_us,
    */
   diff = llabs((int64_t)rtt->smoothed_rtt - (int64_t)rtt_sample);
 
-  rtt->rtt_var = (3 * rtt->rtt_var + (uint64_t)diff) / 4;
-  rtt->smoothed_rtt = (7 * rtt->smoothed_rtt + rtt_sample) / 8;
+  rtt->rtt_var = (QUIC_RTT_VAR_WEIGHT * rtt->rtt_var + (uint64_t)diff)
+                 / QUIC_RTT_VAR_DENOM;
+  rtt->smoothed_rtt = (QUIC_RTT_SMOOTH_WEIGHT * rtt->smoothed_rtt + rtt_sample)
+                      / QUIC_RTT_SMOOTH_DENOM;
 }
 
 uint64_t
