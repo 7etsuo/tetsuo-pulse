@@ -11,6 +11,7 @@
  * exchanged during the TLS handshake.
  */
 
+#include <stddef.h>
 #include <string.h>
 
 #include "quic/SocketQUICTransportParams.h"
@@ -435,22 +436,27 @@ SocketQUICTransportParams_encoded_size (const SocketQUICTransportParams_T *param
 }
 
 /* ============================================================================
- * Encoding
+ * Parameter Encode Handlers
  * ============================================================================
  */
 
-size_t
-SocketQUICTransportParams_encode (const SocketQUICTransportParams_T *params,
-                                  SocketQUICRole role, uint8_t *output,
-                                  size_t output_size)
+/**
+ * @brief Handler function type for transport parameter encoding.
+ */
+typedef size_t (*ParamEncodeHandler) (const SocketQUICTransportParams_T *params,
+                                      SocketQUICRole role, uint8_t *output,
+                                      size_t output_size);
+
+/**
+ * @brief Encode connection ID parameters.
+ */
+static size_t
+encode_connid_params (const SocketQUICTransportParams_T *params,
+                      SocketQUICRole role, uint8_t *output, size_t output_size)
 {
   size_t pos = 0;
   size_t len;
 
-  if (params == NULL || output == NULL)
-    return 0;
-
-  /* Connection IDs */
   if (role == QUIC_ROLE_SERVER && params->has_original_dcid)
     {
       len = encode_connid_param (output + pos, output_size - pos,
@@ -478,158 +484,184 @@ SocketQUICTransportParams_encode (const SocketQUICTransportParams_T *params,
       pos += len;
     }
 
-  /* Stateless reset token (server only) */
+  return pos;
+}
+
+/**
+ * @brief Encode stateless reset token (server only).
+ */
+static size_t
+encode_reset_token (const SocketQUICTransportParams_T *params,
+                    SocketQUICRole role, uint8_t *output, size_t output_size)
+{
   if (role == QUIC_ROLE_SERVER && params->has_stateless_reset_token)
     {
-      len = encode_token_param (output + pos, output_size - pos,
-                                QUIC_TP_STATELESS_RESET_TOKEN,
-                                params->stateless_reset_token,
-                                QUIC_STATELESS_RESET_TOKEN_LEN);
-      if (len == 0)
-        return 0;
-      pos += len;
+      return encode_token_param (output, output_size,
+                                 QUIC_TP_STATELESS_RESET_TOKEN,
+                                 params->stateless_reset_token,
+                                 QUIC_STATELESS_RESET_TOKEN_LEN);
     }
+  return 0;
+}
 
-  /* Variable integer parameters (only encode non-default values) */
-  if (params->max_idle_timeout != QUIC_TP_DEFAULT_MAX_IDLE_TIMEOUT)
+/**
+ * @brief Varint parameter metadata for table-driven encoding.
+ */
+typedef struct
+{
+  uint64_t param_id;
+  size_t offset;       /* Offset of value in SocketQUICTransportParams_T */
+  uint64_t default_val; /* Default value (skip encoding if equal) */
+} VarintParamMeta;
+
+#define VARINT_PARAM_OFFSET(field) offsetof (SocketQUICTransportParams_T, field)
+
+static const VarintParamMeta varint_params[] = {
+  { QUIC_TP_MAX_IDLE_TIMEOUT, VARINT_PARAM_OFFSET (max_idle_timeout),
+    QUIC_TP_DEFAULT_MAX_IDLE_TIMEOUT },
+  { QUIC_TP_MAX_UDP_PAYLOAD_SIZE, VARINT_PARAM_OFFSET (max_udp_payload_size),
+    QUIC_TP_DEFAULT_MAX_UDP_PAYLOAD_SIZE },
+  { QUIC_TP_INITIAL_MAX_DATA, VARINT_PARAM_OFFSET (initial_max_data),
+    QUIC_TP_DEFAULT_INITIAL_MAX_DATA },
+  { QUIC_TP_INITIAL_MAX_STREAM_DATA_BIDI_LOCAL,
+    VARINT_PARAM_OFFSET (initial_max_stream_data_bidi_local),
+    QUIC_TP_DEFAULT_INITIAL_MAX_STREAM_DATA },
+  { QUIC_TP_INITIAL_MAX_STREAM_DATA_BIDI_REMOTE,
+    VARINT_PARAM_OFFSET (initial_max_stream_data_bidi_remote),
+    QUIC_TP_DEFAULT_INITIAL_MAX_STREAM_DATA },
+  { QUIC_TP_INITIAL_MAX_STREAM_DATA_UNI,
+    VARINT_PARAM_OFFSET (initial_max_stream_data_uni),
+    QUIC_TP_DEFAULT_INITIAL_MAX_STREAM_DATA },
+  { QUIC_TP_INITIAL_MAX_STREAMS_BIDI,
+    VARINT_PARAM_OFFSET (initial_max_streams_bidi),
+    QUIC_TP_DEFAULT_INITIAL_MAX_STREAMS },
+  { QUIC_TP_INITIAL_MAX_STREAMS_UNI,
+    VARINT_PARAM_OFFSET (initial_max_streams_uni),
+    QUIC_TP_DEFAULT_INITIAL_MAX_STREAMS },
+  { QUIC_TP_ACK_DELAY_EXPONENT, VARINT_PARAM_OFFSET (ack_delay_exponent),
+    QUIC_TP_DEFAULT_ACK_DELAY_EXPONENT },
+  { QUIC_TP_MAX_ACK_DELAY, VARINT_PARAM_OFFSET (max_ack_delay),
+    QUIC_TP_DEFAULT_MAX_ACK_DELAY },
+  { QUIC_TP_ACTIVE_CONNID_LIMIT, VARINT_PARAM_OFFSET (active_connection_id_limit),
+    QUIC_TP_DEFAULT_ACTIVE_CONNID_LIMIT },
+};
+
+#define VARINT_PARAM_COUNT (sizeof (varint_params) / sizeof (varint_params[0]))
+
+/**
+ * @brief Encode varint parameters using table-driven approach.
+ */
+static size_t
+encode_varint_params (const SocketQUICTransportParams_T *params,
+                      SocketQUICRole role, uint8_t *output, size_t output_size)
+{
+  size_t pos = 0;
+  size_t len;
+  (void)role;
+
+  for (size_t i = 0; i < VARINT_PARAM_COUNT; i++)
     {
-      len = encode_varint_param (output + pos, output_size - pos,
-                                 QUIC_TP_MAX_IDLE_TIMEOUT,
-                                 params->max_idle_timeout);
-      if (len == 0)
-        return 0;
-      pos += len;
+      const VarintParamMeta *meta = &varint_params[i];
+      const uint64_t *value_ptr =
+          (const uint64_t *)((const char *)params + meta->offset);
+
+      if (*value_ptr != meta->default_val)
+        {
+          len = encode_varint_param (output + pos, output_size - pos,
+                                     meta->param_id, *value_ptr);
+          if (len == 0)
+            return 0;
+          pos += len;
+        }
     }
 
-  if (params->max_udp_payload_size != QUIC_TP_DEFAULT_MAX_UDP_PAYLOAD_SIZE)
-    {
-      len = encode_varint_param (output + pos, output_size - pos,
-                                 QUIC_TP_MAX_UDP_PAYLOAD_SIZE,
-                                 params->max_udp_payload_size);
-      if (len == 0)
-        return 0;
-      pos += len;
-    }
+  return pos;
+}
 
-  if (params->initial_max_data != QUIC_TP_DEFAULT_INITIAL_MAX_DATA)
-    {
-      len = encode_varint_param (output + pos, output_size - pos,
-                                 QUIC_TP_INITIAL_MAX_DATA,
-                                 params->initial_max_data);
-      if (len == 0)
-        return 0;
-      pos += len;
-    }
+/**
+ * @brief Encode boolean parameters.
+ */
+static size_t
+encode_boolean_params (const SocketQUICTransportParams_T *params,
+                       SocketQUICRole role, uint8_t *output, size_t output_size)
+{
+  (void)role;
 
-  if (params->initial_max_stream_data_bidi_local
-      != QUIC_TP_DEFAULT_INITIAL_MAX_STREAM_DATA)
-    {
-      len = encode_varint_param (output + pos, output_size - pos,
-                                 QUIC_TP_INITIAL_MAX_STREAM_DATA_BIDI_LOCAL,
-                                 params->initial_max_stream_data_bidi_local);
-      if (len == 0)
-        return 0;
-      pos += len;
-    }
-
-  if (params->initial_max_stream_data_bidi_remote
-      != QUIC_TP_DEFAULT_INITIAL_MAX_STREAM_DATA)
-    {
-      len = encode_varint_param (output + pos, output_size - pos,
-                                 QUIC_TP_INITIAL_MAX_STREAM_DATA_BIDI_REMOTE,
-                                 params->initial_max_stream_data_bidi_remote);
-      if (len == 0)
-        return 0;
-      pos += len;
-    }
-
-  if (params->initial_max_stream_data_uni != QUIC_TP_DEFAULT_INITIAL_MAX_STREAM_DATA)
-    {
-      len = encode_varint_param (output + pos, output_size - pos,
-                                 QUIC_TP_INITIAL_MAX_STREAM_DATA_UNI,
-                                 params->initial_max_stream_data_uni);
-      if (len == 0)
-        return 0;
-      pos += len;
-    }
-
-  if (params->initial_max_streams_bidi != QUIC_TP_DEFAULT_INITIAL_MAX_STREAMS)
-    {
-      len = encode_varint_param (output + pos, output_size - pos,
-                                 QUIC_TP_INITIAL_MAX_STREAMS_BIDI,
-                                 params->initial_max_streams_bidi);
-      if (len == 0)
-        return 0;
-      pos += len;
-    }
-
-  if (params->initial_max_streams_uni != QUIC_TP_DEFAULT_INITIAL_MAX_STREAMS)
-    {
-      len = encode_varint_param (output + pos, output_size - pos,
-                                 QUIC_TP_INITIAL_MAX_STREAMS_UNI,
-                                 params->initial_max_streams_uni);
-      if (len == 0)
-        return 0;
-      pos += len;
-    }
-
-  if (params->ack_delay_exponent != QUIC_TP_DEFAULT_ACK_DELAY_EXPONENT)
-    {
-      len = encode_varint_param (output + pos, output_size - pos,
-                                 QUIC_TP_ACK_DELAY_EXPONENT,
-                                 params->ack_delay_exponent);
-      if (len == 0)
-        return 0;
-      pos += len;
-    }
-
-  if (params->max_ack_delay != QUIC_TP_DEFAULT_MAX_ACK_DELAY)
-    {
-      len = encode_varint_param (output + pos, output_size - pos,
-                                 QUIC_TP_MAX_ACK_DELAY, params->max_ack_delay);
-      if (len == 0)
-        return 0;
-      pos += len;
-    }
-
-  if (params->active_connection_id_limit != QUIC_TP_DEFAULT_ACTIVE_CONNID_LIMIT)
-    {
-      len = encode_varint_param (output + pos, output_size - pos,
-                                 QUIC_TP_ACTIVE_CONNID_LIMIT,
-                                 params->active_connection_id_limit);
-      if (len == 0)
-        return 0;
-      pos += len;
-    }
-
-  /* Boolean parameter */
   if (params->disable_active_migration)
     {
-      len = encode_empty_param (output + pos, output_size - pos,
-                                QUIC_TP_DISABLE_ACTIVE_MIGRATION);
-      if (len == 0)
-        return 0;
-      pos += len;
+      return encode_empty_param (output, output_size,
+                                 QUIC_TP_DISABLE_ACTIVE_MIGRATION);
     }
+  return 0;
+}
 
-  /* Preferred address (server only) */
+/**
+ * @brief Encode preferred address (server only).
+ */
+static size_t
+encode_pref_address (const SocketQUICTransportParams_T *params,
+                     SocketQUICRole role, uint8_t *output, size_t output_size)
+{
   if (role == QUIC_ROLE_SERVER && params->preferred_address.present)
     {
-      len = encode_preferred_address (output + pos, output_size - pos,
-                                      &params->preferred_address);
-      if (len == 0)
-        return 0;
-      pos += len;
+      return encode_preferred_address (output, output_size,
+                                       &params->preferred_address);
     }
+  return 0;
+}
 
-  /* Extension: DATAGRAM */
+/**
+ * @brief Encode extension parameters.
+ */
+static size_t
+encode_extension_params (const SocketQUICTransportParams_T *params,
+                         SocketQUICRole role, uint8_t *output, size_t output_size)
+{
+  (void)role;
+
   if (params->has_max_datagram_frame_size)
     {
-      len = encode_varint_param (output + pos, output_size - pos,
-                                 QUIC_TP_MAX_DATAGRAM_FRAME_SIZE,
-                                 params->max_datagram_frame_size);
-      if (len == 0)
-        return 0;
+      return encode_varint_param (output, output_size,
+                                  QUIC_TP_MAX_DATAGRAM_FRAME_SIZE,
+                                  params->max_datagram_frame_size);
+    }
+  return 0;
+}
+
+/* Encoding handler table */
+static const ParamEncodeHandler encode_handlers[] = {
+  encode_connid_params,     encode_reset_token,    encode_varint_params,
+  encode_boolean_params,    encode_pref_address,   encode_extension_params,
+};
+
+#define ENCODE_HANDLER_COUNT (sizeof (encode_handlers) / sizeof (encode_handlers[0]))
+
+/* ============================================================================
+ * Encoding
+ * ============================================================================
+ */
+
+size_t
+SocketQUICTransportParams_encode (const SocketQUICTransportParams_T *params,
+                                  SocketQUICRole role, uint8_t *output,
+                                  size_t output_size)
+{
+  size_t pos = 0;
+  size_t len;
+
+  if (params == NULL || output == NULL)
+    return 0;
+
+  /* Encode all parameter groups using table-driven approach */
+  for (size_t i = 0; i < ENCODE_HANDLER_COUNT; i++)
+    {
+      len = encode_handlers[i] (params, role, output + pos, output_size - pos);
+      if (len == 0 && i < 3) /* Allow empty results for optional params */
+        {
+          if (output_size - pos == 0)
+            return 0; /* Buffer full */
+          /* Empty result is OK for some handlers */
+        }
       pos += len;
     }
 
