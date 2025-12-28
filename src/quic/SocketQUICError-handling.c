@@ -79,14 +79,10 @@ SocketQUIC_send_connection_close (SocketQUICConnection_T conn, uint64_t code,
   if (reason_len > QUIC_MAX_REASON_LENGTH)
     reason_len = QUIC_MAX_REASON_LENGTH; /* Limit reason phrase length */
 
-  /* Estimate minimum required buffer size:
-   * - Frame type: 1 byte (varint)
-   * - Error code: up to 8 bytes (varint)
-   * - Frame type field (for transport errors): up to 8 bytes (varint)
-   * - Reason length: up to 8 bytes (varint)
-   * - Reason phrase: reason_len bytes
-   */
-  size_t min_size = 1 + 8 + (is_app_error ? 0 : 8) + 8 + reason_len;
+  /* Check minimum buffer size for frame header plus reason phrase */
+  size_t min_size = (is_app_error ? QUIC_FRAME_MIN_SIZE_CONNECTION_CLOSE_APP
+                                  : QUIC_FRAME_MIN_SIZE_CONNECTION_CLOSE_TRANSPORT)
+                    + reason_len;
   if (out_len < min_size)
     return 0;
 
