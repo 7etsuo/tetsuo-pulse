@@ -310,6 +310,44 @@ get_verify_context (X509_STORE_CTX *x509_ctx, Socket_T *out_sock, T *out_ctx)
 }
 
 /**
+ * validate_ocsp_response_basic - Perform basic OCSP response validation
+ * @ocsp_resp: DER-encoded OCSP response data
+ * @ocsp_len: Length of OCSP response data
+ *
+ * Validates the OCSP response format and checks if status is successful.
+ * Note: Full validation (signature, freshness) is done by
+ * SocketTLS_get_ocsp_response_status() post-handshake.
+ * This performs only basic format validation.
+ *
+ * Returns: 1 if response is valid and status is successful, 0 otherwise
+ */
+static int
+validate_ocsp_response_basic (const unsigned char *ocsp_resp, long ocsp_len)
+{
+  const unsigned char *p = ocsp_resp;
+  OCSP_RESPONSE *resp = d2i_OCSP_RESPONSE (NULL, &p, ocsp_len);
+
+  if (!resp)
+    {
+      SOCKET_LOG_ERROR_MSG ("OCSP Must-Staple: Invalid OCSP response format");
+      return 0;
+    }
+
+  int status = OCSP_response_status (resp);
+  OCSP_RESPONSE_free (resp);
+
+  if (status != OCSP_RESPONSE_STATUS_SUCCESSFUL)
+    {
+      SOCKET_LOG_ERROR_MSG (
+          "OCSP Must-Staple: OCSP response status not successful: %d",
+          status);
+      return 0;
+    }
+
+  return 1;
+}
+
+/**
  * check_ocsp_must_staple - Verify OCSP stapling requirements
  * @ctx: TLS context with must-staple config
  * @sock: Socket being verified
@@ -365,32 +403,9 @@ check_ocsp_must_staple (T ctx, Socket_T sock, X509 *cert)
       return 0; /* No OCSP response - fail */
     }
 
-  /* Validate the OCSP response
-   * Note: Full validation (signature, freshness) is done by
-   * SocketTLS_get_ocsp_response_status() post-handshake.
-   * Here we do basic format validation. */
-  {
-    const unsigned char *p = ocsp_resp;
-    OCSP_RESPONSE *resp = d2i_OCSP_RESPONSE (NULL, &p, ocsp_len);
-
-    if (!resp)
-      {
-        SOCKET_LOG_ERROR_MSG (
-            "OCSP Must-Staple: Invalid OCSP response format");
-        return 0;
-      }
-
-    int status = OCSP_response_status (resp);
-    OCSP_RESPONSE_free (resp);
-
-    if (status != OCSP_RESPONSE_STATUS_SUCCESSFUL)
-      {
-        SOCKET_LOG_ERROR_MSG (
-            "OCSP Must-Staple: OCSP response status not successful: %d",
-            status);
-        return 0;
-      }
-  }
+  /* Validate the OCSP response */
+  if (!validate_ocsp_response_basic (ocsp_resp, ocsp_len))
+    return 0;
 
   SOCKET_LOG_DEBUG_MSG ("OCSP Must-Staple: Valid OCSP response present");
   return 1; /* OCSP requirement satisfied */
