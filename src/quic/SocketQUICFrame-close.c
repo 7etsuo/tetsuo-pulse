@@ -23,6 +23,25 @@
 #include <string.h>
 
 /**
+ * @brief Validate UTF-8 reason phrase and return its length.
+ *
+ * @param reason  Reason phrase to validate (may be NULL).
+ * @param out_len Output: length of reason phrase.
+ *
+ * @return 1 if valid (or NULL), 0 if invalid UTF-8.
+ */
+static int
+validate_utf8_reason (const char *reason, size_t *out_len)
+{
+  *out_len = reason ? strlen (reason) : 0;
+  if (*out_len > 0
+      && SocketUTF8_validate ((const unsigned char *)reason, *out_len)
+             != UTF8_VALID)
+    return 0;
+  return 1;
+}
+
+/**
  * @brief Encode CONNECTION_CLOSE frame (transport error, type 0x1c).
  *
  * Encodes a transport-level CONNECTION_CLOSE frame according to RFC 9000
@@ -66,10 +85,8 @@ SocketQUICFrame_encode_connection_close_transport (uint64_t error_code,
     return 0;
 
   /* Validate UTF-8 encoding of reason phrase per RFC 9000 Section 19.19 */
-  size_t reason_len = reason ? strlen (reason) : 0;
-  if (reason_len > 0
-      && SocketUTF8_validate ((const unsigned char *)reason, reason_len)
-             != UTF8_VALID)
+  size_t reason_len;
+  if (!validate_utf8_reason (reason, &reason_len))
     return 0;
 
   /* Calculate required size: type + error_code + frame_type + reason_len +
@@ -157,10 +174,8 @@ SocketQUICFrame_encode_connection_close_app (uint64_t error_code,
     return 0;
 
   /* Validate UTF-8 encoding of reason phrase per RFC 9000 Section 19.19 */
-  size_t reason_len = reason ? strlen (reason) : 0;
-  if (reason_len > 0
-      && SocketUTF8_validate ((const unsigned char *)reason, reason_len)
-             != UTF8_VALID)
+  size_t reason_len;
+  if (!validate_utf8_reason (reason, &reason_len))
     return 0;
 
   /* Calculate required size: type + error_code + reason_len + reason */
