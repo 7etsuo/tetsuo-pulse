@@ -377,6 +377,28 @@ get_loss_time_threshold (const SocketQUICLossRTT_T *rtt)
   return threshold;
 }
 
+/**
+ * Handle a lost packet by updating state and invoking callback.
+ *
+ * @param state Loss state containing bytes_in_flight
+ * @param packet The lost packet to handle
+ * @param lost_callback Optional callback to invoke for lost packet
+ * @param context User context for callback
+ */
+static void
+handle_lost_packet (SocketQUICLossState_T state,
+                    SocketQUICLossSentPacket_T *packet,
+                    SocketQUICLoss_LostCallback lost_callback, void *context)
+{
+  if (packet->in_flight)
+    state->bytes_in_flight -= packet->sent_bytes;
+
+  if (lost_callback)
+    lost_callback (packet, context);
+
+  remove_sent_packet (state, packet->packet_number);
+}
+
 static void
 detect_lost_packets (SocketQUICLossState_T state, const SocketQUICLossRTT_T *rtt,
                      uint64_t current_time,
@@ -425,14 +447,8 @@ detect_lost_packets (SocketQUICLossState_T state, const SocketQUICLossRTT_T *rtt
           if (p->packet_number <= pn_threshold)
             {
               /* Lost by packet threshold */
-              if (p->in_flight)
-                state->bytes_in_flight -= p->sent_bytes;
-
-              if (lost_callback)
-                lost_callback (p, context);
+              handle_lost_packet (state, p, lost_callback, context);
               count++;
-
-              remove_sent_packet (state, p->packet_number);
               p = next;
               continue;
             }
@@ -441,14 +457,8 @@ detect_lost_packets (SocketQUICLossState_T state, const SocketQUICLossRTT_T *rtt
           if (current_time >= p->sent_time_us + loss_delay)
             {
               /* Lost by time threshold */
-              if (p->in_flight)
-                state->bytes_in_flight -= p->sent_bytes;
-
-              if (lost_callback)
-                lost_callback (p, context);
+              handle_lost_packet (state, p, lost_callback, context);
               count++;
-
-              remove_sent_packet (state, p->packet_number);
             }
           else
             {
