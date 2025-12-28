@@ -68,44 +68,15 @@ initialize_mutex (struct SocketDNS_T *dns)
 void
 initialize_queue_condition (struct SocketDNS_T *dns)
 {
-  INIT_PTHREAD_PRIMITIVE (dns, pthread_cond_init, &dns->queue_cond,
-                          DNS_CLEAN_MUTEX,
-                          "Failed to initialize DNS resolver queue condition");
+  /* TODO(Phase 2.x): Removed - no queue condition needed without worker threads */
+  (void)dns;
 }
 
 void
 initialize_result_condition (struct SocketDNS_T *dns)
 {
-  pthread_condattr_t attr;
-  int rc;
-
-  rc = pthread_condattr_init (&attr);
-  if (rc != 0)
-    {
-      cleanup_on_init_failure (dns, DNS_CLEAN_CONDS);
-      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
-                        "Failed to initialize condition attributes");
-    }
-
-  rc = pthread_condattr_setclock (&attr, CLOCK_MONOTONIC);
-  if (rc != 0)
-    {
-      pthread_condattr_destroy (&attr);
-      cleanup_on_init_failure (dns, DNS_CLEAN_CONDS);
-      SOCKET_RAISE_MSG (
-          SocketDNS, SocketDNS_Failed,
-          "Failed to set CLOCK_MONOTONIC for condition variable");
-    }
-
-  rc = pthread_cond_init (&dns->result_cond, &attr);
-  pthread_condattr_destroy (&attr);
-
-  if (rc != 0)
-    {
-      cleanup_on_init_failure (dns, DNS_CLEAN_CONDS);
-      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
-                        "Failed to initialize DNS resolver result condition");
-    }
+  /* TODO(Phase 2.x): Removed - no result condition needed without worker threads */
+  (void)dns;
 }
 
 void
@@ -121,7 +92,7 @@ create_completion_pipe (struct SocketDNS_T *dns)
 {
   if (pipe (dns->pipefd) < 0)
     {
-      cleanup_on_init_failure (dns, DNS_CLEAN_CONDS);
+      cleanup_on_init_failure (dns, DNS_CLEAN_MUTEX);
       SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,
                         "Failed to create completion pipe");
     }
@@ -131,7 +102,7 @@ create_completion_pipe (struct SocketDNS_T *dns)
     {
       int saved_errno = errno;
       cleanup_pipe (dns);
-      cleanup_on_init_failure (dns, DNS_CLEAN_CONDS);
+      cleanup_on_init_failure (dns, DNS_CLEAN_MUTEX);
       errno = saved_errno;
       SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,
                         "Failed to set close-on-exec flag on pipe");
@@ -182,7 +153,7 @@ allocate_dns_resolver (void)
 void
 initialize_dns_fields (struct SocketDNS_T *dns)
 {
-  dns->num_workers = SOCKET_DNS_THREAD_COUNT;
+  /* num_workers removed - no worker threads in new architecture */
   dns->max_pending = SOCKET_DNS_MAX_PENDING;
   dns->request_timeout_ms = SOCKET_DEFAULT_DNS_TIMEOUT_MS;
 
@@ -220,90 +191,53 @@ signal_shutdown_and_broadcast (struct SocketDNS_T *dns)
 {
   pthread_mutex_lock (&dns->mutex);
   dns->shutdown = 1;
-  pthread_cond_broadcast (&dns->queue_cond);
+  /* queue_cond removed - no worker threads to signal */
   pthread_mutex_unlock (&dns->mutex);
 }
 
 static void
 cleanup_partial_workers (struct SocketDNS_T *dns, int created_count)
 {
-  signal_shutdown_and_broadcast (dns);
-
-  for (int i = 0; i < created_count; i++)
-    pthread_join (dns->workers[i], NULL);
+  /* TODO(Phase 2.x): Removed - no worker threads to clean up */
+  (void)dns;
+  (void)created_count;
 }
 
 static void
 set_worker_thread_name (struct SocketDNS_T *dns, int thread_index)
 {
-#if defined(__linux__) || defined(__APPLE__)
-  char thread_name[SOCKET_DNS_THREAD_NAME_SIZE];
-  snprintf (thread_name, sizeof (thread_name), "dns-worker-%d", thread_index);
-#if defined(__APPLE__)
-  (void)dns;
-  pthread_setname_np (thread_name);
-#else
-  pthread_setname_np (dns->workers[thread_index], thread_name);
-#endif
-#else
+  /* TODO(Phase 2.x): Removed - no worker threads */
   (void)dns;
   (void)thread_index;
-#endif
 }
 
 int
 create_single_worker_thread (struct SocketDNS_T *dns, int thread_index)
 {
-  pthread_attr_t attr;
-  int result;
-
-  setup_thread_attributes (&attr);
-  result = pthread_create (&dns->workers[thread_index], &attr, worker_thread,
-                           dns);
-  pthread_attr_destroy (&attr);
-
-  if (result != 0)
-    {
-      cleanup_partial_workers (dns, thread_index);
-      return -1;
-    }
-
-  set_worker_thread_name (dns, thread_index);
+  /* TODO(Phase 2.x): Removed - no worker threads */
+  (void)dns;
+  (void)thread_index;
   return 0;
 }
 
 void
 create_worker_threads (struct SocketDNS_T *dns)
 {
-  for (int i = 0; i < dns->num_workers; i++)
-    {
-      if (create_single_worker_thread (dns, i) != 0)
-        {
-          cleanup_on_init_failure (dns, DNS_CLEAN_ARENA);
-          SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,
-                            "Failed to create DNS worker thread %d", i);
-        }
-    }
+  /* TODO(Phase 2.x): Removed - no worker threads */
+  (void)dns;
 }
 
 void
 start_dns_workers (struct SocketDNS_T *dns)
 {
-  dns->workers = ALLOC (dns->arena, dns->num_workers * sizeof (pthread_t));
-  if (!dns->workers)
-    {
-      cleanup_on_init_failure (dns, DNS_CLEAN_ARENA);
-      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
-                        SOCKET_ENOMEM ": Cannot allocate worker thread array");
-    }
-  create_worker_threads (dns);
+  /* TODO(Phase 2.x): Removed - no worker threads */
+  (void)dns;
 }
 
 void
 cleanup_mutex_cond (struct SocketDNS_T *dns)
 {
-  pthread_cond_destroy (&dns->result_cond);
-  pthread_cond_destroy (&dns->queue_cond);
+  /* condition variables removed - only destroy mutex */
   pthread_mutex_destroy (&dns->mutex);
 }
 
@@ -325,11 +259,7 @@ cleanup_on_init_failure (struct SocketDNS_T *dns,
     Arena_dispose (&dns->arena);
   if (cleanup_level >= DNS_CLEAN_PIPE)
     cleanup_pipe (dns);
-  if (cleanup_level >= DNS_CLEAN_CONDS)
-    {
-      cleanup_mutex_cond (dns);
-    }
-  else if (cleanup_level >= DNS_CLEAN_MUTEX)
+  if (cleanup_level >= DNS_CLEAN_MUTEX)
     {
       pthread_mutex_destroy (&dns->mutex);
     }
@@ -339,10 +269,8 @@ cleanup_on_init_failure (struct SocketDNS_T *dns,
 void
 shutdown_workers (T d)
 {
+  /* TODO(Phase 2.x): Removed - no worker threads to shut down */
   signal_shutdown_and_broadcast (d);
-
-  for (int i = 0; i < d->num_workers; i++)
-    pthread_join (d->workers[i], NULL);
 }
 
 void
@@ -402,9 +330,7 @@ free_request_list_results (Request_T head, size_t next_offset)
 void
 free_all_requests (T d)
 {
-  free_request_list_results (
-      d->queue_head, offsetof (struct SocketDNS_Request_T, queue_next));
-
+  /* No queue_head anymore - only free hash table requests */
   for (int i = 0; i < SOCKET_DNS_REQUEST_HASH_SIZE; i++)
     free_request_list_results (
         d->request_hash[i], offsetof (struct SocketDNS_Request_T, hash_next));
@@ -416,9 +342,7 @@ reset_dns_state (T d)
   SCOPED_MUTEX_LOCK (&d->mutex);
   free_all_requests (d);
   cache_clear_locked (d); /* Free cache entries' malloc'd addrinfo results */
-  d->queue_head = NULL;
-  d->queue_tail = NULL;
-  d->queue_size = 0;
+  /* queue fields removed - no queue in new architecture */
   for (int i = 0; i < SOCKET_DNS_REQUEST_HASH_SIZE; i++)
     d->request_hash[i] = NULL;
 }
@@ -551,72 +475,58 @@ hash_table_remove (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 void
 queue_append (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 {
-  if (dns->queue_tail)
-    {
-      dns->queue_tail->queue_next = req;
-      dns->queue_tail = req;
-    }
-  else
-    {
-      dns->queue_head = req;
-      dns->queue_tail = req;
-    }
-  dns->queue_size++;
+  /* TODO(Phase 2.x): Removed - no queue in new architecture */
+  (void)dns;
+  (void)req;
 }
 
 void
 remove_from_queue_head (struct SocketDNS_T *dns,
                         struct SocketDNS_Request_T *req)
 {
-  dns->queue_head = req->queue_next;
-  if (!dns->queue_head)
-    dns->queue_tail = NULL;
+  /* TODO(Phase 2.x): Removed - no queue in new architecture */
+  (void)dns;
+  (void)req;
 }
 
 void
 remove_from_queue_middle (struct SocketDNS_T *dns,
                           struct SocketDNS_Request_T *req)
 {
-  Request_T prev = dns->queue_head;
-  while (prev && prev->queue_next != req)
-    prev = prev->queue_next;
-  if (prev)
-    {
-      prev->queue_next = req->queue_next;
-      if (dns->queue_tail == req)
-        dns->queue_tail = prev;
-    }
+  /* TODO(Phase 2.x): Removed - no queue in new architecture */
+  (void)dns;
+  (void)req;
 }
 
 void
 queue_remove (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 {
-  if (dns->queue_head == req)
-    remove_from_queue_head (dns, req);
-  else
-    remove_from_queue_middle (dns, req);
-  dns->queue_size--;
+  /* TODO(Phase 2.x): Removed - no queue in new architecture */
+  (void)dns;
+  (void)req;
 }
 
 int
 check_queue_limit (const struct SocketDNS_T *dns)
 {
-  return dns->queue_size >= dns->max_pending;
+  /* TODO(Phase 2.x): Removed - no queue in new architecture */
+  (void)dns;
+  return 0; /* Never full since there's no queue */
 }
 
 void
 submit_dns_request (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 {
+  /* TODO(Phase 2.x): Removed - no queue/workers in new architecture */
   hash_table_insert (dns, req);
-  queue_append (dns, req);
-  pthread_cond_signal (&dns->queue_cond);
+  /* No queue_append or cond signal - worker threads removed */
 }
 
 void
 cancel_pending_request (struct SocketDNS_T *dns,
                         struct SocketDNS_Request_T *req)
 {
-  queue_remove (dns, req);
+  /* No queue_remove - queue removed */
   hash_table_remove (dns, req);
   req->state = REQ_CANCELLED;
 }
@@ -686,35 +596,17 @@ initialize_addrinfo_hints (struct addrinfo *hints)
 Request_T
 dequeue_request (struct SocketDNS_T *dns)
 {
-  struct SocketDNS_Request_T *req;
-
-  if (!dns->queue_head)
-    return NULL;
-
-  req = dns->queue_head;
-  dns->queue_head = req->queue_next;
-  if (!dns->queue_head)
-    dns->queue_tail = NULL;
-  dns->queue_size--;
-
-  req->queue_next = NULL;
-  req->state = REQ_PROCESSING;
-
-  return req;
+  /* TODO(Phase 2.x): Removed - no queue in new architecture */
+  (void)dns;
+  return NULL;
 }
 
 Request_T
 wait_for_request (struct SocketDNS_T *dns)
 {
-  while (dns->queue_head == NULL && !dns->shutdown)
-    {
-      pthread_cond_wait (&dns->queue_cond, &dns->mutex);
-    }
-
-  if (dns->shutdown && dns->queue_head == NULL)
-    return NULL;
-
-  return dequeue_request (dns);
+  /* TODO(Phase 2.x): Removed - no queue/workers in new architecture */
+  (void)dns;
+  return NULL;
 }
 
 void

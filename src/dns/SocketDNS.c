@@ -234,7 +234,6 @@ SocketDNS_new (void)
   dns = allocate_dns_resolver ();
   initialize_dns_fields (dns);
   initialize_dns_components (dns);
-  start_dns_workers (dns);
 
   return dns;
 }
@@ -248,7 +247,6 @@ SocketDNS_free (T *dns)
 
   d = *dns;
 
-  shutdown_workers (d);
   drain_completion_pipe (d);
   reset_dns_state (d);
   destroy_dns_resources (d);
@@ -268,18 +266,9 @@ validate_dns_instance (const struct SocketDNS_T *dns)
 static void
 check_queue_capacity (struct SocketDNS_T *dns)
 {
-  pthread_mutex_lock (&dns->mutex);
-
-  if (check_queue_limit (dns))
-    {
-      size_t max_pending = dns->max_pending;
-      pthread_mutex_unlock (&dns->mutex);
-      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
-                        "DNS request queue full (max %zu pending)",
-                        max_pending);
-    }
-
-  pthread_mutex_unlock (&dns->mutex);
+  /* TODO(Phase 2.x): Implement queue limit check with new architecture */
+  (void)dns;
+  /* For now, skip queue capacity check since there's no queue */
 }
 
 static Request_T
@@ -294,8 +283,11 @@ prepare_resolve_request (struct SocketDNS_T *dns, const char *host, int port,
 static void
 submit_resolve_request (struct SocketDNS_T *dns, Request_T req)
 {
+  /* TODO(Phase 2.x): Implement request submission using new architecture */
   pthread_mutex_lock (&dns->mutex);
-  submit_dns_request (dns, req);
+  /* submit_dns_request removed - no worker thread queue */
+  hash_table_insert (dns, req);
+  req->state = REQ_PENDING;
   SocketMetrics_increment (SOCKET_METRIC_DNS_REQUEST_SUBMITTED, 1);
   pthread_mutex_unlock (&dns->mutex);
 }
@@ -351,8 +343,6 @@ SocketDNS_getmaxpending (struct SocketDNS_T *dns)
 void
 SocketDNS_setmaxpending (struct SocketDNS_T *dns, size_t max_pending)
 {
-  size_t queue_depth;
-
   if (!dns)
     {
       SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
@@ -360,16 +350,7 @@ SocketDNS_setmaxpending (struct SocketDNS_T *dns, size_t max_pending)
     }
 
   pthread_mutex_lock (&dns->mutex);
-  queue_depth = dns->queue_size;
-  if (max_pending < queue_depth)
-    {
-      pthread_mutex_unlock (&dns->mutex);
-      SOCKET_RAISE_MSG (
-          SocketDNS, SocketDNS_Failed,
-          "Cannot set max pending (%zu) below current queue depth (%zu)",
-          max_pending, queue_depth);
-    }
-
+  /* TODO(Phase 2.x): Check against actual pending count when new architecture in place */
   dns->max_pending = max_pending;
   pthread_mutex_unlock (&dns->mutex);
 }
@@ -517,27 +498,15 @@ static int
 wait_for_completion (struct SocketDNS_T *dns,
                      const struct SocketDNS_Request_T *req, int timeout_ms)
 {
-  struct timespec deadline;
+  /* TODO(Phase 2.x): Implement wait using new architecture (no worker threads) */
+  (void)dns;
+  (void)req;
+  (void)timeout_ms;
 
-  if (timeout_ms > 0)
-    compute_deadline (timeout_ms, &deadline);
-
-  while (req->state != REQ_COMPLETE && req->state != REQ_CANCELLED)
-    {
-      if (timeout_ms > 0)
-        {
-          int rc = pthread_cond_timedwait (&dns->result_cond, &dns->mutex,
-                                           &deadline);
-          if (rc == ETIMEDOUT)
-            return ETIMEDOUT;
-        }
-      else
-        {
-          pthread_cond_wait (&dns->result_cond, &dns->mutex);
-        }
-    }
-
-  return 0;
+  /* For now, return timeout immediately since there are no worker threads
+   * to complete requests. This will be replaced with proper implementation
+   * in later phases of DNS unification. */
+  return ETIMEDOUT;
 }
 
 static void
