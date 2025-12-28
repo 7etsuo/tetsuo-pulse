@@ -18,6 +18,10 @@
 #define QUIC_FRAME_ACK_MAX_RANGES 256
 #define QUIC_FRAME_HEADER_MAX_SIZE 32
 
+/* PATH frame size constants (RFC 9000 §19.17-19.18) */
+#define QUIC_PATH_DATA_SIZE 8
+#define QUIC_PATH_FRAME_SIZE (1 + QUIC_PATH_DATA_SIZE)
+
 /* Conservative buffer size estimates for QUIC frame encoding.
  * These assume maximum varint encoding (8 bytes) for all variable-length fields.
  * Used for pre-flight buffer size checks in frame encoding functions.

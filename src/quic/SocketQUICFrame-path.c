@@ -38,10 +38,10 @@ SocketQUICFrame_encode_path_challenge (const uint8_t data[8], uint8_t *out,
   /* Frame type */
   out[0] = QUIC_FRAME_PATH_CHALLENGE;
 
-  /* Copy 8-byte challenge data */
-  memcpy (out + 1, data, 8);
+  /* Copy challenge data */
+  memcpy (out + 1, data, QUIC_PATH_DATA_SIZE);
 
-  return 9; /* 1 byte type + 8 bytes data */
+  return QUIC_PATH_FRAME_SIZE;
 }
 
 /* ============================================================================
@@ -71,10 +71,10 @@ SocketQUICFrame_encode_path_response (const uint8_t data[8], uint8_t *out,
   /* Frame type */
   out[0] = QUIC_FRAME_PATH_RESPONSE;
 
-  /* Copy 8-byte response data (echoed from challenge) */
-  memcpy (out + 1, data, 8);
+  /* Copy response data (echoed from challenge) */
+  memcpy (out + 1, data, QUIC_PATH_DATA_SIZE);
 
-  return 9; /* 1 byte type + 8 bytes data */
+  return QUIC_PATH_FRAME_SIZE;
 }
 
 /* ============================================================================
@@ -89,7 +89,7 @@ int
 SocketQUICFrame_decode_path_challenge (const uint8_t *in, size_t len,
                                        uint8_t data[8])
 {
-  if (!in || !data || len < 9)
+  if (!in || !data || len < QUIC_PATH_FRAME_SIZE)
     return -1;
 
   /* Verify frame type */
@@ -97,9 +97,9 @@ SocketQUICFrame_decode_path_challenge (const uint8_t *in, size_t len,
     return -1;
 
   /* Copy challenge data */
-  memcpy (data, in + 1, 8);
+  memcpy (data, in + 1, QUIC_PATH_DATA_SIZE);
 
-  return 9; /* 1 byte type + 8 bytes data */
+  return QUIC_PATH_FRAME_SIZE;
 }
 
 /* ============================================================================
@@ -114,7 +114,7 @@ int
 SocketQUICFrame_decode_path_response (const uint8_t *in, size_t len,
                                       uint8_t data[8])
 {
-  if (!in || !data || len < 9)
+  if (!in || !data || len < QUIC_PATH_FRAME_SIZE)
     return -1;
 
   /* Verify frame type */
@@ -122,7 +122,7 @@ SocketQUICFrame_decode_path_response (const uint8_t *in, size_t len,
     return -1;
 
   /* Copy response data */
-  memcpy (data, in + 1, 8);
+  memcpy (data, in + 1, QUIC_PATH_DATA_SIZE);
 
-  return 9; /* 1 byte type + 8 bytes data */
+  return QUIC_PATH_FRAME_SIZE;
 }
