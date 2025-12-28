@@ -376,20 +376,26 @@ extern int SocketQUIC_error_is_connection_fatal (uint64_t code);
  * code and reason phrase. This closes the entire connection and all
  * associated streams.
  *
- * @param conn   Connection to close.
- * @param code   Error code (transport or application).
- * @param reason Human-readable reason phrase (may be NULL).
- * @param out    Output buffer for encoded frame.
- * @param out_len Size of output buffer.
+ * @param conn       Connection to close.
+ * @param code       Error code (transport or application).
+ * @param reason     Human-readable reason phrase (may be NULL).
+ * @param reason_len Length of reason phrase in bytes (0 if reason is NULL).
+ *                   If reason_len exceeds QUIC_MAX_REASON_LENGTH, it will
+ *                   be clamped to the maximum allowed length.
+ * @param out        Output buffer for encoded frame.
+ * @param out_len    Size of output buffer.
  *
  * @return Number of bytes written to out, or 0 on error.
  *
  * @note The connection state should be set to CLOSING after calling this.
  *       Transport errors use frame type 0x1c, application errors use 0x1d.
+ *       The reason parameter does NOT need to be null-terminated, as the
+ *       length is explicitly provided via reason_len.
  */
 extern size_t SocketQUIC_send_connection_close (SocketQUICConnection_T conn,
                                                  uint64_t code,
                                                  const char *reason,
+                                                 size_t reason_len,
                                                  uint8_t *out,
                                                  size_t out_len);
 

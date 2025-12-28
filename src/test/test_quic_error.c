@@ -385,8 +385,9 @@ TEST (quic_error_send_connection_close_transport)
       conn = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
 
       /* Send CONNECTION_CLOSE for transport error */
+      const char *reason = "test reason";
       len = SocketQUIC_send_connection_close (
-          conn, QUIC_PROTOCOL_VIOLATION, "test reason", buf, sizeof (buf));
+          conn, QUIC_PROTOCOL_VIOLATION, reason, strlen (reason), buf, sizeof (buf));
 
       ASSERT (len > 0);
 
@@ -444,7 +445,7 @@ TEST (quic_error_send_connection_close_application)
       conn = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
 
       /* Send CONNECTION_CLOSE for application error */
-      len = SocketQUIC_send_connection_close (conn, 0x0200, NULL, buf,
+      len = SocketQUIC_send_connection_close (conn, 0x0200, NULL, 0, buf,
                                                sizeof (buf));
 
       ASSERT (len > 0);
@@ -573,7 +574,7 @@ TEST (quic_error_send_connection_close_null)
   uint8_t buf[256];
 
   /* NULL connection should return 0 */
-  ASSERT_EQ (SocketQUIC_send_connection_close (NULL, QUIC_NO_ERROR, NULL, buf,
+  ASSERT_EQ (SocketQUIC_send_connection_close (NULL, QUIC_NO_ERROR, NULL, 0, buf,
                                                 sizeof (buf)),
              0);
 
@@ -586,7 +587,7 @@ TEST (quic_error_send_connection_close_null)
       arena = Arena_new ();
       conn = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
       ASSERT_EQ (
-          SocketQUIC_send_connection_close (conn, QUIC_NO_ERROR, NULL, NULL, 100),
+          SocketQUIC_send_connection_close (conn, QUIC_NO_ERROR, NULL, 0, NULL, 100),
           0);
     }
   FINALLY { Arena_dispose ((Arena_T *)&arena); }
@@ -610,6 +611,151 @@ TEST (quic_error_send_stream_reset_null)
       arena = Arena_new ();
       stream = SocketQUICStream_new (arena, 0);
       ASSERT_EQ (SocketQUIC_send_stream_reset (stream, 0x0200, 0, NULL, 100), 0);
+    }
+  FINALLY { Arena_dispose ((Arena_T *)&arena); }
+  END_TRY;
+}
+
+/* ============================================================================
+ * Reason String Security Tests (Issue #948)
+ * ============================================================================
+ */
+
+TEST (quic_error_send_connection_close_non_null_terminated)
+{
+  volatile Arena_T arena = NULL;
+  volatile SocketQUICConnection_T conn = NULL;
+  uint8_t buf[256];
+  size_t len;
+  uint64_t reason_len_decoded;
+  const uint8_t *p;
+  size_t consumed;
+
+  TRY
+    {
+      arena = Arena_new ();
+      conn = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
+
+      /* Create a non-null-terminated string buffer */
+      char reason_buf[20];
+      memcpy (reason_buf, "non-null-term", 13);
+      /* Intentionally not null-terminated - fill rest with garbage */
+      memset (reason_buf + 13, 0xFF, sizeof (reason_buf) - 13);
+
+      /* Send CONNECTION_CLOSE with explicit length (no null terminator needed) */
+      len = SocketQUIC_send_connection_close (conn, QUIC_INTERNAL_ERROR,
+                                               reason_buf, 13, buf, sizeof (buf));
+
+      ASSERT (len > 0);
+
+      /* Verify the reason length is exactly 13 bytes */
+      p = buf;
+
+      /* Skip frame type */
+      ASSERT_EQ (SocketQUICVarInt_decode (p, len, &reason_len_decoded, &consumed),
+                 QUIC_VARINT_OK);
+      p += consumed;
+      len -= consumed;
+
+      /* Skip error code */
+      ASSERT_EQ (SocketQUICVarInt_decode (p, len, &reason_len_decoded, &consumed),
+                 QUIC_VARINT_OK);
+      p += consumed;
+      len -= consumed;
+
+      /* Skip frame type field (for transport errors) */
+      ASSERT_EQ (SocketQUICVarInt_decode (p, len, &reason_len_decoded, &consumed),
+                 QUIC_VARINT_OK);
+      p += consumed;
+      len -= consumed;
+
+      /* Check reason phrase length */
+      ASSERT_EQ (SocketQUICVarInt_decode (p, len, &reason_len_decoded, &consumed),
+                 QUIC_VARINT_OK);
+      ASSERT_EQ (reason_len_decoded, 13);
+      p += consumed;
+      len -= consumed;
+
+      /* Verify reason phrase content */
+      ASSERT_EQ (memcmp (p, "non-null-term", 13), 0);
+    }
+  FINALLY { Arena_dispose ((Arena_T *)&arena); }
+  END_TRY;
+}
+
+TEST (quic_error_send_connection_close_null_with_nonzero_length)
+{
+  volatile Arena_T arena = NULL;
+  volatile SocketQUICConnection_T conn = NULL;
+  uint8_t buf[256];
+  size_t len;
+
+  TRY
+    {
+      arena = Arena_new ();
+      conn = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
+
+      /* NULL reason with non-zero length should fail */
+      len = SocketQUIC_send_connection_close (conn, QUIC_NO_ERROR, NULL, 10,
+                                               buf, sizeof (buf));
+
+      ASSERT_EQ (len, 0);
+    }
+  FINALLY { Arena_dispose ((Arena_T *)&arena); }
+  END_TRY;
+}
+
+TEST (quic_error_send_connection_close_length_clamping)
+{
+  volatile Arena_T arena = NULL;
+  volatile SocketQUICConnection_T conn = NULL;
+  uint8_t buf[70000]; /* Large buffer */
+  size_t len;
+  uint64_t reason_len_decoded;
+  const uint8_t *p;
+  size_t consumed;
+
+  TRY
+    {
+      arena = Arena_new ();
+      conn = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
+
+      /* Create a large reason string */
+      char *large_reason = Arena_alloc (arena, 100000, __FILE__, __LINE__);
+      memset (large_reason, 'X', 100000);
+
+      /* Send with length exceeding QUIC_MAX_REASON_LENGTH */
+      len = SocketQUIC_send_connection_close (conn, QUIC_INTERNAL_ERROR,
+                                               large_reason, 100000, buf,
+                                               sizeof (buf));
+
+      ASSERT (len > 0);
+
+      /* Verify the reason length was clamped to QUIC_MAX_REASON_LENGTH */
+      p = buf;
+
+      /* Skip frame type */
+      ASSERT_EQ (SocketQUICVarInt_decode (p, len, &reason_len_decoded, &consumed),
+                 QUIC_VARINT_OK);
+      p += consumed;
+      len -= consumed;
+
+      /* Skip error code */
+      ASSERT_EQ (SocketQUICVarInt_decode (p, len, &reason_len_decoded, &consumed),
+                 QUIC_VARINT_OK);
+      p += consumed;
+      len -= consumed;
+
+      /* Skip frame type field */
+      ASSERT_EQ (SocketQUICVarInt_decode (p, len, &reason_len_decoded, &consumed),
+                 QUIC_VARINT_OK);
+      p += consumed;
+      len -= consumed;
+
+      /* Check reason phrase length is clamped */
+      ASSERT_EQ (SocketQUICVarInt_decode (p, len, &reason_len_decoded, &consumed),
+                 QUIC_VARINT_OK);
+      ASSERT_EQ (reason_len_decoded, QUIC_MAX_REASON_LENGTH);
     }
   FINALLY { Arena_dispose ((Arena_T *)&arena); }
   END_TRY;

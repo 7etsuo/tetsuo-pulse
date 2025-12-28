@@ -55,15 +55,18 @@ SocketQUIC_error_is_connection_fatal (uint64_t code)
 
 size_t
 SocketQUIC_send_connection_close (SocketQUICConnection_T conn, uint64_t code,
-                                   const char *reason, uint8_t *out,
-                                   size_t out_len)
+                                   const char *reason, size_t reason_len,
+                                   uint8_t *out, size_t out_len)
 {
   size_t offset;
-  size_t reason_len;
   uint64_t frame_type;
   int is_app_error;
 
   if (!conn || !out)
+    return 0;
+
+  /* Validate reason parameters: if reason is NULL, length must be 0 */
+  if (!reason && reason_len != 0)
     return 0;
 
   /* Determine if this is an application error (0x1d) or transport error (0x1c) */
@@ -74,10 +77,9 @@ SocketQUIC_send_connection_close (SocketQUICConnection_T conn, uint64_t code,
   frame_type = is_app_error ? QUIC_FRAME_CONNECTION_CLOSE_APP
                             : QUIC_FRAME_CONNECTION_CLOSE;
 
-  /* Calculate required space */
-  reason_len = reason ? strlen (reason) : 0;
+  /* Clamp reason length to maximum allowed */
   if (reason_len > QUIC_MAX_REASON_LENGTH)
-    reason_len = QUIC_MAX_REASON_LENGTH; /* Limit reason phrase length */
+    reason_len = QUIC_MAX_REASON_LENGTH;
 
   /* Estimate minimum required buffer size:
    * - Frame type: 1 byte (varint)
