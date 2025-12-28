@@ -858,8 +858,8 @@ status_cb_wrapper (SSL *ssl, void *arg)
   len = encode_ocsp_response (resp, &der);
   OCSP_RESPONSE_free (resp);
 
-  /* Combined check: encoding failed OR response too large */
-  if (len == 0 || len > SOCKET_TLS_MAX_OCSP_RESPONSE_LEN)
+  /* Check encoding result (encode_ocsp_response validates size internally) */
+  if (len == 0)
     {
       if (der)
         OPENSSL_free (der);
