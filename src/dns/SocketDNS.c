@@ -28,6 +28,7 @@
 #include "core/Arena.h"
 #include "dns/SocketDNS-private.h"
 #include "dns/SocketDNS.h"
+#include "dns/SocketDNSResolver.h"
 #include "socket/SocketCommon-private.h"
 
 #undef T
@@ -549,10 +550,121 @@ resolve_async_with_wait (struct SocketDNS_T *dns, const char *host, int port,
   return wait_and_retrieve_result (dns, req, timeout_ms, host);
 }
 
+static struct addrinfo *
+convert_resolver_result_to_addrinfo (const SocketDNSResolver_Result *result,
+                                     int port)
+{
+  struct addrinfo *head = NULL;
+  struct addrinfo *tail = NULL;
+  size_t i;
+
+  if (!result || result->count == 0)
+    return NULL;
+
+  for (i = 0; i < result->count; i++)
+    {
+      struct addrinfo *ai = calloc (1, sizeof (*ai));
+      if (!ai)
+        {
+          SocketCommon_free_addrinfo (head);
+          return NULL;
+        }
+
+      ai->ai_family = result->addresses[i].family;
+      ai->ai_socktype = SOCK_STREAM;
+      ai->ai_protocol = IPPROTO_TCP;
+
+      if (result->addresses[i].family == AF_INET)
+        {
+          struct sockaddr_in *sa = calloc (1, sizeof (*sa));
+          if (!sa)
+            {
+              free (ai);
+              SocketCommon_free_addrinfo (head);
+              return NULL;
+            }
+          sa->sin_family = AF_INET;
+          sa->sin_port = htons ((uint16_t)port);
+          sa->sin_addr = result->addresses[i].addr.v4;
+          ai->ai_addr = (struct sockaddr *)sa;
+          ai->ai_addrlen = sizeof (*sa);
+        }
+      else if (result->addresses[i].family == AF_INET6)
+        {
+          struct sockaddr_in6 *sa = calloc (1, sizeof (*sa));
+          if (!sa)
+            {
+              free (ai);
+              SocketCommon_free_addrinfo (head);
+              return NULL;
+            }
+          sa->sin6_family = AF_INET6;
+          sa->sin6_port = htons ((uint16_t)port);
+          sa->sin6_addr = result->addresses[i].addr.v6;
+          ai->ai_addr = (struct sockaddr *)sa;
+          ai->ai_addrlen = sizeof (*sa);
+        }
+      else
+        {
+          free (ai);
+          continue;
+        }
+
+      if (!head)
+        head = ai;
+      else
+        tail->ai_next = ai;
+      tail = ai;
+    }
+
+  return head;
+}
+
+static struct addrinfo *
+resolve_via_backend (struct SocketDNS_T *dns, const char *host, int port,
+                     const struct addrinfo *hints, int timeout_ms)
+{
+  SocketDNSResolver_Result result = { 0 };
+  struct addrinfo *addrinfo_result;
+  int flags = RESOLVER_FLAG_BOTH;
+  int err;
+
+  (void)hints;
+
+  if (!dns->resolver)
+    {
+      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+                        "SocketDNSResolver backend not initialized");
+    }
+
+  err = SocketDNSResolver_resolve_sync (dns->resolver, host, flags, timeout_ms,
+                                        &result);
+
+  if (err != RESOLVER_OK)
+    {
+      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+                        "Backend resolution failed: %s",
+                        SocketDNSResolver_strerror (err));
+    }
+
+  addrinfo_result = convert_resolver_result_to_addrinfo (&result, port);
+  SocketDNSResolver_result_free (&result);
+
+  if (!addrinfo_result)
+    {
+      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+                        "Failed to convert resolver result to addrinfo");
+    }
+
+  return addrinfo_result;
+}
+
 struct addrinfo *
 SocketDNS_resolve_sync (struct SocketDNS_T *dns, const char *host, int port,
                         const struct addrinfo *hints, int timeout_ms)
 {
+  struct SocketDNS_CacheEntry *cache_entry;
+  struct addrinfo *result;
   int effective_timeout;
 
   if (!dns)
@@ -564,10 +676,30 @@ SocketDNS_resolve_sync (struct SocketDNS_T *dns, const char *host, int port,
 
   effective_timeout = (timeout_ms > 0) ? timeout_ms : dns->request_timeout_ms;
 
+  /* Fast path for IP addresses and NULL host (wildcard bind) */
   if (host == NULL || socketcommon_is_ip_address (host))
     return dns_sync_fast_path (host, port, hints);
 
-  return resolve_async_with_wait (dns, host, port, effective_timeout);
+  /* Check L1 cache first */
+  pthread_mutex_lock (&dns->mutex);
+  cache_entry = cache_lookup (dns, host);
+  if (cache_entry)
+    {
+      result = SocketCommon_copy_addrinfo (cache_entry->result);
+      pthread_mutex_unlock (&dns->mutex);
+      return result;
+    }
+  pthread_mutex_unlock (&dns->mutex);
+
+  /* Cache miss: use SocketDNSResolver backend */
+  result = resolve_via_backend (dns, host, port, hints, effective_timeout);
+
+  /* Store result in L1 cache */
+  pthread_mutex_lock (&dns->mutex);
+  cache_insert (dns, host, result);
+  pthread_mutex_unlock (&dns->mutex);
+
+  return result;
 }
 
 static unsigned
