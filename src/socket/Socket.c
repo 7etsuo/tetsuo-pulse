@@ -1260,30 +1260,38 @@ Socket_resetstats (T socket)
   pthread_mutex_unlock (&socket->base->mutex);
 }
 
-int
-Socket_probe (const T socket, int timeout_ms)
+/**
+ * Check if socket has a pending error via SO_ERROR.
+ *
+ * @param fd File descriptor to check
+ * @return 1 if socket has error, 0 if no error or check failed
+ */
+static int
+socket_has_error (int fd)
 {
-  int fd;
   int error;
   socklen_t error_len;
-  struct pollfd pfd;
-  char peek_buf;
-  ssize_t peek_result;
-  int poll_timeout;
-
-  assert (socket);
-
-  fd = SocketBase_fd (socket->base);
-  if (fd < 0)
-    return 0;
 
   error = 0;
   error_len = sizeof (error);
   if (getsockopt (fd, SOL_SOCKET, SO_ERROR, &error, &error_len) < 0)
-    return 0;
+    return 1;
 
-  if (error != 0)
-    return 0;
+  return (error != 0);
+}
+
+/**
+ * Poll socket for readability with timeout.
+ *
+ * @param fd File descriptor to poll
+ * @param timeout_ms Timeout in milliseconds (negative values treated as 0)
+ * @return 1 if POLLIN set or interrupted, 0 on error, -1 if timeout/no events
+ */
+static int
+socket_poll_readable (int fd, int timeout_ms)
+{
+  struct pollfd pfd;
+  int poll_timeout;
 
   poll_timeout = (timeout_ms < 0) ? 0 : timeout_ms;
   pfd.fd = fd;
@@ -1301,13 +1309,50 @@ Socket_probe (const T socket, int timeout_ms)
     return 0;
 
   if (pfd.revents & POLLIN)
-    {
-      peek_result = recv (fd, &peek_buf, 1, MSG_PEEK | MSG_DONTWAIT);
-      if (peek_result == 0)
-        return 0;
-      if (peek_result < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
-        return 0;
-    }
+    return 1;
+
+  return -1;
+}
+
+/**
+ * Peek at receive buffer to detect EOF or data availability.
+ *
+ * @param fd File descriptor to peek
+ * @return 1 if data available or would block, 0 on EOF or error
+ */
+static int
+socket_peek_has_data (int fd)
+{
+  char peek_buf;
+  ssize_t peek_result;
+
+  peek_result = recv (fd, &peek_buf, 1, MSG_PEEK | MSG_DONTWAIT);
+  if (peek_result == 0)
+    return 0;
+  if (peek_result < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
+    return 0;
+
+  return 1;
+}
+
+int
+Socket_probe (const T socket, int timeout_ms)
+{
+  int fd;
+  int poll_result;
+
+  assert (socket);
+
+  fd = SocketBase_fd (socket->base);
+  if (fd < 0 || socket_has_error (fd))
+    return 0;
+
+  poll_result = socket_poll_readable (fd, timeout_ms);
+  if (poll_result == 0)
+    return 0;
+
+  if (poll_result == 1)
+    return socket_peek_has_data (fd);
 
   return 1;
 }
