@@ -196,18 +196,18 @@ init_crl_mutex (T ctx)
   pthread_mutexattr_t attr;
 
   if (pthread_mutexattr_init (&attr) != 0)
-    ctx_raise_openssl_error ("Failed to initialize CRL mutex attr");
+    raise_system_error ("Failed to initialize CRL mutex attr");
 
   if (pthread_mutexattr_settype (&attr, PTHREAD_MUTEX_RECURSIVE) != 0)
     {
       pthread_mutexattr_destroy (&attr);
-      ctx_raise_openssl_error ("Failed to set recursive mutex type");
+      raise_system_error ("Failed to set recursive mutex type");
     }
 
   if (pthread_mutex_init (&ctx->crl_mutex, &attr) != 0)
     {
       pthread_mutexattr_destroy (&attr);
-      ctx_raise_openssl_error ("Failed to initialize CRL mutex");
+      raise_system_error ("Failed to initialize CRL mutex");
     }
 
   pthread_mutexattr_destroy (&attr);
