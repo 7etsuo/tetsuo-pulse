@@ -482,6 +482,13 @@ process_cqes (PollBackend_T backend)
     if (fd <= 0)
       continue;
 
+    /* Defense-in-depth: validate fd is within reasonable bounds.
+     * While io_uring user_data corruption is unlikely under normal operation,
+     * this prevents processing invalid fds from corrupted CQEs. Follows the
+     * same pattern as kqueue backend (SocketPoll_kqueue.c:331). */
+    if ((uintptr_t)fd > (uintptr_t)INT_MAX)
+      continue;
+
     if (cqe->res < 0)
       {
         /* Error on this fd */
