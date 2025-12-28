@@ -482,14 +482,22 @@ SocketHTTP_Headers_set (SocketHTTP_Headers_T headers, const char *name,
  */
 
 const char *
-SocketHTTP_Headers_get (SocketHTTP_Headers_T headers, const char *name)
+SocketHTTP_Headers_get_n (SocketHTTP_Headers_T headers, const char *name,
+                          size_t name_len)
 {
   VALIDATE_HEADERS_NAME (headers, name, NULL);
 
-  size_t name_len = strlen (name);
   HeaderEntry *entry = find_entry (headers, name, name_len);
 
   return entry ? entry->value : NULL;
+}
+
+const char *
+SocketHTTP_Headers_get (SocketHTTP_Headers_T headers, const char *name)
+{
+  if (!name)
+    return NULL;
+  return SocketHTTP_Headers_get_n (headers, name, strlen (name));
 }
 
 int
@@ -554,13 +562,13 @@ SocketHTTP_Headers_get_int (SocketHTTP_Headers_T headers, const char *name,
 }
 
 size_t
-SocketHTTP_Headers_get_all (SocketHTTP_Headers_T headers, const char *name,
-                            const char **values, size_t max_values)
+SocketHTTP_Headers_get_all_n (SocketHTTP_Headers_T headers, const char *name,
+                              size_t name_len, const char **values,
+                              size_t max_values)
 {
   if (!headers || !name || !values || max_values == 0)
     return 0;
 
-  size_t name_len = strlen (name);
   size_t found = 0;
 
   HeaderEntry *entry = headers->first;
@@ -574,33 +582,48 @@ SocketHTTP_Headers_get_all (SocketHTTP_Headers_T headers, const char *name,
   return found;
 }
 
+size_t
+SocketHTTP_Headers_get_all (SocketHTTP_Headers_T headers, const char *name,
+                            const char **values, size_t max_values)
+{
+  if (!name)
+    return 0;
+  return SocketHTTP_Headers_get_all_n (headers, name, strlen (name), values,
+                                       max_values);
+}
+
 /* ============================================================================
  * Checking Headers
  * ============================================================================
  */
 
 int
-SocketHTTP_Headers_has (SocketHTTP_Headers_T headers, const char *name)
+SocketHTTP_Headers_has_n (SocketHTTP_Headers_T headers, const char *name,
+                          size_t name_len)
 {
   VALIDATE_HEADERS_NAME (headers, name, 0);
 
-  size_t name_len = strlen (name);
   return find_entry (headers, name, name_len) != NULL;
 }
 
 int
-SocketHTTP_Headers_contains (SocketHTTP_Headers_T headers, const char *name,
-                             const char *token)
+SocketHTTP_Headers_has (SocketHTTP_Headers_T headers, const char *name)
 {
-  if (!headers || !name || !token)
+  if (!name)
+    return 0;
+  return SocketHTTP_Headers_has_n (headers, name, strlen (name));
+}
+
+int
+SocketHTTP_Headers_contains_n (SocketHTTP_Headers_T headers, const char *name,
+                               size_t name_len, const char *token,
+                               size_t token_len)
+{
+  if (!headers || !name || !token || token_len == 0)
     return 0;
 
-  const char *header_value = SocketHTTP_Headers_get (headers, name);
+  const char *header_value = SocketHTTP_Headers_get_n (headers, name, name_len);
   if (!header_value)
-    return 0;
-
-  size_t token_len = strlen (token);
-  if (token_len == 0)
     return 0;
 
   const char *p = header_value;
@@ -620,6 +643,16 @@ SocketHTTP_Headers_contains (SocketHTTP_Headers_T headers, const char *name,
     }
 
   return 0;
+}
+
+int
+SocketHTTP_Headers_contains (SocketHTTP_Headers_T headers, const char *name,
+                             const char *token)
+{
+  if (!name || !token)
+    return 0;
+  return SocketHTTP_Headers_contains_n (headers, name, strlen (name), token,
+                                        strlen (token));
 }
 
 /* ============================================================================

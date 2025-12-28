@@ -498,6 +498,16 @@ extern const char *SocketHTTP_Headers_get (SocketHTTP_Headers_T headers,
                                            const char *name);
 
 /**
+ * @brief Get first header value with explicit name length (avoids strlen).
+ * @param headers Header collection
+ * @param name Header name to look up
+ * @param name_len Length of name (excluding null terminator)
+ * @return Header value (null-terminated), or NULL if not found
+ */
+extern const char *SocketHTTP_Headers_get_n (SocketHTTP_Headers_T headers,
+                                             const char *name, size_t name_len);
+
+/**
  * @brief Get header value as integer.
  * @return 0 on success, -1 if not found or not a valid integer
  */
@@ -510,9 +520,19 @@ extern size_t SocketHTTP_Headers_get_all (SocketHTTP_Headers_T headers,
                                           const char **values,
                                           size_t max_values);
 
+/** @brief Get all values for header with explicit name length (avoids strlen). */
+extern size_t SocketHTTP_Headers_get_all_n (SocketHTTP_Headers_T headers,
+                                            const char *name, size_t name_len,
+                                            const char **values,
+                                            size_t max_values);
+
 /** @brief Check if header exists. */
 extern int SocketHTTP_Headers_has (SocketHTTP_Headers_T headers,
                                    const char *name);
+
+/** @brief Check if header exists with explicit name length (avoids strlen). */
+extern int SocketHTTP_Headers_has_n (SocketHTTP_Headers_T headers,
+                                     const char *name, size_t name_len);
 
 /**
  * @brief Check if header contains token.
@@ -522,6 +542,19 @@ extern int SocketHTTP_Headers_has (SocketHTTP_Headers_T headers,
  */
 extern int SocketHTTP_Headers_contains (SocketHTTP_Headers_T headers,
                                         const char *name, const char *token);
+
+/**
+ * @brief Check if header contains token with explicit lengths (avoids strlen).
+ * @param headers Header collection
+ * @param name Header name to look up
+ * @param name_len Length of name
+ * @param token Token to search for in header value
+ * @param token_len Length of token
+ * @return 1 if token found (case-insensitive), 0 otherwise
+ */
+extern int SocketHTTP_Headers_contains_n (SocketHTTP_Headers_T headers,
+                                          const char *name, size_t name_len,
+                                          const char *token, size_t token_len);
 
 /** @brief Remove first header with name. */
 extern int SocketHTTP_Headers_remove (SocketHTTP_Headers_T headers,
