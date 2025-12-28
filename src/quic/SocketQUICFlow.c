@@ -79,6 +79,22 @@
     }                                                                          \
   while (0)
 
+/**
+ * @brief Check if bytes can be sent without exceeding flow control limits.
+ *
+ * @param ptr Pointer to flow control structure (connection or stream level)
+ * @param consumed_field Name of the consumed bytes field
+ * @param max_field Name of the max bytes field
+ * @param bytes Number of bytes to check
+ * @return 1 if bytes can be sent, 0 otherwise
+ */
+#define CAN_SEND_FLOW(ptr, consumed_field, max_field, bytes)                  \
+  (!(ptr)                                           ? 0                       \
+   : ((bytes) > UINT64_MAX - (ptr)->consumed_field) ? 0                       \
+                                                    : ((ptr)->consumed_field  \
+                                                       + (bytes))             \
+                                                          <= (ptr)->max_field)
+
 /* ============================================================================
  * Connection-Level Flow Control
  * ============================================================================
@@ -132,14 +148,7 @@ SocketQUICFlow_init (SocketQUICFlow_T fc, uint64_t recv_max_data,
 int
 SocketQUICFlow_can_send (const SocketQUICFlow_T fc, size_t bytes)
 {
-  if (!fc)
-    return 0;
-
-  /* Check if adding bytes would exceed send_max_data */
-  if (bytes > UINT64_MAX - fc->send_consumed)
-    return 0; /* Would overflow */
-
-  return (fc->send_consumed + bytes) <= fc->send_max_data;
+  return CAN_SEND_FLOW (fc, send_consumed, send_max_data, bytes);
 }
 
 SocketQUICFlow_Result
@@ -259,14 +268,7 @@ SocketQUICFlowStream_init (SocketQUICFlowStream_T fs, uint64_t stream_id,
 int
 SocketQUICFlowStream_can_send (const SocketQUICFlowStream_T fs, size_t bytes)
 {
-  if (!fs)
-    return 0;
-
-  /* Check if adding bytes would exceed send_max_data */
-  if (bytes > UINT64_MAX - fs->send_consumed)
-    return 0; /* Would overflow */
-
-  return (fs->send_consumed + bytes) <= fs->send_max_data;
+  return CAN_SEND_FLOW (fs, send_consumed, send_max_data, bytes);
 }
 
 SocketQUICFlow_Result
