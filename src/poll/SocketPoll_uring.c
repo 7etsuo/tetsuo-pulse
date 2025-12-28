@@ -25,6 +25,7 @@
 
 #include "core/Arena.h"
 #include "core/SocketConfig.h"
+#include "core/SocketUtil.h" /* For socket_util_ms_to_timespec and other utilities */
 #include "poll/SocketPoll_backend.h"
 #include "socket/Socket.h" /* For Socket_get_monotonic_ms */
 
