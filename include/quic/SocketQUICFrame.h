@@ -24,6 +24,8 @@
  */
 #define QUIC_FRAME_MIN_SIZE_RESET_STREAM (1 + 8 + 8 + 8)  /* frame_type + stream_id + error_code + final_size */
 #define QUIC_FRAME_MIN_SIZE_STOP_SENDING (1 + 8 + 8)      /* frame_type + stream_id + error_code */
+#define QUIC_FRAME_MIN_SIZE_CONNECTION_CLOSE_TRANSPORT (1 + 8 + 8 + 8)  /* frame_type + error_code + frame_type_field + reason_len */
+#define QUIC_FRAME_MIN_SIZE_CONNECTION_CLOSE_APP (1 + 8 + 8)           /* frame_type + error_code + reason_len */
 
 typedef enum {
   QUIC_FRAME_PADDING = 0x00, QUIC_FRAME_PING = 0x01,
