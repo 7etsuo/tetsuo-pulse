@@ -1048,14 +1048,11 @@ he_process_poll_result (T he, SocketHE_Attempt_T *attempt, int fd,
   return he_handle_poll_success (he, attempt, fd);
 }
 
+/* Called when poll events are already available from event loop */
 static int
-he_check_attempt_completion_with_events (T he, SocketHE_Attempt_T *attempt, unsigned poll_events)
+he_check_attempt_with_poll_events (T he, SocketHE_Attempt_T *attempt, short revents)
 {
-  short revents = (short) poll_events;
   int fd;
-  int poll_result;
-  short actual_revents;
-  bool has_event = (poll_events != 0);
 
   if (attempt->state != HE_ATTEMPT_CONNECTING)
     return attempt->state == HE_ATTEMPT_CONNECTED ? 1 : -1;
@@ -1064,24 +1061,30 @@ he_check_attempt_completion_with_events (T he, SocketHE_Attempt_T *attempt, unsi
     return -1;
 
   fd = Socket_fd (attempt->socket);
-
-  if (!has_event) {
-    poll_result = he_poll_attempt_status (fd, &actual_revents);
-    if (poll_result < 0)
-      return -1;
-    revents = actual_revents;
-  } else {
-    poll_result = 1;
-    actual_revents = revents;
-  }
-
-  return he_process_poll_result (he, attempt, fd, poll_result, revents);
+  return he_process_poll_result (he, attempt, fd, 1, revents);
 }
 
+/* Called when we need to poll internally to check attempt status */
 static int
 he_check_attempt_completion (T he, SocketHE_Attempt_T *attempt)
 {
-  return he_check_attempt_completion_with_events (he, attempt, 0);
+  int fd;
+  short revents;
+  int poll_result;
+
+  if (attempt->state != HE_ATTEMPT_CONNECTING)
+    return attempt->state == HE_ATTEMPT_CONNECTED ? 1 : -1;
+
+  if (!attempt->socket)
+    return -1;
+
+  fd = Socket_fd (attempt->socket);
+  poll_result = he_poll_attempt_status (fd, &revents);
+
+  if (poll_result < 0)
+    return -1;
+
+  return he_process_poll_result (he, attempt, fd, poll_result, revents);
 }
 
 static void
@@ -1387,7 +1390,7 @@ SocketHappyEyeballs_process_events (T he, SocketEvent_T *events, int num_events)
         {
           /* Connection attempt event */
           SocketHE_Attempt_T *attempt = (SocketHE_Attempt_T *)data;
-          he_check_attempt_completion_with_events (he, attempt, ev_events);
+          he_check_attempt_with_poll_events (he, attempt, (short)ev_events);
         }
       /* Ignore other events on poll */
     }
