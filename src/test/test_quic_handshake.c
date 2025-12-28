@@ -15,6 +15,7 @@
 #include "core/Arena.h"
 #include "test/Test.h"
 
+#include <stdint.h>
 #include <string.h>
 
 /* ============================================================================
@@ -195,6 +196,48 @@ TEST(handshake_discard_keys_null)
 {
   /* Should not crash */
   SocketQUICHandshake_discard_keys(NULL, QUIC_CRYPTO_LEVEL_INITIAL);
+}
+
+TEST(handshake_discard_keys_secure_clear)
+{
+  Arena_T arena = Arena_new();
+  SocketQUICConnection_T conn = SocketQUICConnection_new(arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICHandshake_T hs = SocketQUICHandshake_new(arena, conn, QUIC_CONN_ROLE_CLIENT);
+
+  /* Simulate key material allocation (for testing secure clearing) */
+  /* In production, this would be done by derive_keys() */
+  const size_t test_key_size = 64;
+  uint8_t *test_keys = Arena_alloc(arena, test_key_size, __FILE__, __LINE__);
+  memset(test_keys, 0xAA, test_key_size); /* Fill with test pattern */
+
+  /* Manually set key pointer (normally done by derive_keys) */
+  hs->keys[QUIC_CRYPTO_LEVEL_INITIAL] = test_keys;
+  hs->keys_available[QUIC_CRYPTO_LEVEL_INITIAL] = 1;
+
+  /* Verify key is set */
+  ASSERT_NOT_NULL(hs->keys[QUIC_CRYPTO_LEVEL_INITIAL]);
+  ASSERT_EQ(1, SocketQUICHandshake_has_keys(hs, QUIC_CRYPTO_LEVEL_INITIAL));
+
+  /* Discard keys - should securely zero the memory */
+  SocketQUICHandshake_discard_keys(hs, QUIC_CRYPTO_LEVEL_INITIAL);
+
+  /* Verify key pointer is cleared */
+  ASSERT_NULL(hs->keys[QUIC_CRYPTO_LEVEL_INITIAL]);
+  ASSERT_EQ(0, SocketQUICHandshake_has_keys(hs, QUIC_CRYPTO_LEVEL_INITIAL));
+
+  /* Verify memory was zeroed (first 64 bytes should be 0) */
+  int all_zeroed = 1;
+  for (size_t i = 0; i < test_key_size; i++) {
+    if (test_keys[i] != 0) {
+      all_zeroed = 0;
+      break;
+    }
+  }
+  ASSERT_EQ(1, all_zeroed);
+
+  SocketQUICHandshake_free(&hs);
+  SocketQUICConnection_free(&conn);
+  Arena_dispose(&arena);
 }
 
 /* ============================================================================
