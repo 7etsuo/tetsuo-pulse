@@ -65,9 +65,15 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLS);
  * Attempts to verify kernel TLS support by checking:
  * 1. Compile-time: Linux kernel version >= 4.13
  * 2. Runtime: /sys/module/tls exists (module loaded)
+ * 3. Runtime: /proc/net/tls_stat exists (built into kernel)
  *
- * Returns: 1 if kernel TLS appears available, 0 otherwise
+ * Returns: 1 if kernel TLS is available, 0 otherwise
  * Thread-safe: Yes
+ *
+ * Note: This function performs a conservative check. If neither runtime
+ * check succeeds, it returns 0. If the module can auto-load, the actual
+ * kTLS activation during SSL handshake will still succeed. This ensures
+ * accurate diagnostic reporting via SocketTLS_ktls_available().
  */
 static int
 ktls_check_kernel_support (void)
@@ -86,9 +92,10 @@ ktls_check_kernel_support (void)
   if (stat ("/proc/net/tls_stat", &st) == 0)
     return 1;
 
-  /* Module might auto-load on first use, so return tentative success
-   * if we're on a kernel version that supports kTLS */
-  return 1;
+  /* If neither check succeeded, kTLS is not currently available.
+   * Conservative approach: report unavailable rather than assume auto-load.
+   * Actual kTLS availability is still determined during SSL_set_options(). */
+  return 0;
 #endif
 }
 
