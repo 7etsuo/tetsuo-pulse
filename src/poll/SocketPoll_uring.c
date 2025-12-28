@@ -335,27 +335,56 @@ backend_del (PollBackend_T backend, int fd)
 }
 
 /**
- * backend_wait - Wait for events on the io_uring poll set
- * @backend: Poll backend instance
- * @timeout_ms: Timeout in milliseconds (-1 for infinite, 0 for non-blocking)
+ * calculate_remaining_timeout - Calculate remaining time after EINTR
+ * @timeout_ms: Original timeout (-1 infinite, 0 non-blocking, >0 deadline)
+ * @deadline_ms: Absolute deadline in milliseconds (0 if infinite)
+ * @now_ms: Current monotonic time in milliseconds
  *
- * Returns: Number of ready events (0 on timeout), -1 on error.
+ * Returns: Remaining timeout in milliseconds, or -1 for infinite, or 0 if
+ * expired.
  *
- * Blocks until events are ready or timeout expires. Retries on EINTR.
+ * Helper for EINTR retry logic. Calculates how much time is left before
+ * the deadline. Returns 0 if deadline has passed (timeout expired).
  */
-int
-backend_wait (PollBackend_T backend, int timeout_ms)
+static int
+calculate_remaining_timeout (int timeout_ms, int64_t deadline_ms,
+                              int64_t now_ms)
+{
+  if (timeout_ms == 0)
+    return 0; /* Non-blocking */
+
+  if (timeout_ms < 0)
+    return -1; /* Infinite */
+
+  /* Positive timeout: check deadline */
+  if (now_ms >= deadline_ms)
+    return 0; /* Expired */
+
+  return (int)(deadline_ms - now_ms);
+}
+
+/**
+ * wait_for_cqe - Wait for CQE with timeout and EINTR retry
+ * @backend: Backend instance
+ * @timeout_ms: Timeout in milliseconds (-1 infinite, 0 non-blocking, >0
+ * deadline)
+ * @cqe_out: Output for first CQE pointer (if successful)
+ *
+ * Returns: 0 on success (CQE available), or number of events on timeout (0),
+ *          or -1 on error (errno set).
+ *
+ * Handles EINTR retry with deadline tracking. Returns 0 (timeout) if the
+ * deadline expires during retry.
+ */
+static int
+wait_for_cqe (PollBackend_T backend, int timeout_ms,
+              struct io_uring_cqe **cqe_out)
 {
   struct __kernel_timespec ts;
   struct __kernel_timespec *ts_ptr = NULL;
-  struct io_uring_cqe *cqe;
-  int nev = 0;
-  int ret;
   int64_t deadline_ms = 0;
   int remaining_ms = timeout_ms;
-  unsigned head;
-
-  assert (backend);
+  int ret;
 
   /* Calculate deadline for positive timeouts */
   if (timeout_ms > 0)
@@ -375,10 +404,10 @@ backend_wait (PollBackend_T backend, int timeout_ms)
         }
 
       /* Wait for at least one CQE */
-      ret = io_uring_wait_cqe_timeout (&backend->ring, &cqe, ts_ptr);
+      ret = io_uring_wait_cqe_timeout (&backend->ring, cqe_out, ts_ptr);
 
       if (ret == 0)
-        break; /* Got events */
+        return 0; /* Success: CQE available */
 
       if (ret == -ETIME)
         {
@@ -392,27 +421,36 @@ backend_wait (PollBackend_T backend, int timeout_ms)
           return HANDLE_POLL_ERROR (backend);
         }
 
-      /* EINTR: Retry with remaining timeout */
-      if (timeout_ms == 0)
+      /* EINTR: Recalculate remaining timeout */
+      remaining_ms = calculate_remaining_timeout (
+          timeout_ms, deadline_ms, Socket_get_monotonic_ms ());
+
+      if (remaining_ms == 0)
         {
           backend->last_nev = 0;
-          return 0;
+          return 0; /* Deadline expired during retry */
         }
-      else if (timeout_ms > 0)
-        {
-          int64_t now_ms = Socket_get_monotonic_ms ();
-          if (now_ms >= deadline_ms)
-            {
-              backend->last_nev = 0;
-              return 0;
-            }
-          remaining_ms = (int)(deadline_ms - now_ms);
-        }
-      /* else: infinite timeout, just retry */
     }
+}
 
-  /* Process available CQEs */
+/**
+ * process_cqes - Process available CQEs into events array
+ * @backend: Backend instance
+ *
+ * Returns: Number of events processed (may be 0).
+ *
+ * Translates io_uring CQEs to portable poll events. Handles single-shot
+ * poll re-submission when IORING_POLL_ADD_MULTI is not available.
+ * Advances the CQ ring after processing.
+ */
+static int
+process_cqes (PollBackend_T backend)
+{
+  struct io_uring_cqe *cqe;
+  unsigned head;
   unsigned consumed = 0;
+  int nev = 0;
+
   io_uring_for_each_cqe (&backend->ring, head, cqe)
   {
     int fd;
@@ -467,6 +505,35 @@ backend_wait (PollBackend_T backend, int timeout_ms)
   if (nev > 0)
     io_uring_submit (&backend->ring);
 #endif
+
+  return nev;
+}
+
+/**
+ * backend_wait - Wait for events on the io_uring poll set
+ * @backend: Poll backend instance
+ * @timeout_ms: Timeout in milliseconds (-1 for infinite, 0 for non-blocking)
+ *
+ * Returns: Number of ready events (0 on timeout), -1 on error.
+ *
+ * Blocks until events are ready or timeout expires. Retries on EINTR.
+ */
+int
+backend_wait (PollBackend_T backend, int timeout_ms)
+{
+  struct io_uring_cqe *cqe;
+  int ret;
+  int nev;
+
+  assert (backend);
+
+  /* Wait for CQE with timeout and EINTR handling */
+  ret = wait_for_cqe (backend, timeout_ms, &cqe);
+  if (ret != 0)
+    return ret; /* Error or timeout */
+
+  /* Process available CQEs into events array */
+  nev = process_cqes (backend);
 
   backend->last_nev = nev;
   return nev;
