@@ -416,12 +416,16 @@ int health_make_host_key(const char *host, int port, char *buf, size_t len);
  * DJB2 hash for string keys with per-instance seed randomization.
  * The seed prevents hash collision DoS attacks.
  *
+ * Delegates to socket_util_hash_djb2_seeded() from SocketUtil.h.
+ *
  * @param key  Host key string.
  * @param seed Hash seed from health context (health->hash_seed).
+ * @param table_size Hash table size (SOCKET_HEALTH_HASH_SIZE).
  *
- * @return Hash value (use % SOCKET_HEALTH_HASH_SIZE for bucket).
+ * @return Hash value in range [0, table_size).
  */
-unsigned int health_hash_key(const char *key, unsigned int seed);
+unsigned int health_hash_key(const char *key, unsigned int seed,
+                             unsigned int table_size);
 
 /**
  * @brief Check if circuit should transition OPEN -> HALF_OPEN.

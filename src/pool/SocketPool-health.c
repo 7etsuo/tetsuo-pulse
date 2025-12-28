@@ -53,22 +53,19 @@ health_monotonic_ms (void)
  * @brief DJB2 hash for string keys with seed randomization.
  * @param key String to hash.
  * @param seed Hash seed for randomization (prevents hash collision DoS).
- * @return Hash value.
+ * @param table_size Hash table size for modulo operation.
+ * @return Hash value in range [0, table_size).
  *
- * Security: The seed is XOR'd into the initial hash value to randomize
- * the hash distribution per-instance, preventing attackers from crafting
- * keys that cause hash collisions.
+ * Security: The seed is mixed into the hash to randomize the hash
+ * distribution per-instance, preventing attackers from crafting keys
+ * that cause hash collisions.
+ *
+ * Delegates to socket_util_hash_djb2_seeded() from SocketUtil.h.
  */
 unsigned int
-health_hash_key (const char *key, unsigned int seed)
+health_hash_key (const char *key, unsigned int seed, unsigned int table_size)
 {
-  unsigned int hash = 5381 ^ seed;
-  int c;
-
-  while ((c = *key++) != 0)
-    hash = ((hash << 5) + hash) + (unsigned int)c;
-
-  return hash;
+  return socket_util_hash_djb2_seeded (key, table_size, seed);
 }
 
 /**
@@ -117,7 +114,7 @@ health_find_circuit (SocketPoolHealth_T health, const char *host, int port,
   if (health_make_host_key (host, port, key, sizeof (key)) < 0)
     return NULL;
 
-  bucket = health_hash_key (key, health->hash_seed) % SOCKET_HEALTH_HASH_SIZE;
+  bucket = health_hash_key (key, health->hash_seed, SOCKET_HEALTH_HASH_SIZE);
   entry = health->circuit_table[bucket];
 
   /* Search chain */
