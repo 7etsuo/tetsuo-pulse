@@ -205,6 +205,31 @@ HTTP modules require Foundation + Core I/O + Security (optional)
 - Include guards use `_INCLUDED` suffix: `#ifndef SOCKET_INCLUDED`
 - Doxygen-style comments for public APIs
 
+## Performance Patterns
+
+### HTTP Header Lookups
+
+When looking up well-known HTTP headers (string literals), use the `_n` variants with `STRLEN_LIT()` to avoid runtime `strlen()` calls:
+
+```c
+/* Hot path - use compile-time length */
+#define STRLEN_LIT(s) (sizeof(s) - 1)
+
+const char *value = SocketHTTP_Headers_get_n(headers, "Content-Length",
+                                              STRLEN_LIT("Content-Length"));
+
+int has_te = SocketHTTP_Headers_has_n(headers, "Transfer-Encoding",
+                                       STRLEN_LIT("Transfer-Encoding"));
+
+int is_close = SocketHTTP_Headers_contains_n(headers, "Connection",
+                                              STRLEN_LIT("Connection"),
+                                              "close", STRLEN_LIT("close"));
+```
+
+Available `_n` variants: `get_n`, `get_all_n`, `has_n`, `contains_n`
+
+For dynamic header names (user input), use the standard functions which handle `strlen()` internally.
+
 ## Automated Hooks
 
 The project uses Claude Code hooks (`.claude/settings.json`) that run automatically:
