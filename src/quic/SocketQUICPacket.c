@@ -247,19 +247,19 @@ parse_retry_header (const uint8_t *data, size_t len,
   /* Retry packet has no Length or Packet Number fields */
   /* The Retry Token is everything except the last 16 bytes (integrity tag) */
 
-  if (len - *offset < 16)
+  if (len - *offset < QUIC_RETRY_INTEGRITY_TAG_LEN)
     return QUIC_PACKET_ERROR_TRUNCATED;
 
-  size_t retry_token_len = len - *offset - 16;
+  size_t retry_token_len = len - *offset - QUIC_RETRY_INTEGRITY_TAG_LEN;
 
   header->retry_token = (retry_token_len > 0) ? (data + *offset) : NULL;
   header->retry_token_length = retry_token_len;
   *offset += retry_token_len;
 
   /* Copy the 16-byte Retry Integrity Tag */
-  memcpy (header->retry_integrity_tag, data + *offset, 16);
+  memcpy (header->retry_integrity_tag, data + *offset, QUIC_RETRY_INTEGRITY_TAG_LEN);
   header->has_retry_integrity_tag = 1;
-  *offset += 16;
+  *offset += QUIC_RETRY_INTEGRITY_TAG_LEN;
 
   header->header_length = *offset;
   *consumed = *offset;
@@ -388,7 +388,7 @@ SocketQUICPacketHeader_size (const SocketQUICPacketHeader_T *header)
         case QUIC_PACKET_TYPE_RETRY:
           /* Retry Token + Integrity Tag (16 bytes) */
           size += header->retry_token_length;
-          size += 16;
+          size += QUIC_RETRY_INTEGRITY_TAG_LEN;
           break;
 
         default:
@@ -491,8 +491,8 @@ serialize_long_header (const SocketQUICPacketHeader_T *header,
         }
 
       /* Retry Integrity Tag */
-      memcpy (output + offset, header->retry_integrity_tag, 16);
-      offset += 16;
+      memcpy (output + offset, header->retry_integrity_tag, QUIC_RETRY_INTEGRITY_TAG_LEN);
+      offset += QUIC_RETRY_INTEGRITY_TAG_LEN;
       break;
 
     default:
