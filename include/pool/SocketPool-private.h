@@ -1181,16 +1181,19 @@ socketpool_close_socket_safe (SocketPool_T pool, Socket_T *socket_ptr,
     SocketPool_remove (pool, *socket_ptr);
     Socket_free (socket_ptr);
   }
-  ELSE
+  EXCEPT(SocketPool_Failed)
   {
-    /* Ignore SocketPool_Failed or Socket_Failed during cleanup -
-     * socket may already be removed or closed */
-    if (context)
-      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                       "%s: socket close/remove failed (may be stale)", context);
-    else
-      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                       "Cleanup: socket close/remove failed (may be stale)");
+    /* Expected failures during cleanup - socket may be stale */
+    SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                     "%s: socket close/remove failed (may be stale)",
+                     context ? context : "Cleanup");
+  }
+  EXCEPT(Socket_Failed)
+  {
+    /* Expected failures during cleanup - socket may be stale */
+    SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                     "%s: socket close/remove failed (may be stale)",
+                     context ? context : "Cleanup");
   }
   END_TRY;
 }
