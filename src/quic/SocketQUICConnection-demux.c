@@ -231,8 +231,20 @@ static void insert_into_addr_bucket(SocketQUICConnTable_T table, SocketQUICConne
 SocketQUICConnection_Result SocketQUICConnTable_add(SocketQUICConnTable_T table, SocketQUICConnection_T conn) {
   if (!table || !conn) return QUIC_CONN_ERROR_NULL;
   pthread_mutex_lock(&table->mutex);
-  if (conn->local_cid_count == 0 || (conn->local_cid_count == 1 && conn->local_cids[0].len == 0)) insert_into_addr_bucket(table, conn);
-  else for (size_t i = 0; i < conn->local_cid_count; i++) if (conn->local_cids[i].len > 0) insert_into_cid_bucket(table, conn, conn->local_cids[i].data, conn->local_cids[i].len);
+
+  /* RFC 9000 Section 5.2: Demultiplexing based on Connection ID */
+  if (SocketQUICConnection_uses_zero_dcid(conn)) {
+    /* Zero-length DCID - use address-based demultiplexing (4-tuple) */
+    insert_into_addr_bucket(table, conn);
+  } else {
+    /* Non-zero DCID - use Connection ID hash table */
+    for (size_t i = 0; i < conn->local_cid_count; i++) {
+      if (conn->local_cids[i].len > 0) {
+        insert_into_cid_bucket(table, conn, conn->local_cids[i].data, conn->local_cids[i].len);
+      }
+    }
+  }
+
   table->conn_count++;
   pthread_mutex_unlock(&table->mutex);
   return QUIC_CONN_OK;
