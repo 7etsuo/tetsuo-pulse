@@ -25,7 +25,7 @@
  */
 
 size_t
-SocketQUICFrame_encode_path_challenge (const uint8_t data[8], uint8_t *out,
+SocketQUICFrame_encode_path_challenge (const uint8_t data[QUIC_PATH_DATA_SIZE], uint8_t *out,
                                         size_t out_size)
 {
   if (!data || !out)
@@ -58,7 +58,7 @@ SocketQUICFrame_encode_path_challenge (const uint8_t data[8], uint8_t *out,
  */
 
 size_t
-SocketQUICFrame_encode_path_response (const uint8_t data[8], uint8_t *out,
+SocketQUICFrame_encode_path_response (const uint8_t data[QUIC_PATH_DATA_SIZE], uint8_t *out,
                                        size_t out_size)
 {
   if (!data || !out)
@@ -87,7 +87,7 @@ SocketQUICFrame_encode_path_response (const uint8_t data[8], uint8_t *out,
 
 int
 SocketQUICFrame_decode_path_challenge (const uint8_t *in, size_t len,
-                                       uint8_t data[8])
+                                       uint8_t data[QUIC_PATH_DATA_SIZE])
 {
   if (!in || !data || len < QUIC_PATH_FRAME_SIZE)
     return -1;
@@ -112,7 +112,7 @@ SocketQUICFrame_decode_path_challenge (const uint8_t *in, size_t len,
 
 int
 SocketQUICFrame_decode_path_response (const uint8_t *in, size_t len,
-                                      uint8_t data[8])
+                                      uint8_t data[QUIC_PATH_DATA_SIZE])
 {
   if (!in || !data || len < QUIC_PATH_FRAME_SIZE)
     return -1;
