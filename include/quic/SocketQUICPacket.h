@@ -562,6 +562,14 @@ extern uint64_t SocketQUICPacket_decode_pn (uint32_t truncated_pn,
  */
 #define QUIC_HP_SAMPLE_LEN 16
 
+/**
+ * @brief QUIC Retry Integrity Tag length (RFC 9000 Section 17.2.5).
+ *
+ * The Retry packet includes a 16-byte integrity tag to prevent
+ * off-path attackers from injecting Retry packets.
+ */
+#define QUIC_RETRY_INTEGRITY_TAG_LEN 16
+
 /* ============================================================================
  * Initial Packet Key Structure (RFC 9001 Section 5)
  * ============================================================================
