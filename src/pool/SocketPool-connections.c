@@ -1171,7 +1171,10 @@ check_socket_error (int fd)
     return EBADF;
 
   if (getsockopt (fd, SOL_SOCKET, SO_ERROR, &error, &len) < 0)
-    return errno;
+    {
+      int saved_errno = errno;
+      return saved_errno;
+    }
 
   return error;
 }
