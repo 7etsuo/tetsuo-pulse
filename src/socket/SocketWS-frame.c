@@ -283,7 +283,7 @@ static SocketWS_Error
 ws_parse_extended_length (SocketWS_FrameParse *frame)
 {
   size_t offset = SOCKETWS_BASE_HEADER_SIZE;
-  int bytes = (frame->payload_len == SOCKETWS_EXTENDED_LEN_16) ? 2 : SOCKETWS_EXTENDED_LEN_64_SIZE;
+  int bytes = (frame->payload_len == SOCKETWS_EXTENDED_LEN_16) ? SOCKETWS_EXTENDED_LEN_16_SIZE : SOCKETWS_EXTENDED_LEN_64_SIZE;
   frame->payload_len = 0;
   for (int i = 0; i < bytes; i++)
     {
@@ -423,7 +423,7 @@ ws_encode_extended_length (unsigned char *header, size_t offset, uint64_t len, u
   unsigned char len_indicator = code & 0x7F;
 
   header[offset++] = code;
-  int bytes = (len_indicator == SOCKETWS_EXTENDED_LEN_16) ? 2 : SOCKETWS_EXTENDED_LEN_64_SIZE;
+  int bytes = (len_indicator == SOCKETWS_EXTENDED_LEN_16) ? SOCKETWS_EXTENDED_LEN_16_SIZE : SOCKETWS_EXTENDED_LEN_64_SIZE;
   for (int i = 0; i < bytes; i++)
     {
       header[offset++] = (len >> ((bytes - 1 - i) * 8)) & 0xFF;
