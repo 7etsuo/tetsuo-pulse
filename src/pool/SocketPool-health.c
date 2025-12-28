@@ -179,6 +179,36 @@ health_should_transition_half_open (SocketPoolHealth_T health,
   return elapsed >= health->config.reset_timeout_ms;
 }
 
+/**
+ * @brief Try to claim a probe slot in HALF_OPEN state.
+ *
+ * Uses atomic compare-exchange loop to prevent TOCTOU race conditions
+ * that could allow more probes than the configured maximum.
+ *
+ * @param entry Circuit entry in HALF_OPEN state.
+ * @param max_probes Maximum number of concurrent probes allowed.
+ * @return 1 if probe slot claimed successfully, 0 if max probes reached.
+ */
+int
+circuit_try_half_open_probe (SocketPoolCircuit_Entry_T entry, int max_probes)
+{
+  int probes
+      = atomic_load_explicit (&entry->half_open_probes, memory_order_acquire);
+
+  while (probes < max_probes)
+    {
+      if (atomic_compare_exchange_weak_explicit (
+              &entry->half_open_probes, &probes, probes + 1,
+              memory_order_acq_rel, memory_order_acquire))
+        {
+          return 1; /* Successfully claimed a probe slot */
+        }
+      /* probes updated by compare_exchange on failure, retry */
+    }
+
+  return 0; /* Max probes reached */
+}
+
 /* ============================================================================
  * Default Health Probe
  * ============================================================================ */
@@ -684,25 +714,8 @@ SocketPool_circuit_allows (struct SocketPool_T *pool, const char *host,
       break;
 
     case POOL_CIRCUIT_HALF_OPEN:
-      {
-        /* Use compare-exchange loop to atomically check and increment,
-           preventing TOCTOU race that could exceed max probes */
-        int probes
-            = atomic_load_explicit (&entry->half_open_probes, memory_order_acquire);
-        while (probes < pool->health->config.half_open_max_probes)
-          {
-            if (atomic_compare_exchange_weak_explicit (
-                    &entry->half_open_probes, &probes, probes + 1,
-                    memory_order_acq_rel, memory_order_acquire))
-              {
-                allows = 1;
-                break;
-              }
-            /* probes updated by compare_exchange on failure, retry */
-          }
-        if (probes >= pool->health->config.half_open_max_probes)
-          allows = 0;
-      }
+      allows = circuit_try_half_open_probe (
+          entry, pool->health->config.half_open_max_probes);
       break;
     }
 
