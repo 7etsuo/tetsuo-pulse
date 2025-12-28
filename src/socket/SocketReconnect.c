@@ -666,7 +666,6 @@ default_health_check (const T conn, const Socket_T socket, int timeout_ms,
 {
   struct pollfd pfd;
   int fd, result;
-  char buf;
   int poll_timeout
       = (timeout_ms > 0) ? timeout_ms : SOCKET_RECONNECT_MIN_HEALTH_POLL_MS;
 
