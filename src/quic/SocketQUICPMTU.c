@@ -58,11 +58,9 @@ SocketQUICPMTU_new (Arena_T arena, size_t initial_pmtu, size_t max_pmtu)
     max_pmtu = QUIC_MAX_PMTU;
 
   /* Allocate context */
-  pmtu = Arena_alloc (arena, sizeof (*pmtu), __FILE__, __LINE__);
+  pmtu = Arena_calloc (arena, 1, sizeof (*pmtu), __FILE__, __LINE__);
   if (!pmtu)
     return NULL;
-
-  memset (pmtu, 0, sizeof (*pmtu));
 
   /* Initialize state */
   pmtu->arena = arena;
