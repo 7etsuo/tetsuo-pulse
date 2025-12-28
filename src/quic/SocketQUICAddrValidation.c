@@ -42,7 +42,8 @@ get_monotonic_ms (void)
     {
       return 0;
     }
-  return (uint64_t)ts.tv_sec * 1000 + (uint64_t)ts.tv_nsec / 1000000;
+  return (uint64_t)ts.tv_sec * SOCKET_MS_PER_SECOND
+         + (uint64_t)ts.tv_nsec / SOCKET_NS_PER_MS;
 }
 
 /**
@@ -268,7 +269,7 @@ SocketQUICAddrValidation_validate_token (const uint8_t *token,
   current_time = get_monotonic_ms ();
   if (current_time > token_timestamp
       && (current_time - token_timestamp)
-             > (QUIC_ADDR_VALIDATION_TOKEN_LIFETIME * 1000))
+             > (QUIC_ADDR_VALIDATION_TOKEN_LIFETIME * SOCKET_MS_PER_SECOND))
     {
       return QUIC_ADDR_VALIDATION_ERROR_EXPIRED;
     }
