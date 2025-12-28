@@ -1083,6 +1083,53 @@ find_tlsfeature_extension (const X509 *cert)
 }
 
 /**
+ * parse_tlsfeature_extension_for_status_request - Parse TLS Feature extension for status_request
+ * @p: Pointer to extension data
+ * @ext_len: Length of extension data
+ *
+ * Parses the ASN.1 SEQUENCE OF INTEGER looking for status_request (5) value.
+ *
+ * Returns: 1 if status_request found, 0 otherwise
+ */
+static int
+parse_tlsfeature_extension_for_status_request (const unsigned char *p,
+                                                 long ext_len)
+{
+  const unsigned char *end = p + ext_len;
+  long seq_len;
+  int tag, xclass;
+
+  /* Expect SEQUENCE */
+  if (ASN1_get_object (&p, &seq_len, &tag, &xclass, ext_len) != 0)
+    return 0;
+
+  if (tag != V_ASN1_SEQUENCE)
+    return 0;
+
+  end = p + seq_len;
+
+  /* Iterate through integers in sequence */
+  while (p < end)
+    {
+      ASN1_INTEGER *aint = NULL;
+      long value;
+
+      aint = d2i_ASN1_INTEGER (NULL, &p, end - p);
+      if (!aint)
+        break;
+
+      value = ASN1_INTEGER_get (aint);
+      ASN1_INTEGER_free (aint);
+
+      /* status_request = 5 per RFC 6066 / RFC 7633 */
+      if (value == OCSP_MUST_STAPLE_STATUS_REQUEST)
+        return 1; /* Must-staple found */
+    }
+
+  return 0; /* status_request (5) not found */
+}
+
+/**
  * SocketTLSContext_cert_has_must_staple - Check certificate for OCSP Must-Staple extension
  * @cert: X509 certificate to examine
  *
@@ -1122,41 +1169,7 @@ SocketTLSContext_cert_has_must_staple (const X509 *cert)
   if (!p || ext_len <= 0)
     return 0;
 
-  /* Parse the SEQUENCE OF INTEGER looking for value 5 (status_request) */
-  {
-    const unsigned char *end = p + ext_len;
-    long seq_len;
-    int tag, xclass;
-
-    /* Expect SEQUENCE */
-    if (ASN1_get_object (&p, &seq_len, &tag, &xclass, ext_len) != 0)
-      return 0;
-
-    if (tag != V_ASN1_SEQUENCE)
-      return 0;
-
-    end = p + seq_len;
-
-    /* Iterate through integers in sequence */
-    while (p < end)
-      {
-        ASN1_INTEGER *aint = NULL;
-        long value;
-
-        aint = d2i_ASN1_INTEGER (NULL, &p, end - p);
-        if (!aint)
-          break;
-
-        value = ASN1_INTEGER_get (aint);
-        ASN1_INTEGER_free (aint);
-
-        /* status_request = 5 per RFC 6066 / RFC 7633 */
-        if (value == OCSP_MUST_STAPLE_STATUS_REQUEST)
-          return 1; /* Must-staple found */
-      }
-  }
-
-  return 0; /* status_request (5) not found in extension */
+  return parse_tlsfeature_extension_for_status_request (p, ext_len);
 }
 
 void
