@@ -42,6 +42,22 @@ const Except_T SocketDNS_Failed
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketDNS);
 
+/* Forward declarations for cache coherence functions */
+static struct SocketDNS_CacheEntry *
+cache_lookup_l1_only (struct SocketDNS_T *dns, const char *hostname);
+static struct SocketDNS_CacheEntry *
+cache_lookup_coherent (struct SocketDNS_T *dns, const char *hostname);
+static struct SocketDNS_CacheEntry *
+cache_validate_ttl_coherent (struct SocketDNS_T *dns, const char *hostname,
+                              struct SocketDNS_CacheEntry *l1_entry);
+static void cache_update_both_tiers (struct SocketDNS_T *dns,
+                                     const char *hostname,
+                                     const SocketDNSResolver_Address *addresses,
+                                     size_t count, uint32_t min_ttl);
+static int cache_promote_l2_to_l1 (struct SocketDNS_T *dns,
+                                   const char *hostname,
+                                   const SocketDNSResolver_Result *l2_result);
+
 void
 validate_resolve_params (const char *host, int port)
 {
@@ -488,7 +504,7 @@ check_l1_cache_and_complete (struct SocketDNS_T *dns, Request_T req)
     return 0; /* Wildcard bind - no cache */
 
   pthread_mutex_lock (&dns->mutex);
-  entry = cache_lookup (dns, req->host);
+  entry = cache_lookup_coherent (dns, req->host);
   pthread_mutex_unlock (&dns->mutex);
 
   if (entry)
@@ -1016,9 +1032,9 @@ SocketDNS_resolve_sync (struct SocketDNS_T *dns, const char *host, int port,
   if (host == NULL || socketcommon_is_ip_address (host))
     return dns_sync_fast_path (host, port, hints);
 
-  /* Check L1 cache first */
+  /* Check L1 cache first (with L2 coherence) */
   pthread_mutex_lock (&dns->mutex);
-  cache_entry = cache_lookup (dns, host);
+  cache_entry = cache_lookup_coherent (dns, host);
   if (cache_entry)
     {
       result = SocketCommon_copy_addrinfo (cache_entry->result);
@@ -1141,8 +1157,183 @@ cache_evict_oldest (struct SocketDNS_T *dns)
   dns->cache_evictions++;
 }
 
-struct SocketDNS_CacheEntry *
-cache_lookup (struct SocketDNS_T *dns, const char *hostname)
+/**
+ * @brief Promote L2 (SocketDNSResolver) cache entry to L1 (SocketDNS) cache.
+ * @ingroup dns
+ *
+ * @param dns DNS resolver instance
+ * @param hostname Hostname to promote
+ * @param l2_result L2 cache result to copy to L1
+ * @return 1 if promotion succeeded, 0 if promotion failed
+ */
+static int
+cache_promote_l2_to_l1 (struct SocketDNS_T *dns, const char *hostname,
+                        const SocketDNSResolver_Result *l2_result)
+{
+  struct addrinfo *ai_result;
+
+  if (!dns || !hostname || !l2_result || l2_result->count == 0)
+    return 0;
+
+  /* Convert SocketDNSResolver_Result to addrinfo for L1 cache */
+  ai_result = resolver_result_to_addrinfo (l2_result, 0);
+  if (!ai_result)
+    return 0;
+
+  /* Insert into L1 cache */
+  cache_insert (dns, hostname, ai_result);
+  SocketCommon_free_addrinfo (ai_result);
+
+  return 1;
+}
+
+/**
+ * @brief Coherent cache lookup checking L1 then L2.
+ * @ingroup dns
+ *
+ * Implements cache coherence rule: L1 miss → check L2 → populate L1.
+ *
+ * @param dns DNS resolver instance
+ * @param hostname Hostname to lookup
+ * @return L1 cache entry (may be newly promoted from L2), or NULL if not cached
+ */
+static struct SocketDNS_CacheEntry *
+cache_lookup_coherent (struct SocketDNS_T *dns, const char *hostname)
+{
+  struct SocketDNS_CacheEntry *l1_entry;
+  SocketDNSResolver_Result l2_result = { 0 };
+  int l2_err;
+
+  if (dns->cache_max_entries == 0)
+    return NULL;
+
+  /* Check L1 cache first (L1-only, no recursion) */
+  l1_entry = cache_lookup_l1_only (dns, hostname);
+  if (l1_entry)
+    return l1_entry; /* L1 hit */
+
+  /* L1 miss - check L2 cache in SocketDNSResolver */
+  if (!dns->resolver)
+    return NULL;
+
+  /* Query L2 cache directly (no resolution triggered) */
+  l2_err = SocketDNSResolver_cache_lookup (dns->resolver, hostname, &l2_result);
+  if (l2_err == RESOLVER_OK)
+    {
+      /* L2 hit - promote to L1 */
+      cache_promote_l2_to_l1 (dns, hostname, &l2_result);
+      SocketDNSResolver_result_free (&l2_result);
+
+      /* Return newly promoted L1 entry */
+      l1_entry = cache_lookup_l1_only (dns, hostname);
+      return l1_entry;
+    }
+
+  /* L2 miss - both caches empty */
+  return NULL;
+}
+
+/**
+ * @brief Validate L1 TTL with L2 fallback on expiry.
+ * @ingroup dns
+ *
+ * Implements cache coherence rule: L1 expiry → check L2 (may still be valid).
+ *
+ * @param dns DNS resolver instance
+ * @param hostname Hostname to validate
+ * @param l1_entry Existing L1 entry (may be expired)
+ * @return Valid cache entry (L1 refreshed if needed), or NULL if both expired
+ */
+static struct SocketDNS_CacheEntry *
+cache_validate_ttl_coherent (struct SocketDNS_T *dns, const char *hostname,
+                              struct SocketDNS_CacheEntry *l1_entry)
+{
+  SocketDNSResolver_Result l2_result = { 0 };
+  int l2_err;
+
+  /* If L1 entry is still valid, return it */
+  if (!cache_entry_expired (dns, l1_entry))
+    return l1_entry;
+
+  /* L1 expired - check if L2 has fresher data with longer TTL */
+  if (!dns->resolver)
+    {
+      cache_remove_entry (dns, l1_entry);
+      dns->cache_evictions++;
+      return NULL;
+    }
+
+  /* Query L2 cache directly */
+  l2_err = SocketDNSResolver_cache_lookup (dns->resolver, hostname, &l2_result);
+  if (l2_err == RESOLVER_OK)
+    {
+      /* L2 still valid - refresh L1 from L2 */
+      cache_remove_entry (dns, l1_entry);
+      cache_promote_l2_to_l1 (dns, hostname, &l2_result);
+      SocketDNSResolver_result_free (&l2_result);
+
+      /* Return refreshed L1 entry */
+      return cache_lookup_l1_only (dns, hostname);
+    }
+
+  /* L2 also expired - remove from L1 */
+  cache_remove_entry (dns, l1_entry);
+  dns->cache_evictions++;
+
+  return NULL;
+}
+
+/**
+ * @brief Update both L1 and L2 caches atomically.
+ * @ingroup dns
+ *
+ * Implements cache coherence rule: Resolution → update both L1 and L2.
+ *
+ * @param dns DNS resolver instance
+ * @param hostname Hostname resolved
+ * @param addresses Array of resolved addresses
+ * @param count Number of addresses
+ * @param min_ttl Minimum TTL from DNS response
+ */
+static void
+cache_update_both_tiers (struct SocketDNS_T *dns, const char *hostname,
+                         const SocketDNSResolver_Address *addresses,
+                         size_t count, uint32_t min_ttl)
+{
+  struct addrinfo *ai_result;
+  SocketDNSResolver_Result l2_result = { 0 };
+  size_t i;
+
+  if (!dns || !hostname || count == 0)
+    return;
+
+  /* Build temporary L2 result structure */
+  l2_result.addresses = (SocketDNSResolver_Address *)addresses;
+  l2_result.count = count;
+  l2_result.min_ttl = min_ttl;
+
+  /* Update L1 cache - convert to addrinfo first */
+  ai_result = resolver_result_to_addrinfo (&l2_result, 0);
+  if (ai_result)
+    {
+      cache_insert (dns, hostname, ai_result);
+      SocketCommon_free_addrinfo (ai_result);
+    }
+
+  /* L2 cache is updated automatically by SocketDNSResolver during resolution */
+  /* No explicit L2 insert needed - SocketDNSResolver_resolve already caches */
+}
+
+/**
+ * @brief Internal L1-only cache lookup (no L2 coherence).
+ * @ingroup dns
+ *
+ * @param dns DNS resolver instance
+ * @param hostname Hostname to lookup
+ * @return L1 cache entry or NULL if not found/expired
+ */
+static struct SocketDNS_CacheEntry *
+cache_lookup_l1_only (struct SocketDNS_T *dns, const char *hostname)
 {
   unsigned hash;
   struct SocketDNS_CacheEntry *entry;
@@ -1176,6 +1367,13 @@ cache_lookup (struct SocketDNS_T *dns, const char *hostname)
 
   dns->cache_misses++;
   return NULL;
+}
+
+struct SocketDNS_CacheEntry *
+cache_lookup (struct SocketDNS_T *dns, const char *hostname)
+{
+  /* Default to coherent lookup for external callers */
+  return cache_lookup_coherent (dns, hostname);
 }
 
 static struct SocketDNS_CacheEntry *
