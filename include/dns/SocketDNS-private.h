@@ -99,8 +99,7 @@ enum DnsCleanupLevel
 {
   DNS_CLEAN_NONE = 0, /**< No cleanup needed */
   DNS_CLEAN_MUTEX,    /**< Cleanup mutex only */
-  DNS_CLEAN_CONDS,    /**< Cleanup condition variables and mutex */
-  DNS_CLEAN_PIPE,     /**< Cleanup pipe, conditions, and mutex */
+  DNS_CLEAN_PIPE,     /**< Cleanup pipe and mutex */
   DNS_CLEAN_ARENA     /**< Cleanup arena and all above */
 };
 
@@ -147,17 +146,10 @@ struct SocketDNS_CacheEntry
 struct SocketDNS_T
 {
   Arena_T arena;      /**< Arena for request/hostname allocation */
-  pthread_t *workers; /**< Worker thread array (arena-allocated) */
-  int num_workers;    /**< Number of worker threads */
-  struct SocketDNS_Request_T *queue_head; /**< Request queue FIFO head */
-  struct SocketDNS_Request_T *queue_tail; /**< Request queue FIFO tail */
-  size_t queue_size;                      /**< Current pending request count */
   size_t max_pending;                     /**< Queue capacity limit */
   struct SocketDNS_Request_T *request_hash[SOCKET_DNS_REQUEST_HASH_SIZE];
   /**< Hash table for O(1) request lookup */
   pthread_mutex_t mutex;      /**< Protects all mutable state */
-  pthread_cond_t queue_cond;  /**< Signals workers when work available */
-  pthread_cond_t result_cond; /**< Signals waiters when result ready */
   int shutdown;               /**< Shutdown flag (1 = shutting down) */
   int pipefd[2];              /**< Completion pipe [0]=read, [1]=write */
   int request_timeout_ms;     /**< Default timeout (0 = no timeout) */
@@ -188,17 +180,16 @@ struct SocketDNS_T
 #define COMPLETION_SIGNAL_BYTE SOCKET_DNS_COMPLETION_SIGNAL_BYTE
 
 /**
- * @brief Signal completion and wake waiters.
+ * @brief Signal completion.
  * @ingroup dns
  * @param dns DNS resolver instance.
  *
- * Consolidates repeated signal_completion + pthread_cond_broadcast pattern.
+ * Signals completion pipe for async notification.
  */
 #define SIGNAL_DNS_COMPLETION(dns)                                            \
   do                                                                          \
     {                                                                         \
       signal_completion (dns);                                                \
-      pthread_cond_broadcast (&(dns)->result_cond);                           \
     }                                                                         \
   while (0)
 
@@ -318,16 +309,8 @@ extern const Except_T SocketDNS_Failed;
 
 /* Forward Declarations - SocketDNS-internal.c */
 
-extern int create_single_worker_thread (struct SocketDNS_T *dns,
-                                        int thread_index);
-extern void create_worker_threads (struct SocketDNS_T *dns);
-extern void start_dns_workers (struct SocketDNS_T *dns);
-
 /* Synchronization primitives */
 extern void initialize_mutex (struct SocketDNS_T *dns);
-extern void initialize_queue_condition (struct SocketDNS_T *dns);
-extern void initialize_result_condition (struct SocketDNS_T *dns);
-extern void initialize_synchronization (struct SocketDNS_T *dns);
 extern void create_completion_pipe (struct SocketDNS_T *dns);
 extern void set_pipe_nonblocking (struct SocketDNS_T *dns);
 extern void initialize_pipe (struct SocketDNS_T *dns);
@@ -339,17 +322,15 @@ extern void cleanup_mutex_cond (struct SocketDNS_T *dns);
 extern void cleanup_pipe (struct SocketDNS_T *dns);
 extern void cleanup_on_init_failure (struct SocketDNS_T *dns,
                                      enum DnsCleanupLevel cleanup_level);
-extern void shutdown_workers (struct SocketDNS_T *dns);
 extern void drain_completion_pipe (struct SocketDNS_T *dns);
 extern void reset_dns_state (struct SocketDNS_T *dns);
 extern void destroy_dns_resources (struct SocketDNS_T *dns);
 extern void free_request_list (struct SocketDNS_Request_T *head,
                                int use_hash_next);
-extern void free_queued_requests (struct SocketDNS_T *dns);
 extern void free_hash_table_requests (struct SocketDNS_T *dns);
 extern void free_all_requests (struct SocketDNS_T *dns);
 
-/* Request allocation and queue management */
+/* Request allocation and hash table management */
 extern unsigned request_hash_function (const struct SocketDNS_Request_T *req);
 extern struct SocketDNS_Request_T *
 allocate_request_structure (struct SocketDNS_T *dns);
@@ -366,15 +347,7 @@ extern void hash_table_insert (struct SocketDNS_T *dns,
                                struct SocketDNS_Request_T *req);
 extern void hash_table_remove (struct SocketDNS_T *dns,
                                struct SocketDNS_Request_T *req);
-extern void remove_from_queue_head (struct SocketDNS_T *dns,
-                                    struct SocketDNS_Request_T *req);
-extern void remove_from_queue_middle (struct SocketDNS_T *dns,
-                                      struct SocketDNS_Request_T *req);
-extern void queue_remove (struct SocketDNS_T *dns,
-                          struct SocketDNS_Request_T *req);
 extern int check_queue_limit (const struct SocketDNS_T *dns);
-extern void submit_dns_request (struct SocketDNS_T *dns,
-                                struct SocketDNS_Request_T *req);
 extern void cancel_pending_request (struct SocketDNS_T *dns,
                                     struct SocketDNS_Request_T *req);
 
@@ -389,20 +362,8 @@ extern void mark_request_timeout (struct SocketDNS_T *dns,
 extern void handle_request_timeout (struct SocketDNS_T *dns,
                                     struct SocketDNS_Request_T *req);
 
-/* Worker thread and resolution */
+/* Resolution helpers */
 extern void initialize_addrinfo_hints (struct addrinfo *hints);
-extern void *worker_thread (void *arg);
-extern void prepare_local_hints (struct addrinfo *local_hints,
-                                 const struct addrinfo *base_hints,
-                                 const struct SocketDNS_Request_T *req);
-extern void handle_resolution_result (struct SocketDNS_T *dns,
-                                      struct SocketDNS_Request_T *req,
-                                      struct addrinfo *result, int res);
-extern void process_single_request (struct SocketDNS_T *dns,
-                                    struct SocketDNS_Request_T *req,
-                                    const struct addrinfo *base_hints);
-extern struct SocketDNS_Request_T *dequeue_request (struct SocketDNS_T *dns);
-extern struct SocketDNS_Request_T *wait_for_request (struct SocketDNS_T *dns);
 extern void signal_completion (struct SocketDNS_T *dns);
 extern void store_resolution_result (struct SocketDNS_T *dns,
                                      struct SocketDNS_Request_T *req,
