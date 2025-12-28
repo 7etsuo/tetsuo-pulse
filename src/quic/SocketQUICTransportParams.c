@@ -119,14 +119,14 @@ SocketQUICTransportParams_set_defaults (SocketQUICTransportParams_T *params,
   SocketQUICTransportParams_init (params);
 
   /* Set reasonable defaults for a typical connection */
-  params->max_idle_timeout = 30000;               /* 30 seconds */
-  params->initial_max_data = 1048576;             /* 1 MB */
-  params->initial_max_stream_data_bidi_local = 262144;  /* 256 KB */
-  params->initial_max_stream_data_bidi_remote = 262144; /* 256 KB */
-  params->initial_max_stream_data_uni = 262144;         /* 256 KB */
-  params->initial_max_streams_bidi = 100;
-  params->initial_max_streams_uni = 100;
-  params->active_connection_id_limit = 8;
+  params->max_idle_timeout = QUIC_TP_TYPICAL_IDLE_TIMEOUT_MS;
+  params->initial_max_data = QUIC_TP_TYPICAL_INITIAL_MAX_DATA;
+  params->initial_max_stream_data_bidi_local = QUIC_TP_TYPICAL_INITIAL_MAX_STREAM_DATA;
+  params->initial_max_stream_data_bidi_remote = QUIC_TP_TYPICAL_INITIAL_MAX_STREAM_DATA;
+  params->initial_max_stream_data_uni = QUIC_TP_TYPICAL_INITIAL_MAX_STREAM_DATA;
+  params->initial_max_streams_bidi = QUIC_TP_TYPICAL_INITIAL_MAX_STREAMS;
+  params->initial_max_streams_uni = QUIC_TP_TYPICAL_INITIAL_MAX_STREAMS;
+  params->active_connection_id_limit = QUIC_TP_TYPICAL_ACTIVE_CONNID_LIMIT;
 
   (void)role; /* May be used for role-specific defaults in future */
 }
