@@ -271,39 +271,20 @@ SocketTLS_is_ktls_rx_active (Socket_T socket)
 }
 
 /**
- * SocketTLS_sendfile - Send file data over TLS with zero-copy when possible
+ * tls_sendfile_fallback - Software fallback for sendfile when kTLS is unavailable
+ * @ssl: SSL connection handle
+ * @file_fd: File descriptor to read from
+ * @offset: Starting offset in file
+ * @size: Number of bytes to send
  *
- * See SocketTLS.h for full documentation.
+ * Reads data from file and sends via SSL_write when hardware kTLS offload
+ * is not available. Handles partial writes and would-block conditions.
+ *
+ * @return Bytes sent on success, -1 on error
  */
-ssize_t
-SocketTLS_sendfile (Socket_T socket, int file_fd, off_t offset, size_t size)
+static ssize_t
+tls_sendfile_fallback (SSL *ssl, int file_fd, off_t offset, size_t size)
 {
-  assert (socket);
-
-  /* Validate TLS I/O ready */
-  SSL *ssl = VALIDATE_TLS_IO_READY (socket, SocketTLS_Failed);
-
-  if (file_fd < 0)
-    {
-      errno = EBADF;
-      return -1;
-    }
-
-  if (size == 0)
-    return 0;
-
-#if SOCKET_HAS_OPENSSL_KTLS
-  /* Check if kTLS TX is active - use SSL_sendfile for zero-copy */
-  if (socket->tls_ktls_tx_active)
-    {
-      ossl_ssize_t sent_raw = SSL_sendfile (ssl, file_fd, offset, size, 0);
-      ssize_t sent = tls_handle_ssl_write_result (ssl, sent_raw, "SSL_sendfile");
-      TLS_CHECK_WRITE_ERROR (sent);
-      return sent;
-    }
-#endif
-
-  /* Fallback: read from file and send via SSL_write */
   unsigned char buf[SOCKET_TLS_KTLS_SENDFILE_BUFSIZE];
   ssize_t total_sent = 0;
 
@@ -344,13 +325,15 @@ SocketTLS_sendfile (Socket_T socket, int file_fd, off_t offset, size_t size)
             to_send = (int)remaining;
 
           int ret_raw = SSL_write (ssl, buf + sent_chunk, to_send);
-          ssize_t ret = tls_handle_ssl_write_result (ssl, ret_raw, "SSL_write in sendfile fallback");
+          ssize_t ret
+              = tls_handle_ssl_write_result (ssl, ret_raw,
+                                             "SSL_write in sendfile fallback");
           TLS_CHECK_WRITE_ERROR (ret);
           sent_chunk += (size_t)ret;
           if (ret == 0)
             {
               /* Would block - return partial progress including this chunk's sent */
-              return total_sent + sent_chunk;
+              return total_sent + (ssize_t)sent_chunk;
             }
         }
       /* Full chunk sent */
@@ -358,6 +341,43 @@ SocketTLS_sendfile (Socket_T socket, int file_fd, off_t offset, size_t size)
     }
 
   return total_sent;
+}
+
+/**
+ * SocketTLS_sendfile - Send file data over TLS with zero-copy when possible
+ *
+ * See SocketTLS.h for full documentation.
+ */
+ssize_t
+SocketTLS_sendfile (Socket_T socket, int file_fd, off_t offset, size_t size)
+{
+  assert (socket);
+
+  /* Validate TLS I/O ready */
+  SSL *ssl = VALIDATE_TLS_IO_READY (socket, SocketTLS_Failed);
+
+  if (file_fd < 0)
+    {
+      errno = EBADF;
+      return -1;
+    }
+
+  if (size == 0)
+    return 0;
+
+#if SOCKET_HAS_OPENSSL_KTLS
+  /* Check if kTLS TX is active - use SSL_sendfile for zero-copy */
+  if (socket->tls_ktls_tx_active)
+    {
+      ossl_ssize_t sent_raw = SSL_sendfile (ssl, file_fd, offset, size, 0);
+      ssize_t sent = tls_handle_ssl_write_result (ssl, sent_raw, "SSL_sendfile");
+      TLS_CHECK_WRITE_ERROR (sent);
+      return sent;
+    }
+#endif
+
+  /* Use software fallback when kTLS is unavailable */
+  return tls_sendfile_fallback (ssl, file_fd, offset, size);
 }
 
 /**
