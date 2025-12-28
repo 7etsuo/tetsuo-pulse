@@ -1043,7 +1043,7 @@ SocketQUICTransportParams_decode (const uint8_t *data, size_t len,
 {
   size_t pos = 0;
   SocketQUICTransportParams_Result result;
-  uint32_t seen_params = 0; /* Bitmap for duplicate detection */
+  uint64_t seen_params = 0; /* Bitmap for duplicate detection (up to param ID 63) */
 
   if (data == NULL || params == NULL || consumed == NULL)
     return QUIC_TP_ERROR_NULL;
@@ -1076,9 +1076,9 @@ SocketQUICTransportParams_decode (const uint8_t *data, size_t len,
         return QUIC_TP_ERROR_INCOMPLETE;
 
       /* Check for duplicates (for known parameters) */
-      if (param_id <= 31)
+      if (param_id <= 63)
         {
-          uint32_t mask = 1u << param_id;
+          uint64_t mask = 1ULL << param_id;
           if (seen_params & mask)
             return QUIC_TP_ERROR_DUPLICATE;
           seen_params |= mask;
