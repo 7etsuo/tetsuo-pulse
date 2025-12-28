@@ -322,22 +322,24 @@ extern const Except_T SocketDNS_Failed;
 
 /* Forward Declarations - SocketDNS-internal.c */
 
-/* Synchronization primitives */
-extern void initialize_mutex (struct SocketDNS_T *dns);
-extern void create_completion_pipe (struct SocketDNS_T *dns);
-extern void set_pipe_nonblocking (struct SocketDNS_T *dns);
-extern void initialize_pipe (struct SocketDNS_T *dns);
-extern void initialize_dns_fields (struct SocketDNS_T *dns);
-extern void initialize_dns_components (struct SocketDNS_T *dns);
+/* Synchronization primitives - migrated to SocketDNS.c (Phase 2.6c):
+ * - initialize_mutex()
+ * - create_completion_pipe()
+ * - set_pipe_nonblocking()
+ * - initialize_pipe()
+ * - initialize_dns_fields()
+ * - initialize_dns_components()
+ */
 
-/* Cleanup and shutdown */
-extern void cleanup_mutex_cond (struct SocketDNS_T *dns);
-extern void cleanup_pipe (struct SocketDNS_T *dns);
-extern void cleanup_on_init_failure (struct SocketDNS_T *dns,
-                                     enum DnsCleanupLevel cleanup_level);
-extern void drain_completion_pipe (struct SocketDNS_T *dns);
-extern void reset_dns_state (struct SocketDNS_T *dns);
-extern void destroy_dns_resources (struct SocketDNS_T *dns);
+/* Cleanup and shutdown - migrated to SocketDNS.c (Phase 2.6c):
+ * - cleanup_mutex_cond()
+ * - cleanup_pipe()
+ * - cleanup_on_init_failure()
+ * - drain_completion_pipe()
+ * - reset_dns_state()
+ * - destroy_dns_resources()
+ */
+
 extern void free_request_list (struct SocketDNS_Request_T *head,
                                int use_hash_next);
 extern void free_hash_table_requests (struct SocketDNS_T *dns);
@@ -390,7 +392,7 @@ extern void invoke_callback (struct SocketDNS_T *dns,
 
 /* Forward Declarations - SocketDNS.c */
 extern void validate_resolve_params (const char *host, int port);
-extern struct SocketDNS_T *allocate_dns_resolver (void);
+/* allocate_dns_resolver() migrated to static in SocketDNS.c (Phase 2.6c) */
 
 /* Cache functions - defined in SocketDNS.c, used by SocketDNS-internal.c */
 extern struct SocketDNS_CacheEntry *cache_lookup (struct SocketDNS_T *dns,

@@ -21,9 +21,11 @@
 #include <arpa/inet.h>
 #include <assert.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <stddef.h>
 #include <string.h>
 #include <strings.h>
+#include <unistd.h>
 
 #include "core/Arena.h"
 #include "dns/SocketDNS-private.h"
@@ -41,6 +43,253 @@ const Except_T SocketDNS_Failed
     = { &SocketDNS_Failed, "SocketDNS operation failed" };
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketDNS);
+
+/* Forward declarations for migrated functions */
+static void cleanup_on_init_failure (struct SocketDNS_T *dns,
+                                     enum DnsCleanupLevel cleanup_level);
+static void cleanup_pipe (struct SocketDNS_T *dns);
+
+/* Initialization/Cleanup Helper Macro (migrated from SocketDNS-internal.c) */
+#define INIT_PTHREAD_PRIMITIVE(dns, init_func, ptr, cleanup_level, error_msg) \
+  do                                                                          \
+    {                                                                         \
+      if (init_func ((ptr), NULL) != 0)                                       \
+        {                                                                     \
+          cleanup_on_init_failure ((dns), (cleanup_level));                   \
+          SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed, (error_msg));        \
+        }                                                                     \
+    }                                                                         \
+  while (0)
+
+/* Initialization Functions (migrated from SocketDNS-internal.c) */
+
+static T
+allocate_dns_resolver (void)
+{
+  struct SocketDNS_T *dns;
+
+  dns = calloc (1, sizeof (*dns));
+  if (!dns)
+    {
+      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+                        SOCKET_ENOMEM ": Cannot allocate DNS resolver");
+    }
+
+  return dns;
+}
+
+static void
+initialize_dns_fields (struct SocketDNS_T *dns)
+{
+  /* num_workers removed - no worker threads in new architecture */
+  dns->max_pending = SOCKET_DNS_MAX_PENDING;
+  dns->request_timeout_ms = SOCKET_DEFAULT_DNS_TIMEOUT_MS;
+
+  dns->cache_max_entries = SOCKET_DNS_DEFAULT_CACHE_MAX_ENTRIES;
+  dns->cache_ttl_seconds = SOCKET_DNS_DEFAULT_CACHE_TTL_SECONDS;
+
+  dns->prefer_ipv6 = 1;
+
+  /* Initialize resolver fields to NULL (Phase 2.2) */
+  dns->resolver = NULL;
+  dns->resolver_arena = NULL;
+}
+
+static void
+initialize_mutex (struct SocketDNS_T *dns)
+{
+  INIT_PTHREAD_PRIMITIVE (dns, pthread_mutex_init, &dns->mutex, DNS_CLEAN_NONE,
+                          "Failed to initialize DNS resolver mutex");
+}
+
+static void
+initialize_queue_condition (struct SocketDNS_T *dns)
+{
+  /* TODO(Phase 2.x): Removed - no queue condition needed without worker threads */
+  (void)dns;
+}
+
+static void
+initialize_result_condition (struct SocketDNS_T *dns)
+{
+  /* TODO(Phase 2.x): Removed - no result condition needed without worker threads */
+  (void)dns;
+}
+
+static void
+initialize_synchronization (struct SocketDNS_T *dns)
+{
+  initialize_mutex (dns);
+  initialize_queue_condition (dns);
+  initialize_result_condition (dns);
+}
+
+static void
+create_completion_pipe (struct SocketDNS_T *dns)
+{
+  if (pipe (dns->pipefd) < 0)
+    {
+      cleanup_on_init_failure (dns, DNS_CLEAN_MUTEX);
+      SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,
+                        "Failed to create completion pipe");
+    }
+
+  if (SocketCommon_setcloexec (dns->pipefd[0], 1) < 0
+      || SocketCommon_setcloexec (dns->pipefd[1], 1) < 0)
+    {
+      int saved_errno = errno;
+      cleanup_pipe (dns);
+      cleanup_on_init_failure (dns, DNS_CLEAN_MUTEX);
+      errno = saved_errno;
+      SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,
+                        "Failed to set close-on-exec flag on pipe");
+    }
+}
+
+static void
+set_pipe_nonblocking (struct SocketDNS_T *dns)
+{
+  int flags = fcntl (dns->pipefd[0], F_GETFL);
+  if (flags < 0)
+    {
+      cleanup_on_init_failure (dns, DNS_CLEAN_ARENA);
+      SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,
+                        "Failed to get pipe flags");
+    }
+
+  if (fcntl (dns->pipefd[0], F_SETFL, flags | O_NONBLOCK) < 0)
+    {
+      cleanup_on_init_failure (dns, DNS_CLEAN_ARENA);
+      SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,
+                        "Failed to set pipe to non-blocking");
+    }
+}
+
+static void
+initialize_pipe (struct SocketDNS_T *dns)
+{
+  create_completion_pipe (dns);
+  set_pipe_nonblocking (dns);
+}
+
+static void
+initialize_dns_components (struct SocketDNS_T *dns)
+{
+  dns->arena = Arena_new ();
+  if (!dns->arena)
+    {
+      free (dns);
+      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+                        SOCKET_ENOMEM ": Cannot allocate DNS resolver arena");
+    }
+
+  initialize_synchronization (dns);
+  initialize_pipe (dns);
+
+  /* Initialize SocketDNSResolver backend (Phase 2.2) */
+  dns->resolver_arena = Arena_new ();
+  if (!dns->resolver_arena)
+    {
+      cleanup_on_init_failure (dns, DNS_CLEAN_PIPE);
+      SOCKET_RAISE_MSG (
+          SocketDNS, SocketDNS_Failed,
+          SOCKET_ENOMEM ": Cannot allocate resolver arena");
+    }
+
+  TRY
+    {
+      dns->resolver = SocketDNSResolver_new (dns->resolver_arena);
+      SocketDNSResolver_load_resolv_conf (dns->resolver);
+    }
+  EXCEPT (SocketDNSResolver_Failed)
+    {
+      Arena_dispose (&dns->resolver_arena);
+      cleanup_on_init_failure (dns, DNS_CLEAN_PIPE);
+      RERAISE;
+    }
+  END_TRY;
+}
+
+/* Cleanup Functions (migrated from SocketDNS-internal.c) */
+
+static void
+cleanup_pipe (struct SocketDNS_T *dns)
+{
+  for (int i = 0; i < 2; i++)
+    {
+      SAFE_CLOSE (dns->pipefd[i]);
+      dns->pipefd[i] = -1;
+    }
+}
+
+static void
+cleanup_mutex_cond (struct SocketDNS_T *dns)
+{
+  /* condition variables removed - only destroy mutex */
+  pthread_mutex_destroy (&dns->mutex);
+}
+
+static void
+cleanup_on_init_failure (struct SocketDNS_T *dns,
+                         enum DnsCleanupLevel cleanup_level)
+{
+  if (cleanup_level >= DNS_CLEAN_ARENA)
+    Arena_dispose (&dns->arena);
+  if (cleanup_level >= DNS_CLEAN_PIPE)
+    cleanup_pipe (dns);
+  if (cleanup_level >= DNS_CLEAN_MUTEX)
+    {
+      pthread_mutex_destroy (&dns->mutex);
+    }
+  free (dns);
+}
+
+static void
+drain_completion_pipe (struct SocketDNS_T *dns)
+{
+  char buffer[SOCKET_DNS_PIPE_BUFFER_SIZE];
+  ssize_t n;
+
+  if (dns->pipefd[0] < 0)
+    return;
+
+  do
+    {
+      n = read (dns->pipefd[0], buffer, sizeof (buffer));
+    }
+  while (n > 0);
+}
+
+static void
+reset_dns_state (T d)
+{
+  pthread_mutex_lock (&d->mutex);
+  free_all_requests (d);
+  cache_clear_locked (d); /* Free cache entries' malloc'd addrinfo results */
+  /* queue fields removed - no queue in new architecture */
+  for (int i = 0; i < SOCKET_DNS_REQUEST_HASH_SIZE; i++)
+    {
+      d->request_hash[i] = NULL;
+    }
+  pthread_mutex_unlock (&d->mutex);
+}
+
+static void
+destroy_dns_resources (T d)
+{
+  cleanup_pipe (d);
+  cleanup_mutex_cond (d);
+
+  /* Free resolver backend (Phase 2.2) */
+  if (d->resolver_arena)
+    {
+      Arena_dispose (&d->resolver_arena);
+      d->resolver = NULL;
+    }
+
+  Arena_dispose (&d->arena);
+  free (d);
+}
 
 /* Forward declarations for cache coherence functions */
 static struct SocketDNS_CacheEntry *
