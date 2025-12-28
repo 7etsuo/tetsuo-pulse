@@ -67,7 +67,7 @@ SocketQUIC_error_string (uint64_t code)
   if (QUIC_IS_CRYPTO_ERROR (code))
     {
       int ret = snprintf (crypto_buf, sizeof (crypto_buf), "CRYPTO_ERROR(0x%02x)",
-                          (unsigned int)QUIC_CRYPTO_ALERT (code));
+                          (uint8_t)QUIC_CRYPTO_ALERT (code));
 
       /* Defensive check: should never happen with current format */
       if (ret < 0 || (size_t)ret >= sizeof (crypto_buf))
