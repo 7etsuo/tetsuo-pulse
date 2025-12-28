@@ -318,21 +318,6 @@ drain_completion_pipe (struct SocketDNS_T *dns)
 }
 
 static void
-secure_clear_memory (void *ptr, size_t len)
-{
-  if (!ptr || len == 0)
-    return;
-
-#ifdef __linux__
-  explicit_bzero (ptr, len);
-#else
-  volatile unsigned char *vptr = (volatile unsigned char *)ptr;
-  while (len--)
-    *vptr++ = 0;
-#endif
-}
-
-static void
 free_request_list_results (Request_T head, size_t next_offset)
 {
   Request_T curr = head;
@@ -558,15 +543,6 @@ submit_dns_request (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
   /* No queue_append or cond signal - worker threads removed */
 }
 
-void
-cancel_pending_request (struct SocketDNS_T *dns,
-                        struct SocketDNS_Request_T *req)
-{
-  /* No queue_remove - queue removed */
-  hash_table_remove (dns, req);
-  req->state = REQ_CANCELLED;
-}
-
 int
 request_effective_timeout_ms (const struct SocketDNS_T *dns,
                               const struct SocketDNS_Request_T *req)
@@ -643,26 +619,6 @@ wait_for_request (struct SocketDNS_T *dns)
   /* TODO(Phase 2.x): Removed - no queue/workers in new architecture */
   (void)dns;
   return NULL;
-}
-
-void
-signal_completion (struct SocketDNS_T *dns)
-{
-  char byte = COMPLETION_SIGNAL_BYTE;
-  ssize_t n;
-
-  n = write (dns->pipefd[1], &byte, 1);
-  (void)n;
-}
-
-int
-dns_cancellation_error (void)
-{
-#ifdef EAI_CANCELLED
-  return EAI_CANCELLED;
-#else
-  return EAI_AGAIN;
-#endif
 }
 
 int

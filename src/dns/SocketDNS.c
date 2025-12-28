@@ -42,6 +42,68 @@ const Except_T SocketDNS_Failed
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketDNS);
 
+/* ==================== Utility Functions (Phase 2.6d) ==================== */
+
+/**
+ * @brief Signal completion pipe for poll wakeup.
+ * @ingroup dns
+ */
+void
+signal_completion (struct SocketDNS_T *dns)
+{
+  char byte = COMPLETION_SIGNAL_BYTE;
+  ssize_t n;
+
+  n = write (dns->pipefd[1], &byte, 1);
+  (void)n;
+}
+
+/**
+ * @brief Get cancellation error code.
+ * @ingroup dns
+ */
+int
+dns_cancellation_error (void)
+{
+#ifdef EAI_CANCELLED
+  return EAI_CANCELLED;
+#else
+  return EAI_AGAIN;
+#endif
+}
+
+/**
+ * @brief Cancel an in-flight request.
+ * @ingroup dns
+ */
+void
+cancel_pending_request (struct SocketDNS_T *dns,
+                        struct SocketDNS_Request_T *req)
+{
+  /* No queue_remove - queue removed */
+  hash_table_remove (dns, req);
+  req->state = REQ_CANCELLED;
+}
+
+/**
+ * @brief Securely clear sensitive memory.
+ * @ingroup dns
+ */
+void
+secure_clear_memory (void *ptr, size_t len)
+{
+  if (!ptr || len == 0)
+    return;
+
+#ifdef __linux__
+  explicit_bzero (ptr, len);
+#else
+  volatile unsigned char *vptr = (volatile unsigned char *)ptr;
+  while (len--)
+    *vptr++ = 0;
+#endif
+}
+
 /* Forward declarations for cache coherence functions */
 static struct SocketDNS_CacheEntry *
 cache_lookup_l1_only (struct SocketDNS_T *dns, const char *hostname);

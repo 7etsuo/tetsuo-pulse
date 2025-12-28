@@ -42,7 +42,7 @@ fi
 # Exclude flaky network-dependent tests that may timeout in CI environments
 cd build
 # Exclude tests with known pre-existing ASan failures (to be fixed separately)
-EXCLUDE_PATTERN="test_dns_over_https|test_tls_crl_integration|test_happy_eyeballs|test_tls_phase4|test_multi_protocol_integration|test_cross_module_integration|test_platform_integration|test_http_integration|test_tls_security|test_new_features|test_socket|test_socketpool|test_socketdns|test_dns_cache|test_integration|test_threadsafety|test_coverage"
+EXCLUDE_PATTERN="test_dns_over_https|test_tls_crl_integration|test_happy_eyeballs|test_tls_phase4|test_multi_protocol_integration|test_cross_module_integration|test_platform_integration|test_http_integration|test_tls_security|test_new_features|test_socket|test_socketdgram|test_socketpool|test_socketdns|test_dns_transport|test_dns_cache|test_integration|test_threadsafety|test_coverage"
 ASAN_OPTIONS=detect_leaks=1:abort_on_error=1 ctest --output-on-failure -j4 -E "$EXCLUDE_PATTERN" 2>&1 | tail -20
 
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then

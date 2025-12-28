@@ -361,8 +361,6 @@ extern void hash_table_insert (struct SocketDNS_T *dns,
 extern void hash_table_remove (struct SocketDNS_T *dns,
                                struct SocketDNS_Request_T *req);
 extern int check_queue_limit (const struct SocketDNS_T *dns);
-extern void cancel_pending_request (struct SocketDNS_T *dns,
-                                    struct SocketDNS_Request_T *req);
 
 /* Timeout handling */
 extern int
@@ -377,11 +375,9 @@ extern void handle_request_timeout (struct SocketDNS_T *dns,
 
 /* Resolution helpers */
 extern void initialize_addrinfo_hints (struct addrinfo *hints);
-extern void signal_completion (struct SocketDNS_T *dns);
 extern void store_resolution_result (struct SocketDNS_T *dns,
                                      struct SocketDNS_Request_T *req,
                                      struct addrinfo *result, int error);
-extern int dns_cancellation_error (void);
 extern int perform_dns_resolution (const struct SocketDNS_Request_T *req,
                                    const struct addrinfo *hints,
                                    struct addrinfo **result);
@@ -391,6 +387,13 @@ extern void invoke_callback (struct SocketDNS_T *dns,
 /* Forward Declarations - SocketDNS.c */
 extern void validate_resolve_params (const char *host, int port);
 extern struct SocketDNS_T *allocate_dns_resolver (void);
+
+/* Utility functions - migrated from SocketDNS-internal.c (Phase 2.6d) */
+extern void signal_completion (struct SocketDNS_T *dns);
+extern int dns_cancellation_error (void);
+extern void cancel_pending_request (struct SocketDNS_T *dns,
+                                    struct SocketDNS_Request_T *req);
+extern void secure_clear_memory (void *ptr, size_t len);
 
 /* Cache functions - defined in SocketDNS.c, used by SocketDNS-internal.c */
 extern struct SocketDNS_CacheEntry *cache_lookup (struct SocketDNS_T *dns,
