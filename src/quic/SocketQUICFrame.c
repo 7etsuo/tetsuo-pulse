@@ -140,11 +140,22 @@ parse_ping (const uint8_t *data, size_t len, size_t *pos,
  * ============================================================================
  */
 
+/**
+ * @brief Parse basic ACK fields (largest_ack, ack_delay, range_count,
+ *        first_range)
+ *
+ * Extracts the mandatory ACK frame fields and validates the first range.
+ *
+ * @param data Frame data buffer
+ * @param len Buffer length
+ * @param pos Current position (updated on success)
+ * @param ack ACK frame structure to populate
+ * @return QUIC_FRAME_OK on success, error code otherwise
+ */
 static SocketQUICFrame_Result
-parse_ack_internal (const uint8_t *data, size_t len, size_t *pos,
-                    SocketQUICFrame_T *frame, Arena_T arena)
+parse_ack_basic_fields (const uint8_t *data, size_t len, size_t *pos,
+                        SocketQUICFrameAck_T *ack)
 {
-  SocketQUICFrameAck_T *ack = &frame->data.ack;
   SocketQUICFrame_Result res;
 
   /* Largest Acknowledged */
@@ -171,48 +182,128 @@ parse_ack_internal (const uint8_t *data, size_t len, size_t *pos,
   if (ack->first_range > ack->largest_ack)
     return QUIC_FRAME_ERROR_ACK_RANGE;
 
-  /* Parse additional ACK ranges */
-  if (ack->range_count > 0)
+  return QUIC_FRAME_OK;
+}
+
+/**
+ * @brief Parse additional ACK ranges with memory allocation
+ *
+ * Allocates and parses the gap/length pairs for additional ACK ranges.
+ * Includes overflow protection and range count validation.
+ *
+ * @param data Frame data buffer
+ * @param len Buffer length
+ * @param pos Current position (updated on success)
+ * @param ack ACK frame structure (range_count must be set)
+ * @param arena Optional arena for allocation (NULL for malloc)
+ * @return QUIC_FRAME_OK on success, error code otherwise
+ */
+static SocketQUICFrame_Result
+parse_ack_ranges (const uint8_t *data, size_t len, size_t *pos,
+                  SocketQUICFrameAck_T *ack, Arena_T arena)
+{
+  SocketQUICFrame_Result res;
+
+  if (ack->range_count == 0)
+    return QUIC_FRAME_OK;
+
+  if (ack->range_count > QUIC_FRAME_ACK_MAX_RANGES)
+    return QUIC_FRAME_ERROR_ACK_RANGE;
+
+  /* Overflow check: ensure range_count * sizeof doesn't wrap */
+  if (ack->range_count > SIZE_MAX / sizeof (SocketQUICFrameAckRange_T))
+    return QUIC_FRAME_ERROR_OVERFLOW;
+
+  size_t range_size = (size_t)ack->range_count * sizeof (SocketQUICFrameAckRange_T);
+  if (arena)
+    ack->ranges = Arena_alloc (arena, range_size, __FILE__, __LINE__);
+  else
+    ack->ranges = malloc (range_size);
+
+  if (!ack->ranges)
+    return QUIC_FRAME_ERROR_INVALID;
+
+  ack->ranges_capacity = (size_t)ack->range_count;
+
+  for (uint64_t i = 0; i < ack->range_count; i++)
     {
-      if (ack->range_count > QUIC_FRAME_ACK_MAX_RANGES)
-        return QUIC_FRAME_ERROR_ACK_RANGE;
-
-      /* Overflow check: ensure range_count * sizeof doesn't wrap */
-      if (ack->range_count > SIZE_MAX / sizeof (SocketQUICFrameAckRange_T))
-        return QUIC_FRAME_ERROR_OVERFLOW;
-
-      size_t range_size = (size_t)ack->range_count * sizeof (SocketQUICFrameAckRange_T);
-      if (arena)
-        ack->ranges = Arena_alloc (arena, range_size, __FILE__, __LINE__);
-      else
-        ack->ranges = malloc (range_size);
-
-      if (!ack->ranges)
-        return QUIC_FRAME_ERROR_INVALID;
-
-      ack->ranges_capacity = (size_t)ack->range_count;
-
-      for (uint64_t i = 0; i < ack->range_count; i++)
-        {
-          res = decode_varint (data, len, pos, &ack->ranges[i].gap);
-          if (res != QUIC_FRAME_OK)
-            return res;
-          res = decode_varint (data, len, pos, &ack->ranges[i].length);
-          if (res != QUIC_FRAME_OK)
-            return res;
-        }
+      res = decode_varint (data, len, pos, &ack->ranges[i].gap);
+      if (res != QUIC_FRAME_OK)
+        return res;
+      res = decode_varint (data, len, pos, &ack->ranges[i].length);
+      if (res != QUIC_FRAME_OK)
+        return res;
     }
+
+  return QUIC_FRAME_OK;
+}
+
+/**
+ * @brief Parse ECN counts (ECT0, ECT1, CE)
+ *
+ * Extracts the three ECN counter fields present in ACK_ECN frames.
+ *
+ * @param data Frame data buffer
+ * @param len Buffer length
+ * @param pos Current position (updated on success)
+ * @param ack ACK frame structure to populate
+ * @return QUIC_FRAME_OK on success, error code otherwise
+ */
+static SocketQUICFrame_Result
+parse_ack_ecn_counts (const uint8_t *data, size_t len, size_t *pos,
+                      SocketQUICFrameAck_T *ack)
+{
+  SocketQUICFrame_Result res;
+
+  res = decode_varint (data, len, pos, &ack->ect0_count);
+  if (res != QUIC_FRAME_OK)
+    return res;
+
+  res = decode_varint (data, len, pos, &ack->ect1_count);
+  if (res != QUIC_FRAME_OK)
+    return res;
+
+  res = decode_varint (data, len, pos, &ack->ecn_ce_count);
+  if (res != QUIC_FRAME_OK)
+    return res;
+
+  return QUIC_FRAME_OK;
+}
+
+/**
+ * @brief Parse ACK or ACK_ECN frame (internal)
+ *
+ * Orchestrates the parsing of ACK frames by delegating to specialized
+ * helper functions for each component.
+ *
+ * @param data Frame data buffer
+ * @param len Buffer length
+ * @param pos Current position (updated on success)
+ * @param frame Frame structure (type must be set)
+ * @param arena Optional arena for range allocation (NULL for malloc)
+ * @return QUIC_FRAME_OK on success, error code otherwise
+ */
+static SocketQUICFrame_Result
+parse_ack_internal (const uint8_t *data, size_t len, size_t *pos,
+                    SocketQUICFrame_T *frame, Arena_T arena)
+{
+  SocketQUICFrameAck_T *ack = &frame->data.ack;
+  SocketQUICFrame_Result res;
+
+  /* Parse basic ACK fields */
+  res = parse_ack_basic_fields (data, len, pos, ack);
+  if (res != QUIC_FRAME_OK)
+    return res;
+
+  /* Parse additional ACK ranges */
+  res = parse_ack_ranges (data, len, pos, ack, arena);
+  if (res != QUIC_FRAME_OK)
+    return res;
 
   /* Parse ECN counts if ACK_ECN */
   if (frame->type == QUIC_FRAME_ACK_ECN)
     {
-      res = decode_varint (data, len, pos, &ack->ect0_count);
-      if (res != QUIC_FRAME_OK)
-        return res;
-      res = decode_varint (data, len, pos, &ack->ect1_count);
-      if (res != QUIC_FRAME_OK)
-        return res;
-      res = decode_varint (data, len, pos, &ack->ecn_ce_count);
+      res = parse_ack_ecn_counts (data, len, pos, ack);
       if (res != QUIC_FRAME_OK)
         return res;
     }
