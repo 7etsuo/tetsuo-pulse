@@ -585,19 +585,16 @@ server_serve_static_file (SocketHTTPServer_T server, ServerConnection *conn,
   while (remaining > 0)
     {
       sent = sendfile (Socket_fd (conn->socket), fd, &offset, remaining);
+
+      /* Handle errors */
       if (sent < 0)
         {
-          if (errno == EAGAIN || errno == EWOULDBLOCK)
-            {
-              /* Would block - need to poll for write readiness */
-              /* For simplicity, we'll continue trying */
-              continue;
-            }
-          if (errno == EINTR)
+          if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)
             continue;
           close (fd);
           return -1;
         }
+
       if (sent == 0)
         break;
 
