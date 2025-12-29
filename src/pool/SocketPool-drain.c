@@ -340,17 +340,9 @@ transition_to_stopped (T pool, int timed_out)
  * Thread-safe: Call with mutex held
  * Complexity: O(n) where n = active connections
  *
- * Collects all active sockets, releases lock, then closes them.
- * This prevents holding the lock during potentially slow close operations.
- *
- * THREAD SAFETY NOTE:
- * Called only during drain (DRAINING state). During drain, SocketPool_add()
- * rejects new connections, but SocketPool_remove() may be called by other
- * threads.
- *
- * MITIGATION: Applications should ensure that during drain, only the drain
- * mechanism itself calls Socket_free() on pool connections. Normal application
- * code should stop processing connections when drain is initiated.
+ * Collects all active sockets under lock to get a consistent snapshot,
+ * then releases the lock before closing to avoid holding it during
+ * potentially slow I/O operations.
  */
 static void
 force_close_all_connections (T pool)
@@ -366,15 +358,35 @@ force_close_all_connections (T pool)
   if (!to_close)
     return;
 
+  /* Collect active connections while holding lock to get consistent snapshot */
   close_count = collect_active_connections (pool, to_close, pool->maxconns);
 
-  /* Release lock before closing sockets */
+  /* THREAD SAFETY: Release lock before closing sockets to avoid holding lock
+   * during potentially slow I/O operations. During this unlocked period:
+   *
+   * SAFE: SocketPool_add() rejects new connections (pool is DRAINING state)
+   * RACE RISK: SocketPool_remove() could be called on a socket we're about
+   *            to close, potentially leading to use-after-free if that thread
+   *            calls Socket_free()
+   *
+   * MITIGATION: Applications MUST NOT call Socket_free() on pool connections
+   * after drain is initiated. The drain mechanism owns all cleanup during this
+   * phase. SocketPool_remove() itself is safe as it only updates bookkeeping.
+   *
+   * RATIONALE: We release the lock here because:
+   * 1. Socket shutdown/close can block (TCP FIN handshake, kernel buffering)
+   * 2. Holding lock during close would serialize all pool operations
+   * 3. The collected sockets array is a snapshot taken under lock protection
+   *
+   * See close_collected_connections() which safely handles NULL sockets and
+   * calls SocketPool_remove() which acquires its own lock for bookkeeping.
+   */
   POOL_UNLOCK (pool);
 
-  /* Close all collected sockets */
+  /* Close all collected sockets (lock released to avoid blocking pool) */
   close_collected_connections (pool, to_close, close_count);
 
-  /* Re-acquire lock for caller */
+  /* Re-acquire lock for caller (expected to hold lock on return) */
   POOL_LOCK (pool);
 
   if (allocated)
