@@ -69,6 +69,10 @@ SocketQUICWire_pn_length (uint64_t full_pn, uint64_t largest_acked)
   unsigned min_bits;
   unsigned num_bytes;
 
+  /* Enforce documented promise: return 4 if full_pn exceeds QUIC_PN_MAX */
+  if (full_pn > QUIC_PN_MAX)
+    return QUIC_PN_MAX_SIZE;
+
   /*
    * RFC 9000 Appendix A.2:
    * The number of bits must be at least one more than the base-2 logarithm

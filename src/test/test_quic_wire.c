@@ -640,6 +640,53 @@ TEST (quic_wire_pn_encode_max_valid)
   ASSERT_EQ (len, 4);
 }
 
+/* ============================================================================
+ * Overflow Check Tests (Issue #1178)
+ * ============================================================================
+ */
+
+TEST (quic_wire_pn_length_overflow_check_max_plus_one)
+{
+  /* Test case from issue #1178: QUIC_PN_MAX + 1 should return 4 */
+  unsigned len = SocketQUICWire_pn_length (QUIC_PN_MAX + 1, QUIC_PN_NONE);
+  ASSERT_EQ (len, 4);
+}
+
+TEST (quic_wire_pn_length_overflow_check_uint64_max)
+{
+  /* Test case from issue #1178: UINT64_MAX should return 4, not wrap to 1 */
+  unsigned len = SocketQUICWire_pn_length (UINT64_MAX, QUIC_PN_NONE);
+  ASSERT_EQ (len, 4);
+}
+
+TEST (quic_wire_pn_length_overflow_check_max_plus_1000)
+{
+  /* Test case from issue #1178: QUIC_PN_MAX + 1000 should return 4 */
+  unsigned len = SocketQUICWire_pn_length (QUIC_PN_MAX + 1000, QUIC_PN_NONE);
+  ASSERT_EQ (len, 4);
+}
+
+TEST (quic_wire_pn_length_overflow_with_acked)
+{
+  /* Overflow check should work regardless of largest_acked value */
+  unsigned len = SocketQUICWire_pn_length (QUIC_PN_MAX + 1, 100);
+  ASSERT_EQ (len, 4);
+}
+
+TEST (quic_wire_pn_length_at_max_boundary)
+{
+  /* QUIC_PN_MAX itself is valid, should not trigger overflow */
+  unsigned len = SocketQUICWire_pn_length (QUIC_PN_MAX, QUIC_PN_NONE);
+  ASSERT_EQ (len, 4);
+}
+
+TEST (quic_wire_pn_length_just_below_max)
+{
+  /* Just below QUIC_PN_MAX should work normally */
+  unsigned len = SocketQUICWire_pn_length (QUIC_PN_MAX - 1, QUIC_PN_NONE);
+  ASSERT_EQ (len, 4);
+}
+
 int
 main (void)
 {
