@@ -562,8 +562,7 @@ connection_set_client_addr (ServerConnection *conn)
   const char *addr = Socket_getpeeraddr (conn->socket);
   if (addr != NULL)
     {
-      strncpy (conn->client_addr, addr, sizeof (conn->client_addr) - 1);
-      conn->client_addr[sizeof (conn->client_addr) - 1] = '\0';
+      socket_util_safe_strncpy (conn->client_addr, addr, sizeof (conn->client_addr));
     }
 }
 
