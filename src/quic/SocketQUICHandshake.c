@@ -130,9 +130,17 @@ crypto_stream_insert_data(Arena_T arena, SocketQUICCryptoStream_T *stream,
   }
 
   SocketQUICCryptoSegment_T *seg = Arena_alloc(arena, sizeof(*seg), __FILE__, __LINE__);
+  if (!seg) {
+    return QUIC_HANDSHAKE_ERROR_MEMORY;
+  }
+
   seg->offset = offset;
   seg->length = length;
   seg->data = Arena_alloc(arena, length, __FILE__, __LINE__);
+  if (!seg->data) {
+    return QUIC_HANDSHAKE_ERROR_MEMORY;
+  }
+
   memcpy(seg->data, data, length);
   seg->next = stream->segments;
   stream->segments = seg;
