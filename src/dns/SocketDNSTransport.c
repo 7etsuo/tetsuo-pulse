@@ -1098,18 +1098,12 @@ tcp_send_query (T transport, struct SocketDNSQuery *query)
   return ret;
 }
 
-/* Receive TCP response with length prefix */
+/* Read 2-byte length prefix (RFC 1035 Section 4.2.2) */
 static int
-tcp_recv_response (T transport, int ns_idx, unsigned char **response,
-                   size_t *response_len)
+tcp_recv_length_prefix (struct DNSTCPConnection *conn)
 {
-  struct DNSTCPConnection *conn = &transport->tcp_conns[ns_idx];
   ssize_t received;
 
-  if (conn->fd < 0)
-    return -1;
-
-  /* First read the 2-byte length prefix */
   while (conn->len_received < 2)
     {
       received = recv (conn->fd, conn->len_buf + conn->len_received,
@@ -1130,22 +1124,33 @@ tcp_recv_response (T transport, int ns_idx, unsigned char **response,
       conn->len_received += (size_t)received;
     }
 
-  /* Decode length and allocate buffer if needed */
+  /* Decode length from network byte order */
+  conn->msg_len = ((size_t)conn->len_buf[0] << 8) | (size_t)conn->len_buf[1];
+  if (conn->msg_len == 0 || conn->msg_len > DNS_TCP_MAX_SIZE)
+    {
+      tcp_conn_close (conn);
+      return -1;
+    }
+
+  return 1;
+}
+
+/* Read message body after length prefix is known */
+static int
+tcp_recv_message_body (T transport, struct DNSTCPConnection *conn,
+                       unsigned char **out_msg, size_t *out_len)
+{
+  ssize_t received;
+
+  /* Allocate buffer if needed */
   if (conn->recv_buf == NULL)
     {
-      conn->msg_len
-          = ((size_t)conn->len_buf[0] << 8) | (size_t)conn->len_buf[1];
-      if (conn->msg_len == 0 || conn->msg_len > DNS_TCP_MAX_SIZE)
-        {
-          tcp_conn_close (conn);
-          return -1;
-        }
       conn->recv_buf
           = Arena_alloc (transport->arena, conn->msg_len, __FILE__, __LINE__);
       conn->recv_len = 0;
     }
 
-  /* Read the message */
+  /* Read message incrementally */
   while (conn->recv_len < conn->msg_len)
     {
       received = recv (conn->fd, conn->recv_buf + conn->recv_len,
@@ -1165,9 +1170,35 @@ tcp_recv_response (T transport, int ns_idx, unsigned char **response,
       conn->recv_len += (size_t)received;
     }
 
-  /* Complete response received */
-  *response = conn->recv_buf;
-  *response_len = conn->msg_len;
+  /* Complete message received */
+  *out_msg = conn->recv_buf;
+  *out_len = conn->msg_len;
+  return 1;
+}
+
+/* Receive TCP response with length prefix */
+static int
+tcp_recv_response (T transport, int ns_idx, unsigned char **response,
+                   size_t *response_len)
+{
+  struct DNSTCPConnection *conn = &transport->tcp_conns[ns_idx];
+  int ret;
+
+  if (conn->fd < 0)
+    return -1;
+
+  /* Read 2-byte length prefix if not already received */
+  if (conn->len_received < 2)
+    {
+      ret = tcp_recv_length_prefix (conn);
+      if (ret <= 0)
+        return ret; /* Error or would block */
+    }
+
+  /* Read message body */
+  ret = tcp_recv_message_body (transport, conn, response, response_len);
+  if (ret <= 0)
+    return ret; /* Error or would block */
 
   /* Reset for next message */
   conn->len_received = 0;
