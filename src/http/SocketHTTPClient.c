@@ -2512,22 +2512,6 @@ SocketHTTPClient_json_post (SocketHTTPClient_T client, const char *url,
 
 /* ===== Prepared Request API (Issue #185) ===== */
 
-/**
- * @brief Validate hostname for security (no control characters).
- *
- * SECURITY: Prevents CRLF injection in Host header.
- */
-static int
-prepared_hostname_safe (const char *host, size_t len)
-{
-  for (size_t i = 0; i < len; i++)
-    {
-      unsigned char c = (unsigned char)host[i];
-      if (c == '\r' || c == '\n' || c == '\0' || c < 0x20)
-        return 0;
-    }
-  return 1;
-}
 
 /**
  * @brief Parse URI and validate hostname safety.
@@ -2550,7 +2534,7 @@ prepare_parse_and_validate_uri (SocketHTTPClient_T client, const char *url,
     }
 
   /* SECURITY: Validate hostname for control characters */
-  if (!prepared_hostname_safe (uri->host, uri->host_len))
+  if (!hostname_safe (uri->host, uri->host_len))
     {
       client->last_error = HTTPCLIENT_ERROR_PROTOCOL;
       HTTPCLIENT_ERROR_MSG ("Invalid characters in hostname");
