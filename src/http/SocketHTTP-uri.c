@@ -1268,23 +1268,29 @@ parse_quoted_value (const char *p, const char *end, const char **value_start,
   *value_start = p;
   while (p < end && *p != '"')
     {
-      if (*p == '\\')
+      if (*p != '\\')
         {
-          if (p + 1 >= end)
-            {
-              *value_start = NULL;
-              *value_len = 0;
-              return end;
-            }
           p++;
-          unsigned char esc = (unsigned char)*p;
-          if (esc < 0x20 || esc == 0x7F)
-            {
-              *value_start = NULL;
-              *value_len = 0;
-              return end;
-            }
+          continue;
         }
+
+      /* Handle escape sequence */
+      if (p + 1 >= end)
+        {
+          *value_start = NULL;
+          *value_len = 0;
+          return end;
+        }
+
+      p++;
+      unsigned char esc = (unsigned char)*p;
+      if (esc < 0x20 || esc == 0x7F)
+        {
+          *value_start = NULL;
+          *value_len = 0;
+          return end;
+        }
+
       p++;
     }
   *value_len = (size_t)(p - *value_start);
