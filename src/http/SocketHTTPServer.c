@@ -258,13 +258,6 @@ is_ipv4_address (const char *addr)
   return inet_pton (AF_INET, addr, &dummy) == 1;
 }
 
-static int
-is_ipv6_address (const char *addr)
-{
-  struct in6_addr dummy;
-  return inet_pton (AF_INET6, addr, &dummy) == 1;
-}
-
 int
 SocketHTTPServer_start (SocketHTTPServer_T server)
 {
@@ -286,13 +279,17 @@ SocketHTTPServer_start (SocketHTTPServer_T server)
     {
       socket_family = AF_INET;
     }
-  else if (is_ipv6_address (bind_addr))
-    {
-      socket_family = AF_INET6;
-    }
   else
     {
-      socket_family = AF_INET6;
+      struct in6_addr dummy;
+      if (inet_pton (AF_INET6, bind_addr, &dummy) == 1)
+        {
+          socket_family = AF_INET6;
+        }
+      else
+        {
+          socket_family = AF_INET6;
+        }
     }
 
   server->listen_socket = Socket_new (socket_family, SOCK_STREAM, 0);
