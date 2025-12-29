@@ -31,22 +31,6 @@
 /* SOCKET_LOG_COMPONENT defined in SocketPool-private.h */
 
 /* ============================================================================
- * Time Utilities
- * ============================================================================ */
-
-/**
- * @brief Get current monotonic time in milliseconds.
- * @return Monotonic time in ms.
- */
-int64_t
-health_monotonic_ms (void)
-{
-  struct timespec ts;
-  clock_gettime (CLOCK_MONOTONIC, &ts);
-  return (int64_t)socket_util_timespec_to_ms (ts);
-}
-
-/* ============================================================================
  * Hash Functions
  * ============================================================================ */
 
@@ -152,7 +136,7 @@ health_find_circuit (SocketPoolHealth_T health, const char *host, int port,
   atomic_init (&entry->consecutive_failures, 0);
   atomic_init (&entry->half_open_probes, 0);
   entry->circuit_open_time_ms = 0;
-  entry->last_success_ms = health_monotonic_ms ();
+  entry->last_success_ms = Socket_get_monotonic_ms ();
   entry->total_failures = 0;
   entry->total_successes = 0;
   entry->hash_next = health->circuit_table[bucket];
@@ -172,7 +156,7 @@ int
 health_should_transition_half_open (SocketPoolHealth_T health,
                                     SocketPoolCircuit_Entry_T entry)
 {
-  int64_t now_ms = health_monotonic_ms ();
+  int64_t now_ms = Socket_get_monotonic_ms ();
   int64_t elapsed = now_ms - entry->circuit_open_time_ms;
   return elapsed >= health->config.reset_timeout_ms;
 }
@@ -753,7 +737,7 @@ SocketPool_circuit_report_success (struct SocketPool_T *pool, const char *host,
 
   /* Reset failure counter */
   atomic_store (&entry->consecutive_failures, 0);
-  entry->last_success_ms = health_monotonic_ms ();
+  entry->last_success_ms = Socket_get_monotonic_ms ();
   entry->total_successes++;
 
   /* In HALF_OPEN, success closes the circuit */
@@ -807,7 +791,7 @@ SocketPool_circuit_report_failure (struct SocketPool_T *pool, const char *host,
         {
           atomic_store_explicit (&entry->state, POOL_CIRCUIT_OPEN,
                                  memory_order_release);
-          entry->circuit_open_time_ms = health_monotonic_ms ();
+          entry->circuit_open_time_ms = Socket_get_monotonic_ms ();
           atomic_fetch_add (&pool->health->stats_circuits_opened, 1);
           SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
                            "Circuit opened for %s:%d (failures=%d)", host, port,
@@ -819,7 +803,7 @@ SocketPool_circuit_report_failure (struct SocketPool_T *pool, const char *host,
       /* Failure in HALF_OPEN - back to OPEN */
       atomic_store_explicit (&entry->state, POOL_CIRCUIT_OPEN,
                              memory_order_release);
-      entry->circuit_open_time_ms = health_monotonic_ms ();
+      entry->circuit_open_time_ms = Socket_get_monotonic_ms ();
       atomic_store (&entry->consecutive_failures, 0);
       SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
                        "Circuit re-opened for %s:%d (probe failed)", host,
@@ -861,7 +845,7 @@ SocketPool_circuit_reset (struct SocketPool_T *pool, const char *host,
                              memory_order_release);
       atomic_store (&entry->consecutive_failures, 0);
       atomic_store (&entry->half_open_probes, 0);
-      entry->last_success_ms = health_monotonic_ms ();
+      entry->last_success_ms = Socket_get_monotonic_ms ();
       found = 1;
       SocketLog_emitf (SOCKET_LOG_INFO, SOCKET_LOG_COMPONENT,
                        "Circuit manually reset for %s:%d", host, port);
