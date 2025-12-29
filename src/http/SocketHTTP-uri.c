@@ -535,30 +535,36 @@ uri_parse_port (const char *start, const char *end, int *port_out)
 }
 
 static SocketHTTP_URIResult
-uri_alloc_all_components (const URIParseContext *ctx, SocketHTTP_URI *result,
-                          Arena_T arena, const char *end)
+uri_alloc_scheme (const URIParseContext *ctx, SocketHTTP_URI *result,
+                  Arena_T arena)
+{
+  if (!ctx->scheme_start || !ctx->scheme_end || ctx->scheme_end <= ctx->scheme_start)
+    return URI_PARSE_OK;
+
+  size_t slen = (size_t)(ctx->scheme_end - ctx->scheme_start);
+  char *s = arena_strndup (arena, ctx->scheme_start, slen);
+  if (!s)
+    return URI_PARSE_ERROR;
+
+  scheme_to_lower (s, slen);
+  result->scheme = s;
+  result->scheme_len = slen;
+  return URI_PARSE_OK;
+}
+
+static SocketHTTP_URIResult
+uri_alloc_userinfo (const URIParseContext *ctx, SocketHTTP_URI *result,
+                    Arena_T arena)
 {
   SocketHTTP_URIResult r;
 
-  /* Scheme */
-  if (ctx->scheme_start && ctx->scheme_end && ctx->scheme_end > ctx->scheme_start)
-    {
-      size_t slen = (size_t)(ctx->scheme_end - ctx->scheme_start);
-      char *s = arena_strndup (arena, ctx->scheme_start, slen);
-      if (!s)
-        return URI_PARSE_ERROR;
-      scheme_to_lower (s, slen);
-      result->scheme = s;
-      result->scheme_len = slen;
-    }
-
-  /* Userinfo */
   if (ctx->userinfo_start && ctx->userinfo_end > ctx->userinfo_start)
     {
       size_t ulen = (size_t)(ctx->userinfo_end - ctx->userinfo_start);
       if (ulen > URI_MAX_USERINFO_LEN)
         return URI_PARSE_TOO_LONG;
     }
+
   r = uri_alloc_component (arena, ctx->userinfo_start, ctx->userinfo_end,
                            &result->userinfo, &result->userinfo_len);
   if (r != URI_PARSE_OK)
@@ -571,13 +577,22 @@ uri_alloc_all_components (const URIParseContext *ctx, SocketHTTP_URI *result,
         return r;
     }
 
-  /* Host */
+  return URI_PARSE_OK;
+}
+
+static SocketHTTP_URIResult
+uri_alloc_host (const URIParseContext *ctx, SocketHTTP_URI *result,
+                Arena_T arena)
+{
+  SocketHTTP_URIResult r;
+
   if (ctx->host_start && ctx->host_end > ctx->host_start)
     {
       size_t hlen = (size_t)(ctx->host_end - ctx->host_start);
       if (hlen > URI_MAX_HOST_LEN)
         return URI_PARSE_TOO_LONG;
     }
+
   r = uri_alloc_component (arena, ctx->host_start, ctx->host_end,
                            &result->host, &result->host_len);
   if (r != URI_PARSE_OK)
@@ -591,80 +606,135 @@ uri_alloc_all_components (const URIParseContext *ctx, SocketHTTP_URI *result,
         return r;
     }
 
-  /* Port */
-  r = uri_parse_port (ctx->port_start, ctx->port_end, &result->port);
-  if (r != URI_PARSE_OK)
-    return r;
+  return URI_PARSE_OK;
+}
 
-  /* Path */
-  if (ctx->path_start)
-    {
-      const char *path_end = ctx->path_end ? ctx->path_end : end;
-      size_t path_len_calc = (size_t)(path_end - ctx->path_start);
-      if (path_len_calc > URI_MAX_PATH_LEN)
-        return URI_PARSE_TOO_LONG;
-      r = uri_alloc_component (arena, ctx->path_start, path_end, &result->path,
-                               &result->path_len);
-      if (r != URI_PARSE_OK)
-        return r;
+static SocketHTTP_URIResult
+uri_alloc_path (const URIParseContext *ctx, SocketHTTP_URI *result,
+                Arena_T arena, const char *end)
+{
+  SocketHTTP_URIResult r;
 
-      if (result->path && result->path_len > 0)
-        {
-          r = validate_path_query (result->path, result->path_len, 1);
-          if (r != URI_PARSE_OK)
-            return r;
-        }
-    }
-  else
+  if (!ctx->path_start)
     {
       char *path = arena_strndup (arena, "", 0);
       if (!path)
         return URI_PARSE_ERROR;
       result->path = path;
       result->path_len = 0;
+      return URI_PARSE_OK;
     }
 
-  /* Query */
-  if (ctx->query_start)
+  const char *path_end = ctx->path_end ? ctx->path_end : end;
+  size_t path_len_calc = (size_t)(path_end - ctx->path_start);
+  if (path_len_calc > URI_MAX_PATH_LEN)
+    return URI_PARSE_TOO_LONG;
+
+  r = uri_alloc_component (arena, ctx->path_start, path_end, &result->path,
+                           &result->path_len);
+  if (r != URI_PARSE_OK)
+    return r;
+
+  if (result->path && result->path_len > 0)
     {
-      const char *query_end = ctx->query_end ? ctx->query_end : end;
-      size_t query_len_calc = (size_t)(query_end - ctx->query_start);
-      if (query_len_calc > URI_MAX_QUERY_LEN)
-        return URI_PARSE_TOO_LONG;
-      r = uri_alloc_component (arena, ctx->query_start, query_end,
-                               &result->query, &result->query_len);
+      r = validate_path_query (result->path, result->path_len, 1);
       if (r != URI_PARSE_OK)
         return r;
-
-      if (result->query && result->query_len > 0)
-        {
-          r = validate_path_query (result->query, result->query_len, 0);
-          if (r != URI_PARSE_OK)
-            return r;
-        }
-    }
-
-  /* Fragment */
-  if (ctx->fragment_start)
-    {
-      const char *fragment_end = ctx->fragment_end ? ctx->fragment_end : end;
-      size_t frag_len_calc = (size_t)(fragment_end - ctx->fragment_start);
-      if (frag_len_calc > URI_MAX_FRAGMENT_LEN)
-        return URI_PARSE_TOO_LONG;
-      r = uri_alloc_component (arena, ctx->fragment_start, fragment_end,
-                               &result->fragment, &result->fragment_len);
-      if (r != URI_PARSE_OK)
-        return r;
-
-      if (result->fragment && result->fragment_len > 0)
-        {
-          r = validate_fragment (result->fragment, result->fragment_len);
-          if (r != URI_PARSE_OK)
-            return r;
-        }
     }
 
   return URI_PARSE_OK;
+}
+
+static SocketHTTP_URIResult
+uri_alloc_query (const URIParseContext *ctx, SocketHTTP_URI *result,
+                 Arena_T arena, const char *end)
+{
+  SocketHTTP_URIResult r;
+
+  if (!ctx->query_start)
+    return URI_PARSE_OK;
+
+  const char *query_end = ctx->query_end ? ctx->query_end : end;
+  size_t query_len_calc = (size_t)(query_end - ctx->query_start);
+  if (query_len_calc > URI_MAX_QUERY_LEN)
+    return URI_PARSE_TOO_LONG;
+
+  r = uri_alloc_component (arena, ctx->query_start, query_end,
+                           &result->query, &result->query_len);
+  if (r != URI_PARSE_OK)
+    return r;
+
+  if (result->query && result->query_len > 0)
+    {
+      r = validate_path_query (result->query, result->query_len, 0);
+      if (r != URI_PARSE_OK)
+        return r;
+    }
+
+  return URI_PARSE_OK;
+}
+
+static SocketHTTP_URIResult
+uri_alloc_fragment (const URIParseContext *ctx, SocketHTTP_URI *result,
+                    Arena_T arena, const char *end)
+{
+  SocketHTTP_URIResult r;
+
+  if (!ctx->fragment_start)
+    return URI_PARSE_OK;
+
+  const char *fragment_end = ctx->fragment_end ? ctx->fragment_end : end;
+  size_t frag_len_calc = (size_t)(fragment_end - ctx->fragment_start);
+  if (frag_len_calc > URI_MAX_FRAGMENT_LEN)
+    return URI_PARSE_TOO_LONG;
+
+  r = uri_alloc_component (arena, ctx->fragment_start, fragment_end,
+                           &result->fragment, &result->fragment_len);
+  if (r != URI_PARSE_OK)
+    return r;
+
+  if (result->fragment && result->fragment_len > 0)
+    {
+      r = validate_fragment (result->fragment, result->fragment_len);
+      if (r != URI_PARSE_OK)
+        return r;
+    }
+
+  return URI_PARSE_OK;
+}
+
+static SocketHTTP_URIResult
+uri_alloc_all_components (const URIParseContext *ctx, SocketHTTP_URI *result,
+                          Arena_T arena, const char *end)
+{
+  SocketHTTP_URIResult r;
+
+  r = uri_alloc_scheme (ctx, result, arena);
+  if (r != URI_PARSE_OK)
+    return r;
+
+  r = uri_alloc_userinfo (ctx, result, arena);
+  if (r != URI_PARSE_OK)
+    return r;
+
+  r = uri_alloc_host (ctx, result, arena);
+  if (r != URI_PARSE_OK)
+    return r;
+
+  r = uri_parse_port (ctx->port_start, ctx->port_end, &result->port);
+  if (r != URI_PARSE_OK)
+    return r;
+
+  r = uri_alloc_path (ctx, result, arena, end);
+  if (r != URI_PARSE_OK)
+    return r;
+
+  r = uri_alloc_query (ctx, result, arena, end);
+  if (r != URI_PARSE_OK)
+    return r;
+
+  r = uri_alloc_fragment (ctx, result, arena, end);
+  return r;
 }
 
 /* ============================================================================
