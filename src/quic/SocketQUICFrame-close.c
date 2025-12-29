@@ -99,8 +99,13 @@ SocketQUICFrame_encode_connection_close_transport (uint64_t error_code,
   if (error_code_len == 0 || frame_type_len == 0 || reason_len_size == 0)
     return 0; /* Value exceeds varint maximum */
 
-  size_t total_len
-      = type_len + error_code_len + frame_type_len + reason_len_size + reason_len;
+  /* Check for integer overflow in total_len calculation (Issue #1146).
+   * Prevent SIZE_MAX wraparound that could bypass buffer size check. */
+  size_t fixed_size = type_len + error_code_len + frame_type_len + reason_len_size;
+  if (reason_len > SIZE_MAX - fixed_size)
+    return 0; /* Overflow would occur */
+
+  size_t total_len = fixed_size + reason_len;
 
   if (out_len < total_len)
     return 0; /* Buffer too small */
@@ -186,7 +191,13 @@ SocketQUICFrame_encode_connection_close_app (uint64_t error_code,
   if (error_code_len == 0 || reason_len_size == 0)
     return 0; /* Value exceeds varint maximum */
 
-  size_t total_len = type_len + error_code_len + reason_len_size + reason_len;
+  /* Check for integer overflow in total_len calculation (Issue #1146).
+   * Prevent SIZE_MAX wraparound that could bypass buffer size check. */
+  size_t fixed_size = type_len + error_code_len + reason_len_size;
+  if (reason_len > SIZE_MAX - fixed_size)
+    return 0; /* Overflow would occur */
+
+  size_t total_len = fixed_size + reason_len;
 
   if (out_len < total_len)
     return 0; /* Buffer too small */
