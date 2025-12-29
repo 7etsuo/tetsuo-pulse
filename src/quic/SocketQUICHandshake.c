@@ -53,40 +53,6 @@ const Except_T SocketQUICHandshake_Failed = { NULL, "QUIC handshake failed" };
  * ============================================================================
  */
 
-/**
- * @brief Map QUIC packet type to encryption level.
- *
- * @param packet_type Packet type from packet header.
- *
- * @return Corresponding encryption level.
- *
- * @note This mapping is defined by RFC 9000 Section 4.1.4:
- *       - Initial packets use Initial keys
- *       - 0-RTT packets use 0-RTT keys (client only)
- *       - Handshake packets use Handshake keys
- *       - 1-RTT packets use Application keys
- */
-static SocketQUICCryptoLevel
-packet_type_to_crypto_level(SocketQUICPacket_Type packet_type)
-{
-  switch (packet_type) {
-    case QUIC_PACKET_TYPE_INITIAL:
-      return QUIC_CRYPTO_LEVEL_INITIAL;
-    case QUIC_PACKET_TYPE_0RTT:
-      return QUIC_CRYPTO_LEVEL_0RTT;
-    case QUIC_PACKET_TYPE_HANDSHAKE:
-      return QUIC_CRYPTO_LEVEL_HANDSHAKE;
-    case QUIC_PACKET_TYPE_1RTT:
-      return QUIC_CRYPTO_LEVEL_APPLICATION;
-    case QUIC_PACKET_TYPE_RETRY:
-      /* Retry packets don't carry CRYPTO frames, but map to Initial */
-      return QUIC_CRYPTO_LEVEL_INITIAL;
-    default:
-      /* Default to Initial for unknown types */
-      return QUIC_CRYPTO_LEVEL_INITIAL;
-  }
-}
-
 static void
 crypto_stream_init(SocketQUICCryptoStream_T *stream)
 {
@@ -172,19 +138,6 @@ crypto_stream_insert_data(Arena_T arena, SocketQUICCryptoStream_T *stream,
   stream->segment_count++;
 
   return QUIC_HANDSHAKE_OK;
-}
-
-static int
-crypto_stream_has_contiguous_data(SocketQUICCryptoStream_T *stream)
-{
-  SocketQUICCryptoSegment_T *seg = stream->segments;
-  while (seg) {
-    if (seg->offset == stream->recv_offset) {
-      return 1;
-    }
-    seg = seg->next;
-  }
-  return 0;
 }
 
 static SocketQUICHandshake_Result
