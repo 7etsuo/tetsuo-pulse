@@ -640,6 +640,56 @@ sockaddr_equal (const struct sockaddr_storage *a,
 }
 
 /**
+ * @brief Format IPv4 address as string.
+ *
+ * Formats as "IP:port".
+ *
+ * @param addr4 IPv4 address to format.
+ * @param buf   Output buffer.
+ * @param size  Size of output buffer.
+ * @return 0 on success, -1 on error or truncation.
+ */
+static int
+format_ipv4_address (const struct sockaddr_in *addr4, char *buf, size_t size)
+{
+  char ip[INET_ADDRSTRLEN];
+  int written;
+
+  if (inet_ntop (AF_INET, &addr4->sin_addr, ip, sizeof (ip)) == NULL)
+    {
+      written = snprintf (buf, size, "invalid:0");
+      return (written < 0 || (size_t)written >= size) ? -1 : 0;
+    }
+  written = snprintf (buf, size, "%s:%u", ip, ntohs (addr4->sin_port));
+  return (written < 0 || (size_t)written >= size) ? -1 : 0;
+}
+
+/**
+ * @brief Format IPv6 address as string.
+ *
+ * Formats as "[IP]:port".
+ *
+ * @param addr6 IPv6 address to format.
+ * @param buf   Output buffer.
+ * @param size  Size of output buffer.
+ * @return 0 on success, -1 on error or truncation.
+ */
+static int
+format_ipv6_address (const struct sockaddr_in6 *addr6, char *buf, size_t size)
+{
+  char ip[INET6_ADDRSTRLEN];
+  int written;
+
+  if (inet_ntop (AF_INET6, &addr6->sin6_addr, ip, sizeof (ip)) == NULL)
+    {
+      written = snprintf (buf, size, "[invalid]:0");
+      return (written < 0 || (size_t)written >= size) ? -1 : 0;
+    }
+  written = snprintf (buf, size, "[%s]:%u", ip, ntohs (addr6->sin6_port));
+  return (written < 0 || (size_t)written >= size) ? -1 : 0;
+}
+
+/**
  * @brief Convert sockaddr_storage to string.
  *
  * Formats as "IP:port".
@@ -653,9 +703,6 @@ static int
 sockaddr_to_string (const struct sockaddr_storage *addr, char *buf,
                     size_t size)
 {
-  const struct sockaddr_in *addr4;
-  const struct sockaddr_in6 *addr6;
-  char ip[INET6_ADDRSTRLEN];
   int written;
 
   if (addr == NULL || buf == NULL || size == 0)
@@ -666,27 +713,9 @@ sockaddr_to_string (const struct sockaddr_storage *addr, char *buf,
     }
 
   if (addr->ss_family == AF_INET)
-    {
-      addr4 = (const struct sockaddr_in *)addr;
-      if (inet_ntop (AF_INET, &addr4->sin_addr, ip, sizeof (ip)) == NULL)
-        {
-          written = snprintf (buf, size, "invalid:0");
-          return (written < 0 || (size_t)written >= size) ? -1 : 0;
-        }
-      written = snprintf (buf, size, "%s:%u", ip, ntohs (addr4->sin_port));
-      return (written < 0 || (size_t)written >= size) ? -1 : 0;
-    }
+    return format_ipv4_address ((const struct sockaddr_in *)addr, buf, size);
   else if (addr->ss_family == AF_INET6)
-    {
-      addr6 = (const struct sockaddr_in6 *)addr;
-      if (inet_ntop (AF_INET6, &addr6->sin6_addr, ip, sizeof (ip)) == NULL)
-        {
-          written = snprintf (buf, size, "[invalid]:0");
-          return (written < 0 || (size_t)written >= size) ? -1 : 0;
-        }
-      written = snprintf (buf, size, "[%s]:%u", ip, ntohs (addr6->sin6_port));
-      return (written < 0 || (size_t)written >= size) ? -1 : 0;
-    }
+    return format_ipv6_address ((const struct sockaddr_in6 *)addr, buf, size);
   else
     {
       written = snprintf (buf, size, "unknown");
