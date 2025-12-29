@@ -16,6 +16,22 @@
  * Thread Safety:
  * - Transport instances are NOT thread-safe
  * - Each transport should be used from a single thread
+ *
+ * Logging Policy:
+ * This module uses differentiated logging levels based on error severity
+ * and operational context:
+ *
+ * - DEBUG level: Transport-layer errors (network timeouts, connection
+ *   closed, socket I/O failures). These are expected in normal production
+ *   operation and don't indicate bugs or security issues.
+ *
+ * - ERROR level: Protocol violations (flow control errors, framing errors)
+ *   and resource allocation failures. These indicate bugs, attacks, or
+ *   system resource exhaustion.
+ *
+ * This distinction prevents production logs from being flooded with
+ * expected operational errors while ensuring protocol-level issues are
+ * visible at the ERROR level for alerting and debugging.
  */
 
 #include "socket/SocketWS-transport.h"
@@ -51,12 +67,14 @@ socket_transport_send (void *ctx, const void *data, size_t len)
   }
   EXCEPT (Socket_Failed)
   {
+    /* Transport-layer error - expected in production (network issues) */
     SOCKET_LOG_DEBUG_MSG ("Socket send failed: %s", Socket_GetLastError ());
     errno = EIO;
     return -1;
   }
   EXCEPT (Socket_Closed)
   {
+    /* Transport-layer error - expected in production (peer disconnect) */
     SOCKET_LOG_DEBUG_MSG ("Socket closed during send");
     errno = EPIPE;
     return -1;
@@ -81,12 +99,14 @@ socket_transport_recv (void *ctx, void *buf, size_t len)
   }
   EXCEPT (Socket_Failed)
   {
+    /* Transport-layer error - expected in production (network issues) */
     SOCKET_LOG_DEBUG_MSG ("Socket recv failed: %s", Socket_GetLastError ());
     errno = EIO;
     return -1;
   }
   EXCEPT (Socket_Closed)
   {
+    /* Transport-layer error - expected in production (peer disconnect) */
     SOCKET_LOG_DEBUG_MSG ("Socket closed during recv");
     return 0; /* EOF */
   }
@@ -111,6 +131,7 @@ socket_transport_close (void *ctx, int orderly)
       }
       EXCEPT (Socket_Failed)
       {
+        /* Transport-layer error - expected in production (already closed) */
         SOCKET_LOG_DEBUG_MSG ("Socket shutdown failed: %s",
                               Socket_GetLastError ());
         /* Continue to close anyway */
@@ -208,6 +229,7 @@ h2stream_transport_send (void *ctx, const void *data, size_t len)
   /* Consume flow control window before sending */
   if (http2_flow_consume_send (conn, stream, send_len) != 0)
     {
+      /* Protocol violation - indicates bug in flow control logic */
       SOCKET_LOG_ERROR_MSG ("Failed to consume flow control window");
       errno = ENOSPC;
       return -1;
@@ -222,6 +244,7 @@ h2stream_transport_send (void *ctx, const void *data, size_t len)
 
   if (http2_frame_send (conn, &header, data, send_len) != 0)
     {
+      /* Protocol error - failed to queue frame in send buffer */
       SOCKET_LOG_ERROR_MSG ("Failed to queue DATA frame");
       errno = EIO;
       return -1;
@@ -267,6 +290,7 @@ h2stream_transport_recv (void *ctx, void *buf, size_t len)
 
   if ((size_t)SocketBuf_read (stream->recv_buf, buf, read_len) != read_len)
     {
+      /* Protocol error - buffer read failed despite available data */
       SOCKET_LOG_ERROR_MSG ("Failed to read from stream recv buffer");
       errno = EIO;
       return -1;
@@ -370,6 +394,7 @@ SocketWS_Transport_socket (Arena_T arena, Socket_T socket, int is_client)
   transport = Arena_alloc (arena, sizeof (*transport), __FILE__, __LINE__);
   if (transport == NULL)
     {
+      /* Resource exhaustion - system out of memory */
       SOCKET_LOG_ERROR_MSG ("Failed to allocate socket transport");
       return NULL;
     }
@@ -398,6 +423,7 @@ SocketWS_Transport_h2stream (Arena_T arena, SocketHTTP2_Stream_T stream)
   transport = Arena_alloc (arena, sizeof (*transport), __FILE__, __LINE__);
   if (transport == NULL)
     {
+      /* Resource exhaustion - system out of memory */
       SOCKET_LOG_ERROR_MSG ("Failed to allocate H2 stream transport");
       return NULL;
     }
