@@ -660,6 +660,33 @@ server_decode_http2_settings (Arena_T arena, const char *b64url,
   return 0;
 }
 
+/* RFC 9113 §8.3: Check if header should be copied during h2c upgrade.
+ * Returns 1 if header should be copied, 0 if it should be filtered out. */
+static int
+should_copy_header_to_h2 (const char *name, const char *value)
+{
+  if (name == NULL || value == NULL)
+    return 0;
+
+  /* RFC 9113 §8.3.1: Connection-specific headers must be removed */
+  if (strcasecmp (name, "Connection") == 0
+      || strcasecmp (name, "Upgrade") == 0
+      || strcasecmp (name, "HTTP2-Settings") == 0
+      || strcasecmp (name, "Keep-Alive") == 0
+      || strcasecmp (name, "Proxy-Connection") == 0)
+    return 0;
+
+  /* Host header is converted to :authority pseudo-header */
+  if (strcasecmp (name, "Host") == 0)
+    return 0;
+
+  /* RFC 9113 §8.2.2: TE header only allowed with value "trailers" */
+  if (strcasecmp (name, "TE") == 0 && strcasecmp (value, "trailers") != 0)
+    return 0;
+
+  return 1;
+}
+
 static int
 server_try_h2c_upgrade (SocketHTTPServer_T server, ServerConnection *conn)
 {
@@ -815,19 +842,10 @@ server_try_h2c_upgrade (SocketHTTPServer_T server, ServerConnection *conn)
               for (size_t i = 0; i < SocketHTTP_Headers_count (headers); i++)
                 {
                   const SocketHTTP_Header *hdr = SocketHTTP_Headers_at (headers, i);
-                  if (hdr == NULL || hdr->name == NULL || hdr->value == NULL)
+                  if (hdr == NULL)
                     continue;
-                  if (strcasecmp (hdr->name, "Connection") == 0
-                      || strcasecmp (hdr->name, "Upgrade") == 0
-                      || strcasecmp (hdr->name, "HTTP2-Settings") == 0
-                      || strcasecmp (hdr->name, "Keep-Alive") == 0
-                      || strcasecmp (hdr->name, "Proxy-Connection") == 0
-                      || strcasecmp (hdr->name, "Host") == 0)
-                    continue;
-                  if (strcasecmp (hdr->name, "TE") == 0
-                      && strcasecmp (hdr->value, "trailers") != 0)
-                    continue;
-                  SocketHTTP_Headers_add (h2h, hdr->name, hdr->value);
+                  if (should_copy_header_to_h2 (hdr->name, hdr->value))
+                    SocketHTTP_Headers_add (h2h, hdr->name, hdr->value);
                 }
 
               s->request = h2req;
