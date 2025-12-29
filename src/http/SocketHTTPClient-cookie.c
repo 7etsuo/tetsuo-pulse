@@ -284,20 +284,6 @@ get_default_path (const char *request_path, char *output, size_t output_size)
 }
 
 static void
-cookie_entry_update_value_flags (CookieEntry *entry,
-                                 const SocketHTTPClient_Cookie *cookie,
-                                 Arena_T arena)
-{
-  entry->cookie.value = socket_util_arena_strdup (arena, cookie->value);
-  if (entry->cookie.value == NULL)
-    RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
-  entry->cookie.expires = cookie->expires;
-  entry->cookie.secure = cookie->secure;
-  entry->cookie.http_only = cookie->http_only;
-  entry->cookie.same_site = cookie->same_site;
-}
-
-static void
 evict_oldest_cookie (SocketHTTPClient_CookieJar_T jar)
 {
   time_t oldest_time = (time_t)-1;
@@ -557,7 +543,13 @@ SocketHTTPClient_CookieJar_set (SocketHTTPClient_CookieJar_T jar,
 
     if (entry != NULL)
       {
-        cookie_entry_update_value_flags (entry, cookie, jar->arena);
+        entry->cookie.value = socket_util_arena_strdup (jar->arena, cookie->value);
+        if (entry->cookie.value == NULL)
+          RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
+        entry->cookie.expires = cookie->expires;
+        entry->cookie.secure = cookie->secure;
+        entry->cookie.http_only = cookie->http_only;
+        entry->cookie.same_site = cookie->same_site;
       }
     else
       {
