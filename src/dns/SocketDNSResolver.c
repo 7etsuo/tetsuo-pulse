@@ -165,6 +165,9 @@ static void cache_insert (T resolver, const char *hostname,
                           const SocketDNSResolver_Address *addresses,
                           size_t count, uint32_t ttl);
 static struct CacheEntry *cache_lookup (T resolver, const char *hostname);
+static struct SocketDNSResolver_Query *initialize_query (
+    T resolver, const char *hostname, int flags,
+    SocketDNSResolver_Callback callback, void *userdata);
 
 /* Use centralized monotonic time utility from SocketUtil.h */
 #define get_monotonic_ms() Socket_get_monotonic_ms()
@@ -1412,6 +1415,47 @@ try_cache (T resolver, const char *hostname, int flags,
   return 1;
 }
 
+/**
+ * Initialize a new DNS query structure.
+ *
+ * Allocates and initializes a query for the given hostname and parameters.
+ * The query is added to the resolver's pending list.
+ *
+ * @param resolver  Resolver instance.
+ * @param hostname  Hostname to query (already validated).
+ * @param flags     Resolution flags.
+ * @param callback  User callback for results.
+ * @param userdata  User data for callback.
+ * @return Initialized query on success, NULL on allocation failure.
+ */
+static struct SocketDNSResolver_Query *
+initialize_query (T resolver, const char *hostname, int flags,
+                  SocketDNSResolver_Callback callback, void *userdata)
+{
+  struct SocketDNSResolver_Query *q;
+
+  /* Allocate query */
+  q = Arena_alloc (resolver->arena, sizeof (*q), __FILE__, __LINE__);
+  if (!q)
+    return NULL;
+
+  /* Initialize query structure */
+  memset (q, 0, sizeof (*q));
+  q->id = generate_unique_id (resolver);
+  snprintf (q->hostname, DNS_MAX_NAME_LEN, "%s", hostname);
+  snprintf (q->current_name, DNS_MAX_NAME_LEN, "%s", hostname);
+  q->flags = flags;
+  q->state = QUERY_STATE_INIT;
+  q->callback = callback;
+  q->userdata = userdata;
+  q->resolver = resolver; /* Set back-pointer for transport callback */
+
+  /* Add to pending list */
+  query_list_add (resolver, q);
+
+  return q;
+}
+
 SocketDNSResolver_Query_T
 SocketDNSResolver_resolve (T resolver, const char *hostname, int flags,
                            SocketDNSResolver_Callback callback, void *userdata)
@@ -1450,26 +1494,13 @@ SocketDNSResolver_resolve (T resolver, const char *hostname, int flags,
       return NULL;
     }
 
-  /* Allocate query */
-  q = Arena_alloc (resolver->arena, sizeof (*q), __FILE__, __LINE__);
+  /* Initialize query */
+  q = initialize_query (resolver, hostname, flags, callback, userdata);
   if (!q)
     {
       callback (NULL, NULL, RESOLVER_ERROR_NOMEM, userdata);
       return NULL;
     }
-
-  memset (q, 0, sizeof (*q));
-  q->id = generate_unique_id (resolver);
-  snprintf (q->hostname, DNS_MAX_NAME_LEN, "%s", hostname);
-  snprintf (q->current_name, DNS_MAX_NAME_LEN, "%s", hostname);
-  q->flags = flags;
-  q->state = QUERY_STATE_INIT;
-  q->callback = callback;
-  q->userdata = userdata;
-  q->resolver = resolver; /* Set back-pointer for transport callback */
-
-  /* Add to pending list */
-  query_list_add (resolver, q);
 
   /* Send initial query */
   if (send_query (resolver, q) != 0)
