@@ -31,6 +31,9 @@ const Except_T SocketDNSCookie_Failed
 /* Client secret size (256 bits for HMAC-SHA256) */
 #define SECRET_SIZE 32
 
+/* Previous secret validity during rollover (RFC 7873 Section 5.3) */
+#define DNS_COOKIE_ROLLOVER_PERIOD 150
+
 /* Internal cache entry with LRU tracking */
 typedef struct CacheNode
 {
@@ -202,7 +205,7 @@ SocketDNSCookie_rotate_secret (T cache)
   /* Save previous secret for rollover */
   memcpy (cache->prev_secret, cache->secret, SECRET_SIZE);
   cache->prev_secret_valid_until
-      = time (NULL) + 150; /* 150 seconds per RFC 7873 */
+      = time (NULL) + DNS_COOKIE_ROLLOVER_PERIOD;
 
   /* Generate new secret */
   if (get_entropy (cache->secret, SECRET_SIZE) != 0)
