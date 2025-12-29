@@ -74,6 +74,18 @@ struct T
 };
 
 /* Forward declarations */
+#ifdef SOCKET_HAS_TLS
+static int generate_client_cookie_hmac (T cache,
+                                        const struct sockaddr *server_addr,
+                                        const struct sockaddr *client_addr,
+                                        socklen_t client_len, uint8_t *cookie);
+#else
+static int generate_client_cookie_fnv (T cache,
+                                       const struct sockaddr *server_addr,
+                                       socklen_t addr_len,
+                                       const struct sockaddr *client_addr,
+                                       socklen_t client_len, uint8_t *cookie);
+#endif
 static int generate_client_cookie (T cache, const struct sockaddr *server_addr,
                                    socklen_t addr_len,
                                    const struct sockaddr *client_addr,
@@ -726,15 +738,14 @@ serialize_address (const struct sockaddr *addr, unsigned char *buf,
 #endif
 
 /*
- * Generate client cookie using HMAC-SHA256
+ * Generate client cookie using HMAC-SHA256 (TLS available)
  */
-static int
-generate_client_cookie (T cache, const struct sockaddr *server_addr,
-                        socklen_t addr_len __attribute__ ((unused)),
-                        const struct sockaddr *client_addr,
-                        socklen_t client_len, uint8_t *cookie)
-{
 #ifdef SOCKET_HAS_TLS
+static int
+generate_client_cookie_hmac (T cache, const struct sockaddr *server_addr,
+                             const struct sockaddr *client_addr,
+                             socklen_t client_len, uint8_t *cookie)
+{
   unsigned char data[256];
   size_t data_len = 0;
 
@@ -761,8 +772,19 @@ generate_client_cookie (T cache, const struct sockaddr *server_addr,
 
   memcpy (cookie, hmac_out, DNS_CLIENT_COOKIE_SIZE);
   return 0;
+}
+#endif
 
-#else
+/*
+ * Generate client cookie using FNV-1a hash (TLS not available)
+ */
+#ifndef SOCKET_HAS_TLS
+static int
+generate_client_cookie_fnv (T cache, const struct sockaddr *server_addr,
+                            socklen_t addr_len,
+                            const struct sockaddr *client_addr,
+                            socklen_t client_len, uint8_t *cookie)
+{
   /* Fallback: FNV-1a 64-bit (RFC 7873 Appendix A.1) */
   uint64_t hash = 14695981039346656037ULL; /* FNV offset basis */
   const uint64_t prime = 1099511628211ULL; /* FNV prime */
@@ -804,6 +826,25 @@ generate_client_cookie (T cache, const struct sockaddr *server_addr,
   cookie[7] = hash & 0xFF;
 
   return 0;
+}
+#endif
+
+/*
+ * Generate client cookie (RFC 7873 §4.1) - dispatcher
+ */
+static int
+generate_client_cookie (T cache, const struct sockaddr *server_addr,
+                        socklen_t addr_len,
+                        const struct sockaddr *client_addr,
+                        socklen_t client_len, uint8_t *cookie)
+{
+#ifdef SOCKET_HAS_TLS
+  (void)addr_len; /* Unused in HMAC path */
+  return generate_client_cookie_hmac (cache, server_addr, client_addr,
+                                      client_len, cookie);
+#else
+  return generate_client_cookie_fnv (cache, server_addr, addr_len, client_addr,
+                                     client_len, cookie);
 #endif
 }
 
