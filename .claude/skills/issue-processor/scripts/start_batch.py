@@ -27,7 +27,9 @@ Example:
 
 import argparse
 import json
+import os
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -47,6 +49,53 @@ from utils import (
 class APIValidationError(Exception):
     """Raised when GitHub API validation fails."""
     pass
+
+
+def generate_wip_label() -> str:
+    """Generate a unique wip label for this instance."""
+    return f"wip:claude-{int(time.time())}-{os.getpid()}"
+
+
+def claim_issue(owner: str, repo: str, issue_num: int, wip_label: str) -> bool:
+    """Atomically claim an issue by adding a wip label. Returns True if successful."""
+    # Create label if needed
+    run_gh(["label", "create", wip_label, "--repo", f"{owner}/{repo}",
+            "--description", "Work in progress - claimed by Claude instance",
+            "--color", "FFA500"], check=False)
+
+    # Add label to issue
+    success, output = run_gh(["issue", "edit", str(issue_num), "--repo", f"{owner}/{repo}",
+                              "--add-label", wip_label], check=False)
+    if not success:
+        return False
+
+    # Verify we won the race
+    success, output = run_gh(["issue", "view", str(issue_num), "--repo", f"{owner}/{repo}",
+                              "--json", "labels"], check=False)
+    if not success:
+        run_gh(["issue", "edit", str(issue_num), "--repo", f"{owner}/{repo}",
+                "--remove-label", wip_label], check=False)
+        return False
+
+    try:
+        data = json.loads(output)
+        wip_labels = [l["name"] for l in data.get("labels", []) if l["name"].startswith("wip:")]
+        if len(wip_labels) > 1:
+            our_ts = int(wip_label.split("-")[1])
+            for other in wip_labels:
+                if other != wip_label:
+                    try:
+                        if int(other.split("-")[1]) < our_ts:
+                            run_gh(["issue", "edit", str(issue_num), "--repo", f"{owner}/{repo}",
+                                    "--remove-label", wip_label], check=False)
+                            return False
+                    except (IndexError, ValueError):
+                        pass
+        return True
+    except (json.JSONDecodeError, KeyError):
+        run_gh(["issue", "edit", str(issue_num), "--repo", f"{owner}/{repo}",
+                "--remove-label", wip_label], check=False)
+        return False
 
 
 def validate_issues_against_github(
@@ -294,20 +343,33 @@ def main():
         save_json(manifest_file, manifest)
         sys.exit(0)
 
-    # Take the batch (up to batch_size)
-    batch = available[:args.batch_size]
+    # Take batch candidates and atomically claim each
+    candidates = available[:args.batch_size]
+    wip_label = generate_wip_label()
+    log_info(f"Attempting to claim {len(candidates)} issues with {wip_label}")
 
-    log_info(f"Claiming batch of {len(batch)} issues: {batch}")
+    claimed = []
+    for num in candidates:
+        if claim_issue(owner, repo, num, wip_label):
+            claimed.append(num)
+            log_info(f"#{num}: claimed")
+        else:
+            log_info(f"#{num}: claim failed")
 
-    # Update manifest with current batch
-    manifest["current_batch"] = batch
+    if not claimed:
+        log_warning("No issues could be claimed")
+        print("[]")
+        sys.exit(0)
+
+    log_info(f"Successfully claimed {len(claimed)} issues: {claimed}")
+
+    # Update manifest with current batch and wip label
+    manifest["current_batch"] = claimed
+    manifest["current_wip_label"] = wip_label
     manifest["batch_started_at"] = datetime.now(timezone.utc).isoformat()
 
-    # Save manifest atomically
     save_json(manifest_file, manifest)
-
-    # Output the batch
-    print(json.dumps(batch))
+    print(json.dumps(claimed))
 
 
 if __name__ == "__main__":
