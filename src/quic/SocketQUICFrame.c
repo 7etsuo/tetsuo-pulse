@@ -241,42 +241,11 @@ parse_ack_ranges (const uint8_t *data, size_t len, size_t *pos,
 }
 
 /**
- * @brief Parse ECN counts (ECT0, ECT1, CE)
- *
- * Extracts the three ECN counter fields present in ACK_ECN frames.
- *
- * @param data Frame data buffer
- * @param len Buffer length
- * @param pos Current position (updated on success)
- * @param ack ACK frame structure to populate
- * @return QUIC_FRAME_OK on success, error code otherwise
- */
-static SocketQUICFrame_Result
-parse_ack_ecn_counts (const uint8_t *data, size_t len, size_t *pos,
-                      SocketQUICFrameAck_T *ack)
-{
-  SocketQUICFrame_Result res;
-
-  res = decode_varint (data, len, pos, &ack->ect0_count);
-  if (res != QUIC_FRAME_OK)
-    return res;
-
-  res = decode_varint (data, len, pos, &ack->ect1_count);
-  if (res != QUIC_FRAME_OK)
-    return res;
-
-  res = decode_varint (data, len, pos, &ack->ecn_ce_count);
-  if (res != QUIC_FRAME_OK)
-    return res;
-
-  return QUIC_FRAME_OK;
-}
-
-/**
  * @brief Parse ACK or ACK_ECN frame (internal)
  *
  * Orchestrates the parsing of ACK frames by delegating to specialized
- * helper functions for each component.
+ * helper functions for each component. For ACK_ECN frames, inlines the
+ * three ECN counter varint decodes directly.
  *
  * @param data Frame data buffer
  * @param len Buffer length
@@ -302,15 +271,20 @@ parse_ack_internal (const uint8_t *data, size_t len, size_t *pos,
   if (res != QUIC_FRAME_OK)
     return res;
 
-  /* Parse ECN counts if ACK_ECN */
-  if (frame->type == QUIC_FRAME_ACK_ECN)
-    {
-      res = parse_ack_ecn_counts (data, len, pos, ack);
-      if (res != QUIC_FRAME_OK)
-        return res;
-    }
+  /* Early exit if not ACK_ECN */
+  if (frame->type != QUIC_FRAME_ACK_ECN)
+    return QUIC_FRAME_OK;
 
-  return QUIC_FRAME_OK;
+  /* Parse ECN counts (inlined for performance) */
+  res = decode_varint (data, len, pos, &ack->ect0_count);
+  if (res != QUIC_FRAME_OK)
+    return res;
+
+  res = decode_varint (data, len, pos, &ack->ect1_count);
+  if (res != QUIC_FRAME_OK)
+    return res;
+
+  return decode_varint (data, len, pos, &ack->ecn_ce_count);
 }
 
 static SocketQUICFrame_Result
@@ -458,16 +432,21 @@ parse_stream (const uint8_t *data, size_t len, size_t *pos,
   if (res != QUIC_FRAME_OK)
     return res;
 
+  /* Handle offset with early initialization */
+  stream->offset = 0;
   if (stream->has_offset)
     {
       res = decode_varint (data, len, pos, &stream->offset);
       if (res != QUIC_FRAME_OK)
         return res;
     }
-  else
-    stream->offset = 0;
 
-  if (stream->has_length)
+  /* Handle length with early initialization */
+  if (!stream->has_length)
+    {
+      stream->length = len - *pos;
+    }
+  else
     {
       res = decode_varint (data, len, pos, &stream->length);
       if (res != QUIC_FRAME_OK)
@@ -480,12 +459,6 @@ parse_stream (const uint8_t *data, size_t len, size_t *pos,
       if (stream->length > SIZE_MAX)
         return QUIC_FRAME_ERROR_OVERFLOW;
     }
-  else
-    stream->length = len - *pos;
-
-  /* Prevent overflow on 32-bit systems */
-  if (stream->length > SIZE_MAX)
-    return QUIC_FRAME_ERROR_OVERFLOW;
 
   stream->data = data + *pos;
   *pos += (size_t)stream->length;
@@ -760,6 +733,9 @@ parse_datagram (const uint8_t *data, size_t len, size_t *pos,
 
   dg->has_length = (frame->type == QUIC_FRAME_DATAGRAM_LEN);
 
+  /* Set default length with early initialization */
+  dg->length = len - *pos;
+
   if (dg->has_length)
     {
       SocketQUICFrame_Result res = decode_varint (data, len, pos, &dg->length);
@@ -769,8 +745,6 @@ parse_datagram (const uint8_t *data, size_t len, size_t *pos,
       if (*pos + dg->length > len)
         return QUIC_FRAME_ERROR_TRUNCATED;
     }
-  else
-    dg->length = len - *pos;
 
   /* Prevent overflow on 32-bit systems */
   if (dg->length > SIZE_MAX)
