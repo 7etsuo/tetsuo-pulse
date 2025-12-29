@@ -330,7 +330,7 @@ SocketQUICAddrValidation_validate_token (const uint8_t *token,
                                           const struct sockaddr *addr,
                                           const uint8_t *secret)
 {
-  SocketQUICAddrValidation_Result result;
+  volatile SocketQUICAddrValidation_Result result;
   uint64_t token_timestamp;
 
   /* Validate inputs */
