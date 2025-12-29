@@ -555,12 +555,45 @@ validate_crl_directory (const char *path)
     SOCKET_LOG_WARN_MSG ("CRL directory '%s' contains no regular files", path);
 }
 
+/**
+ * load_and_validate_crl - Load CRL with validation
+ * @store: X509_STORE to load into
+ * @crl_path: Path to CRL file or directory
+ * @is_directory: Output - set to 1 if path is directory, 0 otherwise
+ *
+ * Validates path, checks size limits, and loads CRL into the store.
+ * Raises SocketTLS_Failed on error.
+ */
+static void
+load_and_validate_crl (X509_STORE *store, const char *crl_path,
+                       int *is_directory)
+{
+  struct stat st;
+  int ret;
+
+  if (stat (crl_path, &st) != 0)
+    RAISE_CTX_ERROR_FMT (SocketTLS_Failed, "Invalid CRL path '%s': %s",
+                         crl_path, Socket_safe_strerror (errno));
+
+  *is_directory = S_ISDIR (st.st_mode);
+
+  /* Security check: prevent DoS from oversized CRL files or directories */
+  if (*is_directory)
+    validate_crl_directory (crl_path);
+  else
+    validate_crl_file_size (crl_path, &st);
+
+  ret = *is_directory ? X509_STORE_load_locations (store, NULL, crl_path)
+                      : X509_STORE_load_locations (store, crl_path, NULL);
+
+  if (ret != 1)
+    ctx_raise_openssl_error ("Failed to load CRL");
+}
+
 void
 SocketTLSContext_load_crl (T ctx, const char *crl_path)
 {
   X509_STORE *store;
-  struct stat st;
-  int ret;
   int is_directory;
 
   assert (ctx);
@@ -576,25 +609,7 @@ SocketTLSContext_load_crl (T ctx, const char *crl_path)
   TRY
   {
     CRL_LOCK (ctx);
-
-    if (stat (crl_path, &st) != 0)
-      RAISE_CTX_ERROR_FMT (SocketTLS_Failed, "Invalid CRL path '%s': %s",
-                           crl_path, Socket_safe_strerror (errno));
-
-    is_directory = S_ISDIR (st.st_mode);
-
-    /* Security check: prevent DoS from oversized CRL files or directories */
-    if (is_directory)
-      validate_crl_directory (crl_path);
-    else
-      validate_crl_file_size (crl_path, &st);
-
-    ret = is_directory ? X509_STORE_load_locations (store, NULL, crl_path)
-                       : X509_STORE_load_locations (store, crl_path, NULL);
-
-    if (ret != 1)
-      ctx_raise_openssl_error ("Failed to load CRL");
-
+    load_and_validate_crl (store, crl_path, &is_directory);
     X509_STORE_set_flags (store,
                           X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL);
   }
