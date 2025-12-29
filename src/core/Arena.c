@@ -405,7 +405,7 @@ arena_release_all_chunks (T arena)
 }
 
 static void
-arena_reset (Arena *arena, int locked)
+arena_reset (T arena, int locked)
 {
   arena->prev = NULL;
   arena->avail = NULL;

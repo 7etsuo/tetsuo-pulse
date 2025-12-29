@@ -1284,17 +1284,6 @@ SocketPool_connect_async (T pool, const char *host, int port,
       RAISE_POOL_MSG (SocketPool_Failed,
                       "Async connect limit reached (%d pending)",
                       SOCKET_POOL_MAX_ASYNC_PENDING);
-
-    req = SocketDNS_resolve (dns, host, port, async_connect_dns_callback, ctx);
-    if (!req)
-      {
-        /* Remove context from list since DNS resolve failed */
-        remove_async_context (pool, ctx);
-        RAISE_POOL_MSG (SocketPool_Failed, "Failed to start DNS resolution");
-      }
-
-    /* Store request handle after successful DNS resolve */
-    ctx->req = req;
   }
   ELSE
   {
@@ -1312,7 +1301,25 @@ SocketPool_connect_async (T pool, const char *host, int port,
   }
   END_TRY;
 
+  /* Release lock BEFORE calling SocketDNS_resolve to prevent deadlock.
+   * The async_connect_dns_callback may be invoked synchronously (e.g., for
+   * IP literals or cache hits), and it needs to acquire the pool lock.
+   * The context is already safely linked into the pool's list. */
   POOL_UNLOCK (pool);
+
+  req = SocketDNS_resolve (dns, host, port, async_connect_dns_callback, ctx);
+  if (!req)
+    {
+      /* DNS resolve failed - clean up context (need lock for list removal) */
+      POOL_LOCK (pool);
+      remove_async_context (pool, ctx);
+      POOL_UNLOCK (pool);
+      Socket_free ((Socket_T *)&socket);
+      RAISE_POOL_MSG (SocketPool_Failed, "Failed to start DNS resolution");
+    }
+
+  /* Store request handle after successful DNS resolve */
+  ctx->req = req;
   return req;
 }
 

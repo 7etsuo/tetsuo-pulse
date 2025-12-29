@@ -1694,15 +1694,12 @@ TEST (socketdns_queue_full_raises_exception)
 
   TRY
   {
-    /* Set a very low max_pending */
-    SocketDNS_setmaxpending (dns, 2);
+    /* Set max_pending to 0 - any hostname request should fail immediately
+     * Note: IP literals (like 127.0.0.1) complete synchronously and don't
+     * count as pending, so we use a hostname that requires actual DNS lookup */
+    SocketDNS_setmaxpending (dns, 0);
 
-    /* Fill the queue */
-    SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
-    SocketDNS_resolve (dns, "127.0.0.1", 80, NULL, NULL);
-    ASSERT_EQ (SocketDNS_getpendingcount (dns), 2);
-
-    /* Try to exceed the limit - should raise exception */
+    /* Try to resolve a hostname - should raise exception since max_pending=0 */
     SocketDNS_resolve (dns, "example.com", 80, NULL, NULL);
 
     /* Should not reach here */
