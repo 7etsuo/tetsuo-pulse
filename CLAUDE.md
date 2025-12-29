@@ -41,6 +41,8 @@ Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`
 
 ## Build Commands
 
+**MANDATORY: Always use `-j$(nproc)` for all build and test commands.** This maximizes parallelism and significantly speeds up builds/tests. Never omit the `-j` flag.
+
 ```bash
 # Standard build (Debug)
 cmake -S . -B build
