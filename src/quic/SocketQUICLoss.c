@@ -534,26 +534,31 @@ SocketQUICLoss_on_ack_received (SocketQUICLossState_T state,
   /* For simplicity, we just remove the largest_acked packet.
    * A full implementation would process ACK ranges.
    */
-  if (largest_pkt != NULL)
+  if (largest_pkt == NULL)
     {
-      if (largest_pkt->in_flight)
-        {
-          /* Defensive check: prevent underflow */
-          if (largest_pkt->sent_bytes > state->bytes_in_flight)
-            {
-              SOCKET_LOG_ERROR_MSG (
-                  "bytes_in_flight underflow: sent_bytes=%zu, in_flight=%zu",
-                  largest_pkt->sent_bytes, state->bytes_in_flight);
-              state->bytes_in_flight = 0;
-            }
-          else
-            {
-              state->bytes_in_flight -= largest_pkt->sent_bytes;
-            }
-        }
-      remove_sent_packet (state, largest_acked);
+      goto detect_lost;
     }
 
+  /* Handle in-flight bytes adjustment */
+  if (largest_pkt->in_flight)
+    {
+      /* Defensive check: prevent underflow */
+      if (largest_pkt->sent_bytes > state->bytes_in_flight)
+        {
+          SOCKET_LOG_ERROR_MSG (
+              "bytes_in_flight underflow: sent_bytes=%zu, in_flight=%zu",
+              largest_pkt->sent_bytes, state->bytes_in_flight);
+          state->bytes_in_flight = 0;
+        }
+      else
+        {
+          state->bytes_in_flight -= largest_pkt->sent_bytes;
+        }
+    }
+
+  remove_sent_packet (state, largest_acked);
+
+detect_lost:
   /* Detect lost packets */
   detect_lost_packets (state, rtt, recv_time_us, lost_callback, context,
                        lost_count);
