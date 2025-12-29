@@ -17,6 +17,9 @@
 #include "core/SocketMetrics.h"
 #include "core/SocketUtil.h"
 
+/* Forward declaration for Socket module live count tracking */
+extern int Socket_debug_live_count (void);
+
 #define PERCENTILE_P50 50.0
 #define PERCENTILE_P75 75.0
 #define PERCENTILE_P90 90.0
@@ -1120,7 +1123,6 @@ SocketMetrics_category_name (SocketMetricCategory category)
 int
 SocketMetrics_get_socket_count (void)
 {
-  extern int Socket_debug_live_count (void);
   return Socket_debug_live_count ();
 }
 
