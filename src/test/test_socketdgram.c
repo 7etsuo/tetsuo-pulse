@@ -1760,6 +1760,102 @@ TEST (socketdgram_bind_udp_ipv4_ipv6_both_work)
   END_TRY;
 }
 
+/* ==================== Port Parsing Validation Tests (Issue #1361) ========
+ */
+
+TEST (socketdgram_recvfrom_validates_port_correctly)
+{
+  setup_signals ();
+  SocketDgram_T sender = SocketDgram_new (AF_INET, 0);
+  SocketDgram_T receiver = SocketDgram_new (AF_INET, 0);
+
+  TRY
+  {
+    SocketDgram_bind (receiver, "127.0.0.1", 0);
+    struct sockaddr_in addr;
+    socklen_t len = sizeof (addr);
+    getsockname (SocketDgram_fd (receiver), (struct sockaddr *)&addr, &len);
+    int port = ntohs (addr.sin_port);
+
+    const char *msg = "Port validation test";
+    ssize_t sent
+        = SocketDgram_sendto (sender, msg, strlen (msg), "127.0.0.1", port);
+    ASSERT_NE (sent, -1);
+
+    usleep (10000);
+    char recv_host[256] = { 0 };
+    int recv_port = 0;
+    char buf[TEST_BUFFER_SIZE] = { 0 };
+    ssize_t received
+        = SocketDgram_recvfrom (receiver, buf, sizeof (buf) - 1, recv_host,
+                                sizeof (recv_host), &recv_port);
+
+    if (received > 0)
+      {
+        /* Port should be non-zero and valid */
+        ASSERT_NE (recv_port, 0);
+        ASSERT (recv_port > 0);
+        ASSERT (recv_port <= 65535);
+      }
+  }
+  EXCEPT (SocketDgram_Failed) { (void)0; }
+  FINALLY
+  {
+    SocketDgram_free (&sender);
+    SocketDgram_free (&receiver);
+  }
+  END_TRY;
+}
+
+TEST (socketdgram_recvfrom_handles_port_range_correctly)
+{
+  setup_signals ();
+  SocketDgram_T sender = SocketDgram_new (AF_INET, 0);
+  SocketDgram_T receiver = SocketDgram_new (AF_INET, 0);
+
+  TRY
+  {
+    /* Bind to ephemeral port and verify it's in valid range */
+    SocketDgram_bind (receiver, "127.0.0.1", 0);
+    struct sockaddr_in addr;
+    socklen_t len = sizeof (addr);
+    getsockname (SocketDgram_fd (receiver), (struct sockaddr *)&addr, &len);
+    int bound_port = ntohs (addr.sin_port);
+
+    /* Bound port should be in valid range */
+    ASSERT (bound_port > 0);
+    ASSERT (bound_port <= 65535);
+
+    /* Send a message */
+    const char *msg = "Port range test";
+    ssize_t sent = SocketDgram_sendto (sender, msg, strlen (msg), "127.0.0.1",
+                                       bound_port);
+    ASSERT_NE (sent, -1);
+
+    usleep (10000);
+    char recv_host[256] = { 0 };
+    int recv_port = 0;
+    char buf[TEST_BUFFER_SIZE] = { 0 };
+    ssize_t received
+        = SocketDgram_recvfrom (receiver, buf, sizeof (buf) - 1, recv_host,
+                                sizeof (recv_host), &recv_port);
+
+    if (received > 0)
+      {
+        /* Received port should match valid range constraints */
+        ASSERT (recv_port > 0);
+        ASSERT (recv_port <= 65535);
+      }
+  }
+  EXCEPT (SocketDgram_Failed) { (void)0; }
+  FINALLY
+  {
+    SocketDgram_free (&sender);
+    SocketDgram_free (&receiver);
+  }
+  END_TRY;
+}
+
 int
 main (void)
 {

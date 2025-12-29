@@ -229,11 +229,14 @@ extract_sender_info (const struct sockaddr_storage *addr, socklen_t addrlen,
       char *endptr;
       errno = 0;
       long port_long = strtol (serv, &endptr, 10);
-      *port
-          = (*endptr == '\0' && errno != ERANGE && port_long > 0
-             && port_long <= SOCKET_MAX_PORT)
-                ? (int)port_long
-                : 0;
+      /* Validate conversion: errno must be exactly 0, full string consumed,
+       * and value in valid port range (1-65535) */
+      *port = 0; /* Default to error state */
+      if (errno == 0 && *endptr == '\0' && port_long > 0
+          && port_long <= SOCKET_MAX_PORT)
+        {
+          *port = (int)port_long;
+        }
     }
   else
     {
