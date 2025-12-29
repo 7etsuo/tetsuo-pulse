@@ -176,6 +176,10 @@ encode_connid_param (uint8_t *buf, size_t buf_size, uint64_t id,
   size_t pos = 0;
   size_t len;
 
+  /* Validate inputs */
+  if (buf == NULL || cid == NULL)
+    return 0;
+
   /* Encode parameter ID */
   len = SocketQUICVarInt_encode (id, buf + pos, buf_size - pos);
   if (len == 0)
@@ -206,6 +210,10 @@ encode_token_param (uint8_t *buf, size_t buf_size, uint64_t id,
 {
   size_t pos = 0;
   size_t len;
+
+  /* Validate inputs */
+  if (buf == NULL || (token_len > 0 && token == NULL))
+    return 0;
 
   /* Encode parameter ID */
   len = SocketQUICVarInt_encode (id, buf + pos, buf_size - pos);
