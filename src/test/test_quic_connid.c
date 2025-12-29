@@ -130,6 +130,17 @@ TEST (quic_connid_set_null)
   ASSERT_EQ (res, QUIC_CONNID_ERROR_NULL);
 }
 
+TEST (quic_connid_set_null_data_nonzero_len)
+{
+  SocketQUICConnectionID_T cid;
+
+  /* len > 0 but data == NULL should return error (not create zero-filled CID) */
+  SocketQUICConnectionID_Result res
+      = SocketQUICConnectionID_set (&cid, NULL, 8);
+
+  ASSERT_EQ (res, QUIC_CONNID_ERROR_NULL);
+}
+
 /* ============================================================================
  * Generation Tests
  * ============================================================================
