@@ -102,42 +102,6 @@ static const struct
   { NULL, NULL }
 };
 
-/**
- * get_mime_type - Determine MIME type from file extension
- * @path: File path to check
- *
- * Returns: MIME type string or "application/octet-stream" for unknown
- */
-static const char *
-get_mime_type (const char *path)
-{
-  const char *ext;
-  size_t path_len, ext_len;
-
-  if (path == NULL)
-    return "application/octet-stream";
-
-  path_len = strlen (path);
-
-  /* Find the last dot in the path */
-  ext = strrchr (path, '.');
-  if (ext == NULL)
-    return "application/octet-stream";
-
-  ext_len = path_len - (size_t)(ext - path);
-
-  /* Check against known extensions (case-insensitive) */
-  for (int i = 0; mime_types[i].extension != NULL; i++)
-    {
-      if (strlen (mime_types[i].extension) == ext_len
-          && strcasecmp (ext, mime_types[i].extension) == 0)
-        {
-          return mime_types[i].mime_type;
-        }
-    }
-
-  return "application/octet-stream";
-}
 
 /**
  * skip_to_next_component - Advance pointer to next path component
@@ -430,8 +394,27 @@ server_serve_static_file (SocketHTTPServer_T server, ServerConnection *conn,
       return 0;
     }
 
-  /* Get MIME type */
-  mime_type = get_mime_type (resolved_path);
+  /* Determine MIME type from file extension */
+  mime_type = "application/octet-stream"; /* Default for unknown types */
+  {
+    const char *ext = strrchr (resolved_path, '.');
+    if (ext != NULL)
+      {
+        size_t path_len = strlen (resolved_path);
+        size_t ext_len = path_len - (size_t)(ext - resolved_path);
+
+        /* Check against known extensions (case-insensitive) */
+        for (int i = 0; mime_types[i].extension != NULL; i++)
+          {
+            if (strlen (mime_types[i].extension) == ext_len
+                && strcasecmp (ext, mime_types[i].extension) == 0)
+              {
+                mime_type = mime_types[i].mime_type;
+                break;
+              }
+          }
+      }
+  }
 
   /* Check If-Modified-Since header */
   if_modified_since = SocketHTTP_Headers_get (conn->request->headers,
