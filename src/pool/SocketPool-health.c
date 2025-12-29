@@ -235,6 +235,35 @@ health_default_probe (struct SocketPool_T *pool, struct Connection *conn,
  * ============================================================================ */
 
 /**
+ * @brief Check and transition circuits from OPEN to HALF_OPEN if timeout elapsed.
+ * @param health Health context.
+ */
+static void
+health_check_circuit_transitions (SocketPoolHealth_T health)
+{
+  pthread_mutex_lock (&health->circuit_mutex);
+
+  for (unsigned int i = 0; i < SOCKET_HEALTH_HASH_SIZE; i++)
+    {
+      SocketPoolCircuit_Entry_T entry = health->circuit_table[i];
+      while (entry)
+        {
+          int state = atomic_load_explicit (&entry->state, memory_order_acquire);
+          if (state == POOL_CIRCUIT_OPEN
+              && health_should_transition_half_open (health, entry))
+            {
+              atomic_store_explicit (&entry->state, POOL_CIRCUIT_HALF_OPEN,
+                                     memory_order_release);
+              atomic_store (&entry->half_open_probes, 0);
+            }
+          entry = entry->hash_next;
+        }
+    }
+
+  pthread_mutex_unlock (&health->circuit_mutex);
+}
+
+/**
  * @brief Run one probe cycle.
  *
  * Selects connections and probes them.
@@ -303,24 +332,7 @@ health_run_probe_cycle (SocketPoolHealth_T health)
   pthread_mutex_unlock (&pool->mutex);
 
   /* Check for OPEN -> HALF_OPEN transitions */
-  pthread_mutex_lock (&health->circuit_mutex);
-  for (unsigned int i = 0; i < SOCKET_HEALTH_HASH_SIZE; i++)
-    {
-      SocketPoolCircuit_Entry_T entry = health->circuit_table[i];
-      while (entry)
-        {
-          int state = atomic_load_explicit (&entry->state, memory_order_acquire);
-          if (state == POOL_CIRCUIT_OPEN
-              && health_should_transition_half_open (health, entry))
-            {
-              atomic_store_explicit (&entry->state, POOL_CIRCUIT_HALF_OPEN,
-                                     memory_order_release);
-              atomic_store (&entry->half_open_probes, 0);
-            }
-          entry = entry->hash_next;
-        }
-    }
-  pthread_mutex_unlock (&health->circuit_mutex);
+  health_check_circuit_transitions (health);
 }
 
 /**
