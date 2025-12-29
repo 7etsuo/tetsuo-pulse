@@ -217,24 +217,25 @@ SocketQUICStream_transition_send (SocketQUICStream_T stream,
   /* Search transition table for valid transition */
   for (size_t i = 0; i < SEND_TRANSITIONS_COUNT; i++)
     {
-      if (send_transitions[i].from_state == current
-          && send_transitions[i].event == event)
-        {
-          /* Valid transition found - execute it */
-          stream->send_state = send_transitions[i].to_state;
+      /* Skip non-matching transitions */
+      if (send_transitions[i].from_state != current ||
+          send_transitions[i].event != event)
+        continue;
 
-          /* Update flags based on transition */
-          if (event == QUIC_STREAM_EVENT_SEND_FIN)
-            stream->fin_sent = 1;
-          else if (event == QUIC_STREAM_EVENT_SEND_RESET ||
-                   event == QUIC_STREAM_EVENT_RECV_STOP_SENDING)
-            stream->reset_sent = 1;
+      /* Valid transition found - execute it */
+      stream->send_state = send_transitions[i].to_state;
 
-          /* Update legacy combined state for backwards compatibility */
-          update_legacy_state_send (stream);
+      /* Update flags based on transition */
+      if (event == QUIC_STREAM_EVENT_SEND_FIN)
+        stream->fin_sent = 1;
+      else if (event == QUIC_STREAM_EVENT_SEND_RESET ||
+               event == QUIC_STREAM_EVENT_RECV_STOP_SENDING)
+        stream->reset_sent = 1;
 
-          return QUIC_STREAM_OK;
-        }
+      /* Update legacy combined state for backwards compatibility */
+      update_legacy_state_send (stream);
+
+      return QUIC_STREAM_OK;
     }
 
   /* No valid transition found */
@@ -313,22 +314,23 @@ SocketQUICStream_transition_recv (SocketQUICStream_T stream,
   /* Table-driven transition lookup */
   for (size_t i = 0; i < RECV_TRANSITIONS_COUNT; i++)
     {
-      if (recv_transitions[i].from_state == current
-          && recv_transitions[i].event == event)
-        {
-          stream->recv_state = recv_transitions[i].to_state;
+      /* Skip non-matching transitions */
+      if (recv_transitions[i].from_state != current ||
+          recv_transitions[i].event != event)
+        continue;
 
-          /* Update flags based on transition */
-          if (event == QUIC_STREAM_EVENT_RECV_FIN)
-            stream->fin_received = 1;
-          else if (event == QUIC_STREAM_EVENT_RECV_RESET)
-            stream->reset_received = 1;
+      stream->recv_state = recv_transitions[i].to_state;
 
-          /* Update legacy combined state for backwards compatibility */
-          update_legacy_state_recv (stream);
+      /* Update flags based on transition */
+      if (event == QUIC_STREAM_EVENT_RECV_FIN)
+        stream->fin_received = 1;
+      else if (event == QUIC_STREAM_EVENT_RECV_RESET)
+        stream->reset_received = 1;
 
-          return QUIC_STREAM_OK;
-        }
+      /* Update legacy combined state for backwards compatibility */
+      update_legacy_state_recv (stream);
+
+      return QUIC_STREAM_OK;
     }
 
   return QUIC_STREAM_ERROR_STATE; /* No valid transition found */
