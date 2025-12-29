@@ -36,6 +36,19 @@ You receive:
 
 ## Execution Protocol
 
+### -1. Write Started Marker (IMMEDIATE FIRST ACTION)
+
+**Before anything else**, write a started marker so the system knows you're alive:
+
+```bash
+echo '{"issue": {ISSUE_NUMBER}, "started_at": "'$(date -Iseconds)'"}' > {STATE_DIR}/started/{ISSUE_NUMBER}.json
+```
+
+Create the `started/` directory if it doesn't exist:
+```bash
+mkdir -p {STATE_DIR}/started
+```
+
 ### 0. Claim the Issue (REQUIRED FIRST STEP)
 
 Before doing ANY work, claim the issue to prevent other instances from working on it:

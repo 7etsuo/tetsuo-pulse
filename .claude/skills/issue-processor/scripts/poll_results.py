@@ -63,6 +63,10 @@ def main():
     failed = set()
 
     start_time = time.time()
+    last_progress_time = start_time
+    last_done_count = 0
+    stall_warning_shown = False
+    STALL_THRESHOLD = 120  # seconds without progress before warning
 
     while True:
         # Check for result files
@@ -91,6 +95,12 @@ def main():
 
         done_count = len(completed) + len(failed)
 
+        # Track progress for stall detection
+        if done_count > last_done_count:
+            last_progress_time = time.time()
+            last_done_count = done_count
+            stall_warning_shown = False
+
         # Update manifest
         manifest = load_json(manifest_path)
         manifest["completed"] = list(set(manifest.get("completed", [])) | completed)
@@ -98,8 +108,36 @@ def main():
         manifest["in_progress"] = [i for i in expected if i not in completed and i not in failed]
         save_json(manifest_path, manifest)
 
-        # Update status
-        status_path.write_text(f"RUNNING:{done_count}/{total}\n")
+        # Update status with stall indicator if needed
+        time_since_progress = time.time() - last_progress_time
+        if time_since_progress > STALL_THRESHOLD and not stall_warning_shown:
+            status_path.write_text(f"STALLED:{done_count}/{total}:no_progress_for_{int(time_since_progress)}s\n")
+            stall_warning_shown = True
+            print(f"WARNING: No progress for {int(time_since_progress)}s. Agents may have failed.", file=sys.stderr)
+
+            # List which issues are still pending
+            pending = [i for i in expected if i not in completed and i not in failed]
+            print(f"Pending issues: {pending}", file=sys.stderr)
+
+            # Check which agents have started (wrote started marker)
+            started_dir = state_dir / "started"
+            if started_dir.exists():
+                started_issues = set()
+                for started_file in started_dir.glob("*.json"):
+                    try:
+                        started_issues.add(int(started_file.stem))
+                    except ValueError:
+                        continue
+
+                started_but_pending = started_issues & set(pending)
+                not_started = set(pending) - started_issues
+
+                if started_but_pending:
+                    print(f"Started but no result: {sorted(started_but_pending)}", file=sys.stderr)
+                if not_started:
+                    print(f"Never started: {sorted(not_started)}", file=sys.stderr)
+        else:
+            status_path.write_text(f"RUNNING:{done_count}/{total}\n")
 
         # Check if all done
         if done_count >= total:
