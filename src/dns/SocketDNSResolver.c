@@ -165,14 +165,8 @@ static void cache_insert (T resolver, const char *hostname,
                           size_t count, uint32_t ttl);
 static struct CacheEntry *cache_lookup (T resolver, const char *hostname);
 
-/* Utility: get monotonic time in milliseconds */
-static int64_t
-get_monotonic_ms (void)
-{
-  struct timespec ts;
-  clock_gettime (CLOCK_MONOTONIC, &ts);
-  return ((int64_t)ts.tv_sec * 1000) + (ts.tv_nsec / 1000000);
-}
+/* Use centralized monotonic time utility from SocketUtil.h */
+#define get_monotonic_ms() Socket_get_monotonic_ms()
 
 /**
  * @brief DJB2 case-insensitive hash for DNS hostnames.
