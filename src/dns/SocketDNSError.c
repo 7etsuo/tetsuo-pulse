@@ -346,7 +346,7 @@ SocketDNS_ede_format (const SocketDNS_ExtendedError *ede, char *buf,
   if (!ede->present)
     {
       int ret = snprintf (buf, buflen, "(no extended error)");
-      return (ret < 0 || (size_t)ret >= buflen) ? -1 : ret;
+      return SOCKET_SNPRINTF_CHECK (ret, buflen);
     }
 
   const char *name = SocketDNS_ede_code_name (ede->info_code);
@@ -358,7 +358,7 @@ SocketDNS_ede_format (const SocketDNS_ExtendedError *ede, char *buf,
   else
     ret = snprintf (buf, buflen, "%s (%u)", name, ede->info_code);
 
-  return (ret < 0 || (size_t)ret >= buflen) ? -1 : ret;
+  return SOCKET_SNPRINTF_CHECK (ret, buflen);
 }
 
 int
