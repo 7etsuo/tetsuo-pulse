@@ -547,13 +547,6 @@ SocketHPACK_Encoder_get_table (SocketHPACK_Encoder_T encoder)
 }
 
 static ssize_t
-hpack_encode_indexed (size_t index, unsigned char *output, size_t output_size)
-{
-  return hpack_encode_int_with_flag (index, HPACK_PREFIX_INDEXED,
-                                     HPACK_INDEXED_MASK, output, output_size);
-}
-
-static ssize_t
 encode_header_name (unsigned char mode, size_t name_index, const char *name,
                     size_t name_len, int use_huffman, unsigned char *output,
                     size_t output_size)
@@ -688,7 +681,8 @@ hpack_encode_header (SocketHPACK_Encoder_T encoder,
   exact_index = find_header_index (encoder, &normalized_hdr, &name_index);
 
   if (exact_index > 0)
-    return hpack_encode_indexed ((size_t)exact_index, output, output_size);
+    return hpack_encode_int_with_flag ((size_t)exact_index, HPACK_PREFIX_INDEXED,
+                                       HPACK_INDEXED_MASK, output, output_size);
 
   unsigned char mode;
   int add_to_table = 0;
