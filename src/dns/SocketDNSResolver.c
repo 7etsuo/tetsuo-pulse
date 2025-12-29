@@ -14,6 +14,7 @@
 #include "dns/SocketDNSTransport.h"
 #include "dns/SocketDNSWire.h"
 #include "socket/SocketCommon.h"
+#include "core/SocketUtil.h"
 
 #include <arpa/inet.h>
 #include <assert.h>
@@ -169,40 +170,18 @@ static struct CacheEntry *cache_lookup (T resolver, const char *hostname);
 #define get_monotonic_ms() Socket_get_monotonic_ms()
 
 /**
- * @brief DJB2 case-insensitive hash for DNS hostnames.
+ * @brief Hash DNS hostname for cache lookup.
  *
- * Uses manual ASCII lowercasing (c >= 'A' && c <= 'Z' then c += 32)
- * instead of tolower() to ensure locale-independent behavior.
+ * Uses centralized case-insensitive DJB2 hash from SocketUtil.
+ * DNS names are case-insensitive per RFC 1035 Section 2.3.3.
  *
- * DNS names are ASCII-only per RFC 1035 §2.3.1, and case-insensitive
- * per §2.3.3. Manual lowercasing guarantees consistent hashing across
- * all systems regardless of LC_CTYPE locale settings.
- *
- * Example: "example.com" and "EXAMPLE.COM" hash to same value.
- *
- * Why manual implementation is preferred over tolower():
- * - Locale independence: tolower() depends on LC_CTYPE (e.g., Turkish
- *   locale where 'I' → 'ı', not 'i')
- * - DNS ASCII-only: RFC 1035 restricts DNS labels to ASCII characters
- * - Performance: Avoids function call overhead
- * - Determinism: Same hash on all systems, preventing cache misses
- *
- * @param hostname DNS hostname (ASCII characters only).
- * @return Hash value (0 to CACHE_HASH_SIZE-1).
+ * @param hostname DNS hostname (ASCII, case-insensitive).
+ * @return Hash bucket index (0 to CACHE_HASH_SIZE-1).
  */
 static unsigned
 hash_hostname (const char *hostname)
 {
-  unsigned hash = 5381; /* DJB2 magic number */
-  int c;
-  while ((c = (unsigned char)*hostname++) != 0)
-    {
-      /* Manual ASCII lowercase: A-Z (65-90) → a-z (97-122) */
-      if (c >= 'A' && c <= 'Z')
-        c += 32;
-      hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
-    }
-  return hash % CACHE_HASH_SIZE;
+  return socket_util_hash_djb2_ci (hostname, CACHE_HASH_SIZE);
 }
 
 /* Utility: hash query ID */
