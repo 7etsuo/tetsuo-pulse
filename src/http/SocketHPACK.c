@@ -500,12 +500,17 @@ SocketHPACK_Encoder_set_table_size (SocketHPACK_Encoder_T encoder,
   assert (encoder != NULL);
 
   /* RFC 7541 §4.2: Multiple size changes - emit smallest first, then final */
+
+  /* No pending sizes - just set the first one */
   if (encoder->pending_table_size_count == 0)
     {
       encoder->pending_table_sizes[0] = max_size;
       encoder->pending_table_size_count = 1;
+      return;
     }
-  else if (encoder->pending_table_size_count == 1)
+
+  /* One pending size - need to add a second one */
+  if (encoder->pending_table_size_count == 1)
     {
       if (max_size < encoder->pending_table_sizes[0])
         {
@@ -517,19 +522,19 @@ SocketHPACK_Encoder_set_table_size (SocketHPACK_Encoder_T encoder,
           encoder->pending_table_sizes[1] = max_size;
         }
       encoder->pending_table_size_count = 2;
+      return;
+    }
+
+  /* Two or more pending sizes - update the second one or reset to one */
+  if (max_size < encoder->pending_table_sizes[0])
+    {
+      encoder->pending_table_sizes[0] = max_size;
+      encoder->pending_table_sizes[1] = 0;
+      encoder->pending_table_size_count = 1;
     }
   else
     {
-      if (max_size < encoder->pending_table_sizes[0])
-        {
-          encoder->pending_table_sizes[0] = max_size;
-          encoder->pending_table_sizes[1] = 0;
-          encoder->pending_table_size_count = 1;
-        }
-      else
-        {
-          encoder->pending_table_sizes[1] = max_size;
-        }
+      encoder->pending_table_sizes[1] = max_size;
     }
 }
 
