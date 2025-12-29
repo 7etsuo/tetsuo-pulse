@@ -149,8 +149,7 @@ check_decode_output_limits (size_t total, size_t output_len, size_t max_size)
   if (!SocketSecurity_check_size (output_len))
     return HTTP1_ERROR;
 
-  potential = total + output_len;
-  if (potential < total)
+  if (!SocketSecurity_check_add (total, output_len, &potential))
     return HTTP1_ERROR_BODY_TOO_LARGE; /* Overflow */
 
   if (max_size != SIZE_MAX && potential > max_size)
@@ -179,8 +178,7 @@ check_encode_output_limits (size_t total, size_t output_len, size_t max_size)
   if (!SocketSecurity_check_size (output_len))
     return 0;
 
-  potential = total + output_len;
-  if (potential < total)
+  if (!SocketSecurity_check_add (total, output_len, &potential))
     return 0; /* Overflow */
 
   if (max_size != SIZE_MAX && potential > max_size)
