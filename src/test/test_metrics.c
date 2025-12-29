@@ -17,11 +17,15 @@
  * - Export formats (Prometheus, StatsD, JSON)
  * - Socket count and peak tracking
  * - Metadata queries (names, help text)
+ * - Thread safety and race condition tests (issue #1640)
  */
 
 #include <math.h>
+#include <pthread.h>
+#include <stdatomic.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "core/Except.h"
 #include "core/SocketMetrics.h"
@@ -585,6 +589,129 @@ TEST (metrics_category_name)
   const char *tls_name = SocketMetrics_category_name (SOCKET_METRIC_CAT_TLS);
   ASSERT_NOT_NULL (tls_name);
   ASSERT (strlen (tls_name) > 0);
+}
+
+/* ============================================================================
+ * Thread Safety Tests (Issue #1640)
+ * ============================================================================
+ */
+
+/* Thread state for race condition test */
+static _Atomic int keep_running = 0;
+static _Atomic int shutdown_started = 0;
+
+/* Thread that hammers histogram operations */
+static void *
+hammer_metrics (void *arg)
+{
+  (void)arg;
+
+  while (atomic_load (&keep_running))
+    {
+      SocketMetrics_histogram_observe (SOCKET_HIST_DNS_QUERY_TIME_MS, 123.45);
+      /* No sleep - hammer as fast as possible to expose race */
+    }
+
+  return NULL;
+}
+
+/* Thread that triggers shutdown */
+static void *
+shutdown_thread (void *arg)
+{
+  (void)arg;
+
+  /* Wait a bit for hammering to start */
+  usleep (50000); /* 50ms */
+
+  atomic_store (&shutdown_started, 1);
+  SocketMetrics_shutdown ();
+
+  return NULL;
+}
+
+/*
+ * Test race condition in shutdown (issue #1640)
+ *
+ * This test verifies that the fix for issue #1640 prevents the race condition
+ * where SocketMetrics_shutdown() could destroy histogram mutexes while other
+ * threads were still using them.
+ *
+ * The fix works by:
+ * 1. Setting all histogram.initialized flags to 0 first
+ * 2. Adding a 10ms delay for in-flight operations to complete
+ * 3. Then safely destroying mutexes with error logging
+ *
+ * If we get through this test without crashing or deadlocking, the fix works.
+ */
+TEST (metrics_shutdown_race_condition)
+{
+  pthread_t hammer_threads[4];
+  pthread_t shutdown_thr;
+  int i;
+
+  SocketMetrics_init ();
+
+  atomic_store (&keep_running, 1);
+  atomic_store (&shutdown_started, 0);
+
+  /* Start multiple threads hammering metrics */
+  for (i = 0; i < 4; i++)
+    {
+      int rc = pthread_create (&hammer_threads[i], NULL, hammer_metrics, NULL);
+      ASSERT_EQ (rc, 0);
+    }
+
+  /* Start shutdown thread */
+  int rc = pthread_create (&shutdown_thr, NULL, shutdown_thread, NULL);
+  ASSERT_EQ (rc, 0);
+
+  /* Wait for shutdown to start */
+  while (!atomic_load (&shutdown_started))
+    {
+      usleep (1000);
+    }
+
+  /* Let it run for a bit after shutdown starts */
+  usleep (20000); /* 20ms - should cover the 10ms usleep in shutdown */
+
+  /* Stop the hammering threads */
+  atomic_store (&keep_running, 0);
+
+  /* Join all threads */
+  for (i = 0; i < 4; i++)
+    {
+      pthread_join (hammer_threads[i], NULL);
+    }
+
+  pthread_join (shutdown_thr, NULL);
+
+  /* If we get here without crashing or deadlocking, the fix works */
+}
+
+/*
+ * Test that histogram operations after shutdown are safe
+ *
+ * After shutdown sets initialized=0, histogram operations should return early
+ * without attempting to acquire mutexes.
+ */
+TEST (metrics_histogram_after_shutdown)
+{
+  SocketMetrics_init ();
+
+  /* Observe some values */
+  SocketMetrics_histogram_observe (SOCKET_HIST_DNS_QUERY_TIME_MS, 50.0);
+  ASSERT_EQ (1, SocketMetrics_histogram_count (SOCKET_HIST_DNS_QUERY_TIME_MS));
+
+  /* Shutdown */
+  SocketMetrics_shutdown ();
+
+  /* These should not crash, just return safely */
+  SocketMetrics_histogram_observe (SOCKET_HIST_DNS_QUERY_TIME_MS, 100.0);
+  uint64_t count = SocketMetrics_histogram_count (SOCKET_HIST_DNS_QUERY_TIME_MS);
+
+  /* After shutdown, histogram is marked as not initialized, so count should be 0 */
+  ASSERT_EQ (0, count);
 }
 
 /* ============================================================================

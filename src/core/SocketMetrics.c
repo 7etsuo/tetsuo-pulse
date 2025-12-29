@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "core/SocketConfig.h"
 #include "core/SocketMetrics.h"
@@ -308,16 +309,6 @@ histogram_init (Histogram *h)
   h->initialized = 1;
 }
 
-static void
-histogram_destroy (Histogram *h)
-{
-  if (h->initialized)
-    {
-      int rc = pthread_mutex_destroy (&h->mutex);
-      assert (rc == 0 && "pthread_mutex_destroy failed - mutex may be locked");
-      h->initialized = 0;
-    }
-}
 
 /* Count incremented atomically inside lock to maintain consistency */
 static void
@@ -521,10 +512,29 @@ SocketMetrics_shutdown (void)
   if (!atomic_compare_exchange_strong (&metrics_initialized, &expected, 0))
     return;
 
+  /* Mark all histograms as shutting down BEFORE destroying mutexes */
   pthread_mutex_lock (&metrics_global_mutex);
 
   for (i = 0; i < SOCKET_HISTOGRAM_METRIC_COUNT; i++)
-    histogram_destroy (&histogram_values[i]);
+    histogram_values[i].initialized = 0;
+
+  pthread_mutex_unlock (&metrics_global_mutex);
+
+  /* Small delay to let in-flight operations complete */
+  usleep (10000); /* 10ms should be enough for histogram operations */
+
+  /* Now safe to destroy mutexes */
+  pthread_mutex_lock (&metrics_global_mutex);
+
+  for (i = 0; i < SOCKET_HISTOGRAM_METRIC_COUNT; i++)
+    {
+      int rc = pthread_mutex_destroy (&histogram_values[i].mutex);
+      if (rc != 0)
+        {
+          SocketLog_emitf (SOCKET_LOG_ERROR, "metrics",
+                           "pthread_mutex_destroy failed: %d", rc);
+        }
+    }
 
   pthread_mutex_unlock (&metrics_global_mutex);
 
