@@ -60,41 +60,6 @@ is_forbidden_trailer (const char *name, size_t name_len)
   return 0;
 }
 
-typedef enum
-{
-  CRLF_OK,
-  CRLF_INCOMPLETE,
-  CRLF_INVALID
-} crlf_result_t;
-
-static crlf_result_t
-skip_crlf (const char **p, const char *end)
-{
-  if (*p >= end)
-    return CRLF_INCOMPLETE;
-
-  if (**p == '\r')
-    {
-      (*p)++;
-      if (*p >= end)
-        return CRLF_INCOMPLETE;
-      if (**p == '\n')
-        {
-          (*p)++;
-          return CRLF_OK;
-        }
-      else
-        return CRLF_INVALID;
-    }
-  else if (**p == '\n')
-    {
-      (*p)++;
-      return CRLF_OK;
-    }
-  else
-    return CRLF_INVALID;
-}
-
 static inline void
 mark_body_complete (SocketHTTP1_Parser_T parser)
 {
@@ -388,10 +353,10 @@ parse_chunk_size (const char *const input, size_t len, size_t *line_len,
         }
     }
 
-  crlf_result_t res = skip_crlf (&p, end);
-  if (res == CRLF_INCOMPLETE)
+  HTTP1_CRLFResult res = http1_skip_crlf (&p, end);
+  if (res == HTTP1_CRLF_INCOMPLETE)
     return -2;
-  if (res != CRLF_OK)
+  if (res != HTTP1_CRLF_OK)
     return -1;
 
   *line_len = (size_t)(p - input);
@@ -475,10 +440,10 @@ static SocketHTTP1_Result
 handle_chunk_crlf_states (SocketHTTP1_Parser_T parser, const char **p,
                           const char *end)
 {
-  crlf_result_t res = skip_crlf (p, end);
-  if (res == CRLF_INCOMPLETE)
+  HTTP1_CRLFResult res = http1_skip_crlf (p, end);
+  if (res == HTTP1_CRLF_INCOMPLETE)
     return HTTP1_INCOMPLETE;
-  if (res != CRLF_OK)
+  if (res != HTTP1_CRLF_OK)
     return HTTP1_ERROR_INVALID_CHUNK_SIZE;
 
   parser->internal_state = HTTP1_PS_CHUNK_SIZE;
@@ -500,14 +465,14 @@ static SocketHTTP1_Result
 handle_trailer_start_state (SocketHTTP1_Parser_T parser, const char **p,
                             const char *end)
 {
-  crlf_result_t res = skip_crlf (p, end);
-  if (res == CRLF_OK)
+  HTTP1_CRLFResult res = http1_skip_crlf (p, end);
+  if (res == HTTP1_CRLF_OK)
     {
       mark_body_complete (parser);
       parser->internal_state = HTTP1_PS_COMPLETE;
       return HTTP1_OK;
     }
-  if (res == CRLF_INCOMPLETE)
+  if (res == HTTP1_CRLF_INCOMPLETE)
     return HTTP1_INCOMPLETE;
   if (!http1_is_tchar (**p))
     return HTTP1_ERROR_INVALID_TRAILER;

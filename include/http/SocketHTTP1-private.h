@@ -284,6 +284,56 @@ http1_tokenbuf_terminate (HTTP1_TokenBuf *buf, Arena_T arena, size_t max_size)
   return buf->data;
 }
 
+/**
+ * CRLF parsing result codes for incremental parsing.
+ */
+typedef enum
+{
+  HTTP1_CRLF_OK = 0,        /**< Valid CRLF sequence found */
+  HTTP1_CRLF_INCOMPLETE,    /**< Need more data to determine validity */
+  HTTP1_CRLF_INVALID        /**< Invalid sequence (not CRLF or bare LF) */
+} HTTP1_CRLFResult;
+
+/**
+ * Skip CRLF sequence in HTTP/1.1 parsing with lenient bare LF support.
+ *
+ * Accepts both "\r\n" (strict RFC 9112) and "\n" (lenient bare LF).
+ * This is used in chunked encoding and trailer parsing.
+ *
+ * @param p Pointer to current position (advanced on success)
+ * @param end End of input buffer
+ * @return HTTP1_CRLF_OK if valid CRLF/LF found (advances *p),
+ *         HTTP1_CRLF_INCOMPLETE if need more data,
+ *         HTTP1_CRLF_INVALID if invalid sequence
+ */
+static inline HTTP1_CRLFResult
+http1_skip_crlf (const char **p, const char *end)
+{
+  if (*p >= end)
+    return HTTP1_CRLF_INCOMPLETE;
+
+  if (**p == '\r')
+    {
+      (*p)++;
+      if (*p >= end)
+        return HTTP1_CRLF_INCOMPLETE;
+      if (**p == '\n')
+        {
+          (*p)++;
+          return HTTP1_CRLF_OK;
+        }
+      else
+        return HTTP1_CRLF_INVALID;
+    }
+  else if (**p == '\n')
+    {
+      (*p)++;
+      return HTTP1_CRLF_OK;
+    }
+  else
+    return HTTP1_CRLF_INVALID;
+}
+
 #define http1_is_tchar(c) SOCKETHTTP_IS_TCHAR (c)
 #define http1_is_digit(c) ((c) >= '0' && (c) <= '9')
 #define http1_is_hex(c)                                                       \
