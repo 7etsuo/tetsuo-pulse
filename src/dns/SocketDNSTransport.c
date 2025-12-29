@@ -1034,39 +1034,49 @@ tcp_conn_check_connect (T transport, int ns_idx)
   return 1;
 }
 
+/* Send buffered data on TCP socket, handling EAGAIN and partial sends
+ * Returns: 1 = fully sent, 0 = would block (partial), -1 = error (conn closed)
+ */
+static int
+tcp_send_buffered (struct DNSTCPConnection *conn)
+{
+  ssize_t sent;
+
+  while (conn->send_offset < conn->send_len)
+    {
+      sent = send (conn->fd, conn->send_buf + conn->send_offset,
+                   conn->send_len - conn->send_offset, MSG_NOSIGNAL);
+      if (sent < 0)
+        {
+          if (errno == EAGAIN || errno == EWOULDBLOCK)
+            return 0; /* Would block, try again later */
+          tcp_conn_close (conn);
+          return -1;
+        }
+      conn->send_offset += (size_t)sent;
+    }
+
+  /* Done sending */
+  conn->send_len = 0;
+  conn->send_offset = 0;
+  return 1;
+}
+
 /* Send data on TCP with length prefix (RFC 1035 §4.2.2) */
 static int
 tcp_send_query (T transport, struct SocketDNSQuery *query)
 {
   struct DNSTCPConnection *conn = &transport->tcp_conns[query->current_ns];
   unsigned char len_prefix[2];
-  ssize_t sent;
   size_t total_len;
+  int ret;
 
   if (conn->fd < 0 || conn->connecting)
     return -1;
 
   /* If we have pending send data, continue that first */
   if (conn->send_len > 0)
-    {
-      while (conn->send_offset < conn->send_len)
-        {
-          sent = send (conn->fd, conn->send_buf + conn->send_offset,
-                       conn->send_len - conn->send_offset, MSG_NOSIGNAL);
-          if (sent < 0)
-            {
-              if (errno == EAGAIN || errno == EWOULDBLOCK)
-                return 0; /* Would block, try again later */
-              tcp_conn_close (conn);
-              return -1;
-            }
-          conn->send_offset += (size_t)sent;
-        }
-      /* Done sending */
-      conn->send_len = 0;
-      conn->send_offset = 0;
-      return 1;
-    }
+    return tcp_send_buffered (conn);
 
   /* Build message with length prefix */
   total_len = 2 + query->query_len;
@@ -1079,25 +1089,13 @@ tcp_send_query (T transport, struct SocketDNSQuery *query)
   conn->send_offset = 0;
 
   /* Try to send immediately */
-  while (conn->send_offset < conn->send_len)
+  ret = tcp_send_buffered (conn);
+  if (ret == 1)
     {
-      sent = send (conn->fd, conn->send_buf + conn->send_offset,
-                   conn->send_len - conn->send_offset, MSG_NOSIGNAL);
-      if (sent < 0)
-        {
-          if (errno == EAGAIN || errno == EWOULDBLOCK)
-            return 0; /* Would block */
-          tcp_conn_close (conn);
-          return -1;
-        }
-      conn->send_offset += (size_t)sent;
+      conn->last_activity_ms = get_monotonic_ms ();
+      query->sent_time_ms = conn->last_activity_ms;
     }
-
-  conn->send_len = 0;
-  conn->send_offset = 0;
-  conn->last_activity_ms = get_monotonic_ms ();
-  query->sent_time_ms = conn->last_activity_ms;
-  return 1;
+  return ret;
 }
 
 /* Receive TCP response with length prefix */
