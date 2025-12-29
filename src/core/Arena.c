@@ -404,6 +404,15 @@ arena_release_all_chunks (T arena)
   assert (arena->limit == NULL);
 }
 
+static void
+arena_reset (Arena *arena, int locked)
+{
+  arena->prev = NULL;
+  arena->avail = NULL;
+  arena->limit = NULL;
+  arena->locked = locked;
+}
+
 T
 Arena_new (void)
 {
@@ -421,10 +430,7 @@ Arena_new (void)
                         "Failed to initialize arena mutex");
     }
 
-  arena->prev = NULL;
-  arena->avail = NULL;
-  arena->limit = NULL;
-  arena->locked = 1;
+  arena_reset (arena, 1);
 
   return arena;
 }
@@ -440,14 +446,10 @@ Arena_new_unlocked (void)
                       ARENA_ENOMEM ": Cannot allocate arena structure");
 
   /* No mutex initialization for unlocked arenas */
-  arena->prev = NULL;
-  arena->avail = NULL;
-  arena->limit = NULL;
-  arena->locked = 0;
+  arena_reset (arena, 0);
 
   return arena;
 }
-
 
 void
 Arena_dispose (T *ap)
@@ -499,8 +501,8 @@ Arena_alloc (T arena, size_t nbytes, const char *file, int line)
     {
       if (arena->locked)
         SOCKET_MUTEX_UNLOCK (&arena->mutex);
-      SOCKET_RAISE_MSG (Arena, Arena_Failed,
-                        "Failed to allocate %zu bytes", aligned_size);
+      SOCKET_RAISE_MSG (Arena, Arena_Failed, "Failed to allocate %zu bytes",
+                        aligned_size);
     }
 
   result = arena->avail;
