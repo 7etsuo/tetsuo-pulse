@@ -321,10 +321,13 @@ typedef struct PollBackend_T *PollBackend_T;
  * @ingroup event_system_backend
  *
  * Common error handling pattern for backend_wait implementations across all
- * three backends (epoll, kqueue, poll). When a wait syscall is interrupted
+ * backends (epoll, kqueue, poll, uring). When a wait syscall is interrupted
  * by a signal (errno == EINTR), this returns 0 to indicate no events ready
  * (allowing the caller to retry if desired). For other errors, returns -1
  * to propagate the error condition.
+ *
+ * The macro uses a comma expression to sequence operations and produce a value,
+ * avoiding GNU statement expression extensions for better portability.
  *
  * @param[in] backend Backend instance to reset state for.
  *
@@ -332,14 +335,12 @@ typedef struct PollBackend_T *PollBackend_T;
  *
  * @note Caller must check errno after this macro returns -1.
  * @note Sets backend->last_nev to 0 to prevent stale event access.
+ * @note Uses comma operator for standard C compliance (no GNU extensions).
  *
- * @see backend_wait() in all three backend implementations.
+ * @see backend_wait() in all backend implementations.
  */
 #define HANDLE_POLL_ERROR(backend)                                            \
-  ({                                                                          \
-    (backend)->last_nev = 0;                                                  \
-    (errno == EINTR) ? 0 : -1;                                                \
-  })
+  ((backend)->last_nev = 0, (errno == EINTR) ? 0 : -1)
 
 /**
  * @brief Essential macro to validate file descriptors before backend system
