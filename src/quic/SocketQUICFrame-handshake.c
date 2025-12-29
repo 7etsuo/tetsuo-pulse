@@ -30,9 +30,9 @@
  */
 
 size_t
-SocketQUICFrame_encode_handshake_done (uint8_t *out)
+SocketQUICFrame_encode_handshake_done (uint8_t *out, size_t out_size)
 {
-  if (!out)
+  if (!out || out_size < 1)
     return 0;
 
   /* Frame type 0x1e */

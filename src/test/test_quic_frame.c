@@ -358,7 +358,7 @@ TEST (frame_handshake_done_encode)
 {
   uint8_t encoded[1];
 
-  size_t len = SocketQUICFrame_encode_handshake_done (encoded);
+  size_t len = SocketQUICFrame_encode_handshake_done (encoded, sizeof (encoded));
 
   ASSERT_EQ (1, len);
   ASSERT_EQ (0x1e, encoded[0]);
@@ -367,7 +367,7 @@ TEST (frame_handshake_done_encode)
 TEST (frame_handshake_done_encode_null_check)
 {
   /* Null output pointer */
-  ASSERT_EQ (0, SocketQUICFrame_encode_handshake_done (NULL));
+  ASSERT_EQ (0, SocketQUICFrame_encode_handshake_done (NULL, 1));
 }
 
 TEST (frame_validation_padding)
