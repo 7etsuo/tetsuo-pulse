@@ -554,7 +554,8 @@ typedef struct PollBackend_T *PollBackend_T;
  * @see SocketPoll_new() typical consumer in public API
  * @see Arena_T docs/foundation for allocation details
  */
-extern PollBackend_T backend_new (Arena_T arena, int maxevents);
+extern PollBackend_T
+backend_new (Arena_T arena, int maxevents);
 
 /**
  * @brief Perform backend cleanup: close platform resources but retain arena
@@ -621,7 +622,8 @@ extern PollBackend_T backend_new (Arena_T arena, int maxevents);
  * @see SocketPoll_free() typical invocation site
  * @see backend_name() for logging freed backend type
  */
-extern void backend_free (PollBackend_T backend);
+extern void
+backend_free (PollBackend_T backend);
 
 /**
  * @brief Register file descriptor for I/O event notifications.
@@ -695,7 +697,8 @@ extern void backend_free (PollBackend_T backend);
  * @see SocketPoll_add() / SocketPoll_mod() public wrappers
  * @see Socket_setnonblocking() ensures compatibility
  */
-extern int backend_add (PollBackend_T backend, int fd, unsigned events);
+extern int
+backend_add (PollBackend_T backend, int fd, unsigned events);
 
 /**
  * @brief Update event monitoring configuration for existing file descriptor.
@@ -760,7 +763,8 @@ extern int backend_add (PollBackend_T backend, int fd, unsigned events);
  * @see SocketPoll_mod() public equivalent
  * @see backend_wait() observes updated events
  */
-extern int backend_mod (PollBackend_T backend, int fd, unsigned events);
+extern int
+backend_mod (PollBackend_T backend, int fd, unsigned events);
 
 /**
  * @brief Remove socket from poll set.
@@ -774,7 +778,8 @@ extern int backend_mod (PollBackend_T backend, int fd, unsigned events);
  * @see backend_add() for registration.
  * @see backend_mod() for modification.
  */
-extern int backend_del (PollBackend_T backend, int fd);
+extern int
+backend_del (PollBackend_T backend, int fd);
 
 /**
  * @brief Wait for events.
@@ -790,7 +795,8 @@ extern int backend_del (PollBackend_T backend, int fd);
  * @see backend_add() for socket registration.
  * @see SocketPoll_wait() for public interface that calls this.
  */
-extern int backend_wait (PollBackend_T backend, int timeout_ms);
+extern int
+backend_wait (PollBackend_T backend, int timeout_ms);
 
 /**
  * @brief Get event details for index.
@@ -810,8 +816,9 @@ extern int backend_wait (PollBackend_T backend, int timeout_ms);
  * @see SocketEvent_T for translated event structure.
  * @see SocketPoll_wait() for complete event processing pipeline.
  */
-extern int backend_get_event (const PollBackend_T backend, int index,
-                              int *fd_out, unsigned *events_out);
+extern int
+backend_get_event (const PollBackend_T backend, int index, int *fd_out,
+                   unsigned *events_out);
 
 /**
  * @brief Get human-readable backend name for debugging and logging.
@@ -826,7 +833,8 @@ extern int backend_get_event (const PollBackend_T backend, int index,
  * @see backend_new() for compile-time backend selection logic.
  * @see SocketPoll_new() for backend initialization during poll creation.
  */
-extern const char *backend_name (void);
+extern const char *
+backend_name (void);
 
 /** @} */
 
