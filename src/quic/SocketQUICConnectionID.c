@@ -61,9 +61,13 @@ SocketQUICConnectionID_set (SocketQUICConnectionID_T *cid, const uint8_t *data,
   if (len > QUIC_CONNID_MAX_LEN)
     return QUIC_CONNID_ERROR_LENGTH;
 
+  /* Fail fast if caller passes len > 0 but data == NULL (programmer error) */
+  if (len > 0 && data == NULL)
+    return QUIC_CONNID_ERROR_NULL;
+
   SocketQUICConnectionID_init (cid);
 
-  if (len > 0 && data != NULL)
+  if (len > 0)
     memcpy (cid->data, data, len);
 
   cid->len = (uint8_t)len;
