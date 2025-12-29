@@ -990,6 +990,105 @@ hpack_decode_table_update (SocketHPACK_Decoder_T decoder,
   return HPACK_OK;
 }
 
+static SocketHPACK_Result
+decode_field_by_type (SocketHPACK_Decoder_T decoder,
+                      const unsigned char *input, size_t input_len,
+                      size_t *pos, SocketHPACK_Header *header,
+                      int *table_update_allowed, int *table_update_count,
+                      Arena_T arena)
+{
+  unsigned char byte = input[*pos];
+  SocketHPACK_Result result;
+
+  if (byte & HPACK_INDEXED_MASK)
+    {
+      *table_update_allowed = 0;
+      return hpack_decode_indexed_field (decoder, input, input_len, pos, header);
+    }
+
+  if ((byte & HPACK_LITERAL_INDEXED_MASK) == HPACK_LITERAL_INDEXED_VAL)
+    {
+      *table_update_allowed = 0;
+      return hpack_decode_literal (decoder, input, input_len,
+                                   HPACK_PREFIX_LITERAL_INDEX, pos,
+                                   header, 1, 0, arena);
+    }
+
+  if ((byte & HPACK_LITERAL_NO_INDEX_MASK) == HPACK_LITERAL_WITHOUT_INDEX_VAL)
+    {
+      *table_update_allowed = 0;
+      return hpack_decode_literal (decoder, input, input_len,
+                                   HPACK_PREFIX_LITERAL_OTHER, pos,
+                                   header, 0, 0, arena);
+    }
+
+  if ((byte & HPACK_LITERAL_NEVER_MASK) == HPACK_LITERAL_NEVER_VAL)
+    {
+      *table_update_allowed = 0;
+      return hpack_decode_literal (decoder, input, input_len,
+                                   HPACK_PREFIX_LITERAL_OTHER, pos,
+                                   header, 0, 1, arena);
+    }
+
+  if ((byte & HPACK_TABLE_UPDATE_MASK) == HPACK_TABLE_UPDATE_VAL)
+    {
+      if (!*table_update_allowed)
+        return HPACK_ERROR_TABLE_SIZE;
+
+      if (*table_update_count >= SOCKETHPACK_MAX_TABLE_UPDATES)
+        return HPACK_ERROR_TABLE_SIZE;
+
+      result = hpack_decode_table_update (decoder, input, input_len, pos);
+      if (result != HPACK_OK)
+        return result;
+
+      (*table_update_count)++;
+      header->name = NULL;
+      return HPACK_OK;
+    }
+
+  return HPACK_ERROR;
+}
+
+static SocketHPACK_Result
+check_decompression_bomb (SocketHPACK_Decoder_T decoder)
+{
+  if (decoder->decode_output_bytes > decoder->max_output_bytes)
+    return HPACK_ERROR_BOMB;
+
+  if (decoder->decode_input_bytes > 0)
+    {
+      double current_ratio = (double)decoder->decode_output_bytes /
+                            (double)decoder->decode_input_bytes;
+      if (current_ratio > decoder->max_expansion_ratio)
+        return HPACK_ERROR_BOMB;
+    }
+
+  return HPACK_OK;
+}
+
+static SocketHPACK_Result
+validate_and_store_header (SocketHPACK_Decoder_T decoder,
+                           const SocketHPACK_Header *header,
+                           SocketHPACK_Header *headers, size_t *hdr_count,
+                           size_t max_headers, size_t *total_size)
+{
+  SocketHPACK_Result result;
+
+  result = validate_header (decoder, header, total_size);
+  if (result != HPACK_OK)
+    return result;
+
+  if (*hdr_count >= max_headers)
+    return HPACK_ERROR_LIST_SIZE;
+
+  headers[*hdr_count] = *header;
+  (*hdr_count)++;
+
+  decoder->decode_output_bytes += header->name_len + header->value_len;
+  return check_decompression_bomb (decoder);
+}
+
 SocketHPACK_Result
 SocketHPACK_Decoder_decode (SocketHPACK_Decoder_T decoder,
                             const unsigned char *input, size_t input_len,
@@ -1000,7 +1099,7 @@ SocketHPACK_Decoder_decode (SocketHPACK_Decoder_T decoder,
   size_t hdr_count = 0;
   size_t total_size = 0;
   int table_update_allowed = 1;
-  int table_update_count = 0; /* RFC 7541 §4.2: at most 2 updates per block */
+  int table_update_count = 0;
   SocketHPACK_Result result;
 
   assert (decoder != NULL);
@@ -1011,97 +1110,25 @@ SocketHPACK_Decoder_decode (SocketHPACK_Decoder_T decoder,
     return HPACK_ERROR;
 
   *header_count = 0;
-
   decoder->decode_input_bytes += input_len;
 
   while (pos < input_len)
     {
-      unsigned char byte = input[pos];
       SocketHPACK_Header header = { 0 };
 
-      if (byte & HPACK_INDEXED_MASK)
-        {
-          table_update_allowed = 0;
-          result = hpack_decode_indexed_field (decoder, input, input_len, &pos,
-                                               &header);
-          if (result != HPACK_OK)
-            return result;
-        }
-      else if ((byte & HPACK_LITERAL_INDEXED_MASK)
-               == HPACK_LITERAL_INDEXED_VAL)
-        {
-          table_update_allowed = 0;
-          result = hpack_decode_literal (decoder, input, input_len,
-                                         HPACK_PREFIX_LITERAL_INDEX, &pos,
-                                         &header, 1, 0, arena);
-          if (result != HPACK_OK)
-            return result;
-        }
-      else if ((byte & HPACK_LITERAL_NO_INDEX_MASK)
-               == HPACK_LITERAL_WITHOUT_INDEX_VAL)
-        {
-          table_update_allowed = 0;
-          result = hpack_decode_literal (decoder, input, input_len,
-                                         HPACK_PREFIX_LITERAL_OTHER, &pos,
-                                         &header, 0, 0, arena);
-          if (result != HPACK_OK)
-            return result;
-        }
-      else if ((byte & HPACK_LITERAL_NEVER_MASK) == HPACK_LITERAL_NEVER_VAL)
-        {
-          table_update_allowed = 0;
-          result = hpack_decode_literal (decoder, input, input_len,
-                                         HPACK_PREFIX_LITERAL_OTHER, &pos,
-                                         &header, 0, 1, arena);
-          if (result != HPACK_OK)
-            return result;
-        }
-      else if ((byte & HPACK_TABLE_UPDATE_MASK) == HPACK_TABLE_UPDATE_VAL)
-        {
-          if (!table_update_allowed)
-            return HPACK_ERROR_TABLE_SIZE;
-
-          /* RFC 7541 §4.2: at most SOCKETHPACK_MAX_TABLE_UPDATES per block */
-          if (table_update_count >= SOCKETHPACK_MAX_TABLE_UPDATES)
-            return HPACK_ERROR_TABLE_SIZE;
-
-          result = hpack_decode_table_update (decoder, input, input_len, &pos);
-          if (result != HPACK_OK)
-            return result;
-
-          table_update_count++;
-          continue;
-        }
-      else
-        {
-          return HPACK_ERROR;
-        }
-
-      result = validate_header (decoder, &header, &total_size);
+      result = decode_field_by_type (decoder, input, input_len, &pos, &header,
+                                     &table_update_allowed, &table_update_count,
+                                     arena);
       if (result != HPACK_OK)
         return result;
 
-      if (hdr_count >= max_headers)
-        return HPACK_ERROR_LIST_SIZE;
+      if (header.name == NULL)
+        continue;
 
-      headers[hdr_count] = header;
-      hdr_count++;
-
-      /* Check expansion ratio to prevent HPACK bombs */
-      decoder->decode_output_bytes += header.name_len + header.value_len;
-
-      /* Check absolute output size limit first */
-      if (decoder->decode_output_bytes > decoder->max_output_bytes)
-        return HPACK_ERROR_BOMB;
-
-      /* Then check expansion ratio */
-      if (decoder->decode_input_bytes > 0)
-        {
-          double current_ratio = (double)decoder->decode_output_bytes /
-                                (double)decoder->decode_input_bytes;
-          if (current_ratio > decoder->max_expansion_ratio)
-            return HPACK_ERROR_BOMB;
-        }
+      result = validate_and_store_header (decoder, &header, headers, &hdr_count,
+                                          max_headers, &total_size);
+      if (result != HPACK_OK)
+        return result;
     }
 
   *header_count = hdr_count;
