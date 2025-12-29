@@ -1,0 +1,11 @@
+{
+  "issue": 1532,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1603",
+  "pr_number": 1603,
+  "branch": "issue-1532-wait-completion-new-arch",
+  "files_changed": ["src/dns/SocketDNS.c"],
+  "tests_passed": true,
+  "commit_sha": "b1f3560d",
+  "summary": "Implemented wait_for_completion() function using new architecture without worker threads. The solution uses poll() on the completion pipe and actively pumps SocketDNSResolver_process() to drive async DNS operations. All 50 DNS tests pass with sanitizers enabled."
+}

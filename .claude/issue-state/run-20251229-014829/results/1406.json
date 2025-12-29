@@ -1,0 +1,19 @@
+{
+  "issue": 1406,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1611",
+  "pr_number": 1611,
+  "branch": "issue-1406-dtls-timeout-constant",
+  "files_changed": [
+    "src/tls/SocketDTLS.c"
+  ],
+  "tests_passed": true,
+  "commit_sha": "18c0b87ee837f5417eb77794eace57d374343acd",
+  "summary": "Replaced magic constant 1000 with SOCKET_DTLS_INITIAL_TIMEOUT_MS in DTLS handshake loop",
+  "verification": {
+    "dtls_basic_tests": "13/13 passed",
+    "dtls_cookie_tests": "10/10 passed",
+    "dtls_mtu_tests": "13/13 passed",
+    "sanitizers": "ASan and UBSan enabled"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "number": 1398,
+  "title": "style: function declarations violate style guide in SocketPoll_backend.h",
+  "body": "**File**: `/home/tetsuo/git/tetsuo-socket/include/poll/SocketPoll_backend.h`\n**Category**: Code Style / Refactoring\n**Severity**: LOW\n**Pattern**: STYLE_RETURN_LINE\n\n## Issue Description\n\nAll function declarations in `SocketPoll_backend.h` have their return types on the same line as the function name, violating the project style guide.\n\n## Affected Lines\n\n- Line 556: `extern PollBackend_T backend_new (...)`\n- Line 623: `extern void backend_free (...)`\n- Line 697: `extern int backend_add (...)`\n- Line 762: `extern int backend_mod (...)`\n- Line 776: `extern int backend_del (...)`\n- Line 792: `extern int backend_wait (...)`\n- Line 812: `extern int backend_get_event (...)`\n- Line 828: `extern const char *backend_name (...)`\n\n## Project Style Guide\n\nFrom `CLAUDE.md` line 203:\n> Return type on separate line from function name\n\nAll `.c` files in the project follow this pattern (e.g., `src/poll/SocketPoll_epoll.c`):\n```c\nstatic unsigned\ntranslate_to_epoll (unsigned events)\n```\n\n## Recommendation\n\nUpdate all function declarations to split return type onto separate line:\n\n**Before**:\n```c\nextern PollBackend_T backend_new (Arena_T arena, int maxevents);\n```\n\n**After**:\n```c\nextern PollBackend_T\nbackend_new (Arena_T arena, int maxevents);\n```\n\n## Impact\n\n- Improves consistency across codebase\n- Makes code match established style guide\n- No functional changes required\n",
+  "labels": [
+    "enhancement"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

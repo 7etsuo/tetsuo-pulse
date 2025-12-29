@@ -1,0 +1,8 @@
+{
+  "number": 1397,
+  "title": "[SECURITY] Missing errno check in dtls_parse_port_string strtol call",
+  "body": "## Summary\nThe `dtls_parse_port_string` function uses `strtol()` to parse port numbers but does not check `errno` for overflow conditions, potentially accepting invalid port values.\n\n## Location\n- **File**: `/home/tetsuo/git/tetsuo-socket/src/tls/SocketDTLS.c`\n- **Line**: 979\n- **Function**: `dtls_parse_port_string`\n- **Severity**: MEDIUM\n- **Category**: Security - Input Validation\n\n## Issue\n```c\nchar *endptr;\nlong p = strtol (port_str, &endptr, 10);\nif (endptr > port_str && *endptr == '\\0' && p >= 1 && p <= 65535)\n  return (int)p;\nreturn 0;\n```\n\nThe code checks if the value is in range `[1, 65535]`, but if `strtol` encounters overflow (e.g., `\"999999999999999999999\"`), it returns `LONG_MAX` or `LONG_MIN` and sets `errno = ERANGE`. The current code would incorrectly validate this as a valid port if `LONG_MAX >= 1 && LONG_MAX <= 65535` (false), but the lack of errno checking means overflow errors go undetected.\n\n## Recommendation\n```c\nchar *endptr;\nerrno = 0;  // Clear errno before call\nlong p = strtol (port_str, &endptr, 10);\nif (errno == ERANGE || endptr == port_str || *endptr != '\\0')\n  return 0;\nif (p >= 1 && p <= 65535)\n  return (int)p;\nreturn 0;\n```\n\n## References\n- CWE-190: Integer Overflow or Wraparound\n- CERT C: ERR07-C - Prefer functions that support error checking over equivalent functions that don't\n\n## Pattern ID\n`STRTOL_NO_ERRNO_CHECK`",
+  "labels": [],
+  "state": "OPEN",
+  "dependencies": []
+}

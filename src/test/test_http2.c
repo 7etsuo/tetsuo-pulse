@@ -18,6 +18,7 @@
 #include "http/SocketHTTP2.h"
 #include "http/SocketHTTP2-private.h"
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -831,6 +832,97 @@ test_tls_validate_null_socket (void)
 }
 
 /* ============================================================================
+ * Pseudo-Header Parsing Tests (RFC 9113 Section 8.3)
+ * ============================================================================
+ */
+
+static int
+test_parse_status_code (void)
+{
+  TEST_BEGIN (parse_status_code);
+  int status;
+
+  /* Valid 3-digit status codes */
+  TEST_ASSERT (http2_parse_status_code ("200", 3, &status) == 0,
+               "200 should be valid");
+  TEST_ASSERT (status == 200, "status should be 200");
+
+  TEST_ASSERT (http2_parse_status_code ("404", 3, &status) == 0,
+               "404 should be valid");
+  TEST_ASSERT (status == 404, "status should be 404");
+
+  TEST_ASSERT (http2_parse_status_code ("100", 3, &status) == 0,
+               "100 should be valid (minimum)");
+  TEST_ASSERT (status == 100, "status should be 100");
+
+  TEST_ASSERT (http2_parse_status_code ("599", 3, &status) == 0,
+               "599 should be valid (maximum)");
+  TEST_ASSERT (status == 599, "status should be 599");
+
+  /* Invalid status codes */
+  TEST_ASSERT (http2_parse_status_code ("99", 2, &status) == -1,
+               "2-digit code should be rejected");
+  TEST_ASSERT (http2_parse_status_code ("1000", 4, &status) == -1,
+               "4-digit code should be rejected");
+  TEST_ASSERT (http2_parse_status_code ("099", 3, &status) == -1,
+               "099 should be rejected (< 100)");
+  TEST_ASSERT (http2_parse_status_code ("600", 3, &status) == -1,
+               "600 should be rejected (> 599)");
+  TEST_ASSERT (http2_parse_status_code ("2x0", 3, &status) == -1,
+               "non-digit should be rejected");
+  TEST_ASSERT (http2_parse_status_code ("20a", 3, &status) == -1,
+               "alpha char should be rejected");
+  TEST_ASSERT (http2_parse_status_code (NULL, 3, &status) == -1,
+               "NULL value should be rejected");
+  TEST_ASSERT (http2_parse_status_code ("200", 3, NULL) == -1,
+               "NULL output should be rejected");
+
+  TEST_PASS ();
+}
+
+static int
+test_parse_content_length (void)
+{
+  TEST_BEGIN (parse_content_length);
+  int64_t cl;
+
+  /* Valid Content-Length values */
+  TEST_ASSERT (http2_parse_content_length ("0", 1, &cl) == 0,
+               "0 should be valid");
+  TEST_ASSERT (cl == 0, "cl should be 0");
+
+  TEST_ASSERT (http2_parse_content_length ("12345", 5, &cl) == 0,
+               "12345 should be valid");
+  TEST_ASSERT (cl == 12345, "cl should be 12345");
+
+  TEST_ASSERT (http2_parse_content_length ("9223372036854775807", 19, &cl) == 0,
+               "INT64_MAX should be valid");
+  TEST_ASSERT (cl == INT64_MAX, "cl should be INT64_MAX");
+
+  /* Invalid Content-Length values */
+  TEST_ASSERT (http2_parse_content_length ("", 0, &cl) == -1,
+               "empty should be rejected");
+  TEST_ASSERT (http2_parse_content_length ("12a34", 5, &cl) == -1,
+               "non-digit in middle should be rejected");
+  TEST_ASSERT (http2_parse_content_length ("-123", 4, &cl) == -1,
+               "negative should be rejected");
+  TEST_ASSERT (http2_parse_content_length ("12 34", 5, &cl) == -1,
+               "space should be rejected");
+  TEST_ASSERT (http2_parse_content_length (NULL, 5, &cl) == -1,
+               "NULL value should be rejected");
+  TEST_ASSERT (http2_parse_content_length ("123", 3, NULL) == -1,
+               "NULL output should be rejected");
+
+  /* Overflow detection */
+  TEST_ASSERT (http2_parse_content_length ("9223372036854775808", 19, &cl) == -1,
+               "INT64_MAX+1 should overflow");
+  TEST_ASSERT (http2_parse_content_length ("99999999999999999999", 20, &cl) == -1,
+               "very large number should overflow");
+
+  TEST_PASS ();
+}
+
+/* ============================================================================
  * Main Test Runner
  * ============================================================================
  */
@@ -894,6 +986,12 @@ main (void)
   printf ("TLS Validation Tests (RFC 9113 §9.2):\n");
   test_tls_result_strings ();
   test_tls_validate_null_socket ();
+  printf ("\n");
+
+  /* Pseudo-header parsing tests (RFC 9113 Section 8.3) */
+  printf ("Pseudo-Header Parsing Tests (RFC 9113 §8.3):\n");
+  test_parse_status_code ();
+  test_parse_content_length ();
   printf ("\n");
 
   /* Summary */

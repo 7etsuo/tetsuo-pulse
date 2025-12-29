@@ -496,6 +496,24 @@ SocketHTTPClient_AsyncRequest_cancel (SocketHTTPClient_AsyncRequest_T req)
    */
 }
 
+void
+SocketHTTPClient_AsyncRequest_free (SocketHTTPClient_AsyncRequest_T *req)
+{
+  if (req == NULL || *req == NULL)
+    return;
+
+  /* Response arena is managed by the async request, free it if created */
+  if ((*req)->response.arena != NULL)
+    {
+      Arena_dispose (&(*req)->response.arena);
+    }
+
+  /* The async request itself is allocated from client arena,
+   * so we don't free it here - it will be freed when the client
+   * arena is disposed. Just null the pointer. */
+  *req = NULL;
+}
+
 int
 SocketHTTPClient_process (SocketHTTPClient_T client, int timeout_ms)
 {

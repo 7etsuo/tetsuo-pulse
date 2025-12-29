@@ -1,0 +1,10 @@
+{
+  "number": 1368,
+  "title": "[HIGH] SocketDNSTransport: Undefined DNS_EDNS0_DEFAULT_UDPSIZE constant",
+  "body": "**File**: `/home/tetsuo/git/tetsuo-socket/src/dns/SocketDNSTransport.c`\n**Line**: 124\n**Severity**: HIGH\n**Category**: Compilation Error / Missing Constant\n\n## Problem\n\nLine 124 uses undefined constant `DNS_EDNS0_DEFAULT_UDPSIZE`:\n\n```c\nunsigned char recv_buf[DNS_EDNS0_DEFAULT_UDPSIZE];\n```\n\n**Verification**: `DNS_EDNS0_DEFAULT_UDPSIZE` is not defined anywhere:\n- Not in `include/dns/SocketDNSWire.h`\n- Not in `include/dns/SocketDNSTransport.h`\n- Not in any header in `include/dns/`\n\n**Impact**:\n- Compilation will fail with \"undefined identifier\" error\n- UDP receive buffer size is completely undefined\n- EDNS0 support (RFC 6891) is broken\n\n## Expected Value\n\nPer RFC 6891 and comments in file (line 23):\n- Default EDNS0 UDP buffer size should be 4096 bytes\n- Classic DNS limit is 512 bytes\n\n## Recommendation\n\nAdd to `/home/tetsuo/git/tetsuo-socket/include/dns/SocketDNSWire.h`:\n\n```c\n/** Default EDNS0 UDP payload size (RFC 6891 Section 6.2.5) */\n#define DNS_EDNS0_DEFAULT_UDPSIZE 4096\n```\n\nOr use existing `DNS_UDP_MAX_SIZE` (512) if EDNS0 not supported.",
+  "labels": [
+    "bug"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

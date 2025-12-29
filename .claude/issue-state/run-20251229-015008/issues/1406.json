@@ -1,0 +1,10 @@
+{
+  "number": 1406,
+  "title": "[REFACTOR] Magic constant SOCKET_DTLS_INITIAL_TIMEOUT_MS in handshake loop",
+  "body": "## Summary\nUse of `SOCKET_DTLS_INITIAL_TIMEOUT_MS` constant in handshake loop appears correct, but verify this constant is properly defined in the header and documented.\n\n## Location\n- **File**: `/home/tetsuo/git/tetsuo-socket/src/tls/SocketDTLS.c`\n- **Line**: 748\n- **Function**: `SocketDTLS_handshake_loop`\n- **Severity**: LOW\n- **Category**: Redundancy - Magic Numbers\n\n## Issue\n```c\nif (infinite_timeout)\n  {\n    /* Infinite wait: Use default DTLS timeout for timer handling */\n    poll_tmo = SOCKET_DTLS_INITIAL_TIMEOUT_MS;\n  }\n```\n\nThis constant is referenced but should be verified to be:\n1. Properly defined in a public header\n2. Documented with rationale for the value\n3. Consistent with other DTLS timeout constants\n\n## Recommendation\nVerify that `SOCKET_DTLS_INITIAL_TIMEOUT_MS` is defined in `/home/tetsuo/git/tetsuo-socket/include/tls/SocketDTLS.h` or appropriate header, and document its purpose.\n\n## Pattern ID\n`MAGIC_TIMEOUT_INITIAL`",
+  "labels": [
+    "wip:claude-1766998119-910987"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

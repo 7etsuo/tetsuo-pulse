@@ -755,159 +755,118 @@ http2_encode_and_alloc_block (SocketHTTP2_Conn_T conn,
   return len;
 }
 
-/* Helper structure to track pseudo-header validation state */
-typedef struct
-{
-  int has_method;
-  int has_scheme;
-  int has_authority;
-  int has_path;
-  int has_status;
-  int has_protocol;
-  int is_connect_method;
-} PseudoHeaderState;
+/* Pseudo-header bit positions for duplicate detection */
+#define PSEUDO_BIT_METHOD    (1 << 0)
+#define PSEUDO_BIT_SCHEME    (1 << 1)
+#define PSEUDO_BIT_AUTHORITY (1 << 2)
+#define PSEUDO_BIT_PATH      (1 << 3)
+#define PSEUDO_BIT_STATUS    (1 << 4)
+#define PSEUDO_BIT_PROTOCOL  (1 << 5)
 
 static int
 validate_pseudo_header (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
                         const SocketHPACK_Header *h, int is_request,
-                        int *pseudo_headers_seen, PseudoHeaderState *state)
+                        int *pseudo_headers_seen, HTTP2_PseudoHeaderState *state)
 {
-  /* Validate pseudo-header name and track required ones */
+  /* Dispatch by pseudo-header name with duplicate detection */
   if (h->name_len == 7 && memcmp (h->name, ":method", 7) == 0)
     {
-      if (*pseudo_headers_seen & (1 << 0))
+      if (*pseudo_headers_seen & PSEUDO_BIT_METHOD)
         {
           SOCKET_LOG_ERROR_MSG ("Duplicate :method pseudo-header");
           return -1;
         }
-      *pseudo_headers_seen |= (1 << 0);
-      state->has_method = 1;
+      *pseudo_headers_seen |= PSEUDO_BIT_METHOD;
 
-      /* Track CONNECT method for RFC 9113/RFC 8441 pseudo-header rules */
-      if (h->value_len == 7 && memcmp (h->value, "CONNECT", 7) == 0)
-        state->is_connect_method = 1;
-
-      /* Method must be valid HTTP method for requests */
-      if (is_request
-          && SocketHTTP_method_parse (h->value, h->value_len)
-                 == HTTP_METHOD_UNKNOWN)
+      if (http2_validate_method_header (h, is_request, state) < 0)
         {
           SOCKET_LOG_ERROR_MSG ("Invalid HTTP method in :method pseudo-header");
           return -1;
         }
+      return 0;
     }
-  else if (h->name_len == 7 && memcmp (h->name, ":scheme", 7) == 0)
+
+  if (h->name_len == 7 && memcmp (h->name, ":scheme", 7) == 0)
     {
-      if (*pseudo_headers_seen & (1 << 1))
+      if (*pseudo_headers_seen & PSEUDO_BIT_SCHEME)
         {
           SOCKET_LOG_ERROR_MSG ("Duplicate :scheme pseudo-header");
           return -1;
         }
-      *pseudo_headers_seen |= (1 << 1);
-      state->has_scheme = 1;
+      *pseudo_headers_seen |= PSEUDO_BIT_SCHEME;
+      return http2_validate_scheme_header (h, state);
     }
-  else if (h->name_len == 10 && memcmp (h->name, ":authority", 10) == 0)
+
+  if (h->name_len == 10 && memcmp (h->name, ":authority", 10) == 0)
     {
-      if (*pseudo_headers_seen & (1 << 2))
+      if (*pseudo_headers_seen & PSEUDO_BIT_AUTHORITY)
         {
           SOCKET_LOG_ERROR_MSG ("Duplicate :authority pseudo-header");
           return -1;
         }
-      *pseudo_headers_seen |= (1 << 2);
-      state->has_authority = 1;
+      *pseudo_headers_seen |= PSEUDO_BIT_AUTHORITY;
+      return http2_validate_authority_header (h, state);
     }
-  else if (h->name_len == 5 && memcmp (h->name, ":path", 5) == 0)
+
+  if (h->name_len == 5 && memcmp (h->name, ":path", 5) == 0)
     {
-      if (*pseudo_headers_seen & (1 << 3))
+      if (*pseudo_headers_seen & PSEUDO_BIT_PATH)
         {
           SOCKET_LOG_ERROR_MSG ("Duplicate :path pseudo-header");
           return -1;
         }
-      *pseudo_headers_seen |= (1 << 3);
-      state->has_path = 1;
+      *pseudo_headers_seen |= PSEUDO_BIT_PATH;
+      return http2_validate_path_header (h, state);
     }
-  else if (h->name_len == 7 && memcmp (h->name, ":status", 7) == 0)
+
+  if (h->name_len == 7 && memcmp (h->name, ":status", 7) == 0)
     {
-      if (*pseudo_headers_seen & (1 << 4))
+      if (*pseudo_headers_seen & PSEUDO_BIT_STATUS)
         {
           SOCKET_LOG_ERROR_MSG ("Duplicate :status pseudo-header");
           return -1;
         }
-      *pseudo_headers_seen |= (1 << 4);
-      state->has_status = 1;
+      *pseudo_headers_seen |= PSEUDO_BIT_STATUS;
 
-      /* Status must be valid HTTP status code */
-      if (!is_request)
+      if (http2_validate_status_header (h, is_request, state) < 0)
         {
-          int status = 0;
-          for (size_t j = 0; j < h->value_len && j < 3; j++)
-            {
-              if (h->value[j] >= '0' && h->value[j] <= '9')
-                status = status * 10 + (h->value[j] - '0');
-              else
-                break;
-            }
-          if (status < 100 || status > 599)
-            {
-              SOCKET_LOG_ERROR_MSG ("Invalid HTTP status code: %.*s",
-                                    (int)h->value_len, h->value);
-              return -1;
-            }
+          SOCKET_LOG_ERROR_MSG ("Invalid HTTP status code: %.*s",
+                                (int)h->value_len, h->value);
+          return -1;
         }
+      return 0;
     }
-  else if (h->name_len == 9 && memcmp (h->name, ":protocol", 9) == 0)
+
+  if (h->name_len == 9 && memcmp (h->name, ":protocol", 9) == 0)
     {
-      if (*pseudo_headers_seen & (1 << 5))
+      if (*pseudo_headers_seen & PSEUDO_BIT_PROTOCOL)
         {
           SOCKET_LOG_ERROR_MSG ("Duplicate :protocol pseudo-header");
           return -1;
         }
-      *pseudo_headers_seen |= (1 << 5);
+      *pseudo_headers_seen |= PSEUDO_BIT_PROTOCOL;
 
-      /* RFC 8441: :protocol is only valid in requests (Extended CONNECT) */
-      if (conn->role == HTTP2_ROLE_SERVER)
+      if (http2_validate_protocol_header (conn, stream, h, state) < 0)
         {
-          /* Server must have advertised SETTINGS_ENABLE_CONNECT_PROTOCOL=1 */
-          if (conn->local_settings[SETTINGS_IDX_ENABLE_CONNECT_PROTOCOL] == 0)
-            {
-              SOCKET_LOG_ERROR_MSG (
-                  ":protocol requires SETTINGS_ENABLE_CONNECT_PROTOCOL=1");
-              return -1;
-            }
-        }
-      else
-        {
-          /* Client should never receive :protocol in responses */
-          SOCKET_LOG_ERROR_MSG (
-              ":protocol pseudo-header not allowed in responses");
+          if (conn->role != HTTP2_ROLE_SERVER)
+            SOCKET_LOG_ERROR_MSG (
+                ":protocol pseudo-header not allowed in responses");
+          else if (conn->local_settings[SETTINGS_IDX_ENABLE_CONNECT_PROTOCOL]
+                   == 0)
+            SOCKET_LOG_ERROR_MSG (
+                ":protocol requires SETTINGS_ENABLE_CONNECT_PROTOCOL=1");
+          else
+            SOCKET_LOG_ERROR_MSG (":protocol value too long: %zu bytes",
+                                  h->value_len);
           return -1;
         }
-
-      /* RFC 8441: Store :protocol value for Extended CONNECT */
-      state->has_protocol = 1;
-      stream->is_extended_connect = 1;
-      if (h->value_len > 0 && h->value_len < sizeof (stream->protocol))
-        {
-          memcpy (stream->protocol, h->value, h->value_len);
-          stream->protocol[h->value_len] = '\0';
-        }
-      else if (h->value_len > 0)
-        {
-          /* Protocol value too long */
-          SOCKET_LOG_ERROR_MSG (":protocol value too long: %zu bytes",
-                                h->value_len);
-          return -1;
-        }
-    }
-  else
-    {
-      /* Unknown pseudo-header */
-      SOCKET_LOG_ERROR_MSG ("Unknown pseudo-header: %.*s", (int)h->name_len,
-                            h->name);
-      return -1;
+      return 0;
     }
 
-  return 0;
+  /* Unknown pseudo-header */
+  SOCKET_LOG_ERROR_MSG ("Unknown pseudo-header: %.*s", (int)h->name_len,
+                        h->name);
+  return -1;
 }
 
 static int
@@ -987,38 +946,14 @@ validate_regular_header_entry (const SocketHPACK_Header *h, int *has_te,
   if (!*parsed_content_length && h->name_len == 14
       && memcmp (h->name, "content-length", 14) == 0)
     {
-      /* Parse Content-Length value */
-      if (h->value_len == 0)
-        {
-          SOCKET_LOG_ERROR_MSG ("Empty Content-Length header");
-          return -1;
-        }
-
-      int64_t cl = 0;
-      int valid = 1;
-      for (size_t j = 0; j < h->value_len; j++)
-        {
-          if (h->value[j] < '0' || h->value[j] > '9')
-            {
-              valid = 0;
-              break;
-            }
-          if (cl > (INT64_MAX - (h->value[j] - '0')) / 10)
-            {
-              valid = 0; /* Overflow */
-              break;
-            }
-          cl = cl * 10 + (h->value[j] - '0');
-        }
-
-      if (!valid)
+      int64_t cl;
+      if (http2_parse_content_length (h->value, h->value_len, &cl) < 0)
         {
           SOCKET_LOG_ERROR_MSG ("Invalid Content-Length value: %.*s",
                                 (int)h->value_len, h->value);
           return -1;
         }
 
-      /* Store for later validation against total DATA received */
       stream->expected_content_length = cl;
       *parsed_content_length = true;
     }
@@ -1027,82 +962,75 @@ validate_regular_header_entry (const SocketHPACK_Header *h, int *has_te,
 }
 
 static int
-validate_required_pseudo_headers (const PseudoHeaderState *state,
+validate_required_pseudo_headers (const HTTP2_PseudoHeaderState *state,
                                    int is_request)
 {
-  if (is_request)
+  /* Response validation: simple single check */
+  if (!is_request)
     {
-      /* All requests must have :method */
-      if (!state->has_method)
-        {
-          SOCKET_LOG_ERROR_MSG ("Request missing required :method pseudo-header");
-          return -1;
-        }
-
-      if (state->is_connect_method)
-        {
-          /* CONNECT requests have different requirements per RFC 9113 §8.5 */
-          if (state->has_protocol)
-            {
-              /* RFC 8441 Extended CONNECT: :scheme, :path, :authority all required */
-              if (!state->has_scheme || !state->has_path
-                  || !state->has_authority)
-                {
-                  SOCKET_LOG_ERROR_MSG (
-                      "Extended CONNECT requires :scheme, :path, and :authority");
-                  return -1;
-                }
-            }
-          else
-            {
-              /* Standard CONNECT: only :authority allowed, no :scheme/:path */
-              if (!state->has_authority)
-                {
-                  SOCKET_LOG_ERROR_MSG (
-                      "CONNECT requires :authority pseudo-header");
-                  return -1;
-                }
-              if (state->has_scheme || state->has_path)
-                {
-                  SOCKET_LOG_ERROR_MSG (
-                      "Standard CONNECT must not have :scheme or :path pseudo-headers");
-                  return -1;
-                }
-            }
-        }
-      else
-        {
-          /* Non-CONNECT requests per RFC 9113 §8.3.1 */
-          if (!state->has_scheme && !state->has_authority)
-            {
-              SOCKET_LOG_ERROR_MSG (
-                  "Request missing required :scheme or :authority pseudo-header");
-              return -1;
-            }
-          if (!state->has_path)
-            {
-              SOCKET_LOG_ERROR_MSG (
-                  "Request missing required :path pseudo-header");
-              return -1;
-            }
-          /* :protocol only valid with CONNECT method */
-          if (state->has_protocol)
-            {
-              SOCKET_LOG_ERROR_MSG (
-                  ":protocol pseudo-header only valid with CONNECT method");
-              return -1;
-            }
-        }
-    }
-  else
-    {
-      /* Response headers: must have :status */
       if (!state->has_status)
         {
           SOCKET_LOG_ERROR_MSG (
               "Response missing required :status pseudo-header");
           return -1;
         }
+      return 0;
+    }
+
+  /* All requests need :method */
+  if (!state->has_method)
+    {
+      SOCKET_LOG_ERROR_MSG ("Request missing required :method pseudo-header");
+      return -1;
+    }
+
+  /* CONNECT has special rules */
+  if (state->is_connect_method)
+    {
+      if (state->has_protocol)
+        {
+          if (http2_validate_extended_connect (state) < 0)
+            {
+              SOCKET_LOG_ERROR_MSG (
+                  "Extended CONNECT requires :scheme, :path, and :authority");
+              return -1;
+            }
+        }
+      else
+        {
+          if (http2_validate_standard_connect (state) < 0)
+            {
+              if (!state->has_authority)
+                SOCKET_LOG_ERROR_MSG (
+                    "CONNECT requires :authority pseudo-header");
+              else
+                SOCKET_LOG_ERROR_MSG (
+                    "Standard CONNECT must not have :scheme or :path pseudo-headers");
+              return -1;
+            }
+        }
+      return 0;
+    }
+
+  /* Non-CONNECT: need :scheme or :authority, and :path */
+  if (!state->has_scheme && !state->has_authority)
+    {
+      SOCKET_LOG_ERROR_MSG (
+          "Request missing required :scheme or :authority pseudo-header");
+      return -1;
+    }
+
+  if (!state->has_path)
+    {
+      SOCKET_LOG_ERROR_MSG ("Request missing required :path pseudo-header");
+      return -1;
+    }
+
+  if (state->has_protocol)
+    {
+      SOCKET_LOG_ERROR_MSG (
+          ":protocol pseudo-header only valid with CONNECT method");
+      return -1;
     }
 
   return 0;
@@ -1115,7 +1043,7 @@ http2_validate_headers (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
 {
   int is_request = (conn->role == HTTP2_ROLE_CLIENT ? 1 : 0);
   int pseudo_headers_seen = 0;
-  PseudoHeaderState state = { 0 };
+  HTTP2_PseudoHeaderState state = { 0 };
   int has_te = 0;
   bool parsed_content_length = false;
   int pseudo_section_ended = 0;
