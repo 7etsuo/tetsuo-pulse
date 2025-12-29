@@ -2240,53 +2240,9 @@ SocketHTTPClient_error_string (SocketHTTPClient_Error error)
   return "Unknown error";
 }
 
-#include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <sys/stat.h>
-#include <unistd.h>
-
-static int
-write_all_eintr (int fd, const void *buf, size_t len)
-{
-  const char *data = buf;
-  size_t remaining = len;
-
-  while (remaining > 0)
-    {
-      ssize_t n = write (fd, data, remaining);
-      if (n <= 0)
-        {
-          if (n < 0 && errno == EINTR)
-            continue;
-          return -1;
-        }
-      data += n;
-      remaining -= (size_t)n;
-    }
-  return 0;
-}
-
-static int
-read_all_eintr (int fd, void *buf, size_t len)
-{
-  char *data = buf;
-  size_t remaining = len;
-
-  while (remaining > 0)
-    {
-      ssize_t n = read (fd, data, remaining);
-      if (n <= 0)
-        {
-          if (n < 0 && errno == EINTR)
-            continue;
-          return -1;
-        }
-      data += n;
-      remaining -= (size_t)n;
-    }
-  return 0;
-}
 
 int
 SocketHTTPClient_download (SocketHTTPClient_T client, const char *url,
@@ -2319,7 +2275,7 @@ SocketHTTPClient_download (SocketHTTPClient_T client, const char *url,
   result = 0;
   if (response.body != NULL && response.body_len > 0)
     {
-      if (write_all_eintr (fd, response.body, response.body_len) != 0)
+      if (socket_util_write_all_eintr (fd, response.body, response.body_len) != 0)
         result = -2;
     }
 
@@ -2359,7 +2315,7 @@ SocketHTTPClient_upload (SocketHTTPClient_T client, const char *url,
       return -2;
     }
 
-  if (read_all_eintr (fd, buffer, (size_t)st.st_size) != 0)
+  if (socket_util_read_all_eintr (fd, buffer, (size_t)st.st_size) != 0)
     {
       free (buffer);
       close (fd);
