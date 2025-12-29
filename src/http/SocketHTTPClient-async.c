@@ -81,6 +81,62 @@ wait_for_completion (SocketHTTPClient_T client, AsyncIOState *state)
   return 0;
 }
 
+/**
+ * @brief Synchronous send fallback when async I/O is unavailable.
+ *
+ * @param socket Socket to send on
+ * @param data Data buffer to send
+ * @param len Length of data
+ * @return Bytes sent on success, -1 on error (sets errno)
+ */
+static ssize_t
+sync_send_fallback (Socket_T socket, const void *data, size_t len)
+{
+  volatile ssize_t sent = 0;
+
+  TRY { sent = Socket_send (socket, data, len); }
+  EXCEPT (Socket_Closed)
+  {
+    errno = EPIPE;
+    return -1;
+  }
+  EXCEPT (Socket_Failed)
+  {
+    return -1;
+  }
+  END_TRY;
+
+  return sent;
+}
+
+/**
+ * @brief Synchronous recv fallback when async I/O is unavailable.
+ *
+ * @param socket Socket to receive from
+ * @param buf Buffer to receive into
+ * @param len Length of buffer
+ * @return Bytes received on success, 0 on EOF, -1 on error (sets errno)
+ */
+static ssize_t
+sync_recv_fallback (Socket_T socket, void *buf, size_t len)
+{
+  volatile ssize_t recvd = 0;
+  volatile int eof = 0;
+
+  TRY { recvd = Socket_recv (socket, buf, len); }
+  EXCEPT (Socket_Closed)
+  {
+    eof = 1;
+  }
+  EXCEPT (Socket_Failed)
+  {
+    return -1;
+  }
+  END_TRY;
+
+  return eof ? 0 : recvd;
+}
+
 int
 httpclient_async_init (SocketHTTPClient_T client)
 {
@@ -155,7 +211,6 @@ httpclient_io_send (SocketHTTPClient_T client, Socket_T socket,
 {
   AsyncIOState state;
   unsigned req_id;
-  volatile ssize_t result = 0;
 
   /* Validate required inputs */
   if (client == NULL || socket == NULL)
@@ -177,21 +232,7 @@ httpclient_io_send (SocketHTTPClient_T client, Socket_T socket,
 
   /* Fast path: use sync I/O if async not available */
   if (!client->async_available || client->async == NULL)
-    {
-      volatile ssize_t sent = 0;
-      TRY { sent = Socket_send (socket, data, len); }
-      EXCEPT (Socket_Closed)
-      {
-        errno = EPIPE;
-        return -1;
-      }
-      EXCEPT (Socket_Failed)
-      {
-        return -1;
-      }
-      END_TRY;
-      return sent;
-    }
+    return sync_send_fallback (socket, data, len);
 
   /* Initialize completion state */
   memset ((void *)&state, 0, sizeof (state));
@@ -205,18 +246,7 @@ httpclient_io_send (SocketHTTPClient_T client, Socket_T socket,
       /* Submission failed - fall back to sync */
       SocketLog_emitf (SOCKET_LOG_DEBUG, "HTTPClient",
                        "Async send submission failed, falling back to sync");
-      TRY { result = Socket_send (socket, data, len); }
-      EXCEPT (Socket_Closed)
-      {
-        errno = EPIPE;
-        return -1;
-      }
-      EXCEPT (Socket_Failed)
-      {
-        return -1;
-      }
-      END_TRY;
-      return result;
+      return sync_send_fallback (socket, data, len);
     }
 
   /* Wait for completion */
@@ -238,7 +268,6 @@ httpclient_io_recv (SocketHTTPClient_T client, Socket_T socket,
 {
   AsyncIOState state;
   unsigned req_id;
-  volatile ssize_t result = 0;
 
   /* Validate required inputs */
   if (client == NULL || socket == NULL)
@@ -260,25 +289,7 @@ httpclient_io_recv (SocketHTTPClient_T client, Socket_T socket,
 
   /* Fast path: use sync I/O if async not available */
   if (!client->async_available || client->async == NULL)
-    {
-      volatile ssize_t recvd = 0;
-      volatile int eof = 0;
-      TRY { recvd = Socket_recv (socket, buf, len); }
-      EXCEPT (Socket_Closed)
-      {
-        eof = 1;
-      }
-      EXCEPT (Socket_Failed)
-      {
-        return -1;
-      }
-      END_TRY;
-
-      if (eof)
-        return 0; /* EOF */
-
-      return recvd;
-    }
+    return sync_recv_fallback (socket, buf, len);
 
   /* Initialize completion state */
   memset ((void *)&state, 0, sizeof (state));
@@ -292,20 +303,7 @@ httpclient_io_recv (SocketHTTPClient_T client, Socket_T socket,
       /* Submission failed - fall back to sync */
       SocketLog_emitf (SOCKET_LOG_DEBUG, "HTTPClient",
                        "Async recv submission failed, falling back to sync");
-      volatile int eof = 0;
-      TRY { result = Socket_recv (socket, buf, len); }
-      EXCEPT (Socket_Closed)
-      {
-        eof = 1;
-        result = 0;
-      }
-      EXCEPT (Socket_Failed)
-      {
-        return -1;
-      }
-      END_TRY;
-      (void)eof; /* Suppress unused warning - used to set result on EOF */
-      return result;
+      return sync_recv_fallback (socket, buf, len);
     }
 
   /* Wait for completion */
