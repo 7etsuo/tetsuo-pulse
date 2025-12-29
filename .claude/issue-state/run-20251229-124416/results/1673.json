@@ -1,0 +1,11 @@
+{
+  "issue": 1673,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1680",
+  "pr_number": 1680,
+  "branch": "issue-1673-flatten-parse-range",
+  "files_changed": ["src/http/SocketHTTPServer.c"],
+  "tests_passed": true,
+  "commit_sha": "e3c65eaf",
+  "notes": "All 13 HTTP-related tests pass. One pre-existing DNS test failure (test_dns_queue_limit) exists in codebase unrelated to this change."
+}

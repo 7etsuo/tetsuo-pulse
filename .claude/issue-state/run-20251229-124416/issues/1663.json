@@ -1,0 +1,10 @@
+{
+  "number": 1663,
+  "title": "refactor(http): extract duplicate auth string copying helper",
+  "body": "## Summary\nExtract duplicate authentication credential copying logic into a helper function.\n\n## Problem\nIdentical auth string copying pattern appears twice:\n- Lines 1869-1874\n- Lines 2107-2112\n\nBoth copy username/password/token using `socket_util_arena_strdup()`.\n\n## Location\n- File: `src/http/SocketHTTPClient.c`\n- Lines: 1869-1874 and 2107-2112\n\n## Proposed Solution\nExtract helper function:\n```c\nstatic void\nhttpclient_auth_copy_to_arena(Arena_T arena, \n                               SocketHTTPClient_Auth *dest,\n                               const SocketHTTPClient_Auth *src);\n```\n\n## Acceptance Criteria\n- [ ] Single auth copying helper function\n- [ ] Both call sites updated\n- [ ] Tests pass with sanitizers\n- [ ] ~12 lines saved\n\n## Labels\nrefactor, redundancy, http",
+  "labels": [
+    "enhancement"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

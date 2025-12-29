@@ -1,0 +1,10 @@
+{
+  "number": 1667,
+  "title": "refactor(http): consolidate arena allocation error pattern in HTTPClient",
+  "body": "## Summary\nExtract repeated arena allocation + error handling pattern into a macro or helper.\n\n## Problem\nSame pattern repeated 4+ times:\n```c\nobj = CALLOC(arena, 1, sizeof(*obj));\nif (obj == NULL) {\n    Arena_dispose(&arena);\n    SOCKET_RAISE_MSG(...);\n}\n```\n\nLocations:\n- Lines 221-227\n- Lines 631-637\n- Lines 1733-1738\n- Lines 2685-2691\n\n## Location\n- File: `src/http/SocketHTTPClient.c`\n\n## Proposed Solution\nOption A - Macro:\n```c\n#define HTTPCLIENT_ARENA_CALLOC_OR_RAISE(arena, ptr, type, exc) \\\n  do { \\\n    (ptr) = CALLOC((arena), 1, sizeof(type)); \\\n    if ((ptr) == NULL) { \\\n      Arena_dispose(&(arena)); \\\n      SOCKET_RAISE_MSG(SocketHTTPClient, (exc), \"Failed to allocate \" #type); \\\n    } \\\n  } while(0)\n```\n\nOption B - Helper function returning allocated pointer or raising.\n\n## Acceptance Criteria\n- [ ] Single macro or helper for arena alloc + error\n- [ ] All 4+ locations updated\n- [ ] Tests pass with sanitizers\n- [ ] ~30 lines saved\n\n## Labels\nrefactor, redundancy, http",
+  "labels": [
+    "enhancement"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

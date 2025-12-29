@@ -1,0 +1,10 @@
+{
+  "number": 1665,
+  "title": "refactor(core): extract EINTR-safe I/O helpers to SocketUtil",
+  "body": "## Summary\nMove EINTR-safe read/write helpers from SocketHTTPClient.c to core/SocketUtil.h for codebase-wide reuse.\n\n## Problem\nEINTR retry loops are duplicated:\n- `write_all_eintr()` at lines 2250-2268\n- `read_all_eintr()` at lines 2271-2289\n\nThese are generic I/O patterns useful across the entire codebase.\n\n## Location\n- File: `src/http/SocketHTTPClient.c`\n- Lines: 2250-2289\n\n## Proposed Solution\nAdd to `include/core/SocketUtil.h`:\n```c\nssize_t socket_util_write_all_eintr(int fd, const void *buf, size_t len);\nssize_t socket_util_read_all_eintr(int fd, void *buf, size_t len);\n```\n\n## Acceptance Criteria\n- [ ] Functions moved to SocketUtil.h as static inline or to SocketUtil.c\n- [ ] SocketHTTPClient.c updated to use new helpers\n- [ ] Other files checked for similar patterns that could use these\n- [ ] Tests pass with sanitizers\n- [ ] ~38 lines saved\n\n## Labels\nrefactor, redundancy, core",
+  "labels": [
+    "enhancement"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

@@ -1,0 +1,10 @@
+{
+  "number": 1666,
+  "title": "refactor(http): replace default port magic numbers with constants",
+  "body": "## Summary\nReplace literal port numbers 80 and 443 with named constants.\n\n## Problem\nMagic numbers for default HTTP/HTTPS ports:\n- Line 833: `80`\n- Line 849: `443`\n- Line 2567: `80` or `443`\n- Lines 2653-2654: port comparisons\n\nUsing magic numbers reduces readability and maintainability.\n\n## Location\n- File: `src/http/SocketHTTPClient.c`\n- Lines: 833, 849, 2567, 2653-2654\n\n## Proposed Solution\nUse or add constants in `include/http/SocketHTTP.h`:\n```c\n#define HTTP_DEFAULT_PORT  80\n#define HTTPS_DEFAULT_PORT 443\n```\n\nThen replace all literals with these constants.\n\n## Acceptance Criteria\n- [ ] Constants defined in SocketHTTP.h (if not already)\n- [ ] All port literals replaced in SocketHTTPClient.c\n- [ ] Other HTTP files checked for same pattern\n- [ ] Tests pass with sanitizers\n- [ ] ~8 lines clarified\n\n## Labels\nrefactor, redundancy, http",
+  "labels": [
+    "enhancement"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

@@ -1,0 +1,10 @@
+{
+  "number": 1672,
+  "title": "refactor(http-server): flatten 7-level nesting in body streaming callback",
+  "body": "## Description\n\nDeep nesting (depth 7) in `server_process_client_event()` at line 1233 in `src/http/SocketHTTPServer.c`.\n\n## Location\n\n- **File**: `src/http/SocketHTTPServer.c`\n- **Lines**: 1203-1259\n- **Function**: `server_process_client_event`\n\n## Current Code\n\nThe body streaming callback handling is nested 7 levels deep within multiple conditional blocks.\n\n## Recommendation\n\nExtract the streaming body handling into a separate helper function to flatten the nesting. Consider:\n- `server_process_streaming_body()`\n- Early returns for error conditions\n\n## Severity\n\nHIGH (depth 7)",
+  "labels": [
+    "enhancement"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

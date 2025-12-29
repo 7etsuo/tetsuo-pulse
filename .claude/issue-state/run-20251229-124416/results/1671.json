@@ -1,0 +1,10 @@
+{
+  "issue": 1671,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1681",
+  "pr_number": 1681,
+  "branch": "issue-1671-flatten-h2c-upgrade-nesting",
+  "files_changed": ["src/http/SocketHTTPServer.c"],
+  "tests_passed": true,
+  "commit_sha": "02a3b94e88a5c775adadd13b373f215494611f0f"
+}
