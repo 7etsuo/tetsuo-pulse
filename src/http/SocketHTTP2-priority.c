@@ -49,38 +49,6 @@ skip_ows (const char *p, const char *end)
   return p;
 }
 
-/*
- * Parse an integer parameter value.
- * RFC 8941: integer = ["-"] 1*15DIGIT
- * For urgency, we only accept 0-7.
- */
-static int
-parse_integer (const char **pp, const char *end, int *value)
-{
-  const char *p = *pp;
-  int v = 0;
-  int digits = 0;
-
-  if (p >= end)
-    return -1;
-
-  /* Parse digits */
-  while (p < end && *p >= '0' && *p <= '9')
-    {
-      v = v * 10 + (*p - '0');
-      digits++;
-      p++;
-      if (digits > 15)
-        return -1; /* Too many digits */
-    }
-
-  if (digits == 0)
-    return -1;
-
-  *value = v;
-  *pp = p;
-  return 0;
-}
 
 /*
  * Parse a Structured Fields Dictionary key.
@@ -193,8 +161,31 @@ SocketHTTP2_Priority_parse (const char *value, size_t len,
           p++; /* Skip '=' */
           p = skip_ows (p, end);
 
-          int urgency;
-          if (parse_integer (&p, end, &urgency) < 0)
+          /* Parse urgency value (RFC 8941: integer = ["-"] 1*15DIGIT) */
+          int urgency = 0;
+          int digits = 0;
+
+          if (p >= end)
+            {
+              SOCKET_LOG_DEBUG_MSG ("Priority parse error: invalid u value");
+              return -1;
+            }
+
+          /* Parse digits */
+          while (p < end && *p >= '0' && *p <= '9')
+            {
+              urgency = urgency * 10 + (*p - '0');
+              digits++;
+              p++;
+              if (digits > 15)
+                {
+                  SOCKET_LOG_DEBUG_MSG (
+                      "Priority parse error: invalid u value (too many digits)");
+                  return -1;
+                }
+            }
+
+          if (digits == 0)
             {
               SOCKET_LOG_DEBUG_MSG ("Priority parse error: invalid u value");
               return -1;
