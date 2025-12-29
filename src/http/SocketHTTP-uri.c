@@ -1142,14 +1142,16 @@ check_path_traversal (const char *path, size_t len)
   /* Check 1: Literal ".." */
   for (size_t i = 0; i + 1 < len; i++)
     {
-      if (path[i] == '.' && path[i + 1] == '.')
-        {
-          if (i == 0 || path[i - 1] == '/')
-            {
-              if (i + 2 >= len || path[i + 2] == '/' || path[i + 2] == '?')
-                return URI_PARSE_INVALID_PATH;
-            }
-        }
+      if (path[i] != '.' || path[i + 1] != '.')
+        continue;
+
+      if (i != 0 && path[i - 1] != '/')
+        continue;
+
+      if (i + 2 < len && path[i + 2] != '/' && path[i + 2] != '?')
+        continue;
+
+      return URI_PARSE_INVALID_PATH;
     }
 
   /* Check 2: Fully encoded "%2e%2e" or "%2E%2E" */
