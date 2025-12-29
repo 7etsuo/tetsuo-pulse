@@ -732,7 +732,7 @@ compute_ds_digest (const char *owner_name,
   return 0;
 }
 
-#endif /* ENABLE_TLS */
+#endif /* SOCKET_HAS_TLS */
 
 /*
  * Verify DS matches DNSKEY
@@ -792,267 +792,271 @@ SocketDNSSEC_verify_ds (const SocketDNSSEC_DS *ds,
 #endif
 }
 
-/*
- * Verify RRSIG signature
- */
-int
-SocketDNSSEC_verify_rrsig (const SocketDNSSEC_RRSIG *rrsig,
-                            const SocketDNSSEC_DNSKEY *dnskey,
-                            const unsigned char *msg,
-                            size_t msglen __attribute__ ((unused)),
-                            size_t rrset_offset, size_t rrset_count)
-{
-  if (rrsig == NULL || dnskey == NULL || msg == NULL)
-    return -1;
-
-  /* Check key tag matches */
-  if (rrsig->key_tag != dnskey->key_tag)
-    return DNSSEC_BOGUS;
-
-  /* Check algorithm matches */
-  if (rrsig->algorithm != dnskey->algorithm)
-    return DNSSEC_BOGUS;
-
-  /* Check validity period */
-  if (!SocketDNSSEC_rrsig_valid_time (rrsig, 0))
-    return DNSSEC_BOGUS;
-
-  /* Check algorithm is supported */
-  if (!SocketDNSSEC_algorithm_supported (rrsig->algorithm))
-    return DNSSEC_INDETERMINATE;
-
 #ifdef SOCKET_HAS_TLS
-  /*
-   * Construct signed data (RFC 4035 Section 5.3.2):
-   * signed_data = RRSIG_RDATA | RR(1) | RR(2) | ...
-   *
-   * RRSIG_RDATA = Type Covered | Algorithm | Labels | Original TTL |
-   *               Signature Expiration | Signature Inception |
-   *               Key Tag | Signer's Name
-   */
 
-  const EVP_MD *md = NULL;
-  EVP_PKEY *pkey = NULL;
-  EVP_MD_CTX *ctx = NULL;
-  int result = DNSSEC_BOGUS;
+/*
+ * Create RSA public key from DNSKEY (RFC 4034)
+ * Returns EVP_PKEY or NULL on error
+ */
+static EVP_PKEY *
+create_rsa_pkey_from_dnskey (const SocketDNSSEC_DNSKEY *dnskey)
+{
+  /* RSA public key format: exponent length + exponent + modulus */
+  if (dnskey->pubkey_len < 3)
+    return NULL;
 
-  /* Select hash algorithm based on DNSSEC algorithm */
-  switch (rrsig->algorithm)
+  const unsigned char *pk = dnskey->pubkey;
+  size_t exp_len;
+  if (pk[0] == 0)
     {
-    case DNSSEC_ALGO_RSASHA1:
-    case DNSSEC_ALGO_RSASHA1_NSEC3_SHA1:
-      md = EVP_sha1 ();
-      break;
-    case DNSSEC_ALGO_RSASHA256:
-    case DNSSEC_ALGO_ECDSAP256SHA256:
-      md = EVP_sha256 ();
-      break;
-    case DNSSEC_ALGO_RSASHA512:
-      md = EVP_sha512 ();
-      break;
-    case DNSSEC_ALGO_ECDSAP384SHA384:
-      md = EVP_sha384 ();
-      break;
-    case DNSSEC_ALGO_ED25519:
-    case DNSSEC_ALGO_ED448:
-      md = NULL; /* Ed25519/Ed448 don't use separate hash */
-      break;
-    default:
-      return DNSSEC_INDETERMINATE;
+      if (dnskey->pubkey_len < 3)
+        return NULL;
+      exp_len = ((size_t)pk[1] << 8) | pk[2];
+      pk += 3;
+    }
+  else
+    {
+      exp_len = pk[0];
+      pk += 1;
     }
 
-  /* Create public key from DNSKEY */
+  if (pk + exp_len > dnskey->pubkey + dnskey->pubkey_len)
+    return NULL;
+
+  const unsigned char *exp_data = pk;
+  pk += exp_len;
+  size_t mod_len = (dnskey->pubkey + dnskey->pubkey_len) - pk;
+
+  /* Create RSA key */
+  BIGNUM *n = BN_bin2bn (pk, mod_len, NULL);
+  BIGNUM *e = BN_bin2bn (exp_data, exp_len, NULL);
+  if (n == NULL || e == NULL)
+    {
+      BN_free (n);
+      BN_free (e);
+      return NULL;
+    }
+
+  EVP_PKEY *pkey = NULL;
+
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+  /* OpenSSL 3.0+ uses EVP_PKEY_fromdata */
+  OSSL_PARAM params[3];
+  params[0] = OSSL_PARAM_construct_BN ("n", (unsigned char *)pk, mod_len);
+  params[1] = OSSL_PARAM_construct_BN ("e", (unsigned char *)exp_data, exp_len);
+  params[2] = OSSL_PARAM_construct_end ();
+
+  EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_from_name (NULL, "RSA", NULL);
+  if (pctx == NULL)
+    {
+      BN_free (n);
+      BN_free (e);
+      return NULL;
+    }
+
+  if (EVP_PKEY_fromdata_init (pctx) <= 0 ||
+      EVP_PKEY_fromdata (pctx, &pkey, EVP_PKEY_PUBLIC_KEY, params) <= 0)
+    {
+      EVP_PKEY_CTX_free (pctx);
+      BN_free (n);
+      BN_free (e);
+      return NULL;
+    }
+  EVP_PKEY_CTX_free (pctx);
+  BN_free (n);
+  BN_free (e);
+#else
+  RSA *rsa = RSA_new ();
+  if (rsa == NULL)
+    {
+      BN_free (n);
+      BN_free (e);
+      return NULL;
+    }
+  RSA_set0_key (rsa, n, e, NULL);
+  pkey = EVP_PKEY_new ();
+  if (pkey == NULL)
+    {
+      RSA_free (rsa);
+      return NULL;
+    }
+  EVP_PKEY_assign_RSA (pkey, rsa);
+#endif
+
+  return pkey;
+}
+
+/*
+ * Create ECDSA public key from DNSKEY (RFC 6605)
+ * Returns EVP_PKEY or NULL on error
+ */
+static EVP_PKEY *
+create_ecdsa_pkey_from_dnskey (const SocketDNSSEC_DNSKEY *dnskey)
+{
+  int nid = (dnskey->algorithm == DNSSEC_ALGO_ECDSAP256SHA256)
+                ? NID_X9_62_prime256v1
+                : NID_secp384r1;
+  size_t coord_size = (dnskey->algorithm == DNSSEC_ALGO_ECDSAP256SHA256)
+                          ? DNSSEC_ECDSA_P256_COORD_SIZE
+                          : DNSSEC_ECDSA_P384_COORD_SIZE;
+
+  if (dnskey->pubkey_len != 2 * coord_size)
+    return NULL;
+
+  EVP_PKEY *pkey = NULL;
+
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+  /* OpenSSL 3.0+ */
+  unsigned char pubkey_uncompressed[1 + 2 * DNSSEC_ECDSA_P384_COORD_SIZE];
+  pubkey_uncompressed[0] = 0x04; /* Uncompressed point */
+  memcpy (pubkey_uncompressed + 1, dnskey->pubkey, 2 * coord_size);
+
+  const char *group_name = (nid == NID_X9_62_prime256v1) ? "P-256" : "P-384";
+  OSSL_PARAM params[3];
+  params[0] = OSSL_PARAM_construct_utf8_string ("group", (char *)group_name, 0);
+  params[1] = OSSL_PARAM_construct_octet_string ("pub", pubkey_uncompressed,
+                                                  1 + 2 * coord_size);
+  params[2] = OSSL_PARAM_construct_end ();
+
+  EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_from_name (NULL, "EC", NULL);
+  if (pctx == NULL)
+    return NULL;
+
+  if (EVP_PKEY_fromdata_init (pctx) <= 0 ||
+      EVP_PKEY_fromdata (pctx, &pkey, EVP_PKEY_PUBLIC_KEY, params) <= 0)
+    {
+      EVP_PKEY_CTX_free (pctx);
+      return NULL;
+    }
+  EVP_PKEY_CTX_free (pctx);
+#else
+  EC_KEY *ec = EC_KEY_new_by_curve_name (nid);
+  if (ec == NULL)
+    return NULL;
+
+  /* Create uncompressed public key point */
+  unsigned char pubkey_uncompressed[1 + 2 * DNSSEC_ECDSA_P384_COORD_SIZE];
+  pubkey_uncompressed[0] = 0x04; /* Uncompressed */
+  memcpy (pubkey_uncompressed + 1, dnskey->pubkey, 2 * coord_size);
+
+  const unsigned char *pp = pubkey_uncompressed;
+  if (o2i_ECPublicKey (&ec, &pp, 1 + 2 * coord_size) == NULL)
+    {
+      EC_KEY_free (ec);
+      return NULL;
+    }
+
+  pkey = EVP_PKEY_new ();
+  if (pkey == NULL)
+    {
+      EC_KEY_free (ec);
+      return NULL;
+    }
+  EVP_PKEY_assign_EC_KEY (pkey, ec);
+#endif
+
+  return pkey;
+}
+
+/*
+ * Create EdDSA public key from DNSKEY (RFC 8080)
+ * Returns EVP_PKEY or NULL on error
+ */
+static EVP_PKEY *
+create_eddsa_pkey_from_dnskey (const SocketDNSSEC_DNSKEY *dnskey)
+{
+  int type = (dnskey->algorithm == DNSSEC_ALGO_ED25519) ? EVP_PKEY_ED25519
+                                                         : EVP_PKEY_ED448;
+  size_t key_len = (dnskey->algorithm == DNSSEC_ALGO_ED25519)
+                       ? DNSSEC_ED25519_PUBKEY_SIZE
+                       : DNSSEC_ED448_PUBKEY_SIZE;
+
+  if (dnskey->pubkey_len != key_len)
+    return NULL;
+
+  return EVP_PKEY_new_raw_public_key (type, NULL, dnskey->pubkey, key_len);
+}
+
+/*
+ * Create public key from DNSKEY based on algorithm
+ * Returns EVP_PKEY or NULL on error
+ */
+static EVP_PKEY *
+create_pkey_from_dnskey (const SocketDNSSEC_DNSKEY *dnskey)
+{
   switch (dnskey->algorithm)
     {
     case DNSSEC_ALGO_RSASHA1:
     case DNSSEC_ALGO_RSASHA1_NSEC3_SHA1:
     case DNSSEC_ALGO_RSASHA256:
     case DNSSEC_ALGO_RSASHA512:
-      {
-        /* RSA public key format: exponent length + exponent + modulus */
-        if (dnskey->pubkey_len < 3)
-          return DNSSEC_BOGUS;
-
-        const unsigned char *pk = dnskey->pubkey;
-        size_t exp_len;
-        if (pk[0] == 0)
-          {
-            if (dnskey->pubkey_len < 3)
-              return DNSSEC_BOGUS;
-            exp_len = ((size_t)pk[1] << 8) | pk[2];
-            pk += 3;
-          }
-        else
-          {
-            exp_len = pk[0];
-            pk += 1;
-          }
-
-        if (pk + exp_len > dnskey->pubkey + dnskey->pubkey_len)
-          return DNSSEC_BOGUS;
-
-        const unsigned char *exp_data = pk;
-        pk += exp_len;
-        size_t mod_len = (dnskey->pubkey + dnskey->pubkey_len) - pk;
-
-        /* Create RSA key */
-        BIGNUM *n = BN_bin2bn (pk, mod_len, NULL);
-        BIGNUM *e = BN_bin2bn (exp_data, exp_len, NULL);
-        if (n == NULL || e == NULL)
-          {
-            BN_free (n);
-            BN_free (e);
-            return DNSSEC_INDETERMINATE;
-          }
-
-#if OPENSSL_VERSION_NUMBER >= 0x30000000L
-        /* OpenSSL 3.0+ uses EVP_PKEY_fromdata */
-        OSSL_PARAM params[3];
-        params[0] = OSSL_PARAM_construct_BN ("n", (unsigned char *)pk, mod_len);
-        params[1] = OSSL_PARAM_construct_BN ("e", (unsigned char *)exp_data, exp_len);
-        params[2] = OSSL_PARAM_construct_end ();
-
-        EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_from_name (NULL, "RSA", NULL);
-        if (pctx == NULL)
-          {
-            BN_free (n);
-            BN_free (e);
-            return DNSSEC_INDETERMINATE;
-          }
-
-        if (EVP_PKEY_fromdata_init (pctx) <= 0 ||
-            EVP_PKEY_fromdata (pctx, &pkey, EVP_PKEY_PUBLIC_KEY, params) <= 0)
-          {
-            EVP_PKEY_CTX_free (pctx);
-            BN_free (n);
-            BN_free (e);
-            return DNSSEC_INDETERMINATE;
-          }
-        EVP_PKEY_CTX_free (pctx);
-        BN_free (n);
-        BN_free (e);
-#else
-        RSA *rsa = RSA_new ();
-        if (rsa == NULL)
-          {
-            BN_free (n);
-            BN_free (e);
-            return DNSSEC_INDETERMINATE;
-          }
-        RSA_set0_key (rsa, n, e, NULL);
-        pkey = EVP_PKEY_new ();
-        if (pkey == NULL)
-          {
-            RSA_free (rsa);
-            return DNSSEC_INDETERMINATE;
-          }
-        EVP_PKEY_assign_RSA (pkey, rsa);
-#endif
-      }
-      break;
+      return create_rsa_pkey_from_dnskey (dnskey);
 
     case DNSSEC_ALGO_ECDSAP256SHA256:
     case DNSSEC_ALGO_ECDSAP384SHA384:
-      {
-        int nid = (dnskey->algorithm == DNSSEC_ALGO_ECDSAP256SHA256)
-                      ? NID_X9_62_prime256v1
-                      : NID_secp384r1;
-        size_t coord_size = (dnskey->algorithm == DNSSEC_ALGO_ECDSAP256SHA256)
-                                ? DNSSEC_ECDSA_P256_COORD_SIZE
-                                : DNSSEC_ECDSA_P384_COORD_SIZE;
-
-        if (dnskey->pubkey_len != 2 * coord_size)
-          return DNSSEC_BOGUS;
-
-#if OPENSSL_VERSION_NUMBER >= 0x30000000L
-        /* OpenSSL 3.0+ */
-        unsigned char pubkey_uncompressed[1 + 2 * DNSSEC_ECDSA_P384_COORD_SIZE];
-        pubkey_uncompressed[0] = 0x04; /* Uncompressed point */
-        memcpy (pubkey_uncompressed + 1, dnskey->pubkey, 2 * coord_size);
-
-        const char *group_name = (nid == NID_X9_62_prime256v1) ? "P-256" : "P-384";
-        OSSL_PARAM params[3];
-        params[0] = OSSL_PARAM_construct_utf8_string ("group", (char *)group_name, 0);
-        params[1] = OSSL_PARAM_construct_octet_string ("pub", pubkey_uncompressed,
-                                                        1 + 2 * coord_size);
-        params[2] = OSSL_PARAM_construct_end ();
-
-        EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_from_name (NULL, "EC", NULL);
-        if (pctx == NULL)
-          return DNSSEC_INDETERMINATE;
-
-        if (EVP_PKEY_fromdata_init (pctx) <= 0 ||
-            EVP_PKEY_fromdata (pctx, &pkey, EVP_PKEY_PUBLIC_KEY, params) <= 0)
-          {
-            EVP_PKEY_CTX_free (pctx);
-            return DNSSEC_INDETERMINATE;
-          }
-        EVP_PKEY_CTX_free (pctx);
-#else
-        EC_KEY *ec = EC_KEY_new_by_curve_name (nid);
-        if (ec == NULL)
-          return DNSSEC_INDETERMINATE;
-
-        /* Create uncompressed public key point */
-        unsigned char pubkey_uncompressed[1 + 2 * DNSSEC_ECDSA_P384_COORD_SIZE];
-        pubkey_uncompressed[0] = 0x04; /* Uncompressed */
-        memcpy (pubkey_uncompressed + 1, dnskey->pubkey, 2 * coord_size);
-
-        const unsigned char *pp = pubkey_uncompressed;
-        if (o2i_ECPublicKey (&ec, &pp, 1 + 2 * coord_size) == NULL)
-          {
-            EC_KEY_free (ec);
-            return DNSSEC_BOGUS;
-          }
-
-        pkey = EVP_PKEY_new ();
-        if (pkey == NULL)
-          {
-            EC_KEY_free (ec);
-            return DNSSEC_INDETERMINATE;
-          }
-        EVP_PKEY_assign_EC_KEY (pkey, ec);
-#endif
-      }
-      break;
+      return create_ecdsa_pkey_from_dnskey (dnskey);
 
     case DNSSEC_ALGO_ED25519:
     case DNSSEC_ALGO_ED448:
-      {
-        int type = (dnskey->algorithm == DNSSEC_ALGO_ED25519) ? EVP_PKEY_ED25519
-                                                               : EVP_PKEY_ED448;
-        size_t key_len = (dnskey->algorithm == DNSSEC_ALGO_ED25519)
-                             ? DNSSEC_ED25519_PUBKEY_SIZE
-                             : DNSSEC_ED448_PUBKEY_SIZE;
-
-        if (dnskey->pubkey_len != key_len)
-          return DNSSEC_BOGUS;
-
-        pkey = EVP_PKEY_new_raw_public_key (type, NULL, dnskey->pubkey, key_len);
-        if (pkey == NULL)
-          return DNSSEC_INDETERMINATE;
-      }
-      break;
+      return create_eddsa_pkey_from_dnskey (dnskey);
 
     default:
-      return DNSSEC_INDETERMINATE;
+      return NULL;
     }
+}
 
-  /* Create verification context */
-  ctx = EVP_MD_CTX_new ();
-  if (ctx == NULL)
+/*
+ * Convert ECDSA signature from raw (r||s) to DER format
+ * Returns allocated DER signature (caller must OPENSSL_free) or NULL
+ */
+static unsigned char *
+convert_ecdsa_signature_to_der (const unsigned char *raw_sig,
+                                 size_t raw_sig_len,
+                                 uint8_t algorithm,
+                                 size_t *der_sig_len)
+{
+  size_t coord_size = (algorithm == DNSSEC_ALGO_ECDSAP256SHA256)
+                          ? DNSSEC_ECDSA_P256_COORD_SIZE
+                          : DNSSEC_ECDSA_P384_COORD_SIZE;
+
+  if (raw_sig_len != 2 * coord_size)
+    return NULL;
+
+  ECDSA_SIG *ecdsa_sig = ECDSA_SIG_new ();
+  if (ecdsa_sig == NULL)
+    return NULL;
+
+  BIGNUM *r = BN_bin2bn (raw_sig, coord_size, NULL);
+  BIGNUM *s = BN_bin2bn (raw_sig + coord_size, coord_size, NULL);
+  if (r == NULL || s == NULL)
     {
-      EVP_PKEY_free (pkey);
-      return DNSSEC_INDETERMINATE;
+      BN_free (r);
+      BN_free (s);
+      ECDSA_SIG_free (ecdsa_sig);
+      return NULL;
     }
 
-  if (EVP_DigestVerifyInit (ctx, NULL, md, NULL, pkey) != 1)
-    {
-      EVP_MD_CTX_free (ctx);
-      EVP_PKEY_free (pkey);
-      return DNSSEC_INDETERMINATE;
-    }
+  ECDSA_SIG_set0 (ecdsa_sig, r, s);
 
+  unsigned char *der_sig = NULL;
+  *der_sig_len = i2d_ECDSA_SIG (ecdsa_sig, &der_sig);
+  ECDSA_SIG_free (ecdsa_sig);
+
+  return der_sig;
+}
+
+/*
+ * Construct RRSIG signed data (RFC 4035 Section 5.3.2)
+ * Returns 0 on success, -1 on error
+ */
+static int
+construct_rrsig_signed_data (EVP_MD_CTX *ctx,
+                              const SocketDNSSEC_RRSIG *rrsig,
+                              const unsigned char *msg,
+                              size_t msglen,
+                              size_t rrset_offset,
+                              size_t rrset_count)
+{
   /*
    * Feed signed data:
    * 1. RRSIG RDATA without signature (fixed fields + signer name)
@@ -1091,19 +1095,12 @@ SocketDNSSEC_verify_rrsig (const SocketDNSSEC_RRSIG *rrsig,
                                          rrsig_rdata + rrsig_rdata_len,
                                          sizeof (rrsig_rdata) - rrsig_rdata_len);
   if (name_len < 0)
-    {
-      EVP_MD_CTX_free (ctx);
-      EVP_PKEY_free (pkey);
-      return DNSSEC_INDETERMINATE;
-    }
+    return -1;
+
   rrsig_rdata_len += name_len;
 
   if (EVP_DigestVerifyUpdate (ctx, rrsig_rdata, rrsig_rdata_len) != 1)
-    {
-      EVP_MD_CTX_free (ctx);
-      EVP_PKEY_free (pkey);
-      return DNSSEC_INDETERMINATE;
-    }
+    return -1;
 
   /*
    * 2. RRset in canonical form (RFC 4035 Section 5.3.2)
@@ -1122,11 +1119,7 @@ SocketDNSSEC_verify_rrsig (const SocketDNSSEC_RRSIG *rrsig,
 
       /* Decode the resource record */
       if (SocketDNS_rr_decode (msg, msglen, current_offset, &rr, &consumed) != 0)
-        {
-          EVP_MD_CTX_free (ctx);
-          EVP_PKEY_free (pkey);
-          return DNSSEC_INDETERMINATE;
-        }
+        return -1;
 
       /* Verify this RR is part of the covered RRset */
       if (rr.type != rrsig->type_covered)
@@ -1143,20 +1136,13 @@ SocketDNSSEC_verify_rrsig (const SocketDNSSEC_RRSIG *rrsig,
       /* Owner name in canonical (lowercase) wire format */
       int owner_len = encode_canonical_name (rr.name, rr_canonical, sizeof (rr_canonical));
       if (owner_len < 0)
-        {
-          EVP_MD_CTX_free (ctx);
-          EVP_PKEY_free (pkey);
-          return DNSSEC_INDETERMINATE;
-        }
+        return -1;
+
       rr_len += owner_len;
 
       /* Check buffer space for fixed fields + RDATA */
       if (rr_len + 10 + rr.rdlength > sizeof (rr_canonical))
-        {
-          EVP_MD_CTX_free (ctx);
-          EVP_PKEY_free (pkey);
-          return DNSSEC_INDETERMINATE;
-        }
+        return -1;
 
       /* Type (2 bytes, network order) */
       WRITE_BE16 (rr_canonical + rr_len, rr.type);
@@ -1183,86 +1169,134 @@ SocketDNSSEC_verify_rrsig (const SocketDNSSEC_RRSIG *rrsig,
 
       /* Add this canonical RR to the signature verification data */
       if (EVP_DigestVerifyUpdate (ctx, rr_canonical, rr_len) != 1)
-        {
-          EVP_MD_CTX_free (ctx);
-          EVP_PKEY_free (pkey);
-          return DNSSEC_INDETERMINATE;
-        }
+        return -1;
 
       current_offset += consumed;
     }
 
-  /* Verify signature */
+  return 0;
+}
+
+/*
+ * Select hash algorithm based on DNSSEC algorithm
+ * Returns EVP_MD or NULL
+ */
+static const EVP_MD *
+select_hash_algorithm (uint8_t algorithm)
+{
+  switch (algorithm)
+    {
+    case DNSSEC_ALGO_RSASHA1:
+    case DNSSEC_ALGO_RSASHA1_NSEC3_SHA1:
+      return EVP_sha1 ();
+    case DNSSEC_ALGO_RSASHA256:
+    case DNSSEC_ALGO_ECDSAP256SHA256:
+      return EVP_sha256 ();
+    case DNSSEC_ALGO_RSASHA512:
+      return EVP_sha512 ();
+    case DNSSEC_ALGO_ECDSAP384SHA384:
+      return EVP_sha384 ();
+    case DNSSEC_ALGO_ED25519:
+    case DNSSEC_ALGO_ED448:
+      return NULL; /* Ed25519/Ed448 don't use separate hash */
+    default:
+      return NULL;
+    }
+}
+
+#endif /* SOCKET_HAS_TLS */
+
+/*
+ * Verify RRSIG signature
+ */
+int
+SocketDNSSEC_verify_rrsig (const SocketDNSSEC_RRSIG *rrsig,
+                            const SocketDNSSEC_DNSKEY *dnskey,
+                            const unsigned char *msg,
+                            size_t msglen __attribute__ ((unused)),
+                            size_t rrset_offset, size_t rrset_count)
+{
+  if (rrsig == NULL || dnskey == NULL || msg == NULL)
+    return -1;
+
+  /* Check key tag matches */
+  if (rrsig->key_tag != dnskey->key_tag)
+    return DNSSEC_BOGUS;
+
+  /* Check algorithm matches */
+  if (rrsig->algorithm != dnskey->algorithm)
+    return DNSSEC_BOGUS;
+
+  /* Check validity period */
+  if (!SocketDNSSEC_rrsig_valid_time (rrsig, 0))
+    return DNSSEC_BOGUS;
+
+  /* Check algorithm is supported */
+  if (!SocketDNSSEC_algorithm_supported (rrsig->algorithm))
+    return DNSSEC_INDETERMINATE;
+
+#ifdef SOCKET_HAS_TLS
+  /* Select hash algorithm */
+  const EVP_MD *md = select_hash_algorithm (rrsig->algorithm);
+
+  /* Create public key from DNSKEY */
+  EVP_PKEY *pkey = create_pkey_from_dnskey (dnskey);
+  if (pkey == NULL)
+    return DNSSEC_INDETERMINATE;
+
+  /* Create verification context */
+  EVP_MD_CTX *ctx = EVP_MD_CTX_new ();
+  if (ctx == NULL)
+    {
+      EVP_PKEY_free (pkey);
+      return DNSSEC_INDETERMINATE;
+    }
+
+  if (EVP_DigestVerifyInit (ctx, NULL, md, NULL, pkey) != 1)
+    {
+      EVP_MD_CTX_free (ctx);
+      EVP_PKEY_free (pkey);
+      return DNSSEC_INDETERMINATE;
+    }
+
+  /* Construct signed data (RRSIG fields + canonical RRset) */
+  if (construct_rrsig_signed_data (ctx, rrsig, msg, msglen,
+                                    rrset_offset, rrset_count) != 0)
+    {
+      EVP_MD_CTX_free (ctx);
+      EVP_PKEY_free (pkey);
+      return DNSSEC_INDETERMINATE;
+    }
+
+  /* Prepare signature (convert ECDSA if needed) */
   const unsigned char *sig = rrsig->signature;
   size_t sig_len = rrsig->signature_len;
-
-  /* For ECDSA, convert from raw (r||s) to DER format */
   unsigned char *der_sig = NULL;
-  size_t der_sig_len = 0;
 
   if (dnskey->algorithm == DNSSEC_ALGO_ECDSAP256SHA256 ||
       dnskey->algorithm == DNSSEC_ALGO_ECDSAP384SHA384)
     {
-      size_t coord_size = (dnskey->algorithm == DNSSEC_ALGO_ECDSAP256SHA256)
-                              ? DNSSEC_ECDSA_P256_COORD_SIZE
-                              : DNSSEC_ECDSA_P384_COORD_SIZE;
-      if (sig_len != 2 * coord_size)
+      der_sig = convert_ecdsa_signature_to_der (sig, sig_len,
+                                                 dnskey->algorithm, &sig_len);
+      if (der_sig == NULL)
         {
           EVP_MD_CTX_free (ctx);
           EVP_PKEY_free (pkey);
           return DNSSEC_BOGUS;
         }
-
-      ECDSA_SIG *ecdsa_sig = ECDSA_SIG_new ();
-      if (ecdsa_sig == NULL)
-        {
-          EVP_MD_CTX_free (ctx);
-          EVP_PKEY_free (pkey);
-          return DNSSEC_INDETERMINATE;
-        }
-
-      BIGNUM *r = BN_bin2bn (sig, coord_size, NULL);
-      BIGNUM *s = BN_bin2bn (sig + coord_size, coord_size, NULL);
-      if (r == NULL || s == NULL)
-        {
-          BN_free (r);
-          BN_free (s);
-          ECDSA_SIG_free (ecdsa_sig);
-          EVP_MD_CTX_free (ctx);
-          EVP_PKEY_free (pkey);
-          return DNSSEC_INDETERMINATE;
-        }
-
-      ECDSA_SIG_set0 (ecdsa_sig, r, s);
-
-      der_sig_len = i2d_ECDSA_SIG (ecdsa_sig, &der_sig);
-      ECDSA_SIG_free (ecdsa_sig);
-
-      if (der_sig == NULL)
-        {
-          EVP_MD_CTX_free (ctx);
-          EVP_PKEY_free (pkey);
-          return DNSSEC_INDETERMINATE;
-        }
-
       sig = der_sig;
-      sig_len = der_sig_len;
     }
 
+  /* Verify signature */
   int verify_result = EVP_DigestVerifyFinal (ctx, sig, sig_len);
 
+  /* Cleanup */
   if (der_sig)
     OPENSSL_free (der_sig);
-
   EVP_MD_CTX_free (ctx);
   EVP_PKEY_free (pkey);
 
-  if (verify_result == 1)
-    result = DNSSEC_SECURE;
-  else
-    result = DNSSEC_BOGUS;
-
-  return result;
+  return (verify_result == 1) ? DNSSEC_SECURE : DNSSEC_BOGUS;
 
 #else
   (void)rrset_offset;
