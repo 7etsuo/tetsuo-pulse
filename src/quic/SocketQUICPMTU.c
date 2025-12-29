@@ -188,6 +188,10 @@ SocketQUICPMTU_send_probe (SocketQUICPMTU_T pmtu, uint64_t packet_number,
   if (pmtu->probes_in_flight >= QUIC_MAX_PMTU_PROBES_IN_FLIGHT)
     return QUIC_PMTU_ERROR_PROBE_LIMIT;
 
+  /* Validate probe size to prevent integer underflow in binary search */
+  if (size <= pmtu->current_pmtu)
+    return QUIC_PMTU_ERROR_SIZE;
+
   /* Allocate probe structure */
   probe = Arena_alloc (pmtu->arena, sizeof (*probe), __FILE__, __LINE__);
   if (!probe)
@@ -279,6 +283,7 @@ update_pmtu_on_probe_failure (SocketQUICPMTU_T pmtu,
 {
   assert (pmtu);
   assert (probe);
+  assert (probe->size >= pmtu->current_pmtu);
 
   /* Probe lost - do NOT update current_pmtu */
   /* RFC 9000 Section 14.3: Probe loss does NOT trigger congestion response */
