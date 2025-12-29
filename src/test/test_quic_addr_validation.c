@@ -115,7 +115,7 @@ test_token_generation_and_validation (void)
   result = SocketQUICAddrValidation_generate_token (
       (struct sockaddr *)&addr, secret, token, &token_len);
   assert (result == QUIC_ADDR_VALIDATION_OK);
-  assert (token_len == 56);
+  assert (token_len == QUIC_ADDR_VALIDATION_TOKEN_SIZE);
 
   /* Validate token with same address */
   result = SocketQUICAddrValidation_validate_token (
@@ -347,9 +347,9 @@ test_null_parameter_handling (void)
                                                     &token_len)
           == QUIC_ADDR_VALIDATION_ERROR_NULL);
 
-  assert (SocketQUICAddrValidation_validate_token (NULL, 56,
-                                                    (struct sockaddr *)&addr,
-                                                    secret)
+  assert (SocketQUICAddrValidation_validate_token (
+              NULL, QUIC_ADDR_VALIDATION_TOKEN_SIZE, (struct sockaddr *)&addr,
+              secret)
           == QUIC_ADDR_VALIDATION_ERROR_NULL);
 
   assert (SocketQUICPathChallenge_generate (NULL, (struct sockaddr *)&addr,

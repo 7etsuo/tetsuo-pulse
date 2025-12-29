@@ -31,6 +31,15 @@
 /** @brief Maximum token size in bytes (RFC 9000 allows variable) */
 #define QUIC_ADDR_VALIDATION_MAX_TOKEN_SIZE 256
 
+/** @brief Token component sizes */
+#define QUIC_TOKEN_TIMESTAMP_SIZE 8   /**< Timestamp field size */
+#define QUIC_TOKEN_ADDR_HASH_SIZE 16  /**< Address hash field size */
+#define QUIC_TOKEN_HMAC_SIZE 32       /**< HMAC-SHA256 field size */
+
+/** @brief Actual token size: 8 (timestamp) + 16 (addr hash) + 32 (HMAC) */
+#define QUIC_ADDR_VALIDATION_TOKEN_SIZE \
+  (QUIC_TOKEN_TIMESTAMP_SIZE + QUIC_TOKEN_ADDR_HASH_SIZE + QUIC_TOKEN_HMAC_SIZE)
+
 /** @brief Token lifetime in seconds */
 #define QUIC_ADDR_VALIDATION_TOKEN_LIFETIME 86400  /* 24 hours */
 

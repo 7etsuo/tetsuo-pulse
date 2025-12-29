@@ -159,8 +159,8 @@ SocketQUICAddrValidation_generate_token (const struct sockaddr *addr,
       return QUIC_ADDR_VALIDATION_ERROR_NULL;
     }
 
-  /* Token format: 8 timestamp + 16 addr_hash + 32 HMAC = 56 bytes */
-  if (*token_len < 56)
+  /* Token format: 8 timestamp + 16 addr_hash + 32 HMAC */
+  if (*token_len < QUIC_ADDR_VALIDATION_TOKEN_SIZE)
     {
       return QUIC_ADDR_VALIDATION_ERROR_BUFFER_SIZE;
     }
@@ -191,7 +191,7 @@ SocketQUICAddrValidation_generate_token (const struct sockaddr *addr,
   memcpy (token + 8, addr_hash, 16);
   memcpy (token + 24, hmac_output, 32);
 
-  *token_len = 56;
+  *token_len = QUIC_ADDR_VALIDATION_TOKEN_SIZE;
   return QUIC_ADDR_VALIDATION_OK;
 }
 
@@ -214,7 +214,7 @@ SocketQUICAddrValidation_validate_token (const uint8_t *token,
     }
 
   /* Check token size */
-  if (token_len != 56)
+  if (token_len != QUIC_ADDR_VALIDATION_TOKEN_SIZE)
     {
       return QUIC_ADDR_VALIDATION_ERROR_INVALID;
     }
