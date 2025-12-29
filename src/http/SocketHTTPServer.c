@@ -63,13 +63,10 @@ find_rate_limiter (SocketHTTPServer_T server, const char *path)
   for (RateLimitEntry *e = server->rate_limiters; e != NULL; e = e->next)
     {
       size_t len = strlen (e->path_prefix);
-      if (strncmp (path, e->path_prefix, len) == 0)
+      if (strncmp (path, e->path_prefix, len) == 0 && len > best_len)
         {
-          if (len > best_len)
-            {
-              best = e;
-              best_len = len;
-            }
+          best = e;
+          best_len = len;
         }
     }
 
