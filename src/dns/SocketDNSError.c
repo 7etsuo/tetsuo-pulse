@@ -47,6 +47,10 @@ static const char *ede_code_names[] = {
   "Invalid Data"                   /* 24 */
 };
 
+_Static_assert (sizeof (ede_code_names) / sizeof (ede_code_names[0])
+                  == DNS_EDE_MAX_DEFINED + 1,
+                "ede_code_names array size must match DNS_EDE_MAX_DEFINED + 1");
+
 /**
  * @brief Error code description table.
  */
@@ -78,6 +82,12 @@ static const char *ede_code_descriptions[] = {
   /* 24 */ "Zone data is too old or has expired"
 };
 
+_Static_assert (sizeof (ede_code_descriptions)
+                    / sizeof (ede_code_descriptions[0])
+                  == DNS_EDE_MAX_DEFINED + 1,
+                "ede_code_descriptions array size must match "
+                "DNS_EDE_MAX_DEFINED + 1");
+
 /**
  * @brief Category name table.
  */
@@ -89,6 +99,11 @@ static const char *ede_category_names[] = {
   "Server State",
   "Network"
 };
+
+_Static_assert (sizeof (ede_category_names) / sizeof (ede_category_names[0])
+                  == DNS_EDE_CATEGORY_NETWORK + 1,
+                "ede_category_names array size must match "
+                "DNS_EDE_CATEGORY_NETWORK + 1");
 
 /**
  * @brief Validate UTF-8 byte sequence.
