@@ -254,8 +254,19 @@ extern void SocketDNS_cancel (T dns, Request_T req);
  * @return Current pending request limit.
  * @threadsafe Yes.
  * @see SocketDNS_setmaxpending() for setting the limit.
+ * @see SocketDNS_getpendingcount() for current pending count.
  */
 extern size_t SocketDNS_getmaxpending (T dns);
+
+/**
+ * @brief Get current number of pending requests.
+ * @ingroup dns
+ * @param dns DNS resolver instance.
+ * @return Number of requests currently pending resolution.
+ * @threadsafe Yes.
+ * @see SocketDNS_getmaxpending() for the capacity limit.
+ */
+extern size_t SocketDNS_getpendingcount (T dns);
 
 /**
  * @brief Set maximum pending request capacity.
@@ -265,6 +276,7 @@ extern size_t SocketDNS_getmaxpending (T dns);
  * @throws SocketDNS_Failed if max_pending < current queue depth.
  * @threadsafe Yes.
  * @see SocketDNS_getmaxpending() for retrieving the current limit.
+ * @see SocketDNS_getpendingcount() for current pending count.
  */
 extern void SocketDNS_setmaxpending (T dns, size_t max_pending);
 
