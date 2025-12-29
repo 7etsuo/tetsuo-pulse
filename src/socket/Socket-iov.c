@@ -731,6 +731,82 @@ socket_wait_with_timeout (int fd, short events, int timeout_ms,
 
 
 /**
+ * SocketIOFn - Function pointer type for I/O operations
+ * @socket: Socket instance
+ * @buf: Buffer for data (void* for generic use)
+ * @len: Number of bytes to transfer
+ *
+ * Returns: Number of bytes transferred, or 0 if would block
+ * Raises: Socket_Closed, Socket_Failed
+ *
+ * Generic I/O function signature for send/recv operations.
+ */
+typedef ssize_t (*SocketIOFn) (T socket, void *buf, size_t len);
+
+/**
+ * socket_io_with_timeout - Generic I/O with timeout helper
+ * @socket: Connected socket
+ * @buf: Buffer for data (read or write)
+ * @len: Number of bytes to transfer
+ * @timeout_ms: Timeout in milliseconds (>0 for deadline, -1 for block, 0 for none)
+ * @poll_event: Poll event to wait for (POLLIN or POLLOUT)
+ * @io_fn: I/O function to call (Socket_send or Socket_recv)
+ * @op_name: Operation name for error messages ("send" or "recv")
+ *
+ * Returns: Total bytes transferred (may be < len on timeout or EOF)
+ * Raises: Socket_Closed, Socket_Failed
+ *
+ * Centralized timeout I/O logic to eliminate duplication between send and recv.
+ * Uses function pointer to abstract the actual I/O operation.
+ */
+static ssize_t
+socket_io_with_timeout (T socket, void *buf, size_t len, int timeout_ms,
+                        short poll_event, SocketIOFn io_fn,
+                        const char *op_name)
+{
+  volatile size_t total = 0;
+  char *ptr;
+  int fd;
+  volatile int64_t deadline_ms;
+  ssize_t result;
+
+  assert (socket);
+  assert (buf || len == 0);
+  assert (io_fn);
+
+  if (len == 0)
+    return 0;
+
+  fd = SocketBase_fd (socket->base);
+  ptr = (char *)buf;
+  deadline_ms = SocketTimeout_deadline_ms (timeout_ms);
+
+  TRY
+  {
+    while (total < len)
+      {
+        /* Wait for socket to be ready with timeout handling */
+        if (!socket_wait_with_timeout (fd, poll_event, timeout_ms, deadline_ms,
+                                        op_name))
+          break; /* Timeout */
+
+        result = io_fn (socket, ptr + total, len - total);
+        if (result > 0)
+          total += (size_t)result;
+        else if (result == 0)
+          break; /* Would block or EOF */
+      }
+  }
+  EXCEPT (Socket_Closed)
+  RERAISE;
+  EXCEPT (Socket_Failed)
+  RERAISE;
+  END_TRY;
+
+  return (ssize_t)total;
+}
+
+/**
  * socket_send_with_timeout - Send with timeout helper
  * @socket: Connected socket
  * @buf: Data to send (const)
@@ -745,44 +821,9 @@ socket_wait_with_timeout (int fd, short events, int timeout_ms,
 static ssize_t
 socket_send_with_timeout (T socket, const void *buf, size_t len, int timeout_ms)
 {
-  volatile size_t total_sent = 0;
-  const char *ptr;
-  int fd;
-  volatile int64_t deadline_ms;
-  ssize_t result;
-
-  assert (socket);
-  assert (buf || len == 0);
-
-  if (len == 0)
-    return 0;
-
-  fd = SocketBase_fd (socket->base);
-  ptr = (const char *)buf;
-  deadline_ms = SocketTimeout_deadline_ms (timeout_ms);
-
-  TRY
-  {
-    while (total_sent < len)
-      {
-        /* Wait for socket to be ready with timeout handling */
-        if (!socket_wait_with_timeout (fd, POLLOUT, timeout_ms, deadline_ms, "send"))
-          break; /* Timeout */
-
-        result = Socket_send (socket, ptr + total_sent, len - total_sent);
-        if (result > 0)
-          total_sent += (size_t)result;
-        else if (result == 0)
-          break; /* Would block */
-      }
-  }
-  EXCEPT (Socket_Closed)
-  RERAISE;
-  EXCEPT (Socket_Failed)
-  RERAISE;
-  END_TRY;
-
-  return (ssize_t)total_sent;
+  /* Cast away const for generic io_fn signature - Socket_send preserves const */
+  return socket_io_with_timeout (socket, (void *)buf, len, timeout_ms, POLLOUT,
+                                  (SocketIOFn)Socket_send, "send");
 }
 
 /**
@@ -800,44 +841,8 @@ socket_send_with_timeout (T socket, const void *buf, size_t len, int timeout_ms)
 static ssize_t
 socket_recv_with_timeout (T socket, void *buf, size_t len, int timeout_ms)
 {
-  volatile size_t total_received = 0;
-  char *ptr;
-  int fd;
-  volatile int64_t deadline_ms;
-  ssize_t result;
-
-  assert (socket);
-  assert (buf || len == 0);
-
-  if (len == 0)
-    return 0;
-
-  fd = SocketBase_fd (socket->base);
-  ptr = (char *)buf;
-  deadline_ms = SocketTimeout_deadline_ms (timeout_ms);
-
-  TRY
-  {
-    while (total_received < len)
-      {
-        /* Wait for socket to be ready with timeout handling */
-        if (!socket_wait_with_timeout (fd, POLLIN, timeout_ms, deadline_ms, "recv"))
-          break; /* Timeout */
-
-        result = Socket_recv (socket, ptr + total_received, len - total_received);
-        if (result > 0)
-          total_received += (size_t)result;
-        else if (result == 0)
-          break; /* Would block or EOF */
-      }
-  }
-  EXCEPT (Socket_Closed)
-  RERAISE;
-  EXCEPT (Socket_Failed)
-  RERAISE;
-  END_TRY;
-
-  return (ssize_t)total_received;
+  return socket_io_with_timeout (socket, buf, len, timeout_ms, POLLIN,
+                                  (SocketIOFn)Socket_recv, "recv");
 }
 
 /**
