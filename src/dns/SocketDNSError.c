@@ -106,6 +106,41 @@ _Static_assert (sizeof (ede_category_names) / sizeof (ede_category_names[0])
                 "DNS_EDE_CATEGORY_NETWORK + 1");
 
 /**
+ * @brief Lookup table mapping EDE codes to categories.
+ *
+ * Uses designated initializers to map INFO-CODE to category.
+ * Sparse array indexed by code - unmapped entries default to
+ * DNS_EDE_CATEGORY_GENERAL (0).
+ */
+static const SocketDNS_EDECategory ede_code_to_category[] = {
+  [DNS_EDE_OTHER]                       = DNS_EDE_CATEGORY_GENERAL,
+  [DNS_EDE_UNSUPPORTED_DNSKEY_ALGORITHM] = DNS_EDE_CATEGORY_DNSSEC,
+  [DNS_EDE_UNSUPPORTED_DS_DIGEST_TYPE]  = DNS_EDE_CATEGORY_DNSSEC,
+  [DNS_EDE_STALE_ANSWER]                = DNS_EDE_CATEGORY_STALE,
+  [DNS_EDE_FORGED_ANSWER]               = DNS_EDE_CATEGORY_POLICY,
+  [DNS_EDE_DNSSEC_INDETERMINATE]        = DNS_EDE_CATEGORY_DNSSEC,
+  [DNS_EDE_DNSSEC_BOGUS]                = DNS_EDE_CATEGORY_DNSSEC,
+  [DNS_EDE_SIGNATURE_EXPIRED]           = DNS_EDE_CATEGORY_DNSSEC,
+  [DNS_EDE_SIGNATURE_NOT_YET_VALID]     = DNS_EDE_CATEGORY_DNSSEC,
+  [DNS_EDE_DNSKEY_MISSING]              = DNS_EDE_CATEGORY_DNSSEC,
+  [DNS_EDE_RRSIGS_MISSING]              = DNS_EDE_CATEGORY_DNSSEC,
+  [DNS_EDE_NO_ZONE_KEY_BIT_SET]         = DNS_EDE_CATEGORY_DNSSEC,
+  [DNS_EDE_NSEC_MISSING]                = DNS_EDE_CATEGORY_DNSSEC,
+  [DNS_EDE_CACHED_ERROR]                = DNS_EDE_CATEGORY_SERVER,
+  [DNS_EDE_NOT_READY]                   = DNS_EDE_CATEGORY_SERVER,
+  [DNS_EDE_BLOCKED]                     = DNS_EDE_CATEGORY_POLICY,
+  [DNS_EDE_CENSORED]                    = DNS_EDE_CATEGORY_POLICY,
+  [DNS_EDE_FILTERED]                    = DNS_EDE_CATEGORY_POLICY,
+  [DNS_EDE_PROHIBITED]                  = DNS_EDE_CATEGORY_POLICY,
+  [DNS_EDE_STALE_NXDOMAIN_ANSWER]       = DNS_EDE_CATEGORY_STALE,
+  [DNS_EDE_NOT_AUTHORITATIVE]           = DNS_EDE_CATEGORY_SERVER,
+  [DNS_EDE_NOT_SUPPORTED]               = DNS_EDE_CATEGORY_SERVER,
+  [DNS_EDE_NO_REACHABLE_AUTHORITY]      = DNS_EDE_CATEGORY_NETWORK,
+  [DNS_EDE_NETWORK_ERROR]               = DNS_EDE_CATEGORY_NETWORK,
+  [DNS_EDE_INVALID_DATA]                = DNS_EDE_CATEGORY_NETWORK
+};
+
+/**
  * @brief Validate UTF-8 byte sequence.
  *
  * Simple UTF-8 validation - checks for valid byte sequences.
@@ -298,48 +333,9 @@ SocketDNS_ede_code_description (uint16_t code)
 SocketDNS_EDECategory
 SocketDNS_ede_category (uint16_t code)
 {
-  switch (code)
-    {
-    case DNS_EDE_OTHER:
-      return DNS_EDE_CATEGORY_GENERAL;
-
-    case DNS_EDE_UNSUPPORTED_DNSKEY_ALGORITHM:
-    case DNS_EDE_UNSUPPORTED_DS_DIGEST_TYPE:
-    case DNS_EDE_DNSSEC_INDETERMINATE:
-    case DNS_EDE_DNSSEC_BOGUS:
-    case DNS_EDE_SIGNATURE_EXPIRED:
-    case DNS_EDE_SIGNATURE_NOT_YET_VALID:
-    case DNS_EDE_DNSKEY_MISSING:
-    case DNS_EDE_RRSIGS_MISSING:
-    case DNS_EDE_NO_ZONE_KEY_BIT_SET:
-    case DNS_EDE_NSEC_MISSING:
-      return DNS_EDE_CATEGORY_DNSSEC;
-
-    case DNS_EDE_STALE_ANSWER:
-    case DNS_EDE_STALE_NXDOMAIN_ANSWER:
-      return DNS_EDE_CATEGORY_STALE;
-
-    case DNS_EDE_FORGED_ANSWER:
-    case DNS_EDE_BLOCKED:
-    case DNS_EDE_CENSORED:
-    case DNS_EDE_FILTERED:
-    case DNS_EDE_PROHIBITED:
-      return DNS_EDE_CATEGORY_POLICY;
-
-    case DNS_EDE_CACHED_ERROR:
-    case DNS_EDE_NOT_READY:
-    case DNS_EDE_NOT_AUTHORITATIVE:
-    case DNS_EDE_NOT_SUPPORTED:
-      return DNS_EDE_CATEGORY_SERVER;
-
-    case DNS_EDE_NO_REACHABLE_AUTHORITY:
-    case DNS_EDE_NETWORK_ERROR:
-    case DNS_EDE_INVALID_DATA:
-      return DNS_EDE_CATEGORY_NETWORK;
-
-    default:
-      return DNS_EDE_CATEGORY_GENERAL;
-    }
+  if (code <= DNS_EDE_MAX_DEFINED)
+    return ede_code_to_category[code];
+  return DNS_EDE_CATEGORY_GENERAL;
 }
 
 const char *
