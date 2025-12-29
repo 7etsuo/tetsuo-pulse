@@ -18,25 +18,25 @@ This skill activates when:
 
 ## CRITICAL: Context Efficiency
 
-This skill uses an ultra-thin architecture:
+This skill uses a direct architecture:
 
 1. **Python scripts** do all deterministic work (zero context)
-2. **ONE coordinator** is spawned (background, 10min timeout)
+2. **Skill spawns implementers directly** (no coordinator layer)
 3. **File polling** monitors progress (NOT TaskOutput)
-4. **Coordinator respawns** on checkpoint (fresh context)
+4. **Batched spawning** prevents context exhaustion
 
 **NEVER use TaskOutput in this skill.** Poll files instead.
 
 ## Architecture
 
 ```
-This Skill (ultra-thin) ──▶ Coordinator Agent ──▶ Implementation Agents (parallel)
-        │                          │                        │
-        │                          ▼                        ▼
-        │                    manifest.json             results/*.json
-        │                    (checkpoint)              (written by agents)
-        │                          │
-        └──────────────────────────┴──── Poll status.txt (via script)
+This Skill ──▶ Implementation Agents (parallel, up to BATCH_SIZE)
+     │                      │
+     │                      ▼
+     │                 results/*.json
+     │                 (written by agents)
+     │
+     └──── Poll status.txt (via script)
 ```
 
 **Context usage**: ~2KB constant (scripts do the heavy lifting)
@@ -70,30 +70,61 @@ Script output tells you ready/blocked count. Creates:
 - `frontier.json` - ready/blocked lists
 - `issues/*.json` - issue details
 
-### Step 3: Spawn Coordinator (Fire and Forget)
+### Step 3: Spawn Implementers Directly (Fire and Forget)
+
+**Claim the batch first** using `start_batch.py` (updates manifest with `current_batch`):
+
+```bash
+BATCH=$(python3 .claude/skills/issue-processor/scripts/start_batch.py \
+  --state-dir {STATE_DIR} \
+  --batch-size 10)
+
+# Update status
+echo "RUNNING:0/$(echo $BATCH | python3 -c 'import json,sys; print(len(json.load(sys.stdin)))')" > {STATE_DIR}/status.txt
+```
+
+This enables visibility - other terminals can see which issues are being worked on.
+
+Spawn ALL agents in ONE message with MULTIPLE Task calls:
 
 ```
-Task tool:
-  subagent_type: "issue-impl-coordinator"
-  description: "Coordinate issue implementation"
+Task(
+  subagent_type: "issue-implementer"
+  description: "Implement #391"
   prompt: |
     STATE_DIR: {STATE_DIR}
     REPOSITORY: {REPOSITORY}
-    RESUME: false
-    BATCH_SIZE: {BATCH_SIZE}
-
-    Process all ready issues. Spawn implementation agents in parallel.
-    Poll for result files using poll_results.py (NOT TaskOutput).
-    Write CHECKPOINT if context gets low.
+    ISSUE_NUMBER: 391
   run_in_background: true
-  timeout: 600000
+)
+Task(
+  subagent_type: "issue-implementer"
+  description: "Implement #392"
+  prompt: |
+    STATE_DIR: {STATE_DIR}
+    REPOSITORY: {REPOSITORY}
+    ISSUE_NUMBER: 392
+  run_in_background: true
+)
+... (spawn up to BATCH_SIZE at once)
 ```
 
-**IMPORTANT**: After spawning, IGNORE the returned task_id. Do not use TaskOutput.
+**IMPORTANT**: After spawning, IGNORE the returned task_ids. Do not use TaskOutput.
 
 ### Step 4: Monitor Status (via Script)
 
-Loop every 30 seconds:
+Poll every 30 seconds until batch completes:
+
+```bash
+python3 .claude/skills/issue-processor/scripts/poll_results.py \
+  --state-dir {STATE_DIR} \
+  --expected {comma_separated_issue_numbers} \
+  --timeout 600
+```
+
+The script monitors `results/*.json` files and updates status.txt.
+
+Also check status with:
 
 ```bash
 python3 .claude/skills/issue-processor/scripts/check_status.py --state-dir {STATE_DIR}
@@ -103,40 +134,30 @@ python3 .claude/skills/issue-processor/scripts/check_status.py --state-dir {STAT
 
 | Status | Action |
 |--------|--------|
-| `READY:N/M` | Coordinator hasn't started yet |
 | `RUNNING:N/M` | In progress, report to user |
 | `STALLED:N/M:no_progress_for_Xs` | No results for 120+ seconds - agents may have failed |
-| `COMPLETED:N/M:X_success:Y_failed` | Done, go to summary |
+| `COMPLETED:N/M:X_success:Y_failed` | Batch done, check for more |
 | `ERROR:message` | Report error |
 
 **STALLED handling**: If you see STALLED, check:
 1. `started/` directory - which agents wrote started markers
 2. `wip:*` labels on issues - which are claimed but not progressing
-3. Consider respawning coordinator or releasing stuck claims
+3. Release stuck claims and retry
 
-**IMPORTANT**: Do NOT use TaskOutput to check coordinator status. Only read status.txt.
+### Step 5: Finish Batch and Process Next
 
-For coordinator respawn on context exhaustion, check manifest.json for in_progress issues.
+After a batch completes, finalize it and check for more:
 
-### Step 5: Handle Resume
-
-If there are in_progress issues in manifest.json but no active coordinator:
-
-```
-Task tool:
-  subagent_type: "issue-impl-coordinator"
-  prompt: |
-    STATE_DIR: {STATE_DIR}
-    REPOSITORY: {REPOSITORY}
-    RESUME: true
-    BATCH_SIZE: {BATCH_SIZE}
-
-    Continue from previous state. Read manifest.json for progress.
-  run_in_background: true
-  timeout: 600000
+```bash
+python3 .claude/skills/issue-processor/scripts/finish_batch.py --state-dir {STATE_DIR}
 ```
 
-Then continue monitoring (Step 4).
+This clears `current_batch` and updates `completed`/`failed` lists in the manifest.
+
+Then check for remaining issues:
+1. Read `manifest.json` - check `completed`, `failed`, `ready` lists
+2. If more ready issues exist, go back to Step 3 with next batch
+3. If all done, go to Step 6 (Summary)
 
 ### Step 5b: Get Next Batch
 
@@ -190,8 +211,9 @@ If user says "continue":
 
 1. Find latest run: `ls -d .claude/issue-state/run-* | tail -1`
 2. Check status: `python3 scripts/check_status.py --state-dir {DIR}`
-3. If not COMPLETED: spawn coordinator with RESUME=true
-4. Continue monitoring
+3. Read manifest.json to find remaining ready issues (excluding completed/failed)
+4. Spawn next batch of implementers directly
+5. Continue polling and batching until done
 
 ## State Files
 
@@ -217,16 +239,16 @@ See `scripts/RESULT_FORMAT.md` for the expected JSON structure when writing resu
 ## What NOT to Do
 
 ❌ `TaskOutput(task_id: "abc123")` - FORBIDDEN
-❌ Reading coordinator output directly - Only poll status.txt
+❌ Reading agent output directly - Only poll result files
 ❌ Waiting for agents synchronously - Fire and forget
-❌ Parsing agent returns - Only read result files
+❌ Using a coordinator subagent - Spawn implementers directly
 
 ## What TO Do
 
 ✅ Run setup.py to create state directory
-✅ Spawn coordinator with `run_in_background: true`
-✅ Poll status.txt using check_status.py
-✅ Spawn new coordinator on CHECKPOINT
+✅ Spawn implementers directly with `run_in_background: true`
+✅ Poll status.txt using check_status.py or poll_results.py
+✅ Process batches sequentially (spawn batch, wait, spawn next)
 ✅ Run summarize.py when COMPLETED
 
 ## Example Usage
@@ -236,8 +258,8 @@ User: /issue-processor --label quic --max 10
 
 Skill:
   [1] Setup: "Fetched 15 issues. Ready: 8, Blocked: 7"
-  [2] Spawning coordinator (fire and forget)...
-  [3] Monitoring status.txt...
+  [2] Spawning 8 implementer agents directly...
+  [3] Polling for results...
       Status: RUNNING:0/8
       Status: RUNNING:5/8
       Status: COMPLETED:8/8:7_success:1_failed
@@ -256,6 +278,33 @@ Skill:
   ### Next Wave
   - #393 (was blocked by #392)
   ...
+```
+
+## Checking Available Issues (for Manual Work)
+
+When issue-processor is running in one terminal and you want to work on issues
+manually in another terminal, use `list_available.py`:
+
+```bash
+python3 .claude/skills/issue-processor/scripts/list_available.py \
+  --repo 7etsuo/tetsuo-socket \
+  --state-dir .claude/issue-state/run-xxx
+```
+
+Output shows:
+- **CLAIMED**: Issues currently being worked on by agents (have `wip:*` labels)
+- **CURRENT BATCH**: Issues in the active batch (from manifest)
+- **AVAILABLE**: Issues safe to work on manually
+
+Options:
+- `--limit N`: Show first N available issues (default: 20)
+- `--json`: Output as JSON for scripting
+
+For quick status with batch details:
+```bash
+python3 .claude/skills/issue-processor/scripts/check_status.py \
+  --state-dir .claude/issue-state/run-xxx \
+  --verbose
 ```
 
 ## Multi-Instance Coordination
@@ -301,8 +350,8 @@ If an instance crashes mid-implementation:
 | Aspect | Value |
 |--------|-------|
 | Context usage | ~2KB constant |
-| Max issues | Unlimited (coordinator respawns) |
+| Max issues | Unlimited (batched spawning) |
 | State persistence | Files survive /compact |
 | Parallelism | 10+ agents per batch |
-| Resume | Automatic from checkpoint |
+| Resume | Automatic from manifest state |
 | Multi-instance | Safe coordination via GitHub labels |
