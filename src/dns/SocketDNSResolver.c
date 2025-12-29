@@ -758,6 +758,10 @@ parse_response (T resolver, struct SocketDNSResolver_Query *q,
           if (q->cname_depth >= RESOLVER_MAX_CNAME_DEPTH)
             return RESOLVER_ERROR_CNAME_LOOP;
 
+          /* Validate CNAME target length before copy */
+          if (strlen (cname_target) >= DNS_MAX_NAME_LEN)
+            return RESOLVER_ERROR_INVALID;
+
           /* Store CNAME target for re-query */
           snprintf (q->current_name, DNS_MAX_NAME_LEN, "%s", cname_target);
           q->cname_depth++;
@@ -929,6 +933,12 @@ transport_callback (SocketDNSQuery_T query, const unsigned char *response,
                   >= 0)
                 {
                   if (q->cname_depth >= RESOLVER_MAX_CNAME_DEPTH)
+                    {
+                      q->state = QUERY_STATE_FAILED;
+                      return;
+                    }
+                  /* Validate CNAME target length before copy */
+                  if (strlen (cname_target) >= DNS_MAX_NAME_LEN)
                     {
                       q->state = QUERY_STATE_FAILED;
                       return;
@@ -1400,6 +1410,13 @@ SocketDNSResolver_resolve (T resolver, const char *hostname, int flags,
   if (SocketDNSTransport_nameserver_count (resolver->transport) == 0)
     {
       callback (NULL, NULL, RESOLVER_ERROR_NO_NS, userdata);
+      return NULL;
+    }
+
+  /* Validate hostname length before allocation */
+  if (strlen (hostname) >= DNS_MAX_NAME_LEN)
+    {
+      callback (NULL, NULL, RESOLVER_ERROR_INVALID, userdata);
       return NULL;
     }
 
