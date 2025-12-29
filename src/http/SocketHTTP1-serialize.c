@@ -327,19 +327,6 @@ add_request_extras (const SocketHTTP_Request *request, char **buf,
   return safe_append_crlf (buf, remaining);
 }
 
-static int
-add_response_extras (const SocketHTTP_Response *response, char **buf,
-                     size_t *remaining)
-{
-  if (append_content_length_header (buf, remaining, response->headers,
-                                    response->has_body,
-                                    response->content_length)
-      < 0)
-    return -1;
-
-  return safe_append_crlf (buf, remaining);
-}
-
 ssize_t
 SocketHTTP1_serialize_request (const SocketHTTP_Request *request, char *output,
                                size_t output_size)
@@ -391,7 +378,13 @@ SocketHTTP1_serialize_response (const SocketHTTP_Response *response,
   if (serialize_headers_section (response->headers, &p, &remaining) < 0)
     return -1;
 
-  if (add_response_extras (response, &p, &remaining) < 0)
+  if (append_content_length_header (&p, &remaining, response->headers,
+                                    response->has_body,
+                                    response->content_length)
+      < 0)
+    return -1;
+
+  if (safe_append_crlf (&p, &remaining) < 0)
     return -1;
 
   *p = '\0';
