@@ -1380,7 +1380,7 @@ SocketWS_close (SocketWS_T ws, int code, const char *reason)
  * @param url The WebSocket URL (ws:// or wss://)
  * @param[out] host Buffer for hostname (size NI_MAXHOST)
  * @param[out] port Port number (default 80/443)
- * @param[out] path Buffer for path (size 1024)
+ * @param[out] path Buffer for path (size SOCKETWS_MAX_PATH_SIZE)
  * @param[out] use_tls TLS flag (1 for wss://, 0 for ws://)
  * @return 0 on success, -1 on error
  */
@@ -1450,8 +1450,8 @@ ws_parse_url (const char *url, char *host, int *port, char *path, int *use_tls)
 
   if (path_start)
     {
-      strncpy (path, path_start, 1024 - 1);
-      path[1024 - 1] = '\0';
+      strncpy (path, path_start, SOCKETWS_MAX_PATH_SIZE - 1);
+      path[SOCKETWS_MAX_PATH_SIZE - 1] = '\0';
     }
   else
     {
