@@ -1409,8 +1409,7 @@ SocketTLS_get_verify_error_string (Socket_T socket, char *buf, size_t size)
   const char *code_str = X509_verify_cert_error_string (code);
   if (code_str)
     {
-      strncpy (buf, code_str, size - 1);
-      buf[size - 1] = '\0';
+      socket_util_safe_strncpy (buf, code_str, size);
       return buf;
     }
 
@@ -1422,8 +1421,7 @@ SocketTLS_get_verify_error_string (Socket_T socket, char *buf, size_t size)
       return buf;
     }
 
-  strncpy (buf, "TLS verification failed (unknown error)", size - 1);
-  buf[size - 1] = '\0';
+  socket_util_safe_strncpy (buf, "TLS verification failed (unknown error)", size);
   return buf;
 }
 
@@ -1877,8 +1875,7 @@ SocketTLS_get_peer_cert_info (Socket_T socket, SocketTLS_CertInfo *info)
           char *hex = BN_bn2hex (bn);
           if (hex)
             {
-              strncpy (info->serial, hex, sizeof (info->serial) - 1);
-              info->serial[sizeof (info->serial) - 1] = '\0';
+              socket_util_safe_strncpy (info->serial, hex, sizeof (info->serial));
               OPENSSL_free (hex);
             }
           BN_free (bn);
