@@ -198,8 +198,9 @@ SocketQUICConnection_initiate_close(SocketQUICConnection_T conn,
   uint64_t timeout = calculate_termination_timeout(pto_ms);
   conn->closing_deadline_ms = safe_add_timeout(now_ms, timeout);
 
-  /* Store error code in user_data for CONNECTION_CLOSE frame generation */
-  /* Note: Actual frame sending is caller's responsibility */
+  /* Error code handling is caller's responsibility */
+  /* Caller must send CONNECTION_CLOSE frame with appropriate error_code */
+  /* This function only manages connection state transition */
   (void)error_code;
 }
 
