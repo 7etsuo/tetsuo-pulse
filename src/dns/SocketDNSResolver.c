@@ -1294,6 +1294,149 @@ SocketDNSResolver_set_retries (T resolver, int max_retries)
   apply_config_to_transport (resolver);
 }
 
+/**
+ * Fast path: Check if hostname is an IP literal and handle immediately.
+ *
+ * @param hostname  Hostname to check.
+ * @param flags     Resolution flags (unused for literals).
+ * @param callback  User callback to invoke if literal.
+ * @param userdata  User data for callback.
+ * @return 1 if handled (IPv4 or IPv6 literal), 0 otherwise.
+ */
+static int
+try_ip_literal (const char *hostname, int flags,
+                SocketDNSResolver_Callback callback, void *userdata)
+{
+  SocketDNSResolver_Result result = { 0 };
+  SocketDNSResolver_Address addr = { 0 };
+  struct in_addr v4;
+  struct in6_addr v6;
+  unsigned int scope_id = 0;
+
+  (void)flags; /* Unused - literals ignore family preference */
+
+  /* Check for IPv4 literal */
+  if (is_ipv4_address (hostname, &v4))
+    {
+      addr.family = AF_INET;
+      addr.addr.v4 = v4;
+      addr.ttl = 0; /* No TTL for literals */
+
+      result.addresses = &addr;
+      result.count = 1;
+      result.min_ttl = 0;
+
+      callback (NULL, &result, RESOLVER_OK, userdata);
+      return 1;
+    }
+
+  /* Check for IPv6 literal */
+  if (is_ipv6_address (hostname, &v6, &scope_id))
+    {
+      addr.family = AF_INET6;
+      addr.addr.v6 = v6;
+      addr.ttl = 0;
+      /* Note: scope_id available but not stored in result */
+      (void)scope_id;
+
+      result.addresses = &addr;
+      result.count = 1;
+      result.min_ttl = 0;
+
+      callback (NULL, &result, RESOLVER_OK, userdata);
+      return 1;
+    }
+
+  return 0;
+}
+
+/**
+ * Fast path: Check if hostname is "localhost" and handle immediately.
+ *
+ * Returns loopback addresses (127.0.0.1 and/or ::1) based on flags.
+ *
+ * @param hostname  Hostname to check.
+ * @param flags     Resolution flags (determines IPv4/IPv6).
+ * @param callback  User callback to invoke if localhost.
+ * @param userdata  User data for callback.
+ * @return 1 if handled, 0 otherwise.
+ */
+static int
+try_localhost (const char *hostname, int flags,
+               SocketDNSResolver_Callback callback, void *userdata)
+{
+  SocketDNSResolver_Result result = { 0 };
+  SocketDNSResolver_Address addrs[2];
+  size_t addr_count = 0;
+
+  if (!is_localhost (hostname))
+    return 0;
+
+  /* Return both IPv4 and IPv6 loopback based on flags */
+  if (flags & RESOLVER_FLAG_IPV4)
+    {
+      addrs[addr_count].family = AF_INET;
+      addrs[addr_count].addr.v4.s_addr = htonl (INADDR_LOOPBACK);
+      addrs[addr_count].ttl = 0;
+      addr_count++;
+    }
+
+  if (flags & RESOLVER_FLAG_IPV6)
+    {
+      addrs[addr_count].family = AF_INET6;
+      addrs[addr_count].addr.v6 = in6addr_loopback;
+      addrs[addr_count].ttl = 0;
+      addr_count++;
+    }
+
+  result.addresses = addrs;
+  result.count = addr_count;
+  result.min_ttl = 0;
+
+  callback (NULL, &result, RESOLVER_OK, userdata);
+  return 1;
+}
+
+/**
+ * Fast path: Check cache for existing resolution.
+ *
+ * @param resolver  Resolver instance.
+ * @param hostname  Hostname to look up.
+ * @param flags     Resolution flags.
+ * @param callback  User callback to invoke if cache hit.
+ * @param userdata  User data for callback.
+ * @return 1 if cache hit, 0 otherwise.
+ */
+static int
+try_cache (T resolver, const char *hostname, int flags,
+           SocketDNSResolver_Callback callback, void *userdata)
+{
+  struct CacheEntry *cached;
+  SocketDNSResolver_Result result = { 0 };
+
+  if (flags & RESOLVER_FLAG_NO_CACHE)
+    return 0;
+
+  cached = cache_lookup (resolver, hostname);
+  if (!cached)
+    return 0;
+
+  /* Build result from cache - use reallocarray to prevent overflow */
+  result.addresses = reallocarray (NULL, cached->address_count,
+                                   sizeof (SocketDNSResolver_Address));
+  if (!result.addresses)
+    return 0; /* Allocation failed, proceed to query */
+
+  memcpy (result.addresses, cached->addresses,
+          cached->address_count * sizeof (SocketDNSResolver_Address));
+  result.count = cached->address_count;
+  result.min_ttl = cached->ttl;
+
+  callback (NULL, &result, RESOLVER_OK, userdata);
+  free (result.addresses);
+  return 1;
+}
+
 SocketDNSResolver_Query_T
 SocketDNSResolver_resolve (T resolver, const char *hostname, int flags,
                            SocketDNSResolver_Callback callback, void *userdata)
@@ -1308,103 +1451,15 @@ SocketDNSResolver_resolve (T resolver, const char *hostname, int flags,
   if ((flags & (RESOLVER_FLAG_IPV4 | RESOLVER_FLAG_IPV6)) == 0)
     flags |= RESOLVER_FLAG_BOTH;
 
-  /* Check if hostname is a numeric IP address - fast path skips DNS */
-  {
-    SocketDNSResolver_Result result = { 0 };
-    SocketDNSResolver_Address addr = { 0 };
-    struct in_addr v4;
-    struct in6_addr v6;
-    unsigned int scope_id = 0;
+  /* Fast paths: IP literals, localhost, cache */
+  if (try_ip_literal (hostname, flags, callback, userdata))
+    return NULL;
 
-    if (is_ipv4_address (hostname, &v4))
-      {
-        /* IPv4 numeric address - no DNS needed */
-        addr.family = AF_INET;
-        addr.addr.v4 = v4;
-        addr.ttl = 0; /* No TTL for literals */
+  if (try_localhost (hostname, flags, callback, userdata))
+    return NULL;
 
-        result.addresses = &addr;
-        result.count = 1;
-        result.min_ttl = 0;
-
-        callback (NULL, &result, RESOLVER_OK, userdata);
-        return NULL; /* No pending query */
-      }
-
-    if (is_ipv6_address (hostname, &v6, &scope_id))
-      {
-        /* IPv6 numeric address (with optional zone ID) - no DNS needed */
-        addr.family = AF_INET6;
-        addr.addr.v6 = v6;
-        addr.ttl = 0;
-        /* Note: scope_id is available for caller but not stored in result.
-         * The caller can use if_nametoindex() to get it if needed. */
-        (void)scope_id;
-
-        result.addresses = &addr;
-        result.count = 1;
-        result.min_ttl = 0;
-
-        callback (NULL, &result, RESOLVER_OK, userdata);
-        return NULL; /* No pending query */
-      }
-  }
-
-  /* Check if hostname is "localhost" - return loopback addresses */
-  if (is_localhost (hostname))
-    {
-      SocketDNSResolver_Result result = { 0 };
-      SocketDNSResolver_Address addrs[2];
-      size_t addr_count = 0;
-
-      /* Return both IPv4 and IPv6 loopback based on flags */
-      if (flags & RESOLVER_FLAG_IPV4)
-        {
-          addrs[addr_count].family = AF_INET;
-          addrs[addr_count].addr.v4.s_addr = htonl (INADDR_LOOPBACK);
-          addrs[addr_count].ttl = 0;
-          addr_count++;
-        }
-      if (flags & RESOLVER_FLAG_IPV6)
-        {
-          addrs[addr_count].family = AF_INET6;
-          addrs[addr_count].addr.v6 = in6addr_loopback;
-          addrs[addr_count].ttl = 0;
-          addr_count++;
-        }
-
-      result.addresses = addrs;
-      result.count = addr_count;
-      result.min_ttl = 0;
-
-      callback (NULL, &result, RESOLVER_OK, userdata);
-      return NULL; /* No pending query */
-    }
-
-  /* Check cache */
-  if (!(flags & RESOLVER_FLAG_NO_CACHE))
-    {
-      struct CacheEntry *cached = cache_lookup (resolver, hostname);
-      if (cached)
-        {
-          /* Build result from cache - use reallocarray to prevent integer overflow */
-          SocketDNSResolver_Result result = { 0 };
-          result.addresses = reallocarray (NULL, cached->address_count,
-                                           sizeof (SocketDNSResolver_Address));
-          if (result.addresses)
-            {
-              memcpy (result.addresses, cached->addresses,
-                      cached->address_count
-                          * sizeof (SocketDNSResolver_Address));
-              result.count = cached->address_count;
-              result.min_ttl = cached->ttl;
-
-              callback (NULL, &result, RESOLVER_OK, userdata);
-              free (result.addresses);
-              return NULL; /* No pending query */
-            }
-        }
-    }
+  if (try_cache (resolver, hostname, flags, callback, userdata))
+    return NULL;
 
   /* Check nameservers */
   if (SocketDNSTransport_nameserver_count (resolver->transport) == 0)
