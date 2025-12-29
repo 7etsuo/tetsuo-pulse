@@ -31,9 +31,38 @@ const Except_T SocketDNSResolver_Failed
     = { &SocketDNSResolver_Failed, "DNS resolver operation failed" };
 
 /* Internal constants */
+
+/**
+ * Query hash table size (power of 2 for fast modulo via bitwise AND).
+ * Sized to handle 256 concurrent queries without excessive collisions.
+ * 16-bit query ID space (65536) / 256 buckets = ~256 IDs per bucket max.
+ */
 #define QUERY_HASH_SIZE 256
+
+/**
+ * Cache hash table size (prime number for uniform distribution).
+ * Prime numbers reduce clustering in hash tables using modulo.
+ * Sized slightly larger than RESOLVER_DEFAULT_CACHE_MAX (1000) to
+ * maintain low load factor (~0.98) for fast lookups.
+ */
 #define CACHE_HASH_SIZE 1021
+
+/**
+ * Maximum DNS query message size (RFC 1035 Section 4.2.1).
+ * Standard UDP DNS messages are limited to 512 bytes without EDNS0.
+ * Queries sent via UDP use this limit; TCP queries have no size limit.
+ *
+ * Note: This is for query messages only. Response parsing handles
+ * larger messages via TCP fallback on truncation (TC bit set).
+ */
 #define MAX_QUERY_MESSAGE_SIZE 512
+
+/**
+ * Timeout backoff multiplier for transport layer.
+ * Allows for exponential backoff: initial, 2x, 4x timeout.
+ * RFC 1035 Section 4.2.1 recommends retry with increasing timeouts.
+ */
+#define TIMEOUT_BACKOFF_MULTIPLIER 4
 
 /* Query states */
 typedef enum
@@ -1127,7 +1156,7 @@ apply_config_to_transport (T resolver)
   SocketDNSTransport_Config config = { 0 };
 
   config.initial_timeout_ms = resolver->timeout_ms;
-  config.max_timeout_ms = resolver->timeout_ms * 4; /* 4x for backoff headroom */
+  config.max_timeout_ms = resolver->timeout_ms * TIMEOUT_BACKOFF_MULTIPLIER;
   config.max_retries = resolver->max_retries;
   config.rotate_nameservers = 1;
 
