@@ -26,6 +26,7 @@
 #include "http/SocketHTTPClient-private.h"
 
 #include <pthread.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 /**
@@ -70,7 +71,13 @@ arena_cache_destructor (void *ptr)
 static void
 arena_cache_init_key (void)
 {
-  pthread_key_create (&arena_cache_key, arena_cache_destructor);
+  int rc = pthread_key_create (&arena_cache_key, arena_cache_destructor);
+  if (rc != 0)
+    {
+      /* Fatal error - can't continue without TLS support */
+      fprintf (stderr, "FATAL: pthread_key_create failed: %d\n", rc);
+      abort ();
+    }
 }
 
 /**
