@@ -1330,7 +1330,10 @@ socketcommon_perform_dns_resolution (const char *host, const char *port_str,
   /* Hostname resolution: use DNS resolver with timeout */
   timeout_ms = SocketCommon_get_dns_timeout ();
 
-  TRY *res = SocketDNS_resolve_sync (dns, host, port, hints, timeout_ms);
+  TRY
+  {
+    *res = SocketDNS_resolve_sync (dns, host, port, hints, timeout_ms);
+  }
   EXCEPT (SocketDNS_Failed)
   {
     const char *safe_host = socketcommon_get_safe_host (host);
