@@ -687,6 +687,47 @@ get_remaining_timeout_ms (int64_t deadline_ms)
   return deadline_ms - Socket_get_monotonic_ms ();
 }
 
+/**
+ * socket_wait_with_timeout - Wait for socket readiness with timeout handling
+ * @fd: File descriptor to wait on
+ * @events: Poll events (POLLIN or POLLOUT)
+ * @timeout_ms: Original timeout value (>0 for deadline, -1 for block, 0 for none)
+ * @deadline_ms: Deadline timestamp from SocketTimeout_deadline_ms()
+ * @op_name: Operation name for error messages ("send" or "recv")
+ *
+ * Returns: 1 if ready, 0 if timeout occurred
+ * Raises: Socket_Failed if poll fails in blocking mode
+ *
+ * Centralizes timeout calculation and wait logic to eliminate duplication.
+ */
+static int
+socket_wait_with_timeout (int fd, short events, int timeout_ms,
+                          int64_t deadline_ms, const char *op_name)
+{
+  int64_t remaining_ms;
+
+  if (timeout_ms > 0)
+    {
+      remaining_ms = get_remaining_timeout_ms (deadline_ms);
+      if (remaining_ms <= 0)
+        return 0; /* Timeout */
+
+      if (SocketCommon_wait_for_fd (fd, events, (int)remaining_ms) <= 0)
+        return 0; /* Timeout or error */
+    }
+  else if (timeout_ms == -1)
+    {
+      /* Block indefinitely */
+      if (SocketCommon_wait_for_fd (fd, events, -1) < 0)
+        {
+          SOCKET_ERROR_FMT ("poll() failed during %s", op_name);
+          RAISE_MODULE_ERROR (Socket_Failed);
+        }
+    }
+
+  return 1; /* Ready */
+}
+
 
 /**
  * socket_send_with_timeout - Send with timeout helper
@@ -707,7 +748,6 @@ socket_send_with_timeout (T socket, const void *buf, size_t len, int timeout_ms)
   const char *ptr;
   int fd;
   volatile int64_t deadline_ms;
-  int64_t remaining_ms;
   ssize_t result;
 
   assert (socket);
@@ -724,25 +764,9 @@ socket_send_with_timeout (T socket, const void *buf, size_t len, int timeout_ms)
   {
     while (total_sent < len)
       {
-        /* Check remaining time */
-        if (timeout_ms > 0)
-          {
-            remaining_ms = get_remaining_timeout_ms (deadline_ms);
-            if (remaining_ms <= 0)
-              break; /* Timeout */
-
-            if (SocketCommon_wait_for_fd (fd, POLLOUT, (int)remaining_ms) <= 0)
-              break; /* Timeout or error */
-          }
-        else if (timeout_ms == -1)
-          {
-            /* Block indefinitely */
-            if (SocketCommon_wait_for_fd (fd, POLLOUT, -1) < 0)
-              {
-                SOCKET_ERROR_FMT ("poll() failed during send");
-                RAISE_MODULE_ERROR (Socket_Failed);
-              }
-          }
+        /* Wait for socket to be ready with timeout handling */
+        if (!socket_wait_with_timeout (fd, POLLOUT, timeout_ms, deadline_ms, "send"))
+          break; /* Timeout */
 
         result = Socket_send (socket, ptr + total_sent, len - total_sent);
         if (result > 0)
@@ -779,7 +803,6 @@ socket_recv_with_timeout (T socket, void *buf, size_t len, int timeout_ms)
   char *ptr;
   int fd;
   volatile int64_t deadline_ms;
-  int64_t remaining_ms;
   ssize_t result;
 
   assert (socket);
@@ -796,25 +819,9 @@ socket_recv_with_timeout (T socket, void *buf, size_t len, int timeout_ms)
   {
     while (total_received < len)
       {
-        /* Check remaining time */
-        if (timeout_ms > 0)
-          {
-            remaining_ms = get_remaining_timeout_ms (deadline_ms);
-            if (remaining_ms <= 0)
-              break; /* Timeout */
-
-            if (SocketCommon_wait_for_fd (fd, POLLIN, (int)remaining_ms) <= 0)
-              break; /* Timeout or error */
-          }
-        else if (timeout_ms == -1)
-          {
-            /* Block indefinitely */
-            if (SocketCommon_wait_for_fd (fd, POLLIN, -1) < 0)
-              {
-                SOCKET_ERROR_FMT ("poll() failed during recv");
-                RAISE_MODULE_ERROR (Socket_Failed);
-              }
-          }
+        /* Wait for socket to be ready with timeout handling */
+        if (!socket_wait_with_timeout (fd, POLLIN, timeout_ms, deadline_ms, "recv"))
+          break; /* Timeout */
 
         result = Socket_recv (socket, ptr + total_received, len - total_received);
         if (result > 0)
