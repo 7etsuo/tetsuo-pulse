@@ -261,18 +261,18 @@ SocketQUICPMTU_probe_acked (SocketQUICPMTU_T pmtu, uint64_t packet_number)
     }
 
   /* Prepare next probe (binary search approach) */
-  if (pmtu->state == QUIC_PMTU_STATE_SEARCHING)
-    {
-      size_t next_target = pmtu->current_pmtu + QUIC_PMTU_PROBE_INCREMENT;
-      if (next_target > pmtu->max_pmtu)
-        next_target = pmtu->max_pmtu;
+  if (pmtu->state != QUIC_PMTU_STATE_SEARCHING)
+    return QUIC_PMTU_OK;
 
-      pmtu->target_pmtu = next_target;
+  size_t next_target = pmtu->current_pmtu + QUIC_PMTU_PROBE_INCREMENT;
+  if (next_target > pmtu->max_pmtu)
+    next_target = pmtu->max_pmtu;
 
-      /* If we can't probe higher, we're done */
-      if (pmtu->target_pmtu == pmtu->current_pmtu)
-        pmtu->state = QUIC_PMTU_STATE_COMPLETE;
-    }
+  pmtu->target_pmtu = next_target;
+
+  /* If we can't probe higher, we're done */
+  if (pmtu->target_pmtu == pmtu->current_pmtu)
+    pmtu->state = QUIC_PMTU_STATE_COMPLETE;
 
   return QUIC_PMTU_OK;
 }
@@ -289,20 +289,21 @@ update_pmtu_on_probe_failure (SocketQUICPMTU_T pmtu,
   /* RFC 9000 Section 14.3: Probe loss does NOT trigger congestion response */
 
   /* Try a smaller probe (halfway between current and failed) */
-  if (pmtu->state == QUIC_PMTU_STATE_SEARCHING)
-    {
-      size_t failed_size = probe->size;
-      size_t new_target = pmtu->current_pmtu
-                          + (failed_size - pmtu->current_pmtu) / 2;
+  if (pmtu->state != QUIC_PMTU_STATE_SEARCHING)
+    return;
 
-      if (new_target > pmtu->current_pmtu)
-        pmtu->target_pmtu = new_target;
-      else
-        {
-          /* Can't probe any smaller increment - done */
-          pmtu->state = QUIC_PMTU_STATE_COMPLETE;
-        }
+  size_t failed_size = probe->size;
+  size_t new_target = pmtu->current_pmtu
+                      + (failed_size - pmtu->current_pmtu) / 2;
+
+  if (new_target > pmtu->current_pmtu)
+    {
+      pmtu->target_pmtu = new_target;
+      return;
     }
+
+  /* Can't probe any smaller increment - done */
+  pmtu->state = QUIC_PMTU_STATE_COMPLETE;
 }
 
 SocketQUICPMTU_Result
@@ -338,14 +339,14 @@ SocketQUICPMTU_process_icmp (SocketQUICPMTU_T pmtu, size_t icmp_mtu)
     return QUIC_PMTU_OK;
 
   /* Only reduce PMTU if ICMP reports smaller value */
-  if (icmp_mtu < pmtu->current_pmtu)
-    {
-      pmtu->current_pmtu = icmp_mtu;
+  if (icmp_mtu >= pmtu->current_pmtu)
+    return QUIC_PMTU_OK;
 
-      /* Update target if it's now too high */
-      if (pmtu->target_pmtu > icmp_mtu)
-        pmtu->target_pmtu = icmp_mtu;
-    }
+  pmtu->current_pmtu = icmp_mtu;
+
+  /* Update target if it's now too high */
+  if (pmtu->target_pmtu > icmp_mtu)
+    pmtu->target_pmtu = icmp_mtu;
 
   return QUIC_PMTU_OK;
 }
