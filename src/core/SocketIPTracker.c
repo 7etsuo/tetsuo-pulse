@@ -261,22 +261,17 @@ init_tracker_fields (T tracker, Arena_T arena, int max_per_ip)
   tracker->initialized = SOCKET_MUTEX_UNINITIALIZED;
 }
 
-/* Generate secure random seed with fallback hierarchy for DoS resistance */
-static unsigned
-generate_hash_seed (void)
+/* Try OpenSSL/LibreSSL RAND_bytes for cryptographically secure randomness */
+static int
+try_openssl_random (unsigned char *seed_bytes, size_t size)
 {
-  unsigned char seed_bytes[sizeof (unsigned)];
-  unsigned seed;
+  return SocketCrypto_random_bytes (seed_bytes, size);
+}
 
-  /* Try SocketCrypto_random_bytes first (OpenSSL/LibreSSL RAND_bytes) */
-  int result = SocketCrypto_random_bytes (seed_bytes, sizeof (seed_bytes));
-  if (result == 0)
-    {
-      memcpy (&seed, seed_bytes, sizeof (seed));
-      return seed;
-    }
-
-  /* Try getrandom() on Linux (kernel 3.17+) */
+/* Try getrandom() syscall on Linux (kernel 3.17+) */
+static int
+try_getrandom (unsigned char *seed_bytes, size_t size)
+{
 #ifdef __linux__
 #ifndef SYS_getrandom
 #define SYS_getrandom 318
@@ -284,9 +279,53 @@ generate_hash_seed (void)
 #ifndef GRND_NONBLOCK
 #define GRND_NONBLOCK 0x0001
 #endif
-  ssize_t n = syscall (SYS_getrandom, seed_bytes, sizeof (seed_bytes),
-                       GRND_NONBLOCK);
-  if (n == (ssize_t)sizeof (seed_bytes))
+  ssize_t n = syscall (SYS_getrandom, seed_bytes, size, GRND_NONBLOCK);
+  return (n == (ssize_t)size) ? 0 : -1;
+#else
+  (void)seed_bytes;
+  (void)size;
+  return -1;
+#endif
+}
+
+/* Try getentropy() on BSD/macOS systems */
+static int
+try_getentropy (unsigned char *seed_bytes, size_t size)
+{
+#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__APPLE__)
+  return getentropy (seed_bytes, size);
+#else
+  (void)seed_bytes;
+  (void)size;
+  return -1;
+#endif
+}
+
+/* Last resort weak fallback using time and PID */
+static unsigned
+get_weak_fallback_seed (void)
+{
+  return (unsigned)time (NULL) ^ (unsigned)getpid ();
+}
+
+/* Generate secure random seed with fallback hierarchy for DoS resistance */
+static unsigned
+generate_hash_seed (void)
+{
+  unsigned char seed_bytes[sizeof (unsigned)];
+  unsigned seed;
+  int result;
+
+  /* Try OpenSSL/LibreSSL first */
+  result = try_openssl_random (seed_bytes, sizeof (seed_bytes));
+  if (result == 0)
+    {
+      memcpy (&seed, seed_bytes, sizeof (seed));
+      return seed;
+    }
+
+  /* Try getrandom() on Linux */
+  if (try_getrandom (seed_bytes, sizeof (seed_bytes)) == 0)
     {
       memcpy (&seed, seed_bytes, sizeof (seed));
       SOCKET_LOG_WARN_MSG (
@@ -295,11 +334,9 @@ generate_hash_seed (void)
           result);
       return seed;
     }
-#endif
 
   /* Try getentropy() on BSD/macOS */
-#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__APPLE__)
-  if (getentropy (seed_bytes, sizeof (seed_bytes)) == 0)
+  if (try_getentropy (seed_bytes, sizeof (seed_bytes)) == 0)
     {
       memcpy (&seed, seed_bytes, sizeof (seed));
       SOCKET_LOG_WARN_MSG (
@@ -308,10 +345,9 @@ generate_hash_seed (void)
           result);
       return seed;
     }
-#endif
 
   /* Last resort - weak but logged heavily */
-  seed = (unsigned)time (NULL) ^ (unsigned)getpid ();
+  seed = get_weak_fallback_seed ();
   SOCKET_LOG_ERROR_MSG (
       "SocketIPTracker: CRITICAL - all secure random sources failed (code: "
       "%d), using weak fallback",
