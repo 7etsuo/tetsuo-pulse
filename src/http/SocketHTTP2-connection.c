@@ -850,18 +850,9 @@ process_single_frame (SocketHTTP2_Conn_T conn)
   return 1;
 }
 
-int
-SocketHTTP2_Conn_process (SocketHTTP2_Conn_T conn, unsigned events)
+static int
+enforce_timeouts (SocketHTTP2_Conn_T conn, int64_t now_ms)
 {
-  int result;
-
-  assert (conn);
-  (void)events; /* May use for POLL_READ/POLL_WRITE optimization later */
-
-  int64_t now_ms = Socket_get_monotonic_ms ();
-
-  /* Enforce HTTP/2 timeouts (RFC 9113) */
-
   /* SETTINGS ACK timeout */
   if (conn->settings_ack_pending && conn->settings_timeout_ms > 0 &&
       (now_ms - conn->settings_sent_time >= (int64_t)conn->settings_timeout_ms)) {
@@ -893,6 +884,23 @@ SocketHTTP2_Conn_process (SocketHTTP2_Conn_T conn, unsigned events)
       return -1;
     }
   }
+
+  return 0;
+}
+
+int
+SocketHTTP2_Conn_process (SocketHTTP2_Conn_T conn, unsigned events)
+{
+  int result;
+
+  assert (conn);
+  (void)events; /* May use for POLL_READ/POLL_WRITE optimization later */
+
+  int64_t now_ms = Socket_get_monotonic_ms ();
+
+  /* Enforce HTTP/2 timeouts (RFC 9113) */
+  if (enforce_timeouts (conn, now_ms) < 0)
+    return -1;
 
   /* Read data from socket into receive buffer */
   if (read_socket_to_buffer (conn) < 0)
