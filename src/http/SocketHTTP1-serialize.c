@@ -78,18 +78,6 @@ safe_append_int64 (char **buf, size_t *remaining, int64_t value)
 }
 
 static int
-header_name_valid_for_serialize (const char *name, size_t len)
-{
-  for (size_t i = 0; i < len; i++)
-    {
-      unsigned char c = (unsigned char)name[i];
-      if (c == '\r' || c == '\n' || c == '\0' || c == ':')
-        return 0;
-    }
-  return len > 0;
-}
-
-static int
 header_value_valid_for_serialize (const char *value, size_t len)
 {
   for (size_t i = 0; i < len; i++)
@@ -118,8 +106,16 @@ serialize_header_cb (const char *name, size_t name_len, const char *value,
   struct serialize_ctx *ctx = userdata;
 
   /* Validate header for CRLF injection (defense in depth) */
-  if (!header_name_valid_for_serialize (name, name_len)
-      || !header_value_valid_for_serialize (value, value_len))
+  /* Check name: reject empty names or names with \r, \n, \0, : */
+  int name_valid = (name_len > 0);
+  for (size_t i = 0; name_valid && i < name_len; i++)
+    {
+      unsigned char c = (unsigned char)name[i];
+      if (c == '\r' || c == '\n' || c == '\0' || c == ':')
+        name_valid = 0;
+    }
+
+  if (!name_valid || !header_value_valid_for_serialize (value, value_len))
     {
       return -1; /* Reject headers with control characters */
     }
