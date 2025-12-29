@@ -152,6 +152,9 @@ static const char *const socket_error_category_names[] = {
   "NETWORK", "PROTOCOL", "APPLICATION", "TIMEOUT", "RESOURCE", "UNKNOWN"
 };
 
+_Static_assert(sizeof(socket_error_category_names) / sizeof(socket_error_category_names[0]) == NUM_ERROR_CATEGORIES,
+               "Category names array size must match NUM_ERROR_CATEGORIES");
+
 SocketErrorCategory
 SocketError_categorize_errno (int err)
 {
