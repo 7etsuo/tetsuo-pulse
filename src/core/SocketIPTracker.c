@@ -261,22 +261,8 @@ init_tracker_fields (T tracker, Arena_T arena, int max_per_ip)
   tracker->initialized = SOCKET_MUTEX_UNINITIALIZED;
 }
 
-/* Generate secure random seed with fallback hierarchy for DoS resistance */
-static unsigned
-generate_hash_seed (void)
-{
-  unsigned char seed_bytes[sizeof (unsigned)];
-  unsigned seed;
+/* Platform-specific random source helpers - returns 0 on success, -1 on failure */
 
-  /* Try SocketCrypto_random_bytes first (OpenSSL/LibreSSL RAND_bytes) */
-  int result = SocketCrypto_random_bytes (seed_bytes, sizeof (seed_bytes));
-  if (result == 0)
-    {
-      memcpy (&seed, seed_bytes, sizeof (seed));
-      return seed;
-    }
-
-  /* Try getrandom() on Linux (kernel 3.17+) */
 #ifdef __linux__
 #ifndef SYS_getrandom
 #define SYS_getrandom 318
@@ -284,9 +270,42 @@ generate_hash_seed (void)
 #ifndef GRND_NONBLOCK
 #define GRND_NONBLOCK 0x0001
 #endif
-  ssize_t n = syscall (SYS_getrandom, seed_bytes, sizeof (seed_bytes),
-                       GRND_NONBLOCK);
-  if (n == (ssize_t)sizeof (seed_bytes))
+
+static int
+try_getrandom (unsigned char *buffer, size_t size)
+{
+  ssize_t n = syscall (SYS_getrandom, buffer, size, GRND_NONBLOCK);
+  return (n == (ssize_t)size) ? 0 : -1;
+}
+#endif
+
+#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__APPLE__)
+static int
+try_getentropy (unsigned char *buffer, size_t size)
+{
+  return getentropy (buffer, size);
+}
+#endif
+
+/* Generate secure random seed with fallback hierarchy for DoS resistance */
+static unsigned
+generate_hash_seed (void)
+{
+  unsigned char seed_bytes[sizeof (unsigned)];
+  unsigned seed;
+  int result;
+
+  /* Try SocketCrypto_random_bytes first (OpenSSL/LibreSSL RAND_bytes) */
+  result = SocketCrypto_random_bytes (seed_bytes, sizeof (seed_bytes));
+  if (result == 0)
+    {
+      memcpy (&seed, seed_bytes, sizeof (seed));
+      return seed;
+    }
+
+  /* Try platform-specific secure random sources */
+#ifdef __linux__
+  if (try_getrandom (seed_bytes, sizeof (seed_bytes)) == 0)
     {
       memcpy (&seed, seed_bytes, sizeof (seed));
       SOCKET_LOG_WARN_MSG (
@@ -297,9 +316,8 @@ generate_hash_seed (void)
     }
 #endif
 
-  /* Try getentropy() on BSD/macOS */
 #if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__APPLE__)
-  if (getentropy (seed_bytes, sizeof (seed_bytes)) == 0)
+  if (try_getentropy (seed_bytes, sizeof (seed_bytes)) == 0)
     {
       memcpy (&seed, seed_bytes, sizeof (seed));
       SOCKET_LOG_WARN_MSG (
