@@ -1769,4 +1769,48 @@ socket_util_safe_mul_size(size_t a, size_t b, size_t *result)
   return 1;
 }
 
+/**
+ * @brief Safe multiplication with overflow detection for uint64_t
+ * @ingroup foundation
+ * @param a First operand
+ * @param b Second operand
+ * @param result Output pointer for product (only set if no overflow)
+ * @return 1 if multiplication is safe, 0 if overflow would occur
+ * @threadsafe Yes (pure function, no shared state)
+ *
+ * Performs checked multiplication of two uint64_t values. The result is only
+ * written if the operation would not overflow. This is the centralized
+ * implementation used across all modules for consistent overflow checking.
+ *
+ * Pattern: Similar to OpenBSD's reallocarray() overflow checking and
+ * Linux kernel's check_mul_overflow(). Uses division to detect overflow
+ * without requiring wider integer types.
+ *
+ * Used for:
+ * - Protocol field arithmetic (port parsing, length calculations)
+ * - Large buffer size computations
+ * - Any uint64_t multiplication where overflow must be prevented
+ *
+ * Example:
+ *   uint64_t port = 6553;
+ *   uint64_t multiplier = 10;
+ *   uint64_t result;
+ *   if (!socket_util_safe_mul_u64(port, multiplier, &result)) {
+ *     // Handle overflow error
+ *     return ERROR_OVERFLOW;
+ *   }
+ *   // Safe to use result
+ *
+ * @see socket_util_safe_add_u64() for addition overflow checking
+ * @see socket_util_safe_mul_size() for size_t multiplication
+ */
+static inline int
+socket_util_safe_mul_u64(uint64_t a, uint64_t b, uint64_t *result)
+{
+  if (a > 0 && b > UINT64_MAX / a)
+    return 0;  /* Overflow would occur */
+  *result = a * b;
+  return 1;
+}
+
 #endif /* SOCKETUTIL_INCLUDED */
