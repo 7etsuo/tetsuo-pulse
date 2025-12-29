@@ -1230,7 +1230,7 @@ SocketDNSResolver_load_resolv_conf (T resolver)
   /* Propagate to transport layer */
   SocketDNSTransport_Config transport_config = { 0 };
   transport_config.initial_timeout_ms = resolver->timeout_ms;
-  transport_config.max_timeout_ms = resolver->timeout_ms * 4;
+  transport_config.max_timeout_ms = resolver->timeout_ms * TIMEOUT_BACKOFF_MULTIPLIER;
   transport_config.max_retries = resolver->max_retries;
   transport_config.rotate_nameservers = SocketDNSConfig_has_rotate (&config);
   SocketDNSTransport_configure (resolver->transport, &transport_config);
