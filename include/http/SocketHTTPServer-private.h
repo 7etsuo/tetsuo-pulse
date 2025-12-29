@@ -288,4 +288,79 @@ void connection_free_pending (SocketHTTPServer_T server);
 int server_run_validator_early (SocketHTTPServer_T server,
                                 ServerConnection *conn);
 
+/*
+ * Response state accessors - abstract HTTP/1.1 vs HTTP/2 path selection.
+ * These inline helpers eliminate dual-path conditionals in response API.
+ */
+
+static inline int *
+server_response_status_ptr (SocketHTTPServer_Request_T req)
+{
+  return req->h2_stream ? &req->h2_stream->response_status
+                        : &req->conn->response_status;
+}
+
+static inline SocketHTTP_Headers_T *
+server_response_headers_ptr (SocketHTTPServer_Request_T req)
+{
+  return req->h2_stream ? &req->h2_stream->response_headers
+                        : &req->conn->response_headers;
+}
+
+static inline void **
+server_response_body_ptr (SocketHTTPServer_Request_T req)
+{
+  return req->h2_stream ? &req->h2_stream->response_body
+                        : &req->conn->response_body;
+}
+
+static inline size_t *
+server_response_body_len_ptr (SocketHTTPServer_Request_T req)
+{
+  return req->h2_stream ? &req->h2_stream->response_body_len
+                        : &req->conn->response_body_len;
+}
+
+static inline int *
+server_response_finished_ptr (SocketHTTPServer_Request_T req)
+{
+  return req->h2_stream ? &req->h2_stream->response_finished
+                        : &req->conn->response_finished;
+}
+
+static inline int *
+server_response_streaming_ptr (SocketHTTPServer_Request_T req)
+{
+  return req->h2_stream ? &req->h2_stream->response_streaming
+                        : &req->conn->response_streaming;
+}
+
+static inline int *
+server_response_headers_sent_ptr (SocketHTTPServer_Request_T req)
+{
+  return req->h2_stream ? &req->h2_stream->response_headers_sent
+                        : &req->conn->response_headers_sent;
+}
+
+static inline int *
+server_body_streaming_ptr (SocketHTTPServer_Request_T req)
+{
+  return req->h2_stream ? &req->h2_stream->body_streaming
+                        : &req->conn->body_streaming;
+}
+
+static inline SocketHTTPServer_BodyCallback *
+server_body_callback_ptr (SocketHTTPServer_Request_T req)
+{
+  return req->h2_stream ? &req->h2_stream->body_callback
+                        : &req->conn->body_callback;
+}
+
+static inline void **
+server_body_callback_userdata_ptr (SocketHTTPServer_Request_T req)
+{
+  return req->h2_stream ? &req->h2_stream->body_callback_userdata
+                        : &req->conn->body_callback_userdata;
+}
+
 #endif /* SOCKETHTTPSERVER_PRIVATE_INCLUDED */

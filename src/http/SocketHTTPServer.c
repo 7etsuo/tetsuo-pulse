@@ -2535,36 +2535,30 @@ void
 SocketHTTPServer_Request_status (SocketHTTPServer_Request_T req, int code)
 {
   assert (req != NULL);
-  if (req->h2_stream != NULL)
-    req->h2_stream->response_status = code;
-  else
-    req->conn->response_status = code;
+  *server_response_status_ptr (req) = code;
 }
 
 void
 SocketHTTPServer_Request_header (SocketHTTPServer_Request_T req,
                                  const char *name, const char *value)
 {
+  SocketHTTP_Headers_T *headers_ptr;
+
   assert (req != NULL);
   assert (name != NULL);
   assert (value != NULL);
 
   /* Reject headers with CRLF characters (injection prevention) */
-  if (!response_header_safe(name) || !response_header_safe(value)) {
-    SOCKET_LOG_WARN_MSG("Rejected response header with CRLF characters");
-    return;
-  }
+  if (!response_header_safe (name) || !response_header_safe (value))
+    {
+      SOCKET_LOG_WARN_MSG ("Rejected response header with CRLF characters");
+      return;
+    }
 
-  if (req->h2_stream != NULL)
-    {
-      if (req->h2_stream->response_headers == NULL)
-        req->h2_stream->response_headers = SocketHTTP_Headers_new (req->arena);
-      SocketHTTP_Headers_add (req->h2_stream->response_headers, name, value);
-    }
-  else
-    {
-      SocketHTTP_Headers_add (req->conn->response_headers, name, value);
-    }
+  headers_ptr = server_response_headers_ptr (req);
+  if (*headers_ptr == NULL)
+    *headers_ptr = SocketHTTP_Headers_new (req->arena);
+  SocketHTTP_Headers_add (*headers_ptr, name, value);
 }
 
 int
@@ -2598,37 +2592,28 @@ void
 SocketHTTPServer_Request_body_data (SocketHTTPServer_Request_T req,
                                     const void *data, size_t len)
 {
+  void **body_ptr;
+  size_t *body_len_ptr;
+  void *body_copy;
+
   assert (req != NULL);
+
+  body_ptr = server_response_body_ptr (req);
+  body_len_ptr = server_response_body_len_ptr (req);
 
   if (data == NULL || len == 0)
     {
-      if (req->h2_stream != NULL)
-        {
-          req->h2_stream->response_body = NULL;
-          req->h2_stream->response_body_len = 0;
-        }
-      else
-        {
-          req->conn->response_body = NULL;
-          req->conn->response_body_len = 0;
-        }
+      *body_ptr = NULL;
+      *body_len_ptr = 0;
       return;
     }
 
-  void *body_copy = Arena_alloc (req->arena, len, __FILE__, __LINE__);
+  body_copy = Arena_alloc (req->arena, len, __FILE__, __LINE__);
   if (body_copy != NULL)
     {
       memcpy (body_copy, data, len);
-      if (req->h2_stream != NULL)
-        {
-          req->h2_stream->response_body = body_copy;
-          req->h2_stream->response_body_len = len;
-        }
-      else
-        {
-          req->conn->response_body = body_copy;
-          req->conn->response_body_len = len;
-        }
+      *body_ptr = body_copy;
+      *body_len_ptr = len;
     }
 }
 
@@ -2640,8 +2625,8 @@ SocketHTTPServer_Request_body_string (SocketHTTPServer_Request_T req,
 
   if (str == NULL)
     {
-      req->conn->response_body = NULL;
-      req->conn->response_body_len = 0;
+      *server_response_body_ptr (req) = NULL;
+      *server_response_body_len_ptr (req) = 0;
       return;
     }
 
@@ -2652,10 +2637,7 @@ void
 SocketHTTPServer_Request_finish (SocketHTTPServer_Request_T req)
 {
   assert (req != NULL);
-  if (req->h2_stream != NULL)
-    req->h2_stream->response_finished = 1;
-  else
-    req->conn->response_finished = 1;
+  *server_response_finished_ptr (req) = 1;
 }
 
 
@@ -2666,18 +2648,9 @@ SocketHTTPServer_Request_body_stream (SocketHTTPServer_Request_T req,
 {
   assert (req != NULL);
 
-  if (req->h2_stream != NULL)
-    {
-      req->h2_stream->body_callback = callback;
-      req->h2_stream->body_callback_userdata = userdata;
-      req->h2_stream->body_streaming = 1;
-    }
-  else
-    {
-      req->conn->body_callback = callback;
-      req->conn->body_callback_userdata = userdata;
-      req->conn->body_streaming = 1;
-    }
+  *server_body_callback_ptr (req) = callback;
+  *server_body_callback_userdata_ptr (req) = userdata;
+  *server_body_streaming_ptr (req) = 1;
 }
 
 int64_t
