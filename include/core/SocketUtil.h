@@ -1607,4 +1607,97 @@ socket_util_timespec_to_ms (struct timespec ts)
  */
 #define SOCKET_BUFFER_GROWTH_FACTOR 2
 
+/* ============================================================================
+ * SAFE ARITHMETIC UTILITIES (Overflow Detection)
+ * ============================================================================
+ */
+
+/**
+ * @brief Safe addition with overflow detection for uint64_t
+ * @ingroup foundation
+ * @param a First operand
+ * @param b Second operand
+ * @param result Output pointer for sum (only set if no overflow)
+ * @return 1 if addition is safe, 0 if overflow would occur
+ * @threadsafe Yes (pure function, no shared state)
+ *
+ * Performs checked addition of two uint64_t values. The result is only
+ * written if the operation would not overflow. This is the centralized
+ * implementation used across all modules for consistent overflow checking.
+ *
+ * Pattern: Similar to C11 Annex K safe functions and Linux kernel's
+ * check_add_overflow(). Provides a single source of truth for overflow
+ * detection to ensure correctness and ease of auditing.
+ *
+ * Used for:
+ * - QUIC offset calculations (frame data, crypto streams)
+ * - Buffer size validation
+ * - Protocol length field additions
+ * - Any arithmetic where overflow must be prevented
+ *
+ * Example:
+ *   uint64_t offset = 1000;
+ *   uint64_t length = 500;
+ *   uint64_t total;
+ *   if (!socket_util_safe_add_u64(offset, length, &total)) {
+ *     // Handle overflow error
+ *     return ERROR_OVERFLOW;
+ *   }
+ *   // Safe to use total
+ *
+ * @see socket_util_safe_mul_size() for multiplication overflow checking
+ */
+static inline int
+socket_util_safe_add_u64(uint64_t a, uint64_t b, uint64_t *result)
+{
+  if (a > UINT64_MAX - b)
+    return 0;  /* Overflow would occur */
+  *result = a + b;
+  return 1;
+}
+
+/**
+ * @brief Safe multiplication with overflow detection for size_t
+ * @ingroup foundation
+ * @param a First operand
+ * @param b Second operand
+ * @param result Output pointer for product (only set if no overflow)
+ * @return 1 if multiplication is safe, 0 if overflow would occur
+ * @threadsafe Yes (pure function, no shared state)
+ *
+ * Performs checked multiplication of two size_t values. The result is only
+ * written if the operation would not overflow. This is the centralized
+ * implementation used across all modules for consistent overflow checking.
+ *
+ * Pattern: Similar to OpenBSD's reallocarray() overflow checking and
+ * Linux kernel's check_mul_overflow(). Uses division to detect overflow
+ * without requiring wider integer types.
+ *
+ * Used for:
+ * - Array allocation size calculations
+ * - Buffer capacity computations
+ * - Memory region size validation
+ * - Any size_t multiplication where overflow must be prevented
+ *
+ * Example:
+ *   size_t count = 1000;
+ *   size_t elem_size = sizeof(struct entry);
+ *   size_t total_bytes;
+ *   if (!socket_util_safe_mul_size(count, elem_size, &total_bytes)) {
+ *     // Handle overflow error
+ *     return ERROR_OVERFLOW;
+ *   }
+ *   // Safe to allocate total_bytes
+ *
+ * @see socket_util_safe_add_u64() for addition overflow checking
+ */
+static inline int
+socket_util_safe_mul_size(size_t a, size_t b, size_t *result)
+{
+  if (a > 0 && b > SIZE_MAX / a)
+    return 0;  /* Overflow would occur */
+  *result = a * b;
+  return 1;
+}
+
 #endif /* SOCKETUTIL_INCLUDED */

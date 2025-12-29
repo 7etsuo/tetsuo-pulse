@@ -14,6 +14,7 @@
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "core/SocketCrypto.h"
+#include "core/SocketUtil.h"
 
 #include <assert.h>
 #include <string.h>
@@ -45,22 +46,6 @@ const Except_T SocketQUICHandshake_Failed = { NULL, "QUIC handshake failed" };
  * Internal Helper Functions
  * ============================================================================
  */
-
-/**
- * @brief Safely add two uint64_t values with overflow protection.
- * @param base Base offset value.
- * @param length Length to add.
- * @param result Pointer to store result if no overflow.
- * @return 1 if addition is safe, 0 if overflow would occur.
- */
-static inline int
-safe_add_offset(uint64_t base, uint64_t length, uint64_t *result)
-{
-  if (base > UINT64_MAX - length)
-    return 0;  /* Overflow would occur */
-  *result = base + length;
-  return 1;
-}
 
 static void
 crypto_stream_init(SocketQUICCryptoStream_T *stream)
@@ -112,7 +97,7 @@ crypto_stream_insert_data(Arena_T arena, SocketQUICCryptoStream_T *stream,
   if (offset == stream->recv_offset) {
     if (stream->recv_buffer) {
       uint64_t total_offset;
-      if (!safe_add_offset(stream->recv_offset, length, &total_offset)) {
+      if (!socket_util_safe_add_u64(stream->recv_offset, length, &total_offset)) {
         return QUIC_HANDSHAKE_ERROR_BUFFER;  /* Overflow would occur */
       }
       if (total_offset > stream->recv_buffer_size) {
