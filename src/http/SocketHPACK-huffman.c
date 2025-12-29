@@ -556,17 +556,6 @@ refill_bit_buffer (uint64_t *bits, int *bits_avail, const unsigned char *input,
     }
 }
 
-static int
-validate_final_padding (uint64_t bits, int bits_avail)
-{
-  if (bits_avail <= 0)
-    return 1;
-
-  if (bits_avail > HUFFMAN_MAX_PAD_BITS)
-    return 0;
-
-  return is_valid_eos_padding (bits, bits_avail);
-}
 
 /* ============================================================================
  * Public API
@@ -684,8 +673,15 @@ SocketHPACK_huffman_decode (const unsigned char *input, size_t input_len,
       bits &= ((uint64_t) 1 << bits_avail) - 1ULL;
     }
 
-  if (!validate_final_padding (bits, bits_avail))
-    return -1;
+  /* Validate final padding per RFC 7541 §5.2 */
+  if (bits_avail > 0)
+    {
+      if (bits_avail > HUFFMAN_MAX_PAD_BITS)
+        return -1;
+
+      if (!is_valid_eos_padding (bits, bits_avail))
+        return -1;
+    }
 
   if (in_pos < input_len)
     return -1;
