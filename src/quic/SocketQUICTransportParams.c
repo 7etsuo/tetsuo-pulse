@@ -282,14 +282,14 @@ encode_preferred_address (uint8_t *buf, size_t buf_size,
     return 0;
 
   /* IPv4 address and port */
-  memcpy (buf + pos, paddr->ipv4_address, 4);
-  pos += 4;
+  memcpy (buf + pos, paddr->ipv4_address, QUIC_IPV4_ADDR_LEN);
+  pos += QUIC_IPV4_ADDR_LEN;
   buf[pos++] = (uint8_t)(paddr->ipv4_port >> 8);
   buf[pos++] = (uint8_t)(paddr->ipv4_port & 0xFF);
 
   /* IPv6 address and port */
-  memcpy (buf + pos, paddr->ipv6_address, 16);
-  pos += 16;
+  memcpy (buf + pos, paddr->ipv6_address, QUIC_IPV6_ADDR_LEN);
+  pos += QUIC_IPV6_ADDR_LEN;
   buf[pos++] = (uint8_t)(paddr->ipv6_port >> 8);
   buf[pos++] = (uint8_t)(paddr->ipv6_port & 0xFF);
 
@@ -302,8 +302,8 @@ encode_preferred_address (uint8_t *buf, size_t buf_size,
     }
 
   /* Stateless reset token */
-  memcpy (buf + pos, paddr->stateless_reset_token, 16);
-  pos += 16;
+  memcpy (buf + pos, paddr->stateless_reset_token, QUIC_STATELESS_RESET_TOKEN_LEN);
+  pos += QUIC_STATELESS_RESET_TOKEN_LEN;
 
   return pos;
 }
@@ -625,16 +625,16 @@ decode_preferred_address (const uint8_t *data, size_t len,
     return QUIC_TP_ERROR_INCOMPLETE;
 
   /* IPv4 address */
-  memcpy (paddr->ipv4_address, data + pos, 4);
-  pos += 4;
+  memcpy (paddr->ipv4_address, data + pos, QUIC_IPV4_ADDR_LEN);
+  pos += QUIC_IPV4_ADDR_LEN;
 
   /* IPv4 port (big-endian) */
   paddr->ipv4_port = ((uint16_t)data[pos] << 8) | data[pos + 1];
   pos += 2;
 
   /* IPv6 address */
-  memcpy (paddr->ipv6_address, data + pos, 16);
-  pos += 16;
+  memcpy (paddr->ipv6_address, data + pos, QUIC_IPV6_ADDR_LEN);
+  pos += QUIC_IPV6_ADDR_LEN;
 
   /* IPv6 port (big-endian) */
   paddr->ipv6_port = ((uint16_t)data[pos] << 8) | data[pos + 1];
@@ -644,7 +644,7 @@ decode_preferred_address (const uint8_t *data, size_t len,
   uint8_t cid_len = data[pos++];
   if (cid_len > QUIC_CONNID_MAX_LEN)
     return QUIC_TP_ERROR_INVALID_VALUE;
-  if (pos + cid_len + 16 > len)
+  if (pos + cid_len + QUIC_STATELESS_RESET_TOKEN_LEN > len)
     return QUIC_TP_ERROR_INCOMPLETE;
 
   /* Connection ID */
@@ -652,8 +652,8 @@ decode_preferred_address (const uint8_t *data, size_t len,
   pos += cid_len;
 
   /* Stateless reset token */
-  memcpy (paddr->stateless_reset_token, data + pos, 16);
-  pos += 16;
+  memcpy (paddr->stateless_reset_token, data + pos, QUIC_STATELESS_RESET_TOKEN_LEN);
+  pos += QUIC_STATELESS_RESET_TOKEN_LEN;
 
   paddr->present = 1;
 
