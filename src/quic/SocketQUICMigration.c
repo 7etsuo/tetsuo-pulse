@@ -309,8 +309,15 @@ SocketQUICMigration_check_timeouts (SocketQUICMigration_T *migration,
               path->challenge_sent_time = current_time_ms;
 
               /* Regenerate challenge data */
-              SocketCrypto_random_bytes (path->challenge,
-                                        QUIC_PATH_CHALLENGE_SIZE);
+              if (SocketCrypto_random_bytes (path->challenge,
+                                            QUIC_PATH_CHALLENGE_SIZE)
+                  != 0)
+                {
+                  /* RNG failure - mark path as permanently failed */
+                  path->state = QUIC_PATH_FAILED;
+                  timeout_count++;
+                  continue;
+                }
 
               /* Caller must resend PATH_CHALLENGE frame */
             }
