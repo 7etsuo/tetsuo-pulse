@@ -138,16 +138,18 @@ alloc_and_validate (Arena_T arena, const char *start, const char *end,
   *out_str = NULL;
   *out_len = 0;
 
+  /* Handle empty input */
   if (!start || end <= start)
     {
-      if (alloc_empty)
-        {
-          char *empty = arena_strndup (arena, "", 0);
-          if (!empty)
-            return URI_PARSE_ERROR;
-          *out_str = empty;
-          *out_len = 0;
-        }
+      if (!alloc_empty)
+        return URI_PARSE_OK;
+
+      char *empty = arena_strndup (arena, "", 0);
+      if (!empty)
+        return URI_PARSE_ERROR;
+
+      *out_str = empty;
+      *out_len = 0;
       return URI_PARSE_OK;
     }
 
