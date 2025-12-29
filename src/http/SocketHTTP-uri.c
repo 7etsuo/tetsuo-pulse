@@ -1183,15 +1183,18 @@ check_path_traversal (const char *path, size_t len)
   /* Check 4: Mixed encoding "%2e." or "%2E." */
   for (size_t i = 0; i + 3 < len; i++)
     {
-      if (path[i] == '%' && path[i + 1] == '2'
-          && (path[i + 2] == 'e' || path[i + 2] == 'E') && path[i + 3] == '.')
-        {
-          if (i == 0 || path[i - 1] == '/')
-            {
-              if (i + 4 >= len || path[i + 4] == '/' || path[i + 4] == '?')
-                return URI_PARSE_INVALID_PATH;
-            }
-        }
+      if (path[i] != '%' || path[i + 1] != '2')
+        continue;
+      if ((path[i + 2] != 'e' && path[i + 2] != 'E') || path[i + 3] != '.')
+        continue;
+
+      if (i != 0 && path[i - 1] != '/')
+        continue;
+
+      if (i + 4 < len && path[i + 4] != '/' && path[i + 4] != '?')
+        continue;
+
+      return URI_PARSE_INVALID_PATH;
     }
 
   return URI_PARSE_OK;
