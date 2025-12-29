@@ -1125,6 +1125,11 @@ SocketDNS_resolve (struct SocketDNS_T *dns, const char *host, int port,
 
   validate_dns_instance (dns);
 
+  /* Check queue capacity BEFORE allocating the request.
+   * This prevents allocating a request that would exceed the limit,
+   * which would leak memory if the exception is raised after allocation. */
+  check_queue_capacity (dns);
+
   /* Allocate and prepare request */
   req = prepare_resolve_request (dns, host, port, callback, data);
 
@@ -1137,11 +1142,6 @@ SocketDNS_resolve (struct SocketDNS_T *dns, const char *host, int port,
 
   /* Cache miss: submit to SocketDNSResolver backend */
   submit_to_resolver (dns, req);
-
-  /* Check queue capacity AFTER submission. If the request completed
-   * synchronously (IP literal), it won't count toward the pending limit.
-   * Only truly pending requests are counted. */
-  check_queue_capacity (dns);
 
   return req;
 }
