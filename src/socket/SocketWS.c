@@ -1445,10 +1445,14 @@ ws_parse_url (const char *url, char *host, int *port, char *path, int *use_tls)
   else
     {
       strncpy (host, url, NI_MAXHOST - 1);
+      host[NI_MAXHOST - 1] = '\0';
     }
 
   if (path_start)
-    strncpy (path, path_start, 1024 - 1);
+    {
+      strncpy (path, path_start, 1024 - 1);
+      path[1024 - 1] = '\0';
+    }
   else
     {
       path[0] = '/';
