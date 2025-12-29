@@ -44,6 +44,7 @@
 #define MONTHS_PER_YEAR 12
 #define LOG_DATE_TRUNCATE_LEN 50
 #define MAX_YEAR 9999
+#define MAX_HTTP_DATE_LEN 128  /* RFC 9110: HTTP dates are bounded by format */
 
 /* ============================================================================
  * Lookup Tables
@@ -592,7 +593,15 @@ SocketHTTP_date_parse (const char *date_str, size_t len, time_t *time_out)
     }
 
   if (len == 0)
-    len = strlen (date_str);
+    {
+      len = strnlen (date_str, MAX_HTTP_DATE_LEN);
+      if (len == MAX_HTTP_DATE_LEN)
+        {
+          SOCKET_LOG_ERROR_MSG ("HTTP date string exceeds maximum length or is "
+                                "not null-terminated");
+          return -1;
+        }
+    }
 
   size_t skipped = skip_whitespace (date_str, len);
   date_str += skipped;
