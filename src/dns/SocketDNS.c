@@ -21,6 +21,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <poll.h>
 #include <stddef.h>
 #include <string.h>
 #include <strings.h>
@@ -1332,15 +1333,78 @@ static int
 wait_for_completion (struct SocketDNS_T *dns,
                      const struct SocketDNS_Request_T *req, int timeout_ms)
 {
-  /* TODO(Phase 2.x): Implement wait using new architecture (no worker threads) */
-  (void)dns;
-  (void)req;
-  (void)timeout_ms;
+  struct timespec deadline;
+  struct pollfd pfd;
+  int elapsed_ms = 0;
 
-  /* For now, return timeout immediately since there are no worker threads
-   * to complete requests. This will be replaced with proper implementation
-   * in later phases of DNS unification. */
-  return ETIMEDOUT;
+  /* Compute absolute deadline for timeout */
+  if (timeout_ms > 0)
+    compute_deadline (timeout_ms, &deadline);
+
+  /* Poll on completion pipe and process resolver until request completes */
+  pfd.fd = dns->pipefd[0];
+  pfd.events = POLLIN;
+
+  while (1)
+    {
+      int poll_timeout;
+      int poll_ret;
+      struct timespec now;
+
+      /* Check if request is complete */
+      if (req->state == REQ_COMPLETE || req->state == REQ_CANCELLED)
+        return 0;
+
+      /* Calculate remaining timeout */
+      if (timeout_ms > 0)
+        {
+          clock_gettime (CLOCK_MONOTONIC, &now);
+          elapsed_ms
+              = (int)((now.tv_sec - (deadline.tv_sec - timeout_ms / 1000)) * 1000
+                      + (now.tv_nsec - (deadline.tv_nsec - (timeout_ms % 1000)
+                                                                * 1000000))
+                            / 1000000);
+
+          if (elapsed_ms >= timeout_ms)
+            return ETIMEDOUT;
+
+          poll_timeout = timeout_ms - elapsed_ms;
+        }
+      else
+        {
+          poll_timeout = 100; /* Use 100ms poll intervals if no timeout */
+        }
+
+      /* Release mutex before blocking operations */
+      pthread_mutex_unlock (&dns->mutex);
+
+      /* Process resolver to drive async operations */
+      if (dns->resolver)
+        SocketDNSResolver_process (dns->resolver, 0);
+
+      /* Wait for completion signal on pipe */
+      poll_ret = poll (&pfd, 1, poll_timeout < 100 ? poll_timeout : 100);
+
+      /* Reacquire mutex */
+      pthread_mutex_lock (&dns->mutex);
+
+      if (poll_ret < 0)
+        {
+          if (errno == EINTR)
+            continue; /* Interrupted by signal, retry */
+          return errno;
+        }
+
+      /* Drain pipe if data is available */
+      if (poll_ret > 0 && (pfd.revents & POLLIN))
+        {
+          char buffer[256];
+          while (read (dns->pipefd[0], buffer, sizeof (buffer)) > 0)
+            ;
+        }
+    }
+
+  return 0;
 }
 
 static void
