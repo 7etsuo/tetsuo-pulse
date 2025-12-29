@@ -610,16 +610,23 @@ dgram_try_addresses (T socket, struct addrinfo *res, int socket_family,
 
       if (dgram_try_single_address (fd, rp, op) == 0)
         {
+          /* Validate address length before memcpy to prevent buffer overflow */
+          if (rp->ai_addrlen > sizeof (struct sockaddr_storage))
+            {
+              SOCKET_ERROR_FMT ("Address length %u exceeds storage size %zu",
+                                rp->ai_addrlen,
+                                sizeof (struct sockaddr_storage));
+              continue; /* Try next address */
+            }
+
           /* Cache address in appropriate field based on operation type */
           if (op == DGRAM_OP_CONNECT)
             {
-              assert (rp->ai_addrlen <= sizeof (struct sockaddr_storage));
               memcpy (&socket->base->remote_addr, rp->ai_addr, rp->ai_addrlen);
               socket->base->remote_addrlen = rp->ai_addrlen;
             }
           else
             {
-              assert (rp->ai_addrlen <= sizeof (struct sockaddr_storage));
               memcpy (&socket->base->local_addr, rp->ai_addr, rp->ai_addrlen);
               socket->base->local_addrlen = rp->ai_addrlen;
             }
