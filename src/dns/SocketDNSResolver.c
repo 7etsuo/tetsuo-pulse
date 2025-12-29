@@ -554,9 +554,13 @@ cache_insert (T resolver, const char *hostname,
   if (!entry)
     return;
 
-  entry->hostname = strdup (hostname);
+  /* Allocate hostname from arena to prevent leak */
+  size_t hostname_len = strlen (hostname) + 1;
+  entry->hostname = Arena_alloc (resolver->arena, hostname_len, __FILE__,
+                                 __LINE__);
   if (!entry->hostname)
     return;
+  memcpy (entry->hostname, hostname, hostname_len);
 
   /* Copy addresses */
   size_t copy_count = count > RESOLVER_MAX_ADDRESSES ? RESOLVER_MAX_ADDRESSES
