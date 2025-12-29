@@ -167,7 +167,7 @@ SocketQUICAddrValidation_generate_token (const struct sockaddr *addr,
                                           uint8_t *token, size_t *token_len)
 {
   uint8_t addr_hash[16];
-  uint8_t hmac_input[24]; /* 8 bytes timestamp + 16 bytes addr hash */
+  uint8_t hmac_input[QUIC_TOKEN_HMAC_INPUT_SIZE];
   unsigned char hmac_output[SOCKET_CRYPTO_SHA256_SIZE];
   uint64_t timestamp;
 
@@ -196,7 +196,8 @@ SocketQUICAddrValidation_generate_token (const struct sockaddr *addr,
   /* Compute HMAC-SHA256 */
   TRY
   {
-    SocketCrypto_hmac_sha256 (secret, 32, hmac_input, 24, hmac_output);
+    SocketCrypto_hmac_sha256 (secret, 32, hmac_input, QUIC_TOKEN_HMAC_INPUT_SIZE,
+                              hmac_output);
   }
   EXCEPT (SocketCrypto_Failed)
   {
@@ -220,7 +221,7 @@ SocketQUICAddrValidation_validate_token (const uint8_t *token,
                                           const uint8_t *secret)
 {
   uint8_t addr_hash[16];
-  uint8_t hmac_input[24];
+  uint8_t hmac_input[QUIC_TOKEN_HMAC_INPUT_SIZE];
   unsigned char hmac_output[SOCKET_CRYPTO_SHA256_SIZE];
   uint64_t token_timestamp;
   uint64_t current_time;
@@ -265,7 +266,8 @@ SocketQUICAddrValidation_validate_token (const uint8_t *token,
   /* Compute expected HMAC */
   TRY
   {
-    SocketCrypto_hmac_sha256 (secret, 32, hmac_input, 24, hmac_output);
+    SocketCrypto_hmac_sha256 (secret, 32, hmac_input, QUIC_TOKEN_HMAC_INPUT_SIZE,
+                              hmac_output);
   }
   EXCEPT (SocketCrypto_Failed)
   {
