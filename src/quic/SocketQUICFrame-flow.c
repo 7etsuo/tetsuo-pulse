@@ -37,16 +37,22 @@ size_t
 SocketQUICFrame_encode_max_data (uint64_t max_data, uint8_t *out,
                                   size_t out_size)
 {
-  size_t pos;
-
   if (!out)
     return 0;
 
-  /* Need at least 1 byte for type + 1 byte for minimum varint */
-  if (out_size < 2)
-    return 0;
+  /* Calculate required size: type (1 byte) + max_data (varint) */
+  size_t type_len = 1;
+  size_t max_data_len = SocketQUICVarInt_size (max_data);
 
-  pos = 0;
+  if (max_data_len == 0)
+    return 0; /* max_data exceeds varint maximum */
+
+  size_t total_len = type_len + max_data_len;
+
+  if (out_size < total_len)
+    return 0; /* Buffer too small */
+
+  size_t pos = 0;
 
   /* Type: 0x10 */
   out[pos++] = QUIC_FRAME_MAX_DATA;
@@ -72,16 +78,23 @@ size_t
 SocketQUICFrame_encode_max_stream_data (uint64_t stream_id, uint64_t max_data,
                                          uint8_t *out, size_t out_size)
 {
-  size_t pos;
-
   if (!out)
     return 0;
 
-  /* Need at least 1 byte for type + 2 bytes for minimum varints */
-  if (out_size < 3)
-    return 0;
+  /* Calculate required size: type + stream_id + max_data (all varints) */
+  size_t type_len = 1;
+  size_t stream_id_len = SocketQUICVarInt_size (stream_id);
+  size_t max_data_len = SocketQUICVarInt_size (max_data);
 
-  pos = 0;
+  if (stream_id_len == 0 || max_data_len == 0)
+    return 0; /* Value exceeds varint maximum */
+
+  size_t total_len = type_len + stream_id_len + max_data_len;
+
+  if (out_size < total_len)
+    return 0; /* Buffer too small */
+
+  size_t pos = 0;
 
   /* Type: 0x11 */
   out[pos++] = QUIC_FRAME_MAX_STREAM_DATA;
@@ -110,16 +123,22 @@ size_t
 SocketQUICFrame_encode_max_streams (int bidirectional, uint64_t max_streams,
                                      uint8_t *out, size_t out_size)
 {
-  size_t pos;
-
   if (!out)
     return 0;
 
-  /* Need at least 1 byte for type + 1 byte for minimum varint */
-  if (out_size < 2)
-    return 0;
+  /* Calculate required size: type (1 byte) + max_streams (varint) */
+  size_t type_len = 1;
+  size_t max_streams_len = SocketQUICVarInt_size (max_streams);
 
-  pos = 0;
+  if (max_streams_len == 0)
+    return 0; /* max_streams exceeds varint maximum */
+
+  size_t total_len = type_len + max_streams_len;
+
+  if (out_size < total_len)
+    return 0; /* Buffer too small */
+
+  size_t pos = 0;
 
   /* Type: 0x12 (bidi) or 0x13 (uni) */
   out[pos++] = bidirectional ? QUIC_FRAME_MAX_STREAMS_BIDI
