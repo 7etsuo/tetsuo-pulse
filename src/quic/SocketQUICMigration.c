@@ -299,34 +299,33 @@ SocketQUICMigration_check_timeouts (SocketQUICMigration_T *migration,
 
       elapsed = current_time_ms - path->challenge_sent_time;
 
-      if (elapsed >= QUIC_PATH_VALIDATION_TIMEOUT_MS)
+      /* Timeout not reached yet - skip this path */
+      if (elapsed < QUIC_PATH_VALIDATION_TIMEOUT_MS)
+        continue;
+
+      /* Max retries exceeded - mark as failed */
+      if (path->challenge_count >= QUIC_PATH_MAX_CHALLENGES)
         {
-          if (path->challenge_count < QUIC_PATH_MAX_CHALLENGES)
-            {
-              /* Retry challenge */
-              path->challenge_count++;
-              path->challenge_sent_time = current_time_ms;
-
-              /* Regenerate challenge data */
-              if (SocketCrypto_random_bytes (path->challenge,
-                                            QUIC_PATH_CHALLENGE_SIZE)
-                  != 0)
-                {
-                  /* RNG failure - mark path as permanently failed */
-                  path->state = QUIC_PATH_FAILED;
-                  timeout_count++;
-                  continue;
-                }
-
-              /* Caller must resend PATH_CHALLENGE frame */
-            }
-          else
-            {
-              /* Max retries exceeded, mark as failed */
-              path->state = QUIC_PATH_FAILED;
-              timeout_count++;
-            }
+          path->state = QUIC_PATH_FAILED;
+          timeout_count++;
+          continue;
         }
+
+      /* Retry challenge - regenerate data */
+      path->challenge_count++;
+      path->challenge_sent_time = current_time_ms;
+
+      if (SocketCrypto_random_bytes (path->challenge,
+                                    QUIC_PATH_CHALLENGE_SIZE)
+          != 0)
+        {
+          /* RNG failure - mark path as permanently failed */
+          path->state = QUIC_PATH_FAILED;
+          timeout_count++;
+          continue;
+        }
+
+      /* Caller must resend PATH_CHALLENGE frame */
     }
 
   return timeout_count;
