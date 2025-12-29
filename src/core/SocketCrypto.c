@@ -434,7 +434,21 @@ base64_decode_char (unsigned char c, unsigned char *buffer, int *buffer_pos,
   return 0;
 }
 
-/* Maximum Base64 scan length to prevent unbounded strlen on untrusted input */
+/*
+ * Maximum Base64 scan length to prevent unbounded strlen on untrusted input.
+ *
+ * 64KB (65536 bytes) chosen to balance security and practical use:
+ * - Security: Prevents unbounded strnlen() scans on potentially malicious or
+ *   non-NUL-terminated input, limiting CPU/memory exposure during validation
+ * - Practical: Supports ~48KB of decoded data (base64 expands by ~4/3), which
+ *   covers common use cases like API keys, tokens, certificates, and small
+ *   embedded resources
+ * - Conservative: Much smaller than SOCKET_SECURITY_MAX_ALLOCATION (256MB) as
+ *   this is a preliminary scan limit, not the final allocation limit
+ *
+ * Larger base64 inputs must provide explicit length via the input_len parameter
+ * rather than relying on NUL-termination scanning.
+ */
 #define BASE64_MAX_SCAN_LENGTH 65536
 
 static int

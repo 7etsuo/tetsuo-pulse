@@ -38,6 +38,8 @@ static int sockaddr_to_string (const struct sockaddr_storage *addr, char *buf,
 static SocketQUICPath_T *find_path_by_challenge (
     SocketQUICMigration_T *migration, const uint8_t challenge[8]);
 static SocketQUICPath_T *allocate_path_slot (SocketQUICMigration_T *migration);
+static size_t find_path_index (const SocketQUICMigration_T *migration,
+                               const SocketQUICPath_T *path);
 
 /* ============================================================================
  * Lifecycle Functions
@@ -252,14 +254,11 @@ SocketQUICMigration_handle_path_response (SocketQUICMigration_T *migration,
   /* If this was the target of migration, complete migration */
   if (migration->migration_in_progress)
     {
-      for (size_t i = 0; i < migration->path_count; i++)
+      size_t path_index = find_path_index (migration, path);
+      if (path_index < migration->path_count)
         {
-          if (&migration->paths[i] == path)
-            {
-              migration->target_path_index = i;
-              /* Caller should invoke SocketQUICMigration_initiate next */
-              break;
-            }
+          migration->target_path_index = path_index;
+          /* Caller should invoke SocketQUICMigration_initiate next */
         }
     }
 
@@ -375,12 +374,7 @@ SocketQUICMigration_initiate (SocketQUICMigration_T *migration,
   SocketQUICMigration_reset_congestion (new_path, old_path);
 
   /* Find index of new path */
-  for (new_path_index = 0; new_path_index < migration->path_count;
-       new_path_index++)
-    {
-      if (&migration->paths[new_path_index] == new_path)
-        break;
-    }
+  new_path_index = find_path_index (migration, new_path);
 
   if (new_path_index >= migration->path_count)
     return QUIC_MIGRATION_ERROR_INVALID_STATE;
@@ -593,7 +587,7 @@ SocketQUICMigration_path_to_string (const SocketQUICPath_T *path, char *buf,
                       (unsigned long)path->cwnd,
                       (unsigned long)path->rtt_us);
 
-  return (written < 0 || (size_t)written >= size) ? -1 : written;
+  return SOCKET_SNPRINTF_CHECK (written, size);
 }
 
 /* ============================================================================
@@ -647,6 +641,56 @@ sockaddr_equal (const struct sockaddr_storage *a,
 }
 
 /**
+ * @brief Format IPv4 address as string.
+ *
+ * Formats as "IP:port".
+ *
+ * @param addr4 IPv4 address to format.
+ * @param buf   Output buffer.
+ * @param size  Size of output buffer.
+ * @return 0 on success, -1 on error or truncation.
+ */
+static int
+format_ipv4_address (const struct sockaddr_in *addr4, char *buf, size_t size)
+{
+  char ip[INET_ADDRSTRLEN];
+  int written;
+
+  if (inet_ntop (AF_INET, &addr4->sin_addr, ip, sizeof (ip)) == NULL)
+    {
+      written = snprintf (buf, size, "invalid:0");
+      return (written < 0 || (size_t)written >= size) ? -1 : 0;
+    }
+  written = snprintf (buf, size, "%s:%u", ip, ntohs (addr4->sin_port));
+  return (written < 0 || (size_t)written >= size) ? -1 : 0;
+}
+
+/**
+ * @brief Format IPv6 address as string.
+ *
+ * Formats as "[IP]:port".
+ *
+ * @param addr6 IPv6 address to format.
+ * @param buf   Output buffer.
+ * @param size  Size of output buffer.
+ * @return 0 on success, -1 on error or truncation.
+ */
+static int
+format_ipv6_address (const struct sockaddr_in6 *addr6, char *buf, size_t size)
+{
+  char ip[INET6_ADDRSTRLEN];
+  int written;
+
+  if (inet_ntop (AF_INET6, &addr6->sin6_addr, ip, sizeof (ip)) == NULL)
+    {
+      written = snprintf (buf, size, "[invalid]:0");
+      return (written < 0 || (size_t)written >= size) ? -1 : 0;
+    }
+  written = snprintf (buf, size, "[%s]:%u", ip, ntohs (addr6->sin6_port));
+  return (written < 0 || (size_t)written >= size) ? -1 : 0;
+}
+
+/**
  * @brief Convert sockaddr_storage to string.
  *
  * Formats as "IP:port".
@@ -660,9 +704,6 @@ static int
 sockaddr_to_string (const struct sockaddr_storage *addr, char *buf,
                     size_t size)
 {
-  const struct sockaddr_in *addr4;
-  const struct sockaddr_in6 *addr6;
-  char ip[INET6_ADDRSTRLEN];
   int written;
 
   if (addr == NULL || buf == NULL || size == 0)
@@ -673,27 +714,9 @@ sockaddr_to_string (const struct sockaddr_storage *addr, char *buf,
     }
 
   if (addr->ss_family == AF_INET)
-    {
-      addr4 = (const struct sockaddr_in *)addr;
-      if (inet_ntop (AF_INET, &addr4->sin_addr, ip, sizeof (ip)) == NULL)
-        {
-          written = snprintf (buf, size, "invalid:0");
-          return (written < 0 || (size_t)written >= size) ? -1 : 0;
-        }
-      written = snprintf (buf, size, "%s:%u", ip, ntohs (addr4->sin_port));
-      return (written < 0 || (size_t)written >= size) ? -1 : 0;
-    }
+    return format_ipv4_address ((const struct sockaddr_in *)addr, buf, size);
   else if (addr->ss_family == AF_INET6)
-    {
-      addr6 = (const struct sockaddr_in6 *)addr;
-      if (inet_ntop (AF_INET6, &addr6->sin6_addr, ip, sizeof (ip)) == NULL)
-        {
-          written = snprintf (buf, size, "[invalid]:0");
-          return (written < 0 || (size_t)written >= size) ? -1 : 0;
-        }
-      written = snprintf (buf, size, "[%s]:%u", ip, ntohs (addr6->sin6_port));
-      return (written < 0 || (size_t)written >= size) ? -1 : 0;
-    }
+    return format_ipv6_address ((const struct sockaddr_in6 *)addr, buf, size);
   else
     {
       written = snprintf (buf, size, "unknown");
@@ -767,4 +790,32 @@ allocate_path_slot (SocketQUICMigration_T *migration)
     }
 
   return NULL;
+}
+
+/**
+ * @brief Find index of path in migration manager.
+ *
+ * Performs linear search to find the array index of a given path.
+ *
+ * @param migration Migration manager.
+ * @param path Path to find.
+ *
+ * @return Path index, or migration->path_count if not found.
+ */
+static size_t
+find_path_index (const SocketQUICMigration_T *migration,
+                 const SocketQUICPath_T *path)
+{
+  size_t i;
+
+  if (migration == NULL || path == NULL)
+    return migration ? migration->path_count : 0;
+
+  for (i = 0; i < migration->path_count; i++)
+    {
+      if (&migration->paths[i] == path)
+        return i;
+    }
+
+  return migration->path_count; /* Not found */
 }

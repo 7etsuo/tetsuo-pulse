@@ -29,6 +29,7 @@
 #include <stdint.h>
 #include "quic/SocketQUICConnection.h"
 #include "quic/SocketQUICConstants.h"
+#include "core/SocketCrypto.h"
 
 /**
  * @brief Safely add two uint64_t values with overflow protection.
@@ -72,6 +73,21 @@ static inline uint64_t
 calculate_termination_timeout(uint64_t pto_ms)
 {
   return pto_ms * QUIC_TERMINATION_PTO_MULTIPLIER;
+}
+
+/**
+ * @brief Update timestamp with monotonic check.
+ * @param timestamp Pointer to timestamp to update.
+ * @param now_ms New timestamp value.
+ *
+ * Only updates if current timestamp is zero or new value is greater.
+ * Ensures timestamps move forward monotonically.
+ */
+static inline void
+update_timestamp(uint64_t *timestamp, uint64_t now_ms)
+{
+  if (*timestamp == 0 || now_ms > *timestamp)
+    *timestamp = now_ms;
 }
 
 /**
@@ -129,12 +145,8 @@ SocketQUICConnection_reset_idle_timer(SocketQUICConnection_T conn,
     return;
 
   /* Update last activity timestamp */
-  if (conn->last_packet_sent_ms == 0 || now_ms > conn->last_packet_sent_ms)
-    conn->last_packet_sent_ms = now_ms;
-
-  if (conn->last_packet_received_ms == 0
-      || now_ms > conn->last_packet_received_ms)
-    conn->last_packet_received_ms = now_ms;
+  update_timestamp(&conn->last_packet_sent_ms, now_ms);
+  update_timestamp(&conn->last_packet_received_ms, now_ms);
 
   /* Recalculate deadline */
   uint64_t effective_timeout = get_effective_idle_timeout(
@@ -321,6 +333,8 @@ SocketQUICConnection_set_stateless_reset_token(SocketQUICConnection_T conn,
  * RFC 9000 Section 10.3: A stateless reset is a packet whose final 16 bytes
  * match the stateless reset token. Minimum packet size is 38 bytes to avoid
  * false positives with short packets.
+ *
+ * Uses constant-time comparison to prevent timing attacks (CWE-208).
  */
 int
 SocketQUICConnection_verify_stateless_reset(const uint8_t *packet,
@@ -334,7 +348,8 @@ SocketQUICConnection_verify_stateless_reset(const uint8_t *packet,
   if (packet_len < QUIC_STATELESS_RESET_MIN_SIZE)
     return 0;
 
-  /* Compare final 16 bytes with expected token */
+  /* Compare final 16 bytes with expected token using constant-time comparison */
   const uint8_t *actual_token = packet + packet_len - QUIC_STATELESS_RESET_TOKEN_LEN;
-  return memcmp(actual_token, expected_token, QUIC_STATELESS_RESET_TOKEN_LEN) == 0;
+  return SocketCrypto_secure_compare(actual_token, expected_token,
+                                     QUIC_STATELESS_RESET_TOKEN_LEN) == 0;
 }

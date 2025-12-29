@@ -1525,7 +1525,17 @@ parse_kernel_version (int *major, int *minor, int *patch)
   /* Parse release string like "5.10.0-generic" or "6.2.15" */
   *major = *minor = *patch = 0;
   if (sscanf (uts.release, "%d.%d.%d", major, minor, patch) >= 2)
-    return 1;
+    {
+      /* Validate kernel version components are reasonable (0-999) */
+      if (*major < 0 || *major > 999 ||
+          *minor < 0 || *minor > 999 ||
+          *patch < 0 || *patch > 999)
+        {
+          *major = *minor = *patch = 0;
+          return 0;
+        }
+      return 1;
+    }
 
   return 0;
 #else
@@ -1818,7 +1828,9 @@ SocketAsync_send_fixed (T async, Socket_T socket, unsigned buf_index,
       RAISE_MODULE_ERROR (SocketAsync_Failed);
     }
 
-  if (offset + len > async->registered_bufs[buf_index].iov_len)
+  /* Check for integer overflow and bounds violation */
+  if (offset > async->registered_bufs[buf_index].iov_len
+      || len > async->registered_bufs[buf_index].iov_len - offset)
     {
       errno = EINVAL;
       SOCKET_ERROR_MSG ("Offset + len exceeds buffer size");
@@ -1912,7 +1924,9 @@ SocketAsync_recv_fixed (T async, Socket_T socket, unsigned buf_index,
       RAISE_MODULE_ERROR (SocketAsync_Failed);
     }
 
-  if (offset + len > async->registered_bufs[buf_index].iov_len)
+  /* Check for integer overflow and bounds violation */
+  if (offset > async->registered_bufs[buf_index].iov_len
+      || len > async->registered_bufs[buf_index].iov_len - offset)
     {
       errno = EINVAL;
       SOCKET_ERROR_MSG ("Offset + len exceeds buffer size");

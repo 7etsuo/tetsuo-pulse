@@ -27,12 +27,6 @@ static const unsigned char HTTP1_ZERO_CHUNK_BYTES[3] = { '0', '\r', '\n' };
 /* Note: HTTP1_CRLF_LEN and HTTP1_HEX_RADIX defined in SocketHTTP1-private.h */
 
 /**
- * Approximate overhead per trailer entry (struct, null terminators, delimiters)
- * Used for total_trailer_size tracking to enforce max_trailer_size limit.
- */
-#define HTTP1_TRAILER_ENTRY_OVERHEAD 32
-
-/**
  * Forbidden trailer header names with pre-computed lengths.
  * Per RFC 9110 Section 6.5.1, certain headers MUST NOT appear in trailers.
  */
@@ -130,7 +124,14 @@ complete_trailer_header (SocketHTTP1_Parser_T parser)
   if (is_forbidden_trailer (trailer_name, trailer_name_len))
     return HTTP1_ERROR_INVALID_TRAILER;
   size_t value_len = parser->value_buf.len;
-  size_t entry_size = trailer_name_len + value_len + HTTP1_TRAILER_ENTRY_OVERHEAD;
+
+  /**
+   * Calculate entry size for limit enforcement using configurable overhead.
+   * The overhead accounts for HeaderEntry struct, null terminators, and
+   * wire format delimiters (see SOCKETHTTP1_TRAILER_ENTRY_OVERHEAD docs).
+   */
+  size_t entry_size = trailer_name_len + value_len
+                      + parser->config.trailer_entry_overhead;
 
   /* Check trailer limits */
   if (parser->trailer_count >= parser->config.max_headers
