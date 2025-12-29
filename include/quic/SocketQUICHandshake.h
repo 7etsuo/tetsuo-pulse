@@ -252,12 +252,14 @@ SocketQUICHandshake_send_initial(SocketQUICConnection_T conn);
  *
  * @param conn  QUIC connection.
  * @param frame CRYPTO frame to process.
+ * @param level Encryption level from packet context.
  *
  * @return QUIC_HANDSHAKE_OK on success, error code otherwise.
  */
 extern SocketQUICHandshake_Result
 SocketQUICHandshake_process_crypto(SocketQUICConnection_T conn,
-                                   const SocketQUICFrameCrypto_T *frame);
+                                   const SocketQUICFrameCrypto_T *frame,
+                                   SocketQUICCryptoLevel level);
 
 /**
  * @brief Derive packet protection keys for encryption level.
