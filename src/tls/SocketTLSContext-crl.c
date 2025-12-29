@@ -105,7 +105,7 @@ schedule_crl_refresh (T ctx, long interval_seconds)
   if (interval_seconds > 0)
     {
       int64_t now_ms = Socket_get_monotonic_ms ();
-      int64_t interval_ms = interval_seconds * 1000LL;
+      int64_t interval_ms = interval_seconds * SOCKET_MS_PER_SECOND;
       ctx->crl_next_refresh_ms = now_ms + interval_ms;
     }
   else
@@ -193,7 +193,7 @@ SocketTLSContext_crl_check_refresh (T ctx)
           {
             int success = try_load_crl (ctx, ctx->crl_refresh_path);
             ctx->crl_next_refresh_ms
-                = now_ms + (ctx->crl_refresh_interval * 1000LL);
+                = now_ms + (ctx->crl_refresh_interval * SOCKET_MS_PER_SECOND);
             notify_crl_callback (ctx, ctx->crl_refresh_path, success);
             result = 1;
           }
