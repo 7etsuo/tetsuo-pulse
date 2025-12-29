@@ -252,13 +252,6 @@ SocketHTTPServer_free (SocketHTTPServer_T *server)
 }
 
 static int
-is_ipv4_address (const char *addr)
-{
-  struct in_addr dummy;
-  return inet_pton (AF_INET, addr, &dummy) == 1;
-}
-
-static int
 is_ipv6_address (const char *addr)
 {
   struct in6_addr dummy;
@@ -282,7 +275,7 @@ SocketHTTPServer_start (SocketHTTPServer_T server)
       bind_addr = "::";
       socket_family = AF_INET6;
     }
-  else if (is_ipv4_address (bind_addr))
+  else if (inet_pton (AF_INET, bind_addr, &(struct in_addr){ 0 }) == 1)
     {
       socket_family = AF_INET;
     }
