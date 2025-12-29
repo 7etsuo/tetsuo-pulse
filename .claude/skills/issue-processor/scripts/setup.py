@@ -199,6 +199,39 @@ def find_frontier(graph: dict) -> tuple[list[int], dict[int, list[int]]]:
     return sorted(ready), blocked
 
 
+def has_wip_label(issue: dict) -> bool:
+    """Check if issue has a work-in-progress label (wip:*)."""
+    for label in issue.get("labels", []):
+        if label.startswith("wip:"):
+            return True
+    return False
+
+
+def filter_claimed_issues(issues: list[dict], ready: list[int]) -> tuple[list[int], list[int]]:
+    """
+    Filter out issues that are already claimed by another instance.
+
+    Args:
+        issues: List of issue dicts with labels
+        ready: List of issue numbers that are ready
+
+    Returns:
+        Tuple of (available issues, claimed issues)
+    """
+    issue_map = {i["number"]: i for i in issues}
+    available = []
+    claimed = []
+
+    for num in ready:
+        issue = issue_map.get(num)
+        if issue and has_wip_label(issue):
+            claimed.append(num)
+        else:
+            available.append(num)
+
+    return available, claimed
+
+
 def run_git(args: list[str], cwd: str | None = None) -> tuple[bool, str]:
     """Run git command and return (success, output)."""
     result = subprocess.run(
@@ -323,6 +356,11 @@ def main():
     # Find frontier
     ready, blocked = find_frontier(graph)
 
+    # Filter out issues already claimed by other instances (have wip:* label)
+    ready, claimed = filter_claimed_issues(issues, ready)
+    if claimed:
+        print(f"Skipping {len(claimed)} issues claimed by other instances: {claimed}", file=sys.stderr)
+
     # Apply max limit to ready
     if args.max and len(ready) > args.max:
         ready = ready[:args.max]
@@ -358,6 +396,7 @@ def main():
         "created_at": datetime.utcnow().isoformat() + "Z",
         "total_issues": len(issues),
         "ready": ready,
+        "claimed_by_others": claimed,
         "completed": [],
         "failed": [],
         "in_progress": []
@@ -378,6 +417,8 @@ def main():
     # Print summary (this is what the skill sees)
     print(f"Ready: {len(ready)} issues")
     print(f"Blocked: {len(blocked)} issues")
+    if claimed:
+        print(f"Claimed by others: {len(claimed)} issues")
     if ready:
         print(f"First ready: #{ready[0]}")
     if blocked:
