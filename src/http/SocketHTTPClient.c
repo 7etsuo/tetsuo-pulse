@@ -2410,73 +2410,42 @@ copy_response_body (const SocketHTTPClient_Response *response, char **out,
   return 0;
 }
 
-int
-SocketHTTPClient_json_get (SocketHTTPClient_T client, const char *url,
-                           char **json_out, size_t *json_len)
+/**
+ * @brief Execute a JSON HTTP request with a given method.
+ *
+ * @param client HTTP client instance
+ * @param method HTTP method (GET, POST, etc.)
+ * @param url Target URL
+ * @param json_body Request body (NULL for GET)
+ * @param json_out Output pointer for response body
+ * @param json_len Output pointer for response body length
+ * @return HTTP status code on success, -1 on request failure, -2 if response
+ * not JSON
+ */
+static int
+httpclient_execute_json (SocketHTTPClient_T client, SocketHTTP_Method method,
+                         const char *url, const char *json_body,
+                         char **json_out, size_t *json_len)
 {
   SocketHTTPClient_Request_T req;
   SocketHTTPClient_Response response = { 0 };
   int status;
 
-  assert (client != NULL);
-  assert (url != NULL);
-  assert (json_out != NULL);
-  assert (json_len != NULL);
-
   *json_out = NULL;
   *json_len = 0;
 
-  req = SocketHTTPClient_Request_new (client, HTTP_METHOD_GET, url);
+  req = SocketHTTPClient_Request_new (client, method, url);
   if (req == NULL)
     return -1;
 
   SocketHTTPClient_Request_header (req, "Accept", "application/json");
 
-  if (SocketHTTPClient_Request_execute (req, &response) != 0)
+  if (json_body != NULL)
     {
-      SocketHTTPClient_Request_free (&req);
-      return -1;
+      SocketHTTPClient_Request_header (req, "Content-Type",
+                                       "application/json");
+      SocketHTTPClient_Request_body (req, json_body, strlen (json_body));
     }
-
-  SocketHTTPClient_Request_free (&req);
-  status = response.status_code;
-
-  if (!is_json_content_type (response.headers))
-    {
-      SocketHTTPClient_Response_free (&response);
-      return -2;
-    }
-
-  copy_response_body (&response, json_out, json_len);
-  SocketHTTPClient_Response_free (&response);
-  return status;
-}
-
-int
-SocketHTTPClient_json_post (SocketHTTPClient_T client, const char *url,
-                            const char *json_body, char **json_out,
-                            size_t *json_len)
-{
-  SocketHTTPClient_Request_T req;
-  SocketHTTPClient_Response response = { 0 };
-  int status;
-
-  assert (client != NULL);
-  assert (url != NULL);
-  assert (json_body != NULL);
-  assert (json_out != NULL);
-  assert (json_len != NULL);
-
-  *json_out = NULL;
-  *json_len = 0;
-
-  req = SocketHTTPClient_Request_new (client, HTTP_METHOD_POST, url);
-  if (req == NULL)
-    return -1;
-
-  SocketHTTPClient_Request_header (req, "Content-Type", "application/json");
-  SocketHTTPClient_Request_header (req, "Accept", "application/json");
-  SocketHTTPClient_Request_body (req, json_body, strlen (json_body));
 
   if (SocketHTTPClient_Request_execute (req, &response) != 0)
     {
@@ -2496,9 +2465,46 @@ SocketHTTPClient_json_post (SocketHTTPClient_T client, const char *url,
         }
       copy_response_body (&response, json_out, json_len);
     }
+  else if (json_body == NULL)
+    {
+      /* GET request with no response body */
+      if (!is_json_content_type (response.headers))
+        {
+          SocketHTTPClient_Response_free (&response);
+          return -2;
+        }
+    }
 
   SocketHTTPClient_Response_free (&response);
   return status;
+}
+
+int
+SocketHTTPClient_json_get (SocketHTTPClient_T client, const char *url,
+                           char **json_out, size_t *json_len)
+{
+  assert (client != NULL);
+  assert (url != NULL);
+  assert (json_out != NULL);
+  assert (json_len != NULL);
+
+  return httpclient_execute_json (client, HTTP_METHOD_GET, url, NULL,
+                                  json_out, json_len);
+}
+
+int
+SocketHTTPClient_json_post (SocketHTTPClient_T client, const char *url,
+                            const char *json_body, char **json_out,
+                            size_t *json_len)
+{
+  assert (client != NULL);
+  assert (url != NULL);
+  assert (json_body != NULL);
+  assert (json_out != NULL);
+  assert (json_len != NULL);
+
+  return httpclient_execute_json (client, HTTP_METHOD_POST, url, json_body,
+                                  json_out, json_len);
 }
 
 /* ===== Prepared Request API (Issue #185) ===== */
