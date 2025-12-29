@@ -586,7 +586,7 @@ SocketQUICMigration_path_to_string (const SocketQUICPath_T *path, char *buf,
                       (unsigned long)path->cwnd,
                       (unsigned long)path->rtt_us);
 
-  return (written < 0 || (size_t)written >= size) ? -1 : written;
+  return SOCKET_SNPRINTF_CHECK (written, size);
 }
 
 /* ============================================================================
