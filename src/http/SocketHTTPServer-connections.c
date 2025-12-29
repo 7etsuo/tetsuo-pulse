@@ -22,7 +22,6 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPServer);
 
 static void record_request_latency (SocketHTTPServer_T server,
                                     int64_t request_start_ms);
-static void connection_set_client_addr (ServerConnection *conn);
 static SocketHTTP1_Parser_T connection_create_parser (Arena_T arena,
                                                       const SocketHTTPServer_Config *config);
 static int connection_init_resources (SocketHTTPServer_T server,
@@ -656,17 +655,6 @@ connection_send_error (SocketHTTPServer_T server, ServerConnection *conn,
   connection_send_response (server, conn);
 }
 
-/* Cache client IP address from socket peer address */
-static void
-connection_set_client_addr (ServerConnection *conn)
-{
-  const char *addr = Socket_getpeeraddr (conn->socket);
-  if (addr != NULL)
-    {
-      socket_util_safe_strncpy (conn->client_addr, addr, sizeof (conn->client_addr));
-    }
-}
-
 /* Create HTTP/1.1 parser with server config limits */
 static SocketHTTP1_Parser_T
 connection_create_parser (Arena_T arena, const SocketHTTPServer_Config *config)
@@ -710,7 +698,13 @@ connection_init_resources (SocketHTTPServer_T server, ServerConnection *conn,
   conn->created_at_ms = Socket_get_monotonic_ms ();
   conn->last_activity_ms = conn->created_at_ms;
 
-  connection_set_client_addr (conn);
+  /* Cache client IP address from socket peer address */
+  const char *addr = Socket_getpeeraddr (conn->socket);
+  if (addr != NULL)
+    {
+      socket_util_safe_strncpy (conn->client_addr, addr, sizeof (conn->client_addr));
+    }
+
   conn->parser = connection_create_parser (arena, &server->config);
   conn->inbuf = SocketBuf_new (arena, HTTPSERVER_IO_BUFFER_SIZE);
   conn->outbuf = SocketBuf_new (arena, HTTPSERVER_IO_BUFFER_SIZE);
