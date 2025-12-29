@@ -12,6 +12,8 @@
 
 #include "quic/SocketQUICError.h"
 
+#include "core/SocketUtil.h"
+
 #include <stdio.h>
 
 /* ============================================================================
@@ -70,7 +72,7 @@ SocketQUIC_error_string (uint64_t code)
                           (uint8_t)QUIC_CRYPTO_ALERT (code));
 
       /* Defensive check: should never happen with current format */
-      if (ret < 0 || (size_t)ret >= sizeof (crypto_buf))
+      if (SOCKET_SNPRINTF_CHECK (ret, sizeof (crypto_buf)) < 0)
         {
           /* Fallback to safe default on truncation or error */
           return "CRYPTO_ERROR(UNKNOWN)";
