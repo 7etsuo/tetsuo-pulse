@@ -1326,7 +1326,8 @@ parse_http2_response_headers (const SocketHPACK_Header *headers,
         {
           /* Parse status code */
           response->status_code = (int)strtol (headers[i].value, NULL, 10);
-          if (response->status_code < 100 || response->status_code > 599)
+          if (response->status_code < HTTP_STATUS_CODE_MIN
+              || response->status_code > HTTP_STATUS_CODE_MAX)
             return -1;
           status_found = 1;
           break;
@@ -1949,7 +1950,7 @@ static int
 should_retry_5xx (SocketHTTPClient_T client,
                   SocketHTTPClient_Response *response, int attempt)
 {
-  if (response->status_code < 500 || response->status_code >= 600)
+  if (!HTTP_STATUS_IS_SERVER_ERROR (response->status_code))
     return 0;
 
   if (!httpclient_should_retry_status (client, response->status_code))
@@ -2305,7 +2306,7 @@ SocketHTTPClient_download (SocketHTTPClient_T client, const char *url,
   if (SocketHTTPClient_get (client, url, &response) != 0)
     return -1;
 
-  if (response.status_code < 200 || response.status_code >= 300)
+  if (!HTTP_STATUS_IS_SUCCESS (response.status_code))
     {
       SocketHTTPClient_Response_free (&response);
       return -1;
