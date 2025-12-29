@@ -18,12 +18,14 @@
 
 #include <arpa/inet.h>
 #include <assert.h>
+#include <fcntl.h>
 #include <net/if.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 #include <sys/random.h>
 #include <time.h>
+#include <unistd.h>
 
 #define T SocketDNSResolver_T
 
@@ -317,7 +319,8 @@ cap_ttl (uint32_t ttl)
  * Generate a cryptographically random query ID per RFC 5452 Section 4.
  *
  * Uses getrandom() for full 16-bit entropy to prevent cache poisoning
- * attacks. Falls back to XOR of monotonic time bits if getrandom() fails.
+ * attacks. Falls back to /dev/urandom if getrandom() fails. Raises
+ * exception if both fail to ensure RFC 5452 compliance.
  */
 static uint16_t
 generate_unique_id (T resolver)
@@ -332,9 +335,17 @@ generate_unique_id (T resolver)
       ssize_t ret = getrandom (&id, sizeof (id), 0);
       if (ret != (ssize_t)sizeof (id))
         {
-          /* Fallback: XOR monotonic time bits for some entropy */
-          uint64_t t = (uint64_t)get_monotonic_ms ();
-          id = (uint16_t)((t ^ (t >> 16) ^ (t >> 32)) & 0xFFFF);
+          /* Fallback to /dev/urandom for cryptographic randomness */
+          int fd = open ("/dev/urandom", O_RDONLY);
+          if (fd >= 0)
+            {
+              ret = read (fd, &id, sizeof (id));
+              close (fd);
+            }
+          /* If both getrandom() and /dev/urandom fail, cannot generate
+           * cryptographically secure ID - fail hard per RFC 5452 */
+          if (ret != (ssize_t)sizeof (id))
+            RAISE (SocketDNSResolver_Failed);
         }
 
       /* Avoid ID 0 (reserved in some implementations) */
