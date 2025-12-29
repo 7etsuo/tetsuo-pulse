@@ -91,24 +91,6 @@ httpclient_should_retry_error (const SocketHTTPClient_T client,
     }
 }
 
-/* RFC 7231: GET, HEAD, PUT, DELETE, OPTIONS, TRACE are idempotent */
-static int
-is_idempotent_method (SocketHTTP_Method method)
-{
-  switch (method)
-    {
-    case HTTP_METHOD_GET:
-    case HTTP_METHOD_HEAD:
-    case HTTP_METHOD_PUT:
-    case HTTP_METHOD_DELETE:
-    case HTTP_METHOD_OPTIONS:
-    case HTTP_METHOD_TRACE:
-      return 1;
-    default:
-      return 0;
-    }
-}
-
 int
 httpclient_should_retry_status_with_method (const SocketHTTPClient_T client,
                                              int status,
@@ -120,9 +102,17 @@ httpclient_should_retry_status_with_method (const SocketHTTPClient_T client,
   if (SocketHTTP_status_category (status) == HTTP_STATUS_SERVER_ERROR
       && client->config.retry_on_5xx)
     {
-      /* SECURITY: Only retry 5xx for idempotent methods */
-      if (!is_idempotent_method (method))
+      /* SECURITY: Only retry 5xx for idempotent methods (RFC 7231) */
+      switch (method)
         {
+        case HTTP_METHOD_GET:
+        case HTTP_METHOD_HEAD:
+        case HTTP_METHOD_PUT:
+        case HTTP_METHOD_DELETE:
+        case HTTP_METHOD_OPTIONS:
+        case HTTP_METHOD_TRACE:
+          break; /* Idempotent - allow retry */
+        default:
           SOCKET_LOG_DEBUG_MSG ("Not retrying %d on non-idempotent method",
                                 status);
           return 0;
