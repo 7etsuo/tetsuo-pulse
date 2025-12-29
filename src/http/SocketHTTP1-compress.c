@@ -281,6 +281,9 @@ decode_zlib (SocketHTTP1_Decoder_T decoder, const unsigned char *input,
   int ret;
   z_stream *s = &decoder->state.zlib;
 
+  assert (input_len <= UINT_MAX);  /* Document precondition */
+  assert (output_len <= UINT_MAX); /* Document precondition */
+
   s->next_in = (Bytef *)input;
   s->avail_in = (uInt)input_len;
   s->next_out = output;
@@ -309,6 +312,8 @@ finish_zlib_decode (SocketHTTP1_Decoder_T decoder, unsigned char *output,
 {
   int ret;
   z_stream *s = &decoder->state.zlib;
+
+  assert (output_len <= UINT_MAX); /* Document precondition */
 
   s->next_in = NULL;
   s->avail_in = 0;
@@ -340,6 +345,9 @@ encode_zlib (SocketHTTP1_Encoder_T encoder, const unsigned char *input,
   int zlib_flush = flush ? Z_SYNC_FLUSH : Z_NO_FLUSH;
   z_stream *s = &encoder->state.zlib;
 
+  assert (input_len <= UINT_MAX);  /* Document precondition */
+  assert (output_len <= UINT_MAX); /* Document precondition */
+
   s->next_in = (Bytef *)input;
   s->avail_in = (uInt)input_len;
   s->next_out = output;
@@ -360,6 +368,8 @@ finish_zlib_encode (SocketHTTP1_Encoder_T encoder, unsigned char *output,
   int ret;
   size_t produced;
   z_stream *s = &encoder->state.zlib;
+
+  assert (output_len <= UINT_MAX); /* Document precondition */
 
   s->next_in = NULL;
   s->avail_in = 0;
