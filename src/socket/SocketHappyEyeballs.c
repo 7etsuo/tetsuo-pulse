@@ -54,6 +54,12 @@ static SocketHE_AddressEntry_T *he_get_next_address (T he);
 static void he_dns_callback (SocketDNSResolver_Query_T query,
                              const SocketDNSResolver_Result *result, int error,
                              void *userdata);
+static int he_dns_callback_should_skip (T he);
+static void he_dns_callback_handle_cancel (T he, int error);
+static void he_dns_callback_handle_error (T he, int error);
+static void he_dns_callback_handle_empty_result (T he);
+static void he_dns_callback_handle_success (T he,
+                                             const SocketDNSResolver_Result *result);
 
 static int he_start_attempt (T he, SocketHE_AddressEntry_T *entry);
 static int he_initiate_connect (T he, SocketHE_Attempt_T *attempt,
@@ -270,6 +276,105 @@ he_calculate_dns_timeout (const T he)
 
 
 /**
+ * @brief Check if HE context is in a terminal state.
+ *
+ * @param he Happy Eyeballs context
+ * @return 1 if in terminal state, 0 otherwise
+ */
+static int
+he_dns_callback_should_skip (T he)
+{
+  return (he->state == HE_STATE_CANCELLED || he->state == HE_STATE_FAILED
+          || he->state == HE_STATE_CONNECTED);
+}
+
+/**
+ * @brief Handle DNS cancellation in callback.
+ *
+ * @param he Happy Eyeballs context
+ * @param error Error code (should be RESOLVER_ERROR_CANCELLED)
+ */
+static void
+he_dns_callback_handle_cancel (T he, int error)
+{
+  he->dns_error = error;
+  he->dns_complete = 1;
+  he->dns_query = NULL;
+}
+
+/**
+ * @brief Handle DNS resolution errors in callback.
+ *
+ * @param he Happy Eyeballs context
+ * @param error Error code from resolver
+ */
+static void
+he_dns_callback_handle_error (T he, int error)
+{
+  int written = snprintf (he->error_buf, sizeof (he->error_buf),
+                          "DNS resolution failed: %s",
+                          SocketDNSResolver_strerror (error));
+  if (written >= (int)sizeof (he->error_buf))
+    {
+      SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                       "DNS error message truncated (%d bytes needed, %zu "
+                       "available)",
+                       written, sizeof (he->error_buf));
+    }
+  he->dns_error = error;
+  he->dns_complete = 1;
+  he->dns_query = NULL;
+
+  /* Only transition if not already done (avoid double transition) */
+  if (he->state == HE_STATE_RESOLVING || he->state == HE_STATE_IDLE)
+    he_transition_to_failed (he, he->error_buf);
+}
+
+/**
+ * @brief Handle empty DNS resolution result.
+ *
+ * @param he Happy Eyeballs context
+ */
+static void
+he_dns_callback_handle_empty_result (T he)
+{
+  snprintf (he->error_buf, sizeof (he->error_buf),
+            "DNS resolution returned no usable addresses");
+  he->dns_error = RESOLVER_ERROR_NXDOMAIN;
+  he->dns_complete = 1;
+  he->dns_query = NULL;
+  he_transition_to_failed (he, he->error_buf);
+}
+
+/**
+ * @brief Handle successful DNS resolution in callback.
+ *
+ * @param he Happy Eyeballs context
+ * @param result DNS resolution result
+ */
+static void
+he_dns_callback_handle_success (T he, const SocketDNSResolver_Result *result)
+{
+  struct addrinfo *resolved
+      = SocketCommon_resolver_to_addrinfo (result, he->port);
+  if (!resolved)
+    {
+      he_dns_callback_handle_empty_result (he);
+      return;
+    }
+
+  he->resolved = resolved;
+  he->dns_complete = 1;
+  he->dns_query = NULL;
+
+  SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                   "DNS resolution complete for %s:%d", he->host, he->port);
+
+  he_sort_addresses (he);
+  he->state = HE_STATE_CONNECTING;
+}
+
+/**
  * @brief DNS resolution callback from SocketDNSResolver.
  *
  * Called when DNS resolution completes (success or error).
@@ -287,8 +392,7 @@ he_dns_callback (SocketDNSResolver_Query_T query,
   /* If the HE context is already in a terminal state, ignore this callback.
    * This can happen when the context was cancelled but the callback is
    * still invoked during resolver cleanup. */
-  if (he->state == HE_STATE_CANCELLED || he->state == HE_STATE_FAILED
-      || he->state == HE_STATE_CONNECTED)
+  if (he_dns_callback_should_skip (he))
     return;
 
   he->dns_callback_pending = 1;
@@ -299,56 +403,15 @@ he_dns_callback (SocketDNSResolver_Query_T query,
       if (error == RESOLVER_ERROR_CANCELLED)
         {
           /* Cancellation is normal during shutdown - don't transition to failed */
-          he->dns_error = error;
-          he->dns_complete = 1;
-          he->dns_query = NULL;
+          he_dns_callback_handle_cancel (he, error);
           return;
         }
 
-      int written = snprintf (he->error_buf, sizeof (he->error_buf),
-                              "DNS resolution failed: %s",
-                              SocketDNSResolver_strerror (error));
-      if (written >= (int)sizeof (he->error_buf))
-        {
-          SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-                           "DNS error message truncated (%d bytes needed, %zu "
-                           "available)",
-                           written, sizeof (he->error_buf));
-        }
-      he->dns_error = error;
-      he->dns_complete = 1;
-      he->dns_query = NULL;
-
-      /* Only transition if not already done (avoid double transition) */
-      if (he->state == HE_STATE_RESOLVING || he->state == HE_STATE_IDLE)
-        he_transition_to_failed (he, he->error_buf);
+      he_dns_callback_handle_error (he, error);
       return;
     }
 
-  /* Convert resolver result to addrinfo format */
-  struct addrinfo *resolved
-      = SocketCommon_resolver_to_addrinfo (result, he->port);
-  if (!resolved)
-    {
-      snprintf (he->error_buf, sizeof (he->error_buf),
-                "DNS resolution returned no usable addresses");
-      he->dns_error = RESOLVER_ERROR_NXDOMAIN;
-      he->dns_complete = 1;
-      he->dns_query = NULL;
-      he_transition_to_failed (he, he->error_buf);
-      return;
-    }
-
-  /* Success - store result and transition to connecting */
-  he->resolved = resolved;
-  he->dns_complete = 1;
-  he->dns_query = NULL;
-
-  SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                   "DNS resolution complete for %s:%d", he->host, he->port);
-
-  he_sort_addresses (he);
-  he->state = HE_STATE_CONNECTING;
+  he_dns_callback_handle_success (he, result);
 }
 
 static int
