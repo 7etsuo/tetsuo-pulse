@@ -338,6 +338,14 @@ static const uint16_t hpack_decode_symbols[] = {
   '&', '*', ',', ';', 'X', 'Z',
 };
 
+/* Verify decode table size matches expected symbol count */
+_Static_assert(sizeof(hpack_decode_symbols) / sizeof(hpack_decode_symbols[0]) == 74,
+               "Huffman decode symbol table must have exactly 74 entries");
+
+/* Individual config verification - symbol counts must sum to 74 */
+_Static_assert(10 + 26 + 32 + 6 == 74,
+               "Decode config symbol counts must sum to 74");
+
 typedef struct
 {
   int bitlen;
@@ -425,6 +433,9 @@ try_decode_nbit (const HuffmanDecodeConfig *cfg, uint64_t bits, int bits_avail,
   if (code >= cfg->first_code && code <= cfg->last_code)
     {
       size_t idx = cfg->symbol_offset + (code - cfg->first_code);
+      /* Bounds check: should never trigger with correct config table */
+      if (idx >= sizeof(hpack_decode_symbols) / sizeof(hpack_decode_symbols[0]))
+        return -1;
       if (*out_pos >= output_size)
         return -1;
       output[(*out_pos)++] = (unsigned char) hpack_decode_symbols[idx];
