@@ -954,13 +954,12 @@ TEST (socketdns_getresult_cancelled_request)
 TEST (socketdns_queue_full_handling)
 {
   SocketDNS_T dns = SocketDNS_new ();
-  Request_T req = NULL;
   size_t original_limit = 0;
+  volatile int exception_raised = 0;
 
-  /* Note: With the new resolver architecture (Phase 2.x), there is no queue.
-   * Resolution for localhost/IP literals is synchronous (immediate callback).
-   * This test now verifies that max_pending getter/setter works and that
-   * synchronous resolution succeeds regardless of the max_pending setting. */
+  /* Note: With the new pending count tracking (issue #1531), max_pending=0
+   * prevents ALL requests, including IP literals, since all requests are tracked.
+   * This test now verifies that max_pending limits are properly enforced. */
   TRY
   {
     original_limit = SocketDNS_getmaxpending (dns);
@@ -969,24 +968,23 @@ TEST (socketdns_queue_full_handling)
     SocketDNS_setmaxpending (dns, 0);
     ASSERT_EQ (SocketDNS_getmaxpending (dns), 0);
 
-    /* IP literal resolution is synchronous - succeeds regardless of limit */
-    req = SocketDNS_resolve (dns, "127.0.0.1", 80, NULL, NULL);
-    ASSERT_NOT_NULL (req);
+    /* Even IP literal resolution should now fail with max_pending=0 */
+    SocketDNS_resolve (dns, "127.0.0.1", 80, NULL, NULL);
 
-    /* Result should be immediately available (synchronous resolution) */
-    struct addrinfo *result = SocketDNS_getresult (dns, req);
-    ASSERT_NOT_NULL (result);
-    SocketCommon_free_addrinfo (result);
-
-    /* Restore original limit */
-    SocketDNS_setmaxpending (dns, original_limit);
-    ASSERT_EQ (SocketDNS_getmaxpending (dns), original_limit);
+    /* Should not reach here */
+    ASSERT_EQ (1, 0);
+  }
+  EXCEPT (SocketDNS_Failed)
+  {
+    exception_raised = 1;
   }
   FINALLY
   {
     SocketDNS_free (&dns);
   }
   END_TRY;
+
+  ASSERT_EQ (exception_raised, 1);
 }
 
 TEST (socketdns_multiple_resolvers_independent)
@@ -1551,6 +1549,173 @@ TEST (test_socketdnsresolver_resolve_sync_cache_paths)
   END_TRY;
 
   ASSERT_NE (success, 0);
+}
+
+/* ==================== Pending Count Tests ==================== */
+
+TEST (socketdns_pending_count_initialization)
+{
+  SocketDNS_T dns = SocketDNS_new ();
+  ASSERT_NOT_NULL (dns);
+
+  /* Initially no pending requests */
+  ASSERT_EQ (SocketDNS_getpendingcount (dns), 0);
+  ASSERT_NE (SocketDNS_getmaxpending (dns), 0);
+
+  SocketDNS_free (&dns);
+}
+
+TEST (socketdns_pending_count_increments)
+{
+  SocketDNS_T dns = SocketDNS_new ();
+  Request_T req1 = NULL, req2 = NULL;
+
+  TRY
+  {
+    ASSERT_EQ (SocketDNS_getpendingcount (dns), 0);
+
+    /* Create first request */
+    req1 = SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
+    ASSERT_NOT_NULL (req1);
+    ASSERT_EQ (SocketDNS_getpendingcount (dns), 1);
+
+    /* Create second request */
+    req2 = SocketDNS_resolve (dns, "127.0.0.1", 80, NULL, NULL);
+    ASSERT_NOT_NULL (req2);
+    ASSERT_EQ (SocketDNS_getpendingcount (dns), 2);
+  }
+  EXCEPT (SocketDNS_Failed) (void) 0;
+  FINALLY SocketDNS_free (&dns);
+  END_TRY;
+}
+
+TEST (socketdns_pending_count_decrements_on_cancel)
+{
+  SocketDNS_T dns = SocketDNS_new ();
+  Request_T req = NULL;
+
+  TRY
+  {
+    req = SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
+    ASSERT_NOT_NULL (req);
+    ASSERT_EQ (SocketDNS_getpendingcount (dns), 1);
+
+    /* Cancel the request */
+    SocketDNS_cancel (dns, req);
+    ASSERT_EQ (SocketDNS_getpendingcount (dns), 0);
+  }
+  EXCEPT (SocketDNS_Failed) (void) 0;
+  FINALLY SocketDNS_free (&dns);
+  END_TRY;
+}
+
+TEST (socketdns_setmaxpending_validates_pending_count)
+{
+  SocketDNS_T dns = SocketDNS_new ();
+  volatile int exception_raised = 0;
+
+  TRY
+  {
+    /* Create 2 pending requests */
+    SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
+    SocketDNS_resolve (dns, "127.0.0.1", 80, NULL, NULL);
+    ASSERT_EQ (SocketDNS_getpendingcount (dns), 2);
+
+    /* Try to set max_pending below current count - should raise exception */
+    SocketDNS_setmaxpending (dns, 1);
+
+    /* Should not reach here */
+    ASSERT_EQ (1, 0);
+  }
+  EXCEPT (SocketDNS_Failed)
+  {
+    exception_raised = 1;
+  }
+  FINALLY SocketDNS_free (&dns);
+  END_TRY;
+
+  ASSERT_EQ (exception_raised, 1);
+}
+
+TEST (socketdns_setmaxpending_allows_equal_pending_count)
+{
+  SocketDNS_T dns = SocketDNS_new ();
+  volatile int success = 0;
+
+  TRY
+  {
+    /* Create 2 pending requests */
+    SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
+    SocketDNS_resolve (dns, "127.0.0.1", 80, NULL, NULL);
+    ASSERT_EQ (SocketDNS_getpendingcount (dns), 2);
+
+    /* Set max_pending equal to current count - should succeed */
+    SocketDNS_setmaxpending (dns, 2);
+    ASSERT_EQ (SocketDNS_getmaxpending (dns), 2);
+
+    success = 1;
+  }
+  EXCEPT (SocketDNS_Failed) (void) 0;
+  FINALLY SocketDNS_free (&dns);
+  END_TRY;
+
+  ASSERT_EQ (success, 1);
+}
+
+TEST (socketdns_setmaxpending_allows_increase)
+{
+  SocketDNS_T dns = SocketDNS_new ();
+  volatile int success = 0;
+
+  TRY
+  {
+    /* Create 1 pending request */
+    SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
+    ASSERT_EQ (SocketDNS_getpendingcount (dns), 1);
+
+    /* Increase max_pending - should succeed */
+    size_t old_max = SocketDNS_getmaxpending (dns);
+    SocketDNS_setmaxpending (dns, old_max + 100);
+    ASSERT_EQ (SocketDNS_getmaxpending (dns), old_max + 100);
+
+    success = 1;
+  }
+  EXCEPT (SocketDNS_Failed) (void) 0;
+  FINALLY SocketDNS_free (&dns);
+  END_TRY;
+
+  ASSERT_EQ (success, 1);
+}
+
+TEST (socketdns_queue_full_raises_exception)
+{
+  SocketDNS_T dns = SocketDNS_new ();
+  volatile int exception_raised = 0;
+
+  TRY
+  {
+    /* Set a very low max_pending */
+    SocketDNS_setmaxpending (dns, 2);
+
+    /* Fill the queue */
+    SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
+    SocketDNS_resolve (dns, "127.0.0.1", 80, NULL, NULL);
+    ASSERT_EQ (SocketDNS_getpendingcount (dns), 2);
+
+    /* Try to exceed the limit - should raise exception */
+    SocketDNS_resolve (dns, "example.com", 80, NULL, NULL);
+
+    /* Should not reach here */
+    ASSERT_EQ (1, 0);
+  }
+  EXCEPT (SocketDNS_Failed)
+  {
+    exception_raised = 1;
+  }
+  FINALLY SocketDNS_free (&dns);
+  END_TRY;
+
+  ASSERT_EQ (exception_raised, 1);
 }
 
 int

@@ -156,6 +156,7 @@ struct SocketDNS_T
 {
   Arena_T arena;      /**< Arena for request/hostname allocation */
   size_t max_pending;                     /**< Queue capacity limit */
+  size_t pending_count;                   /**< Current number of pending requests */
   struct SocketDNS_Request_T *request_hash[SOCKET_DNS_REQUEST_HASH_SIZE];
   /**< Hash table for O(1) request lookup */
   pthread_mutex_t mutex;      /**< Protects all mutable state */

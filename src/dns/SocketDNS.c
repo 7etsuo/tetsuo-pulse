@@ -83,6 +83,7 @@ initialize_dns_fields (struct SocketDNS_T *dns)
 {
   /* num_workers removed - no worker threads in new architecture */
   dns->max_pending = SOCKET_DNS_MAX_PENDING;
+  dns->pending_count = 0;
   dns->request_timeout_ms = SOCKET_DEFAULT_DNS_TIMEOUT_MS;
 
   dns->cache_max_entries = SOCKET_DNS_DEFAULT_CACHE_MAX_ENTRIES;
@@ -448,6 +449,9 @@ hash_table_insert (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
   req->hash_value = hash;
   req->hash_next = dns->request_hash[hash];
   dns->request_hash[hash] = req;
+
+  /* Track pending count for new requests */
+  dns->pending_count++;
 }
 
 void
@@ -455,6 +459,7 @@ hash_table_remove (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 {
   unsigned hash;
   Request_T *pp;
+  int found = 0;
 
   hash = req->hash_value;
 
@@ -471,9 +476,16 @@ hash_table_remove (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
       if (*pp == req)
         {
           *pp = req->hash_next;
+          found = 1;
           break;
         }
       pp = &(*pp)->hash_next;
+    }
+
+  /* Decrement pending count if request was actually found and removed */
+  if (found && dns->pending_count > 0)
+    {
+      dns->pending_count--;
     }
 }
 
@@ -1168,6 +1180,15 @@ SocketDNS_getmaxpending (struct SocketDNS_T *dns)
   return DNS_LOCKED_SIZE_GETTER (dns, max_pending);
 }
 
+size_t
+SocketDNS_getpendingcount (struct SocketDNS_T *dns)
+{
+  if (!dns)
+    return 0;
+
+  return DNS_LOCKED_SIZE_GETTER (dns, pending_count);
+}
+
 void
 SocketDNS_setmaxpending (struct SocketDNS_T *dns, size_t max_pending)
 {
@@ -1178,7 +1199,17 @@ SocketDNS_setmaxpending (struct SocketDNS_T *dns, size_t max_pending)
     }
 
   pthread_mutex_lock (&dns->mutex);
-  /* TODO(Phase 2.x): Check against actual pending count when new architecture in place */
+
+  /* Validate that new limit is not less than current pending count */
+  if (max_pending < dns->pending_count)
+    {
+      size_t current_pending = dns->pending_count;
+      pthread_mutex_unlock (&dns->mutex);
+      SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,
+                        "Cannot set max_pending (%zu) below current pending count (%zu)",
+                        max_pending, current_pending);
+    }
+
   dns->max_pending = max_pending;
   pthread_mutex_unlock (&dns->mutex);
 }
