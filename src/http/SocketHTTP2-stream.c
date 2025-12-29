@@ -2043,27 +2043,6 @@ SocketHTTP2_Stream_push_promise (SocketHTTP2_Stream_T stream,
   return pushed;
 }
 
-typedef struct
-{
-  const unsigned char *data;
-  size_t len;
-} PaddedData;
-
-static int
-extract_padded_data (const SocketHTTP2_FrameHeader *header,
-                     const unsigned char *payload, PaddedData *result)
-{
-  size_t extra = 0;
-  uint8_t pad_len = 0;
-
-  if (http2_extract_padded (header, payload, &extra, &pad_len) < 0)
-    return -1;
-
-  result->data = payload + extra;
-  result->len = header->length - extra - pad_len;
-
-  return 0;
-}
 
 int
 http2_process_data (SocketHTTP2_Conn_T conn,
@@ -2071,7 +2050,6 @@ http2_process_data (SocketHTTP2_Conn_T conn,
                     const unsigned char *payload)
 {
   SocketHTTP2_Stream_T stream;
-  PaddedData padded;
   SocketHTTP2_ErrorCode error;
 
   stream = http2_stream_lookup (conn, header->stream_id);
@@ -2081,11 +2059,16 @@ http2_process_data (SocketHTTP2_Conn_T conn,
       return 0;
     }
 
-  if (extract_padded_data (header, payload, &padded) < 0)
+  /* Extract padded DATA payload */
+  size_t extra = 0;
+  uint8_t pad_len = 0;
+  if (http2_extract_padded (header, payload, &extra, &pad_len) < 0)
     {
       http2_send_connection_error (conn, HTTP2_PROTOCOL_ERROR);
       return -1;
     }
+  const unsigned char *data = payload + extra;
+  size_t data_len = header->length - extra - pad_len;
 
   error = http2_stream_transition (stream, HTTP2_FRAME_DATA, header->flags, 0);
   if (error != HTTP2_NO_ERROR)
@@ -2096,11 +2079,11 @@ http2_process_data (SocketHTTP2_Conn_T conn,
 
   /* Check buffer space before writing full frame - defensive against app not
    * draining */
-  if (SocketBuf_space (stream->recv_buf) < padded.len)
+  if (SocketBuf_space (stream->recv_buf) < data_len)
     {
       SOCKET_LOG_WARN_MSG ("Insufficient recv_buf space for DATA frame on "
                            "stream %u: need %zu, space %zu",
-                           stream->id, padded.len,
+                           stream->id, data_len,
                            SocketBuf_space (stream->recv_buf));
       http2_send_stream_error (conn, stream->id, HTTP2_FLOW_CONTROL_ERROR);
       return -1;
@@ -2112,11 +2095,11 @@ http2_process_data (SocketHTTP2_Conn_T conn,
       return -1;
     }
 
-  size_t written = SocketBuf_write (stream->recv_buf, padded.data, padded.len);
-  assert (written == padded.len); /* Should be full after space check */
+  size_t written = SocketBuf_write (stream->recv_buf, data, data_len);
+  assert (written == data_len); /* Should be full after space check */
 
   /* Track total DATA bytes received for Content-Length validation */
-  stream->total_data_received += padded.len;
+  stream->total_data_received += data_len;
 
   if (header->flags & HTTP2_FLAG_END_STREAM)
     {
