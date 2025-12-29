@@ -305,8 +305,16 @@ he_dns_callback (SocketDNSResolver_Query_T query,
           return;
         }
 
-      snprintf (he->error_buf, sizeof (he->error_buf),
-                "DNS resolution failed: %s", SocketDNSResolver_strerror (error));
+      int written = snprintf (he->error_buf, sizeof (he->error_buf),
+                              "DNS resolution failed: %s",
+                              SocketDNSResolver_strerror (error));
+      if (written >= (int)sizeof (he->error_buf))
+        {
+          SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                           "DNS error message truncated (%d bytes needed, %zu "
+                           "available)",
+                           written, sizeof (he->error_buf));
+        }
       he->dns_error = error;
       he->dns_complete = 1;
       he->dns_query = NULL;
