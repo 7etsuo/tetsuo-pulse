@@ -159,13 +159,13 @@ h2stream_transport_send (void *ctx, const void *data, size_t len)
   size_t send_len;
 
   assert (stream != NULL);
+  assert (stream->conn != NULL);
   assert (data != NULL || len == 0);
 
   if (len == 0)
     return 0;
 
   conn = stream->conn;
-  assert (conn != NULL);
 
   /* Check stream state - must be open or half-closed remote */
   if (stream->state != HTTP2_STREAM_STATE_OPEN
@@ -241,6 +241,7 @@ h2stream_transport_recv (void *ctx, void *buf, size_t len)
   size_t read_len;
 
   assert (stream != NULL);
+  assert (stream->conn != NULL);
   assert (buf != NULL || len == 0);
 
   if (len == 0)
@@ -294,9 +295,9 @@ h2stream_transport_close (void *ctx, int orderly)
   SocketHTTP2_FrameHeader header;
 
   assert (stream != NULL);
+  assert (stream->conn != NULL);
 
   conn = stream->conn;
-  assert (conn != NULL);
 
   if (orderly)
     {
