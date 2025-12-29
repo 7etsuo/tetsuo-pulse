@@ -299,16 +299,36 @@ SocketQUICMigration_find_path (SocketQUICMigration_T *migration,
 /**
  * @brief Initiate path validation.
  *
- * Sends a PATH_CHALLENGE frame on the specified path.
- * Generates random challenge data and starts validation timer.
+ * Generates random challenge data and prepares path for validation.
+ * This function sets up the path state but does NOT send the PATH_CHALLENGE
+ * frame itself - the caller is responsible for frame transmission.
  *
- * RFC 9000 Section 8.2.1: "An endpoint MUST expand datagrams that contain
- * a PATH_CHALLENGE frame to at least 1200 bytes."
+ * Required Sequence for Connection Migration (RFC 9000 §9.1):
+ * 1. Call SocketQUICMigration_probe_path() to generate challenge data
+ * 2. Extract path->challenge data (8 bytes)
+ * 3. Construct and send PATH_CHALLENGE frame containing path->challenge
+ * 4. Ensure datagram is padded to at least 1200 bytes (RFC 9000 §8.2.1)
+ * 5. Wait for PATH_RESPONSE from peer
+ * 6. Call SocketQUICMigration_handle_path_response() when response arrives
+ * 7. Once path is VALIDATED, call SocketQUICMigration_initiate() to complete migration
+ *
+ * Frame Transmission Requirements:
+ * - PATH_CHALLENGE MUST be sent in a packet that is padded to 1200+ bytes
+ * - PATH_CHALLENGE can be sent multiple times if no response (see check_timeouts)
+ * - Path MUST be validated before sending any other application data on it
+ * - Do not send PATH_CHALLENGE for initial path (pre-validated during handshake)
+ *
+ * The function allocates or reuses a path slot, generates cryptographically
+ * secure random challenge data, and sets the path state to QUIC_PATH_VALIDATING.
  *
  * @param migration Migration manager.
  * @param peer_addr Peer address to probe.
  *
  * @return QUIC_MIGRATION_OK on success, error code otherwise.
+ *
+ * @note Caller MUST send PATH_CHALLENGE frame with path->challenge data.
+ * @see RFC 9000 §9.1 (Connection Migration)
+ * @see RFC 9000 §8.2 (Path Validation)
  */
 extern SocketQUICMigration_Result
 SocketQUICMigration_probe_path (SocketQUICMigration_T *migration,
