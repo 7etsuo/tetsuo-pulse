@@ -277,6 +277,20 @@
 #define SOCKET_DTLS_DEFAULT_HANDSHAKE_TIMEOUT_MS 30000
 #endif
 
+/* Default shutdown timeout (total time allowed for graceful shutdown) */
+/**
+ * @brief Default timeout for DTLS shutdown operation (ms).
+ * @ingroup dtls_config
+ * @details Timeout for graceful close_notify exchange during shutdown.
+ * Conservative 5000ms (5 seconds) accounts for network latency and
+ * retransmissions. Used by SocketDTLS_shutdown() internal timeout.
+ * @see SocketDTLS_shutdown() for shutdown operation details.
+ * @see SOCKET_DTLS_MAX_TIMEOUT_MS for maximum retransmission timeout.
+ */
+#ifndef SOCKET_DTLS_DEFAULT_SHUTDOWN_TIMEOUT_MS
+#define SOCKET_DTLS_DEFAULT_SHUTDOWN_TIMEOUT_MS 5000
+#endif
+
 /* Maximum number of retransmissions before giving up */
 #ifndef SOCKET_DTLS_MAX_RETRANSMITS
 #define SOCKET_DTLS_MAX_RETRANSMITS 12

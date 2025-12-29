@@ -54,11 +54,6 @@ const Except_T SocketDTLS_TimeoutExpired
 const Except_T SocketDTLS_ShutdownFailed
     = { .type = &SocketDTLS_ShutdownFailed, .reason = "DTLS shutdown failed" };
 
-#ifndef SOCKET_DTLS_DEFAULT_SHUTDOWN_TIMEOUT_MS
-#define SOCKET_DTLS_DEFAULT_SHUTDOWN_TIMEOUT_MS                               \
-  5000 /* ms, configurable via compile-time override */
-#endif
-
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketDTLS);
 
 /**
