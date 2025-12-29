@@ -201,7 +201,6 @@ SocketQUICStream_transition_send (SocketQUICStream_T stream,
                                   SocketQUICStreamEvent event)
 {
   SocketQUICStreamState current;
-  size_t i;
 
   if (stream == NULL)
     return QUIC_STREAM_ERROR_NULL;
@@ -216,7 +215,7 @@ SocketQUICStream_transition_send (SocketQUICStream_T stream,
     }
 
   /* Search transition table for valid transition */
-  for (i = 0; i < SEND_TRANSITIONS_COUNT; i++)
+  for (size_t i = 0; i < SEND_TRANSITIONS_COUNT; i++)
     {
       if (send_transitions[i].from_state == current
           && send_transitions[i].event == event)
