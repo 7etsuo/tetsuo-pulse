@@ -81,6 +81,9 @@
 /** Maximum pending queries per transport. */
 #define DOH_MAX_PENDING_QUERIES 100
 
+/** Maximum server URL length in ServerConfig. */
+#define DOH_MAX_SERVER_URL_LENGTH 512
+
 /* Error codes for callback */
 #define DOH_ERROR_SUCCESS 0         /**< Query completed successfully */
 #define DOH_ERROR_TIMEOUT -1        /**< Query timeout */

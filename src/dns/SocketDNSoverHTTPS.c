@@ -62,7 +62,7 @@ static const struct
 /* Server configuration entry */
 struct ServerConfig
 {
-  char url[512];
+  char url[DOH_MAX_SERVER_URL_LENGTH];
   SocketDNSoverHTTPS_Method method;
   int prefer_http2;
   int timeout_ms;
