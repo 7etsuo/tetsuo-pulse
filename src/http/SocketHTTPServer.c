@@ -1145,6 +1145,79 @@ server_handle_parsed_request (SocketHTTPServer_T server,
 }
 
 /**
+ * server_process_streaming_body - Handle streaming body callback
+ * @server: HTTP server
+ * @conn: Connection with streaming body
+ * @input: Input buffer pointer
+ * @input_len: Input buffer length
+ *
+ * Returns: Number of requests processed (0 or 1), or -1 on error/close
+ *
+ * Processes request body in streaming mode, invoking the body callback
+ * for each chunk. Returns early if callback aborts or parser fails.
+ */
+static int
+server_process_streaming_body (SocketHTTPServer_T server,
+                                ServerConnection *conn, const void *input,
+                                size_t input_len)
+{
+  char temp_buf[HTTPSERVER_RECV_BUFFER_SIZE];
+  size_t temp_avail = sizeof (temp_buf);
+  size_t consumed, written;
+  SocketHTTP1_Result r;
+
+  r = SocketHTTP1_Parser_read_body (conn->parser, (const char *)input,
+                                    input_len, &consumed, temp_buf, temp_avail,
+                                    &written);
+
+  SocketBuf_consume (conn->inbuf, consumed);
+  conn->body_received += written;
+
+  /* Invoke callback with chunk data */
+  if (written > 0)
+    {
+      int is_final = SocketHTTP1_Parser_body_complete (conn->parser) ? 1 : 0;
+
+      /* Create request context for callback */
+      struct SocketHTTPServer_Request req_ctx;
+      req_ctx.server = server;
+      req_ctx.conn = conn;
+      req_ctx.h2_stream = NULL;
+      req_ctx.arena = conn->arena;
+      req_ctx.start_time_ms = conn->request_start_ms;
+
+      int cb_result = conn->body_callback (&req_ctx, temp_buf, written,
+                                           is_final,
+                                           conn->body_callback_userdata);
+      if (cb_result != 0)
+        {
+          /* Callback aborted - send 400 and close */
+          SOCKET_LOG_WARN_MSG (
+              "Body streaming callback aborted request (returned %d)",
+              cb_result);
+          connection_send_error (server, conn, 400, "Bad Request");
+          conn->state = CONN_STATE_CLOSED;
+          return -1;
+        }
+    }
+
+  if (r == HTTP1_ERROR || r < 0)
+    {
+      SocketMetrics_counter_inc (SOCKET_CTR_HTTP_RESPONSES_5XX);
+      conn->state = CONN_STATE_CLOSED;
+      return -1;
+    }
+
+  if (SocketHTTP1_Parser_body_complete (conn->parser))
+    {
+      conn->state = CONN_STATE_HANDLING;
+      return server_handle_parsed_request (server, conn);
+    }
+
+  return 0;
+}
+
+/**
  * server_process_client_event - Process a single client event
  * @server: HTTP server
  * @conn: Client connection
@@ -1220,59 +1293,12 @@ server_process_client_event (SocketHTTPServer_T server, ServerConnection *conn,
       /* Handle streaming mode: deliver body data via callback */
       if (conn->body_streaming && conn->body_callback)
         {
-          /* Use a temporary buffer for parsing body chunks */
-          char temp_buf[HTTPSERVER_RECV_BUFFER_SIZE];
-          size_t temp_avail = sizeof (temp_buf);
-
-          r = SocketHTTP1_Parser_read_body (conn->parser, (const char *)input,
-                                            input_len, &consumed, temp_buf,
-                                            temp_avail, &written);
-
-          SocketBuf_consume (conn->inbuf, consumed);
-          conn->body_received += written;
-
-          /* Invoke callback with chunk data */
-          if (written > 0)
-            {
-              int is_final
-                  = SocketHTTP1_Parser_body_complete (conn->parser) ? 1 : 0;
-
-              /* Create request context for callback */
-              struct SocketHTTPServer_Request req_ctx;
-              req_ctx.server = server;
-              req_ctx.conn = conn;
-              req_ctx.h2_stream = NULL;
-              req_ctx.arena = conn->arena;
-              req_ctx.start_time_ms = conn->request_start_ms;
-
-              int cb_result = conn->body_callback (
-                  &req_ctx, temp_buf, written, is_final,
-                  conn->body_callback_userdata);
-              if (cb_result != 0)
-                {
-                  /* Callback aborted - send 400 and close */
-                  SOCKET_LOG_WARN_MSG (
-                      "Body streaming callback aborted request (returned %d)",
-                      cb_result);
-                  connection_send_error (server, conn, 400, "Bad Request");
-                  conn->state = CONN_STATE_CLOSED;
-                  return requests_processed;
-                }
-            }
-
-          if (r == HTTP1_ERROR || r < 0)
-            {
-              SocketMetrics_counter_inc (SOCKET_CTR_HTTP_RESPONSES_5XX);
-              conn->state = CONN_STATE_CLOSED;
-              return requests_processed;
-            }
-
-          if (SocketHTTP1_Parser_body_complete (conn->parser))
-            {
-              conn->state = CONN_STATE_HANDLING;
-              requests_processed = server_handle_parsed_request (server, conn);
-            }
-
+          int result = server_process_streaming_body (server, conn, input,
+                                                       input_len);
+          if (result < 0)
+            return requests_processed;
+          if (result > 0)
+            requests_processed = result;
           return requests_processed;
         }
 
