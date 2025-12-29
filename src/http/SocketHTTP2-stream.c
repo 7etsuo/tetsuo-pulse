@@ -1168,22 +1168,21 @@ http2_recombine_cookie_headers (Arena_T arena, SocketHPACK_Header *headers, size
   headers[first_cookie_idx].value = combined_value;
   headers[first_cookie_idx].value_len = total_value_len;
 
-  /* Shift array, skipping extra cookies using indices */
+  /* Build skip bitmap for cookie headers (except first) */
+  char *skip = Arena_calloc (arena, *count, 1, __FILE__, __LINE__);
+  if (skip == NULL) return -1;
+
+  for (size_t k = 1; k < cookie_count; k++)
+    skip[cookie_indices[k]] = 1;
+
+  /* Compact array, skipping marked indices */
   size_t new_count = 0;
   for (size_t i = 0; i < *count; i++) {
-    int skip = 0;
-    for (size_t k = 0; k < cookie_count; k++) {
-      if (cookie_indices[k] == i && i != first_cookie_idx) {
-        skip = 1;
-        break;
-      }
-    }
-    if (!skip) {
-      if (new_count != i) {
-        headers[new_count] = headers[i];
-      }
-      new_count++;
-    }
+    if (skip[i])
+      continue;
+    if (new_count != i)
+      headers[new_count] = headers[i];
+    new_count++;
   }
 
   *count = new_count;
