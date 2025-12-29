@@ -818,12 +818,8 @@ synprotect_init_base (T protect, Arena_T arena,
     {
       TRY
       {
-        if (SocketCrypto_random_bytes (&protect->hash_seed,
-                                       sizeof (protect->hash_seed))
-            != 0)
-          {
-            protect->hash_seed = synprotect_get_fallback_seed ();
-          }
+        SocketCrypto_random_bytes (&protect->hash_seed,
+                                   sizeof (protect->hash_seed));
       }
       EXCEPT (SocketCrypto_Failed)
       {
