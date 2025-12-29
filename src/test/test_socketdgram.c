@@ -1584,6 +1584,182 @@ TEST (socketdgram_debug_live_count_zero_on_cleanup)
   ASSERT_EQ (initial_count, SocketDgram_debug_live_count ());
 }
 
+/* ==================== IPv6 Convenience Function Tests ==================== */
+
+TEST (socketdgram_bind_udp4_creates_ipv4_socket)
+{
+  setup_signals ();
+  SocketDgram_T server = NULL;
+
+  TRY
+  {
+    server = SocketDgram_bind_udp4 ("127.0.0.1", 0);
+    ASSERT_NOT_NULL (server);
+    ASSERT (SocketDgram_isbound (server));
+
+    /* Verify it's IPv4 by checking local address */
+    const char *addr = SocketDgram_getlocaladdr (server);
+    ASSERT_NOT_NULL (addr);
+  }
+  EXCEPT (SocketDgram_Failed) { ASSERT (0); }
+  FINALLY { SocketDgram_free (&server); }
+  END_TRY;
+}
+
+TEST (socketdgram_bind_udp6_creates_ipv6_socket)
+{
+  setup_signals ();
+  SocketDgram_T server = NULL;
+
+  TRY
+  {
+    server = SocketDgram_bind_udp6 ("::1", 0);
+    ASSERT_NOT_NULL (server);
+    ASSERT (SocketDgram_isbound (server));
+
+    /* Verify it's IPv6 by checking local address contains ':' */
+    const char *addr = SocketDgram_getlocaladdr (server);
+    ASSERT_NOT_NULL (addr);
+    ASSERT (strchr (addr, ':') != NULL);
+  }
+  EXCEPT (SocketDgram_Failed) { ASSERT (0); }
+  FINALLY { SocketDgram_free (&server); }
+  END_TRY;
+}
+
+TEST (socketdgram_bind_udp6_wildcard)
+{
+  setup_signals ();
+  SocketDgram_T server = NULL;
+
+  TRY
+  {
+    server = SocketDgram_bind_udp6 ("::", 0);
+    ASSERT_NOT_NULL (server);
+    ASSERT (SocketDgram_isbound (server));
+
+    /* Should get ephemeral port */
+    int port = SocketDgram_getlocalport (server);
+    ASSERT (port > 0);
+  }
+  EXCEPT (SocketDgram_Failed) { ASSERT (0); }
+  FINALLY { SocketDgram_free (&server); }
+  END_TRY;
+}
+
+TEST (socketdgram_bind_udp_autodetect_ipv4_null)
+{
+  setup_signals ();
+  SocketDgram_T server = NULL;
+
+  TRY
+  {
+    /* NULL should default to IPv4 for backward compatibility */
+    server = SocketDgram_bind_udp (NULL, 0);
+    ASSERT_NOT_NULL (server);
+    ASSERT (SocketDgram_isbound (server));
+  }
+  EXCEPT (SocketDgram_Failed) { ASSERT (0); }
+  FINALLY { SocketDgram_free (&server); }
+  END_TRY;
+}
+
+TEST (socketdgram_bind_udp_autodetect_ipv4_dotted)
+{
+  setup_signals ();
+  SocketDgram_T server = NULL;
+
+  TRY
+  {
+    /* Dotted-decimal IPv4 should be detected */
+    server = SocketDgram_bind_udp ("127.0.0.1", 0);
+    ASSERT_NOT_NULL (server);
+    ASSERT (SocketDgram_isbound (server));
+
+    const char *addr = SocketDgram_getlocaladdr (server);
+    ASSERT_NOT_NULL (addr);
+  }
+  EXCEPT (SocketDgram_Failed) { ASSERT (0); }
+  FINALLY { SocketDgram_free (&server); }
+  END_TRY;
+}
+
+TEST (socketdgram_bind_udp_autodetect_ipv6_colon)
+{
+  setup_signals ();
+  SocketDgram_T server = NULL;
+
+  TRY
+  {
+    /* IPv6 with colons should be detected */
+    server = SocketDgram_bind_udp ("::", 0);
+    ASSERT_NOT_NULL (server);
+    ASSERT (SocketDgram_isbound (server));
+
+    const char *addr = SocketDgram_getlocaladdr (server);
+    ASSERT_NOT_NULL (addr);
+    ASSERT (strchr (addr, ':') != NULL);
+  }
+  EXCEPT (SocketDgram_Failed) { ASSERT (0); }
+  FINALLY { SocketDgram_free (&server); }
+  END_TRY;
+}
+
+TEST (socketdgram_bind_udp_autodetect_ipv6_loopback)
+{
+  setup_signals ();
+  SocketDgram_T server = NULL;
+
+  TRY
+  {
+    /* IPv6 loopback should be detected */
+    server = SocketDgram_bind_udp ("::1", 0);
+    ASSERT_NOT_NULL (server);
+    ASSERT (SocketDgram_isbound (server));
+
+    const char *addr = SocketDgram_getlocaladdr (server);
+    ASSERT_NOT_NULL (addr);
+    ASSERT (strchr (addr, ':') != NULL);
+  }
+  EXCEPT (SocketDgram_Failed) { ASSERT (0); }
+  FINALLY { SocketDgram_free (&server); }
+  END_TRY;
+}
+
+TEST (socketdgram_bind_udp_ipv4_ipv6_both_work)
+{
+  setup_signals ();
+  SocketDgram_T server_v4 = NULL;
+  SocketDgram_T server_v6 = NULL;
+
+  TRY
+  {
+    /* Create both IPv4 and IPv6 sockets on different ports */
+    server_v4 = SocketDgram_bind_udp4 ("0.0.0.0", 0);
+    ASSERT_NOT_NULL (server_v4);
+
+    server_v6 = SocketDgram_bind_udp6 ("::", 0);
+    ASSERT_NOT_NULL (server_v6);
+
+    /* Both should be bound */
+    ASSERT (SocketDgram_isbound (server_v4));
+    ASSERT (SocketDgram_isbound (server_v6));
+
+    /* Should have different ports */
+    int port_v4 = SocketDgram_getlocalport (server_v4);
+    int port_v6 = SocketDgram_getlocalport (server_v6);
+    ASSERT (port_v4 > 0);
+    ASSERT (port_v6 > 0);
+  }
+  EXCEPT (SocketDgram_Failed) { ASSERT (0); }
+  FINALLY
+  {
+    SocketDgram_free (&server_v4);
+    SocketDgram_free (&server_v6);
+  }
+  END_TRY;
+}
+
 int
 main (void)
 {
