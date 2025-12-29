@@ -30,6 +30,13 @@ static int connection_init_resources (SocketHTTPServer_T server,
                                       Socket_T socket);
 static int connection_add_to_server (SocketHTTPServer_T server,
                                      ServerConnection *conn);
+static int setup_body_buffer_fixed (SocketHTTPServer_T server,
+                                    ServerConnection *conn,
+                                    size_t content_length,
+                                    size_t max_body);
+static int setup_body_buffer_dynamic (SocketHTTPServer_T server,
+                                      ServerConnection *conn,
+                                      size_t max_body);
 static int connection_setup_body_buffer (SocketHTTPServer_T server,
                                          ServerConnection *conn);
 static int connection_read_initial_body (SocketHTTPServer_T server,
@@ -189,6 +196,61 @@ connection_init_request_ctx (SocketHTTPServer_T server, ServerConnection *conn,
   ctx->start_time_ms = conn->request_start_ms;
 }
 
+/* Setup body buffer for fixed Content-Length mode */
+static int
+setup_body_buffer_fixed (SocketHTTPServer_T server, ServerConnection *conn,
+                         size_t content_length, size_t max_body)
+{
+  if (content_length > max_body)
+    {
+      connection_reject_oversized_body (server, conn);
+      return -1;
+    }
+
+  conn->body_capacity = content_length;
+  conn->body = Arena_alloc (conn->arena, conn->body_capacity, __FILE__,
+                            __LINE__);
+  if (conn->body == NULL)
+    {
+      conn->state = CONN_STATE_CLOSED;
+      return -1;
+    }
+
+  conn->memory_used += conn->body_capacity;
+  return 0;
+}
+
+/* Setup body buffer for chunked/until-close mode */
+static int
+setup_body_buffer_dynamic (SocketHTTPServer_T server, ServerConnection *conn,
+                           size_t max_body)
+{
+  size_t initial_size = HTTPSERVER_CHUNKED_BODY_INITIAL_SIZE;
+
+  (void)server;
+
+  if (initial_size > max_body)
+    initial_size = max_body;
+
+  if (conn->body_uses_buf && conn->body_buf != NULL)
+    {
+      SocketBuf_release (&conn->body_buf);
+      conn->body_uses_buf = 0;
+    }
+
+  conn->body_buf = SocketBuf_new (conn->arena, initial_size);
+  if (conn->body_buf == NULL)
+    {
+      conn->state = CONN_STATE_CLOSED;
+      return -1;
+    }
+
+  conn->body_uses_buf = 1;
+  conn->body_capacity = max_body; /* Max allowed, not current capacity */
+  conn->memory_used += initial_size;
+  return 0;
+}
+
 /* Allocate body buffer: fixed size for Content-Length, dynamic SocketBuf for chunked/until-close */
 static int
 connection_setup_body_buffer (SocketHTTPServer_T server, ServerConnection *conn)
@@ -200,46 +262,10 @@ connection_setup_body_buffer (SocketHTTPServer_T server, ServerConnection *conn)
   conn->body_uses_buf = 0;
 
   if (mode == HTTP1_BODY_CONTENT_LENGTH && cl > 0)
-    {
-      /* Fixed-size body: allocate exact capacity */
-      if ((size_t)cl > max_body)
-        {
-          connection_reject_oversized_body (server, conn);
-          return -1;
-        }
-      conn->body_capacity = (size_t)cl;
-      conn->body = Arena_alloc (conn->arena, conn->body_capacity, __FILE__,
-                                __LINE__);
-      if (conn->body == NULL)
-        {
-          conn->state = CONN_STATE_CLOSED;
-          return -1;
-        }
-      conn->memory_used += conn->body_capacity;
-    }
-  else if (mode == HTTP1_BODY_CHUNKED || mode == HTTP1_BODY_UNTIL_CLOSE)
-    {
-      /* Dynamic body: use SocketBuf_T that can grow up to max_body_size.
-       * Start with small initial capacity to avoid wasting memory. */
-      size_t initial_size = HTTPSERVER_CHUNKED_BODY_INITIAL_SIZE;
-      if (initial_size > max_body)
-        initial_size = max_body;
+    return setup_body_buffer_fixed (server, conn, (size_t)cl, max_body);
 
-      if (conn->body_uses_buf && conn->body_buf != NULL) {
-        SocketBuf_release (&conn->body_buf);
-        conn->body_uses_buf = 0;
-      }
-
-      conn->body_buf = SocketBuf_new (conn->arena, initial_size);
-      if (conn->body_buf == NULL)
-        {
-          conn->state = CONN_STATE_CLOSED;
-          return -1;
-        }
-      conn->body_uses_buf = 1;
-      conn->body_capacity = max_body; /* Max allowed, not current capacity */
-      conn->memory_used += initial_size;
-    }
+  if (mode == HTTP1_BODY_CHUNKED || mode == HTTP1_BODY_UNTIL_CLOSE)
+    return setup_body_buffer_dynamic (server, conn, max_body);
 
   return 0;
 }
