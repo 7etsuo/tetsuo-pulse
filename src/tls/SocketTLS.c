@@ -898,6 +898,116 @@ shutdown_handle_ssl_error (Socket_T socket, SSL *ssl, int result,
     }
 }
 
+/**
+ * shutdown_handle_result - Process SSL_shutdown return value
+ * @socket: Socket instance
+ * @ssl: SSL object
+ * @result: Return value from SSL_shutdown()
+ *
+ * Returns: 0 if complete, 1 if need to continue, -1 if error (raises exception)
+ * Thread-safe: No
+ *
+ * Handles the three possible SSL_shutdown() return values:
+ * - 1: Complete bidirectional shutdown
+ * - 0: Unidirectional shutdown (continue polling)
+ * - <0: Error condition (uses shutdown_handle_ssl_error)
+ */
+static int
+shutdown_handle_result (Socket_T socket, SSL *ssl, int result)
+{
+  if (result == 1)
+    {
+      /* Complete bidirectional shutdown: both close_notify sent and received */
+      socket->tls_shutdown_done = 1;
+      free_tls_resources (socket);
+      return 0;
+    }
+  else if (result == 0)
+    {
+      /* Unidirectional shutdown: our close_notify sent, waiting for peer.
+       * Per SSL_shutdown(3): "A second call is needed to complete the
+       * bidirectional shutdown." Continue looping after poll. */
+      return 1;
+    }
+  else /* result < 0 */
+    {
+      unsigned want_events = 0;
+      int cont = shutdown_handle_ssl_error (socket, ssl, result, &want_events);
+      if (cont < 0)
+        {
+          /* Fatal protocol error - raise exception */
+          free_tls_resources (socket);
+          RAISE_TLS_ERROR (SocketTLS_ShutdownFailed);
+        }
+      if (cont == 0)
+        {
+          /* Shutdown complete or connection lost - clean up and return */
+          free_tls_resources (socket);
+          return 0;
+        }
+      /* cont == 1: WANT_READ/WRITE - poll and retry */
+      return 1;
+    }
+}
+
+/**
+ * shutdown_wait_for_io - Wait for I/O readiness during shutdown
+ * @socket: Socket instance
+ * @deadline: Deadline timestamp in milliseconds
+ *
+ * Returns: 1 to continue, 0 to stop (timeout or EINTR)
+ * Thread-safe: No
+ *
+ * Polls for I/O events needed for shutdown to progress. Uses a timeout
+ * slice to check deadline periodically.
+ */
+static int
+shutdown_wait_for_io (Socket_T socket, int64_t deadline)
+{
+  unsigned events = POLL_READ | POLL_WRITE; /* Shutdown may need both */
+  int poll_timeout
+      = SocketTimeout_poll_timeout (SOCKET_TLS_POLL_INTERVAL_MS, deadline);
+  if (poll_timeout < 0)
+    return 0; /* Timeout expired */
+  if (!do_handshake_poll (socket, events, poll_timeout))
+    return 1; /* EINTR or timeout slice, check deadline again */
+  return 1;
+}
+
+/**
+ * shutdown_finalize - Finalize shutdown on timeout
+ * @socket: Socket instance
+ * @timeout_ms: Timeout value in milliseconds (for error message)
+ *
+ * Raises: SocketTLS_ShutdownFailed exception
+ * Thread-safe: No
+ *
+ * Performs partial shutdown attempt and raises timeout exception.
+ * Called when shutdown loop times out.
+ */
+static void
+shutdown_finalize (Socket_T socket, int timeout_ms)
+{
+  /* Timeout - perform partial shutdown (send our close_notify if possible) */
+  SSL *ssl = tls_socket_get_ssl (socket);
+  if (ssl)
+    {
+      /* Try one more non-blocking SSL_shutdown to send close_notify */
+      (void)SSL_shutdown (ssl);
+    }
+
+  /* Mark as partial shutdown and clean up without raising exception for
+   * timeout. Timeout during shutdown is not critical - we sent our
+   * close_notify (or tried to), and the socket will be closed anyway. */
+  socket->tls_shutdown_done = 0; /* Partial shutdown */
+  free_tls_resources (socket);
+
+  /* For strict mode, raise exception on timeout. Most applications don't need
+   * this level of strictness since the connection is being closed anyway. */
+  TLS_ERROR_FMT ("TLS shutdown timeout after %d ms", timeout_ms);
+  RAISE_TLS_ERROR (SocketTLS_ShutdownFailed);
+}
+
 void
 SocketTLS_shutdown (Socket_T socket)
 {
@@ -928,68 +1038,16 @@ SocketTLS_shutdown (Socket_T socket)
         }
 
       int result = SSL_shutdown (ssl);
-      if (result == 1)
-        {
-          /* Complete bidirectional shutdown: both close_notify sent and
-           * received */
-          socket->tls_shutdown_done = 1;
-          free_tls_resources (socket);
-          return;
-        }
-      else if (result == 0)
-        {
-          /* Unidirectional shutdown: our close_notify sent, waiting for peer.
-           * Per SSL_shutdown(3): "A second call is needed to complete the
-           * bidirectional shutdown." Continue looping after poll. */
-        }
-      else /* result < 0 */
-        {
-          unsigned want_events = 0;
-          int cont = shutdown_handle_ssl_error (socket, ssl, result,
-                                                &want_events);
-          if (cont < 0)
-            {
-              /* Fatal protocol error - raise exception */
-              free_tls_resources (socket);
-              RAISE_TLS_ERROR (SocketTLS_ShutdownFailed);
-            }
-          if (cont == 0)
-            {
-              /* Shutdown complete or connection lost - clean up and return */
-              free_tls_resources (socket);
-              return;
-            }
-          /* cont == 1: WANT_READ/WRITE - poll and retry */
-        }
+      int cont = shutdown_handle_result (socket, ssl, result);
+      if (cont == 0)
+        return; /* Shutdown complete */
 
       /* Need I/O for remaining shutdown steps */
-      unsigned events = POLL_READ | POLL_WRITE; /* Shutdown may need both */
-      int poll_timeout
-          = SocketTimeout_poll_timeout (SOCKET_TLS_POLL_INTERVAL_MS, deadline);
-      if (poll_timeout < 0)
+      if (!shutdown_wait_for_io (socket, deadline))
         break; /* Timeout expired */
-      if (!do_handshake_poll (socket, events, poll_timeout))
-        continue; /* EINTR or timeout slice, check deadline again */
     }
 
-  /* Timeout - perform partial shutdown (send our close_notify if possible) */
-  SSL *ssl = tls_socket_get_ssl (socket);
-  if (ssl)
-    {
-      /* Try one more non-blocking SSL_shutdown to send close_notify */
-      (void)SSL_shutdown (ssl);
-    }
-
-  /* Mark as partial shutdown and clean up without raising exception for
-   * timeout. Timeout during shutdown is not critical - we sent our
-   * close_notify (or tried to), and the socket will be closed anyway. */
-  socket->tls_shutdown_done = 0; /* Partial shutdown */
-  free_tls_resources (socket);
-
-  /* For strict mode, raise exception on timeout. Most applications don't need
-   * this level of strictness since the connection is being closed anyway. */
-  TLS_ERROR_FMT ("TLS shutdown timeout after %d ms", timeout_ms);
-  RAISE_TLS_ERROR (SocketTLS_ShutdownFailed);
+  shutdown_finalize (socket, timeout_ms);
 }
 
 /**
