@@ -569,10 +569,10 @@ remove_header_protection (uint8_t *packet, size_t pn_offset,
   int result = -1;
 
   /* Sample location: 4 bytes after the start of PN field */
-  sample = packet + pn_offset + 4;
+  sample = packet + pn_offset + QUIC_HP_SAMPLE_OFFSET;
 
   /* Ensure we have enough bytes for the sample */
-  if (pn_offset + 4 + QUIC_HP_SAMPLE_LEN > packet_len)
+  if (pn_offset + QUIC_HP_SAMPLE_OFFSET + QUIC_HP_SAMPLE_LEN > packet_len)
     return -1;
 
   /* Generate mask using AES-ECB */
@@ -802,7 +802,7 @@ SocketQUICInitial_protect (uint8_t *packet, size_t *packet_len,
   *packet_len += QUIC_INITIAL_TAG_LEN;
 
   /* Get sample for header protection (4 bytes after PN) */
-  sample = payload + (4 - pn_length);
+  sample = payload + (QUIC_HP_SAMPLE_OFFSET - pn_length);
 
   /* Apply header protection */
   if (apply_header_protection (packet, header_len, sample, hp_key) < 0)
