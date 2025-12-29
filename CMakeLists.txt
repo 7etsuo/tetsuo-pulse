@@ -378,6 +378,7 @@ set(LIB_SOURCES
     src/http/SocketHTTPServer.c
     src/http/SocketHTTPServer-connections.c
     src/http/SocketHTTPServer-static.c
+    src/http/SocketHTTPServer-h2.c
 
     # QUIC foundational module (RFC 9000)
     src/quic/SocketQUICVarInt.c

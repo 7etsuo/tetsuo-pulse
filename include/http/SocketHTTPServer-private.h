@@ -288,11 +288,37 @@ void connection_free_pending (SocketHTTPServer_T server);
 int server_run_validator_early (SocketHTTPServer_T server,
                                 ServerConnection *conn);
 
+/* Rate limiting (SocketHTTPServer.c) */
+SocketRateLimit_T find_rate_limiter (SocketHTTPServer_T server, const char *path);
+
 /* Static file serving (SocketHTTPServer-static.c) */
 StaticRoute *server_find_static_route (SocketHTTPServer_T server,
                                        const char *path);
 int server_serve_static_file (SocketHTTPServer_T server, ServerConnection *conn,
                               StaticRoute *route, const char *file_path);
+
+/* HTTP/2 server stream handling (SocketHTTPServer-h2.c) */
+typedef struct
+{
+  SocketHTTPServer_T server;
+  ServerConnection *conn;
+} HTTP2ServerCallbackCtx;
+
+ServerHTTP2Stream *server_http2_stream_get_or_create (SocketHTTPServer_T server,
+                                                      ServerConnection *conn,
+                                                      SocketHTTP2_Stream_T stream);
+int server_http2_build_request (SocketHTTPServer_T server, ServerHTTP2Stream *s,
+                                const SocketHPACK_Header *headers,
+                                size_t header_count, int end_stream);
+void server_http2_try_dispose_stream (ServerConnection *conn, ServerHTTP2Stream *s);
+void server_http2_send_end_stream (ServerConnection *conn, ServerHTTP2Stream *s);
+void server_http2_flush_stream_output (ServerConnection *conn, ServerHTTP2Stream *s);
+void server_http2_send_nonstreaming_response (ServerConnection *conn,
+                                              ServerHTTP2Stream *s);
+void server_http2_handle_request (HTTP2ServerCallbackCtx *ctx, ServerHTTP2Stream *s);
+void server_http2_stream_cb (SocketHTTP2_Conn_T http2_conn, SocketHTTP2_Stream_T stream,
+                             int event, void *userdata);
+int server_http2_enable (SocketHTTPServer_T server, ServerConnection *conn);
 
 /*
  * Response state accessors - abstract HTTP/1.1 vs HTTP/2 path selection.
