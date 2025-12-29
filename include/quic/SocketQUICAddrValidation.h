@@ -36,6 +36,10 @@
 #define QUIC_TOKEN_ADDR_HASH_SIZE 16  /**< Address hash field size */
 #define QUIC_TOKEN_HMAC_SIZE 32       /**< HMAC-SHA256 field size */
 
+/** @brief Token field offsets */
+#define QUIC_TOKEN_HMAC_OFFSET \
+  (QUIC_TOKEN_TIMESTAMP_SIZE + QUIC_TOKEN_ADDR_HASH_SIZE)  /**< HMAC field offset */
+
 /** @brief Actual token size: 8 (timestamp) + 16 (addr hash) + 32 (HMAC) */
 #define QUIC_ADDR_VALIDATION_TOKEN_SIZE \
   (QUIC_TOKEN_TIMESTAMP_SIZE + QUIC_TOKEN_ADDR_HASH_SIZE + QUIC_TOKEN_HMAC_SIZE)
