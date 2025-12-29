@@ -230,7 +230,7 @@ extern size_t SocketQUICFrame_encode_reset_stream(uint64_t stream_id, uint64_t e
 extern size_t SocketQUICFrame_encode_stop_sending(uint64_t stream_id, uint64_t error_code, uint8_t *out, size_t out_size);
 
 /* HANDSHAKE_DONE frame encoding (RFC 9000 §19.20) */
-extern size_t SocketQUICFrame_encode_handshake_done(uint8_t *out);
+extern size_t SocketQUICFrame_encode_handshake_done(uint8_t *out, size_t out_size);
 
 /* NEW_TOKEN frame encoding/decoding (RFC 9000 §19.7) */
 extern size_t SocketQUICFrame_encode_new_token(const uint8_t *token, size_t token_len,
