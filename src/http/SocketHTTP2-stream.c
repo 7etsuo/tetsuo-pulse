@@ -1283,13 +1283,6 @@ init_pending_header_block (SocketHTTP2_Conn_T conn,
   return 0;
 }
 
-static void
-clear_pending_header_block (SocketHTTP2_Stream_T stream)
-{
-  stream->header_block = NULL;
-  stream->header_block_len = 0;
-  stream->header_block_capacity = 0;
-}
 
 static int
 send_single_headers_frame (SocketHTTP2_Conn_T conn,
@@ -2398,7 +2391,10 @@ http2_process_continuation (SocketHTTP2_Conn_T conn,
       int result = process_complete_header_block (conn, stream,
                                                   stream->header_block,
                                                   stream->header_block_len);
-      clear_pending_header_block (stream);
+      /* Clear pending header block */
+      stream->header_block = NULL;
+      stream->header_block_len = 0;
+      stream->header_block_capacity = 0;
       return result;
     }
 
