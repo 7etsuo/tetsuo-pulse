@@ -28,6 +28,7 @@
 #include <string.h>
 #include <stdint.h>
 #include "quic/SocketQUICConnection.h"
+#include "quic/SocketQUICConstants.h"
 
 /**
  * @brief Safely add two uint64_t values with overflow protection.
@@ -329,7 +330,7 @@ SocketQUICConnection_verify_stateless_reset(const uint8_t *packet,
     return 0;
 
   /* RFC 9000 Section 10.3.1: Minimum size to avoid collisions */
-  if (packet_len < QUIC_STATELESS_RESET_MIN_PACKET_LEN)
+  if (packet_len < QUIC_STATELESS_RESET_MIN_SIZE)
     return 0;
 
   /* Compare final 16 bytes with expected token */
