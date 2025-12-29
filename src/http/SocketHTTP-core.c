@@ -141,18 +141,6 @@ sockethttp_parse_enum(const char *str, size_t len, const struct ParseEntry *tabl
   return default_val;
 }
 
-/* SECURITY: Check for NUL/CR/LF to prevent header injection (CWE-113) */
-static int
-sockethttp_header_value_is_safe (const char *s, size_t len)
-{
-  for (size_t i = 0; i < len; i++)
-    {
-      unsigned char c = (unsigned char)s[i];
-      if (c == 0 || c == '\r' || c == '\n')
-        return 0;
-    }
-  return 1;
-}
 
 /* ============================================================================
  * HTTP Version
@@ -436,7 +424,15 @@ SocketHTTP_header_value_valid (const char *value, size_t len)
   len = sockethttp_effective_length (value, len);
   if (len > SOCKETHTTP_MAX_HEADER_VALUE)
     return 0;
-  return sockethttp_header_value_is_safe (value, len);
+
+  /* SECURITY: Check for NUL/CR/LF to prevent header injection (CWE-113) */
+  for (size_t i = 0; i < len; i++)
+    {
+      unsigned char c = (unsigned char)value[i];
+      if (c == 0 || c == '\r' || c == '\n')
+        return 0;
+    }
+  return 1;
 }
 
 /* ============================================================================
