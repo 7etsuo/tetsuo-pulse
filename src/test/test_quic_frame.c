@@ -1524,6 +1524,173 @@ TEST (frame_datagram_overflow_32bit)
 #endif
 }
 
+/* ============================================================================
+ * CONNECTION_CLOSE Encoding Overflow Tests (Issue #1146)
+ * ============================================================================
+ */
+
+TEST (frame_encode_connection_close_transport_overflow_protection)
+{
+  /* Test that encoding CONNECTION_CLOSE with a huge reason string
+   * is properly rejected to prevent integer overflow.
+   *
+   * This tests the fix for issue #1146 where adding:
+   *   type_len + error_code_len + frame_type_len + reason_len_size + reason_len
+   * could overflow SIZE_MAX, bypassing buffer size checks.
+   */
+  uint8_t buf[256];
+
+  /* Create a string that would cause overflow when added to fixed sizes.
+   * On 64-bit systems with SIZE_MAX = 2^64-1, we can't actually create
+   * such a string in memory, so we simulate by checking edge cases.
+   *
+   * The protection code is:
+   *   size_t fixed_size = type_len + error_code_len + frame_type_len + reason_len_size;
+   *   if (reason_len > SIZE_MAX - fixed_size) return 0;
+   *
+   * Maximum fixed_size = 1 + 8 + 8 + 8 = 25 bytes
+   * So if reason_len is close to SIZE_MAX, the check should trigger.
+   */
+
+  /* We can't create a SIZE_MAX-sized string, but we can verify the function
+   * handles large buffer requirements correctly by testing with a buffer
+   * that's too small for a large (but not overflow-inducing) reason.
+   */
+  const char *large_reason = "This is a test reason phrase that is fairly long "
+                             "to test buffer size validation in CONNECTION_CLOSE "
+                             "encoding without actually causing overflow. "
+                             "The real overflow protection prevents wrapping "
+                             "when reason_len approaches SIZE_MAX.";
+
+  /* Try to encode into a buffer that's too small */
+  size_t len = SocketQUICFrame_encode_connection_close_transport (
+      0x0a,         /* error_code */
+      0x06,         /* frame_type */
+      large_reason, /* reason that won't fit in tiny buffer */
+      buf, 10       /* buffer too small */
+  );
+
+  /* Should return 0 (failure) due to buffer too small */
+  ASSERT_EQ (0, len);
+
+  /* Now verify it succeeds with adequate buffer */
+  len = SocketQUICFrame_encode_connection_close_transport (
+      0x0a, 0x06, large_reason, buf, sizeof (buf));
+
+  ASSERT (len > 0);
+  ASSERT (len <= sizeof (buf));
+}
+
+TEST (frame_encode_connection_close_app_overflow_protection)
+{
+  /* Test overflow protection in application-level CONNECTION_CLOSE encoding.
+   * Same principle as transport variant but without frame_type field.
+   */
+  uint8_t buf[256];
+
+  const char *large_reason = "Application error with a moderately long "
+                             "reason phrase to test buffer validation.";
+
+  /* Try encoding into too-small buffer */
+  size_t len = SocketQUICFrame_encode_connection_close_app (
+      1000,         /* error_code */
+      large_reason, /* reason */
+      buf, 10       /* buffer too small */
+  );
+
+  /* Should return 0 (failure) */
+  ASSERT_EQ (0, len);
+
+  /* Verify success with adequate buffer */
+  len = SocketQUICFrame_encode_connection_close_app (
+      1000, large_reason, buf, sizeof (buf));
+
+  ASSERT (len > 0);
+  ASSERT (len <= sizeof (buf));
+}
+
+TEST (frame_encode_connection_close_transport_max_varint)
+{
+  /* Test encoding with maximum valid varint values to ensure
+   * the overflow check handles the worst-case fixed_size.
+   *
+   * Maximum varint encoding length is 8 bytes.
+   * fixed_size = type_len(1) + error_code_len(8) + frame_type_len(8) + reason_len_size(8)
+   *            = 25 bytes maximum
+   */
+  uint8_t buf[256];
+
+  /* Use maximum varint values (2^62 - 1) */
+  uint64_t max_varint = 0x3FFFFFFFFFFFFFFF;
+
+  /* Encode with max values and short reason */
+  size_t len = SocketQUICFrame_encode_connection_close_transport (
+      max_varint,   /* error_code: max 62-bit value */
+      max_varint,   /* frame_type: max 62-bit value */
+      "ok",         /* small reason */
+      buf, sizeof (buf));
+
+  ASSERT (len > 0);
+
+  /* Parse back to verify */
+  SocketQUICFrame_T frame;
+  size_t consumed;
+  SocketQUICFrame_Result res
+      = SocketQUICFrame_parse (buf, len, &frame, &consumed);
+
+  ASSERT_EQ (QUIC_FRAME_OK, res);
+  ASSERT_EQ (max_varint, frame.data.connection_close.error_code);
+  ASSERT_EQ (max_varint, frame.data.connection_close.frame_type);
+}
+
+TEST (frame_encode_connection_close_app_max_varint)
+{
+  /* Test app-level CONNECTION_CLOSE with maximum varint values */
+  uint8_t buf[256];
+
+  uint64_t max_varint = 0x3FFFFFFFFFFFFFFF;
+
+  size_t len = SocketQUICFrame_encode_connection_close_app (
+      max_varint,   /* error_code: max 62-bit value */
+      "ok",         /* small reason */
+      buf, sizeof (buf));
+
+  ASSERT (len > 0);
+
+  /* Parse back to verify */
+  SocketQUICFrame_T frame;
+  size_t consumed;
+  SocketQUICFrame_Result res
+      = SocketQUICFrame_parse (buf, len, &frame, &consumed);
+
+  ASSERT_EQ (QUIC_FRAME_OK, res);
+  ASSERT_EQ (max_varint, frame.data.connection_close.error_code);
+  ASSERT_EQ (1, frame.data.connection_close.is_app_error);
+}
+
+TEST (frame_encode_connection_close_invalid_utf8)
+{
+  /* Verify that invalid UTF-8 in reason phrase is rejected.
+   * This prevents encoding malformed frames per RFC 9000 §19.19.
+   */
+  uint8_t buf[256];
+
+  /* Invalid UTF-8: continuation byte without leading byte */
+  const char *invalid_utf8 = "Error: \x80\x81\x82";
+
+  size_t len = SocketQUICFrame_encode_connection_close_transport (
+      0x01, 0x00, invalid_utf8, buf, sizeof (buf));
+
+  /* Should return 0 due to UTF-8 validation failure */
+  ASSERT_EQ (0, len);
+
+  /* Same test for app variant */
+  len = SocketQUICFrame_encode_connection_close_app (
+      1000, invalid_utf8, buf, sizeof (buf));
+
+  ASSERT_EQ (0, len);
+}
+
 int
 main (void)
 {
