@@ -738,6 +738,7 @@ set(TEST_SOURCES
     test_timewindow
     test_socketerror
     test_socketevent
+    test_safe_arithmetic
     test_socket
     test_socketbuf
     test_socketdgram
