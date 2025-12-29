@@ -291,6 +291,16 @@
 #define SOCKET_DTLS_DEFAULT_SHUTDOWN_TIMEOUT_MS 5000
 #endif
 
+/**
+ * @brief Poll interval during DTLS shutdown (ms).
+ * @details Interval between poll() calls when waiting for close_notify
+ * during graceful shutdown. Shorter intervals provide faster response
+ * but increase CPU usage.
+ */
+#ifndef SOCKET_DTLS_SHUTDOWN_POLL_INTERVAL_MS
+#define SOCKET_DTLS_SHUTDOWN_POLL_INTERVAL_MS 1000
+#endif
+
 /* Maximum number of retransmissions before giving up */
 #ifndef SOCKET_DTLS_MAX_RETRANSMITS
 #define SOCKET_DTLS_MAX_RETRANSMITS 12

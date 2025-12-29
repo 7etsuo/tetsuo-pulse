@@ -1186,7 +1186,7 @@ static int
 dtls_shutdown_poll_wait (int fd, int64_t deadline_ms)
 {
   struct pollfd pfd = { .fd = fd, .events = POLLIN | POLLOUT };
-  int poll_tmo = SocketTimeout_poll_timeout (1000, deadline_ms);
+  int poll_tmo = SocketTimeout_poll_timeout (SOCKET_DTLS_SHUTDOWN_POLL_INTERVAL_MS, deadline_ms);
   int pr = poll (&pfd, 1, poll_tmo);
 
   if (pr < 0 && errno != EINTR)
