@@ -555,7 +555,8 @@ parse_cidr_notation (const char *cidr, char *ip_out, size_t ip_out_size,
 
   const char *prefix_str = slash + 1;
   char *endptr;
-  errno = 0; /* Reset errno before strtol to detect ERANGE accurately */
+  /* strtol sets but never clears errno - reset to detect ERANGE reliably */
+  errno = 0;
   long prefix_long = strtol (prefix_str, &endptr, 10);
   if (prefix_str == endptr || *endptr != '\0' || errno == ERANGE
       || prefix_long < 0 || prefix_long > SOCKET_IPV6_MAX_PREFIX)
