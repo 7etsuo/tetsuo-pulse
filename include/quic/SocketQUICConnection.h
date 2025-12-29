@@ -30,6 +30,7 @@
 
 typedef struct SocketQUICConnection *SocketQUICConnection_T;
 typedef struct SocketQUICConnTable *SocketQUICConnTable_T;
+typedef struct SocketQUICHandshake *SocketQUICHandshake_T;
 
 extern const Except_T SocketQUICConnTable_Failed;
 extern const Except_T SocketQUICConnection_Failed;
@@ -75,6 +76,7 @@ struct SocketQUICConnection {
   int is_ipv6;
   struct SocketQUICConnection *hash_next;
   void *user_data;
+  SocketQUICHandshake_T handshake;
   uint64_t local_max_idle_timeout_ms;
   uint64_t peer_max_idle_timeout_ms;
   uint64_t idle_timeout_deadline_ms;
