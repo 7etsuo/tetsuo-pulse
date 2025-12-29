@@ -34,6 +34,18 @@ static int connection_setup_body_buffer (SocketHTTPServer_T server,
                                          ServerConnection *conn);
 static int connection_read_initial_body (SocketHTTPServer_T server,
                                          ServerConnection *conn);
+static int connection_read_body_streaming (SocketHTTPServer_T server,
+                                           ServerConnection *conn,
+                                           const void *input,
+                                           size_t input_len);
+static int connection_read_body_chunked (SocketHTTPServer_T server,
+                                         ServerConnection *conn,
+                                         const void *input,
+                                         size_t input_len);
+static int connection_read_body_fixed (SocketHTTPServer_T server,
+                                       ServerConnection *conn,
+                                       const void *input,
+                                       size_t input_len);
 static void connection_reject_oversized_body (SocketHTTPServer_T server,
                                               ServerConnection *conn);
 
@@ -232,168 +244,63 @@ connection_setup_body_buffer (SocketHTTPServer_T server, ServerConnection *conn)
   return 0;
 }
 
-/* Read initial body data. Returns 0 if more data needed, 1 if complete, -1 on error */
+/* Handle streaming mode: deliver body data via callback. Returns 0 if more data needed, 1 if complete, -1 on error */
 static int
-connection_read_initial_body (SocketHTTPServer_T server, ServerConnection *conn)
+connection_read_body_streaming (SocketHTTPServer_T server,
+                                 ServerConnection *conn,
+                                 const void *input,
+                                 size_t input_len)
 {
-  const void *input;
-  size_t input_len, body_consumed, written;
+  char temp_buf[HTTPSERVER_RECV_BUFFER_SIZE];
+  size_t temp_avail = sizeof (temp_buf);
+  size_t max_body = server->config.max_body_size;
+  size_t process_len = input_len;
+  size_t body_consumed, written;
   SocketHTTP1_Result r;
 
-  input = SocketBuf_readptr (conn->inbuf, &input_len);
-  if (input_len == 0)
-    {
-      conn->state = CONN_STATE_READING_BODY;
-      return 0;
-    }
-
-  /* Handle streaming mode: deliver body data via callback instead of buffering
-   */
-  if (conn->body_streaming && conn->body_callback)
-    {
-      /* Use a temporary buffer for parsing body chunks */
-      char temp_buf[HTTPSERVER_RECV_BUFFER_SIZE];
-      size_t temp_avail = sizeof (temp_buf);
-
-      size_t max_body = server->config.max_body_size;
-      size_t process_len = input_len;
-
-      /* Overflow-safe check using centralized utility */
-      if (max_body > 0) {
-        uint64_t total;
-        if (!socket_util_safe_add_u64(conn->body_received, input_len, &total) || total > max_body) {
-          /* Would exceed limit */
-          size_t remaining = max_body - conn->body_received;
-          if (remaining == 0) {
-            connection_reject_oversized_body (server, conn);
-            return -1;
-          }
-          process_len = remaining;
-        }
+  /* Overflow-safe check using centralized utility */
+  if (max_body > 0) {
+    uint64_t total;
+    if (!socket_util_safe_add_u64(conn->body_received, input_len, &total) || total > max_body) {
+      /* Would exceed limit */
+      size_t remaining = max_body - conn->body_received;
+      if (remaining == 0) {
+        connection_reject_oversized_body (server, conn);
+        return -1;
       }
-
-      r = SocketHTTP1_Parser_read_body (conn->parser, (const char *)input,
-                                        process_len, &body_consumed, temp_buf,
-                                        temp_avail, &written);
-
-      SocketBuf_consume (conn->inbuf, body_consumed);
-      conn->body_received += written;
-
-      /* Invoke callback with chunk data */
-      if (written > 0)
-        {
-          int is_final = SocketHTTP1_Parser_body_complete (conn->parser) ? 1 : 0;
-
-          /* Create request context for callback */
-          struct SocketHTTPServer_Request req_ctx;
-          connection_init_request_ctx (server, conn, &req_ctx);
-
-          int cb_result = conn->body_callback (&req_ctx, temp_buf, written,
-                                               is_final,
-                                               conn->body_callback_userdata);
-          if (cb_result != 0)
-            {
-              /* Callback aborted - send 400 and close */
-              SOCKET_LOG_WARN_MSG (
-                  "Body streaming callback aborted request (returned %d)",
-                  cb_result);
-              connection_send_error (server, conn, 400, "Bad Request");
-              conn->state = CONN_STATE_CLOSED;
-              return -1;
-            }
-        }
-
-      if (r == HTTP1_ERROR)
-        {
-          conn->state = CONN_STATE_CLOSED;
-          return -1;
-        }
-
-      if (!SocketHTTP1_Parser_body_complete (conn->parser))
-        {
-          conn->state = CONN_STATE_READING_BODY;
-          return 0;
-        }
-
-      /* Body complete */
-      return 1;
+      process_len = remaining;
     }
+  }
 
-  if (conn->body_uses_buf)
+  r = SocketHTTP1_Parser_read_body (conn->parser, (const char *)input,
+                                    process_len, &body_consumed, temp_buf,
+                                    temp_avail, &written);
+
+  SocketBuf_consume (conn->inbuf, body_consumed);
+  conn->body_received += written;
+
+  /* Invoke callback with chunk data */
+  if (written > 0)
     {
-      /* Chunked/until-close mode: use dynamic SocketBuf_T */
-      size_t max_body = server->config.max_body_size;
-      size_t current_len = SocketBuf_available (conn->body_buf);
+      int is_final = SocketHTTP1_Parser_body_complete (conn->parser) ? 1 : 0;
 
-      /* Check if adding this chunk would exceed limit */
-      uint64_t total;
-      if (!socket_util_safe_add_u64(current_len, input_len, &total) || total > max_body)
-        {
-          /* Only accept up to limit */
-          input_len = max_body - current_len;
-          if (input_len == 0)
-            {
-              connection_reject_oversized_body (server, conn);
-              return -1;
-            }
-        }
+      /* Create request context for callback */
+      struct SocketHTTPServer_Request req_ctx;
+      connection_init_request_ctx (server, conn, &req_ctx);
 
-      /* Ensure buffer has space for incoming data */
-      if (!SocketBuf_ensure (conn->body_buf, input_len))
+      int cb_result = conn->body_callback (&req_ctx, temp_buf, written,
+                                           is_final,
+                                           conn->body_callback_userdata);
+      if (cb_result != 0)
         {
+          /* Callback aborted - send 400 and close */
+          SOCKET_LOG_WARN_MSG (
+              "Body streaming callback aborted request (returned %d)",
+              cb_result);
+          connection_send_error (server, conn, 400, "Bad Request");
           conn->state = CONN_STATE_CLOSED;
           return -1;
         }
-
-      /* Get write pointer and parse body into it */
-      size_t write_avail;
-      void *write_ptr = SocketBuf_writeptr (conn->body_buf, &write_avail);
-      if (write_ptr == NULL || write_avail == 0)
-        {
-          conn->state = CONN_STATE_CLOSED;
-          return -1;
-        }
-
-      r = SocketHTTP1_Parser_read_body (conn->parser, (const char *)input,
-                                        input_len, &body_consumed,
-                                        (char *)write_ptr, write_avail,
-                                        &written);
-
-      SocketBuf_consume (conn->inbuf, body_consumed);
-      if (written > 0)
-        SocketBuf_written (conn->body_buf, written);
-
-      conn->body_len = SocketBuf_available (conn->body_buf);
-    }
-  else
-    {
-      /* Content-Length mode: use fixed buffer */
-      size_t max_body = server->config.max_body_size;
-      size_t process_len = input_len;
-
-      /* Overflow-safe check using centralized utility */
-      if (max_body > 0) {
-        uint64_t total;
-        if (!socket_util_safe_add_u64(conn->body_len, input_len, &total) || total > max_body) {
-          /* Would exceed limit */
-          size_t remaining = max_body - conn->body_len;
-          if (remaining == 0) {
-            connection_reject_oversized_body (server, conn);
-            return -1;
-          }
-          process_len = remaining;
-        }
-      }
-
-      char *output = (char *)conn->body + conn->body_len;
-      size_t output_avail = conn->body_capacity - conn->body_len;
-
-      r = SocketHTTP1_Parser_read_body (conn->parser, (const char *)input,
-                                        process_len, &body_consumed, output,
-                                        output_avail, &written);
-
-      SocketBuf_consume (conn->inbuf, body_consumed);
-      conn->body_len += written;
     }
 
   if (r == HTTP1_ERROR)
@@ -408,7 +315,149 @@ connection_read_initial_body (SocketHTTPServer_T server, ServerConnection *conn)
       return 0;
     }
 
+  /* Body complete */
   return 1;
+}
+
+/* Handle chunked/until-close mode with dynamic buffer. Returns 0 if more data needed, 1 if complete, -1 on error */
+static int
+connection_read_body_chunked (SocketHTTPServer_T server,
+                               ServerConnection *conn,
+                               const void *input,
+                               size_t input_len)
+{
+  size_t max_body = server->config.max_body_size;
+  size_t current_len = SocketBuf_available (conn->body_buf);
+  size_t body_consumed, written;
+  SocketHTTP1_Result r;
+
+  /* Check if adding this chunk would exceed limit */
+  uint64_t total;
+  if (!socket_util_safe_add_u64(current_len, input_len, &total) || total > max_body)
+    {
+      /* Only accept up to limit */
+      input_len = max_body - current_len;
+      if (input_len == 0)
+        {
+          connection_reject_oversized_body (server, conn);
+          return -1;
+        }
+    }
+
+  /* Ensure buffer has space for incoming data */
+  if (!SocketBuf_ensure (conn->body_buf, input_len))
+    {
+      conn->state = CONN_STATE_CLOSED;
+      return -1;
+    }
+
+  /* Get write pointer and parse body into it */
+  size_t write_avail;
+  void *write_ptr = SocketBuf_writeptr (conn->body_buf, &write_avail);
+  if (write_ptr == NULL || write_avail == 0)
+    {
+      conn->state = CONN_STATE_CLOSED;
+      return -1;
+    }
+
+  r = SocketHTTP1_Parser_read_body (conn->parser, (const char *)input,
+                                    input_len, &body_consumed,
+                                    (char *)write_ptr, write_avail,
+                                    &written);
+
+  SocketBuf_consume (conn->inbuf, body_consumed);
+  if (written > 0)
+    SocketBuf_written (conn->body_buf, written);
+
+  conn->body_len = SocketBuf_available (conn->body_buf);
+
+  if (r == HTTP1_ERROR)
+    {
+      conn->state = CONN_STATE_CLOSED;
+      return -1;
+    }
+
+  if (!SocketHTTP1_Parser_body_complete (conn->parser))
+    {
+      conn->state = CONN_STATE_READING_BODY;
+      return 0;
+    }
+
+  return 1;
+}
+
+/* Handle fixed Content-Length mode. Returns 0 if more data needed, 1 if complete, -1 on error */
+static int
+connection_read_body_fixed (SocketHTTPServer_T server,
+                             ServerConnection *conn,
+                             const void *input,
+                             size_t input_len)
+{
+  size_t max_body = server->config.max_body_size;
+  size_t process_len = input_len;
+  size_t body_consumed, written;
+  SocketHTTP1_Result r;
+
+  /* Overflow-safe check using centralized utility */
+  if (max_body > 0) {
+    uint64_t total;
+    if (!socket_util_safe_add_u64(conn->body_len, input_len, &total) || total > max_body) {
+      /* Would exceed limit */
+      size_t remaining = max_body - conn->body_len;
+      if (remaining == 0) {
+        connection_reject_oversized_body (server, conn);
+        return -1;
+      }
+      process_len = remaining;
+    }
+  }
+
+  char *output = (char *)conn->body + conn->body_len;
+  size_t output_avail = conn->body_capacity - conn->body_len;
+
+  r = SocketHTTP1_Parser_read_body (conn->parser, (const char *)input,
+                                    process_len, &body_consumed, output,
+                                    output_avail, &written);
+
+  SocketBuf_consume (conn->inbuf, body_consumed);
+  conn->body_len += written;
+
+  if (r == HTTP1_ERROR)
+    {
+      conn->state = CONN_STATE_CLOSED;
+      return -1;
+    }
+
+  if (!SocketHTTP1_Parser_body_complete (conn->parser))
+    {
+      conn->state = CONN_STATE_READING_BODY;
+      return 0;
+    }
+
+  return 1;
+}
+
+/* Read initial body data. Dispatches to appropriate handler based on mode. Returns 0 if more data needed, 1 if complete, -1 on error */
+static int
+connection_read_initial_body (SocketHTTPServer_T server, ServerConnection *conn)
+{
+  const void *input;
+  size_t input_len;
+
+  input = SocketBuf_readptr (conn->inbuf, &input_len);
+  if (input_len == 0)
+    {
+      conn->state = CONN_STATE_READING_BODY;
+      return 0;
+    }
+
+  /* Dispatch to appropriate handler based on mode */
+  if (conn->body_streaming && conn->body_callback)
+    return connection_read_body_streaming(server, conn, input, input_len);
+  else if (conn->body_uses_buf)
+    return connection_read_body_chunked(server, conn, input, input_len);
+  else
+    return connection_read_body_fixed(server, conn, input, input_len);
 }
 
 /* Parse HTTP request. Runs validator on headers complete, sets up body handling. Returns 0 need more data, 1 ready, -1 error */
