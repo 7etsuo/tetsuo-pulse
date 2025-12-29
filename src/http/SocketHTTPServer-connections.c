@@ -537,8 +537,14 @@ connection_parse_request (SocketHTTPServer_T server, ServerConnection *conn)
       return -1;
     }
 
-  /* Handle request body if present */
-  if (conn->request->has_body && !conn->body_streaming)
+  /* Handle request body if present - use early returns to reduce nesting */
+  if (!conn->request->has_body)
+    {
+      conn->state = CONN_STATE_HANDLING;
+      return 1;
+    }
+
+  if (!conn->body_streaming)
     {
       /* Normal buffered mode: allocate body buffer */
       if (connection_setup_body_buffer (server, conn) < 0)
@@ -550,15 +556,15 @@ connection_parse_request (SocketHTTPServer_T server, ServerConnection *conn)
           if (body_result <= 0)
             return body_result;
         }
-    }
-  else if (conn->request->has_body && conn->body_streaming)
-    {
-      /* Streaming mode enabled by validator - read initial body with callback */
 
-      int body_result = connection_read_initial_body (server, conn);
-      if (body_result <= 0)
-        return body_result;
+      conn->state = CONN_STATE_HANDLING;
+      return 1;
     }
+
+  /* Streaming mode enabled by validator - read initial body with callback */
+  int body_result = connection_read_initial_body (server, conn);
+  if (body_result <= 0)
+    return body_result;
 
   conn->state = CONN_STATE_HANDLING;
   return 1;
