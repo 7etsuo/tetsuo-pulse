@@ -87,6 +87,74 @@ Socket_recvv (T socket, struct iovec *iov, int iovcnt)
 
 /* ==================== Sendfile Operations ==================== */
 
+/**
+ * safe_add_off_t - Add to off_t with overflow checking
+ * @offset: Pointer to offset to update (must not be NULL)
+ * @increment: Value to add to offset
+ *
+ * Returns: 0 on success, -1 on overflow/underflow
+ *
+ * Safely adds increment to *offset with overflow detection. Uses compiler
+ * builtin if available, otherwise performs manual bounds checking. This
+ * prevents CWE-190 (Integer Overflow) which could cause data corruption
+ * or security issues when handling large files.
+ */
+static int
+safe_add_off_t (off_t *offset, off_t increment)
+{
+  assert (offset);
+
+#if defined(__has_builtin) && __has_builtin(__builtin_add_overflow)
+  /* Use compiler builtin for overflow detection (most reliable) */
+  off_t new_offset;
+  if (__builtin_add_overflow (*offset, increment, &new_offset))
+    {
+      SOCKET_ERROR_MSG ("File offset overflow: operation would exceed maximum "
+                        "file offset");
+      return -1;
+    }
+  *offset = new_offset;
+  return 0;
+#else
+  /* Manual overflow check for systems without compiler builtins.
+   * For signed addition, overflow occurs when:
+   * - Both operands positive and sum exceeds maximum
+   * - Both operands negative and sum goes below minimum
+   * Safe to add if signs differ or result stays within bounds. */
+
+  if (increment > 0)
+    {
+      /* Adding positive value - check for overflow.
+       * Maximum value for signed type is 2^(bits-1) - 1 */
+      off_t max_off_t = (off_t) ((1ULL << (sizeof (off_t) * 8 - 1)) - 1);
+      if (*offset > 0 && increment > max_off_t - *offset)
+        {
+          SOCKET_ERROR_MSG (
+              "File offset overflow: operation would exceed maximum file "
+              "offset");
+          return -1;
+        }
+    }
+  else if (increment < 0)
+    {
+      /* Adding negative value - check for underflow.
+       * Minimum value for signed type is -2^(bits-1) */
+      off_t min_off_t = (off_t) (-(1LL << (sizeof (off_t) * 8 - 1)));
+      if (*offset < 0 && increment < min_off_t - *offset)
+        {
+          SOCKET_ERROR_MSG (
+              "File offset underflow: operation would go below minimum file "
+              "offset");
+          return -1;
+        }
+    }
+  /* else: increment is 0, no change needed */
+
+  *offset += increment;
+  return 0;
+#endif
+}
+
 #if SOCKET_HAS_SENDFILE && defined(__linux__)
 /**
  * socket_sendfile_linux - Linux-specific sendfile implementation
@@ -132,7 +200,17 @@ socket_sendfile_bsd (T socket, int file_fd, off_t *offset, size_t count)
   if (result == 0)
     {
       if (offset)
-        *offset = off + len;
+        {
+          /* Use safe addition to prevent off_t overflow (CWE-190) */
+          off_t new_offset = off;
+          if (safe_add_off_t (&new_offset, len) < 0)
+            {
+              /* Overflow detected - return error */
+              errno = EOVERFLOW;
+              return -1;
+            }
+          *offset = new_offset;
+        }
       return (ssize_t)len;
     }
   return -1;
@@ -211,7 +289,12 @@ sendfile_transfer_loop (T socket, int file_fd, off_t *offset, size_t count)
   FINALLY
   {
     if (offset)
-      *offset += (off_t)total_sent;
+      {
+        /* Use safe addition to prevent off_t overflow (CWE-190).
+         * On overflow, safe_add_off_t logs error but doesn't update offset,
+         * leaving it at the last valid value. */
+        (void)safe_add_off_t (offset, (off_t)total_sent);
+      }
   }
   END_TRY;
 
@@ -315,7 +398,14 @@ Socket_sendfileall (T socket, int file_fd, off_t *offset, size_t count)
           }
         total_sent += (size_t)sent;
         if (offset)
-          current_offset += (off_t)sent;
+          {
+            /* Use safe addition to prevent off_t overflow (CWE-190) */
+            if (safe_add_off_t (&current_offset, (off_t)sent) < 0)
+              {
+                /* Overflow detected - stop processing and return partial progress */
+                break;
+              }
+          }
       }
   }
   EXCEPT (Socket_Closed)
