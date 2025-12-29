@@ -910,9 +910,9 @@ tcp_socket_create (int family)
       return -1;
     }
 
-  /* Disable Nagle for lower latency */
+  /* Disable Nagle for lower latency (non-fatal optimization) */
   int nodelay = 1;
-  setsockopt (fd, IPPROTO_TCP, TCP_NODELAY, &nodelay, sizeof (nodelay));
+  (void)setsockopt (fd, IPPROTO_TCP, TCP_NODELAY, &nodelay, sizeof (nodelay));
 
   return fd;
 }
