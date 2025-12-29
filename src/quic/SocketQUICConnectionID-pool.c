@@ -64,6 +64,28 @@ hash_cid_bytes (const uint8_t *id, size_t len, uint32_t seed)
   return hash & (QUIC_CONNID_POOL_HASH_SIZE - 1);
 }
 
+/**
+ * @brief Hash a sequence number for O(1) lookup.
+ *
+ * Uses multiplicative hash with Knuth's constant mixed with seed.
+ *
+ * @param sequence Sequence number to hash.
+ * @param seed Random seed for collision resistance.
+ * @return Hash table index (0 to QUIC_CONNID_POOL_HASH_SIZE - 1).
+ */
+static unsigned
+hash_sequence (uint64_t sequence, uint32_t seed)
+{
+  /* Multiplicative hash using Knuth's constant */
+  uint64_t hash = sequence * 2654435761ULL;
+  hash ^= seed;
+  hash ^= (hash >> 33);
+  hash *= 0xff51afd7ed558ccdULL;
+  hash ^= (hash >> 33);
+
+  return (unsigned)(hash & (QUIC_CONNID_POOL_HASH_SIZE - 1));
+}
+
 /* ============================================================================
  * Pool Lifecycle Functions
  * ============================================================================
@@ -203,6 +225,41 @@ hash_remove (SocketQUICConnectionIDPool_T pool,
 }
 
 /* ============================================================================
+ * Sequence Hash Table Operations (O(1) sequence lookup)
+ * ============================================================================
+ */
+
+static void
+sequence_hash_insert (SocketQUICConnectionIDPool_T pool,
+                      SocketQUICConnectionIDEntry_T *entry)
+{
+  unsigned idx = hash_sequence (entry->cid.sequence, pool->hash_seed);
+
+  entry->seq_hash_next = pool->sequence_table[idx];
+  pool->sequence_table[idx] = entry;
+}
+
+static void
+sequence_hash_remove (SocketQUICConnectionIDPool_T pool,
+                      SocketQUICConnectionIDEntry_T *entry)
+{
+  unsigned idx = hash_sequence (entry->cid.sequence, pool->hash_seed);
+
+  SocketQUICConnectionIDEntry_T **prev = &pool->sequence_table[idx];
+
+  while (*prev)
+    {
+      if (*prev == entry)
+        {
+          *prev = entry->seq_hash_next;
+          entry->seq_hash_next = NULL;
+          return;
+        }
+      prev = &(*prev)->seq_hash_next;
+    }
+}
+
+/* ============================================================================
  * Connection ID Management
  * ============================================================================
  */
@@ -319,8 +376,9 @@ SocketQUICConnectionIDPool_add_with_sequence (SocketQUICConnectionIDPool_T pool,
   if (entry == NULL)
     return QUIC_CONNID_POOL_ERROR_NULL;
 
-  /* Insert into hash table and list */
+  /* Insert into hash tables and list */
   hash_insert (pool, entry);
+  sequence_hash_insert (pool, entry);
   list_append (pool, entry);
 
   pool->total_count++;
@@ -375,17 +433,31 @@ SocketQUICConnectionIDPool_lookup_sequence (const SocketQUICConnectionIDPool_T p
                                              uint64_t sequence)
 {
   SocketQUICConnectionIDEntry_T *entry;
+  unsigned idx;
+  int chain_len;
 
   if (pool == NULL)
     return NULL;
 
-  /* Linear search through list - could be optimized with sequence index */
-  entry = pool->list_head;
+  /* O(1) hash table lookup by sequence number */
+  idx = hash_sequence (sequence, pool->hash_seed);
+  entry = pool->sequence_table[idx];
+  chain_len = 0;
+
   while (entry)
     {
+      chain_len++;
+      if (chain_len > QUIC_CONNID_POOL_MAX_CHAIN_LEN)
+        {
+          SOCKET_LOG_WARN_MSG (
+              "SECURITY: Sequence hash chain too long in lookup (%d)", chain_len);
+          return NULL;
+        }
+
       if (entry->cid.sequence == sequence)
         return entry;
-      entry = entry->list_next;
+
+      entry = entry->seq_hash_next;
     }
 
   return NULL;
@@ -406,6 +478,7 @@ SocketQUICConnectionIDPool_remove (SocketQUICConnectionIDPool_T pool,
 
   /* Remove from data structures */
   hash_remove (pool, entry);
+  sequence_hash_remove (pool, entry);
   list_remove (pool, entry);
 
   pool->total_count--;
@@ -518,6 +591,7 @@ SocketQUICConnectionIDPool_purge_retired (SocketQUICConnectionIDPool_T pool,
       if (entry->is_retired)
         {
           hash_remove (pool, entry);
+          sequence_hash_remove (pool, entry);
           list_remove (pool, entry);
           pool->total_count--;
           count++;
