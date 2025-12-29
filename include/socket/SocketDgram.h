@@ -976,16 +976,16 @@ extern int SocketDgram_debug_live_count (void);
 
 /**
  * @ingroup socket_dgram
- * @brief Create a bound UDP socket in one call.
+ * @brief Create a bound IPv4 UDP socket in one call.
  *
- * Convenience function that combines SocketDgram_new(), SocketDgram_bind()
- * into a single call. Creates a UDP socket bound to the specified address
+ * Convenience function that combines SocketDgram_new(AF_INET), SocketDgram_bind()
+ * into a single call. Creates an IPv4 UDP socket bound to the specified address
  * and port, ready for sending/receiving datagrams.
  *
- * @param[in] host Local address to bind (NULL or "" for INADDR_ANY)
+ * @param[in] host Local IPv4 address to bind (NULL or "" for INADDR_ANY)
  * @param[in] port Local port to bind (1-65535, or 0 for ephemeral port)
  *
- * @return New bound UDP socket ready for SocketDgram_sendto()/recvfrom()
+ * @return New bound IPv4 UDP socket ready for SocketDgram_sendto()/recvfrom()
  *
  * @throws SocketDgram_Failed on socket creation or bind failure
  *
@@ -994,8 +994,55 @@ extern int SocketDgram_debug_live_count (void);
  * ## Example
  *
  * @code{.c}
- * // UDP server
- * SocketDgram_T server = SocketDgram_bind_udp("0.0.0.0", 5353);
+ * // IPv4 UDP server
+ * SocketDgram_T server = SocketDgram_bind_udp4("0.0.0.0", 5353);
+ * char buf[1024];
+ * char sender_ip[INET_ADDRSTRLEN];
+ * int sender_port;
+ * while (running) {
+ *     ssize_t n = SocketDgram_recvfrom(server, buf, sizeof(buf),
+ *                                      sender_ip, sizeof(sender_ip),
+ *                                      &sender_port);
+ *     if (n > 0) {
+ *         // Echo back
+ *         SocketDgram_sendto(server, buf, n, sender_ip, sender_port);
+ *     }
+ * }
+ * SocketDgram_free(&server);
+ * @endcode
+ *
+ * @note Use port 0 to let the OS assign an ephemeral port
+ * @note This function only creates IPv4 sockets
+ *
+ * @see SocketDgram_bind_udp6() for IPv6 variant
+ * @see SocketDgram_bind_udp() for auto-detection variant
+ * @see SocketDgram_bind() for separate bind operation
+ * @see SocketDgram_sendto(), SocketDgram_recvfrom() for I/O
+ */
+extern T SocketDgram_bind_udp4 (const char *host, int port);
+
+/**
+ * @ingroup socket_dgram
+ * @brief Create a bound IPv6 UDP socket in one call.
+ *
+ * Convenience function that combines SocketDgram_new(AF_INET6), SocketDgram_bind()
+ * into a single call. Creates an IPv6 UDP socket bound to the specified address
+ * and port, ready for sending/receiving datagrams.
+ *
+ * @param[in] host Local IPv6 address to bind (NULL or "" for in6addr_any, "::")
+ * @param[in] port Local port to bind (1-65535, or 0 for ephemeral port)
+ *
+ * @return New bound IPv6 UDP socket ready for SocketDgram_sendto()/recvfrom()
+ *
+ * @throws SocketDgram_Failed on socket creation or bind failure
+ *
+ * @threadsafe Yes - creates new socket instance
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // IPv6 UDP server
+ * SocketDgram_T server = SocketDgram_bind_udp6("::", 5353);
  * char buf[1024];
  * char sender_ip[INET6_ADDRSTRLEN];
  * int sender_port;
@@ -1012,8 +1059,71 @@ extern int SocketDgram_debug_live_count (void);
  * @endcode
  *
  * @note Use port 0 to let the OS assign an ephemeral port
- * @note For IPv6, use "::" as host for dual-stack binding
+ * @note This function only creates IPv6 sockets
+ * @note IPv6 sockets can handle IPv4-mapped addresses if IPV6_V6ONLY is not set
  *
+ * @see SocketDgram_bind_udp4() for IPv4 variant
+ * @see SocketDgram_bind_udp() for auto-detection variant
+ * @see SocketDgram_bind() for separate bind operation
+ * @see SocketDgram_sendto(), SocketDgram_recvfrom() for I/O
+ */
+extern T SocketDgram_bind_udp6 (const char *host, int port);
+
+/**
+ * @ingroup socket_dgram
+ * @brief Create a bound UDP socket in one call with auto-detected address family.
+ *
+ * Convenience function that combines SocketDgram_new(), SocketDgram_bind()
+ * into a single call. Creates a UDP socket bound to the specified address
+ * and port, ready for sending/receiving datagrams. Automatically detects
+ * whether to use IPv4 or IPv6 based on the host string format.
+ *
+ * Detection rules:
+ * - NULL or empty string: IPv4 (backward compatibility)
+ * - Contains ':' or starts with '[': IPv6
+ * - Otherwise: IPv4 (for dotted-decimal or hostnames)
+ *
+ * @param[in] host Local address to bind (NULL or "" for INADDR_ANY/IPv4)
+ * @param[in] port Local port to bind (1-65535, or 0 for ephemeral port)
+ *
+ * @return New bound UDP socket ready for SocketDgram_sendto()/recvfrom()
+ *
+ * @throws SocketDgram_Failed on socket creation or bind failure
+ *
+ * @threadsafe Yes - creates new socket instance
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Auto-detects IPv4
+ * SocketDgram_T server_v4 = SocketDgram_bind_udp("0.0.0.0", 5353);
+ *
+ * // Auto-detects IPv6
+ * SocketDgram_T server_v6 = SocketDgram_bind_udp("::", 5353);
+ *
+ * // Generic usage
+ * char buf[1024];
+ * char sender_ip[INET6_ADDRSTRLEN];
+ * int sender_port;
+ * while (running) {
+ *     ssize_t n = SocketDgram_recvfrom(server_v6, buf, sizeof(buf),
+ *                                      sender_ip, sizeof(sender_ip),
+ *                                      &sender_port);
+ *     if (n > 0) {
+ *         // Echo back
+ *         SocketDgram_sendto(server_v6, buf, n, sender_ip, sender_port);
+ *     }
+ * }
+ * SocketDgram_free(&server_v4);
+ * SocketDgram_free(&server_v6);
+ * @endcode
+ *
+ * @note Use port 0 to let the OS assign an ephemeral port
+ * @note For explicit control, use SocketDgram_bind_udp4() or SocketDgram_bind_udp6()
+ * @note Detection is heuristic; for ambiguous cases use explicit variants
+ *
+ * @see SocketDgram_bind_udp4() for explicit IPv4
+ * @see SocketDgram_bind_udp6() for explicit IPv6
  * @see SocketDgram_bind() for separate bind operation
  * @see SocketDgram_sendto(), SocketDgram_recvfrom() for I/O
  * @see Socket_listen_tcp() for TCP server convenience function

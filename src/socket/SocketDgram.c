@@ -880,7 +880,7 @@ SocketDgram_recvvall (T socket, struct iovec *iov, int iovcnt)
 }
 
 T
-SocketDgram_bind_udp (const char *host, int port)
+SocketDgram_bind_udp4 (const char *host, int port)
 {
   T server = NULL;
 
@@ -890,6 +890,77 @@ SocketDgram_bind_udp (const char *host, int port)
   {
     /* Create IPv4 UDP socket */
     server = SocketDgram_new (AF_INET, 0);
+
+    /* Bind to address/port */
+    SocketDgram_bind (server, host, port);
+  }
+  EXCEPT (SocketDgram_Failed)
+  {
+    if (server)
+      SocketDgram_free (&server);
+    RERAISE;
+  }
+  END_TRY;
+
+  return server;
+}
+
+T
+SocketDgram_bind_udp6 (const char *host, int port)
+{
+  T server = NULL;
+
+  assert (port >= 0 && port <= SOCKET_MAX_PORT);
+
+  TRY
+  {
+    /* Create IPv6 UDP socket */
+    server = SocketDgram_new (AF_INET6, 0);
+
+    /* Bind to address/port */
+    SocketDgram_bind (server, host, port);
+  }
+  EXCEPT (SocketDgram_Failed)
+  {
+    if (server)
+      SocketDgram_free (&server);
+    RERAISE;
+  }
+  END_TRY;
+
+  return server;
+}
+
+static int
+detect_address_family (const char *host)
+{
+  /* NULL or empty string defaults to IPv4 for backward compatibility */
+  if (!host || host[0] == '\0')
+    return AF_INET;
+
+  /* Check for IPv6 indicators: contains ':' or starts with '[' */
+  if (strchr (host, ':') != NULL || host[0] == '[')
+    return AF_INET6;
+
+  /* Default to IPv4 for numeric or hostname */
+  return AF_INET;
+}
+
+T
+SocketDgram_bind_udp (const char *host, int port)
+{
+  T server = NULL;
+  int family;
+
+  assert (port >= 0 && port <= SOCKET_MAX_PORT);
+
+  /* Auto-detect address family from host string */
+  family = detect_address_family (host);
+
+  TRY
+  {
+    /* Create UDP socket with detected family */
+    server = SocketDgram_new (family, 0);
 
     /* Bind to address/port */
     SocketDgram_bind (server, host, port);
