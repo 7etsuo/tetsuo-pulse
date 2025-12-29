@@ -189,7 +189,24 @@ connection_init_request_ctx (SocketHTTPServer_T server, ServerConnection *conn,
   ctx->start_time_ms = conn->request_start_ms;
 }
 
-/* Allocate body buffer: fixed size for Content-Length, dynamic SocketBuf for chunked/until-close */
+/**
+ * connection_setup_body_buffer - Allocate request body buffer for HTTP/1.1 connections
+ *
+ * Called once per request in connection_parse_request() after headers are complete.
+ * Chooses allocation strategy based on body transfer mode:
+ * - Content-Length: Fixed-size Arena allocation (exact capacity)
+ * - Chunked/Until-Close: Dynamic SocketBuf (grows up to max_body_size)
+ *
+ * Not reused for keep-alive requests - connection_reset_for_keepalive() releases
+ * the old buffer, and this function allocates fresh for each new request.
+ * HTTP/2 streams use separate body buffer setup in SocketHTTPServer-h2.c.
+ *
+ * Justification for single-use function (52 lines):
+ * - Too large to inline (violates <20 line function guideline)
+ * - Complex allocation logic with overflow checks and dual strategies
+ * - Centralized body buffer setup makes error handling consistent
+ * - Keep-alive pattern doesn't require reuse (fresh allocation per request)
+ */
 static int
 connection_setup_body_buffer (SocketHTTPServer_T server, ServerConnection *conn)
 {
