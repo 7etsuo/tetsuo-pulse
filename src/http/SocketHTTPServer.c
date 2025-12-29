@@ -2903,25 +2903,21 @@ parse_range_header (const char *range_str, off_t file_size, off_t *start,
         return 0;
       *start = (off_t)val;
 
-      if (*endptr == '-')
+      if (*endptr != '-')
+        return 0;
+
+      p = endptr + 1;
+      if (*p == '\0' || *p == ',')
         {
-          p = endptr + 1;
-          if (*p == '\0' || *p == ',')
-            {
-              /* Open-ended: "500-" means 500 to end */
-              *end = file_size - 1;
-            }
-          else
-            {
-              val = strtoll (p, &endptr, 10);
-              if (endptr == p)
-                return 0;
-              *end = (off_t)val;
-            }
+          /* Open-ended: "500-" means 500 to end */
+          *end = file_size - 1;
         }
       else
         {
-          return 0;
+          val = strtoll (p, &endptr, 10);
+          if (endptr == p)
+            return 0;
+          *end = (off_t)val;
         }
     }
 
