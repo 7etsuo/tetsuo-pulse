@@ -931,6 +931,13 @@ test_date_invalid (void)
                "Reject invalid");
   TEST_ASSERT (SocketHTTP_date_parse ("", 0, &t) == -1, "Reject empty");
   TEST_ASSERT (SocketHTTP_date_parse (NULL, 0, &t) == -1, "Reject NULL");
+
+  /* Test that overly long date strings are rejected (security fix for #1392) */
+  char long_date[200];
+  memset (long_date, 'A', sizeof (long_date) - 1);
+  long_date[sizeof (long_date) - 1] = '\0';
+  TEST_ASSERT (SocketHTTP_date_parse (long_date, 0, &t) == -1,
+               "Reject overly long date string");
 }
 
 /* ============================================================================
