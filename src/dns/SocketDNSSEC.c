@@ -13,6 +13,7 @@
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "core/SocketCrypto.h"
+#include "core/SocketUtil.h"
 #include "dns/SocketDNSWire.h"
 #include <arpa/inet.h>
 #include <ctype.h>
@@ -65,38 +66,6 @@
 #include <openssl/bn.h>
 #endif
 
-/*
- * Helper macros for network byte order (big-endian) field extraction.
- * These read multi-byte fields from wire format data.
- */
-
-/** Read big-endian 16-bit value from buffer. */
-#define READ_BE16(p) (((uint16_t)(p)[0] << 8) | (p)[1])
-
-/** Read big-endian 32-bit value from buffer. */
-#define READ_BE32(p)                                                          \
-  (((uint32_t)(p)[0] << 24) | ((uint32_t)(p)[1] << 16) |                      \
-   ((uint32_t)(p)[2] << 8) | (p)[3])
-
-/** Write big-endian 16-bit value to buffer. */
-#define WRITE_BE16(p, v)                                                      \
-  do                                                                          \
-    {                                                                         \
-      (p)[0] = ((v) >> 8) & 0xFF;                                             \
-      (p)[1] = (v) & 0xFF;                                                    \
-    }                                                                         \
-  while (0)
-
-/** Write big-endian 32-bit value to buffer. */
-#define WRITE_BE32(p, v)                                                      \
-  do                                                                          \
-    {                                                                         \
-      (p)[0] = ((v) >> 24) & 0xFF;                                            \
-      (p)[1] = ((v) >> 16) & 0xFF;                                            \
-      (p)[2] = ((v) >> 8) & 0xFF;                                             \
-      (p)[3] = (v) & 0xFF;                                                    \
-    }                                                                         \
-  while (0)
 
 const Except_T SocketDNSSEC_Failed
     = {&SocketDNSSEC_Failed, "DNSSEC operation failed"};
@@ -121,7 +90,7 @@ SocketDNSSEC_calculate_keytag (const unsigned char *rdata, size_t rdlen)
    * Algorithm 1 is deprecated but we maintain compatibility.
    */
   if (rdata[3] == DNSSEC_ALGO_RSAMD5)
-    return READ_BE16 (rdata + rdlen - 3);
+    return socket_util_unpack_be16 (rdata + rdlen - 3);
 
   /* General key tag algorithm (RFC 4034 Appendix B) */
   for (size_t i = 0; i < rdlen; i++)
@@ -154,7 +123,7 @@ SocketDNSSEC_parse_dnskey (const SocketDNS_RR *rr, SocketDNSSEC_DNSKEY *dnskey)
   const unsigned char *p = rr->rdata;
 
   /* Flags: 2 bytes (network order) */
-  dnskey->flags = READ_BE16 (p);
+  dnskey->flags = socket_util_unpack_be16 (p);
   p += 2;
 
   /* Protocol: 1 byte (must be 3 for DNSSEC per RFC 4034 Section 2.1.2) */
@@ -195,7 +164,7 @@ SocketDNSSEC_parse_rrsig (const unsigned char *msg, size_t msglen,
   const unsigned char *end = rr->rdata + rr->rdlength;
 
   /* Type Covered: 2 bytes */
-  rrsig->type_covered = READ_BE16 (p);
+  rrsig->type_covered = socket_util_unpack_be16 (p);
   p += 2;
 
   /* Algorithm: 1 byte */
@@ -205,19 +174,19 @@ SocketDNSSEC_parse_rrsig (const unsigned char *msg, size_t msglen,
   rrsig->labels = *p++;
 
   /* Original TTL: 4 bytes */
-  rrsig->original_ttl = READ_BE32 (p);
+  rrsig->original_ttl = socket_util_unpack_be32 (p);
   p += 4;
 
   /* Signature Expiration: 4 bytes */
-  rrsig->sig_expiration = READ_BE32 (p);
+  rrsig->sig_expiration = socket_util_unpack_be32 (p);
   p += 4;
 
   /* Signature Inception: 4 bytes */
-  rrsig->sig_inception = READ_BE32 (p);
+  rrsig->sig_inception = socket_util_unpack_be32 (p);
   p += 4;
 
   /* Key Tag: 2 bytes */
-  rrsig->key_tag = READ_BE16 (p);
+  rrsig->key_tag = socket_util_unpack_be16 (p);
   p += 2;
 
   /* Signer's Name: variable length, may use compression */
@@ -256,7 +225,7 @@ SocketDNSSEC_parse_ds (const SocketDNS_RR *rr, SocketDNSSEC_DS *ds)
   const unsigned char *p = rr->rdata;
 
   /* Key Tag: 2 bytes */
-  ds->key_tag = READ_BE16 (p);
+  ds->key_tag = socket_util_unpack_be16 (p);
   p += 2;
 
   /* Algorithm: 1 byte */
@@ -354,7 +323,7 @@ SocketDNSSEC_parse_nsec3 (const SocketDNS_RR *rr, SocketDNSSEC_NSEC3 *nsec3)
   nsec3->flags = *p++;
 
   /* Iterations: 2 bytes */
-  nsec3->iterations = READ_BE16 (p);
+  nsec3->iterations = socket_util_unpack_be16 (p);
   p += 2;
 
   /* Salt Length: 1 byte */
@@ -763,7 +732,7 @@ SocketDNSSEC_verify_ds (const SocketDNSSEC_DS *ds,
   if (rdata == NULL)
     return -1;
 
-  WRITE_BE16 (rdata, dnskey->flags);
+  socket_util_pack_be16 (rdata, dnskey->flags);
   rdata[2] = dnskey->protocol;
   rdata[3] = dnskey->algorithm;
   memcpy (rdata + DNSSEC_DNSKEY_FIXED_SIZE, dnskey->pubkey, dnskey->pubkey_len);
@@ -1065,7 +1034,7 @@ SocketDNSSEC_verify_rrsig (const SocketDNSSEC_RRSIG *rrsig,
   size_t rrsig_rdata_len = 0;
 
   /* Type Covered */
-  WRITE_BE16 (rrsig_rdata + rrsig_rdata_len, rrsig->type_covered);
+  socket_util_pack_be16 (rrsig_rdata + rrsig_rdata_len, rrsig->type_covered);
   rrsig_rdata_len += 2;
 
   /* Algorithm */
@@ -1075,19 +1044,19 @@ SocketDNSSEC_verify_rrsig (const SocketDNSSEC_RRSIG *rrsig,
   rrsig_rdata[rrsig_rdata_len++] = rrsig->labels;
 
   /* Original TTL */
-  WRITE_BE32 (rrsig_rdata + rrsig_rdata_len, rrsig->original_ttl);
+  socket_util_pack_be32 (rrsig_rdata + rrsig_rdata_len, rrsig->original_ttl);
   rrsig_rdata_len += 4;
 
   /* Signature Expiration */
-  WRITE_BE32 (rrsig_rdata + rrsig_rdata_len, rrsig->sig_expiration);
+  socket_util_pack_be32 (rrsig_rdata + rrsig_rdata_len, rrsig->sig_expiration);
   rrsig_rdata_len += 4;
 
   /* Signature Inception */
-  WRITE_BE32 (rrsig_rdata + rrsig_rdata_len, rrsig->sig_inception);
+  socket_util_pack_be32 (rrsig_rdata + rrsig_rdata_len, rrsig->sig_inception);
   rrsig_rdata_len += 4;
 
   /* Key Tag */
-  WRITE_BE16 (rrsig_rdata + rrsig_rdata_len, rrsig->key_tag);
+  socket_util_pack_be16 (rrsig_rdata + rrsig_rdata_len, rrsig->key_tag);
   rrsig_rdata_len += 2;
 
   /* Signer's Name in canonical wire format */
@@ -1163,19 +1132,19 @@ SocketDNSSEC_verify_rrsig (const SocketDNSSEC_RRSIG *rrsig,
         }
 
       /* Type (2 bytes, network order) */
-      WRITE_BE16 (rr_canonical + rr_len, rr.type);
+      socket_util_pack_be16 (rr_canonical + rr_len, rr.type);
       rr_len += 2;
 
       /* Class (2 bytes, network order) */
-      WRITE_BE16 (rr_canonical + rr_len, rr.rclass);
+      socket_util_pack_be16 (rr_canonical + rr_len, rr.rclass);
       rr_len += 2;
 
       /* TTL - use original TTL from RRSIG, not current RR TTL (RFC 4035 5.3.2) */
-      WRITE_BE32 (rr_canonical + rr_len, rrsig->original_ttl);
+      socket_util_pack_be32 (rr_canonical + rr_len, rrsig->original_ttl);
       rr_len += 4;
 
       /* RDLENGTH (2 bytes, network order) */
-      WRITE_BE16 (rr_canonical + rr_len, rr.rdlength);
+      socket_util_pack_be16 (rr_canonical + rr_len, rr.rdlength);
       rr_len += 2;
 
       /* RDATA (raw bytes from wire format) */
