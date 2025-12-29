@@ -670,6 +670,69 @@ SocketDTLS_handshake (SocketDgram_T socket)
   return state;
 }
 
+/**
+ * calculate_handshake_poll_timeout - Compute poll timeout for DTLS handshake
+ * @timeout_ms: User-specified timeout (-1 for infinite, 0 for non-blocking, >0
+ * for deadline)
+ * @infinite_timeout: 1 if infinite wait mode, 0 otherwise
+ * @deadline_ms: Absolute deadline in milliseconds (ignored if infinite_timeout)
+ *
+ * Calculates appropriate poll(2) timeout value based on handshake timeout mode:
+ * - Infinite wait: Returns reasonable default (1000ms) to handle DTLS timers
+ * - Finite deadline: Returns remaining milliseconds until deadline
+ *
+ * Returns: poll timeout in milliseconds, or 0 if deadline expired
+ */
+static int
+calculate_handshake_poll_timeout (int timeout_ms, int infinite_timeout,
+                                   int64_t deadline_ms)
+{
+  DTLS_UNUSED (timeout_ms); /* Only used for mode detection */
+
+  if (infinite_timeout)
+    {
+      /* Infinite wait: Use 1 second to periodically check DTLS timers */
+      return 1000;
+    }
+
+  /* Compute remaining time from deadline */
+  int poll_tmo = SocketTimeout_poll_timeout (-1, deadline_ms);
+  if (poll_tmo <= 0)
+    return 0; /* Deadline expired */
+
+  return poll_tmo;
+}
+
+/**
+ * get_poll_events_for_handshake_state - Map handshake state to poll events
+ * @state: Current DTLS handshake state
+ *
+ * Determines which poll events (POLLIN/POLLOUT) to wait for based on the
+ * handshake state machine's current position. Optimizes event mask to avoid
+ * spurious wakeups during non-blocking handshake progression.
+ *
+ * Returns: poll event mask (POLLIN, POLLOUT, or POLLIN|POLLOUT)
+ */
+static short
+get_poll_events_for_handshake_state (DTLSHandshakeState state)
+{
+  switch (state)
+    {
+    case DTLS_HANDSHAKE_WANT_READ:
+    case DTLS_HANDSHAKE_COOKIE_EXCHANGE:
+      /* Wait for incoming data */
+      return POLLIN;
+
+    case DTLS_HANDSHAKE_WANT_WRITE:
+      /* Wait for socket writability */
+      return POLLOUT;
+
+    default:
+      /* Unknown state or IN_PROGRESS: wait for both */
+      return POLLIN | POLLOUT;
+    }
+}
+
 DTLSHandshakeState
 SocketDTLS_handshake_loop (SocketDgram_T socket, int timeout_ms)
 {
@@ -705,51 +768,24 @@ SocketDTLS_handshake_loop (SocketDgram_T socket, int timeout_ms)
 
       DTLSHandshakeState state = SocketDTLS_handshake (socket);
 
-      switch (state)
-        {
-        case DTLS_HANDSHAKE_COMPLETE:
-          return DTLS_HANDSHAKE_COMPLETE;
-
-        case DTLS_HANDSHAKE_ERROR:
-          return DTLS_HANDSHAKE_ERROR;
-
-        case DTLS_HANDSHAKE_WANT_READ:
-          pfd.events = POLLIN;
-          break;
-
-        case DTLS_HANDSHAKE_WANT_WRITE:
-          pfd.events = POLLOUT;
-          break;
-
-        case DTLS_HANDSHAKE_COOKIE_EXCHANGE:
-          /* Server waiting for client cookie response */
-          pfd.events = POLLIN;
-          break;
-
-        default:
-          pfd.events = POLLIN | POLLOUT;
-          break;
-        }
+      /* Terminal states: return immediately */
+      if (state == DTLS_HANDSHAKE_COMPLETE || state == DTLS_HANDSHAKE_ERROR)
+        return state;
 
       /* timeout_ms == 0: Single non-blocking step, return current state */
       if (timeout_ms == 0)
         return state;
 
-      /* Calculate poll timeout based on deadline or infinite wait */
-      int poll_tmo;
-      if (infinite_timeout)
-        {
-          /* Infinite wait: Use default DTLS timeout for timer handling */
-          poll_tmo = SOCKET_DTLS_INITIAL_TIMEOUT_MS;
-        }
-      else
-        {
-          /* Compute remaining time from deadline */
-          poll_tmo = SocketTimeout_poll_timeout (-1, deadline_ms);
-          if (poll_tmo <= 0)
-            break; /* Timeout expired */
-        }
+      /* Calculate poll timeout and events based on state */
+      int poll_tmo
+          = calculate_handshake_poll_timeout (timeout_ms, infinite_timeout,
+                                               deadline_ms);
+      if (poll_tmo == 0)
+        break; /* Deadline expired */
 
+      pfd.events = get_poll_events_for_handshake_state (state);
+
+      /* Wait for I/O readiness */
       int rc = poll (&pfd, 1, poll_tmo);
       if (rc < 0)
         {
