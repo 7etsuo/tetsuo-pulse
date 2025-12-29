@@ -25,6 +25,7 @@
 #define SOCKETSECURITY_INCLUDED
 
 #include <assert.h>
+#include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -281,6 +282,33 @@ SocketSecurity_safe_add (size_t a, size_t b)
   if (a > SIZE_MAX - b)
     return SIZE_MAX; /* Would overflow */
   return a + b;
+}
+
+/**
+ * @brief Convert size_t to int with INT_MAX capping for OpenSSL I/O.
+ *
+ * OpenSSL I/O functions (SSL_read, SSL_write) take int length parameters,
+ * but modern APIs use size_t. This helper safely converts size_t to int,
+ * capping at INT_MAX to prevent overflow.
+ *
+ * @param len  Size to convert (typically buffer length)
+ *
+ * Returns: len capped to INT_MAX if len > INT_MAX, otherwise (int)len
+ *
+ * @threadsafe Yes (pure function)
+ * @complexity O(1)
+ *
+ * Example usage:
+ * @code{.c}
+ * size_t buf_len = 4096;
+ * int ssl_len = SocketSecurity_size_to_int(buf_len);
+ * int result = SSL_write(ssl, buf, ssl_len);
+ * @endcode
+ */
+static inline int
+SocketSecurity_size_to_int (size_t len)
+{
+  return (len > (size_t)INT_MAX) ? INT_MAX : (int)len;
 }
 
 /**

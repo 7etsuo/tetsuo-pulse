@@ -890,8 +890,8 @@ SocketDTLS_send (SocketDgram_T socket, const void *buf, size_t len)
 
   SSL *ssl = VALIDATE_DTLS_IO_READY (socket, SocketDTLS_Failed);
 
-  /* Cap length to INT_MAX */
-  int write_len = (len > (size_t)INT_MAX) ? INT_MAX : (int)len;
+  /* Cap length to INT_MAX for OpenSSL API */
+  int write_len = SocketSecurity_size_to_int (len);
   int result = SSL_write (ssl, buf, write_len);
 
   if (result > 0)
@@ -922,8 +922,8 @@ SocketDTLS_recv (SocketDgram_T socket, void *buf, size_t len)
   /* Handle any pending timeout retransmissions */
   DTLSv1_handle_timeout (ssl);
 
-  /* Cap length to INT_MAX */
-  int read_len = (len > (size_t)INT_MAX) ? INT_MAX : (int)len;
+  /* Cap length to INT_MAX for OpenSSL API */
+  int read_len = SocketSecurity_size_to_int (len);
   int result = SSL_read (ssl, buf, read_len);
 
   if (result > 0)

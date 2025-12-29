@@ -1245,6 +1245,55 @@ TEST (security_control_chars_high_ascii)
 }
 
 /* ============================================================================
+ * Size to Int Conversion Tests
+ * ============================================================================
+ */
+
+TEST (security_size_to_int_normal)
+{
+  /* Normal sizes should be converted correctly */
+  ASSERT_EQ (0, SocketSecurity_size_to_int (0));
+  ASSERT_EQ (1, SocketSecurity_size_to_int (1));
+  ASSERT_EQ (1024, SocketSecurity_size_to_int (1024));
+  ASSERT_EQ (65535, SocketSecurity_size_to_int (65535));
+}
+
+TEST (security_size_to_int_max_valid)
+{
+  /* INT_MAX should be returned unchanged */
+  ASSERT_EQ (INT_MAX, SocketSecurity_size_to_int ((size_t)INT_MAX));
+
+  /* Just below INT_MAX should be returned unchanged */
+  ASSERT_EQ (INT_MAX - 1, SocketSecurity_size_to_int ((size_t)INT_MAX - 1));
+}
+
+TEST (security_size_to_int_capping)
+{
+  /* Sizes exceeding INT_MAX should be capped */
+  ASSERT_EQ (INT_MAX,
+             SocketSecurity_size_to_int ((size_t)INT_MAX + 1));
+  ASSERT_EQ (INT_MAX,
+             SocketSecurity_size_to_int ((size_t)INT_MAX + 1000));
+
+  /* Very large sizes should be capped to INT_MAX */
+  ASSERT_EQ (INT_MAX, SocketSecurity_size_to_int (SIZE_MAX));
+  ASSERT_EQ (INT_MAX, SocketSecurity_size_to_int (SIZE_MAX / 2));
+}
+
+TEST (security_size_to_int_openssl_pattern)
+{
+  /* Test the typical OpenSSL I/O pattern */
+  size_t buf_len = 4096;
+  int ssl_len = SocketSecurity_size_to_int (buf_len);
+  ASSERT_EQ (4096, ssl_len);
+
+  /* Simulate large buffer that would exceed INT_MAX */
+  size_t huge_buf = (size_t)INT_MAX + 1000;
+  int capped_len = SocketSecurity_size_to_int (huge_buf);
+  ASSERT_EQ (INT_MAX, capped_len);
+}
+
+/* ============================================================================
  * TLS Utility Macro Tests
  * ============================================================================
  */
