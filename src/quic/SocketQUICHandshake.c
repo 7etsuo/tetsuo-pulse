@@ -47,6 +47,40 @@ const Except_T SocketQUICHandshake_Failed = { NULL, "QUIC handshake failed" };
  * ============================================================================
  */
 
+/**
+ * @brief Map QUIC packet type to encryption level.
+ *
+ * @param packet_type Packet type from packet header.
+ *
+ * @return Corresponding encryption level.
+ *
+ * @note This mapping is defined by RFC 9000 Section 4.1.4:
+ *       - Initial packets use Initial keys
+ *       - 0-RTT packets use 0-RTT keys (client only)
+ *       - Handshake packets use Handshake keys
+ *       - 1-RTT packets use Application keys
+ */
+static SocketQUICCryptoLevel
+packet_type_to_crypto_level(SocketQUICPacket_Type packet_type)
+{
+  switch (packet_type) {
+    case QUIC_PACKET_TYPE_INITIAL:
+      return QUIC_CRYPTO_LEVEL_INITIAL;
+    case QUIC_PACKET_TYPE_0RTT:
+      return QUIC_CRYPTO_LEVEL_0RTT;
+    case QUIC_PACKET_TYPE_HANDSHAKE:
+      return QUIC_CRYPTO_LEVEL_HANDSHAKE;
+    case QUIC_PACKET_TYPE_1RTT:
+      return QUIC_CRYPTO_LEVEL_APPLICATION;
+    case QUIC_PACKET_TYPE_RETRY:
+      /* Retry packets don't carry CRYPTO frames, but map to Initial */
+      return QUIC_CRYPTO_LEVEL_INITIAL;
+    default:
+      /* Default to Initial for unknown types */
+      return QUIC_CRYPTO_LEVEL_INITIAL;
+  }
+}
+
 static void
 crypto_stream_init(SocketQUICCryptoStream_T *stream)
 {
@@ -326,14 +360,17 @@ SocketQUICHandshake_send_initial(SocketQUICConnection_T conn)
 
 SocketQUICHandshake_Result
 SocketQUICHandshake_process_crypto(SocketQUICConnection_T conn,
-                                   const SocketQUICFrameCrypto_T *frame)
+                                   const SocketQUICFrameCrypto_T *frame,
+                                   SocketQUICCryptoLevel level)
 {
   if (!conn || !frame) {
     return QUIC_HANDSHAKE_ERROR_NULL;
   }
 
-  /* TODO: Determine encryption level from packet context */
-  SocketQUICCryptoLevel level = QUIC_CRYPTO_LEVEL_INITIAL;
+  /* Validate encryption level */
+  if (level >= QUIC_CRYPTO_LEVEL_COUNT) {
+    return QUIC_HANDSHAKE_ERROR_CRYPTO;
+  }
 
   /* Get handshake context from connection */
   /* NOTE: This assumes connection has a handshake field - needs integration */
@@ -342,7 +379,7 @@ SocketQUICHandshake_process_crypto(SocketQUICConnection_T conn,
     return QUIC_HANDSHAKE_ERROR_STATE;
   }
 
-  /* Insert data into CRYPTO stream */
+  /* Insert data into CRYPTO stream for the specified encryption level */
   SocketQUICCryptoStream_T *stream = &hs->crypto_streams[level];
   SocketQUICHandshake_Result res =
       crypto_stream_insert_data(hs->arena, stream, frame->offset,

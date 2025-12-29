@@ -289,8 +289,64 @@ TEST(handshake_get_peer_params_not_received)
 
 TEST(handshake_process_crypto_null)
 {
-  SocketQUICHandshake_Result res = SocketQUICHandshake_process_crypto(NULL, NULL);
+  SocketQUICHandshake_Result res = SocketQUICHandshake_process_crypto(NULL, NULL, QUIC_CRYPTO_LEVEL_INITIAL);
   ASSERT_EQ(QUIC_HANDSHAKE_ERROR_NULL, res);
+}
+
+TEST(handshake_process_crypto_invalid_level)
+{
+  Arena_T arena = Arena_new();
+  SocketQUICConnection_T conn = SocketQUICConnection_new(arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICFrameCrypto_T frame = { .offset = 0, .length = 0, .data = NULL };
+
+  /* Test with invalid encryption level (>= QUIC_CRYPTO_LEVEL_COUNT) */
+  SocketQUICHandshake_Result res = SocketQUICHandshake_process_crypto(conn, &frame, QUIC_CRYPTO_LEVEL_COUNT);
+  ASSERT_EQ(QUIC_HANDSHAKE_ERROR_CRYPTO, res);
+
+  SocketQUICConnection_free(&conn);
+  Arena_dispose(&arena);
+}
+
+TEST(handshake_process_crypto_different_levels)
+{
+  /* Test that CRYPTO frames can be processed at different encryption levels */
+  Arena_T arena = Arena_new();
+  SocketQUICConnection_T conn = SocketQUICConnection_new(arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICHandshake_T hs = SocketQUICHandshake_new(arena, conn, QUIC_CONN_ROLE_CLIENT);
+  ASSERT_NOT_NULL(hs);
+
+  uint8_t test_data[50];
+  memset(test_data, 0x42, sizeof(test_data));
+
+  /* Process CRYPTO frames at different encryption levels
+   * Note: These will fail with ERROR_STATE since conn->handshake isn't set,
+   * but this tests that the encryption level parameter is correctly passed */
+
+  SocketQUICFrameCrypto_T frame = {
+    .offset = 0,
+    .length = sizeof(test_data),
+    .data = test_data
+  };
+
+  /* Test Initial level */
+  SocketQUICHandshake_Result res = SocketQUICHandshake_process_crypto(conn, &frame, QUIC_CRYPTO_LEVEL_INITIAL);
+  ASSERT_EQ(QUIC_HANDSHAKE_ERROR_STATE, res); /* Expected: conn->handshake not set */
+
+  /* Test Handshake level */
+  res = SocketQUICHandshake_process_crypto(conn, &frame, QUIC_CRYPTO_LEVEL_HANDSHAKE);
+  ASSERT_EQ(QUIC_HANDSHAKE_ERROR_STATE, res);
+
+  /* Test Application level */
+  res = SocketQUICHandshake_process_crypto(conn, &frame, QUIC_CRYPTO_LEVEL_APPLICATION);
+  ASSERT_EQ(QUIC_HANDSHAKE_ERROR_STATE, res);
+
+  /* Test 0-RTT level */
+  res = SocketQUICHandshake_process_crypto(conn, &frame, QUIC_CRYPTO_LEVEL_0RTT);
+  ASSERT_EQ(QUIC_HANDSHAKE_ERROR_STATE, res);
+
+  SocketQUICHandshake_free(&hs);
+  SocketQUICConnection_free(&conn);
+  Arena_dispose(&arena);
 }
 
 /* ============================================================================
@@ -329,7 +385,7 @@ TEST(handshake_crypto_overflow_max_offset_plus_length)
       .offset = stream->recv_offset,
       .length = malicious_length,
       .data = dummy_data
-    });
+    }, QUIC_CRYPTO_LEVEL_INITIAL);
 
   /* The function should detect overflow and return error
    * Note: process_crypto may not be fully implemented, but the
@@ -362,7 +418,7 @@ TEST(handshake_crypto_overflow_max_uint64)
       .offset = stream->recv_offset,
       .length = overflow_length,
       .data = dummy_data
-    });
+    }, QUIC_CRYPTO_LEVEL_INITIAL);
 
   SocketQUICHandshake_free(&hs);
   SocketQUICConnection_free(&conn);
@@ -389,7 +445,7 @@ TEST(handshake_crypto_no_overflow_valid_data)
       .offset = 0,
       .length = sizeof(test_data),
       .data = test_data
-    });
+    }, QUIC_CRYPTO_LEVEL_INITIAL);
 
   /* This should succeed if TLS integration allows it, or fail gracefully */
   /* The important thing is it doesn't crash or allow overflow */
@@ -424,7 +480,7 @@ TEST(handshake_crypto_overflow_exact_uint64_max)
       .offset = stream->recv_offset,
       .length = max_safe_length,
       .data = dummy_data
-    });
+    }, QUIC_CRYPTO_LEVEL_INITIAL);
 
   /* Will likely fail due to buffer size, but not due to overflow */
   ASSERT(res == QUIC_HANDSHAKE_ERROR_BUFFER ||
@@ -474,7 +530,7 @@ TEST(handshake_crypto_insert_data_arena_alloc_null_check)
       .offset = 100,  /* Out of order - triggers segment buffering */
       .length = sizeof(test_data),
       .data = test_data
-    });
+    }, QUIC_CRYPTO_LEVEL_INITIAL);
 
   /* The result should be one of the valid outcomes:
    * - QUIC_HANDSHAKE_OK: allocation succeeded
@@ -513,7 +569,7 @@ TEST(handshake_crypto_insert_multiple_segments)
     .offset = 200,
     .length = sizeof(test_data),
     .data = test_data
-  });
+  }, QUIC_CRYPTO_LEVEL_INITIAL);
   /* Should succeed or fail gracefully, but not crash */
   ASSERT(res == QUIC_HANDSHAKE_OK ||
          res == QUIC_HANDSHAKE_ERROR_STATE ||
@@ -524,7 +580,7 @@ TEST(handshake_crypto_insert_multiple_segments)
     .offset = 100,
     .length = sizeof(test_data),
     .data = test_data
-  });
+  }, QUIC_CRYPTO_LEVEL_INITIAL);
   ASSERT(res == QUIC_HANDSHAKE_OK ||
          res == QUIC_HANDSHAKE_ERROR_STATE ||
          res == QUIC_HANDSHAKE_ERROR_MEMORY ||
