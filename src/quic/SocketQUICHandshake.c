@@ -19,6 +19,11 @@
 #include <assert.h>
 #include <string.h>
 
+/* OpenSSL/LibreSSL integration for TLS handshake */
+#ifdef HAVE_OPENSSL
+#include <openssl/ssl.h>
+#endif
+
 /* ============================================================================
  * Constants
  * ============================================================================
@@ -239,8 +244,24 @@ SocketQUICHandshake_free(SocketQUICHandshake_T *handshake)
     crypto_stream_free(&hs->crypto_streams[i]);
   }
 
-  /* TODO: Free TLS context and SSL objects */
-  /* This requires OpenSSL/LibreSSL integration */
+  /* Free TLS context and SSL objects */
+  /* Note: Once OpenSSL/LibreSSL integration is added, these pointers
+   * will be properly initialized and need cleanup. The NULL checks
+   * ensure this is safe to call even before TLS integration. */
+#ifdef HAVE_OPENSSL
+  if (hs->tls_ssl) {
+    SSL_free((SSL *)hs->tls_ssl);
+    hs->tls_ssl = NULL;
+  }
+  if (hs->tls_ctx) {
+    SSL_CTX_free((SSL_CTX *)hs->tls_ctx);
+    hs->tls_ctx = NULL;
+  }
+#else
+  /* Without OpenSSL, these should always be NULL, but clear for safety */
+  hs->tls_ssl = NULL;
+  hs->tls_ctx = NULL;
+#endif
 
   /* Securely zero and free keys */
   for (int i = 0; i < QUIC_CRYPTO_LEVEL_COUNT; i++) {
