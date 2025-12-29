@@ -781,6 +781,58 @@ parse_datagram (const uint8_t *data, size_t len, size_t *pos,
 }
 
 /* ============================================================================
+ * Frame Parser Dispatch Table
+ * ============================================================================
+ */
+
+typedef SocketQUICFrame_Result (*frame_parser_fn) (const uint8_t *data,
+                                                    size_t len, size_t *pos,
+                                                    SocketQUICFrame_T *frame);
+
+static const struct
+{
+  uint64_t type_min;
+  uint64_t type_max;
+  frame_parser_fn parser;
+} frame_parser_table[] = {
+  { QUIC_FRAME_PADDING,               QUIC_FRAME_PADDING,               parse_padding            },
+  { QUIC_FRAME_PING,                  QUIC_FRAME_PING,                  parse_ping               },
+  { QUIC_FRAME_ACK,                   QUIC_FRAME_ACK_ECN,               parse_ack                },
+  { QUIC_FRAME_RESET_STREAM,          QUIC_FRAME_RESET_STREAM,          parse_reset_stream       },
+  { QUIC_FRAME_STOP_SENDING,          QUIC_FRAME_STOP_SENDING,          parse_stop_sending       },
+  { QUIC_FRAME_CRYPTO,                QUIC_FRAME_CRYPTO,                parse_crypto             },
+  { QUIC_FRAME_NEW_TOKEN,             QUIC_FRAME_NEW_TOKEN,             parse_new_token          },
+  { QUIC_FRAME_STREAM,                QUIC_FRAME_STREAM_MAX,            parse_stream             },
+  { QUIC_FRAME_MAX_DATA,              QUIC_FRAME_MAX_DATA,              parse_max_data           },
+  { QUIC_FRAME_MAX_STREAM_DATA,       QUIC_FRAME_MAX_STREAM_DATA,       parse_max_stream_data    },
+  { QUIC_FRAME_MAX_STREAMS_BIDI,      QUIC_FRAME_MAX_STREAMS_UNI,       parse_max_streams        },
+  { QUIC_FRAME_DATA_BLOCKED,          QUIC_FRAME_DATA_BLOCKED,          parse_data_blocked       },
+  { QUIC_FRAME_STREAM_DATA_BLOCKED,   QUIC_FRAME_STREAM_DATA_BLOCKED,   parse_stream_data_blocked},
+  { QUIC_FRAME_STREAMS_BLOCKED_BIDI,  QUIC_FRAME_STREAMS_BLOCKED_UNI,   parse_streams_blocked    },
+  { QUIC_FRAME_NEW_CONNECTION_ID,     QUIC_FRAME_NEW_CONNECTION_ID,     parse_new_connection_id  },
+  { QUIC_FRAME_RETIRE_CONNECTION_ID,  QUIC_FRAME_RETIRE_CONNECTION_ID,  parse_retire_connection_id},
+  { QUIC_FRAME_PATH_CHALLENGE,        QUIC_FRAME_PATH_CHALLENGE,        parse_path_challenge     },
+  { QUIC_FRAME_PATH_RESPONSE,         QUIC_FRAME_PATH_RESPONSE,         parse_path_response      },
+  { QUIC_FRAME_CONNECTION_CLOSE,      QUIC_FRAME_CONNECTION_CLOSE_APP,  parse_connection_close   },
+  { QUIC_FRAME_HANDSHAKE_DONE,        QUIC_FRAME_HANDSHAKE_DONE,        parse_handshake_done     },
+  { QUIC_FRAME_DATAGRAM,              QUIC_FRAME_DATAGRAM_LEN,          parse_datagram           },
+  { 0, 0, NULL } /* Sentinel */
+};
+
+static SocketQUICFrame_Result
+dispatch_frame_parser (uint64_t type, const uint8_t *data, size_t len,
+                       size_t *pos, SocketQUICFrame_T *frame)
+{
+  for (size_t i = 0; frame_parser_table[i].parser != NULL; i++)
+    {
+      if (type >= frame_parser_table[i].type_min
+          && type <= frame_parser_table[i].type_max)
+        return frame_parser_table[i].parser (data, len, pos, frame);
+    }
+  return QUIC_FRAME_ERROR_TYPE;
+}
+
+/* ============================================================================
  * Public Functions
  * ============================================================================
  */
@@ -807,56 +859,8 @@ SocketQUICFrame_parse (const uint8_t *data, size_t len,
   if (res != QUIC_FRAME_OK)
     return res;
 
-  /* Dispatch to type-specific parser */
-  uint64_t type = frame->type;
-
-  if (type == QUIC_FRAME_PADDING)
-    res = parse_padding (data, len, &pos, frame);
-  else if (type == QUIC_FRAME_PING)
-    res = parse_ping (data, len, &pos, frame);
-  else if (type == QUIC_FRAME_ACK || type == QUIC_FRAME_ACK_ECN)
-    res = parse_ack (data, len, &pos, frame);
-  else if (type == QUIC_FRAME_RESET_STREAM)
-    res = parse_reset_stream (data, len, &pos, frame);
-  else if (type == QUIC_FRAME_STOP_SENDING)
-    res = parse_stop_sending (data, len, &pos, frame);
-  else if (type == QUIC_FRAME_CRYPTO)
-    res = parse_crypto (data, len, &pos, frame);
-  else if (type == QUIC_FRAME_NEW_TOKEN)
-    res = parse_new_token (data, len, &pos, frame);
-  else if (SocketQUICFrame_is_stream (type))
-    res = parse_stream (data, len, &pos, frame);
-  else if (type == QUIC_FRAME_MAX_DATA)
-    res = parse_max_data (data, len, &pos, frame);
-  else if (type == QUIC_FRAME_MAX_STREAM_DATA)
-    res = parse_max_stream_data (data, len, &pos, frame);
-  else if (type == QUIC_FRAME_MAX_STREAMS_BIDI
-           || type == QUIC_FRAME_MAX_STREAMS_UNI)
-    res = parse_max_streams (data, len, &pos, frame);
-  else if (type == QUIC_FRAME_DATA_BLOCKED)
-    res = parse_data_blocked (data, len, &pos, frame);
-  else if (type == QUIC_FRAME_STREAM_DATA_BLOCKED)
-    res = parse_stream_data_blocked (data, len, &pos, frame);
-  else if (type == QUIC_FRAME_STREAMS_BLOCKED_BIDI
-           || type == QUIC_FRAME_STREAMS_BLOCKED_UNI)
-    res = parse_streams_blocked (data, len, &pos, frame);
-  else if (type == QUIC_FRAME_NEW_CONNECTION_ID)
-    res = parse_new_connection_id (data, len, &pos, frame);
-  else if (type == QUIC_FRAME_RETIRE_CONNECTION_ID)
-    res = parse_retire_connection_id (data, len, &pos, frame);
-  else if (type == QUIC_FRAME_PATH_CHALLENGE)
-    res = parse_path_challenge (data, len, &pos, frame);
-  else if (type == QUIC_FRAME_PATH_RESPONSE)
-    res = parse_path_response (data, len, &pos, frame);
-  else if (type == QUIC_FRAME_CONNECTION_CLOSE
-           || type == QUIC_FRAME_CONNECTION_CLOSE_APP)
-    res = parse_connection_close (data, len, &pos, frame);
-  else if (type == QUIC_FRAME_HANDSHAKE_DONE)
-    res = parse_handshake_done (data, len, &pos, frame);
-  else if (type == QUIC_FRAME_DATAGRAM || type == QUIC_FRAME_DATAGRAM_LEN)
-    res = parse_datagram (data, len, &pos, frame);
-  else
-    return QUIC_FRAME_ERROR_TYPE;
+  /* Dispatch to type-specific parser via table lookup */
+  res = dispatch_frame_parser (frame->type, data, len, &pos, frame);
 
   if (res == QUIC_FRAME_OK)
     {
