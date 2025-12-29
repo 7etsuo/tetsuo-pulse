@@ -349,41 +349,6 @@ SocketQUICAck_should_send (const SocketQUICAckState_T state,
  */
 
 /**
- * @brief Calculate ACK delay from timestamps.
- *
- * Per RFC 9000, ack_delay is in units of ack_delay_exponent microseconds.
- * Default exponent is 3, so divide by 8 (2^3).
- *
- * @param current_time    Current time in microseconds.
- * @param recv_time       Time when largest packet was received.
- *
- * @return Encoded ACK delay value.
- */
-static uint64_t
-calculate_ack_delay (uint64_t current_time, uint64_t recv_time)
-{
-  if (current_time > recv_time)
-    return (current_time - recv_time) >> QUIC_ACK_DELAY_EXPONENT_DEFAULT;
-  return 0;
-}
-
-/**
- * @brief Determine if ECN counts should be included.
- *
- * @param state ACK state with ECN information.
- *
- * @return Non-zero if ECN frame should be used.
- */
-static int
-should_include_ecn (const SocketQUICAckState_T state)
-{
-  return state->ecn_validated
-         && (state->ecn_counts.ect0_count > 0
-             || state->ecn_counts.ect1_count > 0
-             || state->ecn_counts.ce_count > 0);
-}
-
-/**
  * @brief Encode ACK frame header (type, largest, delay, range count).
  *
  * @param out          Output buffer pointer (updated).
@@ -428,33 +393,6 @@ encode_ack_header (uint8_t **out, size_t *remaining, uint64_t largest,
   *out += n;
   *remaining -= n;
 
-  return QUIC_ACK_OK;
-}
-
-/**
- * @brief Encode first ACK range.
- *
- * @param out        Output buffer pointer (updated).
- * @param remaining  Remaining buffer size (updated).
- * @param range      First ACK range to encode.
- *
- * @return QUIC_ACK_OK on success, error code otherwise.
- */
-static SocketQUICAck_Result
-encode_first_range (uint8_t **out, size_t *remaining,
-                    const SocketQUICAckRange_T *range)
-{
-  uint64_t first_ack_range;
-  size_t n;
-
-  /* First ACK Range = end - start */
-  first_ack_range = range->end - range->start;
-  n = SocketQUICVarInt_encode (first_ack_range, *out, *remaining);
-  if (n == 0)
-    return QUIC_ACK_ERROR_BUFFER;
-
-  *out += n;
-  *remaining -= n;
   return QUIC_ACK_OK;
 }
 
@@ -575,9 +513,20 @@ SocketQUICAck_encode (SocketQUICAckState_T state, uint64_t current_time,
   p = out;
   remaining = out_size;
 
-  /* Calculate encoding parameters */
-  ack_delay = calculate_ack_delay (current_time, state->largest_recv_time);
-  has_ecn = should_include_ecn (state);
+  /* Calculate ACK delay in units of ack_delay_exponent microseconds (RFC 9000).
+   * Default exponent is 3, so divide by 8 (2^3).
+   */
+  ack_delay = (current_time > state->largest_recv_time)
+              ? (current_time - state->largest_recv_time)
+                    >> QUIC_ACK_DELAY_EXPONENT_DEFAULT
+              : 0;
+
+  /* Include ECN counts if validated and any counters are non-zero */
+  has_ecn = state->ecn_validated
+            && (state->ecn_counts.ect0_count > 0
+                || state->ecn_counts.ect1_count > 0
+                || state->ecn_counts.ce_count > 0);
+
   range_count = state->range_count > 0 ? state->range_count - 1 : 0;
 
   /* Encode ACK frame header */
@@ -586,10 +535,15 @@ SocketQUICAck_encode (SocketQUICAckState_T state, uint64_t current_time,
   if (res != QUIC_ACK_OK)
     return res;
 
-  /* Encode first ACK range */
-  res = encode_first_range (&p, &remaining, &state->ranges[0]);
-  if (res != QUIC_ACK_OK)
-    return res;
+  /* Encode first ACK range (end - start) */
+  {
+    uint64_t first_ack_range = state->ranges[0].end - state->ranges[0].start;
+    size_t n = SocketQUICVarInt_encode (first_ack_range, p, remaining);
+    if (n == 0)
+      return QUIC_ACK_ERROR_BUFFER;
+    p += n;
+    remaining -= n;
+  }
 
   /* Encode additional ACK ranges (if any) */
   if (state->range_count > 1)
