@@ -110,38 +110,37 @@
  */
 
 /**
- * @brief Acquire pool mutex.
+ * @brief Acquire pool mutex with error handling.
  * @ingroup connection_mgmt
  * @param p Pool instance.
  *
- * Convenience macro for consistent mutex locking across implementation files.
+ * Locks pool mutex using standard SOCKET_MUTEX_LOCK_OR_RAISE pattern
+ * for consistent error handling. Raises SocketPool_Failed if lock fails.
+ *
+ * @throws SocketPool_Failed if pthread_mutex_lock() fails (EDEADLK, EINVAL, EPERM).
+ * @threadsafe Yes - pthread_mutex_lock is thread-safe.
  *
  * @see POOL_UNLOCK for releasing the mutex.
- * @see pthread_mutex_lock() for underlying operation.
+ * @see SOCKET_MUTEX_LOCK_OR_RAISE in SocketUtil.h for underlying pattern.
+ * @see pthread_mutex_lock() for POSIX operation.
  */
-#define POOL_LOCK(p)                                                          \
-  do                                                                          \
-    {                                                                         \
-      pthread_mutex_lock (&(p)->mutex);                                       \
-    }                                                                         \
-  while (0)
+#define POOL_LOCK(p) SOCKET_MUTEX_LOCK_OR_RAISE(&(p)->mutex, SocketPool, SocketPool_Failed)
 
 /**
  * @brief Release pool mutex.
  * @ingroup connection_mgmt
  * @param p Pool instance.
  *
- * Convenience macro for consistent mutex unlocking across implementation files.
+ * Unlocks pool mutex using standard SOCKET_MUTEX_UNLOCK pattern.
+ * Errors are ignored per POSIX recommendation (indicate programming bugs).
+ *
+ * @threadsafe Yes - pthread_mutex_unlock is thread-safe.
  *
  * @see POOL_LOCK for acquiring the mutex.
- * @see pthread_mutex_unlock() for underlying operation.
+ * @see SOCKET_MUTEX_UNLOCK in SocketUtil.h for underlying pattern.
+ * @see pthread_mutex_unlock() for POSIX operation.
  */
-#define POOL_UNLOCK(p)                                                        \
-  do                                                                          \
-    {                                                                         \
-      pthread_mutex_unlock (&(p)->mutex);                                     \
-    }                                                                         \
-  while (0)
+#define POOL_UNLOCK(p) SOCKET_MUTEX_UNLOCK(&(p)->mutex)
 
 /* ============================================================================
  * Hash Table Configuration
