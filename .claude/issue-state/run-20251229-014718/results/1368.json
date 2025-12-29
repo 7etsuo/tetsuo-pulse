@@ -1,0 +1,8 @@
+{
+  "issue": 1368,
+  "status": "already_resolved",
+  "resolution": "Constant DNS_EDNS0_DEFAULT_UDPSIZE is already defined in include/dns/SocketDNSWire.h at line 792. It was added in commit 5e337584 (PR #818) and expands to DNS_UDP_PAYLOAD_OPTIMAL which equals 4096 bytes per RFC 6891 Section 6.2.5. The constant is properly included in src/dns/SocketDNSTransport.c via the header and compiles successfully.",
+  "commit_reference": "5e337584c25b6d65c6db7fd1f1e09f9191716a87",
+  "pr_reference": 818,
+  "verification": "Verified via: 1) Direct inspection of include/dns/SocketDNSWire.h line 792, 2) Successful compilation test with gcc, 3) Git history shows commit from Dec 27 2025"
+}

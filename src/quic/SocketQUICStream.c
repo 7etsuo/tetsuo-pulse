@@ -264,12 +264,6 @@ SocketQUICStream_state_string (SocketQUICStreamState state)
   return state_strings[state];
 }
 
-const char *
-SocketQUICStream_event_string (SocketQUICStreamEvent event)
-{
-  if (event < 0 || event > QUIC_STREAM_EVENT_MAX)
-    return "Unknown";
-  return event_strings[event];
-}
+/* Note: SocketQUICStream_event_string is in SocketQUICStream-state.c */
 
 DEFINE_RESULT_STRING_FUNC (SocketQUICStream, QUIC_STREAM_ERROR_LIMIT)

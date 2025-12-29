@@ -1,0 +1,14 @@
+{
+  "issue": 1534,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1602",
+  "pr_number": 1602,
+  "branch": "issue-1534-enable-async-tests",
+  "files_changed": [
+    "src/http/SocketHTTPClient-async.c",
+    "src/test/test_http_client.c"
+  ],
+  "tests_passed": true,
+  "commit_sha": "85b1d93a",
+  "summary": "Implemented HTTP client async request API (get_async, post_async, Request_async, AsyncRequest_cancel, process) and enabled test_async_cancel() test. All 45 HTTP client tests pass."
+}

@@ -375,7 +375,6 @@ set(LIB_SOURCES
     src/http/SocketHTTPClient-retry.c
     src/http/SocketHTTPClient-arena.c
     src/http/SocketHTTPClient-async.c
-    src/http/SocketHTTPClient-request-async.c
     src/http/SocketHTTPServer.c
     src/http/SocketHTTPServer-connections.c
 

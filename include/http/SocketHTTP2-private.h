@@ -154,6 +154,24 @@ struct SocketHTTP2_Conn
   uint32_t stream_burst_threshold;    /* Max per burst interval */
   uint32_t stream_churn_threshold;    /* Max rapid cycles per window */
 };
+
+/**
+ * @brief State tracking for pseudo-header validation
+ *
+ * Tracks which pseudo-headers have been seen and their validation state
+ * during HTTP/2 header block parsing per RFC 9113 Section 8.3.
+ */
+typedef struct
+{
+  int has_method;        /**< :method pseudo-header present */
+  int has_scheme;        /**< :scheme pseudo-header present */
+  int has_authority;     /**< :authority pseudo-header present */
+  int has_path;          /**< :path pseudo-header present */
+  int has_status;        /**< :status pseudo-header present */
+  int has_protocol;      /**< :protocol pseudo-header present (RFC 8441) */
+  int is_connect_method; /**< CONNECT method detected */
+} HTTP2_PseudoHeaderState;
+
 extern SocketHTTP2_ErrorCode
 http2_frame_validate (SocketHTTP2_Conn_T conn,
                       const SocketHTTP2_FrameHeader *header);
@@ -310,5 +328,84 @@ extern int http2_field_name_has_prohibited_chars (const char *name, size_t len);
 extern int http2_field_has_boundary_whitespace (const char *value, size_t len);
 extern int http2_validate_te_header (const char *value, size_t len);
 extern int http2_validate_regular_header (const SocketHPACK_Header *header);
+
+/* --- Pseudo-header validation helpers (RFC 9113 Section 8.3) --- */
+
+/**
+ * @brief Parse HTTP status code from :status pseudo-header value
+ * @param value Status code string (e.g., "200", "404")
+ * @param len Length of value
+ * @param status Output: parsed status code (100-599)
+ * @return 0 on success, -1 on invalid status
+ */
+extern int http2_parse_status_code (const char *value, size_t len, int *status);
+
+/**
+ * @brief Parse Content-Length header value with overflow protection
+ * @param value Content-Length value string
+ * @param len Length of value
+ * @param cl Output: parsed content length
+ * @return 0 on success, -1 on empty/invalid/overflow
+ */
+extern int http2_parse_content_length (const char *value, size_t len,
+                                        int64_t *cl);
+
+/**
+ * @brief Validate :method pseudo-header
+ * @return 0 on success, -1 on error
+ */
+extern int http2_validate_method_header (const SocketHPACK_Header *h,
+                                          int is_request,
+                                          HTTP2_PseudoHeaderState *state);
+
+/**
+ * @brief Validate :scheme pseudo-header
+ * @return 0 on success, -1 on error
+ */
+extern int http2_validate_scheme_header (const SocketHPACK_Header *h,
+                                          HTTP2_PseudoHeaderState *state);
+
+/**
+ * @brief Validate :authority pseudo-header
+ * @return 0 on success, -1 on error
+ */
+extern int http2_validate_authority_header (const SocketHPACK_Header *h,
+                                             HTTP2_PseudoHeaderState *state);
+
+/**
+ * @brief Validate :path pseudo-header
+ * @return 0 on success, -1 on error
+ */
+extern int http2_validate_path_header (const SocketHPACK_Header *h,
+                                        HTTP2_PseudoHeaderState *state);
+
+/**
+ * @brief Validate :status pseudo-header
+ * @return 0 on success, -1 on error
+ */
+extern int http2_validate_status_header (const SocketHPACK_Header *h,
+                                          int is_request,
+                                          HTTP2_PseudoHeaderState *state);
+
+/**
+ * @brief Validate :protocol pseudo-header (RFC 8441 Extended CONNECT)
+ * @return 0 on success, -1 on error
+ */
+extern int http2_validate_protocol_header (SocketHTTP2_Conn_T conn,
+                                            SocketHTTP2_Stream_T stream,
+                                            const SocketHPACK_Header *h,
+                                            HTTP2_PseudoHeaderState *state);
+
+/**
+ * @brief Validate standard CONNECT request pseudo-headers (RFC 9113 Section 8.5)
+ * @return 0 on success, -1 on error
+ */
+extern int http2_validate_standard_connect (const HTTP2_PseudoHeaderState *state);
+
+/**
+ * @brief Validate Extended CONNECT request pseudo-headers (RFC 8441)
+ * @return 0 on success, -1 on error
+ */
+extern int http2_validate_extended_connect (const HTTP2_PseudoHeaderState *state);
 
 #endif /* SOCKETHTTP2_PRIVATE_INCLUDED */

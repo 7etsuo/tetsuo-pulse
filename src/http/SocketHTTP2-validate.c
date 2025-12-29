@@ -8,10 +8,12 @@
  * SocketHTTP2-validate.c - HTTP/2 Header and TLS Validation (RFC 9113)
  */
 
+#include <stdint.h>
 #include <string.h>
 #include <strings.h>
 
 #include "http/SocketHPACK.h"
+#include "http/SocketHTTP.h"
 #include "http/SocketHTTP2-private.h"
 #include "socket/Socket.h"
 
@@ -322,4 +324,207 @@ SocketHTTP2_tls_result_string (SocketHTTP2_TLSResult result)
     default:
       return "Unknown TLS validation error";
     }
+}
+
+/*
+ * Pseudo-Header Validation Helpers (RFC 9113 Section 8.3)
+ *
+ * These functions provide modular validation for HTTP/2 pseudo-headers,
+ * reducing nesting depth and improving testability.
+ */
+
+int
+http2_parse_status_code (const char *value, size_t len, int *status)
+{
+  /* RFC 9113 §8.3.2: :status must be a 3-digit code */
+  if (value == NULL || status == NULL || len != 3)
+    return -1;
+
+  int code = 0;
+  for (size_t i = 0; i < 3; i++)
+    {
+      unsigned char c = (unsigned char)value[i];
+      if (c < '0' || c > '9')
+        return -1;
+      code = code * 10 + (c - '0');
+    }
+
+  /* Valid HTTP status codes are 100-599 */
+  if (code < 100 || code > 599)
+    return -1;
+
+  *status = code;
+  return 0;
+}
+
+int
+http2_parse_content_length (const char *value, size_t len, int64_t *cl)
+{
+  /* Empty or NULL value is invalid */
+  if (value == NULL || len == 0 || cl == NULL)
+    return -1;
+
+  int64_t result = 0;
+  for (size_t i = 0; i < len; i++)
+    {
+      unsigned char c = (unsigned char)value[i];
+      if (c < '0' || c > '9')
+        return -1;
+
+      /* Overflow check before multiplication */
+      if (result > (INT64_MAX - (c - '0')) / 10)
+        return -1;
+
+      result = result * 10 + (c - '0');
+    }
+
+  *cl = result;
+  return 0;
+}
+
+/*
+ * Individual Pseudo-Header Validators (RFC 9113 Section 8.3)
+ */
+
+int
+http2_validate_method_header (const SocketHPACK_Header *h, int is_request,
+                               HTTP2_PseudoHeaderState *state)
+{
+  if (h == NULL || state == NULL)
+    return -1;
+
+  state->has_method = 1;
+
+  /* Track CONNECT method for RFC 9113/8441 pseudo-header rules */
+  if (h->value_len == 7 && memcmp (h->value, "CONNECT", 7) == 0)
+    state->is_connect_method = 1;
+
+  /* Method must be valid HTTP method for requests */
+  if (!is_request)
+    return 0;
+
+  if (SocketHTTP_method_parse (h->value, h->value_len) == HTTP_METHOD_UNKNOWN)
+    return -1;
+
+  return 0;
+}
+
+int
+http2_validate_scheme_header (const SocketHPACK_Header *h,
+                               HTTP2_PseudoHeaderState *state)
+{
+  if (h == NULL || state == NULL)
+    return -1;
+
+  state->has_scheme = 1;
+  return 0;
+}
+
+int
+http2_validate_authority_header (const SocketHPACK_Header *h,
+                                  HTTP2_PseudoHeaderState *state)
+{
+  if (h == NULL || state == NULL)
+    return -1;
+
+  state->has_authority = 1;
+  return 0;
+}
+
+int
+http2_validate_path_header (const SocketHPACK_Header *h,
+                             HTTP2_PseudoHeaderState *state)
+{
+  if (h == NULL || state == NULL)
+    return -1;
+
+  state->has_path = 1;
+  return 0;
+}
+
+int
+http2_validate_status_header (const SocketHPACK_Header *h, int is_request,
+                               HTTP2_PseudoHeaderState *state)
+{
+  if (h == NULL || state == NULL)
+    return -1;
+
+  state->has_status = 1;
+
+  /* Only validate status code format for responses */
+  if (is_request)
+    return 0;
+
+  int status;
+  if (http2_parse_status_code (h->value, h->value_len, &status) < 0)
+    return -1;
+
+  return 0;
+}
+
+int
+http2_validate_protocol_header (SocketHTTP2_Conn_T conn,
+                                 SocketHTTP2_Stream_T stream,
+                                 const SocketHPACK_Header *h,
+                                 HTTP2_PseudoHeaderState *state)
+{
+  if (conn == NULL || stream == NULL || h == NULL || state == NULL)
+    return -1;
+
+  /* RFC 8441: :protocol only valid in requests (server receiving) */
+  if (conn->role != HTTP2_ROLE_SERVER)
+    return -1;
+
+  /* Server must have advertised SETTINGS_ENABLE_CONNECT_PROTOCOL=1 */
+  if (conn->local_settings[SETTINGS_IDX_ENABLE_CONNECT_PROTOCOL] == 0)
+    return -1;
+
+  state->has_protocol = 1;
+  stream->is_extended_connect = 1;
+
+  /* Empty protocol is valid */
+  if (h->value_len == 0)
+    return 0;
+
+  /* Store protocol value if it fits */
+  if (h->value_len >= sizeof (stream->protocol))
+    return -1;
+
+  memcpy (stream->protocol, h->value, h->value_len);
+  stream->protocol[h->value_len] = '\0';
+  return 0;
+}
+
+/*
+ * CONNECT Variant Validators (RFC 9113 Section 8.5, RFC 8441)
+ */
+
+int
+http2_validate_standard_connect (const HTTP2_PseudoHeaderState *state)
+{
+  if (state == NULL)
+    return -1;
+
+  /* CONNECT requires :authority */
+  if (!state->has_authority)
+    return -1;
+
+  /* Standard CONNECT must not have :scheme or :path */
+  if (state->has_scheme || state->has_path)
+    return -1;
+
+  return 0;
+}
+
+int
+http2_validate_extended_connect (const HTTP2_PseudoHeaderState *state)
+{
+  if (state == NULL)
+    return -1;
+
+  /* RFC 8441: Extended CONNECT requires :scheme, :path, :authority */
+  if (!state->has_scheme || !state->has_path || !state->has_authority)
+    return -1;
+
+  return 0;
 }
