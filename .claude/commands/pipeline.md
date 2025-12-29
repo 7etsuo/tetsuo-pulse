@@ -1,19 +1,232 @@
 # Code Analysis Pipeline
 
-Multi-agent code analysis pipeline for C codebases. Spawns per-file pipeline agents that independently analyze, verify findings, and create GitHub issues for confirmed problems.
+Multi-agent code analysis pipeline for C codebases. Supports two modes:
+1. **Code Analysis Mode** (default) - Security, redundancy, and refactoring analysis
+2. **TODO Mode** - Scan for TODO/FIXME/HACK/XXX/NOTE comments and create issues
 
 ## Usage
 
 ```
-/pipeline <directory>
+/pipeline <directory>           # Code analysis mode (default)
+/pipeline <directory> todo      # TODO scanning mode
 ```
 
 Examples:
 ```
-/pipeline src/socket/
-/pipeline src/http/
-/pipeline src/
+/pipeline src/socket/           # Analyze socket module for issues
+/pipeline src/http/ todo        # Scan http module for TODO comments
+/pipeline src/                  # Analyze entire src directory
 ```
+
+---
+
+# MODE DETECTION
+
+Check the second argument to determine which mode to run:
+
+- If second argument is `todo` → Run **TODO Mode** (see TODO MODE section below)
+- Otherwise → Run **Code Analysis Mode** (see PHASE 1-3 sections below)
+
+---
+
+# TODO MODE
+
+Scan for TODO/FIXME/HACK/XXX/NOTE comments and create GitHub issues for each one.
+
+## TODO Mode Architecture
+
+```
+/pipeline src/socket/ todo
+    │
+    ▼
+Phase T1: Discovery
+    │ Grep for TODO/FIXME/HACK/XXX/NOTE patterns
+    │ Extract: file, line, pattern, comment text
+    ▼
+Phase T2: Per-TODO Processing (parallel)
+    │ ┌──────────────────────────────────────────┐
+    │ │ todo-scanner-agent (TODO at file1.c:42)  │
+    │ │   ├── Check for duplicate issue          │
+    │ │   └── Create issue if not duplicate      │
+    │ ├──────────────────────────────────────────┤
+    │ │ todo-scanner-agent (FIXME at file2.c:100)│
+    │ │   └── ...                                 │
+    │ └──────────────────────────────────────────┘
+    ▼
+Phase T3: Report
+    │ Aggregate results
+    │ Write <folder>/TODO_ANALYSIS.md
+    ▼
+Done
+```
+
+## PHASE T1: TODO Discovery
+
+**Goal**: Find all TODO/FIXME/HACK/XXX/NOTE comments in the target directory.
+
+### Steps
+
+1. **Scan for TODO patterns** using Grep:
+   ```
+   Use Grep tool with pattern:
+   (TODO|FIXME|HACK|XXX|NOTE)\s*[:\-]?\s*
+
+   Options:
+   - path: <directory>
+   - glob: *.{c,h}
+   - output_mode: content
+   - -n: true (show line numbers)
+   ```
+
+2. **Parse results** into structured findings:
+   - File path
+   - Line number
+   - Pattern type (TODO, FIXME, HACK, XXX, NOTE)
+   - Comment text (everything after the pattern)
+
+3. **CHECKPOINT**: Display findings and ask user to confirm:
+   ```markdown
+   ## Phase T1: TODO Discovery Complete
+
+   Found [N] TODO comments in <directory>:
+
+   | Pattern | Count |
+   |---------|-------|
+   | TODO    | 5     |
+   | FIXME   | 3     |
+   | HACK    | 1     |
+   | XXX     | 0     |
+   | NOTE    | 2     |
+
+   **Total**: 11 TODOs found
+
+   **Proceed with issue creation?** ([N] issues will be created after deduplication)
+   ```
+
+## PHASE T2: Per-TODO Processing
+
+**Goal**: Spawn agents to check for duplicates and create issues.
+
+### CRITICAL: Parallel Execution
+
+**Spawn one `todo-scanner-agent` per TODO finding, ALL IN A SINGLE MESSAGE.**
+
+### Task Invocations
+
+For each TODO finding, spawn:
+
+```
+Task:
+  subagent_type: todo-scanner-agent
+  run_in_background: true
+  prompt: |
+    Process this TODO comment and create a GitHub issue if not duplicate:
+
+    File: [FILEPATH]
+    Line: [LINE_NUMBER]
+    Pattern: [TODO|FIXME|HACK|XXX|NOTE]
+    Comment: [COMMENT_TEXT]
+    Repository: 7etsuo/tetsuo-socket
+
+    Your workflow:
+    1. Read surrounding context (5 lines before/after)
+    2. Check for duplicate issues using: gh issue list --search "FILEPATH:LINE or COMMENT_TEXT"
+    3. If duplicate found, return SKIPPED with existing issue number
+    4. If no duplicate, create the issue directly using gh issue create
+    5. Return result: CREATED (with URL) or SKIPPED (with reason)
+```
+
+### Batching Strategy
+
+If more than 50 TODOs found:
+1. Split into batches of 20
+2. Ask user: "Found [N] TODOs. Process in batches of 20?"
+3. Run each batch, wait for completion
+4. Aggregate results across batches
+
+### Collecting Results
+
+Wait for all agents to complete using `TaskOutput` with blocking.
+
+Each agent returns:
+- Status: CREATED or SKIPPED
+- Issue URL (if created)
+- Existing issue # (if duplicate)
+- Pattern type and file location
+
+## PHASE T3: TODO Report Generation
+
+**Goal**: Aggregate results into a comprehensive TODO report.
+
+### Report Location
+
+Save to: `<directory>/TODO_ANALYSIS.md`
+
+### Report Template
+
+```markdown
+# TODO Analysis Report
+
+**Generated**: [timestamp]
+**Directory**: <directory>
+**TODOs Found**: [count]
+
+## Summary
+
+| Pattern | Found | Created | Duplicates |
+|---------|-------|---------|------------|
+| TODO    | 5     | 4       | 1          |
+| FIXME   | 3     | 3       | 0          |
+| HACK    | 1     | 0       | 1          |
+| XXX     | 0     | 0       | 0          |
+| NOTE    | 2     | 2       | 0          |
+| **Total** | **11** | **9** | **2**     |
+
+## Issues Created
+
+| Issue # | Pattern | File:Line | Description |
+|---------|---------|-----------|-------------|
+| #500 | TODO | socket.c:42 | implement feature X |
+| #501 | FIXME | buf.c:100 | broken parsing |
+| #502 | NOTE | dns.c:200 | edge case handling |
+
+## Duplicates Skipped
+
+| Pattern | File:Line | Existing Issue | Comment |
+|---------|-----------|----------------|---------|
+| TODO | socket.c:200 | #123 | old feature request |
+| HACK | dns.c:50 | #456 | known workaround |
+
+---
+*Report generated by /pipeline todo*
+```
+
+### Final Output
+
+```markdown
+## Phase T3: TODO Report Complete
+
+Report saved to: <directory>/TODO_ANALYSIS.md
+
+### Summary
+- TODOs found: [N]
+- Issues created: [N]
+- Duplicates skipped: [N]
+
+### Issue Links
+
+- #500: todo(socket): implement feature X
+- #501: fixme(http): broken parsing
+- #502: note(dns): edge case handling
+
+**TODO pipeline complete.**
+```
+
+---
+
+# CODE ANALYSIS MODE (Default)
+
+The original multi-agent code analysis pipeline for security, redundancy, and refactoring issues.
 
 ## Pipeline Architecture
 
