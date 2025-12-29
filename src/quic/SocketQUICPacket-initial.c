@@ -387,9 +387,9 @@ SocketQUICInitial_derive_keys (const SocketQUICConnectionID_T *dcid,
 #ifdef SOCKET_HAS_TLS
   const uint8_t *salt;
   size_t salt_len;
-  uint8_t initial_secret[32];
-  uint8_t client_secret[32];
-  uint8_t server_secret[32];
+  uint8_t initial_secret[SOCKET_CRYPTO_SHA256_SIZE];
+  uint8_t client_secret[SOCKET_CRYPTO_SHA256_SIZE];
+  uint8_t server_secret[SOCKET_CRYPTO_SHA256_SIZE];
   SocketQUICInitial_Result result;
 
   if (dcid == NULL || keys == NULL)
@@ -405,27 +405,27 @@ SocketQUICInitial_derive_keys (const SocketQUICConnectionID_T *dcid,
   /* Step 1: HKDF-Extract(salt, client DCID) -> initial_secret */
   if (hkdf_extract (salt, salt_len,
                     dcid->data, dcid->len,
-                    initial_secret, 32) < 0)
+                    initial_secret, SOCKET_CRYPTO_SHA256_SIZE) < 0)
     {
       SocketCrypto_secure_clear (initial_secret, sizeof (initial_secret));
       return QUIC_INITIAL_ERROR_CRYPTO;
     }
 
   /* Step 2: Derive client secret */
-  if (hkdf_expand_label (initial_secret, 32,
+  if (hkdf_expand_label (initial_secret, SOCKET_CRYPTO_SHA256_SIZE,
                           label_client_in, STRLEN_LIT (label_client_in),
                           NULL, 0,
-                          client_secret, 32) < 0)
+                          client_secret, SOCKET_CRYPTO_SHA256_SIZE) < 0)
     {
       SocketCrypto_secure_clear (initial_secret, sizeof (initial_secret));
       return QUIC_INITIAL_ERROR_CRYPTO;
     }
 
   /* Step 3: Derive server secret */
-  if (hkdf_expand_label (initial_secret, 32,
+  if (hkdf_expand_label (initial_secret, SOCKET_CRYPTO_SHA256_SIZE,
                           label_server_in, STRLEN_LIT (label_server_in),
                           NULL, 0,
-                          server_secret, 32) < 0)
+                          server_secret, SOCKET_CRYPTO_SHA256_SIZE) < 0)
     {
       SocketCrypto_secure_clear (initial_secret, sizeof (initial_secret));
       SocketCrypto_secure_clear (client_secret, sizeof (client_secret));
@@ -436,7 +436,7 @@ SocketQUICInitial_derive_keys (const SocketQUICConnectionID_T *dcid,
   SocketCrypto_secure_clear (initial_secret, sizeof (initial_secret));
 
   /* Step 4: Derive client keys */
-  if (derive_traffic_keys (client_secret, 32,
+  if (derive_traffic_keys (client_secret, SOCKET_CRYPTO_SHA256_SIZE,
                             keys->client_key,
                             keys->client_iv,
                             keys->client_hp_key) < 0)
@@ -447,7 +447,7 @@ SocketQUICInitial_derive_keys (const SocketQUICConnectionID_T *dcid,
     }
 
   /* Step 5: Derive server keys */
-  if (derive_traffic_keys (server_secret, 32,
+  if (derive_traffic_keys (server_secret, SOCKET_CRYPTO_SHA256_SIZE,
                             keys->server_key,
                             keys->server_iv,
                             keys->server_hp_key) < 0)
