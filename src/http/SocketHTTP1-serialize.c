@@ -89,18 +89,6 @@ header_name_valid_for_serialize (const char *name, size_t len)
   return len > 0;
 }
 
-static int
-header_value_valid_for_serialize (const char *value, size_t len)
-{
-  for (size_t i = 0; i < len; i++)
-    {
-      unsigned char c = (unsigned char)value[i];
-      if (c == '\r' || c == '\n' || c == '\0')
-        return 0;
-    }
-  return 1;
-}
-
 /**
  * serialize_ctx - Context for header serialization callback
  */
@@ -118,10 +106,19 @@ serialize_header_cb (const char *name, size_t name_len, const char *value,
   struct serialize_ctx *ctx = userdata;
 
   /* Validate header for CRLF injection (defense in depth) */
-  if (!header_name_valid_for_serialize (name, name_len)
-      || !header_value_valid_for_serialize (value, value_len))
+  if (!header_name_valid_for_serialize (name, name_len))
     {
       return -1; /* Reject headers with control characters */
+    }
+
+  /* Validate value doesn't contain CR, LF, or NUL (inlined validation) */
+  for (size_t i = 0; i < value_len; i++)
+    {
+      unsigned char c = (unsigned char)value[i];
+      if (c == '\r' || c == '\n' || c == '\0')
+        {
+          return -1; /* Reject headers with control characters */
+        }
     }
 
   /* Append: name ": " value "\r\n" */
