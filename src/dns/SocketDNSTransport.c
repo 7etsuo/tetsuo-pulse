@@ -753,17 +753,15 @@ SocketDNSTransport_cancel (T transport, SocketDNSQuery_T query)
 /* Forward declaration for TCP processing */
 static int process_tcp_queries (T transport);
 
-int
-SocketDNSTransport_process (T transport, int timeout_ms)
+/* Set up poll file descriptors for IPv4/IPv6 sockets */
+static int
+setup_poll_fds (T transport, struct pollfd *fds)
 {
-  struct pollfd fds[2];
   int nfds = 0;
-  int ret;
-  int processed = 0;
 
   assert (transport);
+  assert (fds);
 
-  /* Set up poll fds */
   if (transport->fd_v4 >= 0)
     {
       fds[nfds].fd = transport->fd_v4;
@@ -778,6 +776,22 @@ SocketDNSTransport_process (T transport, int timeout_ms)
       fds[nfds].revents = 0;
       nfds++;
     }
+
+  return nfds;
+}
+
+int
+SocketDNSTransport_process (T transport, int timeout_ms)
+{
+  struct pollfd fds[2];
+  int nfds;
+  int ret;
+  int processed = 0;
+
+  assert (transport);
+
+  /* Set up poll fds */
+  nfds = setup_poll_fds (transport, fds);
 
   /* Process cancelled queries first */
   processed += process_cancelled (transport);
