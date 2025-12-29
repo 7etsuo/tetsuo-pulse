@@ -2284,21 +2284,19 @@ http2_process_headers (SocketHTTP2_Conn_T conn,
 
   error = http2_stream_transition (stream, HTTP2_FRAME_HEADERS, header->flags,
                                    0);
+  /* RFC 9113: PROTOCOL_ERROR in reserved states is a connection error */
+  if (error == HTTP2_PROTOCOL_ERROR &&
+      (stream->state == HTTP2_STREAM_STATE_RESERVED_LOCAL ||
+       stream->state == HTTP2_STREAM_STATE_RESERVED_REMOTE))
+    {
+      http2_send_connection_error (conn, HTTP2_PROTOCOL_ERROR);
+      return -1;
+    }
+
   if (error != HTTP2_NO_ERROR)
     {
-      /* RFC 9113: PROTOCOL_ERROR in reserved states is a connection error */
-      if (error == HTTP2_PROTOCOL_ERROR &&
-          (stream->state == HTTP2_STREAM_STATE_RESERVED_LOCAL ||
-           stream->state == HTTP2_STREAM_STATE_RESERVED_REMOTE))
-        {
-          http2_send_connection_error (conn, HTTP2_PROTOCOL_ERROR);
-          return -1;
-        }
-      else
-        {
-          http2_send_stream_error (conn, header->stream_id, error);
-          return 0;
-        }
+      http2_send_stream_error (conn, header->stream_id, error);
+      return 0;
     }
 
   if (extract_headers_payload (header, payload, &header_block,
