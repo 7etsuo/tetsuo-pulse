@@ -752,6 +752,7 @@ set(TEST_SOURCES
     test_dns_config
     test_dns_cache
     test_dns_resolver
+    test_dns_queue_limit
     # test_dns_mutex_macros  # Temporarily disabled - build issue in main
     test_dnssec
     test_dnscookie

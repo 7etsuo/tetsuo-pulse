@@ -729,12 +729,43 @@ validate_dns_instance (const struct SocketDNS_T *dns)
     }
 }
 
+static size_t
+count_pending_requests (const struct SocketDNS_T *dns)
+{
+  size_t count = 0;
+  size_t i;
+
+  for (i = 0; i < SOCKET_DNS_REQUEST_HASH_SIZE; i++)
+    {
+      const struct SocketDNS_Request_T *req = dns->request_hash[i];
+      while (req)
+        {
+          if (req->state != REQ_COMPLETE && req->state != REQ_CANCELLED)
+            {
+              count++;
+            }
+          req = req->hash_next;
+        }
+    }
+
+  return count;
+}
+
 static void
 check_queue_capacity (struct SocketDNS_T *dns)
 {
-  /* TODO(Phase 2.x): Implement queue limit check with new architecture */
-  (void)dns;
-  /* For now, skip queue capacity check since there's no queue */
+  size_t pending;
+
+  pthread_mutex_lock (&dns->mutex);
+  pending = count_pending_requests (dns);
+  pthread_mutex_unlock (&dns->mutex);
+
+  if (pending >= dns->max_pending)
+    {
+      SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,
+                        "DNS queue full: %zu pending requests (max %zu)",
+                        pending, dns->max_pending);
+    }
 }
 
 static Request_T
@@ -1081,10 +1112,6 @@ SocketDNS_resolve (struct SocketDNS_T *dns, const char *host, int port,
 
   validate_dns_instance (dns);
 
-  /* Check queue capacity BEFORE allocation to prevent arena memory leak.
-   * If queue is full, we raise exception without allocating. */
-  check_queue_capacity (dns);
-
   /* Allocate and prepare request */
   req = prepare_resolve_request (dns, host, port, callback, data);
 
@@ -1097,6 +1124,11 @@ SocketDNS_resolve (struct SocketDNS_T *dns, const char *host, int port,
 
   /* Cache miss: submit to SocketDNSResolver backend */
   submit_to_resolver (dns, req);
+
+  /* Check queue capacity AFTER submission. If the request completed
+   * synchronously (IP literal), it won't count toward the pending limit.
+   * Only truly pending requests are counted. */
+  check_queue_capacity (dns);
 
   return req;
 }
