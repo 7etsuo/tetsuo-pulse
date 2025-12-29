@@ -75,27 +75,6 @@ load_pool_state (const T pool)
                                                  memory_order_acquire);
 }
 
-/**
- * @brief Overflow-safe millisecond addition with saturation.
- * @ingroup connection_mgmt
- * @param base Base time in milliseconds.
- * @param delta Delta to add in milliseconds.
- * @return base + delta, or INT64_MAX if overflow would occur.
- * @threadsafe Yes - pure function.
- *
- * Used for deadline calculations where overflow must saturate to
- * INT64_MAX rather than wrap around.
- *
- * @see SocketPool_drain() for usage in drain timeouts.
- * @see SocketPool_drain_remaining_ms() for remaining time calculation.
- */
-static inline int64_t
-safe_add_ms (int64_t base, int64_t delta)
-{
-  if (delta > 0 && base > INT64_MAX - delta)
-    return INT64_MAX;
-  return base + delta;
-}
 
 /**
  * @brief Shutdown socket gracefully, ignoring errors.
@@ -428,7 +407,7 @@ SocketPool_drain (T pool, int timeout_ms)
   else if (timeout_ms <= 0)
     pool->drain_deadline_ms = now_ms;
   else
-    pool->drain_deadline_ms = safe_add_ms (now_ms, timeout_ms);
+    pool->drain_deadline_ms = pool_safe_add_ms (now_ms, timeout_ms);
 
   /* Transition to DRAINING with release semantics */
   atomic_store_explicit (&pool->state, POOL_STATE_DRAINING,
@@ -708,7 +687,7 @@ SocketPool_idle_cleanup_due_ms (const T pool)
       return -1;
     }
 
-  remaining = safe_add_ms (pool->last_cleanup_ms, pool->cleanup_interval_ms)
+  remaining = pool_safe_add_ms (pool->last_cleanup_ms, pool->cleanup_interval_ms)
               - Socket_get_monotonic_ms ();
 
   POOL_UNLOCK (pool);
@@ -743,7 +722,7 @@ SocketPool_run_idle_cleanup (T pool)
 
   now_ms = Socket_get_monotonic_ms ();
   next_cleanup_ms
-      = safe_add_ms (pool->last_cleanup_ms, pool->cleanup_interval_ms);
+      = pool_safe_add_ms (pool->last_cleanup_ms, pool->cleanup_interval_ms);
 
   if (now_ms < next_cleanup_ms)
     {
