@@ -83,7 +83,7 @@ SocketQUICMigration_init (SocketQUICMigration_T *migration,
   if (migration == NULL)
     return;
 
-  memset (migration, 0, sizeof (*migration));
+  SocketCrypto_secure_clear (migration, sizeof (*migration));
   migration->connection = connection;
   migration->role = role;
   migration->active_path_index = 0;
