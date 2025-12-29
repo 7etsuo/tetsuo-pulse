@@ -1,0 +1,10 @@
+{
+  "number": 1662,
+  "title": "refactor(http): extract duplicate hostname validation functions",
+  "body": "## Summary\nExtract duplicate hostname validation logic in SocketHTTPClient.c into a single shared function.\n\n## Problem\nTwo nearly identical functions exist for hostname validation:\n- `hostname_safe()` at lines 810-819\n- `prepared_hostname_safe()` at lines 2512-2521\n\nBoth perform security-critical validation to prevent hostname injection attacks.\n\n## Location\n- File: `src/http/SocketHTTPClient.c`\n- Lines: 810-819 and 2512-2521\n\n## Proposed Solution\nExtract to single `httpclient_hostname_safe()` static function, or if useful elsewhere, add `SocketHTTP_URI_hostname_safe()` to `include/http/SocketHTTP.h`.\n\n## Acceptance Criteria\n- [ ] Single hostname validation function\n- [ ] All callers updated to use shared function\n- [ ] Tests pass with sanitizers\n- [ ] ~10 lines saved\n\n## Labels\nrefactor, redundancy, http",
+  "labels": [
+    "enhancement"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

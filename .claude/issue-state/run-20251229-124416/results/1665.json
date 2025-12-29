@@ -1,0 +1,17 @@
+{
+  "issue": 1665,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1687",
+  "pr_number": 1687,
+  "branch": "issue-1665-eintr-safe-helpers",
+  "files_changed": [
+    "include/core/SocketUtil.h",
+    "src/http/SocketHTTPClient.c"
+  ],
+  "tests_passed": true,
+  "commit_sha": "63c80f9c",
+  "summary": "Extracted EINTR-safe I/O helpers from SocketHTTPClient.c to SocketUtil.h for codebase-wide reuse. Added socket_util_write_all_eintr() and socket_util_read_all_eintr() as static inline functions. Removed 38 lines of duplicated code and added comprehensive documentation.",
+  "lines_added": 104,
+  "lines_removed": 46,
+  "test_results": "116/117 tests passing (1 pre-existing DNS memory leak unrelated to changes)"
+}

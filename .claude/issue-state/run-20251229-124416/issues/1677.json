@@ -1,0 +1,10 @@
+{
+  "number": 1677,
+  "title": "refactor(http-server): flatten 5-level nesting in find_rate_limiter",
+  "body": "## Description\n\nDeep nesting (depth 5) in `find_rate_limiter()` at lines 63-74 in `src/http/SocketHTTPServer.c`.\n\n## Location\n\n- **File**: `src/http/SocketHTTPServer.c`\n- **Lines**: 63-74\n- **Function**: `find_rate_limiter`\n\n## Current Code\n\n```c\nfor (RateLimitEntry *e = server->rate_limiters; e != NULL; e = e->next)\n  {\n    size_t len = strlen (e->path_prefix);\n    if (strncmp (path, e->path_prefix, len) == 0)\n      {\n        if (len > best_len)\n          {\n            best = e;\n            best_len = len;\n          }\n      }\n  }\n```\n\n## Recommendation\n\nFlatten by combining conditions:\n```c\nif (strncmp (path, e->path_prefix, len) == 0 && len > best_len)\n  {\n    best = e;\n    best_len = len;\n  }\n```\n\n## Severity\n\nMEDIUM (depth 5)",
+  "labels": [
+    "enhancement"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

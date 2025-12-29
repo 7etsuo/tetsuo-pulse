@@ -1,0 +1,12 @@
+{
+  "issue": 1663,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1683",
+  "pr_number": 1683,
+  "branch": "issue-1663-auth-helper",
+  "files_changed": ["src/http/SocketHTTPClient.c"],
+  "tests_passed": true,
+  "commit_sha": "feb529aa6e869691ace0c935c8b3de723606787b",
+  "lines_saved": 2,
+  "description": "Extracted duplicate auth string copying logic into httpclient_auth_copy_to_arena() helper function"
+}

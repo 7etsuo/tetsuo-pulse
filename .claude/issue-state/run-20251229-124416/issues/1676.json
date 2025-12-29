@@ -1,0 +1,10 @@
+{
+  "number": 1676,
+  "title": "refactor(http-server): inline single-use response_header_safe function",
+  "body": "## Description\n\nSingle-use static function `response_header_safe()` at lines 1745-1754 in `src/http/SocketHTTPServer.c`.\n\n## Location\n\n- **File**: `src/http/SocketHTTPServer.c`\n- **Lines**: 1745-1754\n- **Function**: `response_header_safe`\n\n## Current Code\n\n```c\n/* Validate header for CRLF injection */\nstatic int\nresponse_header_safe(const char *str)\n{\n  if (!str) return 0;\n  for (const char *p = str; *p; p++) {\n    if (*p == '\\r' || *p == '\\n')\n      return 0;\n  }\n  return 1;\n}\n```\n\n## Analysis\n\n- **Size**: 10 lines\n- **Called**: Once (at line 1774)\n- **Pattern**: SINGLE_USE_INLINE\n\n## Recommendation\n\nInline this small validation function at its single call site in `SocketHTTPServer_Request_header()`.\n\n## Severity\n\nHIGH (inline candidate - <30 lines)",
+  "labels": [
+    "enhancement"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

@@ -735,15 +735,8 @@ socketcommon_validate_hostname_internal (const char *host, int use_exceptions,
   /* RFC 1123 hostname validation */
   if (!socketcommon_validate_hostname_labels (host))
     {
-      if (use_exceptions)
-        {
-          SOCKET_RAISE_MSG (SocketCommon, exception_type,
-                            "Invalid hostname format: %.64s", host);
-        }
-      else
-        {
-          SOCKET_ERROR_MSG ("Invalid hostname format: %.64s", host);
-        }
+      COND_ERROR_MSG (use_exceptions, exception_type,
+                      "Invalid hostname format: %.64s", host);
       return -1;
     }
 
@@ -1314,31 +1307,18 @@ socketcommon_resolve_ip_direct (const char *host, const char *port_str,
     {
       const char *err_msg = gai_strerror (gai_err);
       const char *safe_host = host ? host : "<any>";
-      if (use_exceptions)
-        {
-          SOCKET_RAISE_MSG (SocketCommon, exception_type,
-                            "getaddrinfo failed for %s:%s: %s", safe_host,
-                            port_str, err_msg);
-        }
-      else
-        {
-          SOCKET_ERROR_MSG ("getaddrinfo failed for %s:%s: %s", safe_host,
-                            port_str, err_msg);
-          return -1;
-        }
+      COND_ERROR_MSG (use_exceptions, exception_type,
+                      "getaddrinfo failed for %s:%s: %s", safe_host, port_str,
+                      err_msg);
+      return -1;
     }
   *res = SocketCommon_copy_addrinfo (tmp_res);
   freeaddrinfo (tmp_res);
   if (!*res)
     {
-      if (use_exceptions)
-        SOCKET_RAISE_MSG (SocketCommon, exception_type,
-                          "Failed to copy addrinfo from getaddrinfo");
-      else
-        {
-          SOCKET_ERROR_MSG ("Failed to copy addrinfo from getaddrinfo");
-          return -1;
-        }
+      COND_ERROR_MSG (use_exceptions, exception_type,
+                      "Failed to copy addrinfo from getaddrinfo");
+      return -1;
     }
   return 0;
 }
@@ -1375,16 +1355,9 @@ socketcommon_perform_dns_resolution (const char *host, const char *port_str,
   dns = SocketCommon_get_dns_resolver ();
   if (!dns)
     {
-      if (use_exceptions)
-        {
-          SOCKET_RAISE_MSG (SocketCommon, exception_type,
-                            "DNS resolver unavailable");
-        }
-      else
-        {
-          SOCKET_ERROR_MSG ("DNS resolver unavailable");
-          return -1;
-        }
+      COND_ERROR_MSG (use_exceptions, exception_type,
+                      "DNS resolver unavailable");
+      return -1;
     }
 
   /* Fast path for IP addresses and NULL host: direct getaddrinfo with copy */
@@ -1404,17 +1377,9 @@ socketcommon_perform_dns_resolution (const char *host, const char *port_str,
   EXCEPT (SocketDNS_Failed)
   {
     const char *safe_host = socketcommon_get_safe_host (host);
-    if (use_exceptions)
-      {
-        SOCKET_RAISE_MSG (SocketCommon, exception_type,
-                          "DNS resolution failed: %.*s",
-                          SOCKET_ERROR_MAX_HOSTNAME, safe_host);
-      }
-    else
-      {
-        SOCKET_ERROR_MSG ("DNS resolution failed: %.*s",
-                          SOCKET_ERROR_MAX_HOSTNAME, safe_host);
-      }
+    COND_ERROR_MSG (use_exceptions, exception_type,
+                    "DNS resolution failed: %.*s", SOCKET_ERROR_MAX_HOSTNAME,
+                    safe_host);
     return -1;
   }
   END_TRY;
@@ -1454,19 +1419,9 @@ socketcommon_validate_address_family (struct addrinfo **res, int socket_family,
   *res = NULL;
 
   safe_host = socketcommon_get_safe_host (host);
-  if (use_exceptions)
-    {
-      SOCKET_RAISE_MSG (SocketCommon, exception_type,
-                        "No address found for family %d: %.*s:%d",
-                        socket_family, SOCKET_ERROR_MAX_HOSTNAME, safe_host,
-                        port);
-    }
-  else
-    {
-      SOCKET_ERROR_MSG ("No address found for family %d: %.*s:%d",
-                        socket_family, SOCKET_ERROR_MAX_HOSTNAME, safe_host,
-                        port);
-    }
+  COND_ERROR_MSG (use_exceptions, exception_type,
+                  "No address found for family %d: %.*s:%d", socket_family,
+                  SOCKET_ERROR_MAX_HOSTNAME, safe_host, port);
   return -1;
 }
 

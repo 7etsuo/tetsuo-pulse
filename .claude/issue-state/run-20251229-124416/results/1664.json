@@ -1,0 +1,11 @@
+{
+  "issue": 1664,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1682",
+  "pr_number": 1682,
+  "branch": "issue-1664-consolidate-json-requests",
+  "files_changed": ["src/http/SocketHTTPClient.c"],
+  "tests_passed": true,
+  "commit_sha": "9a5742daacc9bc0e62c5c577733af63a8d2c81a7",
+  "summary": "Successfully consolidated json_get() and json_post() functions into a shared httpclient_execute_json() helper, reducing code duplication by 6 lines while maintaining all functionality. All HTTP client tests pass (45/45)."
+}

@@ -1,0 +1,22 @@
+{
+  "issue": 1667,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1688",
+  "pr_number": 1688,
+  "branch": "issue-1667-consolidate-arena-alloc",
+  "files_changed": [
+    "src/http/SocketHTTPClient.c"
+  ],
+  "tests_passed": true,
+  "test_note": "116/117 tests passed - 1 pre-existing DNS test failure (test_dns_queue_limit) confirmed to exist on main branch",
+  "commit_sha": "f23cf43432f0a028cacc58d64ee780acc53fc4df",
+  "changes_summary": {
+    "macros_added": 2,
+    "occurrences_replaced": 4,
+    "lines_at": [221, 1733, 2631, 2685],
+    "macro_names": [
+      "HTTPCLIENT_ARENA_CALLOC_OR_RAISE",
+      "HTTPCLIENT_ARENA_CALLOC_OR_RETURN"
+    ]
+  }
+}
