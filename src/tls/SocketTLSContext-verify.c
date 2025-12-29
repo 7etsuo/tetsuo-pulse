@@ -1136,6 +1136,10 @@ parse_tlsfeature_extension_for_status_request (const unsigned char *p,
       value = ASN1_INTEGER_get (aint);
       ASN1_INTEGER_free (aint);
 
+      /* ASN1_INTEGER_get returns -1 on error or overflow */
+      if (value < 0)
+        continue; /* Skip invalid value and continue parsing */
+
       /* status_request = 5 per RFC 6066 / RFC 7633 */
       if (value == OCSP_MUST_STAPLE_STATUS_REQUEST)
         return 1; /* Must-staple found */
