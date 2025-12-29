@@ -22,6 +22,13 @@
 #include "socket/SocketAsync.h"
 
 /**
+ * @brief Timeout in milliseconds for async completion polling.
+ *
+ * Small timeout to avoid busy-waiting while processing completions.
+ */
+#define ASYNC_COMPLETION_POLL_TIMEOUT_MS 1
+
+/**
  * @brief State for blocking async I/O completion.
  *
  * Used to bridge async callbacks to synchronous semantics.
@@ -75,7 +82,7 @@ wait_for_completion (SocketHTTPClient_T client, AsyncIOState *state)
   while (!__atomic_load_n (&state->completed, __ATOMIC_ACQUIRE))
     {
       /* Process completions with 1ms timeout to avoid busy spin */
-      SocketAsync_process_completions (client->async, 1);
+      SocketAsync_process_completions (client->async, ASYNC_COMPLETION_POLL_TIMEOUT_MS);
     }
 
   return 0;
