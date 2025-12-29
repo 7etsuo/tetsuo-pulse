@@ -973,6 +973,71 @@ find_param_handler (uint64_t param_id)
  * ============================================================================
  */
 
+/**
+ * @brief Decode and validate a single transport parameter.
+ *
+ * Extracts one parameter from the data stream, validates it, and dispatches
+ * to the appropriate handler.
+ *
+ * @param data Input buffer
+ * @param len Length of input buffer
+ * @param pos Current position (updated on success)
+ * @param peer_role Role of the peer sending these parameters
+ * @param params Output parameter structure
+ * @param seen_params Bitmap for duplicate detection
+ * @return QUIC_TP_OK on success, error code otherwise
+ */
+static SocketQUICTransportParams_Result
+decode_single_param (const uint8_t *data, size_t len, size_t *pos,
+                     SocketQUICRole peer_role,
+                     SocketQUICTransportParams_T *params, uint64_t *seen_params)
+{
+  uint64_t param_id;
+  uint64_t param_len;
+  size_t bytes_consumed;
+  SocketQUICTransportParams_Result result;
+
+  /* Decode parameter ID */
+  result = decode_varint_value (data + *pos, len - *pos, &param_id,
+                                &bytes_consumed);
+  if (result != QUIC_TP_OK)
+    return result;
+  *pos += bytes_consumed;
+
+  /* Decode parameter length */
+  result = decode_varint_value (data + *pos, len - *pos, &param_len,
+                                &bytes_consumed);
+  if (result != QUIC_TP_OK)
+    return result;
+  *pos += bytes_consumed;
+
+  /* Check we have enough data for the parameter value */
+  if (*pos + param_len > len)
+    return QUIC_TP_ERROR_INCOMPLETE;
+
+  /* Check for duplicates (for known parameters) */
+  if (param_id <= 63)
+    {
+      uint64_t mask = 1ULL << param_id;
+      if (*seen_params & mask)
+        return QUIC_TP_ERROR_DUPLICATE;
+      *seen_params |= mask;
+    }
+
+  /* Parse parameter based on ID using table-driven dispatch */
+  ParamDecodeHandler handler = find_param_handler (param_id);
+  if (handler != NULL)
+    {
+      result = handler (data + *pos, (size_t)param_len, peer_role, params);
+      if (result != QUIC_TP_OK)
+        return result;
+    }
+  /* Unknown parameters are ignored per RFC 9000 Section 18.1 */
+
+  *pos += (size_t)param_len;
+  return QUIC_TP_OK;
+}
+
 SocketQUICTransportParams_Result
 SocketQUICTransportParams_decode (const uint8_t *data, size_t len,
                                   SocketQUICRole peer_role,
@@ -980,8 +1045,8 @@ SocketQUICTransportParams_decode (const uint8_t *data, size_t len,
                                   size_t *consumed)
 {
   size_t pos = 0;
-  SocketQUICTransportParams_Result result;
   uint64_t seen_params = 0; /* Bitmap for duplicate detection (up to param ID 63) */
+  SocketQUICTransportParams_Result result;
 
   if (data == NULL || params == NULL || consumed == NULL)
     return QUIC_TP_ERROR_NULL;
@@ -991,48 +1056,10 @@ SocketQUICTransportParams_decode (const uint8_t *data, size_t len,
 
   while (pos < len)
     {
-      uint64_t param_id;
-      uint64_t param_len;
-      size_t bytes_consumed;
-
-      /* Decode parameter ID */
-      result = decode_varint_value (data + pos, len - pos, &param_id,
-                                    &bytes_consumed);
+      result =
+          decode_single_param (data, len, &pos, peer_role, params, &seen_params);
       if (result != QUIC_TP_OK)
         return result;
-      pos += bytes_consumed;
-
-      /* Decode parameter length */
-      result = decode_varint_value (data + pos, len - pos, &param_len,
-                                    &bytes_consumed);
-      if (result != QUIC_TP_OK)
-        return result;
-      pos += bytes_consumed;
-
-      /* Check we have enough data for the parameter value */
-      if (pos + param_len > len)
-        return QUIC_TP_ERROR_INCOMPLETE;
-
-      /* Check for duplicates (for known parameters) */
-      if (param_id <= 63)
-        {
-          uint64_t mask = 1ULL << param_id;
-          if (seen_params & mask)
-            return QUIC_TP_ERROR_DUPLICATE;
-          seen_params |= mask;
-        }
-
-      /* Parse parameter based on ID using table-driven dispatch */
-      ParamDecodeHandler handler = find_param_handler (param_id);
-      if (handler != NULL)
-        {
-          result = handler (data + pos, (size_t)param_len, peer_role, params);
-          if (result != QUIC_TP_OK)
-            return result;
-        }
-      /* Unknown parameters are ignored per RFC 9000 Section 18.1 */
-
-      pos += (size_t)param_len;
     }
 
   *consumed = pos;
