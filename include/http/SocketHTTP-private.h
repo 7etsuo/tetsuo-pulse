@@ -146,7 +146,8 @@ sockethttp_is_token_valid (const char *s, size_t len)
 static inline int
 is_default_http_port (int port, int is_https)
 {
-  return port == -1 || port == (is_https ? 443 : 80);
+  return port == -1
+         || port == (is_https ? HTTPS_DEFAULT_PORT : HTTP_DEFAULT_PORT);
 }
 
 /* ============================================================================

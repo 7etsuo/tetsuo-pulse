@@ -118,6 +118,20 @@
 #define SOCKETHTTP_DATE_BUFSIZE 30
 
 /**
+ * @brief Default HTTP port per RFC 9110 Section 4.2.3.
+ *
+ * Standard port for http:// scheme. Used when port is omitted in URI.
+ */
+#define HTTP_DEFAULT_PORT 80
+
+/**
+ * @brief Default HTTPS port per RFC 9110 Section 4.2.3.
+ *
+ * Standard port for https:// scheme. Used when port is omitted in URI.
+ */
+#define HTTPS_DEFAULT_PORT 443
+
+/**
  * @brief Generic HTTP module failure.
  *
  * Use for general errors in HTTP core utilities. Specific errors should use

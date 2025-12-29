@@ -2564,7 +2564,8 @@ prepare_format_host_header (SocketHTTPClient_T client,
   size_t host_header_len;
 
   /* Pre-format Host header - eliminates 2.9% CPU overhead per request */
-  if (prep->effective_port == 80 || prep->effective_port == 443)
+  if (prep->effective_port == HTTP_DEFAULT_PORT
+      || prep->effective_port == HTTPS_DEFAULT_PORT)
     {
       host_header_len
           = (size_t)snprintf (host_buf, sizeof (host_buf), "%s", prep->uri.host);
@@ -2651,7 +2652,7 @@ SocketHTTPClient_prepare (SocketHTTPClient_T client, SocketHTTP_Method method,
   prep->is_secure = SocketHTTP_URI_is_secure (&prep->uri);
   prep->effective_port = prep->uri.port;
   if (prep->effective_port == -1)
-    prep->effective_port = prep->is_secure ? 443 : 80;
+    prep->effective_port = prep->is_secure ? HTTPS_DEFAULT_PORT : HTTP_DEFAULT_PORT;
 
 /* Format Host header */
   if (prepare_format_host_header (client, prep, arena) != 0)
