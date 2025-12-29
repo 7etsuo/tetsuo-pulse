@@ -42,6 +42,10 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHE);
 
 #define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketHE, e)
 
+/* Error message constants */
+static const char *const HE_ERR_ALL_FAILED = "All connection attempts failed";
+static const char *const HE_ERR_TIMEOUT = "Connection timed out";
+
 static void he_cancel_dns (T he);
 static int he_start_dns_resolution (T he);
 static void he_process_dns_completion (T he);
@@ -1190,15 +1194,14 @@ he_check_complete_failure (T he)
   if (!he_all_attempts_done (he) || he->state == HE_STATE_CONNECTED)
     return;
 
-  snprintf (he->error_buf, sizeof (he->error_buf),
-            "All connection attempts failed");
+  snprintf (he->error_buf, sizeof (he->error_buf), "%s", HE_ERR_ALL_FAILED);
   he_transition_to_failed (he, he->error_buf);
 }
 
 static void
 he_handle_total_timeout (T he)
 {
-  snprintf (he->error_buf, sizeof (he->error_buf), "Connection timed out");
+  snprintf (he->error_buf, sizeof (he->error_buf), "%s", HE_ERR_TIMEOUT);
   he_cleanup_attempts (he);
   he_transition_to_failed (he, he->error_buf);
 }
@@ -1488,8 +1491,8 @@ sync_check_all_failed (T he)
 {
   if (he_all_attempts_done (he) && he->state != HE_STATE_CONNECTED)
     {
-      snprintf (he->error_buf, sizeof (he->error_buf),
-                "All connection attempts failed");
+      snprintf (he->error_buf, sizeof (he->error_buf), "%s",
+                HE_ERR_ALL_FAILED);
     }
 }
 
@@ -1499,7 +1502,7 @@ sync_handle_timeout_check (T he)
   if (!he_check_total_timeout (he))
     return 0;
 
-  snprintf (he->error_buf, sizeof (he->error_buf), "Connection timed out");
+  snprintf (he->error_buf, sizeof (he->error_buf), "%s", HE_ERR_TIMEOUT);
   return 1;
 }
 
