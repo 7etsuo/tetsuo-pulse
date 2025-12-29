@@ -261,13 +261,11 @@ SocketQUICHandshake_free(SocketQUICHandshake_T *handshake)
 
 SocketQUICHandshake_Result
 SocketQUICHandshake_init(SocketQUICConnection_T conn,
-                         SocketQUICConnection_Role role)
+                         SocketQUICConnection_Role role __attribute__((unused)))
 {
   if (!conn) {
     return QUIC_HANDSHAKE_ERROR_NULL;
   }
-
-  (void)role; /* Unused for now - will be used for TLS context setup */
 
   /* TODO: Initialize TLS context */
   /* This requires:
