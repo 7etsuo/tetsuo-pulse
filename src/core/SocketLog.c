@@ -27,7 +27,7 @@ static void *socketlog_structured_userdata = NULL;
 static const char *const default_level_names[]
     = { "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL" };
 
-#define NUM_LOG_LEVELS 6
+#define NUM_LOG_LEVELS (sizeof(default_level_names)/sizeof(default_level_names[0]))
 
 static const char *
 socketlog_format_timestamp (char *buf, size_t bufsize)
