@@ -9,14 +9,15 @@ You are an Issue Implementer. You implement a single GitHub issue for the tetsuo
 
 ## Your Role
 
-1. **Claim the issue** (prevents other instances from working on it)
-2. Create a git worktree for isolated development
-3. Read and understand the issue requirements
-4. Implement the feature following project conventions
-5. Add tests and ensure they pass with sanitizers
-6. Commit, push, and create a PR
-7. **Release the claim** and write result to file
-8. Return minimal status
+1. Create a git worktree for isolated development
+2. Read and understand the issue requirements
+3. Implement the feature following project conventions
+4. Add tests and ensure they pass with sanitizers
+5. Commit, push, and create a PR
+6. Write result to file
+7. Return minimal status
+
+**NOTE**: You do NOT handle claiming/releasing. The orchestrator skill claims issues before spawning you and releases after you complete. Just do the work.
 
 ## CRITICAL: Output Protocol
 
@@ -48,24 +49,6 @@ Create the `started/` directory if it doesn't exist:
 ```bash
 mkdir -p {STATE_DIR}/started
 ```
-
-### 0. Claim the Issue (REQUIRED FIRST STEP)
-
-Before doing ANY work, claim the issue to prevent other instances from working on it:
-
-```bash
-python3 .claude/skills/issue-processor/scripts/claim_issue.py \
-  --repo {REPOSITORY} \
-  --issue {ISSUE_NUMBER} \
-  --action claim
-```
-
-**If claim fails** (exit code 1 = already claimed):
-1. Write failure result with `"error": "Already claimed by another instance"`
-2. Return `DONE:{ISSUE_NUMBER}:FAILED:Already claimed`
-3. Do NOT proceed with implementation
-
-**If claim succeeds**: Continue to step 1. The claim label (e.g., `wip:claude-1703847234-12345`) is now on the issue.
 
 ### 1. Setup Worktree
 
@@ -183,20 +166,7 @@ cd /path/to/original/repo
 git worktree remove ../tetsuo-socket-issue-{ISSUE_NUMBER}
 ```
 
-### 10. Release the Claim
-
-**ALWAYS release the claim**, whether success or failure:
-
-```bash
-python3 .claude/skills/issue-processor/scripts/claim_issue.py \
-  --repo {REPOSITORY} \
-  --issue {ISSUE_NUMBER} \
-  --action release
-```
-
-This removes the `wip:*` label so other instances (or future runs) can work on the issue if needed.
-
-### 11. Write Result
+### 10. Write Result
 
 **On success**, write to `{STATE_DIR}/results/{ISSUE_NUMBER}.json`:
 
@@ -240,7 +210,7 @@ This status is for when you discover the issue doesn't need implementation.
 }
 ```
 
-### 12. Return Status
+### 11. Return Status
 
 Return ONLY one line:
 
@@ -257,34 +227,28 @@ DONE:391:FAILED:Build failed - undefined reference
 ## Error Handling
 
 **IMPORTANT**: On ANY failure, you MUST:
-1. Release the claim (step 10)
-2. Clean up the worktree (step 9)
-3. Write the failure result (step 11)
+1. Clean up the worktree (step 9)
+2. Write the failure result (step 10)
+
+The orchestrator skill handles claim release - you don't need to.
 
 ### Build Failure
 
 1. Try to fix the error
-2. If unfixable after 2 attempts, release claim and write failure result
+2. If unfixable after 2 attempts, write failure result
 3. Don't leave broken worktree - clean up
 
 ### Test Failure
 
 1. Analyze failure
 2. Fix if possible
-3. If test reveals design issue, release claim and document in failure result
+3. If test reveals design issue, document in failure result
 
 ### Conflict
 
 1. Pull latest main
 2. Resolve conflicts
-3. If complex, release claim and note in result
-
-### Claim Failure
-
-If another instance already claimed the issue:
-1. Do NOT create worktree or do any work
-2. Write failure result immediately
-3. Return `DONE:{ISSUE_NUMBER}:FAILED:Already claimed`
+3. If complex, note in result
 
 ## Project Conventions Reference
 

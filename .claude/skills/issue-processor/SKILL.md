@@ -24,8 +24,15 @@ This skill uses a direct architecture:
 2. **Skill spawns implementers directly** (no coordinator layer)
 3. **File polling** monitors progress (NOT TaskOutput)
 4. **Batched spawning** prevents context exhaustion
+5. **Centralized locking** - skill claims/releases, agents just implement
 
 **NEVER use TaskOutput in this skill.** Poll files instead.
+
+**Locking Architecture**: The skill owns ALL claim/release logic:
+- `start_batch.py` claims issues with `wip:claude-*` labels BEFORE spawning agents
+- Agents do NOT claim - they trust the skill already claimed for them
+- `finish_batch.py` releases all claims AFTER agents complete
+- This prevents race conditions where agents try to re-claim already-claimed issues
 
 ## Architecture
 
@@ -93,11 +100,15 @@ This enables visibility - other terminals can see which issues are being worked 
 
 Spawn ALL agents in ONE message with MULTIPLE Task calls:
 
+**IMPORTANT**: Include the CRITICAL OVERRIDE instruction to tell agents NOT to claim (the skill already claimed for them):
+
 ```
 Task(
   subagent_type: "issue-implementer"
   description: "Implement #391"
   prompt: |
+    **CRITICAL OVERRIDE**: DO NOT call claim_issue.py --action claim. The orchestrator has already claimed this issue. Skip claiming entirely and go directly to Setup Worktree.
+
     STATE_DIR: {STATE_DIR}
     REPOSITORY: {REPOSITORY}
     ISSUE_NUMBER: 391
@@ -107,6 +118,8 @@ Task(
   subagent_type: "issue-implementer"
   description: "Implement #392"
   prompt: |
+    **CRITICAL OVERRIDE**: DO NOT call claim_issue.py --action claim. The orchestrator has already claimed this issue. Skip claiming entirely and go directly to Setup Worktree.
+
     STATE_DIR: {STATE_DIR}
     REPOSITORY: {REPOSITORY}
     ISSUE_NUMBER: 392
