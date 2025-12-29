@@ -9,7 +9,8 @@
  * @brief QUIC Connection ID Pool Management (RFC 9000 Section 5.1.1-5.1.2).
  *
  * Implements connection ID lifecycle operations including:
- *   - Hash table for O(1) CID lookup
+ *   - Hash table for O(1) CID lookup by bytes
+ *   - Hash table for O(1) sequence number lookup
  *   - Doubly-linked list for sequence-ordered iteration
  *   - Retire Prior To bulk retirement
  *   - active_connection_id_limit enforcement
@@ -62,6 +63,14 @@ hash_cid_bytes (const uint8_t *id, size_t len, uint32_t seed)
     hash = QUIC_HASH_FNV1A_STEP (hash, id[i]);
 
   return hash % QUIC_CONNID_POOL_HASH_SIZE;
+}
+
+static unsigned
+hash_sequence (uint64_t sequence, uint32_t seed)
+{
+  /* Simple multiplicative hash with seed mixing */
+  uint64_t hash = (sequence ^ seed) * UINT64_C(0x9e3779b97f4a7c15);
+  return (unsigned)(hash % QUIC_CONNID_POOL_HASH_SIZE);
 }
 
 /* ============================================================================
@@ -203,6 +212,41 @@ hash_remove (SocketQUICConnectionIDPool_T pool,
 }
 
 /* ============================================================================
+ * Internal Sequence Hash Table Operations
+ * ============================================================================
+ */
+
+static void
+sequence_hash_insert (SocketQUICConnectionIDPool_T pool,
+                      SocketQUICConnectionIDEntry_T *entry)
+{
+  unsigned idx = hash_sequence (entry->cid.sequence, pool->hash_seed);
+
+  entry->seq_hash_next = pool->sequence_table[idx];
+  pool->sequence_table[idx] = entry;
+}
+
+static void
+sequence_hash_remove (SocketQUICConnectionIDPool_T pool,
+                      SocketQUICConnectionIDEntry_T *entry)
+{
+  unsigned idx = hash_sequence (entry->cid.sequence, pool->hash_seed);
+
+  SocketQUICConnectionIDEntry_T **prev = &pool->sequence_table[idx];
+
+  while (*prev)
+    {
+      if (*prev == entry)
+        {
+          *prev = entry->seq_hash_next;
+          entry->seq_hash_next = NULL;
+          return;
+        }
+      prev = &(*prev)->seq_hash_next;
+    }
+}
+
+/* ============================================================================
  * Connection ID Management
  * ============================================================================
  */
@@ -276,8 +320,9 @@ SocketQUICConnectionIDPool_add_with_sequence (SocketQUICConnectionIDPool_T pool,
   entry->is_used = 0;
   entry->used_at = 0;
 
-  /* Insert into hash table and list */
+  /* Insert into hash tables and list */
   hash_insert (pool, entry);
+  sequence_hash_insert (pool, entry);
   list_append (pool, entry);
 
   pool->total_count++;
@@ -332,17 +377,31 @@ SocketQUICConnectionIDPool_lookup_sequence (const SocketQUICConnectionIDPool_T p
                                              uint64_t sequence)
 {
   SocketQUICConnectionIDEntry_T *entry;
+  unsigned idx;
+  int chain_len;
 
   if (pool == NULL)
     return NULL;
 
-  /* Linear search through list - could be optimized with sequence index */
-  entry = pool->list_head;
+  /* O(1) hash table lookup by sequence number */
+  idx = hash_sequence (sequence, pool->hash_seed);
+  entry = pool->sequence_table[idx];
+  chain_len = 0;
+
   while (entry)
     {
+      chain_len++;
+      if (chain_len > QUIC_CONNID_POOL_MAX_CHAIN_LEN)
+        {
+          SOCKET_LOG_WARN_MSG (
+              "SECURITY: Sequence hash chain too long in lookup (%d)", chain_len);
+          return NULL;
+        }
+
       if (entry->cid.sequence == sequence)
         return entry;
-      entry = entry->list_next;
+
+      entry = entry->seq_hash_next;
     }
 
   return NULL;
@@ -363,6 +422,7 @@ SocketQUICConnectionIDPool_remove (SocketQUICConnectionIDPool_T pool,
 
   /* Remove from data structures */
   hash_remove (pool, entry);
+  sequence_hash_remove (pool, entry);
   list_remove (pool, entry);
 
   pool->total_count--;
@@ -475,6 +535,7 @@ SocketQUICConnectionIDPool_purge_retired (SocketQUICConnectionIDPool_T pool,
       if (entry->is_retired)
         {
           hash_remove (pool, entry);
+          sequence_hash_remove (pool, entry);
           list_remove (pool, entry);
           pool->total_count--;
           count++;

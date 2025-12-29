@@ -77,7 +77,8 @@ typedef struct SocketQUICConnectionIDEntry
   int is_used;      /**< Non-zero if currently in use for a path */
   uint64_t used_at; /**< Monotonic timestamp when last used (ms) */
 
-  struct SocketQUICConnectionIDEntry *hash_next; /**< Hash chain pointer */
+  struct SocketQUICConnectionIDEntry *hash_next; /**< Hash chain pointer (CID bytes) */
+  struct SocketQUICConnectionIDEntry *seq_hash_next; /**< Sequence hash chain pointer */
   struct SocketQUICConnectionIDEntry *list_next; /**< Sequence list pointer */
   struct SocketQUICConnectionIDEntry *list_prev; /**< Sequence list pointer */
 
@@ -86,8 +87,8 @@ typedef struct SocketQUICConnectionIDEntry
 /**
  * @brief Connection ID pool for managing active connection IDs.
  *
- * Maintains a hash table for O(1) lookup by CID bytes and a doubly-linked
- * list for sequence-ordered operations like Retire Prior To.
+ * Maintains hash tables for O(1) lookup by CID bytes and sequence number,
+ * plus a doubly-linked list for sequence-ordered operations like Retire Prior To.
  */
 typedef struct SocketQUICConnectionIDPool
 {
@@ -95,6 +96,9 @@ typedef struct SocketQUICConnectionIDPool
 
   SocketQUICConnectionIDEntry_T *hash_table[QUIC_CONNID_POOL_HASH_SIZE];
   /**< Hash table for CID lookup */
+
+  SocketQUICConnectionIDEntry_T *sequence_table[QUIC_CONNID_POOL_HASH_SIZE];
+  /**< Hash table for sequence number lookup */
 
   SocketQUICConnectionIDEntry_T *list_head; /**< First entry by sequence */
   SocketQUICConnectionIDEntry_T *list_tail; /**< Last entry by sequence */
