@@ -17,17 +17,6 @@
 #include <stdio.h>
 #include <arpa/inet.h>
 #include <assert.h>
-#include <errno.h>
-
-/* For random challenge generation */
-#ifdef __linux__
-#include <sys/random.h>
-#elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__)
-#include <stdlib.h>
-#else
-#include <fcntl.h>
-#include <unistd.h>
-#endif
 
 /* ============================================================================
  * Exception Definition
@@ -42,7 +31,6 @@ const Except_T SocketQUICMigration_Failed = { &SocketQUICMigration_Failed,
  * ============================================================================
  */
 
-static int generate_random_bytes (uint8_t *buf, size_t len);
 static int sockaddr_equal (const struct sockaddr_storage *a,
                           const struct sockaddr_storage *b);
 static int sockaddr_to_string (const struct sockaddr_storage *addr, char *buf,
@@ -216,7 +204,7 @@ SocketQUICMigration_probe_path (SocketQUICMigration_T *migration,
     }
 
   /* Generate random challenge data */
-  if (generate_random_bytes (path->challenge, QUIC_PATH_CHALLENGE_SIZE) != 0)
+  if (SocketCrypto_random_bytes (path->challenge, QUIC_PATH_CHALLENGE_SIZE) != 0)
     return QUIC_MIGRATION_ERROR_RANDOM;
 
   /* Set validation state */
@@ -321,8 +309,8 @@ SocketQUICMigration_check_timeouts (SocketQUICMigration_T *migration,
               path->challenge_sent_time = current_time_ms;
 
               /* Regenerate challenge data */
-              generate_random_bytes (path->challenge,
-                                    QUIC_PATH_CHALLENGE_SIZE);
+              SocketCrypto_random_bytes (path->challenge,
+                                        QUIC_PATH_CHALLENGE_SIZE);
 
               /* Caller must resend PATH_CHALLENGE frame */
             }
@@ -605,68 +593,6 @@ SocketQUICMigration_path_to_string (const SocketQUICPath_T *path, char *buf,
  * Helper Function Implementations
  * ============================================================================
  */
-
-/**
- * @brief Generate cryptographically random bytes.
- *
- * Uses platform-specific secure random source.
- *
- * @param buf Output buffer.
- * @param len Number of bytes to generate.
- *
- * @return 0 on success, -1 on failure.
- */
-static int
-generate_random_bytes (uint8_t *buf, size_t len)
-{
-  if (buf == NULL || len == 0)
-    return -1;
-
-#ifdef __linux__
-  /* Use getrandom() on Linux with retry loop for EINTR and partial reads */
-  size_t total = 0;
-  while (total < len)
-    {
-      ssize_t ret = getrandom (buf + total, len - total, 0);
-      if (ret < 0)
-        {
-          if (errno == EINTR)
-            continue; /* Retry on signal interruption */
-          return -1;  /* Real error */
-        }
-      total += (size_t)ret;
-    }
-  return 0;
-#elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__)
-  /* Use arc4random_buf() on BSD/macOS */
-  arc4random_buf (buf, len);
-  return 0;
-#else
-  /* Fallback: use /dev/urandom with retry logic for partial reads */
-  int fd = open ("/dev/urandom", O_RDONLY);
-  size_t total = 0;
-
-  if (fd < 0)
-    return -1;
-
-  /* Retry loop to handle partial reads */
-  while (total < len)
-    {
-      ssize_t n = read (fd, buf + total, len - total);
-      if (n <= 0)
-        {
-          close (fd);
-          /* Zero buffer to avoid leaving weak cryptographic material */
-          memset (buf, 0, len);
-          return -1;
-        }
-      total += n;
-    }
-
-  close (fd);
-  return 0;
-#endif
-}
 
 /**
  * @brief Compare two sockaddr_storage structures for equality.
