@@ -227,6 +227,8 @@ struct SocketHTTPClient_AsyncRequest
   void *userdata;
 
   struct SocketHTTPClient_AsyncRequest *next;
+
+  Arena_T arena;
 };
 
 /**

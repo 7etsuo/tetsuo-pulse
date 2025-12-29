@@ -1088,7 +1088,6 @@ dummy_async_callback (SocketHTTPClient_AsyncRequest_T req,
   (void)userdata;
 }
 
-/* TODO: Enable when async API is implemented
 static void
 test_async_cancel (void)
 {
@@ -1109,11 +1108,11 @@ test_async_cancel (void)
   SocketHTTPClient_AsyncRequest_cancel (async_req);
   SocketHTTPClient_AsyncRequest_cancel (async_req);
 
+  SocketHTTPClient_AsyncRequest_free (&async_req);
   SocketHTTPClient_Request_free (&req);
   SocketHTTPClient_free (&client);
   TEST_PASS ();
 }
-*/
 
 /* ============================================================================
  * Concurrency Configuration Tests
@@ -1436,10 +1435,8 @@ main (void)
   printf ("\nResponse Limit Tests:\n");
   test_max_response_size_config ();
 
-  /* TODO: Enable when async API is implemented
   printf ("\nAsync Request Tests:\n");
   test_async_cancel ();
-  */
 
   printf ("\nConcurrency Tests:\n");
   test_concurrency_config ();
