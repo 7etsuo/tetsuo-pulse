@@ -397,22 +397,6 @@ is_valid_eos_padding (uint64_t bits, int bits_avail)
  * ============================================================================
  */
 
-/* Flush complete bytes from bit accumulator to output. Returns -1 on overflow. */
-static int
-flush_complete_bytes (uint64_t *bits, int *bits_avail, unsigned char *output,
-                      size_t *out_pos, size_t output_size)
-{
-  while (*bits_avail >= HUFFMAN_BITS_PER_BYTE)
-    {
-      if (*out_pos >= output_size)
-        return -1;
-
-      *bits_avail -= HUFFMAN_BITS_PER_BYTE;
-      output[(*out_pos)++] = (unsigned char) (*bits >> *bits_avail);
-    }
-  return 0;
-}
-
 /* ============================================================================
  * Decoding Helpers
  * ============================================================================
@@ -615,9 +599,15 @@ SocketHPACK_huffman_encode (const unsigned char *input, size_t input_len,
       bits = (bits << sym->bits) | sym->code;
       bits_avail += sym->bits;
 
-      if (flush_complete_bytes (&bits, &bits_avail, output, &out_pos,
-                                output_size) < 0)
-        return -1;
+      /* Flush complete bytes from bit accumulator */
+      while (bits_avail >= HUFFMAN_BITS_PER_BYTE)
+        {
+          if (out_pos >= output_size)
+            return -1;
+
+          bits_avail -= HUFFMAN_BITS_PER_BYTE;
+          output[out_pos++] = (unsigned char) (bits >> bits_avail);
+        }
     }
 
   /* Pad remaining bits with 1s (EOS prefix) per RFC 7541 §5.2 */
