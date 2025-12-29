@@ -122,7 +122,7 @@ extern void SocketQUICConnection_initiate_close(SocketQUICConnection_T conn, uin
 extern void SocketQUICConnection_enter_draining(SocketQUICConnection_T conn, uint64_t now_ms, uint64_t pto_ms);
 extern int SocketQUICConnection_is_closing_or_draining(SocketQUICConnection_T conn);
 extern int SocketQUICConnection_check_termination_deadline(SocketQUICConnection_T conn, uint64_t now_ms);
-extern void SocketQUICConnection_set_stateless_reset_token(SocketQUICConnection_T conn, const uint8_t *token);
+extern void SocketQUICConnection_set_stateless_reset_token(SocketQUICConnection_T conn, const uint8_t token[QUIC_STATELESS_RESET_TOKEN_LEN]);
 extern int SocketQUICConnection_verify_stateless_reset(const uint8_t *packet, size_t packet_len, const uint8_t *expected_token);
 
 #endif /* SOCKETQUICCONNECTION_INCLUDED */
