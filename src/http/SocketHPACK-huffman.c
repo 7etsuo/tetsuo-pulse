@@ -480,34 +480,30 @@ try_full_decode (uint64_t bits, int *bits_avail, unsigned char *output,
       uint64_t thiscode = (bits >> (*bits_avail - cl)) & mask;
       int sym = hpack_find_symbol (thiscode, cl);
 
-      if (sym >= 0)
+      if (sym < 0)
+        continue;
+
+      if (sym != HPACK_HUFFMAN_EOS)
         {
-          if (sym == HPACK_HUFFMAN_EOS)
-            {
-              int pad_b = *bits_avail - cl;
-              uint64_t pad_mask;
-              uint64_t pad;
-
-              if (pad_b > HUFFMAN_MAX_PAD_BITS || pad_b < 0)
-                return 0;
-
-              pad_mask = (1ULL << pad_b) - 1ULL;
-              pad = bits & pad_mask;
-              if (pad != pad_mask)
-                return 0;
-
-              *bits_avail = 0;
-              return 2;
-            }
-          else
-            {
-              if (*out_pos >= output_size)
-                return -1;
-              output[(*out_pos)++] = (unsigned char) sym;
-              *bits_avail -= cl;
-              return 1;
-            }
+          if (*out_pos >= output_size)
+            return -1;
+          output[(*out_pos)++] = (unsigned char) sym;
+          *bits_avail -= cl;
+          return 1;
         }
+
+      /* Handle EOS */
+      int pad_b = *bits_avail - cl;
+      if (pad_b > HUFFMAN_MAX_PAD_BITS || pad_b < 0)
+        return 0;
+
+      uint64_t pad_mask = (1ULL << pad_b) - 1ULL;
+      uint64_t pad = bits & pad_mask;
+      if (pad != pad_mask)
+        return 0;
+
+      *bits_avail = 0;
+      return 2;
     }
   return 0;
 }
