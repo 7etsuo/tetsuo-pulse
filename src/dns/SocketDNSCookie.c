@@ -31,6 +31,12 @@ const Except_T SocketDNSCookie_Failed
 /* Client secret size (256 bits for HMAC-SHA256) */
 #define SECRET_SIZE 32
 
+/* Minimum TTL/lifetime for all time-based settings (1 minute) */
+#define DNS_COOKIE_MIN_TTL_SECONDS 60
+
+/* Maximum server cookie TTL (1 day) */
+#define DNS_COOKIE_MAX_SERVER_TTL_SECONDS 86400
+
 /* Internal cache entry with LRU tracking */
 typedef struct CacheNode
 {
@@ -144,8 +150,8 @@ SocketDNSCookie_set_secret_lifetime (T cache, int lifetime_seconds)
   if (cache == NULL)
     return;
 
-  if (lifetime_seconds < 60)
-    lifetime_seconds = 60;
+  if (lifetime_seconds < DNS_COOKIE_MIN_TTL_SECONDS)
+    lifetime_seconds = DNS_COOKIE_MIN_TTL_SECONDS;
   if (lifetime_seconds > DNS_COOKIE_SECRET_LIFETIME_MAX)
     lifetime_seconds = DNS_COOKIE_SECRET_LIFETIME_MAX;
 
@@ -182,10 +188,10 @@ SocketDNSCookie_set_server_ttl (T cache, int ttl_seconds)
   if (cache == NULL)
     return;
 
-  if (ttl_seconds < 60)
-    ttl_seconds = 60;
-  if (ttl_seconds > 86400)
-    ttl_seconds = 86400;
+  if (ttl_seconds < DNS_COOKIE_MIN_TTL_SECONDS)
+    ttl_seconds = DNS_COOKIE_MIN_TTL_SECONDS;
+  if (ttl_seconds > DNS_COOKIE_MAX_SERVER_TTL_SECONDS)
+    ttl_seconds = DNS_COOKIE_MAX_SERVER_TTL_SECONDS;
 
   cache->server_ttl = ttl_seconds;
 }
