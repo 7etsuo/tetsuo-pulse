@@ -655,11 +655,19 @@ get_entropy (uint8_t *buf, size_t len)
 #endif
 
   /* Fallback to getrandom() */
-  ssize_t ret = getrandom (buf, len, 0);
-  if (ret == (ssize_t)len)
-    return 0;
-
-  return -1;
+  size_t offset = 0;
+  while (offset < len)
+    {
+      ssize_t ret = getrandom (buf + offset, len - offset, 0);
+      if (ret < 0)
+        {
+          if (errno == EINTR)
+            continue;
+          return -1;
+        }
+      offset += (size_t)ret;
+    }
+  return 0;
 }
 
 /*
