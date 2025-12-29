@@ -75,6 +75,21 @@ calculate_termination_timeout(uint64_t pto_ms)
 }
 
 /**
+ * @brief Update timestamp with monotonic check.
+ * @param timestamp Pointer to timestamp to update.
+ * @param now_ms New timestamp value.
+ *
+ * Only updates if current timestamp is zero or new value is greater.
+ * Ensures timestamps move forward monotonically.
+ */
+static inline void
+update_timestamp(uint64_t *timestamp, uint64_t now_ms)
+{
+  if (*timestamp == 0 || now_ms > *timestamp)
+    *timestamp = now_ms;
+}
+
+/**
  * @brief Set idle timeout parameters for connection.
  * @param conn Connection instance.
  * @param local_timeout_ms Local max_idle_timeout in milliseconds.
@@ -129,12 +144,8 @@ SocketQUICConnection_reset_idle_timer(SocketQUICConnection_T conn,
     return;
 
   /* Update last activity timestamp */
-  if (conn->last_packet_sent_ms == 0 || now_ms > conn->last_packet_sent_ms)
-    conn->last_packet_sent_ms = now_ms;
-
-  if (conn->last_packet_received_ms == 0
-      || now_ms > conn->last_packet_received_ms)
-    conn->last_packet_received_ms = now_ms;
+  update_timestamp(&conn->last_packet_sent_ms, now_ms);
+  update_timestamp(&conn->last_packet_received_ms, now_ms);
 
   /* Recalculate deadline */
   uint64_t effective_timeout = get_effective_idle_timeout(
