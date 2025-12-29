@@ -37,6 +37,7 @@
 
 #include "core/Arena.h"
 #include "core/SocketTimer.h"
+#include "core/SocketUtil.h"
 #include "dns/SocketDNSDeadServer.h"
 #include "dns/SocketDNSTransport.h"
 #include "dns/SocketDNSWire.h"
