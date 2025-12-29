@@ -347,49 +347,69 @@ SocketDNSoverHTTPS_server_count (T transport)
   return transport->server_count;
 }
 
-SocketDNSoverHTTPS_Query_T
-SocketDNSoverHTTPS_query (T transport, const unsigned char *query, size_t len,
-                           SocketDNSoverHTTPS_Callback callback, void *userdata)
+/**
+ * Build GET request URL with base64url-encoded DNS query.
+ * Returns 0 on success, -1 on failure with error code set.
+ */
+static int
+doh_build_get_request (T transport, const unsigned char *query, size_t len,
+                       struct ServerConfig *server, char **url_out,
+                       int *error_out)
 {
   assert (transport);
   assert (query);
-  assert (len >= DNS_HEADER_SIZE);
-  assert (callback);
+  assert (server);
+  assert (url_out);
+  assert (error_out);
 
-  if (transport->server_count == 0)
+  /* SECURITY: Enforce maximum query size for GET method */
+  if (len > DOH_MAX_GET_QUERY_SIZE)
     {
-      callback (NULL, NULL, 0, DOH_ERROR_NO_SERVER, userdata);
-      return NULL;
+      *error_out = DOH_ERROR_INVALID;
+      return -1;
     }
 
-  if (transport->pending_count >= DOH_MAX_PENDING_QUERIES)
+  /* Base64URL encode the DNS query */
+  size_t b64_size = SocketCrypto_base64_encoded_size (len);
+  char *b64 = ALLOC (transport->arena, b64_size);
+  size_t b64_len = base64url_encode (query, len, b64, b64_size);
+
+  if (b64_len == 0)
     {
-      callback (NULL, NULL, 0, DOH_ERROR_NETWORK, userdata);
-      return NULL;
+      *error_out = DOH_ERROR_INVALID;
+      return -1;
     }
 
-  /* Allocate query structure */
-  struct SocketDNSoverHTTPS_Query *q = ALLOC (transport->arena, sizeof (*q));
-  memset (q, 0, sizeof (*q));
+  /* Build URL with query parameter */
+  char *url = ALLOC (transport->arena, DOH_MAX_URL_LENGTH);
+  int url_len = snprintf (url, DOH_MAX_URL_LENGTH, "%s?dns=%s", server->url,
+                          b64);
 
-  q->id = extract_query_id (query, len);
-  q->callback = callback;
-  q->userdata = userdata;
-  q->sent_time_ms = get_monotonic_ms ();
-  q->cancelled = 0;
-  q->completed = 0;
-  q->error = DOH_ERROR_SUCCESS;
+  if (url_len < 0 || url_len >= DOH_MAX_URL_LENGTH)
+    {
+      *error_out = DOH_ERROR_INVALID;
+      return -1;
+    }
 
-  /* Copy query for potential retransmission */
-  q->query_copy = ALLOC (transport->arena, len);
-  memcpy (q->query_copy, query, len);
-  q->query_len = len;
+  *url_out = url;
+  return 0;
+}
 
-  /* Get current server config */
-  struct ServerConfig *s = &transport->servers[transport->current_server];
+/**
+ * Execute HTTP request (GET or POST) based on server config.
+ * Returns 0 on success, -1 on failure with error code set.
+ */
+static int
+doh_execute_request (T transport, struct ServerConfig *server,
+                     const unsigned char *query, size_t len,
+                     SocketHTTPClient_Response *response, int *error_out)
+{
+  assert (transport);
+  assert (server);
+  assert (query);
+  assert (response);
+  assert (error_out);
 
-  /* Send synchronous HTTP request */
-  SocketHTTPClient_Response response = { 0 };
   volatile int request_ok = 0;
   volatile int http_error = DOH_ERROR_NETWORK;
 
@@ -397,56 +417,28 @@ SocketDNSoverHTTPS_query (T transport, const unsigned char *query, size_t len,
   {
     int ret;
 
-    if (s->method == DOH_METHOD_GET)
+    if (server->method == DOH_METHOD_GET)
       {
-        /* SECURITY: Enforce maximum query size for GET method to prevent
-         * memory exhaustion via base64 encoding. Use POST for large queries. */
-        if (len > DOH_MAX_GET_QUERY_SIZE)
+        char *url = NULL;
+        int build_error = DOH_ERROR_NETWORK;
+        if (doh_build_get_request (transport, query, len, server, &url,
+                                   &build_error)
+            != 0)
           {
-            http_error = DOH_ERROR_INVALID;
             request_ok = 0;
+            http_error = build_error;
           }
         else
           {
-            /* Base64URL encode the DNS query */
-            size_t b64_size = SocketCrypto_base64_encoded_size (len);
-            char *b64 = ALLOC (transport->arena, b64_size);
-            size_t b64_len = base64url_encode (query, len, b64, b64_size);
-
-            if (b64_len == 0)
-              {
-                http_error = DOH_ERROR_INVALID;
-                request_ok = 0;
-              }
-            else
-              {
-                /* Build URL with query parameter */
-                char *url = ALLOC (transport->arena, DOH_MAX_URL_LENGTH);
-                int url_len
-                    = snprintf (url, DOH_MAX_URL_LENGTH, "%s?dns=%s", s->url,
-                                b64);
-
-                if (url_len < 0 || url_len >= DOH_MAX_URL_LENGTH)
-                  {
-                    http_error = DOH_ERROR_INVALID;
-                    request_ok = 0;
-                  }
-                else
-                  {
-                    /* Execute GET request */
-                    ret = SocketHTTPClient_get (transport->http_client, url,
-                                                &response);
-                    request_ok = (ret == 0) ? 1 : 0;
-                  }
-              }
+            ret = SocketHTTPClient_get (transport->http_client, url, response);
+            request_ok = (ret == 0) ? 1 : 0;
           }
       }
     else
       {
-        /* Execute POST request */
-        ret = SocketHTTPClient_post (transport->http_client, s->url,
+        ret = SocketHTTPClient_post (transport->http_client, server->url,
                                      "application/dns-message", query, len,
-                                     &response);
+                                     response);
         request_ok = (ret == 0) ? 1 : 0;
       }
   }
@@ -479,63 +471,125 @@ SocketDNSoverHTTPS_query (T transport, const unsigned char *query, size_t len,
 
   if (!request_ok)
     {
-      callback ((SocketDNSoverHTTPS_Query_T)q, NULL, 0, http_error, userdata);
-      SocketHTTPClient_Response_free (&response);
-      return NULL;
+      *error_out = http_error;
+      return -1;
     }
 
+  return 0;
+}
+
+/**
+ * Validate HTTP response and DNS message.
+ * Returns 0 on success, -1 on validation failure with error code set.
+ */
+static int
+doh_validate_response (const SocketHTTPClient_Response *response,
+                       uint16_t expected_id, int *error_out)
+{
+  assert (response);
+  assert (error_out);
+
+  (void)expected_id; /* Not validated in current implementation */
+
   /* Check HTTP status */
-  if (response.status_code != 200)
+  if (response->status_code != 200)
     {
-      callback ((SocketDNSoverHTTPS_Query_T)q, NULL, 0, DOH_ERROR_HTTP,
-                userdata);
-      SocketHTTPClient_Response_free (&response);
-      transport->stats.queries_sent++;
-      transport->stats.queries_failed++;
-      return NULL;
+      *error_out = DOH_ERROR_HTTP;
+      return -1;
     }
 
   /* Verify Content-Type */
-  const char *ct = SocketHTTP_Headers_get (response.headers, "Content-Type");
+  const char *ct = SocketHTTP_Headers_get (response->headers, "Content-Type");
   if (!ct || strstr (ct, "application/dns-message") == NULL)
     {
-      callback ((SocketDNSoverHTTPS_Query_T)q, NULL, 0, DOH_ERROR_CONTENT_TYPE,
-                userdata);
-      SocketHTTPClient_Response_free (&response);
-      transport->stats.queries_sent++;
-      transport->stats.queries_failed++;
-      return NULL;
+      *error_out = DOH_ERROR_CONTENT_TYPE;
+      return -1;
     }
 
   /* Check minimum response size */
-  if (response.body_len < DNS_HEADER_SIZE)
+  if (response->body_len < DNS_HEADER_SIZE)
     {
-      callback ((SocketDNSoverHTTPS_Query_T)q, NULL, 0, DOH_ERROR_INVALID,
-                userdata);
-      SocketHTTPClient_Response_free (&response);
-      transport->stats.queries_sent++;
-      transport->stats.queries_failed++;
-      return NULL;
+      *error_out = DOH_ERROR_INVALID;
+      return -1;
     }
 
-  /* SECURITY: Validate response size before allocation to prevent memory
-   * exhaustion. DNS messages are limited to 65535 bytes. */
-  if (response.body_len > DOH_MAX_MESSAGE_SIZE)
+  /* SECURITY: Validate response size before allocation */
+  if (response->body_len > DOH_MAX_MESSAGE_SIZE)
     {
-      callback ((SocketDNSoverHTTPS_Query_T)q, NULL, 0, DOH_ERROR_INVALID,
-                userdata);
-      SocketHTTPClient_Response_free (&response);
-      transport->stats.queries_sent++;
-      transport->stats.queries_failed++;
-      return NULL;
+      *error_out = DOH_ERROR_INVALID;
+      return -1;
     }
 
   /* Parse DNS header to check RCODE */
   SocketDNS_Header hdr;
-  if (SocketDNS_header_decode (response.body, response.body_len, &hdr) != 0)
+  if (SocketDNS_header_decode (response->body, response->body_len, &hdr) != 0)
     {
-      callback ((SocketDNSoverHTTPS_Query_T)q, NULL, 0, DOH_ERROR_INVALID,
-                userdata);
+      *error_out = DOH_ERROR_INVALID;
+      return -1;
+    }
+
+  /* Map RCODE to error */
+  *error_out = rcode_to_error (hdr.rcode);
+  return 0;
+}
+
+SocketDNSoverHTTPS_Query_T
+SocketDNSoverHTTPS_query (T transport, const unsigned char *query, size_t len,
+                           SocketDNSoverHTTPS_Callback callback, void *userdata)
+{
+  assert (transport);
+  assert (query);
+  assert (len >= DNS_HEADER_SIZE);
+  assert (callback);
+
+  /* Validate inputs */
+  if (transport->server_count == 0)
+    {
+      callback (NULL, NULL, 0, DOH_ERROR_NO_SERVER, userdata);
+      return NULL;
+    }
+
+  if (transport->pending_count >= DOH_MAX_PENDING_QUERIES)
+    {
+      callback (NULL, NULL, 0, DOH_ERROR_NETWORK, userdata);
+      return NULL;
+    }
+
+  /* Allocate query structure */
+  struct SocketDNSoverHTTPS_Query *q = ALLOC (transport->arena, sizeof (*q));
+  memset (q, 0, sizeof (*q));
+
+  q->id = extract_query_id (query, len);
+  q->callback = callback;
+  q->userdata = userdata;
+  q->sent_time_ms = get_monotonic_ms ();
+  q->cancelled = 0;
+  q->completed = 0;
+  q->error = DOH_ERROR_SUCCESS;
+
+  /* Copy query for potential retransmission */
+  q->query_copy = ALLOC (transport->arena, len);
+  memcpy (q->query_copy, query, len);
+  q->query_len = len;
+
+  /* Get current server config */
+  struct ServerConfig *s = &transport->servers[transport->current_server];
+
+  /* Execute HTTP request via helper */
+  SocketHTTPClient_Response response = { 0 };
+  int error = DOH_ERROR_SUCCESS;
+
+  if (doh_execute_request (transport, s, query, len, &response, &error) != 0)
+    {
+      callback ((SocketDNSoverHTTPS_Query_T)q, NULL, 0, error, userdata);
+      SocketHTTPClient_Response_free (&response);
+      return NULL;
+    }
+
+  /* Validate response via helper */
+  if (doh_validate_response (&response, q->id, &error) != 0)
+    {
+      callback ((SocketDNSoverHTTPS_Query_T)q, NULL, 0, error, userdata);
       SocketHTTPClient_Response_free (&response);
       transport->stats.queries_sent++;
       transport->stats.queries_failed++;
@@ -547,7 +601,7 @@ SocketDNSoverHTTPS_query (T transport, const unsigned char *query, size_t len,
   memcpy (q->response, response.body, response.body_len);
   q->response_len = response.body_len;
   q->completed = 1;
-  q->error = rcode_to_error (hdr.rcode);
+  q->error = error;
 
   /* Update stats */
   transport->stats.queries_sent++;
