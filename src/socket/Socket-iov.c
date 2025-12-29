@@ -44,8 +44,21 @@
 #include "socket/SocketIO.h"
 
 /**
- * Default chunk size for splice operations (64KB)
- * This provides good performance for socket-to-socket transfers
+ * Default chunk size for splice operations (64KB = 16 pages)
+ *
+ * This value was chosen because:
+ * - Matches Linux default pipe buffer size (16 * PAGE_SIZE on x86-64)
+ * - Aligns with typical TCP receive window size
+ * - Balances memory usage vs throughput for socket-to-socket transfers
+ * - Minimizes splice() system calls while avoiding excessive memory use
+ *
+ * Performance characteristics:
+ * - Smaller values (<32KB): More syscalls, lower memory, worse throughput
+ * - Larger values (>128KB): Better throughput, higher memory, diminishing returns
+ *
+ * This can be overridden at compile time for specific workloads:
+ *   -DSOCKET_SPLICE_CHUNK_SIZE=131072  (128KB for high-throughput proxies)
+ *   -DSOCKET_SPLICE_CHUNK_SIZE=32768   (32KB for memory-constrained systems)
  */
 #ifndef SOCKET_SPLICE_CHUNK_SIZE
 #define SOCKET_SPLICE_CHUNK_SIZE 65536
