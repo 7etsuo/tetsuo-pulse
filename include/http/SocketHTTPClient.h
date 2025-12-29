@@ -265,6 +265,8 @@ SocketHTTPClient_Request_async (SocketHTTPClient_Request_T req,
                                 void *userdata);
 extern void
 SocketHTTPClient_AsyncRequest_cancel (SocketHTTPClient_AsyncRequest_T req);
+extern void
+SocketHTTPClient_AsyncRequest_free (SocketHTTPClient_AsyncRequest_T *req);
 extern int SocketHTTPClient_process (SocketHTTPClient_T client,
                                      int timeout_ms);
 
