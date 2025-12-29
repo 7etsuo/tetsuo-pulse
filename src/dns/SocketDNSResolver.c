@@ -1651,6 +1651,139 @@ SocketDNSResolver_fd_v6 (T resolver)
   return SocketDNSTransport_fd_v6 (resolver->transport);
 }
 
+/*
+ * State Transition Handlers
+ */
+
+/**
+ * Handle CNAME state - re-query for CNAME target.
+ *
+ * @param resolver Resolver instance.
+ * @param q        Query in CNAME state.
+ * @return 1 if query completed, 0 otherwise.
+ */
+static int
+handle_cname_state (T resolver, struct SocketDNSResolver_Query *q)
+{
+  q->id = generate_unique_id (resolver);
+  if (send_query (resolver, q) != 0)
+    {
+      complete_query (resolver, q, RESOLVER_ERROR_NETWORK);
+      return 1;
+    }
+  return 0;
+}
+
+/**
+ * Handle TCP fallback state - retry via TCP after truncation.
+ *
+ * @param resolver Resolver instance.
+ * @param q        Query in TCP_FALLBACK state.
+ * @return 1 if query completed, 0 otherwise.
+ */
+static int
+handle_tcp_fallback_state (T resolver, struct SocketDNSResolver_Query *q)
+{
+  q->id = generate_unique_id (resolver);
+  if (send_query (resolver, q) != 0)
+    {
+      complete_query (resolver, q, RESOLVER_ERROR_NETWORK);
+      return 1;
+    }
+  return 0;
+}
+
+/**
+ * Handle init state - send query for second record type (AAAA after A).
+ *
+ * @param resolver Resolver instance.
+ * @param q        Query in INIT state.
+ * @return 1 if query completed, 0 otherwise.
+ */
+static int
+handle_init_state (T resolver, struct SocketDNSResolver_Query *q)
+{
+  q->id = generate_unique_id (resolver);
+  if (send_query (resolver, q) != 0)
+    {
+      complete_query (resolver, q, RESOLVER_ERROR_NETWORK);
+      return 1;
+    }
+  return 0;
+}
+
+/**
+ * Handle complete state - query succeeded.
+ *
+ * @param resolver Resolver instance.
+ * @param q        Query in COMPLETE state.
+ * @return Always 1 (query is complete).
+ */
+static int
+handle_complete_state (T resolver, struct SocketDNSResolver_Query *q)
+{
+  complete_query (resolver, q, RESOLVER_OK);
+  return 1;
+}
+
+/**
+ * Handle failed state - query timed out or encountered error.
+ *
+ * @param resolver Resolver instance.
+ * @param q        Query in FAILED state.
+ * @return Always 1 (query is complete).
+ */
+static int
+handle_failed_state (T resolver, struct SocketDNSResolver_Query *q)
+{
+  complete_query (resolver, q, RESOLVER_ERROR_TIMEOUT);
+  return 1;
+}
+
+/**
+ * Handle cancelled state - query was cancelled by user.
+ *
+ * @param resolver Resolver instance.
+ * @param q        Query in CANCELLED state.
+ * @return Always 1 (query is complete).
+ */
+static int
+handle_cancelled_state (T resolver, struct SocketDNSResolver_Query *q)
+{
+  complete_query (resolver, q, RESOLVER_ERROR_CANCELLED);
+  return 1;
+}
+
+/**
+ * Dispatch state transition for a query.
+ *
+ * @param resolver Resolver instance.
+ * @param q        Query to process.
+ * @return Number of queries completed (0 or 1).
+ */
+static int
+dispatch_state_transition (T resolver, struct SocketDNSResolver_Query *q)
+{
+  switch (q->state)
+    {
+    case QUERY_STATE_CNAME:
+      return handle_cname_state (resolver, q);
+    case QUERY_STATE_TCP_FALLBACK:
+      return handle_tcp_fallback_state (resolver, q);
+    case QUERY_STATE_INIT:
+      return handle_init_state (resolver, q);
+    case QUERY_STATE_COMPLETE:
+      return handle_complete_state (resolver, q);
+    case QUERY_STATE_FAILED:
+      return handle_failed_state (resolver, q);
+    case QUERY_STATE_CANCELLED:
+      return handle_cancelled_state (resolver, q);
+    default:
+      /* SENT/WAITING - no action needed */
+      return 0;
+    }
+}
+
 int
 SocketDNSResolver_process (T resolver, int timeout_ms)
 {
@@ -1667,56 +1800,7 @@ SocketDNSResolver_process (T resolver, int timeout_ms)
     {
       struct SocketDNSResolver_Query *next = q->list_next;
 
-      switch (q->state)
-        {
-        case QUERY_STATE_CNAME:
-          /* Re-query for CNAME target */
-          q->id = generate_unique_id (resolver);
-          if (send_query (resolver, q) != 0)
-            {
-              complete_query (resolver, q, RESOLVER_ERROR_NETWORK);
-              completed++;
-            }
-          break;
-
-        case QUERY_STATE_TCP_FALLBACK:
-          /* Retry via TCP */
-          q->id = generate_unique_id (resolver);
-          if (send_query (resolver, q) != 0)
-            {
-              complete_query (resolver, q, RESOLVER_ERROR_NETWORK);
-              completed++;
-            }
-          break;
-
-        case QUERY_STATE_INIT:
-          /* Need to send query for second record type (AAAA after A) */
-          q->id = generate_unique_id (resolver);
-          if (send_query (resolver, q) != 0)
-            {
-              complete_query (resolver, q, RESOLVER_ERROR_NETWORK);
-              completed++;
-            }
-          break;
-
-        case QUERY_STATE_COMPLETE:
-          complete_query (resolver, q, RESOLVER_OK);
-          completed++;
-          break;
-
-        case QUERY_STATE_FAILED:
-          complete_query (resolver, q, RESOLVER_ERROR_TIMEOUT);
-          completed++;
-          break;
-
-        case QUERY_STATE_CANCELLED:
-          complete_query (resolver, q, RESOLVER_ERROR_CANCELLED);
-          completed++;
-          break;
-
-        default:
-          break;
-        }
+      completed += dispatch_state_transition (resolver, q);
 
       q = next;
     }
