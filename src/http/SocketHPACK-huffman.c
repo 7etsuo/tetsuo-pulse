@@ -310,6 +310,12 @@ const HPACK_HuffmanSymbol hpack_huffman_encode[HPACK_HUFFMAN_SYMBOLS] = {
 };
 /* clang-format on */
 
+/* Verify table size matches expected symbol count */
+_Static_assert(sizeof(hpack_huffman_encode) / sizeof(hpack_huffman_encode[0]) == 257,
+               "Huffman encode table must have exactly 257 entries");
+_Static_assert(HPACK_HUFFMAN_SYMBOLS == 257,
+               "HPACK_HUFFMAN_SYMBOLS must be 257 for unsigned char safety");
+
 /* ============================================================================
  * Decode Tables
  *
