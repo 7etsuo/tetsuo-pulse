@@ -291,14 +291,18 @@ percentile_from_sorted (const double *sorted, size_t n, double percentile)
   return sorted[lower] * (1.0 - frac) + sorted[upper] * frac;
 }
 
-static void
+static int
 histogram_init (Histogram *h)
 {
   int rc;
 
   rc = pthread_mutex_init (&h->mutex, NULL);
-  assert (rc == 0 && "pthread_mutex_init failed");
-  (void)rc; /* Suppress unused warning when NDEBUG is defined */
+  if (rc != 0)
+    {
+      SocketLog_emitf (SOCKET_LOG_ERROR, "metrics",
+                       "pthread_mutex_init failed: %d", rc);
+      return -1;
+    }
   memset (h->values, 0, sizeof (h->values));
   h->write_index = 0;
   atomic_store (&h->count, 0);
@@ -306,6 +310,7 @@ histogram_init (Histogram *h)
   h->min = HUGE_VAL;
   h->max = -HUGE_VAL;
   h->initialized = 1;
+  return 0;
 }
 
 static void
@@ -314,7 +319,13 @@ histogram_destroy (Histogram *h)
   if (h->initialized)
     {
       int rc = pthread_mutex_destroy (&h->mutex);
-      assert (rc == 0 && "pthread_mutex_destroy failed - mutex may be locked");
+      if (rc != 0)
+        {
+          SocketLog_emitf (SOCKET_LOG_ERROR, "metrics",
+                           "pthread_mutex_destroy failed: %d (mutex may be "
+                           "locked)",
+                           rc);
+        }
       h->initialized = 0;
     }
 }
@@ -505,7 +516,17 @@ SocketMetrics_init (void)
     atomic_store (&gauge_values[i], 0);
 
   for (i = 0; i < SOCKET_HISTOGRAM_METRIC_COUNT; i++)
-    histogram_init (&histogram_values[i]);
+    {
+      if (histogram_init (&histogram_values[i]) != 0)
+        {
+          /* Cleanup already-initialized histograms */
+          for (int j = 0; j < i; j++)
+            histogram_destroy (&histogram_values[j]);
+          /* Reset initialization flag */
+          atomic_store (&metrics_initialized, 0);
+          return -1;
+        }
+    }
 
   METRICS_LOG_DEBUG ("Metrics subsystem initialized");
   return 0;
