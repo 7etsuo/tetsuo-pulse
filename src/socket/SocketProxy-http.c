@@ -45,6 +45,10 @@
  * ============================================================================
  */
 
+/** Macro for setting connection-specific error messages (like PROXY_ERROR_MSG for thread-local errors) */
+#define CONN_ERROR_MSG(conn, ...) \
+  snprintf((conn)->error_buf, sizeof((conn)->error_buf), __VA_ARGS__)
+
 /** Length of ':' separator in "username:password" format */
 #define SOCKET_PROXY_CREDS_SEPARATOR_LEN 1
 
@@ -145,7 +149,7 @@ proxy_http_append_formatted (struct SocketProxy_Conn_T *conn, char *buf, size_t 
 
   if (n < 0 || (size_t)n >= *remaining)
     {
-      snprintf (conn->error_buf, sizeof (conn->error_buf), "%s", error_msg);
+      CONN_ERROR_MSG (conn, "%s", error_msg);
       return -1;
     }
 
@@ -288,8 +292,7 @@ append_auth_header (struct SocketProxy_Conn_T *conn, char *buf, size_t *len,
                         sizeof (auth_header))
       < 0)
     {
-      snprintf (conn->error_buf, sizeof (conn->error_buf),
-                "Failed to build auth header");
+      CONN_ERROR_MSG (conn, "Failed to build auth header");
       return -1;
     }
 
@@ -326,8 +329,7 @@ append_extra_headers (struct SocketProxy_Conn_T *conn, char *buf, size_t *len,
                                                *remaining);
   if (headers_len < 0)
     {
-      snprintf (conn->error_buf, sizeof (conn->error_buf),
-                "Extra headers too long");
+      CONN_ERROR_MSG (conn, "Extra headers too long");
       return -1;
     }
 
@@ -448,8 +450,7 @@ create_http_parser (struct SocketProxy_Conn_T *conn)
       = SocketHTTP1_Parser_new (HTTP1_PARSE_RESPONSE, &config, conn->arena);
   if (conn->http_parser == NULL)
     {
-      snprintf (conn->error_buf, sizeof (conn->error_buf),
-                "Failed to create HTTP parser");
+      CONN_ERROR_MSG (conn, "Failed to create HTTP parser");
       return -1;
     }
 
@@ -496,21 +497,18 @@ parse_http_response (struct SocketProxy_Conn_T *conn)
       response = SocketHTTP1_Parser_get_response (conn->http_parser);
       if (response == NULL)
         {
-          snprintf (conn->error_buf, sizeof (conn->error_buf),
-                    "Failed to get parsed response");
+          CONN_ERROR_MSG (conn, "Failed to get parsed response");
           return PROXY_ERROR_PROTOCOL;
         }
       return proxy_http_status_to_result (response->status_code);
 
     case HTTP1_ERROR_SMUGGLING_DETECTED:
-      snprintf (conn->error_buf, sizeof (conn->error_buf),
-                "HTTP response smuggling detected");
+      CONN_ERROR_MSG (conn, "HTTP response smuggling detected");
       return PROXY_ERROR_PROTOCOL;
 
     default:
-      snprintf (conn->error_buf, sizeof (conn->error_buf),
-                "HTTP parse error: %s",
-                SocketHTTP1_result_string (parse_result));
+      CONN_ERROR_MSG (conn, "HTTP parse error: %s",
+                      SocketHTTP1_result_string (parse_result));
       return PROXY_ERROR_PROTOCOL;
     }
 }
