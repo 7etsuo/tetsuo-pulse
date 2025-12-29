@@ -312,32 +312,6 @@ evict_oldest_cookie (SocketHTTPClient_CookieJar_T jar)
     }
 }
 
-static void
-cookie_entry_init_full (CookieEntry *entry,
-                        const SocketHTTPClient_Cookie *cookie,
-                        const char *effective_path, Arena_T arena)
-{
-  entry->cookie.name = socket_util_arena_strdup (arena, cookie->name);
-  if (entry->cookie.name == NULL)
-    RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
-
-  entry->cookie.value = socket_util_arena_strdup (arena, cookie->value);
-  if (entry->cookie.value == NULL)
-    RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
-
-  entry->cookie.domain = socket_util_arena_strdup (arena, cookie->domain);
-  if (entry->cookie.domain == NULL)
-    RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
-
-  entry->cookie.path = socket_util_arena_strdup (arena, effective_path);
-  if (entry->cookie.path == NULL)
-    RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
-
-  entry->cookie.expires = cookie->expires;
-  entry->cookie.secure = cookie->secure;
-  entry->cookie.http_only = cookie->http_only;
-  entry->cookie.same_site = cookie->same_site;
-}
 
 static CookieEntry *
 cookie_jar_find_entry (SocketHTTPClient_CookieJar_T jar, const char *domain,
@@ -577,7 +551,27 @@ insert_cookie:
         if (entry == NULL)
           RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
 
-        cookie_entry_init_full (entry, cookie, effective_path, jar->arena);
+        entry->cookie.name = socket_util_arena_strdup (jar->arena, cookie->name);
+        if (entry->cookie.name == NULL)
+          RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
+
+        entry->cookie.value = socket_util_arena_strdup (jar->arena, cookie->value);
+        if (entry->cookie.value == NULL)
+          RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
+
+        entry->cookie.domain = socket_util_arena_strdup (jar->arena, cookie->domain);
+        if (entry->cookie.domain == NULL)
+          RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
+
+        entry->cookie.path = socket_util_arena_strdup (jar->arena, effective_path);
+        if (entry->cookie.path == NULL)
+          RAISE_HTTPCLIENT_ERROR (SocketHTTPClient_Failed);
+
+        entry->cookie.expires = cookie->expires;
+        entry->cookie.secure = cookie->secure;
+        entry->cookie.http_only = cookie->http_only;
+        entry->cookie.same_site = cookie->same_site;
+
         entry->created = time (NULL);
 
         entry->next = jar->hash_table[hash];
