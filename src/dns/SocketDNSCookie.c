@@ -692,6 +692,39 @@ constant_time_compare (const uint8_t *a, const uint8_t *b, size_t len)
   return result == 0;
 }
 
+#ifdef SOCKET_HAS_TLS
+/*
+ * Serialize address to buffer with bounds checking
+ * Returns 0 on success, -1 on failure
+ */
+static int
+serialize_address (const struct sockaddr *addr, unsigned char *buf,
+                   size_t *offset, size_t bufsize)
+{
+  if (addr->sa_family == AF_INET)
+    {
+      const struct sockaddr_in *sin = (const struct sockaddr_in *)addr;
+      if (*offset + sizeof (sin->sin_addr) > bufsize)
+        return -1;
+      memcpy (buf + *offset, &sin->sin_addr, sizeof (sin->sin_addr));
+      *offset += sizeof (sin->sin_addr);
+    }
+  else if (addr->sa_family == AF_INET6)
+    {
+      const struct sockaddr_in6 *sin6 = (const struct sockaddr_in6 *)addr;
+      if (*offset + sizeof (sin6->sin6_addr) > bufsize)
+        return -1;
+      memcpy (buf + *offset, &sin6->sin6_addr, sizeof (sin6->sin6_addr));
+      *offset += sizeof (sin6->sin6_addr);
+    }
+  else
+    {
+      return -1;
+    }
+  return 0;
+}
+#endif
+
 /*
  * Generate client cookie using HMAC-SHA256
  */
@@ -706,50 +739,13 @@ generate_client_cookie (T cache, const struct sockaddr *server_addr,
   size_t data_len = 0;
 
   /* Build input: server IP + client IP */
-  if (server_addr->sa_family == AF_INET)
-    {
-      const struct sockaddr_in *sin = (const struct sockaddr_in *)server_addr;
-      /* Bounds check: IPv4 address is 4 bytes */
-      if (data_len + sizeof (sin->sin_addr) > sizeof (data))
-        return -1;
-      memcpy (data + data_len, &sin->sin_addr, sizeof (sin->sin_addr));
-      data_len += sizeof (sin->sin_addr);
-    }
-  else if (server_addr->sa_family == AF_INET6)
-    {
-      const struct sockaddr_in6 *sin6 = (const struct sockaddr_in6 *)server_addr;
-      /* Bounds check: IPv6 address is 16 bytes */
-      if (data_len + sizeof (sin6->sin6_addr) > sizeof (data))
-        return -1;
-      memcpy (data + data_len, &sin6->sin6_addr, sizeof (sin6->sin6_addr));
-      data_len += sizeof (sin6->sin6_addr);
-    }
-  else
-    {
-      return -1;
-    }
+  if (serialize_address (server_addr, data, &data_len, sizeof (data)) != 0)
+    return -1;
 
   if (client_addr && client_len > 0)
     {
-      if (client_addr->sa_family == AF_INET)
-        {
-          const struct sockaddr_in *sin = (const struct sockaddr_in *)client_addr;
-          /* Bounds check before copy */
-          if (data_len + sizeof (sin->sin_addr) > sizeof (data))
-            return -1;
-          memcpy (data + data_len, &sin->sin_addr, sizeof (sin->sin_addr));
-          data_len += sizeof (sin->sin_addr);
-        }
-      else if (client_addr->sa_family == AF_INET6)
-        {
-          const struct sockaddr_in6 *sin6
-              = (const struct sockaddr_in6 *)client_addr;
-          /* Bounds check before copy */
-          if (data_len + sizeof (sin6->sin6_addr) > sizeof (data))
-            return -1;
-          memcpy (data + data_len, &sin6->sin6_addr, sizeof (sin6->sin6_addr));
-          data_len += sizeof (sin6->sin6_addr);
-        }
+      if (serialize_address (client_addr, data, &data_len, sizeof (data)) != 0)
+        return -1;
     }
 
   /* HMAC-SHA256 and truncate to 64 bits */
