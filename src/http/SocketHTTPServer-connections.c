@@ -258,13 +258,17 @@ connection_read_initial_body (SocketHTTPServer_T server, ServerConnection *conn)
       size_t max_body = server->config.max_body_size;
       size_t process_len = input_len;
 
-      /* Overflow-safe check */
-      if (max_body > 0 && (input_len > max_body - conn->body_received)) {
-        /* Would exceed limit */
-        process_len = max_body - conn->body_received;
-        if (process_len == 0) {
-          connection_reject_oversized_body (server, conn);
-          return -1;
+      /* Overflow-safe check using centralized utility */
+      if (max_body > 0) {
+        uint64_t total;
+        if (!socket_util_safe_add_u64(conn->body_received, input_len, &total) || total > max_body) {
+          /* Would exceed limit */
+          size_t remaining = max_body - conn->body_received;
+          if (remaining == 0) {
+            connection_reject_oversized_body (server, conn);
+            return -1;
+          }
+          process_len = remaining;
         }
       }
 
@@ -322,7 +326,8 @@ connection_read_initial_body (SocketHTTPServer_T server, ServerConnection *conn)
       size_t current_len = SocketBuf_available (conn->body_buf);
 
       /* Check if adding this chunk would exceed limit */
-      if (current_len + input_len > max_body)
+      uint64_t total;
+      if (!socket_util_safe_add_u64(current_len, input_len, &total) || total > max_body)
         {
           /* Only accept up to limit */
           input_len = max_body - current_len;
@@ -366,13 +371,17 @@ connection_read_initial_body (SocketHTTPServer_T server, ServerConnection *conn)
       size_t max_body = server->config.max_body_size;
       size_t process_len = input_len;
 
-      /* Overflow-safe check */
-      if (max_body > 0 && (input_len > max_body - conn->body_len)) {
-        /* Would exceed limit */
-        process_len = max_body - conn->body_len;
-        if (process_len == 0) {
-          connection_reject_oversized_body (server, conn);
-          return -1;
+      /* Overflow-safe check using centralized utility */
+      if (max_body > 0) {
+        uint64_t total;
+        if (!socket_util_safe_add_u64(conn->body_len, input_len, &total) || total > max_body) {
+          /* Would exceed limit */
+          size_t remaining = max_body - conn->body_len;
+          if (remaining == 0) {
+            connection_reject_oversized_body (server, conn);
+            return -1;
+          }
+          process_len = remaining;
         }
       }
 
