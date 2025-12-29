@@ -1330,10 +1330,21 @@ extern int SocketPool_drain_poll (T pool);
  * @param[in] pool Pool instance.
  * @return Milliseconds until timeout, 0 if already expired, -1 if not
  * draining.
- * @threadsafe Yes - atomic read.
+ * @threadsafe Yes - atomic state check; deadline read may be stale.
  * @note Complexity: O(1). Use as timeout hint for poll/select during drain.
+ *
+ * Returns a best-effort ESTIMATE for timeout hints in event loops. The state
+ * check is atomic, but the deadline read is non-atomic and may observe stale
+ * values. This is acceptable because the returned value is inherently racy
+ * (time advances continuously) and intended for advisory use only.
+ *
+ * Callers MUST treat the return value as a hint, not an exact deadline.
+ * Critical drain decisions (force-close on timeout) are made by
+ * SocketPool_drain_poll() which synchronizes access to both state and
+ * deadline fields under mutex protection.
+ *
  * @see SocketPool_drain() for drain initiation.
- * @see SocketPool_drain_poll() for progress monitoring.
+ * @see SocketPool_drain_poll() for progress monitoring with mutex protection.
  */
 extern int64_t SocketPool_drain_remaining_ms (T pool);
 
