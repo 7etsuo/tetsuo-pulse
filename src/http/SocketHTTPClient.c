@@ -86,6 +86,53 @@ SocketHTTPClient_error_is_retryable (SocketHTTPClient_Error error)
     }
 }
 
+/**
+ * @brief Allocate structure from arena with automatic cleanup on failure.
+ *
+ * Exception-based variant: disposes arena and raises SocketHTTPClient_Failed.
+ * Used in constructors that propagate errors via exceptions.
+ *
+ * @param arena Arena to allocate from
+ * @param ptr Pointer variable to assign (will be set to allocated memory)
+ * @param type Type of structure to allocate (e.g., *client, *req)
+ * @param msg Error message for exception
+ */
+#define HTTPCLIENT_ARENA_CALLOC_OR_RAISE(arena, ptr, type, msg)                \
+  do                                                                           \
+    {                                                                          \
+      (ptr) = CALLOC ((arena), 1, sizeof (type));                              \
+      if ((ptr) == NULL)                                                       \
+        {                                                                      \
+          Arena_dispose (&(arena));                                            \
+          SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed, (msg)); \
+        }                                                                      \
+    }                                                                          \
+  while (0)
+
+/**
+ * @brief Allocate structure from arena with error code on failure.
+ *
+ * Return-code variant: disposes arena, sets last_error, returns NULL.
+ * Used in constructors that report errors via return codes.
+ *
+ * @param arena Arena to allocate from
+ * @param ptr Pointer variable to assign (will be set to allocated memory)
+ * @param type Type of structure to allocate (e.g., *req, *prep)
+ * @param client_expr Expression to access client (e.g., client, prep->client)
+ */
+#define HTTPCLIENT_ARENA_CALLOC_OR_RETURN(arena, ptr, type, client_expr)       \
+  do                                                                           \
+    {                                                                          \
+      (ptr) = CALLOC ((arena), 1, sizeof (type));                              \
+      if ((ptr) == NULL)                                                       \
+        {                                                                      \
+          Arena_dispose (&(arena));                                            \
+          (client_expr)->last_error = HTTPCLIENT_ERROR_OUT_OF_MEMORY;          \
+          return NULL;                                                         \
+        }                                                                      \
+    }                                                                          \
+  while (0)
+
 /* Forward declaration for secure clearing of auth credentials */
 static void secure_clear_auth (SocketHTTPClient_Auth *auth);
 
@@ -218,13 +265,8 @@ SocketHTTPClient_new (const SocketHTTPClient_Config *config)
     }
 
   /* Allocate client structure */
-  client = CALLOC (arena, 1, sizeof (*client));
-  if (client == NULL)
-    {
-      Arena_dispose (&arena);
-      SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed,
-                        "Failed to allocate client structure");
-    }
+  HTTPCLIENT_ARENA_CALLOC_OR_RAISE (arena, client, *client,
+                                    "Failed to allocate client structure");
 
   client->arena = arena;
 
@@ -1730,13 +1772,7 @@ SocketHTTPClient_Request_new (SocketHTTPClient_T client,
       return NULL;
     }
 
-  req = CALLOC (arena, 1, sizeof (*req));
-  if (req == NULL)
-    {
-      Arena_dispose (&arena);
-      client->last_error = HTTPCLIENT_ERROR_OUT_OF_MEMORY;
-      return NULL;
-    }
+  HTTPCLIENT_ARENA_CALLOC_OR_RETURN (arena, req, *req, client);
 
   req->arena = arena;
   req->client = client;
@@ -2628,13 +2664,7 @@ SocketHTTPClient_prepare (SocketHTTPClient_T client, SocketHTTP_Method method,
       return NULL;
     }
 
-  prep = CALLOC (arena, 1, sizeof (*prep));
-  if (prep == NULL)
-    {
-      Arena_dispose (&arena);
-      client->last_error = HTTPCLIENT_ERROR_OUT_OF_MEMORY;
-      return NULL;
-    }
+  HTTPCLIENT_ARENA_CALLOC_OR_RETURN (arena, prep, *prep, client);
 
   prep->arena = arena;
   prep->client = client;
@@ -2682,13 +2712,7 @@ request_new_from_prepared (SocketHTTPClient_PreparedRequest_T prep)
       return NULL;
     }
 
-  req = CALLOC (arena, 1, sizeof (*req));
-  if (req == NULL)
-    {
-      Arena_dispose (&arena);
-      prep->client->last_error = HTTPCLIENT_ERROR_OUT_OF_MEMORY;
-      return NULL;
-    }
+  HTTPCLIENT_ARENA_CALLOC_OR_RETURN (arena, req, *req, prep->client);
 
   req->arena = arena;
   req->client = prep->client;
