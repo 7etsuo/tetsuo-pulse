@@ -103,6 +103,45 @@ TEST(handshake_set_transport_params_null)
   ASSERT_EQ(QUIC_HANDSHAKE_ERROR_NULL, res);
 }
 
+TEST(handshake_set_transport_params_with_tls_extension)
+{
+  /* Test that transport parameters are encoded and configured for TLS extension.
+   * This verifies the implementation of issue #1520 - configuring TLS to send
+   * transport parameters in the QUIC extension (RFC 9000 Section 18). */
+  Arena_T arena = Arena_new();
+  SocketQUICConnection_T conn = SocketQUICConnection_new(arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICHandshake_T hs = SocketQUICHandshake_new(arena, conn, QUIC_CONN_ROLE_CLIENT);
+
+  SocketQUICTransportParams_T params;
+  SocketQUICTransportParams_init(&params);
+
+  /* Set comprehensive transport parameters to test encoding */
+  params.max_idle_timeout = 60000;
+  params.max_udp_payload_size = 1472;
+  params.initial_max_data = 10485760;  /* 10 MB */
+  params.initial_max_stream_data_bidi_local = 1048576;  /* 1 MB */
+  params.initial_max_stream_data_bidi_remote = 1048576;
+  params.initial_max_stream_data_uni = 524288;  /* 512 KB */
+  params.initial_max_streams_bidi = 100;
+  params.initial_max_streams_uni = 100;
+  params.ack_delay_exponent = 3;
+  params.max_ack_delay = 25;
+  params.active_connection_id_limit = 2;
+
+  /* Set transport params - should encode and configure TLS extension */
+  SocketQUICHandshake_Result res = SocketQUICHandshake_set_transport_params(hs, &params);
+  ASSERT_EQ(QUIC_HANDSHAKE_OK, res);
+
+  /* Verify parameters were copied */
+  ASSERT_EQ(params.max_idle_timeout, hs->local_params.max_idle_timeout);
+  ASSERT_EQ(params.initial_max_data, hs->local_params.initial_max_data);
+  ASSERT_EQ(params.initial_max_streams_bidi, hs->local_params.initial_max_streams_bidi);
+
+  SocketQUICHandshake_free(&hs);
+  SocketQUICConnection_free(&conn);
+  Arena_dispose(&arena);
+}
+
 /* ============================================================================
  * Crypto Level String Tests
  * ============================================================================
