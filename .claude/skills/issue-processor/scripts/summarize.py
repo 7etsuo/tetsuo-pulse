@@ -11,10 +11,14 @@ Output:
 """
 
 import argparse
-import json
 import re
 import sys
 from pathlib import Path
+
+from utils import (
+    load_json,
+    log_error,
+)
 
 
 def main():
@@ -28,18 +32,16 @@ def main():
     # Read manifest
     manifest_file = state_dir / "manifest.json"
     if not manifest_file.exists():
-        print("ERROR: manifest.json not found", file=sys.stderr)
+        log_error("manifest.json not found")
         sys.exit(1)
 
-    with open(manifest_file) as f:
-        manifest = json.load(f)
+    manifest = load_json(manifest_file)
 
     # Read frontier for next wave info
     frontier_file = state_dir / "frontier.json"
     frontier = {}
     if frontier_file.exists():
-        with open(frontier_file) as f:
-            frontier = json.load(f)
+        frontier = load_json(frontier_file)
 
     # Collect results
     successes = []
@@ -48,8 +50,11 @@ def main():
 
     if results_dir.exists():
         for result_file in sorted(results_dir.glob("*.json")):
-            with open(result_file) as f:
-                result = json.load(f)
+            try:
+                result = load_json(result_file)
+            except Exception as e:
+                log_error(f"Failed to read {result_file}: {e}")
+                continue
 
             status = result.get("status", "")
             if status == "success":
@@ -91,12 +96,14 @@ def main():
             issue_file = state_dir / "issues" / f"{issue_num}.json"
             title = "—"
             if issue_file.exists():
-                with open(issue_file) as f:
-                    issue_data = json.load(f)
+                try:
+                    issue_data = load_json(issue_file)
                     title = issue_data.get("title", "—")
                     # Truncate long titles
                     if len(title) > 50:
                         title = title[:47] + "..."
+                except Exception:
+                    pass
 
             if pr_url:
                 print(f"| #{issue_num} | {title} | [#{pr_num}]({pr_url}) |")
@@ -148,9 +155,11 @@ def main():
             issue_file = state_dir / "issues" / f"{issue_num}.json"
             title = ""
             if issue_file.exists():
-                with open(issue_file) as f:
-                    issue_data = json.load(f)
+                try:
+                    issue_data = load_json(issue_file)
                     title = issue_data.get("title", "")
+                except Exception:
+                    pass
             print(f"- #{issue_num} {title}")
         if len(next_wave) > 10:
             print(f"- ... and {len(next_wave) - 10} more")

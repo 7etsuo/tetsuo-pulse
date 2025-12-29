@@ -77,11 +77,17 @@ Script output tells you ready/blocked count. Creates:
 ```bash
 BATCH=$(python3 .claude/skills/issue-processor/scripts/start_batch.py \
   --state-dir {STATE_DIR} \
-  --batch-size 10)
+  --batch-size 10 \
+  --fail-mode fail-safe)
 
 # Update status
 echo "RUNNING:0/$(echo $BATCH | python3 -c 'import json,sys; print(len(json.load(sys.stdin)))')" > {STATE_DIR}/status.txt
 ```
+
+**Fail modes** (for API error handling):
+- `fail-safe` (default): Skip entire batch on API error (prevents duplicates)
+- `fail-open`: Include all candidates on API error (risks duplicates)
+- `error`: Exit with error on API failure
 
 This enables visibility - other terminals can see which issues are being worked on.
 
@@ -113,14 +119,21 @@ Task(
 
 ### Step 4: Monitor Status (via Script)
 
-Poll every 30 seconds until batch completes:
+Poll every 10 seconds until batch completes (default):
 
 ```bash
 python3 .claude/skills/issue-processor/scripts/poll_results.py \
   --state-dir {STATE_DIR} \
   --expected {comma_separated_issue_numbers} \
-  --timeout 600
+  --timeout 600 \
+  --poll-interval 10 \
+  --stall-threshold 120
 ```
+
+Arguments:
+- `--poll-interval N`: Seconds between polls (default: 10)
+- `--stall-threshold N`: Seconds without progress before STALLED warning (default: 120)
+- `--timeout N`: Total timeout in seconds (default: 600)
 
 The script monitors `results/*.json` files and updates status.txt.
 
@@ -167,10 +180,12 @@ Use `next_batch.py` to get the next batch of ready issues with optional worktree
 python3 .claude/skills/issue-processor/scripts/next_batch.py \
   --state-dir {STATE_DIR} \
   --batch-size 5 \
-  --create-worktrees
+  --create-worktrees \
+  --fail-mode fail-safe
 ```
 
-This returns JSON with worktree paths for parallel development.
+This returns JSON with worktree paths for parallel development. The `--fail-mode` option
+works the same as in `start_batch.py`.
 
 ### Step 6: Generate Summary
 
@@ -314,9 +329,32 @@ Multiple Claude instances can safely run `/issue-processor` simultaneously witho
 ### How It Works
 
 1. **Setup filtering**: `setup.py` skips issues with `wip:*` labels (already claimed)
-2. **Claim on start**: Each implementer adds a `wip:claude-{timestamp}-{pid}` label before working
-3. **Release on finish**: Label is removed after success or failure
-4. **Race detection**: If two instances try to claim the same issue, the second one backs off
+2. **Batch re-validation**: `start_batch.py` and `next_batch.py` **query GitHub before each batch**
+   to filter out issues that are:
+   - Already CLOSED (completed by other instances)
+   - Have `wip:*` labels (claimed by other instances)
+   - Already have open PRs linked
+3. **Claim on start**: Each implementer adds a `wip:claude-{timestamp}-{pid}` label before working
+4. **Release on finish**: Label is removed after success or failure
+5. **Race detection**: If two instances try to claim the same issue, the second one backs off
+
+### Why Re-Validation Prevents Duplicates
+
+Without re-validation:
+```
+Instance A: setup → ready=[1-50] → works on [1-10]
+Instance B: setup → ready=[11-60] → finishes [11-20]
+Instance A: finishes [1-10] → grabs [11-20] from stale manifest
+         ❌ Creates duplicate PRs for [11-20]!
+```
+
+With re-validation:
+```
+Instance A: setup → ready=[1-50] → works on [1-10]
+Instance B: setup → ready=[11-60] → finishes [11-20]
+Instance A: finishes [1-10] → start_batch.py checks GitHub
+         ✅ Sees [11-20] are closed → skips them → no duplicates
+```
 
 ### Label Protocol
 
@@ -344,6 +382,84 @@ If an instance crashes mid-implementation:
 2. Other instances will skip it
 3. Manually release with `--action release` or remove the label in GitHub UI
 4. The issue becomes available for the next run
+
+## Troubleshooting
+
+### STALLED Status
+
+When `poll_results.py` reports `STALLED`, agents may have failed silently.
+
+**Diagnosis steps:**
+
+1. Check which agents started:
+   ```bash
+   ls {STATE_DIR}/started/
+   ```
+
+2. Check which agents wrote results:
+   ```bash
+   ls {STATE_DIR}/results/
+   ```
+
+3. Find agents that started but didn't finish:
+   ```bash
+   # Compare started vs results
+   comm -23 <(ls {STATE_DIR}/started/ | sort) <(ls {STATE_DIR}/results/ | sort)
+   ```
+
+4. Check GitHub for stuck claims:
+   ```bash
+   python3 .claude/skills/issue-processor/scripts/list_available.py \
+     --repo OWNER/REPO --state-dir {STATE_DIR} --json | jq '.claimed'
+   ```
+
+**Resolution:**
+
+- Release stuck claims manually:
+  ```bash
+  python3 .claude/skills/issue-processor/scripts/claim_issue.py \
+    --repo OWNER/REPO --issue {NUM} --action release
+  ```
+
+- Re-run the batch for failed issues
+
+### API Rate Limits
+
+The GitHub GraphQL API has complexity limits that may cause batch validation to fail.
+
+**Symptoms:**
+- `GitHub API error` messages during batch claiming
+- Empty batches returned despite ready issues
+
+**Resolution:**
+- The default `--fail-mode fail-safe` will skip batches on API errors
+- Wait and retry - rate limits reset over time
+- Reduce `--batch-size` to check fewer issues per API call
+
+### Duplicate PRs
+
+If duplicate PRs are created, check:
+
+1. **Are you using the latest scripts?** Re-validation was added to prevent this.
+
+2. **Is fail-mode set correctly?** Use `fail-safe` (default) not `fail-open`.
+
+3. **Are GitHub labels working?** Check that `wip:*` labels are being applied:
+   ```bash
+   gh issue view {NUM} --repo OWNER/REPO --json labels
+   ```
+
+### Result File Format Errors
+
+If `poll_results.py` can't parse result files:
+
+1. Check the result file format matches `scripts/RESULT_FORMAT.md`
+2. Ensure JSON is valid:
+   ```bash
+   python3 -m json.tool {STATE_DIR}/results/{NUM}.json
+   ```
+
+3. Valid status values are: `success`, `failed`, `already_resolved`
 
 ## Benefits
 

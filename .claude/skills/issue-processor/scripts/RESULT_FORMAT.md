@@ -39,6 +39,34 @@ Results are written to: `{state_dir}/results/{issue_number}.json`
 | `files_changed` | int | Number of files modified |
 | `completed_at` | string | ISO 8601 timestamp |
 
+## Already Resolved Format
+
+Use this when you discover the issue doesn't need implementation (feature already exists,
+issue is stale, etc.):
+
+```json
+{
+    "issue": 393,
+    "status": "already_resolved",
+    "resolution": "Feature already implemented in src/quic/frame.c at line 245"
+}
+```
+
+### Required Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `issue` | int | The GitHub issue number |
+| `status` | string | Must be `"already_resolved"` |
+
+### Optional Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `resolution` | string | Explanation of why no action was needed |
+
+This status is treated as "completed" (not failed) in the pipeline.
+
 ## Failure Format
 
 ```json

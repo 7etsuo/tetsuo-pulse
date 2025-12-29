@@ -23,9 +23,17 @@ Check agent logs or manually inspect issues with wip:* labels.
 """
 
 import argparse
-import json
 import sys
 from pathlib import Path
+
+from utils import (
+    load_json,
+    STATUS_READY,
+    STATUS_RUNNING,
+    STATUS_STALLED,
+    STATUS_COMPLETED,
+    STATUS_ERROR,
+)
 
 
 def main():
@@ -39,7 +47,7 @@ def main():
 
     # Check if state directory exists
     if not state_dir.exists():
-        print("ERROR:state_directory_not_found")
+        print(f"{STATUS_ERROR}:state_directory_not_found")
         sys.exit(1)
 
     # Read status.txt if it exists
@@ -54,11 +62,10 @@ def main():
     # Read manifest for details
     manifest_file = state_dir / "manifest.json"
     if not manifest_file.exists():
-        print("ERROR:manifest_not_found")
+        print(f"{STATUS_ERROR}:manifest_not_found")
         sys.exit(1)
 
-    with open(manifest_file) as f:
-        manifest = json.load(f)
+    manifest = load_json(manifest_file)
 
     total = manifest.get("total_issues", 0)
     completed = manifest.get("completed", [])
@@ -69,13 +76,13 @@ def main():
 
     # Determine status if we don't have status.txt
     if not status_line:
-        if len(completed) + len(failed) == total and total > 0:
-            status_line = f"COMPLETED:{total}/{total}:{len(completed)}_success:{len(failed)}_failed"
+        done = len(completed) + len(failed)
+        if done == total and total > 0:
+            status_line = f"{STATUS_COMPLETED}:{total}/{total}:{len(completed)}_success:{len(failed)}_failed"
         elif len(in_progress) > 0 or len(current_batch) > 0:
-            done = len(completed) + len(failed)
-            status_line = f"RUNNING:{done}/{total}"
+            status_line = f"{STATUS_RUNNING}:{done}/{total}"
         else:
-            status_line = f"READY:{len(ready)}/{total}"
+            status_line = f"{STATUS_READY}:{len(ready)}/{total}"
 
     if not args.verbose:
         print(status_line)

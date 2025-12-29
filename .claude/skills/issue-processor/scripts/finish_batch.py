@@ -11,12 +11,20 @@ Usage:
 
 Output:
     Summary of batch completion status.
+
+Note: Issues without result files are marked as failed (agent crashed).
 """
 
 import argparse
-import json
 import sys
 from pathlib import Path
+
+from utils import (
+    load_json,
+    save_json,
+    log_info,
+    log_warning,
+)
 
 
 def main():
@@ -31,12 +39,11 @@ def main():
     results_dir = state_dir / "results"
 
     if not manifest_file.exists():
-        print("ERROR: manifest.json not found", file=sys.stderr)
+        log_warning("manifest.json not found")
         sys.exit(1)
 
     # Load manifest
-    with open(manifest_file) as f:
-        manifest = json.load(f)
+    manifest = load_json(manifest_file)
 
     current_batch = manifest.get("current_batch", [])
     if not current_batch:
@@ -48,22 +55,28 @@ def main():
 
     # Check result files for each issue in batch
     new_completed = 0
+    new_already_resolved = 0
     new_failed = 0
 
     for issue_num in current_batch:
         result_file = results_dir / f"{issue_num}.json"
         if result_file.exists():
-            with open(result_file) as f:
-                result = json.load(f)
+            result = load_json(result_file)
+            status = result.get("status")
 
-            if result.get("status") == "success":
+            if status == "success":
                 completed.add(issue_num)
                 new_completed += 1
+            elif status == "already_resolved":
+                # Treat already_resolved as completed (issue doesn't need work)
+                completed.add(issue_num)
+                new_already_resolved += 1
             else:
                 failed.add(issue_num)
                 new_failed += 1
         else:
             # No result file - assume failed (agent crashed without writing)
+            log_warning(f"No result file for #{issue_num} - marking as failed")
             failed.add(issue_num)
             new_failed += 1
 
@@ -73,13 +86,15 @@ def main():
     manifest["current_batch"] = []  # Clear the batch
     manifest.pop("batch_started_at", None)
 
-    # Save manifest
-    with open(manifest_file, "w") as f:
-        json.dump(manifest, f, indent=2)
+    # Save manifest atomically
+    save_json(manifest_file, manifest)
 
     # Output summary
-    print(f"Batch complete: {new_completed} succeeded, {new_failed} failed")
-    print(f"Total: {len(completed)} completed, {len(failed)} failed")
+    log_info(f"Batch complete: {new_completed} succeeded, {new_already_resolved} already resolved, {new_failed} failed")
+    log_info(f"Total: {len(completed)} completed, {len(failed)} failed")
+
+    # Return counts for skill to parse
+    print(f"BATCH_DONE:{new_completed + new_already_resolved}:{new_failed}")
 
 
 if __name__ == "__main__":

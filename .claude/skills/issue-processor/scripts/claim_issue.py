@@ -2,8 +2,12 @@
 """
 Claim or release GitHub issues using labels for multi-instance coordination.
 
-Uses 'wip:claude-{timestamp}' labels as distributed locks to prevent multiple
+Uses 'wip:claude-{timestamp}-{pid}' labels as distributed locks to prevent multiple
 Claude instances from working on the same issue simultaneously.
+
+Label format provides uniqueness:
+- timestamp: Unix epoch seconds (uniqueness across time)
+- pid: Process ID (uniqueness within same second on same machine)
 
 Usage:
     python claim_issue.py --repo OWNER/REPO --issue NUM --action claim
@@ -17,24 +21,24 @@ Exit codes:
 """
 
 import argparse
-import json
 import os
 import subprocess
 import sys
 import time
 import urllib.parse
 
+from utils import (
+    run_gh as utils_run_gh,
+    validate_repo_format,
+    log_warning,
+    log_error,
+    ValidationError,
+)
+
 
 def run_gh(args: list[str], check: bool = True) -> tuple[bool, str]:
     """Run gh CLI command and return (success, output)."""
-    result = subprocess.run(
-        ["gh"] + args,
-        capture_output=True,
-        text=True
-    )
-    if check and result.returncode != 0:
-        return False, result.stderr.strip()
-    return True, result.stdout.strip()
+    return utils_run_gh(args, check=check)
 
 
 def get_issue_labels(owner: str, repo: str, issue_num: int) -> list[str]:
@@ -152,7 +156,11 @@ def claim_issue(owner: str, repo: str, issue_num: int) -> tuple[bool, str]:
 
     if len(wip_labels) > 1:
         # Race condition - multiple claims, we lose
-        remove_label(owner, repo, issue_num, claim_label)
+        # CRITICAL: Verify removal succeeds to avoid corrupted state
+        removal_success = remove_label(owner, repo, issue_num, claim_label)
+        if not removal_success:
+            # Log warning but still report we lost the race
+            log_warning(f"Failed to remove our claim label {claim_label} after losing race")
         other_labels = [l for l in wip_labels if l != claim_label]
         return False, f"Lost race to: {other_labels[0]}"
 
@@ -204,7 +212,11 @@ def main():
                         help="Action to perform")
     args = parser.parse_args()
 
-    owner, repo = args.repo.split("/")
+    try:
+        owner, repo = validate_repo_format(args.repo)
+    except ValidationError as e:
+        log_error(str(e))
+        sys.exit(2)
 
     if args.action == "claim":
         success, message = claim_issue(owner, repo, args.issue)
