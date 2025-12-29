@@ -888,7 +888,9 @@ SocketDNSSEC_verify_rrsig (const SocketDNSSEC_RRSIG *rrsig,
             pk += 1;
           }
 
-        if (pk + exp_len > dnskey->pubkey + dnskey->pubkey_len)
+        /* Validate exp_len against remaining buffer to prevent overflow */
+        size_t remaining = (dnskey->pubkey + dnskey->pubkey_len) - pk;
+        if (exp_len > remaining)
           return DNSSEC_BOGUS;
 
         const unsigned char *exp_data = pk;
