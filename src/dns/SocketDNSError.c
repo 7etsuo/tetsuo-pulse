@@ -11,6 +11,7 @@
 
 #include "dns/SocketDNSError.h"
 #include "dns/SocketDNSWire.h"
+#include "core/SocketUTF8.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -140,87 +141,6 @@ static const SocketDNS_EDECategory ede_code_to_category[] = {
   [DNS_EDE_INVALID_DATA]                = DNS_EDE_CATEGORY_NETWORK
 };
 
-/**
- * @brief Validate UTF-8 byte sequence.
- *
- * Simple UTF-8 validation - checks for valid byte sequences.
- *
- * @param data Data to validate.
- * @param len  Length of data.
- * @return true if valid UTF-8, false otherwise.
- */
-static bool
-validate_utf8 (const unsigned char *data, size_t len)
-{
-  size_t i = 0;
-
-  while (i < len)
-    {
-      unsigned char c = data[i];
-
-      if (c < 0x80)
-        {
-          /* ASCII character */
-          i++;
-        }
-      else if ((c & 0xE0) == 0xC0)
-        {
-          /* 2-byte sequence */
-          if (i + 1 >= len)
-            return false;
-          if ((data[i + 1] & 0xC0) != 0x80)
-            return false;
-          /* Check for overlong encoding */
-          if (c < 0xC2)
-            return false;
-          i += 2;
-        }
-      else if ((c & 0xF0) == 0xE0)
-        {
-          /* 3-byte sequence */
-          if (i + 2 >= len)
-            return false;
-          if ((data[i + 1] & 0xC0) != 0x80)
-            return false;
-          if ((data[i + 2] & 0xC0) != 0x80)
-            return false;
-          /* Check for overlong encoding and surrogates */
-          if (c == 0xE0 && data[i + 1] < 0xA0)
-            return false;
-          if (c == 0xED && data[i + 1] >= 0xA0)
-            return false; /* Surrogates */
-          i += 3;
-        }
-      else if ((c & 0xF8) == 0xF0)
-        {
-          /* 4-byte sequence */
-          if (i + 3 >= len)
-            return false;
-          if ((data[i + 1] & 0xC0) != 0x80)
-            return false;
-          if ((data[i + 2] & 0xC0) != 0x80)
-            return false;
-          if ((data[i + 3] & 0xC0) != 0x80)
-            return false;
-          /* Check for overlong encoding and valid range */
-          if (c == 0xF0 && data[i + 1] < 0x90)
-            return false;
-          if (c == 0xF4 && data[i + 1] >= 0x90)
-            return false;
-          if (c > 0xF4)
-            return false;
-          i += 4;
-        }
-      else
-        {
-          /* Invalid leading byte */
-          return false;
-        }
-    }
-
-  return true;
-}
-
 void
 SocketDNS_ede_init (SocketDNS_ExtendedError *ede)
 {
@@ -256,8 +176,8 @@ SocketDNS_ede_parse (const unsigned char *data, size_t len,
       size_t text_len = len - DNS_EDE_MIN_SIZE;
       const unsigned char *text_data = data + DNS_EDE_MIN_SIZE;
 
-      /* Validate UTF-8 */
-      if (!validate_utf8 (text_data, text_len))
+      /* Validate UTF-8 using centralized validator */
+      if (SocketUTF8_validate (text_data, text_len) != UTF8_VALID)
         {
           /* RFC 8914: EXTRA-TEXT must be valid UTF-8 */
           /* We'll accept the EDE but truncate invalid text */
