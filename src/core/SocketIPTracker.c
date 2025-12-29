@@ -263,6 +263,32 @@ init_tracker_fields (T tracker, Arena_T arena, int max_per_ip)
   tracker->initialized = SOCKET_MUTEX_UNINITIALIZED;
 }
 
+/* Platform-specific random seed helpers - flattened from nested conditionals */
+
+#ifdef __linux__
+#ifndef SYS_getrandom
+#define SYS_getrandom 318
+#endif
+#ifndef GRND_NONBLOCK
+#define GRND_NONBLOCK 0x0001
+#endif
+
+static int
+try_getrandom (unsigned char *seed_bytes, size_t size)
+{
+  ssize_t n = syscall (SYS_getrandom, seed_bytes, size, GRND_NONBLOCK);
+  return (n == (ssize_t)size) ? 0 : -1;
+}
+#endif
+
+#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__APPLE__)
+static int
+try_getentropy (unsigned char *seed_bytes, size_t size)
+{
+  return getentropy (seed_bytes, size);
+}
+#endif
+
 /* Generate secure random seed with fallback hierarchy for DoS resistance */
 static unsigned
 generate_hash_seed (void)
@@ -278,17 +304,9 @@ generate_hash_seed (void)
       return seed;
     }
 
-  /* Try getrandom() on Linux (kernel 3.17+) */
+  /* Try platform-specific secure random sources */
 #ifdef __linux__
-#ifndef SYS_getrandom
-#define SYS_getrandom 318
-#endif
-#ifndef GRND_NONBLOCK
-#define GRND_NONBLOCK 0x0001
-#endif
-  ssize_t n = syscall (SYS_getrandom, seed_bytes, sizeof (seed_bytes),
-                       GRND_NONBLOCK);
-  if (n == (ssize_t)sizeof (seed_bytes))
+  if (try_getrandom (seed_bytes, sizeof (seed_bytes)) == 0)
     {
       memcpy (&seed, seed_bytes, sizeof (seed));
       SOCKET_LOG_WARN_MSG (
@@ -299,9 +317,8 @@ generate_hash_seed (void)
     }
 #endif
 
-  /* Try getentropy() on BSD/macOS */
 #if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__APPLE__)
-  if (getentropy (seed_bytes, sizeof (seed_bytes)) == 0)
+  if (try_getentropy (seed_bytes, sizeof (seed_bytes)) == 0)
     {
       memcpy (&seed, seed_bytes, sizeof (seed));
       SOCKET_LOG_WARN_MSG (
