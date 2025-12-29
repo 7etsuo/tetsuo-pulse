@@ -106,7 +106,20 @@ schedule_crl_refresh (T ctx, long interval_seconds)
     {
       int64_t now_ms = Socket_get_monotonic_ms ();
       int64_t interval_ms = interval_seconds * 1000LL;
-      ctx->crl_next_refresh_ms = now_ms + interval_ms;
+      uint64_t result;
+
+      /* Overflow protection: INT64_MAX ~= 292M years uptime */
+      if (!socket_util_safe_add_u64 ((uint64_t)now_ms, (uint64_t)interval_ms,
+                                      &result)
+          || result > (uint64_t)INT64_MAX)
+        {
+          /* Clamp to INT64_MAX on overflow */
+          ctx->crl_next_refresh_ms = INT64_MAX;
+        }
+      else
+        {
+          ctx->crl_next_refresh_ms = (int64_t)result;
+        }
     }
   else
     {
@@ -192,8 +205,23 @@ SocketTLSContext_crl_check_refresh (T ctx)
         else
           {
             int success = try_load_crl (ctx, ctx->crl_refresh_path);
-            ctx->crl_next_refresh_ms
-                = now_ms + (ctx->crl_refresh_interval * 1000LL);
+            int64_t interval_ms = ctx->crl_refresh_interval * 1000LL;
+            uint64_t next_refresh;
+
+            /* Overflow protection: INT64_MAX ~= 292M years uptime */
+            if (!socket_util_safe_add_u64 ((uint64_t)now_ms,
+                                            (uint64_t)interval_ms,
+                                            &next_refresh)
+                || next_refresh > (uint64_t)INT64_MAX)
+              {
+                /* Clamp to INT64_MAX on overflow */
+                ctx->crl_next_refresh_ms = INT64_MAX;
+              }
+            else
+              {
+                ctx->crl_next_refresh_ms = (int64_t)next_refresh;
+              }
+
             notify_crl_callback (ctx, ctx->crl_refresh_path, success);
             result = 1;
           }
