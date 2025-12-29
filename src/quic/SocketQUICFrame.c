@@ -894,67 +894,57 @@ SocketQUICFrame_allowed_packets (uint64_t frame_type)
   return 0;
 }
 
+/**
+ * @brief Frame type to name mapping table.
+ */
+static const struct
+{
+  uint64_t type;
+  const char *name;
+} frame_type_names[] = {
+  { QUIC_FRAME_PADDING,               "PADDING" },
+  { QUIC_FRAME_PING,                  "PING" },
+  { QUIC_FRAME_ACK,                   "ACK" },
+  { QUIC_FRAME_ACK_ECN,               "ACK_ECN" },
+  { QUIC_FRAME_RESET_STREAM,          "RESET_STREAM" },
+  { QUIC_FRAME_STOP_SENDING,          "STOP_SENDING" },
+  { QUIC_FRAME_CRYPTO,                "CRYPTO" },
+  { QUIC_FRAME_NEW_TOKEN,             "NEW_TOKEN" },
+  { QUIC_FRAME_MAX_DATA,              "MAX_DATA" },
+  { QUIC_FRAME_MAX_STREAM_DATA,       "MAX_STREAM_DATA" },
+  { QUIC_FRAME_MAX_STREAMS_BIDI,      "MAX_STREAMS_BIDI" },
+  { QUIC_FRAME_MAX_STREAMS_UNI,       "MAX_STREAMS_UNI" },
+  { QUIC_FRAME_DATA_BLOCKED,          "DATA_BLOCKED" },
+  { QUIC_FRAME_STREAM_DATA_BLOCKED,   "STREAM_DATA_BLOCKED" },
+  { QUIC_FRAME_STREAMS_BLOCKED_BIDI,  "STREAMS_BLOCKED_BIDI" },
+  { QUIC_FRAME_STREAMS_BLOCKED_UNI,   "STREAMS_BLOCKED_UNI" },
+  { QUIC_FRAME_NEW_CONNECTION_ID,     "NEW_CONNECTION_ID" },
+  { QUIC_FRAME_RETIRE_CONNECTION_ID,  "RETIRE_CONNECTION_ID" },
+  { QUIC_FRAME_PATH_CHALLENGE,        "PATH_CHALLENGE" },
+  { QUIC_FRAME_PATH_RESPONSE,         "PATH_RESPONSE" },
+  { QUIC_FRAME_CONNECTION_CLOSE,      "CONNECTION_CLOSE" },
+  { QUIC_FRAME_CONNECTION_CLOSE_APP,  "CONNECTION_CLOSE_APP" },
+  { QUIC_FRAME_HANDSHAKE_DONE,        "HANDSHAKE_DONE" },
+  { QUIC_FRAME_DATAGRAM,              "DATAGRAM" },
+  { QUIC_FRAME_DATAGRAM_LEN,          "DATAGRAM_LEN" },
+  { 0, NULL } /* Sentinel */
+};
+
 const char *
 SocketQUICFrame_type_string (uint64_t frame_type)
 {
+  /* Handle STREAM type range (0x08-0x0f) */
   if (SocketQUICFrame_is_stream (frame_type))
     return "STREAM";
 
-  switch (frame_type)
+  /* Table lookup */
+  for (size_t i = 0; frame_type_names[i].name != NULL; i++)
     {
-    case QUIC_FRAME_PADDING:
-      return "PADDING";
-    case QUIC_FRAME_PING:
-      return "PING";
-    case QUIC_FRAME_ACK:
-      return "ACK";
-    case QUIC_FRAME_ACK_ECN:
-      return "ACK_ECN";
-    case QUIC_FRAME_RESET_STREAM:
-      return "RESET_STREAM";
-    case QUIC_FRAME_STOP_SENDING:
-      return "STOP_SENDING";
-    case QUIC_FRAME_CRYPTO:
-      return "CRYPTO";
-    case QUIC_FRAME_NEW_TOKEN:
-      return "NEW_TOKEN";
-    case QUIC_FRAME_MAX_DATA:
-      return "MAX_DATA";
-    case QUIC_FRAME_MAX_STREAM_DATA:
-      return "MAX_STREAM_DATA";
-    case QUIC_FRAME_MAX_STREAMS_BIDI:
-      return "MAX_STREAMS_BIDI";
-    case QUIC_FRAME_MAX_STREAMS_UNI:
-      return "MAX_STREAMS_UNI";
-    case QUIC_FRAME_DATA_BLOCKED:
-      return "DATA_BLOCKED";
-    case QUIC_FRAME_STREAM_DATA_BLOCKED:
-      return "STREAM_DATA_BLOCKED";
-    case QUIC_FRAME_STREAMS_BLOCKED_BIDI:
-      return "STREAMS_BLOCKED_BIDI";
-    case QUIC_FRAME_STREAMS_BLOCKED_UNI:
-      return "STREAMS_BLOCKED_UNI";
-    case QUIC_FRAME_NEW_CONNECTION_ID:
-      return "NEW_CONNECTION_ID";
-    case QUIC_FRAME_RETIRE_CONNECTION_ID:
-      return "RETIRE_CONNECTION_ID";
-    case QUIC_FRAME_PATH_CHALLENGE:
-      return "PATH_CHALLENGE";
-    case QUIC_FRAME_PATH_RESPONSE:
-      return "PATH_RESPONSE";
-    case QUIC_FRAME_CONNECTION_CLOSE:
-      return "CONNECTION_CLOSE";
-    case QUIC_FRAME_CONNECTION_CLOSE_APP:
-      return "CONNECTION_CLOSE_APP";
-    case QUIC_FRAME_HANDSHAKE_DONE:
-      return "HANDSHAKE_DONE";
-    case QUIC_FRAME_DATAGRAM:
-      return "DATAGRAM";
-    case QUIC_FRAME_DATAGRAM_LEN:
-      return "DATAGRAM_LEN";
-    default:
-      return "UNKNOWN";
+      if (frame_type_names[i].type == frame_type)
+        return frame_type_names[i].name;
     }
+
+  return "UNKNOWN";
 }
 
 const char *
