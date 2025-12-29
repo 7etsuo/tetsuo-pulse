@@ -13,6 +13,7 @@
 #include <ctype.h>
 #include <pthread.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
@@ -281,13 +282,30 @@ tm_to_time_t (struct tm *tm)
 #else
   pthread_mutex_lock (&tz_mutex);
   char *saved_tz = getenv ("TZ");
+  char *tz_copy = NULL;
+  if (saved_tz != NULL)
+    {
+      tz_copy = strdup (saved_tz);
+      if (!tz_copy)
+        {
+          pthread_mutex_unlock (&tz_mutex);
+          return (time_t)-1;
+        }
+    }
+
   setenv ("TZ", "", 1);
   tzset ();
   time_t result = mktime (tm);
-  if (saved_tz != NULL)
-    setenv ("TZ", saved_tz, 1);
+
+  if (tz_copy != NULL)
+    {
+      setenv ("TZ", tz_copy, 1);
+      free (tz_copy);
+    }
   else
-    unsetenv ("TZ");
+    {
+      unsetenv ("TZ");
+    }
   tzset ();
   pthread_mutex_unlock (&tz_mutex);
   return result;
