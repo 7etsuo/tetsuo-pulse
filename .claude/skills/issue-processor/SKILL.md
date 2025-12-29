@@ -250,6 +250,44 @@ Skill:
   ...
 ```
 
+## Multi-Instance Coordination
+
+Multiple Claude instances can safely run `/issue-processor` simultaneously without conflicts.
+
+### How It Works
+
+1. **Setup filtering**: `setup.py` skips issues with `wip:*` labels (already claimed)
+2. **Claim on start**: Each implementer adds a `wip:claude-{timestamp}-{pid}` label before working
+3. **Release on finish**: Label is removed after success or failure
+4. **Race detection**: If two instances try to claim the same issue, the second one backs off
+
+### Label Protocol
+
+| Label | Meaning |
+|-------|---------|
+| `wip:claude-1703847234-12345` | Claimed by instance at timestamp 1703847234, PID 12345 |
+| No `wip:*` label | Available for claiming |
+
+### Manual Claim Management
+
+```bash
+# Check if issue is claimed
+python3 .claude/skills/issue-processor/scripts/claim_issue.py \
+  --repo 7etsuo/tetsuo-socket --issue 391 --action check
+
+# Manually release a stuck claim (e.g., after crash)
+python3 .claude/skills/issue-processor/scripts/claim_issue.py \
+  --repo 7etsuo/tetsuo-socket --issue 391 --action release
+```
+
+### Recovery from Crashes
+
+If an instance crashes mid-implementation:
+1. The `wip:*` label remains on the issue
+2. Other instances will skip it
+3. Manually release with `--action release` or remove the label in GitHub UI
+4. The issue becomes available for the next run
+
 ## Benefits
 
 | Aspect | Value |
@@ -259,3 +297,4 @@ Skill:
 | State persistence | Files survive /compact |
 | Parallelism | 10+ agents per batch |
 | Resume | Automatic from checkpoint |
+| Multi-instance | Safe coordination via GitHub labels |
