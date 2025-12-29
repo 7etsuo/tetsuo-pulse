@@ -151,6 +151,12 @@ static const char *const socket_error_category_names[] = {
   "NETWORK", "PROTOCOL", "APPLICATION", "TIMEOUT", "RESOURCE", "UNKNOWN"
 };
 
+_Static_assert (sizeof (socket_error_category_names)
+                    / sizeof (socket_error_category_names[0])
+                == 6,
+                "Category names array size must match number of "
+                "SocketErrorCategory enum values");
+
 #define NUM_ERROR_CATEGORIES                                                      \
   (sizeof (socket_error_category_names)                                          \
    / sizeof (socket_error_category_names[0]))
