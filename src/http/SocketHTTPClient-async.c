@@ -434,17 +434,17 @@ SocketHTTPClient_post_async (SocketHTTPClient_T client, const char *url,
           SocketHTTPClient_Request_free (&req);
           return NULL;
         }
+    }
 
-      /* Set Content-Type header */
-      if (content_type != NULL)
+  /* Set Content-Type header if provided with body */
+  if (body != NULL && body_len > 0 && content_type != NULL)
+    {
+      if (SocketHTTPClient_Request_header (req, "Content-Type",
+                                           content_type)
+          != 0)
         {
-          if (SocketHTTPClient_Request_header (req, "Content-Type",
-                                               content_type)
-              != 0)
-            {
-              SocketHTTPClient_Request_free (&req);
-              return NULL;
-            }
+          SocketHTTPClient_Request_free (&req);
+          return NULL;
         }
     }
 
