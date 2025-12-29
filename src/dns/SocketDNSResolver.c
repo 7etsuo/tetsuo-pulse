@@ -142,17 +142,39 @@ get_monotonic_ms (void)
   return ((int64_t)ts.tv_sec * 1000) + (ts.tv_nsec / 1000000);
 }
 
-/* Utility: DJB2 case-insensitive hash */
+/**
+ * @brief DJB2 case-insensitive hash for DNS hostnames.
+ *
+ * Uses manual ASCII lowercasing (c >= 'A' && c <= 'Z' then c += 32)
+ * instead of tolower() to ensure locale-independent behavior.
+ *
+ * DNS names are ASCII-only per RFC 1035 §2.3.1, and case-insensitive
+ * per §2.3.3. Manual lowercasing guarantees consistent hashing across
+ * all systems regardless of LC_CTYPE locale settings.
+ *
+ * Example: "example.com" and "EXAMPLE.COM" hash to same value.
+ *
+ * Why manual implementation is preferred over tolower():
+ * - Locale independence: tolower() depends on LC_CTYPE (e.g., Turkish
+ *   locale where 'I' → 'ı', not 'i')
+ * - DNS ASCII-only: RFC 1035 restricts DNS labels to ASCII characters
+ * - Performance: Avoids function call overhead
+ * - Determinism: Same hash on all systems, preventing cache misses
+ *
+ * @param hostname DNS hostname (ASCII characters only).
+ * @return Hash value (0 to CACHE_HASH_SIZE-1).
+ */
 static unsigned
 hash_hostname (const char *hostname)
 {
-  unsigned hash = 5381;
+  unsigned hash = 5381; /* DJB2 magic number */
   int c;
   while ((c = (unsigned char)*hostname++) != 0)
     {
+      /* Manual ASCII lowercase: A-Z (65-90) → a-z (97-122) */
       if (c >= 'A' && c <= 'Z')
-        c += 32; /* lowercase */
-      hash = ((hash << 5) + hash) + c;
+        c += 32;
+      hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
     }
   return hash % CACHE_HASH_SIZE;
 }
