@@ -207,41 +207,23 @@ hash_remove (SocketQUICConnectionIDPool_T pool,
  * ============================================================================
  */
 
-SocketQUICConnectionIDPool_Result
-SocketQUICConnectionIDPool_add (SocketQUICConnectionIDPool_T pool,
-                                 const SocketQUICConnectionID_T *cid)
-{
-  if (pool == NULL || cid == NULL)
-    return QUIC_CONNID_POOL_ERROR_NULL;
-
-  return SocketQUICConnectionIDPool_add_with_sequence (pool, cid,
-                                                        pool->next_sequence);
-}
-
-SocketQUICConnectionIDPool_Result
-SocketQUICConnectionIDPool_add_with_sequence (SocketQUICConnectionIDPool_T pool,
-                                               const SocketQUICConnectionID_T *cid,
-                                               uint64_t sequence)
+/**
+ * @brief Check for duplicate CID in hash chain.
+ *
+ * @param pool The connection ID pool.
+ * @param cid The connection ID to check.
+ * @param idx Hash table index.
+ * @return QUIC_CONNID_POOL_OK if no duplicate, error code otherwise.
+ */
+static SocketQUICConnectionIDPool_Result
+check_for_duplicate_cid (SocketQUICConnectionIDPool_T pool,
+                         const SocketQUICConnectionID_T *cid,
+                         unsigned idx)
 {
   SocketQUICConnectionIDEntry_T *entry;
-  unsigned idx;
-  int chain_len;
+  int chain_len = 0;
 
-  if (pool == NULL || cid == NULL)
-    return QUIC_CONNID_POOL_ERROR_NULL;
-
-  /* Check active_connection_id_limit */
-  if (pool->active_count >= pool->peer_limit)
-    {
-      SOCKET_LOG_WARN_MSG ("Cannot add CID: at peer limit (%zu)",
-                           pool->peer_limit);
-      return QUIC_CONNID_POOL_ERROR_FULL;
-    }
-
-  /* Check for duplicate by CID bytes */
-  idx = hash_cid_bytes (cid->data, cid->len, pool->hash_seed);
   entry = pool->hash_table[idx];
-  chain_len = 0;
 
   while (entry)
     {
@@ -264,17 +246,78 @@ SocketQUICConnectionIDPool_add_with_sequence (SocketQUICConnectionIDPool_T pool,
       entry = entry->hash_next;
     }
 
-  /* Allocate new entry */
+  return QUIC_CONNID_POOL_OK;
+}
+
+/**
+ * @brief Create and initialize a new pool entry.
+ *
+ * @param pool The connection ID pool.
+ * @param cid The connection ID to store.
+ * @param sequence The sequence number for this CID.
+ * @return Pointer to new entry, or NULL on allocation failure.
+ */
+static SocketQUICConnectionIDEntry_T *
+create_pool_entry (SocketQUICConnectionIDPool_T pool,
+                   const SocketQUICConnectionID_T *cid,
+                   uint64_t sequence)
+{
+  SocketQUICConnectionIDEntry_T *entry;
+
   entry = CALLOC (pool->arena, 1, sizeof (*entry));
   if (entry == NULL)
-    return QUIC_CONNID_POOL_ERROR_NULL;
+    return NULL;
 
-  /* Copy CID and set sequence */
   SocketQUICConnectionID_copy (&entry->cid, cid);
   entry->cid.sequence = sequence;
   entry->is_retired = 0;
   entry->is_used = 0;
   entry->used_at = 0;
+
+  return entry;
+}
+
+SocketQUICConnectionIDPool_Result
+SocketQUICConnectionIDPool_add (SocketQUICConnectionIDPool_T pool,
+                                 const SocketQUICConnectionID_T *cid)
+{
+  if (pool == NULL || cid == NULL)
+    return QUIC_CONNID_POOL_ERROR_NULL;
+
+  return SocketQUICConnectionIDPool_add_with_sequence (pool, cid,
+                                                        pool->next_sequence);
+}
+
+SocketQUICConnectionIDPool_Result
+SocketQUICConnectionIDPool_add_with_sequence (SocketQUICConnectionIDPool_T pool,
+                                               const SocketQUICConnectionID_T *cid,
+                                               uint64_t sequence)
+{
+  SocketQUICConnectionIDEntry_T *entry;
+  SocketQUICConnectionIDPool_Result result;
+  unsigned idx;
+
+  if (pool == NULL || cid == NULL)
+    return QUIC_CONNID_POOL_ERROR_NULL;
+
+  /* Check active_connection_id_limit */
+  if (pool->active_count >= pool->peer_limit)
+    {
+      SOCKET_LOG_WARN_MSG ("Cannot add CID: at peer limit (%zu)",
+                           pool->peer_limit);
+      return QUIC_CONNID_POOL_ERROR_FULL;
+    }
+
+  /* Check for duplicate by CID bytes */
+  idx = hash_cid_bytes (cid->data, cid->len, pool->hash_seed);
+  result = check_for_duplicate_cid (pool, cid, idx);
+  if (result != QUIC_CONNID_POOL_OK)
+    return result;
+
+  /* Create new entry */
+  entry = create_pool_entry (pool, cid, sequence);
+  if (entry == NULL)
+    return QUIC_CONNID_POOL_ERROR_NULL;
 
   /* Insert into hash table and list */
   hash_insert (pool, entry);
