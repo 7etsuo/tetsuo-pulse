@@ -1024,8 +1024,11 @@ dtls_parse_port_string (const char *port_str)
     return 0;
 
   char *endptr;
+  errno = 0; /* Clear errno before call (CERT C: ERR07-C) */
   long p = strtol (port_str, &endptr, 10);
-  if (endptr > port_str && *endptr == '\0' && p >= 1 && p <= 65535)
+  if (errno == ERANGE || endptr == port_str || *endptr != '\0')
+    return 0;
+  if (p >= 1 && p <= 65535)
     return (int)p;
   return 0;
 }
