@@ -41,6 +41,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "core/Arena.h"
 #include "core/Except.h"
@@ -1637,6 +1638,107 @@ socket_util_timespec_add (struct timespec ts1, struct timespec ts2)
       result.tv_nsec -= 1000000000;
     }
   return result;
+}
+
+/* ============================================================================
+ * EINTR-SAFE I/O UTILITIES
+ * ============================================================================
+ */
+
+/**
+ * @brief Write all data to file descriptor with EINTR retry.
+ * @ingroup foundation
+ * @param fd File descriptor to write to
+ * @param buf Buffer to write from
+ * @param len Number of bytes to write
+ * @return 0 on success, -1 on error
+ * @threadsafe Yes (pure function, no shared state)
+ *
+ * Writes all requested bytes to the file descriptor, automatically retrying
+ * on EINTR (interrupted system call). This is the standard pattern for robust
+ * I/O operations that may be interrupted by signals.
+ *
+ * The function continues writing until all data is written or a non-EINTR
+ * error occurs. Partial writes are handled by advancing the buffer pointer
+ * and reducing the remaining count.
+ *
+ * Usage:
+ *   if (socket_util_write_all_eintr(fd, data, data_len) != 0) {
+ *     perror("write failed");
+ *     return -1;
+ *   }
+ *
+ * @note Does not handle SIGPIPE - caller should set SO_NOSIGPIPE or ignore SIGPIPE
+ * @see socket_util_read_all_eintr() for reading with EINTR retry
+ * @see write(2) for underlying system call semantics
+ */
+static inline int
+socket_util_write_all_eintr (int fd, const void *buf, size_t len)
+{
+  const char *data = buf;
+  size_t remaining = len;
+
+  while (remaining > 0)
+    {
+      ssize_t n = write (fd, data, remaining);
+      if (n <= 0)
+        {
+          if (n < 0 && errno == EINTR)
+            continue;
+          return -1;
+        }
+      data += n;
+      remaining -= (size_t)n;
+    }
+  return 0;
+}
+
+/**
+ * @brief Read all data from file descriptor with EINTR retry.
+ * @ingroup foundation
+ * @param fd File descriptor to read from
+ * @param buf Buffer to read into
+ * @param len Number of bytes to read
+ * @return 0 on success, -1 on error or EOF
+ * @threadsafe Yes (pure function, no shared state)
+ *
+ * Reads exactly the requested number of bytes from the file descriptor,
+ * automatically retrying on EINTR (interrupted system call). This is the
+ * standard pattern for robust I/O operations that may be interrupted by signals.
+ *
+ * The function continues reading until all data is read or EOF/error occurs.
+ * Partial reads are handled by advancing the buffer pointer and reducing the
+ * remaining count.
+ *
+ * Usage:
+ *   if (socket_util_read_all_eintr(fd, buffer, buffer_len) != 0) {
+ *     perror("read failed");
+ *     return -1;
+ *   }
+ *
+ * @note Returns -1 on EOF before len bytes are read (short read)
+ * @see socket_util_write_all_eintr() for writing with EINTR retry
+ * @see read(2) for underlying system call semantics
+ */
+static inline int
+socket_util_read_all_eintr (int fd, void *buf, size_t len)
+{
+  char *data = buf;
+  size_t remaining = len;
+
+  while (remaining > 0)
+    {
+      ssize_t n = read (fd, data, remaining);
+      if (n <= 0)
+        {
+          if (n < 0 && errno == EINTR)
+            continue;
+          return -1;
+        }
+      data += n;
+      remaining -= (size_t)n;
+    }
+  return 0;
 }
 
 /* ============================================================================
