@@ -290,14 +290,17 @@ SocketQUICConnection_check_termination_deadline(SocketQUICConnection_T conn,
 /**
  * @brief Set stateless reset token for this connection.
  * @param conn Connection instance.
- * @param token 16-byte stateless reset token.
+ * @param token 16-byte stateless reset token (size validated at compile time).
  *
  * Server sets this token in transport parameters.
  * Used by peer to detect stateless resets.
+ *
+ * RFC 9000 Section 10.3: Stateless reset token is exactly 16 bytes.
+ * Array syntax ensures compile-time size validation.
  */
 void
 SocketQUICConnection_set_stateless_reset_token(SocketQUICConnection_T conn,
-                                               const uint8_t *token)
+                                               const uint8_t token[QUIC_STATELESS_RESET_TOKEN_LEN])
 {
   if (!conn || !token)
     return;
