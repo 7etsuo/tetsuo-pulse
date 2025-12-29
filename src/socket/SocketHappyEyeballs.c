@@ -1584,23 +1584,13 @@ sync_poll_and_process_iteration (T he)
   return 0;
 }
 
-Socket_T
-SocketHappyEyeballs_connect (const char *host, int port,
-                             const SocketHE_Config_T *config)
+/* Helper: Create DNS resolver with arena */
+static void
+he_connect_create_resolver (Arena_T *arena, SocketDNSResolver_T *resolver)
 {
-  T he = NULL;
-  Socket_T volatile sock = NULL;
-  Arena_T temp_arena = NULL;
-  SocketDNSResolver_T temp_resolver = NULL;
-  SocketPoll_T temp_poll = NULL;
-  SocketEvent_T *events = NULL;
-  const char *volatile err_msg = NULL;
-
-  assert (host);
-  assert (port > 0 && port <= SOCKET_MAX_PORT);
-
-  temp_arena = Arena_new ();
-  if (!temp_arena)
+  const char *err_msg = NULL;
+  *arena = Arena_new ();
+  if (!*arena)
     {
       SOCKET_RAISE_MSG (SocketHE, SocketHE_Failed,
                         "Failed to create arena for DNS resolver");
@@ -1608,45 +1598,62 @@ SocketHappyEyeballs_connect (const char *host, int port,
 
   TRY
   {
-    temp_resolver = SocketDNSResolver_new (temp_arena);
-    SocketDNSResolver_load_resolv_conf (temp_resolver);
+    *resolver = SocketDNSResolver_new (*arena);
+    SocketDNSResolver_load_resolv_conf (*resolver);
   }
   EXCEPT (SocketDNSResolver_Failed)
   {
-    Arena_dispose (&temp_arena);
+    Arena_dispose (arena);
     err_msg = Socket_GetLastError ();
     SOCKET_RAISE_FMT (SocketHE, SocketHE_Failed,
                       "Failed to create DNS resolver: %s",
                       err_msg ? err_msg : "Unknown error");
   }
   END_TRY;
+}
 
+/* Helper: Create poll instance */
+static void
+he_connect_create_poll (SocketPoll_T *poll, Arena_T arena,
+                        SocketDNSResolver_T resolver)
+{
+  const char *err_msg = NULL;
   TRY
   {
-    temp_poll = SocketPoll_new (SOCKET_HE_MAX_ATTEMPTS);
+    *poll = SocketPoll_new (SOCKET_HE_MAX_ATTEMPTS);
   }
   EXCEPT (SocketPoll_Failed)
   {
-    SocketDNSResolver_free (&temp_resolver);
-    Arena_dispose (&temp_arena);
+    SocketDNSResolver_free (&resolver);
+    Arena_dispose (&arena);
     err_msg = Socket_GetLastError ();
     SOCKET_RAISE_FMT (SocketHE, SocketHE_Failed, "Failed to create poll: %s",
                       err_msg ? err_msg : "Unknown error");
   }
   END_TRY;
+}
+
+/* Helper: Create and configure Happy Eyeballs context */
+static T
+he_connect_setup_context (SocketDNSResolver_T resolver, SocketPoll_T poll,
+                          Arena_T arena, const char *host, int port,
+                          const SocketHE_Config_T *config)
+{
+  const char *err_msg = NULL;
+  T volatile he = NULL;
 
   TRY
   {
-    he = he_create_context (temp_resolver, temp_poll, host, port, config);
+    he = he_create_context (resolver, poll, host, port, config);
     he->owns_resolver = 1;
-    he->resolver_arena = temp_arena; /* Track resolver's arena for cleanup */
+    he->resolver_arena = arena; /* Track resolver's arena for cleanup */
     he->owns_poll = 1;
   }
   EXCEPT (SocketHE_Failed)
   {
-    SocketPoll_free (&temp_poll);
-    SocketDNSResolver_free (&temp_resolver);
-    Arena_dispose (&temp_arena);
+    SocketPoll_free (&poll);
+    SocketDNSResolver_free (&resolver);
+    Arena_dispose (&arena);
     err_msg = Socket_GetLastError ();
     SOCKET_RAISE_FMT (SocketHE, SocketHE_Failed,
                       "Failed to create context: %s",
@@ -1654,15 +1661,28 @@ SocketHappyEyeballs_connect (const char *host, int port,
   }
   END_TRY;
 
-  he->state = HE_STATE_IDLE;
-  SocketHappyEyeballs_process (he);  // Starts async DNS resolution and poll integration
+  return he;
+}
 
-  // Blocking loop until complete
+/* Helper: Run blocking event loop until completion */
+static void
+he_connect_run_event_loop (T he)
+{
+  he->state = HE_STATE_IDLE;
+  SocketHappyEyeballs_process (he);
+
   while (he->state == HE_STATE_RESOLVING || he->state == HE_STATE_CONNECTING)
     {
       if (sync_poll_and_process_iteration (he) != 0)
         break;
     }
+}
+
+/* Helper: Extract result socket or error message */
+static Socket_T
+he_connect_extract_result (T he, const char *volatile *err_msg)
+{
+  Socket_T sock = NULL;
 
   if (he->state == HE_STATE_CONNECTED)
     {
@@ -1670,7 +1690,6 @@ SocketHappyEyeballs_connect (const char *host, int port,
     }
   else
     {
-      /* Copy error message before freeing context to avoid use-after-free */
       const char *tmp_err = SocketHappyEyeballs_error (he);
       if (tmp_err)
         {
@@ -1685,13 +1704,38 @@ SocketHappyEyeballs_connect (const char *host, int port,
             }
           memcpy (err_buf, tmp_err, len);
           err_buf[len] = '\0';
-          err_msg = err_buf;
+          *err_msg = err_buf;
         }
       else
         {
-          err_msg = "Connection failed (unknown reason)";
+          *err_msg = "Connection failed (unknown reason)";
         }
     }
+
+  return sock;
+}
+
+Socket_T
+SocketHappyEyeballs_connect (const char *host, int port,
+                             const SocketHE_Config_T *config)
+{
+  T he = NULL;
+  Socket_T volatile sock = NULL;
+  Arena_T temp_arena = NULL;
+  SocketDNSResolver_T temp_resolver = NULL;
+  SocketPoll_T temp_poll = NULL;
+  const char *volatile err_msg = NULL;
+
+  assert (host);
+  assert (port > 0 && port <= SOCKET_MAX_PORT);
+
+  he_connect_create_resolver (&temp_arena, &temp_resolver);
+  he_connect_create_poll (&temp_poll, temp_arena, temp_resolver);
+  he = he_connect_setup_context (temp_resolver, temp_poll, temp_arena, host,
+                                 port, config);
+
+  he_connect_run_event_loop (he);
+  sock = he_connect_extract_result (he, &err_msg);
 
   SocketHappyEyeballs_free (&he);
 
