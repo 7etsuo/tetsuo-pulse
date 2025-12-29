@@ -1525,7 +1525,17 @@ parse_kernel_version (int *major, int *minor, int *patch)
   /* Parse release string like "5.10.0-generic" or "6.2.15" */
   *major = *minor = *patch = 0;
   if (sscanf (uts.release, "%d.%d.%d", major, minor, patch) >= 2)
-    return 1;
+    {
+      /* Validate kernel version components are reasonable (0-999) */
+      if (*major < 0 || *major > 999 ||
+          *minor < 0 || *minor > 999 ||
+          *patch < 0 || *patch > 999)
+        {
+          *major = *minor = *patch = 0;
+          return 0;
+        }
+      return 1;
+    }
 
   return 0;
 #else

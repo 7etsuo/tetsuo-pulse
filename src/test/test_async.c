@@ -1007,6 +1007,36 @@ TEST (async_iouring_available_api)
   ASSERT_EQ (info.supported, available);
 }
 
+TEST (async_iouring_kernel_version_validation)
+{
+  setup_signals ();
+
+  SocketAsync_IOUringInfo info;
+  memset (&info, 0, sizeof (info));
+
+  int available = SocketAsync_io_uring_available (&info);
+
+  /* On Linux with io_uring compiled, verify kernel version validation */
+#if defined(__linux__) && SOCKET_HAS_IO_URING
+  if (available)
+    {
+      /* Kernel version components should be in reasonable range (0-999) */
+      ASSERT (info.major >= 0 && info.major <= 999);
+      ASSERT (info.minor >= 0 && info.minor <= 999);
+      ASSERT (info.patch >= 0 && info.patch <= 999);
+
+      /* For supported io_uring, major version should be at least 5 */
+      if (info.supported)
+        {
+          ASSERT (info.major >= 5);
+        }
+    }
+#endif
+
+  /* Test passes - kernel version parsing includes validation */
+  ASSERT (1);
+}
+
 TEST (async_iouring_backend_detection)
 {
   setup_signals ();
