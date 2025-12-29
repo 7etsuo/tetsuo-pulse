@@ -162,73 +162,6 @@ SocketQUICAddrValidation_mark_validated (
  */
 
 /**
- * @brief Validate token format and size.
- *
- * @param[in] token Token buffer.
- * @param[in] token_len Token length.
- * @return QUIC_ADDR_VALIDATION_OK if valid, error code otherwise.
- */
-static SocketQUICAddrValidation_Result
-validate_token_format (const uint8_t *token, size_t token_len)
-{
-  if (!token)
-    {
-      return QUIC_ADDR_VALIDATION_ERROR_NULL;
-    }
-
-  if (token_len != QUIC_ADDR_VALIDATION_TOKEN_SIZE)
-    {
-      return QUIC_ADDR_VALIDATION_ERROR_INVALID;
-    }
-
-  return QUIC_ADDR_VALIDATION_OK;
-}
-
-/**
- * @brief Check if token has expired.
- *
- * @param[in] token_timestamp Timestamp from token.
- * @return QUIC_ADDR_VALIDATION_OK if not expired, error code otherwise.
- */
-static SocketQUICAddrValidation_Result
-check_token_expiration (uint64_t token_timestamp)
-{
-  uint64_t current_time;
-
-  current_time = (uint64_t)Socket_get_monotonic_ms ();
-  if (current_time > token_timestamp
-      && (current_time - token_timestamp)
-             > (QUIC_ADDR_VALIDATION_TOKEN_LIFETIME * SOCKET_MS_PER_SECOND))
-    {
-      return QUIC_ADDR_VALIDATION_ERROR_EXPIRED;
-    }
-
-  return QUIC_ADDR_VALIDATION_OK;
-}
-
-/**
- * @brief Verify token address hash matches current address.
- *
- * @param[in] token Token buffer.
- * @param[in] addr Current socket address.
- * @return QUIC_ADDR_VALIDATION_OK if match, error code otherwise.
- */
-static SocketQUICAddrValidation_Result
-verify_token_address (const uint8_t *token, const struct sockaddr *addr)
-{
-  uint8_t addr_hash[QUIC_TOKEN_ADDR_HASH_SIZE];
-
-  hash_address (addr, addr_hash);
-
-  if (SocketCrypto_secure_compare (token + QUIC_TOKEN_TIMESTAMP_SIZE, addr_hash, QUIC_TOKEN_ADDR_HASH_SIZE) != 0)
-    {
-      return QUIC_ADDR_VALIDATION_ERROR_INVALID;
-    }
-
-  return QUIC_ADDR_VALIDATION_OK;
-}
-
-/**
  * @brief Compute and verify token HMAC.
  *
  * @param[in] token Token buffer.
@@ -332,6 +265,8 @@ SocketQUICAddrValidation_validate_token (const uint8_t *token,
 {
   volatile SocketQUICAddrValidation_Result result;
   uint64_t token_timestamp;
+  uint64_t current_time;
+  uint8_t addr_hash[QUIC_TOKEN_ADDR_HASH_SIZE];
 
   /* Validate inputs */
   if (!addr || !secret)
@@ -339,28 +274,36 @@ SocketQUICAddrValidation_validate_token (const uint8_t *token,
       return QUIC_ADDR_VALIDATION_ERROR_NULL;
     }
 
-  /* Validate token format */
-  result = validate_token_format (token, token_len);
-  if (result != QUIC_ADDR_VALIDATION_OK)
+  /* Validate token format (inlined from validate_token_format) */
+  if (!token)
     {
-      return result;
+      return QUIC_ADDR_VALIDATION_ERROR_NULL;
+    }
+
+  if (token_len != QUIC_ADDR_VALIDATION_TOKEN_SIZE)
+    {
+      return QUIC_ADDR_VALIDATION_ERROR_INVALID;
     }
 
   /* Extract timestamp */
   token_timestamp = socket_util_unpack_be64 (token);
 
-  /* Check token expiration */
-  result = check_token_expiration (token_timestamp);
-  if (result != QUIC_ADDR_VALIDATION_OK)
+  /* Check token expiration (inlined from check_token_expiration) */
+  current_time = (uint64_t)Socket_get_monotonic_ms ();
+  if (current_time > token_timestamp
+      && (current_time - token_timestamp)
+             > (QUIC_ADDR_VALIDATION_TOKEN_LIFETIME * SOCKET_MS_PER_SECOND))
     {
-      return result;
+      return QUIC_ADDR_VALIDATION_ERROR_EXPIRED;
     }
 
-  /* Verify address match */
-  result = verify_token_address (token, addr);
-  if (result != QUIC_ADDR_VALIDATION_OK)
+  /* Verify address match (inlined from verify_token_address) */
+  hash_address (addr, addr_hash);
+
+  if (SocketCrypto_secure_compare (token + QUIC_TOKEN_TIMESTAMP_SIZE, addr_hash,
+                                    QUIC_TOKEN_ADDR_HASH_SIZE) != 0)
     {
-      return result;
+      return QUIC_ADDR_VALIDATION_ERROR_INVALID;
     }
 
   /* Verify HMAC */
