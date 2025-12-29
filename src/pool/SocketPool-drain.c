@@ -610,7 +610,10 @@ SocketPool_drain_wait (T pool, int timeout_ms)
   /* Poll with exponential backoff */
   while ((result = SocketPool_drain_poll (pool)) > 0)
     {
-      /* Sleep with exponential backoff */
+      /* Sleep with exponential backoff
+       * Note: nanosleep() may return early on signal (EINTR), which is
+       * acceptable here as the loop will simply poll sooner. The backoff
+       * is for efficiency, not correctness. */
       ts = socket_util_ms_to_timespec (backoff_ms);
       nanosleep (&ts, NULL);
 
