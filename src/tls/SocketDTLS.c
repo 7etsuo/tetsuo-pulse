@@ -691,8 +691,8 @@ calculate_handshake_poll_timeout (int timeout_ms, int infinite_timeout,
 
   if (infinite_timeout)
     {
-      /* Infinite wait: Use 1 second to periodically check DTLS timers */
-      return 1000;
+      /* Infinite wait: Use default DTLS timeout for timer handling */
+      return SOCKET_DTLS_INITIAL_TIMEOUT_MS;
     }
 
   /* Compute remaining time from deadline */
