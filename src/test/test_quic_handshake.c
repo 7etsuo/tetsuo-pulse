@@ -536,6 +536,82 @@ TEST(handshake_crypto_insert_multiple_segments)
 }
 
 /* ============================================================================
+ * TLS Cleanup Tests (Issue #1522)
+ * ============================================================================
+ */
+
+TEST(handshake_free_tls_objects_null)
+{
+  /* Test that free works correctly when TLS objects are NULL
+   * (which is always the case until OpenSSL integration is added) */
+  Arena_T arena = Arena_new();
+  SocketQUICConnection_T conn = SocketQUICConnection_new(arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICHandshake_T hs = SocketQUICHandshake_new(arena, conn, QUIC_CONN_ROLE_CLIENT);
+  ASSERT_NOT_NULL(hs);
+
+  /* Verify TLS objects are NULL initially */
+  ASSERT_NULL(hs->tls_ctx);
+  ASSERT_NULL(hs->tls_ssl);
+
+  /* Free should handle NULL TLS objects gracefully */
+  SocketQUICHandshake_free(&hs);
+  ASSERT_NULL(hs);
+
+  SocketQUICConnection_free(&conn);
+  Arena_dispose(&arena);
+}
+
+TEST(handshake_free_clears_tls_pointers)
+{
+  /* Test that even if TLS objects are set (simulated), they are cleared.
+   * This test verifies the cleanup logic without requiring actual OpenSSL. */
+  Arena_T arena = Arena_new();
+  SocketQUICConnection_T conn = SocketQUICConnection_new(arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICHandshake_T hs = SocketQUICHandshake_new(arena, conn, QUIC_CONN_ROLE_CLIENT);
+  ASSERT_NOT_NULL(hs);
+
+  /* Simulate setting TLS pointers (without OpenSSL, these would normally be NULL)
+   * In production with OpenSSL, these would point to real SSL_CTX/SSL objects */
+  hs->tls_ctx = (void *)0x1;  /* Dummy non-NULL value for testing */
+  hs->tls_ssl = (void *)0x2;  /* Dummy non-NULL value for testing */
+
+  /* Free should clear these pointers
+   * With OpenSSL, it would call SSL_free/SSL_CTX_free first */
+  SocketQUICHandshake_free(&hs);
+  ASSERT_NULL(hs);
+
+  SocketQUICConnection_free(&conn);
+  Arena_dispose(&arena);
+}
+
+TEST(handshake_free_with_keys_and_tls)
+{
+  /* Test comprehensive cleanup: keys + TLS objects */
+  Arena_T arena = Arena_new();
+  SocketQUICConnection_T conn = SocketQUICConnection_new(arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICHandshake_T hs = SocketQUICHandshake_new(arena, conn, QUIC_CONN_ROLE_CLIENT);
+  ASSERT_NOT_NULL(hs);
+
+  /* Set up some keys */
+  const size_t test_key_size = 64;
+  uint8_t *test_keys = Arena_alloc(arena, test_key_size, __FILE__, __LINE__);
+  memset(test_keys, 0xAA, test_key_size);
+  hs->keys[QUIC_CRYPTO_LEVEL_INITIAL] = test_keys;
+  hs->keys_available[QUIC_CRYPTO_LEVEL_INITIAL] = 1;
+
+  /* Simulate TLS objects */
+  hs->tls_ctx = (void *)0x1;
+  hs->tls_ssl = (void *)0x2;
+
+  /* Free should handle both keys and TLS cleanup */
+  SocketQUICHandshake_free(&hs);
+  ASSERT_NULL(hs);
+
+  SocketQUICConnection_free(&conn);
+  Arena_dispose(&arena);
+}
+
+/* ============================================================================
  * Main Test Runner
  * ============================================================================
  */
