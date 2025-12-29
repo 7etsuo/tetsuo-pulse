@@ -573,8 +573,9 @@ proxy_socks5_send_connect (struct SocketProxy_Conn_T *conn)
     }
 
   /* Port (network byte order) */
-  buf[len++] = (unsigned char)((conn->target_port >> 8) & 0xFF);
-  buf[len++] = (unsigned char)(conn->target_port & 0xFF);
+  uint16_t port_nbo = htons(conn->target_port);
+  memcpy(buf + len, &port_nbo, sizeof(port_nbo));
+  len += sizeof(port_nbo);
 
   conn->send_len = len;
   conn->send_offset = 0;
