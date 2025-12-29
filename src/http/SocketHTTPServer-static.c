@@ -216,41 +216,6 @@ format_http_date (time_t t, char *buf)
   return buf;
 }
 
-/**
- * parse_http_date - Parse HTTP-date to time_t
- * @date_str: Date string in RFC 7231 format
- *
- * Returns: time_t value, or -1 on parse error
- */
-static time_t
-parse_http_date (const char *date_str)
-{
-  struct tm tm;
-  memset (&tm, 0, sizeof (tm));
-
-  if (date_str == NULL)
-    return -1;
-
-  /* Try RFC 7231 format: "Sun, 06 Nov 1994 08:49:37 GMT" */
-  if (strptime (date_str, "%a, %d %b %Y %H:%M:%S GMT", &tm) != NULL)
-    {
-      return timegm (&tm);
-    }
-
-  /* Try RFC 850 format: "Sunday, 06-Nov-94 08:49:37 GMT" */
-  if (strptime (date_str, "%A, %d-%b-%y %H:%M:%S GMT", &tm) != NULL)
-    {
-      return timegm (&tm);
-    }
-
-  /* Try ANSI C format: "Sun Nov  6 08:49:37 1994" */
-  if (strptime (date_str, "%a %b %d %H:%M:%S %Y", &tm) != NULL)
-    {
-      return timegm (&tm);
-    }
-
-  return -1;
-}
 
 /**
  * parse_range_header - Parse Range header for partial content
@@ -455,7 +420,28 @@ server_serve_static_file (SocketHTTPServer_T server, ServerConnection *conn,
                                               "If-Modified-Since");
   if (if_modified_since != NULL)
     {
-      if_modified_time = parse_http_date (if_modified_since);
+      /* Parse HTTP date (try multiple formats per RFC 7231) */
+      struct tm tm;
+      memset (&tm, 0, sizeof (tm));
+
+      if_modified_time = -1;
+
+      /* Try RFC 7231 format: "Sun, 06 Nov 1994 08:49:37 GMT" */
+      if (strptime (if_modified_since, "%a, %d %b %Y %H:%M:%S GMT", &tm) != NULL)
+        {
+          if_modified_time = timegm (&tm);
+        }
+      /* Try RFC 850 format: "Sunday, 06-Nov-94 08:49:37 GMT" */
+      else if (strptime (if_modified_since, "%A, %d-%b-%y %H:%M:%S GMT", &tm) != NULL)
+        {
+          if_modified_time = timegm (&tm);
+        }
+      /* Try ANSI C format: "Sun Nov  6 08:49:37 1994" */
+      else if (strptime (if_modified_since, "%a %b %d %H:%M:%S %Y", &tm) != NULL)
+        {
+          if_modified_time = timegm (&tm);
+        }
+
       if (if_modified_time > 0 && st.st_mtime <= if_modified_time)
         {
           /* File not modified since - return 304 */
