@@ -276,6 +276,37 @@ extern void http2_emit_stream_event (SocketHTTP2_Conn_T conn,
                                      SocketHTTP2_Stream_T stream, int event);
 
 extern void http2_emit_conn_event (SocketHTTP2_Conn_T conn, int event);
+
+/* --- Error handling convenience macros --- */
+
+/**
+ * @brief Send connection error and return failure
+ *
+ * Combines http2_send_connection_error() with return -1 for cleaner
+ * error handling in frame processing functions.
+ */
+#define HTTP2_SEND_CONN_ERROR_AND_FAIL(conn, code)                            \
+  do                                                                          \
+    {                                                                         \
+      http2_send_connection_error ((conn), (code));                           \
+      return -1;                                                              \
+    }                                                                         \
+  while (0)
+
+/**
+ * @brief Send stream error and return success (continue processing)
+ *
+ * Combines http2_send_stream_error() with return 0 for stream-level
+ * errors that don't terminate the connection.
+ */
+#define HTTP2_SEND_STREAM_ERROR_AND_CONTINUE(conn, id, code)                  \
+  do                                                                          \
+    {                                                                         \
+      http2_send_stream_error ((conn), (id), (code));                         \
+      return 0;                                                               \
+    }                                                                         \
+  while (0)
+
 static inline void
 write_u16_be (unsigned char *buf, uint16_t value)
 {
