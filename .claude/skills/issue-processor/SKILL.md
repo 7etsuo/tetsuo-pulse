@@ -105,8 +105,14 @@ python3 .claude/skills/issue-processor/scripts/check_status.py --state-dir {STAT
 |--------|--------|
 | `READY:N/M` | Coordinator hasn't started yet |
 | `RUNNING:N/M` | In progress, report to user |
+| `STALLED:N/M:no_progress_for_Xs` | No results for 120+ seconds - agents may have failed |
 | `COMPLETED:N/M:X_success:Y_failed` | Done, go to summary |
 | `ERROR:message` | Report error |
+
+**STALLED handling**: If you see STALLED, check:
+1. `started/` directory - which agents wrote started markers
+2. `wip:*` labels on issues - which are claimed but not progressing
+3. Consider respawning coordinator or releasing stuck claims
 
 **IMPORTANT**: Do NOT use TaskOutput to check coordinator status. Only read status.txt.
 
@@ -197,6 +203,8 @@ If user says "continue":
 ├── frontier.json    # Ready/blocked lists
 ├── worktrees.json   # Worktree paths (if --create-worktrees used)
 ├── issues/          # Issue details
+│   └── 391.json
+├── started/         # Agent start markers (for debugging)
 │   └── 391.json
 └── results/         # Implementation results
     └── 391.json

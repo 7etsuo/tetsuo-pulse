@@ -53,8 +53,8 @@ def create_worktree(repo_root: Path, issue_num: int, branch_name: str) -> Path |
     # Check if worktree already exists
     if worktree_dir.exists():
         # Verify it's a valid worktree
-        success, _ = run_git(["worktree", "list", "--porcelain"], cwd=str(repo_root))
-        if str(worktree_dir) in _:
+        success, worktree_list = run_git(["worktree", "list", "--porcelain"], cwd=str(repo_root))
+        if success and str(worktree_dir) in worktree_list:
             return worktree_dir
         # Directory exists but not a worktree - remove it
         import shutil
