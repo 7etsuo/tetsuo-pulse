@@ -222,6 +222,9 @@ SocketQUICHandshake_new(Arena_T arena, SocketQUICConnection_T conn,
                                           role == QUIC_CONN_ROLE_CLIENT ?
                                           QUIC_ROLE_CLIENT : QUIC_ROLE_SERVER);
 
+  /* Link handshake to connection */
+  conn->handshake = hs;
+
   return hs;
 }
 
@@ -249,6 +252,11 @@ SocketQUICHandshake_free(SocketQUICHandshake_T *handshake)
       SocketCrypto_secure_clear(hs->keys[i], QUIC_MAX_KEY_MATERIAL_SIZE);
       hs->keys[i] = NULL;
     }
+  }
+
+  /* Unlink handshake from connection */
+  if (hs->conn && hs->conn->handshake == hs) {
+    hs->conn->handshake = NULL;
   }
 
   *handshake = NULL;
@@ -334,8 +342,7 @@ SocketQUICHandshake_process_crypto(SocketQUICConnection_T conn,
   SocketQUICCryptoLevel level = QUIC_CRYPTO_LEVEL_INITIAL;
 
   /* Get handshake context from connection */
-  /* NOTE: This assumes connection has a handshake field - needs integration */
-  SocketQUICHandshake_T hs = NULL; /* TODO: Get from conn->handshake */
+  SocketQUICHandshake_T hs = (SocketQUICHandshake_T)conn->handshake;
   if (!hs) {
     return QUIC_HANDSHAKE_ERROR_STATE;
   }

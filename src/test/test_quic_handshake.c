@@ -536,6 +536,92 @@ TEST(handshake_crypto_insert_multiple_segments)
 }
 
 /* ============================================================================
+ * Connection Integration Tests (Issue #1521)
+ * ============================================================================
+ */
+
+TEST(handshake_connection_integration)
+{
+  /* Verify that handshake is properly linked to connection */
+  Arena_T arena = Arena_new();
+  SocketQUICConnection_T conn = SocketQUICConnection_new(arena, QUIC_CONN_ROLE_CLIENT);
+  ASSERT_NOT_NULL(conn);
+
+  /* Initially no handshake */
+  ASSERT_NULL(conn->handshake);
+
+  /* Create handshake - should automatically link to connection */
+  SocketQUICHandshake_T hs = SocketQUICHandshake_new(arena, conn, QUIC_CONN_ROLE_CLIENT);
+  ASSERT_NOT_NULL(hs);
+  ASSERT_NOT_NULL(conn->handshake);
+  ASSERT_EQ(hs, conn->handshake);
+
+  /* Verify handshake can be retrieved from connection */
+  SocketQUICHandshake_T retrieved = (SocketQUICHandshake_T)conn->handshake;
+  ASSERT_EQ(hs, retrieved);
+
+  /* Free handshake - should unlink from connection */
+  SocketQUICHandshake_free(&hs);
+  ASSERT_NULL(hs);
+  ASSERT_NULL(conn->handshake);
+
+  SocketQUICConnection_free(&conn);
+  Arena_dispose(&arena);
+}
+
+TEST(handshake_process_crypto_with_connection)
+{
+  /* Verify process_crypto can retrieve handshake from connection */
+  Arena_T arena = Arena_new();
+  SocketQUICConnection_T conn = SocketQUICConnection_new(arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICHandshake_T hs = SocketQUICHandshake_new(arena, conn, QUIC_CONN_ROLE_CLIENT);
+  ASSERT_NOT_NULL(hs);
+  ASSERT_EQ(hs, conn->handshake);
+
+  /* Now process_crypto should be able to retrieve handshake from conn->handshake */
+  uint8_t test_data[100];
+  memset(test_data, 0x42, sizeof(test_data));
+
+  SocketQUICHandshake_Result res =
+    SocketQUICHandshake_process_crypto(conn, &(SocketQUICFrameCrypto_T){
+      .offset = 0,
+      .length = sizeof(test_data),
+      .data = test_data
+    });
+
+  /* Should succeed (or fail gracefully), but not return ERROR_STATE due to NULL handshake */
+  ASSERT(res == QUIC_HANDSHAKE_OK || res != QUIC_HANDSHAKE_ERROR_STATE);
+
+  SocketQUICHandshake_free(&hs);
+  SocketQUICConnection_free(&conn);
+  Arena_dispose(&arena);
+}
+
+TEST(handshake_process_crypto_without_handshake)
+{
+  /* Verify process_crypto returns ERROR_STATE when no handshake is linked */
+  Arena_T arena = Arena_new();
+  SocketQUICConnection_T conn = SocketQUICConnection_new(arena, QUIC_CONN_ROLE_CLIENT);
+  ASSERT_NULL(conn->handshake);
+
+  uint8_t test_data[100];
+  memset(test_data, 0x42, sizeof(test_data));
+
+  SocketQUICHandshake_Result res =
+    SocketQUICHandshake_process_crypto(conn, &(SocketQUICFrameCrypto_T){
+      .offset = 0,
+      .length = sizeof(test_data),
+      .data = test_data
+    });
+
+  /* Should return ERROR_STATE because handshake is NULL */
+  ASSERT_EQ(QUIC_HANDSHAKE_ERROR_STATE, res);
+
+  SocketQUICConnection_free(&conn);
+  Arena_dispose(&arena);
+}
+
+/* ============================================================================
  * Main Test Runner
  * ============================================================================
  */

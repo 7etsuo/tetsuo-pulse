@@ -84,6 +84,7 @@ struct SocketQUICConnection {
   uint64_t draining_deadline_ms;
   uint8_t stateless_reset_token[QUIC_STATELESS_RESET_TOKEN_LEN];
   int has_stateless_reset_token;
+  void *handshake;  /* SocketQUICHandshake_T (opaque to avoid circular dependency) */
 };
 
 extern SocketQUICConnTable_T SocketQUICConnTable_new(Arena_T arena, size_t bucket_count);
