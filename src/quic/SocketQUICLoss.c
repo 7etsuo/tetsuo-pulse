@@ -391,7 +391,20 @@ handle_lost_packet (SocketQUICLossState_T state,
                     SocketQUICLoss_LostCallback lost_callback, void *context)
 {
   if (packet->in_flight)
-    state->bytes_in_flight -= packet->sent_bytes;
+    {
+      /* Defensive check: prevent underflow */
+      if (packet->sent_bytes > state->bytes_in_flight)
+        {
+          SOCKET_LOG_ERROR_MSG (
+              "bytes_in_flight underflow: sent_bytes=%zu, in_flight=%zu",
+              packet->sent_bytes, state->bytes_in_flight);
+          state->bytes_in_flight = 0;
+        }
+      else
+        {
+          state->bytes_in_flight -= packet->sent_bytes;
+        }
+    }
 
   if (lost_callback)
     lost_callback (packet, context);
@@ -524,7 +537,20 @@ SocketQUICLoss_on_ack_received (SocketQUICLossState_T state,
   if (largest_pkt != NULL)
     {
       if (largest_pkt->in_flight)
-        state->bytes_in_flight -= largest_pkt->sent_bytes;
+        {
+          /* Defensive check: prevent underflow */
+          if (largest_pkt->sent_bytes > state->bytes_in_flight)
+            {
+              SOCKET_LOG_ERROR_MSG (
+                  "bytes_in_flight underflow: sent_bytes=%zu, in_flight=%zu",
+                  largest_pkt->sent_bytes, state->bytes_in_flight);
+              state->bytes_in_flight = 0;
+            }
+          else
+            {
+              state->bytes_in_flight -= largest_pkt->sent_bytes;
+            }
+        }
       remove_sent_packet (state, largest_acked);
     }
 
