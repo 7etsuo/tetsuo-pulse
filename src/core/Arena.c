@@ -317,6 +317,13 @@ arena_calculate_aligned_size (size_t nbytes)
   return final_size;
 }
 
+static inline int
+arena_has_space (const T arena, size_t nbytes)
+{
+  return arena->avail != NULL && arena->limit != NULL
+         && (size_t)(arena->limit - arena->avail) >= nbytes;
+}
+
 static int
 arena_allocate_new_chunk (size_t chunk_size, struct ChunkHeader **ptr_out,
                           char **limit_out)
@@ -361,6 +368,18 @@ arena_get_chunk (T arena, size_t min_size)
     return ARENA_FAILURE;
 
   arena_link_chunk (arena, ptr, limit);
+  return ARENA_SUCCESS;
+}
+
+/* Must hold arena->mutex if arena->locked */
+static int
+arena_ensure_space (T arena, size_t aligned_size)
+{
+  while (!arena_has_space (arena, aligned_size))
+    {
+      if (arena_get_chunk (arena, aligned_size) != ARENA_SUCCESS)
+        return ARENA_FAILURE;
+    }
   return ARENA_SUCCESS;
 }
 
@@ -456,41 +475,35 @@ Arena_dispose (T *ap)
 void *
 Arena_alloc (T arena, size_t nbytes, const char *file, int line)
 {
+  void *result;
+  size_t aligned_size;
+
   (void)file;
   (void)line;
+
   if (arena == NULL)
-    SOCKET_RAISE_MSG (Arena, Arena_Failed, "NULL arena pointer in %s",
-                      "Arena_alloc");
+    SOCKET_RAISE_MSG (Arena, Arena_Failed, "NULL arena pointer");
 
   if (nbytes == 0)
-    SOCKET_RAISE_MSG (Arena, Arena_Failed,
-                      "Zero size allocation in Arena_alloc");
+    SOCKET_RAISE_MSG (Arena, Arena_Failed, "Zero size allocation");
 
-  size_t aligned_size = arena_calculate_aligned_size (nbytes);
+  aligned_size = arena_calculate_aligned_size (nbytes);
   if (aligned_size == 0)
-    SOCKET_RAISE_MSG (
-        Arena, Arena_Failed,
-        "Invalid allocation size: %zu bytes (overflow or exceeds limit)",
-        nbytes);
+    SOCKET_RAISE_MSG (Arena, Arena_Failed,
+                      "Invalid allocation size: %zu bytes", nbytes);
 
   if (arena->locked)
     SOCKET_MUTEX_LOCK_OR_RAISE (&arena->mutex, Arena, Arena_Failed);
 
-  while (arena->avail == NULL || arena->limit == NULL
-         || (size_t)(arena->limit - arena->avail) < aligned_size)
+  if (arena_ensure_space (arena, aligned_size) != ARENA_SUCCESS)
     {
-
-      if (arena_get_chunk (arena, aligned_size) != ARENA_SUCCESS)
-        {
-          if (arena->locked)
-            SOCKET_MUTEX_UNLOCK (&arena->mutex);
-          SOCKET_RAISE_MSG (
-              Arena, Arena_Failed,
-              "Failed to allocate chunk for %zu bytes (out of memory)",
-              aligned_size);
-        }
+      if (arena->locked)
+        SOCKET_MUTEX_UNLOCK (&arena->mutex);
+      SOCKET_RAISE_MSG (Arena, Arena_Failed,
+                        "Failed to allocate %zu bytes", aligned_size);
     }
-  void *result = arena->avail;
+
+  result = arena->avail;
   arena->avail += aligned_size;
 
   if (arena->locked)
