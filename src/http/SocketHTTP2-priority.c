@@ -215,44 +215,49 @@ SocketHTTP2_Priority_parse (const char *value, size_t len,
           /* Incremental parameter (boolean) */
           p = skip_ows (p, end);
 
-          if (p < end && *p == '=')
+          /* Handle bare "i" (no explicit value) */
+          if (p >= end || *p != '=')
             {
-              /* Explicit boolean value */
-              p++; /* Skip '=' */
-              p = skip_ows (p, end);
+              priority->incremental = 1;
+              found_incremental = 1;
+              goto next_parameter;
+            }
 
-              if (p < end && *p == '?')
-                {
-                  p++; /* Skip '?' */
-                  if (p < end && *p == '1')
-                    {
-                      priority->incremental = 1;
-                      p++;
-                    }
-                  else if (p < end && *p == '0')
-                    {
-                      priority->incremental = 0;
-                      p++;
-                    }
-                  else
-                    {
-                      SOCKET_LOG_DEBUG_MSG (
-                          "Priority parse error: invalid boolean for i");
-                      return -1;
-                    }
-                }
-              else
-                {
-                  SOCKET_LOG_DEBUG_MSG (
-                      "Priority parse error: i= requires ?0 or ?1");
-                  return -1;
-                }
+          /* Parse explicit boolean value */
+          p++; /* Skip '=' */
+          p = skip_ows (p, end);
+
+          if (p >= end || *p != '?')
+            {
+              SOCKET_LOG_DEBUG_MSG (
+                  "Priority parse error: i= requires ?0 or ?1");
+              return -1;
+            }
+
+          p++; /* Skip '?' */
+          if (p >= end)
+            {
+              SOCKET_LOG_DEBUG_MSG (
+                  "Priority parse error: invalid boolean for i");
+              return -1;
+            }
+
+          if (*p == '1')
+            {
+              priority->incremental = 1;
+            }
+          else if (*p == '0')
+            {
+              priority->incremental = 0;
             }
           else
             {
-              /* Bare "i" means true */
-              priority->incremental = 1;
+              SOCKET_LOG_DEBUG_MSG (
+                  "Priority parse error: invalid boolean for i");
+              return -1;
             }
+
+          p++;
           found_incremental = 1;
         }
       else
@@ -263,6 +268,7 @@ SocketHTTP2_Priority_parse (const char *value, size_t len,
             p++;
         }
 
+    next_parameter:
       /* Skip to next parameter */
       p = skip_ows (p, end);
       if (p < end && *p == ',')
