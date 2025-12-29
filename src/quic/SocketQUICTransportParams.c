@@ -984,7 +984,7 @@ find_param_handler (uint64_t param_id)
  * @param pos Current position (updated on success)
  * @param peer_role Role of the peer sending these parameters
  * @param params Output parameter structure
- * @param seen_params Bitmap for duplicate detection
+ * @param seen_params Bitmap for duplicate detection (only tracks IDs 0-63)
  * @return QUIC_TP_OK on success, error code otherwise
  */
 static SocketQUICTransportParams_Result
@@ -1015,7 +1015,10 @@ decode_single_param (const uint8_t *data, size_t len, size_t *pos,
   if (*pos + param_len > len)
     return QUIC_TP_ERROR_INCOMPLETE;
 
-  /* Check for duplicates (for known parameters) */
+  /* Check for duplicates (limited to param IDs 0-63 by bitmap size).
+   * Parameters with ID >= 64 bypass duplicate detection, but this is
+   * acceptable since RFC 9000 permits ignoring unknown parameters.
+   */
   if (param_id <= 63)
     {
       uint64_t mask = 1ULL << param_id;
@@ -1045,7 +1048,16 @@ SocketQUICTransportParams_decode (const uint8_t *data, size_t len,
                                   size_t *consumed)
 {
   size_t pos = 0;
-  uint64_t seen_params = 0; /* Bitmap for duplicate detection (up to param ID 63) */
+  /* Bitmap for duplicate detection.
+   * Only tracks param IDs 0-63 due to 64-bit limit.
+   * Extension params >= 64 won't be checked for duplicates,
+   * which is acceptable per RFC 9000 Section 18.1 (ignore unknown).
+   * Current known params (all < 64):
+   *   0x00-0x10: Core parameters (RFC 9000)
+   *   0x11: VERSION_INFO (RFC 9369)
+   *   0x20: MAX_DATAGRAM_FRAME_SIZE (RFC 9221)
+   */
+  uint64_t seen_params = 0;
   SocketQUICTransportParams_Result result;
 
   if (data == NULL || params == NULL || consumed == NULL)
