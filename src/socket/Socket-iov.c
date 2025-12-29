@@ -170,6 +170,8 @@ sendfile_seek_to_offset (int file_fd, off_t *offset)
 static size_t
 sendfile_transfer_loop (T socket, int file_fd, off_t *offset, size_t count)
 {
+  /* Stack-allocated transfer buffer (8KB default, balances throughput with
+   * memory efficiency). See SocketConfig.h for buffer size rationale. */
   char buffer[SOCKET_SENDFILE_FALLBACK_BUFFER_SIZE];
   volatile size_t total_sent = 0;
 

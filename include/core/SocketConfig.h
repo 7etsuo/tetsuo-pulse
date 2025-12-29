@@ -255,8 +255,30 @@ extern const char *Socket_safe_strerror (int errnum);
 /**
  * @brief Fallback buffer size for sendfile operations.
  *
- * Used when sendfile() is not available or fails.
+ * Used when kernel sendfile() is unavailable (TLS connections, unsupported
+ * platforms) or fails. The buffer mediates read/write loops in
+ * socket_sendfile_fallback().
  *
+ * ## Rationale for 8192 Bytes
+ *
+ * - **Page alignment**: 8KB = 2 pages on most systems (4KB page size),
+ *   optimizing kernel buffer cache utilization and reducing TLB misses.
+ * - **Network efficiency**: Fits within typical socket buffer chunks and
+ *   allows efficient pipelining of read→send cycles without excessive
+ *   context switches.
+ * - **Stack safety**: Small enough for stack allocation (used in
+ *   sendfile_transfer_loop) without risking stack overflow.
+ * - **Performance trade-offs**: Larger buffers (64KB+) improve throughput
+ *   for bulk transfers but waste memory for small files and increase
+ *   latency for concurrent connections. 8KB balances throughput with
+ *   responsiveness.
+ *
+ * Can be overridden at compile time with
+ * -DSOCKET_SENDFILE_FALLBACK_BUFFER_SIZE=value.
+ *
+ * @note Kernel sendfile() bypasses this buffer entirely via zero-copy DMA.
+ * @see Socket_sendfile() in src/socket/Socket-iov.c
+ * @see sendfile_transfer_loop() for buffer usage pattern
  */
 #ifndef SOCKET_SENDFILE_FALLBACK_BUFFER_SIZE
 #define SOCKET_SENDFILE_FALLBACK_BUFFER_SIZE 8192
