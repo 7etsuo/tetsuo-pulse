@@ -20,8 +20,6 @@
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPServer);
 
-static void record_request_latency (SocketHTTPServer_T server,
-                                    int64_t request_start_ms);
 static void connection_set_client_addr (ServerConnection *conn);
 static SocketHTTP1_Parser_T connection_create_parser (Arena_T arena,
                                                       const SocketHTTPServer_Config *config);
@@ -160,7 +158,14 @@ connection_reset_for_keepalive (ServerConnection *conn)
 void
 connection_finish_request (SocketHTTPServer_T server, ServerConnection *conn)
 {
-  record_request_latency (server, conn->request_start_ms);
+  (void)server;
+
+  if (conn->request_start_ms > 0)
+    {
+      int64_t elapsed_ms = Socket_get_monotonic_ms () - conn->request_start_ms;
+      SocketMetrics_histogram_observe (
+          SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS, (double)elapsed_ms);
+    }
 
   if (SocketHTTP1_Parser_should_keepalive (conn->parser))
     connection_reset_for_keepalive (conn);
@@ -638,20 +643,6 @@ connection_create_parser (Arena_T arena, const SocketHTTPServer_Config *config)
     RAISE_HTTPSERVER_ERROR (SocketHTTPServer_Failed);
 
   return p;
-}
-
-/* Record request latency to histogram */
-static void
-record_request_latency (SocketHTTPServer_T server, int64_t request_start_ms)
-{
-  (void)server;
-
-  if (request_start_ms > 0)
-    {
-      int64_t elapsed_ms = Socket_get_monotonic_ms () - request_start_ms;
-      SocketMetrics_histogram_observe (
-          SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS, (double)elapsed_ms);
-    }
 }
 
 /* Initialize connection resources: arena, buffers, parser. Enables TLS if configured */
