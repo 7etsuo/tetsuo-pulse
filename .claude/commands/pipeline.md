@@ -66,17 +66,12 @@ Done
 
 ### Steps
 
-1. **Scan for TODO patterns** using Grep:
+1. **Scan for TODO patterns** using Bash with `rg`:
+   ```bash
+   rg "(TODO|FIXME|HACK|XXX|NOTE)" <directory> -n -g "*.c" -g "*.h"
    ```
-   Use Grep tool with pattern:
-   (TODO|FIXME|HACK|XXX|NOTE)\s*[:\-]?\s*
 
-   Options:
-   - path: <directory>
-   - glob: *.{c,h}
-   - output_mode: content
-   - -n: true (show line numbers)
-   ```
+   This is more reliable than the Grep tool which may fail on certain directories.
 
 2. **Parse results** into structured findings:
    - File path
