@@ -77,7 +77,6 @@ static const SocketErrorMapping error_mappings[] = {
 
 #define NUM_ERROR_MAPPINGS                                                    \
   (sizeof (error_mappings) / sizeof (error_mappings[0]))
-#define NUM_ERROR_CATEGORIES 6
 
 /* O(n) linear scan of ~30 entries - acceptable for small table */
 static const SocketErrorMapping *
@@ -151,6 +150,10 @@ Socket_safe_strerror (int errnum)
 static const char *const socket_error_category_names[] = {
   "NETWORK", "PROTOCOL", "APPLICATION", "TIMEOUT", "RESOURCE", "UNKNOWN"
 };
+
+#define NUM_ERROR_CATEGORIES                                                      \
+  (sizeof (socket_error_category_names)                                          \
+   / sizeof (socket_error_category_names[0]))
 
 SocketErrorCategory
 SocketError_categorize_errno (int err)
