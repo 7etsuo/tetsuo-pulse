@@ -1162,12 +1162,31 @@ parse_cookie_attributes (const char **p, const char *end,
   *p = ptr;
 }
 
-static void
-apply_cookie_defaults (SocketHTTPClient_Cookie *cookie,
-                       const SocketHTTP_URI *request_uri, Arena_T arena)
+int
+httpclient_parse_set_cookie (const char *value, size_t len,
+                             const SocketHTTP_URI *request_uri,
+                             SocketHTTPClient_Cookie *cookie, Arena_T arena)
 {
+  const char *p = value;
+  const char *end = value + (len > 0 ? len : strlen (value));
   char default_path[HTTPCLIENT_COOKIE_MAX_PATH_LEN];
 
+  assert (value != NULL);
+  assert (cookie != NULL);
+  assert (arena != NULL);
+
+  memset (cookie, 0, sizeof (*cookie));
+
+  if (parse_cookie_name_value (&p, end, cookie, arena) != 0)
+    {
+      HTTPCLIENT_ERROR_MSG (
+          "Invalid Set-Cookie: missing or malformed name=value");
+      return -1;
+    }
+
+  parse_cookie_attributes (&p, end, cookie, arena);
+
+  /* Apply cookie defaults (inlined from apply_cookie_defaults) */
   if (cookie->domain == NULL && request_uri != NULL
       && request_uri->host != NULL)
     {
@@ -1187,31 +1206,6 @@ apply_cookie_defaults (SocketHTTPClient_Cookie *cookie,
           cookie->path = socket_util_arena_strdup (arena, "/");
         }
     }
-}
-
-int
-httpclient_parse_set_cookie (const char *value, size_t len,
-                             const SocketHTTP_URI *request_uri,
-                             SocketHTTPClient_Cookie *cookie, Arena_T arena)
-{
-  const char *p = value;
-  const char *end = value + (len > 0 ? len : strlen (value));
-
-  assert (value != NULL);
-  assert (cookie != NULL);
-  assert (arena != NULL);
-
-  memset (cookie, 0, sizeof (*cookie));
-
-  if (parse_cookie_name_value (&p, end, cookie, arena) != 0)
-    {
-      HTTPCLIENT_ERROR_MSG (
-          "Invalid Set-Cookie: missing or malformed name=value");
-      return -1;
-    }
-
-  parse_cookie_attributes (&p, end, cookie, arena);
-  apply_cookie_defaults (cookie, request_uri, arena);
 
   if (cookie->name == NULL || cookie->value == NULL)
     {
