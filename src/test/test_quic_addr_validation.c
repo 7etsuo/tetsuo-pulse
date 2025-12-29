@@ -93,6 +93,76 @@ test_amplification_limit_after_validation (void)
   printf ("PASS: test_amplification_limit_after_validation\n");
 }
 
+static void
+test_counter_overflow_protection (void)
+{
+  SocketQUICAddrValidation_State_T state = { 0 };
+
+  /* Test bytes_sent overflow */
+  state.bytes_sent = UINT64_MAX - 50;
+  SocketQUICAddrValidation_update_counters (&state, 100, 0);
+  assert (state.bytes_sent == UINT64_MAX);  /* Should saturate */
+
+  /* Test bytes_received overflow */
+  state.bytes_received = UINT64_MAX - 25;
+  SocketQUICAddrValidation_update_counters (&state, 0, 50);
+  assert (state.bytes_received == UINT64_MAX);  /* Should saturate */
+
+  printf ("PASS: test_counter_overflow_protection\n");
+}
+
+static void
+test_counter_overflow_exact_boundary (void)
+{
+  SocketQUICAddrValidation_State_T state = { 0 };
+
+  /* Test exact boundary - should saturate */
+  state.bytes_sent = UINT64_MAX - 100;
+  SocketQUICAddrValidation_update_counters (&state, 100, 0);
+  assert (state.bytes_sent == UINT64_MAX);
+
+  /* Test just below boundary - should not saturate */
+  state.bytes_sent = UINT64_MAX - 100;
+  SocketQUICAddrValidation_update_counters (&state, 99, 0);
+  assert (state.bytes_sent == UINT64_MAX - 1);
+
+  printf ("PASS: test_counter_overflow_exact_boundary\n");
+}
+
+static void
+test_counter_saturation_stays_saturated (void)
+{
+  SocketQUICAddrValidation_State_T state = { 0 };
+
+  /* Saturate the counter */
+  state.bytes_sent = UINT64_MAX;
+  SocketQUICAddrValidation_update_counters (&state, 100, 0);
+  assert (state.bytes_sent == UINT64_MAX);  /* Should stay saturated */
+
+  /* Multiple updates should keep it saturated */
+  SocketQUICAddrValidation_update_counters (&state, 500, 0);
+  assert (state.bytes_sent == UINT64_MAX);
+
+  printf ("PASS: test_counter_saturation_stays_saturated\n");
+}
+
+static void
+test_counter_both_overflow (void)
+{
+  SocketQUICAddrValidation_State_T state = { 0 };
+
+  /* Both counters at risk of overflow */
+  state.bytes_sent = UINT64_MAX - 10;
+  state.bytes_received = UINT64_MAX - 10;
+  SocketQUICAddrValidation_update_counters (&state, 20, 20);
+
+  /* Both should saturate independently */
+  assert (state.bytes_sent == UINT64_MAX);
+  assert (state.bytes_received == UINT64_MAX);
+
+  printf ("PASS: test_counter_both_overflow\n");
+}
+
 /* ============================================================================
  * Token Generation and Validation Tests
  * ============================================================================
@@ -416,6 +486,12 @@ main (void)
   /* Amplification limit tests */
   test_amplification_limit_before_validation ();
   test_amplification_limit_after_validation ();
+
+  /* Counter overflow tests */
+  test_counter_overflow_protection ();
+  test_counter_overflow_exact_boundary ();
+  test_counter_saturation_stays_saturated ();
+  test_counter_both_overflow ();
 
   /* Token tests */
   test_token_generation_and_validation ();
