@@ -780,41 +780,45 @@ parse_answer_rr (struct SocketDNSResolver_Query *q,
   return RESOLVER_OK;
 }
 
+/**
+ * Validate DNS response header fields (QR bit, ID match).
+ *
+ * RFC 1035 Section 4.1.1 - header format validation.
+ *
+ * @param header Decoded DNS header.
+ * @param q      Query being validated against.
+ * @return RESOLVER_OK if valid, RESOLVER_ERROR_INVALID otherwise.
+ */
 static int
-parse_response (T resolver, struct SocketDNSResolver_Query *q,
-                const unsigned char *response, size_t len)
+validate_response_header (const SocketDNS_Header *header,
+                          struct SocketDNSResolver_Query *q)
 {
-  SocketDNS_Header header;
-  SocketDNS_Question question;
-  SocketDNS_RR rr;
-  size_t offset;
-  size_t consumed;
-
-  (void)resolver; /* Currently unused - reserved for future caching extensions */
-
-  /* Decode header */
-  if (SocketDNS_header_decode (response, len, &header) != 0)
+  /* Verify QR bit is set (response) */
+  if (header->qr != 1)
     return RESOLVER_ERROR_INVALID;
 
-  /* Verify response */
-  if (header.qr != 1)
-    return RESOLVER_ERROR_INVALID;
-  if (header.id != q->id)
+  /* Verify ID matches query */
+  if (header->id != q->id)
     return RESOLVER_ERROR_INVALID;
 
-  /* Validate question section matches query (RFC 5452 Section 3) */
-  if (header.qdcount >= 1)
-    {
-      int vret = validate_response_question (response, len, q);
-      if (vret != RESOLVER_OK)
-        return vret;
-    }
+  return RESOLVER_OK;
+}
 
-  /* Check RCODE */
-  switch (header.rcode)
+/**
+ * Validate DNS response RCODE and convert to resolver error code.
+ *
+ * RFC 1035 Section 4.1.1 - RCODE values.
+ *
+ * @param header Decoded DNS header.
+ * @return RESOLVER_OK if NOERROR, appropriate error code otherwise.
+ */
+static int
+validate_response_rcode (const SocketDNS_Header *header)
+{
+  switch (header->rcode)
     {
     case DNS_RCODE_NOERROR:
-      break;
+      return RESOLVER_OK;
     case DNS_RCODE_NXDOMAIN:
       return RESOLVER_ERROR_NXDOMAIN;
     case DNS_RCODE_SERVFAIL:
@@ -826,10 +830,33 @@ parse_response (T resolver, struct SocketDNSResolver_Query *q,
     default:
       return RESOLVER_ERROR_INVALID;
     }
+}
+
+/**
+ * Parse answer section resource records from DNS response.
+ *
+ * Skips question section and iterates through answer RRs,
+ * delegating to parse_answer_rr for type-specific handling.
+ *
+ * @param q        Query structure to populate with results.
+ * @param response Raw DNS response message.
+ * @param len      Response length in bytes.
+ * @param qdcount  Number of questions to skip.
+ * @param ancount  Number of answers to parse.
+ * @return RESOLVER_OK on success, error code on failure.
+ */
+static int
+parse_answer_section (struct SocketDNSResolver_Query *q,
+                      const unsigned char *response, size_t len, int qdcount,
+                      int ancount)
+{
+  SocketDNS_Question question;
+  SocketDNS_RR rr;
+  size_t offset = DNS_HEADER_SIZE;
+  size_t consumed;
 
   /* Skip question section */
-  offset = DNS_HEADER_SIZE;
-  for (int i = 0; i < header.qdcount; i++)
+  for (int i = 0; i < qdcount; i++)
     {
       if (SocketDNS_question_decode (response, len, offset, &question,
                                      &consumed)
@@ -839,7 +866,7 @@ parse_response (T resolver, struct SocketDNSResolver_Query *q,
     }
 
   /* Parse answer section */
-  for (int i = 0; i < header.ancount; i++)
+  for (int i = 0; i < ancount; i++)
     {
       if (SocketDNS_rr_decode (response, len, offset, &rr, &consumed) != 0)
         return RESOLVER_ERROR_INVALID;
@@ -851,6 +878,42 @@ parse_response (T resolver, struct SocketDNSResolver_Query *q,
     }
 
   return RESOLVER_OK;
+}
+
+static int
+parse_response (T resolver, struct SocketDNSResolver_Query *q,
+                const unsigned char *response, size_t len)
+{
+  SocketDNS_Header header;
+  int result;
+
+  (void)resolver; /* Currently unused - reserved for future caching extensions */
+
+  /* Decode header */
+  if (SocketDNS_header_decode (response, len, &header) != 0)
+    return RESOLVER_ERROR_INVALID;
+
+  /* Validate header fields */
+  result = validate_response_header (&header, q);
+  if (result != RESOLVER_OK)
+    return result;
+
+  /* Validate question section matches query (RFC 5452 Section 3) */
+  if (header.qdcount >= 1)
+    {
+      result = validate_response_question (response, len, q);
+      if (result != RESOLVER_OK)
+        return result;
+    }
+
+  /* Validate RCODE */
+  result = validate_response_rcode (&header);
+  if (result != RESOLVER_OK)
+    return result;
+
+  /* Parse answer section */
+  return parse_answer_section (q, response, len, header.qdcount,
+                               header.ancount);
 }
 
 /*
