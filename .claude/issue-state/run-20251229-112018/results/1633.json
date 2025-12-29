@@ -1,0 +1,10 @@
+{
+  "issue": 1633,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1648",
+  "pr_number": 1648,
+  "branch": "issue-1633-inline-bits-needed",
+  "files_changed": ["src/quic/SocketQUICWire.c"],
+  "tests_passed": true,
+  "commit_sha": "73a8ff702194739ea095f67af69ad8a609155794"
+}

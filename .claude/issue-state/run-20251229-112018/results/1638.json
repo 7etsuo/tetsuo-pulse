@@ -1,0 +1,10 @@
+{
+  "issue": 1638,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1656",
+  "pr_number": 1656,
+  "branch": "issue-1638-move-extern-to-file-scope",
+  "files_changed": ["src/core/SocketMetrics.c"],
+  "tests_passed": true,
+  "commit_sha": "101b3f08"
+}

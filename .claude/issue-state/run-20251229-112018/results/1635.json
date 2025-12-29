@@ -1,0 +1,11 @@
+{
+  "issue": 1635,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1653",
+  "pr_number": 1653,
+  "branch": "issue-1635-inline-quic-ack-helpers",
+  "files_changed": ["src/quic/SocketQUICAck.c"],
+  "tests_passed": true,
+  "commit_sha": "748359aa",
+  "summary": "Inlined three single-use helper functions (calculate_ack_delay, should_include_ecn, encode_first_range) improving code locality and readability. All 26 QUIC tests pass with sanitizers."
+}

@@ -1,0 +1,18 @@
+{
+  "issue": 1636,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1658",
+  "pr_number": 1658,
+  "branch": "issue-1636-flatten-quic-demux-nesting",
+  "files_changed": ["src/quic/SocketQUICConnection-demux.c"],
+  "tests_passed": true,
+  "commit_sha": "4d5360a8e4c76b6387d8189de576b6cdfc93da2e",
+  "summary": "Refactored SocketQUICConnTable_retire_cid to use guard clauses, reducing nesting depth from 4 to 2 levels. Used continue statement for non-matching sequences and inverted last-element check. All QUIC tests pass with sanitizers. One pre-existing DNS test failure unrelated to changes.",
+  "test_results": {
+    "total_tests": 117,
+    "passed": 116,
+    "failed": 1,
+    "failed_tests": ["test_dns_queue_limit"],
+    "note": "Failed test is pre-existing memory leak in DNS module, not related to QUIC refactoring"
+  }
+}

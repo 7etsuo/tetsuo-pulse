@@ -1,0 +1,13 @@
+{
+  "issue": 1625,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1643",
+  "pr_number": 1643,
+  "branch": "issue-1625-remove-dead-code-quic",
+  "files_changed": [
+    "src/quic/SocketQUICHandshake.c"
+  ],
+  "tests_passed": true,
+  "commit_sha": "17826f73e1659d5781d0494de315c0be528acfd9",
+  "summary": "Removed two unused static helper functions from SocketQUICHandshake.c: packet_type_to_crypto_level() and crypto_stream_has_contiguous_data(). All QUIC tests pass with sanitizers (26/26)."
+}

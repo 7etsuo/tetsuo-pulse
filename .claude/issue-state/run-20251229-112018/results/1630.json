@@ -1,0 +1,18 @@
+{
+  "issue": 1630,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1651",
+  "pr_number": 1651,
+  "branch": "issue-1630-inline-single-use-helpers",
+  "files_changed": [
+    "src/quic/SocketQUICConnectionID-pool.c"
+  ],
+  "tests_passed": true,
+  "commit_sha": "180cb80e4ebc83e7a447a4b32e5b6c35c86a7987",
+  "summary": "Inlined three single-use static helper functions (list_append, hash_insert, sequence_hash_insert) into their only call site in SocketQUICConnectionIDPool_add_with_sequence. Net reduction of 20 lines (40 removed, 20 added). All QUIC tests pass with sanitizers.",
+  "lines_changed": {
+    "removed": 40,
+    "added": 20,
+    "net": -20
+  }
+}

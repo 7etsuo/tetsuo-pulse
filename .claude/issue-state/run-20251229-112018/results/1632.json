@@ -1,0 +1,13 @@
+{
+  "issue": 1632,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1649",
+  "pr_number": 1649,
+  "branch": "issue-1632-fix-metrics-mutex-assert",
+  "files_changed": [
+    "src/core/SocketMetrics.c"
+  ],
+  "tests_passed": true,
+  "commit_sha": "6e7653409a737106c31d9845954313f8d1fc1b3c",
+  "summary": "Replaced assert-based error handling for pthread_mutex_init/destroy with proper error checking that works in both debug and release builds. Added error logging via SocketLog_emitf and proper cleanup on failure in SocketMetrics_init."
+}

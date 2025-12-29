@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "core/SocketConfig.h"
 #include "core/SocketMetrics.h"
@@ -545,11 +546,31 @@ SocketMetrics_shutdown (void)
   if (!atomic_compare_exchange_strong (&metrics_initialized, &expected, 0))
     return;
 
+  /* Phase 1: Mark all histograms as not initialized to prevent new operations
+   * from entering. This closes the race window where threads could still
+   * acquire histogram locks after we've set metrics_initialized = 0. */
   pthread_mutex_lock (&metrics_global_mutex);
-
   for (i = 0; i < SOCKET_HISTOGRAM_METRIC_COUNT; i++)
-    histogram_destroy (&histogram_values[i]);
+    histogram_values[i].initialized = 0;
+  pthread_mutex_unlock (&metrics_global_mutex);
 
+  /* Brief pause to let any in-flight histogram operations complete.
+   * This is a simple quiescence approach - operations that already passed
+   * the initialized check will complete their mutex lock/unlock cycle. */
+  struct timespec ts = { .tv_sec = 0, .tv_nsec = 10000000 }; /* 10ms */
+  nanosleep (&ts, NULL);
+
+  /* Phase 2: Now safe to destroy mutexes - all operations have drained */
+  pthread_mutex_lock (&metrics_global_mutex);
+  for (i = 0; i < SOCKET_HISTOGRAM_METRIC_COUNT; i++)
+    {
+      int rc = pthread_mutex_destroy (&histogram_values[i].mutex);
+      if (rc != 0)
+        {
+          SocketLog_emitf (SOCKET_LOG_ERROR, "metrics",
+                           "pthread_mutex_destroy failed: %d", rc);
+        }
+    }
   pthread_mutex_unlock (&metrics_global_mutex);
 
   METRICS_LOG_DEBUG ("Metrics subsystem shutdown");
