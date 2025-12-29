@@ -1462,6 +1462,47 @@ struct resolve_sync_context
   SocketDNSResolver_Result result;
 };
 
+/*
+ * Timeout Tracker for Event Loops
+ */
+
+typedef struct
+{
+  int64_t start_ms;
+  int64_t timeout_ms;
+} TimeoutTracker;
+
+/* Poll in small increments for responsiveness */
+#define SYNC_POLL_INCREMENT_MS 100
+
+static void
+timeout_tracker_init (TimeoutTracker *tracker, int timeout_ms)
+{
+  tracker->start_ms = get_monotonic_ms ();
+  tracker->timeout_ms = timeout_ms;
+}
+
+static int
+timeout_tracker_remaining (const TimeoutTracker *tracker)
+{
+  int64_t elapsed = get_monotonic_ms () - tracker->start_ms;
+  int64_t remaining = tracker->timeout_ms - elapsed;
+
+  if (remaining <= 0)
+    return 0; /* Timeout expired */
+
+  if (remaining > INT_MAX)
+    return INT_MAX;
+
+  return (int)remaining;
+}
+
+static int
+timeout_tracker_expired (const TimeoutTracker *tracker)
+{
+  return timeout_tracker_remaining (tracker) <= 0;
+}
+
 static void
 resolve_sync_callback (SocketDNSResolver_Query_T query,
                        const SocketDNSResolver_Result *result, int error,
@@ -1494,6 +1535,41 @@ resolve_sync_callback (SocketDNSResolver_Query_T query,
   ctx->done = 1;
 }
 
+/**
+ * @brief Run event loop until completion or timeout.
+ *
+ * @param resolver The DNS resolver instance.
+ * @param query The query handle (may be NULL if immediate failure).
+ * @param ctx The synchronous context.
+ * @param tracker The timeout tracker.
+ * @return RESOLVER_OK on completion, RESOLVER_ERROR_TIMEOUT on timeout.
+ */
+static int
+run_sync_event_loop (T resolver, SocketDNSResolver_Query_T query,
+                     struct resolve_sync_context *ctx,
+                     TimeoutTracker *tracker)
+{
+  while (!ctx->done)
+    {
+      if (timeout_tracker_expired (tracker))
+        {
+          /* Cancel and process to fire callback */
+          SocketDNSResolver_cancel (resolver, query);
+          SocketDNSResolver_process (resolver, 0);
+          return RESOLVER_ERROR_TIMEOUT;
+        }
+
+      /* Poll in small increments for responsiveness */
+      int poll_timeout = timeout_tracker_remaining (tracker);
+      if (poll_timeout > SYNC_POLL_INCREMENT_MS)
+        poll_timeout = SYNC_POLL_INCREMENT_MS;
+
+      SocketDNSResolver_process (resolver, poll_timeout);
+    }
+
+  return ctx->error;
+}
+
 int
 SocketDNSResolver_resolve_sync (T resolver, const char *hostname, int flags,
                                 int timeout_ms,
@@ -1501,8 +1577,8 @@ SocketDNSResolver_resolve_sync (T resolver, const char *hostname, int flags,
 {
   struct resolve_sync_context ctx = { 0 };
   SocketDNSResolver_Query_T query;
-  int64_t start_time;
-  int64_t elapsed;
+  TimeoutTracker tracker;
+  int loop_result;
 
   assert (resolver);
   assert (hostname);
@@ -1515,11 +1591,13 @@ SocketDNSResolver_resolve_sync (T resolver, const char *hostname, int flags,
   if (timeout_ms <= 0)
     timeout_ms = RESOLVER_DEFAULT_TIMEOUT_MS;
 
+  timeout_tracker_init (&tracker, timeout_ms);
+
   /* Start async resolution */
   query = SocketDNSResolver_resolve (resolver, hostname, flags,
                                      resolve_sync_callback, &ctx);
 
-  /* Check for immediate completion (cached, localhost, IP literal) */
+  /* Fast path: immediate completion (cached, localhost, IP literal) */
   if (ctx.done)
     {
       if (ctx.error == RESOLVER_OK)
@@ -1528,39 +1606,17 @@ SocketDNSResolver_resolve_sync (T resolver, const char *hostname, int flags,
     }
 
   /* Query failed to start */
-  if (!query && !ctx.done)
-    {
-      return ctx.error != 0 ? ctx.error : RESOLVER_ERROR_NETWORK;
-    }
+  if (!query)
+    return ctx.error != 0 ? ctx.error : RESOLVER_ERROR_NETWORK;
 
-  /* Event loop until done or timeout */
-  start_time = get_monotonic_ms ();
+  /* Run event loop until completion or timeout */
+  loop_result = run_sync_event_loop (resolver, query, &ctx, &tracker);
 
-  while (!ctx.done)
-    {
-      elapsed = get_monotonic_ms () - start_time;
-      if (elapsed >= timeout_ms)
-        {
-          /* Cancel pending query */
-          SocketDNSResolver_cancel (resolver, query);
-          /* Process to fire cancellation callback */
-          SocketDNSResolver_process (resolver, 0);
-          return RESOLVER_ERROR_TIMEOUT;
-        }
-
-      /* Calculate remaining time for this poll iteration */
-      int poll_timeout = (int)(timeout_ms - elapsed);
-      if (poll_timeout > 100)
-        poll_timeout = 100; /* Poll in 100ms increments */
-
-      SocketDNSResolver_process (resolver, poll_timeout);
-    }
-
-  /* Copy result to caller */
-  if (ctx.error == RESOLVER_OK)
+  /* Copy result on success */
+  if (loop_result == RESOLVER_OK && ctx.error == RESOLVER_OK)
     *result = ctx.result;
 
-  return ctx.error;
+  return loop_result;
 }
 
 int
