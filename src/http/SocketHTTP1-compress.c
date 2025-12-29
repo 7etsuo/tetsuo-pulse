@@ -198,14 +198,11 @@ update_encode_total (size_t *total, size_t produced, size_t max_size)
   return 1;
 }
 
-/* Default maximum decompressed size (100MB) for zip bomb protection */
-#define HTTP1_DEFAULT_MAX_DECOMPRESSED_SIZE (100 * 1024 * 1024)
-
 static size_t
 get_effective_max_decompressed_size (const SocketHTTP1_Config *cfg)
 {
   if (cfg == NULL || cfg->max_decompressed_size == 0)
-    return HTTP1_DEFAULT_MAX_DECOMPRESSED_SIZE;
+    return SOCKET_SECURITY_MAX_DECOMPRESSED_SIZE;
   return cfg->max_decompressed_size;
 }
 
