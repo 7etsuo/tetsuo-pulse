@@ -31,6 +31,18 @@
 #include "socket/SocketCommon.h"
 
 /**
+ * @brief DNS cancellation error code.
+ * @ingroup dns
+ *
+ * Returns EAI_CANCELLED if available, otherwise EAI_AGAIN as fallback.
+ */
+#ifdef EAI_CANCELLED
+#define DNS_CANCELLATION_ERROR EAI_CANCELLED
+#else
+#define DNS_CANCELLATION_ERROR EAI_AGAIN
+#endif
+
+/**
  * @brief Opaque handle for a single DNS resolution request.
  * @ingroup dns
  *

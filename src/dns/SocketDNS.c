@@ -372,7 +372,7 @@ allocate_request_hostname (struct SocketDNS_T *dns,
     }
 
   /* Check for overflow: host_len == SIZE_MAX would cause host_len + 1 to wrap to 0 */
-  if (host_len >= SIZE_MAX || host_len > 255)
+  if (host_len >= SIZE_MAX || host_len > SOCKET_DNS_MAX_HOSTNAME_LEN)
     {
       SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
                         "Hostname length overflow or exceeds DNS maximum (255)");
@@ -537,16 +537,6 @@ invoke_user_callback (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req,
   pthread_mutex_unlock (&dns->mutex);
 }
 
-int
-dns_cancellation_error (void)
-{
-#ifdef EAI_CANCELLED
-  return EAI_CANCELLED;
-#else
-  return EAI_AGAIN;
-#endif
-}
-
 void
 cancel_pending_request (struct SocketDNS_T *dns,
                         struct SocketDNS_Request_T *req)
@@ -592,7 +582,7 @@ static void
 cancel_pending_state (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 {
   cancel_pending_request (dns, req);
-  req->error = dns_cancellation_error ();
+  req->error = DNS_CANCELLATION_ERROR;
 }
 
 static void
@@ -601,7 +591,7 @@ cancel_processing_state (struct SocketDNS_T *dns,
 {
   (void)dns;
   req->state = REQ_CANCELLED;
-  req->error = dns_cancellation_error ();
+  req->error = DNS_CANCELLATION_ERROR;
 }
 
 static void
@@ -612,7 +602,7 @@ cancel_complete_state (struct SocketDNS_Request_T *req)
       SocketCommon_free_addrinfo (req->result);
       req->result = NULL;
     }
-  req->error = dns_cancellation_error ();
+  req->error = DNS_CANCELLATION_ERROR;
 }
 
 static void
@@ -640,7 +630,7 @@ handle_cancel_by_state (struct SocketDNS_T *dns,
 
     case REQ_CANCELLED:
       if (req->error == 0)
-        req->error = dns_cancellation_error ();
+        req->error = DNS_CANCELLATION_ERROR;
       break;
     }
 }
@@ -1405,7 +1395,7 @@ wait_for_completion (struct SocketDNS_T *dns,
         }
       else
         {
-          poll_timeout = 100; /* Use 100ms poll intervals if no timeout */
+          poll_timeout = SOCKET_DNS_POLL_INTERVAL_MS;
         }
 
       /* Release mutex before blocking operations */
@@ -1416,7 +1406,9 @@ wait_for_completion (struct SocketDNS_T *dns,
         SocketDNSResolver_process (dns->resolver, 0);
 
       /* Wait for completion signal on pipe */
-      poll_ret = poll (&pfd, 1, poll_timeout < 100 ? poll_timeout : 100);
+      poll_ret = poll (&pfd, 1, poll_timeout < SOCKET_DNS_POLL_INTERVAL_MS
+                                    ? poll_timeout
+                                    : SOCKET_DNS_POLL_INTERVAL_MS);
 
       /* Reacquire mutex */
       pthread_mutex_lock (&dns->mutex);
@@ -1431,7 +1423,7 @@ wait_for_completion (struct SocketDNS_T *dns,
       /* Drain pipe if data is available */
       if (poll_ret > 0 && (pfd.revents & POLLIN))
         {
-          char buffer[256];
+          char buffer[SOCKET_DNS_PIPE_BUFFER_SIZE];
           while (read (dns->pipefd[0], buffer, sizeof (buffer)) > 0)
             ;
         }
