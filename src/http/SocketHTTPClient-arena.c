@@ -95,18 +95,18 @@ httpclient_get_arena_cache (void)
   pthread_once (&arena_cache_once, arena_cache_init_key);
 
   cache = pthread_getspecific (arena_cache_key);
-  if (cache == NULL)
+  if (cache != NULL)
+    return cache;
+
+  cache = calloc (1, sizeof (*cache));
+  if (!cache)
+    return NULL;
+
+  if (pthread_setspecific (arena_cache_key, cache) != 0)
     {
-      cache = calloc (1, sizeof (*cache));
-      if (cache)
-        {
-          if (pthread_setspecific (arena_cache_key, cache) != 0)
-            {
-              /* Failed to store in TLS - free and continue without cache */
-              free (cache);
-              cache = NULL;
-            }
-        }
+      /* Failed to store in TLS - free and continue without cache */
+      free (cache);
+      return NULL;
     }
 
   return cache;
