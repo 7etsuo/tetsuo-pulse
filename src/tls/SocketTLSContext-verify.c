@@ -310,40 +310,75 @@ get_verify_context (X509_STORE_CTX *x509_ctx, Socket_T *out_sock, T *out_ctx)
 }
 
 /**
- * validate_ocsp_response_basic - Perform basic OCSP response validation
- * @ocsp_resp: DER-encoded OCSP response data
- * @ocsp_len: Length of OCSP response data
+ * OcspValidateMode - Error handling mode for OCSP validation
+ */
+typedef enum
+{
+  OCSP_VALIDATE_RETURN_CODE, /* Return 0/1 with logging */
+  OCSP_VALIDATE_RAISE,       /* Raise exception on failure */
+} OcspValidateMode;
+
+/**
+ * validate_ocsp_response - Unified OCSP response validation
+ * @response: DER-encoded OCSP response
+ * @len: Length of response
+ * @check_basic: If true, also validate OCSP_BASICRESP structure
+ * @mode: Error handling mode (return code vs exception)
+ * @context: Context string for error messages
  *
- * Validates the OCSP response format and checks if status is successful.
- * Note: Full validation (signature, freshness) is done by
- * SocketTLS_get_ocsp_response_status() post-handshake.
- * This performs only basic format validation.
+ * Validates OCSP response format, status, and optionally basic response
+ * structure in a single parse pass to avoid redundant parsing operations.
  *
- * Returns: 1 if response is valid and status is successful, 0 otherwise
+ * Returns: 1 if valid, 0 if invalid (RETURN_CODE mode only)
+ * Raises: SocketTLS_Failed (RAISE mode only)
  */
 static int
-validate_ocsp_response_basic (const unsigned char *ocsp_resp, long ocsp_len)
+validate_ocsp_response (const unsigned char *response, size_t len,
+                        int check_basic, OcspValidateMode mode,
+                        const char *context)
 {
-  const unsigned char *p = ocsp_resp;
-  OCSP_RESPONSE *resp = d2i_OCSP_RESPONSE (NULL, &p, ocsp_len);
+  const unsigned char *p = response;
+  OCSP_RESPONSE *resp = d2i_OCSP_RESPONSE (NULL, &p, len);
+  OCSP_BASICRESP *basic = NULL;
+  int status;
 
   if (!resp)
     {
-      SOCKET_LOG_ERROR_MSG ("OCSP Must-Staple: Invalid OCSP response format");
+      if (mode == OCSP_VALIDATE_RAISE)
+        RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "Invalid OCSP response format");
+      SOCKET_LOG_ERROR_MSG ("%s: Invalid OCSP response format", context);
       return 0;
     }
 
-  int status = OCSP_response_status (resp);
-  OCSP_RESPONSE_free (resp);
-
+  status = OCSP_response_status (resp);
   if (status != OCSP_RESPONSE_STATUS_SUCCESSFUL)
     {
-      SOCKET_LOG_ERROR_MSG (
-          "OCSP Must-Staple: OCSP response status not successful: %d",
-          status);
+      OCSP_RESPONSE_free (resp);
+      if (mode == OCSP_VALIDATE_RAISE)
+        RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
+                             "OCSP response status not successful: %d", status);
+      SOCKET_LOG_ERROR_MSG ("%s: OCSP response status not successful: %d",
+                            context, status);
       return 0;
     }
 
+  if (check_basic)
+    {
+      basic = OCSP_response_get1_basic (resp);
+      if (!basic)
+        {
+          OCSP_RESPONSE_free (resp);
+          if (mode == OCSP_VALIDATE_RAISE)
+            RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
+                                 "OCSP response missing basic response structure");
+          SOCKET_LOG_ERROR_MSG ("%s: OCSP response missing basic response",
+                                context);
+          return 0;
+        }
+      OCSP_BASICRESP_free (basic);
+    }
+
+  OCSP_RESPONSE_free (resp);
   return 1;
 }
 
@@ -404,7 +439,8 @@ check_ocsp_must_staple (T ctx, Socket_T sock, X509 *cert)
     }
 
   /* Validate the OCSP response */
-  if (!validate_ocsp_response_basic (ocsp_resp, ocsp_len))
+  if (!validate_ocsp_response (ocsp_resp, ocsp_len, 0,
+                               OCSP_VALIDATE_RETURN_CODE, "OCSP Must-Staple"))
     return 0;
 
   SOCKET_LOG_DEBUG_MSG ("OCSP Must-Staple: Valid OCSP response present");
@@ -899,49 +935,6 @@ validate_ocsp_response_size (size_t len)
                          SOCKET_TLS_MAX_OCSP_RESPONSE_LEN);
 }
 
-/**
- * validate_ocsp_response_format - Validate response DER format and status
- * @response: Response bytes
- * @len: Response length
- *
- * Performs comprehensive validation in a single parse to avoid redundant
- * parsing operations. Checks DER format, response status, and basic
- * response structure in one pass.
- */
-static void
-validate_ocsp_response_format (const unsigned char *response, size_t len)
-{
-  const unsigned char *p = response;
-  OCSP_RESPONSE *resp = d2i_OCSP_RESPONSE (NULL, &p, len);
-  OCSP_BASICRESP *basic = NULL;
-  int status;
-
-  if (!resp)
-    RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "Invalid OCSP response format");
-
-  /* Perform complete validation in single parse pass to avoid
-   * redundant parsing when response is later used. */
-  status = OCSP_response_status (resp);
-  if (status != OCSP_RESPONSE_STATUS_SUCCESSFUL)
-    {
-      OCSP_RESPONSE_free (resp);
-      RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
-                           "OCSP response status not successful: %d", status);
-    }
-
-  /* Validate basic response structure */
-  basic = OCSP_response_get1_basic (resp);
-  if (!basic)
-    {
-      OCSP_RESPONSE_free (resp);
-      RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
-                           "OCSP response missing basic response structure");
-    }
-
-  OCSP_BASICRESP_free (basic);
-  OCSP_RESPONSE_free (resp);
-}
-
 void
 SocketTLSContext_set_ocsp_response (T ctx, const unsigned char *response,
                                     size_t len)
@@ -956,7 +949,8 @@ SocketTLSContext_set_ocsp_response (T ctx, const unsigned char *response,
                          "Invalid OCSP response (null or zero length)");
 
   validate_ocsp_response_size (len);
-  validate_ocsp_response_format (response, len);
+  validate_ocsp_response (response, len, 1, OCSP_VALIDATE_RAISE,
+                          "OCSP response validation");
 
   copy = ctx_arena_alloc (ctx, len, "Failed to allocate OCSP response buffer");
   memcpy (copy, response, len);
