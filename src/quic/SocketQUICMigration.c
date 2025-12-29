@@ -38,6 +38,8 @@ static int sockaddr_to_string (const struct sockaddr_storage *addr, char *buf,
 static SocketQUICPath_T *find_path_by_challenge (
     SocketQUICMigration_T *migration, const uint8_t challenge[8]);
 static SocketQUICPath_T *allocate_path_slot (SocketQUICMigration_T *migration);
+static size_t find_path_index (const SocketQUICMigration_T *migration,
+                               const SocketQUICPath_T *path);
 
 /* ============================================================================
  * Lifecycle Functions
@@ -252,14 +254,11 @@ SocketQUICMigration_handle_path_response (SocketQUICMigration_T *migration,
   /* If this was the target of migration, complete migration */
   if (migration->migration_in_progress)
     {
-      for (size_t i = 0; i < migration->path_count; i++)
+      size_t path_index = find_path_index (migration, path);
+      if (path_index < migration->path_count)
         {
-          if (&migration->paths[i] == path)
-            {
-              migration->target_path_index = i;
-              /* Caller should invoke SocketQUICMigration_initiate next */
-              break;
-            }
+          migration->target_path_index = path_index;
+          /* Caller should invoke SocketQUICMigration_initiate next */
         }
     }
 
@@ -375,12 +374,7 @@ SocketQUICMigration_initiate (SocketQUICMigration_T *migration,
   SocketQUICMigration_reset_congestion (new_path, old_path);
 
   /* Find index of new path */
-  for (new_path_index = 0; new_path_index < migration->path_count;
-       new_path_index++)
-    {
-      if (&migration->paths[new_path_index] == new_path)
-        break;
-    }
+  new_path_index = find_path_index (migration, new_path);
 
   if (new_path_index >= migration->path_count)
     return QUIC_MIGRATION_ERROR_INVALID_STATE;
@@ -767,4 +761,32 @@ allocate_path_slot (SocketQUICMigration_T *migration)
     }
 
   return NULL;
+}
+
+/**
+ * @brief Find index of path in migration manager.
+ *
+ * Performs linear search to find the array index of a given path.
+ *
+ * @param migration Migration manager.
+ * @param path Path to find.
+ *
+ * @return Path index, or migration->path_count if not found.
+ */
+static size_t
+find_path_index (const SocketQUICMigration_T *migration,
+                 const SocketQUICPath_T *path)
+{
+  size_t i;
+
+  if (migration == NULL || path == NULL)
+    return migration ? migration->path_count : 0;
+
+  for (i = 0; i < migration->path_count; i++)
+    {
+      if (&migration->paths[i] == path)
+        return i;
+    }
+
+  return migration->path_count; /* Not found */
 }
