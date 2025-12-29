@@ -52,6 +52,21 @@ static const char *result_strings[] = {
   [QUIC_STREAM_ERROR_LIMIT] = "Stream limit exceeded"
 };
 
+static const char *event_strings[] = {
+  [QUIC_STREAM_EVENT_SEND_DATA] = "Send Data",
+  [QUIC_STREAM_EVENT_SEND_FIN] = "Send FIN",
+  [QUIC_STREAM_EVENT_ALL_DATA_ACKED] = "All Data Acked",
+  [QUIC_STREAM_EVENT_SEND_RESET] = "Send Reset",
+  [QUIC_STREAM_EVENT_RESET_ACKED] = "Reset Acked",
+  [QUIC_STREAM_EVENT_RECV_DATA] = "Receive Data",
+  [QUIC_STREAM_EVENT_RECV_FIN] = "Receive FIN",
+  [QUIC_STREAM_EVENT_ALL_DATA_RECVD] = "All Data Received",
+  [QUIC_STREAM_EVENT_APP_READ_DATA] = "App Read Data",
+  [QUIC_STREAM_EVENT_RECV_RESET] = "Receive Reset",
+  [QUIC_STREAM_EVENT_APP_READ_RESET] = "App Read Reset",
+  [QUIC_STREAM_EVENT_RECV_STOP_SENDING] = "Receive Stop Sending"
+};
+
 /* ============================================================================
  * Stream ID Functions (RFC 9000 Section 2.1)
  * ============================================================================
@@ -247,6 +262,14 @@ SocketQUICStream_state_string (SocketQUICStreamState state)
   if (state > QUIC_STREAM_STATE_RESET_READ)
     return "Unknown";
   return state_strings[state];
+}
+
+const char *
+SocketQUICStream_event_string (SocketQUICStreamEvent event)
+{
+  if (event < 0 || event > QUIC_STREAM_EVENT_MAX)
+    return "Unknown";
+  return event_strings[event];
 }
 
 DEFINE_RESULT_STRING_FUNC (SocketQUICStream, QUIC_STREAM_ERROR_LIMIT)
