@@ -220,7 +220,7 @@ verify_token_address (const uint8_t *token, const struct sockaddr *addr)
 
   hash_address (addr, addr_hash);
 
-  if (SocketCrypto_secure_compare (token + 8, addr_hash, QUIC_TOKEN_ADDR_HASH_SIZE) != 0)
+  if (SocketCrypto_secure_compare (token + QUIC_TOKEN_TIMESTAMP_SIZE, addr_hash, QUIC_TOKEN_ADDR_HASH_SIZE) != 0)
     {
       return QUIC_ADDR_VALIDATION_ERROR_INVALID;
     }
@@ -249,7 +249,7 @@ compute_and_verify_token_hmac (const uint8_t *token, uint64_t token_timestamp,
   hash_address (addr, addr_hash);
 
   socket_util_pack_be64 (hmac_input, token_timestamp);
-  memcpy (hmac_input + 8, addr_hash, QUIC_TOKEN_ADDR_HASH_SIZE);
+  memcpy (hmac_input + QUIC_TOKEN_TIMESTAMP_SIZE, addr_hash, QUIC_TOKEN_ADDR_HASH_SIZE);
 
   TRY
   {
@@ -300,7 +300,7 @@ SocketQUICAddrValidation_generate_token (const struct sockaddr *addr,
 
   /* Build HMAC input: timestamp || addr_hash */
   socket_util_pack_be64 (hmac_input, timestamp);
-  memcpy (hmac_input + 8, addr_hash, QUIC_TOKEN_ADDR_HASH_SIZE);
+  memcpy (hmac_input + QUIC_TOKEN_TIMESTAMP_SIZE, addr_hash, QUIC_TOKEN_ADDR_HASH_SIZE);
 
   /* Compute HMAC-SHA256 */
   TRY
@@ -316,7 +316,7 @@ SocketQUICAddrValidation_generate_token (const struct sockaddr *addr,
 
   /* Build token: timestamp || addr_hash || HMAC */
   socket_util_pack_be64 (token, timestamp);
-  memcpy (token + 8, addr_hash, QUIC_TOKEN_ADDR_HASH_SIZE);
+  memcpy (token + QUIC_TOKEN_TIMESTAMP_SIZE, addr_hash, QUIC_TOKEN_ADDR_HASH_SIZE);
   memcpy (token + 24, hmac_output, 32);
 
   *token_len = QUIC_ADDR_VALIDATION_TOKEN_SIZE;
