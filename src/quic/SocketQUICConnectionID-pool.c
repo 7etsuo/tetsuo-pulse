@@ -155,21 +155,6 @@ SocketQUICConnectionIDPool_can_add (const SocketQUICConnectionIDPool_T pool)
  */
 
 static void
-list_append (SocketQUICConnectionIDPool_T pool,
-             SocketQUICConnectionIDEntry_T *entry)
-{
-  entry->list_prev = pool->list_tail;
-  entry->list_next = NULL;
-
-  if (pool->list_tail)
-    pool->list_tail->list_next = entry;
-  else
-    pool->list_head = entry;
-
-  pool->list_tail = entry;
-}
-
-static void
 list_remove (SocketQUICConnectionIDPool_T pool,
              SocketQUICConnectionIDEntry_T *entry)
 {
@@ -191,17 +176,6 @@ list_remove (SocketQUICConnectionIDPool_T pool,
  * Internal Hash Table Operations
  * ============================================================================
  */
-
-static void
-hash_insert (SocketQUICConnectionIDPool_T pool,
-             SocketQUICConnectionIDEntry_T *entry)
-{
-  unsigned idx
-      = hash_cid_bytes (entry->cid.data, entry->cid.len, pool->hash_seed);
-
-  entry->hash_next = pool->hash_table[idx];
-  pool->hash_table[idx] = entry;
-}
 
 static void
 hash_remove (SocketQUICConnectionIDPool_T pool,
@@ -228,16 +202,6 @@ hash_remove (SocketQUICConnectionIDPool_T pool,
  * Sequence Hash Table Operations (O(1) sequence lookup)
  * ============================================================================
  */
-
-static void
-sequence_hash_insert (SocketQUICConnectionIDPool_T pool,
-                      SocketQUICConnectionIDEntry_T *entry)
-{
-  unsigned idx = hash_sequence (entry->cid.sequence, pool->hash_seed);
-
-  entry->seq_hash_next = pool->sequence_table[idx];
-  pool->sequence_table[idx] = entry;
-}
 
 static void
 sequence_hash_remove (SocketQUICConnectionIDPool_T pool,
@@ -352,7 +316,7 @@ SocketQUICConnectionIDPool_add_with_sequence (SocketQUICConnectionIDPool_T pool,
 {
   SocketQUICConnectionIDEntry_T *entry;
   SocketQUICConnectionIDPool_Result result;
-  unsigned idx;
+  unsigned idx, seq_idx;
 
   if (pool == NULL || cid == NULL)
     return QUIC_CONNID_POOL_ERROR_NULL;
@@ -377,9 +341,25 @@ SocketQUICConnectionIDPool_add_with_sequence (SocketQUICConnectionIDPool_T pool,
     return QUIC_CONNID_POOL_ERROR_NULL;
 
   /* Insert into hash tables and list */
-  hash_insert (pool, entry);
-  sequence_hash_insert (pool, entry);
-  list_append (pool, entry);
+
+  /* Hash insert by CID bytes */
+  idx = hash_cid_bytes (entry->cid.data, entry->cid.len, pool->hash_seed);
+  entry->hash_next = pool->hash_table[idx];
+  pool->hash_table[idx] = entry;
+
+  /* Hash insert by sequence number */
+  seq_idx = hash_sequence (entry->cid.sequence, pool->hash_seed);
+  entry->seq_hash_next = pool->sequence_table[seq_idx];
+  pool->sequence_table[seq_idx] = entry;
+
+  /* Append to doubly-linked list */
+  entry->list_prev = pool->list_tail;
+  entry->list_next = NULL;
+  if (pool->list_tail)
+    pool->list_tail->list_next = entry;
+  else
+    pool->list_head = entry;
+  pool->list_tail = entry;
 
   pool->total_count++;
   pool->active_count++;
