@@ -623,6 +623,89 @@ validate_handshake_preconditions (Socket_T socket)
 }
 
 /**
+ * handshake_record_duration - Record handshake timing metrics
+ * @start_time_ms: Start time in milliseconds (0 to skip recording)
+ *
+ * Records successful handshake duration in histogram if timing is enabled.
+ *
+ * Thread-safe: No
+ */
+static void
+handshake_record_duration (int64_t start_time_ms)
+{
+  if (start_time_ms > 0)
+    {
+      int64_t elapsed_ms = SocketTimeout_elapsed_ms (start_time_ms);
+      SocketMetrics_histogram_observe (SOCKET_HIST_TLS_HANDSHAKE_TIME_MS,
+                                        (double)elapsed_ms);
+    }
+}
+
+/**
+ * handshake_check_timeout - Check for timeout and raise exception if expired
+ * @deadline: Deadline timestamp (0 if no timeout)
+ * @timeout_ms: Original timeout value in milliseconds
+ * @start_time_ms: Start time for elapsed calculation (0 to use timeout_ms)
+ *
+ * Raises: SocketTLS_HandshakeFailed if timeout expired
+ * Thread-safe: No
+ */
+static void
+handshake_check_timeout (int64_t deadline, int timeout_ms,
+                         int64_t start_time_ms)
+{
+  if (!SocketTimeout_expired (deadline))
+    return;
+
+  int64_t elapsed_ms = (start_time_ms > 0)
+                           ? SocketTimeout_elapsed_ms (start_time_ms)
+                           : (int64_t)timeout_ms;
+
+  SocketMetrics_counter_inc (SOCKET_CTR_TLS_HANDSHAKES_TOTAL);
+  SocketMetrics_counter_inc (SOCKET_CTR_TLS_HANDSHAKES_FAILED);
+  tls_format_openssl_error ("TLS handshake timeout");
+  RAISE_TLS_ERROR_MSG (SocketTLS_HandshakeFailed,
+                       "TLS handshake timeout after %lld ms (timeout: %d ms)",
+                       (long long)elapsed_ms, timeout_ms);
+}
+
+/**
+ * handshake_wait_for_io - Wait for I/O readiness during handshake
+ * @socket: Socket instance
+ * @state: Current handshake state
+ * @poll_interval_ms: Poll interval in milliseconds
+ * @deadline: Deadline timestamp (0 if no timeout)
+ *
+ * Performs exception-safe polling and raises on error.
+ *
+ * Returns: 1 if socket ready, 0 on timeout/EINTR (retry)
+ * Raises: SocketTLS_HandshakeFailed on poll error
+ * Thread-safe: No
+ */
+static int
+handshake_wait_for_io (Socket_T socket, TLSHandshakeState state,
+                       int poll_interval_ms, int64_t deadline)
+{
+  unsigned events = state_to_poll_events (state);
+  int poll_timeout = SocketTimeout_poll_timeout (poll_interval_ms, deadline);
+
+  const char *error_msg = NULL;
+  int poll_result
+      = do_handshake_poll_safe (socket, events, poll_timeout, &error_msg);
+
+  if (poll_result < 0)
+    {
+      SocketMetrics_counter_inc (SOCKET_CTR_TLS_HANDSHAKES_TOTAL);
+      SocketMetrics_counter_inc (SOCKET_CTR_TLS_HANDSHAKES_FAILED);
+      TLS_ERROR_FMT ("SocketPoll_wait failed: %s",
+                     error_msg ? error_msg : "unknown");
+      RAISE_TLS_ERROR (SocketTLS_HandshakeFailed);
+    }
+
+  return poll_result;
+}
+
+/**
  * handshake_loop_internal - Internal handshake loop with configurable poll
  * interval
  * @socket: Socket to handshake
@@ -646,10 +729,6 @@ handshake_loop_internal (Socket_T socket, int timeout_ms, int poll_interval_ms,
       = (timeout_ms > 0) ? SocketTimeout_deadline_ms (timeout_ms) : 0LL;
 
   volatile TLSHandshakeState final_state = TLS_HANDSHAKE_ERROR;
-  volatile int loop_timeout = 0;
-  volatile int loop_poll_error = 0;
-  volatile int64_t final_elapsed_ms = 0;
-  const char *volatile poll_error_msg = NULL;
 
   /* Single TRY block at top level - exceptions from handshake are caught */
   TRY
@@ -660,13 +739,7 @@ handshake_loop_internal (Socket_T socket, int timeout_ms, int poll_interval_ms,
 
         if (state == TLS_HANDSHAKE_COMPLETE)
           {
-            /* Record handshake duration in histogram */
-            if (start_time_ms > 0)
-              {
-                int64_t elapsed_ms = SocketTimeout_elapsed_ms (start_time_ms);
-                SocketMetrics_histogram_observe (
-                    SOCKET_HIST_TLS_HANDSHAKE_TIME_MS, (double)elapsed_ms);
-              }
+            handshake_record_duration (start_time_ms);
             final_state = state;
             break; /* Success - exit loop */
           }
@@ -684,34 +757,16 @@ handshake_loop_internal (Socket_T socket, int timeout_ms, int poll_interval_ms,
             break;
           }
 
-        /* Check timeout */
-        if (SocketTimeout_expired (deadline))
-          {
-            loop_timeout = 1;
-            final_elapsed_ms = (start_time_ms > 0)
-                                   ? SocketTimeout_elapsed_ms (start_time_ms)
-                                   : (int64_t)timeout_ms;
-            break;
-          }
+        /* Check timeout and raise if expired */
+        handshake_check_timeout (deadline, timeout_ms, start_time_ms);
 
-        /* Wait for I/O - use safe version that doesn't raise exceptions */
-        unsigned events = state_to_poll_events (state);
-        int poll_timeout
-            = SocketTimeout_poll_timeout (poll_interval_ms, deadline);
-
-        const char *error_msg = NULL;
+        /* Wait for I/O - raises on error, returns 0/1 on success */
         int poll_result
-            = do_handshake_poll_safe (socket, events, poll_timeout, &error_msg);
-
-        if (poll_result < 0)
-          {
-            loop_poll_error = 1;
-            poll_error_msg = error_msg;
-            break;
-          }
+            = handshake_wait_for_io (socket, state, poll_interval_ms, deadline);
 
         /* poll_result == 0: EINTR or partial timeout, continue loop */
         /* poll_result == 1: socket ready, retry handshake */
+        (void)poll_result;
       }
   }
   EXCEPT (SocketTLS_HandshakeFailed)
@@ -720,27 +775,6 @@ handshake_loop_internal (Socket_T socket, int timeout_ms, int poll_interval_ms,
     final_state = TLS_HANDSHAKE_ERROR;
   }
   END_TRY;
-
-  /* Handle error conditions AFTER the TRY block to avoid nested exceptions */
-  if (loop_timeout)
-    {
-      SocketMetrics_counter_inc (SOCKET_CTR_TLS_HANDSHAKES_TOTAL);
-      SocketMetrics_counter_inc (SOCKET_CTR_TLS_HANDSHAKES_FAILED);
-      tls_format_openssl_error ("TLS handshake timeout");
-      RAISE_TLS_ERROR_MSG (SocketTLS_HandshakeFailed,
-                           "TLS handshake timeout after %lld ms "
-                           "(timeout: %d ms)",
-                           (long long)final_elapsed_ms, timeout_ms);
-    }
-
-  if (loop_poll_error)
-    {
-      SocketMetrics_counter_inc (SOCKET_CTR_TLS_HANDSHAKES_TOTAL);
-      SocketMetrics_counter_inc (SOCKET_CTR_TLS_HANDSHAKES_FAILED);
-      TLS_ERROR_FMT ("SocketPoll_wait failed: %s",
-                     poll_error_msg ? poll_error_msg : "unknown");
-      RAISE_TLS_ERROR (SocketTLS_HandshakeFailed);
-    }
 
   return final_state;
 }
