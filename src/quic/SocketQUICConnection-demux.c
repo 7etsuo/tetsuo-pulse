@@ -302,23 +302,37 @@ SocketQUICConnection_Result SocketQUICConnTable_add_cid(SocketQUICConnTable_T ta
 SocketQUICConnection_Result SocketQUICConnTable_retire_cid(SocketQUICConnTable_T table, SocketQUICConnection_T conn, uint64_t sequence) {
   if (!table || !conn) return QUIC_CONN_ERROR_NULL;
   pthread_mutex_lock(&table->mutex);
+
+  /* Search for connection ID with matching sequence number */
   int found = 0;
   for (size_t i = 0; i < conn->local_cid_count; i++) {
-    if (conn->local_cids[i].sequence == sequence) {
-      if (conn->local_cids[i].len > 0) remove_from_cid_bucket(table, conn, conn->local_cids[i].data, conn->local_cids[i].len);
-      /* Explicit bounds validation for defensive programming (issue #788) */
-      if (i < conn->local_cid_count - 1) {
-        /* Assert invariants to catch programming errors early */
-        assert(conn->local_cid_count <= QUIC_CONNECTION_MAX_CIDS);
-        assert(i + 1 < QUIC_CONNECTION_MAX_CIDS);
-        assert(conn->local_cid_count > 0);  /* Prevent underflow */
-        /* Safe to proceed with memmove */
-        size_t move_count = conn->local_cid_count - i - 1;
-        memmove(&conn->local_cids[i], &conn->local_cids[i + 1], move_count * sizeof(SocketQUICConnectionID_T));
-      }
-      conn->local_cid_count--; found = 1; break;
+    /* Guard: Skip non-matching sequence numbers */
+    if (conn->local_cids[i].sequence != sequence)
+      continue;
+
+    /* Found matching sequence - remove from hash bucket if non-zero length */
+    if (conn->local_cids[i].len > 0)
+      remove_from_cid_bucket(table, conn, conn->local_cids[i].data, conn->local_cids[i].len);
+
+    /* Guard: No compaction needed if this is the last element */
+    if (i >= conn->local_cid_count - 1) {
+      conn->local_cid_count--;
+      found = 1;
+      break;
     }
+
+    /* Compact array by moving tail elements forward (issue #788) */
+    assert(conn->local_cid_count <= QUIC_CONNECTION_MAX_CIDS);
+    assert(i + 1 < QUIC_CONNECTION_MAX_CIDS);
+    assert(conn->local_cid_count > 0);  /* Prevent underflow */
+
+    size_t move_count = conn->local_cid_count - i - 1;
+    memmove(&conn->local_cids[i], &conn->local_cids[i + 1], move_count * sizeof(SocketQUICConnectionID_T));
+    conn->local_cid_count--;
+    found = 1;
+    break;
   }
+
   pthread_mutex_unlock(&table->mutex);
   return found ? QUIC_CONN_OK : QUIC_CONN_ERROR_NOT_FOUND;
 }
