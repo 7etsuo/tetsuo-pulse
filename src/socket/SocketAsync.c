@@ -1818,7 +1818,9 @@ SocketAsync_send_fixed (T async, Socket_T socket, unsigned buf_index,
       RAISE_MODULE_ERROR (SocketAsync_Failed);
     }
 
-  if (offset + len > async->registered_bufs[buf_index].iov_len)
+  /* Check for integer overflow and bounds violation */
+  if (offset > async->registered_bufs[buf_index].iov_len
+      || len > async->registered_bufs[buf_index].iov_len - offset)
     {
       errno = EINVAL;
       SOCKET_ERROR_MSG ("Offset + len exceeds buffer size");
@@ -1912,7 +1914,9 @@ SocketAsync_recv_fixed (T async, Socket_T socket, unsigned buf_index,
       RAISE_MODULE_ERROR (SocketAsync_Failed);
     }
 
-  if (offset + len > async->registered_bufs[buf_index].iov_len)
+  /* Check for integer overflow and bounds violation */
+  if (offset > async->registered_bufs[buf_index].iov_len
+      || len > async->registered_bufs[buf_index].iov_len - offset)
     {
       errno = EINVAL;
       SOCKET_ERROR_MSG ("Offset + len exceeds buffer size");
