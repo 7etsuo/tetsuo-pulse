@@ -375,6 +375,22 @@ typedef enum
 #define HTTP_STATUS_5XX_MAX 599
 
 /**
+ * @brief Status code classification macros for quick category checking.
+ *
+ * Provide readable checks for HTTP status code ranges per RFC 9110.
+ * Use these instead of magic number comparisons for improved readability
+ * and maintainability.
+ *
+ * @param c HTTP status code to check
+ * @return 1 if code is in the specified range, 0 otherwise
+ */
+#define HTTP_STATUS_IS_INFORMATIONAL(c) ((c) >= 100 && (c) < 200)
+#define HTTP_STATUS_IS_SUCCESS(c) ((c) >= 200 && (c) < 300)
+#define HTTP_STATUS_IS_REDIRECT(c) ((c) >= 300 && (c) < 400)
+#define HTTP_STATUS_IS_CLIENT_ERROR(c) ((c) >= 400 && (c) < 500)
+#define HTTP_STATUS_IS_SERVER_ERROR(c) ((c) >= 500 && (c) < 600)
+
+/**
  * @brief Categories of HTTP status codes for quick classification.
  *
  * Maps to first digit of status code (1-5). Used for error handling,
