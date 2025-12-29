@@ -30,6 +30,9 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP2);
 #define HTTP2_MAX_DECODED_HEADERS SOCKETHTTP2_MAX_DECODED_HEADERS
 #define HTTP2_MAX_STREAM_ID 0x7FFFFFFF
 
+/* Compile-time string length for literals */
+#define STRLEN_LIT(s) (sizeof(s) - 1)
+
 /* Forward declaration for RFC 9113 §8.4 push method validation */
 static int validate_push_request_method (SocketHTTP2_Stream_T stream);
 
@@ -1604,30 +1607,33 @@ SocketHTTP2_Stream_send_headers_padded (SocketHTTP2_Stream_T stream,
 
 static void
 build_request_pseudo_headers (const SocketHTTP_Request *request,
-                              SocketHPACK_Header *pseudo)
+                              SocketHPACK_Header *pseudo,
+                              size_t scheme_len,
+                              size_t authority_len,
+                              size_t path_len)
 {
   pseudo[0].name = ":method";
-  pseudo[0].name_len = 7;
+  pseudo[0].name_len = STRLEN_LIT(":method");
   pseudo[0].value = SocketHTTP_method_name (request->method);
   pseudo[0].value_len = strlen (pseudo[0].value);
   pseudo[0].never_index = 0;
 
   pseudo[1].name = ":scheme";
-  pseudo[1].name_len = 7;
+  pseudo[1].name_len = STRLEN_LIT(":scheme");
   pseudo[1].value = request->scheme ? request->scheme : "https";
-  pseudo[1].value_len = strlen (pseudo[1].value);
+  pseudo[1].value_len = scheme_len;
   pseudo[1].never_index = 0;
 
   pseudo[2].name = ":authority";
-  pseudo[2].name_len = 10;
+  pseudo[2].name_len = STRLEN_LIT(":authority");
   pseudo[2].value = request->authority ? request->authority : "";
-  pseudo[2].value_len = strlen (pseudo[2].value);
+  pseudo[2].value_len = authority_len;
   pseudo[2].never_index = 0;
 
   pseudo[3].name = ":path";
-  pseudo[3].name_len = 5;
+  pseudo[3].name_len = STRLEN_LIT(":path");
   pseudo[3].value = request->path ? request->path : "/";
-  pseudo[3].value_len = strlen (pseudo[3].value);
+  pseudo[3].value_len = path_len;
   pseudo[3].never_index = 0;
 }
 
@@ -1654,33 +1660,35 @@ SocketHTTP2_Stream_send_request (SocketHTTP2_Stream_T stream,
   SocketHPACK_Header pseudo_headers[HTTP2_REQUEST_PSEUDO_HEADER_COUNT];
   SocketHPACK_Header *all_headers;
   size_t header_count, total_count;
+  volatile size_t path_len = 0, scheme_len = 0, auth_len = 0;
 
   assert (stream);
   assert (request);
 
-  /* Validate pseudo-header inputs for security */
+  /* Validate pseudo-header inputs for security and calculate lengths once */
   TRY
   {
     const char *path = request->path ? request->path : "/";
-    size_t path_len = strlen (path);
+    path_len = request->path ? strlen (request->path) : STRLEN_LIT("/");
     if (path_len == 0 || path[0] != '/' || path_len > SOCKETHTTP_MAX_URI_LEN)
       {
         RAISE (SocketHTTP2_ProtocolError);
       }
 
     const char *scheme = request->scheme ? request->scheme : "https";
+    scheme_len = request->scheme ? strlen (request->scheme) : STRLEN_LIT("https");
     if (strcmp (scheme, "http") != 0 && strcmp (scheme, "https") != 0)
       {
         SOCKET_RAISE_MSG (SocketHTTP2, SocketHTTP2_ProtocolError,
                           "Invalid :scheme '%s'", scheme);
       }
-    if (strlen (scheme) > SOCKETHTTP_MAX_HEADER_VALUE)
+    if (scheme_len > SOCKETHTTP_MAX_HEADER_VALUE)
       { /* Reasonable limit */
         RAISE (SocketHTTP2_ProtocolError);
       }
 
     const char *authority = request->authority ? request->authority : "";
-    size_t auth_len = strlen (authority);
+    auth_len = request->authority ? strlen (request->authority) : STRLEN_LIT("");
     if (auth_len > SOCKETHTTP_MAX_URI_LEN || strchr (authority, '\r')
         || strchr (authority, '\n'))
       {
@@ -1697,7 +1705,7 @@ SocketHTTP2_Stream_send_request (SocketHTTP2_Stream_T stream,
   EXCEPT (SocketHTTP2) { RERAISE; }
   END_TRY;
 
-  build_request_pseudo_headers (request, pseudo_headers);
+  build_request_pseudo_headers (request, pseudo_headers, scheme_len, auth_len, path_len);
 
   header_count
       = request->headers ? SocketHTTP_Headers_count (request->headers) : 0;
