@@ -226,16 +226,6 @@ http2_stream_rate_check (SocketHTTP2_Conn_T conn)
   return 0;
 }
 
-/**
- * Record stream creation in sliding windows.
- */
-static void
-http2_stream_rate_record (SocketHTTP2_Conn_T conn)
-{
-  int64_t now_ms = Socket_get_monotonic_ms ();
-  TimeWindow_record (&conn->stream_create_window, now_ms);
-  TimeWindow_record (&conn->stream_burst_window, now_ms);
-}
 
 /**
  * Record stream close for churn detection.
@@ -311,7 +301,9 @@ http2_stream_create (SocketHTTP2_Conn_T conn, uint32_t stream_id,
   (*get_initiated_count (conn, stream->is_local_initiated))++;
 
   /* Record stream creation in sliding windows for rate limiting */
-  http2_stream_rate_record (conn);
+  int64_t now_ms = Socket_get_monotonic_ms ();
+  TimeWindow_record (&conn->stream_create_window, now_ms);
+  TimeWindow_record (&conn->stream_burst_window, now_ms);
 
   return stream;
 }
