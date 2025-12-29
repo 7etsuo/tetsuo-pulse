@@ -34,9 +34,6 @@
 /* 1-RTT only */
 #define PKT_1 (QUIC_PKT_1RTT)
 
-/* RFC 9000 Section 12.12-12.13: PATH_CHALLENGE/RESPONSE data size */
-#define QUIC_PATH_DATA_SIZE 8
-
 /* RFC 9000 Section 10.3: Stateless Reset Token size */
 #define QUIC_STATELESS_RESET_TOKEN_SIZE 16
 
