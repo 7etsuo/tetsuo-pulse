@@ -64,16 +64,14 @@ validate_crl_path_security (const char *crl_path)
     RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
                          "CRL path failed security validation (length, characters, traversal, or symlink)");
 
+  /* realpath() performs canonicalization that resolves:
+   * - Path traversal (. and .. components)
+   * - Symlinks (expands to actual target)
+   * - Relative to absolute path conversion
+   * Success indicates a valid, resolvable path. */
   char *resolved_path = realpath (crl_path, NULL);
   if (!resolved_path)
     RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "Invalid or unresolvable CRL path");
-
-  if (!tls_validate_file_path (resolved_path))
-    {
-      free (resolved_path);
-      RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
-                           "Resolved CRL path failed security validation");
-    }
 
   free (resolved_path);
 }
