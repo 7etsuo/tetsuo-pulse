@@ -1181,6 +1181,140 @@ tcp_recv_response (T transport, int ns_idx, unsigned char **response,
   return 1;
 }
 
+/**
+ * Check TCP connection state and send query when connected.
+ *
+ * @param transport Transport instance
+ * @param query Query to check
+ * @return 1 if processed (completed), 0 if still pending, -1 for continue loop
+ */
+static int
+check_tcp_connection_state (T transport, struct SocketDNSQuery *query)
+{
+  struct DNSTCPConnection *conn = &transport->tcp_conns[query->current_ns];
+  int status;
+
+  if (!conn->connecting)
+    return 0; /* Not in connecting state */
+
+  status = tcp_conn_check_connect (transport, query->current_ns);
+  if (status < 0)
+    {
+      /* Mark server as having failed (RFC 2308 Section 7.2) */
+      if (transport->dead_server_tracker != NULL)
+        {
+          SocketDNS_Nameserver *ns = &transport->nameservers[query->current_ns];
+          SocketDNSDeadServer_mark_failure (transport->dead_server_tracker,
+                                            ns->address);
+        }
+      complete_query (transport, query, NULL, 0, DNS_ERROR_CONNFAIL);
+      return 1; /* Processed */
+    }
+
+  if (status == 0)
+    return -1; /* Still connecting, continue loop */
+
+  /* Now connected, send query */
+  if (tcp_send_query (transport, query) < 0)
+    {
+      complete_query (transport, query, NULL, 0, DNS_ERROR_NETWORK);
+      return 1; /* Processed */
+    }
+
+  return 0; /* Sent successfully, continue checking */
+}
+
+/**
+ * Handle TCP response polling and validation.
+ *
+ * @param transport Transport instance
+ * @param query Query to check for response
+ * @return 1 if processed (completed), 0 if no response, -1 for continue loop
+ */
+static int
+handle_tcp_response (T transport, struct SocketDNSQuery *query)
+{
+  struct DNSTCPConnection *conn = &transport->tcp_conns[query->current_ns];
+  struct pollfd pfd;
+  unsigned char *response;
+  size_t response_len;
+  int ret;
+
+  if (conn->fd < 0 || conn->connecting)
+    return 0; /* Not ready to receive */
+
+  pfd.fd = conn->fd;
+  pfd.events = POLLIN;
+  pfd.revents = 0;
+
+  if (poll (&pfd, 1, 0) <= 0 || !(pfd.revents & POLLIN))
+    return 0; /* No data available */
+
+  ret = tcp_recv_response (transport, query->current_ns, &response,
+                           &response_len);
+  if (ret < 0)
+    {
+      complete_query (transport, query, NULL, 0, DNS_ERROR_NETWORK);
+      return 1; /* Processed */
+    }
+
+  if (ret > 0)
+    {
+      SocketDNS_Header hdr;
+
+      /* Mark server as alive - it responded (RFC 2308 Section 7.2) */
+      if (transport->dead_server_tracker != NULL)
+        {
+          SocketDNS_Nameserver *ns = &transport->nameservers[query->current_ns];
+          SocketDNSDeadServer_mark_alive (transport->dead_server_tracker,
+                                          ns->address);
+        }
+
+      /* Validate response */
+      if (response_len >= DNS_HEADER_SIZE
+          && SocketDNS_header_decode (response, response_len, &hdr) == 0
+          && hdr.qr == 1 && hdr.id == query->id)
+        {
+          int error = rcode_to_error (hdr.rcode);
+          complete_query (transport, query, response, response_len, error);
+        }
+      else
+        {
+          /* Invalid response, but keep connection open for retries */
+          complete_query (transport, query, NULL, 0, DNS_ERROR_INVALID);
+        }
+      return -1; /* Processed, continue loop */
+    }
+
+  return 0; /* No complete response yet */
+}
+
+/**
+ * Handle TCP query timeout.
+ *
+ * @param transport Transport instance
+ * @param query Query to check for timeout
+ * @param now_ms Current timestamp in milliseconds
+ * @return 1 if timed out (processed), 0 otherwise
+ */
+static int
+handle_tcp_timeout (T transport, struct SocketDNSQuery *query, int64_t now_ms)
+{
+  if (now_ms - query->sent_time_ms < query->timeout_ms)
+    return 0; /* Not timed out */
+
+  /* Mark server as having failed (RFC 2308 Section 7.2) */
+  if (transport->dead_server_tracker != NULL)
+    {
+      SocketDNS_Nameserver *ns = &transport->nameservers[query->current_ns];
+      SocketDNSDeadServer_mark_failure (transport->dead_server_tracker,
+                                        ns->address);
+    }
+
+  complete_query (transport, query, NULL, 0, DNS_ERROR_TIMEOUT);
+  return 1; /* Processed */
+}
+
 /* Process TCP queries - check connections and receive responses */
 static int
 process_tcp_queries (T transport)
@@ -1191,108 +1325,34 @@ process_tcp_queries (T transport)
 
   for (query = transport->pending_head; query != NULL; query = next)
     {
+      int result;
       next = query->next;
 
       if (!query->is_tcp || query->completed || query->cancelled)
         continue;
 
-      struct DNSTCPConnection *conn = &transport->tcp_conns[query->current_ns];
-
       /* Check connection state */
-      if (conn->connecting)
+      result = check_tcp_connection_state (transport, query);
+      if (result > 0)
         {
-          int status = tcp_conn_check_connect (transport, query->current_ns);
-          if (status < 0)
-            {
-              /* Mark server as having failed (RFC 2308 Section 7.2) */
-              if (transport->dead_server_tracker != NULL)
-                {
-                  SocketDNS_Nameserver *ns
-                      = &transport->nameservers[query->current_ns];
-                  SocketDNSDeadServer_mark_failure (
-                      transport->dead_server_tracker, ns->address);
-                }
-              complete_query (transport, query, NULL, 0, DNS_ERROR_CONNFAIL);
-              processed++;
-              continue;
-            }
-          if (status == 0)
-            continue; /* Still connecting */
-
-          /* Now connected, send query */
-          if (tcp_send_query (transport, query) < 0)
-            {
-              complete_query (transport, query, NULL, 0, DNS_ERROR_NETWORK);
-              processed++;
-              continue;
-            }
+          processed++;
+          continue;
         }
+      if (result < 0)
+        continue; /* Still connecting */
 
       /* Check for response */
-      if (conn->fd >= 0 && !conn->connecting)
+      result = handle_tcp_response (transport, query);
+      if (result != 0)
         {
-          struct pollfd pfd = { .fd = conn->fd, .events = POLLIN, .revents = 0 };
-          if (poll (&pfd, 1, 0) > 0 && (pfd.revents & POLLIN))
-            {
-              unsigned char *response;
-              size_t response_len;
-              int ret = tcp_recv_response (transport, query->current_ns,
-                                           &response, &response_len);
-              if (ret < 0)
-                {
-                  complete_query (transport, query, NULL, 0, DNS_ERROR_NETWORK);
-                  processed++;
-                  continue;
-                }
-              if (ret > 0)
-                {
-                  /* Mark server as alive - it responded (RFC 2308 Section 7.2) */
-                  if (transport->dead_server_tracker != NULL)
-                    {
-                      SocketDNS_Nameserver *ns
-                          = &transport->nameservers[query->current_ns];
-                      SocketDNSDeadServer_mark_alive (
-                          transport->dead_server_tracker, ns->address);
-                    }
-
-                  /* Validate response */
-                  SocketDNS_Header hdr;
-                  if (response_len >= DNS_HEADER_SIZE
-                      && SocketDNS_header_decode (response, response_len, &hdr)
-                             == 0
-                      && hdr.qr == 1 && hdr.id == query->id)
-                    {
-                      int error = rcode_to_error (hdr.rcode);
-                      complete_query (transport, query, response, response_len,
-                                      error);
-                      processed++;
-                    }
-                  else
-                    {
-                      /* Invalid response, but keep connection open for retries */
-                      complete_query (transport, query, NULL, 0,
-                                      DNS_ERROR_INVALID);
-                      processed++;
-                    }
-                  continue;
-                }
-            }
+          if (result > 0)
+            processed++;
+          continue;
         }
 
       /* Check for timeout */
-      if (now_ms - query->sent_time_ms >= query->timeout_ms)
-        {
-          /* Mark server as having failed (RFC 2308 Section 7.2) */
-          if (transport->dead_server_tracker != NULL)
-            {
-              SocketDNS_Nameserver *ns
-                  = &transport->nameservers[query->current_ns];
-              SocketDNSDeadServer_mark_failure (transport->dead_server_tracker,
-                                                ns->address);
-            }
-          complete_query (transport, query, NULL, 0, DNS_ERROR_TIMEOUT);
-          processed++;
-        }
+      if (handle_tcp_timeout (transport, query, now_ms))
+        processed++;
     }
 
   return processed;
