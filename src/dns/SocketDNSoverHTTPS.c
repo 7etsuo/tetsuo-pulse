@@ -300,7 +300,8 @@ SocketDNSoverHTTPS_configure (T transport,
         return -1;
     }
 
-  strcpy (s->url, config->url);
+  /* SECURITY: Use memcpy instead of strcpy for defense-in-depth */
+  memcpy (s->url, config->url, url_len + 1);
   s->method = config->method;
   s->prefer_http2 = config->prefer_http2 ? 1 : 1; /* Default to HTTP/2 */
   s->timeout_ms

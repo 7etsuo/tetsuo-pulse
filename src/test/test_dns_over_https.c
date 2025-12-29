@@ -377,6 +377,73 @@ TEST (doh_base64url_internal)
   Arena_dispose (&arena);
 }
 
+/* Test: URL boundary validation (security fix for issue #1281) */
+TEST (doh_url_boundary)
+{
+  Arena_T arena = Arena_new ();
+  SocketDNSoverHTTPS_T doh = SocketDNSoverHTTPS_new (arena);
+
+  /* Test maximum valid URL length (511 chars + null = 512 byte buffer) */
+  char max_url[512];
+  memset (max_url, 0, sizeof (max_url));
+  strcpy (max_url, "https://");
+  /* Fill with 'a' up to 510 chars (leaving room for null terminator) */
+  memset (max_url + 8, 'a', 510 - 8);
+  max_url[510] = '\0';
+
+  SocketDNSoverHTTPS_Config config = { .url = max_url,
+                                        .method = DOH_METHOD_POST,
+                                        .prefer_http2 = 1,
+                                        .timeout_ms = 5000 };
+
+  /* Maximum length URL (511 chars) should succeed */
+  int ret = SocketDNSoverHTTPS_configure (doh, &config);
+  ASSERT_EQ (ret, 0);
+  ASSERT_EQ (SocketDNSoverHTTPS_server_count (doh), 1);
+
+  SocketDNSoverHTTPS_clear_servers (doh);
+
+  /* Test URL at exact limit (512 chars) - should fail (strlen >= 512) */
+  char too_long_url[513];
+  memset (too_long_url, 0, sizeof (too_long_url));
+  strcpy (too_long_url, "https://");
+  memset (too_long_url + 8, 'a', 512 - 8);
+  too_long_url[512] = '\0';  /* 512 char string + null */
+
+  config.url = too_long_url;
+  ret = SocketDNSoverHTTPS_configure (doh, &config);
+  ASSERT_EQ (ret, -1); /* Should reject - URL too long */
+  ASSERT_EQ (SocketDNSoverHTTPS_server_count (doh), 0);
+
+  /* Test URL exceeding buffer size (513 chars) - should fail */
+  char way_too_long_url[514];
+  memset (way_too_long_url, 0, sizeof (way_too_long_url));
+  strcpy (way_too_long_url, "https://");
+  memset (way_too_long_url + 8, 'a', 513 - 8);
+  way_too_long_url[513] = '\0';
+
+  config.url = way_too_long_url;
+  ret = SocketDNSoverHTTPS_configure (doh, &config);
+  ASSERT_EQ (ret, -1); /* Should reject - URL way too long */
+  ASSERT_EQ (SocketDNSoverHTTPS_server_count (doh), 0);
+
+  /* Test URL with control characters - should fail (existing security check) */
+  char control_url[64] = "https://example.com/\x01\x02";
+  config.url = control_url;
+  ret = SocketDNSoverHTTPS_configure (doh, &config);
+  ASSERT_EQ (ret, -1); /* Should reject - control chars */
+  ASSERT_EQ (SocketDNSoverHTTPS_server_count (doh), 0);
+
+  /* Test non-HTTPS URL - should fail (existing security check) */
+  config.url = "http://example.com/dns-query";
+  ret = SocketDNSoverHTTPS_configure (doh, &config);
+  ASSERT_EQ (ret, -1); /* Should reject - not HTTPS */
+  ASSERT_EQ (SocketDNSoverHTTPS_server_count (doh), 0);
+
+  SocketDNSoverHTTPS_free (&doh);
+  Arena_dispose (&arena);
+}
+
 #endif /* SOCKET_HAS_TLS */
 
 int
