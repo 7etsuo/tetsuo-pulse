@@ -121,8 +121,26 @@ SocketQUICAddrValidation_update_counters (
       return;
     }
 
-  state->bytes_sent += bytes_sent;
-  state->bytes_received += bytes_received;
+  /* Check for overflow in bytes_sent */
+  if (state->bytes_sent > UINT64_MAX - bytes_sent)
+    {
+      /* Saturate at max value instead of wrapping */
+      state->bytes_sent = UINT64_MAX;
+    }
+  else
+    {
+      state->bytes_sent += bytes_sent;
+    }
+
+  /* Check for overflow in bytes_received */
+  if (state->bytes_received > UINT64_MAX - bytes_received)
+    {
+      state->bytes_received = UINT64_MAX;
+    }
+  else
+    {
+      state->bytes_received += bytes_received;
+    }
 }
 
 void
