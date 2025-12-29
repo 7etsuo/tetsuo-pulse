@@ -61,7 +61,7 @@ hash_cid_bytes (const uint8_t *id, size_t len, uint32_t seed)
   for (size_t i = 0; i < len; i++)
     hash = QUIC_HASH_FNV1A_STEP (hash, id[i]);
 
-  return hash % QUIC_CONNID_POOL_HASH_SIZE;
+  return hash & (QUIC_CONNID_POOL_HASH_SIZE - 1);
 }
 
 /* ============================================================================
