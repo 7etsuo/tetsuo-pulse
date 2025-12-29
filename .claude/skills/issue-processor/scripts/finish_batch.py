@@ -98,11 +98,12 @@ def main():
             failed.add(issue_num)
             new_failed += 1
 
-    # Release wip label claims
-    if wip_label and owner and repo:
-        log_info(f"Releasing claims with label: {wip_label}")
-        for issue_num in current_batch:
-            release_claim(owner, repo, issue_num, wip_label)
+    # NOTE: We no longer auto-release wip labels. User must manually remove them
+    # after verifying PRs are merged. This prevents issues from appearing
+    # "available" while their PRs are still pending review.
+    # To release claims manually, use: gh issue edit <num> --remove-label <wip-label>
+    if wip_label:
+        log_info(f"Keeping wip label '{wip_label}' on issues (manual removal required)")
 
     # Update manifest
     manifest["completed"] = list(completed)

@@ -56,7 +56,12 @@ def fetch_open_issues(owner: str, repo: str) -> list[dict]:
             log_error(f"Fetching issues: {output}")
             sys.exit(1)
 
-        result = json.loads(output)
+        try:
+            result = json.loads(output)
+        except json.JSONDecodeError as e:
+            log_error(f"Failed to parse GitHub API response: {e}")
+            log_error(f"Response was: {output[:500]}")
+            sys.exit(1)
         page = result.get("data", {}).get("repository", {}).get("issues", {})
         nodes = page.get("nodes", [])
 
@@ -111,10 +116,15 @@ def main():
         state_dir = Path(args.state_dir)
         manifest_file = state_dir / "manifest.json"
         if manifest_file.exists():
-            manifest = load_json(manifest_file)
-            completed_nums = set(manifest.get("completed", []))
-            failed_nums = set(manifest.get("failed", []))
-            current_batch = manifest.get("current_batch", [])
+            try:
+                manifest = load_json(manifest_file)
+                completed_nums = set(manifest.get("completed", []))
+                failed_nums = set(manifest.get("failed", []))
+                current_batch = manifest.get("current_batch", [])
+            except json.JSONDecodeError as e:
+                log_error(f"Failed to parse manifest.json: {e}")
+                log_error(f"File: {manifest_file}")
+                # Continue without manifest data
 
             # Filter out completed/failed/current_batch from available
             current_batch_set = set(current_batch)

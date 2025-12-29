@@ -113,7 +113,7 @@ def load_json(path: Path, default: Any = None) -> Any:
 
     Args:
         path: Path to JSON file
-        default: Value to return if file doesn't exist (None raises error)
+        default: Value to return if file doesn't exist or is empty (None raises error)
 
     Returns:
         Parsed JSON data
@@ -126,6 +126,12 @@ def load_json(path: Path, default: Any = None) -> Any:
         if default is not None:
             return default
         raise FileNotFoundError(f"JSON file not found: {path}")
+
+    # Check for empty file
+    if path.stat().st_size == 0:
+        if default is not None:
+            return default
+        raise json.JSONDecodeError("Empty file", "", 0)
 
     with open(path) as f:
         return json.load(f)
