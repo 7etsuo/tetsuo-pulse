@@ -429,24 +429,6 @@ try_decode_nbit (const HuffmanDecodeConfig *cfg, uint64_t bits, int bits_avail,
   return 0;
 }
 
-/* Linear search for longer codes (9-30 bits). O(257) worst case. */
-static int
-hpack_find_symbol (uint64_t code, int cl)
-{
-  size_t s;
-
-  if (cl < HUFFMAN_MIN_CODE_BITS || cl > HPACK_HUFFMAN_MAX_BITS)
-    return -1;
-
-  for (s = 0; s < HPACK_HUFFMAN_SYMBOLS; s++)
-    {
-      const HPACK_HuffmanSymbol *sym = &hpack_huffman_encode[s];
-      if (sym->bits == (unsigned) cl && sym->code == code)
-        return (int) s;
-    }
-  return -1;
-}
-
 /* Decode long codes (9-30 bits) and EOS. Returns 1=symbol, 2=EOS, 0=no match. */
 static int
 try_full_decode (uint64_t bits, int *bits_avail, unsigned char *output,
@@ -462,7 +444,21 @@ try_full_decode (uint64_t bits, int *bits_avail, unsigned char *output,
     {
       uint64_t mask = (1ULL << cl) - 1ULL;
       uint64_t thiscode = (bits >> (*bits_avail - cl)) & mask;
-      int sym = hpack_find_symbol (thiscode, cl);
+
+      /* Linear search for longer codes (9-30 bits). O(257) worst case. */
+      int sym = -1;
+      if (cl >= HUFFMAN_MIN_CODE_BITS && cl <= HPACK_HUFFMAN_MAX_BITS)
+        {
+          for (size_t s = 0; s < HPACK_HUFFMAN_SYMBOLS; s++)
+            {
+              const HPACK_HuffmanSymbol *sym_entry = &hpack_huffman_encode[s];
+              if (sym_entry->bits == (unsigned) cl && sym_entry->code == thiscode)
+                {
+                  sym = (int) s;
+                  break;
+                }
+            }
+        }
 
       if (sym < 0)
         continue;
