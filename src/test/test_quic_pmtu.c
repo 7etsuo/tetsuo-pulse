@@ -489,6 +489,101 @@ TEST (quic_pmtu_result_strings)
   ASSERT_NE (str, NULL);
 }
 
+/* ============================================================================
+ * Test: Probe Size Validation (Issue #1173)
+ * ============================================================================
+ */
+
+TEST (quic_pmtu_send_probe_size_underflow_protection)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICPMTU_T pmtu;
+  SocketQUICPMTU_Result result;
+
+  /* Initialize with 1200 byte PMTU */
+  pmtu = SocketQUICPMTU_new (arena, 1200, 1500);
+  SocketQUICPMTU_start_discovery (pmtu);
+
+  /* Attempt to send probe smaller than current PMTU (invalid) */
+  result = SocketQUICPMTU_send_probe (pmtu, 100, 1100, 1000);
+
+  /* Should reject with ERROR_SIZE to prevent integer underflow */
+  ASSERT_EQ (result, QUIC_PMTU_ERROR_SIZE);
+
+  /* Verify PMTU state is not corrupted */
+  ASSERT_EQ (SocketQUICPMTU_get_current (pmtu), 1200);
+  ASSERT_EQ (SocketQUICPMTU_get_state (pmtu), QUIC_PMTU_STATE_SEARCHING);
+
+  SocketQUICPMTU_free (&pmtu);
+  Arena_dispose (&arena);
+}
+
+TEST (quic_pmtu_send_probe_exact_current_pmtu)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICPMTU_T pmtu;
+  SocketQUICPMTU_Result result;
+
+  /* Initialize with 1200 byte PMTU */
+  pmtu = SocketQUICPMTU_new (arena, 1200, 1500);
+  SocketQUICPMTU_start_discovery (pmtu);
+
+  /* Attempt to send probe exactly equal to current PMTU (edge case) */
+  result = SocketQUICPMTU_send_probe (pmtu, 100, 1200, 1000);
+
+  /* Should reject - probe must be larger to discover higher PMTU */
+  ASSERT_EQ (result, QUIC_PMTU_ERROR_SIZE);
+
+  SocketQUICPMTU_free (&pmtu);
+  Arena_dispose (&arena);
+}
+
+TEST (quic_pmtu_send_probe_valid_larger_size)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICPMTU_T pmtu;
+  SocketQUICPMTU_Result result;
+
+  /* Initialize with 1200 byte PMTU */
+  pmtu = SocketQUICPMTU_new (arena, 1200, 1500);
+  SocketQUICPMTU_start_discovery (pmtu);
+
+  /* Send probe larger than current PMTU (valid) */
+  result = SocketQUICPMTU_send_probe (pmtu, 100, 1300, 1000);
+
+  /* Should succeed */
+  ASSERT_EQ (result, QUIC_PMTU_OK);
+
+  SocketQUICPMTU_free (&pmtu);
+  Arena_dispose (&arena);
+}
+
+TEST (quic_pmtu_send_probe_minimum_boundary)
+{
+  Arena_T arena = Arena_new ();
+  SocketQUICPMTU_T pmtu;
+  SocketQUICPMTU_Result result;
+
+  /* Initialize with minimum PMTU */
+  pmtu = SocketQUICPMTU_new (arena, QUIC_MIN_PMTU, 1500);
+  SocketQUICPMTU_start_discovery (pmtu);
+
+  /* Attempt to send probe at minimum - 1 (invalid) */
+  result = SocketQUICPMTU_send_probe (pmtu, 100, QUIC_MIN_PMTU - 1, 1000);
+
+  /* Should reject */
+  ASSERT_EQ (result, QUIC_PMTU_ERROR_SIZE);
+
+  /* Send valid probe at minimum + 1 */
+  result = SocketQUICPMTU_send_probe (pmtu, 101, QUIC_MIN_PMTU + 1, 1000);
+
+  /* Should succeed */
+  ASSERT_EQ (result, QUIC_PMTU_OK);
+
+  SocketQUICPMTU_free (&pmtu);
+  Arena_dispose (&arena);
+}
+
 int
 main (void)
 {
