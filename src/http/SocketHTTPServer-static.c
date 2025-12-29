@@ -140,6 +140,24 @@ get_mime_type (const char *path)
 }
 
 /**
+ * skip_to_next_component - Advance pointer to next path component
+ * @p: Current position in path
+ *
+ * Skips to the character after the next '/', or to end of string.
+ *
+ * Returns: Pointer to next component (after '/') or end of string
+ */
+static const char *
+skip_to_next_component (const char *p)
+{
+  while (*p != '\0' && *p != '/')
+    p++;
+  if (*p == '/')
+    p++;
+  return p;
+}
+
+/**
  * validate_static_path - Validate path for security (no traversal attacks)
  * @path: URL path component (after prefix removal)
  *
@@ -166,23 +184,24 @@ validate_static_path (const char *path)
   while (*p != '\0')
     {
       /* Check for ".." component */
-      if (p[0] == '.')
+      if (p[0] != '.')
         {
-          if (p[1] == '.' && (p[2] == '/' || p[2] == '\0'))
-            return 0; /* Found ".." */
-          if (p[1] == '/' || p[1] == '\0')
-            {
-              /* Single "." is okay, skip */
-              p += (p[1] == '/') ? 2 : 1;
-              continue;
-            }
+          p = skip_to_next_component (p);
+          continue;
         }
 
-      /* Skip to next path component */
-      while (*p != '\0' && *p != '/')
-        p++;
-      if (*p == '/')
-        p++;
+      /* Handle ".." (path traversal attack) */
+      if (p[1] == '.' && (p[2] == '/' || p[2] == '\0'))
+        return 0;
+
+      /* Handle "." (valid, skip it) */
+      if (p[1] == '/' || p[1] == '\0')
+        {
+          p += (p[1] == '/') ? 2 : 1;
+          continue;
+        }
+
+      p = skip_to_next_component (p);
     }
 
   /* Reject hidden files (dotfiles) */
