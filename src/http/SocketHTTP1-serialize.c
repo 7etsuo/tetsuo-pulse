@@ -313,21 +313,6 @@ add_optional_host_header (const SocketHTTP_Request *request, char **buf,
 }
 
 static int
-add_request_extras (const SocketHTTP_Request *request, char **buf,
-                    size_t *remaining)
-{
-  if (add_optional_host_header (request, buf, remaining) < 0)
-    return -1;
-
-  if (append_content_length_header (buf, remaining, request->headers,
-                                    request->has_body, request->content_length)
-      < 0)
-    return -1;
-
-  return safe_append_crlf (buf, remaining);
-}
-
-static int
 add_response_extras (const SocketHTTP_Response *response, char **buf,
                      size_t *remaining)
 {
@@ -362,7 +347,18 @@ SocketHTTP1_serialize_request (const SocketHTTP_Request *request, char *output,
   if (serialize_headers_section (request->headers, &p, &remaining) < 0)
     return -1;
 
-  if (add_request_extras (request, &p, &remaining) < 0)
+  /* Add optional Host header if authority present and no Host header set */
+  if (add_optional_host_header (request, &p, &remaining) < 0)
+    return -1;
+
+  /* Add Content-Length header if needed */
+  if (append_content_length_header (&p, &remaining, request->headers,
+                                    request->has_body, request->content_length)
+      < 0)
+    return -1;
+
+  /* Final CRLF to end headers section */
+  if (safe_append_crlf (&p, &remaining) < 0)
     return -1;
 
   *p = '\0';
