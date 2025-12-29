@@ -1570,6 +1570,44 @@ socket_util_timespec_to_ms (struct timespec ts)
          + ts.tv_nsec / SOCKET_NS_PER_MS;
 }
 
+/**
+ * @brief Add two timespec structures together.
+ * @ingroup foundation
+ * @param ts1 First timespec structure
+ * @param ts2 Second timespec structure to add
+ * @return Sum of the two timespec structures, normalized
+ * @threadsafe Yes (pure function, no shared state)
+ *
+ * Adds two timespec structures together, properly handling nanosecond overflow.
+ * The result is normalized so that tv_nsec is always in the range [0, 999999999].
+ *
+ * This utility eliminates manual overflow handling when adding intervals to
+ * absolute times, a common pattern in timed waits and health checks.
+ *
+ * Usage:
+ *   struct timespec now, interval, deadline;
+ *   clock_gettime(CLOCK_REALTIME, &now);
+ *   interval = socket_util_ms_to_timespec(500);
+ *   deadline = socket_util_timespec_add(now, interval);
+ *   pthread_cond_timedwait(&cond, &mutex, &deadline);
+ *
+ * @see socket_util_ms_to_timespec() for creating intervals
+ * @see socket_util_timespec_to_ms() for conversion to milliseconds
+ */
+static inline struct timespec
+socket_util_timespec_add (struct timespec ts1, struct timespec ts2)
+{
+  struct timespec result;
+  result.tv_sec = ts1.tv_sec + ts2.tv_sec;
+  result.tv_nsec = ts1.tv_nsec + ts2.tv_nsec;
+  if (result.tv_nsec >= 1000000000)
+    {
+      result.tv_sec++;
+      result.tv_nsec -= 1000000000;
+    }
+  return result;
+}
+
 /* ============================================================================
  * BUFFER SIZE CONSTANTS
  * ============================================================================
