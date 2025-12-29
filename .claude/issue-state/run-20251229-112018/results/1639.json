@@ -1,0 +1,22 @@
+{
+  "issue": 1639,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1655",
+  "pr_number": 1655,
+  "branch": "issue-1639-improve-quic-frame-readability",
+  "files_changed": ["src/quic/SocketQUICFrame.c"],
+  "tests_passed": true,
+  "commit_sha": "84da647daecbaebb42b2eefa106917678db805df",
+  "test_results": {
+    "quic_tests": "26/26 passed",
+    "total_tests": "116/117 passed (1 pre-existing DNS test failure unrelated to changes)",
+    "sanitizers": "ASan + UBSan enabled"
+  },
+  "changes_summary": {
+    "inlined_function": "parse_ack_ecn_counts into parse_ack_internal",
+    "flattened_functions": ["parse_stream", "parse_datagram"],
+    "lines_removed": 52,
+    "lines_added": 26,
+    "net_reduction": 26
+  }
+}

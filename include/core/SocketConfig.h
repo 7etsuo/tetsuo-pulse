@@ -84,6 +84,7 @@
 /* Standard includes required for configuration macros */
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <stddef.h>
@@ -1274,6 +1275,25 @@ extern const char *Socket_safe_strerror (int errnum);
  */
 #ifndef SOCKET_PORT_STR_BUFSIZE
 #define SOCKET_PORT_STR_BUFSIZE 16
+#endif
+
+/**
+ * @brief Maximum extra characters for CIDR notation suffix.
+ *
+ * Accounts for "/" plus up to 3 digits for prefix length (e.g., "/128").
+ */
+#ifndef SOCKET_CIDR_SUFFIX_MAX_LEN
+#define SOCKET_CIDR_SUFFIX_MAX_LEN 10
+#endif
+
+/**
+ * @brief Maximum poll timeout value to prevent overflow.
+ *
+ * Some poll() implementations may have issues with very large values.
+ * Cap at INT_MAX/2 to provide safety margin.
+ */
+#ifndef SOCKET_POLL_TIMEOUT_MAX
+#define SOCKET_POLL_TIMEOUT_MAX (INT_MAX / 2)
 #endif
 
 /* ============================================================================

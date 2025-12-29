@@ -161,6 +161,101 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketCommon);
 
 #define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketCommon, e)
 
+/* ==================== Conditional Error Reporting Macro ==================== */
+
+/**
+ * COND_ERROR_MSG - Conditionally raise exception or log error message
+ * @use_exc: If true, raise exception; if false, log error only
+ * @exc_type: Exception type to raise when use_exc is true
+ * @fmt: Format string for error message
+ * @...: Format arguments
+ *
+ * Consolidates the common pattern of conditional exception vs error logging.
+ * Reduces code duplication in functions that support both modes.
+ */
+#define COND_ERROR_MSG(use_exc, exc_type, fmt, ...)                           \
+  do                                                                          \
+    {                                                                         \
+      if (use_exc)                                                            \
+        {                                                                     \
+          SOCKET_RAISE_MSG (SocketCommon, exc_type, fmt, ##__VA_ARGS__);      \
+        }                                                                     \
+      else                                                                    \
+        {                                                                     \
+          SOCKET_ERROR_MSG (fmt, ##__VA_ARGS__);                              \
+        }                                                                     \
+    }                                                                         \
+  while (0)
+
+/* ==================== String Parsing Utilities ==================== */
+
+/**
+ * socketcommon_safe_strtol - Parse string to long with errno preservation
+ * @str: String to parse (must be non-NULL, non-empty)
+ * @out: Output for parsed value
+ * @min_val: Minimum acceptable value (inclusive)
+ * @max_val: Maximum acceptable value (inclusive)
+ *
+ * Returns: 0 on success, -1 on parse error or range violation
+ * Thread-safe: Yes (preserves errno)
+ *
+ * Consolidates the common errno-preserving strtol pattern used for parsing
+ * port numbers, CIDR prefixes, and other numeric strings.
+ */
+static int
+socketcommon_safe_strtol (const char *str, long *out, long min_val,
+                          long max_val)
+{
+  char *endptr = NULL;
+  long value;
+  int saved_errno;
+
+  if (!str || !*str || !out)
+    return -1;
+
+  saved_errno = errno;
+  errno = 0;
+  value = strtol (str, &endptr, 10);
+
+  if (errno != 0 || endptr == str || *endptr != '\0' || value < min_val
+      || value > max_val)
+    {
+      errno = saved_errno;
+      return -1;
+    }
+
+  errno = saved_errno;
+  *out = value;
+  return 0;
+}
+
+/**
+ * cidr_validate_prefix_range - Validate CIDR prefix for address family
+ * @family: Address family (SOCKET_AF_INET or SOCKET_AF_INET6)
+ * @prefix: Prefix length to validate
+ *
+ * Returns: 0 if valid, -1 if invalid
+ * Thread-safe: Yes
+ *
+ * Validates that prefix is within valid range for the address family:
+ * - IPv4: 0-32
+ * - IPv6: 0-128
+ */
+static int
+cidr_validate_prefix_range (int family, long prefix)
+{
+  if (prefix < 0)
+    return -1;
+
+  if (family == SOCKET_AF_INET)
+    return (prefix <= SOCKET_IPV4_MAX_PREFIX) ? 0 : -1;
+
+  if (family == SOCKET_AF_INET6)
+    return (prefix <= SOCKET_IPV6_MAX_PREFIX) ? 0 : -1;
+
+  return -1; /* Unknown family */
+}
+
 /* ==================== Timeout Utilities ==================== */
 
 int
@@ -254,27 +349,16 @@ SocketCommon_parse_ip (const char *ip_str, int *family)
  *
  * Returns: 0 on success, -1 on parse error
  * Thread-safe: Yes
+ *
+ * Note: Does not validate family-specific max prefix (32 vs 128).
+ * That validation happens in cidr_parse_ipv4/cidr_parse_ipv6.
  */
 static int
 cidr_parse_prefix (const char *prefix_str, long *prefix_out)
 {
-  char *endptr = NULL;
-  long prefix_long;
-  int saved_errno;
-
-  saved_errno = errno;
-  errno = 0;
-  prefix_long = strtol (prefix_str, &endptr, 10);
-
-  if (errno != 0 || endptr == prefix_str || *endptr != '\0' || prefix_long < 0)
-    {
-      errno = saved_errno;
-      return -1;
-    }
-
-  errno = saved_errno;
-  *prefix_out = prefix_long;
-  return 0;
+  /* Use max of 128 (IPv6 max) - family-specific check happens later */
+  return socketcommon_safe_strtol (prefix_str, prefix_out, 0,
+                                   SOCKET_IPV6_MAX_PREFIX);
 }
 
 /**
@@ -297,7 +381,7 @@ cidr_parse_ipv4 (const char *addr_str, long prefix, unsigned char *network,
   if (inet_pton (SOCKET_AF_INET, addr_str, &addr4) != 1)
     return -1;
 
-  if (prefix > SOCKET_IPV4_MAX_PREFIX)
+  if (cidr_validate_prefix_range (SOCKET_AF_INET, prefix) < 0)
     return -1;
 
   memcpy (network, &addr4, SOCKET_IPV4_ADDR_BYTES);
@@ -326,7 +410,7 @@ cidr_parse_ipv6 (const char *addr_str, long prefix, unsigned char *network,
   if (inet_pton (SOCKET_AF_INET6, addr_str, &addr6) != 1)
     return -1;
 
-  if (prefix > SOCKET_IPV6_MAX_PREFIX)
+  if (cidr_validate_prefix_range (SOCKET_AF_INET6, prefix) < 0)
     return -1;
 
   memcpy (network, &addr6, SOCKET_IPV6_ADDR_BYTES);
@@ -360,7 +444,7 @@ socketcommon_parse_cidr (const char *cidr_str, unsigned char *network,
     return -1;
 
   size_t len = strlen (cidr_str);
-  if (len == 0 || len > SOCKET_ERROR_MAX_HOSTNAME + 10)
+  if (len == 0 || len > SOCKET_ERROR_MAX_HOSTNAME + SOCKET_CIDR_SUFFIX_MAX_LEN)
     return -1;
 
   cidr_copy = strdup (cidr_str);
@@ -446,7 +530,7 @@ SocketCommon_cidr_match (const char *ip_str, const char *cidr_str)
   size_t ip_len = strlen (ip_str);
   size_t cidr_len = strlen (cidr_str);
   if (ip_len == 0 || ip_len > SOCKET_ERROR_MAX_HOSTNAME || cidr_len == 0
-      || cidr_len > SOCKET_ERROR_MAX_HOSTNAME + 10 /* for /prefix */)
+      || cidr_len > SOCKET_ERROR_MAX_HOSTNAME + SOCKET_CIDR_SUFFIX_MAX_LEN)
     {
       return -1;
     }
@@ -634,17 +718,9 @@ socketcommon_validate_hostname_internal (const char *host, int use_exceptions,
   /* Check length bounds */
   if (host_len == 0 || host_len > SOCKET_ERROR_MAX_HOSTNAME)
     {
-      if (use_exceptions)
-        {
-          SOCKET_RAISE_MSG (SocketCommon, exception_type,
-                            "Invalid hostname length: %zu (max %d)", host_len,
-                            SOCKET_ERROR_MAX_HOSTNAME);
-        }
-      else
-        {
-          SOCKET_ERROR_MSG ("Invalid hostname length: %zu (max %d)", host_len,
-                            SOCKET_ERROR_MAX_HOSTNAME);
-        }
+      COND_ERROR_MSG (use_exceptions, exception_type,
+                      "Invalid hostname length: %zu (max %d)", host_len,
+                      SOCKET_ERROR_MAX_HOSTNAME);
       return -1;
     }
 
@@ -1210,24 +1286,15 @@ SocketCommon_setup_hints (struct addrinfo *hints, int socktype, int flags)
 static int
 socketcommon_parse_port_number (const char *port_str)
 {
-  char *endptr;
-  long p;
-  int saved_errno;
+  long port_val;
 
   if (!port_str || !*port_str)
     return 0;
 
-  saved_errno = errno;
-  errno = 0;
-  p = strtol (port_str, &endptr, 10);
-  if (errno == 0 && endptr != port_str && *endptr == '\0' && p >= 0
-      && p <= SOCKET_MAX_PORT)
-    {
-      errno = saved_errno;
-      return (int)p;
-    }
-  errno = saved_errno;
-  return 0;
+  if (socketcommon_safe_strtol (port_str, &port_val, 0, SOCKET_MAX_PORT) < 0)
+    return 0;
+
+  return (int)port_val;
 }
 
 /**
@@ -2253,8 +2320,8 @@ SocketCommon_wait_for_fd (int fd, short events, int timeout_ms)
     timeout_ms = -1; /* Normalize invalid negative to infinite wait */
 
   /* Cap at reasonable maximum (INT_MAX could cause overflow in some implementations) */
-  if (timeout_ms > INT_MAX / 2)
-    timeout_ms = INT_MAX / 2;
+  if (timeout_ms > SOCKET_POLL_TIMEOUT_MAX)
+    timeout_ms = SOCKET_POLL_TIMEOUT_MAX;
 
   pfd.fd = fd;
   pfd.events = events;

@@ -769,7 +769,8 @@ validate_pseudo_header (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
                         int *pseudo_headers_seen, HTTP2_PseudoHeaderState *state)
 {
   /* Dispatch by pseudo-header name with duplicate detection */
-  if (h->name_len == 7 && memcmp (h->name, ":method", 7) == 0)
+  if (h->name_len == STRLEN_LIT (":method")
+      && memcmp (h->name, ":method", STRLEN_LIT (":method")) == 0)
     {
       if (*pseudo_headers_seen & PSEUDO_BIT_METHOD)
         {
@@ -786,7 +787,8 @@ validate_pseudo_header (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
       return 0;
     }
 
-  if (h->name_len == 7 && memcmp (h->name, ":scheme", 7) == 0)
+  if (h->name_len == STRLEN_LIT (":scheme")
+      && memcmp (h->name, ":scheme", STRLEN_LIT (":scheme")) == 0)
     {
       if (*pseudo_headers_seen & PSEUDO_BIT_SCHEME)
         {
@@ -797,7 +799,8 @@ validate_pseudo_header (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
       return http2_validate_scheme_header (h, state);
     }
 
-  if (h->name_len == 10 && memcmp (h->name, ":authority", 10) == 0)
+  if (h->name_len == STRLEN_LIT (":authority")
+      && memcmp (h->name, ":authority", STRLEN_LIT (":authority")) == 0)
     {
       if (*pseudo_headers_seen & PSEUDO_BIT_AUTHORITY)
         {
@@ -808,7 +811,8 @@ validate_pseudo_header (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
       return http2_validate_authority_header (h, state);
     }
 
-  if (h->name_len == 5 && memcmp (h->name, ":path", 5) == 0)
+  if (h->name_len == STRLEN_LIT (":path")
+      && memcmp (h->name, ":path", STRLEN_LIT (":path")) == 0)
     {
       if (*pseudo_headers_seen & PSEUDO_BIT_PATH)
         {
@@ -819,7 +823,8 @@ validate_pseudo_header (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
       return http2_validate_path_header (h, state);
     }
 
-  if (h->name_len == 7 && memcmp (h->name, ":status", 7) == 0)
+  if (h->name_len == STRLEN_LIT (":status")
+      && memcmp (h->name, ":status", STRLEN_LIT (":status")) == 0)
     {
       if (*pseudo_headers_seen & PSEUDO_BIT_STATUS)
         {
@@ -837,7 +842,8 @@ validate_pseudo_header (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
       return 0;
     }
 
-  if (h->name_len == 9 && memcmp (h->name, ":protocol", 9) == 0)
+  if (h->name_len == STRLEN_LIT (":protocol")
+      && memcmp (h->name, ":protocol", STRLEN_LIT (":protocol")) == 0)
     {
       if (*pseudo_headers_seen & PSEUDO_BIT_PROTOCOL)
         {
@@ -918,7 +924,8 @@ validate_regular_header_entry (const SocketHPACK_Header *h, int *has_te,
     }
 
   /* Check TE header restrictions */
-  if (h->name_len == 2 && memcmp (h->name, "te", 2) == 0)
+  if (h->name_len == STRLEN_LIT ("te")
+      && memcmp (h->name, "te", STRLEN_LIT ("te")) == 0)
     {
       if (*has_te)
         {
@@ -928,13 +935,14 @@ validate_regular_header_entry (const SocketHPACK_Header *h, int *has_te,
       *has_te = 1;
 
       /* TE must be "trailers" or empty */
-      if (h->value_len > 0 && h->value_len != 8)
+      if (h->value_len > 0 && h->value_len != STRLEN_LIT ("trailers"))
         {
           SOCKET_LOG_ERROR_MSG ("TE header value must be 'trailers', got: %.*s",
                                 (int)h->value_len, h->value);
           return -1;
         }
-      if (h->value_len == 8 && memcmp (h->value, "trailers", 8) != 0)
+      if (h->value_len == STRLEN_LIT ("trailers")
+          && memcmp (h->value, "trailers", STRLEN_LIT ("trailers")) != 0)
         {
           SOCKET_LOG_ERROR_MSG ("TE header value must be 'trailers', got: %.*s",
                                 (int)h->value_len, h->value);
@@ -943,8 +951,8 @@ validate_regular_header_entry (const SocketHPACK_Header *h, int *has_te,
     }
 
   /* Parse first Content-Length header for validation */
-  if (!*parsed_content_length && h->name_len == 14
-      && memcmp (h->name, "content-length", 14) == 0)
+  if (!*parsed_content_length && h->name_len == STRLEN_LIT ("content-length")
+      && memcmp (h->name, "content-length", STRLEN_LIT ("content-length")) == 0)
     {
       int64_t cl;
       if (http2_parse_content_length (h->value, h->value_len, &cl) < 0)
@@ -1127,7 +1135,8 @@ http2_recombine_cookie_headers (Arena_T arena, SocketHPACK_Header *headers, size
   /* Single pass: collect cookie indices, calculate lengths, find first */
   for (size_t i = 0; i < *count; i++) {
     const SocketHPACK_Header *h = &headers[i];
-    if (h->name_len == 6 && memcmp (h->name, "cookie", 6) == 0) {
+    if (h->name_len == STRLEN_LIT ("cookie")
+        && memcmp (h->name, "cookie", STRLEN_LIT ("cookie")) == 0) {
       cookie_indices[num_cookies] = i;
       if (first_cookie_idx == (size_t)-1) first_cookie_idx = i;
       total_value_len += h->value_len;
@@ -1710,7 +1719,7 @@ SocketHTTP2_Stream_send_response (SocketHTTP2_Stream_T stream,
   status_len = snprintf (status_buf, sizeof (status_buf), "%d",
                          response->status_code);
   pseudo_header.name = ":status";
-  pseudo_header.name_len = 7;
+  pseudo_header.name_len = STRLEN_LIT (":status");
   pseudo_header.value = status_buf;
   pseudo_header.value_len = (size_t)status_len;
   pseudo_header.never_index = 0;
@@ -2430,11 +2439,14 @@ validate_push_request_method (SocketHTTP2_Stream_T stream)
       const SocketHPACK_Header *h = &stream->headers[i];
 
       /* Check for :method pseudo-header */
-      if (h->name_len == 7 && memcmp (h->name, ":method", 7) == 0)
+      if (h->name_len == STRLEN_LIT (":method")
+          && memcmp (h->name, ":method", STRLEN_LIT (":method")) == 0)
         {
           /* RFC 9113 §8.4: Only GET and HEAD are valid for pushed requests */
-          if ((h->value_len == 3 && memcmp (h->value, "GET", 3) == 0)
-              || (h->value_len == 4 && memcmp (h->value, "HEAD", 4) == 0))
+          if ((h->value_len == STRLEN_LIT ("GET")
+               && memcmp (h->value, "GET", STRLEN_LIT ("GET")) == 0)
+              || (h->value_len == STRLEN_LIT ("HEAD")
+                  && memcmp (h->value, "HEAD", STRLEN_LIT ("HEAD")) == 0))
             {
               return 0; /* Valid safe method */
             }

@@ -1,0 +1,14 @@
+{
+  "issue": 1631,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1647",
+  "pr_number": 1647,
+  "branch": "issue-1631-inline-quic-helpers",
+  "files_changed": ["src/quic/SocketQUICAddrValidation.c"],
+  "tests_passed": true,
+  "commit_sha": "153e0b14",
+  "summary": "Inlined three single-use helper functions (validate_token_format, check_token_expiration, verify_token_address) into SocketQUICAddrValidation_validate_token() to improve code locality and readability. The complex compute_and_verify_token_hmac function was preserved as separate due to its complexity.",
+  "lines_removed": 79,
+  "lines_added": 22,
+  "net_reduction": 57
+}

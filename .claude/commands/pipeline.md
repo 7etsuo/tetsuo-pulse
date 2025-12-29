@@ -230,6 +230,8 @@ Analyze code for readability improvements focusing on:
 1. **Nested if statements** that should be flattened to guard clauses
 2. **Single-use subroutines** that are candidates for inlining
 
+**Creates GitHub issues for all verified findings.**
+
 ## Refactor Mode Architecture
 
 ```
@@ -240,21 +242,20 @@ Phase R1: Discovery
     │ Identify target files (.c/.h)
     │ Can be single file or directory
     ▼
-Phase R2: Readability Analysis (parallel)
-    │ ┌──────────────────────────────────────────────────┐
-    │ │ readability-analyzer-agent (file1.c)             │
-    │ │   ├── Find nested if statements (3+ depth)       │
-    │ │   ├── Find single-use static functions           │
-    │ │   └── Generate refactoring suggestions           │
-    │ ├──────────────────────────────────────────────────┤
-    │ │ readability-analyzer-agent (file2.c)             │
-    │ │   └── ...                                         │
-    │ └──────────────────────────────────────────────────┘
+Phase R2: Per-File Pipeline (parallel agents)
+    │ ┌──────────────────────────────────────────────────────┐
+    │ │ per-file-pipeline-agent (file1.c)                   │
+    │ │   ├── Analyze file for readability issues            │
+    │ │   ├── Spawn issue-verifier-agent per finding        │
+    │ │   └── Spawn pipeline-issue-writer for verified      │
+    │ ├──────────────────────────────────────────────────────┤
+    │ │ per-file-pipeline-agent (file2.c)                   │
+    │ │   └── ...                                            │
+    │ └──────────────────────────────────────────────────────┘
     ▼
-Phase R3: Report & Apply
+Phase R3: Report
     │ Aggregate findings
-    │ Present refactoring suggestions
-    │ Optionally apply changes
+    │ List created GitHub issues
     ▼
 Done
 ```
@@ -285,16 +286,26 @@ Done
    - src/http/SocketHTTP2-frames.c (800 lines)
    ...
 
-   **Proceed with readability analysis?**
+   **Proceed with readability analysis?** ([N] per-file-pipeline-agents will be spawned)
    ```
 
-## PHASE R2: Readability Analysis
+## PHASE R2: Per-File Pipeline Agents
 
-**Goal**: Analyze each file for nested ifs and single-use subroutines.
+**Goal**: Spawn independent agents that own the complete analysis→verification→issue workflow for each file.
 
 ### CRITICAL: Parallel Execution
 
-**Spawn one `readability-analyzer-agent` per file, ALL IN A SINGLE MESSAGE.**
+**Spawn one `per-file-pipeline-agent` per source file, ALL IN A SINGLE MESSAGE.**
+
+Do NOT:
+- Process files sequentially
+- Run agents one at a time
+- Analyze files yourself without agents
+
+DO:
+- Send ONE message with N Task tool invocations (one per file)
+- Run all agents in background
+- Collect all results when complete
 
 ### Task Invocations
 
@@ -302,45 +313,62 @@ For each file, spawn:
 
 ```
 Task:
-  subagent_type: readability-analyzer-agent
+  subagent_type: per-file-pipeline-agent
   run_in_background: true
   prompt: |
-    Analyze this file for readability improvements:
+    Run READABILITY-FOCUSED analysis pipeline for this file:
 
     File: [FILEPATH]
+    Repository: 7etsuo/tetsuo-socket
+    Analysis Type: REFACTOR (readability issues only)
 
-    Focus on:
-    1. NESTED IF STATEMENTS (3+ depth) - Find deeply nested conditionals
-       that should be refactored to guard clauses/early returns
-    2. SINGLE-USE SUBROUTINES - Find static functions called exactly once
-       that are candidates for inlining
+    Focus ONLY on these two issue types:
 
-    Return structured findings with:
-    - Exact line numbers
-    - Current code structure
-    - Suggested refactoring
-    - Severity (CRITICAL/HIGH/MEDIUM/LOW)
+    1. NESTED IF STATEMENTS (3+ depth)
+       - Find deeply nested conditionals (if/else chains)
+       - Severity: CRITICAL (5+ depth), HIGH (4 depth), MEDIUM (3 depth)
+       - Pattern: DEEP_NESTING_[depth]
+       - Recommendation: Flatten with guard clauses/early returns
+
+    2. SINGLE-USE SUBROUTINES
+       - Find static functions called exactly once
+       - Severity: HIGH (<30 lines, inline candidate), MEDIUM (30-100 lines, review needed)
+       - Pattern: SINGLE_USE_INLINE or SINGLE_USE_REVIEW
+       - Recommendation: Inline small functions, document justification for larger ones
+
+    Your workflow:
+    1. Analyze the file for ONLY the above readability issues
+    2. For EACH finding, spawn an issue-verifier-agent to verify it
+    3. For each VERIFIED finding, spawn a pipeline-issue-writer to create a GitHub issue
+       - Issue title format: "refactor(<module>): <description>"
+       - Label: "refactor", "readability"
+    4. Return a summary of:
+       - Issues found (nested ifs + single-use functions)
+       - Issues verified vs rejected (false positives)
+       - GitHub issues created (with URLs)
+       - Findings needing manual review
 ```
 
-### Batching
+### Batching Strategy
 
-If >20 files:
-1. Split into batches of 15
-2. Process each batch, collect results
-3. Aggregate across batches
+If more than 20 files:
+1. Split into batches of 15-20 files
+2. Run each batch, wait for completion
+3. Aggregate results across batches
 
 ### Collecting Results
 
-Wait for all agents with `TaskOutput` blocking.
+Wait for all agents to complete using `TaskOutput` with blocking.
 
 Each agent returns:
-- Nested if findings with depth and line ranges
-- Single-use function findings with call sites
-- Refactoring suggestions
+- Count of readability issues found
+- Count verified vs rejected
+- GitHub issue URLs created
+- Any manual review items
 
-## PHASE R3: Report & Apply
+## PHASE R3: Report Generation
 
-**Goal**: Generate report and optionally apply refactoring.
+**Goal**: Aggregate results from all per-file agents into a comprehensive report.
 
 ### Report Location
 
@@ -357,113 +385,65 @@ Save to: `<target>/REFACTOR_ANALYSIS.md`
 
 ## Executive Summary
 
-- **Nested If Issues**: [count] (CRITICAL: [n], HIGH: [n], MEDIUM: [n])
-- **Single-Use Subroutines**: [count] (inline candidates: [n], review needed: [n])
+- **Files Analyzed**: [count]
+- **Readability Issues Found**: [count]
+- **Verified Issues**: [count]
+- **False Positives Filtered**: [count]
+- **GitHub Issues Created**: [count]
 
-## Nested If Statements
+## Issues Created by Category
 
-### CRITICAL (5+ depth)
+### Nested If Statements ([count])
 
-| File:Lines | Depth | Function | Recommendation |
-|------------|-------|----------|----------------|
-| SocketHTTP2.c:100-180 | 5 | process_frame | Flatten with guard clauses |
+| Issue # | File:Lines | Depth | Severity |
+|---------|------------|-------|----------|
+| #200 | SocketHTTP2.c:100-180 | 5 | CRITICAL |
+| #201 | SocketHTTP2.c:300-350 | 4 | HIGH |
 
-#### SocketHTTP2.c:100-180 (Depth: 5)
+### Single-Use Subroutines ([count])
 
-**Current:**
-```c
-if (conn != NULL) {
-    if (conn->state == ACTIVE) {
-        if (frame != NULL) {
-            if (frame->type == DATA) {
-                if (stream != NULL) {
-                    // work
-                }
-            }
-        }
-    }
-}
-```
+| Issue # | File | Function | Lines | Severity |
+|---------|------|----------|-------|----------|
+| #202 | SocketHTTP2.c | parse_value | 12 | HIGH (inline) |
+| #203 | SocketHTTP2.c | process_block | 45 | MEDIUM (review) |
 
-**Suggested:**
-```c
-if (conn == NULL)
-    return SOCKET_HTTP2_ERROR_NULL_CONN;
-if (conn->state != ACTIVE)
-    return SOCKET_HTTP2_ERROR_INACTIVE;
-if (frame == NULL)
-    return SOCKET_HTTP2_ERROR_NULL_FRAME;
-if (frame->type != DATA)
-    return SOCKET_HTTP2_ERROR_WRONG_TYPE;
-if (stream == NULL)
-    return SOCKET_HTTP2_ERROR_NULL_STREAM;
-// work - now prominent
-```
+## Per-File Breakdown
 
-### HIGH (4 depth)
+| File | Found | Verified | Rejected | Issues Created |
+|------|-------|----------|----------|----------------|
+| SocketHTTP2.c | 5 | 4 | 1 | #200, #201, #202 |
+| SocketHTTP2-frame.c | 2 | 2 | 0 | #203, #204 |
 
-[Similar format...]
+## False Positives Filtered
 
-### MEDIUM (3 depth)
-
-[Similar format...]
-
-## Single-Use Subroutines
-
-### Inline Candidates (<30 lines)
-
-| Function | Defined | Called At | Lines | Action |
-|----------|---------|-----------|-------|--------|
-| parse_settings_value | :200 | :450 | 12 | INLINE |
-| validate_stream_id | :300 | :500 | 8 | INLINE |
-
-### Review Needed (30-100 lines)
-
-| Function | Defined | Called At | Lines | Notes |
-|----------|---------|-----------|-------|-------|
-| process_headers_block | :400 | :800 | 65 | Consider if separation is justified |
-
-### Justified Separation (>100 lines)
-
-| Function | Defined | Called At | Lines | Notes |
-|----------|---------|-----------|-------|-------|
-| handle_connection_preface | :100 | :900 | 150 | Complex, separation appropriate |
-
-## Statistics
-
-| Metric | Count |
-|--------|-------|
-| Files analyzed | X |
-| Total nested if issues | X |
-| Total single-use functions | X |
-| Inline candidates | X |
-| Lines that could be simplified | X |
+| File | Line | Pattern | Reason |
+|------|------|---------|--------|
+| file.c | 100 | DEEP_NESTING | Switch statement, intentional |
 
 ---
 *Report generated by /pipeline refactor*
 ```
 
-### Apply Changes (Optional)
-
-After presenting the report, ask:
+### Final Output
 
 ```markdown
-## Apply Refactoring?
+## Phase R3: Report Complete
 
-Found [N] refactoring opportunities.
+Analysis report saved to: <target>/REFACTOR_ANALYSIS.md
 
-Options:
-1. **Apply all** - Automatically refactor all findings
-2. **Apply selected** - Choose which to apply
-3. **Report only** - Just save the report, no changes
+### Summary
+- Files analyzed: [N]
+- GitHub issues created: [N]
+- False positives filtered: [N]
 
-**Which option?**
+### Issue Links
+
+- #200: refactor(http2): Flatten 5-level nesting in process_frame
+- #201: refactor(http2): Flatten 4-level nesting in validate_headers
+- #202: refactor(http2): Inline single-use parse_value function
+
+**Refactor pipeline complete.**
 ```
-
-If user chooses to apply:
-1. For nested ifs: Use Edit tool to refactor each function
-2. For single-use (inline): Copy function body to call site, remove original
-3. After each change: Run `cmake --build build && ctest` to verify
 
 ---
 

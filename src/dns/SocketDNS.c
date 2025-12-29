@@ -501,6 +501,42 @@ signal_completion (struct SocketDNS_T *dns)
   (void)n;
 }
 
+/**
+ * @brief Invoke user callback with proper mutex handling.
+ * @ingroup dns
+ *
+ * Handles the callback invocation pattern:
+ * 1. Save callback pointer and user data
+ * 2. Transfer result ownership to callback
+ * 3. Unlock mutex before callback (avoid deadlock)
+ * 4. Invoke callback
+ * 5. Lock mutex, remove request from hash table, unlock
+ *
+ * @param dns DNS resolver instance (mutex must be held on entry)
+ * @param req Request with callback to invoke
+ * @param result Result to pass to callback (ownership transferred)
+ * @param error Error code to pass to callback
+ * @note Mutex is unlocked on exit
+ */
+static void
+invoke_user_callback (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req,
+                      struct addrinfo *result, int error)
+{
+  SocketDNS_Callback user_cb = req->callback;
+  void *user_data = req->callback_data;
+
+  req->result = NULL; /* Transfer ownership to callback */
+
+  pthread_mutex_unlock (&dns->mutex);
+
+  /* Invoke callback outside mutex to avoid deadlock */
+  user_cb (req, result, error, user_data);
+
+  pthread_mutex_lock (&dns->mutex);
+  hash_table_remove (dns, req);
+  pthread_mutex_unlock (&dns->mutex);
+}
+
 int
 dns_cancellation_error (void)
 {
@@ -961,19 +997,7 @@ socketdns_resolver_callback (SocketDNSResolver_Query_T query,
   /* Invoke user callback if provided */
   if (req->callback)
     {
-      SocketDNS_Callback user_cb = req->callback;
-      void *user_data = req->callback_data;
-      struct addrinfo *cb_result = req->result;
-      req->result = NULL; /* Transfer ownership to callback */
-
-      pthread_mutex_unlock (&dns->mutex);
-
-      /* Invoke callback outside mutex to avoid deadlock */
-      user_cb (req, cb_result, gai_error, user_data);
-
-      pthread_mutex_lock (&dns->mutex);
-      hash_table_remove (dns, req);
-      pthread_mutex_unlock (&dns->mutex);
+      invoke_user_callback (dns, req, req->result, gai_error);
     }
   else
     {
@@ -1014,20 +1038,7 @@ check_l1_cache_and_complete (struct SocketDNS_T *dns, Request_T req)
 
       if (req->callback)
         {
-          SocketDNS_Callback user_cb = req->callback;
-          void *user_data = req->callback_data;
-          struct addrinfo *cb_result = req->result;
-          int cb_error = req->error;
-          req->result = NULL; /* Transfer ownership to callback */
-
-          pthread_mutex_unlock (&dns->mutex);
-
-          /* Invoke callback outside mutex */
-          user_cb (req, cb_result, cb_error, user_data);
-
-          pthread_mutex_lock (&dns->mutex);
-          hash_table_remove (dns, req);
-          pthread_mutex_unlock (&dns->mutex);
+          invoke_user_callback (dns, req, req->result, req->error);
         }
       else
         {
@@ -1098,16 +1109,7 @@ submit_to_resolver (struct SocketDNS_T *dns, Request_T req)
 
       if (req->callback)
         {
-          SocketDNS_Callback user_cb = req->callback;
-          void *user_data = req->callback_data;
-
-          pthread_mutex_unlock (&dns->mutex);
-
-          user_cb (req, NULL, EAI_FAIL, user_data);
-
-          pthread_mutex_lock (&dns->mutex);
-          hash_table_remove (dns, req);
-          pthread_mutex_unlock (&dns->mutex);
+          invoke_user_callback (dns, req, NULL, EAI_FAIL);
         }
       else
         {
@@ -1479,76 +1481,6 @@ resolve_async_with_wait (struct SocketDNS_T *dns, const char *host, int port,
 }
 
 static struct addrinfo *
-convert_resolver_result_to_addrinfo (const SocketDNSResolver_Result *result,
-                                     int port)
-{
-  struct addrinfo *head = NULL;
-  struct addrinfo *tail = NULL;
-  size_t i;
-
-  if (!result || result->count == 0)
-    return NULL;
-
-  for (i = 0; i < result->count; i++)
-    {
-      struct addrinfo *ai = calloc (1, sizeof (*ai));
-      if (!ai)
-        {
-          SocketCommon_free_addrinfo (head);
-          return NULL;
-        }
-
-      ai->ai_family = result->addresses[i].family;
-      ai->ai_socktype = SOCK_STREAM;
-      ai->ai_protocol = IPPROTO_TCP;
-
-      if (result->addresses[i].family == AF_INET)
-        {
-          struct sockaddr_in *sa = calloc (1, sizeof (*sa));
-          if (!sa)
-            {
-              free (ai);
-              SocketCommon_free_addrinfo (head);
-              return NULL;
-            }
-          sa->sin_family = AF_INET;
-          sa->sin_port = htons ((uint16_t)port);
-          sa->sin_addr = result->addresses[i].addr.v4;
-          ai->ai_addr = (struct sockaddr *)sa;
-          ai->ai_addrlen = sizeof (*sa);
-        }
-      else if (result->addresses[i].family == AF_INET6)
-        {
-          struct sockaddr_in6 *sa = calloc (1, sizeof (*sa));
-          if (!sa)
-            {
-              free (ai);
-              SocketCommon_free_addrinfo (head);
-              return NULL;
-            }
-          sa->sin6_family = AF_INET6;
-          sa->sin6_port = htons ((uint16_t)port);
-          sa->sin6_addr = result->addresses[i].addr.v6;
-          ai->ai_addr = (struct sockaddr *)sa;
-          ai->ai_addrlen = sizeof (*sa);
-        }
-      else
-        {
-          free (ai);
-          continue;
-        }
-
-      if (!head)
-        head = ai;
-      else
-        tail->ai_next = ai;
-      tail = ai;
-    }
-
-  return head;
-}
-
-static struct addrinfo *
 resolve_via_backend (struct SocketDNS_T *dns, const char *host, int port,
                      const struct addrinfo *hints, int timeout_ms)
 {
@@ -1575,7 +1507,7 @@ resolve_via_backend (struct SocketDNS_T *dns, const char *host, int port,
                         SocketDNSResolver_strerror (err));
     }
 
-  addrinfo_result = convert_resolver_result_to_addrinfo (&result, port);
+  addrinfo_result = resolver_result_to_addrinfo (&result, port);
   SocketDNSResolver_result_free (&result);
 
   if (!addrinfo_result)

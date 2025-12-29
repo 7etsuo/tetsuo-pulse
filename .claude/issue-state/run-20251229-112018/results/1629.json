@@ -1,0 +1,11 @@
+{
+  "issue": 1629,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1650",
+  "pr_number": 1650,
+  "branch": "issue-1629-clarify-errno-reset",
+  "files_changed": ["src/core/SocketSYNProtect.c"],
+  "tests_passed": true,
+  "commit_sha": "f84c35ae80c66067aa3a50386e92966b220ffa16",
+  "notes": "Documentation-only change. Updated errno reset comment to clarify POSIX semantics. Pre-existing test_dns_queue_limit failure is unrelated (confirmed on main branch)."
+}

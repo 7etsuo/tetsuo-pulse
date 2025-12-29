@@ -1,0 +1,10 @@
+{
+  "issue": 1626,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1644",
+  "pr_number": 1644,
+  "branch": "issue-1626-flatten-quic-loss-nested-if",
+  "files_changed": ["src/quic/SocketQUICLoss.c"],
+  "tests_passed": true,
+  "commit_sha": "eb75f07b"
+}
