@@ -68,6 +68,9 @@ static const char label_quic_key[] = "quic key";
 static const char label_quic_iv[] = "quic iv";
 static const char label_quic_hp[] = "quic hp";
 
+/* Compile-time string length for performance-critical paths */
+#define STRLEN_LIT(s) (sizeof(s) - 1)
+
 /* ============================================================================
  * Result String Table
  * ============================================================================
@@ -347,21 +350,21 @@ derive_traffic_keys (const uint8_t *secret, size_t secret_len,
 {
   /* Derive key */
   if (hkdf_expand_label (secret, secret_len,
-                          label_quic_key, strlen (label_quic_key),
+                          label_quic_key, STRLEN_LIT (label_quic_key),
                           NULL, 0,
                           key, QUIC_INITIAL_KEY_LEN) < 0)
     return -1;
 
   /* Derive IV */
   if (hkdf_expand_label (secret, secret_len,
-                          label_quic_iv, strlen (label_quic_iv),
+                          label_quic_iv, STRLEN_LIT (label_quic_iv),
                           NULL, 0,
                           iv, QUIC_INITIAL_IV_LEN) < 0)
     return -1;
 
   /* Derive header protection key */
   if (hkdf_expand_label (secret, secret_len,
-                          label_quic_hp, strlen (label_quic_hp),
+                          label_quic_hp, STRLEN_LIT (label_quic_hp),
                           NULL, 0,
                           hp_key, QUIC_INITIAL_HP_KEY_LEN) < 0)
     return -1;
@@ -410,7 +413,7 @@ SocketQUICInitial_derive_keys (const SocketQUICConnectionID_T *dcid,
 
   /* Step 2: Derive client secret */
   if (hkdf_expand_label (initial_secret, 32,
-                          label_client_in, strlen (label_client_in),
+                          label_client_in, STRLEN_LIT (label_client_in),
                           NULL, 0,
                           client_secret, 32) < 0)
     {
@@ -420,7 +423,7 @@ SocketQUICInitial_derive_keys (const SocketQUICConnectionID_T *dcid,
 
   /* Step 3: Derive server secret */
   if (hkdf_expand_label (initial_secret, 32,
-                          label_server_in, strlen (label_server_in),
+                          label_server_in, STRLEN_LIT (label_server_in),
                           NULL, 0,
                           server_secret, 32) < 0)
     {
