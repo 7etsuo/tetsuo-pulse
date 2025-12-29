@@ -921,6 +921,29 @@ SocketPool_remove (T pool, Socket_T socket)
  */
 
 /**
+ * @brief Check if connection has exceeded idle timeout (overflow-safe).
+ * @param last_activity Last activity timestamp
+ * @param idle_timeout Idle timeout in seconds
+ * @param now Current time
+ * @return Non-zero if idle, zero otherwise
+ * @threadsafe Yes - pure computation
+ *
+ * Security: Uses subtraction instead of difftime() to avoid overflow.
+ * Handles clock going backwards gracefully.
+ */
+static int
+is_idle_time_exceeded (time_t last_activity, time_t idle_timeout, time_t now)
+{
+  /* Security: Avoid overflow by using subtraction instead of difftime().
+   * If now < last_activity (clock went backwards), not idle. */
+  if (now < last_activity)
+    return 0;
+
+  /* Safe: now >= last_activity, so subtraction won't underflow */
+  return (now - last_activity) >= idle_timeout;
+}
+
+/**
  * @brief Check if connection is active and has exceeded idle timeout.
  * @conn Connection to check
  * @idle_timeout Idle timeout in seconds (0 means close all active connections)
@@ -932,9 +955,6 @@ SocketPool_remove (T pool, Socket_T socket)
  * Consolidates active check, socket validity check, and idle timeout check
  * into a single function. Idle timeout of 0 indicates all active connections
  * should be closed.
- *
- * Security: Uses overflow-safe subtraction instead of difftime() to avoid
- * floating-point precision issues when idle_timeout approaches TIME_MAX.
  */
 static int
 is_connection_idle (const Connection_T conn, time_t idle_timeout, time_t now)
@@ -946,13 +966,7 @@ is_connection_idle (const Connection_T conn, time_t idle_timeout, time_t now)
   if (idle_timeout == 0)
     return 1;
 
-  /* Security: Avoid overflow by using subtraction instead of difftime().
-   * If now < last_activity (clock went backwards), not idle. */
-  if (now < conn->last_activity)
-    return 0;
-
-  /* Safe: now >= last_activity, so subtraction won't underflow */
-  return (now - conn->last_activity) >= idle_timeout;
+  return is_idle_time_exceeded (conn->last_activity, idle_timeout, now);
 }
 
 /**
@@ -1230,9 +1244,6 @@ check_socket_health (const Connection_T conn)
  * @param now Current time.
  * @return Non-zero if connection is stale.
  * @threadsafe Call with mutex held.
- *
- * Security: Uses overflow-safe subtraction instead of difftime() to avoid
- * floating-point precision issues when idle_timeout approaches TIME_MAX.
  */
 static int
 check_connection_staleness (T pool, Connection_T conn, time_t now)
@@ -1241,13 +1252,7 @@ check_connection_staleness (T pool, Connection_T conn, time_t now)
   if (idle_timeout <= 0)
     return 0;
 
-  /* Security: Avoid overflow by using subtraction instead of difftime().
-   * If now < last_activity (clock went backwards), not stale. */
-  if (now < conn->last_activity)
-    return 0;
-
-  /* Safe: now >= last_activity, so subtraction won't underflow */
-  return (now - conn->last_activity) >= idle_timeout;
+  return is_idle_time_exceeded (conn->last_activity, idle_timeout, now);
 }
 
 /**
