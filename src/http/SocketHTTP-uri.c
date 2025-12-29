@@ -517,20 +517,25 @@ uri_parse_port (const char *start, const char *end, int *port_out)
   if (!start || !end || end <= start)
     return URI_PARSE_OK;
 
-  int port = 0;
+  uint64_t port = 0;
   for (const char *pp = start; pp < end; pp++)
     {
       if (!isdigit ((unsigned char)*pp))
         return URI_PARSE_INVALID_PORT;
 
-      int digit = *pp - '0';
-      if (port > (URI_MAX_PORT - digit) / 10)
+      uint64_t digit = (uint64_t)(*pp - '0');
+      uint64_t temp;
+
+      /* Check port * 10 overflow using centralized safe arithmetic */
+      if (!socket_util_safe_mul_u64 (port, 10, &temp))
         return URI_PARSE_INVALID_PORT;
 
-      port = port * 10 + digit;
+      /* Check temp + digit overflow or exceeds max port */
+      if (!socket_util_safe_add_u64 (temp, digit, &port) || port > URI_MAX_PORT)
+        return URI_PARSE_INVALID_PORT;
     }
 
-  *port_out = port;
+  *port_out = (int)port;
   return URI_PARSE_OK;
 }
 
