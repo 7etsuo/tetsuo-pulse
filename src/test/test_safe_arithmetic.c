@@ -6,14 +6,15 @@
 
 /**
  * test_safe_arithmetic.c - Safe arithmetic utility unit tests
- * Tests for socket_util_safe_add_u64() and socket_util_safe_mul_size()
- * overflow detection helpers in SocketUtil.h.
+ * Tests for socket_util_safe_add_u64(), socket_util_safe_mul_size(),
+ * and socket_util_timespec_add() helpers in SocketUtil.h.
  */
 
 #include <assert.h>
 #include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <time.h>
 
 #include "core/SocketUtil.h"
 #include "test/Test.h"
@@ -298,6 +299,118 @@ TEST(safe_mul_size_struct_allocation)
   struct large { char data[1024]; };
   ret = socket_util_safe_mul_size(10000, sizeof(struct large), &result);
   ASSERT_EQ(ret, 1);
+}
+
+/* ============================================================================
+ * socket_util_timespec_add() Tests
+ * ============================================================================
+ */
+
+/* Test basic addition without overflow */
+TEST(timespec_add_no_overflow)
+{
+  struct timespec ts1, ts2, result;
+
+  /* Simple case: 1.5s + 2.3s = 3.8s */
+  ts1.tv_sec = 1;
+  ts1.tv_nsec = 500000000;  /* 0.5s */
+  ts2.tv_sec = 2;
+  ts2.tv_nsec = 300000000;  /* 0.3s */
+  result = socket_util_timespec_add(ts1, ts2);
+  ASSERT_EQ(result.tv_sec, 3);
+  ASSERT_EQ(result.tv_nsec, 800000000);
+
+  /* Both zero */
+  ts1.tv_sec = 0;
+  ts1.tv_nsec = 0;
+  ts2.tv_sec = 0;
+  ts2.tv_nsec = 0;
+  result = socket_util_timespec_add(ts1, ts2);
+  ASSERT_EQ(result.tv_sec, 0);
+  ASSERT_EQ(result.tv_nsec, 0);
+}
+
+/* Test nanosecond overflow handling */
+TEST(timespec_add_nsec_overflow)
+{
+  struct timespec ts1, ts2, result;
+
+  /* 0.6s + 0.5s = 1.1s (overflow test) */
+  ts1.tv_sec = 0;
+  ts1.tv_nsec = 600000000;
+  ts2.tv_sec = 0;
+  ts2.tv_nsec = 500000000;
+  result = socket_util_timespec_add(ts1, ts2);
+  ASSERT_EQ(result.tv_sec, 1);
+  ASSERT_EQ(result.tv_nsec, 100000000);
+
+  /* 5.9s + 3.8s = 9.7s (another overflow) */
+  ts1.tv_sec = 5;
+  ts1.tv_nsec = 900000000;
+  ts2.tv_sec = 3;
+  ts2.tv_nsec = 800000000;
+  result = socket_util_timespec_add(ts1, ts2);
+  ASSERT_EQ(result.tv_sec, 9);
+  ASSERT_EQ(result.tv_nsec, 700000000);
+
+  /* 1.999999999s + 0.000000001s = 2.0s (exact boundary) */
+  ts1.tv_sec = 1;
+  ts1.tv_nsec = 999999999;
+  ts2.tv_sec = 0;
+  ts2.tv_nsec = 1;
+  result = socket_util_timespec_add(ts1, ts2);
+  ASSERT_EQ(result.tv_sec, 2);
+  ASSERT_EQ(result.tv_nsec, 0);
+}
+
+/* Test typical use case: adding interval to current time */
+TEST(timespec_add_interval)
+{
+  struct timespec now, interval, deadline;
+
+  /* Current time: 1000.0s */
+  now.tv_sec = 1000;
+  now.tv_nsec = 0;
+
+  /* Add 500ms interval (from socket_util_ms_to_timespec(500)) */
+  interval.tv_sec = 0;
+  interval.tv_nsec = 500000000;
+
+  deadline = socket_util_timespec_add(now, interval);
+  ASSERT_EQ(deadline.tv_sec, 1000);
+  ASSERT_EQ(deadline.tv_nsec, 500000000);
+
+  /* Add 1500ms interval (1.5s) */
+  interval.tv_sec = 1;
+  interval.tv_nsec = 500000000;
+
+  deadline = socket_util_timespec_add(now, interval);
+  ASSERT_EQ(deadline.tv_sec, 1001);
+  ASSERT_EQ(deadline.tv_nsec, 500000000);
+}
+
+/* Test edge case: maximum nanosecond values */
+TEST(timespec_add_edge_cases)
+{
+  struct timespec ts1, ts2, result;
+
+  /* Max nsec (999999999) + small value */
+  ts1.tv_sec = 10;
+  ts1.tv_nsec = 999999999;
+  ts2.tv_sec = 0;
+  ts2.tv_nsec = 0;
+  result = socket_util_timespec_add(ts1, ts2);
+  ASSERT_EQ(result.tv_sec, 10);
+  ASSERT_EQ(result.tv_nsec, 999999999);
+
+  /* Max nsec + max nsec */
+  ts1.tv_sec = 5;
+  ts1.tv_nsec = 999999999;
+  ts2.tv_sec = 7;
+  ts2.tv_nsec = 999999999;
+  result = socket_util_timespec_add(ts1, ts2);
+  ASSERT_EQ(result.tv_sec, 13);
+  ASSERT_EQ(result.tv_nsec, 999999998);
 }
 
 int

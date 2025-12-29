@@ -1026,50 +1026,6 @@ static int http2_validate_headers (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T
         }
     }
 
-  /* Content-Length parsing moved to main validation loop */
-  for (size_t i = 0; i < count; i++)
-    {
-      const SocketHPACK_Header *h = &headers[i];
-      if (h->name_len == 14 && memcmp (h->name, "content-length", 14) == 0)
-        {
-          /* Parse Content-Length value */
-          if (h->value_len == 0)
-            {
-              /* Empty Content-Length is invalid */
-              SOCKET_LOG_ERROR_MSG ("Empty Content-Length header");
-              goto protocol_error;
-            }
-
-          int64_t cl = 0;
-          int valid = 1;
-          for (size_t j = 0; j < h->value_len; j++)
-            {
-              if (h->value[j] < '0' || h->value[j] > '9')
-                {
-                  valid = 0;
-                  break;
-                }
-              if (cl > (INT64_MAX - (h->value[j] - '0')) / 10)
-                {
-                  valid = 0; /* Overflow */
-                  break;
-                }
-              cl = cl * 10 + (h->value[j] - '0');
-            }
-
-          if (!valid)
-            {
-              SOCKET_LOG_ERROR_MSG ("Invalid Content-Length value: %.*s",
-                                   (int)h->value_len, h->value);
-              goto protocol_error;
-            }
-
-          /* removed duplicate */
-          stream->expected_content_length = cl;
-          break; /* Only use first Content-Length header */
-        }
-    }
-
   /* Validate required pseudo-headers */
   if (is_request)
     {

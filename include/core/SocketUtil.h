@@ -549,6 +549,37 @@ socket_util_round_up_pow2 (size_t n)
 }
 
 /* ============================================================================
+ * SNPRINTF UTILITIES
+ * ============================================================================
+ */
+
+/**
+ * @brief Check snprintf return value for truncation
+ * @ingroup foundation
+ * @param ret Return value from snprintf
+ * @param buflen Buffer size passed to snprintf
+ * @return -1 if truncated or error, ret otherwise
+ * @threadsafe Yes (macro expansion, no shared state)
+ *
+ * Standard pattern for checking snprintf truncation. According to POSIX,
+ * snprintf returns:
+ * - Negative value on encoding error
+ * - Number of characters that would be written (excluding null terminator)
+ * - Truncation occurs when return value >= buflen
+ *
+ * This macro provides a single source of truth for snprintf truncation
+ * checking, reducing code duplication and improving consistency.
+ *
+ * Usage:
+ *   int ret = snprintf(buf, buflen, "format %s", str);
+ *   return SOCKET_SNPRINTF_CHECK(ret, buflen);
+ *
+ * @see snprintf(3) for return value semantics
+ */
+#define SOCKET_SNPRINTF_CHECK(ret, buflen) \
+  ((ret) < 0 || (size_t)(ret) >= (buflen) ? -1 : (ret))
+
+/* ============================================================================
  * MIN/MAX UTILITIES
  * ============================================================================
  */
@@ -1568,6 +1599,44 @@ socket_util_timespec_to_ms (struct timespec ts)
 {
   return (unsigned long)ts.tv_sec * SOCKET_MS_PER_SECOND
          + ts.tv_nsec / SOCKET_NS_PER_MS;
+}
+
+/**
+ * @brief Add two timespec structures together.
+ * @ingroup foundation
+ * @param ts1 First timespec structure
+ * @param ts2 Second timespec structure to add
+ * @return Sum of the two timespec structures, normalized
+ * @threadsafe Yes (pure function, no shared state)
+ *
+ * Adds two timespec structures together, properly handling nanosecond overflow.
+ * The result is normalized so that tv_nsec is always in the range [0, 999999999].
+ *
+ * This utility eliminates manual overflow handling when adding intervals to
+ * absolute times, a common pattern in timed waits and health checks.
+ *
+ * Usage:
+ *   struct timespec now, interval, deadline;
+ *   clock_gettime(CLOCK_REALTIME, &now);
+ *   interval = socket_util_ms_to_timespec(500);
+ *   deadline = socket_util_timespec_add(now, interval);
+ *   pthread_cond_timedwait(&cond, &mutex, &deadline);
+ *
+ * @see socket_util_ms_to_timespec() for creating intervals
+ * @see socket_util_timespec_to_ms() for conversion to milliseconds
+ */
+static inline struct timespec
+socket_util_timespec_add (struct timespec ts1, struct timespec ts2)
+{
+  struct timespec result;
+  result.tv_sec = ts1.tv_sec + ts2.tv_sec;
+  result.tv_nsec = ts1.tv_nsec + ts2.tv_nsec;
+  if (result.tv_nsec >= 1000000000)
+    {
+      result.tv_sec++;
+      result.tv_nsec -= 1000000000;
+    }
+  return result;
 }
 
 /* ============================================================================

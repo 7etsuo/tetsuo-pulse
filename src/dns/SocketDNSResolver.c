@@ -18,12 +18,14 @@
 
 #include <arpa/inet.h>
 #include <assert.h>
+#include <fcntl.h>
 #include <net/if.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 #include <sys/random.h>
 #include <time.h>
+#include <unistd.h>
 
 #define T SocketDNSResolver_T
 
@@ -165,6 +167,9 @@ static void cache_insert (T resolver, const char *hostname,
                           const SocketDNSResolver_Address *addresses,
                           size_t count, uint32_t ttl);
 static struct CacheEntry *cache_lookup (T resolver, const char *hostname);
+static struct SocketDNSResolver_Query *initialize_query (
+    T resolver, const char *hostname, int flags,
+    SocketDNSResolver_Callback callback, void *userdata);
 
 /* Use centralized monotonic time utility from SocketUtil.h */
 #define get_monotonic_ms() Socket_get_monotonic_ms()
@@ -317,7 +322,8 @@ cap_ttl (uint32_t ttl)
  * Generate a cryptographically random query ID per RFC 5452 Section 4.
  *
  * Uses getrandom() for full 16-bit entropy to prevent cache poisoning
- * attacks. Falls back to XOR of monotonic time bits if getrandom() fails.
+ * attacks. Falls back to /dev/urandom if getrandom() fails. Raises
+ * exception if both fail to ensure RFC 5452 compliance.
  */
 static uint16_t
 generate_unique_id (T resolver)
@@ -332,9 +338,17 @@ generate_unique_id (T resolver)
       ssize_t ret = getrandom (&id, sizeof (id), 0);
       if (ret != (ssize_t)sizeof (id))
         {
-          /* Fallback: XOR monotonic time bits for some entropy */
-          uint64_t t = (uint64_t)get_monotonic_ms ();
-          id = (uint16_t)((t ^ (t >> 16) ^ (t >> 32)) & 0xFFFF);
+          /* Fallback to /dev/urandom for cryptographic randomness */
+          int fd = open ("/dev/urandom", O_RDONLY);
+          if (fd >= 0)
+            {
+              ret = read (fd, &id, sizeof (id));
+              close (fd);
+            }
+          /* If both getrandom() and /dev/urandom fail, cannot generate
+           * cryptographically secure ID - fail hard per RFC 5452 */
+          if (ret != (ssize_t)sizeof (id))
+            RAISE (SocketDNSResolver_Failed);
         }
 
       /* Avoid ID 0 (reserved in some implementations) */
@@ -831,41 +845,45 @@ parse_answer_rr (struct SocketDNSResolver_Query *q,
     }
 }
 
+/**
+ * Validate DNS response header fields (QR bit, ID match).
+ *
+ * RFC 1035 Section 4.1.1 - header format validation.
+ *
+ * @param header Decoded DNS header.
+ * @param q      Query being validated against.
+ * @return RESOLVER_OK if valid, RESOLVER_ERROR_INVALID otherwise.
+ */
 static int
-parse_response (T resolver, struct SocketDNSResolver_Query *q,
-                const unsigned char *response, size_t len)
+validate_response_header (const SocketDNS_Header *header,
+                          struct SocketDNSResolver_Query *q)
 {
-  SocketDNS_Header header;
-  SocketDNS_Question question;
-  SocketDNS_RR rr;
-  size_t offset;
-  size_t consumed;
-
-  (void)resolver; /* Currently unused - reserved for future caching extensions */
-
-  /* Decode header */
-  if (SocketDNS_header_decode (response, len, &header) != 0)
+  /* Verify QR bit is set (response) */
+  if (header->qr != 1)
     return RESOLVER_ERROR_INVALID;
 
-  /* Verify response */
-  if (header.qr != 1)
-    return RESOLVER_ERROR_INVALID;
-  if (header.id != q->id)
+  /* Verify ID matches query */
+  if (header->id != q->id)
     return RESOLVER_ERROR_INVALID;
 
-  /* Validate question section matches query (RFC 5452 Section 3) */
-  if (header.qdcount >= 1)
-    {
-      int vret = validate_response_question (response, len, q);
-      if (vret != RESOLVER_OK)
-        return vret;
-    }
+  return RESOLVER_OK;
+}
 
-  /* Check RCODE */
-  switch (header.rcode)
+/**
+ * Validate DNS response RCODE and convert to resolver error code.
+ *
+ * RFC 1035 Section 4.1.1 - RCODE values.
+ *
+ * @param header Decoded DNS header.
+ * @return RESOLVER_OK if NOERROR, appropriate error code otherwise.
+ */
+static int
+validate_response_rcode (const SocketDNS_Header *header)
+{
+  switch (header->rcode)
     {
     case DNS_RCODE_NOERROR:
-      break;
+      return RESOLVER_OK;
     case DNS_RCODE_NXDOMAIN:
       return RESOLVER_ERROR_NXDOMAIN;
     case DNS_RCODE_SERVFAIL:
@@ -877,10 +895,33 @@ parse_response (T resolver, struct SocketDNSResolver_Query *q,
     default:
       return RESOLVER_ERROR_INVALID;
     }
+}
+
+/**
+ * Parse answer section resource records from DNS response.
+ *
+ * Skips question section and iterates through answer RRs,
+ * delegating to parse_answer_rr for type-specific handling.
+ *
+ * @param q        Query structure to populate with results.
+ * @param response Raw DNS response message.
+ * @param len      Response length in bytes.
+ * @param qdcount  Number of questions to skip.
+ * @param ancount  Number of answers to parse.
+ * @return RESOLVER_OK on success, error code on failure.
+ */
+static int
+parse_answer_section (struct SocketDNSResolver_Query *q,
+                      const unsigned char *response, size_t len, int qdcount,
+                      int ancount)
+{
+  SocketDNS_Question question;
+  SocketDNS_RR rr;
+  size_t offset = DNS_HEADER_SIZE;
+  size_t consumed;
 
   /* Skip question section */
-  offset = DNS_HEADER_SIZE;
-  for (int i = 0; i < header.qdcount; i++)
+  for (int i = 0; i < qdcount; i++)
     {
       if (SocketDNS_question_decode (response, len, offset, &question,
                                      &consumed)
@@ -890,7 +931,7 @@ parse_response (T resolver, struct SocketDNSResolver_Query *q,
     }
 
   /* Parse answer section */
-  for (int i = 0; i < header.ancount; i++)
+  for (int i = 0; i < ancount; i++)
     {
       if (SocketDNS_rr_decode (response, len, offset, &rr, &consumed) != 0)
         return RESOLVER_ERROR_INVALID;
@@ -902,6 +943,42 @@ parse_response (T resolver, struct SocketDNSResolver_Query *q,
     }
 
   return RESOLVER_OK;
+}
+
+static int
+parse_response (T resolver, struct SocketDNSResolver_Query *q,
+                const unsigned char *response, size_t len)
+{
+  SocketDNS_Header header;
+  int result;
+
+  (void)resolver; /* Currently unused - reserved for future caching extensions */
+
+  /* Decode header */
+  if (SocketDNS_header_decode (response, len, &header) != 0)
+    return RESOLVER_ERROR_INVALID;
+
+  /* Validate header fields */
+  result = validate_response_header (&header, q);
+  if (result != RESOLVER_OK)
+    return result;
+
+  /* Validate question section matches query (RFC 5452 Section 3) */
+  if (header.qdcount >= 1)
+    {
+      result = validate_response_question (response, len, q);
+      if (result != RESOLVER_OK)
+        return result;
+    }
+
+  /* Validate RCODE */
+  result = validate_response_rcode (&header);
+  if (result != RESOLVER_OK)
+    return result;
+
+  /* Parse answer section */
+  return parse_answer_section (q, response, len, header.qdcount,
+                               header.ancount);
 }
 
 /*
@@ -1204,7 +1281,7 @@ SocketDNSResolver_load_resolv_conf (T resolver)
   /* Propagate to transport layer */
   SocketDNSTransport_Config transport_config = { 0 };
   transport_config.initial_timeout_ms = resolver->timeout_ms;
-  transport_config.max_timeout_ms = resolver->timeout_ms * 4;
+  transport_config.max_timeout_ms = resolver->timeout_ms * TIMEOUT_BACKOFF_MULTIPLIER;
   transport_config.max_retries = resolver->max_retries;
   transport_config.rotate_nameservers = SocketDNSConfig_has_rotate (&config);
   SocketDNSTransport_configure (resolver->transport, &transport_config);
@@ -1400,6 +1477,47 @@ try_cache (T resolver, const char *hostname, int flags,
   return 1;
 }
 
+/**
+ * Initialize a new DNS query structure.
+ *
+ * Allocates and initializes a query for the given hostname and parameters.
+ * The query is added to the resolver's pending list.
+ *
+ * @param resolver  Resolver instance.
+ * @param hostname  Hostname to query (already validated).
+ * @param flags     Resolution flags.
+ * @param callback  User callback for results.
+ * @param userdata  User data for callback.
+ * @return Initialized query on success, NULL on allocation failure.
+ */
+static struct SocketDNSResolver_Query *
+initialize_query (T resolver, const char *hostname, int flags,
+                  SocketDNSResolver_Callback callback, void *userdata)
+{
+  struct SocketDNSResolver_Query *q;
+
+  /* Allocate query */
+  q = Arena_alloc (resolver->arena, sizeof (*q), __FILE__, __LINE__);
+  if (!q)
+    return NULL;
+
+  /* Initialize query structure */
+  memset (q, 0, sizeof (*q));
+  q->id = generate_unique_id (resolver);
+  snprintf (q->hostname, DNS_MAX_NAME_LEN, "%s", hostname);
+  snprintf (q->current_name, DNS_MAX_NAME_LEN, "%s", hostname);
+  q->flags = flags;
+  q->state = QUERY_STATE_INIT;
+  q->callback = callback;
+  q->userdata = userdata;
+  q->resolver = resolver; /* Set back-pointer for transport callback */
+
+  /* Add to pending list */
+  query_list_add (resolver, q);
+
+  return q;
+}
+
 SocketDNSResolver_Query_T
 SocketDNSResolver_resolve (T resolver, const char *hostname, int flags,
                            SocketDNSResolver_Callback callback, void *userdata)
@@ -1438,26 +1556,13 @@ SocketDNSResolver_resolve (T resolver, const char *hostname, int flags,
       return NULL;
     }
 
-  /* Allocate query */
-  q = Arena_alloc (resolver->arena, sizeof (*q), __FILE__, __LINE__);
+  /* Initialize query */
+  q = initialize_query (resolver, hostname, flags, callback, userdata);
   if (!q)
     {
       callback (NULL, NULL, RESOLVER_ERROR_NOMEM, userdata);
       return NULL;
     }
-
-  memset (q, 0, sizeof (*q));
-  q->id = generate_unique_id (resolver);
-  snprintf (q->hostname, DNS_MAX_NAME_LEN, "%s", hostname);
-  snprintf (q->current_name, DNS_MAX_NAME_LEN, "%s", hostname);
-  q->flags = flags;
-  q->state = QUERY_STATE_INIT;
-  q->callback = callback;
-  q->userdata = userdata;
-  q->resolver = resolver; /* Set back-pointer for transport callback */
-
-  /* Add to pending list */
-  query_list_add (resolver, q);
 
   /* Send initial query */
   if (send_query (resolver, q) != 0)

@@ -149,8 +149,7 @@ check_decode_output_limits (size_t total, size_t output_len, size_t max_size)
   if (!SocketSecurity_check_size (output_len))
     return HTTP1_ERROR;
 
-  potential = total + output_len;
-  if (potential < total)
+  if (!SocketSecurity_check_add (total, output_len, &potential))
     return HTTP1_ERROR_BODY_TOO_LARGE; /* Overflow */
 
   if (max_size != SIZE_MAX && potential > max_size)
@@ -179,8 +178,7 @@ check_encode_output_limits (size_t total, size_t output_len, size_t max_size)
   if (!SocketSecurity_check_size (output_len))
     return 0;
 
-  potential = total + output_len;
-  if (potential < total)
+  if (!SocketSecurity_check_add (total, output_len, &potential))
     return 0; /* Overflow */
 
   if (max_size != SIZE_MAX && potential > max_size)
@@ -198,14 +196,11 @@ update_encode_total (size_t *total, size_t produced, size_t max_size)
   return 1;
 }
 
-/* Default maximum decompressed size (100MB) for zip bomb protection */
-#define HTTP1_DEFAULT_MAX_DECOMPRESSED_SIZE (100 * 1024 * 1024)
-
 static size_t
 get_effective_max_decompressed_size (const SocketHTTP1_Config *cfg)
 {
   if (cfg == NULL || cfg->max_decompressed_size == 0)
-    return HTTP1_DEFAULT_MAX_DECOMPRESSED_SIZE;
+    return SOCKET_SECURITY_MAX_DECOMPRESSED_SIZE;
   return cfg->max_decompressed_size;
 }
 
@@ -286,6 +281,9 @@ decode_zlib (SocketHTTP1_Decoder_T decoder, const unsigned char *input,
   int ret;
   z_stream *s = &decoder->state.zlib;
 
+  assert (input_len <= UINT_MAX);  /* Document precondition */
+  assert (output_len <= UINT_MAX); /* Document precondition */
+
   s->next_in = (Bytef *)input;
   s->avail_in = (uInt)input_len;
   s->next_out = output;
@@ -314,6 +312,8 @@ finish_zlib_decode (SocketHTTP1_Decoder_T decoder, unsigned char *output,
 {
   int ret;
   z_stream *s = &decoder->state.zlib;
+
+  assert (output_len <= UINT_MAX); /* Document precondition */
 
   s->next_in = NULL;
   s->avail_in = 0;
@@ -345,6 +345,9 @@ encode_zlib (SocketHTTP1_Encoder_T encoder, const unsigned char *input,
   int zlib_flush = flush ? Z_SYNC_FLUSH : Z_NO_FLUSH;
   z_stream *s = &encoder->state.zlib;
 
+  assert (input_len <= UINT_MAX);  /* Document precondition */
+  assert (output_len <= UINT_MAX); /* Document precondition */
+
   s->next_in = (Bytef *)input;
   s->avail_in = (uInt)input_len;
   s->next_out = output;
@@ -365,6 +368,8 @@ finish_zlib_encode (SocketHTTP1_Encoder_T encoder, unsigned char *output,
   int ret;
   size_t produced;
   z_stream *s = &encoder->state.zlib;
+
+  assert (output_len <= UINT_MAX); /* Document precondition */
 
   s->next_in = NULL;
   s->avail_in = 0;

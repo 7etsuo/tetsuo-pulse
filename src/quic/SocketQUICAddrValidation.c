@@ -37,16 +37,16 @@ const Except_T SocketQUICAddrValidation_Failed
  * Creates a deterministic hash of address for token binding.
  *
  * @param[in] addr Socket address.
- * @param[out] hash Output buffer (16 bytes).
+ * @param[out] hash Output buffer (QUIC_TOKEN_ADDR_HASH_SIZE bytes).
  */
 static void
-hash_address (const struct sockaddr *addr, uint8_t hash[16])
+hash_address (const struct sockaddr *addr, uint8_t hash[QUIC_TOKEN_ADDR_HASH_SIZE])
 {
   unsigned char sha256_output[SOCKET_CRYPTO_SHA256_SIZE];
 
   if (!addr)
     {
-      memset (hash, 0, 16);
+      memset (hash, 0, QUIC_TOKEN_ADDR_HASH_SIZE);
       return;
     }
 
@@ -64,12 +64,12 @@ hash_address (const struct sockaddr *addr, uint8_t hash[16])
     }
   else
     {
-      memset (hash, 0, 16);
+      memset (hash, 0, QUIC_TOKEN_ADDR_HASH_SIZE);
       return;
     }
 
-  /* Use first 16 bytes of SHA-256 */
-  memcpy (hash, sha256_output, 16);
+  /* Use first QUIC_TOKEN_ADDR_HASH_SIZE bytes of SHA-256 */
+  memcpy (hash, sha256_output, QUIC_TOKEN_ADDR_HASH_SIZE);
 }
 
 /* ============================================================================
@@ -216,11 +216,11 @@ check_token_expiration (uint64_t token_timestamp)
 static SocketQUICAddrValidation_Result
 verify_token_address (const uint8_t *token, const struct sockaddr *addr)
 {
-  uint8_t addr_hash[16];
+  uint8_t addr_hash[QUIC_TOKEN_ADDR_HASH_SIZE];
 
   hash_address (addr, addr_hash);
 
-  if (SocketCrypto_secure_compare (token + 8, addr_hash, 16) != 0)
+  if (SocketCrypto_secure_compare (token + QUIC_TOKEN_TIMESTAMP_SIZE, addr_hash, QUIC_TOKEN_ADDR_HASH_SIZE) != 0)
     {
       return QUIC_ADDR_VALIDATION_ERROR_INVALID;
     }
@@ -242,14 +242,14 @@ compute_and_verify_token_hmac (const uint8_t *token, uint64_t token_timestamp,
                                 const struct sockaddr *addr,
                                 const uint8_t *secret)
 {
-  uint8_t addr_hash[16];
+  uint8_t addr_hash[QUIC_TOKEN_ADDR_HASH_SIZE];
   uint8_t hmac_input[QUIC_TOKEN_HMAC_INPUT_SIZE];
   unsigned char hmac_output[SOCKET_CRYPTO_SHA256_SIZE];
 
   hash_address (addr, addr_hash);
 
   socket_util_pack_be64 (hmac_input, token_timestamp);
-  memcpy (hmac_input + 8, addr_hash, 16);
+  memcpy (hmac_input + QUIC_TOKEN_TIMESTAMP_SIZE, addr_hash, QUIC_TOKEN_ADDR_HASH_SIZE);
 
   TRY
   {
@@ -275,7 +275,7 @@ SocketQUICAddrValidation_generate_token (const struct sockaddr *addr,
                                           const uint8_t *secret,
                                           uint8_t *token, size_t *token_len)
 {
-  uint8_t addr_hash[16];
+  uint8_t addr_hash[QUIC_TOKEN_ADDR_HASH_SIZE];
   uint8_t hmac_input[QUIC_TOKEN_HMAC_INPUT_SIZE];
   unsigned char hmac_output[SOCKET_CRYPTO_SHA256_SIZE];
   uint64_t timestamp;
@@ -286,7 +286,7 @@ SocketQUICAddrValidation_generate_token (const struct sockaddr *addr,
       return QUIC_ADDR_VALIDATION_ERROR_NULL;
     }
 
-  /* Token format: 8 timestamp + 16 addr_hash + 32 HMAC */
+  /* Token format: 8 timestamp + QUIC_TOKEN_ADDR_HASH_SIZE addr_hash + 32 HMAC */
   if (*token_len < QUIC_ADDR_VALIDATION_TOKEN_SIZE)
     {
       return QUIC_ADDR_VALIDATION_ERROR_BUFFER_SIZE;
@@ -300,7 +300,7 @@ SocketQUICAddrValidation_generate_token (const struct sockaddr *addr,
 
   /* Build HMAC input: timestamp || addr_hash */
   socket_util_pack_be64 (hmac_input, timestamp);
-  memcpy (hmac_input + 8, addr_hash, 16);
+  memcpy (hmac_input + QUIC_TOKEN_TIMESTAMP_SIZE, addr_hash, QUIC_TOKEN_ADDR_HASH_SIZE);
 
   /* Compute HMAC-SHA256 */
   TRY
@@ -316,7 +316,7 @@ SocketQUICAddrValidation_generate_token (const struct sockaddr *addr,
 
   /* Build token: timestamp || addr_hash || HMAC */
   socket_util_pack_be64 (token, timestamp);
-  memcpy (token + 8, addr_hash, 16);
+  memcpy (token + QUIC_TOKEN_TIMESTAMP_SIZE, addr_hash, QUIC_TOKEN_ADDR_HASH_SIZE);
   memcpy (token + 24, hmac_output, 32);
 
   *token_len = QUIC_ADDR_VALIDATION_TOKEN_SIZE;

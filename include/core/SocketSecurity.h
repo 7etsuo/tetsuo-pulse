@@ -52,6 +52,17 @@
 #endif
 
 /**
+ * @brief Maximum size for decompressed HTTP content (zip bomb protection).
+ *
+ * Default: 100 MiB (104857600 bytes). Used by HTTP/1.1 decompression to
+ * prevent resource exhaustion from malicious compressed payloads. Override
+ * via compile-time definition.
+ */
+#ifndef SOCKET_SECURITY_MAX_DECOMPRESSED_SIZE
+#define SOCKET_SECURITY_MAX_DECOMPRESSED_SIZE (100 * 1024 * 1024)
+#endif
+
+/**
  * @brief Maximum allowed request timeout value in milliseconds.
  *
  * Default: 60 seconds (60000 ms). Override by defining before inclusion.

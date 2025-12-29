@@ -111,6 +111,25 @@
 #define SOCKETHTTP1_MAX_HEADER_LINE (16 * 1024)
 #endif
 
+/**
+ * @brief Default overhead per trailer entry for memory accounting.
+ *
+ * This value represents an estimate of per-entry overhead for trailer headers,
+ * including:
+ * - HeaderEntry struct (64 bytes on 64-bit: 5 pointers + 2 size_t + 2 ints)
+ * - String null terminators (2 bytes)
+ * - Wire format delimiters (": " + "\r\n" = 4 bytes)
+ *
+ * The default value of 32 is a CONSERVATIVE UNDERESTIMATE of actual overhead
+ * (~70 bytes total), providing a safety margin while preventing excessive
+ * memory consumption from trailer headers. This can be tuned per use case
+ * via SocketHTTP1_Config.trailer_entry_overhead if stricter or looser
+ * accounting is needed.
+ */
+#ifndef SOCKETHTTP1_TRAILER_ENTRY_OVERHEAD
+#define SOCKETHTTP1_TRAILER_ENTRY_OVERHEAD 32
+#endif
+
 /** @brief Buffer size for integer-to-string conversion */
 #ifndef SOCKETHTTP1_INT_STRING_BUFSIZE
 #define SOCKETHTTP1_INT_STRING_BUFSIZE 24
@@ -220,6 +239,7 @@ typedef struct
   size_t max_chunk_ext;          /**< Maximum chunk extension length */
   size_t max_trailer_size;       /**< Maximum trailer size */
   size_t max_header_line;        /**< Maximum individual header line length */
+  size_t trailer_entry_overhead; /**< Per-entry overhead for trailer size accounting */
   int allow_obs_fold;            /**< Allow obsolete header folding (default: 0) */
   int strict_mode;               /**< Reject ambiguous input (default: 1) */
   size_t max_decompressed_size;  /**< Maximum decompressed body size (0=unlimited) */

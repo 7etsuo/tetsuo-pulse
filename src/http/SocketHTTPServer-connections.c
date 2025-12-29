@@ -258,13 +258,17 @@ connection_read_initial_body (SocketHTTPServer_T server, ServerConnection *conn)
       size_t max_body = server->config.max_body_size;
       size_t process_len = input_len;
 
-      /* Overflow-safe check */
-      if (max_body > 0 && (input_len > max_body - conn->body_received)) {
-        /* Would exceed limit */
-        process_len = max_body - conn->body_received;
-        if (process_len == 0) {
-          connection_reject_oversized_body (server, conn);
-          return -1;
+      /* Overflow-safe check using centralized utility */
+      if (max_body > 0) {
+        uint64_t total;
+        if (!socket_util_safe_add_u64(conn->body_received, input_len, &total) || total > max_body) {
+          /* Would exceed limit */
+          size_t remaining = max_body - conn->body_received;
+          if (remaining == 0) {
+            connection_reject_oversized_body (server, conn);
+            return -1;
+          }
+          process_len = remaining;
         }
       }
 
@@ -322,7 +326,8 @@ connection_read_initial_body (SocketHTTPServer_T server, ServerConnection *conn)
       size_t current_len = SocketBuf_available (conn->body_buf);
 
       /* Check if adding this chunk would exceed limit */
-      if (current_len + input_len > max_body)
+      uint64_t total;
+      if (!socket_util_safe_add_u64(current_len, input_len, &total) || total > max_body)
         {
           /* Only accept up to limit */
           input_len = max_body - current_len;
@@ -366,13 +371,17 @@ connection_read_initial_body (SocketHTTPServer_T server, ServerConnection *conn)
       size_t max_body = server->config.max_body_size;
       size_t process_len = input_len;
 
-      /* Overflow-safe check */
-      if (max_body > 0 && (input_len > max_body - conn->body_len)) {
-        /* Would exceed limit */
-        process_len = max_body - conn->body_len;
-        if (process_len == 0) {
-          connection_reject_oversized_body (server, conn);
-          return -1;
+      /* Overflow-safe check using centralized utility */
+      if (max_body > 0) {
+        uint64_t total;
+        if (!socket_util_safe_add_u64(conn->body_len, input_len, &total) || total > max_body) {
+          /* Would exceed limit */
+          size_t remaining = max_body - conn->body_len;
+          if (remaining == 0) {
+            connection_reject_oversized_body (server, conn);
+            return -1;
+          }
+          process_len = remaining;
         }
       }
 
@@ -562,8 +571,7 @@ connection_set_client_addr (ServerConnection *conn)
   const char *addr = Socket_getpeeraddr (conn->socket);
   if (addr != NULL)
     {
-      strncpy (conn->client_addr, addr, sizeof (conn->client_addr) - 1);
-      conn->client_addr[sizeof (conn->client_addr) - 1] = '\0';
+      socket_util_safe_strncpy (conn->client_addr, addr, sizeof (conn->client_addr));
     }
 }
 
@@ -665,11 +673,22 @@ connection_add_to_server (SocketHTTPServer_T server, ServerConnection *conn)
   return 0;
 }
 
+/* Clean up partially initialized connection */
+static void
+connection_cleanup_partial (ServerConnection *conn, int resources_initialized)
+{
+  if (resources_initialized && conn->arena != NULL)
+    Arena_dispose (&conn->arena);
+  if (conn->socket != NULL)
+    Socket_free (&conn->socket);
+  free (conn);
+}
+
 /* Allocate and initialize new connection. On failure, cleans up and closes socket */
 ServerConnection *
 connection_new (SocketHTTPServer_T server, Socket_T socket)
 {
-  ServerConnection *volatile conn;
+  ServerConnection *volatile conn = NULL;
   volatile int resources_ok = 0;
   volatile int added_to_server = 0;
 
@@ -682,27 +701,26 @@ connection_new (SocketHTTPServer_T server, Socket_T socket)
   TRY
   {
     if (connection_init_resources (server, conn, socket) < 0)
-      goto cleanup;
+      {
+        connection_cleanup_partial (conn, 0);
+        RETURN NULL;
+      }
     resources_ok = 1;
 
     if (connection_add_to_server (server, conn) < 0)
-      goto cleanup;
+      {
+        connection_cleanup_partial (conn, 1);
+        RETURN NULL;
+      }
     added_to_server = 1;
 
     RETURN conn;
-
-  cleanup:;
   }
   FINALLY
   {
+    /* On exception, clean up if not successfully added to server */
     if (!added_to_server)
-      {
-        if (resources_ok && conn->arena != NULL)
-          Arena_dispose (&conn->arena);
-        if (conn->socket != NULL)
-          Socket_free (&conn->socket);
-        free (conn);
-      }
+      connection_cleanup_partial (conn, resources_ok);
   }
   END_TRY;
 
