@@ -1592,6 +1592,67 @@ ws_complete_handshake (SocketWS_T ws, Socket_T sock)
   return 0;
 }
 
+/**
+ * @brief Set up WebSocket configuration with optional subprotocols.
+ * @internal
+ * @param[out] config Configuration structure to populate
+ * @param protocols Optional comma-separated subprotocols string
+ * @param[out] proto_array Storage for subprotocols array
+ */
+static void
+ws_setup_websocket_config (SocketWS_Config *config, const char *protocols,
+                           const char **proto_array)
+{
+  assert (config);
+  assert (proto_array);
+
+  SocketWS_config_defaults (config);
+  config->role = WS_ROLE_CLIENT;
+
+  if (protocols)
+    {
+      proto_array[0] = protocols;
+      proto_array[1] = NULL;
+      config->subprotocols = proto_array;
+    }
+}
+
+/**
+ * @brief Create WebSocket and complete handshake.
+ * @internal
+ * @param sock Connected socket
+ * @param host Hostname for WebSocket handshake
+ * @param path URL path for WebSocket handshake
+ * @param config WebSocket configuration
+ * @return WebSocket context on success, NULL on error
+ */
+static SocketWS_T
+ws_create_and_handshake (Socket_T sock, const char *host, const char *path,
+                         const SocketWS_Config *config)
+{
+  SocketWS_T ws;
+
+  assert (sock);
+  assert (host);
+  assert (path);
+  assert (config);
+
+  ws = SocketWS_client_new (sock, host, path, config);
+  if (!ws)
+    {
+      Socket_free (&sock);
+      return NULL;
+    }
+
+  if (ws_complete_handshake (ws, sock) != 0)
+    {
+      SocketWS_free (&ws);
+      return NULL;
+    }
+
+  return ws;
+}
+
 SocketWS_T
 SocketWS_connect (const char *url, const char *protocols)
 {
@@ -1602,6 +1663,7 @@ SocketWS_connect (const char *url, const char *protocols)
   char path[SOCKETWS_MAX_PATH_SIZE] = { 0 };
   volatile int port = 80;
   volatile int use_tls = 0;
+  const char *proto_array[2] = { NULL, NULL };
 
   assert (url);
 
@@ -1612,37 +1674,12 @@ SocketWS_connect (const char *url, const char *protocols)
       return NULL;
     }
 
-  /* Create and connect socket */
+  /* Create and connect socket, set up WebSocket */
   TRY
   {
     sock = ws_create_and_connect_socket (host, port, use_tls);
-
-    /* Create WebSocket config */
-    SocketWS_config_defaults (&config);
-    config.role = WS_ROLE_CLIENT;
-
-    /* Set up subprotocols array if provided */
-    const char *proto_array[2] = { NULL, NULL };
-    if (protocols)
-      {
-        proto_array[0] = protocols;
-        config.subprotocols = proto_array;
-      }
-
-    /* Create WebSocket */
-    ws = SocketWS_client_new (sock, host, path, &config);
-    if (!ws)
-      {
-        Socket_free (&sock);
-        return NULL;
-      }
-
-    /* Complete handshake */
-    if (ws_complete_handshake (ws, sock) != 0)
-      {
-        SocketWS_free (&ws);
-        return NULL;
-      }
+    ws_setup_websocket_config (&config, protocols, proto_array);
+    ws = ws_create_and_handshake (sock, host, path, &config);
   }
   EXCEPT (Socket_Failed)
   {
