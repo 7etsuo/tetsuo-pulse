@@ -505,8 +505,37 @@ SocketPool_drain_poll (T pool)
  * @pool: Pool instance
  *
  * Returns: Milliseconds remaining, 0 if expired, -1 if not draining
- * Thread-safe: Yes (C11 atomic read)
+ * Thread-safe: Yes (atomic state check; deadline read may be stale)
  * Complexity: O(1)
+ *
+ * THREAD SAFETY NOTES:
+ * The pool state is checked atomically, but the drain_deadline_ms read is
+ * non-atomic and may observe stale values. This is acceptable because:
+ *
+ * 1. This function returns a best-effort ESTIMATE for use as a timeout hint
+ *    in poll/select during graceful shutdown monitoring.
+ *
+ * 2. The returned value is inherently racy - time advances continuously, so
+ *    the "remaining time" becomes stale immediately after being computed.
+ *
+ * 3. Callers MUST treat the return value as advisory. The actual timeout may
+ *    differ due to:
+ *    - Concurrent drain_deadline_ms modifications by other threads
+ *    - Time elapsed between reading deadline and caller receiving value
+ *    - System clock adjustments (though monotonic clock mitigates this)
+ *
+ * 4. Critical drain decisions (force-close on timeout) are made by
+ *    SocketPool_drain_poll() which holds the mutex and performs consistent
+ *    reads under lock protection.
+ *
+ * USAGE PATTERN:
+ *   while (SocketPool_drain_poll(pool) > 0) {
+ *       int64_t timeout_hint = SocketPool_drain_remaining_ms(pool);
+ *       SocketPoll_wait(poll, &events, timeout_hint);  // Advisory timeout
+ *   }
+ *
+ * If precise deadline tracking is needed, use SocketPool_drain_poll() which
+ * synchronizes access to both state and deadline fields.
  */
 int64_t
 SocketPool_drain_remaining_ms (const T pool)
