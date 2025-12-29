@@ -143,10 +143,11 @@ health_find_circuit (SocketPoolHealth_T health, const char *host, int port,
   if (!entry)
     return NULL;
 
-  entry->host_key = Arena_alloc (health->arena, strlen (key) + 1, __FILE__, __LINE__);
+  size_t key_len = strlen (key);
+  entry->host_key = Arena_alloc (health->arena, key_len + 1, __FILE__, __LINE__);
   if (!entry->host_key)
     return NULL;
-  strcpy (entry->host_key, key);
+  memcpy (entry->host_key, key, key_len + 1);
 
   atomic_init (&entry->state, POOL_CIRCUIT_CLOSED);
   atomic_init (&entry->consecutive_failures, 0);
