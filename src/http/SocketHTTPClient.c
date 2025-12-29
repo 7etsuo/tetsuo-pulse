@@ -108,6 +108,22 @@ get_path_or_root (const SocketHTTP_URI *uri)
   return uri->path != NULL ? uri->path : "/";
 }
 
+/**
+ * httpclient_auth_copy_to_arena - Copy auth strings into arena
+ * @arena: Arena for string allocation
+ * @dest: Destination auth structure (already allocated)
+ * @src: Source auth structure
+ */
+static void
+httpclient_auth_copy_to_arena (Arena_T arena, SocketHTTPClient_Auth *dest,
+                                const SocketHTTPClient_Auth *src)
+{
+  *dest = *src;
+  dest->username = socket_util_arena_strdup (arena, src->username);
+  dest->password = socket_util_arena_strdup (arena, src->password);
+  dest->token = socket_util_arena_strdup (arena, src->token);
+}
+
 void
 SocketHTTPClient_config_defaults (SocketHTTPClient_Config *config)
 {
@@ -1864,13 +1880,7 @@ SocketHTTPClient_Request_auth (SocketHTTPClient_Request_T req,
   if (auth_copy == NULL)
     return;
 
-  *auth_copy = *auth;
-
-  /* Copy strings into arena using centralized utility */
-  auth_copy->username = socket_util_arena_strdup (req->arena, auth->username);
-  auth_copy->password = socket_util_arena_strdup (req->arena, auth->password);
-  auth_copy->token = socket_util_arena_strdup (req->arena, auth->token);
-
+  httpclient_auth_copy_to_arena (req->arena, auth_copy, auth);
   req->auth = auth_copy;
 }
 
@@ -2102,15 +2112,7 @@ SocketHTTPClient_set_auth (SocketHTTPClient_T client,
       return;
     }
 
-  *auth_copy = *auth;
-
-  /* Copy strings using centralized utility */
-  auth_copy->username
-      = socket_util_arena_strdup (client->arena, auth->username);
-  auth_copy->password
-      = socket_util_arena_strdup (client->arena, auth->password);
-  auth_copy->token = socket_util_arena_strdup (client->arena, auth->token);
-
+  httpclient_auth_copy_to_arena (client->arena, auth_copy, auth);
   client->default_auth = auth_copy;
 
   pthread_mutex_unlock (&client->mutex);
