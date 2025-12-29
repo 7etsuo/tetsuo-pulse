@@ -12,6 +12,7 @@
 #include "quic/SocketQUICMigration.h"
 #include "quic/SocketQUICConstants.h"
 #include "core/SocketUtil.h"
+#include "core/SocketCrypto.h"
 #include <string.h>
 #include <stdio.h>
 #include <arpa/inet.h>
@@ -788,8 +789,8 @@ find_path_by_challenge (SocketQUICMigration_T *migration,
 
   for (i = 0; i < migration->path_count; i++)
     {
-      if (memcmp (migration->paths[i].challenge, challenge,
-                 QUIC_PATH_CHALLENGE_SIZE)
+      if (SocketCrypto_secure_compare (migration->paths[i].challenge, challenge,
+                                       QUIC_PATH_CHALLENGE_SIZE)
           == 0)
         {
           return &migration->paths[i];
