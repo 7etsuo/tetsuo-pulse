@@ -549,6 +549,37 @@ socket_util_round_up_pow2 (size_t n)
 }
 
 /* ============================================================================
+ * SNPRINTF UTILITIES
+ * ============================================================================
+ */
+
+/**
+ * @brief Check snprintf return value for truncation
+ * @ingroup foundation
+ * @param ret Return value from snprintf
+ * @param buflen Buffer size passed to snprintf
+ * @return -1 if truncated or error, ret otherwise
+ * @threadsafe Yes (macro expansion, no shared state)
+ *
+ * Standard pattern for checking snprintf truncation. According to POSIX,
+ * snprintf returns:
+ * - Negative value on encoding error
+ * - Number of characters that would be written (excluding null terminator)
+ * - Truncation occurs when return value >= buflen
+ *
+ * This macro provides a single source of truth for snprintf truncation
+ * checking, reducing code duplication and improving consistency.
+ *
+ * Usage:
+ *   int ret = snprintf(buf, buflen, "format %s", str);
+ *   return SOCKET_SNPRINTF_CHECK(ret, buflen);
+ *
+ * @see snprintf(3) for return value semantics
+ */
+#define SOCKET_SNPRINTF_CHECK(ret, buflen) \
+  ((ret) < 0 || (size_t)(ret) >= (buflen) ? -1 : (ret))
+
+/* ============================================================================
  * MIN/MAX UTILITIES
  * ============================================================================
  */

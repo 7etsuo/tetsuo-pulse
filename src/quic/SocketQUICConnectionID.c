@@ -16,13 +16,10 @@
 #include "quic/SocketQUICConnectionID.h"
 #include "quic/SocketQUICConstants.h"
 #include "core/SocketCrypto.h"
+#include "core/SocketUtil.h"
 
 /* Use SocketCrypto_random_bytes() for platform-independent secure random */
 #define SECURE_RANDOM(buf, len) (SocketCrypto_random_bytes ((buf), (len)) == 0)
-
-/* FNV-1a 32-bit hash constants */
-#define FNV1A_OFFSET_BASIS 2166136261u
-#define FNV1A_PRIME        16777619u
 
 /* ============================================================================
  * Result Strings
@@ -285,22 +282,12 @@ SocketQUICConnectionID_decode_fixed (const uint8_t *data, size_t len,
 uint32_t
 SocketQUICConnectionID_hash (const SocketQUICConnectionID_T *cid)
 {
-  uint32_t hash;
-  size_t i;
-
   if (cid == NULL || cid->len == 0)
     return 0;
 
-  /* FNV-1a hash */
-  hash = FNV1A_OFFSET_BASIS;
-
-  for (i = 0; i < cid->len; i++)
-    {
-      hash ^= cid->data[i];
-      hash *= FNV1A_PRIME;
-    }
-
-  return hash;
+  /* Use centralized DJB2 hash for binary data */
+  return socket_util_hash_djb2_len ((const char *)cid->data, cid->len,
+                                     UINT32_MAX);
 }
 
 int

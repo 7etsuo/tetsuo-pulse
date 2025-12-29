@@ -1910,10 +1910,19 @@ SocketCommon_alloc_iov_copy (const struct iovec *iov, int iovcnt,
                              Except_T exc_type)
 {
   struct iovec *copy;
+  size_t alloc_size;
 
   assert (iov);
   assert (iovcnt > 0);
   assert (iovcnt <= IOV_MAX);
+
+  /* Defensive overflow check - should never happen with IOV_MAX bounds */
+  if (!SocketSecurity_check_multiply ((size_t)iovcnt, sizeof (struct iovec),
+                                       &alloc_size))
+    {
+      SOCKET_RAISE_MSG (SocketCommon, exc_type,
+                        "IOV copy allocation would overflow");
+    }
 
   copy = calloc ((size_t)iovcnt, sizeof (struct iovec));
   if (!copy)
@@ -1921,7 +1930,7 @@ SocketCommon_alloc_iov_copy (const struct iovec *iov, int iovcnt,
       SOCKET_RAISE_MSG (SocketCommon, exc_type,
                         SOCKET_ENOMEM ": Cannot allocate iovec copy");
     }
-  memcpy (copy, iov, (size_t)iovcnt * sizeof (struct iovec));
+  memcpy (copy, iov, alloc_size);
   return copy;
 }
 

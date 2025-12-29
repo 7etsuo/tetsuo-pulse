@@ -1007,6 +1007,36 @@ TEST (async_iouring_available_api)
   ASSERT_EQ (info.supported, available);
 }
 
+TEST (async_iouring_kernel_version_validation)
+{
+  setup_signals ();
+
+  SocketAsync_IOUringInfo info;
+  memset (&info, 0, sizeof (info));
+
+  int available = SocketAsync_io_uring_available (&info);
+
+  /* On Linux with io_uring compiled, verify kernel version validation */
+#if defined(__linux__) && SOCKET_HAS_IO_URING
+  if (available)
+    {
+      /* Kernel version components should be in reasonable range (0-999) */
+      ASSERT (info.major >= 0 && info.major <= 999);
+      ASSERT (info.minor >= 0 && info.minor <= 999);
+      ASSERT (info.patch >= 0 && info.patch <= 999);
+
+      /* For supported io_uring, major version should be at least 5 */
+      if (info.supported)
+        {
+          ASSERT (info.major >= 5);
+        }
+    }
+#endif
+
+  /* Test passes - kernel version parsing includes validation */
+  ASSERT (1);
+}
+
 TEST (async_iouring_backend_detection)
 {
   setup_signals ();
@@ -1419,6 +1449,460 @@ TEST (async_timer_multiple)
 
   SocketPoll_free (&poll);
 }
+
+/* ==================== Fixed Buffer Security Tests ==================== */
+
+#if SOCKET_HAS_IO_URING
+
+/**
+ * async_send_fixed_overflow_attack - Test integer overflow protection
+ *
+ * Verifies that the bounds check in SocketAsync_send_fixed() correctly
+ * rejects overflow attacks where offset + len wraps around.
+ */
+TEST (async_send_fixed_overflow_attack)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketAsync_T async = NULL;
+  Socket_T socket = NULL;
+  volatile int raised_exception = 0;
+
+  TRY { async = SocketAsync_new (arena); }
+  EXCEPT (SocketAsync_Failed)
+  {
+    Arena_dispose (&arena);
+    return; /* Skip if async not available */
+  }
+  END_TRY;
+
+  /* Skip if not using io_uring */
+  if (strcmp (SocketAsync_backend_name (async), "io_uring") != 0)
+    {
+      SocketAsync_free (&async);
+      Arena_dispose (&arena);
+      return;
+    }
+
+  TRY { socket = Socket_new (AF_INET, SOCK_STREAM, 0); }
+  EXCEPT (Socket_Failed)
+  {
+    SocketAsync_free (&async);
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  /* Register a small buffer (1KB) */
+  static char test_buf[1024];
+  memset (test_buf, 0, sizeof (test_buf));
+
+  void *bufs[1] = { test_buf };
+  size_t lens[1] = { sizeof (test_buf) };
+
+  TRY { SocketAsync_register_buffers (async, bufs, lens, 1); }
+  EXCEPT (SocketAsync_Failed)
+  {
+    Socket_free (&socket);
+    SocketAsync_free (&async);
+    Arena_dispose (&arena);
+    return; /* Buffer registration not supported */
+  }
+  END_TRY;
+
+  /* Attack vector: offset + len wraps to small value */
+  size_t offset = SIZE_MAX - 1000;
+  size_t len = 2000;
+
+  /* This should raise an exception due to overflow protection */
+  TRY
+  {
+    SocketAsync_send_fixed (async, socket, 0, offset, len,
+                            async_test_callback, NULL, ASYNC_FLAG_NONE);
+  }
+  EXCEPT (SocketAsync_Failed) { raised_exception = 1; }
+  END_TRY;
+
+  /* Should have caught the overflow */
+  ASSERT_EQ (1, raised_exception);
+
+  SocketAsync_unregister_buffers (async);
+  Socket_free (&socket);
+  SocketAsync_free (&async);
+  Arena_dispose (&arena);
+}
+
+/**
+ * async_recv_fixed_overflow_attack - Test integer overflow protection
+ *
+ * Verifies that the bounds check in SocketAsync_recv_fixed() correctly
+ * rejects overflow attacks where offset + len wraps around.
+ */
+TEST (async_recv_fixed_overflow_attack)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketAsync_T async = NULL;
+  Socket_T socket = NULL;
+  volatile int raised_exception = 0;
+
+  TRY { async = SocketAsync_new (arena); }
+  EXCEPT (SocketAsync_Failed)
+  {
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  /* Skip if not using io_uring */
+  if (strcmp (SocketAsync_backend_name (async), "io_uring") != 0)
+    {
+      SocketAsync_free (&async);
+      Arena_dispose (&arena);
+      return;
+    }
+
+  TRY { socket = Socket_new (AF_INET, SOCK_STREAM, 0); }
+  EXCEPT (Socket_Failed)
+  {
+    SocketAsync_free (&async);
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  /* Register a small buffer (1KB) */
+  static char test_buf[1024];
+  memset (test_buf, 0, sizeof (test_buf));
+
+  void *bufs[1] = { test_buf };
+  size_t lens[1] = { sizeof (test_buf) };
+
+  TRY { SocketAsync_register_buffers (async, bufs, lens, 1); }
+  EXCEPT (SocketAsync_Failed)
+  {
+    Socket_free (&socket);
+    SocketAsync_free (&async);
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  /* Attack vector: offset + len wraps to small value */
+  size_t offset = SIZE_MAX - 500;
+  size_t len = 1000;
+
+  /* This should raise an exception due to overflow protection */
+  TRY
+  {
+    SocketAsync_recv_fixed (async, socket, 0, offset, len,
+                            async_test_callback, NULL, ASYNC_FLAG_NONE);
+  }
+  EXCEPT (SocketAsync_Failed) { raised_exception = 1; }
+  END_TRY;
+
+  /* Should have caught the overflow */
+  ASSERT_EQ (1, raised_exception);
+
+  SocketAsync_unregister_buffers (async);
+  Socket_free (&socket);
+  SocketAsync_free (&async);
+  Arena_dispose (&arena);
+}
+
+/**
+ * async_send_fixed_large_offset - Test large offset rejection
+ *
+ * Verifies that an offset beyond buffer size is rejected.
+ */
+TEST (async_send_fixed_large_offset)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketAsync_T async = NULL;
+  Socket_T socket = NULL;
+  volatile int raised_exception = 0;
+
+  TRY { async = SocketAsync_new (arena); }
+  EXCEPT (SocketAsync_Failed)
+  {
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  if (strcmp (SocketAsync_backend_name (async), "io_uring") != 0)
+    {
+      SocketAsync_free (&async);
+      Arena_dispose (&arena);
+      return;
+    }
+
+  TRY { socket = Socket_new (AF_INET, SOCK_STREAM, 0); }
+  EXCEPT (Socket_Failed)
+  {
+    SocketAsync_free (&async);
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  static char test_buf[1024];
+  void *bufs[1] = { test_buf };
+  size_t lens[1] = { sizeof (test_buf) };
+
+  TRY { SocketAsync_register_buffers (async, bufs, lens, 1); }
+  EXCEPT (SocketAsync_Failed)
+  {
+    Socket_free (&socket);
+    SocketAsync_free (&async);
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  /* Offset beyond buffer size */
+  size_t offset = sizeof (test_buf) + 100;
+  size_t len = 10;
+
+  TRY
+  {
+    SocketAsync_send_fixed (async, socket, 0, offset, len,
+                            async_test_callback, NULL, ASYNC_FLAG_NONE);
+  }
+  EXCEPT (SocketAsync_Failed) { raised_exception = 1; }
+  END_TRY;
+
+  ASSERT_EQ (1, raised_exception);
+
+  SocketAsync_unregister_buffers (async);
+  Socket_free (&socket);
+  SocketAsync_free (&async);
+  Arena_dispose (&arena);
+}
+
+/**
+ * async_recv_fixed_valid_bounds - Test valid buffer access
+ *
+ * Verifies that valid offset/len combinations are accepted.
+ */
+TEST (async_recv_fixed_valid_bounds)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketAsync_T async = NULL;
+  Socket_T socket = NULL;
+  volatile unsigned req_id = 0;
+
+  TRY { async = SocketAsync_new (arena); }
+  EXCEPT (SocketAsync_Failed)
+  {
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  if (strcmp (SocketAsync_backend_name (async), "io_uring") != 0)
+    {
+      SocketAsync_free (&async);
+      Arena_dispose (&arena);
+      return;
+    }
+
+  TRY { socket = Socket_new (AF_INET, SOCK_STREAM, 0); }
+  EXCEPT (Socket_Failed)
+  {
+    SocketAsync_free (&async);
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  static char test_buf[1024];
+  void *bufs[1] = { test_buf };
+  size_t lens[1] = { sizeof (test_buf) };
+
+  TRY { SocketAsync_register_buffers (async, bufs, lens, 1); }
+  EXCEPT (SocketAsync_Failed)
+  {
+    Socket_free (&socket);
+    SocketAsync_free (&async);
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  /* Valid access: read 512 bytes starting at offset 256 */
+  TRY
+  {
+    req_id = SocketAsync_recv_fixed (async, socket, 0, 256, 512,
+                                      async_test_callback, NULL,
+                                      ASYNC_FLAG_NONE);
+  }
+  EXCEPT (SocketAsync_Failed) { req_id = 0; }
+  END_TRY;
+
+  /* Should succeed */
+  ASSERT (req_id > 0);
+
+  if (req_id > 0)
+    SocketAsync_cancel (async, req_id);
+
+  SocketAsync_unregister_buffers (async);
+  Socket_free (&socket);
+  SocketAsync_free (&async);
+  Arena_dispose (&arena);
+}
+
+/**
+ * async_send_fixed_edge_case - Test edge case at buffer boundary
+ *
+ * Verifies that accessing exactly to the end of the buffer works.
+ */
+TEST (async_send_fixed_edge_case)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketAsync_T async = NULL;
+  Socket_T socket = NULL;
+  volatile unsigned req_id = 0;
+
+  TRY { async = SocketAsync_new (arena); }
+  EXCEPT (SocketAsync_Failed)
+  {
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  if (strcmp (SocketAsync_backend_name (async), "io_uring") != 0)
+    {
+      SocketAsync_free (&async);
+      Arena_dispose (&arena);
+      return;
+    }
+
+  TRY { socket = Socket_new (AF_INET, SOCK_STREAM, 0); }
+  EXCEPT (Socket_Failed)
+  {
+    SocketAsync_free (&async);
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  static char test_buf[1024];
+  void *bufs[1] = { test_buf };
+  size_t lens[1] = { sizeof (test_buf) };
+
+  TRY { SocketAsync_register_buffers (async, bufs, lens, 1); }
+  EXCEPT (SocketAsync_Failed)
+  {
+    Socket_free (&socket);
+    SocketAsync_free (&async);
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  /* Edge case: access exactly to the end */
+  size_t offset = 1000;
+  size_t len = 24; /* offset + len = 1024, exactly buffer size */
+
+  TRY
+  {
+    req_id = SocketAsync_send_fixed (async, socket, 0, offset, len,
+                                      async_test_callback, NULL,
+                                      ASYNC_FLAG_NONE);
+  }
+  EXCEPT (SocketAsync_Failed) { req_id = 0; }
+  END_TRY;
+
+  /* Should succeed */
+  ASSERT (req_id > 0);
+
+  if (req_id > 0)
+    SocketAsync_cancel (async, req_id);
+
+  SocketAsync_unregister_buffers (async);
+  Socket_free (&socket);
+  SocketAsync_free (&async);
+  Arena_dispose (&arena);
+}
+
+/**
+ * async_send_fixed_one_past_end - Test rejection of access one byte past end
+ *
+ * Verifies that offset + len exactly one past the buffer size is rejected.
+ */
+TEST (async_send_fixed_one_past_end)
+{
+  setup_signals ();
+  Arena_T arena = Arena_new ();
+  SocketAsync_T async = NULL;
+  Socket_T socket = NULL;
+  volatile int raised_exception = 0;
+
+  TRY { async = SocketAsync_new (arena); }
+  EXCEPT (SocketAsync_Failed)
+  {
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  if (strcmp (SocketAsync_backend_name (async), "io_uring") != 0)
+    {
+      SocketAsync_free (&async);
+      Arena_dispose (&arena);
+      return;
+    }
+
+  TRY { socket = Socket_new (AF_INET, SOCK_STREAM, 0); }
+  EXCEPT (Socket_Failed)
+  {
+    SocketAsync_free (&async);
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  static char test_buf[1024];
+  void *bufs[1] = { test_buf };
+  size_t lens[1] = { sizeof (test_buf) };
+
+  TRY { SocketAsync_register_buffers (async, bufs, lens, 1); }
+  EXCEPT (SocketAsync_Failed)
+  {
+    Socket_free (&socket);
+    SocketAsync_free (&async);
+    Arena_dispose (&arena);
+    return;
+  }
+  END_TRY;
+
+  /* One byte past the end */
+  size_t offset = 1000;
+  size_t len = 25; /* offset + len = 1025, one past buffer size */
+
+  TRY
+  {
+    SocketAsync_send_fixed (async, socket, 0, offset, len,
+                            async_test_callback, NULL, ASYNC_FLAG_NONE);
+  }
+  EXCEPT (SocketAsync_Failed) { raised_exception = 1; }
+  END_TRY;
+
+  /* Should have raised exception */
+  ASSERT_EQ (1, raised_exception);
+
+  SocketAsync_unregister_buffers (async);
+  Socket_free (&socket);
+  SocketAsync_free (&async);
+  Arena_dispose (&arena);
+}
+
+#endif /* SOCKET_HAS_IO_URING */
 
 /* ==================== Main ==================== */
 

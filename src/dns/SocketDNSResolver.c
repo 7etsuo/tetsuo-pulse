@@ -18,12 +18,14 @@
 
 #include <arpa/inet.h>
 #include <assert.h>
+#include <fcntl.h>
 #include <net/if.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 #include <sys/random.h>
 #include <time.h>
+#include <unistd.h>
 
 #define T SocketDNSResolver_T
 
@@ -165,6 +167,9 @@ static void cache_insert (T resolver, const char *hostname,
                           const SocketDNSResolver_Address *addresses,
                           size_t count, uint32_t ttl);
 static struct CacheEntry *cache_lookup (T resolver, const char *hostname);
+static struct SocketDNSResolver_Query *initialize_query (
+    T resolver, const char *hostname, int flags,
+    SocketDNSResolver_Callback callback, void *userdata);
 
 /* Use centralized monotonic time utility from SocketUtil.h */
 #define get_monotonic_ms() Socket_get_monotonic_ms()
@@ -317,7 +322,8 @@ cap_ttl (uint32_t ttl)
  * Generate a cryptographically random query ID per RFC 5452 Section 4.
  *
  * Uses getrandom() for full 16-bit entropy to prevent cache poisoning
- * attacks. Falls back to XOR of monotonic time bits if getrandom() fails.
+ * attacks. Falls back to /dev/urandom if getrandom() fails. Raises
+ * exception if both fail to ensure RFC 5452 compliance.
  */
 static uint16_t
 generate_unique_id (T resolver)
@@ -332,9 +338,17 @@ generate_unique_id (T resolver)
       ssize_t ret = getrandom (&id, sizeof (id), 0);
       if (ret != (ssize_t)sizeof (id))
         {
-          /* Fallback: XOR monotonic time bits for some entropy */
-          uint64_t t = (uint64_t)get_monotonic_ms ();
-          id = (uint16_t)((t ^ (t >> 16) ^ (t >> 32)) & 0xFFFF);
+          /* Fallback to /dev/urandom for cryptographic randomness */
+          int fd = open ("/dev/urandom", O_RDONLY);
+          if (fd >= 0)
+            {
+              ret = read (fd, &id, sizeof (id));
+              close (fd);
+            }
+          /* If both getrandom() and /dev/urandom fail, cannot generate
+           * cryptographically secure ID - fail hard per RFC 5452 */
+          if (ret != (ssize_t)sizeof (id))
+            RAISE (SocketDNSResolver_Failed);
         }
 
       /* Avoid ID 0 (reserved in some implementations) */
@@ -1216,7 +1230,7 @@ SocketDNSResolver_load_resolv_conf (T resolver)
   /* Propagate to transport layer */
   SocketDNSTransport_Config transport_config = { 0 };
   transport_config.initial_timeout_ms = resolver->timeout_ms;
-  transport_config.max_timeout_ms = resolver->timeout_ms * 4;
+  transport_config.max_timeout_ms = resolver->timeout_ms * TIMEOUT_BACKOFF_MULTIPLIER;
   transport_config.max_retries = resolver->max_retries;
   transport_config.rotate_nameservers = SocketDNSConfig_has_rotate (&config);
   SocketDNSTransport_configure (resolver->transport, &transport_config);
@@ -1412,6 +1426,47 @@ try_cache (T resolver, const char *hostname, int flags,
   return 1;
 }
 
+/**
+ * Initialize a new DNS query structure.
+ *
+ * Allocates and initializes a query for the given hostname and parameters.
+ * The query is added to the resolver's pending list.
+ *
+ * @param resolver  Resolver instance.
+ * @param hostname  Hostname to query (already validated).
+ * @param flags     Resolution flags.
+ * @param callback  User callback for results.
+ * @param userdata  User data for callback.
+ * @return Initialized query on success, NULL on allocation failure.
+ */
+static struct SocketDNSResolver_Query *
+initialize_query (T resolver, const char *hostname, int flags,
+                  SocketDNSResolver_Callback callback, void *userdata)
+{
+  struct SocketDNSResolver_Query *q;
+
+  /* Allocate query */
+  q = Arena_alloc (resolver->arena, sizeof (*q), __FILE__, __LINE__);
+  if (!q)
+    return NULL;
+
+  /* Initialize query structure */
+  memset (q, 0, sizeof (*q));
+  q->id = generate_unique_id (resolver);
+  snprintf (q->hostname, DNS_MAX_NAME_LEN, "%s", hostname);
+  snprintf (q->current_name, DNS_MAX_NAME_LEN, "%s", hostname);
+  q->flags = flags;
+  q->state = QUERY_STATE_INIT;
+  q->callback = callback;
+  q->userdata = userdata;
+  q->resolver = resolver; /* Set back-pointer for transport callback */
+
+  /* Add to pending list */
+  query_list_add (resolver, q);
+
+  return q;
+}
+
 SocketDNSResolver_Query_T
 SocketDNSResolver_resolve (T resolver, const char *hostname, int flags,
                            SocketDNSResolver_Callback callback, void *userdata)
@@ -1450,26 +1505,13 @@ SocketDNSResolver_resolve (T resolver, const char *hostname, int flags,
       return NULL;
     }
 
-  /* Allocate query */
-  q = Arena_alloc (resolver->arena, sizeof (*q), __FILE__, __LINE__);
+  /* Initialize query */
+  q = initialize_query (resolver, hostname, flags, callback, userdata);
   if (!q)
     {
       callback (NULL, NULL, RESOLVER_ERROR_NOMEM, userdata);
       return NULL;
     }
-
-  memset (q, 0, sizeof (*q));
-  q->id = generate_unique_id (resolver);
-  snprintf (q->hostname, DNS_MAX_NAME_LEN, "%s", hostname);
-  snprintf (q->current_name, DNS_MAX_NAME_LEN, "%s", hostname);
-  q->flags = flags;
-  q->state = QUERY_STATE_INIT;
-  q->callback = callback;
-  q->userdata = userdata;
-  q->resolver = resolver; /* Set back-pointer for transport callback */
-
-  /* Add to pending list */
-  query_list_add (resolver, q);
 
   /* Send initial query */
   if (send_query (resolver, q) != 0)
