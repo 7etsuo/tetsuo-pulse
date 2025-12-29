@@ -48,6 +48,9 @@ static int connection_read_body_fixed (SocketHTTPServer_T server,
                                        size_t input_len);
 static void connection_reject_oversized_body (SocketHTTPServer_T server,
                                               ServerConnection *conn);
+static size_t connection_check_body_size_limit (size_t max_body,
+                                                 size_t current_received,
+                                                 size_t input_len);
 
 static void connection_init_request_ctx (SocketHTTPServer_T server,
                                          ServerConnection *conn,
@@ -178,6 +181,25 @@ connection_reject_oversized_body (SocketHTTPServer_T server,
   conn->state = CONN_STATE_CLOSED;
 }
 
+/* Check if incoming data would exceed body size limit. Returns safe process length, or 0 if limit already reached */
+static size_t
+connection_check_body_size_limit (size_t max_body,
+                                  size_t current_received,
+                                  size_t input_len)
+{
+  if (max_body == 0)
+    return input_len;
+
+  uint64_t total;
+  if (!socket_util_safe_add_u64(current_received, input_len, &total) || total > max_body)
+    {
+      size_t remaining = max_body - current_received;
+      return remaining;
+    }
+
+  return input_len;
+}
+
 static void
 connection_init_request_ctx (SocketHTTPServer_T server, ServerConnection *conn,
                              struct SocketHTTPServer_Request *ctx)
@@ -258,19 +280,13 @@ connection_read_body_streaming (SocketHTTPServer_T server,
   size_t body_consumed, written;
   SocketHTTP1_Result r;
 
-  /* Overflow-safe check using centralized utility */
-  if (max_body > 0) {
-    uint64_t total;
-    if (!socket_util_safe_add_u64(conn->body_received, input_len, &total) || total > max_body) {
-      /* Would exceed limit */
-      size_t remaining = max_body - conn->body_received;
-      if (remaining == 0) {
-        connection_reject_oversized_body (server, conn);
-        return -1;
-      }
-      process_len = remaining;
+  /* Check body size limit */
+  process_len = connection_check_body_size_limit (max_body, conn->body_received, input_len);
+  if (process_len == 0)
+    {
+      connection_reject_oversized_body (server, conn);
+      return -1;
     }
-  }
 
   r = SocketHTTP1_Parser_read_body (conn->parser, (const char *)input,
                                     process_len, &body_consumed, temp_buf,
@@ -398,19 +414,13 @@ connection_read_body_fixed (SocketHTTPServer_T server,
   size_t body_consumed, written;
   SocketHTTP1_Result r;
 
-  /* Overflow-safe check using centralized utility */
-  if (max_body > 0) {
-    uint64_t total;
-    if (!socket_util_safe_add_u64(conn->body_len, input_len, &total) || total > max_body) {
-      /* Would exceed limit */
-      size_t remaining = max_body - conn->body_len;
-      if (remaining == 0) {
-        connection_reject_oversized_body (server, conn);
-        return -1;
-      }
-      process_len = remaining;
+  /* Check body size limit */
+  process_len = connection_check_body_size_limit (max_body, conn->body_len, input_len);
+  if (process_len == 0)
+    {
+      connection_reject_oversized_body (server, conn);
+      return -1;
     }
-  }
 
   char *output = (char *)conn->body + conn->body_len;
   size_t output_avail = conn->body_capacity - conn->body_len;
