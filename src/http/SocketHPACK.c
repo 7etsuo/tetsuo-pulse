@@ -343,18 +343,6 @@ hpack_encode_string (const char *str, size_t len, int use_huffman,
 }
 
 static SocketHPACK_Result
-decode_string_header (const unsigned char *input, size_t input_len,
-                      size_t *pos, int *huffman, uint64_t *str_len)
-{
-  if (input_len == 0)
-    return HPACK_INCOMPLETE;
-
-  *huffman = (input[0] & HPACK_STRING_HUFFMAN_FLAG) != 0;
-  return SocketHPACK_int_decode (input, input_len, HPACK_PREFIX_STRING,
-                                 str_len, pos);
-}
-
-static SocketHPACK_Result
 allocate_string_buffer (Arena_T arena, size_t buf_size, char **buf_out)
 {
   size_t alloc_size = buf_size + 1;
@@ -417,7 +405,13 @@ hpack_decode_string (const unsigned char *input, size_t input_len,
   uint64_t str_len;
   SocketHPACK_Result result;
 
-  result = decode_string_header (input, input_len, &pos, &huffman, &str_len);
+  /* Inline decode_string_header */
+  if (input_len == 0)
+    return HPACK_INCOMPLETE;
+
+  huffman = (input[0] & HPACK_STRING_HUFFMAN_FLAG) != 0;
+  result = SocketHPACK_int_decode (input, input_len, HPACK_PREFIX_STRING,
+                                   &str_len, &pos);
   if (result != HPACK_OK)
     return result;
 
