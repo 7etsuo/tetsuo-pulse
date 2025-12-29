@@ -8,6 +8,10 @@ allowed-tools: Bash,Read,Task
 
 Implement multiple GitHub issues in parallel with unlimited scaling through checkpointing.
 
+## CRITICAL: WIP Labels Are Sacred
+
+**NEVER remove `wip:*` labels programmatically.** These labels indicate work in progress by another agent or session. Even if results aren't appearing, assume the work is still happening elsewhere. Only the user can remove WIP labels via GitHub UI after confirming work is truly abandoned.
+
 ## Activation
 
 This skill activates when:
@@ -28,11 +32,11 @@ This skill uses a direct architecture:
 
 **NEVER use TaskOutput in this skill.** Poll files instead.
 
-**Locking Architecture**: The skill owns ALL claim/release logic:
+**Locking Architecture**: The skill owns claim logic:
 - `start_batch.py` claims issues with `wip:claude-*` labels BEFORE spawning agents
 - Agents do NOT claim - they trust the skill already claimed for them
-- `finish_batch.py` releases all claims AFTER agents complete
-- This prevents race conditions where agents try to re-claim already-claimed issues
+- **WIP labels are NEVER removed automatically** - manual removal via GitHub UI only
+- This prevents race conditions and ensures work is never interrupted
 
 ## Architecture
 
@@ -168,7 +172,7 @@ python3 .claude/skills/issue-processor/scripts/check_status.py --state-dir {STAT
 **STALLED handling**: If you see STALLED, check:
 1. `started/` directory - which agents wrote started markers
 2. `wip:*` labels on issues - which are claimed but not progressing
-3. Release stuck claims and retry
+3. **DO NOT release claims** - assume agents are still running elsewhere. Report status to user.
 
 ### Step 5: Finish Batch and Process Next
 
@@ -347,8 +351,8 @@ Multiple Claude instances can safely run `/issue-processor` simultaneously witho
    - Already CLOSED (completed by other instances)
    - Have `wip:*` labels (claimed by other instances)
    - Already have open PRs linked
-3. **Claim on start**: Each implementer adds a `wip:claude-{timestamp}-{pid}` label before working
-4. **Release on finish**: Label is removed after success or failure
+3. **Claim on start**: Each batch adds `wip:claude-{timestamp}-{pid}` labels before working
+4. **Labels persist**: WIP labels are NEVER removed automatically - user handles cleanup via GitHub UI
 5. **Race detection**: If two instances try to claim the same issue, the second one backs off
 
 ### Why Re-Validation Prevents Duplicates
@@ -382,18 +386,16 @@ Instance A: finishes [1-10] → start_batch.py checks GitHub
 # Check if issue is claimed
 python3 .claude/skills/issue-processor/scripts/claim_issue.py \
   --repo 7etsuo/tetsuo-socket --issue 391 --action check
-
-# Manually release a stuck claim (e.g., after crash)
-python3 .claude/skills/issue-processor/scripts/claim_issue.py \
-  --repo 7etsuo/tetsuo-socket --issue 391 --action release
 ```
+
+**IMPORTANT**: The `--action release` is DISABLED. WIP labels must be removed manually via GitHub UI only.
 
 ### Recovery from Crashes
 
 If an instance crashes mid-implementation:
 1. The `wip:*` label remains on the issue
 2. Other instances will skip it
-3. Manually release with `--action release` or remove the label in GitHub UI
+3. **Only the user** can remove the label via GitHub UI after confirming the work is truly abandoned
 4. The issue becomes available for the next run
 
 ## Troubleshooting
@@ -428,13 +430,9 @@ When `poll_results.py` reports `STALLED`, agents may have failed silently.
 
 **Resolution:**
 
-- Release stuck claims manually:
-  ```bash
-  python3 .claude/skills/issue-processor/scripts/claim_issue.py \
-    --repo OWNER/REPO --issue {NUM} --action release
-  ```
-
-- Re-run the batch for failed issues
+- **DO NOT release claims programmatically** - assume work is still in progress elsewhere
+- Report findings to user and let them decide whether to remove labels via GitHub UI
+- Only re-run after user confirms the work is truly abandoned
 
 ### API Rate Limits
 

@@ -244,9 +244,10 @@ def main():
         sys.exit(0 if success else 1)
 
     elif args.action == "release":
-        success, message = release_issue(owner, repo, args.issue)
-        print(message)
-        sys.exit(0 if success else 2)
+        log_error("RELEASE ACTION DISABLED: WIP labels must NEVER be removed automatically.")
+        log_error("WIP labels indicate work in progress by another agent/session.")
+        log_error("If you need to manually release a stuck claim, do it via GitHub UI.")
+        sys.exit(2)
 
     elif args.action == "check":
         available, message = check_issue(owner, repo, args.issue)

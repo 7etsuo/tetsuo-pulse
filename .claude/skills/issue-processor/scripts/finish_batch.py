@@ -20,19 +20,12 @@ import sys
 from pathlib import Path
 
 from utils import (
-    run_gh,
     load_json,
     save_json,
     validate_repo_format,
     log_info,
     log_warning,
 )
-
-
-def release_claim(owner: str, repo: str, issue_num: int, wip_label: str) -> None:
-    """Remove the wip label from an issue to release the claim."""
-    run_gh(["issue", "edit", str(issue_num), "--repo", f"{owner}/{repo}",
-            "--remove-label", wip_label], check=False)
 
 
 def main():
