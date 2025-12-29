@@ -284,40 +284,35 @@ serialize_response_line (const SocketHTTP_Response *response, char **buf,
 }
 
 static int
-add_optional_host_header (const SocketHTTP_Request *request, char **buf,
-                          size_t *remaining)
-{
-  size_t auth_len;
-
-  if (!request->authority || request->authority[0] == '\0')
-    return 0;
-
-  if (request->headers && SocketHTTP_Headers_has (request->headers, "Host"))
-    return 0;
-
-  if (safe_append (buf, remaining, HTTP_HOST_PREFIX, HTTP_HOST_PREFIX_LEN) < 0)
-    return -1;
-
-  auth_len = strlen (request->authority);
-  if (!SocketHTTP_header_value_valid (request->authority, auth_len))
-    {
-      SOCKET_RAISE_MSG (
-          SocketHTTP1, SocketHTTP1_SerializeError,
-          "Invalid authority contains forbidden characters (CR/LF/NUL)");
-    }
-
-  if (safe_append (buf, remaining, request->authority, auth_len) < 0)
-    return -1;
-
-  return safe_append_crlf (buf, remaining);
-}
-
-static int
 add_request_extras (const SocketHTTP_Request *request, char **buf,
                     size_t *remaining)
 {
-  if (add_optional_host_header (request, buf, remaining) < 0)
-    return -1;
+  /* Add Host header if authority is present and not already in headers */
+  if (request->authority && request->authority[0] != '\0')
+    {
+      if (!request->headers
+          || !SocketHTTP_Headers_has (request->headers, "Host"))
+        {
+          if (safe_append (buf, remaining, HTTP_HOST_PREFIX,
+                           HTTP_HOST_PREFIX_LEN)
+              < 0)
+            return -1;
+
+          size_t auth_len = strlen (request->authority);
+          if (!SocketHTTP_header_value_valid (request->authority, auth_len))
+            {
+              SOCKET_RAISE_MSG (SocketHTTP1, SocketHTTP1_SerializeError,
+                                "Invalid authority contains forbidden "
+                                "characters (CR/LF/NUL)");
+            }
+
+          if (safe_append (buf, remaining, request->authority, auth_len) < 0)
+            return -1;
+
+          if (safe_append_crlf (buf, remaining) < 0)
+            return -1;
+        }
+    }
 
   if (append_content_length_header (buf, remaining, request->headers,
                                     request->has_body, request->content_length)
