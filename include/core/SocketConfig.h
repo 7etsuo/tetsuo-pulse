@@ -573,6 +573,25 @@ extern const char *Socket_safe_strerror (int errnum);
 #define SOCKET_DNS_CACHE_HASH_SIZE 1021
 #endif
 
+/**
+ * @brief Poll interval for synchronous DNS wait operations.
+ *
+ * Used in wait_for_completion() to periodically check for completion
+ * and process the resolver backend.
+ */
+#ifndef SOCKET_DNS_POLL_INTERVAL_MS
+#define SOCKET_DNS_POLL_INTERVAL_MS 100
+#endif
+
+/**
+ * @brief Maximum DNS hostname length per RFC 1035.
+ *
+ * DNS hostnames are limited to 255 characters total.
+ */
+#ifndef SOCKET_DNS_MAX_HOSTNAME_LEN
+#define SOCKET_DNS_MAX_HOSTNAME_LEN 255
+#endif
+
 /* ============================================================================
  * Poll Backend Configuration
  * ============================================================================
