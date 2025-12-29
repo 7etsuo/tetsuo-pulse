@@ -515,7 +515,7 @@ apply_header_protection (uint8_t *packet, size_t header_len,
   else
     {
       /* Short header: mask bottom 5 bits */
-      packet[0] ^= (mask[0] & 0x1F);
+      packet[0] ^= (mask[0] & QUIC_HP_SHORT_HEADER_MASK);
     }
 
   /* Get packet number length from first byte */
