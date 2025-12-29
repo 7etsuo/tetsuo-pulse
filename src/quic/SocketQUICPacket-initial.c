@@ -510,7 +510,7 @@ apply_header_protection (uint8_t *packet, size_t header_len,
   if (packet[0] & 0x80)
     {
       /* Long header: mask bottom 4 bits */
-      packet[0] ^= (mask[0] & 0x0F);
+      packet[0] ^= (mask[0] & QUIC_HP_LONG_HEADER_MASK);
     }
   else
     {
