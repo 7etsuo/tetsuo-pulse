@@ -665,11 +665,22 @@ connection_add_to_server (SocketHTTPServer_T server, ServerConnection *conn)
   return 0;
 }
 
+/* Clean up partially initialized connection */
+static void
+connection_cleanup_partial (ServerConnection *conn, int resources_initialized)
+{
+  if (resources_initialized && conn->arena != NULL)
+    Arena_dispose (&conn->arena);
+  if (conn->socket != NULL)
+    Socket_free (&conn->socket);
+  free (conn);
+}
+
 /* Allocate and initialize new connection. On failure, cleans up and closes socket */
 ServerConnection *
 connection_new (SocketHTTPServer_T server, Socket_T socket)
 {
-  ServerConnection *volatile conn;
+  ServerConnection *volatile conn = NULL;
   volatile int resources_ok = 0;
   volatile int added_to_server = 0;
 
@@ -682,27 +693,26 @@ connection_new (SocketHTTPServer_T server, Socket_T socket)
   TRY
   {
     if (connection_init_resources (server, conn, socket) < 0)
-      goto cleanup;
+      {
+        connection_cleanup_partial (conn, 0);
+        RETURN NULL;
+      }
     resources_ok = 1;
 
     if (connection_add_to_server (server, conn) < 0)
-      goto cleanup;
+      {
+        connection_cleanup_partial (conn, 1);
+        RETURN NULL;
+      }
     added_to_server = 1;
 
     RETURN conn;
-
-  cleanup:;
   }
   FINALLY
   {
+    /* On exception, clean up if not successfully added to server */
     if (!added_to_server)
-      {
-        if (resources_ok && conn->arena != NULL)
-          Arena_dispose (&conn->arena);
-        if (conn->socket != NULL)
-          Socket_free (&conn->socket);
-        free (conn);
-      }
+      connection_cleanup_partial (conn, resources_ok);
   }
   END_TRY;
 
