@@ -86,6 +86,46 @@ set_next (T table, void *entry, void *next)
   *next_ptr = next;
 }
 
+static void *
+search_chain (T table, void *entry, const void *key, void **prev_out)
+{
+  void *prev = NULL;
+
+  while (entry != NULL)
+    {
+      if (table->compare (entry, key) == 0)
+        {
+          if (prev_out != NULL)
+            *prev_out = prev;
+          return entry;
+        }
+      prev = entry;
+      entry = get_next (table, entry);
+    }
+
+  if (prev_out != NULL)
+    *prev_out = NULL;
+  return NULL;
+}
+
+static int
+iterate_bucket (T table, void *entry, HashTable_IterFunc func, void *context)
+{
+  void *next;
+
+  while (entry != NULL)
+    {
+      next = get_next (table, entry);
+
+      if (func (entry, context) != 0)
+        return 1;
+
+      entry = next;
+    }
+
+  return 0;
+}
+
 T
 HashTable_new (Arena_T arena, const HashTable_Config *config)
 {
@@ -149,30 +189,13 @@ void *
 HashTable_find (T table, const void *key, void **prev_out)
 {
   unsigned bucket;
-  void *entry;
-  void *prev = NULL;
 
   assert (table != NULL);
   assert (key != NULL);
 
   bucket = compute_bucket (table, key);
-  entry = table->buckets[bucket];
 
-  while (entry != NULL)
-    {
-      if (table->compare (entry, key) == 0)
-        {
-          if (prev_out != NULL)
-            *prev_out = prev;
-          return entry;
-        }
-      prev = entry;
-      entry = get_next (table, entry);
-    }
-
-  if (prev_out != NULL)
-    *prev_out = NULL;
-  return NULL;
+  return search_chain (table, table->buckets[bucket], key, prev_out);
 }
 
 void
@@ -214,25 +237,14 @@ void
 HashTable_foreach (T table, HashTable_IterFunc func, void *context)
 {
   size_t i;
-  void *entry;
-  void *next;
 
   assert (table != NULL);
   assert (func != NULL);
 
   for (i = 0; i < table->bucket_count; i++)
     {
-      entry = table->buckets[i];
-      while (entry != NULL)
-        {
-          next = get_next (
-              table, entry); /* Get next before callback modifies entry */
-
-          if (func (entry, context) != 0)
-            return;
-
-          entry = next;
-        }
+      if (iterate_bucket (table, table->buckets[i], func, context) != 0)
+        return;
     }
 }
 

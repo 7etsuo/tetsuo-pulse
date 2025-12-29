@@ -556,11 +556,42 @@ Arena_clear (T arena)
     SOCKET_MUTEX_UNLOCK (&arena->mutex);
 }
 
+/* Walk the prev chain to find the oldest chunk (where prev == NULL) */
+static inline struct ChunkHeader *
+arena_find_first_chunk (struct ChunkHeader *chunk)
+{
+  while (chunk->prev != NULL)
+    chunk = chunk->prev;
+  return chunk;
+}
+
+/* Release all chunks except first_chunk to the global cache */
+static inline void
+arena_release_extra_chunks (T arena, struct ChunkHeader *first_chunk)
+{
+  struct ChunkHeader *chunk = arena->prev;
+
+  while (chunk != first_chunk)
+    {
+      struct ChunkHeader *prev_chunk = chunk->prev;
+      chunk_cache_return (chunk);
+      chunk = prev_chunk;
+    }
+}
+
+/* Reset arena state to use a single chunk from the beginning */
+static inline void
+arena_reset_to_chunk (T arena, struct ChunkHeader *chunk)
+{
+  arena->prev = chunk;
+  arena->avail = (char *)((union header *)chunk + 1);
+  arena->limit = chunk_limit (chunk);
+}
+
 void
 Arena_reset (T arena)
 {
   struct ChunkHeader *first_chunk;
-  struct ChunkHeader *chunk;
 
   if (arena == NULL)
     return;
@@ -568,35 +599,16 @@ Arena_reset (T arena)
   if (arena->locked)
     SOCKET_MUTEX_LOCK_OR_RAISE (&arena->mutex, Arena, Arena_Failed);
 
-  /* Find the first (oldest) chunk by walking the prev chain */
-  first_chunk = arena->prev;
-  if (first_chunk == NULL)
+  if (arena->prev == NULL)
     {
-      /* No chunks allocated yet - nothing to reset */
       if (arena->locked)
         SOCKET_MUTEX_UNLOCK (&arena->mutex);
       return;
     }
 
-  /* Walk to find the first chunk (where saved.prev == NULL) */
-  while (first_chunk->prev != NULL)
-    first_chunk = first_chunk->prev;
-
-  /* Release all chunks except the first one to the global cache.
-   * Start from the current chunk and work backwards. */
-  chunk = arena->prev;
-  while (chunk != first_chunk)
-    {
-      struct ChunkHeader *prev_chunk = chunk->prev;
-      chunk_cache_return (chunk);
-      chunk = prev_chunk;
-    }
-
-  /* Reset arena to use just the first chunk from the beginning.
-   * The first chunk's saved state has the original arena state (all NULL). */
-  arena->prev = first_chunk;
-  arena->avail = (char *)((union header *)first_chunk + 1);
-  arena->limit = chunk_limit (first_chunk);
+  first_chunk = arena_find_first_chunk (arena->prev);
+  arena_release_extra_chunks (arena, first_chunk);
+  arena_reset_to_chunk (arena, first_chunk);
 
   if (arena->locked)
     SOCKET_MUTEX_UNLOCK (&arena->mutex);
