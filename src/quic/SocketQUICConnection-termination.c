@@ -29,6 +29,7 @@
 #include <stdint.h>
 #include "quic/SocketQUICConnection.h"
 #include "quic/SocketQUICConstants.h"
+#include "core/SocketCrypto.h"
 
 /**
  * @brief Safely add two uint64_t values with overflow protection.
@@ -332,6 +333,8 @@ SocketQUICConnection_set_stateless_reset_token(SocketQUICConnection_T conn,
  * RFC 9000 Section 10.3: A stateless reset is a packet whose final 16 bytes
  * match the stateless reset token. Minimum packet size is 38 bytes to avoid
  * false positives with short packets.
+ *
+ * Uses constant-time comparison to prevent timing attacks (CWE-208).
  */
 int
 SocketQUICConnection_verify_stateless_reset(const uint8_t *packet,
@@ -345,7 +348,8 @@ SocketQUICConnection_verify_stateless_reset(const uint8_t *packet,
   if (packet_len < QUIC_STATELESS_RESET_MIN_SIZE)
     return 0;
 
-  /* Compare final 16 bytes with expected token */
+  /* Compare final 16 bytes with expected token using constant-time comparison */
   const uint8_t *actual_token = packet + packet_len - QUIC_STATELESS_RESET_TOKEN_LEN;
-  return memcmp(actual_token, expected_token, QUIC_STATELESS_RESET_TOKEN_LEN) == 0;
+  return SocketCrypto_secure_compare(actual_token, expected_token,
+                                     QUIC_STATELESS_RESET_TOKEN_LEN) == 0;
 }
