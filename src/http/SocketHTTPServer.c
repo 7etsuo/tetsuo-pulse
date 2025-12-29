@@ -1741,18 +1741,6 @@ SocketHTTPServer_Request_memory_used (SocketHTTPServer_Request_T req)
 }
 
 
-/* Validate header for CRLF injection */
-static int
-response_header_safe(const char *str)
-{
-  if (!str) return 0;
-  for (const char *p = str; *p; p++) {
-    if (*p == '\r' || *p == '\n')
-      return 0;
-  }
-  return 1;
-}
-
 void
 SocketHTTPServer_Request_status (SocketHTTPServer_Request_T req, int code)
 {
@@ -1765,16 +1753,28 @@ SocketHTTPServer_Request_header (SocketHTTPServer_Request_T req,
                                  const char *name, const char *value)
 {
   SocketHTTP_Headers_T *headers_ptr;
+  const char *p;
 
   assert (req != NULL);
   assert (name != NULL);
   assert (value != NULL);
 
   /* Reject headers with CRLF characters (injection prevention) */
-  if (!response_header_safe (name) || !response_header_safe (value))
+  for (p = name; *p; p++)
     {
-      SOCKET_LOG_WARN_MSG ("Rejected response header with CRLF characters");
-      return;
+      if (*p == '\r' || *p == '\n')
+        {
+          SOCKET_LOG_WARN_MSG ("Rejected response header with CRLF characters");
+          return;
+        }
+    }
+  for (p = value; *p; p++)
+    {
+      if (*p == '\r' || *p == '\n')
+        {
+          SOCKET_LOG_WARN_MSG ("Rejected response header with CRLF characters");
+          return;
+        }
     }
 
   headers_ptr = server_response_headers_ptr (req);
