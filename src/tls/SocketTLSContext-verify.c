@@ -1066,6 +1066,11 @@ SocketTLS_get_ocsp_status (Socket_T socket)
  * status_request value per RFC 6066 / RFC 7633 */
 #define OCSP_MUST_STAPLE_STATUS_REQUEST 5
 
+/* Maximum number of TLS Feature extension entries to parse (DoS mitigation).
+ * RFC 7633 defines only one feature value (status_request = 5).
+ * Even with future extensions, 100 entries is extremely generous. */
+#define MAX_TLSFEATURE_ENTRIES 100
+
 /**
  * find_tlsfeature_extension - Find TLS Feature extension by OID
  * @cert: X509 certificate to search
@@ -1124,10 +1129,15 @@ parse_tlsfeature_extension_for_status_request (const unsigned char *p,
   end = p + seq_len;
 
   /* Iterate through integers in sequence */
+  int iteration = 0;
   while (p < end)
     {
       ASN1_INTEGER *aint = NULL;
       long value;
+
+      /* Prevent DoS from excessive entries */
+      if (++iteration > MAX_TLSFEATURE_ENTRIES)
+        break;
 
       aint = d2i_ASN1_INTEGER (NULL, &p, end - p);
       if (!aint)

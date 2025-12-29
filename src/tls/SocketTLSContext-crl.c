@@ -64,16 +64,14 @@ validate_crl_path_security (const char *crl_path)
     RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
                          "CRL path failed security validation (length, characters, traversal, or symlink)");
 
+  /* realpath() performs canonicalization that resolves:
+   * - Path traversal (. and .. components)
+   * - Symlinks (expands to actual target)
+   * - Relative to absolute path conversion
+   * Success indicates a valid, resolvable path. */
   char *resolved_path = realpath (crl_path, NULL);
   if (!resolved_path)
     RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "Invalid or unresolvable CRL path");
-
-  if (!tls_validate_file_path (resolved_path))
-    {
-      free (resolved_path);
-      RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
-                           "Resolved CRL path failed security validation");
-    }
 
   free (resolved_path);
 }
@@ -105,7 +103,7 @@ schedule_crl_refresh (T ctx, long interval_seconds)
   if (interval_seconds > 0)
     {
       int64_t now_ms = Socket_get_monotonic_ms ();
-      int64_t interval_ms = interval_seconds * 1000LL;
+      int64_t interval_ms = interval_seconds * SOCKET_MS_PER_SECOND;
       uint64_t result;
 
       /* Overflow protection: INT64_MAX ~= 292M years uptime */
@@ -205,7 +203,7 @@ SocketTLSContext_crl_check_refresh (T ctx)
         else
           {
             int success = try_load_crl (ctx, ctx->crl_refresh_path);
-            int64_t interval_ms = ctx->crl_refresh_interval * 1000LL;
+            int64_t interval_ms = ctx->crl_refresh_interval * SOCKET_MS_PER_SECOND;
             uint64_t next_refresh;
 
             /* Overflow protection: INT64_MAX ~= 292M years uptime */

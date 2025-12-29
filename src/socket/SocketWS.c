@@ -1803,21 +1803,16 @@ SocketWS_recv_available (SocketWS_T ws)
   return 0;
 }
 
-int
-SocketWS_recv_message (SocketWS_T ws, SocketWS_Message *msg)
+static int
+ws_poll_for_message (SocketWS_T ws)
 {
   assert (ws);
-  assert (msg);
-
-  /* Initialize output */
-  memset (msg, 0, sizeof (*msg));
-  msg->type = WS_OPCODE_TEXT;
 
   while (1)
     {
       /* Deliver if message already assembled */
       if (ws->message.len > 0 && ws->message.fragment_count > 0)
-        break;
+        return 0;
 
       /* Closed? */
       if (ws->state == WS_STATE_CLOSED)
@@ -1857,6 +1852,12 @@ SocketWS_recv_message (SocketWS_T ws, SocketWS_Message *msg)
       if (SocketWS_process (ws, ev) < 0)
         return -1;
     }
+}
+
+static int
+ws_validate_message_type (SocketWS_T ws)
+{
+  assert (ws);
 
   /* Only return data messages - control frames are handled internally */
   if (ws->message.type != WS_OPCODE_TEXT
@@ -1868,8 +1869,14 @@ SocketWS_recv_message (SocketWS_T ws, SocketWS_Message *msg)
       return -1;
     }
 
-  if (ws_finalize_assembled_message (ws) < 0)
-    return -1;
+  return 0;
+}
+
+static int
+ws_copy_message_to_output (SocketWS_T ws, SocketWS_Message *msg)
+{
+  assert (ws);
+  assert (msg);
 
   /* Allocate buffer for the message */
   msg->data = malloc (ws->message.len);
@@ -1884,10 +1891,39 @@ SocketWS_recv_message (SocketWS_T ws, SocketWS_Message *msg)
   msg->len = ws->message.len;
   msg->type = ws->message.type;
 
+  return 0;
+}
+
+int
+SocketWS_recv_message (SocketWS_T ws, SocketWS_Message *msg)
+{
+  assert (ws);
+  assert (msg);
+
+  /* Initialize output */
+  memset (msg, 0, sizeof (*msg));
+  msg->type = WS_OPCODE_TEXT;
+
+  /* Poll until message is ready */
+  if (ws_poll_for_message (ws) < 0)
+    return -1;
+
+  /* Validate message type */
+  if (ws_validate_message_type (ws) < 0)
+    return -1;
+
+  /* Finalize assembled message (decompress if needed) */
+  if (ws_finalize_assembled_message (ws) < 0)
+    return -1;
+
+  /* Copy to output buffer */
+  if (ws_copy_message_to_output (ws, msg) < 0)
+    return -1;
+
   /* Reset message assembly for next message */
   ws_message_reset (&ws->message);
 
-  return 0; /* Success */
+  return 0;
 }
 
 void

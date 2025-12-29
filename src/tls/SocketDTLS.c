@@ -787,6 +787,46 @@ SocketDTLS_handshake_loop (SocketDgram_T socket, int timeout_ms)
  *   1: Cookie verified, ready for SSL_accept/handshake
  *  <0: Fatal error
  */
+/**
+ * handle_dtls_listen_error - Handle errors from DTLSv1_listen
+ * @socket: Socket instance
+ * @ssl: SSL object
+ * @listen_result: Return value from DTLSv1_listen
+ * @client_addr: BIO_ADDR to free on error
+ *
+ * Classifies and handles SSL errors from DTLSv1_listen, updating socket state
+ * and freeing client_addr as needed. Returns appropriate handshake state.
+ *
+ * Returns: Handshake state (COOKIE_EXCHANGE, WANT_WRITE, or ERROR)
+ */
+static DTLSHandshakeState
+handle_dtls_listen_error (SocketDgram_T socket, SSL *ssl, int listen_result,
+                          BIO_ADDR *client_addr)
+{
+  int ssl_error = SSL_get_error (ssl, listen_result);
+
+  /* Check if it's a retriable error (non-blocking) */
+  if (ssl_error == SSL_ERROR_WANT_READ)
+    {
+      BIO_ADDR_free (client_addr);
+      socket->dtls_last_handshake_state = DTLS_HANDSHAKE_COOKIE_EXCHANGE;
+      return DTLS_HANDSHAKE_COOKIE_EXCHANGE;
+    }
+
+  if (ssl_error == SSL_ERROR_WANT_WRITE)
+    {
+      BIO_ADDR_free (client_addr);
+      socket->dtls_last_handshake_state = DTLS_HANDSHAKE_WANT_WRITE;
+      return DTLS_HANDSHAKE_WANT_WRITE;
+    }
+
+  /* Fatal error */
+  dtls_format_openssl_error ("DTLS listen failed");
+  BIO_ADDR_free (client_addr);
+  socket->dtls_last_handshake_state = DTLS_HANDSHAKE_ERROR;
+  return DTLS_HANDSHAKE_ERROR;
+}
+
 static DTLSHandshakeState
 dtls_handle_listen_with_cookies (SocketDgram_T socket, SSL *ssl)
 {
@@ -798,30 +838,7 @@ dtls_handle_listen_with_cookies (SocketDgram_T socket, SSL *ssl)
   int listen_result = DTLSv1_listen (ssl, client_addr);
 
   if (listen_result < 0)
-    {
-      int ssl_error = SSL_get_error (ssl, listen_result);
-
-      /* Check if it's a retriable error (non-blocking) */
-      if (ssl_error == SSL_ERROR_WANT_READ)
-        {
-          BIO_ADDR_free (client_addr);
-          socket->dtls_last_handshake_state = DTLS_HANDSHAKE_COOKIE_EXCHANGE;
-          return DTLS_HANDSHAKE_COOKIE_EXCHANGE;
-        }
-
-      if (ssl_error == SSL_ERROR_WANT_WRITE)
-        {
-          BIO_ADDR_free (client_addr);
-          socket->dtls_last_handshake_state = DTLS_HANDSHAKE_WANT_WRITE;
-          return DTLS_HANDSHAKE_WANT_WRITE;
-        }
-
-      /* Fatal error */
-      dtls_format_openssl_error ("DTLS listen failed");
-      BIO_ADDR_free (client_addr);
-      socket->dtls_last_handshake_state = DTLS_HANDSHAKE_ERROR;
-      return DTLS_HANDSHAKE_ERROR;
-    }
+    return handle_dtls_listen_error (socket, ssl, listen_result, client_addr);
 
   if (listen_result == 0)
     {
