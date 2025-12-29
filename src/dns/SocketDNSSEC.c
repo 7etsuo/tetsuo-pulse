@@ -449,6 +449,46 @@ SocketDNSSEC_name_canonicalize (char *name)
 }
 
 /*
+ * Parse domain name into labels
+ *
+ * Splits a domain name into labels separated by dots.
+ * Returns the number of labels found.
+ *
+ * @param name Domain name to parse (e.g., "www.example.com")
+ * @param labels Array to store pointers to each label
+ * @param labellens Array to store length of each label
+ * @return Number of labels parsed
+ */
+static int
+parse_domain_labels (const char *name, const char *labels[DNSSEC_MAX_LABELS],
+                     size_t labellens[DNSSEC_MAX_LABELS])
+{
+  int count = 0;
+  const char *p = name;
+
+  while (*p && count < DNSSEC_MAX_LABELS)
+    {
+      labels[count] = p;
+      const char *dot = strchr (p, '.');
+      if (dot)
+        {
+          labellens[count] = dot - p;
+          p = dot + 1;
+        }
+      else
+        {
+          labellens[count] = strlen (p);
+          break;
+        }
+      count++;
+    }
+  if (*p && count < DNSSEC_MAX_LABELS)
+    count++;
+
+  return count;
+}
+
+/*
  * Compare domain names in canonical order (RFC 4034 Section 6.1)
  *
  * Canonical ordering is case-insensitive and compares labels
@@ -460,50 +500,12 @@ SocketDNSSEC_name_canonical_compare (const char *name1, const char *name2)
   if (name1 == NULL || name2 == NULL)
     return (name1 == name2) ? 0 : ((name1 == NULL) ? -1 : 1);
 
-  /* Count labels */
-  int labels1 = 0, labels2 = 0;
+  /* Parse labels from both names */
   const char *label1[DNSSEC_MAX_LABELS], *label2[DNSSEC_MAX_LABELS];
   size_t labellen1[DNSSEC_MAX_LABELS], labellen2[DNSSEC_MAX_LABELS];
 
-  const char *p = name1;
-  while (*p && labels1 < DNSSEC_MAX_LABELS)
-    {
-      label1[labels1] = p;
-      const char *dot = strchr (p, '.');
-      if (dot)
-        {
-          labellen1[labels1] = dot - p;
-          p = dot + 1;
-        }
-      else
-        {
-          labellen1[labels1] = strlen (p);
-          break;
-        }
-      labels1++;
-    }
-  if (*p && labels1 < DNSSEC_MAX_LABELS)
-    labels1++;
-
-  p = name2;
-  while (*p && labels2 < DNSSEC_MAX_LABELS)
-    {
-      label2[labels2] = p;
-      const char *dot = strchr (p, '.');
-      if (dot)
-        {
-          labellen2[labels2] = dot - p;
-          p = dot + 1;
-        }
-      else
-        {
-          labellen2[labels2] = strlen (p);
-          break;
-        }
-      labels2++;
-    }
-  if (*p && labels2 < DNSSEC_MAX_LABELS)
-    labels2++;
+  int labels1 = parse_domain_labels (name1, label1, labellen1);
+  int labels2 = parse_domain_labels (name2, label2, labellen2);
 
   /* Compare from rightmost label */
   int i1 = labels1 - 1, i2 = labels2 - 1;
