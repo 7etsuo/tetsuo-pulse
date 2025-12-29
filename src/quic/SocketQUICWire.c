@@ -32,32 +32,6 @@ static const char *result_strings[] = {
 DEFINE_RESULT_STRING_FUNC (SocketQUICWire, QUIC_PN_ERROR_BITS)
 
 /* ============================================================================
- * Internal Helpers
- * ============================================================================
- */
-
-/**
- * Calculate floor(log2(x)) + 1, i.e., minimum bits needed to represent x.
- * Returns 1 for x == 0 (edge case).
- */
-static unsigned
-bits_needed (uint64_t x)
-{
-  unsigned bits = 0;
-
-  if (x == 0)
-    return 1;
-
-  while (x > 0)
-    {
-      bits++;
-      x >>= 1;
-    }
-
-  return bits;
-}
-
-/* ============================================================================
  * Encoding Functions (RFC 9000 Appendix A.2)
  * ============================================================================
  */
@@ -93,8 +67,21 @@ SocketQUICWire_pn_length (uint64_t full_pn, uint64_t largest_acked)
       num_unacked = full_pn - largest_acked;
     }
 
-  /* Start with floor(log2(num_unacked)) + 1 */
-  min_bits = bits_needed (num_unacked);
+  /* Calculate floor(log2(num_unacked)) + 1 */
+  if (num_unacked == 0)
+    {
+      min_bits = 1;
+    }
+  else
+    {
+      min_bits = 0;
+      uint64_t tmp = num_unacked;
+      while (tmp > 0)
+        {
+          min_bits++;
+          tmp >>= 1;
+        }
+    }
 
   /*
    * Ensure half-window (2^(min_bits-1)) covers the unacked range.
