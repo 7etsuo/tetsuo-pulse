@@ -1,14 +1,16 @@
 # Code Analysis Pipeline
 
-Multi-agent code analysis pipeline for C codebases. Supports two modes:
+Multi-agent code analysis pipeline for C codebases. Supports three modes:
 1. **Code Analysis Mode** (default) - Security, redundancy, and refactoring analysis
 2. **TODO Mode** - Scan for TODO/FIXME/HACK/XXX/NOTE comments and create issues
+3. **Refactor Mode** - Focus on flattening nested ifs and identifying single-use subroutines
 
 ## Usage
 
 ```
 /pipeline <directory>           # Code analysis mode (default)
 /pipeline <directory> todo      # TODO scanning mode
+/pipeline <file|directory> refactor  # Readability refactoring mode
 ```
 
 Examples:
@@ -16,6 +18,8 @@ Examples:
 /pipeline src/socket/           # Analyze socket module for issues
 /pipeline src/http/ todo        # Scan http module for TODO comments
 /pipeline src/                  # Analyze entire src directory
+/pipeline src/http/SocketHTTP2.c refactor  # Refactor analysis on single file
+/pipeline src/socket/ refactor  # Refactor analysis on directory
 ```
 
 ---
@@ -25,6 +29,7 @@ Examples:
 Check the second argument to determine which mode to run:
 
 - If second argument is `todo` → Run **TODO Mode** (see TODO MODE section below)
+- If second argument is `refactor` → Run **Refactor Mode** (see REFACTOR MODE section below)
 - Otherwise → Run **Code Analysis Mode** (see PHASE 1-3 sections below)
 
 ---
@@ -216,6 +221,249 @@ Report saved to: <directory>/TODO_ANALYSIS.md
 
 **TODO pipeline complete.**
 ```
+
+---
+
+# REFACTOR MODE
+
+Analyze code for readability improvements focusing on:
+1. **Nested if statements** that should be flattened to guard clauses
+2. **Single-use subroutines** that are candidates for inlining
+
+## Refactor Mode Architecture
+
+```
+/pipeline src/socket/SocketHTTP2.c refactor
+    │
+    ▼
+Phase R1: Discovery
+    │ Identify target files (.c/.h)
+    │ Can be single file or directory
+    ▼
+Phase R2: Readability Analysis (parallel)
+    │ ┌──────────────────────────────────────────────────┐
+    │ │ readability-analyzer-agent (file1.c)             │
+    │ │   ├── Find nested if statements (3+ depth)       │
+    │ │   ├── Find single-use static functions           │
+    │ │   └── Generate refactoring suggestions           │
+    │ ├──────────────────────────────────────────────────┤
+    │ │ readability-analyzer-agent (file2.c)             │
+    │ │   └── ...                                         │
+    │ └──────────────────────────────────────────────────┘
+    ▼
+Phase R3: Report & Apply
+    │ Aggregate findings
+    │ Present refactoring suggestions
+    │ Optionally apply changes
+    ▼
+Done
+```
+
+## PHASE R1: Discovery
+
+**Goal**: Identify files to analyze for readability issues.
+
+### Steps
+
+1. **Check if input is file or directory**:
+   - If file: analyze that single file
+   - If directory: scan for all .c files recursively
+
+2. **For directories, use Glob**:
+   ```
+   Glob pattern: <directory>/**/*.c
+   ```
+
+3. **CHECKPOINT**: Display files and confirm:
+   ```markdown
+   ## Phase R1: Discovery Complete
+
+   Target: <path>
+   Files to analyze: [N]
+
+   - src/http/SocketHTTP2.c (1500 lines)
+   - src/http/SocketHTTP2-frames.c (800 lines)
+   ...
+
+   **Proceed with readability analysis?**
+   ```
+
+## PHASE R2: Readability Analysis
+
+**Goal**: Analyze each file for nested ifs and single-use subroutines.
+
+### CRITICAL: Parallel Execution
+
+**Spawn one `readability-analyzer-agent` per file, ALL IN A SINGLE MESSAGE.**
+
+### Task Invocations
+
+For each file, spawn:
+
+```
+Task:
+  subagent_type: readability-analyzer-agent
+  run_in_background: true
+  prompt: |
+    Analyze this file for readability improvements:
+
+    File: [FILEPATH]
+
+    Focus on:
+    1. NESTED IF STATEMENTS (3+ depth) - Find deeply nested conditionals
+       that should be refactored to guard clauses/early returns
+    2. SINGLE-USE SUBROUTINES - Find static functions called exactly once
+       that are candidates for inlining
+
+    Return structured findings with:
+    - Exact line numbers
+    - Current code structure
+    - Suggested refactoring
+    - Severity (CRITICAL/HIGH/MEDIUM/LOW)
+```
+
+### Batching
+
+If >20 files:
+1. Split into batches of 15
+2. Process each batch, collect results
+3. Aggregate across batches
+
+### Collecting Results
+
+Wait for all agents with `TaskOutput` blocking.
+
+Each agent returns:
+- Nested if findings with depth and line ranges
+- Single-use function findings with call sites
+- Refactoring suggestions
+
+## PHASE R3: Report & Apply
+
+**Goal**: Generate report and optionally apply refactoring.
+
+### Report Location
+
+Save to: `<target>/REFACTOR_ANALYSIS.md`
+
+### Report Template
+
+```markdown
+# Refactor Analysis Report
+
+**Generated**: [timestamp]
+**Target**: <path>
+**Files Analyzed**: [count]
+
+## Executive Summary
+
+- **Nested If Issues**: [count] (CRITICAL: [n], HIGH: [n], MEDIUM: [n])
+- **Single-Use Subroutines**: [count] (inline candidates: [n], review needed: [n])
+
+## Nested If Statements
+
+### CRITICAL (5+ depth)
+
+| File:Lines | Depth | Function | Recommendation |
+|------------|-------|----------|----------------|
+| SocketHTTP2.c:100-180 | 5 | process_frame | Flatten with guard clauses |
+
+#### SocketHTTP2.c:100-180 (Depth: 5)
+
+**Current:**
+```c
+if (conn != NULL) {
+    if (conn->state == ACTIVE) {
+        if (frame != NULL) {
+            if (frame->type == DATA) {
+                if (stream != NULL) {
+                    // work
+                }
+            }
+        }
+    }
+}
+```
+
+**Suggested:**
+```c
+if (conn == NULL)
+    return SOCKET_HTTP2_ERROR_NULL_CONN;
+if (conn->state != ACTIVE)
+    return SOCKET_HTTP2_ERROR_INACTIVE;
+if (frame == NULL)
+    return SOCKET_HTTP2_ERROR_NULL_FRAME;
+if (frame->type != DATA)
+    return SOCKET_HTTP2_ERROR_WRONG_TYPE;
+if (stream == NULL)
+    return SOCKET_HTTP2_ERROR_NULL_STREAM;
+// work - now prominent
+```
+
+### HIGH (4 depth)
+
+[Similar format...]
+
+### MEDIUM (3 depth)
+
+[Similar format...]
+
+## Single-Use Subroutines
+
+### Inline Candidates (<30 lines)
+
+| Function | Defined | Called At | Lines | Action |
+|----------|---------|-----------|-------|--------|
+| parse_settings_value | :200 | :450 | 12 | INLINE |
+| validate_stream_id | :300 | :500 | 8 | INLINE |
+
+### Review Needed (30-100 lines)
+
+| Function | Defined | Called At | Lines | Notes |
+|----------|---------|-----------|-------|-------|
+| process_headers_block | :400 | :800 | 65 | Consider if separation is justified |
+
+### Justified Separation (>100 lines)
+
+| Function | Defined | Called At | Lines | Notes |
+|----------|---------|-----------|-------|-------|
+| handle_connection_preface | :100 | :900 | 150 | Complex, separation appropriate |
+
+## Statistics
+
+| Metric | Count |
+|--------|-------|
+| Files analyzed | X |
+| Total nested if issues | X |
+| Total single-use functions | X |
+| Inline candidates | X |
+| Lines that could be simplified | X |
+
+---
+*Report generated by /pipeline refactor*
+```
+
+### Apply Changes (Optional)
+
+After presenting the report, ask:
+
+```markdown
+## Apply Refactoring?
+
+Found [N] refactoring opportunities.
+
+Options:
+1. **Apply all** - Automatically refactor all findings
+2. **Apply selected** - Choose which to apply
+3. **Report only** - Just save the report, no changes
+
+**Which option?**
+```
+
+If user chooses to apply:
+1. For nested ifs: Use Edit tool to refactor each function
+2. For single-use (inline): Copy function body to call site, remove original
+3. After each change: Run `cmake --build build && ctest` to verify
 
 ---
 
