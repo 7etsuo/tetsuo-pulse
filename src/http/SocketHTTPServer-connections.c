@@ -72,15 +72,16 @@ connection_read (SocketHTTPServer_T server, ServerConnection *conn)
   }
   END_TRY;
 
-  if (closed || n <= 0)
+  /* Handle error/close first - early return to reduce nesting. */
+  if (closed || n == 0 || (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK))
     {
-      if (closed || n == 0 || (errno != EAGAIN && errno != EWOULDBLOCK))
-        {
-          conn->state = CONN_STATE_CLOSED;
-          return -1;
-        }
-      return 0;
+      conn->state = CONN_STATE_CLOSED;
+      return -1;
     }
+
+  /* EAGAIN/EWOULDBLOCK on non-blocking socket */
+  if (n <= 0)
+    return 0;
 
   conn->last_activity_ms = Socket_get_monotonic_ms ();
   SERVER_METRICS_ADD (server, SOCKET_CTR_HTTP_SERVER_BYTES_RECEIVED,
