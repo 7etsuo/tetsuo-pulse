@@ -721,43 +721,67 @@ validate_response_question (const unsigned char *response, size_t len,
  * Response Parsing
  */
 
+/**
+ * Parse CNAME record and update query state for re-resolution.
+ *
+ * @param q        Query state to update with CNAME target
+ * @param response DNS response message for decompression
+ * @param len      Length of response message
+ * @param rr       CNAME resource record to parse
+ * @return RESOLVER_OK on success, error code on failure
+ */
 static int
-parse_answer_rr (struct SocketDNSResolver_Query *q,
-                 const unsigned char *response, size_t len,
-                 const SocketDNS_RR *rr)
+parse_cname_rr (struct SocketDNSResolver_Query *q,
+                const unsigned char *response, size_t len,
+                const SocketDNS_RR *rr)
 {
   char cname_target[DNS_MAX_NAME_LEN] = { 0 };
 
-  /* Handle CNAME */
-  if (rr->type == DNS_TYPE_CNAME)
+  if (SocketDNS_rdata_parse_cname (response, len, rr, cname_target,
+                                   sizeof (cname_target))
+      < 0)
+    return RESOLVER_OK; /* Skip invalid CNAME */
+
+  /* Check CNAME depth */
+  if (q->cname_depth >= RESOLVER_MAX_CNAME_DEPTH)
+    return RESOLVER_ERROR_CNAME_LOOP;
+
+  /* Validate CNAME target length before copy */
+  if (strlen (cname_target) >= DNS_MAX_NAME_LEN)
+    return RESOLVER_ERROR_INVALID;
+
+  /* Store CNAME target for re-query */
+  snprintf (q->current_name, DNS_MAX_NAME_LEN, "%s", cname_target);
+  q->cname_depth++;
+  q->state = QUERY_STATE_CNAME;
+  return RESOLVER_OK; /* Will trigger re-query */
+}
+
+/**
+ * Parse address record (A or AAAA) and add to query results.
+ *
+ * Performs bailiwick checking per RFC 5452 to prevent cache poisoning.
+ * TTL values are capped per RFC 8767.
+ *
+ * @param q      Query state to add address to
+ * @param rr     Resource record to parse
+ * @param family Address family (AF_INET or AF_INET6)
+ * @return RESOLVER_OK on success, error code on failure
+ */
+static int
+parse_address_rr (struct SocketDNSResolver_Query *q, const SocketDNS_RR *rr,
+                  int family)
+{
+  if (q->address_count >= RESOLVER_MAX_ADDRESSES)
+    return RESOLVER_OK;
+
+  /* Bailiwick check: skip out-of-zone records (RFC 5452) */
+  if (!SocketDNS_name_in_bailiwick (rr->name, q->hostname))
+    return RESOLVER_OK;
+
+  /* Parse address based on family */
+  if (family == AF_INET)
     {
-      if (SocketDNS_rdata_parse_cname (response, len, rr, cname_target,
-                                       sizeof (cname_target))
-          < 0)
-        return RESOLVER_OK; /* Skip invalid CNAME */
-
-      /* Check CNAME depth */
-      if (q->cname_depth >= RESOLVER_MAX_CNAME_DEPTH)
-        return RESOLVER_ERROR_CNAME_LOOP;
-
-      /* Validate CNAME target length before copy */
-      if (strlen (cname_target) >= DNS_MAX_NAME_LEN)
-        return RESOLVER_ERROR_INVALID;
-
-      /* Store CNAME target for re-query */
-      snprintf (q->current_name, DNS_MAX_NAME_LEN, "%s", cname_target);
-      q->cname_depth++;
-      q->state = QUERY_STATE_CNAME;
-      return RESOLVER_OK; /* Will trigger re-query */
-    }
-
-  /* Handle A record */
-  if (rr->type == DNS_TYPE_A && q->address_count < RESOLVER_MAX_ADDRESSES)
-    {
-      /* Bailiwick check: skip out-of-zone records (RFC 5452) */
-      if (!SocketDNS_name_in_bailiwick (rr->name, q->hostname))
-        return RESOLVER_OK;
-
       struct in_addr addr;
       if (SocketDNS_rdata_parse_a (rr, &addr) == 0)
         {
@@ -770,14 +794,8 @@ parse_answer_rr (struct SocketDNSResolver_Query *q,
           q->address_count++;
         }
     }
-
-  /* Handle AAAA record */
-  if (rr->type == DNS_TYPE_AAAA && q->address_count < RESOLVER_MAX_ADDRESSES)
+  else /* AF_INET6 */
     {
-      /* Bailiwick check: skip out-of-zone records (RFC 5452) */
-      if (!SocketDNS_name_in_bailiwick (rr->name, q->hostname))
-        return RESOLVER_OK;
-
       struct in6_addr addr;
       if (SocketDNS_rdata_parse_aaaa (rr, &addr) == 0)
         {
@@ -792,6 +810,35 @@ parse_answer_rr (struct SocketDNSResolver_Query *q,
     }
 
   return RESOLVER_OK;
+}
+
+/**
+ * Parse single answer RR and dispatch to type-specific handler.
+ *
+ * Handles CNAME chains and address records (A, AAAA).
+ *
+ * @param q        Query state to update
+ * @param response DNS response message
+ * @param len      Length of response message
+ * @param rr       Resource record to parse
+ * @return RESOLVER_OK on success, error code on failure
+ */
+static int
+parse_answer_rr (struct SocketDNSResolver_Query *q,
+                 const unsigned char *response, size_t len,
+                 const SocketDNS_RR *rr)
+{
+  switch (rr->type)
+    {
+    case DNS_TYPE_CNAME:
+      return parse_cname_rr (q, response, len, rr);
+    case DNS_TYPE_A:
+      return parse_address_rr (q, rr, AF_INET);
+    case DNS_TYPE_AAAA:
+      return parse_address_rr (q, rr, AF_INET6);
+    default:
+      return RESOLVER_OK;
+    }
 }
 
 /**
