@@ -932,6 +932,9 @@ SocketPool_remove (T pool, Socket_T socket)
  * Consolidates active check, socket validity check, and idle timeout check
  * into a single function. Idle timeout of 0 indicates all active connections
  * should be closed.
+ *
+ * Security: Uses overflow-safe subtraction instead of difftime() to avoid
+ * floating-point precision issues when idle_timeout approaches TIME_MAX.
  */
 static int
 is_connection_idle (const Connection_T conn, time_t idle_timeout, time_t now)
@@ -943,8 +946,13 @@ is_connection_idle (const Connection_T conn, time_t idle_timeout, time_t now)
   if (idle_timeout == 0)
     return 1;
 
-  /* Check if connection has exceeded idle timeout */
-  return difftime (now, conn->last_activity) > (double)idle_timeout;
+  /* Security: Avoid overflow by using subtraction instead of difftime().
+   * If now < last_activity (clock went backwards), not idle. */
+  if (now < conn->last_activity)
+    return 0;
+
+  /* Safe: now >= last_activity, so subtraction won't underflow */
+  return (now - conn->last_activity) >= idle_timeout;
 }
 
 /**
@@ -1222,6 +1230,9 @@ check_socket_health (const Connection_T conn)
  * @param now Current time.
  * @return Non-zero if connection is stale.
  * @threadsafe Call with mutex held.
+ *
+ * Security: Uses overflow-safe subtraction instead of difftime() to avoid
+ * floating-point precision issues when idle_timeout approaches TIME_MAX.
  */
 static int
 check_connection_staleness (T pool, Connection_T conn, time_t now)
@@ -1230,8 +1241,13 @@ check_connection_staleness (T pool, Connection_T conn, time_t now)
   if (idle_timeout <= 0)
     return 0;
 
-  /* Check if connection has exceeded idle timeout */
-  return difftime (now, conn->last_activity) > (double)idle_timeout;
+  /* Security: Avoid overflow by using subtraction instead of difftime().
+   * If now < last_activity (clock went backwards), not stale. */
+  if (now < conn->last_activity)
+    return 0;
+
+  /* Safe: now >= last_activity, so subtraction won't underflow */
+  return (now - conn->last_activity) >= idle_timeout;
 }
 
 /**
