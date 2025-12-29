@@ -25,15 +25,31 @@
 /**
  * @brief Validate UTF-8 reason phrase and return its length.
  *
- * @param reason  Reason phrase to validate (may be NULL).
- * @param out_len Output: length of reason phrase.
+ * Uses strnlen() to limit the maximum length scanned, protecting against
+ * denial-of-service attacks via extremely long reason strings (CWE-400).
+ * The RFC 9000 Section 19.19 doesn't specify a hard limit, but practical
+ * implementations must enforce one to prevent resource exhaustion.
  *
- * @return 1 if valid (or NULL), 0 if invalid UTF-8.
+ * @param reason  Reason phrase to validate (may be NULL).
+ * @param out_len Output: length of reason phrase (capped at QUIC_REASON_MAX_LENGTH).
+ *
+ * @return 1 if valid (or NULL), 0 if invalid UTF-8 or exceeds maximum length.
  */
 static int
 validate_utf8_reason (const char *reason, size_t *out_len)
 {
-  *out_len = reason ? strlen (reason) : 0;
+  if (!reason)
+    {
+      *out_len = 0;
+      return 1;
+    }
+
+  /* Use strnlen to limit scanning and prevent DoS via long strings.
+   * Check for length+1 to detect strings that exceed the limit. */
+  *out_len = strnlen (reason, QUIC_REASON_MAX_LENGTH + 1);
+  if (*out_len > QUIC_REASON_MAX_LENGTH)
+    return 0; /* Reason phrase too long */
+
   if (*out_len > 0
       && SocketUTF8_validate ((const unsigned char *)reason, *out_len)
              != UTF8_VALID)
