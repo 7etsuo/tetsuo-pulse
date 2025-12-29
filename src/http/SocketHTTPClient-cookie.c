@@ -561,24 +561,25 @@ SocketHTTPClient_CookieJar_set (SocketHTTPClient_CookieJar_T jar,
       }
     else
       {
+        if (jar->count < jar->max_cookies)
+          goto insert_cookie;
+
+        SocketHTTPClient_CookieJar_clear_expired (jar);
+        if (jar->count < jar->max_cookies)
+          goto insert_cookie;
+
+        evict_oldest_cookie (jar);
         if (jar->count >= jar->max_cookies)
           {
-            SocketHTTPClient_CookieJar_clear_expired (jar);
-            if (jar->count >= jar->max_cookies)
-              {
-                evict_oldest_cookie (jar);
-                if (jar->count >= jar->max_cookies)
-                  {
-                    SocketLog_emitf (
-                        SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-                        "Cookie jar at max capacity (%zu), rejecting new cookie",
-                        jar->max_cookies);
-                    result = -1;
-                    goto unlock;
-                  }
-              }
+            SocketLog_emitf (
+                SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                "Cookie jar at max capacity (%zu), rejecting new cookie",
+                jar->max_cookies);
+            result = -1;
+            goto unlock;
           }
 
+insert_cookie:
         entry
             = Arena_calloc (jar->arena, 1, sizeof (*entry), __FILE__, __LINE__);
         if (entry == NULL)
