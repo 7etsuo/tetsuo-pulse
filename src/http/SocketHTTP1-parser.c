@@ -420,6 +420,7 @@ SocketHTTP1_config_defaults (SocketHTTP1_Config *config)
   config->max_chunk_ext = SOCKETHTTP1_MAX_CHUNK_EXT;
   config->max_trailer_size = SOCKETHTTP1_MAX_TRAILER_SIZE;
   config->max_header_line = SOCKETHTTP1_MAX_HEADER_LINE;
+  config->trailer_entry_overhead = SOCKETHTTP1_TRAILER_ENTRY_OVERHEAD;
   config->allow_obs_fold = 0;
   config->strict_mode = 1;
 }
