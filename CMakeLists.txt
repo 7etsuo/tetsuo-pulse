@@ -745,6 +745,7 @@ set(TEST_SOURCES
     test_socketpoll
     test_socketpool
     test_pool_health
+    test_iptracker
     test_socketdns
     test_dns_wire
     test_dns_transport

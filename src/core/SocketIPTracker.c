@@ -22,6 +22,8 @@
 #include <sys/syscall.h>
 #endif
 
+#include <fcntl.h>
+
 #include "core/Except.h"
 #include "core/HashTable.h"
 #include "core/SocketConfig.h"
@@ -310,17 +312,32 @@ generate_hash_seed (void)
     }
 #endif
 
-  /* Last resort - weak but logged heavily */
-  seed = (unsigned)time (NULL) ^ (unsigned)getpid ();
+  /* Try /dev/urandom before failing hard */
+  int fd = open ("/dev/urandom", O_RDONLY);
+  if (fd >= 0)
+    {
+      ssize_t bytes_read = read (fd, seed_bytes, sizeof (seed_bytes));
+      close (fd);
+      if (bytes_read == (ssize_t)sizeof (seed_bytes))
+        {
+          memcpy (&seed, seed_bytes, sizeof (seed));
+          SOCKET_LOG_WARN_MSG (
+              "SocketIPTracker: using /dev/urandom fallback (crypto random "
+              "failed: %d)",
+              result);
+          return seed;
+        }
+    }
+
+  /* No secure random source available - fail hard to preserve DoS protection
+   */
   SOCKET_LOG_ERROR_MSG (
       "SocketIPTracker: CRITICAL - all secure random sources failed (code: "
-      "%d), using weak fallback",
+      "%d)",
       result);
-  SOCKET_LOG_ERROR_MSG (
-      "SocketIPTracker: hash DoS protection may be compromised - investigate "
-      "random source failure");
-
-  return seed;
+  SOCKET_RAISE_MSG (SocketIPTracker, SocketIPTracker_Failed,
+                    "Failed to obtain secure random seed for hash DoS "
+                    "protection");
 }
 
 static int
