@@ -1996,83 +1996,92 @@ SocketTLS_get_peer_cert_chain (Socket_T socket, X509 ***chain_out,
 /* SOCKET_TLS_OCSP_MAX_AGE_SECONDS is now defined in SocketTLSConfig.h
  * with comprehensive documentation about replay prevention rationale. */
 
-int
-SocketTLS_get_ocsp_response_status (Socket_T socket)
-{
-  assert (socket);
-
-  SSL *ssl = tls_socket_get_ssl (socket);
-  if (!ssl)
-    return -1;
-
 #if !defined(OPENSSL_NO_OCSP)
+/**
+ * ocsp_parse_response - Parse and validate OCSP response structure
+ * @ssl: SSL connection object
+ *
+ * Retrieves the stapled OCSP response from the SSL connection and validates
+ * its basic structure and status.
+ *
+ * Returns: Basic OCSP response on success, NULL on failure
+ * Thread-safe: No (operates on SSL connection state)
+ */
+static OCSP_BASICRESP *
+ocsp_parse_response (SSL *ssl)
+{
   const unsigned char *ocsp_resp;
   long ocsp_len = SSL_get_tlsext_status_ocsp_resp (ssl, &ocsp_resp);
 
   if (ocsp_len <= 0 || !ocsp_resp)
-    return -1; /* No OCSP response stapled */
+    return NULL; /* No OCSP response stapled */
 
   /* Parse the OCSP response */
   OCSP_RESPONSE *resp = d2i_OCSP_RESPONSE (NULL, &ocsp_resp, ocsp_len);
   if (!resp)
-    return -2; /* Invalid OCSP response format */
+    return NULL; /* Invalid OCSP response format */
 
   /* Check overall response status */
   int response_status = OCSP_response_status (resp);
   if (response_status != OCSP_RESPONSE_STATUS_SUCCESSFUL)
     {
       OCSP_RESPONSE_free (resp);
-      return -2; /* OCSP responder error */
+      return NULL; /* OCSP responder error */
     }
 
   /* Extract basic response for signature verification */
   OCSP_BASICRESP *basic = OCSP_response_get1_basic (resp);
-  if (!basic)
-    {
-      OCSP_RESPONSE_free (resp);
-      return -2; /* Failed to extract basic response */
-    }
+  OCSP_RESPONSE_free (resp);
 
-  /* Get peer certificate chain for signature verification */
+  return basic; /* May be NULL if extraction failed */
+}
+
+/**
+ * ocsp_verify_signature - Verify OCSP response signature against chain
+ * @basic: Basic OCSP response to verify
+ * @ssl: SSL connection object (provides chain and trust store)
+ *
+ * Performs full OCSP signature verification:
+ * 1. Verifies the OCSP response signature
+ * 2. Checks the responder certificate against the trust store
+ * 3. Validates responder certificate is authorized (CA or delegated)
+ *
+ * Returns: 0 on success, -1 on verification failure
+ * Thread-safe: No (operates on SSL connection state)
+ */
+static int
+ocsp_verify_signature (OCSP_BASICRESP *basic, SSL *ssl)
+{
   STACK_OF (X509) *chain = SSL_get_peer_cert_chain (ssl);
-  X509 *peer_cert = SSL_get_peer_certificate (ssl);
-
-  if (!peer_cert)
-    {
-      OCSP_BASICRESP_free (basic);
-      OCSP_RESPONSE_free (resp);
-      return -2; /* No peer certificate for verification */
-    }
-
-  /* Verify OCSP response signature against the certificate chain.
-   * The issuer certificate should be in the chain and is used to verify
-   * the OCSP responder's signature. OCSP_basic_verify with flag 0 performs
-   * full chain verification. */
-  int verify_result = -2;
-
-  /* Get the X509_STORE from the SSL context for trust anchor verification */
   SSL_CTX *ssl_ctx = SSL_get_SSL_CTX (ssl);
   X509_STORE *store = ssl_ctx ? SSL_CTX_get_cert_store (ssl_ctx) : NULL;
 
-  if (store)
-    {
-      /* Perform full OCSP signature verification:
-       * 1. Verifies the OCSP response signature
-       * 2. Checks the responder certificate against the trust store
-       * 3. Validates responder certificate is authorized (CA or delegated) */
-      int verify_flags = OCSP_TRUSTOTHER; /* Trust certs in chain for responder
-                                           */
-      if (OCSP_basic_verify (basic, chain, store, verify_flags) != 1)
-        {
-          /* Signature verification failed */
-          X509_free (peer_cert);
-          OCSP_BASICRESP_free (basic);
-          OCSP_RESPONSE_free (resp);
-          return -2;
-        }
-    }
+  if (!store)
+    return -1; /* No trust store available */
 
-  /* Find the single response matching our peer certificate */
+  /* Trust certificates in chain for OCSP responder verification */
+  int verify_flags = OCSP_TRUSTOTHER;
+
+  if (OCSP_basic_verify (basic, chain, store, verify_flags) != 1)
+    return -1; /* Signature verification failed */
+
+  return 0;
+}
+
+/**
+ * ocsp_check_cert_status - Check certificate status in OCSP response
+ * @basic: Basic OCSP response containing status information
+ *
+ * Iterates through OCSP single responses to find valid certificate status.
+ * Validates response freshness (thisUpdate/nextUpdate timestamps) and maps
+ * OCSP status codes to return values.
+ *
+ * Returns: 1 (GOOD), 0 (REVOKED), or -1 (UNKNOWN/not found)
+ * Thread-safe: Yes (read-only operation on OCSP response)
+ */
+static int
+ocsp_check_cert_status (OCSP_BASICRESP *basic)
+{
   int cert_status = -1;
   int resp_count = OCSP_resp_count (basic);
 
@@ -2090,16 +2099,10 @@ SocketTLS_get_ocsp_response_status (Socket_T socket)
       int status = OCSP_single_get0_status (single, &reason, &revtime,
                                             &thisupd, &nextupd);
 
-      /* Validate response freshness:
-       * - thisUpdate must be in the past
-       * - nextUpdate (if present) must be in the future
-       * - Response must not be older than max age tolerance */
+      /* Validate response freshness */
       if (!OCSP_check_validity (thisupd, nextupd,
                                 SOCKET_TLS_OCSP_MAX_AGE_SECONDS, -1))
-        {
-          /* Response is stale or not yet valid */
-          continue;
-        }
+        continue; /* Response is stale or not yet valid */
 
       /* Map OCSP status to return value */
       switch (status)
@@ -2123,9 +2126,52 @@ SocketTLS_get_ocsp_response_status (Socket_T socket)
         break;
     }
 
+  return cert_status;
+}
+#endif /* !defined(OPENSSL_NO_OCSP) */
+
+int
+ SocketTLS_get_ocsp_response_status (Socket_T socket)
+{
+  assert (socket);
+
+  SSL *ssl = tls_socket_get_ssl (socket);
+  if (!ssl)
+    return -1;
+
+#if !defined(OPENSSL_NO_OCSP)
+  /* Check if OCSP response is present first */
+  const unsigned char *ocsp_resp_check;
+  long ocsp_len_check = SSL_get_tlsext_status_ocsp_resp (ssl, &ocsp_resp_check);
+  if (ocsp_len_check <= 0 || !ocsp_resp_check)
+    return -1; /* No OCSP response stapled */
+
+  /* Parse and validate OCSP response structure */
+  OCSP_BASICRESP *basic = ocsp_parse_response (ssl);
+  if (!basic)
+    return -2; /* Invalid OCSP response */
+
+  /* Verify peer certificate is available */
+  X509 *peer_cert = SSL_get_peer_certificate (ssl);
+  if (!peer_cert)
+    {
+      OCSP_BASICRESP_free (basic);
+      return -2; /* No peer certificate for verification */
+    }
+
+  /* Verify OCSP response signature against certificate chain */
+  if (ocsp_verify_signature (basic, ssl) != 0)
+    {
+      X509_free (peer_cert);
+      OCSP_BASICRESP_free (basic);
+      return -2; /* Signature verification failed */
+    }
+
+  /* Check certificate status in OCSP response */
+  int cert_status = ocsp_check_cert_status (basic);
+
   X509_free (peer_cert);
   OCSP_BASICRESP_free (basic);
-  OCSP_RESPONSE_free (resp);
 
   return cert_status;
 #else
