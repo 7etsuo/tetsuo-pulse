@@ -590,6 +590,37 @@ TEST (cookie_cache_lru_eviction)
 }
 
 /*
+ * Test cache store rejects oversized address length (Issue #1191)
+ */
+TEST (cookie_cache_store_oversized_addr)
+{
+  Arena_T arena = Arena_new ();
+  SocketDNSCookie_T cache = SocketDNSCookie_new (arena);
+
+  struct sockaddr_in server;
+  memset (&server, 0, sizeof (server));
+  server.sin_family = AF_INET;
+  server.sin_port = htons (53);
+  inet_pton (AF_INET, "8.8.8.8", &server.sin_addr);
+
+  uint8_t client_cookie[8] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
+  uint8_t server_cookie[16] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88,
+                               0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x00};
+
+  /* Attempt to store with oversized addr_len (larger than sockaddr_storage) */
+  socklen_t oversized_len = sizeof (struct sockaddr_storage) + 1;
+  int ret = SocketDNSCookie_cache_store (cache, (struct sockaddr *)&server,
+                                         oversized_len, client_cookie,
+                                         server_cookie, 16);
+
+  /* Should reject the oversized address length */
+  ASSERT (ret == -1);
+
+  SocketDNSCookie_free (&cache);
+  Arena_dispose (&arena);
+}
+
+/*
  * Main test entry point
  */
 int

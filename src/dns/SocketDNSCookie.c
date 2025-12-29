@@ -348,6 +348,10 @@ SocketDNSCookie_cache_store (T cache, const struct sockaddr *server_addr,
       || server_len > DNS_SERVER_COOKIE_MAX_SIZE)
     return -1;
 
+  /* Validate address length to prevent buffer overflow */
+  if (addr_len > sizeof (struct sockaddr_storage))
+    return -1;
+
   time_t now = time (NULL);
 
   /* Look for existing entry */
