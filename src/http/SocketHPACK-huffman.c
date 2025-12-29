@@ -545,17 +545,6 @@ try_decode_symbol (uint64_t bits, int *bits_avail, unsigned char *output,
   return 0;
 }
 
-static void
-refill_bit_buffer (uint64_t *bits, int *bits_avail, const unsigned char *input,
-                   size_t *in_pos, size_t input_len)
-{
-  while (*bits_avail < HUFFMAN_REFILL_THRESHOLD && *in_pos < input_len)
-    {
-      *bits = (*bits << HUFFMAN_BITS_PER_BYTE) | input[(*in_pos)++];
-      *bits_avail += HUFFMAN_BITS_PER_BYTE;
-    }
-}
-
 static int
 validate_final_padding (uint64_t bits, int bits_avail)
 {
@@ -654,7 +643,12 @@ SocketHPACK_huffman_decode (const unsigned char *input, size_t input_len,
 
   while (in_pos < input_len || bits_avail >= HUFFMAN_MIN_CODE_BITS)
     {
-      refill_bit_buffer (&bits, &bits_avail, input, &in_pos, input_len);
+      /* Refill bit buffer when running low */
+      while (bits_avail < HUFFMAN_REFILL_THRESHOLD && in_pos < input_len)
+        {
+          bits = (bits << HUFFMAN_BITS_PER_BYTE) | input[in_pos++];
+          bits_avail += HUFFMAN_BITS_PER_BYTE;
+        }
 
       if (bits_avail < HUFFMAN_MIN_CODE_BITS)
         break;
