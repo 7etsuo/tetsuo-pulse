@@ -116,6 +116,18 @@ parse_retry_header (const uint8_t *data, size_t len,
                     SocketQUICPacketHeader_T *header, size_t *offset,
                     size_t *consumed);
 
+static size_t
+serialize_initial_fields (const SocketQUICPacketHeader_T *header,
+                          uint8_t *output, size_t output_size, size_t offset);
+
+static size_t
+serialize_protected_fields (const SocketQUICPacketHeader_T *header,
+                            uint8_t *output, size_t output_size, size_t offset);
+
+static size_t
+serialize_retry_fields (const SocketQUICPacketHeader_T *header,
+                        uint8_t *output, size_t output_size, size_t offset);
+
 /* ============================================================================
  * Long Header Parsing (RFC 9000 Section 17.2)
  * ============================================================================
@@ -405,6 +417,83 @@ SocketQUICPacketHeader_size (const SocketQUICPacketHeader_T *header)
 }
 
 /* ============================================================================
+ * Serialization - Long Header Type-Specific Helpers
+ * ============================================================================
+ */
+
+static size_t
+serialize_initial_fields (const SocketQUICPacketHeader_T *header,
+                          uint8_t *output, size_t output_size, size_t offset)
+{
+  size_t written;
+
+  /* Token length (varint) */
+  written = SocketQUICVarInt_encode (header->token_length, output + offset,
+                                      output_size - offset);
+  if (written == 0)
+    return 0;
+  offset += written;
+
+  /* Token data */
+  if (header->token_length > 0 && header->token != NULL)
+    {
+      if (output_size - offset < header->token_length)
+        return 0;
+      memcpy (output + offset, header->token, header->token_length);
+      offset += header->token_length;
+    }
+
+  /* Continue with protected fields (Length + PN) */
+  return serialize_protected_fields (header, output, output_size, offset);
+}
+
+static size_t
+serialize_protected_fields (const SocketQUICPacketHeader_T *header,
+                            uint8_t *output, size_t output_size, size_t offset)
+{
+  size_t written;
+
+  /* Length field (varint) */
+  written = SocketQUICVarInt_encode (header->length, output + offset,
+                                      output_size - offset);
+  if (written == 0)
+    return 0;
+  offset += written;
+
+  /* Packet Number */
+  if (output_size - offset < header->pn_length)
+    return 0;
+  pack_pn (output + offset, header->packet_number, header->pn_length);
+  offset += header->pn_length;
+
+  return offset;
+}
+
+static size_t
+serialize_retry_fields (const SocketQUICPacketHeader_T *header,
+                        uint8_t *output, size_t output_size, size_t offset)
+{
+  /* Retry Token */
+  if (header->retry_token_length > 0 && header->retry_token != NULL)
+    {
+      if (output_size - offset < header->retry_token_length)
+        return 0;
+      memcpy (output + offset, header->retry_token,
+              header->retry_token_length);
+      offset += header->retry_token_length;
+    }
+
+  /* Retry Integrity Tag (16 bytes) */
+  if (output_size - offset < QUIC_RETRY_INTEGRITY_TAG_LEN)
+    return 0;
+  memcpy (output + offset, header->retry_integrity_tag,
+          QUIC_RETRY_INTEGRITY_TAG_LEN);
+  offset += QUIC_RETRY_INTEGRITY_TAG_LEN;
+
+  return offset;
+}
+
+/* ============================================================================
  * Serialization - Long Header
  * ============================================================================
  */
@@ -451,55 +540,18 @@ serialize_long_header (const SocketQUICPacketHeader_T *header,
   switch (header->type)
     {
     case QUIC_PACKET_TYPE_INITIAL:
-      /* Token length */
-      written = SocketQUICVarInt_encode (header->token_length, output + offset,
-                                          output_size - offset);
-      if (written == 0)
-        return 0;
-      offset += written;
-
-      /* Token data */
-      if (header->token_length > 0 && header->token != NULL)
-        {
-          memcpy (output + offset, header->token, header->token_length);
-          offset += header->token_length;
-        }
-      /* Fall through for Length + PN */
-      /* FALLTHROUGH */
+      return serialize_initial_fields (header, output, output_size, offset);
 
     case QUIC_PACKET_TYPE_0RTT:
     case QUIC_PACKET_TYPE_HANDSHAKE:
-      /* Length */
-      written = SocketQUICVarInt_encode (header->length, output + offset,
-                                          output_size - offset);
-      if (written == 0)
-        return 0;
-      offset += written;
-
-      /* Packet Number */
-      pack_pn (output + offset, header->packet_number, header->pn_length);
-      offset += header->pn_length;
-      break;
+      return serialize_protected_fields (header, output, output_size, offset);
 
     case QUIC_PACKET_TYPE_RETRY:
-      /* Retry Token */
-      if (header->retry_token_length > 0 && header->retry_token != NULL)
-        {
-          memcpy (output + offset, header->retry_token,
-                  header->retry_token_length);
-          offset += header->retry_token_length;
-        }
-
-      /* Retry Integrity Tag */
-      memcpy (output + offset, header->retry_integrity_tag, QUIC_RETRY_INTEGRITY_TAG_LEN);
-      offset += QUIC_RETRY_INTEGRITY_TAG_LEN;
-      break;
+      return serialize_retry_fields (header, output, output_size, offset);
 
     default:
       return 0;
     }
-
-  return offset;
 }
 
 /* ============================================================================
