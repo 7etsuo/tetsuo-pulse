@@ -293,6 +293,117 @@ TEST (nsec3_parse)
 }
 
 /*
+ * Test RSA key parsing with malicious exponent length (overflow attack)
+ * This tests the fix in SocketDNSSEC_verify_rrsig() at line 891-894
+ */
+TEST (dnskey_rsa_overflow_attack)
+{
+#ifdef SOCKET_HAS_TLS
+  /* Create DNSKEY structure with malicious RSA public key */
+  /* Public key blob has exp_len = 0xFFFF which would cause pointer overflow */
+  unsigned char malicious_pubkey[] = {
+      0x00,       /* Exponent length byte = 0 (means use next 2 bytes) */
+      0xFF, 0xFF, /* Exponent length: 65535 (malicious - would cause overflow) */
+      0x01, 0x02, 0x03, 0x04 /* Only 4 bytes of actual data */
+  };
+
+  SocketDNSSEC_DNSKEY dnskey = {
+      .flags = 257,
+      .protocol = 3,
+      .algorithm = DNSSEC_ALGO_RSASHA256,
+      .pubkey = malicious_pubkey,
+      .pubkey_len = sizeof (malicious_pubkey),
+      .key_tag = 0x1234
+  };
+
+  /* Create minimal RRSIG that passes initial checks */
+  SocketDNSSEC_RRSIG rrsig = {
+      .type_covered = 1, /* A record */
+      .algorithm = DNSSEC_ALGO_RSASHA256,
+      .labels = 2,
+      .original_ttl = 3600,
+      .sig_expiration = 0x7FFFFFFF, /* Far future */
+      .sig_inception = 0, /* Epoch */
+      .key_tag = 0x1234,
+      .signature = (unsigned char *)"dummy",
+      .signature_len = 8
+  };
+
+  /* Minimal DNS message with one RR */
+  unsigned char msg[] = {
+      /* DNS Header */
+      0x00, 0x00, /* ID */
+      0x00, 0x00, /* Flags */
+      0x00, 0x00, /* QDCOUNT */
+      0x00, 0x01, /* ANCOUNT = 1 */
+      0x00, 0x00, /* NSCOUNT */
+      0x00, 0x00, /* ARCOUNT */
+      /* Answer RR: example.com A 1.2.3.4 */
+      0x07, 'e', 'x', 'a', 'm', 'p', 'l', 'e', 0x03, 'c', 'o', 'm', 0x00,
+      0x00, 0x01, /* Type A */
+      0x00, 0x01, /* Class IN */
+      0x00, 0x00, 0x0e, 0x10, /* TTL 3600 */
+      0x00, 0x04, /* RDLENGTH 4 */
+      0x01, 0x02, 0x03, 0x04 /* 1.2.3.4 */
+  };
+
+  /* Attempt verification - should return DNSSEC_BOGUS due to overflow check */
+  int result = SocketDNSSEC_verify_rrsig (&rrsig, &dnskey, msg, sizeof (msg), 12, 1);
+
+  /* Should fail with DNSSEC_BOGUS (2) due to bounds check on exp_len */
+  ASSERT (result == 2); /* DNSSEC_BOGUS */
+#endif
+}
+
+/*
+ * Test RSA key parsing with exponent length exceeding buffer
+ */
+TEST (dnskey_rsa_exponent_oob)
+{
+#ifdef SOCKET_HAS_TLS
+  /* Public key where exponent length exceeds remaining buffer */
+  unsigned char oob_pubkey[] = {
+      0x10,       /* Exponent length: 16 bytes */
+      0x01, 0x02, 0x03, 0x04, 0x05 /* Only 5 bytes left (needs 16 + modulus) */
+  };
+
+  SocketDNSSEC_DNSKEY dnskey = {
+      .flags = 257,
+      .protocol = 3,
+      .algorithm = DNSSEC_ALGO_RSASHA256,
+      .pubkey = oob_pubkey,
+      .pubkey_len = sizeof (oob_pubkey),
+      .key_tag = 0x1234
+  };
+
+  SocketDNSSEC_RRSIG rrsig = {
+      .type_covered = 1,
+      .algorithm = DNSSEC_ALGO_RSASHA256,
+      .labels = 2,
+      .original_ttl = 3600,
+      .sig_expiration = 0x7FFFFFFF,
+      .sig_inception = 0,
+      .key_tag = 0x1234,
+      .signature = (unsigned char *)"dummy",
+      .signature_len = 8
+  };
+
+  unsigned char msg[] = {
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
+      0x07, 'e', 'x', 'a', 'm', 'p', 'l', 'e', 0x03, 'c', 'o', 'm', 0x00,
+      0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x0e, 0x10, 0x00, 0x04,
+      0x01, 0x02, 0x03, 0x04
+  };
+
+  /* Attempt verification - should return DNSSEC_BOGUS */
+  int result = SocketDNSSEC_verify_rrsig (&rrsig, &dnskey, msg, sizeof (msg), 12, 1);
+
+  /* Should fail with DNSSEC_BOGUS (2) due to exp_len > remaining */
+  ASSERT (result == 2); /* DNSSEC_BOGUS */
+#endif
+}
+
+/*
  * Test validator lifecycle
  */
 TEST (validator_lifecycle)
