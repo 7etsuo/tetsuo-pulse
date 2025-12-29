@@ -371,13 +371,7 @@ health_worker_thread (void *arg)
           interval_ms = health->config.probe_interval_ms;
           clock_gettime (CLOCK_REALTIME, &ts);
           interval = socket_util_ms_to_timespec ((unsigned long)interval_ms);
-          ts.tv_sec += interval.tv_sec;
-          ts.tv_nsec += interval.tv_nsec;
-          if (ts.tv_nsec >= 1000000000)
-            {
-              ts.tv_sec++;
-              ts.tv_nsec -= 1000000000;
-            }
+          ts = socket_util_timespec_add (ts, interval);
           pthread_cond_timedwait (&health->worker_cond, &health->worker_mutex,
                                   &ts);
         }
