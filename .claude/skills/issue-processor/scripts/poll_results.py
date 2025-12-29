@@ -8,33 +8,36 @@ monitors result files, and updates state WITHOUT consuming agent context.
 Usage:
     python poll_results.py --state-dir DIR --expected 391,392,393 --timeout 600
 
+Options:
+    --stall-threshold N    Seconds without progress before STALLED warning (default: 120)
+    --poll-interval N      Seconds between polls (default: 10)
+    --timeout N            Total timeout in seconds (default: 600)
+
 Output:
     DONE:10/10:8_success:2_failed
     or
     TIMEOUT:7/10:5_success:2_failed
+
+Status file (status.txt) values:
+    RUNNING:done/total     - Active processing
+    STALLED:done/total:... - No progress for stall-threshold seconds
+    COMPLETED:done/total:... - All issues finished
 """
 
 import argparse
-import json
 import sys
 import time
 from pathlib import Path
 
-
-def load_json(path: Path) -> dict:
-    """Load JSON file, return empty dict if missing."""
-    if path.exists():
-        with open(path) as f:
-            return json.load(f)
-    return {}
-
-
-def save_json(path: Path, data: dict):
-    """Save JSON file atomically."""
-    tmp = path.with_suffix('.tmp')
-    with open(tmp, 'w') as f:
-        json.dump(data, f, indent=2)
-    tmp.rename(path)
+from utils import (
+    load_json,
+    save_json,
+    log_info,
+    log_warning,
+    STATUS_RUNNING,
+    STATUS_STALLED,
+    STATUS_COMPLETED,
+)
 
 
 def main():
@@ -42,7 +45,10 @@ def main():
     parser.add_argument("--state-dir", required=True, help="State directory path")
     parser.add_argument("--expected", required=True, help="Comma-separated issue numbers")
     parser.add_argument("--timeout", type=int, default=600, help="Timeout in seconds")
-    parser.add_argument("--poll-interval", type=int, default=10, help="Poll interval in seconds")
+    parser.add_argument("--poll-interval", type=int, default=10,
+                        help="Poll interval in seconds (default: 10)")
+    parser.add_argument("--stall-threshold", type=int, default=120,
+                        help="Seconds without progress before STALLED warning (default: 120)")
     args = parser.parse_args()
 
     state_dir = Path(args.state_dir)
@@ -61,12 +67,12 @@ def main():
     # Track completed issues
     completed = set()
     failed = set()
+    already_resolved = set()
 
     start_time = time.time()
     last_progress_time = start_time
     last_done_count = 0
     stall_warning_shown = False
-    STALL_THRESHOLD = 120  # seconds without progress before warning
 
     while True:
         # Check for result files
@@ -79,21 +85,24 @@ def main():
 
                 if issue_num not in expected:
                     continue
-                if issue_num in completed or issue_num in failed:
+                if issue_num in completed or issue_num in failed or issue_num in already_resolved:
                     continue
 
                 # Read result
                 try:
                     result = load_json(result_file)
-                    if result.get("status") == "success":
+                    status = result.get("status")
+                    if status == "success":
                         completed.add(issue_num)
+                    elif status == "already_resolved":
+                        already_resolved.add(issue_num)
                     else:
                         failed.add(issue_num)
                 except Exception:
                     # File might be partially written, retry next iteration
                     continue
 
-        done_count = len(completed) + len(failed)
+        done_count = len(completed) + len(failed) + len(already_resolved)
 
         # Track progress for stall detection
         if done_count > last_done_count:
@@ -103,21 +112,25 @@ def main():
 
         # Update manifest
         manifest = load_json(manifest_path)
-        manifest["completed"] = list(set(manifest.get("completed", [])) | completed)
+        manifest["completed"] = list(set(manifest.get("completed", [])) | completed | already_resolved)
         manifest["failed"] = list(set(manifest.get("failed", [])) | failed)
-        manifest["in_progress"] = [i for i in expected if i not in completed and i not in failed]
+        manifest["in_progress"] = [i for i in expected if i not in completed
+                                    and i not in failed and i not in already_resolved]
         save_json(manifest_path, manifest)
 
         # Update status with stall indicator if needed
         time_since_progress = time.time() - last_progress_time
-        if time_since_progress > STALL_THRESHOLD and not stall_warning_shown:
-            status_path.write_text(f"STALLED:{done_count}/{total}:no_progress_for_{int(time_since_progress)}s\n")
+        if time_since_progress > args.stall_threshold and not stall_warning_shown:
+            status_path.write_text(
+                f"{STATUS_STALLED}:{done_count}/{total}:no_progress_for_{int(time_since_progress)}s\n"
+            )
             stall_warning_shown = True
-            print(f"WARNING: No progress for {int(time_since_progress)}s. Agents may have failed.", file=sys.stderr)
+            log_warning(f"No progress for {int(time_since_progress)}s. Agents may have failed.")
 
             # List which issues are still pending
-            pending = [i for i in expected if i not in completed and i not in failed]
-            print(f"Pending issues: {pending}", file=sys.stderr)
+            pending = [i for i in expected if i not in completed
+                       and i not in failed and i not in already_resolved]
+            log_info(f"Pending issues: {pending}")
 
             # Check which agents have started (wrote started marker)
             started_dir = state_dir / "started"
@@ -133,29 +146,31 @@ def main():
                 not_started = set(pending) - started_issues
 
                 if started_but_pending:
-                    print(f"Started but no result: {sorted(started_but_pending)}", file=sys.stderr)
+                    log_info(f"Started but no result: {sorted(started_but_pending)}")
                 if not_started:
-                    print(f"Never started: {sorted(not_started)}", file=sys.stderr)
+                    log_info(f"Never started: {sorted(not_started)}")
         else:
-            status_path.write_text(f"RUNNING:{done_count}/{total}\n")
+            status_path.write_text(f"{STATUS_RUNNING}:{done_count}/{total}\n")
 
         # Check if all done
         if done_count >= total:
-            final_status = f"DONE:{total}/{total}:{len(completed)}_success:{len(failed)}_failed"
-            status_path.write_text(f"COMPLETED:{total}/{total}:{len(completed)}_success:{len(failed)}_failed\n")
+            success_count = len(completed) + len(already_resolved)
+            final_status = f"COMPLETED:{total}/{total}:{success_count}_success:{len(failed)}_failed"
+            status_path.write_text(f"{STATUS_COMPLETED}:{total}/{total}:{success_count}_success:{len(failed)}_failed\n")
             print(final_status)
             sys.exit(0)
 
         # Check timeout
         elapsed = time.time() - start_time
         if elapsed >= args.timeout:
-            final_status = f"TIMEOUT:{done_count}/{total}:{len(completed)}_success:{len(failed)}_failed"
+            success_count = len(completed) + len(already_resolved)
+            final_status = f"TIMEOUT:{done_count}/{total}:{success_count}_success:{len(failed)}_failed"
             print(final_status)
             sys.exit(1)
 
         # Progress output (for visibility)
         remaining = total - done_count
-        print(f"[{int(elapsed)}s] Waiting for {remaining} results... ({done_count}/{total} done)", file=sys.stderr)
+        log_info(f"[{int(elapsed)}s] Waiting for {remaining} results... ({done_count}/{total} done)")
 
         time.sleep(args.poll_interval)
 

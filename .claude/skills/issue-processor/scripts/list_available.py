@@ -15,21 +15,17 @@ Output:
 
 import argparse
 import json
-import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 
-
-def run_gh(args: list[str], check: bool = True) -> tuple[bool, str]:
-    """Run gh CLI command and return (success, output)."""
-    result = subprocess.run(
-        ["gh"] + args,
-        capture_output=True,
-        text=True
-    )
-    if check and result.returncode != 0:
-        return False, result.stderr.strip()
-    return True, result.stdout.strip()
+from utils import (
+    run_gh,
+    load_json,
+    validate_repo_format,
+    log_error,
+    ValidationError,
+)
 
 
 def fetch_open_issues(owner: str, repo: str) -> list[dict]:
@@ -55,9 +51,9 @@ def fetch_open_issues(owner: str, repo: str) -> list[dict]:
         }}
         '''
 
-        success, output = run_gh(["api", "graphql", "-f", f"query={query}"])
+        success, output = run_gh(["api", "graphql", "-f", f"query={query}"], check=False)
         if not success:
-            print(f"Error fetching issues: {output}", file=sys.stderr)
+            log_error(f"Fetching issues: {output}")
             sys.exit(1)
 
         result = json.loads(output)
@@ -82,15 +78,6 @@ def fetch_open_issues(owner: str, repo: str) -> list[dict]:
     return issues
 
 
-def load_manifest(state_dir: Path) -> dict | None:
-    """Load manifest.json if it exists."""
-    manifest_file = state_dir / "manifest.json"
-    if manifest_file.exists():
-        with open(manifest_file) as f:
-            return json.load(f)
-    return None
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="List available issues vs claimed issues"
@@ -101,7 +88,11 @@ def main():
     parser.add_argument("--json", action="store_true", help="Output as JSON")
     args = parser.parse_args()
 
-    owner, repo = args.repo.split("/")
+    try:
+        owner, repo = validate_repo_format(args.repo)
+    except ValidationError as e:
+        log_error(str(e))
+        sys.exit(1)
 
     # Fetch all open issues
     print("Fetching open issues...", file=sys.stderr)
@@ -118,8 +109,9 @@ def main():
 
     if args.state_dir:
         state_dir = Path(args.state_dir)
-        manifest = load_manifest(state_dir)
-        if manifest:
+        manifest_file = state_dir / "manifest.json"
+        if manifest_file.exists():
+            manifest = load_json(manifest_file)
             completed_nums = set(manifest.get("completed", []))
             failed_nums = set(manifest.get("failed", []))
             current_batch = manifest.get("current_batch", [])
@@ -169,7 +161,6 @@ def main():
             if len(parts) >= 2:
                 try:
                     timestamp = int(parts[1])
-                    from datetime import datetime
                     claimed_at = datetime.fromtimestamp(timestamp).strftime("%H:%M:%S")
                     print(f"  #{issue['number']:4d}  {issue['title'][:45]:<45}  (since {claimed_at})")
                 except (ValueError, IndexError):
@@ -194,7 +185,7 @@ def main():
 
     # Show stats
     print()
-    print(f"SUMMARY:")
+    print("SUMMARY:")
     print("-" * 50)
     print(f"  Total open issues:  {len(issues)}")
     print(f"  Claimed by agents:  {len(claimed)}")

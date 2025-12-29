@@ -1,6 +1,6 @@
 ---
 name: issue-implementer
-description: Implements a single GitHub issue with code, tests, and PR. Writes result to file, returns minimal status. Used by issue-impl-coordinator.
+description: Implements a single GitHub issue with code, tests, and PR. Writes result to file, returns minimal status. Used by issue-processor skill for parallel implementation.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
 ---
@@ -96,11 +96,10 @@ Before implementing, search for:
 - Patterns to follow
 - Integration points
 
-```bash
-# Example searches
-grep -r "similar_pattern" src/
-ls include/module/
-```
+Use the **Grep** and **Glob** tools (not bash grep) for efficient searching:
+- `Grep` for pattern matching in code
+- `Glob` for finding files by name/extension
+- `Read` for examining specific files
 
 ### 4. Implement
 
@@ -143,13 +142,11 @@ feat(module): implement feature from issue #{ISSUE_NUMBER}
 [Brief description of what was implemented]
 
 Closes #{ISSUE_NUMBER}
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>
 EOF
 )"
 ```
+
+**Note**: Do NOT add AI attribution (Generated with Claude, Co-Authored-By, etc.) per project policy.
 
 ### 8. Push and Create PR
 
@@ -215,6 +212,18 @@ This removes the `wip:*` label so other instances (or future runs) can work on t
   "commit_sha": "abc123..."
 }
 ```
+
+**If already resolved** (feature already exists, issue is stale, etc.), write:
+
+```json
+{
+  "issue": 391,
+  "status": "already_resolved",
+  "resolution": "Feature already implemented in src/quic/frame.c at line 245"
+}
+```
+
+This status is for when you discover the issue doesn't need implementation.
 
 **On failure**, write:
 

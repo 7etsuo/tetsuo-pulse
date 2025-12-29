@@ -14,25 +14,36 @@ Outputs:
 
 import argparse
 import json
-import os
 import re
 import subprocess
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
+
+from utils import (
+    run_gh as utils_run_gh,
+    run_git,
+    save_json,
+    validate_repo_format,
+    log_info,
+    log_warning,
+    log_error,
+    GitHubAPIError,
+    ValidationError,
+)
 
 
 def run_gh(args: list[str]) -> dict:
     """Run gh CLI command and return parsed JSON."""
-    result = subprocess.run(
-        ["gh"] + args,
-        capture_output=True,
-        text=True
-    )
-    if result.returncode != 0:
-        print(f"Error running gh: {result.stderr}", file=sys.stderr)
-        sys.exit(1)
-    return json.loads(result.stdout) if result.stdout.strip() else {}
+    try:
+        success, output = utils_run_gh(args, check=False)
+        if not success:
+            log_error(f"gh {' '.join(args[:2])}: {output}")
+            sys.exit(1)
+        return json.loads(output) if output.strip() else {}
+    except json.JSONDecodeError:
+        # Some commands return non-JSON output
+        return {"_raw": output}
 
 
 def fetch_issues(owner: str, repo: str, label: str | None = None) -> list[dict]:
@@ -115,14 +126,18 @@ def fetch_closed_issues(owner: str, repo: str, issue_numbers: set[int]) -> set[i
             for key, value in repo_data.items():
                 if value and value.get("state") == "CLOSED":
                     closed.add(value["number"])
-        except Exception:
-            # If batch fails, check individually
+        except Exception as e:
+            # If batch fails, check individually using REST API
+            log_warning(f"Batch query failed ({e}), checking issues individually")
             for num in batch:
                 try:
-                    result = run_gh(["api", f"repos/{owner}/{repo}/issues/{num}", "--jq", ".state"])
-                    if "closed" in str(result).lower():
+                    # Use REST API to get issue state
+                    result = run_gh(["api", f"repos/{owner}/{repo}/issues/{num}"])
+                    # result is a dict with "state" field
+                    if result.get("state") == "closed":
                         closed.add(num)
                 except Exception:
+                    # Issue might not exist or API error - skip silently
                     pass
 
     return closed
@@ -300,10 +315,8 @@ def create_worktrees(ready_issues: list[int], state_dir: Path) -> dict[int, str]
         else:
             print(f"Warning: Failed to create worktree for #{issue_num}: {output}", file=sys.stderr)
 
-    # Save worktree mapping
-    worktrees_file = state_dir / "worktrees.json"
-    with open(worktrees_file, "w") as f:
-        json.dump(worktrees, f, indent=2)
+    # Save worktree mapping (atomic write)
+    save_json(state_dir / "worktrees.json", worktrees)
 
     return worktrees
 
@@ -318,7 +331,13 @@ def main():
                         help="Create git worktrees for ready issues")
     args = parser.parse_args()
 
-    owner, repo = args.repo.split("/")
+    # Validate repo format
+    try:
+        owner, repo = validate_repo_format(args.repo)
+    except ValidationError as e:
+        log_error(str(e))
+        sys.exit(1)
+
     state_dir = Path(args.state_dir)
 
     # Create directories
@@ -365,26 +384,23 @@ def main():
     if args.max and len(ready) > args.max:
         ready = ready[:args.max]
 
-    # Write individual issue files
+    # Write individual issue files (using atomic writes)
     for issue in issues:
         issue_file = state_dir / "issues" / f"{issue['number']}.json"
         issue["dependencies"] = parse_dependencies(issue["body"])
-        with open(issue_file, "w") as f:
-            json.dump(issue, f, indent=2)
+        save_json(issue_file, issue)
 
     # Write graph
-    with open(state_dir / "graph.json", "w") as f:
-        json.dump({
-            "graph": {str(k): v for k, v in graph.items()},
-            "closed_issues": sorted(closed_issues)
-        }, f, indent=2)
+    save_json(state_dir / "graph.json", {
+        "graph": {str(k): v for k, v in graph.items()},
+        "closed_issues": sorted(closed_issues)
+    })
 
     # Write frontier
-    with open(state_dir / "frontier.json", "w") as f:
-        json.dump({
-            "ready": ready,
-            "blocked": {str(k): v for k, v in blocked.items()}
-        }, f, indent=2)
+    save_json(state_dir / "frontier.json", {
+        "ready": ready,
+        "blocked": {str(k): v for k, v in blocked.items()}
+    })
 
     # Write manifest
     run_id = state_dir.name
@@ -393,7 +409,7 @@ def main():
         "run_id": run_id,
         "repository": args.repo,
         "label_filter": args.label,
-        "created_at": datetime.utcnow().isoformat() + "Z",
+        "created_at": datetime.now(timezone.utc).isoformat(),
         "total_issues": len(issues),
         "ready": ready,
         "claimed_by_others": claimed,
@@ -401,12 +417,10 @@ def main():
         "failed": [],
         "in_progress": []
     }
-    with open(state_dir / "manifest.json", "w") as f:
-        json.dump(manifest, f, indent=2)
+    save_json(state_dir / "manifest.json", manifest)
 
     # Write initial status
-    with open(state_dir / "status.txt", "w") as f:
-        f.write(f"READY:{len(ready)}/{len(issues)}\n")
+    (state_dir / "status.txt").write_text(f"READY:{len(ready)}/{len(issues)}\n")
 
     # Create worktrees if requested
     worktrees = {}
