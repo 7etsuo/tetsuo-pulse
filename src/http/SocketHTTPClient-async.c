@@ -134,12 +134,11 @@ static ssize_t
 sync_recv_fallback (Socket_T socket, void *buf, size_t len)
 {
   volatile ssize_t recvd = 0;
-  volatile int eof = 0;
 
   TRY { recvd = Socket_recv (socket, buf, len); }
   EXCEPT (Socket_Closed)
   {
-    eof = 1;
+    recvd = 0; /* EOF - graceful close */
   }
   EXCEPT (Socket_Failed)
   {
@@ -147,7 +146,7 @@ sync_recv_fallback (Socket_T socket, void *buf, size_t len)
   }
   END_TRY;
 
-  return eof ? 0 : recvd;
+  return recvd;
 }
 
 int
