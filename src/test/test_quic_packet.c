@@ -675,6 +675,28 @@ TEST (quic_packet_pn_roundtrip)
   ASSERT_EQ (decoded, original_pn);
 }
 
+TEST (quic_packet_decode_pn_overflow_protection)
+{
+  /* Test that invalid pn_length values are rejected to prevent overflow */
+  uint64_t result;
+
+  /* pn_length = 0 (too small) */
+  result = SocketQUICPacket_decode_pn (0x42, 0, 0);
+  ASSERT_EQ (result, 0);
+
+  /* pn_length = 5 (too large, would cause 40-bit shift) */
+  result = SocketQUICPacket_decode_pn (0x42, 5, 0);
+  ASSERT_EQ (result, 0);
+
+  /* pn_length = 8 (would cause 64-bit shift - undefined behavior) */
+  result = SocketQUICPacket_decode_pn (0x42, 8, 0);
+  ASSERT_EQ (result, 0);
+
+  /* pn_length = 255 (max uint8_t, would cause massive shift) */
+  result = SocketQUICPacket_decode_pn (0x42, 255, 0);
+  ASSERT_EQ (result, 0);
+}
+
 /* ============================================================================
  * Utility Function Tests
  * ============================================================================

@@ -813,6 +813,11 @@ SocketQUICPacket_decode_pn (uint32_t truncated_pn, uint8_t pn_length,
   uint64_t pn_mask;
   uint64_t candidate_pn;
 
+  /* Validate pn_length to prevent integer overflow in shift operation */
+  if (pn_length < QUIC_PACKET_NUMBER_MIN_LEN
+      || pn_length > QUIC_PACKET_NUMBER_MAX_LEN)
+    return 0;
+
   /* Calculate the expected packet number window */
   expected_pn = largest_pn + 1;
   pn_win = (uint64_t)1 << (pn_length * 8);
