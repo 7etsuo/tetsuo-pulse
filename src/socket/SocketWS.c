@@ -1375,6 +1375,126 @@ SocketWS_close (SocketWS_T ws, int code, const char *reason)
 }
 
 /**
+ * @brief Parse URL scheme and set default port.
+ * @internal
+ * @param[in,out] url Pointer to URL (updated to skip scheme)
+ * @param[out] use_tls TLS flag (1 for wss://, 0 for ws://)
+ * @param[out] port Default port (80 or 443)
+ * @return 0 on success, -1 on invalid scheme
+ */
+static int
+ws_parse_url_scheme (const char **url, int *use_tls, int *port)
+{
+  assert (url);
+  assert (*url);
+  assert (use_tls);
+  assert (port);
+
+  if (strncmp (*url, "wss://", 6) == 0)
+    {
+      *use_tls = 1;
+      *port = 443;
+      *url += 6;
+      return 0;
+    }
+  else if (strncmp (*url, "ws://", 5) == 0)
+    {
+      *use_tls = 0;
+      *port = 80;
+      *url += 5;
+      return 0;
+    }
+
+  SOCKET_ERROR_MSG ("Invalid WebSocket URL scheme (expected ws:// or wss://)");
+  return -1;
+}
+
+/**
+ * @brief Extract host and optional port from URL.
+ * @internal
+ * @param url URL without scheme
+ * @param[out] host Buffer for hostname (size NI_MAXHOST)
+ * @param[in,out] port Port number (updated if specified in URL)
+ * @return 0 on success, -1 on invalid port
+ */
+static int
+ws_parse_url_host_port (const char *url, char *host, int *port)
+{
+  assert (url);
+  assert (host);
+  assert (port);
+
+  const char *path_start = strchr (url, '/');
+  const char *port_start = strchr (url, ':');
+
+  /* Host with explicit port */
+  if (port_start && (!path_start || port_start < path_start))
+    {
+      size_t host_len = (size_t)(port_start - url);
+      if (host_len >= NI_MAXHOST)
+        host_len = NI_MAXHOST - 1;
+      strncpy (host, url, host_len);
+      host[host_len] = '\0';
+
+      char *endptr;
+      long p = strtol (port_start + 1, &endptr, 10);
+      if (endptr == port_start + 1 || p < 1 || p > 65535)
+        {
+          SOCKET_ERROR_MSG ("Invalid port in WebSocket URL");
+          return -1;
+        }
+      *port = (int)p;
+      return 0;
+    }
+
+  /* Host without port */
+  if (path_start)
+    {
+      size_t host_len = (size_t)(path_start - url);
+      if (host_len >= NI_MAXHOST)
+        host_len = NI_MAXHOST - 1;
+      strncpy (host, url, host_len);
+      host[host_len] = '\0';
+    }
+  else
+    {
+      strncpy (host, url, NI_MAXHOST - 1);
+      host[NI_MAXHOST - 1] = '\0';
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Extract path component from URL.
+ * @internal
+ * @param url URL without scheme
+ * @param[out] path Buffer for path (size 1024)
+ * @return 0 on success
+ */
+static int
+ws_parse_url_path (const char *url, char *path)
+{
+  assert (url);
+  assert (path);
+
+  const char *path_start = strchr (url, '/');
+
+  if (path_start)
+    {
+      strncpy (path, path_start, 1024 - 1);
+      path[1024 - 1] = '\0';
+    }
+  else
+    {
+      path[0] = '/';
+      path[1] = '\0';
+    }
+
+  return 0;
+}
+
+/**
  * @brief Parse WebSocket URL into host, port, path, and TLS flag.
  * @internal
  * @param url The WebSocket URL (ws:// or wss://)
@@ -1393,71 +1513,14 @@ ws_parse_url (const char *url, char *host, int *port, char *path, int *use_tls)
   assert (path);
   assert (use_tls);
 
-  /* Parse URL scheme: ws://host[:port][/path] or wss://... */
-  if (strncmp (url, "wss://", 6) == 0)
-    {
-      *use_tls = 1;
-      *port = 443;
-      url += 6;
-    }
-  else if (strncmp (url, "ws://", 5) == 0)
-    {
-      *use_tls = 0;
-      *port = 80;
-      url += 5;
-    }
-  else
-    {
-      SOCKET_ERROR_MSG ("Invalid WebSocket URL scheme (expected ws:// or wss://)");
-      return -1;
-    }
+  if (ws_parse_url_scheme (&url, use_tls, port) < 0)
+    return -1;
 
-  /* Extract host and path */
-  const char *path_start = strchr (url, '/');
-  const char *port_start = strchr (url, ':');
+  if (ws_parse_url_host_port (url, host, port) < 0)
+    return -1;
 
-  if (port_start && (!path_start || port_start < path_start))
-    {
-      size_t host_len = (size_t)(port_start - url);
-      if (host_len >= NI_MAXHOST)
-        host_len = NI_MAXHOST - 1;
-      strncpy (host, url, host_len);
-      host[host_len] = '\0';
-      {
-        char *endptr;
-        long p = strtol (port_start + 1, &endptr, 10);
-        if (endptr == port_start + 1 || p < 1 || p > 65535)
-          {
-            SOCKET_ERROR_MSG ("Invalid port in WebSocket URL");
-            return -1;
-          }
-        *port = (int)p;
-      }
-    }
-  else if (path_start)
-    {
-      size_t host_len = (size_t)(path_start - url);
-      if (host_len >= NI_MAXHOST)
-        host_len = NI_MAXHOST - 1;
-      strncpy (host, url, host_len);
-      host[host_len] = '\0';
-    }
-  else
-    {
-      strncpy (host, url, NI_MAXHOST - 1);
-      host[NI_MAXHOST - 1] = '\0';
-    }
-
-  if (path_start)
-    {
-      strncpy (path, path_start, 1024 - 1);
-      path[1024 - 1] = '\0';
-    }
-  else
-    {
-      path[0] = '/';
-      path[1] = '\0';
-    }
+  if (ws_parse_url_path (url, path) < 0)
+    return -1;
 
   return 0;
 }
