@@ -204,12 +204,32 @@ def check_issue(owner: str, repo: str, issue_num: int) -> tuple[bool, str]:
     return True, "Available"
 
 
+def verify_claim(owner: str, repo: str, issue_num: int, expected_label: str) -> tuple[bool, str]:
+    """
+    Verify that an issue has a specific claim label (from orchestrator).
+
+    Returns:
+        (success, message) where success is True if the expected label is present
+    """
+    labels = get_issue_labels(owner, repo, issue_num)
+    wip_label = get_wip_label(labels)
+
+    if not wip_label:
+        return False, "No claim found"
+
+    if wip_label == expected_label:
+        return True, f"Verified: {wip_label}"
+
+    return False, f"Different claim: {wip_label} (expected {expected_label})"
+
+
 def main():
     parser = argparse.ArgumentParser(description="Claim/release GitHub issues using labels")
     parser.add_argument("--repo", required=True, help="Repository (owner/repo)")
     parser.add_argument("--issue", type=int, required=True, help="Issue number")
-    parser.add_argument("--action", required=True, choices=["claim", "release", "check"],
+    parser.add_argument("--action", required=True, choices=["claim", "release", "check", "verify"],
                         help="Action to perform")
+    parser.add_argument("--expected-label", help="Expected wip label (for verify action)")
     args = parser.parse_args()
 
     try:
@@ -232,6 +252,14 @@ def main():
         available, message = check_issue(owner, repo, args.issue)
         print(message)
         sys.exit(0 if available else 1)
+
+    elif args.action == "verify":
+        if not args.expected_label:
+            log_error("--expected-label required for verify action")
+            sys.exit(2)
+        success, message = verify_claim(owner, repo, args.issue, args.expected_label)
+        print(message)
+        sys.exit(0 if success else 1)
 
 
 if __name__ == "__main__":
