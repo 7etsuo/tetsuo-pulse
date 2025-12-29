@@ -706,6 +706,79 @@ validate_response_question (const unsigned char *response, size_t len,
  */
 
 static int
+parse_answer_rr (struct SocketDNSResolver_Query *q,
+                 const unsigned char *response, size_t len,
+                 const SocketDNS_RR *rr)
+{
+  char cname_target[DNS_MAX_NAME_LEN] = { 0 };
+
+  /* Handle CNAME */
+  if (rr->type == DNS_TYPE_CNAME)
+    {
+      if (SocketDNS_rdata_parse_cname (response, len, rr, cname_target,
+                                       sizeof (cname_target))
+          < 0)
+        return RESOLVER_OK; /* Skip invalid CNAME */
+
+      /* Check CNAME depth */
+      if (q->cname_depth >= RESOLVER_MAX_CNAME_DEPTH)
+        return RESOLVER_ERROR_CNAME_LOOP;
+
+      /* Validate CNAME target length before copy */
+      if (strlen (cname_target) >= DNS_MAX_NAME_LEN)
+        return RESOLVER_ERROR_INVALID;
+
+      /* Store CNAME target for re-query */
+      snprintf (q->current_name, DNS_MAX_NAME_LEN, "%s", cname_target);
+      q->cname_depth++;
+      q->state = QUERY_STATE_CNAME;
+      return RESOLVER_OK; /* Will trigger re-query */
+    }
+
+  /* Handle A record */
+  if (rr->type == DNS_TYPE_A && q->address_count < RESOLVER_MAX_ADDRESSES)
+    {
+      /* Bailiwick check: skip out-of-zone records (RFC 5452) */
+      if (!SocketDNS_name_in_bailiwick (rr->name, q->hostname))
+        return RESOLVER_OK;
+
+      struct in_addr addr;
+      if (SocketDNS_rdata_parse_a (rr, &addr) == 0)
+        {
+          uint32_t capped_ttl = cap_ttl (rr->ttl);
+          q->addresses[q->address_count].family = AF_INET;
+          q->addresses[q->address_count].addr.v4 = addr;
+          q->addresses[q->address_count].ttl = capped_ttl;
+          if (q->min_ttl == 0 || capped_ttl < q->min_ttl)
+            q->min_ttl = capped_ttl;
+          q->address_count++;
+        }
+    }
+
+  /* Handle AAAA record */
+  if (rr->type == DNS_TYPE_AAAA && q->address_count < RESOLVER_MAX_ADDRESSES)
+    {
+      /* Bailiwick check: skip out-of-zone records (RFC 5452) */
+      if (!SocketDNS_name_in_bailiwick (rr->name, q->hostname))
+        return RESOLVER_OK;
+
+      struct in6_addr addr;
+      if (SocketDNS_rdata_parse_aaaa (rr, &addr) == 0)
+        {
+          uint32_t capped_ttl = cap_ttl (rr->ttl);
+          q->addresses[q->address_count].family = AF_INET6;
+          q->addresses[q->address_count].addr.v6 = addr;
+          q->addresses[q->address_count].ttl = capped_ttl;
+          if (q->min_ttl == 0 || capped_ttl < q->min_ttl)
+            q->min_ttl = capped_ttl;
+          q->address_count++;
+        }
+    }
+
+  return RESOLVER_OK;
+}
+
+static int
 parse_response (T resolver, struct SocketDNSResolver_Query *q,
                 const unsigned char *response, size_t len)
 {
@@ -714,7 +787,6 @@ parse_response (T resolver, struct SocketDNSResolver_Query *q,
   SocketDNS_RR rr;
   size_t offset;
   size_t consumed;
-  char cname_target[DNS_MAX_NAME_LEN] = { 0 };
 
   (void)resolver; /* Currently unused - reserved for future caching extensions */
 
@@ -771,68 +843,9 @@ parse_response (T resolver, struct SocketDNSResolver_Query *q,
         return RESOLVER_ERROR_INVALID;
       offset += consumed;
 
-      /* Handle CNAME */
-      if (rr.type == DNS_TYPE_CNAME)
-        {
-          if (SocketDNS_rdata_parse_cname (response, len, &rr, cname_target,
-                                           sizeof (cname_target))
-              < 0)
-            continue;
-
-          /* Check CNAME depth */
-          if (q->cname_depth >= RESOLVER_MAX_CNAME_DEPTH)
-            return RESOLVER_ERROR_CNAME_LOOP;
-
-          /* Validate CNAME target length before copy */
-          if (strlen (cname_target) >= DNS_MAX_NAME_LEN)
-            return RESOLVER_ERROR_INVALID;
-
-          /* Store CNAME target for re-query */
-          snprintf (q->current_name, DNS_MAX_NAME_LEN, "%s", cname_target);
-          q->cname_depth++;
-          q->state = QUERY_STATE_CNAME;
-          return RESOLVER_OK; /* Will trigger re-query */
-        }
-
-      /* Handle A record */
-      if (rr.type == DNS_TYPE_A && q->address_count < RESOLVER_MAX_ADDRESSES)
-        {
-          /* Bailiwick check: skip out-of-zone records (RFC 5452) */
-          if (!SocketDNS_name_in_bailiwick (rr.name, q->hostname))
-            continue;
-
-          struct in_addr addr;
-          if (SocketDNS_rdata_parse_a (&rr, &addr) == 0)
-            {
-              uint32_t capped_ttl = cap_ttl (rr.ttl);
-              q->addresses[q->address_count].family = AF_INET;
-              q->addresses[q->address_count].addr.v4 = addr;
-              q->addresses[q->address_count].ttl = capped_ttl;
-              if (q->min_ttl == 0 || capped_ttl < q->min_ttl)
-                q->min_ttl = capped_ttl;
-              q->address_count++;
-            }
-        }
-
-      /* Handle AAAA record */
-      if (rr.type == DNS_TYPE_AAAA && q->address_count < RESOLVER_MAX_ADDRESSES)
-        {
-          /* Bailiwick check: skip out-of-zone records (RFC 5452) */
-          if (!SocketDNS_name_in_bailiwick (rr.name, q->hostname))
-            continue;
-
-          struct in6_addr addr;
-          if (SocketDNS_rdata_parse_aaaa (&rr, &addr) == 0)
-            {
-              uint32_t capped_ttl = cap_ttl (rr.ttl);
-              q->addresses[q->address_count].family = AF_INET6;
-              q->addresses[q->address_count].addr.v6 = addr;
-              q->addresses[q->address_count].ttl = capped_ttl;
-              if (q->min_ttl == 0 || capped_ttl < q->min_ttl)
-                q->min_ttl = capped_ttl;
-              q->address_count++;
-            }
-        }
+      int result = parse_answer_rr (q, response, len, &rr);
+      if (result != RESOLVER_OK)
+        return result;
     }
 
   return RESOLVER_OK;
