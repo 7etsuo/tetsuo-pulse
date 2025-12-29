@@ -3235,9 +3235,12 @@ thread_validation_getter (void *arg)
   {
     atomic_store_explicit (&ctx->thread_error, 1, memory_order_relaxed);
   }
+  FINALLY
+  {
+    atomic_store_explicit (&ctx->stop, 1, memory_order_release);
+  }
   END_TRY;
 
-  atomic_store_explicit (&ctx->stop, 1, memory_order_release);
   return NULL;
 }
 
