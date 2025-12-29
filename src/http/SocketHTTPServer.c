@@ -451,13 +451,14 @@ server_process_tls_handshake (SocketHTTPServer_T server, ServerConnection *conn,
       if (alpn != NULL && strcmp (alpn, "h2") == 0
           && server->config.max_version >= HTTP_VERSION_2)
         {
-          conn->is_http2 = 1;
-          conn->state = CONN_STATE_HTTP2;
+          /* Enable HTTP/2 - use early return to reduce nesting. */
           if (server_http2_enable (server, conn) < 0)
             {
               conn->state = CONN_STATE_CLOSED;
               return -1;
             }
+          conn->is_http2 = 1;
+          conn->state = CONN_STATE_HTTP2;
           SocketPoll_mod (server->poll, conn->socket, POLL_READ | POLL_WRITE, conn);
         }
       else
