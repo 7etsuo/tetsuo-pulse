@@ -114,14 +114,8 @@ struct T
 const Except_T SocketDNSoverHTTPS_Failed
     = { &SocketDNSoverHTTPS_Failed, "DNS-over-HTTPS operation failed" };
 
-/* Get monotonic time in milliseconds */
-static int64_t
-get_monotonic_ms (void)
-{
-  struct timespec ts;
-  clock_gettime (CLOCK_MONOTONIC, &ts);
-  return (int64_t)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
-}
+/* Use centralized monotonic time utility from SocketUtil.h */
+#define get_monotonic_ms() Socket_get_monotonic_ms()
 
 /**
  * Convert standard Base64 to Base64URL (RFC 4648 Section 5).
