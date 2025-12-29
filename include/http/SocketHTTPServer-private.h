@@ -288,6 +288,12 @@ void connection_free_pending (SocketHTTPServer_T server);
 int server_run_validator_early (SocketHTTPServer_T server,
                                 ServerConnection *conn);
 
+/* Static file serving (SocketHTTPServer-static.c) */
+StaticRoute *server_find_static_route (SocketHTTPServer_T server,
+                                       const char *path);
+int server_serve_static_file (SocketHTTPServer_T server, ServerConnection *conn,
+                              StaticRoute *route, const char *file_path);
+
 /*
  * Response state accessors - abstract HTTP/1.1 vs HTTP/2 path selection.
  * These inline helpers eliminate dual-path conditionals in response API.
