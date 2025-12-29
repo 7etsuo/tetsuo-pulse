@@ -73,6 +73,9 @@ struct SocketDNSResolver_Query
   unsigned char query_msg[MAX_QUERY_MESSAGE_SIZE];
   size_t query_len;
 
+  /* Back-pointer to resolver (for transport callback) */
+  T resolver;
+
   /* List pointers */
   struct SocketDNSResolver_Query *hash_next;
   struct SocketDNSResolver_Query *list_next;
@@ -691,7 +694,7 @@ parse_response (T resolver, struct SocketDNSResolver_Query *q,
   size_t consumed;
   char cname_target[DNS_MAX_NAME_LEN] = { 0 };
 
-  (void)resolver; /* unused - may be used for caching in future */
+  (void)resolver; /* Currently unused - reserved for future caching extensions */
 
   /* Decode header */
   if (SocketDNS_header_decode (response, len, &header) != 0)
@@ -822,16 +825,15 @@ transport_callback (SocketDNSQuery_T query, const unsigned char *response,
                     size_t len, int error, void *userdata)
 {
   struct SocketDNSResolver_Query *q = userdata;
-  T resolver = NULL;
+  T resolver;
+  int parse_result;
 
-  /* We need the resolver to find q in our list */
-  /* The query struct contains a pointer back to us via the list */
-  /* For now, store resolver in a way we can access it */
-  /* This is a limitation - we'll use a global or embed resolver ptr in query */
   (void)query;
 
   if (!q)
     return;
+
+  resolver = q->resolver; /* Use back-pointer */
 
   /* Handle transport errors */
   if (error != DNS_ERROR_SUCCESS)
@@ -842,156 +844,29 @@ transport_callback (SocketDNSQuery_T query, const unsigned char *response,
           /* TCP fallback - resend via TCP */
           q->state = QUERY_STATE_TCP_FALLBACK;
           q->is_tcp = 1;
-          /* Will be handled in process() */
           return;
         default:
           /* All other errors cause failure */
           q->state = QUERY_STATE_FAILED;
-          /* Callback will be fired in process() */
           return;
         }
     }
 
-  /* Parse response */
-  /* We need the resolver for cache - store it in query */
-  /* For now, just parse without caching */
-  int parse_result = RESOLVER_OK;
+  /* Parse response using shared parsing logic */
   if (response && len > 0)
     {
-      /* Quick header check for RCODE */
-      SocketDNS_Header header;
-      if (SocketDNS_header_decode (response, len, &header) == 0)
+      parse_result = parse_response (resolver, q, response, len);
+
+      if (parse_result == RESOLVER_OK && q->state == QUERY_STATE_CNAME)
         {
-          if (header.tc)
-            {
-              /* Truncated - need TCP fallback */
-              q->state = QUERY_STATE_TCP_FALLBACK;
-              q->is_tcp = 1;
-              return;
-            }
-
-          /* Check RCODE in header */
-          switch (header.rcode)
-            {
-            case DNS_RCODE_NOERROR:
-              break;
-            case DNS_RCODE_NXDOMAIN:
-              q->state = QUERY_STATE_FAILED;
-              return;
-            case DNS_RCODE_SERVFAIL:
-              q->state = QUERY_STATE_FAILED;
-              return;
-            case DNS_RCODE_REFUSED:
-              q->state = QUERY_STATE_FAILED;
-              return;
-            default:
-              break;
-            }
-        }
-
-      /* Full parse will be done in process() when we have resolver context */
-      /* Store response temporarily - but we can't, so parse now */
-      /* Actually, let's parse inline */
-      SocketDNS_Question question;
-      SocketDNS_RR rr;
-      size_t offset;
-      size_t consumed;
-      char cname_target[DNS_MAX_NAME_LEN] = { 0 };
-
-      if (SocketDNS_header_decode (response, len, &header) != 0)
-        {
-          q->state = QUERY_STATE_FAILED;
+          /* CNAME re-query needed */
           return;
         }
 
-      /* Skip question section */
-      offset = DNS_HEADER_SIZE;
-      for (int i = 0; i < header.qdcount; i++)
+      if (parse_result != RESOLVER_OK)
         {
-          if (SocketDNS_question_decode (response, len, offset, &question,
-                                         &consumed)
-              != 0)
-            {
-              q->state = QUERY_STATE_FAILED;
-              return;
-            }
-          offset += consumed;
-        }
-
-      /* Parse answer section */
-      for (int i = 0; i < header.ancount; i++)
-        {
-          if (SocketDNS_rr_decode (response, len, offset, &rr, &consumed) != 0)
-            break;
-          offset += consumed;
-
-          /* Handle CNAME */
-          if (rr.type == DNS_TYPE_CNAME)
-            {
-              if (SocketDNS_rdata_parse_cname (response, len, &rr, cname_target,
-                                               sizeof (cname_target))
-                  >= 0)
-                {
-                  if (q->cname_depth >= RESOLVER_MAX_CNAME_DEPTH)
-                    {
-                      q->state = QUERY_STATE_FAILED;
-                      return;
-                    }
-                  /* Validate CNAME target length before copy */
-                  if (strlen (cname_target) >= DNS_MAX_NAME_LEN)
-                    {
-                      q->state = QUERY_STATE_FAILED;
-                      return;
-                    }
-                  snprintf (q->current_name, DNS_MAX_NAME_LEN, "%s",
-                            cname_target);
-                  q->cname_depth++;
-                  q->state = QUERY_STATE_CNAME;
-                  return;
-                }
-            }
-
-          /* Handle A record */
-          if (rr.type == DNS_TYPE_A
-              && q->address_count < RESOLVER_MAX_ADDRESSES)
-            {
-              /* Bailiwick check: skip out-of-zone records (RFC 5452) */
-              if (!SocketDNS_name_in_bailiwick (rr.name, q->hostname))
-                continue;
-
-              struct in_addr addr;
-              if (SocketDNS_rdata_parse_a (&rr, &addr) == 0)
-                {
-                  uint32_t capped_ttl = cap_ttl (rr.ttl);
-                  q->addresses[q->address_count].family = AF_INET;
-                  q->addresses[q->address_count].addr.v4 = addr;
-                  q->addresses[q->address_count].ttl = capped_ttl;
-                  if (q->min_ttl == 0 || capped_ttl < q->min_ttl)
-                    q->min_ttl = capped_ttl;
-                  q->address_count++;
-                }
-            }
-
-          /* Handle AAAA record */
-          if (rr.type == DNS_TYPE_AAAA
-              && q->address_count < RESOLVER_MAX_ADDRESSES)
-            {
-              /* Bailiwick check: skip out-of-zone records (RFC 5452) */
-              if (!SocketDNS_name_in_bailiwick (rr.name, q->hostname))
-                continue;
-
-              struct in6_addr addr;
-              if (SocketDNS_rdata_parse_aaaa (&rr, &addr) == 0)
-                {
-                  uint32_t capped_ttl = cap_ttl (rr.ttl);
-                  q->addresses[q->address_count].family = AF_INET6;
-                  q->addresses[q->address_count].addr.v6 = addr;
-                  q->addresses[q->address_count].ttl = capped_ttl;
-                  if (q->min_ttl == 0 || capped_ttl < q->min_ttl)
-                    q->min_ttl = capped_ttl;
-                  q->address_count++;
-                }
-            }
+          q->state = QUERY_STATE_FAILED;
+          return;
         }
     }
 
@@ -1436,6 +1311,7 @@ SocketDNSResolver_resolve (T resolver, const char *hostname, int flags,
   q->state = QUERY_STATE_INIT;
   q->callback = callback;
   q->userdata = userdata;
+  q->resolver = resolver; /* Set back-pointer for transport callback */
 
   /* Add to pending list */
   query_list_add (resolver, q);
