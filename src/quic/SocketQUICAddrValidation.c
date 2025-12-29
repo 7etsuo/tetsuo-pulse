@@ -161,6 +161,115 @@ SocketQUICAddrValidation_mark_validated (
  * ============================================================================
  */
 
+/**
+ * @brief Validate token format and size.
+ *
+ * @param[in] token Token buffer.
+ * @param[in] token_len Token length.
+ * @return QUIC_ADDR_VALIDATION_OK if valid, error code otherwise.
+ */
+static SocketQUICAddrValidation_Result
+validate_token_format (const uint8_t *token, size_t token_len)
+{
+  if (!token)
+    {
+      return QUIC_ADDR_VALIDATION_ERROR_NULL;
+    }
+
+  if (token_len != QUIC_ADDR_VALIDATION_TOKEN_SIZE)
+    {
+      return QUIC_ADDR_VALIDATION_ERROR_INVALID;
+    }
+
+  return QUIC_ADDR_VALIDATION_OK;
+}
+
+/**
+ * @brief Check if token has expired.
+ *
+ * @param[in] token_timestamp Timestamp from token.
+ * @return QUIC_ADDR_VALIDATION_OK if not expired, error code otherwise.
+ */
+static SocketQUICAddrValidation_Result
+check_token_expiration (uint64_t token_timestamp)
+{
+  uint64_t current_time;
+
+  current_time = (uint64_t)Socket_get_monotonic_ms ();
+  if (current_time > token_timestamp
+      && (current_time - token_timestamp)
+             > (QUIC_ADDR_VALIDATION_TOKEN_LIFETIME * SOCKET_MS_PER_SECOND))
+    {
+      return QUIC_ADDR_VALIDATION_ERROR_EXPIRED;
+    }
+
+  return QUIC_ADDR_VALIDATION_OK;
+}
+
+/**
+ * @brief Verify token address hash matches current address.
+ *
+ * @param[in] token Token buffer.
+ * @param[in] addr Current socket address.
+ * @return QUIC_ADDR_VALIDATION_OK if match, error code otherwise.
+ */
+static SocketQUICAddrValidation_Result
+verify_token_address (const uint8_t *token, const struct sockaddr *addr)
+{
+  uint8_t addr_hash[16];
+
+  hash_address (addr, addr_hash);
+
+  if (SocketCrypto_secure_compare (token + 8, addr_hash, 16) != 0)
+    {
+      return QUIC_ADDR_VALIDATION_ERROR_INVALID;
+    }
+
+  return QUIC_ADDR_VALIDATION_OK;
+}
+
+/**
+ * @brief Compute and verify token HMAC.
+ *
+ * @param[in] token Token buffer.
+ * @param[in] token_timestamp Timestamp from token.
+ * @param[in] addr Socket address.
+ * @param[in] secret HMAC secret key.
+ * @return QUIC_ADDR_VALIDATION_OK if valid, error code otherwise.
+ */
+static SocketQUICAddrValidation_Result
+compute_and_verify_token_hmac (const uint8_t *token, uint64_t token_timestamp,
+                                const struct sockaddr *addr,
+                                const uint8_t *secret)
+{
+  uint8_t addr_hash[16];
+  uint8_t hmac_input[QUIC_TOKEN_HMAC_INPUT_SIZE];
+  unsigned char hmac_output[SOCKET_CRYPTO_SHA256_SIZE];
+
+  hash_address (addr, addr_hash);
+
+  socket_util_pack_be64 (hmac_input, token_timestamp);
+  memcpy (hmac_input + 8, addr_hash, 16);
+
+  TRY
+  {
+    SocketCrypto_hmac_sha256 (secret, 32, hmac_input,
+                              QUIC_TOKEN_HMAC_INPUT_SIZE, hmac_output);
+  }
+  EXCEPT (SocketCrypto_Failed)
+  {
+    return QUIC_ADDR_VALIDATION_ERROR_CRYPTO;
+  }
+  END_TRY;
+
+  if (SocketCrypto_secure_compare (token + 24, hmac_output, 32) != 0)
+    {
+      return QUIC_ADDR_VALIDATION_ERROR_INVALID;
+    }
+
+  return QUIC_ADDR_VALIDATION_OK;
+}
+
 SocketQUICAddrValidation_Result
 SocketQUICAddrValidation_generate_token (const struct sockaddr *addr,
                                           const uint8_t *secret,
@@ -220,65 +329,44 @@ SocketQUICAddrValidation_validate_token (const uint8_t *token,
                                           const struct sockaddr *addr,
                                           const uint8_t *secret)
 {
-  uint8_t addr_hash[16];
-  uint8_t hmac_input[QUIC_TOKEN_HMAC_INPUT_SIZE];
-  unsigned char hmac_output[SOCKET_CRYPTO_SHA256_SIZE];
+  SocketQUICAddrValidation_Result result;
   uint64_t token_timestamp;
-  uint64_t current_time;
 
   /* Validate inputs */
-  if (!token || !addr || !secret)
+  if (!addr || !secret)
     {
       return QUIC_ADDR_VALIDATION_ERROR_NULL;
     }
 
-  /* Check token size */
-  if (token_len != QUIC_ADDR_VALIDATION_TOKEN_SIZE)
+  /* Validate token format */
+  result = validate_token_format (token, token_len);
+  if (result != QUIC_ADDR_VALIDATION_OK)
     {
-      return QUIC_ADDR_VALIDATION_ERROR_INVALID;
+      return result;
     }
 
   /* Extract timestamp */
   token_timestamp = socket_util_unpack_be64 (token);
 
-  /* Check expiration */
-  current_time = (uint64_t)Socket_get_monotonic_ms ();
-  if (current_time > token_timestamp
-      && (current_time - token_timestamp)
-             > (QUIC_ADDR_VALIDATION_TOKEN_LIFETIME * SOCKET_MS_PER_SECOND))
+  /* Check token expiration */
+  result = check_token_expiration (token_timestamp);
+  if (result != QUIC_ADDR_VALIDATION_OK)
     {
-      return QUIC_ADDR_VALIDATION_ERROR_EXPIRED;
+      return result;
     }
 
-  /* Hash current address */
-  hash_address (addr, addr_hash);
-
-  /* Verify address hash matches */
-  if (SocketCrypto_secure_compare (token + 8, addr_hash, 16) != 0)
+  /* Verify address match */
+  result = verify_token_address (token, addr);
+  if (result != QUIC_ADDR_VALIDATION_OK)
     {
-      return QUIC_ADDR_VALIDATION_ERROR_INVALID;
+      return result;
     }
 
-  /* Rebuild HMAC input */
-  socket_util_pack_be64 (hmac_input, token_timestamp);
-  memcpy (hmac_input + 8, addr_hash, 16);
-
-  /* Compute expected HMAC */
-  TRY
-  {
-    SocketCrypto_hmac_sha256 (secret, 32, hmac_input, QUIC_TOKEN_HMAC_INPUT_SIZE,
-                              hmac_output);
-  }
-  EXCEPT (SocketCrypto_Failed)
-  {
-    return QUIC_ADDR_VALIDATION_ERROR_CRYPTO;
-  }
-  END_TRY;
-
-  /* Verify HMAC matches (constant-time) */
-  if (SocketCrypto_secure_compare (token + 24, hmac_output, 32) != 0)
+  /* Verify HMAC */
+  result = compute_and_verify_token_hmac (token, token_timestamp, addr, secret);
+  if (result != QUIC_ADDR_VALIDATION_OK)
     {
-      return QUIC_ADDR_VALIDATION_ERROR_INVALID;
+      return result;
     }
 
   return QUIC_ADDR_VALIDATION_OK;
