@@ -809,6 +809,7 @@ set(TEST_SOURCES
     test_quic_stream_frame_encode
     test_quic_new_token_frame
     test_quic_path_frame
+    test_quic_frame_close
     test_quic_connection
     test_quic_transport_params
     test_quic_pmtu

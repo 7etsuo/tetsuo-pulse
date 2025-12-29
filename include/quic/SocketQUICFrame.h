@@ -22,6 +22,11 @@
 #define QUIC_PATH_DATA_SIZE 8
 #define QUIC_PATH_FRAME_SIZE (1 + QUIC_PATH_DATA_SIZE)
 
+/* CONNECTION_CLOSE reason phrase maximum length (RFC 9000 §19.19).
+ * While the RFC doesn't mandate a specific limit, we enforce a reasonable
+ * maximum to prevent DoS via extremely long reason strings. */
+#define QUIC_REASON_MAX_LENGTH 1024
+
 /* Conservative buffer size estimates for QUIC frame encoding.
  * These assume maximum varint encoding (8 bytes) for all variable-length fields.
  * Used for pre-flight buffer size checks in frame encoding functions.
