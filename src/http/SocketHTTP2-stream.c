@@ -157,6 +157,36 @@ get_initiated_count (SocketHTTP2_Conn_T conn, int is_local)
 }
 
 /**
+ * Helper function to check a TimeWindow limit and log security warnings.
+ *
+ * @param window Pointer to the TimeWindow to check
+ * @param threshold Maximum allowed count within the window
+ * @param now_ms Current time in milliseconds
+ * @param limit_name Description of the limit being checked (for logging)
+ * @param extra_msg Additional message to append to the warning (can be NULL)
+ * @return 0 if within limit, -1 if limit exceeded
+ */
+static int
+check_time_window_limit (TimeWindow_T *window, uint32_t threshold,
+                         int64_t now_ms, const char *limit_name,
+                         const char *extra_msg)
+{
+  uint32_t effective_count = TimeWindow_effective_count (window, now_ms);
+
+  if (effective_count >= threshold)
+    {
+      SOCKET_LOG_WARN_MSG ("SECURITY: HTTP/2 %s limit exceeded: "
+                           "%" PRIu32 " >= %" PRIu32 " in %" PRId64 " ms%s",
+                           limit_name, effective_count, threshold,
+                           window->duration_ms,
+                           extra_msg ? extra_msg : "");
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
  * Check sliding window stream creation rate limits.
  *
  * Implements CVE-2023-44487 (HTTP/2 Rapid Reset Attack) protection using
@@ -173,38 +203,25 @@ http2_stream_rate_check (SocketHTTP2_Conn_T conn)
   int64_t now_ms = Socket_get_monotonic_ms ();
 
   /* Check sliding window: total creations over window period */
-  uint32_t window_count = TimeWindow_effective_count (&conn->stream_create_window, now_ms);
-  if (window_count >= conn->stream_max_per_window)
-    {
-      SOCKET_LOG_WARN_MSG ("SECURITY: HTTP/2 stream creation window limit exceeded: "
-                           "%" PRIu32 " >= %" PRIu32 " in %" PRId64 " ms - potential DoS attack",
-                           window_count, conn->stream_max_per_window,
-                           conn->stream_create_window.duration_ms);
-      return -1;
-    }
+  if (check_time_window_limit (&conn->stream_create_window,
+                                conn->stream_max_per_window, now_ms,
+                                "stream creation window",
+                                " - potential DoS attack") < 0)
+    return -1;
 
   /* Check burst: short-term rate spike detection */
-  uint32_t burst_count = TimeWindow_effective_count (&conn->stream_burst_window, now_ms);
-  if (burst_count >= conn->stream_burst_threshold)
-    {
-      SOCKET_LOG_WARN_MSG ("SECURITY: HTTP/2 stream creation burst detected: "
-                           "%" PRIu32 " >= %" PRIu32 " in %" PRId64 " ms - potential DoS attack",
-                           burst_count, conn->stream_burst_threshold,
-                           conn->stream_burst_window.duration_ms);
-      return -1;
-    }
+  if (check_time_window_limit (&conn->stream_burst_window,
+                                conn->stream_burst_threshold, now_ms,
+                                "stream creation burst",
+                                " - potential DoS attack") < 0)
+    return -1;
 
   /* Check churn: rapid create+close cycles (CVE-2023-44487 specific) */
-  uint32_t churn_count = TimeWindow_effective_count (&conn->stream_churn_window, now_ms);
-  if (churn_count >= conn->stream_churn_threshold)
-    {
-      SOCKET_LOG_WARN_MSG ("SECURITY: HTTP/2 stream churn limit exceeded: "
-                           "%" PRIu32 " >= %" PRIu32 " in %" PRId64 " ms - "
-                           "CVE-2023-44487 Rapid Reset Attack detected",
-                           churn_count, conn->stream_churn_threshold,
-                           conn->stream_churn_window.duration_ms);
-      return -1;
-    }
+  if (check_time_window_limit (&conn->stream_churn_window,
+                                conn->stream_churn_threshold, now_ms,
+                                "stream churn",
+                                " - CVE-2023-44487 Rapid Reset Attack detected") < 0)
+    return -1;
 
   return 0;
 }
