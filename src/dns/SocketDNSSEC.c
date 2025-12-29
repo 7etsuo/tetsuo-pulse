@@ -1357,6 +1357,13 @@ SocketDNSSEC_validator_free (SocketDNSSEC_Validator_T *validator)
       while (a)
         {
           SocketDNSSEC_TrustAnchor *next = a->next;
+
+          /* Free embedded data pointers */
+          if (a->type == TRUST_ANCHOR_DNSKEY && a->data.dnskey.pubkey != NULL)
+            free ((void *)a->data.dnskey.pubkey);
+          else if (a->type == TRUST_ANCHOR_DS && a->data.ds.digest != NULL)
+            free ((void *)a->data.ds.digest);
+
           free (a);
           a = next;
         }
@@ -1393,6 +1400,171 @@ SocketDNSSEC_validator_add_anchor (SocketDNSSEC_Validator_T validator,
   return 0;
 }
 
+/*
+ * Base64 decoder for trust anchor parsing
+ */
+static int
+base64_decode (const char *input, unsigned char *output, size_t *output_len,
+               size_t max_output)
+{
+  static const unsigned char decode_table[256] = {
+      ['A'] = 0,  ['B'] = 1,  ['C'] = 2,  ['D'] = 3,  ['E'] = 4,  ['F'] = 5,
+      ['G'] = 6,  ['H'] = 7,  ['I'] = 8,  ['J'] = 9,  ['K'] = 10, ['L'] = 11,
+      ['M'] = 12, ['N'] = 13, ['O'] = 14, ['P'] = 15, ['Q'] = 16, ['R'] = 17,
+      ['S'] = 18, ['T'] = 19, ['U'] = 20, ['V'] = 21, ['W'] = 22, ['X'] = 23,
+      ['Y'] = 24, ['Z'] = 25, ['a'] = 26, ['b'] = 27, ['c'] = 28, ['d'] = 29,
+      ['e'] = 30, ['f'] = 31, ['g'] = 32, ['h'] = 33, ['i'] = 34, ['j'] = 35,
+      ['k'] = 36, ['l'] = 37, ['m'] = 38, ['n'] = 39, ['o'] = 40, ['p'] = 41,
+      ['q'] = 42, ['r'] = 43, ['s'] = 44, ['t'] = 45, ['u'] = 46, ['v'] = 47,
+      ['w'] = 48, ['x'] = 49, ['y'] = 50, ['z'] = 51, ['0'] = 52, ['1'] = 53,
+      ['2'] = 54, ['3'] = 55, ['4'] = 56, ['5'] = 57, ['6'] = 58, ['7'] = 59,
+      ['8'] = 60, ['9'] = 61, ['+'] = 62, ['/'] = 63,
+  };
+
+  size_t i = 0;
+  size_t j = 0;
+  size_t len = strlen (input);
+
+  while (i < len)
+    {
+      /* Skip whitespace */
+      if (isspace ((unsigned char)input[i]))
+        {
+          i++;
+          continue;
+        }
+
+      /* Padding or end */
+      if (input[i] == '=' || input[i] == '\0')
+        break;
+
+      /* Decode 4 input chars to 3 output bytes */
+      if (i + 3 >= len)
+        break;
+
+      unsigned char a = decode_table[(unsigned char)input[i]];
+      unsigned char b = decode_table[(unsigned char)input[i + 1]];
+      unsigned char c = decode_table[(unsigned char)input[i + 2]];
+      unsigned char d = decode_table[(unsigned char)input[i + 3]];
+
+      if (j + 3 > max_output)
+        return -1;
+
+      output[j++] = (a << 2) | (b >> 4);
+      output[j++] = (b << 4) | (c >> 2);
+      output[j++] = (c << 6) | d;
+
+      i += 4;
+    }
+
+  *output_len = j;
+  return 0;
+}
+
+/*
+ * Parse DNSKEY from BIND format: flags protocol algorithm base64key
+ */
+static int
+parse_bind_dnskey (const char *zone, const char *fields[], int field_count,
+                   SocketDNSSEC_TrustAnchor *anchor,
+                   unsigned char *key_buffer, size_t key_buffer_size)
+{
+  if (field_count < 7)
+    return -1;
+
+  /* fields[3] = flags, fields[4] = protocol, fields[5] = algorithm,
+   * fields[6] = base64 key */
+  unsigned long flags = strtoul (fields[3], NULL, 10);
+  unsigned long protocol = strtoul (fields[4], NULL, 10);
+  unsigned long algorithm = strtoul (fields[5], NULL, 10);
+
+  if (flags > 65535 || protocol > 255 || algorithm > 255)
+    return -1;
+
+  /* Decode base64 public key */
+  size_t pubkey_len = 0;
+  if (base64_decode (fields[6], key_buffer, &pubkey_len, key_buffer_size) != 0)
+    return -1;
+
+  /* Build DNSKEY RDATA for key tag calculation */
+  unsigned char rdata[4 + 2048];
+  if (pubkey_len + 4 > sizeof (rdata))
+    return -1;
+
+  rdata[0] = (unsigned char)((flags >> 8) & 0xFF);
+  rdata[1] = (unsigned char)(flags & 0xFF);
+  rdata[2] = (unsigned char)protocol;
+  rdata[3] = (unsigned char)algorithm;
+  memcpy (rdata + 4, key_buffer, pubkey_len);
+
+  /* Fill anchor structure */
+  socket_util_safe_strncpy (anchor->zone, zone, sizeof (anchor->zone));
+  anchor->type = TRUST_ANCHOR_DNSKEY;
+  anchor->data.dnskey.flags = (uint16_t)flags;
+  anchor->data.dnskey.protocol = (uint8_t)protocol;
+  anchor->data.dnskey.algorithm = (uint8_t)algorithm;
+  anchor->data.dnskey.pubkey = NULL; /* Will be allocated by caller */
+  anchor->data.dnskey.pubkey_len = (uint16_t)pubkey_len;
+  anchor->data.dnskey.key_tag
+      = SocketDNSSEC_calculate_keytag (rdata, 4 + pubkey_len);
+
+  return 0;
+}
+
+/*
+ * Parse DS from BIND format: keytag algorithm digesttype digest
+ */
+static int
+parse_bind_ds (const char *zone, const char *fields[], int field_count,
+               SocketDNSSEC_TrustAnchor *anchor, unsigned char *digest_buffer,
+               size_t digest_buffer_size)
+{
+  if (field_count < 7)
+    return -1;
+
+  /* fields[3] = keytag, fields[4] = algorithm, fields[5] = digesttype,
+   * fields[6] = hex digest */
+  unsigned long keytag = strtoul (fields[3], NULL, 10);
+  unsigned long algorithm = strtoul (fields[4], NULL, 10);
+  unsigned long digesttype = strtoul (fields[5], NULL, 10);
+
+  if (keytag > 65535 || algorithm > 255 || digesttype > 255)
+    return -1;
+
+  /* Parse hex digest */
+  const char *hex = fields[6];
+  size_t hex_len = strlen (hex);
+  size_t digest_len = hex_len / 2;
+
+  if (digest_len > digest_buffer_size || digest_len > DNSSEC_DS_MAX_DIGEST_LEN)
+    return -1;
+
+  for (size_t i = 0; i < digest_len; i++)
+    {
+      int hi = hex[i * 2];
+      int lo = hex[i * 2 + 1];
+
+      if (!isxdigit (hi) || !isxdigit (lo))
+        return -1;
+
+      hi = isdigit (hi) ? hi - '0' : tolower (hi) - 'a' + 10;
+      lo = isdigit (lo) ? lo - '0' : tolower (lo) - 'a' + 10;
+
+      digest_buffer[i] = (unsigned char)((hi << 4) | lo);
+    }
+
+  /* Fill anchor structure */
+  socket_util_safe_strncpy (anchor->zone, zone, sizeof (anchor->zone));
+  anchor->type = TRUST_ANCHOR_DS;
+  anchor->data.ds.key_tag = (uint16_t)keytag;
+  anchor->data.ds.algorithm = (uint8_t)algorithm;
+  anchor->data.ds.digest_type = (uint8_t)digesttype;
+  anchor->data.ds.digest = NULL; /* Will be allocated by caller */
+  anchor->data.ds.digest_len = (uint16_t)digest_len;
+
+  return 0;
+}
+
 int
 SocketDNSSEC_validator_load_anchors (SocketDNSSEC_Validator_T validator,
                                       const char *filename)
@@ -1400,8 +1572,124 @@ SocketDNSSEC_validator_load_anchors (SocketDNSSEC_Validator_T validator,
   if (validator == NULL || filename == NULL)
     return -1;
 
-  /* TODO: Implement BIND-format trust anchor file parsing */
-  (void)filename;
+  FILE *fp = fopen (filename, "r");
+  if (fp == NULL)
+    return -1;
 
-  return 0;
+  char line[4096];
+  int anchor_count = 0;
+
+  while (fgets (line, sizeof (line), fp) != NULL)
+    {
+      /* Skip comments and blank lines */
+      char *p = line;
+      while (isspace ((unsigned char)*p))
+        p++;
+
+      if (*p == ';' || *p == '#' || *p == '\0')
+        continue;
+
+      /* Parse line into fields */
+      const char *fields[16];
+      int field_count = 0;
+      char *token = strtok (line, " \t\n");
+
+      while (token != NULL && field_count < 16)
+        {
+          /* Skip comments mid-line */
+          if (token[0] == ';' || token[0] == '#')
+            break;
+          fields[field_count++] = token;
+          token = strtok (NULL, " \t\n");
+        }
+
+      if (field_count < 5)
+        continue;
+
+      /* Extract zone name (fields[0]) */
+      char zone[DNS_MAX_NAME_LEN];
+      socket_util_safe_strncpy (zone, fields[0], sizeof (zone));
+
+      /* Check for IN class (fields[1]) and record type (fields[2] or fields[3])
+       */
+      int type_idx = 2;
+      if (strcasecmp (fields[1], "IN") == 0)
+        type_idx = 2;
+      else if (strcasecmp (fields[2], "IN") == 0)
+        type_idx = 3;
+
+      if (type_idx >= field_count)
+        continue;
+
+      const char *rrtype = fields[type_idx];
+      SocketDNSSEC_TrustAnchor anchor;
+      memset (&anchor, 0, sizeof (anchor));
+
+      unsigned char data_buffer[2048];
+      size_t data_len = 0;
+
+      /* Parse DNSKEY or DS */
+      if (strcasecmp (rrtype, "DNSKEY") == 0)
+        {
+          if (parse_bind_dnskey (zone, fields, field_count, &anchor,
+                                 data_buffer, sizeof (data_buffer))
+              != 0)
+            continue;
+          data_len = anchor.data.dnskey.pubkey_len;
+
+          /* Allocate pubkey in validator's arena */
+          unsigned char *pubkey;
+          if (validator->arena)
+            pubkey = Arena_alloc (validator->arena, data_len, __FILE__,
+                                  __LINE__);
+          else
+            pubkey = malloc (data_len);
+
+          if (pubkey == NULL)
+            {
+              fclose (fp);
+              return -1;
+            }
+
+          memcpy (pubkey, data_buffer, data_len);
+          anchor.data.dnskey.pubkey = pubkey;
+        }
+      else if (strcasecmp (rrtype, "DS") == 0)
+        {
+          if (parse_bind_ds (zone, fields, field_count, &anchor, data_buffer,
+                             sizeof (data_buffer))
+              != 0)
+            continue;
+          data_len = anchor.data.ds.digest_len;
+
+          /* Allocate digest in validator's arena */
+          unsigned char *digest;
+          if (validator->arena)
+            digest = Arena_alloc (validator->arena, data_len, __FILE__,
+                                  __LINE__);
+          else
+            digest = malloc (data_len);
+
+          if (digest == NULL)
+            {
+              fclose (fp);
+              return -1;
+            }
+
+          memcpy (digest, data_buffer, data_len);
+          anchor.data.ds.digest = digest;
+        }
+      else
+        {
+          /* Unknown record type */
+          continue;
+        }
+
+      /* Add anchor to validator */
+      if (SocketDNSSEC_validator_add_anchor (validator, &anchor) == 0)
+        anchor_count++;
+    }
+
+  fclose (fp);
+  return anchor_count;
 }

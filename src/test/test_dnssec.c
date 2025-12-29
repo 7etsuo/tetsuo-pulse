@@ -416,6 +416,90 @@ TEST (validator_lifecycle)
 }
 
 /*
+ * Test BIND-format trust anchor file parsing
+ */
+TEST (load_anchors_bind_format)
+{
+  /* Create test trust anchor file */
+  const char *test_file = "/tmp/test_trust_anchors.conf";
+  FILE *fp = fopen (test_file, "w");
+  ASSERT_NOT_NULL (fp);
+
+  /* Write DNSKEY record (simplified base64 key) */
+  fprintf (fp, "; Trust anchor for root zone\n");
+  fprintf (fp, ". IN DNSKEY 257 3 8 "
+               "AwEAAagAIKlVZrpC6Ia7gEzahOR+9W29euxhJhVVLOyQbSEW0O8gcCjF\n");
+  fprintf (fp, "\n");
+
+  /* Write DS record */
+  fprintf (fp, "# Trust anchor as DS record\n");
+  fprintf (
+      fp,
+      "example.com. IN DS 12345 8 2 "
+      "49FD46E6C4B45C55D4AC69CBD3CD34AC1AFE51DE3D5A1D1E1E1F1E1F1E1F1E1F\n");
+
+  /* Write entry with optional TTL field */
+  fprintf (fp, "test.org. 3600 IN DNSKEY 256 3 13 "
+               "AQPJ////4Q==\n");
+
+  fclose (fp);
+
+  /* Load anchors */
+  SocketDNSSEC_Validator_T validator = SocketDNSSEC_validator_new (NULL);
+  ASSERT_NOT_NULL (validator);
+
+  int count = SocketDNSSEC_validator_load_anchors (validator, test_file);
+  ASSERT (count >= 2); /* Should load at least DNSKEY and DS */
+
+  /* Cleanup */
+  SocketDNSSEC_validator_free (&validator);
+  remove (test_file);
+}
+
+/*
+ * Test trust anchor parsing with invalid file
+ */
+TEST (load_anchors_invalid_file)
+{
+  SocketDNSSEC_Validator_T validator = SocketDNSSEC_validator_new (NULL);
+  ASSERT_NOT_NULL (validator);
+
+  /* Try to load non-existent file */
+  int count
+      = SocketDNSSEC_validator_load_anchors (validator, "/nonexistent/file");
+  ASSERT (count == -1);
+
+  SocketDNSSEC_validator_free (&validator);
+}
+
+/*
+ * Test trust anchor with KSK flags
+ */
+TEST (load_anchors_ksk_flags)
+{
+  const char *test_file = "/tmp/test_ksk_anchor.conf";
+  FILE *fp = fopen (test_file, "w");
+  ASSERT_NOT_NULL (fp);
+
+  /* DNSKEY with KSK flags (257 = 0x0101 = ZONE + SEP) */
+  fprintf (fp, ". IN DNSKEY 257 3 8 AQPJ////4Q==\n");
+
+  fclose (fp);
+
+  SocketDNSSEC_Validator_T validator = SocketDNSSEC_validator_new (NULL);
+  ASSERT_NOT_NULL (validator);
+
+  int count = SocketDNSSEC_validator_load_anchors (validator, test_file);
+  ASSERT (count == 1);
+
+  /* Verify anchor was loaded (basic check) */
+  ASSERT (validator != NULL);
+
+  SocketDNSSEC_validator_free (&validator);
+  remove (test_file);
+}
+
+/*
  * Main test entry
  */
 int
