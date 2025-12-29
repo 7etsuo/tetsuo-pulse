@@ -497,7 +497,7 @@ initialize_poll_async (T poll)
   EXCEPT (SocketAsync_Failed)
   {
     poll->async = NULL; /* Graceful degradation - async is optional */
-    return;
+    RETURN;
   }
   END_TRY;
 
