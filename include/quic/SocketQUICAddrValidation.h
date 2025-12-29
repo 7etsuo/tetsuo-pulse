@@ -40,6 +40,9 @@
 /** @brief Path challenge data size (RFC 9000 §8.2) */
 #define QUIC_PATH_CHALLENGE_SIZE 8
 
+/** @brief HMAC input size: 8 bytes timestamp + 16 bytes address hash */
+#define QUIC_TOKEN_HMAC_INPUT_SIZE 24
+
 /* ============================================================================
  * Exception Types
  * ============================================================================
