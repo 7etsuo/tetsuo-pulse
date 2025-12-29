@@ -689,18 +689,6 @@ Socket_recvvall (T socket, struct iovec *iov, int iovcnt)
 /* ==================== I/O Operations with Timeout ==================== */
 
 /**
- * get_remaining_timeout_ms - Get remaining time until deadline
- * @deadline_ms: Deadline timestamp from SocketTimeout_deadline_ms()
- *
- * Returns: Remaining milliseconds (may be negative if past deadline)
- */
-static int64_t
-get_remaining_timeout_ms (int64_t deadline_ms)
-{
-  return deadline_ms - Socket_get_monotonic_ms ();
-}
-
-/**
  * socket_wait_with_timeout - Wait for socket readiness with timeout handling
  * @fd: File descriptor to wait on
  * @events: Poll events (POLLIN or POLLOUT)
@@ -721,7 +709,7 @@ socket_wait_with_timeout (int fd, short events, int timeout_ms,
 
   if (timeout_ms > 0)
     {
-      remaining_ms = get_remaining_timeout_ms (deadline_ms);
+      remaining_ms = SocketTimeout_remaining_ms (deadline_ms);
       if (remaining_ms <= 0)
         return 0; /* Timeout */
 
