@@ -204,13 +204,6 @@ get_effective_max_decompressed_size (const SocketHTTP1_Config *cfg)
   return cfg->max_decompressed_size;
 }
 
-static size_t
-get_effective_max_encoded_size (const SocketHTTP1_Config *cfg)
-{
-  (void)cfg; /* Currently unused, reserved for future configuration */
-  return SIZE_MAX;
-}
-
 #ifdef SOCKETHTTP1_HAS_ZLIB
 
 static int
@@ -864,6 +857,7 @@ SocketHTTP1_Encoder_new (SocketHTTP_Coding coding,
 {
   SocketHTTP1_Encoder_T encoder;
 
+  (void)cfg; /* Currently unused, reserved for future configuration */
   assert (arena);
 
   if (!is_supported_coding (coding))
@@ -876,7 +870,7 @@ SocketHTTP1_Encoder_new (SocketHTTP_Coding coding,
   encoder->coding = coding;
   encoder->arena = arena;
   encoder->level = level;
-  encoder->max_encoded_size = get_effective_max_encoded_size (cfg);
+  encoder->max_encoded_size = SIZE_MAX;  /* No current limit on encoded size */
 
   if (!init_encoder_backend (encoder))
     return NULL;
