@@ -334,8 +334,7 @@ SocketQUICHandshake_process_crypto(SocketQUICConnection_T conn,
   SocketQUICCryptoLevel level = QUIC_CRYPTO_LEVEL_INITIAL;
 
   /* Get handshake context from connection */
-  /* NOTE: This assumes connection has a handshake field - needs integration */
-  SocketQUICHandshake_T hs = NULL; /* TODO: Get from conn->handshake */
+  SocketQUICHandshake_T hs = conn->handshake;
   if (!hs) {
     return QUIC_HANDSHAKE_ERROR_STATE;
   }
