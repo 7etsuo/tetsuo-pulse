@@ -23,6 +23,25 @@
 #include <string.h>
 
 /* ============================================================================
+ * Validation Macros
+ * ============================================================================
+ */
+
+/**
+ * @brief Validate frame encoding parameters.
+ *
+ * Ensures that both the object pointer and output buffer are non-NULL
+ * before proceeding with frame encoding. Returns 0 if validation fails.
+ *
+ * @param obj Object pointer (connection or stream).
+ * @param out Output buffer pointer.
+ */
+#define VALIDATE_FRAME_PARAMS(obj, out) \
+    do { \
+        if (!(obj) || !(out)) return 0; \
+    } while(0)
+
+/* ============================================================================
  * Error Classification (RFC 9000 Section 11)
  * ============================================================================
  */
@@ -63,8 +82,7 @@ SocketQUIC_send_connection_close (SocketQUICConnection_T conn, uint64_t code,
   uint64_t frame_type;
   int is_app_error;
 
-  if (!conn || !out)
-    return 0;
+  VALIDATE_FRAME_PARAMS(conn, out);
 
   /* Validate reason parameters: if reason is NULL, length must be 0 */
   if (!reason && reason_len != 0)
@@ -145,8 +163,7 @@ SocketQUIC_send_stream_reset (SocketQUICStream_T stream, uint64_t code,
   size_t offset;
   uint64_t stream_id;
 
-  if (!stream || !out)
-    return 0;
+  VALIDATE_FRAME_PARAMS(stream, out);
 
   stream_id = SocketQUICStream_get_id (stream);
 
@@ -193,8 +210,7 @@ SocketQUIC_send_stop_sending (SocketQUICStream_T stream, uint64_t code,
   size_t offset;
   uint64_t stream_id;
 
-  if (!stream || !out)
-    return 0;
+  VALIDATE_FRAME_PARAMS(stream, out);
 
   stream_id = SocketQUICStream_get_id (stream);
 
