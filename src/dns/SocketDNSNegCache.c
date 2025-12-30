@@ -412,143 +412,6 @@ SocketDNSNegCache_lookup (T cache, const char *qname, uint16_t qtype,
   return result;
 }
 
-int
-SocketDNSNegCache_insert_nxdomain (T cache, const char *qname, uint16_t qclass,
-                                    uint32_t ttl)
-{
-  if (cache == NULL || qname == NULL)
-    return -1;
-
-  /* Reject if cache is disabled */
-  if (cache->max_entries == 0)
-    return -1;
-
-  /* Validate name length before normalizing */
-  size_t qname_len = strlen (qname);
-  if (qname_len > DNS_NEGCACHE_MAX_NAME)
-    return -1;
-
-  char normalized[DNS_NEGCACHE_MAX_NAME + 1];
-  socket_util_normalize_hostname (normalized, qname, DNS_NEGCACHE_MAX_NAME + 1);
-
-  /* Cap TTL */
-  if (ttl > cache->max_ttl)
-    ttl = cache->max_ttl;
-
-  pthread_mutex_lock (&cache->mutex);
-
-  /* Check if already exists and update */
-  struct NegCacheEntry *existing = find_entry (cache, normalized, 0, qclass);
-  if (existing)
-    {
-      existing->ttl = ttl;
-      existing->insert_time_ms = Socket_get_monotonic_ms ();
-      lru_touch (cache, existing);
-      pthread_mutex_unlock (&cache->mutex);
-      return 0;
-    }
-
-  /* Evict if at capacity */
-  if (cache->max_entries > 0 && cache->size >= cache->max_entries)
-    evict_lru (cache);
-
-  /* Allocate new entry */
-  struct NegCacheEntry *entry = entry_alloc (cache);
-  if (entry == NULL)
-    {
-      pthread_mutex_unlock (&cache->mutex);
-      return -1;
-    }
-
-  memset (entry, 0, sizeof (*entry));
-  snprintf (entry->name, sizeof (entry->name), "%s", normalized);
-  entry->qtype = 0; /* NXDOMAIN uses qtype=0 */
-  entry->qclass = qclass;
-  entry->type = DNS_NEG_NXDOMAIN;
-  entry->ttl = ttl;
-  entry->insert_time_ms = Socket_get_monotonic_ms ();
-
-  hash_insert (cache, entry);
-  lru_add_head (cache, entry);
-  cache->size++;
-  cache->insertions++;
-
-  pthread_mutex_unlock (&cache->mutex);
-
-  return 0;
-}
-
-int
-SocketDNSNegCache_insert_nodata (T cache, const char *qname, uint16_t qtype,
-                                  uint16_t qclass, uint32_t ttl)
-{
-  if (cache == NULL || qname == NULL)
-    return -1;
-
-  /* qtype=0 is reserved for NXDOMAIN */
-  if (qtype == 0)
-    return -1;
-
-  /* Reject if cache is disabled */
-  if (cache->max_entries == 0)
-    return -1;
-
-  /* Validate name length before normalizing */
-  size_t qname_len = strlen (qname);
-  if (qname_len > DNS_NEGCACHE_MAX_NAME)
-    return -1;
-
-  char normalized[DNS_NEGCACHE_MAX_NAME + 1];
-  socket_util_normalize_hostname (normalized, qname, DNS_NEGCACHE_MAX_NAME + 1);
-
-  /* Cap TTL */
-  if (ttl > cache->max_ttl)
-    ttl = cache->max_ttl;
-
-  pthread_mutex_lock (&cache->mutex);
-
-  /* Check if already exists and update */
-  struct NegCacheEntry *existing
-      = find_entry (cache, normalized, qtype, qclass);
-  if (existing)
-    {
-      existing->ttl = ttl;
-      existing->insert_time_ms = Socket_get_monotonic_ms ();
-      lru_touch (cache, existing);
-      pthread_mutex_unlock (&cache->mutex);
-      return 0;
-    }
-
-  /* Evict if at capacity */
-  if (cache->max_entries > 0 && cache->size >= cache->max_entries)
-    evict_lru (cache);
-
-  /* Allocate new entry */
-  struct NegCacheEntry *entry = entry_alloc (cache);
-  if (entry == NULL)
-    {
-      pthread_mutex_unlock (&cache->mutex);
-      return -1;
-    }
-
-  memset (entry, 0, sizeof (*entry));
-  snprintf (entry->name, sizeof (entry->name), "%s", normalized);
-  entry->qtype = qtype;
-  entry->qclass = qclass;
-  entry->type = DNS_NEG_NODATA;
-  entry->ttl = ttl;
-  entry->insert_time_ms = Socket_get_monotonic_ms ();
-
-  hash_insert (cache, entry);
-  lru_add_head (cache, entry);
-  cache->size++;
-  cache->insertions++;
-
-  pthread_mutex_unlock (&cache->mutex);
-
-  return 0;
-}
-
 /**
  * @brief Helper to copy SOA data to internal entry.
  */
@@ -575,10 +438,26 @@ copy_soa_to_entry (struct NegCacheEntry *entry, const SocketDNS_CachedSOA *soa)
   entry->soa_ttl = soa->original_ttl;
 }
 
-int
-SocketDNSNegCache_insert_nxdomain_with_soa (T cache, const char *qname,
-                                             uint16_t qclass, uint32_t ttl,
-                                             const SocketDNS_CachedSOA *soa)
+/**
+ * @brief Common insertion logic for all negative cache entry types.
+ *
+ * Handles validation, normalization, TTL capping, existence checking,
+ * eviction, allocation, and insertion into hash table and LRU list.
+ *
+ * @param cache      Cache instance.
+ * @param qname      Query name (will be normalized).
+ * @param qtype      Query type (0 for NXDOMAIN, specific type for NODATA).
+ * @param qclass     Query class.
+ * @param ttl        TTL from SOA MINIMUM field.
+ * @param type       Entry type (DNS_NEG_NXDOMAIN or DNS_NEG_NODATA).
+ * @param soa        Optional SOA data (may be NULL).
+ * @return 0 on success, -1 on error.
+ */
+static int
+insert_entry_common (T cache, const char *qname, uint16_t qtype,
+                    uint16_t qclass, uint32_t ttl,
+                    SocketDNS_NegCacheType type,
+                    const SocketDNS_CachedSOA *soa)
 {
   if (cache == NULL || qname == NULL)
     return -1;
@@ -602,87 +481,13 @@ SocketDNSNegCache_insert_nxdomain_with_soa (T cache, const char *qname,
   pthread_mutex_lock (&cache->mutex);
 
   /* Check if already exists and update */
-  struct NegCacheEntry *existing = find_entry (cache, normalized, 0, qclass);
+  struct NegCacheEntry *existing = find_entry (cache, normalized, qtype, qclass);
   if (existing)
     {
       existing->ttl = ttl;
       existing->insert_time_ms = Socket_get_monotonic_ms ();
-      copy_soa_to_entry (existing, soa);
-      lru_touch (cache, existing);
-      pthread_mutex_unlock (&cache->mutex);
-      return 0;
-    }
-
-  /* Evict if at capacity */
-  if (cache->max_entries > 0 && cache->size >= cache->max_entries)
-    evict_lru (cache);
-
-  /* Allocate new entry */
-  struct NegCacheEntry *entry = entry_alloc (cache);
-  if (entry == NULL)
-    {
-      pthread_mutex_unlock (&cache->mutex);
-      return -1;
-    }
-
-  memset (entry, 0, sizeof (*entry));
-  snprintf (entry->name, sizeof (entry->name), "%s", normalized);
-  entry->qtype = 0; /* NXDOMAIN uses qtype=0 */
-  entry->qclass = qclass;
-  entry->type = DNS_NEG_NXDOMAIN;
-  entry->ttl = ttl;
-  entry->insert_time_ms = Socket_get_monotonic_ms ();
-  copy_soa_to_entry (entry, soa);
-
-  hash_insert (cache, entry);
-  lru_add_head (cache, entry);
-  cache->size++;
-  cache->insertions++;
-
-  pthread_mutex_unlock (&cache->mutex);
-
-  return 0;
-}
-
-int
-SocketDNSNegCache_insert_nodata_with_soa (T cache, const char *qname,
-                                           uint16_t qtype, uint16_t qclass,
-                                           uint32_t ttl,
-                                           const SocketDNS_CachedSOA *soa)
-{
-  if (cache == NULL || qname == NULL)
-    return -1;
-
-  /* qtype=0 is reserved for NXDOMAIN */
-  if (qtype == 0)
-    return -1;
-
-  /* Reject if cache is disabled */
-  if (cache->max_entries == 0)
-    return -1;
-
-  /* Validate name length before normalizing */
-  size_t qname_len = strlen (qname);
-  if (qname_len > DNS_NEGCACHE_MAX_NAME)
-    return -1;
-
-  char normalized[DNS_NEGCACHE_MAX_NAME + 1];
-  socket_util_normalize_hostname (normalized, qname, DNS_NEGCACHE_MAX_NAME + 1);
-
-  /* Cap TTL */
-  if (ttl > cache->max_ttl)
-    ttl = cache->max_ttl;
-
-  pthread_mutex_lock (&cache->mutex);
-
-  /* Check if already exists and update */
-  struct NegCacheEntry *existing
-      = find_entry (cache, normalized, qtype, qclass);
-  if (existing)
-    {
-      existing->ttl = ttl;
-      existing->insert_time_ms = Socket_get_monotonic_ms ();
-      copy_soa_to_entry (existing, soa);
+      if (soa != NULL)
+        copy_soa_to_entry (existing, soa);
       lru_touch (cache, existing);
       pthread_mutex_unlock (&cache->mutex);
       return 0;
@@ -704,10 +509,11 @@ SocketDNSNegCache_insert_nodata_with_soa (T cache, const char *qname,
   snprintf (entry->name, sizeof (entry->name), "%s", normalized);
   entry->qtype = qtype;
   entry->qclass = qclass;
-  entry->type = DNS_NEG_NODATA;
+  entry->type = type;
   entry->ttl = ttl;
   entry->insert_time_ms = Socket_get_monotonic_ms ();
-  copy_soa_to_entry (entry, soa);
+  if (soa != NULL)
+    copy_soa_to_entry (entry, soa);
 
   hash_insert (cache, entry);
   lru_add_head (cache, entry);
@@ -717,6 +523,49 @@ SocketDNSNegCache_insert_nodata_with_soa (T cache, const char *qname,
   pthread_mutex_unlock (&cache->mutex);
 
   return 0;
+}
+
+int
+SocketDNSNegCache_insert_nxdomain (T cache, const char *qname, uint16_t qclass,
+                                    uint32_t ttl)
+{
+  return insert_entry_common (cache, qname, 0, qclass, ttl,
+                              DNS_NEG_NXDOMAIN, NULL);
+}
+
+int
+SocketDNSNegCache_insert_nodata (T cache, const char *qname, uint16_t qtype,
+                                  uint16_t qclass, uint32_t ttl)
+{
+  /* qtype=0 is reserved for NXDOMAIN */
+  if (qtype == 0)
+    return -1;
+
+  return insert_entry_common (cache, qname, qtype, qclass, ttl,
+                              DNS_NEG_NODATA, NULL);
+}
+
+int
+SocketDNSNegCache_insert_nxdomain_with_soa (T cache, const char *qname,
+                                             uint16_t qclass, uint32_t ttl,
+                                             const SocketDNS_CachedSOA *soa)
+{
+  return insert_entry_common (cache, qname, 0, qclass, ttl,
+                              DNS_NEG_NXDOMAIN, soa);
+}
+
+int
+SocketDNSNegCache_insert_nodata_with_soa (T cache, const char *qname,
+                                           uint16_t qtype, uint16_t qclass,
+                                           uint32_t ttl,
+                                           const SocketDNS_CachedSOA *soa)
+{
+  /* qtype=0 is reserved for NXDOMAIN */
+  if (qtype == 0)
+    return -1;
+
+  return insert_entry_common (cache, qname, qtype, qclass, ttl,
+                              DNS_NEG_NODATA, soa);
 }
 
 int
