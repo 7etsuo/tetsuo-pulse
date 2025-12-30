@@ -780,6 +780,179 @@ cancel_all_queries (T transport, int error)
     }
 }
 
+/* Queue all pending queries for sending after connection established */
+static void
+queue_pending_queries (T transport)
+{
+  struct SocketDNSoverTLS_Query *q;
+
+  for (q = transport->pending_head; q != NULL; q = q->next)
+    {
+      if (!q->cancelled && !q->completed)
+        {
+          queue_query (transport, q);
+        }
+    }
+}
+
+/* Process query timeouts and idle connection timeout */
+static int
+process_query_timeouts (T transport, int64_t now)
+{
+  struct SocketDNSoverTLS_Query *q, *next;
+  struct Connection *conn;
+  int completed;
+
+  completed = 0;
+  conn = &transport->conn;
+
+  /* Check query timeouts */
+  for (q = transport->pending_head; q != NULL; q = next)
+    {
+      next = q->next;
+      if (!q->cancelled && !q->completed)
+        {
+          if (now - q->sent_time_ms > transport->query_timeout_ms)
+            {
+              complete_query (transport, q, NULL, 0, DOT_ERROR_TIMEOUT);
+              completed++;
+            }
+        }
+    }
+
+  /* Check idle timeout */
+  if (conn->state == CONN_STATE_CONNECTED
+      && now - conn->last_activity_ms > transport->idle_timeout_ms)
+    {
+      close_connection (transport, conn);
+    }
+
+  return completed;
+}
+
+/* Process connection state machine continuation */
+static int
+process_connection_state (T transport)
+{
+  struct Connection *conn;
+  int ret;
+
+  conn = &transport->conn;
+
+  /* Continue connection if in progress */
+  if (conn->state == CONN_STATE_CONNECTING
+      || conn->state == CONN_STATE_HANDSHAKING)
+    {
+      ret = continue_connection (transport);
+      if (ret < 0)
+        {
+          /* Connection failed, cancel pending queries */
+          cancel_all_queries (transport, DOT_ERROR_TLS_HANDSHAKE);
+          return -1;
+        }
+
+      if (ret > 0)
+        {
+          /* Just connected, queue pending queries */
+          queue_pending_queries (transport);
+          transport->stats.connections_reused++;
+        }
+    }
+
+  /* Start connection if disconnected but have pending queries */
+  if (conn->state == CONN_STATE_DISCONNECTED)
+    {
+      if (transport->pending_count > 0)
+        {
+          start_connection (transport, transport->current_server);
+        }
+      return 0;
+    }
+
+  return 1; /* Connection ready or in progress */
+}
+
+/* Process socket I/O (poll, send, receive) */
+static int
+process_socket_io (T transport, int timeout_ms)
+{
+  struct Connection *conn;
+  struct pollfd pfd;
+  int fd;
+  int events;
+  int ret;
+  int completed;
+
+  conn = &transport->conn;
+  completed = 0;
+
+  /* Get socket file descriptor */
+  fd = Socket_fd (conn->socket);
+  if (fd < 0)
+    return 0;
+
+  /* Determine poll events */
+  events = POLLIN;
+  if (conn->state == CONN_STATE_CONNECTING
+      || conn->state == CONN_STATE_HANDSHAKING || conn->send_len > 0)
+    {
+      events |= POLLOUT;
+    }
+
+  pfd.fd = fd;
+  pfd.events = (short)events;
+  pfd.revents = 0;
+
+  /* Poll socket */
+  ret = poll (&pfd, 1, timeout_ms);
+  if (ret <= 0)
+    return 0;
+
+  /* Check for errors */
+  if (pfd.revents & (POLLERR | POLLHUP))
+    {
+      close_connection (transport, conn);
+      cancel_all_queries (transport, DOT_ERROR_NETWORK);
+      return 0;
+    }
+
+  /* Continue handshake if needed */
+  if (conn->state == CONN_STATE_CONNECTING
+      || conn->state == CONN_STATE_HANDSHAKING)
+    {
+      ret = continue_connection (transport);
+      if (ret < 0)
+        {
+          cancel_all_queries (transport, DOT_ERROR_TLS_HANDSHAKE);
+          return 0;
+        }
+      if (ret > 0)
+        {
+          /* Just connected, queue pending queries */
+          queue_pending_queries (transport);
+        }
+    }
+
+  /* Send pending data */
+  if (conn->state == CONN_STATE_CONNECTED && (pfd.revents & POLLOUT))
+    {
+      send_pending (transport);
+    }
+
+  /* Receive data */
+  if (conn->state == CONN_STATE_CONNECTED && (pfd.revents & POLLIN))
+    {
+      ret = receive_data (transport);
+      if (ret > 0)
+        {
+          process_response (transport);
+          completed++;
+        }
+    }
+
+  return completed;
+}
+
 /* ============================================================================
  * Public API
  * ============================================================================
@@ -1028,41 +1201,17 @@ SocketDNSoverTLS_query_id (SocketDNSoverTLS_Query_T query)
 int
 SocketDNSoverTLS_process (T transport, int timeout_ms)
 {
-  struct Connection *conn;
-  struct SocketDNSoverTLS_Query *q, *next;
   int completed;
   int64_t now;
-  int fd;
-  struct pollfd pfd;
-  int events;
-  int ret;
+  int state_result;
 
   assert (transport);
 
   completed = 0;
-  conn = &transport->conn;
   now = get_monotonic_ms ();
 
-  /* Check query timeouts */
-  for (q = transport->pending_head; q != NULL; q = next)
-    {
-      next = q->next;
-      if (!q->cancelled && !q->completed)
-        {
-          if (now - q->sent_time_ms > transport->query_timeout_ms)
-            {
-              complete_query (transport, q, NULL, 0, DOT_ERROR_TIMEOUT);
-              completed++;
-            }
-        }
-    }
-
-  /* Check idle timeout */
-  if (conn->state == CONN_STATE_CONNECTED
-      && now - conn->last_activity_ms > transport->idle_timeout_ms)
-    {
-      close_connection (transport, conn);
-    }
+  /* Handle timeouts */
+  completed += process_query_timeouts (transport, now);
 
   /* No server configured */
   if (transport->server_count == 0)
@@ -1070,109 +1219,22 @@ SocketDNSoverTLS_process (T transport, int timeout_ms)
       return completed;
     }
 
-  /* Continue connection if in progress */
-  if (conn->state == CONN_STATE_CONNECTING
-      || conn->state == CONN_STATE_HANDSHAKING)
+  /* Process connection state machine */
+  state_result = process_connection_state (transport);
+  if (state_result < 0)
     {
-      ret = continue_connection (transport);
-      if (ret < 0)
-        {
-          /* Connection failed, cancel pending queries */
-          cancel_all_queries (transport, DOT_ERROR_TLS_HANDSHAKE);
-          return completed;
-        }
-
-      if (ret > 0)
-        {
-          /* Just connected, queue pending queries */
-          for (q = transport->pending_head; q != NULL; q = q->next)
-            {
-              if (!q->cancelled && !q->completed)
-                {
-                  queue_query (transport, q);
-                }
-            }
-          transport->stats.connections_reused++;
-        }
-    }
-
-  /* Get socket for polling */
-  if (conn->state == CONN_STATE_DISCONNECTED)
-    {
-      /* Start connection if we have pending queries */
-      if (transport->pending_count > 0)
-        {
-          start_connection (transport, transport->current_server);
-        }
+      /* Connection failed */
       return completed;
     }
 
-  fd = Socket_fd (conn->socket);
-  if (fd < 0)
-    return completed;
-
-  /* Determine poll events */
-  events = POLLIN;
-  if (conn->state == CONN_STATE_CONNECTING
-      || conn->state == CONN_STATE_HANDSHAKING || conn->send_len > 0)
+  if (state_result == 0)
     {
-      events |= POLLOUT;
-    }
-
-  pfd.fd = fd;
-  pfd.events = (short)events;
-  pfd.revents = 0;
-
-  ret = poll (&pfd, 1, timeout_ms);
-  if (ret <= 0)
-    return completed;
-
-  if (pfd.revents & (POLLERR | POLLHUP))
-    {
-      close_connection (transport, conn);
-      cancel_all_queries (transport, DOT_ERROR_NETWORK);
+      /* Disconnected, no I/O to perform */
       return completed;
     }
 
-  /* Continue handshake */
-  if (conn->state == CONN_STATE_CONNECTING
-      || conn->state == CONN_STATE_HANDSHAKING)
-    {
-      ret = continue_connection (transport);
-      if (ret < 0)
-        {
-          cancel_all_queries (transport, DOT_ERROR_TLS_HANDSHAKE);
-          return completed;
-        }
-      if (ret > 0)
-        {
-          /* Just connected, queue pending queries */
-          for (q = transport->pending_head; q != NULL; q = q->next)
-            {
-              if (!q->cancelled && !q->completed)
-                {
-                  queue_query (transport, q);
-                }
-            }
-        }
-    }
-
-  /* Send pending data */
-  if (conn->state == CONN_STATE_CONNECTED && (pfd.revents & POLLOUT))
-    {
-      send_pending (transport);
-    }
-
-  /* Receive data */
-  if (conn->state == CONN_STATE_CONNECTED && (pfd.revents & POLLIN))
-    {
-      ret = receive_data (transport);
-      if (ret > 0)
-        {
-          process_response (transport);
-          completed++;
-        }
-    }
+  /* Handle I/O */
+  completed += process_socket_io (transport, timeout_ms);
 
   return completed;
 }
