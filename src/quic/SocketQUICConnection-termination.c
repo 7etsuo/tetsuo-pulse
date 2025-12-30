@@ -188,16 +188,15 @@ SocketQUICConnection_check_idle_timeout(SocketQUICConnection_T conn,
 /**
  * @brief Initiate immediate connection close.
  * @param conn Connection instance.
- * @param error_code QUIC error code for CONNECTION_CLOSE frame.
  * @param now_ms Current timestamp in milliseconds.
  * @param pto_ms Probe Timeout (PTO) value in milliseconds.
  *
- * Transitions to CLOSING state. Caller must send CONNECTION_CLOSE frame.
+ * Transitions to CLOSING state. Caller must send CONNECTION_CLOSE frame
+ * with the appropriate error code using SocketQUICFrame_encode_connection_close_*().
  * Connection will transition to CLOSED after 3*PTO.
  */
 void
 SocketQUICConnection_initiate_close(SocketQUICConnection_T conn,
-                                    uint64_t error_code,
                                     uint64_t now_ms,
                                     uint64_t pto_ms)
 {
@@ -214,11 +213,6 @@ SocketQUICConnection_initiate_close(SocketQUICConnection_T conn,
   /* Calculate closing deadline: 3 * PTO */
   uint64_t timeout = calculate_termination_timeout(pto_ms);
   conn->closing_deadline_ms = safe_add_timeout(now_ms, timeout);
-
-  /* Error code handling is caller's responsibility */
-  /* Caller must send CONNECTION_CLOSE frame with appropriate error_code */
-  /* This function only manages connection state transition */
-  (void)error_code;
 }
 
 /**
