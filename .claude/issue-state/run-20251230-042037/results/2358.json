@@ -1,0 +1,11 @@
+{
+  "issue": 2358,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2512",
+  "pr_number": 2512,
+  "branch": "issue-2358-consolidate-socks4-buffer-validation",
+  "files_changed": ["src/socket/SocketProxy-socks4.c"],
+  "tests_passed": true,
+  "commit_sha": "70910cd7",
+  "summary": "Refactored SOCKS4/4a buffer validation by introducing socks4_ensure_buffer_space() helper function, consolidating ad-hoc checks and replacing undefined SOCKS4_ERROR_MSG_REQUEST_TOO_LARGE constant. All 84 proxy tests and 5 integration tests pass with sanitizers enabled."
+}

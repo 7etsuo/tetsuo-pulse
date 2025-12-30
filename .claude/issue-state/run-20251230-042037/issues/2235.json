@@ -1,0 +1,11 @@
+{
+  "number": 2235,
+  "title": "security(http): fix 32-bit pointer truncation in fallback hash seed initialization",
+  "body": "## Summary\nThe fallback hash seed initialization right-shifts a `uintptr_t` by 32 bits, which causes undefined behavior on 32-bit systems where `uintptr_t` is 32 bits wide.\n\n## Location\n- **File**: `src/http/SocketHTTP-headers.c`\n- **Line**: 58-59\n- **Function**: `init_header_hash_seed()`\n\n## Issue\nThe code attempts to mix high and low bits of a stack address for entropy:\n```c\nuintptr_t stack_addr = (uintptr_t)&header_hash_seed;\nuint32_t stack_seed = (uint32_t)(stack_addr ^ (stack_addr >> 32));\n```\n\nOn 32-bit systems, `uintptr_t` is 32 bits, so `stack_addr >> 32` is undefined behavior (right-shift by type width).\n\n## Impact\n- **Severity**: MEDIUM\n- **Scope**: Fallback entropy source (only used if `SocketCrypto_random_bytes()` fails)\n- **Effect**: Undefined behavior on 32-bit platforms, potential weak entropy\n\n## Recommendation\nUse conditional compilation to handle 32-bit vs 64-bit systems:\n```c\nuintptr_t stack_addr = (uintptr_t)&header_hash_seed;\n#if UINTPTR_MAX > UINT32_MAX\n  /* 64-bit system: mix high and low bits */\n  uint32_t stack_seed = (uint32_t)(stack_addr ^ (stack_addr >> 32));\n#else\n  /* 32-bit system: use full address */\n  uint32_t stack_seed = (uint32_t)stack_addr;\n#endif\n```\n\nAlternatively, use modulo for portability:\n```c\nuint32_t stack_seed = (uint32_t)(stack_addr ^ (stack_addr / UINT32_MAX));\n```\n\n## Pattern\n- **Pattern ID**: POINTER_TRUNCATION_RISK\n- **Category**: Security\n- **Severity**: MEDIUM",
+  "labels": [
+    "bug",
+    "wip:claude-1767092676-3930812"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

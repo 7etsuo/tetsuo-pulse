@@ -1,0 +1,8 @@
+{
+  "issue": 2216,
+  "status": "already_resolved",
+  "resolution": "The function SocketHTTPClient_post_async() mentioned in this issue was completely removed from the codebase in commit 45c2aee6 (PR #2428) on 2025-12-30 at 03:23:59 MST. This occurred approximately 55 minutes after the issue was created (02:28:20 MST). The duplicate validation issue no longer exists because the entire function and related async request API were removed as stub implementations. The file src/http/SocketHTTPClient-async.c now only contains httpclient_async_init(), httpclient_async_cleanup(), httpclient_io_send(), and httpclient_io_recv() - the actual io_uring async I/O wrappers.",
+  "commit_that_resolved": "45c2aee6",
+  "pr_that_resolved": 2428,
+  "merged_at": "2025-12-30T10:23:59Z"
+}

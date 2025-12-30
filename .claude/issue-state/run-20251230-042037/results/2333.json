@@ -1,0 +1,9 @@
+{
+  "issue": 2333,
+  "status": "already_resolved",
+  "resolution": "Feature already implemented in commit 891fad3b on 2025-12-30 03:24:43. The configure_ticket_keys function in src/tls/SocketTLSContext-session.c already contains the requested defensive assertions: assert(ctx != NULL), assert(key != NULL), and assert(key_len == SOCKET_TLS_TICKET_KEY_LEN) at lines 204-206.",
+  "commit_sha": "891fad3b043bef6b0379e3769ccfa579e8da4dd6",
+  "commit_message": "feat(tls): add defensive assertions to configure_ticket_keys (#2409)",
+  "file_location": "src/tls/SocketTLSContext-session.c",
+  "lines": "204-206"
+}

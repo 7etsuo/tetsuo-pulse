@@ -1,0 +1,10 @@
+{
+  "issue": 2298,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2504",
+  "pr_number": 2504,
+  "branch": "issue-2298-fix-strdup-error-handling",
+  "files_changed": ["src/simple/SocketSimple-dns.c"],
+  "tests_passed": true,
+  "commit_sha": "46c6e7cdf20de307627057167d39e651cbf86658"
+}

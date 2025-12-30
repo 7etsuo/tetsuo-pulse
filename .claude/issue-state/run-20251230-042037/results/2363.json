@@ -1,0 +1,11 @@
+{
+  "issue": 2363,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2502",
+  "pr_number": 2502,
+  "branch": "issue-2363-refactor-cert-info-extraction",
+  "files_changed": ["src/tls/SocketTLS.c"],
+  "tests_passed": true,
+  "commit_sha": "56c7887f",
+  "summary": "Refactored SocketTLS_get_peer_cert_info from 63 lines to 29 lines by extracting four helper functions (extract_cert_subject, extract_cert_issuer, extract_cert_serial, extract_cert_fingerprint). Each helper handles a single certificate field extraction. All 44 TLS integration tests passed."
+}

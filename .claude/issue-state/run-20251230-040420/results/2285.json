@@ -1,0 +1,10 @@
+{
+  "issue": 2285,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2450",
+  "pr_number": 2450,
+  "branch": "issue-2285-fix-uint64-to-sizet-cast",
+  "files_changed": ["src/quic/SocketQUICHandshake.c"],
+  "tests_passed": true,
+  "commit_sha": "22c13a96"
+}

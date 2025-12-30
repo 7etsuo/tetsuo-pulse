@@ -1,0 +1,11 @@
+{
+  "issue": 2253,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2479",
+  "pr_number": 2479,
+  "branch": "issue-2253-replace-assert-runtime-check",
+  "files_changed": ["src/http/SocketHTTP2-flow.c"],
+  "tests_passed": true,
+  "commit_sha": "f4546eef09a4c2ce8a3550361f11508136b102ea",
+  "summary": "Replaced assert(conn) with runtime NULL check in http2_flow_validate() to prevent NULL pointer dereferences in production builds. Also removed unused assert.h include."
+}

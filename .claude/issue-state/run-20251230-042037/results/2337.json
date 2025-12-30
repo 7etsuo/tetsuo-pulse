@@ -1,0 +1,18 @@
+{
+  "issue": 2337,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2503",
+  "pr_number": 2503,
+  "branch": "issue-2337-socks4-bounds-checks",
+  "files_changed": [
+    "src/socket/SocketProxy-socks4.c"
+  ],
+  "tests_passed": true,
+  "commit_sha": "418b839f1e60c3c1b039a3a834409f6f5043fd43",
+  "summary": "Added defensive bounds checks before buffer write operations in SOCKS4/4a proxy request building. All four identified locations now check buffer space before writing, following the existing pattern at line 329.",
+  "test_results": {
+    "test_proxy": "84/84 passed",
+    "test_proxy_integration": "5/5 passed",
+    "sanitizers": "clean (ASan + UBSan)"
+  }
+}

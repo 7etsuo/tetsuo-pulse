@@ -1,0 +1,15 @@
+{
+  "issue": 2242,
+  "status": "already_resolved",
+  "resolution": "Constant SOCKET_SYN_DEFAULT_DEFER_SEC already defined in include/core/SocketConfig.h at lines 934-936 with value 5. Code compiles successfully without errors. Issue was likely resolved in a previous commit.",
+  "location": {
+    "file": "include/core/SocketConfig.h",
+    "lines": "934-936",
+    "definition": "#define SOCKET_SYN_DEFAULT_DEFER_SEC 5"
+  },
+  "verification": {
+    "compilation_check": "passed",
+    "constant_exists": true,
+    "usage_location": "src/pool/SocketPool-ops.c:1481"
+  }
+}

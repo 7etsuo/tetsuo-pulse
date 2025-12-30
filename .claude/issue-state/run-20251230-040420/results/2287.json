@@ -1,0 +1,5 @@
+{
+  "issue": 2287,
+  "status": "already_resolved",
+  "resolution": "Feature already implemented in commit 560bd0f66d63b45e2c001850a534aadfc666518c (PR #2412). The repetitive policy field mapping in Socket_simple_reconnect_new() was extracted into helper function map_policy_to_core() at lines 62-74 of src/simple/SocketSimple-reconnect.c, reducing function complexity as requested."
+}

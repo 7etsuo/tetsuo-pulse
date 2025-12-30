@@ -1,0 +1,10 @@
+{
+  "number": 2273,
+  "title": "refactor(socket-async): extract bounds check helper for fixed buffer operations",
+  "body": "## Summary\nThe integer overflow and bounds check for registered buffers (lines 1832-1833 and 1928-1929) is duplicated identically in both `SocketAsync_send_fixed` and `SocketAsync_recv_fixed`.\n\n## Location\n- File: `/home/tetsuo/git/tetsuo-socket/src/socket/SocketAsync.c`\n- Lines: 1832-1833 (send_fixed) and 1928-1929 (recv_fixed)\n\n## Issue\nBoth functions contain:\n```c\n/* Check for integer overflow and bounds violation */\nif (offset > async->registered_bufs[buf_index].iov_len\n    || len > async->registered_bufs[buf_index].iov_len - offset)\n{\n    errno = EINVAL;\n    SOCKET_ERROR_MSG (\"Offset + len exceeds buffer size\");\n    RAISE_MODULE_ERROR (SocketAsync_Failed);\n}\n```\n\nThis validation logic is duplicated.\n\n## Recommendation\nExtract into a static inline helper:\n```c\nstatic inline void\nvalidate_fixed_buffer_bounds(T async, unsigned buf_index, size_t offset, size_t len)\n{\n    if (offset > async->registered_bufs[buf_index].iov_len\n        || len > async->registered_bufs[buf_index].iov_len - offset)\n    {\n        errno = EINVAL;\n        SOCKET_ERROR_MSG (\"Offset + len exceeds buffer size\");\n        RAISE_MODULE_ERROR (SocketAsync_Failed);\n    }\n}\n```\n\nThen both functions can call:\n```c\nvalidate_fixed_buffer_bounds(async, buf_index, offset, len);\n```\n\nThis becomes even more important if these functions are consolidated (see issue for DUPLICATED_FIXED_BUFFER_OPS).\n\n## Category\nRedundancy\n\n## Severity\nMEDIUM\n\n## Pattern ID\nDUPLICATED_BOUNDS_CHECK",
+  "labels": [
+    "wip:claude-1767092676-3930812"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

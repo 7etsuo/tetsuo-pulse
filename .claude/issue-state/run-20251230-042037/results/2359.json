@@ -1,0 +1,11 @@
+{
+  "issue": 2359,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2515",
+  "pr_number": 2515,
+  "branch": "issue-2359-locale-independent-sni",
+  "files_changed": ["src/tls/SocketTLSContext-certs.c"],
+  "tests_passed": true,
+  "commit_sha": "b75cb1b7",
+  "implementation_summary": "Replaced locale-dependent strcasecmp() with custom ascii_strcasecmp() for SNI hostname matching to ensure RFC 4343 compliance and prevent Turkish locale issues"
+}

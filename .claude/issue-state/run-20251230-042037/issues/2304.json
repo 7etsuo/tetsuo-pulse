@@ -1,0 +1,8 @@
+{
+  "number": 2304,
+  "title": "refactor(simple-tcp): Extract timeout error checking into helper function",
+  "body": "## Summary\n\nThe timeout error checking pattern is duplicated in 3 functions in `SocketSimple-tcp.c`:\n- Line 54 (Socket_simple_connect_timeout)\n- Line 175 (Socket_simple_accept_timeout)\n- Line 292 (Socket_simple_recv_timeout)\n\n## Current Pattern\n\n```c\nif (Socket_error_is_retryable (err) && (err == ETIMEDOUT || err == EAGAIN))\n{\n    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, \"...\");\n}\n```\n\nNote: Line 54 checks for `EINPROGRESS` instead of `EAGAIN`.\n\n## Recommendation\n\nExtract into a static helper function to reduce redundancy:\n\n```c\nstatic inline int\nis_timeout_error(int err)\n{\n    return Socket_error_is_retryable(err) && \n           (err == ETIMEDOUT || err == EAGAIN || err == EINPROGRESS);\n}\n```\n\nThen replace all instances with:\n\n```c\nif (is_timeout_error(err))\n{\n    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, \"...\");\n}\n```\n\n## Benefits\n\n- Reduces code duplication\n- Centralizes timeout detection logic\n- Easier to maintain and test\n- Ensures consistent timeout handling across all functions\n\n## File\n\n- `src/simple/SocketSimple-tcp.c`\n\n## Category\n\nRedundancy / Refactoring\n\n## Severity\n\nMEDIUM\n\n## Pattern ID\n\nREDUNDANT_TIMEOUT_CHECK",
+  "labels": [],
+  "state": "OPEN",
+  "dependencies": []
+}

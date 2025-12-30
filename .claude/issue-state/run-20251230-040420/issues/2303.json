@@ -1,0 +1,10 @@
+{
+  "number": 2303,
+  "title": "fix(simple): add error handling for calloc failure in Socket_simple_reconnect_get_socket",
+  "body": "## Summary\nThe `Socket_simple_reconnect_get_socket()` function returns NULL on `calloc()` failure without setting an error code, inconsistent with Simple API error handling patterns.\n\n## Location\n**File**: `src/simple/SocketSimple-reconnect.c`  \n**Lines**: 447-451  \n**Function**: `Socket_simple_reconnect_get_socket()`\n\n## Issue\n```c\nif (!conn->simple_socket) {\n    conn->simple_socket = calloc (1, sizeof (struct SocketSimple_Socket));\n    if (!conn->simple_socket)\n      return NULL;  // <-- No error set!\n}\n```\n\n## Current Behavior\n- Returns NULL on allocation failure\n- Does **not** call `simple_set_error()` to record the error\n- Caller cannot distinguish between \"not connected\" and \"allocation failed\"\n\n## Expected Behavior\nAll Simple API functions should set error codes on failure for consistent error reporting via `Socket_simple_error()`.\n\n## Recommendation\nAdd error handling:\n\n```c\nif (!conn->simple_socket) {\n    conn->simple_socket = calloc (1, sizeof (struct SocketSimple_Socket));\n    if (!conn->simple_socket) {\n        simple_set_error(SOCKET_SIMPLE_ERR_MEMORY, \n                        \"Failed to allocate socket wrapper\");\n        return NULL;\n    }\n}\n```\n\n## Analysis\n**Why this matters**:\n- This is a getter function (not a primary API entry point)\n- Memory allocation failures are rare but should be reported consistently\n- The Simple API contract is that errors are always retrievable via `Socket_simple_error()`\n\n**Alternative**: Consider using Arena allocation tied to the connection's lifecycle instead of manual `calloc()`, which would eliminate this failure mode entirely.\n\n## Pattern\nPattern ID: `CALLOC_NO_NULL_CHECK_DELAYED`  \nCategory: Security/Consistency  \nSeverity: MEDIUM  \nStatus: NEEDS_MANUAL_REVIEW\n\n## Related\n- See CLAUDE.md \"Memory Leaks (Multiple Exit Points)\" section\n- Compare with other Simple API functions that consistently call `simple_set_error()`",
+  "labels": [
+    "bug"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

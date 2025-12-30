@@ -1,0 +1,10 @@
+{
+  "number": 2222,
+  "title": "security(http): avoid casting away volatile in async I/O state initialization",
+  "body": "## Summary\n\nIn `src/http/SocketHTTPClient-async.c`, the async I/O functions cast away the `volatile` qualifier when calling `memset` on the `AsyncIOState` structure.\n\n## Location\n\n- **File**: `/home/tetsuo/git/tetsuo-socket/src/http/SocketHTTPClient-async.c`\n- **Lines**: 250, 307\n- **Functions**: `httpclient_io_send`, `httpclient_io_recv`\n\n## Issue Details\n\n**Pattern**: `VOID_CAST_VOLATILE`\n**Severity**: MEDIUM\n**Category**: Security\n\nThe `AsyncIOState` structure has volatile fields:\n```c\ntypedef struct AsyncIOState\n{\n  volatile int completed;\n  volatile ssize_t bytes;\n  volatile int error;\n} AsyncIOState;\n```\n\nBut the initialization casts away volatile:\n```c\nAsyncIOState state;\n/* ... */\nmemset ((void *)&state, 0, sizeof (state));  // Casts away volatile\n```\n\nWhile the code is currently safe (initialization happens before any async operations), this pattern is risky because:\n1. It violates the intent of the `volatile` qualifier\n2. Future refactoring might introduce race conditions\n3. It's a code smell that suggests potential threading issues\n\n## Recommendation\n\nUse explicit field initialization instead of memset:\n\n```c\nAsyncIOState state;\nstate.completed = 0;\nstate.bytes = 0;\nstate.error = 0;\n```\n\nThis:\n- Respects the volatile qualifier\n- Is clearer about intent\n- Has no performance penalty (compiler optimizes to same code)\n- Follows best practices from CLAUDE.md exception safety guidelines\n\n## Impact\n\n- Security: Prevents potential compiler optimizations that might break threading guarantees\n- Maintainability: Makes threading contract explicit\n- Code quality: Follows volatile best practices",
+  "labels": [
+    "wip:claude-1767092676-3930812"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

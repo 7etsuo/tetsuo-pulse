@@ -1,0 +1,12 @@
+{
+  "issue": 2204,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2474",
+  "pr_number": 2474,
+  "branch": "issue-2204-fix-assert-release",
+  "files_changed": ["src/core/SocketEvent.c"],
+  "tests_passed": true,
+  "commit_sha": "dc765096",
+  "summary": "Replaced assert(event) with explicit NULL check in socketevent_dispatch() to prevent undefined behavior in release builds where NDEBUG is defined. The function now logs an error and returns safely if event is NULL, providing defense against CWE-476 (NULL Pointer Dereference) in production environments.",
+  "test_results": "test_socketevent: 15/15 tests passed with ASan/UBSan enabled"
+}

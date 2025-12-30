@@ -1,0 +1,11 @@
+{
+  "number": 2234,
+  "title": "refactor(http): replace duplicated whitespace skipping with sockethttp_skip_whitespace()",
+  "body": "## Summary\n`SocketHTTP_Headers_get_int()` manually skips whitespace twice using duplicated code. The existing `sockethttp_skip_whitespace()` helper should be used instead.\n\n## Location\n- **File**: `src/http/SocketHTTP-headers.c`\n- **Lines**: 515-516, 543-544\n- **Function**: `SocketHTTP_Headers_get_int()`\n\n## Issue\nThe function contains two instances of manual whitespace skipping:\n```c\n// First occurrence (line 515-516)\nwhile (*p == ' ' || *p == '\\t')\n  p++;\n\n// Second occurrence (line 543-544)\nwhile (*p == ' ' || *p == '\\t')\n  p++;\n```\n\nHowever, `SocketHTTP-private.h` provides `sockethttp_skip_whitespace()` (lines 86-91) which implements this exact pattern.\n\n## Recommendation\nReplace manual whitespace skipping with the helper:\n```c\n// Replace line 515-516\np = sockethttp_skip_whitespace(p);\n\n// Replace line 543-544\np = sockethttp_skip_whitespace(p);\n```\n\n## Benefits\n- Eliminates code duplication (2 instances)\n- Uses centralized, tested helper function\n- Improves consistency across HTTP parsing code\n\n## Pattern\n- **Pattern ID**: REDUNDANT_WHITESPACE_SKIP\n- **Category**: Refactoring\n- **Severity**: LOW",
+  "labels": [
+    "enhancement",
+    "wip:claude-1767092676-3930812"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

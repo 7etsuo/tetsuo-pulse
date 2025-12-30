@@ -1,0 +1,17 @@
+{
+  "issue": 2313,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2514",
+  "pr_number": 2514,
+  "branch": "issue-2313-refactor-keepalive-helpers",
+  "files_changed": [
+    "src/simple/SocketSimple-tcp.c"
+  ],
+  "tests_passed": true,
+  "commit_sha": "84327cf7682ab214ce99f396715d513026106871",
+  "summary": "Refactored Socket_simple_set_keepalive function by extracting platform-specific socket option logic into three focused helper functions (set_keepalive_idle, set_keepalive_interval, set_keepalive_count). Reduced nesting depth from 4 to 2 levels and function length from 65 to ~35 lines, improving readability and maintainability.",
+  "tests_run": [
+    "test_socket (299/299 passed)",
+    "test_simple_recv_line (6/6 passed)"
+  ]
+}

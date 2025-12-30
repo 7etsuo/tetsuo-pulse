@@ -1,0 +1,8 @@
+{
+  "number": 2354,
+  "title": "security(tls): validate LONG_MAX comparison in session restore",
+  "body": "## Summary\n\nThe length validation in `SocketTLS_session_restore()` compares `size_t` with `LONG_MAX`, which could be problematic on platforms where `sizeof(size_t) > sizeof(long)`.\n\n## Location\n\n**File**: `src/tls/SocketTLS.c`\n**Line**: 1644\n**Function**: `SocketTLS_session_restore()`\n\n## Issue\n\n```c\n/* Validate length to prevent integer overflow in d2i_SSL_SESSION */\nif (len == 0 || len > (size_t)LONG_MAX)\n    return 0; /* Invalid data */\n```\n\nOn 64-bit Windows (LLP64 model), `long` is 32 bits but `size_t` is 64 bits. This could reject valid session data or, in edge cases, allow overflow.\n\n## Recommendation\n\nUse a more portable check:\n\n```c\n/* Validate length bounds for d2i_SSL_SESSION (takes long) */\nif (len == 0 || len > INT_MAX)  /* More conservative, always safe */\n    return 0;\n```\n\nOr add explicit platform checking:\n\n```c\n#if LONG_MAX < SIZE_MAX\nif (len > (size_t)LONG_MAX)\n    return 0;\n#endif\n```\n\n## Impact\n\n- **Severity**: HIGH\n- **Category**: Security\n- **Pattern**: MISSING_OVERFLOW_CHECK\n- **Affected Platforms**: 64-bit Windows (LLP64), potentially others\n\n## Labels\n\n- `security`\n- `portability`\n- `medium-priority`",
+  "labels": [],
+  "state": "OPEN",
+  "dependencies": []
+}

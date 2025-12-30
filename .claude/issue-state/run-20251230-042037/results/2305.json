@@ -1,0 +1,15 @@
+{
+  "issue": 2305,
+  "status": "already_resolved",
+  "resolution": "Issue was already resolved in commit 8cd2cd2a (PR #2398). The function Socket_simple_dns_request_result at src/simple/SocketSimple-dns.c:715-749 now uses the convert_addrinfo_to_result helper instead of duplicating the conversion logic. The function was reduced from 80 lines to ~35 lines. The related function simple_dns_callback_wrapper was also refactored in the same commit. This change closed issue #2274.",
+  "commit": "8cd2cd2a40d92fd2adcc5f6b1b2c076ad083ecba",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2398",
+  "details": {
+    "file": "src/simple/SocketSimple-dns.c",
+    "function": "Socket_simple_dns_request_result",
+    "lines": "715-749",
+    "helper_function": "convert_addrinfo_to_result",
+    "lines_removed": "~70",
+    "closed_issue": 2274
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "issue": 2232,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2453",
+  "pr_number": 2453,
+  "branch": "issue-2232-simplify-dns-tls-start-connection",
+  "files_changed": ["src/dns/SocketDNSoverTLS.c"],
+  "tests_passed": true,
+  "commit_sha": "9a5d7047b81ac01b9bb1aba6c879935b93e70694"
+}

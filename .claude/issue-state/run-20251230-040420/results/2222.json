@@ -1,0 +1,11 @@
+{
+  "issue": 2222,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2461",
+  "pr_number": 2461,
+  "branch": "issue-2222-fix-volatile-cast-v2",
+  "files_changed": ["src/http/SocketHTTPClient-async.c"],
+  "tests_passed": true,
+  "commit_sha": "15871197e7e9e481e8fd9dc230ff5a14930bc3e1",
+  "summary": "Replaced memset with explicit field initialization to respect volatile qualifier on AsyncIOState structure. Changed lines 250 and 307 from casting away volatile to using explicit field initialization (state.completed=0, state.bytes=0, state.error=0). This prevents potential compiler optimizations that might break threading guarantees."
+}

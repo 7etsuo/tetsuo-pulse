@@ -1,0 +1,8 @@
+{
+  "number": 2366,
+  "title": "refactor(http2-priority): remove redundant bounds check for urgency",
+  "body": "## Summary\n\nRemove redundant bounds check at line 203 in `SocketHTTP2-priority.c`. The urgency value is already validated during parsing at lines 182-187.\n\n## Details\n\n**File:** `src/http/SocketHTTP2-priority.c`\n**Line:** 203\n**Category:** Redundancy\n**Severity:** Low\n\n### Current Code\n\n```c\n/* Early bounds check to prevent overflow - lines 182-187 */\nif (urgency > SOCKETHTTP2_PRIORITY_MAX_URGENCY)\n  {\n    SOCKET_LOG_DEBUG_MSG (\n        \"Priority parse error: u=%d out of range [0-7]\", urgency);\n    return -1;\n  }\n\n/* ... digits check ... */\n\n/* Redundant check at line 203 */\nif (urgency < 0 || urgency > SOCKETHTTP2_PRIORITY_MAX_URGENCY)\n  {\n    SOCKET_LOG_DEBUG_MSG (\n        \"Priority parse error: u=%d out of range [0-7]\", urgency);\n    return -1;\n  }\n```\n\n### Analysis\n\n1. The `urgency > SOCKETHTTP2_PRIORITY_MAX_URGENCY` check at line 203 is redundant because:\n   - The same check already exists at line 182 inside the parsing loop\n   - If urgency exceeds the max, the function returns early at line 186\n\n2. The `urgency < 0` check is also unnecessary because:\n   - `urgency` is initialized to 0 (or a default value)\n   - It is only incremented during digit parsing (`urgency * 10 + digit`)\n   - The value can never become negative\n\n### Suggested Fix\n\nRemove the entire conditional block at lines 203-208.\n\n## Labels\n\n- `refactor`\n- `low-priority`\n- `code-quality`",
+  "labels": [],
+  "state": "OPEN",
+  "dependencies": []
+}

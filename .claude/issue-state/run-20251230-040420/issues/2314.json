@@ -1,0 +1,11 @@
+{
+  "number": 2314,
+  "title": "refactor(simple-ws): define constants for WebSocket frame/message size limits",
+  "body": "## Issue\n\n**File**: `src/simple/SocketSimple-ws.c`  \n**Lines**: 540-541  \n**Pattern**: `MAGIC_BUFFER_SIZES`  \n**Severity**: MEDIUM  \n**Category**: Redundancy / Code Quality\n\nThe `Socket_simple_ws_server_config_init()` function uses hardcoded magic numbers for WebSocket size limits instead of named constants.\n\n## Current Code\n\n```c\nvoid\nSocket_simple_ws_server_config_init (SocketSimple_WSServerConfig *config)\n{\n  if (!config)\n    return;\n  memset (config, 0, sizeof (*config));\n  config->max_frame_size = 16 * 1024 * 1024;   /* 16MB */\n  config->max_message_size = 64 * 1024 * 1024; /* 64MB */\n  config->validate_utf8 = 1;\n  config->enable_compression = 0;\n  config->ping_interval_ms = 0;\n  config->subprotocols = NULL;\n}\n```\n\n## Recommendation\n\nDefine named constants in `src/simple/SocketSimple-internal.h`:\n\n```c\n/* WebSocket size limits */\n#define SOCKET_SIMPLE_WS_DEFAULT_MAX_FRAME_SIZE   (16 * 1024 * 1024)  /* 16MB */\n#define SOCKET_SIMPLE_WS_DEFAULT_MAX_MESSAGE_SIZE (64 * 1024 * 1024)  /* 64MB */\n```\n\nThen use them:\n\n```c\nconfig->max_frame_size = SOCKET_SIMPLE_WS_DEFAULT_MAX_FRAME_SIZE;\nconfig->max_message_size = SOCKET_SIMPLE_WS_DEFAULT_MAX_MESSAGE_SIZE;\n```\n\n## Benefits\n\n- Self-documenting code\n- Single source of truth for default limits\n- Easier to adjust limits across codebase\n- Follows C Anti-Patterns guidance in CLAUDE.md\n\n## Location\n\n- File: `src/simple/SocketSimple-ws.c:540-541`\n- Suggested constant location: `src/simple/SocketSimple-internal.h`",
+  "labels": [
+    "enhancement",
+    "good first issue"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

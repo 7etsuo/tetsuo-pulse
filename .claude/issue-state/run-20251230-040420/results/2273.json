@@ -1,0 +1,11 @@
+{
+  "issue": 2273,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2469",
+  "pr_number": 2469,
+  "branch": "issue-2273-extract-bounds-check-helper",
+  "files_changed": ["src/socket/SocketAsync.c"],
+  "tests_passed": true,
+  "commit_sha": "df5e084138b59e146987766cdb62b7ed6b09a86b",
+  "summary": "Extracted bounds check into validate_fixed_buffer_bounds() static inline helper"
+}

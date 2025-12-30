@@ -1,0 +1,33 @@
+{
+  "issue": 2209,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2478",
+  "pr_number": 2478,
+  "branch": "issue-2209-extract-dns-resolver-helpers",
+  "files_changed": ["src/dns/SocketDNSResolver.c"],
+  "tests_passed": true,
+  "commit_sha": "0e39e8b8",
+  "changes_summary": {
+    "helpers_extracted": 3,
+    "functions_refactored": 3,
+    "lines_reduced": {
+      "generate_unique_id": "52 -> 36 lines",
+      "transport_callback": "63 -> 49 lines",
+      "SocketDNSResolver_resolve": "54 -> 44 lines"
+    },
+    "new_helpers": [
+      "is_query_id_in_use() - 15 lines",
+      "handle_transport_error() - 19 lines",
+      "validate_query_prerequisites() - 22 lines"
+    ]
+  },
+  "test_results": {
+    "test_dns_resolver": "26/26 passed",
+    "test_dns_cache": "passed",
+    "test_dns_transport": "passed",
+    "test_dns_wire": "passed",
+    "sanitizers": "enabled (ASan + UBSan)",
+    "memory_leaks": "none introduced",
+    "pre_existing_failures": ["test_dns_queue_limit (unrelated memory leak in test code)"]
+  }
+}

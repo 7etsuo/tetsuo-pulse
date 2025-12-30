@@ -1,0 +1,13 @@
+{
+  "issue": 2335,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2516",
+  "pr_number": 2516,
+  "branch": "issue-2335-consolidate-ws-exception-handlers",
+  "files_changed": [
+    "src/simple/SocketSimple-ws.c"
+  ],
+  "tests_passed": true,
+  "commit_sha": "38d0591d4588954c35b5a4424aeb4e8b212fc634",
+  "summary": "Consolidated duplicate WebSocket exception handlers into WS_TRY_OPERATION macro, reducing code duplication by ~60 lines across three functions while maintaining consistent error handling and cleanup logic. All WebSocket tests pass with sanitizers enabled."
+}

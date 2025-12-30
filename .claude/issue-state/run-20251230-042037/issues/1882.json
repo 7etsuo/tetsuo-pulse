@@ -1,0 +1,11 @@
+{
+  "number": 1882,
+  "title": "refactor(dns-cookie): extract big-endian serialization helper",
+  "body": "## Summary\nManual big-endian serialization in `generate_client_cookie_fnv()` uses 8 repetitive shift operations that could be simplified.\n\n## Location\n- **File**: `src/dns/SocketDNSCookie.c`\n- **Lines**: 820-828\n- **Pattern**: `MANUAL_ENDIAN_CONVERSION`\n- **Severity**: MEDIUM\n- **Category**: Refactoring\n\n## Current Code\n```c\n/* Store as big-endian */\ncookie[0] = (hash >> 56) & 0xFF;\ncookie[1] = (hash >> 48) & 0xFF;\ncookie[2] = (hash >> 40) & 0xFF;\ncookie[3] = (hash >> 32) & 0xFF;\ncookie[4] = (hash >> 24) & 0xFF;\ncookie[5] = (hash >> 16) & 0xFF;\ncookie[6] = (hash >> 8) & 0xFF;\ncookie[7] = hash & 0xFF;\n```\n\n## Issue\n- Repetitive pattern with magic shift values\n- Error-prone if modified\n- Could use standard network byte order functions or helper\n\n## Recommendation\nOption 1: Use network byte order (if available):\n```c\nuint64_t hash_be = htobe64(hash);  /* or htonll() */\nmemcpy(cookie, &hash_be, sizeof(hash_be));\n```\n\nOption 2: Extract to inline helper:\n```c\nstatic inline void\nstore_uint64_be(uint8_t *buf, uint64_t value)\n{\n  buf[0] = (value >> 56) & 0xFF;\n  buf[1] = (value >> 48) & 0xFF;\n  buf[2] = (value >> 40) & 0xFF;\n  buf[3] = (value >> 32) & 0xFF;\n  buf[4] = (value >> 24) & 0xFF;\n  buf[5] = (value >> 16) & 0xFF;\n  buf[6] = (value >> 8) & 0xFF;\n  buf[7] = value & 0xFF;\n}\n\n/* Then use: */\nstore_uint64_be(cookie, hash);\n```\n\n## Benefits\n- Reduced code duplication\n- More maintainable\n- Standard pattern for endianness handling",
+  "labels": [
+    "enhancement",
+    "wip:claude-1767076339-1196148"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

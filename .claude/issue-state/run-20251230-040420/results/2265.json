@@ -1,0 +1,29 @@
+{
+  "issue": 2265,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2443",
+  "pr_number": 2443,
+  "branch": "issue-2265-extract-timespec-helper",
+  "files_changed": [
+    "src/simple/SocketSimple-ratelimit.c"
+  ],
+  "tests_passed": true,
+  "commit_sha": "882793e533775acedf71d3e20ba3e9998ef64124",
+  "implementation_details": {
+    "summary": "Extracted duplicated milliseconds-to-timespec conversion code into static helper function",
+    "changes": [
+      "Added ms_to_timespec() static helper function after refill_tokens()",
+      "Replaced duplicated conversion in Socket_simple_ratelimit_acquire() at lines 232-233",
+      "Replaced duplicated conversion in Socket_simple_ratelimit_acquire_timeout() at lines 290-291",
+      "Uses existing NANOSECONDS_PER_MILLISECOND constant instead of magic number 1000000"
+    ],
+    "tests_run": [
+      "test_simple_ratelimit (10/10 tests passed)"
+    ],
+    "sanitizers": {
+      "asan": "enabled",
+      "ubsan": "enabled",
+      "leaks_detected": false
+    }
+  }
+}
