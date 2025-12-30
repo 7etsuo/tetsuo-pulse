@@ -637,7 +637,7 @@ static const HashTable_Config sharded_session_config = {
 /**
  * Select shard based on session ID hash using golden ratio multiplication
  *
- * Uses hash multiplier 31 (prime, as in Java's hashCode) followed by golden
+ * Uses socket_util_hash_bytes_prime31() (multiplier 31) followed by golden
  * ratio mixing. This differs from the DJB2 hash (multiplier 33) used elsewhere
  * because:
  * 1. Session IDs are random byte sequences, not ASCII strings (DJB2 optimized
@@ -653,11 +653,10 @@ static size_t
 select_shard (TLSSessionCacheSharded_T *cache, const unsigned char *session_id,
               size_t id_len)
 {
-  unsigned hash = 0;
-  for (size_t i = 0; i < id_len && i < 16; i++)
-    {
-      hash = hash * 31 + session_id[i];  /* Prime 31: (x << 5) - x */
-    }
+  /* Hash first 16 bytes of session ID using prime-31 hash */
+  unsigned hash = socket_util_hash_bytes_prime31 (session_id, id_len, 16);
+
+  /* Apply golden ratio mixing and mask to select shard */
   return (size_t)((hash * HASH_GOLDEN_RATIO) & cache->shard_mask);
 }
 

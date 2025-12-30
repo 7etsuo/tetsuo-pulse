@@ -523,6 +523,44 @@ socket_util_hash_djb2_ci_len (const char *str, size_t len, unsigned table_size)
 }
 
 /**
+ * @brief Hash byte sequence with prime multiplier 31 for random data.
+ * @ingroup foundation
+ * @param data Byte sequence to hash (may contain any byte values).
+ * @param len Length of byte sequence (actual bytes hashed is min(len, max_len)).
+ * @param max_len Maximum bytes to hash from data (for performance).
+ * @return Hash value (before modulo/masking).
+ * @threadsafe Yes (pure function, no shared state)
+ *
+ * Uses prime multiplier 31 (instead of DJB2's 33) optimized for random byte
+ * sequences like cryptographic session IDs, not ASCII strings. The compiler
+ * can optimize 31*x as (x << 5) - x.
+ *
+ * Designed for use with golden ratio mixing or power-of-2 masking rather than
+ * prime modulo, hence returns raw hash value. Typical usage:
+ *   unsigned h = socket_util_hash_bytes_prime31(id, id_len, 16);
+ *   size_t index = (h * HASH_GOLDEN_RATIO) & mask;
+ *
+ * Why prime 31 instead of DJB2's 33:
+ * - Better distribution for random bytes vs ASCII text
+ * - Compiler optimization: 31*x = (x << 5) - x
+ * - Matches Java hashCode() convention for byte arrays
+ *
+ * @see select_shard() in SocketTLS-performance.c for usage example.
+ */
+static inline unsigned
+socket_util_hash_bytes_prime31 (const unsigned char *data, size_t len,
+                                size_t max_len)
+{
+  unsigned hash = 0;
+  size_t limit = (len < max_len) ? len : max_len;
+
+  for (size_t i = 0; i < limit; i++)
+    hash = hash * 31 + data[i]; /* Optimized as (hash << 5) - hash + data[i] */
+
+  return hash;
+}
+
+/**
  * @brief Round up to next power of 2.
  * @ingroup foundation
  * @param n Value to round up (must be > 0).
