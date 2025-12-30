@@ -2387,28 +2387,10 @@ SocketTLS_get_ocsp_next_update (Socket_T socket, time_t *next_update)
     return -1;
 
 #if !defined(OPENSSL_NO_OCSP)
-  const unsigned char *ocsp_resp;
-  long ocsp_len = SSL_get_tlsext_status_ocsp_resp (ssl, &ocsp_resp);
-
-  if (ocsp_len <= 0 || !ocsp_resp)
-    return -1;
-
-  OCSP_RESPONSE *resp = d2i_OCSP_RESPONSE (NULL, &ocsp_resp, ocsp_len);
-  if (!resp)
-    return -1;
-
-  if (OCSP_response_status (resp) != OCSP_RESPONSE_STATUS_SUCCESSFUL)
-    {
-      OCSP_RESPONSE_free (resp);
-      return -1;
-    }
-
-  OCSP_BASICRESP *basic = OCSP_response_get1_basic (resp);
+  /* Reuse existing OCSP response parser */
+  OCSP_BASICRESP *basic = ocsp_parse_response (ssl);
   if (!basic)
-    {
-      OCSP_RESPONSE_free (resp);
-      return -1;
-    }
+    return -1;
 
   int result = -1;
   int resp_count = OCSP_resp_count (basic);
@@ -2435,7 +2417,6 @@ SocketTLS_get_ocsp_next_update (Socket_T socket, time_t *next_update)
     }
 
   OCSP_BASICRESP_free (basic);
-  OCSP_RESPONSE_free (resp);
 
   return result;
 #else
