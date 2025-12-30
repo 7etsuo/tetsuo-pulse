@@ -375,6 +375,69 @@ derive_traffic_keys (const uint8_t *secret, size_t secret_len,
 #endif /* SOCKET_HAS_TLS */
 
 /* ============================================================================
+ * Key Derivation Helpers
+ * ============================================================================
+ */
+
+#ifdef SOCKET_HAS_TLS
+
+/**
+ * @brief Derive initial secret from connection ID.
+ *
+ * Implements RFC 9001 Section 5.2 Step 1: HKDF-Extract with version-specific
+ * salt and client DCID.
+ *
+ * @param salt Version-specific salt
+ * @param salt_len Salt length
+ * @param dcid Client Destination Connection ID
+ * @param initial_secret Output buffer (SOCKET_CRYPTO_SHA256_SIZE bytes)
+ * @return 0 on success, -1 on error
+ */
+static int
+derive_initial_secret (const uint8_t *salt, size_t salt_len,
+                       const SocketQUICConnectionID_T *dcid,
+                       uint8_t initial_secret[SOCKET_CRYPTO_SHA256_SIZE])
+{
+  return hkdf_extract (salt, salt_len, dcid->data, dcid->len,
+                       initial_secret, SOCKET_CRYPTO_SHA256_SIZE);
+}
+
+/**
+ * @brief Derive client and server secrets from initial secret.
+ *
+ * Implements RFC 9001 Section 5.2 Steps 2-3: HKDF-Expand-Label to derive
+ * client and server secrets from the initial secret.
+ *
+ * @param initial_secret Initial secret from HKDF-Extract
+ * @param client_secret Output buffer for client secret (SOCKET_CRYPTO_SHA256_SIZE bytes)
+ * @param server_secret Output buffer for server secret (SOCKET_CRYPTO_SHA256_SIZE bytes)
+ * @return 0 on success, -1 on error
+ */
+static int
+derive_endpoint_secrets (const uint8_t *initial_secret,
+                         uint8_t client_secret[SOCKET_CRYPTO_SHA256_SIZE],
+                         uint8_t server_secret[SOCKET_CRYPTO_SHA256_SIZE])
+{
+  /* Derive client secret */
+  if (hkdf_expand_label (initial_secret, SOCKET_CRYPTO_SHA256_SIZE,
+                         label_client_in, STRLEN_LIT (label_client_in),
+                         NULL, 0,
+                         client_secret, SOCKET_CRYPTO_SHA256_SIZE) < 0)
+    return -1;
+
+  /* Derive server secret */
+  if (hkdf_expand_label (initial_secret, SOCKET_CRYPTO_SHA256_SIZE,
+                         label_server_in, STRLEN_LIT (label_server_in),
+                         NULL, 0,
+                         server_secret, SOCKET_CRYPTO_SHA256_SIZE) < 0)
+    return -1;
+
+  return 0;
+}
+
+#endif /* SOCKET_HAS_TLS */
+
+/* ============================================================================
  * Key Derivation
  * ============================================================================
  */
@@ -405,30 +468,18 @@ SocketQUICInitial_derive_keys (const SocketQUICConnectionID_T *dcid,
   if (result != QUIC_INITIAL_OK)
     return result;
 
-  /* Step 1: HKDF-Extract(salt, client DCID) -> initial_secret */
-  if (hkdf_extract (salt, salt_len,
-                    dcid->data, dcid->len,
-                    initial_secret, SOCKET_CRYPTO_SHA256_SIZE) < 0)
+  /* Step 1: Derive initial secret from DCID */
+  if (derive_initial_secret (salt, salt_len, dcid, initial_secret) < 0)
     goto cleanup;
 
   initial_secret_valid = 1;
 
-  /* Step 2: Derive client secret */
-  if (hkdf_expand_label (initial_secret, SOCKET_CRYPTO_SHA256_SIZE,
-                          label_client_in, STRLEN_LIT (label_client_in),
-                          NULL, 0,
-                          client_secret, SOCKET_CRYPTO_SHA256_SIZE) < 0)
+  /* Step 2-3: Derive client and server secrets */
+  if (derive_endpoint_secrets (initial_secret, client_secret,
+                                server_secret) < 0)
     goto cleanup;
 
   client_secret_valid = 1;
-
-  /* Step 3: Derive server secret */
-  if (hkdf_expand_label (initial_secret, SOCKET_CRYPTO_SHA256_SIZE,
-                          label_server_in, STRLEN_LIT (label_server_in),
-                          NULL, 0,
-                          server_secret, SOCKET_CRYPTO_SHA256_SIZE) < 0)
-    goto cleanup;
-
   server_secret_valid = 1;
 
   /* Clear initial secret (no longer needed) */
