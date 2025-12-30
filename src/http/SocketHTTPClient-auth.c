@@ -540,6 +540,11 @@ generate_cnonce (char *cnonce, size_t size)
 
   if (SocketCrypto_random_bytes (random_bytes, sizeof (random_bytes)) != 0)
     {
+      /* WARNING: Crypto RNG failed, using weak time-based fallback for cnonce.
+       * This creates a predictable nonce that weakens HTTP Digest authentication
+       * security. Attackers who know the approximate request time can guess the
+       * cnonce, potentially enabling replay attacks. In production, ensure crypto
+       * RNG is available (requires OpenSSL/LibreSSL or /dev/urandom). */
       uint64_t t = (uint64_t)time (NULL);
       memcpy (random_bytes, &t, sizeof (t));
       memset (random_bytes + sizeof (t), 0,
