@@ -75,6 +75,19 @@ struct SocketSimple_WS
 };
 
 /* ============================================================================
+ * Constants
+ * ============================================================================
+ */
+
+/**
+ * @brief Default backlog for listen() calls when user doesn't specify one.
+ *
+ * Used by Socket_simple_listen() and Socket_simple_listen_unix() when
+ * backlog parameter is <= 0. Value of 128 is typical for most systems.
+ */
+#define SOCKET_SIMPLE_DEFAULT_BACKLOG 128
+
+/* ============================================================================
  * Thread-Local Error State
  * ============================================================================
  */

@@ -97,7 +97,7 @@ Socket_simple_listen (const char *host, int port, int backlog)
     /* Use library convenience function - handles address family automatically
      */
     sock = Socket_listen_tcp (host ? host : "0.0.0.0", port,
-                              backlog > 0 ? backlog : 128);
+                              backlog > 0 ? backlog : SOCKET_SIMPLE_DEFAULT_BACKLOG);
   }
   EXCEPT (Socket_Failed)
   {
@@ -960,7 +960,7 @@ Socket_simple_listen_unix (const char *path, int backlog)
   {
     sock = Socket_new (AF_UNIX, SOCK_STREAM, 0);
     Socket_bind_unix (sock, path);
-    Socket_listen (sock, backlog > 0 ? backlog : 128);
+    Socket_listen (sock, backlog > 0 ? backlog : SOCKET_SIMPLE_DEFAULT_BACKLOG);
   }
   EXCEPT (Socket_Failed)
   {
