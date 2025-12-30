@@ -1057,6 +1057,80 @@ Socket_simple_get_nodelay (SocketSimple_Socket_T sock)
   return val ? 1 : 0;
 }
 
+/* ============================================================================
+ * Keepalive Helper Functions
+ * ============================================================================
+ */
+
+static int
+set_keepalive_idle (int fd, int idle_secs)
+{
+#ifdef TCP_KEEPIDLE
+  if (idle_secs <= 0)
+    return 0;
+
+  if (setsockopt (fd, IPPROTO_TCP, TCP_KEEPIDLE, &idle_secs,
+                  sizeof (idle_secs))
+      < 0)
+    {
+      simple_set_error_errno (SOCKET_SIMPLE_ERR_SOCKET,
+                              "Failed to set TCP_KEEPIDLE");
+      return -1;
+    }
+#else
+  (void)fd;
+  (void)idle_secs;
+#endif
+  return 0;
+}
+
+static int
+set_keepalive_interval (int fd, int interval_secs)
+{
+#ifdef TCP_KEEPINTVL
+  if (interval_secs <= 0)
+    return 0;
+
+  if (setsockopt (fd, IPPROTO_TCP, TCP_KEEPINTVL, &interval_secs,
+                  sizeof (interval_secs))
+      < 0)
+    {
+      simple_set_error_errno (SOCKET_SIMPLE_ERR_SOCKET,
+                              "Failed to set TCP_KEEPINTVL");
+      return -1;
+    }
+#else
+  (void)fd;
+  (void)interval_secs;
+#endif
+  return 0;
+}
+
+static int
+set_keepalive_count (int fd, int count)
+{
+#ifdef TCP_KEEPCNT
+  if (count <= 0)
+    return 0;
+
+  if (setsockopt (fd, IPPROTO_TCP, TCP_KEEPCNT, &count, sizeof (count)) < 0)
+    {
+      simple_set_error_errno (SOCKET_SIMPLE_ERR_SOCKET,
+                              "Failed to set TCP_KEEPCNT");
+      return -1;
+    }
+#else
+  (void)fd;
+  (void)count;
+#endif
+  return 0;
+}
+
+/* ============================================================================
+ * Keepalive Configuration
+ * ============================================================================
+ */
+
 int
 Socket_simple_set_keepalive (SocketSimple_Socket_T sock, int enable,
                               int idle_secs, int interval_secs, int count)
@@ -1079,47 +1153,15 @@ Socket_simple_set_keepalive (SocketSimple_Socket_T sock, int enable,
       return -1;
     }
 
-  if (enable)
-    {
-#ifdef TCP_KEEPIDLE
-      if (idle_secs > 0)
-        {
-          if (setsockopt (fd, IPPROTO_TCP, TCP_KEEPIDLE, &idle_secs,
-                          sizeof (idle_secs))
-              < 0)
-            {
-              simple_set_error_errno (SOCKET_SIMPLE_ERR_SOCKET,
-                                      "Failed to set TCP_KEEPIDLE");
-              return -1;
-            }
-        }
-#endif
-#ifdef TCP_KEEPINTVL
-      if (interval_secs > 0)
-        {
-          if (setsockopt (fd, IPPROTO_TCP, TCP_KEEPINTVL, &interval_secs,
-                          sizeof (interval_secs))
-              < 0)
-            {
-              simple_set_error_errno (SOCKET_SIMPLE_ERR_SOCKET,
-                                      "Failed to set TCP_KEEPINTVL");
-              return -1;
-            }
-        }
-#endif
-#ifdef TCP_KEEPCNT
-      if (count > 0)
-        {
-          if (setsockopt (fd, IPPROTO_TCP, TCP_KEEPCNT, &count, sizeof (count))
-              < 0)
-            {
-              simple_set_error_errno (SOCKET_SIMPLE_ERR_SOCKET,
-                                      "Failed to set TCP_KEEPCNT");
-              return -1;
-            }
-        }
-#endif
-    }
+  if (!enable)
+    return 0;
+
+  if (set_keepalive_idle (fd, idle_secs) < 0)
+    return -1;
+  if (set_keepalive_interval (fd, interval_secs) < 0)
+    return -1;
+  if (set_keepalive_count (fd, count) < 0)
+    return -1;
 
   return 0;
 }
