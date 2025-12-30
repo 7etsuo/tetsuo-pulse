@@ -179,10 +179,7 @@ synprotect_hash_ip (T protect, const char *ip, unsigned table_size)
   assert (ip != NULL);
   assert (protect != NULL);
 
-  unsigned h = socket_util_hash_djb2 (ip, table_size);
-  h ^= protect->hash_seed;
-  h = socket_util_hash_uint (h, table_size);
-  return h % table_size;
+  return socket_util_hash_djb2_seeded (ip, table_size, protect->hash_seed);
 }
 
 /* Calculate weighted attempt count using linear interpolation */
