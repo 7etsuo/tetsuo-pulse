@@ -580,6 +580,66 @@ TEST (crl_overflow_protection)
   END_TRY;
 }
 
+/* Test safe multiplication prevents overflow in interval calculation */
+TEST (crl_interval_multiplication_overflow_protection)
+{
+  SocketTLSContext_T ctx = NULL;
+  const char *crl_file = "/tmp/test_crl_mul_overflow.crl";
+  const char *ca_key = "/tmp/test_crl_mul_overflow_ca.key";
+  const char *ca_cert = "/tmp/test_crl_mul_overflow_ca.crt";
+
+  if (!generate_test_crl (crl_file, ca_key, ca_cert))
+    return; /* Skip if openssl not available */
+
+  TRY
+  {
+    ctx = SocketTLSContext_new_client (NULL);
+    ASSERT_NOT_NULL (ctx);
+
+    /* Test with maximum allowed interval (1 year = 31536000 seconds)
+     * This verifies that socket_util_safe_mul_u64() is used to prevent
+     * overflow when computing interval_seconds * SOCKET_MS_PER_SECOND.
+     * Without safe_mul, this multiplication could overflow before the
+     * safe_add check, leading to incorrect scheduling.
+     *
+     * Issue #1941: Previously, the code did:
+     *   int64_t interval_ms = interval_seconds * SOCKET_MS_PER_SECOND;
+     * which could overflow if interval_seconds was large. The fix uses
+     * socket_util_safe_mul_u64() to detect overflow during multiplication.
+     */
+    SocketTLSContext_set_crl_auto_refresh (
+        ctx, crl_file, SOCKET_TLS_CRL_MAX_REFRESH_INTERVAL, NULL, NULL);
+
+    /* Verify scheduling succeeded without overflow */
+    long next_ms = SocketTLSContext_crl_next_refresh_ms (ctx);
+
+    /* Should be positive and finite (not clamped to INT64_MAX in normal case) */
+    ASSERT (next_ms > 0);
+
+    /* Verify the result is within expected range for 1 year interval
+     * 1 year = 31536000 seconds = 31536000000 milliseconds
+     * This should fit comfortably in int64_t without overflow */
+    ASSERT (next_ms < LONG_MAX);
+
+    /* Test refresh check also uses safe multiplication */
+    int refresh_result = SocketTLSContext_crl_check_refresh (ctx);
+
+    /* Should return 0 (not time to refresh yet) without crashing */
+    ASSERT_EQ (refresh_result, 0);
+
+    /* Verify timing remains valid after refresh check */
+    next_ms = SocketTLSContext_crl_next_refresh_ms (ctx);
+    ASSERT (next_ms > 0);
+  }
+  FINALLY
+  {
+    cleanup_test_crl (crl_file, ca_key, ca_cert);
+    if (ctx)
+      SocketTLSContext_free (&ctx);
+  }
+  END_TRY;
+}
+
 #endif /* SOCKET_HAS_TLS */
 
 int

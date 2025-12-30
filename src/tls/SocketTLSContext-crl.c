@@ -103,11 +103,22 @@ schedule_crl_refresh (T ctx, long interval_seconds)
   if (interval_seconds > 0)
     {
       int64_t now_ms = Socket_get_monotonic_ms ();
-      int64_t interval_ms = interval_seconds * SOCKET_MS_PER_SECOND;
+      uint64_t interval_ms_u64;
       uint64_t result;
 
+      /* Safely compute interval in milliseconds */
+      if (!socket_util_safe_mul_u64 ((uint64_t)interval_seconds,
+                                      (uint64_t)SOCKET_MS_PER_SECOND,
+                                      &interval_ms_u64))
+        {
+          /* Multiplication would overflow - clamp to INT64_MAX */
+          ctx->crl_next_refresh_ms = INT64_MAX;
+          return;
+        }
+
+      /* Now safely add to current time */
       /* Overflow protection: INT64_MAX ~= 292M years uptime */
-      if (!socket_util_safe_add_u64 ((uint64_t)now_ms, (uint64_t)interval_ms,
+      if (!socket_util_safe_add_u64 ((uint64_t)now_ms, interval_ms_u64,
                                       &result)
           || result > (uint64_t)INT64_MAX)
         {
@@ -203,14 +214,23 @@ SocketTLSContext_crl_check_refresh (T ctx)
         else
           {
             int success = try_load_crl (ctx, ctx->crl_refresh_path);
-            int64_t interval_ms = ctx->crl_refresh_interval * SOCKET_MS_PER_SECOND;
+            uint64_t interval_ms_u64;
             uint64_t next_refresh;
 
+            /* Safely compute interval in milliseconds */
+            if (!socket_util_safe_mul_u64 ((uint64_t)ctx->crl_refresh_interval,
+                                            (uint64_t)SOCKET_MS_PER_SECOND,
+                                            &interval_ms_u64))
+              {
+                /* Multiplication would overflow - clamp to INT64_MAX */
+                ctx->crl_next_refresh_ms = INT64_MAX;
+              }
+            /* Now safely add to current time */
             /* Overflow protection: INT64_MAX ~= 292M years uptime */
-            if (!socket_util_safe_add_u64 ((uint64_t)now_ms,
-                                            (uint64_t)interval_ms,
-                                            &next_refresh)
-                || next_refresh > (uint64_t)INT64_MAX)
+            else if (!socket_util_safe_add_u64 ((uint64_t)now_ms,
+                                                 interval_ms_u64,
+                                                 &next_refresh)
+                     || next_refresh > (uint64_t)INT64_MAX)
               {
                 /* Clamp to INT64_MAX on overflow */
                 ctx->crl_next_refresh_ms = INT64_MAX;
