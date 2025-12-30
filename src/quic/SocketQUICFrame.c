@@ -34,9 +34,6 @@
 /* 1-RTT only */
 #define PKT_1 (QUIC_PKT_1RTT)
 
-/* RFC 9000 Section 10.3: Stateless Reset Token size */
-#define QUIC_STATELESS_RESET_TOKEN_SIZE 16
-
 /**
  * @brief Frame type to allowed packet types mapping.
  */
