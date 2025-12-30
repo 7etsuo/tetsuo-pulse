@@ -132,11 +132,17 @@ sockethttp_parse_enum(const char *str, size_t len, const struct ParseEntry *tabl
     return default_val;
   len = sockethttp_effective_length(str, len);
   for (size_t i = 0; i < table_size; i++) {
-    if (len == table[i].len &&
-        (table[i].case_insens ? strncasecmp(str, table[i].str, len) == 0 :
-                                memcmp(str, table[i].str, len) == 0)) {
+    if (len != table[i].len)
+      continue;
+
+    int matches;
+    if (table[i].case_insens)
+      matches = strncasecmp(str, table[i].str, len) == 0;
+    else
+      matches = memcmp(str, table[i].str, len) == 0;
+
+    if (matches)
       return table[i].val;
-    }
   }
   return default_val;
 }
