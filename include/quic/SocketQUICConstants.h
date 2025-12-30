@@ -413,6 +413,20 @@
  */
 #define QUIC_TP_TYPICAL_ACTIVE_CONNID_LIMIT 8
 
+/**
+ * @brief Maximum parameter ID trackable for duplicate detection.
+ *
+ * Limited to 63 because duplicate checking uses a 64-bit bitmap.
+ * Parameters with ID >= 64 bypass duplicate detection, which is
+ * acceptable per RFC 9000 Section 18.1 (ignore unknown parameters).
+ *
+ * Current known parameters (all < 64):
+ *   0x00-0x10: Core parameters (RFC 9000)
+ *   0x11: VERSION_INFO (RFC 9369)
+ *   0x20: MAX_DATAGRAM_FRAME_SIZE (RFC 9221)
+ */
+#define QUIC_TP_DUPLICATE_CHECK_MAX_ID 63
+
 /* ============================================================================
  * Utility Macros
  * ============================================================================
