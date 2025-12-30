@@ -46,6 +46,13 @@ static const char *skip_to_next_param(const char *p);
 #define skip_delimiters sockethttp_skip_delimiters
 #define skip_whitespace sockethttp_skip_whitespace
 #define is_token_boundary sockethttp_is_token_boundary
+
+static inline int
+is_auth_delimiter (char c)
+{
+  return c == ',' || c == ' ' || c == '\t';
+}
+
 static const char *
 advance_quoted_content (const char *p, char *out, size_t out_size)
 {
@@ -95,7 +102,7 @@ parse_token_value (const char *p, char *out, size_t out_size)
 {
   size_t i = 0;
 
-  while (*p && *p != ',' && *p != ' ' && *p != '\t' && i < out_size - 1)
+  while (*p && !is_auth_delimiter (*p) && i < out_size - 1)
     out[i++] = *p++;
 
   out[i] = '\0';
@@ -130,8 +137,7 @@ parse_parameter_name (const char *p, char *name, size_t name_size)
 {
   size_t i = 0;
 
-  while (*p && *p != '=' && *p != ',' && *p != ' ' && *p != '\t'
-         && i < name_size - 1)
+  while (*p && *p != '=' && !is_auth_delimiter (*p) && i < name_size - 1)
     name[i++] = *p++;
 
   name[i] = '\0';
