@@ -319,6 +319,29 @@ cap_ttl (uint32_t ttl)
  */
 
 /**
+ * Check if a query ID is already in use.
+ *
+ * @param resolver Resolver instance with active queries.
+ * @param id       Query ID to check.
+ * @return 1 if ID is in use, 0 if available.
+ */
+static int
+is_query_id_in_use (T resolver, uint16_t id)
+{
+  unsigned h = hash_query_id (id);
+  struct SocketDNSResolver_Query *q = resolver->query_hash[h];
+
+  while (q)
+    {
+      if (q->id == id)
+        return 1;
+      q = q->hash_next;
+    }
+
+  return 0;
+}
+
+/**
  * Generate a cryptographically random query ID per RFC 5452 Section 4.
  *
  * Uses getrandom() for full 16-bit entropy to prevent cache poisoning
@@ -356,20 +379,7 @@ generate_unique_id (T resolver)
         id = 1;
 
       /* Check if ID is already in use */
-      unsigned h = hash_query_id (id);
-      struct SocketDNSResolver_Query *q = resolver->query_hash[h];
-      int found = 0;
-      while (q)
-        {
-          if (q->id == id)
-            {
-              found = 1;
-              break;
-            }
-          q = q->hash_next;
-        }
-
-      if (!found)
+      if (!is_query_id_in_use (resolver, id))
         return id;
 
       attempts++;
@@ -985,6 +995,38 @@ parse_response (T resolver, struct SocketDNSResolver_Query *q,
  * Transport Callback
  */
 
+/**
+ * Handle transport errors for a DNS query.
+ *
+ * Sets appropriate query state based on error type. DNS_ERROR_TRUNCATED
+ * triggers TCP fallback, all other errors cause immediate failure.
+ *
+ * @param q     Query structure to update.
+ * @param error Transport error code (DNS_ERROR_* from SocketDNSTransport).
+ * @return 1 if error was handled (caller should return), 0 if success.
+ */
+static int
+handle_transport_error (struct SocketDNSResolver_Query *q, int error)
+{
+  if (error == DNS_ERROR_SUCCESS)
+    return 0;
+
+  switch (error)
+    {
+    case DNS_ERROR_TRUNCATED:
+      /* TCP fallback - resend via TCP */
+      q->state = QUERY_STATE_TCP_FALLBACK;
+      q->is_tcp = 1;
+      break;
+    default:
+      /* All other errors cause failure */
+      q->state = QUERY_STATE_FAILED;
+      break;
+    }
+
+  return 1;
+}
+
 static void
 transport_callback (SocketDNSQuery_T query, const unsigned char *response,
                     size_t len, int error, void *userdata)
@@ -1001,21 +1043,8 @@ transport_callback (SocketDNSQuery_T query, const unsigned char *response,
   resolver = q->resolver; /* Use back-pointer */
 
   /* Handle transport errors */
-  if (error != DNS_ERROR_SUCCESS)
-    {
-      switch (error)
-        {
-        case DNS_ERROR_TRUNCATED:
-          /* TCP fallback - resend via TCP */
-          q->state = QUERY_STATE_TCP_FALLBACK;
-          q->is_tcp = 1;
-          return;
-        default:
-          /* All other errors cause failure */
-          q->state = QUERY_STATE_FAILED;
-          return;
-        }
-    }
+  if (handle_transport_error (q, error))
+    return;
 
   /* Parse response using shared parsing logic */
   if (response && len > 0)
@@ -1478,6 +1507,40 @@ try_cache (T resolver, const char *hostname, int flags,
 }
 
 /**
+ * Validate prerequisites for starting a DNS query.
+ *
+ * Checks nameserver availability and hostname length constraints.
+ * Invokes callback with error if validation fails.
+ *
+ * @param resolver  Resolver instance.
+ * @param hostname  Hostname to validate.
+ * @param callback  User callback to invoke on error.
+ * @param userdata  User data for callback.
+ * @return 0 if valid, error code otherwise.
+ */
+static int
+validate_query_prerequisites (T resolver, const char *hostname,
+                               SocketDNSResolver_Callback callback,
+                               void *userdata)
+{
+  /* Check nameservers */
+  if (SocketDNSTransport_nameserver_count (resolver->transport) == 0)
+    {
+      callback (NULL, NULL, RESOLVER_ERROR_NO_NS, userdata);
+      return RESOLVER_ERROR_NO_NS;
+    }
+
+  /* Validate hostname length before allocation */
+  if (strlen (hostname) >= DNS_MAX_NAME_LEN)
+    {
+      callback (NULL, NULL, RESOLVER_ERROR_INVALID, userdata);
+      return RESOLVER_ERROR_INVALID;
+    }
+
+  return RESOLVER_OK;
+}
+
+/**
  * Initialize a new DNS query structure.
  *
  * Allocates and initializes a query for the given hostname and parameters.
@@ -1542,19 +1605,10 @@ SocketDNSResolver_resolve (T resolver, const char *hostname, int flags,
   if (try_cache (resolver, hostname, flags, callback, userdata))
     return NULL;
 
-  /* Check nameservers */
-  if (SocketDNSTransport_nameserver_count (resolver->transport) == 0)
-    {
-      callback (NULL, NULL, RESOLVER_ERROR_NO_NS, userdata);
-      return NULL;
-    }
-
-  /* Validate hostname length before allocation */
-  if (strlen (hostname) >= DNS_MAX_NAME_LEN)
-    {
-      callback (NULL, NULL, RESOLVER_ERROR_INVALID, userdata);
-      return NULL;
-    }
+  /* Validate prerequisites */
+  if (validate_query_prerequisites (resolver, hostname, callback, userdata)
+      != RESOLVER_OK)
+    return NULL;
 
   /* Initialize query */
   q = initialize_query (resolver, hostname, flags, callback, userdata);
