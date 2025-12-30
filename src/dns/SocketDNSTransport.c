@@ -1133,7 +1133,7 @@ tcp_recv_length_prefix (struct DNSTCPConnection *conn)
     }
 
   /* Decode length from network byte order */
-  conn->msg_len = ((size_t)conn->len_buf[0] << 8) | (size_t)conn->len_buf[1];
+  conn->msg_len = socket_util_unpack_be16 (conn->len_buf);
   if (conn->msg_len == 0 || conn->msg_len > DNS_TCP_MAX_SIZE)
     {
       tcp_conn_close (conn);
