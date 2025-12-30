@@ -815,15 +815,11 @@ process_async_completions_internal (T async,
 }
 
 
-static unsigned
-socket_async_submit (T async, Socket_T socket, enum AsyncRequestType type,
-                     const void *send_buf, void *recv_buf, size_t len,
-                     SocketAsync_Callback cb, void *user_data,
-                     SocketAsync_Flags flags)
+static void
+validate_and_prepare_submit (T async, Socket_T socket, enum AsyncRequestType type,
+                              const void *send_buf, void *recv_buf, size_t len,
+                              SocketAsync_Callback cb)
 {
-  struct AsyncRequest *req;
-  unsigned request_id;
-
   if (!async || !socket || !cb || len == 0)
     {
       errno = EINVAL;
@@ -847,9 +843,13 @@ socket_async_submit (T async, Socket_T socket, enum AsyncRequestType type,
   TRY { Socket_setnonblocking (socket); }
   EXCEPT (Socket_Failed) { }
   END_TRY;
+}
 
-  req = setup_async_request (async, socket, cb, user_data, type, send_buf,
-                             recv_buf, len, flags);
+static unsigned
+submit_validated_request (T async, struct AsyncRequest *req,
+                          enum AsyncRequestType type)
+{
+  unsigned request_id;
 
   request_id = submit_and_track_request (async, req);
   if (request_id == 0)
@@ -860,6 +860,22 @@ socket_async_submit (T async, Socket_T socket, enum AsyncRequestType type,
     }
 
   return request_id;
+}
+
+static unsigned
+socket_async_submit (T async, Socket_T socket, enum AsyncRequestType type,
+                     const void *send_buf, void *recv_buf, size_t len,
+                     SocketAsync_Callback cb, void *user_data,
+                     SocketAsync_Flags flags)
+{
+  struct AsyncRequest *req;
+
+  validate_and_prepare_submit (async, socket, type, send_buf, recv_buf, len, cb);
+
+  req = setup_async_request (async, socket, cb, user_data, type, send_buf,
+                             recv_buf, len, flags);
+
+  return submit_validated_request (async, req, type);
 }
 
 T
@@ -1504,31 +1520,8 @@ socket_async_submit_with_timeout (T async, Socket_T socket,
                                   int64_t timeout_ms)
 {
   struct AsyncRequest *req;
-  unsigned request_id;
 
-  if (!async || !socket || !cb || len == 0)
-    {
-      errno = EINVAL;
-      SOCKET_ERROR_FMT ("Invalid parameters: async=%p socket=%p cb=%p len=%zu",
-                        (void *)async, (void *)socket, (void *)cb, len);
-      RAISE_MODULE_ERROR (SocketAsync_Failed);
-    }
-  if (type == REQ_SEND && !send_buf)
-    {
-      errno = EINVAL;
-      SOCKET_ERROR_MSG ("Send buffer is NULL for send operation");
-      RAISE_MODULE_ERROR (SocketAsync_Failed);
-    }
-  if (type == REQ_RECV && !recv_buf)
-    {
-      errno = EINVAL;
-      SOCKET_ERROR_MSG ("Receive buffer is NULL for recv operation");
-      RAISE_MODULE_ERROR (SocketAsync_Failed);
-    }
-
-  TRY { Socket_setnonblocking (socket); }
-  EXCEPT (Socket_Failed) { }
-  END_TRY;
+  validate_and_prepare_submit (async, socket, type, send_buf, recv_buf, len, cb);
 
   req = setup_async_request (async, socket, cb, user_data, type, send_buf,
                              recv_buf, len, flags);
@@ -1536,15 +1529,7 @@ socket_async_submit_with_timeout (T async, Socket_T socket,
   if (timeout_ms > 0)
     req->deadline_ms = Socket_get_monotonic_ms () + timeout_ms;
 
-  request_id = submit_and_track_request (async, req);
-  if (request_id == 0)
-    {
-      const char *op = (type == REQ_SEND) ? "send" : "recv";
-      SOCKET_ERROR_FMT ("Failed to submit async %s (errno=%d)", op, errno);
-      RAISE_MODULE_ERROR (SocketAsync_Failed);
-    }
-
-  return request_id;
+  return submit_validated_request (async, req, type);
 }
 
 
