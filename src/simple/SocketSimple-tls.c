@@ -439,7 +439,8 @@ Socket_simple_listen_tls (const char *host, int port, int backlog,
     /* Use library convenience function - handles address family automatically
      */
     sock = Socket_listen_tcp (host ? host : "0.0.0.0", port,
-                              backlog > 0 ? backlog : 128);
+                              backlog > 0 ? backlog
+                                          : SOCKET_DEFAULT_LISTEN_BACKLOG);
 
     /* Create server TLS context */
     ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
