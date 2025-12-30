@@ -33,7 +33,7 @@ Socket_simple_dtls_options_defaults (SocketSimple_DTLSOptions *opts)
   opts->ca_path = NULL;
   opts->client_cert = NULL;
   opts->client_key = NULL;
-  opts->mtu = 0; /* Use default 1400 */
+  opts->mtu = 0; /* 0 = use DTLS default (SOCKET_SIMPLE_DTLS_DEFAULT_MTU) */
   opts->alpn = NULL;
   opts->alpn_count = 0;
 }
