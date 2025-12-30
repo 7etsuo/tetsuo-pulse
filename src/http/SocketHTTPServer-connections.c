@@ -27,8 +27,6 @@ static SocketHTTP1_Parser_T connection_create_parser (Arena_T arena,
 static int connection_init_resources (SocketHTTPServer_T server,
                                       ServerConnection *conn,
                                       Socket_T socket);
-static int connection_add_to_server (SocketHTTPServer_T server,
-                                     ServerConnection *conn);
 static int setup_body_buffer_fixed (SocketHTTPServer_T server,
                                     ServerConnection *conn,
                                     size_t content_length,
@@ -729,36 +727,6 @@ connection_init_resources (SocketHTTPServer_T server, ServerConnection *conn,
   return 0;
 }
 
-/* Add connection to server list and track IP for per-IP limits. Returns -1 if IP limit exceeded */
-static int
-connection_add_to_server (SocketHTTPServer_T server, ServerConnection *conn)
-{
-  /* Track per-IP connections */
-  if (server->ip_tracker != NULL && conn->client_addr[0] != '\0')
-    {
-      if (!SocketIPTracker_track (server->ip_tracker, conn->client_addr))
-        {
-          SERVER_METRICS_INC (server, SOCKET_CTR_LIMIT_CONNECTIONS_EXCEEDED,
-                              connections_rejected);
-          return -1;
-        }
-    }
-
-  /* Add to server's connection list */
-  conn->next = server->connections;
-  if (server->connections != NULL)
-    server->connections->prev = conn;
-  server->connections = conn;
-
-  /* Update global + per-server metrics */
-  SERVER_GAUGE_INC (server, SOCKET_GAU_HTTP_SERVER_ACTIVE_CONNECTIONS,
-                    active_connections);
-  SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_SERVER_CONNECTIONS_TOTAL,
-                      connections_total);
-
-  return 0;
-}
-
 /* Clean up partially initialized connection */
 static void
 connection_cleanup_partial (ServerConnection *conn, int resources_initialized)
@@ -793,11 +761,30 @@ connection_new (SocketHTTPServer_T server, Socket_T socket)
       }
     resources_ok = 1;
 
-    if (connection_add_to_server (server, conn) < 0)
+    /* Track per-IP connections */
+    if (server->ip_tracker != NULL && conn->client_addr[0] != '\0')
       {
-        connection_cleanup_partial (conn, 1);
-        RETURN NULL;
+        if (!SocketIPTracker_track (server->ip_tracker, conn->client_addr))
+          {
+            SERVER_METRICS_INC (server, SOCKET_CTR_LIMIT_CONNECTIONS_EXCEEDED,
+                                connections_rejected);
+            connection_cleanup_partial (conn, 1);
+            RETURN NULL;
+          }
       }
+
+    /* Add to server's connection list */
+    conn->next = server->connections;
+    if (server->connections != NULL)
+      server->connections->prev = conn;
+    server->connections = conn;
+
+    /* Update global + per-server metrics */
+    SERVER_GAUGE_INC (server, SOCKET_GAU_HTTP_SERVER_ACTIVE_CONNECTIONS,
+                      active_connections);
+    SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_SERVER_CONNECTIONS_TOTAL,
+                        connections_total);
+
     added_to_server = 1;
 
     RETURN conn;
