@@ -48,7 +48,7 @@
 #define SOCKS4_RESPONSE_SIZE 8
 
 /** SOCKS4a marker IP: 0.0.0.1 signals hostname follows */
-#define SOCKS4A_MARKER_IP_BYTE 0x01
+static const unsigned char SOCKS4A_MARKER_IP[4] = {0x00, 0x00, 0x00, 0x01};
 
 /* ============================================================================
  * Static Helper Functions
@@ -289,11 +289,9 @@ proxy_socks4a_send_connect (struct SocketProxy_Conn_T *conn)
   /* Write header: version + command + port */
   len += socks4_write_header (buf + len, conn->target_port);
 
-  /* Write SOCKS4a marker IP: 0.0.0.x where x != 0 */
-  buf[len++] = 0x00;
-  buf[len++] = 0x00;
-  buf[len++] = 0x00;
-  buf[len++] = SOCKS4A_MARKER_IP_BYTE;
+  /* Write SOCKS4a marker IP: 0.0.0.1 signals hostname follows */
+  memcpy (buf + len, SOCKS4A_MARKER_IP, 4);
+  len += 4;
 
   /* Write userid with null terminator */
   if (socks4_write_userid (buf + len, sizeof (conn->send_buf) - len,
