@@ -101,7 +101,9 @@ timer_add_common (SocketSimple_Poll_T poll, int64_t time_ms,
       return NULL;
     }
 
-  if (allow_zero ? (time_ms < 0) : (time_ms <= 0))
+  /* Validate time parameter based on whether zero is allowed */
+  int time_invalid = allow_zero ? (time_ms < 0) : (time_ms <= 0);
+  if (time_invalid)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, time_error_msg);
       return NULL;
