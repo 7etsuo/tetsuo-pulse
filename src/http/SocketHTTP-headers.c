@@ -56,13 +56,7 @@ init_header_hash_seed (void)
       uint32_t pid_seed = (uint32_t)getpid ();
       /* Use stack address for ASLR entropy */
       uintptr_t stack_addr = (uintptr_t)&header_hash_seed;
-#if UINTPTR_MAX > UINT32_MAX
-      /* 64-bit system: mix high and low bits */
       uint32_t stack_seed = (uint32_t)(stack_addr ^ (stack_addr >> 32));
-#else
-      /* 32-bit system: use full address */
-      uint32_t stack_seed = (uint32_t)stack_addr;
-#endif
 
       header_hash_seed = time_seed ^ pid_seed ^ stack_seed;
 
@@ -506,12 +500,18 @@ SocketHTTP_Headers_get (SocketHTTP_Headers_T headers, const char *name)
   return SocketHTTP_Headers_get_n (headers, name, strlen (name));
 }
 
-static int
-parse_int64_from_string (const char *str, int64_t *value)
+int
+SocketHTTP_Headers_get_int (SocketHTTP_Headers_T headers, const char *name,
+                            int64_t *value)
 {
-  const char *p = str;
-  while (*p == ' ' || *p == '\t')
-    p++;
+  if (!headers || !name || !value)
+    return -1;
+
+  const char *str = SocketHTTP_Headers_get (headers, name);
+  if (!str)
+    return -1;
+
+  const char *p = sockethttp_skip_whitespace (str);
   if (*p == '\0')
     return -1;
 
@@ -538,8 +538,7 @@ parse_int64_from_string (const char *str, int64_t *value)
       p++;
     }
 
-  while (*p == ' ' || *p == '\t')
-    p++;
+  p = sockethttp_skip_whitespace (p);
   if (*p != '\0')
     return -1;
 
@@ -557,20 +556,6 @@ parse_int64_from_string (const char *str, int64_t *value)
     }
 
   return 0;
-}
-
-int
-SocketHTTP_Headers_get_int (SocketHTTP_Headers_T headers, const char *name,
-                            int64_t *value)
-{
-  if (!headers || !name || !value)
-    return -1;
-
-  const char *str = SocketHTTP_Headers_get (headers, name);
-  if (!str)
-    return -1;
-
-  return parse_int64_from_string (str, value);
 }
 
 size_t
