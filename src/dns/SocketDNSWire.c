@@ -381,6 +381,94 @@ SocketDNS_name_encode (const char *name, unsigned char *buf, size_t buflen,
   return 0;
 }
 
+/*
+ * Decode a compression pointer and update state.
+ * Returns 0 on success, -1 on error.
+ */
+static int
+decode_compression_pointer (const unsigned char *msg, size_t msglen,
+                            size_t *wire_pos, uint16_t *visited,
+                            int *visited_count, int *hops, size_t *first_end,
+                            int *jumped)
+{
+  uint16_t ptr_offset;
+  int i;
+  unsigned char len_byte;
+
+  /* Need two bytes for pointer */
+  if (*wire_pos + 1 >= msglen)
+    return -1;
+
+  len_byte = msg[*wire_pos];
+  ptr_offset = ((uint16_t)(len_byte & 0x3F) << 8) | msg[*wire_pos + 1];
+
+  /* Pointer must be valid and point backwards (RFC 1035 Section 4.1.4) */
+  if (ptr_offset >= msglen || ptr_offset >= *wire_pos)
+    return -1;
+
+  /* Track first end position for consumed calculation */
+  if (!*jumped)
+    {
+      *first_end = *wire_pos + 2;
+      *jumped = 1;
+    }
+
+  /* Prevent infinite loops by checking visited offsets */
+  for (i = 0; i < *visited_count; i++)
+    {
+      if (visited[i] == ptr_offset)
+        return -1; /* Loop detected */
+    }
+
+  /* Record this offset as visited */
+  if (*visited_count < DNS_MAX_POINTER_HOPS)
+    visited[(*visited_count)++] = (uint16_t)*wire_pos;
+
+  /* Prevent excessive pointer hops */
+  if (++(*hops) > DNS_MAX_POINTER_HOPS)
+    return -1;
+
+  *wire_pos = ptr_offset;
+  return 0;
+}
+
+/*
+ * Decode a single label and append to output buffer.
+ * Returns 0 on success, -1 on error.
+ */
+static int
+decode_label (const unsigned char *msg, size_t msglen, size_t *wire_pos,
+              char *buf, size_t buflen, size_t *out_pos, unsigned char len_byte)
+{
+  /* Validate label length */
+  if (len_byte > DNS_MAX_LABEL_LEN)
+    return -1;
+
+  /* Check there's enough data for the label */
+  if (*wire_pos + 1 + len_byte > msglen)
+    return -1;
+
+  /* Add dot separator (except for first label) */
+  if (*out_pos > 0)
+    {
+      /* Need space for dot + label + null terminator */
+      if (*out_pos + 1 + len_byte >= buflen)
+        return -1;
+      buf[(*out_pos)++] = '.';
+    }
+
+  /* Check output buffer space (must leave room for null terminator) */
+  if (*out_pos + len_byte >= buflen)
+    return -1;
+
+  /* Copy label data */
+  memcpy (buf + *out_pos, msg + *wire_pos + 1, len_byte);
+  *out_pos += len_byte;
+  *wire_pos += 1 + len_byte;
+
+  return 0;
+}
+
 int
 SocketDNS_name_decode (const unsigned char *msg, size_t msglen, size_t offset,
                        char *buf, size_t buflen, size_t *consumed)
@@ -390,7 +478,6 @@ SocketDNS_name_decode (const unsigned char *msg, size_t msglen, size_t offset,
   size_t first_end;
   int hops;
   int jumped;
-  /* Track visited offsets to detect compression loops */
   uint16_t visited[DNS_MAX_POINTER_HOPS];
   int visited_count;
 
@@ -419,48 +506,16 @@ SocketDNS_name_decode (const unsigned char *msg, size_t msglen, size_t offset,
       /* Check for compression pointer */
       if ((len_byte & DNS_COMPRESSION_FLAG) == DNS_COMPRESSION_FLAG)
         {
-          uint16_t ptr_offset;
-          int i;
-
-          /* Need two bytes for pointer */
-          if (wire_pos + 1 >= msglen)
+          if (decode_compression_pointer (msg, msglen, &wire_pos, visited,
+                                          &visited_count, &hops, &first_end,
+                                          &jumped)
+              != 0)
             return -1;
-
-          ptr_offset
-              = ((uint16_t)(len_byte & 0x3F) << 8) | msg[wire_pos + 1];
-
-          /* Pointer must be valid and point backwards (RFC 1035 Section 4.1.4) */
-          if (ptr_offset >= msglen || ptr_offset >= wire_pos)
-            return -1;
-
-          /* Track first end position for consumed calculation */
-          if (!jumped)
-            {
-              first_end = wire_pos + 2;
-              jumped = 1;
-            }
-
-          /* Prevent infinite loops by checking visited offsets */
-          for (i = 0; i < visited_count; i++)
-            {
-              if (visited[i] == ptr_offset)
-                return -1; /* Loop detected */
-            }
-
-          /* Record this offset as visited */
-          if (visited_count < DNS_MAX_POINTER_HOPS)
-            visited[visited_count++] = (uint16_t)wire_pos;
-
-          /* Prevent excessive pointer hops */
-          if (++hops > DNS_MAX_POINTER_HOPS)
-            return -1;
-
-          wire_pos = ptr_offset;
           continue;
         }
 
       /* Check for reserved bits (10 or 01) - invalid */
-      if ((len_byte & 0xC0) != 0 && (len_byte & DNS_COMPRESSION_FLAG) != DNS_COMPRESSION_FLAG)
+      if ((len_byte & 0xC0) != 0)
         return -1;
 
       /* Zero length = end of name */
@@ -472,31 +527,10 @@ SocketDNS_name_decode (const unsigned char *msg, size_t msglen, size_t offset,
           break;
         }
 
-      /* Validate label length */
-      if (len_byte > DNS_MAX_LABEL_LEN)
+      /* Decode label */
+      if (decode_label (msg, msglen, &wire_pos, buf, buflen, &out_pos, len_byte)
+          != 0)
         return -1;
-
-      /* Check there's enough data for the label */
-      if (wire_pos + 1 + len_byte > msglen)
-        return -1;
-
-      /* Add dot separator (except for first label) */
-      if (out_pos > 0)
-        {
-          /* Need space for dot + label + null terminator */
-          if (out_pos + 1 + len_byte >= buflen)
-            return -1;
-          buf[out_pos++] = '.';
-        }
-
-      /* Check output buffer space (must leave room for null terminator) */
-      if (out_pos + len_byte >= buflen)
-        return -1;
-
-      /* Copy label data */
-      memcpy (buf + out_pos, msg + wire_pos + 1, len_byte);
-      out_pos += len_byte;
-      wire_pos += 1 + len_byte;
     }
 
   /* Null terminate */
