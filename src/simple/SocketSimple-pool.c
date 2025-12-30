@@ -22,6 +22,12 @@
 
 #define SOCKET_SIMPLE_DEFAULT_BUFFER_SIZE 4096
 
+/**
+ * @brief Convert milliseconds to seconds, rounding up.
+ * Examples: 0ms→0s, 1ms→1s, 999ms→1s, 1000ms→1s, 1001ms→2s
+ */
+#define MS_TO_SEC_ROUND_UP(ms) (((ms) + 999) / 1000)
+
 /* ============================================================================
  * Internal Structures
  * ============================================================================
@@ -143,8 +149,7 @@ Socket_simple_pool_new_ex (const SocketSimple_PoolOptions *opts)
     }
   if (opts->idle_timeout_ms > 0)
     {
-      /* Round up to nearest second to avoid truncation */
-      time_t timeout_sec = (opts->idle_timeout_ms + 999) / 1000;
+      time_t timeout_sec = MS_TO_SEC_ROUND_UP (opts->idle_timeout_ms);
       SocketPool_set_idle_timeout (pool, timeout_sec);
     }
 
@@ -306,9 +311,7 @@ Socket_simple_pool_cleanup (SocketSimple_Pool_T pool, int max_idle_ms)
       return -1;
     }
 
-  /* Round up to nearest second to avoid truncation.
-   * Example: 1999ms becomes 2s, not 1s (safer for idle timeout). */
-  time_t idle_timeout = (max_idle_ms + 999) / 1000;
+  time_t idle_timeout = MS_TO_SEC_ROUND_UP (max_idle_ms);
   SocketPool_cleanup (pool->pool, idle_timeout);
 
   return 0;
