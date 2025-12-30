@@ -216,6 +216,13 @@ perform_recvfrom (T socket, void *buf, size_t len,
   return received;
 }
 
+/* Compile-time assertion: SOCKET_MAX_PORT must fit in int to prevent overflow
+ * in extract_sender_info() when casting long to int. This is always true
+ * (65535 < INT_MAX on all platforms), but defensive programming ensures
+ * maintenance safety if constants change. */
+_Static_assert (SOCKET_MAX_PORT <= INT_MAX,
+                "SOCKET_MAX_PORT must fit in int range");
+
 static void
 extract_sender_info (const struct sockaddr_storage *addr, socklen_t addrlen,
                      char *host, size_t host_len, int *port)
@@ -230,7 +237,9 @@ extract_sender_info (const struct sockaddr_storage *addr, socklen_t addrlen,
       errno = 0;
       long port_long = strtol (serv, &endptr, 10);
       /* Validate conversion: errno must be exactly 0, full string consumed,
-       * and value in valid port range (1-65535) */
+       * and value in valid port range (1-65535). The SOCKET_MAX_PORT check
+       * implicitly ensures the value fits in int due to the compile-time
+       * assertion above. */
       *port = 0; /* Default to error state */
       if (errno == 0 && *endptr == '\0' && port_long > 0
           && port_long <= SOCKET_MAX_PORT)
