@@ -341,6 +341,12 @@ httpclient_auth_bearer_header (const char *token, char *output,
   return 0;
 }
 
+static inline const char *
+get_digest_algorithm_name (int use_sha256)
+{
+  return use_sha256 ? "SHA-256" : "MD5";
+}
+
 static int
 format_digest_header_with_qop (const char *username, const char *realm,
                                const char *nonce, const char *uri,
@@ -353,7 +359,7 @@ format_digest_header_with_qop (const char *username, const char *realm,
                   "Digest username=\"%s\", realm=\"%s\", nonce=\"%s\", "
                   "uri=\"%s\", algorithm=%s, qop=%s, nc=%s, "
                   "cnonce=\"%s\", response=\"%s\"",
-                  username, realm, nonce, uri, use_sha256 ? "SHA-256" : "MD5",
+                  username, realm, nonce, uri, get_digest_algorithm_name (use_sha256),
                   qop, nc, cnonce, response_hex);
 
   return (written < 0 || (size_t)written >= output_size) ? -1 : 0;
@@ -369,7 +375,7 @@ format_digest_header_no_qop (const char *username, const char *realm,
       = snprintf (output, output_size,
                   "Digest username=\"%s\", realm=\"%s\", nonce=\"%s\", "
                   "uri=\"%s\", algorithm=%s, response=\"%s\"",
-                  username, realm, nonce, uri, use_sha256 ? "SHA-256" : "MD5",
+                  username, realm, nonce, uri, get_digest_algorithm_name (use_sha256),
                   response_hex);
 
   return (written < 0 || (size_t)written >= output_size) ? -1 : 0;
