@@ -29,7 +29,6 @@
 #include <openssl/x509v3.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 
 #define T SocketTLSContext_T
 
@@ -127,13 +126,49 @@ apply_sni_cert (SSL *ssl, const STACK_OF (X509) * chain, EVP_PKEY *pkey)
   return SSL_TLSEXT_ERR_OK;
 }
 
+/**
+ * @brief ASCII-only case-insensitive string comparison (locale-independent)
+ * @param s1 First string
+ * @param s2 Second string
+ * @return 0 if equal (case-insensitive), non-zero otherwise
+ *
+ * Implements RFC 4343 ASCII case folding for DNS names.
+ * Does not depend on locale settings (unlike strcasecmp).
+ */
+static int
+ascii_strcasecmp (const char *s1, const char *s2)
+{
+  const unsigned char *p1 = (const unsigned char *)s1;
+  const unsigned char *p2 = (const unsigned char *)s2;
+
+  while (*p1 && *p2)
+    {
+      unsigned char c1 = *p1;
+      unsigned char c2 = *p2;
+
+      /* ASCII case folding: A-Z -> a-z */
+      if (c1 >= 'A' && c1 <= 'Z')
+        c1 += 'a' - 'A';
+      if (c2 >= 'A' && c2 <= 'Z')
+        c2 += 'a' - 'A';
+
+      if (c1 != c2)
+        return c1 - c2;
+
+      p1++;
+      p2++;
+    }
+
+  return *p1 - *p2;
+}
+
 static int
 find_sni_cert_index (const T ctx, const char *hostname)
 {
   for (size_t i = 0; i < ctx->sni_certs.count; i++)
     {
       const char *stored = ctx->sni_certs.hostnames[i];
-      if (stored && strcasecmp (stored, hostname) == 0)
+      if (stored && ascii_strcasecmp (stored, hostname) == 0)
         return (int)i;
     }
   return -1;
