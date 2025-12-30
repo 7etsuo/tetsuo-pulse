@@ -137,6 +137,24 @@ SocketQUICTransportParams_set_defaults (SocketQUICTransportParams_T *params,
  * ============================================================================
  */
 
+/**
+ * @brief Calculate preferred address content size.
+ *
+ * Computes the total size of preferred address parameter content based on
+ * RFC 9000 Section 18.2 format:
+ * - IPv4 address (4 bytes) + port (2 bytes)
+ * - IPv6 address (16 bytes) + port (2 bytes)
+ * - Connection ID length (1 byte) + Connection ID data
+ * - Stateless Reset Token (16 bytes)
+ *
+ * @param cid_len Connection ID length in bytes
+ * @return Total content size in bytes
+ */
+#define QUIC_PREFERRED_ADDR_CONTENT_SIZE(cid_len) \
+  (QUIC_IPV4_ADDR_LEN + QUIC_PORT_LEN + \
+   QUIC_IPV6_ADDR_LEN + QUIC_PORT_LEN + 1 + \
+   (cid_len) + QUIC_STATELESS_RESET_TOKEN_LEN)
+
 static size_t
 encode_varint_param (uint8_t *buf, size_t buf_size, uint64_t id, uint64_t value)
 {
@@ -268,9 +286,7 @@ encode_preferred_address (uint8_t *buf, size_t buf_size,
   size_t len;
 
   /* Calculate content size */
-  size_t content_size = QUIC_IPV4_ADDR_LEN + QUIC_PORT_LEN +
-                        QUIC_IPV6_ADDR_LEN + QUIC_PORT_LEN + 1 +
-                        paddr->connection_id.len + QUIC_STATELESS_RESET_TOKEN_LEN;
+  size_t content_size = QUIC_PREFERRED_ADDR_CONTENT_SIZE(paddr->connection_id.len);
 
   /* Encode parameter ID */
   len = SocketQUICVarInt_encode (QUIC_TP_PREFERRED_ADDRESS, buf + pos,
@@ -355,9 +371,7 @@ empty_param_size (uint64_t id)
 static size_t
 preferred_address_size (const SocketQUICPreferredAddress_T *paddr)
 {
-  size_t content_size = QUIC_IPV4_ADDR_LEN + QUIC_PORT_LEN +
-                        QUIC_IPV6_ADDR_LEN + QUIC_PORT_LEN + 1 +
-                        paddr->connection_id.len + QUIC_STATELESS_RESET_TOKEN_LEN;
+  size_t content_size = QUIC_PREFERRED_ADDR_CONTENT_SIZE(paddr->connection_id.len);
   size_t id_size = SocketQUICVarInt_size (QUIC_TP_PREFERRED_ADDRESS);
   size_t len_size = SocketQUICVarInt_size (content_size);
   return id_size + len_size + content_size;
