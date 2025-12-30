@@ -55,6 +55,10 @@
 #define HPACK_UINT64_SHIFT_LIMIT 63
 #define HPACK_MAX_INT_CONTINUATION_BYTES 10
 
+/* Max safe shift: 64 bits - 8 bits for last continuation byte payload.
+ * Prevents left shift overflow in integer decoding (RFC 7541 §5.1). */
+#define HPACK_MAX_SAFE_SHIFT 56
+
 #define HPACK_LITERAL_WITH_INDEXING 0x40
 #define HPACK_LITERAL_WITHOUT_INDEX 0x00
 #define HPACK_LITERAL_NEVER_INDEX 0x10
@@ -216,7 +220,7 @@ decode_int_continuation (const unsigned char *input, size_t input_len,
 
       byte_val = input[(*pos)++];
 
-      if (*shift > 56)
+      if (*shift > HPACK_MAX_SAFE_SHIFT)
         return HPACK_ERROR_INTEGER;
 
       uint64_t add_val = (byte_val & HPACK_INT_PAYLOAD_MASK) << *shift;
