@@ -743,6 +743,7 @@ set(TEST_SOURCES
     test_safe_arithmetic
     test_socket
     test_simple_recv_line
+    test_simple_dns_overflow
     test_socketbuf
     test_socketdgram
     test_socketpoll
