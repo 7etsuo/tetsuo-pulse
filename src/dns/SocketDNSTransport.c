@@ -31,6 +31,7 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <poll.h>
+#include <stdint.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -1087,6 +1088,10 @@ tcp_send_query (T transport, struct SocketDNSQuery *query)
     return tcp_send_buffered (conn);
 
   /* Build message with length prefix */
+  /* Check for integer overflow before allocation */
+  if (query->query_len > SIZE_MAX - 2)
+    return -1;
+
   total_len = 2 + query->query_len;
   conn->send_buf = Arena_alloc (transport->arena, total_len, __FILE__, __LINE__);
   len_prefix[0] = (unsigned char)((query->query_len >> 8) & 0xFF);
