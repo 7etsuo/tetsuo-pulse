@@ -39,6 +39,48 @@ Socket_simple_dtls_options_defaults (SocketSimple_DTLSOptions *opts)
 }
 
 /*============================================================================
+ * DTLS Context Configuration Helper
+ *============================================================================*/
+
+/**
+ * @brief Configure DTLS client context with verification, certs, MTU, and ALPN
+ *
+ * @param ctx DTLS context to configure
+ * @param verify_cert 1 to verify certificates, 0 to skip verification
+ * @param client_cert Client certificate path (NULL if not using mTLS)
+ * @param client_key Client key path (NULL if not using mTLS)
+ * @param mtu MTU size (0 to use default)
+ * @param alpn Array of ALPN protocol strings (NULL if not using ALPN)
+ * @param alpn_count Number of ALPN protocols
+ */
+static void
+configure_dtls_client_context (SocketDTLSContext_T ctx, int verify_cert,
+                                const char *client_cert, const char *client_key,
+                                size_t mtu, const char **alpn,
+                                size_t alpn_count)
+{
+  if (!verify_cert)
+    {
+      SocketDTLSContext_set_verify_mode (ctx, TLS_VERIFY_NONE);
+    }
+
+  if (client_cert && client_key)
+    {
+      SocketDTLSContext_load_certificate (ctx, client_cert, client_key);
+    }
+
+  if (mtu > 0)
+    {
+      SocketDTLSContext_set_mtu (ctx, mtu);
+    }
+
+  if (alpn && alpn_count > 0)
+    {
+      SocketDTLSContext_set_alpn_protos (ctx, alpn, alpn_count);
+    }
+}
+
+/*============================================================================
  * DTLS Client Functions
  *============================================================================*/
 
@@ -108,29 +150,9 @@ Socket_simple_dtls_connect_ex (const char *host, int port,
     /* Create DTLS context */
     ctx = SocketDTLSContext_new_client (ca_file);
 
-    /* Configure verification */
-    if (!verify_cert)
-      {
-        SocketDTLSContext_set_verify_mode (ctx, TLS_VERIFY_NONE);
-      }
-
-    /* Load client cert if specified (for mTLS) */
-    if (client_cert && client_key)
-      {
-        SocketDTLSContext_load_certificate (ctx, client_cert, client_key);
-      }
-
-    /* Set MTU if specified */
-    if (mtu > 0)
-      {
-        SocketDTLSContext_set_mtu (ctx, mtu);
-      }
-
-    /* Set ALPN protocols if specified */
-    if (alpn && alpn_count > 0)
-      {
-        SocketDTLSContext_set_alpn_protos (ctx, alpn, alpn_count);
-      }
+    /* Configure context with verification, certs, MTU, ALPN */
+    configure_dtls_client_context (ctx, verify_cert, client_cert, client_key,
+                                    mtu, alpn, alpn_count);
 
     /* Enable DTLS on socket */
     SocketDTLS_enable (dgram, ctx);
@@ -265,25 +287,9 @@ Socket_simple_dtls_enable (SocketSimple_Socket_T sock, const char *hostname,
     /* Create client context */
     ctx = SocketDTLSContext_new_client (ca_file);
 
-    if (!verify_cert)
-      {
-        SocketDTLSContext_set_verify_mode (ctx, TLS_VERIFY_NONE);
-      }
-
-    if (client_cert && client_key)
-      {
-        SocketDTLSContext_load_certificate (ctx, client_cert, client_key);
-      }
-
-    if (mtu > 0)
-      {
-        SocketDTLSContext_set_mtu (ctx, mtu);
-      }
-
-    if (alpn && alpn_count > 0)
-      {
-        SocketDTLSContext_set_alpn_protos (ctx, alpn, alpn_count);
-      }
+    /* Configure context with verification, certs, MTU, ALPN */
+    configure_dtls_client_context (ctx, verify_cert, client_cert, client_key,
+                                    mtu, alpn, alpn_count);
 
     /* Enable DTLS */
     SocketDTLS_enable (sock->dgram, ctx);
