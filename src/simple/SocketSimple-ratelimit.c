@@ -44,7 +44,14 @@ static uint64_t
 get_monotonic_ns (void)
 {
   struct timespec ts;
-  clock_gettime (CLOCK_MONOTONIC, &ts);
+  if (clock_gettime (CLOCK_MONOTONIC, &ts) != 0)
+    {
+      /* CLOCK_MONOTONIC should never fail on properly configured systems,
+         but handle it defensively to avoid using uninitialized values.
+         Returning 0 is safe for rate limiting - it will just cause
+         a single-time delay calculation issue which will self-correct. */
+      return 0;
+    }
   return (uint64_t)ts.tv_sec * 1000000000ULL + (uint64_t)ts.tv_nsec;
 }
 
