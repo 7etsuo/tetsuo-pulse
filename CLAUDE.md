@@ -207,6 +207,565 @@ HTTP modules require Foundation + Core I/O + Security (optional)
 - Include guards use `_INCLUDED` suffix: `#ifndef SOCKET_INCLUDED`
 - Doxygen-style comments for public APIs
 
+## C Anti-Patterns and Fixes
+
+This section documents common code smells and their fixes. Follow these patterns to maintain code quality.
+
+### Magic Numbers
+
+**Anti-pattern:**
+```c
+if (status == 3) {
+    buffer = Arena_alloc(arena, 1024);
+    for (int i = 0; i < 86400; i++) { /* ... */ }
+}
+```
+
+**Fix:** Use named constants or enums:
+```c
+#define SOCKET_BUFFER_SIZE 1024
+#define SECONDS_PER_DAY    86400
+
+typedef enum {
+    STATUS_PENDING  = 1,
+    STATUS_ACTIVE   = 2,
+    STATUS_COMPLETE = 3
+} Status;
+
+if (status == STATUS_COMPLETE) {
+    buffer = Arena_alloc(arena, SOCKET_BUFFER_SIZE);
+    for (int i = 0; i < SECONDS_PER_DAY; i++) { /* ... */ }
+}
+```
+
+### Deep Nesting (Arrow Code)
+
+**Anti-pattern:**
+```c
+int
+Socket_process(Socket_T sock, const char *path)
+{
+    if (sock != NULL) {
+        char *buffer = Arena_alloc(sock->arena, 1024);
+        if (buffer != NULL) {
+            if (Socket_read(sock, buffer, 1024) > 0) {
+                if (validate(buffer)) {
+                    /* actual logic buried here */
+                }
+            }
+        }
+    }
+    return -1;
+}
+```
+
+**Fix:** Use early returns (guard clauses):
+```c
+int
+Socket_process(Socket_T sock, const char *path)
+{
+    if (sock == NULL) return -1;
+
+    char *buffer = Arena_alloc(sock->arena, 1024);
+    if (buffer == NULL) return -1;
+
+    if (Socket_read(sock, buffer, 1024) <= 0) return -1;
+    if (!validate(buffer)) return -1;
+
+    /* actual logic at normal indentation */
+    return do_work(buffer);
+}
+```
+
+### Ignoring Return Values
+
+**Anti-pattern:**
+```c
+void
+read_config(Arena_T arena)
+{
+    FILE *f = fopen("config.txt", "r");
+    char *buf = Arena_alloc(arena, 256);
+    fgets(buf, 256, f);    /* what if fopen failed? */
+    fclose(f);
+}
+```
+
+**Fix:** Always check and handle errors:
+```c
+int
+read_config(Arena_T arena)
+{
+    FILE *f = fopen("config.txt", "r");
+    if (f == NULL) {
+        perror("Failed to open config");
+        return -1;
+    }
+
+    char *buf = Arena_alloc(arena, 256);
+    if (buf == NULL) {
+        fclose(f);
+        return -1;
+    }
+
+    if (fgets(buf, 256, f) == NULL) {
+        fclose(f);
+        return -1;
+    }
+
+    /* use buf... */
+    fclose(f);
+    return 0;
+}
+```
+
+### Unsafe String Handling
+
+**Anti-pattern:**
+```c
+void
+format_error(char *dest, const char *msg)
+{
+    sprintf(dest, "Error: %s", msg);
+    strcpy(global_error, dest);
+}
+```
+
+**Fix:** Use size-bounded functions:
+```c
+void
+format_error(char *dest, size_t dest_size, const char *msg)
+{
+    snprintf(dest, dest_size, "Error: %s", msg);
+    strncpy(global_error, dest, sizeof(global_error) - 1);
+    global_error[sizeof(global_error) - 1] = '\0';
+}
+```
+
+### Memory Leaks (Multiple Exit Points)
+
+**Anti-pattern:**
+```c
+int
+process_request(int x)
+{
+    char *a = malloc(100);
+    char *b = malloc(200);
+
+    if (x < 0) return -1;          /* leaks a and b! */
+
+    if (x == 0) {
+        free(a);
+        return 0;                   /* leaks b! */
+    }
+
+    free(a);
+    free(b);
+    return 1;
+}
+```
+
+**Fix:** Use single cleanup path with `goto`, or use Arena allocation:
+```c
+/* Option 1: goto cleanup (for non-arena code) */
+int
+process_request(int x)
+{
+    int result = -1;
+    char *a = malloc(100);
+    char *b = malloc(200);
+
+    if (a == NULL || b == NULL) goto cleanup;
+    if (x < 0) goto cleanup;
+
+    if (x == 0) {
+        result = 0;
+        goto cleanup;
+    }
+
+    result = 1;
+
+cleanup:
+    free(a);
+    free(b);
+    return result;
+}
+
+/* Option 2: Arena allocation (preferred in this codebase) */
+int
+process_request(Arena_T arena, int x)
+{
+    char *a = Arena_alloc(arena, 100);
+    char *b = Arena_alloc(arena, 200);
+
+    if (x < 0) return -1;
+    if (x == 0) return 0;
+
+    return 1;
+    /* Arena_dispose handles all cleanup */
+}
+```
+
+### Boolean Blindness
+
+**Anti-pattern:**
+```c
+Socket_configure(sock, true, false, true, false, true);
+```
+
+**Fix:** Use enums or flags:
+```c
+typedef enum {
+    SOCKET_OPT_NONBLOCK  = 1 << 0,
+    SOCKET_OPT_REUSEADDR = 1 << 1,
+    SOCKET_OPT_KEEPALIVE = 1 << 2,
+    SOCKET_OPT_NODELAY   = 1 << 3
+} SocketOpts;
+
+Socket_configure(sock, SOCKET_OPT_NONBLOCK | SOCKET_OPT_KEEPALIVE | SOCKET_OPT_NODELAY);
+```
+
+### Missing `const` Correctness
+
+**Anti-pattern:**
+```c
+int
+count_delimiters(char *str, char delim)
+{
+    int count = 0;
+    while (*str) {
+        if (*str == delim) count++;
+        str++;
+    }
+    return count;
+}
+```
+
+**Fix:** Mark read-only parameters as `const`:
+```c
+int
+count_delimiters(const char *str, char delim)
+{
+    int count = 0;
+    while (*str) {
+        if (*str == delim) count++;
+        str++;
+    }
+    return count;
+}
+```
+
+### Global State Abuse
+
+**Anti-pattern:**
+```c
+static int current_socket_fd;
+static char last_error[256];
+static int connection_count;
+
+void
+connect_to_server(const char *host)
+{
+    current_socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+    connection_count++;
+}
+```
+
+**Fix:** Use structs and pass explicitly (opaque pointer pattern):
+```c
+struct Connection {
+    int fd;
+    char last_error[256];
+    Arena_T arena;
+};
+
+typedef struct Connection *Connection_T;
+
+Connection_T
+Connection_new(Arena_T arena)
+{
+    Connection_T conn = Arena_alloc(arena, sizeof(*conn));
+    conn->arena = arena;
+    conn->fd = -1;
+    conn->last_error[0] = '\0';
+    return conn;
+}
+
+int
+Connection_connect(Connection_T conn, const char *host, int port)
+{
+    conn->fd = socket(AF_INET, SOCK_STREAM, 0);
+    /* ... */
+}
+```
+
+### God Functions
+
+**Anti-pattern:**
+```c
+void
+handle_http_request(Request *req)
+{
+    /* 50 lines of validation... */
+    /* 80 lines of parsing... */
+    /* 100 lines of business logic... */
+    /* 40 lines of formatting response... */
+    /* 30 lines of logging... */
+}
+```
+
+**Fix:** Break into smaller, focused functions:
+```c
+static bool validate_request(const Request *req);
+static ParsedData *parse_request(Arena_T arena, const Request *req);
+static Result *process_data(Arena_T arena, const ParsedData *data);
+static Response *format_response(Arena_T arena, const Result *result);
+static void log_request(const Request *req, const Response *resp);
+
+void
+handle_http_request(Arena_T arena, Request *req)
+{
+    if (!validate_request(req)) return;
+
+    ParsedData *data = parse_request(arena, req);
+    Result *result = process_data(arena, data);
+    Response *resp = format_response(arena, result);
+    log_request(req, resp);
+}
+```
+
+### Exception Safety Violations
+
+**Anti-pattern:**
+```c
+int result = 0;  /* NOT volatile! */
+TRY {
+    Socket_connect(socket, host, port);
+    result = 1;  /* may be optimized out after longjmp */
+} EXCEPT(Socket_Failed) {
+    fprintf(stderr, "Failed, result=%d\n", result);  /* undefined! */
+} END_TRY;
+```
+
+**Fix:** Use `volatile` for variables modified in TRY:
+```c
+volatile int result = 0;
+TRY {
+    Socket_connect(socket, host, port);
+    result = 1;
+} EXCEPT(Socket_Failed) {
+    fprintf(stderr, "Failed, result=%d\n", result);  /* safe */
+} END_TRY;
+```
+
+## Dispatch Tables
+
+Dispatch tables replace long `switch`/`if-else` chains with O(1) array lookups. They're faster, more maintainable, and easier to extend.
+
+### Command Dispatch
+
+**Anti-pattern:** Long switch chain:
+```c
+int
+handle_command(Command cmd, Context *ctx)
+{
+    switch (cmd) {
+        case CMD_START:  return cmd_start(ctx);
+        case CMD_STOP:   return cmd_stop(ctx);
+        case CMD_PAUSE:  return cmd_pause(ctx);
+        case CMD_RESUME: return cmd_resume(ctx);
+        case CMD_STATUS: return cmd_status(ctx);
+        /* ... 20 more cases */
+        default: return -1;
+    }
+}
+```
+
+**Fix:** Dispatch table:
+```c
+typedef enum {
+    CMD_START, CMD_STOP, CMD_PAUSE, CMD_RESUME, CMD_STATUS, CMD_COUNT
+} Command;
+
+typedef int (*CommandHandler)(Context *ctx);
+
+static int cmd_start(Context *ctx)  { ctx->running = true;  return 0; }
+static int cmd_stop(Context *ctx)   { ctx->running = false; return 0; }
+static int cmd_pause(Context *ctx)  { ctx->paused = true;   return 0; }
+static int cmd_resume(Context *ctx) { ctx->paused = false;  return 0; }
+static int cmd_status(Context *ctx) { /* ... */ return 0; }
+
+static const CommandHandler dispatch[CMD_COUNT] = {
+    [CMD_START]  = cmd_start,
+    [CMD_STOP]   = cmd_stop,
+    [CMD_PAUSE]  = cmd_pause,
+    [CMD_RESUME] = cmd_resume,
+    [CMD_STATUS] = cmd_status,
+};
+
+int
+handle_command(Command cmd, Context *ctx)
+{
+    if (cmd < 0 || cmd >= CMD_COUNT) return -1;
+    if (dispatch[cmd] == NULL) return -1;
+    return dispatch[cmd](ctx);  /* O(1) lookup */
+}
+```
+
+### String-Based Dispatch
+
+**Anti-pattern:** If-else string comparison:
+```c
+int
+execute(const char *cmd)
+{
+    if (strcmp(cmd, "help") == 0)    return do_help();
+    if (strcmp(cmd, "version") == 0) return do_version();
+    if (strcmp(cmd, "list") == 0)    return do_list();
+    /* ... 20 more commands */
+    return -1;
+}
+```
+
+**Fix:** Lookup table:
+```c
+typedef int (*Handler)(void);
+
+typedef struct {
+    const char *name;
+    Handler     handler;
+} CommandEntry;
+
+static const CommandEntry commands[] = {
+    { "help",    do_help    },
+    { "version", do_version },
+    { "list",    do_list    },
+    { NULL,      NULL       }  /* sentinel */
+};
+
+int
+execute(const char *cmd)
+{
+    for (const CommandEntry *e = commands; e->name != NULL; e++) {
+        if (strcmp(cmd, e->name) == 0) {
+            return e->handler();
+        }
+    }
+    return -1;
+}
+```
+
+For large tables, sort and use `bsearch()` for O(log n) lookup.
+
+### State Machine Dispatch
+
+**Anti-pattern:** Nested switch:
+```c
+void
+state_machine(Event e)
+{
+    switch (current_state) {
+        case STATE_IDLE:
+            switch (e) {
+                case EVENT_START: current_state = STATE_RUNNING; break;
+                case EVENT_QUIT:  current_state = STATE_DONE; break;
+                default: break;
+            }
+            break;
+        case STATE_RUNNING:
+            switch (e) {
+                case EVENT_PAUSE: current_state = STATE_PAUSED; break;
+                case EVENT_STOP:  current_state = STATE_IDLE; break;
+                default: break;
+            }
+            break;
+        /* ... more states */
+    }
+}
+```
+
+**Fix:** 2D dispatch table:
+```c
+typedef enum { STATE_IDLE, STATE_RUNNING, STATE_PAUSED, STATE_DONE, STATE_COUNT } State;
+typedef enum { EVENT_START, EVENT_STOP, EVENT_PAUSE, EVENT_RESUME, EVENT_QUIT, EVENT_COUNT } Event;
+
+typedef State (*TransitionFn)(void);
+
+static State on_start(void)  { return STATE_RUNNING; }
+static State on_stop(void)   { return STATE_IDLE; }
+static State on_pause(void)  { return STATE_PAUSED; }
+static State on_resume(void) { return STATE_RUNNING; }
+static State on_quit(void)   { return STATE_DONE; }
+static State no_op(void)     { return (State)-1; }  /* no change */
+
+static const TransitionFn transitions[STATE_COUNT][EVENT_COUNT] = {
+    /*                  START      STOP     PAUSE     RESUME    QUIT     */
+    [STATE_IDLE]    = { on_start,  no_op,   no_op,    no_op,    on_quit  },
+    [STATE_RUNNING] = { no_op,     on_stop, on_pause, no_op,    on_quit  },
+    [STATE_PAUSED]  = { no_op,     on_stop, no_op,    on_resume, on_quit },
+    [STATE_DONE]    = { no_op,     no_op,   no_op,    no_op,    no_op    },
+};
+
+static State current_state = STATE_IDLE;
+
+void
+handle_event(Event e)
+{
+    if (e < 0 || e >= EVENT_COUNT) return;
+
+    State new_state = transitions[current_state][e]();
+    if (new_state != (State)-1) {
+        current_state = new_state;
+    }
+}
+```
+
+### Computed Goto (GCC Extension)
+
+For ultra-hot loops (interpreters, protocol parsers), computed goto avoids dispatch overhead:
+
+```c
+void
+interpret(uint8_t *bytecode)
+{
+    static const void *dispatch[] = {
+        [OP_NOP]  = &&op_nop,
+        [OP_PUSH] = &&op_push,
+        [OP_POP]  = &&op_pop,
+        [OP_ADD]  = &&op_add,
+        [OP_HALT] = &&op_halt,
+    };
+
+    #define DISPATCH() goto *dispatch[*ip++]
+
+    uint8_t *ip = bytecode;
+    int stack[256], sp = -1;
+    DISPATCH();
+
+op_nop:  DISPATCH();
+op_push: stack[++sp] = *ip++; DISPATCH();
+op_pop:  sp--; DISPATCH();
+op_add:  stack[sp-1] += stack[sp]; sp--; DISPATCH();
+op_halt: return;
+
+    #undef DISPATCH
+}
+```
+
+### Dispatch Table Performance
+
+| Aspect | Switch/If-Else | Dispatch Table |
+|--------|----------------|----------------|
+| Time complexity | O(n) worst case | O(1) |
+| Branch prediction | Can thrash | Single indirect call |
+| Extensibility | Modify switch | Add to array |
+| Testability | Monolithic | Individual handlers |
+
+**Notes:**
+- For 2-4 cases, compiler often generates efficient code anyway
+- Indirect calls have slight overhead vs inlined code
+- Use dispatch tables when you have 5+ cases or need extensibility
+
 ## Performance Patterns
 
 ### HTTP Header Lookups
