@@ -342,6 +342,65 @@ validate_selected_protocol (const char *selected,
 }
 
 /**
+ * select_protocol_from_client - Select protocol from client's offered list
+ * @ctx: TLS context with configured protocols and optional callback
+ * @client_protos: Client's offered protocols
+ * @client_count: Number of client protocols
+ *
+ * Delegates to custom callback if configured, otherwise uses default
+ * server-preference matching algorithm.
+ *
+ * Returns: Selected protocol string or NULL if no match
+ */
+static const char *
+select_protocol_from_client (T ctx, const char **client_protos,
+                              size_t client_count)
+{
+  if (ctx->alpn.callback)
+    {
+      return ctx->alpn.callback (client_protos, client_count,
+                                 ctx->alpn.callback_user_data);
+    }
+  return find_matching_proto (ctx->alpn.protocols, ctx->alpn.count,
+                              (const char *const *)client_protos,
+                              client_count);
+}
+
+/**
+ * allocate_and_store_selected - Allocate persistent copy and store in SSL
+ * @ssl: SSL connection for ex_data storage
+ * @selected: Selected protocol string
+ * @len: Protocol length
+ *
+ * Allocates a persistent copy to prevent use-after-free, then stores it
+ * in SSL ex_data for cleanup via tls_cleanup_alpn_temp().
+ *
+ * Returns: Allocated copy on success, NULL on failure (caller must free)
+ */
+static unsigned char *
+allocate_and_store_selected (SSL *ssl, const char *selected, size_t len)
+{
+  unsigned char *copy = (unsigned char *)malloc (len);
+  if (!copy)
+    return NULL;
+
+  memcpy (copy, selected, len);
+
+  int idx = tls_get_alpn_ex_idx ();
+  if (idx != -1)
+    {
+      if (SSL_set_ex_data (ssl, idx, (void *)copy) != 1)
+        {
+          SOCKET_LOG_WARN_MSG ("Failed to set SSL ex_data for ALPN selected protocol");
+          free (copy);
+          return NULL;
+        }
+    }
+
+  return copy;
+}
+
+/**
  * alpn_select_cb - OpenSSL ALPN selection callback
  * @ssl: SSL connection (for ex_data storage)
  * @out: Output: selected protocol
@@ -356,7 +415,6 @@ static int
 alpn_select_cb (SSL *ssl, const unsigned char **out, unsigned char *outlen,
                 const unsigned char *in, unsigned int inlen, void *arg)
 {
-  TLS_UNUSED (ssl);
   T ctx = (T)arg;
 
   if (!ctx || !ctx->alpn.protocols || ctx->alpn.count == 0)
@@ -369,50 +427,25 @@ alpn_select_cb (SSL *ssl, const unsigned char **out, unsigned char *outlen,
     return SSL_TLSEXT_ERR_NOACK;
 
   /* Select protocol via callback or default matching */
-  const char *selected = NULL;
-  if (ctx->alpn.callback)
-    {
-      selected = ctx->alpn.callback (client_protos, client_count,
-                                     ctx->alpn.callback_user_data);
-    }
-  else
-    {
-      selected = find_matching_proto (ctx->alpn.protocols, ctx->alpn.count,
-                                      client_protos, client_count);
-    }
+  const char *selected
+      = select_protocol_from_client (ctx, client_protos, client_count);
 
   /* Validate selected protocol */
   size_t validated_len = 0;
-  if (!validate_selected_protocol (selected, client_protos, client_count,
-                                   &validated_len))
+  if (!validate_selected_protocol (selected, (const char *const *)client_protos,
+                                   client_count, &validated_len))
     {
       free_client_protos (client_protos, client_count);
       return SSL_TLSEXT_ERR_NOACK;
     }
 
-  /* Allocate persistent copy to prevent UAF.
-   * Store in SSL ex_data for cleanup in tls_cleanup_alpn_temp(). */
-  unsigned char *selected_copy = (unsigned char *)malloc (validated_len);
+  /* Allocate persistent copy and store in SSL ex_data */
+  unsigned char *selected_copy
+      = allocate_and_store_selected (ssl, selected, validated_len);
   if (!selected_copy)
     {
       free_client_protos (client_protos, client_count);
       return SSL_TLSEXT_ERR_NOACK;
-    }
-
-  memcpy (selected_copy, selected, validated_len);
-
-  /* Store for cleanup; prevents leak */
-  int idx = tls_get_alpn_ex_idx ();
-  if (idx != -1)
-    {
-      if (SSL_set_ex_data (ssl, idx, (void *)selected_copy) != 1)
-        {
-          SOCKET_LOG_WARN_MSG ("Failed to set SSL ex_data for ALPN selected protocol");
-          /* Cleanup allocated memory on failure to prevent leak */
-          free (selected_copy);
-          free_client_protos (client_protos, client_count);
-          return SSL_TLSEXT_ERR_NOACK;
-        }
     }
 
   free_client_protos (client_protos, client_count);
