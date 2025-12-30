@@ -81,7 +81,7 @@ Socket_simple_http_options_init (SocketSimple_HTTPOptions *opts)
  */
 
 static int
-convert_response (SocketHTTPClient_Response *src,
+convert_response (const SocketHTTPClient_Response *src,
                   SocketSimple_HTTPResponse *dst)
 {
   const char *ct;
