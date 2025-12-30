@@ -515,6 +515,8 @@ Socket_simple_proxy_connect_timeout (const SocketSimple_ProxyConfig *config,
   TRY { sock = SocketProxy_connect (&core_config, target_host, target_port); }
   EXCEPT (SocketProxy_Failed)
   {
+    /* Use generic PROXY_ERROR since specific SocketProxy_Result is not
+     * available in this exception handler - only the exception itself */
     set_proxy_error (PROXY_ERROR, "Proxy connection failed");
     if (sock)
       Socket_free ((Socket_T *)&sock);
