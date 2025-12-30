@@ -765,47 +765,104 @@ typedef SocketQUICFrame_Result (*frame_parser_fn) (const uint8_t *data,
                                                     size_t len, size_t *pos,
                                                     SocketQUICFrame_T *frame);
 
-static const struct
-{
-  uint64_t type_min;
-  uint64_t type_max;
-  frame_parser_fn parser;
-} frame_parser_table[] = {
-  { QUIC_FRAME_PADDING,               QUIC_FRAME_PADDING,               parse_padding            },
-  { QUIC_FRAME_PING,                  QUIC_FRAME_PING,                  parse_ping               },
-  { QUIC_FRAME_ACK,                   QUIC_FRAME_ACK_ECN,               parse_ack                },
-  { QUIC_FRAME_RESET_STREAM,          QUIC_FRAME_RESET_STREAM,          parse_reset_stream       },
-  { QUIC_FRAME_STOP_SENDING,          QUIC_FRAME_STOP_SENDING,          parse_stop_sending       },
-  { QUIC_FRAME_CRYPTO,                QUIC_FRAME_CRYPTO,                parse_crypto             },
-  { QUIC_FRAME_NEW_TOKEN,             QUIC_FRAME_NEW_TOKEN,             parse_new_token          },
-  { QUIC_FRAME_STREAM,                QUIC_FRAME_STREAM_MAX,            parse_stream             },
-  { QUIC_FRAME_MAX_DATA,              QUIC_FRAME_MAX_DATA,              parse_max_data           },
-  { QUIC_FRAME_MAX_STREAM_DATA,       QUIC_FRAME_MAX_STREAM_DATA,       parse_max_stream_data    },
-  { QUIC_FRAME_MAX_STREAMS_BIDI,      QUIC_FRAME_MAX_STREAMS_UNI,       parse_max_streams        },
-  { QUIC_FRAME_DATA_BLOCKED,          QUIC_FRAME_DATA_BLOCKED,          parse_data_blocked       },
-  { QUIC_FRAME_STREAM_DATA_BLOCKED,   QUIC_FRAME_STREAM_DATA_BLOCKED,   parse_stream_data_blocked},
-  { QUIC_FRAME_STREAMS_BLOCKED_BIDI,  QUIC_FRAME_STREAMS_BLOCKED_UNI,   parse_streams_blocked    },
-  { QUIC_FRAME_NEW_CONNECTION_ID,     QUIC_FRAME_NEW_CONNECTION_ID,     parse_new_connection_id  },
-  { QUIC_FRAME_RETIRE_CONNECTION_ID,  QUIC_FRAME_RETIRE_CONNECTION_ID,  parse_retire_connection_id},
-  { QUIC_FRAME_PATH_CHALLENGE,        QUIC_FRAME_PATH_CHALLENGE,        parse_path_challenge     },
-  { QUIC_FRAME_PATH_RESPONSE,         QUIC_FRAME_PATH_RESPONSE,         parse_path_response      },
-  { QUIC_FRAME_CONNECTION_CLOSE,      QUIC_FRAME_CONNECTION_CLOSE_APP,  parse_connection_close   },
-  { QUIC_FRAME_HANDSHAKE_DONE,        QUIC_FRAME_HANDSHAKE_DONE,        parse_handshake_done     },
-  { QUIC_FRAME_DATAGRAM,              QUIC_FRAME_DATAGRAM_LEN,          parse_datagram           },
-  { 0, 0, NULL } /* Sentinel */
-};
+/* Maximum frame type value (DATAGRAM_LEN = 0x31) */
+#define QUIC_FRAME_TYPE_MAX 0x32
 
+/**
+ * @brief Direct lookup array for O(1) frame parser dispatch.
+ *
+ * RFC 9000 Section 12.4 defines QUIC frame types in a relatively dense space:
+ * - 0x00-0x1e: Standard frames
+ * - 0x30-0x31: DATAGRAM extension frames
+ *
+ * This array provides constant-time dispatch instead of linear search through
+ * 21 parser entries. Memory cost: 400 bytes (50 x 8-byte pointers).
+ */
+static frame_parser_fn parser_dispatch_array[QUIC_FRAME_TYPE_MAX] = { NULL };
+
+/**
+ * @brief Initialize frame parser dispatch array.
+ *
+ * This function is called automatically before main() via GCC constructor
+ * attribute. It populates the dispatch array with function pointers for
+ * all supported frame types.
+ */
+static void __attribute__ ((constructor))
+init_parser_dispatch_array (void)
+{
+  /* Single-type mappings */
+  parser_dispatch_array[QUIC_FRAME_PADDING] = parse_padding;
+  parser_dispatch_array[QUIC_FRAME_PING] = parse_ping;
+  parser_dispatch_array[QUIC_FRAME_RESET_STREAM] = parse_reset_stream;
+  parser_dispatch_array[QUIC_FRAME_STOP_SENDING] = parse_stop_sending;
+  parser_dispatch_array[QUIC_FRAME_CRYPTO] = parse_crypto;
+  parser_dispatch_array[QUIC_FRAME_NEW_TOKEN] = parse_new_token;
+  parser_dispatch_array[QUIC_FRAME_MAX_DATA] = parse_max_data;
+  parser_dispatch_array[QUIC_FRAME_MAX_STREAM_DATA] = parse_max_stream_data;
+  parser_dispatch_array[QUIC_FRAME_DATA_BLOCKED] = parse_data_blocked;
+  parser_dispatch_array[QUIC_FRAME_STREAM_DATA_BLOCKED]
+      = parse_stream_data_blocked;
+  parser_dispatch_array[QUIC_FRAME_NEW_CONNECTION_ID] = parse_new_connection_id;
+  parser_dispatch_array[QUIC_FRAME_RETIRE_CONNECTION_ID]
+      = parse_retire_connection_id;
+  parser_dispatch_array[QUIC_FRAME_PATH_CHALLENGE] = parse_path_challenge;
+  parser_dispatch_array[QUIC_FRAME_PATH_RESPONSE] = parse_path_response;
+  parser_dispatch_array[QUIC_FRAME_HANDSHAKE_DONE] = parse_handshake_done;
+
+  /* ACK frames (0x02-0x03) */
+  parser_dispatch_array[QUIC_FRAME_ACK] = parse_ack;
+  parser_dispatch_array[QUIC_FRAME_ACK_ECN] = parse_ack;
+
+  /* STREAM frames (0x08-0x0f) */
+  for (uint64_t i = QUIC_FRAME_STREAM; i <= QUIC_FRAME_STREAM_MAX; i++)
+    parser_dispatch_array[i] = parse_stream;
+
+  /* MAX_STREAMS frames (0x12-0x13) */
+  parser_dispatch_array[QUIC_FRAME_MAX_STREAMS_BIDI] = parse_max_streams;
+  parser_dispatch_array[QUIC_FRAME_MAX_STREAMS_UNI] = parse_max_streams;
+
+  /* STREAMS_BLOCKED frames (0x16-0x17) */
+  parser_dispatch_array[QUIC_FRAME_STREAMS_BLOCKED_BIDI] = parse_streams_blocked;
+  parser_dispatch_array[QUIC_FRAME_STREAMS_BLOCKED_UNI] = parse_streams_blocked;
+
+  /* CONNECTION_CLOSE frames (0x1c-0x1d) */
+  parser_dispatch_array[QUIC_FRAME_CONNECTION_CLOSE] = parse_connection_close;
+  parser_dispatch_array[QUIC_FRAME_CONNECTION_CLOSE_APP]
+      = parse_connection_close;
+
+  /* DATAGRAM frames (0x30-0x31) */
+  parser_dispatch_array[QUIC_FRAME_DATAGRAM] = parse_datagram;
+  parser_dispatch_array[QUIC_FRAME_DATAGRAM_LEN] = parse_datagram;
+}
+
+/**
+ * @brief Dispatch frame parser based on frame type.
+ *
+ * Performs O(1) lookup in pre-initialized dispatch array. Replaces previous
+ * O(n) linear search through parser table.
+ *
+ * @param type   QUIC frame type (from variable-length integer)
+ * @param data   Raw packet data
+ * @param len    Total data length
+ * @param pos    Current parse position (updated by parser)
+ * @param frame  Output frame structure
+ * @return       QUIC_FRAME_OK or error code
+ */
 static SocketQUICFrame_Result
 dispatch_frame_parser (uint64_t type, const uint8_t *data, size_t len,
                        size_t *pos, SocketQUICFrame_T *frame)
 {
-  for (size_t i = 0; frame_parser_table[i].parser != NULL; i++)
-    {
-      if (type >= frame_parser_table[i].type_min
-          && type <= frame_parser_table[i].type_max)
-        return frame_parser_table[i].parser (data, len, pos, frame);
-    }
-  return QUIC_FRAME_ERROR_TYPE;
+  /* Bounds check: reject types outside dispatch array */
+  if (type >= QUIC_FRAME_TYPE_MAX)
+    return QUIC_FRAME_ERROR_TYPE;
+
+  /* Lookup parser for this frame type */
+  frame_parser_fn parser = parser_dispatch_array[type];
+  if (parser == NULL)
+    return QUIC_FRAME_ERROR_TYPE;
+
+  /* Dispatch to type-specific parser */
+  return parser (data, len, pos, frame);
 }
 
 /* ============================================================================
