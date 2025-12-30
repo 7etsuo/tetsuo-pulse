@@ -2454,8 +2454,16 @@ extern int Socket_getpeergid (const T socket);
  * - Only works with connected Unix domain sockets
  * - Receiving process should validate the fd type before use
  *
- * @threadsafe Yes - uses thread-local error buffers for safe concurrent
- * operation.
+ * THREAD-SAFETY LIMITATIONS:
+ * - WARNING: The passed file descriptor MUST NOT be closed by another thread
+ *   during this operation. There is an inherent TOCTOU (Time-Of-Check to
+ *   Time-Of-Use) race between FD validation and the actual sendmsg() call.
+ * - Caller is responsible for ensuring FD remains valid throughout this call.
+ * - Violation may result in EBADF from sendmsg() or passing invalid FD.
+ *
+ * @threadsafe Conditional - safe only if fd_to_pass is not concurrently
+ * modified or closed by another thread. Socket operations use thread-local
+ * error buffers.
  * @see Socket_recvfd() for receiving file descriptors.
  * @see Socket_sendfds() for sending multiple descriptors.
  */
@@ -2493,8 +2501,17 @@ extern int Socket_recvfd (T socket, int *fd_received);
  * Passes multiple file descriptors atomically in a single message.
  * All descriptors are either sent together or none are sent.
  *
- * @threadsafe Yes - uses thread-local error buffers for safe concurrent
- * operation.
+ * THREAD-SAFETY LIMITATIONS:
+ * - WARNING: All passed file descriptors MUST NOT be closed by another thread
+ *   during this operation. There is an inherent TOCTOU (Time-Of-Check to
+ *   Time-Of-Use) race between FD validation and the actual sendmsg() call.
+ * - Caller is responsible for ensuring all FDs remain valid throughout this
+ *   call.
+ * - Violation may result in EBADF from sendmsg() or passing invalid FDs.
+ *
+ * @threadsafe Conditional - safe only if file descriptors in fds array are
+ * not concurrently modified or closed by another thread. Socket operations
+ * use thread-local error buffers.
  * @see Socket_recvfds() for receiving multiple descriptors.
  * @see Socket_sendfd() for sending single descriptor.
  */
