@@ -316,6 +316,63 @@ Socket_simple_dtls_enable (SocketSimple_Socket_T sock, const char *hostname,
  * DTLS Server Functions
  *============================================================================*/
 
+/**
+ * @brief Wait for ClientHello and complete DTLS handshake.
+ *
+ * @param dgram      DTLS-enabled datagram socket
+ * @param timeout_ms Timeout in milliseconds (0 = default 30000ms)
+ * @return 0 on success, -1 on error (simple_set_error called)
+ */
+static int
+wait_and_complete_dtls_handshake (SocketDgram_T dgram, int timeout_ms)
+{
+  TRY
+  {
+    /* Wait for client hello */
+    DTLSHandshakeState state = SocketDTLS_listen (dgram);
+
+    if (state == DTLS_HANDSHAKE_ERROR)
+      {
+        simple_set_error (SOCKET_SIMPLE_ERR_TLS, "Failed to receive ClientHello");
+        return -1;
+      }
+
+    /* Complete handshake */
+    state = SocketDTLS_handshake_loop (dgram, timeout_ms > 0 ? timeout_ms : 30000);
+
+    if (state != DTLS_HANDSHAKE_COMPLETE)
+      {
+        simple_set_error (SOCKET_SIMPLE_ERR_TLS_HANDSHAKE,
+                          "DTLS handshake with client failed");
+        return -1;
+      }
+  }
+  EXCEPT (SocketDTLS_TimeoutExpired)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "DTLS accept timed out");
+    return -1;
+  }
+  EXCEPT (SocketDTLS_CookieFailed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_TLS, "DTLS cookie verification failed");
+    return -1;
+  }
+  EXCEPT (SocketDTLS_HandshakeFailed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_TLS_HANDSHAKE,
+                      "DTLS handshake with client failed");
+    return -1;
+  }
+  EXCEPT (SocketDTLS_Failed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_TLS, "DTLS accept failed");
+    return -1;
+  }
+  END_TRY;
+
+  return 0;
+}
+
 SocketSimple_Socket_T
 Socket_simple_dtls_listen (const char *host, int port, const char *cert_file,
                            const char *key_file)
@@ -416,50 +473,11 @@ Socket_simple_dtls_accept (SocketSimple_Socket_T server_sock, int timeout_ms)
       return NULL;
     }
 
-  TRY
-  {
-    /* Wait for client hello */
-    DTLSHandshakeState state = SocketDTLS_listen (server_sock->dgram);
-
-    if (state == DTLS_HANDSHAKE_ERROR)
-      {
-        simple_set_error (SOCKET_SIMPLE_ERR_TLS, "Failed to receive ClientHello");
-        return NULL;
-      }
-
-    /* Complete handshake */
-    state = SocketDTLS_handshake_loop (server_sock->dgram,
-                                       timeout_ms > 0 ? timeout_ms : 30000);
-
-    if (state != DTLS_HANDSHAKE_COMPLETE)
-      {
-        simple_set_error (SOCKET_SIMPLE_ERR_TLS_HANDSHAKE,
-                          "DTLS handshake with client failed");
-        return NULL;
-      }
-  }
-  EXCEPT (SocketDTLS_TimeoutExpired)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "DTLS accept timed out");
-    return NULL;
-  }
-  EXCEPT (SocketDTLS_CookieFailed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TLS, "DTLS cookie verification failed");
-    return NULL;
-  }
-  EXCEPT (SocketDTLS_HandshakeFailed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TLS_HANDSHAKE,
-                      "DTLS handshake with client failed");
-    return NULL;
-  }
-  EXCEPT (SocketDTLS_Failed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TLS, "DTLS accept failed");
-    return NULL;
-  }
-  END_TRY;
+  /* Wait for ClientHello and complete handshake */
+  if (wait_and_complete_dtls_handshake (server_sock->dgram, timeout_ms) != 0)
+    {
+      return NULL;
+    }
 
   /* For DTLS, we return the same socket handle after handshake
    * (connectionless - unlike TCP accept) */
