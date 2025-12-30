@@ -17,6 +17,7 @@
 #include "socket/SocketProxy.h"
 
 #include <ctype.h>
+#include <errno.h>
 
 /* ============================================================================
  * Configuration Functions
@@ -310,12 +311,33 @@ Socket_simple_proxy_parse_url (const char *url,
   if (port_start)
     {
       char *endptr;
+      errno = 0; /* Reset errno before strtol */
       long port = strtol (port_start, &endptr, 10);
-      if (port <= 0 || port > 65535)
+
+      /* Check for parse failure (no digits consumed) */
+      if (endptr == port_start)
         {
-          simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid port");
+          simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                            "Invalid port: not a number");
           return -1;
         }
+
+      /* Check that strtol stopped at valid terminator */
+      if (*endptr != '\0' && *endptr != '/')
+        {
+          simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                            "Invalid port: contains non-numeric characters");
+          return -1;
+        }
+
+      /* Check for overflow or out of range */
+      if (errno == ERANGE || port <= 0 || port > 65535)
+        {
+          simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                            "Invalid port: out of range");
+          return -1;
+        }
+
       config->port = (int)port;
     }
   else
