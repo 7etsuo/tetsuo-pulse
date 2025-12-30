@@ -751,7 +751,7 @@ generate_client_cookie_hmac (T cache, const struct sockaddr *server_addr,
     }
 
   /* HMAC-SHA256 and truncate to 64 bits */
-  unsigned char hmac_out[32];
+  unsigned char hmac_out[SOCKET_CRYPTO_SHA256_SIZE];
   unsigned int hmac_len = 0;
 
   HMAC (EVP_sha256 (), cache->secret, SECRET_SIZE, data, data_len, hmac_out,
