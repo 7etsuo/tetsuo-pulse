@@ -56,7 +56,13 @@ init_header_hash_seed (void)
       uint32_t pid_seed = (uint32_t)getpid ();
       /* Use stack address for ASLR entropy */
       uintptr_t stack_addr = (uintptr_t)&header_hash_seed;
+#if UINTPTR_MAX > UINT32_MAX
+      /* 64-bit system: mix high and low bits */
       uint32_t stack_seed = (uint32_t)(stack_addr ^ (stack_addr >> 32));
+#else
+      /* 32-bit system: use full address */
+      uint32_t stack_seed = (uint32_t)stack_addr;
+#endif
 
       header_hash_seed = time_seed ^ pid_seed ^ stack_seed;
 
