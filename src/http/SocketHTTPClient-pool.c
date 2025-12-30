@@ -230,6 +230,27 @@ host_port_secure_match (const HTTPPoolEntry *entry, const char *host, int port,
   return strcasecmp (entry->host, host) == 0;
 }
 
+/**
+ * Verify SNI hostname match for secure connections.
+ *
+ * SECURITY: Ensures TLS hostname matches to prevent connection reuse
+ * across different hostnames (RFC 6125 requirement).
+ *
+ * @param entry Pool entry to verify
+ * @param host Hostname to match against (may be NULL)
+ * @return 1 if match (or not secure), 0 if mismatch
+ */
+static int
+verify_sni_hostname_match (const HTTPPoolEntry *entry, const char *host)
+{
+  /* Not secure or no host - no SNI verification needed */
+  if (!entry->is_secure || host == NULL)
+    return 1;
+
+  /* Hostnames are case-insensitive per RFC 1035 */
+  return strcasecmp (entry->sni_hostname, host) == 0;
+}
+
 static size_t
 pool_count_for_host (HTTPPool *pool, const char *host, int port, int is_secure)
 {
@@ -392,23 +413,18 @@ httpclient_pool_get (HTTPPool *pool, const char *host, int port, int is_secure)
       if (host_port_secure_match (entry, host, port, is_secure)
           && entry_can_handle_request (entry))
         {
-          /* SECURITY FIX: Verify TLS hostname matches for secure connections
+          /* SECURITY: Verify TLS hostname matches for secure connections
            * to prevent connection reuse across different hostnames.
            * CVE-like vulnerability: An attacker could obtain a connection to
            * evil.com, then reuse it for bank.com if we don't verify SNI hostname.
            * RFC 6125 requires hostname verification on every TLS session use.
            */
-          if (entry->is_secure && host) {
-            /* Hostnames are case-insensitive per RFC 1035 */
-            if (strcasecmp(entry->sni_hostname, host) != 0) {
-              /* Hostname mismatch - skip this connection and continue search.
-               * This prevents an attacker from reusing a TLS connection
-               * established for one hostname with a different target hostname.
-               */
+          if (!verify_sni_hostname_match (entry, host))
+            {
+              /* Hostname mismatch - skip this connection and continue search */
               entry = entry->hash_next;
               continue;
             }
-          }
 
           clear_http1_buffers (entry);
           entry_mark_in_use (entry);
@@ -448,13 +464,10 @@ httpclient_pool_get_prepared (HTTPPool *pool, const char *host, size_t host_len,
           && entry_can_handle_request (entry))
         {
           /* SECURITY: Verify TLS hostname matches for secure connections */
-          if (entry->is_secure && host)
+          if (!verify_sni_hostname_match (entry, host))
             {
-              if (strcasecmp (entry->sni_hostname, host) != 0)
-                {
-                  entry = entry->hash_next;
-                  continue;
-                }
+              entry = entry->hash_next;
+              continue;
             }
 
           clear_http1_buffers (entry);
