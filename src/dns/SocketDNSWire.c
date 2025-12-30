@@ -1752,12 +1752,8 @@ SocketDNS_name_in_bailiwick (const char *record_name, const char *query_name)
   const char *suffix = record_name + (rec_len - qry_len);
   for (size_t i = 0; i < qry_len; i++)
     {
-      char a = suffix[i], b = query_name[i];
-      if (a >= 'A' && a <= 'Z')
-        a = (char)(a + 32);
-      if (b >= 'A' && b <= 'Z')
-        b = (char)(b + 32);
-      if (a != b)
+      if (!dns_char_equal_ci ((unsigned char)suffix[i],
+                              (unsigned char)query_name[i]))
         return 0;
     }
 
