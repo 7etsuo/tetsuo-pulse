@@ -180,6 +180,13 @@ socketevent_init_connection (SocketEventRecord *event, SocketEventType type,
                              const char *peer_addr, int peer_port,
                              const char *local_addr, int local_port)
 {
+  if (event == NULL)
+    {
+      SocketLog_emit (SOCKET_LOG_WARN, "SocketEvents",
+                      "NULL event passed to socketevent_init_connection");
+      return;
+    }
+
   event->type = type;
   event->component = component;
   event->data.connection.fd = fd;
