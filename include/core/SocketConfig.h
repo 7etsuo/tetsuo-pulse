@@ -340,6 +340,18 @@ extern const char *Socket_safe_strerror (int errnum);
 #endif
 
 /**
+ * @brief Default backlog for listen() system call when not specified.
+ *
+ * Used as fallback when user passes 0 or negative backlog value.
+ * 128 provides reasonable queue depth for most servers without
+ * excessive resource consumption.
+ *
+ */
+#ifndef SOCKET_DEFAULT_LISTEN_BACKLOG
+#define SOCKET_DEFAULT_LISTEN_BACKLOG 128
+#endif
+
+/**
  * @brief Maximum file descriptors per SCM_RIGHTS message.
  *
  * Unix domain socket file descriptor passing limit.
