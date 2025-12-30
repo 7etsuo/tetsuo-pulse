@@ -127,7 +127,7 @@ httpclient_get_arena_cache (void)
  * Acquire a request arena from thread-local cache.
  *
  * First call per thread creates the arena. Subsequent calls reuse it
- * after clearing (Arena_clear preserves mutex, avoiding init overhead).
+ * after resetting (Arena_reset avoids global mutex, improving throughput).
  *
  * @return Arena for request allocations (never NULL, may raise on OOM)
  */
