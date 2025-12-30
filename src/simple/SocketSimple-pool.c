@@ -16,6 +16,13 @@
 #include "pool/SocketPool.h"
 
 /* ============================================================================
+ * Constants
+ * ============================================================================
+ */
+
+#define SOCKET_SIMPLE_DEFAULT_BUFFER_SIZE 4096
+
+/* ============================================================================
  * Internal Structures
  * ============================================================================
  */
@@ -66,7 +73,7 @@ Socket_simple_pool_options_init (SocketSimple_PoolOptions *opts)
     return;
 
   opts->max_connections = 1024;
-  opts->buffer_size = 4096;
+  opts->buffer_size = SOCKET_SIMPLE_DEFAULT_BUFFER_SIZE;
   opts->idle_timeout_ms = 0;
   opts->conn_rate_limit = 0;
   opts->max_per_ip = 0;
