@@ -107,8 +107,6 @@ simple_create_handle (Socket_T sock, int is_server, int is_tls)
   struct SocketSimple_Socket *handle = calloc (1, sizeof (*handle));
   if (!handle)
     {
-      int saved_errno = errno; /* Preserve errno immediately */
-      errno = saved_errno;     /* Restore before helper call */
       simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
       return NULL;
     }
@@ -126,8 +124,6 @@ simple_create_udp_handle (SocketDgram_T dgram)
   struct SocketSimple_Socket *handle = calloc (1, sizeof (*handle));
   if (!handle)
     {
-      int saved_errno = errno; /* Preserve errno immediately */
-      errno = saved_errno;     /* Restore before helper call */
       simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
       return NULL;
     }
