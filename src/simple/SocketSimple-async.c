@@ -149,6 +149,113 @@ Socket_simple_async_free (SocketSimple_Async_T *async)
  * ============================================================================
  */
 
+/**
+ * Function pointer types for core async operations.
+ */
+typedef unsigned (*AsyncOpFunc) (SocketAsync_T async, Socket_T socket,
+                                 void *buf, size_t len,
+                                 SocketAsync_Callback cb, void *user_data,
+                                 SocketAsync_Flags flags);
+
+typedef unsigned (*AsyncOpTimeoutFunc) (SocketAsync_T async, Socket_T socket,
+                                        void *buf, size_t len,
+                                        SocketAsync_Callback cb, void *user_data,
+                                        SocketAsync_Flags flags,
+                                        int64_t timeout_ms);
+
+/**
+ * Common implementation for async send/recv operations.
+ * Handles validation, context allocation, and operation submission.
+ *
+ * @param async         Simple async context
+ * @param socket        Simple socket handle
+ * @param buf           Buffer for operation
+ * @param len           Buffer length
+ * @param cb            User callback
+ * @param user_data     User data for callback
+ * @param flags         Simple async flags
+ * @param timeout_ms    Timeout in milliseconds (0 = no timeout)
+ * @param op_func       Core async function (no timeout)
+ * @param op_timeout_func Core async function (with timeout)
+ * @param error_msg     Error message for operation failure
+ * @return Request ID on success, 0 on failure
+ */
+static unsigned
+async_operation_common (SocketSimple_Async_T async,
+                        SocketSimple_Socket_T socket, void *buf, size_t len,
+                        SocketSimple_AsyncCallback cb, void *user_data,
+                        SocketSimple_AsyncFlags flags, int64_t timeout_ms,
+                        AsyncOpFunc op_func, AsyncOpTimeoutFunc op_timeout_func,
+                        const char *error_msg)
+{
+  /* Volatile copy to survive potential longjmp in TRY/EXCEPT */
+  SocketSimple_Socket_T volatile safe_socket = socket;
+  Socket_T core_socket;
+  struct CallbackContext *ctx;
+  volatile unsigned request_id = 0;
+
+  Socket_simple_clear_error ();
+
+  if (!async || !async->async)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid async context");
+      return 0;
+    }
+
+  core_socket = get_core_socket ((SocketSimple_Socket_T)safe_socket);
+  if (!core_socket)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                        "Invalid socket (NULL or UDP not supported)");
+      return 0;
+    }
+
+  if (!cb)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Callback is required");
+      return 0;
+    }
+
+  /* Allocate callback context */
+  ctx = calloc (1, sizeof (*ctx));
+  if (!ctx)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY,
+                        "Failed to allocate callback context");
+      return 0;
+    }
+
+  ctx->user_cb = cb;
+  ctx->user_data = user_data;
+  ctx->simple_socket = (SocketSimple_Socket_T)safe_socket;
+
+  TRY
+  {
+    if (timeout_ms > 0)
+      {
+        request_id
+            = op_timeout_func (async->async, core_socket, buf, len,
+                               core_callback_wrapper, ctx,
+                               simple_to_core_flags (flags), timeout_ms);
+      }
+    else
+      {
+        request_id = op_func (async->async, core_socket, buf, len,
+                              core_callback_wrapper, ctx,
+                              simple_to_core_flags (flags));
+      }
+  }
+  EXCEPT (SocketAsync_Failed)
+  {
+    free (ctx);
+    simple_set_error (SOCKET_SIMPLE_ERR_ASYNC, error_msg);
+    return 0;
+  }
+  END_TRY;
+
+  return request_id;
+}
+
 unsigned
 Socket_simple_async_send (SocketSimple_Async_T async,
                           SocketSimple_Socket_T socket, const void *buf,
@@ -176,72 +283,11 @@ Socket_simple_async_send_timeout (SocketSimple_Async_T async,
                                   void *user_data, SocketSimple_AsyncFlags flags,
                                   int64_t timeout_ms)
 {
-  /* Volatile copy to survive potential longjmp in TRY/EXCEPT */
-  SocketSimple_Socket_T volatile safe_socket = socket;
-  Socket_T core_socket;
-  struct CallbackContext *ctx;
-  volatile unsigned request_id = 0;
-
-  Socket_simple_clear_error ();
-
-  if (!async || !async->async)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid async context");
-      return 0;
-    }
-
-  core_socket = get_core_socket ((SocketSimple_Socket_T)safe_socket);
-  if (!core_socket)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Invalid socket (NULL or UDP not supported)");
-      return 0;
-    }
-
-  if (!cb)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Callback is required");
-      return 0;
-    }
-
-  /* Allocate callback context */
-  ctx = calloc (1, sizeof (*ctx));
-  if (!ctx)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY,
-                        "Failed to allocate callback context");
-      return 0;
-    }
-
-  ctx->user_cb = cb;
-  ctx->user_data = user_data;
-  ctx->simple_socket = (SocketSimple_Socket_T)safe_socket;
-
-  TRY
-  {
-    if (timeout_ms > 0)
-      {
-        request_id = SocketAsync_send_timeout (
-            async->async, core_socket, buf, len, core_callback_wrapper, ctx,
-            simple_to_core_flags (flags), timeout_ms);
-      }
-    else
-      {
-        request_id
-            = SocketAsync_send (async->async, core_socket, buf, len,
-                                core_callback_wrapper, ctx,
-                                simple_to_core_flags (flags));
-      }
-  }
-  EXCEPT (SocketAsync_Failed)
-  {
-    free (ctx);
-    simple_set_error (SOCKET_SIMPLE_ERR_ASYNC, "Failed to submit async send");
-    return 0;
-  }
-  END_TRY;
-
-  return request_id;
+  return async_operation_common (async, socket, (void *)buf, len, cb, user_data,
+                                 flags, timeout_ms,
+                                 (AsyncOpFunc)SocketAsync_send,
+                                 (AsyncOpTimeoutFunc)SocketAsync_send_timeout,
+                                 "Failed to submit async send");
 }
 
 unsigned
@@ -251,72 +297,10 @@ Socket_simple_async_recv_timeout (SocketSimple_Async_T async,
                                   void *user_data, SocketSimple_AsyncFlags flags,
                                   int64_t timeout_ms)
 {
-  /* Volatile copy to survive potential longjmp in TRY/EXCEPT */
-  SocketSimple_Socket_T volatile safe_socket = socket;
-  Socket_T core_socket;
-  struct CallbackContext *ctx;
-  volatile unsigned request_id = 0;
-
-  Socket_simple_clear_error ();
-
-  if (!async || !async->async)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid async context");
-      return 0;
-    }
-
-  core_socket = get_core_socket ((SocketSimple_Socket_T)safe_socket);
-  if (!core_socket)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Invalid socket (NULL or UDP not supported)");
-      return 0;
-    }
-
-  if (!cb)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Callback is required");
-      return 0;
-    }
-
-  /* Allocate callback context */
-  ctx = calloc (1, sizeof (*ctx));
-  if (!ctx)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY,
-                        "Failed to allocate callback context");
-      return 0;
-    }
-
-  ctx->user_cb = cb;
-  ctx->user_data = user_data;
-  ctx->simple_socket = (SocketSimple_Socket_T)safe_socket;
-
-  TRY
-  {
-    if (timeout_ms > 0)
-      {
-        request_id = SocketAsync_recv_timeout (
-            async->async, core_socket, buf, len, core_callback_wrapper, ctx,
-            simple_to_core_flags (flags), timeout_ms);
-      }
-    else
-      {
-        request_id
-            = SocketAsync_recv (async->async, core_socket, buf, len,
-                                core_callback_wrapper, ctx,
-                                simple_to_core_flags (flags));
-      }
-  }
-  EXCEPT (SocketAsync_Failed)
-  {
-    free (ctx);
-    simple_set_error (SOCKET_SIMPLE_ERR_ASYNC, "Failed to submit async recv");
-    return 0;
-  }
-  END_TRY;
-
-  return request_id;
+  return async_operation_common (async, socket, buf, len, cb, user_data, flags,
+                                 timeout_ms, (AsyncOpFunc)SocketAsync_recv,
+                                 (AsyncOpTimeoutFunc)SocketAsync_recv_timeout,
+                                 "Failed to submit async recv");
 }
 
 /* ============================================================================
