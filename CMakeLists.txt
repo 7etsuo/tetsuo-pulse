@@ -741,6 +741,7 @@ set(TEST_SOURCES
     test_socketerror
     test_socketevent
     test_safe_arithmetic
+    test_url_utils
     test_socket
     test_simple_recv_line
     test_socketbuf

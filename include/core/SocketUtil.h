@@ -1941,4 +1941,133 @@ socket_util_safe_mul_u64(uint64_t a, uint64_t b, uint64_t *result)
   return 1;
 }
 
+/* ============================================================================
+ * URL ENCODING UTILITIES
+ * ============================================================================
+ */
+
+/**
+ * @brief Decode hexadecimal digit character.
+ * @ingroup foundation
+ * @param c Character to decode ('0'-'9', 'a'-'f', 'A'-'F').
+ * @return Decoded value 0-15, or -1 if not a valid hex digit.
+ * @threadsafe Yes (pure function, no shared state)
+ *
+ * Converts a single hexadecimal character to its numeric value.
+ * Used for percent-decoding URL-encoded strings (e.g., %20 -> space).
+ *
+ * Valid inputs:
+ * - '0'-'9' -> 0-9
+ * - 'a'-'f' -> 10-15
+ * - 'A'-'F' -> 10-15
+ *
+ * Example:
+ *   int hi = socket_util_hex_digit('F');  // Returns 15
+ *   int lo = socket_util_hex_digit('2');  // Returns 2
+ *   char decoded = (hi << 4) | lo;        // 0xF2 = 242
+ *
+ * @see socket_util_url_decode() for complete percent-decoding
+ * @see RFC 3986 Section 2.1 (Percent-Encoding)
+ */
+static inline int
+socket_util_hex_digit (char c)
+{
+  if (c >= '0' && c <= '9')
+    return c - '0';
+  if (c >= 'a' && c <= 'f')
+    return 10 + (c - 'a');
+  if (c >= 'A' && c <= 'F')
+    return 10 + (c - 'A');
+  return -1;
+}
+
+/**
+ * @brief URL-decode percent-encoded string.
+ * @ingroup foundation
+ * @param src Source string with %XX encoding.
+ * @param src_len Length of source string.
+ * @param dst Destination buffer.
+ * @param dst_size Size of destination buffer.
+ * @param out_len Optional output pointer for decoded length (may be NULL).
+ * @return 0 on success, -1 if output would be truncated.
+ * @threadsafe Yes (pure function, no shared state)
+ *
+ * Decodes percent-encoded URL strings per RFC 3986. Converts sequences
+ * like %20 to their corresponding bytes. Invalid percent sequences are
+ * copied literally.
+ *
+ * Behavior:
+ * - %XX where XX are valid hex digits -> decoded byte
+ * - %XY where X or Y invalid -> copied literally (%XY)
+ * - Other characters -> copied literally
+ * - Always null-terminates output
+ * - Returns error if output would be truncated
+ *
+ * Example:
+ *   const char *url = "hello%20world%21";
+ *   char buf[64];
+ *   size_t len;
+ *   if (socket_util_url_decode(url, strlen(url), buf, sizeof(buf), &len) == 0) {
+ *     // buf now contains "hello world!"
+ *     // len is 12
+ *   }
+ *
+ * @note Requires dst_size > 0 for null terminator
+ * @see socket_util_hex_digit() for hex decoding
+ * @see RFC 3986 Section 2.1 (Percent-Encoding)
+ */
+static inline int
+socket_util_url_decode (const char *src, size_t src_len, char *dst,
+                        size_t dst_size, size_t *out_len)
+{
+  size_t di = 0;
+
+  if (dst_size == 0)
+    return -1;
+
+  for (size_t si = 0; si < src_len && di < dst_size - 1; si++)
+    {
+      if (src[si] == '%' && si + 2 < src_len)
+        {
+          int hi = socket_util_hex_digit (src[si + 1]);
+          int lo = socket_util_hex_digit (src[si + 2]);
+          if (hi >= 0 && lo >= 0)
+            {
+              dst[di++] = (char)((hi << 4) | lo);
+              si += 2;
+              continue;
+            }
+        }
+      dst[di++] = src[si];
+    }
+
+  dst[di] = '\0';
+
+  if (out_len != NULL)
+    *out_len = di;
+
+  /* Check for truncation: did we process all input? */
+  /* We need to account for percent sequences that might remain */
+  size_t si = 0;
+  size_t chars_needed = 0;
+  while (si < src_len)
+    {
+      if (src[si] == '%' && si + 2 < src_len)
+        {
+          int hi = socket_util_hex_digit (src[si + 1]);
+          int lo = socket_util_hex_digit (src[si + 2]);
+          if (hi >= 0 && lo >= 0)
+            {
+              chars_needed++;
+              si += 3;
+              continue;
+            }
+        }
+      chars_needed++;
+      si++;
+    }
+
+  return (chars_needed >= dst_size) ? -1 : 0;
+}
+
 #endif /* SOCKETUTIL_INCLUDED */

@@ -165,41 +165,11 @@ parse_scheme (const char *url, SocketSimple_ProxyType *type, const char **rest)
   return -1;
 }
 
-/* Helper to decode percent-encoded character */
-static int
-hex_digit (char c)
-{
-  if (c >= '0' && c <= '9')
-    return c - '0';
-  if (c >= 'a' && c <= 'f')
-    return 10 + (c - 'a');
-  if (c >= 'A' && c <= 'F')
-    return 10 + (c - 'A');
-  return -1;
-}
-
-static size_t
-url_decode (const char *src, size_t src_len, char *dst, size_t dst_size)
-{
-  size_t di = 0;
-  for (size_t si = 0; si < src_len && di < dst_size - 1; si++)
-    {
-      if (src[si] == '%' && si + 2 < src_len)
-        {
-          int hi = hex_digit (src[si + 1]);
-          int lo = hex_digit (src[si + 2]);
-          if (hi >= 0 && lo >= 0)
-            {
-              dst[di++] = (char)((hi << 4) | lo);
-              si += 2;
-              continue;
-            }
-        }
-      dst[di++] = src[si];
-    }
-  dst[di] = '\0';
-  return di;
-}
+/* URL decoding utilities are now in SocketUtil.h:
+ * - socket_util_hex_digit() - decode hex digit character
+ * - socket_util_url_decode() - decode percent-encoded string
+ * See SocketUtil.h for full documentation.
+ */
 
 int
 Socket_simple_proxy_parse_url (const char *url,
@@ -235,16 +205,16 @@ Socket_simple_proxy_parse_url (const char *url,
       if (colon)
         {
           /* user:pass */
-          url_decode (rest, colon - rest, config->username,
-                      sizeof (config->username));
-          url_decode (colon + 1, at - colon - 1, config->password,
-                      sizeof (config->password));
+          socket_util_url_decode (rest, colon - rest, config->username,
+                                  sizeof (config->username), NULL);
+          socket_util_url_decode (colon + 1, at - colon - 1, config->password,
+                                  sizeof (config->password), NULL);
         }
       else
         {
           /* user only */
-          url_decode (rest, at - rest, config->username,
-                      sizeof (config->username));
+          socket_util_url_decode (rest, at - rest, config->username,
+                                  sizeof (config->username), NULL);
         }
       host_start = at + 1;
     }
