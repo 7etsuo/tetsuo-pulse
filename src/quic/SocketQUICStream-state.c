@@ -23,6 +23,8 @@
 
 #include "quic/SocketQUICStream.h"
 
+#include "core/SocketUtil.h"
+
 #include <assert.h>
 #include <stddef.h>
 
@@ -240,8 +242,7 @@ static const SocketQUICStreamTransition send_transitions[] = {
     QUIC_STREAM_STATE_RESET_RECVD }
 };
 
-#define SEND_TRANSITIONS_COUNT                                                \
-  (sizeof (send_transitions) / sizeof (send_transitions[0]))
+#define SEND_TRANSITIONS_COUNT ARRAY_LENGTH (send_transitions)
 
 /**
  * @brief Update send-side flags and legacy state after a transition.
@@ -344,8 +345,7 @@ static const SocketQUICStreamTransition recv_transitions[] = {
    QUIC_STREAM_STATE_RESET_READ}
 };
 
-#define RECV_TRANSITIONS_COUNT                                                \
-  (sizeof (recv_transitions) / sizeof (recv_transitions[0]))
+#define RECV_TRANSITIONS_COUNT ARRAY_LENGTH (recv_transitions)
 
 /**
  * @brief Update receive-side flags and legacy state after a transition.
