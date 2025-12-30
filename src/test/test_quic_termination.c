@@ -326,6 +326,54 @@ test_no_double_transition(void)
   printf("test_no_double_transition: PASS\n");
 }
 
+static void
+test_multiplication_overflow_protection(void)
+{
+  Arena_T arena = Arena_new();
+  SocketQUICConnection_T conn
+      = SocketQUICConnection_new(arena, QUIC_CONN_ROLE_SERVER);
+
+  /* Test case 1: PTO value that would overflow when multiplied by 3 */
+  /* UINT64_MAX / 3 = 6148914691236517205 */
+  /* Any PTO > this value should cause overflow */
+  uint64_t overflow_pto = UINT64_MAX / 3 + 1;
+  SocketQUICConnection_initiate_close(conn, 0, 0, overflow_pto);
+  /* Should saturate to UINT64_MAX, not wrap around */
+  assert(conn->closing_deadline_ms == UINT64_MAX);
+
+  /* Test case 2: Just below boundary should NOT overflow */
+  Arena_T arena2 = Arena_new();
+  SocketQUICConnection_T conn2
+      = SocketQUICConnection_new(arena2, QUIC_CONN_ROLE_CLIENT);
+  /* Use a value well below the boundary to avoid edge case issues */
+  uint64_t safe_pto = (UINT64_MAX / 3) - 1000;
+  SocketQUICConnection_initiate_close(conn2, 0, 0, safe_pto);
+  /* Should compute 3*PTO without overflow */
+  uint64_t expected = safe_pto * 3;
+  assert(conn2->closing_deadline_ms == expected);
+  assert(conn2->closing_deadline_ms < UINT64_MAX);
+
+  /* Test case 3: Maximum PTO (UINT64_MAX) */
+  Arena_T arena3 = Arena_new();
+  SocketQUICConnection_T conn3
+      = SocketQUICConnection_new(arena3, QUIC_CONN_ROLE_SERVER);
+  SocketQUICConnection_initiate_close(conn3, 0, 0, UINT64_MAX);
+  assert(conn3->closing_deadline_ms == UINT64_MAX);
+
+  /* Test case 4: Same for draining state */
+  Arena_T arena4 = Arena_new();
+  SocketQUICConnection_T conn4
+      = SocketQUICConnection_new(arena4, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICConnection_enter_draining(conn4, 0, overflow_pto);
+  assert(conn4->draining_deadline_ms == UINT64_MAX);
+
+  Arena_dispose(&arena);
+  Arena_dispose(&arena2);
+  Arena_dispose(&arena3);
+  Arena_dispose(&arena4);
+  printf("test_multiplication_overflow_protection: PASS\n");
+}
+
 int
 main(void)
 {
@@ -341,6 +389,7 @@ main(void)
   test_stateless_reset_verification();
   test_overflow_protection();
   test_no_double_transition();
+  test_multiplication_overflow_protection();
 
   printf("\nAll tests PASSED!\n");
   return 0;
