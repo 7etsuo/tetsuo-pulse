@@ -500,17 +500,9 @@ SocketHTTP_Headers_get (SocketHTTP_Headers_T headers, const char *name)
   return SocketHTTP_Headers_get_n (headers, name, strlen (name));
 }
 
-int
-SocketHTTP_Headers_get_int (SocketHTTP_Headers_T headers, const char *name,
-                            int64_t *value)
+static int
+parse_int64_from_string (const char *str, int64_t *value)
 {
-  if (!headers || !name || !value)
-    return -1;
-
-  const char *str = SocketHTTP_Headers_get (headers, name);
-  if (!str)
-    return -1;
-
   const char *p = str;
   while (*p == ' ' || *p == '\t')
     p++;
@@ -559,6 +551,20 @@ SocketHTTP_Headers_get_int (SocketHTTP_Headers_T headers, const char *name,
     }
 
   return 0;
+}
+
+int
+SocketHTTP_Headers_get_int (SocketHTTP_Headers_T headers, const char *name,
+                            int64_t *value)
+{
+  if (!headers || !name || !value)
+    return -1;
+
+  const char *str = SocketHTTP_Headers_get (headers, name);
+  if (!str)
+    return -1;
+
+  return parse_int64_from_string (str, value);
 }
 
 size_t
