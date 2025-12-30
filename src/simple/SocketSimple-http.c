@@ -55,14 +55,17 @@ get_global_http_client (void)
  * ============================================================================
  */
 
+#define SOCKET_SIMPLE_DEFAULT_CONNECT_TIMEOUT_MS 30000
+#define SOCKET_SIMPLE_DEFAULT_REQUEST_TIMEOUT_MS 60000
+
 void
 Socket_simple_http_options_init (SocketSimple_HTTPOptions *opts)
 {
   if (!opts)
     return;
   memset (opts, 0, sizeof (*opts));
-  opts->connect_timeout_ms = 30000;
-  opts->request_timeout_ms = 60000;
+  opts->connect_timeout_ms = SOCKET_SIMPLE_DEFAULT_CONNECT_TIMEOUT_MS;
+  opts->request_timeout_ms = SOCKET_SIMPLE_DEFAULT_REQUEST_TIMEOUT_MS;
   opts->max_redirects = 5;
   opts->verify_ssl = 1;
 }
