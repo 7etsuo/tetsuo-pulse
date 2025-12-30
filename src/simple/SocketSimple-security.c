@@ -15,6 +15,7 @@
 #include "SocketSimple-internal.h"
 #include "simple/SocketSimple-security.h"
 
+#include "core/SocketConfig.h"
 #include "core/SocketIPTracker.h"
 #include "core/SocketSYNProtect.h"
 
@@ -44,16 +45,16 @@ Socket_simple_syn_config_init (SocketSimple_SYNConfig *config)
   if (!config)
     return;
   memset (config, 0, sizeof (*config));
-  config->window_duration_ms = 10000;
-  config->max_attempts_per_window = 100;
-  config->max_global_per_second = 1000;
-  config->min_success_ratio = 0.1f;
-  config->throttle_delay_ms = 100;
-  config->block_duration_ms = 300000;
-  config->score_throttle = 0.7f;
-  config->score_challenge = 0.5f;
-  config->score_block = 0.3f;
-  config->max_tracked_ips = 10000;
+  config->window_duration_ms = SOCKET_SYN_DEFAULT_WINDOW_MS;
+  config->max_attempts_per_window = SOCKET_SYN_DEFAULT_MAX_PER_WINDOW;
+  config->max_global_per_second = SOCKET_SYN_DEFAULT_GLOBAL_PER_SEC;
+  config->min_success_ratio = SOCKET_SYN_DEFAULT_MIN_SUCCESS_RATIO;
+  config->throttle_delay_ms = SOCKET_SYN_DEFAULT_THROTTLE_DELAY_MS;
+  config->block_duration_ms = SOCKET_SYN_DEFAULT_BLOCK_DURATION_MS;
+  config->score_throttle = SOCKET_SYN_DEFAULT_SCORE_THROTTLE;
+  config->score_challenge = SOCKET_SYN_DEFAULT_SCORE_CHALLENGE;
+  config->score_block = SOCKET_SYN_DEFAULT_SCORE_BLOCK;
+  config->max_tracked_ips = SOCKET_SYN_DEFAULT_MAX_TRACKED_IPS;
 }
 
 /* ============================================================================
