@@ -61,6 +61,17 @@
 
 #define HPACK_LITERAL_WITHOUT_INDEX_VAL 0x00
 
+/* Field type enumeration for decode dispatch */
+typedef enum
+{
+  HPACK_FIELD_INDEXED,
+  HPACK_FIELD_LITERAL_INDEXED,
+  HPACK_FIELD_LITERAL_NO_INDEX,
+  HPACK_FIELD_LITERAL_NEVER_INDEX,
+  HPACK_FIELD_TABLE_UPDATE,
+  HPACK_FIELD_UNKNOWN
+} HpackFieldType;
+
 /* ============================================================================
  * Validation Helpers
  * ============================================================================
@@ -70,6 +81,28 @@ static inline bool
 valid_prefix_bits (int prefix_bits)
 {
   return prefix_bits >= 1 && prefix_bits <= 8;
+}
+
+/* Classify HPACK field type from first byte (RFC 7541 Section 6) */
+static inline HpackFieldType
+classify_field_type (unsigned char byte)
+{
+  if (byte & HPACK_INDEXED_MASK)
+    return HPACK_FIELD_INDEXED;
+
+  if ((byte & HPACK_LITERAL_INDEXED_MASK) == HPACK_LITERAL_INDEXED_VAL)
+    return HPACK_FIELD_LITERAL_INDEXED;
+
+  if ((byte & HPACK_LITERAL_NO_INDEX_MASK) == HPACK_LITERAL_WITHOUT_INDEX_VAL)
+    return HPACK_FIELD_LITERAL_NO_INDEX;
+
+  if ((byte & HPACK_LITERAL_NEVER_MASK) == HPACK_LITERAL_NEVER_VAL)
+    return HPACK_FIELD_LITERAL_NEVER_INDEX;
+
+  if ((byte & HPACK_TABLE_UPDATE_MASK) == HPACK_TABLE_UPDATE_VAL)
+    return HPACK_FIELD_TABLE_UPDATE;
+
+  return HPACK_FIELD_UNKNOWN;
 }
 
 /* ============================================================================
@@ -1015,6 +1048,30 @@ hpack_decode_table_update (SocketHPACK_Decoder_T decoder,
   return HPACK_OK;
 }
 
+/* Handle dynamic table size update with validation */
+static SocketHPACK_Result
+handle_table_update (SocketHPACK_Decoder_T decoder,
+                     const unsigned char *input, size_t input_len, size_t *pos,
+                     int *table_update_allowed, int *table_update_count,
+                     SocketHPACK_Header *header)
+{
+  SocketHPACK_Result result;
+
+  if (!*table_update_allowed)
+    return HPACK_ERROR_TABLE_SIZE;
+
+  if (*table_update_count >= SOCKETHPACK_MAX_TABLE_UPDATES)
+    return HPACK_ERROR_TABLE_SIZE;
+
+  result = hpack_decode_table_update (decoder, input, input_len, pos);
+  if (result != HPACK_OK)
+    return result;
+
+  (*table_update_count)++;
+  header->name = NULL;
+  return HPACK_OK;
+}
+
 static SocketHPACK_Result
 decode_field_by_type (SocketHPACK_Decoder_T decoder,
                       const unsigned char *input, size_t input_len,
@@ -1022,57 +1079,42 @@ decode_field_by_type (SocketHPACK_Decoder_T decoder,
                       int *table_update_allowed, int *table_update_count,
                       Arena_T arena)
 {
-  unsigned char byte = input[*pos];
-  SocketHPACK_Result result;
+  HpackFieldType type = classify_field_type (input[*pos]);
 
-  if (byte & HPACK_INDEXED_MASK)
+  switch (type)
     {
+    case HPACK_FIELD_INDEXED:
       *table_update_allowed = 0;
-      return hpack_decode_indexed_field (decoder, input, input_len, pos, header);
-    }
+      return hpack_decode_indexed_field (decoder, input, input_len, pos,
+                                         header);
 
-  if ((byte & HPACK_LITERAL_INDEXED_MASK) == HPACK_LITERAL_INDEXED_VAL)
-    {
-      *table_update_allowed = 0;
-      return hpack_decode_literal (decoder, input, input_len,
-                                   HPACK_PREFIX_LITERAL_INDEX, pos,
-                                   header, 1, 0, arena);
-    }
-
-  if ((byte & HPACK_LITERAL_NO_INDEX_MASK) == HPACK_LITERAL_WITHOUT_INDEX_VAL)
-    {
+    case HPACK_FIELD_LITERAL_INDEXED:
       *table_update_allowed = 0;
       return hpack_decode_literal (decoder, input, input_len,
-                                   HPACK_PREFIX_LITERAL_OTHER, pos,
-                                   header, 0, 0, arena);
-    }
+                                   HPACK_PREFIX_LITERAL_INDEX, pos, header, 1,
+                                   0, arena);
 
-  if ((byte & HPACK_LITERAL_NEVER_MASK) == HPACK_LITERAL_NEVER_VAL)
-    {
+    case HPACK_FIELD_LITERAL_NO_INDEX:
       *table_update_allowed = 0;
       return hpack_decode_literal (decoder, input, input_len,
-                                   HPACK_PREFIX_LITERAL_OTHER, pos,
-                                   header, 0, 1, arena);
+                                   HPACK_PREFIX_LITERAL_OTHER, pos, header, 0,
+                                   0, arena);
+
+    case HPACK_FIELD_LITERAL_NEVER_INDEX:
+      *table_update_allowed = 0;
+      return hpack_decode_literal (decoder, input, input_len,
+                                   HPACK_PREFIX_LITERAL_OTHER, pos, header, 0,
+                                   1, arena);
+
+    case HPACK_FIELD_TABLE_UPDATE:
+      return handle_table_update (decoder, input, input_len, pos,
+                                  table_update_allowed, table_update_count,
+                                  header);
+
+    case HPACK_FIELD_UNKNOWN:
+    default:
+      return HPACK_ERROR;
     }
-
-  if ((byte & HPACK_TABLE_UPDATE_MASK) == HPACK_TABLE_UPDATE_VAL)
-    {
-      if (!*table_update_allowed)
-        return HPACK_ERROR_TABLE_SIZE;
-
-      if (*table_update_count >= SOCKETHPACK_MAX_TABLE_UPDATES)
-        return HPACK_ERROR_TABLE_SIZE;
-
-      result = hpack_decode_table_update (decoder, input, input_len, pos);
-      if (result != HPACK_OK)
-        return result;
-
-      (*table_update_count)++;
-      header->name = NULL;
-      return HPACK_OK;
-    }
-
-  return HPACK_ERROR;
 }
 
 static SocketHPACK_Result
