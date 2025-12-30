@@ -510,6 +510,17 @@ extern const char *Socket_safe_strerror (int errnum);
 #endif
 
 /**
+ * @brief Maximum hostname length per RFC 1035.
+ *
+ * DNS hostnames are limited to 255 octets per RFC 1035 §2.3.4.
+ * This constant is used for hostname length validation across the library.
+ *
+ */
+#ifndef SOCKET_MAX_HOSTNAME_LEN
+#define SOCKET_MAX_HOSTNAME_LEN 255 /* RFC 1035 §2.3.4 */
+#endif
+
+/**
  * @brief DNS request hash table size.
  *
  * Prime number for optimal hash distribution.
