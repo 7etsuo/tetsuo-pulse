@@ -161,7 +161,7 @@ static size_t
 circular_calc_chunk (size_t capacity, size_t pos, size_t remaining)
 {
   size_t chunk = capacity - pos;
-  return chunk > remaining ? remaining : chunk;
+  return MIN (chunk, remaining);
 }
 
 
@@ -473,8 +473,7 @@ SocketBuf_readptr (T buf, size_t *len)
     }
 
   size_t contiguous = buf->capacity - buf->head;
-  if (contiguous > buf->size)
-    contiguous = buf->size;
+  contiguous = MIN (contiguous, buf->size);
 
   assert (contiguous > 0);
   assert (contiguous <= buf->capacity);
@@ -508,8 +507,7 @@ SocketBuf_writeptr (T buf, size_t *len)
     }
 
   size_t contiguous = buf->capacity - buf->tail;
-  if (contiguous > space)
-    contiguous = space;
+  contiguous = MIN (contiguous, space);
 
   assert (contiguous > 0);
   assert (contiguous <= buf->capacity);
