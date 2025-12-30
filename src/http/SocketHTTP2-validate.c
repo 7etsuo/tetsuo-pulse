@@ -23,6 +23,13 @@
 #include <openssl/ssl.h>
 #endif
 
+/* String literal length at compile time */
+#define STRLEN_LIT(s) (sizeof (s) - 1)
+
+/* HTTP/2 header validation constants */
+#define HTTP2_TE_HEADER_LEN 2
+#define DECIMAL_BASE        10
+
 /*
  * RFC 9113 §8.2.2: Connection-Specific Header Fields
  *
@@ -34,14 +41,14 @@ static const struct
   const char *name;
   size_t len;
 } http2_forbidden_headers[] = {
-  { "connection", 10 },          /* Alphabetically sorted */
-  { "keep-alive", 10 },
-  { "proxy-authenticate", 18 },
-  { "proxy-authorization", 19 },
-  { "te", 2 },
-  { "trailers", 8 },
-  { "transfer-encoding", 17 },
-  { "upgrade", 7 }
+  { "connection", STRLEN_LIT ("connection") },          /* Alphabetically sorted */
+  { "keep-alive", STRLEN_LIT ("keep-alive") },
+  { "proxy-authenticate", STRLEN_LIT ("proxy-authenticate") },
+  { "proxy-authorization", STRLEN_LIT ("proxy-authorization") },
+  { "te", STRLEN_LIT ("te") },
+  { "trailers", STRLEN_LIT ("trailers") },
+  { "transfer-encoding", STRLEN_LIT ("transfer-encoding") },
+  { "upgrade", STRLEN_LIT ("upgrade") }
 };
 
 #define HTTP2_FORBIDDEN_HEADER_COUNT \
@@ -172,10 +179,48 @@ http2_is_connection_header_forbidden (const SocketHPACK_Header *header)
   if (header == NULL || header->name == NULL)
     return 0;
 
+<<<<<<< HEAD
   /* Binary search in sorted forbidden headers array */
   const void *found
       = bsearch (header, http2_forbidden_headers, HTTP2_FORBIDDEN_HEADER_COUNT,
                  sizeof (http2_forbidden_headers[0]), compare_forbidden_header);
+||||||| parent of 34852df6 (refactor(http2): extract magic numbers to named constants in validation code)
+  for (size_t i = 0; i < HTTP2_FORBIDDEN_HEADER_COUNT; i++)
+    {
+      if (header->name_len == http2_forbidden_headers[i].len
+          && strncasecmp (header->name, http2_forbidden_headers[i].name,
+                          http2_forbidden_headers[i].len)
+                 == 0)
+        {
+          /*
+           * TE header is a special case: it's allowed only with "trailers"
+           * value. Return 0 here (not forbidden) and let caller validate
+           * the value separately via http2_validate_te_header().
+           */
+          if (http2_forbidden_headers[i].len == 2)
+            return 0;
+          return 1;
+        }
+    }
+=======
+  for (size_t i = 0; i < HTTP2_FORBIDDEN_HEADER_COUNT; i++)
+    {
+      if (header->name_len == http2_forbidden_headers[i].len
+          && strncasecmp (header->name, http2_forbidden_headers[i].name,
+                          http2_forbidden_headers[i].len)
+                 == 0)
+        {
+          /*
+           * TE header is a special case: it's allowed only with "trailers"
+           * value. Return 0 here (not forbidden) and let caller validate
+           * the value separately via http2_validate_te_header().
+           */
+          if (http2_forbidden_headers[i].len == HTTP2_TE_HEADER_LEN)
+            return 0;
+          return 1;
+        }
+    }
+>>>>>>> 34852df6 (refactor(http2): extract magic numbers to named constants in validation code)
 
   if (found == NULL)
     return 0; /* Not forbidden */
@@ -454,9 +499,29 @@ http2_parse_status_code (const char *value, size_t len, int *status)
   if (status == NULL || len != 3)
     return -1;
 
+<<<<<<< HEAD
   uint64_t code;
   if (parse_decimal_uint64 (value, len, &code, 599) < 0)
     return -1;
+||||||| parent of 34852df6 (refactor(http2): extract magic numbers to named constants in validation code)
+  int code = 0;
+  for (size_t i = 0; i < 3; i++)
+    {
+      unsigned char c = (unsigned char)value[i];
+      if (c < '0' || c > '9')
+        return -1;
+      code = code * 10 + (c - '0');
+    }
+=======
+  int code = 0;
+  for (size_t i = 0; i < 3; i++)
+    {
+      unsigned char c = (unsigned char)value[i];
+      if (c < '0' || c > '9')
+        return -1;
+      code = code * DECIMAL_BASE + (c - '0');
+    }
+>>>>>>> 34852df6 (refactor(http2): extract magic numbers to named constants in validation code)
 
   /* Valid HTTP status codes are 100-599 */
   if (code < 100)
@@ -477,7 +542,27 @@ http2_parse_content_length (const char *value, size_t len, int64_t *cl)
   if (parse_decimal_uint64 (value, len, &length, INT64_MAX) < 0)
     return -1;
 
+<<<<<<< HEAD
   *cl = (int64_t)length;
+||||||| parent of 34852df6 (refactor(http2): extract magic numbers to named constants in validation code)
+      /* Overflow check before multiplication */
+      if (result > (INT64_MAX - (c - '0')) / 10)
+        return -1;
+
+      result = result * 10 + (c - '0');
+    }
+
+  *cl = result;
+=======
+      /* Overflow check before multiplication */
+      if (result > (INT64_MAX - (c - '0')) / DECIMAL_BASE)
+        return -1;
+
+      result = result * DECIMAL_BASE + (c - '0');
+    }
+
+  *cl = result;
+>>>>>>> 34852df6 (refactor(http2): extract magic numbers to named constants in validation code)
   return 0;
 }
 
