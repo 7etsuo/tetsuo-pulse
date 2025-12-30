@@ -1132,21 +1132,36 @@ Socket_simple_get_keepalive (SocketSimple_Socket_T sock, int *enabled,
   if (idle_secs)
     {
       len = sizeof (*idle_secs);
-      getsockopt (fd, IPPROTO_TCP, TCP_KEEPIDLE, idle_secs, &len);
+      if (getsockopt (fd, IPPROTO_TCP, TCP_KEEPIDLE, idle_secs, &len) < 0)
+        {
+          simple_set_error_errno (SOCKET_SIMPLE_ERR_SOCKET,
+                                  "Failed to get TCP_KEEPIDLE");
+          return -1;
+        }
     }
 #endif
 #ifdef TCP_KEEPINTVL
   if (interval_secs)
     {
       len = sizeof (*interval_secs);
-      getsockopt (fd, IPPROTO_TCP, TCP_KEEPINTVL, interval_secs, &len);
+      if (getsockopt (fd, IPPROTO_TCP, TCP_KEEPINTVL, interval_secs, &len) < 0)
+        {
+          simple_set_error_errno (SOCKET_SIMPLE_ERR_SOCKET,
+                                  "Failed to get TCP_KEEPINTVL");
+          return -1;
+        }
     }
 #endif
 #ifdef TCP_KEEPCNT
   if (count)
     {
       len = sizeof (*count);
-      getsockopt (fd, IPPROTO_TCP, TCP_KEEPCNT, count, &len);
+      if (getsockopt (fd, IPPROTO_TCP, TCP_KEEPCNT, count, &len) < 0)
+        {
+          simple_set_error_errno (SOCKET_SIMPLE_ERR_SOCKET,
+                                  "Failed to get TCP_KEEPCNT");
+          return -1;
+        }
     }
 #endif
 
