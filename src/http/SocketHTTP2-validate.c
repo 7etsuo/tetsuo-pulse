@@ -264,47 +264,67 @@ http2_validate_regular_header (const SocketHPACK_Header *header)
 #if SOCKET_HAS_TLS
 
 /* RFC 9113 Appendix A: Forbidden cipher patterns */
+
+/* Pattern matching functions for cipher validation */
+static int
+pattern_contains (const char *cipher, const char *pattern)
+{
+  return strstr (cipher, pattern) != NULL;
+}
+
+static int
+pattern_starts_with (const char *cipher, const char *pattern)
+{
+  return strncmp (cipher, pattern, strlen (pattern)) == 0;
+}
+
+static int
+pattern_contains_excluding_3des (const char *cipher, const char *pattern)
+{
+  /* Match -DES- but not if part of 3DES or DES-CBC3 */
+  if (strstr (cipher, pattern) == NULL)
+    return 0;
+  if (strstr (cipher, "3DES") != NULL)
+    return 0;
+  if (strstr (cipher, "DES-CBC3") != NULL)
+    return 0;
+  return 1;
+}
+
+/* Dispatch table for forbidden cipher patterns */
+static const struct
+{
+  const char *pattern;
+  int (*matcher) (const char *cipher, const char *pattern);
+} forbidden_cipher_patterns[] = {
+  { "NULL", pattern_contains },              /* NULL ciphers - no encryption */
+  { "EXPORT", pattern_contains },            /* Export ciphers - weak */
+  { "RC4", pattern_contains },               /* RC4 ciphers - broken */
+  { "3DES", pattern_contains },              /* 3DES ciphers - weak (Sweet32) */
+  { "DES-CBC3", pattern_contains },          /* 3DES variant */
+  { "ADH", pattern_contains },               /* Anonymous DH - no auth */
+  { "AECDH", pattern_contains },             /* Anonymous ECDH - no auth */
+  { "aNULL", pattern_starts_with },          /* Anonymous NULL - no auth */
+  { "-DES-", pattern_contains_excluding_3des }, /* Single DES - very weak */
+  { "MD5", pattern_contains }                /* MD5 MAC - weak hash */
+};
+
+#define FORBIDDEN_CIPHER_COUNT \
+  (sizeof (forbidden_cipher_patterns) / sizeof (forbidden_cipher_patterns[0]))
+
 static int
 http2_is_cipher_forbidden (const char *cipher)
 {
   if (cipher == NULL)
     return 1; /* No cipher is forbidden */
 
-  /* NULL ciphers - no encryption */
-  if (strstr (cipher, "NULL") != NULL)
-    return 1;
-
-  /* Export ciphers - weak */
-  if (strstr (cipher, "EXPORT") != NULL)
-    return 1;
-
-  /* RC4 ciphers - broken */
-  if (strstr (cipher, "RC4") != NULL)
-    return 1;
-
-  /* 3DES ciphers - weak (Sweet32) */
-  if (strstr (cipher, "3DES") != NULL)
-    return 1;
-  if (strstr (cipher, "DES-CBC3") != NULL)
-    return 1;
-
-  /* Anonymous ciphers - no authentication */
-  if (strstr (cipher, "ADH") != NULL)
-    return 1;
-  if (strstr (cipher, "AECDH") != NULL)
-    return 1;
-  if (strncmp (cipher, "aNULL", 5) == 0)
-    return 1;
-
-  /* DES ciphers (single DES) - very weak */
-  if (strstr (cipher, "-DES-") != NULL
-      && strstr (cipher, "3DES") == NULL
-      && strstr (cipher, "DES-CBC3") == NULL)
-    return 1;
-
-  /* MD5 MAC - weak hash */
-  if (strstr (cipher, "MD5") != NULL)
-    return 1;
+  for (size_t i = 0; i < FORBIDDEN_CIPHER_COUNT; i++)
+    {
+      if (forbidden_cipher_patterns[i].matcher (cipher,
+                                                 forbidden_cipher_patterns[i]
+                                                     .pattern))
+        return 1;
+    }
 
   return 0; /* Cipher is allowed */
 }
