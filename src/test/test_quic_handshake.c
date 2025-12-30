@@ -9,6 +9,7 @@
  * @brief Unit tests for QUIC handshake operations.
  */
 
+#include <stdint.h>
 #include <string.h>
 
 #include "test/Test.h"
@@ -144,6 +145,77 @@ TEST(handshake_state_queries)
   hs->state = QUIC_HANDSHAKE_STATE_CONFIRMED;
   ASSERT_NE(SocketQUICHandshake_is_complete(hs), 0);
   ASSERT_NE(SocketQUICHandshake_is_confirmed(hs), 0);
+
+  SocketQUICHandshake_free(&hs);
+  Arena_dispose(&arena);
+}
+
+/**
+ * @brief Test CRYPTO frame processing with overflow protection.
+ *
+ * Tests that integer overflow is prevented when updating recv_offset
+ * in crypto_stream_insert_data, addressing issue #2296.
+ */
+TEST(crypto_frame_overflow_protection)
+{
+  Arena_T arena = Arena_new();
+  SocketQUICConnection_T conn = SocketQUICConnection_new(arena, QUIC_CONN_ROLE_CLIENT);
+  ASSERT_NOT_NULL(conn);
+
+  SocketQUICHandshake_T hs = SocketQUICHandshake_new(arena, conn, QUIC_CONN_ROLE_CLIENT);
+  ASSERT_NOT_NULL(hs);
+  conn->handshake = hs;
+
+  /* Set recv_offset to near max to test overflow */
+  hs->crypto_streams[QUIC_CRYPTO_LEVEL_INITIAL].recv_offset = UINT64_MAX - 100;
+
+  /* Create a CRYPTO frame that would cause overflow (contiguous with recv_offset) */
+  SocketQUICFrameCrypto_T frame;
+  frame.offset = UINT64_MAX - 100;  /* Matches recv_offset (contiguous) */
+  frame.length = 200;                /* Would overflow: (MAX-100) + 200 > MAX */
+  frame.data = (const uint8_t *)"dummy_data";
+
+  /* Process the frame - should detect overflow and return error */
+  SocketQUICHandshake_Result result =
+      SocketQUICHandshake_process_crypto(conn, &frame, QUIC_CRYPTO_LEVEL_INITIAL);
+
+  ASSERT_EQ(result, QUIC_HANDSHAKE_ERROR_BUFFER);
+
+  SocketQUICHandshake_free(&hs);
+  Arena_dispose(&arena);
+}
+
+/**
+ * @brief Test CRYPTO frame processing with no buffer (NULL recv_buffer).
+ *
+ * Tests that overflow protection works even when recv_buffer is NULL,
+ * ensuring the unchecked addition on line 97 is now protected.
+ */
+TEST(crypto_frame_overflow_no_buffer)
+{
+  Arena_T arena = Arena_new();
+  SocketQUICConnection_T conn = SocketQUICConnection_new(arena, QUIC_CONN_ROLE_CLIENT);
+  ASSERT_NOT_NULL(conn);
+
+  SocketQUICHandshake_T hs = SocketQUICHandshake_new(arena, conn, QUIC_CONN_ROLE_CLIENT);
+  ASSERT_NOT_NULL(hs);
+  conn->handshake = hs;
+
+  /* Clear the recv_buffer to test NULL path */
+  hs->crypto_streams[QUIC_CRYPTO_LEVEL_INITIAL].recv_buffer = NULL;
+  hs->crypto_streams[QUIC_CRYPTO_LEVEL_INITIAL].recv_offset = UINT64_MAX - 50;
+
+  /* Create frame that would overflow */
+  SocketQUICFrameCrypto_T frame;
+  frame.offset = UINT64_MAX - 50;  /* Matches recv_offset (contiguous) */
+  frame.length = 100;               /* Would overflow */
+  frame.data = (const uint8_t *)"test";
+
+  /* Should detect overflow even without buffer */
+  SocketQUICHandshake_Result result =
+      SocketQUICHandshake_process_crypto(conn, &frame, QUIC_CRYPTO_LEVEL_INITIAL);
+
+  ASSERT_EQ(result, QUIC_HANDSHAKE_ERROR_BUFFER);
 
   SocketQUICHandshake_free(&hs);
   Arena_dispose(&arena);

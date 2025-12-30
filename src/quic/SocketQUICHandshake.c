@@ -17,6 +17,7 @@
 #include "core/SocketUtil.h"
 
 #include <assert.h>
+#include <stdint.h>
 #include <string.h>
 
 /* OpenSSL/LibreSSL integration for TLS handshake */
@@ -84,11 +85,13 @@ crypto_stream_insert_data(Arena_T arena, SocketQUICCryptoStream_T *stream,
 
   /* If contiguous with recv_offset, copy directly */
   if (offset == stream->recv_offset) {
+    /* Check for overflow before updating recv_offset */
+    if (stream->recv_offset > UINT64_MAX - length) {
+      return QUIC_HANDSHAKE_ERROR_BUFFER;
+    }
+
     if (stream->recv_buffer) {
-      uint64_t total_offset;
-      if (!socket_util_safe_add_u64(stream->recv_offset, length, &total_offset)) {
-        return QUIC_HANDSHAKE_ERROR_BUFFER;  /* Overflow would occur */
-      }
+      uint64_t total_offset = stream->recv_offset + length;
       if (total_offset > stream->recv_buffer_size) {
         return QUIC_HANDSHAKE_ERROR_BUFFER;
       }
