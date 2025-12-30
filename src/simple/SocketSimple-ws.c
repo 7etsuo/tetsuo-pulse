@@ -531,53 +531,73 @@ Socket_simple_ws_server_config_init (SocketSimple_WSServerConfig *config)
   config->subprotocols = NULL;
 }
 
+/**
+ * @brief Check if header matches name and has expected value.
+ *
+ * @param header Full header line (e.g., "Upgrade: websocket")
+ * @param name Header name with colon (e.g., "Upgrade:")
+ * @param name_len Length of header name including colon
+ * @param expected_value Expected value (NULL to just check presence)
+ * @return 1 if match, 0 otherwise
+ */
+static int
+check_header_value (const char *header, const char *name, size_t name_len,
+                    const char *expected_value)
+{
+  if (strncasecmp (header, name, name_len) != 0)
+    return 0;
+
+  const char *val = header + name_len;
+  while (*val == ' ')
+    val++;
+
+  if (expected_value)
+    return strcasecmp (val, expected_value) == 0;
+
+  return *val != '\0'; /* Just check presence */
+}
+
+/**
+ * @brief Check if header contains substring in value.
+ *
+ * @param header Full header line
+ * @param name Header name with colon
+ * @param name_len Length of header name including colon
+ * @param substring Substring to find (case-insensitive)
+ * @return 1 if found, 0 otherwise
+ */
+static int
+check_header_contains (const char *header, const char *name, size_t name_len,
+                       const char *substring)
+{
+  if (strncasecmp (header, name, name_len) != 0)
+    return 0;
+
+  const char *val = header + name_len;
+  while (*val == ' ')
+    val++;
+
+  return strcasestr (val, substring) != NULL;
+}
+
 int
 Socket_simple_ws_is_upgrade (const char *method, const char **headers)
 {
-  int has_upgrade = 0;
-  int has_connection = 0;
-  int has_key = 0;
-  int has_version = 0;
-
-  if (!method || !headers)
+  if (!method || !headers || strcasecmp (method, "GET") != 0)
     return 0;
 
-  /* Must be GET request */
-  if (strcasecmp (method, "GET") != 0)
-    return 0;
+  int has_upgrade = 0, has_connection = 0, has_key = 0, has_version = 0;
 
-  /* Check headers */
   for (const char **h = headers; *h != NULL; h++)
     {
-      if (strncasecmp (*h, "Upgrade:", 8) == 0)
-        {
-          const char *val = *h + 8;
-          while (*val == ' ')
-            val++;
-          if (strcasecmp (val, "websocket") == 0)
-            has_upgrade = 1;
-        }
-      else if (strncasecmp (*h, "Connection:", 11) == 0)
-        {
-          const char *val = *h + 11;
-          while (*val == ' ')
-            val++;
-          /* Check for "upgrade" in Connection header */
-          if (strcasestr (val, "upgrade") != NULL)
-            has_connection = 1;
-        }
-      else if (strncasecmp (*h, "Sec-WebSocket-Key:", 18) == 0)
-        {
-          has_key = 1;
-        }
-      else if (strncasecmp (*h, "Sec-WebSocket-Version:", 22) == 0)
-        {
-          const char *val = *h + 22;
-          while (*val == ' ')
-            val++;
-          if (strcmp (val, "13") == 0)
-            has_version = 1;
-        }
+      if (check_header_value (*h, "Upgrade:", 8, "websocket"))
+        has_upgrade = 1;
+      else if (check_header_contains (*h, "Connection:", 11, "upgrade"))
+        has_connection = 1;
+      else if (check_header_value (*h, "Sec-WebSocket-Key:", 18, NULL))
+        has_key = 1;
+      else if (check_header_value (*h, "Sec-WebSocket-Version:", 22, "13"))
+        has_version = 1;
     }
 
   return has_upgrade && has_connection && has_key && has_version;
