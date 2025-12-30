@@ -17,6 +17,28 @@
 #include "socket/SocketCommon.h"
 
 /* ============================================================================
+ * Helper Functions
+ * ============================================================================
+ */
+
+/**
+ * @brief Check if an error code represents a timeout condition.
+ *
+ * Centralizes timeout detection logic to ensure consistent handling across
+ * all timeout-capable functions. Checks for retryable errors that specifically
+ * indicate timeout conditions (ETIMEDOUT, EAGAIN, EINPROGRESS).
+ *
+ * @param err The error number to check (typically from Socket_geterrno())
+ * @return 1 if the error represents a timeout, 0 otherwise
+ */
+static inline int
+is_timeout_error (int err)
+{
+  return Socket_error_is_retryable (err)
+         && (err == ETIMEDOUT || err == EAGAIN || err == EINPROGRESS);
+}
+
+/* ============================================================================
  * TCP Client Functions
  * ============================================================================
  */
@@ -50,8 +72,7 @@ Socket_simple_connect_timeout (const char *host, int port, int timeout_ms)
   EXCEPT (Socket_Failed)
   {
     int err = Socket_geterrno ();
-    if (Socket_error_is_retryable (err)
-        && (err == ETIMEDOUT || err == EINPROGRESS))
+    if (is_timeout_error (err))
       {
         simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "Connection timed out");
       }
@@ -172,7 +193,7 @@ Socket_simple_accept_timeout (SocketSimple_Socket_T server, int timeout_ms)
   EXCEPT (Socket_Failed)
   {
     int err = Socket_geterrno ();
-    if (Socket_error_is_retryable (err) && (err == ETIMEDOUT || err == EAGAIN))
+    if (is_timeout_error (err))
       {
         simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "Accept timed out");
       }
@@ -289,7 +310,7 @@ Socket_simple_recv_timeout (SocketSimple_Socket_T sock, void *buf, size_t len,
   EXCEPT (Socket_Failed)
   {
     int err = Socket_geterrno ();
-    if (Socket_error_is_retryable (err) && (err == ETIMEDOUT || err == EAGAIN))
+    if (is_timeout_error (err))
       {
         simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "Receive timed out");
       }
