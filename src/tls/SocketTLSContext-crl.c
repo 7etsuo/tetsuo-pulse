@@ -98,26 +98,32 @@ notify_crl_callback (T ctx, const char *path, int success)
 }
 
 static void
+set_crl_next_refresh (T ctx, int64_t now_ms, long interval_seconds)
+{
+  int64_t interval_ms = interval_seconds * SOCKET_MS_PER_SECOND;
+  uint64_t result;
+
+  /* Overflow protection: INT64_MAX ~= 292M years uptime */
+  if (!socket_util_safe_add_u64 ((uint64_t)now_ms, (uint64_t)interval_ms,
+                                  &result)
+      || result > (uint64_t)INT64_MAX)
+    {
+      /* Clamp to INT64_MAX on overflow */
+      ctx->crl_next_refresh_ms = INT64_MAX;
+    }
+  else
+    {
+      ctx->crl_next_refresh_ms = (int64_t)result;
+    }
+}
+
+static void
 schedule_crl_refresh (T ctx, long interval_seconds)
 {
   if (interval_seconds > 0)
     {
       int64_t now_ms = Socket_get_monotonic_ms ();
-      int64_t interval_ms = interval_seconds * SOCKET_MS_PER_SECOND;
-      uint64_t result;
-
-      /* Overflow protection: INT64_MAX ~= 292M years uptime */
-      if (!socket_util_safe_add_u64 ((uint64_t)now_ms, (uint64_t)interval_ms,
-                                      &result)
-          || result > (uint64_t)INT64_MAX)
-        {
-          /* Clamp to INT64_MAX on overflow */
-          ctx->crl_next_refresh_ms = INT64_MAX;
-        }
-      else
-        {
-          ctx->crl_next_refresh_ms = (int64_t)result;
-        }
+      set_crl_next_refresh (ctx, now_ms, interval_seconds);
     }
   else
     {
@@ -203,23 +209,7 @@ SocketTLSContext_crl_check_refresh (T ctx)
         else
           {
             int success = try_load_crl (ctx, ctx->crl_refresh_path);
-            int64_t interval_ms = ctx->crl_refresh_interval * SOCKET_MS_PER_SECOND;
-            uint64_t next_refresh;
-
-            /* Overflow protection: INT64_MAX ~= 292M years uptime */
-            if (!socket_util_safe_add_u64 ((uint64_t)now_ms,
-                                            (uint64_t)interval_ms,
-                                            &next_refresh)
-                || next_refresh > (uint64_t)INT64_MAX)
-              {
-                /* Clamp to INT64_MAX on overflow */
-                ctx->crl_next_refresh_ms = INT64_MAX;
-              }
-            else
-              {
-                ctx->crl_next_refresh_ms = (int64_t)next_refresh;
-              }
-
+            set_crl_next_refresh (ctx, now_ms, ctx->crl_refresh_interval);
             notify_crl_callback (ctx, ctx->crl_refresh_path, success);
             result = 1;
           }
