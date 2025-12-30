@@ -358,23 +358,112 @@ start_connection (T transport, int server_index)
   return 0;
 }
 
+/* Check if TCP connection has completed */
+static int
+check_tcp_connect_complete (T transport, struct Connection *conn)
+{
+  struct ServerConfig *server = &transport->servers[conn->server_index];
+  int fd = Socket_fd (conn->socket);
+  struct pollfd pfd = { .fd = fd, .events = POLLOUT };
+  int ret = poll (&pfd, 1, 0);
+
+  if (ret <= 0)
+    return 0; /* Still connecting */
+
+  if (pfd.revents & (POLLERR | POLLHUP))
+    {
+      close_connection (transport, conn);
+      transport->stats.handshake_failures++;
+      return -1;
+    }
+
+  /* Check socket error */
+  int error = 0;
+  socklen_t errlen = sizeof (error);
+  getsockopt (fd, SOL_SOCKET, SO_ERROR, &error, &errlen);
+  if (error != 0)
+    {
+      close_connection (transport, conn);
+      transport->stats.handshake_failures++;
+      return -1;
+    }
+
+  /* Connection established, start TLS handshake */
+  TRY
+  {
+    SocketTLS_enable (conn->socket, conn->tls_ctx);
+    SocketTLS_set_hostname (conn->socket, server->server_name);
+    conn->state = CONN_STATE_HANDSHAKING;
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    close_connection (transport, conn);
+    transport->stats.handshake_failures++;
+    return -1;
+  }
+  END_TRY;
+
+  return 0;
+}
+
+/* Perform TLS handshake */
+static int
+perform_tls_handshake (T transport, struct Connection *conn, int64_t now)
+{
+  volatile TLSHandshakeState hs_state;
+
+  TRY
+  {
+    hs_state = SocketTLS_handshake (conn->socket);
+  }
+  EXCEPT (SocketTLS_HandshakeFailed)
+  {
+    close_connection (transport, conn);
+    transport->stats.handshake_failures++;
+    return -1;
+  }
+  EXCEPT (SocketTLS_VerifyFailed)
+  {
+    close_connection (transport, conn);
+    transport->stats.verify_failures++;
+    return -1;
+  }
+  END_TRY;
+
+  switch (hs_state)
+    {
+    case TLS_HANDSHAKE_COMPLETE:
+      conn->state = CONN_STATE_CONNECTED;
+      conn->last_activity_ms = now;
+      return 1; /* Connected */
+
+    case TLS_HANDSHAKE_ERROR:
+      close_connection (transport, conn);
+      transport->stats.handshake_failures++;
+      return -1;
+
+    case TLS_HANDSHAKE_WANT_READ:
+    case TLS_HANDSHAKE_WANT_WRITE:
+    case TLS_HANDSHAKE_IN_PROGRESS:
+    case TLS_HANDSHAKE_NOT_STARTED:
+      return 0; /* Still handshaking */
+    }
+
+  return 0;
+}
+
 /* Continue TLS connection (non-blocking) */
 static int
 continue_connection (T transport)
 {
   struct Connection *conn = &transport->conn;
-  struct ServerConfig *server;
   int64_t now;
-  int fd;
-  volatile TLSHandshakeState hs_state;
 
   if (conn->state == CONN_STATE_DISCONNECTED
       || conn->state == CONN_STATE_CONNECTED)
     return 0;
 
   now = get_monotonic_ms ();
-  fd = Socket_fd (conn->socket);
-  server = &transport->servers[conn->server_index];
 
   /* Check for timeout */
   if (now - conn->connect_start_ms > transport->handshake_timeout_ms)
@@ -386,85 +475,12 @@ continue_connection (T transport)
 
   if (conn->state == CONN_STATE_CONNECTING)
     {
-      /* Check if connect completed */
-      struct pollfd pfd = { .fd = fd, .events = POLLOUT };
-      int ret = poll (&pfd, 1, 0);
-
-      if (ret <= 0)
-        return 0; /* Still connecting */
-
-      if (pfd.revents & (POLLERR | POLLHUP))
-        {
-          close_connection (transport, conn);
-          transport->stats.handshake_failures++;
-          return -1;
-        }
-
-      /* Check socket error */
-      int error = 0;
-      socklen_t errlen = sizeof (error);
-      getsockopt (fd, SOL_SOCKET, SO_ERROR, &error, &errlen);
-      if (error != 0)
-        {
-          close_connection (transport, conn);
-          transport->stats.handshake_failures++;
-          return -1;
-        }
-
-      /* Connection established, start TLS handshake */
-      TRY
-      {
-        SocketTLS_enable (conn->socket, conn->tls_ctx);
-        SocketTLS_set_hostname (conn->socket, server->server_name);
-        conn->state = CONN_STATE_HANDSHAKING;
-      }
-      EXCEPT (SocketTLS_Failed)
-      {
-        close_connection (transport, conn);
-        transport->stats.handshake_failures++;
-        return -1;
-      }
-      END_TRY;
+      return check_tcp_connect_complete (transport, conn);
     }
 
   if (conn->state == CONN_STATE_HANDSHAKING)
     {
-      TRY
-      {
-        hs_state = SocketTLS_handshake (conn->socket);
-      }
-      EXCEPT (SocketTLS_HandshakeFailed)
-      {
-        close_connection (transport, conn);
-        transport->stats.handshake_failures++;
-        return -1;
-      }
-      EXCEPT (SocketTLS_VerifyFailed)
-      {
-        close_connection (transport, conn);
-        transport->stats.verify_failures++;
-        return -1;
-      }
-      END_TRY;
-
-      switch (hs_state)
-        {
-        case TLS_HANDSHAKE_COMPLETE:
-          conn->state = CONN_STATE_CONNECTED;
-          conn->last_activity_ms = now;
-          return 1; /* Connected */
-
-        case TLS_HANDSHAKE_ERROR:
-          close_connection (transport, conn);
-          transport->stats.handshake_failures++;
-          return -1;
-
-        case TLS_HANDSHAKE_WANT_READ:
-        case TLS_HANDSHAKE_WANT_WRITE:
-        case TLS_HANDSHAKE_IN_PROGRESS:
-        case TLS_HANDSHAKE_NOT_STARTED:
-          return 0; /* Still handshaking */
-        }
+      return perform_tls_handshake (transport, conn, now);
     }
 
   return 0;
