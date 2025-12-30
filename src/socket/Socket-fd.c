@@ -249,7 +249,7 @@ process_single_cmsg (const struct cmsghdr *cmsg, int *temp_fds,
 }
 
 static size_t
-extract_rights_fds (const struct msghdr *msg, int *fds, size_t max_count)
+extract_rights_fds (struct msghdr *msg, int *fds, size_t max_count)
 {
         struct cmsghdr *cmsg;
         int temp_fds[SOCKET_MAX_FDS_PER_MSG];
@@ -259,7 +259,7 @@ extract_rights_fds (const struct msghdr *msg, int *fds, size_t max_count)
 
         memset (temp_fds, -1, sizeof (temp_fds));
 
-        cmsg = CMSG_FIRSTHDR ((struct msghdr *)msg);
+        cmsg = CMSG_FIRSTHDR (msg);
         while (cmsg != NULL)
         {
                 if (cmsg->cmsg_level == SOL_SOCKET
@@ -268,7 +268,7 @@ extract_rights_fds (const struct msghdr *msg, int *fds, size_t max_count)
                         process_single_cmsg (cmsg, temp_fds, &total_fds,
                                              SOCKET_MAX_FDS_PER_MSG);
                 }
-                cmsg = CMSG_NXTHDR ((struct msghdr *)msg, cmsg);
+                cmsg = CMSG_NXTHDR (msg, cmsg);
         }
 
         if (total_fds > max_count)
