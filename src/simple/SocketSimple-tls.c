@@ -406,49 +406,40 @@ Socket_simple_session_restore (SocketSimple_Socket_T sock,
 }
 
 /* ============================================================================
- * TLS Server Functions
+ * TLS Server Functions - Helper Functions
  * ============================================================================
  */
 
-SocketSimple_Socket_T
-Socket_simple_listen_tls (const char *host, int port, int backlog,
-                          const char *cert_file, const char *key_file)
+static int
+validate_listen_tls_params (int port, const char *cert_file,
+                            const char *key_file)
 {
-  volatile Socket_T sock = NULL;
-  volatile SocketTLSContext_T ctx = NULL;
-  volatile int exception_occurred = 0;
-  struct SocketSimple_Socket *handle = NULL;
-
-  Socket_simple_clear_error ();
-
   if (port <= 0 || port > 65535)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid port");
-      return NULL;
+      return -1;
     }
 
   if (!cert_file || !key_file)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
                         "Certificate and key files required");
-      return NULL;
+      return -1;
     }
+
+  return 0;
+}
+
+static Socket_T
+create_tls_listen_socket (const char *host, int port, int backlog,
+                          volatile int *exception_occurred)
+{
+  volatile Socket_T sock = NULL;
 
   TRY
   {
-    /* Use library convenience function - handles address family automatically
-     */
     sock = Socket_listen_tcp (host ? host : "0.0.0.0", port,
                               backlog > 0 ? backlog : 128);
-
-    /* Create server TLS context */
-    ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
-  }
-  EXCEPT (SocketTLS_Failed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TLS,
-                      "Failed to create TLS server context");
-    exception_occurred = 1;
   }
   EXCEPT (Socket_Failed)
   {
@@ -461,29 +452,43 @@ Socket_simple_listen_tls (const char *host, int port, int backlog,
       {
         simple_set_error_errno (SOCKET_SIMPLE_ERR_LISTEN, "Listen failed");
       }
-    exception_occurred = 1;
-  }
-  FINALLY
-  {
-    if (exception_occurred)
-      {
-        if (ctx)
-          SocketTLSContext_free ((SocketTLSContext_T *)&ctx);
-        if (sock)
-          Socket_free ((Socket_T *)&sock);
-      }
+    *exception_occurred = 1;
   }
   END_TRY;
 
-  if (exception_occurred)
-    return NULL;
+  return sock;
+}
 
-  handle = calloc (1, sizeof (*handle));
+static SocketTLSContext_T
+create_tls_server_context (const char *cert_file, const char *key_file,
+                           volatile int *exception_occurred)
+{
+  volatile SocketTLSContext_T ctx = NULL;
+
+  TRY
+  {
+    ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_TLS,
+                      "Failed to create TLS server context");
+    *exception_occurred = 1;
+  }
+  END_TRY;
+
+  return ctx;
+}
+
+static struct SocketSimple_Socket *
+allocate_tls_handle (Socket_T sock, SocketTLSContext_T ctx)
+{
+  struct SocketSimple_Socket *handle = calloc (1, sizeof (*handle));
   if (!handle)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
-      SocketTLSContext_free ((SocketTLSContext_T *)&ctx);
-      Socket_free ((Socket_T *)&sock);
+      SocketTLSContext_free (&ctx);
+      Socket_free (&sock);
       return NULL;
     }
 
@@ -493,6 +498,39 @@ Socket_simple_listen_tls (const char *host, int port, int backlog,
   handle->is_server = 1;
   handle->is_connected = 0;
   return handle;
+}
+
+/* ============================================================================
+ * TLS Server Functions
+ * ============================================================================
+ */
+
+SocketSimple_Socket_T
+Socket_simple_listen_tls (const char *host, int port, int backlog,
+                          const char *cert_file, const char *key_file)
+{
+  volatile Socket_T sock = NULL;
+  volatile SocketTLSContext_T ctx = NULL;
+  volatile int exception_occurred = 0;
+
+  Socket_simple_clear_error ();
+
+  if (validate_listen_tls_params (port, cert_file, key_file) < 0)
+    return NULL;
+
+  sock = create_tls_listen_socket (host, port, backlog, &exception_occurred);
+  if (exception_occurred)
+    return NULL;
+
+  ctx = create_tls_server_context (cert_file, key_file, &exception_occurred);
+  if (exception_occurred)
+    {
+      if (sock)
+        Socket_free ((Socket_T *)&sock);
+      return NULL;
+    }
+
+  return allocate_tls_handle (sock, ctx);
 }
 
 SocketSimple_Socket_T
