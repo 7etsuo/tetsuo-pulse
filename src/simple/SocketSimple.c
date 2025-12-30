@@ -85,10 +85,7 @@ Socket_simple_code (void)
 int
 Socket_simple_is_retryable (void)
 {
-  int err = simple_error.errno_value;
-  return err == EAGAIN || err == EWOULDBLOCK || err == EINTR
-         || err == ECONNREFUSED || err == ETIMEDOUT || err == ENETUNREACH
-         || err == EHOSTUNREACH;
+  return SocketError_is_retryable_errno (simple_error.errno_value);
 }
 
 void
