@@ -244,9 +244,21 @@ proxy_socks4_send_connect (struct SocketProxy_Conn_T *conn)
     }
 
   /* Write header: version + command + port */
+  if (len + 4 > sizeof (conn->send_buf))
+    {
+      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                             "SOCKS4 request too large");
+      return -1;
+    }
   len += socks4_write_header (buf + len, conn->target_port);
 
   /* Write destination IP (network byte order) */
+  if (len + 4 > sizeof (conn->send_buf))
+    {
+      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                             "SOCKS4 request too large");
+      return -1;
+    }
   memcpy (buf + len, &ipv4, 4);
   len += 4;
 
@@ -308,9 +320,21 @@ proxy_socks4a_send_connect (struct SocketProxy_Conn_T *conn)
   /* Additional validation (UTF-8, etc.) already performed in socks4_validate_inputs() */
 
   /* Write header: version + command + port */
+  if (len + 4 > sizeof (conn->send_buf))
+    {
+      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                             "SOCKS4a request too large");
+      return -1;
+    }
   len += socks4_write_header (buf + len, conn->target_port);
 
   /* Write SOCKS4a marker IP: 0.0.0.1 signals hostname follows */
+  if (len + 4 > sizeof (conn->send_buf))
+    {
+      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                             "SOCKS4a request too large");
+      return -1;
+    }
   memcpy (buf + len, SOCKS4A_MARKER_IP, 4);
   len += 4;
 
