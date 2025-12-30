@@ -138,597 +138,138 @@ set_http_error_from_exception (void)
 }
 
 /* ============================================================================
- * One-liner HTTP Functions
+ * Exception Handling Macro
  * ============================================================================
  */
 
-int
-Socket_simple_http_get (const char *url, SocketSimple_HTTPResponse *response)
-{
-  SocketHTTPClient_T client;
-  SocketHTTPClient_Response lib_response;
-  volatile int ret = -1;
-  volatile int exception_occurred = 0;
-
-  Socket_simple_clear_error ();
-
-  if (!url || !response)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
-      return -1;
-    }
-
-  client = get_global_http_client ();
-  if (!client)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_HTTP, "HTTP client not available");
-      return -1;
-    }
-
-  memset (&lib_response, 0, sizeof (lib_response));
-
-  pthread_mutex_lock (&g_http_mutex);
-  TRY { ret = SocketHTTPClient_get (client, url, &lib_response); }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");
-    exception_occurred = 1;
+/**
+ * @brief Standard HTTP exception handlers for Simple API.
+ *
+ * This macro expands to EXCEPT clauses for common HTTP exceptions.
+ * The `exc_flag` parameter must be a volatile int that will be set to 1
+ * when any exception occurs.
+ */
+#define HANDLE_HTTP_EXCEPTIONS(exc_flag)                                      \
+  EXCEPT (SocketHTTPClient_Timeout)                                           \
+  {                                                                           \
+    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");   \
+    exc_flag = 1;                                                             \
+  }                                                                           \
+  EXCEPT (SocketHTTPClient_DNSFailed)                                         \
+  {                                                                           \
+    simple_set_error (SOCKET_SIMPLE_ERR_DNS, "DNS resolution failed");        \
+    exc_flag = 1;                                                             \
+  }                                                                           \
+  EXCEPT (SocketHTTPClient_ConnectFailed)                                     \
+  {                                                                           \
+    simple_set_error (SOCKET_SIMPLE_ERR_CONNECT, "Connection failed");        \
+    exc_flag = 1;                                                             \
+  }                                                                           \
+  EXCEPT (SocketHTTPClient_TLSFailed)                                         \
+  {                                                                           \
+    simple_set_error (SOCKET_SIMPLE_ERR_TLS, "TLS error");                    \
+    exc_flag = 1;                                                             \
+  }                                                                           \
+  EXCEPT (SocketHTTPClient_ProtocolError)                                     \
+  {                                                                           \
+    simple_set_error (SOCKET_SIMPLE_ERR_HTTP_PARSE, "HTTP protocol error");   \
+    exc_flag = 1;                                                             \
+  }                                                                           \
+  EXCEPT (SocketHTTPClient_TooManyRedirects)                                  \
+  {                                                                           \
+    simple_set_error (SOCKET_SIMPLE_ERR_HTTP, "Too many redirects");          \
+    exc_flag = 1;                                                             \
+  }                                                                           \
+  EXCEPT (SocketHTTPClient_Failed)                                            \
+  {                                                                           \
+    set_http_error_from_exception ();                                         \
+    exc_flag = 1;                                                             \
   }
-  EXCEPT (SocketHTTPClient_DNSFailed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_DNS, "DNS resolution failed");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_ConnectFailed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_CONNECT, "Connection failed");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_TLSFailed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TLS, "TLS error");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_ProtocolError)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_HTTP_PARSE, "HTTP protocol error");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_TooManyRedirects)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_HTTP, "Too many redirects");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    exception_occurred = 1;
-  }
-  FINALLY { pthread_mutex_unlock (&g_http_mutex); }
-  END_TRY;
-
-  if (exception_occurred)
-    return -1;
-
-  if (ret != 0)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_HTTP, "HTTP request failed");
-      return -1;
-    }
-
-  ret = convert_response (&lib_response, response);
-  SocketHTTPClient_Response_free (&lib_response);
-
-  return ret;
-}
-
-int
-Socket_simple_http_get_ex (const char *url, const char **headers,
-                           SocketSimple_HTTPResponse *response)
-{
-  SocketHTTPClient_T client;
-  volatile SocketHTTPClient_Request_T req = NULL;
-  SocketHTTPClient_Response lib_response;
-  volatile int ret = -1;
-  volatile int exception_occurred = 0;
-
-  Socket_simple_clear_error ();
-
-  if (!url || !response)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
-      return -1;
-    }
-
-  client = get_global_http_client ();
-  if (!client)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_HTTP, "HTTP client not available");
-      return -1;
-    }
-
-  memset (&lib_response, 0, sizeof (lib_response));
-
-  pthread_mutex_lock (&g_http_mutex);
-  TRY
-  {
-    req = SocketHTTPClient_Request_new (client, HTTP_METHOD_GET, url);
-
-    /* Add custom headers - use stack buffer to avoid malloc leak on exception
-     */
-    if (headers)
-      {
-        for (const char **h = headers; *h != NULL; h++)
-          {
-            /* Parse "Name: Value" format */
-            const char *colon = strchr (*h, ':');
-            if (colon)
-              {
-                size_t name_len = (size_t)(colon - *h);
-                if (name_len < 256)
-                  {
-                    char name[256];
-                    memcpy (name, *h, name_len);
-                    name[name_len] = '\0';
-                    const char *value = colon + 1;
-                    while (*value == ' ')
-                      value++;
-                    SocketHTTPClient_Request_header (
-                        (SocketHTTPClient_Request_T)req, name, value);
-                  }
-              }
-          }
-      }
-
-    ret = SocketHTTPClient_Request_execute ((SocketHTTPClient_Request_T)req,
-                                            &lib_response);
-  }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    exception_occurred = 1;
-  }
-  FINALLY
-  {
-    if (req)
-      SocketHTTPClient_Request_free ((SocketHTTPClient_Request_T *)&req);
-    pthread_mutex_unlock (&g_http_mutex);
-  }
-  END_TRY;
-
-  if (exception_occurred)
-    return -1;
-
-  if (ret != 0)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_HTTP, "HTTP request failed");
-      return -1;
-    }
-
-  ret = convert_response (&lib_response, response);
-  SocketHTTPClient_Response_free (&lib_response);
-
-  return ret;
-}
-
-int
-Socket_simple_http_post (const char *url, const char *content_type,
-                         const void *body, size_t body_len,
-                         SocketSimple_HTTPResponse *response)
-{
-  SocketHTTPClient_T client;
-  SocketHTTPClient_Response lib_response;
-  volatile int ret = -1;
-  volatile int exception_occurred = 0;
-
-  Socket_simple_clear_error ();
-
-  if (!url || !response)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
-      return -1;
-    }
-
-  client = get_global_http_client ();
-  if (!client)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_HTTP, "HTTP client not available");
-      return -1;
-    }
-
-  memset (&lib_response, 0, sizeof (lib_response));
-
-  pthread_mutex_lock (&g_http_mutex);
-  TRY
-  {
-    ret = SocketHTTPClient_post (client, url, content_type, body, body_len,
-                                 &lib_response);
-  }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    exception_occurred = 1;
-  }
-  FINALLY { pthread_mutex_unlock (&g_http_mutex); }
-  END_TRY;
-
-  if (exception_occurred)
-    return -1;
-
-  if (ret != 0)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_HTTP, "HTTP request failed");
-      return -1;
-    }
-
-  ret = convert_response (&lib_response, response);
-  SocketHTTPClient_Response_free (&lib_response);
-
-  return ret;
-}
-
-int
-Socket_simple_http_put (const char *url, const char *content_type,
-                        const void *body, size_t body_len,
-                        SocketSimple_HTTPResponse *response)
-{
-  SocketHTTPClient_T client;
-  SocketHTTPClient_Response lib_response;
-  volatile int ret = -1;
-  volatile int exception_occurred = 0;
-
-  Socket_simple_clear_error ();
-
-  if (!url || !response)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
-      return -1;
-    }
-
-  client = get_global_http_client ();
-  if (!client)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_HTTP, "HTTP client not available");
-      return -1;
-    }
-
-  memset (&lib_response, 0, sizeof (lib_response));
-
-  pthread_mutex_lock (&g_http_mutex);
-  TRY
-  {
-    ret = SocketHTTPClient_put (client, url, content_type, body, body_len,
-                                &lib_response);
-  }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    exception_occurred = 1;
-  }
-  FINALLY { pthread_mutex_unlock (&g_http_mutex); }
-  END_TRY;
-
-  if (exception_occurred)
-    return -1;
-
-  if (ret != 0)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_HTTP, "HTTP request failed");
-      return -1;
-    }
-
-  ret = convert_response (&lib_response, response);
-  SocketHTTPClient_Response_free (&lib_response);
-
-  return ret;
-}
-
-int
-Socket_simple_http_delete (const char *url,
-                           SocketSimple_HTTPResponse *response)
-{
-  SocketHTTPClient_T client;
-  SocketHTTPClient_Response lib_response;
-  volatile int ret = -1;
-  volatile int exception_occurred = 0;
-
-  Socket_simple_clear_error ();
-
-  if (!url || !response)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
-      return -1;
-    }
-
-  client = get_global_http_client ();
-  if (!client)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_HTTP, "HTTP client not available");
-      return -1;
-    }
-
-  memset (&lib_response, 0, sizeof (lib_response));
-
-  pthread_mutex_lock (&g_http_mutex);
-  TRY { ret = SocketHTTPClient_delete (client, url, &lib_response); }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    exception_occurred = 1;
-  }
-  FINALLY { pthread_mutex_unlock (&g_http_mutex); }
-  END_TRY;
-
-  if (exception_occurred)
-    return -1;
-
-  if (ret != 0)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_HTTP, "HTTP request failed");
-      return -1;
-    }
-
-  ret = convert_response (&lib_response, response);
-  SocketHTTPClient_Response_free (&lib_response);
-
-  return ret;
-}
-
-int
-Socket_simple_http_head (const char *url, SocketSimple_HTTPResponse *response)
-{
-  SocketHTTPClient_T client;
-  SocketHTTPClient_Response lib_response;
-  volatile int ret = -1;
-  volatile int exception_occurred = 0;
-
-  Socket_simple_clear_error ();
-
-  if (!url || !response)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
-      return -1;
-    }
-
-  client = get_global_http_client ();
-  if (!client)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_HTTP, "HTTP client not available");
-      return -1;
-    }
-
-  memset (&lib_response, 0, sizeof (lib_response));
-
-  pthread_mutex_lock (&g_http_mutex);
-  TRY { ret = SocketHTTPClient_head (client, url, &lib_response); }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    exception_occurred = 1;
-  }
-  FINALLY { pthread_mutex_unlock (&g_http_mutex); }
-  END_TRY;
-
-  if (exception_occurred)
-    return -1;
-
-  if (ret != 0)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_HTTP, "HTTP request failed");
-      return -1;
-    }
-
-  ret = convert_response (&lib_response, response);
-  SocketHTTPClient_Response_free (&lib_response);
-
-  return ret;
-}
-
-int
-Socket_simple_http_patch (const char *url, const char *content_type,
-                          const void *body, size_t body_len,
-                          SocketSimple_HTTPResponse *response)
-{
-  SocketHTTPClient_T client;
-  volatile SocketHTTPClient_Request_T req = NULL;
-  SocketHTTPClient_Response lib_response;
-  volatile int ret = -1;
-  volatile int exception_occurred = 0;
-
-  Socket_simple_clear_error ();
-
-  if (!url || !response)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
-      return -1;
-    }
-
-  client = get_global_http_client ();
-  if (!client)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_HTTP, "HTTP client not available");
-      return -1;
-    }
-
-  memset (&lib_response, 0, sizeof (lib_response));
-
-  pthread_mutex_lock (&g_http_mutex);
-  TRY
-  {
-    req = SocketHTTPClient_Request_new (client, HTTP_METHOD_PATCH, url);
-    if (content_type)
-      SocketHTTPClient_Request_header ((SocketHTTPClient_Request_T)req,
-                                       "Content-Type", content_type);
-    if (body && body_len > 0)
-      SocketHTTPClient_Request_body ((SocketHTTPClient_Request_T)req, body,
-                                     body_len);
-    ret = SocketHTTPClient_Request_execute ((SocketHTTPClient_Request_T)req,
-                                            &lib_response);
-  }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    exception_occurred = 1;
-  }
-  FINALLY
-  {
-    if (req)
-      SocketHTTPClient_Request_free ((SocketHTTPClient_Request_T *)&req);
-    pthread_mutex_unlock (&g_http_mutex);
-  }
-  END_TRY;
-
-  if (exception_occurred)
-    return -1;
-
-  if (ret != 0)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_HTTP, "HTTP request failed");
-      return -1;
-    }
-
-  ret = convert_response (&lib_response, response);
-  SocketHTTPClient_Response_free (&lib_response);
-
-  return ret;
-}
-
-int
-Socket_simple_http_options (const char *url,
-                            SocketSimple_HTTPResponse *response)
-{
-  SocketHTTPClient_T client;
-  volatile SocketHTTPClient_Request_T req = NULL;
-  SocketHTTPClient_Response lib_response;
-  volatile int ret = -1;
-  volatile int exception_occurred = 0;
-
-  Socket_simple_clear_error ();
-
-  if (!url || !response)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
-      return -1;
-    }
-
-  client = get_global_http_client ();
-  if (!client)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_HTTP, "HTTP client not available");
-      return -1;
-    }
-
-  memset (&lib_response, 0, sizeof (lib_response));
-
-  pthread_mutex_lock (&g_http_mutex);
-  TRY
-  {
-    req = SocketHTTPClient_Request_new (client, HTTP_METHOD_OPTIONS, url);
-    ret = SocketHTTPClient_Request_execute ((SocketHTTPClient_Request_T)req,
-                                            &lib_response);
-  }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    exception_occurred = 1;
-  }
-  FINALLY
-  {
-    if (req)
-      SocketHTTPClient_Request_free ((SocketHTTPClient_Request_T *)&req);
-    pthread_mutex_unlock (&g_http_mutex);
-  }
-  END_TRY;
-
-  if (exception_occurred)
-    return -1;
-
-  if (ret != 0)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_HTTP, "HTTP request failed");
-      return -1;
-    }
-
-  ret = convert_response (&lib_response, response);
-  SocketHTTPClient_Response_free (&lib_response);
-
-  return ret;
-}
 
 /* ============================================================================
- * Extended Functions with Custom Headers
+ * Common HTTP Operation Helper
  * ============================================================================
  */
 
-static void
-add_custom_headers (SocketHTTPClient_Request_T req, const char **headers)
-{
-  if (!headers)
-    return;
-
-  for (const char **h = headers; *h != NULL; h++)
-    {
-      const char *colon = strchr (*h, ':');
-      if (colon)
-        {
-          size_t name_len = (size_t)(colon - *h);
-          if (name_len < 256)
-            {
-              char name[256];
-              memcpy (name, *h, name_len);
-              name[name_len] = '\0';
-              const char *value = colon + 1;
-              while (*value == ' ')
-                value++;
-              SocketHTTPClient_Request_header (req, name, value);
-            }
-        }
-    }
-}
-
-int
-Socket_simple_http_post_ex (const char *url, const char **headers,
-                            const char *content_type, const void *body,
-                            size_t body_len,
-                            SocketSimple_HTTPResponse *response)
+/**
+ * @brief Execute an HTTP operation with global client and standard error
+ * handling.
+ *
+ * This helper reduces code duplication across simple HTTP method wrappers.
+ *
+ * @param operation Function pointer to the HTTP operation to execute
+ * @param url Target URL
+ * @param response Output response structure
+ * @return 0 on success, -1 on failure
+ */
+static int
+execute_simple_http_operation (
+    int (*operation) (SocketHTTPClient_T, const char *,
+                      SocketHTTPClient_Response *),
+    const char *url, SocketSimple_HTTPResponse *response)
 {
   SocketHTTPClient_T client;
-  volatile SocketHTTPClient_Request_T req = NULL;
+  SocketHTTPClient_Response lib_response;
+  volatile int ret = -1;
+  volatile int exception_occurred = 0;
+
+  Socket_simple_clear_error ();
+
+  if (!url || !response)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
+      return -1;
+    }
+
+  client = get_global_http_client ();
+  if (!client)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_HTTP, "HTTP client not available");
+      return -1;
+    }
+
+  memset (&lib_response, 0, sizeof (lib_response));
+
+  pthread_mutex_lock (&g_http_mutex);
+  TRY { ret = operation (client, url, &lib_response); }
+  HANDLE_HTTP_EXCEPTIONS (exception_occurred)
+  FINALLY { pthread_mutex_unlock (&g_http_mutex); }
+  END_TRY;
+
+  if (exception_occurred)
+    return -1;
+
+  if (ret != 0)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_HTTP, "HTTP request failed");
+      return -1;
+    }
+
+  ret = convert_response (&lib_response, response);
+  SocketHTTPClient_Response_free (&lib_response);
+
+  return ret;
+}
+
+/**
+ * @brief Execute an HTTP operation with body using global client.
+ *
+ * @param operation Function pointer to the HTTP operation
+ * @param url Target URL
+ * @param content_type Content-Type header value (can be NULL)
+ * @param body Request body data (can be NULL)
+ * @param body_len Body length in bytes
+ * @param response Output response structure
+ * @return 0 on success, -1 on failure
+ */
+static int
+execute_simple_http_operation_with_body (
+    int (*operation) (SocketHTTPClient_T, const char *, const char *,
+                      const void *, size_t, SocketHTTPClient_Response *),
+    const char *url, const char *content_type, const void *body,
+    size_t body_len, SocketSimple_HTTPResponse *response)
+{
+  SocketHTTPClient_T client;
   SocketHTTPClient_Response lib_response;
   volatile int ret = -1;
   volatile int exception_occurred = 0;
@@ -753,33 +294,10 @@ Socket_simple_http_post_ex (const char *url, const char **headers,
   pthread_mutex_lock (&g_http_mutex);
   TRY
   {
-    req = SocketHTTPClient_Request_new (client, HTTP_METHOD_POST, url);
-    add_custom_headers ((SocketHTTPClient_Request_T)req, headers);
-    if (content_type)
-      SocketHTTPClient_Request_header ((SocketHTTPClient_Request_T)req,
-                                       "Content-Type", content_type);
-    if (body && body_len > 0)
-      SocketHTTPClient_Request_body ((SocketHTTPClient_Request_T)req, body,
-                                     body_len);
-    ret = SocketHTTPClient_Request_execute ((SocketHTTPClient_Request_T)req,
-                                            &lib_response);
+    ret = operation (client, url, content_type, body, body_len, &lib_response);
   }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    exception_occurred = 1;
-  }
-  FINALLY
-  {
-    if (req)
-      SocketHTTPClient_Request_free ((SocketHTTPClient_Request_T *)&req);
-    pthread_mutex_unlock (&g_http_mutex);
-  }
+  HANDLE_HTTP_EXCEPTIONS (exception_occurred)
+  FINALLY { pthread_mutex_unlock (&g_http_mutex); }
   END_TRY;
 
   if (exception_occurred)
@@ -797,84 +315,21 @@ Socket_simple_http_post_ex (const char *url, const char **headers,
   return ret;
 }
 
-int
-Socket_simple_http_put_ex (const char *url, const char **headers,
-                           const char *content_type, const void *body,
-                           size_t body_len,
-                           SocketSimple_HTTPResponse *response)
-{
-  SocketHTTPClient_T client;
-  volatile SocketHTTPClient_Request_T req = NULL;
-  SocketHTTPClient_Response lib_response;
-  volatile int ret = -1;
-  volatile int exception_occurred = 0;
-
-  Socket_simple_clear_error ();
-
-  if (!url || !response)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
-      return -1;
-    }
-
-  client = get_global_http_client ();
-  if (!client)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_HTTP, "HTTP client not available");
-      return -1;
-    }
-
-  memset (&lib_response, 0, sizeof (lib_response));
-
-  pthread_mutex_lock (&g_http_mutex);
-  TRY
-  {
-    req = SocketHTTPClient_Request_new (client, HTTP_METHOD_PUT, url);
-    add_custom_headers ((SocketHTTPClient_Request_T)req, headers);
-    if (content_type)
-      SocketHTTPClient_Request_header ((SocketHTTPClient_Request_T)req,
-                                       "Content-Type", content_type);
-    if (body && body_len > 0)
-      SocketHTTPClient_Request_body ((SocketHTTPClient_Request_T)req, body,
-                                     body_len);
-    ret = SocketHTTPClient_Request_execute ((SocketHTTPClient_Request_T)req,
-                                            &lib_response);
-  }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    exception_occurred = 1;
-  }
-  FINALLY
-  {
-    if (req)
-      SocketHTTPClient_Request_free ((SocketHTTPClient_Request_T *)&req);
-    pthread_mutex_unlock (&g_http_mutex);
-  }
-  END_TRY;
-
-  if (exception_occurred)
-    return -1;
-
-  if (ret != 0)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_HTTP, "HTTP request failed");
-      return -1;
-    }
-
-  ret = convert_response (&lib_response, response);
-  SocketHTTPClient_Response_free (&lib_response);
-
-  return ret;
-}
-
-int
-Socket_simple_http_delete_ex (const char *url, const char **headers,
+/**
+ * @brief Execute HTTP request using Request API with global client.
+ *
+ * @param method HTTP method enum
+ * @param url Target URL
+ * @param content_type Content-Type header (can be NULL)
+ * @param body Request body (can be NULL)
+ * @param body_len Body length
+ * @param response Output response structure
+ * @return 0 on success, -1 on failure
+ */
+static int
+execute_simple_http_request (SocketHTTP_Method method, const char *url,
+                              const char *content_type, const void *body,
+                              size_t body_len,
                               SocketSimple_HTTPResponse *response)
 {
   SocketHTTPClient_T client;
@@ -903,21 +358,17 @@ Socket_simple_http_delete_ex (const char *url, const char **headers,
   pthread_mutex_lock (&g_http_mutex);
   TRY
   {
-    req = SocketHTTPClient_Request_new (client, HTTP_METHOD_DELETE, url);
-    add_custom_headers ((SocketHTTPClient_Request_T)req, headers);
+    req = SocketHTTPClient_Request_new (client, method, url);
+    if (content_type)
+      SocketHTTPClient_Request_header ((SocketHTTPClient_Request_T)req,
+                                       "Content-Type", content_type);
+    if (body && body_len > 0)
+      SocketHTTPClient_Request_body ((SocketHTTPClient_Request_T)req, body,
+                                     body_len);
     ret = SocketHTTPClient_Request_execute ((SocketHTTPClient_Request_T)req,
                                             &lib_response);
   }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    exception_occurred = 1;
-  }
+  HANDLE_HTTP_EXCEPTIONS (exception_occurred)
   FINALLY
   {
     if (req)
@@ -941,9 +392,58 @@ Socket_simple_http_delete_ex (const char *url, const char **headers,
   return ret;
 }
 
-int
-Socket_simple_http_head_ex (const char *url, const char **headers,
-                            SocketSimple_HTTPResponse *response)
+/**
+ * @brief Add custom headers to an HTTP request.
+ *
+ * Parses "Name: Value" format header strings and adds them to the request.
+ *
+ * @param req HTTP request handle
+ * @param headers NULL-terminated array of header strings (can be NULL)
+ */
+static void
+add_custom_headers (SocketHTTPClient_Request_T req, const char **headers)
+{
+  if (!headers)
+    return;
+
+  for (const char **h = headers; *h != NULL; h++)
+    {
+      const char *colon = strchr (*h, ':');
+      if (colon)
+        {
+          size_t name_len = (size_t)(colon - *h);
+          if (name_len < 256)
+            {
+              char name[256];
+              memcpy (name, *h, name_len);
+              name[name_len] = '\0';
+              const char *value = colon + 1;
+              while (*value == ' ')
+                value++;
+              SocketHTTPClient_Request_header (req, name, value);
+            }
+        }
+    }
+}
+
+/**
+ * @brief Execute HTTP request with custom headers using Request API.
+ *
+ * @param method HTTP method enum
+ * @param url Target URL
+ * @param headers NULL-terminated array of "Name: Value" strings (can be NULL)
+ * @param content_type Content-Type header (can be NULL)
+ * @param body Request body (can be NULL)
+ * @param body_len Body length
+ * @param response Output response structure
+ * @return 0 on success, -1 on failure
+ */
+static int
+execute_simple_http_request_ex (SocketHTTP_Method method, const char *url,
+                                 const char **headers,
+                                 const char *content_type, const void *body,
+                                 size_t body_len,
+                                 SocketSimple_HTTPResponse *response)
 {
   SocketHTTPClient_T client;
   volatile SocketHTTPClient_Request_T req = NULL;
@@ -971,77 +471,7 @@ Socket_simple_http_head_ex (const char *url, const char **headers,
   pthread_mutex_lock (&g_http_mutex);
   TRY
   {
-    req = SocketHTTPClient_Request_new (client, HTTP_METHOD_HEAD, url);
-    add_custom_headers ((SocketHTTPClient_Request_T)req, headers);
-    ret = SocketHTTPClient_Request_execute ((SocketHTTPClient_Request_T)req,
-                                            &lib_response);
-  }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    exception_occurred = 1;
-  }
-  FINALLY
-  {
-    if (req)
-      SocketHTTPClient_Request_free ((SocketHTTPClient_Request_T *)&req);
-    pthread_mutex_unlock (&g_http_mutex);
-  }
-  END_TRY;
-
-  if (exception_occurred)
-    return -1;
-
-  if (ret != 0)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_HTTP, "HTTP request failed");
-      return -1;
-    }
-
-  ret = convert_response (&lib_response, response);
-  SocketHTTPClient_Response_free (&lib_response);
-
-  return ret;
-}
-
-int
-Socket_simple_http_patch_ex (const char *url, const char **headers,
-                             const char *content_type, const void *body,
-                             size_t body_len,
-                             SocketSimple_HTTPResponse *response)
-{
-  SocketHTTPClient_T client;
-  volatile SocketHTTPClient_Request_T req = NULL;
-  SocketHTTPClient_Response lib_response;
-  volatile int ret = -1;
-  volatile int exception_occurred = 0;
-
-  Socket_simple_clear_error ();
-
-  if (!url || !response)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
-      return -1;
-    }
-
-  client = get_global_http_client ();
-  if (!client)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_HTTP, "HTTP client not available");
-      return -1;
-    }
-
-  memset (&lib_response, 0, sizeof (lib_response));
-
-  pthread_mutex_lock (&g_http_mutex);
-  TRY
-  {
-    req = SocketHTTPClient_Request_new (client, HTTP_METHOD_PATCH, url);
+    req = SocketHTTPClient_Request_new (client, method, url);
     add_custom_headers ((SocketHTTPClient_Request_T)req, headers);
     if (content_type)
       SocketHTTPClient_Request_header ((SocketHTTPClient_Request_T)req,
@@ -1052,16 +482,7 @@ Socket_simple_http_patch_ex (const char *url, const char **headers,
     ret = SocketHTTPClient_Request_execute ((SocketHTTPClient_Request_T)req,
                                             &lib_response);
   }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    exception_occurred = 1;
-  }
+  HANDLE_HTTP_EXCEPTIONS (exception_occurred)
   FINALLY
   {
     if (req)
@@ -1085,72 +506,135 @@ Socket_simple_http_patch_ex (const char *url, const char **headers,
   return ret;
 }
 
+/* ============================================================================
+ * One-liner HTTP Functions
+ * ============================================================================
+ */
+
+int
+Socket_simple_http_get (const char *url, SocketSimple_HTTPResponse *response)
+{
+  return execute_simple_http_operation (SocketHTTPClient_get, url, response);
+}
+
+int
+Socket_simple_http_get_ex (const char *url, const char **headers,
+                           SocketSimple_HTTPResponse *response)
+{
+  return execute_simple_http_request_ex (HTTP_METHOD_GET, url, headers, NULL,
+                                         NULL, 0, response);
+}
+
+int
+Socket_simple_http_post (const char *url, const char *content_type,
+                         const void *body, size_t body_len,
+                         SocketSimple_HTTPResponse *response)
+{
+  return execute_simple_http_operation_with_body (SocketHTTPClient_post, url,
+                                                   content_type, body, body_len,
+                                                   response);
+}
+
+int
+Socket_simple_http_put (const char *url, const char *content_type,
+                        const void *body, size_t body_len,
+                        SocketSimple_HTTPResponse *response)
+{
+  return execute_simple_http_operation_with_body (SocketHTTPClient_put, url,
+                                                   content_type, body, body_len,
+                                                   response);
+}
+
+int
+Socket_simple_http_delete (const char *url,
+                           SocketSimple_HTTPResponse *response)
+{
+  return execute_simple_http_operation (SocketHTTPClient_delete, url, response);
+}
+
+int
+Socket_simple_http_head (const char *url, SocketSimple_HTTPResponse *response)
+{
+  return execute_simple_http_operation (SocketHTTPClient_head, url, response);
+}
+
+int
+Socket_simple_http_patch (const char *url, const char *content_type,
+                          const void *body, size_t body_len,
+                          SocketSimple_HTTPResponse *response)
+{
+  return execute_simple_http_request (HTTP_METHOD_PATCH, url, content_type,
+                                      body, body_len, response);
+}
+
+int
+Socket_simple_http_options (const char *url,
+                            SocketSimple_HTTPResponse *response)
+{
+  return execute_simple_http_request (HTTP_METHOD_OPTIONS, url, NULL, NULL, 0,
+                                      response);
+}
+
+/* ============================================================================
+ * Extended Functions with Custom Headers
+ * ============================================================================
+ */
+
+int
+Socket_simple_http_post_ex (const char *url, const char **headers,
+                            const char *content_type, const void *body,
+                            size_t body_len,
+                            SocketSimple_HTTPResponse *response)
+{
+  return execute_simple_http_request_ex (HTTP_METHOD_POST, url, headers,
+                                         content_type, body, body_len,
+                                         response);
+}
+
+int
+Socket_simple_http_put_ex (const char *url, const char **headers,
+                           const char *content_type, const void *body,
+                           size_t body_len,
+                           SocketSimple_HTTPResponse *response)
+{
+  return execute_simple_http_request_ex (HTTP_METHOD_PUT, url, headers,
+                                         content_type, body, body_len,
+                                         response);
+}
+
+int
+Socket_simple_http_delete_ex (const char *url, const char **headers,
+                              SocketSimple_HTTPResponse *response)
+{
+  return execute_simple_http_request_ex (HTTP_METHOD_DELETE, url, headers,
+                                         NULL, NULL, 0, response);
+}
+
+int
+Socket_simple_http_head_ex (const char *url, const char **headers,
+                            SocketSimple_HTTPResponse *response)
+{
+  return execute_simple_http_request_ex (HTTP_METHOD_HEAD, url, headers, NULL,
+                                         NULL, 0, response);
+}
+
+int
+Socket_simple_http_patch_ex (const char *url, const char **headers,
+                             const char *content_type, const void *body,
+                             size_t body_len,
+                             SocketSimple_HTTPResponse *response)
+{
+  return execute_simple_http_request_ex (HTTP_METHOD_PATCH, url, headers,
+                                         content_type, body, body_len,
+                                         response);
+}
+
 int
 Socket_simple_http_options_ex (const char *url, const char **headers,
                                SocketSimple_HTTPResponse *response)
 {
-  SocketHTTPClient_T client;
-  volatile SocketHTTPClient_Request_T req = NULL;
-  SocketHTTPClient_Response lib_response;
-  volatile int ret = -1;
-  volatile int exception_occurred = 0;
-
-  Socket_simple_clear_error ();
-
-  if (!url || !response)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
-      return -1;
-    }
-
-  client = get_global_http_client ();
-  if (!client)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_HTTP, "HTTP client not available");
-      return -1;
-    }
-
-  memset (&lib_response, 0, sizeof (lib_response));
-
-  pthread_mutex_lock (&g_http_mutex);
-  TRY
-  {
-    req = SocketHTTPClient_Request_new (client, HTTP_METHOD_OPTIONS, url);
-    add_custom_headers ((SocketHTTPClient_Request_T)req, headers);
-    ret = SocketHTTPClient_Request_execute ((SocketHTTPClient_Request_T)req,
-                                            &lib_response);
-  }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    exception_occurred = 1;
-  }
-  FINALLY
-  {
-    if (req)
-      SocketHTTPClient_Request_free ((SocketHTTPClient_Request_T *)&req);
-    pthread_mutex_unlock (&g_http_mutex);
-  }
-  END_TRY;
-
-  if (exception_occurred)
-    return -1;
-
-  if (ret != 0)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_HTTP, "HTTP request failed");
-      return -1;
-    }
-
-  ret = convert_response (&lib_response, response);
-  SocketHTTPClient_Response_free (&lib_response);
-
-  return ret;
+  return execute_simple_http_request_ex (HTTP_METHOD_OPTIONS, url, headers,
+                                         NULL, NULL, 0, response);
 }
 
 /* ============================================================================
