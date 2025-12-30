@@ -71,6 +71,7 @@ Socket_simple_poll_new (int max_events_arg)
 {
   volatile SocketPoll_T poll = NULL;
   volatile int max_events = max_events_arg;
+  struct SocketSimple_Poll *volatile handle = NULL;
 
   Socket_simple_clear_error ();
 
@@ -79,28 +80,38 @@ Socket_simple_poll_new (int max_events_arg)
       max_events = SOCKET_SIMPLE_POLL_DEFAULT_MAX_EVENTS;
     }
 
-  TRY { poll = SocketPoll_new (max_events); }
+  TRY
+  {
+    poll = SocketPoll_new (max_events);
+
+    handle = calloc (1, sizeof (*handle));
+    if (!handle)
+      {
+        simple_set_error (SOCKET_SIMPLE_ERR_MEMORY,
+                          "Memory allocation failed");
+        RAISE (SocketPoll_Failed);
+      }
+
+    handle->poll = poll;
+    handle->max_events = max_events;
+    handle->default_timeout_ms = -1; /* Infinite by default */
+  }
   EXCEPT (SocketPoll_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_POLL,
                       "Failed to create poll instance");
-    return NULL;
+  }
+  FINALLY
+  {
+    /* Clean up poll object if allocation succeeded but handle didn't */
+    if (poll && !handle)
+      {
+        SocketPoll_free ((SocketPoll_T *)&poll);
+      }
   }
   END_TRY;
 
-  struct SocketSimple_Poll *handle = calloc (1, sizeof (*handle));
-  if (!handle)
-    {
-      SocketPoll_free ((SocketPoll_T *)&poll);
-      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
-      return NULL;
-    }
-
-  handle->poll = poll;
-  handle->max_events = max_events;
-  handle->default_timeout_ms = -1; /* Infinite by default */
-
-  return handle;
+  return (struct SocketSimple_Poll *)handle;
 }
 
 void
