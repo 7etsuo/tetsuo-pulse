@@ -188,8 +188,7 @@ async_operation_common (SocketSimple_Async_T async,
                         AsyncOpFunc op_func, AsyncOpTimeoutFunc op_timeout_func,
                         const char *error_msg)
 {
-  /* Volatile copy to survive potential longjmp in TRY/EXCEPT */
-  SocketSimple_Socket_T volatile safe_socket = socket;
+  SocketSimple_Socket_T safe_socket = socket;
   Socket_T core_socket;
   struct CallbackContext *ctx;
   volatile unsigned request_id = 0;
