@@ -295,6 +295,7 @@ SocketTLSContext_add_pin_from_cert (T ctx, const char *cert_file)
     }
 
   /* O_NOFOLLOW: symlink protection */
+  errno = 0; /* Clear errno before security-critical syscall */
   int fd = open (cert_file, O_RDONLY | O_NOFOLLOW);
   if (fd == -1)
     {
