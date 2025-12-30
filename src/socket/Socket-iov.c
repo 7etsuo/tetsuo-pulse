@@ -206,6 +206,17 @@ socket_sendfile_linux (T socket, int file_fd, off_t *offset, size_t count)
 static ssize_t
 socket_sendfile_bsd (T socket, int file_fd, off_t *offset, size_t count)
 {
+  /* Check for overflow when casting size_t to off_t (CWE-190).
+   * On systems where sizeof(size_t) > sizeof(off_t), large values
+   * could silently truncate, causing partial transfers. Calculate
+   * max off_t using same pattern as safe_add_off_t(). */
+  off_t max_off_t = (off_t) ((1ULL << (sizeof (off_t) * 8 - 1)) - 1);
+  if (count > (size_t)max_off_t)
+    {
+      errno = EOVERFLOW;
+      return -1;
+    }
+
   off_t len = (off_t)count;
   off_t off = offset ? *offset : 0;
   int result
