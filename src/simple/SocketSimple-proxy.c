@@ -19,6 +19,10 @@
 #include <ctype.h>
 #include <errno.h>
 
+/* Default proxy ports (see CLAUDE.md: Magic Numbers anti-pattern) */
+#define SOCKET_PROXY_DEFAULT_PORT_HTTP  8080
+#define SOCKET_PROXY_DEFAULT_PORT_SOCKS 1080
+
 /* ============================================================================
  * Configuration Functions
  * ============================================================================
@@ -35,6 +39,25 @@ Socket_simple_proxy_config_init (SocketSimple_ProxyConfig *config)
   config->port = 0;
   config->connect_timeout_ms = 0;   /* Use default */
   config->handshake_timeout_ms = 0; /* Use default */
+}
+
+/* Helper to get default port for proxy type */
+static int
+get_default_proxy_port (SocketSimple_ProxyType type)
+{
+  switch (type)
+    {
+    case SOCKET_SIMPLE_PROXY_HTTP:
+    case SOCKET_SIMPLE_PROXY_HTTPS:
+      return SOCKET_PROXY_DEFAULT_PORT_HTTP;
+    case SOCKET_SIMPLE_PROXY_SOCKS4:
+    case SOCKET_SIMPLE_PROXY_SOCKS4A:
+    case SOCKET_SIMPLE_PROXY_SOCKS5:
+    case SOCKET_SIMPLE_PROXY_SOCKS5H:
+      return SOCKET_PROXY_DEFAULT_PORT_SOCKS;
+    default:
+      return SOCKET_PROXY_DEFAULT_PORT_HTTP;
+    }
 }
 
 /* Helper to convert simple proxy type to core proxy type */
@@ -329,22 +352,7 @@ Socket_simple_proxy_parse_url (const char *url,
   else
     {
       /* Use default port based on type */
-      switch (config->type)
-        {
-        case SOCKET_SIMPLE_PROXY_HTTP:
-        case SOCKET_SIMPLE_PROXY_HTTPS:
-          config->port = 8080;
-          break;
-        case SOCKET_SIMPLE_PROXY_SOCKS4:
-        case SOCKET_SIMPLE_PROXY_SOCKS4A:
-        case SOCKET_SIMPLE_PROXY_SOCKS5:
-        case SOCKET_SIMPLE_PROXY_SOCKS5H:
-          config->port = 1080;
-          break;
-        default:
-          config->port = 8080;
-          break;
-        }
+      config->port = get_default_proxy_port (config->type);
     }
 
   /* Validate we have a host */
