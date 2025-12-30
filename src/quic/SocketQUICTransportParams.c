@@ -757,6 +757,28 @@ check_server_only (SocketQUICRole peer_role)
 }
 
 /**
+ * CHECK_SERVER_ONLY - Validate peer role for server-only transport parameters
+ * @peer_role: The role of the peer sending the transport parameters
+ *
+ * Server-only parameters (RFC 9000 Section 18.2):
+ * - original_destination_connection_id (0x00)
+ * - stateless_reset_token (0x02)
+ * - preferred_address (0x0d)
+ * - retry_source_connection_id (0x0f)
+ *
+ * Returns QUIC_TP_ERROR_ROLE if peer_role is not QUIC_ROLE_SERVER.
+ * Use this macro at the start of decoder functions for server-only parameters.
+ *
+ * Thread-safe: Yes (stateless check)
+ */
+#define CHECK_SERVER_ONLY(peer_role) \
+  do { \
+    SocketQUICTransportParams_Result __result = check_server_only (peer_role); \
+    if (__result != QUIC_TP_OK) \
+      return __result; \
+  } while (0)
+
+/**
  * @brief Decode a varint parameter value into a uint64_t field.
  */
 static SocketQUICTransportParams_Result
@@ -781,9 +803,8 @@ decode_param_original_dcid (const uint8_t *data, size_t param_len,
                             SocketQUICRole peer_role,
                             SocketQUICTransportParams_T *params)
 {
-  SocketQUICTransportParams_Result result = check_server_only (peer_role);
-  if (result != QUIC_TP_OK)
-    return result;
+  SocketQUICTransportParams_Result result;
+  CHECK_SERVER_ONLY (peer_role);
 
   result = decode_connid_value (data, param_len, &params->original_dcid);
   if (result != QUIC_TP_OK)
@@ -807,9 +828,7 @@ decode_param_stateless_reset_token (const uint8_t *data, size_t param_len,
                                     SocketQUICRole peer_role,
                                     SocketQUICTransportParams_T *params)
 {
-  SocketQUICTransportParams_Result result = check_server_only (peer_role);
-  if (result != QUIC_TP_OK)
-    return result;
+  CHECK_SERVER_ONLY (peer_role);
 
   if (param_len != QUIC_STATELESS_RESET_TOKEN_LEN)
     return QUIC_TP_ERROR_INVALID_VALUE;
@@ -927,9 +946,7 @@ decode_param_preferred_address (const uint8_t *data, size_t param_len,
                                 SocketQUICRole peer_role,
                                 SocketQUICTransportParams_T *params)
 {
-  SocketQUICTransportParams_Result result = check_server_only (peer_role);
-  if (result != QUIC_TP_OK)
-    return result;
+  CHECK_SERVER_ONLY (peer_role);
 
   return decode_preferred_address (data, param_len, &params->preferred_address);
 }
@@ -965,9 +982,8 @@ decode_param_retry_scid (const uint8_t *data, size_t param_len,
                          SocketQUICRole peer_role,
                          SocketQUICTransportParams_T *params)
 {
-  SocketQUICTransportParams_Result result = check_server_only (peer_role);
-  if (result != QUIC_TP_OK)
-    return result;
+  SocketQUICTransportParams_Result result;
+  CHECK_SERVER_ONLY (peer_role);
 
   result = decode_connid_value (data, param_len, &params->retry_scid);
   if (result != QUIC_TP_OK)
