@@ -79,7 +79,7 @@ static unsigned
 hash_sequence (uint64_t sequence, uint32_t seed)
 {
   /* Multiplicative hash using Knuth's constant */
-  uint64_t hash = sequence * 2654435761ULL;
+  uint64_t hash = sequence * QUIC_HASH_KNUTH_CONSTANT;
   hash ^= seed;
   hash ^= (hash >> 33);
   hash *= QUIC_HASH_MURMUR3_MIX;

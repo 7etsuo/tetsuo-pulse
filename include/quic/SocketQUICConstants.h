@@ -65,6 +65,17 @@
  */
 #define QUIC_HASH_MURMUR3_MIX 0xff51afd7ed558ccdULL
 
+/**
+ * @brief Knuth's multiplicative hash constant (32-bit).
+ *
+ * Used for integer hashing in hash tables. This is the 32-bit
+ * golden ratio constant: 2^32 / φ where φ is the golden ratio.
+ * Provides excellent distribution for sequential integer inputs.
+ *
+ * @see Donald Knuth, The Art of Computer Programming, Volume 3, Section 6.4
+ */
+#define QUIC_HASH_KNUTH_CONSTANT 2654435761ULL
+
 /* ============================================================================
  * HKDF Label Constants (RFC 8446)
  * ============================================================================
