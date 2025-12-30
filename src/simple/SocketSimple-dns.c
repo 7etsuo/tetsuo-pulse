@@ -106,8 +106,20 @@ convert_addrinfo_to_result (struct addrinfo *res, SocketSimple_DNSResult *result
           == 0)
         {
           result->addresses[i] = strdup (host);
-          if (result->addresses[i])
-            i++;
+          if (!result->addresses[i])
+            {
+              /* Free already allocated addresses on strdup failure */
+              for (int j = 0; j < i; j++)
+                {
+                  free (result->addresses[j]);
+                }
+              free (result->addresses);
+              result->addresses = NULL;
+              simple_set_error (SOCKET_SIMPLE_ERR_MEMORY,
+                               "Memory allocation failed during DNS conversion");
+              return -1;
+            }
+          i++;
         }
     }
 
