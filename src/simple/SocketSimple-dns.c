@@ -17,7 +17,116 @@
 #include <netdb.h>
 
 /* ============================================================================
- * DNS Resolution
+ * DNS Resolution - Helper Functions
+ * ============================================================================
+ */
+
+/**
+ * @brief Count the number of addresses in an addrinfo linked list.
+ * @param res The addrinfo list to count.
+ * @return Number of addresses in the list.
+ */
+static int
+count_addrinfo (struct addrinfo *res)
+{
+  int count = 0;
+  for (struct addrinfo *p = res; p != NULL; p = p->ai_next)
+    count++;
+  return count;
+}
+
+/**
+ * @brief Perform synchronous DNS resolution with exception handling.
+ * @param dns The DNS resolver instance.
+ * @param hostname The hostname to resolve.
+ * @param hints The addrinfo hints for resolution.
+ * @param timeout_ms Timeout in milliseconds.
+ * @param exception_occurred Output parameter set to 1 if exception occurs.
+ * @return addrinfo result or NULL on error/timeout.
+ */
+static struct addrinfo *
+resolve_hostname_sync (SocketDNS_T dns, const char *hostname,
+                       struct addrinfo *hints, int timeout_ms,
+                       int *exception_occurred)
+{
+  struct addrinfo *volatile res = NULL;
+
+  TRY { res = SocketDNS_resolve_sync (dns, hostname, 0, hints, timeout_ms); }
+  EXCEPT (SocketDNS_Failed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_DNS, "DNS resolution failed");
+    *exception_occurred = 1;
+  }
+  FINALLY
+  {
+    /* Cleanup res on exception - normal path handles it in caller */
+    if (*exception_occurred && res)
+      {
+        SocketCommon_free_addrinfo (res);
+        res = NULL;
+      }
+  }
+  END_TRY;
+
+  return res;
+}
+
+/**
+ * @brief Convert addrinfo linked list to SocketSimple_DNSResult.
+ * @param res The addrinfo list to convert.
+ * @param result The output SocketSimple_DNSResult structure.
+ * @return 0 on success, -1 on error.
+ */
+static int
+convert_addrinfo_to_result (struct addrinfo *res, SocketSimple_DNSResult *result)
+{
+  int count = count_addrinfo (res);
+
+  if (count == 0)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_DNS, "No addresses found");
+      return -1;
+    }
+
+  result->addresses = calloc ((size_t)count + 1, sizeof (char *));
+  if (!result->addresses)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
+      return -1;
+    }
+
+  int i = 0;
+  for (struct addrinfo *p = res; p != NULL && i < count; p = p->ai_next)
+    {
+      char host[NI_MAXHOST];
+      /* Use library's reverse lookup wrapper - returns 0 on success */
+      if (SocketCommon_reverse_lookup (p->ai_addr, p->ai_addrlen, host,
+                                       sizeof (host), NULL, 0, NI_NUMERICHOST,
+                                       SocketCommon_Failed)
+          == 0)
+        {
+          result->addresses[i] = strdup (host);
+          if (result->addresses[i])
+            i++;
+        }
+    }
+
+  result->count = i;
+  result->family = res->ai_family;
+
+  if (result->count == 0)
+    {
+      free (result->addresses);
+      result->addresses = NULL;
+      simple_set_error (SOCKET_SIMPLE_ERR_DNS, "Failed to resolve addresses");
+      return -1;
+    }
+
+  return 0;
+}
+
+/* ============================================================================
+ * DNS Resolution - Public API
  * ============================================================================
  */
 
@@ -26,13 +135,9 @@ Socket_simple_dns_resolve_timeout (const char *hostname,
                                    SocketSimple_DNSResult *result,
                                    int timeout_ms)
 {
-  SocketDNS_T dns = SocketCommon_get_dns_resolver ();
-  volatile struct addrinfo *res = NULL;
-  struct addrinfo *p;
-  struct addrinfo hints;
-  volatile int ret = -1;
   volatile int exception_occurred = 0;
-  int count = 0;
+  struct addrinfo hints;
+  struct addrinfo *res = NULL;
 
   Socket_simple_clear_error ();
 
@@ -44,6 +149,7 @@ Socket_simple_dns_resolve_timeout (const char *hostname,
 
   memset (result, 0, sizeof (*result));
 
+  SocketDNS_T dns = SocketCommon_get_dns_resolver ();
   if (!dns)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_DNS, "DNS resolver not available");
@@ -52,23 +158,9 @@ Socket_simple_dns_resolve_timeout (const char *hostname,
 
   SocketCommon_setup_hints (&hints, SOCK_STREAM, 0);
 
-  TRY { res = SocketDNS_resolve_sync (dns, hostname, 0, &hints, timeout_ms); }
-  EXCEPT (SocketDNS_Failed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_DNS, "DNS resolution failed");
-    exception_occurred = 1;
-  }
-  FINALLY
-  {
-    /* Cleanup res on exception - normal path handles it below */
-    if (exception_occurred && res)
-      {
-        SocketCommon_free_addrinfo ((struct addrinfo *)res);
-        res = NULL;
-      }
-  }
-  END_TRY;
-
+  /* Resolve hostname with exception handling */
+  res = resolve_hostname_sync (dns, hostname, &hints, timeout_ms,
+                               (int *)&exception_occurred);
   if (exception_occurred)
     return -1;
 
@@ -78,58 +170,10 @@ Socket_simple_dns_resolve_timeout (const char *hostname,
       return -1;
     }
 
-  /* Count addresses */
-  for (p = (struct addrinfo *)res; p != NULL; p = p->ai_next)
-    {
-      count++;
-    }
+  /* Convert addrinfo to result structure */
+  int ret = convert_addrinfo_to_result (res, result);
+  SocketCommon_free_addrinfo (res);
 
-  if (count == 0)
-    {
-      SocketCommon_free_addrinfo ((struct addrinfo *)res);
-      simple_set_error (SOCKET_SIMPLE_ERR_DNS, "No addresses found");
-      return -1;
-    }
-
-  result->addresses = calloc ((size_t)count + 1, sizeof (char *));
-  if (!result->addresses)
-    {
-      SocketCommon_free_addrinfo ((struct addrinfo *)res);
-      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
-      return -1;
-    }
-
-  int i = 0;
-  for (p = (struct addrinfo *)res; p != NULL && i < count; p = p->ai_next)
-    {
-      char host[NI_MAXHOST];
-      /* Use library's reverse lookup wrapper - returns 0 on success */
-      if (SocketCommon_reverse_lookup (p->ai_addr, p->ai_addrlen, host,
-                                       sizeof (host), NULL, 0, NI_NUMERICHOST,
-                                       SocketCommon_Failed)
-          == 0)
-        {
-          result->addresses[i] = strdup (host);
-          if (result->addresses[i])
-            {
-              i++;
-            }
-        }
-    }
-
-  result->count = i;
-  result->family = ((struct addrinfo *)res)->ai_family;
-  SocketCommon_free_addrinfo ((struct addrinfo *)res);
-
-  if (result->count == 0)
-    {
-      free (result->addresses);
-      result->addresses = NULL;
-      simple_set_error (SOCKET_SIMPLE_ERR_DNS, "Failed to resolve addresses");
-      return -1;
-    }
-
-  ret = 0;
   return ret;
 }
 
