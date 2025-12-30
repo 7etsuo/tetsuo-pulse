@@ -265,7 +265,7 @@ Socket_simple_http_get_ex (const char *url, const char **headers,
             if (colon)
               {
                 size_t name_len = (size_t)(colon - *h);
-                if (name_len < 256)
+                if (name_len > 0 && name_len < 256)
                   {
                     char name[256];
                     memcpy (name, *h, name_len);
@@ -707,7 +707,7 @@ add_custom_headers (SocketHTTPClient_Request_T req, const char **headers)
       if (colon)
         {
           size_t name_len = (size_t)(colon - *h);
-          if (name_len < 256)
+          if (name_len > 0 && name_len < 256)
             {
               char name[256];
               memcpy (name, *h, name_len);
