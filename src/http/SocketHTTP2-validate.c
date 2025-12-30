@@ -179,25 +179,29 @@ http2_is_connection_header_forbidden (const SocketHPACK_Header *header)
   if (header == NULL || header->name == NULL)
     return 0;
 
-  for (size_t i = 0; i < HTTP2_FORBIDDEN_HEADER_COUNT; i++)
-    {
-      if (header->name_len == http2_forbidden_headers[i].len
-          && strncasecmp (header->name, http2_forbidden_headers[i].name,
-                          http2_forbidden_headers[i].len)
-                 == 0)
-        {
-          /*
-           * TE header is a special case: it's allowed only with "trailers"
-           * value. Return 0 here (not forbidden) and let caller validate
-           * the value separately via http2_validate_te_header().
-           */
-          if (http2_forbidden_headers[i].len == HTTP2_TE_HEADER_LEN)
-            return 0;
-          return 1;
-        }
-    }
+  /* Binary search in sorted forbidden headers array */
+  const void *found
+      = bsearch (header, http2_forbidden_headers, HTTP2_FORBIDDEN_HEADER_COUNT,
+                 sizeof (http2_forbidden_headers[0]), compare_forbidden_header);
 
-  return 0; /* Not forbidden */
+  if (found == NULL)
+    return 0; /* Not forbidden */
+
+  /*
+   * TE header is a special case: it's allowed only with "trailers"
+   * value. Return 0 here (not forbidden) and let caller validate
+   * the value separately via http2_validate_te_header().
+   */
+  const struct
+  {
+    const char *name;
+    size_t len;
+  } *entry = found;
+
+  if (entry->len == 2) /* "te" */
+    return 0;
+
+  return 1; /* Forbidden */
 }
 
 int
@@ -457,14 +461,9 @@ http2_parse_status_code (const char *value, size_t len, int *status)
   if (status == NULL || len != 3)
     return -1;
 
-  int code = 0;
-  for (size_t i = 0; i < 3; i++)
-    {
-      unsigned char c = (unsigned char)value[i];
-      if (c < '0' || c > '9')
-        return -1;
-      code = code * DECIMAL_BASE + (c - '0');
-    }
+  uint64_t code;
+  if (parse_decimal_uint64 (value, len, &code, 599) < 0)
+    return -1;
 
   /* Valid HTTP status codes are 100-599 */
   if (code < 100)
@@ -478,24 +477,14 @@ int
 http2_parse_content_length (const char *value, size_t len, int64_t *cl)
 {
   /* Empty or NULL value is invalid */
-  if (cl == NULL || value == NULL || len == 0)
+  if (cl == NULL)
     return -1;
 
-  int64_t result = 0;
-  for (size_t i = 0; i < len; i++)
-    {
-      unsigned char c = (unsigned char)value[i];
-      if (c < '0' || c > '9')
-        return -1;
+  uint64_t length;
+  if (parse_decimal_uint64 (value, len, &length, INT64_MAX) < 0)
+    return -1;
 
-      /* Overflow check before multiplication */
-      if (result > (INT64_MAX - (c - '0')) / DECIMAL_BASE)
-        return -1;
-
-      result = result * DECIMAL_BASE + (c - '0');
-    }
-
-  *cl = result;
+  *cl = (int64_t)length;
   return 0;
 }
 
