@@ -1837,6 +1837,24 @@ SocketAsync_registered_buffer_count (const T async)
 
 #if SOCKET_HAS_IO_URING
 /*
+ * Validate that offset + len doesn't exceed the registered buffer bounds.
+ * Raises SocketAsync_Failed on overflow or bounds violation.
+ */
+static inline void
+validate_fixed_buffer_bounds (T async, unsigned buf_index, size_t offset,
+                              size_t len)
+{
+  /* Check for integer overflow and bounds violation */
+  if (offset > async->registered_bufs[buf_index].iov_len
+      || len > async->registered_bufs[buf_index].iov_len - offset)
+    {
+      errno = EINVAL;
+      SOCKET_ERROR_MSG ("Offset + len exceeds buffer size");
+      RAISE_MODULE_ERROR (SocketAsync_Failed);
+    }
+}
+
+/*
  * Internal helper to consolidate send_fixed and recv_fixed implementations.
  * Both functions share identical logic except for operation type and io_uring
  * prep function (write_fixed vs read_fixed).
@@ -1867,14 +1885,7 @@ socket_async_submit_fixed (T async, Socket_T socket, unsigned buf_index,
       RAISE_MODULE_ERROR (SocketAsync_Failed);
     }
 
-  /* Check for integer overflow and bounds violation */
-  if (offset > async->registered_bufs[buf_index].iov_len
-      || len > async->registered_bufs[buf_index].iov_len - offset)
-    {
-      errno = EINVAL;
-      SOCKET_ERROR_MSG ("Offset + len exceeds buffer size");
-      RAISE_MODULE_ERROR (SocketAsync_Failed);
-    }
+  validate_fixed_buffer_bounds (async, buf_index, offset, len);
 
   fd = Socket_fd (socket);
   buf_ptr = (char *)async->registered_bufs[buf_index].iov_base + offset;
