@@ -1110,45 +1110,40 @@ simple_method_to_http_method (SocketSimple_HTTPMethod method)
     }
 }
 
-int
-Socket_simple_http_request (SocketSimple_HTTPMethod method, const char *url,
-                            const char **headers, const void *body,
-                            size_t body_len,
-                            const SocketSimple_HTTPOptions *opts,
-                            SocketSimple_HTTPResponse *response)
+/**
+ * @brief Build and execute an HTTP request with exception handling.
+ *
+ * This helper encapsulates the request building, header addition, body
+ * attachment, and execution logic with comprehensive exception handling.
+ *
+ * @param client HTTP client instance
+ * @param method HTTP method
+ * @param url Request URL
+ * @param headers Optional custom headers (NULL-terminated array)
+ * @param body Optional request body
+ * @param body_len Length of request body
+ * @param lib_response Output response structure
+ * @return 0 on success, -1 on failure (error already set)
+ */
+static int
+build_and_execute_request (SocketHTTPClient_T client, SocketHTTP_Method method,
+                            const char *url, const char **headers,
+                            const void *body, size_t body_len,
+                            SocketHTTPClient_Response *lib_response)
 {
-  SocketSimple_HTTP_T client = NULL;
   volatile SocketHTTPClient_Request_T req = NULL;
-  SocketHTTPClient_Response lib_response;
   volatile int ret = -1;
   volatile int exception_occurred = 0;
 
-  Socket_simple_clear_error ();
-
-  if (!url || !response)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
-      return -1;
-    }
-
-  /* Create client with options if provided, otherwise use defaults */
-  client = Socket_simple_http_new_ex (opts);
-  if (!client)
-    return -1; /* Error already set by new_ex */
-
-  memset (&lib_response, 0, sizeof (lib_response));
-
   TRY
   {
-    req = SocketHTTPClient_Request_new (client->client,
-                                        simple_method_to_http_method (method),
-                                        url);
+    req = SocketHTTPClient_Request_new (client, method, url);
     add_custom_headers ((SocketHTTPClient_Request_T)req, headers);
     if (body && body_len > 0)
       SocketHTTPClient_Request_body ((SocketHTTPClient_Request_T)req, body,
                                      body_len);
     ret = SocketHTTPClient_Request_execute ((SocketHTTPClient_Request_T)req,
-                                            &lib_response);
+                                            lib_response);
   }
   EXCEPT (SocketHTTPClient_Timeout)
   {
@@ -1193,18 +1188,55 @@ Socket_simple_http_request (SocketSimple_HTTPMethod method, const char *url,
   END_TRY;
 
   if (exception_occurred)
-    {
-      Socket_simple_http_free (&client);
-      return -1;
-    }
+    return -1;
 
   if (ret != 0)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_HTTP, "HTTP request failed");
+      return -1;
+    }
+
+  return 0;
+}
+
+int
+Socket_simple_http_request (SocketSimple_HTTPMethod method, const char *url,
+                            const char **headers, const void *body,
+                            size_t body_len,
+                            const SocketSimple_HTTPOptions *opts,
+                            SocketSimple_HTTPResponse *response)
+{
+  SocketSimple_HTTP_T client = NULL;
+  SocketHTTPClient_Response lib_response;
+  int ret;
+
+  Socket_simple_clear_error ();
+
+  if (!url || !response)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
+      return -1;
+    }
+
+  /* Create client with options if provided, otherwise use defaults */
+  client = Socket_simple_http_new_ex (opts);
+  if (!client)
+    return -1; /* Error already set by new_ex */
+
+  memset (&lib_response, 0, sizeof (lib_response));
+
+  /* Build and execute request with exception handling */
+  ret = build_and_execute_request (client->client,
+                                    simple_method_to_http_method (method), url,
+                                    headers, body, body_len, &lib_response);
+
+  if (ret != 0)
+    {
       Socket_simple_http_free (&client);
       return -1;
     }
 
+  /* Convert response and cleanup */
   ret = convert_response (&lib_response, response);
   SocketHTTPClient_Response_free (&lib_response);
   Socket_simple_http_free (&client);
