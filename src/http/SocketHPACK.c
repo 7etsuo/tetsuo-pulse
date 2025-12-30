@@ -365,6 +365,7 @@ decode_string_data_literal (const unsigned char *input, size_t str_len,
   if (result != HPACK_OK)
     return result;
 
+  assert (input != NULL);
   memcpy (*str_out, input + pos, str_len);
   (*str_out)[str_len] = '\0';
   *str_len_out = str_len;
@@ -872,6 +873,7 @@ hpack_copy_indexed_name (SocketHPACK_Decoder_T decoder, size_t index,
   if (alloc_result != HPACK_OK)
     return alloc_result;
 
+  assert (name_hdr.name != NULL);
   memcpy (name_copy, name_hdr.name, name_hdr.name_len);
   name_copy[name_hdr.name_len] = '\0';
 
