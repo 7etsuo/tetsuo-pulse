@@ -153,24 +153,21 @@ sockethttp_parse_enum(const char *str, size_t len, const struct ParseEntry *tabl
  * ============================================================================
  */
 
+static const char *version_strings[] = {
+    [HTTP_VERSION_0_9] = "HTTP/0.9",
+    [HTTP_VERSION_1_0] = "HTTP/1.0",
+    [HTTP_VERSION_1_1] = "HTTP/1.1",
+    [HTTP_VERSION_2]   = "HTTP/2",
+    [HTTP_VERSION_3]   = "HTTP/3",
+};
+#define VERSION_STRINGS_COUNT (sizeof(version_strings)/sizeof(version_strings[0]))
+
 const char *
 SocketHTTP_version_string (SocketHTTP_Version version)
 {
-  switch (version)
-    {
-    case HTTP_VERSION_0_9:
-      return "HTTP/0.9";
-    case HTTP_VERSION_1_0:
-      return "HTTP/1.0";
-    case HTTP_VERSION_1_1:
-      return "HTTP/1.1";
-    case HTTP_VERSION_2:
-      return "HTTP/2";
-    case HTTP_VERSION_3:
-      return "HTTP/3";
-    default:
-      return "HTTP/?";
-    }
+  if (version >= 0 && (size_t)version < VERSION_STRINGS_COUNT && version_strings[version])
+    return version_strings[version];
+  return "HTTP/?";
 }
 
 static const struct ParseEntry version_table[] = {
@@ -193,32 +190,25 @@ SocketHTTP_version_parse (const char *str, size_t len)
  * ============================================================================
  */
 
+static const char *method_names[] = {
+    [HTTP_METHOD_GET]     = "GET",
+    [HTTP_METHOD_HEAD]    = "HEAD",
+    [HTTP_METHOD_POST]    = "POST",
+    [HTTP_METHOD_PUT]     = "PUT",
+    [HTTP_METHOD_DELETE]  = "DELETE",
+    [HTTP_METHOD_CONNECT] = "CONNECT",
+    [HTTP_METHOD_OPTIONS] = "OPTIONS",
+    [HTTP_METHOD_TRACE]   = "TRACE",
+    [HTTP_METHOD_PATCH]   = "PATCH",
+};
+#define METHOD_NAMES_COUNT (sizeof(method_names)/sizeof(method_names[0]))
+
 const char *
 SocketHTTP_method_name (SocketHTTP_Method method)
 {
-  switch (method)
-    {
-    case HTTP_METHOD_GET:
-      return "GET";
-    case HTTP_METHOD_HEAD:
-      return "HEAD";
-    case HTTP_METHOD_POST:
-      return "POST";
-    case HTTP_METHOD_PUT:
-      return "PUT";
-    case HTTP_METHOD_DELETE:
-      return "DELETE";
-    case HTTP_METHOD_CONNECT:
-      return "CONNECT";
-    case HTTP_METHOD_OPTIONS:
-      return "OPTIONS";
-    case HTTP_METHOD_TRACE:
-      return "TRACE";
-    case HTTP_METHOD_PATCH:
-      return "PATCH";
-    default:
-      return NULL;
-    }
+  if (method >= 0 && (size_t)method < METHOD_NAMES_COUNT && method_names[method])
+    return method_names[method];
+  return NULL;
 }
 
 static const struct ParseEntry method_table[] = {
@@ -462,24 +452,20 @@ SocketHTTP_coding_parse (const char *name, size_t len)
     sizeof(coding_table) / sizeof(coding_table[0]), HTTP_CODING_UNKNOWN);
 }
 
+static const char *coding_names[] = {
+    [HTTP_CODING_IDENTITY] = "identity",
+    [HTTP_CODING_CHUNKED]  = "chunked",
+    [HTTP_CODING_GZIP]     = "gzip",
+    [HTTP_CODING_DEFLATE]  = "deflate",
+    [HTTP_CODING_COMPRESS] = "compress",
+    [HTTP_CODING_BR]       = "br",
+};
+#define CODING_NAMES_COUNT (sizeof(coding_names)/sizeof(coding_names[0]))
+
 const char *
 SocketHTTP_coding_name (SocketHTTP_Coding coding)
 {
-  switch (coding)
-    {
-    case HTTP_CODING_IDENTITY:
-      return "identity";
-    case HTTP_CODING_CHUNKED:
-      return "chunked";
-    case HTTP_CODING_GZIP:
-      return "gzip";
-    case HTTP_CODING_DEFLATE:
-      return "deflate";
-    case HTTP_CODING_COMPRESS:
-      return "compress";
-    case HTTP_CODING_BR:
-      return "br";
-    default:
-      return NULL;
-    }
+  if (coding >= 0 && (size_t)coding < CODING_NAMES_COUNT && coding_names[coding])
+    return coding_names[coding];
+  return NULL;
 }
