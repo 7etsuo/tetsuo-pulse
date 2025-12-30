@@ -67,7 +67,7 @@ Socket_simple_happyeyeballs_connect_config (
 
   if (timeout_ms <= 0)
     {
-      timeout_ms = 30000; /* Default 30 seconds */
+      timeout_ms = SOCKET_SIMPLE_DEFAULT_TIMEOUT_MS;
     }
 
   /* Build core config from simple config */

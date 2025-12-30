@@ -53,6 +53,14 @@ extern "C" {
  *============================================================================*/
 
 /**
+ * @brief Default timeout for Happy Eyeballs connections (milliseconds).
+ *
+ * When timeout_ms parameter is 0 or negative, this default of 30 seconds
+ * is used for the overall connection timeout.
+ */
+#define SOCKET_SIMPLE_DEFAULT_TIMEOUT_MS 30000
+
+/**
  * @brief Happy Eyeballs connection configuration.
  */
 typedef struct SocketSimple_HappyEyeballs_Config {
