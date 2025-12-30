@@ -108,7 +108,8 @@ Socket_simple_syn_new (const SocketSimple_SYNConfig *config)
   if (!handle)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
-      SocketSYNProtect_free ((SocketSYNProtect_T *)&protect);
+      SocketSYNProtect_T tmp = protect;
+      SocketSYNProtect_free (&tmp);
       return NULL;
     }
 
@@ -438,7 +439,8 @@ Socket_simple_ip_tracker_new (int max_per_ip)
   if (!handle)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
-      SocketIPTracker_free ((SocketIPTracker_T *)&tracker);
+      SocketIPTracker_T tmp = tracker;
+      SocketIPTracker_free (&tmp);
       return NULL;
     }
 
