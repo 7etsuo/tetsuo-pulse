@@ -41,6 +41,10 @@ const Except_T SocketDNSCookie_Failed
 /* Previous secret validity during rollover (RFC 7873 §5.3) */
 #define DNS_COOKIE_ROLLOVER_PERIOD 150
 
+/* FNV-1a 64-bit constants (RFC 7873 Appendix A.1) */
+#define FNV1A_64_OFFSET_BASIS 14695981039346656037ULL
+#define FNV1A_64_PRIME        1099511628211ULL
+
 /* Internal cache entry with LRU tracking */
 typedef struct CacheNode
 {
@@ -777,8 +781,8 @@ generate_client_cookie_fnv (T cache, const struct sockaddr *server_addr,
                             socklen_t client_len, uint8_t *cookie)
 {
   /* Fallback: FNV-1a 64-bit (RFC 7873 Appendix A.1) */
-  uint64_t hash = 14695981039346656037ULL; /* FNV offset basis */
-  const uint64_t prime = 1099511628211ULL; /* FNV prime */
+  uint64_t hash = FNV1A_64_OFFSET_BASIS;
+  const uint64_t prime = FNV1A_64_PRIME;
 
   /* Hash server address */
   const uint8_t *p = (const uint8_t *)server_addr;
