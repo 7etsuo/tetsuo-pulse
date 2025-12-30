@@ -12,6 +12,7 @@
 #include "dns/SocketDNSCookie.h"
 #include "dns/SocketDNSWire.h"
 #include "core/Arena.h"
+#include "core/SocketCrypto.h"
 #include <arpa/inet.h>
 #include <string.h>
 #include <sys/random.h>
@@ -553,9 +554,10 @@ SocketDNSCookie_validate (const SocketDNSCookie_Cookie *sent_cookie,
   if (sent_cookie == NULL || response == NULL)
     return 0;
 
-  return constant_time_compare (sent_cookie->client_cookie,
-                                response->client_cookie,
-                                DNS_CLIENT_COOKIE_SIZE);
+  return SocketCrypto_secure_compare (sent_cookie->client_cookie,
+                                      response->client_cookie,
+                                      DNS_CLIENT_COOKIE_SIZE)
+         == 0;
 }
 
 /*
@@ -604,8 +606,9 @@ SocketDNSCookie_equal (const SocketDNSCookie_Cookie *a,
   if (a == NULL || b == NULL)
     return 0;
 
-  if (!constant_time_compare (a->client_cookie, b->client_cookie,
-                              DNS_CLIENT_COOKIE_SIZE))
+  if (SocketCrypto_secure_compare (a->client_cookie, b->client_cookie,
+                                   DNS_CLIENT_COOKIE_SIZE)
+      != 0)
     return 0;
 
   if (a->server_cookie_len != b->server_cookie_len)
@@ -613,8 +616,9 @@ SocketDNSCookie_equal (const SocketDNSCookie_Cookie *a,
 
   if (a->server_cookie_len > 0)
     {
-      if (!constant_time_compare (a->server_cookie, b->server_cookie,
-                                  a->server_cookie_len))
+      if (SocketCrypto_secure_compare (a->server_cookie, b->server_cookie,
+                                       a->server_cookie_len)
+          != 0)
         return 0;
     }
 
@@ -692,18 +696,6 @@ get_entropy (uint8_t *buf, size_t len)
       offset += (size_t)ret;
     }
   return 0;
-}
-
-/*
- * Constant-time comparison to prevent timing attacks
- */
-static int
-constant_time_compare (const uint8_t *a, const uint8_t *b, size_t len)
-{
-  uint8_t result = 0;
-  for (size_t i = 0; i < len; i++)
-    result |= a[i] ^ b[i];
-  return result == 0;
 }
 
 #ifdef SOCKET_HAS_TLS
