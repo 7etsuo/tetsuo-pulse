@@ -768,6 +768,7 @@ set(TEST_SOURCES
     test_happy_eyeballs
     test_reconnect
     test_ratelimit
+    test_simple_ratelimit
     test_async
     test_coverage
     test_synprotect
