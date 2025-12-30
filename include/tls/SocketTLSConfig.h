@@ -603,6 +603,37 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
 #endif
 
 /**
+ * @brief Minimum TLS shutdown timeout for best-effort shutdown operations
+ * @ingroup tls_config
+ *
+ * Minimum timeout (in milliseconds) enforced for TLS shutdown operations to
+ * ensure a reasonable grace period even when the default timeout is reduced.
+ * Used by SocketTLS_disable() when computing best-effort shutdown timeout.
+ *
+ * ## Rationale for 1000ms (1 second)
+ *
+ * - **Protocol compliance**: Allows time for bidirectional close_notify exchange
+ * - **Network variance**: Accommodates typical RTT + processing time
+ * - **Graceful degradation**: Prevents premature connection termination
+ * - **Resource cleanup**: Ensures peer has reasonable time to acknowledge
+ *
+ * ## Override Example
+ *
+ * @code{.c}
+ * // Aggressive timeout for high-churn servers (500ms)
+ * #define SOCKET_TLS_MIN_SHUTDOWN_TIMEOUT_MS 500
+ * @endcode
+ *
+ * @note This is a lower bound; actual timeout may be higher based on
+ *       SOCKET_TLS_DEFAULT_SHUTDOWN_TIMEOUT_MS.
+ * @see SocketTLS_disable() for best-effort shutdown implementation.
+ * @see SOCKET_TLS_DEFAULT_SHUTDOWN_TIMEOUT_MS for default timeout.
+ */
+#ifndef SOCKET_TLS_MIN_SHUTDOWN_TIMEOUT_MS
+#define SOCKET_TLS_MIN_SHUTDOWN_TIMEOUT_MS 1000 /* 1 second */
+#endif
+
+/**
  * @brief TLS handshake poll interval for non-blocking operations
  * @ingroup tls_config
  *
