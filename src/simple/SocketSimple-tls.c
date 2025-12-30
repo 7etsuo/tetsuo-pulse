@@ -31,7 +31,121 @@ Socket_simple_tls_options_init (SocketSimple_TLSOptions *opts)
 #ifdef SOCKET_HAS_TLS
 
 /* ============================================================================
- * TLS Client Functions
+ * TLS Client Functions - Helper Functions
+ * ============================================================================
+ */
+
+static Socket_T
+tls_connect_socket (const char *host, int port, int timeout_ms,
+                    volatile int *exception_occurred)
+{
+  volatile Socket_T sock = NULL;
+
+  TRY
+  {
+    if (timeout_ms > 0)
+      {
+        sock = Socket_connect_tcp (host, port, timeout_ms);
+      }
+    else
+      {
+        sock = Socket_new (AF_INET, SOCK_STREAM, 0);
+        Socket_connect (sock, host, port);
+      }
+  }
+  EXCEPT (Socket_Failed)
+  {
+    simple_set_error_errno (SOCKET_SIMPLE_ERR_CONNECT, "Connection failed");
+    *exception_occurred = 1;
+  }
+  END_TRY;
+
+  return sock;
+}
+
+static SocketTLSContext_T
+tls_create_client_context (const char *ca_file, const char *client_cert,
+                            const char *client_key, int verify_cert,
+                            volatile int *exception_occurred)
+{
+  volatile SocketTLSContext_T ctx = NULL;
+
+  TRY
+  {
+    ctx = SocketTLSContext_new_client (ca_file);
+
+    if (client_cert && client_key)
+      {
+        SocketTLSContext_load_certificate (ctx, client_cert, client_key);
+      }
+
+    if (!verify_cert)
+      {
+        SocketTLSContext_set_verify_mode (ctx, TLS_VERIFY_NONE);
+      }
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_TLS, "TLS context creation failed");
+    *exception_occurred = 1;
+  }
+  END_TRY;
+
+  return ctx;
+}
+
+static int
+tls_perform_handshake (Socket_T sock, SocketTLSContext_T ctx,
+                       const char *host, volatile int *exception_occurred)
+{
+  TRY
+  {
+    SocketTLS_enable (sock, ctx);
+    SocketTLS_set_hostname (sock, host);
+    SocketTLS_handshake_auto (sock);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_TLS, "TLS error");
+    *exception_occurred = 1;
+  }
+  EXCEPT (SocketTLS_HandshakeFailed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_TLS_HANDSHAKE, "TLS handshake failed");
+    *exception_occurred = 1;
+  }
+  EXCEPT (SocketTLS_VerifyFailed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_TLS_VERIFY,
+                      "Certificate verification failed");
+    *exception_occurred = 1;
+  }
+  END_TRY;
+
+  return *exception_occurred ? -1 : 0;
+}
+
+static struct SocketSimple_Socket *
+tls_create_handle (Socket_T sock, SocketTLSContext_T ctx)
+{
+  struct SocketSimple_Socket *handle = calloc (1, sizeof (*handle));
+  if (!handle)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
+      SocketTLSContext_free (&ctx);
+      Socket_free (&sock);
+      return NULL;
+    }
+
+  handle->socket = sock;
+  handle->tls_ctx = ctx;
+  handle->is_tls = 1;
+  handle->is_connected = 1;
+  return handle;
+}
+
+/* ============================================================================
+ * TLS Client Functions - Public API
  * ============================================================================
  */
 
@@ -48,7 +162,6 @@ Socket_simple_connect_tls_ex (const char *host, int port,
   volatile Socket_T sock = NULL;
   volatile SocketTLSContext_T ctx = NULL;
   volatile int exception_occurred = 0;
-  struct SocketSimple_Socket *handle = NULL;
   SocketSimple_TLSOptions opts_local;
 
   /* Copy options to local before TRY block to avoid longjmp issues */
@@ -72,91 +185,37 @@ Socket_simple_connect_tls_ex (const char *host, int port,
       opts_param = &opts_local;
     }
 
-  /* Copy values before TRY to avoid clobbering issues */
+  /* Copy values before calling helpers to avoid clobbering issues */
   timeout_ms = opts_param->timeout_ms;
   ca_file = opts_param->ca_file;
   client_cert = opts_param->client_cert;
   client_key = opts_param->client_key;
   verify_cert = opts_param->verify_cert;
 
-  TRY
-  {
-    if (timeout_ms > 0)
-      {
-        sock = Socket_connect_tcp (host, port, timeout_ms);
-      }
-    else
-      {
-        sock = Socket_new (AF_INET, SOCK_STREAM, 0);
-        Socket_connect (sock, host, port);
-      }
-
-    ctx = SocketTLSContext_new_client (ca_file);
-
-    if (client_cert && client_key)
-      {
-        SocketTLSContext_load_certificate (ctx, client_cert, client_key);
-      }
-
-    if (!verify_cert)
-      {
-        SocketTLSContext_set_verify_mode (ctx, TLS_VERIFY_NONE);
-      }
-
-    SocketTLS_enable (sock, ctx);
-    SocketTLS_set_hostname (sock, host);
-    SocketTLS_handshake_auto (sock);
-  }
-  EXCEPT (SocketTLS_Failed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TLS, "TLS error");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketTLS_HandshakeFailed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TLS_HANDSHAKE, "TLS handshake failed");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketTLS_VerifyFailed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TLS_VERIFY,
-                      "Certificate verification failed");
-    exception_occurred = 1;
-  }
-  EXCEPT (Socket_Failed)
-  {
-    simple_set_error_errno (SOCKET_SIMPLE_ERR_CONNECT, "Connection failed");
-    exception_occurred = 1;
-  }
-  FINALLY
-  {
-    if (exception_occurred)
-      {
-        if (ctx)
-          SocketTLSContext_free ((SocketTLSContext_T *)&ctx);
-        if (sock)
-          Socket_free ((Socket_T *)&sock);
-      }
-  }
-  END_TRY;
-
+  /* Step 1: Connect socket */
+  sock = tls_connect_socket (host, port, timeout_ms, &exception_occurred);
   if (exception_occurred)
     return NULL;
 
-  handle = calloc (1, sizeof (*handle));
-  if (!handle)
+  /* Step 2: Create TLS context */
+  ctx = tls_create_client_context (ca_file, client_cert, client_key,
+                                    verify_cert, &exception_occurred);
+  if (exception_occurred)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
+      Socket_free ((Socket_T *)&sock);
+      return NULL;
+    }
+
+  /* Step 3: Perform TLS handshake */
+  if (tls_perform_handshake (sock, ctx, host, &exception_occurred) == -1)
+    {
       SocketTLSContext_free ((SocketTLSContext_T *)&ctx);
       Socket_free ((Socket_T *)&sock);
       return NULL;
     }
 
-  handle->socket = sock;
-  handle->tls_ctx = ctx;
-  handle->is_tls = 1;
-  handle->is_connected = 1;
-  return handle;
+  /* Step 4: Create and return handle */
+  return tls_create_handle (sock, ctx);
 }
 
 int
