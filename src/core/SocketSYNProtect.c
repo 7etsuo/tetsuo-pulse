@@ -400,19 +400,46 @@ check_whitelist_blacklist (T protect, const char *client_ip, int64_t now_ms,
   return 0;
 }
 
+/**
+ * @brief Cleanup stages for error handling during initialization.
+ * @internal
+ *
+ * Used to track initialization progress and perform appropriate cleanup
+ * on failure. Ordered by dependency: later stages depend on earlier ones.
+ */
 typedef enum
 {
-  SYN_CLEANUP_NONE = 0,
-  SYN_CLEANUP_MUTEX,
-  SYN_CLEANUP_IP_TABLE,
-  SYN_CLEANUP_WHITELIST,
-  SYN_CLEANUP_BLACKLIST,
-  SYN_CLEANUP_LIMITER
+  SYN_CLEANUP_NONE = 0,      /**< No resources initialized yet */
+  SYN_CLEANUP_MUTEX,         /**< Mutex initialized */
+  SYN_CLEANUP_IP_TABLE,      /**< IP hash table allocated */
+  SYN_CLEANUP_WHITELIST,     /**< Whitelist table allocated */
+  SYN_CLEANUP_BLACKLIST,     /**< Blacklist table allocated */
+  SYN_CLEANUP_LIMITER        /**< Global rate limiter initialized */
 } SYN_CleanupStage;
 
+/* Forward declarations for cleanup helpers */
+static void free_ip_entries (T protect);
+static void free_whitelist_entries (T protect);
+static void free_blacklist_entries (T protect);
+
+/**
+ * @brief Clean up partially initialized SYN protection resources.
+ * @internal
+ *
+ * @param protect  The partially initialized SYN protection instance
+ * @param stage    How far initialization progressed before failure
+ *
+ * Frees resources in reverse dependency order based on the cleanup stage.
+ * Only frees resources that were successfully initialized. For malloc-based
+ * allocations, also frees any entries in the hash tables.
+ */
 static void
 cleanup_synprotect_init (T protect, SYN_CleanupStage stage)
 {
+  if (protect == NULL)
+    return;
+
+  /* Clean up in reverse order of initialization */
   switch (stage)
     {
     case SYN_CLEANUP_LIMITER:
@@ -420,16 +447,29 @@ cleanup_synprotect_init (T protect, SYN_CleanupStage stage)
         SocketRateLimit_free (&protect->global_limiter);
       /* FALLTHROUGH */
     case SYN_CLEANUP_BLACKLIST:
-      free_memory (protect, protect->blacklist_table);
+      if (protect->use_malloc && protect->blacklist_table != NULL)
+        {
+          free_blacklist_entries (protect);
+          free (protect->blacklist_table);
+        }
       /* FALLTHROUGH */
     case SYN_CLEANUP_WHITELIST:
-      free_memory (protect, protect->whitelist_table);
+      if (protect->use_malloc && protect->whitelist_table != NULL)
+        {
+          free_whitelist_entries (protect);
+          free (protect->whitelist_table);
+        }
       /* FALLTHROUGH */
     case SYN_CLEANUP_IP_TABLE:
-      free_memory (protect, protect->ip_table);
+      if (protect->use_malloc && protect->ip_table != NULL)
+        {
+          free_ip_entries (protect);
+          free (protect->ip_table);
+        }
       /* FALLTHROUGH */
     case SYN_CLEANUP_MUTEX:
-      pthread_mutex_destroy (&protect->mutex);
+      if (protect->initialized == SOCKET_MUTEX_INITIALIZED)
+        pthread_mutex_destroy (&protect->mutex);
       /* FALLTHROUGH */
     case SYN_CLEANUP_NONE:
       if (protect->use_malloc)
@@ -873,6 +913,40 @@ synprotect_init_tables (T protect, const SocketSYNProtect_Config *config)
   return -1;
 }
 
+/**
+ * @brief Initialize all SYN protection resources (mutex and tables).
+ * @internal
+ *
+ * @param protect       The SYN protection instance
+ * @param cfg           Validated configuration
+ * @param cleanup_stage Output parameter for cleanup stage on failure
+ * @return 1 on success, 0 on failure (with cleanup_stage set)
+ *
+ * Initializes mutex first, then all hash tables in sequence. On failure,
+ * sets cleanup_stage to indicate which resources need cleanup.
+ */
+static int
+synprotect_init_all_resources (T protect, const SocketSYNProtect_Config *cfg,
+                                int *cleanup_stage)
+{
+  int mutex_error = 0;
+
+  if (!synprotect_init_mutex (protect, &mutex_error))
+    {
+      *cleanup_stage = SYN_CLEANUP_NONE;
+      return 0;
+    }
+
+  int init_result = synprotect_init_tables (protect, cfg);
+  if (init_result >= 0)
+    {
+      *cleanup_stage = init_result;
+      return 0;
+    }
+
+  return 1;
+}
+
 T
 SocketSYNProtect_new (Arena_T arena, const SocketSYNProtect_Config *config)
 {
@@ -890,23 +964,11 @@ SocketSYNProtect_new (Arena_T arena, const SocketSYNProtect_Config *config)
 
   synprotect_init_base (protect, arena, cfg);
 
-  {
-    int mutex_error = 0;
-    if (!synprotect_init_mutex (protect, &mutex_error))
-      {
-        cleanup_synprotect_init (protect, SYN_CLEANUP_NONE);
-        SOCKET_RAISE_MSG (SocketSYNProtect, SocketSYNProtect_Failed,
-                          "Failed to initialize mutex: %s",
-                          strerror (mutex_error));
-      }
-  }
-
-  init_result = synprotect_init_tables (protect, cfg);
-  if (init_result >= 0)
+  if (!synprotect_init_all_resources (protect, cfg, &init_result))
     {
       cleanup_synprotect_init (protect, (SYN_CleanupStage)init_result);
       SOCKET_RAISE_MSG (SocketSYNProtect, SocketSYNProtect_Failed,
-                        "Failed to initialize hash tables");
+                        "Failed to initialize SYN protection resources");
     }
 
   synprotect_finalize (protect);
