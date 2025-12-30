@@ -138,6 +138,76 @@ set_http_error_from_exception (void)
 }
 
 /* ============================================================================
+ * Exception Handling Macros
+ * ============================================================================
+ */
+
+/**
+ * @brief Common exception handling for HTTP client operations.
+ *
+ * This macro handles the standard set of exceptions thrown by
+ * SocketHTTPClient operations and maps them to Simple API error codes.
+ *
+ * @param exception_var Name of volatile int variable to set on exception
+ */
+#define HANDLE_HTTP_EXCEPTIONS(exception_var)                                 \
+  EXCEPT (SocketHTTPClient_Timeout)                                           \
+  {                                                                           \
+    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");  \
+    exception_var = 1;                                                        \
+  }                                                                           \
+  EXCEPT (SocketHTTPClient_DNSFailed)                                         \
+  {                                                                           \
+    simple_set_error (SOCKET_SIMPLE_ERR_DNS, "DNS resolution failed");       \
+    exception_var = 1;                                                        \
+  }                                                                           \
+  EXCEPT (SocketHTTPClient_ConnectFailed)                                     \
+  {                                                                           \
+    simple_set_error (SOCKET_SIMPLE_ERR_CONNECT, "Connection failed");       \
+    exception_var = 1;                                                        \
+  }                                                                           \
+  EXCEPT (SocketHTTPClient_TLSFailed)                                         \
+  {                                                                           \
+    simple_set_error (SOCKET_SIMPLE_ERR_TLS, "TLS error");                   \
+    exception_var = 1;                                                        \
+  }                                                                           \
+  EXCEPT (SocketHTTPClient_ProtocolError)                                     \
+  {                                                                           \
+    simple_set_error (SOCKET_SIMPLE_ERR_HTTP_PARSE, "HTTP protocol error");  \
+    exception_var = 1;                                                        \
+  }                                                                           \
+  EXCEPT (SocketHTTPClient_TooManyRedirects)                                  \
+  {                                                                           \
+    simple_set_error (SOCKET_SIMPLE_ERR_HTTP, "Too many redirects");         \
+    exception_var = 1;                                                        \
+  }                                                                           \
+  EXCEPT (SocketHTTPClient_Failed)                                            \
+  {                                                                           \
+    set_http_error_from_exception ();                                        \
+    exception_var = 1;                                                        \
+  }
+
+/**
+ * @brief Minimal exception handling for basic HTTP operations.
+ *
+ * This macro provides a subset of exception handlers for simpler operations
+ * that only need to handle timeout and general failure cases.
+ *
+ * @param exception_var Name of volatile int variable to set on exception
+ */
+#define HANDLE_HTTP_EXCEPTIONS_MINIMAL(exception_var)                         \
+  EXCEPT (SocketHTTPClient_Timeout)                                           \
+  {                                                                           \
+    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");  \
+    exception_var = 1;                                                        \
+  }                                                                           \
+  EXCEPT (SocketHTTPClient_Failed)                                            \
+  {                                                                           \
+    set_http_error_from_exception ();                                        \
+    exception_var = 1;                                                        \
+  }
+
+/* ============================================================================
  * One-liner HTTP Functions
  * ============================================================================
  */
@@ -169,41 +239,7 @@ Socket_simple_http_get (const char *url, SocketSimple_HTTPResponse *response)
 
   pthread_mutex_lock (&g_http_mutex);
   TRY { ret = SocketHTTPClient_get (client, url, &lib_response); }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_DNSFailed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_DNS, "DNS resolution failed");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_ConnectFailed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_CONNECT, "Connection failed");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_TLSFailed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TLS, "TLS error");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_ProtocolError)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_HTTP_PARSE, "HTTP protocol error");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_TooManyRedirects)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_HTTP, "Too many redirects");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    exception_occurred = 1;
-  }
+  HANDLE_HTTP_EXCEPTIONS (exception_occurred)
   FINALLY { pthread_mutex_unlock (&g_http_mutex); }
   END_TRY;
 
@@ -283,16 +319,7 @@ Socket_simple_http_get_ex (const char *url, const char **headers,
     ret = SocketHTTPClient_Request_execute ((SocketHTTPClient_Request_T)req,
                                             &lib_response);
   }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    exception_occurred = 1;
-  }
+  HANDLE_HTTP_EXCEPTIONS_MINIMAL (exception_occurred)
   FINALLY
   {
     if (req)
@@ -349,16 +376,7 @@ Socket_simple_http_post (const char *url, const char *content_type,
     ret = SocketHTTPClient_post (client, url, content_type, body, body_len,
                                  &lib_response);
   }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    exception_occurred = 1;
-  }
+  HANDLE_HTTP_EXCEPTIONS_MINIMAL (exception_occurred)
   FINALLY { pthread_mutex_unlock (&g_http_mutex); }
   END_TRY;
 
@@ -410,16 +428,7 @@ Socket_simple_http_put (const char *url, const char *content_type,
     ret = SocketHTTPClient_put (client, url, content_type, body, body_len,
                                 &lib_response);
   }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    exception_occurred = 1;
-  }
+  HANDLE_HTTP_EXCEPTIONS_MINIMAL (exception_occurred)
   FINALLY { pthread_mutex_unlock (&g_http_mutex); }
   END_TRY;
 
@@ -466,16 +475,7 @@ Socket_simple_http_delete (const char *url,
 
   pthread_mutex_lock (&g_http_mutex);
   TRY { ret = SocketHTTPClient_delete (client, url, &lib_response); }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    exception_occurred = 1;
-  }
+  HANDLE_HTTP_EXCEPTIONS_MINIMAL (exception_occurred)
   FINALLY { pthread_mutex_unlock (&g_http_mutex); }
   END_TRY;
 
@@ -521,16 +521,7 @@ Socket_simple_http_head (const char *url, SocketSimple_HTTPResponse *response)
 
   pthread_mutex_lock (&g_http_mutex);
   TRY { ret = SocketHTTPClient_head (client, url, &lib_response); }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    exception_occurred = 1;
-  }
+  HANDLE_HTTP_EXCEPTIONS_MINIMAL (exception_occurred)
   FINALLY { pthread_mutex_unlock (&g_http_mutex); }
   END_TRY;
 
@@ -590,16 +581,7 @@ Socket_simple_http_patch (const char *url, const char *content_type,
     ret = SocketHTTPClient_Request_execute ((SocketHTTPClient_Request_T)req,
                                             &lib_response);
   }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    exception_occurred = 1;
-  }
+  HANDLE_HTTP_EXCEPTIONS_MINIMAL (exception_occurred)
   FINALLY
   {
     if (req)
@@ -657,16 +639,7 @@ Socket_simple_http_options (const char *url,
     ret = SocketHTTPClient_Request_execute ((SocketHTTPClient_Request_T)req,
                                             &lib_response);
   }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    exception_occurred = 1;
-  }
+  HANDLE_HTTP_EXCEPTIONS_MINIMAL (exception_occurred)
   FINALLY
   {
     if (req)
@@ -764,16 +737,7 @@ Socket_simple_http_post_ex (const char *url, const char **headers,
     ret = SocketHTTPClient_Request_execute ((SocketHTTPClient_Request_T)req,
                                             &lib_response);
   }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    exception_occurred = 1;
-  }
+  HANDLE_HTTP_EXCEPTIONS_MINIMAL (exception_occurred)
   FINALLY
   {
     if (req)
@@ -840,16 +804,7 @@ Socket_simple_http_put_ex (const char *url, const char **headers,
     ret = SocketHTTPClient_Request_execute ((SocketHTTPClient_Request_T)req,
                                             &lib_response);
   }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    exception_occurred = 1;
-  }
+  HANDLE_HTTP_EXCEPTIONS_MINIMAL (exception_occurred)
   FINALLY
   {
     if (req)
@@ -908,16 +863,7 @@ Socket_simple_http_delete_ex (const char *url, const char **headers,
     ret = SocketHTTPClient_Request_execute ((SocketHTTPClient_Request_T)req,
                                             &lib_response);
   }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    exception_occurred = 1;
-  }
+  HANDLE_HTTP_EXCEPTIONS_MINIMAL (exception_occurred)
   FINALLY
   {
     if (req)
@@ -976,16 +922,7 @@ Socket_simple_http_head_ex (const char *url, const char **headers,
     ret = SocketHTTPClient_Request_execute ((SocketHTTPClient_Request_T)req,
                                             &lib_response);
   }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    exception_occurred = 1;
-  }
+  HANDLE_HTTP_EXCEPTIONS_MINIMAL (exception_occurred)
   FINALLY
   {
     if (req)
@@ -1052,16 +989,7 @@ Socket_simple_http_patch_ex (const char *url, const char **headers,
     ret = SocketHTTPClient_Request_execute ((SocketHTTPClient_Request_T)req,
                                             &lib_response);
   }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    exception_occurred = 1;
-  }
+  HANDLE_HTTP_EXCEPTIONS_MINIMAL (exception_occurred)
   FINALLY
   {
     if (req)
@@ -1120,16 +1048,7 @@ Socket_simple_http_options_ex (const char *url, const char **headers,
     ret = SocketHTTPClient_Request_execute ((SocketHTTPClient_Request_T)req,
                                             &lib_response);
   }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    exception_occurred = 1;
-  }
+  HANDLE_HTTP_EXCEPTIONS_MINIMAL (exception_occurred)
   FINALLY
   {
     if (req)
@@ -1317,16 +1236,7 @@ Socket_simple_http_get_json (const char *url, char **json_out,
 
   pthread_mutex_lock (&g_http_mutex);
   TRY { status = SocketHTTPClient_json_get (client, url, json_out, json_len); }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    exception_occurred = 1;
-  }
+  HANDLE_HTTP_EXCEPTIONS_MINIMAL (exception_occurred)
   FINALLY { pthread_mutex_unlock (&g_http_mutex); }
   END_TRY;
 
@@ -1368,16 +1278,7 @@ Socket_simple_http_post_json (const char *url, const char *json_body,
     status = SocketHTTPClient_json_post (client, url, json_body, json_out,
                                          json_len);
   }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    exception_occurred = 1;
-  }
+  HANDLE_HTTP_EXCEPTIONS_MINIMAL (exception_occurred)
   FINALLY { pthread_mutex_unlock (&g_http_mutex); }
   END_TRY;
 
@@ -1431,16 +1332,7 @@ Socket_simple_http_put_json (const char *url, const char *json_body,
     ret = SocketHTTPClient_Request_execute ((SocketHTTPClient_Request_T)req,
                                             &lib_response);
   }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    exception_occurred = 1;
-  }
+  HANDLE_HTTP_EXCEPTIONS_MINIMAL (exception_occurred)
   FINALLY
   {
     if (req)
@@ -1509,16 +1401,7 @@ Socket_simple_http_download (const char *url, const char *filepath)
 
   pthread_mutex_lock (&g_http_mutex);
   TRY { ret = SocketHTTPClient_download (client, url, filepath); }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP download timed out");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    exception_occurred = 1;
-  }
+  HANDLE_HTTP_EXCEPTIONS_MINIMAL (exception_occurred)
   FINALLY { pthread_mutex_unlock (&g_http_mutex); }
   END_TRY;
 
@@ -1564,16 +1447,7 @@ Socket_simple_http_upload (const char *url, const char *filepath,
 
   pthread_mutex_lock (&g_http_mutex);
   TRY { ret = SocketHTTPClient_upload (client, url, filepath); }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP upload timed out");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    exception_occurred = 1;
-  }
+  HANDLE_HTTP_EXCEPTIONS_MINIMAL (exception_occurred)
   FINALLY { pthread_mutex_unlock (&g_http_mutex); }
   END_TRY;
 
@@ -1691,33 +1565,13 @@ Socket_simple_http_client_get (SocketSimple_HTTP_T client, const char *url,
 
   memset (&lib_response, 0, sizeof (lib_response));
 
+  volatile int exception_occurred = 0;
   TRY { ret = SocketHTTPClient_get (client->client, url, &lib_response); }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");
-    return -1;
-  }
-  EXCEPT (SocketHTTPClient_DNSFailed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_DNS, "DNS resolution failed");
-    return -1;
-  }
-  EXCEPT (SocketHTTPClient_ConnectFailed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_CONNECT, "Connection failed");
-    return -1;
-  }
-  EXCEPT (SocketHTTPClient_TLSFailed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TLS, "TLS error");
-    return -1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    return -1;
-  }
+  HANDLE_HTTP_EXCEPTIONS (exception_occurred)
   END_TRY;
+
+  if (exception_occurred)
+    return -1;
 
   if (ret != 0)
     {
@@ -1750,22 +1604,17 @@ Socket_simple_http_client_post (SocketSimple_HTTP_T client, const char *url,
 
   memset (&lib_response, 0, sizeof (lib_response));
 
+  volatile int exception_occurred = 0;
   TRY
   {
     ret = SocketHTTPClient_post (client->client, url, content_type, body,
                                  body_len, &lib_response);
   }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "HTTP request timed out");
-    return -1;
-  }
-  EXCEPT (SocketHTTPClient_Failed)
-  {
-    set_http_error_from_exception ();
-    return -1;
-  }
+  HANDLE_HTTP_EXCEPTIONS_MINIMAL (exception_occurred)
   END_TRY;
+
+  if (exception_occurred)
+    return -1;
 
   if (ret != 0)
     {
