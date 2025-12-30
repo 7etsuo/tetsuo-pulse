@@ -292,13 +292,13 @@ SocketQUICAck_record_ecn (SocketQUICAckState_T state, int ecn_type)
 
   switch (ecn_type)
     {
-    case 1: /* ECT(0) */
+    case QUIC_ECN_ECT0:
       state->ecn_counts.ect0_count++;
       break;
-    case 2: /* ECT(1) */
+    case QUIC_ECN_ECT1:
       state->ecn_counts.ect1_count++;
       break;
-    case 3: /* CE */
+    case QUIC_ECN_CE:
       state->ecn_counts.ce_count++;
       break;
     default:
