@@ -235,6 +235,14 @@ socket_sendfile_bsd (T socket, int file_fd, off_t *offset, size_t count)
             }
           *offset = new_offset;
         }
+      /* Check for SSIZE_MAX overflow before cast (CWE-190).
+       * If len > SSIZE_MAX, casting to ssize_t would wrap to negative,
+       * causing caller to misinterpret success as error. */
+      if (len > SSIZE_MAX)
+        {
+          errno = EOVERFLOW;
+          return -1;
+        }
       return (ssize_t)len;
     }
   return -1;
