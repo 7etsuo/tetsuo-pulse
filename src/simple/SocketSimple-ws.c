@@ -117,161 +117,88 @@ Socket_simple_ws_connect_ex (const char *url,
  * ============================================================================
  */
 
+/**
+ * @brief Common exception handling wrapper for WebSocket send operations.
+ *
+ * This macro implements the standard pattern for Simple API WebSocket send
+ * functions, eliminating code duplication across send_text, send_binary,
+ * send_json, and ping.
+ *
+ * @param data_check Additional validation check (e.g., "|| !text")
+ * @param invalid_msg Error message for invalid arguments
+ * @param ws_call The SocketWS_* function call to execute
+ * @param op_name Operation name for error messages (e.g., "send", "ping")
+ */
+#define WS_SEND_WRAPPER(data_check, invalid_msg, ws_call, op_name)            \
+  do                                                                           \
+    {                                                                          \
+      volatile int ret = -1;                                                   \
+      volatile int exception_occurred = 0;                                     \
+                                                                               \
+      Socket_simple_clear_error ();                                            \
+                                                                               \
+      if (!ws || !ws->ws data_check)                                           \
+        {                                                                      \
+          simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, invalid_msg);       \
+          return -1;                                                           \
+        }                                                                      \
+                                                                               \
+      TRY { ret = ws_call; }                                                   \
+      EXCEPT (SocketWS_Failed)                                                 \
+      {                                                                        \
+        simple_set_error (SOCKET_SIMPLE_ERR_SEND,                              \
+                          "WebSocket " op_name " failed");                     \
+        exception_occurred = 1;                                                \
+      }                                                                        \
+      EXCEPT (SocketWS_Closed)                                                 \
+      {                                                                        \
+        simple_set_error (SOCKET_SIMPLE_ERR_CLOSED,                            \
+                          "WebSocket connection closed");                      \
+        exception_occurred = 1;                                                \
+      }                                                                        \
+      END_TRY;                                                                 \
+                                                                               \
+      if (exception_occurred)                                                  \
+        return -1;                                                             \
+                                                                               \
+      if (ret != 0)                                                            \
+        {                                                                      \
+          simple_set_error (SOCKET_SIMPLE_ERR_SEND,                            \
+                            "WebSocket " op_name " failed");                   \
+          return -1;                                                           \
+        }                                                                      \
+                                                                               \
+      return 0;                                                                \
+    }                                                                          \
+  while (0)
+
 int
 Socket_simple_ws_send_text (SocketSimple_WS_T ws, const char *text, size_t len)
 {
-  volatile int ret = -1;
-  volatile int exception_occurred = 0;
-
-  Socket_simple_clear_error ();
-
-  if (!ws || !ws->ws || !text)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
-      return -1;
-    }
-
-  TRY { ret = SocketWS_send_text (ws->ws, text, len); }
-  EXCEPT (SocketWS_Failed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_SEND, "WebSocket send failed");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketWS_Closed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_CLOSED, "WebSocket connection closed");
-    exception_occurred = 1;
-  }
-  END_TRY;
-
-  if (exception_occurred)
-    return -1;
-
-  if (ret != 0)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_SEND, "WebSocket send failed");
-      return -1;
-    }
-
-  return 0;
+  WS_SEND_WRAPPER (|| !text, "Invalid argument",
+                   SocketWS_send_text (ws->ws, text, len), "send");
 }
 
 int
 Socket_simple_ws_send_binary (SocketSimple_WS_T ws, const void *data,
                               size_t len)
 {
-  volatile int ret = -1;
-  volatile int exception_occurred = 0;
-
-  Socket_simple_clear_error ();
-
-  if (!ws || !ws->ws || !data)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
-      return -1;
-    }
-
-  TRY { ret = SocketWS_send_binary (ws->ws, data, len); }
-  EXCEPT (SocketWS_Failed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_SEND, "WebSocket send failed");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketWS_Closed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_CLOSED, "WebSocket connection closed");
-    exception_occurred = 1;
-  }
-  END_TRY;
-
-  if (exception_occurred)
-    return -1;
-
-  if (ret != 0)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_SEND, "WebSocket send failed");
-      return -1;
-    }
-
-  return 0;
+  WS_SEND_WRAPPER (|| !data, "Invalid argument",
+                   SocketWS_send_binary (ws->ws, data, len), "send");
 }
 
 int
 Socket_simple_ws_send_json (SocketSimple_WS_T ws, const char *json)
 {
-  volatile int ret = -1;
-  volatile int exception_occurred = 0;
-
-  Socket_simple_clear_error ();
-
-  if (!ws || !ws->ws || !json)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
-      return -1;
-    }
-
-  TRY { ret = SocketWS_send_json (ws->ws, json); }
-  EXCEPT (SocketWS_Failed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_SEND, "WebSocket send failed");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketWS_Closed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_CLOSED, "WebSocket connection closed");
-    exception_occurred = 1;
-  }
-  END_TRY;
-
-  if (exception_occurred)
-    return -1;
-
-  if (ret != 0)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_SEND, "WebSocket send failed");
-      return -1;
-    }
-
-  return 0;
+  WS_SEND_WRAPPER (|| !json, "Invalid argument",
+                   SocketWS_send_json (ws->ws, json), "send");
 }
 
 int
 Socket_simple_ws_ping (SocketSimple_WS_T ws)
 {
-  volatile int ret = -1;
-  volatile int exception_occurred = 0;
-
-  Socket_simple_clear_error ();
-
-  if (!ws || !ws->ws)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid WebSocket");
-      return -1;
-    }
-
-  TRY { ret = SocketWS_ping (ws->ws, NULL, 0); }
-  EXCEPT (SocketWS_Failed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_SEND, "WebSocket ping failed");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketWS_Closed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_CLOSED, "WebSocket connection closed");
-    exception_occurred = 1;
-  }
-  END_TRY;
-
-  if (exception_occurred)
-    return -1;
-
-  if (ret != 0)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_SEND, "WebSocket ping failed");
-      return -1;
-    }
-
-  return 0;
+  WS_SEND_WRAPPER (/* no extra check */, "Invalid WebSocket",
+                   SocketWS_ping (ws->ws, NULL, 0), "ping");
 }
 
 /* ============================================================================
