@@ -225,55 +225,33 @@ compute_ha2 (const char *method, const char *uri, int use_sha256,
   return compute_digest_a (method, uri, NULL, use_sha256, 0, ha2_hex);
 }
 
-static int
-compute_response_with_qop (const char *ha1_hex, const char *nonce,
-                           const char *nc, const char *cnonce, const char *qop,
-                           const char *ha2_hex, int use_sha256,
-                           char *response_hex)
-{
-  char buf[HTTPCLIENT_DIGEST_A_BUFFER_SIZE];
-  int len;
-
-  if (nc == NULL || cnonce == NULL)
-    return -1;
-
-  len = snprintf (buf, sizeof (buf), "%s:%s:%s:%s:%s:%s", ha1_hex, nonce, nc,
-                  cnonce, qop, ha2_hex);
-  if (len < 0 || (size_t)len >= sizeof (buf))
-    return -1;
-
-  digest_hash (buf, (size_t)len, use_sha256, response_hex);
-  return 0;
-}
-
-/* Compute response without qop (RFC 2617 compat) */
-static int
-compute_response_no_qop (const char *ha1_hex, const char *nonce,
-                         const char *ha2_hex, int use_sha256,
-                         char *response_hex)
-{
-  char buf[HTTPCLIENT_DIGEST_A_BUFFER_SIZE];
-  int len;
-
-  len = snprintf (buf, sizeof (buf), "%s:%s:%s", ha1_hex, nonce, ha2_hex);
-  if (len < 0 || (size_t)len >= sizeof (buf))
-    return -1;
-
-  digest_hash (buf, (size_t)len, use_sha256, response_hex);
-  return 0;
-}
-
+/* Compute response hash with or without qop (RFC 2617/7616) */
 static int
 compute_response_hash (const char *ha1_hex, const char *nonce, const char *nc,
                        const char *cnonce, const char *qop,
                        const char *ha2_hex, int use_sha256, char *response_hex)
 {
+  char buf[HTTPCLIENT_DIGEST_A_BUFFER_SIZE];
+  int len;
+
   if (qop != NULL && strcmp (qop, HTTPCLIENT_DIGEST_TOKEN_AUTH) == 0)
-    return compute_response_with_qop (ha1_hex, nonce, nc, cnonce, qop, ha2_hex,
-                                      use_sha256, response_hex);
+    {
+      if (nc == NULL || cnonce == NULL)
+        return -1;
+
+      len = snprintf (buf, sizeof (buf), "%s:%s:%s:%s:%s:%s", ha1_hex, nonce,
+                      nc, cnonce, qop, ha2_hex);
+    }
   else
-    return compute_response_no_qop (ha1_hex, nonce, ha2_hex, use_sha256,
-                                    response_hex);
+    {
+      len = snprintf (buf, sizeof (buf), "%s:%s:%s", ha1_hex, nonce, ha2_hex);
+    }
+
+  if (len < 0 || (size_t)len >= sizeof (buf))
+    return -1;
+
+  digest_hash (buf, (size_t)len, use_sha256, response_hex);
+  return 0;
 }
 
 int
