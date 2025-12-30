@@ -180,7 +180,10 @@ append_deflate_trailer (Arena_T arena, const unsigned char *input,
 {
   unsigned char *buf;
 
-  *output_len = input_len + WS_DEFLATE_TRAILER_SIZE;
+  /* Defense-in-depth: check overflow even though caller checks (issue #2347) */
+  if (!SocketSecurity_check_add (input_len, WS_DEFLATE_TRAILER_SIZE, output_len))
+    return NULL;
+
   buf = ALLOC (arena, *output_len);
   if (!buf)
     return NULL;
