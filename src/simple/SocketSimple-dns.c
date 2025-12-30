@@ -216,8 +216,16 @@ Socket_simple_dns_lookup (const char *hostname, char *buf, size_t len)
   return 0;
 }
 
-int
-Socket_simple_dns_lookup4 (const char *hostname, char *buf, size_t len)
+/**
+ * @brief Perform DNS lookup for a specific address family.
+ * @param hostname The hostname to resolve.
+ * @param buf Buffer to store the resulting IP address string.
+ * @param len Size of the buffer.
+ * @param family Address family (AF_INET or AF_INET6).
+ * @return 0 on success, -1 on error.
+ */
+static int
+dns_lookup_family (const char *hostname, char *buf, size_t len, int family)
 {
   SocketDNS_T dns = SocketCommon_get_dns_resolver ();
   volatile struct addrinfo *res = NULL;
@@ -240,7 +248,7 @@ Socket_simple_dns_lookup4 (const char *hostname, char *buf, size_t len)
     }
 
   SocketCommon_setup_hints (&hints, SOCK_STREAM, 0);
-  hints.ai_family = AF_INET; /* Override for IPv4 only */
+  hints.ai_family = family;
 
   TRY { res = SocketDNS_resolve_sync (dns, hostname, 0, &hints, SOCKET_SIMPLE_DNS_DEFAULT_TIMEOUT_MS); }
   EXCEPT (SocketDNS_Failed)
@@ -263,7 +271,9 @@ Socket_simple_dns_lookup4 (const char *hostname, char *buf, size_t len)
 
   if (!res)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_DNS, "No IPv4 address found");
+      simple_set_error (SOCKET_SIMPLE_ERR_DNS,
+                        family == AF_INET ? "No IPv4 address found"
+                                         : "No IPv6 address found");
       return -1;
     }
 
@@ -287,73 +297,15 @@ Socket_simple_dns_lookup4 (const char *hostname, char *buf, size_t len)
 }
 
 int
+Socket_simple_dns_lookup4 (const char *hostname, char *buf, size_t len)
+{
+  return dns_lookup_family (hostname, buf, len, AF_INET);
+}
+
+int
 Socket_simple_dns_lookup6 (const char *hostname, char *buf, size_t len)
 {
-  SocketDNS_T dns = SocketCommon_get_dns_resolver ();
-  volatile struct addrinfo *res = NULL;
-  struct addrinfo hints;
-  volatile int exception_occurred = 0;
-  int ret = -1;
-
-  Socket_simple_clear_error ();
-
-  if (!hostname || !buf)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
-      return -1;
-    }
-
-  if (!dns)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_DNS, "DNS resolver not available");
-      return -1;
-    }
-
-  SocketCommon_setup_hints (&hints, SOCK_STREAM, 0);
-  hints.ai_family = AF_INET6; /* Override for IPv6 only */
-
-  TRY { res = SocketDNS_resolve_sync (dns, hostname, 0, &hints, SOCKET_SIMPLE_DNS_DEFAULT_TIMEOUT_MS); }
-  EXCEPT (SocketDNS_Failed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_DNS, "DNS resolution failed");
-    exception_occurred = 1;
-  }
-  FINALLY
-  {
-    if (exception_occurred && res)
-      {
-        SocketCommon_free_addrinfo ((struct addrinfo *)res);
-        res = NULL;
-      }
-  }
-  END_TRY;
-
-  if (exception_occurred)
-    return -1;
-
-  if (!res)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_DNS, "No IPv6 address found");
-      return -1;
-    }
-
-  char host[NI_MAXHOST];
-  if (SocketCommon_reverse_lookup (((struct addrinfo *)res)->ai_addr,
-                                   ((struct addrinfo *)res)->ai_addrlen, host,
-                                   sizeof (host), NULL, 0, NI_NUMERICHOST,
-                                   SocketCommon_Failed)
-      == 0)
-    {
-      snprintf (buf, len, "%s", host);
-      ret = 0;
-    }
-  else
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_DNS, "Failed to get address string");
-    }
-
-  SocketCommon_free_addrinfo ((struct addrinfo *)res);
-  return ret;
+  return dns_lookup_family (hostname, buf, len, AF_INET6);
 }
 
 int
