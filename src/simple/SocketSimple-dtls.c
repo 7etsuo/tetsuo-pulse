@@ -181,9 +181,15 @@ Socket_simple_dtls_connect_ex (const char *host, int port,
     if (exception_occurred)
       {
         if (ctx)
-          SocketDTLSContext_free ((SocketDTLSContext_T *)&ctx);
+          {
+            SocketDTLSContext_T temp_ctx = (SocketDTLSContext_T)ctx;
+            SocketDTLSContext_free (&temp_ctx);
+          }
         if (dgram)
-          SocketDgram_free ((SocketDgram_T *)&dgram);
+          {
+            SocketDgram_T temp_dgram = (SocketDgram_T)dgram;
+            SocketDgram_free (&temp_dgram);
+          }
       }
   }
   END_TRY;
@@ -195,7 +201,8 @@ Socket_simple_dtls_connect_ex (const char *host, int port,
   SocketSimple_Socket_T handle = simple_create_udp_handle (dgram);
   if (!handle)
     {
-      SocketDgram_free ((SocketDgram_T *)&dgram);
+      SocketDgram_T temp_dgram = (SocketDgram_T)dgram;
+      SocketDgram_free (&temp_dgram);
       simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Failed to create handle");
       return NULL;
     }
@@ -305,7 +312,10 @@ Socket_simple_dtls_enable (SocketSimple_Socket_T sock, const char *hostname,
   FINALLY
   {
     if (exception_occurred && ctx)
-      SocketDTLSContext_free ((SocketDTLSContext_T *)&ctx);
+      {
+        SocketDTLSContext_T temp_ctx = (SocketDTLSContext_T)ctx;
+        SocketDTLSContext_free (&temp_ctx);
+      }
   }
   END_TRY;
 
@@ -361,18 +371,30 @@ Socket_simple_dtls_listen (const char *host, int port, const char *cert_file,
     simple_set_error (SOCKET_SIMPLE_ERR_TLS,
                       "Failed to create DTLS server context");
     if (ctx)
-      SocketDTLSContext_free ((SocketDTLSContext_T *)&ctx);
+      {
+        SocketDTLSContext_T temp_ctx = (SocketDTLSContext_T)ctx;
+        SocketDTLSContext_free (&temp_ctx);
+      }
     if (dgram)
-      SocketDgram_free ((SocketDgram_T *)&dgram);
+      {
+        SocketDgram_T temp_dgram = (SocketDgram_T)dgram;
+        SocketDgram_free (&temp_dgram);
+      }
     return NULL;
   }
   EXCEPT (SocketDgram_Failed)
   {
     simple_set_error_errno (SOCKET_SIMPLE_ERR_BIND, "Failed to bind UDP socket");
     if (ctx)
-      SocketDTLSContext_free ((SocketDTLSContext_T *)&ctx);
+      {
+        SocketDTLSContext_T temp_ctx = (SocketDTLSContext_T)ctx;
+        SocketDTLSContext_free (&temp_ctx);
+      }
     if (dgram)
-      SocketDgram_free ((SocketDgram_T *)&dgram);
+      {
+        SocketDgram_T temp_dgram = (SocketDgram_T)dgram;
+        SocketDgram_free (&temp_dgram);
+      }
     return NULL;
   }
   END_TRY;
@@ -380,7 +402,8 @@ Socket_simple_dtls_listen (const char *host, int port, const char *cert_file,
   SocketSimple_Socket_T handle = simple_create_udp_handle (dgram);
   if (!handle)
     {
-      SocketDgram_free ((SocketDgram_T *)&dgram);
+      SocketDgram_T temp_dgram = (SocketDgram_T)dgram;
+      SocketDgram_free (&temp_dgram);
       simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Failed to create handle");
       return NULL;
     }
