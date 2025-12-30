@@ -402,27 +402,67 @@ SocketHTTP2_tls_result_string (SocketHTTP2_TLSResult result)
  * reducing nesting depth and improving testability.
  */
 
+/**
+ * @brief Parse decimal digits to uint64_t with overflow protection
+ * @param value String containing only digits
+ * @param len Length of value
+ * @param result Output: parsed value
+ * @param max_value Maximum allowed value (for range validation)
+ * @return 0 on success, -1 on invalid input or overflow
+ *
+ * This helper extracts the common digit parsing logic used by status code
+ * and content-length parsers, ensuring consistent overflow protection and
+ * validation across all numeric header parsing.
+ */
+static int
+parse_decimal_uint64 (const char *value, size_t len, uint64_t *result,
+                      uint64_t max_value)
+{
+  if (value == NULL || result == NULL || len == 0)
+    return -1;
+
+  uint64_t num = 0;
+  for (size_t i = 0; i < len; i++)
+    {
+      unsigned char c = (unsigned char)value[i];
+
+      /* Validate digit */
+      if (c < '0' || c > '9')
+        return -1;
+
+      uint64_t digit = c - '0';
+
+      /* Overflow check before multiplication */
+      if (num > (UINT64_MAX - digit) / 10)
+        return -1;
+
+      num = num * 10 + digit;
+
+      /* Range check */
+      if (num > max_value)
+        return -1;
+    }
+
+  *result = num;
+  return 0;
+}
+
 int
 http2_parse_status_code (const char *value, size_t len, int *status)
 {
   /* RFC 9113 §8.3.2: :status must be a 3-digit code */
-  if (value == NULL || status == NULL || len != 3)
+  if (status == NULL || len != 3)
     return -1;
 
-  int code = 0;
-  for (size_t i = 0; i < 3; i++)
-    {
-      unsigned char c = (unsigned char)value[i];
-      if (c < '0' || c > '9')
-        return -1;
-      code = code * 10 + (c - '0');
-    }
+  uint64_t code;
+  if (parse_decimal_uint64 (value, len, &code, 599) < 0)
+    return -1;
 
   /* Valid HTTP status codes are 100-599 */
-  if (code < 100 || code > 599)
+  if (code < 100)
     return -1;
 
-  *status = code;
+  *status = (int)code;
   return 0;
 }
 
@@ -430,24 +470,14 @@ int
 http2_parse_content_length (const char *value, size_t len, int64_t *cl)
 {
   /* Empty or NULL value is invalid */
-  if (value == NULL || len == 0 || cl == NULL)
+  if (cl == NULL)
     return -1;
 
-  int64_t result = 0;
-  for (size_t i = 0; i < len; i++)
-    {
-      unsigned char c = (unsigned char)value[i];
-      if (c < '0' || c > '9')
-        return -1;
+  uint64_t length;
+  if (parse_decimal_uint64 (value, len, &length, INT64_MAX) < 0)
+    return -1;
 
-      /* Overflow check before multiplication */
-      if (result > (INT64_MAX - (c - '0')) / 10)
-        return -1;
-
-      result = result * 10 + (c - '0');
-    }
-
-  *cl = result;
+  *cl = (int64_t)length;
   return 0;
 }
 
