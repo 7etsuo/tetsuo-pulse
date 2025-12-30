@@ -235,7 +235,8 @@ proxy_socks4_send_connect (struct SocketProxy_Conn_T *conn)
                            conn->username, &userid_written)
       < 0)
     {
-      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL, "Request too large");
+      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                             SOCKS4_ERROR_MSG_REQUEST_TOO_LARGE);
       return -1;
     }
   len += userid_written;
@@ -300,7 +301,8 @@ proxy_socks4a_send_connect (struct SocketProxy_Conn_T *conn)
                            conn->username, &userid_written)
       < 0)
     {
-      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL, "Request too large");
+      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                             SOCKS4_ERROR_MSG_REQUEST_TOO_LARGE);
       return -1;
     }
   len += userid_written;
@@ -308,7 +310,8 @@ proxy_socks4a_send_connect (struct SocketProxy_Conn_T *conn)
   /* Validate buffer space for hostname + null terminator */
   if (len + host_len + 1 > sizeof (conn->send_buf))
     {
-      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL, "Request too large");
+      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                             SOCKS4_ERROR_MSG_REQUEST_TOO_LARGE);
       return -1;
     }
 

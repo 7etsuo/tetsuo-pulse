@@ -262,6 +262,14 @@
 #define SOCKS4_REPLY_NO_IDENTD 92
 #define SOCKS4_REPLY_IDENTD_MISMATCH 93
 
+/** @brief SOCKS4 error message for buffer overflow during request building.
+ * @ingroup proxy_private
+ * Used when request size exceeds SOCKET_PROXY_BUFFER_SIZE.
+ * @see proxy_socks4_send_connect(), proxy_socks4a_send_connect()
+ * @see SOCKET_PROXY_BUFFER_SIZE
+ */
+#define SOCKS4_ERROR_MSG_REQUEST_TOO_LARGE "Request too large"
+
 /** @brief SOCKS5 protocol version number.
  * @ingroup proxy_private
  * Value: 5
