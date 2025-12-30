@@ -21,6 +21,9 @@
 /* Use SocketCrypto_random_bytes() for platform-independent secure random */
 #define SECURE_RANDOM(buf, len) (SocketCrypto_random_bytes ((buf), (len)) == 0)
 
+/* Connection ID empty string representation */
+#define CONNID_EMPTY_STR "empty"
+
 /* ============================================================================
  * Result Strings
  * ============================================================================
@@ -307,13 +310,13 @@ SocketQUICConnectionID_to_hex (const SocketQUICConnectionID_T *cid, char *buf,
 
   if (cid == NULL || cid->len == 0)
     {
-      if (size < sizeof ("empty"))
+      if (size < sizeof (CONNID_EMPTY_STR))
         {
           buf[0] = '\0';
           return -1;
         }
-      memcpy (buf, "empty", sizeof ("empty"));
-      return sizeof ("empty") - 1;
+      memcpy (buf, CONNID_EMPTY_STR, sizeof (CONNID_EMPTY_STR));
+      return sizeof (CONNID_EMPTY_STR) - 1;
     }
 
   /* Format: "XX:XX:XX..." requires 3*len-1 chars + null terminator.
