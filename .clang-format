@@ -1,0 +1,83 @@
+# SPDX-License-Identifier: MIT
+# Clang-format configuration matching tetsuo-socket codebase style
+# Usage: clang-format -i <file.c>
+
+Language: Cpp
+BasedOnStyle: GNU
+
+# Indentation
+IndentWidth: 2
+TabWidth: 2
+UseTab: Never
+ContinuationIndentWidth: 4
+
+# Column limit
+ColumnLimit: 80
+
+# Braces - GNU style
+BreakBeforeBraces: GNU
+# Equivalent to:
+#   - Function braces on own line at column 0
+#   - Control flow braces on own line, indented
+#   - Struct/enum braces on own line
+
+# Function declarations - return type on own line
+AlwaysBreakAfterReturnType: AllDefinitions
+
+# Pointer alignment - star with variable name: char *ptr
+PointerAlignment: Right
+DerivePointerAlignment: false
+
+# Space before parentheses - GNU style: sizeof (x), func (arg)
+SpaceBeforeParens: Always
+
+# Space in parentheses
+SpacesInParentheses: false
+SpaceInEmptyParentheses: false
+
+# Binary operators - break before operator (for assignments: var\n    = expr)
+BreakBeforeBinaryOperators: All
+
+# Alignment
+AlignAfterOpenBracket: Align
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AlignEscapedNewlines: Left
+AlignOperands: true
+AlignTrailingComments: true
+
+# Short blocks - don't put on single line
+AllowShortBlocksOnASingleLine: Never
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+
+# Empty lines
+KeepEmptyLinesAtTheStartOfBlocks: false
+MaxEmptyLinesToKeep: 2
+
+# Include sorting
+SortIncludes: false
+IncludeBlocks: Preserve
+
+# Comments
+ReflowComments: true
+SpacesBeforeTrailingComments: 1
+
+# Other
+BinPackArguments: false
+BinPackParameters: false
+AllowAllArgumentsOnNextLine: true
+AllowAllParametersOfDeclarationOnNextLine: true
+
+# Preprocessor
+IndentPPDirectives: None
+
+# Penalties (prefer breaking at specific points)
+PenaltyBreakBeforeFirstCallParameter: 19
+PenaltyBreakComment: 300
+PenaltyBreakFirstLessLess: 120
+PenaltyBreakString: 1000
+PenaltyExcessCharacter: 1000000
+PenaltyReturnTypeOnItsOwnLine: 0
