@@ -18,6 +18,57 @@
 #include "simple/SocketSimple-http-server.h"
 
 /* ============================================================================
+ * WebSocket Exception Handling Helpers
+ * ============================================================================
+ */
+
+/**
+ * @brief Execute a WebSocket operation with standard exception handling.
+ *
+ * This macro wraps WebSocket operations (connect, accept) with consistent
+ * exception handling for SocketWS_Failed and SocketWS_ProtocolError.
+ * On exception, it sets the appropriate Simple API error, cleans up the
+ * WebSocket, and sets the exception_occurred flag.
+ *
+ * @param ws_ptr Pointer to volatile SocketWS_T variable
+ * @param exception_flag Pointer to volatile int exception_occurred variable
+ * @param failed_error_code Simple API error code for SocketWS_Failed
+ * @param failed_error_msg Error message for SocketWS_Failed
+ * @param operation The WebSocket operation to execute (e.g., SocketWS_connect(...))
+ *
+ * Example:
+ *   volatile SocketWS_T ws = NULL;
+ *   volatile int exception_occurred = 0;
+ *   WS_TRY_OPERATION(&ws, &exception_occurred,
+ *                    SOCKET_SIMPLE_ERR_CONNECT, "WebSocket connection failed",
+ *                    ws = SocketWS_connect(url, protocols));
+ */
+#define WS_TRY_OPERATION(ws_ptr, exception_flag, failed_error_code,            \
+                         failed_error_msg, operation)                          \
+  do                                                                           \
+    {                                                                          \
+      TRY { operation; }                                                       \
+      EXCEPT (SocketWS_Failed)                                                 \
+      {                                                                        \
+        simple_set_error ((failed_error_code), (failed_error_msg));            \
+        *(exception_flag) = 1;                                                 \
+      }                                                                        \
+      EXCEPT (SocketWS_ProtocolError)                                          \
+      {                                                                        \
+        simple_set_error (SOCKET_SIMPLE_ERR_WS_PROTOCOL,                       \
+                          "WebSocket protocol error");                         \
+        *(exception_flag) = 1;                                                 \
+      }                                                                        \
+      FINALLY                                                                  \
+      {                                                                        \
+        if (*(exception_flag) && *(ws_ptr))                                    \
+          SocketWS_free ((SocketWS_T *)(ws_ptr));                              \
+      }                                                                        \
+      END_TRY;                                                                 \
+    }                                                                          \
+  while (0)
+
+/* ============================================================================
  * WebSocket Options
  * ============================================================================
  */
@@ -68,27 +119,9 @@ Socket_simple_ws_connect_ex (const char *url,
 
   protocols = opts_param->subprotocols;
 
-  TRY { ws = SocketWS_connect (url, protocols); }
-  EXCEPT (SocketWS_Failed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_CONNECT,
-                      "WebSocket connection failed");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketWS_ProtocolError)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_WS_PROTOCOL,
-                      "WebSocket protocol error");
-    exception_occurred = 1;
-  }
-  FINALLY
-  {
-    if (exception_occurred && ws)
-      {
-        SocketWS_free ((SocketWS_T *)&ws);
-      }
-  }
-  END_TRY;
+  WS_TRY_OPERATION (&ws, &exception_occurred, SOCKET_SIMPLE_ERR_CONNECT,
+                    "WebSocket connection failed",
+                    ws = SocketWS_connect (url, protocols));
 
   if (exception_occurred)
     return NULL;
@@ -702,33 +735,16 @@ Socket_simple_ws_accept (void *http_req,
 
   convert_ws_server_config (config, &ws_config);
 
-  TRY
-  {
-    /* Accept the WebSocket upgrade */
-    ws = SocketWS_server_accept (conn->socket, request, &ws_config);
+  WS_TRY_OPERATION (
+      &ws, &exception_occurred, SOCKET_SIMPLE_ERR_SOCKET,
+      "WebSocket server accept failed", {
+        /* Accept the WebSocket upgrade */
+        ws = SocketWS_server_accept (conn->socket, request, &ws_config);
 
-    /* Complete the handshake */
-    if (ws)
-      perform_ws_handshake (&ws, &exception_occurred);
-  }
-  EXCEPT (SocketWS_Failed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_SOCKET,
-                      "WebSocket server accept failed");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketWS_ProtocolError)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_WS_PROTOCOL,
-                      "WebSocket protocol error during accept");
-    exception_occurred = 1;
-  }
-  FINALLY
-  {
-    if (exception_occurred && ws)
-      SocketWS_free ((SocketWS_T *)&ws);
-  }
-  END_TRY;
+        /* Complete the handshake */
+        if (ws)
+          perform_ws_handshake (&ws, &exception_occurred);
+      });
 
   if (exception_occurred)
     return NULL;
@@ -791,24 +807,16 @@ Socket_simple_ws_accept_raw (void *sock, const char *ws_key,
     /* Build minimal HTTP request structure for WebSocket upgrade */
     request = build_fake_ws_request (arena, ws_key);
 
-    /* Accept the WebSocket upgrade */
-    ws = SocketWS_server_accept (socket, request, &ws_config);
+    /* Accept the WebSocket upgrade and handle WebSocket exceptions */
+    WS_TRY_OPERATION (
+        &ws, &exception_occurred, SOCKET_SIMPLE_ERR_SOCKET,
+        "WebSocket server accept failed", {
+          ws = SocketWS_server_accept (socket, request, &ws_config);
 
-    /* Complete the handshake */
-    if (ws)
-      perform_ws_handshake (&ws, &exception_occurred);
-  }
-  EXCEPT (SocketWS_Failed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_SOCKET,
-                      "WebSocket server accept failed");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketWS_ProtocolError)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_WS_PROTOCOL,
-                      "WebSocket protocol error during accept");
-    exception_occurred = 1;
+          /* Complete the handshake */
+          if (ws)
+            perform_ws_handshake (&ws, &exception_occurred);
+        });
   }
   EXCEPT (Arena_Failed)
   {
@@ -820,9 +828,6 @@ Socket_simple_ws_accept_raw (void *sock, const char *ws_key,
     /* Clean up temporary arena - WebSocket has its own copy */
     if (arena)
       Arena_dispose ((Arena_T *)&arena);
-
-    if (exception_occurred && ws)
-      SocketWS_free ((SocketWS_T *)&ws);
   }
   END_TRY;
 
