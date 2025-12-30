@@ -49,6 +49,30 @@ state_callback_wrapper (SocketReconnect_T core __attribute__ ((unused)),
  * Policy Helpers
  *============================================================================*/
 
+/**
+ * @brief Map Simple API policy to Core API policy.
+ *
+ * Translates field names from the simpler Simple API to the more verbose
+ * Core API names. This centralizes the API translation logic.
+ *
+ * @param core Core policy structure to populate.
+ * @param simple Simple policy to translate.
+ */
+static void
+map_policy_to_core (SocketReconnect_Policy_T *core,
+                    const SocketSimple_Reconnect_Policy *simple)
+{
+  core->initial_delay_ms = simple->initial_delay_ms;
+  core->max_delay_ms = simple->max_delay_ms;
+  core->multiplier = simple->multiplier;
+  core->jitter = simple->jitter;
+  core->max_attempts = simple->max_attempts;
+  core->circuit_failure_threshold = simple->circuit_threshold;
+  core->circuit_reset_timeout_ms = simple->circuit_reset_ms;
+  core->health_check_interval_ms = simple->health_interval_ms;
+  core->health_check_timeout_ms = simple->health_timeout_ms;
+}
+
 void
 Socket_simple_reconnect_policy_defaults (SocketSimple_Reconnect_Policy *policy)
 {
@@ -103,15 +127,7 @@ Socket_simple_reconnect_new (const char *host, int port,
 
   if (policy)
     {
-      core_policy.initial_delay_ms = policy->initial_delay_ms;
-      core_policy.max_delay_ms = policy->max_delay_ms;
-      core_policy.multiplier = policy->multiplier;
-      core_policy.jitter = policy->jitter;
-      core_policy.max_attempts = policy->max_attempts;
-      core_policy.circuit_failure_threshold = policy->circuit_threshold;
-      core_policy.circuit_reset_timeout_ms = policy->circuit_reset_ms;
-      core_policy.health_check_interval_ms = policy->health_interval_ms;
-      core_policy.health_check_timeout_ms = policy->health_timeout_ms;
+      map_policy_to_core (&core_policy, policy);
     }
 
   TRY
