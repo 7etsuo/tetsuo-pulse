@@ -226,6 +226,31 @@ map_opcode_to_simple_type (SocketWS_Opcode opcode)
     }
 }
 
+/**
+ * @brief Copy WebSocket close information to a Simple API message.
+ *
+ * Extracts the close code and reason from the WebSocket and populates
+ * the Simple API message structure. Handles strdup failure gracefully
+ * since the close event is more important than preserving the reason.
+ *
+ * @param ws WebSocket connection
+ * @param msg Message structure to populate
+ */
+static void
+copy_ws_close_info (SocketSimple_WS_T ws, SocketSimple_WSMessage *msg)
+{
+  msg->type = SOCKET_SIMPLE_WS_CLOSE;
+  msg->close_code = SocketWS_close_code (ws->ws);
+
+  const char *reason = SocketWS_close_reason (ws->ws);
+  if (reason)
+    {
+      msg->close_reason = strdup (reason);
+      /* If strdup fails, msg->close_reason will be NULL
+       * Caller can still handle close event */
+    }
+}
+
 int
 Socket_simple_ws_recv (SocketSimple_WS_T ws, SocketSimple_WSMessage *msg)
 {
@@ -252,19 +277,7 @@ Socket_simple_ws_recv (SocketSimple_WS_T ws, SocketSimple_WSMessage *msg)
   }
   EXCEPT (SocketWS_Closed)
   {
-    /* Get close info before marking as exception */
-    msg->type = SOCKET_SIMPLE_WS_CLOSE;
-    msg->close_code = SocketWS_close_code (ws->ws);
-    const char *reason = SocketWS_close_reason (ws->ws);
-    if (reason)
-      {
-        msg->close_reason = strdup (reason);
-        /* If strdup fails, set to NULL - caller can still handle close */
-        if (!msg->close_reason)
-          {
-            /* Log warning but continue - close event is more important */
-          }
-      }
+    copy_ws_close_info (ws, msg);
     return 0; /* Not an error, just closed */
   }
   EXCEPT (SocketWS_ProtocolError)
@@ -280,19 +293,7 @@ Socket_simple_ws_recv (SocketSimple_WS_T ws, SocketSimple_WSMessage *msg)
 
   if (ret == 0)
     {
-      /* Clean close */
-      msg->type = SOCKET_SIMPLE_WS_CLOSE;
-      msg->close_code = SocketWS_close_code (ws->ws);
-      const char *reason = SocketWS_close_reason (ws->ws);
-      if (reason)
-        {
-          msg->close_reason = strdup (reason);
-          /* If strdup fails, set to NULL - caller can still handle close */
-          if (!msg->close_reason)
-            {
-              /* Log warning but continue - close event is more important */
-            }
-        }
+      copy_ws_close_info (ws, msg);
       return 0;
     }
 
