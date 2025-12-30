@@ -50,6 +50,7 @@
 #define HPACK_INT_CONTINUATION_VALUE 128
 
 #define HPACK_INT_BUF_SIZE 16
+/* Conservative 2x ratio for Huffman decode buffer (worst-case is 8/5 ≈ 1.6) */
 #define HPACK_HUFFMAN_RATIO 2
 
 #define HPACK_UINT64_SHIFT_LIMIT 63
