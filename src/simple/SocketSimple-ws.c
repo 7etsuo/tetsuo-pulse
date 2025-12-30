@@ -117,48 +117,34 @@ Socket_simple_ws_connect_ex (const char *url,
  * ============================================================================
  */
 
-int
-Socket_simple_ws_send_text (SocketSimple_WS_T ws, const char *text, size_t len)
-{
-  volatile int ret = -1;
-  volatile int exception_occurred = 0;
+/**
+ * @brief Function pointer type for WebSocket send operations.
+ *
+ * This type is used to abstract different send operations (text, binary, json)
+ * in the common error handling wrapper.
+ *
+ * @param ws The WebSocket handle
+ * @param data Pointer to data to send
+ * @param len Length of data (may be ignored for some operations like json)
+ * @return 0 on success, non-zero on failure
+ */
+typedef int (*ws_send_fn) (SocketWS_T ws, const void *data, size_t len);
 
-  Socket_simple_clear_error ();
-
-  if (!ws || !ws->ws || !text)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
-      return -1;
-    }
-
-  TRY { ret = SocketWS_send_text (ws->ws, text, len); }
-  EXCEPT (SocketWS_Failed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_SEND, "WebSocket send failed");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketWS_Closed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_CLOSED, "WebSocket connection closed");
-    exception_occurred = 1;
-  }
-  END_TRY;
-
-  if (exception_occurred)
-    return -1;
-
-  if (ret != 0)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_SEND, "WebSocket send failed");
-      return -1;
-    }
-
-  return 0;
-}
-
-int
-Socket_simple_ws_send_binary (SocketSimple_WS_T ws, const void *data,
-                              size_t len)
+/**
+ * @brief Common wrapper for WebSocket send operations.
+ *
+ * Centralizes exception handling for send operations to avoid code duplication.
+ * Handles validation, exception catching, and error reporting.
+ *
+ * @param ws Simple API WebSocket wrapper
+ * @param data Data to send (validated for NULL)
+ * @param len Length parameter (passed to send_fn)
+ * @param send_fn Function pointer to the actual send operation
+ * @return 0 on success, -1 on error (error details in simple error state)
+ */
+static int
+ws_send_wrapper (SocketSimple_WS_T ws, const void *data, size_t len,
+                 ws_send_fn send_fn)
 {
   volatile int ret = -1;
   volatile int exception_occurred = 0;
@@ -171,7 +157,7 @@ Socket_simple_ws_send_binary (SocketSimple_WS_T ws, const void *data,
       return -1;
     }
 
-  TRY { ret = SocketWS_send_binary (ws->ws, data, len); }
+  TRY { ret = send_fn (ws->ws, data, len); }
   EXCEPT (SocketWS_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_SEND, "WebSocket send failed");
@@ -197,42 +183,37 @@ Socket_simple_ws_send_binary (SocketSimple_WS_T ws, const void *data,
 }
 
 int
+Socket_simple_ws_send_text (SocketSimple_WS_T ws, const char *text, size_t len)
+{
+  return ws_send_wrapper (ws, text, len,
+                          (ws_send_fn)SocketWS_send_text);
+}
+
+int
+Socket_simple_ws_send_binary (SocketSimple_WS_T ws, const void *data,
+                              size_t len)
+{
+  return ws_send_wrapper (ws, data, len,
+                          (ws_send_fn)SocketWS_send_binary);
+}
+
+/**
+ * @brief Adapter to make SocketWS_send_json compatible with ws_send_fn signature.
+ *
+ * SocketWS_send_json computes length internally via strlen, so we ignore
+ * the len parameter.
+ */
+static int
+ws_send_json_adapter (SocketWS_T ws, const void *data, size_t len)
+{
+  (void)len; /* Unused - json send computes length internally */
+  return SocketWS_send_json (ws, (const char *)data);
+}
+
+int
 Socket_simple_ws_send_json (SocketSimple_WS_T ws, const char *json)
 {
-  volatile int ret = -1;
-  volatile int exception_occurred = 0;
-
-  Socket_simple_clear_error ();
-
-  if (!ws || !ws->ws || !json)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
-      return -1;
-    }
-
-  TRY { ret = SocketWS_send_json (ws->ws, json); }
-  EXCEPT (SocketWS_Failed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_SEND, "WebSocket send failed");
-    exception_occurred = 1;
-  }
-  EXCEPT (SocketWS_Closed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_CLOSED, "WebSocket connection closed");
-    exception_occurred = 1;
-  }
-  END_TRY;
-
-  if (exception_occurred)
-    return -1;
-
-  if (ret != 0)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_SEND, "WebSocket send failed");
-      return -1;
-    }
-
-  return 0;
+  return ws_send_wrapper (ws, json, 0, ws_send_json_adapter);
 }
 
 int
