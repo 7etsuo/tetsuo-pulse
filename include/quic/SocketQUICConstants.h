@@ -73,6 +73,26 @@
 #define QUIC_HKDF_LABEL_MAX_SIZE 520
 
 /* ============================================================================
+ * Stream ID Constants (RFC 9000 Section 2.1)
+ * ============================================================================
+ */
+
+/**
+ * @brief Stream ID increment value (RFC 9000 Section 2.1).
+ *
+ * Stream IDs increment by 4 to preserve the 2-bit type encoding
+ * in bits 0-1. Same-type streams use IDs: 0, 4, 8, 12, ...
+ *
+ * The lower 2 bits of a stream ID encode:
+ *   - Bit 0: Initiator (0=client, 1=server)
+ *   - Bit 1: Directionality (0=bidirectional, 1=unidirectional)
+ *
+ * Incrementing by 4 preserves these bits, ensuring consecutive
+ * stream IDs are of the same type.
+ */
+#define QUIC_STREAM_ID_INCREMENT 4
+
+/* ============================================================================
  * Congestion Control Constants (RFC 9002)
  * ============================================================================
  */

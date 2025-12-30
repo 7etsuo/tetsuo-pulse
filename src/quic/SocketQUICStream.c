@@ -111,7 +111,7 @@ SocketQUICStream_is_valid_id (uint64_t stream_id)
 uint64_t
 SocketQUICStream_next_id (uint64_t stream_id)
 {
-  uint64_t next = stream_id + 4;
+  uint64_t next = stream_id + QUIC_STREAM_ID_INCREMENT;
 
   /* Check for overflow */
   if (next > QUIC_STREAM_ID_MAX || next < stream_id)
