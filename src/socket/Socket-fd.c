@@ -259,16 +259,15 @@ extract_rights_fds (const struct msghdr *msg, int *fds, size_t max_count)
 
         memset (temp_fds, -1, sizeof (temp_fds));
 
-        cmsg = CMSG_FIRSTHDR ((struct msghdr *)msg);
-        while (cmsg != NULL)
+        for (cmsg = CMSG_FIRSTHDR ((struct msghdr *)msg);
+             cmsg != NULL;
+             cmsg = CMSG_NXTHDR ((struct msghdr *)msg, cmsg))
         {
-                if (cmsg->cmsg_level == SOL_SOCKET
-                    && cmsg->cmsg_type == SCM_RIGHTS)
-                {
-                        process_single_cmsg (cmsg, temp_fds, &total_fds,
-                                             SOCKET_MAX_FDS_PER_MSG);
-                }
-                cmsg = CMSG_NXTHDR ((struct msghdr *)msg, cmsg);
+                if (cmsg->cmsg_level != SOL_SOCKET || cmsg->cmsg_type != SCM_RIGHTS)
+                        continue;
+
+                process_single_cmsg (cmsg, temp_fds, &total_fds,
+                                     SOCKET_MAX_FDS_PER_MSG);
         }
 
         if (total_fds > max_count)
