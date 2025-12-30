@@ -30,13 +30,19 @@
 #include <stdlib.h>
 
 /**
+ * Arena cache flags.
+ */
+#define ARENA_AVAILABLE  0
+#define ARENA_IN_USE     1
+
+/**
  * Thread-local arena cache structure.
  */
 typedef struct
 {
   Arena_T request_arena;      /**< Cached arena for request allocations */
   Arena_T response_arena;     /**< Cached arena for response allocations */
-  int response_arena_in_use;  /**< Non-zero if response arena is leased */
+  int response_arena_in_use;  /**< ARENA_IN_USE if response arena is leased */
 } HTTPClientArenaCache;
 
 static pthread_key_t arena_cache_key;
@@ -197,7 +203,7 @@ httpclient_acquire_response_arena (void)
   if (cache->response_arena && !cache->response_arena_in_use)
     {
       Arena_reset (cache->response_arena);
-      cache->response_arena_in_use = 1;
+      cache->response_arena_in_use = ARENA_IN_USE;
       return cache->response_arena;
     }
 
@@ -205,7 +211,7 @@ httpclient_acquire_response_arena (void)
   if (!cache->response_arena)
     {
       cache->response_arena = Arena_new_unlocked ();
-      cache->response_arena_in_use = 1;
+      cache->response_arena_in_use = ARENA_IN_USE;
       return cache->response_arena;
     }
 
@@ -237,7 +243,7 @@ httpclient_release_response_arena (Arena_T *arena_ptr)
     {
       /* Arena is from our cache - reset and mark available */
       Arena_reset (*arena_ptr);
-      cache->response_arena_in_use = 0;
+      cache->response_arena_in_use = ARENA_AVAILABLE;
       *arena_ptr = NULL;
       return;
     }
