@@ -604,28 +604,24 @@ convert_ws_server_config (const SocketSimple_WSServerConfig *simple_config,
     }
 }
 
-SocketSimple_WS_T
-Socket_simple_ws_accept (void *http_req,
-                         const SocketSimple_WSServerConfig *config)
+/**
+ * @brief Validate HTTP server request and extract connection.
+ *
+ * @param http_req The HTTP request handle from Simple API
+ * @return ServerConnection* Valid connection or NULL on error
+ */
+static ServerConnection *
+validate_http_server_request (void *http_req)
 {
-  volatile SocketWS_T ws = NULL;
-  volatile int exception_occurred = 0;
-  struct SocketSimple_WS *handle = NULL;
-  SocketWS_Config ws_config;
-
-  Socket_simple_clear_error ();
-
   if (!http_req)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "HTTP request is NULL");
       return NULL;
     }
 
-  /* Get the Simple API HTTP server request wrapper */
   SocketSimple_HTTPServerRequest_T simple_req
       = (SocketSimple_HTTPServerRequest_T)http_req;
 
-  /* Access the core HTTP server request through the simple wrapper */
   SocketHTTPServer_Request_T core_req = simple_req->core_req;
   if (!core_req)
     {
@@ -634,7 +630,6 @@ Socket_simple_ws_accept (void *http_req,
       return NULL;
     }
 
-  /* Get the underlying connection and socket */
   ServerConnection *conn = core_req->conn;
   if (!conn || !conn->socket)
     {
@@ -643,26 +638,37 @@ Socket_simple_ws_accept (void *http_req,
       return NULL;
     }
 
-  /* Get the parsed HTTP request */
-  const SocketHTTP_Request *request = conn->request;
-  if (!request)
+  if (!conn->request)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
                         "HTTP request not parsed");
       return NULL;
     }
 
-  /* Convert Simple API config to core config */
-  convert_ws_server_config (config, &ws_config);
+  return conn;
+}
+
+/**
+ * @brief Perform WebSocket upgrade and complete handshake.
+ *
+ * @param socket The underlying socket
+ * @param request The HTTP request
+ * @param ws_config WebSocket configuration
+ * @return SocketWS_T WebSocket handle or NULL on error
+ */
+static SocketWS_T
+perform_ws_handshake (Socket_T socket, const SocketHTTP_Request *request,
+                      const SocketWS_Config *ws_config)
+{
+  volatile SocketWS_T ws = NULL;
+  volatile int exception_occurred = 0;
 
   TRY
   {
-    /* Accept the WebSocket upgrade */
-    ws = SocketWS_server_accept (conn->socket, request, &ws_config);
+    ws = SocketWS_server_accept (socket, request, ws_config);
 
     if (ws)
       {
-        /* Complete the handshake (sends 101 Switching Protocols) */
         int handshake_result;
         do
           {
@@ -703,27 +709,70 @@ Socket_simple_ws_accept (void *http_req,
   if (exception_occurred)
     return NULL;
 
+  return (SocketWS_T)ws;
+}
+
+/**
+ * @brief Create Simple API WebSocket handle wrapper.
+ *
+ * @param ws Core WebSocket handle
+ * @return SocketSimple_WS_T Simple API handle or NULL on error
+ */
+static SocketSimple_WS_T
+create_ws_handle (SocketWS_T ws)
+{
+  struct SocketSimple_WS *handle = calloc (1, sizeof (*handle));
+  if (!handle)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
+      SocketWS_free (&ws);
+      return NULL;
+    }
+
+  handle->ws = ws;
+  return handle;
+}
+
+/**
+ * @brief Transfer socket ownership from HTTP connection to WebSocket.
+ *
+ * Prevents HTTP server from closing the socket after upgrade.
+ *
+ * @param conn The server connection
+ */
+static void
+transfer_connection_ownership (ServerConnection *conn)
+{
+  conn->socket = NULL;
+}
+
+SocketSimple_WS_T
+Socket_simple_ws_accept (void *http_req,
+                         const SocketSimple_WSServerConfig *config)
+{
+  SocketWS_Config ws_config;
+
+  Socket_simple_clear_error ();
+
+  ServerConnection *conn = validate_http_server_request (http_req);
+  if (!conn)
+    return NULL;
+
+  convert_ws_server_config (config, &ws_config);
+
+  SocketWS_T ws = perform_ws_handshake (conn->socket, conn->request,
+                                        &ws_config);
   if (!ws)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_SOCKET, "WebSocket accept failed");
       return NULL;
     }
 
-  /* Create the simple wrapper handle */
-  handle = calloc (1, sizeof (*handle));
+  SocketSimple_WS_T handle = create_ws_handle (ws);
   if (!handle)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
-      SocketWS_free ((SocketWS_T *)&ws);
-      return NULL;
-    }
+    return NULL;
 
-  handle->ws = ws;
-
-  /* Mark the HTTP connection as upgraded - prevent normal response handling.
-   * The socket is now owned by the WebSocket, so we need to prevent the
-   * HTTP server from closing it. Set conn->socket to NULL to indicate this. */
-  conn->socket = NULL;
+  transfer_connection_ownership (conn);
 
   return handle;
 }
