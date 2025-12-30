@@ -9,6 +9,7 @@
  */
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 
@@ -22,12 +23,18 @@
 #include <openssl/ssl.h>
 #endif
 
+/*
+ * RFC 9113 §8.2.2: Connection-Specific Header Fields
+ *
+ * HTTP/2 forbids connection-specific headers from HTTP/1.1.
+ * Array is sorted alphabetically for O(log n) binary search.
+ */
 static const struct
 {
   const char *name;
   size_t len;
 } http2_forbidden_headers[] = {
-  { "connection", 10 },
+  { "connection", 10 },          /* Alphabetically sorted */
   { "keep-alive", 10 },
   { "proxy-authenticate", 18 },
   { "proxy-authorization", 19 },
@@ -39,6 +46,34 @@ static const struct
 
 #define HTTP2_FORBIDDEN_HEADER_COUNT \
   (sizeof (http2_forbidden_headers) / sizeof (http2_forbidden_headers[0]))
+
+/*
+ * Binary search comparison function for forbidden header lookup.
+ *
+ * Returns:
+ *   < 0 if header < entry (header sorts before)
+ *   > 0 if header > entry (header sorts after)
+ *     0 if header == entry (match found)
+ */
+static int
+compare_forbidden_header (const void *key, const void *elem)
+{
+  const SocketHPACK_Header *header = (const SocketHPACK_Header *)key;
+  const struct
+  {
+    const char *name;
+    size_t len;
+  } *entry = elem;
+
+  /* Compare length first for quick rejection */
+  if (header->name_len < entry->len)
+    return -1;
+  if (header->name_len > entry->len)
+    return 1;
+
+  /* Case-insensitive name comparison */
+  return strncasecmp (header->name, entry->name, entry->len);
+}
 
 int
 http2_field_has_uppercase (const char *name, size_t len)
@@ -121,31 +156,45 @@ http2_field_has_boundary_whitespace (const char *value, size_t len)
   return 0;
 }
 
+/*
+ * Check if header is a forbidden connection-specific header.
+ *
+ * Uses O(log n) binary search over sorted forbidden header list.
+ * For 8 headers: max 3 comparisons vs 8 for linear search.
+ *
+ * Returns:
+ *   1 if header is forbidden
+ *   0 if header is allowed (including special case for "te")
+ */
 int
 http2_is_connection_header_forbidden (const SocketHPACK_Header *header)
 {
   if (header == NULL || header->name == NULL)
     return 0;
 
-  for (size_t i = 0; i < HTTP2_FORBIDDEN_HEADER_COUNT; i++)
-    {
-      if (header->name_len == http2_forbidden_headers[i].len
-          && strncasecmp (header->name, http2_forbidden_headers[i].name,
-                          http2_forbidden_headers[i].len)
-                 == 0)
-        {
-          /*
-           * TE header is a special case: it's allowed only with "trailers"
-           * value. Return 0 here (not forbidden) and let caller validate
-           * the value separately via http2_validate_te_header().
-           */
-          if (http2_forbidden_headers[i].len == 2)
-            return 0;
-          return 1;
-        }
-    }
+  /* Binary search in sorted forbidden headers array */
+  const void *found
+      = bsearch (header, http2_forbidden_headers, HTTP2_FORBIDDEN_HEADER_COUNT,
+                 sizeof (http2_forbidden_headers[0]), compare_forbidden_header);
 
-  return 0;
+  if (found == NULL)
+    return 0; /* Not forbidden */
+
+  /*
+   * TE header is a special case: it's allowed only with "trailers"
+   * value. Return 0 here (not forbidden) and let caller validate
+   * the value separately via http2_validate_te_header().
+   */
+  const struct
+  {
+    const char *name;
+    size_t len;
+  } *entry = found;
+
+  if (entry->len == 2) /* "te" */
+    return 0;
+
+  return 1; /* Forbidden */
 }
 
 int
