@@ -26,6 +26,52 @@
  */
 #define SOCKET_SIMPLE_DTLS_DEFAULT_TIMEOUT_MS 30000
 
+/**
+ * @brief Cleanup macro for DTLS resources in FINALLY blocks.
+ *
+ * This macro encapsulates the common pattern of cleaning up DTLS context
+ * and datagram socket resources when an exception occurs. It properly handles
+ * volatile-qualified pointers and uses temporary variables to satisfy the
+ * free functions' pointer-to-pointer requirements.
+ *
+ * @param ctx_ptr Pointer to volatile SocketDTLSContext_T (may be NULL)
+ * @param dgram_ptr Pointer to volatile SocketDgram_T (may be NULL)
+ * @param exception_flag Exception occurred flag (should be true)
+ *
+ * Usage:
+ * @code
+ * volatile SocketDTLSContext_T ctx = NULL;
+ * volatile SocketDgram_T dgram = NULL;
+ * volatile int exception_occurred = 0;
+ *
+ * TRY {
+ *   // ... operations that may fail ...
+ * } EXCEPT(SomeError) {
+ *   exception_occurred = 1;
+ * } FINALLY {
+ *   CLEANUP_DTLS_RESOURCES(ctx, dgram, exception_occurred);
+ * } END_TRY;
+ * @endcode
+ */
+#define CLEANUP_DTLS_RESOURCES(ctx_ptr, dgram_ptr, exception_flag)            \
+  do                                                                           \
+    {                                                                          \
+      if (exception_flag)                                                      \
+        {                                                                      \
+          if (ctx_ptr)                                                         \
+            {                                                                  \
+              SocketDTLSContext_T temp_ctx = (SocketDTLSContext_T)(ctx_ptr);  \
+              SocketDTLSContext_free (&temp_ctx);                              \
+            }                                                                  \
+          if (dgram_ptr)                                                       \
+            {                                                                  \
+              SocketDgram_T temp_dgram = (SocketDgram_T)(dgram_ptr);          \
+              SocketDgram_free (&temp_dgram);                                  \
+            }                                                                  \
+        }                                                                      \
+    }                                                                          \
+  while (0)
+
 /*============================================================================
  * Options Helpers
  *============================================================================*/
@@ -252,19 +298,7 @@ Socket_simple_dtls_connect_ex (const char *host, int port,
   }
   FINALLY
   {
-    if (exception_occurred)
-      {
-        if (ctx)
-          {
-            SocketDTLSContext_T temp_ctx = (SocketDTLSContext_T)ctx;
-            SocketDTLSContext_free (&temp_ctx);
-          }
-        if (dgram)
-          {
-            SocketDgram_T temp_dgram = (SocketDgram_T)dgram;
-            SocketDgram_free (&temp_dgram);
-          }
-      }
+    CLEANUP_DTLS_RESOURCES (ctx, dgram, exception_occurred);
   }
   END_TRY;
 
@@ -362,11 +396,7 @@ Socket_simple_dtls_enable (SocketSimple_Socket_T sock, const char *hostname,
   }
   FINALLY
   {
-    if (exception_occurred && ctx)
-      {
-        SocketDTLSContext_T temp_ctx = (SocketDTLSContext_T)ctx;
-        SocketDTLSContext_free (&temp_ctx);
-      }
+    CLEANUP_DTLS_RESOURCES (ctx, NULL, exception_occurred);
   }
   END_TRY;
 
@@ -402,6 +432,7 @@ Socket_simple_dtls_listen (const char *host, int port, const char *cert_file,
 {
   volatile SocketDgram_T dgram = NULL;
   volatile SocketDTLSContext_T ctx = NULL;
+  volatile int exception_occurred = 0;
 
   Socket_simple_clear_error ();
 
@@ -437,34 +468,21 @@ Socket_simple_dtls_listen (const char *host, int port, const char *cert_file,
   {
     simple_set_error (SOCKET_SIMPLE_ERR_TLS,
                       "Failed to create DTLS server context");
-    if (ctx)
-      {
-        SocketDTLSContext_T temp_ctx = (SocketDTLSContext_T)ctx;
-        SocketDTLSContext_free (&temp_ctx);
-      }
-    if (dgram)
-      {
-        SocketDgram_T temp_dgram = (SocketDgram_T)dgram;
-        SocketDgram_free (&temp_dgram);
-      }
-    return NULL;
+    exception_occurred = 1;
   }
   EXCEPT (SocketDgram_Failed)
   {
     simple_set_error_errno (SOCKET_SIMPLE_ERR_BIND, "Failed to bind UDP socket");
-    if (ctx)
-      {
-        SocketDTLSContext_T temp_ctx = (SocketDTLSContext_T)ctx;
-        SocketDTLSContext_free (&temp_ctx);
-      }
-    if (dgram)
-      {
-        SocketDgram_T temp_dgram = (SocketDgram_T)dgram;
-        SocketDgram_free (&temp_dgram);
-      }
-    return NULL;
+    exception_occurred = 1;
+  }
+  FINALLY
+  {
+    CLEANUP_DTLS_RESOURCES (ctx, dgram, exception_occurred);
   }
   END_TRY;
+
+  if (exception_occurred)
+    return NULL;
 
   SocketSimple_Socket_T handle = simple_create_udp_handle (dgram);
   if (!handle)
