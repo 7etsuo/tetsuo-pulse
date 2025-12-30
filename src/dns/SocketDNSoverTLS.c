@@ -929,6 +929,78 @@ process_connection_state (T transport)
   return 1; /* Connection ready or in progress */
 }
 
+/* Determine poll events based on connection state */
+static int
+get_poll_events (const struct Connection *conn)
+{
+  int events = POLLIN;
+
+  if (conn->state == CONN_STATE_CONNECTING
+      || conn->state == CONN_STATE_HANDSHAKING || conn->send_len > 0)
+    {
+      events |= POLLOUT;
+    }
+
+  return events;
+}
+
+/* Handle connection state machine progression */
+static int
+handle_connection_progress (T transport, struct Connection *conn)
+{
+  int ret;
+
+  if (conn->state != CONN_STATE_CONNECTING
+      && conn->state != CONN_STATE_HANDSHAKING)
+    {
+      return 0;
+    }
+
+  ret = continue_connection (transport);
+  if (ret < 0)
+    {
+      cancel_all_queries (transport, DOT_ERROR_TLS_HANDSHAKE);
+      return -1;
+    }
+
+  if (ret > 0)
+    {
+      /* Just connected, queue pending queries */
+      queue_pending_queries (transport);
+    }
+
+  return ret;
+}
+
+/* Handle socket events for connected state */
+static int
+handle_connected_io (T transport, struct Connection *conn, short revents)
+{
+  int completed = 0;
+  int ret;
+
+  (void)conn;
+
+  /* Send pending data */
+  if (revents & POLLOUT)
+    {
+      send_pending (transport);
+    }
+
+  /* Receive data */
+  if (revents & POLLIN)
+    {
+      ret = receive_data (transport);
+      if (ret > 0)
+        {
+          process_response (transport);
+          completed++;
+        }
+    }
+
+  return completed;
+}
+
 /* Process socket I/O (poll, send, receive) */
 static int
 process_socket_io (T transport, int timeout_ms)
@@ -936,28 +1008,18 @@ process_socket_io (T transport, int timeout_ms)
   struct Connection *conn;
   struct pollfd pfd;
   int fd;
-  int events;
   int ret;
-  int completed;
 
   conn = &transport->conn;
-  completed = 0;
 
   /* Get socket file descriptor */
   fd = Socket_fd (conn->socket);
   if (fd < 0)
     return 0;
 
-  /* Determine poll events */
-  events = POLLIN;
-  if (conn->state == CONN_STATE_CONNECTING
-      || conn->state == CONN_STATE_HANDSHAKING || conn->send_len > 0)
-    {
-      events |= POLLOUT;
-    }
-
+  /* Setup poll */
   pfd.fd = fd;
-  pfd.events = (short)events;
+  pfd.events = (short)get_poll_events (conn);
   pfd.revents = 0;
 
   /* Poll socket */
@@ -973,41 +1035,15 @@ process_socket_io (T transport, int timeout_ms)
       return 0;
     }
 
-  /* Continue handshake if needed */
-  if (conn->state == CONN_STATE_CONNECTING
-      || conn->state == CONN_STATE_HANDSHAKING)
-    {
-      ret = continue_connection (transport);
-      if (ret < 0)
-        {
-          cancel_all_queries (transport, DOT_ERROR_TLS_HANDSHAKE);
-          return 0;
-        }
-      if (ret > 0)
-        {
-          /* Just connected, queue pending queries */
-          queue_pending_queries (transport);
-        }
-    }
+  /* Handle connection progress */
+  if (handle_connection_progress (transport, conn) < 0)
+    return 0;
 
-  /* Send pending data */
-  if (conn->state == CONN_STATE_CONNECTED && (pfd.revents & POLLOUT))
-    {
-      send_pending (transport);
-    }
+  /* Handle I/O for connected state */
+  if (conn->state == CONN_STATE_CONNECTED)
+    return handle_connected_io (transport, conn, pfd.revents);
 
-  /* Receive data */
-  if (conn->state == CONN_STATE_CONNECTED && (pfd.revents & POLLIN))
-    {
-      ret = receive_data (transport);
-      if (ret > 0)
-        {
-          process_response (transport);
-          completed++;
-        }
-    }
-
-  return completed;
+  return 0;
 }
 
 /* ============================================================================
