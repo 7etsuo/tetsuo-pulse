@@ -125,7 +125,12 @@ SocketQUICFrame_encode_crypto (uint64_t offset, const uint8_t *data,
  * @param len    Length of input buffer
  * @param frame  Output: decoded crypto frame structure
  *
- * @return Number of bytes consumed on success, or -1 on error
+ * @return Number of bytes consumed on success, or negative error code on failure:
+ *         -QUIC_FRAME_ERROR_NULL      (NULL pointer or zero length)
+ *         -QUIC_FRAME_ERROR_TYPE      (not a CRYPTO frame)
+ *         -QUIC_FRAME_ERROR_TRUNCATED (incomplete frame data)
+ *         -QUIC_FRAME_ERROR_VARINT    (invalid varint encoding)
+ *         -QUIC_FRAME_ERROR_INVALID   (other parse errors)
  */
 
 ssize_t
@@ -133,11 +138,11 @@ SocketQUICFrame_decode_crypto (const uint8_t *data, size_t len,
                                 SocketQUICFrameCrypto_T *frame)
 {
   if (!data || !frame || len == 0)
-    return -1;
+    return -(ssize_t)QUIC_FRAME_ERROR_NULL;
 
   /* Verify frame type is CRYPTO (0x06) */
   if (data[0] != QUIC_FRAME_CRYPTO)
-    return -1;
+    return -(ssize_t)QUIC_FRAME_ERROR_TYPE;
 
   /* Use the full parser to decode the frame */
   SocketQUICFrame_T full_frame;
@@ -147,7 +152,7 @@ SocketQUICFrame_decode_crypto (const uint8_t *data, size_t len,
       = SocketQUICFrame_parse (data, len, &full_frame, &consumed);
 
   if (res != QUIC_FRAME_OK)
-    return -1;
+    return -(ssize_t)res;
 
   /* Copy crypto-specific data */
   *frame = full_frame.data.crypto;

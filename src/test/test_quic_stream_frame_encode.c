@@ -180,16 +180,20 @@ TEST (frame_stream_decode_null_params)
   uint8_t buf[] = { 0x08, 0x00 };
   SocketQUICFrameStream_T frame;
 
-  /* NULL data */
-  ASSERT_EQ (-1, SocketQUICFrame_decode_stream (NULL, sizeof (buf), &frame));
+  /* NULL data - should return -QUIC_FRAME_ERROR_NULL */
+  ssize_t result = SocketQUICFrame_decode_stream (NULL, sizeof (buf), &frame);
+  ASSERT (result < 0);
+  ASSERT_EQ (-(ssize_t)QUIC_FRAME_ERROR_NULL, result);
 
-  /* NULL frame */
-  ASSERT_EQ (-1, SocketQUICFrame_decode_stream (buf, sizeof (buf), NULL));
+  /* NULL frame - should return -QUIC_FRAME_ERROR_NULL */
+  result = SocketQUICFrame_decode_stream (buf, sizeof (buf), NULL);
+  ASSERT (result < 0);
+  ASSERT_EQ (-(ssize_t)QUIC_FRAME_ERROR_NULL, result);
 
-  /* Zero length */
-  ASSERT_EQ (-1, SocketQUICFrame_decode_stream (NULL, sizeof (buf), &frame));
-  ASSERT_EQ (-1, SocketQUICFrame_decode_stream (buf, sizeof (buf), NULL));
-  ASSERT_EQ (-1, SocketQUICFrame_decode_stream (buf, 0, &frame));
+  /* Zero length - should return -QUIC_FRAME_ERROR_NULL */
+  result = SocketQUICFrame_decode_stream (buf, 0, &frame);
+  ASSERT (result < 0);
+  ASSERT_EQ (-(ssize_t)QUIC_FRAME_ERROR_NULL, result);
 }
 
 TEST (frame_stream_encode_overflow_protection)
@@ -212,6 +216,54 @@ TEST (frame_stream_encode_overflow_protection)
   len = SocketQUICFrame_encode_stream (100, 500, data, SIZE_MAX - 20, 0, buf,
                                         sizeof (buf));
   ASSERT_EQ (0, len); /* Should fail due to overflow */
+}
+
+TEST (frame_stream_decode_error_type_mismatch)
+{
+  /* Non-STREAM frame type (0x06 = CRYPTO) */
+  uint8_t buf[] = { 0x06, 0x00 };
+  SocketQUICFrameStream_T frame;
+
+  ssize_t result = SocketQUICFrame_decode_stream (buf, sizeof (buf), &frame);
+  ASSERT (result < 0);
+  ASSERT_EQ (-(ssize_t)QUIC_FRAME_ERROR_TYPE, result);
+}
+
+TEST (frame_stream_decode_error_truncated)
+{
+  /* Valid STREAM frame type but truncated data */
+  uint8_t buf[] = { 0x08 }; /* Missing stream ID */
+  SocketQUICFrameStream_T frame;
+
+  ssize_t result = SocketQUICFrame_decode_stream (buf, sizeof (buf), &frame);
+  ASSERT (result < 0);
+  /* Should be truncated error from parser */
+  ASSERT_EQ (-(ssize_t)QUIC_FRAME_ERROR_TRUNCATED, result);
+}
+
+TEST (frame_stream_decode_error_distinction)
+{
+  SocketQUICFrameStream_T frame;
+  ssize_t result;
+
+  /* Test 1: NULL pointer error */
+  result = SocketQUICFrame_decode_stream (NULL, 10, &frame);
+  ASSERT_EQ (-(ssize_t)QUIC_FRAME_ERROR_NULL, result);
+
+  /* Test 2: Wrong frame type error */
+  uint8_t wrong_type[] = { 0x01, 0x00 }; /* PING frame */
+  result = SocketQUICFrame_decode_stream (wrong_type, sizeof (wrong_type), &frame);
+  ASSERT_EQ (-(ssize_t)QUIC_FRAME_ERROR_TYPE, result);
+
+  /* Test 3: Truncated frame error */
+  uint8_t truncated[] = { 0x08 }; /* STREAM frame, but no stream ID */
+  result = SocketQUICFrame_decode_stream (truncated, sizeof (truncated), &frame);
+  ASSERT_EQ (-(ssize_t)QUIC_FRAME_ERROR_TRUNCATED, result);
+
+  /* Verify errors are distinct */
+  ASSERT (QUIC_FRAME_ERROR_NULL != QUIC_FRAME_ERROR_TYPE);
+  ASSERT (QUIC_FRAME_ERROR_NULL != QUIC_FRAME_ERROR_TRUNCATED);
+  ASSERT (QUIC_FRAME_ERROR_TYPE != QUIC_FRAME_ERROR_TRUNCATED);
 }
 
 int

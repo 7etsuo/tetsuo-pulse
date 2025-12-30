@@ -228,14 +228,20 @@ TEST (frame_crypto_decode_null_params)
   uint8_t buf[] = { 0x06, 0x00, 0x00 };
   SocketQUICFrameCrypto_T frame;
 
-  /* NULL data */
-  ASSERT_EQ (-1, SocketQUICFrame_decode_crypto (NULL, sizeof (buf), &frame));
+  /* NULL data - should return -QUIC_FRAME_ERROR_NULL */
+  ssize_t result = SocketQUICFrame_decode_crypto (NULL, sizeof (buf), &frame);
+  ASSERT (result < 0);
+  ASSERT_EQ (-(ssize_t)QUIC_FRAME_ERROR_NULL, result);
 
-  /* NULL frame */
-  ASSERT_EQ (-1, SocketQUICFrame_decode_crypto (buf, sizeof (buf), NULL));
+  /* NULL frame - should return -QUIC_FRAME_ERROR_NULL */
+  result = SocketQUICFrame_decode_crypto (buf, sizeof (buf), NULL);
+  ASSERT (result < 0);
+  ASSERT_EQ (-(ssize_t)QUIC_FRAME_ERROR_NULL, result);
 
-  /* Zero length */
-  ASSERT_EQ (-1, SocketQUICFrame_decode_crypto (buf, 0, &frame));
+  /* Zero length - should return -QUIC_FRAME_ERROR_NULL */
+  result = SocketQUICFrame_decode_crypto (buf, 0, &frame);
+  ASSERT (result < 0);
+  ASSERT_EQ (-(ssize_t)QUIC_FRAME_ERROR_NULL, result);
 }
 
 TEST (frame_crypto_decode_invalid_type)
@@ -243,8 +249,10 @@ TEST (frame_crypto_decode_invalid_type)
   uint8_t buf[] = { 0x08, 0x00, 0x00 }; /* STREAM frame, not CRYPTO */
   SocketQUICFrameCrypto_T frame;
 
-  /* Should fail with wrong frame type */
-  ASSERT_EQ (-1, SocketQUICFrame_decode_crypto (buf, sizeof (buf), &frame));
+  /* Should fail with wrong frame type - returns -QUIC_FRAME_ERROR_TYPE */
+  ssize_t result = SocketQUICFrame_decode_crypto (buf, sizeof (buf), &frame);
+  ASSERT (result < 0);
+  ASSERT_EQ (-(ssize_t)QUIC_FRAME_ERROR_TYPE, result);
 }
 
 TEST (frame_crypto_decode_truncated)
@@ -254,8 +262,14 @@ TEST (frame_crypto_decode_truncated)
   uint8_t buf2[] = { 0x06, 0x00 }; /* Type + offset, no length */
   SocketQUICFrameCrypto_T frame;
 
-  ASSERT_EQ (-1, SocketQUICFrame_decode_crypto (buf1, sizeof (buf1), &frame));
-  ASSERT_EQ (-1, SocketQUICFrame_decode_crypto (buf2, sizeof (buf2), &frame));
+  /* Both should return -QUIC_FRAME_ERROR_TRUNCATED */
+  ssize_t result1 = SocketQUICFrame_decode_crypto (buf1, sizeof (buf1), &frame);
+  ASSERT (result1 < 0);
+  ASSERT_EQ (-(ssize_t)QUIC_FRAME_ERROR_TRUNCATED, result1);
+
+  ssize_t result2 = SocketQUICFrame_decode_crypto (buf2, sizeof (buf2), &frame);
+  ASSERT (result2 < 0);
+  ASSERT_EQ (-(ssize_t)QUIC_FRAME_ERROR_TRUNCATED, result2);
 }
 
 TEST (frame_crypto_decode_data_truncated)
@@ -265,7 +279,34 @@ TEST (frame_crypto_decode_data_truncated)
   SocketQUICFrameCrypto_T frame;
 
   /* Should fail due to truncated data */
-  ASSERT_EQ (-1, SocketQUICFrame_decode_crypto (buf, sizeof (buf), &frame));
+  ssize_t result = SocketQUICFrame_decode_crypto (buf, sizeof (buf), &frame);
+  ASSERT (result < 0);
+  ASSERT_EQ (-(ssize_t)QUIC_FRAME_ERROR_TRUNCATED, result);
+}
+
+TEST (frame_crypto_decode_error_distinction)
+{
+  SocketQUICFrameCrypto_T frame;
+  ssize_t result;
+
+  /* Test 1: NULL pointer error */
+  result = SocketQUICFrame_decode_crypto (NULL, 10, &frame);
+  ASSERT_EQ (-(ssize_t)QUIC_FRAME_ERROR_NULL, result);
+
+  /* Test 2: Wrong frame type error */
+  uint8_t wrong_type[] = { 0x01, 0x00 }; /* PING frame */
+  result = SocketQUICFrame_decode_crypto (wrong_type, sizeof (wrong_type), &frame);
+  ASSERT_EQ (-(ssize_t)QUIC_FRAME_ERROR_TYPE, result);
+
+  /* Test 3: Truncated frame error */
+  uint8_t truncated[] = { 0x06 }; /* CRYPTO frame, but no offset */
+  result = SocketQUICFrame_decode_crypto (truncated, sizeof (truncated), &frame);
+  ASSERT_EQ (-(ssize_t)QUIC_FRAME_ERROR_TRUNCATED, result);
+
+  /* Verify errors are distinct */
+  ASSERT (QUIC_FRAME_ERROR_NULL != QUIC_FRAME_ERROR_TYPE);
+  ASSERT (QUIC_FRAME_ERROR_NULL != QUIC_FRAME_ERROR_TRUNCATED);
+  ASSERT (QUIC_FRAME_ERROR_TYPE != QUIC_FRAME_ERROR_TRUNCATED);
 }
 
 /* ============================================================================
