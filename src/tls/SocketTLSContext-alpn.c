@@ -22,6 +22,7 @@
 
 #include "tls/SocketTLS-private.h"
 #include <assert.h>
+#include <limits.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -29,6 +30,15 @@
 #include "core/SocketSecurity.h"
 
 #define T SocketTLSContext_T
+
+/**
+ * RFC 7301 Section 3.1: Protocol name length is encoded as a single byte
+ * in wire format (opaque ProtocolName<1..2^8-1>), limiting maximum length
+ * to 255 bytes. This assertion ensures SOCKET_TLS_MAX_ALPN_LEN can be
+ * safely cast to unsigned char in alpn_select_cb() and build_wire_format().
+ */
+_Static_assert(SOCKET_TLS_MAX_ALPN_LEN <= UCHAR_MAX,
+               "ALPN protocol length must fit in unsigned char (RFC 7301 wire format)");
 
 /** Initial capacity for dynamically-grown protocol arrays */
 #define ALPN_INITIAL_CAPACITY 4
