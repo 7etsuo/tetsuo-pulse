@@ -457,9 +457,14 @@ http2_parse_status_code (const char *value, size_t len, int *status)
   if (status == NULL || len != 3)
     return -1;
 
-  uint64_t code;
-  if (parse_decimal_uint64 (value, len, &code, 599) < 0)
-    return -1;
+  int code = 0;
+  for (size_t i = 0; i < 3; i++)
+    {
+      unsigned char c = (unsigned char)value[i];
+      if (c < '0' || c > '9')
+        return -1;
+      code = code * DECIMAL_BASE + (c - '0');
+    }
 
   /* Valid HTTP status codes are 100-599 */
   if (code < 100)
