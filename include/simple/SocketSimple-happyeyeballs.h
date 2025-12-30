@@ -53,6 +53,20 @@ extern "C" {
  *============================================================================*/
 
 /**
+ * @brief Default resolution delay in milliseconds (RFC 8305 § 5).
+ *
+ * Delay before starting parallel DNS resolution for both address families.
+ */
+#define SOCKET_HE_DEFAULT_RESOLUTION_DELAY_MS 50
+
+/**
+ * @brief Default connection attempt delay in milliseconds (RFC 8305 § 5).
+ *
+ * Delay before starting IPv4 connection attempt after IPv6 has started.
+ */
+#define SOCKET_HE_DEFAULT_CONNECTION_DELAY_MS 250
+
+/**
  * @brief Happy Eyeballs connection configuration.
  */
 typedef struct SocketSimple_HappyEyeballs_Config {
