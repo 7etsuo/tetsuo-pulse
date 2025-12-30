@@ -18,6 +18,15 @@
 #include "tls/SocketDTLSContext.h"
 
 /*============================================================================
+ * Constants
+ *============================================================================*/
+
+/**
+ * @brief Default timeout for DTLS handshakes (30 seconds).
+ */
+#define SOCKET_SIMPLE_DTLS_DEFAULT_TIMEOUT_MS 30000
+
+/*============================================================================
  * Options Helpers
  *============================================================================*/
 
@@ -27,7 +36,7 @@ Socket_simple_dtls_options_defaults (SocketSimple_DTLSOptions *opts)
   if (!opts)
     return;
 
-  opts->timeout_ms = 30000;
+  opts->timeout_ms = SOCKET_SIMPLE_DTLS_DEFAULT_TIMEOUT_MS;
   opts->verify_cert = 1;
   opts->ca_file = NULL;
   opts->ca_path = NULL;
@@ -473,7 +482,7 @@ Socket_simple_dtls_accept (SocketSimple_Socket_T server_sock, int timeout_ms)
 
     /* Complete handshake */
     state = SocketDTLS_handshake_loop (server_sock->dgram,
-                                       timeout_ms > 0 ? timeout_ms : 30000);
+                                       timeout_ms > 0 ? timeout_ms : SOCKET_SIMPLE_DTLS_DEFAULT_TIMEOUT_MS);
 
     if (state != DTLS_HANDSHAKE_COMPLETE)
       {
@@ -685,7 +694,7 @@ Socket_simple_dtls_handshake (SocketSimple_Socket_T sock, int timeout_ms)
   {
     DTLSHandshakeState state
         = SocketDTLS_handshake_loop (sock->dgram,
-                                     timeout_ms > 0 ? timeout_ms : 30000);
+                                     timeout_ms > 0 ? timeout_ms : SOCKET_SIMPLE_DTLS_DEFAULT_TIMEOUT_MS);
 
     if (state != DTLS_HANDSHAKE_COMPLETE)
       {
