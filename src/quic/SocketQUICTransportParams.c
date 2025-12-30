@@ -656,7 +656,10 @@ decode_preferred_address (const uint8_t *data, size_t len,
     return QUIC_TP_ERROR_INCOMPLETE;
 
   /* Connection ID */
-  SocketQUICConnectionID_set (&paddr->connection_id, data + pos, cid_len);
+  SocketQUICConnectionID_Result res =
+      SocketQUICConnectionID_set (&paddr->connection_id, data + pos, cid_len);
+  if (res != QUIC_CONNID_OK)
+    return QUIC_TP_ERROR_INVALID_VALUE;
   pos += cid_len;
 
   /* Stateless reset token */
