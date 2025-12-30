@@ -95,7 +95,11 @@ crypto_stream_insert_data(Arena_T arena, SocketQUICCryptoStream_T *stream,
       if (total_offset > stream->recv_buffer_size) {
         return QUIC_HANDSHAKE_ERROR_BUFFER;
       }
-      memcpy(stream->recv_buffer + stream->recv_offset, data, length);
+      /* Validate length fits in size_t for memcpy (CWE-197: 32-bit systems) */
+      if (length > SIZE_MAX) {
+        return QUIC_HANDSHAKE_ERROR_BUFFER;
+      }
+      memcpy(stream->recv_buffer + stream->recv_offset, data, (size_t)length);
     }
     stream->recv_offset += length;
     return QUIC_HANDSHAKE_OK;
@@ -106,6 +110,11 @@ crypto_stream_insert_data(Arena_T arena, SocketQUICCryptoStream_T *stream,
     return QUIC_HANDSHAKE_ERROR_BUFFER;
   }
 
+  /* Validate length fits in size_t for Arena_alloc and memcpy (CWE-197: 32-bit systems) */
+  if (length > SIZE_MAX) {
+    return QUIC_HANDSHAKE_ERROR_BUFFER;
+  }
+
   SocketQUICCryptoSegment_T *seg = Arena_alloc(arena, sizeof(*seg), __FILE__, __LINE__);
   if (!seg) {
     return QUIC_HANDSHAKE_ERROR_MEMORY;
@@ -113,12 +122,12 @@ crypto_stream_insert_data(Arena_T arena, SocketQUICCryptoStream_T *stream,
 
   seg->offset = offset;
   seg->length = length;
-  seg->data = Arena_alloc(arena, length, __FILE__, __LINE__);
+  seg->data = Arena_alloc(arena, (size_t)length, __FILE__, __LINE__);
   if (!seg->data) {
     return QUIC_HANDSHAKE_ERROR_MEMORY;
   }
 
-  memcpy(seg->data, data, length);
+  memcpy(seg->data, data, (size_t)length);
   seg->next = stream->segments;
   stream->segments = seg;
   stream->segment_count++;
