@@ -1802,12 +1802,18 @@ SocketAsync_registered_buffer_count (const T async)
 #endif
 }
 
-unsigned
-SocketAsync_send_fixed (T async, Socket_T socket, unsigned buf_index,
-                        size_t offset, size_t len, SocketAsync_Callback cb,
-                        void *user_data, SocketAsync_Flags flags)
-{
 #if SOCKET_HAS_IO_URING
+/*
+ * Internal helper to consolidate send_fixed and recv_fixed implementations.
+ * Both functions share identical logic except for operation type and io_uring
+ * prep function (write_fixed vs read_fixed).
+ */
+static unsigned
+socket_async_submit_fixed (T async, Socket_T socket, unsigned buf_index,
+                           size_t offset, size_t len, SocketAsync_Callback cb,
+                           void *user_data, SocketAsync_Flags flags,
+                           enum AsyncRequestType type)
+{
   struct AsyncRequest *req;
   struct io_uring_sqe *sqe;
   int fd;
@@ -1841,8 +1847,13 @@ SocketAsync_send_fixed (T async, Socket_T socket, unsigned buf_index,
   buf_ptr = (char *)async->registered_bufs[buf_index].iov_base + offset;
 
   /* Set up request with fixed buffer flag */
-  req = setup_async_request (async, socket, cb, user_data, REQ_SEND, buf_ptr,
-                             NULL, len, flags | ASYNC_FLAG_FIXED_BUFFER);
+  if (type == REQ_SEND)
+    req = setup_async_request (async, socket, cb, user_data, REQ_SEND,
+                               buf_ptr, NULL, len,
+                               flags | ASYNC_FLAG_FIXED_BUFFER);
+  else
+    req = setup_async_request (async, socket, cb, user_data, REQ_RECV, NULL,
+                               buf_ptr, len, flags | ASYNC_FLAG_FIXED_BUFFER);
 
   pthread_mutex_lock (&async->mutex);
   req->request_id = generate_request_id_unlocked (async);
@@ -1872,7 +1883,12 @@ SocketAsync_send_fixed (T async, Socket_T socket, unsigned buf_index,
       return 0;
     }
 
-  io_uring_prep_write_fixed (sqe, fd, buf_ptr, len, 0, buf_index);
+  /* Prepare io_uring operation based on type */
+  if (type == REQ_SEND)
+    io_uring_prep_write_fixed (sqe, fd, buf_ptr, len, 0, buf_index);
+  else
+    io_uring_prep_read_fixed (sqe, fd, buf_ptr, len, 0, buf_index);
+
   sqe->user_data = (uintptr_t)req->request_id;
 
   request_id = req->request_id;
@@ -1883,6 +1899,17 @@ SocketAsync_send_fixed (T async, Socket_T socket, unsigned buf_index,
   pthread_mutex_unlock (&async->mutex);
 
   return request_id;
+}
+#endif /* SOCKET_HAS_IO_URING */
+
+unsigned
+SocketAsync_send_fixed (T async, Socket_T socket, unsigned buf_index,
+                        size_t offset, size_t len, SocketAsync_Callback cb,
+                        void *user_data, SocketAsync_Flags flags)
+{
+#if SOCKET_HAS_IO_URING
+  return socket_async_submit_fixed (async, socket, buf_index, offset, len, cb,
+                                     user_data, flags, REQ_SEND);
 #else
   (void)async;
   (void)socket;
@@ -1904,81 +1931,8 @@ SocketAsync_recv_fixed (T async, Socket_T socket, unsigned buf_index,
                         void *user_data, SocketAsync_Flags flags)
 {
 #if SOCKET_HAS_IO_URING
-  struct AsyncRequest *req;
-  struct io_uring_sqe *sqe;
-  int fd;
-  unsigned request_id;
-  char *buf_ptr;
-
-  if (!async || !async->ring || !socket || !cb)
-    {
-      errno = EINVAL;
-      RAISE_MODULE_ERROR (SocketAsync_Failed);
-    }
-
-  if (buf_index >= async->registered_buf_count)
-    {
-      errno = EINVAL;
-      SOCKET_ERROR_FMT ("Buffer index %u out of range (count=%u)", buf_index,
-                        async->registered_buf_count);
-      RAISE_MODULE_ERROR (SocketAsync_Failed);
-    }
-
-  /* Check for integer overflow and bounds violation */
-  if (offset > async->registered_bufs[buf_index].iov_len
-      || len > async->registered_bufs[buf_index].iov_len - offset)
-    {
-      errno = EINVAL;
-      SOCKET_ERROR_MSG ("Offset + len exceeds buffer size");
-      RAISE_MODULE_ERROR (SocketAsync_Failed);
-    }
-
-  fd = Socket_fd (socket);
-  buf_ptr = (char *)async->registered_bufs[buf_index].iov_base + offset;
-
-  /* Set up request with fixed buffer flag */
-  req = setup_async_request (async, socket, cb, user_data, REQ_RECV, NULL,
-                             buf_ptr, len, flags | ASYNC_FLAG_FIXED_BUFFER);
-
-  pthread_mutex_lock (&async->mutex);
-  req->request_id = generate_request_id_unlocked (async);
-
-  /* Insert into hash table */
-  unsigned hash = request_hash (req->request_id);
-  req->next = async->requests[hash];
-  async->requests[hash] = req;
-  req->submitted_at = Socket_get_monotonic_ms ();
-
-  /* Submit fixed buffer operation */
-  sqe = io_uring_get_sqe (async->ring);
-  if (!sqe)
-    {
-      /* Try flushing pending operations */
-      if (async->pending_sqe_count > 0)
-        flush_io_uring_unlocked (async);
-      sqe = io_uring_get_sqe (async->ring);
-    }
-
-  if (!sqe)
-    {
-      remove_request_unlocked (async, req);
-      pthread_mutex_unlock (&async->mutex);
-      socket_async_free_request (async, req);
-      errno = EAGAIN;
-      return 0;
-    }
-
-  io_uring_prep_read_fixed (sqe, fd, buf_ptr, len, 0, buf_index);
-  sqe->user_data = (uintptr_t)req->request_id;
-
-  request_id = req->request_id;
-
-  /* Submit immediately for fixed buffer ops */
-  io_uring_submit (async->ring);
-
-  pthread_mutex_unlock (&async->mutex);
-
-  return request_id;
+  return socket_async_submit_fixed (async, socket, buf_index, offset, len, cb,
+                                     user_data, flags, REQ_RECV);
 #else
   (void)async;
   (void)socket;
