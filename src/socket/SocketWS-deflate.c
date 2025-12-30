@@ -546,6 +546,19 @@ ws_compression_free (SocketWS_T ws)
   /* Buffers not allocated; no action needed */
 }
 
+static int
+check_zlib_size_limit (SocketWS_T ws, size_t size, const char *type_name)
+{
+  if (size > UINT_MAX)
+    {
+      ws_set_error (ws, WS_ERROR_COMPRESSION,
+                    "%s size %zu exceeds zlib limit %u", type_name, size,
+                    UINT_MAX);
+      return -1;
+    }
+  return 0;
+}
+
 static unsigned char *
 setup_compress_buffer (SocketWS_T ws, size_t input_len, size_t *buf_size)
 {
@@ -574,20 +587,11 @@ setup_deflate_stream (SocketWS_T ws, z_stream *strm, const unsigned char *input,
                       size_t output_size)
 {
   /* Check for overflow before casting size_t to uInt (zlib limitation) */
-  if (input_len > UINT_MAX)
-    {
-      ws_set_error (ws, WS_ERROR_COMPRESSION,
-                    "Input size %zu exceeds zlib limit %u", input_len,
-                    UINT_MAX);
-      return -1;
-    }
-  if (output_size > UINT_MAX)
-    {
-      ws_set_error (ws, WS_ERROR_COMPRESSION,
-                    "Buffer size %zu exceeds zlib limit %u", output_size,
-                    UINT_MAX);
-      return -1;
-    }
+  if (check_zlib_size_limit (ws, input_len, "Input") < 0)
+    return -1;
+  if (check_zlib_size_limit (ws, output_size, "Buffer") < 0)
+    return -1;
+
   strm->next_in = (Bytef *)input;
   strm->avail_in = (uInt)input_len;
   strm->next_out = output;
@@ -680,20 +684,11 @@ ws_decompress_message (SocketWS_T ws, const unsigned char *input,
 
   /* Set up zlib stream */
   /* Check for overflow before casting size_t to uInt (zlib limitation, issue #566) */
-  if (input_with_trailer_len > UINT_MAX)
-    {
-      ws_set_error (ws, WS_ERROR_COMPRESSION,
-                    "Input size %zu exceeds zlib limit %u",
-                    input_with_trailer_len, UINT_MAX);
-      return -1;
-    }
-  if (buf_size > UINT_MAX)
-    {
-      ws_set_error (ws, WS_ERROR_COMPRESSION,
-                    "Buffer size %zu exceeds zlib limit %u", buf_size,
-                    UINT_MAX);
-      return -1;
-    }
+  if (check_zlib_size_limit (ws, input_with_trailer_len, "Input") < 0)
+    return -1;
+  if (check_zlib_size_limit (ws, buf_size, "Buffer") < 0)
+    return -1;
+
   setup_inflate_stream (strm, input_with_trailer, input_with_trailer_len,
                        buf, buf_size);
 
