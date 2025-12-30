@@ -12,6 +12,7 @@
 #include "dns/SocketDNSCookie.h"
 #include "dns/SocketDNSWire.h"
 #include "core/Arena.h"
+#include "core/SocketCrypto.h"
 #include <arpa/inet.h>
 #include <string.h>
 #include <sys/random.h>
@@ -141,15 +142,16 @@ SocketDNSCookie_free (T *cache)
     return;
 
   /* Clear sensitive data */
-  memset ((*cache)->secret, 0, SECRET_SIZE);
-  memset ((*cache)->prev_secret, 0, SECRET_SIZE);
+  SocketCrypto_secure_clear ((*cache)->secret, SECRET_SIZE);
+  SocketCrypto_secure_clear ((*cache)->prev_secret, SECRET_SIZE);
 
   /* Clear cache entries */
   CacheNode *node = (*cache)->head;
   while (node)
     {
       CacheNode *next = node->next;
-      memset (&node->entry.server_cookie, 0, DNS_SERVER_COOKIE_MAX_SIZE);
+      SocketCrypto_secure_clear (&node->entry.server_cookie,
+                                 DNS_SERVER_COOKIE_MAX_SIZE);
       node = next;
     }
 
@@ -483,7 +485,8 @@ SocketDNSCookie_cache_invalidate (T cache, const struct sockaddr *server_addr,
     cache->tail = node->prev;
 
   /* Clear sensitive data */
-  memset (&node->entry.server_cookie, 0, DNS_SERVER_COOKIE_MAX_SIZE);
+  SocketCrypto_secure_clear (&node->entry.server_cookie,
+                             DNS_SERVER_COOKIE_MAX_SIZE);
 
   cache->count--;
   cache->stats.current_entries = cache->count;
@@ -504,7 +507,8 @@ SocketDNSCookie_cache_clear (T cache)
   while (node)
     {
       CacheNode *next = node->next;
-      memset (&node->entry.server_cookie, 0, DNS_SERVER_COOKIE_MAX_SIZE);
+      SocketCrypto_secure_clear (&node->entry.server_cookie,
+                                 DNS_SERVER_COOKIE_MAX_SIZE);
       node = next;
     }
 
@@ -912,7 +916,8 @@ evict_lru (T cache)
     cache->head = NULL;
 
   /* Clear sensitive data */
-  memset (&node->entry.server_cookie, 0, DNS_SERVER_COOKIE_MAX_SIZE);
+  SocketCrypto_secure_clear (&node->entry.server_cookie,
+                             DNS_SERVER_COOKIE_MAX_SIZE);
 
   cache->count--;
   cache->stats.cache_evictions++;
