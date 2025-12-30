@@ -19,7 +19,8 @@
  * IMPLEMENTATION NOTES:
  * - Uses fd_to_index mapping table for O(1) FD lookup via find_fd_index()
  * - Dynamically expands capacity as needed with overflow protection
- * - backend_get_event requires O(n) scan due to poll(2) design limitation
+ * - backend_get_event is O(1) via ready_events compaction after poll()
+ * - Compacts ready events once per wait for efficient iteration
  * - All constants from SocketConfig.h: POLL_INITIAL_FDS,
  *   POLL_INITIAL_FD_MAP_SIZE
  *
@@ -43,12 +44,20 @@
 /* Sentinel value indicating FD not in poll set */
 #define FD_INDEX_INVALID (-1)
 
+/* Ready event structure for O(1) event retrieval */
+struct ready_event
+{
+  int fd;           /* File descriptor */
+  unsigned events;  /* Translated events */
+};
+
 /* Backend instance structure */
 #define T PollBackend_T
 struct T
 {
   struct pollfd *fds;  /* Array of pollfd structures */
   int *fd_to_index;    /* FD to index mapping (for O(1) lookup) */
+  struct ready_event *ready_events; /* Compacted ready events from last wait */
   int nfds;            /* Current number of FDs */
   int capacity;        /* Capacity of fds array */
   int maxevents;       /* Maximum events per wait (not strictly enforced) */
@@ -171,6 +180,30 @@ init_backend_fd_mapping (PollBackend_T backend)
 }
 
 /**
+ * init_backend_ready_events - Allocate ready events array
+ * @backend: Backend to initialize
+ *
+ * Returns: 0 on success, -1 on failure
+ */
+static int
+init_backend_ready_events (PollBackend_T backend)
+{
+  size_t total_bytes;
+  if (backend->maxevents <= 0) {
+    errno = EINVAL;
+    backend->ready_events = NULL;
+    return -1;
+  }
+  if (!SocketSecurity_check_multiply((size_t)backend->maxevents, sizeof(struct ready_event), &total_bytes)) {
+    errno = EOVERFLOW;
+    backend->ready_events = NULL;
+    return -1;
+  }
+  backend->ready_events = calloc((size_t)backend->maxevents, sizeof(struct ready_event));
+  return backend->ready_events ? 0 : -1;
+}
+
+/**
  * init_backend_state - Initialize backend counters and state
  * @backend: Backend to initialize
  * @maxevents: Maximum events per wait
@@ -200,6 +233,8 @@ backend_new (Arena_T arena, const int maxevents)
   backend->max_fd = POLL_INITIAL_FD_MAP_SIZE;
   backend->max_fd_limit = compute_max_fd_limit (backend->max_fd);
 
+  init_backend_state (backend, maxevents);
+
   if (init_backend_fds (backend) < 0)
     return NULL;
 
@@ -209,7 +244,13 @@ backend_new (Arena_T arena, const int maxevents)
       return NULL;
     }
 
-  init_backend_state (backend, maxevents);
+  if (init_backend_ready_events (backend) < 0)
+    {
+      free (backend->fds);
+      free (backend->fd_to_index);
+      return NULL;
+    }
+
   return backend;
 }
 
@@ -223,6 +264,9 @@ backend_free (PollBackend_T backend)
 
   if (backend->fd_to_index)
     free (backend->fd_to_index);
+
+  if (backend->ready_events)
+    free (backend->ready_events);
 }
 
 /* ==================== FD Lookup Helpers ==================== */
@@ -533,6 +577,33 @@ reset_backend_wait_state (PollBackend_T backend, int nev)
 
 
 /**
+ * compact_ready_events - Compact ready fds into ready_events array
+ * @backend: Backend instance
+ * @result: Number of ready fds from poll()
+ *
+ * Scans fds array once and compacts ready events for O(1) retrieval.
+ * Returns: Number of events compacted (should match result)
+ */
+static int
+compact_ready_events (PollBackend_T backend, int result)
+{
+  int ready_count = 0;
+
+  for (int i = 0; i < backend->nfds && ready_count < result; i++)
+    {
+      if (backend->fds[i].revents != 0)
+        {
+          backend->ready_events[ready_count].fd = backend->fds[i].fd;
+          backend->ready_events[ready_count].events
+              = translate_from_poll_events (backend->fds[i].revents);
+          ready_count++;
+        }
+    }
+
+  return ready_count;
+}
+
+/**
  * handle_poll_success - Handle successful poll result
  * @backend: Backend instance
  * @result: Number of ready fds from poll()
@@ -542,8 +613,9 @@ reset_backend_wait_state (PollBackend_T backend, int nev)
 static int
 handle_poll_success (PollBackend_T backend, int result)
 {
-  reset_backend_wait_state (backend, result);
-  return result;
+  int ready_count = compact_ready_events (backend, result);
+  reset_backend_wait_state (backend, ready_count);
+  return ready_count;
 }
 
 /**
@@ -587,38 +659,6 @@ backend_wait (PollBackend_T backend, const int timeout_ms)
   return handle_poll_success (backend, result);
 }
 
-/**
- * find_nth_ready_fd - Find the nth FD with events in pollfd array
- * @backend: Backend instance
- * @target_index: Which ready FD to find (0-based)
- * @fd_out: Output - file descriptor
- * @events_out: Output - translated events
- *
- * Returns: 0 on success, -1 if not found
- */
-static int
-find_nth_ready_fd (const PollBackend_T backend, int target_index, int *fd_out,
-                   unsigned *events_out)
-{
-  int count = 0;
-
-  for (int i = 0; i < backend->nfds; i++)
-    {
-      if (backend->fds[i].revents != 0)
-        {
-          if (count == target_index)
-            {
-              *fd_out = backend->fds[i].fd;
-              *events_out = translate_from_poll_events (backend->fds[i].revents);
-              return 0;
-            }
-          count++;
-        }
-    }
-
-  return -1;
-}
-
 int
 backend_get_event (const PollBackend_T backend, const int index, int *fd_out,
                    unsigned *events_out)
@@ -630,7 +670,9 @@ backend_get_event (const PollBackend_T backend, const int index, int *fd_out,
   if (index < 0 || index >= backend->last_nev)
     return -1;
 
-  return find_nth_ready_fd (backend, index, fd_out, events_out);
+  *fd_out = backend->ready_events[index].fd;
+  *events_out = backend->ready_events[index].events;
+  return 0;
 }
 
 const char *
