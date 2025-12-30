@@ -12,6 +12,7 @@
 #include "dns/SocketDNSCookie.h"
 #include "dns/SocketDNSWire.h"
 #include "core/Arena.h"
+#include "core/SocketCrypto.h"
 #include <arpa/inet.h>
 #include <string.h>
 #include <sys/random.h>
@@ -28,8 +29,8 @@
 const Except_T SocketDNSCookie_Failed
     = {&SocketDNSCookie_Failed, "DNS Cookie operation failed"};
 
-/* Client secret size (256 bits for HMAC-SHA256) */
-#define SECRET_SIZE 32
+/* Client secret size (HMAC-SHA256 key size) */
+#define SECRET_SIZE SOCKET_CRYPTO_SHA256_SIZE
 
 /* Minimum TTL/lifetime for all time-based settings (1 minute) */
 #define DNS_COOKIE_MIN_TTL_SECONDS 60
