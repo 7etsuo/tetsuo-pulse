@@ -49,6 +49,10 @@
 #define HPACK_INT_PAYLOAD_MASK 0x7F
 #define HPACK_INT_CONTINUATION_VALUE 128
 
+/* RFC 7541 Section 5.1: Integer encoding buffer size
+ * Max size = 1 prefix byte + 10 continuation bytes (7 bits each) + safety margin
+ * Each continuation byte contributes 7 bits; theoretical max for uint64_t requires
+ * at most 10 continuation bytes. Buffer sized to 16 for alignment and safety. */
 #define HPACK_INT_BUF_SIZE 16
 #define HPACK_HUFFMAN_RATIO 2
 
