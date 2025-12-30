@@ -478,14 +478,24 @@ int
 http2_parse_content_length (const char *value, size_t len, int64_t *cl)
 {
   /* Empty or NULL value is invalid */
-  if (cl == NULL)
+  if (cl == NULL || value == NULL || len == 0)
     return -1;
 
-  uint64_t length;
-  if (parse_decimal_uint64 (value, len, &length, INT64_MAX) < 0)
-    return -1;
+  int64_t result = 0;
+  for (size_t i = 0; i < len; i++)
+    {
+      unsigned char c = (unsigned char)value[i];
+      if (c < '0' || c > '9')
+        return -1;
 
-  *cl = (int64_t)length;
+      /* Overflow check before multiplication */
+      if (result > (INT64_MAX - (c - '0')) / DECIMAL_BASE)
+        return -1;
+
+      result = result * DECIMAL_BASE + (c - '0');
+    }
+
+  *cl = result;
   return 0;
 }
 
