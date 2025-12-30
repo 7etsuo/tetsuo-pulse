@@ -66,6 +66,16 @@
  */
 #define DOT_RECV_BUFFER_SIZE 4096
 
+/**
+ * Maximum total memory for pending query allocations (CWE-770 mitigation).
+ *
+ * Set to 10MB to prevent arena exhaustion while allowing reasonable query load.
+ * With DOT_MAX_PENDING_QUERIES=100 and DOT_MAX_MESSAGE_SIZE=65535, the worst
+ * case without this limit would be 6.5MB (100 * 65KB). This limit provides
+ * additional headroom while preventing unbounded allocation.
+ */
+#define DOT_MAX_TOTAL_QUERY_BYTES (10 * 1024 * 1024)
+
 /* Well-known DoT servers */
 static const struct
 {
@@ -161,6 +171,9 @@ struct T
   struct SocketDNSoverTLS_Query *pending_head;
   struct SocketDNSoverTLS_Query *pending_tail;
   int pending_count;
+
+  /* Memory tracking (CWE-770: Allocation of Resources Without Limits) */
+  size_t total_query_bytes;
 
   /* Statistics */
   SocketDNSoverTLS_Stats stats;
@@ -675,6 +688,16 @@ complete_query (T transport, struct SocketDNSoverTLS_Query *query,
 
   transport->pending_count--;
 
+  /* Decrement memory tracking (CWE-770 mitigation) */
+  if (transport->total_query_bytes >= query->query_len)
+    {
+      transport->total_query_bytes -= query->query_len;
+    }
+  else
+    {
+      transport->total_query_bytes = 0; /* Safety: prevent underflow */
+    }
+
   /* Update stats */
   if (error == DOT_ERROR_SUCCESS)
     transport->stats.queries_completed++;
@@ -932,6 +955,12 @@ SocketDNSoverTLS_query (T transport, const unsigned char *query, size_t len,
       return NULL;
     }
 
+  /* Check cumulative memory limit (CWE-770 mitigation) */
+  if (transport->total_query_bytes + len > DOT_MAX_TOTAL_QUERY_BYTES)
+    {
+      return NULL; /* Would exceed memory budget */
+    }
+
   /* Decode query ID */
   if (SocketDNS_header_decode (query, len, &hdr) != 0)
     {
@@ -946,6 +975,9 @@ SocketDNSoverTLS_query (T transport, const unsigned char *query, size_t len,
   q->query = ALLOC (transport->arena, len);
   memcpy (q->query, query, len);
   q->query_len = len;
+
+  /* Track total memory usage (CWE-770 mitigation) */
+  transport->total_query_bytes += len;
   q->sent_time_ms = get_monotonic_ms ();
   q->callback = callback;
   q->userdata = userdata;
