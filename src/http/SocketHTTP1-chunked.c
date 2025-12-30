@@ -10,6 +10,7 @@
 #include "http/SocketHTTP1.h"
 
 #include <assert.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -385,12 +386,13 @@ handle_chunk_size_state (SocketHTTP1_Parser_T parser, const char **p,
     return HTTP1_ERROR_INVALID_CHUNK_SIZE;
 
   (*p) += line_len;
-  parser->chunk_size = (size_t)chunk_size;
-  parser->chunk_remaining = (size_t)chunk_size;
 
   if (chunk_size == 0)
     {
       /* Last chunk - expect trailers or final CRLF */
+      parser->chunk_size = 0;
+      parser->chunk_remaining = 0;
+
       if (parser->trailers == NULL)
         {
           SocketHTTP_Headers_T trailers
@@ -408,9 +410,17 @@ handle_chunk_size_state (SocketHTTP1_Parser_T parser, const char **p,
     }
   else
     {
+      /* Validate chunk_size fits in size_t (32-bit safety) */
+      if ((uint64_t)chunk_size > SIZE_MAX)
+        return HTTP1_ERROR_CHUNK_TOO_LARGE;
+
       /* Check chunk size limit */
       if ((size_t)chunk_size > parser->config.max_chunk_size)
         return HTTP1_ERROR_CHUNK_TOO_LARGE;
+
+      /* Safe to cast after validation */
+      parser->chunk_size = (size_t)chunk_size;
+      parser->chunk_remaining = (size_t)chunk_size;
 
       parser->internal_state = HTTP1_PS_CHUNK_DATA;
       parser->state = HTTP1_STATE_CHUNK_DATA;
