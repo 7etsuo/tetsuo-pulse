@@ -297,6 +297,12 @@ typedef struct
 /** Maximum valid urgency value */
 #define SOCKETHTTP2_PRIORITY_MAX_URGENCY 7
 
+/** Maximum serialized priority field length: "u=7, i" = 7 bytes */
+#define SOCKETHTTP2_PRIORITY_FIELD_MAX_LEN 8
+
+/** PRIORITY_UPDATE frame payload size: 4 bytes stream ID + priority field */
+#define SOCKETHTTP2_PRIORITY_UPDATE_MAX_PAYLOAD 16
+
 /**
  * RFC 9218 Extensible Priority parameters.
  *

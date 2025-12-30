@@ -352,8 +352,8 @@ SocketHTTP2_send_priority_update (SocketHTTP2_Conn_T conn, uint32_t stream_id,
                                   const SocketHTTP2_Priority *priority)
 {
   SocketHTTP2_FrameHeader header;
-  unsigned char payload[64]; /* 4 bytes stream ID + priority field value */
-  char priority_field[32];
+  unsigned char payload[SOCKETHTTP2_PRIORITY_UPDATE_MAX_PAYLOAD];
+  char priority_field[SOCKETHTTP2_PRIORITY_FIELD_MAX_LEN];
   ssize_t priority_len;
   size_t payload_len;
 
