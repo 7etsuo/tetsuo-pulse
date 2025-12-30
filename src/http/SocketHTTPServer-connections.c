@@ -22,8 +22,6 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPServer);
 
 static void record_request_latency (SocketHTTPServer_T server,
                                     int64_t request_start_ms);
-static SocketHTTP1_Parser_T connection_create_parser (Arena_T arena,
-                                                      const SocketHTTPServer_Config *config);
 static int connection_init_resources (SocketHTTPServer_T server,
                                       ServerConnection *conn,
                                       Socket_T socket);
@@ -655,22 +653,6 @@ connection_send_error (SocketHTTPServer_T server, ServerConnection *conn,
   connection_send_response (server, conn);
 }
 
-/* Create HTTP/1.1 parser with server config limits */
-static SocketHTTP1_Parser_T
-connection_create_parser (Arena_T arena, const SocketHTTPServer_Config *config)
-{
-  SocketHTTP1_Config pcfg;
-  SocketHTTP1_config_defaults (&pcfg);
-  pcfg.max_header_size = config->max_header_size;
-
-  SocketHTTP1_Parser_T p
-      = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, &pcfg, arena);
-  if (p == NULL)
-    RAISE_HTTPSERVER_ERROR (SocketHTTPServer_Failed);
-
-  return p;
-}
-
 /* Record request latency to histogram */
 static void
 record_request_latency (SocketHTTPServer_T server, int64_t request_start_ms)
@@ -705,7 +687,14 @@ connection_init_resources (SocketHTTPServer_T server, ServerConnection *conn,
       socket_util_safe_strncpy (conn->client_addr, addr, sizeof (conn->client_addr));
     }
 
-  conn->parser = connection_create_parser (arena, &server->config);
+  /* Create HTTP/1.1 parser with server config limits */
+  SocketHTTP1_Config pcfg;
+  SocketHTTP1_config_defaults (&pcfg);
+  pcfg.max_header_size = server->config.max_header_size;
+  conn->parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, &pcfg, arena);
+  if (conn->parser == NULL)
+    RAISE_HTTPSERVER_ERROR (SocketHTTPServer_Failed);
+
   conn->inbuf = SocketBuf_new (arena, HTTPSERVER_IO_BUFFER_SIZE);
   conn->outbuf = SocketBuf_new (arena, HTTPSERVER_IO_BUFFER_SIZE);
   conn->response_headers = SocketHTTP_Headers_new (arena);
