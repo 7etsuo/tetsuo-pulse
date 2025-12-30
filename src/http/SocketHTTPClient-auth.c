@@ -505,10 +505,8 @@ generate_cnonce (char *cnonce, size_t size)
 
   if (SocketCrypto_random_bytes (random_bytes, sizeof (random_bytes)) != 0)
     {
-      uint64_t t = (uint64_t)time (NULL);
-      memcpy (random_bytes, &t, sizeof (t));
-      memset (random_bytes + sizeof (t), 0,
-              sizeof (random_bytes) - sizeof (t));
+      SOCKET_LOG_ERROR_MSG ("Failed to generate secure random bytes for cnonce");
+      RAISE (SocketHTTPClient_Failed);
     }
 
   SocketCrypto_hex_encode (random_bytes, sizeof (random_bytes), cnonce, 1);
