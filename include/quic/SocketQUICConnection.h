@@ -117,7 +117,7 @@ extern const char *SocketQUICConnection_role_string(SocketQUICConnection_Role ro
 extern void SocketQUICConnection_set_idle_timeout(SocketQUICConnection_T conn, uint64_t local_timeout_ms, uint64_t peer_timeout_ms);
 extern void SocketQUICConnection_reset_idle_timer(SocketQUICConnection_T conn, uint64_t now_ms);
 extern int SocketQUICConnection_check_idle_timeout(SocketQUICConnection_T conn, uint64_t now_ms);
-extern void SocketQUICConnection_initiate_close(SocketQUICConnection_T conn, uint64_t error_code, uint64_t now_ms, uint64_t pto_ms);
+extern void SocketQUICConnection_initiate_close(SocketQUICConnection_T conn, uint64_t now_ms, uint64_t pto_ms);
 extern void SocketQUICConnection_enter_draining(SocketQUICConnection_T conn, uint64_t now_ms, uint64_t pto_ms);
 extern int SocketQUICConnection_is_closing_or_draining(SocketQUICConnection_T conn);
 extern int SocketQUICConnection_check_termination_deadline(SocketQUICConnection_T conn, uint64_t now_ms);

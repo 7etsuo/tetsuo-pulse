@@ -112,8 +112,8 @@ test_immediate_close_transitions(void)
   /* Start in IDLE state */
   assert(conn->state == QUIC_CONN_STATE_IDLE);
 
-  /* Initiate close with error code 0x00 (NO_ERROR) */
-  SocketQUICConnection_initiate_close(conn, 0x00, 1000, TEST_PTO_MS);
+  /* Initiate close (error code passed separately to CONNECTION_CLOSE frame) */
+  SocketQUICConnection_initiate_close(conn, 1000, TEST_PTO_MS);
 
   /* Should transition to CLOSING */
   assert(conn->state == QUIC_CONN_STATE_CLOSING);
@@ -277,7 +277,7 @@ test_overflow_protection(void)
 
   /* Test closing deadline overflow */
   uint64_t near_max = UINT64_MAX - 100;
-  SocketQUICConnection_initiate_close(conn, 0, near_max, 1000);
+  SocketQUICConnection_initiate_close(conn, near_max, 1000);
   assert(conn->closing_deadline_ms == UINT64_MAX);
 
   /* Test draining deadline overflow */
@@ -300,12 +300,12 @@ test_no_double_transition(void)
       = SocketQUICConnection_new(arena, QUIC_CONN_ROLE_CLIENT);
 
   /* Enter closing state */
-  SocketQUICConnection_initiate_close(conn, 0, 1000, TEST_PTO_MS);
+  SocketQUICConnection_initiate_close(conn, 1000, TEST_PTO_MS);
   assert(conn->state == QUIC_CONN_STATE_CLOSING);
   uint64_t first_deadline = conn->closing_deadline_ms;
 
   /* Attempt to close again should not change deadline */
-  SocketQUICConnection_initiate_close(conn, 1, 2000, TEST_PTO_MS);
+  SocketQUICConnection_initiate_close(conn, 2000, TEST_PTO_MS);
   assert(conn->state == QUIC_CONN_STATE_CLOSING);
   assert(conn->closing_deadline_ms == first_deadline);
 
@@ -337,7 +337,7 @@ test_multiplication_overflow_protection(void)
   /* UINT64_MAX / 3 = 6148914691236517205 */
   /* Any PTO > this value should cause overflow */
   uint64_t overflow_pto = UINT64_MAX / 3 + 1;
-  SocketQUICConnection_initiate_close(conn, 0, 0, overflow_pto);
+  SocketQUICConnection_initiate_close(conn, 0, overflow_pto);
   /* Should saturate to UINT64_MAX, not wrap around */
   assert(conn->closing_deadline_ms == UINT64_MAX);
 
@@ -347,7 +347,7 @@ test_multiplication_overflow_protection(void)
       = SocketQUICConnection_new(arena2, QUIC_CONN_ROLE_CLIENT);
   /* Use a value well below the boundary to avoid edge case issues */
   uint64_t safe_pto = (UINT64_MAX / 3) - 1000;
-  SocketQUICConnection_initiate_close(conn2, 0, 0, safe_pto);
+  SocketQUICConnection_initiate_close(conn2, 0, safe_pto);
   /* Should compute 3*PTO without overflow */
   uint64_t expected = safe_pto * 3;
   assert(conn2->closing_deadline_ms == expected);
@@ -357,7 +357,7 @@ test_multiplication_overflow_protection(void)
   Arena_T arena3 = Arena_new();
   SocketQUICConnection_T conn3
       = SocketQUICConnection_new(arena3, QUIC_CONN_ROLE_SERVER);
-  SocketQUICConnection_initiate_close(conn3, 0, 0, UINT64_MAX);
+  SocketQUICConnection_initiate_close(conn3, 0, UINT64_MAX);
   assert(conn3->closing_deadline_ms == UINT64_MAX);
 
   /* Test case 4: Same for draining state */
