@@ -1232,6 +1232,102 @@ validate_connect_async_params (T pool, const char *host, int port,
 }
 
 /**
+ * setup_async_connection_context - Initialize async connect context
+ * @pool: Pool instance (must be locked by caller)
+ * @socket: Configured socket for connection
+ * @callback: User completion callback
+ * @data: User data for callback
+ *
+ * Returns: Initialized async context added to pool's pending list
+ * Raises: SocketPool_Failed on allocation or limit errors
+ * Thread-safe: Caller must hold pool mutex
+ *
+ * Allocates context from freelist/arena, initializes fields, and adds
+ * to pool's async_ctx list. Enforces SOCKET_POOL_MAX_ASYNC_PENDING limit.
+ */
+static AsyncConnectContext_T
+setup_async_connection_context (T pool, Socket_T socket,
+                                SocketPool_ConnectCallback callback,
+                                void *data)
+{
+  AsyncConnectContext_T ctx;
+
+  ctx = alloc_async_context (pool);
+  if (!ctx)
+    RAISE_POOL_MSG (SocketPool_Failed,
+                    SOCKET_ENOMEM ": Cannot allocate async context");
+
+  /* Initialize context BEFORE DNS resolve - callback may fire immediately
+   * for IP addresses that don't need actual DNS lookup (e.g. "127.0.0.1") */
+  ctx->pool = pool;
+  ctx->socket = socket;
+  ctx->cb = callback;
+  ctx->user_data = data;
+  ctx->next = NULL;
+
+  /* Security: Check async pending limit before starting DNS */
+  if (!add_async_context (pool, ctx))
+    RAISE_POOL_MSG (SocketPool_Failed,
+                    "Async connect limit reached (%d pending)",
+                    SOCKET_POOL_MAX_ASYNC_PENDING);
+
+  return ctx;
+}
+
+/**
+ * cleanup_failed_async_context - Clean up context and socket after failure
+ * @pool: Pool instance (must be locked by caller)
+ * @ctx: Context to clean up (may be NULL or partially initialized)
+ * @socket: Socket pointer (freed and set to NULL if non-NULL)
+ *
+ * Thread-safe: Caller must hold pool mutex
+ *
+ * Handles cleanup for partial initialization failures during async connect
+ * setup. If context was added to pool list, removes it. Always frees socket.
+ */
+static void
+cleanup_failed_async_context (T pool, AsyncConnectContext_T ctx,
+                              Socket_T *socket)
+{
+  if (ctx && ctx->socket)
+    {
+      /* Context was added to list - remove it first */
+      remove_async_context (pool, ctx);
+      ctx->socket = NULL;
+    }
+  if (socket && *socket)
+    Socket_free (socket);
+}
+
+/**
+ * initiate_dns_resolution - Start DNS resolution for async connection
+ * @dns: DNS resolver
+ * @host: Target hostname
+ * @port: Target port
+ * @ctx: Async context for callback
+ *
+ * Returns: DNS request handle
+ * Raises: SocketPool_Failed on DNS start failure
+ * Thread-safe: Yes - call without pool lock to avoid deadlock
+ *
+ * Starts DNS resolution with async_connect_dns_callback. May invoke callback
+ * synchronously for IP literals or cache hits, so caller must release pool
+ * lock before calling this function.
+ */
+static Request_T
+initiate_dns_resolution (SocketDNS_T dns, const char *host, int port,
+                        AsyncConnectContext_T ctx)
+{
+  Request_T req;
+
+  req = SocketDNS_resolve (dns, host, port, async_connect_dns_callback, ctx);
+  if (!req)
+    RAISE_POOL_MSG (SocketPool_Failed, "Failed to start DNS resolution");
+
+  return req;
+}
+
+/**
  * SocketPool_connect_async - Create async connection to remote host
  * @pool: Pool instance
  * @host: Remote hostname or IP address
@@ -1263,39 +1359,14 @@ SocketPool_connect_async (T pool, const char *host, int port,
   TRY
   {
     dns = get_or_create_dns (pool);
-    ctx = alloc_async_context (pool);
-    if (!ctx)
-      RAISE_POOL_MSG (SocketPool_Failed,
-                      SOCKET_ENOMEM ": Cannot allocate async context");
-
     socket = create_pool_socket ();
     apply_pool_timeouts (socket);
-
-    /* Initialize context BEFORE DNS resolve - callback may fire immediately
-     * for IP addresses that don't need actual DNS lookup (e.g. "127.0.0.1") */
-    ctx->pool = pool;
-    ctx->socket = socket;
-    ctx->cb = callback;
-    ctx->user_data = data;
-    ctx->next = NULL;
-
-    /* Security: Check async pending limit before starting DNS */
-    if (!add_async_context (pool, ctx))
-      RAISE_POOL_MSG (SocketPool_Failed,
-                      "Async connect limit reached (%d pending)",
-                      SOCKET_POOL_MAX_ASYNC_PENDING);
+    ctx = setup_async_connection_context (pool, socket, callback, data);
   }
   ELSE
   {
     /* Cleanup on any exception (Socket_Failed or SocketPool_Failed) */
-    if (ctx && ctx->socket)
-      {
-        /* Context was added to list - remove it first */
-        remove_async_context (pool, ctx);
-        ctx->socket = NULL;
-      }
-    if (socket)
-      Socket_free ((Socket_T *)&socket);
+    cleanup_failed_async_context (pool, ctx, (Socket_T *)&socket);
     POOL_UNLOCK (pool);
     RERAISE;
   }
@@ -1307,16 +1378,17 @@ SocketPool_connect_async (T pool, const char *host, int port,
    * The context is already safely linked into the pool's list. */
   POOL_UNLOCK (pool);
 
-  req = SocketDNS_resolve (dns, host, port, async_connect_dns_callback, ctx);
-  if (!req)
-    {
-      /* DNS resolve failed - clean up context (need lock for list removal) */
-      POOL_LOCK (pool);
-      remove_async_context (pool, ctx);
-      POOL_UNLOCK (pool);
-      Socket_free ((Socket_T *)&socket);
-      RAISE_POOL_MSG (SocketPool_Failed, "Failed to start DNS resolution");
-    }
+  TRY { req = initiate_dns_resolution (dns, host, port, ctx); }
+  EXCEPT (SocketPool_Failed)
+  {
+    /* DNS resolve failed - clean up context (need lock for list removal) */
+    POOL_LOCK (pool);
+    remove_async_context (pool, ctx);
+    POOL_UNLOCK (pool);
+    Socket_free ((Socket_T *)&socket);
+    RERAISE;
+  }
+  END_TRY;
 
   /* Store request handle after successful DNS resolve */
   ctx->req = req;
@@ -1511,6 +1583,66 @@ consume_rate_and_track_ip (T pool, const char *client_ip)
 }
 
 /**
+ * handle_syn_action - Process SYN protection action for accepted client
+ * @pool: Pool instance
+ * @protect: SYN protection instance
+ * @client: Pointer to accepted client socket (freed on block/failure)
+ * @action: Action to apply (ALLOW/THROTTLE/CHALLENGE/BLOCK)
+ * @client_ip: Client IP address
+ *
+ * Returns: Socket if allowed, NULL if blocked or rate limit exceeded
+ * Thread-safe: Yes
+ *
+ * Consolidates the switch statement pattern for SYN protection actions.
+ * Applies throttle delays, TCP_DEFER_ACCEPT challenges, consumes rate
+ * tokens, and tracks IPs as appropriate for each action.
+ */
+static Socket_T
+handle_syn_action (T pool, SocketSYNProtect_T protect, Socket_T *client,
+                   SocketSYN_Action action, const char *client_ip)
+{
+  switch (action)
+    {
+    case SYN_ACTION_ALLOW:
+      if (!try_consume_and_report (pool, protect, client_ip, 1))
+        {
+          handle_syn_consume_failure (protect, client_ip, client);
+          return NULL;
+        }
+      break;
+
+    case SYN_ACTION_THROTTLE:
+      /* Apply throttle delay, then allow */
+      apply_syn_throttle (action, protect);
+      if (!try_consume_and_report (pool, protect, client_ip, 1))
+        {
+          handle_syn_consume_failure (protect, client_ip, client);
+          return NULL;
+        }
+      break;
+
+    case SYN_ACTION_CHALLENGE:
+      /* Apply TCP_DEFER_ACCEPT challenge */
+      apply_syn_challenge (*client, action, protect);
+      if (!try_consume_and_report (pool, protect, client_ip, 0))
+        {
+          handle_syn_consume_failure (protect, client_ip, client);
+          return NULL;
+        }
+      /* Report success only after challenge - caller should verify data
+       * received */
+      break;
+
+    case SYN_ACTION_BLOCK:
+      /* Reject connection immediately */
+      handle_syn_consume_failure (protect, client_ip, client);
+      return NULL;
+    }
+
+  return *client;
+}
+
+/**
  * SocketPool_accept_protected - Accept with full SYN flood protection
  * @pool: Pool instance
  * @server: Server socket (listening, non-blocking)
@@ -1582,46 +1714,8 @@ SocketPool_accept_protected (T pool, Socket_T server,
   if (action_out)
     *action_out = action;
 
-  /* Handle action */
-  switch (action)
-    {
-    case SYN_ACTION_ALLOW:
-      if (!try_consume_and_report (pool, protect, client_ip, 1))
-        {
-          handle_syn_consume_failure (protect, client_ip, &client);
-          return NULL;
-        }
-      break;
-
-    case SYN_ACTION_THROTTLE:
-      /* Apply throttle delay, then allow */
-      apply_syn_throttle (action, protect);
-      if (!try_consume_and_report (pool, protect, client_ip, 1))
-        {
-          handle_syn_consume_failure (protect, client_ip, &client);
-          return NULL;
-        }
-      break;
-
-    case SYN_ACTION_CHALLENGE:
-      /* Apply TCP_DEFER_ACCEPT challenge */
-      apply_syn_challenge (client, action, protect);
-      if (!try_consume_and_report (pool, protect, client_ip, 0))
-        {
-          handle_syn_consume_failure (protect, client_ip, &client);
-          return NULL;
-        }
-      /* Report success only after challenge - caller should verify data
-       * received */
-      break;
-
-    case SYN_ACTION_BLOCK:
-      /* Reject connection immediately */
-      handle_syn_consume_failure (protect, client_ip, &client);
-      return NULL;
-    }
-
-  return client;
+  /* Handle action using extracted helper */
+  return handle_syn_action (pool, protect, &client, action, client_ip);
 }
 
 #undef T
