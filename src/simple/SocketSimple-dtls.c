@@ -38,6 +38,37 @@ Socket_simple_dtls_options_defaults (SocketSimple_DTLSOptions *opts)
   opts->alpn_count = 0;
 }
 
+/**
+ * @brief Copy DTLS options from struct to local variables.
+ *
+ * This helper function extracts option values from the SocketSimple_DTLSOptions
+ * structure into local variables before entering a TRY block, avoiding longjmp
+ * clobbering issues.
+ *
+ * @param opts Source options structure
+ * @param ca_file Output: CA file path
+ * @param verify_cert Output: Certificate verification flag
+ * @param client_cert Output: Client certificate path
+ * @param client_key Output: Client key path
+ * @param mtu Output: Maximum transmission unit
+ * @param alpn Output: ALPN protocols array
+ * @param alpn_count Output: Number of ALPN protocols
+ */
+static void
+copy_dtls_options (const SocketSimple_DTLSOptions *opts, const char **ca_file,
+                   int *verify_cert, const char **client_cert,
+                   const char **client_key, size_t *mtu, const char ***alpn,
+                   size_t *alpn_count)
+{
+  *ca_file = opts->ca_file;
+  *verify_cert = opts->verify_cert;
+  *client_cert = opts->client_cert;
+  *client_key = opts->client_key;
+  *mtu = opts->mtu;
+  *alpn = opts->alpn;
+  *alpn_count = opts->alpn_count;
+}
+
 /*============================================================================
  * DTLS Client Functions
  *============================================================================*/
@@ -89,13 +120,8 @@ Socket_simple_dtls_connect_ex (const char *host, int port,
 
   /* Copy all values before TRY block */
   timeout_ms = opts_param->timeout_ms;
-  verify_cert = opts_param->verify_cert;
-  ca_file = opts_param->ca_file;
-  client_cert = opts_param->client_cert;
-  client_key = opts_param->client_key;
-  mtu = opts_param->mtu;
-  alpn = opts_param->alpn;
-  alpn_count = opts_param->alpn_count;
+  copy_dtls_options (opts_param, &ca_file, &verify_cert, &client_cert,
+                     &client_key, &mtu, &alpn, &alpn_count);
 
   TRY
   {
@@ -259,13 +285,8 @@ Socket_simple_dtls_enable (SocketSimple_Socket_T sock, const char *hostname,
     }
 
   /* Copy all values before TRY block */
-  ca_file = opts_param->ca_file;
-  verify_cert = opts_param->verify_cert;
-  client_cert = opts_param->client_cert;
-  client_key = opts_param->client_key;
-  mtu = opts_param->mtu;
-  alpn = opts_param->alpn;
-  alpn_count = opts_param->alpn_count;
+  copy_dtls_options (opts_param, &ca_file, &verify_cert, &client_cert,
+                     &client_key, &mtu, &alpn, &alpn_count);
 
   TRY
   {
