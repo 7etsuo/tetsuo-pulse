@@ -77,18 +77,6 @@ safe_append_int64 (char **buf, size_t *remaining, int64_t value)
   return safe_append (buf, remaining, num, (size_t)len);
 }
 
-static int
-header_value_valid_for_serialize (const char *value, size_t len)
-{
-  for (size_t i = 0; i < len; i++)
-    {
-      unsigned char c = (unsigned char)value[i];
-      if (c == '\r' || c == '\n' || c == '\0')
-        return 0;
-    }
-  return 1;
-}
-
 /**
  * serialize_ctx - Context for header serialization callback
  */
@@ -115,7 +103,7 @@ serialize_header_cb (const char *name, size_t name_len, const char *value,
         name_valid = 0;
     }
 
-  if (!name_valid || !header_value_valid_for_serialize (value, value_len))
+  if (!name_valid || !SocketHTTP_header_value_valid (value, value_len))
     {
       return -1; /* Reject headers with control characters */
     }
