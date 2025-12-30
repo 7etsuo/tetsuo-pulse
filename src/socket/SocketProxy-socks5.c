@@ -465,6 +465,93 @@ proxy_socks5_recv_auth (struct SocketProxy_Conn_T *conn)
  */
 
 /**
+ * encode_ipv4_address - Encode IPv4 address in SOCKS5 format
+ * @buf: Buffer to write encoded address
+ * @len_inout: Current buffer length (input), updated length (output)
+ * @ipv4: IPv4 address structure
+ *
+ * Encodes an IPv4 address with ATYP byte (0x01) followed by 4-byte address.
+ *
+ * Returns: 0 on success
+ */
+static int
+encode_ipv4_address (unsigned char *buf, size_t *len_inout,
+                     const struct in_addr *ipv4)
+{
+  size_t len = *len_inout;
+  buf[len++] = SOCKS5_ATYP_IPV4;
+  memcpy (buf + len, ipv4, SOCKS5_IPV4_ADDR_SIZE);
+  len += SOCKS5_IPV4_ADDR_SIZE;
+  *len_inout = len;
+  return 0;
+}
+
+/**
+ * encode_ipv6_address - Encode IPv6 address in SOCKS5 format
+ * @buf: Buffer to write encoded address
+ * @len_inout: Current buffer length (input), updated length (output)
+ * @ipv6: IPv6 address structure
+ *
+ * Encodes an IPv6 address with ATYP byte (0x04) followed by 16-byte address.
+ *
+ * Returns: 0 on success
+ */
+static int
+encode_ipv6_address (unsigned char *buf, size_t *len_inout,
+                     const struct in6_addr *ipv6)
+{
+  size_t len = *len_inout;
+  buf[len++] = SOCKS5_ATYP_IPV6;
+  memcpy (buf + len, ipv6, SOCKS5_IPV6_ADDR_SIZE);
+  len += SOCKS5_IPV6_ADDR_SIZE;
+  *len_inout = len;
+  return 0;
+}
+
+/**
+ * encode_domain_address - Encode domain name in SOCKS5 format
+ * @buf: Buffer to write encoded address
+ * @len_inout: Current buffer length (input), updated length (output)
+ * @domain: Domain name string
+ * @conn: Connection context for error reporting
+ *
+ * Encodes a domain name with ATYP byte (0x03), 1-byte length, and domain
+ * string. Validates length (1-255) and content (no CR/LF).
+ *
+ * Returns: 0 on success, -1 on error (with conn error set)
+ */
+static int
+encode_domain_address (unsigned char *buf, size_t *len_inout,
+                       const char *domain, struct SocketProxy_Conn_T *conn)
+{
+  size_t len = *len_inout;
+  size_t host_len = strlen (domain);
+
+  /* Validate length and content */
+  if (host_len == 0 || host_len > SOCKET_PROXY_MAX_HOSTNAME_LEN)
+    {
+      socketproxy_set_error (conn, PROXY_ERROR,
+                             "Hostname invalid length: %zu bytes (must be 1-%d)",
+                             host_len, SOCKET_PROXY_MAX_HOSTNAME_LEN);
+      return -1;
+    }
+  if (strpbrk (domain, "\r\n") != NULL)
+    {
+      socketproxy_set_error (
+          conn, PROXY_ERROR,
+          "Hostname contains forbidden characters (CR or LF)");
+      return -1;
+    }
+
+  buf[len++] = SOCKS5_ATYP_DOMAIN;
+  buf[len++] = (unsigned char)host_len;
+  memcpy (buf + len, domain, host_len);
+  len += host_len;
+  *len_inout = len;
+  return 0;
+}
+
+/**
  * encode_socks5_destination_address - Encode destination address for SOCKS5
  * @buf: Buffer to write encoded address
  * @len_inout: Current buffer length (input), updated length (output)
@@ -472,8 +559,7 @@ proxy_socks5_recv_auth (struct SocketProxy_Conn_T *conn)
  * @conn: Connection context for error reporting
  *
  * Encodes the destination address in SOCKS5 format. Determines address type
- * (IPv4, IPv6, or domain) and writes the appropriate ATYP byte followed by
- * the address data.
+ * (IPv4, IPv6, or domain) and delegates to appropriate encoder.
  *
  * Returns: 0 on success, -1 on error (with conn error set)
  */
@@ -482,56 +568,18 @@ encode_socks5_destination_address (unsigned char *buf, size_t *len_inout,
                                    const char *target_host,
                                    struct SocketProxy_Conn_T *conn)
 {
-  size_t len = *len_inout;
   struct in_addr ipv4;
   struct in6_addr ipv6;
-  size_t host_len;
 
-  /* Determine address type */
   if (inet_pton (AF_INET, target_host, &ipv4) == 1)
     {
-      /* IPv4 address */
-      buf[len++] = SOCKS5_ATYP_IPV4;
-      memcpy (buf + len, &ipv4, SOCKS5_IPV4_ADDR_SIZE);
-      len += SOCKS5_IPV4_ADDR_SIZE;
+      return encode_ipv4_address (buf, len_inout, &ipv4);
     }
-  else if (inet_pton (AF_INET6, target_host, &ipv6) == 1)
+  if (inet_pton (AF_INET6, target_host, &ipv6) == 1)
     {
-      /* IPv6 address */
-      buf[len++] = SOCKS5_ATYP_IPV6;
-      memcpy (buf + len, &ipv6, SOCKS5_IPV6_ADDR_SIZE);
-      len += SOCKS5_IPV6_ADDR_SIZE;
+      return encode_ipv6_address (buf, len_inout, &ipv6);
     }
-  else
-    {
-      /* Domain name */
-      host_len = strlen (target_host);
-
-      /* Validate length and content */
-      if (host_len == 0 || host_len > SOCKET_PROXY_MAX_HOSTNAME_LEN)
-        {
-          socketproxy_set_error (
-              conn, PROXY_ERROR,
-              "Hostname invalid length: %zu bytes (must be 1-%d)", host_len,
-              SOCKET_PROXY_MAX_HOSTNAME_LEN);
-          return -1;
-        }
-      if (strpbrk (target_host, "\r\n") != NULL)
-        {
-          socketproxy_set_error (
-              conn, PROXY_ERROR,
-              "Hostname contains forbidden characters (CR or LF)");
-          return -1;
-        }
-
-      buf[len++] = SOCKS5_ATYP_DOMAIN;
-      buf[len++] = (unsigned char)host_len;
-      memcpy (buf + len, target_host, host_len);
-      len += host_len;
-    }
-
-  *len_inout = len;
-  return 0;
+  return encode_domain_address (buf, len_inout, target_host, conn);
 }
 
 int
