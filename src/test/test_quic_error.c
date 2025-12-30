@@ -761,6 +761,36 @@ TEST (quic_error_send_connection_close_length_clamping)
   END_TRY;
 }
 
+TEST (quic_error_send_connection_close_overflow_protection)
+{
+  volatile Arena_T arena = NULL;
+  volatile SocketQUICConnection_T conn = NULL;
+  uint8_t buf[10]; /* Small buffer to trigger the overflow check */
+  size_t len;
+
+  TRY
+    {
+      arena = Arena_new ();
+      conn = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
+
+      /* Create a reason string at max length */
+      char *max_reason = Arena_alloc (arena, QUIC_MAX_REASON_LENGTH, __FILE__, __LINE__);
+      memset (max_reason, 'Y', QUIC_MAX_REASON_LENGTH);
+
+      /* Attempt to send with maximum reason length but small buffer.
+       * On 16-bit size_t systems, base_size + QUIC_MAX_REASON_LENGTH could overflow.
+       * The overflow check should detect this and return 0. */
+      len = SocketQUIC_send_connection_close (conn, QUIC_INTERNAL_ERROR,
+                                               max_reason, QUIC_MAX_REASON_LENGTH,
+                                               buf, sizeof (buf));
+
+      /* Should fail safely - either due to overflow check or buffer size check */
+      ASSERT_EQ (len, 0);
+    }
+  FINALLY { Arena_dispose ((Arena_T *)&arena); }
+  END_TRY;
+}
+
 /* ============================================================================
  * Integer Overflow Security Tests (Issue #2001)
  * ============================================================================

@@ -19,6 +19,7 @@
 #include "quic/SocketQUICStream.h"
 #include "quic/SocketQUICVarInt.h"
 
+#include <stdint.h>
 #include <string.h>
 
 /* ============================================================================
@@ -82,9 +83,15 @@ SocketQUIC_send_connection_close (SocketQUICConnection_T conn, uint64_t code,
     reason_len = QUIC_MAX_REASON_LENGTH;
 
   /* Check minimum buffer size for frame header plus reason phrase */
-  size_t min_size = (is_app_error ? QUIC_FRAME_MIN_SIZE_CONNECTION_CLOSE_APP
-                                  : QUIC_FRAME_MIN_SIZE_CONNECTION_CLOSE_TRANSPORT)
-                    + reason_len;
+  size_t base_size = is_app_error ? QUIC_FRAME_MIN_SIZE_CONNECTION_CLOSE_APP
+                                  : QUIC_FRAME_MIN_SIZE_CONNECTION_CLOSE_TRANSPORT;
+
+  /* Check for overflow before adding reason_len (CWE-190, CERT INT30-C) */
+  if (reason_len > SIZE_MAX - base_size)
+    return 0;
+
+  size_t min_size = base_size + reason_len;
+
   if (out_len < min_size)
     return 0;
 
