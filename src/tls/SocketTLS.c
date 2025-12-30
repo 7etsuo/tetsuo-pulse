@@ -606,7 +606,7 @@ disable_handle_io_wait (Socket_T socket, SSL *ssl, int result, int64_t deadline)
     {
       /* Brief poll then retry */
       unsigned events = (err == SSL_ERROR_WANT_READ) ? POLL_READ : POLL_WRITE;
-      int poll_timeout = SocketTimeout_poll_timeout (100, deadline);
+      int poll_timeout = SocketTimeout_poll_timeout (SOCKET_TLS_POLL_INTERVAL_MS, deadline);
 
       if (poll_timeout > 0)
         {
