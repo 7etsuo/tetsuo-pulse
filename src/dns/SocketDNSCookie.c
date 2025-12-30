@@ -31,6 +31,9 @@ const Except_T SocketDNSCookie_Failed
 /* Client secret size (256 bits for HMAC-SHA256) */
 #define SECRET_SIZE 32
 
+/* Maximum HMAC input buffer size: IPv6 server (16) + IPv6 client (16) = 32 bytes */
+#define HMAC_INPUT_MAX_SIZE (sizeof(struct in6_addr) * 2)
+
 /* Minimum TTL/lifetime for all time-based settings (1 minute) */
 #define DNS_COOKIE_MIN_TTL_SECONDS 60
 
@@ -748,7 +751,7 @@ generate_client_cookie_hmac (T cache, const struct sockaddr *server_addr,
                              const struct sockaddr *client_addr,
                              socklen_t client_len, uint8_t *cookie)
 {
-  unsigned char data[256];
+  unsigned char data[HMAC_INPUT_MAX_SIZE];
   size_t data_len = 0;
 
   /* Build input: server IP + client IP */
