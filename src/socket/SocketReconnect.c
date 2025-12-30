@@ -453,32 +453,38 @@ check_connect_completion (T conn)
   /* Check for errors */
   if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL))
     {
+      /* Initialize error before getsockopt to avoid uninitialized read */
       error = 0;
       len = sizeof (error);
       int connect_err;
       if (getsockopt (fd, SOL_SOCKET, SO_ERROR, &error, &len) < 0)
         {
+          /* getsockopt itself failed, use errno */
           connect_err = errno;
         }
       else
         {
+          /* getsockopt succeeded, use socket error or default to ECONNREFUSED */
           connect_err = error ? error : ECONNREFUSED;
         }
       reconnect_set_socket_error (conn, "Connect poll error", connect_err);
       return -1;
     }
 
-  /* Check SO_ERROR */
+  /* Check SO_ERROR - verify connection completed successfully */
+  /* Initialize error before getsockopt to avoid uninitialized read */
   error = 0;
   len = sizeof (error);
   if (getsockopt (fd, SOL_SOCKET, SO_ERROR, &error, &len) < 0)
     {
+      /* getsockopt itself failed, use errno */
       reconnect_set_socket_error (conn, "Connect check getsockopt failed", errno);
       return -1;
     }
 
   if (error != 0)
     {
+      /* Connection completed with error */
       reconnect_set_socket_error (conn, "Connect check failed", error);
       return -1;
     }
