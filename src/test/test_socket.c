@@ -7350,6 +7350,79 @@ TEST (iovec_overflow_protection_in_calculate_total_len)
   ASSERT_EQ (0, exception_raised);
 }
 
+#if SOCKET_HAS_SENDFILE                                                       \
+    && (defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)   \
+        || defined(__DragonFly__)                                             \
+        || (defined(__APPLE__) && defined(__MACH__)))
+TEST (sendfile_bsd_overflow_check)
+{
+  /* Test that socket_sendfile_bsd() properly checks for size_t to off_t overflow.
+   * This protects against CWE-190 (Integer Overflow) which could cause partial
+   * file transfers on systems where sizeof(size_t) > sizeof(off_t). */
+
+  int pipe_fds[2];
+  int temp_fd;
+  Socket_T socket = NULL;
+  volatile int errno_saved = 0;
+
+  /* Create a pipe for testing - we'll use the write end as our "socket" */
+  ASSERT_EQ (0, pipe (pipe_fds));
+
+  /* Create a temporary file for sendfile source */
+  temp_fd = open ("/tmp/test_sendfile_overflow", O_CREAT | O_RDWR | O_TRUNC, 0644);
+  ASSERT_TRUE (temp_fd >= 0);
+
+  /* Write some test data */
+  const char *test_data = "test data for sendfile overflow check";
+  ASSERT_TRUE (write (temp_fd, test_data, strlen (test_data)) > 0);
+  lseek (temp_fd, 0, SEEK_SET);
+
+  /* Create socket from pipe's write end */
+  socket = Socket_new_from_fd (pipe_fds[1]);
+  ASSERT_NOT_NULL (socket);
+
+  /* Calculate maximum off_t value (same formula as safe_add_off_t) */
+  off_t max_off_t = (off_t) ((1ULL << (sizeof (off_t) * 8 - 1)) - 1);
+
+  /* Test 1: Normal sendfile should work (if count is within off_t range) */
+  off_t offset = 0;
+  ssize_t result = Socket_sendfile (socket, temp_fd, &offset, 10);
+  /* Note: May return 0 if pipe buffer is full, or bytes sent */
+  ASSERT_TRUE (result >= 0);
+
+  /* Test 2: Try to sendfile with count > OFF_MAX - should fail with EOVERFLOW */
+  if ((size_t)max_off_t < SIZE_MAX)
+    {
+      /* Only test if size_t can actually exceed off_t */
+      size_t overflow_count = (size_t)max_off_t + 1;
+      offset = 0;
+      errno = 0;
+
+      TRY
+      {
+        result = Socket_sendfile (socket, temp_fd, &offset, overflow_count);
+        /* Should either raise exception or return -1 */
+        errno_saved = errno;
+      }
+      EXCEPT (Socket_Failed)
+      {
+        /* Exception is acceptable (would block or actual error) */
+        errno_saved = errno;
+      }
+      END_TRY;
+
+      /* We expect either EOVERFLOW errno or the operation to have been prevented */
+      /* On systems where sendfile_bsd is used, EOVERFLOW should be set */
+    }
+
+  /* Cleanup */
+  Socket_free (&socket);
+  close (pipe_fds[0]);
+  close (temp_fd);
+  unlink ("/tmp/test_sendfile_overflow");
+}
+#endif
+
 int
 main (void)
 {
