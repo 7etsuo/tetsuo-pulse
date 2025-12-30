@@ -191,6 +191,14 @@ Socket_simple_ratelimit_acquire (SocketSimple_RateLimit_T limit, int tokens)
   if (tokens <= 0)
     return 0;
 
+  /* Prevent infinite loop: tokens must not exceed bucket size */
+  if (tokens > limit->bucket_size)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                        "Requested tokens exceeds bucket size");
+      return -1;
+    }
+
   while (!Socket_simple_ratelimit_try_acquire (limit, tokens))
     {
       int wait_ms = Socket_simple_ratelimit_wait_ms (limit, tokens);
@@ -218,6 +226,14 @@ Socket_simple_ratelimit_acquire_timeout (SocketSimple_RateLimit_T limit,
 
   if (tokens <= 0)
     return 1;
+
+  /* Validate tokens against bucket size to prevent long/infinite wait */
+  if (tokens > limit->bucket_size)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                        "Requested tokens exceeds bucket size");
+      return -1;
+    }
 
   uint64_t start = get_monotonic_ns ();
   uint64_t deadline = start + (uint64_t)timeout_ms * 1000000ULL;
