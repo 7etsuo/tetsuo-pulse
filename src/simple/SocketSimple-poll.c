@@ -27,6 +27,24 @@ struct SocketSimple_Poll
 };
 
 /* ============================================================================
+ * Helper: Validate poll and socket arguments
+ * ============================================================================
+ */
+
+static int
+validate_poll_and_socket (SocketSimple_Poll_T poll,
+                           SocketSimple_Socket_T sock)
+{
+  if (!poll || !sock)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                        "Invalid poll or socket");
+      return -1;
+    }
+  return 0;
+}
+
+/* ============================================================================
  * Helper: Extract and validate core socket handle
  * ============================================================================
  */
@@ -164,12 +182,8 @@ Socket_simple_poll_add (SocketSimple_Poll_T poll, SocketSimple_Socket_T sock,
 {
   Socket_simple_clear_error ();
 
-  if (!poll || !sock)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Invalid poll or socket");
-      return -1;
-    }
+  if (validate_poll_and_socket (poll, sock) != 0)
+    return -1;
 
   /* Get underlying Socket_T with validation */
   Socket_T core_sock = get_core_socket (sock);
@@ -195,12 +209,8 @@ Socket_simple_poll_mod (SocketSimple_Poll_T poll, SocketSimple_Socket_T sock,
 {
   Socket_simple_clear_error ();
 
-  if (!poll || !sock)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Invalid poll or socket");
-      return -1;
-    }
+  if (validate_poll_and_socket (poll, sock) != 0)
+    return -1;
 
   /* Get underlying Socket_T with validation */
   Socket_T core_sock = get_core_socket (sock);
@@ -226,12 +236,8 @@ Socket_simple_poll_del (SocketSimple_Poll_T poll, SocketSimple_Socket_T sock)
 {
   Socket_simple_clear_error ();
 
-  if (!poll || !sock)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Invalid poll or socket");
-      return -1;
-    }
+  if (validate_poll_and_socket (poll, sock) != 0)
+    return -1;
 
   /* Get underlying Socket_T with validation */
   Socket_T core_sock = get_core_socket (sock);
@@ -257,12 +263,8 @@ Socket_simple_poll_modify_events (SocketSimple_Poll_T poll,
 {
   Socket_simple_clear_error ();
 
-  if (!poll || !sock)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Invalid poll or socket");
-      return -1;
-    }
+  if (validate_poll_and_socket (poll, sock) != 0)
+    return -1;
 
   /* Get underlying Socket_T with validation */
   Socket_T core_sock = get_core_socket (sock);
