@@ -188,7 +188,8 @@ SocketQUICConnection_check_idle_timeout(SocketQUICConnection_T conn,
  * @param now_ms Current timestamp in milliseconds.
  * @param pto_ms Probe Timeout (PTO) value in milliseconds.
  *
- * Transitions to CLOSING state. Caller must send CONNECTION_CLOSE frame.
+ * Transitions to CLOSING state and stores error code for diagnostics.
+ * Caller must send CONNECTION_CLOSE frame.
  * Connection will transition to CLOSED after 3*PTO.
  */
 void
@@ -211,10 +212,9 @@ SocketQUICConnection_initiate_close(SocketQUICConnection_T conn,
   uint64_t timeout = calculate_termination_timeout(pto_ms);
   conn->closing_deadline_ms = safe_add_timeout(now_ms, timeout);
 
-  /* Error code handling is caller's responsibility */
-  /* Caller must send CONNECTION_CLOSE frame with appropriate error_code */
-  /* This function only manages connection state transition */
-  (void)error_code;
+  /* Store error code for diagnostics and debugging */
+  conn->close_error_code = error_code;
+  conn->has_close_error = 1;
 }
 
 /**
@@ -352,4 +352,27 @@ SocketQUICConnection_verify_stateless_reset(const uint8_t *packet,
   const uint8_t *actual_token = packet + packet_len - QUIC_STATELESS_RESET_TOKEN_LEN;
   return SocketCrypto_secure_compare(actual_token, expected_token,
                                      QUIC_STATELESS_RESET_TOKEN_LEN) == 0;
+}
+
+/**
+ * @brief Retrieve stored close error code.
+ * @param conn Connection instance.
+ * @param error_code Output parameter for error code.
+ * @return 1 if error code is available, 0 otherwise.
+ *
+ * Allows applications to retrieve the error code after connection closure
+ * for diagnostics, logging, and debugging purposes.
+ */
+int
+SocketQUICConnection_get_close_error(SocketQUICConnection_T conn,
+                                     uint64_t *error_code)
+{
+  if (!conn || !error_code)
+    return 0;
+
+  if (!conn->has_close_error)
+    return 0;
+
+  *error_code = conn->close_error_code;
+  return 1;
 }

@@ -326,6 +326,130 @@ test_no_double_transition(void)
   printf("test_no_double_transition: PASS\n");
 }
 
+static void
+test_close_error_code_storage(void)
+{
+  Arena_T arena = Arena_new();
+  SocketQUICConnection_T conn
+      = SocketQUICConnection_new(arena, QUIC_CONN_ROLE_CLIENT);
+
+  /* Initially no error code should be set */
+  uint64_t error_code = 0;
+  assert(SocketQUICConnection_get_close_error(conn, &error_code) == 0);
+
+  /* Close with error code 0x01 (INTERNAL_ERROR) */
+  SocketQUICConnection_initiate_close(conn, 0x01, 1000, TEST_PTO_MS);
+
+  /* Should be able to retrieve error code */
+  assert(SocketQUICConnection_get_close_error(conn, &error_code) == 1);
+  assert(error_code == 0x01);
+
+  Arena_dispose(&arena);
+  printf("test_close_error_code_storage: PASS\n");
+}
+
+static void
+test_close_error_code_various_values(void)
+{
+  Arena_T arena = Arena_new();
+
+  /* Test NO_ERROR */
+  SocketQUICConnection_T conn1
+      = SocketQUICConnection_new(arena, QUIC_CONN_ROLE_SERVER);
+  SocketQUICConnection_initiate_close(conn1, 0x00, 1000, TEST_PTO_MS);
+  uint64_t error = 0xFF;
+  assert(SocketQUICConnection_get_close_error(conn1, &error) == 1);
+  assert(error == 0x00);
+
+  /* Test FLOW_CONTROL_ERROR */
+  SocketQUICConnection_T conn2
+      = SocketQUICConnection_new(arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICConnection_initiate_close(conn2, 0x03, 2000, TEST_PTO_MS);
+  assert(SocketQUICConnection_get_close_error(conn2, &error) == 1);
+  assert(error == 0x03);
+
+  /* Test application error code (HTTP/3 range) */
+  SocketQUICConnection_T conn3
+      = SocketQUICConnection_new(arena, QUIC_CONN_ROLE_SERVER);
+  SocketQUICConnection_initiate_close(conn3, 0x0100, 3000, TEST_PTO_MS);
+  assert(SocketQUICConnection_get_close_error(conn3, &error) == 1);
+  assert(error == 0x0100);
+
+  /* Test large error code */
+  SocketQUICConnection_T conn4
+      = SocketQUICConnection_new(arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICConnection_initiate_close(conn4, 0xFFFFFFFFFFFFFFFFULL, 4000,
+                                      TEST_PTO_MS);
+  assert(SocketQUICConnection_get_close_error(conn4, &error) == 1);
+  assert(error == 0xFFFFFFFFFFFFFFFFULL);
+
+  Arena_dispose(&arena);
+  printf("test_close_error_code_various_values: PASS\n");
+}
+
+static void
+test_close_error_code_null_checks(void)
+{
+  Arena_T arena = Arena_new();
+  SocketQUICConnection_T conn
+      = SocketQUICConnection_new(arena, QUIC_CONN_ROLE_SERVER);
+  uint64_t error = 0;
+
+  /* Null connection */
+  assert(SocketQUICConnection_get_close_error(NULL, &error) == 0);
+
+  /* Null error_code output parameter */
+  SocketQUICConnection_initiate_close(conn, 0x42, 1000, TEST_PTO_MS);
+  assert(SocketQUICConnection_get_close_error(conn, NULL) == 0);
+
+  /* Both null */
+  assert(SocketQUICConnection_get_close_error(NULL, NULL) == 0);
+
+  Arena_dispose(&arena);
+  printf("test_close_error_code_null_checks: PASS\n");
+}
+
+static void
+test_close_error_code_before_close(void)
+{
+  Arena_T arena = Arena_new();
+  SocketQUICConnection_T conn
+      = SocketQUICConnection_new(arena, QUIC_CONN_ROLE_CLIENT);
+
+  /* Should return 0 (no error) when connection hasn't closed yet */
+  uint64_t error = 0;
+  assert(SocketQUICConnection_get_close_error(conn, &error) == 0);
+
+  /* Transition to handshake state */
+  conn->state = QUIC_CONN_STATE_HANDSHAKE;
+  assert(SocketQUICConnection_get_close_error(conn, &error) == 0);
+
+  /* Transition to established state */
+  conn->state = QUIC_CONN_STATE_ESTABLISHED;
+  assert(SocketQUICConnection_get_close_error(conn, &error) == 0);
+
+  Arena_dispose(&arena);
+  printf("test_close_error_code_before_close: PASS\n");
+}
+
+static void
+test_close_error_code_draining_no_error(void)
+{
+  Arena_T arena = Arena_new();
+  SocketQUICConnection_T conn
+      = SocketQUICConnection_new(arena, QUIC_CONN_ROLE_SERVER);
+
+  /* Enter draining state (received CONNECTION_CLOSE) */
+  SocketQUICConnection_enter_draining(conn, 1000, TEST_PTO_MS);
+
+  /* Should not have error code (draining doesn't set it) */
+  uint64_t error = 0;
+  assert(SocketQUICConnection_get_close_error(conn, &error) == 0);
+
+  Arena_dispose(&arena);
+  printf("test_close_error_code_draining_no_error: PASS\n");
+}
+
 int
 main(void)
 {
@@ -341,6 +465,11 @@ main(void)
   test_stateless_reset_verification();
   test_overflow_protection();
   test_no_double_transition();
+  test_close_error_code_storage();
+  test_close_error_code_various_values();
+  test_close_error_code_null_checks();
+  test_close_error_code_before_close();
+  test_close_error_code_draining_no_error();
 
   printf("\nAll tests PASSED!\n");
   return 0;

@@ -84,8 +84,10 @@ struct SocketQUICConnection {
   uint64_t last_packet_received_ms;
   uint64_t closing_deadline_ms;
   uint64_t draining_deadline_ms;
+  uint64_t close_error_code;
   uint8_t stateless_reset_token[QUIC_STATELESS_RESET_TOKEN_LEN];
   int has_stateless_reset_token;
+  int has_close_error;
 };
 
 extern SocketQUICConnTable_T SocketQUICConnTable_new(Arena_T arena, size_t bucket_count);
@@ -123,5 +125,6 @@ extern int SocketQUICConnection_is_closing_or_draining(SocketQUICConnection_T co
 extern int SocketQUICConnection_check_termination_deadline(SocketQUICConnection_T conn, uint64_t now_ms);
 extern void SocketQUICConnection_set_stateless_reset_token(SocketQUICConnection_T conn, const uint8_t token[QUIC_STATELESS_RESET_TOKEN_LEN]);
 extern int SocketQUICConnection_verify_stateless_reset(const uint8_t *packet, size_t packet_len, const uint8_t *expected_token);
+extern int SocketQUICConnection_get_close_error(SocketQUICConnection_T conn, uint64_t *error_code);
 
 #endif /* SOCKETQUICCONNECTION_INCLUDED */
