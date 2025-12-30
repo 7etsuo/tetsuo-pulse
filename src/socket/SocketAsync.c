@@ -1062,7 +1062,7 @@ int
 SocketAsync_submit_batch (T async, SocketAsync_Op *ops, size_t count)
 {
   volatile size_t submitted = 0;
-  volatile size_t i;
+  size_t i;
   int use_deferred = 0;
 
   if (!async || !ops || count == 0)
@@ -1073,37 +1073,37 @@ SocketAsync_submit_batch (T async, SocketAsync_Op *ops, size_t count)
   use_deferred = (async->ring != NULL && async->available);
 #endif
 
-  for (i = 0; i < count; i++)
-    {
-      SocketAsync_Op *op = &ops[i];
-      volatile SocketAsync_Flags flags = op->flags;
-      volatile unsigned req_id = 0;
-
-      /* Add NOSYNC flag for deferred submission on io_uring */
-      if (use_deferred)
-        flags |= ASYNC_FLAG_NOSYNC;
-
-      TRY
+  TRY
+  {
+    for (i = 0; i < count; i++)
       {
+        SocketAsync_Op *op = &ops[i];
+        SocketAsync_Flags flags = op->flags;
+        unsigned req_id;
+
+        /* Add NOSYNC flag for deferred submission on io_uring */
+        if (use_deferred)
+          flags |= ASYNC_FLAG_NOSYNC;
+
         if (op->is_send)
           {
             req_id = SocketAsync_send (async, op->socket, op->send_buf, op->len,
-                                       op->cb, op->user_data, (SocketAsync_Flags)flags);
+                                       op->cb, op->user_data, flags);
           }
         else
           {
             req_id = SocketAsync_recv (async, op->socket, op->recv_buf, op->len,
-                                       op->cb, op->user_data, (SocketAsync_Flags)flags);
+                                       op->cb, op->user_data, flags);
           }
-        op->request_id = (unsigned)req_id;
+        op->request_id = req_id;
         submitted++;
       }
-      EXCEPT (SocketAsync_Failed)
-      {
-        break;
-      }
-      END_TRY;
-    }
+  }
+  EXCEPT (SocketAsync_Failed)
+  {
+    /* Partial submission - some operations succeeded before failure */
+  }
+  END_TRY;
 
   /* Flush all pending SQEs in one syscall */
   if (use_deferred && submitted > 0)
