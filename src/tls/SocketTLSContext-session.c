@@ -201,6 +201,10 @@ SocketTLSContext_get_cache_stats (T ctx, size_t *hits, size_t *misses,
 static int
 configure_ticket_keys (T ctx, const unsigned char *key, size_t key_len)
 {
+  assert (ctx != NULL);
+  assert (key != NULL);
+  assert (key_len == SOCKET_TLS_TICKET_KEY_LEN);
+
   memcpy (ctx->ticket_key, key, key_len);
 
   if (SSL_CTX_ctrl (ctx->ssl_ctx, SSL_CTRL_SET_TLSEXT_TICKET_KEYS,
