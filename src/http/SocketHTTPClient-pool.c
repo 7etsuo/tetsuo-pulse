@@ -165,6 +165,23 @@ pool_list_remove (HTTPPool *pool, HTTPPoolEntry *entry)
 }
 
 static void
+clear_http1_buffers (HTTPPoolEntry *entry)
+{
+  if (entry->version != HTTP_VERSION_1_1 && entry->version != HTTP_VERSION_1_0)
+    return;
+
+  /* SECURITY: Clear buffers before reuse to prevent information leakage */
+  if (entry->proto.h1.inbuf)
+    SocketBuf_clear (entry->proto.h1.inbuf);
+  if (entry->proto.h1.outbuf)
+    SocketBuf_clear (entry->proto.h1.outbuf);
+
+  /* Reset parser state */
+  if (entry->proto.h1.parser)
+    SocketHTTP1_Parser_reset (entry->proto.h1.parser);
+}
+
+static void
 close_http1_resources (HTTPPoolEntry *entry)
 {
   if (entry->proto.h1.socket != NULL)
@@ -393,20 +410,7 @@ httpclient_pool_get (HTTPPool *pool, const char *host, int port, int is_secure)
             }
           }
 
-          /* SECURITY: Clear buffers before reuse to prevent information leakage */
-          if (entry->version == HTTP_VERSION_1_1 || entry->version == HTTP_VERSION_1_0) {
-            if (entry->proto.h1.inbuf) {
-              SocketBuf_clear(entry->proto.h1.inbuf);
-            }
-            if (entry->proto.h1.outbuf) {
-              SocketBuf_clear(entry->proto.h1.outbuf);
-            }
-            /* Reset parser state */
-            if (entry->proto.h1.parser) {
-              SocketHTTP1_Parser_reset(entry->proto.h1.parser);
-            }
-          }
-
+          clear_http1_buffers (entry);
           entry_mark_in_use (entry);
           pool->reused_connections++;
           pthread_mutex_unlock (&pool->mutex);
@@ -453,18 +457,7 @@ httpclient_pool_get_prepared (HTTPPool *pool, const char *host, size_t host_len,
                 }
             }
 
-          /* SECURITY: Clear buffers before reuse */
-          if (entry->version == HTTP_VERSION_1_1
-              || entry->version == HTTP_VERSION_1_0)
-            {
-              if (entry->proto.h1.inbuf)
-                SocketBuf_clear (entry->proto.h1.inbuf);
-              if (entry->proto.h1.outbuf)
-                SocketBuf_clear (entry->proto.h1.outbuf);
-              if (entry->proto.h1.parser)
-                SocketHTTP1_Parser_reset (entry->proto.h1.parser);
-            }
-
+          clear_http1_buffers (entry);
           entry_mark_in_use (entry);
           pool->reused_connections++;
           pthread_mutex_unlock (&pool->mutex);
