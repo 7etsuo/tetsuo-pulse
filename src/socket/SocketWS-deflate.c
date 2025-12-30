@@ -82,6 +82,19 @@ validate_window_bits (int bits)
 }
 
 static int
+validate_and_store_window_bits (SocketWS_T ws, int bits, const char *type_name)
+{
+  int validated = validate_window_bits (bits);
+  if (validated < 0)
+    {
+      ws_set_error (ws, WS_ERROR_COMPRESSION, "Invalid %s: %d", type_name,
+                    bits);
+      return -1;
+    }
+  return validated;
+}
+
+static int
 init_zlib_stream (z_stream *strm, int window_bits, int is_deflate)
 {
   assert (strm);
@@ -457,22 +470,15 @@ ws_compression_init (SocketWS_T ws)
   memset (&ws->compression, 0, sizeof (ws->compression));
 
   /* Validate window bits from negotiation */
-  deflate_bits = validate_window_bits (ws->handshake.client_max_window_bits);
+  deflate_bits = validate_and_store_window_bits (
+      ws, ws->handshake.client_max_window_bits, "client_max_window_bits");
   if (deflate_bits < 0)
-    {
-      ws_set_error (ws, WS_ERROR_COMPRESSION,
-                    "Invalid client_max_window_bits: %d",
-                    ws->handshake.client_max_window_bits);
-      return -1;
-    }
-  inflate_bits = validate_window_bits (ws->handshake.server_max_window_bits);
+    return -1;
+
+  inflate_bits = validate_and_store_window_bits (
+      ws, ws->handshake.server_max_window_bits, "server_max_window_bits");
   if (inflate_bits < 0)
-    {
-      ws_set_error (ws, WS_ERROR_COMPRESSION,
-                    "Invalid server_max_window_bits: %d",
-                    ws->handshake.server_max_window_bits);
-      return -1;
-    }
+    return -1;
 
   /* Store settings */
   ws->compression.server_no_context_takeover
