@@ -28,7 +28,7 @@ Socket_simple_ws_options_init (SocketSimple_WSOptions *opts)
   if (!opts)
     return;
   memset (opts, 0, sizeof (*opts));
-  opts->connect_timeout_ms = SOCKET_SIMPLE_WS_DEFAULT_TIMEOUT_MS;
+  opts->connect_timeout_ms = 30000;
 }
 
 /* ============================================================================
@@ -117,47 +117,21 @@ Socket_simple_ws_connect_ex (const char *url,
  * ============================================================================
  */
 
-/**
- * @brief Function pointer type for WebSocket send operations.
- *
- * This type is used to abstract different send operations (text, binary, json)
- * in the common error handling wrapper.
- *
- * @param ws The WebSocket handle
- * @param data Pointer to data to send
- * @param len Length of data (may be ignored for some operations like json)
- * @return 0 on success, non-zero on failure
- */
-typedef int (*ws_send_fn) (SocketWS_T ws, const void *data, size_t len);
-
-/**
- * @brief Common wrapper for WebSocket send operations.
- *
- * Centralizes exception handling for send operations to avoid code duplication.
- * Handles validation, exception catching, and error reporting.
- *
- * @param ws Simple API WebSocket wrapper
- * @param data Data to send (validated for NULL)
- * @param len Length parameter (passed to send_fn)
- * @param send_fn Function pointer to the actual send operation
- * @return 0 on success, -1 on error (error details in simple error state)
- */
-static int
-ws_send_wrapper (SocketSimple_WS_T ws, const void *data, size_t len,
-                 ws_send_fn send_fn)
+int
+Socket_simple_ws_send_text (SocketSimple_WS_T ws, const char *text, size_t len)
 {
   volatile int ret = -1;
   volatile int exception_occurred = 0;
 
   Socket_simple_clear_error ();
 
-  if (!ws || !ws->ws || !data)
+  if (!ws || !ws->ws || !text)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
       return -1;
     }
 
-  TRY { ret = send_fn (ws->ws, data, len); }
+  TRY { ret = SocketWS_send_text (ws->ws, text, len); }
   EXCEPT (SocketWS_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_SEND, "WebSocket send failed");
@@ -183,37 +157,82 @@ ws_send_wrapper (SocketSimple_WS_T ws, const void *data, size_t len,
 }
 
 int
-Socket_simple_ws_send_text (SocketSimple_WS_T ws, const char *text, size_t len)
-{
-  return ws_send_wrapper (ws, text, len,
-                          (ws_send_fn)SocketWS_send_text);
-}
-
-int
 Socket_simple_ws_send_binary (SocketSimple_WS_T ws, const void *data,
                               size_t len)
 {
-  return ws_send_wrapper (ws, data, len,
-                          (ws_send_fn)SocketWS_send_binary);
-}
+  volatile int ret = -1;
+  volatile int exception_occurred = 0;
 
-/**
- * @brief Adapter to make SocketWS_send_json compatible with ws_send_fn signature.
- *
- * SocketWS_send_json computes length internally via strlen, so we ignore
- * the len parameter.
- */
-static int
-ws_send_json_adapter (SocketWS_T ws, const void *data, size_t len)
-{
-  (void)len; /* Unused - json send computes length internally */
-  return SocketWS_send_json (ws, (const char *)data);
+  Socket_simple_clear_error ();
+
+  if (!ws || !ws->ws || !data)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
+      return -1;
+    }
+
+  TRY { ret = SocketWS_send_binary (ws->ws, data, len); }
+  EXCEPT (SocketWS_Failed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_SEND, "WebSocket send failed");
+    exception_occurred = 1;
+  }
+  EXCEPT (SocketWS_Closed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_CLOSED, "WebSocket connection closed");
+    exception_occurred = 1;
+  }
+  END_TRY;
+
+  if (exception_occurred)
+    return -1;
+
+  if (ret != 0)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_SEND, "WebSocket send failed");
+      return -1;
+    }
+
+  return 0;
 }
 
 int
 Socket_simple_ws_send_json (SocketSimple_WS_T ws, const char *json)
 {
-  return ws_send_wrapper (ws, json, 0, ws_send_json_adapter);
+  volatile int ret = -1;
+  volatile int exception_occurred = 0;
+
+  Socket_simple_clear_error ();
+
+  if (!ws || !ws->ws || !json)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
+      return -1;
+    }
+
+  TRY { ret = SocketWS_send_json (ws->ws, json); }
+  EXCEPT (SocketWS_Failed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_SEND, "WebSocket send failed");
+    exception_occurred = 1;
+  }
+  EXCEPT (SocketWS_Closed)
+  {
+    simple_set_error (SOCKET_SIMPLE_ERR_CLOSED, "WebSocket connection closed");
+    exception_occurred = 1;
+  }
+  END_TRY;
+
+  if (exception_occurred)
+    return -1;
+
+  if (ret != 0)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_SEND, "WebSocket send failed");
+      return -1;
+    }
+
+  return 0;
 }
 
 int
@@ -313,10 +332,10 @@ Socket_simple_ws_recv (SocketSimple_WS_T ws, SocketSimple_WSMessage *msg)
     if (reason)
       {
         msg->close_reason = strdup (reason);
+        /* If strdup fails, set to NULL - caller can still handle close */
         if (!msg->close_reason)
           {
-            /* Allocation failed, but still return gracefully with NULL reason */
-            msg->close_reason = NULL;
+            /* Log warning but continue - close event is more important */
           }
       }
     return 0; /* Not an error, just closed */
@@ -341,10 +360,10 @@ Socket_simple_ws_recv (SocketSimple_WS_T ws, SocketSimple_WSMessage *msg)
       if (reason)
         {
           msg->close_reason = strdup (reason);
+          /* If strdup fails, set to NULL - caller can still handle close */
           if (!msg->close_reason)
             {
-              /* Allocation failed, but still return gracefully with NULL reason */
-              msg->close_reason = NULL;
+              /* Log warning but continue - close event is more important */
             }
         }
       return 0;
@@ -518,81 +537,61 @@ Socket_simple_ws_server_config_init (SocketSimple_WSServerConfig *config)
   if (!config)
     return;
   memset (config, 0, sizeof (*config));
-  config->max_frame_size = SOCKET_SIMPLE_WS_DEFAULT_MAX_FRAME_SIZE;
-  config->max_message_size = SOCKET_SIMPLE_WS_DEFAULT_MAX_MESSAGE_SIZE;
+  config->max_frame_size = 16 * 1024 * 1024;   /* 16MB */
+  config->max_message_size = 64 * 1024 * 1024; /* 64MB */
   config->validate_utf8 = 1;
   config->enable_compression = 0;
   config->ping_interval_ms = 0;
   config->subprotocols = NULL;
 }
 
-/**
- * @brief Check if header matches name and has expected value.
- *
- * @param header Full header line (e.g., "Upgrade: websocket")
- * @param name Header name with colon (e.g., "Upgrade:")
- * @param name_len Length of header name including colon
- * @param expected_value Expected value (NULL to just check presence)
- * @return 1 if match, 0 otherwise
- */
-static int
-check_header_value (const char *header, const char *name, size_t name_len,
-                    const char *expected_value)
-{
-  if (strncasecmp (header, name, name_len) != 0)
-    return 0;
-
-  const char *val = header + name_len;
-  while (*val == ' ')
-    val++;
-
-  if (expected_value)
-    return strcasecmp (val, expected_value) == 0;
-
-  return *val != '\0'; /* Just check presence */
-}
-
-/**
- * @brief Check if header contains substring in value.
- *
- * @param header Full header line
- * @param name Header name with colon
- * @param name_len Length of header name including colon
- * @param substring Substring to find (case-insensitive)
- * @return 1 if found, 0 otherwise
- */
-static int
-check_header_contains (const char *header, const char *name, size_t name_len,
-                       const char *substring)
-{
-  if (strncasecmp (header, name, name_len) != 0)
-    return 0;
-
-  const char *val = header + name_len;
-  while (*val == ' ')
-    val++;
-
-  return strcasestr (val, substring) != NULL;
-}
-
 int
 Socket_simple_ws_is_upgrade (const char *method, const char **headers)
 {
-  if (!method || !headers || strcasecmp (method, "GET") != 0)
+  int has_upgrade = 0;
+  int has_connection = 0;
+  int has_key = 0;
+  int has_version = 0;
+
+  if (!method || !headers)
     return 0;
 
-  int has_upgrade = 0, has_connection = 0, has_key = 0, has_version = 0;
+  /* Must be GET request */
+  if (strcasecmp (method, "GET") != 0)
+    return 0;
 
+  /* Check headers */
   for (const char **h = headers; *h != NULL; h++)
     {
-      if (check_header_value (*h, "Upgrade:", 8, "websocket"))
-        has_upgrade = 1;
-      else if (check_header_contains (*h, "Connection:", 11, "upgrade"))
-        has_connection = 1;
-      else if (check_header_value (*h, "Sec-WebSocket-Key:", 18, NULL))
-        has_key = 1;
-      else if (check_header_value (*h, "Sec-WebSocket-Version:", 22, "13"))
-        has_version = 1;
+      if (strncasecmp (*h, "Upgrade:", 8) == 0)
+        {
+          const char *val = *h + 8;
+          while (*val == ' ')
+            val++;
+          if (strcasecmp (val, "websocket") == 0)
+            has_upgrade = 1;
+        }
+      else if (strncasecmp (*h, "Connection:", 11) == 0)
+        {
+          const char *val = *h + 11;
+          while (*val == ' ')
+            val++;
+          /* Check for "upgrade" in Connection header */
+          if (strcasestr (val, "upgrade") != NULL)
+            has_connection = 1;
+        }
+      else if (strncasecmp (*h, "Sec-WebSocket-Key:", 18) == 0)
+        {
+          has_key = 1;
+        }
+      else if (strncasecmp (*h, "Sec-WebSocket-Version:", 22) == 0)
+        {
+          const char *val = *h + 22;
+          while (*val == ' ')
+            val++;
+          if (strcmp (val, "13") == 0)
+            has_version = 1;
+        }
     }
 
   return has_upgrade && has_connection && has_key && has_version;
@@ -617,39 +616,6 @@ convert_ws_server_config (const SocketSimple_WSServerConfig *simple_config,
       ws_config->ping_interval_ms = simple_config->ping_interval_ms;
       ws_config->subprotocols = simple_config->subprotocols;
     }
-}
-
-/**
- * @brief Perform WebSocket handshake with error handling.
- *
- * Executes the handshake polling loop and handles errors by freeing
- * the WebSocket on failure.
- *
- * @param ws Pointer to volatile WebSocket handle
- * @param exception_occurred Pointer to exception flag
- * @return 0 on success, -1 on failure
- */
-static int
-perform_ws_handshake (volatile SocketWS_T *ws, volatile int *exception_occurred)
-{
-  int handshake_result;
-
-  do
-    {
-      handshake_result = SocketWS_handshake (*ws);
-    }
-  while (handshake_result > 0);
-
-  if (handshake_result < 0)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_WS_PROTOCOL,
-                        "WebSocket handshake failed");
-      SocketWS_free ((SocketWS_T *)ws);
-      *exception_occurred = 1;
-      return -1;
-    }
-
-  return 0;
 }
 
 SocketSimple_WS_T
@@ -711,9 +677,19 @@ Socket_simple_ws_accept (void *http_req,
     if (ws)
       {
         /* Complete the handshake (sends 101 Switching Protocols) */
-        if (perform_ws_handshake (&ws, &exception_occurred) < 0)
+        int handshake_result;
+        do
           {
-            ws = NULL; /* Already freed by helper */
+            handshake_result = SocketWS_handshake (ws);
+          }
+        while (handshake_result > 0);
+
+        if (handshake_result < 0)
+          {
+            simple_set_error (SOCKET_SIMPLE_ERR_WS_PROTOCOL,
+                              "WebSocket handshake failed");
+            SocketWS_free ((SocketWS_T *)&ws);
+            exception_occurred = 1;
           }
       }
   }
@@ -831,9 +807,19 @@ Socket_simple_ws_accept_raw (void *sock, const char *ws_key,
     if (ws)
       {
         /* Complete the handshake (sends 101 Switching Protocols) */
-        if (perform_ws_handshake (&ws, &exception_occurred) < 0)
+        int handshake_result;
+        do
           {
-            ws = NULL; /* Already freed by helper */
+            handshake_result = SocketWS_handshake (ws);
+          }
+        while (handshake_result > 0);
+
+        if (handshake_result < 0)
+          {
+            simple_set_error (SOCKET_SIMPLE_ERR_WS_PROTOCOL,
+                              "WebSocket handshake failed");
+            SocketWS_free ((SocketWS_T *)&ws);
+            exception_occurred = 1;
           }
       }
   }
