@@ -589,6 +589,60 @@ validate_decode_termination (uint64_t bits,
 }
 
 /* ============================================================================
+ * Refactored Huffman Decode Helpers
+ *
+ * These helpers break down the main decode logic into smaller, testable units
+ * while preserving original behavior and performance.
+ * ============================================================================
+ */
+
+static int
+validate_huffman_inputs (const unsigned char *input, size_t input_len,
+                         unsigned char *output, size_t output_size)
+{
+  if (!validate_buffer (input, input_len) ||
+      !validate_buffer (output, output_size))
+    return 0;
+  return 1;
+}
+
+static void
+init_huffman_state (size_t *out_pos, uint64_t *bits, int *bits_avail,
+                    size_t *in_pos)
+{
+  *out_pos = 0;
+  *bits = 0;
+  *bits_avail = 0;
+  *in_pos = 0;
+}
+
+static int
+process_next_huffman_symbol (uint64_t *bits, int *bits_avail, size_t *in_pos,
+                             size_t input_len, const unsigned char *input,
+                             size_t *out_pos, size_t output_size,
+                             unsigned char *output)
+{
+  refill_bit_buffer (bits, bits_avail, input, in_pos, input_len);
+
+  if (*bits_avail < HUFFMAN_MIN_CODE_BITS)
+    return DECODE_NO_MATCH;
+
+  int result = try_decode_symbol (*bits, bits_avail, output, out_pos, output_size);
+  if (result == DECODE_ERROR)
+    return DECODE_ERROR;
+
+  if (result != DECODE_SYMBOL)
+    {
+      if (is_valid_termination (*bits, *bits_avail))
+        return DECODE_EOS;
+      return DECODE_ERROR;
+    }
+
+  clear_consumed_bits (bits, *bits_avail);
+  return DECODE_SYMBOL;
+}
+
+/* ============================================================================
  * Public API
  * ============================================================================
  */
@@ -665,39 +719,28 @@ ssize_t
 SocketHPACK_huffman_decode (const unsigned char *input, size_t input_len,
                             unsigned char *output, size_t output_size)
 {
-  size_t out_pos = 0;
-  uint64_t bits = 0;
-  int bits_avail = 0;
-  size_t in_pos = 0;
-
-  if (!validate_buffer (input, input_len)
-      || !validate_buffer (output, output_size))
+  if (!validate_huffman_inputs (input, input_len, output, output_size))
     return -1;
 
   if (input_len == 0)
     return 0;
 
+  size_t out_pos;
+  uint64_t bits;
+  int bits_avail;
+  size_t in_pos;
+
+  init_huffman_state (&out_pos, &bits, &bits_avail, &in_pos);
+
   while (in_pos < input_len || bits_avail >= HUFFMAN_MIN_CODE_BITS)
     {
-      refill_bit_buffer (&bits, &bits_avail, input, &in_pos, input_len);
-
-      if (bits_avail < HUFFMAN_MIN_CODE_BITS)
-        break;
-
-      int result = try_decode_symbol (bits, &bits_avail, output, &out_pos,
-                                      output_size);
-
-      if (result == DECODE_ERROR)
+      int res = process_next_huffman_symbol (&bits, &bits_avail, &in_pos,
+                                             input_len, input, &out_pos,
+                                             output_size, output);
+      if (res == DECODE_ERROR)
         return -1;
-
-      if (result != DECODE_SYMBOL)
-        {
-          if (is_valid_termination (bits, bits_avail))
-            break;
-          return -1;
-        }
-
-      clear_consumed_bits (&bits, bits_avail);
+      if (res != DECODE_SYMBOL)
+        break;
     }
 
   if (!validate_decode_termination (bits, bits_avail, in_pos, input_len))
