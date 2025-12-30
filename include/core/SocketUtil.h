@@ -1028,6 +1028,32 @@ SocketTimeout_elapsed_ms (int64_t start_ms)
  */
 
 /* ============================================================================
+ * PORT VALIDATION CONSTANTS
+ * ============================================================================
+ */
+
+/**
+ * @brief Maximum valid TCP/UDP port number (2^16 - 1).
+ * @ingroup foundation
+ *
+ * Valid port numbers range from 1 to 65535. Port 0 is reserved and typically
+ * used to request automatic port assignment by the operating system.
+ *
+ * This constant centralizes port validation across the codebase, eliminating
+ * magic number duplication and improving maintainability.
+ *
+ * Used for:
+ * - Port validation in connection establishment
+ * - DTLS and TLS endpoint configuration
+ * - HTTP server port binding
+ * - DNS server port validation
+ *
+ * @see RFC 793 (TCP) - Ports are 16-bit unsigned integers
+ * @see RFC 768 (UDP) - Port range 0-65535
+ */
+#define SOCKET_MAX_PORT 65535
+
+/* ============================================================================
  * DNS NAME UTILITIES
  * ============================================================================
  */
