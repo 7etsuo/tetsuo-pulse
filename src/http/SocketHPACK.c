@@ -54,6 +54,7 @@
  * Each continuation byte contributes 7 bits; theoretical max for uint64_t requires
  * at most 10 continuation bytes. Buffer sized to 16 for alignment and safety. */
 #define HPACK_INT_BUF_SIZE 16
+/* Conservative 2x ratio for Huffman decode buffer (worst-case is 8/5 ≈ 1.6) */
 #define HPACK_HUFFMAN_RATIO 2
 
 #define HPACK_UINT64_SHIFT_LIMIT 63
