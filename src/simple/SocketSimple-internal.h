@@ -105,4 +105,10 @@ SocketSimple_Socket_T simple_create_handle (Socket_T sock, int is_server,
 
 SocketSimple_Socket_T simple_create_udp_handle (SocketDgram_T dgram);
 
+#ifdef SOCKET_HAS_TLS
+SocketSimple_Socket_T simple_create_tls_handle (Socket_T sock,
+                                                SocketTLSContext_T ctx,
+                                                int is_server, int is_connected);
+#endif
+
 #endif /* SOCKETSIMPLE_INTERNAL_H */

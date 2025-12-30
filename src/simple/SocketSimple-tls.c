@@ -31,6 +31,41 @@ Socket_simple_tls_options_init (SocketSimple_TLSOptions *opts)
 #ifdef SOCKET_HAS_TLS
 
 /* ============================================================================
+ * TLS Handle Helper
+ * ============================================================================
+ */
+
+/**
+ * @brief Create a TLS-enabled socket handle.
+ *
+ * @param sock Socket instance
+ * @param ctx TLS context (can be NULL if client doesn't own it)
+ * @param is_server 1 for server socket, 0 for client
+ * @param is_connected 1 if socket is connected, 0 if listening
+ * @return Handle or NULL on allocation failure
+ *
+ * @note Sets SOCKET_SIMPLE_ERR_MEMORY error on allocation failure.
+ */
+SocketSimple_Socket_T
+simple_create_tls_handle (Socket_T sock, SocketTLSContext_T ctx, int is_server,
+                          int is_connected)
+{
+  struct SocketSimple_Socket *handle = calloc (1, sizeof (*handle));
+  if (!handle)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
+      return NULL;
+    }
+
+  handle->socket = sock;
+  handle->tls_ctx = ctx;
+  handle->is_tls = 1;
+  handle->is_server = is_server;
+  handle->is_connected = is_connected;
+  return handle;
+}
+
+/* ============================================================================
  * TLS Client Functions
  * ============================================================================
  */
@@ -143,19 +178,14 @@ Socket_simple_connect_tls_ex (const char *host, int port,
   if (exception_occurred)
     return NULL;
 
-  handle = calloc (1, sizeof (*handle));
+  handle = simple_create_tls_handle (sock, ctx, 0, 1);
   if (!handle)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
       SocketTLSContext_free ((SocketTLSContext_T *)&ctx);
       Socket_free ((Socket_T *)&sock);
       return NULL;
     }
 
-  handle->socket = sock;
-  handle->tls_ctx = ctx;
-  handle->is_tls = 1;
-  handle->is_connected = 1;
   return handle;
 }
 
@@ -478,20 +508,14 @@ Socket_simple_listen_tls (const char *host, int port, int backlog,
   if (exception_occurred)
     return NULL;
 
-  handle = calloc (1, sizeof (*handle));
+  handle = simple_create_tls_handle (sock, ctx, 1, 0);
   if (!handle)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
       SocketTLSContext_free ((SocketTLSContext_T *)&ctx);
       Socket_free ((Socket_T *)&sock);
       return NULL;
     }
 
-  handle->socket = sock;
-  handle->tls_ctx = ctx;
-  handle->is_tls = 1;
-  handle->is_server = 1;
-  handle->is_connected = 0;
   return handle;
 }
 
@@ -564,20 +588,14 @@ Socket_simple_accept_tls (SocketSimple_Socket_T server)
   if (exception_occurred)
     return NULL;
 
-  handle = calloc (1, sizeof (*handle));
+  handle = simple_create_tls_handle (client, NULL, 0, 1);
   if (!handle)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
       SocketTLS_disable (client);
       Socket_free ((Socket_T *)&client);
       return NULL;
     }
 
-  handle->socket = client;
-  handle->tls_ctx = NULL; /* Client doesn't own the context, server does */
-  handle->is_tls = 1;
-  handle->is_server = 0;
-  handle->is_connected = 1;
   return handle;
 }
 
