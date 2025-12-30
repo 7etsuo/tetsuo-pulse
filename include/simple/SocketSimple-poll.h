@@ -58,6 +58,18 @@ extern "C" {
 typedef struct SocketSimple_Poll *SocketSimple_Poll_T;
 
 /*============================================================================
+ * Constants
+ *============================================================================*/
+
+/**
+ * @brief Default maximum events for poll instance when not specified.
+ *
+ * Used when max_events <= 0 is passed to Socket_simple_poll_new().
+ * Balances memory usage with event handling capacity for typical use cases.
+ */
+#define SOCKET_SIMPLE_POLL_DEFAULT_MAX_EVENTS 64
+
+/*============================================================================
  * Event Flags
  *============================================================================*/
 

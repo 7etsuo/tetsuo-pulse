@@ -76,7 +76,7 @@ Socket_simple_poll_new (int max_events_arg)
 
   if (max_events <= 0)
     {
-      max_events = 64; /* Default */
+      max_events = SOCKET_SIMPLE_POLL_DEFAULT_MAX_EVENTS;
     }
 
   TRY { poll = SocketPoll_new (max_events); }
