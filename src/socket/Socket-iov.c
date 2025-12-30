@@ -630,8 +630,8 @@ Socket_sendvall (T socket, const struct iovec *iov, int iovcnt)
 {
   struct iovec *iov_copy = NULL;
   volatile size_t total_sent = 0;
-  volatile size_t total_len;
-  volatile ssize_t sent;
+  size_t total_len;
+  ssize_t sent;
 
   assert (socket);
   assert (iov);
@@ -666,8 +666,8 @@ Socket_recvvall (T socket, struct iovec *iov, int iovcnt)
 {
   struct iovec *iov_copy = NULL;
   volatile size_t total_received = 0;
-  volatile size_t total_len;
-  volatile ssize_t received;
+  size_t total_len;
+  ssize_t received;
 
   assert (socket);
   assert (iov);
