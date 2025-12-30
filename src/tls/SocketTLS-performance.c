@@ -796,6 +796,9 @@ SocketTLSContext_create_sharded_cache (SocketTLSContext_T ctx,
                                                        sizeof (TLSSessionShard_T),
                                                        __FILE__, __LINE__);
 
+    /* Default: evenly distribute total cache capacity across shards.
+     * If sessions_per_shard is 0, calculate it by dividing the global
+     * SOCKET_TLS_SESSION_CACHE_SIZE (1000 sessions) by the number of shards. */
     size_t sessions_per_shard_final = sessions_per_shard ? sessions_per_shard : (SOCKET_TLS_SESSION_CACHE_SIZE / actual_shards);
 
     for (size_t i = 0; i < actual_shards; i++)
