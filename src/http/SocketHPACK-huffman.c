@@ -422,10 +422,6 @@ _Static_assert (sizeof (hpack_decode_symbols) / sizeof (hpack_decode_symbols[0])
                     == 74,
                 "Huffman decode symbol table must have exactly 74 entries");
 
-/* Individual config verification - symbol counts must sum to 74 */
-_Static_assert (10 + 26 + 32 + 6 == 74,
-                "Decode config symbol counts must sum to 74");
-
 typedef struct
 {
   int bitlen;
@@ -435,11 +431,40 @@ typedef struct
   size_t symbol_offset;
 } HuffmanDecodeConfig;
 
+/* RFC 7541 Appendix B - Huffman decode configuration constants */
+#define HPACK_DECODE_5BIT_MASK      0x1Fu
+#define HPACK_DECODE_5BIT_FIRST     0x00u
+#define HPACK_DECODE_5BIT_LAST      0x09u
+#define HPACK_DECODE_5BIT_COUNT     10u
+#define HPACK_DECODE_5BIT_OFFSET    0u
+
+#define HPACK_DECODE_6BIT_MASK      0x3Fu
+#define HPACK_DECODE_6BIT_FIRST     0x14u
+#define HPACK_DECODE_6BIT_LAST      0x2Du
+#define HPACK_DECODE_6BIT_COUNT     26u
+#define HPACK_DECODE_6BIT_OFFSET    10u
+
+#define HPACK_DECODE_7BIT_MASK      0x7Fu
+#define HPACK_DECODE_7BIT_FIRST     0x5Cu
+#define HPACK_DECODE_7BIT_LAST      0x7Bu
+#define HPACK_DECODE_7BIT_COUNT     32u
+#define HPACK_DECODE_7BIT_OFFSET    36u
+
+#define HPACK_DECODE_8BIT_MASK      0xFFu
+#define HPACK_DECODE_8BIT_FIRST     0xF8u
+#define HPACK_DECODE_8BIT_LAST      0xFDu
+#define HPACK_DECODE_8BIT_COUNT     6u
+#define HPACK_DECODE_8BIT_OFFSET    68u
+
+/* Individual config verification - symbol counts must sum to 74 */
+_Static_assert (HPACK_DECODE_5BIT_COUNT + HPACK_DECODE_6BIT_COUNT + HPACK_DECODE_7BIT_COUNT + HPACK_DECODE_8BIT_COUNT == 74,
+                "Decode config symbol counts must sum to 74");
+
 static const HuffmanDecodeConfig hpack_decode_configs[] = {
-  { 5, 0x1Fu, 0x00u, 0x09u, 0u },  /* 5-bit: 10 symbols */
-  { 6, 0x3Fu, 0x14u, 0x2Du, 10u }, /* 6-bit: 26 symbols */
-  { 7, 0x7Fu, 0x5Cu, 0x7Bu, 36u }, /* 7-bit: 32 symbols */
-  { 8, 0xFFu, 0xF8u, 0xFDu, 68u }  /* 8-bit: 6 symbols */
+  { 5, HPACK_DECODE_5BIT_MASK, HPACK_DECODE_5BIT_FIRST, HPACK_DECODE_5BIT_LAST, HPACK_DECODE_5BIT_OFFSET },
+  { 6, HPACK_DECODE_6BIT_MASK, HPACK_DECODE_6BIT_FIRST, HPACK_DECODE_6BIT_LAST, HPACK_DECODE_6BIT_OFFSET },
+  { 7, HPACK_DECODE_7BIT_MASK, HPACK_DECODE_7BIT_FIRST, HPACK_DECODE_7BIT_LAST, HPACK_DECODE_7BIT_OFFSET },
+  { 8, HPACK_DECODE_8BIT_MASK, HPACK_DECODE_8BIT_FIRST, HPACK_DECODE_8BIT_LAST, HPACK_DECODE_8BIT_OFFSET }
 };
 
 #define NUM_DECODE_CONFIGS \
