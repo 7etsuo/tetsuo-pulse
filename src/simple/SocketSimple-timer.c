@@ -168,31 +168,51 @@ Socket_simple_timer_add_repeating (SocketSimple_Poll_T poll,
  * Timer Control
  *============================================================================*/
 
-int
-Socket_simple_timer_cancel (SocketSimple_Poll_T poll,
-                             SocketSimple_Timer_T timer)
+/**
+ * @brief Validate timer operation parameters and return core poll handle.
+ *
+ * This helper function consolidates the common validation logic used by
+ * timer control functions (cancel, reschedule, pause, resume).
+ *
+ * @param poll Poll handle to validate.
+ * @param timer Timer handle to validate.
+ * @return Core poll handle on success, NULL on error (sets error state).
+ */
+static SocketPoll_T
+validate_timer_operation (SocketSimple_Poll_T poll, SocketSimple_Timer_T timer)
 {
   Socket_simple_clear_error ();
 
   if (!poll || !timer)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
-      return -1;
+      return NULL;
     }
 
   if (!timer->is_valid)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Timer already cancelled or fired");
-      return -1;
+                        "Timer cancelled or fired");
+      return NULL;
     }
 
   SocketPoll_T core_poll = simple_poll_get_core (poll);
   if (!core_poll)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid poll handle");
-      return -1;
+      return NULL;
     }
+
+  return core_poll;
+}
+
+int
+Socket_simple_timer_cancel (SocketSimple_Poll_T poll,
+                             SocketSimple_Timer_T timer)
+{
+  SocketPoll_T core_poll = validate_timer_operation (poll, timer);
+  if (!core_poll)
+    return -1;
 
   int result = SocketTimer_cancel (core_poll, timer->core_timer);
   if (result < 0)
@@ -210,27 +230,9 @@ Socket_simple_timer_reschedule (SocketSimple_Poll_T poll,
                                  SocketSimple_Timer_T timer,
                                  int64_t new_delay_ms)
 {
-  Socket_simple_clear_error ();
-
-  if (!poll || !timer)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
-      return -1;
-    }
-
-  if (!timer->is_valid)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Timer cancelled or fired");
-      return -1;
-    }
-
-  SocketPoll_T core_poll = simple_poll_get_core (poll);
+  SocketPoll_T core_poll = validate_timer_operation (poll, timer);
   if (!core_poll)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid poll handle");
-      return -1;
-    }
+    return -1;
 
   int result
       = SocketTimer_reschedule (core_poll, timer->core_timer, new_delay_ms);
@@ -246,27 +248,9 @@ Socket_simple_timer_reschedule (SocketSimple_Poll_T poll,
 int
 Socket_simple_timer_pause (SocketSimple_Poll_T poll, SocketSimple_Timer_T timer)
 {
-  Socket_simple_clear_error ();
-
-  if (!poll || !timer)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
-      return -1;
-    }
-
-  if (!timer->is_valid)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Timer cancelled or fired");
-      return -1;
-    }
-
-  SocketPoll_T core_poll = simple_poll_get_core (poll);
+  SocketPoll_T core_poll = validate_timer_operation (poll, timer);
   if (!core_poll)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid poll handle");
-      return -1;
-    }
+    return -1;
 
   int result = SocketTimer_pause (core_poll, timer->core_timer);
   if (result < 0)
@@ -282,27 +266,9 @@ int
 Socket_simple_timer_resume (SocketSimple_Poll_T poll,
                              SocketSimple_Timer_T timer)
 {
-  Socket_simple_clear_error ();
-
-  if (!poll || !timer)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid argument");
-      return -1;
-    }
-
-  if (!timer->is_valid)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Timer cancelled or fired");
-      return -1;
-    }
-
-  SocketPoll_T core_poll = simple_poll_get_core (poll);
+  SocketPoll_T core_poll = validate_timer_operation (poll, timer);
   if (!core_poll)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid poll handle");
-      return -1;
-    }
+    return -1;
 
   int result = SocketTimer_resume (core_poll, timer->core_timer);
   if (result < 0)
