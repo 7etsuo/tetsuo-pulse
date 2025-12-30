@@ -174,36 +174,47 @@ expand_sni_capacity (T ctx)
       || !SocketSecurity_check_size (alloc_size))
     ctx_raise_openssl_error ("SNI capacity overflow");
 
-  /* Pre-allocate all arrays atomically to prevent partial failure state
-   * corruption. If any allocation fails, rollback successful allocations
-   * before raising exception. This ensures context remains consistent. */
-  void *new_hostnames = realloc (ctx->sni_certs.hostnames, alloc_size);
-  void *new_cert_files = realloc (ctx->sni_certs.cert_files, alloc_size);
-  void *new_key_files = realloc (ctx->sni_certs.key_files, alloc_size);
-  void *new_chains = realloc (ctx->sni_certs.chains, alloc_size);
-  void *new_pkeys = realloc (ctx->sni_certs.pkeys, alloc_size);
+  /* Phase 1: Allocate new arrays independently (don't modify originals).
+   * Using malloc instead of realloc prevents the critical flaw where
+   * successful reallocs free old pointers, then rollback frees new ones,
+   * leaving dangling pointers in ctx->sni_certs. */
+  void *new_hostnames = malloc (alloc_size);
+  void *new_cert_files = malloc (alloc_size);
+  void *new_key_files = malloc (alloc_size);
+  void *new_chains = malloc (alloc_size);
+  void *new_pkeys = malloc (alloc_size);
 
-  /* Verify all allocations succeeded before committing state */
+  /* Verify all allocations succeeded before proceeding */
   if (!new_hostnames || !new_cert_files || !new_key_files || !new_chains
       || !new_pkeys)
     {
-      /* Rollback successful allocations: only free if pointer changed
-       * (realloc may return same pointer if shrinking or in-place resize) */
-      if (new_hostnames && new_hostnames != ctx->sni_certs.hostnames)
-        free (new_hostnames);
-      if (new_cert_files && new_cert_files != ctx->sni_certs.cert_files)
-        free (new_cert_files);
-      if (new_key_files && new_key_files != ctx->sni_certs.key_files)
-        free (new_key_files);
-      if (new_chains && new_chains != ctx->sni_certs.chains)
-        free (new_chains);
-      if (new_pkeys && new_pkeys != ctx->sni_certs.pkeys)
-        free (new_pkeys);
-
+      /* Simple cleanup - all are independent mallocs, old arrays untouched */
+      free (new_hostnames);
+      free (new_cert_files);
+      free (new_key_files);
+      free (new_chains);
+      free (new_pkeys);
       ctx_raise_openssl_error ("Failed to allocate SNI certificate arrays");
     }
 
-  /* All allocations succeeded - atomically commit new state */
+  /* Phase 2: Copy old data to new arrays if capacity was previously non-zero */
+  if (ctx->sni_certs.capacity > 0)
+    {
+      size_t old_size = ctx->sni_certs.capacity * sizeof (void *);
+      memcpy (new_hostnames, ctx->sni_certs.hostnames, old_size);
+      memcpy (new_cert_files, ctx->sni_certs.cert_files, old_size);
+      memcpy (new_key_files, ctx->sni_certs.key_files, old_size);
+      memcpy (new_chains, ctx->sni_certs.chains, old_size);
+      memcpy (new_pkeys, ctx->sni_certs.pkeys, old_size);
+    }
+
+  /* Phase 3: Free old arrays and commit new state atomically */
+  free (ctx->sni_certs.hostnames);
+  free (ctx->sni_certs.cert_files);
+  free (ctx->sni_certs.key_files);
+  free (ctx->sni_certs.chains);
+  free (ctx->sni_certs.pkeys);
+
   ctx->sni_certs.hostnames = new_hostnames;
   ctx->sni_certs.cert_files = new_cert_files;
   ctx->sni_certs.key_files = new_key_files;
