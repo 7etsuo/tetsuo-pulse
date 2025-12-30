@@ -273,7 +273,7 @@ SocketDNSoverHTTPS_free (T *transport)
 
 int
 SocketDNSoverHTTPS_configure (T transport,
-                               const SocketDNSoverHTTPS_Config *config)
+                              const SocketDNSoverHTTPS_Config *config)
 {
   assert (transport);
   assert (config);
@@ -321,10 +321,10 @@ SocketDNSoverHTTPS_add_server (T transport, const char *server_name)
       if (strcasecmp (server_name, well_known_servers[i].name) == 0)
         {
           SocketDNSoverHTTPS_Config cfg = { .url = well_known_servers[i].url,
-                                             .method = DOH_METHOD_POST,
-                                             .prefer_http2 = 1,
-                                             .timeout_ms
-                                             = DOH_QUERY_TIMEOUT_MS };
+                                            .method = DOH_METHOD_POST,
+                                            .prefer_http2 = 1,
+                                            .timeout_ms
+                                            = DOH_QUERY_TIMEOUT_MS };
           return SocketDNSoverHTTPS_configure (transport, &cfg);
         }
     }
@@ -555,28 +555,46 @@ doh_validate_response (const SocketHTTPClient_Response *response,
   return 0;
 }
 
-SocketDNSoverHTTPS_Query_T
-SocketDNSoverHTTPS_query (T transport, const unsigned char *query, size_t len,
-                           SocketDNSoverHTTPS_Callback callback, void *userdata)
+/**
+ * Validate query parameters and check transport limits.
+ *
+ * @param transport Transport context.
+ * @param callback Callback function pointer.
+ * @return DOH_ERROR_SUCCESS on validation pass, error code otherwise.
+ */
+static int
+validate_query_request (T transport, SocketDNSoverHTTPS_Callback callback)
 {
   assert (transport);
-  assert (query);
-  assert (len >= DNS_HEADER_SIZE);
   assert (callback);
 
   if (transport->server_count == 0)
-    {
-      callback (NULL, NULL, 0, DOH_ERROR_NO_SERVER, userdata);
-      return NULL;
-    }
+    return DOH_ERROR_NO_SERVER;
 
   if (transport->pending_count >= DOH_MAX_PENDING_QUERIES)
-    {
-      callback (NULL, NULL, 0, DOH_ERROR_NETWORK, userdata);
-      return NULL;
-    }
+    return DOH_ERROR_NETWORK;
 
-  /* Allocate query structure */
+  return DOH_ERROR_SUCCESS;
+}
+
+/**
+ * Allocate and initialize query structure.
+ *
+ * @param transport Transport context (for arena allocation).
+ * @param query DNS query buffer.
+ * @param len Query length.
+ * @param callback Completion callback function.
+ * @param userdata User data for callback.
+ * @return Allocated and initialized query structure.
+ */
+static struct SocketDNSoverHTTPS_Query *
+allocate_query_structure (T transport, const unsigned char *query, size_t len,
+                          SocketDNSoverHTTPS_Callback callback, void *userdata)
+{
+  assert (transport);
+  assert (query);
+  assert (callback);
+
   struct SocketDNSoverHTTPS_Query *q = ALLOC (transport->arena, sizeof (*q));
   memset (q, 0, sizeof (*q));
 
@@ -592,6 +610,77 @@ SocketDNSoverHTTPS_query (T transport, const unsigned char *query, size_t len,
   q->query_copy = ALLOC (transport->arena, len);
   memcpy (q->query_copy, query, len);
   q->query_len = len;
+
+  return q;
+}
+
+/**
+ * Copy HTTP response data to query structure.
+ *
+ * @param transport Transport context (for arena allocation).
+ * @param q Query structure to update.
+ * @param response HTTP response containing DNS message.
+ * @param error Error code from validation.
+ */
+static void
+copy_response_data (T transport, struct SocketDNSoverHTTPS_Query *q,
+                    const SocketHTTPClient_Response *response, int error)
+{
+  assert (transport);
+  assert (q);
+  assert (response);
+
+  q->response = ALLOC (transport->arena, response->body_len);
+  memcpy (q->response, response->body, response->body_len);
+  q->response_len = response->body_len;
+  q->completed = 1;
+  q->error = error;
+}
+
+/**
+ * Update transport statistics after query completion.
+ *
+ * @param transport Transport context.
+ * @param query_len Length of query sent.
+ * @param response_len Length of response received.
+ * @param error Error code from query (DOH_ERROR_SUCCESS or error).
+ */
+static void
+update_query_stats (T transport, size_t query_len, size_t response_len,
+                    int error)
+{
+  assert (transport);
+
+  transport->stats.queries_sent++;
+  transport->stats.bytes_sent += query_len;
+  transport->stats.bytes_received += response_len;
+
+  if (error == DOH_ERROR_SUCCESS)
+    transport->stats.queries_completed++;
+  else
+    transport->stats.queries_failed++;
+}
+
+SocketDNSoverHTTPS_Query_T
+SocketDNSoverHTTPS_query (T transport, const unsigned char *query, size_t len,
+                          SocketDNSoverHTTPS_Callback callback, void *userdata)
+{
+  assert (transport);
+  assert (query);
+  assert (len >= DNS_HEADER_SIZE);
+  assert (callback);
+
+  /* Validate request */
+  int validation_error = validate_query_request (transport, callback);
+  if (validation_error != DOH_ERROR_SUCCESS)
+    {
+      callback (NULL, NULL, 0, validation_error, userdata);
+      return NULL;
+    }
+
+  /* Allocate query structure */
+  struct SocketDNSoverHTTPS_Query *q
+      = allocate_query_structure (transport, query, len, callback, userdata);
 
   /* Get current server configuration */
   struct ServerConfig *server = &transport->servers[transport->current_server];
@@ -622,22 +711,11 @@ SocketDNSoverHTTPS_query (T transport, const unsigned char *query, size_t len,
       return NULL;
     }
 
-  /* Copy validated response to query structure */
-  q->response = ALLOC (transport->arena, response.body_len);
-  memcpy (q->response, response.body, response.body_len);
-  q->response_len = response.body_len;
-  q->completed = 1;
-  q->error = validate_error;
+  /* Copy validated response */
+  copy_response_data (transport, q, &response, validate_error);
 
-  /* Update stats */
-  transport->stats.queries_sent++;
-  transport->stats.bytes_sent += len;
-  transport->stats.bytes_received += response.body_len;
-
-  if (q->error == DOH_ERROR_SUCCESS)
-    transport->stats.queries_completed++;
-  else
-    transport->stats.queries_failed++;
+  /* Update statistics */
+  update_query_stats (transport, len, response.body_len, validate_error);
 
   /* Invoke callback immediately (synchronous operation) */
   callback ((SocketDNSoverHTTPS_Query_T)q, q->response, q->response_len,
