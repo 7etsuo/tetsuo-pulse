@@ -28,6 +28,8 @@ static const char *type_strings[] = {
   [QUIC_STREAM_UNI_CLIENT] = "Client-Initiated Unidirectional",
   [QUIC_STREAM_UNI_SERVER] = "Server-Initiated Unidirectional"
 };
+_Static_assert(sizeof(type_strings)/sizeof(type_strings[0]) == QUIC_STREAM_UNI_SERVER + 1,
+               "type_strings array size must match SocketQUICStreamType enum");
 
 static const char *state_strings[] = {
   [QUIC_STREAM_STATE_READY] = "Ready",
@@ -41,6 +43,8 @@ static const char *state_strings[] = {
   [QUIC_STREAM_STATE_DATA_READ] = "DataRead",
   [QUIC_STREAM_STATE_RESET_READ] = "ResetRead"
 };
+_Static_assert(sizeof(state_strings)/sizeof(state_strings[0]) == QUIC_STREAM_STATE_RESET_READ + 1,
+               "state_strings array size must match SocketQUICStreamState enum");
 
 static const char *result_strings[] = {
   [QUIC_STREAM_OK] = "OK",
@@ -51,6 +55,8 @@ static const char *result_strings[] = {
   [QUIC_STREAM_ERROR_STATE] = "Invalid state transition",
   [QUIC_STREAM_ERROR_LIMIT] = "Stream limit exceeded"
 };
+_Static_assert(sizeof(result_strings)/sizeof(result_strings[0]) == QUIC_STREAM_ERROR_LIMIT + 1,
+               "result_strings array size must match SocketQUICStream_Result enum");
 
 static const char *event_strings[] = {
   [QUIC_STREAM_EVENT_SEND_DATA] = "Send Data",
@@ -66,6 +72,8 @@ static const char *event_strings[] = {
   [QUIC_STREAM_EVENT_APP_READ_RESET] = "App Read Reset",
   [QUIC_STREAM_EVENT_RECV_STOP_SENDING] = "Receive Stop Sending"
 };
+_Static_assert(sizeof(event_strings)/sizeof(event_strings[0]) == QUIC_STREAM_EVENT_MAX + 1,
+               "event_strings array size must match SocketQUICStreamEvent enum");
 
 /* ============================================================================
  * Stream ID Functions (RFC 9000 Section 2.1)
