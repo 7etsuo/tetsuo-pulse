@@ -68,6 +68,22 @@
 
 #endif /* SOCKETHTTP1_HAS_BROTLI */
 
+/**
+ * @brief Maximum buffer size for compression/decompression operations.
+ *
+ * zlib's z_stream structure uses uInt (unsigned int) for avail_in and avail_out
+ * fields, limiting buffer sizes to UINT_MAX bytes. This constant documents
+ * this API constraint and is used for runtime validation before casts.
+ *
+ * For Brotli operations (which use size_t natively and don't have this limit),
+ * we enforce the same constraint for consistent API behavior across all codecs.
+ *
+ * @see zlib.h: typedef unsigned int uInt;
+ * @see Lines 277-278, 309, 341-342, 365 (zlib assertions)
+ * @see Lines 831, 941 (encoder/decoder finish validation)
+ */
+#define ZLIB_MAX_BUFFER_SIZE UINT_MAX
+
 /* Decoder state for gzip/deflate/brotli decompression */
 struct SocketHTTP1_Decoder
 {
@@ -135,7 +151,7 @@ is_supported_coding (SocketHTTP_Coding coding)
 static int
 check_buffer_limits (size_t input_len, size_t output_len)
 {
-  return (input_len <= UINT_MAX && output_len <= UINT_MAX);
+  return (input_len <= ZLIB_MAX_BUFFER_SIZE && output_len <= ZLIB_MAX_BUFFER_SIZE);
 }
 
 static SocketHTTP1_Result
@@ -274,8 +290,8 @@ decode_zlib (SocketHTTP1_Decoder_T decoder, const unsigned char *input,
   int ret;
   z_stream *s = &decoder->state.zlib;
 
-  assert (input_len <= UINT_MAX);  /* Document precondition */
-  assert (output_len <= UINT_MAX); /* Document precondition */
+  assert (input_len <= ZLIB_MAX_BUFFER_SIZE);  /* Document precondition */
+  assert (output_len <= ZLIB_MAX_BUFFER_SIZE); /* Document precondition */
 
   s->next_in = (Bytef *)input;
   s->avail_in = (uInt)input_len;
@@ -306,7 +322,7 @@ finish_zlib_decode (SocketHTTP1_Decoder_T decoder, unsigned char *output,
   int ret;
   z_stream *s = &decoder->state.zlib;
 
-  assert (output_len <= UINT_MAX); /* Document precondition */
+  assert (output_len <= ZLIB_MAX_BUFFER_SIZE); /* Document precondition */
 
   s->next_in = NULL;
   s->avail_in = 0;
@@ -338,8 +354,8 @@ encode_zlib (SocketHTTP1_Encoder_T encoder, const unsigned char *input,
   int zlib_flush = flush ? Z_SYNC_FLUSH : Z_NO_FLUSH;
   z_stream *s = &encoder->state.zlib;
 
-  assert (input_len <= UINT_MAX);  /* Document precondition */
-  assert (output_len <= UINT_MAX); /* Document precondition */
+  assert (input_len <= ZLIB_MAX_BUFFER_SIZE);  /* Document precondition */
+  assert (output_len <= ZLIB_MAX_BUFFER_SIZE); /* Document precondition */
 
   s->next_in = (Bytef *)input;
   s->avail_in = (uInt)input_len;
@@ -362,7 +378,7 @@ finish_zlib_encode (SocketHTTP1_Encoder_T encoder, unsigned char *output,
   size_t produced;
   z_stream *s = &encoder->state.zlib;
 
-  assert (output_len <= UINT_MAX); /* Document precondition */
+  assert (output_len <= ZLIB_MAX_BUFFER_SIZE); /* Document precondition */
 
   s->next_in = NULL;
   s->avail_in = 0;
@@ -828,7 +844,7 @@ SocketHTTP1_Decoder_finish (SocketHTTP1_Decoder_T decoder,
   if (decoder->finished)
     return HTTP1_OK;
 
-  if (output_len > UINT_MAX)
+  if (output_len > ZLIB_MAX_BUFFER_SIZE)
     return HTTP1_ERROR;
 
   limit_res = check_decode_output_limits (decoder->total_decompressed,
@@ -938,7 +954,7 @@ SocketHTTP1_Encoder_finish (SocketHTTP1_Encoder_T encoder,
   if (encoder->finished)
     return 0;
 
-  if (output_len > UINT_MAX)
+  if (output_len > ZLIB_MAX_BUFFER_SIZE)
     return -1;
 
   if (!check_encode_output_limits (encoder->total_encoded, output_len,
