@@ -17,6 +17,14 @@
 #include <unistd.h>
 
 /* ============================================================================
+ * Constants
+ * ============================================================================
+ */
+
+#define NANOSECONDS_PER_SECOND      1000000000ULL
+#define NANOSECONDS_PER_MILLISECOND 1000000ULL
+
+/* ============================================================================
  * Internal Structure
  * ============================================================================
  */
@@ -52,7 +60,7 @@ get_monotonic_ns (void)
          a single-time delay calculation issue which will self-correct. */
       return 0;
     }
-  return (uint64_t)ts.tv_sec * 1000000000ULL + (uint64_t)ts.tv_nsec;
+  return (uint64_t)ts.tv_sec * NANOSECONDS_PER_SECOND + (uint64_t)ts.tv_nsec;
 }
 
 static void
@@ -63,7 +71,7 @@ refill_tokens (SocketSimple_RateLimit_T limit)
 
   if (elapsed_ns > 0)
     {
-      double seconds = (double)elapsed_ns / 1000000000.0;
+      double seconds = (double)elapsed_ns / (double)NANOSECONDS_PER_SECOND;
       double new_tokens = seconds * limit->tokens_per_sec;
       limit->tokens += new_tokens;
       if (limit->tokens > limit->bucket_size)
@@ -246,7 +254,7 @@ Socket_simple_ratelimit_acquire_timeout (SocketSimple_RateLimit_T limit,
     }
 
   uint64_t start = get_monotonic_ns ();
-  uint64_t deadline = start + (uint64_t)timeout_ms * 1000000ULL;
+  uint64_t deadline = start + (uint64_t)timeout_ms * NANOSECONDS_PER_MILLISECOND;
 
   while (!Socket_simple_ratelimit_try_acquire (limit, tokens))
     {
@@ -257,7 +265,7 @@ Socket_simple_ratelimit_acquire_timeout (SocketSimple_RateLimit_T limit,
         }
 
       int wait_ms = Socket_simple_ratelimit_wait_ms (limit, tokens);
-      int64_t remaining = (deadline - now) / 1000000;
+      int64_t remaining = (deadline - now) / NANOSECONDS_PER_MILLISECOND;
       if (wait_ms > remaining)
         {
           wait_ms = (int)remaining;
