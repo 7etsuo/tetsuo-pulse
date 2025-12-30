@@ -6,7 +6,6 @@
 
 /* SocketHTTP2-flow.c - HTTP/2 Flow Control (RFC 9113 Section 5.2) */
 
-#include <assert.h>
 #include <stdint.h>
 
 #include "core/SocketSecurity.h"
@@ -52,7 +51,11 @@ static inline int
 http2_flow_validate (const SocketHTTP2_Conn_T conn,
                      const SocketHTTP2_Stream_T stream)
 {
-  assert (conn);
+  if (conn == NULL)
+    {
+      SOCKET_LOG_ERROR_MSG ("NULL connection pointer in flow control");
+      return -1;
+    }
 
   if (stream && stream->conn != conn)
     {
