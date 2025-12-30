@@ -12,6 +12,7 @@
 #include "SocketSimple-internal.h"
 #include "simple/SocketSimple-ratelimit.h"
 
+#include <limits.h>
 #include <math.h>
 #include <pthread.h>
 #include <time.h>
@@ -267,6 +268,11 @@ Socket_simple_ratelimit_acquire_timeout (SocketSimple_RateLimit_T limit,
 
       int wait_ms = Socket_simple_ratelimit_wait_ms (limit, tokens);
       int64_t remaining = (deadline - now) / NANOSECONDS_PER_MILLISECOND;
+      /* Clamp to INT_MAX to prevent truncation */
+      if (remaining > INT_MAX)
+        {
+          remaining = INT_MAX;
+        }
       if (wait_ms > remaining)
         {
           wait_ms = (int)remaining;

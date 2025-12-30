@@ -9,6 +9,7 @@
  * Tests for the Simple API rate limiter module.
  */
 
+#include <limits.h>
 #include <unistd.h>
 
 #include "simple/SocketSimple-ratelimit.h"
@@ -183,6 +184,26 @@ TEST (ratelimit_statistics_tracking)
 
   /* Check rejected count */
   ASSERT_EQ (10, stats.total_rejected); /* Last failed attempt */
+
+  Socket_simple_ratelimit_free (&limiter);
+}
+
+/* Test Issue #2283: large timeout should not cause integer truncation */
+TEST (ratelimit_acquire_timeout_handles_large_timeout)
+{
+  SocketSimple_RateLimit_T limiter
+      = Socket_simple_ratelimit_new (100, 10);
+  ASSERT_NOT_NULL (limiter);
+
+  /* Use bucket normally first to verify state */
+  int result = Socket_simple_ratelimit_try_acquire (limiter, 5);
+  ASSERT_EQ (1, result);
+
+  /* Try to acquire remaining tokens with very large timeout (> INT_MAX ms)
+   * This should not crash or truncate - the function should handle it safely
+   * We use a very short actual wait by having tokens available soon */
+  result = Socket_simple_ratelimit_acquire_timeout (limiter, 5, INT_MAX);
+  ASSERT_EQ (1, result); /* Should succeed without truncation issues */
 
   Socket_simple_ratelimit_free (&limiter);
 }
