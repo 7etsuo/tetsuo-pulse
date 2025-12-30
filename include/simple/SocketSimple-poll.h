@@ -69,6 +69,16 @@ typedef struct SocketSimple_Poll *SocketSimple_Poll_T;
  */
 #define SOCKET_SIMPLE_POLL_DEFAULT_MAX_EVENTS 64
 
+/**
+ * @brief Sentinel value to use poll instance's default timeout.
+ *
+ * Pass this value as timeout_ms to Socket_simple_poll_wait() to use
+ * the default timeout set via Socket_simple_poll_set_timeout().
+ * This allows per-instance timeout configuration while still allowing
+ * individual wait calls to override when needed.
+ */
+#define SOCKET_POLL_TIMEOUT_USE_DEFAULT (-2)
+
 /*============================================================================
  * Event Flags
  *============================================================================*/
@@ -183,7 +193,8 @@ extern int Socket_simple_poll_modify_events(SocketSimple_Poll_T poll,
  * @param poll Poll handle.
  * @param events Output array for events.
  * @param max_events Maximum events to return.
- * @param timeout_ms Timeout in milliseconds (-1 for infinite, 0 for non-blocking).
+ * @param timeout_ms Timeout in milliseconds (-1 for infinite, 0 for non-blocking,
+ *                   SOCKET_POLL_TIMEOUT_USE_DEFAULT to use instance default).
  * @return Number of events (>=0), or -1 on error.
  */
 extern int Socket_simple_poll_wait(SocketSimple_Poll_T poll,
