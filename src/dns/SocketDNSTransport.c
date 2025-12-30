@@ -605,7 +605,9 @@ SocketDNSTransport_add_nameserver (T transport, const char *address, int port)
     return -1;
 
   ns = &transport->nameservers[transport->nameserver_count];
-  snprintf (ns->address, sizeof (ns->address), "%s", address);
+  int ret = snprintf (ns->address, sizeof (ns->address), "%s", address);
+  if (SOCKET_SNPRINTF_CHECK (ret, sizeof (ns->address)) < 0)
+    return -1; /* Address string truncated */
   ns->port = port > 0 ? port : DNS_PORT;
   ns->family = family;
 
