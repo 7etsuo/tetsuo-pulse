@@ -67,6 +67,20 @@ const Except_T SocketDNSResolver_Failed
  */
 #define TIMEOUT_BACKOFF_MULTIPLIER 4
 
+/**
+ * Maximum attempts for generating unique cryptographically random query IDs.
+ * Prevents infinite loops if RNG fails repeatedly while maintaining RFC 5452
+ * compliance for transaction ID unpredictability.
+ */
+#define DNS_MAX_ID_GENERATION_ATTEMPTS 1000
+
+/**
+ * Milliseconds per second conversion constant.
+ * Used for converting TTL values from seconds to milliseconds for
+ * cache expiration calculations.
+ */
+#define MS_PER_SECOND 1000
+
 /* Query states */
 typedef enum
 {
@@ -330,7 +344,7 @@ generate_unique_id (T resolver)
 {
   uint16_t id;
   int attempts = 0;
-  const int max_attempts = 1000;
+  const int max_attempts = DNS_MAX_ID_GENERATION_ATTEMPTS;
 
   do
     {
@@ -541,7 +555,7 @@ cache_entry_expired (T resolver, const struct CacheEntry *entry)
   int64_t age_ms = now_ms - entry->insert_time_ms;
   int ttl = resolver->cache_ttl_seconds > 0 ? resolver->cache_ttl_seconds
                                             : (int)entry->ttl;
-  return age_ms >= (int64_t)ttl * 1000;
+  return age_ms >= (int64_t)ttl * MS_PER_SECOND;
 }
 
 static struct CacheEntry *
@@ -1275,7 +1289,7 @@ SocketDNSResolver_load_resolv_conf (T resolver)
     }
 
   /* Apply timeout/retry/rotate options from resolv.conf (RFC 1035 §4.2.1) */
-  resolver->timeout_ms = config.timeout_secs * 1000;
+  resolver->timeout_ms = config.timeout_secs * MS_PER_SECOND;
   resolver->max_retries = config.attempts;
 
   /* Propagate to transport layer */
