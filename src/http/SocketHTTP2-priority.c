@@ -214,13 +214,7 @@ SocketHTTP2_Priority_parse (const char *value, size_t len,
               return -1;
             }
 
-          if (urgency < 0 || urgency > SOCKETHTTP2_PRIORITY_MAX_URGENCY)
-            {
-              SOCKET_LOG_DEBUG_MSG (
-                  "Priority parse error: u=%d out of range [0-7]", urgency);
-              return -1;
-            }
-
+          /* Note: urgency bounds already validated in parsing loop above (line 196) */
           priority->urgency = (uint8_t)urgency;
           found_urgency = 1;
         }
