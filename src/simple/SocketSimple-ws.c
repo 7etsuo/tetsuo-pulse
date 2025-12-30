@@ -330,7 +330,14 @@ Socket_simple_ws_recv (SocketSimple_WS_T ws, SocketSimple_WSMessage *msg)
     msg->close_code = SocketWS_close_code (ws->ws);
     const char *reason = SocketWS_close_reason (ws->ws);
     if (reason)
-      msg->close_reason = strdup (reason);
+      {
+        msg->close_reason = strdup (reason);
+        if (!msg->close_reason)
+          {
+            /* Allocation failed, but still return gracefully with NULL reason */
+            msg->close_reason = NULL;
+          }
+      }
     return 0; /* Not an error, just closed */
   }
   EXCEPT (SocketWS_ProtocolError)
@@ -351,7 +358,14 @@ Socket_simple_ws_recv (SocketSimple_WS_T ws, SocketSimple_WSMessage *msg)
       msg->close_code = SocketWS_close_code (ws->ws);
       const char *reason = SocketWS_close_reason (ws->ws);
       if (reason)
-        msg->close_reason = strdup (reason);
+        {
+          msg->close_reason = strdup (reason);
+          if (!msg->close_reason)
+            {
+              /* Allocation failed, but still return gracefully with NULL reason */
+              msg->close_reason = NULL;
+            }
+        }
       return 0;
     }
 
