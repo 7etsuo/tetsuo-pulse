@@ -618,6 +618,110 @@ convert_ws_server_config (const SocketSimple_WSServerConfig *simple_config,
     }
 }
 
+/**
+ * @brief Build a minimal HTTP request structure for WebSocket upgrade.
+ *
+ * Creates a fake HTTP request with the required headers for WebSocket
+ * upgrade acceptance. The request is allocated in the provided arena.
+ *
+ * @param arena Arena for memory allocation
+ * @param ws_key WebSocket key from client handshake
+ * @return Pointer to the constructed request, or NULL on failure
+ */
+static SocketHTTP_Request *
+build_fake_ws_request (Arena_T arena, const char *ws_key)
+{
+  SocketHTTP_Request *request;
+  SocketHTTP_Headers_T headers;
+
+  /* Allocate and zero the request structure */
+  request = Arena_alloc (arena, sizeof (SocketHTTP_Request), __FILE__, __LINE__);
+  memset (request, 0, sizeof (SocketHTTP_Request));
+
+  /* Create headers container */
+  headers = SocketHTTP_Headers_new (arena);
+
+  /* Add required WebSocket upgrade headers */
+  SocketHTTP_Headers_add (headers, "Upgrade", "websocket");
+  SocketHTTP_Headers_add (headers, "Connection", "Upgrade");
+  SocketHTTP_Headers_add (headers, "Sec-WebSocket-Key", ws_key);
+  SocketHTTP_Headers_add (headers, "Sec-WebSocket-Version", "13");
+
+  /* Set up the request structure */
+  request->method = HTTP_METHOD_GET;
+  request->headers = headers;
+  request->path = "/";
+  request->version = HTTP_VERSION_1_1;
+
+  return request;
+}
+
+/**
+ * @brief Complete the WebSocket handshake.
+ *
+ * Performs the handshake loop until completion or failure.
+ * On failure, sets an appropriate error and cleans up the WebSocket.
+ *
+ * @param ws WebSocket instance (volatile pointer)
+ * @param exception_occurred Pointer to exception flag (volatile)
+ * @return 0 on success, -1 on failure
+ */
+static int
+perform_ws_handshake (volatile SocketWS_T *ws, volatile int *exception_occurred)
+{
+  int handshake_result;
+
+  if (!*ws)
+    return -1;
+
+  /* Complete the handshake (sends 101 Switching Protocols) */
+  do
+    {
+      handshake_result = SocketWS_handshake (*ws);
+    }
+  while (handshake_result > 0);
+
+  if (handshake_result < 0)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_WS_PROTOCOL,
+                        "WebSocket handshake failed");
+      SocketWS_free ((SocketWS_T *)ws);
+      *exception_occurred = 1;
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Create a Simple API WebSocket handle from a core WebSocket.
+ *
+ * Allocates and initializes a Simple API wrapper handle.
+ * On failure, frees the WebSocket and sets an error.
+ *
+ * @param ws Core WebSocket instance
+ * @return Simple API handle, or NULL on failure
+ */
+static struct SocketSimple_WS *
+create_simple_ws_handle (SocketWS_T ws)
+{
+  struct SocketSimple_WS *handle;
+
+  if (!ws)
+    return NULL;
+
+  handle = calloc (1, sizeof (*handle));
+  if (!handle)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
+      SocketWS_free (&ws);
+      return NULL;
+    }
+
+  handle->ws = ws;
+  return handle;
+}
+
 SocketSimple_WS_T
 Socket_simple_ws_accept (void *http_req,
                          const SocketSimple_WSServerConfig *config)
@@ -626,6 +730,10 @@ Socket_simple_ws_accept (void *http_req,
   volatile int exception_occurred = 0;
   struct SocketSimple_WS *handle = NULL;
   SocketWS_Config ws_config;
+  SocketSimple_HTTPServerRequest_T simple_req;
+  SocketHTTPServer_Request_T core_req;
+  ServerConnection *conn;
+  const SocketHTTP_Request *request;
 
   Socket_simple_clear_error ();
 
@@ -636,11 +744,10 @@ Socket_simple_ws_accept (void *http_req,
     }
 
   /* Get the Simple API HTTP server request wrapper */
-  SocketSimple_HTTPServerRequest_T simple_req
-      = (SocketSimple_HTTPServerRequest_T)http_req;
+  simple_req = (SocketSimple_HTTPServerRequest_T)http_req;
 
   /* Access the core HTTP server request through the simple wrapper */
-  SocketHTTPServer_Request_T core_req = simple_req->core_req;
+  core_req = simple_req->core_req;
   if (!core_req)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
@@ -649,7 +756,7 @@ Socket_simple_ws_accept (void *http_req,
     }
 
   /* Get the underlying connection and socket */
-  ServerConnection *conn = core_req->conn;
+  conn = core_req->conn;
   if (!conn || !conn->socket)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
@@ -658,7 +765,7 @@ Socket_simple_ws_accept (void *http_req,
     }
 
   /* Get the parsed HTTP request */
-  const SocketHTTP_Request *request = conn->request;
+  request = conn->request;
   if (!request)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
@@ -666,7 +773,6 @@ Socket_simple_ws_accept (void *http_req,
       return NULL;
     }
 
-  /* Convert Simple API config to core config */
   convert_ws_server_config (config, &ws_config);
 
   TRY
@@ -674,24 +780,9 @@ Socket_simple_ws_accept (void *http_req,
     /* Accept the WebSocket upgrade */
     ws = SocketWS_server_accept (conn->socket, request, &ws_config);
 
+    /* Complete the handshake */
     if (ws)
-      {
-        /* Complete the handshake (sends 101 Switching Protocols) */
-        int handshake_result;
-        do
-          {
-            handshake_result = SocketWS_handshake (ws);
-          }
-        while (handshake_result > 0);
-
-        if (handshake_result < 0)
-          {
-            simple_set_error (SOCKET_SIMPLE_ERR_WS_PROTOCOL,
-                              "WebSocket handshake failed");
-            SocketWS_free ((SocketWS_T *)&ws);
-            exception_occurred = 1;
-          }
-      }
+      perform_ws_handshake (&ws, &exception_occurred);
   }
   EXCEPT (SocketWS_Failed)
   {
@@ -708,9 +799,7 @@ Socket_simple_ws_accept (void *http_req,
   FINALLY
   {
     if (exception_occurred && ws)
-      {
-        SocketWS_free ((SocketWS_T *)&ws);
-      }
+      SocketWS_free ((SocketWS_T *)&ws);
   }
   END_TRY;
 
@@ -724,15 +813,9 @@ Socket_simple_ws_accept (void *http_req,
     }
 
   /* Create the simple wrapper handle */
-  handle = calloc (1, sizeof (*handle));
+  handle = create_simple_ws_handle (ws);
   if (!handle)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
-      SocketWS_free ((SocketWS_T *)&ws);
-      return NULL;
-    }
-
-  handle->ws = ws;
+    return NULL;
 
   /* Mark the HTTP connection as upgraded - prevent normal response handling.
    * The socket is now owned by the WebSocket, so we need to prevent the
@@ -748,14 +831,13 @@ Socket_simple_ws_accept_raw (void *sock, const char *ws_key,
 {
   volatile SocketWS_T ws = NULL;
   volatile int exception_occurred = 0;
-  struct SocketSimple_WS *handle = NULL;
-  SocketWS_Config ws_config;
   volatile Arena_T arena = NULL;
-  volatile SocketHTTP_Request *request = NULL;
-  volatile SocketHTTP_Headers_T headers = NULL;
+  SocketWS_Config ws_config;
+  Socket_T socket;
 
   Socket_simple_clear_error ();
 
+  /* Validate arguments */
   if (!sock)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Socket is NULL");
@@ -769,59 +851,25 @@ Socket_simple_ws_accept_raw (void *sock, const char *ws_key,
       return NULL;
     }
 
-  /* Cast the socket handle */
-  Socket_T socket = (Socket_T)sock;
-
-  /* Convert Simple API config to core config */
+  socket = (Socket_T)sock;
   convert_ws_server_config (config, &ws_config);
 
   TRY
   {
-    /* Create a temporary arena for the fake HTTP request */
+    SocketHTTP_Request *request;
+
+    /* Create temporary arena for the fake HTTP request */
     arena = Arena_new ();
 
-    /* Build a minimal HTTP request structure for WebSocket upgrade */
-    request
-        = Arena_alloc (arena, sizeof (SocketHTTP_Request), __FILE__, __LINE__);
-    memset ((void *)request, 0, sizeof (SocketHTTP_Request));
-
-    /* Create headers container */
-    headers = SocketHTTP_Headers_new (arena);
-
-    /* Add required WebSocket upgrade headers */
-    SocketHTTP_Headers_add (headers, "Upgrade", "websocket");
-    SocketHTTP_Headers_add (headers, "Connection", "Upgrade");
-    SocketHTTP_Headers_add (headers, "Sec-WebSocket-Key", ws_key);
-    SocketHTTP_Headers_add (headers, "Sec-WebSocket-Version", "13");
-
-    /* Set up the request structure */
-    ((SocketHTTP_Request *)request)->method = HTTP_METHOD_GET;
-    ((SocketHTTP_Request *)request)->headers = headers;
-    ((SocketHTTP_Request *)request)->path = "/";
-    ((SocketHTTP_Request *)request)->version = HTTP_VERSION_1_1;
+    /* Build minimal HTTP request structure for WebSocket upgrade */
+    request = build_fake_ws_request (arena, ws_key);
 
     /* Accept the WebSocket upgrade */
-    ws = SocketWS_server_accept (socket, (const SocketHTTP_Request *)request,
-                                 &ws_config);
+    ws = SocketWS_server_accept (socket, request, &ws_config);
 
+    /* Complete the handshake */
     if (ws)
-      {
-        /* Complete the handshake (sends 101 Switching Protocols) */
-        int handshake_result;
-        do
-          {
-            handshake_result = SocketWS_handshake (ws);
-          }
-        while (handshake_result > 0);
-
-        if (handshake_result < 0)
-          {
-            simple_set_error (SOCKET_SIMPLE_ERR_WS_PROTOCOL,
-                              "WebSocket handshake failed");
-            SocketWS_free ((SocketWS_T *)&ws);
-            exception_occurred = 1;
-          }
-      }
+      perform_ws_handshake (&ws, &exception_occurred);
   }
   EXCEPT (SocketWS_Failed)
   {
@@ -842,16 +890,12 @@ Socket_simple_ws_accept_raw (void *sock, const char *ws_key,
   }
   FINALLY
   {
-    /* Clean up the temporary arena - the WebSocket has its own copy of
-     * what it needs */
+    /* Clean up temporary arena - WebSocket has its own copy */
     if (arena)
-      {
-        Arena_dispose ((Arena_T *)&arena);
-      }
+      Arena_dispose ((Arena_T *)&arena);
+
     if (exception_occurred && ws)
-      {
-        SocketWS_free ((SocketWS_T *)&ws);
-      }
+      SocketWS_free ((SocketWS_T *)&ws);
   }
   END_TRY;
 
@@ -864,17 +908,7 @@ Socket_simple_ws_accept_raw (void *sock, const char *ws_key,
       return NULL;
     }
 
-  /* Create the simple wrapper handle */
-  handle = calloc (1, sizeof (*handle));
-  if (!handle)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
-      SocketWS_free ((SocketWS_T *)&ws);
-      return NULL;
-    }
-
-  handle->ws = ws;
-  return handle;
+  return create_simple_ws_handle (ws);
 }
 
 void
