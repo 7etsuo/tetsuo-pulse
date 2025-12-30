@@ -145,6 +145,64 @@ Socket_simple_async_free (SocketSimple_Async_T *async)
 }
 
 /* ============================================================================
+ * Async Send/Recv Operations - Helpers
+ * ============================================================================
+ */
+
+/**
+ * Validate async context and extract core socket.
+ * Returns NULL on validation failure and sets error.
+ */
+static Socket_T
+validate_async_socket (SocketSimple_Async_T async,
+                       SocketSimple_Socket_T socket)
+{
+  if (!async || !async->async)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid async context");
+      return NULL;
+    }
+
+  Socket_T core = get_core_socket (socket);
+  if (!core)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                        "Invalid socket (NULL or UDP not supported)");
+      return NULL;
+    }
+
+  return core;
+}
+
+/**
+ * Allocate and initialize callback context.
+ * Returns NULL on allocation failure and sets error.
+ */
+static struct CallbackContext *
+alloc_callback_context (SocketSimple_Socket_T socket,
+                        SocketSimple_AsyncCallback cb, void *user_data)
+{
+  if (!cb)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Callback is required");
+      return NULL;
+    }
+
+  struct CallbackContext *ctx = calloc (1, sizeof (*ctx));
+  if (!ctx)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY,
+                        "Failed to allocate callback context");
+      return NULL;
+    }
+
+  ctx->user_cb = cb;
+  ctx->user_data = user_data;
+  ctx->simple_socket = socket;
+  return ctx;
+}
+
+/* ============================================================================
  * Async Send/Recv Operations
  * ============================================================================
  */
@@ -178,44 +236,19 @@ Socket_simple_async_send_timeout (SocketSimple_Async_T async,
 {
   /* Volatile copy to survive potential longjmp in TRY/EXCEPT */
   SocketSimple_Socket_T volatile safe_socket = socket;
-  Socket_T core_socket;
-  struct CallbackContext *ctx;
   volatile unsigned request_id = 0;
+  struct CallbackContext *ctx;
+  Socket_T core_socket;
 
   Socket_simple_clear_error ();
 
-  if (!async || !async->async)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid async context");
-      return 0;
-    }
-
-  core_socket = get_core_socket ((SocketSimple_Socket_T)safe_socket);
+  core_socket = validate_async_socket (async, (SocketSimple_Socket_T)safe_socket);
   if (!core_socket)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Invalid socket (NULL or UDP not supported)");
-      return 0;
-    }
+    return 0;
 
-  if (!cb)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Callback is required");
-      return 0;
-    }
-
-  /* Allocate callback context */
-  ctx = calloc (1, sizeof (*ctx));
+  ctx = alloc_callback_context ((SocketSimple_Socket_T)safe_socket, cb, user_data);
   if (!ctx)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY,
-                        "Failed to allocate callback context");
-      return 0;
-    }
-
-  ctx->user_cb = cb;
-  ctx->user_data = user_data;
-  ctx->simple_socket = (SocketSimple_Socket_T)safe_socket;
+    return 0;
 
   TRY
   {
@@ -253,44 +286,19 @@ Socket_simple_async_recv_timeout (SocketSimple_Async_T async,
 {
   /* Volatile copy to survive potential longjmp in TRY/EXCEPT */
   SocketSimple_Socket_T volatile safe_socket = socket;
-  Socket_T core_socket;
-  struct CallbackContext *ctx;
   volatile unsigned request_id = 0;
+  struct CallbackContext *ctx;
+  Socket_T core_socket;
 
   Socket_simple_clear_error ();
 
-  if (!async || !async->async)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid async context");
-      return 0;
-    }
-
-  core_socket = get_core_socket ((SocketSimple_Socket_T)safe_socket);
+  core_socket = validate_async_socket (async, (SocketSimple_Socket_T)safe_socket);
   if (!core_socket)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Invalid socket (NULL or UDP not supported)");
-      return 0;
-    }
+    return 0;
 
-  if (!cb)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Callback is required");
-      return 0;
-    }
-
-  /* Allocate callback context */
-  ctx = calloc (1, sizeof (*ctx));
+  ctx = alloc_callback_context ((SocketSimple_Socket_T)safe_socket, cb, user_data);
   if (!ctx)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY,
-                        "Failed to allocate callback context");
-      return 0;
-    }
-
-  ctx->user_cb = cb;
-  ctx->user_data = user_data;
-  ctx->simple_socket = (SocketSimple_Socket_T)safe_socket;
+    return 0;
 
   TRY
   {
