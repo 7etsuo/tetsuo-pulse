@@ -29,6 +29,8 @@ typedef struct
 
 typedef void (*HttpAuthParamCallback)(const char *name, const char *value, void *userdata);
 
+typedef void (*ChallengeFieldHandler)(DigestChallenge *ch, const char *value);
+
 static const char *parse_quoted_string (const char *p, char *out,
                                         size_t out_size);
 static const char *parse_token_value (const char *p, char *out,
@@ -36,6 +38,12 @@ static const char *parse_token_value (const char *p, char *out,
 static const char *skip_quoted_value (const char *p);
 static const char *parse_parameter_name (const char *p, char *name,
                                          size_t name_size);
+static void store_realm (DigestChallenge *ch, const char *value);
+static void store_nonce (DigestChallenge *ch, const char *value);
+static void store_opaque (DigestChallenge *ch, const char *value);
+static void store_qop (DigestChallenge *ch, const char *value);
+static void store_algorithm (DigestChallenge *ch, const char *value);
+static void store_stale (DigestChallenge *ch, const char *value);
 static void store_challenge_field (DigestChallenge *ch, const char *name,
                                    const char *value);
 static int check_stale_value(const char *value);
@@ -140,21 +148,70 @@ parse_parameter_name (const char *p, char *name, size_t name_size)
 }
 
 static void
+store_realm (DigestChallenge *ch, const char *value)
+{
+  socket_util_safe_strncpy (ch->realm, value, sizeof (ch->realm));
+}
+
+static void
+store_nonce (DigestChallenge *ch, const char *value)
+{
+  socket_util_safe_strncpy (ch->nonce, value, sizeof (ch->nonce));
+}
+
+static void
+store_opaque (DigestChallenge *ch, const char *value)
+{
+  socket_util_safe_strncpy (ch->opaque, value, sizeof (ch->opaque));
+}
+
+static void
+store_qop (DigestChallenge *ch, const char *value)
+{
+  socket_util_safe_strncpy (ch->qop, value, sizeof (ch->qop));
+}
+
+static void
+store_algorithm (DigestChallenge *ch, const char *value)
+{
+  socket_util_safe_strncpy (ch->algorithm, value, sizeof (ch->algorithm));
+}
+
+static void
+store_stale (DigestChallenge *ch, const char *value)
+{
+  ch->stale = check_stale_value (value);
+}
+
+typedef struct
+{
+  const char *name;
+  ChallengeFieldHandler handler;
+} ChallengeFieldEntry;
+
+static const ChallengeFieldEntry challenge_field_handlers[] = {
+  { "algorithm", store_algorithm },
+  { "nonce", store_nonce },
+  { "opaque", store_opaque },
+  { "qop", store_qop },
+  { "realm", store_realm },
+  { "stale", store_stale },
+  { NULL, NULL }
+};
+
+static void
 store_challenge_field (DigestChallenge *ch, const char *name,
                        const char *value)
 {
-  if (strcasecmp (name, "realm") == 0)
-    socket_util_safe_strncpy (ch->realm, value, sizeof (ch->realm));
-  else if (strcasecmp (name, "nonce") == 0)
-    socket_util_safe_strncpy (ch->nonce, value, sizeof (ch->nonce));
-  else if (strcasecmp (name, "opaque") == 0)
-    socket_util_safe_strncpy (ch->opaque, value, sizeof (ch->opaque));
-  else if (strcasecmp (name, "qop") == 0)
-    socket_util_safe_strncpy (ch->qop, value, sizeof (ch->qop));
-  else if (strcasecmp (name, "algorithm") == 0)
-    socket_util_safe_strncpy (ch->algorithm, value, sizeof (ch->algorithm));
-  else if (strcasecmp (name, "stale") == 0)
-    ch->stale = check_stale_value(value);
+  for (const ChallengeFieldEntry *entry = challenge_field_handlers;
+       entry->name != NULL; entry++)
+    {
+      if (strcasecmp (name, entry->name) == 0)
+        {
+          entry->handler (ch, value);
+          return;
+        }
+    }
 }
 
 static void
@@ -603,4 +660,11 @@ httpclient_auth_is_stale_nonce (const char *www_authenticate)
   int is_stale = 0;
   parse_http_auth_params(www_authenticate, 0, check_stale_cb, &is_stale);
   return is_stale;
+}
+
+void
+httpclient_auth_clear_header (char *header, size_t header_size)
+{
+  if (header != NULL && header_size > 0)
+    SocketCrypto_secure_clear (header, header_size);
 }
