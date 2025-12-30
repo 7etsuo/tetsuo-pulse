@@ -28,7 +28,7 @@ Socket_simple_ws_options_init (SocketSimple_WSOptions *opts)
   if (!opts)
     return;
   memset (opts, 0, sizeof (*opts));
-  opts->connect_timeout_ms = 30000;
+  opts->connect_timeout_ms = SOCKET_SIMPLE_DEFAULT_TIMEOUT_MS;
 }
 
 /* ============================================================================
