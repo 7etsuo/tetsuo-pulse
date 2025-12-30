@@ -254,6 +254,16 @@ extern int Socket_simple_ws_fd(SocketSimple_WS_T ws);
  *============================================================================*/
 
 /**
+ * @brief Default maximum frame size (16 MB).
+ */
+#define SOCKET_SIMPLE_WS_DEFAULT_MAX_FRAME_SIZE   (16 * 1024 * 1024)
+
+/**
+ * @brief Default maximum message size (64 MB).
+ */
+#define SOCKET_SIMPLE_WS_DEFAULT_MAX_MESSAGE_SIZE (64 * 1024 * 1024)
+
+/**
  * @brief WebSocket server configuration.
  */
 typedef struct {
