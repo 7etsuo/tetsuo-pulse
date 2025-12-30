@@ -23,6 +23,11 @@
 
 #define HUFFMAN_MIN_CODE_BITS 5 /* Shortest code (common chars) */
 #define HUFFMAN_MAX_PAD_BITS 7  /* Max EOS padding (RFC 7541 §5.2) */
+/*
+ * Refill bit buffer when fewer than this many bits remain.
+ * Set to 32 to ensure at least 30 bits available (longest HPACK Huffman code).
+ * Uses ~50% of 64-bit accumulator, balancing refill overhead vs. buffer size.
+ */
 #define HUFFMAN_REFILL_THRESHOLD 32
 #define HUFFMAN_BITS_PER_BYTE 8
 
