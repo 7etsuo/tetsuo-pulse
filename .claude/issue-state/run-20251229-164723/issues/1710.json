@@ -1,0 +1,11 @@
+{
+  "number": 1710,
+  "title": "refactor(http1-chunked): inline single-use handle_trailer_line_completion function",
+  "body": "## Summary\n\nThe `handle_trailer_line_completion()` function is called exactly once and could be inlined to simplify the call graph.\n\n## Location\n\n**File:** `/home/tetsuo/git/tetsuo-socket/src/http/SocketHTTP1-chunked.c`\n**Lines:** 572-587 (definition), 668 (single call site)\n**Function:** `handle_trailer_line_completion()`\n\n## Issue Details\n\n**Pattern:** SINGLE_USE_INLINE\n**Severity:** HIGH\n**Category:** Readability/Refactoring\n\nThe function is only 16 lines and is called once from `handle_trailer_states()` in the `HTTP1_PS_TRAILER_CR` and `HTTP1_PS_TRAILER_LF` cases.\n\n## Current Code\n\n```c\nstatic SocketHTTP1_Result\nhandle_trailer_line_completion (SocketHTTP1_Parser_T parser, const char **p,\n                                const char *end)\n{\n  (void)end;\n  if (parser->internal_state == HTTP1_PS_TRAILER_CR)\n    {\n      if (**p != '\\n')\n        return HTTP1_ERROR_INVALID_TRAILER;\n      (*p)++;\n    }\n  SocketHTTP1_Result res = complete_trailer_header (parser);\n  if (res != HTTP1_OK)\n    return res;\n  return HTTP1_OK;\n}\n```\n\n## Recommendation\n\nInline this function at its single call site (line 668) to:\n1. Reduce indirection and improve code locality\n2. Simplify the call graph\n3. Make the trailer parsing state machine more transparent\n\nThe logic is simple enough that inlining will not hurt readability.\n\n## References\n\n- Similar inlining performed in recent refactoring efforts (#1695, #1692)",
+  "labels": [
+    "enhancement",
+    "wip:claude-1767050066-3589118"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

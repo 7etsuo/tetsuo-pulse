@@ -1,0 +1,12 @@
+{
+  "issue": 1740,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1792",
+  "pr_number": 1792,
+  "branch": "issue-1740-inline-connection-add-to-server",
+  "files_changed": ["src/http/SocketHTTPServer-connections.c"],
+  "tests_passed": true,
+  "commit_sha": "b50544dbd63f2f4699ee9b709a53a132f7b0d817",
+  "summary": "Inlined connection_add_to_server function into its single call site in connection_new()",
+  "notes": "116/117 tests passed. One test failure (test_dns_queue_limit) is pre-existing on main branch - DNS memory leak unrelated to HTTP server connection changes."
+}

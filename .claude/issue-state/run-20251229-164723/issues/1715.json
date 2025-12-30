@@ -1,0 +1,11 @@
+{
+  "number": 1715,
+  "title": "refactor(http1-serialize): inline single-use header_name_valid_for_serialize function",
+  "body": "## Summary\n\nThe static function `header_name_valid_for_serialize` (lines 81-90) is only called once in the entire file, making it a candidate for inlining to improve code locality.\n\n## Location\n\n**File**: `src/http/SocketHTTP1-serialize.c`\n**Lines**: 81-90 (10 lines)\n**Called at**: Line 121 in `serialize_header_cb`\n\n## Current Code\n\n```c\nstatic int\nheader_name_valid_for_serialize (const char *name, size_t len)\n{\n  for (size_t i = 0; i < len; i++)\n    {\n      unsigned char c = (unsigned char)name[i];\n      if (c == '\\r' || c == '\\n' || c == '\\0' || c == ':')\n        return 0;\n    }\n  return len > 0;\n}\n```\n\n**Single call site** (line 121):\n```c\nif (!header_name_valid_for_serialize (name, name_len)\n    || !header_value_valid_for_serialize (value, value_len))\n  {\n    return -1; /* Reject headers with control characters */\n  }\n```\n\n## Recommendation\n\nInline this 10-line validation function directly into its only call site at line 121 to:\n- Improve code locality and readability\n- Reduce function call overhead (minor performance benefit)\n- Eliminate unnecessary abstraction for single-use logic\n\n## Pattern\n\n- **Type**: SINGLE_USE_INLINE\n- **Severity**: HIGH (small function, clear inline candidate)\n- **Category**: Refactoring / Readability\n\n## Related\n\nThis is part of a broader pattern in this file - see also `header_value_valid_for_serialize` which has the same issue.",
+  "labels": [
+    "enhancement",
+    "wip:claude-1767050066-3589118"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

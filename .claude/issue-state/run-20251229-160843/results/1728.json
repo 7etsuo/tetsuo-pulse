@@ -1,0 +1,16 @@
+{
+  "issue": 1728,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1783",
+  "pr_number": 1783,
+  "branch": "issue-1728-inline-add-request-extras",
+  "files_changed": ["src/http/SocketHTTP1-serialize.c"],
+  "tests_passed": true,
+  "commit_sha": "234c402deec55a47c5d93596152a8fceef7e0096",
+  "summary": "Inlined single-use add_request_extras function into SocketHTTP1_serialize_request, improving code locality and reducing abstraction. All HTTP tests pass (13/13). One unrelated pre-existing test failure in test_dns_queue_limit (memory leak in DNS code, also fails on main branch).",
+  "test_results": {
+    "http_tests": "13/13 passed",
+    "total_tests": "116/117 passed (1 pre-existing failure in DNS code)",
+    "sanitizers_enabled": true
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "issue": 1704,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1755",
+  "pr_number": 1755,
+  "branch": "issue-1704-flatten-hpack-huffman-nesting",
+  "files_changed": ["src/http/SocketHPACK-huffman.c"],
+  "tests_passed": true,
+  "commit_sha": "c274b9fdc90da77e166be4b29c237e2d251afe14",
+  "summary": "Refactored try_full_decode function in SocketHPACK-huffman.c to reduce nesting from 4 levels to 2 levels using early continue and inverted conditionals. All HPACK tests pass. Note: 1 pre-existing DNS test failure unrelated to this change."
+}

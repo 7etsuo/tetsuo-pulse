@@ -1,0 +1,8 @@
+{
+  "number": 1719,
+  "title": "refactor(http-server-connections): flatten 3-level nesting in connection_read error handling",
+  "body": "## Summary\n\nThe error handling code in connection_read() uses 3-level nested if statements (lines 75-83).\n\n## Location\nFile: src/http/SocketHTTPServer-connections.c\nFunction: connection_read\nLines: 75-83\n\n## Pattern\nDEEP_NESTING_3 (MEDIUM severity)",
+  "labels": [],
+  "state": "OPEN",
+  "dependencies": []
+}

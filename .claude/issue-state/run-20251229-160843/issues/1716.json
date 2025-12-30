@@ -1,0 +1,10 @@
+{
+  "number": 1716,
+  "title": "refactor(http-uri): flatten 5-level nesting in check_path_traversal literal dot-dot check",
+  "body": "## Summary\n\nThe `check_path_traversal` function in `SocketHTTP-uri.c` contains 5 levels of nested if statements in the literal `..` path traversal detection logic, making it difficult to read and maintain.\n\n## Location\n\n**File**: `/home/tetsuo/git/tetsuo-socket/src/http/SocketHTTP-uri.c`  \n**Lines**: 1143-1151  \n**Function**: `check_path_traversal`  \n**Pattern**: `DEEP_NESTING_5`  \n**Severity**: CRITICAL\n\n## Current Code\n\n```c\nfor (size_t i = 0; i + 1 < len; i++)\n  {\n    if (path[i] == '.' && path[i + 1] == '.')\n      {\n        if (i == 0 || path[i - 1] == '/')\n          {\n            if (i + 2 >= len || path[i + 2] == '/' || path[i + 2] == '?')\n              return URI_PARSE_INVALID_PATH;\n          }\n      }\n  }\n```\n\n## Issue\n\nThis code has **5 levels of nesting**:\n1. `for` loop\n2. `if` (dot-dot pattern match)\n3. `if` (boundary check: start of string or after slash)\n4. `if` (separator check: end of string or slash or query)\n5. `return` statement\n\n## Recommendation\n\nFlatten using early `continue` statements or a guard clause pattern:\n\n```c\nfor (size_t i = 0; i + 1 < len; i++)\n  {\n    if (path[i] != '.' || path[i + 1] != '.')\n      continue;\n    \n    if (i != 0 && path[i - 1] != '/')\n      continue;\n    \n    if (i + 2 < len && path[i + 2] != '/' && path[i + 2] != '?')\n      continue;\n    \n    return URI_PARSE_INVALID_PATH;\n  }\n```\n\nThis reduces nesting from 5 levels to 2 levels, improving readability while preserving the exact same logic.\n\n## Context\n\nThis is part of security-critical path traversal attack detection (RFC 3986). The function checks for literal `..` as well as various URL-encoded variants (`%2e%2e`, `.%2e`, `%2e.`). Similar nesting patterns exist in checks 3 and 4.\n\n## Category\nReadability refactoring",
+  "labels": [
+    "enhancement"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

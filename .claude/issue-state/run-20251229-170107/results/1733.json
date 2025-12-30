@@ -1,0 +1,10 @@
+{
+  "issue": 1733,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1803",
+  "pr_number": 1803,
+  "branch": "issue-1733-inline-record-request-latency",
+  "files_changed": ["src/http/SocketHTTPServer-connections.c"],
+  "tests_passed": true,
+  "commit_sha": "abd24f9d3da126c995b2fa3f0659b897b81d7b28"
+}

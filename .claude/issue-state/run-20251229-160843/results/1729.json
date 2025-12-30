@@ -1,0 +1,12 @@
+{
+  "issue": 1729,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1785",
+  "pr_number": 1785,
+  "branch": "issue-1729-inline-http2-stream-rate-record",
+  "files_changed": ["src/http/SocketHTTP2-stream.c"],
+  "tests_passed": true,
+  "commit_sha": "8797e173",
+  "summary": "Inlined single-use helper function http2_stream_rate_record at its only call site in http2_stream_create. Removes 11 lines, eliminates function call overhead, and makes rate limiting logic more visible.",
+  "note": "One pre-existing DNS test failure (test_dns_queue_limit) confirmed to exist on main branch - unrelated to HTTP/2 changes."
+}

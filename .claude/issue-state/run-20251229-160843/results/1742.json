@@ -1,0 +1,13 @@
+{
+  "issue": 1742,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1794",
+  "pr_number": 1794,
+  "branch": "issue-1742-flatten-validate-static-path",
+  "files_changed": [
+    "src/http/SocketHTTPServer-static.c"
+  ],
+  "tests_passed": true,
+  "test_details": "116/117 tests passed - 1 pre-existing DNS test failure unrelated to changes",
+  "commit_sha": "bfca7374d4e97b9ee97ccd842807ede1cf1aeed3"
+}

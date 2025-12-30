@@ -1,0 +1,19 @@
+{
+  "issue": 1717,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1778",
+  "pr_number": 1778,
+  "branch": "issue-1717-flatten-validate-pseudo-headers",
+  "files_changed": [
+    "src/http/SocketHTTP2-stream.c"
+  ],
+  "tests_passed": true,
+  "commit_sha": "d5ea3fb72719765deb3b857399e221f179c68470",
+  "summary": "Refactored validate_required_pseudo_headers to reduce nesting from 4 levels to 2 levels by using early returns and separating CONNECT validation into distinct guard clauses. All HTTP/2 tests pass with sanitizers enabled.",
+  "changes_made": [
+    "Separated extended CONNECT and standard CONNECT validation into separate guard clauses",
+    "Used early returns to eliminate else branches and reduce nesting",
+    "Added RFC references (RFC 8441 for extended CONNECT, RFC 9113 Section 8.5 for standard)",
+    "Leveraged existing helper functions http2_validate_standard_connect() and http2_validate_extended_connect()"
+  ]
+}

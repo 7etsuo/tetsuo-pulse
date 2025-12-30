@@ -1,0 +1,10 @@
+{
+  "number": 1724,
+  "title": "refactor(http-server-connections): extract body buffer setup into mode-specific functions",
+  "body": "## Summary\n\nThe connection_setup_body_buffer() function contains 4-level nested if statements (lines 202-243).\n\n## Location\nFile: src/http/SocketHTTPServer-connections.c\nFunction: connection_setup_body_buffer\nLines: 202-243\n\n## Pattern\nDEEP_NESTING_4 (HIGH severity)",
+  "labels": [
+    "wip:claude-1767050400-3661884"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

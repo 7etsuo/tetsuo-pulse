@@ -1,0 +1,11 @@
+{
+  "number": 1708,
+  "title": "refactor(http1-chunked): flatten 4-level nesting in TRAILER_COLON case",
+  "body": "## Summary\n\nThe `HTTP1_PS_TRAILER_COLON` case in the `handle_trailer_states()` function (lines 625-654) contains 4 levels of nesting that reduces readability.\n\n## Location\n\n**File:** `/home/tetsuo/git/tetsuo-socket/src/http/SocketHTTP1-chunked.c`\n**Lines:** 625-654\n**Function:** `handle_trailer_states()`\n\n## Issue Details\n\n**Pattern:** DEEP_NESTING_4\n**Severity:** HIGH\n**Category:** Readability/Refactoring\n\nThe nesting structure is:\n```\nwhile (*p < end) {              // Level 1\n  switch (parser->internal_state) {  // Level 2\n    case HTTP1_PS_TRAILER_COLON:     // Level 3\n      if (http1_is_ows(c)) {         // Level 4\n        ...\n      }\n      if (c == '\\r' || c == '\\n') {  // Level 4\n        ...\n      }\n      if (...) {                     // Level 4\n        ...\n      }\n  }\n}\n```\n\n## Recommendation\n\nExtract the `HTTP1_PS_TRAILER_COLON` case body into a separate helper function `handle_trailer_colon_state()` to:\n1. Reduce nesting depth\n2. Improve consistency with other trailer state handlers in the same file\n3. Make the state machine logic easier to follow\n\nThis would align with the pattern already used for `handle_trailer_start_state()`, `handle_trailer_name_state()`, and `handle_trailer_value_state()`.\n\n## References\n\n- Current file follows state handler extraction pattern\n- Similar refactoring recently applied to other HTTP parser modules",
+  "labels": [
+    "enhancement",
+    "wip:claude-1767050066-3589118"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

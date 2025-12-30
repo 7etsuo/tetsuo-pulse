@@ -1,0 +1,13 @@
+{
+  "issue": 1748,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1800",
+  "pr_number": 1800,
+  "branch": "issue-1748-inline-parse-http-date",
+  "files_changed": [
+    "src/http/SocketHTTPServer-static.c"
+  ],
+  "tests_passed": true,
+  "commit_sha": "d78e0b476b7ff75932ebb6221ae431e0ec73de7d",
+  "summary": "Inlined single-use parse_http_date function into server_serve_static_file, reducing 14 lines and eliminating unnecessary indirection"
+}

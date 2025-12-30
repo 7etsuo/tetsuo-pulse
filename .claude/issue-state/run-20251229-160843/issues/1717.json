@@ -1,0 +1,8 @@
+{
+  "number": 1717,
+  "title": "refactor(http2-stream): flatten 4-level nesting in validate_required_pseudo_headers",
+  "body": "## Issue\nDeep nesting (4 levels) in CONNECT method validation makes code hard to follow.\n\n**File**: `src/http/SocketHTTP2-stream.c`  \n**Lines**: 996-1021  \n**Function**: `validate_required_pseudo_headers`  \n**Pattern**: DEEP_NESTING_4  \n**Severity**: CRITICAL\n\n## Current Code Structure\nThe function has 4 levels of nesting in CONNECT validation logic with nested if/else chains.\n\n## Recommendation\nFlatten with early returns and guard clauses:\n- Use early returns for error conditions\n- Eliminate else branches where possible  \n- Consider extracting CONNECT validation to separate helper functions\n- Reduce maximum nesting to 2 levels\n\n## Benefits\n- Improved readability\n- Easier to understand control flow\n- Reduced cognitive load\n- Easier maintenance and testing",
+  "labels": [],
+  "state": "OPEN",
+  "dependencies": []
+}

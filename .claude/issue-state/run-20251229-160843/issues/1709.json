@@ -1,0 +1,8 @@
+{
+  "number": 1709,
+  "title": "refactor(hpack-huffman): inline single-use validate_final_padding",
+  "body": "## Issue\n`validate_final_padding` is a static function called exactly once, making it a candidate for inlining.\n\n**File:** `src/http/SocketHPACK-huffman.c`  \n**Lines:** 560-569 (10 lines)  \n**Called at:** Line 687 (in SocketHPACK_huffman_decode)  \n**Severity:** HIGH  \n**Pattern:** SINGLE_USE_INLINE  \n**Category:** Readability Refactor\n\n## Current Code\n```c\nstatic int\nvalidate_final_padding (uint64_t bits, int bits_avail)\n{\n  if (bits_avail <= 0)\n    return 1;\n\n  if (bits_avail > HUFFMAN_MAX_PAD_BITS)\n    return 0;\n\n  return is_valid_eos_padding (bits, bits_avail);\n}\n```\n\n**Single call site (line 687):**\n```c\nif (!validate_final_padding (bits, bits_avail))\n  return -1;\n```\n\n## Recommendation\nInline the function body at line 687 in `SocketHPACK_huffman_decode`:\n\n```c\n// Validate final padding per RFC 7541 \u00a75.2\nif (bits_avail > 0)\n  {\n    if (bits_avail > HUFFMAN_MAX_PAD_BITS)\n      return -1;\n    \n    if (!is_valid_eos_padding (bits, bits_avail))\n      return -1;\n  }\n```\n\n## Impact\n- Reduces indirection (one fewer function call)\n- Keeps validation logic close to the end of decode\n- Small function body (10 lines) is easy to inline\n- Maintains clarity with a comment referencing RFC 7541",
+  "labels": [],
+  "state": "OPEN",
+  "dependencies": []
+}

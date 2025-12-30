@@ -1,0 +1,11 @@
+{
+  "issue": 1745,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1790",
+  "pr_number": 1790,
+  "branch": "issue-1745-flatten-parse-range-header",
+  "files_changed": ["src/http/SocketHTTPServer-static.c"],
+  "tests_passed": true,
+  "commit_sha": "6e649fa2",
+  "summary": "Flattened 5-level nesting in parse_range_header function to 3 levels by using early returns and simplified control flow"
+}

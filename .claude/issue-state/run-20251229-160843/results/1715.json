@@ -1,0 +1,13 @@
+{
+  "issue": 1715,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1768",
+  "pr_number": 1768,
+  "branch": "issue-1715-inline-header-name-valid",
+  "files_changed": ["src/http/SocketHTTP1-serialize.c"],
+  "tests_passed": true,
+  "commit_sha": "510ffe91",
+  "summary": "Inlined single-use header_name_valid_for_serialize function into serialize_header_cb",
+  "tests_run": "116/117 passed (1 pre-existing failure in unrelated DNS test)",
+  "http_tests": "13/13 passed"
+}

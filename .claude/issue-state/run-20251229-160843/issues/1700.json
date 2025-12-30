@@ -1,0 +1,10 @@
+{
+  "number": 1700,
+  "title": "refactor(http-client-cookie): flatten 4-level nesting in cookie jar capacity management",
+  "body": "## Issue\n4-level nested if statements in cookie jar capacity management make the code harder to follow.\n\n**File**: `src/http/SocketHTTPClient-cookie.c`\n**Lines**: 564-580\n**Severity**: HIGH\n**Pattern**: DEEP_NESTING_4\n**Category**: Readability/Refactoring\n\n## Current Code\n```c\nif (jar->count >= jar->max_cookies)\n  {\n    SocketHTTPClient_CookieJar_clear_expired (jar);\n    if (jar->count >= jar->max_cookies)\n      {\n        evict_oldest_cookie (jar);\n        if (jar->count >= jar->max_cookies)\n          {\n            SocketLog_emitf (\n                SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,\n                \"Cookie jar at max capacity (%zu), rejecting new cookie\",\n                jar->max_cookies);\n            result = -1;\n            goto unlock;\n          }\n      }\n  }\n```\n\n## Recommendation\nFlatten the nested structure using sequential checks with early exit:\n\n```c\nif (jar->count < jar->max_cookies)\n  goto insert_cookie;\n\nSocketHTTPClient_CookieJar_clear_expired (jar);\nif (jar->count < jar->max_cookies)\n  goto insert_cookie;\n\nevict_oldest_cookie (jar);\nif (jar->count >= jar->max_cookies)\n  {\n    SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,\n                     \"Cookie jar at max capacity (%zu), rejecting new cookie\",\n                     jar->max_cookies);\n    result = -1;\n    goto unlock;\n  }\n\ninsert_cookie:\n  // cookie insertion code...\n```\n\n## Benefits\n- Reduces cognitive load (from 4 to 1 level of nesting)\n- Makes the progressive fallback strategy (clear expired \u2192 evict \u2192 fail) more explicit\n- Improves readability and maintainability",
+  "labels": [
+    "enhancement"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

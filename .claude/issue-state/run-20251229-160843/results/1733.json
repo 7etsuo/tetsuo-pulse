@@ -1,0 +1,11 @@
+{
+  "issue": 1733,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1788",
+  "pr_number": 1788,
+  "branch": "issue-1733-inline-record-request-latency",
+  "files_changed": ["src/http/SocketHTTPServer-connections.c"],
+  "tests_passed": true,
+  "commit_sha": "abd24f9d",
+  "summary": "Inlined single-use record_request_latency function (11 lines) into connection_finish_request. Removed forward declaration. All HTTP tests pass."
+}

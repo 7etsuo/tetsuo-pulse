@@ -1,0 +1,10 @@
+{
+  "number": 1731,
+  "title": "refactor(http-uri): flatten 5-level nesting in check_path_traversal mixed encoding %2e. check",
+  "body": "## Summary\n\nThe `check_path_traversal` function contains 5 levels of nested if statements in the mixed encoding `%2e.` path traversal detection logic (Check 4).\n\n## Location\n\n**File**: `/home/tetsuo/git/tetsuo-socket/src/http/SocketHTTP-uri.c`  \n**Lines**: 1184-1192  \n**Function**: `check_path_traversal`  \n**Pattern**: `DEEP_NESTING_5`  \n**Severity**: CRITICAL\n\n## Current Code\n\n```c\n/* Check 4: Mixed encoding \"%2e.\" or \"%2E.\" */\nfor (size_t i = 0; i + 3 < len; i++)\n  {\n    if (path[i] == '%' && path[i + 1] == '2'\n        && (path[i + 2] == 'e' || path[i + 2] == 'E') && path[i + 3] == '.')\n      {\n        if (i == 0 || path[i - 1] == '/')\n          {\n            if (i + 4 >= len || path[i + 4] == '/' || path[i + 4] == '?')\n              return URI_PARSE_INVALID_PATH;\n          }\n      }\n  }\n```\n\n## Issue\n\nThis code has **5 levels of nesting**:\n1. `for` loop\n2. `if` (pattern match: `%2e.` or `%2E.`)\n3. `if` (boundary check: start of string or after slash)\n4. `if` (separator check: end of string or slash or query)\n5. `return` statement\n\n## Recommendation\n\nFlatten using early `continue` statements:\n\n```c\nfor (size_t i = 0; i + 3 < len; i++)\n  {\n    if (path[i] != '%' || path[i + 1] != '2')\n      continue;\n    if ((path[i + 2] != 'e' && path[i + 2] != 'E') || path[i + 3] != '.')\n      continue;\n    \n    if (i != 0 && path[i - 1] != '/')\n      continue;\n    \n    if (i + 4 < len && path[i + 4] != '/' && path[i + 4] != '?')\n      continue;\n    \n    return URI_PARSE_INVALID_PATH;\n  }\n```\n\nThis reduces nesting from 5 levels to 2 levels.\n\n## Context\n\nPart of security-critical path traversal attack detection. This check catches mixed encoding like `/foo/%2e./bar` which should be treated as `/../`. This is the mirror case of Check 3 (`.%2e`).\n\n## Category\nReadability refactoring",
+  "labels": [
+    "enhancement"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

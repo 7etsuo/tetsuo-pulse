@@ -1,0 +1,11 @@
+{
+  "issue": 1714,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1766",
+  "pr_number": 1766,
+  "branch": "issue-1714-inline-header-value-is-safe",
+  "files_changed": ["src/http/SocketHTTP-core.c"],
+  "tests_passed": true,
+  "commit_sha": "c8022e73e8ec87d8349b3c575a5472839e938d94",
+  "summary": "Successfully inlined single-use sockethttp_header_value_is_safe function into SocketHTTP_header_value_valid. All HTTP tests pass with sanitizers enabled."
+}

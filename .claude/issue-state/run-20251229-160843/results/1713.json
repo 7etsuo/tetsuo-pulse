@@ -1,0 +1,17 @@
+{
+  "issue": 1713,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1760",
+  "pr_number": 1760,
+  "branch": "issue-1713-inline-apply-cookie-defaults",
+  "files_changed": ["src/http/SocketHTTPClient-cookie.c"],
+  "tests_passed": true,
+  "commit_sha": "6b24b169",
+  "summary": "Inlined single-use apply_cookie_defaults function into httpclient_parse_set_cookie",
+  "test_results": {
+    "http_client_tests": "45/45 passed",
+    "total_tests": "115/117 passed",
+    "sanitizers": "enabled",
+    "note": "2 pre-existing test failures unrelated to this change (test_dns_queue_limit, test_tls_phase4)"
+  }
+}

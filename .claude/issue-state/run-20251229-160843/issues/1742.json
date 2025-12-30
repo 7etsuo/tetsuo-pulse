@@ -1,0 +1,10 @@
+{
+  "number": 1742,
+  "title": "refactor(http-server-static): flatten 4-level nesting in validate_static_path",
+  "body": "## Summary\n\nThe `validate_static_path` function contains 4-level nested if statements (lines 169-179) that check for \"..\" path traversal sequences. This deep nesting reduces readability and makes the security logic harder to audit.\n\n## Location\n\n**File**: `src/http/SocketHTTPServer-static.c`  \n**Function**: `validate_static_path`  \n**Lines**: 169-179  \n**Pattern**: `DEEP_NESTING_4`  \n**Severity**: HIGH\n\n## Current Code\n\n```c\nwhile (*p \\!= '\\0')              // Level 1\n  {\n    if (p[0] == '.')            // Level 2\n      {\n        if (p[1] == '.' && (p[2] == '/' || p[2] == '\\0'))  // Level 3\n          return 0;\n        if (p[1] == '/' || p[1] == '\\0')                    // Level 3\n          {                                                  // Level 4\n            p += (p[1] == '/') ? 2 : 1;\n            continue;\n          }\n      }\n    while (*p \\!= '\\0' && *p \\!= '/')\n      p++;\n    if (*p == '/')\n      p++;\n  }\n```\n\n## Recommendation\n\nFlatten the nesting by:\n1. Using guard clauses for the dot-handling logic  \n2. Extracting the path component traversal to a helper function\n3. Inverting conditions to reduce nesting depth\n\nExample refactoring:\n```c\nwhile (*p \\!= '\\0')\n  {\n    if (p[0] \\!= '.') \n      {\n        p = skip_to_next_component(p);\n        continue;\n      }\n    \n    // Handle \"..\" (path traversal attack)\n    if (p[1] == '.' && (p[2] == '/' || p[2] == '\\0'))\n      return 0;\n    \n    // Handle \".\" (valid, skip it)\n    if (p[1] == '/' || p[1] == '\\0')\n      {\n        p += (p[1] == '/') ? 2 : 1;\n        continue;\n      }\n    \n    p = skip_to_next_component(p);\n  }\n```",
+  "labels": [
+    "enhancement"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

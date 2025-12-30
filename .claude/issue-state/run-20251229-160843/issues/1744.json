@@ -1,0 +1,8 @@
+{
+  "number": 1744,
+  "title": "refactor(http2-stream): inline single-use function extract_padded_data",
+  "body": "## Issue\nSingle-use helper function adds unnecessary indirection.\n\n**File**: `src/http/SocketHTTP2-stream.c`  \n**Lines**: 2052-2066  \n**Function**: `extract_padded_data`  \n**Pattern**: SINGLE_USE_INLINE  \n**Severity**: HIGH  \n**Size**: 14 lines  \n**Usage**: Called once from `http2_process_data` at line 2084\n\n## Current Code\n\\`\\`\\`c\nstatic int\nextract_padded_data (const SocketHTTP2_FrameHeader *header,\n                     const unsigned char *payload, PaddedData *result)\n{\n  size_t extra = 0;\n  uint8_t pad_len = 0;\n\n  if (http2_extract_padded (header, payload, &extra, &pad_len) < 0)\n    return -1;\n\n  result->data = payload + extra;\n  result->len = header->length - extra - pad_len;\n\n  return 0;\n}\n\\`\\`\\`\n\n## Recommendation\nInline at the single call site in `http2_process_data`:\n\\`\\`\\`c\n/* Extract padded DATA payload */\nsize_t extra = 0;\nuint8_t pad_len = 0;\nif (http2_extract_padded (header, payload, &extra, &pad_len) < 0) {\n    http2_send_connection_error (conn, HTTP2_PROTOCOL_ERROR);\n    return -1;\n}\nconst unsigned char *data = payload + extra;\nsize_t data_len = header->length - extra - pad_len;\n\\`\\`\\`\n\n## Benefits\n- Eliminates unnecessary struct allocation (PaddedData)\n- Reduces code indirection\n- Makes padding extraction logic more visible at call site\n- Simplifies codebase (one less function and type to maintain)",
+  "labels": [],
+  "state": "OPEN",
+  "dependencies": []
+}

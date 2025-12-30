@@ -1,0 +1,11 @@
+{
+  "issue": 1722,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1802",
+  "pr_number": 1802,
+  "branch": "issue-1722-inline-header-value-valid",
+  "files_changed": ["src/http/SocketHTTP1-serialize.c"],
+  "tests_passed": true,
+  "commit_sha": "97deb5c2185d6fab620004d1cd0b45200967124f",
+  "summary": "Inlined the single-use header_value_valid_for_serialize function directly into its only call site in serialize_header_cb, improving code locality and reducing function call overhead."
+}

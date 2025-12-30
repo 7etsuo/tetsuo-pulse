@@ -1,0 +1,10 @@
+{
+  "number": 1723,
+  "title": "refactor(http2-stream): flatten 4-level nesting in http2_process_headers error handling",
+  "body": "## Issue\nDeep nesting (4 levels) in error handling logic makes code hard to follow.\n\n**File**: `src/http/SocketHTTP2-stream.c`  \n**Lines**: 2285-2302  \n**Function**: `http2_process_headers`  \n**Pattern**: DEEP_NESTING_4  \n**Severity**: CRITICAL\n\n## Current Code Structure\nThe function has 4 levels of nesting in error checking:\n- State transition error check\n- Protocol error check  \n- Reserved state check\n- Else branch with different error handling\n\n## Recommendation\nFlatten with guard clauses:\n- Use early returns for error conditions\n- Eliminate nested else branches\n- Extract error handling logic to helper function\n- Reduce maximum nesting to 2 levels\n\n## Benefits\n- Improved readability\n- Clearer error handling flow\n- Reduced cognitive load\n- Easier to verify correctness",
+  "labels": [
+    "wip:claude-1767050400-3661884"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

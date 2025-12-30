@@ -1,0 +1,10 @@
+{
+  "issue": 1725,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1777",
+  "pr_number": 1777,
+  "branch": "issue-1725-extract-overflow-check",
+  "files_changed": ["src/http/SocketHTTPServer-connections.c"],
+  "tests_passed": true,
+  "commit_sha": "7af8fdea"
+}

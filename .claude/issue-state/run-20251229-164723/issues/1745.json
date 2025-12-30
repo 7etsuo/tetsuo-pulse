@@ -1,0 +1,11 @@
+{
+  "number": 1745,
+  "title": "refactor(http-server-static): flatten 5-level nesting in parse_range_header",
+  "body": "## Summary\n\nThe `parse_range_header` function contains 5-level nested if/else statements (lines 303-318) when parsing range values. This deep nesting makes the range parsing logic difficult to follow and maintain.\n\n## Location\n\n**File**: `src/http/SocketHTTPServer-static.c`  \n**Function**: `parse_range_header`  \n**Lines**: 303-318  \n**Pattern**: `DEEP_NESTING_5`  \n**Severity**: CRITICAL\n\n## Current Code\n\n```c\nelse                                    // Level 1\n  {\n    /* Normal range: \"500-999\" or \"500-\" */\n    val = strtoll (p, &endptr, 10);\n    if (endptr == p || val < 0)         // Level 2\n      return 0;\n    *start = (off_t)val;\n\n    if (*endptr == '-')                  // Level 3\n      {\n        p = endptr + 1;\n        if (*p == '\\0' || *p == ',')     // Level 4\n          {\n            /* Open-ended: \"500-\" means 500 to end */\n            *end = file_size - 1;\n          }\n        else                             // Level 5\n          {\n            val = strtoll (p, &endptr, 10);\n            if (endptr == p)\n              return 0;\n            *end = (off_t)val;\n          }\n      }\n  }\n```\n\n## Recommendation\n\nFlatten the nesting by:\n1. Using early returns for error conditions\n2. Extracting range endpoint parsing to helper functions\n3. Simplifying the conditional logic flow\n\nExample refactoring:\n```c\nelse\n  {\n    /* Normal range: \"500-999\" or \"500-\" */\n    val = strtoll (p, &endptr, 10);\n    if (endptr == p || val < 0)\n      return 0;\n    *start = (off_t)val;\n\n    if (*endptr != '-')\n      return 0;\n    \n    p = endptr + 1;\n    \n    /* Open-ended range: \"500-\" */\n    if (*p == '\\0' || *p == ',')\n      {\n        *end = file_size - 1;\n        return 1;\n      }\n    \n    /* Closed range: \"500-999\" */\n    val = strtoll (p, &endptr, 10);\n    if (endptr == p)\n      return 0;\n    *end = (off_t)val;\n  }\n```",
+  "labels": [
+    "enhancement",
+    "wip:claude-1767051301-3810271"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}
