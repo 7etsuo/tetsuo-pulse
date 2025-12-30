@@ -85,7 +85,7 @@ typedef enum {
 typedef struct SocketSimple_PoolOptions {
     int max_connections;      /**< Maximum connections (default: 1024) */
     int buffer_size;          /**< Per-connection buffer size (default: 4096) */
-    int idle_timeout_ms;      /**< Idle connection timeout, 0=none (default: 0) */
+    int idle_timeout_ms;      /**< Idle timeout in ms, rounded up to seconds, 0=none (default: 0) */
     int conn_rate_limit;      /**< Max connections/sec, 0=unlimited (default: 0) */
     int max_per_ip;           /**< Max connections per IP, 0=unlimited (default: 0) */
 } SocketSimple_PoolOptions;
@@ -178,6 +178,10 @@ extern int Socket_simple_pool_remove(SocketSimple_Pool_T pool,
 
 /**
  * @brief Remove idle connections older than timeout.
+ *
+ * Note: Milliseconds are rounded up to the nearest second internally
+ * (e.g., 1999ms becomes 2s). This ensures connections are not prematurely
+ * removed due to truncation.
  *
  * @param pool Pool handle.
  * @param max_idle_ms Maximum idle time in milliseconds.

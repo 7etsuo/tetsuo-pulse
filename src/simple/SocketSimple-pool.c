@@ -136,7 +136,9 @@ Socket_simple_pool_new_ex (const SocketSimple_PoolOptions *opts)
     }
   if (opts->idle_timeout_ms > 0)
     {
-      SocketPool_set_idle_timeout (pool, opts->idle_timeout_ms / 1000);
+      /* Round up to nearest second to avoid truncation */
+      time_t timeout_sec = (opts->idle_timeout_ms + 999) / 1000;
+      SocketPool_set_idle_timeout (pool, timeout_sec);
     }
 
   return handle;
@@ -297,7 +299,9 @@ Socket_simple_pool_cleanup (SocketSimple_Pool_T pool, int max_idle_ms)
       return -1;
     }
 
-  time_t idle_timeout = max_idle_ms / 1000;
+  /* Round up to nearest second to avoid truncation.
+   * Example: 1999ms becomes 2s, not 1s (safer for idle timeout). */
+  time_t idle_timeout = (max_idle_ms + 999) / 1000;
   SocketPool_cleanup (pool->pool, idle_timeout);
 
   return 0;
