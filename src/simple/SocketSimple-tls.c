@@ -25,7 +25,7 @@ Socket_simple_tls_options_init (SocketSimple_TLSOptions *opts)
     return;
   memset (opts, 0, sizeof (*opts));
   opts->verify_cert = 1;
-  opts->timeout_ms = 30000;
+  opts->timeout_ms = SOCKET_TLS_HANDSHAKE_TIMEOUT_MS;
 }
 
 #ifdef SOCKET_HAS_TLS

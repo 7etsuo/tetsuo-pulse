@@ -26,6 +26,11 @@ typedef struct SocketSimple_Socket *SocketSimple_Socket_T;
  *============================================================================*/
 
 /**
+ * @brief Default TLS handshake timeout (30 seconds).
+ */
+#define SOCKET_TLS_HANDSHAKE_TIMEOUT_MS 30000
+
+/**
  * @brief TLS connection options.
  */
 typedef struct {
