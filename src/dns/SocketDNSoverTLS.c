@@ -403,7 +403,13 @@ continue_connection (T transport)
       /* Check socket error */
       int error = 0;
       socklen_t errlen = sizeof (error);
-      getsockopt (fd, SOL_SOCKET, SO_ERROR, &error, &errlen);
+      if (getsockopt (fd, SOL_SOCKET, SO_ERROR, &error, &errlen) < 0)
+        {
+          /* getsockopt failed - treat as connection failure */
+          close_connection (transport, conn);
+          transport->stats.handshake_failures++;
+          return -1;
+        }
       if (error != 0)
         {
           close_connection (transport, conn);
