@@ -435,8 +435,14 @@ SocketDNSServfailCache_insert (T cache, const char *qname, uint16_t qtype,
     }
 
   memset (entry, 0, sizeof (*entry));
-  socket_util_safe_strncpy (entry->name, normalized, sizeof (entry->name));
-  socket_util_safe_strncpy (entry->nameserver, nameserver, sizeof (entry->nameserver));
+  if (!socket_util_safe_strncpy (entry->name, normalized, sizeof (entry->name))
+      || !socket_util_safe_strncpy (entry->nameserver, nameserver,
+                                     sizeof (entry->nameserver)))
+    {
+      entry_free (cache, entry);
+      pthread_mutex_unlock (&cache->mutex);
+      return -1; /* Name or nameserver truncated */
+    }
   entry->qtype = qtype;
   entry->qclass = qclass;
   entry->ttl = ttl;

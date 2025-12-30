@@ -759,7 +759,7 @@ connection_new (SocketHTTPServer_T server, Socket_T socket)
     const char *addr = Socket_getpeeraddr (conn->socket);
     if (addr != NULL)
       {
-        socket_util_safe_strncpy (conn->client_addr, addr, sizeof (conn->client_addr));
+        (void)socket_util_safe_strncpy (conn->client_addr, addr, sizeof (conn->client_addr));
       }
 
     conn->parser = connection_create_parser (arena, &server->config);

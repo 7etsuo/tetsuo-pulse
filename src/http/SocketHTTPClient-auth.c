@@ -29,8 +29,6 @@ typedef struct
 
 typedef void (*HttpAuthParamCallback)(const char *name, const char *value, void *userdata);
 
-typedef void (*ChallengeFieldHandler)(DigestChallenge *ch, const char *value);
-
 static const char *parse_quoted_string (const char *p, char *out,
                                         size_t out_size);
 static const char *parse_token_value (const char *p, char *out,
@@ -38,12 +36,6 @@ static const char *parse_token_value (const char *p, char *out,
 static const char *skip_quoted_value (const char *p);
 static const char *parse_parameter_name (const char *p, char *name,
                                          size_t name_size);
-static void store_realm (DigestChallenge *ch, const char *value);
-static void store_nonce (DigestChallenge *ch, const char *value);
-static void store_opaque (DigestChallenge *ch, const char *value);
-static void store_qop (DigestChallenge *ch, const char *value);
-static void store_algorithm (DigestChallenge *ch, const char *value);
-static void store_stale (DigestChallenge *ch, const char *value);
 static void store_challenge_field (DigestChallenge *ch, const char *name,
                                    const char *value);
 static int check_stale_value(const char *value);
@@ -148,70 +140,21 @@ parse_parameter_name (const char *p, char *name, size_t name_size)
 }
 
 static void
-store_realm (DigestChallenge *ch, const char *value)
-{
-  socket_util_safe_strncpy (ch->realm, value, sizeof (ch->realm));
-}
-
-static void
-store_nonce (DigestChallenge *ch, const char *value)
-{
-  socket_util_safe_strncpy (ch->nonce, value, sizeof (ch->nonce));
-}
-
-static void
-store_opaque (DigestChallenge *ch, const char *value)
-{
-  socket_util_safe_strncpy (ch->opaque, value, sizeof (ch->opaque));
-}
-
-static void
-store_qop (DigestChallenge *ch, const char *value)
-{
-  socket_util_safe_strncpy (ch->qop, value, sizeof (ch->qop));
-}
-
-static void
-store_algorithm (DigestChallenge *ch, const char *value)
-{
-  socket_util_safe_strncpy (ch->algorithm, value, sizeof (ch->algorithm));
-}
-
-static void
-store_stale (DigestChallenge *ch, const char *value)
-{
-  ch->stale = check_stale_value (value);
-}
-
-typedef struct
-{
-  const char *name;
-  ChallengeFieldHandler handler;
-} ChallengeFieldEntry;
-
-static const ChallengeFieldEntry challenge_field_handlers[] = {
-  { "algorithm", store_algorithm },
-  { "nonce", store_nonce },
-  { "opaque", store_opaque },
-  { "qop", store_qop },
-  { "realm", store_realm },
-  { "stale", store_stale },
-  { NULL, NULL }
-};
-
-static void
 store_challenge_field (DigestChallenge *ch, const char *name,
                        const char *value)
 {
-  for (const ChallengeFieldEntry *entry = challenge_field_handlers;
-       entry->name != NULL; entry++)
-    {
-      if (strcasecmp (name, entry->name) == 0)
-        {
-          entry->handler (ch, value);
-          return;
-        }
-    }
+  if (strcasecmp (name, "realm") == 0)
+    (void)socket_util_safe_strncpy (ch->realm, value, sizeof (ch->realm));
+  else if (strcasecmp (name, "nonce") == 0)
+    (void)socket_util_safe_strncpy (ch->nonce, value, sizeof (ch->nonce));
+  else if (strcasecmp (name, "opaque") == 0)
+    (void)socket_util_safe_strncpy (ch->opaque, value, sizeof (ch->opaque));
+  else if (strcasecmp (name, "qop") == 0)
+    (void)socket_util_safe_strncpy (ch->qop, value, sizeof (ch->qop));
+  else if (strcasecmp (name, "algorithm") == 0)
+    (void)socket_util_safe_strncpy (ch->algorithm, value, sizeof (ch->algorithm));
+  else if (strcasecmp (name, "stale") == 0)
+    ch->stale = check_stale_value(value);
 }
 
 static void
@@ -282,33 +225,55 @@ compute_ha2 (const char *method, const char *uri, int use_sha256,
   return compute_digest_a (method, uri, NULL, use_sha256, 0, ha2_hex);
 }
 
-/* Compute response hash with or without qop (RFC 2617/7616) */
 static int
-compute_response_hash (const char *ha1_hex, const char *nonce, const char *nc,
-                       const char *cnonce, const char *qop,
-                       const char *ha2_hex, int use_sha256, char *response_hex)
+compute_response_with_qop (const char *ha1_hex, const char *nonce,
+                           const char *nc, const char *cnonce, const char *qop,
+                           const char *ha2_hex, int use_sha256,
+                           char *response_hex)
 {
   char buf[HTTPCLIENT_DIGEST_A_BUFFER_SIZE];
   int len;
 
-  if (qop != NULL && strcmp (qop, HTTPCLIENT_DIGEST_TOKEN_AUTH) == 0)
-    {
-      if (nc == NULL || cnonce == NULL)
-        return -1;
+  if (nc == NULL || cnonce == NULL)
+    return -1;
 
-      len = snprintf (buf, sizeof (buf), "%s:%s:%s:%s:%s:%s", ha1_hex, nonce,
-                      nc, cnonce, qop, ha2_hex);
-    }
-  else
-    {
-      len = snprintf (buf, sizeof (buf), "%s:%s:%s", ha1_hex, nonce, ha2_hex);
-    }
-
+  len = snprintf (buf, sizeof (buf), "%s:%s:%s:%s:%s:%s", ha1_hex, nonce, nc,
+                  cnonce, qop, ha2_hex);
   if (len < 0 || (size_t)len >= sizeof (buf))
     return -1;
 
   digest_hash (buf, (size_t)len, use_sha256, response_hex);
   return 0;
+}
+
+/* Compute response without qop (RFC 2617 compat) */
+static int
+compute_response_no_qop (const char *ha1_hex, const char *nonce,
+                         const char *ha2_hex, int use_sha256,
+                         char *response_hex)
+{
+  char buf[HTTPCLIENT_DIGEST_A_BUFFER_SIZE];
+  int len;
+
+  len = snprintf (buf, sizeof (buf), "%s:%s:%s", ha1_hex, nonce, ha2_hex);
+  if (len < 0 || (size_t)len >= sizeof (buf))
+    return -1;
+
+  digest_hash (buf, (size_t)len, use_sha256, response_hex);
+  return 0;
+}
+
+static int
+compute_response_hash (const char *ha1_hex, const char *nonce, const char *nc,
+                       const char *cnonce, const char *qop,
+                       const char *ha2_hex, int use_sha256, char *response_hex)
+{
+  if (qop != NULL && strcmp (qop, HTTPCLIENT_DIGEST_TOKEN_AUTH) == 0)
+    return compute_response_with_qop (ha1_hex, nonce, nc, cnonce, qop, ha2_hex,
+                                      use_sha256, response_hex);
+  else
+    return compute_response_no_qop (ha1_hex, nonce, ha2_hex, use_sha256,
+                                    response_hex);
 }
 
 int
@@ -331,7 +296,7 @@ httpclient_auth_basic_header (const char *username, const char *password,
     {
       SOCKET_LOG_WARN_MSG (
           "Basic auth credentials too long: username='%.*s' password_len=%zu",
-          (int)strnlen (username, 32), username, strnlen (password, 1024));
+          (int)strnlen (username, 32), username, strlen (password));
       return -1;
     }
 
@@ -487,7 +452,7 @@ parse_digest_challenge (const char *header, DigestChallenge *ch)
     return -1;
 
   if (ch->algorithm[0] == '\0')
-    socket_util_safe_strncpy (ch->algorithm, "MD5", sizeof (ch->algorithm));
+    (void)socket_util_safe_strncpy (ch->algorithm, "MD5", sizeof (ch->algorithm));
 
   return 0;
 }
@@ -540,11 +505,6 @@ generate_cnonce (char *cnonce, size_t size)
 
   if (SocketCrypto_random_bytes (random_bytes, sizeof (random_bytes)) != 0)
     {
-      /* WARNING: Crypto RNG failed, using weak time-based fallback for cnonce.
-       * This creates a predictable nonce that weakens HTTP Digest authentication
-       * security. Attackers who know the approximate request time can guess the
-       * cnonce, potentially enabling replay attacks. In production, ensure crypto
-       * RNG is available (requires OpenSSL/LibreSSL or /dev/urandom). */
       uint64_t t = (uint64_t)time (NULL);
       memcpy (random_bytes, &t, sizeof (t));
       memset (random_bytes + sizeof (t), 0,
@@ -643,11 +603,4 @@ httpclient_auth_is_stale_nonce (const char *www_authenticate)
   int is_stale = 0;
   parse_http_auth_params(www_authenticate, 0, check_stale_cb, &is_stale);
   return is_stale;
-}
-
-void
-httpclient_auth_clear_header (char *header, size_t header_size)
-{
-  if (header != NULL && header_size > 0)
-    SocketCrypto_secure_clear (header, header_size);
 }

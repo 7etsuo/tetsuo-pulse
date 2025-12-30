@@ -1498,7 +1498,8 @@ parse_bind_dnskey (const char *zone, const char *fields[], int field_count,
   memcpy (rdata + 4, key_buffer, pubkey_len);
 
   /* Fill anchor structure */
-  socket_util_safe_strncpy (anchor->zone, zone, sizeof (anchor->zone));
+  if (!socket_util_safe_strncpy (anchor->zone, zone, sizeof (anchor->zone)))
+    return -1; /* Zone name truncated */
   anchor->type = TRUST_ANCHOR_DNSKEY;
   anchor->data.dnskey.flags = (uint16_t)flags;
   anchor->data.dnskey.protocol = (uint8_t)protocol;
@@ -1554,7 +1555,8 @@ parse_bind_ds (const char *zone, const char *fields[], int field_count,
     }
 
   /* Fill anchor structure */
-  socket_util_safe_strncpy (anchor->zone, zone, sizeof (anchor->zone));
+  if (!socket_util_safe_strncpy (anchor->zone, zone, sizeof (anchor->zone)))
+    return -1; /* Zone name truncated */
   anchor->type = TRUST_ANCHOR_DS;
   anchor->data.ds.key_tag = (uint16_t)keytag;
   anchor->data.ds.algorithm = (uint8_t)algorithm;
@@ -1608,7 +1610,8 @@ SocketDNSSEC_validator_load_anchors (SocketDNSSEC_Validator_T validator,
 
       /* Extract zone name (fields[0]) */
       char zone[DNS_MAX_NAME_LEN];
-      socket_util_safe_strncpy (zone, fields[0], sizeof (zone));
+      if (!socket_util_safe_strncpy (zone, fields[0], sizeof (zone)))
+        continue; /* Skip entry if zone name truncated */
 
       /* Check for IN class (fields[1]) and record type (fields[2] or fields[3])
        */
