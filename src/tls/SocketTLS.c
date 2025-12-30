@@ -526,6 +526,137 @@ do_handshake_poll (Socket_T socket, unsigned events, int timeout_ms)
   return result;
 }
 
+/**
+ * disable_compute_shutdown_timeout - Calculate timeout for best-effort shutdown
+ *
+ * Returns: Timeout in milliseconds (minimum 1 second)
+ * Thread-safe: Yes
+ */
+static int
+disable_compute_shutdown_timeout (void)
+{
+  int timeout_ms = SOCKET_TLS_DEFAULT_SHUTDOWN_TIMEOUT_MS / 4;
+  if (timeout_ms < 1000)
+    timeout_ms = 1000; /* Minimum 1 second for disable */
+  return timeout_ms;
+}
+
+/**
+ * disable_handle_shutdown_result - Process SSL_shutdown() result for disable
+ * @socket: Socket instance
+ * @result: Return value from SSL_shutdown()
+ * @clean_shutdown_out: Output for clean shutdown flag
+ *
+ * Handles the three SSL_shutdown() return values:
+ * - 1: Clean bidirectional shutdown (set flag, done)
+ * - 0: Unidirectional shutdown (retry once)
+ * - <0: Error (will be handled by caller)
+ *
+ * Returns: 1 to continue loop, 0 to break
+ * Thread-safe: No
+ */
+static int
+disable_handle_shutdown_result (Socket_T socket, int result,
+                                 int *clean_shutdown_out)
+{
+  SSL *ssl = tls_socket_get_ssl (socket);
+
+  if (result == 1)
+    {
+      /* Clean bidirectional shutdown */
+      *clean_shutdown_out = 1;
+      socket->tls_shutdown_done = 1;
+      return 0; /* Break loop */
+    }
+  else if (result == 0)
+    {
+      /* Unidirectional shutdown sent, need peer response */
+      /* Try once more then accept partial shutdown */
+      result = SSL_shutdown (ssl);
+      if (result == 1)
+        {
+          *clean_shutdown_out = 1;
+          socket->tls_shutdown_done = 1;
+        }
+      return 0; /* Break loop */
+    }
+
+  return 1; /* Continue loop (error case handled by caller) */
+}
+
+/**
+ * disable_handle_io_wait - Handle I/O wait for SSL_shutdown retry
+ * @socket: Socket instance
+ * @ssl: SSL object
+ * @result: SSL_shutdown() result (negative value)
+ * @deadline: Shutdown deadline timestamp
+ *
+ * Checks if SSL_shutdown needs I/O wait (WANT_READ/WANT_WRITE) and performs
+ * brief poll if needed. Best-effort operation - ignores poll errors.
+ *
+ * Returns: 1 to continue retry loop, 0 to break
+ * Thread-safe: No
+ */
+static int
+disable_handle_io_wait (Socket_T socket, SSL *ssl, int result, int64_t deadline)
+{
+  int err = SSL_get_error (ssl, result);
+
+  if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
+    {
+      /* Brief poll then retry */
+      unsigned events = (err == SSL_ERROR_WANT_READ) ? POLL_READ : POLL_WRITE;
+      int poll_timeout = SocketTimeout_poll_timeout (100, deadline);
+
+      if (poll_timeout > 0)
+        {
+          /* Simple poll - ignore errors, best-effort */
+          (void)do_handshake_poll (socket, events, poll_timeout);
+          return 1; /* Continue retry */
+        }
+    }
+
+  /* Other error or timeout - accept incomplete shutdown */
+  return 0;
+}
+
+/**
+ * disable_perform_shutdown_loop - Attempt SSL shutdown with retry loop
+ * @socket: Socket instance
+ * @ssl: SSL object
+ * @timeout_ms: Timeout in milliseconds
+ *
+ * Best-effort SSL shutdown with limited retries. Handles:
+ * - Bidirectional shutdown (complete)
+ * - Unidirectional shutdown (partial, one retry)
+ * - I/O blocking (brief poll then retry)
+ * - Timeout (accept incomplete)
+ *
+ * Returns: 1 if clean shutdown, 0 if partial/failed
+ * Thread-safe: No
+ */
+static int
+disable_perform_shutdown_loop (Socket_T socket, SSL *ssl, int timeout_ms)
+{
+  int clean_shutdown = 0;
+  int64_t deadline = SocketTimeout_deadline_ms (timeout_ms);
+
+  while (!SocketTimeout_expired (deadline))
+    {
+      int result = SSL_shutdown (ssl);
+
+      /* Handle successful or partial shutdown */
+      if (!disable_handle_shutdown_result (socket, result, &clean_shutdown))
+        break;
+
+      /* result < 0: check if we need to wait for I/O */
+      if (!disable_handle_io_wait (socket, ssl, result, deadline))
+        break;
+    }
+
+  return clean_shutdown;
+}
+
 int
 SocketTLS_disable (Socket_T socket)
 {
@@ -538,64 +669,20 @@ SocketTLS_disable (Socket_T socket)
 
   int clean_shutdown = 0;
 
-  /* Attempt graceful SSL shutdown (best-effort, no exceptions) */
-  SSL *ssl = tls_socket_get_ssl (socket);
-  if (ssl && !socket->tls_shutdown_done)
-    {
-      /* Non-blocking best-effort shutdown with limited retries */
-      int timeout_ms = SOCKET_TLS_DEFAULT_SHUTDOWN_TIMEOUT_MS / 4;
-      if (timeout_ms < 1000)
-        timeout_ms = 1000; /* Minimum 1 second for disable */
-
-      int64_t deadline = SocketTimeout_deadline_ms (timeout_ms);
-
-      while (!SocketTimeout_expired (deadline))
-        {
-          int result = SSL_shutdown (ssl);
-          if (result == 1)
-            {
-              /* Clean bidirectional shutdown */
-              clean_shutdown = 1;
-              socket->tls_shutdown_done = 1;
-              break;
-            }
-          else if (result == 0)
-            {
-              /* Unidirectional shutdown sent, need peer response */
-              /* Try once more then accept partial shutdown */
-              result = SSL_shutdown (ssl);
-              if (result == 1)
-                {
-                  clean_shutdown = 1;
-                  socket->tls_shutdown_done = 1;
-                }
-              break;
-            }
-          else
-            {
-              /* result < 0: check if we need to wait for I/O */
-              int err = SSL_get_error (ssl, result);
-              if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
-                {
-                  /* Brief poll then retry */
-                  unsigned events
-                      = (err == SSL_ERROR_WANT_READ) ? POLL_READ : POLL_WRITE;
-                  int poll_timeout = SocketTimeout_poll_timeout (100, deadline);
-                  if (poll_timeout > 0)
-                    {
-                      /* Simple poll - ignore errors, best-effort */
-                      (void)do_handshake_poll (socket, events, poll_timeout);
-                      continue;
-                    }
-                }
-              /* Other error or timeout - accept incomplete shutdown */
-              break;
-            }
-        }
-    }
-  else if (socket->tls_shutdown_done)
+  /* Check if already shutdown */
+  if (socket->tls_shutdown_done)
     {
       clean_shutdown = 1;
+    }
+  else
+    {
+      /* Attempt graceful SSL shutdown (best-effort, no exceptions) */
+      SSL *ssl = tls_socket_get_ssl (socket);
+      if (ssl)
+        {
+          int timeout_ms = disable_compute_shutdown_timeout ();
+          clean_shutdown = disable_perform_shutdown_loop (socket, ssl, timeout_ms);
+        }
     }
 
   /* Always clean up TLS resources regardless of shutdown result */
