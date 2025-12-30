@@ -464,7 +464,11 @@ Socket_simple_reconnect_get_socket (SocketSimple_Reconnect_T conn)
     {
       conn->simple_socket = calloc (1, sizeof (struct SocketSimple_Socket));
       if (!conn->simple_socket)
-        return NULL;
+        {
+          simple_set_error (SOCKET_SIMPLE_ERR_MEMORY,
+                            "Failed to allocate socket wrapper");
+          return NULL;
+        }
     }
 
   conn->simple_socket->socket = core_sock;
