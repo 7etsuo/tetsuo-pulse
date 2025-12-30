@@ -236,7 +236,7 @@ static size_t
 extract_token_bounds (const char *start, const char **end)
 {
   const char *p = start;
-  while (*p && *p != ',' && *p != ' ' && *p != '\t')
+  while (!sockethttp_is_token_boundary (*p))
     p++;
   *end = p;
   return (size_t)(p - start);
