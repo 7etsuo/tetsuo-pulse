@@ -12,6 +12,7 @@
 #include "SocketSimple-internal.h"
 #include "simple/SocketSimple-ratelimit.h"
 
+#include <math.h>
 #include <pthread.h>
 #include <time.h>
 #include <unistd.h>
@@ -187,7 +188,7 @@ Socket_simple_ratelimit_wait_ms (SocketSimple_RateLimit_T limit, int tokens)
     {
       double needed = tokens - limit->tokens;
       double seconds = needed / limit->tokens_per_sec;
-      wait_ms = (int)(seconds * 1000.0) + 1; /* Round up */
+      wait_ms = (int)ceil(seconds * 1000.0);
     }
 
   pthread_mutex_unlock (&limit->mutex);
