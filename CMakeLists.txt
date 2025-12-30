@@ -745,6 +745,7 @@ set(TEST_SOURCES
     test_socket
     test_simple_recv_line
     test_simple_dns_overflow
+    test_simple_poll
     test_simple_poll_udp
     test_socketbuf
     test_socketdgram
