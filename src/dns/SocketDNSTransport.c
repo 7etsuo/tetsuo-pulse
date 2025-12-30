@@ -1089,8 +1089,7 @@ tcp_send_query (T transport, struct SocketDNSQuery *query)
   /* Build message with length prefix */
   total_len = 2 + query->query_len;
   conn->send_buf = Arena_alloc (transport->arena, total_len, __FILE__, __LINE__);
-  len_prefix[0] = (unsigned char)((query->query_len >> 8) & 0xFF);
-  len_prefix[1] = (unsigned char)(query->query_len & 0xFF);
+  socket_util_pack_be16 (len_prefix, (uint16_t)query->query_len);
   memcpy (conn->send_buf, len_prefix, 2);
   memcpy (conn->send_buf + 2, query->query, query->query_len);
   conn->send_len = total_len;
