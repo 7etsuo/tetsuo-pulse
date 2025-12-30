@@ -162,16 +162,6 @@ sni_callback (SSL *ssl, int *ad, void *arg)
                          ctx->sni_certs.pkeys[idx]);
 }
 
-static int
-sni_realloc_array (void **ptr, size_t new_size)
-{
-  void *new_ptr = realloc (*ptr, new_size);
-  if (!new_ptr)
-    return 0;
-  *ptr = new_ptr;
-  return 1;
-}
-
 static void
 expand_sni_capacity (T ctx)
 {
