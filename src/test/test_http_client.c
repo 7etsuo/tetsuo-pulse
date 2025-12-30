@@ -771,6 +771,94 @@ test_auth_buffer_overflow_protection (void)
   TEST_PASS ();
 }
 
+/**
+ * Test secure clearing of authentication headers (Issue #1868)
+ */
+static void
+test_auth_secure_clear (void)
+{
+  char output[256];
+  int result;
+  size_t i;
+  int all_cleared;
+
+  TEST_START ("auth header secure clearing");
+
+  /* Test Basic auth header clearing */
+  result
+      = httpclient_auth_basic_header ("user", "pass", output, sizeof (output));
+  ASSERT_EQ (result, 0, "should generate basic auth header");
+  ASSERT_STR_EQ (output, "Basic dXNlcjpwYXNz",
+                 "should have correct base64 encoding");
+
+  /* Clear the header */
+  httpclient_auth_clear_header (output, sizeof (output));
+
+  /* Verify all bytes are cleared (should be zeroed) */
+  all_cleared = 1;
+  for (i = 0; i < sizeof (output); i++)
+    {
+      if (output[i] != 0)
+        {
+          all_cleared = 0;
+          break;
+        }
+    }
+  ASSERT_TRUE (all_cleared, "basic auth header should be fully cleared");
+
+  /* Test Bearer token header clearing */
+  result = httpclient_auth_bearer_header ("secret_token_12345", output,
+                                          sizeof (output));
+  ASSERT_EQ (result, 0, "should generate bearer auth header");
+  ASSERT_TRUE (strncmp (output, "Bearer ", 7) == 0,
+               "should start with 'Bearer '");
+
+  /* Clear the header */
+  httpclient_auth_clear_header (output, sizeof (output));
+
+  /* Verify all bytes are cleared */
+  all_cleared = 1;
+  for (i = 0; i < sizeof (output); i++)
+    {
+      if (output[i] != 0)
+        {
+          all_cleared = 0;
+          break;
+        }
+    }
+  ASSERT_TRUE (all_cleared, "bearer auth header should be fully cleared");
+
+#if SOCKET_HAS_TLS
+  /* Test Digest auth header clearing (requires TLS for hashing) */
+  result = httpclient_auth_digest_response (
+      "user", "pass", "testrealm@host.com",
+      "dcd98b7102dd2f0e8b11d0f600bfb0c093", "/dir/index.html", "GET",
+      NULL, /* qop */
+      NULL, /* nc */
+      NULL, /* cnonce */
+      0,    /* MD5 */
+      output, sizeof (output));
+  ASSERT_EQ (result, 0, "should generate digest response");
+
+  /* Clear the header */
+  httpclient_auth_clear_header (output, sizeof (output));
+
+  /* Verify all bytes are cleared */
+  all_cleared = 1;
+  for (i = 0; i < sizeof (output); i++)
+    {
+      if (output[i] != 0)
+        {
+          all_cleared = 0;
+          break;
+        }
+    }
+  ASSERT_TRUE (all_cleared, "digest auth header should be fully cleared");
+#endif
+
+  TEST_PASS ();
+}
+
 /* ============================================================================
  * Pool Statistics Tests
  * ============================================================================
@@ -1424,6 +1512,7 @@ main (void)
   test_auth_stale_nonce_detection ();
   test_auth_digest_client_config ();
   test_auth_buffer_overflow_protection ();
+  test_auth_secure_clear ();
 
   printf ("\nPool Tests:\n");
   test_pool_stats ();

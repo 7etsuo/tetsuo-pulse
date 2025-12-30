@@ -293,12 +293,16 @@ httpclient_auth_basic_header (const char *username, const char *password,
       SOCKET_LOG_WARN_MSG (
           "Basic auth credentials too long: username='%.*s' password_len=%zu",
           (int)strnlen (username, 32), username, strlen (password));
+      SocketCrypto_secure_clear (credentials, sizeof (credentials));
       return -1;
     }
 
   base64_size = SocketCrypto_base64_encoded_size ((size_t)cred_len);
   if (HTTPCLIENT_BASIC_PREFIX_LEN + base64_size > output_size)
-    return -1;
+    {
+      SocketCrypto_secure_clear (credentials, sizeof (credentials));
+      return -1;
+    }
 
   /* Write prefix followed by base64-encoded credentials */
   memcpy (output, HTTPCLIENT_BASIC_PREFIX, HTTPCLIENT_BASIC_PREFIX_LEN);
@@ -309,7 +313,18 @@ httpclient_auth_basic_header (const char *username, const char *password,
                                     output_size - HTTPCLIENT_BASIC_PREFIX_LEN);
   SocketCrypto_secure_clear (credentials, sizeof (credentials));
 
-  return (encoded_len < 0) ? -1 : 0;
+  if (encoded_len < 0)
+    {
+      SocketCrypto_secure_clear (output, output_size);
+      return -1;
+    }
+
+  /* SECURITY NOTE: The output buffer now contains sensitive base64-encoded
+   * credentials. Callers MUST use httpclient_auth_clear_header() to securely
+   * clear the output buffer when it is no longer needed to prevent credential
+   * leakage through memory dumps or debugging sessions. */
+
+  return 0;
 }
 
 int
@@ -337,6 +352,10 @@ httpclient_auth_bearer_header (const char *token, char *output,
   memcpy (output, HTTPCLIENT_BEARER_PREFIX, HTTPCLIENT_BEARER_PREFIX_LEN);
   memcpy (output + HTTPCLIENT_BEARER_PREFIX_LEN, token, token_len);
   output[HTTPCLIENT_BEARER_PREFIX_LEN + token_len] = '\0';
+
+  /* SECURITY NOTE: The output buffer now contains sensitive bearer token.
+   * Callers MUST use httpclient_auth_clear_header() to securely clear
+   * the output buffer when it is no longer needed. */
 
   return 0;
 }
@@ -603,4 +622,13 @@ httpclient_auth_is_stale_nonce (const char *www_authenticate)
   int is_stale = 0;
   parse_http_auth_params(www_authenticate, 0, check_stale_cb, &is_stale);
   return is_stale;
+}
+
+void
+httpclient_auth_clear_header (char *header, size_t header_size)
+{
+  assert (header != NULL);
+  assert (header_size > 0);
+
+  SocketCrypto_secure_clear (header, header_size);
 }

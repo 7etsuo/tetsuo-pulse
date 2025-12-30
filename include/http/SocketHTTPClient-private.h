@@ -324,6 +324,7 @@ extern int httpclient_auth_digest_challenge (
 extern int httpclient_auth_bearer_header (const char *token, char *output,
                                           size_t output_size);
 extern int httpclient_auth_is_stale_nonce (const char *www_authenticate);
+extern void httpclient_auth_clear_header (char *header, size_t header_size);
 
 extern int httpclient_cookies_for_request (
     SocketHTTPClient_CookieJar_T jar, const SocketHTTP_URI *uri, char *output,
