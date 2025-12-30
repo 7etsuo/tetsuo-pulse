@@ -116,54 +116,43 @@ set_proxy_error (SocketProxy_Result result, const char *default_msg)
     }
 }
 
+/* Scheme lookup table for URL parsing */
+typedef struct
+{
+  const char *prefix;
+  size_t prefix_len;
+  SocketSimple_ProxyType type;
+} SchemeEntry;
+
+static const SchemeEntry scheme_table[] = {
+  /* Order matters: longer prefixes first to avoid partial matches */
+  { "socks5h://", 10, SOCKET_SIMPLE_PROXY_SOCKS5H },
+  { "socks4a://", 10, SOCKET_SIMPLE_PROXY_SOCKS4A },
+  { "socks5://", 9, SOCKET_SIMPLE_PROXY_SOCKS5 },
+  { "socks4://", 9, SOCKET_SIMPLE_PROXY_SOCKS4 },
+  { "socks://", 8, SOCKET_SIMPLE_PROXY_SOCKS5 }, /* Alias for socks5 */
+  { "https://", 8, SOCKET_SIMPLE_PROXY_HTTPS },
+  { "http://", 7, SOCKET_SIMPLE_PROXY_HTTP },
+};
+
+#define SCHEME_COUNT (sizeof (scheme_table) / sizeof (scheme_table[0]))
+
 /* Helper to parse scheme from URL */
 static int
 parse_scheme (const char *url, SocketSimple_ProxyType *type, const char **rest)
 {
-  if (strncasecmp (url, "http://", 7) == 0)
+  for (size_t i = 0; i < SCHEME_COUNT; i++)
     {
-      *type = SOCKET_SIMPLE_PROXY_HTTP;
-      *rest = url + 7;
-      return 0;
+      if (strncasecmp (url, scheme_table[i].prefix,
+                       scheme_table[i].prefix_len)
+          == 0)
+        {
+          *type = scheme_table[i].type;
+          *rest = url + scheme_table[i].prefix_len;
+          return 0;
+        }
     }
-  if (strncasecmp (url, "https://", 8) == 0)
-    {
-      *type = SOCKET_SIMPLE_PROXY_HTTPS;
-      *rest = url + 8;
-      return 0;
-    }
-  if (strncasecmp (url, "socks4a://", 10) == 0)
-    {
-      *type = SOCKET_SIMPLE_PROXY_SOCKS4A;
-      *rest = url + 10;
-      return 0;
-    }
-  if (strncasecmp (url, "socks4://", 9) == 0)
-    {
-      *type = SOCKET_SIMPLE_PROXY_SOCKS4;
-      *rest = url + 9;
-      return 0;
-    }
-  if (strncasecmp (url, "socks5h://", 10) == 0)
-    {
-      *type = SOCKET_SIMPLE_PROXY_SOCKS5H;
-      *rest = url + 10;
-      return 0;
-    }
-  if (strncasecmp (url, "socks5://", 9) == 0)
-    {
-      *type = SOCKET_SIMPLE_PROXY_SOCKS5;
-      *rest = url + 9;
-      return 0;
-    }
-  if (strncasecmp (url, "socks://", 8) == 0)
-    {
-      *type = SOCKET_SIMPLE_PROXY_SOCKS5; /* Default SOCKS to v5 */
-      *rest = url + 8;
-      return 0;
-    }
-
-  return -1;
+  return -1; /* Unknown scheme */
 }
 
 /* URL decoding utilities are now in SocketUtil.h:
