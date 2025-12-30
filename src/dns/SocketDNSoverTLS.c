@@ -324,6 +324,39 @@ create_tls_context (T transport, struct ServerConfig *server)
   return ctx;
 }
 
+/* Setup sockaddr structure for server connection */
+static int
+setup_server_address (const struct ServerConfig *server,
+                      struct sockaddr_storage *addr, socklen_t *addrlen)
+{
+  memset (addr, 0, sizeof (*addr));
+
+  if (server->family == AF_INET)
+    {
+      struct sockaddr_in *addr4 = (struct sockaddr_in *)addr;
+      addr4->sin_family = AF_INET;
+      addr4->sin_port = htons (server->port);
+      if (inet_pton (AF_INET, server->address, &addr4->sin_addr) != 1)
+        return -1;
+      *addrlen = sizeof (*addr4);
+    }
+  else if (server->family == AF_INET6)
+    {
+      struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)addr;
+      addr6->sin6_family = AF_INET6;
+      addr6->sin6_port = htons (server->port);
+      if (inet_pton (AF_INET6, server->address, &addr6->sin6_addr) != 1)
+        return -1;
+      *addrlen = sizeof (*addr6);
+    }
+  else
+    {
+      return -1; /* Unknown address family */
+    }
+
+  return 0;
+}
+
 /* Start TLS connection to server */
 static int
 start_connection (T transport, int server_index)
@@ -354,35 +387,19 @@ start_connection (T transport, int server_index)
 
   TRY
   {
-    /* Create socket */
-    conn->socket = Socket_new (server->family, SOCK_STREAM, 0);
-    Socket_setnonblocking (conn->socket);
-
-    /* Connect to server */
-    fd = Socket_fd (conn->socket);
-
     struct sockaddr_storage addr;
     socklen_t addrlen;
 
-    if (server->family == AF_INET)
-      {
-        struct sockaddr_in *addr4 = (struct sockaddr_in *)&addr;
-        memset (addr4, 0, sizeof (*addr4));
-        addr4->sin_family = AF_INET;
-        addr4->sin_port = htons (server->port);
-        inet_pton (AF_INET, server->address, &addr4->sin_addr);
-        addrlen = sizeof (*addr4);
-      }
-    else
-      {
-        struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)&addr;
-        memset (addr6, 0, sizeof (*addr6));
-        addr6->sin6_family = AF_INET6;
-        addr6->sin6_port = htons (server->port);
-        inet_pton (AF_INET6, server->address, &addr6->sin6_addr);
-        addrlen = sizeof (*addr6);
-      }
+    /* Create socket */
+    conn->socket = Socket_new (server->family, SOCK_STREAM, 0);
+    Socket_setnonblocking (conn->socket);
+    fd = Socket_fd (conn->socket);
 
+    /* Setup server address */
+    if (setup_server_address (server, &addr, &addrlen) < 0)
+      RAISE (Socket_Failed);
+
+    /* Connect to server */
     int ret = connect (fd, (struct sockaddr *)&addr, addrlen);
     if (ret < 0 && errno != EINPROGRESS)
       {
