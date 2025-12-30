@@ -20,6 +20,20 @@
 #include <string.h>
 
 /* ============================================================================
+ * Constants
+ * ============================================================================
+ */
+
+/**
+ * @brief Buffer size for JSON error response formatting.
+ *
+ * Used by Socket_simple_http_server_response_error to format simple
+ * JSON error messages. 512 bytes is sufficient for typical error messages
+ * while preventing overflow from overly long input.
+ */
+#define SOCKET_SIMPLE_ERROR_JSON_BUFFER_SIZE 512
+
+/* ============================================================================
  * Internal Structures
  * ============================================================================
  */
@@ -640,7 +654,7 @@ void
 Socket_simple_http_server_response_error (SocketSimple_HTTPServerRequest_T req,
                                           int status, const char *message)
 {
-  char json[512];
+  char json[SOCKET_SIMPLE_ERROR_JSON_BUFFER_SIZE];
   char escaped[256];
 
   if (!req || !req->core_req)
