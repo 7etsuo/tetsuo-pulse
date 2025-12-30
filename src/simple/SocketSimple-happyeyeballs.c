@@ -50,6 +50,7 @@ Socket_simple_happyeyeballs_connect_config (
     const SocketSimple_HappyEyeballs_Config *config)
 {
   volatile Socket_T sock = NULL;
+  volatile int success = 0;
 
   Socket_simple_clear_error ();
 
@@ -86,7 +87,11 @@ Socket_simple_happyeyeballs_connect_config (
         core_config.max_attempts = config->max_attempts;
     }
 
-  TRY { sock = SocketHappyEyeballs_connect (host, port, &core_config); }
+  TRY
+  {
+    sock = SocketHappyEyeballs_connect (host, port, &core_config);
+    success = 1;
+  }
   EXCEPT (SocketHE_Failed)
   {
     int err = Socket_geterrno ();
@@ -99,18 +104,20 @@ Socket_simple_happyeyeballs_connect_config (
         simple_set_error_errno (SOCKET_SIMPLE_ERR_CONNECT,
                                 "Happy Eyeballs connect failed");
       }
-    if (sock)
-      Socket_free ((Socket_T *)&sock);
-    return NULL;
   }
   EXCEPT (Socket_Failed)
   {
     simple_set_error_errno (SOCKET_SIMPLE_ERR_CONNECT, "Connection failed");
-    if (sock)
+  }
+  FINALLY
+  {
+    if (!success && sock)
       Socket_free ((Socket_T *)&sock);
-    return NULL;
   }
   END_TRY;
+
+  if (!success)
+    return NULL;
 
   SocketSimple_Socket_T handle = simple_create_handle (sock, 0, 0);
   if (!handle)
