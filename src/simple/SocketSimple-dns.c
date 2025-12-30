@@ -17,20 +17,6 @@
 #include <netdb.h>
 
 /* ============================================================================
- * Constants
- * ============================================================================
- */
-
-/**
- * @brief Maximum number of addresses allowed in DNS response.
- *
- * Protects against integer overflow in calloc() when processing malicious
- * DNS responses. Set to reasonable upper limit that exceeds typical use
- * cases while preventing memory exhaustion attacks.
- */
-#define DNS_MAX_ADDRESSES 1024
-
-/* ============================================================================
  * DNS Resolution - Helper Functions
  * ============================================================================
  */
@@ -99,12 +85,6 @@ convert_addrinfo_to_result (struct addrinfo *res, SocketSimple_DNSResult *result
   if (count == 0)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_DNS, "No addresses found");
-      return -1;
-    }
-
-  if (count > DNS_MAX_ADDRESSES)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_DNS, "Too many addresses in DNS response");
       return -1;
     }
 
@@ -470,43 +450,15 @@ simple_dns_callback_wrapper (SocketDNS_Request_T *req, struct addrinfo *result,
 
   if (error == 0 && result)
     {
-      /* Convert addrinfo to simple result */
-      struct addrinfo *p;
-      int count = 0;
-
-      for (p = result; p != NULL; p = p->ai_next)
-        count++;
-
-      if (count > 0 && count <= DNS_MAX_ADDRESSES)
-        {
-          simple_result.addresses = calloc ((size_t)count + 1, sizeof (char *));
-          if (simple_result.addresses)
-            {
-              int i = 0;
-              for (p = result; p != NULL && i < count; p = p->ai_next)
-                {
-                  char host[NI_MAXHOST];
-                  if (SocketCommon_reverse_lookup (p->ai_addr, p->ai_addrlen,
-                                                   host, sizeof (host), NULL, 0,
-                                                   NI_NUMERICHOST,
-                                                   SocketCommon_Failed)
-                      == 0)
-                    {
-                      simple_result.addresses[i] = strdup (host);
-                      if (simple_result.addresses[i])
-                        i++;
-                    }
-                }
-              simple_result.count = i;
-              simple_result.family = result->ai_family;
-            }
-        }
+      /* Use helper to convert addrinfo to simple result */
+      convert_addrinfo_to_result (result, &simple_result);
     }
 
   /* Call user callback */
   if (ctx->callback)
     {
-      ctx->callback (error == 0 ? &simple_result : NULL, error, ctx->userdata);
+      ctx->callback (error == 0 && simple_result.count > 0 ? &simple_result : NULL,
+                     error, ctx->userdata);
     }
 
   /* Cleanup */
@@ -792,59 +744,8 @@ Socket_simple_dns_request_result (SocketSimple_DNSRequest_T req,
       return -1;
     }
 
-  /* Convert addrinfo to simple result */
-  struct addrinfo *p;
-  int count = 0;
-
-  for (p = req->result; p != NULL; p = p->ai_next)
-    count++;
-
-  if (count == 0)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_DNS, "No addresses found");
-      return -1;
-    }
-
-  if (count > DNS_MAX_ADDRESSES)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_DNS, "Too many addresses in DNS response");
-      return -1;
-    }
-
-  result->addresses = calloc ((size_t)count + 1, sizeof (char *));
-  if (!result->addresses)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
-      return -1;
-    }
-
-  int i = 0;
-  for (p = req->result; p != NULL && i < count; p = p->ai_next)
-    {
-      char host[NI_MAXHOST];
-      if (SocketCommon_reverse_lookup (p->ai_addr, p->ai_addrlen, host,
-                                       sizeof (host), NULL, 0, NI_NUMERICHOST,
-                                       SocketCommon_Failed)
-          == 0)
-        {
-          result->addresses[i] = strdup (host);
-          if (result->addresses[i])
-            i++;
-        }
-    }
-
-  result->count = i;
-  result->family = req->result->ai_family;
-
-  if (result->count == 0)
-    {
-      free (result->addresses);
-      result->addresses = NULL;
-      simple_set_error (SOCKET_SIMPLE_ERR_DNS, "Failed to convert addresses");
-      return -1;
-    }
-
-  return 0;
+  /* Use helper to convert addrinfo to simple result */
+  return convert_addrinfo_to_result (req->result, result);
 }
 
 int
