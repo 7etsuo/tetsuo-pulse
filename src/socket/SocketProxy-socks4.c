@@ -109,6 +109,55 @@ socks4_write_userid (unsigned char *buf, size_t buf_remaining,
 }
 
 /**
+ * socks4a_write_marker_ip - Write SOCKS4a marker IP (0.0.0.1)
+ * @buf: Output buffer (must have at least 4 bytes available)
+ *
+ * Returns: Number of bytes written (always 4)
+ *
+ * Writes the SOCKS4a marker IP address (0.0.0.1) which signals to the
+ * proxy server that a hostname follows instead of a real IP address.
+ */
+static size_t
+socks4a_write_marker_ip (unsigned char *buf)
+{
+  buf[0] = 0x00;
+  buf[1] = 0x00;
+  buf[2] = 0x00;
+  buf[3] = SOCKS4A_MARKER_IP_BYTE;
+  return 4;
+}
+
+/**
+ * socks4a_write_hostname - Write hostname string with null terminator
+ * @buf: Output buffer
+ * @buf_remaining: Remaining buffer space
+ * @hostname: Hostname string (non-NULL, already validated)
+ * @host_len: Pre-computed hostname length (from socks4_validate_inputs)
+ * @bytes_written: Output - bytes written including null terminator
+ *
+ * Returns: 0 on success, -1 if buffer overflow
+ *
+ * Hostname length and validity already checked by caller (socks4_validate_inputs).
+ */
+static int
+socks4a_write_hostname (unsigned char *buf, size_t buf_remaining,
+                        const char *hostname, size_t host_len,
+                        size_t *bytes_written)
+{
+  /* Need space for hostname + null terminator */
+  if (host_len + 1 > buf_remaining)
+    {
+      *bytes_written = 0;
+      return -1;
+    }
+
+  memcpy (buf, hostname, host_len);
+  buf[host_len] = 0x00;
+  *bytes_written = host_len + 1;
+  return 0;
+}
+
+/**
  * socks4_validate_inputs - Common input validation for SOCKS4/4a requests
  * @conn: Proxy connection context
  * @out_host_len: Optional output for target_host length (may be NULL)
@@ -289,11 +338,8 @@ proxy_socks4a_send_connect (struct SocketProxy_Conn_T *conn)
   /* Write header: version + command + port */
   len += socks4_write_header (buf + len, conn->target_port);
 
-  /* Write SOCKS4a marker IP: 0.0.0.x where x != 0 */
-  buf[len++] = 0x00;
-  buf[len++] = 0x00;
-  buf[len++] = 0x00;
-  buf[len++] = SOCKS4A_MARKER_IP_BYTE;
+  /* Write SOCKS4a marker IP (0.0.0.1) */
+  len += socks4a_write_marker_ip (buf + len);
 
   /* Write userid with null terminator */
   if (socks4_write_userid (buf + len, sizeof (conn->send_buf) - len,
@@ -305,17 +351,15 @@ proxy_socks4a_send_connect (struct SocketProxy_Conn_T *conn)
     }
   len += userid_written;
 
-  /* Validate buffer space for hostname + null terminator */
-  if (len + host_len + 1 > sizeof (conn->send_buf))
+  /* Write hostname with null terminator */
+  if (socks4a_write_hostname (buf + len, sizeof (conn->send_buf) - len,
+                              conn->target_host, host_len, &userid_written)
+      < 0)
     {
       socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL, "Request too large");
       return -1;
     }
-
-  /* Write hostname with null terminator */
-  memcpy (buf + len, conn->target_host, host_len);
-  len += host_len;
-  buf[len++] = 0x00;
+  len += userid_written;
 
   conn->send_len = len;
   conn->send_offset = 0;
