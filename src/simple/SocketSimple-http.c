@@ -23,6 +23,7 @@
  */
 
 #define SOCKET_SIMPLE_DEFAULT_MAX_REDIRECTS 5
+#define SOCKET_SIMPLE_MAX_HEADER_NAME_LEN 256
 
 /* ============================================================================
  * Shared Global HTTP Client (Lazy Initialization)
@@ -330,9 +331,9 @@ Socket_simple_http_get_ex (const char *url, const char **headers,
             if (colon)
               {
                 size_t name_len = (size_t)(colon - *h);
-                if (name_len > 0 && name_len < 256)
+                if (name_len > 0 && name_len < SOCKET_SIMPLE_MAX_HEADER_NAME_LEN)
                   {
-                    char name[256];
+                    char name[SOCKET_SIMPLE_MAX_HEADER_NAME_LEN];
                     memcpy (name, *h, name_len);
                     name[name_len] = '\0';
                     const char *value = colon + 1;
@@ -709,9 +710,9 @@ add_custom_headers (SocketHTTPClient_Request_T req, const char **headers)
       if (colon)
         {
           size_t name_len = (size_t)(colon - *h);
-          if (name_len > 0 && name_len < 256)
+          if (name_len > 0 && name_len < SOCKET_SIMPLE_MAX_HEADER_NAME_LEN)
             {
-              char name[256];
+              char name[SOCKET_SIMPLE_MAX_HEADER_NAME_LEN];
               memcpy (name, *h, name_len);
               name[name_len] = '\0';
               const char *value = colon + 1;
