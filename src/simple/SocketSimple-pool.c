@@ -315,7 +315,65 @@ Socket_simple_pool_cleanup (SocketSimple_Pool_T pool, int max_idle_ms)
 }
 
 /* ============================================================================
- * Accept with Rate Limiting
+ * Accept with Rate Limiting - Helper Functions
+ * ============================================================================
+ */
+
+/**
+ * @brief Validate listener socket for accept operations.
+ * @param pool Pool instance
+ * @param listener Listener socket to validate
+ * @return 0 on success, -1 on error (sets simple error)
+ */
+static int
+validate_listener_for_accept (SocketSimple_Pool_T pool,
+                               SocketSimple_Socket_T listener)
+{
+  if (!pool || !listener)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                        "Invalid pool or listener");
+      return -1;
+    }
+
+  if (!listener->socket || !listener->is_server)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                        "Invalid listener socket");
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Create simple wrapper and add accepted socket to pool.
+ * @param pool Pool instance
+ * @param client Accepted client socket
+ * @return Connection handle on success, NULL on error (sets simple error)
+ */
+static SocketSimple_Conn_T
+wrap_and_add_to_pool (SocketSimple_Pool_T pool, Socket_T client)
+{
+  SocketSimple_Socket_T simple_sock = simple_create_handle (client, 0, 0);
+  if (!simple_sock)
+    {
+      Socket_free ((Socket_T *)&client);
+      return NULL;
+    }
+
+  SocketSimple_Conn_T conn = Socket_simple_pool_add (pool, simple_sock);
+  if (!conn)
+    {
+      Socket_simple_close (&simple_sock);
+      return NULL;
+    }
+
+  return conn;
+}
+
+/* ============================================================================
+ * Accept with Rate Limiting - Public Functions
  * ============================================================================
  */
 
