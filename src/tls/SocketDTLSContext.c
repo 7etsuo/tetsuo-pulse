@@ -423,6 +423,71 @@ dtls_read_file_contents (const char *path, size_t max_size, const char *desc,
   END_TRY;
 }
 
+/**
+ * load_cert_chain_from_bio - Load certificate chain from BIO into SSL_CTX
+ * @ssl_ctx: OpenSSL context
+ * @cert_bio: BIO containing PEM-encoded certificate(s)
+ *
+ * Loads primary certificate and any additional chain certificates from BIO.
+ * Raises exception on failure.
+ */
+static void
+load_cert_chain_from_bio (SSL_CTX *ssl_ctx, BIO *cert_bio)
+{
+  /* Load primary certificate */
+  X509 *cert = PEM_read_bio_X509 (cert_bio, NULL, NULL, NULL);
+  if (!cert)
+    raise_openssl_error ("Failed to parse certificate");
+
+  if (SSL_CTX_use_certificate (ssl_ctx, cert) != 1)
+    {
+      X509_free (cert);
+      raise_openssl_error ("Failed to load certificate");
+    }
+  X509_free (cert);
+
+  /* Load additional chain certificates if present */
+  X509 *ca_cert = NULL;
+  while ((ca_cert = PEM_read_bio_X509 (cert_bio, NULL, NULL, NULL)) != NULL)
+    {
+      if (SSL_CTX_add1_chain_cert (ssl_ctx, ca_cert) != 1)
+        {
+          X509_free (ca_cert);
+          raise_openssl_error ("Failed to add chain certificate");
+        }
+      X509_free (ca_cert);
+    }
+  ERR_clear_error (); /* Clear expected end-of-file error */
+}
+
+/**
+ * load_private_key_from_bio - Load private key from BIO into SSL_CTX
+ * @ssl_ctx: OpenSSL context
+ * @key_bio: BIO containing PEM-encoded private key
+ *
+ * Loads private key and verifies it matches the loaded certificate.
+ * Raises exception on failure.
+ */
+static void
+load_private_key_from_bio (SSL_CTX *ssl_ctx, BIO *key_bio)
+{
+  /* Load private key */
+  EVP_PKEY *pkey = PEM_read_bio_PrivateKey (key_bio, NULL, NULL, NULL);
+  if (!pkey)
+    raise_openssl_error ("Failed to parse private key");
+
+  if (SSL_CTX_use_PrivateKey (ssl_ctx, pkey) != 1)
+    {
+      EVP_PKEY_free (pkey);
+      raise_openssl_error ("Failed to load private key");
+    }
+  EVP_PKEY_free (pkey);
+
+  /* Verify key matches certificate */
+  if (SSL_CTX_check_private_key (ssl_ctx) != 1)
+    raise_openssl_error ("Certificate and private key mismatch");
+}
+
 void
 SocketDTLSContext_load_certificate (T ctx, const char *cert_file,
                                     const char *key_file)
@@ -463,51 +528,16 @@ SocketDTLSContext_load_certificate (T ctx, const char *cert_file,
     if (!cert_bio)
       raise_openssl_error ("Failed to create BIO for certificate");
 
-    /* Load certificate chain from memory */
-    X509 *cert = PEM_read_bio_X509 ((BIO *)cert_bio, NULL, NULL, NULL);
-    if (!cert)
-      raise_openssl_error ("Failed to parse certificate");
-
-    if (SSL_CTX_use_certificate (ctx->ssl_ctx, cert) != 1)
-      {
-        X509_free (cert);
-        raise_openssl_error ("Failed to load certificate");
-      }
-    X509_free (cert);
-
-    /* Load additional chain certificates if present */
-    X509 *ca_cert = NULL;
-    while ((ca_cert = PEM_read_bio_X509 ((BIO *)cert_bio, NULL, NULL, NULL)) != NULL)
-      {
-        if (SSL_CTX_add1_chain_cert (ctx->ssl_ctx, ca_cert) != 1)
-          {
-            X509_free (ca_cert);
-            raise_openssl_error ("Failed to add chain certificate");
-          }
-        X509_free (ca_cert);
-      }
-    ERR_clear_error (); /* Clear expected end-of-file error */
+    /* Load certificate chain */
+    load_cert_chain_from_bio (ctx->ssl_ctx, (BIO *)cert_bio);
 
     /* Create BIO from key data */
     key_bio = BIO_new_mem_buf ((void *)key_data, (int)key_size);
     if (!key_bio)
       raise_openssl_error ("Failed to create BIO for private key");
 
-    /* Load private key from memory */
-    EVP_PKEY *pkey = PEM_read_bio_PrivateKey ((BIO *)key_bio, NULL, NULL, NULL);
-    if (!pkey)
-      raise_openssl_error ("Failed to parse private key");
-
-    if (SSL_CTX_use_PrivateKey (ctx->ssl_ctx, pkey) != 1)
-      {
-        EVP_PKEY_free (pkey);
-        raise_openssl_error ("Failed to load private key");
-      }
-    EVP_PKEY_free (pkey);
-
-    /* Verify key matches certificate */
-    if (SSL_CTX_check_private_key (ctx->ssl_ctx) != 1)
-      raise_openssl_error ("Certificate and private key mismatch");
+    /* Load private key and verify */
+    load_private_key_from_bio (ctx->ssl_ctx, (BIO *)key_bio);
   }
   FINALLY
   {
