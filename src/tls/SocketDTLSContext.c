@@ -763,6 +763,40 @@ SocketDTLSContext_set_cipher_list (T ctx, const char *ciphers)
 }
 
 /**
+ * alpn_match_protocol - Check if client protocol matches any configured protocol
+ * @ctx: DTLS context with ALPN configuration
+ * @client_proto: Client protocol string
+ * @client_len: Length of client protocol string
+ * @out: Output pointer for matched protocol
+ * @outlen: Output length of matched protocol
+ *
+ * Searches configured ALPN protocols for a match with the client-provided
+ * protocol. Uses precomputed lengths for O(1) comparison.
+ *
+ * @return 1 if match found (with out/outlen populated), 0 otherwise
+ */
+static int
+alpn_match_protocol (T ctx, const unsigned char *client_proto,
+                     unsigned int client_len, const unsigned char **out,
+                     unsigned char *outlen)
+{
+  for (size_t i = 0; i < ctx->alpn.count; i++)
+    {
+      const char *our_proto = ctx->alpn.protocols[i];
+      size_t our_len = ctx->alpn.lens[i];
+
+      if (our_len == client_len
+          && memcmp (our_proto, client_proto, our_len) == 0)
+        {
+          *out = client_proto;
+          *outlen = (unsigned char)client_len;
+          return 1; /* Match found */
+        }
+    }
+  return 0; /* No match */
+}
+
+/**
  * alpn_select_cb - ALPN selection callback for server
  */
 static int
@@ -791,20 +825,9 @@ alpn_select_cb (SSL *ssl, const unsigned char **out, unsigned char *outlen,
           continue;
         }
 
-      /* Check against our protocols using cached lengths */
-      for (size_t i = 0; i < ctx->alpn.count; i++)
-        {
-          const char *our_proto = ctx->alpn.protocols[i];
-          size_t our_len = ctx->alpn.lens[i];
+      if (alpn_match_protocol (ctx, client_proto, client_len, out, outlen))
+        return SSL_TLSEXT_ERR_OK;
 
-          if (our_len == client_len
-              && memcmp (our_proto, client_proto, our_len) == 0)
-            {
-              *out = client_proto;
-              *outlen = (unsigned char)client_len;
-              return SSL_TLSEXT_ERR_OK;
-            }
-        }
       client_proto += client_len;
     }
 
