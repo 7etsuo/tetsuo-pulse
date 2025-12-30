@@ -42,6 +42,7 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLS);
 #define SOCKET_TLS_SHARDED_BUCKET_COUNT     64   /* Power-of-2 for efficient modulo operations */
 #define SOCKET_TLS_SHARDED_MIN_SHARDS       2    /* Minimum for meaningful sharding */
 #define SOCKET_TLS_SHARDED_MAX_SHARDS       256  /* Maximum for reasonable memory usage */
+#define TLS_SESSION_ID_MAX_SIZE             32   /* Maximum session ID size (SSL_MAX_SSL_SESSION_ID_LENGTH) */
 
 /* Ex-data index for associating SocketTLSContext_T with SSL_CTX
  * Thread-safe initialization using pthread_once to prevent race conditions
@@ -600,7 +601,7 @@ SocketTLS_get_key_update_count (Socket_T socket)
  * @brief Session entry wrapper for intrusive hash table
  */
 typedef struct SessionEntry {
-  unsigned char session_id[32];  /**< Copy of session ID for lookup */
+  unsigned char session_id[TLS_SESSION_ID_MAX_SIZE];  /**< Copy of session ID for lookup */
   SSL_SESSION *session;          /**< The OpenSSL session object */
   struct SessionEntry *next;     /**< Hash chain pointer */
 } SessionEntry;
@@ -616,7 +617,7 @@ sharded_session_hash (const void *key, unsigned seed, unsigned table_size)
 static int
 sharded_session_compare (const void *entry, const void *key)
 {
-  return memcmp (entry, key, 32); /* Fixed 32 bytes assumed */
+  return memcmp (entry, key, TLS_SESSION_ID_MAX_SIZE);
 }
 
 static void **
@@ -708,8 +709,9 @@ sharded_new_session_cb(SSL *ssl, SSL_SESSION *sess)
     return 0;
   }
 
-  memset(entry->session_id, 0, 32);
-  memcpy(entry->session_id, id, id_len < 32 ? id_len : 32);
+  memset(entry->session_id, 0, TLS_SESSION_ID_MAX_SIZE);
+  memcpy(entry->session_id, id,
+         (id_len < TLS_SESSION_ID_MAX_SIZE) ? id_len : TLS_SESSION_ID_MAX_SIZE);
   entry->session = sess;
   entry->next = NULL;
 
