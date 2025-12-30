@@ -1162,45 +1162,10 @@ test_max_response_size_config (void)
 /* ============================================================================
  * Async Request Tests
  * ============================================================================
+ * NOTE: Async request API removed in issue #2227 (stub implementations).
+ * The async I/O functionality (io_uring) still works via enable_async_io config.
+ * ============================================================================
  */
-
-/* Dummy callback for async tests */
-static void
-dummy_async_callback (SocketHTTPClient_AsyncRequest_T req,
-                      SocketHTTPClient_Response *response,
-                      SocketHTTPClient_Error error, void *userdata)
-{
-  (void)req;
-  (void)response;
-  (void)error;
-  (void)userdata;
-}
-
-static void
-test_async_cancel (void)
-{
-  SocketHTTPClient_T client;
-  SocketHTTPClient_Request_T req;
-  SocketHTTPClient_AsyncRequest_T async_req;
-
-  TEST_START ("async request cancellation");
-
-  client = SocketHTTPClient_new (NULL);
-  req = SocketHTTPClient_Request_new (client, HTTP_METHOD_GET,
-                                      "http://example.com/test");
-  ASSERT_NOT_NULL (req, "request should be created");
-
-  async_req = SocketHTTPClient_Request_async (req, dummy_async_callback, NULL);
-  ASSERT_NOT_NULL (async_req, "async request should be created");
-
-  SocketHTTPClient_AsyncRequest_cancel (async_req);
-  SocketHTTPClient_AsyncRequest_cancel (async_req);
-
-  SocketHTTPClient_AsyncRequest_free (&async_req);
-  SocketHTTPClient_Request_free (&req);
-  SocketHTTPClient_free (&client);
-  TEST_PASS ();
-}
 
 /* ============================================================================
  * Concurrency Configuration Tests
@@ -1524,8 +1489,7 @@ main (void)
   printf ("\nResponse Limit Tests:\n");
   test_max_response_size_config ();
 
-  printf ("\nAsync Request Tests:\n");
-  test_async_cancel ();
+  /* Async request API removed (was stub-only, see issue #2227) */
 
   printf ("\nConcurrency Tests:\n");
   test_concurrency_config ();
