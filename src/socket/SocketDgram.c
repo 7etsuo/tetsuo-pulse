@@ -894,58 +894,6 @@ SocketDgram_recvvall (T socket, struct iovec *iov, int iovcnt)
   return (ssize_t)total_received;
 }
 
-T
-SocketDgram_bind_udp4 (const char *host, int port)
-{
-  T server = NULL;
-
-  assert (port >= 0 && port <= SOCKET_MAX_PORT);
-
-  TRY
-  {
-    /* Create IPv4 UDP socket */
-    server = SocketDgram_new (AF_INET, 0);
-
-    /* Bind to address/port */
-    SocketDgram_bind (server, host, port);
-  }
-  EXCEPT (SocketDgram_Failed)
-  {
-    if (server)
-      SocketDgram_free (&server);
-    RERAISE;
-  }
-  END_TRY;
-
-  return server;
-}
-
-T
-SocketDgram_bind_udp6 (const char *host, int port)
-{
-  T server = NULL;
-
-  assert (port >= 0 && port <= SOCKET_MAX_PORT);
-
-  TRY
-  {
-    /* Create IPv6 UDP socket */
-    server = SocketDgram_new (AF_INET6, 0);
-
-    /* Bind to address/port */
-    SocketDgram_bind (server, host, port);
-  }
-  EXCEPT (SocketDgram_Failed)
-  {
-    if (server)
-      SocketDgram_free (&server);
-    RERAISE;
-  }
-  END_TRY;
-
-  return server;
-}
-
 static int
 detect_address_family (const char *host)
 {
@@ -961,23 +909,16 @@ detect_address_family (const char *host)
   return AF_INET;
 }
 
-T
-SocketDgram_bind_udp (const char *host, int port)
+static T
+dgram_bind_with_family (int family, const char *host, int port)
 {
   T server = NULL;
-  int family;
 
   assert (port >= 0 && port <= SOCKET_MAX_PORT);
 
-  /* Auto-detect address family from host string */
-  family = detect_address_family (host);
-
   TRY
   {
-    /* Create UDP socket with detected family */
     server = SocketDgram_new (family, 0);
-
-    /* Bind to address/port */
     SocketDgram_bind (server, host, port);
   }
   EXCEPT (SocketDgram_Failed)
@@ -989,6 +930,25 @@ SocketDgram_bind_udp (const char *host, int port)
   END_TRY;
 
   return server;
+}
+
+T
+SocketDgram_bind_udp4 (const char *host, int port)
+{
+  return dgram_bind_with_family (AF_INET, host, port);
+}
+
+T
+SocketDgram_bind_udp6 (const char *host, int port)
+{
+  return dgram_bind_with_family (AF_INET6, host, port);
+}
+
+T
+SocketDgram_bind_udp (const char *host, int port)
+{
+  int family = detect_address_family (host);
+  return dgram_bind_with_family (family, host, port);
 }
 
 #undef T
