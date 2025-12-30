@@ -57,7 +57,6 @@
 /* Conservative 2x ratio for Huffman decode buffer (worst-case is 8/5 ≈ 1.6) */
 #define HPACK_HUFFMAN_RATIO 2
 
-#define HPACK_UINT64_SHIFT_LIMIT 63
 /* Max continuation bytes to encode uint64_t: 10 bytes * 7 bits = 70 bits (> 64 bits needed)
  * RFC 7541 §5.1: Each continuation byte carries 7 bits of value.
  * This limit prevents DoS via oversized integer encodings. */
