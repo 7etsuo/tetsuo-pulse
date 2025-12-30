@@ -523,8 +523,8 @@ Socket_simple_ws_server_config_init (SocketSimple_WSServerConfig *config)
   if (!config)
     return;
   memset (config, 0, sizeof (*config));
-  config->max_frame_size = 16 * 1024 * 1024;   /* 16MB */
-  config->max_message_size = 64 * 1024 * 1024; /* 64MB */
+  config->max_frame_size = SOCKET_SIMPLE_WS_DEFAULT_MAX_FRAME_SIZE;
+  config->max_message_size = SOCKET_SIMPLE_WS_DEFAULT_MAX_MESSAGE_SIZE;
   config->validate_utf8 = 1;
   config->enable_compression = 0;
   config->ping_interval_ms = 0;
