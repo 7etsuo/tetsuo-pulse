@@ -866,8 +866,23 @@ handshake_loop_internal (Socket_T socket, int timeout_ms, int poll_interval_ms,
   return final_state;
 }
 
-TLSHandshakeState
-SocketTLS_handshake_loop (Socket_T socket, int timeout_ms)
+/**
+ * handshake_loop_with_defaults - Common handshake loop with preconditions
+ * @socket: Socket to handshake
+ * @timeout_ms: Total timeout in milliseconds (0 for non-blocking)
+ * @poll_interval_ms: Poll interval in milliseconds between attempts
+ *
+ * Handles common preconditions and delegates to handshake_loop_internal.
+ * Checks if handshake is already complete, validates preconditions,
+ * and tracks timing for metrics.
+ *
+ * Returns: TLSHandshakeState
+ * Raises: SocketTLS_HandshakeFailed on timeout or error
+ * Thread-safe: No
+ */
+static TLSHandshakeState
+handshake_loop_with_defaults (Socket_T socket, int timeout_ms,
+                               int poll_interval_ms)
 {
   assert (socket);
 
@@ -877,28 +892,26 @@ SocketTLS_handshake_loop (Socket_T socket, int timeout_ms)
   validate_handshake_preconditions (socket);
 
   int64_t start_time_ms = Socket_get_monotonic_ms ();
-  return handshake_loop_internal (socket, timeout_ms,
-                                  SOCKET_TLS_POLL_INTERVAL_MS, start_time_ms);
+  return handshake_loop_internal (socket, timeout_ms, poll_interval_ms,
+                                  start_time_ms);
+}
+
+TLSHandshakeState
+SocketTLS_handshake_loop (Socket_T socket, int timeout_ms)
+{
+  return handshake_loop_with_defaults (socket, timeout_ms,
+                                       SOCKET_TLS_POLL_INTERVAL_MS);
 }
 
 TLSHandshakeState
 SocketTLS_handshake_loop_ex (Socket_T socket, int timeout_ms,
                              int poll_interval_ms)
 {
-  assert (socket);
-
-  if (socket->tls_handshake_done)
-    return TLS_HANDSHAKE_COMPLETE;
-
-  validate_handshake_preconditions (socket);
-
   /* Validate poll interval - use default if invalid */
   if (poll_interval_ms <= 0)
     poll_interval_ms = SOCKET_TLS_POLL_INTERVAL_MS;
 
-  int64_t start_time_ms = Socket_get_monotonic_ms ();
-  return handshake_loop_internal (socket, timeout_ms, poll_interval_ms,
-                                  start_time_ms);
+  return handshake_loop_with_defaults (socket, timeout_ms, poll_interval_ms);
 }
 
 TLSHandshakeState
