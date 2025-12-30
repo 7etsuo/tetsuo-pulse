@@ -21,6 +21,7 @@
 
 #include <assert.h>
 #include <ctype.h>
+#include <limits.h>
 #include <string.h>
 
 #undef SOCKET_LOG_COMPONENT
@@ -174,11 +175,21 @@ SocketHTTP2_Priority_parse (const char *value, size_t len,
           /* Parse digits */
           while (p < end && *p >= '0' && *p <= '9')
             {
-              urgency = urgency * 10 + (*p - '0');
+              int digit = *p - '0';
+
+              /* Check BEFORE multiplication to prevent integer overflow */
+              if (urgency > (INT_MAX - digit) / 10)
+                {
+                  SOCKET_LOG_DEBUG_MSG (
+                      "Priority parse error: u value would overflow");
+                  return -1;
+                }
+
+              urgency = urgency * 10 + digit;
               digits++;
               p++;
 
-              /* Early bounds check to prevent overflow */
+              /* Bounds check for valid urgency range [0-7] */
               if (urgency > SOCKETHTTP2_PRIORITY_MAX_URGENCY)
                 {
                   SOCKET_LOG_DEBUG_MSG (
