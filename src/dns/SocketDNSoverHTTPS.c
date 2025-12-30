@@ -405,6 +405,37 @@ doh_build_get_request (T transport, const unsigned char *query, size_t len,
   return 0;
 }
 
+/* Map SocketHTTPClient exceptions to DoH error codes */
+static const struct
+{
+  const Except_T *exception;
+  int error_code;
+} http_exception_map[] = {
+  { &SocketHTTPClient_Failed, DOH_ERROR_HTTP },
+  { &SocketHTTPClient_DNSFailed, DOH_ERROR_NETWORK },
+  { &SocketHTTPClient_ConnectFailed, DOH_ERROR_NETWORK },
+  { &SocketHTTPClient_TLSFailed, DOH_ERROR_TLS },
+  { &SocketHTTPClient_Timeout, DOH_ERROR_TIMEOUT },
+  { NULL, 0 }
+};
+
+/**
+ * Map HTTP client exception to DoH error code.
+ *
+ * @param frame Exception frame from TRY/EXCEPT block.
+ * @return DoH error code (DOH_ERROR_*).
+ */
+static int
+map_http_exception_to_error (volatile const Except_Frame *frame)
+{
+  for (int i = 0; http_exception_map[i].exception != NULL; i++)
+    {
+      if (frame->exception == http_exception_map[i].exception)
+        return http_exception_map[i].error_code;
+    }
+  return DOH_ERROR_NETWORK; /* Default for unknown exceptions */
+}
+
 /**
  * Execute HTTP request (GET or POST based on server configuration).
  *
@@ -462,30 +493,10 @@ doh_execute_request (T transport, struct ServerConfig *server,
         request_ok = (ret == 0) ? 1 : 0;
       }
   }
-  EXCEPT (SocketHTTPClient_Failed)
+  ELSE
   {
     request_ok = 0;
-    http_error = DOH_ERROR_HTTP;
-  }
-  EXCEPT (SocketHTTPClient_DNSFailed)
-  {
-    request_ok = 0;
-    http_error = DOH_ERROR_NETWORK;
-  }
-  EXCEPT (SocketHTTPClient_ConnectFailed)
-  {
-    request_ok = 0;
-    http_error = DOH_ERROR_NETWORK;
-  }
-  EXCEPT (SocketHTTPClient_TLSFailed)
-  {
-    request_ok = 0;
-    http_error = DOH_ERROR_TLS;
-  }
-  EXCEPT (SocketHTTPClient_Timeout)
-  {
-    request_ok = 0;
-    http_error = DOH_ERROR_TIMEOUT;
+    http_error = map_http_exception_to_error (&Except_frame);
   }
   END_TRY;
 
