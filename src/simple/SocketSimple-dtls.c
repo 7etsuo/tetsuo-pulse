@@ -115,7 +115,7 @@ Socket_simple_dtls_connect_ex (const char *host, int port,
       return NULL;
     }
 
-  if (port <= 0 || port > 65535)
+  if (port <= 0 || port > SOCKET_MAX_PORT)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid port");
       return NULL;
@@ -365,7 +365,7 @@ Socket_simple_dtls_listen (const char *host, int port, const char *cert_file,
 
   Socket_simple_clear_error ();
 
-  if (port <= 0 || port > 65535)
+  if (port <= 0 || port > SOCKET_MAX_PORT)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid port");
       return NULL;
@@ -622,7 +622,7 @@ Socket_simple_dtls_sendto (SocketSimple_Socket_T sock, const void *data,
       return -1;
     }
 
-  if (!host || port <= 0 || port > 65535)
+  if (!host || port <= 0 || port > SOCKET_MAX_PORT)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
                         "Invalid destination");
