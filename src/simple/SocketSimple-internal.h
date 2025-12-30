@@ -87,6 +87,22 @@ struct SocketSimple_WS
  */
 #define SOCKET_SIMPLE_DEFAULT_BACKLOG 128
 
+/**
+ * @brief Default maximum WebSocket frame size (16MB).
+ *
+ * Used by Socket_simple_ws_server_config_init() to initialize the default
+ * max_frame_size in SocketSimple_WSServerConfig.
+ */
+#define SOCKET_SIMPLE_WS_DEFAULT_MAX_FRAME_SIZE (16 * 1024 * 1024)
+
+/**
+ * @brief Default maximum WebSocket message size (64MB).
+ *
+ * Used by Socket_simple_ws_server_config_init() to initialize the default
+ * max_message_size in SocketSimple_WSServerConfig.
+ */
+#define SOCKET_SIMPLE_WS_DEFAULT_MAX_MESSAGE_SIZE (64 * 1024 * 1024)
+
 /* ============================================================================
  * Thread-Local Error State
  * ============================================================================
