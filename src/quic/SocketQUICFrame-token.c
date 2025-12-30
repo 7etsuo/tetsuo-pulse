@@ -89,7 +89,7 @@ SocketQUICFrame_encode_new_token (const uint8_t *token, size_t token_len,
     return 0;
 
   /* Calculate required size: type + token_length + token */
-  size_t type_len = 1;
+  size_t type_len = QUIC_FRAME_TYPE_SIZE;
   size_t token_len_varint = SocketQUICVarInt_size (token_len);
 
   if (!VALIDATE_VARINT_SIZES (token_len_varint))

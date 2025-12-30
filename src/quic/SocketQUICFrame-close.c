@@ -88,7 +88,7 @@ encode_connection_close_common (uint8_t frame_type_byte, uint64_t error_code,
     return 0;
 
   /* Calculate required size */
-  size_t type_len = 1;
+  size_t type_len = QUIC_FRAME_TYPE_SIZE;
   size_t error_code_len = SocketQUICVarInt_size (error_code);
   size_t frame_type_len = frame_type_ptr ? SocketQUICVarInt_size (*frame_type_ptr) : 0;
   size_t reason_len_size = SocketQUICVarInt_size (reason_len);
