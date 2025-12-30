@@ -131,7 +131,7 @@ SocketQUICConnectionID_equal (const SocketQUICConnectionID_T *a,
   if (a->len == 0)
     return 1; /* Both zero-length CIDs are equal */
 
-  return (memcmp (a->data, b->data, a->len) == 0);
+  return (SocketCrypto_secure_compare (a->data, b->data, a->len) == 0);
 }
 
 int
@@ -150,7 +150,7 @@ SocketQUICConnectionID_equal_raw (const SocketQUICConnectionID_T *cid,
   if (data == NULL)
     return 0;
 
-  return (memcmp (cid->data, data, len) == 0);
+  return (SocketCrypto_secure_compare (cid->data, data, len) == 0);
 }
 
 SocketQUICConnectionID_Result
