@@ -232,6 +232,42 @@ test_priority_parse_invalid (void)
   TEST_PASS ();
 }
 
+static int
+test_priority_parse_overflow_protection (void)
+{
+  TEST_BEGIN (priority_parse_overflow_protection);
+
+  SocketHTTP2_Priority priority;
+  int ret;
+
+  /* Test case from issue #1872: Integer overflow with large value */
+  ret = SocketHTTP2_Priority_parse ("u=9999999999", 12, &priority);
+  TEST_ASSERT (ret == -1, "Parse should fail for u=9999999999 (overflow)");
+
+  /* Test another large value that would overflow */
+  ret = SocketHTTP2_Priority_parse ("u=123456789", 11, &priority);
+  TEST_ASSERT (ret == -1, "Parse should fail for u=123456789 (overflow)");
+
+  /* Test maximum valid value plus one */
+  ret = SocketHTTP2_Priority_parse ("u=8", 3, &priority);
+  TEST_ASSERT (ret == -1, "Parse should fail for u=8");
+
+  /* Test multi-digit value slightly over limit */
+  ret = SocketHTTP2_Priority_parse ("u=10", 4, &priority);
+  TEST_ASSERT (ret == -1, "Parse should fail for u=10");
+
+  /* Test that valid boundary values still work */
+  ret = SocketHTTP2_Priority_parse ("u=0", 3, &priority);
+  TEST_ASSERT (ret == 0, "Parse should succeed for u=0");
+  TEST_ASSERT (priority.urgency == 0, "Urgency should be 0");
+
+  ret = SocketHTTP2_Priority_parse ("u=7", 3, &priority);
+  TEST_ASSERT (ret == 0, "Parse should succeed for u=7");
+  TEST_ASSERT (priority.urgency == 7, "Urgency should be 7");
+
+  TEST_PASS ();
+}
+
 /* Priority serialization tests */
 static int
 test_priority_serialize_defaults (void)
@@ -371,6 +407,7 @@ main (void)
   test_priority_parse_empty ();
   test_priority_parse_unknown_params ();
   test_priority_parse_invalid ();
+  test_priority_parse_overflow_protection ();
 
   /* Priority serialization */
   printf ("\nPriority Serialization:\n");
