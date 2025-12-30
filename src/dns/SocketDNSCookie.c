@@ -102,6 +102,15 @@ static void move_to_front (T cache, CacheNode *node);
 static void evict_lru (T cache);
 static int addr_equal (const struct sockaddr *a, socklen_t alen,
                        const struct sockaddr *b, socklen_t blen);
+static void update_cache_entry (CacheNode *node, const uint8_t *client_cookie,
+                                const uint8_t *server_cookie, size_t server_len,
+                                time_t now, int ttl);
+static CacheNode *create_cache_entry (T cache,
+                                      const struct sockaddr *server_addr,
+                                      socklen_t addr_len,
+                                      const uint8_t *client_cookie,
+                                      const uint8_t *server_cookie,
+                                      size_t server_len, time_t now);
 
 /*
  * Create a new DNS Cookie cache
@@ -367,39 +376,21 @@ SocketDNSCookie_cache_store (T cache, const struct sockaddr *server_addr,
     return -1;
 
   time_t now = time (NULL);
-
-  /* Look for existing entry */
   CacheNode *node = find_node (cache, server_addr, addr_len);
 
   if (node)
     {
-      /* Update existing entry */
-      memcpy (node->entry.client_cookie, client_cookie, DNS_CLIENT_COOKIE_SIZE);
-      memcpy (node->entry.server_cookie, server_cookie, server_len);
-      node->entry.server_cookie_len = server_len;
-      node->entry.received_at = now;
-      node->entry.expires_at = now + cache->server_ttl;
-      node->last_used = now;
+      update_cache_entry (node, client_cookie, server_cookie, server_len, now,
+                          cache->server_ttl);
       move_to_front (cache, node);
     }
   else
     {
-      /* Evict if at capacity */
       if (cache->count >= cache->max_entries)
         evict_lru (cache);
 
-      /* Create new entry */
-      node = Arena_alloc (cache->arena, sizeof (*node), __FILE__, __LINE__);
-      memset (node, 0, sizeof (*node));
-
-      memcpy (&node->entry.server_addr, server_addr, addr_len);
-      node->entry.addr_len = addr_len;
-      memcpy (node->entry.client_cookie, client_cookie, DNS_CLIENT_COOKIE_SIZE);
-      memcpy (node->entry.server_cookie, server_cookie, server_len);
-      node->entry.server_cookie_len = server_len;
-      node->entry.received_at = now;
-      node->entry.expires_at = now + cache->server_ttl;
-      node->last_used = now;
+      node = create_cache_entry (cache, server_addr, addr_len, client_cookie,
+                                 server_cookie, server_len, now);
 
       /* Add to front of list */
       node->next = cache->head;
@@ -848,6 +839,43 @@ generate_client_cookie (T cache, const struct sockaddr *server_addr,
   return generate_client_cookie_fnv (cache, server_addr, addr_len, client_addr,
                                      client_len, cookie);
 #endif
+}
+
+/*
+ * Update an existing cache entry with new cookie data
+ */
+static void
+update_cache_entry (CacheNode *node, const uint8_t *client_cookie,
+                    const uint8_t *server_cookie, size_t server_len,
+                    time_t now, int ttl)
+{
+  memcpy (node->entry.client_cookie, client_cookie, DNS_CLIENT_COOKIE_SIZE);
+  memcpy (node->entry.server_cookie, server_cookie, server_len);
+  node->entry.server_cookie_len = server_len;
+  node->entry.received_at = now;
+  node->entry.expires_at = now + ttl;
+  node->last_used = now;
+}
+
+/*
+ * Create a new cache entry node
+ */
+static CacheNode *
+create_cache_entry (T cache, const struct sockaddr *server_addr,
+                    socklen_t addr_len, const uint8_t *client_cookie,
+                    const uint8_t *server_cookie, size_t server_len,
+                    time_t now)
+{
+  CacheNode *node = Arena_alloc (cache->arena, sizeof (*node), __FILE__,
+                                 __LINE__);
+  memset (node, 0, sizeof (*node));
+
+  memcpy (&node->entry.server_addr, server_addr, addr_len);
+  node->entry.addr_len = addr_len;
+  update_cache_entry (node, client_cookie, server_cookie, server_len, now,
+                      cache->server_ttl);
+
+  return node;
 }
 
 /*
