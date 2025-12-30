@@ -17,6 +17,20 @@
 #include <netdb.h>
 
 /* ============================================================================
+ * Constants
+ * ============================================================================
+ */
+
+/**
+ * @brief Maximum number of addresses allowed in DNS response.
+ *
+ * Protects against integer overflow in calloc() when processing malicious
+ * DNS responses. Set to reasonable upper limit that exceeds typical use
+ * cases while preventing memory exhaustion attacks.
+ */
+#define DNS_MAX_ADDRESSES 1024
+
+/* ============================================================================
  * DNS Resolution - Helper Functions
  * ============================================================================
  */
@@ -85,6 +99,12 @@ convert_addrinfo_to_result (struct addrinfo *res, SocketSimple_DNSResult *result
   if (count == 0)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_DNS, "No addresses found");
+      return -1;
+    }
+
+  if (count > DNS_MAX_ADDRESSES)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_DNS, "Too many addresses in DNS response");
       return -1;
     }
 
@@ -457,7 +477,7 @@ simple_dns_callback_wrapper (SocketDNS_Request_T *req, struct addrinfo *result,
       for (p = result; p != NULL; p = p->ai_next)
         count++;
 
-      if (count > 0)
+      if (count > 0 && count <= DNS_MAX_ADDRESSES)
         {
           simple_result.addresses = calloc ((size_t)count + 1, sizeof (char *));
           if (simple_result.addresses)
@@ -782,6 +802,12 @@ Socket_simple_dns_request_result (SocketSimple_DNSRequest_T req,
   if (count == 0)
     {
       simple_set_error (SOCKET_SIMPLE_ERR_DNS, "No addresses found");
+      return -1;
+    }
+
+  if (count > DNS_MAX_ADDRESSES)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_DNS, "Too many addresses in DNS response");
       return -1;
     }
 
