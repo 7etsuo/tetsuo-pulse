@@ -12,6 +12,7 @@
 #include "dns/SocketDNSCookie.h"
 #include "dns/SocketDNSWire.h"
 #include "core/Arena.h"
+#include "core/SocketUtil.h"
 #include <arpa/inet.h>
 #include <string.h>
 #include <sys/random.h>
@@ -818,14 +819,7 @@ generate_client_cookie_fnv (T cache, const struct sockaddr *server_addr,
     }
 
   /* Store as big-endian */
-  cookie[0] = (hash >> 56) & 0xFF;
-  cookie[1] = (hash >> 48) & 0xFF;
-  cookie[2] = (hash >> 40) & 0xFF;
-  cookie[3] = (hash >> 32) & 0xFF;
-  cookie[4] = (hash >> 24) & 0xFF;
-  cookie[5] = (hash >> 16) & 0xFF;
-  cookie[6] = (hash >> 8) & 0xFF;
-  cookie[7] = hash & 0xFF;
+  socket_util_pack_be64 (cookie, hash);
 
   return 0;
 }
