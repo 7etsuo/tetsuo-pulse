@@ -46,6 +46,12 @@
 /** Maximum query size for GET method (to prevent base64 explosion). */
 #define DOH_MAX_GET_QUERY_SIZE 512
 
+/** ASCII control character boundary (space character). */
+#define ASCII_SPACE 0x20
+
+/** ASCII DEL control character. */
+#define ASCII_DEL 0x7F
+
 /* Well-known DoH servers */
 static const struct
 {
@@ -292,7 +298,7 @@ SocketDNSoverHTTPS_configure (T transport,
   for (size_t i = 0; i < url_len; i++)
     {
       unsigned char c = (unsigned char)config->url[i];
-      if (c < 0x20 || c == 0x7F)
+      if (c < ASCII_SPACE || c == ASCII_DEL)
         return -1;
     }
 
