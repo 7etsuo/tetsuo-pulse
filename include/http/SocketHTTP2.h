@@ -304,6 +304,13 @@ typedef struct
 #define SOCKETHTTP2_PRIORITY_UPDATE_MAX_PAYLOAD 16
 
 /**
+ * Maximum serialized priority field length.
+ * RFC 9218 Section 4: Priority field format is "u=N" (3 bytes) + ", i" (3 bytes).
+ * Maximum output: "u=7, i" (7 bytes) + null terminator (1 byte) = 8 bytes.
+ */
+#define SOCKETHTTP2_PRIORITY_FIELD_MAX_LEN 8
+
+/**
  * RFC 9218 Extensible Priority parameters.
  *
  * Priority replaces the deprecated RFC 7540 priority scheme.
