@@ -12,6 +12,7 @@
 #include "dns/SocketDNSCookie.h"
 #include "dns/SocketDNSWire.h"
 #include "core/Arena.h"
+#include "core/SocketCrypto.h"
 #include <arpa/inet.h>
 #include <string.h>
 #include <sys/random.h>
@@ -628,8 +629,6 @@ int
 SocketDNSCookie_to_hex (const SocketDNSCookie_Cookie *cookie, char *buf,
                         size_t buflen)
 {
-  static const char hex[] = "0123456789abcdef";
-
   if (cookie == NULL || buf == NULL)
     return -1;
 
@@ -643,22 +642,18 @@ SocketDNSCookie_to_hex (const SocketDNSCookie_Cookie *cookie, char *buf,
 
   char *p = buf;
 
-  /* Format client cookie */
-  for (int i = 0; i < DNS_CLIENT_COOKIE_SIZE; i++)
-    {
-      *p++ = hex[(cookie->client_cookie[i] >> 4) & 0xF];
-      *p++ = hex[cookie->client_cookie[i] & 0xF];
-    }
+  /* Format client cookie using SocketCrypto_hex_encode */
+  SocketCrypto_hex_encode (cookie->client_cookie, DNS_CLIENT_COOKIE_SIZE, p,
+                           1);
+  p += DNS_CLIENT_COOKIE_SIZE * 2;
 
   /* Format server cookie if present */
   if (cookie->server_cookie_len > 0)
     {
       *p++ = ':';
-      for (size_t i = 0; i < cookie->server_cookie_len; i++)
-        {
-          *p++ = hex[(cookie->server_cookie[i] >> 4) & 0xF];
-          *p++ = hex[cookie->server_cookie[i] & 0xF];
-        }
+      SocketCrypto_hex_encode (cookie->server_cookie, cookie->server_cookie_len,
+                               p, 1);
+      p += cookie->server_cookie_len * 2;
     }
 
   *p = '\0';
