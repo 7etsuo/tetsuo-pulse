@@ -129,7 +129,7 @@ SocketQUICStream_first_id (SocketQUICStreamType type)
 uint64_t
 SocketQUICStream_sequence (uint64_t stream_id)
 {
-  return stream_id >> 2;
+  return stream_id >> QUIC_STREAM_TYPE_BITS;
 }
 
 /* ============================================================================

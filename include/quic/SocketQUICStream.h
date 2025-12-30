@@ -70,6 +70,17 @@
  */
 #define QUIC_STREAM_TYPE_MASK 0x03
 
+/**
+ * @brief Number of bits used for stream type encoding (RFC 9000 Section 2.1).
+ *
+ * The lower 2 bits of stream ID encode:
+ *   Bit 0: Initiator (0=client, 1=server)
+ *   Bit 1: Directionality (0=bidirectional, 1=unidirectional)
+ *
+ * Sequence number = stream_id >> QUIC_STREAM_TYPE_BITS
+ */
+#define QUIC_STREAM_TYPE_BITS 2
+
 /* ============================================================================
  * Data Structures
  * ============================================================================
