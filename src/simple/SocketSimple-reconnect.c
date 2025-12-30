@@ -49,6 +49,17 @@ state_callback_wrapper (SocketReconnect_T core __attribute__ ((unused)),
  * Policy Helpers
  *============================================================================*/
 
+/* Default reconnection policy values */
+#define RECONNECT_DEFAULT_INITIAL_DELAY_MS    100
+#define RECONNECT_DEFAULT_MAX_DELAY_MS        30000
+#define RECONNECT_DEFAULT_MULTIPLIER          2.0
+#define RECONNECT_DEFAULT_JITTER              0.25
+#define RECONNECT_DEFAULT_MAX_ATTEMPTS        10
+#define RECONNECT_DEFAULT_CIRCUIT_THRESHOLD   5
+#define RECONNECT_DEFAULT_CIRCUIT_RESET_MS    60000
+#define RECONNECT_DEFAULT_HEALTH_INTERVAL_MS  30000
+#define RECONNECT_DEFAULT_HEALTH_TIMEOUT_MS   5000
+
 /**
  * @brief Map Simple API policy to Core API policy.
  *
@@ -79,15 +90,15 @@ Socket_simple_reconnect_policy_defaults (SocketSimple_Reconnect_Policy *policy)
   if (!policy)
     return;
 
-  policy->initial_delay_ms = 100;
-  policy->max_delay_ms = 30000;
-  policy->multiplier = 2.0;
-  policy->jitter = 0.25;
-  policy->max_attempts = 10;
-  policy->circuit_threshold = 5;
-  policy->circuit_reset_ms = 60000;
-  policy->health_interval_ms = 30000;
-  policy->health_timeout_ms = 5000;
+  policy->initial_delay_ms = RECONNECT_DEFAULT_INITIAL_DELAY_MS;
+  policy->max_delay_ms = RECONNECT_DEFAULT_MAX_DELAY_MS;
+  policy->multiplier = RECONNECT_DEFAULT_MULTIPLIER;
+  policy->jitter = RECONNECT_DEFAULT_JITTER;
+  policy->max_attempts = RECONNECT_DEFAULT_MAX_ATTEMPTS;
+  policy->circuit_threshold = RECONNECT_DEFAULT_CIRCUIT_THRESHOLD;
+  policy->circuit_reset_ms = RECONNECT_DEFAULT_CIRCUIT_RESET_MS;
+  policy->health_interval_ms = RECONNECT_DEFAULT_HEALTH_INTERVAL_MS;
+  policy->health_timeout_ms = RECONNECT_DEFAULT_HEALTH_TIMEOUT_MS;
 }
 
 /*============================================================================
