@@ -373,8 +373,9 @@ session_is_expired (const SSL_SESSION *sess, time_t now)
   if (now < sess_time)
     return 0;
 
-  /* Safe: now >= sess_time, so subtraction won't underflow */
-  return (now - sess_time) >= sess_timeout;
+  /* Safe: now >= sess_time, so subtraction won't underflow
+   * Cast sess_timeout to time_t to ensure type consistency in comparison */
+  return (now - sess_time) >= (time_t)sess_timeout;
 }
 
 /**
