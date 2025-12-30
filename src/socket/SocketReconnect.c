@@ -1162,6 +1162,21 @@ SocketReconnect_next_timeout_ms (T conn)
   return timeout;
 }
 
+static void
+attempt_reconnect (T conn)
+{
+  transition_state (conn, RECONNECT_CONNECTING);
+  if (start_connect (conn))
+    {
+      if (!conn->connect_in_progress)
+        handle_connect_success (conn);
+    }
+  else
+    {
+      handle_connect_failure (conn);
+    }
+}
+
 void
 SocketReconnect_tick (T conn)
 {
@@ -1177,16 +1192,7 @@ SocketReconnect_tick (T conn)
       if (now >= conn->backoff_until_ms)
         {
           /* Backoff expired, retry */
-          transition_state (conn, RECONNECT_CONNECTING);
-          if (start_connect (conn))
-            {
-              if (!conn->connect_in_progress)
-                handle_connect_success (conn);
-            }
-          else
-            {
-              handle_connect_failure (conn);
-            }
+          attempt_reconnect (conn);
         }
       break;
 
@@ -1196,16 +1202,7 @@ SocketReconnect_tick (T conn)
         {
           /* Try probe connection */
           conn->circuit_state = CIRCUIT_HALF_OPEN;
-          transition_state (conn, RECONNECT_CONNECTING);
-          if (start_connect (conn))
-            {
-              if (!conn->connect_in_progress)
-                handle_connect_success (conn);
-            }
-          else
-            {
-              handle_connect_failure (conn);
-            }
+          attempt_reconnect (conn);
         }
       break;
 
