@@ -27,6 +27,29 @@ struct SocketSimple_Async
 };
 
 /* ============================================================================
+ * Helper: Validate async context
+ * ============================================================================
+ */
+
+/**
+ * Validate that the async context is non-NULL and initialized.
+ * Sets an error and returns false if invalid.
+ *
+ * @param async The async context to validate
+ * @return true if valid, false otherwise
+ */
+static inline int
+validate_async_context (SocketSimple_Async_T async)
+{
+  if (!async || !async->async)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid async context");
+      return 0;
+    }
+  return 1;
+}
+
+/* ============================================================================
  * Helper: Map Simple flags to core flags
  * ============================================================================
  */
@@ -184,11 +207,8 @@ Socket_simple_async_send_timeout (SocketSimple_Async_T async,
 
   Socket_simple_clear_error ();
 
-  if (!async || !async->async)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid async context");
-      return 0;
-    }
+  if (!validate_async_context (async))
+    return 0;
 
   core_socket = get_core_socket ((SocketSimple_Socket_T)safe_socket);
   if (!core_socket)
@@ -259,11 +279,8 @@ Socket_simple_async_recv_timeout (SocketSimple_Async_T async,
 
   Socket_simple_clear_error ();
 
-  if (!async || !async->async)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid async context");
-      return 0;
-    }
+  if (!validate_async_context (async))
+    return 0;
 
   core_socket = get_core_socket ((SocketSimple_Socket_T)safe_socket);
   if (!core_socket)
@@ -329,11 +346,8 @@ Socket_simple_async_process (SocketSimple_Async_T async, int timeout_ms)
 {
   Socket_simple_clear_error ();
 
-  if (!async || !async->async)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid async context");
-      return -1;
-    }
+  if (!validate_async_context (async))
+    return -1;
 
   return SocketAsync_process_completions (async->async, timeout_ms);
 }
@@ -348,11 +362,8 @@ Socket_simple_async_cancel (SocketSimple_Async_T async, unsigned request_id)
 {
   Socket_simple_clear_error ();
 
-  if (!async || !async->async)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid async context");
-      return -1;
-    }
+  if (!validate_async_context (async))
+    return -1;
 
   return SocketAsync_cancel (async->async, request_id);
 }
@@ -362,11 +373,8 @@ Socket_simple_async_cancel_all (SocketSimple_Async_T async)
 {
   Socket_simple_clear_error ();
 
-  if (!async || !async->async)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid async context");
-      return -1;
-    }
+  if (!validate_async_context (async))
+    return -1;
 
   return SocketAsync_cancel_all (async->async);
 }
@@ -388,11 +396,8 @@ Socket_simple_async_get_progress (SocketSimple_Async_T async,
 
   Socket_simple_clear_error ();
 
-  if (!async || !async->async)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid async context");
-      return 0;
-    }
+  if (!validate_async_context (async))
+    return 0;
 
   return SocketAsync_get_progress (async->async, request_id, completed, total);
 }
@@ -403,11 +408,8 @@ Socket_simple_async_send_continue (SocketSimple_Async_T async,
 {
   Socket_simple_clear_error ();
 
-  if (!async || !async->async)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid async context");
-      return 0;
-    }
+  if (!validate_async_context (async))
+    return 0;
 
   return SocketAsync_send_continue (async->async, request_id);
 }
@@ -418,11 +420,8 @@ Socket_simple_async_recv_continue (SocketSimple_Async_T async,
 {
   Socket_simple_clear_error ();
 
-  if (!async || !async->async)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid async context");
-      return 0;
-    }
+  if (!validate_async_context (async))
+    return 0;
 
   return SocketAsync_recv_continue (async->async, request_id);
 }
@@ -455,11 +454,8 @@ Socket_simple_async_expire_stale (SocketSimple_Async_T async)
 {
   Socket_simple_clear_error ();
 
-  if (!async || !async->async)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid async context");
-      return 0;
-    }
+  if (!validate_async_context (async))
+    return 0;
 
   return SocketAsync_expire_stale (async->async);
 }
