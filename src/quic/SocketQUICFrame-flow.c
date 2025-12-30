@@ -44,7 +44,7 @@ SocketQUICFrame_encode_max_data (uint64_t max_data, uint8_t *out,
   size_t type_len = 1;
   size_t max_data_len = SocketQUICVarInt_size (max_data);
 
-  if (max_data_len == 0)
+  if (!VALIDATE_VARINT_SIZES (max_data_len))
     return 0; /* max_data exceeds varint maximum */
 
   size_t total_len = type_len + max_data_len;
@@ -86,7 +86,7 @@ SocketQUICFrame_encode_max_stream_data (uint64_t stream_id, uint64_t max_data,
   size_t stream_id_len = SocketQUICVarInt_size (stream_id);
   size_t max_data_len = SocketQUICVarInt_size (max_data);
 
-  if (stream_id_len == 0 || max_data_len == 0)
+  if (!VALIDATE_VARINT_SIZES (stream_id_len, max_data_len))
     return 0; /* Value exceeds varint maximum */
 
   size_t total_len = type_len + stream_id_len + max_data_len;
@@ -130,7 +130,7 @@ SocketQUICFrame_encode_max_streams (int bidirectional, uint64_t max_streams,
   size_t type_len = 1;
   size_t max_streams_len = SocketQUICVarInt_size (max_streams);
 
-  if (max_streams_len == 0)
+  if (!VALIDATE_VARINT_SIZES (max_streams_len))
     return 0; /* max_streams exceeds varint maximum */
 
   size_t total_len = type_len + max_streams_len;
@@ -183,7 +183,7 @@ SocketQUICFrame_encode_data_blocked (uint64_t max_data, uint8_t *out,
   size_t type_len = 1;
   size_t max_data_len = SocketQUICVarInt_size (max_data);
 
-  if (max_data_len == 0)
+  if (!VALIDATE_VARINT_SIZES (max_data_len))
     return 0; /* max_data exceeds varint maximum */
 
   size_t total_len = type_len + max_data_len;
@@ -240,7 +240,7 @@ SocketQUICFrame_encode_stream_data_blocked (uint64_t stream_id,
   size_t stream_id_len = SocketQUICVarInt_size (stream_id);
   size_t max_data_len = SocketQUICVarInt_size (max_data);
 
-  if (stream_id_len == 0 || max_data_len == 0)
+  if (!VALIDATE_VARINT_SIZES (stream_id_len, max_data_len))
     return 0; /* Value exceeds varint maximum */
 
   size_t total_len = type_len + stream_id_len + max_data_len;
@@ -300,7 +300,7 @@ SocketQUICFrame_encode_streams_blocked (int bidirectional, uint64_t max_streams,
   size_t type_len = 1;
   size_t max_streams_len = SocketQUICVarInt_size (max_streams);
 
-  if (max_streams_len == 0)
+  if (!VALIDATE_VARINT_SIZES (max_streams_len))
     return 0; /* max_streams exceeds varint maximum */
 
   size_t total_len = type_len + max_streams_len;

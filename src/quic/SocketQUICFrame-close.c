@@ -93,10 +93,10 @@ encode_connection_close_common (uint8_t frame_type_byte, uint64_t error_code,
   size_t frame_type_len = frame_type_ptr ? SocketQUICVarInt_size (*frame_type_ptr) : 0;
   size_t reason_len_size = SocketQUICVarInt_size (reason_len);
 
-  if (error_code_len == 0 || reason_len_size == 0)
+  if (!VALIDATE_VARINT_SIZES (error_code_len, reason_len_size))
     return 0; /* Value exceeds varint maximum */
 
-  if (frame_type_ptr && frame_type_len == 0)
+  if (frame_type_ptr && !VALIDATE_VARINT_SIZES (frame_type_len))
     return 0; /* Frame type value exceeds varint maximum */
 
   /* Check for integer overflow in total_len calculation.

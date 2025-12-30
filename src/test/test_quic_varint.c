@@ -523,6 +523,67 @@ TEST (quic_varint_decode_2byte_extra_bytes)
   ASSERT_EQ (consumed, 2);
 }
 
+/* ============================================================================
+ * VALIDATE_VARINT_SIZES Macro Tests (Issue #2023)
+ * ============================================================================
+ */
+
+TEST (quic_varint_validate_sizes_all_valid)
+{
+  /* Test that the macro returns 1 (true) when all sizes are valid */
+  size_t s1 = SocketQUICVarInt_size (100);
+  size_t s2 = SocketQUICVarInt_size (1000);
+  size_t s3 = SocketQUICVarInt_size (10000);
+
+  ASSERT (VALIDATE_VARINT_SIZES (s1, s2, s3));
+}
+
+TEST (quic_varint_validate_sizes_one_invalid)
+{
+  /* Test that the macro returns 0 (false) when one size is invalid */
+  size_t s1 = SocketQUICVarInt_size (100);
+  size_t s2 = SocketQUICVarInt_size (SOCKETQUICVARINT_MAX + 1); /* Invalid */
+  size_t s3 = SocketQUICVarInt_size (10000);
+
+  ASSERT (!VALIDATE_VARINT_SIZES (s1, s2, s3));
+}
+
+TEST (quic_varint_validate_sizes_all_invalid)
+{
+  /* Test that the macro returns 0 (false) when all sizes are invalid */
+  size_t s1 = SocketQUICVarInt_size (SOCKETQUICVARINT_MAX + 1);
+  size_t s2 = SocketQUICVarInt_size (SOCKETQUICVARINT_MAX + 2);
+  size_t s3 = SocketQUICVarInt_size (UINT64_MAX);
+
+  ASSERT (!VALIDATE_VARINT_SIZES (s1, s2, s3));
+}
+
+TEST (quic_varint_validate_sizes_single_value)
+{
+  /* Test that the macro works with a single value */
+  size_t s1 = SocketQUICVarInt_size (100);
+  ASSERT (VALIDATE_VARINT_SIZES (s1));
+
+  size_t s2 = SocketQUICVarInt_size (SOCKETQUICVARINT_MAX + 1);
+  ASSERT (!VALIDATE_VARINT_SIZES (s2));
+}
+
+TEST (quic_varint_validate_sizes_many_values)
+{
+  /* Test that the macro works with many values */
+  size_t s1 = SocketQUICVarInt_size (1);
+  size_t s2 = SocketQUICVarInt_size (64);
+  size_t s3 = SocketQUICVarInt_size (16384);
+  size_t s4 = SocketQUICVarInt_size (1073741824);
+  size_t s5 = SocketQUICVarInt_size (SOCKETQUICVARINT_MAX);
+
+  ASSERT (VALIDATE_VARINT_SIZES (s1, s2, s3, s4, s5));
+
+  /* Now with one invalid in the middle */
+  size_t s6 = SocketQUICVarInt_size (SOCKETQUICVARINT_MAX + 1);
+  ASSERT (!VALIDATE_VARINT_SIZES (s1, s2, s6, s4, s5));
+}
+
 int
 main (void)
 {

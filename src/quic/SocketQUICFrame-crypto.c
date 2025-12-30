@@ -73,7 +73,7 @@ SocketQUICFrame_encode_crypto (uint64_t offset, const uint8_t *data,
   size_t offset_len = SocketQUICVarInt_size (offset);
   size_t length_len = SocketQUICVarInt_size (len);
 
-  if (offset_len == 0 || length_len == 0)
+  if (!VALIDATE_VARINT_SIZES (offset_len, length_len))
     return 0; /* Value exceeds varint maximum */
 
   /* Prevent integer overflow in size calculation */
