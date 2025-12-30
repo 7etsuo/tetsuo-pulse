@@ -136,6 +136,18 @@ typedef struct T *T;
 extern const Except_T SocketBuf_Failed;
 
 /**
+ * @brief Initial capacity for dynamic buffer growth when current capacity is 0.
+ * @ingroup core_io
+ *
+ * This constant defines the default initial capacity used by the buffer
+ * reserve logic when growing from zero capacity. Set to 4096 bytes (4KB)
+ * for efficient initial allocation without excessive memory waste.
+ *
+ * @see reserve_calc_new_capacity() in SocketBuf.c
+ */
+#define SOCKETBUF_INITIAL_CAPACITY 4096
+
+/**
  * @brief Create a new circular buffer with specified initial capacity.
  * @ingroup core_io
  *
