@@ -444,6 +444,92 @@ TEST (dot_query_id)
   Arena_dispose (&arena);
 }
 
+/* Test: Cumulative memory limit (CWE-770 mitigation) */
+TEST (dot_memory_limit)
+{
+  Arena_T arena = Arena_new ();
+  SocketDNSoverTLS_T dot = SocketDNSoverTLS_new (arena);
+
+  /* Add server */
+  SocketDNSoverTLS_add_server (dot, "google", DOT_MODE_OPPORTUNISTIC);
+
+  /* Build large queries to test memory limit
+   * DOT_MAX_TOTAL_QUERY_BYTES = 10MB
+   * We'll try to allocate 11MB worth of queries to exceed the limit
+   */
+  const size_t large_query_size = 60000; /* ~60KB per query */
+  const int num_queries = 180; /* 180 * 60KB = 10.8MB */
+
+  int queries_accepted = 0;
+  int queries_rejected = 0;
+
+  for (int i = 0; i < num_queries; i++)
+    {
+      /* Build a query with padding to reach desired size */
+      unsigned char *query = ALLOC (arena, large_query_size);
+      memset (query, 0, large_query_size);
+
+      /* Create valid DNS header */
+      SocketDNS_Header hdr;
+      SocketDNS_header_init_query (&hdr, (uint16_t)(0x1000 + i), 1);
+      SocketDNS_header_encode (&hdr, query, large_query_size);
+
+      /* Add a question section */
+      SocketDNS_Question question;
+      SocketDNS_question_init (&question, "example.com", DNS_TYPE_A);
+      size_t written;
+      SocketDNS_question_encode (&question, query + DNS_HEADER_SIZE,
+                                 large_query_size - DNS_HEADER_SIZE, &written);
+
+      reset_callback_state ();
+      SocketDNSoverTLS_Query_T q = SocketDNSoverTLS_query (
+          dot, query, large_query_size, test_callback, NULL);
+
+      if (q)
+        {
+          queries_accepted++;
+        }
+      else
+        {
+          queries_rejected++;
+          /* Should start rejecting after reaching the limit */
+          break;
+        }
+    }
+
+  /* Verify that some queries were accepted but not all */
+  ASSERT (queries_accepted > 0);
+  ASSERT (queries_rejected > 0 || queries_accepted < num_queries);
+
+  /* Pending count should match accepted queries */
+  ASSERT_EQ (SocketDNSoverTLS_pending_count (dot), queries_accepted);
+
+  /* Cancel all queries to free memory */
+  SocketDNSoverTLS_close_all (dot);
+  ASSERT_EQ (SocketDNSoverTLS_pending_count (dot), 0);
+
+  /* After cancelling, should be able to add queries again */
+  unsigned char small_query[512];
+  SocketDNS_Header hdr;
+  SocketDNS_header_init_query (&hdr, 0x9999, 1);
+  SocketDNS_header_encode (&hdr, small_query, sizeof (small_query));
+
+  SocketDNS_Question question;
+  SocketDNS_question_init (&question, "test.com", DNS_TYPE_A);
+  size_t written;
+  SocketDNS_question_encode (&question, small_query + DNS_HEADER_SIZE,
+                             sizeof (small_query) - DNS_HEADER_SIZE, &written);
+  size_t small_query_len = DNS_HEADER_SIZE + written;
+
+  reset_callback_state ();
+  SocketDNSoverTLS_Query_T q = SocketDNSoverTLS_query (
+      dot, small_query, small_query_len, test_callback, NULL);
+  ASSERT_NOT_NULL (q);
+
+  SocketDNSoverTLS_free (&dot);
+  Arena_dispose (&arena);
+}
+
 #else /* !SOCKET_HAS_TLS */
 
 /* Stub test when TLS is disabled */
