@@ -377,6 +377,25 @@ Socket_simple_dtls_enable (SocketSimple_Socket_T sock, const char *hostname,
  * DTLS Server Functions
  *============================================================================*/
 
+/**
+ * @brief Create and configure a DTLS server context.
+ *
+ * Creates a server context with the specified certificate and key,
+ * and enables cookie exchange for DoS protection.
+ *
+ * @param cert_file Path to certificate file
+ * @param key_file Path to private key file
+ * @return Server context on success, raises exception on failure
+ */
+static SocketDTLSContext_T
+create_dtls_server_context (const char *cert_file, const char *key_file)
+{
+  SocketDTLSContext_T ctx = SocketDTLSContext_new_server (cert_file, key_file,
+                                                          NULL);
+  SocketDTLSContext_enable_cookie_exchange (ctx);
+  return ctx;
+}
+
 SocketSimple_Socket_T
 Socket_simple_dtls_listen (const char *host, int port, const char *cert_file,
                            const char *key_file)
@@ -407,11 +426,8 @@ Socket_simple_dtls_listen (const char *host, int port, const char *cert_file,
     /* Bind to address */
     SocketDgram_bind (dgram, host, port);
 
-    /* Create server context */
-    ctx = SocketDTLSContext_new_server (cert_file, key_file, NULL);
-
-    /* Enable cookie exchange for DoS protection */
-    SocketDTLSContext_enable_cookie_exchange (ctx);
+    /* Create and configure server context */
+    ctx = create_dtls_server_context (cert_file, key_file);
 
     /* Enable DTLS on socket */
     SocketDTLS_enable (dgram, ctx);
