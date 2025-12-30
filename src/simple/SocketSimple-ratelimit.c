@@ -84,6 +84,13 @@ refill_tokens (SocketSimple_RateLimit_T limit)
     }
 }
 
+static void
+ms_to_timespec (int ms, struct timespec *ts)
+{
+  ts->tv_sec = ms / 1000;
+  ts->tv_nsec = (ms % 1000) * NANOSECONDS_PER_MILLISECOND;
+}
+
 /* ============================================================================
  * Rate Limiter Lifecycle
  * ============================================================================
@@ -222,8 +229,7 @@ Socket_simple_ratelimit_acquire (SocketSimple_RateLimit_T limit, int tokens)
       if (wait_ms > 0)
         {
           struct timespec ts;
-          ts.tv_sec = wait_ms / 1000;
-          ts.tv_nsec = (wait_ms % 1000) * 1000000;
+          ms_to_timespec (wait_ms, &ts);
           nanosleep (&ts, NULL);
           pthread_mutex_lock (&limit->mutex);
           limit->total_waited_ms += wait_ms;
@@ -281,8 +287,7 @@ Socket_simple_ratelimit_acquire_timeout (SocketSimple_RateLimit_T limit,
       if (wait_ms > 0)
         {
           struct timespec ts;
-          ts.tv_sec = wait_ms / 1000;
-          ts.tv_nsec = (wait_ms % 1000) * 1000000;
+          ms_to_timespec (wait_ms, &ts);
           nanosleep (&ts, NULL);
           pthread_mutex_lock (&limit->mutex);
           limit->total_waited_ms += wait_ms;
