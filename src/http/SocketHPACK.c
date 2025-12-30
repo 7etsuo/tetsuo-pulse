@@ -415,6 +415,9 @@ hpack_decode_string (const unsigned char *input, size_t input_len,
   if (result != HPACK_OK)
     return result;
 
+  /* Check for 32-bit platform overflow (always false on 64-bit platforms where
+   * sizeof(size_t) == sizeof(uint64_t), but necessary for 32-bit compatibility
+   * where uint64_t values can exceed SIZE_MAX) */
   if (str_len > SIZE_MAX || pos + str_len > input_len)
     return (str_len > SIZE_MAX) ? HPACK_ERROR_INTEGER : HPACK_INCOMPLETE;
 
@@ -1006,6 +1009,9 @@ hpack_decode_table_update (SocketHPACK_Decoder_T decoder,
     return result;
   *pos += consumed;
 
+  /* Check for 32-bit platform overflow (always false on 64-bit platforms where
+   * sizeof(size_t) == sizeof(uint64_t), but necessary for 32-bit compatibility
+   * where uint64_t values can exceed SIZE_MAX) */
   if (new_size > SIZE_MAX)
     return HPACK_ERROR_INTEGER;
   if (new_size > decoder->settings_max_table_size)
