@@ -61,6 +61,37 @@
 #include "core/SocketEvent.h"  /* Event dispatching */
 
 /* ============================================================================
+ * COMMON UTILITY MACROS
+ * ============================================================================
+ */
+
+/**
+ * @brief ARRAY_LENGTH - Calculate number of elements in a static array
+ * @param arr Array name (must be a static array, not a pointer)
+ * @ingroup foundation
+ *
+ * Calculates the number of elements in a statically-allocated array at
+ * compile time. This is the standard C idiom for array length calculation.
+ *
+ * WARNING: This macro only works for arrays with static storage duration
+ * (declared with a known size at compile time). It will give incorrect
+ * results if used on:
+ * - Pointers (including function parameters declared as arrays)
+ * - Dynamically allocated arrays
+ * - Variable-length arrays (VLAs)
+ *
+ * Example:
+ *   static const char *states[] = {"Ready", "Send", "DataSent"};
+ *   for (size_t i = 0; i < ARRAY_LENGTH(states); i++) {
+ *     printf("%s\n", states[i]);
+ *   }
+ *
+ * Pattern: Standard C idiom used throughout the codebase for transition
+ * tables, string tables, and other fixed-size lookup arrays.
+ */
+#define ARRAY_LENGTH(arr) (sizeof (arr) / sizeof ((arr)[0]))
+
+/* ============================================================================
  * ERROR HANDLING MACROS (Combine Error + Log)
  * ============================================================================
  */
