@@ -498,6 +498,59 @@ TEST (session_id_context_too_long)
   END_TRY;
 }
 
+/* ==================== Session Restore Bounds Checking ==================== */
+
+TEST (session_restore_invalid_length)
+{
+  const char *cert_file = "test_sess_bounds.crt";
+  const char *key_file = "test_sess_bounds.key";
+  Socket_T client = NULL, server = NULL;
+  SocketTLSContext_T client_ctx = NULL, server_ctx = NULL;
+
+  if (generate_test_certs (cert_file, key_file) != 0)
+    return;
+
+  TRY
+  {
+    SocketPair_new (SOCK_STREAM, &client, &server);
+    Socket_setnonblocking (client);
+    Socket_setnonblocking (server);
+
+    client_ctx = SocketTLSContext_new_client (NULL);
+    SocketTLSContext_set_verify_mode (client_ctx, TLS_VERIFY_NONE);
+
+    server_ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+
+    SocketTLS_enable (client, client_ctx);
+    SocketTLS_enable (server, server_ctx);
+
+    /* Test 1: Zero length should be rejected */
+    unsigned char dummy_buf[16] = { 0 };
+    int result = SocketTLS_session_restore (client, dummy_buf, 0);
+    ASSERT_EQ (result, 0); /* Should return 0 for invalid data */
+
+    /* Test 2: Length exceeding INT_MAX should be rejected.
+     * This validates the fix for issue #2354 - ensures portability
+     * across platforms including 64-bit Windows (LLP64). */
+    size_t too_large = (size_t)INT_MAX + 1;
+    result = SocketTLS_session_restore (client, dummy_buf, too_large);
+    ASSERT_EQ (result, 0); /* Should return 0 for invalid data */
+  }
+  FINALLY
+  {
+    if (client)
+      Socket_free (&client);
+    if (server)
+      Socket_free (&server);
+    if (client_ctx)
+      SocketTLSContext_free (&client_ctx);
+    if (server_ctx)
+      SocketTLSContext_free (&server_ctx);
+    remove_test_certs (cert_file, key_file);
+  }
+  END_TRY;
+}
+
 #endif /* SOCKET_HAS_TLS */
 
 int
