@@ -32,26 +32,10 @@
 
 #include "core/Arena.h"
 #include "core/Except.h"
+#include "core/SocketConfig.h"
 #include "quic/SocketQUICConnection.h"
 #include "quic/SocketQUICFrame.h"
 #include "quic/SocketQUICTransportParams.h"
-
-/* ============================================================================
- * Constants
- * ============================================================================
- */
-
-/**
- * @brief Maximum CRYPTO frame data buffer size.
- *
- * Limits memory for buffering out-of-order CRYPTO frames.
- */
-#define QUIC_HANDSHAKE_CRYPTO_BUFFER_SIZE 16384
-
-/**
- * @brief Maximum number of buffered CRYPTO frame segments.
- */
-#define QUIC_HANDSHAKE_MAX_CRYPTO_SEGMENTS 64
 
 /* ============================================================================
  * Types
