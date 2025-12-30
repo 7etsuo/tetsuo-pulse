@@ -45,6 +45,27 @@
 #define QUIC_HASH_FNV1A_PRIME 16777619u
 
 /* ============================================================================
+ * Hash Constants (MurmurHash3)
+ * ============================================================================
+ *
+ * MurmurHash3 is used for sequence number hashing in the connection ID pool.
+ * Provides excellent avalanche characteristics for integer hashing.
+ *
+ * @see https://github.com/aappleby/smhasher
+ */
+
+/**
+ * @brief MurmurHash3 64-bit finalizer mixing constant.
+ *
+ * Used in multiplicative hashing for avalanche effect in sequence number
+ * hashing. This constant is part of the MurmurHash3 finalizer step and
+ * ensures that similar input values produce well-distributed hash outputs.
+ *
+ * From MurmurHash3 by Austin Appleby (public domain).
+ */
+#define QUIC_HASH_MURMUR3_MIX 0xff51afd7ed558ccdULL
+
+/* ============================================================================
  * HKDF Label Constants (RFC 8446)
  * ============================================================================
  */
