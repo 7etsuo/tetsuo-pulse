@@ -76,6 +76,40 @@
  */
 #define DOT_MAX_TOTAL_QUERY_BYTES (10 * 1024 * 1024)
 
+/**
+ * Server address buffer size.
+ *
+ * Sized to hold IPv6 addresses with zone identifiers:
+ * - IPv6 max: 39 chars (8 groups of 4 hex + 7 colons)
+ * - Zone ID: "%" + zone name (up to 20 chars typical)
+ * - Null terminator: 1 char
+ * - Total: 39 + 1 + 20 + 1 = 61, rounded to 64 for alignment
+ *
+ * Example: "fe80::1234:5678:90ab:cdef%eth0"
+ */
+#define DOT_SERVER_ADDRESS_SIZE 64
+
+/**
+ * DNS server name buffer size.
+ *
+ * RFC 1035 §2.3.4 specifies maximum domain name length of 255 octets.
+ * Add 1 byte for null terminator.
+ */
+#define DOT_SERVER_NAME_SIZE 256
+
+/**
+ * SPKI pin buffer size.
+ *
+ * Base64-encoded SHA256 hash:
+ * - SHA256 hash: 32 bytes
+ * - Base64 encoding: ceil(32 * 4/3) = 44 chars
+ * - Null terminator: 1 char
+ * - Padding/alignment: rounded to 64 bytes
+ *
+ * Used for RFC 7469 Public Key Pinning (HPKP) in DNS-over-TLS.
+ */
+#define DOT_SPKI_PIN_SIZE 64
+
 /* Well-known DoT servers */
 static const struct
 {
@@ -96,13 +130,13 @@ static const struct
 /* Server configuration entry */
 struct ServerConfig
 {
-  char address[64];
+  char address[DOT_SERVER_ADDRESS_SIZE];
   int port;
-  char server_name[256];
+  char server_name[DOT_SERVER_NAME_SIZE];
   SocketDNSoverTLS_Mode mode;
-  char spki_pin[64];        /* Base64-encoded SHA256 */
-  char spki_pin_backup[64]; /* Backup pin */
-  int family;               /* AF_INET or AF_INET6 */
+  char spki_pin[DOT_SPKI_PIN_SIZE];        /* Base64-encoded SHA256 */
+  char spki_pin_backup[DOT_SPKI_PIN_SIZE]; /* Backup pin */
+  int family;                              /* AF_INET or AF_INET6 */
 };
 
 /* TLS connection state */
