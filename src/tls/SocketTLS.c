@@ -1757,8 +1757,12 @@ SocketTLS_session_restore (Socket_T socket, const unsigned char *buffer,
   if (!ssl)
     return -1;
 
-  /* Validate length to prevent integer overflow in d2i_SSL_SESSION */
-  if (len == 0 || len > (size_t)LONG_MAX)
+  /* Validate length bounds for d2i_SSL_SESSION (takes long parameter).
+   * Use INT_MAX for portability - it's safe on all platforms including
+   * 64-bit Windows (LLP64) where sizeof(long)=4 but sizeof(size_t)=8.
+   * This conservative check prevents both overflow and platform-specific
+   * edge cases while still allowing session data up to ~2GB. */
+  if (len == 0 || len > INT_MAX)
     return 0; /* Invalid data */
 
   /* Deserialize session from DER format */
