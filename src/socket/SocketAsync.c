@@ -1346,22 +1346,27 @@ SocketAsync_get_timeout (T async)
 }
 
 
-static int
-check_and_expire_stale_requests (T async)
+static int64_t
+calculate_request_deadline (const struct AsyncRequest *req,
+                             int64_t global_timeout)
 {
-  int64_t now_ms;
-  int expired_count = 0;
+  if (req->deadline_ms > 0)
+    return req->deadline_ms;
+
+  if (global_timeout > 0 && req->submitted_at > 0)
+    return req->submitted_at + global_timeout;
+
+  return 0;
+}
+
+
+static struct AsyncRequest *
+collect_expired_requests (T async, int64_t now_ms, int64_t global_timeout,
+                          int *out_count)
+{
   struct AsyncRequest *expired_list = NULL;
   struct AsyncRequest *expired_tail = NULL;
-  int64_t global_timeout;
-
-  if (!async)
-    return 0;
-
-  now_ms = Socket_get_monotonic_ms ();
-
-  pthread_mutex_lock (&async->mutex);
-  global_timeout = async->request_timeout_ms;
+  int expired_count = 0;
 
   for (unsigned i = 0; i < SOCKET_HASH_TABLE_SIZE; i++)
     {
@@ -1370,17 +1375,9 @@ check_and_expire_stale_requests (T async)
       while (*pp)
         {
           struct AsyncRequest *req = *pp;
-          int64_t deadline;
+          int64_t deadline = calculate_request_deadline (req, global_timeout);
 
-          if (req->deadline_ms > 0)
-            {
-              deadline = req->deadline_ms;
-            }
-          else if (global_timeout > 0 && req->submitted_at > 0)
-            {
-              deadline = req->submitted_at + global_timeout;
-            }
-          else
+          if (deadline == 0)
             {
               pp = &req->next;
               continue;
@@ -1405,7 +1402,17 @@ check_and_expire_stale_requests (T async)
         }
     }
 
-  pthread_mutex_unlock (&async->mutex);
+  if (out_count)
+    *out_count = expired_count;
+
+  return expired_list;
+}
+
+
+static int
+invoke_timeout_callbacks (T async, struct AsyncRequest *expired_list)
+{
+  int count = 0;
 
   while (expired_list)
     {
@@ -1416,7 +1423,33 @@ check_and_expire_stale_requests (T async)
         req->cb (req->socket, -1, ETIMEDOUT, req->user_data);
 
       socket_async_free_request (async, req);
+      count++;
     }
+
+  return count;
+}
+
+
+static int
+check_and_expire_stale_requests (T async)
+{
+  int64_t now_ms;
+  struct AsyncRequest *expired_list;
+  int64_t global_timeout;
+  int expired_count;
+
+  if (!async)
+    return 0;
+
+  now_ms = Socket_get_monotonic_ms ();
+
+  pthread_mutex_lock (&async->mutex);
+  global_timeout = async->request_timeout_ms;
+  expired_list = collect_expired_requests (async, now_ms, global_timeout,
+                                            &expired_count);
+  pthread_mutex_unlock (&async->mutex);
+
+  invoke_timeout_callbacks (async, expired_list);
 
   return expired_count;
 }
