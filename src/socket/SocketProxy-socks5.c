@@ -113,14 +113,15 @@ calculate_socks5_connect_response_length (struct SocketProxy_Conn_T *conn,
     case SOCKS5_ATYP_DOMAIN:
       /* Need header + length byte to read domain length */
       {
-        SocketProxy_Result res
-            = proxy_socks5_ensure_data (conn, SOCKS5_CONNECT_HEADER_SIZE + 1);
+        SocketProxy_Result res = proxy_socks5_ensure_data (
+            conn, SOCKS5_CONNECT_HEADER_SIZE + SOCKS5_DOMAIN_LENGTH_SIZE);
         if (res != PROXY_OK)
           return res;
       }
       addr_len = buf[4];
       /* header + len byte + domain + port */
-      needed = SOCKS5_CONNECT_HEADER_SIZE + 1 + addr_len + SOCKS5_PORT_SIZE;
+      needed = SOCKS5_CONNECT_HEADER_SIZE + SOCKS5_DOMAIN_LENGTH_SIZE
+               + addr_len + SOCKS5_PORT_SIZE;
       break;
 
     case SOCKS5_ATYP_IPV6:

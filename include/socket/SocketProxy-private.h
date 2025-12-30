@@ -345,6 +345,7 @@
 #define SOCKS5_IPV4_ADDR_SIZE 4  /**< IPv4 address bytes */
 #define SOCKS5_IPV6_ADDR_SIZE 16 /**< IPv6 address bytes */
 #define SOCKS5_PORT_SIZE 2       /**< Port bytes (network order) */
+#define SOCKS5_DOMAIN_LENGTH_SIZE 1 /**< Domain name length byte (ATYP_DOMAIN) */
 
 /** @brief SOCKS5 response message size constants.
  * @ingroup proxy_private
