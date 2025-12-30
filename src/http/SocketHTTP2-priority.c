@@ -177,6 +177,15 @@ SocketHTTP2_Priority_parse (const char *value, size_t len,
               urgency = urgency * 10 + (*p - '0');
               digits++;
               p++;
+
+              /* Early bounds check to prevent overflow */
+              if (urgency > SOCKETHTTP2_PRIORITY_MAX_URGENCY)
+                {
+                  SOCKET_LOG_DEBUG_MSG (
+                      "Priority parse error: u=%d out of range [0-7]", urgency);
+                  return -1;
+                }
+
               if (digits > 15)
                 {
                   SOCKET_LOG_DEBUG_MSG (
