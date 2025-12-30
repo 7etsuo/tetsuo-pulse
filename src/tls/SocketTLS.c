@@ -529,15 +529,15 @@ do_handshake_poll (Socket_T socket, unsigned events, int timeout_ms)
 /**
  * disable_compute_shutdown_timeout - Calculate timeout for best-effort shutdown
  *
- * Returns: Timeout in milliseconds (minimum 1 second)
+ * Returns: Timeout in milliseconds (minimum SOCKET_TLS_MIN_SHUTDOWN_TIMEOUT_MS)
  * Thread-safe: Yes
  */
 static int
 disable_compute_shutdown_timeout (void)
 {
   int timeout_ms = SOCKET_TLS_DEFAULT_SHUTDOWN_TIMEOUT_MS / 4;
-  if (timeout_ms < 1000)
-    timeout_ms = 1000; /* Minimum 1 second for disable */
+  if (timeout_ms < SOCKET_TLS_MIN_SHUTDOWN_TIMEOUT_MS)
+    timeout_ms = SOCKET_TLS_MIN_SHUTDOWN_TIMEOUT_MS;
   return timeout_ms;
 }
 
