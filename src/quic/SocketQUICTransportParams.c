@@ -11,6 +11,7 @@
  * exchanged during the TLS handshake.
  */
 
+#include <assert.h>
 #include <stddef.h>
 #include <string.h>
 
@@ -441,10 +442,21 @@ static const VarIntParamMetadata varint_params[] = {
 
 /**
  * @brief Get value of a uint64_t field by offset.
+ *
+ * Performs bounds checking to ensure the offset is valid and within struct bounds.
+ * The assertions verify:
+ *   - params pointer is non-NULL
+ *   - offset is within the struct
+ *   - offset + sizeof(uint64_t) does not exceed struct bounds
+ *
+ * While offsets are compile-time constants from offsetof(), these assertions
+ * provide defense-in-depth against memory corruption or misuse.
  */
 static inline uint64_t
 get_param_value (const SocketQUICTransportParams_T *params, size_t offset)
 {
+  assert (params != NULL);
+  assert (offset <= sizeof (*params) - sizeof (uint64_t));
   return *(const uint64_t *)((const uint8_t *)params + offset);
 }
 
