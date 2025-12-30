@@ -27,8 +27,8 @@ Socket_simple_happyeyeballs_config_defaults (
   if (!config)
     return;
 
-  config->resolution_delay_ms = 50;
-  config->connection_delay_ms = 250;
+  config->resolution_delay_ms = SOCKET_HE_DEFAULT_RESOLUTION_DELAY_MS;
+  config->connection_delay_ms = SOCKET_HE_DEFAULT_CONNECTION_DELAY_MS;
   config->prefer_ipv6 = 1;
   config->max_attempts = 0;
 }
