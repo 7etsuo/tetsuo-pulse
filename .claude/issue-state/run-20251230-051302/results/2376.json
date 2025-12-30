@@ -1,0 +1,10 @@
+{
+  "issue": 2376,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2534",
+  "pr_number": 2534,
+  "branch": "issue-2376-remove-redundant-bounds-check-v2",
+  "files_changed": ["src/http/SocketHTTP2-priority.c"],
+  "tests_passed": true,
+  "commit_sha": "20ab8cbd1210ee41b5186d2616ee1bfa01ae1b0d"
+}

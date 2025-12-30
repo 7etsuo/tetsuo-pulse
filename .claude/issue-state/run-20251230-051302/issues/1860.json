@@ -1,0 +1,12 @@
+{
+  "number": 1860,
+  "title": "refactor(dns): extract helpers from SocketDNS_rdata_parse_soa (86 lines exceeds 50-line guideline)",
+  "body": "## Location\n**File:** `src/dns/SocketDNSWire.c`  \n**Lines:** 882-967  \n**Function:** `SocketDNS_rdata_parse_soa`\n\n## Issue\nThe `SocketDNS_rdata_parse_soa` function is 86 lines long, exceeding the HIGH severity threshold of 50 lines. The function performs three distinct tasks: validation, domain name parsing, and fixed field parsing.\n\n**Current structure:**\n- Lines 890-906: Validation (RDATA bounds checks)\n- Lines 908-922: Parse two domain names (MNAME and RNAME)\n- Lines 924-964: Parse five 32-bit fields (SERIAL, REFRESH, RETRY, EXPIRE, MINIMUM)\n\n## Recommendation\nExtract a helper function for parsing the fixed 32-bit fields:\n\n```c\nstatic int\nparse_soa_fixed_fields(const unsigned char *msg, size_t offset,\n                      SocketDNS_SOA *soa)\n{\n  soa->serial = dns_unpack_be32(msg + offset);\n  offset += 4;\n  soa->refresh = dns_unpack_be32(msg + offset);\n  offset += 4;\n  soa->retry = dns_unpack_be32(msg + offset);\n  offset += 4;\n  soa->expire = dns_unpack_be32(msg + offset);\n  offset += 4;\n  soa->minimum = dns_unpack_be32(msg + offset);\n  return 0;\n}\n```\n\nThe main function would then become:\n```c\nint\nSocketDNS_rdata_parse_soa(...)\n{\n  // Validation (10 lines)\n  // Parse MNAME (5 lines)\n  // Parse RNAME (5 lines)\n  // Verify fixed fields fit (3 lines)\n  // Call parse_soa_fixed_fields (1 line)\n  // Return (1 line)\n}\n```\n\nThis reduces the main function from 86 to ~35 lines.\n\n**Note:** This issue also depends on #1853 (replacing manual unpacking with `dns_unpack_be32`).\n\n## Benefits\n- Brings function length under 50-line guideline\n- Separates variable-length parsing (domain names) from fixed-length parsing (32-bit fields)\n- Improves readability\n- Makes the SOA parsing structure clearer\n\n## Category\nRefactoring / Code Quality\n\n## Severity\nHIGH (exceeds 50-line guideline)\n\n## Pattern ID\nLONG_FUNCTION_50\n\n## Dependencies\n- #1853 (use dns_unpack_be32 helper)",
+  "labels": [
+    "wip:claude-1767088468-2934395"
+  ],
+  "state": "OPEN",
+  "dependencies": [
+    1853
+  ]
+}

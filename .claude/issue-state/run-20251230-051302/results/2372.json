@@ -1,0 +1,14 @@
+{
+  "issue": 2372,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2535",
+  "pr_number": 2535,
+  "branch": "issue-2372-errno-validation-pinning",
+  "files_changed": [
+    "src/tls/SocketTLSContext-pinning.c",
+    "src/test/test_tls_pinning.c"
+  ],
+  "tests_passed": true,
+  "commit_sha": "2b0df99d",
+  "description": "Added errno = 0 before open() syscall to ensure clean errno state for security-critical ELOOP check in certificate pinning. Added test case to verify symlink rejection works correctly."
+}

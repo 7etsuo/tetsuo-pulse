@@ -1,0 +1,10 @@
+{
+  "issue": 2370,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2528",
+  "pr_number": 2528,
+  "branch": "issue-2370-default-max-connections",
+  "files_changed": ["src/simple/SocketSimple-pool.c"],
+  "tests_passed": true,
+  "commit_sha": "e5cb322b56c91bccc4f772b804b6dbb5c870de89"
+}
