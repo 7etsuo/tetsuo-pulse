@@ -347,9 +347,16 @@ Socket_simple_recv_all (SocketSimple_Socket_T sock, void *buf, size_t len)
   return 0;
 }
 
+#define RECV_LINE_BUFFER_SIZE 4096
+
 ssize_t
 Socket_simple_recv_line (SocketSimple_Socket_T sock, char *buf, size_t maxlen)
 {
+  static __thread char internal_buffer[RECV_LINE_BUFFER_SIZE];
+  static __thread size_t buffer_pos = 0;
+  static __thread ssize_t buffer_len = 0;
+  static __thread Socket_T last_socket = NULL;
+
   Socket_simple_clear_error ();
 
   if (!sock || !sock->socket || !buf || maxlen == 0)
@@ -358,21 +365,36 @@ Socket_simple_recv_line (SocketSimple_Socket_T sock, char *buf, size_t maxlen)
       return -1;
     }
 
+  /* Reset buffer if socket changed */
+  if (last_socket != sock->socket)
+    {
+      buffer_pos = 0;
+      buffer_len = 0;
+      last_socket = sock->socket;
+    }
+
   size_t pos = 0;
   while (pos < maxlen - 1)
     {
-      ssize_t n = Socket_simple_recv (sock, buf + pos, 1);
-      if (n < 0)
-        return -1;
-      if (n == 0)
-        break;
-      if (buf[pos] == '\n')
+      /* Refill buffer if empty */
+      if (buffer_pos >= (size_t)buffer_len)
         {
-          pos++;
-          break;
+          buffer_len
+              = Socket_simple_recv (sock, internal_buffer, sizeof (internal_buffer));
+          if (buffer_len < 0)
+            return -1;
+          if (buffer_len == 0)
+            break; /* EOF */
+          buffer_pos = 0;
         }
-      pos++;
+
+      /* Copy from buffer to output, stopping at newline */
+      char c = internal_buffer[buffer_pos++];
+      buf[pos++] = c;
+      if (c == '\n')
+        break;
     }
+
   buf[pos] = '\0';
   return (ssize_t)pos;
 }
