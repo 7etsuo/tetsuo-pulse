@@ -25,6 +25,9 @@
 #define SOCKET_SIMPLE_DEFAULT_MAX_REDIRECTS 5
 #define SOCKET_SIMPLE_MAX_HEADER_NAME_LEN 256
 
+/* Performance: Compile-time string length for header lookups */
+#define STRLEN_LIT(s) (sizeof(s) - 1)
+
 /* ============================================================================
  * Shared Global HTTP Client (Lazy Initialization)
  * ============================================================================
@@ -116,7 +119,8 @@ convert_response (SocketHTTPClient_Response *src,
     }
 
   /* Extract Content-Type header */
-  ct = SocketHTTP_Headers_get (src->headers, "Content-Type");
+  ct = SocketHTTP_Headers_get_n (src->headers, "Content-Type",
+                                  STRLEN_LIT ("Content-Type"));
   if (ct)
     {
       dst->content_type = strdup (ct);
@@ -130,7 +134,8 @@ convert_response (SocketHTTPClient_Response *src,
     }
 
   /* Extract Location header */
-  loc = SocketHTTP_Headers_get (src->headers, "Location");
+  loc = SocketHTTP_Headers_get_n (src->headers, "Location",
+                                   STRLEN_LIT ("Location"));
   if (loc)
     {
       dst->location = strdup (loc);
