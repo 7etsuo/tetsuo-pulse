@@ -46,13 +46,6 @@ static const char *skip_to_next_param(const char *p);
 #define skip_delimiters sockethttp_skip_delimiters
 #define skip_whitespace sockethttp_skip_whitespace
 #define is_token_boundary sockethttp_is_token_boundary
-
-static inline int
-is_auth_delimiter (char c)
-{
-  return c == ',' || c == ' ' || c == '\t';
-}
-
 static const char *
 advance_quoted_content (const char *p, char *out, size_t out_size)
 {
@@ -102,7 +95,7 @@ parse_token_value (const char *p, char *out, size_t out_size)
 {
   size_t i = 0;
 
-  while (*p && !is_auth_delimiter (*p) && i < out_size - 1)
+  while (!is_token_boundary (*p) && i < out_size - 1)
     out[i++] = *p++;
 
   out[i] = '\0';
@@ -137,7 +130,7 @@ parse_parameter_name (const char *p, char *name, size_t name_size)
 {
   size_t i = 0;
 
-  while (*p && *p != '=' && !is_auth_delimiter (*p) && i < name_size - 1)
+  while (*p && *p != '=' && !is_token_boundary (*p) && i < name_size - 1)
     name[i++] = *p++;
 
   name[i] = '\0';
@@ -299,16 +292,12 @@ httpclient_auth_basic_header (const char *username, const char *password,
       SOCKET_LOG_WARN_MSG (
           "Basic auth credentials too long: username='%.*s' password_len=%zu",
           (int)strnlen (username, 32), username, strlen (password));
-      SocketCrypto_secure_clear (credentials, sizeof (credentials));
       return -1;
     }
 
   base64_size = SocketCrypto_base64_encoded_size ((size_t)cred_len);
   if (HTTPCLIENT_BASIC_PREFIX_LEN + base64_size > output_size)
-    {
-      SocketCrypto_secure_clear (credentials, sizeof (credentials));
-      return -1;
-    }
+    return -1;
 
   /* Write prefix followed by base64-encoded credentials */
   memcpy (output, HTTPCLIENT_BASIC_PREFIX, HTTPCLIENT_BASIC_PREFIX_LEN);
@@ -319,18 +308,7 @@ httpclient_auth_basic_header (const char *username, const char *password,
                                     output_size - HTTPCLIENT_BASIC_PREFIX_LEN);
   SocketCrypto_secure_clear (credentials, sizeof (credentials));
 
-  if (encoded_len < 0)
-    {
-      SocketCrypto_secure_clear (output, output_size);
-      return -1;
-    }
-
-  /* SECURITY NOTE: The output buffer now contains sensitive base64-encoded
-   * credentials. Callers MUST use httpclient_auth_clear_header() to securely
-   * clear the output buffer when it is no longer needed to prevent credential
-   * leakage through memory dumps or debugging sessions. */
-
-  return 0;
+  return (encoded_len < 0) ? -1 : 0;
 }
 
 int
@@ -359,17 +337,7 @@ httpclient_auth_bearer_header (const char *token, char *output,
   memcpy (output + HTTPCLIENT_BEARER_PREFIX_LEN, token, token_len);
   output[HTTPCLIENT_BEARER_PREFIX_LEN + token_len] = '\0';
 
-  /* SECURITY NOTE: The output buffer now contains sensitive bearer token.
-   * Callers MUST use httpclient_auth_clear_header() to securely clear
-   * the output buffer when it is no longer needed. */
-
   return 0;
-}
-
-static inline const char *
-get_digest_algorithm_name (int use_sha256)
-{
-  return use_sha256 ? "SHA-256" : "MD5";
 }
 
 static int
@@ -384,7 +352,7 @@ format_digest_header_with_qop (const char *username, const char *realm,
                   "Digest username=\"%s\", realm=\"%s\", nonce=\"%s\", "
                   "uri=\"%s\", algorithm=%s, qop=%s, nc=%s, "
                   "cnonce=\"%s\", response=\"%s\"",
-                  username, realm, nonce, uri, get_digest_algorithm_name (use_sha256),
+                  username, realm, nonce, uri, use_sha256 ? "SHA-256" : "MD5",
                   qop, nc, cnonce, response_hex);
 
   return (written < 0 || (size_t)written >= output_size) ? -1 : 0;
@@ -400,7 +368,7 @@ format_digest_header_no_qop (const char *username, const char *realm,
       = snprintf (output, output_size,
                   "Digest username=\"%s\", realm=\"%s\", nonce=\"%s\", "
                   "uri=\"%s\", algorithm=%s, response=\"%s\"",
-                  username, realm, nonce, uri, get_digest_algorithm_name (use_sha256),
+                  username, realm, nonce, uri, use_sha256 ? "SHA-256" : "MD5",
                   response_hex);
 
   return (written < 0 || (size_t)written >= output_size) ? -1 : 0;
@@ -536,8 +504,10 @@ generate_cnonce (char *cnonce, size_t size)
 
   if (SocketCrypto_random_bytes (random_bytes, sizeof (random_bytes)) != 0)
     {
-      SOCKET_LOG_ERROR_MSG ("Failed to generate secure random bytes for cnonce");
-      RAISE (SocketHTTPClient_Failed);
+      uint64_t t = (uint64_t)time (NULL);
+      memcpy (random_bytes, &t, sizeof (t));
+      memset (random_bytes + sizeof (t), 0,
+              sizeof (random_bytes) - sizeof (t));
     }
 
   SocketCrypto_hex_encode (random_bytes, sizeof (random_bytes), cnonce, 1);
@@ -632,13 +602,4 @@ httpclient_auth_is_stale_nonce (const char *www_authenticate)
   int is_stale = 0;
   parse_http_auth_params(www_authenticate, 0, check_stale_cb, &is_stale);
   return is_stale;
-}
-
-void
-httpclient_auth_clear_header (char *header, size_t header_size)
-{
-  assert (header != NULL);
-  assert (header_size > 0);
-
-  SocketCrypto_secure_clear (header, header_size);
 }
