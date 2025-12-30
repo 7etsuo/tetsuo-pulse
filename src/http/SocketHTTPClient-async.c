@@ -63,26 +63,54 @@ async_io_callback (Socket_T socket, ssize_t bytes, int err, void *user_data)
 }
 
 /**
- * @brief Wait for async operation to complete.
+ * @brief Wait for async operation to complete with timeout.
  *
  * Spins on completion flag while processing async completions.
  * Uses process_completions with small timeout to avoid busy wait.
+ * Returns error if operation exceeds client's configured timeout.
  *
- * @param client HTTP client with async context
+ * @param client HTTP client with async context and timeout config
  * @param state Completion state to wait on
- * @return 0 when completed
+ * @return 0 when completed successfully, -1 on timeout or error
  */
 static int
 wait_for_completion (SocketHTTPClient_T client, AsyncIOState *state)
 {
+  int elapsed_ms = 0;
+  int timeout_ms;
+  int ret;
+
   assert (client != NULL);
   assert (client->async != NULL);
   assert (state != NULL);
 
+  /* Use client's configured request timeout (default 60 seconds) */
+  timeout_ms = client->config.request_timeout_ms;
+  if (timeout_ms <= 0)
+    timeout_ms = HTTPCLIENT_DEFAULT_REQUEST_TIMEOUT_MS;
+
   while (!__atomic_load_n (&state->completed, __ATOMIC_ACQUIRE))
     {
+      /* Check timeout */
+      if (elapsed_ms >= timeout_ms)
+        {
+          SocketLog_emitf (SOCKET_LOG_WARN, "HTTPClient",
+                          "Async operation timed out after %d ms", elapsed_ms);
+          errno = ETIMEDOUT;
+          return -1;
+        }
+
       /* Process completions with 1ms timeout to avoid busy spin */
-      SocketAsync_process_completions (client->async, ASYNC_COMPLETION_POLL_TIMEOUT_MS);
+      ret = SocketAsync_process_completions (client->async,
+                                             ASYNC_COMPLETION_POLL_TIMEOUT_MS);
+      if (ret < 0)
+        {
+          SocketLog_emitf (SOCKET_LOG_ERROR, "HTTPClient",
+                          "Failed to process async completions");
+          return -1;
+        }
+
+      elapsed_ms += ASYNC_COMPLETION_POLL_TIMEOUT_MS;
     }
 
   return 0;
@@ -262,7 +290,11 @@ httpclient_io_send (SocketHTTPClient_T client, Socket_T socket,
     }
 
   /* Wait for completion */
-  wait_for_completion (client, &state);
+  if (wait_for_completion (client, &state) < 0)
+    {
+      /* Timeout or processing error - errno already set */
+      return -1;
+    }
 
   /* Check for error */
   if (state.error != 0)
@@ -319,7 +351,11 @@ httpclient_io_recv (SocketHTTPClient_T client, Socket_T socket,
     }
 
   /* Wait for completion */
-  wait_for_completion (client, &state);
+  if (wait_for_completion (client, &state) < 0)
+    {
+      /* Timeout or processing error - errno already set */
+      return -1;
+    }
 
   /* Check for error */
   if (state.error != 0)
