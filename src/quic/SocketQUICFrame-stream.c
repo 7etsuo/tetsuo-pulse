@@ -57,7 +57,7 @@ SocketQUICFrame_encode_reset_stream (uint64_t stream_id, uint64_t error_code,
   size_t error_code_len = SocketQUICVarInt_size (error_code);
   size_t final_size_len = SocketQUICVarInt_size (final_size);
 
-  if (stream_id_len == 0 || error_code_len == 0 || final_size_len == 0)
+  if (!VALIDATE_VARINT_SIZES (stream_id_len, error_code_len, final_size_len))
     return 0; /* Value exceeds varint maximum */
 
   size_t total_len = type_len + stream_id_len + error_code_len + final_size_len;
@@ -124,7 +124,7 @@ SocketQUICFrame_encode_stop_sending (uint64_t stream_id, uint64_t error_code,
   size_t stream_id_len = SocketQUICVarInt_size (stream_id);
   size_t error_code_len = SocketQUICVarInt_size (error_code);
 
-  if (stream_id_len == 0 || error_code_len == 0)
+  if (!VALIDATE_VARINT_SIZES (stream_id_len, error_code_len))
     return 0; /* Value exceeds varint maximum */
 
   size_t total_len = type_len + stream_id_len + error_code_len;
@@ -207,10 +207,10 @@ SocketQUICFrame_encode_stream (uint64_t stream_id, uint64_t offset,
   size_t offset_len = (offset > 0) ? SocketQUICVarInt_size (offset) : 0;
   size_t length_len = SocketQUICVarInt_size (len);
 
-  if (stream_id_len == 0 || length_len == 0)
+  if (!VALIDATE_VARINT_SIZES (stream_id_len, length_len))
     return 0; /* Value exceeds varint maximum */
 
-  if (offset > 0 && offset_len == 0)
+  if (offset > 0 && !VALIDATE_VARINT_SIZES (offset_len))
     return 0; /* Offset exceeds varint maximum */
 
   /* Prevent integer overflow in size calculation */

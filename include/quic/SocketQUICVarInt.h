@@ -177,6 +177,46 @@ encode_varint_field (uint64_t value, uint8_t *out, size_t *pos,
   return 1;
 }
 
+/**
+ * @brief Validate that multiple varint size calculations succeeded.
+ *
+ * This helper macro validates that all provided size values are non-zero,
+ * which indicates that SocketQUICVarInt_size() succeeded for all values.
+ * A zero return from SocketQUICVarInt_size() means the value exceeds the
+ * maximum representable varint (2^62-1).
+ *
+ * This reduces code duplication across frame encoding functions that need
+ * to validate multiple varint-encoded fields before calculating total size.
+ *
+ * @param ... Variable number of size_t values to validate (from SocketQUICVarInt_size).
+ *
+ * @return 1 if all sizes are non-zero (valid), 0 if any size is zero (invalid).
+ *
+ * Example:
+ * @code
+ * size_t stream_id_len = SocketQUICVarInt_size(stream_id);
+ * size_t error_code_len = SocketQUICVarInt_size(error_code);
+ * size_t final_size_len = SocketQUICVarInt_size(final_size);
+ *
+ * if (!VALIDATE_VARINT_SIZES(stream_id_len, error_code_len, final_size_len))
+ *   return 0; // One or more values exceed varint maximum
+ * @endcode
+ */
+#define VALIDATE_VARINT_SIZES(...)                                            \
+  ({                                                                          \
+    const size_t sizes[] = { __VA_ARGS__ };                                   \
+    int valid = 1;                                                            \
+    for (size_t i = 0; i < sizeof (sizes) / sizeof (sizes[0]); i++)          \
+      {                                                                       \
+        if (sizes[i] == 0)                                                    \
+          {                                                                   \
+            valid = 0;                                                        \
+            break;                                                            \
+          }                                                                   \
+      }                                                                       \
+    valid;                                                                    \
+  })
+
 /** @} */
 
 #endif /* SOCKETQUICVARINT_INCLUDED */

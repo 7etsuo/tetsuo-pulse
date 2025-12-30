@@ -92,7 +92,7 @@ SocketQUICFrame_encode_new_token (const uint8_t *token, size_t token_len,
   size_t type_len = 1;
   size_t token_len_varint = SocketQUICVarInt_size (token_len);
 
-  if (token_len_varint == 0)
+  if (!VALIDATE_VARINT_SIZES (token_len_varint))
     return 0; /* Token length exceeds varint maximum */
 
   /* Check for integer overflow in size calculation (CWE-190).
