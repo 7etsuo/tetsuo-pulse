@@ -672,6 +672,14 @@ SocketDNSoverHTTPS_query (T transport, const unsigned char *query, size_t len,
   assert (len >= DNS_HEADER_SIZE);
   assert (callback);
 
+  /* SECURITY: Validate query size before allocation to prevent memory
+   * exhaustion. DNS messages are limited to 65535 bytes (RFC 1035). */
+  if (len > DOH_MAX_MESSAGE_SIZE)
+    {
+      callback (NULL, NULL, 0, DOH_ERROR_INVALID, userdata);
+      return NULL;
+    }
+
   /* Validate request */
   int validation_error = validate_query_request (transport, callback);
   if (validation_error != DOH_ERROR_SUCCESS)
