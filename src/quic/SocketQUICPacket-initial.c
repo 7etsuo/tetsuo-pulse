@@ -390,7 +390,10 @@ SocketQUICInitial_derive_keys (const SocketQUICConnectionID_T *dcid,
   uint8_t initial_secret[SOCKET_CRYPTO_SHA256_SIZE];
   uint8_t client_secret[SOCKET_CRYPTO_SHA256_SIZE];
   uint8_t server_secret[SOCKET_CRYPTO_SHA256_SIZE];
-  SocketQUICInitial_Result result;
+  SocketQUICInitial_Result result = QUIC_INITIAL_ERROR_CRYPTO;
+  int initial_secret_valid = 0;
+  int client_secret_valid = 0;
+  int server_secret_valid = 0;
 
   if (dcid == NULL || keys == NULL)
     return QUIC_INITIAL_ERROR_NULL;
@@ -406,45 +409,38 @@ SocketQUICInitial_derive_keys (const SocketQUICConnectionID_T *dcid,
   if (hkdf_extract (salt, salt_len,
                     dcid->data, dcid->len,
                     initial_secret, SOCKET_CRYPTO_SHA256_SIZE) < 0)
-    {
-      SocketCrypto_secure_clear (initial_secret, sizeof (initial_secret));
-      return QUIC_INITIAL_ERROR_CRYPTO;
-    }
+    goto cleanup;
+
+  initial_secret_valid = 1;
 
   /* Step 2: Derive client secret */
   if (hkdf_expand_label (initial_secret, SOCKET_CRYPTO_SHA256_SIZE,
                           label_client_in, STRLEN_LIT (label_client_in),
                           NULL, 0,
                           client_secret, SOCKET_CRYPTO_SHA256_SIZE) < 0)
-    {
-      SocketCrypto_secure_clear (initial_secret, sizeof (initial_secret));
-      return QUIC_INITIAL_ERROR_CRYPTO;
-    }
+    goto cleanup;
+
+  client_secret_valid = 1;
 
   /* Step 3: Derive server secret */
   if (hkdf_expand_label (initial_secret, SOCKET_CRYPTO_SHA256_SIZE,
                           label_server_in, STRLEN_LIT (label_server_in),
                           NULL, 0,
                           server_secret, SOCKET_CRYPTO_SHA256_SIZE) < 0)
-    {
-      SocketCrypto_secure_clear (initial_secret, sizeof (initial_secret));
-      SocketCrypto_secure_clear (client_secret, sizeof (client_secret));
-      return QUIC_INITIAL_ERROR_CRYPTO;
-    }
+    goto cleanup;
 
-  /* Clear initial secret */
+  server_secret_valid = 1;
+
+  /* Clear initial secret (no longer needed) */
   SocketCrypto_secure_clear (initial_secret, sizeof (initial_secret));
+  initial_secret_valid = 0;
 
   /* Step 4: Derive client keys */
   if (derive_traffic_keys (client_secret, SOCKET_CRYPTO_SHA256_SIZE,
                             keys->client_key,
                             keys->client_iv,
                             keys->client_hp_key) < 0)
-    {
-      SocketCrypto_secure_clear (client_secret, sizeof (client_secret));
-      SocketCrypto_secure_clear (server_secret, sizeof (server_secret));
-      return QUIC_INITIAL_ERROR_CRYPTO;
-    }
+    goto cleanup;
 
   /* Step 5: Derive server keys */
   if (derive_traffic_keys (server_secret, SOCKET_CRYPTO_SHA256_SIZE,
@@ -452,18 +448,24 @@ SocketQUICInitial_derive_keys (const SocketQUICConnectionID_T *dcid,
                             keys->server_iv,
                             keys->server_hp_key) < 0)
     {
-      SocketCrypto_secure_clear (client_secret, sizeof (client_secret));
-      SocketCrypto_secure_clear (server_secret, sizeof (server_secret));
       SocketQUICInitialKeys_clear (keys);
-      return QUIC_INITIAL_ERROR_CRYPTO;
+      goto cleanup;
     }
 
-  /* Clear intermediate secrets */
-  SocketCrypto_secure_clear (client_secret, sizeof (client_secret));
-  SocketCrypto_secure_clear (server_secret, sizeof (server_secret));
-
+  /* Success - mark keys as initialized */
   keys->initialized = 1;
-  return QUIC_INITIAL_OK;
+  result = QUIC_INITIAL_OK;
+
+cleanup:
+  /* Centralized secure cleanup of all secrets */
+  if (initial_secret_valid)
+    SocketCrypto_secure_clear (initial_secret, sizeof (initial_secret));
+  if (client_secret_valid)
+    SocketCrypto_secure_clear (client_secret, sizeof (client_secret));
+  if (server_secret_valid)
+    SocketCrypto_secure_clear (server_secret, sizeof (server_secret));
+
+  return result;
 
 #else
   (void)dcid;
