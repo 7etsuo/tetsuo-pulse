@@ -1949,6 +1949,102 @@ asn1_time_to_time_t (const ASN1_TIME *asn1)
   return timegm (&tm_time);
 }
 
+/**
+ * @brief Extract certificate subject name
+ *
+ * @param cert X509 certificate
+ * @param buf Output buffer
+ * @param size Buffer size
+ */
+static void
+extract_cert_subject (X509 *cert, char *buf, size_t size)
+{
+  assert (cert);
+  assert (buf);
+  assert (size > 0);
+
+  X509_NAME *subject_name = X509_get_subject_name (cert);
+  if (subject_name)
+    X509_NAME_oneline (subject_name, buf, (int)size);
+}
+
+/**
+ * @brief Extract certificate issuer name
+ *
+ * @param cert X509 certificate
+ * @param buf Output buffer
+ * @param size Buffer size
+ */
+static void
+extract_cert_issuer (X509 *cert, char *buf, size_t size)
+{
+  assert (cert);
+  assert (buf);
+  assert (size > 0);
+
+  X509_NAME *issuer_name = X509_get_issuer_name (cert);
+  if (issuer_name)
+    X509_NAME_oneline (issuer_name, buf, (int)size);
+}
+
+/**
+ * @brief Extract certificate serial number as hex string
+ *
+ * @param cert X509 certificate
+ * @param buf Output buffer
+ * @param size Buffer size
+ */
+static void
+extract_cert_serial (X509 *cert, char *buf, size_t size)
+{
+  assert (cert);
+  assert (buf);
+  assert (size > 0);
+
+  ASN1_INTEGER *serial = X509_get_serialNumber (cert);
+  if (!serial)
+    return;
+
+  BIGNUM *bn = ASN1_INTEGER_to_BN (serial, NULL);
+  if (!bn)
+    return;
+
+  char *hex = BN_bn2hex (bn);
+  if (hex)
+    {
+      socket_util_safe_strncpy (buf, hex, size);
+      OPENSSL_free (hex);
+    }
+  BN_free (bn);
+}
+
+/**
+ * @brief Extract certificate SHA256 fingerprint
+ *
+ * @param cert X509 certificate
+ * @param buf Output buffer
+ * @param size Buffer size
+ */
+static void
+extract_cert_fingerprint (X509 *cert, char *buf, size_t size)
+{
+  assert (cert);
+  assert (buf);
+  assert (size > 0);
+
+  unsigned char md[EVP_MAX_MD_SIZE];
+  unsigned int md_len = 0;
+
+  if (!X509_digest (cert, EVP_sha256 (), md, &md_len))
+    return;
+
+  /* Limit to SHA256 digest size (32 bytes = 64 hex chars) */
+  int expected_size = EVP_MD_size (EVP_sha256 ());
+  size_t hash_len
+      = (md_len > (unsigned)expected_size) ? (size_t)expected_size : md_len;
+  SocketCrypto_hex_encode (md, hash_len, buf, size);
+}
+
 int
 SocketTLS_get_peer_cert_info (Socket_T socket, SocketTLS_CertInfo *info)
 {
@@ -1965,15 +2061,10 @@ SocketTLS_get_peer_cert_info (Socket_T socket, SocketTLS_CertInfo *info)
   if (!cert)
     return 0; /* No peer certificate */
 
-  /* Subject */
-  X509_NAME *subject_name = X509_get_subject_name (cert);
-  if (subject_name)
-    X509_NAME_oneline (subject_name, info->subject, sizeof (info->subject));
-
-  /* Issuer */
-  X509_NAME *issuer_name = X509_get_issuer_name (cert);
-  if (issuer_name)
-    X509_NAME_oneline (issuer_name, info->issuer, sizeof (info->issuer));
+  extract_cert_subject (cert, info->subject, sizeof (info->subject));
+  extract_cert_issuer (cert, info->issuer, sizeof (info->issuer));
+  extract_cert_serial (cert, info->serial, sizeof (info->serial));
+  extract_cert_fingerprint (cert, info->fingerprint, sizeof (info->fingerprint));
 
   /* Validity period */
   info->not_before = asn1_time_to_time_t (X509_get0_notBefore (cert));
@@ -1981,36 +2072,6 @@ SocketTLS_get_peer_cert_info (Socket_T socket, SocketTLS_CertInfo *info)
 
   /* Version (0-indexed in X509, add 1 for standard numbering) */
   info->version = (int)X509_get_version (cert) + 1;
-
-  /* Serial number */
-  ASN1_INTEGER *serial = X509_get_serialNumber (cert);
-  if (serial)
-    {
-      BIGNUM *bn = ASN1_INTEGER_to_BN (serial, NULL);
-      if (bn)
-        {
-          char *hex = BN_bn2hex (bn);
-          if (hex)
-            {
-              socket_util_safe_strncpy (info->serial, hex, sizeof (info->serial));
-              OPENSSL_free (hex);
-            }
-          BN_free (bn);
-        }
-    }
-
-  /* SHA256 fingerprint using SocketCrypto_hex_encode for safety */
-  unsigned char md[EVP_MAX_MD_SIZE];
-  unsigned int md_len = 0;
-  if (X509_digest (cert, EVP_sha256 (), md, &md_len))
-    {
-      /* Limit to SHA256 digest size (32 bytes = 64 hex chars) */
-      int expected_size = EVP_MD_size (EVP_sha256 ());
-      size_t hash_len
-          = (md_len > (unsigned)expected_size) ? (size_t)expected_size : md_len;
-      SocketCrypto_hex_encode (md, hash_len, info->fingerprint,
-                               sizeof (info->fingerprint));
-    }
 
   X509_free (cert);
   return 1;
