@@ -30,6 +30,9 @@
 /* PRIORITY_UPDATE frame minimum payload size: 4 bytes for stream ID */
 #define PRIORITY_UPDATE_MIN_PAYLOAD_SIZE 4
 
+/* Stream ID size in PRIORITY_UPDATE payload (always 4 bytes) */
+#define PRIORITY_UPDATE_STREAM_ID_SIZE 4
+
 void
 SocketHTTP2_Priority_init (SocketHTTP2_Priority *priority)
 {
@@ -390,7 +393,7 @@ SocketHTTP2_send_priority_update (SocketHTTP2_Conn_T conn, uint32_t stream_id,
     return -1;
 
   /* Build payload: Prioritized Stream ID (4 bytes) + Priority Field Value */
-  payload_len = 4 + (size_t)priority_len;
+  payload_len = PRIORITY_UPDATE_STREAM_ID_SIZE + (size_t)priority_len;
   if (payload_len > sizeof (payload))
     return -1;
 
@@ -399,7 +402,7 @@ SocketHTTP2_send_priority_update (SocketHTTP2_Conn_T conn, uint32_t stream_id,
 
   /* Copy priority field value */
   if (priority_len > 0)
-    memcpy (payload + 4, priority_field, (size_t)priority_len);
+    memcpy (payload + PRIORITY_UPDATE_STREAM_ID_SIZE, priority_field, (size_t)priority_len);
 
   /* Build frame header */
   header.length = (uint32_t)payload_len;
@@ -472,8 +475,8 @@ http2_process_priority_update (SocketHTTP2_Conn_T conn,
   SocketHTTP2_Priority_init (&priority);
   if (header->length > PRIORITY_UPDATE_MIN_PAYLOAD_SIZE)
     {
-      const char *priority_value = (const char *)(payload + 4);
-      size_t priority_len = header->length - 4;
+      const char *priority_value = (const char *)(payload + PRIORITY_UPDATE_STREAM_ID_SIZE);
+      size_t priority_len = header->length - PRIORITY_UPDATE_STREAM_ID_SIZE;
 
       if (SocketHTTP2_Priority_parse (priority_value, priority_len, &priority)
           < 0)
