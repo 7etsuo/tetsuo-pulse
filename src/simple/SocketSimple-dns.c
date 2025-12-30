@@ -130,6 +130,8 @@ convert_addrinfo_to_result (struct addrinfo *res, SocketSimple_DNSResult *result
  * ============================================================================
  */
 
+#define SOCKET_SIMPLE_DNS_DEFAULT_TIMEOUT_MS 5000
+
 int
 Socket_simple_dns_resolve_timeout (const char *hostname,
                                    SocketSimple_DNSResult *result,
@@ -180,7 +182,7 @@ Socket_simple_dns_resolve_timeout (const char *hostname,
 int
 Socket_simple_dns_resolve (const char *hostname, SocketSimple_DNSResult *result)
 {
-  return Socket_simple_dns_resolve_timeout (hostname, result, 5000);
+  return Socket_simple_dns_resolve_timeout (hostname, result, SOCKET_SIMPLE_DNS_DEFAULT_TIMEOUT_MS);
 }
 
 int
@@ -228,7 +230,7 @@ Socket_simple_dns_lookup4 (const char *hostname, char *buf, size_t len)
   SocketCommon_setup_hints (&hints, SOCK_STREAM, 0);
   hints.ai_family = AF_INET; /* Override for IPv4 only */
 
-  TRY { res = SocketDNS_resolve_sync (dns, hostname, 0, &hints, 5000); }
+  TRY { res = SocketDNS_resolve_sync (dns, hostname, 0, &hints, SOCKET_SIMPLE_DNS_DEFAULT_TIMEOUT_MS); }
   EXCEPT (SocketDNS_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_DNS, "DNS resolution failed");
@@ -298,7 +300,7 @@ Socket_simple_dns_lookup6 (const char *hostname, char *buf, size_t len)
   SocketCommon_setup_hints (&hints, SOCK_STREAM, 0);
   hints.ai_family = AF_INET6; /* Override for IPv6 only */
 
-  TRY { res = SocketDNS_resolve_sync (dns, hostname, 0, &hints, 5000); }
+  TRY { res = SocketDNS_resolve_sync (dns, hostname, 0, &hints, SOCKET_SIMPLE_DNS_DEFAULT_TIMEOUT_MS); }
   EXCEPT (SocketDNS_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_DNS, "DNS resolution failed");
