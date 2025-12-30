@@ -169,6 +169,35 @@ Socket_simple_pool_free (SocketSimple_Pool_T *pool)
  * ============================================================================
  */
 
+/**
+ * @brief Helper: Validate pool and socket for operations
+ *
+ * @param pool Pool to validate
+ * @param sock Socket to validate
+ * @param custom_msg Custom error message for invalid socket (NULL for default)
+ * @return 0 on success, -1 on validation failure
+ */
+static int
+validate_pool_and_socket (SocketSimple_Pool_T pool, SocketSimple_Socket_T sock,
+                          const char *custom_msg)
+{
+  if (!pool || !sock)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                        "Invalid pool or socket");
+      return -1;
+    }
+
+  if (!sock->socket)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                        custom_msg ? custom_msg : "Invalid socket");
+      return -1;
+    }
+
+  return 0;
+}
+
 SocketSimple_Conn_T
 Socket_simple_pool_add (SocketSimple_Pool_T pool, SocketSimple_Socket_T sock)
 {
@@ -176,19 +205,10 @@ Socket_simple_pool_add (SocketSimple_Pool_T pool, SocketSimple_Socket_T sock)
 
   Socket_simple_clear_error ();
 
-  if (!pool || !sock)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Invalid pool or socket");
-      return NULL;
-    }
-
-  if (!sock->socket)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "UDP sockets not supported in pool");
-      return NULL;
-    }
+  if (validate_pool_and_socket (pool, sock,
+                                "UDP sockets not supported in pool")
+      != 0)
+    return NULL;
 
   TRY { conn = SocketPool_add (pool->pool, sock->socket); }
   EXCEPT (SocketPool_Failed)
@@ -227,18 +247,8 @@ Socket_simple_pool_get (SocketSimple_Pool_T pool, SocketSimple_Socket_T sock)
 {
   Socket_simple_clear_error ();
 
-  if (!pool || !sock)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Invalid pool or socket");
-      return NULL;
-    }
-
-  if (!sock->socket)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid socket");
-      return NULL;
-    }
+  if (validate_pool_and_socket (pool, sock, NULL) != 0)
+    return NULL;
 
   Connection_T conn = SocketPool_get (pool->pool, sock->socket);
   if (!conn)
@@ -256,18 +266,8 @@ Socket_simple_pool_remove (SocketSimple_Pool_T pool,
 {
   Socket_simple_clear_error ();
 
-  if (!pool || !sock)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Invalid pool or socket");
-      return -1;
-    }
-
-  if (!sock->socket)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid socket");
-      return -1;
-    }
+  if (validate_pool_and_socket (pool, sock, NULL) != 0)
+    return -1;
 
   /* Get the simple conn handle to free it */
   Connection_T conn = SocketPool_get (pool->pool, sock->socket);
