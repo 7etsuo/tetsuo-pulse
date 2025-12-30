@@ -377,6 +377,8 @@ int
 Socket_simple_timer_cancel_all (SocketSimple_Poll_T poll
                                  __attribute__ ((unused)))
 {
+  Socket_simple_clear_error ();
+
   /* Not currently supported - timers must be cancelled individually. */
   simple_set_error (SOCKET_SIMPLE_ERR_UNSUPPORTED,
                     "Cancel all timers not supported");
@@ -390,6 +392,8 @@ Socket_simple_timer_cancel_all (SocketSimple_Poll_T poll
 int
 Socket_simple_timer_count (SocketSimple_Poll_T poll __attribute__ ((unused)))
 {
+  Socket_simple_clear_error ();
+
   /* Timer count not available from core API. */
   simple_set_error (SOCKET_SIMPLE_ERR_UNSUPPORTED,
                     "Timer count not supported");
