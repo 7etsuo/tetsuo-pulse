@@ -75,8 +75,7 @@ static const SocketErrorMapping error_mappings[] = {
   { EPERM, SOCKET_ERROR_UNKNOWN, SOCKET_ERROR_CATEGORY_APPLICATION, 0 },
 };
 
-#define NUM_ERROR_MAPPINGS                                                    \
-  (sizeof (error_mappings) / sizeof (error_mappings[0]))
+#define NUM_ERROR_MAPPINGS ARRAY_SIZE (error_mappings)
 
 /* O(n) linear scan of ~30 entries - acceptable for small table */
 static const SocketErrorMapping *
@@ -151,15 +150,11 @@ static const char *const socket_error_category_names[] = {
   "NETWORK", "PROTOCOL", "APPLICATION", "TIMEOUT", "RESOURCE", "UNKNOWN"
 };
 
-_Static_assert (sizeof (socket_error_category_names)
-                    / sizeof (socket_error_category_names[0])
-                == 6,
+#define NUM_ERROR_CATEGORIES ARRAY_SIZE (socket_error_category_names)
+
+_Static_assert (NUM_ERROR_CATEGORIES == SOCKET_ERROR_CATEGORY_COUNT,
                 "Category names array size must match number of "
                 "SocketErrorCategory enum values");
-
-#define NUM_ERROR_CATEGORIES                                                      \
-  (sizeof (socket_error_category_names)                                          \
-   / sizeof (socket_error_category_names[0]))
 
 SocketErrorCategory
 SocketError_categorize_errno (int err)
