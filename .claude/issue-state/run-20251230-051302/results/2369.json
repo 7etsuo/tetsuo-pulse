@@ -1,0 +1,14 @@
+{
+  "issue": 2369,
+  "status": "already_resolved",
+  "resolution": "Duplicate of issue #2350, which was fixed by PR #2525 (commit ec88103b). All magic number 4 occurrences have been replaced with PRIORITY_UPDATE_STREAM_ID_SIZE constant in src/http/SocketHTTP2-priority.c at lines 396, 405, 478, and 479.",
+  "duplicate_of": 2350,
+  "fixed_by_pr": 2525,
+  "fixed_by_commit": "ec88103b",
+  "verification": {
+    "file": "src/http/SocketHTTP2-priority.c",
+    "constant_used": "PRIORITY_UPDATE_STREAM_ID_SIZE",
+    "locations_fixed": [396, 405, 478, 479],
+    "remaining_magic_numbers": 0
+  }
+}

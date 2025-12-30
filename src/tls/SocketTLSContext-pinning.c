@@ -279,23 +279,11 @@ SocketTLSContext_add_pin_hex (T ctx, const char *hex_hash)
   pthread_mutex_unlock (&ctx->pinning.lock);
 }
 
-void
-SocketTLSContext_add_pin_from_cert (T ctx, const char *cert_file)
+/* Helper 1: Secure file opening with symlink protection */
+static FILE *
+open_cert_file_secure (const char *cert_file)
 {
-  assert (ctx);
-
-  if (!cert_file || !*cert_file)
-    raise_invalid_pin_param ("Certificate file path cannot be NULL or empty");
-
-  if (!tls_validate_file_path (cert_file))
-    {
-      RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
-                           "Invalid certificate file path: '%.200s'",
-                           cert_file);
-    }
-
-  /* O_NOFOLLOW: symlink protection */
-  errno = 0; /* Clear errno before security-critical syscall */
+  errno = 0;
   int fd = open (cert_file, O_RDONLY | O_NOFOLLOW);
   if (fd == -1)
     {
@@ -317,10 +305,15 @@ SocketTLSContext_add_pin_from_cert (T ctx, const char *cert_file)
       RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
                            "Cannot fdopen certificate file descriptor");
     }
+  return fp;
+}
 
+/* Helper 2: Validate certificate file size */
+static off_t
+validate_cert_file_size (FILE *fp)
+{
   if (fseeko (fp, 0, SEEK_END) != 0)
     {
-      fclose (fp);
       RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
                            "Cannot seek in certificate file");
     }
@@ -328,7 +321,6 @@ SocketTLSContext_add_pin_from_cert (T ctx, const char *cert_file)
   off_t fsize = ftello (fp);
   if (fsize < 0 || fseeko (fp, 0, SEEK_SET) != 0)
     {
-      fclose (fp);
       RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
                            "Cannot determine certificate file size");
     }
@@ -337,19 +329,23 @@ SocketTLSContext_add_pin_from_cert (T ctx, const char *cert_file)
   if (usize > SOCKET_TLS_MAX_CERT_FILE_SIZE
       || !SocketSecurity_check_size (usize))
     {
-      fclose (fp);
       RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
                            "Certificate file too large: %ld bytes (max %zu)",
                            fsize, (size_t)SOCKET_TLS_MAX_CERT_FILE_SIZE);
     }
+  return fsize;
+}
 
+/* Helper 3: Parse certificate and extract SPKI hash */
+static void
+parse_cert_and_extract_pin (FILE *fp, unsigned char *hash)
+{
   X509 *cert = PEM_read_X509 (fp, NULL, NULL, NULL);
-  fclose (fp); /* Closes underlying fd */
-
   if (!cert)
-    ctx_raise_openssl_error ("Failed to parse certificate file");
+    {
+      ctx_raise_openssl_error ("Failed to parse certificate file");
+    }
 
-  unsigned char hash[SOCKET_TLS_PIN_HASH_LEN];
   if (tls_pinning_extract_spki_hash (cert, hash) != 0)
     {
       X509_free (cert);
@@ -358,6 +354,29 @@ SocketTLSContext_add_pin_from_cert (T ctx, const char *cert_file)
     }
 
   X509_free (cert);
+}
+
+void
+SocketTLSContext_add_pin_from_cert (T ctx, const char *cert_file)
+{
+  assert (ctx);
+
+  if (!cert_file || !*cert_file)
+    raise_invalid_pin_param ("Certificate file path cannot be NULL or empty");
+
+  if (!tls_validate_file_path (cert_file))
+    {
+      RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
+                           "Invalid certificate file path: '%.200s'",
+                           cert_file);
+    }
+
+  FILE *fp = open_cert_file_secure (cert_file);
+  validate_cert_file_size (fp);
+
+  unsigned char hash[SOCKET_TLS_PIN_HASH_LEN];
+  parse_cert_and_extract_pin (fp, hash);
+  fclose (fp);
 
   pthread_mutex_lock (&ctx->pinning.lock);
   insert_pin (ctx, hash);
