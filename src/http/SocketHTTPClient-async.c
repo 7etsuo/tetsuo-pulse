@@ -275,7 +275,9 @@ httpclient_io_send (SocketHTTPClient_T client, Socket_T socket,
     return sync_send_fallback (socket, data, len);
 
   /* Initialize completion state */
-  memset ((void *)&state, 0, sizeof (state));
+  state.completed = 0;
+  state.bytes = 0;
+  state.error = 0;
 
   /* Submit async send */
   req_id = SocketAsync_send (client->async, socket, data, len,
@@ -336,7 +338,9 @@ httpclient_io_recv (SocketHTTPClient_T client, Socket_T socket,
     return sync_recv_fallback (socket, buf, len);
 
   /* Initialize completion state */
-  memset ((void *)&state, 0, sizeof (state));
+  state.completed = 0;
+  state.bytes = 0;
+  state.error = 0;
 
   /* Submit async recv */
   req_id = SocketAsync_recv (client->async, socket, buf, len,
