@@ -738,6 +738,47 @@ cleanup:
   return result;
 }
 
+/**
+ * @brief Select appropriate keys based on packet direction.
+ *
+ * For protect operations (encryption), is_client indicates the sender:
+ * - is_client=1: Use client keys (client sending to server)
+ * - is_client=0: Use server keys (server sending to client)
+ *
+ * For unprotect operations (decryption), is_client indicates the receiver:
+ * - is_client=1: Use server keys (client receiving from server)
+ * - is_client=0: Use client keys (server receiving from client)
+ *
+ * @param keys Key material for both client and server
+ * @param is_client 1 if using client perspective, 0 for server perspective
+ * @param for_sender 1 if selecting sender keys, 0 if selecting receiver keys
+ * @param out_key Output: selected encryption key
+ * @param out_iv Output: selected IV
+ * @param out_hp_key Output: selected header protection key
+ */
+static void
+select_protection_keys (const SocketQUICInitialKeys_T *keys,
+                        int is_client, int for_sender,
+                        const uint8_t **out_key,
+                        const uint8_t **out_iv,
+                        const uint8_t **out_hp_key)
+{
+  int use_client_keys = (for_sender ? is_client : !is_client);
+
+  if (use_client_keys)
+    {
+      *out_key = keys->client_key;
+      *out_iv = keys->client_iv;
+      *out_hp_key = keys->client_hp_key;
+    }
+  else
+    {
+      *out_key = keys->server_key;
+      *out_iv = keys->server_iv;
+      *out_hp_key = keys->server_hp_key;
+    }
+}
+
 #endif /* SOCKET_HAS_TLS */
 
 SocketQUICInitial_Result
@@ -765,18 +806,7 @@ SocketQUICInitial_protect (uint8_t *packet, size_t *packet_len,
     return QUIC_INITIAL_ERROR_CRYPTO;
 
   /* Select keys based on sender */
-  if (is_client)
-    {
-      key = keys->client_key;
-      iv = keys->client_iv;
-      hp_key = keys->client_hp_key;
-    }
-  else
-    {
-      key = keys->server_key;
-      iv = keys->server_iv;
-      hp_key = keys->server_hp_key;
-    }
+  select_protection_keys (keys, is_client, 1, &key, &iv, &hp_key);
 
   /* Get packet number from header */
   pn_length = (packet[0] & 0x03) + 1;
@@ -852,20 +882,7 @@ SocketQUICInitial_unprotect (uint8_t *packet, size_t packet_len,
     return QUIC_INITIAL_ERROR_CRYPTO;
 
   /* Select keys based on receiver (opposite of sender) */
-  if (is_client)
-    {
-      /* Client receiving from server */
-      key = keys->server_key;
-      iv = keys->server_iv;
-      hp_key = keys->server_hp_key;
-    }
-  else
-    {
-      /* Server receiving from client */
-      key = keys->client_key;
-      iv = keys->client_iv;
-      hp_key = keys->client_hp_key;
-    }
+  select_protection_keys (keys, is_client, 0, &key, &iv, &hp_key);
 
   /* Remove header protection and extract packet number length */
   if (remove_header_protection (packet, pn_offset, packet_len,
