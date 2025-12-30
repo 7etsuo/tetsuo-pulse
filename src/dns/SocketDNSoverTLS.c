@@ -1206,42 +1206,36 @@ SocketDNSoverTLS_stats (T transport, SocketDNSoverTLS_Stats *stats)
   *stats = transport->stats;
 }
 
+/* Dispatch table for error messages */
+static const char *error_messages[] = {
+  [0]  = "Success",
+  [1]  = "Query timeout",
+  [2]  = "Query cancelled",
+  [3]  = "Network error",
+  [4]  = "TLS handshake failed",
+  [5]  = "Certificate verification failed",
+  [6]  = "TLS I/O error",
+  [7]  = "Invalid response",
+  [8]  = "No server configured",
+  [9]  = "Server returned FORMERR",
+  [10] = "Server returned SERVFAIL",
+  [11] = "Domain does not exist",
+  [12] = "Server refused query",
+  [13] = "SPKI pin mismatch",
+};
+
+#define ERROR_MESSAGE_COUNT (sizeof (error_messages) / sizeof (error_messages[0]))
+
 const char *
 SocketDNSoverTLS_strerror (int error)
 {
-  switch (error)
-    {
-    case DOT_ERROR_SUCCESS:
-      return "Success";
-    case DOT_ERROR_TIMEOUT:
-      return "Query timeout";
-    case DOT_ERROR_CANCELLED:
-      return "Query cancelled";
-    case DOT_ERROR_NETWORK:
-      return "Network error";
-    case DOT_ERROR_TLS_HANDSHAKE:
-      return "TLS handshake failed";
-    case DOT_ERROR_TLS_VERIFY:
-      return "Certificate verification failed";
-    case DOT_ERROR_TLS_IO:
-      return "TLS I/O error";
-    case DOT_ERROR_INVALID:
-      return "Invalid response";
-    case DOT_ERROR_NO_SERVER:
-      return "No server configured";
-    case DOT_ERROR_FORMERR:
-      return "Server returned FORMERR";
-    case DOT_ERROR_SERVFAIL:
-      return "Server returned SERVFAIL";
-    case DOT_ERROR_NXDOMAIN:
-      return "Domain does not exist";
-    case DOT_ERROR_REFUSED:
-      return "Server refused query";
-    case DOT_ERROR_SPKI_MISMATCH:
-      return "SPKI pin mismatch";
-    default:
-      return "Unknown error";
-    }
+  /* Convert error code to array index (error codes are negative or zero) */
+  int index = (error <= 0) ? -error : error;
+
+  if (index >= (int) ERROR_MESSAGE_COUNT)
+    return "Unknown error";
+
+  return error_messages[index];
 }
 
 #endif /* SOCKET_HAS_TLS */
