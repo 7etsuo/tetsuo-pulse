@@ -84,8 +84,6 @@ timer_add_common (SocketSimple_Poll_T poll, int64_t time_ms,
                   int allow_zero, const char *time_error_msg,
                   TimerCreateFn create_fn, const char *fail_msg)
 {
-  volatile SocketTimer_T core_timer = NULL;
-
   Socket_simple_clear_error ();
 
   if (!poll)
@@ -128,9 +126,8 @@ timer_add_common (SocketSimple_Poll_T poll, int64_t time_ms,
 
   TRY
   {
-    core_timer
+    handle->core_timer
         = create_fn (core_poll, time_ms, timer_callback_wrapper, handle);
-    handle->core_timer = core_timer;
   }
   EXCEPT (SocketTimer_Failed)
   {
