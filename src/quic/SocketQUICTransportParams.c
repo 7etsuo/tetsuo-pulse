@@ -1044,7 +1044,7 @@ decode_single_param (const uint8_t *data, size_t len, size_t *pos,
    * Parameters with ID >= 64 bypass duplicate detection, but this is
    * acceptable since RFC 9000 permits ignoring unknown parameters.
    */
-  if (param_id <= 63)
+  if (param_id <= QUIC_TP_DUPLICATE_CHECK_MAX_ID)
     {
       uint64_t mask = 1ULL << param_id;
       if (*seen_params & mask)
