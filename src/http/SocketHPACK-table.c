@@ -211,6 +211,46 @@ hpack_validate_header_ptr (SocketHPACK_Header *header, const char *func)
   return HPACK_OK;
 }
 
+static SocketHPACK_Result
+hpack_validate_table_index (const SocketHPACK_Table_T table, size_t index)
+{
+  if (index == 0 || index > table->count)
+    {
+      SOCKET_LOG_WARN_MSG (
+          "SocketHPACK Table_get: invalid index %zu (valid range 1-%zu)", index,
+          table->count);
+      return HPACK_ERROR_INVALID_INDEX;
+    }
+
+  if (index - 1 >= table->capacity)
+    {
+      SOCKET_LOG_ERROR_MSG (
+          "SocketHPACK Table_get: offset %zu exceeds capacity %zu", index - 1,
+          table->capacity);
+      return HPACK_ERROR_INVALID_INDEX;
+    }
+
+  return HPACK_OK;
+}
+
+static inline size_t
+hpack_table_index_to_slot (const SocketHPACK_Table_T table, size_t index)
+{
+  size_t offset = index - 1;
+  return (table->tail + table->capacity - 1 - offset) & (table->capacity - 1);
+}
+
+static void
+hpack_populate_header_from_dynamic (const HPACK_DynamicEntry *entry,
+                                    SocketHPACK_Header *header)
+{
+  header->name = entry->name;
+  header->name_len = entry->name_len;
+  header->value = entry->value;
+  header->value_len = entry->value_len;
+  header->never_index = 0;
+}
+
 /* Case-insensitive comparison with explicit lengths (ASCII, for HTTP headers) */
 static int
 hpack_strcasecmp (const char *a, size_t a_len, const char *b, size_t b_len)
@@ -544,9 +584,6 @@ SocketHPACK_Result
 SocketHPACK_Table_get (SocketHPACK_Table_T table, size_t index,
                        SocketHPACK_Header *header)
 {
-  size_t actual_index;
-  size_t offset;
-  HPACK_DynamicEntry *entry;
   SocketHPACK_Result res;
 
   res = hpack_validate_table_strict (table, "Table_get");
@@ -557,31 +594,12 @@ SocketHPACK_Table_get (SocketHPACK_Table_T table, size_t index,
   if (res != HPACK_OK)
     return res;
 
-  if (index == 0 || index > table->count)
-    {
-      SOCKET_LOG_WARN_MSG (
-          "SocketHPACK Table_get: invalid index %zu (valid range 1-%zu)", index,
-          table->count);
-      return HPACK_ERROR_INVALID_INDEX;
-    }
+  res = hpack_validate_table_index (table, index);
+  if (res != HPACK_OK)
+    return res;
 
-  offset = index - 1;
-  if (offset >= table->capacity)
-    {
-      SOCKET_LOG_ERROR_MSG (
-          "SocketHPACK Table_get: offset %zu exceeds capacity %zu", offset,
-          table->capacity);
-      return HPACK_ERROR_INVALID_INDEX;
-    }
-
-  actual_index = (table->tail + table->capacity - 1 - offset) & (table->capacity - 1);
-  entry = &table->entries[actual_index];
-
-  header->name = entry->name;
-  header->name_len = entry->name_len;
-  header->value = entry->value;
-  header->value_len = entry->value_len;
-  header->never_index = 0;
+  size_t slot = hpack_table_index_to_slot (table, index);
+  hpack_populate_header_from_dynamic (&table->entries[slot], header);
 
   return HPACK_OK;
 }
@@ -637,8 +655,8 @@ SocketHPACK_Table_find (SocketHPACK_Table_T table, const char *name,
 
   for (i = 0; i < table->count; i++)
     {
-      size_t actual_index = (table->tail - 1 - i) & (table->capacity - 1);
-      HPACK_DynamicEntry *entry = &table->entries[actual_index];
+      size_t slot = hpack_table_index_to_slot (table, i + 1);
+      HPACK_DynamicEntry *entry = &table->entries[slot];
       int match
           = hpack_match_entry (entry->name, entry->name_len, entry->value,
                                entry->value_len, name, name_len, value,
