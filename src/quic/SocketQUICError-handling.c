@@ -114,7 +114,8 @@ SocketQUIC_send_connection_close (SocketQUICConnection_T conn, uint64_t code,
   /* Copy reason phrase */
   if (reason_len > 0)
     {
-      if (offset + reason_len > out_len)
+      /* Prevent integer overflow: check if reason_len > (out_len - offset) */
+      if (offset > out_len || reason_len > out_len - offset)
         return 0;
 
       memcpy (out + offset, reason, reason_len);
