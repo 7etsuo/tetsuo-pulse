@@ -550,6 +550,25 @@ httpclient_pool_cleanup_idle (HTTPPool *pool)
   pthread_mutex_unlock (&pool->mutex);
 }
 
+/* SECURITY: Store SNI hostname for TLS verification on connection reuse.
+ * This prevents hostname confusion attacks where a connection established
+ * for one hostname could be incorrectly reused for a different hostname.
+ * The stored hostname is verified on every pool_get() call before reuse.
+ */
+static void
+store_sni_hostname (HTTPPoolEntry *entry, const char *host, int is_secure)
+{
+  if (is_secure && host)
+    {
+      strncpy (entry->sni_hostname, host, sizeof (entry->sni_hostname) - 1);
+      entry->sni_hostname[sizeof (entry->sni_hostname) - 1] = '\0';
+    }
+  else
+    {
+      entry->sni_hostname[0] = '\0';
+    }
+}
+
 static void
 create_http1_entry_resources (HTTPPoolEntry *entry)
 {
@@ -590,17 +609,7 @@ init_http1_entry_fields (HTTPPoolEntry *entry, Socket_T socket,
   entry->closed = 0;
   entry->proto.h1.socket = socket;
 
-  /* SECURITY: Store SNI hostname for TLS verification on connection reuse.
-   * This prevents hostname confusion attacks where a connection established
-   * for one hostname could be incorrectly reused for a different hostname.
-   * The stored hostname is verified on every pool_get() call before reuse.
-   */
-  if (is_secure && host) {
-    strncpy(entry->sni_hostname, host, sizeof(entry->sni_hostname) - 1);
-    entry->sni_hostname[sizeof(entry->sni_hostname) - 1] = '\0';
-  } else {
-    entry->sni_hostname[0] = '\0';
-  }
+  store_sni_hostname (entry, host, is_secure);
 }
 
 static void
@@ -684,17 +693,7 @@ init_http2_entry_fields (HTTPPoolEntry *entry, Socket_T socket,
   entry->proto.h2.conn = NULL;
   entry->proto.h2.active_streams = 0;
 
-  /* SECURITY: Store SNI hostname for TLS verification on connection reuse.
-   * This prevents hostname confusion attacks where a connection established
-   * for one hostname could be incorrectly reused for a different hostname.
-   * The stored hostname is verified on every pool_get() call before reuse.
-   */
-  if (is_secure && host) {
-    strncpy(entry->sni_hostname, host, sizeof(entry->sni_hostname) - 1);
-    entry->sni_hostname[sizeof(entry->sni_hostname) - 1] = '\0';
-  } else {
-    entry->sni_hostname[0] = '\0';
-  }
+  store_sni_hostname (entry, host, is_secure);
 }
 
 static int
