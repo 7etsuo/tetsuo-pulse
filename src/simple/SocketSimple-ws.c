@@ -604,6 +604,39 @@ convert_ws_server_config (const SocketSimple_WSServerConfig *simple_config,
     }
 }
 
+/**
+ * @brief Perform WebSocket handshake with error handling.
+ *
+ * Executes the handshake polling loop and handles errors by freeing
+ * the WebSocket on failure.
+ *
+ * @param ws Pointer to volatile WebSocket handle
+ * @param exception_occurred Pointer to exception flag
+ * @return 0 on success, -1 on failure
+ */
+static int
+perform_ws_handshake (volatile SocketWS_T *ws, volatile int *exception_occurred)
+{
+  int handshake_result;
+
+  do
+    {
+      handshake_result = SocketWS_handshake (*ws);
+    }
+  while (handshake_result > 0);
+
+  if (handshake_result < 0)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_WS_PROTOCOL,
+                        "WebSocket handshake failed");
+      SocketWS_free ((SocketWS_T *)ws);
+      *exception_occurred = 1;
+      return -1;
+    }
+
+  return 0;
+}
+
 SocketSimple_WS_T
 Socket_simple_ws_accept (void *http_req,
                          const SocketSimple_WSServerConfig *config)
@@ -663,19 +696,9 @@ Socket_simple_ws_accept (void *http_req,
     if (ws)
       {
         /* Complete the handshake (sends 101 Switching Protocols) */
-        int handshake_result;
-        do
+        if (perform_ws_handshake (&ws, &exception_occurred) < 0)
           {
-            handshake_result = SocketWS_handshake (ws);
-          }
-        while (handshake_result > 0);
-
-        if (handshake_result < 0)
-          {
-            simple_set_error (SOCKET_SIMPLE_ERR_WS_PROTOCOL,
-                              "WebSocket handshake failed");
-            SocketWS_free ((SocketWS_T *)&ws);
-            exception_occurred = 1;
+            ws = NULL; /* Already freed by helper */
           }
       }
   }
@@ -793,19 +816,9 @@ Socket_simple_ws_accept_raw (void *sock, const char *ws_key,
     if (ws)
       {
         /* Complete the handshake (sends 101 Switching Protocols) */
-        int handshake_result;
-        do
+        if (perform_ws_handshake (&ws, &exception_occurred) < 0)
           {
-            handshake_result = SocketWS_handshake (ws);
-          }
-        while (handshake_result > 0);
-
-        if (handshake_result < 0)
-          {
-            simple_set_error (SOCKET_SIMPLE_ERR_WS_PROTOCOL,
-                              "WebSocket handshake failed");
-            SocketWS_free ((SocketWS_T *)&ws);
-            exception_occurred = 1;
+            ws = NULL; /* Already freed by helper */
           }
       }
   }
