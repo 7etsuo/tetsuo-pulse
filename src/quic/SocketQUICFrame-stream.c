@@ -24,6 +24,82 @@
 #include <sys/types.h>
 
 /* ============================================================================
+ * Helper Functions for Varint Size Calculation
+ * ============================================================================
+ */
+
+/**
+ * @brief Calculate total size for a 2-field frame (type + field1 + field2).
+ *
+ * This helper reduces code duplication in frame encoding functions that follow
+ * the pattern: 1-byte type + N varint fields. It calculates individual field
+ * sizes, validates them, and returns the total frame size.
+ *
+ * @param field1    First varint field value.
+ * @param field2    Second varint field value.
+ * @param f1_len    Output: encoded size of field1 (may be NULL).
+ * @param f2_len    Output: encoded size of field2 (may be NULL).
+ *
+ * @return Total frame size (1 + f1_len + f2_len), or 0 if any field exceeds
+ *         varint maximum (2^62-1).
+ */
+static inline size_t
+calculate_2field_size (uint64_t field1, uint64_t field2, size_t *f1_len,
+                        size_t *f2_len)
+{
+  size_t local_f1 = SocketQUICVarInt_size (field1);
+  size_t local_f2 = SocketQUICVarInt_size (field2);
+
+  if (local_f1 == 0 || local_f2 == 0)
+    return 0; /* Value exceeds varint maximum */
+
+  if (f1_len)
+    *f1_len = local_f1;
+  if (f2_len)
+    *f2_len = local_f2;
+
+  return 1 + local_f1 + local_f2;
+}
+
+/**
+ * @brief Calculate total size for a 3-field frame (type + field1 + field2 + field3).
+ *
+ * This helper reduces code duplication in frame encoding functions that follow
+ * the pattern: 1-byte type + N varint fields. It calculates individual field
+ * sizes, validates them, and returns the total frame size.
+ *
+ * @param field1    First varint field value.
+ * @param field2    Second varint field value.
+ * @param field3    Third varint field value.
+ * @param f1_len    Output: encoded size of field1 (may be NULL).
+ * @param f2_len    Output: encoded size of field2 (may be NULL).
+ * @param f3_len    Output: encoded size of field3 (may be NULL).
+ *
+ * @return Total frame size (1 + f1_len + f2_len + f3_len), or 0 if any field
+ *         exceeds varint maximum (2^62-1).
+ */
+static inline size_t
+calculate_3field_size (uint64_t field1, uint64_t field2, uint64_t field3,
+                        size_t *f1_len, size_t *f2_len, size_t *f3_len)
+{
+  size_t local_f1 = SocketQUICVarInt_size (field1);
+  size_t local_f2 = SocketQUICVarInt_size (field2);
+  size_t local_f3 = SocketQUICVarInt_size (field3);
+
+  if (local_f1 == 0 || local_f2 == 0 || local_f3 == 0)
+    return 0; /* Value exceeds varint maximum */
+
+  if (f1_len)
+    *f1_len = local_f1;
+  if (f2_len)
+    *f2_len = local_f2;
+  if (f3_len)
+    *f3_len = local_f3;
+
+  return 1 + local_f1 + local_f2 + local_f3;
+}
+
+/* ============================================================================
  * RESET_STREAM Frame Encoding (RFC 9000 Section 19.4)
  * ============================================================================
  *
@@ -51,16 +127,13 @@ SocketQUICFrame_encode_reset_stream (uint64_t stream_id, uint64_t error_code,
   if (!out)
     return 0;
 
-  /* Calculate required size: type + stream_id + error_code + final_size */
-  size_t type_len = 1;
-  size_t stream_id_len = SocketQUICVarInt_size (stream_id);
-  size_t error_code_len = SocketQUICVarInt_size (error_code);
-  size_t final_size_len = SocketQUICVarInt_size (final_size);
+  /* Calculate required size using helper: type + stream_id + error_code + final_size */
+  size_t total_len
+      = calculate_3field_size (stream_id, error_code, final_size, NULL, NULL,
+                                NULL);
 
-  if (stream_id_len == 0 || error_code_len == 0 || final_size_len == 0)
+  if (total_len == 0)
     return 0; /* Value exceeds varint maximum */
-
-  size_t total_len = type_len + stream_id_len + error_code_len + final_size_len;
 
   if (out_size < total_len)
     return 0; /* Buffer too small */
@@ -119,15 +192,11 @@ SocketQUICFrame_encode_stop_sending (uint64_t stream_id, uint64_t error_code,
   if (!out)
     return 0;
 
-  /* Calculate required size: type + stream_id + error_code */
-  size_t type_len = 1;
-  size_t stream_id_len = SocketQUICVarInt_size (stream_id);
-  size_t error_code_len = SocketQUICVarInt_size (error_code);
+  /* Calculate required size using helper: type + stream_id + error_code */
+  size_t total_len = calculate_2field_size (stream_id, error_code, NULL, NULL);
 
-  if (stream_id_len == 0 || error_code_len == 0)
+  if (total_len == 0)
     return 0; /* Value exceeds varint maximum */
-
-  size_t total_len = type_len + stream_id_len + error_code_len;
 
   if (out_size < total_len)
     return 0; /* Buffer too small */
@@ -202,19 +271,23 @@ SocketQUICFrame_encode_stream (uint64_t stream_id, uint64_t offset,
     frame_type |= QUIC_FRAME_STREAM_OFF; /* Bit 2: OFF */
 
   /* Calculate required buffer size */
-  size_t type_len = 1;
-  size_t stream_id_len = SocketQUICVarInt_size (stream_id);
-  size_t offset_len = (offset > 0) ? SocketQUICVarInt_size (offset) : 0;
-  size_t length_len = SocketQUICVarInt_size (len);
+  size_t stream_id_len, length_len;
+  size_t base_size = calculate_2field_size (stream_id, len, &stream_id_len, &length_len);
 
-  if (stream_id_len == 0 || length_len == 0)
+  if (base_size == 0)
     return 0; /* Value exceeds varint maximum */
 
-  if (offset > 0 && offset_len == 0)
-    return 0; /* Offset exceeds varint maximum */
+  /* Handle optional offset field */
+  size_t offset_len = 0;
+  if (offset > 0)
+    {
+      offset_len = SocketQUICVarInt_size (offset);
+      if (offset_len == 0)
+        return 0; /* Offset exceeds varint maximum */
+    }
 
   /* Prevent integer overflow in size calculation */
-  size_t header_size = type_len + stream_id_len + offset_len + length_len;
+  size_t header_size = base_size + offset_len;
   if (len > SIZE_MAX - header_size)
     return 0; /* Would overflow */
 
