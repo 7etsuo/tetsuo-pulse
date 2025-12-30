@@ -179,29 +179,25 @@ http2_is_connection_header_forbidden (const SocketHPACK_Header *header)
   if (header == NULL || header->name == NULL)
     return 0;
 
-  /* Binary search in sorted forbidden headers array */
-  const void *found
-      = bsearch (header, http2_forbidden_headers, HTTP2_FORBIDDEN_HEADER_COUNT,
-                 sizeof (http2_forbidden_headers[0]), compare_forbidden_header);
+  for (size_t i = 0; i < HTTP2_FORBIDDEN_HEADER_COUNT; i++)
+    {
+      if (header->name_len == http2_forbidden_headers[i].len
+          && strncasecmp (header->name, http2_forbidden_headers[i].name,
+                          http2_forbidden_headers[i].len)
+                 == 0)
+        {
+          /*
+           * TE header is a special case: it's allowed only with "trailers"
+           * value. Return 0 here (not forbidden) and let caller validate
+           * the value separately via http2_validate_te_header().
+           */
+          if (http2_forbidden_headers[i].len == HTTP2_TE_HEADER_LEN)
+            return 0;
+          return 1;
+        }
+    }
 
-  if (found == NULL)
-    return 0; /* Not forbidden */
-
-  /*
-   * TE header is a special case: it's allowed only with "trailers"
-   * value. Return 0 here (not forbidden) and let caller validate
-   * the value separately via http2_validate_te_header().
-   */
-  const struct
-  {
-    const char *name;
-    size_t len;
-  } *entry = found;
-
-  if (entry->len == HTTP2_TE_HEADER_LEN) /* "te" */
-    return 0;
-
-  return 1; /* Forbidden */
+  return 0; /* Not forbidden */
 }
 
 int
