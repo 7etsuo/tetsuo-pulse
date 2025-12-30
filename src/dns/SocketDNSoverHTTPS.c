@@ -221,11 +221,7 @@ SocketDNSoverHTTPS_new (Arena_T arena)
   memset (transport, 0, sizeof (*transport));
 
   transport->arena = arena;
-  transport->server_count = 0;
-  transport->current_server = 0;
-  transport->pending_head = NULL;
-  transport->pending_tail = NULL;
-  transport->pending_count = 0;
+  /* All other fields already zeroed by memset */
 
   /* Create HTTP client with HTTP/2 support */
   SocketHTTPClient_Config config;
