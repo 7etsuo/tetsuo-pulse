@@ -550,6 +550,44 @@ try_decode_symbol (uint64_t bits, int *bits_avail, unsigned char *output,
   return 0;
 }
 
+/* Refill bit buffer from input stream until threshold or input exhausted */
+static inline void
+refill_bit_buffer (uint64_t *bits,
+                   int *bits_avail,
+                   const unsigned char *input,
+                   size_t *in_pos,
+                   size_t input_len)
+{
+  while (*bits_avail < HUFFMAN_REFILL_THRESHOLD && *in_pos < input_len)
+    {
+      *bits = (*bits << HUFFMAN_BITS_PER_BYTE) | input[(*in_pos)++];
+      *bits_avail += HUFFMAN_BITS_PER_BYTE;
+    }
+}
+
+/* Clear consumed bits from accumulator, keeping only valid remainder */
+static inline void
+clear_consumed_bits (uint64_t *bits, int bits_avail)
+{
+  *bits &= ((uint64_t)1 << bits_avail) - 1ULL;
+}
+
+/* Validate decode termination: proper EOS padding and all input consumed */
+static int
+validate_decode_termination (uint64_t bits,
+                             int bits_avail,
+                             size_t in_pos,
+                             size_t input_len)
+{
+  if (bits_avail > 0 && !is_valid_termination (bits, bits_avail))
+    return 0;
+
+  if (in_pos < input_len)
+    return 0;
+
+  return 1;
+}
+
 /* ============================================================================
  * Public API
  * ============================================================================
@@ -641,12 +679,7 @@ SocketHPACK_huffman_decode (const unsigned char *input, size_t input_len,
 
   while (in_pos < input_len || bits_avail >= HUFFMAN_MIN_CODE_BITS)
     {
-      /* Refill bit buffer when running low */
-      while (bits_avail < HUFFMAN_REFILL_THRESHOLD && in_pos < input_len)
-        {
-          bits = (bits << HUFFMAN_BITS_PER_BYTE) | input[in_pos++];
-          bits_avail += HUFFMAN_BITS_PER_BYTE;
-        }
+      refill_bit_buffer (&bits, &bits_avail, input, &in_pos, input_len);
 
       if (bits_avail < HUFFMAN_MIN_CODE_BITS)
         break;
@@ -657,7 +690,6 @@ SocketHPACK_huffman_decode (const unsigned char *input, size_t input_len,
       if (result == DECODE_ERROR)
         return -1;
 
-      /* EOS or no-match both require valid termination to succeed */
       if (result != DECODE_SYMBOL)
         {
           if (is_valid_termination (bits, bits_avail))
@@ -665,14 +697,10 @@ SocketHPACK_huffman_decode (const unsigned char *input, size_t input_len,
           return -1;
         }
 
-      bits &= ((uint64_t) 1 << bits_avail) - 1ULL;
+      clear_consumed_bits (&bits, bits_avail);
     }
 
-  /* Validate final padding per RFC 7541 §5.2 */
-  if (bits_avail > 0 && !is_valid_termination (bits, bits_avail))
-    return -1;
-
-  if (in_pos < input_len)
+  if (!validate_decode_termination (bits, bits_avail, in_pos, input_len))
     return -1;
 
   return (ssize_t) out_pos;
