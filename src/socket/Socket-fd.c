@@ -4,7 +4,24 @@
  * https://x.com/tetsuoai
  */
 
-/* Reference: POSIX.1-2008, sendmsg/recvmsg with SCM_RIGHTS */
+/* Reference: POSIX.1-2008, sendmsg/recvmsg with SCM_RIGHTS
+ *
+ * THREAD-SAFETY NOTE (CWE-367: TOCTOU):
+ * The FD validation functions (validate_fd_open, validate_fd_array_nonclosing,
+ * validate_fd_array_closing) check file descriptor validity using fcntl(F_GETFD).
+ * However, there is an inherent Time-Of-Check to Time-Of-Use (TOCTOU) race
+ * condition where an FD could be closed by another thread between validation
+ * and actual use in sendmsg()/recvmsg().
+ *
+ * MITIGATION:
+ * This limitation is documented in the public API (Socket.h). Callers MUST
+ * ensure that file descriptors are not concurrently closed during FD passing
+ * operations. This is a fundamental limitation of the FD passing API design
+ * and cannot be fully eliminated without application-level synchronization.
+ *
+ * IMPACT: Low likelihood (requires concurrent FD operations), medium consequence
+ * (sendmsg may fail with EBADF or pass closed FD to peer).
+ */
 
 #include <errno.h>
 #include <fcntl.h>
@@ -58,12 +75,21 @@ validate_unix_socket (const T socket)
         return 1;
 }
 
+/*
+ * TOCTOU WARNING: This check is inherently racy. FD could be closed by another
+ * thread immediately after this function returns true but before sendmsg() is
+ * called. Callers must ensure FD lifecycle synchronization at application level.
+ */
 static int
 validate_fd_open (int fd)
 {
         return (fd >= 0 && fcntl (fd, F_GETFD) >= 0);
 }
 
+/*
+ * Validate FD array before sending. Note: TOCTOU race exists between this
+ * check and sendmsg() - see file header for details.
+ */
 static int
 validate_fd_array_nonclosing (const int *fds, size_t count, const char *context)
 {
@@ -187,6 +213,11 @@ validate_cmsg_data_len (const struct cmsghdr *cmsg)
         return 1;
 }
 
+/*
+ * Validate received FDs. Note: TOCTOU race exists - an FD received from peer
+ * could theoretically be closed by another thread before validation completes,
+ * though this is extremely unlikely in practice as FDs are just received.
+ */
 static void
 validate_fd_array_closing (int *fds, size_t *received_count, size_t count, const char *context)
 {
