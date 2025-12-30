@@ -1,0 +1,10 @@
+{
+  "issue": 2322,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2498",
+  "pr_number": 2498,
+  "branch": "issue-2322-remove-unnecessary-volatile",
+  "files_changed": ["src/simple/SocketSimple-timer.c"],
+  "tests_passed": true,
+  "commit_sha": "883beb05da12502b44795656079d7aad4a03af35"
+}

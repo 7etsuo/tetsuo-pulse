@@ -1,0 +1,8 @@
+{
+  "number": 2353,
+  "title": "refactor(tls): replace magic poll interval 100ms with named constant",
+  "body": "## Summary\n\nHardcoded magic number `100` for poll interval in shutdown retry logic should be replaced with a named constant.\n\n## Location\n\n**File**: `src/tls/SocketTLS.c`\n**Line**: 583\n**Function**: `SocketTLS_disable()`\n\n## Issue\n\n```c\nint poll_timeout = SocketTimeout_poll_timeout (100, deadline);\n```\n\nThe value `100` (100ms poll interval) is hardcoded without explanation or symbolic constant.\n\n## Recommendation\n\nDefine a constant (may already exist as `SOCKET_TLS_POLL_INTERVAL_MS` is used elsewhere):\n\n```c\n#define SOCKET_TLS_SHUTDOWN_POLL_INTERVAL_MS 100\n```\n\nOr reuse existing `SOCKET_TLS_POLL_INTERVAL_MS` if appropriate.\n\n## Impact\n\n- **Severity**: LOW\n- **Category**: Refactoring\n- **Pattern**: MAGIC_TIMEOUT_100\n\n## Labels\n\n- `refactoring`\n- `low-priority`\n- `code-quality`",
+  "labels": [],
+  "state": "OPEN",
+  "dependencies": []
+}

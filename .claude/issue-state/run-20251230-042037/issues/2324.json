@@ -1,0 +1,10 @@
+{
+  "number": 2324,
+  "title": "refactor(tls): replace magic number 32 with TLS_SESSION_ID_MAX_SIZE constant",
+  "body": "## Summary\n\nThe TLS session cache comparison function uses a hardcoded magic number `32` for session ID size, which reduces maintainability and clarity.\n\n## Location\n\n**File:** `src/tls/SocketTLS-performance.c`  \n**Lines:** 619, 603, 711, 712  \n**Function:** `sharded_session_compare()` and `sharded_new_session_cb()`\n\n## Current Code\n\n```c\nstatic int\nsharded_session_compare (const void *entry, const void *key)\n{\n  return memcmp (entry, key, 32); /* Fixed 32 bytes assumed */\n}\n```\n\n## Issue\n\nThe hardcoded `32` appears multiple times in this file:\n- Line 603: `unsigned char session_id[32];` (struct definition)\n- Line 619: `memcmp (entry, key, 32);` (comparison)\n- Line 711: `memset(entry->session_id, 0, 32);`\n- Line 712: `memcpy(entry->session_id, id, id_len < 32 ? id_len : 32);`\n\nUsing magic numbers makes the code harder to maintain. If the session ID size needs to change, all instances must be updated manually.\n\n## Recommendation\n\nDefine a named constant at the top of the file:\n\n```c\n#define TLS_SESSION_ID_MAX_SIZE 32\n```\n\nThen replace all instances:\n\n```c\nstatic int\nsharded_session_compare (const void *entry, const void *key)\n{\n  return memcmp (entry, key, TLS_SESSION_ID_MAX_SIZE);\n}\n```\n\n## Related\n\nThis pattern follows the codebase's anti-pattern documentation in CLAUDE.md which recommends using named constants instead of magic numbers.\n\n## Metadata\n\n- **Category:** Redundancy\n- **Severity:** Medium\n- **Pattern ID:** MAGIC_NUMBER_32\n- **Effort:** Low (simple find-and-replace)",
+  "labels": [
+    "enhancement"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

@@ -1,0 +1,11 @@
+{
+  "issue": 2277,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2451",
+  "pr_number": 2451,
+  "branch": "issue-2277-remove-unnecessary-volatile",
+  "files_changed": ["src/simple/SocketSimple-async.c"],
+  "tests_passed": true,
+  "commit_sha": "9db2c93fc7d0e53851237052448e140e4dc7b0a5",
+  "summary": "Removed unnecessary volatile qualifier from safe_socket variable in async_operation_common(). Variable is assigned once and never modified in TRY block, making volatile unnecessary. Only request_id correctly retains volatile as it's modified inside TRY."
+}

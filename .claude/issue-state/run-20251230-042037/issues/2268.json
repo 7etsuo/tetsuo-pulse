@@ -1,0 +1,11 @@
+{
+  "number": 2268,
+  "title": "refactor(simple-poll): undefined constant SOCKET_POLL_TIMEOUT_USE_DEFAULT",
+  "body": "**File**: `src/simple/SocketSimple-poll.c`  \n**Line**: 308  \n**Category**: Refactor  \n**Severity**: MEDIUM  \n\n## Issue\nUse of undefined constant `SOCKET_POLL_TIMEOUT_USE_DEFAULT` at line 308:\n\n```c\nif (timeout_ms == SOCKET_POLL_TIMEOUT_USE_DEFAULT)\n```\n\nGrep search across the entire codebase shows this constant is not defined anywhere, which will cause compilation failure.\n\n## Impact\n- Code will not compile\n- Magic number comparison without documentation\n\n## Recommendation\n1. Define `SOCKET_POLL_TIMEOUT_USE_DEFAULT` in `include/simple/SocketSimple-poll.h`, OR\n2. Replace with a documented magic value (e.g., `INT_MIN` or `-2`)\n\n## References\n- File: `/home/tetsuo/git/tetsuo-socket/src/simple/SocketSimple-poll.c:308`\n- Function: `Socket_simple_poll_wait()`",
+  "labels": [
+    "bug",
+    "wip:claude-1767092676-3930812"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

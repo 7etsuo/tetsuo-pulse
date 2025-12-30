@@ -1,0 +1,10 @@
+{
+  "number": 2233,
+  "title": "refactor(http): extract integer parsing logic from SocketHTTP_Headers_get_int()",
+  "body": "## Summary\n`SocketHTTP_Headers_get_int()` function is 59 lines long, exceeding the 50-line guideline. The integer parsing logic should be extracted into a separate helper function.\n\n## Location\n- **File**: `src/http/SocketHTTP-headers.c`\n- **Lines**: 504-562 (59 lines)\n- **Function**: `SocketHTTP_Headers_get_int()`\n\n## Issue\nThe function combines header lookup with complex integer parsing logic including:\n- Whitespace trimming (duplicated at start and end)\n- Sign handling (`+`/`-`)\n- Overflow-safe digit accumulation\n- Range validation for INT64_MIN/INT64_MAX\n\nThis makes the function harder to test and maintain.\n\n## Recommendation\nExtract the integer parsing logic into a separate helper:\n```c\nstatic int\nparse_int64_from_string(const char *str, int64_t *value)\n{\n  // Parsing logic here (lines 514-559)\n}\n\nint\nSocketHTTP_Headers_get_int(SocketHTTP_Headers_T headers, const char *name,\n                           int64_t *value)\n{\n  if (!headers || !name || !value)\n    return -1;\n\n  const char *str = SocketHTTP_Headers_get(headers, name);\n  if (!str)\n    return -1;\n\n  return parse_int64_from_string(str, value);\n}\n```\n\n## Benefits\n- Reduces function length from 59 to ~12 lines\n- Separates concerns (lookup vs parsing)\n- Enables independent unit testing of parsing logic\n- Allows reuse of parsing logic elsewhere\n\n## Pattern\n- **Pattern ID**: LONG_FUNCTION_50\n- **Category**: Refactoring\n- **Severity**: MEDIUM",
+  "labels": [
+    "enhancement"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

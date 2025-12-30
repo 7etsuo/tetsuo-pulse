@@ -1,0 +1,11 @@
+{
+  "issue": 2300,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2497",
+  "pr_number": 2497,
+  "branch": "issue-2300-timer-error-clear",
+  "files_changed": ["src/simple/SocketSimple-timer.c"],
+  "tests_passed": true,
+  "commit_sha": "3a0888d02e2c9bd6bf0a8191a30ebb5dd6b69a0b",
+  "summary": "Added missing Socket_simple_clear_error() calls to Socket_simple_timer_cancel_all() and Socket_simple_timer_count() for API consistency"
+}

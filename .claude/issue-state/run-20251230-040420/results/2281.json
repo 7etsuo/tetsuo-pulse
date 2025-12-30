@@ -1,0 +1,7 @@
+{
+  "issue": 2281,
+  "status": "already_resolved",
+  "resolution": "Feature already implemented in commit 9f18ae5dcfcc01ddffdae8613aed4c27fb50b458 (PR #2402, merged 2025-12-30T10:31:26Z). The redundant errno save/restore operations in simple_create_udp_handle() at lines 127-128 were removed along with the same pattern in simple_create_handle(). Current code in src/simple/SocketSimple.c lines 122-133 no longer contains the redundant operations.",
+  "related_pr": "https://github.com/7etsuo/tetsuo-socket/pull/2402",
+  "commit_sha": "9f18ae5dcfcc01ddffdae8613aed4c27fb50b458"
+}

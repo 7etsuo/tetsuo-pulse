@@ -1,0 +1,11 @@
+{
+  "issue": 2234,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2445",
+  "pr_number": 2445,
+  "branch": "issue-2234-skip-whitespace-helper",
+  "files_changed": ["src/http/SocketHTTP-headers.c"],
+  "tests_passed": true,
+  "commit_sha": "5e8f1e04812e9906e4a5dfcefe929d178ca977e9",
+  "description": "Replaced two instances of manual whitespace skipping in SocketHTTP_Headers_get_int() with calls to sockethttp_skip_whitespace() helper function"
+}

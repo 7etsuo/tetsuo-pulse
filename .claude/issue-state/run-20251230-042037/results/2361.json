@@ -1,0 +1,9 @@
+{
+  "issue": 2361,
+  "status": "already_resolved",
+  "resolution": "Feature already implemented in commit 5b18b7fe (Dec 29, 2025) which closed issue #1402. The SocketTLS_shutdown() function has been refactored with the exact pattern requested: extracted shutdown_handle_result(), shutdown_wait_for_io(), and shutdown_finalize() helpers. Main function reduced from 93 lines to 40 lines, eliminating the deep nesting described in the issue.",
+  "commit_sha": "5b18b7fee523860bdd1bfaabc51be5159434d7bc",
+  "related_issue": 1402,
+  "files_affected": ["src/tls/SocketTLS.c"],
+  "verification": "Current implementation (lines 1098-1138 in src/tls/SocketTLS.c) shows clean structure with minimal nesting, using the exact helper functions suggested in issue description."
+}

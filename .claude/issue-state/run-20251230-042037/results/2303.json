@@ -1,0 +1,13 @@
+{
+  "issue": 2303,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2511",
+  "pr_number": 2511,
+  "branch": "issue-2303-fix-reconnect-calloc-error",
+  "files_changed": [
+    "src/simple/SocketSimple-reconnect.c"
+  ],
+  "tests_passed": true,
+  "commit_sha": "7fc99b83",
+  "implementation_notes": "Added simple_set_error(SOCKET_SIMPLE_ERR_MEMORY, 'Failed to allocate socket wrapper') call on calloc failure in Socket_simple_reconnect_get_socket() to maintain Simple API error handling consistency. All 67 reconnect tests pass with sanitizers enabled."
+}

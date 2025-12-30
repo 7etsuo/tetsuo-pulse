@@ -776,6 +776,7 @@ set(TEST_SOURCES
     test_async
     test_coverage
     test_synprotect
+    test_simple_security
     test_crypto
     test_utf8
     test_http_core

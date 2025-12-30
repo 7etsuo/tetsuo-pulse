@@ -1,0 +1,11 @@
+{
+  "issue": 2365,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2508",
+  "pr_number": 2508,
+  "branch": "issue-2365-deduplicate-ocsp-parsing",
+  "files_changed": ["src/tls/SocketTLS.c"],
+  "tests_passed": true,
+  "commit_sha": "55d8a68c",
+  "summary": "Refactored SocketTLS_get_ocsp_next_update() to reuse existing ocsp_parse_response() helper, eliminating ~20 lines of duplicated OCSP parsing code. Reduced function from 68 to 48 lines. All TLS tests pass."
+}

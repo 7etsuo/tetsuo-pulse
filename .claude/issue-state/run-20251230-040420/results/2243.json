@@ -1,0 +1,23 @@
+{
+  "issue": 2243,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2481",
+  "pr_number": 2481,
+  "branch": "issue-2243-refactor-connection-close-v2",
+  "files_changed": [
+    "src/quic/SocketQUICError-handling.c"
+  ],
+  "tests_passed": true,
+  "commit_sha": "dc208093",
+  "summary": "Refactored SocketQUIC_send_connection_close from 76 lines to 38 lines by extracting 4 helper functions",
+  "helpers_created": [
+    "validate_connection_close_params",
+    "calculate_connection_close_size",
+    "encode_connection_close_header",
+    "encode_reason_phrase"
+  ],
+  "tests_run": [
+    "test_quic_error (54 tests - all passed)",
+    "test_quic_frame_close (15 tests - all passed)"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "issue": 2315,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2509",
+  "pr_number": 2509,
+  "branch": "issue-2315-extract-retry-logic",
+  "files_changed": ["src/socket/SocketReconnect.c"],
+  "tests_passed": true,
+  "commit_sha": "81a417bed5c8b4c680a8b4db6c89ef664166994d",
+  "summary": "Extracted duplicated connection retry logic from SocketReconnect_tick into attempt_reconnect() helper function. Reduced function from 59 to 35 lines while maintaining identical behavior. All 67 reconnect tests pass with sanitizers."
+}

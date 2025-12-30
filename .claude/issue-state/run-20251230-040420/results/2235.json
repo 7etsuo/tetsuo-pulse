@@ -1,0 +1,16 @@
+{
+  "issue": 2235,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2458",
+  "pr_number": 2458,
+  "branch": "issue-2235-fix-32bit-pointer-truncation",
+  "files_changed": ["src/http/SocketHTTP-headers.c"],
+  "tests_passed": true,
+  "commit_sha": "b0c1c062",
+  "summary": "Fixed 32-bit pointer truncation in fallback hash seed initialization by using conditional compilation to handle 32-bit vs 64-bit platforms correctly",
+  "test_results": {
+    "http_core": "225/225 passed",
+    "arena": "25/25 passed",
+    "except": "39/39 passed"
+  }
+}

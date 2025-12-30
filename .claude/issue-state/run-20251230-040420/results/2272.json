@@ -1,0 +1,11 @@
+{
+  "issue": 2272,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2454",
+  "pr_number": 2454,
+  "branch": "issue-2272-extract-quic-helpers",
+  "files_changed": ["src/quic/SocketQUICPacket-initial.c"],
+  "tests_passed": true,
+  "commit_sha": "1c567900",
+  "summary": "Extracted two helper functions (derive_initial_secret and derive_endpoint_secrets) from SocketQUICInitial_derive_keys, reducing function length from 91 to 82 lines. All 26 QUIC tests pass with sanitizers enabled."
+}

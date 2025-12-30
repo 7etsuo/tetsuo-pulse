@@ -1,0 +1,10 @@
+{
+  "issue": 2360,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2523",
+  "pr_number": 2523,
+  "branch": "issue-2360-deduplicate-handshake-preconditions",
+  "files_changed": ["src/tls/SocketTLS.c"],
+  "tests_passed": true,
+  "commit_sha": "6c79827bb46a6f7c616b84a2ccdba013bed9b64d"
+}

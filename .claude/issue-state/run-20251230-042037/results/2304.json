@@ -1,0 +1,11 @@
+{
+  "issue": 2304,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2496",
+  "pr_number": 2496,
+  "branch": "issue-2304-extract-timeout-helper",
+  "files_changed": ["src/simple/SocketSimple-tcp.c"],
+  "tests_passed": true,
+  "commit_sha": "fb475da9",
+  "summary": "Extracted duplicated timeout error checking logic into static inline helper function is_timeout_error(). Refactored 3 functions (Socket_simple_connect_timeout, Socket_simple_accept_timeout, Socket_simple_recv_timeout) to use the centralized helper, reducing code duplication and improving maintainability."
+}

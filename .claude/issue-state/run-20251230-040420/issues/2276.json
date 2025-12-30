@@ -1,0 +1,11 @@
+{
+  "number": 2276,
+  "title": "fix(quic): undefined function socket_util_safe_add_u64() called in SocketQUICHandshake.c:106",
+  "body": "## Summary\n**File:** `src/quic/SocketQUICHandshake.c`  \n**Line:** 106  \n**Severity:** CRITICAL  \n**Category:** Security - Undefined Function Call\n\n## Issue\nThe code calls a non-existent function `socket_util_safe_add_u64()` which will cause a linker error:\n\n```c\nif (!socket_util_safe_add_u64(stream->recv_offset, length, &total_offset)) {\n    return QUIC_HANDSHAKE_ERROR_BUFFER;  /* Overflow would occur */\n}\n```\n\n## Verification\n- Grep search confirms function does not exist in any header or source file\n- No `socket_util_` prefix functions exist in `include/core/SocketUtil.h`\n- This code will not compile/link\n\n## Impact\n- **Build Failure:** Code cannot link\n- **Missing Protection:** Integer overflow check is completely bypassed\n- **Security Risk:** Without overflow check, buffer overflow is possible\n\n## Recommendation\n\n**Option 1: Implement the missing function**\nAdd to `include/core/SocketUtil.h`:\n```c\n/**\n * @brief Safe uint64_t addition with overflow check.\n * @return 1 on success, 0 if overflow would occur.\n */\nstatic inline int\nsocket_util_safe_add_u64(uint64_t a, uint64_t b, uint64_t *result)\n{\n    if (a > UINT64_MAX - b) {\n        return 0;  /* Overflow */\n    }\n    *result = a + b;\n    return 1;\n}\n```\n\n**Option 2: Use inline overflow check**\nReplace line 106-108 with:\n```c\nif (stream->recv_offset > UINT64_MAX - length) {\n    return QUIC_HANDSHAKE_ERROR_BUFFER;  /* Overflow would occur */\n}\nuint64_t total_offset = stream->recv_offset + length;\n```\n\n## Related Issues\nAlso affects line 114 which performs unchecked addition after the overflow check fails.\n\n## Pattern ID\n`UNDEFINED_FUNCTION_CALL`",
+  "labels": [
+    "bug",
+    "quic"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

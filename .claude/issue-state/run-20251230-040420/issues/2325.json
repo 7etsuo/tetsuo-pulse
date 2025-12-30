@@ -1,0 +1,10 @@
+{
+  "number": 2325,
+  "title": "refactor(simple-dtls): Socket_simple_dtls_connect_ex exceeds 100-line guideline (130 lines)",
+  "body": "## Summary\n\nFunction `Socket_simple_dtls_connect_ex` in `src/simple/SocketSimple-dtls.c` is 130 lines long (lines 159-288), exceeding the 100-line maintainability guideline.\n\n## Details\n\n**File**: `src/simple/SocketSimple-dtls.c`\n**Lines**: 159-288\n**Category**: refactor\n**Severity**: HIGH\n**Pattern**: LONG_FUNCTION_130\n\n## Issue\n\nThe function handles multiple responsibilities:\n- Parameter validation (host, port)\n- Options copying to avoid longjmp clobbering\n- UDP socket creation and connection\n- DTLS context creation and configuration\n- DTLS enablement on socket\n- Handshake execution\n- Multiple exception handlers\n- Resource cleanup\n\n## Recommendation\n\nBreak the function into smaller, focused helper functions:\n\n1. **`validate_dtls_connect_params(host, port)`** - parameter validation\n2. **`create_dtls_client_socket(host, port)`** - UDP socket creation and connection\n3. **`configure_and_enable_dtls(dgram, options)`** - context creation and DTLS enablement\n4. **Main function** orchestrates these helpers\n\nThis would improve:\n- Readability and maintainability\n- Testability (can unit test each helper)\n- Code reuse\n- Adherence to single responsibility principle\n\n## Context\n\nThis issue was identified during automated code analysis pipeline.",
+  "labels": [
+    "enhancement"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

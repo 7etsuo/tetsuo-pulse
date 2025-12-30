@@ -1,0 +1,11 @@
+{
+  "issue": 2349,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2493",
+  "pr_number": 2493,
+  "branch": "issue-2349-deduplicate-zlib-validation",
+  "files_changed": ["src/socket/SocketWS-deflate.c"],
+  "tests_passed": true,
+  "commit_sha": "8c6e8919",
+  "summary": "Extracted duplicate UINT_MAX validation logic into helper function check_zlib_size_limit(). Replaced duplicate blocks in setup_deflate_stream() and ws_decompress_message(). All WebSocket tests (24/24) and integration tests (6/6) pass."
+}

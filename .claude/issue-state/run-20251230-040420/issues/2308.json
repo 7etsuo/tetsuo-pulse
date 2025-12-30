@@ -1,0 +1,8 @@
+{
+  "number": 2308,
+  "title": "refactor(reconnect): extract peek logic from default_health_check",
+  "body": "## Summary\nThe `default_health_check` function in `SocketReconnect.c` is 60 lines long and handles multiple concerns: poll setup, error handling, and socket peek operations. This violates the single responsibility principle.\n\n## Location\n- **File**: `src/socket/SocketReconnect.c`\n- **Function**: `default_health_check`\n- **Lines**: 706-765\n\n## Issue Details\nThe function mixes several responsibilities:\n1. Poll setup and execution (lines 709-730)\n2. Poll error checking (lines 732-734)\n3. Socket peek with TRY/EXCEPT blocks (lines 737-762)\n\n## Recommendation\nExtract the socket peek logic (lines 737-762) into a separate helper function:\n\n```c\nstatic int\nsocket_peek_for_eof(Socket_T socket)\n{\n  char dummy;\n  volatile ssize_t peek_res = 0;\n  \n  TRY {\n    peek_res = socket_recv_internal(socket, &dummy, 1, MSG_PEEK | MSG_DONTWAIT);\n  }\n  EXCEPT(Socket_Failed) {\n    return 0;\n  }\n  EXCEPT(Socket_Closed) {\n    return 0;\n  }\n#if SOCKET_HAS_TLS\n  EXCEPT(SocketTLS_Failed) {\n    return 0;\n  }\n#endif\n  END_TRY;\n  \n  return peek_res != 0;\n}\n```\n\n## Benefits\n- Improved readability and maintainability\n- Each function has a single, clear responsibility\n- Easier to test peek logic independently\n- Reduces function length to ~40 lines\n\n## Pattern\n`LONG_FUNCTION_60`\n\n## Severity\nMEDIUM\n\n## Category\nrefactor",
+  "labels": [],
+  "state": "OPEN",
+  "dependencies": []
+}

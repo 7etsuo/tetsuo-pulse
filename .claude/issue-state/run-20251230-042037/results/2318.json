@@ -1,0 +1,10 @@
+{
+  "issue": 2318,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2499",
+  "pr_number": 2499,
+  "branch": "issue-2318-quic-varint-macro",
+  "files_changed": ["src/quic/SocketQUICTransportParams.c"],
+  "tests_passed": true,
+  "commit_sha": "c99d6303"
+}

@@ -1,0 +1,11 @@
+{
+  "issue": 2254,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/2482",
+  "pr_number": 2482,
+  "branch": "issue-2254-extract-async-validation",
+  "files_changed": ["src/simple/SocketSimple-async.c"],
+  "tests_passed": true,
+  "commit_sha": "406bc3ca",
+  "summary": "Extracted 11 instances of duplicated async context validation into 3 focused macros (VALIDATE_ASYNC_CONTEXT, VALIDATE_ASYNC_CONTEXT_NOERR, VALIDATE_ASYNC_CONTEXT_NOERR_VOID). All 40 async tests pass with sanitizers enabled."
+}
