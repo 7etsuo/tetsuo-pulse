@@ -1116,6 +1116,86 @@ SocketDNSoverTLS_server_count (T transport)
   return transport->server_count;
 }
 
+/* Validate query can be submitted */
+static int
+validate_query_submission (T transport, size_t query_len)
+{
+  if (transport->server_count == 0)
+    return -1;
+
+  /* Validate query length to prevent memory exhaustion (CWE-770) */
+  if (query_len > DOT_MAX_MESSAGE_SIZE)
+    return -1;
+
+  if (transport->pending_count >= DOT_MAX_PENDING_QUERIES)
+    return -1;
+
+  /* Check cumulative memory limit (CWE-770 mitigation) */
+  if (transport->total_query_bytes + query_len > DOT_MAX_TOTAL_QUERY_BYTES)
+    return -1;
+
+  return 0;
+}
+
+/* Allocate and initialize query structure */
+static struct SocketDNSoverTLS_Query *
+create_query (T transport, const unsigned char *query, size_t len,
+              uint16_t id, SocketDNSoverTLS_Callback callback, void *userdata)
+{
+  struct SocketDNSoverTLS_Query *q;
+
+  q = ALLOC (transport->arena, sizeof (*q));
+  memset (q, 0, sizeof (*q));
+
+  q->id = id;
+  q->query = ALLOC (transport->arena, len);
+  memcpy (q->query, query, len);
+  q->query_len = len;
+  q->sent_time_ms = get_monotonic_ms ();
+  q->callback = callback;
+  q->userdata = userdata;
+
+  return q;
+}
+
+/* Add query to pending list */
+static void
+enqueue_query (T transport, struct SocketDNSoverTLS_Query *q)
+{
+  q->next = NULL;
+  q->prev = transport->pending_tail;
+  if (transport->pending_tail)
+    transport->pending_tail->next = q;
+  else
+    transport->pending_head = q;
+  transport->pending_tail = q;
+  transport->pending_count++;
+  transport->stats.queries_sent++;
+}
+
+/* Ensure connection is established, with fallback */
+static int
+ensure_connected (T transport)
+{
+  if (transport->conn.state != CONN_STATE_DISCONNECTED)
+    return 0; /* Already connecting or connected */
+
+  /* Try current server */
+  if (start_connection (transport, transport->current_server) == 0)
+    return 0;
+
+  /* Fallback to next server - protect against division by zero (CWE-369) */
+  if (transport->server_count > 0)
+    {
+      transport->current_server
+          = (transport->current_server + 1) % transport->server_count;
+      if (start_connection (transport, transport->current_server) == 0)
+        return 0;
+    }
+
+  return -1; /* All servers failed */
+}
+
 SocketDNSoverTLS_Query_T
 SocketDNSoverTLS_query (T transport, const unsigned char *query, size_t len,
                         SocketDNSoverTLS_Callback callback, void *userdata)
@@ -1128,84 +1208,33 @@ SocketDNSoverTLS_query (T transport, const unsigned char *query, size_t len,
   assert (callback);
   assert (len >= DNS_HEADER_SIZE);
 
-  if (transport->server_count == 0)
-    {
-      return NULL;
-    }
+  /* Validate submission */
+  if (validate_query_submission (transport, len) < 0)
+    return NULL;
 
-  /* Validate query length to prevent memory exhaustion (CWE-770) */
-  if (len > DOT_MAX_MESSAGE_SIZE)
-    {
-      return NULL;
-    }
-
-  if (transport->pending_count >= DOT_MAX_PENDING_QUERIES)
-    {
-      return NULL;
-    }
-
-  /* Check cumulative memory limit (CWE-770 mitigation) */
-  if (transport->total_query_bytes + len > DOT_MAX_TOTAL_QUERY_BYTES)
-    {
-      return NULL; /* Would exceed memory budget */
-    }
-
-  /* Decode query ID */
+  /* Parse query ID */
   if (SocketDNS_header_decode (query, len, &hdr) != 0)
-    {
-      return NULL;
-    }
+    return NULL;
 
-  /* Allocate query */
-  q = ALLOC (transport->arena, sizeof (*q));
-  memset (q, 0, sizeof (*q));
+  /* Create query */
+  q = create_query (transport, query, len, hdr.id, callback, userdata);
 
-  q->id = hdr.id;
-  q->query = ALLOC (transport->arena, len);
-  memcpy (q->query, query, len);
-  q->query_len = len;
-
-  /* Track total memory usage (CWE-770 mitigation) */
+  /* Track memory (CWE-770 mitigation) */
   transport->total_query_bytes += len;
-  q->sent_time_ms = get_monotonic_ms ();
-  q->callback = callback;
-  q->userdata = userdata;
 
   /* Add to pending list */
-  q->next = NULL;
-  q->prev = transport->pending_tail;
-  if (transport->pending_tail)
-    transport->pending_tail->next = q;
-  else
-    transport->pending_head = q;
-  transport->pending_tail = q;
-  transport->pending_count++;
-  transport->stats.queries_sent++;
+  enqueue_query (transport, q);
 
-  /* Ensure connection is established */
-  if (transport->conn.state == CONN_STATE_DISCONNECTED)
+  /* Ensure connection */
+  if (ensure_connected (transport) < 0)
     {
-      if (start_connection (transport, transport->current_server) < 0)
-        {
-          /* Try next server - protect against division by zero (CWE-369) */
-          if (transport->server_count > 0)
-            {
-              transport->current_server
-                  = (transport->current_server + 1) % transport->server_count;
-            }
-          if (start_connection (transport, transport->current_server) < 0)
-            {
-              complete_query (transport, q, NULL, 0, DOT_ERROR_NETWORK);
-              return NULL;
-            }
-        }
+      complete_query (transport, q, NULL, 0, DOT_ERROR_NETWORK);
+      return NULL;
     }
 
-  /* Queue query for sending */
+  /* Queue for sending if ready */
   if (transport->conn.state == CONN_STATE_CONNECTED)
-    {
-      queue_query (transport, q);
-    }
+    queue_query (transport, q);
 
   return q;
 }
