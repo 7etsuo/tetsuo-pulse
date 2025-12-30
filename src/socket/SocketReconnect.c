@@ -456,17 +456,13 @@ check_connect_completion (T conn)
       /* Initialize error before getsockopt to avoid uninitialized read */
       error = 0;
       len = sizeof (error);
-      int connect_err;
+      int connect_err = ECONNREFUSED; /* default */
+
       if (getsockopt (fd, SOL_SOCKET, SO_ERROR, &error, &len) < 0)
-        {
-          /* getsockopt itself failed, use errno */
-          connect_err = errno;
-        }
-      else
-        {
-          /* getsockopt succeeded, use socket error or default to ECONNREFUSED */
-          connect_err = error ? error : ECONNREFUSED;
-        }
+        connect_err = errno; /* getsockopt itself failed */
+      else if (error != 0)
+        connect_err = error; /* socket error occurred */
+
       reconnect_set_socket_error (conn, "Connect poll error", connect_err);
       return -1;
     }
