@@ -120,6 +120,14 @@ extern const uint8_t http1_req_state[HTTP1_NUM_STATES][HTTP1_NUM_CLASSES];
 extern const uint8_t http1_resp_state[HTTP1_NUM_STATES][HTTP1_NUM_CLASSES];
 extern const uint8_t http1_req_action[HTTP1_NUM_STATES][HTTP1_NUM_CLASSES];
 extern const uint8_t http1_resp_action[HTTP1_NUM_STATES][HTTP1_NUM_CLASSES];
+
+#define HTTP1_DEFAULT_METHOD_BUF_SIZE 16
+#define HTTP1_DEFAULT_URI_BUF_SIZE 256
+#define HTTP1_DEFAULT_REASON_BUF_SIZE 64
+#define HTTP1_DEFAULT_HEADER_NAME_BUF_SIZE 64
+#define HTTP1_DEFAULT_HEADER_VALUE_BUF_SIZE 256
+#define HTTP1_DEFAULT_TOKEN_BUF_SIZE 64
+
 typedef struct
 {
   char *data;
@@ -206,7 +214,7 @@ http1_tokenbuf_append (HTTP1_TokenBuf *buf, Arena_T arena, char c,
     {
       /* After release, capacity is 0 - use default initial size */
       size_t new_capacity
-          = (buf->capacity == 0) ? 64 : (buf->capacity * 2);
+          = (buf->capacity == 0) ? HTTP1_DEFAULT_TOKEN_BUF_SIZE : (buf->capacity * 2);
       if (new_capacity > max_size)
         new_capacity = max_size;
 
@@ -241,7 +249,7 @@ http1_tokenbuf_append_block (HTTP1_TokenBuf *buf, Arena_T arena,
 
   if (new_len > buf->capacity)
     {
-      new_capacity = (buf->capacity == 0) ? 64 : buf->capacity;
+      new_capacity = (buf->capacity == 0) ? HTTP1_DEFAULT_TOKEN_BUF_SIZE : buf->capacity;
       while (new_capacity < new_len)
         new_capacity *= 2;
       if (new_capacity > max_size)
@@ -345,11 +353,5 @@ http1_skip_crlf (const char **p, const char *end)
   ((unsigned char)(c) >= 0x21 && (unsigned char)(c) <= 0x7E)
 #define http1_is_obs_text(c) ((unsigned char)(c) >= 0x80)
 #define http1_is_field_vchar(c) (http1_is_vchar (c) || http1_is_obs_text (c))
-
-#define HTTP1_DEFAULT_METHOD_BUF_SIZE 16
-#define HTTP1_DEFAULT_URI_BUF_SIZE 256
-#define HTTP1_DEFAULT_REASON_BUF_SIZE 64
-#define HTTP1_DEFAULT_HEADER_NAME_BUF_SIZE 64
-#define HTTP1_DEFAULT_HEADER_VALUE_BUF_SIZE 256
 
 #endif /* SOCKETHTTP1_PRIVATE_INCLUDED */
