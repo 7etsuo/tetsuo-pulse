@@ -107,7 +107,8 @@ SocketTLSContext_set_ctlog_list_file (T ctx, const char *log_file)
 #else /* !SOCKET_HAS_CT_SUPPORT */
 
 static void
-raise_ct_not_supported(T ctx, const char *feature) {
+raise_ct_not_supported(T ctx, const char *feature)
+{
   assert(ctx);
   RAISE_CTX_ERROR_MSG(SocketTLS_Failed, "%s not supported (requires OpenSSL 1.1.0+ with CT)", feature);
 }
