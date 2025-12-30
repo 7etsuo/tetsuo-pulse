@@ -18,6 +18,13 @@
 #include <pthread.h>
 
 /* ============================================================================
+ * Constants
+ * ============================================================================
+ */
+
+#define SOCKET_SIMPLE_DEFAULT_MAX_REDIRECTS 5
+
+/* ============================================================================
  * Shared Global HTTP Client (Lazy Initialization)
  * ============================================================================
  */
@@ -63,7 +70,7 @@ Socket_simple_http_options_init (SocketSimple_HTTPOptions *opts)
   memset (opts, 0, sizeof (*opts));
   opts->connect_timeout_ms = 30000;
   opts->request_timeout_ms = 60000;
-  opts->max_redirects = 5;
+  opts->max_redirects = SOCKET_SIMPLE_DEFAULT_MAX_REDIRECTS;
   opts->verify_ssl = 1;
 }
 
