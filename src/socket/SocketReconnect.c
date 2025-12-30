@@ -709,6 +709,35 @@ handle_connect_failure (T conn)
 }
 
 static int
+socket_peek_for_eof (Socket_T socket)
+{
+  char dummy;
+  volatile ssize_t peek_res = 0;
+
+  TRY
+  {
+    peek_res = socket_recv_internal (socket, &dummy, 1, MSG_PEEK | MSG_DONTWAIT);
+  }
+  EXCEPT (Socket_Failed)
+  {
+    return 0;
+  }
+  EXCEPT (Socket_Closed)
+  {
+    return 0;
+  }
+#if SOCKET_HAS_TLS
+  EXCEPT (SocketTLS_Failed)
+  {
+    return 0;
+  }
+#endif
+  END_TRY;
+
+  return peek_res != 0;
+}
+
+static int
 default_health_check (const T conn, const Socket_T socket, int timeout_ms,
                       void *userdata)
 {
@@ -742,29 +771,8 @@ default_health_check (const T conn, const Socket_T socket, int timeout_ms,
   /* If readable, peek to check for EOF */
   if (pfd.revents & POLLIN)
     {
-      char dummy;
-      volatile ssize_t peek_res = 0;
-      TRY
-      {
-        peek_res = socket_recv_internal (socket, &dummy, 1, MSG_PEEK | MSG_DONTWAIT);
-      }
-      EXCEPT (Socket_Failed)
-      {
+      if (!socket_peek_for_eof (socket))
         return 0;
-      }
-      EXCEPT (Socket_Closed)
-      {
-        return 0;
-      }
-#if SOCKET_HAS_TLS
-      EXCEPT (SocketTLS_Failed)
-      {
-        return 0;
-      }
-#endif
-      END_TRY;
-      if (peek_res == 0)
-        return 0; /* EOF or would block */
     }
 
   return 1;
