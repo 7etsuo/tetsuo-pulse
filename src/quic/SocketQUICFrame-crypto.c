@@ -69,7 +69,7 @@ SocketQUICFrame_encode_crypto (uint64_t offset, const uint8_t *data,
     return 0;
 
   /* Calculate required buffer size */
-  size_t type_len = 1;
+  size_t type_len = QUIC_FRAME_TYPE_SIZE;
   size_t offset_len = SocketQUICVarInt_size (offset);
   size_t length_len = SocketQUICVarInt_size (len);
 

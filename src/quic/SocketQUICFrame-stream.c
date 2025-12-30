@@ -52,7 +52,7 @@ SocketQUICFrame_encode_reset_stream (uint64_t stream_id, uint64_t error_code,
     return 0;
 
   /* Calculate required size: type + stream_id + error_code + final_size */
-  size_t type_len = 1;
+  size_t type_len = QUIC_FRAME_TYPE_SIZE;
   size_t stream_id_len = SocketQUICVarInt_size (stream_id);
   size_t error_code_len = SocketQUICVarInt_size (error_code);
   size_t final_size_len = SocketQUICVarInt_size (final_size);
@@ -120,7 +120,7 @@ SocketQUICFrame_encode_stop_sending (uint64_t stream_id, uint64_t error_code,
     return 0;
 
   /* Calculate required size: type + stream_id + error_code */
-  size_t type_len = 1;
+  size_t type_len = QUIC_FRAME_TYPE_SIZE;
   size_t stream_id_len = SocketQUICVarInt_size (stream_id);
   size_t error_code_len = SocketQUICVarInt_size (error_code);
 
@@ -202,7 +202,7 @@ SocketQUICFrame_encode_stream (uint64_t stream_id, uint64_t offset,
     frame_type |= QUIC_FRAME_STREAM_OFF; /* Bit 2: OFF */
 
   /* Calculate required buffer size */
-  size_t type_len = 1;
+  size_t type_len = QUIC_FRAME_TYPE_SIZE;
   size_t stream_id_len = SocketQUICVarInt_size (stream_id);
   size_t offset_len = (offset > 0) ? SocketQUICVarInt_size (offset) : 0;
   size_t length_len = SocketQUICVarInt_size (len);

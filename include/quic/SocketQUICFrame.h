@@ -22,6 +22,11 @@
 #define QUIC_PATH_DATA_SIZE 8
 #define QUIC_PATH_FRAME_SIZE (1 + QUIC_PATH_DATA_SIZE)
 
+/* QUIC frame type field size (RFC 9000).
+ * All QUIC frames start with a variable-length integer type field.
+ * For frame types 0x00-0x3f, this is always encoded as 1 byte. */
+#define QUIC_FRAME_TYPE_SIZE 1
+
 /* CONNECTION_CLOSE reason phrase maximum length (RFC 9000 §19.19).
  * While the RFC doesn't mandate a specific limit, we enforce a reasonable
  * maximum to prevent DoS via extremely long reason strings. */

@@ -41,7 +41,7 @@ SocketQUICFrame_encode_max_data (uint64_t max_data, uint8_t *out,
     return 0;
 
   /* Calculate required size: type (1 byte) + max_data (varint) */
-  size_t type_len = 1;
+  size_t type_len = QUIC_FRAME_TYPE_SIZE;
   size_t max_data_len = SocketQUICVarInt_size (max_data);
 
   if (max_data_len == 0)
@@ -82,7 +82,7 @@ SocketQUICFrame_encode_max_stream_data (uint64_t stream_id, uint64_t max_data,
     return 0;
 
   /* Calculate required size: type + stream_id + max_data (all varints) */
-  size_t type_len = 1;
+  size_t type_len = QUIC_FRAME_TYPE_SIZE;
   size_t stream_id_len = SocketQUICVarInt_size (stream_id);
   size_t max_data_len = SocketQUICVarInt_size (max_data);
 
@@ -127,7 +127,7 @@ SocketQUICFrame_encode_max_streams (int bidirectional, uint64_t max_streams,
     return 0;
 
   /* Calculate required size: type (1 byte) + max_streams (varint) */
-  size_t type_len = 1;
+  size_t type_len = QUIC_FRAME_TYPE_SIZE;
   size_t max_streams_len = SocketQUICVarInt_size (max_streams);
 
   if (max_streams_len == 0)
@@ -180,7 +180,7 @@ SocketQUICFrame_encode_data_blocked (uint64_t max_data, uint8_t *out,
     return 0;
 
   /* Calculate required size: type (1 byte) + max_data (varint) */
-  size_t type_len = 1;
+  size_t type_len = QUIC_FRAME_TYPE_SIZE;
   size_t max_data_len = SocketQUICVarInt_size (max_data);
 
   if (max_data_len == 0)
@@ -236,7 +236,7 @@ SocketQUICFrame_encode_stream_data_blocked (uint64_t stream_id,
     return 0;
 
   /* Calculate required size: type + stream_id + max_data (all varints) */
-  size_t type_len = 1;
+  size_t type_len = QUIC_FRAME_TYPE_SIZE;
   size_t stream_id_len = SocketQUICVarInt_size (stream_id);
   size_t max_data_len = SocketQUICVarInt_size (max_data);
 
@@ -297,7 +297,7 @@ SocketQUICFrame_encode_streams_blocked (int bidirectional, uint64_t max_streams,
     return 0;
 
   /* Calculate required size: type (1 byte) + max_streams (varint) */
-  size_t type_len = 1;
+  size_t type_len = QUIC_FRAME_TYPE_SIZE;
   size_t max_streams_len = SocketQUICVarInt_size (max_streams);
 
   if (max_streams_len == 0)
