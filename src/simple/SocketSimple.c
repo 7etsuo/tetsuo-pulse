@@ -52,7 +52,7 @@ simple_set_error_errno (SocketSimple_ErrorCode code, const char *prefix)
   simple_error.code = code;
   simple_error.errno_value = errno;
   snprintf (simple_error.message, sizeof (simple_error.message), "%s: %s",
-            prefix, strerror (errno));
+            prefix, Socket_safe_strerror (errno));
 }
 
 /* ============================================================================
