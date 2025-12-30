@@ -637,6 +637,30 @@ decode_varint_value (const uint8_t *data, size_t len, uint64_t *value,
   return QUIC_TP_OK;
 }
 
+/**
+ * @brief Decode varint at current position and advance.
+ *
+ * Decodes a varint from data at *pos, stores result in out_var,
+ * and advances *pos by the number of bytes consumed.
+ *
+ * @param data      Input buffer
+ * @param len       Length of input buffer
+ * @param pos       Pointer to current position (updated on success)
+ * @param out_var   Variable to store decoded value
+ *
+ * On error, returns early from enclosing function with QUIC_TP_ERROR_*.
+ */
+#define DECODE_VARINT_AT_POS(data, len, pos, out_var) \
+  do { \
+    size_t __consumed; \
+    SocketQUICTransportParams_Result __res = \
+        decode_varint_value((data) + *(pos), (len) - *(pos), \
+                           &(out_var), &__consumed); \
+    if (__res != QUIC_TP_OK) \
+      return __res; \
+    *(pos) += __consumed; \
+  } while(0)
+
 static SocketQUICTransportParams_Result
 decode_connid_value (const uint8_t *data, size_t len,
                      SocketQUICConnectionID_T *cid)
@@ -1036,22 +1060,13 @@ decode_single_param (const uint8_t *data, size_t len, size_t *pos,
 {
   uint64_t param_id;
   uint64_t param_len;
-  size_t bytes_consumed;
   SocketQUICTransportParams_Result result;
 
   /* Decode parameter ID */
-  result = decode_varint_value (data + *pos, len - *pos, &param_id,
-                                &bytes_consumed);
-  if (result != QUIC_TP_OK)
-    return result;
-  *pos += bytes_consumed;
+  DECODE_VARINT_AT_POS(data, len, pos, param_id);
 
   /* Decode parameter length */
-  result = decode_varint_value (data + *pos, len - *pos, &param_len,
-                                &bytes_consumed);
-  if (result != QUIC_TP_OK)
-    return result;
-  *pos += bytes_consumed;
+  DECODE_VARINT_AT_POS(data, len, pos, param_len);
 
   /* Check we have enough data for the parameter value */
   if (*pos + param_len > len)
