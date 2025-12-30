@@ -88,6 +88,13 @@ convert_response (SocketHTTPClient_Response *src,
   /* Copy body */
   if (src->body && src->body_len > 0)
     {
+      /* Check for integer overflow before malloc */
+      if (src->body_len > SIZE_MAX - 1)
+        {
+          simple_set_error (SOCKET_SIMPLE_ERR_MEMORY,
+                            "Response body too large");
+          return -1;
+        }
       dst->body = malloc (src->body_len + 1);
       if (!dst->body)
         {
@@ -1463,6 +1470,14 @@ Socket_simple_http_put_json (const char *url, const char *json_body,
   /* Copy JSON body */
   if (lib_response.body && lib_response.body_len > 0)
     {
+      /* Check for integer overflow before malloc */
+      if (lib_response.body_len > SIZE_MAX - 1)
+        {
+          simple_set_error (SOCKET_SIMPLE_ERR_MEMORY,
+                            "Response body too large");
+          SocketHTTPClient_Response_free (&lib_response);
+          return -1;
+        }
       *json_out = malloc (lib_response.body_len + 1);
       if (!*json_out)
         {
