@@ -44,6 +44,19 @@ extern "C" {
 #endif
 
 /*============================================================================
+ * DTLS Constants
+ *============================================================================*/
+
+/**
+ * @brief Default MTU for DTLS connections.
+ *
+ * The default Maximum Transmission Unit for DTLS is 1400 bytes,
+ * which accounts for typical IPv6 overhead and ensures the DTLS
+ * record plus UDP/IP headers fit within the path MTU.
+ */
+#define SOCKET_SIMPLE_DTLS_DEFAULT_MTU 1400
+
+/*============================================================================
  * DTLS Options
  *============================================================================*/
 
@@ -57,7 +70,7 @@ typedef struct SocketSimple_DTLSOptions {
     const char *ca_path;      /**< CA certificate directory */
     const char *client_cert;  /**< Client certificate file (for mTLS) */
     const char *client_key;   /**< Client private key file (for mTLS) */
-    size_t mtu;               /**< MTU size, 0 for default (1400) */
+    size_t mtu;               /**< MTU size, 0 for default (SOCKET_SIMPLE_DTLS_DEFAULT_MTU) */
     const char **alpn;        /**< ALPN protocol list (NULL-terminated) */
     size_t alpn_count;        /**< Number of ALPN protocols */
 } SocketSimple_DTLSOptions;
