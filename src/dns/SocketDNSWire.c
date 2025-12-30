@@ -930,38 +930,23 @@ SocketDNS_rdata_parse_soa (const unsigned char *msg, size_t msglen,
     return -1;
 
   /* Extract SERIAL (32-bit, network byte order) */
-  soa->serial = ((uint32_t)msg[offset] << 24) |
-                ((uint32_t)msg[offset + 1] << 16) |
-                ((uint32_t)msg[offset + 2] << 8) |
-                ((uint32_t)msg[offset + 3]);
+  soa->serial = dns_unpack_be32(msg + offset);
   offset += 4;
 
   /* Extract REFRESH (32-bit, network byte order) */
-  soa->refresh = ((uint32_t)msg[offset] << 24) |
-                 ((uint32_t)msg[offset + 1] << 16) |
-                 ((uint32_t)msg[offset + 2] << 8) |
-                 ((uint32_t)msg[offset + 3]);
+  soa->refresh = dns_unpack_be32(msg + offset);
   offset += 4;
 
   /* Extract RETRY (32-bit, network byte order) */
-  soa->retry = ((uint32_t)msg[offset] << 24) |
-               ((uint32_t)msg[offset + 1] << 16) |
-               ((uint32_t)msg[offset + 2] << 8) |
-               ((uint32_t)msg[offset + 3]);
+  soa->retry = dns_unpack_be32(msg + offset);
   offset += 4;
 
   /* Extract EXPIRE (32-bit, network byte order) */
-  soa->expire = ((uint32_t)msg[offset] << 24) |
-                ((uint32_t)msg[offset + 1] << 16) |
-                ((uint32_t)msg[offset + 2] << 8) |
-                ((uint32_t)msg[offset + 3]);
+  soa->expire = dns_unpack_be32(msg + offset);
   offset += 4;
 
   /* Extract MINIMUM (32-bit, network byte order) */
-  soa->minimum = ((uint32_t)msg[offset] << 24) |
-                 ((uint32_t)msg[offset + 1] << 16) |
-                 ((uint32_t)msg[offset + 2] << 8) |
-                 ((uint32_t)msg[offset + 3]);
+  soa->minimum = dns_unpack_be32(msg + offset);
 
   return 0;
 }
