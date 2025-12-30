@@ -90,6 +90,13 @@ struct T
  * For NODATA: hash(name, type, class)
  *
  * Uses a random seed to protect against hash collision DoS attacks.
+ *
+ * Note: This manually implements DJB2 with qtype/qclass extension rather than
+ * using socket_util_hash_djb2_seeded_ci() because RFC 2308 cache semantics
+ * require the complete tuple (name, qtype, qclass) to be hashed. The SocketUtil
+ * helper only hashes the string portion and would require duplicating the loop
+ * logic to extend with qtype/qclass. The current implementation is clearer and
+ * avoids intermediate calculations.
  */
 static unsigned
 compute_hash_with_seed (const char *name, uint16_t qtype, uint16_t qclass, uint32_t seed)
@@ -99,11 +106,11 @@ compute_hash_with_seed (const char *name, uint16_t qtype, uint16_t qclass, uint3
   /* Mix in random seed for DoS protection */
   hash = ((hash << 5) + hash) ^ seed;
 
-  /* Hash the normalized name */
+  /* Hash the normalized name (case-insensitive per DNS spec) */
   for (const char *p = name; *p; p++)
     hash = ((hash << 5) + hash) ^ (unsigned char)tolower ((unsigned char)*p);
 
-  /* Include qtype and qclass */
+  /* Extend hash with qtype and qclass for RFC 2308 cache key tuple */
   hash = ((hash << 5) + hash) ^ qtype;
   hash = ((hash << 5) + hash) ^ qclass;
 
