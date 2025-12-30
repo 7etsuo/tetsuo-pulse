@@ -2004,8 +2004,10 @@ SocketTLS_get_peer_cert_info (Socket_T socket, SocketTLS_CertInfo *info)
   unsigned int md_len = 0;
   if (X509_digest (cert, EVP_sha256 (), md, &md_len))
     {
-      /* Limit to SHA256 size (32 bytes = 64 hex chars) */
-      size_t hash_len = (md_len > 32) ? 32 : md_len;
+      /* Limit to SHA256 digest size (32 bytes = 64 hex chars) */
+      int expected_size = EVP_MD_size (EVP_sha256 ());
+      size_t hash_len
+          = (md_len > (unsigned)expected_size) ? (size_t)expected_size : md_len;
       SocketCrypto_hex_encode (md, hash_len, info->fingerprint,
                                sizeof (info->fingerprint));
     }
