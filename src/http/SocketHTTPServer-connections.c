@@ -24,9 +24,6 @@ static void record_request_latency (SocketHTTPServer_T server,
                                     int64_t request_start_ms);
 static SocketHTTP1_Parser_T connection_create_parser (Arena_T arena,
                                                       const SocketHTTPServer_Config *config);
-static int connection_init_resources (SocketHTTPServer_T server,
-                                      ServerConnection *conn,
-                                      Socket_T socket);
 static int connection_add_to_server (SocketHTTPServer_T server,
                                      ServerConnection *conn);
 static int setup_body_buffer_fixed (SocketHTTPServer_T server,
@@ -685,50 +682,6 @@ record_request_latency (SocketHTTPServer_T server, int64_t request_start_ms)
     }
 }
 
-/* Initialize connection resources: arena, buffers, parser. Enables TLS if configured */
-static int
-connection_init_resources (SocketHTTPServer_T server, ServerConnection *conn,
-                           Socket_T socket)
-{
-  Arena_T arena = Arena_new ();
-  conn->arena = arena;
-  conn->socket = socket;
-
-  conn->state = CONN_STATE_READING_REQUEST;
-  conn->created_at_ms = Socket_get_monotonic_ms ();
-  conn->last_activity_ms = conn->created_at_ms;
-
-  /* Cache client IP address from socket peer address */
-  const char *addr = Socket_getpeeraddr (conn->socket);
-  if (addr != NULL)
-    {
-      socket_util_safe_strncpy (conn->client_addr, addr, sizeof (conn->client_addr));
-    }
-
-  conn->parser = connection_create_parser (arena, &server->config);
-  conn->inbuf = SocketBuf_new (arena, HTTPSERVER_IO_BUFFER_SIZE);
-  conn->outbuf = SocketBuf_new (arena, HTTPSERVER_IO_BUFFER_SIZE);
-  conn->response_headers = SocketHTTP_Headers_new (arena);
-
-  conn->memory_used = sizeof (*conn) + (2 * HTTPSERVER_IO_BUFFER_SIZE);
-
-  /* Optional TLS enable: handshake is driven by server event loop. */
-  if (server->config.tls_context != NULL)
-    {
-#if SOCKET_HAS_TLS
-      conn->tls_enabled = 1;
-      conn->tls_handshake_done = 0;
-      SocketTLS_enable (conn->socket, server->config.tls_context);
-      conn->state = CONN_STATE_TLS_HANDSHAKE;
-#else
-      HTTPSERVER_ERROR_MSG ("TLS requested but SOCKET_HAS_TLS=0");
-      RAISE_HTTPSERVER_ERROR (SocketHTTPServer_Failed);
-#endif
-    }
-
-  return 0;
-}
-
 /* Add connection to server list and track IP for per-IP limits. Returns -1 if IP limit exceeded */
 static int
 connection_add_to_server (SocketHTTPServer_T server, ServerConnection *conn)
@@ -786,11 +739,43 @@ connection_new (SocketHTTPServer_T server, Socket_T socket)
 
   TRY
   {
-    if (connection_init_resources (server, conn, socket) < 0)
+    /* Initialize connection resources: arena, buffers, parser. Enables TLS if configured */
+    Arena_T arena = Arena_new ();
+    conn->arena = arena;
+    conn->socket = socket;
+
+    conn->state = CONN_STATE_READING_REQUEST;
+    conn->created_at_ms = Socket_get_monotonic_ms ();
+    conn->last_activity_ms = conn->created_at_ms;
+
+    /* Cache client IP address from socket peer address */
+    const char *addr = Socket_getpeeraddr (conn->socket);
+    if (addr != NULL)
       {
-        connection_cleanup_partial (conn, 0);
-        RETURN NULL;
+        socket_util_safe_strncpy (conn->client_addr, addr, sizeof (conn->client_addr));
       }
+
+    conn->parser = connection_create_parser (arena, &server->config);
+    conn->inbuf = SocketBuf_new (arena, HTTPSERVER_IO_BUFFER_SIZE);
+    conn->outbuf = SocketBuf_new (arena, HTTPSERVER_IO_BUFFER_SIZE);
+    conn->response_headers = SocketHTTP_Headers_new (arena);
+
+    conn->memory_used = sizeof (*conn) + (2 * HTTPSERVER_IO_BUFFER_SIZE);
+
+    /* Optional TLS enable: handshake is driven by server event loop. */
+    if (server->config.tls_context != NULL)
+      {
+#if SOCKET_HAS_TLS
+        conn->tls_enabled = 1;
+        conn->tls_handshake_done = 0;
+        SocketTLS_enable (conn->socket, server->config.tls_context);
+        conn->state = CONN_STATE_TLS_HANDSHAKE;
+#else
+        HTTPSERVER_ERROR_MSG ("TLS requested but SOCKET_HAS_TLS=0");
+        RAISE_HTTPSERVER_ERROR (SocketHTTPServer_Failed);
+#endif
+      }
+
     resources_ok = 1;
 
     if (connection_add_to_server (server, conn) < 0)
