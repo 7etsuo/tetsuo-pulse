@@ -42,6 +42,30 @@
     } while(0)
 
 /* ============================================================================
+ * Helper Functions
+ * ============================================================================
+ */
+
+/**
+ * @brief Validate frame output buffer has sufficient size.
+ *
+ * Checks that the output buffer is non-NULL and has at least the minimum
+ * required size for frame encoding. This centralizes the validation logic
+ * used across all frame encoding functions.
+ *
+ * @param out      Output buffer pointer.
+ * @param out_len  Output buffer size in bytes.
+ * @param min_size Minimum required size in bytes.
+ *
+ * @return 1 if buffer is valid and large enough, 0 otherwise.
+ */
+static inline int
+validate_frame_buffer (const uint8_t *out, size_t out_len, size_t min_size)
+{
+  return out != NULL && out_len >= min_size;
+}
+
+/* ============================================================================
  * Error Classification (RFC 9000 Section 11)
  * ============================================================================
  */
@@ -110,7 +134,7 @@ SocketQUIC_send_connection_close (SocketQUICConnection_T conn, uint64_t code,
 
   size_t min_size = base_size + reason_len;
 
-  if (out_len < min_size)
+  if (!validate_frame_buffer (out, out_len, min_size))
     return 0;
 
   offset = 0;
@@ -173,8 +197,7 @@ SocketQUIC_send_stream_reset (SocketQUICStream_T stream, uint64_t code,
    * - Application error code: varint
    * - Final size: varint
    */
-  size_t min_size = QUIC_FRAME_MIN_SIZE_RESET_STREAM;
-  if (out_len < min_size)
+  if (!validate_frame_buffer (out, out_len, QUIC_FRAME_MIN_SIZE_RESET_STREAM))
     return 0;
 
   offset = 0;
@@ -219,8 +242,7 @@ SocketQUIC_send_stop_sending (SocketQUICStream_T stream, uint64_t code,
    * - Stream ID: varint
    * - Application error code: varint
    */
-  size_t min_size = QUIC_FRAME_MIN_SIZE_STOP_SENDING;
-  if (out_len < min_size)
+  if (!validate_frame_buffer (out, out_len, QUIC_FRAME_MIN_SIZE_STOP_SENDING))
     return 0;
 
   offset = 0;
