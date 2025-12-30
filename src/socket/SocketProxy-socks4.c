@@ -109,6 +109,40 @@ socks4_write_userid (unsigned char *buf, size_t buf_remaining,
 }
 
 /**
+ * socks4_validate_username - Validate username for SOCKS4/4a requests
+ * @conn: Proxy connection context
+ *
+ * Returns: 0 on success, -1 on validation failure (error set in conn)
+ *
+ * Validates that username (if provided) does not exceed maximum length
+ * and contains valid UTF-8 encoding. Sets PROXY_ERROR_PROTOCOL on failure.
+ */
+static int
+socks4_validate_username (struct SocketProxy_Conn_T *conn)
+{
+  if (conn->username == NULL)
+    return 0;
+
+  size_t user_len = strlen (conn->username);
+  if (user_len > SOCKET_PROXY_MAX_USERNAME_LEN)
+    {
+      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                             "Username too long (max %d): %zu",
+                             SOCKET_PROXY_MAX_USERNAME_LEN, user_len);
+      return -1;
+    }
+
+  if (SocketUTF8_validate_str (conn->username) != UTF8_VALID)
+    {
+      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                             "Invalid UTF-8 in username");
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
  * socks4_validate_inputs - Common input validation for SOCKS4/4a requests
  * @conn: Proxy connection context
  * @out_host_len: Optional output for target_host length (may be NULL)
@@ -147,24 +181,6 @@ socks4_validate_inputs (struct SocketProxy_Conn_T *conn, size_t *out_host_len)
                                "Invalid UTF-8 in target host");
         RETURN -1;
       }
-
-    if (conn->username != NULL)
-      {
-        size_t user_len = strlen (conn->username);
-        if (user_len > SOCKET_PROXY_MAX_USERNAME_LEN)
-          {
-            socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                                   "Username too long (max %d): %zu",
-                                   SOCKET_PROXY_MAX_USERNAME_LEN, user_len);
-            RETURN -1;
-          }
-        if (SocketUTF8_validate_str (conn->username) != UTF8_VALID)
-          {
-            socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                                   "Invalid UTF-8 in username");
-            RETURN -1;
-          }
-      }
   }
   EXCEPT (SocketProxy_Failed)
   {
@@ -172,6 +188,10 @@ socks4_validate_inputs (struct SocketProxy_Conn_T *conn, size_t *out_host_len)
     RETURN -1;
   }
   END_TRY;
+
+  /* Validate username (outside TRY block since it sets error directly) */
+  if (socks4_validate_username (conn) != 0)
+    return -1;
 
   /* Return computed host length if requested */
   if (out_host_len)
