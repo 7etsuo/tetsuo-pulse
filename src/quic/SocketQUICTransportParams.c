@@ -1036,17 +1036,75 @@ static const ParamHandlerEntry param_handlers[] = {
 
 #define PARAM_HANDLER_COUNT (sizeof (param_handlers) / sizeof (param_handlers[0]))
 
+/* Compile-time assertions to ensure param_handlers remains sorted.
+ * Binary search requires the array to be sorted by param_id. */
+_Static_assert (QUIC_TP_ORIGINAL_DCID < QUIC_TP_MAX_IDLE_TIMEOUT,
+                "param_handlers must be sorted by param_id");
+_Static_assert (QUIC_TP_MAX_IDLE_TIMEOUT < QUIC_TP_STATELESS_RESET_TOKEN,
+                "param_handlers must be sorted by param_id");
+_Static_assert (QUIC_TP_STATELESS_RESET_TOKEN < QUIC_TP_MAX_UDP_PAYLOAD_SIZE,
+                "param_handlers must be sorted by param_id");
+_Static_assert (QUIC_TP_MAX_UDP_PAYLOAD_SIZE < QUIC_TP_INITIAL_MAX_DATA,
+                "param_handlers must be sorted by param_id");
+_Static_assert (QUIC_TP_INITIAL_MAX_DATA < QUIC_TP_INITIAL_MAX_STREAM_DATA_BIDI_LOCAL,
+                "param_handlers must be sorted by param_id");
+_Static_assert (QUIC_TP_INITIAL_MAX_STREAM_DATA_BIDI_LOCAL
+                  < QUIC_TP_INITIAL_MAX_STREAM_DATA_BIDI_REMOTE,
+                "param_handlers must be sorted by param_id");
+_Static_assert (QUIC_TP_INITIAL_MAX_STREAM_DATA_BIDI_REMOTE
+                  < QUIC_TP_INITIAL_MAX_STREAM_DATA_UNI,
+                "param_handlers must be sorted by param_id");
+_Static_assert (QUIC_TP_INITIAL_MAX_STREAM_DATA_UNI
+                  < QUIC_TP_INITIAL_MAX_STREAMS_BIDI,
+                "param_handlers must be sorted by param_id");
+_Static_assert (QUIC_TP_INITIAL_MAX_STREAMS_BIDI < QUIC_TP_INITIAL_MAX_STREAMS_UNI,
+                "param_handlers must be sorted by param_id");
+_Static_assert (QUIC_TP_INITIAL_MAX_STREAMS_UNI < QUIC_TP_ACK_DELAY_EXPONENT,
+                "param_handlers must be sorted by param_id");
+_Static_assert (QUIC_TP_ACK_DELAY_EXPONENT < QUIC_TP_MAX_ACK_DELAY,
+                "param_handlers must be sorted by param_id");
+_Static_assert (QUIC_TP_MAX_ACK_DELAY < QUIC_TP_DISABLE_ACTIVE_MIGRATION,
+                "param_handlers must be sorted by param_id");
+_Static_assert (QUIC_TP_DISABLE_ACTIVE_MIGRATION < QUIC_TP_PREFERRED_ADDRESS,
+                "param_handlers must be sorted by param_id");
+_Static_assert (QUIC_TP_PREFERRED_ADDRESS < QUIC_TP_ACTIVE_CONNID_LIMIT,
+                "param_handlers must be sorted by param_id");
+_Static_assert (QUIC_TP_ACTIVE_CONNID_LIMIT < QUIC_TP_INITIAL_SCID,
+                "param_handlers must be sorted by param_id");
+_Static_assert (QUIC_TP_INITIAL_SCID < QUIC_TP_RETRY_SCID,
+                "param_handlers must be sorted by param_id");
+_Static_assert (QUIC_TP_RETRY_SCID < QUIC_TP_MAX_DATAGRAM_FRAME_SIZE,
+                "param_handlers must be sorted by param_id");
+
 /**
- * @brief Find handler for a parameter ID.
+ * @brief Find handler for a parameter ID using binary search.
+ *
+ * The param_handlers array is sorted by param_id, enabling O(log n) lookup.
+ * This is critical for performance as this function is called for every
+ * decoded transport parameter during the TLS handshake.
+ *
+ * @param param_id Parameter ID to look up.
+ * @return Handler function if found, NULL otherwise.
  */
 static ParamDecodeHandler
 find_param_handler (uint64_t param_id)
 {
-  for (size_t i = 0; i < PARAM_HANDLER_COUNT; i++)
+  size_t left = 0;
+  size_t right = PARAM_HANDLER_COUNT;
+
+  while (left < right)
     {
-      if (param_handlers[i].param_id == param_id)
-        return param_handlers[i].handler;
+      size_t mid = left + (right - left) / 2;
+
+      if (param_handlers[mid].param_id == param_id)
+        return param_handlers[mid].handler;
+
+      if (param_handlers[mid].param_id < param_id)
+        left = mid + 1;
+      else
+        right = mid;
     }
+
   return NULL;
 }
 
