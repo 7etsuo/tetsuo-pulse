@@ -64,6 +64,18 @@ http2_flow_validate (const SocketHTTP2_Conn_T conn,
   return 0;
 }
 
+/* Extract window selection logic to eliminate duplication */
+static inline void
+http2_flow_get_windows (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
+                        int is_recv, int32_t **conn_window,
+                        int32_t **stream_window)
+{
+  *conn_window = is_recv ? &conn->recv_window : &conn->send_window;
+  *stream_window = NULL;
+  if (stream)
+    *stream_window = is_recv ? &stream->recv_window : &stream->send_window;
+}
+
 static int
 http2_flow_consume_level (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
                           int is_recv, size_t bytes)
@@ -71,10 +83,9 @@ http2_flow_consume_level (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
   if (http2_flow_validate (conn, stream) < 0)
     return -1;
 
-  int32_t *cwindow = is_recv ? &conn->recv_window : &conn->send_window;
-  int32_t *swindow = NULL;
-  if (stream)
-    swindow = is_recv ? &stream->recv_window : &stream->send_window;
+  int32_t *cwindow;
+  int32_t *swindow;
+  http2_flow_get_windows (conn, stream, is_recv, &cwindow, &swindow);
 
   /* Check connection window */
   if (bytes > INT32_MAX)
@@ -113,11 +124,12 @@ http2_flow_update_level (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
   if (http2_flow_validate (conn, stream) < 0)
     return -1;
 
-  int32_t *window;
-  if (stream)
-    window = is_recv ? &stream->recv_window : &stream->send_window;
-  else
-    window = is_recv ? &conn->recv_window : &conn->send_window;
+  int32_t *cwindow;
+  int32_t *swindow;
+  http2_flow_get_windows (conn, stream, is_recv, &cwindow, &swindow);
+
+  /* Update stream window if present, otherwise connection window */
+  int32_t *window = swindow ? swindow : cwindow;
 
   return flow_update_window (window, increment);
 }
