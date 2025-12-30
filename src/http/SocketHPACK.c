@@ -881,21 +881,14 @@ hpack_copy_indexed_name (SocketHPACK_Decoder_T decoder, size_t index,
 }
 
 static SocketHPACK_Result
-hpack_decode_literal (SocketHPACK_Decoder_T decoder,
-                      const unsigned char *input, size_t input_len,
-                      int prefix_bits, size_t *pos, SocketHPACK_Header *header,
-                      int add_to_table, int never_indexed, Arena_T arena)
+hpack_decode_literal_name (SocketHPACK_Decoder_T decoder,
+                           const unsigned char *input, size_t input_len,
+                           int prefix_bits, size_t *pos,
+                           SocketHPACK_Header *header, Arena_T arena)
 {
   uint64_t index;
   size_t consumed;
   SocketHPACK_Result result;
-  char *name;
-  size_t name_len;
-  char *value;
-  size_t value_len;
-
-  if (!valid_prefix_bits (prefix_bits))
-    return HPACK_ERROR;
 
   result = SocketHPACK_int_decode (input + *pos, input_len - *pos, prefix_bits,
                                    &index, &consumed);
@@ -904,38 +897,77 @@ hpack_decode_literal (SocketHPACK_Decoder_T decoder,
   *pos += consumed;
 
   if (index > 0)
-    {
-      result = hpack_copy_indexed_name (decoder, (size_t)index, header, arena);
-      if (result != HPACK_OK)
-        return result;
-    }
-  else
-    {
-      result = hpack_decode_string (input + *pos, input_len - *pos, &name,
-                                    &name_len, &consumed, arena);
-      if (result != HPACK_OK)
-        return result;
-      *pos += consumed;
+    return hpack_copy_indexed_name (decoder, (size_t)index, header, arena);
 
-      header->name = name;
-      header->name_len = name_len;
-    }
+  char *name;
+  size_t name_len;
 
-  result = hpack_decode_string (input + *pos, input_len - *pos, &value,
-                                &value_len, &consumed, arena);
+  result = hpack_decode_string (input + *pos, input_len - *pos, &name,
+                                &name_len, &consumed, arena);
   if (result != HPACK_OK)
     return result;
   *pos += consumed;
 
+  header->name = name;
+  header->name_len = name_len;
+  return HPACK_OK;
+}
+
+static SocketHPACK_Result
+hpack_decode_literal_value (const unsigned char *input, size_t input_len,
+                            size_t *pos, SocketHPACK_Header *header,
+                            Arena_T arena)
+{
+  char *value;
+  size_t value_len;
+  size_t consumed;
+
+  SocketHPACK_Result result
+      = hpack_decode_string (input + *pos, input_len - *pos, &value, &value_len,
+                             &consumed, arena);
+  if (result != HPACK_OK)
+    return result;
+
+  *pos += consumed;
   header->value = value;
   header->value_len = value_len;
-  header->never_index = never_indexed;
+  return HPACK_OK;
+}
 
+static void
+hpack_finalize_literal (SocketHPACK_Decoder_T decoder,
+                        SocketHPACK_Header *header, int add_to_table,
+                        int never_indexed)
+{
+  header->never_index = never_indexed;
   if (add_to_table)
     {
       SocketHPACK_Table_add (decoder->table, header->name, header->name_len,
                              header->value, header->value_len);
     }
+}
+
+static SocketHPACK_Result
+hpack_decode_literal (SocketHPACK_Decoder_T decoder,
+                      const unsigned char *input, size_t input_len,
+                      int prefix_bits, size_t *pos, SocketHPACK_Header *header,
+                      int add_to_table, int never_indexed, Arena_T arena)
+{
+  SocketHPACK_Result result;
+
+  if (!valid_prefix_bits (prefix_bits))
+    return HPACK_ERROR;
+
+  result = hpack_decode_literal_name (decoder, input, input_len, prefix_bits,
+                                      pos, header, arena);
+  if (result != HPACK_OK)
+    return result;
+
+  result = hpack_decode_literal_value (input, input_len, pos, header, arena);
+  if (result != HPACK_OK)
+    return result;
+
+  hpack_finalize_literal (decoder, header, add_to_table, never_indexed);
 
   return HPACK_OK;
 }
