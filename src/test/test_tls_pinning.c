@@ -824,6 +824,49 @@ TEST (pinning_on_server_context)
   END_TRY;
 }
 
+TEST (pinning_symlink_rejection)
+{
+  const char *cert_file = "test_symlink_pin.crt";
+  const char *key_file = "test_symlink_pin.key";
+  const char *symlink_file = "test_symlink_pin.link";
+
+  if (generate_test_certs (cert_file, key_file) != 0)
+    return;
+
+  /* Create a symlink to the certificate */
+  if (symlink (cert_file, symlink_file) != 0)
+    {
+      remove_test_certs (cert_file, key_file);
+      return; /* Skip test if symlink creation fails */
+    }
+
+  SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
+  ASSERT_NOT_NULL (ctx);
+
+  volatile int caught = 0;
+
+  /* Attempting to add pin from symlink should fail with ELOOP */
+  TRY { SocketTLSContext_add_pin_from_cert (ctx, symlink_file); }
+  EXCEPT (SocketTLS_Failed) { caught = 1; }
+  END_TRY;
+  ASSERT_EQ (caught, 1);
+
+  /* Regular file should still work */
+  caught = 0;
+  TRY
+  {
+    SocketTLSContext_add_pin_from_cert (ctx, cert_file);
+    ASSERT_EQ (SocketTLSContext_get_pin_count (ctx), 1);
+  }
+  EXCEPT (SocketTLS_Failed) { caught = 1; }
+  END_TRY;
+  ASSERT_EQ (caught, 0);
+
+  SocketTLSContext_free (&ctx);
+  unlink (symlink_file);
+  remove_test_certs (cert_file, key_file);
+}
+
 #endif /* SOCKET_HAS_TLS */
 
 int
