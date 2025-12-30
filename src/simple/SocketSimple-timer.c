@@ -53,9 +53,36 @@ timer_callback_wrapper (void *data)
  * Timer Creation
  *============================================================================*/
 
-SocketSimple_Timer_T
-Socket_simple_timer_add (SocketSimple_Poll_T poll, int64_t delay_ms,
-                          SocketSimple_TimerCallback callback, void *userdata)
+/**
+ * @brief Function pointer type for core timer creation functions.
+ *
+ * This type represents the signature of SocketTimer_add() and
+ * SocketTimer_add_repeating().
+ */
+typedef SocketTimer_T (*TimerCreateFn) (SocketPoll_T, int64_t,
+                                        SocketTimerCallback, void *);
+
+/**
+ * @brief Common implementation for timer creation.
+ *
+ * This helper function consolidates the shared logic between
+ * Socket_simple_timer_add() and Socket_simple_timer_add_repeating().
+ *
+ * @param poll Poll handle.
+ * @param time_ms Delay or interval in milliseconds.
+ * @param callback User callback function.
+ * @param userdata User data to pass to callback.
+ * @param allow_zero Whether to allow zero time_ms (1 = allow, 0 = reject).
+ * @param time_error_msg Error message for invalid time parameter.
+ * @param create_fn Core timer creation function.
+ * @param fail_msg Error message for timer creation failure.
+ * @return Timer handle on success, NULL on error.
+ */
+static SocketSimple_Timer_T
+timer_add_common (SocketSimple_Poll_T poll, int64_t time_ms,
+                  SocketSimple_TimerCallback callback, void *userdata,
+                  int allow_zero, const char *time_error_msg,
+                  TimerCreateFn create_fn, const char *fail_msg)
 {
   volatile SocketTimer_T core_timer = NULL;
 
@@ -74,10 +101,9 @@ Socket_simple_timer_add (SocketSimple_Poll_T poll, int64_t delay_ms,
       return NULL;
     }
 
-  if (delay_ms < 0)
+  if (allow_zero ? (time_ms < 0) : (time_ms <= 0))
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Delay must be non-negative");
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, time_error_msg);
       return NULL;
     }
 
@@ -103,12 +129,12 @@ Socket_simple_timer_add (SocketSimple_Poll_T poll, int64_t delay_ms,
   TRY
   {
     core_timer
-        = SocketTimer_add (core_poll, delay_ms, timer_callback_wrapper, handle);
+        = create_fn (core_poll, time_ms, timer_callback_wrapper, handle);
     handle->core_timer = core_timer;
   }
   EXCEPT (SocketTimer_Failed)
   {
-    simple_set_error (SOCKET_SIMPLE_ERR_POLL, "Failed to add timer");
+    simple_set_error (SOCKET_SIMPLE_ERR_POLL, fail_msg);
     free (handle);
     return NULL;
   }
@@ -118,69 +144,24 @@ Socket_simple_timer_add (SocketSimple_Poll_T poll, int64_t delay_ms,
 }
 
 SocketSimple_Timer_T
+Socket_simple_timer_add (SocketSimple_Poll_T poll, int64_t delay_ms,
+                          SocketSimple_TimerCallback callback, void *userdata)
+{
+  return timer_add_common (poll, delay_ms, callback, userdata, 1,
+                           "Delay must be non-negative", SocketTimer_add,
+                           "Failed to add timer");
+}
+
+SocketSimple_Timer_T
 Socket_simple_timer_add_repeating (SocketSimple_Poll_T poll,
                                     int64_t interval_ms,
                                     SocketSimple_TimerCallback callback,
                                     void *userdata)
 {
-  volatile SocketTimer_T core_timer = NULL;
-
-  Socket_simple_clear_error ();
-
-  if (!poll)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid poll handle");
-      return NULL;
-    }
-
-  if (!callback)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Timer callback required");
-      return NULL;
-    }
-
-  if (interval_ms <= 0)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Interval must be positive");
-      return NULL;
-    }
-
-  struct SocketSimple_Timer *handle = calloc (1, sizeof (*handle));
-  if (!handle)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
-      return NULL;
-    }
-
-  handle->callback = callback;
-  handle->userdata = userdata;
-  handle->is_valid = 1;
-
-  SocketPoll_T core_poll = simple_poll_get_core (poll);
-  if (!core_poll)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid poll handle");
-      free (handle);
-      return NULL;
-    }
-
-  TRY
-  {
-    core_timer = SocketTimer_add_repeating (core_poll, interval_ms,
-                                             timer_callback_wrapper, handle);
-    handle->core_timer = core_timer;
-  }
-  EXCEPT (SocketTimer_Failed)
-  {
-    simple_set_error (SOCKET_SIMPLE_ERR_POLL, "Failed to add repeating timer");
-    free (handle);
-    return NULL;
-  }
-  END_TRY;
-
-  return handle;
+  return timer_add_common (poll, interval_ms, callback, userdata, 0,
+                           "Interval must be positive",
+                           SocketTimer_add_repeating,
+                           "Failed to add repeating timer");
 }
 
 /*============================================================================
