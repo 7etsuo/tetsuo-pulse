@@ -1125,16 +1125,8 @@ he_check_total_timeout (const T he)
   if (he->config.total_timeout_ms <= 0)
     return 0;
 
-  int64_t now_ms = Socket_get_monotonic_ms ();
-  int64_t elapsed;
-  if (now_ms < he->start_time_ms)
-    {
-      /* Time warp or overflow: treat as expired */
-      return 1;
-    }
-  elapsed = now_ms - he->start_time_ms;
-  int64_t total = he->config.total_timeout_ms;
-  return elapsed >= total;
+  int64_t deadline = he->start_time_ms + he->config.total_timeout_ms;
+  return SocketTimeout_expired (deadline);
 }
 
 static int
@@ -1159,19 +1151,14 @@ he_calculate_total_timeout_remaining (const T he, int current_timeout)
   if (he->config.total_timeout_ms <= 0)
     return current_timeout;
 
-  int64_t now_ms = Socket_get_monotonic_ms ();
-  if (now_ms < he->start_time_ms)
-    {
-      return 0; /* Time warp: expired */
-    }
-  int64_t elapsed = now_ms - he->start_time_ms;
+  int64_t deadline = he->start_time_ms + he->config.total_timeout_ms;
+  remaining = SocketTimeout_remaining_ms (deadline);
 
-  int64_t total = he->config.total_timeout_ms;
-  if (total <= elapsed || total <= 0)
-    {
-      return 0;
-    }
-  remaining = total - elapsed;
+  if (remaining == -1)
+    return current_timeout; /* No deadline */
+  if (remaining == 0)
+    return 0; /* Expired */
+
   return he_apply_timeout_limit (current_timeout, remaining);
 }
 
