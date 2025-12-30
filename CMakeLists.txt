@@ -742,6 +742,7 @@ set(TEST_SOURCES
     test_socketevent
     test_safe_arithmetic
     test_socket
+    test_simple_recv_line
     test_socketbuf
     test_socketdgram
     test_socketpoll
