@@ -525,6 +525,100 @@ Socket_simple_http_server_response_finish (
  * ============================================================================
  */
 
+/**
+ * json_escape_string - Escape a string for safe JSON insertion
+ * @dest: Destination buffer for escaped string
+ * @dest_size: Size of destination buffer
+ * @src: Source string to escape (may be NULL)
+ *
+ * Escapes special JSON characters per RFC 8259 Section 7:
+ * - Quotation mark (U+0022)
+ * - Reverse solidus (U+005C)
+ * - Control characters (U+0000 through U+001F)
+ *
+ * Prevents JSON injection attacks by ensuring user input cannot break
+ * JSON structure or inject malicious fields.
+ *
+ * NOTE: Not static to allow testing. This is an internal implementation
+ * detail and should not be used directly by library users.
+ */
+void
+json_escape_string (char *dest, size_t dest_size, const char *src)
+{
+  size_t i = 0;
+
+  if (dest_size == 0)
+    return;
+
+  if (!src)
+    {
+      dest[0] = '\0';
+      return;
+    }
+
+  while (*src && i < dest_size - 1)
+    {
+      unsigned char c = (unsigned char)*src;
+
+      if (c == '\"' && i < dest_size - 2)
+        {
+          dest[i++] = '\\';
+          dest[i++] = '\"';
+        }
+      else if (c == '\\' && i < dest_size - 2)
+        {
+          dest[i++] = '\\';
+          dest[i++] = '\\';
+        }
+      else if (c == '\b' && i < dest_size - 2)
+        {
+          dest[i++] = '\\';
+          dest[i++] = 'b';
+        }
+      else if (c == '\f' && i < dest_size - 2)
+        {
+          dest[i++] = '\\';
+          dest[i++] = 'f';
+        }
+      else if (c == '\n' && i < dest_size - 2)
+        {
+          dest[i++] = '\\';
+          dest[i++] = 'n';
+        }
+      else if (c == '\r' && i < dest_size - 2)
+        {
+          dest[i++] = '\\';
+          dest[i++] = 'r';
+        }
+      else if (c == '\t' && i < dest_size - 2)
+        {
+          dest[i++] = '\\';
+          dest[i++] = 't';
+        }
+      else if (c < 0x20)
+        {
+          /* Escape other control characters as \uXXXX */
+          int written = snprintf (&dest[i], dest_size - i, "\\u%04x", c);
+          if (written > 0 && (size_t)written < dest_size - i)
+            {
+              i += written;
+            }
+          else
+            {
+              break; /* Not enough space */
+            }
+        }
+      else
+        {
+          dest[i++] = c;
+        }
+
+      src++;
+    }
+
+  dest[i] = '\0';
+}
+
 void
 Socket_simple_http_server_response_json (SocketSimple_HTTPServerRequest_T req,
                                          int status, const char *json)
@@ -547,11 +641,13 @@ Socket_simple_http_server_response_error (SocketSimple_HTTPServerRequest_T req,
                                           int status, const char *message)
 {
   char json[512];
+  char escaped[256];
 
   if (!req || !req->core_req)
     return;
 
-  snprintf (json, sizeof (json), "{\"error\":\"%s\"}", message ? message : "");
+  json_escape_string (escaped, sizeof (escaped), message);
+  snprintf (json, sizeof (json), "{\"error\":\"%s\"}", escaped);
 
   Socket_simple_http_server_response_json (req, status, json);
 }
