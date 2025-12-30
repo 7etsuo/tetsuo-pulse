@@ -96,23 +96,6 @@
 /** CRLF size for HTTP line endings */
 #define SOCKET_PROXY_CRLF_SIZE (sizeof ("\r\n") - 1)
 
-/* HTTP status code range boundaries */
-#define HTTP_STATUS_SUCCESS_MIN 200
-#define HTTP_STATUS_SUCCESS_MAX 299
-#define HTTP_STATUS_CLIENT_ERROR_MIN 400
-#define HTTP_STATUS_CLIENT_ERROR_MAX 499
-#define HTTP_STATUS_SERVER_ERROR_MIN 500
-
-/* Specific HTTP status codes for proxy responses */
-#define HTTP_STATUS_BAD_REQUEST 400
-#define HTTP_STATUS_FORBIDDEN 403
-#define HTTP_STATUS_NOT_FOUND 404
-#define HTTP_STATUS_PROXY_AUTH_REQUIRED 407
-#define HTTP_STATUS_INTERNAL_SERVER_ERROR 500
-#define HTTP_STATUS_BAD_GATEWAY 502
-#define HTTP_STATUS_SERVICE_UNAVAILABLE 503
-#define HTTP_STATUS_GATEWAY_TIMEOUT 504
-
 /* ============================================================================
  * Helper Functions
  * ============================================================================
@@ -599,7 +582,7 @@ handle_server_error_status (int status)
 {
   switch (status)
     {
-    case HTTP_STATUS_INTERNAL_SERVER_ERROR:
+    case HTTP_STATUS_INTERNAL_ERROR:
       PROXY_ERROR_MSG ("HTTP 500 Internal Server Error");
       return PROXY_ERROR;
 
@@ -638,16 +621,16 @@ SocketProxy_Result
 proxy_http_status_to_result (int status)
 {
   /* 2xx Success - tunnel established */
-  if (status >= HTTP_STATUS_SUCCESS_MIN && status <= HTTP_STATUS_SUCCESS_MAX)
+  if (status >= HTTP_STATUS_2XX_MIN && status <= HTTP_STATUS_2XX_MAX)
     return PROXY_OK;
 
   /* 4xx Client Error */
-  if (status >= HTTP_STATUS_CLIENT_ERROR_MIN
-      && status <= HTTP_STATUS_CLIENT_ERROR_MAX)
+  if (status >= HTTP_STATUS_4XX_MIN
+      && status <= HTTP_STATUS_4XX_MAX)
     return handle_client_error_status (status);
 
   /* 5xx Server Error */
-  if (status >= HTTP_STATUS_SERVER_ERROR_MIN)
+  if (status >= HTTP_STATUS_5XX_MIN)
     return handle_server_error_status (status);
 
   /* Unexpected status (1xx, 3xx, or invalid) */
