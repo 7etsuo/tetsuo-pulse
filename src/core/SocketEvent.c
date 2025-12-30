@@ -69,7 +69,13 @@ socketevent_dispatch (const SocketEventRecord *event)
   SocketEventHandler local_handlers[SOCKET_EVENT_MAX_HANDLERS];
   size_t count;
 
-  assert (event);
+  /* Explicit NULL check (CWE-476) - not compiled out in release builds */
+  if (event == NULL)
+    {
+      SocketLog_emit (SOCKET_LOG_ERROR, "SocketEvents",
+                      "NULL event passed to socketevent_dispatch");
+      return;
+    }
 
   SOCKET_MUTEX_LOCK_OR_RAISE (&socketevent_mutex, SocketEvent,
                               SocketEvent_Failed);
