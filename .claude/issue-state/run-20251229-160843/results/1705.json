@@ -1,0 +1,11 @@
+{
+  "issue": 1705,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1754",
+  "pr_number": 1754,
+  "branch": "issue-1705-inline-flush-complete-bytes",
+  "files_changed": ["src/http/SocketHPACK-huffman.c"],
+  "tests_passed": true,
+  "commit_sha": "2e74184bcbbf379ee4b9498fbad7f68d0a0a8fc2",
+  "summary": "Inlined single-use flush_complete_bytes function into SocketHPACK_huffman_encode. All HPACK and HTTP2 tests pass."
+}

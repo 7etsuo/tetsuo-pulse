@@ -1,0 +1,11 @@
+{
+  "issue": 1678,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1694",
+  "pr_number": 1694,
+  "branch": "issue-1678-flatten-tls-alpn-nesting",
+  "files_changed": ["src/http/SocketHTTPServer.c"],
+  "tests_passed": true,
+  "commit_sha": "fd228951feada3c775b1cdf51335cde136b98cd0",
+  "description": "Reduced nesting depth from 5 to 4 levels in server_process_tls_handshake() by using early return pattern for error handling in TLS ALPN HTTP/2 negotiation"
+}

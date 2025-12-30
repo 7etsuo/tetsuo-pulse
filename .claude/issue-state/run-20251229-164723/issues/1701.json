@@ -1,0 +1,10 @@
+{
+  "number": 1701,
+  "title": "refactor(hpack): inline single-use hpack_encode_indexed function",
+  "body": "## Summary\n\nThe function `hpack_encode_indexed` (lines 550-554) is a 5-line wrapper called exactly once. It can be inlined to reduce indirection.\n\n## File\n`src/http/SocketHPACK.c`\n\n## Line Range\n550-554\n\n## Pattern\nSINGLE_USE_INLINE\n\n## Severity\nHIGH\n\n## Issue\nSingle-use function that wraps `hpack_encode_int_with_flag`:\n\n```c\nstatic ssize_t\nhpack_encode_indexed (size_t index, unsigned char *output, size_t output_size)\n{\n  return hpack_encode_int_with_flag (index, HPACK_PREFIX_INDEXED,\n                                     HPACK_INDEXED_MASK, output, output_size);\n}\n```\n\nCalled only once at line 691:\n```c\nif (exact_index > 0)\n  return hpack_encode_indexed ((size_t)exact_index, output, output_size);\n```\n\n## Call Count\nDefinition: Line 550\nCalls: Line 691 (1 call total)\n\n## Recommendation\n\nInline the function at its single call site:\n\n```c\nif (exact_index > 0)\n  return hpack_encode_int_with_flag ((size_t)exact_index, HPACK_PREFIX_INDEXED,\n                                     HPACK_INDEXED_MASK, output, output_size);\n```\n\nThis eliminates unnecessary function call overhead and simplifies the code structure without sacrificing readability.\n\n## Category\nrefactor\n\n## Analysis Source\nAutomated readability analysis - HPACK pipeline run",
+  "labels": [
+    "wip:claude-1767049733-3520773"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

@@ -1,0 +1,11 @@
+{
+  "issue": 1737,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1795",
+  "pr_number": 1795,
+  "branch": "issue-1737-inline-clear-pending-header-block",
+  "files_changed": ["src/http/SocketHTTP2-stream.c"],
+  "tests_passed": true,
+  "commit_sha": "63a0eb7f7a877909622c8f08ee2d429f7c6f81f6",
+  "notes": "All HTTP/2 tests passed (test_http2, test_http2_integration, test_http2_priority, test_http2_rate_limit, test_http2_server_push). One unrelated DNS test (test_dns_queue_limit) has a pre-existing memory leak unrelated to this refactoring."
+}

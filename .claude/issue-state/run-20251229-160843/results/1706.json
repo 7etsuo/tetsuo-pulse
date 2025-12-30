@@ -1,0 +1,11 @@
+{
+  "issue": 1706,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1761",
+  "pr_number": 1761,
+  "branch": "issue-1706-inline-hpack-find-symbol",
+  "files_changed": ["src/http/SocketHPACK-huffman.c"],
+  "tests_passed": true,
+  "commit_sha": "72c608d3893e6a9888b19e98a5c3d38b2ac9f3f5",
+  "notes": "116/117 tests passed. One pre-existing test failure in test_dns_queue_limit (DNS memory leak unrelated to HPACK changes). All HPACK tests pass."
+}

@@ -1,0 +1,19 @@
+{
+  "issue": 1731,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1779",
+  "pr_number": 1779,
+  "branch": "issue-1731-flatten-check-path-traversal-mixed-encoding",
+  "files_changed": ["src/http/SocketHTTP-uri.c"],
+  "tests_passed": true,
+  "commit_sha": "3a21542f9e96774ab6ebe4fa9f1f22ec3503183b",
+  "summary": "Flattened 5-level nesting in check_path_traversal Check 4 (mixed encoding %2e. detection) to 2 levels using early continue statements. Security logic unchanged, readability improved.",
+  "test_results": {
+    "total_tests": 117,
+    "passed": 116,
+    "failed": 1,
+    "failed_test": "test_dns_queue_limit (pre-existing flaky test, unrelated to changes)",
+    "http_core_tests": "225/225 passed",
+    "http1_parser_tests": "34/34 passed"
+  }
+}

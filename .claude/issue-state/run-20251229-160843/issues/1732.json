@@ -1,0 +1,10 @@
+{
+  "number": 1732,
+  "title": "refactor(http1-serialize): inline single-use add_response_extras function",
+  "body": "## Summary\n\nThe static function `add_response_extras` (lines 331-341) is only called once in the entire file, making it a candidate for inlining to improve code locality.\n\n## Location\n\n**File**: `src/http/SocketHTTP1-serialize.c`\n**Lines**: 331-341 (11 lines)\n**Called at**: Line 394 in `SocketHTTP1_serialize_response`\n\n## Current Code\n\n```c\nstatic int\nadd_response_extras (const SocketHTTP_Response *response, char **buf,\n                     size_t *remaining)\n{\n  if (append_content_length_header (buf, remaining, response->headers,\n                                    response->has_body,\n                                    response->content_length)\n      < 0)\n    return -1;\n\n  return safe_append_crlf (buf, remaining);\n}\n```\n\n**Single call site** (line 394):\n```c\nif (add_response_extras (response, &p, &remaining) < 0)\n  return -1;\n```\n\n## Recommendation\n\nInline this 11-line wrapper function directly into its only call site at line 394 in `SocketHTTP1_serialize_response` to:\n- Improve code locality and readability\n- Reduce unnecessary abstraction layer\n- Make the response serialization flow more explicit\n- Mirror the structure after `add_request_extras` is inlined (#1728)\n\n## Pattern\n\n- **Type**: SINGLE_USE_INLINE\n- **Severity**: HIGH (small wrapper function, clear inline candidate)\n- **Category**: Refactoring / Readability\n\n## Related\n\nThis is the response counterpart to `add_request_extras` (#1728).",
+  "labels": [
+    "enhancement"
+  ],
+  "state": "OPEN",
+  "dependencies": []
+}

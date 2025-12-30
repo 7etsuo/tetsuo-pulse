@@ -1,0 +1,11 @@
+{
+  "issue": 1739,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1789",
+  "pr_number": 1789,
+  "branch": "issue-1739-flatten-alloc-empty-nesting",
+  "files_changed": ["src/http/SocketHTTP-uri.c"],
+  "tests_passed": true,
+  "commit_sha": "bb81c092",
+  "summary": "Reduced nesting from 3 levels to 2 in alloc_and_validate function by using early return guard clause for !alloc_empty case. All 225 HTTP core tests passed."
+}

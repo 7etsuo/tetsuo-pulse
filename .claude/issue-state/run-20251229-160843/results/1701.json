@@ -1,0 +1,11 @@
+{
+  "issue": 1701,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1753",
+  "pr_number": 1753,
+  "branch": "issue-1701-inline-hpack-encode-indexed",
+  "files_changed": ["src/http/SocketHPACK.c"],
+  "tests_passed": true,
+  "commit_sha": "a4c58921",
+  "summary": "Inlined single-use hpack_encode_indexed function at its only call site, reducing indirection and simplifying code structure. Removed 5-line wrapper function and replaced call with direct invocation of hpack_encode_int_with_flag. All HPACK and HTTP/2 tests pass."
+}

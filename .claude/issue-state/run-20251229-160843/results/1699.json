@@ -1,0 +1,11 @@
+{
+  "issue": 1699,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1750",
+  "pr_number": 1750,
+  "branch": "issue-1699-inline-is-idempotent-method",
+  "files_changed": ["src/http/SocketHTTPClient-retry.c"],
+  "tests_passed": true,
+  "commit_sha": "4b8d3e09",
+  "summary": "Inlined single-use is_idempotent_method() helper function directly into httpclient_should_retry_status_with_method() at its single call site, improving code locality and eliminating unnecessary indirection."
+}

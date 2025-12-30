@@ -1,0 +1,10 @@
+{
+  "issue": 1736,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1809",
+  "pr_number": 1809,
+  "branch": "issue-1736-inline-connection-create-parser",
+  "files_changed": ["src/http/SocketHTTPServer-connections.c"],
+  "tests_passed": true,
+  "commit_sha": "85a485c759ec3ae7b9221bdf96f50fafe7edc945"
+}

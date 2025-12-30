@@ -1,0 +1,11 @@
+{
+  "issue": 1675,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1693",
+  "pr_number": 1693,
+  "branch": "issue-1675-inline-is-ipv6-address",
+  "files_changed": ["src/http/SocketHTTPServer.c"],
+  "tests_passed": true,
+  "commit_sha": "d22c97ca",
+  "notes": "One pre-existing test failure (test_dns_queue_limit) exists on main branch, unrelated to this change"
+}

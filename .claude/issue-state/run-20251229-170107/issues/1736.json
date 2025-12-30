@@ -1,0 +1,8 @@
+{
+  "number": 1736,
+  "title": "refactor(http-server-connections): inline single-use connection_create_parser function",
+  "body": "## Summary\n\nThe connection_create_parser function is called only once (line 671) and is 14 lines long.\n\n## Location\nFile: src/http/SocketHTTPServer-connections.c\nFunction: connection_create_parser\nLines: 627-641\nCalled at: connection_init_resources (line 671)\n\n## Pattern\nSINGLE_USE_INLINE (HIGH severity)",
+  "labels": [],
+  "state": "OPEN",
+  "dependencies": []
+}

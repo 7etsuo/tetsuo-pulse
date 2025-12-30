@@ -1,0 +1,8 @@
+{
+  "number": 1738,
+  "title": "refactor(http-server-connections): review single-use connection_init_resources function",
+  "body": "## Summary\n\nThe connection_init_resources function is called only once (line 752) and is 35 lines long.\n\n## Location\nFile: src/http/SocketHTTPServer-connections.c\nFunction: connection_init_resources\nLines: 657-693\nCalled at: connection_new (line 752)\n\n## Pattern\nSINGLE_USE_REVIEW (MEDIUM severity)\n\n## Recommendation\nReview whether this function provides value as a separate unit or should be inlined into connection_new.",
+  "labels": [],
+  "state": "OPEN",
+  "dependencies": []
+}

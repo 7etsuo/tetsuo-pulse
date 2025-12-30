@@ -1,0 +1,10 @@
+{
+  "issue": 1738,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1806",
+  "pr_number": 1806,
+  "branch": "issue-1738-review-connection-init-resources",
+  "files_changed": ["src/http/SocketHTTPServer-connections.c"],
+  "tests_passed": true,
+  "commit_sha": "1505edbc"
+}

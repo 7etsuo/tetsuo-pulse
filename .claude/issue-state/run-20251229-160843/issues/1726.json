@@ -1,0 +1,8 @@
+{
+  "number": 1726,
+  "title": "refactor(http-server-connections): flatten 4-level nesting in request body handling",
+  "body": "## Summary\n\nThe connection_parse_request() function contains 4-level nested if statements (lines 504-524) for handling request bodies.\n\n## Location\nFile: src/http/SocketHTTPServer-connections.c\nFunction: connection_parse_request\nLines: 504-524\n\n## Pattern\nDEEP_NESTING_4 (HIGH severity)",
+  "labels": [],
+  "state": "OPEN",
+  "dependencies": []
+}

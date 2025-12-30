@@ -1,0 +1,8 @@
+{
+  "number": 1741,
+  "title": "refactor(http-server-connections): document justification for single-use connection_setup_body_buffer",
+  "body": "## Summary\n\nThe connection_setup_body_buffer function is called only once (line 507) and is 52 lines long.\n\n## Location\nFile: src/http/SocketHTTPServer-connections.c\nFunction: connection_setup_body_buffer\nLines: 192-245\nCalled at: connection_parse_request (line 507)\n\n## Pattern\nSINGLE_USE_REVIEW (MEDIUM severity)\n\n## Recommendation\nKeep as separate function due to size (52 lines), but add documentation explaining why it's not reused elsewhere.",
+  "labels": [],
+  "state": "OPEN",
+  "dependencies": []
+}

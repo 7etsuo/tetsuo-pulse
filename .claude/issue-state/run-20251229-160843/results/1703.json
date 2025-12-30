@@ -1,0 +1,10 @@
+{
+  "issue": 1703,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1752",
+  "pr_number": 1752,
+  "branch": "issue-1703-inline-decode-string-header",
+  "files_changed": ["src/http/SocketHPACK.c"],
+  "tests_passed": true,
+  "commit_sha": "4897cfe0"
+}

@@ -1,0 +1,19 @@
+{
+  "issue": 1735,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1781",
+  "pr_number": 1781,
+  "branch": "issue-1735-flatten-parse-quoted-value",
+  "files_changed": [
+    "src/http/SocketHTTP-uri.c"
+  ],
+  "tests_passed": true,
+  "commit_sha": "b9fb5719ee51209162ad79ff3c7c5b5c6acfea98",
+  "summary": "Flattened 4-level nesting to 3 levels in parse_quoted_value function by inverting backslash check and using early continue",
+  "test_results": {
+    "total_tests": 117,
+    "passed": 116,
+    "failed": 1,
+    "note": "1 pre-existing test failure (test_dns_queue_limit) unrelated to HTTP URI changes - same failure exists on main branch"
+  }
+}

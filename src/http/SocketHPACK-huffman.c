@@ -26,6 +26,12 @@
 #define HUFFMAN_REFILL_THRESHOLD 32
 #define HUFFMAN_BITS_PER_BYTE 8
 
+/* Decode result codes for try_decode_symbol */
+#define DECODE_ERROR    (-1)
+#define DECODE_NO_MATCH   0
+#define DECODE_SYMBOL     1
+#define DECODE_EOS        2
+
 /* ============================================================================
  * Huffman Encode Table (RFC 7541 Appendix B)
  * ============================================================================
@@ -392,6 +398,14 @@ is_valid_eos_padding (uint64_t bits, int bits_avail)
   return padding == pad_mask;
 }
 
+/* Check if we've reached a valid termination point (EOS or valid padding) */
+static inline int
+is_valid_termination (uint64_t bits, int bits_avail)
+{
+  return bits_avail <= HUFFMAN_MAX_PAD_BITS
+         && is_valid_eos_padding (bits, bits_avail);
+}
+
 /* ============================================================================
  * Encoding Helpers
  * ============================================================================
@@ -401,6 +415,39 @@ is_valid_eos_padding (uint64_t bits, int bits_avail)
  * Decoding Helpers
  * ============================================================================
  */
+
+static inline uint64_t
+extract_code_bits (uint64_t bits, int bits_avail, int code_len)
+{
+  uint64_t mask = (1ULL << code_len) - 1ULL;
+  return (bits >> (bits_avail - code_len)) & mask;
+}
+
+static int
+find_symbol_by_code (int bitlen, uint64_t code)
+{
+  size_t s;
+
+  for (s = 0; s < HPACK_HUFFMAN_SYMBOLS; s++)
+    {
+      const HPACK_HuffmanSymbol *entry = &hpack_huffman_encode[s];
+      if (entry->bits == (unsigned) bitlen && entry->code == code)
+        return (int) s;
+    }
+
+  return -1;
+}
+
+static int
+emit_decoded_byte (unsigned char *output, size_t *out_pos, size_t output_size,
+                   unsigned char byte)
+{
+  if (*out_pos >= output_size)
+    return -1;
+
+  output[(*out_pos)++] = byte;
+  return 0;
+}
 
 /* Try to decode a short code (5-8 bits). Returns 1 if decoded, 0 if no match. */
 static int
@@ -434,57 +481,39 @@ static int
 try_full_decode (uint64_t bits, int *bits_avail, unsigned char *output,
                  size_t *out_pos, size_t output_size)
 {
-  int maxcl;
-  int cl;
+  int max_code_len = (*bits_avail > HPACK_HUFFMAN_MAX_BITS)
+                         ? HPACK_HUFFMAN_MAX_BITS
+                         : *bits_avail;
+  int code_len;
 
-  maxcl = (*bits_avail > HPACK_HUFFMAN_MAX_BITS) ? HPACK_HUFFMAN_MAX_BITS
-                                                 : *bits_avail;
-
-  for (cl = 9; cl <= maxcl; cl++)
+  for (code_len = 9; code_len <= max_code_len; code_len++)
     {
-      uint64_t mask = (1ULL << cl) - 1ULL;
-      uint64_t thiscode = (bits >> (*bits_avail - cl)) & mask;
-
-      /* Linear search for longer codes (9-30 bits). O(257) worst case. */
-      int sym = -1;
-      if (cl >= HUFFMAN_MIN_CODE_BITS && cl <= HPACK_HUFFMAN_MAX_BITS)
-        {
-          for (size_t s = 0; s < HPACK_HUFFMAN_SYMBOLS; s++)
-            {
-              const HPACK_HuffmanSymbol *sym_entry = &hpack_huffman_encode[s];
-              if (sym_entry->bits == (unsigned) cl && sym_entry->code == thiscode)
-                {
-                  sym = (int) s;
-                  break;
-                }
-            }
-        }
+      uint64_t code = extract_code_bits (bits, *bits_avail, code_len);
+      int sym = find_symbol_by_code (code_len, code);
 
       if (sym < 0)
         continue;
 
-      if (sym != HPACK_HUFFMAN_EOS)
+      if (sym == HPACK_HUFFMAN_EOS)
         {
-          if (*out_pos >= output_size)
-            return -1;
-          output[(*out_pos)++] = (unsigned char) sym;
-          *bits_avail -= cl;
-          return 1;
+          int pad_bits = *bits_avail - code_len;
+          if (pad_bits < 0 || pad_bits > HUFFMAN_MAX_PAD_BITS)
+            return 0;
+          if (pad_bits > 0 && !is_valid_eos_padding (bits, pad_bits))
+            return 0;
+          *bits_avail = 0;
+          return 2;
         }
 
-      /* Handle EOS */
-      int pad_b = *bits_avail - cl;
-      if (pad_b > HUFFMAN_MAX_PAD_BITS || pad_b < 0)
-        return 0;
+      if (emit_decoded_byte (output, out_pos, output_size,
+                             (unsigned char) sym)
+          < 0)
+        return -1;
 
-      uint64_t pad_mask = (1ULL << pad_b) - 1ULL;
-      uint64_t pad = bits & pad_mask;
-      if (pad != pad_mask)
-        return 0;
-
-      *bits_avail = 0;
-      return 2;
+      *bits_avail -= code_len;
+      return 1;
     }
+
   return 0;
 }
 
@@ -602,7 +631,6 @@ SocketHPACK_huffman_decode (const unsigned char *input, size_t input_len,
   uint64_t bits = 0;
   int bits_avail = 0;
   size_t in_pos = 0;
-  int decode_result;
 
   if (!validate_buffer (input, input_len)
       || !validate_buffer (output, output_size))
@@ -623,24 +651,16 @@ SocketHPACK_huffman_decode (const unsigned char *input, size_t input_len,
       if (bits_avail < HUFFMAN_MIN_CODE_BITS)
         break;
 
-      decode_result
-          = try_decode_symbol (bits, &bits_avail, output, &out_pos,
-                               output_size);
+      int result = try_decode_symbol (bits, &bits_avail, output, &out_pos,
+                                      output_size);
 
-      if (decode_result < 0)
+      if (result == DECODE_ERROR)
         return -1;
 
-      if (decode_result == 2)
+      /* EOS or no-match both require valid termination to succeed */
+      if (result != DECODE_SYMBOL)
         {
-          if (bits_avail <= HUFFMAN_MAX_PAD_BITS
-              && is_valid_eos_padding (bits, bits_avail))
-            break;
-          return -1;
-        }
-      else if (decode_result == 0)
-        {
-          if (bits_avail <= HUFFMAN_MAX_PAD_BITS
-              && is_valid_eos_padding (bits, bits_avail))
+          if (is_valid_termination (bits, bits_avail))
             break;
           return -1;
         }
@@ -649,14 +669,8 @@ SocketHPACK_huffman_decode (const unsigned char *input, size_t input_len,
     }
 
   /* Validate final padding per RFC 7541 §5.2 */
-  if (bits_avail > 0)
-    {
-      if (bits_avail > HUFFMAN_MAX_PAD_BITS)
-        return -1;
-
-      if (!is_valid_eos_padding (bits, bits_avail))
-        return -1;
-    }
+  if (bits_avail > 0 && !is_valid_termination (bits, bits_avail))
+    return -1;
 
   if (in_pos < input_len)
     return -1;

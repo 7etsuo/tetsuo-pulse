@@ -1,0 +1,11 @@
+{
+  "issue": 1707,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1804",
+  "pr_number": 1804,
+  "branch": "issue-1707-inline-refill-bit-buffer",
+  "files_changed": ["src/http/SocketHPACK-huffman.c"],
+  "tests_passed": true,
+  "commit_sha": "14b577e0",
+  "summary": "Inlined single-use refill_bit_buffer function in SocketHPACK_huffman_decode, reducing indirection and simplifying the decode loop. Net reduction of 7 lines (13 removed, 6 added). All HPACK tests pass."
+}

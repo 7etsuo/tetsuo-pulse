@@ -1,0 +1,10 @@
+{
+  "issue": 1720,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1776",
+  "pr_number": 1776,
+  "branch": "issue-1720-flatten-cookie-headers",
+  "files_changed": ["src/http/SocketHTTP2-stream.c"],
+  "tests_passed": true,
+  "commit_sha": "4d3309c0d4bac97aee3d1b00eeb5740e3f6e7c87"
+}

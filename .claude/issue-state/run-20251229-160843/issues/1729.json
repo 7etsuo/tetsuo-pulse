@@ -1,0 +1,8 @@
+{
+  "number": 1729,
+  "title": "refactor(http2-stream): inline single-use function http2_stream_rate_record",
+  "body": "## Issue\nSingle-use helper function adds unnecessary indirection.\n\n**File**: `src/http/SocketHTTP2-stream.c`  \n**Lines**: 232-238  \n**Function**: `http2_stream_rate_record`  \n**Pattern**: SINGLE_USE_INLINE  \n**Severity**: HIGH  \n**Size**: 6 lines  \n**Usage**: Called once from `http2_stream_create` at line 314\n\n## Current Code\n\\`\\`\\`c\nstatic void\nhttp2_stream_rate_record (SocketHTTP2_Conn_T conn)\n{\n  int64_t now_ms = Socket_get_monotonic_ms ();\n  TimeWindow_record (&conn->stream_create_window, now_ms);\n  TimeWindow_record (&conn->stream_burst_window, now_ms);\n}\n\\`\\`\\`\n\n## Recommendation\nInline at the single call site in `http2_stream_create`:\n\\`\\`\\`c\n/* Record stream creation in sliding windows for rate limiting */\nint64_t now_ms = Socket_get_monotonic_ms ();\nTimeWindow_record (&conn->stream_create_window, now_ms);\nTimeWindow_record (&conn->stream_burst_window, now_ms);\n\\`\\`\\`\n\n## Benefits\n- Eliminates unnecessary function call overhead\n- Reduces code indirection\n- Makes rate limiting logic more visible at call site\n- Simplifies codebase (one less function to maintain)",
+  "labels": [],
+  "state": "OPEN",
+  "dependencies": []
+}

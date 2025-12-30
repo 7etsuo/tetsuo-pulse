@@ -1,0 +1,10 @@
+{
+  "issue": 1743,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1805",
+  "pr_number": 1805,
+  "branch": "issue-1743-inline-host-header",
+  "files_changed": ["src/http/SocketHTTP1-serialize.c"],
+  "tests_passed": true,
+  "commit_sha": "f15bebd349fdeae87b45af539eb34c063d0aee86"
+}

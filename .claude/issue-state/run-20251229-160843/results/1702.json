@@ -1,0 +1,10 @@
+{
+  "issue": 1702,
+  "status": "success",
+  "pr_url": "https://github.com/7etsuo/tetsuo-socket/pull/1749",
+  "pr_number": 1749,
+  "branch": "issue-1702-inline-cookie-entry-update",
+  "files_changed": ["src/http/SocketHTTPClient-cookie.c"],
+  "tests_passed": true,
+  "commit_sha": "de3458a6"
+}
