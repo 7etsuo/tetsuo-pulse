@@ -105,4 +105,14 @@ SocketSimple_Socket_T simple_create_handle (Socket_T sock, int is_server,
 
 SocketSimple_Socket_T simple_create_udp_handle (SocketDgram_T dgram);
 
+/* ============================================================================
+ * Constants
+ * ============================================================================
+ */
+
+/**
+ * @brief Default timeout for Socket_simple_connect (milliseconds).
+ */
+#define SOCKET_SIMPLE_DEFAULT_TIMEOUT_MS 30000
+
 #endif /* SOCKETSIMPLE_INTERNAL_H */

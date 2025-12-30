@@ -25,7 +25,7 @@ SocketSimple_Socket_T
 Socket_simple_connect (const char *host, int port)
 {
   /* Use timeout version with default timeout */
-  return Socket_simple_connect_timeout (host, port, 30000);
+  return Socket_simple_connect_timeout (host, port, SOCKET_SIMPLE_DEFAULT_TIMEOUT_MS);
 }
 
 SocketSimple_Socket_T
