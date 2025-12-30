@@ -106,7 +106,7 @@ static int
 he_copy_hostname (T he, const char *host)
 {
   size_t len = strlen (host);
-  if (len == 0 || len > 255)
+  if (len == 0 || len > SOCKET_MAX_HOSTNAME_LEN)
     {
       RAISE_MODULE_ERROR (SocketHE_Failed);
     }
