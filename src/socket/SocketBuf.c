@@ -568,6 +568,49 @@ compact_rotate_in_place (char *data, size_t capacity, size_t head, size_t size)
 #undef SWAP_BYTES
 }
 
+/* Compact data that doesn't wrap around the buffer boundary.
+ * Simple case: all data is contiguous from [head, head+size).
+ */
+static void
+compact_simple (T buf, size_t first_part)
+{
+  (void)first_part; /* Used for documentation/validation */
+  memmove (buf->data, buf->data + buf->head, buf->size);
+}
+
+/* Compact wrapped data using two-part move.
+ * Optimization for when first_part <= head: we have room to move
+ * the second part first without overwriting data.
+ */
+static void
+compact_two_part (T buf, size_t first_part, size_t second_part)
+{
+  memmove (buf->data + first_part, buf->data, second_part);
+  memmove (buf->data, buf->data + buf->head, first_part);
+}
+
+/* Compact wrapped data using temporary buffer.
+ * Falls back to in-place rotation if allocation fails.
+ */
+static void
+compact_with_temp (T buf, size_t first_part, size_t second_part)
+{
+  char *temp = Arena_alloc (buf->arena, buf->size, __FILE__, __LINE__);
+  if (temp)
+    {
+      memmove (temp, buf->data + buf->head, first_part);
+      memmove (temp + first_part, buf->data, second_part);
+      memmove (buf->data, temp, buf->size);
+    }
+  else
+    {
+      SOCKET_LOG_DEBUG_MSG ("Arena_alloc failed in compact, using in-place "
+                            "rotation (size=%zu)",
+                            buf->size);
+      compact_rotate_in_place (buf->data, buf->capacity, buf->head, buf->size);
+    }
+}
+
 void
 SocketBuf_compact (T buf)
 {
@@ -580,36 +623,16 @@ SocketBuf_compact (T buf)
 
   if (first_part >= buf->size)
     {
-      memmove (buf->data, buf->data + buf->head, buf->size);
+      compact_simple (buf, first_part);
     }
   else
     {
       size_t second_part = buf->size - first_part;
 
       if (first_part <= buf->head)
-        {
-          memmove (buf->data + first_part, buf->data, second_part);
-          memmove (buf->data, buf->data + buf->head, first_part);
-        }
+        compact_two_part (buf, first_part, second_part);
       else
-        {
-          char *temp = Arena_alloc (buf->arena, buf->size, __FILE__, __LINE__);
-          if (temp)
-            {
-              memmove (temp, buf->data + buf->head, first_part);
-              memmove (temp + first_part, buf->data, second_part);
-              memmove (buf->data, temp, buf->size);
-            }
-          else
-            {
-              SOCKET_LOG_DEBUG_MSG (
-                  "Arena_alloc failed in compact, using in-place rotation "
-                  "(size=%zu)",
-                  buf->size);
-              compact_rotate_in_place (buf->data, buf->capacity, buf->head,
-                                       buf->size);
-            }
-        }
+        compact_with_temp (buf, first_part, second_part);
     }
 
   buf->head = 0;
