@@ -30,20 +30,7 @@
 #include "quic/SocketQUICConnection.h"
 #include "quic/SocketQUICConstants.h"
 #include "core/SocketCrypto.h"
-
-/**
- * @brief Safely add two uint64_t values with overflow protection.
- * @param base Base timestamp value.
- * @param offset Offset to add.
- * @return base + offset, or UINT64_MAX if overflow would occur.
- */
-static inline uint64_t
-safe_add_timeout(uint64_t base, uint64_t offset)
-{
-  if (base > UINT64_MAX - offset)
-    return UINT64_MAX;
-  return base + offset;
-}
+#include "core/SocketUtil.h"
 
 /**
  * @brief Calculate effective idle timeout as minimum of local and peer values.
@@ -59,24 +46,6 @@ get_effective_idle_timeout(uint64_t local_timeout_ms, uint64_t peer_timeout_ms)
   return local_timeout_ms < peer_timeout_ms
          ? local_timeout_ms
          : peer_timeout_ms;
-}
-
-/**
- * @brief Calculate termination timeout for closing/draining states.
- * @param pto_ms Probe Timeout (PTO) value in milliseconds.
- * @return Termination timeout in milliseconds (3 * PTO), or UINT64_MAX if overflow.
- *
- * RFC 9000 Section 10.2: An endpoint remains in the closing or draining
- * state for a period equal to three times the current PTO.
- *
- * Implements overflow protection consistent with safe_add_timeout.
- */
-static inline uint64_t
-calculate_termination_timeout(uint64_t pto_ms)
-{
-  if (pto_ms > UINT64_MAX / QUIC_CLOSING_TIMEOUT_PTO_MULT)
-    return UINT64_MAX;
-  return pto_ms * QUIC_CLOSING_TIMEOUT_PTO_MULT;
 }
 
 /**
@@ -157,7 +126,12 @@ SocketQUICConnection_reset_idle_timer(SocketQUICConnection_T conn,
       conn->local_max_idle_timeout_ms,
       conn->peer_max_idle_timeout_ms);
 
-  conn->idle_timeout_deadline_ms = safe_add_timeout(now_ms, effective_timeout);
+  /* Use safe addition with saturation semantics */
+  if (!socket_util_safe_add_u64(now_ms, effective_timeout,
+                                  &conn->idle_timeout_deadline_ms))
+    {
+      conn->idle_timeout_deadline_ms = UINT64_MAX;  /* Saturate on overflow */
+    }
 }
 
 /**
@@ -210,9 +184,17 @@ SocketQUICConnection_initiate_close(SocketQUICConnection_T conn,
   /* RFC 9000 Section 10.2: enter closing state */
   conn->state = QUIC_CONN_STATE_CLOSING;
 
-  /* Calculate closing deadline: 3 * PTO */
-  uint64_t timeout = calculate_termination_timeout(pto_ms);
-  conn->closing_deadline_ms = safe_add_timeout(now_ms, timeout);
+  /* Calculate closing deadline: 3 * PTO with overflow protection */
+  uint64_t timeout;
+  if (!socket_util_safe_mul_u64(pto_ms, QUIC_CLOSING_TIMEOUT_PTO_MULT, &timeout))
+    {
+      timeout = UINT64_MAX;  /* Saturate on overflow */
+    }
+
+  if (!socket_util_safe_add_u64(now_ms, timeout, &conn->closing_deadline_ms))
+    {
+      conn->closing_deadline_ms = UINT64_MAX;  /* Saturate on overflow */
+    }
 }
 
 /**
@@ -240,9 +222,17 @@ SocketQUICConnection_enter_draining(SocketQUICConnection_T conn,
   /* RFC 9000 Section 10.2.2: enter draining state */
   conn->state = QUIC_CONN_STATE_DRAINING;
 
-  /* Calculate draining deadline: 3 * PTO */
-  uint64_t timeout = calculate_termination_timeout(pto_ms);
-  conn->draining_deadline_ms = safe_add_timeout(now_ms, timeout);
+  /* Calculate draining deadline: 3 * PTO with overflow protection */
+  uint64_t timeout;
+  if (!socket_util_safe_mul_u64(pto_ms, QUIC_CLOSING_TIMEOUT_PTO_MULT, &timeout))
+    {
+      timeout = UINT64_MAX;  /* Saturate on overflow */
+    }
+
+  if (!socket_util_safe_add_u64(now_ms, timeout, &conn->draining_deadline_ms))
+    {
+      conn->draining_deadline_ms = UINT64_MAX;  /* Saturate on overflow */
+    }
 }
 
 /**
