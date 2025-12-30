@@ -128,9 +128,6 @@ struct T
 const Except_T SocketDNSTransport_Failed
     = { &SocketDNSTransport_Failed, "DNS transport operation failed" };
 
-/* Use centralized monotonic time utility from SocketUtil.h */
-#define get_monotonic_ms() Socket_get_monotonic_ms()
-
 /* Detect address family from string */
 static int
 detect_address_family (const char *address)
@@ -249,7 +246,7 @@ send_query (T transport, struct SocketDNSQuery *query)
   if (sent <= 0)
     return -1;
 
-  query->sent_time_ms = get_monotonic_ms ();
+  query->sent_time_ms = Socket_get_monotonic_ms ();
   return 0;
 }
 
@@ -386,7 +383,7 @@ static int
 check_timeouts (T transport)
 {
   struct SocketDNSQuery *query, *next;
-  int64_t now_ms = get_monotonic_ms ();
+  int64_t now_ms = Socket_get_monotonic_ms ();
   int processed = 0;
 
   for (query = transport->pending_head; query != NULL; query = next)
@@ -980,7 +977,7 @@ tcp_conn_start (T transport, int ns_idx)
       if (errno == EINPROGRESS)
         {
           conn->connecting = 1;
-          conn->connect_start_ms = get_monotonic_ms ();
+          conn->connect_start_ms = Socket_get_monotonic_ms ();
           return 0;
         }
       tcp_conn_close (conn);
@@ -989,7 +986,7 @@ tcp_conn_start (T transport, int ns_idx)
 
   /* Connected immediately */
   conn->connecting = 0;
-  conn->last_activity_ms = get_monotonic_ms ();
+  conn->last_activity_ms = Socket_get_monotonic_ms ();
   return 0;
 }
 
@@ -1020,7 +1017,7 @@ tcp_conn_check_connect (T transport, int ns_idx)
   if (ret == 0)
     {
       /* Still connecting - check timeout */
-      int64_t now = get_monotonic_ms ();
+      int64_t now = Socket_get_monotonic_ms ();
       if (now - conn->connect_start_ms > transport->tcp_connect_timeout_ms)
         {
           tcp_conn_close (conn);
@@ -1038,7 +1035,7 @@ tcp_conn_check_connect (T transport, int ns_idx)
 
   /* Connected! */
   conn->connecting = 0;
-  conn->last_activity_ms = get_monotonic_ms ();
+  conn->last_activity_ms = Socket_get_monotonic_ms ();
   return 1;
 }
 
@@ -1100,7 +1097,7 @@ tcp_send_query (T transport, struct SocketDNSQuery *query)
   ret = tcp_send_buffered (conn);
   if (ret == 1)
     {
-      conn->last_activity_ms = get_monotonic_ms ();
+      conn->last_activity_ms = Socket_get_monotonic_ms ();
       query->sent_time_ms = conn->last_activity_ms;
     }
   return ret;
@@ -1213,7 +1210,7 @@ tcp_recv_response (T transport, int ns_idx, unsigned char **response,
   conn->msg_len = 0;
   conn->recv_buf = NULL;
   conn->recv_len = 0;
-  conn->last_activity_ms = get_monotonic_ms ();
+  conn->last_activity_ms = Socket_get_monotonic_ms ();
 
   return 1;
 }
@@ -1358,7 +1355,7 @@ process_tcp_queries (T transport)
 {
   struct SocketDNSQuery *query, *next;
   int processed = 0;
-  int64_t now_ms = get_monotonic_ms ();
+  int64_t now_ms = Socket_get_monotonic_ms ();
 
   for (query = transport->pending_head; query != NULL; query = next)
     {
@@ -1467,7 +1464,7 @@ SocketDNSTransport_query_tcp (T transport, const unsigned char *query_data,
   else
     {
       /* Will be sent when connection completes */
-      query->sent_time_ms = get_monotonic_ms ();
+      query->sent_time_ms = Socket_get_monotonic_ms ();
     }
 
   /* Rotate nameserver for next query */
