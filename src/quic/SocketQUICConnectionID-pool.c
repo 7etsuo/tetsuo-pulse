@@ -67,7 +67,9 @@ hash_cid_bytes (const uint8_t *id, size_t len, uint32_t seed)
 /**
  * @brief Hash a sequence number for O(1) lookup.
  *
- * Uses multiplicative hash with Knuth's constant mixed with seed.
+ * Uses MurmurHash3-inspired mixing for excellent avalanche characteristics.
+ * The hash combines Knuth's multiplicative constant with the MurmurHash3
+ * finalizer to ensure uniform distribution even for sequential inputs.
  *
  * @param sequence Sequence number to hash.
  * @param seed Random seed for collision resistance.
@@ -80,7 +82,7 @@ hash_sequence (uint64_t sequence, uint32_t seed)
   uint64_t hash = sequence * 2654435761ULL;
   hash ^= seed;
   hash ^= (hash >> 33);
-  hash *= 0xff51afd7ed558ccdULL;
+  hash *= QUIC_HASH_MURMUR3_MIX;
   hash ^= (hash >> 33);
 
   return (unsigned)(hash & (QUIC_CONNID_POOL_HASH_SIZE - 1));
