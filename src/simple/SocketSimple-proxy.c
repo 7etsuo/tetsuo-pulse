@@ -19,10 +19,6 @@
 #include <ctype.h>
 #include <errno.h>
 
-/* Default proxy ports (see CLAUDE.md: Magic Numbers anti-pattern) */
-#define SOCKET_PROXY_DEFAULT_PORT_HTTP  8080
-#define SOCKET_PROXY_DEFAULT_PORT_SOCKS 1080
-
 /* ============================================================================
  * Configuration Functions
  * ============================================================================
@@ -41,48 +37,73 @@ Socket_simple_proxy_config_init (SocketSimple_ProxyConfig *config)
   config->handshake_timeout_ms = 0; /* Use default */
 }
 
-/* Helper to get default port for proxy type */
-static int
-get_default_proxy_port (SocketSimple_ProxyType type)
+/* ============================================================================
+ * Proxy Type Dispatch Table
+ * ============================================================================
+ */
+
+/**
+ * @brief Proxy type metadata for dispatch table.
+ *
+ * Consolidates all enum-dependent information (core type mapping, string name,
+ * default port) into a single source of truth. Eliminates duplicate switch
+ * statements per CLAUDE.md dispatch table pattern.
+ */
+typedef struct
 {
-  switch (type)
+  SocketSimple_ProxyType simple_type; /**< Simple API type identifier */
+  SocketProxyType core_type;          /**< Core module type mapping */
+  const char *name;                   /**< Human-readable name */
+  int default_port;                   /**< Default port for this type */
+} ProxyTypeInfo;
+
+/**
+ * @brief Master dispatch table for proxy type metadata.
+ *
+ * Single source of truth for all proxy type conversions. Add new proxy
+ * types by adding one entry here - no need to update multiple switches.
+ */
+static const ProxyTypeInfo proxy_type_table[] = {
+  { SOCKET_SIMPLE_PROXY_NONE, SOCKET_PROXY_NONE, "direct", 0 },
+  { SOCKET_SIMPLE_PROXY_HTTP, SOCKET_PROXY_HTTP, "HTTP", 8080 },
+  { SOCKET_SIMPLE_PROXY_HTTPS, SOCKET_PROXY_HTTPS, "HTTPS", 8080 },
+  { SOCKET_SIMPLE_PROXY_SOCKS4, SOCKET_PROXY_SOCKS4, "SOCKS4", 1080 },
+  { SOCKET_SIMPLE_PROXY_SOCKS4A, SOCKET_PROXY_SOCKS4A, "SOCKS4a", 1080 },
+  { SOCKET_SIMPLE_PROXY_SOCKS5, SOCKET_PROXY_SOCKS5, "SOCKS5", 1080 },
+  { SOCKET_SIMPLE_PROXY_SOCKS5H, SOCKET_PROXY_SOCKS5H, "SOCKS5h", 1080 },
+};
+
+#define PROXY_TYPE_COUNT                                                       \
+  (sizeof (proxy_type_table) / sizeof (proxy_type_table[0]))
+
+/**
+ * @brief Look up proxy type metadata.
+ *
+ * @param type Simple proxy type to look up.
+ * @return Pointer to metadata entry, or NULL if not found.
+ */
+static const ProxyTypeInfo *
+lookup_proxy_info (SocketSimple_ProxyType type)
+{
+  for (size_t i = 0; i < PROXY_TYPE_COUNT; i++)
     {
-    case SOCKET_SIMPLE_PROXY_HTTP:
-    case SOCKET_SIMPLE_PROXY_HTTPS:
-      return SOCKET_PROXY_DEFAULT_PORT_HTTP;
-    case SOCKET_SIMPLE_PROXY_SOCKS4:
-    case SOCKET_SIMPLE_PROXY_SOCKS4A:
-    case SOCKET_SIMPLE_PROXY_SOCKS5:
-    case SOCKET_SIMPLE_PROXY_SOCKS5H:
-      return SOCKET_PROXY_DEFAULT_PORT_SOCKS;
-    default:
-      return SOCKET_PROXY_DEFAULT_PORT_HTTP;
+      if (proxy_type_table[i].simple_type == type)
+        return &proxy_type_table[i];
     }
+  return NULL;
 }
 
-/* Helper to convert simple proxy type to core proxy type */
+/**
+ * @brief Convert simple proxy type to core proxy type.
+ *
+ * @param type Simple proxy type.
+ * @return Corresponding core proxy type (SOCKET_PROXY_NONE on unknown).
+ */
 static SocketProxyType
 simple_to_core_proxy_type (SocketSimple_ProxyType type)
 {
-  switch (type)
-    {
-    case SOCKET_SIMPLE_PROXY_NONE:
-      return SOCKET_PROXY_NONE;
-    case SOCKET_SIMPLE_PROXY_HTTP:
-      return SOCKET_PROXY_HTTP;
-    case SOCKET_SIMPLE_PROXY_HTTPS:
-      return SOCKET_PROXY_HTTPS;
-    case SOCKET_SIMPLE_PROXY_SOCKS4:
-      return SOCKET_PROXY_SOCKS4;
-    case SOCKET_SIMPLE_PROXY_SOCKS4A:
-      return SOCKET_PROXY_SOCKS4A;
-    case SOCKET_SIMPLE_PROXY_SOCKS5:
-      return SOCKET_PROXY_SOCKS5;
-    case SOCKET_SIMPLE_PROXY_SOCKS5H:
-      return SOCKET_PROXY_SOCKS5H;
-    default:
-      return SOCKET_PROXY_NONE;
-    }
+  const ProxyTypeInfo *info = lookup_proxy_info (type);
+  return info ? info->core_type : SOCKET_PROXY_NONE;
 }
 
 /* Helper to set error from proxy result */
@@ -351,8 +372,9 @@ Socket_simple_proxy_parse_url (const char *url,
     }
   else
     {
-      /* Use default port based on type */
-      config->port = get_default_proxy_port (config->type);
+      /* Use default port based on type (from dispatch table) */
+      const ProxyTypeInfo *info = lookup_proxy_info (config->type);
+      config->port = info ? info->default_port : 8080;
     }
 
   /* Validate we have a host */
@@ -369,25 +391,8 @@ Socket_simple_proxy_parse_url (const char *url,
 const char *
 Socket_simple_proxy_type_name (SocketSimple_ProxyType type)
 {
-  switch (type)
-    {
-    case SOCKET_SIMPLE_PROXY_NONE:
-      return "direct";
-    case SOCKET_SIMPLE_PROXY_HTTP:
-      return "HTTP";
-    case SOCKET_SIMPLE_PROXY_HTTPS:
-      return "HTTPS";
-    case SOCKET_SIMPLE_PROXY_SOCKS4:
-      return "SOCKS4";
-    case SOCKET_SIMPLE_PROXY_SOCKS4A:
-      return "SOCKS4a";
-    case SOCKET_SIMPLE_PROXY_SOCKS5:
-      return "SOCKS5";
-    case SOCKET_SIMPLE_PROXY_SOCKS5H:
-      return "SOCKS5h";
-    default:
-      return "unknown";
-    }
+  const ProxyTypeInfo *info = lookup_proxy_info (type);
+  return info ? info->name : "unknown";
 }
 
 /* ============================================================================
