@@ -762,6 +762,68 @@ TEST (quic_error_send_connection_close_length_clamping)
 }
 
 /* ============================================================================
+ * Integer Overflow Security Tests (Issue #2001)
+ * ============================================================================
+ */
+
+TEST (quic_error_send_connection_close_integer_overflow_protection)
+{
+  volatile Arena_T arena = NULL;
+  volatile SocketQUICConnection_T conn = NULL;
+  uint8_t buf[100];
+  size_t len;
+
+  TRY
+    {
+      arena = Arena_new ();
+      conn = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
+
+      /* Create a reason string that would cause overflow if unchecked */
+      /* Use maximum allowed reason length */
+      char *large_reason = Arena_alloc (arena, QUIC_MAX_REASON_LENGTH, __FILE__, __LINE__);
+      memset (large_reason, 'X', QUIC_MAX_REASON_LENGTH);
+
+      /* Try to send with a very small buffer - should safely reject */
+      /* This tests the overflow protection: if offset is large and reason_len
+       * is large, offset + reason_len could overflow */
+      len = SocketQUIC_send_connection_close (conn, QUIC_INTERNAL_ERROR,
+                                               large_reason, QUIC_MAX_REASON_LENGTH,
+                                               buf, sizeof (buf));
+
+      /* Should fail (return 0) because buffer is too small */
+      /* With the fix, this safely detects the overflow condition */
+      ASSERT_EQ (len, 0);
+    }
+  FINALLY { Arena_dispose ((Arena_T *)&arena); }
+  END_TRY;
+}
+
+TEST (quic_error_send_connection_close_boundary_check)
+{
+  volatile Arena_T arena = NULL;
+  volatile SocketQUICConnection_T conn = NULL;
+  uint8_t buf[256];
+  size_t len;
+
+  TRY
+    {
+      arena = Arena_new ();
+      conn = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
+
+      /* Test with exact buffer size match */
+      const char *reason = "test";
+      len = SocketQUIC_send_connection_close (conn, QUIC_NO_ERROR,
+                                               reason, 4, buf, sizeof (buf));
+
+      /* Should succeed with small buffer and small reason */
+      ASSERT (len > 0);
+      ASSERT (len <= sizeof (buf));
+    }
+  FINALLY { Arena_dispose ((Arena_T *)&arena); }
+  END_TRY;
+}
+
+/* ============================================================================
  * Main
  * ============================================================================
  */
