@@ -138,6 +138,39 @@ parse_single_protocol (const unsigned char *in, unsigned int inlen,
 }
 
 /**
+ * grow_protocol_array - Grow protocol array with overflow protection
+ * @protos: Current array
+ * @capacity: Current capacity (updated on success)
+ *
+ * Doubles the array capacity with overflow checking. On allocation failure,
+ * the old array is NOT freed (caller handles cleanup).
+ *
+ * Returns: New array or NULL on failure (overflow or allocation failure)
+ */
+static const char **
+grow_protocol_array (const char **protos, size_t *capacity)
+{
+  size_t new_capacity;
+  size_t alloc_size;
+
+  /* Check for capacity doubling overflow */
+  if (!SocketSecurity_check_multiply (*capacity, 2, &new_capacity))
+    return NULL;
+
+  /* Check for allocation size overflow */
+  if (!SocketSecurity_check_multiply (new_capacity, sizeof (char *),
+                                      &alloc_size))
+    return NULL;
+
+  const char **new_protos = realloc (protos, alloc_size);
+  if (!new_protos)
+    return NULL;
+
+  *capacity = new_capacity;
+  return new_protos;
+}
+
+/**
  * parse_client_protos - Parse client protocols from ALPN wire format
  * @in: Wire format input (length-prefixed strings)
  * @inlen: Input length
@@ -184,28 +217,12 @@ parse_client_protos (const unsigned char *in, unsigned int inlen,
       /* Grow array if needed */
       if (count >= capacity)
         {
-          size_t new_capacity;
-          size_t alloc_size;
-          /* Check for capacity doubling overflow */
-          if (!SocketSecurity_check_multiply (capacity, 2, &new_capacity))
-            {
-              free_client_protos (protos, count);
-              return NULL;
-            }
-          /* Check for allocation size overflow */
-          if (!SocketSecurity_check_multiply (new_capacity, sizeof (char *),
-                                              &alloc_size))
-            {
-              free_client_protos (protos, count);
-              return NULL;
-            }
-          const char **new_protos = realloc (protos, alloc_size);
+          const char **new_protos = grow_protocol_array (protos, &capacity);
           if (!new_protos)
             {
               free_client_protos (protos, count);
               return NULL;
             }
-          capacity = new_capacity;
           protos = new_protos;
         }
 
