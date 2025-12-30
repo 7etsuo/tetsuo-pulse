@@ -1120,6 +1120,48 @@ create_pooled_entry (SocketHTTPClient_T client, Socket_T socket,
   return entry;
 }
 
+static void
+determine_connection_params (const SocketHTTP_URI *uri, int *port,
+                              int *is_secure)
+{
+  assert (uri != NULL);
+  assert (port != NULL);
+  assert (is_secure != NULL);
+
+  *is_secure = SocketHTTP_URI_is_secure (uri);
+  *port = SocketHTTP_URI_get_port (uri, *is_secure ? HTTPS_DEFAULT_PORT
+                                                    : HTTP_DEFAULT_PORT);
+}
+
+static HTTPPoolEntry *
+handle_non_pooled_entry (SocketHTTPClient_T client, Socket_T socket,
+                         const char *host, int port, int is_secure,
+                         SocketHTTP_Version negotiated_version)
+{
+  /* Non-pooled: only HTTP/1.1 supported (temp entries don't do HTTP/2).
+   * If ALPN negotiated h2, we must fail since we can't handle HTTP/2 framing.
+   * This can happen when the server only supports h2 (rare) or prefers it. */
+  if (negotiated_version == HTTP_VERSION_2)
+    {
+      HTTPCLIENT_ERROR_MSG ("HTTP/2 negotiated but non-pooled mode only "
+                            "supports HTTP/1.1");
+      Socket_free (&socket);
+      client->last_error = HTTPCLIENT_ERROR_PROTOCOL;
+      return NULL;
+    }
+
+  TRY { return create_temp_entry (socket, host, port, is_secure); }
+  EXCEPT (Arena_Failed)
+  {
+    Socket_free (&socket);
+    client->last_error = HTTPCLIENT_ERROR_OUT_OF_MEMORY;
+    return 0;
+  }
+  END_TRY;
+
+  return NULL; /* Unreachable, silences compiler */
+}
+
 HTTPPoolEntry *
 httpclient_connect (SocketHTTPClient_T client, const SocketHTTP_URI *uri)
 {
@@ -1133,10 +1175,7 @@ httpclient_connect (SocketHTTPClient_T client, const SocketHTTP_URI *uri)
   assert (uri != NULL);
   assert (uri->host != NULL);
 
-  /* Determine port and security */
-  is_secure = SocketHTTP_URI_is_secure (uri);
-  port = SocketHTTP_URI_get_port (uri, is_secure ? HTTPS_DEFAULT_PORT
-                                                 : HTTP_DEFAULT_PORT);
+  determine_connection_params (uri, &port, &is_secure);
 
   /* Try to get existing connection from pool (also checks limits) */
   entry = pool_try_get_connection (client, uri->host, port, is_secure);
@@ -1177,26 +1216,6 @@ httpclient_connect (SocketHTTPClient_T client, const SocketHTTP_URI *uri)
     return create_pooled_entry (client, socket, uri->host, port, is_secure,
                                 negotiated_version);
 
-  /* Non-pooled: only HTTP/1.1 supported (temp entries don't do HTTP/2).
-   * If ALPN negotiated h2, we must fail since we can't handle HTTP/2 framing.
-   * This can happen when the server only supports h2 (rare) or prefers it. */
-  if (negotiated_version == HTTP_VERSION_2)
-    {
-      HTTPCLIENT_ERROR_MSG ("HTTP/2 negotiated but non-pooled mode only "
-                            "supports HTTP/1.1");
-      Socket_free (&socket);
-      client->last_error = HTTPCLIENT_ERROR_PROTOCOL;
-      return NULL;
-    }
-
-  TRY { return create_temp_entry (socket, uri->host, port, is_secure); }
-  EXCEPT (Arena_Failed)
-  {
-    Socket_free (&socket);
-    client->last_error = HTTPCLIENT_ERROR_OUT_OF_MEMORY;
-    return 0;
-  }
-  END_TRY;
-
-  return NULL; /* Unreachable, silences compiler */
+  return handle_non_pooled_entry (client, socket, uri->host, port, is_secure,
+                                   negotiated_version);
 }
