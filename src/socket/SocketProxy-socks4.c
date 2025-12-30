@@ -56,6 +56,34 @@ static const unsigned char SOCKS4A_MARKER_IP[4] = {0x00, 0x00, 0x00, 0x01};
  */
 
 /**
+ * socks4_ensure_buffer_space - Validate buffer space before write
+ * @conn: Proxy connection context for error reporting
+ * @current_len: Current number of bytes in send buffer
+ * @needed_bytes: Additional bytes needed for next write
+ *
+ * Returns: 0 on success (sufficient space), -1 on overflow (error set in conn)
+ *
+ * Provides consistent buffer validation for all SOCKS4/4a request building.
+ * Prevents buffer overflow by checking that current_len + needed_bytes does
+ * not exceed send_buf capacity.
+ *
+ * Sets PROXY_ERROR_PROTOCOL with "Request too large" message on failure,
+ * following the pattern established at line 329 in proxy_socks4a_send_connect().
+ */
+static inline int
+socks4_ensure_buffer_space (struct SocketProxy_Conn_T *conn, size_t current_len,
+                            size_t needed_bytes)
+{
+  if (current_len + needed_bytes > sizeof (conn->send_buf))
+    {
+      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
+                             "SOCKS4 request too large for buffer");
+      return -1;
+    }
+  return 0;
+}
+
+/**
  * socks4_write_header - Write SOCKS4 request header (version + command + port)
  * @buf: Output buffer (must have at least 4 bytes available)
  * @port: Destination port (1-65535)
@@ -243,6 +271,10 @@ proxy_socks4_send_connect (struct SocketProxy_Conn_T *conn)
       return -1;
     }
 
+  /* Validate buffer space for header (4 bytes) */
+  if (socks4_ensure_buffer_space (conn, len, 4) < 0)
+    return -1;
+
   /* Write header: version + command + port */
   if (len + 4 > sizeof (conn->send_buf))
     {
@@ -251,6 +283,10 @@ proxy_socks4_send_connect (struct SocketProxy_Conn_T *conn)
       return -1;
     }
   len += socks4_write_header (buf + len, conn->target_port);
+
+  /* Validate buffer space for IPv4 address (4 bytes) */
+  if (socks4_ensure_buffer_space (conn, len, 4) < 0)
+    return -1;
 
   /* Write destination IP (network byte order) */
   if (len + 4 > sizeof (conn->send_buf))
@@ -268,7 +304,7 @@ proxy_socks4_send_connect (struct SocketProxy_Conn_T *conn)
       < 0)
     {
       socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                             SOCKS4_ERROR_MSG_REQUEST_TOO_LARGE);
+                             "SOCKS4 request too large for buffer");
       return -1;
     }
   len += userid_written;
@@ -319,6 +355,10 @@ proxy_socks4a_send_connect (struct SocketProxy_Conn_T *conn)
   /* host_len already computed by socks4_validate_inputs() above */
   /* Additional validation (UTF-8, etc.) already performed in socks4_validate_inputs() */
 
+  /* Validate buffer space for header (4 bytes) */
+  if (socks4_ensure_buffer_space (conn, len, 4) < 0)
+    return -1;
+
   /* Write header: version + command + port */
   if (len + 4 > sizeof (conn->send_buf))
     {
@@ -327,6 +367,10 @@ proxy_socks4a_send_connect (struct SocketProxy_Conn_T *conn)
       return -1;
     }
   len += socks4_write_header (buf + len, conn->target_port);
+
+  /* Validate buffer space for SOCKS4a marker IP (4 bytes) */
+  if (socks4_ensure_buffer_space (conn, len, 4) < 0)
+    return -1;
 
   /* Write SOCKS4a marker IP: 0.0.0.1 signals hostname follows */
   if (len + 4 > sizeof (conn->send_buf))
@@ -344,18 +388,14 @@ proxy_socks4a_send_connect (struct SocketProxy_Conn_T *conn)
       < 0)
     {
       socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                             SOCKS4_ERROR_MSG_REQUEST_TOO_LARGE);
+                             "SOCKS4 request too large for buffer");
       return -1;
     }
   len += userid_written;
 
   /* Validate buffer space for hostname + null terminator */
-  if (len + host_len + 1 > sizeof (conn->send_buf))
-    {
-      socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                             SOCKS4_ERROR_MSG_REQUEST_TOO_LARGE);
-      return -1;
-    }
+  if (socks4_ensure_buffer_space (conn, len, host_len + 1) < 0)
+    return -1;
 
   /* Write hostname with null terminator */
   memcpy (buf + len, conn->target_host, host_len);
