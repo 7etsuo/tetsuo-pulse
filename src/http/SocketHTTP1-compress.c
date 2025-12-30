@@ -138,26 +138,70 @@ check_buffer_limits (size_t input_len, size_t output_len)
   return (input_len <= UINT_MAX && output_len <= UINT_MAX);
 }
 
-static SocketHTTP1_Result
-check_decode_output_limits (size_t total, size_t output_len, size_t max_size)
+/** Result codes for generic size limit validation */
+typedef enum
+{
+  SIZE_LIMIT_OK = 0,           /**< No errors, within limits */
+  SIZE_LIMIT_ERROR_SIZE,       /**< Invalid size value */
+  SIZE_LIMIT_ERROR_OVERFLOW,   /**< Addition would overflow */
+  SIZE_LIMIT_ERROR_EXCEEDED    /**< Exceeds maximum allowed size */
+} size_limit_result_t;
+
+/** Generic size limit validation logic.
+ *
+ * Validates that adding output_len to total stays within max_size bounds
+ * without overflow. This is the single source of truth for size validation
+ * used by both encode and decode paths.
+ *
+ * @param total Current accumulated size
+ * @param output_len Size to be added
+ * @param max_size Maximum allowed total (SIZE_MAX means no limit)
+ * @return Size limit validation result
+ */
+static size_limit_result_t
+check_size_limits_generic (size_t total, size_t output_len, size_t max_size)
 {
   size_t potential;
 
   if (output_len == 0)
-    return HTTP1_OK;
+    return SIZE_LIMIT_OK;
 
   if (!SocketSecurity_check_size (output_len))
-    return HTTP1_ERROR;
+    return SIZE_LIMIT_ERROR_SIZE;
 
   if (!SocketSecurity_check_add (total, output_len, &potential))
-    return HTTP1_ERROR_BODY_TOO_LARGE; /* Overflow */
+    return SIZE_LIMIT_ERROR_OVERFLOW;
 
   if (max_size != SIZE_MAX && potential > max_size)
-    return HTTP1_ERROR_BODY_TOO_LARGE;
+    return SIZE_LIMIT_ERROR_EXCEEDED;
 
-  return HTTP1_OK;
+  return SIZE_LIMIT_OK;
 }
 
+/** Check decode output limits (returns SocketHTTP1_Result).
+ *
+ * Wrapper that converts generic size validation to decode-specific result type.
+ */
+static SocketHTTP1_Result
+check_decode_output_limits (size_t total, size_t output_len, size_t max_size)
+{
+  switch (check_size_limits_generic (total, output_len, max_size))
+    {
+    case SIZE_LIMIT_OK:
+      return HTTP1_OK;
+    case SIZE_LIMIT_ERROR_SIZE:
+      return HTTP1_ERROR;
+    case SIZE_LIMIT_ERROR_OVERFLOW:
+    case SIZE_LIMIT_ERROR_EXCEEDED:
+      return HTTP1_ERROR_BODY_TOO_LARGE;
+    }
+  return HTTP1_ERROR; /* Unreachable, silence compiler warning */
+}
+
+/** Update decode total and check limits (returns SocketHTTP1_Result).
+ *
+ * Updates the running total and validates it stays within max_size.
+ */
 static SocketHTTP1_Result
 update_decode_total (size_t *total, size_t written, size_t max_size)
 {
@@ -167,26 +211,22 @@ update_decode_total (size_t *total, size_t written, size_t max_size)
   return HTTP1_OK;
 }
 
+/** Check encode output limits (returns int: 1=ok, 0=error).
+ *
+ * Wrapper that converts generic size validation to encode-specific result type.
+ */
 static int
 check_encode_output_limits (size_t total, size_t output_len, size_t max_size)
 {
-  size_t potential;
-
-  if (output_len == 0)
-    return 1;
-
-  if (!SocketSecurity_check_size (output_len))
-    return 0;
-
-  if (!SocketSecurity_check_add (total, output_len, &potential))
-    return 0; /* Overflow */
-
-  if (max_size != SIZE_MAX && potential > max_size)
-    return 0;
-
-  return 1;
+  return check_size_limits_generic (total, output_len, max_size) == SIZE_LIMIT_OK
+             ? 1
+             : 0;
 }
 
+/** Update encode total and check limits (returns int: 1=ok, 0=error).
+ *
+ * Updates the running total and validates it stays within max_size.
+ */
 static int
 update_encode_total (size_t *total, size_t produced, size_t max_size)
 {
