@@ -117,9 +117,6 @@ Socket_get_monotonic_ms (void)
 
 /* NOTE: Legacy system for backward compatibility. Prefer SocketMetrics.h. */
 
-/* Sentinel value for unmapped legacy metrics */
-#define SOCKET_COUNTER_UNMAPPED ((SocketCounterMetric)-1)
-
 static const SocketCounterMetric legacy_to_counter[SOCKET_METRIC_COUNT] = {
   [SOCKET_METRIC_SOCKET_CONNECT_SUCCESS] = SOCKET_CTR_SOCKET_CONNECT_SUCCESS,
   [SOCKET_METRIC_SOCKET_CONNECT_FAILURE] = SOCKET_CTR_SOCKET_CONNECT_FAILED,

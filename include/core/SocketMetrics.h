@@ -394,7 +394,8 @@ typedef enum SocketCounterMetric
   SOCKET_CTR_SYNPROTECT_BLACKLISTED,
   SOCKET_CTR_SYNPROTECT_LRU_EVICTIONS,
 
-  SOCKET_COUNTER_METRIC_COUNT
+  SOCKET_COUNTER_METRIC_COUNT,
+  SOCKET_COUNTER_UNMAPPED = -1 /* Sentinel for legacy mapping */
 } SocketCounterMetric;
 
 /**
