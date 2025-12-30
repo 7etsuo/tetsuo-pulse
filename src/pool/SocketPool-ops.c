@@ -27,6 +27,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "core/SocketConfig.h"   /* for SOCKET_SYN_DEFAULT_* constants */
 #include "core/SocketSecurity.h" /* for SocketSecurity_check_multiply */
 #include "dns/SocketDNS.h"
 #include "pool/SocketPool-private.h"
