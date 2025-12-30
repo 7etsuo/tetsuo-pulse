@@ -1761,6 +1761,47 @@ SocketDNS_name_in_bailiwick (const char *record_name, const char *query_name)
 }
 
 /*
+ * Helper: Skip a DNS message section (questions or resource records)
+ *
+ * Iterates through 'count' records starting at '*offset', advancing
+ * '*offset' for each successfully decoded/skipped record.
+ *
+ * @param msg         DNS message buffer
+ * @param msglen      Length of message buffer
+ * @param offset      Pointer to current offset (updated on success)
+ * @param count       Number of records to skip
+ * @param skip_questions  If true, decode questions; if false, skip RRs
+ * @return 0 on success, -1 on parse error
+ */
+static int
+skip_dns_section (const unsigned char *msg, size_t msglen, size_t *offset,
+                  uint16_t count, int skip_questions)
+{
+  uint16_t i;
+  size_t consumed;
+
+  for (i = 0; i < count; i++)
+    {
+      if (skip_questions)
+        {
+          SocketDNS_Question question;
+          if (SocketDNS_question_decode (msg, msglen, *offset, &question,
+                                         &consumed)
+              != 0)
+            return -1;
+        }
+      else
+        {
+          if (SocketDNS_rr_skip (msg, msglen, *offset, &consumed) != 0)
+            return -1;
+        }
+      *offset += consumed;
+    }
+
+  return 0;
+}
+
+/*
  * Negative Cache TTL Extraction (RFC 2308)
  *
  * Per RFC 2308 Section 5, the negative cache TTL is calculated as:
@@ -1775,7 +1816,6 @@ SocketDNS_extract_negative_ttl (const unsigned char *msg, size_t msglen,
                                  SocketDNS_SOA *soa_out)
 {
   SocketDNS_Header header;
-  SocketDNS_Question question;
   SocketDNS_RR rr;
   SocketDNS_SOA soa;
   size_t offset;
@@ -1790,23 +1830,12 @@ SocketDNS_extract_negative_ttl (const unsigned char *msg, size_t msglen,
   if (SocketDNS_header_decode (msg, msglen, &header) != 0)
     return DNS_NEGATIVE_TTL_DEFAULT;
 
-  /* Skip question section */
+  /* Skip question and answer sections */
   offset = DNS_HEADER_SIZE;
-  for (i = 0; i < header.qdcount; i++)
-    {
-      if (SocketDNS_question_decode (msg, msglen, offset, &question, &consumed)
-          != 0)
-        return DNS_NEGATIVE_TTL_DEFAULT;
-      offset += consumed;
-    }
-
-  /* Skip answer section */
-  for (i = 0; i < header.ancount; i++)
-    {
-      if (SocketDNS_rr_skip (msg, msglen, offset, &consumed) != 0)
-        return DNS_NEGATIVE_TTL_DEFAULT;
-      offset += consumed;
-    }
+  if (skip_dns_section (msg, msglen, &offset, header.qdcount, 1) != 0)
+    return DNS_NEGATIVE_TTL_DEFAULT;
+  if (skip_dns_section (msg, msglen, &offset, header.ancount, 0) != 0)
+    return DNS_NEGATIVE_TTL_DEFAULT;
 
   /* Scan authority section for SOA record */
   for (i = 0; i < header.nscount; i++)
