@@ -493,39 +493,24 @@ SocketHPACK_Encoder_free (SocketHPACK_Encoder_T *encoder)
   *encoder = NULL;
 }
 
-void
-SocketHPACK_Encoder_set_table_size (SocketHPACK_Encoder_T encoder,
-                                    size_t max_size)
+static void
+add_second_pending_size (SocketHPACK_Encoder_T encoder, size_t max_size)
 {
-  assert (encoder != NULL);
-
-  /* RFC 7541 §4.2: Multiple size changes - emit smallest first, then final */
-
-  /* No pending sizes - just set the first one */
-  if (encoder->pending_table_size_count == 0)
+  if (max_size < encoder->pending_table_sizes[0])
     {
+      encoder->pending_table_sizes[1] = encoder->pending_table_sizes[0];
       encoder->pending_table_sizes[0] = max_size;
-      encoder->pending_table_size_count = 1;
-      return;
     }
-
-  /* One pending size - need to add a second one */
-  if (encoder->pending_table_size_count == 1)
+  else
     {
-      if (max_size < encoder->pending_table_sizes[0])
-        {
-          encoder->pending_table_sizes[1] = encoder->pending_table_sizes[0];
-          encoder->pending_table_sizes[0] = max_size;
-        }
-      else
-        {
-          encoder->pending_table_sizes[1] = max_size;
-        }
-      encoder->pending_table_size_count = 2;
-      return;
+      encoder->pending_table_sizes[1] = max_size;
     }
+  encoder->pending_table_size_count = 2;
+}
 
-  /* Two or more pending sizes - update the second one or reset to one */
+static void
+update_pending_sizes (SocketHPACK_Encoder_T encoder, size_t max_size)
+{
   if (max_size < encoder->pending_table_sizes[0])
     {
       encoder->pending_table_sizes[0] = max_size;
@@ -536,6 +521,33 @@ SocketHPACK_Encoder_set_table_size (SocketHPACK_Encoder_T encoder,
     {
       encoder->pending_table_sizes[1] = max_size;
     }
+}
+
+void
+SocketHPACK_Encoder_set_table_size (SocketHPACK_Encoder_T encoder,
+                                    size_t max_size)
+{
+  assert (encoder != NULL);
+
+  /* RFC 7541 §4.2: Multiple size changes - emit smallest first, then final */
+
+  /* State 0: No pending sizes */
+  if (encoder->pending_table_size_count == 0)
+    {
+      encoder->pending_table_sizes[0] = max_size;
+      encoder->pending_table_size_count = 1;
+      return;
+    }
+
+  /* State 1: One pending size */
+  if (encoder->pending_table_size_count == 1)
+    {
+      add_second_pending_size (encoder, max_size);
+      return;
+    }
+
+  /* State 2+: Two or more pending sizes */
+  update_pending_sizes (encoder, max_size);
 }
 
 SocketHPACK_Table_T
