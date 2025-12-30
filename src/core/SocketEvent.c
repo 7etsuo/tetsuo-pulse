@@ -34,8 +34,18 @@ static size_t socketevent_handler_count = 0;
 static size_t
 socketevent_copy_handlers_unlocked (SocketEventHandler *local_handlers)
 {
-  memcpy (local_handlers, socketevent_handlers,
-          sizeof (SocketEventHandler) * socketevent_handler_count);
+  size_t total_size;
+
+  /* Check for multiplication overflow (CWE-190) */
+  if (socketevent_handler_count > SIZE_MAX / sizeof (SocketEventHandler))
+    {
+      SocketLog_emit (SOCKET_LOG_ERROR, "SocketEvents",
+                      "Handler count causes size overflow");
+      return 0;
+    }
+
+  total_size = sizeof (SocketEventHandler) * socketevent_handler_count;
+  memcpy (local_handlers, socketevent_handlers, total_size);
   return socketevent_handler_count;
 }
 
@@ -65,6 +75,10 @@ socketevent_dispatch (const SocketEventRecord *event)
                               SocketEvent_Failed);
   count = socketevent_copy_handlers_unlocked (local_handlers);
   SOCKET_MUTEX_UNLOCK (&socketevent_mutex);
+
+  /* Skip invocation if copy failed (e.g., overflow or no handlers) */
+  if (count == 0)
+    return;
 
   socketevent_invoke_handlers (local_handlers, count, event);
 }
