@@ -47,6 +47,11 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPClient);
 #define POOL_MAX_HASH_CHAIN_LEN 1024
 #endif
 
+/* SECURITY: Limit maximum hash table size to prevent excessive memory use */
+#ifndef POOL_MAX_HASH_TABLE_SIZE
+#define POOL_MAX_HASH_TABLE_SIZE 65536
+#endif
+
 /* Forward declarations */
 static void pool_entry_remove_and_recycle (HTTPPool *pool, HTTPPoolEntry *entry);
 
@@ -253,10 +258,9 @@ httpclient_pool_new (Arena_T arena, const SocketHTTPClient_Config *config)
     {
       suggested_size = HTTPCLIENT_POOL_HASH_SIZE;
     }
-  const size_t max_hash_size = 65536; /* Prevent excessive memory use */
-  if (suggested_size > max_hash_size)
+  if (suggested_size > POOL_MAX_HASH_TABLE_SIZE)
     {
-      suggested_size = max_hash_size;
+      suggested_size = POOL_MAX_HASH_TABLE_SIZE;
     }
   size_t elem_size = sizeof (HTTPPoolEntry *);
   size_t table_bytes;
