@@ -64,15 +64,19 @@ get_effective_idle_timeout(uint64_t local_timeout_ms, uint64_t peer_timeout_ms)
 /**
  * @brief Calculate termination timeout for closing/draining states.
  * @param pto_ms Probe Timeout (PTO) value in milliseconds.
- * @return Termination timeout in milliseconds (3 * PTO).
+ * @return Termination timeout in milliseconds (3 * PTO), or UINT64_MAX if overflow.
  *
  * RFC 9000 Section 10.2: An endpoint remains in the closing or draining
  * state for a period equal to three times the current PTO.
+ *
+ * Implements overflow protection consistent with safe_add_timeout.
  */
 static inline uint64_t
 calculate_termination_timeout(uint64_t pto_ms)
 {
-  return pto_ms * QUIC_TERMINATION_PTO_MULTIPLIER;
+  if (pto_ms > UINT64_MAX / QUIC_CLOSING_TIMEOUT_PTO_MULT)
+    return UINT64_MAX;
+  return pto_ms * QUIC_CLOSING_TIMEOUT_PTO_MULT;
 }
 
 /**
