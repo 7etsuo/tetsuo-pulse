@@ -231,12 +231,12 @@ TEST (ack_record_ecn)
   arena = Arena_new ();
   state = SocketQUICAck_new (arena, 0, 0);
 
-  SocketQUICAck_record_ecn (state, 1); /* ECT(0) */
-  SocketQUICAck_record_ecn (state, 1);
-  SocketQUICAck_record_ecn (state, 2); /* ECT(1) */
-  SocketQUICAck_record_ecn (state, 3); /* CE */
-  SocketQUICAck_record_ecn (state, 3);
-  SocketQUICAck_record_ecn (state, 3);
+  SocketQUICAck_record_ecn (state, QUIC_ECN_ECT0);
+  SocketQUICAck_record_ecn (state, QUIC_ECN_ECT0);
+  SocketQUICAck_record_ecn (state, QUIC_ECN_ECT1);
+  SocketQUICAck_record_ecn (state, QUIC_ECN_CE);
+  SocketQUICAck_record_ecn (state, QUIC_ECN_CE);
+  SocketQUICAck_record_ecn (state, QUIC_ECN_CE);
 
   ASSERT_EQ (2, state->ecn_counts.ect0_count);
   ASSERT_EQ (1, state->ecn_counts.ect1_count);
@@ -248,7 +248,7 @@ TEST (ack_record_ecn)
 TEST (ack_record_ecn_null)
 {
   /* Should not crash */
-  SocketQUICAck_record_ecn (NULL, 1);
+  SocketQUICAck_record_ecn (NULL, QUIC_ECN_ECT0);
 }
 
 /* ============================================================================
@@ -412,7 +412,7 @@ TEST (ack_encode_with_ecn)
   state = SocketQUICAck_new (arena, 0, 0);
 
   SocketQUICAck_record_packet (state, 5, 1000000, 1);
-  SocketQUICAck_record_ecn (state, 1); /* ECT(0) */
+  SocketQUICAck_record_ecn (state, QUIC_ECN_ECT0);
   state->ecn_validated = 1;
 
   res = SocketQUICAck_encode (state, 1000000, buf, sizeof (buf), &len);

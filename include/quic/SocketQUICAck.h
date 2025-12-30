@@ -42,6 +42,24 @@
  */
 
 /**
+ * @brief ECN codepoint types (RFC 3168).
+ *
+ * Explicit Congestion Notification codepoints used in IP headers
+ * to signal network congestion. QUIC tracks these to implement
+ * congestion control.
+ *
+ * @see RFC 3168 (The Addition of Explicit Congestion Notification to IP)
+ * @see RFC 9000 Section 13.4 (ECN Validation)
+ */
+typedef enum
+{
+  QUIC_ECN_NOT_ECT = 0, /**< Not ECN-Capable Transport */
+  QUIC_ECN_ECT0    = 1, /**< ECN Capable Transport (0) */
+  QUIC_ECN_ECT1    = 2, /**< ECN Capable Transport (1) */
+  QUIC_ECN_CE      = 3  /**< Congestion Experienced */
+} SocketQUICECN_Type;
+
+/**
  * @brief Maximum number of ACK ranges to track.
  *
  * RFC 9000 doesn't specify a limit but practical implementations
@@ -208,7 +226,7 @@ SocketQUICAck_record_packet (SocketQUICAckState_T state, uint64_t packet_number,
  * @brief Record ECN information from received packet.
  *
  * @param state    ACK state to update.
- * @param ecn_type ECN codepoint (0=not-ECT, 1=ECT0, 2=ECT1, 3=CE).
+ * @param ecn_type ECN codepoint (SocketQUICECN_Type).
  */
 extern void SocketQUICAck_record_ecn (SocketQUICAckState_T state, int ecn_type);
 
