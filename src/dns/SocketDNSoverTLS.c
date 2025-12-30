@@ -612,29 +612,116 @@ queue_query (T transport, struct SocketDNSoverTLS_Query *query)
   return 0;
 }
 
+/* Read raw data from TLS socket */
+static int
+read_tls_data (T transport, unsigned char *buf, size_t bufsize,
+               ssize_t *bytes_read)
+{
+  volatile ssize_t n;
+
+  assert (transport != NULL);
+  assert (buf != NULL);
+  assert (bytes_read != NULL);
+
+  TRY
+  {
+    n = SocketTLS_recv (transport->conn.socket, buf, bufsize);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    close_connection (transport, &transport->conn);
+    return -1;
+  }
+  END_TRY;
+
+  *bytes_read = n;
+  return 0;
+}
+
+/* Parse 2-byte length prefix from receive buffer */
+static int
+parse_length_prefix (struct Connection *conn, const unsigned char *buf,
+                     size_t buf_len, size_t *processed)
+{
+  assert (conn != NULL);
+  assert (buf != NULL);
+  assert (processed != NULL);
+
+  /* Accumulate length prefix bytes */
+  while (conn->len_received < 2 && *processed < buf_len)
+    {
+      conn->len_buf[conn->len_received++] = buf[(*processed)++];
+    }
+
+  /* Decode message length once we have both bytes */
+  if (conn->len_received == 2 && conn->msg_len == 0)
+    {
+      conn->msg_len
+          = ((size_t)conn->len_buf[0] << 8) | (size_t)conn->len_buf[1];
+
+      /* Validate length - reject zero-length messages (CWE-476, CWE-400) */
+      if (conn->msg_len == 0 || conn->msg_len > DOT_MAX_MESSAGE_SIZE)
+        {
+          return -1; /* Invalid length */
+        }
+    }
+
+  return 0;
+}
+
+/* Allocate receive buffer for incoming message */
+static int
+allocate_recv_buffer (T transport, struct Connection *conn)
+{
+  assert (transport != NULL);
+  assert (conn != NULL);
+  assert (conn->msg_len > 0);
+  assert (conn->msg_len <= DOT_MAX_MESSAGE_SIZE);
+
+  /* Allocate or reuse buffer if large enough */
+  if (!conn->recv_buf || conn->recv_alloc < conn->msg_len)
+    {
+      conn->recv_buf = ALLOC (transport->arena, conn->msg_len);
+      if (!conn->recv_buf)
+        {
+          return -1;
+        }
+      conn->recv_alloc = conn->msg_len;
+    }
+
+  conn->recv_len = 0;
+  return 0;
+}
+
+/* Copy data into receive buffer */
+static void
+append_to_recv_buffer (struct Connection *conn, const unsigned char *buf,
+                       size_t len)
+{
+  assert (conn != NULL);
+  assert (buf != NULL);
+  assert (conn->recv_buf != NULL);
+  assert (conn->recv_len + len <= conn->msg_len);
+
+  memcpy (conn->recv_buf + conn->recv_len, buf, len);
+  conn->recv_len += len;
+}
+
 /* Receive data from connection */
 static int
 receive_data (T transport)
 {
   struct Connection *conn = &transport->conn;
   unsigned char buf[DOT_RECV_BUFFER_SIZE];
-  volatile ssize_t n;
+  ssize_t n;
   size_t processed;
 
   if (conn->state != CONN_STATE_CONNECTED)
     return 0;
 
-  /* Try to receive data */
-  TRY
-  {
-    n = SocketTLS_recv (conn->socket, buf, sizeof (buf));
-  }
-  EXCEPT (SocketTLS_Failed)
-  {
-    close_connection (transport, conn);
+  /* Read from TLS socket */
+  if (read_tls_data (transport, buf, sizeof (buf), &n) < 0)
     return -1;
-  }
-  END_TRY;
 
   if (n <= 0)
     {
@@ -649,49 +736,36 @@ receive_data (T transport)
   transport->stats.bytes_received += (uint64_t)n;
   conn->last_activity_ms = get_monotonic_ms ();
 
-  /* Process received data */
+  /* Process received data in chunks */
   processed = 0;
   while (processed < (size_t)n)
     {
-      /* Read length prefix first */
-      while (conn->len_received < 2 && processed < (size_t)n)
+      /* Parse length prefix */
+      if (parse_length_prefix (conn, buf, (size_t)n, &processed) < 0)
         {
-          conn->len_buf[conn->len_received++] = buf[processed++];
+          close_connection (transport, conn);
+          return -1;
         }
 
       if (conn->len_received < 2)
-        break; /* Need more data */
+        break; /* Need more data for length prefix */
 
-      /* Decode message length */
-      if (conn->msg_len == 0)
+      /* Allocate buffer if we have the length but no buffer yet */
+      if (conn->recv_buf == NULL)
         {
-          conn->msg_len
-              = ((size_t)conn->len_buf[0] << 8) | (size_t)conn->len_buf[1];
-
-          /* Validate length - reject zero-length messages (CWE-476, CWE-400) */
-          if (conn->msg_len == 0 || conn->msg_len > DOT_MAX_MESSAGE_SIZE)
+          if (allocate_recv_buffer (transport, conn) < 0)
             {
-              /* Invalid length */
               close_connection (transport, conn);
               return -1;
             }
-
-          /* Allocate receive buffer */
-          if (!conn->recv_buf || conn->recv_alloc < conn->msg_len)
-            {
-              conn->recv_buf = ALLOC (transport->arena, conn->msg_len);
-              conn->recv_alloc = conn->msg_len;
-            }
-          conn->recv_len = 0;
         }
 
-      /* Read message body */
+      /* Copy message body */
       size_t need = conn->msg_len - conn->recv_len;
       size_t avail = (size_t)n - processed;
       size_t copy = (need < avail) ? need : avail;
 
-      memcpy (conn->recv_buf + conn->recv_len, buf + processed, copy);
-      conn->recv_len += copy;
+      append_to_recv_buffer (conn, buf + processed, copy);
       processed += copy;
 
       /* Check if complete message */
