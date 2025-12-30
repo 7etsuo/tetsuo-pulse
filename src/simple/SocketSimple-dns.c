@@ -21,6 +21,51 @@
  * ============================================================================
  */
 
+/**
+ * @brief Helper to convert addrinfo linked list to string array
+ *
+ * @param res Addrinfo linked list to convert
+ * @param count Number of addresses in linked list
+ * @param out_addresses Pointer to receive allocated string array
+ * @return Number of addresses successfully converted, or -1 on error
+ */
+static int
+convert_addrinfo_to_strings (struct addrinfo *res, int count,
+                             char ***out_addresses)
+{
+  char **addresses;
+  struct addrinfo *p;
+  int i;
+
+  addresses = calloc ((size_t)count + 1, sizeof (char *));
+  if (!addresses)
+    return -1;
+
+  i = 0;
+  for (p = res; p != NULL && i < count; p = p->ai_next)
+    {
+      char host[NI_MAXHOST];
+      if (SocketCommon_reverse_lookup (p->ai_addr, p->ai_addrlen, host,
+                                       sizeof (host), NULL, 0, NI_NUMERICHOST,
+                                       SocketCommon_Failed)
+          == 0)
+        {
+          addresses[i] = strdup (host);
+          if (addresses[i])
+            i++;
+        }
+    }
+
+  if (i == 0)
+    {
+      free (addresses);
+      return -1;
+    }
+
+  *out_addresses = addresses;
+  return i;
+}
+
 int
 Socket_simple_dns_resolve_timeout (const char *hostname,
                                    SocketSimple_DNSResult *result,
@@ -91,43 +136,20 @@ Socket_simple_dns_resolve_timeout (const char *hostname,
       return -1;
     }
 
-  result->addresses = calloc ((size_t)count + 1, sizeof (char *));
-  if (!result->addresses)
-    {
-      SocketCommon_free_addrinfo ((struct addrinfo *)res);
-      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
-      return -1;
-    }
-
-  int i = 0;
-  for (p = (struct addrinfo *)res; p != NULL && i < count; p = p->ai_next)
-    {
-      char host[NI_MAXHOST];
-      /* Use library's reverse lookup wrapper - returns 0 on success */
-      if (SocketCommon_reverse_lookup (p->ai_addr, p->ai_addrlen, host,
-                                       sizeof (host), NULL, 0, NI_NUMERICHOST,
-                                       SocketCommon_Failed)
-          == 0)
-        {
-          result->addresses[i] = strdup (host);
-          if (result->addresses[i])
-            {
-              i++;
-            }
-        }
-    }
-
-  result->count = i;
+  /* Convert addrinfo to string array */
+  int actual_count
+      = convert_addrinfo_to_strings ((struct addrinfo *)res, count,
+                                     &result->addresses);
   result->family = ((struct addrinfo *)res)->ai_family;
   SocketCommon_free_addrinfo ((struct addrinfo *)res);
 
-  if (result->count == 0)
+  if (actual_count < 0)
     {
-      free (result->addresses);
-      result->addresses = NULL;
-      simple_set_error (SOCKET_SIMPLE_ERR_DNS, "Failed to resolve addresses");
+      simple_set_error (SOCKET_SIMPLE_ERR_DNS, "Failed to convert addresses");
       return -1;
     }
+
+  result->count = actual_count;
 
   ret = 0;
   return ret;
@@ -413,25 +435,11 @@ simple_dns_callback_wrapper (SocketDNS_Request_T *req, struct addrinfo *result,
 
       if (count > 0)
         {
-          simple_result.addresses = calloc ((size_t)count + 1, sizeof (char *));
-          if (simple_result.addresses)
+          int actual_count = convert_addrinfo_to_strings (
+              result, count, &simple_result.addresses);
+          if (actual_count > 0)
             {
-              int i = 0;
-              for (p = result; p != NULL && i < count; p = p->ai_next)
-                {
-                  char host[NI_MAXHOST];
-                  if (SocketCommon_reverse_lookup (p->ai_addr, p->ai_addrlen,
-                                                   host, sizeof (host), NULL, 0,
-                                                   NI_NUMERICHOST,
-                                                   SocketCommon_Failed)
-                      == 0)
-                    {
-                      simple_result.addresses[i] = strdup (host);
-                      if (simple_result.addresses[i])
-                        i++;
-                    }
-                }
-              simple_result.count = i;
+              simple_result.count = actual_count;
               simple_result.family = result->ai_family;
             }
         }
@@ -739,38 +747,17 @@ Socket_simple_dns_request_result (SocketSimple_DNSRequest_T req,
       return -1;
     }
 
-  result->addresses = calloc ((size_t)count + 1, sizeof (char *));
-  if (!result->addresses)
+  /* Convert addrinfo to string array */
+  int actual_count
+      = convert_addrinfo_to_strings (req->result, count, &result->addresses);
+  if (actual_count < 0)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Memory allocation failed");
-      return -1;
-    }
-
-  int i = 0;
-  for (p = req->result; p != NULL && i < count; p = p->ai_next)
-    {
-      char host[NI_MAXHOST];
-      if (SocketCommon_reverse_lookup (p->ai_addr, p->ai_addrlen, host,
-                                       sizeof (host), NULL, 0, NI_NUMERICHOST,
-                                       SocketCommon_Failed)
-          == 0)
-        {
-          result->addresses[i] = strdup (host);
-          if (result->addresses[i])
-            i++;
-        }
-    }
-
-  result->count = i;
-  result->family = req->result->ai_family;
-
-  if (result->count == 0)
-    {
-      free (result->addresses);
-      result->addresses = NULL;
       simple_set_error (SOCKET_SIMPLE_ERR_DNS, "Failed to convert addresses");
       return -1;
     }
+
+  result->count = actual_count;
+  result->family = req->result->ai_family;
 
   return 0;
 }
