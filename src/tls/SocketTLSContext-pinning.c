@@ -95,7 +95,7 @@ calculate_pin_capacity (size_t current_cap, size_t max_pins)
   if (current_cap == 0)
     return SOCKET_TLS_PIN_INITIAL_CAPACITY;
 
-  size_t new_cap = current_cap * 2;
+  size_t new_cap = current_cap * SOCKET_BUFFER_GROWTH_FACTOR;
   return (new_cap > max_pins) ? max_pins : new_cap;
 }
 
