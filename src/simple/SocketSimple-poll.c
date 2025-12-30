@@ -27,6 +27,28 @@ struct SocketSimple_Poll
 };
 
 /* ============================================================================
+ * Helper: Extract and validate core socket handle
+ * ============================================================================
+ */
+
+static Socket_T
+get_core_socket (SocketSimple_Socket_T sock)
+{
+  if (sock->socket)
+    return sock->socket;
+
+  if (sock->dgram)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_UNSUPPORTED,
+                        "UDP sockets not supported in poll");
+      return NULL;
+    }
+
+  simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid socket handle");
+  return NULL;
+}
+
+/* ============================================================================
  * Helper: Map Simple events to core events
  * ============================================================================
  */
@@ -149,26 +171,10 @@ Socket_simple_poll_add (SocketSimple_Poll_T poll, SocketSimple_Socket_T sock,
       return -1;
     }
 
-  /* Get underlying Socket_T */
-  Socket_T core_sock = NULL;
-  if (sock->socket)
-    {
-      core_sock = sock->socket;
-    }
-  else if (sock->dgram)
-    {
-      /* For UDP, we need to handle differently - SocketPoll works with
-       * Socket_T */
-      simple_set_error (SOCKET_SIMPLE_ERR_UNSUPPORTED,
-                        "UDP sockets not supported in poll");
-      return -1;
-    }
-  else
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Invalid socket handle");
-      return -1;
-    }
+  /* Get underlying Socket_T with validation */
+  Socket_T core_sock = get_core_socket (sock);
+  if (!core_sock)
+    return -1;
 
   unsigned core_events = simple_to_core_events (events);
 
@@ -196,13 +202,10 @@ Socket_simple_poll_mod (SocketSimple_Poll_T poll, SocketSimple_Socket_T sock,
       return -1;
     }
 
-  Socket_T core_sock = sock->socket;
+  /* Get underlying Socket_T with validation */
+  Socket_T core_sock = get_core_socket (sock);
   if (!core_sock)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Invalid socket handle");
-      return -1;
-    }
+    return -1;
 
   unsigned core_events = simple_to_core_events (events);
 
@@ -230,13 +233,10 @@ Socket_simple_poll_del (SocketSimple_Poll_T poll, SocketSimple_Socket_T sock)
       return -1;
     }
 
-  Socket_T core_sock = sock->socket;
+  /* Get underlying Socket_T with validation */
+  Socket_T core_sock = get_core_socket (sock);
   if (!core_sock)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Invalid socket handle");
-      return -1;
-    }
+    return -1;
 
   TRY { SocketPoll_del (poll->poll, core_sock); }
   EXCEPT (SocketPoll_Failed)
@@ -264,13 +264,10 @@ Socket_simple_poll_modify_events (SocketSimple_Poll_T poll,
       return -1;
     }
 
-  Socket_T core_sock = sock->socket;
+  /* Get underlying Socket_T with validation */
+  Socket_T core_sock = get_core_socket (sock);
   if (!core_sock)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Invalid socket handle");
-      return -1;
-    }
+    return -1;
 
   unsigned add = simple_to_core_events (add_events);
   unsigned remove = simple_to_core_events (remove_events);
