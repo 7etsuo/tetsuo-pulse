@@ -105,6 +105,13 @@ convert_response (SocketHTTPClient_Response *src,
   if (ct)
     {
       dst->content_type = strdup (ct);
+      if (!dst->content_type)
+        {
+          free (dst->body);
+          simple_set_error (SOCKET_SIMPLE_ERR_MEMORY,
+                            "Failed to copy Content-Type header");
+          return -1;
+        }
     }
 
   /* Extract Location header */
@@ -112,6 +119,14 @@ convert_response (SocketHTTPClient_Response *src,
   if (loc)
     {
       dst->location = strdup (loc);
+      if (!dst->location)
+        {
+          free (dst->body);
+          free (dst->content_type);
+          simple_set_error (SOCKET_SIMPLE_ERR_MEMORY,
+                            "Failed to copy Location header");
+          return -1;
+        }
     }
 
   return 0;
