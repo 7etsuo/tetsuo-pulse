@@ -37,73 +37,29 @@ Socket_simple_proxy_config_init (SocketSimple_ProxyConfig *config)
   config->handshake_timeout_ms = 0; /* Use default */
 }
 
-/* ============================================================================
- * Proxy Type Dispatch Table
- * ============================================================================
- */
-
-/**
- * @brief Proxy type metadata for dispatch table.
- *
- * Consolidates all enum-dependent information (core type mapping, string name,
- * default port) into a single source of truth. Eliminates duplicate switch
- * statements per CLAUDE.md dispatch table pattern.
- */
-typedef struct
-{
-  SocketSimple_ProxyType simple_type; /**< Simple API type identifier */
-  SocketProxyType core_type;          /**< Core module type mapping */
-  const char *name;                   /**< Human-readable name */
-  int default_port;                   /**< Default port for this type */
-} ProxyTypeInfo;
-
-/**
- * @brief Master dispatch table for proxy type metadata.
- *
- * Single source of truth for all proxy type conversions. Add new proxy
- * types by adding one entry here - no need to update multiple switches.
- */
-static const ProxyTypeInfo proxy_type_table[] = {
-  { SOCKET_SIMPLE_PROXY_NONE, SOCKET_PROXY_NONE, "direct", 0 },
-  { SOCKET_SIMPLE_PROXY_HTTP, SOCKET_PROXY_HTTP, "HTTP", 8080 },
-  { SOCKET_SIMPLE_PROXY_HTTPS, SOCKET_PROXY_HTTPS, "HTTPS", 8080 },
-  { SOCKET_SIMPLE_PROXY_SOCKS4, SOCKET_PROXY_SOCKS4, "SOCKS4", 1080 },
-  { SOCKET_SIMPLE_PROXY_SOCKS4A, SOCKET_PROXY_SOCKS4A, "SOCKS4a", 1080 },
-  { SOCKET_SIMPLE_PROXY_SOCKS5, SOCKET_PROXY_SOCKS5, "SOCKS5", 1080 },
-  { SOCKET_SIMPLE_PROXY_SOCKS5H, SOCKET_PROXY_SOCKS5H, "SOCKS5h", 1080 },
-};
-
-#define PROXY_TYPE_COUNT                                                       \
-  (sizeof (proxy_type_table) / sizeof (proxy_type_table[0]))
-
-/**
- * @brief Look up proxy type metadata.
- *
- * @param type Simple proxy type to look up.
- * @return Pointer to metadata entry, or NULL if not found.
- */
-static const ProxyTypeInfo *
-lookup_proxy_info (SocketSimple_ProxyType type)
-{
-  for (size_t i = 0; i < PROXY_TYPE_COUNT; i++)
-    {
-      if (proxy_type_table[i].simple_type == type)
-        return &proxy_type_table[i];
-    }
-  return NULL;
-}
-
-/**
- * @brief Convert simple proxy type to core proxy type.
- *
- * @param type Simple proxy type.
- * @return Corresponding core proxy type (SOCKET_PROXY_NONE on unknown).
- */
+/* Helper to convert simple proxy type to core proxy type */
 static SocketProxyType
 simple_to_core_proxy_type (SocketSimple_ProxyType type)
 {
-  const ProxyTypeInfo *info = lookup_proxy_info (type);
-  return info ? info->core_type : SOCKET_PROXY_NONE;
+  switch (type)
+    {
+    case SOCKET_SIMPLE_PROXY_NONE:
+      return SOCKET_PROXY_NONE;
+    case SOCKET_SIMPLE_PROXY_HTTP:
+      return SOCKET_PROXY_HTTP;
+    case SOCKET_SIMPLE_PROXY_HTTPS:
+      return SOCKET_PROXY_HTTPS;
+    case SOCKET_SIMPLE_PROXY_SOCKS4:
+      return SOCKET_PROXY_SOCKS4;
+    case SOCKET_SIMPLE_PROXY_SOCKS4A:
+      return SOCKET_PROXY_SOCKS4A;
+    case SOCKET_SIMPLE_PROXY_SOCKS5:
+      return SOCKET_PROXY_SOCKS5;
+    case SOCKET_SIMPLE_PROXY_SOCKS5H:
+      return SOCKET_PROXY_SOCKS5H;
+    default:
+      return SOCKET_PROXY_NONE;
+    }
 }
 
 /* Helper to set error from proxy result */
@@ -216,6 +172,181 @@ parse_scheme (const char *url, SocketSimple_ProxyType *type, const char **rest)
  * See SocketUtil.h for full documentation.
  */
 
+/**
+ * @brief Parse and decode userinfo from proxy URL.
+ * @param userinfo_start Start of userinfo section.
+ * @param userinfo_end End of userinfo section (@ character).
+ * @param config Config structure to populate.
+ * @return 0 on success, -1 on error (credentials too long).
+ */
+static int
+parse_userinfo (const char *userinfo_start, const char *userinfo_end,
+                SocketSimple_ProxyConfig *config)
+{
+  const char *colon = memchr (userinfo_start, ':', userinfo_end - userinfo_start);
+
+  if (colon)
+    {
+      /* user:pass format */
+      if (socket_util_url_decode (userinfo_start, colon - userinfo_start,
+                                  config->username, sizeof (config->username),
+                                  NULL) != 0)
+        {
+          simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                            "Proxy username too long");
+          return -1;
+        }
+
+      if (socket_util_url_decode (colon + 1, userinfo_end - colon - 1,
+                                  config->password, sizeof (config->password),
+                                  NULL) != 0)
+        {
+          simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                            "Proxy password too long");
+          return -1;
+        }
+    }
+  else
+    {
+      /* username only */
+      if (socket_util_url_decode (userinfo_start, userinfo_end - userinfo_start,
+                                  config->username, sizeof (config->username),
+                                  NULL) != 0)
+        {
+          simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                            "Proxy username too long");
+          return -1;
+        }
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Parse host and port from URL remainder.
+ * @param host_start Start of host[:port] section.
+ * @param config Config structure to populate with hostname.
+ * @return Pointer to port section (or NULL if no port), or (const char*)-1 on error.
+ */
+static const char *
+parse_host_port (const char *host_start, SocketSimple_ProxyConfig *config)
+{
+  const char *host_end = host_start;
+  const char *port_start = NULL;
+
+  /* Handle IPv6 [address] notation */
+  if (*host_start == '[')
+    {
+      const char *bracket = strchr (host_start, ']');
+      if (!bracket)
+        {
+          simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                            "Invalid IPv6 address in URL");
+          return (const char *)-1;
+        }
+
+      /* Copy IPv6 address without brackets */
+      size_t addr_len = bracket - host_start - 1;
+      if (addr_len >= sizeof (config->host))
+        {
+          simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                            "Hostname too long");
+          return (const char *)-1;
+        }
+
+      memcpy (config->host, host_start + 1, addr_len);
+      config->host[addr_len] = '\0';
+      host_end = bracket + 1;
+
+      if (*host_end == ':')
+        port_start = host_end + 1;
+    }
+  else
+    {
+      /* Regular hostname or IPv4 */
+      while (*host_end && *host_end != ':' && *host_end != '/')
+        host_end++;
+
+      size_t host_len = host_end - host_start;
+      if (host_len >= sizeof (config->host))
+        {
+          simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                            "Hostname too long");
+          return (const char *)-1;
+        }
+
+      memcpy (config->host, host_start, host_len);
+      config->host[host_len] = '\0';
+
+      if (*host_end == ':')
+        port_start = host_end + 1;
+    }
+
+  return port_start;
+}
+
+/**
+ * @brief Parse port number from string.
+ * @param port_str String containing port number.
+ * @return Parsed port on success, -1 on error.
+ */
+static int
+parse_port_number (const char *port_str)
+{
+  char *endptr;
+  errno = 0; /* Reset errno before strtol */
+  long port = strtol (port_str, &endptr, 10);
+
+  /* Check for parse failure (no digits consumed) */
+  if (endptr == port_str)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                        "Invalid port: not a number");
+      return -1;
+    }
+
+  /* Check that strtol stopped at valid terminator */
+  if (*endptr != '\0' && *endptr != '/')
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                        "Invalid port: contains non-numeric characters");
+      return -1;
+    }
+
+  /* Check for overflow or out of range */
+  if (errno == ERANGE || port <= 0 || port > 65535)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                        "Invalid port: out of range");
+      return -1;
+    }
+
+  return (int)port;
+}
+
+/**
+ * @brief Get default port for proxy type.
+ * @param type Proxy type.
+ * @return Default port number.
+ */
+static int
+get_default_proxy_port (SocketSimple_ProxyType type)
+{
+  switch (type)
+    {
+    case SOCKET_SIMPLE_PROXY_HTTP:
+    case SOCKET_SIMPLE_PROXY_HTTPS:
+      return 8080;
+    case SOCKET_SIMPLE_PROXY_SOCKS4:
+    case SOCKET_SIMPLE_PROXY_SOCKS4A:
+    case SOCKET_SIMPLE_PROXY_SOCKS5:
+    case SOCKET_SIMPLE_PROXY_SOCKS5H:
+      return 1080;
+    default:
+      return 8080;
+    }
+}
+
 int
 Socket_simple_proxy_parse_url (const char *url,
                                SocketSimple_ProxyConfig *config)
@@ -230,6 +361,7 @@ Socket_simple_proxy_parse_url (const char *url,
 
   Socket_simple_proxy_config_init (config);
 
+  /* Parse scheme */
   const char *rest = NULL;
   if (parse_scheme (url, &config->type, &rest) != 0)
     {
@@ -238,146 +370,37 @@ Socket_simple_proxy_parse_url (const char *url,
       return -1;
     }
 
-  /* Parse optional userinfo (user:pass@) */
+  /* Parse optional userinfo */
   const char *at = strchr (rest, '@');
   const char *slash = strchr (rest, '/');
-  const char *host_start;
+  const char *host_start = rest;
 
   if (at && (!slash || at < slash))
     {
-      /* Has userinfo */
-      const char *colon = memchr (rest, ':', at - rest);
-
-      if (colon)
-        {
-          /* user:pass */
-          if (socket_util_url_decode (rest, colon - rest, config->username,
-                                      sizeof (config->username), NULL) != 0)
-            {
-              simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                                "Proxy username too long");
-              return -1;
-            }
-          if (socket_util_url_decode (colon + 1, at - colon - 1, config->password,
-                                      sizeof (config->password), NULL) != 0)
-            {
-              simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                                "Proxy password too long");
-              return -1;
-            }
-        }
-      else
-        {
-          /* user only */
-          if (socket_util_url_decode (rest, at - rest, config->username,
-                                      sizeof (config->username), NULL) != 0)
-            {
-              simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                                "Proxy username too long");
-              return -1;
-            }
-        }
+      if (parse_userinfo (rest, at, config) != 0)
+        return -1;
       host_start = at + 1;
     }
-  else
-    {
-      host_start = rest;
-    }
 
-  /* Parse host[:port] */
-  const char *host_end = host_start;
-  const char *port_start = NULL;
+  /* Parse host and port */
+  const char *port_start = parse_host_port (host_start, config);
+  if (port_start == (const char *)-1)
+    return -1;
 
-  /* Handle IPv6 [address] notation */
-  if (*host_start == '[')
-    {
-      const char *bracket = strchr (host_start, ']');
-      if (!bracket)
-        {
-          simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                            "Invalid IPv6 address in URL");
-          return -1;
-        }
-      /* Copy IPv6 address without brackets */
-      size_t addr_len = bracket - host_start - 1;
-      if (addr_len >= sizeof (config->host))
-        {
-          simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                            "Hostname too long");
-          return -1;
-        }
-      memcpy (config->host, host_start + 1, addr_len);
-      config->host[addr_len] = '\0';
-      host_end = bracket + 1;
-      if (*host_end == ':')
-        {
-          port_start = host_end + 1;
-        }
-    }
-  else
-    {
-      /* Regular hostname or IPv4 */
-      while (*host_end && *host_end != ':' && *host_end != '/')
-        {
-          host_end++;
-        }
-      size_t host_len = host_end - host_start;
-      if (host_len >= sizeof (config->host))
-        {
-          simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                            "Hostname too long");
-          return -1;
-        }
-      memcpy (config->host, host_start, host_len);
-      config->host[host_len] = '\0';
-
-      if (*host_end == ':')
-        {
-          port_start = host_end + 1;
-        }
-    }
-
-  /* Parse port if present */
+  /* Parse explicit port or use default */
   if (port_start)
     {
-      char *endptr;
-      errno = 0; /* Reset errno before strtol */
-      long port = strtol (port_start, &endptr, 10);
-
-      /* Check for parse failure (no digits consumed) */
-      if (endptr == port_start)
-        {
-          simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                            "Invalid port: not a number");
-          return -1;
-        }
-
-      /* Check that strtol stopped at valid terminator */
-      if (*endptr != '\0' && *endptr != '/')
-        {
-          simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                            "Invalid port: contains non-numeric characters");
-          return -1;
-        }
-
-      /* Check for overflow or out of range */
-      if (errno == ERANGE || port <= 0 || port > 65535)
-        {
-          simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                            "Invalid port: out of range");
-          return -1;
-        }
-
-      config->port = (int)port;
+      int port = parse_port_number (port_start);
+      if (port < 0)
+        return -1;
+      config->port = port;
     }
   else
     {
-      /* Use default port based on type (from dispatch table) */
-      const ProxyTypeInfo *info = lookup_proxy_info (config->type);
-      config->port = info ? info->default_port : 8080;
+      config->port = get_default_proxy_port (config->type);
     }
 
-  /* Validate we have a host */
+  /* Validate hostname */
   if (config->host[0] == '\0')
     {
       simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
@@ -391,8 +414,25 @@ Socket_simple_proxy_parse_url (const char *url,
 const char *
 Socket_simple_proxy_type_name (SocketSimple_ProxyType type)
 {
-  const ProxyTypeInfo *info = lookup_proxy_info (type);
-  return info ? info->name : "unknown";
+  switch (type)
+    {
+    case SOCKET_SIMPLE_PROXY_NONE:
+      return "direct";
+    case SOCKET_SIMPLE_PROXY_HTTP:
+      return "HTTP";
+    case SOCKET_SIMPLE_PROXY_HTTPS:
+      return "HTTPS";
+    case SOCKET_SIMPLE_PROXY_SOCKS4:
+      return "SOCKS4";
+    case SOCKET_SIMPLE_PROXY_SOCKS4A:
+      return "SOCKS4a";
+    case SOCKET_SIMPLE_PROXY_SOCKS5:
+      return "SOCKS5";
+    case SOCKET_SIMPLE_PROXY_SOCKS5H:
+      return "SOCKS5h";
+    default:
+      return "unknown";
+    }
 }
 
 /* ============================================================================
