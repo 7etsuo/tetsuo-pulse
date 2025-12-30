@@ -302,7 +302,7 @@ SocketDNSoverHTTPS_configure (T transport,
 
   memcpy (s->url, config->url, url_len + 1); /* Include null terminator */
   s->method = config->method;
-  s->prefer_http2 = config->prefer_http2 ? 1 : 1; /* Default to HTTP/2 */
+  s->prefer_http2 = config->prefer_http2 ? 1 : 0; /* Respect HTTP/2 preference */
   s->timeout_ms
       = config->timeout_ms > 0 ? config->timeout_ms : DOH_QUERY_TIMEOUT_MS;
 
