@@ -271,7 +271,12 @@ SocketQUICFrame_encode_stream (uint64_t stream_id, uint64_t offset,
  * @param len    Length of input buffer
  * @param frame  Output: decoded stream frame structure
  *
- * @return Number of bytes consumed on success, or -1 on error
+ * @return Number of bytes consumed on success, or negative error code on failure:
+ *         -QUIC_FRAME_ERROR_NULL      (NULL pointer or zero length)
+ *         -QUIC_FRAME_ERROR_TYPE      (not a STREAM frame)
+ *         -QUIC_FRAME_ERROR_TRUNCATED (incomplete frame data)
+ *         -QUIC_FRAME_ERROR_VARINT    (invalid varint encoding)
+ *         -QUIC_FRAME_ERROR_INVALID   (other parse errors)
  */
 
 ssize_t
@@ -279,11 +284,11 @@ SocketQUICFrame_decode_stream (const uint8_t *data, size_t len,
                                SocketQUICFrameStream_T *frame)
 {
   if (!data || !frame || len == 0)
-    return -1;
+    return -(ssize_t)QUIC_FRAME_ERROR_NULL;
 
   /* Verify frame type is STREAM (0x08-0x0f) */
   if (!SocketQUICFrame_is_stream (data[0]))
-    return -1;
+    return -(ssize_t)QUIC_FRAME_ERROR_TYPE;
 
   /* Use the full parser to decode the frame */
   SocketQUICFrame_T full_frame;
@@ -293,7 +298,7 @@ SocketQUICFrame_decode_stream (const uint8_t *data, size_t len,
       = SocketQUICFrame_parse (data, len, &full_frame, &consumed);
 
   if (res != QUIC_FRAME_OK)
-    return -1;
+    return -(ssize_t)res;
 
   /* Copy stream-specific data */
   *frame = full_frame.data.stream;
