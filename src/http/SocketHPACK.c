@@ -126,6 +126,16 @@ classify_field_type (unsigned char byte)
  * Create lowercase copy of header name in arena.
  * RFC 9113 §8.2: "Field names MUST be converted to lowercase when
  * constructing an HTTP/2 message."
+ *
+ * NOTE: socket_util_normalize_hostname() from SocketUtil.h cannot be used here
+ * because it has different semantics:
+ * - It writes to a pre-allocated buffer (void return) instead of returning a pointer
+ * - It always copies data, whereas we optimize by returning the original string
+ *   if no conversion is needed (common case in HTTP/2)
+ * - Our implementation minimizes arena allocations for performance
+ *
+ * The optimization matters for HPACK encoding hot paths where most headers
+ * are already lowercase (:method, :path, content-type, etc.).
  */
 static const char *
 lowercase_header_name (Arena_T arena, const char *name, size_t len)
