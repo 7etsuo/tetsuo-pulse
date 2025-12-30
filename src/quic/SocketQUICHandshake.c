@@ -24,23 +24,6 @@
 #include <openssl/ssl.h>
 #endif
 
-
-/* ============================================================================
- * Constants
- * ============================================================================
- */
-
-/**
- * @brief Maximum QUIC packet protection key material size.
- *
- * Based on RFC 9001 with AES-256-GCM or ChaCha20-Poly1305:
- * - Packet protection key: 32 bytes
- * - IV: 12 bytes
- * - Header protection key: 32 bytes
- * Total: 76 bytes (rounded to 128 for safety margin)
- */
-#define QUIC_MAX_KEY_MATERIAL_SIZE 128
-
 /* ============================================================================
  * Exceptions
  * ============================================================================

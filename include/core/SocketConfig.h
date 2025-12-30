@@ -471,6 +471,55 @@ extern const char *Socket_safe_strerror (int errnum);
 #endif
 
 /* ============================================================================
+ * QUIC Configuration
+ * ============================================================================
+ */
+
+/**
+ * @brief Maximum CRYPTO frame data buffer size.
+ *
+ * Limits memory for buffering out-of-order CRYPTO frames during handshake.
+ * Based on typical TLS 1.3 handshake message sizes:
+ * - ClientHello: ~500-2000 bytes
+ * - ServerHello + EncryptedExtensions + Certificate: 4000-8000 bytes
+ * - 16KB provides comfortable margin for large certificate chains
+ *
+ * Can be overridden at compile time with
+ * -DQUIC_HANDSHAKE_CRYPTO_BUFFER_SIZE=value.
+ */
+#ifndef QUIC_HANDSHAKE_CRYPTO_BUFFER_SIZE
+#define QUIC_HANDSHAKE_CRYPTO_BUFFER_SIZE 16384
+#endif
+
+/**
+ * @brief Maximum number of buffered CRYPTO frame segments.
+ *
+ * Limits memory for out-of-order fragment reassembly.
+ * 64 segments × ~256 bytes avg = ~16KB max fragmented state.
+ *
+ * Can be overridden at compile time with
+ * -DQUIC_HANDSHAKE_MAX_CRYPTO_SEGMENTS=value.
+ */
+#ifndef QUIC_HANDSHAKE_MAX_CRYPTO_SEGMENTS
+#define QUIC_HANDSHAKE_MAX_CRYPTO_SEGMENTS 64
+#endif
+
+/**
+ * @brief Maximum QUIC packet protection key material size.
+ *
+ * Based on RFC 9001 with AES-256-GCM or ChaCha20-Poly1305:
+ * - Packet protection key: 32 bytes
+ * - IV: 12 bytes
+ * - Header protection key: 32 bytes
+ * Total: 76 bytes (rounded to 128 for safety margin)
+ *
+ * Can be overridden at compile time with -DQUIC_MAX_KEY_MATERIAL_SIZE=value.
+ */
+#ifndef QUIC_MAX_KEY_MATERIAL_SIZE
+#define QUIC_MAX_KEY_MATERIAL_SIZE 128
+#endif
+
+/* ============================================================================
  * DNS Configuration
  * ============================================================================
  */
