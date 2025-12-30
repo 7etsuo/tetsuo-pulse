@@ -1755,16 +1755,7 @@ he_connect_extract_result (T he, const char *volatile *err_msg)
       if (tmp_err)
         {
           static _Thread_local char err_buf[SOCKET_HE_CONNECT_ERROR_BUFSIZE];
-          size_t len = strlen (tmp_err);
-          if (len >= sizeof (err_buf))
-            {
-              SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-                               "Error message truncated from %zu to %zu bytes",
-                               len, sizeof (err_buf) - 1);
-              len = sizeof (err_buf) - 1;
-            }
-          memcpy (err_buf, tmp_err, len);
-          err_buf[len] = '\0';
+          socket_util_safe_strncpy (err_buf, tmp_err, sizeof (err_buf));
           *err_msg = err_buf;
         }
       else
