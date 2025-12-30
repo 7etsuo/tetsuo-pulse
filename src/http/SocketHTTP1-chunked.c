@@ -325,12 +325,13 @@ parse_chunk_size (const char *const input, size_t len, size_t *line_len,
   while (p < end && http1_is_hex (*p))
     {
       uint64_t digit = (uint64_t)http1_hex_value (*p);
+      uint64_t new_size;
 
-      /* Check overflow before multiplication */
-      if (size > (UINT64_MAX - digit) / HTTP1_HEX_RADIX)
+      /* Check overflow using compiler built-ins */
+      if (__builtin_mul_overflow (size, HTTP1_HEX_RADIX, &new_size)
+          || __builtin_add_overflow (new_size, digit, &size))
         return -1;
 
-      size = size * HTTP1_HEX_RADIX + digit;
       has_digit = 1;
       p++;
     }
