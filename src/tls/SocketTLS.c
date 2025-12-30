@@ -1219,6 +1219,92 @@ SocketTLS_send (Socket_T socket, const void *buf, size_t len)
 }
 
 /**
+ * handle_ssl_read_error - Handle SSL_read error conditions
+ * @ssl: SSL connection object
+ * @result: Raw result from SSL_read
+ * @ssl_error: Error code from SSL_get_error
+ *
+ * Processes SSL_read error conditions and takes appropriate action.
+ * Returns 0 for EAGAIN (caller should retry), or raises exceptions
+ * for fatal errors and connection close events.
+ *
+ * Error handling:
+ * - SSL_ERROR_ZERO_RETURN: Clean shutdown (raises Socket_Closed)
+ * - SSL_ERROR_WANT_READ/WRITE: Non-blocking would-block (returns 0, errno=EAGAIN)
+ * - SSL_ERROR_SYSCALL: System error or abrupt close (raises exception)
+ * - SSL_ERROR_SSL: Protocol error (raises SocketTLS_Failed)
+ * - Default: Unknown error (raises SocketTLS_Failed)
+ *
+ * Returns: 0 for would-block (EAGAIN)
+ * Raises: Socket_Closed on clean/abrupt shutdown,
+ *         SocketTLS_Failed on protocol or syscall errors
+ * Thread-safe: Yes - operates on per-connection SSL state
+ */
+static ssize_t
+handle_ssl_read_error (SSL *ssl, int result, int ssl_error)
+{
+  (void)ssl; /* Unused - reserved for future use */
+
+  switch (ssl_error)
+    {
+    case SSL_ERROR_ZERO_RETURN:
+      /* Clean shutdown: peer sent close_notify alert.
+       * This is a graceful connection termination - no data lost.
+       * Set errno to 0 to indicate clean shutdown, then raise. */
+      errno = 0;
+      RAISE (Socket_Closed);
+      __builtin_unreachable (); /* RAISE never returns */
+
+    case SSL_ERROR_WANT_READ:
+    case SSL_ERROR_WANT_WRITE:
+      /* Non-blocking: would block, set errno and return 0.
+       * Note: WANT_WRITE can occur during renegotiation even on recv.
+       * Caller should poll for appropriate events and retry. */
+      errno = EAGAIN;
+      return 0;
+
+    case SSL_ERROR_SYSCALL:
+      /* System call error - check errno for details.
+       * errno = 0 with result = 0: Unexpected EOF (peer closed abruptly).
+       * This differs from SSL_ERROR_ZERO_RETURN which is a clean shutdown.
+       *
+       * Per OpenSSL docs: "Some I/O error occurred. The retrying may be
+       * possible but the caller must ensure that the error wasn't fatal."
+       * With errno = 0 and result = 0, it means unexpected EOF. */
+      if (result == 0 && errno == 0)
+        {
+          /* Abrupt close: peer disconnected without close_notify.
+           * This could indicate a truncation attack or network failure.
+           * Set ECONNRESET to distinguish from clean shutdown. */
+          errno = ECONNRESET;
+          RAISE (Socket_Closed);
+          __builtin_unreachable (); /* RAISE never returns */
+        }
+      /* Other syscall error - errno is already set appropriately */
+      tls_format_openssl_error ("TLS recv failed (syscall)");
+      RAISE_TLS_ERROR (SocketTLS_Failed);
+      __builtin_unreachable (); /* RAISE never returns */
+
+    case SSL_ERROR_SSL:
+      /* Protocol error - fatal TLS failure (e.g., bad record MAC,
+       * decompression failure, handshake failure during renegotiation). */
+      errno = EPROTO;
+      tls_format_openssl_error ("TLS recv failed (protocol)");
+      RAISE_TLS_ERROR (SocketTLS_Failed);
+      __builtin_unreachable (); /* RAISE never returns */
+
+    default:
+      /* Unknown error type - should not happen with current OpenSSL */
+      errno = EIO;
+      tls_format_openssl_error ("TLS recv failed (unknown)");
+      RAISE_TLS_ERROR (SocketTLS_Failed);
+    }
+
+  /* Unreachable - all cases either return or raise */
+  return -1;
+}
+
+/**
  * SocketTLS_recv - Receive data from a TLS-encrypted connection
  * @socket: Socket with completed TLS handshake
  * @buf: Buffer to receive data into
@@ -1285,63 +1371,7 @@ SocketTLS_recv (Socket_T socket, void *buf, size_t len)
    * SSL_get_error must be consulted for the definitive error code. */
   int ssl_error = SSL_get_error (ssl, result);
 
-  switch (ssl_error)
-    {
-    case SSL_ERROR_ZERO_RETURN:
-      /* Clean shutdown: peer sent close_notify alert.
-       * This is a graceful connection termination - no data lost.
-       * Set errno to 0 to indicate clean shutdown, then raise. */
-      errno = 0;
-      RAISE (Socket_Closed);
-      __builtin_unreachable (); /* RAISE never returns */
-
-    case SSL_ERROR_WANT_READ:
-    case SSL_ERROR_WANT_WRITE:
-      /* Non-blocking: would block, set errno and return 0.
-       * Note: WANT_WRITE can occur during renegotiation even on recv.
-       * Caller should poll for appropriate events and retry. */
-      errno = EAGAIN;
-      return 0;
-
-    case SSL_ERROR_SYSCALL:
-      /* System call error - check errno for details.
-       * errno = 0 with result = 0: Unexpected EOF (peer closed abruptly).
-       * This differs from SSL_ERROR_ZERO_RETURN which is a clean shutdown.
-       *
-       * Per OpenSSL docs: "Some I/O error occurred. The retrying may be
-       * possible but the caller must ensure that the error wasn't fatal."
-       * With errno = 0 and result = 0, it means unexpected EOF. */
-      if (result == 0 && errno == 0)
-        {
-          /* Abrupt close: peer disconnected without close_notify.
-           * This could indicate a truncation attack or network failure.
-           * Set ECONNRESET to distinguish from clean shutdown. */
-          errno = ECONNRESET;
-          RAISE (Socket_Closed);
-          __builtin_unreachable (); /* RAISE never returns */
-        }
-      /* Other syscall error - errno is already set appropriately */
-      tls_format_openssl_error ("TLS recv failed (syscall)");
-      RAISE_TLS_ERROR (SocketTLS_Failed);
-      __builtin_unreachable (); /* RAISE never returns */
-
-    case SSL_ERROR_SSL:
-      /* Protocol error - fatal TLS failure (e.g., bad record MAC,
-       * decompression failure, handshake failure during renegotiation). */
-      errno = EPROTO;
-      tls_format_openssl_error ("TLS recv failed (protocol)");
-      RAISE_TLS_ERROR (SocketTLS_Failed);
-      __builtin_unreachable (); /* RAISE never returns */
-
-    default:
-      /* Unknown error type - should not happen with current OpenSSL */
-      errno = EIO;
-      tls_format_openssl_error ("TLS recv failed (unknown)");
-      RAISE_TLS_ERROR (SocketTLS_Failed);
-    }
-
-  /* Unreachable - all cases either return or raise */
-  return -1;
+  return handle_ssl_read_error (ssl, result, ssl_error);
 }
 
 const char *
