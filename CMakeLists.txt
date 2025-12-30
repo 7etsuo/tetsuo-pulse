@@ -782,6 +782,7 @@ set(TEST_SOURCES
     test_proxy
     test_websocket
     test_security
+    test_json_injection
     test_http_integration
     test_ws_integration
     test_http2_integration
