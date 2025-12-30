@@ -24,6 +24,8 @@
 
 #define SOCKET_SIMPLE_DEFAULT_MAX_REDIRECTS 5
 #define SOCKET_SIMPLE_MAX_HEADER_NAME_LEN 256
+#define SOCKET_SIMPLE_DEFAULT_CONNECT_TIMEOUT_MS 30000
+#define SOCKET_SIMPLE_DEFAULT_REQUEST_TIMEOUT_MS 60000
 
 /* Performance: Compile-time string length for header lookups */
 #define STRLEN_LIT(s) (sizeof(s) - 1)
@@ -72,8 +74,8 @@ Socket_simple_http_options_init (SocketSimple_HTTPOptions *opts)
   if (!opts)
     return;
   memset (opts, 0, sizeof (*opts));
-  opts->connect_timeout_ms = 30000;
-  opts->request_timeout_ms = 60000;
+  opts->connect_timeout_ms = SOCKET_SIMPLE_DEFAULT_CONNECT_TIMEOUT_MS;
+  opts->request_timeout_ms = SOCKET_SIMPLE_DEFAULT_REQUEST_TIMEOUT_MS;
   opts->max_redirects = SOCKET_SIMPLE_DEFAULT_MAX_REDIRECTS;
   opts->verify_ssl = 1;
 }
