@@ -784,6 +784,7 @@ set(TEST_SOURCES
     test_http2_rate_limit
     test_http_client
     test_proxy
+    test_simple_proxy_url
     test_websocket
     test_security
     test_json_injection

@@ -203,19 +203,35 @@ Socket_simple_proxy_parse_url (const char *url,
     {
       /* Has userinfo */
       const char *colon = memchr (rest, ':', at - rest);
+
       if (colon)
         {
           /* user:pass */
-          socket_util_url_decode (rest, colon - rest, config->username,
-                                  sizeof (config->username), NULL);
-          socket_util_url_decode (colon + 1, at - colon - 1, config->password,
-                                  sizeof (config->password), NULL);
+          if (socket_util_url_decode (rest, colon - rest, config->username,
+                                      sizeof (config->username), NULL) != 0)
+            {
+              simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                                "Proxy username too long");
+              return -1;
+            }
+          if (socket_util_url_decode (colon + 1, at - colon - 1, config->password,
+                                      sizeof (config->password), NULL) != 0)
+            {
+              simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                                "Proxy password too long");
+              return -1;
+            }
         }
       else
         {
           /* user only */
-          socket_util_url_decode (rest, at - rest, config->username,
-                                  sizeof (config->username), NULL);
+          if (socket_util_url_decode (rest, at - rest, config->username,
+                                      sizeof (config->username), NULL) != 0)
+            {
+              simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
+                                "Proxy username too long");
+              return -1;
+            }
         }
       host_start = at + 1;
     }
