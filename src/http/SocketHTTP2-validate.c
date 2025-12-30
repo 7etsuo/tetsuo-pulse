@@ -198,7 +198,7 @@ http2_is_connection_header_forbidden (const SocketHPACK_Header *header)
     size_t len;
   } *entry = found;
 
-  if (entry->len == 2) /* "te" */
+  if (entry->len == HTTP2_TE_HEADER_LEN) /* "te" */
     return 0;
 
   return 1; /* Forbidden */
