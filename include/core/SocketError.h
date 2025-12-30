@@ -188,8 +188,9 @@ typedef enum SocketErrorCategory
                                         responses */
   SOCKET_ERROR_CATEGORY_TIMEOUT,     /**< Timeout errors: ETIMEDOUT, deadline
                                         exceeded */
-  SOCKET_ERROR_CATEGORY_RESOURCE, /**< Resource exhaustion: OOM, fd limits */
-  SOCKET_ERROR_CATEGORY_UNKNOWN   /**< Unclassified errors */
+  SOCKET_ERROR_CATEGORY_RESOURCE,    /**< Resource exhaustion: OOM, fd limits */
+  SOCKET_ERROR_CATEGORY_UNKNOWN,     /**< Unclassified errors */
+  SOCKET_ERROR_CATEGORY_COUNT        /**< Sentinel: total number of categories */
 } SocketErrorCategory;
 
 /**

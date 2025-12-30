@@ -1998,6 +1998,21 @@ union align
 #define SOCKET_TO_STRING(x) SOCKET_STRINGIFY (x)
 
 /**
+ * @brief Calculate the number of elements in a compile-time array.
+ *
+ * This macro provides a safe, type-checked way to determine array sizes,
+ * replacing manual sizeof(arr)/sizeof(arr[0]) calculations. It only works
+ * with true arrays, not pointers, ensuring compile-time safety.
+ *
+ * @param arr Array name (must be a true array, not a pointer).
+ * @return Number of elements in the array.
+ *
+ * @note This is a compile-time constant suitable for use in static assertions.
+ * @warning Using this on a pointer will give incorrect results or compile error.
+ */
+#define ARRAY_SIZE(arr) (sizeof (arr) / sizeof ((arr)[0]))
+
+/**
  * @brief Valid port range string for error messages.
  *
  */
