@@ -65,7 +65,7 @@ Socket_simple_pool_options_init (SocketSimple_PoolOptions *opts)
   if (!opts)
     return;
 
-  opts->max_connections = 1024;
+  opts->max_connections = SOCKET_SIMPLE_DEFAULT_MAX_CONNECTIONS;
   opts->buffer_size = 4096;
   opts->idle_timeout_ms = 0;
   opts->conn_rate_limit = 0;
