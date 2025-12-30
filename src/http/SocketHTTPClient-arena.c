@@ -102,9 +102,14 @@ httpclient_get_arena_cache (void)
   if (!cache)
     return NULL;
 
-  if (pthread_setspecific (arena_cache_key, cache) != 0)
+  int rc = pthread_setspecific (arena_cache_key, cache);
+  if (rc != 0)
     {
       /* Failed to store in TLS - free and continue without cache */
+      fprintf (stderr,
+               "WARNING: pthread_setspecific failed: %d (falling back to "
+               "non-cached arenas)\n",
+               rc);
       free (cache);
       return NULL;
     }
