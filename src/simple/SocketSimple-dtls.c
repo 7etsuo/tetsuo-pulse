@@ -79,6 +79,73 @@ copy_dtls_options (const SocketSimple_DTLSOptions *opts, const char **ca_file,
 }
 
 /*============================================================================
+ * DTLS Client Helpers
+ *============================================================================*/
+
+/**
+ * @brief Create and configure a DTLS client context with all options.
+ *
+ * @param ca_file CA certificate file path (NULL for system defaults)
+ * @param verify_cert Whether to verify peer certificate
+ * @param client_cert Client certificate file (NULL if not using mTLS)
+ * @param client_key Client private key file (NULL if not using mTLS)
+ * @param mtu Maximum Transmission Unit (0 for default)
+ * @param alpn Array of ALPN protocol names
+ * @param alpn_count Number of ALPN protocols
+ * @return Configured DTLS context or NULL on error
+ */
+static SocketDTLSContext_T
+create_and_configure_dtls_client_context (const char *ca_file, int verify_cert,
+                                          const char *client_cert,
+                                          const char *client_key, size_t mtu,
+                                          const char **alpn, size_t alpn_count)
+{
+  SocketDTLSContext_T ctx = SocketDTLSContext_new_client (ca_file);
+
+  if (!verify_cert)
+    {
+      SocketDTLSContext_set_verify_mode (ctx, TLS_VERIFY_NONE);
+    }
+
+  if (client_cert && client_key)
+    {
+      SocketDTLSContext_load_certificate (ctx, client_cert, client_key);
+    }
+
+  if (mtu > 0)
+    {
+      SocketDTLSContext_set_mtu (ctx, mtu);
+    }
+
+  if (alpn && alpn_count > 0)
+    {
+      SocketDTLSContext_set_alpn_protos (ctx, alpn, alpn_count);
+    }
+
+  return ctx;
+}
+
+/**
+ * @brief Perform DTLS handshake and verify completion.
+ *
+ * @param dgram UDP socket with DTLS enabled
+ * @param timeout_ms Handshake timeout in milliseconds
+ * @return 0 on success, -1 on failure
+ */
+static int
+perform_dtls_handshake (SocketDgram_T dgram, int timeout_ms)
+{
+  DTLSHandshakeState state = SocketDTLS_handshake_loop (dgram, timeout_ms);
+  if (state != DTLS_HANDSHAKE_COMPLETE)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_TLS_HANDSHAKE,
+                        "DTLS handshake failed");
+      return -1;
+    }
+  return 0;
+}
+
+/*============================================================================
  * DTLS Client Functions
  *============================================================================*/
 
@@ -134,38 +201,14 @@ Socket_simple_dtls_connect_ex (const char *host, int port,
 
   TRY
   {
-    /* Create UDP socket */
+    /* Create and connect UDP socket */
     dgram = SocketDgram_new (AF_INET, 0);
-
-    /* Connect UDP socket to peer */
     SocketDgram_connect (dgram, host, port);
 
-    /* Create DTLS context */
-    ctx = SocketDTLSContext_new_client (ca_file);
-
-    /* Configure verification */
-    if (!verify_cert)
-      {
-        SocketDTLSContext_set_verify_mode (ctx, TLS_VERIFY_NONE);
-      }
-
-    /* Load client cert if specified (for mTLS) */
-    if (client_cert && client_key)
-      {
-        SocketDTLSContext_load_certificate (ctx, client_cert, client_key);
-      }
-
-    /* Set MTU if specified */
-    if (mtu > 0)
-      {
-        SocketDTLSContext_set_mtu (ctx, mtu);
-      }
-
-    /* Set ALPN protocols if specified */
-    if (alpn && alpn_count > 0)
-      {
-        SocketDTLSContext_set_alpn_protos (ctx, alpn, alpn_count);
-      }
+    /* Create and configure DTLS context */
+    ctx = create_and_configure_dtls_client_context (ca_file, verify_cert,
+                                                     client_cert, client_key,
+                                                     mtu, alpn, alpn_count);
 
     /* Enable DTLS on socket */
     SocketDTLS_enable (dgram, ctx);
@@ -175,12 +218,8 @@ Socket_simple_dtls_connect_ex (const char *host, int port,
     SocketDTLS_set_hostname (dgram, host);
 
     /* Perform blocking handshake */
-    DTLSHandshakeState state
-        = SocketDTLS_handshake_loop (dgram, timeout_ms);
-    if (state != DTLS_HANDSHAKE_COMPLETE)
+    if (perform_dtls_handshake (dgram, timeout_ms) != 0)
       {
-        simple_set_error (SOCKET_SIMPLE_ERR_TLS_HANDSHAKE,
-                          "DTLS handshake failed");
         exception_occurred = 1;
       }
   }
@@ -299,28 +338,10 @@ Socket_simple_dtls_enable (SocketSimple_Socket_T sock, const char *hostname,
 
   TRY
   {
-    /* Create client context */
-    ctx = SocketDTLSContext_new_client (ca_file);
-
-    if (!verify_cert)
-      {
-        SocketDTLSContext_set_verify_mode (ctx, TLS_VERIFY_NONE);
-      }
-
-    if (client_cert && client_key)
-      {
-        SocketDTLSContext_load_certificate (ctx, client_cert, client_key);
-      }
-
-    if (mtu > 0)
-      {
-        SocketDTLSContext_set_mtu (ctx, mtu);
-      }
-
-    if (alpn && alpn_count > 0)
-      {
-        SocketDTLSContext_set_alpn_protos (ctx, alpn, alpn_count);
-      }
+    /* Create and configure client context */
+    ctx = create_and_configure_dtls_client_context (ca_file, verify_cert,
+                                                     client_cert, client_key,
+                                                     mtu, alpn, alpn_count);
 
     /* Enable DTLS */
     SocketDTLS_enable (sock->dgram, ctx);
