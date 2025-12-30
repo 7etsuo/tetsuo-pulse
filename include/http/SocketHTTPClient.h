@@ -145,7 +145,6 @@ typedef struct
 
 typedef struct SocketHTTPClient *SocketHTTPClient_T;
 typedef struct SocketHTTPClient_Request *SocketHTTPClient_Request_T;
-typedef struct SocketHTTPClient_AsyncRequest *SocketHTTPClient_AsyncRequest_T;
 typedef struct SocketHTTPClient_CookieJar *SocketHTTPClient_CookieJar_T;
 
 typedef struct
@@ -245,30 +244,6 @@ extern int SocketHTTPClient_execute_prepared (
  */
 extern void SocketHTTPClient_PreparedRequest_free (
     SocketHTTPClient_PreparedRequest_T *prep);
-
-typedef void (*SocketHTTPClient_Callback) (SocketHTTPClient_AsyncRequest_T req,
-                                           SocketHTTPClient_Response *response,
-                                           SocketHTTPClient_Error error,
-                                           void *userdata);
-
-extern SocketHTTPClient_AsyncRequest_T
-SocketHTTPClient_get_async (SocketHTTPClient_T client, const char *url,
-                            SocketHTTPClient_Callback callback,
-                            void *userdata);
-extern SocketHTTPClient_AsyncRequest_T SocketHTTPClient_post_async (
-    SocketHTTPClient_T client, const char *url, const char *content_type,
-    const void *body, size_t body_len, SocketHTTPClient_Callback callback,
-    void *userdata);
-extern SocketHTTPClient_AsyncRequest_T
-SocketHTTPClient_Request_async (SocketHTTPClient_Request_T req,
-                                SocketHTTPClient_Callback callback,
-                                void *userdata);
-extern void
-SocketHTTPClient_AsyncRequest_cancel (SocketHTTPClient_AsyncRequest_T req);
-extern void
-SocketHTTPClient_AsyncRequest_free (SocketHTTPClient_AsyncRequest_T *req);
-extern int SocketHTTPClient_process (SocketHTTPClient_T client,
-                                     int timeout_ms);
 
 typedef enum
 {

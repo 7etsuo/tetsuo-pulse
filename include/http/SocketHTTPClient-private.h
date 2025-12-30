@@ -192,46 +192,6 @@ struct SocketHTTPClient_PreparedRequest
 };
 
 /**
- * @brief States for asynchronous HTTP requests.
- * @ingroup http
- */
-typedef enum
-{
-  ASYNC_STATE_IDLE = 0,
-  ASYNC_STATE_CONNECTING,
-  ASYNC_STATE_SENDING,
-  ASYNC_STATE_RECEIVING_HEADERS,
-  ASYNC_STATE_RECEIVING_BODY,
-  ASYNC_STATE_COMPLETE,
-  ASYNC_STATE_FAILED,
-  ASYNC_STATE_CANCELLED
-} HTTPAsyncState;
-
-/**
- * @brief Asynchronous HTTP request state.
- * @ingroup http
- */
-struct SocketHTTPClient_AsyncRequest
-{
-  SocketHTTPClient_T client;
-  SocketHTTPClient_Request_T request;
-
-  HTTPAsyncState state;
-  SocketHTTPClient_Error error;
-
-  HTTPPoolEntry *conn;
-
-  SocketHTTPClient_Response response;
-
-  SocketHTTPClient_Callback callback;
-  void *userdata;
-
-  struct SocketHTTPClient_AsyncRequest *next;
-
-  Arena_T arena;
-};
-
-/**
  * @brief Individual cookie storage entry.
  * @ingroup http
  */
