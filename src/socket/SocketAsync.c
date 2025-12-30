@@ -1236,24 +1236,23 @@ SocketAsync_get_progress (T async, unsigned request_id, size_t *completed,
   return found;
 }
 
-
-static unsigned
-socket_async_continue_request (T async, unsigned request_id,
-                               enum AsyncRequestType expected_type)
+/* Extract and validate a request for continuation.
+ * Returns extracted request on success, NULL on failure.
+ * Caller must free the returned request with socket_async_free_request().
+ *
+ * This function locks the mutex, validates the request exists and matches
+ * the expected type, extracts its data, removes it from the hash table,
+ * and unlocks the mutex.
+ */
+static struct AsyncRequest *
+extract_continue_request (T async, unsigned request_id,
+                          enum AsyncRequestType expected_type,
+                          size_t *remaining_len)
 {
   struct AsyncRequest *orig_req;
-  struct AsyncRequest *new_req;
-  Socket_T socket;
-  SocketAsync_Callback cb;
-  void *user_data;
-  const void *send_buf = NULL;
-  void *recv_buf = NULL;
-  size_t remaining_len;
-  SocketAsync_Flags flags;
-  unsigned new_id;
 
-  if (!async || request_id == 0)
-    return 0;
+  if (!async || request_id == 0 || !remaining_len)
+    return NULL;
 
   pthread_mutex_lock (&async->mutex);
 
@@ -1261,44 +1260,78 @@ socket_async_continue_request (T async, unsigned request_id,
   if (!orig_req)
     {
       pthread_mutex_unlock (&async->mutex);
-      return 0;
+      return NULL;
     }
 
   if (orig_req->type != expected_type)
     {
       pthread_mutex_unlock (&async->mutex);
-      return 0;
+      return NULL;
     }
 
   if (orig_req->completed >= orig_req->len)
     {
       pthread_mutex_unlock (&async->mutex);
-      return 0;
+      return NULL;
     }
 
-  socket = orig_req->socket;
-  cb = orig_req->cb;
-  user_data = orig_req->user_data;
-  remaining_len = orig_req->len - orig_req->completed;
-  flags = orig_req->flags;
-
-  if (expected_type == REQ_SEND)
-    send_buf = (const char *)orig_req->send_buf + orig_req->completed;
-  else
-    recv_buf = (char *)orig_req->recv_buf + orig_req->completed;
+  *remaining_len = orig_req->len - orig_req->completed;
 
   remove_request_unlocked (async, orig_req);
 
   pthread_mutex_unlock (&async->mutex);
 
-  socket_async_free_request (async, orig_req);
+  return orig_req;
+}
 
-  new_req = setup_async_request (async, socket, cb, user_data, expected_type,
-                                 send_buf, recv_buf, remaining_len, flags);
+/* Create and submit a continuation request based on original request data.
+ * Returns new request ID on success, 0 on failure.
+ */
+static unsigned
+resubmit_continuation (T async, struct AsyncRequest *orig_req,
+                       size_t remaining_len)
+{
+  struct AsyncRequest *new_req;
+  const void *send_buf = NULL;
+  void *recv_buf = NULL;
+  unsigned new_id;
+
+  if (!async || !orig_req)
+    return 0;
+
+  if (orig_req->type == REQ_SEND)
+    send_buf = (const char *)orig_req->send_buf + orig_req->completed;
+  else
+    recv_buf = (char *)orig_req->recv_buf + orig_req->completed;
+
+  new_req = setup_async_request (async, orig_req->socket, orig_req->cb,
+                                 orig_req->user_data, orig_req->type,
+                                 send_buf, recv_buf, remaining_len,
+                                 orig_req->flags);
 
   new_id = submit_and_track_request (async, new_req);
   if (new_id == 0)
     socket_async_free_request (async, new_req);
+
+  return new_id;
+}
+
+static unsigned
+socket_async_continue_request (T async, unsigned request_id,
+                               enum AsyncRequestType expected_type)
+{
+  struct AsyncRequest *orig_req;
+  size_t remaining_len;
+  unsigned new_id;
+
+  orig_req = extract_continue_request (async, request_id, expected_type,
+                                       &remaining_len);
+  if (!orig_req)
+    return 0;
+
+  new_id = resubmit_continuation (async, orig_req, remaining_len);
+
+  socket_async_free_request (async, orig_req);
 
   return new_id;
 }
