@@ -280,7 +280,6 @@ dtls_cookie_verify_cb (SSL *ssl, const unsigned char *cookie,
     num_secrets = COOKIE_SECRET_COUNT;
   }
 
-  verified = 0;
   for (int s = 0; s < num_secrets; s++) {
     for (int t = 0; t < COOKIE_TIMESTAMP_WINDOW; t++) {
       /* Prevent underflow: only subtract if t <= timestamp */
