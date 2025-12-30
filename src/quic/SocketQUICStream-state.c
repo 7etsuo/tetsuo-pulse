@@ -113,7 +113,7 @@ update_legacy_state_recv (SocketQUICStream_T stream)
 }
 
 /* ============================================================================
- * Send-Side State Machine (RFC 9000 Section 3.1)
+ * State Transition Infrastructure
  * ============================================================================
  */
 
@@ -129,6 +129,66 @@ typedef struct
   SocketQUICStreamEvent event;      /**< Triggering event */
   SocketQUICStreamState to_state;   /**< Destination state */
 } SocketQUICStreamTransition;
+
+/**
+ * @brief Callback for updating flags and legacy state after a transition.
+ *
+ * Invoked after a successful state transition to update stream flags
+ * (fin_sent, reset_received, etc.) and maintain the legacy combined state.
+ *
+ * @param stream Stream to update.
+ * @param event  Event that triggered the transition.
+ */
+typedef void (*StateUpdateFn) (SocketQUICStream_T stream,
+                               SocketQUICStreamEvent event);
+
+/**
+ * @brief Perform a state transition using a lookup table.
+ *
+ * This helper function encapsulates the common linear search logic used by
+ * both send and receive state machines. It searches the transition table for
+ * a valid transition matching the current state and event, then applies it.
+ *
+ * @param stream      Stream to transition.
+ * @param current     Current state to transition from.
+ * @param event       Event triggering the transition.
+ * @param table       Transition table to search.
+ * @param table_size  Number of entries in the table.
+ * @param state_field Pointer to the state field to update.
+ * @param update_fn   Callback to update flags and legacy state.
+ *
+ * @return QUIC_STREAM_OK on success, QUIC_STREAM_ERROR_STATE if no valid
+ *         transition exists.
+ */
+static SocketQUICStream_Result
+do_state_transition (SocketQUICStream_T stream, SocketQUICStreamState current,
+                     SocketQUICStreamEvent event,
+                     const SocketQUICStreamTransition *table, size_t table_size,
+                     SocketQUICStreamState *state_field, StateUpdateFn update_fn)
+{
+  /* Search transition table for valid transition */
+  for (size_t i = 0; i < table_size; i++)
+    {
+      if (table[i].from_state == current && table[i].event == event)
+        {
+          /* Valid transition found - execute it */
+          *state_field = table[i].to_state;
+
+          /* Update flags and legacy state */
+          update_fn (stream, event);
+
+          return QUIC_STREAM_OK;
+        }
+    }
+
+  /* No valid transition found */
+  return QUIC_STREAM_ERROR_STATE;
+}
+
+/* ============================================================================
+ * Send-Side State Machine (RFC 9000 Section 3.1)
+ * ============================================================================
+ */
 
 /**
  * @brief Send-side state transition table (RFC 9000 Section 3.1).
@@ -184,6 +244,29 @@ static const SocketQUICStreamTransition send_transitions[] = {
   (sizeof (send_transitions) / sizeof (send_transitions[0]))
 
 /**
+ * @brief Update send-side flags and legacy state after a transition.
+ *
+ * Updates fin_sent/reset_sent flags based on the event and maintains
+ * the legacy combined state field for backwards compatibility.
+ *
+ * @param stream Stream to update.
+ * @param event  Event that triggered the transition.
+ */
+static void
+update_send_state (SocketQUICStream_T stream, SocketQUICStreamEvent event)
+{
+  /* Update flags based on transition */
+  if (event == QUIC_STREAM_EVENT_SEND_FIN)
+    stream->fin_sent = 1;
+  else if (event == QUIC_STREAM_EVENT_SEND_RESET
+           || event == QUIC_STREAM_EVENT_RECV_STOP_SENDING)
+    stream->reset_sent = 1;
+
+  /* Update legacy combined state for backwards compatibility */
+  update_legacy_state_send (stream);
+}
+
+/**
  * @brief Validate and execute send-side state transition.
  *
  * Uses a table-driven approach for clarity and maintainability.
@@ -214,32 +297,10 @@ SocketQUICStream_transition_send (SocketQUICStream_T stream,
       return QUIC_STREAM_ERROR_STATE;
     }
 
-  /* Search transition table for valid transition */
-  for (size_t i = 0; i < SEND_TRANSITIONS_COUNT; i++)
-    {
-      /* Skip non-matching transitions */
-      if (send_transitions[i].from_state != current ||
-          send_transitions[i].event != event)
-        continue;
-
-      /* Valid transition found - execute it */
-      stream->send_state = send_transitions[i].to_state;
-
-      /* Update flags based on transition */
-      if (event == QUIC_STREAM_EVENT_SEND_FIN)
-        stream->fin_sent = 1;
-      else if (event == QUIC_STREAM_EVENT_SEND_RESET ||
-               event == QUIC_STREAM_EVENT_RECV_STOP_SENDING)
-        stream->reset_sent = 1;
-
-      /* Update legacy combined state for backwards compatibility */
-      update_legacy_state_send (stream);
-
-      return QUIC_STREAM_OK;
-    }
-
-  /* No valid transition found */
-  return QUIC_STREAM_ERROR_STATE;
+  /* Delegate to common transition logic */
+  return do_state_transition (stream, current, event, send_transitions,
+                              SEND_TRANSITIONS_COUNT, &stream->send_state,
+                              update_send_state);
 }
 
 /* ============================================================================
@@ -287,6 +348,28 @@ static const SocketQUICStreamTransition recv_transitions[] = {
   (sizeof (recv_transitions) / sizeof (recv_transitions[0]))
 
 /**
+ * @brief Update receive-side flags and legacy state after a transition.
+ *
+ * Updates fin_received/reset_received flags based on the event and
+ * maintains the legacy combined state field for backwards compatibility.
+ *
+ * @param stream Stream to update.
+ * @param event  Event that triggered the transition.
+ */
+static void
+update_recv_state (SocketQUICStream_T stream, SocketQUICStreamEvent event)
+{
+  /* Update flags based on transition */
+  if (event == QUIC_STREAM_EVENT_RECV_FIN)
+    stream->fin_received = 1;
+  else if (event == QUIC_STREAM_EVENT_RECV_RESET)
+    stream->reset_received = 1;
+
+  /* Update legacy combined state for backwards compatibility */
+  update_legacy_state_recv (stream);
+}
+
+/**
  * @brief Validate and execute receive-side state transition.
  *
  * Uses table-driven lookup to find valid transitions from current state
@@ -311,27 +394,8 @@ SocketQUICStream_transition_recv (SocketQUICStream_T stream,
       return QUIC_STREAM_ERROR_STATE;
     }
 
-  /* Table-driven transition lookup */
-  for (size_t i = 0; i < RECV_TRANSITIONS_COUNT; i++)
-    {
-      /* Skip non-matching transitions */
-      if (recv_transitions[i].from_state != current ||
-          recv_transitions[i].event != event)
-        continue;
-
-      stream->recv_state = recv_transitions[i].to_state;
-
-      /* Update flags based on transition */
-      if (event == QUIC_STREAM_EVENT_RECV_FIN)
-        stream->fin_received = 1;
-      else if (event == QUIC_STREAM_EVENT_RECV_RESET)
-        stream->reset_received = 1;
-
-      /* Update legacy combined state for backwards compatibility */
-      update_legacy_state_recv (stream);
-
-      return QUIC_STREAM_OK;
-    }
-
-  return QUIC_STREAM_ERROR_STATE; /* No valid transition found */
+  /* Delegate to common transition logic */
+  return do_state_transition (stream, current, event, recv_transitions,
+                              RECV_TRANSITIONS_COUNT, &stream->recv_state,
+                              update_recv_state);
 }
