@@ -23,6 +23,16 @@
 
 #define T Socket_T
 
+/* Compile-time validation of FD passing limits */
+_Static_assert (SOCKET_MAX_FDS_PER_MSG > 0,
+                "SOCKET_MAX_FDS_PER_MSG must be positive");
+
+_Static_assert (SOCKET_MAX_FDS_PER_MSG <= 253,
+                "SOCKET_MAX_FDS_PER_MSG exceeds SCM_MAX_FD (253)");
+
+_Static_assert (CMSG_SPACE (sizeof (int) * SOCKET_MAX_FDS_PER_MSG) < 8192,
+                "CMSG buffer size too large for stack allocation");
+
 /* SCM_RIGHTS requires at least 1 byte of data to be sent */
 #define FD_PASS_DUMMY_BYTE '\x00'
 
