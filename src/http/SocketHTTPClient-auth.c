@@ -189,35 +189,40 @@ digest_hash (const void *data, size_t len, int use_sha256, char *hex_output)
 }
 
 static int
+compute_digest_a (const char *arg1, const char *arg2, const char *arg3,
+                  int use_sha256, int secure_clear, char *ha_hex)
+{
+  char buffer[HTTPCLIENT_DIGEST_A_BUFFER_SIZE];
+  int len;
+
+  if (arg3 != NULL)
+    len = snprintf (buffer, sizeof (buffer), "%s:%s:%s", arg1, arg2, arg3);
+  else
+    len = snprintf (buffer, sizeof (buffer), "%s:%s", arg1, arg2);
+
+  if (len < 0 || (size_t)len >= sizeof (buffer))
+    return -1;
+
+  digest_hash (buffer, (size_t)len, use_sha256, ha_hex);
+
+  if (secure_clear)
+    SocketCrypto_secure_clear (buffer, sizeof (buffer));
+
+  return 0;
+}
+
+static int
 compute_ha1 (const char *username, const char *realm, const char *password,
              int use_sha256, char *ha1_hex)
 {
-  char a1[HTTPCLIENT_DIGEST_A_BUFFER_SIZE];
-  int len;
-
-  len = snprintf (a1, sizeof (a1), "%s:%s:%s", username, realm, password);
-  if (len < 0 || (size_t)len >= sizeof (a1))
-    return -1;
-
-  digest_hash (a1, (size_t)len, use_sha256, ha1_hex);
-  SocketCrypto_secure_clear (a1, sizeof (a1));
-
-  return 0;
+  return compute_digest_a (username, realm, password, use_sha256, 1, ha1_hex);
 }
 
 static int
 compute_ha2 (const char *method, const char *uri, int use_sha256,
              char *ha2_hex)
 {
-  char a2[HTTPCLIENT_DIGEST_A_BUFFER_SIZE];
-  int len;
-
-  len = snprintf (a2, sizeof (a2), "%s:%s", method, uri);
-  if (len < 0 || (size_t)len >= sizeof (a2))
-    return -1;
-
-  digest_hash (a2, (size_t)len, use_sha256, ha2_hex);
-  return 0;
+  return compute_digest_a (method, uri, NULL, use_sha256, 0, ha2_hex);
 }
 
 static int
