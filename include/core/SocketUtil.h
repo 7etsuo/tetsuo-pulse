@@ -34,6 +34,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <pthread.h>
+#include <stdbool.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -1507,24 +1508,33 @@ socket_util_safe_copy_ip (char *dest, const char *src, size_t max_len)
  * Copies up to max_len-1 characters from src to dest and always null-terminates.
  * Prevents buffer overflow by design. Truncates if source exceeds max_len-1.
  *
+ * @return true if entire string was copied, false if truncation occurred
+ *
  * @threadsafe Yes - no shared state
  *
  * @complexity O(min(strlen(src), max_len)) - linear in string length
  *
  * Usage:
  *   char buf[256];
- *   socket_util_safe_strncpy(buf, user_input, sizeof(buf));
+ *   if (!socket_util_safe_strncpy(buf, user_input, sizeof(buf))) {
+ *     // Handle truncation error
+ *   }
  *
- * @note Truncates src if it exceeds max_len-1 characters
+ * @note Returns false if src exceeds max_len-1 characters (truncation occurred)
  * @warning dest must be at least max_len bytes to avoid buffer overflow
  *
  * @see strncpy(3) for underlying copy mechanism
  */
-static inline void
+static inline bool
 socket_util_safe_strncpy (char *dest, const char *src, size_t max_len)
 {
+  size_t src_len;
+
   if (max_len == 0)
-    return;
+    return false;
+
+  src_len = strlen (src);
+
 /* Suppress GCC false positive: we explicitly null-terminate below */
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic push
@@ -1535,6 +1545,9 @@ socket_util_safe_strncpy (char *dest, const char *src, size_t max_len)
 #pragma GCC diagnostic pop
 #endif
   dest[max_len - 1] = '\0';
+
+  /* Return false if truncation occurred */
+  return src_len < max_len;
 }
 
 /* ============================================================================

@@ -1207,32 +1207,41 @@ SocketDNSoverTLS_configure (T transport, const SocketDNSoverTLS_Config *config)
   server = &transport->servers[transport->server_count];
   memset (server, 0, sizeof (*server));
 
-  socket_util_safe_strncpy (server->address, config->server_address, sizeof (server->address));
+  if (!socket_util_safe_strncpy (server->address, config->server_address,
+                                  sizeof (server->address)))
+    return -1; /* Server address truncated */
+
   server->port = (config->port > 0) ? config->port : DOT_PORT;
   server->family = family;
   server->mode = config->mode;
 
   if (config->server_name)
     {
-      socket_util_safe_strncpy (server->server_name, config->server_name,
-                                sizeof (server->server_name));
+      if (!socket_util_safe_strncpy (server->server_name, config->server_name,
+                                      sizeof (server->server_name)))
+        return -1; /* Server name truncated */
     }
   else
     {
       /* Use address as SNI if no server name provided */
-      socket_util_safe_strncpy (server->server_name, config->server_address,
-                                sizeof (server->server_name));
+      if (!socket_util_safe_strncpy (server->server_name, config->server_address,
+                                      sizeof (server->server_name)))
+        return -1; /* Server name (from address) truncated */
     }
 
   if (config->spki_pin)
     {
-      socket_util_safe_strncpy (server->spki_pin, config->spki_pin, sizeof (server->spki_pin));
+      if (!socket_util_safe_strncpy (server->spki_pin, config->spki_pin,
+                                      sizeof (server->spki_pin)))
+        return -1; /* SPKI pin truncated */
     }
 
   if (config->spki_pin_backup)
     {
-      socket_util_safe_strncpy (server->spki_pin_backup, config->spki_pin_backup,
-                                sizeof (server->spki_pin_backup));
+      if (!socket_util_safe_strncpy (server->spki_pin_backup,
+                                      config->spki_pin_backup,
+                                      sizeof (server->spki_pin_backup)))
+        return -1; /* SPKI backup pin truncated */
     }
 
   transport->server_count++;

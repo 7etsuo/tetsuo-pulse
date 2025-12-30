@@ -530,6 +530,61 @@ TEST (dot_memory_limit)
   Arena_dispose (&arena);
 }
 
+/* Test: String truncation detection in configure */
+TEST (dot_configure_truncation)
+{
+  Arena_T arena = Arena_new ();
+  SocketDNSoverTLS_T dot = SocketDNSoverTLS_new (arena);
+
+  /* Test 1: Server address truncation (buffer size is 64) */
+  char long_address[128];
+  memset (long_address, 'a', sizeof (long_address) - 1);
+  long_address[sizeof (long_address) - 1] = '\0';
+
+  SocketDNSoverTLS_Config config = { .server_address = long_address,
+                                     .port = 853,
+                                     .server_name = NULL,
+                                     .mode = DOT_MODE_OPPORTUNISTIC,
+                                     .spki_pin = NULL,
+                                     .spki_pin_backup = NULL };
+
+  int ret = SocketDNSoverTLS_configure (dot, &config);
+  ASSERT_EQ (ret, -1); /* Should fail due to address truncation */
+
+  /* Test 2: Server name truncation (buffer size is 256) */
+  char long_server_name[300];
+  memset (long_server_name, 'b', sizeof (long_server_name) - 1);
+  long_server_name[sizeof (long_server_name) - 1] = '\0';
+
+  config.server_address = "8.8.8.8";
+  config.server_name = long_server_name;
+
+  ret = SocketDNSoverTLS_configure (dot, &config);
+  ASSERT_EQ (ret, -1); /* Should fail due to server name truncation */
+
+  /* Test 3: SPKI pin truncation (buffer size is 64) */
+  char long_pin[80];
+  memset (long_pin, 'c', sizeof (long_pin) - 1);
+  long_pin[sizeof (long_pin) - 1] = '\0';
+
+  config.server_name = "dns.google";
+  config.spki_pin = long_pin;
+
+  ret = SocketDNSoverTLS_configure (dot, &config);
+  ASSERT_EQ (ret, -1); /* Should fail due to SPKI pin truncation */
+
+  /* Test 4: Valid configuration (no truncation) */
+  config.spki_pin = "YZPgTZ+woNCCCIW3LH2CxQeLzB/1m42QcCTBSdgayjs=";
+  config.spki_pin_backup = NULL;
+
+  ret = SocketDNSoverTLS_configure (dot, &config);
+  ASSERT_EQ (ret, 0); /* Should succeed - all fields fit */
+  ASSERT_EQ (SocketDNSoverTLS_server_count (dot), 1);
+
+  SocketDNSoverTLS_free (&dot);
+  Arena_dispose (&arena);
+}
+
 #else /* !SOCKET_HAS_TLS */
 
 /* Stub test when TLS is disabled */

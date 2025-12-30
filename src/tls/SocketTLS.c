@@ -529,15 +529,15 @@ do_handshake_poll (Socket_T socket, unsigned events, int timeout_ms)
 /**
  * disable_compute_shutdown_timeout - Calculate timeout for best-effort shutdown
  *
- * Returns: Timeout in milliseconds (minimum SOCKET_TLS_MIN_SHUTDOWN_TIMEOUT_MS)
+ * Returns: Timeout in milliseconds (minimum 1 second)
  * Thread-safe: Yes
  */
 static int
 disable_compute_shutdown_timeout (void)
 {
   int timeout_ms = SOCKET_TLS_DEFAULT_SHUTDOWN_TIMEOUT_MS / 4;
-  if (timeout_ms < SOCKET_TLS_MIN_SHUTDOWN_TIMEOUT_MS)
-    timeout_ms = SOCKET_TLS_MIN_SHUTDOWN_TIMEOUT_MS;
+  if (timeout_ms < 1000)
+    timeout_ms = 1000; /* Minimum 1 second for disable */
   return timeout_ms;
 }
 
@@ -606,7 +606,7 @@ disable_handle_io_wait (Socket_T socket, SSL *ssl, int result, int64_t deadline)
     {
       /* Brief poll then retry */
       unsigned events = (err == SSL_ERROR_WANT_READ) ? POLL_READ : POLL_WRITE;
-      int poll_timeout = SocketTimeout_poll_timeout (SOCKET_TLS_POLL_INTERVAL_MS, deadline);
+      int poll_timeout = SocketTimeout_poll_timeout (100, deadline);
 
       if (poll_timeout > 0)
         {
@@ -866,23 +866,8 @@ handshake_loop_internal (Socket_T socket, int timeout_ms, int poll_interval_ms,
   return final_state;
 }
 
-/**
- * handshake_loop_with_defaults - Common handshake loop with preconditions
- * @socket: Socket to handshake
- * @timeout_ms: Total timeout in milliseconds (0 for non-blocking)
- * @poll_interval_ms: Poll interval in milliseconds between attempts
- *
- * Handles common preconditions and delegates to handshake_loop_internal.
- * Checks if handshake is already complete, validates preconditions,
- * and tracks timing for metrics.
- *
- * Returns: TLSHandshakeState
- * Raises: SocketTLS_HandshakeFailed on timeout or error
- * Thread-safe: No
- */
-static TLSHandshakeState
-handshake_loop_with_defaults (Socket_T socket, int timeout_ms,
-                               int poll_interval_ms)
+TLSHandshakeState
+SocketTLS_handshake_loop (Socket_T socket, int timeout_ms)
 {
   assert (socket);
 
@@ -892,26 +877,28 @@ handshake_loop_with_defaults (Socket_T socket, int timeout_ms,
   validate_handshake_preconditions (socket);
 
   int64_t start_time_ms = Socket_get_monotonic_ms ();
-  return handshake_loop_internal (socket, timeout_ms, poll_interval_ms,
-                                  start_time_ms);
-}
-
-TLSHandshakeState
-SocketTLS_handshake_loop (Socket_T socket, int timeout_ms)
-{
-  return handshake_loop_with_defaults (socket, timeout_ms,
-                                       SOCKET_TLS_POLL_INTERVAL_MS);
+  return handshake_loop_internal (socket, timeout_ms,
+                                  SOCKET_TLS_POLL_INTERVAL_MS, start_time_ms);
 }
 
 TLSHandshakeState
 SocketTLS_handshake_loop_ex (Socket_T socket, int timeout_ms,
                              int poll_interval_ms)
 {
+  assert (socket);
+
+  if (socket->tls_handshake_done)
+    return TLS_HANDSHAKE_COMPLETE;
+
+  validate_handshake_preconditions (socket);
+
   /* Validate poll interval - use default if invalid */
   if (poll_interval_ms <= 0)
     poll_interval_ms = SOCKET_TLS_POLL_INTERVAL_MS;
 
-  return handshake_loop_with_defaults (socket, timeout_ms, poll_interval_ms);
+  int64_t start_time_ms = Socket_get_monotonic_ms ();
+  return handshake_loop_internal (socket, timeout_ms, poll_interval_ms,
+                                  start_time_ms);
 }
 
 TLSHandshakeState
@@ -1539,7 +1526,7 @@ SocketTLS_get_verify_error_string (Socket_T socket, char *buf, size_t size)
   const char *code_str = X509_verify_cert_error_string (code);
   if (code_str)
     {
-      socket_util_safe_strncpy (buf, code_str, size);
+      (void)socket_util_safe_strncpy (buf, code_str, size);
       return buf;
     }
 
@@ -1551,7 +1538,7 @@ SocketTLS_get_verify_error_string (Socket_T socket, char *buf, size_t size)
       return buf;
     }
 
-  socket_util_safe_strncpy (buf, "TLS verification failed (unknown error)", size);
+  (void)socket_util_safe_strncpy (buf, "TLS verification failed (unknown error)", size);
   return buf;
 }
 
@@ -1770,12 +1757,8 @@ SocketTLS_session_restore (Socket_T socket, const unsigned char *buffer,
   if (!ssl)
     return -1;
 
-  /* Validate length bounds for d2i_SSL_SESSION (takes long parameter).
-   * Use INT_MAX for portability - it's safe on all platforms including
-   * 64-bit Windows (LLP64) where sizeof(long)=4 but sizeof(size_t)=8.
-   * This conservative check prevents both overflow and platform-specific
-   * edge cases while still allowing session data up to ~2GB. */
-  if (len == 0 || len > INT_MAX)
+  /* Validate length to prevent integer overflow in d2i_SSL_SESSION */
+  if (len == 0 || len > (size_t)LONG_MAX)
     return 0; /* Invalid data */
 
   /* Deserialize session from DER format */
@@ -1966,102 +1949,6 @@ asn1_time_to_time_t (const ASN1_TIME *asn1)
   return timegm (&tm_time);
 }
 
-/**
- * @brief Extract certificate subject name
- *
- * @param cert X509 certificate
- * @param buf Output buffer
- * @param size Buffer size
- */
-static void
-extract_cert_subject (X509 *cert, char *buf, size_t size)
-{
-  assert (cert);
-  assert (buf);
-  assert (size > 0);
-
-  X509_NAME *subject_name = X509_get_subject_name (cert);
-  if (subject_name)
-    X509_NAME_oneline (subject_name, buf, (int)size);
-}
-
-/**
- * @brief Extract certificate issuer name
- *
- * @param cert X509 certificate
- * @param buf Output buffer
- * @param size Buffer size
- */
-static void
-extract_cert_issuer (X509 *cert, char *buf, size_t size)
-{
-  assert (cert);
-  assert (buf);
-  assert (size > 0);
-
-  X509_NAME *issuer_name = X509_get_issuer_name (cert);
-  if (issuer_name)
-    X509_NAME_oneline (issuer_name, buf, (int)size);
-}
-
-/**
- * @brief Extract certificate serial number as hex string
- *
- * @param cert X509 certificate
- * @param buf Output buffer
- * @param size Buffer size
- */
-static void
-extract_cert_serial (X509 *cert, char *buf, size_t size)
-{
-  assert (cert);
-  assert (buf);
-  assert (size > 0);
-
-  ASN1_INTEGER *serial = X509_get_serialNumber (cert);
-  if (!serial)
-    return;
-
-  BIGNUM *bn = ASN1_INTEGER_to_BN (serial, NULL);
-  if (!bn)
-    return;
-
-  char *hex = BN_bn2hex (bn);
-  if (hex)
-    {
-      socket_util_safe_strncpy (buf, hex, size);
-      OPENSSL_free (hex);
-    }
-  BN_free (bn);
-}
-
-/**
- * @brief Extract certificate SHA256 fingerprint
- *
- * @param cert X509 certificate
- * @param buf Output buffer
- * @param size Buffer size
- */
-static void
-extract_cert_fingerprint (X509 *cert, char *buf, size_t size)
-{
-  assert (cert);
-  assert (buf);
-  assert (size > 0);
-
-  unsigned char md[EVP_MAX_MD_SIZE];
-  unsigned int md_len = 0;
-
-  if (!X509_digest (cert, EVP_sha256 (), md, &md_len))
-    return;
-
-  /* Limit to SHA256 digest size (32 bytes = 64 hex chars) */
-  int expected_size = EVP_MD_size (EVP_sha256 ());
-  size_t hash_len
-      = (md_len > (unsigned)expected_size) ? (size_t)expected_size : md_len;
-  SocketCrypto_hex_encode (md, hash_len, buf, size);
-}
-
 int
 SocketTLS_get_peer_cert_info (Socket_T socket, SocketTLS_CertInfo *info)
 {
@@ -2078,10 +1965,15 @@ SocketTLS_get_peer_cert_info (Socket_T socket, SocketTLS_CertInfo *info)
   if (!cert)
     return 0; /* No peer certificate */
 
-  extract_cert_subject (cert, info->subject, sizeof (info->subject));
-  extract_cert_issuer (cert, info->issuer, sizeof (info->issuer));
-  extract_cert_serial (cert, info->serial, sizeof (info->serial));
-  extract_cert_fingerprint (cert, info->fingerprint, sizeof (info->fingerprint));
+  /* Subject */
+  X509_NAME *subject_name = X509_get_subject_name (cert);
+  if (subject_name)
+    X509_NAME_oneline (subject_name, info->subject, sizeof (info->subject));
+
+  /* Issuer */
+  X509_NAME *issuer_name = X509_get_issuer_name (cert);
+  if (issuer_name)
+    X509_NAME_oneline (issuer_name, info->issuer, sizeof (info->issuer));
 
   /* Validity period */
   info->not_before = asn1_time_to_time_t (X509_get0_notBefore (cert));
@@ -2089,6 +1981,36 @@ SocketTLS_get_peer_cert_info (Socket_T socket, SocketTLS_CertInfo *info)
 
   /* Version (0-indexed in X509, add 1 for standard numbering) */
   info->version = (int)X509_get_version (cert) + 1;
+
+  /* Serial number */
+  ASN1_INTEGER *serial = X509_get_serialNumber (cert);
+  if (serial)
+    {
+      BIGNUM *bn = ASN1_INTEGER_to_BN (serial, NULL);
+      if (bn)
+        {
+          char *hex = BN_bn2hex (bn);
+          if (hex)
+            {
+              (void)socket_util_safe_strncpy (info->serial, hex, sizeof (info->serial));
+              OPENSSL_free (hex);
+            }
+          BN_free (bn);
+        }
+    }
+
+  /* SHA256 fingerprint using SocketCrypto_hex_encode for safety */
+  unsigned char md[EVP_MAX_MD_SIZE];
+  unsigned int md_len = 0;
+  if (X509_digest (cert, EVP_sha256 (), md, &md_len))
+    {
+      /* Limit to SHA256 digest size (32 bytes = 64 hex chars) */
+      int expected_size = EVP_MD_size (EVP_sha256 ());
+      size_t hash_len
+          = (md_len > (unsigned)expected_size) ? (size_t)expected_size : md_len;
+      SocketCrypto_hex_encode (md, hash_len, info->fingerprint,
+                               sizeof (info->fingerprint));
+    }
 
   X509_free (cert);
   return 1;
@@ -2387,10 +2309,28 @@ SocketTLS_get_ocsp_next_update (Socket_T socket, time_t *next_update)
     return -1;
 
 #if !defined(OPENSSL_NO_OCSP)
-  /* Reuse existing OCSP response parser */
-  OCSP_BASICRESP *basic = ocsp_parse_response (ssl);
-  if (!basic)
+  const unsigned char *ocsp_resp;
+  long ocsp_len = SSL_get_tlsext_status_ocsp_resp (ssl, &ocsp_resp);
+
+  if (ocsp_len <= 0 || !ocsp_resp)
     return -1;
+
+  OCSP_RESPONSE *resp = d2i_OCSP_RESPONSE (NULL, &ocsp_resp, ocsp_len);
+  if (!resp)
+    return -1;
+
+  if (OCSP_response_status (resp) != OCSP_RESPONSE_STATUS_SUCCESSFUL)
+    {
+      OCSP_RESPONSE_free (resp);
+      return -1;
+    }
+
+  OCSP_BASICRESP *basic = OCSP_response_get1_basic (resp);
+  if (!basic)
+    {
+      OCSP_RESPONSE_free (resp);
+      return -1;
+    }
 
   int result = -1;
   int resp_count = OCSP_resp_count (basic);
@@ -2417,6 +2357,7 @@ SocketTLS_get_ocsp_next_update (Socket_T socket, time_t *next_update)
     }
 
   OCSP_BASICRESP_free (basic);
+  OCSP_RESPONSE_free (resp);
 
   return result;
 #else

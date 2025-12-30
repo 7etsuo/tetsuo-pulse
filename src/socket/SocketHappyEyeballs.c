@@ -1755,7 +1755,7 @@ he_connect_extract_result (T he, const char *volatile *err_msg)
       if (tmp_err)
         {
           static _Thread_local char err_buf[SOCKET_HE_CONNECT_ERROR_BUFSIZE];
-          socket_util_safe_strncpy (err_buf, tmp_err, sizeof (err_buf));
+          (void)socket_util_safe_strncpy (err_buf, tmp_err, sizeof (err_buf));
           *err_msg = err_buf;
         }
       else
