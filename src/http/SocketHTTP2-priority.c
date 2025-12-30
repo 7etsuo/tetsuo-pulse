@@ -214,7 +214,6 @@ SocketHTTP2_Priority_parse (const char *value, size_t len,
               return -1;
             }
 
-          /* Note: urgency bounds already validated in parsing loop above (line 196) */
           priority->urgency = (uint8_t)urgency;
           found_urgency = 1;
         }
