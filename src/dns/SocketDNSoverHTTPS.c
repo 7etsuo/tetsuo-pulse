@@ -120,9 +120,6 @@ struct T
 const Except_T SocketDNSoverHTTPS_Failed
     = { &SocketDNSoverHTTPS_Failed, "DNS-over-HTTPS operation failed" };
 
-/* Use centralized monotonic time utility from SocketUtil.h */
-#define get_monotonic_ms() Socket_get_monotonic_ms()
-
 /**
  * Convert standard Base64 to Base64URL (RFC 4648 Section 5).
  * Replaces + with -, / with _, and removes padding.
@@ -603,7 +600,7 @@ allocate_query_structure (T transport, const unsigned char *query, size_t len,
   q->id = extract_query_id (query, len);
   q->callback = callback;
   q->userdata = userdata;
-  q->sent_time_ms = get_monotonic_ms ();
+  q->sent_time_ms = Socket_get_monotonic_ms ();
   q->cancelled = 0;
   q->completed = 0;
   q->error = DOH_ERROR_SUCCESS;
