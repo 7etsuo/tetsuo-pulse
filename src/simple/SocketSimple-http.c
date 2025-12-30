@@ -238,6 +238,37 @@ set_http_error_from_exception (void)
   }
 
 /* ============================================================================
+ * Header Parsing Helper
+ * ============================================================================
+ */
+
+static void
+add_custom_headers (SocketHTTPClient_Request_T req, const char **headers)
+{
+  if (!headers)
+    return;
+
+  for (const char **h = headers; *h != NULL; h++)
+    {
+      const char *colon = strchr (*h, ':');
+      if (colon)
+        {
+          size_t name_len = (size_t)(colon - *h);
+          if (name_len > 0 && name_len < SOCKET_SIMPLE_MAX_HEADER_NAME_LEN)
+            {
+              char name[SOCKET_SIMPLE_MAX_HEADER_NAME_LEN];
+              memcpy (name, *h, name_len);
+              name[name_len] = '\0';
+              const char *value = colon + 1;
+              while (*value == ' ')
+                value++;
+              SocketHTTPClient_Request_header (req, name, value);
+            }
+        }
+    }
+}
+
+/* ============================================================================
  * One-liner HTTP Functions
  * ============================================================================
  */
@@ -319,33 +350,7 @@ Socket_simple_http_get_ex (const char *url, const char **headers,
   TRY
   {
     req = SocketHTTPClient_Request_new (client, HTTP_METHOD_GET, url);
-
-    /* Add custom headers - use stack buffer to avoid malloc leak on exception
-     */
-    if (headers)
-      {
-        for (const char **h = headers; *h != NULL; h++)
-          {
-            /* Parse "Name: Value" format */
-            const char *colon = strchr (*h, ':');
-            if (colon)
-              {
-                size_t name_len = (size_t)(colon - *h);
-                if (name_len > 0 && name_len < SOCKET_SIMPLE_MAX_HEADER_NAME_LEN)
-                  {
-                    char name[SOCKET_SIMPLE_MAX_HEADER_NAME_LEN];
-                    memcpy (name, *h, name_len);
-                    name[name_len] = '\0';
-                    const char *value = colon + 1;
-                    while (*value == ' ')
-                      value++;
-                    SocketHTTPClient_Request_header (
-                        (SocketHTTPClient_Request_T)req, name, value);
-                  }
-              }
-          }
-      }
-
+    add_custom_headers ((SocketHTTPClient_Request_T)req, headers);
     ret = SocketHTTPClient_Request_execute ((SocketHTTPClient_Request_T)req,
                                             &lib_response);
   }
@@ -697,32 +702,6 @@ Socket_simple_http_options (const char *url,
  * Extended Functions with Custom Headers
  * ============================================================================
  */
-
-static void
-add_custom_headers (SocketHTTPClient_Request_T req, const char **headers)
-{
-  if (!headers)
-    return;
-
-  for (const char **h = headers; *h != NULL; h++)
-    {
-      const char *colon = strchr (*h, ':');
-      if (colon)
-        {
-          size_t name_len = (size_t)(colon - *h);
-          if (name_len > 0 && name_len < SOCKET_SIMPLE_MAX_HEADER_NAME_LEN)
-            {
-              char name[SOCKET_SIMPLE_MAX_HEADER_NAME_LEN];
-              memcpy (name, *h, name_len);
-              name[name_len] = '\0';
-              const char *value = colon + 1;
-              while (*value == ' ')
-                value++;
-              SocketHTTPClient_Request_header (req, name, value);
-            }
-        }
-    }
-}
 
 int
 Socket_simple_http_post_ex (const char *url, const char **headers,
