@@ -2725,30 +2725,6 @@ TEST (socket_connect_with_addrinfo_ipv4)
   END_TRY;
 }
 
-TEST (socketmetrics_snapshot_exports)
-{
-  SocketMetricsSnapshot snapshot = { { 0ULL } };
-
-  SocketMetrics_legacy_reset ();
-  SocketMetrics_increment (SOCKET_METRIC_SOCKET_CONNECT_SUCCESS, 3);
-  SocketMetrics_increment (SOCKET_METRIC_POLL_WAKEUPS, 1);
-  SocketMetrics_getsnapshot (&snapshot);
-
-  ASSERT_EQ (3ULL,
-             SocketMetrics_snapshot_value (
-                 &snapshot, SOCKET_METRIC_SOCKET_CONNECT_SUCCESS));
-  ASSERT_EQ (
-      1ULL,
-      SocketMetrics_snapshot_value (&snapshot, SOCKET_METRIC_POLL_WAKEUPS));
-  ASSERT_EQ (SOCKET_METRIC_COUNT, SocketMetrics_count ());
-
-  SocketMetrics_legacy_reset ();
-  SocketMetrics_getsnapshot (&snapshot);
-  ASSERT_EQ (0ULL,
-             SocketMetrics_snapshot_value (
-                 &snapshot, SOCKET_METRIC_SOCKET_CONNECT_SUCCESS));
-}
-
 TEST (socketevents_emit_and_unregister)
 {
   EventProbe probe = { 0 };
@@ -2770,99 +2746,6 @@ TEST (socketevents_emit_and_unregister)
   SocketEvent_unregister (event_probe_callback, &probe);
   SocketEvent_emit_poll_wakeup (1, 0);
   ASSERT_EQ (2, probe.count);
-}
-
-TEST (socketmetrics_all_metric_types)
-{
-  SocketMetricsSnapshot snapshot = { { 0ULL } };
-
-  SocketMetrics_legacy_reset ();
-  SocketMetrics_increment (SOCKET_METRIC_SOCKET_CONNECT_SUCCESS, 1);
-  SocketMetrics_increment (SOCKET_METRIC_SOCKET_CONNECT_FAILURE, 2);
-  SocketMetrics_increment (SOCKET_METRIC_SOCKET_SHUTDOWN_CALL, 3);
-  SocketMetrics_increment (SOCKET_METRIC_DNS_REQUEST_SUBMITTED, 4);
-  SocketMetrics_increment (SOCKET_METRIC_DNS_REQUEST_COMPLETED, 5);
-  SocketMetrics_increment (SOCKET_METRIC_DNS_REQUEST_FAILED, 6);
-  SocketMetrics_increment (SOCKET_METRIC_DNS_REQUEST_CANCELLED, 7);
-  SocketMetrics_increment (SOCKET_METRIC_DNS_REQUEST_TIMEOUT, 8);
-  SocketMetrics_increment (SOCKET_METRIC_POLL_WAKEUPS, 9);
-  SocketMetrics_increment (SOCKET_METRIC_POLL_EVENTS_DISPATCHED, 10);
-  SocketMetrics_increment (SOCKET_METRIC_POOL_CONNECTIONS_ADDED, 11);
-  SocketMetrics_increment (SOCKET_METRIC_POOL_CONNECTIONS_REMOVED, 12);
-  SocketMetrics_increment (SOCKET_METRIC_POOL_CONNECTIONS_REUSED, 13);
-
-  SocketMetrics_getsnapshot (&snapshot);
-
-  ASSERT_EQ (1ULL,
-             SocketMetrics_snapshot_value (
-                 &snapshot, SOCKET_METRIC_SOCKET_CONNECT_SUCCESS));
-  ASSERT_EQ (2ULL,
-             SocketMetrics_snapshot_value (
-                 &snapshot, SOCKET_METRIC_SOCKET_CONNECT_FAILURE));
-  ASSERT_EQ (3ULL,
-             SocketMetrics_snapshot_value (&snapshot,
-                                           SOCKET_METRIC_SOCKET_SHUTDOWN_CALL));
-  {
-    uint64_t actual_dns = SocketMetrics_snapshot_value (
-        &snapshot, SOCKET_METRIC_DNS_REQUEST_SUBMITTED);
-    if (actual_dns != 4ULL)
-      printf ("\n  [DEBUG] DNS_REQUEST_SUBMITTED = %llu (expected 4)\n",
-              (unsigned long long)actual_dns);
-  }
-  ASSERT_EQ (4ULL,
-             SocketMetrics_snapshot_value (
-                 &snapshot, SOCKET_METRIC_DNS_REQUEST_SUBMITTED));
-  ASSERT_EQ (5ULL,
-             SocketMetrics_snapshot_value (
-                 &snapshot, SOCKET_METRIC_DNS_REQUEST_COMPLETED));
-  ASSERT_EQ (6ULL,
-             SocketMetrics_snapshot_value (&snapshot,
-                                           SOCKET_METRIC_DNS_REQUEST_FAILED));
-  ASSERT_EQ (7ULL,
-             SocketMetrics_snapshot_value (
-                 &snapshot, SOCKET_METRIC_DNS_REQUEST_CANCELLED));
-  ASSERT_EQ (8ULL,
-             SocketMetrics_snapshot_value (&snapshot,
-                                           SOCKET_METRIC_DNS_REQUEST_TIMEOUT));
-  ASSERT_EQ (
-      9ULL,
-      SocketMetrics_snapshot_value (&snapshot, SOCKET_METRIC_POLL_WAKEUPS));
-  ASSERT_EQ (10ULL,
-             SocketMetrics_snapshot_value (
-                 &snapshot, SOCKET_METRIC_POLL_EVENTS_DISPATCHED));
-  ASSERT_EQ (11ULL,
-             SocketMetrics_snapshot_value (
-                 &snapshot, SOCKET_METRIC_POOL_CONNECTIONS_ADDED));
-  ASSERT_EQ (12ULL,
-             SocketMetrics_snapshot_value (
-                 &snapshot, SOCKET_METRIC_POOL_CONNECTIONS_REMOVED));
-  ASSERT_EQ (13ULL,
-             SocketMetrics_snapshot_value (
-                 &snapshot, SOCKET_METRIC_POOL_CONNECTIONS_REUSED));
-}
-
-TEST (socketmetrics_metric_names)
-{
-  ASSERT_NOT_NULL (SocketMetrics_name (SOCKET_METRIC_SOCKET_CONNECT_SUCCESS));
-  ASSERT_NOT_NULL (SocketMetrics_name (SOCKET_METRIC_SOCKET_CONNECT_FAILURE));
-  ASSERT_NOT_NULL (SocketMetrics_name (SOCKET_METRIC_DNS_REQUEST_SUBMITTED));
-  ASSERT_NOT_NULL (SocketMetrics_name (SOCKET_METRIC_POLL_WAKEUPS));
-  ASSERT_NOT_NULL (SocketMetrics_name (SOCKET_METRIC_POOL_CONNECTIONS_ADDED));
-  ASSERT_NOT_NULL (SocketMetrics_name ((SocketMetric)999));
-}
-
-TEST (socketmetrics_increment_by_value)
-{
-  SocketMetricsSnapshot snapshot = { { 0ULL } };
-
-  SocketMetrics_legacy_reset ();
-  SocketMetrics_increment (SOCKET_METRIC_SOCKET_CONNECT_SUCCESS, 5);
-  SocketMetrics_increment (SOCKET_METRIC_SOCKET_CONNECT_SUCCESS, 3);
-  SocketMetrics_getsnapshot (&snapshot);
-
-  ASSERT_EQ (8ULL,
-             SocketMetrics_snapshot_value (
-                 &snapshot, SOCKET_METRIC_SOCKET_CONNECT_SUCCESS));
 }
 
 TEST (socketevents_multiple_handlers)

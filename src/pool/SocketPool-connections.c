@@ -22,6 +22,7 @@
 #include <sys/socket.h>
 #include <time.h>
 
+#include "core/SocketMetrics.h"
 #include "pool/SocketPool-private.h"
 /* SocketUtil.h included via SocketPool-private.h */
 
@@ -543,7 +544,7 @@ handle_existing_slot (Connection_T conn, time_t now)
    * 20) */
   SocketPool_connections_release_buffers (conn);
   update_existing_slot (conn, now);
-  SocketMetrics_increment (SOCKET_METRIC_POOL_CONNECTIONS_REUSED, 1);
+  SocketMetrics_counter_inc (SOCKET_CTR_POOL_CONNECTIONS_REUSED);
   return conn;
 }
 
@@ -565,7 +566,7 @@ setup_new_connection (T pool, Connection_T conn, Socket_T socket, time_t now)
   add_to_active_list (pool, conn);
   increment_pool_count (pool);
   pool->stats_total_added++;
-  SocketMetrics_increment (SOCKET_METRIC_POOL_CONNECTIONS_ADDED, 1);
+  SocketMetrics_counter_inc (SOCKET_CTR_POOL_CONNECTIONS_CREATED);
   return conn;
 }
 
@@ -881,7 +882,7 @@ remove_known_connection (T pool, Connection_T conn, Socket_T socket)
   return_to_free_list (pool, conn);
   decrement_pool_count (pool);
   pool->stats_total_removed++;
-  SocketMetrics_increment (SOCKET_METRIC_POOL_CONNECTIONS_REMOVED, 1);
+  SocketMetrics_counter_inc (SOCKET_CTR_POOL_CONNECTIONS_DESTROYED);
 }
 
 /**

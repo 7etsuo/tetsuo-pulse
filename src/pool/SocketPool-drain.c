@@ -29,6 +29,7 @@
 #include <limits.h>
 #include <stdlib.h>
 
+#include "core/SocketMetrics.h"
 #include "pool/SocketPool-private.h"
 /* SocketUtil.h included via SocketPool-private.h */
 
@@ -309,7 +310,7 @@ transition_to_stopped (T pool, int timed_out)
                    SOCKET_LOG_COMPONENT,
                    "Pool drain complete (timed_out=%d)",
                    timed_out);
-  SocketMetrics_increment (SOCKET_METRIC_POOL_DRAIN_COMPLETED, 1);
+  SocketMetrics_counter_inc (SOCKET_CTR_POOL_DRAIN_COMPLETED);
 
   /* Release lock BEFORE callback to prevent deadlock */
   POOL_UNLOCK (pool);
@@ -442,7 +443,7 @@ SocketPool_drain (T pool, int timeout_ms)
                    "Pool drain initiated: %zu connections, timeout=%d ms",
                    current_count,
                    timeout_ms);
-  SocketMetrics_increment (SOCKET_METRIC_POOL_DRAIN_INITIATED, 1);
+  SocketMetrics_counter_inc (SOCKET_CTR_POOL_DRAIN_STARTED);
 
   /* If no connections, transition immediately to STOPPED */
   if (current_count == 0)
