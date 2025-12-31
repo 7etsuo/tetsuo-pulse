@@ -103,7 +103,10 @@ socks5_server_thread_func (void *arg)
 
   /* Accept client - handle Socket_Failed exception when socket is closed
    * during shutdown */
-  TRY { client = Socket_accept (server->listen_socket); }
+  TRY
+  {
+    client = Socket_accept (server->listen_socket);
+  }
   EXCEPT (Socket_Failed)
   {
     /* Socket was closed - expected during server stop */
@@ -130,7 +133,10 @@ socks5_server_thread_func (void *arg)
   Socket_settimeout (client, 2);
 
   /* SOCKS5 greeting - read client's auth methods */
-  TRY { n = Socket_recv (client, buf, sizeof (buf)); }
+  TRY
+  {
+    n = Socket_recv (client, buf, sizeof (buf));
+  }
   EXCEPT (Socket_Closed)
   {
     Socket_free (&client);
@@ -195,7 +201,10 @@ socks5_server_thread_func (void *arg)
   /* Handle username/password auth if required */
   if (auth_method == SOCKS5_AUTH_USERPASS)
     {
-      TRY { n = Socket_recv (client, buf, sizeof (buf)); }
+      TRY
+      {
+        n = Socket_recv (client, buf, sizeof (buf));
+      }
       EXCEPT (Socket_Closed)
       {
         Socket_free (&client);
@@ -249,7 +258,10 @@ socks5_server_thread_func (void *arg)
     }
 
   /* Read connect request */
-  TRY { n = Socket_recv (client, buf, sizeof (buf)); }
+  TRY
+  {
+    n = Socket_recv (client, buf, sizeof (buf));
+  }
   EXCEPT (Socket_Closed)
   {
     Socket_free (&client);
@@ -277,8 +289,13 @@ socks5_server_thread_func (void *arg)
           server->running = 0;
           return NULL;
         }
-      snprintf (target_host, sizeof (target_host), "%d.%d.%d.%d", buf[4],
-                buf[5], buf[6], buf[7]);
+      snprintf (target_host,
+                sizeof (target_host),
+                "%d.%d.%d.%d",
+                buf[4],
+                buf[5],
+                buf[6],
+                buf[7]);
       (void)
           target_host; /* Used for protocol parsing, we use test server port */
     }
@@ -382,7 +399,10 @@ echo_server_thread_func (void *arg)
   server->echo_started = 1;
 
   /* Handle Socket_Failed exception when socket is closed during shutdown */
-  TRY { client = Socket_accept (server->target_listen); }
+  TRY
+  {
+    client = Socket_accept (server->target_listen);
+  }
   EXCEPT (Socket_Failed)
   {
     /* Socket was closed - expected during server stop */
@@ -425,7 +445,8 @@ echo_server_thread_func (void *arg)
 }
 
 static int
-socks5_server_start (Socks5TestServer *server, const char *username,
+socks5_server_start (Socks5TestServer *server,
+                     const char *username,
                      const char *password)
 {
   struct sockaddr_in addr;
@@ -453,8 +474,8 @@ socks5_server_start (Socks5TestServer *server, const char *username,
 
   /* Get actual port */
   len = sizeof (addr);
-  getsockname (Socket_fd (server->listen_socket), (struct sockaddr *)&addr,
-               &len);
+  getsockname (
+      Socket_fd (server->listen_socket), (struct sockaddr *)&addr, &len);
   server->proxy_port = ntohs (addr.sin_port);
 
   /* Create target listen socket */
@@ -475,15 +496,15 @@ socks5_server_start (Socks5TestServer *server, const char *username,
   END_TRY;
 
   len = sizeof (addr);
-  getsockname (Socket_fd (server->target_listen), (struct sockaddr *)&addr,
-               &len);
+  getsockname (
+      Socket_fd (server->target_listen), (struct sockaddr *)&addr, &len);
   server->target_port = ntohs (addr.sin_port);
 
   server->running = 1;
 
   /* Start echo server thread */
-  if (pthread_create (&server->echo_thread, NULL, echo_server_thread_func,
-                      server)
+  if (pthread_create (
+          &server->echo_thread, NULL, echo_server_thread_func, server)
       != 0)
     {
       server->running = 0;
@@ -595,8 +616,8 @@ TEST (proxy_integration_url_parsing)
   int result;
 
   /* Test SOCKS5 URL with credentials */
-  result = SocketProxy_parse_url ("socks5://user:pass@proxy.local:1080",
-                                  &config, NULL);
+  result = SocketProxy_parse_url (
+      "socks5://user:pass@proxy.local:1080", &config, NULL);
   ASSERT_EQ (result, 0);
   ASSERT_EQ (config.type, SOCKET_PROXY_SOCKS5);
   ASSERT (strcmp (config.host, "proxy.local") == 0);
@@ -654,8 +675,7 @@ TEST (proxy_integration_socks5_no_auth)
   proxy_config.handshake_timeout_ms = TEST_TIMEOUT_MS;
 
   /* Connect through proxy - this creates socket internally */
-  client
-      = SocketProxy_connect (&proxy_config, "127.0.0.1", server.target_port);
+  client = SocketProxy_connect (&proxy_config, "127.0.0.1", server.target_port);
   ASSERT_NOT_NULL (client);
 
   /* Verify tunnel is established */
@@ -715,8 +735,7 @@ TEST (proxy_integration_socks5_with_auth)
   proxy_config.handshake_timeout_ms = TEST_TIMEOUT_MS;
 
   /* Connect through proxy */
-  client
-      = SocketProxy_connect (&proxy_config, "127.0.0.1", server.target_port);
+  client = SocketProxy_connect (&proxy_config, "127.0.0.1", server.target_port);
   ASSERT_NOT_NULL (client);
 
   /* Verify tunnel */
@@ -730,7 +749,8 @@ TEST (proxy_integration_socks5_with_auth)
     {
       printf ("  [DEBUG] tunnel not established after %d tries, "
               "client_connected=%d\n",
-              tries, server.client_connected);
+              tries,
+              server.client_connected);
     }
   ASSERT (server.tunnel_established);
 
@@ -779,8 +799,7 @@ TEST (proxy_integration_socks5_bad_auth)
   proxy_config.handshake_timeout_ms = TEST_TIMEOUT_MS;
 
   /* Should fail with auth error - returns NULL */
-  client
-      = SocketProxy_connect (&proxy_config, "127.0.0.1", server.target_port);
+  client = SocketProxy_connect (&proxy_config, "127.0.0.1", server.target_port);
 
   /* NULL means connection/auth failed */
   ASSERT_NULL (client);

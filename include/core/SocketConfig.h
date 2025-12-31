@@ -137,8 +137,8 @@ extern const char *Socket_safe_strerror (int errnum);
  * Calculated as: (MAJOR * 10000) + (MINOR * 100) + PATCH
  *
  */
-#define SOCKET_VERSION                                                        \
-  ((SOCKET_VERSION_MAJOR * 10000) + (SOCKET_VERSION_MINOR * 100)              \
+#define SOCKET_VERSION                                           \
+  ((SOCKET_VERSION_MAJOR * 10000) + (SOCKET_VERSION_MINOR * 100) \
    + SOCKET_VERSION_PATCH)
 
 /* ============================================================================
@@ -237,8 +237,8 @@ extern const char *Socket_safe_strerror (int errnum);
  *
  */
 #ifndef UDP_MAX_PAYLOAD
-#define UDP_MAX_PAYLOAD                                                       \
-  65507UL /* IPv4/6 max UDP payload excluding headers                         \
+#define UDP_MAX_PAYLOAD                               \
+  65507UL /* IPv4/6 max UDP payload excluding headers \
            */
 #endif
 
@@ -375,8 +375,9 @@ extern const char *Socket_safe_strerror (int errnum);
  * @brief Maximum hash chain length before rejecting insertion.
  *
  * Defense-in-depth against algorithmic complexity attacks where an attacker
- * could craft inputs that cause hash collisions, degrading O(1) lookups to O(n).
- * When a hash bucket exceeds this chain length, new registrations are rejected.
+ * could craft inputs that cause hash collisions, degrading O(1) lookups to
+ * O(n). When a hash bucket exceeds this chain length, new registrations are
+ * rejected.
  *
  * Set to 0 to disable chain length checking (not recommended).
  *
@@ -407,7 +408,7 @@ extern const char *Socket_safe_strerror (int errnum);
  *
  */
 #ifndef ARENA_MAX_ALLOC_SIZE
-#define ARENA_MAX_ALLOC_SIZE                                                  \
+#define ARENA_MAX_ALLOC_SIZE \
   SOCKET_SECURITY_MAX_ALLOCATION /* Matches centralized limit */
 #endif
 
@@ -1303,7 +1304,7 @@ extern const char *Socket_safe_strerror (int errnum);
  *
  */
 #ifndef SOCKET_LOG_TRUNCATION_SUFFIX_LEN
-#define SOCKET_LOG_TRUNCATION_SUFFIX_LEN                                      \
+#define SOCKET_LOG_TRUNCATION_SUFFIX_LEN \
   (sizeof (SOCKET_LOG_TRUNCATION_SUFFIX) - 1)
 #endif
 
@@ -1686,8 +1687,8 @@ typedef struct SocketTimeouts_Extended
  *
  */
 #ifndef SOCKET_DEFAULT_TLS_TIMEOUT_MS
-#define SOCKET_DEFAULT_TLS_TIMEOUT_MS                                         \
-  30000 /**< 30 seconds for TLS handshake */
+#define SOCKET_DEFAULT_TLS_TIMEOUT_MS 30000 /**< 30 seconds for TLS handshake \
+                                             */
 #endif
 
 /**
@@ -1695,7 +1696,7 @@ typedef struct SocketTimeouts_Extended
  *
  */
 #ifndef SOCKET_DEFAULT_REQUEST_TIMEOUT_MS
-#define SOCKET_DEFAULT_REQUEST_TIMEOUT_MS                                     \
+#define SOCKET_DEFAULT_REQUEST_TIMEOUT_MS \
   60000 /**< 60 seconds for request cycle */
 #endif
 
@@ -2008,7 +2009,8 @@ union align
  * @return Number of elements in the array.
  *
  * @note This is a compile-time constant suitable for use in static assertions.
- * @warning Using this on a pointer will give incorrect results or compile error.
+ * @warning Using this on a pointer will give incorrect results or compile
+ * error.
  */
 #define ARRAY_SIZE(arr) (sizeof (arr) / sizeof ((arr)[0]))
 
@@ -2589,10 +2591,10 @@ union align
 /**
  * @brief Sets the global memory limit enforced by all Arena allocators.
  *
- * Configures a hard limit on total memory usage across all arenas. When reached,
- * Arena_alloc() calls return NULL, triggering Arena_Failed exceptions. Setting to
- * 0 disables the limit (unlimited). Changes take effect immediately for new
- * allocations.
+ * Configures a hard limit on total memory usage across all arenas. When
+ * reached, Arena_alloc() calls return NULL, triggering Arena_Failed exceptions.
+ * Setting to 0 disables the limit (unlimited). Changes take effect immediately
+ * for new allocations.
  *
  * @param[in] max_bytes The new global limit in bytes (0 = unlimited).
  * @return None.
@@ -2603,8 +2605,8 @@ extern void SocketConfig_set_max_memory (size_t max_bytes);
 /**
  * @brief Retrieves the currently configured global memory limit.
  *
- * Returns the maximum allowed total memory for all Arena allocations. A value of
- * 0 indicates unlimited.
+ * Returns the maximum allowed total memory for all Arena allocations. A value
+ * of 0 indicates unlimited.
  *
  * @return Current global memory limit in bytes (0 = unlimited).
  * @threadsafe Yes - atomic load operation.
@@ -2638,8 +2640,8 @@ extern size_t SocketConfig_get_memory_used (void);
  * @param s Buffer size to validate.
  * @return Non-zero if buffer size is valid.
  */
-#define SOCKET_VALID_BUFFER_SIZE(s)                                           \
-  ((size_t)(s) >= SOCKET_MIN_BUFFER_SIZE                                      \
+#define SOCKET_VALID_BUFFER_SIZE(s)      \
+  ((size_t)(s) >= SOCKET_MIN_BUFFER_SIZE \
    && (size_t)(s) <= SOCKET_MAX_BUFFER_SIZE)
 
 /**
@@ -2648,7 +2650,7 @@ extern size_t SocketConfig_get_memory_used (void);
  * @param c Connection count to validate.
  * @return Non-zero if connection count is valid.
  */
-#define SOCKET_VALID_CONNECTION_COUNT(c)                                      \
+#define SOCKET_VALID_CONNECTION_COUNT(c) \
   ((size_t)(c) > 0 && (size_t)(c) <= SOCKET_MAX_CONNECTIONS)
 
 /**
@@ -2657,7 +2659,7 @@ extern size_t SocketConfig_get_memory_used (void);
  * @param e Number of poll events to validate.
  * @return Non-zero if poll events count is valid.
  */
-#define SOCKET_VALID_POLL_EVENTS(e)                                           \
+#define SOCKET_VALID_POLL_EVENTS(e) \
   ((int)(e) > 0 && (int)(e) <= SOCKET_MAX_POLL_EVENTS)
 
 /**
@@ -2678,17 +2680,17 @@ extern size_t SocketConfig_get_memory_used (void);
  *
  * @param fd File descriptor to close (ignored if negative).
  */
-#define SAFE_CLOSE(fd)                                                        \
-  do                                                                          \
-    {                                                                         \
-      if ((fd) >= 0)                                                          \
-        {                                                                     \
-          int _r = close (fd);                                                \
-          if (_r < 0 && errno != EINTR)                                       \
-            fprintf (stderr, "close failed: %s\n",                            \
-                     Socket_safe_strerror (errno));                           \
-        }                                                                     \
-    }                                                                         \
+#define SAFE_CLOSE(fd)                                                       \
+  do                                                                         \
+    {                                                                        \
+      if ((fd) >= 0)                                                         \
+        {                                                                    \
+          int _r = close (fd);                                               \
+          if (_r < 0 && errno != EINTR)                                      \
+            fprintf (                                                        \
+                stderr, "close failed: %s\n", Socket_safe_strerror (errno)); \
+        }                                                                    \
+    }                                                                        \
   while (0)
 
 #endif /* SOCKETCONFIG_INCLUDED */

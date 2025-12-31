@@ -26,8 +26,10 @@ typedef struct
 } LogProbe;
 
 static void
-log_capture_callback (void *userdata, SocketLogLevel level,
-                      const char *component, const char *message)
+log_capture_callback (void *userdata,
+                      SocketLogLevel level,
+                      const char *component,
+                      const char *message)
 {
   LogProbe *probe = (LogProbe *)userdata;
 
@@ -52,8 +54,7 @@ TEST (socketlog_custom_callback_receives_errors)
   ASSERT_EQ (1, probe.called);
   ASSERT_EQ (SOCKET_LOG_ERROR, probe.level);
   ASSERT_NOT_NULL (probe.component);
-  ASSERT (strstr (probe.message, "Observability logging test message")
-          != NULL);
+  ASSERT (strstr (probe.message, "Observability logging test message") != NULL);
 
   SocketLog_setcallback (NULL, NULL);
 }
@@ -102,8 +103,8 @@ TEST (socketlog_emitf_formats_messages)
   LogProbe probe = { 0 };
 
   SocketLog_setcallback (log_capture_callback, &probe);
-  SocketLog_emitf (SOCKET_LOG_WARN, "TestComponent", "Formatted: %d %s", 42,
-                   "test");
+  SocketLog_emitf (
+      SOCKET_LOG_WARN, "TestComponent", "Formatted: %d %s", 42, "test");
 
   ASSERT_EQ (1, probe.called);
   ASSERT_EQ (SOCKET_LOG_WARN, probe.level);

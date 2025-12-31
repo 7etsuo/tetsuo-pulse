@@ -66,7 +66,9 @@ TEST (ct_context_basic_operations)
       SocketTLSContext_set_ctlog_list_file (ctx, NULL);
       Test_fail ("Expected failure on NULL log file", __FILE__, __LINE__);
     }
-    EXCEPT (SocketTLS_Failed) { /* Expected */ }
+    EXCEPT (SocketTLS_Failed)
+    { /* Expected */
+    }
     END_TRY;
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic pop
@@ -77,7 +79,9 @@ TEST (ct_context_basic_operations)
       SocketTLSContext_set_ctlog_list_file (ctx, "");
       Test_fail ("Expected failure on empty log file", __FILE__, __LINE__);
     }
-    EXCEPT (SocketTLS_Failed) {}
+    EXCEPT (SocketTLS_Failed)
+    {
+    }
     END_TRY;
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic pop
@@ -112,8 +116,7 @@ TEST (ct_context_basic_operations)
   {
     /* Handle unsupported or config errors */
     if (Except_stack->exception->type == &SocketTLS_Failed
-        && strstr (Except_stack->exception->reason, "CT not supported")
-               != NULL)
+        && strstr (Except_stack->exception->reason, "CT not supported") != NULL)
       {
         /* Expected without OpenSSL CT */
         success = 1;
@@ -122,7 +125,9 @@ TEST (ct_context_basic_operations)
       {
         {
           char buf[512];
-          snprintf (buf, sizeof (buf), "Unexpected TLS failure: %s",
+          snprintf (buf,
+                    sizeof (buf),
+                    "Unexpected TLS failure: %s",
                     Except_stack->exception->reason);
           Test_fail (buf, __FILE__, __LINE__);
         }
@@ -162,8 +167,8 @@ TEST (ct_server_context_rejection)
     TRY
     {
       SocketTLSContext_enable_ct (server, CT_VALIDATION_STRICT);
-      Test_fail ("Expected SocketTLS_Failed on server CT enable", __FILE__,
-                 __LINE__);
+      Test_fail (
+          "Expected SocketTLS_Failed on server CT enable", __FILE__, __LINE__);
     }
     EXCEPT (SocketTLS_Failed)
     {
@@ -200,7 +205,10 @@ TEST (ct_server_context_rejection)
   {
     /* Cert load failure expected if no files; API test still valid */
   }
-  FINALLY { SocketTLSContext_free ((SocketTLSContext_T *)&server); }
+  FINALLY
+  {
+    SocketTLSContext_free ((SocketTLSContext_T *)&server);
+  }
   END_TRY;
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic pop

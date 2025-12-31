@@ -113,8 +113,8 @@ Socket_simple_pool_new_ex (const SocketSimple_PoolOptions *opts)
   TRY
   {
     arena = Arena_new ();
-    pool = SocketPool_new (arena, (size_t)opts->max_connections,
-                           (size_t)opts->buffer_size);
+    pool = SocketPool_new (
+        arena, (size_t)opts->max_connections, (size_t)opts->buffer_size);
   }
   EXCEPT (SocketPool_Failed)
   {
@@ -141,8 +141,8 @@ Socket_simple_pool_new_ex (const SocketSimple_PoolOptions *opts)
   /* Apply optional settings */
   if (opts->conn_rate_limit > 0)
     {
-      SocketPool_setconnrate (pool, opts->conn_rate_limit,
-                              opts->conn_rate_limit);
+      SocketPool_setconnrate (
+          pool, opts->conn_rate_limit, opts->conn_rate_limit);
     }
   if (opts->max_per_ip > 0)
     {
@@ -193,7 +193,8 @@ Socket_simple_pool_free (SocketSimple_Pool_T *pool)
  * @return 0 on success, -1 on validation failure
  */
 static int
-validate_pool_and_socket (SocketSimple_Pool_T pool, SocketSimple_Socket_T sock,
+validate_pool_and_socket (SocketSimple_Pool_T pool,
+                          SocketSimple_Socket_T sock,
                           const char *custom_msg)
 {
   if (!pool || !sock)
@@ -220,12 +221,14 @@ Socket_simple_pool_add (SocketSimple_Pool_T pool, SocketSimple_Socket_T sock)
 
   Socket_simple_clear_error ();
 
-  if (validate_pool_and_socket (pool, sock,
-                                "UDP sockets not supported in pool")
+  if (validate_pool_and_socket (pool, sock, "UDP sockets not supported in pool")
       != 0)
     return NULL;
 
-  TRY { conn = SocketPool_add (pool->pool, sock->socket); }
+  TRY
+  {
+    conn = SocketPool_add (pool->pool, sock->socket);
+  }
   EXCEPT (SocketPool_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_POOL, "Failed to add socket to pool");
@@ -276,8 +279,7 @@ Socket_simple_pool_get (SocketSimple_Pool_T pool, SocketSimple_Socket_T sock)
 }
 
 int
-Socket_simple_pool_remove (SocketSimple_Pool_T pool,
-                           SocketSimple_Socket_T sock)
+Socket_simple_pool_remove (SocketSimple_Pool_T pool, SocketSimple_Socket_T sock)
 {
   Socket_simple_clear_error ();
 
@@ -331,7 +333,7 @@ Socket_simple_pool_cleanup (SocketSimple_Pool_T pool, int max_idle_ms)
  */
 static int
 validate_listener_for_accept (SocketSimple_Pool_T pool,
-                               SocketSimple_Socket_T listener)
+                              SocketSimple_Socket_T listener)
 {
   if (!pool || !listener)
     {
@@ -392,7 +394,10 @@ Socket_simple_pool_accept (SocketSimple_Pool_T pool,
   if (validate_listener_for_accept (pool, listener) != 0)
     return NULL;
 
-  TRY { client = Socket_accept (listener->socket); }
+  TRY
+  {
+    client = Socket_accept (listener->socket);
+  }
   EXCEPT (Socket_Failed)
   {
     simple_set_error_errno (SOCKET_SIMPLE_ERR_ACCEPT, "Accept failed");
@@ -428,7 +433,10 @@ Socket_simple_pool_accept_limited (SocketSimple_Pool_T pool,
     }
 
   /* Use rate-limited accept */
-  TRY { client = SocketPool_accept_limited (pool->pool, listener->socket); }
+  TRY
+  {
+    client = SocketPool_accept_limited (pool->pool, listener->socket);
+  }
   EXCEPT (SocketPool_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_POOL, "Rate limited accept failed");
@@ -556,8 +564,7 @@ Socket_simple_pool_get_stats (SocketSimple_Pool_T pool,
 
   if (!pool || !stats)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Invalid pool or stats");
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid pool or stats");
       return -1;
     }
 
@@ -679,8 +686,7 @@ Socket_simple_conn_peer_ip (SocketSimple_Conn_T conn, char *buf, size_t len)
   const char *peer = Socket_getpeeraddr (sock);
   if (!peer)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_SOCKET,
-                        "Failed to get peer address");
+      simple_set_error (SOCKET_SIMPLE_ERR_SOCKET, "Failed to get peer address");
       return -1;
     }
 

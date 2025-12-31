@@ -564,8 +564,8 @@ extern void SocketDgram_connect (T socket, const char *host, int port);
  * @see SocketDgram_recvfrom() for receiving datagrams.
  * @see SocketDgram_connect() for setting default destination.
  */
-extern ssize_t SocketDgram_sendto (T socket, const void *buf, size_t len,
-                                   const char *host, int port);
+extern ssize_t SocketDgram_sendto (
+    T socket, const void *buf, size_t len, const char *host, int port);
 
 /**
  * @ingroup socket_dgram
@@ -589,8 +589,8 @@ extern ssize_t SocketDgram_sendto (T socket, const void *buf, size_t len,
  * @see SocketDgram_sendto() for sending datagrams.
  * @see SocketDgram_recv() for receiving from connected sockets.
  */
-extern ssize_t SocketDgram_recvfrom (T socket, void *buf, size_t len,
-                                     char *host, size_t host_len, int *port);
+extern ssize_t SocketDgram_recvfrom (
+    T socket, void *buf, size_t len, char *host, size_t host_len, int *port);
 
 /**
  * @ingroup socket_dgram
@@ -678,8 +678,8 @@ extern ssize_t SocketDgram_recvall (T socket, void *buf, size_t len);
  * @see SocketDgram_recvv() for scatter/gather receive.
  * @see SocketDgram_sendvall() for guaranteed complete scatter/gather send.
  */
-extern ssize_t SocketDgram_sendv (T socket, const struct iovec *iov,
-                                  int iovcnt);
+extern ssize_t
+SocketDgram_sendv (T socket, const struct iovec *iov, int iovcnt);
 
 /**
  * @ingroup socket_dgram
@@ -714,8 +714,8 @@ extern ssize_t SocketDgram_recvv (T socket, struct iovec *iov, int iovcnt);
  * @see SocketDgram_sendv() for partial scatter/gather send.
  * @see SocketDgram_recvvall() for receiving all scatter/gather data.
  */
-extern ssize_t SocketDgram_sendvall (T socket, const struct iovec *iov,
-                                     int iovcnt);
+extern ssize_t
+SocketDgram_sendvall (T socket, const struct iovec *iov, int iovcnt);
 
 /**
  * @ingroup socket_dgram
@@ -791,8 +791,8 @@ extern void SocketDgram_setbroadcast (T socket, int enable);
  * @see SocketDgram_leavemulticast() for leaving multicast groups.
  * @see SocketDgram_setttl() for controlling multicast reach.
  */
-extern void SocketDgram_joinmulticast (T socket, const char *group,
-                                       const char *interface);
+extern void
+SocketDgram_joinmulticast (T socket, const char *group, const char *interface);
 
 /**
  * @ingroup socket_dgram
@@ -803,8 +803,8 @@ extern void SocketDgram_joinmulticast (T socket, const char *group,
  * @throws SocketDgram_Failed on error.
  * @see SocketDgram_joinmulticast() for joining multicast groups.
  */
-extern void SocketDgram_leavemulticast (T socket, const char *group,
-                                        const char *interface);
+extern void
+SocketDgram_leavemulticast (T socket, const char *group, const char *interface);
 
 /**
  * @ingroup socket_dgram
@@ -978,9 +978,9 @@ extern int SocketDgram_debug_live_count (void);
  * @ingroup socket_dgram
  * @brief Create a bound IPv4 UDP socket in one call.
  *
- * Convenience function that combines SocketDgram_new(AF_INET), SocketDgram_bind()
- * into a single call. Creates an IPv4 UDP socket bound to the specified address
- * and port, ready for sending/receiving datagrams.
+ * Convenience function that combines SocketDgram_new(AF_INET),
+ * SocketDgram_bind() into a single call. Creates an IPv4 UDP socket bound to
+ * the specified address and port, ready for sending/receiving datagrams.
  *
  * @param[in] host Local IPv4 address to bind (NULL or "" for INADDR_ANY)
  * @param[in] port Local port to bind (1-65535, or 0 for ephemeral port)
@@ -1025,9 +1025,9 @@ extern T SocketDgram_bind_udp4 (const char *host, int port);
  * @ingroup socket_dgram
  * @brief Create a bound IPv6 UDP socket in one call.
  *
- * Convenience function that combines SocketDgram_new(AF_INET6), SocketDgram_bind()
- * into a single call. Creates an IPv6 UDP socket bound to the specified address
- * and port, ready for sending/receiving datagrams.
+ * Convenience function that combines SocketDgram_new(AF_INET6),
+ * SocketDgram_bind() into a single call. Creates an IPv6 UDP socket bound to
+ * the specified address and port, ready for sending/receiving datagrams.
  *
  * @param[in] host Local IPv6 address to bind (NULL or "" for in6addr_any, "::")
  * @param[in] port Local port to bind (1-65535, or 0 for ephemeral port)
@@ -1071,7 +1071,8 @@ extern T SocketDgram_bind_udp6 (const char *host, int port);
 
 /**
  * @ingroup socket_dgram
- * @brief Create a bound UDP socket in one call with auto-detected address family.
+ * @brief Create a bound UDP socket in one call with auto-detected address
+ * family.
  *
  * Convenience function that combines SocketDgram_new(), SocketDgram_bind()
  * into a single call. Creates a UDP socket bound to the specified address
@@ -1119,7 +1120,8 @@ extern T SocketDgram_bind_udp6 (const char *host, int port);
  * @endcode
  *
  * @note Use port 0 to let the OS assign an ephemeral port
- * @note For explicit control, use SocketDgram_bind_udp4() or SocketDgram_bind_udp6()
+ * @note For explicit control, use SocketDgram_bind_udp4() or
+ * SocketDgram_bind_udp6()
  * @note Detection is heuristic; for ambiguous cases use explicit variants
  *
  * @see SocketDgram_bind_udp4() for explicit IPv4

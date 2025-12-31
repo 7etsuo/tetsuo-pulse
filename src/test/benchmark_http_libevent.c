@@ -102,8 +102,12 @@ http_request_done (struct evhttp_request *req, void *arg)
  * @brief Parse URL into components.
  */
 static int
-parse_url (const char *url, char *host, size_t host_len, int *port,
-           char *path, size_t path_len)
+parse_url (const char *url,
+           char *host,
+           size_t host_len,
+           int *port,
+           char *path,
+           size_t path_len)
 {
   /* Simple URL parser for http://host:port/path */
   const char *p = url;
@@ -234,8 +238,7 @@ bench_worker (void *arg)
       ctx->base = base;
 
       /* Create request with callback */
-      struct evhttp_request *req
-          = evhttp_request_new (http_request_done, ctx);
+      struct evhttp_request *req = evhttp_request_new (http_request_done, ctx);
       if (!req)
         {
           free (ctx);
@@ -247,8 +250,8 @@ bench_worker (void *arg)
       /* Add headers */
       struct evkeyvalq *headers = evhttp_request_get_output_headers (req);
       evhttp_add_header (headers, "Host", host);
-      evhttp_add_header (headers, "Connection",
-                         config->keep_alive ? "keep-alive" : "close");
+      evhttp_add_header (
+          headers, "Connection", config->keep_alive ? "keep-alive" : "close");
 
       /* Send request */
       pending++;
@@ -291,7 +294,8 @@ main (int argc, char **argv)
   printf ("libevent HTTP benchmark\n");
   printf ("URL: %s\n", config.url);
   printf ("Threads: %d\n", config.threads);
-  printf ("Requests per thread: %d (+ %d warmup)\n", config.requests_per_thread,
+  printf ("Requests per thread: %d (+ %d warmup)\n",
+          config.requests_per_thread,
           config.warmup_requests);
   printf ("libevent version: %s\n", event_get_version ());
 
@@ -313,8 +317,8 @@ main (int argc, char **argv)
                                     (size_t)config.requests_per_thread)
           != 0)
         {
-          fprintf (stderr, "Failed to allocate result buffer for thread %d\n",
-                   i);
+          fprintf (
+              stderr, "Failed to allocate result buffer for thread %d\n", i);
           return 1;
         }
 
@@ -344,9 +348,9 @@ main (int argc, char **argv)
   /* libevent doesn't expose connection stats easily, estimate */
   result.connections_created = config.threads;
   result.connections_reused
-      = config.keep_alive ? (config.threads * config.requests_per_thread
-                             - config.threads)
-                          : 0;
+      = config.keep_alive
+            ? (config.threads * config.requests_per_thread - config.threads)
+            : 0;
 
   /* Compute statistics */
   bench_compute_stats (results, config.threads, &result);

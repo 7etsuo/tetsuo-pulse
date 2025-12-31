@@ -4,7 +4,8 @@
  * https://x.com/tetsuoai
  */
 
-/* SocketHTTP1-serialize.c - HTTP/1.1 Request/Response Serialization (RFC 9112) */
+/* SocketHTTP1-serialize.c - HTTP/1.1 Request/Response Serialization (RFC 9112)
+ */
 
 #include <assert.h>
 #include <stdio.h>
@@ -88,8 +89,11 @@ struct serialize_ctx
 };
 
 static int
-serialize_header_cb (const char *name, size_t name_len, const char *value,
-                     size_t value_len, void *userdata)
+serialize_header_cb (const char *name,
+                     size_t name_len,
+                     const char *value,
+                     size_t value_len,
+                     void *userdata)
 {
   struct serialize_ctx *ctx = userdata;
 
@@ -110,8 +114,8 @@ serialize_header_cb (const char *name, size_t name_len, const char *value,
 
   /* Append: name ": " value "\r\n" */
   if (safe_append (&ctx->buf, &ctx->remaining, name, name_len) < 0
-      || safe_append (&ctx->buf, &ctx->remaining, HTTP_HEADER_SEP,
-                      HTTP_HEADER_SEP_LEN)
+      || safe_append (
+             &ctx->buf, &ctx->remaining, HTTP_HEADER_SEP, HTTP_HEADER_SEP_LEN)
              < 0
       || safe_append (&ctx->buf, &ctx->remaining, value, value_len) < 0
       || safe_append_crlf (&ctx->buf, &ctx->remaining) < 0)
@@ -124,11 +128,12 @@ serialize_header_cb (const char *name, size_t name_len, const char *value,
 }
 
 static int
-serialize_headers_section (SocketHTTP_Headers_T headers, char **buf,
+serialize_headers_section (SocketHTTP_Headers_T headers,
+                           char **buf,
                            size_t *remaining)
 {
-  struct serialize_ctx ctx = { .buf = *buf, .remaining = *remaining, .error
-                               = 0 };
+  struct serialize_ctx ctx
+      = { .buf = *buf, .remaining = *remaining, .error = 0 };
 
   if (!headers)
     return 0;
@@ -144,8 +149,10 @@ serialize_headers_section (SocketHTTP_Headers_T headers, char **buf,
 }
 
 static int
-append_content_length_header (char **buf, size_t *remaining,
-                              SocketHTTP_Headers_T headers, int has_body,
+append_content_length_header (char **buf,
+                              size_t *remaining,
+                              SocketHTTP_Headers_T headers,
+                              int has_body,
                               int64_t content_length)
 {
   if (!has_body || content_length < 0)
@@ -156,7 +163,9 @@ append_content_length_header (char **buf, size_t *remaining,
           || SocketHTTP_Headers_has (headers, "Transfer-Encoding")))
     return 0;
 
-  if (safe_append (buf, remaining, HTTP_CONTENT_LENGTH_PREFIX,
+  if (safe_append (buf,
+                   remaining,
+                   HTTP_CONTENT_LENGTH_PREFIX,
                    HTTP_CONTENT_LENGTH_PREFIX_LEN)
       < 0)
     return -1;
@@ -168,7 +177,8 @@ append_content_length_header (char **buf, size_t *remaining,
 }
 
 static int
-serialize_request_line (const SocketHTTP_Request *request, char **buf,
+serialize_request_line (const SocketHTTP_Request *request,
+                        char **buf,
                         size_t *remaining)
 {
   const char *method_name;
@@ -178,8 +188,10 @@ serialize_request_line (const SocketHTTP_Request *request, char **buf,
   method_name = SocketHTTP_method_name (request->method);
   if (!method_name)
     {
-      SOCKET_RAISE_MSG (SocketHTTP1, SocketHTTP1_SerializeError,
-                        "Unknown HTTP method: %d", (int)request->method);
+      SOCKET_RAISE_MSG (SocketHTTP1,
+                        SocketHTTP1_SerializeError,
+                        "Unknown HTTP method: %d",
+                        (int)request->method);
     }
 
   if (safe_append_str (buf, remaining, method_name) < 0)
@@ -189,10 +201,11 @@ serialize_request_line (const SocketHTTP_Request *request, char **buf,
     return -1;
 
   target = request->path && request->path[0] ? request->path : "/";
-  size_t target_len = strlen(target);
-  if (!SocketHTTP_header_value_valid(target, target_len))
+  size_t target_len = strlen (target);
+  if (!SocketHTTP_header_value_valid (target, target_len))
     {
-      SOCKET_RAISE_MSG (SocketHTTP1, SocketHTTP1_SerializeError,
+      SOCKET_RAISE_MSG (SocketHTTP1,
+                        SocketHTTP1_SerializeError,
                         "Invalid request target contains forbidden "
                         "characters (CR/LF/NUL)");
     }
@@ -205,8 +218,10 @@ serialize_request_line (const SocketHTTP_Request *request, char **buf,
   version_str = SocketHTTP_version_string (request->version);
   if (!version_str)
     {
-      SOCKET_RAISE_MSG (SocketHTTP1, SocketHTTP1_SerializeError,
-                        "Unknown HTTP version: %d", (int)request->version);
+      SOCKET_RAISE_MSG (SocketHTTP1,
+                        SocketHTTP1_SerializeError,
+                        "Unknown HTTP version: %d",
+                        (int)request->version);
     }
 
   if (safe_append_str (buf, remaining, version_str) < 0)
@@ -216,7 +231,8 @@ serialize_request_line (const SocketHTTP_Request *request, char **buf,
 }
 
 static int
-serialize_response_line (const SocketHTTP_Response *response, char **buf,
+serialize_response_line (const SocketHTTP_Response *response,
+                         char **buf,
                          size_t *remaining)
 {
   const char *version_str;
@@ -224,15 +240,19 @@ serialize_response_line (const SocketHTTP_Response *response, char **buf,
 
   if (!SocketHTTP_status_valid (response->status_code))
     {
-      SOCKET_RAISE_MSG (SocketHTTP1, SocketHTTP1_SerializeError,
-                        "Invalid status code: %d", response->status_code);
+      SOCKET_RAISE_MSG (SocketHTTP1,
+                        SocketHTTP1_SerializeError,
+                        "Invalid status code: %d",
+                        response->status_code);
     }
 
   version_str = SocketHTTP_version_string (response->version);
   if (!version_str)
     {
-      SOCKET_RAISE_MSG (SocketHTTP1, SocketHTTP1_SerializeError,
-                        "Unknown HTTP version: %d", (int)response->version);
+      SOCKET_RAISE_MSG (SocketHTTP1,
+                        SocketHTTP1_SerializeError,
+                        "Unknown HTTP version: %d",
+                        (int)response->version);
     }
 
   if (safe_append_str (buf, remaining, version_str) < 0)
@@ -256,7 +276,8 @@ serialize_response_line (const SocketHTTP_Response *response, char **buf,
       size_t reason_len = strlen (reason);
       if (!SocketHTTP_header_value_valid (reason, reason_len))
         {
-          SOCKET_RAISE_MSG (SocketHTTP1, SocketHTTP1_SerializeError,
+          SOCKET_RAISE_MSG (SocketHTTP1,
+                            SocketHTTP1_SerializeError,
                             "Invalid reason phrase contains forbidden "
                             "characters (CR/LF/NUL)");
         }
@@ -268,10 +289,13 @@ serialize_response_line (const SocketHTTP_Response *response, char **buf,
 }
 
 static int
-add_response_extras (const SocketHTTP_Response *response, char **buf,
+add_response_extras (const SocketHTTP_Response *response,
+                     char **buf,
                      size_t *remaining)
 {
-  if (append_content_length_header (buf, remaining, response->headers,
+  if (append_content_length_header (buf,
+                                    remaining,
+                                    response->headers,
                                     response->has_body,
                                     response->content_length)
       < 0)
@@ -281,7 +305,8 @@ add_response_extras (const SocketHTTP_Response *response, char **buf,
 }
 
 ssize_t
-SocketHTTP1_serialize_request (const SocketHTTP_Request *request, char *output,
+SocketHTTP1_serialize_request (const SocketHTTP_Request *request,
+                               char *output,
                                size_t output_size)
 {
   char *p;
@@ -305,17 +330,21 @@ SocketHTTP1_serialize_request (const SocketHTTP_Request *request, char *output,
   /* Add optional Host header if authority present and no Host header set */
   if (request->authority && request->authority[0] != '\0')
     {
-      if (!request->headers || !SocketHTTP_Headers_has (request->headers, "Host"))
+      if (!request->headers
+          || !SocketHTTP_Headers_has (request->headers, "Host"))
         {
-          if (safe_append (&p, &remaining, HTTP_HOST_PREFIX, HTTP_HOST_PREFIX_LEN) < 0)
+          if (safe_append (
+                  &p, &remaining, HTTP_HOST_PREFIX, HTTP_HOST_PREFIX_LEN)
+              < 0)
             return -1;
 
           size_t auth_len = strlen (request->authority);
           if (!SocketHTTP_header_value_valid (request->authority, auth_len))
             {
-              SOCKET_RAISE_MSG (
-                  SocketHTTP1, SocketHTTP1_SerializeError,
-                  "Invalid authority contains forbidden characters (CR/LF/NUL)");
+              SOCKET_RAISE_MSG (SocketHTTP1,
+                                SocketHTTP1_SerializeError,
+                                "Invalid authority contains forbidden "
+                                "characters (CR/LF/NUL)");
             }
 
           if (safe_append (&p, &remaining, request->authority, auth_len) < 0)
@@ -327,8 +356,11 @@ SocketHTTP1_serialize_request (const SocketHTTP_Request *request, char *output,
     }
 
   /* Add Content-Length header if needed */
-  if (append_content_length_header (&p, &remaining, request->headers,
-                                    request->has_body, request->content_length)
+  if (append_content_length_header (&p,
+                                    &remaining,
+                                    request->headers,
+                                    request->has_body,
+                                    request->content_length)
       < 0)
     return -1;
 
@@ -342,7 +374,8 @@ SocketHTTP1_serialize_request (const SocketHTTP_Request *request, char *output,
 
 ssize_t
 SocketHTTP1_serialize_response (const SocketHTTP_Response *response,
-                                char *output, size_t output_size)
+                                char *output,
+                                size_t output_size)
 {
   char *p;
   size_t remaining;
@@ -370,7 +403,8 @@ SocketHTTP1_serialize_response (const SocketHTTP_Response *response,
 }
 
 ssize_t
-SocketHTTP1_serialize_headers (SocketHTTP_Headers_T headers, char *output,
+SocketHTTP1_serialize_headers (SocketHTTP_Headers_T headers,
+                               char *output,
                                size_t output_size)
 {
   struct serialize_ctx ctx;

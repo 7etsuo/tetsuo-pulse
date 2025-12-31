@@ -98,26 +98,35 @@ read_int (const uint8_t **data, size_t *remaining)
  * generate_ip - Generate IPv4/IPv6 address for LRU testing
  */
 static void
-generate_ip (char *buf, size_t bufsize, const uint8_t **data,
-             size_t *remaining)
+generate_ip (char *buf, size_t bufsize, const uint8_t **data, size_t *remaining)
 {
   uint8_t type = read_byte (data, remaining) % 3;
 
   switch (type)
     {
     case 0: /* Sequential IPv4 for predictable patterns */
-      snprintf (buf, bufsize, "192.168.%u.%u", read_byte (data, remaining),
+      snprintf (buf,
+                bufsize,
+                "192.168.%u.%u",
+                read_byte (data, remaining),
                 read_byte (data, remaining));
       break;
 
     case 1: /* IPv6 */
-      snprintf (buf, bufsize, "2001:db8::%x:%x", read_uint16 (data, remaining),
+      snprintf (buf,
+                bufsize,
+                "2001:db8::%x:%x",
+                read_uint16 (data, remaining),
                 read_uint16 (data, remaining));
       break;
 
     case 2: /* Fully random IPv4 */
-      snprintf (buf, bufsize, "%u.%u.%u.%u", read_byte (data, remaining),
-                read_byte (data, remaining), read_byte (data, remaining),
+      snprintf (buf,
+                bufsize,
+                "%u.%u.%u.%u",
+                read_byte (data, remaining),
+                read_byte (data, remaining),
+                read_byte (data, remaining),
                 read_byte (data, remaining));
       break;
     }
@@ -129,8 +138,10 @@ generate_ip (char *buf, size_t bufsize, const uint8_t **data,
  * Tests eviction when max_tracked_ips is reached.
  */
 static void
-test_fill_to_capacity (SocketSYNProtect_T protect, const uint8_t **data,
-                       size_t *remaining, size_t max_ips)
+test_fill_to_capacity (SocketSYNProtect_T protect,
+                       const uint8_t **data,
+                       size_t *remaining,
+                       size_t max_ips)
 {
   char ip_buf[128];
 
@@ -152,8 +163,10 @@ test_fill_to_capacity (SocketSYNProtect_T protect, const uint8_t **data,
  * Tests that evict_lru_entry() is called correctly.
  */
 static void
-test_overflow_capacity (SocketSYNProtect_T protect, const uint8_t **data,
-                        size_t *remaining, size_t max_ips)
+test_overflow_capacity (SocketSYNProtect_T protect,
+                        const uint8_t **data,
+                        size_t *remaining,
+                        size_t max_ips)
 {
   char ip_buf[128];
 
@@ -181,7 +194,8 @@ test_overflow_capacity (SocketSYNProtect_T protect, const uint8_t **data,
  * lru_touch() logic.
  */
 static void
-test_touch_pattern (SocketSYNProtect_T protect, const uint8_t **data,
+test_touch_pattern (SocketSYNProtect_T protect,
+                    const uint8_t **data,
                     size_t *remaining)
 {
   char ips[10][128];
@@ -247,7 +261,8 @@ test_touch_pattern (SocketSYNProtect_T protect, const uint8_t **data,
  * Tests interaction between LRU touch operations and reputation updates.
  */
 static void
-test_success_failure_mix (SocketSYNProtect_T protect, const uint8_t **data,
+test_success_failure_mix (SocketSYNProtect_T protect,
+                          const uint8_t **data,
                           size_t *remaining)
 {
   char ip_buf[128];
@@ -277,7 +292,8 @@ test_success_failure_mix (SocketSYNProtect_T protect, const uint8_t **data,
  * test_edge_cases - Test LRU edge cases
  */
 static void
-test_edge_cases (SocketSYNProtect_T protect, const uint8_t **data,
+test_edge_cases (SocketSYNProtect_T protect,
+                 const uint8_t **data,
                  size_t *remaining)
 {
   char ip_buf[128];
@@ -337,13 +353,22 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     if (protect == NULL)
       return 0;
   }
-  ELSE { return 0; }
+  ELSE
+  {
+    return 0;
+  }
   END_TRY;
 
   /* Get the max_tracked_ips value for test functions */
   SocketSYNProtect_Stats initial_stats;
-  TRY { SocketSYNProtect_stats (protect, &initial_stats); }
-  ELSE { return 0; }
+  TRY
+  {
+    SocketSYNProtect_stats (protect, &initial_stats);
+  }
+  ELSE
+  {
+    return 0;
+  }
   END_TRY;
 
   size_t max_ips = config.max_tracked_ips;
@@ -370,8 +395,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
           case OP_REPORT_FAILURE:
             generate_ip (ip_buf, sizeof (ip_buf), &ptr, &remaining);
-            SocketSYNProtect_report_failure (protect, ip_buf,
-                                             read_int (&ptr, &remaining));
+            SocketSYNProtect_report_failure (
+                protect, ip_buf, read_int (&ptr, &remaining));
             break;
 
           case OP_REPEATED_CHECK:
@@ -412,14 +437,21 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             break;
           }
       }
-      ELSE { /* Ignore exceptions during fuzzing */ }
+      ELSE
+      { /* Ignore exceptions during fuzzing */
+      }
       END_TRY;
 
       /* Periodically run cleanup to test expiration alongside LRU */
       if (read_byte (&ptr, &remaining) % 10 == 0)
         {
-          TRY { SocketSYNProtect_cleanup (protect); }
-          ELSE {}
+          TRY
+          {
+            SocketSYNProtect_cleanup (protect);
+          }
+          ELSE
+          {
+          }
           END_TRY;
         }
 
@@ -429,13 +461,23 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     }
 
   /* Final edge case test */
-  TRY { test_edge_cases (protect, &ptr, &remaining); }
-  ELSE {}
+  TRY
+  {
+    test_edge_cases (protect, &ptr, &remaining);
+  }
+  ELSE
+  {
+  }
   END_TRY;
 
   /* Test success/failure mix */
-  TRY { test_success_failure_mix (protect, &ptr, &remaining); }
-  ELSE {}
+  TRY
+  {
+    test_success_failure_mix (protect, &ptr, &remaining);
+  }
+  ELSE
+  {
+  }
   END_TRY;
 
   /* Final stats to verify LRU evictions occurred */
@@ -445,12 +487,19 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     SocketSYNProtect_stats (protect, &final_stats);
     /* If we added more than max_ips, evictions should have occurred */
   }
-  ELSE {}
+  ELSE
+  {
+  }
   END_TRY;
 
   /* Cleanup */
-  TRY { SocketSYNProtect_free (&protect); }
-  ELSE { /* Ignore cleanup exceptions */ }
+  TRY
+  {
+    SocketSYNProtect_free (&protect);
+  }
+  ELSE
+  { /* Ignore cleanup exceptions */
+  }
   END_TRY;
 
   return 0;

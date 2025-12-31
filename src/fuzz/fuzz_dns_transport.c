@@ -91,8 +91,11 @@ static int g_callback_error = 0;
 static size_t g_callback_len = 0;
 
 static void
-test_callback (SocketDNSQuery_T query, const unsigned char *response,
-               size_t len, int error, void *userdata)
+test_callback (SocketDNSQuery_T query,
+               const unsigned char *response,
+               size_t len,
+               int error,
+               void *userdata)
 {
   (void)query;
   (void)response;
@@ -116,8 +119,11 @@ test_callback (SocketDNSQuery_T query, const unsigned char *response,
 
 /* Build a DNS query message from fuzzer input */
 static int
-build_query (const struct fuzz_input *input, size_t input_size,
-             unsigned char *query_buf, size_t query_buf_size, size_t *query_len)
+build_query (const struct fuzz_input *input,
+             size_t input_size,
+             unsigned char *query_buf,
+             size_t query_buf_size,
+             size_t *query_len)
 {
   SocketDNS_Header hdr;
   size_t offset = 0;
@@ -149,8 +155,8 @@ build_query (const struct fuzz_input *input, size_t input_size,
   if (offset + DNS_MAX_NAME_LEN + 4 > query_buf_size)
     return -1;
 
-  if (SocketDNS_name_encode (qname, query_buf + offset,
-                             query_buf_size - offset, &name_len)
+  if (SocketDNS_name_encode (
+          qname, query_buf + offset, query_buf_size - offset, &name_len)
       != 0)
     return -1;
 
@@ -171,17 +177,21 @@ build_query (const struct fuzz_input *input, size_t input_size,
 
 /* Build a DNS response from fuzzer input */
 static int
-build_response (const struct fuzz_input *input, size_t input_size,
-                const unsigned char *query, size_t query_len,
-                unsigned char *response_buf, size_t response_buf_size,
-                size_t *response_len, int *is_truncated)
+build_response (const struct fuzz_input *input,
+                size_t input_size,
+                const unsigned char *query,
+                size_t query_len,
+                unsigned char *response_buf,
+                size_t response_buf_size,
+                size_t *response_len,
+                int *is_truncated)
 {
   SocketDNS_Header hdr;
   size_t offset = 0;
   size_t response_data_offset = sizeof (struct fuzz_input);
-  size_t response_data_len
-      = input_size > response_data_offset ? input_size - response_data_offset
-                                           : 0;
+  size_t response_data_len = input_size > response_data_offset
+                                 ? input_size - response_data_offset
+                                 : 0;
 
   if (response_buf_size < DNS_HEADER_SIZE)
     return -1;
@@ -349,8 +359,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   else
     {
       /* Single nameserver */
-      result
-          = SocketDNSTransport_add_nameserver (transport, "127.0.0.1", 53);
+      result = SocketDNSTransport_add_nameserver (transport, "127.0.0.1", 53);
       (void)result;
     }
 
@@ -376,8 +385,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   /* Build query message */
   unsigned char query_buf[512];
   size_t query_len;
-  if (build_query (input, size, query_buf, sizeof (query_buf), &query_len)
-      != 0)
+  if (build_query (input, size, query_buf, sizeof (query_buf), &query_len) != 0)
     {
       goto cleanup;
     }
@@ -393,15 +401,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       {
         if (input->transport_type == 0)
           {
-            query = SocketDNSTransport_query_udp (transport, query_buf,
-                                                  query_len, test_callback,
-                                                  NULL);
+            query = SocketDNSTransport_query_udp (
+                transport, query_buf, query_len, test_callback, NULL);
           }
         else
           {
-            query = SocketDNSTransport_query_tcp (transport, query_buf,
-                                                  query_len, test_callback,
-                                                  NULL);
+            query = SocketDNSTransport_query_tcp (
+                transport, query_buf, query_len, test_callback, NULL);
           }
       }
       EXCEPT (SocketDNSTransport_Failed)
@@ -429,8 +435,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       /* Test TC bit handling */
       TRY
       {
-        query = SocketDNSTransport_query_udp (transport, query_buf, query_len,
-                                              test_callback, NULL);
+        query = SocketDNSTransport_query_udp (
+            transport, query_buf, query_len, test_callback, NULL);
       }
       EXCEPT (SocketDNSTransport_Failed)
       {
@@ -442,8 +448,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       /* Test timeout and retry logic by creating query but not processing */
       TRY
       {
-        query = SocketDNSTransport_query_udp (transport, query_buf, query_len,
-                                              test_callback, NULL);
+        query = SocketDNSTransport_query_udp (
+            transport, query_buf, query_len, test_callback, NULL);
       }
       EXCEPT (SocketDNSTransport_Failed)
       {
@@ -458,8 +464,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       /* Test TCP transport paths */
       TRY
       {
-        query = SocketDNSTransport_query_tcp (transport, query_buf, query_len,
-                                              test_callback, NULL);
+        query = SocketDNSTransport_query_tcp (
+            transport, query_buf, query_len, test_callback, NULL);
       }
       EXCEPT (SocketDNSTransport_Failed)
       {
@@ -478,8 +484,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       /* Test invalid response handling */
       TRY
       {
-        query = SocketDNSTransport_query_udp (transport, query_buf, query_len,
-                                              test_callback, NULL);
+        query = SocketDNSTransport_query_udp (
+            transport, query_buf, query_len, test_callback, NULL);
       }
       EXCEPT (SocketDNSTransport_Failed)
       {
@@ -524,8 +530,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       /* Test query cancellation */
       TRY
       {
-        query = SocketDNSTransport_query_udp (transport, query_buf, query_len,
-                                              test_callback, NULL);
+        query = SocketDNSTransport_query_udp (
+            transport, query_buf, query_len, test_callback, NULL);
       }
       EXCEPT (SocketDNSTransport_Failed)
       {
@@ -551,8 +557,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       /* Test EDNS0 large response handling */
       TRY
       {
-        query = SocketDNSTransport_query_udp (transport, query_buf, query_len,
-                                              test_callback, NULL);
+        query = SocketDNSTransport_query_udp (
+            transport, query_buf, query_len, test_callback, NULL);
       }
       EXCEPT (SocketDNSTransport_Failed)
       {
@@ -594,8 +600,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   /* NULL query */
   TRY
   {
-    (void)SocketDNSTransport_query_udp (transport, NULL, query_len,
-                                        test_callback, NULL);
+    (void)SocketDNSTransport_query_udp (
+        transport, NULL, query_len, test_callback, NULL);
   }
   EXCEPT (SocketDNSTransport_Failed)
   {
@@ -605,8 +611,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   /* Zero length query */
   TRY
   {
-    (void)SocketDNSTransport_query_udp (transport, query_buf, 0,
-                                        test_callback, NULL);
+    (void)SocketDNSTransport_query_udp (
+        transport, query_buf, 0, test_callback, NULL);
   }
   EXCEPT (SocketDNSTransport_Failed)
   {
@@ -616,9 +622,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   /* Oversized query */
   TRY
   {
-    (void)SocketDNSTransport_query_udp (transport, query_buf,
-                                        DNS_UDP_MAX_SIZE + 1, test_callback,
-                                        NULL);
+    (void)SocketDNSTransport_query_udp (
+        transport, query_buf, DNS_UDP_MAX_SIZE + 1, test_callback, NULL);
   }
   EXCEPT (SocketDNSTransport_Failed)
   {
@@ -628,8 +633,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   /* NULL callback */
   TRY
   {
-    (void)SocketDNSTransport_query_udp (transport, query_buf, query_len, NULL,
-                                        NULL);
+    (void)SocketDNSTransport_query_udp (
+        transport, query_buf, query_len, NULL, NULL);
   }
   EXCEPT (SocketDNSTransport_Failed)
   {
@@ -648,8 +653,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   /* Query with no nameservers (should call callback with DNS_ERROR_NONS) */
   TRY
   {
-    (void)SocketDNSTransport_query_udp (transport, query_buf, query_len,
-                                        test_callback, NULL);
+    (void)SocketDNSTransport_query_udp (
+        transport, query_buf, query_len, test_callback, NULL);
   }
   EXCEPT (SocketDNSTransport_Failed)
   {

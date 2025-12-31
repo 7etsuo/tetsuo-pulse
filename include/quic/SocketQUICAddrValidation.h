@@ -32,20 +32,21 @@
 #define QUIC_ADDR_VALIDATION_MAX_TOKEN_SIZE 256
 
 /** @brief Token component sizes */
-#define QUIC_TOKEN_TIMESTAMP_SIZE 8   /**< Timestamp field size */
-#define QUIC_TOKEN_ADDR_HASH_SIZE 16  /**< Address hash field size */
-#define QUIC_TOKEN_HMAC_SIZE 32       /**< HMAC-SHA256 field size */
+#define QUIC_TOKEN_TIMESTAMP_SIZE 8  /**< Timestamp field size */
+#define QUIC_TOKEN_ADDR_HASH_SIZE 16 /**< Address hash field size */
+#define QUIC_TOKEN_HMAC_SIZE 32      /**< HMAC-SHA256 field size */
 
 /** @brief Token field offsets */
 #define QUIC_TOKEN_HMAC_OFFSET \
-  (QUIC_TOKEN_TIMESTAMP_SIZE + QUIC_TOKEN_ADDR_HASH_SIZE)  /**< HMAC field offset */
+  (QUIC_TOKEN_TIMESTAMP_SIZE   \
+   + QUIC_TOKEN_ADDR_HASH_SIZE) /**< HMAC field offset */
 
 /** @brief Actual token size: 8 (timestamp) + 16 (addr hash) + 32 (HMAC) */
 #define QUIC_ADDR_VALIDATION_TOKEN_SIZE \
   (QUIC_TOKEN_TIMESTAMP_SIZE + QUIC_TOKEN_ADDR_HASH_SIZE + QUIC_TOKEN_HMAC_SIZE)
 
 /** @brief Token lifetime in seconds */
-#define QUIC_ADDR_VALIDATION_TOKEN_LIFETIME 86400  /* 24 hours */
+#define QUIC_ADDR_VALIDATION_TOKEN_LIFETIME 86400 /* 24 hours */
 
 /** @brief 3x amplification limit before address validation */
 #define QUIC_ADDR_VALIDATION_AMPLIFICATION_LIMIT 3
@@ -74,7 +75,8 @@ extern const Except_T SocketQUICAddrValidation_Failed;
 /**
  * @brief Result codes for address validation operations.
  */
-typedef enum {
+typedef enum
+{
   QUIC_ADDR_VALIDATION_OK = 0,
   QUIC_ADDR_VALIDATION_ERROR_NULL,
   QUIC_ADDR_VALIDATION_ERROR_INVALID,
@@ -87,23 +89,25 @@ typedef enum {
 /**
  * @brief Token validation state tracker.
  */
-typedef struct SocketQUICAddrValidation_State {
-  uint64_t bytes_received;    /**< Bytes validated as received from peer */
-  uint64_t bytes_sent;        /**< Bytes sent to peer */
-  int address_validated;      /**< 1 if address validated, 0 otherwise */
-  uint64_t validation_time;   /**< Timestamp when validated */
+typedef struct SocketQUICAddrValidation_State
+{
+  uint64_t bytes_received;  /**< Bytes validated as received from peer */
+  uint64_t bytes_sent;      /**< Bytes sent to peer */
+  int address_validated;    /**< 1 if address validated, 0 otherwise */
+  uint64_t validation_time; /**< Timestamp when validated */
 } SocketQUICAddrValidation_State_T;
 
 /**
  * @brief Path challenge tracker for migration validation.
  */
-typedef struct SocketQUICPathChallenge {
-  uint8_t data[QUIC_PATH_CHALLENGE_SIZE];  /**< Challenge data */
-  uint64_t sent_time;                       /**< When challenge was sent */
-  int pending;                              /**< 1 if waiting for response */
-  uint8_t peer_addr[16];                    /**< Address where sent */
-  uint16_t peer_port;                       /**< Port where sent */
-  int is_ipv6;                              /**< 1 if IPv6, 0 if IPv4 */
+typedef struct SocketQUICPathChallenge
+{
+  uint8_t data[QUIC_PATH_CHALLENGE_SIZE]; /**< Challenge data */
+  uint64_t sent_time;                     /**< When challenge was sent */
+  int pending;                            /**< 1 if waiting for response */
+  uint8_t peer_addr[16];                  /**< Address where sent */
+  uint16_t peer_port;                     /**< Port where sent */
+  int is_ipv6;                            /**< 1 if IPv6, 0 if IPv4 */
 } SocketQUICPathChallenge_T;
 
 /* ============================================================================
@@ -125,8 +129,7 @@ typedef struct SocketQUICPathChallenge {
  * @threadsafe Yes - reads immutable state.
  * @complexity O(1)
  */
-extern int
-SocketQUICAddrValidation_check_amplification_limit (
+extern int SocketQUICAddrValidation_check_amplification_limit (
     const SocketQUICAddrValidation_State_T *state, size_t bytes_to_send);
 
 /**
@@ -139,9 +142,9 @@ SocketQUICAddrValidation_check_amplification_limit (
  * @threadsafe No - modifies state.
  * @complexity O(1)
  */
-extern void
-SocketQUICAddrValidation_update_counters (
-    SocketQUICAddrValidation_State_T *state, size_t bytes_sent,
+extern void SocketQUICAddrValidation_update_counters (
+    SocketQUICAddrValidation_State_T *state,
+    size_t bytes_sent,
     size_t bytes_received);
 
 /**
@@ -153,8 +156,7 @@ SocketQUICAddrValidation_update_counters (
  * @threadsafe No - modifies state.
  * @complexity O(1)
  */
-extern void
-SocketQUICAddrValidation_mark_validated (
+extern void SocketQUICAddrValidation_mark_validated (
     SocketQUICAddrValidation_State_T *state, uint64_t timestamp);
 
 /* ============================================================================
@@ -185,9 +187,10 @@ SocketQUICAddrValidation_mark_validated (
  * @complexity O(1) - crypto operations.
  */
 extern SocketQUICAddrValidation_Result
-SocketQUICAddrValidation_generate_token (
-    const struct sockaddr *addr, const uint8_t *secret, uint8_t *token,
-    size_t *token_len);
+SocketQUICAddrValidation_generate_token (const struct sockaddr *addr,
+                                         const uint8_t *secret,
+                                         uint8_t *token,
+                                         size_t *token_len);
 
 /**
  * @brief Validate address token.
@@ -207,9 +210,9 @@ SocketQUICAddrValidation_generate_token (
  */
 extern SocketQUICAddrValidation_Result
 SocketQUICAddrValidation_validate_token (const uint8_t *token,
-                                          size_t token_len,
-                                          const struct sockaddr *addr,
-                                          const uint8_t *secret);
+                                         size_t token_len,
+                                         const struct sockaddr *addr,
+                                         const uint8_t *secret);
 
 /* ============================================================================
  * Path Validation Functions (PATH_CHALLENGE/PATH_RESPONSE)
@@ -224,8 +227,7 @@ SocketQUICAddrValidation_validate_token (const uint8_t *token,
  * @threadsafe Yes.
  * @complexity O(1)
  */
-extern void
-SocketQUICPathChallenge_init (SocketQUICPathChallenge_T *challenge);
+extern void SocketQUICPathChallenge_init (SocketQUICPathChallenge_T *challenge);
 
 /**
  * @brief Generate and send PATH_CHALLENGE frame.
@@ -245,8 +247,8 @@ SocketQUICPathChallenge_init (SocketQUICPathChallenge_T *challenge);
  */
 extern SocketQUICAddrValidation_Result
 SocketQUICPathChallenge_generate (SocketQUICPathChallenge_T *challenge,
-                                   const struct sockaddr *path,
-                                   uint64_t timestamp);
+                                  const struct sockaddr *path,
+                                  uint64_t timestamp);
 
 /**
  * @brief Verify PATH_RESPONSE matches challenge.
@@ -260,9 +262,9 @@ SocketQUICPathChallenge_generate (SocketQUICPathChallenge_T *challenge,
  * @threadsafe Yes - reads immutable challenge data.
  * @complexity O(1) - constant-time comparison.
  */
-extern int
-SocketQUICPathChallenge_verify_response (
-    const SocketQUICPathChallenge_T *challenge, const uint8_t *response_data,
+extern int SocketQUICPathChallenge_verify_response (
+    const SocketQUICPathChallenge_T *challenge,
+    const uint8_t *response_data,
     size_t response_len);
 
 /**

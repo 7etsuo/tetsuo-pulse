@@ -182,8 +182,9 @@ TEST (quic_varint_decode_rfc_sample_494878333)
 
 TEST (quic_varint_decode_rfc_sample_151288809941952652)
 {
-  const uint8_t data[] = { 0xC2, 0x19, 0x7C, 0x5E,
-                           0xFF, 0x14, 0xE8, 0x8C }; /* 151288809941952652 */
+  const uint8_t data[] = {
+    0xC2, 0x19, 0x7C, 0x5E, 0xFF, 0x14, 0xE8, 0x8C
+  }; /* 151288809941952652 */
   uint64_t value;
   size_t consumed;
 
@@ -281,7 +282,8 @@ TEST (quic_varint_encode_8byte_min)
 TEST (quic_varint_encode_8byte_max)
 {
   uint8_t buf[8];
-  size_t len = SocketQUICVarInt_encode (SOCKETQUICVARINT_MAX, buf, sizeof (buf));
+  size_t len
+      = SocketQUICVarInt_encode (SOCKETQUICVARINT_MAX, buf, sizeof (buf));
 
   ASSERT_EQ (len, 8);
   ASSERT_EQ (buf[0], 0xFF);
@@ -485,7 +487,8 @@ TEST (quic_varint_result_string)
   ASSERT_NOT_NULL (SocketQUICVarInt_result_string (QUIC_VARINT_ERROR_OVERFLOW));
   ASSERT_NOT_NULL (SocketQUICVarInt_result_string (QUIC_VARINT_ERROR_BUFFER));
   ASSERT_NOT_NULL (SocketQUICVarInt_result_string (QUIC_VARINT_ERROR_NULL));
-  ASSERT_NOT_NULL (SocketQUICVarInt_result_string ((SocketQUICVarInt_Result)99));
+  ASSERT_NOT_NULL (
+      SocketQUICVarInt_result_string ((SocketQUICVarInt_Result)99));
 }
 
 /* ============================================================================

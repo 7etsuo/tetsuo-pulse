@@ -19,10 +19,10 @@ const Except_T SocketDNS_WireError
  * Big-endian pack/unpack helpers - now using shared utilities from SocketUtil.h
  */
 
-#define dns_unpack_be16(p) socket_util_unpack_be16(p)
-#define dns_pack_be16(p, v) socket_util_pack_be16(p, v)
-#define dns_unpack_be32(p) socket_util_unpack_be32(p)
-#define dns_pack_be32(p, v) socket_util_pack_be32(p, v)
+#define dns_unpack_be16(p) socket_util_unpack_be16 (p)
+#define dns_pack_be16(p, v) socket_util_pack_be16 (p, v)
+#define dns_unpack_be32(p) socket_util_unpack_be32 (p)
+#define dns_pack_be32(p, v) socket_util_pack_be32 (p, v)
 
 /*
  * Flags word layout (16 bits):
@@ -47,21 +47,21 @@ const Except_T SocketDNS_WireError
  *   RCODE: bits 3-0 (0x000F)
  */
 
-#define DNS_FLAG_QR_MASK     0x8000
-#define DNS_FLAG_QR_SHIFT    15
+#define DNS_FLAG_QR_MASK 0x8000
+#define DNS_FLAG_QR_SHIFT 15
 #define DNS_FLAG_OPCODE_MASK 0x7800
 #define DNS_FLAG_OPCODE_SHIFT 11
-#define DNS_FLAG_AA_MASK     0x0400
-#define DNS_FLAG_AA_SHIFT    10
-#define DNS_FLAG_TC_MASK     0x0200
-#define DNS_FLAG_TC_SHIFT    9
-#define DNS_FLAG_RD_MASK     0x0100
-#define DNS_FLAG_RD_SHIFT    8
-#define DNS_FLAG_RA_MASK     0x0080
-#define DNS_FLAG_RA_SHIFT    7
-#define DNS_FLAG_Z_MASK      0x0070
-#define DNS_FLAG_Z_SHIFT     4
-#define DNS_FLAG_RCODE_MASK  0x000F
+#define DNS_FLAG_AA_MASK 0x0400
+#define DNS_FLAG_AA_SHIFT 10
+#define DNS_FLAG_TC_MASK 0x0200
+#define DNS_FLAG_TC_SHIFT 9
+#define DNS_FLAG_RD_MASK 0x0100
+#define DNS_FLAG_RD_SHIFT 8
+#define DNS_FLAG_RA_MASK 0x0080
+#define DNS_FLAG_RA_SHIFT 7
+#define DNS_FLAG_Z_MASK 0x0070
+#define DNS_FLAG_Z_SHIFT 4
+#define DNS_FLAG_RCODE_MASK 0x000F
 #define DNS_FLAG_RCODE_SHIFT 0
 
 static inline uint16_t
@@ -85,7 +85,8 @@ static inline void
 dns_unpack_flags (uint16_t flags, SocketDNS_Header *h)
 {
   h->qr = (uint8_t)((flags & DNS_FLAG_QR_MASK) >> DNS_FLAG_QR_SHIFT);
-  h->opcode = (uint8_t)((flags & DNS_FLAG_OPCODE_MASK) >> DNS_FLAG_OPCODE_SHIFT);
+  h->opcode
+      = (uint8_t)((flags & DNS_FLAG_OPCODE_MASK) >> DNS_FLAG_OPCODE_SHIFT);
   h->aa = (uint8_t)((flags & DNS_FLAG_AA_MASK) >> DNS_FLAG_AA_SHIFT);
   h->tc = (uint8_t)((flags & DNS_FLAG_TC_MASK) >> DNS_FLAG_TC_SHIFT);
   h->rd = (uint8_t)((flags & DNS_FLAG_RD_MASK) >> DNS_FLAG_RD_SHIFT);
@@ -95,7 +96,8 @@ dns_unpack_flags (uint16_t flags, SocketDNS_Header *h)
 }
 
 int
-SocketDNS_header_encode (const SocketDNS_Header *header, unsigned char *buf,
+SocketDNS_header_encode (const SocketDNS_Header *header,
+                         unsigned char *buf,
                          size_t buflen)
 {
   uint16_t flags;
@@ -129,7 +131,8 @@ SocketDNS_header_encode (const SocketDNS_Header *header, unsigned char *buf,
 }
 
 int
-SocketDNS_header_decode (const unsigned char *data, size_t datalen,
+SocketDNS_header_decode (const unsigned char *data,
+                         size_t datalen,
                          SocketDNS_Header *header)
 {
   uint16_t flags;
@@ -163,7 +166,8 @@ SocketDNS_header_decode (const unsigned char *data, size_t datalen,
 }
 
 void
-SocketDNS_header_init_query (SocketDNS_Header *header, uint16_t id,
+SocketDNS_header_init_query (SocketDNS_Header *header,
+                             uint16_t id,
                              uint16_t qdcount)
 {
   if (!header)
@@ -171,9 +175,9 @@ SocketDNS_header_init_query (SocketDNS_Header *header, uint16_t id,
 
   memset (header, 0, sizeof (*header));
   header->id = id;
-  header->qr = 0;                 /* Query */
+  header->qr = 0; /* Query */
   header->opcode = DNS_OPCODE_QUERY;
-  header->rd = 1;                 /* Request recursion */
+  header->rd = 1; /* Request recursion */
   header->qdcount = qdcount;
 }
 
@@ -309,7 +313,9 @@ SocketDNS_name_wire_length (const char *name)
 }
 
 int
-SocketDNS_name_encode (const char *name, unsigned char *buf, size_t buflen,
+SocketDNS_name_encode (const char *name,
+                       unsigned char *buf,
+                       size_t buflen,
                        size_t *written)
 {
   const char *label_start;
@@ -386,9 +392,13 @@ SocketDNS_name_encode (const char *name, unsigned char *buf, size_t buflen,
  * Returns 0 on success, -1 on error.
  */
 static int
-decode_compression_pointer (const unsigned char *msg, size_t msglen,
-                            size_t *wire_pos, uint16_t *visited,
-                            int *visited_count, int *hops, size_t *first_end,
+decode_compression_pointer (const unsigned char *msg,
+                            size_t msglen,
+                            size_t *wire_pos,
+                            uint16_t *visited,
+                            int *visited_count,
+                            int *hops,
+                            size_t *first_end,
                             int *jumped)
 {
   uint16_t ptr_offset;
@@ -437,8 +447,13 @@ decode_compression_pointer (const unsigned char *msg, size_t msglen,
  * Returns 0 on success, -1 on error.
  */
 static int
-decode_label (const unsigned char *msg, size_t msglen, size_t *wire_pos,
-              char *buf, size_t buflen, size_t *out_pos, unsigned char len_byte)
+decode_label (const unsigned char *msg,
+              size_t msglen,
+              size_t *wire_pos,
+              char *buf,
+              size_t buflen,
+              size_t *out_pos,
+              unsigned char len_byte)
 {
   /* Validate label length */
   if (len_byte > DNS_MAX_LABEL_LEN)
@@ -470,8 +485,12 @@ decode_label (const unsigned char *msg, size_t msglen, size_t *wire_pos,
 }
 
 int
-SocketDNS_name_decode (const unsigned char *msg, size_t msglen, size_t offset,
-                       char *buf, size_t buflen, size_t *consumed)
+SocketDNS_name_decode (const unsigned char *msg,
+                       size_t msglen,
+                       size_t offset,
+                       char *buf,
+                       size_t buflen,
+                       size_t *consumed)
 {
   size_t out_pos;
   size_t wire_pos;
@@ -506,8 +525,13 @@ SocketDNS_name_decode (const unsigned char *msg, size_t msglen, size_t offset,
       /* Check for compression pointer */
       if ((len_byte & DNS_COMPRESSION_FLAG) == DNS_COMPRESSION_FLAG)
         {
-          if (decode_compression_pointer (msg, msglen, &wire_pos, visited,
-                                          &visited_count, &hops, &first_end,
+          if (decode_compression_pointer (msg,
+                                          msglen,
+                                          &wire_pos,
+                                          visited,
+                                          &visited_count,
+                                          &hops,
+                                          &first_end,
                                           &jumped)
               != 0)
             return -1;
@@ -581,7 +605,9 @@ SocketDNS_name_equal (const char *name1, const char *name2)
 
 int
 SocketDNS_question_encode (const SocketDNS_Question *question,
-                           unsigned char *buf, size_t buflen, size_t *written)
+                           unsigned char *buf,
+                           size_t buflen,
+                           size_t *written)
 {
   size_t name_len;
   size_t pos;
@@ -614,8 +640,10 @@ SocketDNS_question_encode (const SocketDNS_Question *question,
 }
 
 int
-SocketDNS_question_decode (const unsigned char *msg, size_t msglen,
-                           size_t offset, SocketDNS_Question *question,
+SocketDNS_question_decode (const unsigned char *msg,
+                           size_t msglen,
+                           size_t offset,
+                           SocketDNS_Question *question,
                            size_t *consumed)
 {
   size_t name_consumed;
@@ -629,8 +657,12 @@ SocketDNS_question_decode (const unsigned char *msg, size_t msglen,
     return -1;
 
   /* Decode the domain name */
-  name_len = SocketDNS_name_decode (msg, msglen, offset, question->qname,
-                                    sizeof (question->qname), &name_consumed);
+  name_len = SocketDNS_name_decode (msg,
+                                    msglen,
+                                    offset,
+                                    question->qname,
+                                    sizeof (question->qname),
+                                    &name_consumed);
   if (name_len < 0)
     return -1;
 
@@ -655,7 +687,8 @@ SocketDNS_question_decode (const unsigned char *msg, size_t msglen,
 }
 
 void
-SocketDNS_question_init (SocketDNS_Question *question, const char *name,
+SocketDNS_question_init (SocketDNS_Question *question,
+                         const char *name,
                          uint16_t qtype)
 {
   size_t name_len;
@@ -695,8 +728,11 @@ SocketDNS_question_init (SocketDNS_Question *question, const char *name,
 #define DNS_RR_FIXED_SIZE 10 /* TYPE + CLASS + TTL + RDLENGTH */
 
 int
-SocketDNS_rr_decode (const unsigned char *msg, size_t msglen, size_t offset,
-                     SocketDNS_RR *rr, size_t *consumed)
+SocketDNS_rr_decode (const unsigned char *msg,
+                     size_t msglen,
+                     size_t offset,
+                     SocketDNS_RR *rr,
+                     size_t *consumed)
 {
   size_t name_consumed;
   int name_len;
@@ -710,8 +746,8 @@ SocketDNS_rr_decode (const unsigned char *msg, size_t msglen, size_t offset,
     return -1;
 
   /* Decode the owner name */
-  name_len = SocketDNS_name_decode (msg, msglen, offset, rr->name,
-                                    sizeof (rr->name), &name_consumed);
+  name_len = SocketDNS_name_decode (
+      msg, msglen, offset, rr->name, sizeof (rr->name), &name_consumed);
   if (name_len < 0)
     return -1;
 
@@ -753,7 +789,9 @@ SocketDNS_rr_decode (const unsigned char *msg, size_t msglen, size_t offset,
 }
 
 int
-SocketDNS_rr_skip (const unsigned char *msg, size_t msglen, size_t offset,
+SocketDNS_rr_skip (const unsigned char *msg,
+                   size_t msglen,
+                   size_t offset,
                    size_t *consumed)
 {
   char name_buf[DNS_MAX_NAME_LEN];
@@ -769,9 +807,8 @@ SocketDNS_rr_skip (const unsigned char *msg, size_t msglen, size_t offset,
     return -1;
 
   /* Skip the name */
-  name_len
-      = SocketDNS_name_decode (msg, msglen, offset, name_buf, sizeof (name_buf),
-                               &name_consumed);
+  name_len = SocketDNS_name_decode (
+      msg, msglen, offset, name_buf, sizeof (name_buf), &name_consumed);
   if (name_len < 0)
     return -1;
 
@@ -788,7 +825,8 @@ SocketDNS_rr_skip (const unsigned char *msg, size_t msglen, size_t offset,
   if (rdlength > msglen)
     return -1; /* rdlength larger than entire message */
   if (pos + DNS_RR_FIXED_SIZE > msglen - rdlength)
-    return -1; /* Would overflow: check (pos + DNS_RR_FIXED_SIZE + rdlength <= msglen) safely */
+    return -1; /* Would overflow: check (pos + DNS_RR_FIXED_SIZE + rdlength <=
+                  msglen) safely */
 
   if (consumed)
     *consumed = name_consumed + DNS_RR_FIXED_SIZE + rdlength;
@@ -867,8 +905,10 @@ SocketDNS_rdata_parse_aaaa (const SocketDNS_RR *rr, struct in6_addr *addr)
  */
 
 int
-SocketDNS_rdata_parse_cname (const unsigned char *msg, size_t msglen,
-                             const SocketDNS_RR *rr, char *cname,
+SocketDNS_rdata_parse_cname (const unsigned char *msg,
+                             size_t msglen,
+                             const SocketDNS_RR *rr,
+                             char *cname,
                              size_t cnamelen)
 {
   size_t rdata_offset;
@@ -892,8 +932,8 @@ SocketDNS_rdata_parse_cname (const unsigned char *msg, size_t msglen,
     return -1;
 
   /* Decode the domain name from RDATA (handles compression pointers) */
-  return SocketDNS_name_decode (msg, msglen, rdata_offset, cname, cnamelen,
-                                NULL);
+  return SocketDNS_name_decode (
+      msg, msglen, rdata_offset, cname, cnamelen, NULL);
 }
 
 /*
@@ -919,7 +959,8 @@ SocketDNS_rdata_parse_cname (const unsigned char *msg, size_t msglen,
  * specified offset. All fields are 32-bit values in network byte order.
  */
 static void
-parse_soa_fixed_fields (const unsigned char *msg, size_t offset,
+parse_soa_fixed_fields (const unsigned char *msg,
+                        size_t offset,
                         SocketDNS_SOA *soa)
 {
   soa->serial = dns_unpack_be32 (msg + offset);
@@ -934,8 +975,10 @@ parse_soa_fixed_fields (const unsigned char *msg, size_t offset,
 }
 
 int
-SocketDNS_rdata_parse_soa (const unsigned char *msg, size_t msglen,
-                           const SocketDNS_RR *rr, SocketDNS_SOA *soa)
+SocketDNS_rdata_parse_soa (const unsigned char *msg,
+                           size_t msglen,
+                           const SocketDNS_RR *rr,
+                           SocketDNS_SOA *soa)
 {
   size_t rdata_offset;
   size_t offset;
@@ -963,15 +1006,15 @@ SocketDNS_rdata_parse_soa (const unsigned char *msg, size_t msglen,
   offset = rdata_offset;
 
   /* Decode MNAME (primary nameserver) */
-  name_len = SocketDNS_name_decode (msg, msglen, offset, soa->mname,
-                                    sizeof (soa->mname), &consumed);
+  name_len = SocketDNS_name_decode (
+      msg, msglen, offset, soa->mname, sizeof (soa->mname), &consumed);
   if (name_len < 0)
     return -1;
   offset += consumed;
 
   /* Decode RNAME (responsible person mailbox) */
-  name_len = SocketDNS_name_decode (msg, msglen, offset, soa->rname,
-                                    sizeof (soa->rname), &consumed);
+  name_len = SocketDNS_name_decode (
+      msg, msglen, offset, soa->rname, sizeof (soa->rname), &consumed);
   if (name_len < 0)
     return -1;
   offset += consumed;
@@ -997,9 +1040,9 @@ SocketDNS_rdata_parse_soa (const unsigned char *msg, size_t msglen,
  *   NAME     - Must be 0 (root domain, single zero byte)
  *   TYPE     - 41 (OPT)
  *   CLASS    - Requestor's UDP payload size
- *   TTL      - Extended RCODE (8 bits) | VERSION (8 bits) | DO (1 bit) | Z (15 bits)
- *   RDLENGTH - Length of options data
- *   RDATA    - Zero or more {option-code, option-length, option-data} tuples
+ *   TTL      - Extended RCODE (8 bits) | VERSION (8 bits) | DO (1 bit) | Z (15
+ * bits) RDLENGTH - Length of options data RDATA    - Zero or more {option-code,
+ * option-length, option-data} tuples
  *
  * Wire format (11 bytes minimum without options):
  *   +--+--+--+--+--+--+--+--+--+--+--+
@@ -1016,15 +1059,15 @@ SocketDNS_opt_init (SocketDNS_OPT *opt, uint16_t udp_size)
   memset (opt, 0, sizeof (*opt));
 
   /* Enforce minimum UDP payload size per RFC 6891 Section 6.2.3 */
-  opt->udp_payload_size = (udp_size < DNS_EDNS0_MIN_UDPSIZE)
-                              ? DNS_EDNS0_MIN_UDPSIZE
-                              : udp_size;
+  opt->udp_payload_size
+      = (udp_size < DNS_EDNS0_MIN_UDPSIZE) ? DNS_EDNS0_MIN_UDPSIZE : udp_size;
   opt->version = DNS_EDNS0_VERSION;
   /* do_bit = 0, z = 0, rdlength = 0, rdata = NULL (already zeroed) */
 }
 
 int
-SocketDNS_opt_encode (const SocketDNS_OPT *opt, unsigned char *buf,
+SocketDNS_opt_encode (const SocketDNS_OPT *opt,
+                      unsigned char *buf,
                       size_t buflen)
 {
   size_t total;
@@ -1052,8 +1095,7 @@ SocketDNS_opt_encode (const SocketDNS_OPT *opt, unsigned char *buf,
   p += 2;
 
   /* TTL = extended RCODE (8) | version (8) | DO (1) | Z (15) */
-  ttl = ((uint32_t)opt->extended_rcode << 24)
-        | ((uint32_t)opt->version << 16)
+  ttl = ((uint32_t)opt->extended_rcode << 24) | ((uint32_t)opt->version << 16)
         | ((uint32_t)(opt->do_bit ? 0x8000 : 0))
         | ((uint32_t)(opt->z & 0x7FFF));
   dns_pack_be32 (p, ttl);
@@ -1171,8 +1213,9 @@ SocketDNS_opt_validate (const SocketDNS_OPT *opt, size_t rdata_len)
 }
 
 int
-SocketDNS_response_count_opt (const unsigned char *msg, size_t msg_len,
-                               const SocketDNS_Header *hdr)
+SocketDNS_response_count_opt (const unsigned char *msg,
+                              size_t msg_len,
+                              const SocketDNS_Header *hdr)
 {
   size_t offset;
   int opt_count;
@@ -1320,8 +1363,7 @@ SocketDNS_opt_get_version (const SocketDNS_OPT *opt)
 }
 
 int
-SocketDNS_opt_is_badvers (const SocketDNS_Header *hdr,
-                          const SocketDNS_OPT *opt)
+SocketDNS_opt_is_badvers (const SocketDNS_Header *hdr, const SocketDNS_OPT *opt)
 {
   uint16_t ext_rcode;
 
@@ -1347,7 +1389,8 @@ SocketDNS_opt_is_badvers (const SocketDNS_Header *hdr,
 
 int
 SocketDNS_edns_option_encode (const SocketDNS_EDNSOption *option,
-                              unsigned char *buf, size_t buflen)
+                              unsigned char *buf,
+                              size_t buflen)
 {
   size_t total;
 
@@ -1379,7 +1422,8 @@ SocketDNS_edns_option_encode (const SocketDNS_EDNSOption *option,
 
 void
 SocketDNS_edns_option_iter_init (SocketDNS_EDNSOptionIter *iter,
-                                  const unsigned char *rdata, size_t rdlen)
+                                 const unsigned char *rdata,
+                                 size_t rdlen)
 {
   if (!iter)
     return;
@@ -1398,7 +1442,7 @@ SocketDNS_edns_option_iter_init (SocketDNS_EDNSOptionIter *iter,
 
 int
 SocketDNS_edns_option_iter_next (SocketDNS_EDNSOptionIter *iter,
-                                  SocketDNS_EDNSOption *option)
+                                 SocketDNS_EDNSOption *option)
 {
   uint16_t code;
   uint16_t length;
@@ -1439,8 +1483,10 @@ SocketDNS_edns_option_iter_next (SocketDNS_EDNSOptionIter *iter,
 }
 
 int
-SocketDNS_edns_option_find (const unsigned char *rdata, size_t rdlen,
-                             uint16_t code, SocketDNS_EDNSOption *option)
+SocketDNS_edns_option_find (const unsigned char *rdata,
+                            size_t rdlen,
+                            uint16_t code,
+                            SocketDNS_EDNSOption *option)
 {
   SocketDNS_EDNSOptionIter iter;
   SocketDNS_EDNSOption opt;
@@ -1466,7 +1512,9 @@ SocketDNS_edns_option_find (const unsigned char *rdata, size_t rdlen,
 
 int
 SocketDNS_edns_options_encode (const SocketDNS_EDNSOption *options,
-                                size_t count, unsigned char *buf, size_t buflen)
+                               size_t count,
+                               unsigned char *buf,
+                               size_t buflen)
 {
   size_t pos;
   size_t i;
@@ -1483,8 +1531,8 @@ SocketDNS_edns_options_encode (const SocketDNS_EDNSOption *options,
 
   for (i = 0; i < count; i++)
     {
-      encoded = SocketDNS_edns_option_encode (&options[i], buf + pos,
-                                               buflen - pos);
+      encoded
+          = SocketDNS_edns_option_encode (&options[i], buf + pos, buflen - pos);
       if (encoded < 0)
         return -1;
 
@@ -1528,7 +1576,7 @@ SocketDNS_payload_config_init (SocketDNS_PayloadConfig *config)
 
 uint16_t
 SocketDNS_payload_get_size (const SocketDNS_PayloadTracker *tracker,
-                             const SocketDNS_PayloadConfig *config)
+                            const SocketDNS_PayloadConfig *config)
 {
   SocketDNS_PayloadConfig defaults;
   const SocketDNS_PayloadConfig *cfg;
@@ -1571,7 +1619,7 @@ SocketDNS_payload_get_size (const SocketDNS_PayloadTracker *tracker,
       size = cfg->fallback2_size;
       break;
     case DNS_PAYLOAD_STATE_TCP:
-      return 0;  /* Signal that TCP is required */
+      return 0; /* Signal that TCP is required */
     default:
       size = cfg->initial_size;
       break;
@@ -1601,7 +1649,7 @@ SocketDNS_payload_failed (SocketDNS_PayloadTracker *tracker, uint64_t now)
     {
     case DNS_PAYLOAD_STATE_4096:
       tracker->state = DNS_PAYLOAD_STATE_1400;
-      tracker->failure_count = 0;  /* Reset count for new state */
+      tracker->failure_count = 0; /* Reset count for new state */
       break;
     case DNS_PAYLOAD_STATE_1400:
       tracker->state = DNS_PAYLOAD_STATE_512;
@@ -1619,7 +1667,8 @@ SocketDNS_payload_failed (SocketDNS_PayloadTracker *tracker, uint64_t now)
 
 void
 SocketDNS_payload_succeeded (SocketDNS_PayloadTracker *tracker,
-                              uint16_t size, uint64_t now)
+                             uint16_t size,
+                             uint64_t now)
 {
   if (!tracker)
     return;
@@ -1635,8 +1684,8 @@ SocketDNS_payload_succeeded (SocketDNS_PayloadTracker *tracker,
 
 int
 SocketDNS_payload_should_reset (const SocketDNS_PayloadTracker *tracker,
-                                 const SocketDNS_PayloadConfig *config,
-                                 uint64_t now)
+                                const SocketDNS_PayloadConfig *config,
+                                uint64_t now)
 {
   SocketDNS_PayloadConfig defaults;
   const SocketDNS_PayloadConfig *cfg;
@@ -1779,8 +1828,11 @@ SocketDNS_name_in_bailiwick (const char *record_name, const char *query_name)
  * @return 0 on success, -1 on parse error
  */
 static int
-skip_dns_section (const unsigned char *msg, size_t msglen, size_t *offset,
-                  uint16_t count, int skip_questions)
+skip_dns_section (const unsigned char *msg,
+                  size_t msglen,
+                  size_t *offset,
+                  uint16_t count,
+                  int skip_questions)
 {
   uint16_t i;
   size_t consumed;
@@ -1790,8 +1842,8 @@ skip_dns_section (const unsigned char *msg, size_t msglen, size_t *offset,
       if (skip_questions)
         {
           SocketDNS_Question question;
-          if (SocketDNS_question_decode (msg, msglen, *offset, &question,
-                                         &consumed)
+          if (SocketDNS_question_decode (
+                  msg, msglen, *offset, &question, &consumed)
               != 0)
             return -1;
         }
@@ -1817,8 +1869,9 @@ skip_dns_section (const unsigned char *msg, size_t msglen, size_t *offset,
  */
 
 uint32_t
-SocketDNS_extract_negative_ttl (const unsigned char *msg, size_t msglen,
-                                 SocketDNS_SOA *soa_out)
+SocketDNS_extract_negative_ttl (const unsigned char *msg,
+                                size_t msglen,
+                                SocketDNS_SOA *soa_out)
 {
   SocketDNS_Header header;
   SocketDNS_RR rr;

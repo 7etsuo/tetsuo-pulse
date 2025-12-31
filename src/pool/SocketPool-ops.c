@@ -72,7 +72,8 @@ static int consume_rate_and_track_ip (T pool, const char *client_ip);
  * Consolidates the repeated pattern of reporting failure and freeing socket.
  */
 static void
-handle_syn_consume_failure (SocketSYNProtect_T protect, const char *client_ip,
+handle_syn_consume_failure (SocketSYNProtect_T protect,
+                            const char *client_ip,
                             Socket_T *client)
 {
   SocketSYNProtect_report_failure (protect, client_ip, ECONNREFUSED);
@@ -94,8 +95,10 @@ handle_syn_consume_failure (SocketSYNProtect_T protect, const char *client_ip,
  * 2. Post-accept: consume token and track IP (this function)
  */
 static int
-try_consume_and_report (T pool, SocketSYNProtect_T protect,
-                        const char *client_ip, int report_success)
+try_consume_and_report (T pool,
+                        SocketSYNProtect_T protect,
+                        const char *client_ip,
+                        int report_success)
 {
   if (!consume_rate_and_track_ip (pool, client_ip))
     {
@@ -124,7 +127,8 @@ try_consume_and_report (T pool, SocketSYNProtect_T protect,
  * Thread-safe: Call with mutex held
  */
 static size_t
-collect_excess_connections (T pool, size_t new_maxconns,
+collect_excess_connections (T pool,
+                            size_t new_maxconns,
                             Socket_T *excess_sockets)
 {
   size_t excess_count = 0;
@@ -192,8 +196,7 @@ realloc_connections_array (T pool, size_t new_maxconns)
 static void
 rehash_active_connections (T pool, size_t valid_count)
 {
-  memset (pool->hash_table, 0,
-          sizeof (pool->hash_table[0]) * SOCKET_HASH_SIZE);
+  memset (pool->hash_table, 0, sizeof (pool->hash_table[0]) * SOCKET_HASH_SIZE);
 
   for (size_t i = 0; i < valid_count; i++)
     {
@@ -272,8 +275,8 @@ initialize_new_slots (T pool, size_t old_maxconns, size_t new_maxconns)
       struct Connection *conn = &pool->connections[i];
       SocketPool_connections_initialize_slot (conn);
 
-      if (SocketPool_connections_alloc_buffers (pool->arena, pool->bufsize,
-                                                conn)
+      if (SocketPool_connections_alloc_buffers (
+              pool->arena, pool->bufsize, conn)
           == 0)
         {
           conn->free_next = pool->free_list;
@@ -295,7 +298,8 @@ initialize_new_slots (T pool, size_t old_maxconns, size_t new_maxconns)
 static void
 close_excess_sockets (T pool, Socket_T *excess_sockets, size_t excess_count)
 {
-  /* volatile prevents clobbering when socketpool_close_socket_safe may use setjmp */
+  /* volatile prevents clobbering when socketpool_close_socket_safe may use
+   * setjmp */
   volatile size_t i;
   for (i = 0; i < excess_count; i++)
     {
@@ -351,9 +355,12 @@ handle_shrink_excess (T pool, size_t new_maxconns)
    * Log if mismatch detected for debugging but don't assert. */
   if (collected != excess_count)
     {
-      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+      SocketLog_emitf (SOCKET_LOG_DEBUG,
+                       SOCKET_LOG_COMPONENT,
                        "Shrink: expected %zu excess, found %zu (count=%zu)",
-                       excess_count, collected, pool->count);
+                       excess_count,
+                       collected,
+                       pool->count);
     }
 
   POOL_UNLOCK (pool);
@@ -406,9 +413,11 @@ SocketPool_resize (T pool, size_t new_maxconns)
    * MUST NOT call SocketPool_add/remove/get (will deadlock). */
   if (pre_cb)
     {
-      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+      SocketLog_emitf (SOCKET_LOG_DEBUG,
+                       SOCKET_LOG_COMPONENT,
                        "Pool pre-resize notification: %zu -> %zu connections",
-                       old_maxconns, new_maxconns);
+                       old_maxconns,
+                       new_maxconns);
       pre_cb (pool, old_maxconns, new_maxconns, pre_cb_data);
     }
 
@@ -424,8 +433,7 @@ SocketPool_resize (T pool, size_t new_maxconns)
   /* Rehash only valid slots: min of old and new size.
    * When growing, new slots are uninitialized until initialize_new_slots.
    * When shrinking, array was truncated to new_maxconns. */
-  valid_count
-      = old_maxconns < new_maxconns ? old_maxconns : new_maxconns;
+  valid_count = old_maxconns < new_maxconns ? old_maxconns : new_maxconns;
   rehash_active_connections (pool, valid_count);
   rebuild_active_list (pool, valid_count);
 
@@ -445,9 +453,11 @@ SocketPool_resize (T pool, size_t new_maxconns)
   /* Invoke resize callback outside lock to prevent deadlock */
   if (cb)
     {
-      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+      SocketLog_emitf (SOCKET_LOG_DEBUG,
+                       SOCKET_LOG_COMPONENT,
                        "Pool resized from %zu to %zu connections",
-                       old_maxconns, new_maxconns);
+                       old_maxconns,
+                       new_maxconns);
       cb (pool, old_maxconns, new_maxconns, cb_data);
     }
 }
@@ -498,8 +508,8 @@ SocketPool_prewarm (T pool, int percentage)
       /* Only prewarm truly free slots (inactive and no buffers allocated) */
       if (!c->active && !c->inbuf && !c->outbuf)
         {
-          if (SocketPool_connections_alloc_buffers (pool->arena, pool->bufsize,
-                                                    c)
+          if (SocketPool_connections_alloc_buffers (
+                  pool->arena, pool->bufsize, c)
               == 0)
             allocated++;
         }
@@ -556,8 +566,8 @@ SocketPool_count (T pool)
  *
  * Calls func for each active connection.
  * Thread-safe: Yes - holds mutex during iteration with periodic yielding
- * Performance: O(active_count) - iterates only active connections via linked list
- * Warning: Callback must not modify pool structure
+ * Performance: O(active_count) - iterates only active connections via linked
+ * list Warning: Callback must not modify pool structure
  *
  * Note: Yields lock every SOCKET_POOL_FOREACH_BATCH_SIZE iterations to
  * reduce contention on large pools.
@@ -607,7 +617,8 @@ SocketPool_foreach (T pool, void (*func) (Connection_T, void *), void *arg)
  *
  * Returns: First matching connection or NULL if none found
  * Thread-safe: Yes - holds mutex during search
- * Complexity: O(active_count) - iterates only active connections via linked list
+ * Complexity: O(active_count) - iterates only active connections via linked
+ * list
  */
 Connection_T
 SocketPool_find (T pool, SocketPool_Predicate predicate, void *userdata)
@@ -643,11 +654,15 @@ SocketPool_find (T pool, SocketPool_Predicate predicate, void *userdata)
  *
  * Returns: Number of matching connections found
  * Thread-safe: Yes - holds mutex during search
- * Complexity: O(active_count) - iterates only active connections via linked list
+ * Complexity: O(active_count) - iterates only active connections via linked
+ * list
  */
 size_t
-SocketPool_filter (T pool, SocketPool_Predicate predicate, void *userdata,
-                   Connection_T *results, size_t max_results)
+SocketPool_filter (T pool,
+                   SocketPool_Predicate predicate,
+                   void *userdata,
+                   Connection_T *results,
+                   size_t max_results)
 {
   size_t found = 0;
   Connection_T conn;
@@ -748,7 +763,10 @@ wrap_fd_as_socket (int newfd)
 {
   volatile Socket_T sock = NULL;
 
-  TRY { sock = Socket_new_from_fd (newfd); }
+  TRY
+  {
+    sock = Socket_new_from_fd (newfd);
+  }
   EXCEPT (Socket_Failed)
   {
     SAFE_CLOSE (newfd);
@@ -832,8 +850,11 @@ accept_one_connection (T pool, int server_fd, Socket_T *accepted, int count)
  * All accepted sockets are automatically added to the pool.
  */
 int
-SocketPool_accept_batch (T pool, Socket_T server, int max_accepts,
-                         size_t accepted_capacity, Socket_T *accepted)
+SocketPool_accept_batch (T pool,
+                         Socket_T server,
+                         int max_accepts,
+                         size_t accepted_capacity,
+                         Socket_T *accepted)
 {
   int count = 0;
   int limit;
@@ -845,7 +866,8 @@ SocketPool_accept_batch (T pool, Socket_T server, int max_accepts,
 
   if (max_accepts <= 0 || max_accepts > SOCKET_POOL_MAX_BATCH_ACCEPTS)
     {
-      SOCKET_ERROR_MSG ("Invalid max_accepts %d (must be 1-%d)", max_accepts,
+      SOCKET_ERROR_MSG ("Invalid max_accepts %d (must be 1-%d)",
+                        max_accepts,
                         SOCKET_POOL_MAX_BATCH_ACCEPTS);
       return 0;
     }
@@ -853,7 +875,8 @@ SocketPool_accept_batch (T pool, Socket_T server, int max_accepts,
   if ((size_t)max_accepts > accepted_capacity)
     {
       SOCKET_ERROR_MSG ("accepted_capacity %zu too small for max_accepts %d",
-                        accepted_capacity, max_accepts);
+                        accepted_capacity,
+                        max_accepts);
       return 0;
     }
 
@@ -870,7 +893,8 @@ SocketPool_accept_batch (T pool, Socket_T server, int max_accepts,
     return 0;
 
   size_t available = pool_maxconns - pool_count;
-  /* Clamp to max_accepts (already validated as <= SOCKET_POOL_MAX_BATCH_ACCEPTS) */
+  /* Clamp to max_accepts (already validated as <=
+   * SOCKET_POOL_MAX_BATCH_ACCEPTS) */
   limit = (available > (size_t)max_accepts) ? max_accepts : (int)available;
 
   server_fd = Socket_fd (server);
@@ -903,8 +927,12 @@ SocketPool_accept_batch (T pool, Socket_T server, int max_accepts,
  * Raises: SocketPool_Failed on invalid parameters
  */
 static void
-validate_prepare_params (T pool, SocketDNS_T dns, const char *host, int port,
-                         Socket_T *out_socket, Request_T *out_req)
+validate_prepare_params (T pool,
+                         SocketDNS_T dns,
+                         const char *host,
+                         int port,
+                         Socket_T *out_socket,
+                         Request_T *out_req)
 {
   if (!pool || !dns || !host || !SOCKET_VALID_PORT (port) || !out_socket
       || !out_req)
@@ -958,7 +986,9 @@ apply_pool_timeouts (Socket_T socket)
  * Raises: SocketPool_Failed on error
  */
 static Request_T
-start_async_connect (SocketDNS_T dns, Socket_T socket, const char *host,
+start_async_connect (SocketDNS_T dns,
+                     Socket_T socket,
+                     const char *host,
                      int port)
 {
   Request_T req = Socket_connect_async (dns, socket, host, port);
@@ -985,8 +1015,11 @@ start_async_connect (SocketDNS_T dns, Socket_T socket, const char *host,
  * SocketPool_add() on completion.
  */
 int
-SocketPool_prepare_connection (T pool, SocketDNS_T dns, const char *host,
-                               int port, Socket_T *out_socket,
+SocketPool_prepare_connection (T pool,
+                               SocketDNS_T dns,
+                               const char *host,
+                               int port,
+                               Socket_T *out_socket,
                                Request_T *out_req)
 {
   Socket_T socket = NULL;
@@ -1146,7 +1179,10 @@ get_or_create_dns (T pool)
 {
   if (!pool->dns)
     {
-      TRY { pool->dns = SocketDNS_new (); }
+      TRY
+      {
+        pool->dns = SocketDNS_new ();
+      }
       EXCEPT (SocketDNS_Failed)
       {
         RAISE_POOL_MSG (SocketPool_Failed,
@@ -1165,8 +1201,10 @@ get_or_create_dns (T pool)
  * @data: AsyncConnectContext
  */
 static void
-async_connect_dns_callback (Request_T req, struct addrinfo *result,
-                            int error, void *data)
+async_connect_dns_callback (Request_T req,
+                            struct addrinfo *result,
+                            int error,
+                            void *data)
 {
   AsyncConnectContext_T ctx = data;
   T pool = ctx->pool;
@@ -1232,7 +1270,9 @@ invoke_callback:;
  * Raises: SocketPool_Failed on invalid parameters
  */
 static void
-validate_connect_async_params (T pool, const char *host, int port,
+validate_connect_async_params (T pool,
+                               const char *host,
+                               int port,
                                SocketPool_ConnectCallback callback)
 {
   if (!pool || !host || !SOCKET_VALID_PORT (port))
@@ -1255,7 +1295,8 @@ validate_connect_async_params (T pool, const char *host, int port,
  * to pool's async_ctx list. Enforces SOCKET_POOL_MAX_ASYNC_PENDING limit.
  */
 static AsyncConnectContext_T
-setup_async_connection_context (T pool, Socket_T socket,
+setup_async_connection_context (T pool,
+                                Socket_T socket,
                                 SocketPool_ConnectCallback callback,
                                 void *data)
 {
@@ -1295,7 +1336,8 @@ setup_async_connection_context (T pool, Socket_T socket,
  * setup. If context was added to pool list, removes it. Always frees socket.
  */
 static void
-cleanup_failed_async_context (T pool, AsyncConnectContext_T ctx,
+cleanup_failed_async_context (T pool,
+                              AsyncConnectContext_T ctx,
                               Socket_T *socket)
 {
   if (ctx && ctx->socket)
@@ -1324,8 +1366,10 @@ cleanup_failed_async_context (T pool, AsyncConnectContext_T ctx,
  * lock before calling this function.
  */
 static Request_T
-initiate_dns_resolution (SocketDNS_T dns, const char *host, int port,
-                        AsyncConnectContext_T ctx)
+initiate_dns_resolution (SocketDNS_T dns,
+                         const char *host,
+                         int port,
+                         AsyncConnectContext_T ctx)
 {
   Request_T req;
 
@@ -1353,8 +1397,11 @@ initiate_dns_resolution (SocketDNS_T dns, const char *host, int port,
  * - Failure: callback(NULL, error_code, data)
  */
 Request_T
-SocketPool_connect_async (T pool, const char *host, int port,
-                          SocketPool_ConnectCallback callback, void *data)
+SocketPool_connect_async (T pool,
+                          const char *host,
+                          int port,
+                          SocketPool_ConnectCallback callback,
+                          void *data)
 {
   SocketDNS_T dns;
   volatile Socket_T socket = NULL;
@@ -1387,7 +1434,10 @@ SocketPool_connect_async (T pool, const char *host, int port,
    * The context is already safely linked into the pool's list. */
   POOL_UNLOCK (pool);
 
-  TRY { req = initiate_dns_resolution (dns, host, port, ctx); }
+  TRY
+  {
+    req = initiate_dns_resolution (dns, host, port, ctx);
+  }
   EXCEPT (SocketPool_Failed)
   {
     /* DNS resolve failed - clean up context (need lock for list removal) */
@@ -1476,7 +1526,8 @@ apply_syn_throttle (SocketSYN_Action action, SocketSYNProtect_T protect)
  * @protect: Protection instance (for config)
  */
 static void
-apply_syn_challenge (Socket_T socket, SocketSYN_Action action,
+apply_syn_challenge (Socket_T socket,
+                     SocketSYN_Action action,
                      SocketSYNProtect_T protect)
 {
   if (action != SYN_ACTION_CHALLENGE || protect == NULL || socket == NULL)
@@ -1486,11 +1537,15 @@ apply_syn_challenge (Socket_T socket, SocketSYN_Action action,
    * for per-connection challenge we apply it to accepted socket to
    * ensure data is received before proceeding. This is less effective
    * than listener-level defer but still adds a challenge. */
-  TRY { Socket_setdeferaccept (socket, SOCKET_SYN_DEFAULT_DEFER_SEC); }
+  TRY
+  {
+    Socket_setdeferaccept (socket, SOCKET_SYN_DEFAULT_DEFER_SEC);
+  }
   ELSE
   {
     /* Ignore failures - best effort protection */
-    SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+    SocketLog_emitf (SOCKET_LOG_DEBUG,
+                     SOCKET_LOG_COMPONENT,
                      "SYN challenge: TCP_DEFER_ACCEPT failed (continuing)");
   }
   END_TRY;
@@ -1607,8 +1662,11 @@ consume_rate_and_track_ip (T pool, const char *client_ip)
  * tokens, and tracks IPs as appropriate for each action.
  */
 static Socket_T
-handle_syn_action (T pool, SocketSYNProtect_T protect, Socket_T *client,
-                   SocketSYN_Action action, const char *client_ip)
+handle_syn_action (T pool,
+                   SocketSYNProtect_T protect,
+                   Socket_T *client,
+                   SocketSYN_Action action,
+                   const char *client_ip)
 {
   switch (action)
     {
@@ -1673,7 +1731,8 @@ handle_syn_action (T pool, SocketSYNProtect_T protect, Socket_T *client,
  * 5. Apply throttle/challenge actions as needed
  */
 Socket_T
-SocketPool_accept_protected (T pool, Socket_T server,
+SocketPool_accept_protected (T pool,
+                             Socket_T server,
                              SocketSYN_Action *action_out)
 {
   Socket_T client = NULL;

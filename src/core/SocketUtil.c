@@ -43,7 +43,7 @@ static const clockid_t preferred_clocks[] = {
 #endif
 };
 
-#define PREFERRED_CLOCKS_COUNT                                                \
+#define PREFERRED_CLOCKS_COUNT \
   (sizeof (preferred_clocks) / sizeof (preferred_clocks[0]))
 
 static int64_t
@@ -73,7 +73,8 @@ socket_warn_monotonic_fallback (void)
   if (!monotonic_fallback_warned)
     {
       monotonic_fallback_warned = 1;
-      SocketLog_emit (SOCKET_LOG_WARN, "Socket",
+      SocketLog_emit (SOCKET_LOG_WARN,
+                      "Socket",
                       "CLOCK_MONOTONIC unavailable, using CLOCK_REALTIME "
                       "(vulnerable to time manipulation)");
     }
@@ -94,7 +95,8 @@ Socket_get_monotonic_ms (void)
 
 #if SOCKET_MONOTONIC_STRICT
   /* Strict mode: fail instead of using CLOCK_REALTIME */
-  SocketLog_emit (SOCKET_LOG_ERROR, "Socket",
+  SocketLog_emit (SOCKET_LOG_ERROR,
+                  "Socket",
                   "No monotonic clock available and SOCKET_MONOTONIC_STRICT "
                   "is enabled");
   return 0;
@@ -177,8 +179,10 @@ SocketMetrics_increment (SocketMetric metric, unsigned long value)
 {
   if (!socketmetrics_legacy_is_valid (metric))
     {
-      SocketLog_emitf (SOCKET_LOG_WARN, "SocketMetrics",
-                       "Invalid metric %d in increment ignored", (int)metric);
+      SocketLog_emitf (SOCKET_LOG_WARN,
+                       "SocketMetrics",
+                       "Invalid metric %d in increment ignored",
+                       (int)metric);
       return;
     }
 
@@ -189,10 +193,12 @@ SocketMetrics_increment (SocketMetric metric, unsigned long value)
     }
   else
     {
-      SocketLog_emitf (SOCKET_LOG_WARN, "SocketMetrics",
+      SocketLog_emitf (SOCKET_LOG_WARN,
+                       "SocketMetrics",
                        "Unmapped legacy metric %s (%d) ignored; consider "
                        "migrating to new API",
-                       socketmetrics_legacy_names[metric], (int)metric);
+                       socketmetrics_legacy_names[metric],
+                       (int)metric);
     }
 }
 
@@ -203,7 +209,8 @@ SocketMetrics_getsnapshot (SocketMetricsSnapshot *snapshot)
   int i;
   if (snapshot == NULL)
     {
-      SocketLog_emit (SOCKET_LOG_WARN, "SocketMetrics",
+      SocketLog_emit (SOCKET_LOG_WARN,
+                      "SocketMetrics",
                       "NULL snapshot in getsnapshot ignored");
       return;
     }

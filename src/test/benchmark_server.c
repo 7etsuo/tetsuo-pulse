@@ -103,8 +103,11 @@ main (int argc, char **argv)
     // Check if bind succeeded (Socket_bind may return gracefully on errors)
     if (!Socket_isbound (server))
       {
-        fprintf (stderr, "Failed to bind to port %d (errno: %d - %s)\n", port,
-                 errno, strerror (errno));
+        fprintf (stderr,
+                 "Failed to bind to port %d (errno: %d - %s)\n",
+                 port,
+                 errno,
+                 strerror (errno));
         return 1;
       }
     Socket_listen (server, SOMAXCONN);
@@ -165,7 +168,10 @@ main (int argc, char **argv)
     fprintf (stderr, "Server error\n");
     return 1;
   }
-  FINALLY { Arena_dispose (&arena); }
+  FINALLY
+  {
+    Arena_dispose (&arena);
+  }
   END_TRY;
 
   return 0;

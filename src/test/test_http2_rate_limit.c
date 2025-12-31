@@ -32,33 +32,33 @@
 static int tests_run = 0;
 static int tests_passed = 0;
 
-#define TEST_ASSERT(cond, msg)                                                \
-  do                                                                          \
-    {                                                                         \
-      if (!(cond))                                                            \
-        {                                                                     \
-          fprintf (stderr, "FAIL: %s (%s:%d)\n", (msg), __FILE__, __LINE__);  \
-          return 0;                                                           \
-        }                                                                     \
-    }                                                                         \
+#define TEST_ASSERT(cond, msg)                                               \
+  do                                                                         \
+    {                                                                        \
+      if (!(cond))                                                           \
+        {                                                                    \
+          fprintf (stderr, "FAIL: %s (%s:%d)\n", (msg), __FILE__, __LINE__); \
+          return 0;                                                          \
+        }                                                                    \
+    }                                                                        \
   while (0)
 
-#define TEST_BEGIN(name)                                                      \
-  do                                                                          \
-    {                                                                         \
-      tests_run++;                                                            \
-      printf ("  Testing %s... ", #name);                                     \
-      fflush (stdout);                                                        \
-    }                                                                         \
+#define TEST_BEGIN(name)                  \
+  do                                      \
+    {                                     \
+      tests_run++;                        \
+      printf ("  Testing %s... ", #name); \
+      fflush (stdout);                    \
+    }                                     \
   while (0)
 
-#define TEST_PASS()                                                           \
-  do                                                                          \
-    {                                                                         \
-      tests_passed++;                                                         \
-      printf ("PASSED\n");                                                    \
-      return 1;                                                               \
-    }                                                                         \
+#define TEST_PASS()        \
+  do                       \
+    {                      \
+      tests_passed++;      \
+      printf ("PASSED\n"); \
+      return 1;            \
+    }                      \
   while (0)
 
 /* ============================================================================
@@ -75,15 +75,20 @@ test_config_sliding_window_defaults (void)
   SocketHTTP2_config_defaults (&config, HTTP2_ROLE_SERVER);
 
   /* Verify sliding window defaults are set correctly */
-  TEST_ASSERT (config.stream_window_size_ms == SOCKETHTTP2_STREAM_WINDOW_SIZE_MS,
+  TEST_ASSERT (config.stream_window_size_ms
+                   == SOCKETHTTP2_STREAM_WINDOW_SIZE_MS,
                "stream_window_size_ms should match default");
-  TEST_ASSERT (config.stream_max_per_window == SOCKETHTTP2_STREAM_MAX_PER_WINDOW,
+  TEST_ASSERT (config.stream_max_per_window
+                   == SOCKETHTTP2_STREAM_MAX_PER_WINDOW,
                "stream_max_per_window should match default");
-  TEST_ASSERT (config.stream_burst_threshold == SOCKETHTTP2_STREAM_BURST_THRESHOLD,
+  TEST_ASSERT (config.stream_burst_threshold
+                   == SOCKETHTTP2_STREAM_BURST_THRESHOLD,
                "stream_burst_threshold should match default");
-  TEST_ASSERT (config.stream_burst_interval_ms == SOCKETHTTP2_STREAM_BURST_INTERVAL_MS,
+  TEST_ASSERT (config.stream_burst_interval_ms
+                   == SOCKETHTTP2_STREAM_BURST_INTERVAL_MS,
                "stream_burst_interval_ms should match default");
-  TEST_ASSERT (config.stream_churn_threshold == SOCKETHTTP2_STREAM_CHURN_THRESHOLD,
+  TEST_ASSERT (config.stream_churn_threshold
+                   == SOCKETHTTP2_STREAM_CHURN_THRESHOLD,
                "stream_churn_threshold should match default");
 
   TEST_PASS ();
@@ -98,9 +103,11 @@ test_config_sliding_window_client (void)
   SocketHTTP2_config_defaults (&config, HTTP2_ROLE_CLIENT);
 
   /* Client should have same rate limit defaults as server */
-  TEST_ASSERT (config.stream_window_size_ms == SOCKETHTTP2_STREAM_WINDOW_SIZE_MS,
+  TEST_ASSERT (config.stream_window_size_ms
+                   == SOCKETHTTP2_STREAM_WINDOW_SIZE_MS,
                "Client stream_window_size_ms");
-  TEST_ASSERT (config.stream_max_per_window == SOCKETHTTP2_STREAM_MAX_PER_WINDOW,
+  TEST_ASSERT (config.stream_max_per_window
+                   == SOCKETHTTP2_STREAM_MAX_PER_WINDOW,
                "Client stream_max_per_window");
 
   TEST_PASS ();
@@ -195,9 +202,11 @@ test_timewindow_sliding (void)
     }
 
   /* At 1050ms, we should have: current=5, previous=10, with some decay */
-  uint32_t count_second_window = TimeWindow_effective_count (&window, now_ms + 1050);
+  uint32_t count_second_window
+      = TimeWindow_effective_count (&window, now_ms + 1050);
 
-  /* The effective count should include some contribution from the previous window */
+  /* The effective count should include some contribution from the previous
+   * window */
   TEST_ASSERT (count_second_window >= 5,
                "Count should include current window events");
   TEST_ASSERT (count_second_window <= 15,
@@ -225,8 +234,7 @@ test_timewindow_burst_detection (void)
     }
 
   uint32_t count = TimeWindow_effective_count (&burst_window, now_ms + 600);
-  TEST_ASSERT (count >= burst_threshold,
-               "Burst should exceed threshold");
+  TEST_ASSERT (count >= burst_threshold, "Burst should exceed threshold");
 
   TEST_PASS ();
 }
@@ -250,8 +258,7 @@ test_timewindow_churn_detection (void)
     }
 
   uint32_t count = TimeWindow_effective_count (&churn_window, now_ms + 12000);
-  TEST_ASSERT (count >= churn_threshold,
-               "Churn count should exceed threshold");
+  TEST_ASSERT (count >= churn_threshold, "Churn count should exceed threshold");
 
   TEST_PASS ();
 }
@@ -309,7 +316,8 @@ test_cve_2023_44487_constants (void)
                "RST rate limit should restrict resets");
 
   /* Stream churn threshold should catch rapid reset patterns */
-  TEST_ASSERT (SOCKETHTTP2_STREAM_CHURN_THRESHOLD < SOCKETHTTP2_STREAM_MAX_PER_WINDOW,
+  TEST_ASSERT (SOCKETHTTP2_STREAM_CHURN_THRESHOLD
+                   < SOCKETHTTP2_STREAM_MAX_PER_WINDOW,
                "Churn threshold should be stricter than total window limit");
 
   TEST_PASS ();

@@ -56,8 +56,10 @@ typedef enum SocketLogLevel
  * @param message Log message.
  * @see SocketLog_setcallback() for registration.
  */
-typedef void (*SocketLogCallback) (void *userdata, SocketLogLevel level,
-                                   const char *component, const char *message);
+typedef void (*SocketLogCallback) (void *userdata,
+                                   SocketLogLevel level,
+                                   const char *component,
+                                   const char *message);
 
 /**
  * @brief Register a custom callback for all library log emissions.
@@ -105,7 +107,8 @@ const char *SocketLog_levelname (SocketLogLevel level);
  *
  * @threadsafe Yes
  */
-void SocketLog_emit (SocketLogLevel level, const char *component,
+void SocketLog_emit (SocketLogLevel level,
+                     const char *component,
                      const char *message);
 
 /**
@@ -120,9 +123,10 @@ void SocketLog_emit (SocketLogLevel level, const char *component,
  * @warning fmt must be a compile-time literal to prevent format string attacks.
  * @threadsafe Yes
  */
-void SocketLog_emitf (SocketLogLevel level, const char *component,
-                      const char *fmt, ...)
-    __attribute__ ((format (printf, 3, 4)));
+void SocketLog_emitf (SocketLogLevel level,
+                      const char *component,
+                      const char *fmt,
+                      ...) __attribute__ ((format (printf, 3, 4)));
 
 /**
  * @brief Emit formatted log message using va_list.
@@ -135,9 +139,10 @@ void SocketLog_emitf (SocketLogLevel level, const char *component,
  *
  * @threadsafe Yes
  */
-void SocketLog_emitfv (SocketLogLevel level, const char *component,
-                       const char *fmt, va_list args)
-    __attribute__ ((format (printf, 3, 0)));
+void SocketLog_emitfv (SocketLogLevel level,
+                       const char *component,
+                       const char *fmt,
+                       va_list args) __attribute__ ((format (printf, 3, 0)));
 
 /**
  * @brief Configure global minimum log level threshold.
@@ -184,27 +189,27 @@ extern SocketLogLevel SocketLog_getlevel (void);
  */
 
 /* Log at TRACE level (most verbose, detailed tracing) */
-#define SOCKET_LOG_TRACE_MSG(fmt, ...)                                        \
+#define SOCKET_LOG_TRACE_MSG(fmt, ...) \
   SocketLog_emitf (SOCKET_LOG_TRACE, SOCKET_LOG_COMPONENT, fmt, ##__VA_ARGS__)
 
 /* Log at DEBUG level (debugging information) */
-#define SOCKET_LOG_DEBUG_MSG(fmt, ...)                                        \
+#define SOCKET_LOG_DEBUG_MSG(fmt, ...) \
   SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT, fmt, ##__VA_ARGS__)
 
 /* Log at INFO level (normal operational messages) */
-#define SOCKET_LOG_INFO_MSG(fmt, ...)                                         \
+#define SOCKET_LOG_INFO_MSG(fmt, ...) \
   SocketLog_emitf (SOCKET_LOG_INFO, SOCKET_LOG_COMPONENT, fmt, ##__VA_ARGS__)
 
 /* Log at WARN level (warning conditions) */
-#define SOCKET_LOG_WARN_MSG(fmt, ...)                                         \
+#define SOCKET_LOG_WARN_MSG(fmt, ...) \
   SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT, fmt, ##__VA_ARGS__)
 
 /* Log at ERROR level (error conditions) */
-#define SOCKET_LOG_ERROR_MSG(fmt, ...)                                        \
+#define SOCKET_LOG_ERROR_MSG(fmt, ...) \
   SocketLog_emitf (SOCKET_LOG_ERROR, SOCKET_LOG_COMPONENT, fmt, ##__VA_ARGS__)
 
 /* Log at FATAL level (critical errors, typically before abort) */
-#define SOCKET_LOG_FATAL_MSG(fmt, ...)                                        \
+#define SOCKET_LOG_FATAL_MSG(fmt, ...) \
   SocketLog_emitf (SOCKET_LOG_FATAL, SOCKET_LOG_COMPONENT, fmt, ##__VA_ARGS__)
 
 /* ----------------------------------------------------------------------------
@@ -222,27 +227,27 @@ extern SocketLogLevel SocketLog_getlevel (void);
  */
 
 /* Log untrusted string at TRACE level */
-#define SOCKET_LOG_TRACE_SAFE(msg)                                            \
+#define SOCKET_LOG_TRACE_SAFE(msg) \
   SocketLog_emit (SOCKET_LOG_TRACE, SOCKET_LOG_COMPONENT, (msg))
 
 /* Log untrusted string at DEBUG level */
-#define SOCKET_LOG_DEBUG_SAFE(msg)                                            \
+#define SOCKET_LOG_DEBUG_SAFE(msg) \
   SocketLog_emit (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT, (msg))
 
 /* Log untrusted string at INFO level */
-#define SOCKET_LOG_INFO_SAFE(msg)                                             \
+#define SOCKET_LOG_INFO_SAFE(msg) \
   SocketLog_emit (SOCKET_LOG_INFO, SOCKET_LOG_COMPONENT, (msg))
 
 /* Log untrusted string at WARN level */
-#define SOCKET_LOG_WARN_SAFE(msg)                                             \
+#define SOCKET_LOG_WARN_SAFE(msg) \
   SocketLog_emit (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT, (msg))
 
 /* Log untrusted string at ERROR level */
-#define SOCKET_LOG_ERROR_SAFE(msg)                                            \
+#define SOCKET_LOG_ERROR_SAFE(msg) \
   SocketLog_emit (SOCKET_LOG_ERROR, SOCKET_LOG_COMPONENT, (msg))
 
 /* Log untrusted string at FATAL level */
-#define SOCKET_LOG_FATAL_SAFE(msg)                                            \
+#define SOCKET_LOG_FATAL_SAFE(msg) \
   SocketLog_emit (SOCKET_LOG_FATAL, SOCKET_LOG_COMPONENT, (msg))
 
 /* ----------------------------------------------------------------------------
@@ -273,7 +278,7 @@ extern SocketLogLevel SocketLog_getlevel (void);
  */
 typedef struct SocketLogContext
 {
-  char trace_id[SOCKET_LOG_ID_SIZE]; /**< Distributed trace ID (e.g., UUID) */
+  char trace_id[SOCKET_LOG_ID_SIZE];   /**< Distributed trace ID (e.g., UUID) */
   char request_id[SOCKET_LOG_ID_SIZE]; /**< Request-specific ID */
   int connection_fd; /**< Associated file descriptor (-1 if none) */
 } SocketLogContext;
@@ -354,10 +359,13 @@ typedef struct SocketLogField
  * @param field_count Number of fields.
  * @param context Thread logging context (may be NULL).
  */
-typedef void (*SocketLogStructuredCallback) (
-    void *userdata, SocketLogLevel level, const char *component,
-    const char *message, const SocketLogField *fields, size_t field_count,
-    const SocketLogContext *context);
+typedef void (*SocketLogStructuredCallback) (void *userdata,
+                                             SocketLogLevel level,
+                                             const char *component,
+                                             const char *message,
+                                             const SocketLogField *fields,
+                                             size_t field_count,
+                                             const SocketLogContext *context);
 
 /**
  * @brief Register callback for handling structured log emissions with fields.
@@ -408,8 +416,8 @@ extern void SocketLog_emit_structured (SocketLogLevel level,
  *                             SOCKET_LOG_FIELDS({"key1", "val1"},
  *                                               {"key2", "val2"}));
  */
-#define SOCKET_LOG_FIELDS(...)                                                \
-  (SocketLogField[]){ __VA_ARGS__ },                                          \
+#define SOCKET_LOG_FIELDS(...)       \
+  (SocketLogField[]){ __VA_ARGS__ }, \
       (sizeof ((SocketLogField[]){ __VA_ARGS__ }) / sizeof (SocketLogField))
 
 #endif /* SOCKETLOG_INCLUDED */

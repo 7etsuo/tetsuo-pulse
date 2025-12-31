@@ -49,10 +49,10 @@ struct ready_event
 
 struct T
 {
-  struct io_uring ring;          /* io_uring instance */
-  int maxevents;                 /* Maximum events per wait */
-  int last_nev;                  /* Valid events from last backend_wait */
-  struct ready_event *events;    /* Results array for backend_get_event */
+  struct io_uring ring;       /* io_uring instance */
+  int maxevents;              /* Maximum events per wait */
+  int last_nev;               /* Valid events from last backend_wait */
+  struct ready_event *events; /* Results array for backend_get_event */
 };
 #undef T
 
@@ -65,11 +65,8 @@ static const struct
 {
   unsigned poll_event;
   unsigned uring_flag;
-} poll_to_uring_map[] = {
-    { POLL_READ, POLLIN },
-    { POLL_WRITE, POLLOUT },
-    { 0, 0 }
-};
+} poll_to_uring_map[]
+    = { { POLL_READ, POLLIN }, { POLL_WRITE, POLLOUT }, { 0, 0 } };
 
 /**
  * @brief Mapping between io_uring poll flags and portable poll events.
@@ -78,13 +75,11 @@ static const struct
 {
   unsigned uring_flag;
   unsigned poll_flag;
-} uring_event_map[] = {
-    { POLLIN, POLL_READ },
-    { POLLOUT, POLL_WRITE },
-    { POLLERR, POLL_ERROR },
-    { POLLHUP, POLL_HANGUP },
-    { 0, 0 }
-};
+} uring_event_map[] = { { POLLIN, POLL_READ },
+                        { POLLOUT, POLL_WRITE },
+                        { POLLERR, POLL_ERROR },
+                        { POLLHUP, POLL_HANGUP },
+                        { 0, 0 } };
 
 /**
  * ms_to_kernel_timespec - Convert milliseconds to kernel timespec
@@ -379,8 +374,9 @@ backend_del (PollBackend_T backend, int fd)
  * the deadline. Returns 0 if deadline has passed (timeout expired).
  */
 static int
-calculate_remaining_timeout (int timeout_ms, int64_t deadline_ms,
-                              int64_t now_ms)
+calculate_remaining_timeout (int timeout_ms,
+                             int64_t deadline_ms,
+                             int64_t now_ms)
 {
   if (timeout_ms == 0)
     return 0; /* Non-blocking */
@@ -409,7 +405,8 @@ calculate_remaining_timeout (int timeout_ms, int64_t deadline_ms,
  * deadline expires during retry.
  */
 static int
-wait_for_cqe (PollBackend_T backend, int timeout_ms,
+wait_for_cqe (PollBackend_T backend,
+              int timeout_ms,
               struct io_uring_cqe **cqe_out)
 {
   struct __kernel_timespec ts;
@@ -588,7 +585,9 @@ backend_wait (PollBackend_T backend, int timeout_ms)
  * Returns: 0 on success, -1 if index out of valid range.
  */
 int
-backend_get_event (const PollBackend_T backend, int index, int *fd_out,
+backend_get_event (const PollBackend_T backend,
+                   int index,
+                   int *fd_out,
                    unsigned *events_out)
 {
   assert (backend);

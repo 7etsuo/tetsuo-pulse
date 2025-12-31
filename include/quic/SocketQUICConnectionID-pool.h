@@ -77,10 +77,11 @@ typedef struct SocketQUICConnectionIDEntry
   int is_used;      /**< Non-zero if currently in use for a path */
   uint64_t used_at; /**< Monotonic timestamp when last used (ms) */
 
-  struct SocketQUICConnectionIDEntry *hash_next;     /**< CID hash chain pointer */
-  struct SocketQUICConnectionIDEntry *seq_hash_next; /**< Sequence hash chain ptr */
-  struct SocketQUICConnectionIDEntry *list_next;     /**< Sequence list pointer */
-  struct SocketQUICConnectionIDEntry *list_prev;     /**< Sequence list pointer */
+  struct SocketQUICConnectionIDEntry *hash_next; /**< CID hash chain pointer */
+  struct SocketQUICConnectionIDEntry
+      *seq_hash_next;                            /**< Sequence hash chain ptr */
+  struct SocketQUICConnectionIDEntry *list_next; /**< Sequence list pointer */
+  struct SocketQUICConnectionIDEntry *list_prev; /**< Sequence list pointer */
 
 } SocketQUICConnectionIDEntry_T;
 
@@ -103,12 +104,12 @@ typedef struct SocketQUICConnectionIDPool
   SocketQUICConnectionIDEntry_T *list_head; /**< First entry by sequence */
   SocketQUICConnectionIDEntry_T *list_tail; /**< Last entry by sequence */
 
-  uint64_t next_sequence;       /**< Next sequence number to assign */
-  uint64_t retire_prior_to;     /**< Current retire prior to value */
-  size_t active_count;          /**< Number of non-retired entries */
-  size_t total_count;           /**< Total entries including retired */
-  size_t peer_limit;            /**< Peer's active_connection_id_limit */
-  uint32_t hash_seed;           /**< Random seed for hash function */
+  uint64_t next_sequence;   /**< Next sequence number to assign */
+  uint64_t retire_prior_to; /**< Current retire prior to value */
+  size_t active_count;      /**< Number of non-retired entries */
+  size_t total_count;       /**< Total entries including retired */
+  size_t peer_limit;        /**< Peer's active_connection_id_limit */
+  uint32_t hash_seed;       /**< Random seed for hash function */
 
 } *SocketQUICConnectionIDPool_T;
 
@@ -117,14 +118,14 @@ typedef struct SocketQUICConnectionIDPool
  */
 typedef enum
 {
-  QUIC_CONNID_POOL_OK = 0,       /**< Operation succeeded */
-  QUIC_CONNID_POOL_ERROR_NULL,   /**< NULL pointer argument */
-  QUIC_CONNID_POOL_ERROR_FULL,   /**< Pool at peer's limit */
-  QUIC_CONNID_POOL_ERROR_DUP,    /**< Duplicate connection ID */
-  QUIC_CONNID_POOL_ERROR_SEQ,    /**< Invalid sequence number */
-  QUIC_CONNID_POOL_ERROR_LIMIT,  /**< Limit exceeded */
-  QUIC_CONNID_POOL_ERROR_CHAIN,  /**< Hash chain too long (DoS) */
-  QUIC_CONNID_POOL_NOT_FOUND     /**< Connection ID not in pool */
+  QUIC_CONNID_POOL_OK = 0,      /**< Operation succeeded */
+  QUIC_CONNID_POOL_ERROR_NULL,  /**< NULL pointer argument */
+  QUIC_CONNID_POOL_ERROR_FULL,  /**< Pool at peer's limit */
+  QUIC_CONNID_POOL_ERROR_DUP,   /**< Duplicate connection ID */
+  QUIC_CONNID_POOL_ERROR_SEQ,   /**< Invalid sequence number */
+  QUIC_CONNID_POOL_ERROR_LIMIT, /**< Limit exceeded */
+  QUIC_CONNID_POOL_ERROR_CHAIN, /**< Hash chain too long (DoS) */
+  QUIC_CONNID_POOL_NOT_FOUND    /**< Connection ID not in pool */
 } SocketQUICConnectionIDPool_Result;
 
 /* ============================================================================
@@ -150,8 +151,8 @@ SocketQUICConnectionIDPool_new (Arena_T arena, size_t peer_limit);
  *
  * @return Number of active connection IDs.
  */
-extern size_t
-SocketQUICConnectionIDPool_active_count (const SocketQUICConnectionIDPool_T pool);
+extern size_t SocketQUICConnectionIDPool_active_count (
+    const SocketQUICConnectionIDPool_T pool);
 
 /**
  * @brief Get the total number of connection IDs including retired.
@@ -160,8 +161,8 @@ SocketQUICConnectionIDPool_active_count (const SocketQUICConnectionIDPool_T pool
  *
  * @return Total connection ID count.
  */
-extern size_t
-SocketQUICConnectionIDPool_total_count (const SocketQUICConnectionIDPool_T pool);
+extern size_t SocketQUICConnectionIDPool_total_count (
+    const SocketQUICConnectionIDPool_T pool);
 
 /**
  * @brief Check if more connection IDs can be added.
@@ -194,7 +195,7 @@ SocketQUICConnectionIDPool_can_add (const SocketQUICConnectionIDPool_T pool);
  */
 extern SocketQUICConnectionIDPool_Result
 SocketQUICConnectionIDPool_add (SocketQUICConnectionIDPool_T pool,
-                                 const SocketQUICConnectionID_T *cid);
+                                const SocketQUICConnectionID_T *cid);
 
 /**
  * @brief Add a connection ID with explicit sequence number.
@@ -209,9 +210,10 @@ SocketQUICConnectionIDPool_add (SocketQUICConnectionIDPool_T pool,
  * @return QUIC_CONNID_POOL_OK on success, error code otherwise.
  */
 extern SocketQUICConnectionIDPool_Result
-SocketQUICConnectionIDPool_add_with_sequence (SocketQUICConnectionIDPool_T pool,
-                                               const SocketQUICConnectionID_T *cid,
-                                               uint64_t sequence);
+SocketQUICConnectionIDPool_add_with_sequence (
+    SocketQUICConnectionIDPool_T pool,
+    const SocketQUICConnectionID_T *cid,
+    uint64_t sequence);
 
 /**
  * @brief Look up a connection ID by its bytes.
@@ -224,7 +226,8 @@ SocketQUICConnectionIDPool_add_with_sequence (SocketQUICConnectionIDPool_T pool,
  */
 extern SocketQUICConnectionIDEntry_T *
 SocketQUICConnectionIDPool_lookup (const SocketQUICConnectionIDPool_T pool,
-                                    const uint8_t *id, size_t len);
+                                   const uint8_t *id,
+                                   size_t len);
 
 /**
  * @brief Look up a connection ID by sequence number.
@@ -235,8 +238,8 @@ SocketQUICConnectionIDPool_lookup (const SocketQUICConnectionIDPool_T pool,
  * @return Matching entry, or NULL if not found.
  */
 extern SocketQUICConnectionIDEntry_T *
-SocketQUICConnectionIDPool_lookup_sequence (const SocketQUICConnectionIDPool_T pool,
-                                             uint64_t sequence);
+SocketQUICConnectionIDPool_lookup_sequence (
+    const SocketQUICConnectionIDPool_T pool, uint64_t sequence);
 
 /**
  * @brief Remove a specific connection ID from the pool.
@@ -250,7 +253,8 @@ SocketQUICConnectionIDPool_lookup_sequence (const SocketQUICConnectionIDPool_T p
  */
 extern SocketQUICConnectionIDPool_Result
 SocketQUICConnectionIDPool_remove (SocketQUICConnectionIDPool_T pool,
-                                    const uint8_t *id, size_t len);
+                                   const uint8_t *id,
+                                   size_t len);
 
 /* ============================================================================
  * Retirement Functions (RFC 9000 §5.1.2)
@@ -274,8 +278,8 @@ SocketQUICConnectionIDPool_remove (SocketQUICConnectionIDPool_T pool,
  */
 extern SocketQUICConnectionIDPool_Result
 SocketQUICConnectionIDPool_retire_prior_to (SocketQUICConnectionIDPool_T pool,
-                                             uint64_t retire_prior_to,
-                                             size_t *retired_count);
+                                            uint64_t retire_prior_to,
+                                            size_t *retired_count);
 
 /**
  * @brief Retire a specific connection ID by sequence number.
@@ -290,7 +294,7 @@ SocketQUICConnectionIDPool_retire_prior_to (SocketQUICConnectionIDPool_T pool,
  */
 extern SocketQUICConnectionIDPool_Result
 SocketQUICConnectionIDPool_retire_sequence (SocketQUICConnectionIDPool_T pool,
-                                             uint64_t sequence);
+                                            uint64_t sequence);
 
 /**
  * @brief Remove all retired connection IDs from the pool.
@@ -304,7 +308,7 @@ SocketQUICConnectionIDPool_retire_sequence (SocketQUICConnectionIDPool_T pool,
  */
 extern SocketQUICConnectionIDPool_Result
 SocketQUICConnectionIDPool_purge_retired (SocketQUICConnectionIDPool_T pool,
-                                           size_t *removed_count);
+                                          size_t *removed_count);
 
 /**
  * @brief Get the current Retire Prior To value.
@@ -313,8 +317,8 @@ SocketQUICConnectionIDPool_purge_retired (SocketQUICConnectionIDPool_T pool,
  *
  * @return Current retire prior to value.
  */
-extern uint64_t
-SocketQUICConnectionIDPool_get_retire_prior_to (const SocketQUICConnectionIDPool_T pool);
+extern uint64_t SocketQUICConnectionIDPool_get_retire_prior_to (
+    const SocketQUICConnectionIDPool_T pool);
 
 /* ============================================================================
  * Iteration Functions
@@ -341,9 +345,10 @@ typedef int (*SocketQUICConnectionIDPool_Iterator) (
  *
  * @return Number of entries visited, or -1 on error.
  */
-extern int SocketQUICConnectionIDPool_foreach (SocketQUICConnectionIDPool_T pool,
-                                                SocketQUICConnectionIDPool_Iterator callback,
-                                                void *context);
+extern int SocketQUICConnectionIDPool_foreach (
+    SocketQUICConnectionIDPool_T pool,
+    SocketQUICConnectionIDPool_Iterator callback,
+    void *context);
 
 /**
  * @brief Get the next available connection ID for use.
@@ -370,8 +375,8 @@ SocketQUICConnectionIDPool_get_available (SocketQUICConnectionIDPool_T pool);
  *
  * @return Human-readable string.
  */
-extern const char *
-SocketQUICConnectionIDPool_result_string (SocketQUICConnectionIDPool_Result result);
+extern const char *SocketQUICConnectionIDPool_result_string (
+    SocketQUICConnectionIDPool_Result result);
 
 /**
  * @brief Check if the pool needs more connection IDs.
@@ -386,7 +391,7 @@ SocketQUICConnectionIDPool_result_string (SocketQUICConnectionIDPool_Result resu
  */
 extern int
 SocketQUICConnectionIDPool_needs_more (const SocketQUICConnectionIDPool_T pool,
-                                        size_t min_for_migrate);
+                                       size_t min_for_migrate);
 
 /** @} */
 

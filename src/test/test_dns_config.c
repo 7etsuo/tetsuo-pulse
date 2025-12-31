@@ -330,8 +330,7 @@ TEST (dns_config_empty_file_fallback)
 
   ASSERT_EQ (ret, 0);
   ASSERT_EQ (config.nameserver_count, 1);
-  ASSERT (strcmp (config.nameservers[0].address,
-                  DNS_CONFIG_FALLBACK_NAMESERVER)
+  ASSERT (strcmp (config.nameservers[0].address, DNS_CONFIG_FALLBACK_NAMESERVER)
           == 0);
 }
 

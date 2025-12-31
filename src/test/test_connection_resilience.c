@@ -66,7 +66,7 @@ TEST (integration_connection_state_preservation)
   ssize_t sent = Socket_send (client, test_msg, strlen (test_msg));
   ASSERT_EQ (sent, (ssize_t)strlen (test_msg));
 
-  char buf[1024] = {0};
+  char buf[1024] = { 0 };
   ssize_t received = Socket_recv (accepted, buf, sizeof (buf));
   ASSERT_EQ (received, sent);
   ASSERT_EQ (strcmp (buf, test_msg), 0);
@@ -128,7 +128,7 @@ TEST (integration_connection_recovery_manual_reconnect)
               if (sent > 0)
                 {
                   /* Receive on server */
-                  char buf[1024] = {0};
+                  char buf[1024] = { 0 };
                   ssize_t received = Socket_recv (accepted, buf, sizeof (buf));
                   if (received > 0)
                     {
@@ -138,8 +138,9 @@ TEST (integration_connection_recovery_manual_reconnect)
                 }
 
               /* Receive echo on client */
-              char client_buf[1024] = {0};
-              ssize_t client_received = Socket_recv (client, client_buf, sizeof (client_buf));
+              char client_buf[1024] = { 0 };
+              ssize_t client_received
+                  = Socket_recv (client, client_buf, sizeof (client_buf));
               ASSERT (client_received > 0);
 
               Socket_free (&accepted);

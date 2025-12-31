@@ -268,7 +268,8 @@ dfa_step (uint32_t *state, unsigned char byte, uint32_t *prev_out)
 }
 
 static void
-update_sequence_tracking (SocketUTF8_State *state, uint32_t prev_state,
+update_sequence_tracking (SocketUTF8_State *state,
+                          uint32_t prev_state,
                           uint32_t curr_state)
 {
   if (prev_state == UTF8_STATE_ACCEPT && curr_state != UTF8_STATE_ACCEPT)
@@ -406,7 +407,8 @@ get_current_status (uint32_t state)
 }
 
 SocketUTF8_Result
-SocketUTF8_update (SocketUTF8_State *state, const unsigned char *data,
+SocketUTF8_update (SocketUTF8_State *state,
+                   const unsigned char *data,
                    size_t len)
 {
   if (!state)
@@ -529,8 +531,8 @@ SocketUTF8_encode (uint32_t codepoint, unsigned char *output)
       temp_cp >>= 6;
       pos--;
     }
-  output[0] = (unsigned char)(utf8_lead_start[len]
-                              | (temp_cp & utf8_lead_mask[len]));
+  output[0]
+      = (unsigned char)(utf8_lead_start[len] | (temp_cp & utf8_lead_mask[len]));
 
   return len;
 }
@@ -650,7 +652,9 @@ done:
 }
 
 SocketUTF8_Result
-SocketUTF8_decode (const unsigned char *data, size_t len, uint32_t *codepoint,
+SocketUTF8_decode (const unsigned char *data,
+                   size_t len,
+                   uint32_t *codepoint,
                    size_t *consumed)
 {
   uint32_t cp = 0;
@@ -716,7 +720,8 @@ SocketUTF8_decode (const unsigned char *data, size_t len, uint32_t *codepoint,
 }
 
 SocketUTF8_Result
-SocketUTF8_count_codepoints (const unsigned char *data, size_t len,
+SocketUTF8_count_codepoints (const unsigned char *data,
+                             size_t len,
                              size_t *count)
 {
   if (!count)

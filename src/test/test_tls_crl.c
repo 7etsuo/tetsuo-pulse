@@ -54,7 +54,9 @@ typedef struct
 
 /* Test CRL refresh callback */
 static void
-test_crl_callback (SocketTLSContext_T ctx, const char *path, int success,
+test_crl_callback (SocketTLSContext_T ctx,
+                   const char *path,
+                   int success,
                    void *user_data)
 {
   test_callback_data_t *data = (test_callback_data_t *)user_data;
@@ -71,7 +73,9 @@ test_crl_callback (SocketTLSContext_T ctx, const char *path, int success,
  * Creates a CA key and cert, then generates a CRL signed by that CA.
  */
 static int
-generate_test_crl (const char *crl_file, const char *ca_key, const char *ca_cert)
+generate_test_crl (const char *crl_file,
+                   const char *ca_key,
+                   const char *ca_cert)
 {
   char cmd[2048];
   const char *conf_file = "/tmp/openssl_crl_test.cnf";
@@ -82,21 +86,22 @@ generate_test_crl (const char *crl_file, const char *ca_key, const char *ca_cert
   if (!f)
     return 0;
 
-  fprintf (f, "[ca]\n"
-              "default_ca = CA_default\n"
-              "[CA_default]\n"
-              "database = /tmp/crl_test_index.txt\n"
-              "crlnumber = /tmp/crl_test_crlnumber\n"
-              "default_md = sha256\n"
-              "default_crl_days = 30\n"
-              "[req]\n"
-              "distinguished_name = req_dn\n"
-              "x509_extensions = v3_ca\n"
-              "[req_dn]\n"
-              "CN = Test CA\n"
-              "[v3_ca]\n"
-              "basicConstraints = CA:TRUE\n"
-              "keyUsage = keyCertSign, cRLSign\n");
+  fprintf (f,
+           "[ca]\n"
+           "default_ca = CA_default\n"
+           "[CA_default]\n"
+           "database = /tmp/crl_test_index.txt\n"
+           "crlnumber = /tmp/crl_test_crlnumber\n"
+           "default_md = sha256\n"
+           "default_crl_days = 30\n"
+           "[req]\n"
+           "distinguished_name = req_dn\n"
+           "x509_extensions = v3_ca\n"
+           "[req_dn]\n"
+           "CN = Test CA\n"
+           "[v3_ca]\n"
+           "basicConstraints = CA:TRUE\n"
+           "keyUsage = keyCertSign, cRLSign\n");
   fclose (f);
 
   /* Create empty index file */
@@ -113,24 +118,31 @@ generate_test_crl (const char *crl_file, const char *ca_key, const char *ca_cert
     }
 
   /* Generate CA key */
-  snprintf (cmd, sizeof (cmd), "openssl genrsa -out %s 2048 2>/dev/null",
-            ca_key);
+  snprintf (
+      cmd, sizeof (cmd), "openssl genrsa -out %s 2048 2>/dev/null", ca_key);
   if (system (cmd) != 0)
     goto fail;
 
   /* Generate self-signed CA certificate */
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl req -new -x509 -key %s -out %s -days 1 -nodes "
             "-subj '/CN=Test CA' -config %s -extensions v3_ca 2>/dev/null",
-            ca_key, ca_cert, conf_file);
+            ca_key,
+            ca_cert,
+            conf_file);
   if (system (cmd) != 0)
     goto fail;
 
   /* Generate CRL */
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl ca -gencrl -keyfile %s -cert %s -out %s "
             "-config %s 2>/dev/null",
-            ca_key, ca_cert, crl_file, conf_file);
+            ca_key,
+            ca_cert,
+            crl_file,
+            conf_file);
   if (system (cmd) != 0)
     goto fail;
 
@@ -155,8 +167,7 @@ fail:
 }
 
 static void
-cleanup_test_crl (const char *crl_file, const char *ca_key,
-                  const char *ca_cert)
+cleanup_test_crl (const char *crl_file, const char *ca_key, const char *ca_cert)
 {
   unlink (crl_file);
   unlink (ca_key);
@@ -207,7 +218,10 @@ TEST (crl_interval_validation_negative)
     {
       SocketTLSContext_set_crl_auto_refresh (ctx, crl_file, -1, NULL, NULL);
     }
-    EXCEPT (SocketTLS_Failed) { caught = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught, 1);
@@ -243,7 +257,10 @@ TEST (crl_interval_validation_below_minimum)
     {
       SocketTLSContext_set_crl_auto_refresh (ctx, crl_file, 30, NULL, NULL);
     }
-    EXCEPT (SocketTLS_Failed) { caught = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught, 1);
@@ -277,10 +294,13 @@ TEST (crl_interval_validation_above_maximum)
     /* Test 400 days (above maximum of 1 year) */
     TRY
     {
-      SocketTLSContext_set_crl_auto_refresh (ctx, crl_file, 400L * 24 * 3600,
-                                             NULL, NULL);
+      SocketTLSContext_set_crl_auto_refresh (
+          ctx, crl_file, 400L * 24 * 3600, NULL, NULL);
     }
-    EXCEPT (SocketTLS_Failed) { caught = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught, 1);
@@ -343,8 +363,14 @@ TEST (crl_error_nonexistent_file)
     ASSERT_NOT_NULL (ctx);
 
     /* Test loading non-existent file (should fail) */
-    TRY { SocketTLSContext_load_crl (ctx, "/nonexistent/crl/file.pem"); }
-    EXCEPT (SocketTLS_Failed) { caught = 1; }
+    TRY
+    {
+      SocketTLSContext_load_crl (ctx, "/nonexistent/crl/file.pem");
+    }
+    EXCEPT (SocketTLS_Failed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught, 1);
@@ -369,8 +395,14 @@ TEST (crl_path_security_traversal)
     ASSERT_NOT_NULL (ctx);
 
     /* Test path with .. (should fail due to traversal) */
-    TRY { SocketTLSContext_load_crl (ctx, "/tmp/../../../etc/passwd"); }
-    EXCEPT (SocketTLS_Failed) { caught = 1; }
+    TRY
+    {
+      SocketTLSContext_load_crl (ctx, "/tmp/../../../etc/passwd");
+    }
+    EXCEPT (SocketTLS_Failed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught, 1);
@@ -485,8 +517,14 @@ TEST (crl_file_size_limit)
     ASSERT ((size_t)written == oversize);
 
     /* Loading oversized file should fail */
-    TRY { SocketTLSContext_load_crl (ctx, temp_file); }
-    EXCEPT (SocketTLS_Failed) { caught = 1; }
+    TRY
+    {
+      SocketTLSContext_load_crl (ctx, temp_file);
+    }
+    EXCEPT (SocketTLS_Failed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught, 1);
@@ -507,7 +545,7 @@ TEST (crl_auto_refresh_with_callback)
   const char *crl_file = "/tmp/test_crl_callback.crl";
   const char *ca_key = "/tmp/test_crl_callback_ca.key";
   const char *ca_cert = "/tmp/test_crl_callback_ca.crt";
-  test_callback_data_t callback_data = {0};
+  test_callback_data_t callback_data = { 0 };
 
   if (!generate_test_crl (crl_file, ca_key, ca_cert))
     return; /* Skip if openssl not available */
@@ -518,9 +556,11 @@ TEST (crl_auto_refresh_with_callback)
     ASSERT_NOT_NULL (ctx);
 
     /* Configure auto-refresh with callback */
-    SocketTLSContext_set_crl_auto_refresh (
-        ctx, crl_file, SOCKET_TLS_CRL_MIN_REFRESH_INTERVAL, test_crl_callback,
-        &callback_data);
+    SocketTLSContext_set_crl_auto_refresh (ctx,
+                                           crl_file,
+                                           SOCKET_TLS_CRL_MIN_REFRESH_INTERVAL,
+                                           test_crl_callback,
+                                           &callback_data);
 
     /* Verify timing is set */
     long next_ms = SocketTLSContext_crl_next_refresh_ms (ctx);

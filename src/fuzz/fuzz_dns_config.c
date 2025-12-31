@@ -236,34 +236,45 @@ fuzz_config_limits (const uint8_t *data, size_t size)
   memset (content, 0, sizeof (content));
 
   /* Add too many nameservers */
-  for (int i = 0; i < DNS_CONFIG_MAX_NAMESERVERS + 2 && offset < sizeof (content) - 50; i++)
+  for (int i = 0;
+       i < DNS_CONFIG_MAX_NAMESERVERS + 2 && offset < sizeof (content) - 50;
+       i++)
     {
       /* Use fuzzer data for IP addresses */
       if (size >= 4)
         {
-          offset += snprintf (content + offset, sizeof (content) - offset,
+          offset += snprintf (content + offset,
+                              sizeof (content) - offset,
                               "nameserver %u.%u.%u.%u\n",
-                              data[i % size], data[(i + 1) % size],
-                              data[(i + 2) % size], data[(i + 3) % size]);
+                              data[i % size],
+                              data[(i + 1) % size],
+                              data[(i + 2) % size],
+                              data[(i + 3) % size]);
         }
     }
 
   /* Add too many search domains */
-  for (int i = 0; i < DNS_CONFIG_MAX_SEARCH_DOMAINS + 2 && offset < sizeof (content) - 50; i++)
+  for (int i = 0;
+       i < DNS_CONFIG_MAX_SEARCH_DOMAINS + 2 && offset < sizeof (content) - 50;
+       i++)
     {
-      offset
-          += snprintf (content + offset, sizeof (content) - offset,
-                       "search domain%d.example.com\n", i);
+      offset += snprintf (content + offset,
+                          sizeof (content) - offset,
+                          "search domain%d.example.com\n",
+                          i);
     }
 
   /* Add options with extreme values */
   if (size >= 4 && offset < sizeof (content) - 100)
     {
-      uint32_t timeout = (data[0] << 24) | (data[1] << 16) | (data[2] << 8)
-                         | data[3];
-      offset += snprintf (content + offset, sizeof (content) - offset,
-                          "options timeout:%u attempts:%u ndots:%u\n", timeout,
-                          timeout, timeout);
+      uint32_t timeout
+          = (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3];
+      offset += snprintf (content + offset,
+                          sizeof (content) - offset,
+                          "options timeout:%u attempts:%u ndots:%u\n",
+                          timeout,
+                          timeout,
+                          timeout);
     }
 
   /* Parse the pathological config */

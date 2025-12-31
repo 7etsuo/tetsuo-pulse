@@ -192,8 +192,8 @@ h2stream_transport_send (void *ctx, const void *data, size_t len)
   if (stream->state != HTTP2_STREAM_STATE_OPEN
       && stream->state != HTTP2_STREAM_STATE_HALF_CLOSED_REMOTE)
     {
-      SOCKET_LOG_DEBUG_MSG ("Cannot send on stream %u in state %d", stream->id,
-                            stream->state);
+      SOCKET_LOG_DEBUG_MSG (
+          "Cannot send on stream %u in state %d", stream->id, stream->state);
       errno = EPIPE;
       return -1;
     }
@@ -213,7 +213,8 @@ h2stream_transport_send (void *ctx, const void *data, size_t len)
     {
       /* Flow control blocked - would need to wait for WINDOW_UPDATE */
       SOCKET_LOG_DEBUG_MSG (
-          "Stream %u send blocked by flow control (available=%d)", stream->id,
+          "Stream %u send blocked by flow control (available=%d)",
+          stream->id,
           available);
       errno = EAGAIN;
       return -1;
@@ -250,8 +251,8 @@ h2stream_transport_send (void *ctx, const void *data, size_t len)
       return -1;
     }
 
-  SOCKET_LOG_DEBUG_MSG ("Queued %zu bytes as DATA on stream %u", send_len,
-                        stream->id);
+  SOCKET_LOG_DEBUG_MSG (
+      "Queued %zu bytes as DATA on stream %u", send_len, stream->id);
 
   return (ssize_t)send_len;
 }
@@ -297,8 +298,8 @@ h2stream_transport_recv (void *ctx, void *buf, size_t len)
       return -1;
     }
 
-  SOCKET_LOG_DEBUG_MSG ("Read %zu bytes from stream %u recv buffer", read_len,
-                        stream->id);
+  SOCKET_LOG_DEBUG_MSG (
+      "Read %zu bytes from stream %u recv buffer", read_len, stream->id);
 
   /* Send WINDOW_UPDATE to replenish flow control window */
   if (http2_flow_update_recv (stream->conn, stream, (uint32_t)read_len) != 0)
@@ -332,8 +333,8 @@ h2stream_transport_close (void *ctx, int orderly)
         {
           memset (&header, 0, sizeof (header));
           header.length = 0;
-          header.type = 0x0;            /* DATA frame type */
-          header.flags = 0x1;           /* END_STREAM flag */
+          header.type = 0x0;  /* DATA frame type */
+          header.flags = 0x1; /* END_STREAM flag */
           header.stream_id = stream->id;
 
           if (http2_frame_send (conn, &header, NULL, 0) == 0)
@@ -408,7 +409,9 @@ SocketWS_Transport_socket (Arena_T arena, Socket_T socket, int is_client)
 
   SOCKET_LOG_DEBUG_MSG (
       "Created socket transport (fd=%d, is_client=%d, masking=%d)",
-      Socket_fd (socket), is_client, transport->requires_masking);
+      Socket_fd (socket),
+      is_client,
+      transport->requires_masking);
 
   return transport;
 }
@@ -435,8 +438,8 @@ SocketWS_Transport_h2stream (Arena_T arena, SocketHTTP2_Stream_T stream)
   transport->arena = arena;
   transport->requires_masking = 0; /* RFC 8441: No masking for HTTP/2 */
 
-  SOCKET_LOG_DEBUG_MSG (
-      "Created H2 stream transport (stream_id=%u, masking=0)", stream->id);
+  SOCKET_LOG_DEBUG_MSG ("Created H2 stream transport (stream_id=%u, masking=0)",
+                        stream->id);
 
   return transport;
 }
@@ -456,7 +459,8 @@ SocketWS_Transport_requires_masking (SocketWS_Transport_T transport)
 }
 
 ssize_t
-SocketWS_Transport_send (SocketWS_Transport_T transport, const void *data,
+SocketWS_Transport_send (SocketWS_Transport_T transport,
+                         const void *data,
                          size_t len)
 {
   assert (transport != NULL);

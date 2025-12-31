@@ -80,9 +80,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         uint64_t value;
         size_t consumed;
 
-        SocketQUICVarInt_Result res
-            = SocketQUICVarInt_decode (payload, payload_size, &value,
-                                       &consumed);
+        SocketQUICVarInt_Result res = SocketQUICVarInt_decode (
+            payload, payload_size, &value, &consumed);
 
         if (res == QUIC_VARINT_OK)
           {
@@ -137,9 +136,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                 uint64_t decoded;
                 size_t consumed;
 
-                SocketQUICVarInt_Result res
-                    = SocketQUICVarInt_decode (buf, encoded_len, &decoded,
-                                               &consumed);
+                SocketQUICVarInt_Result res = SocketQUICVarInt_decode (
+                    buf, encoded_len, &decoded, &consumed);
 
                 /* Must succeed and produce same value */
                 assert (res == QUIC_VARINT_OK);
@@ -161,10 +159,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             uint64_t value;
             size_t consumed;
 
-            SocketQUICVarInt_Result res
-                = SocketQUICVarInt_decode (payload + offset,
-                                           payload_size - offset, &value,
-                                           &consumed);
+            SocketQUICVarInt_Result res = SocketQUICVarInt_decode (
+                payload + offset, payload_size - offset, &value, &consumed);
 
             if (res != QUIC_VARINT_OK)
               break;

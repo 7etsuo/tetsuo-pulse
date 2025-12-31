@@ -41,18 +41,16 @@
 #include <string.h>
 
 /* HTTP request template with Authorization header */
-static const char *auth_request_template =
-  "GET /protected HTTP/1.1\r\n"
-  "Host: example.com\r\n"
-  "Authorization: %s\r\n"
-  "\r\n";
+static const char *auth_request_template = "GET /protected HTTP/1.1\r\n"
+                                           "Host: example.com\r\n"
+                                           "Authorization: %s\r\n"
+                                           "\r\n";
 
 /* HTTP response template with WWW-Authenticate header */
-static const char *auth_response_template =
-  "HTTP/1.1 401 Unauthorized\r\n"
-  "WWW-Authenticate: %s\r\n"
-  "Content-Length: 0\r\n"
-  "\r\n";
+static const char *auth_response_template = "HTTP/1.1 401 Unauthorized\r\n"
+                                            "WWW-Authenticate: %s\r\n"
+                                            "Content-Length: 0\r\n"
+                                            "\r\n";
 
 /**
  * Parse Basic authentication credentials
@@ -75,7 +73,8 @@ parse_basic_auth (const char *auth_header, Arena_T arena)
   if (!decoded)
     return;
 
-  int decode_result = SocketCrypto_base64_decode (b64_start, b64_len, (unsigned char *)decoded, decoded_len);
+  int decode_result = SocketCrypto_base64_decode (
+      b64_start, b64_len, (unsigned char *)decoded, decoded_len);
   if (decode_result > 0)
     {
       decoded[decode_result] = '\0';
@@ -108,7 +107,8 @@ parse_digest_auth (const char *auth_header, Arena_T arena)
     return;
 
   const char *params_start = auth_header + 7;
-  char *params_copy = Arena_alloc (arena, strlen (params_start) + 1, __FILE__, __LINE__);
+  char *params_copy
+      = Arena_alloc (arena, strlen (params_start) + 1, __FILE__, __LINE__);
   if (!params_copy)
     return;
 
@@ -140,16 +140,14 @@ parse_digest_auth (const char *auth_header, Arena_T arena)
             }
 
           /* Process known Digest parameters */
-          if (strcasecmp (key, "username") == 0 ||
-              strcasecmp (key, "realm") == 0 ||
-              strcasecmp (key, "nonce") == 0 ||
-              strcasecmp (key, "uri") == 0 ||
-              strcasecmp (key, "response") == 0 ||
-              strcasecmp (key, "algorithm") == 0 ||
-              strcasecmp (key, "cnonce") == 0 ||
-              strcasecmp (key, "opaque") == 0 ||
-              strcasecmp (key, "qop") == 0 ||
-              strcasecmp (key, "nc") == 0)
+          if (strcasecmp (key, "username") == 0
+              || strcasecmp (key, "realm") == 0
+              || strcasecmp (key, "nonce") == 0 || strcasecmp (key, "uri") == 0
+              || strcasecmp (key, "response") == 0
+              || strcasecmp (key, "algorithm") == 0
+              || strcasecmp (key, "cnonce") == 0
+              || strcasecmp (key, "opaque") == 0 || strcasecmp (key, "qop") == 0
+              || strcasecmp (key, "nc") == 0)
             {
               /* Validate parameter value */
               size_t value_len = strlen (value);
@@ -170,7 +168,8 @@ parse_www_authenticate (const char *auth_header, Arena_T arena)
   if (!auth_header)
     return;
 
-  char *header_copy = Arena_alloc (arena, strlen (auth_header) + 1, __FILE__, __LINE__);
+  char *header_copy
+      = Arena_alloc (arena, strlen (auth_header) + 1, __FILE__, __LINE__);
   if (!header_copy)
     return;
 
@@ -238,10 +237,10 @@ parse_www_authenticate (const char *auth_header, Arena_T arena)
                   while (*value && (*value == ' ' || *value == '\t'))
                     value++;
 
-                  if (strcasecmp (key, "realm") == 0 ||
-                      strcasecmp (key, "scope") == 0 ||
-                      strcasecmp (key, "error") == 0 ||
-                      strcasecmp (key, "error_description") == 0)
+                  if (strcasecmp (key, "realm") == 0
+                      || strcasecmp (key, "scope") == 0
+                      || strcasecmp (key, "error") == 0
+                      || strcasecmp (key, "error_description") == 0)
                     {
                       size_t param_len = strlen (value);
                       (void)param_len;
@@ -281,23 +280,29 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       {
         /* Build request with fuzzed Authorization header */
         char auth_value[4096];
-        size_t auth_len = size > sizeof (auth_value) - 1 ? sizeof (auth_value) - 1 : size;
+        size_t auth_len
+            = size > sizeof (auth_value) - 1 ? sizeof (auth_value) - 1 : size;
         memcpy (auth_value, data, auth_len);
         auth_value[auth_len] = '\0';
 
-        int request_len = snprintf (request_buffer, sizeof (request_buffer),
-                                   auth_request_template, auth_value);
+        int request_len = snprintf (request_buffer,
+                                    sizeof (request_buffer),
+                                    auth_request_template,
+                                    auth_value);
 
         if (request_len > 0 && (size_t)request_len < sizeof (request_buffer))
           {
-            SocketHTTP1_Parser_execute (parser, request_buffer, request_len, &consumed);
+            SocketHTTP1_Parser_execute (
+                parser, request_buffer, request_len, &consumed);
 
             if (SocketHTTP1_Parser_state (parser) >= HTTP1_STATE_BODY)
               {
-                const SocketHTTP_Request *request = SocketHTTP1_Parser_get_request (parser);
+                const SocketHTTP_Request *request
+                    = SocketHTTP1_Parser_get_request (parser);
                 if (request)
                   {
-                    const char *auth_header = SocketHTTP_Headers_get (request->headers, "Authorization");
+                    const char *auth_header = SocketHTTP_Headers_get (
+                        request->headers, "Authorization");
                     if (auth_header)
                       {
                         /* Test auth parsing functions */
@@ -317,23 +322,29 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     if (parser)
       {
         char auth_value[4096];
-        size_t auth_len = size > sizeof (auth_value) - 1 ? sizeof (auth_value) - 1 : size;
+        size_t auth_len
+            = size > sizeof (auth_value) - 1 ? sizeof (auth_value) - 1 : size;
         memcpy (auth_value, data, auth_len);
         auth_value[auth_len] = '\0';
 
-        int response_len = snprintf (response_buffer, sizeof (response_buffer),
-                                    auth_response_template, auth_value);
+        int response_len = snprintf (response_buffer,
+                                     sizeof (response_buffer),
+                                     auth_response_template,
+                                     auth_value);
 
         if (response_len > 0 && (size_t)response_len < sizeof (response_buffer))
           {
-            SocketHTTP1_Parser_execute (parser, response_buffer, response_len, &consumed);
+            SocketHTTP1_Parser_execute (
+                parser, response_buffer, response_len, &consumed);
 
             if (SocketHTTP1_Parser_state (parser) >= HTTP1_STATE_BODY)
               {
-                const SocketHTTP_Response *response = SocketHTTP1_Parser_get_response (parser);
+                const SocketHTTP_Response *response
+                    = SocketHTTP1_Parser_get_response (parser);
                 if (response)
                   {
-                    const char *www_auth = SocketHTTP_Headers_get (response->headers, "WWW-Authenticate");
+                    const char *www_auth = SocketHTTP_Headers_get (
+                        response->headers, "WWW-Authenticate");
                     if (www_auth)
                       {
                         parse_www_authenticate (www_auth, arena);
@@ -348,14 +359,19 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
     /* Test 3: Known valid authentication headers */
     const char *valid_auth_headers[] = {
-        "Basic dXNlcjpwYXNz",                          /* user:pass */
-        "Digest username=\"user\", realm=\"test\", nonce=\"abc123\", uri=\"/\", response=\"xyz789\"",
-        "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9", /* JWT-like */
-        "Negotiate TlRMTVNTUAADAAAAGAAYAIAAA",         /* NTLM */
-        "AWS4-HMAC-SHA256 Credential=AKIAIOSFODNN7EXAMPLE/20130524/us-east-1/s3/aws4_request, SignedHeaders=host;range;x-amz-date, Signature=example",
+      "Basic dXNlcjpwYXNz", /* user:pass */
+      "Digest username=\"user\", realm=\"test\", nonce=\"abc123\", uri=\"/\", "
+      "response=\"xyz789\"",
+      "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9", /* JWT-like */
+      "Negotiate TlRMTVNTUAADAAAAGAAYAIAAA",         /* NTLM */
+      "AWS4-HMAC-SHA256 "
+      "Credential=AKIAIOSFODNN7EXAMPLE/20130524/us-east-1/s3/aws4_request, "
+      "SignedHeaders=host;range;x-amz-date, Signature=example",
     };
 
-    for (size_t i = 0; i < sizeof (valid_auth_headers) / sizeof (valid_auth_headers[0]); i++)
+    for (size_t i = 0;
+         i < sizeof (valid_auth_headers) / sizeof (valid_auth_headers[0]);
+         i++)
       {
         parse_basic_auth (valid_auth_headers[i], arena);
         parse_digest_auth (valid_auth_headers[i], arena);
@@ -364,22 +380,23 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
     /* Test 4: Malformed authentication headers */
     const char *malformed_auth[] = {
-        "Basic ",                           /* Empty Basic */
-        "Basic invalid-base64!",            /* Invalid base64 */
-        "Basic dXNlcg==",                   /* Missing password */
-        "Digest ",                          /* Empty Digest */
-        "Digest username=",                 /* Incomplete Digest */
-        "Digest username=\"user",           /* Unclosed quote */
-        "Digest username=\"user\", invalid", /* Invalid parameter */
-        "Bearer ",                          /* Empty Bearer */
-        "Unknown scheme",                   /* Unknown scheme */
-        "Basic\r\nX-Injected: header",      /* Header injection */
-        "Basic dXNlcjpwYXNz\r\n",           /* CRLF in auth */
-        "",                                 /* Empty */
-        "Basic \xff\xfe",                   /* Invalid UTF-8 */
+      "Basic ",                            /* Empty Basic */
+      "Basic invalid-base64!",             /* Invalid base64 */
+      "Basic dXNlcg==",                    /* Missing password */
+      "Digest ",                           /* Empty Digest */
+      "Digest username=",                  /* Incomplete Digest */
+      "Digest username=\"user",            /* Unclosed quote */
+      "Digest username=\"user\", invalid", /* Invalid parameter */
+      "Bearer ",                           /* Empty Bearer */
+      "Unknown scheme",                    /* Unknown scheme */
+      "Basic\r\nX-Injected: header",       /* Header injection */
+      "Basic dXNlcjpwYXNz\r\n",            /* CRLF in auth */
+      "",                                  /* Empty */
+      "Basic \xff\xfe",                    /* Invalid UTF-8 */
     };
 
-    for (size_t i = 0; i < sizeof (malformed_auth) / sizeof (malformed_auth[0]); i++)
+    for (size_t i = 0; i < sizeof (malformed_auth) / sizeof (malformed_auth[0]);
+         i++)
       {
         parse_basic_auth (malformed_auth[i], arena);
         parse_digest_auth (malformed_auth[i], arena);
@@ -391,15 +408,20 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       {
         /* Test various base64 inputs for Basic auth */
         char b64_input[1024];
-        size_t b64_len = size > sizeof (b64_input) - 1 ? sizeof (b64_input) - 1 : size;
+        size_t b64_len
+            = size > sizeof (b64_input) - 1 ? sizeof (b64_input) - 1 : size;
         memcpy (b64_input, data, b64_len);
         b64_input[b64_len] = '\0';
 
-        char *decoded = Arena_alloc (arena, (b64_len * 3) / 4 + 4, __FILE__, __LINE__);
+        char *decoded
+            = Arena_alloc (arena, (b64_len * 3) / 4 + 4, __FILE__, __LINE__);
         if (decoded)
           {
-            int decode_result = SocketCrypto_base64_decode (b64_input, b64_len, (unsigned char *)decoded,
-                                                           (b64_len * 3) / 4 + 4);
+            int decode_result
+                = SocketCrypto_base64_decode (b64_input,
+                                              b64_len,
+                                              (unsigned char *)decoded,
+                                              (b64_len * 3) / 4 + 4);
             (void)decode_result;
           }
       }

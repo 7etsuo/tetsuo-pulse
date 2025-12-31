@@ -100,7 +100,10 @@ TEST (cov_socket_new_from_invalid_fd)
         Socket_T sock = Socket_new_from_fd (fd);
         (void)sock;
       }
-      EXCEPT (Socket_Failed) { raised = 1; }
+      EXCEPT (Socket_Failed)
+      {
+        raised = 1;
+      }
       END_TRY;
 
       ASSERT (raised == 1);
@@ -126,7 +129,10 @@ TEST (cov_socket_new_from_non_socket_fd)
     Socket_T sock = Socket_new_from_fd (fd);
     (void)sock;
   }
-  EXCEPT (Socket_Failed) { raised = 1; }
+  EXCEPT (Socket_Failed)
+  {
+    raised = 1;
+  }
   END_TRY;
 
   close (fds[0]);
@@ -149,7 +155,9 @@ TEST (cov_socket_bind_invalid_address)
      * This exercises the DNS/address validation code path. */
     Socket_bind (sock, "999.999.999.999", 0);
   }
-  EXCEPT (Socket_Failed) { /* Expected - invalid IP format */ }
+  EXCEPT (Socket_Failed)
+  { /* Expected - invalid IP format */
+  }
   END_TRY;
 
   if (sock)
@@ -169,7 +177,10 @@ TEST (cov_socket_connect_invalid_port)
     /* Try to connect to invalid port (0 or negative) */
     Socket_connect (sock, "127.0.0.1", 0);
   }
-  EXCEPT (Socket_Failed) { raised = 1; }
+  EXCEPT (Socket_Failed)
+  {
+    raised = 1;
+  }
   END_TRY;
 
   if (sock)
@@ -192,7 +203,10 @@ TEST (cov_socket_listen_not_bound)
     /* Try to listen without binding */
     Socket_listen (sock, 5);
   }
-  EXCEPT (Socket_Failed) { raised = 1; }
+  EXCEPT (Socket_Failed)
+  {
+    raised = 1;
+  }
   END_TRY;
 
   if (sock)
@@ -217,7 +231,10 @@ TEST (cov_socket_accept_not_listening)
     Socket_T client = Socket_accept (sock);
     (void)client;
   }
-  EXCEPT (Socket_Failed) { raised = 1; }
+  EXCEPT (Socket_Failed)
+  {
+    raised = 1;
+  }
   END_TRY;
 
   if (sock)
@@ -239,8 +256,14 @@ TEST (cov_socket_send_not_connected)
     sock = Socket_new (AF_INET, SOCK_STREAM, 0);
     Socket_send (sock, buf, sizeof (buf));
   }
-  EXCEPT (Socket_Failed) { raised = 1; }
-  EXCEPT (Socket_Closed) { raised = 1; }
+  EXCEPT (Socket_Failed)
+  {
+    raised = 1;
+  }
+  EXCEPT (Socket_Closed)
+  {
+    raised = 1;
+  }
   END_TRY;
 
   if (sock)
@@ -262,8 +285,14 @@ TEST (cov_socket_recv_not_connected)
     sock = Socket_new (AF_INET, SOCK_STREAM, 0);
     Socket_recv (sock, buf, sizeof (buf));
   }
-  EXCEPT (Socket_Failed) { raised = 1; }
-  EXCEPT (Socket_Closed) { raised = 1; }
+  EXCEPT (Socket_Failed)
+  {
+    raised = 1;
+  }
+  EXCEPT (Socket_Closed)
+  {
+    raised = 1;
+  }
   END_TRY;
 
   if (sock)
@@ -347,15 +376,16 @@ TEST (cov_socketdgram_send_recv)
     SocketDgram_setnonblocking (receiver);
     usleep (50000); /* Wait for packet */
 
-    ssize_t recvd
-        = SocketDgram_recvfrom (receiver, buf, sizeof (buf), from_addr,
-                                sizeof (from_addr), &from_port);
+    ssize_t recvd = SocketDgram_recvfrom (
+        receiver, buf, sizeof (buf), from_addr, sizeof (from_addr), &from_port);
     if (recvd > 0)
       {
         ASSERT (strcmp (buf, msg) == 0);
       }
   }
-  EXCEPT (SocketDgram_Failed) { /* May fail */ }
+  EXCEPT (SocketDgram_Failed)
+  { /* May fail */
+  }
   FINALLY
   {
     if (sender)
@@ -388,7 +418,9 @@ TEST (cov_socketdgram_broadcast)
     int ttl = SocketDgram_getttl (sock);
     ASSERT (ttl == 64);
   }
-  EXCEPT (SocketDgram_Failed) { /* May fail depending on OS */ }
+  EXCEPT (SocketDgram_Failed)
+  { /* May fail depending on OS */
+  }
   FINALLY
   {
     if (sock)
@@ -691,14 +723,24 @@ TEST (cov_socketpool_foreach)
     client = Socket_new (AF_INET, SOCK_STREAM, 0);
     Socket_setnonblocking (client);
 
-    TRY { Socket_connect (client, "127.0.0.1", port); }
-    EXCEPT (Socket_Failed) { /* Expected */ }
+    TRY
+    {
+      Socket_connect (client, "127.0.0.1", port);
+    }
+    EXCEPT (Socket_Failed)
+    { /* Expected */
+    }
     END_TRY;
 
     /* Accept */
     usleep (50000);
-    TRY { accepted = Socket_accept (server); }
-    EXCEPT (Socket_Failed) { /* May fail */ }
+    TRY
+    {
+      accepted = Socket_accept (server);
+    }
+    EXCEPT (Socket_Failed)
+    { /* May fail */
+    }
     END_TRY;
 
     if (accepted)
@@ -752,8 +794,14 @@ TEST (cov_socketreconnect_backoff_minimum_delay)
   policy.jitter = 0.5;
   policy.max_attempts = 2;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", 59960, &policy, NULL, NULL); }
-  EXCEPT (SocketReconnect_Failed) { return; }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", 59960, &policy, NULL, NULL);
+  }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    return;
+  }
   END_TRY;
 
   SocketReconnect_connect (conn);
@@ -782,8 +830,14 @@ TEST (cov_socketreconnect_max_delay_cap)
   policy.jitter = 0.0;
   policy.max_attempts = 3;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", 59959, &policy, NULL, NULL); }
-  EXCEPT (SocketReconnect_Failed) { return; }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", 59959, &policy, NULL, NULL);
+  }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    return;
+  }
   END_TRY;
 
   SocketReconnect_connect (conn);
@@ -804,8 +858,10 @@ static SocketReconnect_State last_transition_old = RECONNECT_DISCONNECTED;
 static SocketReconnect_State last_transition_new = RECONNECT_DISCONNECTED;
 
 static void
-tracking_callback (SocketReconnect_T conn, SocketReconnect_State old_state,
-                   SocketReconnect_State new_state, void *userdata)
+tracking_callback (SocketReconnect_T conn,
+                   SocketReconnect_State old_state,
+                   SocketReconnect_State new_state,
+                   void *userdata)
 {
   (void)conn;
   (void)userdata;
@@ -847,8 +903,8 @@ TEST (cov_socketreconnect_state_transitions)
 
   TRY
   {
-    conn = SocketReconnect_new ("127.0.0.1", port, &policy, tracking_callback,
-                                NULL);
+    conn = SocketReconnect_new (
+        "127.0.0.1", port, &policy, tracking_callback, NULL);
   }
   EXCEPT (SocketReconnect_Failed)
   {
@@ -911,7 +967,10 @@ TEST (cov_socketreconnect_send_recv_eof)
   policy.max_attempts = 3;
   policy.initial_delay_ms = 10;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -931,7 +990,9 @@ TEST (cov_socketreconnect_send_recv_eof)
         if (!accepted)
           accepted = Socket_accept (server);
       }
-      EXCEPT (Socket_Failed) { /* Ignore */ }
+      EXCEPT (Socket_Failed)
+      { /* Ignore */
+      }
       END_TRY;
       usleep (50000);
     }
@@ -979,7 +1040,10 @@ TEST (cov_socketreconnect_zero_jitter)
   policy.max_attempts = 2;
   policy.initial_delay_ms = 10;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", 59970, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", 59970, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     ASSERT (0);
@@ -1031,7 +1095,10 @@ TEST (cov_socketreconnect_unlimited_attempts)
   policy.max_attempts = 0; /* Unlimited */
   policy.initial_delay_ms = 10;
 
-  TRY { conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL); }
+  TRY
+  {
+    conn = SocketReconnect_new ("127.0.0.1", port, &policy, NULL, NULL);
+  }
   EXCEPT (SocketReconnect_Failed)
   {
     Socket_free (&server);
@@ -1108,7 +1175,9 @@ static atomic_int dns_callback_called = 0;
 static atomic_int dns_callback_error = 0;
 
 static void
-dns_test_callback (Request_T req, struct addrinfo *result, int error,
+dns_test_callback (Request_T req,
+                   struct addrinfo *result,
+                   int error,
                    void *data)
 {
   (void)req;
@@ -1148,7 +1217,9 @@ TEST (cov_dns_resolve_async)
         ASSERT (dns_callback_called == 1);
       }
   }
-  EXCEPT (SocketDNS_Failed) { /* May fail if DNS not available */ }
+  EXCEPT (SocketDNS_Failed)
+  { /* May fail if DNS not available */
+  }
   FINALLY
   {
     if (dns)
@@ -1170,9 +1241,8 @@ TEST (cov_dns_resolve_invalid)
     dns = SocketDNS_new ();
 
     /* Try to resolve invalid hostname */
-    Request_T req
-        = SocketDNS_resolve (dns, "this-host-should-not-exist.invalid", 80,
-                             dns_test_callback, NULL);
+    Request_T req = SocketDNS_resolve (
+        dns, "this-host-should-not-exist.invalid", 80, dns_test_callback, NULL);
     if (req)
       {
         /* Wait for callback */
@@ -1183,7 +1253,9 @@ TEST (cov_dns_resolve_invalid)
           }
       }
   }
-  EXCEPT (SocketDNS_Failed) { /* Expected for invalid host */ }
+  EXCEPT (SocketDNS_Failed)
+  { /* Expected for invalid host */
+  }
   FINALLY
   {
     if (dns)
@@ -1210,10 +1282,12 @@ generate_test_certs_cov (const char *cert_file, const char *key_file)
 {
   char cmd[1024];
   snprintf (
-      cmd, sizeof (cmd),
+      cmd,
+      sizeof (cmd),
       "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s -days 1 -nodes "
       "-subj '/CN=localhost' 2>/dev/null",
-      key_file, cert_file);
+      key_file,
+      cert_file);
   return system (cmd);
 }
 
@@ -1291,7 +1365,9 @@ TEST (cov_tls_session_cache_stats)
         (void)stores;
       }
   }
-  EXCEPT (SocketTLS_Failed) { /* May fail */ }
+  EXCEPT (SocketTLS_Failed)
+  { /* May fail */
+  }
   FINALLY
   {
     if (client_sock)
@@ -1342,15 +1418,19 @@ TEST (cov_tls_ocsp_response_too_large)
     unsigned char *large_response = malloc (LARGE_OCSP_RESPONSE_SIZE);
     if (large_response)
       {
-        memset (large_response, 0x30,
+        memset (large_response,
+                0x30,
                 LARGE_OCSP_RESPONSE_SIZE); /* ASN.1 SEQUENCE tag */
 
         TRY
         {
-          SocketTLSContext_set_ocsp_response (ctx, large_response,
-                                              LARGE_OCSP_RESPONSE_SIZE);
+          SocketTLSContext_set_ocsp_response (
+              ctx, large_response, LARGE_OCSP_RESPONSE_SIZE);
         }
-        EXCEPT (SocketTLS_Failed) { raised = 1; }
+        EXCEPT (SocketTLS_Failed)
+        {
+          raised = 1;
+        }
         END_TRY;
 
         free (large_response);
@@ -1380,13 +1460,23 @@ TEST (cov_tls_protocol_version_fallback)
   SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
 
   /* Set min protocol to TLS 1.2 */
-  TRY { SocketTLSContext_set_min_protocol (ctx, TLS1_2_VERSION); }
-  EXCEPT (SocketTLS_Failed) { /* May fail on some OpenSSL builds */ }
+  TRY
+  {
+    SocketTLSContext_set_min_protocol (ctx, TLS1_2_VERSION);
+  }
+  EXCEPT (SocketTLS_Failed)
+  { /* May fail on some OpenSSL builds */
+  }
   END_TRY;
 
   /* Set max protocol */
-  TRY { SocketTLSContext_set_max_protocol (ctx, TLS1_3_VERSION); }
-  EXCEPT (SocketTLS_Failed) { /* May fail */ }
+  TRY
+  {
+    SocketTLSContext_set_max_protocol (ctx, TLS1_3_VERSION);
+  }
+  EXCEPT (SocketTLS_Failed)
+  { /* May fail */
+  }
   END_TRY;
 
   SocketTLSContext_free (&ctx);

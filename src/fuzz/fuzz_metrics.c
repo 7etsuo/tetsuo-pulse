@@ -84,9 +84,9 @@ test_counter_increment (const uint8_t *data, size_t size)
   int metric_idx = data[0];
 
   /* Get increment value from fuzz data */
-  unsigned long increment_value
-      = ((unsigned long)data[1] << 24) | ((unsigned long)data[2] << 16)
-        | ((unsigned long)data[3] << 8) | data[4];
+  unsigned long increment_value = ((unsigned long)data[1] << 24)
+                                  | ((unsigned long)data[2] << 16)
+                                  | ((unsigned long)data[3] << 8) | data[4];
 
   /* Test valid metric indices */
   if (metric_idx < SOCKET_METRIC_COUNT)
@@ -142,7 +142,8 @@ test_metric_names (void)
     }
 
   /* Test out-of-bounds indices */
-  const char *invalid_name = SocketMetrics_name ((SocketMetric)SOCKET_METRIC_COUNT);
+  const char *invalid_name
+      = SocketMetrics_name ((SocketMetric)SOCKET_METRIC_COUNT);
   (void)invalid_name;
 
   invalid_name = SocketMetrics_name ((SocketMetric)(SOCKET_METRIC_COUNT + 1));
@@ -196,8 +197,8 @@ test_snapshots (const uint8_t *data, size_t size)
   (void)null_val;
 
   /* Test snapshot_value with invalid metric */
-  unsigned long long invalid_val
-      = SocketMetrics_snapshot_value (&snap2, (SocketMetric)SOCKET_METRIC_COUNT);
+  unsigned long long invalid_val = SocketMetrics_snapshot_value (
+      &snap2, (SocketMetric)SOCKET_METRIC_COUNT);
   (void)invalid_val;
 
   invalid_val = SocketMetrics_snapshot_value (&snap2, (SocketMetric)255);
@@ -314,7 +315,8 @@ test_operation_sequence (const uint8_t *data, size_t size)
         {
         case 0: /* Increment */
           {
-            unsigned long val = ((unsigned long)data[offset] << 8) | data[offset + 1];
+            unsigned long val
+                = ((unsigned long)data[offset] << 8) | data[offset + 1];
             offset += 2;
             SocketMetrics_increment ((SocketMetric)metric_idx, val + 1);
           }
@@ -348,8 +350,8 @@ test_operation_sequence (const uint8_t *data, size_t size)
           {
             SocketMetricsSnapshot snap;
             SocketMetrics_getsnapshot (&snap);
-            unsigned long long val
-                = SocketMetrics_snapshot_value (&snap, (SocketMetric)metric_idx);
+            unsigned long long val = SocketMetrics_snapshot_value (
+                &snap, (SocketMetric)metric_idx);
             (void)val;
             offset += 2;
           }
@@ -411,7 +413,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
      * ==================================================================== */
     SocketMetrics_legacy_reset ();
   }
-  EXCEPT (Arena_Failed) { /* Unlikely but handle */ }
+  EXCEPT (Arena_Failed)
+  { /* Unlikely but handle */
+  }
   END_TRY;
 
   return 0;

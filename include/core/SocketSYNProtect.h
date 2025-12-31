@@ -152,8 +152,8 @@ typedef struct SocketSYNProtect_Stats
  * @threadsafe Yes - creates independent instance
  * @complexity O(1)
  */
-extern T SocketSYNProtect_new (Arena_T arena,
-                               const SocketSYNProtect_Config *config);
+extern T
+SocketSYNProtect_new (Arena_T arena, const SocketSYNProtect_Config *config);
 
 /**
  * @brief Dispose of a SYN protection instance and release all resources.
@@ -183,10 +183,11 @@ extern void SocketSYNProtect_config_defaults (SocketSYNProtect_Config *config);
  * Raises: SocketSYNProtect_Failed if config contains invalid values
  *
  * @threadsafe Yes - mutex-protected atomic update
- * @complexity O(n) if max_tracked_ips reduced (triggers eviction), O(1) otherwise
+ * @complexity O(n) if max_tracked_ips reduced (triggers eviction), O(1)
+ * otherwise
  */
-extern void SocketSYNProtect_configure (T protect,
-                                        const SocketSYNProtect_Config *config);
+extern void
+SocketSYNProtect_configure (T protect, const SocketSYNProtect_Config *config);
 
 /**
  * @brief Evaluate client IP and determine protection action.
@@ -196,9 +197,11 @@ extern void SocketSYNProtect_configure (T protect,
  * scores, and applies appropriate protection actions.
  *
  * @param protect    Active protection instance
- * @param client_ip  Client IP address (IPv4/IPv6) or NULL/empty for unconditional ALLOW
- * @param state_out  Optional output for detailed IP state information (may be NULL)
- * Returns: Protection action: SYN_ACTION_ALLOW, THROTTLE, CHALLENGE, or BLOCK
+ * @param client_ip  Client IP address (IPv4/IPv6) or NULL/empty for
+ * unconditional ALLOW
+ * @param state_out  Optional output for detailed IP state information (may be
+ * NULL) Returns: Protection action: SYN_ACTION_ALLOW, THROTTLE, CHALLENGE, or
+ * BLOCK
  *
  * @threadsafe Yes - internal mutex protects all shared state modifications
  * @complexity O(1) average case - hash table lookups
@@ -228,15 +231,17 @@ extern void SocketSYNProtect_report_success (T protect, const char *client_ip);
  * @threadsafe Yes - mutex-protected update operation
  * @complexity O(1) - hash table lookup and atomic update
  */
-extern void SocketSYNProtect_report_failure (T protect, const char *client_ip,
+extern void SocketSYNProtect_report_failure (T protect,
+                                             const char *client_ip,
                                              int error_code);
 
 /**
  * @brief Add an IP address to the whitelist.
  *
  * @param protect  Active protection instance
- * @param ip       Null-terminated IP address string (IPv4: "192.168.1.1", IPv6: "2001:db8::1")
- * Returns: 1 on success (added or already present), 0 if whitelist is full
+ * @param ip       Null-terminated IP address string (IPv4: "192.168.1.1", IPv6:
+ * "2001:db8::1") Returns: 1 on success (added or already present), 0 if
+ * whitelist is full
  *
  * @threadsafe Yes - mutex-protected update operation
  * @complexity O(1) average case - hash table insertion
@@ -247,8 +252,9 @@ extern int SocketSYNProtect_whitelist_add (T protect, const char *ip);
  * @brief Add a CIDR range to the whitelist.
  *
  * @param protect  Active protection instance
- * @param cidr     CIDR notation string (e.g., "10.0.0.0/8", "192.168.1.0/24", "2001:db8::/32")
- * Returns: 1 on success (added or already present), 0 on parse error or whitelist full
+ * @param cidr     CIDR notation string (e.g., "10.0.0.0/8", "192.168.1.0/24",
+ * "2001:db8::/32") Returns: 1 on success (added or already present), 0 on parse
+ * error or whitelist full
  *
  * @threadsafe Yes - mutex-protected update operation
  * @complexity O(1)
@@ -293,14 +299,15 @@ extern void SocketSYNProtect_whitelist_clear (T protect);
  *
  * @param protect     Active protection instance
  * @param ip          Null-terminated IP address string (IPv4 or IPv6)
- * @param duration_ms Block duration: positive = temporary (auto-expires), 0 = permanent
- * Returns: 1 on success (added or duration extended), 0 if blacklist is full
+ * @param duration_ms Block duration: positive = temporary (auto-expires), 0 =
+ * permanent Returns: 1 on success (added or duration extended), 0 if blacklist
+ * is full
  *
  * @threadsafe Yes - mutex-protected update operation
  * @complexity O(1) average case - hash table insertion
  */
-extern int SocketSYNProtect_blacklist_add (T protect, const char *ip,
-                                           int duration_ms);
+extern int
+SocketSYNProtect_blacklist_add (T protect, const char *ip, int duration_ms);
 
 /**
  * @brief Remove an IP address from the blacklist.
@@ -336,7 +343,8 @@ extern int SocketSYNProtect_blacklist_contains (T protect, const char *ip);
 extern void SocketSYNProtect_blacklist_clear (T protect);
 
 /**
- * @brief Retrieve the current state and reputation metrics for a specific IP address.
+ * @brief Retrieve the current state and reputation metrics for a specific IP
+ * address.
  *
  * @param protect  Active protection instance
  * @param ip       IP address string to query (IPv4 or IPv6)
@@ -346,7 +354,8 @@ extern void SocketSYNProtect_blacklist_clear (T protect);
  * @threadsafe Yes - mutex-protected atomic snapshot
  * @complexity O(1) average case - hash table lookup
  */
-extern int SocketSYNProtect_get_ip_state (T protect, const char *ip,
+extern int SocketSYNProtect_get_ip_state (T protect,
+                                          const char *ip,
                                           SocketSYN_IPState *state);
 
 /**
@@ -377,7 +386,8 @@ extern void SocketSYNProtect_stats_reset (T protect);
  * @brief Convert SYN action enum to human-readable string.
  *
  * @param action  Action enum value to convert
- * Returns: Pointer to static null-terminated string ("ALLOW", "THROTTLE", "CHALLENGE", "BLOCK")
+ * Returns: Pointer to static null-terminated string ("ALLOW", "THROTTLE",
+ * "CHALLENGE", "BLOCK")
  *
  * @threadsafe Yes - pure function returning constant data
  * @complexity O(1)
@@ -388,7 +398,8 @@ extern const char *SocketSYNProtect_action_name (SocketSYN_Action action);
  * @brief Convert reputation enum to human-readable string.
  *
  * @param rep  Reputation enum value to convert
- * Returns: Pointer to static null-terminated string ("TRUSTED", "NEUTRAL", "SUSPECT", "HOSTILE")
+ * Returns: Pointer to static null-terminated string ("TRUSTED", "NEUTRAL",
+ * "SUSPECT", "HOSTILE")
  *
  * @threadsafe Yes - pure function returning constant data
  * @complexity O(1)
@@ -410,7 +421,8 @@ extern const char *SocketSYNProtect_reputation_name (SocketSYN_Reputation rep);
  * Returns: Number of IP entries cleaned up (evicted or expired)
  *
  * @threadsafe Yes - mutex-protected operation
- * @complexity O(n) worst case - must scan all tracked IPs, but typically much faster
+ * @complexity O(n) worst case - must scan all tracked IPs, but typically much
+ * faster
  */
 extern size_t SocketSYNProtect_cleanup (T protect);
 

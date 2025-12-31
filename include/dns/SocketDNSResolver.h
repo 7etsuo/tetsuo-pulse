@@ -225,9 +225,11 @@ typedef struct
  * @note Result is only valid during callback; copy if needed.
  * @note Do not call SocketDNSResolver_free() from within callback.
  */
-typedef void (*SocketDNSResolver_Callback) (SocketDNSResolver_Query_T query,
-                                            const SocketDNSResolver_Result *result,
-                                            int error, void *userdata);
+typedef void (*SocketDNSResolver_Callback) (
+    SocketDNSResolver_Query_T query,
+    const SocketDNSResolver_Result *result,
+    int error,
+    void *userdata);
 
 /**
  * @brief Cache statistics structure.
@@ -235,14 +237,14 @@ typedef void (*SocketDNSResolver_Callback) (SocketDNSResolver_Query_T query,
  */
 typedef struct
 {
-  uint64_t hits;        /**< Number of cache hits */
-  uint64_t misses;      /**< Number of cache misses */
-  uint64_t evictions;   /**< Number of LRU evictions */
-  uint64_t insertions;  /**< Number of cache insertions */
-  size_t current_size;  /**< Current number of cached entries */
-  size_t max_entries;   /**< Maximum cache entries */
-  int ttl_seconds;      /**< Default TTL for cached entries */
-  double hit_rate;      /**< Cache hit rate (0.0 - 1.0) */
+  uint64_t hits;       /**< Number of cache hits */
+  uint64_t misses;     /**< Number of cache misses */
+  uint64_t evictions;  /**< Number of LRU evictions */
+  uint64_t insertions; /**< Number of cache insertions */
+  size_t current_size; /**< Current number of cached entries */
+  size_t max_entries;  /**< Maximum cache entries */
+  int ttl_seconds;     /**< Default TTL for cached entries */
+  double hit_rate;     /**< Cache hit rate (0.0 - 1.0) */
 } SocketDNSResolver_CacheStats;
 
 /* Lifecycle functions */
@@ -305,8 +307,8 @@ extern int SocketDNSResolver_load_resolv_conf (T resolver);
  * SocketDNSResolver_add_nameserver(resolver, "2001:4860:4860::8888", 53);
  * @endcode
  */
-extern int SocketDNSResolver_add_nameserver (T resolver, const char *address,
-                                             int port);
+extern int
+SocketDNSResolver_add_nameserver (T resolver, const char *address, int port);
 
 /**
  * @brief Remove all configured nameservers.
@@ -375,9 +377,12 @@ extern void SocketDNSResolver_set_retries (T resolver, int max_retries);
  *                           my_callback, NULL);
  * @endcode
  */
-extern SocketDNSResolver_Query_T SocketDNSResolver_resolve (
-    T resolver, const char *hostname, int flags,
-    SocketDNSResolver_Callback callback, void *userdata);
+extern SocketDNSResolver_Query_T
+SocketDNSResolver_resolve (T resolver,
+                           const char *hostname,
+                           int flags,
+                           SocketDNSResolver_Callback callback,
+                           void *userdata);
 
 /**
  * @brief Resolve a hostname synchronously (blocking).
@@ -390,11 +395,14 @@ extern SocketDNSResolver_Query_T SocketDNSResolver_resolve (
  * @param hostname   Hostname to resolve (must not be NULL).
  * @param flags      Resolution flags (RESOLVER_FLAG_*).
  * @param timeout_ms Maximum time to wait in milliseconds.
- * @param result     Output result (caller must free with SocketDNSResolver_result_free).
+ * @param result     Output result (caller must free with
+ * SocketDNSResolver_result_free).
  * @return RESOLVER_OK on success, error code on failure.
  *
- * @note The result must be freed by the caller using SocketDNSResolver_result_free().
- * @note This function blocks the calling thread until resolution completes or times out.
+ * @note The result must be freed by the caller using
+ * SocketDNSResolver_result_free().
+ * @note This function blocks the calling thread until resolution completes or
+ * times out.
  *
  * @code{.c}
  * SocketDNSResolver_Result result = {0};
@@ -408,8 +416,10 @@ extern SocketDNSResolver_Query_T SocketDNSResolver_resolve (
  * }
  * @endcode
  */
-extern int SocketDNSResolver_resolve_sync (T resolver, const char *hostname,
-                                           int flags, int timeout_ms,
+extern int SocketDNSResolver_resolve_sync (T resolver,
+                                           const char *hostname,
+                                           int flags,
+                                           int timeout_ms,
                                            SocketDNSResolver_Result *result);
 
 /**
@@ -423,7 +433,8 @@ extern int SocketDNSResolver_resolve_sync (T resolver, const char *hostname,
  * @param query    Query handle to cancel.
  * @return 0 on success, -1 if query not found or already completed.
  */
-extern int SocketDNSResolver_cancel (T resolver, SocketDNSResolver_Query_T query);
+extern int
+SocketDNSResolver_cancel (T resolver, SocketDNSResolver_Query_T query);
 
 /**
  * @brief Get the hostname being resolved by a query.
@@ -432,7 +443,8 @@ extern int SocketDNSResolver_cancel (T resolver, SocketDNSResolver_Query_T query
  * @param query Query handle.
  * @return Hostname string (valid while query is pending).
  */
-extern const char *SocketDNSResolver_query_hostname (SocketDNSResolver_Query_T query);
+extern const char *
+SocketDNSResolver_query_hostname (SocketDNSResolver_Query_T query);
 
 /* Event loop integration */
 
@@ -522,8 +534,8 @@ extern void SocketDNSResolver_cache_set_max (T resolver, size_t max_entries);
  * @param resolver Resolver instance.
  * @param stats    Output statistics structure.
  */
-extern void SocketDNSResolver_cache_stats (T resolver,
-                                           SocketDNSResolver_CacheStats *stats);
+extern void
+SocketDNSResolver_cache_stats (T resolver, SocketDNSResolver_CacheStats *stats);
 
 /**
  * @brief Lookup hostname in L2 cache directly (no resolution).
@@ -534,13 +546,16 @@ extern void SocketDNSResolver_cache_stats (T resolver,
  *
  * @param resolver Resolver instance.
  * @param hostname Hostname to lookup.
- * @param result   Output result (caller must free with SocketDNSResolver_result_free).
- * @return RESOLVER_OK if cached entry found, RESOLVER_ERROR_NXDOMAIN if not cached.
+ * @param result   Output result (caller must free with
+ * SocketDNSResolver_result_free).
+ * @return RESOLVER_OK if cached entry found, RESOLVER_ERROR_NXDOMAIN if not
+ * cached.
  *
  * @note Does not trigger resolution - pure cache query.
  * @note TTL expiration is checked; expired entries return miss.
  */
-extern int SocketDNSResolver_cache_lookup (T resolver, const char *hostname,
+extern int SocketDNSResolver_cache_lookup (T resolver,
+                                           const char *hostname,
                                            SocketDNSResolver_Result *result);
 
 /* Utility functions */

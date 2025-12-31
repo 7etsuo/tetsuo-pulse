@@ -6,7 +6,8 @@
 
 /**
  * @file test_quic_new_token_frame.c
- * @brief Unit tests for QUIC NEW_TOKEN frame encoding/decoding (RFC 9000 §19.7).
+ * @brief Unit tests for QUIC NEW_TOKEN frame encoding/decoding (RFC 9000
+ * §19.7).
  */
 
 #include "quic/SocketQUICFrame.h"
@@ -37,8 +38,8 @@ TEST (frame_new_token_encode_basic)
   uint8_t decoded_token[128];
   size_t decoded_len = sizeof (decoded_token);
 
-  int res
-      = SocketQUICFrame_decode_new_token (buf, len, decoded_token, &decoded_len);
+  int res = SocketQUICFrame_decode_new_token (
+      buf, len, decoded_token, &decoded_len);
 
   ASSERT_EQ (0, res);
   ASSERT_EQ (token_len, decoded_len);
@@ -61,8 +62,9 @@ TEST (frame_new_token_encode_single_byte)
   uint8_t decoded_token[128];
   size_t decoded_len = sizeof (decoded_token);
 
-  ASSERT_EQ (0, SocketQUICFrame_decode_new_token (buf, len, decoded_token,
-                                                   &decoded_len));
+  ASSERT_EQ (
+      0,
+      SocketQUICFrame_decode_new_token (buf, len, decoded_token, &decoded_len));
   ASSERT_EQ (1, decoded_len);
   ASSERT_EQ ('x', decoded_token[0]);
 }
@@ -77,8 +79,8 @@ TEST (frame_new_token_encode_long_token)
   for (size_t i = 0; i < sizeof (token); i++)
     token[i] = (uint8_t)(i & 0xff);
 
-  len = SocketQUICFrame_encode_new_token (token, sizeof (token), buf,
-                                           sizeof (buf));
+  len = SocketQUICFrame_encode_new_token (
+      token, sizeof (token), buf, sizeof (buf));
 
   ASSERT (len > 0);
   ASSERT_EQ (QUIC_FRAME_NEW_TOKEN, buf[0]);
@@ -87,8 +89,9 @@ TEST (frame_new_token_encode_long_token)
   uint8_t decoded_token[256];
   size_t decoded_len = sizeof (decoded_token);
 
-  ASSERT_EQ (0, SocketQUICFrame_decode_new_token (buf, len, decoded_token,
-                                                   &decoded_len));
+  ASSERT_EQ (
+      0,
+      SocketQUICFrame_decode_new_token (buf, len, decoded_token, &decoded_len));
   ASSERT_EQ (sizeof (token), decoded_len);
   ASSERT (memcmp (decoded_token, token, sizeof (token)) == 0);
 }
@@ -110,9 +113,8 @@ TEST (frame_new_token_encode_buffer_too_small)
   const uint8_t token[100] = { 0 };
 
   /* Try to encode token larger than buffer */
-  size_t len
-      = SocketQUICFrame_encode_new_token (token, sizeof (token), buf,
-                                           sizeof (buf));
+  size_t len = SocketQUICFrame_encode_new_token (
+      token, sizeof (token), buf, sizeof (buf));
 
   ASSERT_EQ (0, len); /* Should fail gracefully */
 }
@@ -142,17 +144,17 @@ TEST (frame_new_token_roundtrip)
   size_t original_len = strlen ((const char *)original_token);
 
   /* Encode */
-  size_t encoded_len
-      = SocketQUICFrame_encode_new_token (original_token, original_len, buf,
-                                           sizeof (buf));
+  size_t encoded_len = SocketQUICFrame_encode_new_token (
+      original_token, original_len, buf, sizeof (buf));
   ASSERT (encoded_len > 0);
 
   /* Decode */
   uint8_t decoded_token[128];
   size_t decoded_len = sizeof (decoded_token);
 
-  ASSERT_EQ (0, SocketQUICFrame_decode_new_token (buf, encoded_len,
-                                                   decoded_token, &decoded_len));
+  ASSERT_EQ (0,
+             SocketQUICFrame_decode_new_token (
+                 buf, encoded_len, decoded_token, &decoded_len));
 
   /* Verify roundtrip */
   ASSERT_EQ (original_len, decoded_len);
@@ -201,21 +203,21 @@ TEST (frame_new_token_decode_null_params)
   size_t token_len = sizeof (token);
 
   /* NULL data */
-  ASSERT_EQ (-1, SocketQUICFrame_decode_new_token (NULL, sizeof (buf), token,
-                                                    &token_len));
+  ASSERT_EQ (
+      -1,
+      SocketQUICFrame_decode_new_token (NULL, sizeof (buf), token, &token_len));
 
   /* NULL token output */
-  ASSERT_EQ (-1,
-             SocketQUICFrame_decode_new_token (buf, sizeof (buf), NULL,
-                                                &token_len));
+  ASSERT_EQ (
+      -1,
+      SocketQUICFrame_decode_new_token (buf, sizeof (buf), NULL, &token_len));
 
   /* NULL token_len */
   ASSERT_EQ (-1,
              SocketQUICFrame_decode_new_token (buf, sizeof (buf), token, NULL));
 
   /* Zero length */
-  ASSERT_EQ (-1,
-             SocketQUICFrame_decode_new_token (buf, 0, token, &token_len));
+  ASSERT_EQ (-1, SocketQUICFrame_decode_new_token (buf, 0, token, &token_len));
 }
 
 TEST (frame_new_token_decode_output_buffer_too_small)
@@ -226,9 +228,8 @@ TEST (frame_new_token_decode_output_buffer_too_small)
   const uint8_t large_token[100] = { 0 };
 
   /* Encode large token */
-  size_t encoded_len = SocketQUICFrame_encode_new_token (large_token,
-                                                          sizeof (large_token),
-                                                          buf, sizeof (buf));
+  size_t encoded_len = SocketQUICFrame_encode_new_token (
+      large_token, sizeof (large_token), buf, sizeof (buf));
   ASSERT (encoded_len > 0);
 
   /* Try to decode into small buffer */
@@ -248,9 +249,8 @@ TEST (frame_new_token_varint_token_length)
     token[i] = (uint8_t)(i + 1);
 
   /* Encode token requiring 2-byte varint length (64-16383) */
-  size_t encoded_len
-      = SocketQUICFrame_encode_new_token (token, sizeof (token), buf,
-                                           sizeof (buf));
+  size_t encoded_len = SocketQUICFrame_encode_new_token (
+      token, sizeof (token), buf, sizeof (buf));
   ASSERT (encoded_len > 0);
 
   /* Verify the length field uses correct varint encoding */
@@ -259,9 +259,8 @@ TEST (frame_new_token_varint_token_length)
   /* Decode token length varint */
   uint64_t decoded_token_len;
   size_t consumed;
-  SocketQUICVarInt_Result res
-      = SocketQUICVarInt_decode (buf + 1, encoded_len - 1, &decoded_token_len,
-                                  &consumed);
+  SocketQUICVarInt_Result res = SocketQUICVarInt_decode (
+      buf + 1, encoded_len - 1, &decoded_token_len, &consumed);
 
   ASSERT_EQ (QUIC_VARINT_OK, res);
   ASSERT_EQ (sizeof (token), decoded_token_len);
@@ -270,8 +269,9 @@ TEST (frame_new_token_varint_token_length)
   uint8_t decoded_token[256];
   token_len = sizeof (decoded_token);
 
-  ASSERT_EQ (0, SocketQUICFrame_decode_new_token (buf, encoded_len,
-                                                   decoded_token, &token_len));
+  ASSERT_EQ (0,
+             SocketQUICFrame_decode_new_token (
+                 buf, encoded_len, decoded_token, &token_len));
   ASSERT_EQ (sizeof (token), token_len);
   ASSERT (memcmp (decoded_token, token, sizeof (token)) == 0);
 }
@@ -314,8 +314,8 @@ TEST (frame_new_token_encode_overflow_size_max)
    * This tests the overflow protection added to prevent:
    *   total_len = 1 + 8 + SIZE_MAX  (would overflow to small value)
    */
-  size_t len = SocketQUICFrame_encode_new_token (token, SIZE_MAX, buf,
-                                                  sizeof (buf));
+  size_t len
+      = SocketQUICFrame_encode_new_token (token, SIZE_MAX, buf, sizeof (buf));
 
   ASSERT_EQ (0, len); /* Should reject due to overflow check */
 }
@@ -329,8 +329,8 @@ TEST (frame_new_token_encode_overflow_near_size_max)
    * and token_len_varint (max 8):
    *   total_len = 1 + 8 + (SIZE_MAX - 5) = SIZE_MAX + 4 (overflows to 3)
    */
-  size_t len = SocketQUICFrame_encode_new_token (token, SIZE_MAX - 5, buf,
-                                                  sizeof (buf));
+  size_t len = SocketQUICFrame_encode_new_token (
+      token, SIZE_MAX - 5, buf, sizeof (buf));
 
   ASSERT_EQ (0, len); /* Should reject due to overflow check */
 }
@@ -351,8 +351,8 @@ TEST (frame_new_token_encode_overflow_boundary)
    * However, it will fail the varint encoding check because SIZE_MAX - 9
    * exceeds the maximum varint value (2^62 - 1).
    */
-  size_t len = SocketQUICFrame_encode_new_token (token, SIZE_MAX - 9, buf,
-                                                  sizeof (buf));
+  size_t len = SocketQUICFrame_encode_new_token (
+      token, SIZE_MAX - 9, buf, sizeof (buf));
 
   ASSERT_EQ (0, len); /* Should fail (either overflow or varint limit) */
 }
@@ -368,8 +368,8 @@ TEST (frame_new_token_encode_large_valid_token_len)
     token[i] = (uint8_t)(i & 0xff);
 
   /* This should succeed - large but valid token length */
-  len = SocketQUICFrame_encode_new_token (token, sizeof (token), buf,
-                                           sizeof (buf));
+  len = SocketQUICFrame_encode_new_token (
+      token, sizeof (token), buf, sizeof (buf));
 
   ASSERT (len > 0); /* Should succeed */
   ASSERT_EQ (QUIC_FRAME_NEW_TOKEN, buf[0]);
@@ -378,8 +378,9 @@ TEST (frame_new_token_encode_large_valid_token_len)
   uint8_t decoded_token[256];
   size_t decoded_len = sizeof (decoded_token);
 
-  ASSERT_EQ (0, SocketQUICFrame_decode_new_token (buf, len, decoded_token,
-                                                   &decoded_len));
+  ASSERT_EQ (
+      0,
+      SocketQUICFrame_decode_new_token (buf, len, decoded_token, &decoded_len));
   ASSERT_EQ (sizeof (token), decoded_len);
   ASSERT (memcmp (decoded_token, token, sizeof (token)) == 0);
 }

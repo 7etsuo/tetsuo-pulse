@@ -21,7 +21,8 @@
  * - Connection: Upgrade header validation
  * - Malformed HTTP request handling
  *
- * Build/Run: CC=clang cmake -DENABLE_FUZZING=ON .. && make fuzz_websocket_handshake
+ * Build/Run: CC=clang cmake -DENABLE_FUZZING=ON .. && make
+ * fuzz_websocket_handshake
  * ./fuzz_websocket_handshake corpus/websocket_handshake/ -fork=16 -max_len=8192
  */
 
@@ -39,22 +40,19 @@
 #include <strings.h>
 
 /* Valid WebSocket upgrade request template */
-static const char *ws_upgrade_template
-    = "GET /websocket HTTP/1.1\r\n"
-      "Host: example.com\r\n"
-      "Upgrade: websocket\r\n"
-      "Connection: Upgrade\r\n"
-      "Sec-WebSocket-Key: %s\r\n"
-      "Sec-WebSocket-Version: 13\r\n"
-      "Origin: http://example.com\r\n"
-      "\r\n";
+static const char *ws_upgrade_template = "GET /websocket HTTP/1.1\r\n"
+                                         "Host: example.com\r\n"
+                                         "Upgrade: websocket\r\n"
+                                         "Connection: Upgrade\r\n"
+                                         "Sec-WebSocket-Key: %s\r\n"
+                                         "Sec-WebSocket-Version: 13\r\n"
+                                         "Origin: http://example.com\r\n"
+                                         "\r\n";
 
 /* Common WebSocket keys for testing */
 static const char *valid_ws_keys[] = {
-  "dGhlIHNhbXBsZSBub25jZQ==",
-  "dGVzdA==",
-  "MTIzNDU2Nzg5MDEyMzQ1Ng==",
-  "QUJDREVGR0hJSktMTU5PUQ==",
+  "dGhlIHNhbXBsZSBub25jZQ==", "dGVzdA==",
+  "MTIzNDU2Nzg5MDEyMzQ1Ng==", "QUJDREVGR0hJSktMTU5PUQ==",
   "eHh4eHh4eHh4eHh4eHh4eA==",
 };
 
@@ -84,8 +82,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, &cfg, arena);
     if (parser)
       {
-        SocketHTTP1_Parser_execute (parser, (const char *)data, size,
-                                    &consumed);
+        SocketHTTP1_Parser_execute (
+            parser, (const char *)data, size, &consumed);
 
         if (SocketHTTP1_Parser_state (parser) >= HTTP1_STATE_BODY)
           {
@@ -109,7 +107,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
                 if (upgrade && connection && ws_key && ws_version)
                   {
-                    int valid_upgrade = (strcasecmp (upgrade, "websocket") == 0);
+                    int valid_upgrade
+                        = (strcasecmp (upgrade, "websocket") == 0);
                     int valid_version = (strcmp (ws_version, "13") == 0);
                     (void)valid_upgrade;
                     (void)valid_version;
@@ -134,16 +133,18 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             fuzzed_key[i] = (data[i] % 64) + 32;
           }
 
-        int request_len = snprintf (request_buffer, sizeof (request_buffer),
-                                    ws_upgrade_template, fuzzed_key);
+        int request_len = snprintf (request_buffer,
+                                    sizeof (request_buffer),
+                                    ws_upgrade_template,
+                                    fuzzed_key);
 
         if (request_len > 0 && (size_t)request_len < sizeof (request_buffer))
           {
             parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, &cfg, arena);
             if (parser)
               {
-                SocketHTTP1_Parser_execute (parser, request_buffer, request_len,
-                                            &consumed);
+                SocketHTTP1_Parser_execute (
+                    parser, request_buffer, request_len, &consumed);
                 SocketHTTP1_Parser_free (&parser);
                 parser = NULL;
               }
@@ -169,12 +170,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     };
 
     for (size_t i = 0;
-         i < sizeof (malformed_requests) / sizeof (malformed_requests[0]); i++)
+         i < sizeof (malformed_requests) / sizeof (malformed_requests[0]);
+         i++)
       {
         parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, &cfg, arena);
         if (parser)
           {
-            SocketHTTP1_Parser_execute (parser, malformed_requests[i],
+            SocketHTTP1_Parser_execute (parser,
+                                        malformed_requests[i],
                                         strlen (malformed_requests[i]),
                                         &consumed);
 
@@ -194,20 +197,22 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       }
 
     /* Test 4: Valid keys */
-    for (size_t i = 0;
-         i < sizeof (valid_ws_keys) / sizeof (valid_ws_keys[0]); i++)
+    for (size_t i = 0; i < sizeof (valid_ws_keys) / sizeof (valid_ws_keys[0]);
+         i++)
       {
         char valid_request[1024];
-        int len = snprintf (valid_request, sizeof (valid_request),
-                            ws_upgrade_template, valid_ws_keys[i]);
+        int len = snprintf (valid_request,
+                            sizeof (valid_request),
+                            ws_upgrade_template,
+                            valid_ws_keys[i]);
 
         if (len > 0 && (size_t)len < sizeof (valid_request))
           {
             parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, &cfg, arena);
             if (parser)
               {
-                SocketHTTP1_Parser_execute (parser, valid_request, len,
-                                            &consumed);
+                SocketHTTP1_Parser_execute (
+                    parser, valid_request, len, &consumed);
 
                 if (SocketHTTP1_Parser_state (parser) >= HTTP1_STATE_BODY)
                   {

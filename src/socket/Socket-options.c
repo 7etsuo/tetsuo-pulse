@@ -53,17 +53,19 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketOptions);
 
 /* Convenience macros for cleaner code */
 #define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketOptions, e)
-#define RAISE_FMT(e, fmt, ...)                                                \
+#define RAISE_FMT(e, fmt, ...) \
   SOCKET_RAISE_FMT (SocketOptions, e, fmt, ##__VA_ARGS__)
-#define RAISE_MSG(e, fmt, ...)                                                \
+#define RAISE_MSG(e, fmt, ...) \
   SOCKET_RAISE_MSG (SocketOptions, e, fmt, ##__VA_ARGS__)
 
 /* Internal helper prototypes */
 static int socket_get_tcp_int_quiet (int fd, int optname, int *out);
 static int socket_get_tcp_uint_quiet (int fd, int optname, unsigned int *out);
-static int socket_get_tcp_string_quiet (int fd, int optname, char *buf, size_t buflen);
+static int
+socket_get_tcp_string_quiet (int fd, int optname, char *buf, size_t buflen);
 static int socket_getbuf_size (T socket, int optname);
-static void socket_setbuf_size (T socket, int optname, int size, const char *buf_type);
+static void
+socket_setbuf_size (T socket, int optname, int size, const char *buf_type);
 
 /* sanitize_timeout is defined in SocketCommon.c - use extern declaration */
 extern int socketcommon_sanitize_timeout (int timeout_ms);
@@ -184,7 +186,9 @@ Socket_gettimeout (T socket)
   assert (socket);
 
   SocketCommon_getoption_timeval (SocketBase_fd (socket->base),
-                                  SOCKET_SOL_SOCKET, SOCKET_SO_RCVTIMEO, &tv,
+                                  SOCKET_SOL_SOCKET,
+                                  SOCKET_SO_RCVTIMEO,
+                                  &tv,
                                   Socket_Failed);
 
   return (int)tv.tv_sec;
@@ -346,10 +350,17 @@ Socket_shutdown (T socket, int how)
   assert (socket);
 
   if (how != SOCKET_SHUT_RD && how != SOCKET_SHUT_WR && how != SOCKET_SHUT_RDWR)
-    RAISE_MSG (Socket_Failed, "Invalid shutdown mode %d: must be SHUT_RD (0), SHUT_WR (1), or SHUT_RDWR (2)", how);
+    RAISE_MSG (Socket_Failed,
+               "Invalid shutdown mode %d: must be SHUT_RD (0), SHUT_WR (1), or "
+               "SHUT_RDWR (2)",
+               how);
 
   if (shutdown (SocketBase_fd (socket->base), how) < 0)
-    RAISE_FMT (Socket_Failed, "shutdown failed on fd %d (how=%d): %s", SocketBase_fd (socket->base), how, Socket_safe_strerror(errno));
+    RAISE_FMT (Socket_Failed,
+               "shutdown failed on fd %d (how=%d): %s",
+               SocketBase_fd (socket->base),
+               how,
+               Socket_safe_strerror (errno));
 }
 
 /* ============================================================================
@@ -373,8 +384,8 @@ Socket_shutdown (T socket, int how)
  * Thread-safe: Yes
  */
 static int
-socket_get_option_quiet (int fd, int level, int optname, void *optval,
-                         socklen_t *optlen)
+socket_get_option_quiet (
+    int fd, int level, int optname, void *optval, socklen_t *optlen)
 {
   assert (fd >= 0);
   assert (optval);
@@ -432,13 +443,14 @@ socket_get_tcp_string_quiet (int fd, int optname, char *buf, size_t buflen)
   assert (fd >= 0);
   assert (buf);
   assert (buflen > 0);
-  socklen_t len = (socklen_t) buflen;
+  socklen_t len = (socklen_t)buflen;
   if (socket_get_option_quiet (fd, SOCKET_IPPROTO_TCP, optname, buf, &len) < 0)
     return -1;
-  if (len > (socklen_t) buflen) {
-    errno = EMSGSIZE;
-    return -1;
-  }
+  if (len > (socklen_t)buflen)
+    {
+      errno = EMSGSIZE;
+      return -1;
+    }
   buf[buflen - 1] = '\0';
   return 0;
 }
@@ -452,30 +464,46 @@ Socket_setkeepalive (T socket, int idle, int interval, int count)
     RAISE_MSG (Socket_Failed,
                "Invalid keepalive parameters (idle=%d, interval=%d, "
                "count=%d): all must be > 0",
-               idle, interval, count);
-  if (idle > SOCKET_KEEPALIVE_MAX_IDLE || interval > SOCKET_KEEPALIVE_MAX_INTERVAL
+               idle,
+               interval,
+               count);
+  if (idle > SOCKET_KEEPALIVE_MAX_IDLE
+      || interval > SOCKET_KEEPALIVE_MAX_INTERVAL
       || count > SOCKET_KEEPALIVE_MAX_COUNT)
     {
       RAISE_MSG (Socket_Failed,
                  "Unreasonable keepalive parameters (idle=%d, interval=%d, "
                  "count=%d): values too large (max idle=%d, interval=%d, "
                  "count=%d)",
-                 idle, interval, count, SOCKET_KEEPALIVE_MAX_IDLE,
-                 SOCKET_KEEPALIVE_MAX_INTERVAL, SOCKET_KEEPALIVE_MAX_COUNT);
+                 idle,
+                 interval,
+                 count,
+                 SOCKET_KEEPALIVE_MAX_IDLE,
+                 SOCKET_KEEPALIVE_MAX_INTERVAL,
+                 SOCKET_KEEPALIVE_MAX_COUNT);
     }
-  SocketCommon_set_option_int (socket->base, SOCKET_SOL_SOCKET,
-                               SOCKET_SO_KEEPALIVE, 1, Socket_Failed);
+  SocketCommon_set_option_int (
+      socket->base, SOCKET_SOL_SOCKET, SOCKET_SO_KEEPALIVE, 1, Socket_Failed);
 #ifdef TCP_KEEPIDLE
-  SocketCommon_set_option_int (socket->base, SOCKET_IPPROTO_TCP,
-                               SOCKET_TCP_KEEPIDLE, idle, Socket_Failed);
+  SocketCommon_set_option_int (socket->base,
+                               SOCKET_IPPROTO_TCP,
+                               SOCKET_TCP_KEEPIDLE,
+                               idle,
+                               Socket_Failed);
 #endif
 #ifdef TCP_KEEPINTVL
-  SocketCommon_set_option_int (socket->base, SOCKET_IPPROTO_TCP,
-                               SOCKET_TCP_KEEPINTVL, interval, Socket_Failed);
+  SocketCommon_set_option_int (socket->base,
+                               SOCKET_IPPROTO_TCP,
+                               SOCKET_TCP_KEEPINTVL,
+                               interval,
+                               Socket_Failed);
 #endif
 #ifdef TCP_KEEPCNT
-  SocketCommon_set_option_int (socket->base, SOCKET_IPPROTO_TCP,
-                               SOCKET_TCP_KEEPCNT, count, Socket_Failed);
+  SocketCommon_set_option_int (socket->base,
+                               SOCKET_IPPROTO_TCP,
+                               SOCKET_TCP_KEEPCNT,
+                               count,
+                               Socket_Failed);
 #endif
 }
 
@@ -492,8 +520,11 @@ Socket_getkeepalive (T socket, int *idle, int *interval, int *count)
 
   fd = SocketBase_fd (socket->base);
 
-  SocketCommon_getoption_int (fd, SOCKET_SOL_SOCKET, SOCKET_SO_KEEPALIVE,
-                              &keepalive_enabled, Socket_Failed);
+  SocketCommon_getoption_int (fd,
+                              SOCKET_SOL_SOCKET,
+                              SOCKET_SO_KEEPALIVE,
+                              &keepalive_enabled,
+                              Socket_Failed);
 
   *idle = 0;
   *interval = 0;
@@ -503,18 +534,18 @@ Socket_getkeepalive (T socket, int *idle, int *interval, int *count)
     return;
 
 #ifdef TCP_KEEPIDLE
-  SocketCommon_getoption_int (fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_KEEPIDLE,
-                              idle, Socket_Failed);
+  SocketCommon_getoption_int (
+      fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_KEEPIDLE, idle, Socket_Failed);
 #endif
 
 #ifdef TCP_KEEPINTVL
-  SocketCommon_getoption_int (fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_KEEPINTVL,
-                              interval, Socket_Failed);
+  SocketCommon_getoption_int (
+      fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_KEEPINTVL, interval, Socket_Failed);
 #endif
 
 #ifdef TCP_KEEPCNT
-  SocketCommon_getoption_int (fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_KEEPCNT,
-                              count, Socket_Failed);
+  SocketCommon_getoption_int (
+      fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_KEEPCNT, count, Socket_Failed);
 #endif
 }
 
@@ -540,8 +571,8 @@ Socket_setnodelay (T socket, int nodelay)
 {
   assert (socket);
   int val = (nodelay != 0) ? 1 : 0;
-  SocketCommon_set_option_int (socket->base, SOCKET_IPPROTO_TCP,
-                               SOCKET_TCP_NODELAY, val, Socket_Failed);
+  SocketCommon_set_option_int (
+      socket->base, SOCKET_IPPROTO_TCP, SOCKET_TCP_NODELAY, val, Socket_Failed);
 }
 
 /**
@@ -559,8 +590,11 @@ Socket_getnodelay (T socket)
 
   assert (socket);
 
-  SocketCommon_getoption_int (SocketBase_fd (socket->base), SOCKET_IPPROTO_TCP,
-                              SOCKET_TCP_NODELAY, &nodelay, Socket_Failed);
+  SocketCommon_getoption_int (SocketBase_fd (socket->base),
+                              SOCKET_IPPROTO_TCP,
+                              SOCKET_TCP_NODELAY,
+                              &nodelay,
+                              Socket_Failed);
 
   return nodelay;
 }
@@ -583,11 +617,16 @@ Socket_setcongestion (T socket, const char *algorithm)
                  "Congestion algorithm name too long (maximum %d characters)",
                  SOCKET_MAX_CONGESTION_ALGO_LEN);
     }
-  if (setsockopt (SocketBase_fd (socket->base), SOCKET_IPPROTO_TCP,
-                  SOCKET_TCP_CONGESTION, algorithm, (socklen_t)(alen + 1))
+  if (setsockopt (SocketBase_fd (socket->base),
+                  SOCKET_IPPROTO_TCP,
+                  SOCKET_TCP_CONGESTION,
+                  algorithm,
+                  (socklen_t)(alen + 1))
       < 0)
-    RAISE_FMT (Socket_Failed, "Failed to set TCP_CONGESTION (algorithm=%.*s)",
-               (int)alen, algorithm);
+    RAISE_FMT (Socket_Failed,
+               "Failed to set TCP_CONGESTION (algorithm=%.*s)",
+               (int)alen,
+               algorithm);
 #else
   RAISE_MSG (Socket_Failed, "TCP_CONGESTION not supported on this platform");
 #endif
@@ -602,7 +641,8 @@ Socket_getcongestion (T socket, char *algorithm, size_t len)
 
 #if SOCKET_HAS_TCP_CONGESTION
   int fd = SocketBase_fd (socket->base);
-  return socket_get_tcp_string_quiet (fd, SOCKET_TCP_CONGESTION, algorithm, len);
+  return socket_get_tcp_string_quiet (
+      fd, SOCKET_TCP_CONGESTION, algorithm, len);
 #else
   return -1;
 #endif
@@ -650,7 +690,8 @@ socket_getbuf_size (T socket, int optname)
   assert (socket);
   int fd = SocketBase_fd (socket->base);
   int bufsize = 0;
-  SocketCommon_getoption_int (fd, SOCKET_SOL_SOCKET, optname, &bufsize, Socket_Failed);
+  SocketCommon_getoption_int (
+      fd, SOCKET_SOL_SOCKET, optname, &bufsize, Socket_Failed);
   return bufsize;
 }
 
@@ -672,10 +713,13 @@ socket_setbuf_size (T socket, int optname, int size, const char *buf_type)
     {
       RAISE_FMT (Socket_Failed,
                  "Invalid %s buffer size %d (min=%zu, max=%zu)",
-                 buf_type, size,
-                 (size_t)SOCKET_MIN_BUFFER_SIZE, (size_t)SOCKET_MAX_BUFFER_SIZE);
+                 buf_type,
+                 size,
+                 (size_t)SOCKET_MIN_BUFFER_SIZE,
+                 (size_t)SOCKET_MAX_BUFFER_SIZE);
     }
-  SocketCommon_set_option_int (socket->base, SOCKET_SOL_SOCKET, optname, size, Socket_Failed);
+  SocketCommon_set_option_int (
+      socket->base, SOCKET_SOL_SOCKET, optname, size, Socket_Failed);
 }
 
 /* ============================================================================
@@ -689,8 +733,11 @@ Socket_setfastopen (T socket, int enable)
   assert (socket);
   int val = (enable != 0) ? 1 : 0;
 #if SOCKET_HAS_TCP_FASTOPEN
-  SocketCommon_set_option_int (socket->base, SOCKET_IPPROTO_TCP,
-                               SOCKET_TCP_FASTOPEN, val, Socket_Failed);
+  SocketCommon_set_option_int (socket->base,
+                               SOCKET_IPPROTO_TCP,
+                               SOCKET_TCP_FASTOPEN,
+                               val,
+                               Socket_Failed);
 #else
   RAISE_MSG (Socket_Failed, "TCP_FASTOPEN not supported on this platform");
 #endif
@@ -721,12 +768,15 @@ Socket_setusertimeout (T socket, unsigned int timeout_ms)
     {
       RAISE_MSG (Socket_Failed,
                  "User timeout value %u exceeds maximum supported %d",
-                 timeout_ms, INT_MAX);
+                 timeout_ms,
+                 INT_MAX);
     }
 
 #if SOCKET_HAS_TCP_USER_TIMEOUT
-  SocketCommon_set_option_int (socket->base, SOCKET_IPPROTO_TCP,
-                               SOCKET_TCP_USER_TIMEOUT, (int)timeout_ms,
+  SocketCommon_set_option_int (socket->base,
+                               SOCKET_IPPROTO_TCP,
+                               SOCKET_TCP_USER_TIMEOUT,
+                               (int)timeout_ms,
                                Socket_Failed);
 #else
   RAISE_MSG (Socket_Failed, "TCP_USER_TIMEOUT not supported on this platform");
@@ -765,11 +815,15 @@ Socket_getusertimeout (T socket)
 static void
 set_deferaccept_linux (int fd, int timeout_sec)
 {
-  if (setsockopt (fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_DEFER_ACCEPT,
-                  &timeout_sec, sizeof (timeout_sec))
+  if (setsockopt (fd,
+                  SOCKET_IPPROTO_TCP,
+                  SOCKET_TCP_DEFER_ACCEPT,
+                  &timeout_sec,
+                  sizeof (timeout_sec))
       < 0)
     RAISE_FMT (Socket_Failed,
-               "Failed to set TCP_DEFER_ACCEPT (timeout_sec=%d)", timeout_sec);
+               "Failed to set TCP_DEFER_ACCEPT (timeout_sec=%d)",
+               timeout_sec);
 }
 #endif
 
@@ -810,12 +864,14 @@ Socket_setdeferaccept (T socket, int timeout_sec)
 
   if (timeout_sec < 0)
     RAISE_MSG (Socket_Failed,
-               "Invalid defer accept timeout: %d (must be >= 0)", timeout_sec);
+               "Invalid defer accept timeout: %d (must be >= 0)",
+               timeout_sec);
   if (timeout_sec > SOCKET_MAX_DEFER_ACCEPT_SEC)
     {
       RAISE_MSG (Socket_Failed,
                  "Defer accept timeout too large: %d (maximum %d seconds)",
-                 timeout_sec, SOCKET_MAX_DEFER_ACCEPT_SEC);
+                 timeout_sec,
+                 SOCKET_MAX_DEFER_ACCEPT_SEC);
     }
 
 #if SOCKET_HAS_TCP_DEFER_ACCEPT
@@ -823,9 +879,8 @@ Socket_setdeferaccept (T socket, int timeout_sec)
 #elif SOCKET_HAS_SO_ACCEPTFILTER
   set_acceptfilter_bsd (SocketBase_fd (socket->base), timeout_sec > 0);
 #else
-  RAISE_MSG (
-      Socket_Failed,
-      "TCP_DEFER_ACCEPT/SO_ACCEPTFILTER not supported on this platform");
+  RAISE_MSG (Socket_Failed,
+             "TCP_DEFER_ACCEPT/SO_ACCEPTFILTER not supported on this platform");
 #endif
 }
 
@@ -842,8 +897,11 @@ get_deferaccept_linux (int fd)
 {
   int timeout_sec = 0;
 
-  SocketCommon_getoption_int (fd, SOCKET_IPPROTO_TCP, SOCKET_TCP_DEFER_ACCEPT,
-                              &timeout_sec, Socket_Failed);
+  SocketCommon_getoption_int (fd,
+                              SOCKET_IPPROTO_TCP,
+                              SOCKET_TCP_DEFER_ACCEPT,
+                              &timeout_sec,
+                              Socket_Failed);
 
   return timeout_sec;
 }
@@ -886,9 +944,8 @@ Socket_getdeferaccept (T socket)
 #elif SOCKET_HAS_SO_ACCEPTFILTER
   return get_acceptfilter_bsd (SocketBase_fd (socket->base));
 #else
-  RAISE_MSG (
-      Socket_Failed,
-      "TCP_DEFER_ACCEPT/SO_ACCEPTFILTER not supported on this platform");
+  RAISE_MSG (Socket_Failed,
+             "TCP_DEFER_ACCEPT/SO_ACCEPTFILTER not supported on this platform");
   return 0; /* Unreachable but silences compiler */
 #endif
 }

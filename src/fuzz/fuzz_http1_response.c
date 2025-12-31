@@ -52,8 +52,10 @@
  * Test incremental parsing with variable chunk sizes
  */
 static void
-test_incremental_parsing (SocketHTTP1_Parser_T parser, const uint8_t *data,
-                          size_t size, size_t chunk_size)
+test_incremental_parsing (SocketHTTP1_Parser_T parser,
+                          const uint8_t *data,
+                          size_t size,
+                          size_t chunk_size)
 {
   size_t offset = 0;
   size_t consumed;
@@ -64,8 +66,8 @@ test_incremental_parsing (SocketHTTP1_Parser_T parser, const uint8_t *data,
       size_t remaining = size - offset;
       size_t to_parse = (remaining < chunk_size) ? remaining : chunk_size;
 
-      result = SocketHTTP1_Parser_execute (parser, (const char *)data + offset,
-                                           to_parse, &consumed);
+      result = SocketHTTP1_Parser_execute (
+          parser, (const char *)data + offset, to_parse, &consumed);
       offset += consumed;
 
       if (consumed == 0 && result == HTTP1_INCOMPLETE)
@@ -82,14 +84,18 @@ test_incremental_parsing (SocketHTTP1_Parser_T parser, const uint8_t *data,
       size_t body_consumed, body_written;
       size_t body_remaining = size - offset;
 
-      while (body_remaining > 0
-             && !SocketHTTP1_Parser_body_complete (parser))
+      while (body_remaining > 0 && !SocketHTTP1_Parser_body_complete (parser))
         {
           size_t to_read
               = (body_remaining < chunk_size) ? body_remaining : chunk_size;
-          SocketHTTP1_Result body_result = SocketHTTP1_Parser_read_body (
-              parser, (const char *)data + offset, to_read, &body_consumed,
-              body_buf, sizeof (body_buf), &body_written);
+          SocketHTTP1_Result body_result
+              = SocketHTTP1_Parser_read_body (parser,
+                                              (const char *)data + offset,
+                                              to_read,
+                                              &body_consumed,
+                                              body_buf,
+                                              sizeof (body_buf),
+                                              &body_written);
 
           if (body_consumed == 0)
             break;
@@ -173,8 +179,8 @@ exercise_parser_accessors (SocketHTTP1_Parser_T parser)
 
               /* Get all Set-Cookie headers (common duplicate) */
               const char *cookies[16];
-              SocketHTTP_Headers_get_all (resp->headers, "Set-Cookie", cookies,
-                                          16);
+              SocketHTTP_Headers_get_all (
+                  resp->headers, "Set-Cookie", cookies, 16);
 
               /* Iterate headers */
               size_t count = SocketHTTP_Headers_count (resp->headers);
@@ -219,8 +225,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       parser = SocketHTTP1_Parser_new (HTTP1_PARSE_RESPONSE, NULL, arena);
       if (parser)
         {
-          result = SocketHTTP1_Parser_execute (parser, (const char *)data,
-                                               size, &consumed);
+          result = SocketHTTP1_Parser_execute (
+              parser, (const char *)data, size, &consumed);
           exercise_parser_accessors (parser);
 
           /* If headers parsed, try body */
@@ -233,17 +239,20 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
               if (remaining > 0)
                 {
-                  SocketHTTP1_Parser_read_body (
-                      parser, (const char *)data + consumed, remaining,
-                      &body_consumed, body_buf, sizeof (body_buf),
-                      &body_written);
+                  SocketHTTP1_Parser_read_body (parser,
+                                                (const char *)data + consumed,
+                                                remaining,
+                                                &body_consumed,
+                                                body_buf,
+                                                sizeof (body_buf),
+                                                &body_written);
                 }
             }
 
           /* Test parser reset and reuse */
           SocketHTTP1_Parser_reset (parser);
-          SocketHTTP1_Parser_execute (parser, (const char *)data, size,
-                                      &consumed);
+          SocketHTTP1_Parser_execute (
+              parser, (const char *)data, size, &consumed);
 
           SocketHTTP1_Parser_free (&parser);
         }
@@ -261,8 +270,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           = SocketHTTP1_Parser_new (HTTP1_PARSE_RESPONSE, &strict_cfg, arena);
       if (parser)
         {
-          result = SocketHTTP1_Parser_execute (parser, (const char *)data,
-                                               size, &consumed);
+          result = SocketHTTP1_Parser_execute (
+              parser, (const char *)data, size, &consumed);
           exercise_parser_accessors (parser);
           SocketHTTP1_Parser_free (&parser);
         }
@@ -306,8 +315,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           parser = SocketHTTP1_Parser_new (HTTP1_PARSE_RESPONSE, NULL, arena);
           if (parser)
             {
-              SocketHTTP1_Parser_execute (parser, informational[i],
-                                          strlen (informational[i]), &consumed);
+              SocketHTTP1_Parser_execute (parser,
+                                          informational[i],
+                                          strlen (informational[i]),
+                                          &consumed);
               exercise_parser_accessors (parser);
               SocketHTTP1_Parser_free (&parser);
             }
@@ -328,8 +339,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           parser = SocketHTTP1_Parser_new (HTTP1_PARSE_RESPONSE, NULL, arena);
           if (parser)
             {
-              SocketHTTP1_Parser_execute (parser, success[i],
-                                          strlen (success[i]), &consumed);
+              SocketHTTP1_Parser_execute (
+                  parser, success[i], strlen (success[i]), &consumed);
               exercise_parser_accessors (parser);
               SocketHTTP1_Parser_free (&parser);
             }
@@ -352,8 +363,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           parser = SocketHTTP1_Parser_new (HTTP1_PARSE_RESPONSE, NULL, arena);
           if (parser)
             {
-              SocketHTTP1_Parser_execute (parser, redirects[i],
-                                          strlen (redirects[i]), &consumed);
+              SocketHTTP1_Parser_execute (
+                  parser, redirects[i], strlen (redirects[i]), &consumed);
               exercise_parser_accessors (parser);
               SocketHTTP1_Parser_free (&parser);
             }
@@ -370,13 +381,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               "HTTP/1.1 429 Too Many Requests\r\nRetry-After: "
               "60\r\nContent-Length: 0\r\n\r\n" };
 
-      for (size_t i = 0;
-           i < sizeof (client_errors) / sizeof (client_errors[0]); i++)
+      for (size_t i = 0; i < sizeof (client_errors) / sizeof (client_errors[0]);
+           i++)
         {
           parser = SocketHTTP1_Parser_new (HTTP1_PARSE_RESPONSE, NULL, arena);
           if (parser)
             {
-              SocketHTTP1_Parser_execute (parser, client_errors[i],
+              SocketHTTP1_Parser_execute (parser,
+                                          client_errors[i],
                                           strlen (client_errors[i]),
                                           &consumed);
               exercise_parser_accessors (parser);
@@ -393,13 +405,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               "300\r\nContent-Length: 0\r\n\r\n",
               "HTTP/1.1 504 Gateway Timeout\r\nContent-Length: 0\r\n\r\n" };
 
-      for (size_t i = 0;
-           i < sizeof (server_errors) / sizeof (server_errors[0]); i++)
+      for (size_t i = 0; i < sizeof (server_errors) / sizeof (server_errors[0]);
+           i++)
         {
           parser = SocketHTTP1_Parser_new (HTTP1_PARSE_RESPONSE, NULL, arena);
           if (parser)
             {
-              SocketHTTP1_Parser_execute (parser, server_errors[i],
+              SocketHTTP1_Parser_execute (parser,
+                                          server_errors[i],
                                           strlen (server_errors[i]),
                                           &consumed);
               exercise_parser_accessors (parser);
@@ -482,11 +495,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
            i < sizeof (malformed_responses) / sizeof (malformed_responses[0]);
            i++)
         {
-          parser = SocketHTTP1_Parser_new (HTTP1_PARSE_RESPONSE, &strict_cfg,
-                                           arena);
+          parser = SocketHTTP1_Parser_new (
+              HTTP1_PARSE_RESPONSE, &strict_cfg, arena);
           if (parser)
             {
-              SocketHTTP1_Parser_execute (parser, malformed_responses[i],
+              SocketHTTP1_Parser_execute (parser,
+                                          malformed_responses[i],
                                           strlen (malformed_responses[i]),
                                           &consumed);
               SocketHTTP1_Parser_free (&parser);
@@ -524,14 +538,17 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       };
 
       for (size_t i = 0;
-           i < sizeof (chunked_responses) / sizeof (chunked_responses[0]); i++)
+           i < sizeof (chunked_responses) / sizeof (chunked_responses[0]);
+           i++)
         {
           parser = SocketHTTP1_Parser_new (HTTP1_PARSE_RESPONSE, NULL, arena);
           if (parser)
             {
-              result = SocketHTTP1_Parser_execute (
-                  parser, chunked_responses[i], strlen (chunked_responses[i]),
-                  &consumed);
+              result
+                  = SocketHTTP1_Parser_execute (parser,
+                                                chunked_responses[i],
+                                                strlen (chunked_responses[i]),
+                                                &consumed);
 
               if (result == HTTP1_OK)
                 {
@@ -543,10 +560,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                   while (remaining > 0
                          && !SocketHTTP1_Parser_body_complete (parser))
                     {
-                      SocketHTTP1_Parser_read_body (
-                          parser, chunked_responses[i] + consumed, remaining,
-                          &body_consumed, body_buf, sizeof (body_buf),
-                          &body_written);
+                      SocketHTTP1_Parser_read_body (parser,
+                                                    chunked_responses[i]
+                                                        + consumed,
+                                                    remaining,
+                                                    &body_consumed,
+                                                    body_buf,
+                                                    sizeof (body_buf),
+                                                    &body_written);
 
                       if (body_consumed == 0)
                         break;
@@ -587,7 +608,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           parser = SocketHTTP1_Parser_new (HTTP1_PARSE_RESPONSE, NULL, arena);
           if (parser)
             {
-              SocketHTTP1_Parser_execute (parser, keepalive_responses[i],
+              SocketHTTP1_Parser_execute (parser,
+                                          keepalive_responses[i],
                                           strlen (keepalive_responses[i]),
                                           &consumed);
 
@@ -615,23 +637,24 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         if (body_len > size - 10)
           body_len = size - 10;
 
-        resp_len = snprintf (response_buf, sizeof (response_buf),
+        resp_len = snprintf (response_buf,
+                             sizeof (response_buf),
                              "HTTP/1.1 %d %s\r\n"
                              "Content-Length: %zu\r\n"
                              "\r\n",
-                             status_code, SocketHTTP_status_reason (status_code),
+                             status_code,
+                             SocketHTTP_status_reason (status_code),
                              body_len);
 
-        if (resp_len > 0
-            && (size_t)resp_len + body_len < sizeof (response_buf))
+        if (resp_len > 0 && (size_t)resp_len + body_len < sizeof (response_buf))
           {
             memcpy (response_buf + resp_len, data + 3, body_len);
 
             parser = SocketHTTP1_Parser_new (HTTP1_PARSE_RESPONSE, NULL, arena);
             if (parser)
               {
-                SocketHTTP1_Parser_execute (parser, response_buf,
-                                            resp_len + body_len, &consumed);
+                SocketHTTP1_Parser_execute (
+                    parser, response_buf, resp_len + body_len, &consumed);
                 exercise_parser_accessors (parser);
                 SocketHTTP1_Parser_free (&parser);
               }
@@ -654,8 +677,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       parser = SocketHTTP1_Parser_new (HTTP1_PARSE_RESPONSE, NULL, arena);
       if (parser)
         {
-          SocketHTTP1_Parser_execute (parser, cookie_response,
-                                      strlen (cookie_response), &consumed);
+          SocketHTTP1_Parser_execute (
+              parser, cookie_response, strlen (cookie_response), &consumed);
 
           const SocketHTTP_Response *resp
               = SocketHTTP1_Parser_get_response (parser);
@@ -663,9 +686,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             {
               /* Get all cookies */
               const char *cookies[10];
-              size_t count = SocketHTTP_Headers_get_all (resp->headers,
-                                                         "Set-Cookie", cookies,
-                                                         10);
+              size_t count = SocketHTTP_Headers_get_all (
+                  resp->headers, "Set-Cookie", cookies, 10);
               (void)count;
             }
 

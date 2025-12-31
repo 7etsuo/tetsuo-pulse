@@ -72,8 +72,11 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
             /* Create name and value strings */
             char name[64], value[128];
-            size_t actual_name = (name_len < sizeof (name) - 1) ? name_len : sizeof (name) - 1;
-            size_t actual_value = (value_len < sizeof (value) - 1) ? value_len : sizeof (value) - 1;
+            size_t actual_name
+                = (name_len < sizeof (name) - 1) ? name_len : sizeof (name) - 1;
+            size_t actual_value = (value_len < sizeof (value) - 1)
+                                      ? value_len
+                                      : sizeof (value) - 1;
 
             if (offset + actual_name + actual_value > size)
               break;
@@ -111,12 +114,15 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         {
           /* Split input into 3 parts, ensuring we don't read past buffer */
           size_t third = size / 3;
-          size_t domain_len = (third > sizeof (domain) - 1) ? sizeof (domain) - 1 : third;
-          size_t path_len = (third > sizeof (path) - 1) ? sizeof (path) - 1 : third;
-          
+          size_t domain_len
+              = (third > sizeof (domain) - 1) ? sizeof (domain) - 1 : third;
+          size_t path_len
+              = (third > sizeof (path) - 1) ? sizeof (path) - 1 : third;
+
           /* Ensure we have enough data for all three parts */
           size_t remaining = size - domain_len - path_len;
-          size_t name_len = (remaining > sizeof (name) - 1) ? sizeof (name) - 1 : remaining;
+          size_t name_len
+              = (remaining > sizeof (name) - 1) ? sizeof (name) - 1 : remaining;
 
           memcpy (domain, data, domain_len);
           domain[domain_len] = '\0';
@@ -127,15 +133,16 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           memcpy (name, data + domain_len + path_len, name_len);
           name[name_len] = '\0';
 
-          const SocketHTTPClient_Cookie *cookie = SocketHTTPClient_CookieJar_get (
-              cookie_jar, domain, path, name);
+          const SocketHTTPClient_Cookie *cookie
+              = SocketHTTPClient_CookieJar_get (cookie_jar, domain, path, name);
           (void)cookie;
         }
 
       /* Test with known domains/paths */
-      const char *domains[] = {"example.com", "sub.example.com", ".example.com", "other.com"};
-      const char *paths[] = {"/", "/test", "/test/nested", "/api"};
-      const char *names[] = {"session", "user", "auth", "test"};
+      const char *domains[]
+          = { "example.com", "sub.example.com", ".example.com", "other.com" };
+      const char *paths[] = { "/", "/test", "/test/nested", "/api" };
+      const char *names[] = { "session", "user", "auth", "test" };
 
       for (size_t d = 0; d < sizeof (domains) / sizeof (domains[0]); d++)
         {
@@ -143,8 +150,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             {
               for (size_t n = 0; n < sizeof (names) / sizeof (names[0]); n++)
                 {
-                  const SocketHTTPClient_Cookie *cookie = SocketHTTPClient_CookieJar_get (
-                      cookie_jar, domains[d], paths[p], names[n]);
+                  const SocketHTTPClient_Cookie *cookie
+                      = SocketHTTPClient_CookieJar_get (
+                          cookie_jar, domains[d], paths[p], names[n]);
                   (void)cookie;
                 }
             }
@@ -165,15 +173,16 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         int secure;
         int http_only;
       } test_cookies[] = {
-          {"session", "abc123", "example.com", "/", 1, 1},
-          {"user", "john", ".example.com", "/", 0, 0},
-          {"token", "xyz", "sub.example.com", "/api", 1, 0},
-          {"tracking", "123", "example.com", "/tracking/", 0, 1},
-          {"", "empty_name", "example.com", "/", 0, 0}, /* Empty name */
-          {"empty_value", "", "example.com", "/", 0, 0}, /* Empty value */
+        { "session", "abc123", "example.com", "/", 1, 1 },
+        { "user", "john", ".example.com", "/", 0, 0 },
+        { "token", "xyz", "sub.example.com", "/api", 1, 0 },
+        { "tracking", "123", "example.com", "/tracking/", 0, 1 },
+        { "", "empty_name", "example.com", "/", 0, 0 },  /* Empty name */
+        { "empty_value", "", "example.com", "/", 0, 0 }, /* Empty value */
       };
 
-      for (size_t i = 0; i < sizeof (test_cookies) / sizeof (test_cookies[0]); i++)
+      for (size_t i = 0; i < sizeof (test_cookies) / sizeof (test_cookies[0]);
+           i++)
         {
           SocketHTTPClient_Cookie cookie;
           memset (&cookie, 0, sizeof (cookie));
@@ -198,10 +207,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         time_t now = time (NULL);
 
         /* Use fuzz data for expiration offset - use unsigned to avoid UB */
-        int32_t offset_seconds = (int32_t)(((uint32_t)data[0] << 24) |
-                                           ((uint32_t)data[1] << 16) |
-                                           ((uint32_t)data[2] << 8) |
-                                           (uint32_t)data[3]);
+        int32_t offset_seconds
+            = (int32_t)(((uint32_t)data[0] << 24) | ((uint32_t)data[1] << 16)
+                        | ((uint32_t)data[2] << 8) | (uint32_t)data[3]);
 
         SocketHTTPClient_Cookie cookie;
         memset (&cookie, 0, sizeof (cookie));
@@ -248,11 +256,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
      * ==================================================================== */
     {
       /* Test SameSite values */
-      SocketHTTPClient_SameSite samesite_values[] = {
-          COOKIE_SAMESITE_NONE, COOKIE_SAMESITE_LAX, COOKIE_SAMESITE_STRICT
-      };
+      SocketHTTPClient_SameSite samesite_values[] = { COOKIE_SAMESITE_NONE,
+                                                      COOKIE_SAMESITE_LAX,
+                                                      COOKIE_SAMESITE_STRICT };
 
-      for (size_t i = 0; i < sizeof (samesite_values) / sizeof (samesite_values[0]); i++)
+      for (size_t i = 0;
+           i < sizeof (samesite_values) / sizeof (samesite_values[0]);
+           i++)
         {
           SocketHTTPClient_Cookie cookie;
           memset (&cookie, 0, sizeof (cookie));
@@ -276,8 +286,11 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         /* Create a cookie with long name and value from fuzz data */
         char long_name[256], long_value[2048];
 
-        size_t name_len = (size > sizeof (long_name) - 1) ? sizeof (long_name) - 1 : size / 4;
-        size_t value_len = (size > sizeof (long_value) - 1) ? sizeof (long_value) - 1 : size;
+        size_t name_len = (size > sizeof (long_name) - 1)
+                              ? sizeof (long_name) - 1
+                              : size / 4;
+        size_t value_len
+            = (size > sizeof (long_value) - 1) ? sizeof (long_value) - 1 : size;
 
         memcpy (long_name, data, name_len);
         long_name[name_len] = '\0';
@@ -288,7 +301,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         /* Remove problematic characters */
         for (size_t i = 0; i < name_len; i++)
           {
-            if (long_name[i] == '=' || long_name[i] == ';' || long_name[i] == '\0')
+            if (long_name[i] == '=' || long_name[i] == ';'
+                || long_name[i] == '\0')
               long_name[i] = 'x';
           }
         for (size_t i = 0; i < value_len; i++)
@@ -318,16 +332,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         const char *domain;
         const char *path;
       } domain_tests[] = {
-          {"example.com", "/"},
-          {".example.com", "/"},
-          {"sub.example.com", "/"},
-          {"sub.sub.example.com", "/"},
-          {"localhost", "/"},
-          {"127.0.0.1", "/"},
-          {"[::1]", "/"}, /* IPv6 */
+        { "example.com", "/" },     { ".example.com", "/" },
+        { "sub.example.com", "/" }, { "sub.sub.example.com", "/" },
+        { "localhost", "/" },       { "127.0.0.1", "/" },
+        { "[::1]", "/" }, /* IPv6 */
       };
 
-      for (size_t i = 0; i < sizeof (domain_tests) / sizeof (domain_tests[0]); i++)
+      for (size_t i = 0; i < sizeof (domain_tests) / sizeof (domain_tests[0]);
+           i++)
         {
           SocketHTTPClient_Cookie cookie;
           memset (&cookie, 0, sizeof (cookie));
@@ -340,8 +352,11 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           SocketHTTPClient_CookieJar_set (cookie_jar, &cookie);
 
           /* Try to get the cookie back */
-          const SocketHTTPClient_Cookie *retrieved = SocketHTTPClient_CookieJar_get (
-              cookie_jar, domain_tests[i].domain, domain_tests[i].path, "domain_test");
+          const SocketHTTPClient_Cookie *retrieved
+              = SocketHTTPClient_CookieJar_get (cookie_jar,
+                                                domain_tests[i].domain,
+                                                domain_tests[i].path,
+                                                "domain_test");
           (void)retrieved;
         }
     }

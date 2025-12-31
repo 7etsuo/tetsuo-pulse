@@ -85,19 +85,19 @@
 #define DOH_MAX_SERVER_URL_LENGTH 512
 
 /* Error codes for callback */
-#define DOH_ERROR_SUCCESS 0         /**< Query completed successfully */
-#define DOH_ERROR_TIMEOUT -1        /**< Query timeout */
-#define DOH_ERROR_CANCELLED -2      /**< Query cancelled */
-#define DOH_ERROR_NETWORK -3        /**< Network/socket error */
-#define DOH_ERROR_TLS -4            /**< TLS error */
-#define DOH_ERROR_HTTP -5           /**< HTTP error (non-2xx status) */
-#define DOH_ERROR_INVALID -6        /**< Invalid DNS response */
-#define DOH_ERROR_NO_SERVER -7      /**< No server configured */
-#define DOH_ERROR_CONTENT_TYPE -8   /**< Wrong Content-Type in response */
-#define DOH_ERROR_FORMERR -9        /**< Server returned FORMERR */
-#define DOH_ERROR_SERVFAIL -10      /**< Server returned SERVFAIL */
-#define DOH_ERROR_NXDOMAIN -11      /**< Domain does not exist */
-#define DOH_ERROR_REFUSED -12       /**< Server refused query */
+#define DOH_ERROR_SUCCESS 0       /**< Query completed successfully */
+#define DOH_ERROR_TIMEOUT -1      /**< Query timeout */
+#define DOH_ERROR_CANCELLED -2    /**< Query cancelled */
+#define DOH_ERROR_NETWORK -3      /**< Network/socket error */
+#define DOH_ERROR_TLS -4          /**< TLS error */
+#define DOH_ERROR_HTTP -5         /**< HTTP error (non-2xx status) */
+#define DOH_ERROR_INVALID -6      /**< Invalid DNS response */
+#define DOH_ERROR_NO_SERVER -7    /**< No server configured */
+#define DOH_ERROR_CONTENT_TYPE -8 /**< Wrong Content-Type in response */
+#define DOH_ERROR_FORMERR -9      /**< Server returned FORMERR */
+#define DOH_ERROR_SERVFAIL -10    /**< Server returned SERVFAIL */
+#define DOH_ERROR_NXDOMAIN -11    /**< Domain does not exist */
+#define DOH_ERROR_REFUSED -12     /**< Server refused query */
 
 /**
  * @brief DNS-over-HTTPS HTTP method preference.
@@ -153,9 +153,10 @@ typedef struct SocketDNSoverHTTPS_Query *SocketDNSoverHTTPS_Query_T;
  * @note Response buffer is only valid during callback; copy if needed.
  */
 typedef void (*SocketDNSoverHTTPS_Callback) (SocketDNSoverHTTPS_Query_T query,
-                                              const unsigned char *response,
-                                              size_t len, int error,
-                                              void *userdata);
+                                             const unsigned char *response,
+                                             size_t len,
+                                             int error,
+                                             void *userdata);
 
 /**
  * @brief DNS-over-HTTPS server configuration.
@@ -219,8 +220,9 @@ extern void SocketDNSoverHTTPS_free (T *transport);
  * @param config    Server configuration.
  * @return 0 on success, -1 on error.
  */
-extern int SocketDNSoverHTTPS_configure (T transport,
-                                          const SocketDNSoverHTTPS_Config *config);
+extern int
+SocketDNSoverHTTPS_configure (T transport,
+                              const SocketDNSoverHTTPS_Config *config);
 
 /**
  * @brief Add a preconfigured DoH server by name.
@@ -273,9 +275,12 @@ extern int SocketDNSoverHTTPS_server_count (T transport);
  * @param userdata  User data passed to callback.
  * @return Query handle on success, NULL on error.
  */
-extern SocketDNSoverHTTPS_Query_T SocketDNSoverHTTPS_query (
-    T transport, const unsigned char *query, size_t len,
-    SocketDNSoverHTTPS_Callback callback, void *userdata);
+extern SocketDNSoverHTTPS_Query_T
+SocketDNSoverHTTPS_query (T transport,
+                          const unsigned char *query,
+                          size_t len,
+                          SocketDNSoverHTTPS_Callback callback,
+                          void *userdata);
 
 /**
  * @brief Cancel a pending query.
@@ -285,8 +290,8 @@ extern SocketDNSoverHTTPS_Query_T SocketDNSoverHTTPS_query (
  * @param query     Query handle to cancel.
  * @return 0 on success, -1 if query not found.
  */
-extern int SocketDNSoverHTTPS_cancel (T transport,
-                                       SocketDNSoverHTTPS_Query_T query);
+extern int
+SocketDNSoverHTTPS_cancel (T transport, SocketDNSoverHTTPS_Query_T query);
 
 /**
  * @brief Get query ID from query handle.
@@ -330,8 +335,8 @@ extern int SocketDNSoverHTTPS_pending_count (T transport);
  * @param transport Transport instance.
  * @param stats     Output statistics structure.
  */
-extern void SocketDNSoverHTTPS_stats (T transport,
-                                       SocketDNSoverHTTPS_Stats *stats);
+extern void
+SocketDNSoverHTTPS_stats (T transport, SocketDNSoverHTTPS_Stats *stats);
 
 /* Utility functions */
 

@@ -103,8 +103,10 @@ SocketQUICWire_pn_length (uint64_t full_pn, uint64_t largest_acked)
 }
 
 size_t
-SocketQUICWire_pn_encode (uint64_t full_pn, uint64_t largest_acked,
-                          uint8_t *output, size_t output_size)
+SocketQUICWire_pn_encode (uint64_t full_pn,
+                          uint64_t largest_acked,
+                          uint8_t *output,
+                          size_t output_size)
 {
   unsigned pn_len;
 
@@ -129,8 +131,10 @@ SocketQUICWire_pn_encode (uint64_t full_pn, uint64_t largest_acked,
  */
 
 SocketQUICWire_Result
-SocketQUICWire_pn_decode (uint64_t largest_pn, uint64_t truncated_pn,
-                          unsigned pn_nbits, uint64_t *full_pn)
+SocketQUICWire_pn_decode (uint64_t largest_pn,
+                          uint64_t truncated_pn,
+                          unsigned pn_nbits,
+                          uint64_t *full_pn)
 {
   uint64_t expected_pn;
   uint64_t pn_win;
@@ -203,7 +207,9 @@ SocketQUICWire_pn_decode (uint64_t largest_pn, uint64_t truncated_pn,
 }
 
 SocketQUICWire_Result
-SocketQUICWire_pn_read (const uint8_t *data, size_t len, unsigned pn_len,
+SocketQUICWire_pn_read (const uint8_t *data,
+                        size_t len,
+                        unsigned pn_len,
                         uint64_t *value)
 {
   if (data == NULL || value == NULL)
@@ -246,7 +252,9 @@ SocketQUICWire_pn_read (const uint8_t *data, size_t len, unsigned pn_len,
 }
 
 size_t
-SocketQUICWire_pn_write (uint64_t value, unsigned pn_len, uint8_t *output,
+SocketQUICWire_pn_write (uint64_t value,
+                         unsigned pn_len,
+                         uint8_t *output,
                          size_t output_size)
 {
   if (output == NULL)

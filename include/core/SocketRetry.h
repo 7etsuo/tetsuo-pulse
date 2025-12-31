@@ -49,11 +49,12 @@ extern const Except_T SocketRetry_Failed;
  */
 typedef struct SocketRetry_Policy
 {
-  int max_attempts;         /**< Maximum retry attempts (0=unlimited, capped internally) */
-  int initial_delay_ms;     /**< Initial backoff delay in ms */
-  int max_delay_ms;         /**< Maximum cap for backoff delays in ms */
-  double multiplier;        /**< Exponential backoff multiplier (>1.0 recommended) */
-  double jitter;            /**< Jitter factor for randomizing delays (0.0-1.0) */
+  int max_attempts; /**< Maximum retry attempts (0=unlimited, capped internally)
+                     */
+  int initial_delay_ms; /**< Initial backoff delay in ms */
+  int max_delay_ms;     /**< Maximum cap for backoff delays in ms */
+  double multiplier; /**< Exponential backoff multiplier (>1.0 recommended) */
+  double jitter;     /**< Jitter factor for randomizing delays (0.0-1.0) */
 } SocketRetry_Policy;
 
 #ifndef SOCKET_RETRY_DEFAULT_MAX_ATTEMPTS
@@ -108,10 +109,10 @@ typedef int (*SocketRetry_ShouldRetry) (int error, int attempt, void *context);
  */
 typedef struct SocketRetry_Stats
 {
-  int attempts;              /**< Total operation invocations */
-  int last_error;            /**< Final error code (0=success) */
-  int64_t total_delay_ms;    /**< Sum of backoff sleeps (excludes op time) */
-  int64_t total_time_ms;     /**< Wall-clock from start to end */
+  int attempts;           /**< Total operation invocations */
+  int last_error;         /**< Final error code (0=success) */
+  int64_t total_delay_ms; /**< Sum of backoff sleeps (excludes op time) */
+  int64_t total_time_ms;  /**< Wall-clock from start to end */
 } SocketRetry_Stats;
 
 /**
@@ -148,7 +149,8 @@ extern void SocketRetry_free (T *retry);
  * @threadsafe No
  * @complexity O(max_attempts * operation_time + total_delay)
  */
-extern int SocketRetry_execute (T retry, SocketRetry_Operation operation,
+extern int SocketRetry_execute (T retry,
+                                SocketRetry_Operation operation,
                                 SocketRetry_ShouldRetry should_retry,
                                 void *context);
 
@@ -163,7 +165,8 @@ extern int SocketRetry_execute (T retry, SocketRetry_Operation operation,
  * @threadsafe No
  * @complexity O(max_attempts * op_time + delays)
  */
-extern int SocketRetry_execute_simple (T retry, SocketRetry_Operation operation,
+extern int SocketRetry_execute_simple (T retry,
+                                       SocketRetry_Operation operation,
                                        void *context);
 
 /**
@@ -230,8 +233,8 @@ extern void SocketRetry_policy_defaults (SocketRetry_Policy *policy);
  * @threadsafe Yes (if rand() implementation is)
  * @complexity O(1)
  */
-extern int SocketRetry_calculate_delay (const SocketRetry_Policy *policy,
-                                        int attempt);
+extern int
+SocketRetry_calculate_delay (const SocketRetry_Policy *policy, int attempt);
 
 /** @} */
 

@@ -38,8 +38,11 @@ event_cb (struct bufferevent *bev, short events, void *ctx)
 }
 
 static void
-accept_conn_cb (struct evconnlistener *listener, int fd, struct sockaddr *addr,
-                int socklen, void *arg)
+accept_conn_cb (struct evconnlistener *listener,
+                int fd,
+                struct sockaddr *addr,
+                int socklen,
+                void *arg)
 {
   (void)addr;
   (void)socklen;
@@ -72,9 +75,13 @@ main ()
 
   signal (SIGPIPE, SIG_IGN);
 
-  listener = evconnlistener_new_bind (
-      base, accept_conn_cb, base, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE,
-      -1, (struct sockaddr *)&sin, sizeof (sin));
+  listener = evconnlistener_new_bind (base,
+                                      accept_conn_cb,
+                                      base,
+                                      LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE,
+                                      -1,
+                                      (struct sockaddr *)&sin,
+                                      sizeof (sin));
 
   if (!listener)
     {

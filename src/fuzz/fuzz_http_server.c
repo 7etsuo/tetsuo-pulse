@@ -148,9 +148,15 @@ test_config_fuzzing (const uint8_t *data, size_t size)
         SocketHTTPServer_free (&server);
       }
   }
-  EXCEPT (SocketHTTPServer_Failed) { /* Expected for invalid config */ }
-  EXCEPT (SocketHTTPServer_BindFailed) { /* Expected - port in use etc */ }
-  EXCEPT (Arena_Failed) { /* Memory exhaustion */ }
+  EXCEPT (SocketHTTPServer_Failed)
+  { /* Expected for invalid config */
+  }
+  EXCEPT (SocketHTTPServer_BindFailed)
+  { /* Expected - port in use etc */
+  }
+  EXCEPT (Arena_Failed)
+  { /* Memory exhaustion */
+  }
   END_TRY;
 }
 
@@ -174,8 +180,8 @@ test_request_parsing (Arena_T arena, const uint8_t *data, size_t size)
     return;
 
   /* Parse the fuzzed data as if it came from a client */
-  SocketHTTP1_Result result
-      = SocketHTTP1_Parser_execute (parser, (const char *)data, size, &consumed);
+  SocketHTTP1_Result result = SocketHTTP1_Parser_execute (
+      parser, (const char *)data, size, &consumed);
 
   if (result == HTTP1_OK)
     {
@@ -216,9 +222,13 @@ test_request_parsing (Arena_T arena, const uint8_t *data, size_t size)
           char body_buf[8192];
           size_t body_consumed, body_written;
 
-          SocketHTTP1_Parser_read_body (parser, (const char *)data + consumed,
-                                        size - consumed, &body_consumed, body_buf,
-                                        sizeof (body_buf), &body_written);
+          SocketHTTP1_Parser_read_body (parser,
+                                        (const char *)data + consumed,
+                                        size - consumed,
+                                        &body_consumed,
+                                        body_buf,
+                                        sizeof (body_buf),
+                                        &body_written);
         }
     }
 
@@ -280,7 +290,8 @@ test_pipelined_requests (Arena_T arena, const uint8_t *data, size_t size)
         }
       else
         {
-          /* Parse error - skip a byte and try to resync (as a lenient server might) */
+          /* Parse error - skip a byte and try to resync (as a lenient server
+           * might) */
           offset++;
         }
 
@@ -315,14 +326,16 @@ test_websocket_upgrade (Arena_T arena, const uint8_t *data, size_t size)
   memcpy (fuzzed_key, data, key_len);
   fuzzed_key[key_len] = '\0';
 
-  /* Make it printable for base64-like key - cast to unsigned to prevent negative result */
+  /* Make it printable for base64-like key - cast to unsigned to prevent
+   * negative result */
   for (size_t i = 0; i < key_len; i++)
     {
       if (fuzzed_key[i] < 32 || fuzzed_key[i] > 126)
         fuzzed_key[i] = 'A' + ((unsigned char)fuzzed_key[i] % 26);
     }
 
-  int len = snprintf (request_buf, sizeof (request_buf),
+  int len = snprintf (request_buf,
+                      sizeof (request_buf),
                       "GET /websocket HTTP/1.1\r\n"
                       "Host: localhost\r\n"
                       "Upgrade: websocket\r\n"
@@ -342,19 +355,22 @@ test_websocket_upgrade (Arena_T arena, const uint8_t *data, size_t size)
 
       if (SocketHTTP1_Parser_state (parser) >= HTTP1_STATE_BODY)
         {
-          const SocketHTTP_Request *req = SocketHTTP1_Parser_get_request (parser);
+          const SocketHTTP_Request *req
+              = SocketHTTP1_Parser_get_request (parser);
           if (req && req->headers)
             {
               /* Validate WebSocket headers as server would */
-              const char *upgrade = SocketHTTP_Headers_get (req->headers, "Upgrade");
+              const char *upgrade
+                  = SocketHTTP_Headers_get (req->headers, "Upgrade");
               const char *connection
                   = SocketHTTP_Headers_get (req->headers, "Connection");
               const char *ws_key
                   = SocketHTTP_Headers_get (req->headers, "Sec-WebSocket-Key");
-              const char *ws_version
-                  = SocketHTTP_Headers_get (req->headers, "Sec-WebSocket-Version");
+              const char *ws_version = SocketHTTP_Headers_get (
+                  req->headers, "Sec-WebSocket-Version");
 
-              int is_websocket = (upgrade && connection && ws_key && ws_version);
+              int is_websocket
+                  = (upgrade && connection && ws_key && ws_version);
               (void)is_websocket;
             }
         }
@@ -388,10 +404,13 @@ test_h2c_upgrade (Arena_T arena, const uint8_t *data, size_t size)
   /* Make it base64-like - cast to unsigned to prevent negative index */
   for (size_t i = 0; i < settings_len; i++)
     {
-      fuzzed_settings[i] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"[(unsigned char)fuzzed_settings[i] % 64];
+      fuzzed_settings[i]
+          = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+              [(unsigned char)fuzzed_settings[i] % 64];
     }
 
-  int len = snprintf (request_buf, sizeof (request_buf),
+  int len = snprintf (request_buf,
+                      sizeof (request_buf),
                       "GET / HTTP/1.1\r\n"
                       "Host: localhost\r\n"
                       "Upgrade: h2c\r\n"
@@ -413,7 +432,8 @@ test_h2c_upgrade (Arena_T arena, const uint8_t *data, size_t size)
           int is_upgrade = SocketHTTP1_Parser_is_upgrade (parser);
           (void)is_upgrade;
 
-          const SocketHTTP_Request *req = SocketHTTP1_Parser_get_request (parser);
+          const SocketHTTP_Request *req
+              = SocketHTTP1_Parser_get_request (parser);
           if (req && req->headers)
             {
               const char *h2_settings
@@ -472,8 +492,12 @@ test_rate_limiting (Arena_T arena, const uint8_t *data, size_t size)
         SocketRateLimit_free (&limiter);
       }
   }
-  EXCEPT (SocketRateLimit_Failed) { /* Expected for invalid config */ }
-  EXCEPT (Arena_Failed) { /* Memory exhaustion */ }
+  EXCEPT (SocketRateLimit_Failed)
+  { /* Expected for invalid config */
+  }
+  EXCEPT (Arena_Failed)
+  { /* Memory exhaustion */
+  }
   END_TRY;
 }
 
@@ -503,8 +527,8 @@ test_incremental_delivery (Arena_T arena, const uint8_t *data, size_t size)
   while (offset < size && result == HTTP1_INCOMPLETE)
     {
       size_t consumed;
-      result = SocketHTTP1_Parser_execute (parser, (const char *)data + offset, 1,
-                                           &consumed);
+      result = SocketHTTP1_Parser_execute (
+          parser, (const char *)data + offset, 1, &consumed);
       offset += consumed;
 
       /* If no progress, advance anyway */
@@ -553,11 +577,12 @@ test_malformed_requests (Arena_T arena)
     /* LF without CR */
     "GET / HTTP/1.1\nHost: x\r\n\r\n",
 
-    /* Request line too long (fragment) - NOLINT(bugprone-suspicious-missing-comma) */
+    /* Request line too long (fragment) -
+       NOLINT(bugprone-suspicious-missing-comma) */
     "GET /aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-        " HTTP/1.1\r\nHost: x\r\n\r\n",
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    " HTTP/1.1\r\nHost: x\r\n\r\n",
 
     /* Invalid characters in header name */
     "GET / HTTP/1.1\r\nHo st: x\r\n\r\n",
@@ -575,14 +600,17 @@ test_malformed_requests (Arena_T arena)
     "CONNECT localhost HTTP/1.1\r\nHost: localhost\r\n\r\n",
   };
 
-  for (size_t i = 0; i < sizeof (malformed_requests) / sizeof (malformed_requests[0]);
+  for (size_t i = 0;
+       i < sizeof (malformed_requests) / sizeof (malformed_requests[0]);
        i++)
     {
       parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, &cfg, arena);
       if (parser)
         {
-          SocketHTTP1_Parser_execute (parser, malformed_requests[i],
-                                      strlen (malformed_requests[i]), &consumed);
+          SocketHTTP1_Parser_execute (parser,
+                                      malformed_requests[i],
+                                      strlen (malformed_requests[i]),
+                                      &consumed);
           SocketHTTP1_Parser_free (&parser);
         }
     }
@@ -637,9 +665,15 @@ test_stats_access (void)
         SocketHTTPServer_free (&server);
       }
   }
-  EXCEPT (SocketHTTPServer_Failed) {}
-  EXCEPT (SocketHTTPServer_BindFailed) {}
-  EXCEPT (Arena_Failed) {}
+  EXCEPT (SocketHTTPServer_Failed)
+  {
+  }
+  EXCEPT (SocketHTTPServer_BindFailed)
+  {
+  }
+  EXCEPT (Arena_Failed)
+  {
+  }
   END_TRY;
 }
 
@@ -720,18 +754,26 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, &cfg, g_arena);
           if (parser)
             {
-              SocketHTTP1_Parser_execute (parser, (const char *)data + 2,
-                                          size - 2, &consumed);
+              SocketHTTP1_Parser_execute (
+                  parser, (const char *)data + 2, size - 2, &consumed);
               SocketHTTP1_Parser_free (&parser);
             }
         }
         break;
       }
   }
-  EXCEPT (SocketHTTP1_ParseError) { /* Expected */ }
-  EXCEPT (SocketHTTPServer_Failed) { /* Expected */ }
-  EXCEPT (SocketHTTPServer_ProtocolError) { /* Expected */ }
-  EXCEPT (Arena_Failed) { /* Memory exhaustion */ }
+  EXCEPT (SocketHTTP1_ParseError)
+  { /* Expected */
+  }
+  EXCEPT (SocketHTTPServer_Failed)
+  { /* Expected */
+  }
+  EXCEPT (SocketHTTPServer_ProtocolError)
+  { /* Expected */
+  }
+  EXCEPT (Arena_Failed)
+  { /* Memory exhaustion */
+  }
   END_TRY;
 
   return 0;

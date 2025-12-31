@@ -98,7 +98,9 @@ bench_worker (void *arg)
                     {
                       fprintf (stderr,
                                "[Thread %d] Request %d: HTTP %ld\n",
-                               targ->thread_id, i, response_code);
+                               targ->thread_id,
+                               i,
+                               response_code);
                     }
                 }
             }
@@ -110,8 +112,11 @@ bench_worker (void *arg)
               result->failed++;
               if (config->verbose)
                 {
-                  fprintf (stderr, "[Thread %d] Request %d failed: %s\n",
-                           targ->thread_id, i, curl_easy_strerror (res));
+                  fprintf (stderr,
+                           "[Thread %d] Request %d failed: %s\n",
+                           targ->thread_id,
+                           i,
+                           curl_easy_strerror (res));
                 }
             }
         }
@@ -168,8 +173,8 @@ create_curl_handle (const BenchHTTPConfig *config)
   else if (config->version == BENCH_HTTP_VERSION_2)
     {
       /* HTTP/2 for both TLS and cleartext */
-      curl_easy_setopt (curl, CURLOPT_HTTP_VERSION,
-                        CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE);
+      curl_easy_setopt (
+          curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE);
     }
   else
     {
@@ -208,7 +213,8 @@ main (int argc, char **argv)
   printf ("libcurl HTTP benchmark\n");
   printf ("URL: %s\n", config.url);
   printf ("Threads: %d\n", config.threads);
-  printf ("Requests per thread: %d (+ %d warmup)\n", config.requests_per_thread,
+  printf ("Requests per thread: %d (+ %d warmup)\n",
+          config.requests_per_thread,
           config.warmup_requests);
   printf ("libcurl version: %s\n", curl_version ());
 
@@ -240,8 +246,8 @@ main (int argc, char **argv)
                                     (size_t)config.requests_per_thread)
           != 0)
         {
-          fprintf (stderr, "Failed to allocate result buffer for thread %d\n",
-                   i);
+          fprintf (
+              stderr, "Failed to allocate result buffer for thread %d\n", i);
           curl_global_cleanup ();
           return 1;
         }

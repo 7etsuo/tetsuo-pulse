@@ -32,17 +32,17 @@
 /**
  * Arena cache flags.
  */
-#define ARENA_AVAILABLE  0
-#define ARENA_IN_USE     1
+#define ARENA_AVAILABLE 0
+#define ARENA_IN_USE 1
 
 /**
  * Thread-local arena cache structure.
  */
 typedef struct
 {
-  Arena_T request_arena;      /**< Cached arena for request allocations */
-  Arena_T response_arena;     /**< Cached arena for response allocations */
-  int response_arena_in_use;  /**< ARENA_IN_USE if response arena is leased */
+  Arena_T request_arena;     /**< Cached arena for request allocations */
+  Arena_T response_arena;    /**< Cached arena for response allocations */
+  int response_arena_in_use; /**< ARENA_IN_USE if response arena is leased */
 } HTTPClientArenaCache;
 
 static pthread_key_t arena_cache_key;
@@ -137,7 +137,8 @@ httpclient_acquire_request_arena (void)
   HTTPClientArenaCache *cache = httpclient_get_arena_cache ();
 
   if (!cache)
-    return Arena_new_unlocked (); /* Fallback - still safe, single-threaded use */
+    return Arena_new_unlocked (); /* Fallback - still safe, single-threaded use
+                                   */
 
   if (cache->request_arena)
     {
@@ -197,7 +198,8 @@ httpclient_acquire_response_arena (void)
   HTTPClientArenaCache *cache = httpclient_get_arena_cache ();
 
   if (!cache)
-    return Arena_new_unlocked (); /* Fallback - still safe, single-threaded use */
+    return Arena_new_unlocked (); /* Fallback - still safe, single-threaded use
+                                   */
 
   /* If response arena exists and not in use, reuse it */
   if (cache->response_arena && !cache->response_arena_in_use)

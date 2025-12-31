@@ -100,12 +100,10 @@ set_proxy_error (SocketProxy_Result result, const char *default_msg)
       simple_set_error (SOCKET_SIMPLE_ERR_PROXY, "Proxy protocol error");
       break;
     case PROXY_ERROR_UNSUPPORTED:
-      simple_set_error (SOCKET_SIMPLE_ERR_PROXY,
-                        "Proxy command not supported");
+      simple_set_error (SOCKET_SIMPLE_ERR_PROXY, "Proxy command not supported");
       break;
     case PROXY_ERROR_TIMEOUT:
-      simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT,
-                        "Proxy operation timed out");
+      simple_set_error (SOCKET_SIMPLE_ERR_TIMEOUT, "Proxy operation timed out");
       break;
     case PROXY_ERROR_CANCELLED:
       simple_set_error (SOCKET_SIMPLE_ERR_PROXY, "Proxy operation cancelled");
@@ -143,8 +141,7 @@ parse_scheme (const char *url, SocketSimple_ProxyType *type, const char **rest)
 {
   for (size_t i = 0; i < SCHEME_COUNT; i++)
     {
-      if (strncasecmp (url, scheme_table[i].prefix,
-                       scheme_table[i].prefix_len)
+      if (strncasecmp (url, scheme_table[i].prefix, scheme_table[i].prefix_len)
           == 0)
         {
           *type = scheme_table[i].type;
@@ -169,26 +166,34 @@ parse_scheme (const char *url, SocketSimple_ProxyType *type, const char **rest)
  * @return 0 on success, -1 on error (credentials too long).
  */
 static int
-parse_userinfo (const char *userinfo_start, const char *userinfo_end,
+parse_userinfo (const char *userinfo_start,
+                const char *userinfo_end,
                 SocketSimple_ProxyConfig *config)
 {
-  const char *colon = memchr (userinfo_start, ':', userinfo_end - userinfo_start);
+  const char *colon
+      = memchr (userinfo_start, ':', userinfo_end - userinfo_start);
 
   if (colon)
     {
       /* user:pass format */
-      if (socket_util_url_decode (userinfo_start, colon - userinfo_start,
-                                  config->username, sizeof (config->username),
-                                  NULL) != 0)
+      if (socket_util_url_decode (userinfo_start,
+                                  colon - userinfo_start,
+                                  config->username,
+                                  sizeof (config->username),
+                                  NULL)
+          != 0)
         {
           simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
                             "Proxy username too long");
           return -1;
         }
 
-      if (socket_util_url_decode (colon + 1, userinfo_end - colon - 1,
-                                  config->password, sizeof (config->password),
-                                  NULL) != 0)
+      if (socket_util_url_decode (colon + 1,
+                                  userinfo_end - colon - 1,
+                                  config->password,
+                                  sizeof (config->password),
+                                  NULL)
+          != 0)
         {
           simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
                             "Proxy password too long");
@@ -198,9 +203,12 @@ parse_userinfo (const char *userinfo_start, const char *userinfo_end,
   else
     {
       /* username only */
-      if (socket_util_url_decode (userinfo_start, userinfo_end - userinfo_start,
-                                  config->username, sizeof (config->username),
-                                  NULL) != 0)
+      if (socket_util_url_decode (userinfo_start,
+                                  userinfo_end - userinfo_start,
+                                  config->username,
+                                  sizeof (config->username),
+                                  NULL)
+          != 0)
         {
           simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
                             "Proxy username too long");
@@ -215,7 +223,8 @@ parse_userinfo (const char *userinfo_start, const char *userinfo_end,
  * @brief Parse host and port from URL remainder.
  * @param host_start Start of host[:port] section.
  * @param config Config structure to populate with hostname.
- * @return Pointer to port section (or NULL if no port), or (const char*)-1 on error.
+ * @return Pointer to port section (or NULL if no port), or (const char*)-1 on
+ * error.
  */
 static const char *
 parse_host_port (const char *host_start, SocketSimple_ProxyConfig *config)
@@ -238,8 +247,7 @@ parse_host_port (const char *host_start, SocketSimple_ProxyConfig *config)
       size_t addr_len = bracket - host_start - 1;
       if (addr_len >= sizeof (config->host))
         {
-          simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                            "Hostname too long");
+          simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Hostname too long");
           return (const char *)-1;
         }
 
@@ -259,8 +267,7 @@ parse_host_port (const char *host_start, SocketSimple_ProxyConfig *config)
       size_t host_len = host_end - host_start;
       if (host_len >= sizeof (config->host))
         {
-          simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                            "Hostname too long");
+          simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Hostname too long");
           return (const char *)-1;
         }
 
@@ -455,15 +462,17 @@ build_core_config (const SocketSimple_ProxyConfig *simple,
 
 SocketSimple_Socket_T
 Socket_simple_proxy_connect (const SocketSimple_ProxyConfig *config,
-                             const char *target_host, int target_port)
+                             const char *target_host,
+                             int target_port)
 {
-  return Socket_simple_proxy_connect_timeout (config, target_host, target_port,
-                                              0);
+  return Socket_simple_proxy_connect_timeout (
+      config, target_host, target_port, 0);
 }
 
 SocketSimple_Socket_T
 Socket_simple_proxy_connect_timeout (const SocketSimple_ProxyConfig *config,
-                                     const char *target_host, int target_port,
+                                     const char *target_host,
+                                     int target_port,
                                      int timeout_ms_arg)
 {
   volatile Socket_T sock = NULL;
@@ -481,8 +490,8 @@ Socket_simple_proxy_connect_timeout (const SocketSimple_ProxyConfig *config,
     {
       /* Direct connection, no proxy */
       if (timeout_ms > 0)
-        return Socket_simple_connect_timeout (target_host, target_port,
-                                              timeout_ms);
+        return Socket_simple_connect_timeout (
+            target_host, target_port, timeout_ms);
       else
         return Socket_simple_connect (target_host, target_port);
     }
@@ -512,7 +521,10 @@ Socket_simple_proxy_connect_timeout (const SocketSimple_ProxyConfig *config,
       core_config.handshake_timeout_ms = timeout_ms;
     }
 
-  TRY { sock = SocketProxy_connect (&core_config, target_host, target_port); }
+  TRY
+  {
+    sock = SocketProxy_connect (&core_config, target_host, target_port);
+  }
   EXCEPT (SocketProxy_Failed)
   {
     /* Use generic PROXY_ERROR since specific SocketProxy_Result is not
@@ -552,7 +564,8 @@ Socket_simple_proxy_connect_timeout (const SocketSimple_ProxyConfig *config,
 
 SocketSimple_Socket_T
 Socket_simple_proxy_connect_tls (const SocketSimple_ProxyConfig *config,
-                                 const char *target_host, int target_port)
+                                 const char *target_host,
+                                 int target_port)
 {
 #ifdef SOCKET_HAS_TLS
   Socket_simple_clear_error ();
@@ -593,7 +606,8 @@ Socket_simple_proxy_connect_tls (const SocketSimple_ProxyConfig *config,
 int
 Socket_simple_proxy_tunnel (SocketSimple_Socket_T sock,
                             const SocketSimple_ProxyConfig *config,
-                            const char *target_host, int target_port)
+                            const char *target_host,
+                            int target_port)
 {
   Socket_simple_clear_error ();
 
@@ -630,8 +644,8 @@ Socket_simple_proxy_tunnel (SocketSimple_Socket_T sock,
 
   TRY
   {
-    result = SocketProxy_tunnel (sock->socket, &core_config, target_host,
-                                 target_port, NULL);
+    result = SocketProxy_tunnel (
+        sock->socket, &core_config, target_host, target_port, NULL);
   }
   EXCEPT (SocketProxy_Failed)
   {

@@ -239,10 +239,12 @@ typedef struct
   size_t max_chunk_ext;          /**< Maximum chunk extension length */
   size_t max_trailer_size;       /**< Maximum trailer size */
   size_t max_header_line;        /**< Maximum individual header line length */
-  size_t trailer_entry_overhead; /**< Per-entry overhead for trailer size accounting */
-  int allow_obs_fold;            /**< Allow obsolete header folding (default: 0) */
-  int strict_mode;               /**< Reject ambiguous input (default: 1) */
-  size_t max_decompressed_size;  /**< Maximum decompressed body size (0=unlimited) */
+  size_t trailer_entry_overhead; /**< Per-entry overhead for trailer size
+                                    accounting */
+  int allow_obs_fold; /**< Allow obsolete header folding (default: 0) */
+  int strict_mode;    /**< Reject ambiguous input (default: 1) */
+  size_t max_decompressed_size; /**< Maximum decompressed body size
+                                   (0=unlimited) */
 } SocketHTTP1_Config;
 
 /**
@@ -278,7 +280,8 @@ extern void SocketHTTP1_config_defaults (SocketHTTP1_Config *config);
  */
 extern SocketHTTP1_Parser_T
 SocketHTTP1_Parser_new (SocketHTTP1_ParseMode mode,
-                        const SocketHTTP1_Config *config, Arena_T arena);
+                        const SocketHTTP1_Config *config,
+                        Arena_T arena);
 
 /**
  * @brief Dispose of HTTP/1.1 parser instance and release resources.
@@ -310,12 +313,15 @@ extern void SocketHTTP1_Parser_reset (SocketHTTP1_Parser_T parser);
  * @param[in] data Raw input bytes from socket/network
  * @param[in] len Length of data buffer (may be partial message)
  * @param[out] consumed Number of bytes processed (always set, even on error)
- * @return HTTP1_OK (headers complete), HTTP1_INCOMPLETE (need more data), or error
+ * @return HTTP1_OK (headers complete), HTTP1_INCOMPLETE (need more data), or
+ * error
  * @threadsafe No
  */
 extern SocketHTTP1_Result
-SocketHTTP1_Parser_execute (SocketHTTP1_Parser_T parser, const char *data,
-                            size_t len, size_t *consumed);
+SocketHTTP1_Parser_execute (SocketHTTP1_Parser_T parser,
+                            const char *data,
+                            size_t len,
+                            size_t *consumed);
 
 /**
  * @brief Get current parser state.
@@ -324,8 +330,7 @@ SocketHTTP1_Parser_execute (SocketHTTP1_Parser_T parser, const char *data,
  * @return Current high-level state
  * @threadsafe No
  */
-extern SocketHTTP1_State
-SocketHTTP1_Parser_state (SocketHTTP1_Parser_T parser);
+extern SocketHTTP1_State SocketHTTP1_Parser_state (SocketHTTP1_Parser_T parser);
 
 /**
  * @brief Get parsed request.
@@ -392,9 +397,13 @@ extern int64_t SocketHTTP1_Parser_body_remaining (SocketHTTP1_Parser_T parser);
  * @threadsafe No
  */
 extern SocketHTTP1_Result
-SocketHTTP1_Parser_read_body (SocketHTTP1_Parser_T parser, const char *input,
-                              size_t input_len, size_t *consumed, char *output,
-                              size_t output_len, size_t *written);
+SocketHTTP1_Parser_read_body (SocketHTTP1_Parser_T parser,
+                              const char *input,
+                              size_t input_len,
+                              size_t *consumed,
+                              char *output,
+                              size_t output_len,
+                              size_t *written);
 
 /**
  * @brief Check if body fully received.
@@ -468,9 +477,9 @@ extern int SocketHTTP1_Parser_expects_continue (SocketHTTP1_Parser_T parser);
  * @throws SocketHTTP1_SerializeError For invalid request fields
  * @threadsafe Yes
  */
-extern ssize_t
-SocketHTTP1_serialize_request (const SocketHTTP_Request *request, char *output,
-                               size_t output_size);
+extern ssize_t SocketHTTP1_serialize_request (const SocketHTTP_Request *request,
+                                              char *output,
+                                              size_t output_size);
 
 /**
  * @brief Serialize response to buffer.
@@ -486,7 +495,8 @@ SocketHTTP1_serialize_request (const SocketHTTP_Request *request, char *output,
  */
 extern ssize_t
 SocketHTTP1_serialize_response (const SocketHTTP_Response *response,
-                                char *output, size_t output_size);
+                                char *output,
+                                size_t output_size);
 
 /**
  * @brief Serialize headers only.
@@ -516,8 +526,10 @@ extern ssize_t SocketHTTP1_serialize_headers (SocketHTTP_Headers_T headers,
  * @return Total bytes written, or -1 on error
  * @threadsafe Yes
  */
-extern ssize_t SocketHTTP1_chunk_encode (const void *data, size_t len,
-                                         char *output, size_t output_size);
+extern ssize_t SocketHTTP1_chunk_encode (const void *data,
+                                         size_t len,
+                                         char *output,
+                                         size_t output_size);
 
 /**
  * @brief Write final (zero-length) chunk.
@@ -530,7 +542,8 @@ extern ssize_t SocketHTTP1_chunk_encode (const void *data, size_t len,
  * @return Bytes written, or -1 on error
  * @threadsafe Yes
  */
-extern ssize_t SocketHTTP1_chunk_final (char *output, size_t output_size,
+extern ssize_t SocketHTTP1_chunk_final (char *output,
+                                        size_t output_size,
                                         SocketHTTP_Headers_T trailers);
 
 /**
@@ -559,9 +572,9 @@ typedef struct SocketHTTP1_Encoder *SocketHTTP1_Encoder_T;
  */
 typedef enum
 {
-  HTTP1_COMPRESS_FAST    = 1, /**< Fastest compression */
+  HTTP1_COMPRESS_FAST = 1,    /**< Fastest compression */
   HTTP1_COMPRESS_DEFAULT = 6, /**< Balanced default */
-  HTTP1_COMPRESS_BEST    = 9  /**< Maximum compression */
+  HTTP1_COMPRESS_BEST = 9     /**< Maximum compression */
 } SocketHTTP1_CompressLevel;
 
 /**
@@ -575,7 +588,8 @@ typedef enum
  */
 extern SocketHTTP1_Decoder_T
 SocketHTTP1_Decoder_new (SocketHTTP_Coding coding,
-                         const SocketHTTP1_Config *cfg, Arena_T arena);
+                         const SocketHTTP1_Config *cfg,
+                         Arena_T arena);
 
 /**
  * @brief Free decoder.
@@ -598,9 +612,12 @@ extern void SocketHTTP1_Decoder_free (SocketHTTP1_Decoder_T *decoder);
  */
 extern SocketHTTP1_Result
 SocketHTTP1_Decoder_decode (SocketHTTP1_Decoder_T decoder,
-                            const unsigned char *input, size_t input_len,
-                            size_t *consumed, unsigned char *output,
-                            size_t output_len, size_t *written);
+                            const unsigned char *input,
+                            size_t input_len,
+                            size_t *consumed,
+                            unsigned char *output,
+                            size_t output_len,
+                            size_t *written);
 
 /**
  * @brief Finalize decoding.
@@ -612,7 +629,8 @@ SocketHTTP1_Decoder_decode (SocketHTTP1_Decoder_T decoder,
  */
 extern SocketHTTP1_Result
 SocketHTTP1_Decoder_finish (SocketHTTP1_Decoder_T decoder,
-                            unsigned char *output, size_t output_len,
+                            unsigned char *output,
+                            size_t output_len,
                             size_t *written);
 
 /**
@@ -626,7 +644,8 @@ SocketHTTP1_Decoder_finish (SocketHTTP1_Decoder_T decoder,
 extern SocketHTTP1_Encoder_T
 SocketHTTP1_Encoder_new (SocketHTTP_Coding coding,
                          SocketHTTP1_CompressLevel level,
-                         const SocketHTTP1_Config *cfg, Arena_T arena);
+                         const SocketHTTP1_Config *cfg,
+                         Arena_T arena);
 
 /**
  * @brief Free encoder.
@@ -650,7 +669,8 @@ extern ssize_t SocketHTTP1_Encoder_encode (SocketHTTP1_Encoder_T encoder,
                                            const unsigned char *input,
                                            size_t input_len,
                                            unsigned char *output,
-                                           size_t output_len, int flush);
+                                           size_t output_len,
+                                           int flush);
 
 /**
  * @brief Finish encoding.

@@ -41,7 +41,7 @@ static const char *transport_error_names[] = {
   "NO_VIABLE_PATH"             /* 0x10 */
 };
 
-#define TRANSPORT_ERROR_COUNT                                                 \
+#define TRANSPORT_ERROR_COUNT \
   (sizeof (transport_error_names) / sizeof (transport_error_names[0]))
 
 /* ============================================================================
@@ -68,7 +68,9 @@ SocketQUIC_error_string (uint64_t code)
   /* Crypto errors: 0x0100-0x01ff */
   if (QUIC_IS_CRYPTO_ERROR (code))
     {
-      int ret = snprintf (crypto_buf, sizeof (crypto_buf), "CRYPTO_ERROR(0x%02x)",
+      int ret = snprintf (crypto_buf,
+                          sizeof (crypto_buf),
+                          "CRYPTO_ERROR(0x%02x)",
                           (uint8_t)QUIC_CRYPTO_ALERT (code));
 
       /* Defensive check: should never happen with current format */

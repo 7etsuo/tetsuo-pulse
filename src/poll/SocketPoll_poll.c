@@ -47,19 +47,19 @@
 /* Ready event structure for O(1) event retrieval */
 struct ready_event
 {
-  int fd;           /* File descriptor */
-  unsigned events;  /* Translated events */
+  int fd;          /* File descriptor */
+  unsigned events; /* Translated events */
 };
 
 /* Backend instance structure */
 #define T PollBackend_T
 struct T
 {
-  struct pollfd *fds;  /* Array of pollfd structures */
-  int *fd_to_index;    /* FD to index mapping (for O(1) lookup) */
+  struct pollfd *fds;               /* Array of pollfd structures */
+  int *fd_to_index;                 /* FD to index mapping (for O(1) lookup) */
   struct ready_event *ready_events; /* Compacted ready events from last wait */
-  int nfds;            /* Current number of FDs */
-  int capacity;        /* Capacity of fds array */
+  int nfds;                         /* Current number of FDs */
+  int capacity;                     /* Capacity of fds array */
   int maxevents;       /* Maximum events per wait (not strictly enforced) */
   int last_wait_count; /* Number of events from last wait */
   int last_nev;        /* Valid events from last backend_wait */
@@ -70,13 +70,16 @@ struct T
 
 /* ==================== Safe Allocation Helpers ==================== */
 
-/* Inlined into callers to reduce redundancy; uses SocketSecurity_check_multiply directly */
+/* Inlined into callers to reduce redundancy; uses SocketSecurity_check_multiply
+ * directly */
 
-/* safe_realloc_array inlined into callers using SocketSecurity_check_multiply */
+/* safe_realloc_array inlined into callers using SocketSecurity_check_multiply
+ */
 
 /* ==================== Integer Safe Arithmetic Helpers ==================== */
 
-/* safe_int_add and safe_int_double inlined into callers using SocketSecurity_check_add/multiply directly */
+/* safe_int_add and safe_int_double inlined into callers using
+ * SocketSecurity_check_add/multiply directly */
 
 /* ==================== Initialization Helpers ==================== */
 
@@ -103,18 +106,21 @@ static int *
 allocate_fd_mapping (const int size)
 {
   size_t total_bytes;
-  if (size <= 0) {
-    errno = EINVAL;
-    return NULL;
-  }
-  if (!SocketSecurity_check_multiply((size_t)size, sizeof(int), &total_bytes)) {
-    errno = EOVERFLOW;
-    return NULL;
-  }
-  int *mapping = calloc((size_t)size, sizeof(int));
-  if (!mapping) {
-    return NULL;
-  }
+  if (size <= 0)
+    {
+      errno = EINVAL;
+      return NULL;
+    }
+  if (!SocketSecurity_check_multiply ((size_t)size, sizeof (int), &total_bytes))
+    {
+      errno = EOVERFLOW;
+      return NULL;
+    }
+  int *mapping = calloc ((size_t)size, sizeof (int));
+  if (!mapping)
+    {
+      return NULL;
+    }
   init_fd_mapping_range (mapping, 0, size);
   return mapping;
 }
@@ -152,17 +158,20 @@ static int
 init_backend_fds (PollBackend_T backend)
 {
   size_t total_bytes;
-  if (backend->capacity <= 0) {
-    errno = EINVAL;
-    backend->fds = NULL;
-    return -1;
-  }
-  if (!SocketSecurity_check_multiply((size_t)backend->capacity, sizeof(struct pollfd), &total_bytes)) {
-    errno = EOVERFLOW;
-    backend->fds = NULL;
-    return -1;
-  }
-  backend->fds = calloc((size_t)backend->capacity, sizeof(struct pollfd));
+  if (backend->capacity <= 0)
+    {
+      errno = EINVAL;
+      backend->fds = NULL;
+      return -1;
+    }
+  if (!SocketSecurity_check_multiply (
+          (size_t)backend->capacity, sizeof (struct pollfd), &total_bytes))
+    {
+      errno = EOVERFLOW;
+      backend->fds = NULL;
+      return -1;
+    }
+  backend->fds = calloc ((size_t)backend->capacity, sizeof (struct pollfd));
   return backend->fds ? 0 : -1;
 }
 
@@ -189,17 +198,22 @@ static int
 init_backend_ready_events (PollBackend_T backend)
 {
   size_t total_bytes;
-  if (backend->maxevents <= 0) {
-    errno = EINVAL;
-    backend->ready_events = NULL;
-    return -1;
-  }
-  if (!SocketSecurity_check_multiply((size_t)backend->maxevents, sizeof(struct ready_event), &total_bytes)) {
-    errno = EOVERFLOW;
-    backend->ready_events = NULL;
-    return -1;
-  }
-  backend->ready_events = calloc((size_t)backend->maxevents, sizeof(struct ready_event));
+  if (backend->maxevents <= 0)
+    {
+      errno = EINVAL;
+      backend->ready_events = NULL;
+      return -1;
+    }
+  if (!SocketSecurity_check_multiply ((size_t)backend->maxevents,
+                                      sizeof (struct ready_event),
+                                      &total_bytes))
+    {
+      errno = EOVERFLOW;
+      backend->ready_events = NULL;
+      return -1;
+    }
+  backend->ready_events
+      = calloc ((size_t)backend->maxevents, sizeof (struct ready_event));
   return backend->ready_events ? 0 : -1;
 }
 
@@ -305,10 +319,13 @@ ensure_fd_mapping (PollBackend_T backend, const int fd)
     return 0;
 
   size_t sum;
-  if (!SocketSecurity_check_add((size_t)fd, (size_t)POLL_FD_MAP_EXPAND_INCREMENT, &sum) || sum > INT_MAX) {
-    errno = EOVERFLOW;
-    return -1;
-  }
+  if (!SocketSecurity_check_add (
+          (size_t)fd, (size_t)POLL_FD_MAP_EXPAND_INCREMENT, &sum)
+      || sum > INT_MAX)
+    {
+      errno = EOVERFLOW;
+      return -1;
+    }
   new_max = (int)sum;
 
   if (new_max > backend->max_fd_limit)
@@ -318,14 +335,17 @@ ensure_fd_mapping (PollBackend_T backend, const int fd)
     }
 
   size_t total_bytes;
-  if (!SocketSecurity_check_multiply((size_t)new_max, sizeof(int), &total_bytes)) {
-    errno = EOVERFLOW;
-    return -1;
-  }
-  new_mapping = realloc(backend->fd_to_index, total_bytes);
-  if (!new_mapping) {
-    return -1;
-  }
+  if (!SocketSecurity_check_multiply (
+          (size_t)new_max, sizeof (int), &total_bytes))
+    {
+      errno = EOVERFLOW;
+      return -1;
+    }
+  new_mapping = realloc (backend->fd_to_index, total_bytes);
+  if (!new_mapping)
+    {
+      return -1;
+    }
 
   init_fd_mapping_range (new_mapping, backend->max_fd, new_max);
   backend->fd_to_index = new_mapping;
@@ -352,21 +372,26 @@ ensure_capacity (PollBackend_T backend)
     return 0;
 
   size_t product;
-  if (!SocketSecurity_check_multiply((size_t)backend->capacity, 2, &product) || product > INT_MAX) {
-    errno = EOVERFLOW;
-    return -1;
-  }
+  if (!SocketSecurity_check_multiply ((size_t)backend->capacity, 2, &product)
+      || product > INT_MAX)
+    {
+      errno = EOVERFLOW;
+      return -1;
+    }
   new_capacity = (int)product;
 
   size_t total_bytes;
-  if (!SocketSecurity_check_multiply((size_t)new_capacity, sizeof(struct pollfd), &total_bytes)) {
-    errno = EOVERFLOW;
-    return -1;
-  }
-  new_fds = realloc(backend->fds, total_bytes);
-  if (!new_fds) {
-    return -1;
-  }
+  if (!SocketSecurity_check_multiply (
+          (size_t)new_capacity, sizeof (struct pollfd), &total_bytes))
+    {
+      errno = EOVERFLOW;
+      return -1;
+    }
+  new_fds = realloc (backend->fds, total_bytes);
+  if (!new_fds)
+    {
+      return -1;
+    }
 
   backend->fds = new_fds;
   backend->capacity = new_capacity;
@@ -660,7 +685,9 @@ backend_wait (PollBackend_T backend, const int timeout_ms)
 }
 
 int
-backend_get_event (const PollBackend_T backend, const int index, int *fd_out,
+backend_get_event (const PollBackend_T backend,
+                   const int index,
+                   int *fd_out,
                    unsigned *events_out)
 {
   assert (backend);

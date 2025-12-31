@@ -95,22 +95,26 @@ ip_addresses_equal (const char *ip1, const char *ip2)
 }
 
 int
-cidr_full_bytes_match (const uint8_t *ip_bytes, const uint8_t *entry_bytes,
+cidr_full_bytes_match (const uint8_t *ip_bytes,
+                       const uint8_t *entry_bytes,
                        int bytes)
 {
   return (memcmp (ip_bytes, entry_bytes, (size_t)bytes) == 0);
 }
 
 int
-cidr_partial_byte_match (const uint8_t *ip_bytes, const uint8_t *entry_bytes,
-                         int byte_index, int remaining_bits)
+cidr_partial_byte_match (const uint8_t *ip_bytes,
+                         const uint8_t *entry_bytes,
+                         int byte_index,
+                         int remaining_bits)
 {
   uint8_t mask = (uint8_t)(0xFF << (SOCKET_BITS_PER_BYTE - remaining_bits));
   return ((ip_bytes[byte_index] & mask) == (entry_bytes[byte_index] & mask));
 }
 
 int
-ip_matches_cidr_bytes (int family, const uint8_t *ip_bytes,
+ip_matches_cidr_bytes (int family,
+                       const uint8_t *ip_bytes,
                        const SocketSYN_WhitelistEntry *entry)
 {
   int bits, bytes_to_match, remaining_bits;
@@ -126,8 +130,8 @@ ip_matches_cidr_bytes (int family, const uint8_t *ip_bytes,
     return 0;
 
   if (remaining_bits != 0)
-    return cidr_partial_byte_match (ip_bytes, entry->addr_bytes,
-                                    bytes_to_match, remaining_bits);
+    return cidr_partial_byte_match (
+        ip_bytes, entry->addr_bytes, bytes_to_match, remaining_bits);
 
   return 1;
 }
@@ -151,7 +155,8 @@ ip_matches_cidr (const char *ip, const SocketSYN_WhitelistEntry *entry)
 /* Compares parsed bytes to prevent bypass via alternate IP formats */
 int
 whitelist_check_bucket_bytes (const SocketSYN_WhitelistEntry *entry,
-                              const char *ip_str, int family,
+                              const char *ip_str,
+                              int family,
                               const uint8_t *ip_bytes)
 {
   size_t cmp_len;
@@ -195,8 +200,10 @@ whitelist_check_bucket (const SocketSYN_WhitelistEntry *entry, const char *ip)
 }
 
 int
-whitelist_check_all_cidrs_bytes (SocketSYNProtect_T protect, int family,
-                                 const uint8_t *ip_bytes, unsigned skip_bucket)
+whitelist_check_all_cidrs_bytes (SocketSYNProtect_T protect,
+                                 int family,
+                                 const uint8_t *ip_bytes,
+                                 unsigned skip_bucket)
 {
   for (size_t i = 0; i < SOCKET_SYN_LIST_HASH_SIZE; i++)
     {
@@ -216,7 +223,8 @@ whitelist_check_all_cidrs_bytes (SocketSYNProtect_T protect, int family,
 }
 
 int
-whitelist_check_all_cidrs (SocketSYNProtect_T protect, const char *ip,
+whitelist_check_all_cidrs (SocketSYNProtect_T protect,
+                           const char *ip,
                            unsigned skip_bucket)
 {
   uint8_t ip_bytes[SOCKET_IPV6_ADDR_BYTES];
@@ -228,8 +236,8 @@ whitelist_check_all_cidrs (SocketSYNProtect_T protect, const char *ip,
   family = parse_ip_address (ip, ip_bytes, sizeof (ip_bytes));
   if (family == 0)
     return 0;
-  return whitelist_check_all_cidrs_bytes (protect, family, ip_bytes,
-                                          skip_bucket);
+  return whitelist_check_all_cidrs_bytes (
+      protect, family, ip_bytes, skip_bucket);
 }
 
 int
@@ -248,16 +256,15 @@ whitelist_check (SocketSYNProtect_T protect, const char *ip)
 
   bucket = synprotect_hash_ip (protect, ip, SOCKET_SYN_LIST_HASH_SIZE);
 
-  if (whitelist_check_bucket_bytes (protect->whitelist_table[bucket], ip,
-                                    family, ip_bytes))
+  if (whitelist_check_bucket_bytes (
+          protect->whitelist_table[bucket], ip, family, ip_bytes))
     return 1;
 
   return whitelist_check_all_cidrs_bytes (protect, family, ip_bytes, bucket);
 }
 
 void
-remove_ip_entry_from_hash (SocketSYNProtect_T protect,
-                           SocketSYN_IPEntry *entry)
+remove_ip_entry_from_hash (SocketSYNProtect_T protect, SocketSYN_IPEntry *entry)
 {
   unsigned bucket
       = synprotect_hash_ip (protect, entry->state.ip, protect->ip_table_size);

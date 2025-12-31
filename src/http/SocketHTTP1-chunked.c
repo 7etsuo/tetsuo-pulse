@@ -4,7 +4,8 @@
  * https://x.com/tetsuoai
  */
 
-/* SocketHTTP1-chunked.c - HTTP/1.1 Chunked Transfer Encoding (RFC 9112 Section 7.1) */
+/* SocketHTTP1-chunked.c - HTTP/1.1 Chunked Transfer Encoding (RFC 9112
+ * Section 7.1) */
 
 #include "http/SocketHTTP1-private.h"
 #include "http/SocketHTTP1.h"
@@ -22,7 +23,7 @@ static const unsigned char HTTP1_ZERO_CHUNK_BYTES[3] = { '0', '\r', '\n' };
 #define HTTP1_ZERO_CHUNK_SIZE_LINE_LEN 3
 
 /** Minimum buffer size for final zero chunk + final CRLF (no trailers) */
-#define HTTP1_FINAL_CHUNK_MIN_SIZE                                            \
+#define HTTP1_FINAL_CHUNK_MIN_SIZE \
   (HTTP1_ZERO_CHUNK_SIZE_LINE_LEN + HTTP1_CRLF_LEN)
 
 /* Note: HTTP1_CRLF_LEN and HTTP1_HEX_RADIX defined in SocketHTTP1-private.h */
@@ -42,7 +43,7 @@ static const struct
 };
 
 /** Number of forbidden trailer headers */
-#define HTTP1_NUM_FORBIDDEN_TRAILERS                                          \
+#define HTTP1_NUM_FORBIDDEN_TRAILERS \
   (sizeof (forbidden_trailers) / sizeof (forbidden_trailers[0]))
 
 static int
@@ -73,8 +74,8 @@ static SocketHTTP1_Result
 complete_trailer_header (SocketHTTP1_Parser_T parser)
 {
   /* Terminate value buffer */
-  char *value = http1_tokenbuf_terminate (&parser->value_buf, parser->arena,
-                                          parser->config.max_header_value);
+  char *value = http1_tokenbuf_terminate (
+      &parser->value_buf, parser->arena, parser->config.max_header_value);
   if (value == NULL)
     return HTTP1_ERROR_HEADER_TOO_LARGE;
 
@@ -96,8 +97,8 @@ complete_trailer_header (SocketHTTP1_Parser_T parser)
    * The overhead accounts for HeaderEntry struct, null terminators, and
    * wire format delimiters (see SOCKETHTTP1_TRAILER_ENTRY_OVERHEAD docs).
    */
-  size_t entry_size = trailer_name_len + value_len
-                      + parser->config.trailer_entry_overhead;
+  size_t entry_size
+      = trailer_name_len + value_len + parser->config.trailer_entry_overhead;
 
   /* Check trailer limits */
   if (parser->trailer_count >= parser->config.max_headers
@@ -123,8 +124,11 @@ complete_trailer_header (SocketHTTP1_Parser_T parser)
 }
 
 static size_t
-copy_data (const char **input_pos, const char *input_end, char **output_pos,
-           size_t *output_remaining, size_t max_bytes)
+copy_data (const char **input_pos,
+           const char *input_end,
+           char **output_pos,
+           size_t *output_remaining,
+           size_t max_bytes)
 {
   size_t input_avail = (size_t)(input_end - *input_pos);
   size_t to_copy = max_bytes;
@@ -145,9 +149,12 @@ copy_data (const char **input_pos, const char *input_end, char **output_pos,
 }
 
 static inline void
-update_progress (const char *const input_start, const char *const input_pos,
-                 const char *const output_start, const char *const output_pos,
-                 size_t *consumed, size_t *written)
+update_progress (const char *const input_start,
+                 const char *const input_pos,
+                 const char *const output_start,
+                 const char *const output_pos,
+                 size_t *consumed,
+                 size_t *written)
 {
   *consumed = (size_t)(input_pos - input_start);
   *written = (size_t)(output_pos - output_start);
@@ -179,7 +186,9 @@ SocketHTTP1_chunk_encode_size (size_t data_len)
 }
 
 ssize_t
-SocketHTTP1_chunk_encode (const void *data, size_t len, char *output,
+SocketHTTP1_chunk_encode (const void *data,
+                          size_t len,
+                          char *output,
                           size_t output_size)
 {
   size_t required;
@@ -220,7 +229,8 @@ SocketHTTP1_chunk_encode (const void *data, size_t len, char *output,
 }
 
 ssize_t
-SocketHTTP1_chunk_final (char *output, size_t output_size,
+SocketHTTP1_chunk_final (char *output,
+                         size_t output_size,
                          SocketHTTP_Headers_T trailers)
 {
   char *p;
@@ -263,9 +273,13 @@ SocketHTTP1_chunk_final (char *output, size_t output_size,
 }
 
 static SocketHTTP1_Result
-read_body_content_length (SocketHTTP1_Parser_T parser, const char *const input,
-                          size_t input_len, size_t *consumed, char *output,
-                          size_t output_len, size_t *written)
+read_body_content_length (SocketHTTP1_Parser_T parser,
+                          const char *const input,
+                          size_t input_len,
+                          size_t *consumed,
+                          char *output,
+                          size_t output_len,
+                          size_t *written)
 {
   *consumed = 0;
   *written = 0;
@@ -278,8 +292,8 @@ read_body_content_length (SocketHTTP1_Parser_T parser, const char *const input,
 
   size_t max_copy = (size_t)parser->body_remaining;
   const char *input_pos = input;
-  size_t copied = copy_data (&input_pos, input + input_len, &output,
-                             &output_len, max_copy);
+  size_t copied = copy_data (
+      &input_pos, input + input_len, &output, &output_len, max_copy);
   *consumed = copied;
   *written = copied;
   parser->body_remaining -= (int64_t)copied;
@@ -294,16 +308,20 @@ read_body_content_length (SocketHTTP1_Parser_T parser, const char *const input,
 }
 
 static SocketHTTP1_Result
-read_body_until_close (SocketHTTP1_Parser_T parser, const char *const input,
-                       size_t input_len, size_t *consumed, char *output,
-                       size_t output_len, size_t *written)
+read_body_until_close (SocketHTTP1_Parser_T parser,
+                       const char *const input,
+                       size_t input_len,
+                       size_t *consumed,
+                       char *output,
+                       size_t output_len,
+                       size_t *written)
 {
   /* Parser unused - body mode determined, just copy data */
   (void)parser;
 
   const char *input_pos = input;
-  size_t copied = copy_data (&input_pos, input + input_len, &output,
-                             &output_len, input_len);
+  size_t copied = copy_data (
+      &input_pos, input + input_len, &output, &output_len, input_len);
   *consumed = copied;
   *written = copied;
 
@@ -312,7 +330,9 @@ read_body_until_close (SocketHTTP1_Parser_T parser, const char *const input,
 }
 
 static int64_t
-parse_chunk_size (const char *const input, size_t len, size_t *line_len,
+parse_chunk_size (const char *const input,
+                  size_t len,
+                  size_t *line_len,
                   size_t max_ext_len)
 {
   const char *p = input;
@@ -371,14 +391,15 @@ parse_chunk_size (const char *const input, size_t len, size_t *line_len,
 }
 
 static SocketHTTP1_Result
-handle_chunk_size_state (SocketHTTP1_Parser_T parser, const char **p,
+handle_chunk_size_state (SocketHTTP1_Parser_T parser,
+                         const char **p,
                          const char *end)
 {
   int64_t chunk_size;
   size_t line_len;
 
-  chunk_size = parse_chunk_size (*p, (size_t)(end - *p), &line_len,
-                                 parser->config.max_chunk_ext);
+  chunk_size = parse_chunk_size (
+      *p, (size_t)(end - *p), &line_len, parser->config.max_chunk_ext);
 
   if (chunk_size == -2)
     return HTTP1_INCOMPLETE; /* Need more data */
@@ -431,8 +452,11 @@ handle_chunk_size_state (SocketHTTP1_Parser_T parser, const char **p,
 }
 
 static SocketHTTP1_Result
-handle_chunk_data_state (SocketHTTP1_Parser_T parser, const char **p,
-                         const char *end, char **out, size_t *out_remaining)
+handle_chunk_data_state (SocketHTTP1_Parser_T parser,
+                         const char **p,
+                         const char *end,
+                         char **out,
+                         size_t *out_remaining)
 {
   size_t copied
       = copy_data (p, end, out, out_remaining, parser->chunk_remaining);
@@ -448,7 +472,8 @@ handle_chunk_data_state (SocketHTTP1_Parser_T parser, const char **p,
 }
 
 static SocketHTTP1_Result
-handle_chunk_crlf_states (SocketHTTP1_Parser_T parser, const char **p,
+handle_chunk_crlf_states (SocketHTTP1_Parser_T parser,
+                          const char **p,
                           const char *end)
 {
   HTTP1_CRLFResult res = http1_skip_crlf (p, end);
@@ -473,7 +498,8 @@ handle_chunk_crlf_states (SocketHTTP1_Parser_T parser, const char **p,
  * data, or error code
  */
 static SocketHTTP1_Result
-handle_trailer_start_state (SocketHTTP1_Parser_T parser, const char **p,
+handle_trailer_start_state (SocketHTTP1_Parser_T parser,
+                            const char **p,
                             const char *end)
 {
   HTTP1_CRLFResult res = http1_skip_crlf (p, end);
@@ -502,7 +528,8 @@ handle_trailer_start_state (SocketHTTP1_Parser_T parser, const char **p,
  * @return HTTP1_OK on success, or error code
  */
 static SocketHTTP1_Result
-handle_trailer_name_state (SocketHTTP1_Parser_T parser, const char **p,
+handle_trailer_name_state (SocketHTTP1_Parser_T parser,
+                           const char **p,
                            const char *end)
 {
   (void)end;
@@ -521,8 +548,8 @@ handle_trailer_name_state (SocketHTTP1_Parser_T parser, const char **p,
     }
   if (!http1_is_tchar (c))
     return HTTP1_ERROR_INVALID_HEADER_NAME;
-  if (http1_tokenbuf_append (&parser->name_buf, parser->arena, c,
-                             parser->config.max_header_name)
+  if (http1_tokenbuf_append (
+          &parser->name_buf, parser->arena, c, parser->config.max_header_name)
       < 0)
     return HTTP1_ERROR_HEADER_TOO_LARGE;
   parser->line_length++;
@@ -542,7 +569,8 @@ handle_trailer_name_state (SocketHTTP1_Parser_T parser, const char **p,
  * @return HTTP1_OK on success, or error code
  */
 static SocketHTTP1_Result
-handle_trailer_colon_state (SocketHTTP1_Parser_T parser, const char **p,
+handle_trailer_colon_state (SocketHTTP1_Parser_T parser,
+                            const char **p,
                             const char *end)
 {
   (void)end;
@@ -564,8 +592,8 @@ handle_trailer_colon_state (SocketHTTP1_Parser_T parser, const char **p,
     }
   if (!(http1_is_field_vchar (c) || http1_is_ows (c)))
     return HTTP1_ERROR_INVALID_HEADER_VALUE;
-  if (http1_tokenbuf_append (&parser->value_buf, parser->arena, c,
-                             parser->config.max_header_value)
+  if (http1_tokenbuf_append (
+          &parser->value_buf, parser->arena, c, parser->config.max_header_value)
       < 0)
     return HTTP1_ERROR_HEADER_TOO_LARGE;
   parser->line_length++;
@@ -584,7 +612,8 @@ handle_trailer_colon_state (SocketHTTP1_Parser_T parser, const char **p,
  * @return HTTP1_OK on success, or error code
  */
 static SocketHTTP1_Result
-handle_trailer_value_state (SocketHTTP1_Parser_T parser, const char **p,
+handle_trailer_value_state (SocketHTTP1_Parser_T parser,
+                            const char **p,
                             const char *end)
 {
   (void)end;
@@ -603,8 +632,8 @@ handle_trailer_value_state (SocketHTTP1_Parser_T parser, const char **p,
     }
   if (!(http1_is_field_vchar (c) || http1_is_ows (c)))
     return HTTP1_ERROR_INVALID_HEADER_VALUE;
-  if (http1_tokenbuf_append (&parser->value_buf, parser->arena, c,
-                             parser->config.max_header_value)
+  if (http1_tokenbuf_append (
+          &parser->value_buf, parser->arena, c, parser->config.max_header_value)
       < 0)
     return HTTP1_ERROR_HEADER_TOO_LARGE;
   parser->line_length++;
@@ -627,7 +656,8 @@ handle_trailer_value_state (SocketHTTP1_Parser_T parser, const char **p,
  *         or error code
  */
 static SocketHTTP1_Result
-handle_trailer_states (SocketHTTP1_Parser_T parser, const char **p,
+handle_trailer_states (SocketHTTP1_Parser_T parser,
+                       const char **p,
                        const char *end)
 {
   while (*p < end)
@@ -636,7 +666,8 @@ handle_trailer_states (SocketHTTP1_Parser_T parser, const char **p,
         {
         case HTTP1_PS_TRAILER_START:
           {
-            SocketHTTP1_Result res = handle_trailer_start_state (parser, p, end);
+            SocketHTTP1_Result res
+                = handle_trailer_start_state (parser, p, end);
             if (res != HTTP1_OK || parser->internal_state == HTTP1_PS_COMPLETE)
               return res;
             break;
@@ -652,7 +683,8 @@ handle_trailer_states (SocketHTTP1_Parser_T parser, const char **p,
 
         case HTTP1_PS_TRAILER_COLON:
           {
-            SocketHTTP1_Result res = handle_trailer_colon_state (parser, p, end);
+            SocketHTTP1_Result res
+                = handle_trailer_colon_state (parser, p, end);
             if (res != HTTP1_OK)
               return res;
             break;
@@ -660,7 +692,8 @@ handle_trailer_states (SocketHTTP1_Parser_T parser, const char **p,
 
         case HTTP1_PS_TRAILER_VALUE:
           {
-            SocketHTTP1_Result res = handle_trailer_value_state (parser, p, end);
+            SocketHTTP1_Result res
+                = handle_trailer_value_state (parser, p, end);
             if (res != HTTP1_OK)
               return res;
             break;
@@ -699,9 +732,13 @@ handle_trailer_states (SocketHTTP1_Parser_T parser, const char **p,
 }
 
 static SocketHTTP1_Result
-read_body_chunked (SocketHTTP1_Parser_T parser, const char *const input,
-                   size_t input_len, size_t *consumed, char *output,
-                   size_t output_len, size_t *written)
+read_body_chunked (SocketHTTP1_Parser_T parser,
+                   const char *const input,
+                   size_t input_len,
+                   size_t *consumed,
+                   char *output,
+                   size_t output_len,
+                   size_t *written)
 {
   const char *p = input;
   const char *end = input + input_len;
@@ -709,12 +746,12 @@ read_body_chunked (SocketHTTP1_Parser_T parser, const char *const input,
   size_t out_remaining = output_len;
   SocketHTTP1_Result result;
 
-#define UPDATE_PROGRESS_AND_RETURN(r)                                         \
-  do                                                                          \
-    {                                                                         \
-      update_progress (input, p, output, out, consumed, written);             \
-      return (r);                                                             \
-    }                                                                         \
+#define UPDATE_PROGRESS_AND_RETURN(r)                             \
+  do                                                              \
+    {                                                             \
+      update_progress (input, p, output, out, consumed, written); \
+      return (r);                                                 \
+    }                                                             \
   while (0)
 
   *consumed = 0;
@@ -731,8 +768,8 @@ read_body_chunked (SocketHTTP1_Parser_T parser, const char *const input,
           break;
 
         case HTTP1_PS_CHUNK_DATA:
-          result = handle_chunk_data_state (parser, &p, end, &out,
-                                            &out_remaining);
+          result
+              = handle_chunk_data_state (parser, &p, end, &out, &out_remaining);
           if (result == HTTP1_INCOMPLETE)
             UPDATE_PROGRESS_AND_RETURN (HTTP1_INCOMPLETE);
           break;
@@ -770,9 +807,13 @@ read_body_chunked (SocketHTTP1_Parser_T parser, const char *const input,
 }
 
 SocketHTTP1_Result
-SocketHTTP1_Parser_read_body (SocketHTTP1_Parser_T parser, const char *input,
-                              size_t input_len, size_t *consumed, char *output,
-                              size_t output_len, size_t *written)
+SocketHTTP1_Parser_read_body (SocketHTTP1_Parser_T parser,
+                              const char *input,
+                              size_t input_len,
+                              size_t *consumed,
+                              char *output,
+                              size_t output_len,
+                              size_t *written)
 {
   assert (parser);
   assert (input || input_len == 0);
@@ -798,16 +839,16 @@ SocketHTTP1_Parser_read_body (SocketHTTP1_Parser_T parser, const char *input,
       return HTTP1_OK;
 
     case HTTP1_BODY_CONTENT_LENGTH:
-      return read_body_content_length (parser, input, input_len, consumed,
-                                       output, output_len, written);
+      return read_body_content_length (
+          parser, input, input_len, consumed, output, output_len, written);
 
     case HTTP1_BODY_CHUNKED:
-      return read_body_chunked (parser, input, input_len, consumed, output,
-                                output_len, written);
+      return read_body_chunked (
+          parser, input, input_len, consumed, output, output_len, written);
 
     case HTTP1_BODY_UNTIL_CLOSE:
-      return read_body_until_close (parser, input, input_len, consumed, output,
-                                    output_len, written);
+      return read_body_until_close (
+          parser, input, input_len, consumed, output, output_len, written);
 
     default:
       return HTTP1_ERROR;

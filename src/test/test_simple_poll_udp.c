@@ -21,10 +21,10 @@
 /* Internal structure for testing (from SocketSimple-internal.h) */
 struct SocketSimple_Socket
 {
-  void *socket;     /* Socket_T */
-  void *dgram;      /* SocketDgram_T */
+  void *socket; /* Socket_T */
+  void *dgram;  /* SocketDgram_T */
 #ifdef SOCKET_HAS_TLS
-  void *tls_ctx;    /* SocketTLSContext_T */
+  void *tls_ctx; /* SocketTLSContext_T */
 #endif
   int is_tls;
   int is_server;
@@ -42,7 +42,7 @@ create_fake_udp_socket (void)
     return NULL;
 
   /* Fake dgram pointer (non-NULL to trigger dgram check) */
-  sock->dgram = (void *)0x1;  /* Non-NULL fake pointer */
+  sock->dgram = (void *)0x1; /* Non-NULL fake pointer */
   sock->socket = NULL;
   sock->is_udp = 1;
 
@@ -131,9 +131,11 @@ test_simple_poll_modify_events_rejects_udp (void)
   ASSERT_NOT_NULL (udp_sock);
 
   /* Try to modify events for UDP socket - should fail */
-  int result = Socket_simple_poll_modify_events (
-      poll, (SocketSimple_Socket_T)udp_sock, SOCKET_SIMPLE_POLL_READ,
-      SOCKET_SIMPLE_POLL_WRITE);
+  int result
+      = Socket_simple_poll_modify_events (poll,
+                                          (SocketSimple_Socket_T)udp_sock,
+                                          SOCKET_SIMPLE_POLL_READ,
+                                          SOCKET_SIMPLE_POLL_WRITE);
   ASSERT_EQ (-1, result);
 
   /* Verify error message */
@@ -156,15 +158,15 @@ test_simple_poll_consistent_error_message (void)
   ASSERT_NOT_NULL (udp_sock);
 
   /* Test add */
-  Socket_simple_poll_add (poll, (SocketSimple_Socket_T)udp_sock,
-                          SOCKET_SIMPLE_POLL_READ, NULL);
+  Socket_simple_poll_add (
+      poll, (SocketSimple_Socket_T)udp_sock, SOCKET_SIMPLE_POLL_READ, NULL);
   const char *error1 = Socket_simple_error ();
   ASSERT_NOT_NULL (error1);
   ASSERT_NOT_NULL (strstr (error1, "UDP sockets not supported"));
 
   /* Test mod */
-  Socket_simple_poll_mod (poll, (SocketSimple_Socket_T)udp_sock,
-                          SOCKET_SIMPLE_POLL_WRITE, NULL);
+  Socket_simple_poll_mod (
+      poll, (SocketSimple_Socket_T)udp_sock, SOCKET_SIMPLE_POLL_WRITE, NULL);
   const char *error2 = Socket_simple_error ();
   ASSERT_NOT_NULL (error2);
   ASSERT_NOT_NULL (strstr (error2, "UDP sockets not supported"));
@@ -176,7 +178,8 @@ test_simple_poll_consistent_error_message (void)
   ASSERT_NOT_NULL (strstr (error3, "UDP sockets not supported"));
 
   /* Test modify_events */
-  Socket_simple_poll_modify_events (poll, (SocketSimple_Socket_T)udp_sock,
+  Socket_simple_poll_modify_events (poll,
+                                    (SocketSimple_Socket_T)udp_sock,
                                     SOCKET_SIMPLE_POLL_READ,
                                     SOCKET_SIMPLE_POLL_WRITE);
   const char *error4 = Socket_simple_error ();

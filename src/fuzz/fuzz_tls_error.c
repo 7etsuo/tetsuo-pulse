@@ -23,8 +23,9 @@
  * - Format string safety
  * - Memory safety with edge case buffer sizes
  *
- * Build: CC=clang cmake .. -DENABLE_FUZZING=ON -DENABLE_TLS=ON && make fuzz_tls_error
- * Run:   ./fuzz_tls_error corpus/tls_error/ -fork=16 -max_len=4096
+ * Build: CC=clang cmake .. -DENABLE_FUZZING=ON -DENABLE_TLS=ON && make
+ * fuzz_tls_error Run:   ./fuzz_tls_error corpus/tls_error/ -fork=16
+ * -max_len=4096
  */
 
 #if SOCKET_HAS_TLS
@@ -66,11 +67,14 @@ push_synthetic_error (void)
    * ERR_put_error is deprecated in OpenSSL 3.0 but still works.
    * We use ERR_raise_data for OpenSSL 3.0+ compatibility. */
 #if OPENSSL_VERSION_NUMBER >= 0x30000000L
-  ERR_raise_data (ERR_LIB_SSL, SSL_R_CERTIFICATE_VERIFY_FAILED,
-                  "synthetic fuzz error");
+  ERR_raise_data (
+      ERR_LIB_SSL, SSL_R_CERTIFICATE_VERIFY_FAILED, "synthetic fuzz error");
 #else
-  ERR_put_error (ERR_LIB_SSL, SSL_F_SSL_CTX_USE_CERTIFICATE,
-                 SSL_R_CERTIFICATE_VERIFY_FAILED, __FILE__, __LINE__);
+  ERR_put_error (ERR_LIB_SSL,
+                 SSL_F_SSL_CTX_USE_CERTIFICATE,
+                 SSL_R_CERTIFICATE_VERIFY_FAILED,
+                 __FILE__,
+                 __LINE__);
 #endif
 }
 

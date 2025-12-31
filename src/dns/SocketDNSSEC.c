@@ -68,7 +68,7 @@
 
 
 const Except_T SocketDNSSEC_Failed
-    = {&SocketDNSSEC_Failed, "DNSSEC operation failed"};
+    = { &SocketDNSSEC_Failed, "DNSSEC operation failed" };
 
 /*
  * Key tag calculation (RFC 4034 Appendix B)
@@ -148,8 +148,10 @@ SocketDNSSEC_parse_dnskey (const SocketDNS_RR *rr, SocketDNSSEC_DNSKEY *dnskey)
  * Parse RRSIG record RDATA (RFC 4034 Section 3)
  */
 int
-SocketDNSSEC_parse_rrsig (const unsigned char *msg, size_t msglen,
-                           const SocketDNS_RR *rr, SocketDNSSEC_RRSIG *rrsig)
+SocketDNSSEC_parse_rrsig (const unsigned char *msg,
+                          size_t msglen,
+                          const SocketDNS_RR *rr,
+                          SocketDNSSEC_RRSIG *rrsig)
 {
   if (msg == NULL || rr == NULL || rrsig == NULL)
     return -1;
@@ -192,8 +194,12 @@ SocketDNSSEC_parse_rrsig (const unsigned char *msg, size_t msglen,
   /* Signer's Name: variable length, may use compression */
   size_t offset = (size_t)(p - msg);
   size_t consumed;
-  int len = SocketDNS_name_decode (msg, msglen, offset, rrsig->signer_name,
-                                   sizeof (rrsig->signer_name), &consumed);
+  int len = SocketDNS_name_decode (msg,
+                                   msglen,
+                                   offset,
+                                   rrsig->signer_name,
+                                   sizeof (rrsig->signer_name),
+                                   &consumed);
   if (len < 0)
     return -1;
   p += consumed;
@@ -269,8 +275,10 @@ SocketDNSSEC_parse_ds (const SocketDNS_RR *rr, SocketDNSSEC_DS *ds)
  * Parse NSEC record RDATA (RFC 4034 Section 4)
  */
 int
-SocketDNSSEC_parse_nsec (const unsigned char *msg, size_t msglen,
-                          const SocketDNS_RR *rr, SocketDNSSEC_NSEC *nsec)
+SocketDNSSEC_parse_nsec (const unsigned char *msg,
+                         size_t msglen,
+                         const SocketDNS_RR *rr,
+                         SocketDNSSEC_NSEC *nsec)
 {
   if (msg == NULL || rr == NULL || nsec == NULL)
     return -1;
@@ -284,8 +292,12 @@ SocketDNSSEC_parse_nsec (const unsigned char *msg, size_t msglen,
   /* Next Domain Name: variable length, may use compression */
   size_t offset = (size_t)(rr->rdata - msg);
   size_t consumed;
-  int len = SocketDNS_name_decode (msg, msglen, offset, nsec->next_domain,
-                                   sizeof (nsec->next_domain), &consumed);
+  int len = SocketDNS_name_decode (msg,
+                                   msglen,
+                                   offset,
+                                   nsec->next_domain,
+                                   sizeof (nsec->next_domain),
+                                   &consumed);
   if (len < 0)
     return -1;
 
@@ -361,8 +373,9 @@ SocketDNSSEC_parse_nsec3 (const SocketDNS_RR *rr, SocketDNSSEC_NSEC3 *nsec3)
  *   Each window covers 256 types (0-255, 256-511, etc.)
  */
 int
-SocketDNSSEC_type_in_bitmap (const unsigned char *bitmaps, size_t bitmaps_len,
-                              uint16_t rrtype)
+SocketDNSSEC_type_in_bitmap (const unsigned char *bitmaps,
+                             size_t bitmaps_len,
+                             uint16_t rrtype)
 {
   if (bitmaps == NULL || bitmaps_len == 0)
     return 0;
@@ -429,7 +442,8 @@ SocketDNSSEC_name_canonicalize (char *name)
  * @return Number of labels parsed
  */
 static int
-parse_domain_labels (const char *name, const char *labels[DNSSEC_MAX_LABELS],
+parse_domain_labels (const char *name,
+                     const char *labels[DNSSEC_MAX_LABELS],
                      size_t labellens[DNSSEC_MAX_LABELS])
 {
   int count = 0;
@@ -480,7 +494,8 @@ SocketDNSSEC_name_canonical_compare (const char *name1, const char *name2)
   int i1 = labels1 - 1, i2 = labels2 - 1;
   while (i1 >= 0 && i2 >= 0)
     {
-      size_t len = (labellen1[i1] < labellen2[i2]) ? labellen1[i1] : labellen2[i2];
+      size_t len
+          = (labellen1[i1] < labellen2[i2]) ? labellen1[i1] : labellen2[i2];
       for (size_t j = 0; j < len; j++)
         {
           unsigned char c1 = (unsigned char)label1[i1][j];
@@ -639,8 +654,11 @@ encode_canonical_name (const char *name, unsigned char *buf, size_t buflen)
 static int
 compute_ds_digest (const char *owner_name,
                    const SocketDNSSEC_DNSKEY *dnskey __attribute__ ((unused)),
-                   const unsigned char *rdata, size_t rdlen,
-                   uint8_t digest_type, unsigned char *digest, size_t *digest_len)
+                   const unsigned char *rdata,
+                   size_t rdlen,
+                   uint8_t digest_type,
+                   unsigned char *digest,
+                   size_t *digest_len)
 {
   const EVP_MD *md = NULL;
 
@@ -671,7 +689,8 @@ compute_ds_digest (const char *owner_name,
 
   /* Hash owner name in canonical wire format */
   unsigned char name_wire[DNS_MAX_NAME_LEN];
-  int name_len = encode_canonical_name (owner_name, name_wire, sizeof (name_wire));
+  int name_len
+      = encode_canonical_name (owner_name, name_wire, sizeof (name_wire));
   if (name_len < 0)
     {
       EVP_MD_CTX_free (ctx);
@@ -710,8 +729,8 @@ compute_ds_digest (const char *owner_name,
  */
 int
 SocketDNSSEC_verify_ds (const SocketDNSSEC_DS *ds,
-                         const SocketDNSSEC_DNSKEY *dnskey,
-                         const char *owner_name)
+                        const SocketDNSSEC_DNSKEY *dnskey,
+                        const char *owner_name)
 {
   if (ds == NULL || dnskey == NULL || owner_name == NULL)
     return -1;
@@ -726,7 +745,8 @@ SocketDNSSEC_verify_ds (const SocketDNSSEC_DS *ds,
 
 #ifdef SOCKET_HAS_TLS
   /* Reconstruct DNSKEY RDATA for hashing.
-   * Note: pubkey_len is uint16_t (max 65535), so adding 4 bytes cannot overflow. */
+   * Note: pubkey_len is uint16_t (max 65535), so adding 4 bytes cannot
+   * overflow. */
   size_t rdata_len = DNSSEC_DNSKEY_FIXED_SIZE + dnskey->pubkey_len;
   unsigned char *rdata = malloc (rdata_len);
   if (rdata == NULL)
@@ -740,8 +760,13 @@ SocketDNSSEC_verify_ds (const SocketDNSSEC_DS *ds,
   unsigned char computed_digest[DNSSEC_DS_MAX_DIGEST_LEN];
   size_t computed_len;
 
-  int ret = compute_ds_digest (owner_name, dnskey, rdata, rdata_len,
-                                ds->digest_type, computed_digest, &computed_len);
+  int ret = compute_ds_digest (owner_name,
+                               dnskey,
+                               rdata,
+                               rdata_len,
+                               ds->digest_type,
+                               computed_digest,
+                               &computed_len);
   free (rdata);
 
   if (ret < 0)
@@ -752,7 +777,8 @@ SocketDNSSEC_verify_ds (const SocketDNSSEC_DS *ds,
     return 0;
 
   /* Constant-time comparison to prevent timing attacks */
-  return (SocketCrypto_secure_compare (computed_digest, ds->digest, computed_len)
+  return (SocketCrypto_secure_compare (
+              computed_digest, ds->digest, computed_len)
           == 0)
              ? 1
              : 0;
@@ -768,7 +794,8 @@ SocketDNSSEC_verify_ds (const SocketDNSSEC_DS *ds,
 /*
  * Create RSA public key from DNSKEY
  * Returns pkey on success, NULL on error
- * Sets *status to DNSSEC_BOGUS for malformed data, DNSSEC_INDETERMINATE for system errors
+ * Sets *status to DNSSEC_BOGUS for malformed data, DNSSEC_INDETERMINATE for
+ * system errors
  */
 static EVP_PKEY *
 create_rsa_pkey_from_dnskey (const SocketDNSSEC_DNSKEY *dnskey, int *status)
@@ -839,8 +866,8 @@ create_rsa_pkey_from_dnskey (const SocketDNSSEC_DNSKEY *dnskey, int *status)
       return NULL;
     }
 
-  if (EVP_PKEY_fromdata_init (pctx) <= 0 ||
-      EVP_PKEY_fromdata (pctx, &pkey, EVP_PKEY_PUBLIC_KEY, params) <= 0)
+  if (EVP_PKEY_fromdata_init (pctx) <= 0
+      || EVP_PKEY_fromdata (pctx, &pkey, EVP_PKEY_PUBLIC_KEY, params) <= 0)
     {
       EVP_PKEY_CTX_free (pctx);
       BN_free (n);
@@ -878,7 +905,8 @@ create_rsa_pkey_from_dnskey (const SocketDNSSEC_DNSKEY *dnskey, int *status)
 /*
  * Create ECDSA public key from DNSKEY
  * Returns pkey on success, NULL on error
- * Sets *status to DNSSEC_BOGUS for malformed data, DNSSEC_INDETERMINATE for system errors
+ * Sets *status to DNSSEC_BOGUS for malformed data, DNSSEC_INDETERMINATE for
+ * system errors
  */
 static EVP_PKEY *
 create_ecdsa_pkey_from_dnskey (const SocketDNSSEC_DNSKEY *dnskey, int *status)
@@ -907,8 +935,8 @@ create_ecdsa_pkey_from_dnskey (const SocketDNSSEC_DNSKEY *dnskey, int *status)
   const char *group_name = (nid == NID_X9_62_prime256v1) ? "P-256" : "P-384";
   OSSL_PARAM params[3];
   params[0] = OSSL_PARAM_construct_utf8_string ("group", (char *)group_name, 0);
-  params[1] = OSSL_PARAM_construct_octet_string ("pub", pubkey_uncompressed,
-                                                  1 + 2 * coord_size);
+  params[1] = OSSL_PARAM_construct_octet_string (
+      "pub", pubkey_uncompressed, 1 + 2 * coord_size);
   params[2] = OSSL_PARAM_construct_end ();
 
   EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_from_name (NULL, "EC", NULL);
@@ -918,8 +946,8 @@ create_ecdsa_pkey_from_dnskey (const SocketDNSSEC_DNSKEY *dnskey, int *status)
       return NULL;
     }
 
-  if (EVP_PKEY_fromdata_init (pctx) <= 0 ||
-      EVP_PKEY_fromdata (pctx, &pkey, EVP_PKEY_PUBLIC_KEY, params) <= 0)
+  if (EVP_PKEY_fromdata_init (pctx) <= 0
+      || EVP_PKEY_fromdata (pctx, &pkey, EVP_PKEY_PUBLIC_KEY, params) <= 0)
     {
       EVP_PKEY_CTX_free (pctx);
       *status = DNSSEC_INDETERMINATE;
@@ -964,13 +992,14 @@ create_ecdsa_pkey_from_dnskey (const SocketDNSSEC_DNSKEY *dnskey, int *status)
 /*
  * Create EdDSA public key from DNSKEY
  * Returns pkey on success, NULL on error
- * Sets *status to DNSSEC_BOGUS for malformed data, DNSSEC_INDETERMINATE for system errors
+ * Sets *status to DNSSEC_BOGUS for malformed data, DNSSEC_INDETERMINATE for
+ * system errors
  */
 static EVP_PKEY *
 create_eddsa_pkey_from_dnskey (const SocketDNSSEC_DNSKEY *dnskey, int *status)
 {
   int type = (dnskey->algorithm == DNSSEC_ALGO_ED25519) ? EVP_PKEY_ED25519
-                                                         : EVP_PKEY_ED448;
+                                                        : EVP_PKEY_ED448;
   size_t key_len = (dnskey->algorithm == DNSSEC_ALGO_ED25519)
                        ? DNSSEC_ED25519_PUBKEY_SIZE
                        : DNSSEC_ED448_PUBKEY_SIZE;
@@ -981,7 +1010,8 @@ create_eddsa_pkey_from_dnskey (const SocketDNSSEC_DNSKEY *dnskey, int *status)
       return NULL;
     }
 
-  EVP_PKEY *pkey = EVP_PKEY_new_raw_public_key (type, NULL, dnskey->pubkey, key_len);
+  EVP_PKEY *pkey
+      = EVP_PKEY_new_raw_public_key (type, NULL, dnskey->pubkey, key_len);
   if (pkey == NULL)
     {
       *status = DNSSEC_INDETERMINATE;
@@ -997,11 +1027,11 @@ create_eddsa_pkey_from_dnskey (const SocketDNSSEC_DNSKEY *dnskey, int *status)
  */
 static int
 construct_rrsig_signed_data (EVP_MD_CTX *ctx,
-                              const SocketDNSSEC_RRSIG *rrsig,
-                              const unsigned char *msg,
-                              size_t msglen,
-                              size_t rrset_offset,
-                              size_t rrset_count)
+                             const SocketDNSSEC_RRSIG *rrsig,
+                             const unsigned char *msg,
+                             size_t msglen,
+                             size_t rrset_offset,
+                             size_t rrset_count)
 {
   /*
    * Feed signed data:
@@ -1038,8 +1068,8 @@ construct_rrsig_signed_data (EVP_MD_CTX *ctx,
 
   /* Signer's Name in canonical wire format */
   int name_len = encode_canonical_name (rrsig->signer_name,
-                                         rrsig_rdata + rrsig_rdata_len,
-                                         sizeof (rrsig_rdata) - rrsig_rdata_len);
+                                        rrsig_rdata + rrsig_rdata_len,
+                                        sizeof (rrsig_rdata) - rrsig_rdata_len);
   if (name_len < 0)
     return -1;
   rrsig_rdata_len += name_len;
@@ -1060,7 +1090,8 @@ construct_rrsig_signed_data (EVP_MD_CTX *ctx,
       size_t consumed;
 
       /* Decode the resource record */
-      if (SocketDNS_rr_decode (msg, msglen, current_offset, &rr, &consumed) != 0)
+      if (SocketDNS_rr_decode (msg, msglen, current_offset, &rr, &consumed)
+          != 0)
         return -1;
 
       /* Verify this RR is part of the covered RRset */
@@ -1071,12 +1102,14 @@ construct_rrsig_signed_data (EVP_MD_CTX *ctx,
           continue;
         }
 
-      /* Build canonical RR data: owner | type | class | TTL | RDLENGTH | RDATA */
+      /* Build canonical RR data: owner | type | class | TTL | RDLENGTH | RDATA
+       */
       unsigned char rr_canonical[DNS_MAX_NAME_LEN + 10 + DNS_MAX_RDATA_LEN];
       size_t rr_len = 0;
 
       /* Owner name in canonical (lowercase) wire format */
-      int owner_len = encode_canonical_name (rr.name, rr_canonical, sizeof (rr_canonical));
+      int owner_len = encode_canonical_name (
+          rr.name, rr_canonical, sizeof (rr_canonical));
       if (owner_len < 0)
         return -1;
       rr_len += owner_len;
@@ -1093,7 +1126,8 @@ construct_rrsig_signed_data (EVP_MD_CTX *ctx,
       socket_util_pack_be16 (rr_canonical + rr_len, rr.rclass);
       rr_len += 2;
 
-      /* TTL - use original TTL from RRSIG, not current RR TTL (RFC 4035 5.3.2) */
+      /* TTL - use original TTL from RRSIG, not current RR TTL (RFC 4035 5.3.2)
+       */
       socket_util_pack_be32 (rr_canonical + rr_len, rrsig->original_ttl);
       rr_len += 4;
 
@@ -1123,9 +1157,9 @@ construct_rrsig_signed_data (EVP_MD_CTX *ctx,
  */
 static unsigned char *
 convert_ecdsa_signature_to_der (const unsigned char *raw_sig,
-                                 size_t raw_sig_len,
-                                 uint8_t algorithm,
-                                 size_t *der_sig_len)
+                                size_t raw_sig_len,
+                                uint8_t algorithm,
+                                size_t *der_sig_len)
 {
   size_t coord_size = (algorithm == DNSSEC_ALGO_ECDSAP256SHA256)
                           ? DNSSEC_ECDSA_P256_COORD_SIZE
@@ -1164,10 +1198,11 @@ convert_ecdsa_signature_to_der (const unsigned char *raw_sig,
  */
 int
 SocketDNSSEC_verify_rrsig (const SocketDNSSEC_RRSIG *rrsig,
-                            const SocketDNSSEC_DNSKEY *dnskey,
-                            const unsigned char *msg,
-                            size_t msglen __attribute__ ((unused)),
-                            size_t rrset_offset, size_t rrset_count)
+                           const SocketDNSSEC_DNSKEY *dnskey,
+                           const unsigned char *msg,
+                           size_t msglen __attribute__ ((unused)),
+                           size_t rrset_offset,
+                           size_t rrset_count)
 {
   if (rrsig == NULL || dnskey == NULL || msg == NULL)
     return -1;
@@ -1266,8 +1301,9 @@ SocketDNSSEC_verify_rrsig (const SocketDNSSEC_RRSIG *rrsig,
     }
 
   /* Build signature data */
-  if (construct_rrsig_signed_data (ctx, rrsig, msg, msglen,
-                                    rrset_offset, rrset_count) != 0)
+  if (construct_rrsig_signed_data (
+          ctx, rrsig, msg, msglen, rrset_offset, rrset_count)
+      != 0)
     {
       EVP_MD_CTX_free (ctx);
       EVP_PKEY_free (pkey);
@@ -1279,11 +1315,11 @@ SocketDNSSEC_verify_rrsig (const SocketDNSSEC_RRSIG *rrsig,
   size_t sig_len = rrsig->signature_len;
   unsigned char *der_sig = NULL;
 
-  if (dnskey->algorithm == DNSSEC_ALGO_ECDSAP256SHA256 ||
-      dnskey->algorithm == DNSSEC_ALGO_ECDSAP384SHA384)
+  if (dnskey->algorithm == DNSSEC_ALGO_ECDSAP256SHA256
+      || dnskey->algorithm == DNSSEC_ALGO_ECDSAP384SHA384)
     {
-      der_sig = convert_ecdsa_signature_to_der (sig, sig_len,
-                                                 dnskey->algorithm, &sig_len);
+      der_sig = convert_ecdsa_signature_to_der (
+          sig, sig_len, dnskey->algorithm, &sig_len);
       if (der_sig == NULL)
         {
           EVP_MD_CTX_free (ctx);
@@ -1376,7 +1412,7 @@ SocketDNSSEC_validator_free (SocketDNSSEC_Validator_T *validator)
 
 int
 SocketDNSSEC_validator_add_anchor (SocketDNSSEC_Validator_T validator,
-                                    const SocketDNSSEC_TrustAnchor *anchor)
+                                   const SocketDNSSEC_TrustAnchor *anchor)
 {
   if (validator == NULL || anchor == NULL)
     return -1;
@@ -1384,8 +1420,8 @@ SocketDNSSEC_validator_add_anchor (SocketDNSSEC_Validator_T validator,
   SocketDNSSEC_TrustAnchor *new_anchor;
 
   if (validator->arena)
-    new_anchor = Arena_alloc (validator->arena, sizeof (*new_anchor),
-                               __FILE__, __LINE__);
+    new_anchor = Arena_alloc (
+        validator->arena, sizeof (*new_anchor), __FILE__, __LINE__);
   else
     new_anchor = malloc (sizeof (*new_anchor));
 
@@ -1404,21 +1440,23 @@ SocketDNSSEC_validator_add_anchor (SocketDNSSEC_Validator_T validator,
  * Base64 decoder for trust anchor parsing
  */
 static int
-base64_decode (const char *input, unsigned char *output, size_t *output_len,
+base64_decode (const char *input,
+               unsigned char *output,
+               size_t *output_len,
                size_t max_output)
 {
   static const unsigned char decode_table[256] = {
-      ['A'] = 0,  ['B'] = 1,  ['C'] = 2,  ['D'] = 3,  ['E'] = 4,  ['F'] = 5,
-      ['G'] = 6,  ['H'] = 7,  ['I'] = 8,  ['J'] = 9,  ['K'] = 10, ['L'] = 11,
-      ['M'] = 12, ['N'] = 13, ['O'] = 14, ['P'] = 15, ['Q'] = 16, ['R'] = 17,
-      ['S'] = 18, ['T'] = 19, ['U'] = 20, ['V'] = 21, ['W'] = 22, ['X'] = 23,
-      ['Y'] = 24, ['Z'] = 25, ['a'] = 26, ['b'] = 27, ['c'] = 28, ['d'] = 29,
-      ['e'] = 30, ['f'] = 31, ['g'] = 32, ['h'] = 33, ['i'] = 34, ['j'] = 35,
-      ['k'] = 36, ['l'] = 37, ['m'] = 38, ['n'] = 39, ['o'] = 40, ['p'] = 41,
-      ['q'] = 42, ['r'] = 43, ['s'] = 44, ['t'] = 45, ['u'] = 46, ['v'] = 47,
-      ['w'] = 48, ['x'] = 49, ['y'] = 50, ['z'] = 51, ['0'] = 52, ['1'] = 53,
-      ['2'] = 54, ['3'] = 55, ['4'] = 56, ['5'] = 57, ['6'] = 58, ['7'] = 59,
-      ['8'] = 60, ['9'] = 61, ['+'] = 62, ['/'] = 63,
+    ['A'] = 0,  ['B'] = 1,  ['C'] = 2,  ['D'] = 3,  ['E'] = 4,  ['F'] = 5,
+    ['G'] = 6,  ['H'] = 7,  ['I'] = 8,  ['J'] = 9,  ['K'] = 10, ['L'] = 11,
+    ['M'] = 12, ['N'] = 13, ['O'] = 14, ['P'] = 15, ['Q'] = 16, ['R'] = 17,
+    ['S'] = 18, ['T'] = 19, ['U'] = 20, ['V'] = 21, ['W'] = 22, ['X'] = 23,
+    ['Y'] = 24, ['Z'] = 25, ['a'] = 26, ['b'] = 27, ['c'] = 28, ['d'] = 29,
+    ['e'] = 30, ['f'] = 31, ['g'] = 32, ['h'] = 33, ['i'] = 34, ['j'] = 35,
+    ['k'] = 36, ['l'] = 37, ['m'] = 38, ['n'] = 39, ['o'] = 40, ['p'] = 41,
+    ['q'] = 42, ['r'] = 43, ['s'] = 44, ['t'] = 45, ['u'] = 46, ['v'] = 47,
+    ['w'] = 48, ['x'] = 49, ['y'] = 50, ['z'] = 51, ['0'] = 52, ['1'] = 53,
+    ['2'] = 54, ['3'] = 55, ['4'] = 56, ['5'] = 57, ['6'] = 58, ['7'] = 59,
+    ['8'] = 60, ['9'] = 61, ['+'] = 62, ['/'] = 63,
   };
 
   size_t i = 0;
@@ -1465,9 +1503,12 @@ base64_decode (const char *input, unsigned char *output, size_t *output_len,
  * Parse DNSKEY from BIND format: flags protocol algorithm base64key
  */
 static int
-parse_bind_dnskey (const char *zone, const char *fields[], int field_count,
+parse_bind_dnskey (const char *zone,
+                   const char *fields[],
+                   int field_count,
                    SocketDNSSEC_TrustAnchor *anchor,
-                   unsigned char *key_buffer, size_t key_buffer_size)
+                   unsigned char *key_buffer,
+                   size_t key_buffer_size)
 {
   if (field_count < 7)
     return -1;
@@ -1516,8 +1557,11 @@ parse_bind_dnskey (const char *zone, const char *fields[], int field_count,
  * Parse DS from BIND format: keytag algorithm digesttype digest
  */
 static int
-parse_bind_ds (const char *zone, const char *fields[], int field_count,
-               SocketDNSSEC_TrustAnchor *anchor, unsigned char *digest_buffer,
+parse_bind_ds (const char *zone,
+               const char *fields[],
+               int field_count,
+               SocketDNSSEC_TrustAnchor *anchor,
+               unsigned char *digest_buffer,
                size_t digest_buffer_size)
 {
   if (field_count < 7)
@@ -1569,7 +1613,7 @@ parse_bind_ds (const char *zone, const char *fields[], int field_count,
 
 int
 SocketDNSSEC_validator_load_anchors (SocketDNSSEC_Validator_T validator,
-                                      const char *filename)
+                                     const char *filename)
 {
   if (validator == NULL || filename == NULL)
     return -1;
@@ -1634,8 +1678,12 @@ SocketDNSSEC_validator_load_anchors (SocketDNSSEC_Validator_T validator,
       /* Parse DNSKEY or DS */
       if (strcasecmp (rrtype, "DNSKEY") == 0)
         {
-          if (parse_bind_dnskey (zone, fields, field_count, &anchor,
-                                 data_buffer, sizeof (data_buffer))
+          if (parse_bind_dnskey (zone,
+                                 fields,
+                                 field_count,
+                                 &anchor,
+                                 data_buffer,
+                                 sizeof (data_buffer))
               != 0)
             continue;
           data_len = anchor.data.dnskey.pubkey_len;
@@ -1643,8 +1691,8 @@ SocketDNSSEC_validator_load_anchors (SocketDNSSEC_Validator_T validator,
           /* Allocate pubkey in validator's arena */
           unsigned char *pubkey;
           if (validator->arena)
-            pubkey = Arena_alloc (validator->arena, data_len, __FILE__,
-                                  __LINE__);
+            pubkey
+                = Arena_alloc (validator->arena, data_len, __FILE__, __LINE__);
           else
             pubkey = malloc (data_len);
 
@@ -1659,7 +1707,11 @@ SocketDNSSEC_validator_load_anchors (SocketDNSSEC_Validator_T validator,
         }
       else if (strcasecmp (rrtype, "DS") == 0)
         {
-          if (parse_bind_ds (zone, fields, field_count, &anchor, data_buffer,
+          if (parse_bind_ds (zone,
+                             fields,
+                             field_count,
+                             &anchor,
+                             data_buffer,
                              sizeof (data_buffer))
               != 0)
             continue;
@@ -1668,8 +1720,8 @@ SocketDNSSEC_validator_load_anchors (SocketDNSSEC_Validator_T validator,
           /* Allocate digest in validator's arena */
           unsigned char *digest;
           if (validator->arena)
-            digest = Arena_alloc (validator->arena, data_len, __FILE__,
-                                  __LINE__);
+            digest
+                = Arena_alloc (validator->arena, data_len, __FILE__, __LINE__);
           else
             digest = malloc (data_len);
 

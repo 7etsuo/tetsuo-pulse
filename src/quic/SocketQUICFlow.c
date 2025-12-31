@@ -33,25 +33,26 @@
  * @param bytes Number of bytes to consume
  * @return Returns early with appropriate error code on failure
  */
-#define CONSUME_FLOW_SEND(ptr, consumed_field, max_field, bytes)              \
-  do                                                                           \
-    {                                                                          \
-      if (!(ptr))                                                              \
-        return QUIC_FLOW_ERROR_NULL;                                           \
-      if ((bytes) > UINT64_MAX - (ptr)->consumed_field)                        \
-        return QUIC_FLOW_ERROR_OVERFLOW;                                       \
-      uint64_t new_consumed = (ptr)->consumed_field + (bytes);                 \
-      if (new_consumed > (ptr)->max_field)                                     \
-        return QUIC_FLOW_ERROR_BLOCKED;                                        \
-      (ptr)->consumed_field = new_consumed;                                    \
-    }                                                                          \
+#define CONSUME_FLOW_SEND(ptr, consumed_field, max_field, bytes) \
+  do                                                             \
+    {                                                            \
+      if (!(ptr))                                                \
+        return QUIC_FLOW_ERROR_NULL;                             \
+      if ((bytes) > UINT64_MAX - (ptr)->consumed_field)          \
+        return QUIC_FLOW_ERROR_OVERFLOW;                         \
+      uint64_t new_consumed = (ptr)->consumed_field + (bytes);   \
+      if (new_consumed > (ptr)->max_field)                       \
+        return QUIC_FLOW_ERROR_BLOCKED;                          \
+      (ptr)->consumed_field = new_consumed;                      \
+    }                                                            \
   while (0)
 
 /**
- * @brief Helper macro to consume received bytes with overflow and bounds checking.
+ * @brief Helper macro to consume received bytes with overflow and bounds
+ * checking.
  *
- * This macro eliminates code duplication between connection-level and stream-level
- * flow control consume_recv functions. It performs:
+ * This macro eliminates code duplication between connection-level and
+ * stream-level flow control consume_recv functions. It performs:
  * 1. NULL pointer check
  * 2. Overflow detection (addition would exceed UINT64_MAX)
  * 3. Flow control bounds check (new_consumed <= max_field)
@@ -65,18 +66,18 @@
  * @note Caller must return QUIC_FLOW_OK after macro succeeds.
  * @note Macro returns error codes directly on failure.
  */
-#define CONSUME_FLOW_RECV(ptr, consumed_field, max_field, bytes)              \
-  do                                                                           \
-    {                                                                          \
-      if (!(ptr))                                                              \
-        return QUIC_FLOW_ERROR_NULL;                                           \
-      if ((bytes) > UINT64_MAX - (ptr)->consumed_field)                        \
-        return QUIC_FLOW_ERROR_OVERFLOW;                                       \
-      uint64_t new_consumed = (ptr)->consumed_field + (bytes);                 \
-      if (new_consumed > (ptr)->max_field)                                     \
-        return QUIC_FLOW_ERROR_BLOCKED;                                        \
-      (ptr)->consumed_field = new_consumed;                                    \
-    }                                                                          \
+#define CONSUME_FLOW_RECV(ptr, consumed_field, max_field, bytes) \
+  do                                                             \
+    {                                                            \
+      if (!(ptr))                                                \
+        return QUIC_FLOW_ERROR_NULL;                             \
+      if ((bytes) > UINT64_MAX - (ptr)->consumed_field)          \
+        return QUIC_FLOW_ERROR_OVERFLOW;                         \
+      uint64_t new_consumed = (ptr)->consumed_field + (bytes);   \
+      if (new_consumed > (ptr)->max_field)                       \
+        return QUIC_FLOW_ERROR_BLOCKED;                          \
+      (ptr)->consumed_field = new_consumed;                      \
+    }                                                            \
   while (0)
 
 /**
@@ -88,12 +89,11 @@
  * @param bytes Number of bytes to check
  * @return 1 if bytes can be sent, 0 otherwise
  */
-#define CAN_SEND_FLOW(ptr, consumed_field, max_field, bytes)                  \
-  (!(ptr)                                           ? 0                       \
-   : ((bytes) > UINT64_MAX - (ptr)->consumed_field) ? 0                       \
-                                                    : ((ptr)->consumed_field  \
-                                                       + (bytes))             \
-                                                          <= (ptr)->max_field)
+#define CAN_SEND_FLOW(ptr, consumed_field, max_field, bytes) \
+  (!(ptr) ? 0                                                \
+   : ((bytes) > UINT64_MAX - (ptr)->consumed_field)          \
+       ? 0                                                   \
+       : ((ptr)->consumed_field + (bytes)) <= (ptr)->max_field)
 
 /**
  * @brief Calculate available flow control window.
@@ -109,9 +109,10 @@
  * @return Available window in bytes, or 0 if blocked/invalid
  */
 #define GET_FLOW_WINDOW(ptr, consumed_field, max_field) \
-  (!(ptr) ? 0 : \
-   ((ptr)->consumed_field >= (ptr)->max_field) ? 0 : \
-   ((ptr)->max_field - (ptr)->consumed_field))
+  (!(ptr) ? 0                                           \
+   : ((ptr)->consumed_field >= (ptr)->max_field)        \
+       ? 0                                              \
+       : ((ptr)->max_field - (ptr)->consumed_field))
 
 /* ============================================================================
  * Connection-Level Flow Control
@@ -142,8 +143,10 @@ SocketQUICFlow_new (Arena_T arena)
 }
 
 SocketQUICFlow_Result
-SocketQUICFlow_init (SocketQUICFlow_T fc, uint64_t recv_max_data,
-                     uint64_t send_max_data, uint64_t max_streams_bidi,
+SocketQUICFlow_init (SocketQUICFlow_T fc,
+                     uint64_t recv_max_data,
+                     uint64_t send_max_data,
+                     uint64_t max_streams_bidi,
                      uint64_t max_streams_uni)
 {
   if (!fc)
@@ -252,8 +255,10 @@ SocketQUICFlowStream_new (Arena_T arena, uint64_t stream_id)
 }
 
 SocketQUICFlow_Result
-SocketQUICFlowStream_init (SocketQUICFlowStream_T fs, uint64_t stream_id,
-                           uint64_t recv_max_data, uint64_t send_max_data)
+SocketQUICFlowStream_init (SocketQUICFlowStream_T fs,
+                           uint64_t stream_id,
+                           uint64_t recv_max_data,
+                           uint64_t send_max_data)
 {
   if (!fs)
     return QUIC_FLOW_ERROR_NULL;
@@ -452,11 +457,11 @@ SocketQUICFlow_close_stream_uni (SocketQUICFlow_T fc)
  */
 
 static const char *result_strings[] = {
-    [QUIC_FLOW_OK] = "QUIC_FLOW_OK",
-    [QUIC_FLOW_ERROR_NULL] = "QUIC_FLOW_ERROR_NULL",
-    [QUIC_FLOW_ERROR_BLOCKED] = "QUIC_FLOW_ERROR_BLOCKED",
-    [QUIC_FLOW_ERROR_OVERFLOW] = "QUIC_FLOW_ERROR_OVERFLOW",
-    [QUIC_FLOW_ERROR_INVALID] = "QUIC_FLOW_ERROR_INVALID",
+  [QUIC_FLOW_OK] = "QUIC_FLOW_OK",
+  [QUIC_FLOW_ERROR_NULL] = "QUIC_FLOW_ERROR_NULL",
+  [QUIC_FLOW_ERROR_BLOCKED] = "QUIC_FLOW_ERROR_BLOCKED",
+  [QUIC_FLOW_ERROR_OVERFLOW] = "QUIC_FLOW_ERROR_OVERFLOW",
+  [QUIC_FLOW_ERROR_INVALID] = "QUIC_FLOW_ERROR_INVALID",
 };
 
 DEFINE_RESULT_STRING_FUNC (SocketQUICFlow, QUIC_FLOW_ERROR_INVALID)

@@ -77,9 +77,13 @@ bench_worker (void *arg)
               result->failed++;
               if (config->verbose)
                 {
-                  fprintf (stderr, "[Thread %d] Request %d failed: rc=%d, "
-                                   "status=%d\n",
-                           targ->thread_id, i, rc, response.status_code);
+                  fprintf (stderr,
+                           "[Thread %d] Request %d failed: rc=%d, "
+                           "status=%d\n",
+                           targ->thread_id,
+                           i,
+                           rc,
+                           response.status_code);
                 }
             }
         }
@@ -156,13 +160,13 @@ main (int argc, char **argv)
   printf ("tetsuo-socket HTTP benchmark\n");
   printf ("URL: %s\n", config.url);
   printf ("Threads: %d\n", config.threads);
-  printf ("Requests per thread: %d (+ %d warmup)\n", config.requests_per_thread,
+  printf ("Requests per thread: %d (+ %d warmup)\n",
+          config.requests_per_thread,
           config.warmup_requests);
 
   /* Create per-thread clients and results */
   SocketHTTPClient_T *clients = calloc (config.threads, sizeof (*clients));
-  BenchHTTPThreadResult *results
-      = calloc (config.threads, sizeof (*results));
+  BenchHTTPThreadResult *results = calloc (config.threads, sizeof (*results));
   BenchHTTPThreadArg *args = calloc (config.threads, sizeof (*args));
   pthread_t *threads = calloc (config.threads, sizeof (*threads));
 
@@ -186,8 +190,8 @@ main (int argc, char **argv)
                                     (size_t)config.requests_per_thread)
           != 0)
         {
-          fprintf (stderr, "Failed to allocate result buffer for thread %d\n",
-                   i);
+          fprintf (
+              stderr, "Failed to allocate result buffer for thread %d\n", i);
           return 1;
         }
 
@@ -236,8 +240,8 @@ main (int argc, char **argv)
   /* Write JSON output if requested */
   if (config.output_file)
     {
-      if (bench_write_json (config.output_file, "tetsuo-socket", &config,
-                            &result)
+      if (bench_write_json (
+              config.output_file, "tetsuo-socket", &config, &result)
           == 0)
         {
           printf ("Results written to: %s\n", config.output_file);

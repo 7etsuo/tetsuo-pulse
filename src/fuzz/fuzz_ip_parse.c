@@ -77,18 +77,30 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         /* This may raise exception for invalid ports - that's OK */
         SocketCommon_validate_port (port, SocketCommon_Failed);
       }
-      EXCEPT (SocketCommon_Failed) { /* Expected for invalid ports */ }
+      EXCEPT (SocketCommon_Failed)
+      { /* Expected for invalid ports */
+      }
       END_TRY;
     }
 
   /* Test host validation */
-  TRY { SocketCommon_validate_host_not_null (ip_str, SocketCommon_Failed); }
-  EXCEPT (SocketCommon_Failed) { /* Should not happen for non-NULL string */ }
+  TRY
+  {
+    SocketCommon_validate_host_not_null (ip_str, SocketCommon_Failed);
+  }
+  EXCEPT (SocketCommon_Failed)
+  { /* Should not happen for non-NULL string */
+  }
   END_TRY;
 
   /* Test NULL host validation */
-  TRY { SocketCommon_validate_host_not_null (NULL, SocketCommon_Failed); }
-  EXCEPT (SocketCommon_Failed) { /* Expected - NULL host is invalid */ }
+  TRY
+  {
+    SocketCommon_validate_host_not_null (NULL, SocketCommon_Failed);
+  }
+  EXCEPT (SocketCommon_Failed)
+  { /* Expected - NULL host is invalid */
+  }
   END_TRY;
 
   /* Test wildcard normalization */

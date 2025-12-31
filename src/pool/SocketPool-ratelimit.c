@@ -90,11 +90,13 @@ ip_limit_allows (const T pool, const char *client_ip)
 /**
  * pool_disable_component - Safely disable a pool component under lock.
  * @pool: The connection pool instance.
- * @component: Address of the component pointer to nullify (e.g., &pool->conn_limiter).
+ * @component: Address of the component pointer to nullify (e.g.,
+ * &pool->conn_limiter).
  *
  * Acquires the pool mutex, sets the referenced component pointer to NULL,
  * and releases the mutex. This helper centralizes the common disable pattern
- * used when configuration parameters indicate disabling a feature (e.g., rate=0).
+ * used when configuration parameters indicate disabling a feature (e.g.,
+ * rate=0).
  *
  * Reduces code duplication in setter functions like SocketPool_setconnrate()
  * and SocketPool_setmaxperip().
@@ -136,7 +138,8 @@ pool_disable_component (T pool, void **component)
  * @see SocketPool_release_ip() for release operation
  */
 static void
-locked_ip_op_void (T pool, const char *ip,
+locked_ip_op_void (T pool,
+                   const char *ip,
                    void (*op) (SocketIPTracker_T, const char *))
 {
   if (!pool_is_valid_ip (ip))
@@ -162,7 +165,8 @@ locked_ip_op_void (T pool, const char *ip,
  * @threadsafe Yes
  */
 static int
-locked_ip_op_int (T pool, const char *ip,
+locked_ip_op_int (T pool,
+                  const char *ip,
                   int (*op) (SocketIPTracker_T, const char *),
                   int no_tracker_retval)
 {
@@ -198,21 +202,21 @@ locked_ip_op_int (T pool, const char *ip,
  * Returns: 1 on success, 0 on failure
  * Thread-safe: Caller must hold pool mutex
  */
-#define CONFIGURE_POOL_COMPONENT(POOL, FIELD, RECONFIG_CALL, CREATE_CALL,    \
-                                 EXCEPTION)                                   \
-  do                                                                          \
-    {                                                                         \
-      if ((POOL)->FIELD)                                                      \
-        {                                                                     \
-          RECONFIG_CALL;                                                      \
-          return 1;                                                           \
-        }                                                                     \
-      TRY (POOL)->FIELD = (CREATE_CALL);                                      \
-      EXCEPT (EXCEPTION)                                                      \
-      return 0;                                                               \
-      END_TRY;                                                                \
-      return 1;                                                               \
-    }                                                                         \
+#define CONFIGURE_POOL_COMPONENT(                       \
+    POOL, FIELD, RECONFIG_CALL, CREATE_CALL, EXCEPTION) \
+  do                                                    \
+    {                                                   \
+      if ((POOL)->FIELD)                                \
+        {                                               \
+          RECONFIG_CALL;                                \
+          return 1;                                     \
+        }                                               \
+      TRY (POOL)->FIELD = (CREATE_CALL);                \
+      EXCEPT (EXCEPTION)                                \
+      return 0;                                         \
+      END_TRY;                                          \
+      return 1;                                         \
+    }                                                   \
   while (0)
 
 /* ============================================================================
@@ -232,8 +236,11 @@ static int
 configure_rate_limiter (T pool, size_t rate, size_t burst)
 {
   CONFIGURE_POOL_COMPONENT (
-      pool, conn_limiter, SocketRateLimit_configure (pool->conn_limiter, rate, burst),
-      SocketRateLimit_new (pool->arena, rate, burst), SocketRateLimit_Failed);
+      pool,
+      conn_limiter,
+      SocketRateLimit_configure (pool->conn_limiter, rate, burst),
+      SocketRateLimit_new (pool->arena, rate, burst),
+      SocketRateLimit_Failed);
 }
 
 /* ============================================================================
@@ -252,10 +259,12 @@ static int
 configure_ip_tracker (T pool, int max_conns)
 {
   CONFIGURE_POOL_COMPONENT (
-      pool, ip_tracker, SocketIPTracker_setmax (pool->ip_tracker, max_conns),
-      SocketIPTracker_new (pool->arena, max_conns), SocketIPTracker_Failed);
+      pool,
+      ip_tracker,
+      SocketIPTracker_setmax (pool->ip_tracker, max_conns),
+      SocketIPTracker_new (pool->arena, max_conns),
+      SocketIPTracker_Failed);
 }
-
 
 
 /* ============================================================================
@@ -267,37 +276,44 @@ configure_ip_tracker (T pool, int max_conns)
  * @brief Configure the global connection acceptance rate limit for the pool.
  * @ingroup connection_mgmt
  *
- * Applies token bucket rate limiting to incoming connections via SocketPool_accept_limited().
- * Limits the rate of new connections added to the pool to prevent overload from SYN floods
- * or rapid client bursts. Each accepted connection consumes SOCKET_POOL_TOKENS_PER_ACCEPT
- * tokens (typically 1).
+ * Applies token bucket rate limiting to incoming connections via
+ * SocketPool_accept_limited(). Limits the rate of new connections added to the
+ * pool to prevent overload from SYN floods or rapid client bursts. Each
+ * accepted connection consumes SOCKET_POOL_TOKENS_PER_ACCEPT tokens (typically
+ * 1).
  *
  * When conns_per_sec <= 0, rate limiting is disabled by nullifying the internal
- * SocketRateLimit_T instance. Burst capacity allows temporary spikes; defaults to
- * conns_per_sec if unspecified (<=0).
+ * SocketRateLimit_T instance. Burst capacity allows temporary spikes; defaults
+ * to conns_per_sec if unspecified (<=0).
  *
- * Parameter validation enforces security limits: conns_per_sec <= SOCKET_POOL_MAX_RATE_PER_SEC
- * and burst <= rate * SOCKET_POOL_MAX_BURST_MULTIPLIER to avoid excessive memory allocation
- * or DoS vectors.
+ * Parameter validation enforces security limits: conns_per_sec <=
+ * SOCKET_POOL_MAX_RATE_PER_SEC and burst <= rate *
+ * SOCKET_POOL_MAX_BURST_MULTIPLIER to avoid excessive memory allocation or DoS
+ * vectors.
  *
- * Dynamic reconfiguration is supported; changes take effect immediately for subsequent
- * accepts without disrupting existing connections.
+ * Dynamic reconfiguration is supported; changes take effect immediately for
+ * subsequent accepts without disrupting existing connections.
  *
  * @param[in] pool The connection pool to configure.
- * @param[in] conns_per_sec Maximum connections per second (tokens replenished/sec). 0 disables.
+ * @param[in] conns_per_sec Maximum connections per second (tokens
+ * replenished/sec). 0 disables.
  * @param[in] burst Maximum burst tokens (defaults to conns_per_sec if <=0).
  *
  * @throws SocketPool_Failed
- * - Invalid parameters (e.g., conns_per_sec > max allowed, unsafe burst size via SocketSecurity_check_multiply).
- * - Internal allocation failure when creating the rate limiter (Arena_Failed propagated).
+ * - Invalid parameters (e.g., conns_per_sec > max allowed, unsafe burst size
+ * via SocketSecurity_check_multiply).
+ * - Internal allocation failure when creating the rate limiter (Arena_Failed
+ * propagated).
  *
- * @threadsafe Yes - acquires pool mutex internally. Concurrent calls are safe and serialized.
+ * @threadsafe Yes - acquires pool mutex internally. Concurrent calls are safe
+ * and serialized.
  *
  * ## Basic Usage Example
  *
  * @code{.c}
  * Arena_T arena = Arena_new();
- * SocketPool_T pool = SocketPool_new(arena, 1000, 4096);  // max 1000 conns, 4KB buffers
+ * SocketPool_T pool = SocketPool_new(arena, 1000, 4096);  // max 1000 conns,
+ * 4KB buffers
  *
  * // Limit to 100 new connections per second, burst up to 200
  * SocketPool_setconnrate(pool, 100, 200);
@@ -323,9 +339,12 @@ configure_ip_tracker (T pool, int max_conns)
  * SocketPool_setconnrate(pool, 1000, 5000);  // High rate for trusted networks
  * @endcode
  *
- * @note Refill uses monotonic time (CLOCK_MONOTONIC); resistant to time skew attacks.
- * @warning No automatic token refund on accept() failures (intentional anti-DoS measure).
- * @warning Excessive burst may lead to temporary overload; tune based on server capacity.
+ * @note Refill uses monotonic time (CLOCK_MONOTONIC); resistant to time skew
+ * attacks.
+ * @warning No automatic token refund on accept() failures (intentional anti-DoS
+ * measure).
+ * @warning Excessive burst may lead to temporary overload; tune based on server
+ * capacity.
  * @complexity O(1) - either reconfigures existing limiter or allocates new one.
  *
  * @see SocketPool_getconnrate() for querying current limits.
@@ -362,13 +381,15 @@ SocketPool_setconnrate (T pool, int conns_per_sec, int burst)
       RAISE_POOL_MSG (SocketPool_Failed,
                       "Invalid connection rate: rate=%d burst=%d (max %d/sec, "
                       "burst <=%dx rate)",
-                      conns_per_sec, safe_burst, SOCKET_POOL_MAX_RATE_PER_SEC,
+                      conns_per_sec,
+                      safe_burst,
+                      SOCKET_POOL_MAX_RATE_PER_SEC,
                       SOCKET_POOL_MAX_BURST_MULTIPLIER);
     }
 
   POOL_LOCK (pool);
-  config_ok = configure_rate_limiter (pool, (size_t)conns_per_sec,
-                                      (size_t)safe_burst);
+  config_ok = configure_rate_limiter (
+      pool, (size_t)conns_per_sec, (size_t)safe_burst);
   POOL_UNLOCK (pool);
 
   if (!config_ok)
@@ -380,9 +401,9 @@ SocketPool_setconnrate (T pool, int conns_per_sec, int burst)
  * @brief Retrieve the currently configured connection rate limit.
  * @ingroup connection_mgmt
  *
- * Returns the conns_per_sec value last set via SocketPool_setconnrate(), or 0 if
- * rate limiting is disabled. The return value reflects the token replenishment
- * rate in connections per second.
+ * Returns the conns_per_sec value last set via SocketPool_setconnrate(), or 0
+ * if rate limiting is disabled. The return value reflects the token
+ * replenishment rate in connections per second.
  *
  * Internal size_t is capped at INT_MAX for int return compatibility; values
  * exceeding INT_MAX (rare, due to config limits) are clamped to INT_MAX.
@@ -397,8 +418,9 @@ SocketPool_setconnrate (T pool, int conns_per_sec, int burst)
  *
  * @throws None - query operation only; no exceptions raised.
  *
- * @threadsafe Yes - acquires pool mutex briefly for atomic read of limiter state.
- * Concurrent queries safe; does not block accept operations significantly.
+ * @threadsafe Yes - acquires pool mutex briefly for atomic read of limiter
+ * state. Concurrent queries safe; does not block accept operations
+ * significantly.
  *
  * ## Usage Example
  *
@@ -419,14 +441,15 @@ SocketPool_setconnrate (T pool, int conns_per_sec, int burst)
  * }
  * @endcode
  *
- * @note Does not return burst capacity; use SocketRateLimit APIs directly if needed
- *       (not exposed publicly for pool).
+ * @note Does not return burst capacity; use SocketRateLimit APIs directly if
+ * needed (not exposed publicly for pool).
  * @note Value is 0 after SocketPool_new() until explicitly set.
  * @complexity O(1) - simple mutex-protected field read.
  *
  * @see SocketPool_setconnrate() for setting the limit.
  * @see SocketRateLimit_get_rate() underlying query (clamped to int).
- * @see SocketPool_stats() for broader pool metrics including rate limiter stats.
+ * @see SocketPool_stats() for broader pool metrics including rate limiter
+ * stats.
  */
 int
 SocketPool_getconnrate (T pool)
@@ -451,26 +474,30 @@ SocketPool_getconnrate (T pool)
  */
 
 /**
- * @brief Configure the maximum number of concurrent connections per client IP address.
+ * @brief Configure the maximum number of concurrent connections per client IP
+ * address.
  * @ingroup connection_mgmt
  *
- * Enforces per-IP connection limits to mitigate abuse from single sources (e.g., bots,
- * scanners, or compromised hosts). Uses internal SocketIPTracker_T to track active
- * connections by IP address string obtained via Socket_getpeeraddr().
+ * Enforces per-IP connection limits to mitigate abuse from single sources
+ * (e.g., bots, scanners, or compromised hosts). Uses internal SocketIPTracker_T
+ * to track active connections by IP address string obtained via
+ * Socket_getpeeraddr().
  *
- * When max_conns <= 0, per-IP limiting is disabled (unlimited per IP, subject to global
- * maxconns and rate limits). Tracking begins automatically on successful SocketPool_add()
- * or manual SocketPool_track_ip() calls, and decrements on SocketPool_remove() or
- * SocketPool_release_ip().
+ * When max_conns <= 0, per-IP limiting is disabled (unlimited per IP, subject
+ * to global maxconns and rate limits). Tracking begins automatically on
+ * successful SocketPool_add() or manual SocketPool_track_ip() calls, and
+ * decrements on SocketPool_remove() or SocketPool_release_ip().
  *
- * Validation caps max_conns <= SOCKET_POOL_MAX_CONNECTIONS_PER_IP to prevent hash table
- * memory exhaustion from excessive state (e.g., millions of IPs).
+ * Validation caps max_conns <= SOCKET_POOL_MAX_CONNECTIONS_PER_IP to prevent
+ * hash table memory exhaustion from excessive state (e.g., millions of IPs).
  *
- * Integrates with SocketPool_accept_limited() and SocketPool_add(): rejects if limit reached.
- * Dynamic changes affect new connections only; existing exceedances persist until closed.
+ * Integrates with SocketPool_accept_limited() and SocketPool_add(): rejects if
+ * limit reached. Dynamic changes affect new connections only; existing
+ * exceedances persist until closed.
  *
  * @param[in] pool The connection pool to configure.
- * @param[in] max_conns Maximum concurrent connections allowed per IP (0 disables).
+ * @param[in] max_conns Maximum concurrent connections allowed per IP (0
+ * disables).
  *
  * @throws SocketPool_Failed
  * - Invalid max_conns (> configured maximum).
@@ -487,7 +514,8 @@ SocketPool_getconnrate (T pool)
  * SocketPool_setmaxperip(pool, 5);
  *
  * // Whitelist trusted IPs (unlimited for them)
- * SocketPool_iptracker_whitelist_add(pool->ip_tracker, "192.168.1.1");  // If exposed
+ * SocketPool_iptracker_whitelist_add(pool->ip_tracker, "192.168.1.1");  // If
+ * exposed
  *
  * // In server loop:
  * Socket_T client = SocketPool_accept_limited(pool, listener);
@@ -510,9 +538,12 @@ SocketPool_getconnrate (T pool)
  * int count_for_ip = SocketPool_ip_count(pool, "10.0.0.1");
  * @endcode
  *
- * @note IP tracking uses string representation (IPv4/IPv6); Unix domain sockets skipped (NULL ip).
- * @note Whitelist/blacklist via underlying SocketIPTracker (if public API exposed).
- * @note Counts persist until release; manual track/release for non-pooled sockets.
+ * @note IP tracking uses string representation (IPv4/IPv6); Unix domain sockets
+ * skipped (NULL ip).
+ * @note Whitelist/blacklist via underlying SocketIPTracker (if public API
+ * exposed).
+ * @note Counts persist until release; manual track/release for non-pooled
+ * sockets.
  * @warning Without rate limiting, vulnerable to connection exhaustion per IP.
  * @complexity O(1) - reconfigures or creates tracker.
  *
@@ -540,7 +571,8 @@ SocketPool_setmaxperip (T pool, int max_conns)
   if (max_conns > SOCKET_POOL_MAX_CONNECTIONS_PER_IP)
     {
       RAISE_POOL_MSG (SocketPool_Failed,
-                      "Invalid max per IP: %d (range 1-%d)", max_conns,
+                      "Invalid max per IP: %d (range 1-%d)",
+                      max_conns,
                       SOCKET_POOL_MAX_CONNECTIONS_PER_IP);
     }
 
@@ -593,7 +625,8 @@ SocketPool_setmaxperip (T pool, int max_conns)
  * }
  * @endcode
  *
- * @note Complements global limits; does not affect whitelisted IPs if supported.
+ * @note Complements global limits; does not affect whitelisted IPs if
+ * supported.
  * @note IPv6 addresses tracked separately from IPv4.
  * @complexity O(1) - direct field access under mutex.
  *
@@ -621,28 +654,33 @@ SocketPool_getmaxperip (T pool)
  */
 
 /**
- * @brief Non-consuming pre-check if a new connection acceptance would be allowed.
+ * @brief Non-consuming pre-check if a new connection acceptance would be
+ * allowed.
  * @ingroup connection_mgmt
  *
  * Performs atomic checks under pool mutex for: pool state (must be RUNNING),
- * global rate limit availability (tokens > 0), and per-IP limit (if client_ip provided
- * and tracking enabled). Returns 1 only if all checks pass, indicating SocketPool_accept_limited()
- * has a high likelihood of succeeding (subject to concurrent changes and accept() outcome).
+ * global rate limit availability (tokens > 0), and per-IP limit (if client_ip
+ * provided and tracking enabled). Returns 1 only if all checks pass, indicating
+ * SocketPool_accept_limited() has a high likelihood of succeeding (subject to
+ * concurrent changes and accept() outcome).
  *
- * Does NOT consume rate tokens or increment IP counts - purely advisory for load
- * shedding, logging, or conditional accept logic (e.g., before expensive operations).
+ * Does NOT consume rate tokens or increment IP counts - purely advisory for
+ * load shedding, logging, or conditional accept logic (e.g., before expensive
+ * operations).
  *
  * If client_ip is NULL or invalid, per-IP check is skipped (always allows).
- * Immediate 0 return if pool state is DRAINING or STOPPED (graceful shutdown in progress).
+ * Immediate 0 return if pool state is DRAINING or STOPPED (graceful shutdown in
+ * progress).
  *
- * Use before Socket_accept() in custom loops, or integrate with SYN protection for
- * early rejection.
+ * Use before Socket_accept() in custom loops, or integrate with SYN protection
+ * for early rejection.
  *
  * @param[in] pool The connection pool to check.
- * @param[in] client_ip Optional client IP (from e.g., getsockname or SYN data). NULL skips per-IP check.
+ * @param[in] client_ip Optional client IP (from e.g., getsockname or SYN data).
+ * NULL skips per-IP check.
  *
- * @return 1 if acceptance likely allowed (state OK + rate available + IP under limit),
- *         0 otherwise (draining/stopped/rate exhausted/IP saturated).
+ * @return 1 if acceptance likely allowed (state OK + rate available + IP under
+ * limit), 0 otherwise (draining/stopped/rate exhausted/IP saturated).
  *
  * @throws None - read-only checks; no modifications or allocations.
  *
@@ -660,10 +698,9 @@ SocketPool_getmaxperip (T pool)
  *             Socket_T client = Socket_accept(server);
  *             if (client) {
  *                 const char *ip = Socket_getpeeraddr(client);
- *                 if (SocketPool_accept_allowed(pool, ip)) {  // Double-check with IP
- *                     SocketPool_add(pool, client);
- *                 } else {
- *                     Socket_free(&client);  // Reject due to IP limit
+ *                 if (SocketPool_accept_allowed(pool, ip)) {  // Double-check
+ * with IP SocketPool_add(pool, client); } else { Socket_free(&client);  //
+ * Reject due to IP limit
  *                 }
  *             }
  *         } else {
@@ -688,13 +725,16 @@ SocketPool_getmaxperip (T pool)
  * }
  * @endcode
  *
- * @note Concurrent calls may race: another thread may consume token between check and accept_limited().
+ * @note Concurrent calls may race: another thread may consume token between
+ * check and accept_limited().
  * @note For IPv6, provide full address string; tracking distinguishes v4/v6.
  * @note Performance: O(1) hash lookup for IP count if tracking enabled.
- * @warning Not a guarantee - use SocketPool_accept_limited() for actual enforcement.
+ * @warning Not a guarantee - use SocketPool_accept_limited() for actual
+ * enforcement.
  *
  * @see SocketPool_accept_limited() for token-consuming accept with limits.
- * @see SocketPool_setconnrate() / SocketPool_setmaxperip() for configuring checks.
+ * @see SocketPool_setconnrate() / SocketPool_setmaxperip() for configuring
+ * checks.
  * @see rate_limit_allows() / ip_limit_allows() internal helpers (private).
  */
 int
@@ -722,12 +762,14 @@ SocketPool_accept_allowed (T pool, const char *client_ip)
 }
 
 /**
- * @brief Perform rate-limited and state-aware Socket_accept() with integrated protections.
+ * @brief Perform rate-limited and state-aware Socket_accept() with integrated
+ * protections.
  * @ingroup connection_mgmt
  *
- * Combines pool state verification, global rate token consumption, per-IP limit check,
- * and Socket_accept() into a single operation. Returns accepted client socket only if
- * all preconditions pass; otherwise NULL (with partial consumption as noted).
+ * Combines pool state verification, global rate token consumption, per-IP limit
+ * check, and Socket_accept() into a single operation. Returns accepted client
+ * socket only if all preconditions pass; otherwise NULL (with partial
+ * consumption as noted).
  *
  * Sequence:
  * 1. Acquire pool mutex.
@@ -735,25 +777,29 @@ SocketPool_accept_allowed (T pool, const char *client_ip)
  * 3. Attempt to consume rate token (SOCKET_POOL_TOKENS_PER_ACCEPT, default 1).
  * 4. Release mutex.
  * 5. If token consumed successfully, call Socket_accept(server).
- * 6. On successful accept: get peer IP, track it via internal IP tracker (if enabled).
+ * 6. On successful accept: get peer IP, track it via internal IP tracker (if
+ * enabled).
  * 7. On IP track failure (limit reached): free socket, return NULL.
  *
  * Key Behaviors:
  * - Immediate NULL if pool draining/stopped (supports graceful shutdown).
- * - Token consumed before accept(); no refund on accept() failure (anti-DoS: prevents
- *   rapid invalid accepts depleting tokens).
- * - Automatic IP tracking post-accept (if SocketPool_setmaxperip() > 0); failure
- *   closes socket and returns NULL.
+ * - Token consumed before accept(); no refund on accept() failure (anti-DoS:
+ * prevents rapid invalid accepts depleting tokens).
+ * - Automatic IP tracking post-accept (if SocketPool_setmaxperip() > 0);
+ * failure closes socket and returns NULL.
  * - Races minimized: state and rate checks combined under mutex.
  *
- * CRITICAL CALLER RESPONSIBILITY: After successful return, if SocketPool_add(pool, client)
- * fails (e.g., pool full, state changed, exception), MUST:
- * - SocketPool_release_ip(pool, Socket_getpeeraddr(client)) to decrement IP count.
+ * CRITICAL CALLER RESPONSIBILITY: After successful return, if
+ * SocketPool_add(pool, client) fails (e.g., pool full, state changed,
+ * exception), MUST:
+ * - SocketPool_release_ip(pool, Socket_getpeeraddr(client)) to decrement IP
+ * count.
  * - Socket_free(&client) to close FD and free resources.
- * Failure causes IP "leak": permanent ban for that IP until manual release or pool clear,
- * enabling DoS. Always wrap in TRY/EXCEPT/FINALLY for safety.
+ * Failure causes IP "leak": permanent ban for that IP until manual release or
+ * pool clear, enabling DoS. Always wrap in TRY/EXCEPT/FINALLY for safety.
  *
- * Integrates with SocketSYNProtect: use SocketPool_accept_protected() variant for SYN flood defense.
+ * Integrates with SocketSYNProtect: use SocketPool_accept_protected() variant
+ * for SYN flood defense.
  *
  * @param[in] pool The connection pool enforcing limits.
  * @param[in] server Listening server socket (must be bound/listening).
@@ -765,10 +811,11 @@ SocketPool_accept_allowed (T pool, const char *client_ip)
  *         - Socket_accept() failed (errno set; e.g., EAGAIN, EMFILE).
  *         - Per-IP limit reached post-accept (socket auto-closed).
  *
- * @throws Propagates exceptions from Socket_accept() (e.g., Socket_Failed on sys errors)
- *         or internal tracking (rare, e.g., Arena_Failed).
+ * @throws Propagates exceptions from Socket_accept() (e.g., Socket_Failed on
+ * sys errors) or internal tracking (rare, e.g., Arena_Failed).
  *
- * @threadsafe Yes - mutex for checks/consume; Socket_accept() not locked (standard concurrent accept safe on Unix).
+ * @threadsafe Yes - mutex for checks/consume; Socket_accept() not locked
+ * (standard concurrent accept safe on Unix).
  *
  * ## Standard Usage in Server Loop
  *
@@ -788,8 +835,8 @@ SocketPool_accept_allowed (T pool, const char *client_ip)
  *             Connection_T conn = SocketPool_add(pool, client);
  *             // Process request, e.g., http_handle(conn)...
  *         } EXCEPT(SocketPool_Failed) {
- *             // Pool full, etc. - already tracked, but release if needed? No, add failed means not added
- *             const char *ip = Socket_getpeeraddr(client);
+ *             // Pool full, etc. - already tracked, but release if needed? No,
+ * add failed means not added const char *ip = Socket_getpeeraddr(client);
  *             SocketPool_release_ip(pool, ip);  // Decrement count
  *             Socket_free(&client);  // Close
  *             SOCKET_LOG_WARN_MSG("Failed to add client %s: pool full?", ip);
@@ -831,13 +878,16 @@ SocketPool_accept_allowed (T pool, const char *client_ip)
  * }
  * @endcode
  *
- * @note Socket_accept() may return NULL with EAGAIN (non-blocking server); loop accordingly.
+ * @note Socket_accept() may return NULL with EAGAIN (non-blocking server); loop
+ * accordingly.
  * @warning Caller must handle post-accept add failure to avoid IP count leaks.
  * @security No refund on accept fail prevents token exhaustion attacks.
- * @complexity O(1) amortized - checks + accept() + optional hash insert for IP track.
+ * @complexity O(1) amortized - checks + accept() + optional hash insert for IP
+ * track.
  *
  * @see SocketPool_accept_allowed() for non-consuming pre-check.
- * @see SocketPool_add() for adding accepted socket to pool (with error handling).
+ * @see SocketPool_add() for adding accepted socket to pool (with error
+ * handling).
  * @see SocketPool_release_ip() critical for cleanup on add failure.
  * @see SocketPool_accept_protected() for SYN flood integration.
  * @see docs/POOL.md#error-handling for full patterns.

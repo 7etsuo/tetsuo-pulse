@@ -160,7 +160,10 @@ bench_thread (void *arg)
     total_reqs += reqs_per_thread;
     pthread_mutex_unlock (&client_mutex);
   }
-  FINALLY { Arena_dispose (&arena); }
+  FINALLY
+  {
+    Arena_dispose (&arena);
+  }
   END_TRY;
 
   return NULL;
@@ -179,7 +182,7 @@ main (int argc, char **argv)
       if (strncmp (argv[i], "--port=", 7) == 0)
         {
           long p = strtol (argv[i] + 7, NULL, 10);
-          port = (p >= 1 && p <= 65535) ? (int)p : 80;  /* Default on invalid */
+          port = (p >= 1 && p <= 65535) ? (int)p : 80; /* Default on invalid */
         }
       if (strncmp (argv[i], "--reqs=", 7) == 0)
         reqs = atol (argv[i] + 7);
@@ -192,16 +195,18 @@ main (int argc, char **argv)
   // Wait for server to start
   sleep (1);
 
-  printf ("Benchmark client: %ld reqs across %d threads to %s:%d\n", reqs,
-          threads, BENCH_HOST, port);
+  printf ("Benchmark client: %ld reqs across %d threads to %s:%d\n",
+          reqs,
+          threads,
+          BENCH_HOST,
+          port);
 
   pthread_t *pth = calloc (threads, sizeof (pthread_t));
   long reqs_per_thread = reqs / threads;
 
   for (int i = 0; i < threads; i++)
     {
-      struct bench_thread_arg *targ
-          = malloc (sizeof (struct bench_thread_arg));
+      struct bench_thread_arg *targ = malloc (sizeof (struct bench_thread_arg));
       targ->thread_id = i;
       targ->reqs_per_thread = reqs_per_thread;
       targ->port = port;
@@ -222,8 +227,10 @@ main (int argc, char **argv)
                           : 0;
 
   printf ("\nResults:\n");
-  printf ("Total reqs: %ld (success: %ld, fail: %ld)\n", total_reqs,
-          successful_reqs, failed_reqs);
+  printf ("Total reqs: %ld (success: %ld, fail: %ld)\n",
+          total_reqs,
+          successful_reqs,
+          failed_reqs);
   printf ("Avg latency: %.2f ms\n", avg_latency_ms);
   printf ("Throughput: %.0f reqs/sec\n", throughput);
 

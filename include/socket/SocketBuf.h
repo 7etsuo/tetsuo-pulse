@@ -10,7 +10,7 @@
 #include "core/Arena.h"
 #include <stdbool.h>
 #include <stddef.h>
-#include <sys/types.h>  /* For ssize_t */
+#include <sys/types.h> /* For ssize_t */
 
 /**
  * @file SocketBuf.h
@@ -736,7 +736,9 @@ typedef struct SocketAsync_T *SocketAsync_T;
  *
  * @threadsafe Invoked serially from event loop thread.
  */
-typedef void (*SocketBuf_AsyncCallback) (T buf, ssize_t bytes, int err,
+typedef void (*SocketBuf_AsyncCallback) (T buf,
+                                         ssize_t bytes,
+                                         int err,
                                          void *user_data);
 
 /**
@@ -830,8 +832,10 @@ extern Socket_T SocketBuf_get_socket (const T buf);
  * @see SocketBuf_fill_async() for async receive.
  * @see SocketAsync_Flags for available flags.
  */
-extern unsigned SocketBuf_flush_async (T buf, SocketBuf_AsyncCallback cb,
-                                       void *user_data, int flags);
+extern unsigned SocketBuf_flush_async (T buf,
+                                       SocketBuf_AsyncCallback cb,
+                                       void *user_data,
+                                       int flags);
 
 /**
  * @brief Asynchronously fill buffer from the associated socket.
@@ -882,9 +886,11 @@ extern unsigned SocketBuf_flush_async (T buf, SocketBuf_AsyncCallback cb,
  * @see SocketBuf_flush_async() for async send.
  * @see SocketBuf_ensure() to guarantee write space.
  */
-extern unsigned SocketBuf_fill_async (T buf, size_t max_fill,
+extern unsigned SocketBuf_fill_async (T buf,
+                                      size_t max_fill,
                                       SocketBuf_AsyncCallback cb,
-                                      void *user_data, int flags);
+                                      void *user_data,
+                                      int flags);
 
 /**
  * @brief Check if async I/O is available and configured for this buffer.

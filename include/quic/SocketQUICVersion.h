@@ -91,7 +91,7 @@ typedef enum
  * @param nibble Value 0-15 for the high nibble of each byte.
  * @return A valid GREASE version number.
  */
-#define QUIC_VERSION_GREASE(nibble)                                           \
+#define QUIC_VERSION_GREASE(nibble)                                            \
   ((((uint32_t)(nibble) & 0x0f) << 28) | 0x0a0a0a0a                            \
    | (((uint32_t)(nibble) & 0x0f) << 20) | (((uint32_t)(nibble) & 0x0f) << 12) \
    | (((uint32_t)(nibble) & 0x0f) << 4))
@@ -125,7 +125,7 @@ typedef enum
  * @param v Version to check (uint32_t).
  * @return Non-zero if version is supported, zero otherwise.
  */
-#define QUIC_VERSION_IS_SUPPORTED(v)                                          \
+#define QUIC_VERSION_IS_SUPPORTED(v) \
   ((v) == QUIC_VERSION_1 || (v) == QUIC_VERSION_2)
 
 /**
@@ -138,7 +138,7 @@ typedef enum
  * @param v Version to check (uint32_t).
  * @return Non-zero if v is a real protocol version, zero otherwise.
  */
-#define QUIC_VERSION_IS_REAL(v)                                               \
+#define QUIC_VERSION_IS_REAL(v) \
   ((v) != QUIC_VERSION_NEGOTIATION && !QUIC_VERSION_IS_GREASE (v))
 
 /* ============================================================================
@@ -300,9 +300,11 @@ typedef enum
  */
 extern int
 SocketQUICVersion_create_negotiation (const SocketQUICConnectionID_T *dcid,
-                                       const SocketQUICConnectionID_T *scid,
-                                       const uint32_t *versions, size_t count,
-                                       uint8_t *output, size_t output_size);
+                                      const SocketQUICConnectionID_T *scid,
+                                      const uint32_t *versions,
+                                      size_t count,
+                                      uint8_t *output,
+                                      size_t output_size);
 
 /**
  * @brief Parse a Version Negotiation packet.
@@ -326,11 +328,13 @@ SocketQUICVersion_create_negotiation (const SocketQUICConnectionID_T *dcid,
  * @note Client MUST verify the CIDs match before accepting the packet.
  */
 extern SocketQUICVersion_NegResult
-SocketQUICVersion_parse_negotiation (const uint8_t *data, size_t len,
-                                      SocketQUICConnectionID_T *dcid,
-                                      SocketQUICConnectionID_T *scid,
-                                      uint32_t *versions_out,
-                                      size_t max_versions, size_t *count_out);
+SocketQUICVersion_parse_negotiation (const uint8_t *data,
+                                     size_t len,
+                                     SocketQUICConnectionID_T *dcid,
+                                     SocketQUICConnectionID_T *scid,
+                                     uint32_t *versions_out,
+                                     size_t max_versions,
+                                     size_t *count_out);
 
 /** @} */
 

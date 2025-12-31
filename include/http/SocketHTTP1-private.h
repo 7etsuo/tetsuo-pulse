@@ -176,7 +176,8 @@ struct SocketHTTP1_Parser
   int expects_continue;
 };
 static inline int
-http1_tokenbuf_init (HTTP1_TokenBuf *buf, Arena_T arena,
+http1_tokenbuf_init (HTTP1_TokenBuf *buf,
+                     Arena_T arena,
                      size_t initial_capacity)
 {
   buf->data = Arena_alloc (arena, initial_capacity, __FILE__, __LINE__);
@@ -204,7 +205,9 @@ http1_tokenbuf_release (HTTP1_TokenBuf *buf)
 }
 
 static inline int
-http1_tokenbuf_append (HTTP1_TokenBuf *buf, Arena_T arena, char c,
+http1_tokenbuf_append (HTTP1_TokenBuf *buf,
+                       Arena_T arena,
+                       char c,
                        size_t max_size)
 {
   if (buf->len >= max_size)
@@ -213,8 +216,8 @@ http1_tokenbuf_append (HTTP1_TokenBuf *buf, Arena_T arena, char c,
   if (buf->len >= buf->capacity)
     {
       /* After release, capacity is 0 - use default initial size */
-      size_t new_capacity
-          = (buf->capacity == 0) ? HTTP1_DEFAULT_TOKEN_BUF_SIZE : (buf->capacity * 2);
+      size_t new_capacity = (buf->capacity == 0) ? HTTP1_DEFAULT_TOKEN_BUF_SIZE
+                                                 : (buf->capacity * 2);
       if (new_capacity > max_size)
         new_capacity = max_size;
 
@@ -233,8 +236,11 @@ http1_tokenbuf_append (HTTP1_TokenBuf *buf, Arena_T arena, char c,
 }
 
 static inline int
-http1_tokenbuf_append_block (HTTP1_TokenBuf *buf, Arena_T arena,
-                             const char *src, size_t count, size_t max_size)
+http1_tokenbuf_append_block (HTTP1_TokenBuf *buf,
+                             Arena_T arena,
+                             const char *src,
+                             size_t count,
+                             size_t max_size)
 {
   size_t new_len;
   size_t new_capacity;
@@ -249,7 +255,8 @@ http1_tokenbuf_append_block (HTTP1_TokenBuf *buf, Arena_T arena,
 
   if (new_len > buf->capacity)
     {
-      new_capacity = (buf->capacity == 0) ? HTTP1_DEFAULT_TOKEN_BUF_SIZE : buf->capacity;
+      new_capacity
+          = (buf->capacity == 0) ? HTTP1_DEFAULT_TOKEN_BUF_SIZE : buf->capacity;
       while (new_capacity < new_len)
         new_capacity *= 2;
       if (new_capacity > max_size)
@@ -297,9 +304,9 @@ http1_tokenbuf_terminate (HTTP1_TokenBuf *buf, Arena_T arena, size_t max_size)
  */
 typedef enum
 {
-  HTTP1_CRLF_OK = 0,        /**< Valid CRLF sequence found */
-  HTTP1_CRLF_INCOMPLETE,    /**< Need more data to determine validity */
-  HTTP1_CRLF_INVALID        /**< Invalid sequence (not CRLF or bare LF) */
+  HTTP1_CRLF_OK = 0,     /**< Valid CRLF sequence found */
+  HTTP1_CRLF_INCOMPLETE, /**< Need more data to determine validity */
+  HTTP1_CRLF_INVALID     /**< Invalid sequence (not CRLF or bare LF) */
 } HTTP1_CRLFResult;
 
 /**
@@ -344,12 +351,12 @@ http1_skip_crlf (const char **p, const char *end)
 
 #define http1_is_tchar(c) SOCKETHTTP_IS_TCHAR (c)
 #define http1_is_digit(c) ((c) >= '0' && (c) <= '9')
-#define http1_is_hex(c)                                                       \
-  (((c) >= '0' && (c) <= '9') || ((c) >= 'a' && (c) <= 'f')                   \
+#define http1_is_hex(c)                                     \
+  (((c) >= '0' && (c) <= '9') || ((c) >= 'a' && (c) <= 'f') \
    || ((c) >= 'A' && (c) <= 'F'))
 #define http1_hex_value(c) SOCKETHTTP_HEX_VALUE (c)
 #define http1_is_ows(c) ((c) == ' ' || (c) == '\t')
-#define http1_is_vchar(c)                                                     \
+#define http1_is_vchar(c) \
   ((unsigned char)(c) >= 0x21 && (unsigned char)(c) <= 0x7E)
 #define http1_is_obs_text(c) ((unsigned char)(c) >= 0x80)
 #define http1_is_field_vchar(c) (http1_is_vchar (c) || http1_is_obs_text (c))

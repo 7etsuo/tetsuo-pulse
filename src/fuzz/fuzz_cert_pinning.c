@@ -99,7 +99,9 @@ fuzz_add_binary_hash (const uint8_t *data, size_t size)
     (void)SocketTLSContext_get_pin_count (ctx);
     (void)SocketTLSContext_has_pins (ctx);
   }
-  ELSE { /* Exception expected for invalid input */ }
+  ELSE
+  { /* Exception expected for invalid input */
+  }
   END_TRY;
 
   SocketTLSContext_free (&ctx);
@@ -148,7 +150,9 @@ fuzz_add_hex_hash (const uint8_t *data, size_t size, int with_prefix)
     SocketTLSContext_add_pin_hex (ctx, input);
     (void)SocketTLSContext_get_pin_count (ctx);
   }
-  ELSE { /* Exception expected for invalid hex */ }
+  ELSE
+  { /* Exception expected for invalid hex */
+  }
   END_TRY;
 
   free (prefixed);
@@ -192,7 +196,9 @@ fuzz_verify_pin (const uint8_t *data, size_t size)
     /* NULL should be safe */
     (void)SocketTLSContext_verify_pin (ctx, NULL);
   }
-  ELSE { /* No exceptions expected for verify */ }
+  ELSE
+  { /* No exceptions expected for verify */
+  }
   END_TRY;
 
   SocketTLSContext_free (&ctx);
@@ -224,7 +230,9 @@ fuzz_verify_der_cert (const uint8_t *data, size_t size)
         /* Verify cert matches pin */
         (void)SocketTLSContext_verify_cert_pin (ctx, cert);
       }
-      ELSE { /* Exception possible for malformed certs */ }
+      ELSE
+      { /* Exception possible for malformed certs */
+      }
       END_TRY;
 
       X509_free (cert);
@@ -270,7 +278,9 @@ fuzz_clear_pins (const uint8_t *data, size_t size)
     /* Clear again should be safe */
     SocketTLSContext_clear_pins (ctx);
   }
-  ELSE { /* Max pins exception possible */ }
+  ELSE
+  { /* Max pins exception possible */
+  }
   END_TRY;
 
   SocketTLSContext_free (&ctx);
@@ -340,7 +350,9 @@ fuzz_mixed_operations (const uint8_t *data, size_t size)
           }
       }
   }
-  ELSE { /* Max pins exception possible */ }
+  ELSE
+  { /* Max pins exception possible */
+  }
   END_TRY;
 
   SocketTLSContext_free (&ctx);

@@ -52,12 +52,15 @@ generate_test_certs (const char *cert_file, const char *key_file)
 {
   char cmd[1024];
 
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl genrsa -out %s 2048 && "
             "openssl req -new -x509 -key %s -out %s -days 1 -nodes "
             "-subj '/CN=localhost' -addext \"basicConstraints = CA:TRUE\" "
             "2>/dev/null",
-            key_file, key_file, cert_file);
+            key_file,
+            key_file,
+            cert_file);
   if (system (cmd) != 0)
     goto fail;
 
@@ -367,8 +370,14 @@ TEST (pinning_invalid_hex_format)
   volatile int caught = 0;
 
   /* Too short */
-  TRY { SocketTLSContext_add_pin_hex (ctx, "abcd"); }
-  EXCEPT (SocketTLS_Failed) { caught = 1; }
+  TRY
+  {
+    SocketTLSContext_add_pin_hex (ctx, "abcd");
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    caught = 1;
+  }
   END_TRY;
   ASSERT_EQ (caught, 1);
 
@@ -380,7 +389,10 @@ TEST (pinning_invalid_hex_format)
         ctx,
         "gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg");
   }
-  EXCEPT (SocketTLS_Failed) { caught = 1; }
+  EXCEPT (SocketTLS_Failed)
+  {
+    caught = 1;
+  }
   END_TRY;
   ASSERT_EQ (caught, 1);
 
@@ -392,7 +404,10 @@ TEST (pinning_invalid_hex_format)
         ctx,
         "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef00");
   }
-  EXCEPT (SocketTLS_Failed) { caught = 1; }
+  EXCEPT (SocketTLS_Failed)
+  {
+    caught = 1;
+  }
   END_TRY;
   ASSERT_EQ (caught, 1);
 
@@ -409,20 +424,38 @@ TEST (pinning_null_hash)
 
   volatile int caught = 0;
 
-  TRY { SocketTLSContext_add_pin (ctx, NULL); }
-  EXCEPT (SocketTLS_Failed) { caught = 1; }
+  TRY
+  {
+    SocketTLSContext_add_pin (ctx, NULL);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    caught = 1;
+  }
   END_TRY;
   ASSERT_EQ (caught, 1);
 
   caught = 0;
-  TRY { SocketTLSContext_add_pin_hex (ctx, NULL); }
-  EXCEPT (SocketTLS_Failed) { caught = 1; }
+  TRY
+  {
+    SocketTLSContext_add_pin_hex (ctx, NULL);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    caught = 1;
+  }
   END_TRY;
   ASSERT_EQ (caught, 1);
 
   caught = 0;
-  TRY { SocketTLSContext_add_pin_hex (ctx, ""); }
-  EXCEPT (SocketTLS_Failed) { caught = 1; }
+  TRY
+  {
+    SocketTLSContext_add_pin_hex (ctx, "");
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    caught = 1;
+  }
   END_TRY;
   ASSERT_EQ (caught, 1);
 
@@ -436,14 +469,26 @@ TEST (pinning_invalid_cert_file)
 
   volatile int caught = 0;
 
-  TRY { SocketTLSContext_add_pin_from_cert (ctx, "/nonexistent/file.pem"); }
-  EXCEPT (SocketTLS_Failed) { caught = 1; }
+  TRY
+  {
+    SocketTLSContext_add_pin_from_cert (ctx, "/nonexistent/file.pem");
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    caught = 1;
+  }
   END_TRY;
   ASSERT_EQ (caught, 1);
 
   caught = 0;
-  TRY { SocketTLSContext_add_pin_from_cert (ctx, NULL); }
-  EXCEPT (SocketTLS_Failed) { caught = 1; }
+  TRY
+  {
+    SocketTLSContext_add_pin_from_cert (ctx, NULL);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    caught = 1;
+  }
   END_TRY;
   ASSERT_EQ (caught, 1);
 
@@ -763,8 +808,8 @@ TEST (pinning_binary_search_correctness)
   unsigned char hashes[10][32];
   for (int i = 0; i < 10; i++)
     {
-      memset (hashes[i], (unsigned char)(i * 17),
-              32); /* Non-sequential values */
+      memset (
+          hashes[i], (unsigned char)(i * 17), 32); /* Non-sequential values */
     }
 
   /* Add in random order */
@@ -820,7 +865,10 @@ TEST (pinning_on_server_context)
 
     SocketTLSContext_free (&server_ctx);
   }
-  FINALLY { remove_test_certs (cert_file, key_file); }
+  FINALLY
+  {
+    remove_test_certs (cert_file, key_file);
+  }
   END_TRY;
 }
 
@@ -846,8 +894,14 @@ TEST (pinning_symlink_rejection)
   volatile int caught = 0;
 
   /* Attempting to add pin from symlink should fail with ELOOP */
-  TRY { SocketTLSContext_add_pin_from_cert (ctx, symlink_file); }
-  EXCEPT (SocketTLS_Failed) { caught = 1; }
+  TRY
+  {
+    SocketTLSContext_add_pin_from_cert (ctx, symlink_file);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    caught = 1;
+  }
   END_TRY;
   ASSERT_EQ (caught, 1);
 
@@ -858,7 +912,10 @@ TEST (pinning_symlink_rejection)
     SocketTLSContext_add_pin_from_cert (ctx, cert_file);
     ASSERT_EQ (SocketTLSContext_get_pin_count (ctx), 1);
   }
-  EXCEPT (SocketTLS_Failed) { caught = 1; }
+  EXCEPT (SocketTLS_Failed)
+  {
+    caught = 1;
+  }
   END_TRY;
   ASSERT_EQ (caught, 0);
 

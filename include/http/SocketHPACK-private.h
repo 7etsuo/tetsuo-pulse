@@ -9,7 +9,8 @@
  * @brief Internal HPACK header compression structures and constants.
  * @internal
  *
- * Private implementation for HPACK (RFC 7541). Use SocketHPACK.h for public API.
+ * Private implementation for HPACK (RFC 7541). Use SocketHPACK.h for public
+ * API.
  */
 
 #ifndef SOCKETHPACK_PRIVATE_INCLUDED
@@ -47,8 +48,11 @@ struct SocketHPACK_Table
   Arena_T arena;
 };
 
-extern int SocketHPACK_Table_find (SocketHPACK_Table_T table, const char *name,
-                                   size_t name_len, const char *value, size_t value_len);
+extern int SocketHPACK_Table_find (SocketHPACK_Table_T table,
+                                   const char *name,
+                                   size_t name_len,
+                                   const char *value,
+                                   size_t value_len);
 struct SocketHPACK_Encoder
 {
   SocketHPACK_Table_T table;
@@ -100,8 +104,8 @@ extern const HPACK_HuffmanTransition
 extern const HPACK_StaticEntry
     hpack_static_table[SOCKETHPACK_STATIC_TABLE_SIZE];
 
-extern size_t hpack_table_evict (SocketHPACK_Table_T table,
-                                 size_t required_space);
+extern size_t
+hpack_table_evict (SocketHPACK_Table_T table, size_t required_space);
 
 static inline size_t
 hpack_entry_size (size_t name_len, size_t value_len)

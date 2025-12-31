@@ -83,8 +83,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         int is_supported = QUIC_VERSION_IS_SUPPORTED (version);
 
         /* Verify support only for known versions */
-        int expected
-            = (version == QUIC_VERSION_1 || version == QUIC_VERSION_2);
+        int expected = (version == QUIC_VERSION_1 || version == QUIC_VERSION_2);
         assert (is_supported == expected);
       }
       break;

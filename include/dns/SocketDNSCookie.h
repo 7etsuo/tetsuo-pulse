@@ -142,13 +142,14 @@ typedef struct
  */
 typedef struct
 {
-  struct sockaddr_storage server_addr; /**< Nameserver address */
-  socklen_t addr_len;                  /**< Address length */
+  struct sockaddr_storage server_addr;           /**< Nameserver address */
+  socklen_t addr_len;                            /**< Address length */
   uint8_t client_cookie[DNS_CLIENT_COOKIE_SIZE]; /**< Client cookie used */
-  uint8_t server_cookie[DNS_SERVER_COOKIE_MAX_SIZE]; /**< Cached server cookie */
-  size_t server_cookie_len;            /**< Server cookie length */
-  time_t received_at;                  /**< When cookie was received */
-  time_t expires_at;                   /**< Expiration time */
+  uint8_t
+      server_cookie[DNS_SERVER_COOKIE_MAX_SIZE]; /**< Cached server cookie */
+  size_t server_cookie_len;                      /**< Server cookie length */
+  time_t received_at; /**< When cookie was received */
+  time_t expires_at;  /**< Expiration time */
 } SocketDNSCookie_Entry;
 
 /**
@@ -229,7 +230,8 @@ extern void SocketDNSCookie_set_secret_lifetime (T cache, int lifetime_seconds);
  * When the cache is full, least-recently-used entries are evicted.
  *
  * @param cache       Cookie cache instance.
- * @param max_entries Maximum entries (clamped to [1, DNS_COOKIE_CACHE_MAX_SIZE]).
+ * @param max_entries Maximum entries (clamped to [1,
+ * DNS_COOKIE_CACHE_MAX_SIZE]).
  */
 extern void SocketDNSCookie_set_cache_size (T cache, size_t max_entries);
 
@@ -320,7 +322,8 @@ extern int SocketDNSCookie_generate (T cache,
  * }
  * @endcode
  */
-extern int SocketDNSCookie_parse (const unsigned char *data, size_t len,
+extern int SocketDNSCookie_parse (const unsigned char *data,
+                                  size_t len,
                                   SocketDNSCookie_Cookie *cookie);
 
 /**
@@ -352,7 +355,8 @@ extern int SocketDNSCookie_parse (const unsigned char *data, size_t len,
  * @endcode
  */
 extern int SocketDNSCookie_encode (const SocketDNSCookie_Cookie *cookie,
-                                   unsigned char *buf, size_t buflen);
+                                   unsigned char *buf,
+                                   size_t buflen);
 
 /* Cache operations */
 
@@ -525,7 +529,8 @@ extern int SocketDNSCookie_equal (const SocketDNSCookie_Cookie *a,
  * @endcode
  */
 extern int SocketDNSCookie_to_hex (const SocketDNSCookie_Cookie *cookie,
-                                   char *buf, size_t buflen);
+                                   char *buf,
+                                   size_t buflen);
 
 /** @} */ /* End of dns_cookie group */
 

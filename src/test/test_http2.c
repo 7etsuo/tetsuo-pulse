@@ -31,33 +31,33 @@
 static int tests_run = 0;
 static int tests_passed = 0;
 
-#define TEST_ASSERT(cond, msg)                                                \
-  do                                                                          \
-    {                                                                         \
-      if (!(cond))                                                            \
-        {                                                                     \
-          fprintf (stderr, "FAIL: %s (%s:%d)\n", (msg), __FILE__, __LINE__);  \
-          return 0;                                                           \
-        }                                                                     \
-    }                                                                         \
+#define TEST_ASSERT(cond, msg)                                               \
+  do                                                                         \
+    {                                                                        \
+      if (!(cond))                                                           \
+        {                                                                    \
+          fprintf (stderr, "FAIL: %s (%s:%d)\n", (msg), __FILE__, __LINE__); \
+          return 0;                                                          \
+        }                                                                    \
+    }                                                                        \
   while (0)
 
-#define TEST_BEGIN(name)                                                      \
-  do                                                                          \
-    {                                                                         \
-      tests_run++;                                                            \
-      printf ("  Testing %s... ", #name);                                     \
-      fflush (stdout);                                                        \
-    }                                                                         \
+#define TEST_BEGIN(name)                  \
+  do                                      \
+    {                                     \
+      tests_run++;                        \
+      printf ("  Testing %s... ", #name); \
+      fflush (stdout);                    \
+    }                                     \
   while (0)
 
-#define TEST_PASS()                                                           \
-  do                                                                          \
-    {                                                                         \
-      tests_passed++;                                                         \
-      printf ("PASSED\n");                                                    \
-      return 1;                                                               \
-    }                                                                         \
+#define TEST_PASS()        \
+  do                       \
+    {                      \
+      tests_passed++;      \
+      printf ("PASSED\n"); \
+      return 1;            \
+    }                      \
   while (0)
 
 /* ============================================================================
@@ -211,10 +211,10 @@ test_error_strings (void)
   TEST_ASSERT (strcmp (SocketHTTP2_error_string (HTTP2_NO_ERROR), "NO_ERROR")
                    == 0,
                "NO_ERROR string");
-  TEST_ASSERT (strcmp (SocketHTTP2_error_string (HTTP2_PROTOCOL_ERROR),
-                       "PROTOCOL_ERROR")
-                   == 0,
-               "PROTOCOL_ERROR string");
+  TEST_ASSERT (
+      strcmp (SocketHTTP2_error_string (HTTP2_PROTOCOL_ERROR), "PROTOCOL_ERROR")
+          == 0,
+      "PROTOCOL_ERROR string");
   TEST_ASSERT (strcmp (SocketHTTP2_error_string (HTTP2_FLOW_CONTROL_ERROR),
                        "FLOW_CONTROL_ERROR")
                    == 0,
@@ -232,9 +232,9 @@ test_frame_type_strings (void)
 {
   TEST_BEGIN (frame_type_strings);
 
-  TEST_ASSERT (
-      strcmp (SocketHTTP2_frame_type_string (HTTP2_FRAME_DATA), "DATA") == 0,
-      "DATA string");
+  TEST_ASSERT (strcmp (SocketHTTP2_frame_type_string (HTTP2_FRAME_DATA), "DATA")
+                   == 0,
+               "DATA string");
   TEST_ASSERT (
       strcmp (SocketHTTP2_frame_type_string (HTTP2_FRAME_HEADERS), "HEADERS")
           == 0,
@@ -257,13 +257,11 @@ test_stream_state_strings (void)
   TEST_BEGIN (stream_state_strings);
 
   TEST_ASSERT (
-      strcmp (SocketHTTP2_stream_state_string (HTTP2_STREAM_STATE_IDLE),
-              "idle")
+      strcmp (SocketHTTP2_stream_state_string (HTTP2_STREAM_STATE_IDLE), "idle")
           == 0,
       "idle string");
   TEST_ASSERT (
-      strcmp (SocketHTTP2_stream_state_string (HTTP2_STREAM_STATE_OPEN),
-              "open")
+      strcmp (SocketHTTP2_stream_state_string (HTTP2_STREAM_STATE_OPEN), "open")
           == 0,
       "open string");
   TEST_ASSERT (
@@ -556,10 +554,13 @@ test_padded_headers_frame_format (void)
    */
 
   /* Test that PADDED can be combined with other HEADERS flags */
-  uint8_t flags = HTTP2_FLAG_PADDED | HTTP2_FLAG_END_HEADERS | HTTP2_FLAG_END_STREAM;
+  uint8_t flags
+      = HTTP2_FLAG_PADDED | HTTP2_FLAG_END_HEADERS | HTTP2_FLAG_END_STREAM;
   TEST_ASSERT ((flags & HTTP2_FLAG_PADDED) != 0, "PADDED flag should be set");
-  TEST_ASSERT ((flags & HTTP2_FLAG_END_HEADERS) != 0, "END_HEADERS flag should be set");
-  TEST_ASSERT ((flags & HTTP2_FLAG_END_STREAM) != 0, "END_STREAM flag should be set");
+  TEST_ASSERT ((flags & HTTP2_FLAG_END_HEADERS) != 0,
+               "END_HEADERS flag should be set");
+  TEST_ASSERT ((flags & HTTP2_FLAG_END_STREAM) != 0,
+               "END_STREAM flag should be set");
 
   /* Verify that PADDED and PRIORITY can coexist */
   flags = HTTP2_FLAG_PADDED | HTTP2_FLAG_PRIORITY;
@@ -588,8 +589,10 @@ test_padding_constraints (void)
 
   /* Minimum valid frame with padding: 1 (pad_length) + 0 (data) + pad_length */
   /* pad_length must be < total payload length */
-  size_t min_payload_for_1byte_padding = 2; /* 1 byte pad_length + 1 byte padding */
-  TEST_ASSERT (min_payload_for_1byte_padding >= 2, "Minimum padded payload size");
+  size_t min_payload_for_1byte_padding
+      = 2; /* 1 byte pad_length + 1 byte padding */
+  TEST_ASSERT (min_payload_for_1byte_padding >= 2,
+               "Minimum padded payload size");
 
   TEST_PASS ();
 }
@@ -707,9 +710,11 @@ test_field_name_valid (void)
   /* Valid lowercase names */
   TEST_ASSERT (http2_field_name_has_prohibited_chars ("content-type", 12) == 0,
                "Lowercase content-type should be valid");
-  TEST_ASSERT (http2_field_name_has_prohibited_chars ("accept-encoding", 15) == 0,
+  TEST_ASSERT (http2_field_name_has_prohibited_chars ("accept-encoding", 15)
+                   == 0,
                "Lowercase accept-encoding should be valid");
-  TEST_ASSERT (http2_field_name_has_prohibited_chars ("x-custom-header", 15) == 0,
+  TEST_ASSERT (http2_field_name_has_prohibited_chars ("x-custom-header", 15)
+                   == 0,
                "Custom header should be valid");
 
   /* Numbers and special allowed characters */
@@ -794,7 +799,8 @@ test_tls_result_strings (void)
 
   str = SocketHTTP2_tls_result_string (HTTP2_TLS_NOT_ENABLED);
   TEST_ASSERT (str != NULL, "HTTP2_TLS_NOT_ENABLED should have a string");
-  TEST_ASSERT (strstr (str, "cleartext") != NULL || strstr (str, "not enabled") != NULL,
+  TEST_ASSERT (strstr (str, "cleartext") != NULL
+                   || strstr (str, "not enabled") != NULL,
                "Should mention cleartext or not enabled");
 
   str = SocketHTTP2_tls_result_string (HTTP2_TLS_VERSION_TOO_LOW);
@@ -914,9 +920,11 @@ test_parse_content_length (void)
                "NULL output should be rejected");
 
   /* Overflow detection */
-  TEST_ASSERT (http2_parse_content_length ("9223372036854775808", 19, &cl) == -1,
+  TEST_ASSERT (http2_parse_content_length ("9223372036854775808", 19, &cl)
+                   == -1,
                "INT64_MAX+1 should overflow");
-  TEST_ASSERT (http2_parse_content_length ("99999999999999999999", 20, &cl) == -1,
+  TEST_ASSERT (http2_parse_content_length ("99999999999999999999", 20, &cl)
+                   == -1,
                "very large number should overflow");
 
   TEST_PASS ();
@@ -996,8 +1004,10 @@ main (void)
 
   /* Summary */
   printf ("=====================\n");
-  printf ("Tests: %d passed, %d failed, %d total\n", tests_passed,
-          tests_run - tests_passed, tests_run);
+  printf ("Tests: %d passed, %d failed, %d total\n",
+          tests_passed,
+          tests_run - tests_passed,
+          tests_run);
 
   return (tests_passed == tests_run) ? 0 : 1;
 }

@@ -9,9 +9,9 @@
  * @brief Implementation of the exception-based test framework.
  * @ingroup test_framework
  *
- * Provides the core implementation of the test framework including test registration,
- * execution, failure reporting, and result tracking. Designed to work with the
- * exception-based error handling system for robust test cleanup.
+ * Provides the core implementation of the test framework including test
+ * registration, execution, failure reporting, and result tracking. Designed to
+ * work with the exception-based error handling system for robust test cleanup.
  *
  * @see Test.h for the public API.
  * @see @ref foundation for exception handling infrastructure.
@@ -62,7 +62,8 @@ const Except_T Test_Failed = { &Test_Failed, "Test assertion failed" };
  * Called automatically by the TEST() macro via GCC constructor attribute.
  * Maintains an internal linked list of registered test functions.
  *
- * @note Thread Safety: Not thread-safe (called at program startup before threads).
+ * @note Thread Safety: Not thread-safe (called at program startup before
+ * threads).
  * @see TEST() macro for automatic registration.
  * @see Test_run_all() for test execution.
  */
@@ -107,8 +108,12 @@ void
 Test_fail (const char *message, const char *file, int line)
 {
   /* Format detailed error message */
-  snprintf (test_failure_message, sizeof (test_failure_message), "%s at %s:%d",
-            message ? message : "Test failed", file ? file : "unknown", line);
+  snprintf (test_failure_message,
+            sizeof (test_failure_message),
+            "%s at %s:%d",
+            message ? message : "Test failed",
+            file ? file : "unknown",
+            line);
 
   /* Set failure flag - avoids exception nesting issues */
   test_failure_flag = 1;
@@ -122,19 +127,25 @@ Test_fail (const char *message, const char *file, int line)
  * @param file Source file where the failure occurred.
  * @param line Line number where the failure occurred.
  *
- * Formats and reports a detailed failure message for ASSERT_EQ() macro failures,
- * showing both expected and actual values with file/line location.
+ * Formats and reports a detailed failure message for ASSERT_EQ() macro
+ * failures, showing both expected and actual values with file/line location.
  *
  * @see ASSERT_EQ() macro that calls this function.
  * @see Test_fail() for the base failure reporting mechanism.
  */
 void
-Test_fail_eq (const char *expected_str, const char *actual_str,
-              const char *file, int line)
+Test_fail_eq (const char *expected_str,
+              const char *actual_str,
+              const char *file,
+              int line)
 {
-  snprintf (test_failure_message, sizeof (test_failure_message),
-            "Assertion failed: expected %s == %s at %s:%d", expected_str,
-            actual_str, file ? file : "unknown", line);
+  snprintf (test_failure_message,
+            sizeof (test_failure_message),
+            "Assertion failed: expected %s == %s at %s:%d",
+            expected_str,
+            actual_str,
+            file ? file : "unknown",
+            line);
 
   test_failure_flag = 1;
 }
@@ -147,19 +158,25 @@ Test_fail_eq (const char *expected_str, const char *actual_str,
  * @param file Source file where the failure occurred.
  * @param line Line number where the failure occurred.
  *
- * Formats and reports a detailed failure message for ASSERT_NE() macro failures,
- * showing both expected and actual values with file/line location.
+ * Formats and reports a detailed failure message for ASSERT_NE() macro
+ * failures, showing both expected and actual values with file/line location.
  *
  * @see ASSERT_NE() macro that calls this function.
  * @see Test_fail() for the base failure reporting mechanism.
  */
 void
-Test_fail_ne (const char *expected_str, const char *actual_str,
-              const char *file, int line)
+Test_fail_ne (const char *expected_str,
+              const char *actual_str,
+              const char *file,
+              int line)
 {
-  snprintf (test_failure_message, sizeof (test_failure_message),
-            "Assertion failed: expected %s != %s at %s:%d", expected_str,
-            actual_str, file ? file : "unknown", line);
+  snprintf (test_failure_message,
+            sizeof (test_failure_message),
+            "Assertion failed: expected %s != %s at %s:%d",
+            expected_str,
+            actual_str,
+            file ? file : "unknown",
+            line);
 
   test_failure_flag = 1;
 }
@@ -168,13 +185,15 @@ Test_fail_ne (const char *expected_str, const char *actual_str,
  * @brief Execute all registered tests and display results.
  * @ingroup test_framework
  *
- * Runs each registered test function in registration order, catching Test_Failed
- * exceptions raised by ASSERT macros. This allows FINALLY blocks in tests to
- * execute for proper resource cleanup even when assertions fail.
+ * Runs each registered test function in registration order, catching
+ * Test_Failed exceptions raised by ASSERT macros. This allows FINALLY blocks in
+ * tests to execute for proper resource cleanup even when assertions fail.
  *
- * Prints detailed progress and summary of test results including pass/fail counts.
+ * Prints detailed progress and summary of test results including pass/fail
+ * counts.
  *
- * @note Thread Safety: Not thread-safe (intended for single-threaded test execution).
+ * @note Thread Safety: Not thread-safe (intended for single-threaded test
+ * execution).
  * @see TEST() macro for registering tests.
  * @see ASSERT() macros for test assertions.
  * @see Test_get_failures() for programmatic result checking.
@@ -196,8 +215,7 @@ Test_run_all (void)
       return;
     }
 
-  printf ("Running %d test%s...\n\n", total_tests,
-          total_tests == 1 ? "" : "s");
+  printf ("Running %d test%s...\n\n", total_tests, total_tests == 1 ? "" : "s");
 
   /* Run each test */
   volatile struct TestFunction *volatile current_test = test_list;
@@ -217,7 +235,10 @@ Test_run_all (void)
        * Test_Failed is caught to allow FINALLY blocks to execute in tests,
        * ensuring proper cleanup of resources even when assertions fail.
        * ELSE catches any other uncaught exceptions to prevent crashes. */
-      TRY { current_test->func (); }
+      TRY
+      {
+        current_test->func ();
+      }
       EXCEPT (Test_Failed)
       {
         /* Test_Failed was raised by ASSERT macro - failure already recorded
@@ -232,7 +253,8 @@ Test_run_all (void)
           {
             test_failure_flag = 1;
             const Except_T *exc = Except_stack ? Except_stack->exception : NULL;
-            snprintf (test_failure_message, sizeof (test_failure_message),
+            snprintf (test_failure_message,
+                      sizeof (test_failure_message),
                       "Unhandled exception: %s",
                       exc && exc->reason ? exc->reason : "Unknown");
           }
@@ -257,8 +279,10 @@ Test_run_all (void)
 
   /* Print summary */
   printf ("\n");
-  printf ("Results: %d passed, %d failed, %d total\n", test_passed,
-          test_failed, test_count);
+  printf ("Results: %d passed, %d failed, %d total\n",
+          test_passed,
+          test_failed,
+          test_count);
 
   /* Preserve failure count for Test_get_failures() */
   last_failure_count = test_failed;
@@ -274,7 +298,8 @@ Test_run_all (void)
  * @ingroup test_framework
  *
  * Returns the count of tests that failed during the most recent execution
- * of Test_run_all(). Returns 0 if all tests passed or if no tests have been run yet.
+ * of Test_run_all(). Returns 0 if all tests passed or if no tests have been run
+ * yet.
  *
  * @return Number of failed tests (0 indicates success).
  * @see Test_run_all() for executing the test suite.

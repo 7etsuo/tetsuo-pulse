@@ -35,7 +35,6 @@
 #define T SocketTLSContext_T
 
 
-
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLSContext);
 
 /* Return 0: OpenSSL owns session. Return 1: callback takes ownership. */
@@ -65,7 +64,8 @@ info_callback (const SSL *ssl, int where, int ret)
       if (ctx)
         {
           pthread_mutex_lock (&ctx->stats_mutex);
-          /* Cast: OpenSSL API inconsistency - SSL_session_reused needs non-const */
+          /* Cast: OpenSSL API inconsistency - SSL_session_reused needs
+           * non-const */
           if (SSL_session_reused ((SSL *)ssl))
             ctx->cache_hits++;
           else
@@ -87,7 +87,8 @@ set_cache_size (T ctx, size_t size)
     {
       RAISE_CTX_ERROR_FMT (
           SocketTLS_Failed,
-          "Session cache size %zu exceeds security limit of %zu", size,
+          "Session cache size %zu exceeds security limit of %zu",
+          size,
           limits.tls_session_cache_size);
     }
 
@@ -95,7 +96,8 @@ set_cache_size (T ctx, size_t size)
     {
       RAISE_CTX_ERROR_FMT (
           SocketTLS_Failed,
-          "Session cache size %zu exceeds maximum supported value %ld", size,
+          "Session cache size %zu exceeds maximum supported value %ld",
+          size,
           LONG_MAX);
     }
 
@@ -106,7 +108,8 @@ set_cache_size (T ctx, size_t size)
 }
 
 void
-SocketTLSContext_set_session_id_context (T ctx, const unsigned char *context,
+SocketTLSContext_set_session_id_context (T ctx,
+                                         const unsigned char *context,
                                          size_t context_len)
 {
   assert (ctx);
@@ -124,11 +127,12 @@ SocketTLSContext_set_session_id_context (T ctx, const unsigned char *context,
       RAISE_CTX_ERROR_FMT (
           SocketTLS_Failed,
           "Session ID context length must be 1-%d bytes, got %zu",
-          SSL_MAX_SID_CTX_LENGTH, context_len);
+          SSL_MAX_SID_CTX_LENGTH,
+          context_len);
     }
 
-  if (SSL_CTX_set_session_id_context (ctx->ssl_ctx, context,
-                                      (unsigned int)context_len)
+  if (SSL_CTX_set_session_id_context (
+          ctx->ssl_ctx, context, (unsigned int)context_len)
       != 1)
     {
       ctx_raise_openssl_error ("Failed to set session ID context");
@@ -136,7 +140,8 @@ SocketTLSContext_set_session_id_context (T ctx, const unsigned char *context,
 }
 
 void
-SocketTLSContext_enable_session_cache (T ctx, size_t max_sessions,
+SocketTLSContext_enable_session_cache (T ctx,
+                                       size_t max_sessions,
                                        long timeout_seconds)
 {
   assert (ctx);
@@ -159,7 +164,8 @@ SocketTLSContext_enable_session_cache (T ctx, size_t max_sessions,
       RAISE_CTX_ERROR_FMT (
           SocketTLS_Failed,
           "Session timeout %ld seconds exceeds maximum allowed %ld",
-          sess_timeout, SOCKET_TLS_SESSION_MAX_TIMEOUT);
+          sess_timeout,
+          SOCKET_TLS_SESSION_MAX_TIMEOUT);
     }
   SSL_CTX_set_timeout (ctx->ssl_ctx, sess_timeout);
   ctx->session_cache_enabled = 1;
@@ -174,7 +180,9 @@ SocketTLSContext_set_session_cache_size (T ctx, size_t size)
 }
 
 void
-SocketTLSContext_get_cache_stats (T ctx, size_t *hits, size_t *misses,
+SocketTLSContext_get_cache_stats (T ctx,
+                                  size_t *hits,
+                                  size_t *misses,
                                   size_t *stores)
 {
   if (!ctx || !ctx->session_cache_enabled)
@@ -207,8 +215,10 @@ configure_ticket_keys (T ctx, const unsigned char *key, size_t key_len)
 
   memcpy (ctx->ticket_key, key, key_len);
 
-  if (SSL_CTX_ctrl (ctx->ssl_ctx, SSL_CTRL_SET_TLSEXT_TICKET_KEYS,
-                    (int)key_len, ctx->ticket_key)
+  if (SSL_CTX_ctrl (ctx->ssl_ctx,
+                    SSL_CTRL_SET_TLSEXT_TICKET_KEYS,
+                    (int)key_len,
+                    ctx->ticket_key)
       != 1)
     {
       OPENSSL_cleanse (ctx->ticket_key, SOCKET_TLS_TICKET_KEY_LEN);
@@ -219,7 +229,8 @@ configure_ticket_keys (T ctx, const unsigned char *key, size_t key_len)
 }
 
 void
-SocketTLSContext_enable_session_tickets (T ctx, const unsigned char *key,
+SocketTLSContext_enable_session_tickets (T ctx,
+                                         const unsigned char *key,
                                          size_t key_len)
 {
   assert (ctx);
@@ -227,10 +238,9 @@ SocketTLSContext_enable_session_tickets (T ctx, const unsigned char *key,
 
   if (key_len != SOCKET_TLS_TICKET_KEY_LEN)
     {
-      RAISE_CTX_ERROR_FMT (
-          SocketTLS_Failed,
-          "Session ticket key length must be exactly %d bytes",
-          SOCKET_TLS_TICKET_KEY_LEN);
+      RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
+                           "Session ticket key length must be exactly %d bytes",
+                           SOCKET_TLS_TICKET_KEY_LEN);
     }
 
   if (key == NULL)
@@ -248,7 +258,8 @@ SocketTLSContext_enable_session_tickets (T ctx, const unsigned char *key,
 }
 
 void
-SocketTLSContext_rotate_session_ticket_key (T ctx, const unsigned char *new_key,
+SocketTLSContext_rotate_session_ticket_key (T ctx,
+                                            const unsigned char *new_key,
                                             size_t new_key_len)
 {
   assert (ctx);
@@ -266,7 +277,8 @@ SocketTLSContext_rotate_session_ticket_key (T ctx, const unsigned char *new_key,
       RAISE_CTX_ERROR_FMT (
           SocketTLS_Failed,
           "Session ticket key length must be exactly %d bytes, got %zu",
-          SOCKET_TLS_TICKET_KEY_LEN, new_key_len);
+          SOCKET_TLS_TICKET_KEY_LEN,
+          new_key_len);
     }
 
   if (new_key == NULL)

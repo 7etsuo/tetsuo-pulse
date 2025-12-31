@@ -45,7 +45,7 @@
 #define MONTHS_PER_YEAR 12
 #define LOG_DATE_TRUNCATE_LEN 50
 #define MAX_YEAR 9999
-#define MAX_HTTP_DATE_LEN 128  /* RFC 9110: HTTP dates are bounded by format */
+#define MAX_HTTP_DATE_LEN 128 /* RFC 9110: HTTP dates are bounded by format */
 
 /* ============================================================================
  * Lookup Tables
@@ -55,9 +55,9 @@
 static const char *const day_names_short[]
     = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
 
-static const char *const day_names_long[] = {
-  "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
-};
+static const char *const day_names_long[]
+    = { "Sunday",   "Monday", "Tuesday", "Wednesday",
+        "Thursday", "Friday", "Saturday" };
 
 static const size_t day_long_lengths[DAYS_PER_WEEK] = { 6, 6, 7, 9, 8, 6, 8 };
 
@@ -65,11 +65,10 @@ static const struct
 {
   const char *name;
   int month;
-} month_table[] = {
-  { "Jan", 0 },  { "Feb", 1 },  { "Mar", 2 }, { "Apr", 3 }, { "May", 4 },
-  { "Jun", 5 },  { "Jul", 6 },  { "Aug", 7 }, { "Sep", 8 }, { "Oct", 9 },
-  { "Nov", 10 }, { "Dec", 11 }, { NULL, -1 }
-};
+} month_table[]
+    = { { "Jan", 0 },  { "Feb", 1 },  { "Mar", 2 }, { "Apr", 3 }, { "May", 4 },
+        { "Jun", 5 },  { "Jul", 6 },  { "Aug", 7 }, { "Sep", 8 }, { "Oct", 9 },
+        { "Nov", 10 }, { "Dec", 11 }, { NULL, -1 } };
 
 static const int days_per_month[MONTHS_PER_YEAR]
     = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
@@ -272,12 +271,12 @@ parse_time_hms (const char **p, const char *end, DateParts *parts)
  */
 
 static pthread_mutex_t tz_mutex __attribute__ ((unused))
-    = PTHREAD_MUTEX_INITIALIZER;
+= PTHREAD_MUTEX_INITIALIZER;
 
 static time_t
 tm_to_time_t (struct tm *tm)
 {
-#if defined(_GNU_SOURCE) || defined(__linux__) || defined(__APPLE__)          \
+#if defined(_GNU_SOURCE) || defined(__linux__) || defined(__APPLE__) \
     || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
   return timegm (tm);
 #else
@@ -649,10 +648,10 @@ SocketHTTP_date_parse (const char *date_str, size_t len, time_t *time_out)
         return 0;
     }
 
-  int print_len = (len > LOG_DATE_TRUNCATE_LEN) ? LOG_DATE_TRUNCATE_LEN
-                                                : (int)len;
-  SOCKET_LOG_WARN_MSG ("Invalid HTTP date format (len=%zu): %.*s...", len,
-                       print_len, date_str);
+  int print_len
+      = (len > LOG_DATE_TRUNCATE_LEN) ? LOG_DATE_TRUNCATE_LEN : (int)len;
+  SOCKET_LOG_WARN_MSG (
+      "Invalid HTTP date format (len=%zu): %.*s...", len, print_len, date_str);
   return -1;
 }
 
@@ -675,10 +674,16 @@ SocketHTTP_date_format (time_t t, char *output)
   if (mon < 0 || mon > (MONTHS_PER_YEAR - 1))
     mon = 0;
 
-  int n = snprintf (
-      output, SOCKETHTTP_DATE_BUFSIZE, "%s, %02d %s %04d %02d:%02d:%02d GMT",
-      day_names_short[wday], (int)tm->tm_mday, month_table[mon].name,
-      tm->tm_year + 1900, (int)tm->tm_hour, (int)tm->tm_min, (int)tm->tm_sec);
+  int n = snprintf (output,
+                    SOCKETHTTP_DATE_BUFSIZE,
+                    "%s, %02d %s %04d %02d:%02d:%02d GMT",
+                    day_names_short[wday],
+                    (int)tm->tm_mday,
+                    month_table[mon].name,
+                    tm->tm_year + 1900,
+                    (int)tm->tm_hour,
+                    (int)tm->tm_min,
+                    (int)tm->tm_sec);
 
   if (n < 0 || n >= SOCKETHTTP_DATE_BUFSIZE || n != 29)
     return -1;

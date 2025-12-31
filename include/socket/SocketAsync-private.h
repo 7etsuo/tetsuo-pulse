@@ -236,17 +236,20 @@ struct AsyncRequest
   int64_t submitted_at; /* Submission time (ms, monotonic) */
 
   /**
-   * @brief Per-request deadline for timeout detection (milliseconds, monotonic).
+   * @brief Per-request deadline for timeout detection (milliseconds,
+   * monotonic).
    *
    * Set via SocketAsync_send_timeout() or SocketAsync_recv_timeout() to specify
    * a per-request timeout. Overrides global context timeout when non-zero.
    *
    * Values:
    * - 0: Use global context timeout (async->request_timeout_ms)
-   * - >0: Absolute deadline (monotonic ms) - request expires when now >= deadline
+   * - >0: Absolute deadline (monotonic ms) - request expires when now >=
+   * deadline
    *
-   * Checked during SocketAsync_process_completions() and SocketAsync_expire_stale().
-   * On expiration, callback is invoked with err=ETIMEDOUT.
+   * Checked during SocketAsync_process_completions() and
+   * SocketAsync_expire_stale(). On expiration, callback is invoked with
+   * err=ETIMEDOUT.
    *
    * @see SocketAsync_send_timeout()
    * @see SocketAsync_recv_timeout()

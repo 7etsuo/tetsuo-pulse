@@ -147,12 +147,12 @@ struct SocketHTTP2_Conn
   TimeWindow_T settings_window;
 
   /* Sliding window stream creation rate limiting (CVE-2023-44487 protection) */
-  TimeWindow_T stream_create_window;  /* Tracks creations over window period */
-  TimeWindow_T stream_burst_window;   /* Short-term burst detection */
-  TimeWindow_T stream_churn_window;   /* Rapid create+close cycle detection */
-  uint32_t stream_max_per_window;     /* Max creations per window */
-  uint32_t stream_burst_threshold;    /* Max per burst interval */
-  uint32_t stream_churn_threshold;    /* Max rapid cycles per window */
+  TimeWindow_T stream_create_window; /* Tracks creations over window period */
+  TimeWindow_T stream_burst_window;  /* Short-term burst detection */
+  TimeWindow_T stream_churn_window;  /* Rapid create+close cycle detection */
+  uint32_t stream_max_per_window;    /* Max creations per window */
+  uint32_t stream_burst_threshold;   /* Max per burst interval */
+  uint32_t stream_churn_threshold;   /* Max rapid cycles per window */
 };
 
 /**
@@ -180,10 +180,11 @@ extern int http2_flow_adjust_window (int32_t *window, int32_t delta);
 
 extern int http2_frame_send (SocketHTTP2_Conn_T conn,
                              const SocketHTTP2_FrameHeader *header,
-                             const void *payload, size_t payload_len);
+                             const void *payload,
+                             size_t payload_len);
 
-extern SocketHTTP2_Stream_T http2_stream_lookup (const SocketHTTP2_Conn_T conn,
-                                                 uint32_t stream_id);
+extern SocketHTTP2_Stream_T
+http2_stream_lookup (const SocketHTTP2_Conn_T conn, uint32_t stream_id);
 
 extern SocketHTTP2_Stream_T http2_stream_create (SocketHTTP2_Conn_T conn,
                                                  uint32_t stream_id,
@@ -192,14 +193,18 @@ extern SocketHTTP2_Stream_T http2_stream_create (SocketHTTP2_Conn_T conn,
 extern void http2_stream_destroy (SocketHTTP2_Stream_T stream);
 
 extern SocketHTTP2_ErrorCode
-http2_stream_transition (SocketHTTP2_Stream_T stream, uint8_t frame_type,
-                         uint8_t flags, int is_send);
+http2_stream_transition (SocketHTTP2_Stream_T stream,
+                         uint8_t frame_type,
+                         uint8_t flags,
+                         int is_send);
 
 extern int http2_flow_consume_recv (SocketHTTP2_Conn_T conn,
-                                    SocketHTTP2_Stream_T stream, size_t bytes);
+                                    SocketHTTP2_Stream_T stream,
+                                    size_t bytes);
 
 extern int http2_flow_consume_send (SocketHTTP2_Conn_T conn,
-                                    SocketHTTP2_Stream_T stream, size_t bytes);
+                                    SocketHTTP2_Stream_T stream,
+                                    size_t bytes);
 
 extern int http2_flow_update_recv (SocketHTTP2_Conn_T conn,
                                    SocketHTTP2_Stream_T stream,
@@ -258,11 +263,13 @@ extern int http2_process_priority_update (SocketHTTP2_Conn_T conn,
 
 extern int http2_decode_headers (SocketHTTP2_Conn_T conn,
                                  SocketHTTP2_Stream_T stream,
-                                 const unsigned char *block, size_t len);
+                                 const unsigned char *block,
+                                 size_t len);
 
 extern ssize_t http2_encode_headers (SocketHTTP2_Conn_T conn,
                                      const SocketHPACK_Header *headers,
-                                     size_t count, unsigned char *output,
+                                     size_t count,
+                                     unsigned char *output,
                                      size_t output_size);
 
 extern void http2_send_connection_error (SocketHTTP2_Conn_T conn,
@@ -273,7 +280,8 @@ extern void http2_send_stream_error (SocketHTTP2_Conn_T conn,
                                      SocketHTTP2_ErrorCode error_code);
 
 extern void http2_emit_stream_event (SocketHTTP2_Conn_T conn,
-                                     SocketHTTP2_Stream_T stream, int event);
+                                     SocketHTTP2_Stream_T stream,
+                                     int event);
 
 extern void http2_emit_conn_event (SocketHTTP2_Conn_T conn, int event);
 
@@ -285,12 +293,12 @@ extern void http2_emit_conn_event (SocketHTTP2_Conn_T conn, int event);
  * Combines http2_send_connection_error() with return -1 for cleaner
  * error handling in frame processing functions.
  */
-#define HTTP2_SEND_CONN_ERROR_AND_FAIL(conn, code)                            \
-  do                                                                          \
-    {                                                                         \
-      http2_send_connection_error ((conn), (code));                           \
-      return -1;                                                              \
-    }                                                                         \
+#define HTTP2_SEND_CONN_ERROR_AND_FAIL(conn, code)  \
+  do                                                \
+    {                                               \
+      http2_send_connection_error ((conn), (code)); \
+      return -1;                                    \
+    }                                               \
   while (0)
 
 /**
@@ -299,12 +307,12 @@ extern void http2_emit_conn_event (SocketHTTP2_Conn_T conn, int event);
  * Combines http2_send_stream_error() with return 0 for stream-level
  * errors that don't terminate the connection.
  */
-#define HTTP2_SEND_STREAM_ERROR_AND_CONTINUE(conn, id, code)                  \
-  do                                                                          \
-    {                                                                         \
-      http2_send_stream_error ((conn), (id), (code));                         \
-      return 0;                                                               \
-    }                                                                         \
+#define HTTP2_SEND_STREAM_ERROR_AND_CONTINUE(conn, id, code) \
+  do                                                         \
+    {                                                        \
+      http2_send_stream_error ((conn), (id), (code));        \
+      return 0;                                              \
+    }                                                        \
   while (0)
 
 static inline void
@@ -352,7 +360,8 @@ read_u31_be (const unsigned char *buf)
          | ((uint32_t)buf[2] << 8) | buf[3];
 }
 
-extern int http2_is_connection_header_forbidden (const SocketHPACK_Header *header);
+extern int
+http2_is_connection_header_forbidden (const SocketHPACK_Header *header);
 extern int http2_field_has_uppercase (const char *name, size_t len);
 extern int http2_field_has_prohibited_chars (const char *data, size_t len);
 extern int http2_field_name_has_prohibited_chars (const char *name, size_t len);
@@ -378,65 +387,68 @@ extern int http2_parse_status_code (const char *value, size_t len, int *status);
  * @param cl Output: parsed content length
  * @return 0 on success, -1 on empty/invalid/overflow
  */
-extern int http2_parse_content_length (const char *value, size_t len,
-                                        int64_t *cl);
+extern int
+http2_parse_content_length (const char *value, size_t len, int64_t *cl);
 
 /**
  * @brief Validate :method pseudo-header
  * @return 0 on success, -1 on error
  */
 extern int http2_validate_method_header (const SocketHPACK_Header *h,
-                                          int is_request,
-                                          HTTP2_PseudoHeaderState *state);
+                                         int is_request,
+                                         HTTP2_PseudoHeaderState *state);
 
 /**
  * @brief Validate :scheme pseudo-header
  * @return 0 on success, -1 on error
  */
 extern int http2_validate_scheme_header (const SocketHPACK_Header *h,
-                                          HTTP2_PseudoHeaderState *state);
+                                         HTTP2_PseudoHeaderState *state);
 
 /**
  * @brief Validate :authority pseudo-header
  * @return 0 on success, -1 on error
  */
 extern int http2_validate_authority_header (const SocketHPACK_Header *h,
-                                             HTTP2_PseudoHeaderState *state);
+                                            HTTP2_PseudoHeaderState *state);
 
 /**
  * @brief Validate :path pseudo-header
  * @return 0 on success, -1 on error
  */
 extern int http2_validate_path_header (const SocketHPACK_Header *h,
-                                        HTTP2_PseudoHeaderState *state);
+                                       HTTP2_PseudoHeaderState *state);
 
 /**
  * @brief Validate :status pseudo-header
  * @return 0 on success, -1 on error
  */
 extern int http2_validate_status_header (const SocketHPACK_Header *h,
-                                          int is_request,
-                                          HTTP2_PseudoHeaderState *state);
+                                         int is_request,
+                                         HTTP2_PseudoHeaderState *state);
 
 /**
  * @brief Validate :protocol pseudo-header (RFC 8441 Extended CONNECT)
  * @return 0 on success, -1 on error
  */
 extern int http2_validate_protocol_header (SocketHTTP2_Conn_T conn,
-                                            SocketHTTP2_Stream_T stream,
-                                            const SocketHPACK_Header *h,
-                                            HTTP2_PseudoHeaderState *state);
+                                           SocketHTTP2_Stream_T stream,
+                                           const SocketHPACK_Header *h,
+                                           HTTP2_PseudoHeaderState *state);
 
 /**
- * @brief Validate standard CONNECT request pseudo-headers (RFC 9113 Section 8.5)
+ * @brief Validate standard CONNECT request pseudo-headers (RFC 9113
+ * Section 8.5)
  * @return 0 on success, -1 on error
  */
-extern int http2_validate_standard_connect (const HTTP2_PseudoHeaderState *state);
+extern int
+http2_validate_standard_connect (const HTTP2_PseudoHeaderState *state);
 
 /**
  * @brief Validate Extended CONNECT request pseudo-headers (RFC 8441)
  * @return 0 on success, -1 on error
  */
-extern int http2_validate_extended_connect (const HTTP2_PseudoHeaderState *state);
+extern int
+http2_validate_extended_connect (const HTTP2_PseudoHeaderState *state);
 
 #endif /* SOCKETHTTP2_PRIVATE_INCLUDED */

@@ -215,12 +215,16 @@ typedef struct SocketHTTPServer_Request *SocketHTTPServer_Request_T;
 typedef void (*SocketHTTPServer_Handler) (SocketHTTPServer_Request_T req,
                                           void *userdata);
 typedef int (*SocketHTTPServer_BodyCallback) (SocketHTTPServer_Request_T req,
-                                              const void *chunk, size_t len,
-                                              int is_final, void *userdata);
+                                              const void *chunk,
+                                              size_t len,
+                                              int is_final,
+                                              void *userdata);
 typedef int (*SocketHTTPServer_Validator) (SocketHTTPServer_Request_T req,
-                                           int *reject_status, void *userdata);
+                                           int *reject_status,
+                                           void *userdata);
 typedef void (*SocketHTTPServer_DrainCallback) (SocketHTTPServer_T server,
-                                                int timed_out, void *userdata);
+                                                int timed_out,
+                                                void *userdata);
 
 extern void SocketHTTPServer_config_defaults (SocketHTTPServer_Config *config);
 extern SocketHTTPServer_T
@@ -233,8 +237,7 @@ extern void SocketHTTPServer_set_handler (SocketHTTPServer_T server,
                                           void *userdata);
 
 extern int SocketHTTPServer_fd (SocketHTTPServer_T server);
-extern int SocketHTTPServer_process (SocketHTTPServer_T server,
-                                     int timeout_ms);
+extern int SocketHTTPServer_process (SocketHTTPServer_T server, int timeout_ms);
 extern SocketPoll_T SocketHTTPServer_poll (SocketHTTPServer_T server);
 
 extern SocketHTTP_Method
@@ -261,8 +264,8 @@ extern Arena_T SocketHTTPServer_Request_arena (SocketHTTPServer_Request_T req);
 extern size_t
 SocketHTTPServer_Request_memory_used (SocketHTTPServer_Request_T req);
 
-extern void SocketHTTPServer_Request_status (SocketHTTPServer_Request_T req,
-                                             int code);
+extern void
+SocketHTTPServer_Request_status (SocketHTTPServer_Request_T req, int code);
 extern void SocketHTTPServer_Request_header (SocketHTTPServer_Request_T req,
                                              const char *name,
                                              const char *value);
@@ -270,7 +273,8 @@ extern int SocketHTTPServer_Request_trailer (SocketHTTPServer_Request_T req,
                                              const char *name,
                                              const char *value);
 extern void SocketHTTPServer_Request_body_data (SocketHTTPServer_Request_T req,
-                                                const void *data, size_t len);
+                                                const void *data,
+                                                size_t len);
 extern void
 SocketHTTPServer_Request_body_string (SocketHTTPServer_Request_T req,
                                       const char *str);
@@ -282,15 +286,14 @@ SocketHTTPServer_Request_body_stream (SocketHTTPServer_Request_T req,
                                       void *userdata);
 extern int64_t
 SocketHTTPServer_Request_body_expected (SocketHTTPServer_Request_T req);
-extern int
-SocketHTTPServer_Request_is_chunked (SocketHTTPServer_Request_T req);
+extern int SocketHTTPServer_Request_is_chunked (SocketHTTPServer_Request_T req);
 
 extern int
 SocketHTTPServer_Request_begin_stream (SocketHTTPServer_Request_T req);
 extern int SocketHTTPServer_Request_send_chunk (SocketHTTPServer_Request_T req,
-                                                const void *data, size_t len);
-extern int
-SocketHTTPServer_Request_end_stream (SocketHTTPServer_Request_T req);
+                                                const void *data,
+                                                size_t len);
+extern int SocketHTTPServer_Request_end_stream (SocketHTTPServer_Request_T req);
 
 extern int SocketHTTPServer_Request_push (SocketHTTPServer_Request_T req,
                                           const char *path,
@@ -301,10 +304,10 @@ extern int
 SocketHTTPServer_Request_is_websocket (SocketHTTPServer_Request_T req);
 extern SocketWS_T
 SocketHTTPServer_Request_upgrade_websocket (SocketHTTPServer_Request_T req);
-extern SocketHTTP2_Stream_T
-SocketHTTPServer_Request_accept_websocket_h2 (SocketHTTPServer_Request_T req,
-                                              SocketHTTPServer_BodyCallback callback,
-                                              void *userdata);
+extern SocketHTTP2_Stream_T SocketHTTPServer_Request_accept_websocket_h2 (
+    SocketHTTPServer_Request_T req,
+    SocketHTTPServer_BodyCallback callback,
+    void *userdata);
 
 extern void SocketHTTPServer_set_rate_limit (SocketHTTPServer_T server,
                                              const char *path_prefix,
@@ -317,8 +320,8 @@ SocketHTTPServer_set_validator (SocketHTTPServer_T server,
 
 extern int SocketHTTPServer_drain (SocketHTTPServer_T server, int timeout_ms);
 extern int SocketHTTPServer_drain_poll (SocketHTTPServer_T server);
-extern int SocketHTTPServer_drain_wait (SocketHTTPServer_T server,
-                                        int timeout_ms);
+extern int
+SocketHTTPServer_drain_wait (SocketHTTPServer_T server, int timeout_ms);
 extern int64_t SocketHTTPServer_drain_remaining_ms (SocketHTTPServer_T server);
 extern void
 SocketHTTPServer_set_drain_callback (SocketHTTPServer_T server,
@@ -361,14 +364,17 @@ extern int SocketHTTPServer_add_static_dir (SocketHTTPServer_T server,
 
 typedef int (*SocketHTTPServer_Middleware) (SocketHTTPServer_Request_T req,
                                             void *userdata);
-extern int SocketHTTPServer_add_middleware (SocketHTTPServer_T server,
-                                            SocketHTTPServer_Middleware middleware,
-                                            void *userdata);
+extern int
+SocketHTTPServer_add_middleware (SocketHTTPServer_T server,
+                                 SocketHTTPServer_Middleware middleware,
+                                 void *userdata);
 
 typedef void (*SocketHTTPServer_ErrorHandler) (SocketHTTPServer_Request_T req,
-                                               int status_code, void *userdata);
-extern void SocketHTTPServer_set_error_handler (SocketHTTPServer_T server,
-                                                SocketHTTPServer_ErrorHandler handler,
-                                                void *userdata);
+                                               int status_code,
+                                               void *userdata);
+extern void
+SocketHTTPServer_set_error_handler (SocketHTTPServer_T server,
+                                    SocketHTTPServer_ErrorHandler handler,
+                                    void *userdata);
 
 #endif /* SOCKETHTTPSERVER_INCLUDED */

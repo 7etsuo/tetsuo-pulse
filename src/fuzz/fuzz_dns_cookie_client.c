@@ -35,7 +35,8 @@
  * - Concurrent operations simulation
  *
  * Build: CC=clang cmake .. -DENABLE_FUZZING=ON && make fuzz_dns_cookie_client
- * Run:   ./fuzz_dns_cookie_client corpus/dns_cookie_client/ -fork=16 -max_len=1024
+ * Run:   ./fuzz_dns_cookie_client corpus/dns_cookie_client/ -fork=16
+ * -max_len=1024
  */
 
 #include <stdlib.h>
@@ -50,7 +51,9 @@
 
 /* Helper to construct IPv4 address from fuzzer input */
 static void
-build_ipv4_addr (const uint8_t *data, size_t len, struct sockaddr_in *addr,
+build_ipv4_addr (const uint8_t *data,
+                 size_t len,
+                 struct sockaddr_in *addr,
                  socklen_t *addr_len)
 {
   memset (addr, 0, sizeof (*addr));
@@ -71,7 +74,9 @@ build_ipv4_addr (const uint8_t *data, size_t len, struct sockaddr_in *addr,
 
 /* Helper to construct IPv6 address from fuzzer input */
 static void
-build_ipv6_addr (const uint8_t *data, size_t len, struct sockaddr_in6 *addr,
+build_ipv6_addr (const uint8_t *data,
+                 size_t len,
+                 struct sockaddr_in6 *addr,
                  socklen_t *addr_len)
 {
   memset (addr, 0, sizeof (*addr));
@@ -110,8 +115,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   const uint8_t *section3 = data + section1_len + section2_len;
   size_t section3_len = size / 4;
 
-  const uint8_t *section4
-      = data + section1_len + section2_len + section3_len;
+  const uint8_t *section4 = data + section1_len + section2_len + section3_len;
   size_t section4_len = size - section1_len - section2_len - section3_len;
 
   TRY
@@ -123,9 +127,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     /* Test 1: Configuration fuzzing */
     if (section1_len >= 4)
       {
-        int secret_lifetime
-            = ((int)section1[0] << 24) | ((int)section1[1] << 16)
-              | ((int)section1[2] << 8) | section1[3];
+        int secret_lifetime = ((int)section1[0] << 24)
+                              | ((int)section1[1] << 16)
+                              | ((int)section1[2] << 8) | section1[3];
         SocketDNSCookie_set_secret_lifetime (cache, secret_lifetime);
 
         if (section1_len >= 8)
@@ -133,8 +137,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             size_t cache_size = ((size_t)section1[4] << 8) | section1[5];
             SocketDNSCookie_set_cache_size (cache, cache_size);
 
-            int server_ttl
-                = ((int)section1[6] << 8) | section1[7];
+            int server_ttl = ((int)section1[6] << 8) | section1[7];
             SocketDNSCookie_set_server_ttl (cache, server_ttl);
           }
       }
@@ -150,37 +153,42 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         /* Test IPv4 generation */
         build_ipv4_addr (section2, section2_len, &server_v4, &server_len);
         build_ipv4_addr (section2 + 6,
-                         section2_len > 6 ? section2_len - 6 : 0, &client_v4,
+                         section2_len > 6 ? section2_len - 6 : 0,
+                         &client_v4,
                          &client_len);
 
-        int result = SocketDNSCookie_generate (
-            cache, (struct sockaddr *)&server_v4, server_len,
-            (struct sockaddr *)&client_v4, client_len, &cookie);
+        int result = SocketDNSCookie_generate (cache,
+                                               (struct sockaddr *)&server_v4,
+                                               server_len,
+                                               (struct sockaddr *)&client_v4,
+                                               client_len,
+                                               &cookie);
         (void)result;
 
         /* Test IPv6 generation if enough data */
         if (section2_len >= 34)
           {
             build_ipv6_addr (section2, section2_len, &server_v6, &server_len);
-            build_ipv6_addr (section2 + 18, section2_len - 18, &client_v6,
-                             &client_len);
+            build_ipv6_addr (
+                section2 + 18, section2_len - 18, &client_v6, &client_len);
 
-            result = SocketDNSCookie_generate (
-                cache, (struct sockaddr *)&server_v6, server_len,
-                (struct sockaddr *)&client_v6, client_len, &cookie);
+            result = SocketDNSCookie_generate (cache,
+                                               (struct sockaddr *)&server_v6,
+                                               server_len,
+                                               (struct sockaddr *)&client_v6,
+                                               client_len,
+                                               &cookie);
             (void)result;
           }
 
         /* Test with NULL client address (should use server address only) */
         result = SocketDNSCookie_generate (
-            cache, (struct sockaddr *)&server_v4, server_len, NULL, 0,
-            &cookie);
+            cache, (struct sockaddr *)&server_v4, server_len, NULL, 0, &cookie);
         (void)result;
       }
 
     /* Test 3: Server cookie caching and lookup */
-    if (section3_len >= DNS_CLIENT_COOKIE_SIZE + DNS_SERVER_COOKIE_MIN_SIZE
-                            + 6)
+    if (section3_len >= DNS_CLIENT_COOKIE_SIZE + DNS_SERVER_COOKIE_MIN_SIZE + 6)
       {
         struct sockaddr_in server_addr;
         socklen_t addr_len;
@@ -191,17 +199,16 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
         /* Extract client and server cookies from fuzz input */
         const uint8_t *client_cookie = section3 + 6;
-        const uint8_t *server_cookie
-            = section3 + 6 + DNS_CLIENT_COOKIE_SIZE;
+        const uint8_t *server_cookie = section3 + 6 + DNS_CLIENT_COOKIE_SIZE;
 
         /* Determine server cookie length (8-32 bytes valid) */
-        size_t server_len = section3[0] % (DNS_SERVER_COOKIE_MAX_SIZE
-                                           - DNS_SERVER_COOKIE_MIN_SIZE + 1)
+        size_t server_len = section3[0]
+                                % (DNS_SERVER_COOKIE_MAX_SIZE
+                                   - DNS_SERVER_COOKIE_MIN_SIZE + 1)
                             + DNS_SERVER_COOKIE_MIN_SIZE;
 
         /* Ensure we don't read beyond input */
-        size_t available
-            = section3_len - 6 - DNS_CLIENT_COOKIE_SIZE;
+        size_t available = section3_len - 6 - DNS_CLIENT_COOKIE_SIZE;
         if (server_len > available)
           server_len = available;
 
@@ -210,9 +217,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             && server_len <= DNS_SERVER_COOKIE_MAX_SIZE)
           {
             /* Store server cookie */
-            int result = SocketDNSCookie_cache_store (
-                cache, (struct sockaddr *)&server_addr, addr_len,
-                client_cookie, server_cookie, server_len);
+            int result
+                = SocketDNSCookie_cache_store (cache,
+                                               (struct sockaddr *)&server_addr,
+                                               addr_len,
+                                               client_cookie,
+                                               server_cookie,
+                                               server_len);
             (void)result;
 
             /* Lookup the stored cookie */
@@ -224,15 +235,18 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             if (found)
               {
                 /* Build cookies for validation */
-                memcpy (cookie.client_cookie, client_cookie,
+                memcpy (cookie.client_cookie,
+                        client_cookie,
                         DNS_CLIENT_COOKIE_SIZE);
                 memcpy (cookie.server_cookie, server_cookie, server_len);
                 cookie.server_cookie_len = server_len;
 
                 SocketDNSCookie_Cookie response;
-                memcpy (response.client_cookie, entry.client_cookie,
+                memcpy (response.client_cookie,
+                        entry.client_cookie,
                         DNS_CLIENT_COOKIE_SIZE);
-                memcpy (response.server_cookie, entry.server_cookie,
+                memcpy (response.server_cookie,
+                        entry.server_cookie,
                         entry.server_cookie_len);
                 response.server_cookie_len = entry.server_cookie_len;
 
@@ -246,8 +260,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
                 /* Test hex formatting */
                 char hex_buf[128];
-                int hex_len
-                    = SocketDNSCookie_to_hex (&cookie, hex_buf, sizeof (hex_buf));
+                int hex_len = SocketDNSCookie_to_hex (
+                    &cookie, hex_buf, sizeof (hex_buf));
                 (void)hex_len;
               }
 
@@ -285,9 +299,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
             build_ipv4_addr (section4, section4_len, &server_addr, &addr_len);
 
-            int result = SocketDNSCookie_generate (
-                cache, (struct sockaddr *)&server_addr, addr_len, NULL, 0,
-                &cookie);
+            int result
+                = SocketDNSCookie_generate (cache,
+                                            (struct sockaddr *)&server_addr,
+                                            addr_len,
+                                            NULL,
+                                            0,
+                                            &cookie);
             (void)result;
           }
       }
@@ -321,14 +339,18 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             uint8_t client_cookie[DNS_CLIENT_COOKIE_SIZE] = { 0 };
             uint8_t server_cookie[DNS_SERVER_COOKIE_MIN_SIZE] = { 0 };
 
-            memcpy (client_cookie, section4 + i * 10,
+            memcpy (client_cookie,
+                    section4 + i * 10,
                     (i * 10 + DNS_CLIENT_COOKIE_SIZE <= section4_len)
                         ? DNS_CLIENT_COOKIE_SIZE
                         : 0);
 
-            SocketDNSCookie_cache_store (
-                cache, (struct sockaddr *)&server_addr, addr_len,
-                client_cookie, server_cookie, DNS_SERVER_COOKIE_MIN_SIZE);
+            SocketDNSCookie_cache_store (cache,
+                                         (struct sockaddr *)&server_addr,
+                                         addr_len,
+                                         client_cookie,
+                                         server_cookie,
+                                         DNS_SERVER_COOKIE_MIN_SIZE);
           }
       }
 
@@ -379,30 +401,39 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
         /* Generate with zero-length address */
         SocketDNSCookie_Cookie cookie;
-        (void)SocketDNSCookie_generate (cache, (struct sockaddr *)&addr, 0,
-                                        NULL, 0, &cookie);
+        (void)SocketDNSCookie_generate (
+            cache, (struct sockaddr *)&addr, 0, NULL, 0, &cookie);
 
         /* Store with invalid server cookie lengths */
         uint8_t client_cookie[DNS_CLIENT_COOKIE_SIZE] = { 0 };
         uint8_t server_cookie[DNS_SERVER_COOKIE_MAX_SIZE + 10] = { 0 };
 
         /* Too short */
-        (void)SocketDNSCookie_cache_store (
-            cache, (struct sockaddr *)&addr, addr_len, client_cookie,
-            server_cookie, DNS_SERVER_COOKIE_MIN_SIZE - 1);
+        (void)SocketDNSCookie_cache_store (cache,
+                                           (struct sockaddr *)&addr,
+                                           addr_len,
+                                           client_cookie,
+                                           server_cookie,
+                                           DNS_SERVER_COOKIE_MIN_SIZE - 1);
 
         /* Too long */
-        (void)SocketDNSCookie_cache_store (
-            cache, (struct sockaddr *)&addr, addr_len, client_cookie,
-            server_cookie, DNS_SERVER_COOKIE_MAX_SIZE + 1);
+        (void)SocketDNSCookie_cache_store (cache,
+                                           (struct sockaddr *)&addr,
+                                           addr_len,
+                                           client_cookie,
+                                           server_cookie,
+                                           DNS_SERVER_COOKIE_MAX_SIZE + 1);
 
         /* Test with mismatched address families */
         struct sockaddr_in6 addr6;
         build_ipv6_addr (data, size, &addr6, &addr_len);
 
-        (void)SocketDNSCookie_generate (cache, (struct sockaddr *)&addr6,
-                                        addr_len, (struct sockaddr *)&addr,
-                                        sizeof (addr), &cookie);
+        (void)SocketDNSCookie_generate (cache,
+                                        (struct sockaddr *)&addr6,
+                                        addr_len,
+                                        (struct sockaddr *)&addr,
+                                        sizeof (addr),
+                                        &cookie);
       }
 
     /* Test 12: Statistics reset */

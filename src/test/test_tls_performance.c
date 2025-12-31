@@ -250,7 +250,8 @@ TEST (buffer_pool_concurrent)
   /* Start threads */
   for (int i = 0; i < 4; i++)
     {
-      int ret = pthread_create (&threads[i], NULL, buffer_pool_thread_func, pool);
+      int ret
+          = pthread_create (&threads[i], NULL, buffer_pool_thread_func, pool);
       ASSERT_EQ (0, ret);
     }
 
@@ -290,7 +291,8 @@ TEST (early_data_status_non_tls)
 
   Socket_free (&sock);
 
-  printf ("    Early data status correctly returns NOT_SENT for non-TLS socket\n");
+  printf (
+      "    Early data status correctly returns NOT_SENT for non-TLS socket\n");
 }
 
 /* ============================================================================
@@ -313,11 +315,11 @@ TEST (sharded_cache_creation)
 
   TRY
   {
-    ctx = SocketTLSContext_new_server ("../certs/server.crt",
-                                       "../certs/server.key", NULL);
+    ctx = SocketTLSContext_new_server (
+        "../certs/server.crt", "../certs/server.key", NULL);
     if (!ctx)
-      ctx = SocketTLSContext_new_server ("certs/server.crt",
-                                         "certs/server.key", NULL);
+      ctx = SocketTLSContext_new_server (
+          "certs/server.crt", "certs/server.key", NULL);
     ASSERT_NOT_NULL (ctx);
 
     /* Create sharded cache */
@@ -367,11 +369,11 @@ TEST (context_early_data_config)
 
   TRY
   {
-    server_ctx = SocketTLSContext_new_server ("../certs/server.crt",
-                                              "../certs/server.key", NULL);
+    server_ctx = SocketTLSContext_new_server (
+        "../certs/server.crt", "../certs/server.key", NULL);
     if (!server_ctx)
-      server_ctx = SocketTLSContext_new_server ("certs/server.crt",
-                                                "certs/server.key", NULL);
+      server_ctx = SocketTLSContext_new_server (
+          "certs/server.crt", "certs/server.key", NULL);
     ASSERT_NOT_NULL (server_ctx);
 
     client_ctx = SocketTLSContext_new_client (NULL);
@@ -536,8 +538,7 @@ main (void)
 
   int failures = Test_get_failures ();
 
-  printf ("\n=== Test Summary: %d failures ===\n\n",
-          failures);
+  printf ("\n=== Test Summary: %d failures ===\n\n", failures);
 
   return failures > 0 ? 1 : 0;
 }

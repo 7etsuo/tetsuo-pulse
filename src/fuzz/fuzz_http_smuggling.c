@@ -71,7 +71,9 @@
  * Parse request and detect smuggling indicators
  */
 static void
-test_smuggling_detection (Arena_T arena, const char *request, size_t len,
+test_smuggling_detection (Arena_T arena,
+                          const char *request,
+                          size_t len,
                           int strict)
 {
   SocketHTTP1_Parser_T parser = NULL;
@@ -95,7 +97,8 @@ test_smuggling_detection (Arena_T arena, const char *request, size_t len,
       if (req && req->headers)
         {
           /* Check for conflicting headers */
-          const char *cl = SocketHTTP_Headers_get (req->headers, "Content-Length");
+          const char *cl
+              = SocketHTTP_Headers_get (req->headers, "Content-Length");
           const char *te
               = SocketHTTP_Headers_get (req->headers, "Transfer-Encoding");
 
@@ -109,9 +112,8 @@ test_smuggling_detection (Arena_T arena, const char *request, size_t len,
 
           /* Check for multiple values */
           const char *cl_all[10];
-          size_t cl_count = SocketHTTP_Headers_get_all (req->headers,
-                                                        "Content-Length",
-                                                        cl_all, 10);
+          size_t cl_count = SocketHTTP_Headers_get_all (
+              req->headers, "Content-Length", cl_all, 10);
           if (cl_count > 1)
             {
               /* Multiple CL headers - smuggling indicator */
@@ -119,9 +121,8 @@ test_smuggling_detection (Arena_T arena, const char *request, size_t len,
             }
 
           const char *te_all[10];
-          size_t te_count = SocketHTTP_Headers_get_all (req->headers,
-                                                        "Transfer-Encoding",
-                                                        te_all, 10);
+          size_t te_count = SocketHTTP_Headers_get_all (
+              req->headers, "Transfer-Encoding", te_all, 10);
           if (te_count > 1)
             {
               /* Multiple TE headers - smuggling indicator */
@@ -141,9 +142,12 @@ test_smuggling_detection (Arena_T arena, const char *request, size_t len,
         {
           char body_buf[8192];
           size_t body_consumed, body_written;
-          SocketHTTP1_Parser_read_body (parser, request + consumed,
-                                        len - consumed, &body_consumed,
-                                        body_buf, sizeof (body_buf),
+          SocketHTTP1_Parser_read_body (parser,
+                                        request + consumed,
+                                        len - consumed,
+                                        &body_consumed,
+                                        body_buf,
+                                        sizeof (body_buf),
                                         &body_written);
         }
     }
@@ -174,8 +178,8 @@ test_incremental_smuggling (Arena_T arena, const char *request, size_t len)
 
   while (offset < len && result == HTTP1_INCOMPLETE)
     {
-      result = SocketHTTP1_Parser_execute (parser, request + offset, 1,
-                                           &consumed);
+      result
+          = SocketHTTP1_Parser_execute (parser, request + offset, 1, &consumed);
       offset += consumed;
       if (consumed == 0 && result == HTTP1_INCOMPLETE)
         offset++;
@@ -189,9 +193,14 @@ test_incremental_smuggling (Arena_T arena, const char *request, size_t len)
 
       while (offset < len && !SocketHTTP1_Parser_body_complete (parser))
         {
-          SocketHTTP1_Result body_result = SocketHTTP1_Parser_read_body (
-              parser, request + offset, 1, &body_consumed, body_buf,
-              sizeof (body_buf), &body_written);
+          SocketHTTP1_Result body_result
+              = SocketHTTP1_Parser_read_body (parser,
+                                              request + offset,
+                                              1,
+                                              &body_consumed,
+                                              body_buf,
+                                              sizeof (body_buf),
+                                              &body_written);
 
           if (body_consumed == 0)
             break;
@@ -272,10 +281,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       for (size_t i = 0; i < sizeof (cl_te_attacks) / sizeof (cl_te_attacks[0]);
            i++)
         {
-          test_smuggling_detection (arena, cl_te_attacks[i],
-                                    strlen (cl_te_attacks[i]), 0);
-          test_smuggling_detection (arena, cl_te_attacks[i],
-                                    strlen (cl_te_attacks[i]), 1);
+          test_smuggling_detection (
+              arena, cl_te_attacks[i], strlen (cl_te_attacks[i]), 0);
+          test_smuggling_detection (
+              arena, cl_te_attacks[i], strlen (cl_te_attacks[i]), 1);
         }
     }
 
@@ -317,10 +326,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       for (size_t i = 0; i < sizeof (te_cl_attacks) / sizeof (te_cl_attacks[0]);
            i++)
         {
-          test_smuggling_detection (arena, te_cl_attacks[i],
-                                    strlen (te_cl_attacks[i]), 0);
-          test_smuggling_detection (arena, te_cl_attacks[i],
-                                    strlen (te_cl_attacks[i]), 1);
+          test_smuggling_detection (
+              arena, te_cl_attacks[i], strlen (te_cl_attacks[i]), 0);
+          test_smuggling_detection (
+              arena, te_cl_attacks[i], strlen (te_cl_attacks[i]), 1);
         }
     }
 
@@ -426,10 +435,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       for (size_t i = 0; i < sizeof (te_te_attacks) / sizeof (te_te_attacks[0]);
            i++)
         {
-          test_smuggling_detection (arena, te_te_attacks[i],
-                                    strlen (te_te_attacks[i]), 0);
-          test_smuggling_detection (arena, te_te_attacks[i],
-                                    strlen (te_te_attacks[i]), 1);
+          test_smuggling_detection (
+              arena, te_te_attacks[i], strlen (te_te_attacks[i]), 0);
+          test_smuggling_detection (
+              arena, te_te_attacks[i], strlen (te_te_attacks[i]), 1);
         }
     }
 
@@ -489,12 +498,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       };
 
       for (size_t i = 0;
-           i < sizeof (dup_cl_attacks) / sizeof (dup_cl_attacks[0]); i++)
+           i < sizeof (dup_cl_attacks) / sizeof (dup_cl_attacks[0]);
+           i++)
         {
-          test_smuggling_detection (arena, dup_cl_attacks[i],
-                                    strlen (dup_cl_attacks[i]), 0);
-          test_smuggling_detection (arena, dup_cl_attacks[i],
-                                    strlen (dup_cl_attacks[i]), 1);
+          test_smuggling_detection (
+              arena, dup_cl_attacks[i], strlen (dup_cl_attacks[i]), 0);
+          test_smuggling_detection (
+              arena, dup_cl_attacks[i], strlen (dup_cl_attacks[i]), 1);
         }
     }
 
@@ -583,13 +593,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         "\r\n",
       };
 
-      for (size_t i = 0;
-           i < sizeof (cl_edge_cases) / sizeof (cl_edge_cases[0]); i++)
+      for (size_t i = 0; i < sizeof (cl_edge_cases) / sizeof (cl_edge_cases[0]);
+           i++)
         {
-          test_smuggling_detection (arena, cl_edge_cases[i],
-                                    strlen (cl_edge_cases[i]), 0);
-          test_smuggling_detection (arena, cl_edge_cases[i],
-                                    strlen (cl_edge_cases[i]), 1);
+          test_smuggling_detection (
+              arena, cl_edge_cases[i], strlen (cl_edge_cases[i]), 0);
+          test_smuggling_detection (
+              arena, cl_edge_cases[i], strlen (cl_edge_cases[i]), 1);
         }
     }
 
@@ -699,13 +709,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         "\r\n",
       };
 
-      for (size_t i = 0;
-           i < sizeof (chunk_attacks) / sizeof (chunk_attacks[0]); i++)
+      for (size_t i = 0; i < sizeof (chunk_attacks) / sizeof (chunk_attacks[0]);
+           i++)
         {
-          test_smuggling_detection (arena, chunk_attacks[i],
-                                    strlen (chunk_attacks[i]), 0);
-          test_smuggling_detection (arena, chunk_attacks[i],
-                                    strlen (chunk_attacks[i]), 1);
+          test_smuggling_detection (
+              arena, chunk_attacks[i], strlen (chunk_attacks[i]), 0);
+          test_smuggling_detection (
+              arena, chunk_attacks[i], strlen (chunk_attacks[i]), 1);
         }
     }
 
@@ -743,12 +753,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       };
 
       for (size_t i = 0;
-           i < sizeof (version_attacks) / sizeof (version_attacks[0]); i++)
+           i < sizeof (version_attacks) / sizeof (version_attacks[0]);
+           i++)
         {
-          test_smuggling_detection (arena, version_attacks[i],
-                                    strlen (version_attacks[i]), 0);
-          test_smuggling_detection (arena, version_attacks[i],
-                                    strlen (version_attacks[i]), 1);
+          test_smuggling_detection (
+              arena, version_attacks[i], strlen (version_attacks[i]), 0);
+          test_smuggling_detection (
+              arena, version_attacks[i], strlen (version_attacks[i]), 1);
         }
     }
 
@@ -805,12 +816,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       };
 
       for (size_t i = 0;
-           i < sizeof (injection_attacks) / sizeof (injection_attacks[0]); i++)
+           i < sizeof (injection_attacks) / sizeof (injection_attacks[0]);
+           i++)
         {
-          test_smuggling_detection (arena, injection_attacks[i],
-                                    strlen (injection_attacks[i]), 0);
-          test_smuggling_detection (arena, injection_attacks[i],
-                                    strlen (injection_attacks[i]), 1);
+          test_smuggling_detection (
+              arena, injection_attacks[i], strlen (injection_attacks[i]), 0);
+          test_smuggling_detection (
+              arena, injection_attacks[i], strlen (injection_attacks[i]), 1);
         }
     }
 
@@ -826,7 +838,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         /* CL.TE with fuzzed embedded data */
         size_t payload_len = size > 100 ? 100 : size;
 
-        len = snprintf (smuggle_buf, sizeof (smuggle_buf),
+        len = snprintf (smuggle_buf,
+                        sizeof (smuggle_buf),
                         "POST / HTTP/1.1\r\n"
                         "Host: test.com\r\n"
                         "Content-Length: %zu\r\n"

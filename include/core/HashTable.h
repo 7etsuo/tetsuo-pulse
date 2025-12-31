@@ -46,7 +46,8 @@
 typedef struct T *T;
 
 /** Hash function: returns bucket index (0 to table_size-1) */
-typedef unsigned (*HashTable_HashFunc) (const void *key, unsigned seed,
+typedef unsigned (*HashTable_HashFunc) (const void *key,
+                                        unsigned seed,
                                         unsigned table_size);
 
 /** Key comparison: returns 0 if match, non-zero otherwise */
@@ -98,8 +99,8 @@ extern void HashTable_insert (T table, void *entry, const void *key);
  * Remove entry. Use prev from HashTable_find for O(1) removal.
  * Does not free the entry.
  */
-extern void HashTable_remove (T table, void *entry, void *prev,
-                              const void *key);
+extern void
+HashTable_remove (T table, void *entry, void *prev, const void *key);
 
 /**
  * Iterate all entries. Stops if callback returns non-zero.

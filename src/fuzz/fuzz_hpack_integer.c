@@ -44,15 +44,17 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           {
             /* Verify by re-encoding */
             unsigned char encoded[16];
-            size_t enc_len = SocketHPACK_int_encode (value, prefix, encoded,
-                                                     sizeof (encoded));
+            size_t enc_len = SocketHPACK_int_encode (
+                value, prefix, encoded, sizeof (encoded));
 
             /* Verify consumed matches encoded length */
             (void)enc_len;
           }
       }
   }
-  EXCEPT (SocketHPACK_Error) { /* Expected for malformed input */ }
+  EXCEPT (SocketHPACK_Error)
+  { /* Expected for malformed input */
+  }
   END_TRY;
 
   return 0;

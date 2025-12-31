@@ -283,7 +283,9 @@ extern const Except_T SocketAsync_Failed;
  * @see Socket_geterrorcode() - For detailed error info.
  * @see docs/ASYNC_IO.md#callback-best-practices - Optimization and pitfalls.
  */
-typedef void (*SocketAsync_Callback) (Socket_T socket, ssize_t bytes, int err,
+typedef void (*SocketAsync_Callback) (Socket_T socket,
+                                      ssize_t bytes,
+                                      int err,
                                       void *user_data);
 
 /**
@@ -387,7 +389,8 @@ typedef enum
    * - Buffer must be registered via SocketAsync_register_buffers() first
    * - io_uring backend only; ignored on other backends
    *
-   * @note Use SocketAsync_send_fixed() / SocketAsync_recv_fixed() for cleaner API.
+   * @note Use SocketAsync_send_fixed() / SocketAsync_recv_fixed() for cleaner
+   * API.
    * @see SocketAsync_register_buffers()
    * @see SocketAsync_send_fixed()
    * @see SocketAsync_recv_fixed()
@@ -402,7 +405,8 @@ typedef enum
  * @ingroup async_io
  *
  * Controls optional io_uring performance features that may require elevated
- * privileges or specific kernel versions. Use with SocketAsync_new_with_config().
+ * privileges or specific kernel versions. Use with
+ * SocketAsync_new_with_config().
  *
  * All options default to disabled (0) for maximum compatibility.
  */
@@ -423,7 +427,8 @@ typedef struct SocketAsync_Config
    * (see sqpoll_idle_ms). Set to 0 to disable SQPOLL mode.
    *
    * @note Requires Linux kernel 5.4+ for SQPOLL support.
-   * @note Falls back gracefully to standard submission if privileges insufficient.
+   * @note Falls back gracefully to standard submission if privileges
+   * insufficient.
    */
   int enable_sqpoll;
 
@@ -479,7 +484,9 @@ typedef struct SocketAsync_Config
  * @endcode
  */
 #define SOCKETASYNC_CONFIG_DEFAULT \
-  { 0, 1000, -1, 256 }
+  {                                \
+    0, 1000, -1, 256               \
+  }
 
 /**
  * @brief Create a new standalone asynchronous I/O context.
@@ -581,7 +588,8 @@ extern T SocketAsync_new (Arena_T arena);
  * @ingroup async_io
  *
  * Creates an async context with optional advanced io_uring features like SQPOLL
- * mode. Falls back gracefully when features unavailable or insufficient privileges.
+ * mode. Falls back gracefully when features unavailable or insufficient
+ * privileges.
  *
  * @param[in] arena Arena_T for internal allocations.
  * @param[in] config Configuration options (NULL for defaults).
@@ -603,12 +611,14 @@ extern T SocketAsync_new (Arena_T arena);
  * }
  * @endcode
  *
- * @note SQPOLL requires CAP_SYS_ADMIN or unprivileged io_uring setup (kernel 5.12+).
+ * @note SQPOLL requires CAP_SYS_ADMIN or unprivileged io_uring setup
+ * (kernel 5.12+).
  * @see SocketAsync_new() for simple creation with defaults.
  * @see SocketAsync_Config for configuration options.
  * @see SocketAsync_is_sqpoll_active() to verify SQPOLL activation.
  */
-extern T SocketAsync_new_with_config (Arena_T arena, const SocketAsync_Config *config);
+extern T
+SocketAsync_new_with_config (Arena_T arena, const SocketAsync_Config *config);
 
 /**
  * @brief Check if SQPOLL mode is active.
@@ -793,9 +803,13 @@ extern void SocketAsync_free (T *async);
  * @see SocketPoll_wait() - Processes completions automatically in event loop.
  * @see docs/ASYNC_IO.md#async-send - Examples and fallback handling.
  */
-extern unsigned SocketAsync_send (T async, Socket_T socket, const void *buf,
-                                  size_t len, SocketAsync_Callback cb,
-                                  void *user_data, SocketAsync_Flags flags);
+extern unsigned SocketAsync_send (T async,
+                                  Socket_T socket,
+                                  const void *buf,
+                                  size_t len,
+                                  SocketAsync_Callback cb,
+                                  void *user_data,
+                                  SocketAsync_Flags flags);
 
 /**
  * @brief Submit an asynchronous receive operation on a socket.
@@ -896,9 +910,13 @@ extern unsigned SocketAsync_send (T async, Socket_T socket, const void *buf,
  * @see SocketAsync_cancel() - Abort pending recv.
  * @see docs/ASYNC_IO.md#async-receive - Fallback mode and echo server example.
  */
-extern unsigned SocketAsync_recv (T async, Socket_T socket, void *buf,
-                                  size_t len, SocketAsync_Callback cb,
-                                  void *user_data, SocketAsync_Flags flags);
+extern unsigned SocketAsync_recv (T async,
+                                  Socket_T socket,
+                                  void *buf,
+                                  size_t len,
+                                  SocketAsync_Callback cb,
+                                  void *user_data,
+                                  SocketAsync_Flags flags);
 
 /**
  * @brief Cancel a pending asynchronous I/O operation by request ID.
@@ -1206,7 +1224,8 @@ typedef struct SocketAsync_Op
  * @see SocketAsync_recv() for single recv operation.
  * @see SocketAsync_cancel() to cancel by request_id.
  */
-extern int SocketAsync_submit_batch (T async, SocketAsync_Op *ops, size_t count);
+extern int
+SocketAsync_submit_batch (T async, SocketAsync_Op *ops, size_t count);
 
 /**
  * @brief Flush all pending io_uring submissions.
@@ -1301,11 +1320,11 @@ extern int SocketAsync_cancel_all (T async);
  */
 typedef enum
 {
-  ASYNC_BACKEND_AUTO = 0,   /**< Automatic best-available selection (default) */
-  ASYNC_BACKEND_IO_URING,   /**< Linux io_uring (kernel 5.1+) */
-  ASYNC_BACKEND_KQUEUE,     /**< BSD/macOS kqueue */
-  ASYNC_BACKEND_POLL,       /**< POSIX poll fallback */
-  ASYNC_BACKEND_NONE        /**< Explicitly disable async (sync mode) */
+  ASYNC_BACKEND_AUTO = 0, /**< Automatic best-available selection (default) */
+  ASYNC_BACKEND_IO_URING, /**< Linux io_uring (kernel 5.1+) */
+  ASYNC_BACKEND_KQUEUE,   /**< BSD/macOS kqueue */
+  ASYNC_BACKEND_POLL,     /**< POSIX poll fallback */
+  ASYNC_BACKEND_NONE      /**< Explicitly disable async (sync mode) */
 } SocketAsync_Backend;
 
 /**
@@ -1393,8 +1412,10 @@ extern int SocketAsync_set_backend (SocketAsync_Backend backend);
  * @see SocketAsync_send_continue() to resume partial transfers.
  * @see SocketAsync_recv_continue() to resume partial receives.
  */
-extern int SocketAsync_get_progress (T async, unsigned request_id,
-                                     size_t *completed, size_t *total);
+extern int SocketAsync_get_progress (T async,
+                                     unsigned request_id,
+                                     size_t *completed,
+                                     size_t *total);
 
 /**
  * @brief Continue a partially completed send operation.
@@ -1422,8 +1443,8 @@ extern int SocketAsync_get_progress (T async, unsigned request_id,
  *     if (bytes > 0 && bytes < (ssize_t)(state->total_len - state->sent)) {
  *         // Partial send - continue with remainder
  *         state->sent += bytes;
- *         unsigned new_id = SocketAsync_send_continue(state->async, state->req_id);
- *         if (new_id > 0) state->req_id = new_id;
+ *         unsigned new_id = SocketAsync_send_continue(state->async,
+ * state->req_id); if (new_id > 0) state->req_id = new_id;
  *     }
  * }
  * @endcode
@@ -1541,8 +1562,10 @@ extern int SocketAsync_expire_stale (T async);
  * @see SocketAsync_send() for sends using global timeout.
  * @see SocketAsync_set_timeout() for global timeout configuration.
  */
-extern unsigned SocketAsync_send_timeout (T async, Socket_T socket,
-                                          const void *buf, size_t len,
+extern unsigned SocketAsync_send_timeout (T async,
+                                          Socket_T socket,
+                                          const void *buf,
+                                          size_t len,
                                           SocketAsync_Callback cb,
                                           void *user_data,
                                           SocketAsync_Flags flags,
@@ -1570,8 +1593,11 @@ extern unsigned SocketAsync_send_timeout (T async, Socket_T socket,
  * @see SocketAsync_recv() for receives using global timeout.
  * @see SocketAsync_set_timeout() for global timeout configuration.
  */
-extern unsigned SocketAsync_recv_timeout (T async, Socket_T socket, void *buf,
-                                          size_t len, SocketAsync_Callback cb,
+extern unsigned SocketAsync_recv_timeout (T async,
+                                          Socket_T socket,
+                                          void *buf,
+                                          size_t len,
+                                          SocketAsync_Callback cb,
                                           void *user_data,
                                           SocketAsync_Flags flags,
                                           int64_t timeout_ms);
@@ -1582,7 +1608,8 @@ extern unsigned SocketAsync_recv_timeout (T async, Socket_T socket, void *buf,
  * @brief Register a buffer pool for fixed buffer I/O operations.
  * @ingroup async_io
  * @param[in] async Async context.
- * @param[in] bufs Array of buffer pointers (must remain valid until unregistered).
+ * @param[in] bufs Array of buffer pointers (must remain valid until
+ * unregistered).
  * @param[in] lens Array of buffer lengths corresponding to bufs.
  * @param[in] count Number of buffers to register.
  * @return 0 on success, -1 on failure (check errno).
@@ -1622,7 +1649,9 @@ extern unsigned SocketAsync_recv_timeout (T async, Socket_T socket, void *buf,
  * @see SocketAsync_send_fixed() for fixed buffer send.
  * @see SocketAsync_recv_fixed() for fixed buffer receive.
  */
-extern int SocketAsync_register_buffers (T async, void **bufs, size_t *lens,
+extern int SocketAsync_register_buffers (T async,
+                                         void **bufs,
+                                         size_t *lens,
                                          unsigned count);
 
 /**
@@ -1631,8 +1660,9 @@ extern int SocketAsync_register_buffers (T async, void **bufs, size_t *lens,
  * @param[in] async Async context.
  * @return 0 on success, -1 on failure.
  *
- * Unregisters all buffers previously registered with SocketAsync_register_buffers().
- * After this call, fixed buffer operations will fail until new buffers are registered.
+ * Unregisters all buffers previously registered with
+ * SocketAsync_register_buffers(). After this call, fixed buffer operations will
+ * fail until new buffers are registered.
  *
  * @note Ensure no fixed buffer operations are in-flight before unregistering.
  * @threadsafe Yes.
@@ -1659,20 +1689,26 @@ extern unsigned SocketAsync_registered_buffer_count (const T async);
  * @param[in] len Number of bytes to send.
  * @param[in] cb Completion callback.
  * @param[in] user_data User data for callback.
- * @param[in] flags Operation flags (ASYNC_FLAG_FIXED_BUFFER added automatically).
+ * @param[in] flags Operation flags (ASYNC_FLAG_FIXED_BUFFER added
+ * automatically).
  * @return Request ID on success, 0 on failure.
  *
  * Uses IORING_OP_SEND_FIXED for zero-copy send from registered buffer.
  * Eliminates per-operation buffer mapping for improved throughput.
  *
- * @throws SocketAsync_Failed if buf_index out of range or buffers not registered.
+ * @throws SocketAsync_Failed if buf_index out of range or buffers not
+ * registered.
  * @threadsafe Yes.
  * @see SocketAsync_register_buffers() to register buffer pool.
  */
-extern unsigned SocketAsync_send_fixed (T async, Socket_T socket,
-                                        unsigned buf_index, size_t offset,
-                                        size_t len, SocketAsync_Callback cb,
-                                        void *user_data, SocketAsync_Flags flags);
+extern unsigned SocketAsync_send_fixed (T async,
+                                        Socket_T socket,
+                                        unsigned buf_index,
+                                        size_t offset,
+                                        size_t len,
+                                        SocketAsync_Callback cb,
+                                        void *user_data,
+                                        SocketAsync_Flags flags);
 
 /**
  * @brief Receive into a pre-registered fixed buffer.
@@ -1684,19 +1720,25 @@ extern unsigned SocketAsync_send_fixed (T async, Socket_T socket,
  * @param[in] len Maximum bytes to receive.
  * @param[in] cb Completion callback.
  * @param[in] user_data User data for callback.
- * @param[in] flags Operation flags (ASYNC_FLAG_FIXED_BUFFER added automatically).
+ * @param[in] flags Operation flags (ASYNC_FLAG_FIXED_BUFFER added
+ * automatically).
  * @return Request ID on success, 0 on failure.
  *
  * Uses IORING_OP_RECV_FIXED for zero-copy receive into registered buffer.
  *
- * @throws SocketAsync_Failed if buf_index out of range or buffers not registered.
+ * @throws SocketAsync_Failed if buf_index out of range or buffers not
+ * registered.
  * @threadsafe Yes.
  * @see SocketAsync_register_buffers() to register buffer pool.
  */
-extern unsigned SocketAsync_recv_fixed (T async, Socket_T socket,
-                                        unsigned buf_index, size_t offset,
-                                        size_t len, SocketAsync_Callback cb,
-                                        void *user_data, SocketAsync_Flags flags);
+extern unsigned SocketAsync_recv_fixed (T async,
+                                        Socket_T socket,
+                                        unsigned buf_index,
+                                        size_t offset,
+                                        size_t len,
+                                        SocketAsync_Callback cb,
+                                        void *user_data,
+                                        SocketAsync_Flags flags);
 
 /* ==================== Fixed Files API ==================== */
 
@@ -1752,7 +1794,8 @@ extern int SocketAsync_unregister_files (T async);
  * @ingroup async_io
  * @param[in] async Async context.
  * @param[in] index Index in the registered fd array to update.
- * @param[in] new_fd New file descriptor to register at this index (-1 to clear).
+ * @param[in] new_fd New file descriptor to register at this index (-1 to
+ * clear).
  * @return 0 on success, -1 on failure.
  *
  * Allows dynamic updating of the registered fd table without re-registering
@@ -1761,7 +1804,8 @@ extern int SocketAsync_unregister_files (T async);
  * @threadsafe Yes.
  * @see SocketAsync_register_files()
  */
-extern int SocketAsync_update_registered_fd (T async, unsigned index, int new_fd);
+extern int
+SocketAsync_update_registered_fd (T async, unsigned index, int new_fd);
 
 /**
  * @brief Get the fixed file index for a registered fd.
@@ -1871,7 +1915,8 @@ extern int SocketAsync_io_uring_available (SocketAsync_IOUringInfo *info);
  * }
  * @endcode
  *
- * @note Returns -1 if async is NULL, not available, or backend doesn't use eventfd.
+ * @note Returns -1 if async is NULL, not available, or backend doesn't use
+ * eventfd.
  * @see SocketAsync_process_completions() to handle notifications.
  * @see SocketPoll_wait() automatically integrates this for poll-managed async.
  */

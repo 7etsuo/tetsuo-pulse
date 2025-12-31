@@ -66,8 +66,8 @@ TEST (proxy_parse_url_socks5_simple)
   SocketProxy_Config config;
   int result;
 
-  result = SocketProxy_parse_url ("socks5://proxy.example.com:1080", &config,
-                                  NULL);
+  result = SocketProxy_parse_url (
+      "socks5://proxy.example.com:1080", &config, NULL);
 
   ASSERT_EQ (0, result);
   ASSERT_EQ (SOCKET_PROXY_SOCKS5, config.type);
@@ -83,8 +83,8 @@ TEST (proxy_parse_url_socks5_with_auth)
   SocketProxy_Config config;
   int result;
 
-  result = SocketProxy_parse_url ("socks5://user:pass@proxy.example.com:1080",
-                                  &config, NULL);
+  result = SocketProxy_parse_url (
+      "socks5://user:pass@proxy.example.com:1080", &config, NULL);
 
   ASSERT_EQ (0, result);
   ASSERT_EQ (SOCKET_PROXY_SOCKS5, config.type);
@@ -227,8 +227,8 @@ TEST (proxy_parse_url_with_arena)
   arena = Arena_new ();
   ASSERT_NOT_NULL (arena);
 
-  result = SocketProxy_parse_url ("socks5://user:pass@proxy:1080", &config,
-                                  arena);
+  result
+      = SocketProxy_parse_url ("socks5://user:pass@proxy:1080", &config, arena);
 
   ASSERT_EQ (0, result);
   ASSERT_EQ (SOCKET_PROXY_SOCKS5, config.type);
@@ -471,11 +471,13 @@ TEST (proxy_conn_new_invalid_config)
 
   TRY
   {
-    SocketProxy_Conn_T conn
-        = SocketProxy_Conn_new (&config, "example.com", 80);
+    SocketProxy_Conn_T conn = SocketProxy_Conn_new (&config, "example.com", 80);
     (void)conn;
   }
-  EXCEPT (SocketProxy_Failed) { caught = 1; }
+  EXCEPT (SocketProxy_Failed)
+  {
+    caught = 1;
+  }
   END_TRY;
 
   ASSERT (caught);

@@ -49,10 +49,12 @@ generate_test_certs (const char *cert_file, const char *key_file)
 {
   char cmd[1024];
 
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s "
             "-days 1 -nodes -subj '/CN=localhost' -batch 2>/dev/null",
-            key_file, cert_file);
+            key_file,
+            cert_file);
   if (system (cmd) != 0)
     return -1;
 
@@ -328,7 +330,9 @@ TEST (ktls_sendfile_basic)
   const char *cert_file = "test_ktls_sendfile.crt";
   const char *key_file = "test_ktls_sendfile.key";
   char test_file[64];
-  snprintf (test_file, sizeof (test_file), "/tmp/ktls_test_data_%d.bin",
+  snprintf (test_file,
+            sizeof (test_file),
+            "/tmp/ktls_test_data_%d.bin",
             (int)getpid ());
   const char *file_content = "This is test data for kTLS sendfile.";
   Socket_T client = NULL, server = NULL;
@@ -390,8 +394,8 @@ TEST (ktls_sendfile_basic)
     ASSERT (file_fd >= 0);
 
     /* Send file via SocketTLS_sendfile */
-    ssize_t sent = SocketTLS_sendfile (client, file_fd, 0,
-                                       strlen (file_content));
+    ssize_t sent
+        = SocketTLS_sendfile (client, file_fd, 0, strlen (file_content));
     ASSERT (sent > 0);
     ASSERT_EQ ((size_t)sent, strlen (file_content));
 
@@ -401,8 +405,8 @@ TEST (ktls_sendfile_basic)
     for (int i = 0; i < 20 && (size_t)total_received < strlen (file_content);
          i++)
       {
-        ssize_t n = SocketTLS_recv (server, buf + total_received,
-                                    sizeof (buf) - 1 - total_received);
+        ssize_t n = SocketTLS_recv (
+            server, buf + total_received, sizeof (buf) - 1 - total_received);
         if (n > 0)
           total_received += n;
         else if (n == 0 && errno == EAGAIN)

@@ -52,8 +52,11 @@ static char *
 get_test_socket_path (void)
 {
   static char path[256];
-  snprintf (path, sizeof (path), "/tmp/test_unix_socket_%d_%d",
-            getpid (), platform_test_counter++);
+  snprintf (path,
+            sizeof (path),
+            "/tmp/test_unix_socket_%d_%d",
+            getpid (),
+            platform_test_counter++);
   return path;
 }
 
@@ -152,7 +155,9 @@ unix_socket_server_start (UnixSocketServer *server, const char *socket_path)
   Socket_listen (server->listen_socket, 10);
 
   /* Start server thread */
-  ASSERT_EQ (pthread_create (&server->thread, NULL, unix_socket_server_thread, server), 0);
+  ASSERT_EQ (
+      pthread_create (&server->thread, NULL, unix_socket_server_thread, server),
+      0);
 
   /* Give server time to start */
   usleep (50000);
@@ -180,7 +185,7 @@ unix_socket_server_stop (UnixSocketServer *server)
 
 TEST (integration_platform_unix_socket_performance)
 {
-  Socket_T socks[2] = {NULL, NULL};
+  Socket_T socks[2] = { NULL, NULL };
 
   /* Test Unix socket pair for basic performance */
   SocketPair_new (SOCK_STREAM, &socks[0], &socks[1]);
@@ -195,7 +200,7 @@ TEST (integration_platform_unix_socket_performance)
       ssize_t sent = Socket_send (socks[0], msg, strlen (msg));
       ASSERT_EQ (sent, (ssize_t)strlen (msg));
 
-      char buf[128] = {0};
+      char buf[128] = { 0 };
       ssize_t received = Socket_recv (socks[1], buf, sizeof (buf));
       ASSERT_EQ (received, sent);
       ASSERT_EQ (strcmp (buf, msg), 0);
@@ -208,7 +213,7 @@ TEST (integration_platform_unix_socket_performance)
 
 TEST (integration_platform_unix_socket_reliability)
 {
-  Socket_T socks[2] = {NULL, NULL};
+  Socket_T socks[2] = { NULL, NULL };
 
   /* Test Unix socket pair creation and basic communication */
   SocketPair_new (SOCK_STREAM, &socks[0], &socks[1]);
@@ -221,7 +226,7 @@ TEST (integration_platform_unix_socket_reliability)
   ASSERT_EQ (sent, (ssize_t)strlen (test_msg));
 
   /* Receive on other end */
-  char buf[256] = {0};
+  char buf[256] = { 0 };
   ssize_t received = Socket_recv (socks[1], buf, sizeof (buf));
   ASSERT_EQ (received, sent);
   ASSERT_EQ (strcmp (buf, test_msg), 0);
@@ -300,7 +305,7 @@ TEST (integration_platform_socket_options)
   Socket_setnonblocking (sock);
 
   /* Test various TCP options if supported */
-  Socket_setnodelay (sock, 1); /* Disable Nagle */
+  Socket_setnodelay (sock, 1);           /* Disable Nagle */
   Socket_setkeepalive (sock, 60, 10, 3); /* Enable keepalive */
 
   /* Test timeout settings */
@@ -318,7 +323,7 @@ TEST (integration_platform_socket_options)
 
 TEST (integration_platform_unix_socket_fd_passing)
 {
-  Socket_T socks[2] = {NULL, NULL};
+  Socket_T socks[2] = { NULL, NULL };
   int test_fd = -1;
 
   signal (SIGPIPE, SIG_IGN);
@@ -330,7 +335,8 @@ TEST (integration_platform_unix_socket_fd_passing)
 
   /* Create a test file descriptor to pass */
   char temp_file[256];
-  snprintf (temp_file, sizeof (temp_file), "/tmp/test_fd_pass_%d.txt", getpid ());
+  snprintf (
+      temp_file, sizeof (temp_file), "/tmp/test_fd_pass_%d.txt", getpid ());
 
   test_fd = open (temp_file, O_CREAT | O_RDWR, 0644);
   ASSERT (test_fd >= 0);

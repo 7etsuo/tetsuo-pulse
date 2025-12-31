@@ -52,8 +52,10 @@
 #endif
 
 static SocketWS_T
-wsh2_create_ws_context (Arena_T arena, SocketHTTP2_Stream_T stream,
-                        const SocketWS_Config *config, SocketWS_Role role)
+wsh2_create_ws_context (Arena_T arena,
+                        SocketHTTP2_Stream_T stream,
+                        const SocketWS_Config *config,
+                        SocketWS_Role role)
 {
   SocketWS_T ws;
   SocketWS_Config cfg;
@@ -118,8 +120,7 @@ wsh2_create_ws_context (Arena_T arena, SocketHTTP2_Stream_T stream,
   /* WebSocket over HTTP/2 starts in OPEN state (no handshake needed) */
   ws->state = WS_STATE_OPEN;
 
-  SOCKET_LOG_DEBUG_MSG ("Created WebSocket over HTTP/2 stream %u",
-                        stream->id);
+  SOCKET_LOG_DEBUG_MSG ("Created WebSocket over HTTP/2 stream %u", stream->id);
 
   return ws;
 }
@@ -188,8 +189,8 @@ SocketWSH2_server_accept (SocketHTTP2_Stream_T stream,
   response_headers[0].value_len = 3;
   response_headers[0].never_index = 0;
 
-  send_result = SocketHTTP2_Stream_send_headers (stream, response_headers, 1,
-                                                 0 /* no END_STREAM */);
+  send_result = SocketHTTP2_Stream_send_headers (
+      stream, response_headers, 1, 0 /* no END_STREAM */);
   if (send_result < 0)
     {
       SOCKET_LOG_ERROR_MSG ("Failed to send WebSocket accept response");
@@ -257,9 +258,8 @@ send_connect_request (SocketHTTP2_Stream_T stream, const char *path)
   /* :authority would be set from connection context in production */
 
   /* Send request headers */
-  send_result = SocketHTTP2_Stream_send_headers (stream, request_headers,
-                                                 header_count,
-                                                 0 /* no END_STREAM */);
+  send_result = SocketHTTP2_Stream_send_headers (
+      stream, request_headers, header_count, 0 /* no END_STREAM */);
   if (send_result < 0)
     {
       SOCKET_LOG_ERROR_MSG ("Failed to send WebSocket connect request");
@@ -271,7 +271,8 @@ send_connect_request (SocketHTTP2_Stream_T stream, const char *path)
 
 static int
 receive_connect_response (SocketHTTP2_Stream_T stream,
-                          SocketHPACK_Header *headers, size_t max_headers,
+                          SocketHPACK_Header *headers,
+                          size_t max_headers,
                           size_t *header_count)
 {
   int recv_result;
@@ -283,8 +284,8 @@ receive_connect_response (SocketHTTP2_Stream_T stream,
 
   /* Wait for response headers (blocking for simplicity) */
   /* In production, this should be integrated with event loop */
-  recv_result = SocketHTTP2_Stream_recv_headers (stream, headers, max_headers,
-                                                 header_count, &end_stream);
+  recv_result = SocketHTTP2_Stream_recv_headers (
+      stream, headers, max_headers, header_count, &end_stream);
   if (recv_result <= 0)
     {
       SOCKET_LOG_ERROR_MSG ("Failed to receive WebSocket connect response");
@@ -325,7 +326,8 @@ validate_websocket_response (SocketHPACK_Header *headers, size_t header_count)
 }
 
 SocketWS_T
-SocketWSH2_client_connect (SocketHTTP2_Conn_T conn, const char *path,
+SocketWSH2_client_connect (SocketHTTP2_Conn_T conn,
+                           const char *path,
                            const SocketWS_Config *config)
 {
   SocketHTTP2_Stream_T stream;
@@ -363,8 +365,7 @@ SocketWSH2_client_connect (SocketHTTP2_Conn_T conn, const char *path,
     }
 
   /* Receive response headers */
-  if (receive_connect_response (stream, response_headers, 16,
-                                &response_count)
+  if (receive_connect_response (stream, response_headers, 16, &response_count)
       < 0)
     {
       SocketHTTP2_Stream_close (stream, HTTP2_CANCEL);

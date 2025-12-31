@@ -84,10 +84,11 @@ typedef struct SocketReconnect_Policy
 
   /* Circuit breaker settings */
   int circuit_failure_threshold; /**< Failures to open circuit (default: 5) */
-  int circuit_reset_timeout_ms;  /**< Cooldown before probe (default: 60000ms) */
+  int circuit_reset_timeout_ms; /**< Cooldown before probe (default: 60000ms) */
 
   /* Health monitoring settings */
-  int health_check_interval_ms; /**< Check interval, 0=disabled (default: 30000ms) */
+  int health_check_interval_ms; /**< Check interval, 0=disabled (default:
+                                   30000ms) */
   int health_check_timeout_ms;  /**< Check timeout (default: 5000ms) */
 } SocketReconnect_Policy_T;
 
@@ -166,8 +167,10 @@ typedef void (*SocketReconnect_Callback) (T conn,
  * @param userdata User data
  * @return 1 if healthy, 0 if unhealthy (triggers BACKOFF)
  */
-typedef int (*SocketReconnect_HealthCheck) (T conn, Socket_T socket,
-                                            int timeout_ms, void *userdata);
+typedef int (*SocketReconnect_HealthCheck) (T conn,
+                                            Socket_T socket,
+                                            int timeout_ms,
+                                            void *userdata);
 
 /* ============================================================================
  * Context Creation and Destruction
@@ -185,7 +188,8 @@ typedef int (*SocketReconnect_HealthCheck) (T conn, Socket_T socket,
  * @return New handle in DISCONNECTED state
  * @throws SocketReconnect_Failed on invalid parameters or allocation failure
  */
-extern T SocketReconnect_new (const char *host, int port,
+extern T SocketReconnect_new (const char *host,
+                              int port,
                               const SocketReconnect_Policy_T *policy,
                               SocketReconnect_Callback callback,
                               void *userdata);
@@ -207,8 +211,8 @@ extern void SocketReconnect_free (T *conn);
  * @ingroup connection_mgmt
  * @param conn Reconnection context
  *
- * Transitions DISCONNECTED -> CONNECTING. No-op if already connecting/connected.
- * Ignored if CIRCUIT_OPEN until reset timeout elapses.
+ * Transitions DISCONNECTED -> CONNECTING. No-op if already
+ * connecting/connected. Ignored if CIRCUIT_OPEN until reset timeout elapses.
  */
 extern void SocketReconnect_connect (T conn);
 
@@ -400,8 +404,8 @@ extern const char *SocketReconnect_state_name (SocketReconnect_State state);
  * @param hostname SNI hostname for verification
  * @throws SocketReconnect_Failed if hostname is NULL or too long
  */
-extern void SocketReconnect_set_tls (T conn, SocketTLSContext_T ctx,
-                                     const char *hostname);
+extern void
+SocketReconnect_set_tls (T conn, SocketTLSContext_T ctx, const char *hostname);
 
 /**
  * @brief Disable TLS for future connections.

@@ -62,7 +62,8 @@ validate_crl_path_security (const char *crl_path)
 
   if (!tls_validate_file_path (crl_path))
     RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
-                         "CRL path failed security validation (length, characters, traversal, or symlink)");
+                         "CRL path failed security validation (length, "
+                         "characters, traversal, or symlink)");
 
   /* realpath() performs canonicalization that resolves:
    * - Path traversal (. and .. components)
@@ -80,8 +81,7 @@ static int
 try_load_crl (T ctx, const char *path)
 {
   volatile int success = 1;
-  TRY
-  SocketTLSContext_load_crl (ctx, path);
+  TRY SocketTLSContext_load_crl (ctx, path);
   EXCEPT (SocketTLS_Failed)
   success = 0;
   END_TRY;
@@ -104,8 +104,8 @@ set_crl_next_refresh (T ctx, int64_t now_ms, long interval_seconds)
   uint64_t result;
 
   /* Overflow protection: INT64_MAX ~= 292M years uptime */
-  if (!socket_util_safe_add_u64 ((uint64_t)now_ms, (uint64_t)interval_ms,
-                                  &result)
+  if (!socket_util_safe_add_u64 (
+          (uint64_t)now_ms, (uint64_t)interval_ms, &result)
       || result > (uint64_t)INT64_MAX)
     {
       /* Clamp to INT64_MAX on overflow */
@@ -132,7 +132,8 @@ schedule_crl_refresh (T ctx, long interval_seconds)
 }
 
 void
-SocketTLSContext_set_crl_auto_refresh (T ctx, const char *crl_path,
+SocketTLSContext_set_crl_auto_refresh (T ctx,
+                                       const char *crl_path,
                                        long interval_seconds,
                                        SocketTLSCrlCallback callback,
                                        void *user_data)
@@ -161,7 +162,10 @@ SocketTLSContext_set_crl_auto_refresh (T ctx, const char *crl_path,
           notify_crl_callback (ctx, crl_path, 0);
       }
   }
-  FINALLY { CRL_UNLOCK (ctx); }
+  FINALLY
+  {
+    CRL_UNLOCK (ctx);
+  }
   END_TRY;
 }
 
@@ -179,7 +183,10 @@ SocketTLSContext_cancel_crl_auto_refresh (T ctx)
     ctx->crl_callback = NULL;
     ctx->crl_user_data = NULL;
   }
-  FINALLY { CRL_UNLOCK (ctx); }
+  FINALLY
+  {
+    CRL_UNLOCK (ctx);
+  }
   END_TRY;
 }
 
@@ -219,7 +226,10 @@ SocketTLSContext_crl_check_refresh (T ctx)
   {
     result = 0;
   }
-  FINALLY { CRL_UNLOCK (ctx); }
+  FINALLY
+  {
+    CRL_UNLOCK (ctx);
+  }
   END_TRY;
 
   return result;
@@ -257,7 +267,10 @@ SocketTLSContext_crl_next_refresh_ms (T ctx)
   {
     result = -1;
   }
-  FINALLY { CRL_UNLOCK (ctx); }
+  FINALLY
+  {
+    CRL_UNLOCK (ctx);
+  }
   END_TRY;
 
   return result;

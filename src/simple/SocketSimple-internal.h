@@ -130,8 +130,8 @@ void simple_set_error_errno (SocketSimple_ErrorCode code, const char *prefix);
  * ============================================================================
  */
 
-SocketSimple_Socket_T simple_create_handle (Socket_T sock, int is_server,
-                                            int is_tls);
+SocketSimple_Socket_T
+simple_create_handle (Socket_T sock, int is_server, int is_tls);
 
 SocketSimple_Socket_T simple_create_udp_handle (SocketDgram_T dgram);
 

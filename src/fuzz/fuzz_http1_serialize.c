@@ -83,7 +83,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           request.version = HTTP_VERSION_1_1;
 
           char path[256];
-          size_t path_len = (size > 2) ? ((size - 2 > sizeof (path) - 1) ? sizeof (path) - 1 : size - 2) : 0;
+          size_t path_len
+              = (size > 2) ? ((size - 2 > sizeof (path) - 1) ? sizeof (path) - 1
+                                                             : size - 2)
+                           : 0;
           if (path_len > 0)
             {
               memcpy (path, data + 2, path_len);
@@ -98,7 +101,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             {
               request.headers = headers;
               SocketHTTP_Headers_add (headers, "Host", "example.com");
-              ssize_t serialized = SocketHTTP1_serialize_request (&request, output_buffer, sizeof (output_buffer));
+              ssize_t serialized = SocketHTTP1_serialize_request (
+                  &request, output_buffer, sizeof (output_buffer));
               (void)serialized;
             }
         }
@@ -110,7 +114,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           SocketHTTP_Response response;
           memset (&response, 0, sizeof (response));
           response.version = HTTP_VERSION_1_1;
-          response.status_code = (size >= 3) ? (100 + (((int)data[1] << 8) | data[2]) % 500) : 200;
+          response.status_code
+              = (size >= 3) ? (100 + (((int)data[1] << 8) | data[2]) % 500)
+                            : 200;
           response.reason_phrase = "OK";
 
           SocketHTTP_Headers_T headers = SocketHTTP_Headers_new (g_arena);
@@ -118,7 +124,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             {
               response.headers = headers;
               SocketHTTP_Headers_add (headers, "Content-Type", "text/plain");
-              ssize_t serialized = SocketHTTP1_serialize_response (&response, output_buffer, sizeof (output_buffer));
+              ssize_t serialized = SocketHTTP1_serialize_response (
+                  &response, output_buffer, sizeof (output_buffer));
               (void)serialized;
             }
         }
@@ -139,16 +146,19 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               request.headers = headers;
               SocketHTTP_Headers_add (headers, "Host", "example.com");
 
-              ssize_t len = SocketHTTP1_serialize_request (&request, output_buffer, sizeof (output_buffer));
+              ssize_t len = SocketHTTP1_serialize_request (
+                  &request, output_buffer, sizeof (output_buffer));
               if (len > 0)
                 {
                   SocketHTTP1_Config cfg;
                   SocketHTTP1_config_defaults (&cfg);
-                  SocketHTTP1_Parser_T parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, &cfg, g_arena);
+                  SocketHTTP1_Parser_T parser = SocketHTTP1_Parser_new (
+                      HTTP1_PARSE_REQUEST, &cfg, g_arena);
                   if (parser)
                     {
                       size_t consumed;
-                      SocketHTTP1_Parser_execute (parser, output_buffer, len, &consumed);
+                      SocketHTTP1_Parser_execute (
+                          parser, output_buffer, len, &consumed);
                       SocketHTTP1_Parser_free (&parser);
                     }
                 }
@@ -159,11 +169,11 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       case 3:
         /* Test 4: Edge cases - single method/status based on input */
         {
-          SocketHTTP_Method methods[] = {
-              HTTP_METHOD_GET, HTTP_METHOD_HEAD, HTTP_METHOD_POST, HTTP_METHOD_PUT,
-              HTTP_METHOD_DELETE, HTTP_METHOD_CONNECT, HTTP_METHOD_OPTIONS,
-              HTTP_METHOD_TRACE, HTTP_METHOD_PATCH, HTTP_METHOD_UNKNOWN
-          };
+          SocketHTTP_Method methods[]
+              = { HTTP_METHOD_GET,     HTTP_METHOD_HEAD,   HTTP_METHOD_POST,
+                  HTTP_METHOD_PUT,     HTTP_METHOD_DELETE, HTTP_METHOD_CONNECT,
+                  HTTP_METHOD_OPTIONS, HTTP_METHOD_TRACE,  HTTP_METHOD_PATCH,
+                  HTTP_METHOD_UNKNOWN };
           SocketHTTP_Request method_req;
           memset (&method_req, 0, sizeof (method_req));
           method_req.method = methods[data[1] % 10];
@@ -174,16 +184,25 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             {
               method_req.headers = h;
               SocketHTTP_Headers_add (h, "Host", "example.com");
-              SocketHTTP1_serialize_request (&method_req, output_buffer, sizeof (output_buffer));
+              SocketHTTP1_serialize_request (
+                  &method_req, output_buffer, sizeof (output_buffer));
             }
         }
         break;
       }
   }
-  EXCEPT (SocketHTTP1_SerializeError) { /* Expected */ }
-  EXCEPT (SocketHTTP1_ParseError) { /* Expected */ }
-  EXCEPT (SocketHTTP_Failed) { /* Expected */ }
-  EXCEPT (Arena_Failed) { /* Expected */ }
+  EXCEPT (SocketHTTP1_SerializeError)
+  { /* Expected */
+  }
+  EXCEPT (SocketHTTP1_ParseError)
+  { /* Expected */
+  }
+  EXCEPT (SocketHTTP_Failed)
+  { /* Expected */
+  }
+  EXCEPT (Arena_Failed)
+  { /* Expected */
+  }
   END_TRY;
 
   return 0;

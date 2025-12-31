@@ -5,7 +5,8 @@
  */
 
 /**
- * fuzz_dns_encode.c - libFuzzer harness for DNS wire format encoding/serialization
+ * fuzz_dns_encode.c - libFuzzer harness for DNS wire format
+ * encoding/serialization
  *
  * Fuzzes DNS encoding functions to achieve coverage of *_encode() functions
  * which currently have 0% line coverage (issue #260).
@@ -201,8 +202,7 @@ test_name_encode (const char *name)
   (void)wire_len;
 
   /* Encode name */
-  result
-      = SocketDNS_name_encode (name, wire, sizeof (wire), &written);
+  result = SocketDNS_name_encode (name, wire, sizeof (wire), &written);
   if (result != 0)
     return; /* Encoding failed */
 
@@ -213,8 +213,8 @@ test_name_encode (const char *name)
     }
 
   /* Decode and verify roundtrip */
-  result = SocketDNS_name_decode (wire, written, 0, decoded, sizeof (decoded),
-                                  &consumed);
+  result = SocketDNS_name_decode (
+      wire, written, 0, decoded, sizeof (decoded), &consumed);
   if (result >= 0)
     {
       /* Names should match (case-insensitive) */
@@ -251,8 +251,7 @@ test_question_encode (const SocketDNS_Question *question)
   int result;
 
   /* Encode question */
-  result
-      = SocketDNS_question_encode (question, buf, sizeof (buf), &written);
+  result = SocketDNS_question_encode (question, buf, sizeof (buf), &written);
   if (result != 0)
     return; /* Encoding failed */
 
@@ -261,8 +260,7 @@ test_question_encode (const SocketDNS_Question *question)
   if (result == 0)
     {
       /* Verify fields match */
-      int name_equal
-          = SocketDNS_name_equal (question->qname, decoded.qname);
+      int name_equal = SocketDNS_name_equal (question->qname, decoded.qname);
       (void)name_equal;
       (void)(question->qtype == decoded.qtype);
       (void)(question->qclass == decoded.qclass);
@@ -391,8 +389,8 @@ test_edns_options_batch_encode (const uint8_t *data, size_t size)
 
   if (option_count > 0)
     {
-      int enc_len = SocketDNS_edns_options_encode (options, option_count, buf,
-                                                    sizeof (buf));
+      int enc_len = SocketDNS_edns_options_encode (
+          options, option_count, buf, sizeof (buf));
       if (enc_len > 0)
         {
           /* Parse back using iterator */
@@ -484,12 +482,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       test_name_encode (name_buf);
 
       /* Test special cases */
-      test_name_encode (""); /* Empty string (root) */
-      test_name_encode ("."); /* Root domain */
-      test_name_encode ("a"); /* Single character */
-      test_name_encode ("example.com"); /* Valid domain */
+      test_name_encode ("");                /* Empty string (root) */
+      test_name_encode (".");               /* Root domain */
+      test_name_encode ("a");               /* Single character */
+      test_name_encode ("example.com");     /* Valid domain */
       test_name_encode ("www.example.com"); /* Subdomain */
-      test_name_encode ("example.com."); /* Trailing dot */
+      test_name_encode ("example.com.");    /* Trailing dot */
 
       /* Test maximum label length */
       char max_label[DNS_MAX_LABEL_LEN + 2];
@@ -538,10 +536,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
       /* Test various record types */
       const uint16_t types[]
-          = { DNS_TYPE_A,    DNS_TYPE_AAAA,  DNS_TYPE_CNAME, DNS_TYPE_NS,
-              DNS_TYPE_MX,   DNS_TYPE_TXT,   DNS_TYPE_SOA,   DNS_TYPE_PTR,
-              DNS_TYPE_SRV,  DNS_TYPE_DNSKEY, DNS_TYPE_RRSIG, DNS_TYPE_NSEC,
-              DNS_TYPE_DS,   DNS_TYPE_NSEC3, DNS_TYPE_OPT,   DNS_TYPE_ANY };
+          = { DNS_TYPE_A,   DNS_TYPE_AAAA,   DNS_TYPE_CNAME, DNS_TYPE_NS,
+              DNS_TYPE_MX,  DNS_TYPE_TXT,    DNS_TYPE_SOA,   DNS_TYPE_PTR,
+              DNS_TYPE_SRV, DNS_TYPE_DNSKEY, DNS_TYPE_RRSIG, DNS_TYPE_NSEC,
+              DNS_TYPE_DS,  DNS_TYPE_NSEC3,  DNS_TYPE_OPT,   DNS_TYPE_ANY };
 
       for (size_t i = 0; i < sizeof (types) / sizeof (types[0]); i++)
         {
@@ -618,11 +616,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       test_edns_option_encode (&edns_option);
 
       /* Test well-known option codes */
-      const uint16_t opt_codes[]
-          = { DNS_EDNS_OPT_NSID,     DNS_EDNS_OPT_CLIENT_SUBNET,
-              DNS_EDNS_OPT_COOKIE,   DNS_EDNS_OPT_TCP_KEEPALIVE,
-              DNS_EDNS_OPT_PADDING,  DNS_EDNS_OPT_EXTENDED_ERROR,
-              0,                     65535 };
+      const uint16_t opt_codes[] = { DNS_EDNS_OPT_NSID,
+                                     DNS_EDNS_OPT_CLIENT_SUBNET,
+                                     DNS_EDNS_OPT_COOKIE,
+                                     DNS_EDNS_OPT_TCP_KEEPALIVE,
+                                     DNS_EDNS_OPT_PADDING,
+                                     DNS_EDNS_OPT_EXTENDED_ERROR,
+                                     0,
+                                     65535 };
 
       for (size_t i = 0; i < sizeof (opt_codes) / sizeof (opt_codes[0]); i++)
         {
@@ -667,8 +668,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   (void)SocketDNS_edns_option_encode (&edns_option, NULL, sizeof (rdata_buf));
 
   (void)SocketDNS_edns_options_encode (NULL, 0, rdata_buf, sizeof (rdata_buf));
-  (void)SocketDNS_edns_options_encode (&edns_option, 1, NULL,
-                                        sizeof (rdata_buf));
+  (void)SocketDNS_edns_options_encode (
+      &edns_option, 1, NULL, sizeof (rdata_buf));
 
   (void)SocketDNS_opt_ttl_encode (NULL);
 

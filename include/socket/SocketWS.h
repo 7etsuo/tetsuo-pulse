@@ -212,8 +212,7 @@ typedef enum
   WS_CLOSE_UNSUPPORTED_DATA = 1003, /**< Received unsupported frame type. */
   WS_CLOSE_NO_STATUS = 1005,        /**< No status rcvd (internal use only). */
   WS_CLOSE_ABNORMAL = 1006,         /**< Closed without CLOSE frame. */
-  WS_CLOSE_INVALID_PAYLOAD
-  = 1007, /**< Invalid UTF-8 or other payload error. */
+  WS_CLOSE_INVALID_PAYLOAD = 1007, /**< Invalid UTF-8 or other payload error. */
   WS_CLOSE_POLICY_VIOLATION = 1008, /**< Message violates policy. */
   WS_CLOSE_MESSAGE_TOO_BIG = 1009,  /**< Message exceeds size limits. */
   WS_CLOSE_MANDATORY_EXT = 1010,    /**< Required extension not offered. */
@@ -244,7 +243,7 @@ typedef enum
   WS_STATE_CONNECTING, /**< Handshake (HTTP upgrade) in progress. */
   WS_STATE_OPEN,       /**< Connection established, ready for read/write. */
   WS_STATE_CLOSING,    /**< Close frame sent/received, awaiting ack. */
-  WS_STATE_CLOSED /**< Connection terminated, resources freed on free(). */
+  WS_STATE_CLOSED      /**< Connection terminated, resources freed on free(). */
 } SocketWS_State;
 
 /**
@@ -311,8 +310,7 @@ typedef enum
  */
 typedef struct
 {
-  SocketWS_Role
-      role; /**< Role: client masks frames, server validates masks. */
+  SocketWS_Role role; /**< Role: client masks frames, server validates masks. */
 
   /* Limits */
   size_t max_frame_size;   /**< Maximum single frame payload size (default:
@@ -339,7 +337,7 @@ typedef struct
   /* Keepalive */
   int ping_interval_ms; /**< Auto-ping interval in ms (0=disabled, default: 0).
                          */
-  int ping_timeout_ms; /**< Timeout for pong response in ms (default: 5000). */
+  int ping_timeout_ms;  /**< Timeout for pong response in ms (default: 5000). */
 } SocketWS_Config;
 
 /* ============================================================================
@@ -384,7 +382,7 @@ typedef struct
 typedef struct
 {
   SocketWS_Opcode
-      type; /**< Message type: WS_OPCODE_TEXT or WS_OPCODE_BINARY. */
+      type;            /**< Message type: WS_OPCODE_TEXT or WS_OPCODE_BINARY. */
   unsigned char *data; /**< Allocated message payload (caller frees). */
   size_t len;          /**< Total message length in bytes. */
 } SocketWS_Message;
@@ -502,8 +500,10 @@ extern void SocketWS_config_defaults (SocketWS_Config *config);
  * @see @ref SocketHTTP_Request for HTTP upgrade details.
  * @see docs/WEBSOCKET.md for full guide.
  */
-extern T SocketWS_client_new (Socket_T socket, const char *host,
-                              const char *path, const SocketWS_Config *config);
+extern T SocketWS_client_new (Socket_T socket,
+                              const char *host,
+                              const char *path,
+                              const SocketWS_Config *config);
 
 /* ============================================================================
  * Server API
@@ -576,8 +576,8 @@ extern T SocketWS_server_accept (Socket_T socket,
  * @see SocketWS_is_upgrade() to check validity before accepting/rejecting.
  * @see SocketHTTPServer for full HTTP server handling including upgrades.
  */
-extern void SocketWS_server_reject (Socket_T socket, int status_code,
-                                    const char *reason);
+extern void
+SocketWS_server_reject (Socket_T socket, int status_code, const char *reason);
 
 /* ============================================================================
  * Connection Lifecycle
@@ -1148,8 +1148,8 @@ extern int SocketWS_send_json (T ws, const char *json);
  * @see SocketWS_recv_message() for full message control
  * @see SocketWS_send_json() for sending JSON
  */
-extern SocketWS_Error SocketWS_recv_json (T ws, char **json_out,
-                                          size_t *json_len);
+extern SocketWS_Error
+SocketWS_recv_json (T ws, char **json_out, size_t *json_len);
 
 /**
  * @brief Get ping/pong round-trip time
@@ -1186,11 +1186,11 @@ extern int64_t SocketWS_get_ping_latency (T ws);
  */
 typedef struct SocketWS_CompressionOptions
 {
-  int level;                  /**< zlib compression level (1-9, default 6) */
+  int level; /**< zlib compression level (1-9, default 6) */
   int server_no_context_takeover; /**< Server resets context per message */
   int client_no_context_takeover; /**< Client resets context per message */
-  int server_max_window_bits; /**< Server LZ77 window (8-15, default 15) */
-  int client_max_window_bits; /**< Client LZ77 window (8-15, default 15) */
+  int server_max_window_bits;     /**< Server LZ77 window (8-15, default 15) */
+  int client_max_window_bits;     /**< Client LZ77 window (8-15, default 15) */
 } SocketWS_CompressionOptions;
 
 /**
@@ -1198,8 +1198,8 @@ typedef struct SocketWS_CompressionOptions
  * @ingroup websocket
  * @param[out] options Options structure to initialize
  */
-extern void SocketWS_compression_options_defaults (
-    SocketWS_CompressionOptions *options);
+extern void
+SocketWS_compression_options_defaults (SocketWS_CompressionOptions *options);
 
 /**
  * @brief Enable permessage-deflate compression
@@ -1234,8 +1234,8 @@ extern void SocketWS_compression_options_defaults (
  * @see SocketWS_compression_enabled() to check if active
  * @see SocketWS_Config.enable_compression for config-based setup
  */
-extern int SocketWS_enable_compression (T ws,
-                                        const SocketWS_CompressionOptions *options);
+extern int
+SocketWS_enable_compression (T ws, const SocketWS_CompressionOptions *options);
 
 #undef T
 /** @} */ /* websocket group */

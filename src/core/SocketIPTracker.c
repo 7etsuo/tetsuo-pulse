@@ -57,25 +57,25 @@ struct T
   int initialized;
 };
 
-#define TRACKER_LOCK(t)                                                       \
-  SOCKET_MUTEX_LOCK_OR_RAISE (&(t)->mutex, SocketIPTracker,                  \
-                              SocketIPTracker_Failed)
+#define TRACKER_LOCK(t)        \
+  SOCKET_MUTEX_LOCK_OR_RAISE ( \
+      &(t)->mutex, SocketIPTracker, SocketIPTracker_Failed)
 #define TRACKER_UNLOCK(t) SOCKET_MUTEX_UNLOCK (&(t)->mutex)
-#define TRACKER_READ_FIELD(t, field, var)                                     \
-  do                                                                          \
-    {                                                                         \
-      TRACKER_LOCK (t);                                                       \
-      var = (t)->field;                                                       \
-      TRACKER_UNLOCK (t);                                                     \
-    }                                                                         \
+#define TRACKER_READ_FIELD(t, field, var) \
+  do                                      \
+    {                                     \
+      TRACKER_LOCK (t);                   \
+      var = (t)->field;                   \
+      TRACKER_UNLOCK (t);                 \
+    }                                     \
   while (0)
-#define TRACKER_WRITE_FIELD(t, field, val)                                    \
-  do                                                                          \
-    {                                                                         \
-      TRACKER_LOCK (t);                                                       \
-      (t)->field = (val);                                                     \
-      TRACKER_UNLOCK (t);                                                     \
-    }                                                                         \
+#define TRACKER_WRITE_FIELD(t, field, val) \
+  do                                       \
+    {                                      \
+      TRACKER_LOCK (t);                    \
+      (t)->field = (val);                  \
+      TRACKER_UNLOCK (t);                  \
+    }                                      \
   while (0)
 
 static inline int
@@ -102,8 +102,8 @@ validate_ip (const char *ip, const char *caller)
   if (ip_len >= (size_t)SOCKET_IP_MAX_LEN)
     {
       if (caller != NULL)
-        SOCKET_LOG_WARN_MSG ("Invalid IP for %s: %s (len=%zu)", caller, ip,
-                             ip_len);
+        SOCKET_LOG_WARN_MSG (
+            "Invalid IP for %s: %s (len=%zu)", caller, ip, ip_len);
       return IP_ADVANCED_INVALID;
     }
 
@@ -116,8 +116,8 @@ validate_ip (const char *ip, const char *caller)
     return IP_VALID;
 
   if (caller != NULL)
-    SOCKET_LOG_WARN_MSG ("Invalid IP format for %s: %s (len=%zu)", caller, ip,
-                         ip_len);
+    SOCKET_LOG_WARN_MSG (
+        "Invalid IP format for %s: %s (len=%zu)", caller, ip, ip_len);
   return IP_ADVANCED_INVALID;
 }
 
@@ -304,7 +304,7 @@ generate_hash_seed (void)
       return seed;
     }
 
-  /* Try platform-specific secure random sources */
+    /* Try platform-specific secure random sources */
 #ifdef __linux__
   if (try_getrandom (seed_bytes, sizeof (seed_bytes)) == 0)
     {
@@ -352,7 +352,8 @@ generate_hash_seed (void)
       "SocketIPTracker: CRITICAL - all secure random sources failed (code: "
       "%d)",
       result);
-  SOCKET_RAISE_MSG (SocketIPTracker, SocketIPTracker_Failed,
+  SOCKET_RAISE_MSG (SocketIPTracker,
+                    SocketIPTracker_Failed,
                     "Failed to obtain secure random seed for hash DoS "
                     "protection");
 }
@@ -366,7 +367,10 @@ init_tracker_table (T tracker)
                               .compare = iptracker_compare,
                               .next_ptr = iptracker_next_ptr };
 
-  TRY { tracker->table = HashTable_new (tracker->arena, &config); }
+  TRY
+  {
+    tracker->table = HashTable_new (tracker->arena, &config);
+  }
   EXCEPT (HashTable_Failed)
   {
     SOCKET_ERROR_MSG ("Failed to allocate IP tracker hash table");
@@ -471,7 +475,8 @@ SocketIPTracker_new (Arena_T arena, int max_per_ip)
   T tracker = allocate_tracker (arena);
 
   if (tracker == NULL)
-    SOCKET_RAISE_MSG (SocketIPTracker, SocketIPTracker_Failed,
+    SOCKET_RAISE_MSG (SocketIPTracker,
+                      SocketIPTracker_Failed,
                       "Failed to allocate IP tracker");
 
   init_tracker_fields (tracker, arena, max_per_ip);
@@ -485,7 +490,8 @@ SocketIPTracker_new (Arena_T arena, int max_per_ip)
   if (init_tracker_mutex (tracker) != 0)
     {
       cleanup_failed_tracker (tracker);
-      SOCKET_RAISE_FMT (SocketIPTracker, SocketIPTracker_Failed,
+      SOCKET_RAISE_FMT (SocketIPTracker,
+                        SocketIPTracker_Failed,
                         "Failed to initialize IP tracker mutex");
     }
 

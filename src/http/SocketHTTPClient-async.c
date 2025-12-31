@@ -35,9 +35,9 @@
  */
 typedef struct AsyncIOState
 {
-  volatile int completed;     /**< Set to 1 when operation completes */
-  volatile ssize_t bytes;     /**< Bytes transferred or -1 on error */
-  volatile int error;         /**< errno value if error occurred */
+  volatile int completed; /**< Set to 1 when operation completes */
+  volatile ssize_t bytes; /**< Bytes transferred or -1 on error */
+  volatile int error;     /**< errno value if error occurred */
 } AsyncIOState;
 
 /**
@@ -94,8 +94,10 @@ wait_for_completion (SocketHTTPClient_T client, AsyncIOState *state)
       /* Check timeout */
       if (elapsed_ms >= timeout_ms)
         {
-          SocketLog_emitf (SOCKET_LOG_WARN, "HTTPClient",
-                          "Async operation timed out after %d ms", elapsed_ms);
+          SocketLog_emitf (SOCKET_LOG_WARN,
+                           "HTTPClient",
+                           "Async operation timed out after %d ms",
+                           elapsed_ms);
           errno = ETIMEDOUT;
           return -1;
         }
@@ -105,8 +107,9 @@ wait_for_completion (SocketHTTPClient_T client, AsyncIOState *state)
                                              ASYNC_COMPLETION_POLL_TIMEOUT_MS);
       if (ret < 0)
         {
-          SocketLog_emitf (SOCKET_LOG_ERROR, "HTTPClient",
-                          "Failed to process async completions");
+          SocketLog_emitf (SOCKET_LOG_ERROR,
+                           "HTTPClient",
+                           "Failed to process async completions");
           return -1;
         }
 
@@ -132,7 +135,10 @@ sync_send_fallback (Socket_T socket, const void *data, size_t len)
 {
   volatile ssize_t sent = 0;
 
-  TRY { sent = Socket_send (socket, data, len); }
+  TRY
+  {
+    sent = Socket_send (socket, data, len);
+  }
   EXCEPT (Socket_Closed)
   {
     errno = EPIPE;
@@ -163,7 +169,10 @@ sync_recv_fallback (Socket_T socket, void *buf, size_t len)
 {
   volatile ssize_t recvd = 0;
 
-  TRY { recvd = Socket_recv (socket, buf, len); }
+  TRY
+  {
+    recvd = Socket_recv (socket, buf, len);
+  }
   EXCEPT (Socket_Closed)
   {
     recvd = 0; /* EOF - graceful close */
@@ -199,16 +208,19 @@ httpclient_async_init (SocketHTTPClient_T client)
         client->async_available = SocketAsync_is_available (client->async);
         if (client->async_available)
           {
-            SocketLog_emitf (SOCKET_LOG_INFO, "HTTPClient",
+            SocketLog_emitf (SOCKET_LOG_INFO,
+                             "HTTPClient",
                              "Async I/O enabled (backend: %s)",
                              SocketAsync_backend_name (client->async));
             result = 0;
           }
         else
           {
-            SocketLog_emitf (SOCKET_LOG_DEBUG, "HTTPClient",
-                             "Async I/O requested but not available (backend: %s)",
-                             SocketAsync_backend_name (client->async));
+            SocketLog_emitf (
+                SOCKET_LOG_DEBUG,
+                "HTTPClient",
+                "Async I/O requested but not available (backend: %s)",
+                SocketAsync_backend_name (client->async));
             /* Keep async context for potential fallback use */
             result = 0;
           }
@@ -216,7 +228,8 @@ httpclient_async_init (SocketHTTPClient_T client)
   }
   EXCEPT (SocketAsync_Failed)
   {
-    SocketLog_emitf (SOCKET_LOG_WARN, "HTTPClient",
+    SocketLog_emitf (SOCKET_LOG_WARN,
+                     "HTTPClient",
                      "Failed to initialize async I/O, using sync fallback");
     client->async = NULL;
     client->async_available = 0;
@@ -246,8 +259,10 @@ httpclient_async_cleanup (SocketHTTPClient_T client)
 }
 
 ssize_t
-httpclient_io_send (SocketHTTPClient_T client, Socket_T socket,
-                    const void *data, size_t len)
+httpclient_io_send (SocketHTTPClient_T client,
+                    Socket_T socket,
+                    const void *data,
+                    size_t len)
 {
   AsyncIOState state;
   unsigned req_id;
@@ -280,13 +295,18 @@ httpclient_io_send (SocketHTTPClient_T client, Socket_T socket,
   state.error = 0;
 
   /* Submit async send */
-  req_id = SocketAsync_send (client->async, socket, data, len,
-                             async_io_callback, (void *)&state,
+  req_id = SocketAsync_send (client->async,
+                             socket,
+                             data,
+                             len,
+                             async_io_callback,
+                             (void *)&state,
                              ASYNC_FLAG_NONE);
   if (req_id == 0)
     {
       /* Submission failed - fall back to sync */
-      SocketLog_emitf (SOCKET_LOG_DEBUG, "HTTPClient",
+      SocketLog_emitf (SOCKET_LOG_DEBUG,
+                       "HTTPClient",
                        "Async send submission failed, falling back to sync");
       return sync_send_fallback (socket, data, len);
     }
@@ -309,8 +329,10 @@ httpclient_io_send (SocketHTTPClient_T client, Socket_T socket,
 }
 
 ssize_t
-httpclient_io_recv (SocketHTTPClient_T client, Socket_T socket,
-                    void *buf, size_t len)
+httpclient_io_recv (SocketHTTPClient_T client,
+                    Socket_T socket,
+                    void *buf,
+                    size_t len)
 {
   AsyncIOState state;
   unsigned req_id;
@@ -343,13 +365,18 @@ httpclient_io_recv (SocketHTTPClient_T client, Socket_T socket,
   state.error = 0;
 
   /* Submit async recv */
-  req_id = SocketAsync_recv (client->async, socket, buf, len,
-                             async_io_callback, (void *)&state,
+  req_id = SocketAsync_recv (client->async,
+                             socket,
+                             buf,
+                             len,
+                             async_io_callback,
+                             (void *)&state,
                              ASYNC_FLAG_NONE);
   if (req_id == 0)
     {
       /* Submission failed - fall back to sync */
-      SocketLog_emitf (SOCKET_LOG_DEBUG, "HTTPClient",
+      SocketLog_emitf (SOCKET_LOG_DEBUG,
+                       "HTTPClient",
                        "Async recv submission failed, falling back to sync");
       return sync_recv_fallback (socket, buf, len);
     }

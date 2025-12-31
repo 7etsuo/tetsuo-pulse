@@ -50,53 +50,53 @@
 /* TCP connection state per nameserver */
 struct DNSTCPConnection
 {
-  int fd;                                  /* TCP socket fd (-1 if not connected) */
-  int family;                              /* AF_INET or AF_INET6 */
-  int connecting;                          /* Non-blocking connect in progress */
-  int64_t connect_start_ms;                /* When connect started */
-  int64_t last_activity_ms;                /* Last send/recv time */
+  int fd;                   /* TCP socket fd (-1 if not connected) */
+  int family;               /* AF_INET or AF_INET6 */
+  int connecting;           /* Non-blocking connect in progress */
+  int64_t connect_start_ms; /* When connect started */
+  int64_t last_activity_ms; /* Last send/recv time */
 
   /* Receive state for 2-byte length prefix */
-  unsigned char len_buf[2];                /* Length prefix buffer */
-  size_t len_received;                     /* Bytes of length received (0-2) */
-  size_t msg_len;                          /* Message length after decoding */
-  unsigned char *recv_buf;                 /* Message receive buffer */
-  size_t recv_len;                         /* Bytes of message received */
+  unsigned char len_buf[2]; /* Length prefix buffer */
+  size_t len_received;      /* Bytes of length received (0-2) */
+  size_t msg_len;           /* Message length after decoding */
+  unsigned char *recv_buf;  /* Message receive buffer */
+  size_t recv_len;          /* Bytes of message received */
 
   /* Send state for pending data */
-  unsigned char *send_buf;                 /* Pending send data */
-  size_t send_len;                         /* Total bytes to send */
-  size_t send_offset;                      /* Bytes already sent */
+  unsigned char *send_buf; /* Pending send data */
+  size_t send_len;         /* Total bytes to send */
+  size_t send_offset;      /* Bytes already sent */
 };
 
 /* Internal query state */
 struct SocketDNSQuery
 {
-  uint16_t id;                           /* DNS message ID */
-  unsigned char *query;                  /* Query copy (arena-allocated) */
-  size_t query_len;                      /* Query length */
-  int current_ns;                        /* Current nameserver index */
-  int retry_count;                       /* Number of retries */
-  int timeout_ms;                        /* Current timeout (backoff) */
-  int64_t sent_time_ms;                  /* Timestamp when sent */
-  int cancelled;                         /* Cancelled flag */
-  int completed;                         /* Completed flag */
-  int is_tcp;                            /* Using TCP transport */
-  SocketDNSTransport_Callback callback;  /* User callback */
-  void *userdata;                        /* User data */
-  struct SocketDNSQuery *next;           /* Linked list next */
-  struct SocketDNSQuery *prev;           /* Linked list prev */
+  uint16_t id;                          /* DNS message ID */
+  unsigned char *query;                 /* Query copy (arena-allocated) */
+  size_t query_len;                     /* Query length */
+  int current_ns;                       /* Current nameserver index */
+  int retry_count;                      /* Number of retries */
+  int timeout_ms;                       /* Current timeout (backoff) */
+  int64_t sent_time_ms;                 /* Timestamp when sent */
+  int cancelled;                        /* Cancelled flag */
+  int completed;                        /* Completed flag */
+  int is_tcp;                           /* Using TCP transport */
+  SocketDNSTransport_Callback callback; /* User callback */
+  void *userdata;                       /* User data */
+  struct SocketDNSQuery *next;          /* Linked list next */
+  struct SocketDNSQuery *prev;          /* Linked list prev */
 };
 
 /* Main transport structure */
 struct T
 {
-  Arena_T arena;              /* Memory arena */
-  SocketPoll_T poll;          /* Poll instance (for timers) */
-  SocketDgram_T socket_v4;    /* IPv4 UDP socket */
-  SocketDgram_T socket_v6;    /* IPv6 UDP socket */
-  int fd_v4;                  /* IPv4 socket fd */
-  int fd_v6;                  /* IPv6 socket fd */
+  Arena_T arena;           /* Memory arena */
+  SocketPoll_T poll;       /* Poll instance (for timers) */
+  SocketDgram_T socket_v4; /* IPv4 UDP socket */
+  SocketDgram_T socket_v6; /* IPv6 UDP socket */
+  int fd_v4;               /* IPv4 socket fd */
+  int fd_v6;               /* IPv6 socket fd */
 
   /* Nameserver configuration */
   SocketDNS_Nameserver nameservers[DNS_MAX_NAMESERVERS];
@@ -235,8 +235,8 @@ send_query (T transport, struct SocketDNSQuery *query)
   /* Send the query */
   TRY
   {
-    sent = SocketDgram_sendto (sock, query->query, query->query_len,
-                               ns->address, ns->port);
+    sent = SocketDgram_sendto (
+        sock, query->query, query->query_len, ns->address, ns->port);
   }
   EXCEPT (SocketDgram_Failed)
   {
@@ -253,8 +253,11 @@ send_query (T transport, struct SocketDNSQuery *query)
 
 /* Complete a query with result */
 static void
-complete_query (T transport, struct SocketDNSQuery *query,
-                const unsigned char *response, size_t len, int error)
+complete_query (T transport,
+                struct SocketDNSQuery *query,
+                const unsigned char *response,
+                size_t len,
+                int error)
 {
   query->completed = 1;
   remove_from_pending (transport, query);
@@ -265,8 +268,11 @@ complete_query (T transport, struct SocketDNSQuery *query,
 
 /* Process a single received response */
 static int
-process_response (T transport, const unsigned char *data, size_t len,
-                  const char *sender_addr, int sender_port)
+process_response (T transport,
+                  const unsigned char *data,
+                  size_t len,
+                  const char *sender_addr,
+                  int sender_port)
 {
   SocketDNS_Header hdr;
   struct SocketDNSQuery *query;
@@ -332,9 +338,12 @@ receive_responses (T transport, SocketDgram_T sock)
     {
       TRY
       {
-        len = SocketDgram_recvfrom (sock, transport->recv_buf,
-                                    sizeof (transport->recv_buf), sender_addr,
-                                    sizeof (sender_addr), &sender_port);
+        len = SocketDgram_recvfrom (sock,
+                                    transport->recv_buf,
+                                    sizeof (transport->recv_buf),
+                                    sender_addr,
+                                    sizeof (sender_addr),
+                                    &sender_port);
       }
       EXCEPT (SocketDgram_Failed)
       {
@@ -345,9 +354,11 @@ receive_responses (T transport, SocketDgram_T sock)
       if (len <= 0)
         break;
 
-      processed
-          += process_response (transport, transport->recv_buf, (size_t)len,
-                               sender_addr, sender_port);
+      processed += process_response (transport,
+                                     transport->recv_buf,
+                                     (size_t)len,
+                                     sender_addr,
+                                     sender_port);
     }
 
   return processed;
@@ -369,8 +380,8 @@ find_next_alive_ns (T transport, int start_ns)
       int ns_idx = (start_ns + i) % ns_count;
       SocketDNS_Nameserver *ns = &transport->nameservers[ns_idx];
 
-      if (!SocketDNSDeadServer_is_dead (transport->dead_server_tracker,
-                                         ns->address, NULL))
+      if (!SocketDNSDeadServer_is_dead (
+              transport->dead_server_tracker, ns->address, NULL))
         return ns_idx;
     }
 
@@ -555,8 +566,8 @@ SocketDNSTransport_free (T *transport)
         {
           query->cancelled = 1;
           if (query->callback)
-            query->callback (query, NULL, 0, DNS_ERROR_CANCELLED,
-                             query->userdata);
+            query->callback (
+                query, NULL, 0, DNS_ERROR_CANCELLED, query->userdata);
         }
     }
 
@@ -660,8 +671,10 @@ SocketDNSTransport_get_dead_server_tracker (T transport)
 }
 
 SocketDNSQuery_T
-SocketDNSTransport_query_udp (T transport, const unsigned char *query_data,
-                              size_t len, SocketDNSTransport_Callback callback,
+SocketDNSTransport_query_udp (T transport,
+                              const unsigned char *query_data,
+                              size_t len,
+                              SocketDNSTransport_Callback callback,
                               void *userdata)
 {
   struct SocketDNSQuery *query;
@@ -813,9 +826,11 @@ SocketDNSTransport_process (T transport, int timeout_ms)
           if (fds[i].revents & POLLIN)
             {
               if (fds[i].fd == transport->fd_v4)
-                processed += receive_responses (transport, transport->socket_v4);
+                processed
+                    += receive_responses (transport, transport->socket_v4);
               else if (fds[i].fd == transport->fd_v6)
-                processed += receive_responses (transport, transport->socket_v6);
+                processed
+                    += receive_responses (transport, transport->socket_v6);
             }
         }
     }
@@ -1030,7 +1045,8 @@ tcp_conn_check_connect (T transport, int ns_idx)
     }
 
   /* Check for connect error */
-  if (getsockopt (conn->fd, SOL_SOCKET, SO_ERROR, &err, &errlen) < 0 || err != 0)
+  if (getsockopt (conn->fd, SOL_SOCKET, SO_ERROR, &err, &errlen) < 0
+      || err != 0)
     {
       tcp_conn_close (conn);
       return -1;
@@ -1052,8 +1068,10 @@ tcp_send_buffered (struct DNSTCPConnection *conn)
 
   while (conn->send_offset < conn->send_len)
     {
-      sent = send (conn->fd, conn->send_buf + conn->send_offset,
-                   conn->send_len - conn->send_offset, MSG_NOSIGNAL);
+      sent = send (conn->fd,
+                   conn->send_buf + conn->send_offset,
+                   conn->send_len - conn->send_offset,
+                   MSG_NOSIGNAL);
       if (sent < 0)
         {
           if (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -1092,7 +1110,8 @@ tcp_send_query (T transport, struct SocketDNSQuery *query)
     return -1;
 
   total_len = 2 + query->query_len;
-  conn->send_buf = Arena_alloc (transport->arena, total_len, __FILE__, __LINE__);
+  conn->send_buf
+      = Arena_alloc (transport->arena, total_len, __FILE__, __LINE__);
   socket_util_pack_be16 (len_prefix, (uint16_t)query->query_len);
   memcpy (conn->send_buf, len_prefix, 2);
   memcpy (conn->send_buf + 2, query->query, query->query_len);
@@ -1117,8 +1136,10 @@ tcp_recv_length_prefix (struct DNSTCPConnection *conn)
 
   while (conn->len_received < 2)
     {
-      received = recv (conn->fd, conn->len_buf + conn->len_received,
-                       2 - conn->len_received, 0);
+      received = recv (conn->fd,
+                       conn->len_buf + conn->len_received,
+                       2 - conn->len_received,
+                       0);
       if (received < 0)
         {
           if (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -1148,8 +1169,10 @@ tcp_recv_length_prefix (struct DNSTCPConnection *conn)
 
 /* Read message body after length prefix is known */
 static int
-tcp_recv_message_body (T transport, struct DNSTCPConnection *conn,
-                       unsigned char **out_msg, size_t *out_len)
+tcp_recv_message_body (T transport,
+                       struct DNSTCPConnection *conn,
+                       unsigned char **out_msg,
+                       size_t *out_len)
 {
   ssize_t received;
 
@@ -1164,8 +1187,10 @@ tcp_recv_message_body (T transport, struct DNSTCPConnection *conn,
   /* Read message incrementally */
   while (conn->recv_len < conn->msg_len)
     {
-      received = recv (conn->fd, conn->recv_buf + conn->recv_len,
-                       conn->msg_len - conn->recv_len, 0);
+      received = recv (conn->fd,
+                       conn->recv_buf + conn->recv_len,
+                       conn->msg_len - conn->recv_len,
+                       0);
       if (received < 0)
         {
           if (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -1189,7 +1214,9 @@ tcp_recv_message_body (T transport, struct DNSTCPConnection *conn,
 
 /* Receive TCP response with length prefix */
 static int
-tcp_recv_response (T transport, int ns_idx, unsigned char **response,
+tcp_recv_response (T transport,
+                   int ns_idx,
+                   unsigned char **response,
                    size_t *response_len)
 {
   struct DNSTCPConnection *conn = &transport->tcp_conns[ns_idx];
@@ -1290,8 +1317,8 @@ handle_tcp_response (T transport, struct SocketDNSQuery *query)
   if (poll (&pfd, 1, 0) <= 0 || !(pfd.revents & POLLIN))
     return 0; /* No data available */
 
-  ret = tcp_recv_response (transport, query->current_ns, &response,
-                           &response_len);
+  ret = tcp_recv_response (
+      transport, query->current_ns, &response, &response_len);
   if (ret < 0)
     {
       complete_query (transport, query, NULL, 0, DNS_ERROR_NETWORK);
@@ -1399,8 +1426,10 @@ process_tcp_queries (T transport)
 }
 
 SocketDNSQuery_T
-SocketDNSTransport_query_tcp (T transport, const unsigned char *query_data,
-                              size_t len, SocketDNSTransport_Callback callback,
+SocketDNSTransport_query_tcp (T transport,
+                              const unsigned char *query_data,
+                              size_t len,
+                              SocketDNSTransport_Callback callback,
                               void *userdata)
 {
   struct SocketDNSQuery *query;

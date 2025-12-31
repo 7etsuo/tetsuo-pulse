@@ -171,7 +171,8 @@ extern const Except_T SocketDNS_Failed;
  * SocketDNS_resolve and use SocketDNS_check/SocketDNS_getresult).
  */
 typedef void (*SocketDNS_Callback) (SocketDNS_Request_T *req,
-                                    struct addrinfo *result, int error,
+                                    struct addrinfo *result,
+                                    int error,
                                     void *data);
 
 /**
@@ -213,7 +214,8 @@ extern void SocketDNS_free (T *dns);
  * @ingroup dns
  *
  * Submits a DNS resolution request to the thread pool. Supports callback mode
- * (provide callback) or polling mode (NULL callback, use pollfd/check/getresult).
+ * (provide callback) or polling mode (NULL callback, use
+ * pollfd/check/getresult).
  *
  * @param[in] dns Resolver instance.
  * @param[in] host Hostname/IP or NULL (wildcard bind).
@@ -221,7 +223,8 @@ extern void SocketDNS_free (T *dns);
  * @param[in] callback Completion callback or NULL (polling mode).
  * @param[in] data User data passed to callback.
  * @return Request handle.
- * @throws SocketDNS_Failed on invalid params, queue full, or allocation failure.
+ * @throws SocketDNS_Failed on invalid params, queue full, or allocation
+ * failure.
  * @threadsafe Yes.
  *
  * @warning Callbacks run in worker threads - must be thread-safe.
@@ -229,8 +232,8 @@ extern void SocketDNS_free (T *dns);
  * @see SocketDNS_Callback for callback safety rules.
  * @see SocketDNS_pollfd() and SocketDNS_check() for polling mode.
  */
-extern Request_T SocketDNS_resolve (T dns, const char *host, int port,
-                                    SocketDNS_Callback callback, void *data);
+extern Request_T SocketDNS_resolve (
+    T dns, const char *host, int port, SocketDNS_Callback callback, void *data);
 
 /**
  * @brief Cancel a pending DNS resolution.
@@ -385,8 +388,7 @@ extern int SocketDNS_geterror (T dns, Request_T req);
  * @see SocketDNS_settimeout() for setting the default timeout.
  * @see SocketDNS_resolve() for creating requests.
  */
-extern void SocketDNS_request_settimeout (T dns, Request_T req,
-                                          int timeout_ms);
+extern void SocketDNS_request_settimeout (T dns, Request_T req, int timeout_ms);
 
 /**
  * @brief Create a completed request from pre-resolved addrinfo.
@@ -427,7 +429,8 @@ SocketDNS_create_completed_request (T dns, struct addrinfo *result, int port);
  *
  * @see SocketDNS_resolve() for asynchronous resolution.
  */
-extern struct addrinfo *SocketDNS_resolve_sync (T dns, const char *host,
+extern struct addrinfo *SocketDNS_resolve_sync (T dns,
+                                                const char *host,
                                                 int port,
                                                 const struct addrinfo *hints,
                                                 int timeout_ms);
@@ -440,8 +443,9 @@ extern struct addrinfo *SocketDNS_resolve_sync (T dns, const char *host,
  * cache efficiency and tune TTL/size parameters.
  *
  * @note ABI Stability: This structure uses fixed-width types for cross-platform
- * compatibility. Fields are ordered to ensure natural alignment on all platforms.
- * Binary layout is guaranteed stable across compiler versions and architectures.
+ * compatibility. Fields are ordered to ensure natural alignment on all
+ * platforms. Binary layout is guaranteed stable across compiler versions and
+ * architectures.
  *
  * @see SocketDNS_cache_stats() to retrieve statistics.
  * @see SocketDNS_cache_clear() to reset cache.
@@ -456,7 +460,7 @@ typedef struct SocketDNS_CacheStats
   uint64_t max_entries;  /**< Maximum cache capacity */
   double hit_rate;       /**< Calculated hit rate (hits / (hits + misses)) */
   int32_t ttl_seconds;   /**< Current TTL setting */
-  int32_t _reserved;     /**< Reserved for future use; ensures 8-byte alignment */
+  int32_t _reserved; /**< Reserved for future use; ensures 8-byte alignment */
 } SocketDNS_CacheStats;
 
 /**
@@ -688,8 +692,8 @@ extern int SocketDNS_get_prefer_ipv6 (T dns);
  *
  * @see SocketDNS_set_search_domains() for search path configuration.
  */
-extern int SocketDNS_set_nameservers (T dns, const char **servers,
-                                      size_t count);
+extern int
+SocketDNS_set_nameservers (T dns, const char **servers, size_t count);
 
 /**
  * @brief Set DNS search domains for hostname resolution.
@@ -724,8 +728,8 @@ extern int SocketDNS_set_nameservers (T dns, const char **servers,
  *
  * @see SocketDNS_set_nameservers() for nameserver configuration.
  */
-extern int SocketDNS_set_search_domains (T dns, const char **domains,
-                                         size_t count);
+extern int
+SocketDNS_set_search_domains (T dns, const char **domains, size_t count);
 
 #undef T
 #undef Request_T

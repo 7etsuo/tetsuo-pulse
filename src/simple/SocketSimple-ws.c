@@ -34,7 +34,8 @@
  * @param exception_flag Pointer to volatile int exception_occurred variable
  * @param failed_error_code Simple API error code for SocketWS_Failed
  * @param failed_error_msg Error message for SocketWS_Failed
- * @param operation The WebSocket operation to execute (e.g., SocketWS_connect(...))
+ * @param operation The WebSocket operation to execute (e.g.,
+ * SocketWS_connect(...))
  *
  * Example:
  *   volatile SocketWS_T ws = NULL;
@@ -43,29 +44,32 @@
  *                    SOCKET_SIMPLE_ERR_CONNECT, "WebSocket connection failed",
  *                    ws = SocketWS_connect(url, protocols));
  */
-#define WS_TRY_OPERATION(ws_ptr, exception_flag, failed_error_code,            \
-                         failed_error_msg, operation)                          \
-  do                                                                           \
-    {                                                                          \
-      TRY { operation; }                                                       \
-      EXCEPT (SocketWS_Failed)                                                 \
-      {                                                                        \
-        simple_set_error ((failed_error_code), (failed_error_msg));            \
-        *(exception_flag) = 1;                                                 \
-      }                                                                        \
-      EXCEPT (SocketWS_ProtocolError)                                          \
-      {                                                                        \
-        simple_set_error (SOCKET_SIMPLE_ERR_WS_PROTOCOL,                       \
-                          "WebSocket protocol error");                         \
-        *(exception_flag) = 1;                                                 \
-      }                                                                        \
-      FINALLY                                                                  \
-      {                                                                        \
-        if (*(exception_flag) && *(ws_ptr))                                    \
-          SocketWS_free ((SocketWS_T *)(ws_ptr));                              \
-      }                                                                        \
-      END_TRY;                                                                 \
-    }                                                                          \
+#define WS_TRY_OPERATION(                                                   \
+    ws_ptr, exception_flag, failed_error_code, failed_error_msg, operation) \
+  do                                                                        \
+    {                                                                       \
+      TRY                                                                   \
+      {                                                                     \
+        operation;                                                          \
+      }                                                                     \
+      EXCEPT (SocketWS_Failed)                                              \
+      {                                                                     \
+        simple_set_error ((failed_error_code), (failed_error_msg));         \
+        *(exception_flag) = 1;                                              \
+      }                                                                     \
+      EXCEPT (SocketWS_ProtocolError)                                       \
+      {                                                                     \
+        simple_set_error (SOCKET_SIMPLE_ERR_WS_PROTOCOL,                    \
+                          "WebSocket protocol error");                      \
+        *(exception_flag) = 1;                                              \
+      }                                                                     \
+      FINALLY                                                               \
+      {                                                                     \
+        if (*(exception_flag) && *(ws_ptr))                                 \
+          SocketWS_free ((SocketWS_T *)(ws_ptr));                           \
+      }                                                                     \
+      END_TRY;                                                              \
+    }                                                                       \
   while (0)
 
 /* ============================================================================
@@ -119,7 +123,9 @@ Socket_simple_ws_connect_ex (const char *url,
 
   protocols = opts_param->subprotocols;
 
-  WS_TRY_OPERATION (&ws, &exception_occurred, SOCKET_SIMPLE_ERR_CONNECT,
+  WS_TRY_OPERATION (&ws,
+                    &exception_occurred,
+                    SOCKET_SIMPLE_ERR_CONNECT,
                     "WebSocket connection failed",
                     ws = SocketWS_connect (url, protocols));
 
@@ -162,76 +168,86 @@ Socket_simple_ws_connect_ex (const char *url,
  * @param ws_call The SocketWS_* function call to execute
  * @param op_name Operation name for error messages (e.g., "send", "ping")
  */
-#define WS_SEND_WRAPPER(data_check, invalid_msg, ws_call, op_name)            \
-  do                                                                           \
-    {                                                                          \
-      volatile int ret = -1;                                                   \
-      volatile int exception_occurred = 0;                                     \
-                                                                               \
-      Socket_simple_clear_error ();                                            \
-                                                                               \
-      if (!ws || !ws->ws data_check)                                           \
-        {                                                                      \
-          simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, invalid_msg);       \
-          return -1;                                                           \
-        }                                                                      \
-                                                                               \
-      TRY { ret = ws_call; }                                                   \
-      EXCEPT (SocketWS_Failed)                                                 \
-      {                                                                        \
-        simple_set_error (SOCKET_SIMPLE_ERR_SEND,                              \
-                          "WebSocket " op_name " failed");                     \
-        exception_occurred = 1;                                                \
-      }                                                                        \
-      EXCEPT (SocketWS_Closed)                                                 \
-      {                                                                        \
-        simple_set_error (SOCKET_SIMPLE_ERR_CLOSED,                            \
-                          "WebSocket connection closed");                      \
-        exception_occurred = 1;                                                \
-      }                                                                        \
-      END_TRY;                                                                 \
-                                                                               \
-      if (exception_occurred)                                                  \
-        return -1;                                                             \
-                                                                               \
-      if (ret != 0)                                                            \
-        {                                                                      \
-          simple_set_error (SOCKET_SIMPLE_ERR_SEND,                            \
-                            "WebSocket " op_name " failed");                   \
-          return -1;                                                           \
-        }                                                                      \
-                                                                               \
-      return 0;                                                                \
-    }                                                                          \
+#define WS_SEND_WRAPPER(data_check, invalid_msg, ws_call, op_name)       \
+  do                                                                     \
+    {                                                                    \
+      volatile int ret = -1;                                             \
+      volatile int exception_occurred = 0;                               \
+                                                                         \
+      Socket_simple_clear_error ();                                      \
+                                                                         \
+      if (!ws || !ws->ws data_check)                                     \
+        {                                                                \
+          simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, invalid_msg); \
+          return -1;                                                     \
+        }                                                                \
+                                                                         \
+      TRY                                                                \
+      {                                                                  \
+        ret = ws_call;                                                   \
+      }                                                                  \
+      EXCEPT (SocketWS_Failed)                                           \
+      {                                                                  \
+        simple_set_error (SOCKET_SIMPLE_ERR_SEND,                        \
+                          "WebSocket " op_name " failed");               \
+        exception_occurred = 1;                                          \
+      }                                                                  \
+      EXCEPT (SocketWS_Closed)                                           \
+      {                                                                  \
+        simple_set_error (SOCKET_SIMPLE_ERR_CLOSED,                      \
+                          "WebSocket connection closed");                \
+        exception_occurred = 1;                                          \
+      }                                                                  \
+      END_TRY;                                                           \
+                                                                         \
+      if (exception_occurred)                                            \
+        return -1;                                                       \
+                                                                         \
+      if (ret != 0)                                                      \
+        {                                                                \
+          simple_set_error (SOCKET_SIMPLE_ERR_SEND,                      \
+                            "WebSocket " op_name " failed");             \
+          return -1;                                                     \
+        }                                                                \
+                                                                         \
+      return 0;                                                          \
+    }                                                                    \
   while (0)
 
 int
 Socket_simple_ws_send_text (SocketSimple_WS_T ws, const char *text, size_t len)
 {
-  WS_SEND_WRAPPER (|| !text, "Invalid argument",
-                   SocketWS_send_text (ws->ws, text, len), "send");
+  WS_SEND_WRAPPER (|| !text,
+                   "Invalid argument",
+                   SocketWS_send_text (ws->ws, text, len),
+                   "send");
 }
 
 int
-Socket_simple_ws_send_binary (SocketSimple_WS_T ws, const void *data,
+Socket_simple_ws_send_binary (SocketSimple_WS_T ws,
+                              const void *data,
                               size_t len)
 {
-  WS_SEND_WRAPPER (|| !data, "Invalid argument",
-                   SocketWS_send_binary (ws->ws, data, len), "send");
+  WS_SEND_WRAPPER (|| !data,
+                   "Invalid argument",
+                   SocketWS_send_binary (ws->ws, data, len),
+                   "send");
 }
 
 int
 Socket_simple_ws_send_json (SocketSimple_WS_T ws, const char *json)
 {
-  WS_SEND_WRAPPER (|| !json, "Invalid argument",
-                   SocketWS_send_json (ws->ws, json), "send");
+  WS_SEND_WRAPPER (
+      || !json, "Invalid argument", SocketWS_send_json (ws->ws, json), "send");
 }
 
 int
 Socket_simple_ws_ping (SocketSimple_WS_T ws)
 {
-  WS_SEND_WRAPPER (/* no extra check */, "Invalid WebSocket",
-                   SocketWS_ping (ws->ws, NULL, 0), "ping");
+  WS_SEND_WRAPPER (/* no extra check */,
+                   "Invalid WebSocket",
+                   SocketWS_ping (ws->ws, NULL, 0),
+                   "ping");
 }
 
 /* ============================================================================
@@ -302,7 +318,10 @@ Socket_simple_ws_recv (SocketSimple_WS_T ws, SocketSimple_WSMessage *msg)
   memset (msg, 0, sizeof (*msg));
   memset (&lib_msg, 0, sizeof (lib_msg));
 
-  TRY { ret = SocketWS_recv_message (ws->ws, &lib_msg); }
+  TRY
+  {
+    ret = SocketWS_recv_message (ws->ws, &lib_msg);
+  }
   EXCEPT (SocketWS_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_RECV, "WebSocket receive failed");
@@ -346,7 +365,8 @@ Socket_simple_ws_recv (SocketSimple_WS_T ws, SocketSimple_WSMessage *msg)
 
 int
 Socket_simple_ws_recv_timeout (SocketSimple_WS_T ws,
-                               SocketSimple_WSMessage *msg, int timeout_ms)
+                               SocketSimple_WSMessage *msg,
+                               int timeout_ms)
 {
   Socket_simple_clear_error ();
 
@@ -367,7 +387,10 @@ Socket_simple_ws_recv_timeout (SocketSimple_WS_T ws,
   volatile int ready = 0;
   volatile int exception_occurred = 0;
 
-  TRY { ready = Socket_probe (sock, timeout_ms); }
+  TRY
+  {
+    ready = Socket_probe (sock, timeout_ms);
+  }
   EXCEPT (Socket_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_RECV, "Socket probe failed");
@@ -406,7 +429,10 @@ Socket_simple_ws_close (SocketSimple_WS_T ws, int code, const char *reason)
       return -1;
     }
 
-  TRY { ret = SocketWS_close (ws->ws, code, reason); }
+  TRY
+  {
+    ret = SocketWS_close (ws->ws, code, reason);
+  }
   EXCEPT (SocketWS_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_SOCKET, "WebSocket close failed");
@@ -596,7 +622,8 @@ build_fake_ws_request (Arena_T arena, const char *ws_key)
   SocketHTTP_Headers_T headers;
 
   /* Allocate and zero the request structure */
-  request = Arena_alloc (arena, sizeof (SocketHTTP_Request), __FILE__, __LINE__);
+  request
+      = Arena_alloc (arena, sizeof (SocketHTTP_Request), __FILE__, __LINE__);
   memset (request, 0, sizeof (SocketHTTP_Request));
 
   /* Create headers container */
@@ -736,16 +763,19 @@ Socket_simple_ws_accept (void *http_req,
 
   convert_ws_server_config (config, &ws_config);
 
-  WS_TRY_OPERATION (
-      &ws, &exception_occurred, SOCKET_SIMPLE_ERR_SOCKET,
-      "WebSocket server accept failed", {
-        /* Accept the WebSocket upgrade */
-        ws = SocketWS_server_accept (conn->socket, request, &ws_config);
+  WS_TRY_OPERATION (&ws,
+                    &exception_occurred,
+                    SOCKET_SIMPLE_ERR_SOCKET,
+                    "WebSocket server accept failed",
+                    {
+                      /* Accept the WebSocket upgrade */
+                      ws = SocketWS_server_accept (
+                          conn->socket, request, &ws_config);
 
-        /* Complete the handshake */
-        if (ws)
-          perform_ws_handshake (&ws, &exception_occurred);
-      });
+                      /* Complete the handshake */
+                      if (ws)
+                        perform_ws_handshake (&ws, &exception_occurred);
+                    });
 
   if (exception_occurred)
     return NULL;
@@ -770,7 +800,8 @@ Socket_simple_ws_accept (void *http_req,
 }
 
 SocketSimple_WS_T
-Socket_simple_ws_accept_raw (void *sock, const char *ws_key,
+Socket_simple_ws_accept_raw (void *sock,
+                             const char *ws_key,
                              const SocketSimple_WSServerConfig *config)
 {
   volatile SocketWS_T ws = NULL;
@@ -809,15 +840,18 @@ Socket_simple_ws_accept_raw (void *sock, const char *ws_key,
     request = build_fake_ws_request (arena, ws_key);
 
     /* Accept the WebSocket upgrade and handle WebSocket exceptions */
-    WS_TRY_OPERATION (
-        &ws, &exception_occurred, SOCKET_SIMPLE_ERR_SOCKET,
-        "WebSocket server accept failed", {
-          ws = SocketWS_server_accept (socket, request, &ws_config);
+    WS_TRY_OPERATION (&ws,
+                      &exception_occurred,
+                      SOCKET_SIMPLE_ERR_SOCKET,
+                      "WebSocket server accept failed",
+                      {
+                        ws = SocketWS_server_accept (
+                            socket, request, &ws_config);
 
-          /* Complete the handshake */
-          if (ws)
-            perform_ws_handshake (&ws, &exception_occurred);
-        });
+                        /* Complete the handshake */
+                        if (ws)
+                          perform_ws_handshake (&ws, &exception_occurred);
+                      });
   }
   EXCEPT (Arena_Failed)
   {
@@ -878,7 +912,10 @@ Socket_simple_ws_reject (void *http_req, int status, const char *reason)
     }
 
   /* Use SocketWS_server_reject to send rejection response */
-  TRY { SocketWS_server_reject (conn->socket, status, reason); }
+  TRY
+  {
+    SocketWS_server_reject (conn->socket, status, reason);
+  }
   EXCEPT (Socket_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_SEND,

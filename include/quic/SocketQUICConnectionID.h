@@ -111,12 +111,12 @@ typedef struct SocketQUICConnectionID
  */
 typedef enum
 {
-  QUIC_CONNID_OK = 0,            /**< Operation succeeded */
-  QUIC_CONNID_ERROR_NULL,        /**< NULL pointer argument */
-  QUIC_CONNID_ERROR_LENGTH,      /**< Invalid CID length */
-  QUIC_CONNID_ERROR_BUFFER,      /**< Output buffer too small */
-  QUIC_CONNID_ERROR_INCOMPLETE,  /**< Need more input data */
-  QUIC_CONNID_ERROR_RANDOM       /**< Random generation failed */
+  QUIC_CONNID_OK = 0,           /**< Operation succeeded */
+  QUIC_CONNID_ERROR_NULL,       /**< NULL pointer argument */
+  QUIC_CONNID_ERROR_LENGTH,     /**< Invalid CID length */
+  QUIC_CONNID_ERROR_BUFFER,     /**< Output buffer too small */
+  QUIC_CONNID_ERROR_INCOMPLETE, /**< Need more input data */
+  QUIC_CONNID_ERROR_RANDOM      /**< Random generation failed */
 } SocketQUICConnectionID_Result;
 
 /* ============================================================================
@@ -145,7 +145,8 @@ extern void SocketQUICConnectionID_init (SocketQUICConnectionID_T *cid);
  * @return QUIC_CONNID_OK on success, error code otherwise.
  */
 extern SocketQUICConnectionID_Result
-SocketQUICConnectionID_set (SocketQUICConnectionID_T *cid, const uint8_t *data,
+SocketQUICConnectionID_set (SocketQUICConnectionID_T *cid,
+                            const uint8_t *data,
                             size_t len);
 
 /* ============================================================================
@@ -209,8 +210,10 @@ extern int SocketQUICConnectionID_equal (const SocketQUICConnectionID_T *a,
  *
  * @return 1 if equal, 0 otherwise.
  */
-extern int SocketQUICConnectionID_equal_raw (const SocketQUICConnectionID_T *cid,
-                                             const uint8_t *data, size_t len);
+extern int
+SocketQUICConnectionID_equal_raw (const SocketQUICConnectionID_T *cid,
+                                  const uint8_t *data,
+                                  size_t len);
 
 /**
  * @brief Copy a Connection ID.
@@ -244,7 +247,8 @@ SocketQUICConnectionID_copy (SocketQUICConnectionID_T *dst,
  */
 extern size_t
 SocketQUICConnectionID_encode_length (const SocketQUICConnectionID_T *cid,
-                                      uint8_t *output, size_t output_size);
+                                      uint8_t *output,
+                                      size_t output_size);
 
 /**
  * @brief Encode Connection ID for packet header.
@@ -257,8 +261,10 @@ SocketQUICConnectionID_encode_length (const SocketQUICConnectionID_T *cid,
  *
  * @return Number of bytes written, or 0 on error.
  */
-extern size_t SocketQUICConnectionID_encode (const SocketQUICConnectionID_T *cid,
-                                             uint8_t *output, size_t output_size);
+extern size_t
+SocketQUICConnectionID_encode (const SocketQUICConnectionID_T *cid,
+                               uint8_t *output,
+                               size_t output_size);
 
 /**
  * @brief Encode Connection ID with length prefix.
@@ -273,7 +279,8 @@ extern size_t SocketQUICConnectionID_encode (const SocketQUICConnectionID_T *cid
  */
 extern size_t
 SocketQUICConnectionID_encode_with_length (const SocketQUICConnectionID_T *cid,
-                                           uint8_t *output, size_t output_size);
+                                           uint8_t *output,
+                                           size_t output_size);
 
 /**
  * @brief Decode Connection ID from packet with length prefix.
@@ -288,8 +295,10 @@ SocketQUICConnectionID_encode_with_length (const SocketQUICConnectionID_T *cid,
  * @return QUIC_CONNID_OK on success, error code otherwise.
  */
 extern SocketQUICConnectionID_Result
-SocketQUICConnectionID_decode (const uint8_t *data, size_t len,
-                               SocketQUICConnectionID_T *cid, size_t *consumed);
+SocketQUICConnectionID_decode (const uint8_t *data,
+                               size_t len,
+                               SocketQUICConnectionID_T *cid,
+                               size_t *consumed);
 
 /**
  * @brief Decode Connection ID with known length.
@@ -304,7 +313,8 @@ SocketQUICConnectionID_decode (const uint8_t *data, size_t len,
  * @return QUIC_CONNID_OK on success, error code otherwise.
  */
 extern SocketQUICConnectionID_Result
-SocketQUICConnectionID_decode_fixed (const uint8_t *data, size_t len,
+SocketQUICConnectionID_decode_fixed (const uint8_t *data,
+                                     size_t len,
                                      SocketQUICConnectionID_T *cid,
                                      size_t cid_len);
 
@@ -322,7 +332,8 @@ SocketQUICConnectionID_decode_fixed (const uint8_t *data, size_t len,
  *
  * @return Hash value.
  */
-extern uint32_t SocketQUICConnectionID_hash (const SocketQUICConnectionID_T *cid);
+extern uint32_t
+SocketQUICConnectionID_hash (const SocketQUICConnectionID_T *cid);
 
 /**
  * @brief Check if Connection ID is zero-length.
@@ -373,7 +384,8 @@ SocketQUICConnectionID_result_string (SocketQUICConnectionID_Result result);
  * @return Number of characters written (excluding null), or -1 on error.
  */
 extern int SocketQUICConnectionID_to_hex (const SocketQUICConnectionID_T *cid,
-                                          char *buf, size_t size);
+                                          char *buf,
+                                          size_t size);
 
 /** @} */
 

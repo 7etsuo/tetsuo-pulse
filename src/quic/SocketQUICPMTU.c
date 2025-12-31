@@ -27,15 +27,14 @@
  * ============================================================================
  */
 
-static const char *result_strings[] = {
-  [QUIC_PMTU_OK] = "OK",
-  [QUIC_PMTU_ERROR_NULL] = "NULL pointer argument",
-  [QUIC_PMTU_ERROR_SIZE] = "Invalid size (< 1200 bytes)",
-  [QUIC_PMTU_ERROR_BUFFER] = "Buffer too small for padding",
-  [QUIC_PMTU_ERROR_STATE] = "Invalid state for operation",
-  [QUIC_PMTU_ERROR_PROBE_LIMIT] = "Too many probes in flight",
-  [QUIC_PMTU_ERROR_ARENA] = "Arena allocation failed"
-};
+static const char *result_strings[]
+    = { [QUIC_PMTU_OK] = "OK",
+        [QUIC_PMTU_ERROR_NULL] = "NULL pointer argument",
+        [QUIC_PMTU_ERROR_SIZE] = "Invalid size (< 1200 bytes)",
+        [QUIC_PMTU_ERROR_BUFFER] = "Buffer too small for padding",
+        [QUIC_PMTU_ERROR_STATE] = "Invalid state for operation",
+        [QUIC_PMTU_ERROR_PROBE_LIMIT] = "Too many probes in flight",
+        [QUIC_PMTU_ERROR_ARENA] = "Arena allocation failed" };
 
 DEFINE_RESULT_STRING_FUNC (SocketQUICPMTU, QUIC_PMTU_ERROR_ARENA)
 
@@ -175,8 +174,10 @@ SocketQUICPMTU_get_next_probe_size (SocketQUICPMTU_T pmtu, size_t *size_out)
  */
 
 SocketQUICPMTU_Result
-SocketQUICPMTU_send_probe (SocketQUICPMTU_T pmtu, uint64_t packet_number,
-                            size_t size, uint64_t sent_time_ms)
+SocketQUICPMTU_send_probe (SocketQUICPMTU_T pmtu,
+                           uint64_t packet_number,
+                           size_t size,
+                           uint64_t sent_time_ms)
 {
   SocketQUICPMTU_Probe_T *probe;
 
@@ -279,7 +280,7 @@ SocketQUICPMTU_probe_acked (SocketQUICPMTU_T pmtu, uint64_t packet_number)
 
 static void
 update_pmtu_on_probe_failure (SocketQUICPMTU_T pmtu,
-                               SocketQUICPMTU_Probe_T *probe)
+                              SocketQUICPMTU_Probe_T *probe)
 {
   assert (pmtu);
   assert (probe);
@@ -293,8 +294,8 @@ update_pmtu_on_probe_failure (SocketQUICPMTU_T pmtu,
     return;
 
   size_t failed_size = probe->size;
-  size_t new_target = pmtu->current_pmtu
-                      + (failed_size - pmtu->current_pmtu) / 2;
+  size_t new_target
+      = pmtu->current_pmtu + (failed_size - pmtu->current_pmtu) / 2;
 
   if (new_target > pmtu->current_pmtu)
     {

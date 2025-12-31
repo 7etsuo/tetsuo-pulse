@@ -187,17 +187,17 @@ typedef struct
  */
 typedef struct
 {
-  uint64_t hits;             /**< Total cache hits */
-  uint64_t misses;           /**< Total cache misses */
-  uint64_t nxdomain_hits;    /**< NXDOMAIN-specific hits */
-  uint64_t nodata_hits;      /**< NODATA-specific hits */
-  uint64_t insertions;       /**< Total insertions */
-  uint64_t evictions;        /**< LRU evictions */
-  uint64_t expirations;      /**< TTL expirations */
-  size_t current_size;       /**< Current entry count */
-  size_t max_entries;        /**< Maximum capacity */
-  uint32_t max_ttl;          /**< Maximum allowed TTL */
-  double hit_rate;           /**< Calculated hit rate */
+  uint64_t hits;          /**< Total cache hits */
+  uint64_t misses;        /**< Total cache misses */
+  uint64_t nxdomain_hits; /**< NXDOMAIN-specific hits */
+  uint64_t nodata_hits;   /**< NODATA-specific hits */
+  uint64_t insertions;    /**< Total insertions */
+  uint64_t evictions;     /**< LRU evictions */
+  uint64_t expirations;   /**< TTL expirations */
+  size_t current_size;    /**< Current entry count */
+  size_t max_entries;     /**< Maximum capacity */
+  uint32_t max_ttl;       /**< Maximum allowed TTL */
+  double hit_rate;        /**< Calculated hit rate */
 } SocketDNS_NegCacheStats;
 
 /* Lifecycle functions */
@@ -267,9 +267,12 @@ extern void SocketDNSNegCache_free (T *cache);
  * }
  * @endcode
  */
-extern SocketDNS_NegCacheResult SocketDNSNegCache_lookup (
-    T cache, const char *qname, uint16_t qtype, uint16_t qclass,
-    SocketDNS_NegCacheEntry *entry);
+extern SocketDNS_NegCacheResult
+SocketDNSNegCache_lookup (T cache,
+                          const char *qname,
+                          uint16_t qtype,
+                          uint16_t qclass,
+                          SocketDNS_NegCacheEntry *entry);
 
 /**
  * @brief Insert an NXDOMAIN entry into the cache.
@@ -296,8 +299,10 @@ extern SocketDNS_NegCacheResult SocketDNSNegCache_lookup (
  * // etc.
  * @endcode
  */
-extern int SocketDNSNegCache_insert_nxdomain (T cache, const char *qname,
-                                               uint16_t qclass, uint32_t ttl);
+extern int SocketDNSNegCache_insert_nxdomain (T cache,
+                                              const char *qname,
+                                              uint16_t qclass,
+                                              uint32_t ttl);
 
 /**
  * @brief Insert a NODATA entry into the cache.
@@ -322,9 +327,8 @@ extern int SocketDNSNegCache_insert_nxdomain (T cache, const char *qname,
  * // example.com A lookups will miss (and may succeed)
  * @endcode
  */
-extern int SocketDNSNegCache_insert_nodata (T cache, const char *qname,
-                                             uint16_t qtype, uint16_t qclass,
-                                             uint32_t ttl);
+extern int SocketDNSNegCache_insert_nodata (
+    T cache, const char *qname, uint16_t qtype, uint16_t qclass, uint32_t ttl);
 
 /**
  * @brief Insert an NXDOMAIN entry with SOA data (RFC 2308 Section 6).
@@ -351,9 +355,12 @@ extern int SocketDNSNegCache_insert_nodata (T cache, const char *qname,
  *                                             DNS_CLASS_IN, 300, &soa);
  * @endcode
  */
-extern int SocketDNSNegCache_insert_nxdomain_with_soa (
-    T cache, const char *qname, uint16_t qclass, uint32_t ttl,
-    const SocketDNS_CachedSOA *soa);
+extern int
+SocketDNSNegCache_insert_nxdomain_with_soa (T cache,
+                                            const char *qname,
+                                            uint16_t qclass,
+                                            uint32_t ttl,
+                                            const SocketDNS_CachedSOA *soa);
 
 /**
  * @brief Insert a NODATA entry with SOA data (RFC 2308 Section 6).
@@ -370,9 +377,13 @@ extern int SocketDNSNegCache_insert_nxdomain_with_soa (
  * @param soa        Cached SOA data (may be NULL if no SOA available).
  * @return 0 on success, -1 on error.
  */
-extern int SocketDNSNegCache_insert_nodata_with_soa (
-    T cache, const char *qname, uint16_t qtype, uint16_t qclass, uint32_t ttl,
-    const SocketDNS_CachedSOA *soa);
+extern int
+SocketDNSNegCache_insert_nodata_with_soa (T cache,
+                                          const char *qname,
+                                          uint16_t qtype,
+                                          uint16_t qclass,
+                                          uint32_t ttl,
+                                          const SocketDNS_CachedSOA *soa);
 
 /* Response Building (RFC 2308 Section 6) */
 
@@ -410,18 +421,22 @@ extern int SocketDNSNegCache_insert_nodata_with_soa (
  *     size_t resplen;
  *     if (SocketDNSNegCache_build_response(&entry, "nonexistent.example.com",
  *                                           DNS_TYPE_A, DNS_CLASS_IN,
- *                                           query_id, response, sizeof(response),
- *                                           &resplen) == 0) {
+ *                                           query_id, response,
+ * sizeof(response), &resplen) == 0) {
  *         // Send response with SOA in authority section
  *     }
  * }
  * @endcode
  */
-extern int SocketDNSNegCache_build_response (const SocketDNS_NegCacheEntry *entry,
-                                              const char *qname, uint16_t qtype,
-                                              uint16_t qclass, uint16_t query_id,
-                                              unsigned char *buf, size_t buflen,
-                                              size_t *written);
+extern int
+SocketDNSNegCache_build_response (const SocketDNS_NegCacheEntry *entry,
+                                  const char *qname,
+                                  uint16_t qtype,
+                                  uint16_t qclass,
+                                  uint16_t query_id,
+                                  unsigned char *buf,
+                                  size_t buflen,
+                                  size_t *written);
 
 /**
  * @brief Remove all entries for a specific name.
@@ -447,8 +462,10 @@ extern int SocketDNSNegCache_remove (T cache, const char *qname);
  * @param qclass  Query class.
  * @return 1 if entry was found and removed, 0 if not found.
  */
-extern int SocketDNSNegCache_remove_nodata (T cache, const char *qname,
-                                             uint16_t qtype, uint16_t qclass);
+extern int SocketDNSNegCache_remove_nodata (T cache,
+                                            const char *qname,
+                                            uint16_t qtype,
+                                            uint16_t qclass);
 
 /**
  * @brief Clear all entries from the cache.
@@ -510,7 +527,8 @@ extern const char *SocketDNSNegCache_type_name (SocketDNS_NegCacheType type);
  * @param result Lookup result.
  * @return "MISS", "HIT_NXDOMAIN", or "HIT_NODATA".
  */
-extern const char *SocketDNSNegCache_result_name (SocketDNS_NegCacheResult result);
+extern const char *
+SocketDNSNegCache_result_name (SocketDNS_NegCacheResult result);
 
 /** @} */ /* End of dns_negcache group */
 

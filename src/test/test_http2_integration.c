@@ -73,8 +73,8 @@ create_temp_cert_files (void)
 {
   FILE *f;
 
-  snprintf (cert_file, sizeof (cert_file), "/tmp/test_h2_cert_%d.pem",
-            getpid ());
+  snprintf (
+      cert_file, sizeof (cert_file), "/tmp/test_h2_cert_%d.pem", getpid ());
   snprintf (key_file, sizeof (key_file), "/tmp/test_h2_key_%d.pem", getpid ());
 
   f = fopen (cert_file, "w");
@@ -242,8 +242,7 @@ h2_server_start (H2TestServer *server)
   server->port = port;
 
   /* Create TLS context */
-  TRY server->tls_ctx
-      = SocketTLSContext_new_server (cert_file, key_file, NULL);
+  TRY server->tls_ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
   EXCEPT (SocketTLS_Failed)
   return -1;
   END_TRY;
@@ -274,8 +273,8 @@ h2_server_start (H2TestServer *server)
 
   /* Get actual port */
   len = sizeof (addr);
-  getsockname (Socket_fd (server->listen_socket), (struct sockaddr *)&addr,
-               &len);
+  getsockname (
+      Socket_fd (server->listen_socket), (struct sockaddr *)&addr, &len);
   server->port = ntohs (addr.sin_port);
 
   server->running = 1;
@@ -512,8 +511,8 @@ TEST (http2_integration_frame_parsing)
   data[7] = 0x00;
   data[8] = 0x00; /* Stream ID: 0 */
 
-  int result = SocketHTTP2_frame_header_parse ((const unsigned char *)data, 9,
-                                               &header);
+  int result = SocketHTTP2_frame_header_parse (
+      (const unsigned char *)data, 9, &header);
   ASSERT_EQ (result, 0);
   ASSERT_EQ (header.length, 18);
   ASSERT_EQ (header.type, HTTP2_FRAME_SETTINGS);
@@ -531,8 +530,8 @@ TEST (http2_integration_frame_parsing)
   data[7] = 0x00;
   data[8] = 0x00; /* Stream ID: 0 */
 
-  result = SocketHTTP2_frame_header_parse ((const unsigned char *)data, 9,
-                                           &header);
+  result = SocketHTTP2_frame_header_parse (
+      (const unsigned char *)data, 9, &header);
   ASSERT_EQ (result, 0);
   ASSERT_EQ (header.length, 8);
   ASSERT_EQ (header.type, HTTP2_FRAME_PING);
@@ -548,8 +547,8 @@ TEST (http2_integration_frame_parsing)
   data[7] = 0x00;
   data[8] = 0x01; /* Stream ID: 1 */
 
-  result = SocketHTTP2_frame_header_parse ((const unsigned char *)data, 9,
-                                           &header);
+  result = SocketHTTP2_frame_header_parse (
+      (const unsigned char *)data, 9, &header);
   ASSERT_EQ (result, 0);
   ASSERT_EQ (header.length, 256);
   ASSERT_EQ (header.type, HTTP2_FRAME_DATA);

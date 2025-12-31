@@ -46,7 +46,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         (void)enc_len; /* Suppress unused warning */
       }
   }
-  EXCEPT (SocketHPACK_Error) { /* Expected for malformed input */ }
+  EXCEPT (SocketHPACK_Error)
+  { /* Expected for malformed input */
+  }
   END_TRY;
 
   return 0;

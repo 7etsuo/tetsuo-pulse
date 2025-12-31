@@ -117,8 +117,8 @@ extern void *Arena_alloc (T arena, size_t nbytes, const char *file, int line);
  * @threadsafe Yes
  * @complexity O(1) alloc + O(n) zeroing
  */
-extern void *Arena_calloc (T arena, size_t count, size_t nbytes,
-                           const char *file, int line);
+extern void *
+Arena_calloc (T arena, size_t count, size_t nbytes, const char *file, int line);
 
 /**
  * @brief Reset arena for reuse without destroying it.
@@ -154,13 +154,13 @@ extern void Arena_reset (T arena);
 /**
  * @brief Allocate with automatic source location tracking.
  */
-#define ALLOC(arena, nbytes)                                                  \
+#define ALLOC(arena, nbytes) \
   (Arena_alloc ((arena), (nbytes), __FILE__, __LINE__))
 
 /**
  * @brief Zero-allocate with automatic source location tracking.
  */
-#define CALLOC(arena, count, nbytes)                                          \
+#define CALLOC(arena, count, nbytes) \
   (Arena_calloc ((arena), (count), (nbytes), __FILE__, __LINE__))
 
 #undef T

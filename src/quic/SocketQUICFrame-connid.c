@@ -66,7 +66,8 @@ SocketQUICFrame_encode_new_connection_id (uint64_t sequence,
                                           uint8_t cid_length,
                                           const uint8_t *cid,
                                           const uint8_t reset_token[16],
-                                          uint8_t *out, size_t out_size)
+                                          uint8_t *out,
+                                          size_t out_size)
 {
   /* Validate inputs */
   if (!out || !cid || !reset_token)
@@ -86,7 +87,8 @@ SocketQUICFrame_encode_new_connection_id (uint64_t sequence,
   size_t type_len = SocketQUICVarInt_size (QUIC_FRAME_NEW_CONNECTION_ID);
   size_t seq_len = SocketQUICVarInt_size (sequence);
   size_t retire_len = SocketQUICVarInt_size (retire_prior_to);
-  size_t total_len = type_len + seq_len + retire_len + 1 + cid_length + QUIC_STATELESS_RESET_TOKEN_LEN;
+  size_t total_len = type_len + seq_len + retire_len + 1 + cid_length
+                     + QUIC_STATELESS_RESET_TOKEN_LEN;
 
   if (out_size < total_len)
     return 0;
@@ -138,8 +140,9 @@ SocketQUICFrame_encode_new_connection_id (uint64_t sequence,
  * @return Number of bytes written, or 0 on error
  */
 size_t
-SocketQUICFrame_encode_retire_connection_id (uint64_t sequence, uint8_t *out,
-                                              size_t out_size)
+SocketQUICFrame_encode_retire_connection_id (uint64_t sequence,
+                                             uint8_t *out,
+                                             size_t out_size)
 {
   /* Validate inputs */
   if (!out)
@@ -156,7 +159,8 @@ SocketQUICFrame_encode_retire_connection_id (uint64_t sequence, uint8_t *out,
     return 0;
 
   /* Encode frame type */
-  if (!encode_varint_field (QUIC_FRAME_RETIRE_CONNECTION_ID, out, &pos, out_size))
+  if (!encode_varint_field (
+          QUIC_FRAME_RETIRE_CONNECTION_ID, out, &pos, out_size))
     return 0;
 
   /* Encode sequence number */

@@ -371,8 +371,8 @@ extern void SocketDTLS_enable (SocketDgram_T socket, SocketDTLSContext_T ctx);
  * @see @ref core_io "Core I/O" for datagram socket primitives.
  * @see docs/SECURITY.md#dns-resolution for best practices.
  */
-extern void SocketDTLS_set_peer (SocketDgram_T socket, const char *host,
-                                 int port);
+extern void
+SocketDTLS_set_peer (SocketDgram_T socket, const char *host, int port);
 
 /**
  * @brief Set SNI hostname for client DTLS connections.
@@ -438,8 +438,8 @@ extern void SocketDTLS_set_peer (SocketDgram_T socket, const char *host,
  * @see SocketDTLS_handshake() - must follow this call
  * @see docs/SECURITY.md#certificate-verification for hardening guidelines.
  */
-extern void SocketDTLS_set_hostname (SocketDgram_T socket,
-                                     const char *hostname);
+extern void
+SocketDTLS_set_hostname (SocketDgram_T socket, const char *hostname);
 
 /**
  * @brief Set per-connection MTU for DTLS record sizing.
@@ -705,8 +705,8 @@ extern DTLSHandshakeState SocketDTLS_handshake (SocketDgram_T socket);
  * @see @ref event_system for full async patterns
  * @see docs/ASYNC_IO.md#blocking-vs-nonblocking for tradeoffs.
  */
-extern DTLSHandshakeState SocketDTLS_handshake_loop (SocketDgram_T socket,
-                                                     int timeout_ms);
+extern DTLSHandshakeState
+SocketDTLS_handshake_loop (SocketDgram_T socket, int timeout_ms);
 
 /**
  * @brief Server-side initial DTLS handshake receive.
@@ -881,8 +881,8 @@ extern DTLSHandshakeState SocketDTLS_listen (SocketDgram_T socket);
  * @see @ref utilities "Utilities" for rate limiting large transfers
  * @see docs/SECURITY.md#dtls-io for performance tuning.
  */
-extern ssize_t SocketDTLS_send (SocketDgram_T socket, const void *buf,
-                                size_t len);
+extern ssize_t
+SocketDTLS_send (SocketDgram_T socket, const void *buf, size_t len);
 
 /**
  * @brief Receive application data from established DTLS connection.
@@ -986,8 +986,11 @@ extern ssize_t SocketDTLS_recv (SocketDgram_T socket, void *buf, size_t len);
  * @throws SocketDTLS_Failed on errors
  * @threadsafe No
  */
-extern ssize_t SocketDTLS_sendto (SocketDgram_T socket, const void *buf,
-                                  size_t len, const char *host, int port);
+extern ssize_t SocketDTLS_sendto (SocketDgram_T socket,
+                                  const void *buf,
+                                  size_t len,
+                                  const char *host,
+                                  int port);
 
 /**
  * @brief Receive DTLS datagram with sender address
@@ -1005,8 +1008,11 @@ extern ssize_t SocketDTLS_sendto (SocketDgram_T socket, const void *buf,
  * @throws SocketDTLS_Failed on errors
  * @threadsafe No
  */
-extern ssize_t SocketDTLS_recvfrom (SocketDgram_T socket, void *buf,
-                                    size_t len, char *host, size_t host_len,
+extern ssize_t SocketDTLS_recvfrom (SocketDgram_T socket,
+                                    void *buf,
+                                    size_t len,
+                                    char *host,
+                                    size_t host_len,
                                     int *port);
 
 /* ============================================================================

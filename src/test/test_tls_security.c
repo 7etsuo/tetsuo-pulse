@@ -50,10 +50,12 @@ generate_test_certs (const char *cert_file, const char *key_file)
 {
   char cmd[1024];
 
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s "
             "-days 1 -nodes -subj '/CN=localhost' -batch 2>/dev/null",
-            key_file, cert_file);
+            key_file,
+            cert_file);
   if (system (cmd) != 0)
     return -1;
 
@@ -110,7 +112,10 @@ TEST (security_reject_weak_ciphers)
       SocketTLSContext_set_cipher_list (
           ctx, "NULL-MD5:NULL-SHA:DES-CBC3-SHA:RC4-SHA");
     }
-    EXCEPT (SocketTLS_Failed) { caught = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     /* Note: This might not fail if OpenSSL allows it, but disabling
@@ -139,10 +144,13 @@ TEST (security_path_traversal_in_cert_path)
     /* Try to load cert with path traversal - should fail */
     TRY
     {
-      ctx = SocketTLSContext_new_server ("/../../../etc/passwd",
-                                         "/../../../etc/shadow", NULL);
+      ctx = SocketTLSContext_new_server (
+          "/../../../etc/passwd", "/../../../etc/shadow", NULL);
     }
-    EXCEPT (SocketTLS_Failed) { caught = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught, 1);
@@ -166,8 +174,14 @@ TEST (security_path_traversal_in_ca_path)
     ASSERT_NOT_NULL (ctx);
 
     /* Try to load CA with path traversal */
-    TRY { SocketTLSContext_load_ca (ctx, "/../../../etc/passwd"); }
-    EXCEPT (SocketTLS_Failed) { caught = 1; }
+    TRY
+    {
+      SocketTLSContext_load_ca (ctx, "/../../../etc/passwd");
+    }
+    EXCEPT (SocketTLS_Failed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught, 1);
@@ -279,7 +293,10 @@ TEST (security_pin_wrong_hash_rejected)
               && server_state != TLS_HANDSHAKE_ERROR)
             server_state = SocketTLS_handshake (server);
         }
-        EXCEPT (SocketTLS_HandshakeFailed) { server_state = TLS_HANDSHAKE_ERROR; }
+        EXCEPT (SocketTLS_HandshakeFailed)
+        {
+          server_state = TLS_HANDSHAKE_ERROR;
+        }
         END_TRY;
 
         loops++;
@@ -404,8 +421,14 @@ TEST (security_ticket_key_length_validation)
     unsigned char short_key[32];
     memset (short_key, 0x42, 32);
 
-    TRY { SocketTLSContext_enable_session_tickets (ctx, short_key, 32); }
-    EXCEPT (SocketTLS_Failed) { caught = 1; }
+    TRY
+    {
+      SocketTLSContext_enable_session_tickets (ctx, short_key, 32);
+    }
+    EXCEPT (SocketTLS_Failed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught, 1);
@@ -431,8 +454,14 @@ TEST (security_control_chars_in_path)
     ASSERT_NOT_NULL (ctx);
 
     /* Path with control characters should fail */
-    TRY { SocketTLSContext_load_ca (ctx, "/path/with\x01control\x02chars.pem"); }
-    EXCEPT (SocketTLS_Failed) { caught = 1; }
+    TRY
+    {
+      SocketTLSContext_load_ca (ctx, "/path/with\x01control\x02chars.pem");
+    }
+    EXCEPT (SocketTLS_Failed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught, 1);
@@ -464,8 +493,13 @@ TEST (security_sni_length_limit)
     long_hostname[sizeof (long_hostname) - 1] = '\0';
 
     /* Should either accept (truncated) or fail gracefully */
-    TRY { SocketTLS_set_hostname (socket, long_hostname); }
-    EXCEPT (SocketTLS_Failed) { /* Acceptable */ }
+    TRY
+    {
+      SocketTLS_set_hostname (socket, long_hostname);
+    }
+    EXCEPT (SocketTLS_Failed)
+    { /* Acceptable */
+    }
     END_TRY;
   }
   FINALLY
@@ -481,17 +515,21 @@ TEST (security_sni_length_limit)
 /* ==================== Certificate Chain Depth Limit ==================== */
 
 static int
-generate_cert_chain (const char *chain_file, const char *key_file, int num_certs)
+generate_cert_chain (const char *chain_file,
+                     const char *key_file,
+                     int num_certs)
 {
   FILE *fp;
   char cmd[2048];
   int i;
 
   /* Generate root CA */
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s "
             "-days 1 -nodes -subj '/CN=Root CA' -batch 2>/dev/null",
-            key_file, chain_file);
+            key_file,
+            chain_file);
   if (system (cmd) != 0)
     return -1;
 
@@ -507,10 +545,13 @@ generate_cert_chain (const char *chain_file, const char *key_file, int num_certs
       snprintf (tmp_cert, sizeof (tmp_cert), "/tmp/test_chain_%d.crt", i);
       snprintf (tmp_key, sizeof (tmp_key), "/tmp/test_chain_%d.key", i);
 
-      snprintf (cmd, sizeof (cmd),
+      snprintf (cmd,
+                sizeof (cmd),
                 "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s "
                 "-days 1 -nodes -subj '/CN=Intermediate %d' -batch 2>/dev/null",
-                tmp_key, tmp_cert, i);
+                tmp_key,
+                tmp_cert,
+                i);
       if (system (cmd) != 0)
         {
           fclose (fp);
@@ -607,7 +648,10 @@ TEST (security_cert_chain_exceeds_max_depth)
     {
       SocketTLSContext_add_certificate (ctx, NULL, cert_file, key_file);
     }
-    EXCEPT (SocketTLS_Failed) { caught = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught, 1);
@@ -654,7 +698,10 @@ TEST (security_cert_chain_way_over_max_depth)
     {
       SocketTLSContext_add_certificate (ctx, NULL, cert_file, key_file);
     }
-    EXCEPT (SocketTLS_Failed) { caught = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught, 1);

@@ -260,11 +260,11 @@ extern const Except_T SocketProxy_Failed;
 typedef enum
 {
   SOCKET_PROXY_NONE = 0, /**< No proxy - direct connection to target. */
-  SOCKET_PROXY_HTTP,  /**< HTTP CONNECT method (RFC 7231). Supports Basic auth.
-                       */
-  SOCKET_PROXY_HTTPS, /**< HTTPS CONNECT - TLS-encrypted connection to proxy
-                         before handshake. */
-  SOCKET_PROXY_SOCKS4,  /**< SOCKS4 protocol - IPv4 addresses only, no auth. */
+  SOCKET_PROXY_HTTP,   /**< HTTP CONNECT method (RFC 7231). Supports Basic auth.
+                        */
+  SOCKET_PROXY_HTTPS,  /**< HTTPS CONNECT - TLS-encrypted connection to proxy
+                          before handshake. */
+  SOCKET_PROXY_SOCKS4, /**< SOCKS4 protocol - IPv4 addresses only, no auth. */
   SOCKET_PROXY_SOCKS4A, /**< SOCKS4a extension - supports domain name
                            resolution at proxy. */
   SOCKET_PROXY_SOCKS5,  /**< SOCKS5 protocol (RFC 1928) - supports IPv6, auth,
@@ -343,10 +343,10 @@ typedef enum
   PROXY_STATE_IDLE = 0,         /**< Initial state: connection not started. */
   PROXY_STATE_CONNECTING_PROXY, /**< Resolving/connecting to proxy server via
                                    HappyEyeballs. */
-  PROXY_STATE_TLS_TO_PROXY,   /**< Performing TLS handshake to HTTPS proxy. */
-  PROXY_STATE_HANDSHAKE_SEND, /**< Sending proxy protocol request (CONNECT or
-                                 SOCKS). */
-  PROXY_STATE_HANDSHAKE_RECV, /**< Awaiting and parsing proxy response. */
+  PROXY_STATE_TLS_TO_PROXY,     /**< Performing TLS handshake to HTTPS proxy. */
+  PROXY_STATE_HANDSHAKE_SEND,   /**< Sending proxy protocol request (CONNECT or
+                                   SOCKS). */
+  PROXY_STATE_HANDSHAKE_RECV,   /**< Awaiting and parsing proxy response. */
   PROXY_STATE_AUTH_SEND, /**< Sending SOCKS5 authentication subnegotiation. */
   PROXY_STATE_AUTH_RECV, /**< Receiving SOCKS5 auth response. */
   PROXY_STATE_CONNECTED, /**< Success: tunnel ready for target communication.
@@ -406,9 +406,8 @@ typedef struct SocketProxy_Config
 
 #if SOCKET_HAS_TLS
   /** @brief TLS configuration for HTTPS proxies (TLS to proxy server). */
-  SocketTLSContext_T
-      tls_ctx; /**< TLS context. NULL uses secure system defaults if available.
-                  Requires #if SOCKET_HAS_TLS. */
+  SocketTLSContext_T tls_ctx; /**< TLS context. NULL uses secure system defaults
+                                 if available. Requires #if SOCKET_HAS_TLS. */
 #endif
 
   /** @brief Timeout configuration (0 = use module defaults). */
@@ -471,7 +470,8 @@ extern void SocketProxy_config_defaults (SocketProxy_Config *config);
  * @see docs/PROXY.md#url-format for extended URL features.
  * @see @ref foundation "Arena module" for memory management.
  */
-extern int SocketProxy_parse_url (const char *url, SocketProxy_Config *config,
+extern int SocketProxy_parse_url (const char *url,
+                                  SocketProxy_Config *config,
                                   Arena_T arena);
 
 /* ============================================================================
@@ -519,7 +519,8 @@ extern int SocketProxy_parse_url (const char *url, SocketProxy_Config *config,
  * @see docs/SECURITY.md for TLS and auth security considerations.
  */
 extern Socket_T SocketProxy_connect (const SocketProxy_Config *proxy,
-                                     const char *target_host, int target_port);
+                                     const char *target_host,
+                                     int target_port);
 
 /**
  * @brief Perform proxy handshake on pre-connected socket to establish tunnel.
@@ -564,8 +565,10 @@ extern Socket_T SocketProxy_connect (const SocketProxy_Config *proxy,
  * @see docs/PROXY.md#custom-socket for advanced usage examples.
  */
 extern SocketProxy_Result
-SocketProxy_tunnel (Socket_T socket, const SocketProxy_Config *proxy,
-                    const char *target_host, int target_port,
+SocketProxy_tunnel (Socket_T socket,
+                    const SocketProxy_Config *proxy,
+                    const char *target_host,
+                    int target_port,
                     Arena_T arena /* optional for TLS context allocation */);
 
 /* ============================================================================
@@ -619,9 +622,11 @@ SocketProxy_tunnel (Socket_T socket, const SocketProxy_Config *proxy,
  * @see docs/ASYNC_IO.md for full event loop patterns.
  * @see docs/PROXY.md#async-api for advanced async features.
  */
-extern T SocketProxy_Conn_start (SocketDNSResolver_T resolver, SocketPoll_T poll,
+extern T SocketProxy_Conn_start (SocketDNSResolver_T resolver,
+                                 SocketPoll_T poll,
                                  const SocketProxy_Config *proxy,
-                                 const char *target_host, int target_port);
+                                 const char *target_host,
+                                 int target_port);
 
 /**
  * @brief Create proxy connection context with blocking proxy connect, async
@@ -666,7 +671,8 @@ extern T SocketProxy_Conn_start (SocketDNSResolver_T resolver, SocketPoll_T poll
  * @see docs/PROXY.md#hybrid-api for hybrid sync/async patterns.
  */
 extern T SocketProxy_Conn_new (const SocketProxy_Config *proxy,
-                               const char *target_host, int target_port);
+                               const char *target_host,
+                               int target_port);
 
 /**
  * @brief Query if proxy operation has completed.

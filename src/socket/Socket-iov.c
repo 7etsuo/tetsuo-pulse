@@ -54,7 +54,8 @@
  *
  * Performance characteristics:
  * - Smaller values (<32KB): More syscalls, lower memory, worse throughput
- * - Larger values (>128KB): Better throughput, higher memory, diminishing returns
+ * - Larger values (>128KB): Better throughput, higher memory, diminishing
+ * returns
  *
  * This can be overridden at compile time for specific workloads:
  *   -DSOCKET_SPLICE_CHUNK_SIZE=131072  (128KB for high-throughput proxies)
@@ -66,11 +67,14 @@
 
 #define T Socket_T
 
-/* Generic step function typedefs to reduce code duplication in loop implementations */
-typedef ssize_t (*SocketSendStepFn)(T socket, const void *buf, size_t len);
-typedef ssize_t (*SocketRecvStepFn)(T socket, void *buf, size_t len);
-typedef ssize_t (*SocketSendvStepFn)(T socket, const struct iovec *iov, int iovcnt);
-typedef ssize_t (*SocketRecvvStepFn)(T socket, struct iovec *iov, int iovcnt);
+/* Generic step function typedefs to reduce code duplication in loop
+ * implementations */
+typedef ssize_t (*SocketSendStepFn) (T socket, const void *buf, size_t len);
+typedef ssize_t (*SocketRecvStepFn) (T socket, void *buf, size_t len);
+typedef ssize_t (*SocketSendvStepFn) (T socket,
+                                      const struct iovec *iov,
+                                      int iovcnt);
+typedef ssize_t (*SocketRecvvStepFn) (T socket, struct iovec *iov, int iovcnt);
 
 /* Declare module-specific exception using centralized macros */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketIOV);
@@ -139,7 +143,7 @@ safe_add_off_t (off_t *offset, off_t increment)
     {
       /* Adding positive value - check for overflow.
        * Maximum value for signed type is 2^(bits-1) - 1 */
-      off_t max_off_t = (off_t) ((1ULL << (sizeof (off_t) * 8 - 1)) - 1);
+      off_t max_off_t = (off_t)((1ULL << (sizeof (off_t) * 8 - 1)) - 1);
       if (*offset > 0 && increment > max_off_t - *offset)
         {
           SOCKET_ERROR_MSG (
@@ -152,7 +156,7 @@ safe_add_off_t (off_t *offset, off_t increment)
     {
       /* Adding negative value - check for underflow.
        * Minimum value for signed type is -2^(bits-1) */
-      off_t min_off_t = (off_t) (-(1LL << (sizeof (off_t) * 8 - 1)));
+      off_t min_off_t = (off_t)(-(1LL << (sizeof (off_t) * 8 - 1)));
       if (*offset < 0 && increment < min_off_t - *offset)
         {
           SOCKET_ERROR_MSG (
@@ -190,9 +194,9 @@ socket_sendfile_linux (T socket, int file_fd, off_t *offset, size_t count)
 }
 #endif
 
-#if SOCKET_HAS_SENDFILE                                                       \
-    && (defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)   \
-        || defined(__DragonFly__)                                             \
+#if SOCKET_HAS_SENDFILE                                                     \
+    && (defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) \
+        || defined(__DragonFly__)                                           \
         || (defined(__APPLE__) && defined(__MACH__)))
 /**
  * socket_sendfile_bsd - BSD/macOS sendfile implementation
@@ -210,7 +214,7 @@ socket_sendfile_bsd (T socket, int file_fd, off_t *offset, size_t count)
    * On systems where sizeof(size_t) > sizeof(off_t), large values
    * could silently truncate, causing partial transfers. Calculate
    * max off_t using same pattern as safe_add_off_t(). */
-  off_t max_off_t = (off_t) ((1ULL << (sizeof (off_t) * 8 - 1)) - 1);
+  off_t max_off_t = (off_t)((1ULL << (sizeof (off_t) * 8 - 1)) - 1);
   if (count > (size_t)max_off_t)
     {
       errno = EOVERFLOW;
@@ -376,9 +380,9 @@ Socket_sendfile (T socket, int file_fd, off_t *offset, size_t count)
     {
       result = socket_sendfile_linux (socket, file_fd, offset, count);
     }
-#elif SOCKET_HAS_SENDFILE                                                     \
-    && (defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)   \
-        || defined(__DragonFly__)                                             \
+#elif SOCKET_HAS_SENDFILE                                                   \
+    && (defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) \
+        || defined(__DragonFly__)                                           \
         || (defined(__APPLE__) && defined(__MACH__)))
   {
     result = socket_sendfile_bsd (socket, file_fd, offset, count);
@@ -396,7 +400,8 @@ Socket_sendfile (T socket, int file_fd, off_t *offset, size_t count)
       if (socketio_is_connection_closed_send ())
         RAISE (Socket_Closed);
       SOCKET_ERROR_FMT (
-          "Zero-copy file transfer failed (file_fd=%d, count=%zu)", file_fd,
+          "Zero-copy file transfer failed (file_fd=%d, count=%zu)",
+          file_fd,
           count);
       RAISE_MODULE_ERROR (Socket_Failed);
     }
@@ -434,7 +439,8 @@ Socket_sendfileall (T socket, int file_fd, off_t *offset, size_t count)
             /* Use safe addition to prevent off_t overflow (CWE-190) */
             if (safe_add_off_t (&current_offset, (off_t)sent) < 0)
               {
-                /* Overflow detected - stop processing and return partial progress */
+                /* Overflow detected - stop processing and return partial
+                 * progress */
                 break;
               }
           }
@@ -507,7 +513,8 @@ Socket_recvmsg (T socket, struct msghdr *msg, int flags)
 
 /* ==================== Guaranteed Completion Functions ==================== */
 
-/* Wrapper functions removed - using type-specific iteration functions instead */
+/* Wrapper functions removed - using type-specific iteration functions instead
+ */
 
 /**
  * Socket_sendall - Send all data (handles partial sends)
@@ -587,7 +594,9 @@ Socket_recvall (T socket, void *buf, size_t len)
  * Returns: 1 to continue, 0 to stop (would block or no active iov)
  */
 static int
-sendvall_iteration (T socket, struct iovec *iov_copy, int iovcnt,
+sendvall_iteration (T socket,
+                    struct iovec *iov_copy,
+                    int iovcnt,
                     ssize_t *bytes_sent)
 {
   int active_iovcnt = 0;
@@ -597,7 +606,8 @@ sendvall_iteration (T socket, struct iovec *iov_copy, int iovcnt,
   if (active_iov == NULL)
     return 0;
 
-  *bytes_sent = Socket_sendv (socket, (const struct iovec *)active_iov, active_iovcnt);
+  *bytes_sent
+      = Socket_sendv (socket, (const struct iovec *)active_iov, active_iovcnt);
   if (*bytes_sent == 0)
     return 0;
 
@@ -615,7 +625,9 @@ sendvall_iteration (T socket, struct iovec *iov_copy, int iovcnt,
  * Returns: 1 to continue, 0 to stop (would block or no active iov)
  */
 static int
-recvvall_iteration (T socket, struct iovec *iov_copy, int iovcnt,
+recvvall_iteration (T socket,
+                    struct iovec *iov_copy,
+                    int iovcnt,
                     ssize_t *bytes_received)
 {
   int active_iovcnt = 0;
@@ -663,7 +675,10 @@ Socket_sendvall (T socket, const struct iovec *iov, int iovcnt)
   RERAISE;
   EXCEPT (Socket_Failed)
   RERAISE;
-  FINALLY { free (iov_copy); }
+  FINALLY
+  {
+    free (iov_copy);
+  }
   END_TRY;
 
   return (ssize_t)total_sent;
@@ -691,15 +706,19 @@ Socket_recvvall (T socket, struct iovec *iov, int iovcnt)
 
   TRY
   {
-    while (total_received < total_len
-           && recvvall_iteration (socket, iov_copy, iovcnt, (ssize_t *)&received))
+    while (
+        total_received < total_len
+        && recvvall_iteration (socket, iov_copy, iovcnt, (ssize_t *)&received))
       total_received += (size_t)received;
   }
   EXCEPT (Socket_Closed)
   RERAISE;
   EXCEPT (Socket_Failed)
   RERAISE;
-  FINALLY { free (iov_copy); }
+  FINALLY
+  {
+    free (iov_copy);
+  }
   END_TRY;
 
   return (ssize_t)total_received;
@@ -711,7 +730,8 @@ Socket_recvvall (T socket, struct iovec *iov, int iovcnt)
  * socket_wait_with_timeout - Wait for socket readiness with timeout handling
  * @fd: File descriptor to wait on
  * @events: Poll events (POLLIN or POLLOUT)
- * @timeout_ms: Original timeout value (>0 for deadline, -1 for block, 0 for none)
+ * @timeout_ms: Original timeout value (>0 for deadline, -1 for block, 0 for
+ * none)
  * @deadline_ms: Deadline timestamp from SocketTimeout_deadline_ms()
  * @op_name: Operation name for error messages ("send" or "recv")
  *
@@ -721,8 +741,11 @@ Socket_recvvall (T socket, struct iovec *iov, int iovcnt)
  * Centralizes timeout calculation and wait logic to eliminate duplication.
  */
 static int
-socket_wait_with_timeout (int fd, short events, int timeout_ms,
-                          int64_t deadline_ms, const char *op_name)
+socket_wait_with_timeout (int fd,
+                          short events,
+                          int timeout_ms,
+                          int64_t deadline_ms,
+                          const char *op_name)
 {
   int64_t remaining_ms;
 
@@ -767,7 +790,8 @@ typedef ssize_t (*SocketIOFn) (T socket, void *buf, size_t len);
  * @socket: Connected socket
  * @buf: Buffer for data (read or write)
  * @len: Number of bytes to transfer
- * @timeout_ms: Timeout in milliseconds (>0 for deadline, -1 for block, 0 for none)
+ * @timeout_ms: Timeout in milliseconds (>0 for deadline, -1 for block, 0 for
+ * none)
  * @poll_event: Poll event to wait for (POLLIN or POLLOUT)
  * @io_fn: I/O function to call (Socket_send or Socket_recv)
  * @op_name: Operation name for error messages ("send" or "recv")
@@ -779,8 +803,12 @@ typedef ssize_t (*SocketIOFn) (T socket, void *buf, size_t len);
  * Uses function pointer to abstract the actual I/O operation.
  */
 static ssize_t
-socket_io_with_timeout (T socket, void *buf, size_t len, int timeout_ms,
-                        short poll_event, SocketIOFn io_fn,
+socket_io_with_timeout (T socket,
+                        void *buf,
+                        size_t len,
+                        int timeout_ms,
+                        short poll_event,
+                        SocketIOFn io_fn,
                         const char *op_name)
 {
   volatile size_t total = 0;
@@ -805,8 +833,8 @@ socket_io_with_timeout (T socket, void *buf, size_t len, int timeout_ms,
     while (total < len)
       {
         /* Wait for socket to be ready with timeout handling */
-        if (!socket_wait_with_timeout (fd, poll_event, timeout_ms, deadline_ms,
-                                        op_name))
+        if (!socket_wait_with_timeout (
+                fd, poll_event, timeout_ms, deadline_ms, op_name))
           break; /* Timeout */
 
         result = io_fn (socket, ptr + total, len - total);
@@ -830,7 +858,8 @@ socket_io_with_timeout (T socket, void *buf, size_t len, int timeout_ms,
  * @socket: Connected socket
  * @buf: Data to send (const)
  * @len: Number of bytes to send
- * @timeout_ms: Timeout in milliseconds (>0 for deadline, -1 for block, 0 for none)
+ * @timeout_ms: Timeout in milliseconds (>0 for deadline, -1 for block, 0 for
+ * none)
  *
  * Returns: Total bytes sent (may be < len on timeout)
  * Raises: Socket_Closed, Socket_Failed
@@ -840,9 +869,15 @@ socket_io_with_timeout (T socket, void *buf, size_t len, int timeout_ms,
 static ssize_t
 socket_send_with_timeout (T socket, const void *buf, size_t len, int timeout_ms)
 {
-  /* Cast away const for generic io_fn signature - Socket_send preserves const */
-  return socket_io_with_timeout (socket, (void *)buf, len, timeout_ms, POLLOUT,
-                                  (SocketIOFn)Socket_send, "send");
+  /* Cast away const for generic io_fn signature - Socket_send preserves const
+   */
+  return socket_io_with_timeout (socket,
+                                 (void *)buf,
+                                 len,
+                                 timeout_ms,
+                                 POLLOUT,
+                                 (SocketIOFn)Socket_send,
+                                 "send");
 }
 
 /**
@@ -850,7 +885,8 @@ socket_send_with_timeout (T socket, const void *buf, size_t len, int timeout_ms)
  * @socket: Connected socket
  * @buf: Buffer for received data (non-const)
  * @len: Number of bytes to receive
- * @timeout_ms: Timeout in milliseconds (>0 for deadline, -1 for block, 0 for none)
+ * @timeout_ms: Timeout in milliseconds (>0 for deadline, -1 for block, 0 for
+ * none)
  *
  * Returns: Total bytes received (may be < len on timeout or EOF)
  * Raises: Socket_Closed, Socket_Failed
@@ -860,8 +896,8 @@ socket_send_with_timeout (T socket, const void *buf, size_t len, int timeout_ms)
 static ssize_t
 socket_recv_with_timeout (T socket, void *buf, size_t len, int timeout_ms)
 {
-  return socket_io_with_timeout (socket, buf, len, timeout_ms, POLLIN,
-                                  (SocketIOFn)Socket_recv, "recv");
+  return socket_io_with_timeout (
+      socket, buf, len, timeout_ms, POLLIN, (SocketIOFn)Socket_recv, "recv");
 }
 
 /**
@@ -907,7 +943,9 @@ Socket_recvall_timeout (T socket, void *buf, size_t len, int timeout_ms)
  * Raises: Socket_Closed, Socket_Failed
  */
 ssize_t
-Socket_sendv_timeout (T socket, const struct iovec *iov, int iovcnt,
+Socket_sendv_timeout (T socket,
+                      const struct iovec *iov,
+                      int iovcnt,
                       int timeout_ms)
 {
   int fd;
@@ -1055,7 +1093,11 @@ Socket_splice (T socket_in, T socket_out, size_t len)
     }
 
   /* Splice from socket to pipe */
-  spliced_in = splice (fd_in, NULL, pipe_fds[1], NULL, chunk_size,
+  spliced_in = splice (fd_in,
+                       NULL,
+                       pipe_fds[1],
+                       NULL,
+                       chunk_size,
                        SPLICE_F_MOVE | SPLICE_F_NONBLOCK);
 
   if (spliced_in < 0)
@@ -1072,7 +1114,11 @@ Socket_splice (T socket_in, T socket_out, size_t len)
     }
 
   /* Splice from pipe to socket */
-  spliced_out = splice (pipe_fds[0], NULL, fd_out, NULL, (size_t)spliced_in,
+  spliced_out = splice (pipe_fds[0],
+                        NULL,
+                        fd_out,
+                        NULL,
+                        (size_t)spliced_in,
                         SPLICE_F_MOVE | SPLICE_F_NONBLOCK);
 
   close_pipe_fds (pipe_fds);

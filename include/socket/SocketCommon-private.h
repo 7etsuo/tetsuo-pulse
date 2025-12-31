@@ -451,8 +451,8 @@ SocketBase_timeouts (SocketBase_T base)
  * @see core/SocketConfig.h for SocketTimeouts_T definition
  * @see docs/TIMEOUTS.md for timeout best practices
  */
-extern void SocketBase_set_timeouts (SocketBase_T base,
-                                     const SocketTimeouts_T *timeouts);
+extern void
+SocketBase_set_timeouts (SocketBase_T base, const SocketTimeouts_T *timeouts);
 
 /* ... add more extern decls for getters/setters as needed */
 
@@ -515,8 +515,8 @@ extern void SocketBase_set_timeouts (SocketBase_T base,
  * @see SocketCommon_disable_sigpipe() for SIGPIPE details
  * @see docs/SECURITY.md#file-descriptor-leaks for CLOEXEC importance
  */
-extern int SocketCommon_create_fd (int domain, int type, int protocol,
-                                   Except_T exc_type);
+extern int
+SocketCommon_create_fd (int domain, int type, int protocol, Except_T exc_type);
 
 /**
  * @brief Initialize pre-allocated SocketBase_T with FD and parameters.
@@ -574,8 +574,12 @@ extern int SocketCommon_create_fd (int domain, int type, int protocol,
  * @see SocketCommon_update_local_endpoint() for post-bind endpoint refresh
  * @see docs/ERROR_HANDLING.md for TRY/EXCEPT patterns with FD cleanup
  */
-extern void SocketCommon_init_base (SocketBase_T base, int fd, int domain,
-                                    int type, int protocol, Except_T exc_type);
+extern void SocketCommon_init_base (SocketBase_T base,
+                                    int fd,
+                                    int domain,
+                                    int type,
+                                    int protocol,
+                                    Except_T exc_type);
 
 /**
  * @brief Determine socket address family from base or fd.
@@ -587,7 +591,8 @@ extern void SocketCommon_init_base (SocketBase_T base, int fd, int domain,
  * @note Uses SO_DOMAIN (Linux) or getsockname() fallback.
  * @note Unifies family detection across modules.
  */
-extern int SocketCommon_get_family (SocketBase_T base, bool raise_on_fail,
+extern int SocketCommon_get_family (SocketBase_T base,
+                                    bool raise_on_fail,
                                     Except_T exc_type);
 
 /* ============================================================================
@@ -632,8 +637,8 @@ extern void SocketCommon_setreuseport (SocketBase_T base, Except_T exc_type);
  * @note Sets both SO_SNDTIMEO and SO_RCVTIMEO.
  * @see SocketCommon_getoption_timeval()
  */
-extern void SocketCommon_settimeout (SocketBase_T base, int timeout_sec,
-                                     Except_T exc_type);
+extern void
+SocketCommon_settimeout (SocketBase_T base, int timeout_sec, Except_T exc_type);
 
 /**
  * @brief Set FD_CLOEXEC flag with error handling.
@@ -644,7 +649,8 @@ extern void SocketCommon_settimeout (SocketBase_T base, int timeout_sec,
  * @note Prevents fd inheritance across exec(); uses fcntl F_SETFD.
  * @see SocketCommon_setcloexec() public variant.
  */
-extern void SocketCommon_setcloexec_with_error (SocketBase_T base, int enable,
+extern void SocketCommon_setcloexec_with_error (SocketBase_T base,
+                                                int enable,
                                                 Except_T exc_type);
 
 /**
@@ -670,8 +676,7 @@ extern void SocketCommon_disable_sigpipe (int fd);
  * @see SocketCommon_free_addrinfo()
  * @see getaddrinfo(3)
  */
-extern struct addrinfo *
-SocketCommon_copy_addrinfo (const struct addrinfo *src);
+extern struct addrinfo *SocketCommon_copy_addrinfo (const struct addrinfo *src);
 
 /* ============================================================================
  * Internal Low-Level Utility Functions
@@ -728,8 +733,8 @@ extern bool socketcommon_is_ip_address (const char *host);
  * @note Validates range; uses snprintf; null-terminates.
  * @note Used in error messages, URI building.
  */
-extern void socketcommon_convert_port_to_string (int port, char *port_str,
-                                                 size_t bufsize);
+extern void
+socketcommon_convert_port_to_string (int port, char *port_str, size_t bufsize);
 
 /**
  * @brief Module Exception Forward Declarations
@@ -919,9 +924,11 @@ extern int socketcommon_sanitize_timeout (int timeout_ms);
  * Used for timed waits during non-blocking connect and accept operations.
  *
  * @param[in] pfd Pointer to pollfd structure (fd, events, revents)
- * @param[in] timeout_ms Timeout in milliseconds (0=immediate, >0=wait, -1=infinite)
+ * @param[in] timeout_ms Timeout in milliseconds (0=immediate, >0=wait,
+ * -1=infinite)
  *
- * @return Poll result: >0=events ready, 0=timeout, <0=error (errno set, not EINTR)
+ * @return Poll result: >0=events ready, 0=timeout, <0=error (errno set, not
+ * EINTR)
  *
  * @throws None - returns error code via return value and errno
  * @threadsafe Yes - operates on single pollfd, no shared state
@@ -966,7 +973,8 @@ socket_poll_eintr_retry (struct pollfd *pfd, int timeout_ms)
  *
  * @param[in] fd File descriptor of socket with pending connect
  *
- * @return 0 on success (connection established), -1 on error (errno set to pending error)
+ * @return 0 on success (connection established), -1 on error (errno set to
+ * pending error)
  *
  * @throws None - returns error code via return value and errno
  * @threadsafe Yes - operates on single fd, uses stack variables
@@ -1020,7 +1028,8 @@ socket_check_so_error (int fd)
  *
  * @param[in] fd File descriptor to restore
  * @param[in] original_flags Original flags from fcntl(F_GETFL) to restore
- * @param[in] component Component name for logging context (e.g., "SocketConnect")
+ * @param[in] component Component name for logging context (e.g.,
+ * "SocketConnect")
  *
  * @throws None - logs warning on failure but continues
  * @threadsafe Yes - operates on single fd, no shared state
@@ -1042,14 +1051,18 @@ socket_check_so_error (int fd)
  * @see socket_poll_eintr_retry() for typical usage context
  */
 static inline void
-socket_common_restore_blocking_mode (int fd, int original_flags,
+socket_common_restore_blocking_mode (int fd,
+                                     int original_flags,
                                      const char *component)
 {
   if (fcntl (fd, F_SETFL, original_flags) < 0)
     {
-      SocketLog_emitf (SOCKET_LOG_WARN, component,
+      SocketLog_emitf (SOCKET_LOG_WARN,
+                       component,
                        "Failed to restore blocking mode (fd=%d, errno=%d): %s",
-                       fd, errno, Socket_safe_strerror (errno));
+                       fd,
+                       errno,
+                       Socket_safe_strerror (errno));
     }
 }
 

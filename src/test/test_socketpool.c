@@ -575,7 +575,7 @@ TEST (socketpool_reuse_after_remove)
 
 /* ==================== Buffer Integration Tests ==================== */
 
-#if 0 /* KNOWN_ISSUE: Exception handling segfault during buffer operations.
+#if 0 /* KNOWN_ISSUE: Exception handling segfault during buffer operations. \
        * See KNOWN_ISSUES.md for details and tracking. */
 TEST(socketpool_connection_buffer_operations)
 {
@@ -664,7 +664,7 @@ TEST (socketpool_add_remove_cycle)
 
 /* ==================== Thread Safety Tests ==================== */
 
-#if 0 /* KNOWN_ISSUE: realloc() invalid pointer during concurrent pool
+#if 0 /* KNOWN_ISSUE: realloc() invalid pointer during concurrent pool \
        * operations. See KNOWN_ISSUES.md for details and tracking. */
 static void *thread_add_remove_connections(void *arg)
 {
@@ -1001,11 +1001,17 @@ TEST (socketpool_connect_async_invalid_params)
   TRY
   {
     /* Invalid (negative) port */
-    SocketPool_connect_async (pool, "localhost", -1, async_connect_callback,
-                              NULL);
+    SocketPool_connect_async (
+        pool, "localhost", -1, async_connect_callback, NULL);
   }
-  EXCEPT (SocketPool_Failed) { raised = 1; }
-  EXCEPT (Socket_Failed) { raised = 1; }
+  EXCEPT (SocketPool_Failed)
+  {
+    raised = 1;
+  }
+  EXCEPT (Socket_Failed)
+  {
+    raised = 1;
+  }
   END_TRY;
 
   ASSERT_EQ (raised, 1);
@@ -1048,7 +1054,10 @@ TEST (socketpool_prepare_connection_basic)
   END_TRY;
 
   /* Create DNS resolver */
-  TRY { dns = SocketDNS_new (); }
+  TRY
+  {
+    dns = SocketDNS_new ();
+  }
   EXCEPT (SocketDNS_Failed)
   {
     Socket_free (&server);
@@ -1062,8 +1071,8 @@ TEST (socketpool_prepare_connection_basic)
   /* Prepare connection */
   TRY
   {
-    int result = SocketPool_prepare_connection (pool, dns, "127.0.0.1", port,
-                                                &out_socket, &out_req);
+    int result = SocketPool_prepare_connection (
+        pool, dns, "127.0.0.1", port, &out_socket, &out_req);
     ASSERT_EQ (result, 0);
     ASSERT_NOT_NULL (out_socket);
     ASSERT_NOT_NULL (out_req);
@@ -1106,7 +1115,10 @@ TEST (socketpool_prepare_connection_invalid_params)
   Request_T out_req = NULL;
   volatile int raised = 0;
 
-  TRY { dns = SocketDNS_new (); }
+  TRY
+  {
+    dns = SocketDNS_new ();
+  }
   EXCEPT (SocketDNS_Failed)
   {
     SocketPool_free (&pool);
@@ -1120,11 +1132,17 @@ TEST (socketpool_prepare_connection_invalid_params)
    * Socket_Failed */
   TRY
   {
-    SocketPool_prepare_connection (pool, dns, "localhost", -1, &out_socket,
-                                   &out_req);
+    SocketPool_prepare_connection (
+        pool, dns, "localhost", -1, &out_socket, &out_req);
   }
-  EXCEPT (SocketPool_Failed) { raised = 1; }
-  EXCEPT (Socket_Failed) { raised = 1; }
+  EXCEPT (SocketPool_Failed)
+  {
+    raised = 1;
+  }
+  EXCEPT (Socket_Failed)
+  {
+    raised = 1;
+  }
   END_TRY;
 
   /* Clean up socket if it was created (shouldn't be with invalid params) */
@@ -1171,7 +1189,10 @@ TEST (socketpool_resize_shrink_with_active)
     count = SocketPool_count (pool);
     ASSERT (count <= 3);
   }
-  EXCEPT (SocketPool_Failed) { ASSERT (0); }
+  EXCEPT (SocketPool_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   /* Clean up - remove and free sockets */
@@ -1268,7 +1289,10 @@ TEST (socketpool_connection_has_reconnect_disabled)
     SocketReconnect_T r = Connection_reconnect (conn);
     ASSERT_NULL (r);
   }
-  EXCEPT (SocketPool_Failed) { ASSERT (0); }
+  EXCEPT (SocketPool_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   Socket_free (&socket);
@@ -1320,7 +1344,10 @@ TEST (socketpool_hash_collision_handling)
         ASSERT_NOT_NULL (conn);
       }
   }
-  EXCEPT (SocketPool_Failed) { ASSERT (0); }
+  EXCEPT (SocketPool_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   /* Cleanup */
@@ -1363,7 +1390,10 @@ TEST (socketpool_activity_time_updated)
     /* Activity time should be set when connection is added */
     ASSERT (t1 > 0);
   }
-  EXCEPT (SocketPool_Failed) { ASSERT (0); }
+  EXCEPT (SocketPool_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   Socket_free (&socket);
@@ -1377,8 +1407,14 @@ TEST (socketpool_new_null_arena_raises)
 {
   volatile int raised = 0;
 
-  TRY { SocketPool_new (NULL, 100, 1024); }
-  EXCEPT (SocketPool_Failed) { raised = 1; }
+  TRY
+  {
+    SocketPool_new (NULL, 100, 1024);
+  }
+  EXCEPT (SocketPool_Failed)
+  {
+    raised = 1;
+  }
   END_TRY;
 
   ASSERT_EQ (raised, 1);
@@ -1389,8 +1425,14 @@ TEST (socketpool_new_invalid_maxconns_raises)
   Arena_T arena = Arena_new ();
   volatile int raised = 0;
 
-  TRY { SocketPool_new (arena, 0, 1024); }
-  EXCEPT (SocketPool_Failed) { raised = 1; }
+  TRY
+  {
+    SocketPool_new (arena, 0, 1024);
+  }
+  EXCEPT (SocketPool_Failed)
+  {
+    raised = 1;
+  }
   END_TRY;
 
   ASSERT_EQ (raised, 1);
@@ -1402,8 +1444,14 @@ TEST (socketpool_new_invalid_bufsize_raises)
   Arena_T arena = Arena_new ();
   volatile int raised = 0;
 
-  TRY { SocketPool_new (arena, 100, 0); }
-  EXCEPT (SocketPool_Failed) { raised = 1; }
+  TRY
+  {
+    SocketPool_new (arena, 100, 0);
+  }
+  EXCEPT (SocketPool_Failed)
+  {
+    raised = 1;
+  }
   END_TRY;
 
   ASSERT_EQ (raised, 1);
@@ -1434,8 +1482,14 @@ TEST (socketpool_enable_reconnect_success)
     SocketReconnect_T r = Connection_reconnect (conn);
     ASSERT_NOT_NULL (r);
   }
-  EXCEPT (SocketPool_Failed) { ASSERT (0); }
-  EXCEPT (SocketReconnect_Failed) { ASSERT (0); }
+  EXCEPT (SocketPool_Failed)
+  {
+    ASSERT (0);
+  }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   Socket_free (&socket);
@@ -1462,8 +1516,14 @@ TEST (socketpool_disable_reconnect_with_active)
     SocketPool_disable_reconnect (pool, conn);
     ASSERT_EQ (Connection_has_reconnect (conn), 0);
   }
-  EXCEPT (SocketPool_Failed) { ASSERT (0); }
-  EXCEPT (SocketReconnect_Failed) { ASSERT (0); }
+  EXCEPT (SocketPool_Failed)
+  {
+    ASSERT (0);
+  }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   Socket_free (&socket);
@@ -1489,8 +1549,14 @@ TEST (socketpool_process_reconnects_with_active)
     /* Process reconnects - should not crash with active reconnect context */
     SocketPool_process_reconnects (pool);
   }
-  EXCEPT (SocketPool_Failed) { ASSERT (0); }
-  EXCEPT (SocketReconnect_Failed) { ASSERT (0); }
+  EXCEPT (SocketPool_Failed)
+  {
+    ASSERT (0);
+  }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   Socket_free (&socket);
@@ -1518,8 +1584,14 @@ TEST (socketpool_reconnect_timeout_with_active)
     /* Timeout may be -1 if no pending action, or >= 0 if pending */
     (void)timeout;
   }
-  EXCEPT (SocketPool_Failed) { ASSERT (0); }
-  EXCEPT (SocketReconnect_Failed) { ASSERT (0); }
+  EXCEPT (SocketPool_Failed)
+  {
+    ASSERT (0);
+  }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   Socket_free (&socket);
@@ -1551,8 +1623,14 @@ TEST (socketpool_enable_reconnect_with_policy)
 
     ASSERT_NE (Connection_has_reconnect (conn), 0);
   }
-  EXCEPT (SocketPool_Failed) { ASSERT (0); }
-  EXCEPT (SocketReconnect_Failed) { ASSERT (0); }
+  EXCEPT (SocketPool_Failed)
+  {
+    ASSERT (0);
+  }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   Socket_free (&socket);
@@ -1575,8 +1653,14 @@ TEST (socketpool_free_with_reconnect_contexts)
     /* Enable reconnect */
     SocketPool_enable_reconnect (pool, conn, "127.0.0.1", 8080);
   }
-  EXCEPT (SocketPool_Failed) { ASSERT (0); }
-  EXCEPT (SocketReconnect_Failed) { ASSERT (0); }
+  EXCEPT (SocketPool_Failed)
+  {
+    ASSERT (0);
+  }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   /* Free pool with active reconnect context - covers free_reconnect_contexts
@@ -1603,7 +1687,10 @@ TEST (socketpool_free_with_dns)
     pool->dns = dns;
     dns = NULL; /* Transfer ownership to pool */
   }
-  EXCEPT (SocketDNS_Failed) { ASSERT (0); }
+  EXCEPT (SocketDNS_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   /* Free pool with DNS resolver - covers free_dns_resolver path (line 521) */
@@ -1646,8 +1733,14 @@ TEST (socketpool_reconnect_timeout_multiple_connections)
     timeout = SocketPool_reconnect_timeout_ms (pool);
     (void)timeout;
   }
-  EXCEPT (SocketPool_Failed) { ASSERT (0); }
-  EXCEPT (SocketReconnect_Failed) { ASSERT (0); }
+  EXCEPT (SocketPool_Failed)
+  {
+    ASSERT (0);
+  }
+  EXCEPT (SocketReconnect_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   Socket_free (&sock1);
@@ -1696,8 +1789,12 @@ TEST (socketpool_reconnect_with_backoff_timeout)
     (void)r1;
     (void)r2;
   }
-  EXCEPT (SocketPool_Failed) { /* May fail, that's ok */ }
-  EXCEPT (SocketReconnect_Failed) { /* May fail, that's ok */ }
+  EXCEPT (SocketPool_Failed)
+  { /* May fail, that's ok */
+  }
+  EXCEPT (SocketReconnect_Failed)
+  { /* May fail, that's ok */
+  }
   END_TRY;
 
   Socket_free (&sock1);
@@ -1758,7 +1855,10 @@ TEST (socketpool_hash_chain_removal_middle)
         ASSERT_NOT_NULL (found);
       }
   }
-  EXCEPT (SocketPool_Failed) { ASSERT (0); }
+  EXCEPT (SocketPool_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   /* Cleanup */
@@ -1817,7 +1917,10 @@ TEST (socketpool_find_slot_chain_traversal)
         ASSERT_NOT_NULL (conn);
       }
   }
-  EXCEPT (SocketPool_Failed) { ASSERT (0); }
+  EXCEPT (SocketPool_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   for (i = 0; i < 30; i++)
@@ -1858,7 +1961,10 @@ create_pending_connection (Socket_T server, Socket_T *out_client)
     Socket_setnonblocking (client);
 
     /* Initiate non-blocking connect - will be pending */
-    TRY { Socket_connect (client, "127.0.0.1", port); }
+    TRY
+    {
+      Socket_connect (client, "127.0.0.1", port);
+    }
     EXCEPT (Socket_Failed)
     {
       /* EINPROGRESS is expected for non-blocking connect */
@@ -1922,8 +2028,12 @@ TEST (socketpool_batch_accept_with_pending_connection)
         ASSERT_NOT_NULL (conn);
       }
   }
-  EXCEPT (Socket_Failed) { /* May fail on some systems */ }
-  EXCEPT (SocketPool_Failed) { /* May fail on some systems */ }
+  EXCEPT (Socket_Failed)
+  { /* May fail on some systems */
+  }
+  EXCEPT (SocketPool_Failed)
+  { /* May fail on some systems */
+  }
   END_TRY;
 
   /* Cleanup accepted sockets */
@@ -1973,8 +2083,12 @@ TEST (socketpool_batch_accept_pool_add_fails)
     count = SocketPool_accept_batch (pool, server, 10, cap10, accepted);
     ASSERT_EQ (count, 0);
   }
-  EXCEPT (Socket_Failed) { /* May fail */ }
-  EXCEPT (SocketPool_Failed) { /* May fail */ }
+  EXCEPT (Socket_Failed)
+  { /* May fail */
+  }
+  EXCEPT (SocketPool_Failed)
+  { /* May fail */
+  }
   END_TRY;
 
   if (filler)
@@ -2005,8 +2119,7 @@ TEST (socketpool_batch_accept_invalid_max_accepts)
 
     /* Test with max_accepts > SOCKET_POOL_MAX_BATCH_ACCEPTS (1000) */
     size_t cap2000 = sizeof (accepted) / sizeof (accepted[0]);
-    int count
-        = SocketPool_accept_batch (pool, server, 2000, cap2000, accepted);
+    int count = SocketPool_accept_batch (pool, server, 2000, cap2000, accepted);
     /* Should return 0 due to invalid parameter */
     ASSERT_EQ (count, 0);
 
@@ -2020,8 +2133,13 @@ TEST (socketpool_batch_accept_invalid_max_accepts)
     count = SocketPool_accept_batch (pool, server, -1, cap_neg, accepted);
     ASSERT_EQ (count, 0);
   }
-  EXCEPT (Socket_Failed) { ASSERT (0); }
-  EXCEPT (SocketPool_Failed) { /* Expected for invalid params */ }
+  EXCEPT (Socket_Failed)
+  {
+    ASSERT (0);
+  }
+  EXCEPT (SocketPool_Failed)
+  { /* Expected for invalid params */
+  }
   END_TRY;
 
   Socket_free (&server);
@@ -2104,8 +2222,12 @@ TEST (socketpool_connect_async_success)
         Socket_free (&s);
       }
   }
-  EXCEPT (SocketPool_Failed) { /* May fail due to DNS/connect issues */ }
-  EXCEPT (Socket_Failed) { /* May fail */ }
+  EXCEPT (SocketPool_Failed)
+  { /* May fail due to DNS/connect issues */
+  }
+  EXCEPT (Socket_Failed)
+  { /* May fail */
+  }
   END_TRY;
 
   if (server)
@@ -2122,7 +2244,7 @@ TEST (socketpool_connect_async_success)
  * The core functionality is tested by socketpool_connect_async_connect_failure
  * which uses localhost and fails immediately with ECONNREFUSED.
  */
-#if 0 /* KNOWN_ISSUE: DNS resolution timing issues with localhost connection
+#if 0 /* KNOWN_ISSUE: DNS resolution timing issues with localhost connection \
        * failures. See KNOWN_ISSUES.md for details and tracking. */
 TEST (socketpool_connect_async_dns_failure)
 {
@@ -2200,8 +2322,12 @@ TEST (socketpool_connect_async_connect_failure)
           }
       }
   }
-  EXCEPT (SocketPool_Failed) { /* May fail */ }
-  EXCEPT (Socket_Failed) { /* May fail */ }
+  EXCEPT (SocketPool_Failed)
+  { /* May fail */
+  }
+  EXCEPT (Socket_Failed)
+  { /* May fail */
+  }
   END_TRY;
 
   /* Brief delay for cleanup */
@@ -2261,8 +2387,12 @@ TEST (socketpool_connect_async_valid_params)
         Socket_free (&s);
       }
   }
-  EXCEPT (SocketPool_Failed) { /* May fail */ }
-  EXCEPT (Socket_Failed) { /* May fail */ }
+  EXCEPT (SocketPool_Failed)
+  { /* May fail */
+  }
+  EXCEPT (Socket_Failed)
+  { /* May fail */
+  }
   END_TRY;
 
   if (server)
@@ -2286,7 +2416,9 @@ TEST (socketpool_resize_overflow_protection)
     /* If it doesn't crash, the overflow protection worked
      * (value gets clamped to SOCKET_MAX_CONNECTIONS) */
   }
-  EXCEPT (SocketPool_Failed) { /* Expected - overflow detected */ }
+  EXCEPT (SocketPool_Failed)
+  { /* Expected - overflow detected */
+  }
   END_TRY;
 
   SocketPool_free (&pool);
@@ -2305,7 +2437,10 @@ TEST (socketpool_prepare_connection_null_params)
   Request_T out_req = NULL;
   volatile int raised = 0;
 
-  TRY { dns = SocketDNS_new (); }
+  TRY
+  {
+    dns = SocketDNS_new ();
+  }
   EXCEPT (SocketDNS_Failed)
   {
     SocketPool_free (&pool);
@@ -2317,10 +2452,13 @@ TEST (socketpool_prepare_connection_null_params)
   /* Test with NULL pool */
   TRY
   {
-    SocketPool_prepare_connection (NULL, dns, "localhost", 80, &out_socket,
-                                   &out_req);
+    SocketPool_prepare_connection (
+        NULL, dns, "localhost", 80, &out_socket, &out_req);
   }
-  EXCEPT (SocketPool_Failed) { raised = 1; }
+  EXCEPT (SocketPool_Failed)
+  {
+    raised = 1;
+  }
   END_TRY;
   ASSERT_EQ (raised, 1);
 
@@ -2328,10 +2466,13 @@ TEST (socketpool_prepare_connection_null_params)
   raised = 0;
   TRY
   {
-    SocketPool_prepare_connection (pool, NULL, "localhost", 80, &out_socket,
-                                   &out_req);
+    SocketPool_prepare_connection (
+        pool, NULL, "localhost", 80, &out_socket, &out_req);
   }
-  EXCEPT (SocketPool_Failed) { raised = 1; }
+  EXCEPT (SocketPool_Failed)
+  {
+    raised = 1;
+  }
   END_TRY;
   ASSERT_EQ (raised, 1);
 
@@ -2341,7 +2482,10 @@ TEST (socketpool_prepare_connection_null_params)
   {
     SocketPool_prepare_connection (pool, dns, NULL, 80, &out_socket, &out_req);
   }
-  EXCEPT (SocketPool_Failed) { raised = 1; }
+  EXCEPT (SocketPool_Failed)
+  {
+    raised = 1;
+  }
   END_TRY;
   ASSERT_EQ (raised, 1);
 
@@ -2351,7 +2495,10 @@ TEST (socketpool_prepare_connection_null_params)
   {
     SocketPool_prepare_connection (pool, dns, "localhost", 80, NULL, &out_req);
   }
-  EXCEPT (SocketPool_Failed) { raised = 1; }
+  EXCEPT (SocketPool_Failed)
+  {
+    raised = 1;
+  }
   END_TRY;
   ASSERT_EQ (raised, 1);
 
@@ -2359,10 +2506,13 @@ TEST (socketpool_prepare_connection_null_params)
   raised = 0;
   TRY
   {
-    SocketPool_prepare_connection (pool, dns, "localhost", 80, &out_socket,
-                                   NULL);
+    SocketPool_prepare_connection (
+        pool, dns, "localhost", 80, &out_socket, NULL);
   }
-  EXCEPT (SocketPool_Failed) { raised = 1; }
+  EXCEPT (SocketPool_Failed)
+  {
+    raised = 1;
+  }
   END_TRY;
   ASSERT_EQ (raised, 1);
 
@@ -2381,17 +2531,25 @@ TEST (socketpool_connect_async_null_params)
   /* Test with NULL pool */
   TRY
   {
-    SocketPool_connect_async (NULL, "localhost", 80, async_test_callback,
-                              NULL);
+    SocketPool_connect_async (NULL, "localhost", 80, async_test_callback, NULL);
   }
-  EXCEPT (SocketPool_Failed) { raised = 1; }
+  EXCEPT (SocketPool_Failed)
+  {
+    raised = 1;
+  }
   END_TRY;
   ASSERT_EQ (raised, 1);
 
   /* Test with NULL host */
   raised = 0;
-  TRY { SocketPool_connect_async (pool, NULL, 80, async_test_callback, NULL); }
-  EXCEPT (SocketPool_Failed) { raised = 1; }
+  TRY
+  {
+    SocketPool_connect_async (pool, NULL, 80, async_test_callback, NULL);
+  }
+  EXCEPT (SocketPool_Failed)
+  {
+    raised = 1;
+  }
   END_TRY;
   ASSERT_EQ (raised, 1);
 
@@ -2427,8 +2585,13 @@ TEST (socketpool_batch_accept_null_params)
     count = SocketPool_accept_batch (pool, server, 10, cap_nullarr, NULL);
     ASSERT_EQ (count, 0);
   }
-  EXCEPT (Socket_Failed) { ASSERT (0); }
-  EXCEPT (SocketPool_Failed) { /* May be raised */ }
+  EXCEPT (Socket_Failed)
+  {
+    ASSERT (0);
+  }
+  EXCEPT (SocketPool_Failed)
+  { /* May be raised */
+  }
   END_TRY;
 
   Socket_free (&server);
@@ -2456,8 +2619,12 @@ TEST (socketpool_accept_one_error_not_eagain)
     /* Should return 0 due to accept error */
     ASSERT_EQ (count, 0);
   }
-  EXCEPT (Socket_Failed) { /* Expected */ }
-  EXCEPT (SocketPool_Failed) { /* May be raised */ }
+  EXCEPT (Socket_Failed)
+  { /* Expected */
+  }
+  EXCEPT (SocketPool_Failed)
+  { /* May be raised */
+  }
   END_TRY;
 
   Socket_free (&server);
@@ -2477,7 +2644,10 @@ TEST (socketpool_prewarm_zero_percent)
     /* Pre-warm 0% - should do nothing but not crash */
     SocketPool_prewarm (pool, 0);
   }
-  EXCEPT (SocketPool_Failed) { ASSERT (0); }
+  EXCEPT (SocketPool_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   SocketPool_free (&pool);
@@ -2494,7 +2664,10 @@ TEST (socketpool_prewarm_100_percent)
     /* Pre-warm 100% - should allocate all buffers */
     SocketPool_prewarm (pool, 100);
   }
-  EXCEPT (SocketPool_Failed) { ASSERT (0); }
+  EXCEPT (SocketPool_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   SocketPool_free (&pool);
@@ -2575,8 +2748,12 @@ TEST (socketpool_connect_async_pool_full_callback)
           }
       }
   }
-  EXCEPT (SocketPool_Failed) { /* May fail */ }
-  EXCEPT (Socket_Failed) { /* May fail */ }
+  EXCEPT (SocketPool_Failed)
+  { /* May fail */
+  }
+  EXCEPT (Socket_Failed)
+  { /* May fail */
+  }
   END_TRY;
 
   if (filler)
@@ -2684,8 +2861,12 @@ TEST (socketpool_connect_async_multiple_pending)
           }
       }
   }
-  EXCEPT (SocketPool_Failed) { /* May fail */ }
-  EXCEPT (Socket_Failed) { /* May fail */ }
+  EXCEPT (SocketPool_Failed)
+  { /* May fail */
+  }
+  EXCEPT (Socket_Failed)
+  { /* May fail */
+  }
   END_TRY;
 
   if (server)
@@ -2722,7 +2903,10 @@ TEST (socketpool_batch_accept_socket_add_fails)
   /* Create second pending connection */
   client2 = Socket_new (AF_INET, SOCK_STREAM, 0);
   Socket_setnonblocking (client2);
-  TRY { Socket_connect (client2, "127.0.0.1", port); }
+  TRY
+  {
+    Socket_connect (client2, "127.0.0.1", port);
+  }
   EXCEPT (Socket_Failed)
   {
     if (errno != EINPROGRESS && errno != EWOULDBLOCK)
@@ -2751,8 +2935,12 @@ TEST (socketpool_batch_accept_socket_add_fails)
     /* Should have accepted at least 1 */
     ASSERT (count >= 0);
   }
-  EXCEPT (Socket_Failed) { /* May fail */ }
-  EXCEPT (SocketPool_Failed) { /* May fail */ }
+  EXCEPT (Socket_Failed)
+  { /* May fail */
+  }
+  EXCEPT (SocketPool_Failed)
+  { /* May fail */
+  }
   END_TRY;
 
   /* Cleanup accepted */
@@ -2818,8 +3006,12 @@ TEST (socketpool_batch_accept_wrap_fd_fails)
           }
       }
   }
-  EXCEPT (Socket_Failed) { /* May fail */ }
-  EXCEPT (SocketPool_Failed) { /* May fail */ }
+  EXCEPT (Socket_Failed)
+  { /* May fail */
+  }
+  EXCEPT (SocketPool_Failed)
+  { /* May fail */
+  }
   END_TRY;
 
   if (client)
@@ -3255,8 +3447,8 @@ thread_validation_remove_add (void *arg)
       {
         SocketPool_remove (ctx->pool, ctx->socket);
         (void)SocketPool_add (ctx->pool, ctx->socket);
-        atomic_fetch_add_explicit (&ctx->remove_add_cycles, 1,
-                                  memory_order_relaxed);
+        atomic_fetch_add_explicit (
+            &ctx->remove_add_cycles, 1, memory_order_relaxed);
         usleep (50);
       }
   }
@@ -3327,15 +3519,17 @@ TEST (socketpool_validation_callback_threaded)
     /* Ensure socket is present before starting. */
     ASSERT_NOT_NULL (SocketPool_add (pool, sock));
 
-    ASSERT_EQ (0, pthread_create (&t_get, NULL, thread_validation_getter, &ctx));
     ASSERT_EQ (0,
-               pthread_create (&t_mutate, NULL, thread_validation_remove_add,
-                               &ctx));
+               pthread_create (&t_get, NULL, thread_validation_getter, &ctx));
+    ASSERT_EQ (
+        0,
+        pthread_create (&t_mutate, NULL, thread_validation_remove_add, &ctx));
 
     ASSERT_EQ (0, pthread_join (t_get, NULL));
     ASSERT_EQ (0, pthread_join (t_mutate, NULL));
 
-    ASSERT_EQ (0, atomic_load_explicit (&ctx.thread_error, memory_order_relaxed));
+    ASSERT_EQ (0,
+               atomic_load_explicit (&ctx.thread_error, memory_order_relaxed));
     ASSERT (atomic_load_explicit (&ctx.cb_calls, memory_order_relaxed) > 0);
     ASSERT (atomic_load_explicit (&ctx.get_calls, memory_order_relaxed) > 0);
     ASSERT (atomic_load_explicit (&ctx.remove_add_cycles, memory_order_relaxed)

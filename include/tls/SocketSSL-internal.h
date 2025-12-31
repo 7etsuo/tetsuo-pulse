@@ -374,7 +374,8 @@ ssl_secure_clear_hostname (const char *hostname)
  * @code{.c}
  * char errbuf[512];
  * if (SSL_connect(ssl) <= 0) {
- *     ssl_format_openssl_error_to_buf("SSL_connect failed", errbuf, sizeof(errbuf));
+ *     ssl_format_openssl_error_to_buf("SSL_connect failed", errbuf,
+ * sizeof(errbuf));
  *     // errbuf now contains: "SSL_connect failed: error:0A000..."
  * }
  * @endcode
@@ -389,7 +390,8 @@ ssl_secure_clear_hostname (const char *hostname)
  * @see ERR_clear_error() for error queue cleanup.
  */
 static inline void
-ssl_format_openssl_error_to_buf (const char *context, char *buf,
+ssl_format_openssl_error_to_buf (const char *context,
+                                 char *buf,
                                  size_t buf_size)
 {
   unsigned long err;
@@ -427,7 +429,9 @@ ssl_format_openssl_error_to_buf (const char *context, char *buf,
       /* No error in queue - provide meaningful fallback */
       if (context && *context)
         {
-          snprintf (buf, buf_size, "%s: Unknown error (no OpenSSL error code)",
+          snprintf (buf,
+                    buf_size,
+                    "%s: Unknown error (no OpenSSL error code)",
                     context);
         }
       else
@@ -550,15 +554,9 @@ ssl_apply_sni_hostname (SSL *ssl, const char *hostname)
  * if (result == 1) {
  *     // Handshake complete
  * } else {
- *     int next = ssl_handle_handshake_result(ssl, result, &socket->handshake_done);
- *     switch (next) {
- *         case 0: // Complete
- *             break;
- *         case 1: // WANT_READ
- *             poll_for_read();
- *             break;
- *         case 2: // WANT_WRITE
- *             poll_for_write();
+ *     int next = ssl_handle_handshake_result(ssl, result,
+ * &socket->handshake_done); switch (next) { case 0: // Complete break; case 1:
+ * // WANT_READ poll_for_read(); break; case 2: // WANT_WRITE poll_for_write();
  *             break;
  *         case -1: // Error
  *             handle_error();

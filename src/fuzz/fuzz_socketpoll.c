@@ -69,8 +69,14 @@ LLVMFuzzerInitialize (int *argc, char ***argv)
   (void)argc;
   (void)argv;
 
-  TRY { g_poll = SocketPoll_new (MAX_FUZZ_MAXEVENTS); }
-  EXCEPT (SocketPoll_Failed) { g_poll = NULL; }
+  TRY
+  {
+    g_poll = SocketPoll_new (MAX_FUZZ_MAXEVENTS);
+  }
+  EXCEPT (SocketPoll_Failed)
+  {
+    g_poll = NULL;
+  }
   END_TRY;
 
   return 0;
@@ -184,8 +190,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                     socket_count++;
                   }
               }
-              EXCEPT (Socket_Failed) { /* Socket creation can fail */ }
-              EXCEPT (SocketPoll_Failed) { /* Poll add can fail */ }
+              EXCEPT (Socket_Failed)
+              { /* Socket creation can fail */
+              }
+              EXCEPT (SocketPoll_Failed)
+              { /* Poll add can fail */
+              }
               END_TRY;
             }
         }
@@ -209,8 +219,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                     socket_count++;
                   }
               }
-              EXCEPT (Socket_Failed) {}
-              EXCEPT (SocketPoll_Failed) {}
+              EXCEPT (Socket_Failed)
+              {
+              }
+              EXCEPT (SocketPoll_Failed)
+              {
+              }
               END_TRY;
             }
 
@@ -227,10 +241,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                         unsigned new_events = POLL_READ | POLL_WRITE;
                         if (size >= 7 + (size_t)i && (data[6 + i] & 0x01))
                           new_events = POLL_WRITE;
-                        SocketPoll_mod (poll, sockets[i], new_events,
+                        SocketPoll_mod (poll,
+                                        sockets[i],
+                                        new_events,
                                         (void *)(uintptr_t)(i + 100));
                       }
-                      EXCEPT (SocketPoll_Failed) { /* Mod can fail */ }
+                      EXCEPT (SocketPoll_Failed)
+                      { /* Mod can fail */
+                      }
                       END_TRY;
                     }
                 }
@@ -256,8 +274,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                     socket_count++;
                   }
               }
-              EXCEPT (Socket_Failed) {}
-              EXCEPT (SocketPoll_Failed) {}
+              EXCEPT (Socket_Failed)
+              {
+              }
+              EXCEPT (SocketPoll_Failed)
+              {
+              }
               END_TRY;
             }
 
@@ -269,8 +291,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                 {
                   if (sockets[i])
                     {
-                      TRY { SocketPoll_del (poll, sockets[i]); }
-                      EXCEPT (SocketPoll_Failed) { /* Del can fail */ }
+                      TRY
+                      {
+                        SocketPoll_del (poll, sockets[i]);
+                      }
+                      EXCEPT (SocketPoll_Failed)
+                      { /* Del can fail */
+                      }
                       END_TRY;
                     }
                 }
@@ -279,7 +306,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           /* Try to delete same socket again (should handle gracefully) */
           if (socket_count > 0 && sockets[0])
             {
-              TRY { SocketPoll_del (poll, sockets[0]); }
+              TRY
+              {
+                SocketPoll_del (poll, sockets[0]);
+              }
               EXCEPT (SocketPoll_Failed)
               {
                 /* Expected - socket already removed or not in poll */
@@ -306,8 +336,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                     socket_count++;
                   }
               }
-              EXCEPT (Socket_Failed) {}
-              EXCEPT (SocketPoll_Failed) {}
+              EXCEPT (Socket_Failed)
+              {
+              }
+              EXCEPT (SocketPoll_Failed)
+              {
+              }
               END_TRY;
             }
 
@@ -320,7 +354,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             (void)n;
             (void)events;
           }
-          EXCEPT (SocketPoll_Failed) { /* Wait can fail */ }
+          EXCEPT (SocketPoll_Failed)
+          { /* Wait can fail */
+          }
           END_TRY;
         }
         break;
@@ -339,7 +375,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                 SocketPoll_add (poll, sock, POLL_READ, NULL);
 
                 /* Add second time - should fail */
-                TRY { SocketPoll_add (poll, sock, POLL_WRITE, NULL); }
+                TRY
+                {
+                  SocketPoll_add (poll, sock, POLL_WRITE, NULL);
+                }
                 EXCEPT (SocketPoll_Failed)
                 {
                   /* Expected - duplicate add detected */
@@ -347,8 +386,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                 END_TRY;
               }
           }
-          EXCEPT (Socket_Failed) {}
-          EXCEPT (SocketPoll_Failed) {}
+          EXCEPT (Socket_Failed)
+          {
+          }
+          EXCEPT (SocketPoll_Failed)
+          {
+          }
           END_TRY;
         }
         break;
@@ -375,8 +418,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                         socket_count++;
                       }
                   }
-                  EXCEPT (Socket_Failed) {}
-                  EXCEPT (SocketPoll_Failed) {}
+                  EXCEPT (Socket_Failed)
+                  {
+                  }
+                  EXCEPT (SocketPoll_Failed)
+                  {
+                  }
                   END_TRY;
                 }
 
@@ -387,8 +434,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                   int idx = socket_count - 1;
                   if (sockets[idx])
                     {
-                      TRY { SocketPoll_del (poll, sockets[idx]); }
-                      EXCEPT (SocketPoll_Failed) {}
+                      TRY
+                      {
+                        SocketPoll_del (poll, sockets[idx]);
+                      }
+                      EXCEPT (SocketPoll_Failed)
+                      {
+                      }
                       END_TRY;
                       Socket_free (&sockets[idx]);
                       socket_count--;
@@ -412,10 +464,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           (void)current;
 
           /* Test edge cases */
-          SocketPoll_setdefaulttimeout (poll, -1); /* Infinite */
-          SocketPoll_setdefaulttimeout (poll, 0);  /* Immediate */
-          SocketPoll_setdefaulttimeout (poll,
-                                        -99); /* Invalid - should clamp */
+          SocketPoll_setdefaulttimeout (poll, -1);  /* Infinite */
+          SocketPoll_setdefaulttimeout (poll, 0);   /* Immediate */
+          SocketPoll_setdefaulttimeout (poll, -99); /* Invalid - should clamp */
 
           /* Add a socket and wait with default timeout */
           TRY
@@ -431,21 +482,31 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                 SocketEvent_T *events = NULL;
                 SocketPoll_setdefaulttimeout (poll,
                                               0); /* Ensure immediate return */
-                int n = SocketPoll_wait (poll, &events,
-                                         SOCKET_POLL_TIMEOUT_USE_DEFAULT);
+                int n = SocketPoll_wait (
+                    poll, &events, SOCKET_POLL_TIMEOUT_USE_DEFAULT);
                 (void)n;
               }
           }
-          EXCEPT (Socket_Failed) {}
-          EXCEPT (SocketPoll_Failed) {}
+          EXCEPT (Socket_Failed)
+          {
+          }
+          EXCEPT (SocketPoll_Failed)
+          {
+          }
           END_TRY;
         }
         break;
       }
   }
-  EXCEPT (SocketPoll_Failed) { /* Expected for some operations */ }
-  EXCEPT (Socket_Failed) { /* Socket creation can fail */ }
-  EXCEPT (Arena_Failed) { /* Memory allocation can fail */ }
+  EXCEPT (SocketPoll_Failed)
+  { /* Expected for some operations */
+  }
+  EXCEPT (Socket_Failed)
+  { /* Socket creation can fail */
+  }
+  EXCEPT (Arena_Failed)
+  { /* Memory allocation can fail */
+  }
   FINALLY
   {
     /* Clean up sockets - remove from poll first if they were added */
@@ -455,8 +516,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           {
             if (poll)
               {
-                TRY { SocketPoll_del (poll, sockets[i]); }
-                EXCEPT (SocketPoll_Failed) { /* May already be removed */ }
+                TRY
+                {
+                  SocketPoll_del (poll, sockets[i]);
+                }
+                EXCEPT (SocketPoll_Failed)
+                { /* May already be removed */
+                }
                 END_TRY;
               }
             Socket_free (&sockets[i]);

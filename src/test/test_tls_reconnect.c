@@ -61,10 +61,12 @@ static int
 generate_test_certs (const char *cert_file, const char *key_file)
 {
   char cmd[512];
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s "
             "-days 1 -nodes -subj '/CN=localhost' 2>/dev/null",
-            key_file, cert_file);
+            key_file,
+            cert_file);
   return system (cmd) == 0 ? 0 : -1;
 }
 
@@ -180,7 +182,10 @@ TEST (tls_reconnect_null_hostname_rejected)
     ASSERT_NOT_NULL (conn);
 
     /* Try to set TLS with NULL hostname - should raise exception */
-    TRY { SocketReconnect_set_tls (conn, ctx, NULL); }
+    TRY
+    {
+      SocketReconnect_set_tls (conn, ctx, NULL);
+    }
     EXCEPT (SocketReconnect_Failed)
     {
       exception_raised = 1;
@@ -215,7 +220,10 @@ TEST (tls_reconnect_empty_hostname_rejected)
     ASSERT_NOT_NULL (conn);
 
     /* Try to set TLS with empty hostname - should raise exception */
-    TRY { SocketReconnect_set_tls (conn, ctx, ""); }
+    TRY
+    {
+      SocketReconnect_set_tls (conn, ctx, "");
+    }
     EXCEPT (SocketReconnect_Failed)
     {
       exception_raised = 1;

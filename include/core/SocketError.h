@@ -88,22 +88,22 @@ extern __thread int socket_last_errno;
  *
  * Internal helper macro to eliminate duplication in error formatting.
  */
-#define SOCKET_ERROR_APPLY_TRUNCATION(ret)                                    \
-  do                                                                          \
-    {                                                                         \
-      if ((ret) >= (int)SOCKET_ERROR_BUFSIZE)                                 \
-        {                                                                     \
-          socket_error_buf[SOCKET_ERROR_BUFSIZE - 1] = '\0';                  \
-          if (SOCKET_ERROR_BUFSIZE >= SOCKET_ERROR_TRUNCATION_SIZE + 1)       \
-            {                                                                 \
-              memcpy (socket_error_buf + SOCKET_ERROR_BUFSIZE                 \
-                          - SOCKET_ERROR_TRUNCATION_SIZE,                     \
-                      SOCKET_ERROR_TRUNCATION_MARKER,                         \
-                      SOCKET_ERROR_TRUNCATION_SIZE - 1);                      \
-              socket_error_buf[SOCKET_ERROR_BUFSIZE - 1] = '\0';              \
-            }                                                                 \
-        }                                                                     \
-    }                                                                         \
+#define SOCKET_ERROR_APPLY_TRUNCATION(ret)                              \
+  do                                                                    \
+    {                                                                   \
+      if ((ret) >= (int)SOCKET_ERROR_BUFSIZE)                           \
+        {                                                               \
+          socket_error_buf[SOCKET_ERROR_BUFSIZE - 1] = '\0';            \
+          if (SOCKET_ERROR_BUFSIZE >= SOCKET_ERROR_TRUNCATION_SIZE + 1) \
+            {                                                           \
+              memcpy (socket_error_buf + SOCKET_ERROR_BUFSIZE           \
+                          - SOCKET_ERROR_TRUNCATION_SIZE,               \
+                      SOCKET_ERROR_TRUNCATION_MARKER,                   \
+                      SOCKET_ERROR_TRUNCATION_SIZE - 1);                \
+              socket_error_buf[SOCKET_ERROR_BUFSIZE - 1] = '\0';        \
+            }                                                           \
+        }                                                               \
+    }                                                                   \
   while (0)
 
 /**
@@ -190,7 +190,7 @@ typedef enum SocketErrorCategory
                                         exceeded */
   SOCKET_ERROR_CATEGORY_RESOURCE,    /**< Resource exhaustion: OOM, fd limits */
   SOCKET_ERROR_CATEGORY_UNKNOWN,     /**< Unclassified errors */
-  SOCKET_ERROR_CATEGORY_COUNT        /**< Sentinel: total number of categories */
+  SOCKET_ERROR_CATEGORY_COUNT /**< Sentinel: total number of categories */
 } SocketErrorCategory;
 
 /**

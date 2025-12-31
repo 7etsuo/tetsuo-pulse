@@ -21,21 +21,31 @@
 static int tests_passed = 0;
 static int tests_failed = 0;
 
-#define TEST(name) static void test_##name(void)
-#define RUN_TEST(name) do { \
-    printf("Running test_%s...\n", #name); \
-    test_##name(); \
-    tests_passed++; \
-} while(0)
+#define TEST(name) static void test_##name (void)
+#define RUN_TEST(name)                        \
+  do                                          \
+    {                                         \
+      printf ("Running test_%s...\n", #name); \
+      test_##name ();                         \
+      tests_passed++;                         \
+    }                                         \
+  while (0)
 
-#define ASSERT(cond) do { \
-    if (!(cond)) { \
-        fprintf(stderr, "ASSERTION FAILED: %s:%d: %s\n", \
-                __FILE__, __LINE__, #cond); \
-        tests_failed++; \
-        return; \
-    } \
-} while(0)
+#define ASSERT(cond)                                \
+  do                                                \
+    {                                               \
+      if (!(cond))                                  \
+        {                                           \
+          fprintf (stderr,                          \
+                   "ASSERTION FAILED: %s:%d: %s\n", \
+                   __FILE__,                        \
+                   __LINE__,                        \
+                   #cond);                          \
+          tests_failed++;                           \
+          return;                                   \
+        }                                           \
+    }                                               \
+  while (0)
 
 /* Helper to create IPv4 sockaddr */
 static void
@@ -67,11 +77,12 @@ make_ipv6_addr (struct sockaddr_storage *addr, const char *ip, uint16_t port)
 TEST (migration_new)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICConnection_T conn = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICConnection_T conn
+      = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
   SocketQUICMigration_T *migration;
 
-  migration = SocketQUICMigration_new (arena, conn,
-                                       QUIC_MIGRATION_ROLE_INITIATOR);
+  migration
+      = SocketQUICMigration_new (arena, conn, QUIC_MIGRATION_ROLE_INITIATOR);
   ASSERT (migration != NULL);
   ASSERT (migration->connection == conn);
   ASSERT (migration->role == QUIC_MIGRATION_ROLE_INITIATOR);
@@ -103,14 +114,15 @@ TEST (migration_init)
 TEST (init_path_basic)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICConnection_T conn = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICConnection_T conn
+      = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
   SocketQUICMigration_T *migration;
   struct sockaddr_storage local_addr, peer_addr;
   SocketQUICConnectionID_T cid;
   SocketQUICMigration_Result result;
 
-  migration = SocketQUICMigration_new (arena, conn,
-                                       QUIC_MIGRATION_ROLE_INITIATOR);
+  migration
+      = SocketQUICMigration_new (arena, conn, QUIC_MIGRATION_ROLE_INITIATOR);
   ASSERT (migration != NULL);
 
   /* Create addresses */
@@ -123,14 +135,15 @@ TEST (init_path_basic)
   cid.sequence = 0;
 
   /* Initialize path */
-  result = SocketQUICMigration_init_path (migration, &local_addr, &peer_addr,
-                                          &cid);
+  result = SocketQUICMigration_init_path (
+      migration, &local_addr, &peer_addr, &cid);
   ASSERT (result == QUIC_MIGRATION_OK);
   ASSERT (migration->path_count == 1);
   ASSERT (migration->active_path_index == 0);
 
   /* Verify path state */
-  const SocketQUICPath_T *path = SocketQUICMigration_get_active_path (migration);
+  const SocketQUICPath_T *path
+      = SocketQUICMigration_get_active_path (migration);
   ASSERT (path != NULL);
   ASSERT (path->state == QUIC_PATH_VALIDATED);
   ASSERT (path->cwnd == 12000); /* Initial cwnd = 10 * 1200 */
@@ -142,14 +155,15 @@ TEST (init_path_basic)
 TEST (get_active_path)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICConnection_T conn = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICConnection_T conn
+      = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
   SocketQUICMigration_T *migration;
   struct sockaddr_storage local_addr, peer_addr;
   SocketQUICConnectionID_T cid;
   const SocketQUICPath_T *path;
 
-  migration = SocketQUICMigration_new (arena, conn,
-                                       QUIC_MIGRATION_ROLE_INITIATOR);
+  migration
+      = SocketQUICMigration_new (arena, conn, QUIC_MIGRATION_ROLE_INITIATOR);
 
   /* No active path initially */
   path = SocketQUICMigration_get_active_path (migration);
@@ -174,14 +188,15 @@ TEST (get_active_path)
 TEST (find_path_by_address)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICConnection_T conn = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICConnection_T conn
+      = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
   SocketQUICMigration_T *migration;
   struct sockaddr_storage local_addr, peer_addr1, peer_addr2;
   SocketQUICConnectionID_T cid;
   SocketQUICPath_T *path;
 
-  migration = SocketQUICMigration_new (arena, conn,
-                                       QUIC_MIGRATION_ROLE_INITIATOR);
+  migration
+      = SocketQUICMigration_new (arena, conn, QUIC_MIGRATION_ROLE_INITIATOR);
 
   make_ipv4_addr (&local_addr, "192.168.1.1", 4433);
   make_ipv4_addr (&peer_addr1, "192.168.1.100", 8080);
@@ -212,14 +227,15 @@ TEST (find_path_by_address)
 TEST (probe_path_new)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICConnection_T conn = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICConnection_T conn
+      = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
   SocketQUICMigration_T *migration;
   struct sockaddr_storage local_addr, peer_addr, new_peer_addr;
   SocketQUICConnectionID_T cid;
   SocketQUICMigration_Result result;
 
-  migration = SocketQUICMigration_new (arena, conn,
-                                       QUIC_MIGRATION_ROLE_INITIATOR);
+  migration
+      = SocketQUICMigration_new (arena, conn, QUIC_MIGRATION_ROLE_INITIATOR);
 
   /* Initialize initial path */
   make_ipv4_addr (&local_addr, "192.168.1.1", 4433);
@@ -236,7 +252,8 @@ TEST (probe_path_new)
   ASSERT (migration->path_count == 2);
 
   /* Find the new path and verify state */
-  SocketQUICPath_T *path = SocketQUICMigration_find_path (migration, &new_peer_addr);
+  SocketQUICPath_T *path
+      = SocketQUICMigration_find_path (migration, &new_peer_addr);
   ASSERT (path != NULL);
   ASSERT (path->state == QUIC_PATH_VALIDATING);
   ASSERT (path->challenge_count == 1);
@@ -247,15 +264,16 @@ TEST (probe_path_new)
 TEST (handle_path_response)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICConnection_T conn = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICConnection_T conn
+      = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
   SocketQUICMigration_T *migration;
   struct sockaddr_storage local_addr, peer_addr, new_peer_addr;
   SocketQUICConnectionID_T cid;
   SocketQUICMigration_Result result;
   SocketQUICPath_T *path;
 
-  migration = SocketQUICMigration_new (arena, conn,
-                                       QUIC_MIGRATION_ROLE_INITIATOR);
+  migration
+      = SocketQUICMigration_new (arena, conn, QUIC_MIGRATION_ROLE_INITIATOR);
 
   /* Initialize initial path */
   make_ipv4_addr (&local_addr, "10.0.0.1", 4433);
@@ -288,18 +306,19 @@ TEST (handle_path_response)
 TEST (handle_path_challenge)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICConnection_T conn = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_SERVER);
+  SocketQUICConnection_T conn
+      = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_SERVER);
   SocketQUICMigration_T *migration;
   uint8_t challenge[8] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
   uint8_t response[8];
   SocketQUICMigration_Result result;
 
-  migration = SocketQUICMigration_new (arena, conn,
-                                       QUIC_MIGRATION_ROLE_RESPONDER);
+  migration
+      = SocketQUICMigration_new (arena, conn, QUIC_MIGRATION_ROLE_RESPONDER);
 
   /* Handle PATH_CHALLENGE */
-  result = SocketQUICMigration_handle_path_challenge (migration, challenge,
-                                                      response);
+  result = SocketQUICMigration_handle_path_challenge (
+      migration, challenge, response);
   ASSERT (result == QUIC_MIGRATION_OK);
 
   /* Response should match challenge (RFC 9000 Section 8.2.2) */
@@ -311,15 +330,16 @@ TEST (handle_path_challenge)
 TEST (path_validation_timeout)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICConnection_T conn = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICConnection_T conn
+      = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
   SocketQUICMigration_T *migration;
   struct sockaddr_storage local_addr, peer_addr, new_peer_addr;
   SocketQUICConnectionID_T cid;
   SocketQUICPath_T *path;
   int timeout_count;
 
-  migration = SocketQUICMigration_new (arena, conn,
-                                       QUIC_MIGRATION_ROLE_INITIATOR);
+  migration
+      = SocketQUICMigration_new (arena, conn, QUIC_MIGRATION_ROLE_INITIATOR);
 
   /* Initialize paths */
   make_ipv4_addr (&local_addr, "10.0.0.1", 4433);
@@ -340,16 +360,16 @@ TEST (path_validation_timeout)
   path->challenge_count = 1; /* Start at 1 (already sent) */
 
   /* Check timeouts - should trigger retry */
-  timeout_count = SocketQUICMigration_check_timeouts (migration,
-                                                      QUIC_PATH_VALIDATION_TIMEOUT_MS + 100);
-  ASSERT (path->challenge_count == 2); /* Retry incremented */
+  timeout_count = SocketQUICMigration_check_timeouts (
+      migration, QUIC_PATH_VALIDATION_TIMEOUT_MS + 100);
+  ASSERT (path->challenge_count == 2);          /* Retry incremented */
   ASSERT (path->state == QUIC_PATH_VALIDATING); /* Still validating */
 
   /* Exhaust retries - set to max and trigger timeout again */
   path->challenge_sent_time = 0;
   path->challenge_count = QUIC_PATH_MAX_CHALLENGES;
-  timeout_count = SocketQUICMigration_check_timeouts (migration,
-                                                      QUIC_PATH_VALIDATION_TIMEOUT_MS * 2);
+  timeout_count = SocketQUICMigration_check_timeouts (
+      migration, QUIC_PATH_VALIDATION_TIMEOUT_MS * 2);
   /* After max retries, path should be marked as failed */
   ASSERT (path->state == QUIC_PATH_FAILED);
   ASSERT (timeout_count >= 0); /* At least not negative */
@@ -365,12 +385,13 @@ TEST (path_validation_timeout)
 TEST (migration_can_migrate_client)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICConnection_T conn = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICConnection_T conn
+      = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
   SocketQUICMigration_T *migration;
 
   /* Client (initiator) should be able to migrate */
-  migration = SocketQUICMigration_new (arena, conn,
-                                       QUIC_MIGRATION_ROLE_INITIATOR);
+  migration
+      = SocketQUICMigration_new (arena, conn, QUIC_MIGRATION_ROLE_INITIATOR);
   ASSERT (SocketQUICMigration_can_migrate (migration) == 1);
 
   Arena_dispose (&arena);
@@ -379,12 +400,13 @@ TEST (migration_can_migrate_client)
 TEST (migration_can_migrate_server)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICConnection_T conn = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_SERVER);
+  SocketQUICConnection_T conn
+      = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_SERVER);
   SocketQUICMigration_T *migration;
 
   /* Server (responder) should NOT be able to migrate voluntarily */
-  migration = SocketQUICMigration_new (arena, conn,
-                                       QUIC_MIGRATION_ROLE_RESPONDER);
+  migration
+      = SocketQUICMigration_new (arena, conn, QUIC_MIGRATION_ROLE_RESPONDER);
   ASSERT (SocketQUICMigration_can_migrate (migration) == 0);
 
   Arena_dispose (&arena);
@@ -393,7 +415,8 @@ TEST (migration_can_migrate_server)
 TEST (migration_initiate)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICConnection_T conn = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICConnection_T conn
+      = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
   SocketQUICMigration_T *migration;
   struct sockaddr_storage local_addr, peer_addr, new_peer_addr;
   SocketQUICConnectionID_T cid;
@@ -401,8 +424,8 @@ TEST (migration_initiate)
   SocketQUICPath_T *new_path;
   const SocketQUICPath_T *active_path;
 
-  migration = SocketQUICMigration_new (arena, conn,
-                                       QUIC_MIGRATION_ROLE_INITIATOR);
+  migration
+      = SocketQUICMigration_new (arena, conn, QUIC_MIGRATION_ROLE_INITIATOR);
 
   /* Initialize initial path */
   make_ipv4_addr (&local_addr, "192.168.1.1", 4433);
@@ -444,15 +467,16 @@ TEST (migration_initiate)
 TEST (nat_rebinding_detection)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICConnection_T conn = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICConnection_T conn
+      = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
   SocketQUICMigration_T *migration;
   struct sockaddr_storage local_addr, peer_addr1, peer_addr2;
   SocketQUICConnectionID_T cid;
   SocketQUICMigration_Result result;
   uint64_t current_time_ms = 1000;
 
-  migration = SocketQUICMigration_new (arena, conn,
-                                       QUIC_MIGRATION_ROLE_INITIATOR);
+  migration
+      = SocketQUICMigration_new (arena, conn, QUIC_MIGRATION_ROLE_INITIATOR);
 
   /* Initialize path */
   make_ipv4_addr (&local_addr, "10.0.0.1", 4433);
@@ -463,9 +487,8 @@ TEST (nat_rebinding_detection)
 
   /* Rapid address change (NAT rebinding) */
   make_ipv4_addr (&peer_addr2, "10.0.0.3", 8080);
-  result = SocketQUICMigration_handle_peer_address_change (migration,
-                                                           &peer_addr2,
-                                                           current_time_ms);
+  result = SocketQUICMigration_handle_peer_address_change (
+      migration, &peer_addr2, current_time_ms);
   ASSERT (result == QUIC_MIGRATION_OK);
 
   /* Another rapid change within NAT rebind window */
@@ -539,14 +562,15 @@ TEST (update_rtt)
 TEST (ipv6_path_validation)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICConnection_T conn = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICConnection_T conn
+      = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
   SocketQUICMigration_T *migration;
   struct sockaddr_storage local_addr, peer_addr;
   SocketQUICConnectionID_T cid;
   SocketQUICMigration_Result result;
 
-  migration = SocketQUICMigration_new (arena, conn,
-                                       QUIC_MIGRATION_ROLE_INITIATOR);
+  migration
+      = SocketQUICMigration_new (arena, conn, QUIC_MIGRATION_ROLE_INITIATOR);
 
   /* IPv6 addresses */
   make_ipv6_addr (&local_addr, "2001:db8::1", 4433);
@@ -555,11 +579,12 @@ TEST (ipv6_path_validation)
   SocketQUICConnectionID_init (&cid);
   SocketQUICConnectionID_generate (&cid, 8);
 
-  result = SocketQUICMigration_init_path (migration, &local_addr, &peer_addr,
-                                          &cid);
+  result = SocketQUICMigration_init_path (
+      migration, &local_addr, &peer_addr, &cid);
   ASSERT (result == QUIC_MIGRATION_OK);
 
-  const SocketQUICPath_T *path = SocketQUICMigration_get_active_path (migration);
+  const SocketQUICPath_T *path
+      = SocketQUICMigration_get_active_path (migration);
   ASSERT (path != NULL);
 
   /* Verify addresses are IPv6 */
@@ -608,15 +633,16 @@ TEST (result_string)
 TEST (path_to_string)
 {
   Arena_T arena = Arena_new ();
-  SocketQUICConnection_T conn = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
+  SocketQUICConnection_T conn
+      = SocketQUICConnection_new (arena, QUIC_CONN_ROLE_CLIENT);
   SocketQUICMigration_T *migration;
   struct sockaddr_storage local_addr, peer_addr;
   SocketQUICConnectionID_T cid;
   char buf[256];
   int ret;
 
-  migration = SocketQUICMigration_new (arena, conn,
-                                       QUIC_MIGRATION_ROLE_INITIATOR);
+  migration
+      = SocketQUICMigration_new (arena, conn, QUIC_MIGRATION_ROLE_INITIATOR);
 
   make_ipv4_addr (&local_addr, "192.168.1.1", 4433);
   make_ipv4_addr (&peer_addr, "192.168.1.100", 8080);
@@ -624,7 +650,8 @@ TEST (path_to_string)
   SocketQUICConnectionID_generate (&cid, 8);
   SocketQUICMigration_init_path (migration, &local_addr, &peer_addr, &cid);
 
-  const SocketQUICPath_T *path = SocketQUICMigration_get_active_path (migration);
+  const SocketQUICPath_T *path
+      = SocketQUICMigration_get_active_path (migration);
   ret = SocketQUICMigration_path_to_string (path, buf, sizeof (buf));
 
   ASSERT (ret > 0);

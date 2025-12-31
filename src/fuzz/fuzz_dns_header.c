@@ -87,9 +87,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
       /* Verify init_query sets expected fields */
       (void)(header.id == id);
-      (void)(header.qr == 0);       /* Query */
-      (void)(header.opcode == 0);   /* Standard query */
-      (void)(header.rd == 1);       /* Recursion desired */
+      (void)(header.qr == 0);     /* Query */
+      (void)(header.opcode == 0); /* Standard query */
+      (void)(header.rd == 1);     /* Recursion desired */
       (void)(header.qdcount == qdcount);
     }
 

@@ -84,8 +84,10 @@ typedef struct Arena_T *Arena_T;
  * @see SocketDNS_resolve() to submit request with callback.
  * @see SocketDNS_Callback safety notes in SocketDNS.h documentation.
  */
-typedef void (*SocketDNS_Callback) (SocketDNS_Request_T *, struct addrinfo *,
-                                    int, void *);
+typedef void (*SocketDNS_Callback) (SocketDNS_Request_T *,
+                                    struct addrinfo *,
+                                    int,
+                                    void *);
 
 /**
  * @brief DNS request lifecycle states.
@@ -95,7 +97,7 @@ typedef void (*SocketDNS_Callback) (SocketDNS_Request_T *, struct addrinfo *,
  */
 typedef enum
 {
-  REQ_PENDING, /**< Request enqueued, awaiting assignment to worker thread */
+  REQ_PENDING,    /**< Request enqueued, awaiting assignment to worker thread */
   REQ_PROCESSING, /**< Dequeued and actively being resolved by worker
                      (getaddrinfo active) */
   REQ_COMPLETE,   /**< Resolution complete; result/error stored, ready for
@@ -126,13 +128,15 @@ struct SocketDNS_Request_T
   SocketDNS_Callback callback; /**< Completion callback (NULL for polling) */
   void *callback_data;         /**< User data passed to callback */
   RequestState state;          /**< Current request lifecycle state */
-  struct addrinfo *result; /**< Resolution result (owned until retrieved) */
-  int error;               /**< getaddrinfo() error code (0 on success) */
+  struct addrinfo *result;     /**< Resolution result (owned until retrieved) */
+  int error;                   /**< getaddrinfo() error code (0 on success) */
   struct SocketDNS_Request_T *queue_next; /**< Queue linked list pointer */
   struct SocketDNS_Request_T *hash_next;  /**< Hash table chain pointer */
   unsigned hash_value;                    /**< Cached hash for O(1) removal */
-  int64_t submit_time_ms; /**< Monotonic timestamp (ms since boot) at submission for timeout calculation. Use Socket_get_monotonic_ms() for current time. */
-  int timeout_override_ms;     /**< Per-request timeout (-1 = use default) */
+  int64_t submit_time_ms; /**< Monotonic timestamp (ms since boot) at submission
+                             for timeout calculation. Use
+                             Socket_get_monotonic_ms() for current time. */
+  int timeout_override_ms; /**< Per-request timeout (-1 = use default) */
   struct SocketDNS_T *dns_resolver; /**< Back-pointer to owning resolver */
 };
 
@@ -166,15 +170,15 @@ typedef struct SocketDNSResolver_T *SocketDNSResolver_T;
  */
 struct SocketDNS_T
 {
-  Arena_T arena;      /**< Arena for request/hostname allocation */
-  size_t max_pending;                     /**< Queue capacity limit */
-  size_t pending_count;                   /**< Current number of pending requests */
+  Arena_T arena;        /**< Arena for request/hostname allocation */
+  size_t max_pending;   /**< Queue capacity limit */
+  size_t pending_count; /**< Current number of pending requests */
   struct SocketDNS_Request_T *request_hash[SOCKET_DNS_REQUEST_HASH_SIZE];
   /**< Hash table for O(1) request lookup */
-  pthread_mutex_t mutex;      /**< Protects all mutable state */
-  int shutdown;               /**< Shutdown flag (1 = shutting down) */
-  int pipefd[2];              /**< Completion pipe [0]=read, [1]=write */
-  int request_timeout_ms;     /**< Default timeout (0 = no timeout) */
+  pthread_mutex_t mutex;  /**< Protects all mutable state */
+  int shutdown;           /**< Shutdown flag (1 = shutting down) */
+  int pipefd[2];          /**< Completion pipe [0]=read, [1]=write */
+  int request_timeout_ms; /**< Default timeout (0 = no timeout) */
 
   /* DNS Cache */
   struct SocketDNS_CacheEntry *cache_hash[SOCKET_DNS_CACHE_HASH_SIZE];
@@ -182,24 +186,24 @@ struct SocketDNS_T
   struct SocketDNS_CacheEntry *cache_lru_head; /**< LRU list head (most recent)
                                                 */
   struct SocketDNS_CacheEntry *cache_lru_tail; /**< LRU list tail (oldest) */
-  size_t cache_size;       /**< Current number of cached entries */
-  size_t cache_max_entries; /**< Maximum cache entries (0 = disabled) */
-  int cache_ttl_seconds;   /**< TTL for cached entries (0 = disabled) */
-  uint64_t cache_hits;     /**< Cache hit counter */
-  uint64_t cache_misses;   /**< Cache miss counter */
-  uint64_t cache_evictions; /**< Eviction counter */
+  size_t cache_size;         /**< Current number of cached entries */
+  size_t cache_max_entries;  /**< Maximum cache entries (0 = disabled) */
+  int cache_ttl_seconds;     /**< TTL for cached entries (0 = disabled) */
+  uint64_t cache_hits;       /**< Cache hit counter */
+  uint64_t cache_misses;     /**< Cache miss counter */
+  uint64_t cache_evictions;  /**< Eviction counter */
   uint64_t cache_insertions; /**< Insertion counter */
 
   /* DNS Configuration */
-  int prefer_ipv6;         /**< 1 = prefer IPv6, 0 = prefer IPv4 */
-  char **custom_nameservers; /**< Custom nameserver list (NULL = use system) */
-  size_t nameserver_count;  /**< Number of custom nameservers */
-  char **search_domains;   /**< Custom search domains (NULL = use system) */
+  int prefer_ipv6;            /**< 1 = prefer IPv6, 0 = prefer IPv4 */
+  char **custom_nameservers;  /**< Custom nameserver list (NULL = use system) */
+  size_t nameserver_count;    /**< Number of custom nameservers */
+  char **search_domains;      /**< Custom search domains (NULL = use system) */
   size_t search_domain_count; /**< Number of search domains */
 
   /* SocketDNSResolver Backend (Phase 2.2) */
-  SocketDNSResolver_T resolver;    /**< Backend resolver instance */
-  Arena_T resolver_arena;          /**< Separate arena for resolver lifecycle */
+  SocketDNSResolver_T resolver; /**< Backend resolver instance */
+  Arena_T resolver_arena;       /**< Separate arena for resolver lifecycle */
 };
 
 /* Internal macros - use centralized constant */
@@ -212,11 +216,11 @@ struct SocketDNS_T
  *
  * Signals completion pipe for async notification.
  */
-#define SIGNAL_DNS_COMPLETION(dns)                                            \
-  do                                                                          \
-    {                                                                         \
-      signal_completion (dns);                                                \
-    }                                                                         \
+#define SIGNAL_DNS_COMPLETION(dns) \
+  do                               \
+    {                              \
+      signal_completion (dns);     \
+    }                              \
   while (0)
 
 /**
@@ -227,7 +231,8 @@ struct SocketDNS_T
  */
 #define SANITIZE_TIMEOUT_MS(timeout_ms) ((timeout_ms) < 0 ? 0 : (timeout_ms))
 
-/* ==================== Mutex-Protected Field Access Macros ==================== */
+/* ==================== Mutex-Protected Field Access Macros ====================
+ */
 
 /**
  * @brief Thread-safe getter for int field with mutex protection.
@@ -240,25 +245,27 @@ struct SocketDNS_T
  *
  * Usage: int timeout = DNS_LOCKED_INT_GETTER(dns, request_timeout_ms);
  */
-#define DNS_LOCKED_INT_GETTER(dns, field)                                     \
-  ({                                                                          \
-    int _value;                                                               \
-    int _lock_err = pthread_mutex_lock (&(dns)->mutex);                       \
-    if (_lock_err != 0)                                                       \
-      {                                                                       \
-        SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,                        \
-                          "Mutex lock failed for " #field ": %s",             \
-                          strerror (_lock_err));                              \
-      }                                                                       \
-    _value = (dns)->field;                                                    \
-    int _unlock_err = pthread_mutex_unlock (&(dns)->mutex);                   \
-    if (_unlock_err != 0)                                                     \
-      {                                                                       \
-        SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,                        \
-                          "Mutex unlock failed for " #field ": %s",           \
-                          strerror (_unlock_err));                            \
-      }                                                                       \
-    _value;                                                                   \
+#define DNS_LOCKED_INT_GETTER(dns, field)                           \
+  ({                                                                \
+    int _value;                                                     \
+    int _lock_err = pthread_mutex_lock (&(dns)->mutex);             \
+    if (_lock_err != 0)                                             \
+      {                                                             \
+        SOCKET_RAISE_FMT (SocketDNS,                                \
+                          SocketDNS_Failed,                         \
+                          "Mutex lock failed for " #field ": %s",   \
+                          strerror (_lock_err));                    \
+      }                                                             \
+    _value = (dns)->field;                                          \
+    int _unlock_err = pthread_mutex_unlock (&(dns)->mutex);         \
+    if (_unlock_err != 0)                                           \
+      {                                                             \
+        SOCKET_RAISE_FMT (SocketDNS,                                \
+                          SocketDNS_Failed,                         \
+                          "Mutex unlock failed for " #field ": %s", \
+                          strerror (_unlock_err));                  \
+      }                                                             \
+    _value;                                                         \
   })
 
 /**
@@ -272,25 +279,27 @@ struct SocketDNS_T
  *
  * Usage: size_t max = DNS_LOCKED_SIZE_GETTER(dns, max_pending);
  */
-#define DNS_LOCKED_SIZE_GETTER(dns, field)                                    \
-  ({                                                                          \
-    size_t _value;                                                            \
-    int _lock_err = pthread_mutex_lock (&(dns)->mutex);                       \
-    if (_lock_err != 0)                                                       \
-      {                                                                       \
-        SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,                        \
-                          "Mutex lock failed for " #field ": %s",             \
-                          strerror (_lock_err));                              \
-      }                                                                       \
-    _value = (dns)->field;                                                    \
-    int _unlock_err = pthread_mutex_unlock (&(dns)->mutex);                   \
-    if (_unlock_err != 0)                                                     \
-      {                                                                       \
-        SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,                        \
-                          "Mutex unlock failed for " #field ": %s",           \
-                          strerror (_unlock_err));                            \
-      }                                                                       \
-    _value;                                                                   \
+#define DNS_LOCKED_SIZE_GETTER(dns, field)                          \
+  ({                                                                \
+    size_t _value;                                                  \
+    int _lock_err = pthread_mutex_lock (&(dns)->mutex);             \
+    if (_lock_err != 0)                                             \
+      {                                                             \
+        SOCKET_RAISE_FMT (SocketDNS,                                \
+                          SocketDNS_Failed,                         \
+                          "Mutex lock failed for " #field ": %s",   \
+                          strerror (_lock_err));                    \
+      }                                                             \
+    _value = (dns)->field;                                          \
+    int _unlock_err = pthread_mutex_unlock (&(dns)->mutex);         \
+    if (_unlock_err != 0)                                           \
+      {                                                             \
+        SOCKET_RAISE_FMT (SocketDNS,                                \
+                          SocketDNS_Failed,                         \
+                          "Mutex unlock failed for " #field ": %s", \
+                          strerror (_unlock_err));                  \
+      }                                                             \
+    _value;                                                         \
   })
 
 /**
@@ -305,25 +314,27 @@ struct SocketDNS_T
  *
  * Usage: DNS_LOCKED_INT_SETTER(dns, request_timeout_ms, new_timeout);
  */
-#define DNS_LOCKED_INT_SETTER(dns, field, value)                              \
-  do                                                                          \
-    {                                                                         \
-      int _lock_err = pthread_mutex_lock (&(dns)->mutex);                     \
-      if (_lock_err != 0)                                                     \
-        {                                                                     \
-          SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,                      \
-                            "Mutex lock failed for " #field ": %s",           \
-                            strerror (_lock_err));                            \
-        }                                                                     \
-      (dns)->field = (value);                                                 \
-      int _unlock_err = pthread_mutex_unlock (&(dns)->mutex);                 \
-      if (_unlock_err != 0)                                                   \
-        {                                                                     \
-          SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,                      \
-                            "Mutex unlock failed for " #field ": %s",         \
-                            strerror (_unlock_err));                          \
-        }                                                                     \
-    }                                                                         \
+#define DNS_LOCKED_INT_SETTER(dns, field, value)                      \
+  do                                                                  \
+    {                                                                 \
+      int _lock_err = pthread_mutex_lock (&(dns)->mutex);             \
+      if (_lock_err != 0)                                             \
+        {                                                             \
+          SOCKET_RAISE_FMT (SocketDNS,                                \
+                            SocketDNS_Failed,                         \
+                            "Mutex lock failed for " #field ": %s",   \
+                            strerror (_lock_err));                    \
+        }                                                             \
+      (dns)->field = (value);                                         \
+      int _unlock_err = pthread_mutex_unlock (&(dns)->mutex);         \
+      if (_unlock_err != 0)                                           \
+        {                                                             \
+          SOCKET_RAISE_FMT (SocketDNS,                                \
+                            SocketDNS_Failed,                         \
+                            "Mutex unlock failed for " #field ": %s", \
+                            strerror (_unlock_err));                  \
+        }                                                             \
+    }                                                                 \
   while (0)
 
 extern const Except_T SocketDNS_Failed;
@@ -334,8 +345,8 @@ extern const Except_T SocketDNS_Failed;
 
 /* Forward Declarations */
 
-extern void free_request_list (struct SocketDNS_Request_T *head,
-                               int use_hash_next);
+extern void
+free_request_list (struct SocketDNS_Request_T *head, int use_hash_next);
 extern void free_hash_table_requests (struct SocketDNS_T *dns);
 extern void free_all_requests (struct SocketDNS_T *dns);
 
@@ -344,23 +355,27 @@ extern struct SocketDNS_Request_T *
 allocate_request_structure (struct SocketDNS_T *dns);
 extern void allocate_request_hostname (struct SocketDNS_T *dns,
                                        struct SocketDNS_Request_T *req,
-                                       const char *host, size_t host_len);
+                                       const char *host,
+                                       size_t host_len);
 extern void initialize_request_fields (struct SocketDNS_Request_T *req,
-                                       int port, SocketDNS_Callback callback,
+                                       int port,
+                                       SocketDNS_Callback callback,
                                        void *data);
-extern struct SocketDNS_Request_T *
-allocate_request (struct SocketDNS_T *dns, const char *host, size_t host_len,
-                  int port, SocketDNS_Callback cb, void *data);
+extern struct SocketDNS_Request_T *allocate_request (struct SocketDNS_T *dns,
+                                                     const char *host,
+                                                     size_t host_len,
+                                                     int port,
+                                                     SocketDNS_Callback cb,
+                                                     void *data);
 extern int check_queue_limit (const struct SocketDNS_T *dns);
 
 /* Timeout handling */
-extern int
-request_effective_timeout_ms (const struct SocketDNS_T *dns,
-                              const struct SocketDNS_Request_T *req);
+extern int request_effective_timeout_ms (const struct SocketDNS_T *dns,
+                                         const struct SocketDNS_Request_T *req);
 extern int request_timed_out (const struct SocketDNS_T *dns,
                               const struct SocketDNS_Request_T *req);
-extern void mark_request_timeout (struct SocketDNS_T *dns,
-                                  struct SocketDNS_Request_T *req);
+extern void
+mark_request_timeout (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req);
 extern void handle_request_timeout (struct SocketDNS_T *dns,
                                     struct SocketDNS_Request_T *req);
 
@@ -368,21 +383,22 @@ extern void handle_request_timeout (struct SocketDNS_T *dns,
 extern void initialize_addrinfo_hints (struct addrinfo *hints);
 extern void store_resolution_result (struct SocketDNS_T *dns,
                                      struct SocketDNS_Request_T *req,
-                                     struct addrinfo *result, int error);
+                                     struct addrinfo *result,
+                                     int error);
 extern int perform_dns_resolution (const struct SocketDNS_Request_T *req,
                                    const struct addrinfo *hints,
                                    struct addrinfo **result);
-extern void invoke_callback (struct SocketDNS_T *dns,
-                             struct SocketDNS_Request_T *req);
+extern void
+invoke_callback (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req);
 
 /* Forward Declarations - SocketDNS.c */
 extern void validate_resolve_params (const char *host, int port);
 
 /* Hash table operations */
-extern void hash_table_insert (struct SocketDNS_T *dns,
-                               struct SocketDNS_Request_T *req);
-extern void hash_table_remove (struct SocketDNS_T *dns,
-                               struct SocketDNS_Request_T *req);
+extern void
+hash_table_insert (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req);
+extern void
+hash_table_remove (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req);
 
 /* Utility functions */
 extern void signal_completion (struct SocketDNS_T *dns);
@@ -391,9 +407,10 @@ extern void cancel_pending_request (struct SocketDNS_T *dns,
                                     struct SocketDNS_Request_T *req);
 
 /* Cache functions */
-extern struct SocketDNS_CacheEntry *cache_lookup (struct SocketDNS_T *dns,
-                                                   const char *hostname);
-extern void cache_insert (struct SocketDNS_T *dns, const char *hostname,
+extern struct SocketDNS_CacheEntry *
+cache_lookup (struct SocketDNS_T *dns, const char *hostname);
+extern void cache_insert (struct SocketDNS_T *dns,
+                          const char *hostname,
                           struct addrinfo *result);
 extern void cache_clear_locked (struct SocketDNS_T *dns);
 

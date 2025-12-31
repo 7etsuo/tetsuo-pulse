@@ -25,7 +25,9 @@
  * Validate data using incremental API with specified chunk sizes
  */
 static SocketUTF8_Result
-validate_chunked (const uint8_t *data, size_t size, const uint8_t *chunk_sizes,
+validate_chunked (const uint8_t *data,
+                  size_t size,
+                  const uint8_t *chunk_sizes,
                   size_t num_chunks)
 {
   SocketUTF8_State state;
@@ -105,7 +107,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
       /* Use subsequent bytes as chunk sizes */
       chunked_result
-          = validate_chunked (data + 1, size - 1, data + 1,
+          = validate_chunked (data + 1,
+                              size - 1,
+                              data + 1,
                               num_chunks < size - 1 ? num_chunks : size - 1);
 
       /* One-shot on same data (minus first byte) */

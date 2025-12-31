@@ -90,7 +90,8 @@ server_thread_func (void *arg)
 }
 
 static int
-test_server_start (TestServer *ts, SocketHTTPServer_Handler handler,
+test_server_start (TestServer *ts,
+                   SocketHTTPServer_Handler handler,
                    void *handler_data)
 {
   SocketHTTPServer_Config config;
@@ -265,8 +266,8 @@ echo_handler (SocketHTTPServer_Request_T req, void *userdata)
         {
           memset (data, 'X', size);
           SocketHTTPServer_Request_status (req, 200);
-          SocketHTTPServer_Request_header (req, "Content-Type",
-                                           "application/octet-stream");
+          SocketHTTPServer_Request_header (
+              req, "Content-Type", "application/octet-stream");
           SocketHTTPServer_Request_body_data (req, data, size);
           free (data);
         }
@@ -357,8 +358,8 @@ TEST (http_integration_post_request)
   TRY client = SocketHTTPClient_new (NULL);
   ASSERT_NOT_NULL (client);
 
-  result = SocketHTTPClient_post (client, url, "text/plain", post_body,
-                                  strlen (post_body), &response);
+  result = SocketHTTPClient_post (
+      client, url, "text/plain", post_body, strlen (post_body), &response);
   ASSERT_EQ (result, 0);
   ASSERT_EQ (response.status_code, 200);
 

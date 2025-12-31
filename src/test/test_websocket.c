@@ -37,28 +37,28 @@
 static int tests_run = 0;
 static int tests_passed = 0;
 
-#define TEST_START(name)                                                      \
-  do                                                                          \
-    {                                                                         \
-      printf ("  Testing %s...", name);                                       \
-      fflush (stdout);                                                        \
-      tests_run++;                                                            \
-    }                                                                         \
+#define TEST_START(name)                \
+  do                                    \
+    {                                   \
+      printf ("  Testing %s...", name); \
+      fflush (stdout);                  \
+      tests_run++;                      \
+    }                                   \
   while (0)
 
-#define TEST_PASS()                                                           \
-  do                                                                          \
-    {                                                                         \
-      printf (" PASSED\n");                                                   \
-      tests_passed++;                                                         \
-    }                                                                         \
+#define TEST_PASS()         \
+  do                        \
+    {                       \
+      printf (" PASSED\n"); \
+      tests_passed++;       \
+    }                       \
   while (0)
 
-#define TEST_FAIL(msg)                                                        \
-  do                                                                          \
-    {                                                                         \
-      printf (" FAILED: %s\n", msg);                                          \
-    }                                                                         \
+#define TEST_FAIL(msg)               \
+  do                                 \
+    {                                \
+      printf (" FAILED: %s\n", msg); \
+    }                                \
   while (0)
 
 /* ============================================================================
@@ -231,8 +231,8 @@ test_frame_header_large (void)
   TEST_START ("frame_header_large");
 
   /* Large payload (64-bit length) */
-  len = ws_frame_build_header (header, 1, WS_OPCODE_BINARY, 0, NULL,
-                               payload_len);
+  len = ws_frame_build_header (
+      header, 1, WS_OPCODE_BINARY, 0, NULL, payload_len);
 
   assert (len == 10);
   assert ((header[1] & 0x7F) == 127);
@@ -676,16 +676,16 @@ test_ws_compression_roundtrip (void)
   size_t decomp_len = 0;
 
   // Compress
-  int comp_ret = ws_compress_message (ws, (const unsigned char *)test_str,
-                                      test_len, &compressed, &comp_len);
+  int comp_ret = ws_compress_message (
+      ws, (const unsigned char *)test_str, test_len, &compressed, &comp_len);
   assert (comp_ret == 0);
   assert (comp_len > 0);
   assert (comp_len
           < test_len * 2); // Reasonable compression or slight expansion
 
   // Decompress
-  int decomp_ret = ws_decompress_message (ws, compressed, comp_len,
-                                          &decompressed, &decomp_len);
+  int decomp_ret = ws_decompress_message (
+      ws, compressed, comp_len, &decompressed, &decomp_len);
   assert (decomp_ret == 0);
   assert (decomp_len == test_len);
   assert (memcmp (decompressed, test_str, test_len) == 0);
@@ -714,7 +714,7 @@ test_ws_compression_errors (void)
   // Invalid window bits
   ws->handshake.client_max_window_bits = 20; // Invalid >15
   int init_ret = ws_compression_init (ws);
-  (void)init_ret; /* Used in assert */
+  (void)init_ret;          /* Used in assert */
   assert (init_ret == -1); // Should error on validation
 
   // Reset for other test
@@ -732,9 +732,8 @@ test_ws_compression_errors (void)
   const unsigned char test_data[] = "Hello, WebSocket compression test!";
   unsigned char *comp_out = NULL;
   size_t comp_len = 0;
-  int comp_ret
-      = ws_compress_message (ws, test_data, sizeof (test_data) - 1,
-                             &comp_out, &comp_len);
+  int comp_ret = ws_compress_message (
+      ws, test_data, sizeof (test_data) - 1, &comp_out, &comp_len);
   assert (comp_ret == 0); // Should succeed for reasonable input
   assert (comp_out != NULL);
   assert (comp_len > 0);

@@ -55,8 +55,9 @@
 #endif
 
 /* Calculate flush threshold from ring size */
-#define SOCKET_IO_URING_FLUSH_THRESHOLD \
-  ((SOCKET_DEFAULT_IO_URING_ENTRIES * SOCKET_IO_URING_FLUSH_THRESHOLD_PCT) / 100)
+#define SOCKET_IO_URING_FLUSH_THRESHOLD                                    \
+  ((SOCKET_DEFAULT_IO_URING_ENTRIES * SOCKET_IO_URING_FLUSH_THRESHOLD_PCT) \
+   / 100)
 
 /* Key fields for partial completion and timeout support:
  * - size_t completed in AsyncRequest - tracks bytes transferred so far
@@ -64,8 +65,9 @@
  * - int64_t deadline_ms in AsyncRequest - per-request deadline (0 = use global)
  * - int64_t request_timeout_ms in SocketAsync_T - global timeout (0 = disabled)
  *
- * See SocketAsync_send_continue(), SocketAsync_recv_continue() for continuation.
- * See SocketAsync_set_timeout(), SocketAsync_expire_stale() for timeout handling.
+ * See SocketAsync_send_continue(), SocketAsync_recv_continue() for
+ * continuation. See SocketAsync_set_timeout(), SocketAsync_expire_stale() for
+ * timeout handling.
  */
 
 const Except_T SocketAsync_Failed
@@ -106,7 +108,10 @@ socket_async_allocate_request (T async)
 
   assert (async);
 
-  TRY { req = CALLOC (async->arena, 1, sizeof (struct AsyncRequest)); }
+  TRY
+  {
+    req = CALLOC (async->arena, 1, sizeof (struct AsyncRequest));
+  }
   EXCEPT (Arena_Failed)
   {
     /* LCOV_EXCL_START */
@@ -136,7 +141,8 @@ socket_async_free_request (T async, struct AsyncRequest *req)
     }
 }
 
-static int find_and_remove_request (T async, unsigned request_id,
+static int find_and_remove_request (T async,
+                                    unsigned request_id,
                                     struct AsyncRequest **out_req,
                                     SocketAsync_Callback *out_cb,
                                     Socket_T *out_socket,
@@ -161,7 +167,10 @@ accumulate_transfer_progress (struct AsyncRequest *req, ssize_t result)
 }
 
 static void
-process_request_completion (T async, struct AsyncRequest *req, ssize_t result, int err)
+process_request_completion (T async,
+                            struct AsyncRequest *req,
+                            ssize_t result,
+                            int err)
 {
   if (err == 0)
     accumulate_transfer_progress (req, result);
@@ -185,9 +194,14 @@ handle_completion (T async, unsigned request_id, ssize_t result, int err)
 }
 #endif /* SOCKET_HAS_IO_URING */
 static struct AsyncRequest *
-setup_async_request (T async, Socket_T socket, SocketAsync_Callback cb,
-                     void *user_data, enum AsyncRequestType type,
-                     const void *send_buf, void *recv_buf, size_t len,
+setup_async_request (T async,
+                     Socket_T socket,
+                     SocketAsync_Callback cb,
+                     void *user_data,
+                     enum AsyncRequestType type,
+                     const void *send_buf,
+                     void *recv_buf,
+                     size_t len,
                      SocketAsync_Flags flags)
 {
   struct AsyncRequest *req = socket_async_allocate_request (async);
@@ -250,9 +264,11 @@ remove_request_unlocked (T async, struct AsyncRequest *req)
 }
 
 static int
-find_and_remove_request (T async, unsigned request_id,
+find_and_remove_request (T async,
+                         unsigned request_id,
                          struct AsyncRequest **out_req,
-                         SocketAsync_Callback *out_cb, Socket_T *out_socket,
+                         SocketAsync_Callback *out_cb,
+                         Socket_T *out_socket,
                          void **out_user_data)
 {
   unsigned hash;
@@ -335,7 +351,7 @@ submit_and_track_request (T async, struct AsyncRequest *req)
   async->requests[hash] = req;
 
   req->completed = 0;
-  req->submitted_at = Socket_get_monotonic_ms();
+  req->submitted_at = Socket_get_monotonic_ms ();
 
   pthread_mutex_unlock (&async->mutex);
 
@@ -485,7 +501,12 @@ submit_kqueue_aio (T async, struct AsyncRequest *req)
   assert (async && async->kqueue_fd >= 0 && req);
 
   filter = (req->type == REQ_SEND) ? EVFILT_WRITE : EVFILT_READ;
-  EV_SET (&kev, fd, filter, EV_ADD | EV_ENABLE | EV_ONESHOT, 0, 0,
+  EV_SET (&kev,
+          fd,
+          filter,
+          EV_ADD | EV_ENABLE | EV_ONESHOT,
+          0,
+          0,
           (void *)(uintptr_t)req->request_id);
 
   if (kevent (async->kqueue_fd, &kev, 1, NULL, 0, NULL) < 0)
@@ -496,8 +517,11 @@ submit_kqueue_aio (T async, struct AsyncRequest *req)
 
 
 static ssize_t
-socket_async_perform_io (Socket_T socket, enum AsyncRequestType type,
-                         const void *send_buf, void *recv_buf, size_t len,
+socket_async_perform_io (Socket_T socket,
+                         enum AsyncRequestType type,
+                         const void *send_buf,
+                         void *recv_buf,
+                         size_t len,
                          int *err_out)
 {
   ssize_t result;
@@ -546,8 +570,8 @@ socket_async_perform_io (Socket_T socket, enum AsyncRequestType type,
 static void
 kqueue_perform_io (struct AsyncRequest *req, ssize_t *result, int *err)
 {
-  *result = socket_async_perform_io (req->socket, req->type, req->send_buf,
-                                     req->recv_buf, req->len, err);
+  *result = socket_async_perform_io (
+      req->socket, req->type, req->send_buf, req->recv_buf, req->len, err);
 }
 
 /**
@@ -607,7 +631,9 @@ process_kqueue_completions (T async, int timeout_ms, int max_completions)
 
 #if SOCKET_HAS_IO_URING
 static int
-io_uring_register_and_activate (T async, unsigned ring_size, int sqpoll_active,
+io_uring_register_and_activate (T async,
+                                unsigned ring_size,
+                                int sqpoll_active,
                                 const char *backend_name)
 {
   async->io_uring_fd = eventfd (0, EFD_NONBLOCK | EFD_CLOEXEC);
@@ -628,7 +654,8 @@ io_uring_register_and_activate (T async, unsigned ring_size, int sqpoll_active,
 }
 
 static int
-try_io_uring_sqpoll (T async, const SocketAsync_Config *config,
+try_io_uring_sqpoll (T async,
+                     const SocketAsync_Config *config,
                      unsigned ring_size)
 {
   struct io_uring_params params;
@@ -677,8 +704,9 @@ detect_io_uring_backend (T async, const SocketAsync_Config *config)
   unsigned ring_size;
   int sqpoll_requested;
 
-  ring_size = (config && config->ring_size > 0) ? config->ring_size
-                                                 : SOCKET_DEFAULT_IO_URING_ENTRIES;
+  ring_size = (config && config->ring_size > 0)
+                  ? config->ring_size
+                  : SOCKET_DEFAULT_IO_URING_ENTRIES;
   sqpoll_requested = config && config->enable_sqpoll;
 
   /* Test if io_uring is available */
@@ -796,15 +824,15 @@ process_async_completions_internal (T async,
           uint64_t val;
           ssize_t n = read (async->io_uring_fd, &val, sizeof (val));
           if (n > 0)
-            completed = process_io_uring_completions (async,
-                                                      SOCKET_MAX_EVENT_BATCH);
+            completed
+                = process_io_uring_completions (async, SOCKET_MAX_EVENT_BATCH);
         }
 #endif
 
 #if defined(__APPLE__) || defined(__FreeBSD__)
       if (async->kqueue_fd >= 0)
-        completed = process_kqueue_completions (async, timeout_ms,
-                                                SOCKET_MAX_EVENT_BATCH);
+        completed = process_kqueue_completions (
+            async, timeout_ms, SOCKET_MAX_EVENT_BATCH);
 #endif
     }
 
@@ -816,15 +844,22 @@ process_async_completions_internal (T async,
 
 
 static void
-validate_and_prepare_submit (T async, Socket_T socket, enum AsyncRequestType type,
-                              const void *send_buf, void *recv_buf, size_t len,
-                              SocketAsync_Callback cb)
+validate_and_prepare_submit (T async,
+                             Socket_T socket,
+                             enum AsyncRequestType type,
+                             const void *send_buf,
+                             void *recv_buf,
+                             size_t len,
+                             SocketAsync_Callback cb)
 {
   if (!async || !socket || !cb || len == 0)
     {
       errno = EINVAL;
       SOCKET_ERROR_FMT ("Invalid parameters: async=%p socket=%p cb=%p len=%zu",
-                        (void *)async, (void *)socket, (void *)cb, len);
+                        (void *)async,
+                        (void *)socket,
+                        (void *)cb,
+                        len);
       RAISE_MODULE_ERROR (SocketAsync_Failed);
     }
   if (type == REQ_SEND && !send_buf)
@@ -840,13 +875,19 @@ validate_and_prepare_submit (T async, Socket_T socket, enum AsyncRequestType typ
       RAISE_MODULE_ERROR (SocketAsync_Failed);
     }
 
-  TRY { Socket_setnonblocking (socket); }
-  EXCEPT (Socket_Failed) { }
+  TRY
+  {
+    Socket_setnonblocking (socket);
+  }
+  EXCEPT (Socket_Failed)
+  {
+  }
   END_TRY;
 }
 
 static unsigned
-submit_validated_request (T async, struct AsyncRequest *req,
+submit_validated_request (T async,
+                          struct AsyncRequest *req,
                           enum AsyncRequestType type)
 {
   unsigned request_id;
@@ -863,17 +904,23 @@ submit_validated_request (T async, struct AsyncRequest *req,
 }
 
 static unsigned
-socket_async_submit (T async, Socket_T socket, enum AsyncRequestType type,
-                     const void *send_buf, void *recv_buf, size_t len,
-                     SocketAsync_Callback cb, void *user_data,
+socket_async_submit (T async,
+                     Socket_T socket,
+                     enum AsyncRequestType type,
+                     const void *send_buf,
+                     void *recv_buf,
+                     size_t len,
+                     SocketAsync_Callback cb,
+                     void *user_data,
                      SocketAsync_Flags flags)
 {
   struct AsyncRequest *req;
 
-  validate_and_prepare_submit (async, socket, type, send_buf, recv_buf, len, cb);
+  validate_and_prepare_submit (
+      async, socket, type, send_buf, recv_buf, len, cb);
 
-  req = setup_async_request (async, socket, cb, user_data, type, send_buf,
-                             recv_buf, len, flags);
+  req = setup_async_request (
+      async, socket, cb, user_data, type, send_buf, recv_buf, len, flags);
 
   return submit_validated_request (async, req, type);
 }
@@ -885,7 +932,10 @@ SocketAsync_new (Arena_T arena)
 
   assert (arena);
 
-  TRY { async = CALLOC (arena, 1, sizeof (*async)); }
+  TRY
+  {
+    async = CALLOC (arena, 1, sizeof (*async));
+  }
   EXCEPT (Arena_Failed)
   {
     /* LCOV_EXCL_START */
@@ -918,7 +968,10 @@ SocketAsync_new_with_config (Arena_T arena, const SocketAsync_Config *config)
 
   assert (arena);
 
-  TRY { async = CALLOC (arena, 1, sizeof (*async)); }
+  TRY
+  {
+    async = CALLOC (arena, 1, sizeof (*async));
+  }
   EXCEPT (Arena_Failed)
   {
     /* LCOV_EXCL_START */
@@ -1034,22 +1087,30 @@ SocketAsync_backend_name (const T async)
 
 
 unsigned
-SocketAsync_send (T async, Socket_T socket, const void *buf, size_t len,
-                  SocketAsync_Callback cb, void *user_data,
+SocketAsync_send (T async,
+                  Socket_T socket,
+                  const void *buf,
+                  size_t len,
+                  SocketAsync_Callback cb,
+                  void *user_data,
                   SocketAsync_Flags flags)
 {
-  return socket_async_submit (async, socket, REQ_SEND, buf, NULL, len, cb,
-                              user_data, flags);
+  return socket_async_submit (
+      async, socket, REQ_SEND, buf, NULL, len, cb, user_data, flags);
 }
 
 
 unsigned
-SocketAsync_recv (T async, Socket_T socket, void *buf, size_t len,
-                  SocketAsync_Callback cb, void *user_data,
+SocketAsync_recv (T async,
+                  Socket_T socket,
+                  void *buf,
+                  size_t len,
+                  SocketAsync_Callback cb,
+                  void *user_data,
                   SocketAsync_Flags flags)
 {
-  return socket_async_submit (async, socket, REQ_RECV, NULL, buf, len, cb,
-                              user_data, flags);
+  return socket_async_submit (
+      async, socket, REQ_RECV, NULL, buf, len, cb, user_data, flags);
 }
 
 
@@ -1103,13 +1164,23 @@ SocketAsync_submit_batch (T async, SocketAsync_Op *ops, size_t count)
 
         if (op->is_send)
           {
-            req_id = SocketAsync_send (async, op->socket, op->send_buf, op->len,
-                                       op->cb, op->user_data, flags);
+            req_id = SocketAsync_send (async,
+                                       op->socket,
+                                       op->send_buf,
+                                       op->len,
+                                       op->cb,
+                                       op->user_data,
+                                       flags);
           }
         else
           {
-            req_id = SocketAsync_recv (async, op->socket, op->recv_buf, op->len,
-                                       op->cb, op->user_data, flags);
+            req_id = SocketAsync_recv (async,
+                                       op->socket,
+                                       op->recv_buf,
+                                       op->len,
+                                       op->cb,
+                                       op->user_data,
+                                       flags);
           }
         op->request_id = req_id;
         submitted++;
@@ -1223,7 +1294,9 @@ SocketAsync_set_backend (SocketAsync_Backend backend)
 
 
 int
-SocketAsync_get_progress (T async, unsigned request_id, size_t *completed,
+SocketAsync_get_progress (T async,
+                          unsigned request_id,
+                          size_t *completed,
                           size_t *total)
 {
   struct AsyncRequest *req;
@@ -1261,7 +1334,8 @@ SocketAsync_get_progress (T async, unsigned request_id, size_t *completed,
  * and unlocks the mutex.
  */
 static struct AsyncRequest *
-extract_continue_request (T async, unsigned request_id,
+extract_continue_request (T async,
+                          unsigned request_id,
                           enum AsyncRequestType expected_type,
                           size_t *remaining_len)
 {
@@ -1304,7 +1378,8 @@ extract_continue_request (T async, unsigned request_id,
  * Returns new request ID on success, 0 on failure.
  */
 static unsigned
-resubmit_continuation (T async, struct AsyncRequest *orig_req,
+resubmit_continuation (T async,
+                       struct AsyncRequest *orig_req,
                        size_t remaining_len)
 {
   struct AsyncRequest *new_req;
@@ -1320,9 +1395,14 @@ resubmit_continuation (T async, struct AsyncRequest *orig_req,
   else
     recv_buf = (char *)orig_req->recv_buf + orig_req->completed;
 
-  new_req = setup_async_request (async, orig_req->socket, orig_req->cb,
-                                 orig_req->user_data, orig_req->type,
-                                 send_buf, recv_buf, remaining_len,
+  new_req = setup_async_request (async,
+                                 orig_req->socket,
+                                 orig_req->cb,
+                                 orig_req->user_data,
+                                 orig_req->type,
+                                 send_buf,
+                                 recv_buf,
+                                 remaining_len,
                                  orig_req->flags);
 
   new_id = submit_and_track_request (async, new_req);
@@ -1333,15 +1413,16 @@ resubmit_continuation (T async, struct AsyncRequest *orig_req,
 }
 
 static unsigned
-socket_async_continue_request (T async, unsigned request_id,
+socket_async_continue_request (T async,
+                               unsigned request_id,
                                enum AsyncRequestType expected_type)
 {
   struct AsyncRequest *orig_req;
   size_t remaining_len;
   unsigned new_id;
 
-  orig_req = extract_continue_request (async, request_id, expected_type,
-                                       &remaining_len);
+  orig_req = extract_continue_request (
+      async, request_id, expected_type, &remaining_len);
   if (!orig_req)
     return 0;
 
@@ -1397,7 +1478,7 @@ SocketAsync_get_timeout (T async)
 
 static int64_t
 calculate_request_deadline (const struct AsyncRequest *req,
-                             int64_t global_timeout)
+                            int64_t global_timeout)
 {
   if (req->deadline_ms > 0)
     return req->deadline_ms;
@@ -1410,7 +1491,9 @@ calculate_request_deadline (const struct AsyncRequest *req,
 
 
 static struct AsyncRequest *
-collect_expired_requests (T async, int64_t now_ms, int64_t global_timeout,
+collect_expired_requests (T async,
+                          int64_t now_ms,
+                          int64_t global_timeout,
                           int *out_count)
 {
   struct AsyncRequest *expired_list = NULL;
@@ -1494,8 +1577,8 @@ check_and_expire_stale_requests (T async)
 
   pthread_mutex_lock (&async->mutex);
   global_timeout = async->request_timeout_ms;
-  expired_list = collect_expired_requests (async, now_ms, global_timeout,
-                                            &expired_count);
+  expired_list = collect_expired_requests (
+      async, now_ms, global_timeout, &expired_count);
   pthread_mutex_unlock (&async->mutex);
 
   invoke_timeout_callbacks (async, expired_list);
@@ -1512,19 +1595,24 @@ SocketAsync_expire_stale (T async)
 
 
 static unsigned
-socket_async_submit_with_timeout (T async, Socket_T socket,
+socket_async_submit_with_timeout (T async,
+                                  Socket_T socket,
                                   enum AsyncRequestType type,
-                                  const void *send_buf, void *recv_buf,
-                                  size_t len, SocketAsync_Callback cb,
-                                  void *user_data, SocketAsync_Flags flags,
+                                  const void *send_buf,
+                                  void *recv_buf,
+                                  size_t len,
+                                  SocketAsync_Callback cb,
+                                  void *user_data,
+                                  SocketAsync_Flags flags,
                                   int64_t timeout_ms)
 {
   struct AsyncRequest *req;
 
-  validate_and_prepare_submit (async, socket, type, send_buf, recv_buf, len, cb);
+  validate_and_prepare_submit (
+      async, socket, type, send_buf, recv_buf, len, cb);
 
-  req = setup_async_request (async, socket, cb, user_data, type, send_buf,
-                             recv_buf, len, flags);
+  req = setup_async_request (
+      async, socket, cb, user_data, type, send_buf, recv_buf, len, flags);
 
   if (timeout_ms > 0)
     req->deadline_ms = Socket_get_monotonic_ms () + timeout_ms;
@@ -1534,23 +1622,47 @@ socket_async_submit_with_timeout (T async, Socket_T socket,
 
 
 unsigned
-SocketAsync_send_timeout (T async, Socket_T socket, const void *buf, size_t len,
-                          SocketAsync_Callback cb, void *user_data,
-                          SocketAsync_Flags flags, int64_t timeout_ms)
+SocketAsync_send_timeout (T async,
+                          Socket_T socket,
+                          const void *buf,
+                          size_t len,
+                          SocketAsync_Callback cb,
+                          void *user_data,
+                          SocketAsync_Flags flags,
+                          int64_t timeout_ms)
 {
-  return socket_async_submit_with_timeout (async, socket, REQ_SEND, buf, NULL,
-                                           len, cb, user_data, flags,
+  return socket_async_submit_with_timeout (async,
+                                           socket,
+                                           REQ_SEND,
+                                           buf,
+                                           NULL,
+                                           len,
+                                           cb,
+                                           user_data,
+                                           flags,
                                            timeout_ms);
 }
 
 
 unsigned
-SocketAsync_recv_timeout (T async, Socket_T socket, void *buf, size_t len,
-                          SocketAsync_Callback cb, void *user_data,
-                          SocketAsync_Flags flags, int64_t timeout_ms)
+SocketAsync_recv_timeout (T async,
+                          Socket_T socket,
+                          void *buf,
+                          size_t len,
+                          SocketAsync_Callback cb,
+                          void *user_data,
+                          SocketAsync_Flags flags,
+                          int64_t timeout_ms)
 {
-  return socket_async_submit_with_timeout (async, socket, REQ_RECV, NULL, buf,
-                                           len, cb, user_data, flags,
+  return socket_async_submit_with_timeout (async,
+                                           socket,
+                                           REQ_RECV,
+                                           NULL,
+                                           buf,
+                                           len,
+                                           cb,
+                                           user_data,
+                                           flags,
                                            timeout_ms);
 }
 
@@ -1578,9 +1690,8 @@ parse_kernel_version (int *major, int *minor, int *patch)
   if (sscanf (uts.release, "%d.%d.%d", major, minor, patch) >= 2)
     {
       /* Validate kernel version components are reasonable (0-999) */
-      if (*major < 0 || *major > 999 ||
-          *minor < 0 || *minor > 999 ||
-          *patch < 0 || *patch > 999)
+      if (*major < 0 || *major > 999 || *minor < 0 || *minor > 999 || *patch < 0
+          || *patch > 999)
         {
           *major = *minor = *patch = 0;
           return 0;
@@ -1655,8 +1766,8 @@ SocketAsync_io_uring_available (SocketAsync_IOUringInfo *info)
     }
 
   /* Parse kernel version */
-  if (!parse_kernel_version (&cached_info.major, &cached_info.minor,
-                             &cached_info.patch))
+  if (!parse_kernel_version (
+          &cached_info.major, &cached_info.minor, &cached_info.patch))
     {
       cached = 0;
       if (info)
@@ -1741,10 +1852,14 @@ SocketAsync_pending_count (const T async)
 }
 
 
-/* ==================== Registered Buffers Implementation ==================== */
+/* ==================== Registered Buffers Implementation ====================
+ */
 
 int
-SocketAsync_register_buffers (T async, void **bufs, size_t *lens, unsigned count)
+SocketAsync_register_buffers (T async,
+                              void **bufs,
+                              size_t *lens,
+                              unsigned count)
 {
 #if SOCKET_HAS_IO_URING
   struct iovec *iovs;
@@ -1859,7 +1974,9 @@ SocketAsync_registered_buffer_count (const T async)
  * Raises SocketAsync_Failed on overflow or bounds violation.
  */
 static inline void
-validate_fixed_buffer_bounds (T async, unsigned buf_index, size_t offset,
+validate_fixed_buffer_bounds (T async,
+                              unsigned buf_index,
+                              size_t offset,
                               size_t len)
 {
   /* Check for integer overflow and bounds violation */
@@ -1878,9 +1995,14 @@ validate_fixed_buffer_bounds (T async, unsigned buf_index, size_t offset,
  * prep function (write_fixed vs read_fixed).
  */
 static unsigned
-socket_async_submit_fixed (T async, Socket_T socket, unsigned buf_index,
-                           size_t offset, size_t len, SocketAsync_Callback cb,
-                           void *user_data, SocketAsync_Flags flags,
+socket_async_submit_fixed (T async,
+                           Socket_T socket,
+                           unsigned buf_index,
+                           size_t offset,
+                           size_t len,
+                           SocketAsync_Callback cb,
+                           void *user_data,
+                           SocketAsync_Flags flags,
                            enum AsyncRequestType type)
 {
   struct AsyncRequest *req;
@@ -1898,7 +2020,8 @@ socket_async_submit_fixed (T async, Socket_T socket, unsigned buf_index,
   if (buf_index >= async->registered_buf_count)
     {
       errno = EINVAL;
-      SOCKET_ERROR_FMT ("Buffer index %u out of range (count=%u)", buf_index,
+      SOCKET_ERROR_FMT ("Buffer index %u out of range (count=%u)",
+                        buf_index,
                         async->registered_buf_count);
       RAISE_MODULE_ERROR (SocketAsync_Failed);
     }
@@ -1910,12 +2033,25 @@ socket_async_submit_fixed (T async, Socket_T socket, unsigned buf_index,
 
   /* Set up request with fixed buffer flag */
   if (type == REQ_SEND)
-    req = setup_async_request (async, socket, cb, user_data, REQ_SEND,
-                               buf_ptr, NULL, len,
+    req = setup_async_request (async,
+                               socket,
+                               cb,
+                               user_data,
+                               REQ_SEND,
+                               buf_ptr,
+                               NULL,
+                               len,
                                flags | ASYNC_FLAG_FIXED_BUFFER);
   else
-    req = setup_async_request (async, socket, cb, user_data, REQ_RECV, NULL,
-                               buf_ptr, len, flags | ASYNC_FLAG_FIXED_BUFFER);
+    req = setup_async_request (async,
+                               socket,
+                               cb,
+                               user_data,
+                               REQ_RECV,
+                               NULL,
+                               buf_ptr,
+                               len,
+                               flags | ASYNC_FLAG_FIXED_BUFFER);
 
   pthread_mutex_lock (&async->mutex);
   req->request_id = generate_request_id_unlocked (async);
@@ -1965,13 +2101,18 @@ socket_async_submit_fixed (T async, Socket_T socket, unsigned buf_index,
 #endif /* SOCKET_HAS_IO_URING */
 
 unsigned
-SocketAsync_send_fixed (T async, Socket_T socket, unsigned buf_index,
-                        size_t offset, size_t len, SocketAsync_Callback cb,
-                        void *user_data, SocketAsync_Flags flags)
+SocketAsync_send_fixed (T async,
+                        Socket_T socket,
+                        unsigned buf_index,
+                        size_t offset,
+                        size_t len,
+                        SocketAsync_Callback cb,
+                        void *user_data,
+                        SocketAsync_Flags flags)
 {
 #if SOCKET_HAS_IO_URING
-  return socket_async_submit_fixed (async, socket, buf_index, offset, len, cb,
-                                     user_data, flags, REQ_SEND);
+  return socket_async_submit_fixed (
+      async, socket, buf_index, offset, len, cb, user_data, flags, REQ_SEND);
 #else
   (void)async;
   (void)socket;
@@ -1988,13 +2129,18 @@ SocketAsync_send_fixed (T async, Socket_T socket, unsigned buf_index,
 }
 
 unsigned
-SocketAsync_recv_fixed (T async, Socket_T socket, unsigned buf_index,
-                        size_t offset, size_t len, SocketAsync_Callback cb,
-                        void *user_data, SocketAsync_Flags flags)
+SocketAsync_recv_fixed (T async,
+                        Socket_T socket,
+                        unsigned buf_index,
+                        size_t offset,
+                        size_t len,
+                        SocketAsync_Callback cb,
+                        void *user_data,
+                        SocketAsync_Flags flags)
 {
 #if SOCKET_HAS_IO_URING
-  return socket_async_submit_fixed (async, socket, buf_index, offset, len, cb,
-                                     user_data, flags, REQ_RECV);
+  return socket_async_submit_fixed (
+      async, socket, buf_index, offset, len, cb, user_data, flags, REQ_RECV);
 #else
   (void)async;
   (void)socket;

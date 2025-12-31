@@ -111,8 +111,10 @@ extern const Except_T SocketTimer_Failed;
  * @see SocketTimer_add_repeating()
  * @see SocketTimer_cancel()
  */
-extern T SocketTimer_add (SocketPoll_T poll, int64_t delay_ms,
-                          SocketTimerCallback callback, void *userdata);
+extern T SocketTimer_add (SocketPoll_T poll,
+                          int64_t delay_ms,
+                          SocketTimerCallback callback,
+                          void *userdata);
 
 /**
  * @brief Add a repeating (periodic) timer to the event poll.
@@ -133,7 +135,8 @@ extern T SocketTimer_add (SocketPoll_T poll, int64_t delay_ms,
  * @see SocketTimer_add()
  * @see SocketTimer_cancel()
  */
-extern T SocketTimer_add_repeating (SocketPoll_T poll, int64_t interval_ms,
+extern T SocketTimer_add_repeating (SocketPoll_T poll,
+                                    int64_t interval_ms,
                                     SocketTimerCallback callback,
                                     void *userdata);
 
@@ -185,8 +188,8 @@ extern int64_t SocketTimer_remaining (SocketPoll_T poll, T timer);
  * @note For repeating timers, also updates the interval.
  * @see SocketTimer_add()
  */
-extern int SocketTimer_reschedule (SocketPoll_T poll, T timer,
-                                   int64_t new_delay_ms);
+extern int
+SocketTimer_reschedule (SocketPoll_T poll, T timer, int64_t new_delay_ms);
 
 /**
  * @brief Pause a timer, preserving remaining time.

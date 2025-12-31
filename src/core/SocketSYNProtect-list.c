@@ -66,7 +66,8 @@ lru_remove (SocketSYNProtect_T protect, SocketSYN_IPEntry *entry)
  * @param entry    IP entry to insert at front of LRU list
  *
  * @note Caller must hold protect->mutex
- * @note Entry must not already be in the LRU list (caller should call lru_remove first)
+ * @note Entry must not already be in the LRU list (caller should call
+ * lru_remove first)
  */
 void
 lru_push_front (SocketSYNProtect_T protect, SocketSYN_IPEntry *entry)
@@ -86,9 +87,9 @@ lru_push_front (SocketSYNProtect_T protect, SocketSYN_IPEntry *entry)
  * @brief Mark an entry as recently used by moving it to the front of LRU list.
  * @internal
  *
- * If the entry is not already at the front, removes it from its current position
- * and pushes it to the front of the LRU list. No-op if entry is already the head.
- * Used to update access time when an IP is accessed.
+ * If the entry is not already at the front, removes it from its current
+ * position and pushes it to the front of the LRU list. No-op if entry is
+ * already the head. Used to update access time when an IP is accessed.
  *
  * @param protect  SYN protection instance
  * @param entry    IP entry to mark as recently used

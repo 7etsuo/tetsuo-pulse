@@ -61,7 +61,10 @@ static char scratch[4096];
  * Returns: 0 on success, -1 on expected failure
  */
 static int
-execute_op (SocketBuf_T buf, uint8_t op, uint8_t arg, const uint8_t *payload,
+execute_op (SocketBuf_T buf,
+            uint8_t op,
+            uint8_t arg,
+            const uint8_t *payload,
             size_t payload_len)
 {
   switch (op % STRESS_OP_COUNT)
@@ -126,7 +129,10 @@ execute_op (SocketBuf_T buf, uint8_t op, uint8_t arg, const uint8_t *payload,
       {
         /* Reserve additional space - may fail */
         size_t reserve_size = ((size_t)arg * 16) + 1; /* Scale up arg */
-        TRY { SocketBuf_reserve (buf, reserve_size); }
+        TRY
+        {
+          SocketBuf_reserve (buf, reserve_size);
+        }
         EXCEPT (SocketBuf_Failed)
         {
           /* Expected for large reserves */
@@ -263,8 +269,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     /* Final state verification */
     (void)SocketBuf_check_invariants (buf);
   }
-  EXCEPT (Arena_Failed) { /* Memory allocation failure */ }
-  EXCEPT (SocketBuf_Failed) { /* Buffer operation failure */ }
+  EXCEPT (Arena_Failed)
+  { /* Memory allocation failure */
+  }
+  EXCEPT (SocketBuf_Failed)
+  { /* Buffer operation failure */
+  }
   FINALLY
   {
     if (buf)

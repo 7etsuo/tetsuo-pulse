@@ -89,8 +89,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           memcpy (hex_str, pin_data, hex_len);
           hex_str[hex_len] = '\0';
 
-          TRY { SocketTLSContext_add_pin_hex (ctx, hex_str); }
-          EXCEPT (SocketTLS_Failed) { /* Expected for invalid hex */ }
+          TRY
+          {
+            SocketTLSContext_add_pin_hex (ctx, hex_str);
+          }
+          EXCEPT (SocketTLS_Failed)
+          { /* Expected for invalid hex */
+          }
           END_TRY;
         }
         break;
@@ -105,7 +110,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           else
             {
               /* Pad with zeros */
-              unsigned char padded[32] = {0};
+              unsigned char padded[32] = { 0 };
               memcpy (padded, pin_data, pin_size);
               SocketTLSContext_add_pin (ctx, padded);
             }
@@ -122,8 +127,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           memcpy (hex_str + prefix_len, pin_data, hex_len);
           hex_str[prefix_len + hex_len] = '\0';
 
-          TRY { SocketTLSContext_add_pin_hex (ctx, hex_str); }
-          EXCEPT (SocketTLS_Failed) {}
+          TRY
+          {
+            SocketTLSContext_add_pin_hex (ctx, hex_str);
+          }
+          EXCEPT (SocketTLS_Failed)
+          {
+          }
           END_TRY;
         }
         break;
@@ -216,20 +226,28 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               if (pin_size > i)
                 {
                   size_t idx = pin_data[i % pin_size] % 64;
-                  variations[i][idx]
-                      = "0123456789abcdef"[pin_data[0] % 16];
+                  variations[i][idx] = "0123456789abcdef"[pin_data[0] % 16];
                 }
 
-              TRY { SocketTLSContext_add_pin_hex (ctx, variations[i]); }
-              EXCEPT (SocketTLS_Failed) {}
+              TRY
+              {
+                SocketTLSContext_add_pin_hex (ctx, variations[i]);
+              }
+              EXCEPT (SocketTLS_Failed)
+              {
+              }
               END_TRY;
             }
         }
         break;
       }
   }
-  EXCEPT (SocketTLS_Failed) {}
-  ELSE {}
+  EXCEPT (SocketTLS_Failed)
+  {
+  }
+  ELSE
+  {
+  }
   END_TRY;
 
   if (ctx)

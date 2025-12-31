@@ -73,10 +73,10 @@ create_temp_cert_files (void)
 {
   FILE *f;
 
-  snprintf (cert_file, sizeof (cert_file), "/tmp/test_push_cert_%d.pem",
-            getpid ());
-  snprintf (key_file, sizeof (key_file), "/tmp/test_push_key_%d.pem",
-            getpid ());
+  snprintf (
+      cert_file, sizeof (cert_file), "/tmp/test_push_cert_%d.pem", getpid ());
+  snprintf (
+      key_file, sizeof (key_file), "/tmp/test_push_key_%d.pem", getpid ());
 
   f = fopen (cert_file, "w");
   if (f == NULL)
@@ -200,13 +200,22 @@ push_server_thread_func (void *arg)
 
       /* Send server SETTINGS frame with ENABLE_PUSH=1 */
       unsigned char settings_frame[] = {
-        0x00, 0x00, 0x06,      /* Length: 6 (one setting) */
-        0x04,                  /* Type: SETTINGS */
-        0x00,                  /* Flags: 0 */
-        0x00, 0x00, 0x00, 0x00, /* Stream ID: 0 */
+        0x00,
+        0x00,
+        0x06, /* Length: 6 (one setting) */
+        0x04, /* Type: SETTINGS */
+        0x00, /* Flags: 0 */
+        0x00,
+        0x00,
+        0x00,
+        0x00, /* Stream ID: 0 */
         /* SETTINGS_ENABLE_PUSH = 1 */
-        0x00, 0x02, /* ID: ENABLE_PUSH */
-        0x00, 0x00, 0x00, 0x01  /* Value: 1 */
+        0x00,
+        0x02, /* ID: ENABLE_PUSH */
+        0x00,
+        0x00,
+        0x00,
+        0x01 /* Value: 1 */
       };
       SocketTLS_send (client, settings_frame, sizeof (settings_frame));
 
@@ -226,18 +235,36 @@ push_server_thread_func (void *arg)
         {
           /* Send PUSH_PROMISE frame for stream 2 */
           unsigned char push_promise[] = {
-            0x00, 0x00, 0x15,      /* Length: 21 */
-            0x05,                  /* Type: PUSH_PROMISE */
-            0x04,                  /* Flags: END_HEADERS */
-            0x00, 0x00, 0x00, 0x01, /* Stream ID: 1 (associated stream) */
+            0x00,
+            0x00,
+            0x15, /* Length: 21 */
+            0x05, /* Type: PUSH_PROMISE */
+            0x04, /* Flags: END_HEADERS */
+            0x00,
+            0x00,
+            0x00,
+            0x01, /* Stream ID: 1 (associated stream) */
             /* Promised Stream ID: 2 (4 bytes) */
-            0x00, 0x00, 0x00, 0x02,
+            0x00,
+            0x00,
+            0x00,
+            0x02,
             /* HPACK encoded headers (simplified - static table refs) */
-            0x82,             /* :method: GET (index 2) */
-            0x86,             /* :scheme: http (index 6) */
-            0x84,             /* :path: / (index 4) */
-            0x41, 0x8a, 0x08, 0x9d, 0x5c, 0x0b, 0x81, 0x70, 0xdc, 0x78,
-            0x0f, 0x03 /* :authority: www.example.com */
+            0x82, /* :method: GET (index 2) */
+            0x86, /* :scheme: http (index 6) */
+            0x84, /* :path: / (index 4) */
+            0x41,
+            0x8a,
+            0x08,
+            0x9d,
+            0x5c,
+            0x0b,
+            0x81,
+            0x70,
+            0xdc,
+            0x78,
+            0x0f,
+            0x03 /* :authority: www.example.com */
           };
           SocketTLS_send (client, push_promise, sizeof (push_promise));
           server->push_promise_sent = 1;
@@ -245,11 +272,11 @@ push_server_thread_func (void *arg)
 
           /* Send response HEADERS for stream 1 */
           unsigned char response_headers[] = {
-            0x00, 0x00, 0x01,      /* Length: 1 */
-            0x01,                  /* Type: HEADERS */
-            0x05,                  /* Flags: END_STREAM | END_HEADERS */
+            0x00, 0x00, 0x01,       /* Length: 1 */
+            0x01,                   /* Type: HEADERS */
+            0x05,                   /* Flags: END_STREAM | END_HEADERS */
             0x00, 0x00, 0x00, 0x01, /* Stream ID: 1 */
-            0x88                   /* :status: 200 (index 8) */
+            0x88                    /* :status: 200 (index 8) */
           };
           SocketTLS_send (client, response_headers, sizeof (response_headers));
         }
@@ -277,8 +304,7 @@ push_server_start (PushTestServer *server)
   server->port = port;
 
   /* Create TLS context */
-  TRY server->tls_ctx
-      = SocketTLSContext_new_server (cert_file, key_file, NULL);
+  TRY server->tls_ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
   EXCEPT (SocketTLS_Failed)
   return -1;
   END_TRY;
@@ -309,8 +335,8 @@ push_server_start (PushTestServer *server)
 
   /* Get actual port */
   len = sizeof (addr);
-  getsockname (Socket_fd (server->listen_socket), (struct sockaddr *)&addr,
-               &len);
+  getsockname (
+      Socket_fd (server->listen_socket), (struct sockaddr *)&addr, &len);
   server->port = ntohs (addr.sin_port);
 
   server->running = 1;
@@ -481,13 +507,22 @@ TEST (http2_push_promise_client_reception)
 
   /* Send SETTINGS frame with ENABLE_PUSH=1 (client accepts pushes) */
   unsigned char settings_frame[] = {
-    0x00, 0x00, 0x06,      /* Length: 6 (one setting) */
-    0x04,                  /* Type: SETTINGS */
-    0x00,                  /* Flags: 0 */
-    0x00, 0x00, 0x00, 0x00, /* Stream ID: 0 */
+    0x00,
+    0x00,
+    0x06, /* Length: 6 (one setting) */
+    0x04, /* Type: SETTINGS */
+    0x00, /* Flags: 0 */
+    0x00,
+    0x00,
+    0x00,
+    0x00, /* Stream ID: 0 */
     /* SETTINGS_ENABLE_PUSH = 1 */
-    0x00, 0x02, /* ID: ENABLE_PUSH */
-    0x00, 0x00, 0x00, 0x01  /* Value: 1 */
+    0x00,
+    0x02, /* ID: ENABLE_PUSH */
+    0x00,
+    0x00,
+    0x00,
+    0x01 /* Value: 1 */
   };
   sent = SocketTLS_send (client, settings_frame, sizeof (settings_frame));
   ASSERT_EQ (sent, (ssize_t)sizeof (settings_frame));
@@ -505,15 +540,21 @@ TEST (http2_push_promise_client_reception)
 
   /* Send HEADERS frame to request a resource (stream 1) */
   unsigned char headers_frame[] = {
-    0x00, 0x00, 0x05,      /* Length: 5 */
-    0x01,                  /* Type: HEADERS */
-    0x04,                  /* Flags: END_HEADERS */
-    0x00, 0x00, 0x00, 0x01, /* Stream ID: 1 */
+    0x00,
+    0x00,
+    0x05, /* Length: 5 */
+    0x01, /* Type: HEADERS */
+    0x04, /* Flags: END_HEADERS */
+    0x00,
+    0x00,
+    0x00,
+    0x01, /* Stream ID: 1 */
     /* HPACK encoded headers */
-    0x82,             /* :method: GET */
-    0x86,             /* :scheme: http */
-    0x84,             /* :path: / */
-    0x41, 0x00        /* :authority: (empty) */
+    0x82, /* :method: GET */
+    0x86, /* :scheme: http */
+    0x84, /* :path: / */
+    0x41,
+    0x00 /* :authority: (empty) */
   };
   SocketTLS_send (client, headers_frame, sizeof (headers_frame));
 
@@ -594,7 +635,7 @@ TEST (http2_push_promise_stream_id_must_be_monotonic)
   uint32_t invalid_reuse = 2;
   uint32_t invalid_lower = 0;
 
-  ASSERT (next_valid > last_pushed);      /* Valid: 4 > 2 */
+  ASSERT (next_valid > last_pushed);       /* Valid: 4 > 2 */
   ASSERT (!(invalid_reuse > last_pushed)); /* Invalid: 2 not > 2 */
   ASSERT (!(invalid_lower > last_pushed)); /* Invalid: 0 not > 2 */
 }

@@ -129,7 +129,8 @@ TEST (sha256_empty)
 
   hex_to_bytes (
       "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      expected, 32);
+      expected,
+      32);
 
   SocketCrypto_sha256 ("", 0, result);
   ASSERT (memcmp (result, expected, 32) == 0);
@@ -143,7 +144,8 @@ TEST (sha256_abc)
 
   hex_to_bytes (
       "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
-      expected, 32);
+      expected,
+      32);
 
   SocketCrypto_sha256 ("abc", 3, result);
   ASSERT (memcmp (result, expected, 32) == 0);
@@ -159,7 +161,8 @@ TEST (sha256_long)
 
   hex_to_bytes (
       "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1",
-      expected, 32);
+      expected,
+      32);
 
   SocketCrypto_sha256 (input, strlen (input), result);
   ASSERT (memcmp (result, expected, 32) == 0);
@@ -227,7 +230,8 @@ TEST (hmac_sha256_test_case_1)
 
   hex_to_bytes (
       "b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7",
-      expected, 32);
+      expected,
+      32);
 
   SocketCrypto_hmac_sha256 (key, 20, data, strlen (data), result);
   ASSERT (memcmp (result, expected, 32) == 0);
@@ -243,7 +247,8 @@ TEST (hmac_sha256_test_case_2)
 
   hex_to_bytes (
       "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843",
-      expected, 32);
+      expected,
+      32);
 
   SocketCrypto_hmac_sha256 (key, strlen (key), data, strlen (data), result);
   ASSERT (memcmp (result, expected, 32) == 0);
@@ -265,7 +270,8 @@ TEST (hmac_sha256_test_case_3)
 
   hex_to_bytes (
       "773ea91e36800e46854db8ebd09181a72959098b3ef8c122d9635514ced565fe",
-      expected, 32);
+      expected,
+      32);
 
   SocketCrypto_hmac_sha256 (key, 20, data, 50, result);
   ASSERT (memcmp (result, expected, 32) == 0);
@@ -372,8 +378,7 @@ TEST (base64_encode_foob)
 {
   /* RFC 4648: "foob" -> "Zm9vYg==" */
   char output[16];
-  ssize_t len
-      = SocketCrypto_base64_encode ("foob", 4, output, sizeof (output));
+  ssize_t len = SocketCrypto_base64_encode ("foob", 4, output, sizeof (output));
   ASSERT (len == 8);
   ASSERT (strcmp (output, "Zm9vYg==") == 0);
 }
@@ -409,8 +414,7 @@ TEST (base64_decode_Zg)
 {
   /* "Zg==" -> "f" */
   unsigned char output[16];
-  ssize_t len
-      = SocketCrypto_base64_decode ("Zg==", 4, output, sizeof (output));
+  ssize_t len = SocketCrypto_base64_decode ("Zg==", 4, output, sizeof (output));
   ASSERT (len == 1);
   ASSERT (output[0] == 'f');
 }
@@ -419,8 +423,7 @@ TEST (base64_decode_Zm8)
 {
   /* "Zm8=" -> "fo" */
   unsigned char output[16];
-  ssize_t len
-      = SocketCrypto_base64_decode ("Zm8=", 4, output, sizeof (output));
+  ssize_t len = SocketCrypto_base64_decode ("Zm8=", 4, output, sizeof (output));
   ASSERT (len == 2);
   ASSERT (memcmp (output, "fo", 2) == 0);
 }
@@ -429,8 +432,7 @@ TEST (base64_decode_Zm9v)
 {
   /* "Zm9v" -> "foo" */
   unsigned char output[16];
-  ssize_t len
-      = SocketCrypto_base64_decode ("Zm9v", 4, output, sizeof (output));
+  ssize_t len = SocketCrypto_base64_decode ("Zm9v", 4, output, sizeof (output));
   ASSERT (len == 3);
   ASSERT (memcmp (output, "foo", 3) == 0);
 }
@@ -451,12 +453,12 @@ TEST (base64_roundtrip)
   char encoded[128];
   unsigned char decoded[128];
 
-  ssize_t enc_len = SocketCrypto_base64_encode (original, strlen (original),
-                                                encoded, sizeof (encoded));
+  ssize_t enc_len = SocketCrypto_base64_encode (
+      original, strlen (original), encoded, sizeof (encoded));
   ASSERT (enc_len > 0);
 
-  ssize_t dec_len = SocketCrypto_base64_decode (encoded, (size_t)enc_len,
-                                                decoded, sizeof (decoded));
+  ssize_t dec_len = SocketCrypto_base64_decode (
+      encoded, (size_t)enc_len, decoded, sizeof (decoded));
   ASSERT (dec_len == (ssize_t)strlen (original));
   ASSERT (memcmp (decoded, original, (size_t)dec_len) == 0);
 }
@@ -496,8 +498,8 @@ TEST (base64_whitespace)
 {
   /* Base64 should ignore whitespace per RFC 4648 Section 3.3 */
   unsigned char output[16];
-  ssize_t len = SocketCrypto_base64_decode ("Zm 9v\nYm\tFy", 0, output,
-                                            sizeof (output));
+  ssize_t len = SocketCrypto_base64_decode (
+      "Zm 9v\nYm\tFy", 0, output, sizeof (output));
   ASSERT (len == 6);
   ASSERT (memcmp (output, "foobar", 6) == 0);
 }
@@ -562,8 +564,8 @@ TEST (base64_decode_bounded_strlen)
   memset (valid_input, 'A', sizeof (valid_input) - 1);
   valid_input[sizeof (valid_input) - 1] = '\0';
 
-  ssize_t len = SocketCrypto_base64_decode (valid_input, 0, output,
-                                            sizeof (output));
+  ssize_t len
+      = SocketCrypto_base64_decode (valid_input, 0, output, sizeof (output));
   /* Should succeed (or fail due to buffer size, but not -1 from strlen scan)
    */
   ASSERT (len >= 0 || len == -1);
@@ -623,9 +625,8 @@ TEST (hex_decode_invalid)
 
 TEST (hex_roundtrip)
 {
-  unsigned char original[]
-      = { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
-          0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
+  unsigned char original[] = { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
+                               0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
   char encoded[64];
   unsigned char decoded[16];
 
@@ -723,8 +724,7 @@ main (void)
   printf ("=========================\n");
 
 #ifndef SOCKET_HAS_TLS
-  printf (
-      "Note: TLS-dependent tests skipped (SOCKET_HAS_TLS not defined)\n\n");
+  printf ("Note: TLS-dependent tests skipped (SOCKET_HAS_TLS not defined)\n\n");
 #endif
 
   Test_run_all ();

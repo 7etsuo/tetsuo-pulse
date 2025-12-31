@@ -62,16 +62,16 @@ typedef enum
  */
 typedef enum
 {
-  DNS_RCODE_NOERROR = 0,  /**< No error condition */
-  DNS_RCODE_FORMERR = 1,  /**< Format error - server could not interpret */
-  DNS_RCODE_SERVFAIL = 2, /**< Server failure - internal error */
-  DNS_RCODE_NXDOMAIN = 3, /**< Name Error - domain does not exist */
-  DNS_RCODE_NOTIMP = 4,   /**< Not Implemented - query type not supported */
-  DNS_RCODE_REFUSED = 5,  /**< Refused - policy restriction */
-  DNS_RCODE_YXDOMAIN = 6, /**< Name exists when it should not (RFC 2136) */
-  DNS_RCODE_YXRRSET = 7,  /**< RR set exists when it should not (RFC 2136) */
-  DNS_RCODE_NXRRSET = 8,  /**< RR set does not exist (RFC 2136) */
-  DNS_RCODE_NOTAUTH = 9,  /**< Server not authoritative (RFC 2136) */
+  DNS_RCODE_NOERROR = 0,   /**< No error condition */
+  DNS_RCODE_FORMERR = 1,   /**< Format error - server could not interpret */
+  DNS_RCODE_SERVFAIL = 2,  /**< Server failure - internal error */
+  DNS_RCODE_NXDOMAIN = 3,  /**< Name Error - domain does not exist */
+  DNS_RCODE_NOTIMP = 4,    /**< Not Implemented - query type not supported */
+  DNS_RCODE_REFUSED = 5,   /**< Refused - policy restriction */
+  DNS_RCODE_YXDOMAIN = 6,  /**< Name exists when it should not (RFC 2136) */
+  DNS_RCODE_YXRRSET = 7,   /**< RR set exists when it should not (RFC 2136) */
+  DNS_RCODE_NXRRSET = 8,   /**< RR set does not exist (RFC 2136) */
+  DNS_RCODE_NOTAUTH = 9,   /**< Server not authoritative (RFC 2136) */
   DNS_RCODE_NOTZONE = 10,  /**< Name not in zone (RFC 2136) */
   DNS_RCODE_BADCOOKIE = 23 /**< Bad/missing Server Cookie (RFC 7873) */
 } SocketDNS_Rcode;
@@ -165,7 +165,8 @@ extern const Except_T SocketDNS_WireError;
  * @see SocketDNS_header_decode() for parsing wire format.
  */
 extern int SocketDNS_header_encode (const SocketDNS_Header *header,
-                                    unsigned char *buf, size_t buflen);
+                                    unsigned char *buf,
+                                    size_t buflen);
 
 /**
  * @brief Decode DNS header from wire format.
@@ -192,7 +193,8 @@ extern int SocketDNS_header_encode (const SocketDNS_Header *header,
  *
  * @see SocketDNS_header_encode() for creating wire format.
  */
-extern int SocketDNS_header_decode (const unsigned char *data, size_t datalen,
+extern int SocketDNS_header_decode (const unsigned char *data,
+                                    size_t datalen,
                                     SocketDNS_Header *header);
 
 /**
@@ -212,7 +214,8 @@ extern int SocketDNS_header_decode (const unsigned char *data, size_t datalen,
  * // header is now ready to encode
  * @endcode
  */
-extern void SocketDNS_header_init_query (SocketDNS_Header *header, uint16_t id,
+extern void SocketDNS_header_init_query (SocketDNS_Header *header,
+                                         uint16_t id,
                                          uint16_t qdcount);
 
 /**
@@ -225,7 +228,8 @@ extern void SocketDNS_header_init_query (SocketDNS_Header *header, uint16_t id,
 /** Maximum length of a single DNS label (RFC 1035 Section 2.3.4). */
 #define DNS_MAX_LABEL_LEN 63
 
-/** Maximum total length of a domain name in wire format (RFC 1035 Section 2.3.4). */
+/** Maximum total length of a domain name in wire format (RFC 1035
+ * Section 2.3.4). */
 #define DNS_MAX_NAME_LEN 255
 
 /** Compression pointer flag (high 2 bits = 11, RFC 1035 Section 4.1.4). */
@@ -234,7 +238,8 @@ extern void SocketDNS_header_init_query (SocketDNS_Header *header, uint16_t id,
 /** Mask for compression pointer offset (14 bits). */
 #define DNS_COMPRESSION_OFFSET_MASK 0x3FFF
 
-/** Maximum depth for following compression pointers (prevents infinite loops). */
+/** Maximum depth for following compression pointers (prevents infinite loops).
+ */
 #define DNS_MAX_POINTER_HOPS 16
 
 /**
@@ -254,14 +259,17 @@ extern void SocketDNS_header_init_query (SocketDNS_Header *header, uint16_t id,
  * @code{.c}
  * unsigned char wire[DNS_MAX_NAME_LEN];
  * size_t len;
- * if (SocketDNS_name_encode("www.example.com", wire, sizeof(wire), &len) == 0) {
+ * if (SocketDNS_name_encode("www.example.com", wire, sizeof(wire), &len) == 0)
+ * {
  *     // wire contains: [3]www[7]example[3]com[0]
  *     // len = 17
  * }
  * @endcode
  */
-extern int SocketDNS_name_encode (const char *name, unsigned char *buf,
-                                  size_t buflen, size_t *written);
+extern int SocketDNS_name_encode (const char *name,
+                                  unsigned char *buf,
+                                  size_t buflen,
+                                  size_t *written);
 
 /**
  * @brief Decode a domain name from DNS wire format (with compression support).
@@ -282,14 +290,17 @@ extern int SocketDNS_name_encode (const char *name, unsigned char *buf,
  * @code{.c}
  * char name[DNS_MAX_NAME_LEN];
  * size_t consumed;
- * int len = SocketDNS_name_decode(msg, msglen, 12, name, sizeof(name), &consumed);
- * if (len >= 0) {
- *     printf("Domain: %s (consumed %zu bytes)\n", name, consumed);
+ * int len = SocketDNS_name_decode(msg, msglen, 12, name, sizeof(name),
+ * &consumed); if (len >= 0) { printf("Domain: %s (consumed %zu bytes)\n", name,
+ * consumed);
  * }
  * @endcode
  */
-extern int SocketDNS_name_decode (const unsigned char *msg, size_t msglen,
-                                  size_t offset, char *buf, size_t buflen,
+extern int SocketDNS_name_decode (const unsigned char *msg,
+                                  size_t msglen,
+                                  size_t offset,
+                                  char *buf,
+                                  size_t buflen,
                                   size_t *consumed);
 
 /**
@@ -340,7 +351,8 @@ extern size_t SocketDNS_name_wire_length (const char *name);
  * @{
  */
 
-/** Fixed fields size in question section: QTYPE(2) + QCLASS(2) bytes (RFC 1035 Section 4.1.2). */
+/** Fixed fields size in question section: QTYPE(2) + QCLASS(2) bytes (RFC 1035
+ * Section 4.1.2). */
 #define DNS_QUESTION_FIXED_SIZE 4
 
 /**
@@ -350,23 +362,23 @@ extern size_t SocketDNS_name_wire_length (const char *name);
  */
 typedef enum
 {
-  DNS_TYPE_A = 1,      /**< IPv4 host address (RFC 1035) */
-  DNS_TYPE_NS = 2,     /**< Authoritative name server (RFC 1035) */
-  DNS_TYPE_CNAME = 5,  /**< Canonical name for alias (RFC 1035) */
-  DNS_TYPE_SOA = 6,    /**< Start of authority (RFC 1035) */
-  DNS_TYPE_PTR = 12,   /**< Domain name pointer (RFC 1035) */
-  DNS_TYPE_MX = 15,    /**< Mail exchange (RFC 1035) */
-  DNS_TYPE_TXT = 16,   /**< Text strings (RFC 1035) */
-  DNS_TYPE_AAAA = 28,  /**< IPv6 host address (RFC 3596) */
-  DNS_TYPE_SRV = 33,   /**< Service locator (RFC 2782) */
-  DNS_TYPE_OPT = 41,   /**< EDNS0 option (RFC 6891) */
-  DNS_TYPE_DS = 43,    /**< Delegation Signer (RFC 4034) */
-  DNS_TYPE_RRSIG = 46, /**< RRSIG signature (RFC 4034) */
-  DNS_TYPE_NSEC = 47,  /**< Next Secure (RFC 4034) */
-  DNS_TYPE_DNSKEY = 48, /**< DNS Public Key (RFC 4034) */
-  DNS_TYPE_NSEC3 = 50, /**< NSEC3 hashed denial (RFC 5155) */
+  DNS_TYPE_A = 1,           /**< IPv4 host address (RFC 1035) */
+  DNS_TYPE_NS = 2,          /**< Authoritative name server (RFC 1035) */
+  DNS_TYPE_CNAME = 5,       /**< Canonical name for alias (RFC 1035) */
+  DNS_TYPE_SOA = 6,         /**< Start of authority (RFC 1035) */
+  DNS_TYPE_PTR = 12,        /**< Domain name pointer (RFC 1035) */
+  DNS_TYPE_MX = 15,         /**< Mail exchange (RFC 1035) */
+  DNS_TYPE_TXT = 16,        /**< Text strings (RFC 1035) */
+  DNS_TYPE_AAAA = 28,       /**< IPv6 host address (RFC 3596) */
+  DNS_TYPE_SRV = 33,        /**< Service locator (RFC 2782) */
+  DNS_TYPE_OPT = 41,        /**< EDNS0 option (RFC 6891) */
+  DNS_TYPE_DS = 43,         /**< Delegation Signer (RFC 4034) */
+  DNS_TYPE_RRSIG = 46,      /**< RRSIG signature (RFC 4034) */
+  DNS_TYPE_NSEC = 47,       /**< Next Secure (RFC 4034) */
+  DNS_TYPE_DNSKEY = 48,     /**< DNS Public Key (RFC 4034) */
+  DNS_TYPE_NSEC3 = 50,      /**< NSEC3 hashed denial (RFC 5155) */
   DNS_TYPE_NSEC3PARAM = 51, /**< NSEC3 parameters (RFC 5155) */
-  DNS_TYPE_ANY = 255   /**< Any type (QTYPE only, RFC 1035) */
+  DNS_TYPE_ANY = 255        /**< Any type (QTYPE only, RFC 1035) */
 } SocketDNS_Type;
 
 /**
@@ -431,7 +443,8 @@ typedef struct
  * @endcode
  */
 extern int SocketDNS_question_encode (const SocketDNS_Question *question,
-                                      unsigned char *buf, size_t buflen,
+                                      unsigned char *buf,
+                                      size_t buflen,
                                       size_t *written);
 
 /**
@@ -456,8 +469,10 @@ extern int SocketDNS_question_encode (const SocketDNS_Question *question,
  * }
  * @endcode
  */
-extern int SocketDNS_question_decode (const unsigned char *msg, size_t msglen,
-                                      size_t offset, SocketDNS_Question *question,
+extern int SocketDNS_question_decode (const unsigned char *msg,
+                                      size_t msglen,
+                                      size_t offset,
+                                      SocketDNS_Question *question,
                                       size_t *consumed);
 
 /**
@@ -477,7 +492,8 @@ extern int SocketDNS_question_decode (const unsigned char *msg, size_t msglen,
  * @endcode
  */
 extern void SocketDNS_question_init (SocketDNS_Question *question,
-                                     const char *name, uint16_t qtype);
+                                     const char *name,
+                                     uint16_t qtype);
 
 /** @} */ /* End of dns_question group */
 
@@ -557,8 +573,10 @@ typedef struct
  * }
  * @endcode
  */
-extern int SocketDNS_rr_decode (const unsigned char *msg, size_t msglen,
-                                size_t offset, SocketDNS_RR *rr,
+extern int SocketDNS_rr_decode (const unsigned char *msg,
+                                size_t msglen,
+                                size_t offset,
+                                SocketDNS_RR *rr,
                                 size_t *consumed);
 
 /**
@@ -586,8 +604,10 @@ extern int SocketDNS_rr_decode (const unsigned char *msg, size_t msglen,
  * // offset now points to authority section
  * @endcode
  */
-extern int SocketDNS_rr_skip (const unsigned char *msg, size_t msglen,
-                              size_t offset, size_t *consumed);
+extern int SocketDNS_rr_skip (const unsigned char *msg,
+                              size_t msglen,
+                              size_t offset,
+                              size_t *consumed);
 
 /** @} */ /* End of dns_rr group */
 
@@ -629,8 +649,8 @@ extern int SocketDNS_rr_skip (const unsigned char *msg, size_t msglen,
  * }
  * @endcode
  */
-extern int SocketDNS_rdata_parse_a (const SocketDNS_RR *rr,
-                                    struct in_addr *addr);
+extern int
+SocketDNS_rdata_parse_a (const SocketDNS_RR *rr, struct in_addr *addr);
 
 /**
  * @brief Parse AAAA record RDATA (IPv6 address).
@@ -657,8 +677,8 @@ extern int SocketDNS_rdata_parse_a (const SocketDNS_RR *rr,
  * }
  * @endcode
  */
-extern int SocketDNS_rdata_parse_aaaa (const SocketDNS_RR *rr,
-                                       struct in6_addr *addr);
+extern int
+SocketDNS_rdata_parse_aaaa (const SocketDNS_RR *rr, struct in6_addr *addr);
 
 /**
  * @brief Parse CNAME record RDATA (canonical name).
@@ -689,11 +709,14 @@ extern int SocketDNS_rdata_parse_aaaa (const SocketDNS_RR *rr,
  * }
  * @endcode
  */
-extern int SocketDNS_rdata_parse_cname (const unsigned char *msg, size_t msglen,
-                                        const SocketDNS_RR *rr, char *cname,
+extern int SocketDNS_rdata_parse_cname (const unsigned char *msg,
+                                        size_t msglen,
+                                        const SocketDNS_RR *rr,
+                                        char *cname,
                                         size_t cnamelen);
 
-/** Size of SOA fixed fields in bytes (SERIAL + REFRESH + RETRY + EXPIRE + MINIMUM). */
+/** Size of SOA fixed fields in bytes (SERIAL + REFRESH + RETRY + EXPIRE +
+ * MINIMUM). */
 #define DNS_SOA_FIXED_SIZE 20
 
 /**
@@ -770,8 +793,10 @@ typedef struct
  * }
  * @endcode
  */
-extern int SocketDNS_rdata_parse_soa (const unsigned char *msg, size_t msglen,
-                                      const SocketDNS_RR *rr, SocketDNS_SOA *soa);
+extern int SocketDNS_rdata_parse_soa (const unsigned char *msg,
+                                      size_t msglen,
+                                      const SocketDNS_RR *rr,
+                                      SocketDNS_SOA *soa);
 
 /** @} */ /* End of dns_rdata group */
 
@@ -794,7 +819,8 @@ extern int SocketDNS_rdata_parse_soa (const unsigned char *msg, size_t msglen,
 /** RFC 1035 minimum UDP payload size. */
 #define DNS_UDP_PAYLOAD_MIN 512
 
-/** Minimum UDP payload size (values below treated as 512, RFC 6891 Section 6.2.3). */
+/** Minimum UDP payload size (values below treated as 512, RFC 6891
+ * Section 6.2.3). */
 #define DNS_EDNS0_MIN_UDPSIZE DNS_UDP_PAYLOAD_MIN
 
 /** Fixed size of OPT pseudo-RR in bytes (1 + 2 + 2 + 4 + 2 = 11). */
@@ -830,11 +856,11 @@ extern int SocketDNS_rdata_parse_soa (const unsigned char *msg, size_t msglen,
 typedef struct
 {
   uint16_t udp_payload_size; /**< Max UDP payload size (CLASS field) */
-  uint8_t extended_rcode;    /**< Upper 8 bits of 12-bit RCODE (TTL bits 24-31) */
-  uint8_t version;           /**< EDNS version (TTL bits 16-23), 0 for EDNS0 */
-  uint8_t do_bit;            /**< DNSSEC OK flag (TTL bit 15) */
-  uint16_t z;                /**< Reserved, must be zero (TTL bits 0-14) */
-  uint16_t rdlength;         /**< Length of RDATA in bytes */
+  uint8_t extended_rcode; /**< Upper 8 bits of 12-bit RCODE (TTL bits 24-31) */
+  uint8_t version;        /**< EDNS version (TTL bits 16-23), 0 for EDNS0 */
+  uint8_t do_bit;         /**< DNSSEC OK flag (TTL bit 15) */
+  uint16_t z;             /**< Reserved, must be zero (TTL bits 0-14) */
+  uint16_t rdlength;      /**< Length of RDATA in bytes */
   const unsigned char *rdata; /**< Pointer to RDATA (options), not owned */
 } SocketDNS_OPT;
 
@@ -874,8 +900,10 @@ typedef struct
  */
 typedef enum
 {
-  DNS_RCODE_EXT_BADVERS = 16,  /**< BADVERS - Server doesn't support EDNS version */
-  DNS_RCODE_EXT_BADSIG = 16,   /**< BADSIG - TSIG signature failure (same as BADVERS) */
+  DNS_RCODE_EXT_BADVERS
+  = 16, /**< BADVERS - Server doesn't support EDNS version */
+  DNS_RCODE_EXT_BADSIG
+  = 16, /**< BADSIG - TSIG signature failure (same as BADVERS) */
   DNS_RCODE_EXT_BADKEY = 17,   /**< BADKEY - Key not recognized */
   DNS_RCODE_EXT_BADTIME = 18,  /**< BADTIME - Signature out of time window */
   DNS_RCODE_EXT_BADMODE = 19,  /**< BADMODE - Bad TKEY mode */
@@ -946,8 +974,9 @@ extern void SocketDNS_opt_init (SocketDNS_OPT *opt, uint16_t udp_size);
  * }
  * @endcode
  */
-extern int SocketDNS_opt_encode (const SocketDNS_OPT *opt, unsigned char *buf,
-                                  size_t buflen);
+extern int SocketDNS_opt_encode (const SocketDNS_OPT *opt,
+                                 unsigned char *buf,
+                                 size_t buflen);
 
 /**
  * @brief Decode an OPT record from wire format.
@@ -970,8 +999,8 @@ extern int SocketDNS_opt_encode (const SocketDNS_OPT *opt, unsigned char *buf,
  * }
  * @endcode
  */
-extern int SocketDNS_opt_decode (const unsigned char *buf, size_t len,
-                                  SocketDNS_OPT *opt);
+extern int
+SocketDNS_opt_decode (const unsigned char *buf, size_t len, SocketDNS_OPT *opt);
 
 /**
  * @brief Validate an OPT record per RFC 6891 Section 6.1.1.
@@ -990,15 +1019,15 @@ extern int SocketDNS_opt_decode (const unsigned char *buf, size_t len,
  * @code{.c}
  * SocketDNS_OPT opt;
  * if (SocketDNS_opt_decode(buf, len, &opt) > 0) {
- *     SocketDNS_OPT_ValidationResult result = SocketDNS_opt_validate(&opt, len);
- *     if (result != DNS_OPT_VALID) {
+ *     SocketDNS_OPT_ValidationResult result = SocketDNS_opt_validate(&opt,
+ * len); if (result != DNS_OPT_VALID) {
  *         // Return FORMERR
  *     }
  * }
  * @endcode
  */
-extern SocketDNS_OPT_ValidationResult SocketDNS_opt_validate (
-    const SocketDNS_OPT *opt, size_t rdata_len);
+extern SocketDNS_OPT_ValidationResult
+SocketDNS_opt_validate (const SocketDNS_OPT *opt, size_t rdata_len);
 
 /**
  * @brief Check if OPT NAME is the root domain.
@@ -1032,8 +1061,9 @@ extern int SocketDNS_opt_is_valid_name (unsigned char name_byte);
  * }
  * @endcode
  */
-extern int SocketDNS_response_count_opt (const unsigned char *msg, size_t msg_len,
-                                          const SocketDNS_Header *hdr);
+extern int SocketDNS_response_count_opt (const unsigned char *msg,
+                                         size_t msg_len,
+                                         const SocketDNS_Header *hdr);
 
 /**
  * @brief Get human-readable string for OPT validation result.
@@ -1042,7 +1072,8 @@ extern int SocketDNS_response_count_opt (const unsigned char *msg, size_t msg_le
  * @param[in] result Validation result code.
  * @return Static string describing the result.
  */
-extern const char *SocketDNS_opt_validation_str (SocketDNS_OPT_ValidationResult result);
+extern const char *
+SocketDNS_opt_validation_str (SocketDNS_OPT_ValidationResult result);
 
 /**
  * @brief Calculate the 12-bit extended RCODE from header and OPT.
@@ -1067,7 +1098,7 @@ extern const char *SocketDNS_opt_validation_str (SocketDNS_OPT_ValidationResult 
  * @endcode
  */
 extern uint16_t SocketDNS_opt_extended_rcode (const SocketDNS_Header *hdr,
-                                               const SocketDNS_OPT *opt);
+                                              const SocketDNS_OPT *opt);
 
 /**
  * @brief Decode OPT TTL field into flags structure.
@@ -1150,7 +1181,7 @@ extern int SocketDNS_opt_get_version (const SocketDNS_OPT *opt);
  * @endcode
  */
 extern int SocketDNS_opt_is_badvers (const SocketDNS_Header *hdr,
-                                      const SocketDNS_OPT *opt);
+                                     const SocketDNS_OPT *opt);
 
 /**
  * @defgroup dns_edns0_options EDNS0 Option Parsing
@@ -1170,16 +1201,16 @@ extern int SocketDNS_opt_is_badvers (const SocketDNS_Header *hdr,
  */
 typedef enum
 {
-  DNS_EDNS_OPT_RESERVED = 0,         /**< Reserved (RFC 6891) */
-  DNS_EDNS_OPT_NSID = 3,             /**< Name Server Identifier (RFC 5001) */
-  DNS_EDNS_OPT_CLIENT_SUBNET = 8,    /**< Client Subnet (RFC 7871) */
-  DNS_EDNS_OPT_COOKIE = 10,          /**< DNS Cookie (RFC 7873) */
-  DNS_EDNS_OPT_TCP_KEEPALIVE = 11,   /**< TCP Keepalive (RFC 7828) */
-  DNS_EDNS_OPT_PADDING = 12,         /**< Padding (RFC 7830) */
-  DNS_EDNS_OPT_EXTENDED_ERROR = 15,  /**< Extended DNS Error (RFC 8914) */
-  DNS_EDNS_OPT_LOCAL_MIN = 65001,    /**< Local/Experimental minimum */
-  DNS_EDNS_OPT_LOCAL_MAX = 65534,    /**< Local/Experimental maximum */
-  DNS_EDNS_OPT_RESERVED_MAX = 65535  /**< Reserved (RFC 6891) */
+  DNS_EDNS_OPT_RESERVED = 0,        /**< Reserved (RFC 6891) */
+  DNS_EDNS_OPT_NSID = 3,            /**< Name Server Identifier (RFC 5001) */
+  DNS_EDNS_OPT_CLIENT_SUBNET = 8,   /**< Client Subnet (RFC 7871) */
+  DNS_EDNS_OPT_COOKIE = 10,         /**< DNS Cookie (RFC 7873) */
+  DNS_EDNS_OPT_TCP_KEEPALIVE = 11,  /**< TCP Keepalive (RFC 7828) */
+  DNS_EDNS_OPT_PADDING = 12,        /**< Padding (RFC 7830) */
+  DNS_EDNS_OPT_EXTENDED_ERROR = 15, /**< Extended DNS Error (RFC 8914) */
+  DNS_EDNS_OPT_LOCAL_MIN = 65001,   /**< Local/Experimental minimum */
+  DNS_EDNS_OPT_LOCAL_MAX = 65534,   /**< Local/Experimental maximum */
+  DNS_EDNS_OPT_RESERVED_MAX = 65535 /**< Reserved (RFC 6891) */
 } SocketDNS_EDNSOptionCode;
 
 /**
@@ -1205,9 +1236,10 @@ typedef enum
  */
 typedef struct
 {
-  uint16_t code;               /**< Option code (IANA assigned) */
-  uint16_t length;             /**< Length of option data in bytes */
-  const unsigned char *data;   /**< Option data (not owned, may be NULL if length=0) */
+  uint16_t code;   /**< Option code (IANA assigned) */
+  uint16_t length; /**< Length of option data in bytes */
+  const unsigned char
+      *data; /**< Option data (not owned, may be NULL if length=0) */
 } SocketDNS_EDNSOption;
 
 /**
@@ -1219,8 +1251,8 @@ typedef struct
  */
 typedef struct
 {
-  const unsigned char *pos;   /**< Current position in RDATA */
-  const unsigned char *end;   /**< End of RDATA */
+  const unsigned char *pos; /**< Current position in RDATA */
+  const unsigned char *end; /**< End of RDATA */
 } SocketDNS_EDNSOptionIter;
 
 /**
@@ -1246,7 +1278,8 @@ typedef struct
  * @endcode
  */
 extern int SocketDNS_edns_option_encode (const SocketDNS_EDNSOption *option,
-                                          unsigned char *buf, size_t buflen);
+                                         unsigned char *buf,
+                                         size_t buflen);
 
 /**
  * @brief Initialize an iterator for parsing EDNS options.
@@ -1265,8 +1298,8 @@ extern int SocketDNS_edns_option_encode (const SocketDNS_EDNSOption *option,
  * @endcode
  */
 extern void SocketDNS_edns_option_iter_init (SocketDNS_EDNSOptionIter *iter,
-                                              const unsigned char *rdata,
-                                              size_t rdlen);
+                                             const unsigned char *rdata,
+                                             size_t rdlen);
 
 /**
  * @brief Get next option from the iterator.
@@ -1299,7 +1332,7 @@ extern void SocketDNS_edns_option_iter_init (SocketDNS_EDNSOptionIter *iter,
  * @endcode
  */
 extern int SocketDNS_edns_option_iter_next (SocketDNS_EDNSOptionIter *iter,
-                                             SocketDNS_EDNSOption *option);
+                                            SocketDNS_EDNSOption *option);
 
 /**
  * @brief Find an option by code in OPT RDATA.
@@ -1322,8 +1355,10 @@ extern int SocketDNS_edns_option_iter_next (SocketDNS_EDNSOptionIter *iter,
  * }
  * @endcode
  */
-extern int SocketDNS_edns_option_find (const unsigned char *rdata, size_t rdlen,
-                                        uint16_t code, SocketDNS_EDNSOption *option);
+extern int SocketDNS_edns_option_find (const unsigned char *rdata,
+                                       size_t rdlen,
+                                       uint16_t code,
+                                       SocketDNS_EDNSOption *option);
 
 /**
  * @brief Encode an array of options to RDATA format.
@@ -1352,8 +1387,9 @@ extern int SocketDNS_edns_option_find (const unsigned char *rdata, size_t rdlen,
  * @endcode
  */
 extern int SocketDNS_edns_options_encode (const SocketDNS_EDNSOption *options,
-                                           size_t count, unsigned char *buf,
-                                           size_t buflen);
+                                          size_t count,
+                                          unsigned char *buf,
+                                          size_t buflen);
 
 /** @} */ /* End of dns_edns0_options group */
 
@@ -1420,10 +1456,11 @@ typedef struct
  */
 typedef struct
 {
-  uint16_t initial_size;     /**< Initial payload size (default: 4096) */
-  uint16_t fallback1_size;   /**< First fallback size (default: 1400) */
-  uint16_t fallback2_size;   /**< Second fallback size (default: 512) */
-  uint32_t reset_timeout_sec; /**< Seconds before resetting to initial (default: 300) */
+  uint16_t initial_size;      /**< Initial payload size (default: 4096) */
+  uint16_t fallback1_size;    /**< First fallback size (default: 1400) */
+  uint16_t fallback2_size;    /**< Second fallback size (default: 512) */
+  uint32_t reset_timeout_sec; /**< Seconds before resetting to initial (default:
+                                 300) */
 } SocketDNS_PayloadConfig;
 
 /**
@@ -1477,8 +1514,9 @@ extern void SocketDNS_payload_config_init (SocketDNS_PayloadConfig *config);
  * }
  * @endcode
  */
-extern uint16_t SocketDNS_payload_get_size (const SocketDNS_PayloadTracker *tracker,
-                                             const SocketDNS_PayloadConfig *config);
+extern uint16_t
+SocketDNS_payload_get_size (const SocketDNS_PayloadTracker *tracker,
+                            const SocketDNS_PayloadConfig *config);
 
 /**
  * @brief Record a payload-related failure and advance state.
@@ -1498,8 +1536,8 @@ extern uint16_t SocketDNS_payload_get_size (const SocketDNS_PayloadTracker *trac
  * }
  * @endcode
  */
-extern void SocketDNS_payload_failed (SocketDNS_PayloadTracker *tracker,
-                                       uint64_t now);
+extern void
+SocketDNS_payload_failed (SocketDNS_PayloadTracker *tracker, uint64_t now);
 
 /**
  * @brief Record a successful query and cache the working size.
@@ -1520,7 +1558,8 @@ extern void SocketDNS_payload_failed (SocketDNS_PayloadTracker *tracker,
  * @endcode
  */
 extern void SocketDNS_payload_succeeded (SocketDNS_PayloadTracker *tracker,
-                                          uint16_t size, uint64_t now);
+                                         uint16_t size,
+                                         uint64_t now);
 
 /**
  * @brief Check if tracker should be reset to initial state.
@@ -1534,9 +1573,10 @@ extern void SocketDNS_payload_succeeded (SocketDNS_PayloadTracker *tracker,
  * @param[in] now     Current Unix timestamp.
  * @return 1 if should reset, 0 otherwise.
  */
-extern int SocketDNS_payload_should_reset (const SocketDNS_PayloadTracker *tracker,
-                                            const SocketDNS_PayloadConfig *config,
-                                            uint64_t now);
+extern int
+SocketDNS_payload_should_reset (const SocketDNS_PayloadTracker *tracker,
+                                const SocketDNS_PayloadConfig *config,
+                                uint64_t now);
 
 /**
  * @brief Reset tracker to initial state.
@@ -1562,7 +1602,8 @@ extern void SocketDNS_payload_reset (SocketDNS_PayloadTracker *tracker);
  * @param[in] tracker Payload tracker.
  * @return 1 if must use TCP, 0 if UDP still viable.
  */
-extern int SocketDNS_payload_needs_tcp (const SocketDNS_PayloadTracker *tracker);
+extern int
+SocketDNS_payload_needs_tcp (const SocketDNS_PayloadTracker *tracker);
 
 /**
  * @brief Get human-readable state name.
@@ -1604,8 +1645,8 @@ extern const char *SocketDNS_payload_state_name (SocketDNS_PayloadState state);
  * assert(SocketDNS_name_in_bailiwick("attacker.com", "example.com") == 0);
  * @endcode
  */
-extern int SocketDNS_name_in_bailiwick (const char *record_name,
-                                        const char *query_name);
+extern int
+SocketDNS_name_in_bailiwick (const char *record_name, const char *query_name);
 
 /** @} */ /* End of dns_security group */
 
@@ -1666,8 +1707,8 @@ extern int SocketDNS_name_in_bailiwick (const char *record_name,
  * @see RFC 2308 Section 5 for negative caching requirements.
  */
 extern uint32_t SocketDNS_extract_negative_ttl (const unsigned char *msg,
-                                                 size_t msglen,
-                                                 SocketDNS_SOA *soa_out);
+                                                size_t msglen,
+                                                SocketDNS_SOA *soa_out);
 
 /** @} */ /* End of dns_negative_cache group */
 

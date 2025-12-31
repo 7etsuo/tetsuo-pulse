@@ -39,10 +39,12 @@ generate_test_certs (const char *cert_file, const char *key_file)
    * Note: -addext requires OpenSSL 1.1.1+, so we use basic options for
    * compatibility */
   snprintf (
-      cmd, sizeof (cmd),
+      cmd,
+      sizeof (cmd),
       "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s -days 1 -nodes "
       "-subj '/CN=localhost' 2>/dev/null",
-      key_file, cert_file);
+      key_file,
+      cert_file);
   if (system (cmd) != 0)
     goto fail;
 
@@ -107,8 +109,11 @@ TEST (tls_alpn_callback)
 }
 
 static int
-dummy_verify_cb (int pre_ok, X509_STORE_CTX *ctx, SocketTLSContext_T tls_ctx,
-                 Socket_T sock, void *user_data)
+dummy_verify_cb (int pre_ok,
+                 X509_STORE_CTX *ctx,
+                 SocketTLSContext_T tls_ctx,
+                 Socket_T sock,
+                 void *user_data)
 {
   (void)pre_ok;
   (void)tls_ctx;
@@ -119,8 +124,11 @@ dummy_verify_cb (int pre_ok, X509_STORE_CTX *ctx, SocketTLSContext_T tls_ctx,
 }
 
 static int
-fail_verify_cb (int pre_ok, X509_STORE_CTX *ctx, SocketTLSContext_T tls_ctx,
-                Socket_T sock, void *user_data)
+fail_verify_cb (int pre_ok,
+                X509_STORE_CTX *ctx,
+                SocketTLSContext_T tls_ctx,
+                Socket_T sock,
+                void *user_data)
 {
   (void)pre_ok;
   (void)ctx;
@@ -131,8 +139,11 @@ fail_verify_cb (int pre_ok, X509_STORE_CTX *ctx, SocketTLSContext_T tls_ctx,
 }
 
 static int
-raising_verify_cb (int pre_ok, X509_STORE_CTX *ctx, SocketTLSContext_T tls_ctx,
-                   Socket_T sock, void *user_data)
+raising_verify_cb (int pre_ok,
+                   X509_STORE_CTX *ctx,
+                   SocketTLSContext_T tls_ctx,
+                   Socket_T sock,
+                   void *user_data)
 {
   (void)pre_ok;
   (void)ctx;
@@ -171,8 +182,10 @@ typedef struct
  * (preverify_ok, x509_ctx, tls_ctx, socket, user_data)"
  */
 static int
-param_capture_verify_cb (int pre_ok, X509_STORE_CTX *x509_ctx,
-                         SocketTLSContext_T tls_ctx, Socket_T sock,
+param_capture_verify_cb (int pre_ok,
+                         X509_STORE_CTX *x509_ctx,
+                         SocketTLSContext_T tls_ctx,
+                         Socket_T sock,
                          void *user_data)
 {
   VerifyCallbackCapture *cap = (VerifyCallbackCapture *)user_data;
@@ -225,8 +238,8 @@ TEST (tls_verify_callback_params)
     client_ctx = SocketTLSContext_new_client (NULL);
 
     /* Set callback that captures all parameters */
-    SocketTLSContext_set_verify_callback (client_ctx, param_capture_verify_cb,
-                                          &capture);
+    SocketTLSContext_set_verify_callback (
+        client_ctx, param_capture_verify_cb, &capture);
     SocketTLSContext_set_verify_mode (client_ctx, TLS_VERIFY_PEER);
 
     ASSERT_EQ (socketpair (AF_UNIX, SOCK_STREAM, 0, sv), 0);
@@ -301,8 +314,11 @@ TEST (tls_verify_callback_params)
  * handshake"
  */
 static int
-reject_verify_cb (int pre_ok, X509_STORE_CTX *x509_ctx,
-                  SocketTLSContext_T tls_ctx, Socket_T sock, void *user_data)
+reject_verify_cb (int pre_ok,
+                  X509_STORE_CTX *x509_ctx,
+                  SocketTLSContext_T tls_ctx,
+                  Socket_T sock,
+                  void *user_data)
 {
   (void)pre_ok;
   (void)tls_ctx;
@@ -377,7 +393,10 @@ TEST (tls_verify_callback_reject)
           usleep (1000);
         }
     }
-    EXCEPT (SocketTLS_HandshakeFailed) { handshake_failed = 1; }
+    EXCEPT (SocketTLS_HandshakeFailed)
+    {
+      handshake_failed = 1;
+    }
     END_TRY;
 
     /* The handshake must have failed or ended in ERROR state */
@@ -415,15 +434,14 @@ TEST (verify_callback_api)
       = SocketTLSContext_new_client (NULL); /* No CA for test */
 
   /* Test set_callback with NULL (disable) */
-  SocketTLSContext_set_verify_callback (ctx, NULL,
-                                        NULL); /* Should not raise */
+  SocketTLSContext_set_verify_callback (ctx, NULL, NULL); /* Should not raise */
 
   /* Test set with dummy callback */
   SocketTLSVerifyCallback dummy_cb = (SocketTLSVerifyCallback)dummy_verify_cb;
   void *dummy_data = (void *)0x1;
   SocketTLSContext_set_verify_mode (ctx, TLS_VERIFY_PEER);
-  SocketTLSContext_set_verify_callback (ctx, dummy_cb,
-                                        dummy_data); /* Should not raise */
+  SocketTLSContext_set_verify_callback (
+      ctx, dummy_cb, dummy_data); /* Should not raise */
 
   /* Test set mode after callback (reconfig) */
   SocketTLSContext_set_verify_mode (ctx, TLS_VERIFY_NONE);
@@ -457,7 +475,8 @@ TEST (verify_integration_basic)
      * (no CA) */
     client_ctx = SocketTLSContext_new_client (NULL); // No CA -> preverify fail
     SocketTLSContext_set_verify_mode (client_ctx, TLS_VERIFY_PEER);
-    SocketTLSContext_set_verify_callback (client_ctx, dummy_verify_cb,
+    SocketTLSContext_set_verify_callback (client_ctx,
+                                          dummy_verify_cb,
                                           NULL); // Always returns 1
 
     /* Server ctx: standard */
@@ -536,7 +555,9 @@ TEST (crl_load_api)
     SocketTLSContext_load_crl (ctx, "/non/existent/path/to/crl.der");
     ASSERT (0); /* Should not reach - raises */
   }
-  EXCEPT (SocketTLS_Failed) { /* Expected failure */ }
+  EXCEPT (SocketTLS_Failed)
+  { /* Expected failure */
+  }
   END_TRY;
 
   /* Test empty path raises */
@@ -545,7 +566,9 @@ TEST (crl_load_api)
     SocketTLSContext_load_crl (ctx, "");
     ASSERT (0);
   }
-  EXCEPT (SocketTLS_Failed) { /* Expected */ }
+  EXCEPT (SocketTLS_Failed)
+  { /* Expected */
+  }
   END_TRY;
 
   /* Test directory load (current dir - may succeed even without CRL files) */
@@ -554,7 +577,10 @@ TEST (crl_load_api)
     SocketTLSContext_load_crl (ctx, ".");
     /* Success if path valid; CRLs optional */
   }
-  EXCEPT (SocketTLS_Failed) { ASSERT (0); /* Unexpected if path exists */ }
+  EXCEPT (SocketTLS_Failed)
+  {
+    ASSERT (0); /* Unexpected if path exists */
+  }
   END_TRY;
 
   /* Test file load with non-existent but valid name? Or skip advanced */
@@ -591,7 +617,9 @@ TEST (crl_refresh_api)
     SocketTLSContext_refresh_crl (ctx, "/non/existent.crl");
     ASSERT (0); /* Should raise */
   }
-  EXCEPT (SocketTLS_Failed) { /* Expected */ }
+  EXCEPT (SocketTLS_Failed)
+  { /* Expected */
+  }
   END_TRY;
 
   SocketTLSContext_free (&ctx);
@@ -622,7 +650,10 @@ TEST (session_cache_api)
   ASSERT_EQ (stores, 0);
 
   /* Enable with params */
-  TRY { SocketTLSContext_enable_session_cache (ctx, 100, 300); }
+  TRY
+  {
+    SocketTLSContext_enable_session_cache (ctx, 100, 300);
+  }
   EXCEPT (SocketTLS_Failed)
   {
     ASSERT (0); /* Should not raise for valid params */
@@ -632,10 +663,12 @@ TEST (session_cache_api)
   /* Invalid size raises */
   TRY
   {
-    SocketTLSContext_enable_session_cache (ctx, 0,
-                                           300); /* 0 invalid? Default ok */
+    SocketTLSContext_enable_session_cache (
+        ctx, 0, 300); /* 0 invalid? Default ok */
   }
-  EXCEPT (SocketTLS_Failed) { /* Adjust if defaults allow */ }
+  EXCEPT (SocketTLS_Failed)
+  { /* Adjust if defaults allow */
+  }
   END_TRY;
 
   /* Set size */
@@ -667,8 +700,14 @@ TEST (session_tickets_api)
       = { 1 }; /* Mock key of 80 bytes for OpenSSL 3 ticket keys */
 
   /* Valid len no raise */
-  TRY { SocketTLSContext_enable_session_tickets (ctx, key80, 80); }
-  EXCEPT (SocketTLS_Failed) { ASSERT (0); }
+  TRY
+  {
+    SocketTLSContext_enable_session_tickets (ctx, key80, 80);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   /* Invalid len raises */
@@ -677,12 +716,20 @@ TEST (session_tickets_api)
     SocketTLSContext_enable_session_tickets (ctx, key80, 79);
     ASSERT (0);
   }
-  EXCEPT (SocketTLS_Failed) { /* Expected */ }
+  EXCEPT (SocketTLS_Failed)
+  { /* Expected */
+  }
   END_TRY;
 
   /* Re-enable with valid len no raise */
-  TRY { SocketTLSContext_enable_session_tickets (ctx, key80, 80); }
-  EXCEPT (SocketTLS_Failed) { ASSERT (0); }
+  TRY
+  {
+    SocketTLSContext_enable_session_tickets (ctx, key80, 80);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   SocketTLSContext_free (&ctx);
@@ -754,7 +801,9 @@ TEST (tls_load_certificate_basic)
     ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
     ASSERT_NOT_NULL (ctx);
   }
-  EXCEPT (SocketTLS_Failed) { /* Expected if cert gen failed */ }
+  EXCEPT (SocketTLS_Failed)
+  { /* Expected if cert gen failed */
+  }
   FINALLY
   {
     if (ctx)
@@ -779,7 +828,10 @@ TEST (tls_load_certificate_invalid_path)
         "/nonexistent/cert.pem", "/nonexistent/key.pem", NULL);
     (void)ctx;
   }
-  EXCEPT (SocketTLS_Failed) { raised = 1; }
+  EXCEPT (SocketTLS_Failed)
+  {
+    raised = 1;
+  }
   END_TRY;
 
   ASSERT_EQ (raised, 1);
@@ -810,7 +862,9 @@ TEST (tls_load_ca_basic)
     ctx = SocketTLSContext_new_client (ca_file);
     ASSERT_NOT_NULL (ctx);
   }
-  EXCEPT (SocketTLS_Failed) { /* Expected if CA load fails */ }
+  EXCEPT (SocketTLS_Failed)
+  { /* Expected if CA load fails */
+  }
   FINALLY
   {
     if (ctx)
@@ -833,8 +887,14 @@ TEST (tls_load_ca_invalid_path)
 
   /* Note: SocketTLSContext_load_ca may or may not raise for invalid paths
    * depending on OpenSSL behavior. Just test that it doesn't crash. */
-  TRY { SocketTLSContext_load_ca (ctx, "/nonexistent/ca.pem"); }
-  EXCEPT (SocketTLS_Failed) { raised = 1; }
+  TRY
+  {
+    SocketTLSContext_load_ca (ctx, "/nonexistent/ca.pem");
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    raised = 1;
+  }
   END_TRY;
 
   /* Either outcome is acceptable - raised or not */
@@ -851,15 +911,19 @@ TEST (tls_load_ca_invalid_path)
 
 /* Helper to generate cert for specific hostname */
 static int
-generate_sni_cert (const char *hostname, const char *cert_file,
+generate_sni_cert (const char *hostname,
+                   const char *cert_file,
                    const char *key_file)
 {
   char cmd[1024];
 
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s -days 1 "
             "-nodes -subj '/CN=%s' 2>/dev/null",
-            key_file, cert_file, hostname);
+            key_file,
+            cert_file,
+            hostname);
   return system (cmd);
 }
 
@@ -893,7 +957,9 @@ TEST (tls_sni_add_certificate_basic)
 
     /* Should not raise - cert added successfully */
   }
-  EXCEPT (SocketTLS_Failed) { /* May fail if cert loading fails */ }
+  EXCEPT (SocketTLS_Failed)
+  { /* May fail if cert loading fails */
+  }
   FINALLY
   {
     if (ctx)
@@ -944,14 +1010,16 @@ TEST (tls_sni_add_multiple_certificates)
     ASSERT_NOT_NULL (ctx);
 
     /* Add multiple SNI certificates */
-    SocketTLSContext_add_certificate (ctx, "host1.example.com", sni1_cert,
-                                      sni1_key);
-    SocketTLSContext_add_certificate (ctx, "host2.example.com", sni2_cert,
-                                      sni2_key);
+    SocketTLSContext_add_certificate (
+        ctx, "host1.example.com", sni1_cert, sni1_key);
+    SocketTLSContext_add_certificate (
+        ctx, "host2.example.com", sni2_cert, sni2_key);
 
     /* Should have 2 SNI certs plus default */
   }
-  EXCEPT (SocketTLS_Failed) { /* May fail if cert loading fails */ }
+  EXCEPT (SocketTLS_Failed)
+  { /* May fail if cert loading fails */
+  }
   FINALLY
   {
     if (ctx)
@@ -988,11 +1056,15 @@ TEST (tls_sni_add_certificate_invalid_path)
     ASSERT_NOT_NULL (ctx);
 
     /* Try to add certificate with invalid path */
-    SocketTLSContext_add_certificate (ctx, "invalid.example.com",
+    SocketTLSContext_add_certificate (ctx,
+                                      "invalid.example.com",
                                       "/nonexistent/cert.pem",
                                       "/nonexistent/key.pem");
   }
-  EXCEPT (SocketTLS_Failed) { raised = 1; }
+  EXCEPT (SocketTLS_Failed)
+  {
+    raised = 1;
+  }
   FINALLY
   {
     if (ctx)
@@ -1033,10 +1105,12 @@ TEST (tls_sni_add_default_certificate)
     ASSERT_NOT_NULL (ctx);
 
     /* Add default certificate (NULL hostname) */
-    SocketTLSContext_add_certificate (ctx, NULL, new_default_cert,
-                                      new_default_key);
+    SocketTLSContext_add_certificate (
+        ctx, NULL, new_default_cert, new_default_key);
   }
-  EXCEPT (SocketTLS_Failed) { /* May fail */ }
+  EXCEPT (SocketTLS_Failed)
+  { /* May fail */
+  }
   FINALLY
   {
     if (ctx)
@@ -1068,12 +1142,20 @@ TEST (tls_set_min_protocol)
     SocketTLSContext_set_min_protocol (ctx, TLS1_3_VERSION);
     /* Should not raise - TLS1.3 is valid */
   }
-  EXCEPT (SocketTLS_Failed) { ASSERT (0); /* Unexpected failure */ }
+  EXCEPT (SocketTLS_Failed)
+  {
+    ASSERT (0); /* Unexpected failure */
+  }
   END_TRY;
 
   /* Test with TLS 1.2 (lower) - may succeed depending on build */
-  TRY { SocketTLSContext_set_min_protocol (ctx, TLS1_2_VERSION); }
-  EXCEPT (SocketTLS_Failed) { /* May fail due to TLS1.3-only config */ }
+  TRY
+  {
+    SocketTLSContext_set_min_protocol (ctx, TLS1_2_VERSION);
+  }
+  EXCEPT (SocketTLS_Failed)
+  { /* May fail due to TLS1.3-only config */
+  }
   END_TRY;
 
   SocketTLSContext_free (&ctx);
@@ -1095,7 +1177,10 @@ TEST (tls_set_max_protocol)
     SocketTLSContext_set_max_protocol (ctx, TLS1_3_VERSION);
     /* Should not raise */
   }
-  EXCEPT (SocketTLS_Failed) { ASSERT (0); /* Unexpected failure */ }
+  EXCEPT (SocketTLS_Failed)
+  {
+    ASSERT (0); /* Unexpected failure */
+  }
   END_TRY;
 
   SocketTLSContext_free (&ctx);
@@ -1124,7 +1209,10 @@ TEST (tls_protocol_version_config)
     ctx = SocketTLSContext_new (NULL);
     ASSERT (ctx != NULL);
   }
-  EXCEPT (SocketTLS_Failed) { ASSERT (0); /* Unexpected failure */ }
+  EXCEPT (SocketTLS_Failed)
+  {
+    ASSERT (0); /* Unexpected failure */
+  }
   END_TRY;
   if (ctx)
     SocketTLSContext_free (&ctx);
@@ -1137,7 +1225,10 @@ TEST (tls_protocol_version_config)
     ctx = SocketTLSContext_new (&config);
     ASSERT (ctx != NULL);
   }
-  EXCEPT (SocketTLS_Failed) { ASSERT (0); }
+  EXCEPT (SocketTLS_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
   if (ctx)
     SocketTLSContext_free (&ctx);
@@ -1194,7 +1285,10 @@ TEST (tls_protocol_version_config)
     SocketTLSContext_set_max_protocol (ctx, TLS1_3_VERSION);
     SocketTLSContext_set_min_protocol (ctx, TLS1_3_VERSION);
   }
-  EXCEPT (SocketTLS_Failed) { ASSERT (0); /* Should not fail */ }
+  EXCEPT (SocketTLS_Failed)
+  {
+    ASSERT (0); /* Should not fail */
+  }
   END_TRY;
   SocketTLSContext_free (&ctx);
 #else
@@ -1228,7 +1322,10 @@ TEST (tls_set_cipher_list_valid)
     SocketTLSContext_set_cipher_list (ctx, "HIGH:!aNULL:!eNULL");
     /* Should not raise */
   }
-  EXCEPT (SocketTLS_Failed) { ASSERT (0); }
+  EXCEPT (SocketTLS_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   /* Test with NULL (should use default) */
@@ -1237,7 +1334,10 @@ TEST (tls_set_cipher_list_valid)
     SocketTLSContext_set_cipher_list (ctx, NULL);
     /* Should not raise - uses default */
   }
-  EXCEPT (SocketTLS_Failed) { ASSERT (0); }
+  EXCEPT (SocketTLS_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   SocketTLSContext_free (&ctx);
@@ -1260,7 +1360,10 @@ TEST (tls_set_cipher_list_invalid)
     SocketTLSContext_set_cipher_list (ctx,
                                       "INVALID_CIPHER_THAT_DOES_NOT_EXIST");
   }
-  EXCEPT (SocketTLS_Failed) { raised = 1; }
+  EXCEPT (SocketTLS_Failed)
+  {
+    raised = 1;
+  }
   END_TRY;
 
   /* Either raised or OpenSSL accepted it (depends on version) */
@@ -1296,7 +1399,9 @@ TEST (tls_ocsp_response_set_valid)
       SocketTLSContext_set_ocsp_response (ctx, NULL, 0);
       ASSERT (0); /* Should raise */
     }
-    EXCEPT (SocketTLS_Failed) { /* Expected */ }
+    EXCEPT (SocketTLS_Failed)
+    { /* Expected */
+    }
     END_TRY;
 
     /* Test with zero length - should raise */
@@ -1306,18 +1411,22 @@ TEST (tls_ocsp_response_set_valid)
       SocketTLSContext_set_ocsp_response (ctx, dummy, 0);
       ASSERT (0); /* Should raise */
     }
-    EXCEPT (SocketTLS_Failed) { /* Expected */ }
+    EXCEPT (SocketTLS_Failed)
+    { /* Expected */
+    }
     END_TRY;
 
     /* Test with invalid OCSP response (garbage bytes) - should raise */
     unsigned char invalid_resp[] = { 0x30, 0x03, 0x02, 0x01, 0x00 };
     TRY
     {
-      SocketTLSContext_set_ocsp_response (ctx, invalid_resp,
-                                          sizeof (invalid_resp));
+      SocketTLSContext_set_ocsp_response (
+          ctx, invalid_resp, sizeof (invalid_resp));
       /* May or may not raise depending on OpenSSL parsing */
     }
-    EXCEPT (SocketTLS_Failed) { /* May be expected */ }
+    EXCEPT (SocketTLS_Failed)
+    { /* May be expected */
+    }
     END_TRY;
   }
   FINALLY
@@ -1336,7 +1445,8 @@ TEST (tls_ocsp_response_set_valid)
 /* ==================== ALPN Callback Tests ==================== */
 
 static const char *
-custom_alpn_callback (const char **client_protos, size_t client_count,
+custom_alpn_callback (const char **client_protos,
+                      size_t client_count,
                       void *user_data)
 {
   int *called = (int *)user_data;
@@ -1374,8 +1484,8 @@ TEST (tls_alpn_callback_registration)
     SocketTLSContext_set_alpn_protos (ctx, protos, 2);
 
     /* Set custom callback */
-    SocketTLSContext_set_alpn_callback (ctx, custom_alpn_callback,
-                                        (void *)&callback_marker);
+    SocketTLSContext_set_alpn_callback (
+        ctx, custom_alpn_callback, (void *)&callback_marker);
 
     /* Verify callback was registered (context internal state) */
     /* The callback will be invoked during actual handshake */
@@ -1440,8 +1550,13 @@ TEST (tls_hostname_edge_cases)
     SocketTLS_enable (client_sock, client_ctx);
 
     /* Test valid hostname */
-    TRY { SocketTLS_set_hostname (client_sock, "example.com"); }
-    EXCEPT (SocketTLS_Failed) { /* May fail on some validation */ }
+    TRY
+    {
+      SocketTLS_set_hostname (client_sock, "example.com");
+    }
+    EXCEPT (SocketTLS_Failed)
+    { /* May fail on some validation */
+    }
     END_TRY;
 
     /* Test hostname with port (should be invalid for SNI) */
@@ -1450,7 +1565,9 @@ TEST (tls_hostname_edge_cases)
       SocketTLS_set_hostname (client_sock, "example.com:443");
       /* Some validation may reject this */
     }
-    EXCEPT (SocketTLS_Failed) { /* Expected - port not allowed in SNI */ }
+    EXCEPT (SocketTLS_Failed)
+    { /* Expected - port not allowed in SNI */
+    }
     END_TRY;
 
     /* Test empty hostname (should fail) */
@@ -1459,7 +1576,9 @@ TEST (tls_hostname_edge_cases)
       SocketTLS_set_hostname (client_sock, "");
       ASSERT (0); /* Should raise */
     }
-    EXCEPT (SocketTLS_Failed) { /* Expected */ }
+    EXCEPT (SocketTLS_Failed)
+    { /* Expected */
+    }
     END_TRY;
   }
   FINALLY
@@ -1536,8 +1655,8 @@ TEST (tls_verify_error_string_api)
 
     /* Test get_verify_error_string with successful verification */
     char err_buf[256];
-    const char *err = SocketTLS_get_verify_error_string (client_sock, err_buf,
-                                                         sizeof (err_buf));
+    const char *err = SocketTLS_get_verify_error_string (
+        client_sock, err_buf, sizeof (err_buf));
     /* Should return NULL for successful verification (X509_V_OK) */
     /* Or a string if there was a verification issue (self-signed) */
     (void)err; /* Either outcome acceptable for self-signed */
@@ -1548,8 +1667,8 @@ TEST (tls_verify_error_string_api)
     ASSERT_NULL (null_err);
 
     /* Test with NULL buffer */
-    null_err = SocketTLS_get_verify_error_string (client_sock, NULL,
-                                                  sizeof (err_buf));
+    null_err = SocketTLS_get_verify_error_string (
+        client_sock, NULL, sizeof (err_buf));
     ASSERT_NULL (null_err);
 
     /* Test with zero size */
@@ -1635,19 +1754,24 @@ TEST (tls_alpn_protos_validation)
     SocketTLSContext_set_alpn_protos (ctx, protos, 3);
     /* Should succeed */
   }
-  EXCEPT (SocketTLS_Failed) { ASSERT (0); /* Unexpected failure */ }
+  EXCEPT (SocketTLS_Failed)
+  {
+    ASSERT (0); /* Unexpected failure */
+  }
   END_TRY;
 
   /* Test invalid characters (now rejects per full RFC 7301 printable ASCII) */
   TRY
   {
-    const char *invalid_chars[]
-        = { "h2", "http/1.1 ", "!invalid space and !",
-            "spdy" }; // space 0x20 invalid, ! 0x21 ok but test
+    const char *invalid_chars[] = {
+      "h2", "http/1.1 ", "!invalid space and !", "spdy"
+    }; // space 0x20 invalid, ! 0x21 ok but test
     SocketTLSContext_set_alpn_protos (ctx, invalid_chars, 4);
     ASSERT (0); /* Should raise on invalid chars */
   }
-  EXCEPT (SocketTLS_Failed) { /* Expected: validation failure */ }
+  EXCEPT (SocketTLS_Failed)
+  { /* Expected: validation failure */
+  }
   END_TRY;
 
   /* Note: Embedded NUL detection is impossible with C strings since strlen()
@@ -1666,7 +1790,9 @@ TEST (tls_alpn_protos_validation)
     SocketTLSContext_set_alpn_protos (ctx, protos_long, 1);
     ASSERT (0); /* Should raise on length >255 */
   }
-  EXCEPT (SocketTLS_Failed) { /* Expected */ }
+  EXCEPT (SocketTLS_Failed)
+  { /* Expected */
+  }
   END_TRY;
 
   /* Test too many protocols (exceeds max) */
@@ -1682,7 +1808,9 @@ TEST (tls_alpn_protos_validation)
     SocketTLSContext_set_alpn_protos (ctx, many_protos, 17);
     ASSERT (0); /* Should raise on count > max (16) */
   }
-  EXCEPT (SocketTLS_Failed) { /* Expected */ }
+  EXCEPT (SocketTLS_Failed)
+  { /* Expected */
+  }
   FINALLY
   {
     /* Cleanup test leak */
@@ -1697,7 +1825,10 @@ TEST (tls_alpn_protos_validation)
     SocketTLSContext_set_alpn_protos (ctx, NULL, 0);
     /* Should not raise - count=0 is no-op */
   }
-  EXCEPT (SocketTLS_Failed) { ASSERT (0); }
+  EXCEPT (SocketTLS_Failed)
+  {
+    ASSERT (0);
+  }
   END_TRY;
 
   SocketTLSContext_free (&ctx);
@@ -1734,7 +1865,10 @@ TEST (tls_session_tickets_key_length)
       SocketTLSContext_enable_session_tickets (ctx, key80, 80);
       /* Should succeed */
     }
-    EXCEPT (SocketTLS_Failed) { ASSERT (0); }
+    EXCEPT (SocketTLS_Failed)
+    {
+      ASSERT (0);
+    }
     END_TRY;
 
     /* Test with short key (should fail) */
@@ -1745,7 +1879,10 @@ TEST (tls_session_tickets_key_length)
       SocketTLSContext_enable_session_tickets (ctx, key48, 48);
       ASSERT (0); /* Should raise */
     }
-    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
     ASSERT_EQ (raised, 1);
 
@@ -1758,7 +1895,10 @@ TEST (tls_session_tickets_key_length)
       SocketTLSContext_enable_session_tickets (ctx, key128, 128);
       ASSERT (0); /* Should raise */
     }
-    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
     ASSERT_EQ (raised, 1);
   }
@@ -1823,8 +1963,14 @@ TEST (tls_session_tickets_rotation)
     /* Rotate again with another key */
     unsigned char key3[80];
     memset (key3, 0x33, sizeof (key3));
-    TRY { SocketTLSContext_rotate_session_ticket_key (ctx, key3, 80); }
-    EXCEPT (SocketTLS_Failed) { ASSERT (0); }
+    TRY
+    {
+      SocketTLSContext_rotate_session_ticket_key (ctx, key3, 80);
+    }
+    EXCEPT (SocketTLS_Failed)
+    {
+      ASSERT (0);
+    }
     END_TRY;
   }
   FINALLY
@@ -1865,7 +2011,10 @@ TEST (tls_session_tickets_rotation_errors)
       SocketTLSContext_rotate_session_ticket_key (ctx, key, 80);
       ASSERT (0); /* Should raise */
     }
-    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
     ASSERT_EQ (raised, 1);
 
@@ -1881,7 +2030,10 @@ TEST (tls_session_tickets_rotation_errors)
       SocketTLSContext_rotate_session_ticket_key (ctx, short_key, 48);
       ASSERT (0); /* Should raise */
     }
-    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
     ASSERT_EQ (raised, 1);
 
@@ -1892,7 +2044,10 @@ TEST (tls_session_tickets_rotation_errors)
       SocketTLSContext_rotate_session_ticket_key (ctx, NULL, 80);
       ASSERT (0); /* Should raise */
     }
-    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
     ASSERT_EQ (raised, 1);
 
@@ -1981,8 +2136,14 @@ TEST (tls_enable_without_fd)
   volatile int raised = 0;
 
   /* Socket not connected - fd valid but not connected, enable may work */
-  TRY { SocketTLS_enable (sock, ctx); }
-  EXCEPT (SocketTLS_Failed) { raised = 1; }
+  TRY
+  {
+    SocketTLS_enable (sock, ctx);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    raised = 1;
+  }
   END_TRY;
 
   /* Either outcome acceptable - depends on implementation */
@@ -2029,7 +2190,10 @@ TEST (tls_double_enable)
       SocketTLS_enable (sock, client_ctx);
       ASSERT (0); /* Should raise */
     }
-    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (raised, 1);
@@ -2110,7 +2274,10 @@ TEST (tls_verify_callback_exception)
           usleep (1000);
         }
     }
-    EXCEPT (SocketTLS_HandshakeFailed) { handshake_failed = 1; }
+    EXCEPT (SocketTLS_HandshakeFailed)
+    {
+      handshake_failed = 1;
+    }
     END_TRY;
 
     /* Handshake should have failed due to verify callback exception */
@@ -2151,7 +2318,10 @@ TEST (tls_session_cache_zero_size)
     SocketTLSContext_set_session_cache_size (ctx, 0);
     ASSERT (0); /* Should raise */
   }
-  EXCEPT (SocketTLS_Failed) { raised = 1; }
+  EXCEPT (SocketTLS_Failed)
+  {
+    raised = 1;
+  }
   END_TRY;
 
   ASSERT_EQ (raised, 1);
@@ -2215,8 +2385,14 @@ TEST (session_cache_stats_partial_null)
   size_t hits = 99, misses = 99, stores = 99;
 
   /* Enable session cache first */
-  TRY { SocketTLSContext_enable_session_cache (ctx, 100, 300); }
-  EXCEPT (SocketTLS_Failed) { ASSERT (0); /* Should not fail */ }
+  TRY
+  {
+    SocketTLSContext_enable_session_cache (ctx, 100, 300);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    ASSERT (0); /* Should not fail */
+  }
   END_TRY;
 
   /* Test with only misses pointer (hits and stores NULL) */
@@ -2267,7 +2443,10 @@ TEST (session_cache_server_mode)
     ASSERT_EQ (misses, 0);
     ASSERT_EQ (stores, 0);
   }
-  EXCEPT (SocketTLS_Failed) { ASSERT (0); /* Should not fail */ }
+  EXCEPT (SocketTLS_Failed)
+  {
+    ASSERT (0); /* Should not fail */
+  }
   FINALLY
   {
     if (ctx)
@@ -2291,8 +2470,14 @@ TEST (session_cache_timeout_defaults)
   SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
 
   /* Test with zero timeout - should use SOCKET_TLS_SESSION_TIMEOUT_DEFAULT */
-  TRY { SocketTLSContext_enable_session_cache (ctx, 100, 0); }
-  EXCEPT (SocketTLS_Failed) { ASSERT (0); /* Should not fail */ }
+  TRY
+  {
+    SocketTLSContext_enable_session_cache (ctx, 100, 0);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    ASSERT (0); /* Should not fail */
+  }
   END_TRY;
 
   SocketTLSContext_free (&ctx);
@@ -2302,8 +2487,14 @@ TEST (session_cache_timeout_defaults)
 
   /* Test with negative timeout - should use SOCKET_TLS_SESSION_TIMEOUT_DEFAULT
    */
-  TRY { SocketTLSContext_enable_session_cache (ctx, 100, -1); }
-  EXCEPT (SocketTLS_Failed) { ASSERT (0); /* Should not fail */ }
+  TRY
+  {
+    SocketTLSContext_enable_session_cache (ctx, 100, -1);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    ASSERT (0); /* Should not fail */
+  }
   END_TRY;
 
   SocketTLSContext_free (&ctx);
@@ -2323,8 +2514,14 @@ TEST (session_cache_zero_max_sessions)
   SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
 
   /* Test with zero max_sessions - should skip set_cache_size call */
-  TRY { SocketTLSContext_enable_session_cache (ctx, 0, 300); }
-  EXCEPT (SocketTLS_Failed) { ASSERT (0); /* Should not fail */ }
+  TRY
+  {
+    SocketTLSContext_enable_session_cache (ctx, 0, 300);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    ASSERT (0); /* Should not fail */
+  }
   END_TRY;
 
   /* Verify cache is still enabled */
@@ -2373,7 +2570,10 @@ TEST (session_id_context_valid)
     unsigned char one_byte = 'A';
     SocketTLSContext_set_session_id_context (ctx, &one_byte, 1);
   }
-  EXCEPT (SocketTLS_Failed) { ASSERT (0); /* Should not raise */ }
+  EXCEPT (SocketTLS_Failed)
+  {
+    ASSERT (0); /* Should not raise */
+  }
   FINALLY
   {
     if (ctx)
@@ -2409,7 +2609,10 @@ TEST (session_id_context_null_pointer)
     SocketTLSContext_set_session_id_context (ctx, NULL, 10);
     ASSERT (0); /* Should not reach here */
   }
-  EXCEPT (SocketTLS_Failed) { raised = 1; }
+  EXCEPT (SocketTLS_Failed)
+  {
+    raised = 1;
+  }
   FINALLY
   {
     if (ctx)
@@ -2448,7 +2651,10 @@ TEST (session_id_context_zero_length)
     SocketTLSContext_set_session_id_context (ctx, data, 0);
     ASSERT (0); /* Should not reach here */
   }
-  EXCEPT (SocketTLS_Failed) { raised = 1; }
+  EXCEPT (SocketTLS_Failed)
+  {
+    raised = 1;
+  }
   FINALLY
   {
     if (ctx)
@@ -2488,7 +2694,10 @@ TEST (session_id_context_too_long)
     SocketTLSContext_set_session_id_context (ctx, data, 33);
     ASSERT (0); /* Should not reach here */
   }
-  EXCEPT (SocketTLS_Failed) { raised = 1; }
+  EXCEPT (SocketTLS_Failed)
+  {
+    raised = 1;
+  }
   FINALLY
   {
     if (ctx)
@@ -2536,7 +2745,10 @@ TEST (session_id_context_with_cache)
     ASSERT_EQ (misses, 0);
     ASSERT_EQ (stores, 0);
   }
-  EXCEPT (SocketTLS_Failed) { ASSERT (0); /* Should not raise */ }
+  EXCEPT (SocketTLS_Failed)
+  {
+    ASSERT (0); /* Should not raise */
+  }
   FINALLY
   {
     if (ctx)
@@ -2676,8 +2888,10 @@ static const Except_T Test_GenericException
     = { &Test_GenericException, "Test generic exception" };
 
 static int
-generic_exception_verify_cb (int pre_ok, X509_STORE_CTX *ctx,
-                             SocketTLSContext_T tls_ctx, Socket_T sock,
+generic_exception_verify_cb (int pre_ok,
+                             X509_STORE_CTX *ctx,
+                             SocketTLSContext_T tls_ctx,
+                             Socket_T sock,
                              void *user_data)
 {
   (void)pre_ok;
@@ -2712,8 +2926,8 @@ TEST (tls_verify_callback_generic_exception)
 
     /* Set callback that raises GENERIC exception (not SocketTLS_Failed) */
     /* This exercises the ELSE block in internal_verify_callback */
-    SocketTLSContext_set_verify_callback (client_ctx,
-                                          generic_exception_verify_cb, NULL);
+    SocketTLSContext_set_verify_callback (
+        client_ctx, generic_exception_verify_cb, NULL);
     SocketTLSContext_set_verify_mode (client_ctx, TLS_VERIFY_PEER);
 
     ASSERT_EQ (socketpair (AF_UNIX, SOCK_STREAM, 0, sv), 0);
@@ -2747,7 +2961,9 @@ TEST (tls_verify_callback_generic_exception)
           usleep (1000);
         }
     }
-    EXCEPT (SocketTLS_HandshakeFailed) { /* Expected due to callback */ }
+    EXCEPT (SocketTLS_HandshakeFailed)
+    { /* Expected due to callback */
+    }
     END_TRY;
 
     /* Main test: ensure no crash, ELSE block was exercised */
@@ -2786,7 +3002,10 @@ TEST (tls_crl_load_null_path)
     SocketTLSContext_load_crl (ctx, NULL);
     ASSERT (0); /* Should raise */
   }
-  EXCEPT (SocketTLS_Failed) { raised = 1; }
+  EXCEPT (SocketTLS_Failed)
+  {
+    raised = 1;
+  }
   END_TRY;
 
   ASSERT_EQ (raised, 1);
@@ -2800,12 +3019,14 @@ TEST (tls_crl_load_null_path)
 
 /* Helper to generate a simple CRL file for testing */
 static int
-generate_test_crl (const char *ca_cert, const char *ca_key,
+generate_test_crl (const char *ca_cert,
+                   const char *ca_key,
                    const char *crl_file)
 {
   char cmd[2048];
   /* Generate a CRL from the CA */
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl ca -gencrl -keyfile %s -cert %s -out %s "
             "-config /dev/stdin 2>/dev/null <<'EOF'\n"
             "[ca]\ndefault_ca = CA_default\n"
@@ -2813,7 +3034,9 @@ generate_test_crl (const char *ca_cert, const char *ca_key,
             "crlnumber = /dev/null\ndefault_crl_days = 1\n"
             "default_md = sha256\n"
             "EOF",
-            ca_key, ca_cert, crl_file);
+            ca_key,
+            ca_cert,
+            crl_file);
   return system (cmd);
 }
 
@@ -2840,7 +3063,9 @@ TEST (tls_crl_load_file)
      * May fail or succeed depending on OpenSSL's tolerance. */
     SocketTLSContext_load_crl (ctx, cert_file);
   }
-  EXCEPT (SocketTLS_Failed) { /* Expected - cert is not a valid CRL */ }
+  EXCEPT (SocketTLS_Failed)
+  { /* Expected - cert is not a valid CRL */
+  }
   END_TRY;
 
   SocketTLSContext_free (&ctx);
@@ -2860,23 +3085,43 @@ TEST (tls_min_protocol_fallback)
   SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
 
   /* Test TLS1_VERSION (0x0301) to trigger version > TLS1_VERSION branch */
-  TRY { SocketTLSContext_set_min_protocol (ctx, TLS1_VERSION); }
-  EXCEPT (SocketTLS_Failed) { /* May fail, but exercises code path */ }
+  TRY
+  {
+    SocketTLSContext_set_min_protocol (ctx, TLS1_VERSION);
+  }
+  EXCEPT (SocketTLS_Failed)
+  { /* May fail, but exercises code path */
+  }
   END_TRY;
 
   /* Test TLS1_1_VERSION to trigger version > TLS1_1_VERSION branch */
-  TRY { SocketTLSContext_set_min_protocol (ctx, TLS1_1_VERSION); }
-  EXCEPT (SocketTLS_Failed) { /* May fail */ }
+  TRY
+  {
+    SocketTLSContext_set_min_protocol (ctx, TLS1_1_VERSION);
+  }
+  EXCEPT (SocketTLS_Failed)
+  { /* May fail */
+  }
   END_TRY;
 
   /* Test TLS1_2_VERSION to trigger version > TLS1_2_VERSION branch */
-  TRY { SocketTLSContext_set_min_protocol (ctx, TLS1_2_VERSION); }
-  EXCEPT (SocketTLS_Failed) { /* May fail */ }
+  TRY
+  {
+    SocketTLSContext_set_min_protocol (ctx, TLS1_2_VERSION);
+  }
+  EXCEPT (SocketTLS_Failed)
+  { /* May fail */
+  }
   END_TRY;
 
   /* Test version 0 (invalid) to potentially trigger fallback path */
-  TRY { SocketTLSContext_set_min_protocol (ctx, 0); }
-  EXCEPT (SocketTLS_Failed) { /* Expected */ }
+  TRY
+  {
+    SocketTLSContext_set_min_protocol (ctx, 0);
+  }
+  EXCEPT (SocketTLS_Failed)
+  { /* Expected */
+  }
   END_TRY;
 
   SocketTLSContext_free (&ctx);
@@ -2915,7 +3160,10 @@ TEST (tls_ocsp_response_too_large)
       SocketTLSContext_set_ocsp_response (ctx, large_resp, too_large);
       ASSERT (0); /* Should raise */
     }
-    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
 
     free (large_resp);
@@ -3169,8 +3417,8 @@ TEST (tls_ocsp_gen_callback_integration)
     SocketTLSContext_set_verify_mode (client_ctx, TLS_VERIFY_NONE);
 
     /* Set OCSP gen callback on server - will be called during handshake */
-    SocketTLSContext_set_ocsp_gen_callback (server_ctx, tracking_ocsp_gen_cb,
-                                            NULL);
+    SocketTLSContext_set_ocsp_gen_callback (
+        server_ctx, tracking_ocsp_gen_cb, NULL);
 
     ASSERT_EQ (socketpair (AF_UNIX, SOCK_STREAM, 0, sv), 0);
     server_sock = Socket_new_from_fd (sv[0]);
@@ -3328,8 +3576,8 @@ TEST (tls_ocsp_with_valid_response)
     SocketTLSContext_set_verify_mode (client_ctx, TLS_VERIFY_NONE);
 
     /* Set OCSP gen callback that returns valid response */
-    SocketTLSContext_set_ocsp_gen_callback (server_ctx, valid_ocsp_gen_cb,
-                                            NULL);
+    SocketTLSContext_set_ocsp_gen_callback (
+        server_ctx, valid_ocsp_gen_cb, NULL);
 
     ASSERT_EQ (socketpair (AF_UNIX, SOCK_STREAM, 0, sv), 0);
     server_sock = Socket_new_from_fd (sv[0]);
@@ -3421,8 +3669,8 @@ TEST (tls_ocsp_with_successful_response)
 
     /* Set OCSP gen callback that returns SUCCESSFUL status response
      * This exercises validate_ocsp_basic_response path */
-    SocketTLSContext_set_ocsp_gen_callback (server_ctx, successful_ocsp_gen_cb,
-                                            NULL);
+    SocketTLSContext_set_ocsp_gen_callback (
+        server_ctx, successful_ocsp_gen_cb, NULL);
 
     ASSERT_EQ (socketpair (AF_UNIX, SOCK_STREAM, 0, sv), 0);
     server_sock = Socket_new_from_fd (sv[0]);
@@ -3513,8 +3761,7 @@ TEST (tls_ocsp_with_full_basic_response)
 
     /* Set OCSP gen callback that returns response with basic response
      * This exercises validate_ocsp_basic_response success path */
-    SocketTLSContext_set_ocsp_gen_callback (server_ctx, full_ocsp_gen_cb,
-                                            NULL);
+    SocketTLSContext_set_ocsp_gen_callback (server_ctx, full_ocsp_gen_cb, NULL);
 
     ASSERT_EQ (socketpair (AF_UNIX, SOCK_STREAM, 0, sv), 0);
     server_sock = Socket_new_from_fd (sv[0]);
@@ -3596,24 +3843,30 @@ create_invalid_pem (const char *path)
 
 /* Helper to generate two separate cert/key pairs for mismatch testing */
 static int
-generate_two_cert_pairs (const char *cert1, const char *key1,
-                         const char *cert2, const char *key2)
+generate_two_cert_pairs (const char *cert1,
+                         const char *key1,
+                         const char *cert2,
+                         const char *key2)
 {
   char cmd[1024];
 
   /* Generate first pair */
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s -days 1 "
             "-nodes -subj '/CN=host1.example.com' 2>/dev/null",
-            key1, cert1);
+            key1,
+            cert1);
   if (system (cmd) != 0)
     return -1;
 
   /* Generate second pair */
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s -days 1 "
             "-nodes -subj '/CN=host2.example.com' 2>/dev/null",
-            key2, cert2);
+            key2,
+            cert2);
   if (system (cmd) != 0)
     {
       unlink (cert1);
@@ -3657,7 +3910,10 @@ TEST (tls_load_certificate_errors)
     {
       SocketTLSContext_load_certificate (ctx, "../etc/passwd", valid_key);
     }
-    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
     ASSERT_EQ (raised, 1);
 
@@ -3667,35 +3923,62 @@ TEST (tls_load_certificate_errors)
     {
       SocketTLSContext_load_certificate (ctx, valid_cert, "../etc/passwd");
     }
-    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
     ASSERT_EQ (raised, 1);
 
     /* Test 3: Empty cert path - should raise */
     raised = 0;
-    TRY { SocketTLSContext_load_certificate (ctx, "", valid_key); }
-    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    TRY
+    {
+      SocketTLSContext_load_certificate (ctx, "", valid_key);
+    }
+    EXCEPT (SocketTLS_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
     ASSERT_EQ (raised, 1);
 
     /* Test 4: Empty key path - should raise */
     raised = 0;
-    TRY { SocketTLSContext_load_certificate (ctx, valid_cert, ""); }
-    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    TRY
+    {
+      SocketTLSContext_load_certificate (ctx, valid_cert, "");
+    }
+    EXCEPT (SocketTLS_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
     ASSERT_EQ (raised, 1);
 
     /* Test 5: Invalid PEM certificate file - should raise */
     raised = 0;
-    TRY { SocketTLSContext_load_certificate (ctx, invalid_pem, valid_key); }
-    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    TRY
+    {
+      SocketTLSContext_load_certificate (ctx, invalid_pem, valid_key);
+    }
+    EXCEPT (SocketTLS_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
     ASSERT_EQ (raised, 1);
 
     /* Test 6: Invalid PEM key file - should raise */
     raised = 0;
-    TRY { SocketTLSContext_load_certificate (ctx, valid_cert, invalid_pem); }
-    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    TRY
+    {
+      SocketTLSContext_load_certificate (ctx, valid_cert, invalid_pem);
+    }
+    EXCEPT (SocketTLS_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
     ASSERT_EQ (raised, 1);
 
@@ -3703,10 +3986,13 @@ TEST (tls_load_certificate_errors)
     raised = 0;
     TRY
     {
-      SocketTLSContext_load_certificate (ctx, "/nonexistent/cert.pem",
-                                         valid_key);
+      SocketTLSContext_load_certificate (
+          ctx, "/nonexistent/cert.pem", valid_key);
     }
-    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
     ASSERT_EQ (raised, 1);
 
@@ -3714,10 +4000,13 @@ TEST (tls_load_certificate_errors)
     raised = 0;
     TRY
     {
-      SocketTLSContext_load_certificate (ctx, valid_cert,
-                                         "/nonexistent/key.pem");
+      SocketTLSContext_load_certificate (
+          ctx, valid_cert, "/nonexistent/key.pem");
     }
-    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
     ASSERT_EQ (raised, 1);
   }
@@ -3760,15 +4049,27 @@ TEST (tls_load_certificate_mismatch)
 
     /* Load cert1 with key2 - should raise due to mismatch */
     raised = 0;
-    TRY { SocketTLSContext_load_certificate (ctx, cert1, key2); }
-    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    TRY
+    {
+      SocketTLSContext_load_certificate (ctx, cert1, key2);
+    }
+    EXCEPT (SocketTLS_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
     ASSERT_EQ (raised, 1);
 
     /* Load cert2 with key1 - should raise due to mismatch */
     raised = 0;
-    TRY { SocketTLSContext_load_certificate (ctx, cert2, key1); }
-    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    TRY
+    {
+      SocketTLSContext_load_certificate (ctx, cert2, key1);
+    }
+    EXCEPT (SocketTLS_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
     ASSERT_EQ (raised, 1);
   }
@@ -3812,14 +4113,25 @@ TEST (tls_load_ca_directory_fallback)
   END_TRY;
 
   /* Test with /tmp (another directory) */
-  TRY { SocketTLSContext_load_ca (ctx, "/tmp"); }
-  EXCEPT (SocketTLS_Failed) { /* May fail if no valid CA files */ }
+  TRY
+  {
+    SocketTLSContext_load_ca (ctx, "/tmp");
+  }
+  EXCEPT (SocketTLS_Failed)
+  { /* May fail if no valid CA files */
+  }
   END_TRY;
 
   /* Test path with control characters - should raise */
   volatile int raised = 0;
-  TRY { SocketTLSContext_load_ca (ctx, "/path\twith\ttabs"); }
-  EXCEPT (SocketTLS_Failed) { raised = 1; }
+  TRY
+  {
+    SocketTLSContext_load_ca (ctx, "/path\twith\ttabs");
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    raised = 1;
+  }
   END_TRY;
   ASSERT_EQ (raised, 1);
 
@@ -3858,11 +4170,14 @@ TEST (tls_sni_client_context_rejection)
     raised = 0;
     TRY
     {
-      SocketTLSContext_add_certificate (client_ctx, "example.com", cert_file,
-                                        key_file);
+      SocketTLSContext_add_certificate (
+          client_ctx, "example.com", cert_file, key_file);
       ASSERT (0); /* Should not reach here */
     }
-    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (raised, 1);
@@ -3947,10 +4262,12 @@ TEST (tls_sni_capacity_expansion)
           "host4.example.com", "host5.example.com", "host6.example.com" };
 
   /* Generate default certificate with CN=localhost */
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s -days 1 "
             "-nodes -subj '/CN=localhost' 2>/dev/null",
-            default_key, default_cert);
+            default_key,
+            default_cert);
   if (system (cmd) != 0)
     {
       Arena_dispose (&arena);
@@ -3961,11 +4278,13 @@ TEST (tls_sni_capacity_expansion)
   volatile int i;
   for (i = 0; i < 6; i++)
     {
-      snprintf (
-          cmd, sizeof (cmd),
-          "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s -days 1 "
-          "-nodes -subj '/CN=%s' 2>/dev/null",
-          keys[i], certs[i], hosts[i]);
+      snprintf (cmd,
+                sizeof (cmd),
+                "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s -days 1 "
+                "-nodes -subj '/CN=%s' 2>/dev/null",
+                keys[i],
+                certs[i],
+                hosts[i]);
       if (system (cmd) != 0)
         {
           /* Cleanup any generated certs */
@@ -4035,10 +4354,12 @@ TEST (tls_sni_invalid_hostname)
   FILE *fp;
 
   /* Generate default certificate with CN=localhost */
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s -days 1 "
             "-nodes -subj '/CN=localhost' 2>/dev/null",
-            key_file, cert_file);
+            key_file,
+            cert_file);
   if (system (cmd) != 0)
     {
       Arena_dispose (&arena);
@@ -4046,10 +4367,12 @@ TEST (tls_sni_invalid_hostname)
     }
 
   /* Generate a certificate with CN matching the valid hostname for Test 6 */
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s -days 1 "
             "-nodes -subj '/CN=valid-host.example.com' 2>/dev/null",
-            valid_key, valid_cert);
+            valid_key,
+            valid_cert);
   if (system (cmd) != 0)
     {
       unlink (cert_file);
@@ -4089,17 +4412,26 @@ TEST (tls_sni_invalid_hostname)
     raised = 0;
     TRY
     {
-      SocketTLSContext_add_certificate (ctx, "-invalid.example.com", cert_file,
-                                        key_file);
+      SocketTLSContext_add_certificate (
+          ctx, "-invalid.example.com", cert_file, key_file);
     }
-    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
     ASSERT_EQ (raised, 1);
 
     /* Test 2: Empty hostname string - invalid (not NULL, but "") */
     raised = 0;
-    TRY { SocketTLSContext_add_certificate (ctx, "", cert_file, key_file); }
-    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    TRY
+    {
+      SocketTLSContext_add_certificate (ctx, "", cert_file, key_file);
+    }
+    EXCEPT (SocketTLS_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
     ASSERT_EQ (raised, 1);
 
@@ -4107,10 +4439,13 @@ TEST (tls_sni_invalid_hostname)
     raised = 0;
     TRY
     {
-      SocketTLSContext_add_certificate (ctx, "host..example.com", cert_file,
-                                        key_file);
+      SocketTLSContext_add_certificate (
+          ctx, "host..example.com", cert_file, key_file);
     }
-    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
     ASSERT_EQ (raised, 1);
 
@@ -4118,10 +4453,13 @@ TEST (tls_sni_invalid_hostname)
     raised = 0;
     TRY
     {
-      SocketTLSContext_add_certificate (ctx, "host_name.example.com",
-                                        cert_file, key_file);
+      SocketTLSContext_add_certificate (
+          ctx, "host_name.example.com", cert_file, key_file);
     }
-    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
     ASSERT_EQ (raised, 1);
 
@@ -4133,9 +4471,13 @@ TEST (tls_sni_invalid_hostname)
           ctx,
           "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn."
           "example.com",
-          cert_file, key_file);
+          cert_file,
+          key_file);
     }
-    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
     ASSERT_EQ (raised, 1);
 
@@ -4143,10 +4485,13 @@ TEST (tls_sni_invalid_hostname)
     raised = 0;
     TRY
     {
-      SocketTLSContext_add_certificate (ctx, "valid-host.example.com",
-                                        valid_cert, valid_key);
+      SocketTLSContext_add_certificate (
+          ctx, "valid-host.example.com", valid_cert, valid_key);
     }
-    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
     ASSERT_EQ (raised, 0); /* Should NOT raise */
   }
@@ -4203,11 +4548,14 @@ TEST (tls_sni_cert_key_mismatch)
     raised = 0;
     TRY
     {
-      SocketTLSContext_add_certificate (ctx, "mismatch1.example.com", cert1,
-                                        key2);
+      SocketTLSContext_add_certificate (
+          ctx, "mismatch1.example.com", cert1, key2);
       ASSERT (0); /* Should not reach here */
     }
-    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
     ASSERT_EQ (raised, 1);
 
@@ -4215,11 +4563,14 @@ TEST (tls_sni_cert_key_mismatch)
     raised = 0;
     TRY
     {
-      SocketTLSContext_add_certificate (ctx, "mismatch2.example.com", cert2,
-                                        key1);
+      SocketTLSContext_add_certificate (
+          ctx, "mismatch2.example.com", cert2, key1);
       ASSERT (0); /* Should not reach here */
     }
-    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
     ASSERT_EQ (raised, 1);
   }
@@ -4264,10 +4615,12 @@ TEST (tls_sni_callback_selection)
 
   /* Generate cert for specific host */
   char cmd[512];
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s -days 1 "
             "-nodes -subj '/CN=snihost1.example.com' 2>/dev/null",
-            host1_key, host1_cert);
+            host1_key,
+            host1_cert);
   if (system (cmd) != 0)
     {
       remove_test_certs (default_cert, default_key);
@@ -4281,12 +4634,12 @@ TEST (tls_sni_callback_selection)
     ASSERT_NOT_NULL (server_ctx);
 
     /* Add SNI certificate for snihost1.example.com */
-    SocketTLSContext_add_certificate (server_ctx, "snihost1.example.com",
-                                      host1_cert, host1_key);
+    SocketTLSContext_add_certificate (
+        server_ctx, "snihost1.example.com", host1_cert, host1_key);
 
     /* Add another SNI host to ensure callback is registered */
-    SocketTLSContext_add_certificate (server_ctx, "snihost2.example.com",
-                                      host1_cert, host1_key);
+    SocketTLSContext_add_certificate (
+        server_ctx, "snihost2.example.com", host1_cert, host1_key);
 
     client_ctx = SocketTLSContext_new_client (NULL);
     ASSERT_NOT_NULL (client_ctx);
@@ -4301,7 +4654,10 @@ TEST (tls_sni_callback_selection)
     SocketTLS_enable (client_sock, client_ctx);
 
     /* Set SNI hostname on client - this triggers SNI callback on server */
-    TRY { SocketTLS_set_hostname (client_sock, "snihost1.example.com"); }
+    TRY
+    {
+      SocketTLS_set_hostname (client_sock, "snihost1.example.com");
+    }
     EXCEPT (SocketTLS_Failed)
     {
       /* May fail with self-signed cert verification */
@@ -4392,10 +4748,12 @@ TEST (tls_sni_callback_no_match)
 
   /* Generate cert for known host */
   char cmd[512];
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s -days 1 "
             "-nodes -subj '/CN=known.example.com' 2>/dev/null",
-            known_key, known_cert);
+            known_key,
+            known_cert);
   if (system (cmd) != 0)
     {
       remove_test_certs (default_cert, default_key);
@@ -4444,8 +4802,8 @@ TEST (tls_sni_callback_no_match)
   TRY
   {
     /* Add SNI certificate for known host only */
-    SocketTLSContext_add_certificate (server_ctx, "known.example.com",
-                                      known_cert, known_key);
+    SocketTLSContext_add_certificate (
+        server_ctx, "known.example.com", known_cert, known_key);
 
     client_ctx = SocketTLSContext_new_client (NULL);
     ASSERT_NOT_NULL (client_ctx);
@@ -4460,8 +4818,13 @@ TEST (tls_sni_callback_no_match)
     SocketTLS_enable (client_sock, client_ctx);
 
     /* Set SNI hostname to UNKNOWN host - should trigger no-match path */
-    TRY { SocketTLS_set_hostname (client_sock, "unknown.example.com"); }
-    EXCEPT (SocketTLS_Failed) { /* May fail */ }
+    TRY
+    {
+      SocketTLS_set_hostname (client_sock, "unknown.example.com");
+    }
+    EXCEPT (SocketTLS_Failed)
+    { /* May fail */
+    }
     END_TRY;
 
     Socket_setnonblocking (server_sock);
@@ -4556,10 +4919,13 @@ TEST (tls_load_invalid_pem_files)
     raised = 0;
     TRY
     {
-      SocketTLSContext_add_certificate (ctx, "badcert.example.com",
-                                        invalid_cert, valid_key);
+      SocketTLSContext_add_certificate (
+          ctx, "badcert.example.com", invalid_cert, valid_key);
     }
-    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
     ASSERT_EQ (raised, 1);
 
@@ -4567,10 +4933,13 @@ TEST (tls_load_invalid_pem_files)
     raised = 0;
     TRY
     {
-      SocketTLSContext_add_certificate (ctx, "badkey.example.com", valid_cert,
-                                        invalid_key);
+      SocketTLSContext_add_certificate (
+          ctx, "badkey.example.com", valid_cert, invalid_key);
     }
-    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
     ASSERT_EQ (raised, 1);
 
@@ -4578,10 +4947,13 @@ TEST (tls_load_invalid_pem_files)
     raised = 0;
     TRY
     {
-      SocketTLSContext_add_certificate (ctx, "bothbad.example.com",
-                                        invalid_cert, invalid_key);
+      SocketTLSContext_add_certificate (
+          ctx, "bothbad.example.com", invalid_cert, invalid_key);
     }
-    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
     ASSERT_EQ (raised, 1);
   }
@@ -4627,10 +4999,13 @@ TEST (tls_sni_add_certificate_path_traversal)
     raised = 0;
     TRY
     {
-      SocketTLSContext_add_certificate (ctx, "valid.example.com",
-                                        "../etc/passwd", key_file);
+      SocketTLSContext_add_certificate (
+          ctx, "valid.example.com", "../etc/passwd", key_file);
     }
-    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
     ASSERT_EQ (raised, 1);
 
@@ -4638,10 +5013,13 @@ TEST (tls_sni_add_certificate_path_traversal)
     raised = 0;
     TRY
     {
-      SocketTLSContext_add_certificate (ctx, "valid.example.com", cert_file,
-                                        "../etc/passwd");
+      SocketTLSContext_add_certificate (
+          ctx, "valid.example.com", cert_file, "../etc/passwd");
     }
-    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
     ASSERT_EQ (raised, 1);
 
@@ -4649,10 +5027,12 @@ TEST (tls_sni_add_certificate_path_traversal)
     raised = 0;
     TRY
     {
-      SocketTLSContext_add_certificate (ctx, "valid.example.com", "",
-                                        key_file);
+      SocketTLSContext_add_certificate (ctx, "valid.example.com", "", key_file);
     }
-    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
     ASSERT_EQ (raised, 1);
 
@@ -4660,10 +5040,13 @@ TEST (tls_sni_add_certificate_path_traversal)
     raised = 0;
     TRY
     {
-      SocketTLSContext_add_certificate (ctx, "valid.example.com", cert_file,
-                                        "");
+      SocketTLSContext_add_certificate (
+          ctx, "valid.example.com", cert_file, "");
     }
-    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      raised = 1;
+    }
     END_TRY;
     ASSERT_EQ (raised, 1);
   }

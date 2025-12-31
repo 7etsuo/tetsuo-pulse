@@ -64,8 +64,8 @@ typedef struct SocketWS_Transport *SocketWS_Transport_T;
  */
 typedef enum
 {
-  SOCKETWS_TRANSPORT_SOCKET,   /**< TCP/TLS socket transport (RFC 6455) */
-  SOCKETWS_TRANSPORT_H2STREAM  /**< HTTP/2 stream transport (RFC 8441) */
+  SOCKETWS_TRANSPORT_SOCKET,  /**< TCP/TLS socket transport (RFC 6455) */
+  SOCKETWS_TRANSPORT_H2STREAM /**< HTTP/2 stream transport (RFC 8441) */
 } SocketWS_TransportType;
 
 /* ============================================================================
@@ -86,8 +86,9 @@ typedef enum
  *
  * @note For non-blocking transports, may return partial send or EAGAIN.
  */
-typedef ssize_t (*SocketWS_TransportSend)(void *ctx, const void *data,
-                                          size_t len);
+typedef ssize_t (*SocketWS_TransportSend) (void *ctx,
+                                           const void *data,
+                                           size_t len);
 
 /**
  * @brief Function pointer type for transport receive operation.
@@ -102,7 +103,7 @@ typedef ssize_t (*SocketWS_TransportSend)(void *ctx, const void *data,
  *
  * @note For non-blocking transports, may return EAGAIN.
  */
-typedef ssize_t (*SocketWS_TransportRecv)(void *ctx, void *buf, size_t len);
+typedef ssize_t (*SocketWS_TransportRecv) (void *ctx, void *buf, size_t len);
 
 /**
  * @brief Function pointer type for transport close operation.
@@ -116,7 +117,7 @@ typedef ssize_t (*SocketWS_TransportRecv)(void *ctx, void *buf, size_t len);
  *
  * @note For HTTP/2: orderly=1 sends END_STREAM, orderly=0 sends RST_STREAM.
  */
-typedef int (*SocketWS_TransportClose)(void *ctx, int orderly);
+typedef int (*SocketWS_TransportClose) (void *ctx, int orderly);
 
 /**
  * @brief Function pointer type for getting transport file descriptor.
@@ -129,7 +130,7 @@ typedef int (*SocketWS_TransportClose)(void *ctx, int orderly);
  *
  * @note HTTP/2 streams return -1; poll the connection instead.
  */
-typedef int (*SocketWS_TransportGetFd)(void *ctx);
+typedef int (*SocketWS_TransportGetFd) (void *ctx);
 
 /**
  * @brief Function pointer type for transport cleanup.
@@ -141,7 +142,7 @@ typedef int (*SocketWS_TransportGetFd)(void *ctx);
  *
  * @note Should NOT free arena-allocated memory (managed by arena lifecycle).
  */
-typedef void (*SocketWS_TransportFree)(void *ctx);
+typedef void (*SocketWS_TransportFree) (void *ctx);
 
 /**
  * @brief Operations table for WebSocket transport backends.
@@ -155,11 +156,11 @@ typedef void (*SocketWS_TransportFree)(void *ctx);
  */
 typedef struct
 {
-  SocketWS_TransportSend send;   /**< Send data through transport */
-  SocketWS_TransportRecv recv;   /**< Receive data from transport */
-  SocketWS_TransportClose close; /**< Close the transport */
+  SocketWS_TransportSend send;    /**< Send data through transport */
+  SocketWS_TransportRecv recv;    /**< Receive data from transport */
+  SocketWS_TransportClose close;  /**< Close the transport */
   SocketWS_TransportGetFd get_fd; /**< Get file descriptor for polling */
-  SocketWS_TransportFree free;   /**< Release transport resources */
+  SocketWS_TransportFree free;    /**< Release transport resources */
 } SocketWS_TransportOps;
 
 /* ============================================================================
@@ -177,12 +178,12 @@ typedef struct
  */
 struct SocketWS_Transport
 {
-  SocketWS_TransportType type;     /**< Transport type identifier */
+  SocketWS_TransportType type;      /**< Transport type identifier */
   const SocketWS_TransportOps *ops; /**< Operations vtable */
-  void *ctx;                       /**< Transport-specific context */
-  Arena_T arena;                   /**< Memory arena for allocations */
-  int requires_masking;            /**< 1 if client masking required (RFC 6455),
-                                        0 for HTTP/2 (RFC 8441) */
+  void *ctx;                        /**< Transport-specific context */
+  Arena_T arena;                    /**< Memory arena for allocations */
+  int requires_masking; /**< 1 if client masking required (RFC 6455),
+                             0 for HTTP/2 (RFC 8441) */
 };
 
 /* ============================================================================
@@ -205,9 +206,8 @@ struct SocketWS_Transport
  * @note The socket is owned by the transport after creation.
  * @see SocketWS_Transport_free() to release.
  */
-extern SocketWS_Transport_T SocketWS_Transport_socket(Arena_T arena,
-                                                      Socket_T socket,
-                                                      int is_client);
+extern SocketWS_Transport_T
+SocketWS_Transport_socket (Arena_T arena, Socket_T socket, int is_client);
 
 /**
  * @brief Create an HTTP/2 stream transport (RFC 8441).
@@ -224,8 +224,8 @@ extern SocketWS_Transport_T SocketWS_Transport_socket(Arena_T arena,
  * @note The stream must be in an appropriate state (post-HEADERS exchange).
  * @see SocketWS_Transport_free() to release.
  */
-extern SocketWS_Transport_T SocketWS_Transport_h2stream(Arena_T arena,
-                                                        SocketHTTP2_Stream_T stream);
+extern SocketWS_Transport_T
+SocketWS_Transport_h2stream (Arena_T arena, SocketHTTP2_Stream_T stream);
 
 /* ============================================================================
  * Transport Access Functions
@@ -239,7 +239,8 @@ extern SocketWS_Transport_T SocketWS_Transport_h2stream(Arena_T arena,
  * @param transport Transport handle.
  * @return Transport type (socket or HTTP/2 stream).
  */
-extern SocketWS_TransportType SocketWS_Transport_type(SocketWS_Transport_T transport);
+extern SocketWS_TransportType
+SocketWS_Transport_type (SocketWS_Transport_T transport);
 
 /**
  * @brief Check if transport requires client masking.
@@ -251,7 +252,7 @@ extern SocketWS_TransportType SocketWS_Transport_type(SocketWS_Transport_T trans
  * @param transport Transport handle.
  * @return Non-zero if masking required, 0 otherwise.
  */
-extern int SocketWS_Transport_requires_masking(SocketWS_Transport_T transport);
+extern int SocketWS_Transport_requires_masking (SocketWS_Transport_T transport);
 
 /**
  * @brief Send data through the transport.
@@ -262,8 +263,9 @@ extern int SocketWS_Transport_requires_masking(SocketWS_Transport_T transport);
  * @param len Length of data.
  * @return Bytes sent, or -1 on error.
  */
-extern ssize_t SocketWS_Transport_send(SocketWS_Transport_T transport,
-                                       const void *data, size_t len);
+extern ssize_t SocketWS_Transport_send (SocketWS_Transport_T transport,
+                                        const void *data,
+                                        size_t len);
 
 /**
  * @brief Receive data from the transport.
@@ -274,8 +276,8 @@ extern ssize_t SocketWS_Transport_send(SocketWS_Transport_T transport,
  * @param len Maximum bytes to receive.
  * @return Bytes received, 0 on EOF, -1 on error.
  */
-extern ssize_t SocketWS_Transport_recv(SocketWS_Transport_T transport,
-                                       void *buf, size_t len);
+extern ssize_t
+SocketWS_Transport_recv (SocketWS_Transport_T transport, void *buf, size_t len);
 
 /**
  * @brief Close the transport.
@@ -285,7 +287,8 @@ extern ssize_t SocketWS_Transport_recv(SocketWS_Transport_T transport,
  * @param orderly Non-zero for graceful close.
  * @return 0 on success, -1 on error.
  */
-extern int SocketWS_Transport_close(SocketWS_Transport_T transport, int orderly);
+extern int
+SocketWS_Transport_close (SocketWS_Transport_T transport, int orderly);
 
 /**
  * @brief Get file descriptor for poll integration.
@@ -294,7 +297,7 @@ extern int SocketWS_Transport_close(SocketWS_Transport_T transport, int orderly)
  * @param transport Transport handle.
  * @return File descriptor, or -1 if not available.
  */
-extern int SocketWS_Transport_get_fd(SocketWS_Transport_T transport);
+extern int SocketWS_Transport_get_fd (SocketWS_Transport_T transport);
 
 /**
  * @brief Free transport resources.
@@ -305,7 +308,7 @@ extern int SocketWS_Transport_get_fd(SocketWS_Transport_T transport);
  *
  * @param transport Pointer to transport handle (set to NULL).
  */
-extern void SocketWS_Transport_free(SocketWS_Transport_T *transport);
+extern void SocketWS_Transport_free (SocketWS_Transport_T *transport);
 
 /**
  * @brief Get the underlying socket (for socket transports only).
@@ -316,7 +319,7 @@ extern void SocketWS_Transport_free(SocketWS_Transport_T *transport);
  *
  * @note Returns NULL for HTTP/2 stream transports.
  */
-extern Socket_T SocketWS_Transport_get_socket(SocketWS_Transport_T transport);
+extern Socket_T SocketWS_Transport_get_socket (SocketWS_Transport_T transport);
 
 /**
  * @brief Get the underlying HTTP/2 stream (for H2 transports only).
@@ -327,6 +330,7 @@ extern Socket_T SocketWS_Transport_get_socket(SocketWS_Transport_T transport);
  *
  * @note Returns NULL for socket transports.
  */
-extern SocketHTTP2_Stream_T SocketWS_Transport_get_h2stream(SocketWS_Transport_T transport);
+extern SocketHTTP2_Stream_T
+SocketWS_Transport_get_h2stream (SocketWS_Transport_T transport);
 
 #endif /* SOCKETWS_TRANSPORT_INCLUDED */

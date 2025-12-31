@@ -41,8 +41,8 @@ TEST (proxy_port_valid_parsing)
   ASSERT_EQ (config.port, 1080);
 
   /* Port 1 (minimum valid) */
-  result = Socket_simple_proxy_parse_url ("http://proxy.example.com:1",
-                                          &config);
+  result
+      = Socket_simple_proxy_parse_url ("http://proxy.example.com:1", &config);
   ASSERT_EQ (result, 0);
   ASSERT_EQ (config.port, 1);
 
@@ -59,8 +59,8 @@ TEST (proxy_port_zero_rejected)
   SocketSimple_ProxyConfig config;
   int result;
 
-  result = Socket_simple_proxy_parse_url ("http://proxy.example.com:0",
-                                          &config);
+  result
+      = Socket_simple_proxy_parse_url ("http://proxy.example.com:0", &config);
   ASSERT_EQ (result, -1);
   ASSERT_EQ (Socket_simple_code (), SOCKET_SIMPLE_ERR_INVALID_ARG);
 }
@@ -71,8 +71,8 @@ TEST (proxy_port_negative_rejected)
   SocketSimple_ProxyConfig config;
   int result;
 
-  result = Socket_simple_proxy_parse_url ("http://proxy.example.com:-1",
-                                          &config);
+  result
+      = Socket_simple_proxy_parse_url ("http://proxy.example.com:-1", &config);
   ASSERT_EQ (result, -1);
   ASSERT_EQ (Socket_simple_code (), SOCKET_SIMPLE_ERR_INVALID_ARG);
 
@@ -105,13 +105,13 @@ TEST (proxy_port_non_numeric_rejected)
   SocketSimple_ProxyConfig config;
   int result;
 
-  result = Socket_simple_proxy_parse_url ("http://proxy.example.com:abc",
-                                          &config);
+  result
+      = Socket_simple_proxy_parse_url ("http://proxy.example.com:abc", &config);
   ASSERT_EQ (result, -1);
   ASSERT_EQ (Socket_simple_code (), SOCKET_SIMPLE_ERR_INVALID_ARG);
 
-  result = Socket_simple_proxy_parse_url ("http://proxy.example.com:80x",
-                                          &config);
+  result
+      = Socket_simple_proxy_parse_url ("http://proxy.example.com:80x", &config);
   ASSERT_EQ (result, -1);
   ASSERT_EQ (Socket_simple_code (), SOCKET_SIMPLE_ERR_INVALID_ARG);
 }
@@ -178,8 +178,7 @@ TEST (proxy_port_ipv6_parsing)
   ASSERT_EQ (config.port, 8080);
   ASSERT (strcmp (config.host, "::1") == 0);
 
-  result = Socket_simple_proxy_parse_url (
-      "http://[2001:db8::1]:1080", &config);
+  result = Socket_simple_proxy_parse_url ("http://[2001:db8::1]:1080", &config);
   ASSERT_EQ (result, 0);
   ASSERT_EQ (config.port, 1080);
   ASSERT (strcmp (config.host, "2001:db8::1") == 0);

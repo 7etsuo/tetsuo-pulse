@@ -35,21 +35,21 @@
 struct NegCacheEntry
 {
   char name[DNS_NEGCACHE_MAX_NAME + 1]; /**< Normalized (lowercase) QNAME */
-  uint16_t qtype;    /**< QTYPE (0 for NXDOMAIN, specific for NODATA) */
-  uint16_t qclass;   /**< QCLASS */
-  SocketDNS_NegCacheType type; /**< Entry type */
-  uint32_t ttl;      /**< Original TTL */
-  int64_t insert_time_ms; /**< Monotonic insertion time */
+  uint16_t qtype;  /**< QTYPE (0 for NXDOMAIN, specific for NODATA) */
+  uint16_t qclass; /**< QCLASS */
+  SocketDNS_NegCacheType type;     /**< Entry type */
+  uint32_t ttl;                    /**< Original TTL */
+  int64_t insert_time_ms;          /**< Monotonic insertion time */
   struct NegCacheEntry *hash_next; /**< Hash chain pointer */
   struct NegCacheEntry *lru_prev;  /**< LRU list prev */
   struct NegCacheEntry *lru_next;  /**< LRU list next */
 
   /* RFC 2308 Section 6: Cached SOA for authority section */
-  int has_soa;       /**< Whether SOA data is present */
-  char soa_name[DNS_NEGCACHE_MAX_SOA_NAME + 1];    /**< SOA owner name */
+  int has_soa; /**< Whether SOA data is present */
+  char soa_name[DNS_NEGCACHE_MAX_SOA_NAME + 1];        /**< SOA owner name */
   unsigned char soa_rdata[DNS_NEGCACHE_MAX_SOA_RDATA]; /**< Raw SOA RDATA */
-  size_t soa_rdlen;  /**< SOA RDATA length */
-  uint32_t soa_ttl;  /**< Original SOA record TTL */
+  size_t soa_rdlen;                                    /**< SOA RDATA length */
+  uint32_t soa_ttl; /**< Original SOA record TTL */
 };
 
 /**
@@ -57,19 +57,19 @@ struct NegCacheEntry
  */
 struct T
 {
-  Arena_T arena; /**< Memory arena */
+  Arena_T arena;         /**< Memory arena */
   pthread_mutex_t mutex; /**< Thread safety */
 
   struct NegCacheEntry *hash_table[NEGCACHE_HASH_SIZE]; /**< Hash buckets */
   struct NegCacheEntry *lru_head; /**< LRU head (most recent) */
   struct NegCacheEntry *lru_tail; /**< LRU tail (oldest) */
 
-  size_t size;         /**< Current entry count */
-  size_t max_entries;  /**< Maximum capacity */
-  uint32_t max_ttl;    /**< Maximum TTL allowed */
+  size_t size;        /**< Current entry count */
+  size_t max_entries; /**< Maximum capacity */
+  uint32_t max_ttl;   /**< Maximum TTL allowed */
 
   /* Hash collision DoS protection */
-  uint32_t hash_seed;  /**< Random seed for hash function */
+  uint32_t hash_seed; /**< Random seed for hash function */
 
   /* Statistics */
   uint64_t hits;
@@ -81,7 +81,8 @@ struct T
   uint64_t expirations;
 };
 
-/* normalize_name() replaced by socket_util_normalize_hostname() from SocketUtil.h */
+/* normalize_name() replaced by socket_util_normalize_hostname() from
+ * SocketUtil.h */
 
 /**
  * @brief Compute hash for cache key tuple.
@@ -99,7 +100,10 @@ struct T
  * avoids intermediate calculations.
  */
 static unsigned
-compute_hash_with_seed (const char *name, uint16_t qtype, uint16_t qclass, uint32_t seed)
+compute_hash_with_seed (const char *name,
+                        uint16_t qtype,
+                        uint16_t qclass,
+                        uint32_t seed)
 {
   unsigned hash = SOCKET_UTIL_DJB2_SEED;
 
@@ -128,7 +132,8 @@ compute_hash (T cache, const char *name, uint16_t qtype, uint16_t qclass)
 
 /* entry_expired() replaced by socket_util_ttl_expired() from SocketUtil.h */
 
-/* entry_ttl_remaining() replaced by socket_util_ttl_remaining() from SocketUtil.h */
+/* entry_ttl_remaining() replaced by socket_util_ttl_remaining() from
+ * SocketUtil.h */
 
 /**
  * @brief Remove entry from LRU list.
@@ -206,7 +211,8 @@ static void
 entry_free (T cache, struct NegCacheEntry *entry)
 {
   /* Compute bucket for hash removal */
-  unsigned bucket = compute_hash (cache, entry->name, entry->qtype, entry->qclass);
+  unsigned bucket
+      = compute_hash (cache, entry->name, entry->qtype, entry->qclass);
 
   hash_remove (cache, entry, bucket);
   lru_remove (cache, entry);
@@ -232,7 +238,9 @@ evict_lru (T cache)
  * @brief Find entry by exact key tuple.
  */
 static struct NegCacheEntry *
-find_entry (T cache, const char *normalized_name, uint16_t qtype,
+find_entry (T cache,
+            const char *normalized_name,
+            uint16_t qtype,
             uint16_t qclass)
 {
   unsigned bucket = compute_hash (cache, normalized_name, qtype, qclass);
@@ -255,7 +263,8 @@ find_entry (T cache, const char *normalized_name, uint16_t qtype,
 static void
 hash_insert (T cache, struct NegCacheEntry *entry)
 {
-  unsigned bucket = compute_hash (cache, entry->name, entry->qtype, entry->qclass);
+  unsigned bucket
+      = compute_hash (cache, entry->name, entry->qtype, entry->qclass);
   entry->hash_next = cache->hash_table[bucket];
   cache->hash_table[bucket] = entry;
 }
@@ -266,8 +275,8 @@ hash_insert (T cache, struct NegCacheEntry *entry)
 static struct NegCacheEntry *
 entry_alloc (T cache)
 {
-  return Arena_alloc (cache->arena, sizeof (struct NegCacheEntry), __FILE__,
-                      __LINE__);
+  return Arena_alloc (
+      cache->arena, sizeof (struct NegCacheEntry), __FILE__, __LINE__);
 }
 
 /* Public API */
@@ -324,8 +333,11 @@ SocketDNSNegCache_free (T *cache)
 }
 
 SocketDNS_NegCacheResult
-SocketDNSNegCache_lookup (T cache, const char *qname, uint16_t qtype,
-                          uint16_t qclass, SocketDNS_NegCacheEntry *entry)
+SocketDNSNegCache_lookup (T cache,
+                          const char *qname,
+                          uint16_t qtype,
+                          uint16_t qclass,
+                          SocketDNS_NegCacheEntry *entry)
 {
   if (cache == NULL || qname == NULL)
     return DNS_NEG_MISS;
@@ -363,7 +375,8 @@ SocketDNSNegCache_lookup (T cache, const char *qname, uint16_t qtype,
       found = find_entry (cache, normalized, qtype, qclass);
       if (found)
         {
-          if (socket_util_ttl_expired (found->insert_time_ms, found->ttl, now_ms))
+          if (socket_util_ttl_expired (
+                  found->insert_time_ms, found->ttl, now_ms))
             {
               entry_free (cache, found);
               cache->expirations++;
@@ -384,17 +397,19 @@ SocketDNSNegCache_lookup (T cache, const char *qname, uint16_t qtype,
     {
       entry->type = found->type;
       entry->original_ttl = found->ttl;
-      entry->ttl_remaining = socket_util_ttl_remaining (found->insert_time_ms, found->ttl, now_ms);
+      entry->ttl_remaining = socket_util_ttl_remaining (
+          found->insert_time_ms, found->ttl, now_ms);
       entry->insert_time_ms = found->insert_time_ms;
 
       /* Copy SOA data for RFC 2308 Section 6 compliance */
       entry->soa.has_soa = found->has_soa;
       if (found->has_soa)
         {
-          snprintf (entry->soa.name, sizeof (entry->soa.name), "%s",
-                    found->soa_name);
+          snprintf (
+              entry->soa.name, sizeof (entry->soa.name), "%s", found->soa_name);
           entry->soa.rdlen = found->soa_rdlen;
-          if (found->soa_rdlen > 0 && found->soa_rdlen <= DNS_NEGCACHE_MAX_SOA_RDATA)
+          if (found->soa_rdlen > 0
+              && found->soa_rdlen <= DNS_NEGCACHE_MAX_SOA_RDATA)
             memcpy (entry->soa.rdata, found->soa_rdata, found->soa_rdlen);
           entry->soa.original_ttl = found->soa_ttl;
         }
@@ -454,10 +469,13 @@ copy_soa_to_entry (struct NegCacheEntry *entry, const SocketDNS_CachedSOA *soa)
  * @return 0 on success, -1 on error.
  */
 static int
-insert_entry_common (T cache, const char *qname, uint16_t qtype,
-                    uint16_t qclass, uint32_t ttl,
-                    SocketDNS_NegCacheType type,
-                    const SocketDNS_CachedSOA *soa)
+insert_entry_common (T cache,
+                     const char *qname,
+                     uint16_t qtype,
+                     uint16_t qclass,
+                     uint32_t ttl,
+                     SocketDNS_NegCacheType type,
+                     const SocketDNS_CachedSOA *soa)
 {
   if (cache == NULL || qname == NULL)
     return -1;
@@ -481,7 +499,8 @@ insert_entry_common (T cache, const char *qname, uint16_t qtype,
   pthread_mutex_lock (&cache->mutex);
 
   /* Check if already exists and update */
-  struct NegCacheEntry *existing = find_entry (cache, normalized, qtype, qclass);
+  struct NegCacheEntry *existing
+      = find_entry (cache, normalized, qtype, qclass);
   if (existing)
     {
       existing->ttl = ttl;
@@ -526,46 +545,52 @@ insert_entry_common (T cache, const char *qname, uint16_t qtype,
 }
 
 int
-SocketDNSNegCache_insert_nxdomain (T cache, const char *qname, uint16_t qclass,
-                                    uint32_t ttl)
+SocketDNSNegCache_insert_nxdomain (T cache,
+                                   const char *qname,
+                                   uint16_t qclass,
+                                   uint32_t ttl)
 {
-  return insert_entry_common (cache, qname, 0, qclass, ttl,
-                              DNS_NEG_NXDOMAIN, NULL);
+  return insert_entry_common (
+      cache, qname, 0, qclass, ttl, DNS_NEG_NXDOMAIN, NULL);
 }
 
 int
-SocketDNSNegCache_insert_nodata (T cache, const char *qname, uint16_t qtype,
-                                  uint16_t qclass, uint32_t ttl)
+SocketDNSNegCache_insert_nodata (
+    T cache, const char *qname, uint16_t qtype, uint16_t qclass, uint32_t ttl)
 {
   /* qtype=0 is reserved for NXDOMAIN */
   if (qtype == 0)
     return -1;
 
-  return insert_entry_common (cache, qname, qtype, qclass, ttl,
-                              DNS_NEG_NODATA, NULL);
+  return insert_entry_common (
+      cache, qname, qtype, qclass, ttl, DNS_NEG_NODATA, NULL);
 }
 
 int
-SocketDNSNegCache_insert_nxdomain_with_soa (T cache, const char *qname,
-                                             uint16_t qclass, uint32_t ttl,
-                                             const SocketDNS_CachedSOA *soa)
+SocketDNSNegCache_insert_nxdomain_with_soa (T cache,
+                                            const char *qname,
+                                            uint16_t qclass,
+                                            uint32_t ttl,
+                                            const SocketDNS_CachedSOA *soa)
 {
-  return insert_entry_common (cache, qname, 0, qclass, ttl,
-                              DNS_NEG_NXDOMAIN, soa);
+  return insert_entry_common (
+      cache, qname, 0, qclass, ttl, DNS_NEG_NXDOMAIN, soa);
 }
 
 int
-SocketDNSNegCache_insert_nodata_with_soa (T cache, const char *qname,
-                                           uint16_t qtype, uint16_t qclass,
-                                           uint32_t ttl,
-                                           const SocketDNS_CachedSOA *soa)
+SocketDNSNegCache_insert_nodata_with_soa (T cache,
+                                          const char *qname,
+                                          uint16_t qtype,
+                                          uint16_t qclass,
+                                          uint32_t ttl,
+                                          const SocketDNS_CachedSOA *soa)
 {
   /* qtype=0 is reserved for NXDOMAIN */
   if (qtype == 0)
     return -1;
 
-  return insert_entry_common (cache, qname, qtype, qclass, ttl,
-                              DNS_NEG_NODATA, soa);
+  return insert_entry_common (
+      cache, qname, qtype, qclass, ttl, DNS_NEG_NODATA, soa);
 }
 
 int
@@ -608,8 +633,10 @@ SocketDNSNegCache_remove (T cache, const char *qname)
 }
 
 int
-SocketDNSNegCache_remove_nodata (T cache, const char *qname, uint16_t qtype,
-                                  uint16_t qclass)
+SocketDNSNegCache_remove_nodata (T cache,
+                                 const char *qname,
+                                 uint16_t qtype,
+                                 uint16_t qclass)
 {
   if (cache == NULL || qname == NULL || qtype == 0)
     return 0;
@@ -748,8 +775,11 @@ SocketDNSNegCache_result_name (SocketDNS_NegCacheResult result)
  * @return 0 on success, -1 on error
  */
 static int
-encode_soa_authority (const SocketDNS_NegCacheEntry *entry, uint16_t qclass,
-                      unsigned char *buf, size_t buflen, size_t offset,
+encode_soa_authority (const SocketDNS_NegCacheEntry *entry,
+                      uint16_t qclass,
+                      unsigned char *buf,
+                      size_t buflen,
+                      size_t offset,
                       size_t *bytes_written)
 {
   if (entry == NULL || buf == NULL || bytes_written == NULL)
@@ -793,8 +823,8 @@ encode_soa_authority (const SocketDNS_NegCacheEntry *entry, uint16_t qclass,
     return -1;
 
   /* Encode SOA owner name */
-  if (SocketDNS_name_encode (entry->soa.name, buf + offset, buflen - offset,
-                              &soa_name_len)
+  if (SocketDNS_name_encode (
+          entry->soa.name, buf + offset, buflen - offset, &soa_name_len)
       != 0)
     return -1;
   offset += soa_name_len;
@@ -831,10 +861,13 @@ encode_soa_authority (const SocketDNS_NegCacheEntry *entry, uint16_t qclass,
 
 int
 SocketDNSNegCache_build_response (const SocketDNS_NegCacheEntry *entry,
-                                   const char *qname, uint16_t qtype,
-                                   uint16_t qclass, uint16_t query_id,
-                                   unsigned char *buf, size_t buflen,
-                                   size_t *written)
+                                  const char *qname,
+                                  uint16_t qtype,
+                                  uint16_t qclass,
+                                  uint16_t query_id,
+                                  unsigned char *buf,
+                                  size_t buflen,
+                                  size_t *written)
 {
   if (entry == NULL || qname == NULL || buf == NULL)
     return -1;
@@ -880,8 +913,8 @@ SocketDNSNegCache_build_response (const SocketDNS_NegCacheEntry *entry,
   question.qclass = qclass;
 
   size_t question_len = 0;
-  if (SocketDNS_question_encode (&question, buf + offset, buflen - offset,
-                                  &question_len)
+  if (SocketDNS_question_encode (
+          &question, buf + offset, buflen - offset, &question_len)
       != 0)
     return -1;
   offset += question_len;

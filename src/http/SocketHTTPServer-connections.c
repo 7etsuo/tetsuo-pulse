@@ -4,7 +4,8 @@
  * https://x.com/tetsuoai
  */
 
-/* SocketHTTPServer-connections.c - Connection management for HTTP/1.1 and HTTP/2 */
+/* SocketHTTPServer-connections.c - Connection management for HTTP/1.1 and
+ * HTTP/2 */
 
 #include <stdlib.h>
 #include <string.h>
@@ -20,12 +21,12 @@
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPServer);
 
-static void record_request_latency (SocketHTTPServer_T server,
-                                    int64_t request_start_ms);
-static SocketHTTP1_Parser_T connection_create_parser (Arena_T arena,
-                                                      const SocketHTTPServer_Config *config);
-static int connection_add_to_server (SocketHTTPServer_T server,
-                                     ServerConnection *conn);
+static void
+record_request_latency (SocketHTTPServer_T server, int64_t request_start_ms);
+static SocketHTTP1_Parser_T
+connection_create_parser (Arena_T arena, const SocketHTTPServer_Config *config);
+static int
+connection_add_to_server (SocketHTTPServer_T server, ServerConnection *conn);
 static int setup_body_buffer_fixed (SocketHTTPServer_T server,
                                     ServerConnection *conn,
                                     size_t content_length,
@@ -52,14 +53,15 @@ static int connection_read_body_fixed (SocketHTTPServer_T server,
 static void connection_reject_oversized_body (SocketHTTPServer_T server,
                                               ServerConnection *conn);
 static size_t connection_check_body_size_limit (size_t max_body,
-                                                 size_t current_received,
-                                                 size_t input_len);
+                                                size_t current_received,
+                                                size_t input_len);
 
 static void connection_init_request_ctx (SocketHTTPServer_T server,
                                          ServerConnection *conn,
                                          struct SocketHTTPServer_Request *ctx);
 
-/* Read data from socket into connection buffer. Returns >0 bytes read, 0 on EAGAIN, -1 on error/close */
+/* Read data from socket into connection buffer. Returns >0 bytes read, 0 on
+ * EAGAIN, -1 on error/close */
 int
 connection_read (SocketHTTPServer_T server, ServerConnection *conn)
 {
@@ -90,8 +92,10 @@ connection_read (SocketHTTPServer_T server, ServerConnection *conn)
     return 0;
 
   conn->last_activity_ms = Socket_get_monotonic_ms ();
-  SERVER_METRICS_ADD (server, SOCKET_CTR_HTTP_SERVER_BYTES_RECEIVED,
-                      bytes_received, (uint64_t)n);
+  SERVER_METRICS_ADD (server,
+                      SOCKET_CTR_HTTP_SERVER_BYTES_RECEIVED,
+                      bytes_received,
+                      (uint64_t)n);
   SocketBuf_write (conn->inbuf, buf, (size_t)n);
 
   return (int)n;
@@ -99,8 +103,10 @@ connection_read (SocketHTTPServer_T server, ServerConnection *conn)
 
 /* Send data over connection socket. Returns 0 on success, -1 on error */
 int
-connection_send_data (SocketHTTPServer_T server, ServerConnection *conn,
-                      const void *data, size_t len)
+connection_send_data (SocketHTTPServer_T server,
+                      ServerConnection *conn,
+                      const void *data,
+                      size_t len)
 {
   volatile int closed = 0;
   volatile ssize_t sent = 0;
@@ -123,8 +129,8 @@ connection_send_data (SocketHTTPServer_T server, ServerConnection *conn,
     }
 
   conn->last_activity_ms = Socket_get_monotonic_ms ();
-  SERVER_METRICS_ADD (server, SOCKET_CTR_HTTP_SERVER_BYTES_SENT, bytes_sent,
-                      (uint64_t)sent);
+  SERVER_METRICS_ADD (
+      server, SOCKET_CTR_HTTP_SERVER_BYTES_SENT, bytes_sent, (uint64_t)sent);
   return 0;
 }
 
@@ -137,10 +143,11 @@ connection_reset_for_keepalive (ServerConnection *conn)
   SocketBuf_clear (conn->inbuf);
   SocketBuf_clear (conn->outbuf);
 
-  if (conn->body_uses_buf && conn->body_buf != NULL) {
-    SocketBuf_release (&conn->body_buf);
-    conn->body_uses_buf = 0;
-  }
+  if (conn->body_uses_buf && conn->body_buf != NULL)
+    {
+      SocketBuf_release (&conn->body_buf);
+      conn->body_uses_buf = 0;
+    }
 
   SocketHTTP_Headers_clear (conn->response_headers);
   conn->response_status = 0;
@@ -163,7 +170,8 @@ connection_reset_for_keepalive (ServerConnection *conn)
   conn->state = CONN_STATE_READING_REQUEST;
 }
 
-/* Complete request processing. Records latency and either resets for keep-alive or closes */
+/* Complete request processing. Records latency and either resets for keep-alive
+ * or closes */
 void
 connection_finish_request (SocketHTTPServer_T server, ServerConnection *conn)
 {
@@ -185,7 +193,8 @@ connection_reject_oversized_body (SocketHTTPServer_T server,
   conn->state = CONN_STATE_CLOSED;
 }
 
-/* Check if incoming data would exceed body size limit. Returns safe process length, or 0 if limit already reached */
+/* Check if incoming data would exceed body size limit. Returns safe process
+ * length, or 0 if limit already reached */
 static size_t
 connection_check_body_size_limit (size_t max_body,
                                   size_t current_received,
@@ -195,7 +204,8 @@ connection_check_body_size_limit (size_t max_body,
     return input_len;
 
   uint64_t total;
-  if (!socket_util_safe_add_u64(current_received, input_len, &total) || total > max_body)
+  if (!socket_util_safe_add_u64 (current_received, input_len, &total)
+      || total > max_body)
     {
       size_t remaining = max_body - current_received;
       return remaining;
@@ -205,7 +215,8 @@ connection_check_body_size_limit (size_t max_body,
 }
 
 static void
-connection_init_request_ctx (SocketHTTPServer_T server, ServerConnection *conn,
+connection_init_request_ctx (SocketHTTPServer_T server,
+                             ServerConnection *conn,
                              struct SocketHTTPServer_Request *ctx)
 {
   ctx->server = server;
@@ -217,8 +228,10 @@ connection_init_request_ctx (SocketHTTPServer_T server, ServerConnection *conn,
 
 /* Setup body buffer for fixed Content-Length mode */
 static int
-setup_body_buffer_fixed (SocketHTTPServer_T server, ServerConnection *conn,
-                         size_t content_length, size_t max_body)
+setup_body_buffer_fixed (SocketHTTPServer_T server,
+                         ServerConnection *conn,
+                         size_t content_length,
+                         size_t max_body)
 {
   if (content_length > max_body)
     {
@@ -227,8 +240,8 @@ setup_body_buffer_fixed (SocketHTTPServer_T server, ServerConnection *conn,
     }
 
   conn->body_capacity = content_length;
-  conn->body = Arena_alloc (conn->arena, conn->body_capacity, __FILE__,
-                            __LINE__);
+  conn->body
+      = Arena_alloc (conn->arena, conn->body_capacity, __FILE__, __LINE__);
   if (conn->body == NULL)
     {
       conn->state = CONN_STATE_CLOSED;
@@ -241,7 +254,8 @@ setup_body_buffer_fixed (SocketHTTPServer_T server, ServerConnection *conn,
 
 /* Setup body buffer for chunked/until-close mode */
 static int
-setup_body_buffer_dynamic (SocketHTTPServer_T server, ServerConnection *conn,
+setup_body_buffer_dynamic (SocketHTTPServer_T server,
+                           ServerConnection *conn,
                            size_t max_body)
 {
   size_t initial_size = HTTPSERVER_CHUNKED_BODY_INITIAL_SIZE;
@@ -270,7 +284,8 @@ setup_body_buffer_dynamic (SocketHTTPServer_T server, ServerConnection *conn,
   return 0;
 }
 
-/* Allocate body buffer: fixed size for Content-Length, dynamic SocketBuf for chunked/until-close */
+/* Allocate body buffer: fixed size for Content-Length, dynamic SocketBuf for
+ * chunked/until-close */
 static int
 connection_setup_body_buffer (SocketHTTPServer_T server, ServerConnection *conn)
 {
@@ -289,12 +304,13 @@ connection_setup_body_buffer (SocketHTTPServer_T server, ServerConnection *conn)
   return 0;
 }
 
-/* Handle streaming mode: deliver body data via callback. Returns 0 if more data needed, 1 if complete, -1 on error */
+/* Handle streaming mode: deliver body data via callback. Returns 0 if more data
+ * needed, 1 if complete, -1 on error */
 static int
 connection_read_body_streaming (SocketHTTPServer_T server,
-                                 ServerConnection *conn,
-                                 const void *input,
-                                 size_t input_len)
+                                ServerConnection *conn,
+                                const void *input,
+                                size_t input_len)
 {
   char temp_buf[HTTPSERVER_RECV_BUFFER_SIZE];
   size_t temp_avail = sizeof (temp_buf);
@@ -304,16 +320,21 @@ connection_read_body_streaming (SocketHTTPServer_T server,
   SocketHTTP1_Result r;
 
   /* Check body size limit */
-  process_len = connection_check_body_size_limit (max_body, conn->body_received, input_len);
+  process_len = connection_check_body_size_limit (
+      max_body, conn->body_received, input_len);
   if (process_len == 0)
     {
       connection_reject_oversized_body (server, conn);
       return -1;
     }
 
-  r = SocketHTTP1_Parser_read_body (conn->parser, (const char *)input,
-                                    process_len, &body_consumed, temp_buf,
-                                    temp_avail, &written);
+  r = SocketHTTP1_Parser_read_body (conn->parser,
+                                    (const char *)input,
+                                    process_len,
+                                    &body_consumed,
+                                    temp_buf,
+                                    temp_avail,
+                                    &written);
 
   SocketBuf_consume (conn->inbuf, body_consumed);
   conn->body_received += written;
@@ -327,9 +348,8 @@ connection_read_body_streaming (SocketHTTPServer_T server,
       struct SocketHTTPServer_Request req_ctx;
       connection_init_request_ctx (server, conn, &req_ctx);
 
-      int cb_result = conn->body_callback (&req_ctx, temp_buf, written,
-                                           is_final,
-                                           conn->body_callback_userdata);
+      int cb_result = conn->body_callback (
+          &req_ctx, temp_buf, written, is_final, conn->body_callback_userdata);
       if (cb_result != 0)
         {
           /* Callback aborted - send 400 and close */
@@ -358,12 +378,13 @@ connection_read_body_streaming (SocketHTTPServer_T server,
   return 1;
 }
 
-/* Handle chunked/until-close mode with dynamic buffer. Returns 0 if more data needed, 1 if complete, -1 on error */
+/* Handle chunked/until-close mode with dynamic buffer. Returns 0 if more data
+ * needed, 1 if complete, -1 on error */
 static int
 connection_read_body_chunked (SocketHTTPServer_T server,
-                               ServerConnection *conn,
-                               const void *input,
-                               size_t input_len)
+                              ServerConnection *conn,
+                              const void *input,
+                              size_t input_len)
 {
   size_t max_body = server->config.max_body_size;
   size_t current_len = SocketBuf_available (conn->body_buf);
@@ -372,7 +393,8 @@ connection_read_body_chunked (SocketHTTPServer_T server,
 
   /* Check if adding this chunk would exceed limit */
   uint64_t total;
-  if (!socket_util_safe_add_u64(current_len, input_len, &total) || total > max_body)
+  if (!socket_util_safe_add_u64 (current_len, input_len, &total)
+      || total > max_body)
     {
       /* Only accept up to limit */
       input_len = max_body - current_len;
@@ -399,9 +421,12 @@ connection_read_body_chunked (SocketHTTPServer_T server,
       return -1;
     }
 
-  r = SocketHTTP1_Parser_read_body (conn->parser, (const char *)input,
-                                    input_len, &body_consumed,
-                                    (char *)write_ptr, write_avail,
+  r = SocketHTTP1_Parser_read_body (conn->parser,
+                                    (const char *)input,
+                                    input_len,
+                                    &body_consumed,
+                                    (char *)write_ptr,
+                                    write_avail,
                                     &written);
 
   SocketBuf_consume (conn->inbuf, body_consumed);
@@ -425,12 +450,13 @@ connection_read_body_chunked (SocketHTTPServer_T server,
   return 1;
 }
 
-/* Handle fixed Content-Length mode. Returns 0 if more data needed, 1 if complete, -1 on error */
+/* Handle fixed Content-Length mode. Returns 0 if more data needed, 1 if
+ * complete, -1 on error */
 static int
 connection_read_body_fixed (SocketHTTPServer_T server,
-                             ServerConnection *conn,
-                             const void *input,
-                             size_t input_len)
+                            ServerConnection *conn,
+                            const void *input,
+                            size_t input_len)
 {
   size_t max_body = server->config.max_body_size;
   size_t process_len = input_len;
@@ -438,7 +464,8 @@ connection_read_body_fixed (SocketHTTPServer_T server,
   SocketHTTP1_Result r;
 
   /* Check body size limit */
-  process_len = connection_check_body_size_limit (max_body, conn->body_len, input_len);
+  process_len
+      = connection_check_body_size_limit (max_body, conn->body_len, input_len);
   if (process_len == 0)
     {
       connection_reject_oversized_body (server, conn);
@@ -448,9 +475,13 @@ connection_read_body_fixed (SocketHTTPServer_T server,
   char *output = (char *)conn->body + conn->body_len;
   size_t output_avail = conn->body_capacity - conn->body_len;
 
-  r = SocketHTTP1_Parser_read_body (conn->parser, (const char *)input,
-                                    process_len, &body_consumed, output,
-                                    output_avail, &written);
+  r = SocketHTTP1_Parser_read_body (conn->parser,
+                                    (const char *)input,
+                                    process_len,
+                                    &body_consumed,
+                                    output,
+                                    output_avail,
+                                    &written);
 
   SocketBuf_consume (conn->inbuf, body_consumed);
   conn->body_len += written;
@@ -470,7 +501,8 @@ connection_read_body_fixed (SocketHTTPServer_T server,
   return 1;
 }
 
-/* Read initial body data. Dispatches to appropriate handler based on mode. Returns 0 if more data needed, 1 if complete, -1 on error */
+/* Read initial body data. Dispatches to appropriate handler based on mode.
+ * Returns 0 if more data needed, 1 if complete, -1 on error */
 static int
 connection_read_initial_body (SocketHTTPServer_T server, ServerConnection *conn)
 {
@@ -486,14 +518,15 @@ connection_read_initial_body (SocketHTTPServer_T server, ServerConnection *conn)
 
   /* Dispatch to appropriate handler based on mode */
   if (conn->body_streaming && conn->body_callback)
-    return connection_read_body_streaming(server, conn, input, input_len);
+    return connection_read_body_streaming (server, conn, input, input_len);
   else if (conn->body_uses_buf)
-    return connection_read_body_chunked(server, conn, input, input_len);
+    return connection_read_body_chunked (server, conn, input, input_len);
   else
-    return connection_read_body_fixed(server, conn, input, input_len);
+    return connection_read_body_fixed (server, conn, input, input_len);
 }
 
-/* Parse HTTP request. Runs validator on headers complete, sets up body handling. Returns 0 need more data, 1 ready, -1 error */
+/* Parse HTTP request. Runs validator on headers complete, sets up body
+ * handling. Returns 0 need more data, 1 ready, -1 error */
 int
 connection_parse_request (SocketHTTPServer_T server, ServerConnection *conn)
 {
@@ -596,8 +629,8 @@ connection_send_response (SocketHTTPServer_T server, ServerConnection *conn)
       int ret = snprintf (cl, sizeof (cl), "%zu", conn->response_body_len);
       if (ret < 0 || ret >= (int)sizeof (cl))
         {
-          /* Defensive check: should never happen with 32-byte buffer for size_t,
-           * but handle gracefully if buffer size assumptions change. */
+          /* Defensive check: should never happen with 32-byte buffer for
+           * size_t, but handle gracefully if buffer size assumptions change. */
           conn->state = CONN_STATE_CLOSED;
           return;
         }
@@ -616,18 +649,22 @@ connection_send_response (SocketHTTPServer_T server, ServerConnection *conn)
 
   if (conn->response_body != NULL && conn->response_body_len > 0)
     {
-      if (connection_send_data (server, conn, conn->response_body,
-                                conn->response_body_len) < 0)
+      if (connection_send_data (
+              server, conn, conn->response_body, conn->response_body_len)
+          < 0)
         return;
     }
 
   connection_finish_request (server, conn);
 }
 
-/* Send HTTP error response. Uses custom error handler if registered, otherwise sends default text/plain */
+/* Send HTTP error response. Uses custom error handler if registered, otherwise
+ * sends default text/plain */
 void
-connection_send_error (SocketHTTPServer_T server, ServerConnection *conn,
-                       int status, const char *body)
+connection_send_error (SocketHTTPServer_T server,
+                       ServerConnection *conn,
+                       int status,
+                       const char *body)
 {
   conn->response_status = status;
 
@@ -652,8 +689,8 @@ connection_send_error (SocketHTTPServer_T server, ServerConnection *conn,
           conn->response_body = copy;
           conn->response_body_len = len;
         }
-      SocketHTTP_Headers_set (conn->response_headers, "Content-Type",
-                              "text/plain");
+      SocketHTTP_Headers_set (
+          conn->response_headers, "Content-Type", "text/plain");
     }
 
   connection_send_response (server, conn);
@@ -689,7 +726,8 @@ record_request_latency (SocketHTTPServer_T server, int64_t request_start_ms)
     }
 }
 
-/* Add connection to server list and track IP for per-IP limits. Returns -1 if IP limit exceeded */
+/* Add connection to server list and track IP for per-IP limits. Returns -1 if
+ * IP limit exceeded */
 static int
 connection_add_to_server (SocketHTTPServer_T server, ServerConnection *conn)
 {
@@ -698,7 +736,8 @@ connection_add_to_server (SocketHTTPServer_T server, ServerConnection *conn)
     {
       if (!SocketIPTracker_track (server->ip_tracker, conn->client_addr))
         {
-          SERVER_METRICS_INC (server, SOCKET_CTR_LIMIT_CONNECTIONS_EXCEEDED,
+          SERVER_METRICS_INC (server,
+                              SOCKET_CTR_LIMIT_CONNECTIONS_EXCEEDED,
                               connections_rejected);
           return -1;
         }
@@ -711,10 +750,10 @@ connection_add_to_server (SocketHTTPServer_T server, ServerConnection *conn)
   server->connections = conn;
 
   /* Update global + per-server metrics */
-  SERVER_GAUGE_INC (server, SOCKET_GAU_HTTP_SERVER_ACTIVE_CONNECTIONS,
-                    active_connections);
-  SERVER_METRICS_INC (server, SOCKET_CTR_HTTP_SERVER_CONNECTIONS_TOTAL,
-                      connections_total);
+  SERVER_GAUGE_INC (
+      server, SOCKET_GAU_HTTP_SERVER_ACTIVE_CONNECTIONS, active_connections);
+  SERVER_METRICS_INC (
+      server, SOCKET_CTR_HTTP_SERVER_CONNECTIONS_TOTAL, connections_total);
 
   return 0;
 }
@@ -730,7 +769,8 @@ connection_cleanup_partial (ServerConnection *conn, int resources_initialized)
   free (conn);
 }
 
-/* Allocate and initialize new connection. On failure, cleans up and closes socket */
+/* Allocate and initialize new connection. On failure, cleans up and closes
+ * socket */
 ServerConnection *
 connection_new (SocketHTTPServer_T server, Socket_T socket)
 {
@@ -746,7 +786,8 @@ connection_new (SocketHTTPServer_T server, Socket_T socket)
 
   TRY
   {
-    /* Initialize connection resources: arena, buffers, parser. Enables TLS if configured */
+    /* Initialize connection resources: arena, buffers, parser. Enables TLS if
+     * configured */
     Arena_T arena = Arena_new ();
     conn->arena = arena;
     conn->socket = socket;
@@ -759,7 +800,8 @@ connection_new (SocketHTTPServer_T server, Socket_T socket)
     const char *addr = Socket_getpeeraddr (conn->socket);
     if (addr != NULL)
       {
-        (void)socket_util_safe_strncpy (conn->client_addr, addr, sizeof (conn->client_addr));
+        (void)socket_util_safe_strncpy (
+            conn->client_addr, addr, sizeof (conn->client_addr));
       }
 
     conn->parser = connection_create_parser (arena, &server->config);
@@ -868,14 +910,15 @@ connection_close (SocketHTTPServer_T server, ServerConnection *conn)
   conn->prev = NULL;
 
   /* Update global + per-server metrics */
-  SERVER_GAUGE_DEC (server, SOCKET_GAU_HTTP_SERVER_ACTIVE_CONNECTIONS,
-                    active_connections);
+  SERVER_GAUGE_DEC (
+      server, SOCKET_GAU_HTTP_SERVER_ACTIVE_CONNECTIONS, active_connections);
 
   /* Release body buffer if allocated */
-  if (conn->body_uses_buf && conn->body_buf != NULL) {
-    SocketBuf_release (&conn->body_buf);
-    conn->body_uses_buf = 0;
-  }
+  if (conn->body_uses_buf && conn->body_buf != NULL)
+    {
+      SocketBuf_release (&conn->body_buf);
+      conn->body_uses_buf = 0;
+    }
 
   /* Free arena */
   if (conn->arena != NULL)

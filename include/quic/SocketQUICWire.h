@@ -73,11 +73,11 @@
  */
 typedef enum
 {
-  QUIC_PN_OK = 0,          /**< Operation succeeded */
-  QUIC_PN_ERROR_NULL,      /**< NULL pointer argument */
-  QUIC_PN_ERROR_BUFFER,    /**< Output buffer too small */
-  QUIC_PN_ERROR_OVERFLOW,  /**< Packet number exceeds maximum */
-  QUIC_PN_ERROR_BITS       /**< Invalid bit count (must be 8, 16, 24, or 32) */
+  QUIC_PN_OK = 0,         /**< Operation succeeded */
+  QUIC_PN_ERROR_NULL,     /**< NULL pointer argument */
+  QUIC_PN_ERROR_BUFFER,   /**< Output buffer too small */
+  QUIC_PN_ERROR_OVERFLOW, /**< Packet number exceeds maximum */
+  QUIC_PN_ERROR_BITS      /**< Invalid bit count (must be 8, 16, 24, or 32) */
 } SocketQUICWire_Result;
 
 /* ============================================================================
@@ -108,8 +108,8 @@ typedef enum
  * // len = 2 (29,519 unacked packets, needs 16 bits)
  * @endcode
  */
-extern unsigned SocketQUICWire_pn_length (uint64_t full_pn,
-                                          uint64_t largest_acked);
+extern unsigned
+SocketQUICWire_pn_length (uint64_t full_pn, uint64_t largest_acked);
 
 /**
  * @brief Encode a packet number with truncation.
@@ -135,8 +135,10 @@ extern unsigned SocketQUICWire_pn_length (uint64_t full_pn,
  * // len = 2, buf = {0x5c, 0x02}
  * @endcode
  */
-extern size_t SocketQUICWire_pn_encode (uint64_t full_pn, uint64_t largest_acked,
-                                        uint8_t *output, size_t output_size);
+extern size_t SocketQUICWire_pn_encode (uint64_t full_pn,
+                                        uint64_t largest_acked,
+                                        uint8_t *output,
+                                        size_t output_size);
 
 /* ============================================================================
  * Decoding Functions (RFC 9000 Appendix A.3)
@@ -153,7 +155,8 @@ extern size_t SocketQUICWire_pn_encode (uint64_t full_pn, uint64_t largest_acked
  * The algorithm handles wrap-around near the 2^62 boundary correctly.
  *
  * @param largest_pn   Largest packet number successfully processed in this
- *                     packet number space, or QUIC_PN_NONE if this is the first.
+ *                     packet number space, or QUIC_PN_NONE if this is the
+ * first.
  * @param truncated_pn Truncated packet number value from packet header.
  * @param pn_nbits     Number of bits in the truncated value (8, 16, 24, or 32).
  * @param full_pn      Output: reconstructed full packet number.
@@ -208,8 +211,10 @@ extern SocketQUICWire_Result SocketQUICWire_pn_read (const uint8_t *data,
  *
  * @return Number of bytes written, or 0 on error.
  */
-extern size_t SocketQUICWire_pn_write (uint64_t value, unsigned pn_len,
-                                       uint8_t *output, size_t output_size);
+extern size_t SocketQUICWire_pn_write (uint64_t value,
+                                       unsigned pn_len,
+                                       uint8_t *output,
+                                       size_t output_size);
 
 /* ============================================================================
  * Utility Functions

@@ -45,38 +45,54 @@
 
 /* Helper to generate CA, server, and client certificates */
 static int
-generate_mtls_certs (const char *ca_cert, const char *ca_key,
-                     const char *server_cert, const char *server_key,
-                     const char *client_cert, const char *client_key)
+generate_mtls_certs (const char *ca_cert,
+                     const char *ca_key,
+                     const char *server_cert,
+                     const char *server_key,
+                     const char *client_cert,
+                     const char *client_key)
 {
   char cmd[2048];
 
   /* Generate CA */
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl genrsa -out %s 2048 2>/dev/null && "
             "openssl req -x509 -new -key %s -out %s -days 1 "
             "-subj '/CN=TestCA' -batch 2>/dev/null",
-            ca_key, ca_key, ca_cert);
+            ca_key,
+            ca_key,
+            ca_cert);
   if (system (cmd) != 0)
     return -1;
 
   /* Generate server cert signed by CA */
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl genrsa -out %s 2048 2>/dev/null && "
             "openssl req -new -key %s -subj '/CN=localhost' -batch 2>/dev/null "
             "| openssl x509 -req -CA %s -CAkey %s -CAcreateserial -out %s "
             "-days 1 2>/dev/null",
-            server_key, server_key, ca_cert, ca_key, server_cert);
+            server_key,
+            server_key,
+            ca_cert,
+            ca_key,
+            server_cert);
   if (system (cmd) != 0)
     return -1;
 
   /* Generate client cert signed by CA */
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl genrsa -out %s 2048 2>/dev/null && "
             "openssl req -new -key %s -subj '/CN=client' -batch 2>/dev/null | "
             "openssl x509 -req -CA %s -CAkey %s -CAcreateserial -out %s "
             "-days 1 2>/dev/null",
-            client_key, client_key, ca_cert, ca_key, client_cert);
+            client_key,
+            client_key,
+            ca_cert,
+            ca_key,
+            client_cert);
   if (system (cmd) != 0)
     return -1;
 
@@ -84,9 +100,12 @@ generate_mtls_certs (const char *ca_cert, const char *ca_key,
 }
 
 static void
-remove_mtls_certs (const char *ca_cert, const char *ca_key,
-                   const char *server_cert, const char *server_key,
-                   const char *client_cert, const char *client_key)
+remove_mtls_certs (const char *ca_cert,
+                   const char *ca_key,
+                   const char *server_cert,
+                   const char *server_key,
+                   const char *client_cert,
+                   const char *client_key)
 {
   unlink (ca_cert);
   unlink (ca_key);
@@ -155,8 +174,8 @@ TEST (mtls_verify_fail_if_no_peer_mode)
   const char *client_key = "test_mtls_client.key";
   SocketTLSContext_T ctx = NULL;
 
-  if (generate_mtls_certs (ca_cert, ca_key, server_cert, server_key,
-                           client_cert, client_key)
+  if (generate_mtls_certs (
+          ca_cert, ca_key, server_cert, server_key, client_cert, client_key)
       != 0)
     return;
 
@@ -172,8 +191,8 @@ TEST (mtls_verify_fail_if_no_peer_mode)
   {
     if (ctx)
       SocketTLSContext_free (&ctx);
-    remove_mtls_certs (ca_cert, ca_key, server_cert, server_key, client_cert,
-                       client_key);
+    remove_mtls_certs (
+        ca_cert, ca_key, server_cert, server_key, client_cert, client_key);
   }
   END_TRY;
 }
@@ -191,8 +210,8 @@ TEST (mtls_successful_handshake)
   Socket_T client = NULL, server = NULL;
   SocketTLSContext_T client_ctx = NULL, server_ctx = NULL;
 
-  if (generate_mtls_certs (ca_cert, ca_key, server_cert, server_key,
-                           client_cert, client_key)
+  if (generate_mtls_certs (
+          ca_cert, ca_key, server_cert, server_key, client_cert, client_key)
       != 0)
     return;
 
@@ -204,7 +223,8 @@ TEST (mtls_successful_handshake)
 
     /* Server requires client cert */
     server_ctx = SocketTLSContext_new_server (server_cert, server_key, ca_cert);
-    SocketTLSContext_set_verify_mode (server_ctx, TLS_VERIFY_FAIL_IF_NO_PEER_CERT);
+    SocketTLSContext_set_verify_mode (server_ctx,
+                                      TLS_VERIFY_FAIL_IF_NO_PEER_CERT);
 
     /* Client provides cert and verifies server */
     client_ctx = SocketTLSContext_new_client (ca_cert);
@@ -235,8 +255,8 @@ TEST (mtls_successful_handshake)
       SocketTLSContext_free (&client_ctx);
     if (server_ctx)
       SocketTLSContext_free (&server_ctx);
-    remove_mtls_certs (ca_cert, ca_key, server_cert, server_key, client_cert,
-                       client_key);
+    remove_mtls_certs (
+        ca_cert, ca_key, server_cert, server_key, client_cert, client_key);
   }
   END_TRY;
 }
@@ -253,8 +273,8 @@ TEST (mtls_missing_client_cert_fails)
   SocketTLSContext_T client_ctx = NULL, server_ctx = NULL;
   volatile int handshake_failed = 0;
 
-  if (generate_mtls_certs (ca_cert, ca_key, server_cert, server_key,
-                           client_cert, client_key)
+  if (generate_mtls_certs (
+          ca_cert, ca_key, server_cert, server_key, client_cert, client_key)
       != 0)
     return;
 
@@ -266,7 +286,8 @@ TEST (mtls_missing_client_cert_fails)
 
     /* Server requires client cert */
     server_ctx = SocketTLSContext_new_server (server_cert, server_key, ca_cert);
-    SocketTLSContext_set_verify_mode (server_ctx, TLS_VERIFY_FAIL_IF_NO_PEER_CERT);
+    SocketTLSContext_set_verify_mode (server_ctx,
+                                      TLS_VERIFY_FAIL_IF_NO_PEER_CERT);
 
     /* Client does NOT provide cert */
     client_ctx = SocketTLSContext_new_client (ca_cert);
@@ -283,8 +304,14 @@ TEST (mtls_missing_client_cert_fails)
       if (result != 0)
         handshake_failed = 1;
     }
-    EXCEPT (SocketTLS_Failed) { handshake_failed = 1; }
-    EXCEPT (SocketTLS_HandshakeFailed) { handshake_failed = 1; }
+    EXCEPT (SocketTLS_Failed)
+    {
+      handshake_failed = 1;
+    }
+    EXCEPT (SocketTLS_HandshakeFailed)
+    {
+      handshake_failed = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (handshake_failed, 1); /* Should have failed */
@@ -299,8 +326,8 @@ TEST (mtls_missing_client_cert_fails)
       SocketTLSContext_free (&client_ctx);
     if (server_ctx)
       SocketTLSContext_free (&server_ctx);
-    remove_mtls_certs (ca_cert, ca_key, server_cert, server_key, client_cert,
-                       client_key);
+    remove_mtls_certs (
+        ca_cert, ca_key, server_cert, server_key, client_cert, client_key);
   }
   END_TRY;
 }
@@ -318,8 +345,8 @@ TEST (mtls_get_peer_cert_info)
   Socket_T client = NULL, server = NULL;
   SocketTLSContext_T client_ctx = NULL, server_ctx = NULL;
 
-  if (generate_mtls_certs (ca_cert, ca_key, server_cert, server_key,
-                           client_cert, client_key)
+  if (generate_mtls_certs (
+          ca_cert, ca_key, server_cert, server_key, client_cert, client_key)
       != 0)
     return;
 
@@ -330,7 +357,8 @@ TEST (mtls_get_peer_cert_info)
     Socket_setnonblocking (server);
 
     server_ctx = SocketTLSContext_new_server (server_cert, server_key, ca_cert);
-    SocketTLSContext_set_verify_mode (server_ctx, TLS_VERIFY_FAIL_IF_NO_PEER_CERT);
+    SocketTLSContext_set_verify_mode (server_ctx,
+                                      TLS_VERIFY_FAIL_IF_NO_PEER_CERT);
 
     client_ctx = SocketTLSContext_new_client (ca_cert);
     SocketTLSContext_load_certificate (client_ctx, client_cert, client_key);
@@ -359,8 +387,8 @@ TEST (mtls_get_peer_cert_info)
       SocketTLSContext_free (&client_ctx);
     if (server_ctx)
       SocketTLSContext_free (&server_ctx);
-    remove_mtls_certs (ca_cert, ca_key, server_cert, server_key, client_cert,
-                       client_key);
+    remove_mtls_certs (
+        ca_cert, ca_key, server_cert, server_key, client_cert, client_key);
   }
   END_TRY;
 }
@@ -370,8 +398,10 @@ TEST (mtls_get_peer_cert_info)
 static int callback_call_count = 0;
 
 static int
-test_verify_callback (int preverify_ok, X509_STORE_CTX *x509_ctx,
-                      SocketTLSContext_T tls_ctx, Socket_T socket,
+test_verify_callback (int preverify_ok,
+                      X509_STORE_CTX *x509_ctx,
+                      SocketTLSContext_T tls_ctx,
+                      Socket_T socket,
                       void *user_data)
 {
   (void)x509_ctx;
@@ -394,8 +424,8 @@ TEST (mtls_custom_verify_callback)
   Socket_T client = NULL, server = NULL;
   SocketTLSContext_T client_ctx = NULL, server_ctx = NULL;
 
-  if (generate_mtls_certs (ca_cert, ca_key, server_cert, server_key,
-                           client_cert, client_key)
+  if (generate_mtls_certs (
+          ca_cert, ca_key, server_cert, server_key, client_cert, client_key)
       != 0)
     return;
 
@@ -410,8 +440,8 @@ TEST (mtls_custom_verify_callback)
     /* Server with custom verify callback */
     server_ctx = SocketTLSContext_new_server (server_cert, server_key, ca_cert);
     SocketTLSContext_set_verify_mode (server_ctx, TLS_VERIFY_PEER);
-    SocketTLSContext_set_verify_callback (server_ctx, test_verify_callback,
-                                          NULL);
+    SocketTLSContext_set_verify_callback (
+        server_ctx, test_verify_callback, NULL);
 
     client_ctx = SocketTLSContext_new_client (ca_cert);
     SocketTLSContext_load_certificate (client_ctx, client_cert, client_key);
@@ -433,8 +463,8 @@ TEST (mtls_custom_verify_callback)
       SocketTLSContext_free (&client_ctx);
     if (server_ctx)
       SocketTLSContext_free (&server_ctx);
-    remove_mtls_certs (ca_cert, ca_key, server_cert, server_key, client_cert,
-                       client_key);
+    remove_mtls_certs (
+        ca_cert, ca_key, server_cert, server_key, client_cert, client_key);
   }
   END_TRY;
 }

@@ -27,7 +27,8 @@ static void *socketlog_structured_userdata = NULL;
 static const char *const default_level_names[]
     = { "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL" };
 
-#define NUM_LOG_LEVELS (sizeof(default_level_names)/sizeof(default_level_names[0]))
+#define NUM_LOG_LEVELS \
+  (sizeof (default_level_names) / sizeof (default_level_names[0]))
 
 static const char *
 socketlog_format_timestamp (char *buf, size_t bufsize)
@@ -47,7 +48,8 @@ socketlog_format_timestamp (char *buf, size_t bufsize)
   if (!time_ok
       || strftime (buf, bufsize, SOCKET_LOG_TIMESTAMP_FORMAT, &tm_buf) == 0)
     {
-      /* Safe strncpy equivalent - defined in SocketUtil.h but we can't include it here */
+      /* Safe strncpy equivalent - defined in SocketUtil.h but we can't include
+       * it here */
       if (bufsize > 0)
         {
           strncpy (buf, SOCKET_LOG_DEFAULT_TIMESTAMP, bufsize - 1);
@@ -66,16 +68,20 @@ socketlog_get_stream (SocketLogLevel level)
 }
 
 static void
-default_logger (void *userdata, SocketLogLevel level, const char *component,
+default_logger (void *userdata,
+                SocketLogLevel level,
+                const char *component,
                 const char *message)
 {
   char ts[SOCKET_LOG_TIMESTAMP_BUFSIZE];
 
   (void)userdata;
 
-  fprintf (socketlog_get_stream (level), "%s [%s] %s: %s\n",
+  fprintf (socketlog_get_stream (level),
+           "%s [%s] %s: %s\n",
            socketlog_format_timestamp (ts, sizeof (ts)),
-           SocketLog_levelname (level), component ? component : "(unknown)",
+           SocketLog_levelname (level),
+           component ? component : "(unknown)",
            message ? message : "(null)");
 }
 
@@ -158,7 +164,8 @@ SocketLog_getlevel (void)
 }
 
 void
-SocketLog_emit (SocketLogLevel level, const char *component,
+SocketLog_emit (SocketLogLevel level,
+                const char *component,
                 const char *message)
 {
   SocketLogAllInfo all = socketlog_acquire_all_info (level);
@@ -171,7 +178,9 @@ SocketLog_emit (SocketLogLevel level, const char *component,
 /* WARNING: fmt must be a compile-time literal to prevent format string attacks
  */
 void
-SocketLog_emitf (SocketLogLevel level, const char *component, const char *fmt,
+SocketLog_emitf (SocketLogLevel level,
+                 const char *component,
+                 const char *fmt,
                  ...)
 {
   va_list args;
@@ -187,7 +196,8 @@ socketlog_apply_truncation (char *buffer, size_t bufsize)
   if (bufsize >= SOCKET_LOG_TRUNCATION_SUFFIX_LEN + 1)
     {
       size_t start = bufsize - SOCKET_LOG_TRUNCATION_SUFFIX_LEN - 1;
-      memcpy (buffer + start, SOCKET_LOG_TRUNCATION_SUFFIX,
+      memcpy (buffer + start,
+              SOCKET_LOG_TRUNCATION_SUFFIX,
               SOCKET_LOG_TRUNCATION_SUFFIX_LEN + 1);
     }
 }
@@ -195,7 +205,9 @@ socketlog_apply_truncation (char *buffer, size_t bufsize)
 /* WARNING: fmt must be a compile-time literal to prevent format string attacks
  */
 void
-SocketLog_emitfv (SocketLogLevel level, const char *component, const char *fmt,
+SocketLog_emitfv (SocketLogLevel level,
+                  const char *component,
+                  const char *fmt,
                   va_list args)
 {
   char buffer[SOCKET_LOG_BUFFER_SIZE];
@@ -269,15 +281,17 @@ SocketLog_setstructuredcallback (SocketLogStructuredCallback callback,
 }
 
 static int
-socketlog_append_field_if_space (char *buffer, size_t *pos, size_t bufsize,
+socketlog_append_field_if_space (char *buffer,
+                                 size_t *pos,
+                                 size_t bufsize,
                                  const SocketLogField *field)
 {
   if (field->key == NULL || field->value == NULL)
     return 0;
 
   size_t remaining = bufsize - *pos;
-  int written = snprintf (buffer + *pos, remaining, " %s=%s", field->key,
-                          field->value);
+  int written
+      = snprintf (buffer + *pos, remaining, " %s=%s", field->key, field->value);
 
   if (written < 0)
     return -1;
@@ -293,16 +307,18 @@ socketlog_append_field_if_space (char *buffer, size_t *pos, size_t bufsize,
 }
 
 static size_t
-socketlog_format_fields (char *buffer, size_t bufsize,
-                         const SocketLogField *fields, size_t field_count)
+socketlog_format_fields (char *buffer,
+                         size_t bufsize,
+                         const SocketLogField *fields,
+                         size_t field_count)
 {
   size_t pos = 0;
   size_t i;
 
   for (i = 0; i < field_count && pos < bufsize - 1; i++)
     {
-      int res = socketlog_append_field_if_space (buffer, &pos, bufsize,
-                                                 &fields[i]);
+      int res
+          = socketlog_append_field_if_space (buffer, &pos, bufsize, &fields[i]);
       if (res < 0)
         break; /* snprintf error */
       if (res == 0)
@@ -313,18 +329,27 @@ socketlog_format_fields (char *buffer, size_t bufsize,
 }
 
 static void
-socketlog_call_structured (const SocketLogAllInfo *all, SocketLogLevel level,
-                           const char *component, const char *message,
-                           const SocketLogField *fields, size_t field_count)
+socketlog_call_structured (const SocketLogAllInfo *all,
+                           SocketLogLevel level,
+                           const char *component,
+                           const char *message,
+                           const SocketLogField *fields,
+                           size_t field_count)
 {
-  all->structured_callback (all->structured_userdata, level, component,
-                            message, fields, field_count,
+  all->structured_callback (all->structured_userdata,
+                            level,
+                            component,
+                            message,
+                            fields,
+                            field_count,
                             SocketLog_getcontext ());
 }
 
 static void
-socketlog_call_fallback (const SocketLogAllInfo *all, SocketLogLevel level,
-                         const char *component, const char *message)
+socketlog_call_fallback (const SocketLogAllInfo *all,
+                         SocketLogLevel level,
+                         const char *component,
+                         const char *message)
 {
   all->fallback_callback (all->fallback_userdata, level, component, message);
 }
@@ -332,7 +357,8 @@ socketlog_call_fallback (const SocketLogAllInfo *all, SocketLogLevel level,
 static void
 socketlog_format_and_call_fallback (const SocketLogAllInfo *all,
                                     SocketLogLevel level,
-                                    const char *component, const char *message,
+                                    const char *component,
+                                    const char *message,
                                     const SocketLogField *fields,
                                     size_t field_count)
 {
@@ -362,19 +388,20 @@ socketlog_format_and_call_fallback (const SocketLogAllInfo *all,
 static void
 socketlog_emit_structured_with_all (const SocketLogAllInfo *all,
                                     SocketLogLevel level,
-                                    const char *component, const char *message,
+                                    const char *component,
+                                    const char *message,
                                     const SocketLogField *fields,
                                     size_t field_count)
 {
   if (all->structured_callback != NULL)
     {
-      socketlog_call_structured (all, level, component, message, fields,
-                                 field_count);
+      socketlog_call_structured (
+          all, level, component, message, fields, field_count);
     }
   else if (fields != NULL && field_count > 0)
     {
-      socketlog_format_and_call_fallback (all, level, component, message,
-                                          fields, field_count);
+      socketlog_format_and_call_fallback (
+          all, level, component, message, fields, field_count);
     }
   else
     {
@@ -383,14 +410,16 @@ socketlog_emit_structured_with_all (const SocketLogAllInfo *all,
 }
 
 void
-SocketLog_emit_structured (SocketLogLevel level, const char *component,
-                           const char *message, const SocketLogField *fields,
+SocketLog_emit_structured (SocketLogLevel level,
+                           const char *component,
+                           const char *message,
+                           const SocketLogField *fields,
                            size_t field_count)
 {
   SocketLogAllInfo all = socketlog_acquire_all_info (level);
   if (!all.should_log)
     return;
 
-  socketlog_emit_structured_with_all (&all, level, component, message, fields,
-                                      field_count);
+  socketlog_emit_structured_with_all (
+      &all, level, component, message, fields, field_count);
 }

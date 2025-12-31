@@ -345,7 +345,8 @@
 #define SOCKS5_IPV4_ADDR_SIZE 4  /**< IPv4 address bytes */
 #define SOCKS5_IPV6_ADDR_SIZE 16 /**< IPv6 address bytes */
 #define SOCKS5_PORT_SIZE 2       /**< Port bytes (network order) */
-#define SOCKS5_DOMAIN_LENGTH_SIZE 1 /**< Domain name length byte (ATYP_DOMAIN) */
+#define SOCKS5_DOMAIN_LENGTH_SIZE \
+  1 /**< Domain name length byte (ATYP_DOMAIN) */
 
 /** @brief SOCKS5 response message size constants.
  * @ingroup proxy_private
@@ -364,9 +365,9 @@
  * Used to validate full response recv.
  * @see proxy_socks5_recv_connect() for parsing.
  */
-#define SOCKS5_CONNECT_IPV4_RESPONSE_SIZE                                     \
+#define SOCKS5_CONNECT_IPV4_RESPONSE_SIZE \
   (SOCKS5_CONNECT_HEADER_SIZE + SOCKS5_IPV4_ADDR_SIZE + SOCKS5_PORT_SIZE)
-#define SOCKS5_CONNECT_IPV6_RESPONSE_SIZE                                     \
+#define SOCKS5_CONNECT_IPV6_RESPONSE_SIZE \
   (SOCKS5_CONNECT_HEADER_SIZE + SOCKS5_IPV6_ADDR_SIZE + SOCKS5_PORT_SIZE)
 
 /* ============================================================================
@@ -401,32 +402,32 @@ typedef enum
                          * (greeting for SOCKS5, request for others). */
 
   /* SOCKS5 states (RFC 1928 multi-step negotiation) */
-  PROTO_STATE_SOCKS5_GREETING_SENT, /**< @brief SOCKS5 version 5 greeting sent
-                                     * to proxy. Lists supported auth methods
-                                     * (SOCKS5_AUTH_NONE, optional
-                                     * SOCKS5_AUTH_PASSWORD). Awaiting method
-                                     * selection response (2-byte: VER=5,
-                                     * METHOD). */
+  PROTO_STATE_SOCKS5_GREETING_SENT,   /**< @brief SOCKS5 version 5 greeting sent
+                                       * to proxy. Lists supported auth methods
+                                       * (SOCKS5_AUTH_NONE, optional
+                                       * SOCKS5_AUTH_PASSWORD). Awaiting method
+                                       * selection response (2-byte: VER=5,
+                                       * METHOD). */
   PROTO_STATE_SOCKS5_METHOD_RECEIVED, /**< @brief Method selection response
                                        * parsed successfully. Auth method
                                        * stored in conn->socks5_auth_method; if
                                        * none, proceed to connect; else
                                        * transition to auth subnegotiation. */
-  PROTO_STATE_SOCKS5_AUTH_SENT, /**< @brief Username/password authentication
-                                 * request sent (method 0x02). Format per RFC
-                                 * 1929: VER=1, ULEN, USERID, PLEN, PASSWD.
-                                 * Awaiting 2-byte response (VER=1, STATUS=0x00
-                                 * success). */
+  PROTO_STATE_SOCKS5_AUTH_SENT,     /**< @brief Username/password authentication
+                                     * request sent (method 0x02). Format per RFC
+                                     * 1929: VER=1, ULEN, USERID, PLEN, PASSWD.
+                                     * Awaiting 2-byte response (VER=1, STATUS=0x00
+                                     * success). */
   PROTO_STATE_SOCKS5_AUTH_RECEIVED, /**< @brief Auth response received and
                                      * validated. On success (STATUS=0),
                                      * proceed to CONNECT; failure maps to
                                      * PROXY_ERROR_AUTH_FAILED. */
-  PROTO_STATE_SOCKS5_CONNECT_SENT, /**< @brief SOCKS5 CONNECT command sent with
-                                    * target details. CMD=0x01, ATYP
-                                    * (IPv4/domain/IPv6), ADDR, PORT; supports
-                                    * SOCKS5H (hostname at proxy). Awaiting
-                                    * variable-length reply (VER=5, REP, bound
-                                    * addr/port). */
+  PROTO_STATE_SOCKS5_CONNECT_SENT,  /**< @brief SOCKS5 CONNECT command sent with
+                                     * target details. CMD=0x01, ATYP
+                                     * (IPv4/domain/IPv6), ADDR, PORT; supports
+                                     * SOCKS5H (hostname at proxy). Awaiting
+                                     * variable-length reply (VER=5, REP, bound
+                                     * addr/port). */
   PROTO_STATE_SOCKS5_CONNECT_RECEIVED, /**< @brief CONNECT reply fully parsed.
                                         * REP=0x00 success (tunnel ready,
                                         * ignore bound addr); other REPs map to
@@ -435,11 +436,11 @@ typedef enum
 
   /* SOCKS4/4a states (simpler single request/response cycle) */
   PROTO_STATE_SOCKS4_CONNECT_SENT,     /**< @brief SOCKS4 CONNECT request sent
-                                        * (IPv4 only or 4a extension).     VN=4, CMD=1,
-                                        * DSTPORT, DSTIP (0.0.0.x for 4a domain),
-                                        * USERID="socket", null-term domain (4a).
-                                        * Awaiting 8-byte reply (null VN, CD=90
-                                        * granted or error). */
+                                        * (IPv4 only or 4a extension).     VN=4,
+                                        * CMD=1,     DSTPORT, DSTIP (0.0.0.x for 4a
+                                        * domain),     USERID="socket", null-term domain
+                                        * (4a).     Awaiting 8-byte reply (null VN,
+                                        * CD=90     granted or error). */
   PROTO_STATE_SOCKS4_CONNECT_RECEIVED, /**< @brief SOCKS4 reply received and
                                         * checked. CD=90 success; 91-93 errors
                                         * mapped via
@@ -626,15 +627,15 @@ typedef enum
 struct SocketProxy_Conn_T
 {
   /* Configuration (copied from user) */
-  SocketProxyType type;     /**< Proxy type */
-  char *proxy_host;         /**< Proxy hostname (arena copy) */
-  int proxy_port;           /**< Proxy port */
-  char *username;           /**< Username (arena copy, may be NULL) */
-  char *password;           /**< Password (arena copy, may be NULL) */
-  char *target_host;        /**< Target hostname (arena copy) */
-  int target_port;          /**< Target port */
-  int connect_timeout_ms;   /**< Proxy connect timeout */
-  int handshake_timeout_ms; /**< Handshake timeout */
+  SocketProxyType type;               /**< Proxy type */
+  char *proxy_host;                   /**< Proxy hostname (arena copy) */
+  int proxy_port;                     /**< Proxy port */
+  char *username;                     /**< Username (arena copy, may be NULL) */
+  char *password;                     /**< Password (arena copy, may be NULL) */
+  char *target_host;                  /**< Target hostname (arena copy) */
+  int target_port;                    /**< Target port */
+  int connect_timeout_ms;             /**< Proxy connect timeout */
+  int handshake_timeout_ms;           /**< Handshake timeout */
   SocketHTTP_Headers_T extra_headers; /**< HTTP CONNECT extra headers */
 #if SOCKET_HAS_TLS
   SocketTLSContext_T tls_ctx; /**< TLS context from config (copied ptr) */
@@ -650,7 +651,8 @@ struct SocketProxy_Conn_T
   SocketDNSResolver_T resolver; /**< DNS resolver for async connection */
   SocketPoll_T poll;            /**< Poll instance for async connection */
   SocketHE_T he;                /**< HappyEyeballs context (during connect) */
-  int owns_resolver_poll; /**< 1 if we own resolver/poll (sync wrapper), 0 if external */
+  int owns_resolver_poll; /**< 1 if we own resolver/poll (sync wrapper), 0 if
+                             external */
 
   /* HTTP CONNECT specific */
   SocketHTTP1_Parser_T http_parser; /**< HTTP response parser */
@@ -1851,7 +1853,8 @@ extern void socketproxy_advance_state (struct SocketProxy_Conn_T *conn);
  * @see docs/ERROR_HANDLING.md For integration patterns.
  */
 extern void socketproxy_set_error (struct SocketProxy_Conn_T *conn,
-                                   SocketProxy_Result result, const char *fmt,
+                                   SocketProxy_Result result,
+                                   const char *fmt,
                                    ...);
 
 /**
@@ -1934,7 +1937,8 @@ extern int socketproxy_parse_scheme (const char *url,
  */
 extern int socketproxy_parse_userinfo (const char *start,
                                        SocketProxy_Config *config,
-                                       Arena_T arena, const char **end);
+                                       Arena_T arena,
+                                       const char **end);
 
 /**
  * @brief Parse [host]:port from URL, handling IPv6 literals.
@@ -1956,7 +1960,8 @@ extern int socketproxy_parse_userinfo (const char *start,
  */
 extern int socketproxy_parse_hostport (const char *start,
                                        SocketProxy_Config *config,
-                                       Arena_T arena, size_t *consumed_out);
+                                       Arena_T arena,
+                                       size_t *consumed_out);
 
 /** @} */ /* proxy_private */
 

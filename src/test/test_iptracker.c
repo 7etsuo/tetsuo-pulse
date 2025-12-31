@@ -25,7 +25,10 @@ TEST (iptracker_new_creates_tracker)
 
   SocketIPTracker_T tracker = NULL;
   volatile int exception_raised = 0;
-  TRY { tracker = SocketIPTracker_new (arena, 10); }
+  TRY
+  {
+    tracker = SocketIPTracker_new (arena, 10);
+  }
   EXCEPT (SocketIPTracker_Failed)
   {
     /* If we get here, it means all secure random sources failed */
@@ -46,7 +49,10 @@ TEST (iptracker_new_without_arena)
 {
   SocketIPTracker_T tracker = NULL;
   volatile int exception_raised = 0;
-  TRY { tracker = SocketIPTracker_new (NULL, 5); }
+  TRY
+  {
+    tracker = SocketIPTracker_new (NULL, 5);
+  }
   EXCEPT (SocketIPTracker_Failed)
   {
     exception_raised = 1;
@@ -67,7 +73,10 @@ TEST (iptracker_track_basic)
 
   SocketIPTracker_T tracker = NULL;
   volatile int exception_raised = 0;
-  TRY { tracker = SocketIPTracker_new (arena, 10); }
+  TRY
+  {
+    tracker = SocketIPTracker_new (arena, 10);
+  }
   EXCEPT (SocketIPTracker_Failed)
   {
     exception_raised = 1;
@@ -75,11 +84,11 @@ TEST (iptracker_track_basic)
   END_TRY;
 
   if (exception_raised)
-  {
-    Arena_dispose (&arena);
-    ASSERT_EQ (exception_raised, 0);
-    return;
-  }
+    {
+      Arena_dispose (&arena);
+      ASSERT_EQ (exception_raised, 0);
+      return;
+    }
 
   /* Track an IPv4 address */
   int result = SocketIPTracker_track (tracker, "192.168.1.1");
@@ -107,7 +116,10 @@ TEST (iptracker_release_basic)
   ASSERT_NOT_NULL (arena);
 
   SocketIPTracker_T tracker = NULL;
-  TRY { tracker = SocketIPTracker_new (arena, 10); }
+  TRY
+  {
+    tracker = SocketIPTracker_new (arena, 10);
+  }
   EXCEPT (SocketIPTracker_Failed)
   {
     Arena_dispose (&arena);
@@ -137,7 +149,10 @@ TEST (iptracker_max_per_ip_limit)
   ASSERT_NOT_NULL (arena);
 
   SocketIPTracker_T tracker = NULL;
-  TRY { tracker = SocketIPTracker_new (arena, 3); }
+  TRY
+  {
+    tracker = SocketIPTracker_new (arena, 3);
+  }
   EXCEPT (SocketIPTracker_Failed)
   {
     Arena_dispose (&arena);
@@ -166,7 +181,10 @@ TEST (iptracker_ipv6_addresses)
   ASSERT_NOT_NULL (arena);
 
   SocketIPTracker_T tracker = NULL;
-  TRY { tracker = SocketIPTracker_new (arena, 10); }
+  TRY
+  {
+    tracker = SocketIPTracker_new (arena, 10);
+  }
   EXCEPT (SocketIPTracker_Failed)
   {
     Arena_dispose (&arena);
@@ -195,7 +213,10 @@ TEST (iptracker_invalid_ips)
   ASSERT_NOT_NULL (arena);
 
   SocketIPTracker_T tracker = NULL;
-  TRY { tracker = SocketIPTracker_new (arena, 10); }
+  TRY
+  {
+    tracker = SocketIPTracker_new (arena, 10);
+  }
   EXCEPT (SocketIPTracker_Failed)
   {
     Arena_dispose (&arena);
@@ -225,7 +246,10 @@ TEST (iptracker_unique_ips)
   ASSERT_NOT_NULL (arena);
 
   SocketIPTracker_T tracker = NULL;
-  TRY { tracker = SocketIPTracker_new (arena, 10); }
+  TRY
+  {
+    tracker = SocketIPTracker_new (arena, 10);
+  }
   EXCEPT (SocketIPTracker_Failed)
   {
     Arena_dispose (&arena);
@@ -257,7 +281,10 @@ TEST (iptracker_clear)
   ASSERT_NOT_NULL (arena);
 
   SocketIPTracker_T tracker = NULL;
-  TRY { tracker = SocketIPTracker_new (arena, 10); }
+  TRY
+  {
+    tracker = SocketIPTracker_new (arena, 10);
+  }
   EXCEPT (SocketIPTracker_Failed)
   {
     Arena_dispose (&arena);

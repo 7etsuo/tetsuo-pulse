@@ -21,35 +21,35 @@
  * @brief Error code name table.
  */
 static const char *ede_code_names[] = {
-  "Other Error",                   /* 0 */
-  "Unsupported DNSKEY Algorithm",  /* 1 */
-  "Unsupported DS Digest Type",    /* 2 */
-  "Stale Answer",                  /* 3 */
-  "Forged Answer",                 /* 4 */
-  "DNSSEC Indeterminate",          /* 5 */
-  "DNSSEC Bogus",                  /* 6 */
-  "Signature Expired",             /* 7 */
-  "Signature Not Yet Valid",       /* 8 */
-  "DNSKEY Missing",                /* 9 */
-  "RRSIGs Missing",                /* 10 */
-  "No Zone Key Bit Set",           /* 11 */
-  "NSEC Missing",                  /* 12 */
-  "Cached Error",                  /* 13 */
-  "Not Ready",                     /* 14 */
-  "Blocked",                       /* 15 */
-  "Censored",                      /* 16 */
-  "Filtered",                      /* 17 */
-  "Prohibited",                    /* 18 */
-  "Stale NXDOMAIN Answer",         /* 19 */
-  "Not Authoritative",             /* 20 */
-  "Not Supported",                 /* 21 */
-  "No Reachable Authority",        /* 22 */
-  "Network Error",                 /* 23 */
-  "Invalid Data"                   /* 24 */
+  "Other Error",                  /* 0 */
+  "Unsupported DNSKEY Algorithm", /* 1 */
+  "Unsupported DS Digest Type",   /* 2 */
+  "Stale Answer",                 /* 3 */
+  "Forged Answer",                /* 4 */
+  "DNSSEC Indeterminate",         /* 5 */
+  "DNSSEC Bogus",                 /* 6 */
+  "Signature Expired",            /* 7 */
+  "Signature Not Yet Valid",      /* 8 */
+  "DNSKEY Missing",               /* 9 */
+  "RRSIGs Missing",               /* 10 */
+  "No Zone Key Bit Set",          /* 11 */
+  "NSEC Missing",                 /* 12 */
+  "Cached Error",                 /* 13 */
+  "Not Ready",                    /* 14 */
+  "Blocked",                      /* 15 */
+  "Censored",                     /* 16 */
+  "Filtered",                     /* 17 */
+  "Prohibited",                   /* 18 */
+  "Stale NXDOMAIN Answer",        /* 19 */
+  "Not Authoritative",            /* 20 */
+  "Not Supported",                /* 21 */
+  "No Reachable Authority",       /* 22 */
+  "Network Error",                /* 23 */
+  "Invalid Data"                  /* 24 */
 };
 
 _Static_assert (sizeof (ede_code_names) / sizeof (ede_code_names[0])
-                  == DNS_EDE_MAX_DEFINED + 1,
+                    == DNS_EDE_MAX_DEFINED + 1,
                 "ede_code_names array size must match DNS_EDE_MAX_DEFINED + 1");
 
 /**
@@ -84,25 +84,20 @@ static const char *ede_code_descriptions[] = {
 };
 
 _Static_assert (sizeof (ede_code_descriptions)
-                    / sizeof (ede_code_descriptions[0])
-                  == DNS_EDE_MAX_DEFINED + 1,
+                        / sizeof (ede_code_descriptions[0])
+                    == DNS_EDE_MAX_DEFINED + 1,
                 "ede_code_descriptions array size must match "
                 "DNS_EDE_MAX_DEFINED + 1");
 
 /**
  * @brief Category name table.
  */
-static const char *ede_category_names[] = {
-  "General",
-  "DNSSEC",
-  "Stale Cache",
-  "Policy/Filter",
-  "Server State",
-  "Network"
-};
+static const char *ede_category_names[]
+    = { "General",       "DNSSEC",       "Stale Cache",
+        "Policy/Filter", "Server State", "Network" };
 
 _Static_assert (sizeof (ede_category_names) / sizeof (ede_category_names[0])
-                  == DNS_EDE_CATEGORY_NETWORK + 1,
+                    == DNS_EDE_CATEGORY_NETWORK + 1,
                 "ede_category_names array size must match "
                 "DNS_EDE_CATEGORY_NETWORK + 1");
 
@@ -113,33 +108,32 @@ _Static_assert (sizeof (ede_category_names) / sizeof (ede_category_names[0])
  * Sparse array indexed by code - unmapped entries default to
  * DNS_EDE_CATEGORY_GENERAL (0).
  */
-static const SocketDNS_EDECategory ede_code_to_category[] = {
-  [DNS_EDE_OTHER]                       = DNS_EDE_CATEGORY_GENERAL,
-  [DNS_EDE_UNSUPPORTED_DNSKEY_ALGORITHM] = DNS_EDE_CATEGORY_DNSSEC,
-  [DNS_EDE_UNSUPPORTED_DS_DIGEST_TYPE]  = DNS_EDE_CATEGORY_DNSSEC,
-  [DNS_EDE_STALE_ANSWER]                = DNS_EDE_CATEGORY_STALE,
-  [DNS_EDE_FORGED_ANSWER]               = DNS_EDE_CATEGORY_POLICY,
-  [DNS_EDE_DNSSEC_INDETERMINATE]        = DNS_EDE_CATEGORY_DNSSEC,
-  [DNS_EDE_DNSSEC_BOGUS]                = DNS_EDE_CATEGORY_DNSSEC,
-  [DNS_EDE_SIGNATURE_EXPIRED]           = DNS_EDE_CATEGORY_DNSSEC,
-  [DNS_EDE_SIGNATURE_NOT_YET_VALID]     = DNS_EDE_CATEGORY_DNSSEC,
-  [DNS_EDE_DNSKEY_MISSING]              = DNS_EDE_CATEGORY_DNSSEC,
-  [DNS_EDE_RRSIGS_MISSING]              = DNS_EDE_CATEGORY_DNSSEC,
-  [DNS_EDE_NO_ZONE_KEY_BIT_SET]         = DNS_EDE_CATEGORY_DNSSEC,
-  [DNS_EDE_NSEC_MISSING]                = DNS_EDE_CATEGORY_DNSSEC,
-  [DNS_EDE_CACHED_ERROR]                = DNS_EDE_CATEGORY_SERVER,
-  [DNS_EDE_NOT_READY]                   = DNS_EDE_CATEGORY_SERVER,
-  [DNS_EDE_BLOCKED]                     = DNS_EDE_CATEGORY_POLICY,
-  [DNS_EDE_CENSORED]                    = DNS_EDE_CATEGORY_POLICY,
-  [DNS_EDE_FILTERED]                    = DNS_EDE_CATEGORY_POLICY,
-  [DNS_EDE_PROHIBITED]                  = DNS_EDE_CATEGORY_POLICY,
-  [DNS_EDE_STALE_NXDOMAIN_ANSWER]       = DNS_EDE_CATEGORY_STALE,
-  [DNS_EDE_NOT_AUTHORITATIVE]           = DNS_EDE_CATEGORY_SERVER,
-  [DNS_EDE_NOT_SUPPORTED]               = DNS_EDE_CATEGORY_SERVER,
-  [DNS_EDE_NO_REACHABLE_AUTHORITY]      = DNS_EDE_CATEGORY_NETWORK,
-  [DNS_EDE_NETWORK_ERROR]               = DNS_EDE_CATEGORY_NETWORK,
-  [DNS_EDE_INVALID_DATA]                = DNS_EDE_CATEGORY_NETWORK
-};
+static const SocketDNS_EDECategory ede_code_to_category[]
+    = { [DNS_EDE_OTHER] = DNS_EDE_CATEGORY_GENERAL,
+        [DNS_EDE_UNSUPPORTED_DNSKEY_ALGORITHM] = DNS_EDE_CATEGORY_DNSSEC,
+        [DNS_EDE_UNSUPPORTED_DS_DIGEST_TYPE] = DNS_EDE_CATEGORY_DNSSEC,
+        [DNS_EDE_STALE_ANSWER] = DNS_EDE_CATEGORY_STALE,
+        [DNS_EDE_FORGED_ANSWER] = DNS_EDE_CATEGORY_POLICY,
+        [DNS_EDE_DNSSEC_INDETERMINATE] = DNS_EDE_CATEGORY_DNSSEC,
+        [DNS_EDE_DNSSEC_BOGUS] = DNS_EDE_CATEGORY_DNSSEC,
+        [DNS_EDE_SIGNATURE_EXPIRED] = DNS_EDE_CATEGORY_DNSSEC,
+        [DNS_EDE_SIGNATURE_NOT_YET_VALID] = DNS_EDE_CATEGORY_DNSSEC,
+        [DNS_EDE_DNSKEY_MISSING] = DNS_EDE_CATEGORY_DNSSEC,
+        [DNS_EDE_RRSIGS_MISSING] = DNS_EDE_CATEGORY_DNSSEC,
+        [DNS_EDE_NO_ZONE_KEY_BIT_SET] = DNS_EDE_CATEGORY_DNSSEC,
+        [DNS_EDE_NSEC_MISSING] = DNS_EDE_CATEGORY_DNSSEC,
+        [DNS_EDE_CACHED_ERROR] = DNS_EDE_CATEGORY_SERVER,
+        [DNS_EDE_NOT_READY] = DNS_EDE_CATEGORY_SERVER,
+        [DNS_EDE_BLOCKED] = DNS_EDE_CATEGORY_POLICY,
+        [DNS_EDE_CENSORED] = DNS_EDE_CATEGORY_POLICY,
+        [DNS_EDE_FILTERED] = DNS_EDE_CATEGORY_POLICY,
+        [DNS_EDE_PROHIBITED] = DNS_EDE_CATEGORY_POLICY,
+        [DNS_EDE_STALE_NXDOMAIN_ANSWER] = DNS_EDE_CATEGORY_STALE,
+        [DNS_EDE_NOT_AUTHORITATIVE] = DNS_EDE_CATEGORY_SERVER,
+        [DNS_EDE_NOT_SUPPORTED] = DNS_EDE_CATEGORY_SERVER,
+        [DNS_EDE_NO_REACHABLE_AUTHORITY] = DNS_EDE_CATEGORY_NETWORK,
+        [DNS_EDE_NETWORK_ERROR] = DNS_EDE_CATEGORY_NETWORK,
+        [DNS_EDE_INVALID_DATA] = DNS_EDE_CATEGORY_NETWORK };
 
 void
 SocketDNS_ede_init (SocketDNS_ExtendedError *ede)
@@ -154,7 +148,8 @@ SocketDNS_ede_init (SocketDNS_ExtendedError *ede)
 }
 
 int
-SocketDNS_ede_parse (const unsigned char *data, size_t len,
+SocketDNS_ede_parse (const unsigned char *data,
+                     size_t len,
                      SocketDNS_ExtendedError *ede)
 {
   if (data == NULL || ede == NULL)
@@ -200,7 +195,8 @@ SocketDNS_ede_parse (const unsigned char *data, size_t len,
 }
 
 int
-SocketDNS_ede_encode (const SocketDNS_ExtendedError *ede, unsigned char *buf,
+SocketDNS_ede_encode (const SocketDNS_ExtendedError *ede,
+                      unsigned char *buf,
                       size_t buflen)
 {
   if (ede == NULL || buf == NULL)
@@ -337,7 +333,8 @@ SocketDNS_ede_is_retriable (uint16_t code)
 }
 
 int
-SocketDNS_ede_format (const SocketDNS_ExtendedError *ede, char *buf,
+SocketDNS_ede_format (const SocketDNS_ExtendedError *ede,
+                      char *buf,
                       size_t buflen)
 {
   if (ede == NULL || buf == NULL || buflen == 0)
@@ -353,8 +350,8 @@ SocketDNS_ede_format (const SocketDNS_ExtendedError *ede, char *buf,
   int ret;
 
   if (ede->extra_text_len > 0)
-    ret = snprintf (buf, buflen, "%s (%u): %s", name, ede->info_code,
-                    ede->extra_text);
+    ret = snprintf (
+        buf, buflen, "%s (%u): %s", name, ede->info_code, ede->extra_text);
   else
     ret = snprintf (buf, buflen, "%s (%u)", name, ede->info_code);
 
@@ -362,8 +359,10 @@ SocketDNS_ede_format (const SocketDNS_ExtendedError *ede, char *buf,
 }
 
 int
-SocketDNS_ede_parse_all (const unsigned char *rdata, size_t rdlen,
-                         SocketDNS_ExtendedError *ede_array, size_t max_count)
+SocketDNS_ede_parse_all (const unsigned char *rdata,
+                         size_t rdlen,
+                         SocketDNS_ExtendedError *ede_array,
+                         size_t max_count)
 {
   if (rdata == NULL || ede_array == NULL || max_count == 0)
     return -1;
@@ -381,8 +380,8 @@ SocketDNS_ede_parse_all (const unsigned char *rdata, size_t rdlen,
           if ((size_t)count >= max_count)
             break;
 
-          if (SocketDNS_ede_parse (opt.data, opt.length,
-                                   &ede_array[count]) == 0)
+          if (SocketDNS_ede_parse (opt.data, opt.length, &ede_array[count])
+              == 0)
             count++;
         }
     }
@@ -391,8 +390,10 @@ SocketDNS_ede_parse_all (const unsigned char *rdata, size_t rdlen,
 }
 
 int
-SocketDNS_ede_to_edns_option (const SocketDNS_ExtendedError *ede, void *opt,
-                              unsigned char *opt_data, size_t data_len)
+SocketDNS_ede_to_edns_option (const SocketDNS_ExtendedError *ede,
+                              void *opt,
+                              unsigned char *opt_data,
+                              size_t data_len)
 {
   if (ede == NULL || opt == NULL || opt_data == NULL)
     return -1;

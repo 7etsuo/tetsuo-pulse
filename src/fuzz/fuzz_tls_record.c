@@ -66,8 +66,14 @@ LLVMFuzzerInitialize (int *argc, char ***argv)
   (void)argc;
   (void)argv;
 
-  TRY { g_client_ctx = SocketTLSContext_new_client (NULL); }
-  EXCEPT (SocketTLS_Failed) { g_client_ctx = NULL; }
+  TRY
+  {
+    g_client_ctx = SocketTLSContext_new_client (NULL);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    g_client_ctx = NULL;
+  }
   END_TRY;
 
   return 0;
@@ -78,18 +84,18 @@ LLVMFuzzerInitialize (int *argc, char ***argv)
  */
 typedef enum
 {
-  OP_RECORD_SEND = 0,           /* Test SSL_write() with various payloads */
-  OP_RECORD_RECV,               /* Test SSL_read() error paths */
-  OP_RECORD_PARTIAL_WRITE,      /* Partial write scenarios */
-  OP_RECORD_ZERO_LEN,           /* Zero-length operations */
-  OP_RECORD_LARGE_PAYLOAD,      /* Large payloads > INT_MAX edge */
-  OP_ALERT_PROCESSING,          /* Trigger alert conditions */
-  OP_SESSION_SAVE_RESTORE,      /* Session ticket edge cases */
-  OP_RENEGOTIATION_CHECK,       /* Renegotiation handling */
-  OP_VERIFY_RESULT_QUERY,       /* Certificate verification paths */
-  OP_SHUTDOWN_PATHS,            /* Shutdown error handling */
-  OP_ERROR_CODE_COVERAGE,       /* SSL_get_error() branches */
-  OP_PROTOCOL_VERSION_EDGE,     /* TLS 1.2 vs 1.3 differences */
+  OP_RECORD_SEND = 0,       /* Test SSL_write() with various payloads */
+  OP_RECORD_RECV,           /* Test SSL_read() error paths */
+  OP_RECORD_PARTIAL_WRITE,  /* Partial write scenarios */
+  OP_RECORD_ZERO_LEN,       /* Zero-length operations */
+  OP_RECORD_LARGE_PAYLOAD,  /* Large payloads > INT_MAX edge */
+  OP_ALERT_PROCESSING,      /* Trigger alert conditions */
+  OP_SESSION_SAVE_RESTORE,  /* Session ticket edge cases */
+  OP_RENEGOTIATION_CHECK,   /* Renegotiation handling */
+  OP_VERIFY_RESULT_QUERY,   /* Certificate verification paths */
+  OP_SHUTDOWN_PATHS,        /* Shutdown error handling */
+  OP_ERROR_CODE_COVERAGE,   /* SSL_get_error() branches */
+  OP_PROTOCOL_VERSION_EDGE, /* TLS 1.2 vs 1.3 differences */
   OP_COUNT
 } RecordOp;
 
@@ -288,8 +294,8 @@ test_verify_queries (Socket_T socket)
 
   /* Try getting error string */
   char error_buf[256];
-  const char *error_str
-      = SocketTLS_get_verify_error_string (socket, error_buf, sizeof (error_buf));
+  const char *error_str = SocketTLS_get_verify_error_string (
+      socket, error_buf, sizeof (error_buf));
   (void)error_str;
 
   /* Get cert info (should fail gracefully) */

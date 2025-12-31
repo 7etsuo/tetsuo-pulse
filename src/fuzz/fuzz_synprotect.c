@@ -65,8 +65,7 @@ read_int (const uint8_t **data, size_t *remaining)
  * Returns: Length of string read
  */
 static size_t
-read_string (char *buf, size_t bufsize, const uint8_t **data,
-             size_t *remaining)
+read_string (char *buf, size_t bufsize, const uint8_t **data, size_t *remaining)
 {
   size_t len = 0;
 
@@ -90,7 +89,9 @@ read_string (char *buf, size_t bufsize, const uint8_t **data,
  * @remaining: Remaining bytes
  */
 static void
-generate_random_ip (char *buf, size_t bufsize, const uint8_t **data,
+generate_random_ip (char *buf,
+                    size_t bufsize,
+                    const uint8_t **data,
                     size_t *remaining)
 {
   uint8_t type = read_byte (data, remaining) % 5;
@@ -98,17 +99,27 @@ generate_random_ip (char *buf, size_t bufsize, const uint8_t **data,
   switch (type)
     {
     case 0: /* Valid IPv4 */
-      snprintf (buf, bufsize, "%u.%u.%u.%u", read_byte (data, remaining),
-                read_byte (data, remaining), read_byte (data, remaining),
+      snprintf (buf,
+                bufsize,
+                "%u.%u.%u.%u",
+                read_byte (data, remaining),
+                read_byte (data, remaining),
+                read_byte (data, remaining),
                 read_byte (data, remaining));
       break;
 
     case 1: /* Valid IPv6 */
-      snprintf (buf, bufsize, "%x:%x:%x:%x:%x:%x:%x:%x",
-                read_byte (data, remaining), read_byte (data, remaining),
-                read_byte (data, remaining), read_byte (data, remaining),
-                read_byte (data, remaining), read_byte (data, remaining),
-                read_byte (data, remaining), read_byte (data, remaining));
+      snprintf (buf,
+                bufsize,
+                "%x:%x:%x:%x:%x:%x:%x:%x",
+                read_byte (data, remaining),
+                read_byte (data, remaining),
+                read_byte (data, remaining),
+                read_byte (data, remaining),
+                read_byte (data, remaining),
+                read_byte (data, remaining),
+                read_byte (data, remaining),
+                read_byte (data, remaining));
       break;
 
     case 2: /* Random string (may be invalid) */
@@ -131,7 +142,9 @@ generate_random_ip (char *buf, size_t bufsize, const uint8_t **data,
  * generate_cidr - Generate CIDR notation from fuzzer data
  */
 static void
-generate_cidr (char *buf, size_t bufsize, const uint8_t **data,
+generate_cidr (char *buf,
+               size_t bufsize,
+               const uint8_t **data,
                size_t *remaining)
 {
   uint8_t type = read_byte (data, remaining) % 4;
@@ -139,15 +152,23 @@ generate_cidr (char *buf, size_t bufsize, const uint8_t **data,
   switch (type)
     {
     case 0: /* Valid IPv4 CIDR */
-      snprintf (buf, bufsize, "%u.%u.%u.%u/%u", read_byte (data, remaining),
-                read_byte (data, remaining), read_byte (data, remaining),
+      snprintf (buf,
+                bufsize,
+                "%u.%u.%u.%u/%u",
+                read_byte (data, remaining),
+                read_byte (data, remaining),
+                read_byte (data, remaining),
                 read_byte (data, remaining),
                 (unsigned)(read_byte (data, remaining) % 33));
       break;
 
     case 1: /* Valid IPv6 CIDR */
-      snprintf (buf, bufsize, "%x:%x::%x/%u", read_byte (data, remaining),
-                read_byte (data, remaining), read_byte (data, remaining),
+      snprintf (buf,
+                bufsize,
+                "%x:%x::%x/%u",
+                read_byte (data, remaining),
+                read_byte (data, remaining),
+                read_byte (data, remaining),
                 (unsigned)(read_byte (data, remaining) % 129));
       break;
 
@@ -188,7 +209,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     if (protect == NULL)
       return 0;
   }
-  ELSE { return 0; }
+  ELSE
+  {
+    return 0;
+  }
   END_TRY;
 
   /* Perform random operations */
@@ -220,8 +244,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
           case 3: /* Report failure */
             generate_random_ip (ip_buf, sizeof (ip_buf), &ptr, &remaining);
-            SocketSYNProtect_report_failure (protect, ip_buf,
-                                             read_int (&ptr, &remaining));
+            SocketSYNProtect_report_failure (
+                protect, ip_buf, read_int (&ptr, &remaining));
             break;
 
           case 4: /* Whitelist add */
@@ -270,13 +294,20 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             break;
           }
       }
-      ELSE { /* Ignore exceptions during fuzzing */ }
+      ELSE
+      { /* Ignore exceptions during fuzzing */
+      }
       END_TRY;
     }
 
   /* Cleanup */
-  TRY { SocketSYNProtect_free (&protect); }
-  ELSE { /* Ignore cleanup exceptions */ }
+  TRY
+  {
+    SocketSYNProtect_free (&protect);
+  }
+  ELSE
+  { /* Ignore cleanup exceptions */
+  }
   END_TRY;
 
   return 0;

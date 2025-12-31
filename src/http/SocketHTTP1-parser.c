@@ -428,19 +428,21 @@ SocketHTTP1_config_defaults (SocketHTTP1_Config *config)
 static int
 init_token_buffers (SocketHTTP1_Parser_T parser)
 {
-  if (http1_tokenbuf_init (&parser->method_buf, parser->arena,
-                           HTTP1_DEFAULT_METHOD_BUF_SIZE)
+  if (http1_tokenbuf_init (
+          &parser->method_buf, parser->arena, HTTP1_DEFAULT_METHOD_BUF_SIZE)
           < 0
-      || http1_tokenbuf_init (&parser->uri_buf, parser->arena,
-                              HTTP1_DEFAULT_URI_BUF_SIZE)
+      || http1_tokenbuf_init (
+             &parser->uri_buf, parser->arena, HTTP1_DEFAULT_URI_BUF_SIZE)
              < 0
-      || http1_tokenbuf_init (&parser->reason_buf, parser->arena,
-                              HTTP1_DEFAULT_REASON_BUF_SIZE)
+      || http1_tokenbuf_init (
+             &parser->reason_buf, parser->arena, HTTP1_DEFAULT_REASON_BUF_SIZE)
              < 0
-      || http1_tokenbuf_init (&parser->name_buf, parser->arena,
+      || http1_tokenbuf_init (&parser->name_buf,
+                              parser->arena,
                               HTTP1_DEFAULT_HEADER_NAME_BUF_SIZE)
              < 0
-      || http1_tokenbuf_init (&parser->value_buf, parser->arena,
+      || http1_tokenbuf_init (&parser->value_buf,
+                              parser->arena,
                               HTTP1_DEFAULT_HEADER_VALUE_BUF_SIZE)
              < 0)
     {
@@ -473,7 +475,8 @@ reset_body_tracking (SocketHTTP1_Parser_T parser)
 
 SocketHTTP1_Parser_T
 SocketHTTP1_Parser_new (SocketHTTP1_ParseMode mode,
-                        const SocketHTTP1_Config *config, Arena_T arena)
+                        const SocketHTTP1_Config *config,
+                        Arena_T arena)
 {
   SocketHTTP1_Parser_T parser;
 
@@ -612,8 +615,11 @@ parse_cl_value (const char *str, size_t len)
 }
 
 static int
-cl_validator (const char *name, size_t name_len, const char *value,
-              size_t value_len, void *userdata)
+cl_validator (const char *name,
+              size_t name_len,
+              const char *value,
+              size_t value_len,
+              void *userdata)
 {
   int64_t *expected = (int64_t *)userdata;
 
@@ -635,9 +641,8 @@ parse_content_length (SocketHTTP_Headers_T headers)
   if (!headers)
     return -1;
 
-  const char *first_cl
-      = SocketHTTP_Headers_get_n (headers, "Content-Length",
-                                  STRLEN_LIT ("Content-Length"));
+  const char *first_cl = SocketHTTP_Headers_get_n (
+      headers, "Content-Length", STRLEN_LIT ("Content-Length"));
   if (!first_cl)
     return -2; /* Not present */
 
@@ -732,9 +737,11 @@ has_chunked_encoding (SocketHTTP_Headers_T headers)
     return 0;
 
   const char *te_values[SOCKETHTTP_MAX_HEADERS];
-  size_t count = SocketHTTP_Headers_get_all_n (
-      headers, "Transfer-Encoding", STRLEN_LIT ("Transfer-Encoding"),
-      te_values, SOCKETHTTP_MAX_HEADERS);
+  size_t count = SocketHTTP_Headers_get_all_n (headers,
+                                               "Transfer-Encoding",
+                                               STRLEN_LIT ("Transfer-Encoding"),
+                                               te_values,
+                                               SOCKETHTTP_MAX_HEADERS);
 
   for (size_t i = 0; i < count; i++)
     {
@@ -755,9 +762,11 @@ has_other_transfer_coding (SocketHTTP_Headers_T headers)
     return 0;
 
   const char *te_values[SOCKETHTTP_MAX_HEADERS];
-  size_t count = SocketHTTP_Headers_get_all_n (
-      headers, "Transfer-Encoding", STRLEN_LIT ("Transfer-Encoding"),
-      te_values, SOCKETHTTP_MAX_HEADERS);
+  size_t count = SocketHTTP_Headers_get_all_n (headers,
+                                               "Transfer-Encoding",
+                                               STRLEN_LIT ("Transfer-Encoding"),
+                                               te_values,
+                                               SOCKETHTTP_MAX_HEADERS);
 
   for (size_t i = 0; i < count; i++)
     {
@@ -814,8 +823,8 @@ determine_body_mode (SocketHTTP1_Parser_T parser)
   int64_t cl_value;
   int has_cl;
 
-  has_te = SocketHTTP_Headers_has_n (parser->headers, "Transfer-Encoding",
-                                     STRLEN_LIT ("Transfer-Encoding"));
+  has_te = SocketHTTP_Headers_has_n (
+      parser->headers, "Transfer-Encoding", STRLEN_LIT ("Transfer-Encoding"));
   cl_value = parse_content_length (parser->headers);
   has_cl = (cl_value >= -1); /* -1 = invalid, -2 = not present */
 
@@ -847,10 +856,12 @@ determine_body_mode (SocketHTTP1_Parser_T parser)
 
           /* Validate chunked is last per RFC 9112 */
           const char *te_values[SOCKETHTTP_MAX_HEADERS];
-          size_t count = SocketHTTP_Headers_get_all_n (
-              parser->headers, "Transfer-Encoding",
-              STRLEN_LIT ("Transfer-Encoding"), te_values,
-              SOCKETHTTP_MAX_HEADERS);
+          size_t count
+              = SocketHTTP_Headers_get_all_n (parser->headers,
+                                              "Transfer-Encoding",
+                                              STRLEN_LIT ("Transfer-Encoding"),
+                                              te_values,
+                                              SOCKETHTTP_MAX_HEADERS);
           for (size_t i = 0; i < count; i++)
             {
               if (!te_chunked_is_last (te_values[i]))
@@ -896,27 +907,30 @@ determine_keepalive (SocketHTTP_Version version,
   if (version == HTTP_VERSION_1_1)
     {
       /* HTTP/1.1: keep-alive by default unless "Connection: close" */
-      return !SocketHTTP_Headers_contains_n (headers, "Connection",
-                                             STRLEN_LIT ("Connection"), "close",
+      return !SocketHTTP_Headers_contains_n (headers,
+                                             "Connection",
+                                             STRLEN_LIT ("Connection"),
+                                             "close",
                                              STRLEN_LIT ("close"));
     }
 
   /* HTTP/1.0: close by default unless "Connection: keep-alive" */
-  return SocketHTTP_Headers_contains_n (headers, "Connection",
-                                        STRLEN_LIT ("Connection"), "keep-alive",
+  return SocketHTTP_Headers_contains_n (headers,
+                                        "Connection",
+                                        STRLEN_LIT ("Connection"),
+                                        "keep-alive",
                                         STRLEN_LIT ("keep-alive"));
 }
 
 static void
 check_upgrade (SocketHTTP1_Parser_T parser)
 {
-  if (SocketHTTP_Headers_has_n (parser->headers, "Upgrade",
-                                STRLEN_LIT ("Upgrade")))
+  if (SocketHTTP_Headers_has_n (
+          parser->headers, "Upgrade", STRLEN_LIT ("Upgrade")))
     {
       parser->is_upgrade = 1;
-      parser->upgrade_protocol
-          = SocketHTTP_Headers_get_n (parser->headers, "Upgrade",
-                                      STRLEN_LIT ("Upgrade"));
+      parser->upgrade_protocol = SocketHTTP_Headers_get_n (
+          parser->headers, "Upgrade", STRLEN_LIT ("Upgrade"));
     }
 }
 
@@ -955,8 +969,8 @@ finalize_request (SocketHTTP1_Parser_T parser)
    * This handles HTTP/0.9 simple requests where bare LF transitions
    * directly from URI state to HEADER_START without URI_END action.
    */
-  if (!http1_tokenbuf_terminate (&parser->uri_buf, parser->arena,
-                                 parser->config.max_request_line))
+  if (!http1_tokenbuf_terminate (
+          &parser->uri_buf, parser->arena, parser->config.max_request_line))
     return HTTP1_ERROR_LINE_TOO_LONG;
 
   /* Set request target (path) - now null-terminated */
@@ -984,8 +998,10 @@ finalize_request (SocketHTTP1_Parser_T parser)
   req->content_length = parser->content_length;
 
   /* Check for Expect: 100-continue */
-  if (SocketHTTP_Headers_contains_n (parser->headers, "Expect",
-                                     STRLEN_LIT ("Expect"), "100-continue",
+  if (SocketHTTP_Headers_contains_n (parser->headers,
+                                     "Expect",
+                                     STRLEN_LIT ("Expect"),
+                                     "100-continue",
                                      STRLEN_LIT ("100-continue")))
     parser->expects_continue = 1;
 
@@ -1009,8 +1025,8 @@ finalize_response (SocketHTTP1_Parser_T parser)
    * directly to HEADER_START without REASON_END action.
    * Note: reason phrase is optional and may be empty.
    */
-  if (!http1_tokenbuf_terminate (&parser->reason_buf, parser->arena,
-                                 parser->config.max_request_line))
+  if (!http1_tokenbuf_terminate (
+          &parser->reason_buf, parser->arena, parser->config.max_request_line))
     return HTTP1_ERROR_LINE_TOO_LONG;
 
   /* Set status code and reason */
@@ -1049,13 +1065,13 @@ set_error (SocketHTTP1_Parser_T parser, SocketHTTP1_Result error)
   parser->error = error;
 }
 
-#define RETURN_PARSE_ERROR(parser, err, p, data, consumed)                    \
-  do                                                                          \
-    {                                                                         \
-      set_error ((parser), (err));                                            \
-      *(consumed) = (size_t)((p) - (data));                                   \
-      return (parser)->error;                                                 \
-    }                                                                         \
+#define RETURN_PARSE_ERROR(parser, err, p, data, consumed) \
+  do                                                       \
+    {                                                      \
+      set_error ((parser), (err));                         \
+      *(consumed) = (size_t)((p) - (data));                \
+      return (parser)->error;                              \
+    }                                                      \
   while (0)
 
 static SocketHTTP1_Result
@@ -1070,10 +1086,10 @@ add_current_header (SocketHTTP1_Parser_T parser)
   name_len = parser->name_buf.len;
   value_len = parser->value_buf.len;
 
-  name = http1_tokenbuf_terminate (&parser->name_buf, parser->arena,
-                                   parser->config.max_header_name);
-  value = http1_tokenbuf_terminate (&parser->value_buf, parser->arena,
-                                    parser->config.max_header_value);
+  name = http1_tokenbuf_terminate (
+      &parser->name_buf, parser->arena, parser->config.max_header_name);
+  value = http1_tokenbuf_terminate (
+      &parser->value_buf, parser->arena, parser->config.max_header_value);
 
   if (!name || !value)
     return HTTP1_ERROR_HEADER_TOO_LARGE;
@@ -1086,8 +1102,8 @@ add_current_header (SocketHTTP1_Parser_T parser)
     return HTTP1_ERROR_HEADER_TOO_LARGE;
 
   /* Use zero-copy: store pointers directly into arena buffer, no second copy */
-  if (SocketHTTP_Headers_add_ref (parser->headers, name, name_len, value,
-                                  value_len)
+  if (SocketHTTP_Headers_add_ref (
+          parser->headers, name, name_len, value, value_len)
       < 0)
     return HTTP1_ERROR_INVALID_HEADER_VALUE;
 
@@ -1144,51 +1160,59 @@ state_to_error (HTTP1_InternalState state)
 }
 
 static SocketHTTP1_Result
-handle_store_action (SocketHTTP1_Parser_T parser, uint8_t action, char c,
-                     const char *p, const char *data, size_t *consumed)
+handle_store_action (SocketHTTP1_Parser_T parser,
+                     uint8_t action,
+                     char c,
+                     const char *p,
+                     const char *data,
+                     size_t *consumed)
 {
   int ret;
 
   switch (action)
     {
     case HTTP1_ACT_STORE_METHOD:
-      ret = http1_tokenbuf_append (&parser->method_buf, parser->arena, c,
-                                   SOCKETHTTP1_MAX_METHOD_LEN);
+      ret = http1_tokenbuf_append (
+          &parser->method_buf, parser->arena, c, SOCKETHTTP1_MAX_METHOD_LEN);
       if (ret < 0)
-        RETURN_PARSE_ERROR (parser, HTTP1_ERROR_INVALID_METHOD, p, data,
-                            consumed);
+        RETURN_PARSE_ERROR (
+            parser, HTTP1_ERROR_INVALID_METHOD, p, data, consumed);
       break;
 
     case HTTP1_ACT_STORE_URI:
-      ret = http1_tokenbuf_append (&parser->uri_buf, parser->arena, c,
-                                   parser->config.max_request_line);
+      ret = http1_tokenbuf_append (
+          &parser->uri_buf, parser->arena, c, parser->config.max_request_line);
       if (ret < 0)
-        RETURN_PARSE_ERROR (parser, HTTP1_ERROR_LINE_TOO_LONG, p, data,
-                            consumed);
+        RETURN_PARSE_ERROR (
+            parser, HTTP1_ERROR_LINE_TOO_LONG, p, data, consumed);
       break;
 
     case HTTP1_ACT_STORE_REASON:
-      ret = http1_tokenbuf_append (&parser->reason_buf, parser->arena, c,
+      ret = http1_tokenbuf_append (&parser->reason_buf,
+                                   parser->arena,
+                                   c,
                                    parser->config.max_request_line);
       if (ret < 0)
-        RETURN_PARSE_ERROR (parser, HTTP1_ERROR_LINE_TOO_LONG, p, data,
-                            consumed);
+        RETURN_PARSE_ERROR (
+            parser, HTTP1_ERROR_LINE_TOO_LONG, p, data, consumed);
       break;
 
     case HTTP1_ACT_STORE_NAME:
-      ret = http1_tokenbuf_append (&parser->name_buf, parser->arena, c,
-                                   parser->config.max_header_name);
+      ret = http1_tokenbuf_append (
+          &parser->name_buf, parser->arena, c, parser->config.max_header_name);
       if (ret < 0)
-        RETURN_PARSE_ERROR (parser, HTTP1_ERROR_INVALID_HEADER_NAME, p, data,
-                            consumed);
+        RETURN_PARSE_ERROR (
+            parser, HTTP1_ERROR_INVALID_HEADER_NAME, p, data, consumed);
       break;
 
     case HTTP1_ACT_STORE_VALUE:
-      ret = http1_tokenbuf_append (&parser->value_buf, parser->arena, c,
+      ret = http1_tokenbuf_append (&parser->value_buf,
+                                   parser->arena,
+                                   c,
                                    parser->config.max_header_value);
       if (ret < 0)
-        RETURN_PARSE_ERROR (parser, HTTP1_ERROR_HEADER_TOO_LARGE, p, data,
-                            consumed);
+        RETURN_PARSE_ERROR (
+            parser, HTTP1_ERROR_HEADER_TOO_LARGE, p, data, consumed);
       break;
 
     default:
@@ -1199,55 +1223,66 @@ handle_store_action (SocketHTTP1_Parser_T parser, uint8_t action, char c,
 }
 
 static SocketHTTP1_Result
-handle_method_end (SocketHTTP1_Parser_T parser, const char *p,
-                   const char *data, size_t *consumed)
+handle_method_end (SocketHTTP1_Parser_T parser,
+                   const char *p,
+                   const char *data,
+                   size_t *consumed)
 {
   if (parser->method_buf.len == 0)
     RETURN_PARSE_ERROR (parser, HTTP1_ERROR_INVALID_METHOD, p, data, consumed);
 
-  if (!http1_tokenbuf_terminate (&parser->method_buf, parser->arena,
-                                 parser->config.max_request_line))
+  if (!http1_tokenbuf_terminate (
+          &parser->method_buf, parser->arena, parser->config.max_request_line))
     RETURN_PARSE_ERROR (parser, HTTP1_ERROR_LINE_TOO_LONG, p, data, consumed);
 
   return HTTP1_OK;
 }
 
 static SocketHTTP1_Result
-handle_uri_end (SocketHTTP1_Parser_T parser, const char *p, const char *data,
+handle_uri_end (SocketHTTP1_Parser_T parser,
+                const char *p,
+                const char *data,
                 size_t *consumed)
 {
-  if (!http1_tokenbuf_terminate (&parser->uri_buf, parser->arena,
-                                 parser->config.max_request_line))
+  if (!http1_tokenbuf_terminate (
+          &parser->uri_buf, parser->arena, parser->config.max_request_line))
     RETURN_PARSE_ERROR (parser, HTTP1_ERROR_LINE_TOO_LONG, p, data, consumed);
 
   return HTTP1_OK;
 }
 
 static SocketHTTP1_Result
-handle_version_digit (SocketHTTP1_Parser_T parser, uint8_t action, char c,
-                      const char *p, const char *data, size_t *consumed)
+handle_version_digit (SocketHTTP1_Parser_T parser,
+                      uint8_t action,
+                      char c,
+                      const char *p,
+                      const char *data,
+                      size_t *consumed)
 {
   if (action == HTTP1_ACT_VERSION_MAJ)
     {
       parser->version_major = parser->version_major * 10 + (c - '0');
       if (parser->version_major > HTTP1_MAX_VERSION_DIGIT)
-        RETURN_PARSE_ERROR (parser, HTTP1_ERROR_INVALID_VERSION, p, data,
-                            consumed);
+        RETURN_PARSE_ERROR (
+            parser, HTTP1_ERROR_INVALID_VERSION, p, data, consumed);
     }
   else
     {
       parser->version_minor = parser->version_minor * 10 + (c - '0');
       if (parser->version_minor > HTTP1_MAX_VERSION_DIGIT)
-        RETURN_PARSE_ERROR (parser, HTTP1_ERROR_INVALID_VERSION, p, data,
-                            consumed);
+        RETURN_PARSE_ERROR (
+            parser, HTTP1_ERROR_INVALID_VERSION, p, data, consumed);
     }
 
   return HTTP1_OK;
 }
 
 static SocketHTTP1_Result
-handle_status_digit (SocketHTTP1_Parser_T parser, char c, const char *p,
-                     const char *data, size_t *consumed)
+handle_status_digit (SocketHTTP1_Parser_T parser,
+                     char c,
+                     const char *p,
+                     const char *data,
+                     size_t *consumed)
 {
   parser->status_code = parser->status_code * 10 + (c - '0');
 
@@ -1285,8 +1320,10 @@ in_header_state (HTTP1_InternalState state)
 }
 
 static inline SocketHTTP1_Result
-handle_body_state_exit (SocketHTTP1_Parser_T parser, HTTP1_InternalState state,
-                        size_t consumed_bytes, size_t *consumed)
+handle_body_state_exit (SocketHTTP1_Parser_T parser,
+                        HTTP1_InternalState state,
+                        size_t consumed_bytes,
+                        size_t *consumed)
 {
   parser->internal_state = state;
   *consumed = consumed_bytes;
@@ -1299,8 +1336,12 @@ handle_body_state_exit (SocketHTTP1_Parser_T parser, HTTP1_InternalState state,
 }
 
 static SocketHTTP1_Result
-handle_dfa_action (SocketHTTP1_Parser_T parser, uint8_t action, uint8_t c,
-                   const char *p, const char *data, size_t *consumed,
+handle_dfa_action (SocketHTTP1_Parser_T parser,
+                   uint8_t action,
+                   uint8_t c,
+                   const char *p,
+                   const char *data,
+                   size_t *consumed,
                    HTTP1_InternalState current_state,
                    HTTP1_InternalState *next_state)
 {
@@ -1317,8 +1358,7 @@ handle_dfa_action (SocketHTTP1_Parser_T parser, uint8_t action, uint8_t c,
     case HTTP1_ACT_STORE_REASON:
     case HTTP1_ACT_STORE_NAME:
     case HTTP1_ACT_STORE_VALUE:
-      result
-          = handle_store_action (parser, action, (char)c, p, data, consumed);
+      result = handle_store_action (parser, action, (char)c, p, data, consumed);
       return result;
 
     case HTTP1_ACT_METHOD_END:
@@ -1432,7 +1472,9 @@ scan_header_name (const char *p, const char *end)
 }
 
 static SocketHTTP1_Result
-parse_headers_loop (SocketHTTP1_Parser_T parser, const char *data, size_t len,
+parse_headers_loop (SocketHTTP1_Parser_T parser,
+                    const char *data,
+                    size_t len,
                     size_t *consumed,
                     const uint8_t (*state_table)[HTTP1_NUM_CLASSES],
                     const uint8_t (*action_table)[HTTP1_NUM_CLASSES])
@@ -1452,8 +1494,8 @@ parse_headers_loop (SocketHTTP1_Parser_T parser, const char *data, size_t len,
     {
       /* Handle body/trailer states outside the table-driven loop */
       if (state >= HTTP1_PS_BODY_IDENTITY)
-        return handle_body_state_exit (parser, state, (size_t)(p - data),
-                                       consumed);
+        return handle_body_state_exit (
+            parser, state, (size_t)(p - data), consumed);
 
       /*
        * OPTIMIZATION 1: Batch processing for header values
@@ -1477,9 +1519,11 @@ parse_headers_loop (SocketHTTP1_Parser_T parser, const char *data, size_t len,
                 }
 
               /* Batch append to value buffer */
-              if (http1_tokenbuf_append_block (
-                      &parser->value_buf, parser->arena, p, chunk_len,
-                      parser->config.max_header_value)
+              if (http1_tokenbuf_append_block (&parser->value_buf,
+                                               parser->arena,
+                                               p,
+                                               chunk_len,
+                                               parser->config.max_header_value)
                   < 0)
                 {
                   set_error (parser, HTTP1_ERROR_HEADER_TOO_LARGE);
@@ -1513,9 +1557,11 @@ parse_headers_loop (SocketHTTP1_Parser_T parser, const char *data, size_t len,
                   return parser->error;
                 }
 
-              if (http1_tokenbuf_append_block (
-                      &parser->name_buf, parser->arena, p, chunk_len,
-                      parser->config.max_header_name)
+              if (http1_tokenbuf_append_block (&parser->name_buf,
+                                               parser->arena,
+                                               p,
+                                               chunk_len,
+                                               parser->config.max_header_name)
                   < 0)
                 {
                   set_error (parser, HTTP1_ERROR_INVALID_HEADER_NAME);
@@ -1551,8 +1597,10 @@ parse_headers_loop (SocketHTTP1_Parser_T parser, const char *data, size_t len,
         else if (action == HTTP1_ACT_STORE_VALUE)
           {
             /* Inline single-byte value append (for bytes after batch) */
-            if (http1_tokenbuf_append (&parser->value_buf, parser->arena,
-                                       (char)c, parser->config.max_header_value)
+            if (http1_tokenbuf_append (&parser->value_buf,
+                                       parser->arena,
+                                       (char)c,
+                                       parser->config.max_header_value)
                 < 0)
               {
                 set_error (parser, HTTP1_ERROR_HEADER_TOO_LARGE);
@@ -1563,8 +1611,10 @@ parse_headers_loop (SocketHTTP1_Parser_T parser, const char *data, size_t len,
         else if (action == HTTP1_ACT_STORE_NAME)
           {
             /* Inline single-byte name append */
-            if (http1_tokenbuf_append (&parser->name_buf, parser->arena,
-                                       (char)c, parser->config.max_header_name)
+            if (http1_tokenbuf_append (&parser->name_buf,
+                                       parser->arena,
+                                       (char)c,
+                                       parser->config.max_header_name)
                 < 0)
               {
                 set_error (parser, HTTP1_ERROR_INVALID_HEADER_NAME);
@@ -1575,8 +1625,8 @@ parse_headers_loop (SocketHTTP1_Parser_T parser, const char *data, size_t len,
         else
           {
             /* Non-trivial action - use full handler */
-            result = handle_dfa_action (parser, action, c, p, data, consumed,
-                                        state, &next_state);
+            result = handle_dfa_action (
+                parser, action, c, p, data, consumed, state, &next_state);
             if (result != HTTP1_OK)
               return result;
           }
@@ -1623,8 +1673,8 @@ parse_headers_loop (SocketHTTP1_Parser_T parser, const char *data, size_t len,
 
         /* Handle transition to body/complete/error states */
         if (state >= HTTP1_PS_BODY_IDENTITY)
-          return handle_body_state_exit (parser, state, (size_t)(p - data),
-                                         consumed);
+          return handle_body_state_exit (
+              parser, state, (size_t)(p - data), consumed);
       }
     }
 
@@ -1634,8 +1684,10 @@ parse_headers_loop (SocketHTTP1_Parser_T parser, const char *data, size_t len,
 }
 
 SocketHTTP1_Result
-SocketHTTP1_Parser_execute (SocketHTTP1_Parser_T parser, const char *data,
-                            size_t len, size_t *consumed)
+SocketHTTP1_Parser_execute (SocketHTTP1_Parser_T parser,
+                            const char *data,
+                            size_t len,
+                            size_t *consumed)
 {
   const uint8_t (*state_table)[HTTP1_NUM_CLASSES];
   const uint8_t (*action_table)[HTTP1_NUM_CLASSES];
@@ -1664,8 +1716,8 @@ SocketHTTP1_Parser_execute (SocketHTTP1_Parser_T parser, const char *data,
       action_table = http1_resp_action;
     }
 
-  return parse_headers_loop (parser, data, len, consumed, state_table,
-                             action_table);
+  return parse_headers_loop (
+      parser, data, len, consumed, state_table, action_table);
 }
 
 /* Undefine internal macro */

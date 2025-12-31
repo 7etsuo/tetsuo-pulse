@@ -75,15 +75,16 @@ counting_handler (SocketHTTPServer_Request_T req, void *userdata)
   SocketHTTPServer_Request_status (req, 200);
   if (ctx && ctx->response)
     {
-      SocketHTTPServer_Request_body_data (req, ctx->response,
-                                          strlen (ctx->response));
+      SocketHTTPServer_Request_body_data (
+          req, ctx->response, strlen (ctx->response));
     }
   SocketHTTPServer_Request_finish (req);
 }
 
 /* Validator that allows all requests */
 static int
-allow_all_validator (SocketHTTPServer_Request_T req, int *reject_status,
+allow_all_validator (SocketHTTPServer_Request_T req,
+                     int *reject_status,
                      void *userdata)
 {
   (void)req;
@@ -94,7 +95,8 @@ allow_all_validator (SocketHTTPServer_Request_T req, int *reject_status,
 
 /* Validator that rejects all requests */
 static int
-reject_all_validator (SocketHTTPServer_Request_T req, int *reject_status,
+reject_all_validator (SocketHTTPServer_Request_T req,
+                      int *reject_status,
                       void *userdata)
 {
   (void)req;
@@ -122,7 +124,8 @@ TEST (httpserver_config_defaults)
   ASSERT_EQ (HTTPSERVER_DEFAULT_MAX_HEADER_SIZE, config.max_header_size);
   ASSERT_EQ (HTTPSERVER_DEFAULT_MAX_BODY_SIZE, config.max_body_size);
   ASSERT_EQ (HTTPSERVER_DEFAULT_REQUEST_TIMEOUT_MS, config.request_timeout_ms);
-  ASSERT_EQ (HTTPSERVER_DEFAULT_KEEPALIVE_TIMEOUT_MS, config.keepalive_timeout_ms);
+  ASSERT_EQ (HTTPSERVER_DEFAULT_KEEPALIVE_TIMEOUT_MS,
+             config.keepalive_timeout_ms);
   ASSERT_NULL (config.tls_context);
 }
 
@@ -475,7 +478,7 @@ TEST (httpserver_drain)
     /* State should be draining or stopped */
     SocketHTTPServer_State state = SocketHTTPServer_state (server);
     ASSERT (state == HTTPSERVER_STATE_DRAINING
-                 || state == HTTPSERVER_STATE_STOPPED);
+            || state == HTTPSERVER_STATE_STOPPED);
   }
   FINALLY
   {
@@ -604,7 +607,7 @@ TEST (httpserver_multiple_start_stop)
     /* Multiple start/stop cycles */
     int result = SocketHTTPServer_start (server);
     ASSERT_EQ (0, result);
-    
+
     SocketHTTPServer_stop (server);
 
     /* State should be updated */
@@ -661,8 +664,11 @@ typedef struct
 
 /* Body callback that accumulates data */
 static int
-accumulating_body_callback (SocketHTTPServer_Request_T req, const void *chunk,
-                            size_t len, int is_final, void *userdata)
+accumulating_body_callback (SocketHTTPServer_Request_T req,
+                            const void *chunk,
+                            size_t len,
+                            int is_final,
+                            void *userdata)
 {
   (void)req;
   BodyStreamContext *ctx = (BodyStreamContext *)userdata;
@@ -691,7 +697,8 @@ accumulating_body_callback (SocketHTTPServer_Request_T req, const void *chunk,
 
 /* Validator that enables body streaming */
 static int
-streaming_validator (SocketHTTPServer_Request_T req, int *reject_status,
+streaming_validator (SocketHTTPServer_Request_T req,
+                     int *reject_status,
                      void *userdata)
 {
   BodyStreamContext *ctx = (BodyStreamContext *)userdata;
@@ -892,7 +899,8 @@ TEST (httpserver_dynamic_chunked_body_config)
 
   /* Test that HTTPSERVER_CHUNKED_BODY_INITIAL_SIZE is properly defined */
   ASSERT (HTTPSERVER_CHUNKED_BODY_INITIAL_SIZE > 0);
-  ASSERT (HTTPSERVER_CHUNKED_BODY_INITIAL_SIZE <= HTTPSERVER_DEFAULT_MAX_BODY_SIZE);
+  ASSERT (HTTPSERVER_CHUNKED_BODY_INITIAL_SIZE
+          <= HTTPSERVER_DEFAULT_MAX_BODY_SIZE);
 
   /* Default is 8KB */
   ASSERT_EQ (8192, HTTPSERVER_CHUNKED_BODY_INITIAL_SIZE);
@@ -982,4 +990,3 @@ main (void)
   Test_run_all ();
   return Test_get_failures ();
 }
-

@@ -137,13 +137,16 @@ TEST (simple_proxy_parse_url_username_too_long)
   /* Build URL with username that is exactly 128 chars (buffer size) */
   /* This should be rejected because url_decode needs space for null terminator
    */
-  const char *long_username
-      = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" /* 64 */
-        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"; /* 128
-                                                                               total
-                                                                             */
+  const char *long_username = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                              "xxxxxxxxxxxxxxxx" /* 64 */
+                              "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                              "xxxxxxxxxxxxxxxx"; /* 128
+                                                     total
+                                                   */
 
-  snprintf (url, sizeof (url), "socks5://%s:pass@proxy.example.com:1080",
+  snprintf (url,
+            sizeof (url),
+            "socks5://%s:pass@proxy.example.com:1080",
             long_username);
 
   result = Socket_simple_proxy_parse_url (url, &config);
@@ -159,13 +162,16 @@ TEST (simple_proxy_parse_url_password_too_long)
   char url[512];
 
   /* Build URL with password that is exactly 128 chars (buffer size) */
-  const char *long_password
-      = "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp" /* 64 */
-        "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp"; /* 128
-                                                                               total
-                                                                             */
+  const char *long_password = "pppppppppppppppppppppppppppppppppppppppppppppppp"
+                              "pppppppppppppppp" /* 64 */
+                              "pppppppppppppppppppppppppppppppppppppppppppppppp"
+                              "pppppppppppppppp"; /* 128
+                                                     total
+                                                   */
 
-  snprintf (url, sizeof (url), "socks5://user:%s@proxy.example.com:1080",
+  snprintf (url,
+            sizeof (url),
+            "socks5://user:%s@proxy.example.com:1080",
             long_password);
 
   result = Socket_simple_proxy_parse_url (url, &config);
@@ -181,14 +187,15 @@ TEST (simple_proxy_parse_url_username_only_too_long)
   char url[512];
 
   /* Build URL with username only (no password) that is too long */
-  const char *long_username
-      = "uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu" /* 64 */
-        "uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu"; /* 128
-                                                                                 total
-                                                                               */
+  const char *long_username = "uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu"
+                              "uuuuuuuuuuuuuuuu" /* 64 */
+                              "uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu"
+                              "uuuuuuuuuuuuuuuu"; /* 128
+                                                       total
+                                                     */
 
-  snprintf (url, sizeof (url), "socks5://%s@proxy.example.com:1080",
-            long_username);
+  snprintf (
+      url, sizeof (url), "socks5://%s@proxy.example.com:1080", long_username);
 
   result = Socket_simple_proxy_parse_url (url, &config);
 
@@ -209,10 +216,13 @@ TEST (simple_proxy_parse_url_username_max_valid_length)
 
   /* Build URL with username that is 100 chars (safe, well below limit) */
   const char *username_100
-      = "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy" /* 64 */
+      = "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy" /* 64
+                                                                            */
         "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"; /* 100 total */
 
-  snprintf (url, sizeof (url), "socks5://%s:pass@proxy.example.com:1080",
+  snprintf (url,
+            sizeof (url),
+            "socks5://%s:pass@proxy.example.com:1080",
             username_100);
 
   result = Socket_simple_proxy_parse_url (url, &config);
@@ -230,10 +240,13 @@ TEST (simple_proxy_parse_url_password_max_valid_length)
 
   /* Build URL with password that is 100 chars (safe, well below limit) */
   const char *password_100
-      = "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz" /* 64 */
+      = "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz" /* 64
+                                                                            */
         "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"; /* 100 total */
 
-  snprintf (url, sizeof (url), "socks5://user:%s@proxy.example.com:1080",
+  snprintf (url,
+            sizeof (url),
+            "socks5://user:%s@proxy.example.com:1080",
             password_100);
 
   result = Socket_simple_proxy_parse_url (url, &config);
@@ -262,13 +275,16 @@ TEST (simple_proxy_parse_url_percent_encoded_causes_truncation)
 
   /* Create a username that's long but becomes even longer when considering
    * buffer */
-  const char *username_with_encoding
-      = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" /* 63 */
-        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"; /* 126
-                                                                              */
+  const char *username_with_encoding = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                                       "aaaaaaaaaaaaaaaaaaaaaaaa" /* 63 */
+                                       "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                                       "aaaaaaaaaaaaaaaaaaaaaaaa"; /* 126
+                                                                    */
 
   /* If we add more, it should fail */
-  snprintf (url, sizeof (url), "socks5://%sXX:pass@proxy.example.com:1080",
+  snprintf (url,
+            sizeof (url),
+            "socks5://%sXX:pass@proxy.example.com:1080",
             username_with_encoding);
 
   result = Socket_simple_proxy_parse_url (url, &config);
@@ -292,7 +308,9 @@ TEST (simple_proxy_parse_url_http_username_too_long)
       = "hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh"
         "hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh";
 
-  snprintf (url, sizeof (url), "http://%s:pass@proxy.example.com:8080",
+  snprintf (url,
+            sizeof (url),
+            "http://%s:pass@proxy.example.com:8080",
             long_username);
 
   result = Socket_simple_proxy_parse_url (url, &config);
@@ -311,7 +329,9 @@ TEST (simple_proxy_parse_url_socks4a_password_too_long)
       = "ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss"
         "ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss";
 
-  snprintf (url, sizeof (url), "socks4a://user:%s@proxy.example.com:1080",
+  snprintf (url,
+            sizeof (url),
+            "socks4a://user:%s@proxy.example.com:1080",
             long_password);
 
   result = Socket_simple_proxy_parse_url (url, &config);

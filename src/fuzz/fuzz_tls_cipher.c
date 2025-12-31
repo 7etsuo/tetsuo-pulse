@@ -36,28 +36,22 @@
  * Known valid cipher strings for mutation testing.
  * These provide a baseline that should always work.
  */
-static const char *VALID_CIPHER_STRINGS[] = {
-    "HIGH:!aNULL:!eNULL",
-    "ECDHE+AESGCM:ECDHE+CHACHA20",
-    "ECDHE-RSA-AES256-GCM-SHA384",
-    "ECDHE-ECDSA-AES128-GCM-SHA256",
-    "DHE-RSA-AES256-GCM-SHA384",
-    "AES256-GCM-SHA384",
-    "DEFAULT:!aNULL:!eNULL:!MD5",
-    NULL
-};
+static const char *VALID_CIPHER_STRINGS[]
+    = { "HIGH:!aNULL:!eNULL",          "ECDHE+AESGCM:ECDHE+CHACHA20",
+        "ECDHE-RSA-AES256-GCM-SHA384", "ECDHE-ECDSA-AES128-GCM-SHA256",
+        "DHE-RSA-AES256-GCM-SHA384",   "AES256-GCM-SHA384",
+        "DEFAULT:!aNULL:!eNULL:!MD5",  NULL };
 
 /**
  * Known valid TLS 1.3 ciphersuite strings.
  */
-static const char *VALID_TLS13_SUITES[] = {
-    "TLS_AES_256_GCM_SHA384",
-    "TLS_CHACHA20_POLY1305_SHA256",
-    "TLS_AES_128_GCM_SHA256",
-    "TLS_AES_256_GCM_SHA384:TLS_AES_128_GCM_SHA256",
-    "TLS_CHACHA20_POLY1305_SHA256:TLS_AES_256_GCM_SHA384",
-    NULL
-};
+static const char *VALID_TLS13_SUITES[]
+    = { "TLS_AES_256_GCM_SHA384",
+        "TLS_CHACHA20_POLY1305_SHA256",
+        "TLS_AES_128_GCM_SHA256",
+        "TLS_AES_256_GCM_SHA384:TLS_AES_128_GCM_SHA256",
+        "TLS_CHACHA20_POLY1305_SHA256:TLS_AES_256_GCM_SHA384",
+        NULL };
 
 /**
  * null_terminate_fuzz_data - Create null-terminated string from fuzz data
@@ -133,7 +127,10 @@ test_cipher_application (SocketTLSContext_T ctx, const char *cipher_str)
   if (!ctx || !cipher_str)
     return;
 
-  TRY { SocketTLSContext_set_cipher_list (ctx, cipher_str); }
+  TRY
+  {
+    SocketTLSContext_set_cipher_list (ctx, cipher_str);
+  }
   EXCEPT (SocketTLS_Failed)
   {
     /* Expected for invalid cipher strings */
@@ -152,7 +149,10 @@ test_ciphersuite_application (SocketTLSContext_T ctx, const char *suite_str)
   if (!ctx || !suite_str)
     return;
 
-  TRY { SocketTLSContext_set_ciphersuites (ctx, suite_str); }
+  TRY
+  {
+    SocketTLSContext_set_ciphersuites (ctx, suite_str);
+  }
   EXCEPT (SocketTLS_Failed)
   {
     /* Expected for invalid ciphersuite strings */

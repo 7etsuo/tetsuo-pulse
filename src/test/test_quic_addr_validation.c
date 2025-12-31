@@ -53,8 +53,7 @@ test_amplification_limit_before_validation (void)
   SocketQUICAddrValidation_State_T state = { 0 };
 
   /* Initial state: 0 bytes received/sent */
-  assert (SocketQUICAddrValidation_check_amplification_limit (&state, 1)
-          == 0);
+  assert (SocketQUICAddrValidation_check_amplification_limit (&state, 1) == 0);
 
   /* After receiving 100 bytes, can send up to 300 */
   SocketQUICAddrValidation_update_counters (&state, 0, 100);
@@ -101,12 +100,12 @@ test_counter_overflow_protection (void)
   /* Test bytes_sent overflow */
   state.bytes_sent = UINT64_MAX - 50;
   SocketQUICAddrValidation_update_counters (&state, 100, 0);
-  assert (state.bytes_sent == UINT64_MAX);  /* Should saturate */
+  assert (state.bytes_sent == UINT64_MAX); /* Should saturate */
 
   /* Test bytes_received overflow */
   state.bytes_received = UINT64_MAX - 25;
   SocketQUICAddrValidation_update_counters (&state, 0, 50);
-  assert (state.bytes_received == UINT64_MAX);  /* Should saturate */
+  assert (state.bytes_received == UINT64_MAX); /* Should saturate */
 
   printf ("PASS: test_counter_overflow_protection\n");
 }
@@ -137,7 +136,7 @@ test_counter_saturation_stays_saturated (void)
   /* Saturate the counter */
   state.bytes_sent = UINT64_MAX;
   SocketQUICAddrValidation_update_counters (&state, 100, 0);
-  assert (state.bytes_sent == UINT64_MAX);  /* Should stay saturated */
+  assert (state.bytes_sent == UINT64_MAX); /* Should stay saturated */
 
   /* Multiple updates should keep it saturated */
   SocketQUICAddrValidation_update_counters (&state, 500, 0);
@@ -295,8 +294,8 @@ test_path_challenge_generation (void)
 
   /* Initialize and generate challenge */
   SocketQUICPathChallenge_init (&challenge);
-  result = SocketQUICPathChallenge_generate (&challenge,
-                                              (struct sockaddr *)&addr, 12345);
+  result = SocketQUICPathChallenge_generate (
+      &challenge, (struct sockaddr *)&addr, 12345);
   assert (result == QUIC_ADDR_VALIDATION_OK);
   assert (challenge.pending == 1);
   assert (challenge.sent_time == 12345);
@@ -331,22 +330,22 @@ test_path_challenge_verification (void)
 
   /* Generate challenge */
   SocketQUICPathChallenge_init (&challenge);
-  SocketQUICPathChallenge_generate (&challenge, (struct sockaddr *)&addr,
-                                    12345);
+  SocketQUICPathChallenge_generate (
+      &challenge, (struct sockaddr *)&addr, 12345);
 
   /* Copy challenge data as response */
   memcpy (response, challenge.data, QUIC_PATH_CHALLENGE_SIZE);
 
   /* Verify correct response */
-  assert (
-      SocketQUICPathChallenge_verify_response (&challenge, response, sizeof (response))
-      == 1);
+  assert (SocketQUICPathChallenge_verify_response (
+              &challenge, response, sizeof (response))
+          == 1);
 
   /* Corrupt response */
   response[0] ^= 0xFF;
-  assert (
-      SocketQUICPathChallenge_verify_response (&challenge, response, sizeof (response))
-      == 0);
+  assert (SocketQUICPathChallenge_verify_response (
+              &challenge, response, sizeof (response))
+          == 0);
 
   printf ("PASS: test_path_challenge_verification\n");
 }
@@ -361,8 +360,8 @@ test_path_challenge_completion (void)
 
   /* Generate and verify pending */
   SocketQUICPathChallenge_init (&challenge);
-  SocketQUICPathChallenge_generate (&challenge, (struct sockaddr *)&addr,
-                                    12345);
+  SocketQUICPathChallenge_generate (
+      &challenge, (struct sockaddr *)&addr, 12345);
   assert (SocketQUICPathChallenge_is_pending (&challenge) == 1);
 
   /* Complete challenge */
@@ -383,8 +382,8 @@ test_path_challenge_ipv6 (void)
 
   /* Generate challenge for IPv6 */
   SocketQUICPathChallenge_init (&challenge);
-  result = SocketQUICPathChallenge_generate (&challenge,
-                                              (struct sockaddr *)&addr, 12345);
+  result = SocketQUICPathChallenge_generate (
+      &challenge, (struct sockaddr *)&addr, 12345);
   assert (result == QUIC_ADDR_VALIDATION_OK);
   assert (challenge.is_ipv6 == 1);
   assert (challenge.peer_port == 4433);
@@ -413,18 +412,20 @@ test_null_parameter_handling (void)
   /* Test NULL checks */
   assert (SocketQUICAddrValidation_check_amplification_limit (NULL, 100) == 0);
 
-  assert (SocketQUICAddrValidation_generate_token (NULL, secret, token,
-                                                    &token_len)
-          == QUIC_ADDR_VALIDATION_ERROR_NULL);
+  assert (
+      SocketQUICAddrValidation_generate_token (NULL, secret, token, &token_len)
+      == QUIC_ADDR_VALIDATION_ERROR_NULL);
 
-  assert (SocketQUICAddrValidation_validate_token (
-              NULL, QUIC_ADDR_VALIDATION_TOKEN_SIZE, (struct sockaddr *)&addr,
-              secret)
-          == QUIC_ADDR_VALIDATION_ERROR_NULL);
+  assert (
+      SocketQUICAddrValidation_validate_token (NULL,
+                                               QUIC_ADDR_VALIDATION_TOKEN_SIZE,
+                                               (struct sockaddr *)&addr,
+                                               secret)
+      == QUIC_ADDR_VALIDATION_ERROR_NULL);
 
-  assert (SocketQUICPathChallenge_generate (NULL, (struct sockaddr *)&addr,
-                                             12345)
-          == QUIC_ADDR_VALIDATION_ERROR_NULL);
+  assert (
+      SocketQUICPathChallenge_generate (NULL, (struct sockaddr *)&addr, 12345)
+      == QUIC_ADDR_VALIDATION_ERROR_NULL);
 
   assert (SocketQUICPathChallenge_verify_response (NULL, token, 8) == 0);
 

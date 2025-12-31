@@ -59,7 +59,10 @@
  * Returns length of extracted address (0 if none).
  */
 static size_t
-extract_address (const uint8_t *data, size_t size, size_t offset, char *addr,
+extract_address (const uint8_t *data,
+                 size_t size,
+                 size_t offset,
+                 char *addr,
                  size_t addr_max)
 {
   size_t i;
@@ -271,7 +274,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           size_t addr_offset = (offset + i) % size;
 
           /* Generate simple address from fuzz data */
-          snprintf (temp_addr, sizeof (temp_addr), "%d.%d.%d.%d",
+          snprintf (temp_addr,
+                    sizeof (temp_addr),
+                    "%d.%d.%d.%d",
                     data[addr_offset % size] % 256,
                     data[(addr_offset + 1) % size] % 256,
                     data[(addr_offset + 2) % size] % 256,
@@ -410,14 +415,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
    * Test Case 13: IPv4 and IPv6 address formats
    */
   const char *test_addrs[] = {
-    "8.8.8.8",           /* IPv4 */
-    "192.168.1.1",       /* IPv4 private */
-    "::1",               /* IPv6 loopback */
+    "8.8.8.8",              /* IPv4 */
+    "192.168.1.1",          /* IPv4 private */
+    "::1",                  /* IPv6 loopback */
     "2001:4860:4860::8888", /* IPv6 public */
-    "fe80::1",           /* IPv6 link-local */
-    "[2001:db8::1]:53",  /* IPv6 with port */
-    "dns.google.com",    /* Hostname */
-    "ns1.example.org",   /* Hostname */
+    "fe80::1",              /* IPv6 link-local */
+    "[2001:db8::1]:53",     /* IPv6 with port */
+    "dns.google.com",       /* Hostname */
+    "ns1.example.org",      /* Hostname */
   };
 
   SocketDNSDeadServer_clear (tracker);
@@ -472,8 +477,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               (void)SocketDNSDeadServer_is_dead (tracker, addr2, NULL);
               break;
             case 4: /* Mark alive */
-              SocketDNSDeadServer_mark_alive (tracker,
-                                              (i & 1) ? addr1 : addr2);
+              SocketDNSDeadServer_mark_alive (tracker, (i & 1) ? addr1 : addr2);
               break;
             case 5: /* Prune */
               (void)SocketDNSDeadServer_prune (tracker);

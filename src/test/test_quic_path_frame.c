@@ -6,7 +6,8 @@
 
 /**
  * @file test_quic_path_frame.c
- * @brief Unit tests for QUIC PATH_CHALLENGE and PATH_RESPONSE frame encoding/decoding (RFC 9000 §19.17-19.18).
+ * @brief Unit tests for QUIC PATH_CHALLENGE and PATH_RESPONSE frame
+ * encoding/decoding (RFC 9000 §19.17-19.18).
  */
 
 #include "quic/SocketQUICFrame.h"
@@ -43,8 +44,8 @@ TEST (frame_path_challenge_encode_roundtrip)
   uint8_t decoded_data[8];
 
   /* Encode */
-  size_t len = SocketQUICFrame_encode_path_challenge (original_data, buf,
-                                                       sizeof (buf));
+  size_t len = SocketQUICFrame_encode_path_challenge (
+      original_data, buf, sizeof (buf));
   ASSERT_EQ (9, len);
 
   /* Decode */
@@ -121,7 +122,7 @@ TEST (frame_path_response_encode_basic)
   /* Encode basic PATH_RESPONSE frame */
   len = SocketQUICFrame_encode_path_response (data, buf, sizeof (buf));
 
-  ASSERT_EQ (9, len); /* 1 byte type + 8 bytes data */
+  ASSERT_EQ (9, len);                           /* 1 byte type + 8 bytes data */
   ASSERT_EQ (QUIC_FRAME_PATH_RESPONSE, buf[0]); /* Frame type: 0x1b */
 
   /* Verify data was copied correctly */
@@ -136,8 +137,8 @@ TEST (frame_path_response_encode_roundtrip)
   uint8_t decoded_data[8];
 
   /* Encode */
-  size_t len = SocketQUICFrame_encode_path_response (original_data, buf,
-                                                      sizeof (buf));
+  size_t len
+      = SocketQUICFrame_encode_path_response (original_data, buf, sizeof (buf));
   ASSERT_EQ (9, len);
 
   /* Decode */
@@ -219,8 +220,8 @@ TEST (frame_path_challenge_response_echo)
   ASSERT_EQ (9, challenge_len);
 
   /* Decode the challenge */
-  int res = SocketQUICFrame_decode_path_challenge (challenge_buf, challenge_len,
-                                                    decoded_data);
+  int res = SocketQUICFrame_decode_path_challenge (
+      challenge_buf, challenge_len, decoded_data);
   ASSERT_EQ (9, res);
 
   /* Encode PATH_RESPONSE with the same data (echo) */
@@ -237,8 +238,8 @@ TEST (frame_path_challenge_response_echo)
 
   /* Decode response and verify */
   uint8_t response_data[8];
-  res = SocketQUICFrame_decode_path_response (response_buf, response_len,
-                                               response_data);
+  res = SocketQUICFrame_decode_path_response (
+      response_buf, response_len, response_data);
   ASSERT_EQ (9, res);
   ASSERT (memcmp (response_data, challenge_data, 8) == 0);
 }

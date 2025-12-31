@@ -922,7 +922,8 @@ extern int Socket_is_readable (const T socket);
  * @endcode
  *
  * @note Returns 1 if send buffer has space; doesn't guarantee all data fits
- * @note For non-blocking connect, writable means connect completed (check error)
+ * @note For non-blocking connect, writable means connect completed (check
+ * error)
  *
  * @see Socket_is_readable() for read readiness check
  * @see Socket_get_error() to check after non-blocking connect
@@ -942,29 +943,29 @@ extern int Socket_is_writable (const T socket);
 typedef struct SocketTCPInfo
 {
   /* Connection state */
-  uint8_t state;        /**< TCP state (TCP_ESTABLISHED, etc.) */
-  uint8_t ca_state;     /**< Congestion avoidance state */
-  uint8_t retransmits;  /**< Number of unrecovered RTOs */
-  uint8_t probes;       /**< Number of unanswered zero-window probes */
-  uint8_t backoff;      /**< Backoff exponent for RTO */
+  uint8_t state;       /**< TCP state (TCP_ESTABLISHED, etc.) */
+  uint8_t ca_state;    /**< Congestion avoidance state */
+  uint8_t retransmits; /**< Number of unrecovered RTOs */
+  uint8_t probes;      /**< Number of unanswered zero-window probes */
+  uint8_t backoff;     /**< Backoff exponent for RTO */
 
   /* Options */
-  uint8_t options;      /**< TCP options enabled */
-  uint8_t snd_wscale;   /**< Send window scale */
-  uint8_t rcv_wscale;   /**< Receive window scale */
+  uint8_t options;    /**< TCP options enabled */
+  uint8_t snd_wscale; /**< Send window scale */
+  uint8_t rcv_wscale; /**< Receive window scale */
 
   /* RTT estimation */
-  uint32_t rto_us;      /**< Retransmission timeout (microseconds) */
-  uint32_t ato_us;      /**< ACK timeout (microseconds) */
-  uint32_t snd_mss;     /**< Send MSS */
-  uint32_t rcv_mss;     /**< Receive MSS */
+  uint32_t rto_us;  /**< Retransmission timeout (microseconds) */
+  uint32_t ato_us;  /**< ACK timeout (microseconds) */
+  uint32_t snd_mss; /**< Send MSS */
+  uint32_t rcv_mss; /**< Receive MSS */
 
   /* Counters */
-  uint32_t unacked;     /**< Unacknowledged segments */
-  uint32_t sacked;      /**< SACKed segments */
-  uint32_t lost;        /**< Lost segments */
-  uint32_t retrans;     /**< Retransmitted segments */
-  uint32_t fackets;     /**< FACKed segments */
+  uint32_t unacked; /**< Unacknowledged segments */
+  uint32_t sacked;  /**< SACKed segments */
+  uint32_t lost;    /**< Lost segments */
+  uint32_t retrans; /**< Retransmitted segments */
+  uint32_t fackets; /**< FACKed segments */
 
   /* Timing */
   uint32_t last_data_sent_ms; /**< Time since last data sent (ms) */
@@ -973,18 +974,18 @@ typedef struct SocketTCPInfo
   uint32_t last_ack_recv_ms;  /**< Time since last ACK received (ms) */
 
   /* Metrics */
-  uint32_t pmtu;        /**< Path MTU */
+  uint32_t pmtu;         /**< Path MTU */
   uint32_t rcv_ssthresh; /**< Receive slow-start threshold */
-  uint32_t rtt_us;      /**< Smoothed RTT (microseconds) */
-  uint32_t rttvar_us;   /**< RTT variance (microseconds) */
+  uint32_t rtt_us;       /**< Smoothed RTT (microseconds) */
+  uint32_t rttvar_us;    /**< RTT variance (microseconds) */
   uint32_t snd_ssthresh; /**< Send slow-start threshold */
-  uint32_t snd_cwnd;    /**< Send congestion window */
-  uint32_t advmss;      /**< Advertised MSS */
-  uint32_t reordering;  /**< Reordering metric */
+  uint32_t snd_cwnd;     /**< Send congestion window */
+  uint32_t advmss;       /**< Advertised MSS */
+  uint32_t reordering;   /**< Reordering metric */
 
   /* Extended (Linux 2.6.10+) */
-  uint32_t rcv_rtt_us;  /**< Receiver RTT estimate (microseconds) */
-  uint32_t rcv_space;   /**< Receive buffer space */
+  uint32_t rcv_rtt_us; /**< Receiver RTT estimate (microseconds) */
+  uint32_t rcv_space;  /**< Receive buffer space */
 
   uint32_t total_retrans; /**< Total retransmissions */
 
@@ -997,16 +998,16 @@ typedef struct SocketTCPInfo
   uint64_t bytes_received; /**< Bytes received */
 
   /* Segments (Linux 4.2+) */
-  uint32_t segs_out;       /**< Segments sent */
-  uint32_t segs_in;        /**< Segments received */
+  uint32_t segs_out; /**< Segments sent */
+  uint32_t segs_in;  /**< Segments received */
 
   /* Delivery (Linux 4.6+) */
-  uint32_t notsent_bytes;  /**< Not-yet-sent bytes in write queue */
-  uint32_t min_rtt_us;     /**< Minimum observed RTT (microseconds) */
-  uint32_t data_segs_in;   /**< Data segments received */
-  uint32_t data_segs_out;  /**< Data segments sent */
+  uint32_t notsent_bytes; /**< Not-yet-sent bytes in write queue */
+  uint32_t min_rtt_us;    /**< Minimum observed RTT (microseconds) */
+  uint32_t data_segs_in;  /**< Data segments received */
+  uint32_t data_segs_out; /**< Data segments sent */
 
-  uint64_t delivery_rate;  /**< Delivery rate (bytes/sec) */
+  uint64_t delivery_rate; /**< Delivery rate (bytes/sec) */
 } SocketTCPInfo;
 
 /**
@@ -1465,8 +1466,8 @@ extern ssize_t Socket_recvvall (T socket, struct iovec *iov, int iovcnt);
  * @see Socket_sendfileall() for guaranteed complete transfer.
  * @see Socket_send() for buffer-based sending.
  */
-extern ssize_t Socket_sendfile (T socket, int file_fd, off_t *offset,
-                                size_t count);
+extern ssize_t
+Socket_sendfile (T socket, int file_fd, off_t *offset, size_t count);
 
 /**
  * @brief Zero-copy file-to-socket transfer (handles partial transfers).
@@ -1480,8 +1481,8 @@ extern ssize_t Socket_sendfile (T socket, int file_fd, off_t *offset,
  * @see Socket_sendfile() for partial transfer operations.
  * @see Socket_sendall() for buffer-based guaranteed sending.
  */
-extern ssize_t Socket_sendfileall (T socket, int file_fd, off_t *offset,
-                                   size_t count);
+extern ssize_t
+Socket_sendfileall (T socket, int file_fd, off_t *offset, size_t count);
 
 /* ============================================================================
  * I/O Operations with Timeout
@@ -1528,8 +1529,8 @@ extern ssize_t Socket_sendfileall (T socket, int file_fd, off_t *offset,
  * @see Socket_sendall() for blocking send
  * @see Socket_send() for single send operation
  */
-extern ssize_t Socket_sendall_timeout (T socket, const void *buf, size_t len,
-                                       int timeout_ms);
+extern ssize_t
+Socket_sendall_timeout (T socket, const void *buf, size_t len, int timeout_ms);
 
 /**
  * @brief Receive all requested data with timeout.
@@ -1563,8 +1564,8 @@ extern ssize_t Socket_sendall_timeout (T socket, const void *buf, size_t len,
  * @see Socket_recvall() for blocking receive
  * @see Socket_recv() for single receive operation
  */
-extern ssize_t Socket_recvall_timeout (T socket, void *buf, size_t len,
-                                       int timeout_ms);
+extern ssize_t
+Socket_recvall_timeout (T socket, void *buf, size_t len, int timeout_ms);
 
 /**
  * @brief Scatter/gather send with timeout.
@@ -1587,8 +1588,10 @@ extern ssize_t Socket_recvall_timeout (T socket, void *buf, size_t len,
  * @see Socket_sendvall() for guaranteed complete send (no timeout)
  * @see Socket_recvv_timeout() for scatter/gather receive with timeout
  */
-extern ssize_t Socket_sendv_timeout (T socket, const struct iovec *iov,
-                                     int iovcnt, int timeout_ms);
+extern ssize_t Socket_sendv_timeout (T socket,
+                                     const struct iovec *iov,
+                                     int iovcnt,
+                                     int timeout_ms);
 
 /**
  * @brief Scatter/gather receive with timeout.
@@ -1611,8 +1614,8 @@ extern ssize_t Socket_sendv_timeout (T socket, const struct iovec *iov,
  * @see Socket_recvvall() for guaranteed complete receive (no timeout)
  * @see Socket_sendv_timeout() for scatter/gather send with timeout
  */
-extern ssize_t Socket_recvv_timeout (T socket, struct iovec *iov, int iovcnt,
-                                     int timeout_ms);
+extern ssize_t
+Socket_recvv_timeout (T socket, struct iovec *iov, int iovcnt, int timeout_ms);
 
 /* ============================================================================
  * Advanced I/O Operations
@@ -2038,8 +2041,8 @@ extern int Socket_gettimeout (T socket);
  * @throws Socket_Failed on error.
  * @see Socket_setkeepalive() for setting keepalive parameters.
  */
-extern void Socket_getkeepalive (T socket, int *idle, int *interval,
-                                 int *count);
+extern void
+Socket_getkeepalive (T socket, int *idle, int *interval, int *count);
 
 /**
  * @brief Get TCP_NODELAY setting.
@@ -2538,8 +2541,8 @@ extern int Socket_sendfds (T socket, const int *fds, size_t count);
  * @see Socket_sendfds() for sending multiple descriptors.
  * @see Socket_recvfd() for receiving single descriptor.
  */
-extern int Socket_recvfds (T socket, int *fds, size_t max_count,
-                           size_t *received_count);
+extern int
+Socket_recvfds (T socket, int *fds, size_t max_count, size_t *received_count);
 
 /**
  * @brief Bind Unix domain socket to a filesystem path.
@@ -2561,8 +2564,8 @@ extern int Socket_recvfds (T socket, int *fds, size_t max_count,
  * @threadsafe Conditional - safe if base fd is not shared across threads
  * without locking.
  */
-extern void SocketUnix_bind (SocketBase_T base, const char *path,
-                             Except_T exc_type);
+extern void
+SocketUnix_bind (SocketBase_T base, const char *path, Except_T exc_type);
 
 /**
  * @brief Connect Unix domain socket to a filesystem path.
@@ -2584,8 +2587,8 @@ extern void SocketUnix_bind (SocketBase_T base, const char *path,
  * @threadsafe Conditional - safe if base fd is not shared across threads
  * without locking.
  */
-extern void SocketUnix_connect (SocketBase_T base, const char *path,
-                                Except_T exc_type);
+extern void
+SocketUnix_connect (SocketBase_T base, const char *path, Except_T exc_type);
 
 /**
  * @brief Validate a Unix domain socket path.
@@ -2625,8 +2628,8 @@ extern int SocketUnix_validate_unix_path (const char *path, size_t path_len);
  * @see Socket_bind_async_cancel() for canceling the request.
  * @see Socket_bind_with_addrinfo() for binding with resolved address.
  */
-extern Request_T Socket_bind_async (SocketDNS_T dns, T socket,
-                                    const char *host, int port);
+extern Request_T
+Socket_bind_async (SocketDNS_T dns, T socket, const char *host, int port);
 
 /**
  * @brief Cancel pending async bind resolution.
@@ -2649,8 +2652,8 @@ extern void Socket_bind_async_cancel (SocketDNS_T dns, Request_T req);
  * @see Socket_connect_async_cancel() for canceling the request.
  * @see Socket_connect_with_addrinfo() for connecting with resolved address.
  */
-extern Request_T Socket_connect_async (SocketDNS_T dns, T socket,
-                                       const char *host, int port);
+extern Request_T
+Socket_connect_async (SocketDNS_T dns, T socket, const char *host, int port);
 
 /**
  * @brief Cancel pending async connect resolution.
@@ -2785,7 +2788,8 @@ extern T Socket_listen_tcp (const char *host, int port, int backlog);
  * @endcode
  *
  * @note DNS resolution uses synchronous getaddrinfo() which may block
- * @note For non-blocking connect, use Socket_setnonblocking() + Socket_connect()
+ * @note For non-blocking connect, use Socket_setnonblocking() +
+ * Socket_connect()
  *
  * @see Socket_connect_unix_timeout() for Unix domain sockets
  * @see Socket_connect() for more control over socket options
@@ -2872,8 +2876,8 @@ extern T Socket_accept_timeout (T socket, int timeout_ms);
  * @see Socket_connect_async() for async DNS + connect
  * @see SocketHappyEyeballs for RFC 8305 connection racing
  */
-extern int Socket_connect_nonblocking (T socket, const char *ip_address,
-                                       int port);
+extern int
+Socket_connect_nonblocking (T socket, const char *ip_address, int port);
 
 /**
  * @brief Create a listening Unix domain socket in one call.
@@ -2941,8 +2945,8 @@ extern T Socket_listen_unix (const char *path, int backlog);
  * @see Socket_connect_unix() for connect without timeout
  * @see Socket_listen_unix() for creating Unix domain server
  */
-extern void Socket_connect_unix_timeout (T socket, const char *path,
-                                         int timeout_ms);
+extern void
+Socket_connect_unix_timeout (T socket, const char *path, int timeout_ms);
 
 /**
  * @brief Send a single file descriptor over Unix domain socket.
@@ -3095,8 +3099,8 @@ extern int Socket_sendfds (T socket, const int *fds, size_t count);
  * @see Socket_sendfds() for sending multiple file descriptors
  * @see Socket_recvfd() for receiving a single file descriptor
  */
-extern int Socket_recvfds (T socket, int *fds, size_t max_count,
-                           size_t *received_count);
+extern int
+Socket_recvfds (T socket, int *fds, size_t max_count, size_t *received_count);
 
 #undef T
 

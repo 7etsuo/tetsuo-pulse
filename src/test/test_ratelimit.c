@@ -559,8 +559,7 @@ TEST (iptracker_invalid_ip_rejected)
   SocketIPTracker_T tracker;
   int result;
 
-  TRY
-  tracker = SocketIPTracker_new (arena, 10);
+  TRY tracker = SocketIPTracker_new (arena, 10);
 
   /* Empty string - returns 1 (allow) as silent no-op per implementation */
   result = SocketIPTracker_track (tracker, "");

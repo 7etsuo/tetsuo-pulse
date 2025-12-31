@@ -30,19 +30,19 @@
 static int tests_run = 0;
 static int tests_passed = 0;
 
-#define TEST_ASSERT(cond, msg)                                                \
-  do                                                                          \
-    {                                                                         \
-      tests_run++;                                                            \
-      if (cond)                                                               \
-        {                                                                     \
-          tests_passed++;                                                     \
-        }                                                                     \
-      else                                                                    \
-        {                                                                     \
-          printf ("FAIL: %s (%s:%d)\n", msg, __FILE__, __LINE__);             \
-        }                                                                     \
-    }                                                                         \
+#define TEST_ASSERT(cond, msg)                                    \
+  do                                                              \
+    {                                                             \
+      tests_run++;                                                \
+      if (cond)                                                   \
+        {                                                         \
+          tests_passed++;                                         \
+        }                                                         \
+      else                                                        \
+        {                                                         \
+          printf ("FAIL: %s (%s:%d)\n", msg, __FILE__, __LINE__); \
+        }                                                         \
+    }                                                             \
   while (0)
 
 /* ============================================================================
@@ -55,15 +55,15 @@ test_version_string (void)
 {
   printf ("Testing HTTP version strings...\n");
 
-  TEST_ASSERT (
-      strcmp (SocketHTTP_version_string (HTTP_VERSION_0_9), "HTTP/0.9") == 0,
-      "HTTP/0.9 string");
-  TEST_ASSERT (
-      strcmp (SocketHTTP_version_string (HTTP_VERSION_1_0), "HTTP/1.0") == 0,
-      "HTTP/1.0 string");
-  TEST_ASSERT (
-      strcmp (SocketHTTP_version_string (HTTP_VERSION_1_1), "HTTP/1.1") == 0,
-      "HTTP/1.1 string");
+  TEST_ASSERT (strcmp (SocketHTTP_version_string (HTTP_VERSION_0_9), "HTTP/0.9")
+                   == 0,
+               "HTTP/0.9 string");
+  TEST_ASSERT (strcmp (SocketHTTP_version_string (HTTP_VERSION_1_0), "HTTP/1.0")
+                   == 0,
+               "HTTP/1.0 string");
+  TEST_ASSERT (strcmp (SocketHTTP_version_string (HTTP_VERSION_1_1), "HTTP/1.1")
+                   == 0,
+               "HTTP/1.1 string");
   TEST_ASSERT (strcmp (SocketHTTP_version_string (HTTP_VERSION_2), "HTTP/2")
                    == 0,
                "HTTP/2 string");
@@ -306,8 +306,7 @@ test_headers_multi (void)
   TEST_ASSERT (SocketHTTP_Headers_count (headers) == 3, "Count is 3");
 
   const char *values[10];
-  size_t count
-      = SocketHTTP_Headers_get_all (headers, "Set-Cookie", values, 10);
+  size_t count = SocketHTTP_Headers_get_all (headers, "Set-Cookie", values, 10);
   TEST_ASSERT (count == 3, "Get all returns 3");
   TEST_ASSERT (strcmp (values[0], "a=1") == 0, "First cookie");
   TEST_ASSERT (strcmp (values[1], "b=2") == 0, "Second cookie");
@@ -329,8 +328,7 @@ test_headers_set (void)
   TEST_ASSERT (SocketHTTP_Headers_count (headers) == 2, "Count is 2");
 
   SocketHTTP_Headers_set (headers, "Content-Type", "application/json");
-  TEST_ASSERT (SocketHTTP_Headers_count (headers) == 1,
-               "Count is 1 after set");
+  TEST_ASSERT (SocketHTTP_Headers_count (headers) == 1, "Count is 1 after set");
 
   const char *value = SocketHTTP_Headers_get (headers, "Content-Type");
   TEST_ASSERT (strcmp (value, "application/json") == 0, "Value replaced");
@@ -374,9 +372,9 @@ test_headers_contains (void)
   SocketHTTP_Headers_add (headers, "Connection", "keep-alive, upgrade");
   SocketHTTP_Headers_add (headers, "Accept-Encoding", "gzip, deflate, br");
 
-  TEST_ASSERT (
-      SocketHTTP_Headers_contains (headers, "Connection", "keep-alive") == 1,
-      "Contains keep-alive");
+  TEST_ASSERT (SocketHTTP_Headers_contains (headers, "Connection", "keep-alive")
+                   == 1,
+               "Contains keep-alive");
   TEST_ASSERT (SocketHTTP_Headers_contains (headers, "Connection", "upgrade")
                    == 1,
                "Contains upgrade");
@@ -433,8 +431,7 @@ test_header_validation (void)
                "Space in name invalid");
   TEST_ASSERT (SocketHTTP_header_name_valid ("Invalid:Header", 14) == 0,
                "Colon in name invalid");
-  TEST_ASSERT (SocketHTTP_header_name_valid ("", 0) == 0,
-               "Empty name invalid");
+  TEST_ASSERT (SocketHTTP_header_name_valid ("", 0) == 0, "Empty name invalid");
 
   TEST_ASSERT (SocketHTTP_header_value_valid ("normal value", 12) == 1,
                "Normal value valid");
@@ -562,8 +559,8 @@ test_uri_with_query (void)
   SocketHTTP_URI uri;
   SocketHTTP_URIResult result;
 
-  result = SocketHTTP_URI_parse ("http://example.com/search?q=test&page=1", 0,
-                                 &uri, arena);
+  result = SocketHTTP_URI_parse (
+      "http://example.com/search?q=test&page=1", 0, &uri, arena);
   TEST_ASSERT (result == URI_PARSE_OK, "Parse URI with query");
   TEST_ASSERT (uri.query && strcmp (uri.query, "q=test&page=1") == 0, "Query");
 
@@ -579,8 +576,8 @@ test_uri_with_fragment (void)
   SocketHTTP_URI uri;
   SocketHTTP_URIResult result;
 
-  result = SocketHTTP_URI_parse ("http://example.com/page#section", 0, &uri,
-                                 arena);
+  result = SocketHTTP_URI_parse (
+      "http://example.com/page#section", 0, &uri, arena);
   TEST_ASSERT (result == URI_PARSE_OK, "Parse URI with fragment");
   TEST_ASSERT (uri.fragment && strcmp (uri.fragment, "section") == 0,
                "Fragment");
@@ -639,7 +636,8 @@ test_uri_security_invalid (void)
   // NUL)
   result = SocketHTTP_URI_parse ("http://example.com/pat\0h",
                                  sizeof ("http://example.com/pat\0h") - 1,
-                                 &uri, arena);
+                                 &uri,
+                                 arena);
   TEST_ASSERT (result == URI_PARSE_ERROR, "Reject control char (NUL) in path");
 
   // Invalid host char (space)
@@ -648,13 +646,11 @@ test_uri_security_invalid (void)
 
   // Invalid reg-name char in host
   result = SocketHTTP_URI_parse ("http://exa<mple.com/path", 0, &uri, arena);
-  TEST_ASSERT (result == URI_PARSE_INVALID_HOST,
-               "Reject < in host (reg-name)");
+  TEST_ASSERT (result == URI_PARSE_INVALID_HOST, "Reject < in host (reg-name)");
 
   // Malformed IPv6 literal
   result = SocketHTTP_URI_parse ("http://[::g]:80/path", 0, &uri, arena);
-  TEST_ASSERT (result == URI_PARSE_INVALID_HOST,
-               "Reject invalid char in IPv6");
+  TEST_ASSERT (result == URI_PARSE_INVALID_HOST, "Reject invalid char in IPv6");
 
   // Unmatched IPv6 bracket
   result = SocketHTTP_URI_parse ("http://[::1/path", 0, &uri, arena);
@@ -677,7 +673,8 @@ test_uri_security_invalid (void)
   result = SocketHTTP_URI_parse ("http://example.com/../foo", 0, &uri, arena);
   TEST_ASSERT (result == URI_PARSE_INVALID_PATH, "Reject literal ../foo");
 
-  result = SocketHTTP_URI_parse ("http://example.com/foo/../bar", 0, &uri, arena);
+  result
+      = SocketHTTP_URI_parse ("http://example.com/foo/../bar", 0, &uri, arena);
   TEST_ASSERT (result == URI_PARSE_INVALID_PATH, "Reject foo/../bar");
 
   result = SocketHTTP_URI_parse ("http://example.com/..", 0, &uri, arena);
@@ -687,11 +684,15 @@ test_uri_security_invalid (void)
   TEST_ASSERT (result == URI_PARSE_INVALID_PATH, "Reject .. before query");
 
   // Path traversal - fully encoded "%2e%2e"
-  result = SocketHTTP_URI_parse ("http://example.com/%2e%2e/foo", 0, &uri, arena);
-  TEST_ASSERT (result == URI_PARSE_INVALID_PATH, "Reject %2e%2e/foo (lowercase)");
+  result
+      = SocketHTTP_URI_parse ("http://example.com/%2e%2e/foo", 0, &uri, arena);
+  TEST_ASSERT (result == URI_PARSE_INVALID_PATH,
+               "Reject %2e%2e/foo (lowercase)");
 
-  result = SocketHTTP_URI_parse ("http://example.com/%2E%2E/foo", 0, &uri, arena);
-  TEST_ASSERT (result == URI_PARSE_INVALID_PATH, "Reject %2E%2E/foo (uppercase)");
+  result
+      = SocketHTTP_URI_parse ("http://example.com/%2E%2E/foo", 0, &uri, arena);
+  TEST_ASSERT (result == URI_PARSE_INVALID_PATH,
+               "Reject %2E%2E/foo (uppercase)");
 
   // Path traversal - mixed encoding ".%2e"
   result = SocketHTTP_URI_parse ("http://example.com/.%2e/foo", 0, &uri, arena);
@@ -700,14 +701,17 @@ test_uri_security_invalid (void)
   result = SocketHTTP_URI_parse ("http://example.com/.%2E/foo", 0, &uri, arena);
   TEST_ASSERT (result == URI_PARSE_INVALID_PATH, "Reject .%2E/foo (uppercase)");
 
-  result = SocketHTTP_URI_parse ("http://example.com/foo/.%2e/", 0, &uri, arena);
+  result
+      = SocketHTTP_URI_parse ("http://example.com/foo/.%2e/", 0, &uri, arena);
   TEST_ASSERT (result == URI_PARSE_INVALID_PATH, "Reject foo/.%2e/ (mid-path)");
 
   result = SocketHTTP_URI_parse ("http://example.com/.%2e", 0, &uri, arena);
   TEST_ASSERT (result == URI_PARSE_INVALID_PATH, "Reject .%2e (at end)");
 
-  result = SocketHTTP_URI_parse ("http://example.com/.%2e?query", 0, &uri, arena);
-  TEST_ASSERT (result == URI_PARSE_INVALID_PATH, "Reject .%2e?query (before query)");
+  result
+      = SocketHTTP_URI_parse ("http://example.com/.%2e?query", 0, &uri, arena);
+  TEST_ASSERT (result == URI_PARSE_INVALID_PATH,
+               "Reject .%2e?query (before query)");
 
   // Path traversal - mixed encoding "%2e."
   result = SocketHTTP_URI_parse ("http://example.com/%2e./foo", 0, &uri, arena);
@@ -716,14 +720,17 @@ test_uri_security_invalid (void)
   result = SocketHTTP_URI_parse ("http://example.com/%2E./foo", 0, &uri, arena);
   TEST_ASSERT (result == URI_PARSE_INVALID_PATH, "Reject %2E./foo (uppercase)");
 
-  result = SocketHTTP_URI_parse ("http://example.com/foo/%2e./", 0, &uri, arena);
+  result
+      = SocketHTTP_URI_parse ("http://example.com/foo/%2e./", 0, &uri, arena);
   TEST_ASSERT (result == URI_PARSE_INVALID_PATH, "Reject foo/%2e./ (mid-path)");
 
   result = SocketHTTP_URI_parse ("http://example.com/%2e.", 0, &uri, arena);
   TEST_ASSERT (result == URI_PARSE_INVALID_PATH, "Reject %2e. (at end)");
 
-  result = SocketHTTP_URI_parse ("http://example.com/%2e.?query", 0, &uri, arena);
-  TEST_ASSERT (result == URI_PARSE_INVALID_PATH, "Reject %2e.?query (before query)");
+  result
+      = SocketHTTP_URI_parse ("http://example.com/%2e.?query", 0, &uri, arena);
+  TEST_ASSERT (result == URI_PARSE_INVALID_PATH,
+               "Reject %2e.?query (before query)");
 
   // Valid paths with single dots (should pass)
   result = SocketHTTP_URI_parse ("http://example.com/.", 0, &uri, arena);
@@ -756,8 +763,8 @@ test_mediatype_security (void)
   TEST_ASSERT (res == -1, "Reject invalid param name char");
 
   // Incomplete escape in quoted
-  res = SocketHTTP_MediaType_parse ("text/plain; boundary=\\\"abc\\", 0, &mt,
-                                    arena);
+  res = SocketHTTP_MediaType_parse (
+      "text/plain; boundary=\\\"abc\\", 0, &mt, arena);
   TEST_ASSERT (res == -1, "Reject incomplete escape in quoted value");
 
   Arena_dispose (&arena);
@@ -772,8 +779,8 @@ test_uri_userinfo (void)
   SocketHTTP_URI uri;
   SocketHTTP_URIResult result;
 
-  result = SocketHTTP_URI_parse ("http://user:pass@example.com/path", 0, &uri,
-                                 arena);
+  result = SocketHTTP_URI_parse (
+      "http://user:pass@example.com/path", 0, &uri, arena);
   TEST_ASSERT (result == URI_PARSE_OK, "Parse URI with userinfo");
   TEST_ASSERT (uri.userinfo && strcmp (uri.userinfo, "user:pass") == 0,
                "Userinfo");
@@ -833,8 +840,8 @@ test_uri_build (void)
   SocketHTTP_URI uri;
   char buf[256];
 
-  SocketHTTP_URI_parse ("https://user@example.com:8080/path?query#frag", 0,
-                        &uri, arena);
+  SocketHTTP_URI_parse (
+      "https://user@example.com:8080/path?query#frag", 0, &uri, arena);
 
   ssize_t len = SocketHTTP_URI_build (&uri, buf, sizeof (buf));
   TEST_ASSERT (len > 0, "Build succeeds");
@@ -1018,8 +1025,7 @@ test_accept_parsing (void)
 
   TEST_ASSERT (count == 3, "Parse 3 values");
   /* Should be sorted by quality */
-  TEST_ASSERT (strcmp (results[0].value, "text/html") == 0,
-               "First: text/html");
+  TEST_ASSERT (strcmp (results[0].value, "text/html") == 0, "First: text/html");
   TEST_ASSERT (results[0].quality == 1.0f, "First quality 1.0");
   TEST_ASSERT (strcmp (results[1].value, "application/json") == 0,
                "Second: application/json");
@@ -1046,8 +1052,7 @@ test_coding (void)
                "Parse GZIP (case-insensitive)");
   TEST_ASSERT (SocketHTTP_coding_parse ("deflate", 0) == HTTP_CODING_DEFLATE,
                "Parse deflate");
-  TEST_ASSERT (SocketHTTP_coding_parse ("br", 0) == HTTP_CODING_BR,
-               "Parse br");
+  TEST_ASSERT (SocketHTTP_coding_parse ("br", 0) == HTTP_CODING_BR, "Parse br");
   TEST_ASSERT (SocketHTTP_coding_parse ("chunked", 0) == HTTP_CODING_CHUNKED,
                "Parse chunked");
   TEST_ASSERT (SocketHTTP_coding_parse ("unknown", 0) == HTTP_CODING_UNKNOWN,

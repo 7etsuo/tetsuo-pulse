@@ -50,8 +50,10 @@
  * Test incremental parsing with variable chunk sizes
  */
 static void
-test_incremental_parsing (SocketHTTP1_Parser_T parser, const uint8_t *data,
-                          size_t size, size_t chunk_size)
+test_incremental_parsing (SocketHTTP1_Parser_T parser,
+                          const uint8_t *data,
+                          size_t size,
+                          size_t chunk_size)
 {
   size_t offset = 0;
   size_t consumed;
@@ -62,8 +64,8 @@ test_incremental_parsing (SocketHTTP1_Parser_T parser, const uint8_t *data,
       size_t remaining = size - offset;
       size_t to_parse = (remaining < chunk_size) ? remaining : chunk_size;
 
-      result = SocketHTTP1_Parser_execute (parser, (const char *)data + offset,
-                                           to_parse, &consumed);
+      result = SocketHTTP1_Parser_execute (
+          parser, (const char *)data + offset, to_parse, &consumed);
       offset += consumed;
 
       /* If no progress made and still incomplete, advance by 1 to prevent
@@ -82,14 +84,18 @@ test_incremental_parsing (SocketHTTP1_Parser_T parser, const uint8_t *data,
       size_t body_consumed, body_written;
       size_t body_remaining = size - offset;
 
-      while (body_remaining > 0
-             && !SocketHTTP1_Parser_body_complete (parser))
+      while (body_remaining > 0 && !SocketHTTP1_Parser_body_complete (parser))
         {
           size_t to_read
               = (body_remaining < chunk_size) ? body_remaining : chunk_size;
-          SocketHTTP1_Result body_result = SocketHTTP1_Parser_read_body (
-              parser, (const char *)data + offset, to_read, &body_consumed,
-              body_buf, sizeof (body_buf), &body_written);
+          SocketHTTP1_Result body_result
+              = SocketHTTP1_Parser_read_body (parser,
+                                              (const char *)data + offset,
+                                              to_read,
+                                              &body_consumed,
+                                              body_buf,
+                                              sizeof (body_buf),
+                                              &body_written);
 
           if (body_consumed == 0)
             break;
@@ -206,8 +212,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, NULL, arena);
       if (parser)
         {
-          result = SocketHTTP1_Parser_execute (parser, (const char *)data,
-                                               size, &consumed);
+          result = SocketHTTP1_Parser_execute (
+              parser, (const char *)data, size, &consumed);
 
           /* Exercise accessors regardless of result */
           exercise_parser_accessors (parser);
@@ -222,17 +228,20 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
               if (remaining > 0)
                 {
-                  SocketHTTP1_Parser_read_body (
-                      parser, (const char *)data + consumed, remaining,
-                      &body_consumed, body_buf, sizeof (body_buf),
-                      &body_written);
+                  SocketHTTP1_Parser_read_body (parser,
+                                                (const char *)data + consumed,
+                                                remaining,
+                                                &body_consumed,
+                                                body_buf,
+                                                sizeof (body_buf),
+                                                &body_written);
                 }
             }
 
           /* Test parser reset and reuse */
           SocketHTTP1_Parser_reset (parser);
-          result = SocketHTTP1_Parser_execute (parser, (const char *)data,
-                                               size, &consumed);
+          result = SocketHTTP1_Parser_execute (
+              parser, (const char *)data, size, &consumed);
 
           SocketHTTP1_Parser_free (&parser);
         }
@@ -249,8 +258,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, &strict_cfg, arena);
       if (parser)
         {
-          result = SocketHTTP1_Parser_execute (parser, (const char *)data,
-                                               size, &consumed);
+          result = SocketHTTP1_Parser_execute (
+              parser, (const char *)data, size, &consumed);
           exercise_parser_accessors (parser);
           SocketHTTP1_Parser_free (&parser);
         }
@@ -270,8 +279,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, &lenient_cfg, arena);
       if (parser)
         {
-          result = SocketHTTP1_Parser_execute (parser, (const char *)data,
-                                               size, &consumed);
+          result = SocketHTTP1_Parser_execute (
+              parser, (const char *)data, size, &consumed);
           exercise_parser_accessors (parser);
           SocketHTTP1_Parser_free (&parser);
         }
@@ -287,12 +296,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       restrictive_cfg.max_headers = 10;
       restrictive_cfg.max_request_line = 256;
 
-      parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, &restrictive_cfg,
-                                       arena);
+      parser = SocketHTTP1_Parser_new (
+          HTTP1_PARSE_REQUEST, &restrictive_cfg, arena);
       if (parser)
         {
-          result = SocketHTTP1_Parser_execute (parser, (const char *)data,
-                                               size, &consumed);
+          result = SocketHTTP1_Parser_execute (
+              parser, (const char *)data, size, &consumed);
           SocketHTTP1_Parser_free (&parser);
         }
     }
@@ -338,12 +347,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       };
 
       for (size_t i = 0;
-           i < sizeof (valid_requests) / sizeof (valid_requests[0]); i++)
+           i < sizeof (valid_requests) / sizeof (valid_requests[0]);
+           i++)
         {
           parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, NULL, arena);
           if (parser)
             {
-              SocketHTTP1_Parser_execute (parser, valid_requests[i],
+              SocketHTTP1_Parser_execute (parser,
+                                          valid_requests[i],
                                           strlen (valid_requests[i]),
                                           &consumed);
               exercise_parser_accessors (parser);
@@ -420,11 +431,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
            i < sizeof (malformed_requests) / sizeof (malformed_requests[0]);
            i++)
         {
-          parser
-              = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, &strict_cfg, arena);
+          parser = SocketHTTP1_Parser_new (
+              HTTP1_PARSE_REQUEST, &strict_cfg, arena);
           if (parser)
             {
-              SocketHTTP1_Parser_execute (parser, malformed_requests[i],
+              SocketHTTP1_Parser_execute (parser,
+                                          malformed_requests[i],
                                           strlen (malformed_requests[i]),
                                           &consumed);
               SocketHTTP1_Parser_free (&parser);
@@ -442,9 +454,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         int req_len;
 
         /* Extract components from fuzz data */
-        const char *methods[]
-            = { "GET",  "POST",    "PUT",     "DELETE", "HEAD",
-                "OPTIONS", "PATCH", "TRACE", "CONNECT" };
+        const char *methods[] = { "GET",     "POST",  "PUT",   "DELETE", "HEAD",
+                                  "OPTIONS", "PATCH", "TRACE", "CONNECT" };
         int method_idx = data[0] % 9;
 
         size_t path_len = (data[1] % 128) + 1;
@@ -453,7 +464,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
         char path[256];
         path[0] = '/';
-        size_t copy_len = (path_len < sizeof (path) - 2) ? path_len : sizeof (path) - 2;
+        size_t copy_len
+            = (path_len < sizeof (path) - 2) ? path_len : sizeof (path) - 2;
         memcpy (path + 1, data + 2, copy_len);
         path[copy_len + 1] = '\0';
 
@@ -464,19 +476,21 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               path[i] = 'x';
           }
 
-        req_len = snprintf (request_buf, sizeof (request_buf),
+        req_len = snprintf (request_buf,
+                            sizeof (request_buf),
                             "%s %s HTTP/1.1\r\n"
                             "Host: example.com\r\n"
                             "\r\n",
-                            methods[method_idx], path);
+                            methods[method_idx],
+                            path);
 
         if (req_len > 0 && (size_t)req_len < sizeof (request_buf))
           {
             parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, NULL, arena);
             if (parser)
               {
-                SocketHTTP1_Parser_execute (parser, request_buf, req_len,
-                                            &consumed);
+                SocketHTTP1_Parser_execute (
+                    parser, request_buf, req_len, &consumed);
                 exercise_parser_accessors (parser);
                 SocketHTTP1_Parser_free (&parser);
               }
@@ -487,28 +501,26 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
      * Test 9: Result string function coverage
      * ==================================================================== */
     {
-      SocketHTTP1_Result results[] = {
-        HTTP1_OK,
-        HTTP1_INCOMPLETE,
-        HTTP1_ERROR,
-        HTTP1_ERROR_LINE_TOO_LONG,
-        HTTP1_ERROR_INVALID_METHOD,
-        HTTP1_ERROR_INVALID_URI,
-        HTTP1_ERROR_INVALID_VERSION,
-        HTTP1_ERROR_INVALID_STATUS,
-        HTTP1_ERROR_INVALID_HEADER_NAME,
-        HTTP1_ERROR_INVALID_HEADER_VALUE,
-        HTTP1_ERROR_HEADER_TOO_LARGE,
-        HTTP1_ERROR_TOO_MANY_HEADERS,
-        HTTP1_ERROR_INVALID_CONTENT_LENGTH,
-        HTTP1_ERROR_INVALID_CHUNK_SIZE,
-        HTTP1_ERROR_CHUNK_TOO_LARGE,
-        HTTP1_ERROR_BODY_TOO_LARGE,
-        HTTP1_ERROR_INVALID_TRAILER,
-        HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING,
-        HTTP1_ERROR_UNEXPECTED_EOF,
-        HTTP1_ERROR_SMUGGLING_DETECTED
-      };
+      SocketHTTP1_Result results[] = { HTTP1_OK,
+                                       HTTP1_INCOMPLETE,
+                                       HTTP1_ERROR,
+                                       HTTP1_ERROR_LINE_TOO_LONG,
+                                       HTTP1_ERROR_INVALID_METHOD,
+                                       HTTP1_ERROR_INVALID_URI,
+                                       HTTP1_ERROR_INVALID_VERSION,
+                                       HTTP1_ERROR_INVALID_STATUS,
+                                       HTTP1_ERROR_INVALID_HEADER_NAME,
+                                       HTTP1_ERROR_INVALID_HEADER_VALUE,
+                                       HTTP1_ERROR_HEADER_TOO_LARGE,
+                                       HTTP1_ERROR_TOO_MANY_HEADERS,
+                                       HTTP1_ERROR_INVALID_CONTENT_LENGTH,
+                                       HTTP1_ERROR_INVALID_CHUNK_SIZE,
+                                       HTTP1_ERROR_CHUNK_TOO_LARGE,
+                                       HTTP1_ERROR_BODY_TOO_LARGE,
+                                       HTTP1_ERROR_INVALID_TRAILER,
+                                       HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING,
+                                       HTTP1_ERROR_UNEXPECTED_EOF,
+                                       HTTP1_ERROR_SMUGGLING_DETECTED };
 
       for (size_t i = 0; i < sizeof (results) / sizeof (results[0]); i++)
         {
@@ -535,12 +547,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       };
 
       for (size_t i = 0;
-           i < sizeof (continue_requests) / sizeof (continue_requests[0]); i++)
+           i < sizeof (continue_requests) / sizeof (continue_requests[0]);
+           i++)
         {
           parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, NULL, arena);
           if (parser)
             {
-              SocketHTTP1_Parser_execute (parser, continue_requests[i],
+              SocketHTTP1_Parser_execute (parser,
+                                          continue_requests[i],
                                           strlen (continue_requests[i]),
                                           &consumed);
 
@@ -557,17 +571,22 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
      * ==================================================================== */
     {
       const char *upgrade_requests[] = {
-        "GET /ws HTTP/1.1\r\nHost: test.com\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n\r\n",
-        "GET / HTTP/1.1\r\nHost: test.com\r\nUpgrade: h2c\r\nConnection: Upgrade, HTTP2-Settings\r\nHTTP2-Settings: AAMAAABkAAQAAP__\r\n\r\n",
+        "GET /ws HTTP/1.1\r\nHost: test.com\r\nUpgrade: "
+        "websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: "
+        "dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n\r\n",
+        "GET / HTTP/1.1\r\nHost: test.com\r\nUpgrade: h2c\r\nConnection: "
+        "Upgrade, HTTP2-Settings\r\nHTTP2-Settings: AAMAAABkAAQAAP__\r\n\r\n",
       };
 
       for (size_t i = 0;
-           i < sizeof (upgrade_requests) / sizeof (upgrade_requests[0]); i++)
+           i < sizeof (upgrade_requests) / sizeof (upgrade_requests[0]);
+           i++)
         {
           parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, NULL, arena);
           if (parser)
             {
-              SocketHTTP1_Parser_execute (parser, upgrade_requests[i],
+              SocketHTTP1_Parser_execute (parser,
+                                          upgrade_requests[i],
                                           strlen (upgrade_requests[i]),
                                           &consumed);
 

@@ -52,9 +52,8 @@ TEST (negcache_nxdomain_insert_lookup)
   SocketDNSNegCache_T cache = SocketDNSNegCache_new (arena);
 
   /* Insert NXDOMAIN for nonexistent.example.com */
-  int ret
-      = SocketDNSNegCache_insert_nxdomain (cache, "nonexistent.example.com",
-                                           DNS_CLASS_IN, 300);
+  int ret = SocketDNSNegCache_insert_nxdomain (
+      cache, "nonexistent.example.com", DNS_CLASS_IN, 300);
   ASSERT_EQ (ret, 0);
 
   SocketDNS_NegCacheStats stats;
@@ -66,21 +65,21 @@ TEST (negcache_nxdomain_insert_lookup)
   SocketDNS_NegCacheEntry entry;
   SocketDNS_NegCacheResult result;
 
-  result = SocketDNSNegCache_lookup (cache, "nonexistent.example.com",
-                                     DNS_TYPE_A, DNS_CLASS_IN, &entry);
+  result = SocketDNSNegCache_lookup (
+      cache, "nonexistent.example.com", DNS_TYPE_A, DNS_CLASS_IN, &entry);
   ASSERT_EQ (result, DNS_NEG_HIT_NXDOMAIN);
   ASSERT_EQ (entry.type, DNS_NEG_NXDOMAIN);
   ASSERT (entry.ttl_remaining > 0);
   ASSERT (entry.ttl_remaining <= 300);
 
   /* AAAA lookup should also hit the NXDOMAIN */
-  result = SocketDNSNegCache_lookup (cache, "nonexistent.example.com",
-                                     DNS_TYPE_AAAA, DNS_CLASS_IN, &entry);
+  result = SocketDNSNegCache_lookup (
+      cache, "nonexistent.example.com", DNS_TYPE_AAAA, DNS_CLASS_IN, &entry);
   ASSERT_EQ (result, DNS_NEG_HIT_NXDOMAIN);
 
   /* MX lookup should also hit */
-  result = SocketDNSNegCache_lookup (cache, "nonexistent.example.com",
-                                     DNS_TYPE_MX, DNS_CLASS_IN, &entry);
+  result = SocketDNSNegCache_lookup (
+      cache, "nonexistent.example.com", DNS_TYPE_MX, DNS_CLASS_IN, &entry);
   ASSERT_EQ (result, DNS_NEG_HIT_NXDOMAIN);
 
   SocketDNSNegCache_stats (cache, &stats);
@@ -98,8 +97,8 @@ TEST (negcache_nodata_insert_lookup)
   SocketDNSNegCache_T cache = SocketDNSNegCache_new (arena);
 
   /* Insert NODATA for example.com AAAA (name exists but no AAAA records) */
-  int ret = SocketDNSNegCache_insert_nodata (cache, "example.com",
-                                             DNS_TYPE_AAAA, DNS_CLASS_IN, 300);
+  int ret = SocketDNSNegCache_insert_nodata (
+      cache, "example.com", DNS_TYPE_AAAA, DNS_CLASS_IN, 300);
   ASSERT_EQ (ret, 0);
 
   SocketDNS_NegCacheStats stats;
@@ -110,19 +109,19 @@ TEST (negcache_nodata_insert_lookup)
   SocketDNS_NegCacheEntry entry;
   SocketDNS_NegCacheResult result;
 
-  result = SocketDNSNegCache_lookup (cache, "example.com", DNS_TYPE_AAAA,
-                                     DNS_CLASS_IN, &entry);
+  result = SocketDNSNegCache_lookup (
+      cache, "example.com", DNS_TYPE_AAAA, DNS_CLASS_IN, &entry);
   ASSERT_EQ (result, DNS_NEG_HIT_NODATA);
   ASSERT_EQ (entry.type, DNS_NEG_NODATA);
 
   /* Lookup A should MISS (NODATA is type-specific per RFC 2308) */
-  result = SocketDNSNegCache_lookup (cache, "example.com", DNS_TYPE_A,
-                                     DNS_CLASS_IN, NULL);
+  result = SocketDNSNegCache_lookup (
+      cache, "example.com", DNS_TYPE_A, DNS_CLASS_IN, NULL);
   ASSERT_EQ (result, DNS_NEG_MISS);
 
   /* Lookup MX should also MISS */
-  result = SocketDNSNegCache_lookup (cache, "example.com", DNS_TYPE_MX,
-                                     DNS_CLASS_IN, NULL);
+  result = SocketDNSNegCache_lookup (
+      cache, "example.com", DNS_TYPE_MX, DNS_CLASS_IN, NULL);
   ASSERT_EQ (result, DNS_NEG_MISS);
 
   SocketDNSNegCache_stats (cache, &stats);
@@ -141,22 +140,22 @@ TEST (negcache_nxdomain_precedence)
   SocketDNSNegCache_T cache = SocketDNSNegCache_new (arena);
 
   /* Insert NODATA for specific type first */
-  SocketDNSNegCache_insert_nodata (cache, "test.example.com", DNS_TYPE_A,
-                                   DNS_CLASS_IN, 300);
+  SocketDNSNegCache_insert_nodata (
+      cache, "test.example.com", DNS_TYPE_A, DNS_CLASS_IN, 300);
 
   /* Then insert NXDOMAIN for same name (should replace/override) */
-  SocketDNSNegCache_insert_nxdomain (cache, "test.example.com", DNS_CLASS_IN,
-                                     600);
+  SocketDNSNegCache_insert_nxdomain (
+      cache, "test.example.com", DNS_CLASS_IN, 600);
 
   /* Lookup should return NXDOMAIN (takes precedence) */
   SocketDNS_NegCacheResult result;
-  result = SocketDNSNegCache_lookup (cache, "test.example.com", DNS_TYPE_A,
-                                     DNS_CLASS_IN, NULL);
+  result = SocketDNSNegCache_lookup (
+      cache, "test.example.com", DNS_TYPE_A, DNS_CLASS_IN, NULL);
   ASSERT_EQ (result, DNS_NEG_HIT_NXDOMAIN);
 
   /* Other types should also return NXDOMAIN */
-  result = SocketDNSNegCache_lookup (cache, "test.example.com", DNS_TYPE_AAAA,
-                                     DNS_CLASS_IN, NULL);
+  result = SocketDNSNegCache_lookup (
+      cache, "test.example.com", DNS_TYPE_AAAA, DNS_CLASS_IN, NULL);
   ASSERT_EQ (result, DNS_NEG_HIT_NXDOMAIN);
 
   SocketDNSNegCache_free (&cache);
@@ -170,22 +169,22 @@ TEST (negcache_case_insensitive)
   SocketDNSNegCache_T cache = SocketDNSNegCache_new (arena);
 
   /* Insert with lowercase */
-  SocketDNSNegCache_insert_nxdomain (cache, "test.example.com", DNS_CLASS_IN,
-                                     300);
+  SocketDNSNegCache_insert_nxdomain (
+      cache, "test.example.com", DNS_CLASS_IN, 300);
 
   /* Lookup with different cases should all hit */
   SocketDNS_NegCacheResult result;
 
-  result = SocketDNSNegCache_lookup (cache, "TEST.EXAMPLE.COM", DNS_TYPE_A,
-                                     DNS_CLASS_IN, NULL);
+  result = SocketDNSNegCache_lookup (
+      cache, "TEST.EXAMPLE.COM", DNS_TYPE_A, DNS_CLASS_IN, NULL);
   ASSERT_EQ (result, DNS_NEG_HIT_NXDOMAIN);
 
-  result = SocketDNSNegCache_lookup (cache, "Test.Example.Com", DNS_TYPE_A,
-                                     DNS_CLASS_IN, NULL);
+  result = SocketDNSNegCache_lookup (
+      cache, "Test.Example.Com", DNS_TYPE_A, DNS_CLASS_IN, NULL);
   ASSERT_EQ (result, DNS_NEG_HIT_NXDOMAIN);
 
-  result = SocketDNSNegCache_lookup (cache, "tEsT.eXaMpLe.CoM", DNS_TYPE_A,
-                                     DNS_CLASS_IN, NULL);
+  result = SocketDNSNegCache_lookup (
+      cache, "tEsT.eXaMpLe.CoM", DNS_TYPE_A, DNS_CLASS_IN, NULL);
   ASSERT_EQ (result, DNS_NEG_HIT_NXDOMAIN);
 
   SocketDNSNegCache_free (&cache);
@@ -199,21 +198,21 @@ TEST (negcache_ttl_expiration)
   SocketDNSNegCache_T cache = SocketDNSNegCache_new (arena);
 
   /* Insert with 1 second TTL */
-  SocketDNSNegCache_insert_nxdomain (cache, "expiring.example.com",
-                                     DNS_CLASS_IN, 1);
+  SocketDNSNegCache_insert_nxdomain (
+      cache, "expiring.example.com", DNS_CLASS_IN, 1);
 
   /* Should hit immediately */
   SocketDNS_NegCacheResult result;
-  result = SocketDNSNegCache_lookup (cache, "expiring.example.com", DNS_TYPE_A,
-                                     DNS_CLASS_IN, NULL);
+  result = SocketDNSNegCache_lookup (
+      cache, "expiring.example.com", DNS_TYPE_A, DNS_CLASS_IN, NULL);
   ASSERT_EQ (result, DNS_NEG_HIT_NXDOMAIN);
 
   /* Wait for TTL to expire */
   sleep (2);
 
   /* Should now miss due to expiration */
-  result = SocketDNSNegCache_lookup (cache, "expiring.example.com", DNS_TYPE_A,
-                                     DNS_CLASS_IN, NULL);
+  result = SocketDNSNegCache_lookup (
+      cache, "expiring.example.com", DNS_TYPE_A, DNS_CLASS_IN, NULL);
   ASSERT_EQ (result, DNS_NEG_MISS);
 
   SocketDNS_NegCacheStats stats;
@@ -234,13 +233,13 @@ TEST (negcache_max_ttl_clamp)
   SocketDNSNegCache_set_max_ttl (cache, 60);
 
   /* Insert with high TTL - should be clamped */
-  SocketDNSNegCache_insert_nxdomain (cache, "clamped.example.com", DNS_CLASS_IN,
-                                     3600);
+  SocketDNSNegCache_insert_nxdomain (
+      cache, "clamped.example.com", DNS_CLASS_IN, 3600);
 
   /* Lookup and verify TTL was clamped */
   SocketDNS_NegCacheEntry entry;
-  SocketDNSNegCache_lookup (cache, "clamped.example.com", DNS_TYPE_A,
-                            DNS_CLASS_IN, &entry);
+  SocketDNSNegCache_lookup (
+      cache, "clamped.example.com", DNS_TYPE_A, DNS_CLASS_IN, &entry);
   ASSERT (entry.original_ttl <= 60);
 
   SocketDNSNegCache_free (&cache);
@@ -257,24 +256,24 @@ TEST (negcache_lru_eviction)
   SocketDNSNegCache_set_max_entries (cache, 3);
 
   /* Insert 3 entries */
-  SocketDNSNegCache_insert_nxdomain (cache, "first.example.com", DNS_CLASS_IN,
-                                     300);
-  SocketDNSNegCache_insert_nxdomain (cache, "second.example.com", DNS_CLASS_IN,
-                                     300);
-  SocketDNSNegCache_insert_nxdomain (cache, "third.example.com", DNS_CLASS_IN,
-                                     300);
+  SocketDNSNegCache_insert_nxdomain (
+      cache, "first.example.com", DNS_CLASS_IN, 300);
+  SocketDNSNegCache_insert_nxdomain (
+      cache, "second.example.com", DNS_CLASS_IN, 300);
+  SocketDNSNegCache_insert_nxdomain (
+      cache, "third.example.com", DNS_CLASS_IN, 300);
 
   SocketDNS_NegCacheStats stats;
   SocketDNSNegCache_stats (cache, &stats);
   ASSERT_EQ (stats.current_size, 3);
 
   /* Access first entry to make it recently used */
-  SocketDNSNegCache_lookup (cache, "first.example.com", DNS_TYPE_A,
-                            DNS_CLASS_IN, NULL);
+  SocketDNSNegCache_lookup (
+      cache, "first.example.com", DNS_TYPE_A, DNS_CLASS_IN, NULL);
 
   /* Insert 4th entry - should evict LRU (second) */
-  SocketDNSNegCache_insert_nxdomain (cache, "fourth.example.com", DNS_CLASS_IN,
-                                     300);
+  SocketDNSNegCache_insert_nxdomain (
+      cache, "fourth.example.com", DNS_CLASS_IN, 300);
 
   SocketDNSNegCache_stats (cache, &stats);
   ASSERT_EQ (stats.current_size, 3);
@@ -282,13 +281,13 @@ TEST (negcache_lru_eviction)
 
   /* First should still be present (was accessed) */
   SocketDNS_NegCacheResult result;
-  result = SocketDNSNegCache_lookup (cache, "first.example.com", DNS_TYPE_A,
-                                     DNS_CLASS_IN, NULL);
+  result = SocketDNSNegCache_lookup (
+      cache, "first.example.com", DNS_TYPE_A, DNS_CLASS_IN, NULL);
   ASSERT_EQ (result, DNS_NEG_HIT_NXDOMAIN);
 
   /* Second should have been evicted */
-  result = SocketDNSNegCache_lookup (cache, "second.example.com", DNS_TYPE_A,
-                                     DNS_CLASS_IN, NULL);
+  result = SocketDNSNegCache_lookup (
+      cache, "second.example.com", DNS_TYPE_A, DNS_CLASS_IN, NULL);
   ASSERT_EQ (result, DNS_NEG_MISS);
 
   SocketDNSNegCache_free (&cache);
@@ -302,14 +301,14 @@ TEST (negcache_remove)
   SocketDNSNegCache_T cache = SocketDNSNegCache_new (arena);
 
   /* Insert NXDOMAIN */
-  SocketDNSNegCache_insert_nxdomain (cache, "remove.example.com", DNS_CLASS_IN,
-                                     300);
+  SocketDNSNegCache_insert_nxdomain (
+      cache, "remove.example.com", DNS_CLASS_IN, 300);
 
   /* Insert multiple NODATA for same name */
-  SocketDNSNegCache_insert_nodata (cache, "partial.example.com", DNS_TYPE_A,
-                                   DNS_CLASS_IN, 300);
-  SocketDNSNegCache_insert_nodata (cache, "partial.example.com", DNS_TYPE_AAAA,
-                                   DNS_CLASS_IN, 300);
+  SocketDNSNegCache_insert_nodata (
+      cache, "partial.example.com", DNS_TYPE_A, DNS_CLASS_IN, 300);
+  SocketDNSNegCache_insert_nodata (
+      cache, "partial.example.com", DNS_TYPE_AAAA, DNS_CLASS_IN, 300);
 
   SocketDNS_NegCacheStats stats;
   SocketDNSNegCache_stats (cache, &stats);
@@ -324,13 +323,13 @@ TEST (negcache_remove)
 
   /* Lookups should miss */
   SocketDNS_NegCacheResult result;
-  result = SocketDNSNegCache_lookup (cache, "partial.example.com", DNS_TYPE_A,
-                                     DNS_CLASS_IN, NULL);
+  result = SocketDNSNegCache_lookup (
+      cache, "partial.example.com", DNS_TYPE_A, DNS_CLASS_IN, NULL);
   ASSERT_EQ (result, DNS_NEG_MISS);
 
   /* Original entry should still exist */
-  result = SocketDNSNegCache_lookup (cache, "remove.example.com", DNS_TYPE_A,
-                                     DNS_CLASS_IN, NULL);
+  result = SocketDNSNegCache_lookup (
+      cache, "remove.example.com", DNS_TYPE_A, DNS_CLASS_IN, NULL);
   ASSERT_EQ (result, DNS_NEG_HIT_NXDOMAIN);
 
   SocketDNSNegCache_free (&cache);
@@ -344,20 +343,20 @@ TEST (negcache_remove_nodata)
   SocketDNSNegCache_T cache = SocketDNSNegCache_new (arena);
 
   /* Insert multiple NODATA for same name */
-  SocketDNSNegCache_insert_nodata (cache, "multi.example.com", DNS_TYPE_A,
-                                   DNS_CLASS_IN, 300);
-  SocketDNSNegCache_insert_nodata (cache, "multi.example.com", DNS_TYPE_AAAA,
-                                   DNS_CLASS_IN, 300);
-  SocketDNSNegCache_insert_nodata (cache, "multi.example.com", DNS_TYPE_MX,
-                                   DNS_CLASS_IN, 300);
+  SocketDNSNegCache_insert_nodata (
+      cache, "multi.example.com", DNS_TYPE_A, DNS_CLASS_IN, 300);
+  SocketDNSNegCache_insert_nodata (
+      cache, "multi.example.com", DNS_TYPE_AAAA, DNS_CLASS_IN, 300);
+  SocketDNSNegCache_insert_nodata (
+      cache, "multi.example.com", DNS_TYPE_MX, DNS_CLASS_IN, 300);
 
   SocketDNS_NegCacheStats stats;
   SocketDNSNegCache_stats (cache, &stats);
   ASSERT_EQ (stats.current_size, 3);
 
   /* Remove only AAAA NODATA */
-  int removed = SocketDNSNegCache_remove_nodata (cache, "multi.example.com",
-                                                 DNS_TYPE_AAAA, DNS_CLASS_IN);
+  int removed = SocketDNSNegCache_remove_nodata (
+      cache, "multi.example.com", DNS_TYPE_AAAA, DNS_CLASS_IN);
   ASSERT_EQ (removed, 1);
 
   SocketDNSNegCache_stats (cache, &stats);
@@ -365,17 +364,17 @@ TEST (negcache_remove_nodata)
 
   /* AAAA should miss */
   SocketDNS_NegCacheResult result;
-  result = SocketDNSNegCache_lookup (cache, "multi.example.com", DNS_TYPE_AAAA,
-                                     DNS_CLASS_IN, NULL);
+  result = SocketDNSNegCache_lookup (
+      cache, "multi.example.com", DNS_TYPE_AAAA, DNS_CLASS_IN, NULL);
   ASSERT_EQ (result, DNS_NEG_MISS);
 
   /* A and MX should still hit */
-  result = SocketDNSNegCache_lookup (cache, "multi.example.com", DNS_TYPE_A,
-                                     DNS_CLASS_IN, NULL);
+  result = SocketDNSNegCache_lookup (
+      cache, "multi.example.com", DNS_TYPE_A, DNS_CLASS_IN, NULL);
   ASSERT_EQ (result, DNS_NEG_HIT_NODATA);
 
-  result = SocketDNSNegCache_lookup (cache, "multi.example.com", DNS_TYPE_MX,
-                                     DNS_CLASS_IN, NULL);
+  result = SocketDNSNegCache_lookup (
+      cache, "multi.example.com", DNS_TYPE_MX, DNS_CLASS_IN, NULL);
   ASSERT_EQ (result, DNS_NEG_HIT_NODATA);
 
   SocketDNSNegCache_free (&cache);
@@ -391,8 +390,8 @@ TEST (negcache_clear)
   /* Insert several entries */
   SocketDNSNegCache_insert_nxdomain (cache, "a.example.com", DNS_CLASS_IN, 300);
   SocketDNSNegCache_insert_nxdomain (cache, "b.example.com", DNS_CLASS_IN, 300);
-  SocketDNSNegCache_insert_nodata (cache, "c.example.com", DNS_TYPE_A,
-                                   DNS_CLASS_IN, 300);
+  SocketDNSNegCache_insert_nodata (
+      cache, "c.example.com", DNS_TYPE_A, DNS_CLASS_IN, 300);
 
   SocketDNS_NegCacheStats stats;
   SocketDNSNegCache_stats (cache, &stats);
@@ -406,8 +405,8 @@ TEST (negcache_clear)
 
   /* All lookups should miss */
   SocketDNS_NegCacheResult result;
-  result = SocketDNSNegCache_lookup (cache, "a.example.com", DNS_TYPE_A,
-                                     DNS_CLASS_IN, NULL);
+  result = SocketDNSNegCache_lookup (
+      cache, "a.example.com", DNS_TYPE_A, DNS_CLASS_IN, NULL);
   ASSERT_EQ (result, DNS_NEG_MISS);
 
   SocketDNSNegCache_free (&cache);
@@ -429,24 +428,24 @@ TEST (negcache_stats_accuracy)
   ASSERT_EQ (stats.insertions, 0);
 
   /* Insert and lookup */
-  SocketDNSNegCache_insert_nxdomain (cache, "stat.example.com", DNS_CLASS_IN,
-                                     300);
-  SocketDNSNegCache_insert_nodata (cache, "nodata.example.com", DNS_TYPE_A,
-                                   DNS_CLASS_IN, 300);
+  SocketDNSNegCache_insert_nxdomain (
+      cache, "stat.example.com", DNS_CLASS_IN, 300);
+  SocketDNSNegCache_insert_nodata (
+      cache, "nodata.example.com", DNS_TYPE_A, DNS_CLASS_IN, 300);
 
-  SocketDNSNegCache_lookup (cache, "stat.example.com", DNS_TYPE_A, DNS_CLASS_IN,
-                            NULL);
-  SocketDNSNegCache_lookup (cache, "stat.example.com", DNS_TYPE_AAAA,
-                            DNS_CLASS_IN, NULL);
-  SocketDNSNegCache_lookup (cache, "nodata.example.com", DNS_TYPE_A,
-                            DNS_CLASS_IN, NULL);
-  SocketDNSNegCache_lookup (cache, "miss.example.com", DNS_TYPE_A, DNS_CLASS_IN,
-                            NULL);
+  SocketDNSNegCache_lookup (
+      cache, "stat.example.com", DNS_TYPE_A, DNS_CLASS_IN, NULL);
+  SocketDNSNegCache_lookup (
+      cache, "stat.example.com", DNS_TYPE_AAAA, DNS_CLASS_IN, NULL);
+  SocketDNSNegCache_lookup (
+      cache, "nodata.example.com", DNS_TYPE_A, DNS_CLASS_IN, NULL);
+  SocketDNSNegCache_lookup (
+      cache, "miss.example.com", DNS_TYPE_A, DNS_CLASS_IN, NULL);
 
   SocketDNSNegCache_stats (cache, &stats);
 
   ASSERT_EQ (stats.insertions, 2);
-  ASSERT_EQ (stats.hits, 3);       /* 2 NXDOMAIN + 1 NODATA */
+  ASSERT_EQ (stats.hits, 3); /* 2 NXDOMAIN + 1 NODATA */
   ASSERT_EQ (stats.nxdomain_hits, 2);
   ASSERT_EQ (stats.nodata_hits, 1);
   ASSERT_EQ (stats.misses, 1);
@@ -489,19 +488,19 @@ TEST (negcache_different_classes)
   SocketDNSNegCache_T cache = SocketDNSNegCache_new (arena);
 
   /* Insert NXDOMAIN for class IN */
-  SocketDNSNegCache_insert_nxdomain (cache, "class.example.com", DNS_CLASS_IN,
-                                     300);
+  SocketDNSNegCache_insert_nxdomain (
+      cache, "class.example.com", DNS_CLASS_IN, 300);
 
   /* Lookup with same class should hit */
   SocketDNS_NegCacheResult result;
-  result = SocketDNSNegCache_lookup (cache, "class.example.com", DNS_TYPE_A,
-                                     DNS_CLASS_IN, NULL);
+  result = SocketDNSNegCache_lookup (
+      cache, "class.example.com", DNS_TYPE_A, DNS_CLASS_IN, NULL);
   ASSERT_EQ (result, DNS_NEG_HIT_NXDOMAIN);
 
   /* Lookup with different class should miss (per RFC 2308) */
   uint16_t DNS_CLASS_CH = 3; /* Chaos class */
-  result = SocketDNSNegCache_lookup (cache, "class.example.com", DNS_TYPE_A,
-                                     DNS_CLASS_CH, NULL);
+  result = SocketDNSNegCache_lookup (
+      cache, "class.example.com", DNS_TYPE_A, DNS_CLASS_CH, NULL);
   ASSERT_EQ (result, DNS_NEG_MISS);
 
   SocketDNSNegCache_free (&cache);
@@ -526,8 +525,8 @@ TEST (negcache_name_limits)
 
   /* Lookup should work */
   SocketDNS_NegCacheResult result;
-  result = SocketDNSNegCache_lookup (cache, long_name, DNS_TYPE_A, DNS_CLASS_IN,
-                                     NULL);
+  result = SocketDNSNegCache_lookup (
+      cache, long_name, DNS_TYPE_A, DNS_CLASS_IN, NULL);
   ASSERT_EQ (result, DNS_NEG_HIT_NXDOMAIN);
 
   /* Create a name exceeding max length (256 characters) */
@@ -536,8 +535,8 @@ TEST (negcache_name_limits)
   too_long_name[256] = '\0';
 
   /* Should fail */
-  ret = SocketDNSNegCache_insert_nxdomain (cache, too_long_name, DNS_CLASS_IN,
-                                           300);
+  ret = SocketDNSNegCache_insert_nxdomain (
+      cache, too_long_name, DNS_CLASS_IN, 300);
   ASSERT_EQ (ret, -1);
 
   SocketDNSNegCache_free (&cache);
@@ -554,8 +553,8 @@ TEST (negcache_disabled)
   SocketDNSNegCache_set_max_entries (cache, 0);
 
   /* Insertions should fail */
-  int ret = SocketDNSNegCache_insert_nxdomain (cache, "disabled.example.com",
-                                               DNS_CLASS_IN, 300);
+  int ret = SocketDNSNegCache_insert_nxdomain (
+      cache, "disabled.example.com", DNS_CLASS_IN, 300);
   ASSERT_EQ (ret, -1);
 
   SocketDNS_NegCacheStats stats;
@@ -574,8 +573,8 @@ TEST (negcache_zero_ttl)
   SocketDNSNegCache_T cache = SocketDNSNegCache_new (arena);
 
   /* Insert with zero TTL - should still be cached momentarily */
-  int ret = SocketDNSNegCache_insert_nxdomain (cache, "zero.example.com",
-                                               DNS_CLASS_IN, 0);
+  int ret = SocketDNSNegCache_insert_nxdomain (
+      cache, "zero.example.com", DNS_CLASS_IN, 0);
   ASSERT_EQ (ret, 0);
 
   /* Immediate lookup might hit or miss depending on timing */
@@ -593,13 +592,13 @@ TEST (negcache_null_entry)
   Arena_T arena = Arena_new ();
   SocketDNSNegCache_T cache = SocketDNSNegCache_new (arena);
 
-  SocketDNSNegCache_insert_nxdomain (cache, "null.example.com", DNS_CLASS_IN,
-                                     300);
+  SocketDNSNegCache_insert_nxdomain (
+      cache, "null.example.com", DNS_CLASS_IN, 300);
 
   /* Lookup with NULL entry should still work */
   SocketDNS_NegCacheResult result;
-  result = SocketDNSNegCache_lookup (cache, "null.example.com", DNS_TYPE_A,
-                                     DNS_CLASS_IN, NULL);
+  result = SocketDNSNegCache_lookup (
+      cache, "null.example.com", DNS_TYPE_A, DNS_CLASS_IN, NULL);
   ASSERT_EQ (result, DNS_NEG_HIT_NXDOMAIN);
 
   SocketDNSNegCache_free (&cache);
@@ -696,8 +695,8 @@ TEST (negcache_insert_nxdomain_with_soa)
   /* Lookup and verify SOA data is present */
   SocketDNS_NegCacheEntry entry;
   SocketDNS_NegCacheResult result;
-  result = SocketDNSNegCache_lookup (cache, "nonexistent.example.com",
-                                     DNS_TYPE_A, DNS_CLASS_IN, &entry);
+  result = SocketDNSNegCache_lookup (
+      cache, "nonexistent.example.com", DNS_TYPE_A, DNS_CLASS_IN, &entry);
   ASSERT_EQ (result, DNS_NEG_HIT_NXDOMAIN);
   ASSERT (entry.soa.has_soa);
   ASSERT (strcmp (entry.soa.name, "example.com") == 0);
@@ -730,8 +729,8 @@ TEST (negcache_insert_nodata_with_soa)
   /* Lookup and verify SOA data is present */
   SocketDNS_NegCacheEntry entry;
   SocketDNS_NegCacheResult result;
-  result = SocketDNSNegCache_lookup (cache, "example.com", DNS_TYPE_AAAA,
-                                     DNS_CLASS_IN, &entry);
+  result = SocketDNSNegCache_lookup (
+      cache, "example.com", DNS_TYPE_AAAA, DNS_CLASS_IN, &entry);
   ASSERT_EQ (result, DNS_NEG_HIT_NODATA);
   ASSERT (entry.soa.has_soa);
   ASSERT (strcmp (entry.soa.name, "example.com") == 0);
@@ -755,8 +754,8 @@ TEST (negcache_insert_without_soa)
   /* Lookup and verify no SOA data */
   SocketDNS_NegCacheEntry entry;
   SocketDNS_NegCacheResult result;
-  result = SocketDNSNegCache_lookup (cache, "nosoa.example.com", DNS_TYPE_A,
-                                     DNS_CLASS_IN, &entry);
+  result = SocketDNSNegCache_lookup (
+      cache, "nosoa.example.com", DNS_TYPE_A, DNS_CLASS_IN, &entry);
   ASSERT_EQ (result, DNS_NEG_HIT_NXDOMAIN);
   ASSERT (!entry.soa.has_soa);
 
@@ -784,23 +783,27 @@ TEST (negcache_build_response_nxdomain)
 
   /* Lookup entry */
   SocketDNS_NegCacheEntry entry;
-  SocketDNSNegCache_lookup (cache, "nxdom.example.com", DNS_TYPE_A,
-                            DNS_CLASS_IN, &entry);
+  SocketDNSNegCache_lookup (
+      cache, "nxdom.example.com", DNS_TYPE_A, DNS_CLASS_IN, &entry);
 
   /* Build response */
   unsigned char response[512];
   size_t resplen = 0;
-  int ret = SocketDNSNegCache_build_response (&entry, "nxdom.example.com",
-                                               DNS_TYPE_A, DNS_CLASS_IN, 0x1234,
-                                               response, sizeof (response),
-                                               &resplen);
+  int ret = SocketDNSNegCache_build_response (&entry,
+                                              "nxdom.example.com",
+                                              DNS_TYPE_A,
+                                              DNS_CLASS_IN,
+                                              0x1234,
+                                              response,
+                                              sizeof (response),
+                                              &resplen);
   ASSERT_EQ (ret, 0);
   ASSERT (resplen > 12); /* At least header */
 
   /* Verify header */
-  ASSERT_EQ (response[0], 0x12); /* ID high */
-  ASSERT_EQ (response[1], 0x34); /* ID low */
-  ASSERT (response[2] & 0x80);   /* QR = 1 (response) */
+  ASSERT_EQ (response[0], 0x12);     /* ID high */
+  ASSERT_EQ (response[1], 0x34);     /* ID low */
+  ASSERT (response[2] & 0x80);       /* QR = 1 (response) */
   ASSERT_EQ (response[3] & 0x0F, 3); /* RCODE = 3 (NXDOMAIN) */
 
   /* Verify QDCOUNT = 1 */
@@ -834,28 +837,32 @@ TEST (negcache_build_response_nodata)
   soa.has_soa = 1;
 
   /* Insert NODATA with SOA */
-  SocketDNSNegCache_insert_nodata_with_soa (cache, "nodata.example.com",
-                                             DNS_TYPE_AAAA, DNS_CLASS_IN, 300,
-                                             &soa);
+  SocketDNSNegCache_insert_nodata_with_soa (
+      cache, "nodata.example.com", DNS_TYPE_AAAA, DNS_CLASS_IN, 300, &soa);
 
   /* Lookup entry */
   SocketDNS_NegCacheEntry entry;
-  SocketDNSNegCache_lookup (cache, "nodata.example.com", DNS_TYPE_AAAA,
-                            DNS_CLASS_IN, &entry);
+  SocketDNSNegCache_lookup (
+      cache, "nodata.example.com", DNS_TYPE_AAAA, DNS_CLASS_IN, &entry);
 
   /* Build response */
   unsigned char response[512];
   size_t resplen = 0;
-  int ret = SocketDNSNegCache_build_response (
-      &entry, "nodata.example.com", DNS_TYPE_AAAA, DNS_CLASS_IN, 0xABCD,
-      response, sizeof (response), &resplen);
+  int ret = SocketDNSNegCache_build_response (&entry,
+                                              "nodata.example.com",
+                                              DNS_TYPE_AAAA,
+                                              DNS_CLASS_IN,
+                                              0xABCD,
+                                              response,
+                                              sizeof (response),
+                                              &resplen);
   ASSERT_EQ (ret, 0);
   ASSERT (resplen > 12); /* At least header */
 
   /* Verify header */
-  ASSERT_EQ (response[0], 0xAB); /* ID high */
-  ASSERT_EQ (response[1], 0xCD); /* ID low */
-  ASSERT (response[2] & 0x80);   /* QR = 1 (response) */
+  ASSERT_EQ (response[0], 0xAB);     /* ID high */
+  ASSERT_EQ (response[1], 0xCD);     /* ID low */
+  ASSERT (response[2] & 0x80);       /* QR = 1 (response) */
   ASSERT_EQ (response[3] & 0x0F, 0); /* RCODE = 0 (NOERROR for NODATA) */
 
   /* Verify QDCOUNT = 1 */
@@ -881,21 +888,25 @@ TEST (negcache_build_response_no_soa)
   SocketDNSNegCache_T cache = SocketDNSNegCache_new (arena);
 
   /* Insert NXDOMAIN without SOA */
-  SocketDNSNegCache_insert_nxdomain_with_soa (cache, "nosoa.example.com",
-                                               DNS_CLASS_IN, 300, NULL);
+  SocketDNSNegCache_insert_nxdomain_with_soa (
+      cache, "nosoa.example.com", DNS_CLASS_IN, 300, NULL);
 
   /* Lookup entry */
   SocketDNS_NegCacheEntry entry;
-  SocketDNSNegCache_lookup (cache, "nosoa.example.com", DNS_TYPE_A,
-                            DNS_CLASS_IN, &entry);
+  SocketDNSNegCache_lookup (
+      cache, "nosoa.example.com", DNS_TYPE_A, DNS_CLASS_IN, &entry);
 
   /* Build response - should still work, just no SOA in authority */
   unsigned char response[512];
   size_t resplen = 0;
-  int ret = SocketDNSNegCache_build_response (&entry, "nosoa.example.com",
-                                               DNS_TYPE_A, DNS_CLASS_IN, 0x5678,
-                                               response, sizeof (response),
-                                               &resplen);
+  int ret = SocketDNSNegCache_build_response (&entry,
+                                              "nosoa.example.com",
+                                              DNS_TYPE_A,
+                                              DNS_CLASS_IN,
+                                              0x5678,
+                                              response,
+                                              sizeof (response),
+                                              &resplen);
   ASSERT_EQ (ret, 0);
 
   /* Verify NSCOUNT = 0 (no SOA) */
@@ -921,16 +932,16 @@ TEST (negcache_ttl_decrement)
   soa.has_soa = 1;
 
   /* Insert with TTL of 300 */
-  SocketDNSNegCache_insert_nxdomain_with_soa (cache, "ttl.example.com",
-                                               DNS_CLASS_IN, 300, &soa);
+  SocketDNSNegCache_insert_nxdomain_with_soa (
+      cache, "ttl.example.com", DNS_CLASS_IN, 300, &soa);
 
   /* Wait a bit to let TTL decrement */
   usleep (100000); /* 100ms */
 
   /* Lookup - TTL should be slightly less than 300 */
   SocketDNS_NegCacheEntry entry;
-  SocketDNSNegCache_lookup (cache, "ttl.example.com", DNS_TYPE_A, DNS_CLASS_IN,
-                            &entry);
+  SocketDNSNegCache_lookup (
+      cache, "ttl.example.com", DNS_TYPE_A, DNS_CLASS_IN, &entry);
 
   /* Remaining TTL should be <= 300 */
   ASSERT (entry.ttl_remaining <= 300);
@@ -947,13 +958,13 @@ TEST (negcache_update_with_soa)
   SocketDNSNegCache_T cache = SocketDNSNegCache_new (arena);
 
   /* Insert without SOA first */
-  SocketDNSNegCache_insert_nxdomain_with_soa (cache, "update.example.com",
-                                               DNS_CLASS_IN, 100, NULL);
+  SocketDNSNegCache_insert_nxdomain_with_soa (
+      cache, "update.example.com", DNS_CLASS_IN, 100, NULL);
 
   /* Lookup - should have no SOA */
   SocketDNS_NegCacheEntry entry;
-  SocketDNSNegCache_lookup (cache, "update.example.com", DNS_TYPE_A,
-                            DNS_CLASS_IN, &entry);
+  SocketDNSNegCache_lookup (
+      cache, "update.example.com", DNS_TYPE_A, DNS_CLASS_IN, &entry);
   ASSERT (!entry.soa.has_soa);
 
   /* Update with SOA */
@@ -964,12 +975,12 @@ TEST (negcache_update_with_soa)
   soa.original_ttl = 3600;
   soa.has_soa = 1;
 
-  SocketDNSNegCache_insert_nxdomain_with_soa (cache, "update.example.com",
-                                               DNS_CLASS_IN, 300, &soa);
+  SocketDNSNegCache_insert_nxdomain_with_soa (
+      cache, "update.example.com", DNS_CLASS_IN, 300, &soa);
 
   /* Lookup - should now have SOA */
-  SocketDNSNegCache_lookup (cache, "update.example.com", DNS_TYPE_A,
-                            DNS_CLASS_IN, &entry);
+  SocketDNSNegCache_lookup (
+      cache, "update.example.com", DNS_TYPE_A, DNS_CLASS_IN, &entry);
   ASSERT (entry.soa.has_soa);
   ASSERT_EQ (entry.soa.original_ttl, 3600);
 
@@ -1004,13 +1015,17 @@ TEST (negcache_hash_seed_randomized)
   ASSERT_EQ (stats2.current_size, 0);
 
   /* Insert the same data into both caches */
-  SocketDNSNegCache_insert_nxdomain (cache1, "test.example.com", DNS_CLASS_IN, 300);
-  SocketDNSNegCache_insert_nxdomain (cache2, "test.example.com", DNS_CLASS_IN, 300);
+  SocketDNSNegCache_insert_nxdomain (
+      cache1, "test.example.com", DNS_CLASS_IN, 300);
+  SocketDNSNegCache_insert_nxdomain (
+      cache2, "test.example.com", DNS_CLASS_IN, 300);
 
   /* Both should successfully store the entry (verifies hash function works) */
   SocketDNS_NegCacheResult result1, result2;
-  result1 = SocketDNSNegCache_lookup (cache1, "test.example.com", DNS_TYPE_A, DNS_CLASS_IN, NULL);
-  result2 = SocketDNSNegCache_lookup (cache2, "test.example.com", DNS_TYPE_A, DNS_CLASS_IN, NULL);
+  result1 = SocketDNSNegCache_lookup (
+      cache1, "test.example.com", DNS_TYPE_A, DNS_CLASS_IN, NULL);
+  result2 = SocketDNSNegCache_lookup (
+      cache2, "test.example.com", DNS_TYPE_A, DNS_CLASS_IN, NULL);
 
   ASSERT_EQ (result1, DNS_NEG_HIT_NXDOMAIN);
   ASSERT_EQ (result2, DNS_NEG_HIT_NXDOMAIN);

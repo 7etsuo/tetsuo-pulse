@@ -6,7 +6,8 @@
 
 /**
  * @file SocketQUICConnection.h
- * @brief QUIC Connection Table and Packet Demultiplexing (RFC 9000 Section 5.2-5.3).
+ * @brief QUIC Connection Table and Packet Demultiplexing (RFC 9000
+ * Section 5.2-5.3).
  */
 
 #ifndef SOCKETQUICCONNECTION_INCLUDED
@@ -35,7 +36,8 @@ typedef struct SocketQUICHandshake *SocketQUICHandshake_T;
 extern const Except_T SocketQUICConnTable_Failed;
 extern const Except_T SocketQUICConnection_Failed;
 
-typedef enum {
+typedef enum
+{
   QUIC_CONN_OK = 0,
   QUIC_CONN_ERROR_NULL,
   QUIC_CONN_ERROR_FULL,
@@ -47,7 +49,8 @@ typedef enum {
   QUIC_CONN_ERROR_MEMORY
 } SocketQUICConnection_Result;
 
-typedef enum {
+typedef enum
+{
   QUIC_CONN_STATE_IDLE = 0,
   QUIC_CONN_STATE_HANDSHAKE,
   QUIC_CONN_STATE_ESTABLISHED,
@@ -56,12 +59,14 @@ typedef enum {
   QUIC_CONN_STATE_CLOSED
 } SocketQUICConnection_State;
 
-typedef enum {
+typedef enum
+{
   QUIC_CONN_ROLE_CLIENT = 0,
   QUIC_CONN_ROLE_SERVER
 } SocketQUICConnection_Role;
 
-struct SocketQUICConnection {
+struct SocketQUICConnection
+{
   SocketQUICConnectionID_T local_cids[QUIC_CONNECTION_MAX_CIDS];
   size_t local_cid_count;
   SocketQUICConnectionID_T peer_cids[QUIC_CONNECTION_MAX_CIDS];
@@ -88,40 +93,99 @@ struct SocketQUICConnection {
   int has_stateless_reset_token;
 };
 
-extern SocketQUICConnTable_T SocketQUICConnTable_new(Arena_T arena, size_t bucket_count);
-extern void SocketQUICConnTable_free(SocketQUICConnTable_T *table);
-extern SocketQUICConnection_T SocketQUICConnTable_lookup(SocketQUICConnTable_T table, const uint8_t *dcid, size_t dcid_len);
-extern SocketQUICConnection_T SocketQUICConnTable_lookup_by_addr(SocketQUICConnTable_T table, const uint8_t *local_addr, const uint8_t *peer_addr, uint16_t local_port, uint16_t peer_port, int is_ipv6);
-extern SocketQUICConnection_Result SocketQUICConnTable_add(SocketQUICConnTable_T table, SocketQUICConnection_T conn);
-extern SocketQUICConnection_Result SocketQUICConnTable_remove(SocketQUICConnTable_T table, SocketQUICConnection_T conn);
-extern size_t SocketQUICConnTable_count(SocketQUICConnTable_T table);
-extern SocketQUICConnection_Result SocketQUICConnTable_add_cid(SocketQUICConnTable_T table, SocketQUICConnection_T conn, const SocketQUICConnectionID_T *new_cid);
-extern SocketQUICConnection_Result SocketQUICConnTable_retire_cid(SocketQUICConnTable_T table, SocketQUICConnection_T conn, uint64_t sequence);
-extern void SocketQUICConnTable_get_stats(SocketQUICConnTable_T table, uint64_t *chain_limit_hits_cid, uint64_t *chain_limit_hits_addr, uint64_t *max_chain_len_seen, size_t *conn_count);
+extern SocketQUICConnTable_T
+SocketQUICConnTable_new (Arena_T arena, size_t bucket_count);
+extern void SocketQUICConnTable_free (SocketQUICConnTable_T *table);
+extern SocketQUICConnection_T
+SocketQUICConnTable_lookup (SocketQUICConnTable_T table,
+                            const uint8_t *dcid,
+                            size_t dcid_len);
+extern SocketQUICConnection_T
+SocketQUICConnTable_lookup_by_addr (SocketQUICConnTable_T table,
+                                    const uint8_t *local_addr,
+                                    const uint8_t *peer_addr,
+                                    uint16_t local_port,
+                                    uint16_t peer_port,
+                                    int is_ipv6);
+extern SocketQUICConnection_Result
+SocketQUICConnTable_add (SocketQUICConnTable_T table,
+                         SocketQUICConnection_T conn);
+extern SocketQUICConnection_Result
+SocketQUICConnTable_remove (SocketQUICConnTable_T table,
+                            SocketQUICConnection_T conn);
+extern size_t SocketQUICConnTable_count (SocketQUICConnTable_T table);
+extern SocketQUICConnection_Result
+SocketQUICConnTable_add_cid (SocketQUICConnTable_T table,
+                             SocketQUICConnection_T conn,
+                             const SocketQUICConnectionID_T *new_cid);
+extern SocketQUICConnection_Result
+SocketQUICConnTable_retire_cid (SocketQUICConnTable_T table,
+                                SocketQUICConnection_T conn,
+                                uint64_t sequence);
+extern void SocketQUICConnTable_get_stats (SocketQUICConnTable_T table,
+                                           uint64_t *chain_limit_hits_cid,
+                                           uint64_t *chain_limit_hits_addr,
+                                           uint64_t *max_chain_len_seen,
+                                           size_t *conn_count);
 
-extern SocketQUICConnection_T SocketQUICConnection_new(Arena_T arena, SocketQUICConnection_Role role);
-extern void SocketQUICConnection_init(SocketQUICConnection_T conn, SocketQUICConnection_Role role);
-extern void SocketQUICConnection_free(SocketQUICConnection_T *conn);
-extern SocketQUICConnection_Result SocketQUICConnection_update_dcid(SocketQUICConnection_T conn, const SocketQUICConnectionID_T *new_dcid);
-extern SocketQUICConnection_Result SocketQUICConnection_add_local_cid(SocketQUICConnection_T conn, const SocketQUICConnectionID_T *cid);
-extern SocketQUICConnection_Result SocketQUICConnection_add_peer_cid(SocketQUICConnection_T conn, const SocketQUICConnectionID_T *cid);
-extern const SocketQUICConnectionID_T *SocketQUICConnection_get_local_cid(SocketQUICConnection_T conn);
-extern const SocketQUICConnectionID_T *SocketQUICConnection_get_peer_cid(SocketQUICConnection_T conn);
-extern SocketQUICConnection_Result SocketQUICConnection_set_addresses(SocketQUICConnection_T conn, const uint8_t *local_addr, const uint8_t *peer_addr, uint16_t local_port, uint16_t peer_port, int is_ipv6);
-extern int SocketQUICConnection_uses_zero_dcid(SocketQUICConnection_T conn);
+extern SocketQUICConnection_T
+SocketQUICConnection_new (Arena_T arena, SocketQUICConnection_Role role);
+extern void SocketQUICConnection_init (SocketQUICConnection_T conn,
+                                       SocketQUICConnection_Role role);
+extern void SocketQUICConnection_free (SocketQUICConnection_T *conn);
+extern SocketQUICConnection_Result
+SocketQUICConnection_update_dcid (SocketQUICConnection_T conn,
+                                  const SocketQUICConnectionID_T *new_dcid);
+extern SocketQUICConnection_Result
+SocketQUICConnection_add_local_cid (SocketQUICConnection_T conn,
+                                    const SocketQUICConnectionID_T *cid);
+extern SocketQUICConnection_Result
+SocketQUICConnection_add_peer_cid (SocketQUICConnection_T conn,
+                                   const SocketQUICConnectionID_T *cid);
+extern const SocketQUICConnectionID_T *
+SocketQUICConnection_get_local_cid (SocketQUICConnection_T conn);
+extern const SocketQUICConnectionID_T *
+SocketQUICConnection_get_peer_cid (SocketQUICConnection_T conn);
+extern SocketQUICConnection_Result
+SocketQUICConnection_set_addresses (SocketQUICConnection_T conn,
+                                    const uint8_t *local_addr,
+                                    const uint8_t *peer_addr,
+                                    uint16_t local_port,
+                                    uint16_t peer_port,
+                                    int is_ipv6);
+extern int SocketQUICConnection_uses_zero_dcid (SocketQUICConnection_T conn);
 
-extern const char *SocketQUICConnection_result_string(SocketQUICConnection_Result result);
-extern const char *SocketQUICConnection_state_string(SocketQUICConnection_State state);
-extern const char *SocketQUICConnection_role_string(SocketQUICConnection_Role role);
+extern const char *
+SocketQUICConnection_result_string (SocketQUICConnection_Result result);
+extern const char *
+SocketQUICConnection_state_string (SocketQUICConnection_State state);
+extern const char *
+SocketQUICConnection_role_string (SocketQUICConnection_Role role);
 
-extern void SocketQUICConnection_set_idle_timeout(SocketQUICConnection_T conn, uint64_t local_timeout_ms, uint64_t peer_timeout_ms);
-extern void SocketQUICConnection_reset_idle_timer(SocketQUICConnection_T conn, uint64_t now_ms);
-extern int SocketQUICConnection_check_idle_timeout(SocketQUICConnection_T conn, uint64_t now_ms);
-extern void SocketQUICConnection_initiate_close(SocketQUICConnection_T conn, uint64_t now_ms, uint64_t pto_ms);
-extern void SocketQUICConnection_enter_draining(SocketQUICConnection_T conn, uint64_t now_ms, uint64_t pto_ms);
-extern int SocketQUICConnection_is_closing_or_draining(SocketQUICConnection_T conn);
-extern int SocketQUICConnection_check_termination_deadline(SocketQUICConnection_T conn, uint64_t now_ms);
-extern void SocketQUICConnection_set_stateless_reset_token(SocketQUICConnection_T conn, const uint8_t token[QUIC_STATELESS_RESET_TOKEN_LEN]);
-extern int SocketQUICConnection_verify_stateless_reset(const uint8_t *packet, size_t packet_len, const uint8_t *expected_token);
+extern void SocketQUICConnection_set_idle_timeout (SocketQUICConnection_T conn,
+                                                   uint64_t local_timeout_ms,
+                                                   uint64_t peer_timeout_ms);
+extern void SocketQUICConnection_reset_idle_timer (SocketQUICConnection_T conn,
+                                                   uint64_t now_ms);
+extern int SocketQUICConnection_check_idle_timeout (SocketQUICConnection_T conn,
+                                                    uint64_t now_ms);
+extern void SocketQUICConnection_initiate_close (SocketQUICConnection_T conn,
+                                                 uint64_t now_ms,
+                                                 uint64_t pto_ms);
+extern void SocketQUICConnection_enter_draining (SocketQUICConnection_T conn,
+                                                 uint64_t now_ms,
+                                                 uint64_t pto_ms);
+extern int
+SocketQUICConnection_is_closing_or_draining (SocketQUICConnection_T conn);
+extern int
+SocketQUICConnection_check_termination_deadline (SocketQUICConnection_T conn,
+                                                 uint64_t now_ms);
+extern void SocketQUICConnection_set_stateless_reset_token (
+    SocketQUICConnection_T conn,
+    const uint8_t token[QUIC_STATELESS_RESET_TOKEN_LEN]);
+extern int
+SocketQUICConnection_verify_stateless_reset (const uint8_t *packet,
+                                             size_t packet_len,
+                                             const uint8_t *expected_token);
 
 #endif /* SOCKETQUICCONNECTION_INCLUDED */

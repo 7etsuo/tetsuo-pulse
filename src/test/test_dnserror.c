@@ -58,12 +58,10 @@ TEST (ede_parse_basic)
 TEST (ede_parse_with_text)
 {
   /* INFO-CODE: Network Error (23) + EXTRA-TEXT */
-  unsigned char data[] = {
-    0x00, 0x17,                               /* INFO-CODE = 23 */
-    'C', 'o', 'n', 'n', 'e', 'c', 't', 'i',   /* EXTRA-TEXT */
-    'o', 'n', ' ', 'r', 'e', 'f', 'u', 's',
-    'e', 'd'
-  };
+  unsigned char data[]
+      = { 0x00, 0x17,                               /* INFO-CODE = 23 */
+          'C',  'o',  'n', 'n', 'e', 'c', 't', 'i', /* EXTRA-TEXT */
+          'o',  'n',  ' ', 'r', 'e', 'f', 'u', 's', 'e', 'd' };
   SocketDNS_ExtendedError ede;
 
   int ret = SocketDNS_ede_parse (data, sizeof (data), &ede);
@@ -78,12 +76,10 @@ TEST (ede_parse_with_text)
 TEST (ede_parse_utf8_text)
 {
   /* INFO-CODE: Blocked (15) + UTF-8 EXTRA-TEXT with Euro sign */
-  unsigned char data[] = {
-    0x00, 0x0F,                     /* INFO-CODE = 15 */
-    'C', 'o', 's', 't', ':', ' ',
-    0xE2, 0x82, 0xAC,               /* Euro sign (U+20AC) */
-    '1', '0'
-  };
+  unsigned char data[] = { 0x00, 0x0F, /* INFO-CODE = 15 */
+                           'C',  'o',  's',  't',  ':',
+                           ' ',  0xE2, 0x82, 0xAC, /* Euro sign (U+20AC) */
+                           '1',  '0' };
   SocketDNS_ExtendedError ede;
 
   int ret = SocketDNS_ede_parse (data, sizeof (data), &ede);
@@ -167,9 +163,9 @@ TEST (ede_encode_with_text)
 
   unsigned char buf[64];
   int ret = SocketDNS_ede_encode (&ede, buf, sizeof (buf));
-  ASSERT_EQ (ret, 9);  /* 2 + 7 */
+  ASSERT_EQ (ret, 9); /* 2 + 7 */
   ASSERT_EQ (buf[0], 0x00);
-  ASSERT_EQ (buf[1], 0x17);  /* 23 = Network Error */
+  ASSERT_EQ (buf[1], 0x17); /* 23 = Network Error */
   ASSERT (memcmp (buf + 2, "timeout", 7) == 0);
 }
 
@@ -204,7 +200,7 @@ TEST (ede_encode_buffer_too_small)
   strcpy (ede.extra_text, "test");
   ede.extra_text_len = 4;
 
-  unsigned char buf[4];  /* Too small for 2 + 4 = 6 bytes */
+  unsigned char buf[4]; /* Too small for 2 + 4 = 6 bytes */
   int ret = SocketDNS_ede_encode (&ede, buf, sizeof (buf));
   ASSERT_EQ (ret, -1);
 }
@@ -213,9 +209,15 @@ TEST (ede_encode_buffer_too_small)
 TEST (ede_code_name)
 {
   ASSERT (strcmp (SocketDNS_ede_code_name (DNS_EDE_OTHER), "Other Error") == 0);
-  ASSERT (strcmp (SocketDNS_ede_code_name (DNS_EDE_DNSSEC_BOGUS), "DNSSEC Bogus") == 0);
-  ASSERT (strcmp (SocketDNS_ede_code_name (DNS_EDE_NETWORK_ERROR), "Network Error") == 0);
-  ASSERT (strcmp (SocketDNS_ede_code_name (DNS_EDE_INVALID_DATA), "Invalid Data") == 0);
+  ASSERT (
+      strcmp (SocketDNS_ede_code_name (DNS_EDE_DNSSEC_BOGUS), "DNSSEC Bogus")
+      == 0);
+  ASSERT (
+      strcmp (SocketDNS_ede_code_name (DNS_EDE_NETWORK_ERROR), "Network Error")
+      == 0);
+  ASSERT (
+      strcmp (SocketDNS_ede_code_name (DNS_EDE_INVALID_DATA), "Invalid Data")
+      == 0);
 
   /* Unknown code */
   ASSERT (strcmp (SocketDNS_ede_code_name (100), "Unknown Error") == 0);
@@ -239,37 +241,60 @@ TEST (ede_code_description)
 TEST (ede_category)
 {
   /* DNSSEC category */
-  ASSERT_EQ (SocketDNS_ede_category (DNS_EDE_DNSSEC_BOGUS), DNS_EDE_CATEGORY_DNSSEC);
-  ASSERT_EQ (SocketDNS_ede_category (DNS_EDE_SIGNATURE_EXPIRED), DNS_EDE_CATEGORY_DNSSEC);
-  ASSERT_EQ (SocketDNS_ede_category (DNS_EDE_DNSKEY_MISSING), DNS_EDE_CATEGORY_DNSSEC);
+  ASSERT_EQ (SocketDNS_ede_category (DNS_EDE_DNSSEC_BOGUS),
+             DNS_EDE_CATEGORY_DNSSEC);
+  ASSERT_EQ (SocketDNS_ede_category (DNS_EDE_SIGNATURE_EXPIRED),
+             DNS_EDE_CATEGORY_DNSSEC);
+  ASSERT_EQ (SocketDNS_ede_category (DNS_EDE_DNSKEY_MISSING),
+             DNS_EDE_CATEGORY_DNSSEC);
 
   /* Stale category */
-  ASSERT_EQ (SocketDNS_ede_category (DNS_EDE_STALE_ANSWER), DNS_EDE_CATEGORY_STALE);
-  ASSERT_EQ (SocketDNS_ede_category (DNS_EDE_STALE_NXDOMAIN_ANSWER), DNS_EDE_CATEGORY_STALE);
+  ASSERT_EQ (SocketDNS_ede_category (DNS_EDE_STALE_ANSWER),
+             DNS_EDE_CATEGORY_STALE);
+  ASSERT_EQ (SocketDNS_ede_category (DNS_EDE_STALE_NXDOMAIN_ANSWER),
+             DNS_EDE_CATEGORY_STALE);
 
   /* Policy category */
   ASSERT_EQ (SocketDNS_ede_category (DNS_EDE_BLOCKED), DNS_EDE_CATEGORY_POLICY);
-  ASSERT_EQ (SocketDNS_ede_category (DNS_EDE_CENSORED), DNS_EDE_CATEGORY_POLICY);
-  ASSERT_EQ (SocketDNS_ede_category (DNS_EDE_FILTERED), DNS_EDE_CATEGORY_POLICY);
+  ASSERT_EQ (SocketDNS_ede_category (DNS_EDE_CENSORED),
+             DNS_EDE_CATEGORY_POLICY);
+  ASSERT_EQ (SocketDNS_ede_category (DNS_EDE_FILTERED),
+             DNS_EDE_CATEGORY_POLICY);
 
   /* Server category */
-  ASSERT_EQ (SocketDNS_ede_category (DNS_EDE_NOT_READY), DNS_EDE_CATEGORY_SERVER);
-  ASSERT_EQ (SocketDNS_ede_category (DNS_EDE_NOT_SUPPORTED), DNS_EDE_CATEGORY_SERVER);
+  ASSERT_EQ (SocketDNS_ede_category (DNS_EDE_NOT_READY),
+             DNS_EDE_CATEGORY_SERVER);
+  ASSERT_EQ (SocketDNS_ede_category (DNS_EDE_NOT_SUPPORTED),
+             DNS_EDE_CATEGORY_SERVER);
 
   /* Network category */
-  ASSERT_EQ (SocketDNS_ede_category (DNS_EDE_NETWORK_ERROR), DNS_EDE_CATEGORY_NETWORK);
-  ASSERT_EQ (SocketDNS_ede_category (DNS_EDE_NO_REACHABLE_AUTHORITY), DNS_EDE_CATEGORY_NETWORK);
+  ASSERT_EQ (SocketDNS_ede_category (DNS_EDE_NETWORK_ERROR),
+             DNS_EDE_CATEGORY_NETWORK);
+  ASSERT_EQ (SocketDNS_ede_category (DNS_EDE_NO_REACHABLE_AUTHORITY),
+             DNS_EDE_CATEGORY_NETWORK);
 }
 
 /* Test EDE category names */
 TEST (ede_category_name)
 {
-  ASSERT (strcmp (SocketDNS_ede_category_name (DNS_EDE_CATEGORY_GENERAL), "General") == 0);
-  ASSERT (strcmp (SocketDNS_ede_category_name (DNS_EDE_CATEGORY_DNSSEC), "DNSSEC") == 0);
-  ASSERT (strcmp (SocketDNS_ede_category_name (DNS_EDE_CATEGORY_STALE), "Stale Cache") == 0);
-  ASSERT (strcmp (SocketDNS_ede_category_name (DNS_EDE_CATEGORY_POLICY), "Policy/Filter") == 0);
-  ASSERT (strcmp (SocketDNS_ede_category_name (DNS_EDE_CATEGORY_SERVER), "Server State") == 0);
-  ASSERT (strcmp (SocketDNS_ede_category_name (DNS_EDE_CATEGORY_NETWORK), "Network") == 0);
+  ASSERT (
+      strcmp (SocketDNS_ede_category_name (DNS_EDE_CATEGORY_GENERAL), "General")
+      == 0);
+  ASSERT (
+      strcmp (SocketDNS_ede_category_name (DNS_EDE_CATEGORY_DNSSEC), "DNSSEC")
+      == 0);
+  ASSERT (strcmp (SocketDNS_ede_category_name (DNS_EDE_CATEGORY_STALE),
+                  "Stale Cache")
+          == 0);
+  ASSERT (strcmp (SocketDNS_ede_category_name (DNS_EDE_CATEGORY_POLICY),
+                  "Policy/Filter")
+          == 0);
+  ASSERT (strcmp (SocketDNS_ede_category_name (DNS_EDE_CATEGORY_SERVER),
+                  "Server State")
+          == 0);
+  ASSERT (
+      strcmp (SocketDNS_ede_category_name (DNS_EDE_CATEGORY_NETWORK), "Network")
+      == 0);
 }
 
 /* Test is_dnssec_error helper */
@@ -280,7 +305,9 @@ TEST (ede_is_dnssec_error)
   ASSERT_EQ (SocketDNS_ede_is_dnssec_error (DNS_EDE_DNSKEY_MISSING), true);
   ASSERT_EQ (SocketDNS_ede_is_dnssec_error (DNS_EDE_RRSIGS_MISSING), true);
   ASSERT_EQ (SocketDNS_ede_is_dnssec_error (DNS_EDE_NSEC_MISSING), true);
-  ASSERT_EQ (SocketDNS_ede_is_dnssec_error (DNS_EDE_UNSUPPORTED_DNSKEY_ALGORITHM), true);
+  ASSERT_EQ (
+      SocketDNS_ede_is_dnssec_error (DNS_EDE_UNSUPPORTED_DNSKEY_ALGORITHM),
+      true);
 
   /* Non-DNSSEC codes */
   ASSERT_EQ (SocketDNS_ede_is_dnssec_error (DNS_EDE_OTHER), false);
@@ -319,7 +346,8 @@ TEST (ede_is_retriable)
   ASSERT_EQ (SocketDNS_ede_is_retriable (DNS_EDE_NETWORK_ERROR), true);
   ASSERT_EQ (SocketDNS_ede_is_retriable (DNS_EDE_NO_REACHABLE_AUTHORITY), true);
   ASSERT_EQ (SocketDNS_ede_is_retriable (DNS_EDE_CACHED_ERROR), true);
-  ASSERT_EQ (SocketDNS_ede_is_retriable (DNS_EDE_SIGNATURE_NOT_YET_VALID), true);
+  ASSERT_EQ (SocketDNS_ede_is_retriable (DNS_EDE_SIGNATURE_NOT_YET_VALID),
+             true);
   ASSERT_EQ (SocketDNS_ede_is_retriable (DNS_EDE_STALE_ANSWER), true);
 
   /* Non-retriable errors */
@@ -384,14 +412,20 @@ TEST (ede_parse_all_multiple)
   size_t pos = 0;
 
   /* First EDE: DNSSEC Bogus (6) */
-  rdata[pos++] = 0x00; rdata[pos++] = 0x0F;  /* Option code 15 */
-  rdata[pos++] = 0x00; rdata[pos++] = 0x02;  /* Length 2 */
-  rdata[pos++] = 0x00; rdata[pos++] = 0x06;  /* INFO-CODE 6 */
+  rdata[pos++] = 0x00;
+  rdata[pos++] = 0x0F; /* Option code 15 */
+  rdata[pos++] = 0x00;
+  rdata[pos++] = 0x02; /* Length 2 */
+  rdata[pos++] = 0x00;
+  rdata[pos++] = 0x06; /* INFO-CODE 6 */
 
   /* Second EDE: Network Error (23) with text */
-  rdata[pos++] = 0x00; rdata[pos++] = 0x0F;  /* Option code 15 */
-  rdata[pos++] = 0x00; rdata[pos++] = 0x09;  /* Length 9 */
-  rdata[pos++] = 0x00; rdata[pos++] = 0x17;  /* INFO-CODE 23 */
+  rdata[pos++] = 0x00;
+  rdata[pos++] = 0x0F; /* Option code 15 */
+  rdata[pos++] = 0x00;
+  rdata[pos++] = 0x09; /* Length 9 */
+  rdata[pos++] = 0x00;
+  rdata[pos++] = 0x17; /* INFO-CODE 23 */
   memcpy (rdata + pos, "timeout", 7);
   pos += 7;
 
@@ -407,11 +441,9 @@ TEST (ede_parse_all_multiple)
 TEST (ede_parse_all_empty)
 {
   /* RDATA with only non-EDE options */
-  unsigned char rdata[] = {
-    0x00, 0x03,  /* Option code 3 (NSID) */
-    0x00, 0x04,  /* Length 4 */
-    't', 'e', 's', 't'
-  };
+  unsigned char rdata[] = { 0x00, 0x03, /* Option code 3 (NSID) */
+                            0x00, 0x04, /* Length 4 */
+                            't',  'e',  's', 't' };
 
   SocketDNS_ExtendedError errors[4];
   int count = SocketDNS_ede_parse_all (rdata, sizeof (rdata), errors, 4);
@@ -434,7 +466,7 @@ TEST (ede_to_edns_option)
   int ret = SocketDNS_ede_to_edns_option (&ede, &opt, data, sizeof (data));
   ASSERT_EQ (ret, 0);
   ASSERT_EQ (opt.code, DNS_EDE_OPTION_CODE);
-  ASSERT_EQ (opt.length, 8);  /* 2 + 6 */
+  ASSERT_EQ (opt.length, 8); /* 2 + 6 */
   ASSERT_NOT_NULL (opt.data);
 }
 

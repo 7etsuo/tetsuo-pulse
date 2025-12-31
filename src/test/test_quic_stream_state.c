@@ -5,7 +5,8 @@
  */
 
 /**
- * test_quic_stream_state.c - QUIC Stream State Machine tests (RFC 9000 Section 3)
+ * test_quic_stream_state.c - QUIC Stream State Machine tests (RFC 9000 Section
+ * 3)
  *
  * Tests the dual state machines for sending and receiving parts of streams.
  * Each stream has independent send and receive state machines.
@@ -444,8 +445,7 @@ TEST (quic_stream_get_send_state)
   SocketQUICStream_init (&stream, 0);
   stream.send_state = QUIC_STREAM_STATE_SEND;
 
-  ASSERT_EQ (SocketQUICStream_get_send_state (&stream),
-             QUIC_STREAM_STATE_SEND);
+  ASSERT_EQ (SocketQUICStream_get_send_state (&stream), QUIC_STREAM_STATE_SEND);
 }
 
 TEST (quic_stream_get_send_state_null)
@@ -485,9 +485,8 @@ TEST (quic_stream_event_string)
   ASSERT (strcmp (SocketQUICStream_event_string (QUIC_STREAM_EVENT_RECV_RESET),
                   "RecvReset")
           == 0);
-  ASSERT (strcmp (
-              SocketQUICStream_event_string ((SocketQUICStreamEvent)999),
-              "Unknown")
+  ASSERT (strcmp (SocketQUICStream_event_string ((SocketQUICStreamEvent)999),
+                  "Unknown")
           == 0);
 }
 

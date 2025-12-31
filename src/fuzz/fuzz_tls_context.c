@@ -69,7 +69,7 @@ static const int protocol_versions[] = {
   TLS1_2_VERSION,
   TLS1_3_VERSION,
 };
-#define NUM_PROTOCOL_VERSIONS                                                 \
+#define NUM_PROTOCOL_VERSIONS \
   (sizeof (protocol_versions) / sizeof (protocol_versions[0]))
 
 /**
@@ -297,7 +297,7 @@ fuzz_enable_session_cache (const uint8_t *data, size_t size)
 
   if (size >= 4)
     {
-      max_sessions = (size_t) (data[0] | ((uint16_t)data[1] << 8));
+      max_sessions = (size_t)(data[0] | ((uint16_t)data[1] << 8));
       timeout = (long)(data[2] | ((uint16_t)data[3] << 8));
     }
 
@@ -357,8 +357,14 @@ LLVMFuzzerInitialize (int *argc, char ***argv)
   (void)argc;
   (void)argv;
 
-  TRY { g_client_ctx = SocketTLSContext_new_client (NULL); }
-  EXCEPT (SocketTLS_Failed) { g_client_ctx = NULL; }
+  TRY
+  {
+    g_client_ctx = SocketTLSContext_new_client (NULL);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    g_client_ctx = NULL;
+  }
   END_TRY;
 
   return 0;
@@ -378,7 +384,9 @@ fuzz_set_verify_mode_cached (uint8_t mode_idx)
     TLSVerifyMode mode = verify_modes[mode_idx % NUM_VERIFY_MODES];
     SocketTLSContext_set_verify_mode (g_client_ctx, mode);
   }
-  EXCEPT (SocketTLS_Failed) { /* Handle gracefully */ }
+  EXCEPT (SocketTLS_Failed)
+  { /* Handle gracefully */
+  }
   END_TRY;
 }
 
@@ -398,7 +406,9 @@ fuzz_set_protocol_cached (uint8_t min_idx, uint8_t max_idx)
     SocketTLSContext_set_min_protocol (g_client_ctx, min_ver);
     SocketTLSContext_set_max_protocol (g_client_ctx, max_ver);
   }
-  EXCEPT (SocketTLS_Failed) { /* Expected for invalid combinations */ }
+  EXCEPT (SocketTLS_Failed)
+  { /* Expected for invalid combinations */
+  }
   END_TRY;
 }
 
@@ -411,8 +421,13 @@ fuzz_set_ciphers_cached (const char *cipher_str)
   if (!g_client_ctx)
     return;
 
-  TRY { SocketTLSContext_set_cipher_list (g_client_ctx, cipher_str); }
-  EXCEPT (SocketTLS_Failed) { /* Expected for invalid cipher strings */ }
+  TRY
+  {
+    SocketTLSContext_set_cipher_list (g_client_ctx, cipher_str);
+  }
+  EXCEPT (SocketTLS_Failed)
+  { /* Expected for invalid cipher strings */
+  }
   END_TRY;
 }
 
@@ -434,8 +449,13 @@ fuzz_enable_session_cache_cached (const uint8_t *data, size_t size)
       timeout = (long)(data[2] | ((uint16_t)data[3] << 8));
     }
 
-  TRY { SocketTLSContext_enable_session_cache (g_client_ctx, max_sessions, timeout); }
-  EXCEPT (SocketTLS_Failed) { /* Expected for invalid parameters */ }
+  TRY
+  {
+    SocketTLSContext_enable_session_cache (g_client_ctx, max_sessions, timeout);
+  }
+  EXCEPT (SocketTLS_Failed)
+  { /* Expected for invalid parameters */
+  }
   END_TRY;
 }
 

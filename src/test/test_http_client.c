@@ -40,40 +40,40 @@ static int tests_run = 0;
 static int tests_passed = 0;
 static int tests_failed = 0;
 
-#define TEST_START(name)                                                      \
-  do                                                                          \
-    {                                                                         \
-      printf ("  Testing: %s... ", name);                                     \
-      fflush (stdout);                                                        \
-      tests_run++;                                                            \
-    }                                                                         \
+#define TEST_START(name)                  \
+  do                                      \
+    {                                     \
+      printf ("  Testing: %s... ", name); \
+      fflush (stdout);                    \
+      tests_run++;                        \
+    }                                     \
   while (0)
 
-#define TEST_PASS()                                                           \
-  do                                                                          \
-    {                                                                         \
-      printf ("PASS\n");                                                      \
-      tests_passed++;                                                         \
-    }                                                                         \
+#define TEST_PASS()      \
+  do                     \
+    {                    \
+      printf ("PASS\n"); \
+      tests_passed++;    \
+    }                    \
   while (0)
 
-#define TEST_FAIL(msg)                                                        \
-  do                                                                          \
-    {                                                                         \
-      printf ("FAIL: %s\n", msg);                                             \
-      tests_failed++;                                                         \
-    }                                                                         \
+#define TEST_FAIL(msg)            \
+  do                              \
+    {                             \
+      printf ("FAIL: %s\n", msg); \
+      tests_failed++;             \
+    }                             \
   while (0)
 
-#define ASSERT_TRUE(cond, msg)                                                \
-  do                                                                          \
-    {                                                                         \
-      if (!(cond))                                                            \
-        {                                                                     \
-          TEST_FAIL (msg);                                                    \
-          return;                                                             \
-        }                                                                     \
-    }                                                                         \
+#define ASSERT_TRUE(cond, msg) \
+  do                           \
+    {                          \
+      if (!(cond))             \
+        {                      \
+          TEST_FAIL (msg);     \
+          return;              \
+        }                      \
+    }                          \
   while (0)
 
 #define ASSERT_EQ(a, b, msg) ASSERT_TRUE ((a) == (b), msg)
@@ -96,17 +96,19 @@ test_config_defaults (void)
 
   SocketHTTPClient_config_defaults (&config);
 
-  ASSERT_EQ (config.max_version, HTTP_VERSION_2,
-             "max_version should be HTTP/2");
-  ASSERT_EQ (config.allow_http2_cleartext, 0,
-             "h2c should be disabled by default");
+  ASSERT_EQ (
+      config.max_version, HTTP_VERSION_2, "max_version should be HTTP/2");
+  ASSERT_EQ (
+      config.allow_http2_cleartext, 0, "h2c should be disabled by default");
   ASSERT_EQ (config.enable_connection_pool, 1, "pooling should be enabled");
   ASSERT_EQ (config.max_connections_per_host,
              HTTPCLIENT_DEFAULT_MAX_CONNS_PER_HOST,
              "max_connections_per_host");
-  ASSERT_EQ (config.connect_timeout_ms, HTTPCLIENT_DEFAULT_CONNECT_TIMEOUT_MS,
+  ASSERT_EQ (config.connect_timeout_ms,
+             HTTPCLIENT_DEFAULT_CONNECT_TIMEOUT_MS,
              "connect_timeout_ms");
-  ASSERT_EQ (config.follow_redirects, HTTPCLIENT_DEFAULT_MAX_REDIRECTS,
+  ASSERT_EQ (config.follow_redirects,
+             HTTPCLIENT_DEFAULT_MAX_REDIRECTS,
              "follow_redirects");
   ASSERT_EQ (config.auto_decompress, 1, "auto_decompress should be enabled");
   ASSERT_EQ (config.verify_ssl, 1, "verify_ssl should be enabled");
@@ -172,8 +174,8 @@ test_request_new_free (void)
   client = SocketHTTPClient_new (NULL);
   ASSERT_NOT_NULL (client, "client should not be NULL");
 
-  req = SocketHTTPClient_Request_new (client, HTTP_METHOD_GET,
-                                      "http://example.com/path?query=value");
+  req = SocketHTTPClient_Request_new (
+      client, HTTP_METHOD_GET, "http://example.com/path?query=value");
   ASSERT_NOT_NULL (req, "request should not be NULL");
 
   SocketHTTPClient_Request_free (&req);
@@ -193,8 +195,8 @@ test_request_headers (void)
   TEST_START ("request headers");
 
   client = SocketHTTPClient_new (NULL);
-  req = SocketHTTPClient_Request_new (client, HTTP_METHOD_GET,
-                                      "http://example.com/");
+  req = SocketHTTPClient_Request_new (
+      client, HTTP_METHOD_GET, "http://example.com/");
 
   result
       = SocketHTTPClient_Request_header (req, "X-Custom-Header", "test-value");
@@ -219,11 +221,11 @@ test_request_body (void)
   TEST_START ("request body");
 
   client = SocketHTTPClient_new (NULL);
-  req = SocketHTTPClient_Request_new (client, HTTP_METHOD_POST,
-                                      "http://example.com/api");
+  req = SocketHTTPClient_Request_new (
+      client, HTTP_METHOD_POST, "http://example.com/api");
 
-  result = SocketHTTPClient_Request_header (req, "Content-Type",
-                                            "application/json");
+  result = SocketHTTPClient_Request_header (
+      req, "Content-Type", "application/json");
   ASSERT_EQ (result, 0, "content-type header");
 
   result = SocketHTTPClient_Request_body (req, body, strlen (body));
@@ -243,8 +245,8 @@ test_request_timeout (void)
   TEST_START ("request timeout");
 
   client = SocketHTTPClient_new (NULL);
-  req = SocketHTTPClient_Request_new (client, HTTP_METHOD_GET,
-                                      "http://example.com/");
+  req = SocketHTTPClient_Request_new (
+      client, HTTP_METHOD_GET, "http://example.com/");
 
   SocketHTTPClient_Request_timeout (req, 5000);
 
@@ -450,8 +452,8 @@ test_auth_per_request (void)
   TEST_START ("per-request authentication");
 
   client = SocketHTTPClient_new (NULL);
-  req = SocketHTTPClient_Request_new (client, HTTP_METHOD_GET,
-                                      "http://example.com/secure");
+  req = SocketHTTPClient_Request_new (
+      client, HTTP_METHOD_GET, "http://example.com/secure");
 
   memset (&auth, 0, sizeof (auth));
   auth.type = HTTP_AUTH_BEARER;
@@ -489,8 +491,8 @@ test_auth_basic_header (void)
                "should start with 'Basic '");
 
   /* The value should be base64("user:pass") = "dXNlcjpwYXNz" */
-  ASSERT_STR_EQ (output, "Basic dXNlcjpwYXNz",
-                 "should have correct base64 encoding");
+  ASSERT_STR_EQ (
+      output, "Basic dXNlcjpwYXNz", "should have correct base64 encoding");
 
   TEST_PASS ();
 }
@@ -509,14 +511,19 @@ test_auth_digest_md5_no_qop (void)
   TEST_START ("digest auth MD5 no qop");
 
   /* Test with RFC 2617 style (no qop) */
-  result = httpclient_auth_digest_response (
-      "user", "pass", "testrealm@host.com",
-      "dcd98b7102dd2f0e8b11d0f600bfb0c093", "/dir/index.html", "GET",
-      NULL, /* qop */
-      NULL, /* nc */
-      NULL, /* cnonce */
-      0,    /* MD5 */
-      output, sizeof (output));
+  result
+      = httpclient_auth_digest_response ("user",
+                                         "pass",
+                                         "testrealm@host.com",
+                                         "dcd98b7102dd2f0e8b11d0f600bfb0c093",
+                                         "/dir/index.html",
+                                         "GET",
+                                         NULL, /* qop */
+                                         NULL, /* nc */
+                                         NULL, /* cnonce */
+                                         0,    /* MD5 */
+                                         output,
+                                         sizeof (output));
 
   ASSERT_EQ (result, 0, "should generate digest response");
 
@@ -554,11 +561,18 @@ test_auth_digest_md5_qop_auth (void)
 
   /* Test with RFC 7616 style (qop=auth) */
   result = httpclient_auth_digest_response (
-      "testuser", "testpass", "Protected Area",
-      "7f9f98d76b89c4d2e5a5a5d3e4f5a6b7", "/protected/resource", "GET", "auth",
-      "00000001", "8fc1bc23d4e8f5a9", /* Fixed cnonce for reproducible test */
-      0,                              /* MD5 */
-      output, sizeof (output));
+      "testuser",
+      "testpass",
+      "Protected Area",
+      "7f9f98d76b89c4d2e5a5a5d3e4f5a6b7",
+      "/protected/resource",
+      "GET",
+      "auth",
+      "00000001",
+      "8fc1bc23d4e8f5a9", /* Fixed cnonce for reproducible test */
+      0,                  /* MD5 */
+      output,
+      sizeof (output));
 
   ASSERT_EQ (result, 0, "should generate digest response");
 
@@ -585,10 +599,18 @@ test_auth_digest_sha256 (void)
 
   TEST_START ("digest auth SHA-256");
 
-  result = httpclient_auth_digest_response (
-      "user", "secret", "api.example.com", "abc123def456", "/api/v1/data",
-      "POST", "auth", "00000001", "randomcnonce", 1, /* SHA-256 */
-      output, sizeof (output));
+  result = httpclient_auth_digest_response ("user",
+                                            "secret",
+                                            "api.example.com",
+                                            "abc123def456",
+                                            "/api/v1/data",
+                                            "POST",
+                                            "auth",
+                                            "00000001",
+                                            "randomcnonce",
+                                            1, /* SHA-256 */
+                                            output,
+                                            sizeof (output));
 
   ASSERT_EQ (result, 0, "should generate SHA-256 digest response");
 
@@ -624,9 +646,14 @@ test_auth_digest_challenge (void)
                          "algorithm=MD5, "
                          "opaque=\"5ccc069c403ebaf9f0171e9517f40e41\"";
 
-  result = httpclient_auth_digest_challenge (www_auth, "user", "pass", "GET",
-                                             "/dir/index.html", "00000001",
-                                             output, sizeof (output));
+  result = httpclient_auth_digest_challenge (www_auth,
+                                             "user",
+                                             "pass",
+                                             "GET",
+                                             "/dir/index.html",
+                                             "00000001",
+                                             output,
+                                             sizeof (output));
 
   ASSERT_EQ (result, 0, "should parse challenge and generate response");
 
@@ -640,9 +667,14 @@ test_auth_digest_challenge (void)
   /* Test qop with tab delimiter (word boundary bug fix) */
   const char *www_auth_tab = "Digest realm=\"test\", nonce=\"abc\", "
                              "qop=\"auth\t, auth-int\"";
-  result = httpclient_auth_digest_challenge (www_auth_tab, "user", "pass",
-                                             "GET", "/test", "00000001",
-                                             output, sizeof (output));
+  result = httpclient_auth_digest_challenge (www_auth_tab,
+                                             "user",
+                                             "pass",
+                                             "GET",
+                                             "/test",
+                                             "00000001",
+                                             output,
+                                             sizeof (output));
   ASSERT_EQ (result, 0, "should parse qop with tab delimiter");
   ASSERT_NOT_NULL (strstr (output, "qop=auth"),
                    "should select auth with tab boundary");
@@ -754,15 +786,24 @@ test_auth_buffer_overflow_protection (void)
   TEST_START ("auth buffer overflow protection");
 
   /* Basic auth with small buffer should fail */
-  result = httpclient_auth_basic_header ("user", "password", small_buf,
-                                         sizeof (small_buf));
+  result = httpclient_auth_basic_header (
+      "user", "password", small_buf, sizeof (small_buf));
   ASSERT_EQ (result, -1, "should fail with small buffer");
 
 #if SOCKET_HAS_TLS
   /* Digest response with small buffer should fail (requires TLS for MD5) */
-  result = httpclient_auth_digest_response ("user", "pass", "realm", "nonce",
-                                            "/", "GET", NULL, NULL, NULL, 0,
-                                            small_buf, sizeof (small_buf));
+  result = httpclient_auth_digest_response ("user",
+                                            "pass",
+                                            "realm",
+                                            "nonce",
+                                            "/",
+                                            "GET",
+                                            NULL,
+                                            NULL,
+                                            NULL,
+                                            0,
+                                            small_buf,
+                                            sizeof (small_buf));
   ASSERT_EQ (result, -1, "should fail with small buffer for digest");
 #else
   (void)result; /* Suppress unused warning when TLS disabled */
@@ -788,8 +829,8 @@ test_auth_secure_clear (void)
   result
       = httpclient_auth_basic_header ("user", "pass", output, sizeof (output));
   ASSERT_EQ (result, 0, "should generate basic auth header");
-  ASSERT_STR_EQ (output, "Basic dXNlcjpwYXNz",
-                 "should have correct base64 encoding");
+  ASSERT_STR_EQ (
+      output, "Basic dXNlcjpwYXNz", "should have correct base64 encoding");
 
   /* Clear the header */
   httpclient_auth_clear_header (output, sizeof (output));
@@ -807,8 +848,8 @@ test_auth_secure_clear (void)
   ASSERT_TRUE (all_cleared, "basic auth header should be fully cleared");
 
   /* Test Bearer token header clearing */
-  result = httpclient_auth_bearer_header ("secret_token_12345", output,
-                                          sizeof (output));
+  result = httpclient_auth_bearer_header (
+      "secret_token_12345", output, sizeof (output));
   ASSERT_EQ (result, 0, "should generate bearer auth header");
   ASSERT_TRUE (strncmp (output, "Bearer ", 7) == 0,
                "should start with 'Bearer '");
@@ -830,14 +871,19 @@ test_auth_secure_clear (void)
 
 #if SOCKET_HAS_TLS
   /* Test Digest auth header clearing (requires TLS for hashing) */
-  result = httpclient_auth_digest_response (
-      "user", "pass", "testrealm@host.com",
-      "dcd98b7102dd2f0e8b11d0f600bfb0c093", "/dir/index.html", "GET",
-      NULL, /* qop */
-      NULL, /* nc */
-      NULL, /* cnonce */
-      0,    /* MD5 */
-      output, sizeof (output));
+  result
+      = httpclient_auth_digest_response ("user",
+                                         "pass",
+                                         "testrealm@host.com",
+                                         "dcd98b7102dd2f0e8b11d0f600bfb0c093",
+                                         "/dir/index.html",
+                                         "GET",
+                                         NULL, /* qop */
+                                         NULL, /* nc */
+                                         NULL, /* cnonce */
+                                         0,    /* MD5 */
+                                         output,
+                                         sizeof (output));
   ASSERT_EQ (result, 0, "should generate digest response");
 
   /* Clear the header */
@@ -897,8 +943,8 @@ test_pool_clear (void)
   SocketHTTPClient_pool_clear (client);
 
   SocketHTTPClient_pool_stats (client, &stats);
-  ASSERT_EQ (stats.active_connections, 0,
-             "should have no connections after clear");
+  ASSERT_EQ (
+      stats.active_connections, 0, "should have no connections after clear");
 
   SocketHTTPClient_free (&client);
   TEST_PASS ();
@@ -1025,18 +1071,18 @@ test_url_parsing_various (void)
   client = SocketHTTPClient_new (NULL);
 
   /* Valid URLs should work */
-  req = SocketHTTPClient_Request_new (client, HTTP_METHOD_GET,
-                                      "http://example.com/path");
+  req = SocketHTTPClient_Request_new (
+      client, HTTP_METHOD_GET, "http://example.com/path");
   ASSERT_NOT_NULL (req, "http URL should create request");
   SocketHTTPClient_Request_free (&req);
 
-  req = SocketHTTPClient_Request_new (client, HTTP_METHOD_GET,
-                                      "https://secure.example.com/api");
+  req = SocketHTTPClient_Request_new (
+      client, HTTP_METHOD_GET, "https://secure.example.com/api");
   ASSERT_NOT_NULL (req, "https URL should create request");
   SocketHTTPClient_Request_free (&req);
 
-  req = SocketHTTPClient_Request_new (client, HTTP_METHOD_GET,
-                                      "http://localhost:3000/test");
+  req = SocketHTTPClient_Request_new (
+      client, HTTP_METHOD_GET, "http://localhost:3000/test");
   ASSERT_NOT_NULL (req, "localhost URL should create request");
   SocketHTTPClient_Request_free (&req);
 
@@ -1077,8 +1123,7 @@ test_pool_stats_extended (void)
   ASSERT_EQ (stats.connections_created, 0, "no connections created initially");
   ASSERT_EQ (stats.connections_failed, 0, "no connections failed initially");
   ASSERT_EQ (stats.connections_timed_out, 0, "no timeouts initially");
-  ASSERT_EQ (stats.stale_connections_removed, 0,
-             "no stale removals initially");
+  ASSERT_EQ (stats.stale_connections_removed, 0, "no stale removals initially");
   ASSERT_EQ (stats.pool_exhausted_waits, 0, "no waits initially");
 
   SocketHTTPClient_free (&client);
@@ -1163,7 +1208,8 @@ test_max_response_size_config (void)
  * Async Request Tests
  * ============================================================================
  * NOTE: Async request API removed in issue #2227 (stub implementations).
- * The async I/O functionality (io_uring) still works via enable_async_io config.
+ * The async I/O functionality (io_uring) still works via enable_async_io
+ * config.
  * ============================================================================
  */
 
@@ -1259,8 +1305,8 @@ test_timeout_configuration (void)
   ASSERT_NOT_NULL (client, "client should be created");
 
   /* Create request with custom timeout */
-  req = SocketHTTPClient_Request_new (client, HTTP_METHOD_GET,
-                                      "http://example.com/");
+  req = SocketHTTPClient_Request_new (
+      client, HTTP_METHOD_GET, "http://example.com/");
   ASSERT_NOT_NULL (req, "request should be created");
 
   /* Set per-request timeout */
@@ -1287,8 +1333,8 @@ test_prepared_request_basic (void)
   client = SocketHTTPClient_new (NULL);
   ASSERT_NOT_NULL (client, "client should not be NULL");
 
-  prep = SocketHTTPClient_prepare (client, HTTP_METHOD_GET,
-                                   "http://example.com/path?query=value");
+  prep = SocketHTTPClient_prepare (
+      client, HTTP_METHOD_GET, "http://example.com/path?query=value");
   ASSERT_NOT_NULL (prep, "prepared request should not be NULL");
 
   SocketHTTPClient_PreparedRequest_free (&prep);
@@ -1308,8 +1354,8 @@ test_prepared_request_https (void)
 
   client = SocketHTTPClient_new (NULL);
 
-  prep = SocketHTTPClient_prepare (client, HTTP_METHOD_GET,
-                                   "https://secure.example.com/api/v1/data");
+  prep = SocketHTTPClient_prepare (
+      client, HTTP_METHOD_GET, "https://secure.example.com/api/v1/data");
   ASSERT_NOT_NULL (prep, "prepared https request should not be NULL");
 
   SocketHTTPClient_PreparedRequest_free (&prep);
@@ -1328,26 +1374,26 @@ test_prepared_request_methods (void)
   client = SocketHTTPClient_new (NULL);
 
   /* Test GET */
-  prep = SocketHTTPClient_prepare (client, HTTP_METHOD_GET,
-                                   "http://example.com/get");
+  prep = SocketHTTPClient_prepare (
+      client, HTTP_METHOD_GET, "http://example.com/get");
   ASSERT_NOT_NULL (prep, "GET prepared should succeed");
   SocketHTTPClient_PreparedRequest_free (&prep);
 
   /* Test POST */
-  prep = SocketHTTPClient_prepare (client, HTTP_METHOD_POST,
-                                   "http://example.com/post");
+  prep = SocketHTTPClient_prepare (
+      client, HTTP_METHOD_POST, "http://example.com/post");
   ASSERT_NOT_NULL (prep, "POST prepared should succeed");
   SocketHTTPClient_PreparedRequest_free (&prep);
 
   /* Test PUT */
-  prep = SocketHTTPClient_prepare (client, HTTP_METHOD_PUT,
-                                   "http://example.com/put");
+  prep = SocketHTTPClient_prepare (
+      client, HTTP_METHOD_PUT, "http://example.com/put");
   ASSERT_NOT_NULL (prep, "PUT prepared should succeed");
   SocketHTTPClient_PreparedRequest_free (&prep);
 
   /* Test DELETE */
-  prep = SocketHTTPClient_prepare (client, HTTP_METHOD_DELETE,
-                                   "http://example.com/delete");
+  prep = SocketHTTPClient_prepare (
+      client, HTTP_METHOD_DELETE, "http://example.com/delete");
   ASSERT_NOT_NULL (prep, "DELETE prepared should succeed");
   SocketHTTPClient_PreparedRequest_free (&prep);
 
@@ -1366,14 +1412,14 @@ test_prepared_request_with_port (void)
   client = SocketHTTPClient_new (NULL);
 
   /* Non-standard port */
-  prep = SocketHTTPClient_prepare (client, HTTP_METHOD_GET,
-                                   "http://example.com:8080/api");
+  prep = SocketHTTPClient_prepare (
+      client, HTTP_METHOD_GET, "http://example.com:8080/api");
   ASSERT_NOT_NULL (prep, "prepared with custom port should succeed");
   SocketHTTPClient_PreparedRequest_free (&prep);
 
   /* HTTPS with custom port */
-  prep = SocketHTTPClient_prepare (client, HTTP_METHOD_GET,
-                                   "https://example.com:8443/secure");
+  prep = SocketHTTPClient_prepare (
+      client, HTTP_METHOD_GET, "https://example.com:8443/secure");
   ASSERT_NOT_NULL (prep, "prepared https with custom port should succeed");
   SocketHTTPClient_PreparedRequest_free (&prep);
 
@@ -1392,8 +1438,8 @@ test_prepared_request_invalid (void)
   client = SocketHTTPClient_new (NULL);
 
   /* NULL client - must fail */
-  prep = SocketHTTPClient_prepare (NULL, HTTP_METHOD_GET,
-                                   "http://example.com/");
+  prep
+      = SocketHTTPClient_prepare (NULL, HTTP_METHOD_GET, "http://example.com/");
   ASSERT_NULL (prep, "NULL client should return NULL");
 
   /* NULL URL - must fail */
@@ -1519,8 +1565,10 @@ main (void)
   test_prepared_request_free_null ();
 
   printf ("\n============================================================\n");
-  printf ("Test Results: %d passed, %d failed, %d total\n", tests_passed,
-          tests_failed, tests_run);
+  printf ("Test Results: %d passed, %d failed, %d total\n",
+          tests_passed,
+          tests_failed,
+          tests_run);
   printf ("============================================================\n\n");
 
   return tests_failed > 0 ? 1 : 0;

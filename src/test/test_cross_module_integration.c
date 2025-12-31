@@ -97,7 +97,8 @@ proxy_http_handler (SocketHTTPServer_Request_T req, void *userdata)
       size_t body_len = SocketHTTPServer_Request_body_len (req);
 
       SocketHTTPServer_Request_status (req, 200);
-      SocketHTTPServer_Request_header (req, "Content-Type", "application/octet-stream");
+      SocketHTTPServer_Request_header (
+          req, "Content-Type", "application/octet-stream");
       if (body && body_len > 0)
         {
           SocketHTTPServer_Request_body_data (req, body, body_len);
@@ -160,11 +161,14 @@ proxy_http_tls_server_start (ProxyHTTPTLSServer *server)
   Socket_T listen_sock = Socket_listen_tcp ("127.0.0.1", http_port, 5);
   ASSERT_NOT_NULL (listen_sock);
 
-  /* Store the socket in the server struct (reuse http_server field as generic socket) */
+  /* Store the socket in the server struct (reuse http_server field as generic
+   * socket) */
   server->http_server = (SocketHTTPServer_T)listen_sock;
 
   /* Start server thread */
-  ASSERT_EQ (pthread_create (&server->thread, NULL, proxy_http_tls_server_thread, server), 0);
+  ASSERT_EQ (pthread_create (
+                 &server->thread, NULL, proxy_http_tls_server_thread, server),
+             0);
 
   /* Give server time to start */
   usleep (50000);
@@ -235,7 +239,8 @@ pool_reconnect_server_thread (void *arg)
                   else
                     {
                       /* Add to pool for normal handling */
-                      Connection_T conn = SocketPool_add (server->pool, accepted);
+                      Connection_T conn
+                          = SocketPool_add (server->pool, accepted);
                       if (conn)
                         {
                           SocketPoll_add (poll, accepted, POLL_READ, conn);
@@ -291,14 +296,17 @@ pool_reconnect_server_start (PoolReconnectServer *server, int drop_connections)
   ASSERT_NOT_NULL (server->pool);
 
   /* Create listening socket */
-  server->listen_socket = Socket_listen_tcp ("127.0.0.1", get_cross_test_port(), 50);
+  server->listen_socket
+      = Socket_listen_tcp ("127.0.0.1", get_cross_test_port (), 50);
   ASSERT_NOT_NULL (server->listen_socket);
 
   /* Get the assigned port */
   server->port = Socket_getlocalport (server->listen_socket);
 
   /* Start server thread */
-  ASSERT_EQ (pthread_create (&server->thread, NULL, pool_reconnect_server_thread, server), 0);
+  ASSERT_EQ (pthread_create (
+                 &server->thread, NULL, pool_reconnect_server_thread, server),
+             0);
 
   /* Give server time to start */
   usleep (50000);
@@ -343,7 +351,7 @@ TEST (integration_cross_module_http_basic)
   ASSERT_EQ (sent, (ssize_t)strlen (test_data));
 
   /* Receive echo */
-  char buf[1024] = {0};
+  char buf[1024] = { 0 };
   ssize_t received = Socket_recv (client, buf, sizeof (buf));
   ASSERT_EQ (received, sent);
   ASSERT_EQ (strcmp (buf, test_data), 0);
@@ -399,10 +407,10 @@ TEST (integration_cross_module_dns_basic)
   SocketDNS_cache_clear (dns);
 
   /* Test DNS configuration */
-  const char *nameservers[] = {"8.8.8.8", "1.1.1.1"};
+  const char *nameservers[] = { "8.8.8.8", "1.1.1.1" };
   SocketDNS_set_nameservers (dns, nameservers, 2);
 
-  const char *domains[] = {"example.com", "local"};
+  const char *domains[] = { "example.com", "local" };
   SocketDNS_set_search_domains (dns, domains, 2);
 
   SocketDNS_prefer_ipv6 (dns, 1);

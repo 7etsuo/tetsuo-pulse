@@ -45,9 +45,10 @@
  * ============================================================================
  */
 
-/** Macro for setting connection-specific error messages (like PROXY_ERROR_MSG for thread-local errors) */
+/** Macro for setting connection-specific error messages (like PROXY_ERROR_MSG
+ * for thread-local errors) */
 #define CONN_ERROR_MSG(conn, ...) \
-  snprintf((conn)->error_buf, sizeof((conn)->error_buf), __VA_ARGS__)
+  snprintf ((conn)->error_buf, sizeof ((conn)->error_buf), __VA_ARGS__)
 
 /** Length of ':' separator in "username:password" format */
 #define SOCKET_PROXY_CREDS_SEPARATOR_LEN 1
@@ -60,8 +61,9 @@
   (SOCKET_PROXY_CREDS_SEPARATOR_LEN + SOCKET_PROXY_CREDS_NULL_TERM)
 
 /** Buffer size for Basic auth credentials (username:password) */
-#define SOCKET_PROXY_CREDENTIALS_BUFSIZE                                      \
-  (SOCKET_PROXY_MAX_USERNAME_LEN + SOCKET_PROXY_MAX_PASSWORD_LEN + SOCKET_PROXY_CREDS_OVERHEAD)
+#define SOCKET_PROXY_CREDENTIALS_BUFSIZE                         \
+  (SOCKET_PROXY_MAX_USERNAME_LEN + SOCKET_PROXY_MAX_PASSWORD_LEN \
+   + SOCKET_PROXY_CREDS_OVERHEAD)
 
 /** Length of "Basic " prefix for Proxy-Authorization header */
 #define SOCKET_PROXY_BASIC_AUTH_PREFIX_LEN (sizeof ("Basic ") - 1)
@@ -89,8 +91,8 @@
 #define SOCKET_PROXY_BASE64_PADDING 32
 
 /** Buffer size for Base64-encoded auth header value */
-#define SOCKET_PROXY_AUTH_HEADER_BUFSIZE                                      \
-  ((SOCKET_PROXY_CREDENTIALS_BUFSIZE * 4 / 3)                                 \
+#define SOCKET_PROXY_AUTH_HEADER_BUFSIZE      \
+  ((SOCKET_PROXY_CREDENTIALS_BUFSIZE * 4 / 3) \
    + SOCKET_PROXY_BASIC_AUTH_PREFIX_LEN + SOCKET_PROXY_BASE64_PADDING)
 
 /** CRLF size for HTTP line endings */
@@ -102,7 +104,8 @@
  */
 
 /**
- * proxy_http_append_formatted - Append formatted HTTP line to request buffer using connection error buf
+ * proxy_http_append_formatted - Append formatted HTTP line to request buffer
+ * using connection error buf
  * @conn: Proxy connection context for error reporting
  * @buf: Buffer start pointer
  * @len: Pointer to current length (updated on success)
@@ -113,15 +116,20 @@
  * Returns: 0 on success, -1 on truncation/error (error in conn->error_buf)
  * Thread-safe: No (modifies conn buffers)
  *
- * Simplified helper for HTTP request building. Uses conn->error_buf automatically.
- * Consolidates bounds-checked formatting for headers like "Host: %s:%d\r\n".
- * Assumes fmt includes \r\n termination.
+ * Simplified helper for HTTP request building. Uses conn->error_buf
+ * automatically. Consolidates bounds-checked formatting for headers like "Host:
+ * %s:%d\r\n". Assumes fmt includes \r\n termination.
  *
  * @see append_request_terminator() for final CRLF if needed.
  */
 static int
-proxy_http_append_formatted (struct SocketProxy_Conn_T *conn, char *buf, size_t *len, size_t *remaining, const char *error_msg, const char *fmt,
-                  ...)
+proxy_http_append_formatted (struct SocketProxy_Conn_T *conn,
+                             char *buf,
+                             size_t *len,
+                             size_t *remaining,
+                             const char *error_msg,
+                             const char *fmt,
+                             ...)
 {
   va_list args;
   int n;
@@ -156,7 +164,9 @@ proxy_http_append_formatted (struct SocketProxy_Conn_T *conn, char *buf, size_t 
  * sensitive data from being left in memory.
  */
 static int
-build_basic_auth (const char *username, const char *password, char *output,
+build_basic_auth (const char *username,
+                  const char *password,
+                  char *output,
                   size_t output_size)
 {
   char credentials[SOCKET_PROXY_CREDENTIALS_BUFSIZE];
@@ -165,8 +175,8 @@ build_basic_auth (const char *username, const char *password, char *output,
   size_t base64_size;
 
   /* Format credentials as "username:password" */
-  cred_len = (size_t)snprintf (credentials, sizeof (credentials), "%s:%s",
-                               username, password);
+  cred_len = (size_t)snprintf (
+      credentials, sizeof (credentials), "%s:%s", username, password);
   if (cred_len >= sizeof (credentials))
     {
       SocketCrypto_secure_clear (credentials, sizeof (credentials));
@@ -186,7 +196,9 @@ build_basic_auth (const char *username, const char *password, char *output,
 
   /* Encode credentials */
   encoded_len = SocketCrypto_base64_encode (
-      credentials, cred_len, output + SOCKET_PROXY_BASIC_AUTH_PREFIX_LEN,
+      credentials,
+      cred_len,
+      output + SOCKET_PROXY_BASIC_AUTH_PREFIX_LEN,
       output_size - SOCKET_PROXY_BASIC_AUTH_PREFIX_LEN);
 
   /* Clear sensitive credentials regardless of result */
@@ -221,12 +233,19 @@ build_basic_auth (const char *username, const char *password, char *output,
  * Formats: "CONNECT host:port HTTP/1.1\r\n"
  */
 static int
-append_request_line (struct SocketProxy_Conn_T *conn, char *buf, size_t *len,
+append_request_line (struct SocketProxy_Conn_T *conn,
+                     char *buf,
+                     size_t *len,
                      size_t *remaining)
 {
-  return proxy_http_append_formatted (conn, buf, len, remaining, "Request line too long",
-                           "CONNECT %s:%d HTTP/1.1\r\n", conn->target_host,
-                           conn->target_port);
+  return proxy_http_append_formatted (conn,
+                                      buf,
+                                      len,
+                                      remaining,
+                                      "Request line too long",
+                                      "CONNECT %s:%d HTTP/1.1\r\n",
+                                      conn->target_host,
+                                      conn->target_port);
 }
 
 /**
@@ -241,12 +260,19 @@ append_request_line (struct SocketProxy_Conn_T *conn, char *buf, size_t *len,
  * Formats: "Host: host:port\r\n"
  */
 static int
-append_host_header (struct SocketProxy_Conn_T *conn, char *buf, size_t *len,
+append_host_header (struct SocketProxy_Conn_T *conn,
+                    char *buf,
+                    size_t *len,
                     size_t *remaining)
 {
-  return proxy_http_append_formatted (conn, buf, len, remaining, "Host header too long",
-                           "Host: %s:%d\r\n", conn->target_host,
-                           conn->target_port);
+  return proxy_http_append_formatted (conn,
+                                      buf,
+                                      len,
+                                      remaining,
+                                      "Host header too long",
+                                      "Host: %s:%d\r\n",
+                                      conn->target_host,
+                                      conn->target_port);
 }
 
 /**
@@ -262,7 +288,9 @@ append_host_header (struct SocketProxy_Conn_T *conn, char *buf, size_t *len,
  * Securely clears the encoded auth header after use.
  */
 static int
-append_auth_header (struct SocketProxy_Conn_T *conn, char *buf, size_t *len,
+append_auth_header (struct SocketProxy_Conn_T *conn,
+                    char *buf,
+                    size_t *len,
                     size_t *remaining)
 {
   char auth_header[SOCKET_PROXY_AUTH_HEADER_BUFSIZE];
@@ -271,16 +299,21 @@ append_auth_header (struct SocketProxy_Conn_T *conn, char *buf, size_t *len,
   if (conn->username == NULL || conn->password == NULL)
     return 0;
 
-  if (build_basic_auth (conn->username, conn->password, auth_header,
-                        sizeof (auth_header))
+  if (build_basic_auth (
+          conn->username, conn->password, auth_header, sizeof (auth_header))
       < 0)
     {
       CONN_ERROR_MSG (conn, "Failed to build auth header");
       return -1;
     }
 
-  result = proxy_http_append_formatted (conn, buf, len, remaining, "Auth header too long",
-                             "Proxy-Authorization: %s\r\n", auth_header);
+  result = proxy_http_append_formatted (conn,
+                                        buf,
+                                        len,
+                                        remaining,
+                                        "Auth header too long",
+                                        "Proxy-Authorization: %s\r\n",
+                                        auth_header);
 
   /* Clear auth header after use - security best practice */
   SocketCrypto_secure_clear (auth_header, sizeof (auth_header));
@@ -300,7 +333,9 @@ append_auth_header (struct SocketProxy_Conn_T *conn, char *buf, size_t *len,
  * Serializes extra HTTP headers using SocketHTTP1_serialize_headers.
  */
 static int
-append_extra_headers (struct SocketProxy_Conn_T *conn, char *buf, size_t *len,
+append_extra_headers (struct SocketProxy_Conn_T *conn,
+                      char *buf,
+                      size_t *len,
                       size_t *remaining)
 {
   ssize_t headers_len;
@@ -308,8 +343,8 @@ append_extra_headers (struct SocketProxy_Conn_T *conn, char *buf, size_t *len,
   if (conn->extra_headers == NULL)
     return 0;
 
-  headers_len = SocketHTTP1_serialize_headers (conn->extra_headers, buf + *len,
-                                               *remaining);
+  headers_len = SocketHTTP1_serialize_headers (
+      conn->extra_headers, buf + *len, *remaining);
   if (headers_len < 0)
     {
       CONN_ERROR_MSG (conn, "Extra headers too long");
@@ -334,10 +369,13 @@ append_extra_headers (struct SocketProxy_Conn_T *conn, char *buf, size_t *len,
  * Uses proxy_http_append_formatted for consistency and bounds check.
  */
 static int
-append_request_terminator (struct SocketProxy_Conn_T *conn, char *buf,
-                           size_t *len, size_t *remaining)
+append_request_terminator (struct SocketProxy_Conn_T *conn,
+                           char *buf,
+                           size_t *len,
+                           size_t *remaining)
 {
-  return proxy_http_append_formatted (conn, buf, len, remaining, "Request terminator too small", "\r\n");
+  return proxy_http_append_formatted (
+      conn, buf, len, remaining, "Request terminator too small", "\r\n");
 }
 
 /**
@@ -461,13 +499,14 @@ parse_http_response (struct SocketProxy_Conn_T *conn)
 
   parse_result = SocketHTTP1_Parser_execute (conn->http_parser,
                                              (const char *)conn->recv_buf,
-                                             conn->recv_len, &consumed);
+                                             conn->recv_len,
+                                             &consumed);
 
   /* Shift consumed data out of buffer */
   if (consumed > 0)
     {
-      memmove (conn->recv_buf, conn->recv_buf + consumed,
-               conn->recv_len - consumed);
+      memmove (
+          conn->recv_buf, conn->recv_buf + consumed, conn->recv_len - consumed);
       conn->recv_len -= consumed;
     }
 
@@ -490,7 +529,8 @@ parse_http_response (struct SocketProxy_Conn_T *conn)
       return PROXY_ERROR_PROTOCOL;
 
     default:
-      CONN_ERROR_MSG (conn, "HTTP parse error: %s",
+      CONN_ERROR_MSG (conn,
+                      "HTTP parse error: %s",
                       SocketHTTP1_result_string (parse_result));
       return PROXY_ERROR_PROTOCOL;
     }
@@ -625,8 +665,7 @@ proxy_http_status_to_result (int status)
     return PROXY_OK;
 
   /* 4xx Client Error */
-  if (status >= HTTP_STATUS_4XX_MIN
-      && status <= HTTP_STATUS_4XX_MAX)
+  if (status >= HTTP_STATUS_4XX_MIN && status <= HTTP_STATUS_4XX_MAX)
     return handle_client_error_status (status);
 
   /* 5xx Server Error */

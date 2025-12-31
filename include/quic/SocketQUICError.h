@@ -182,7 +182,7 @@ typedef enum
  * @param code QUIC error code to check.
  * @return Non-zero if code is in crypto error range, zero otherwise.
  */
-#define QUIC_IS_CRYPTO_ERROR(code)                                            \
+#define QUIC_IS_CRYPTO_ERROR(code) \
   (((code) >= QUIC_CRYPTO_ERROR_BASE) && ((code) <= QUIC_CRYPTO_ERROR_MAX))
 
 /**
@@ -339,8 +339,8 @@ extern const char *SocketQUIC_error_string (uint64_t code);
 static inline const char *
 SocketQUIC_error_category_string (SocketQUIC_ErrorCategory category)
 {
-  static const char *names[] = { "TRANSPORT", "CRYPTO", "APPLICATION",
-                                 "UNKNOWN" };
+  static const char *names[]
+      = { "TRANSPORT", "CRYPTO", "APPLICATION", "UNKNOWN" };
 
   if (category > QUIC_ERROR_CATEGORY_UNKNOWN)
     return "UNKNOWN";
@@ -393,11 +393,11 @@ extern int SocketQUIC_error_is_connection_fatal (uint64_t code);
  *       length is explicitly provided via reason_len.
  */
 extern size_t SocketQUIC_send_connection_close (SocketQUICConnection_T conn,
-                                                 uint64_t code,
-                                                 const char *reason,
-                                                 size_t reason_len,
-                                                 uint8_t *out,
-                                                 size_t out_len);
+                                                uint64_t code,
+                                                const char *reason,
+                                                size_t reason_len,
+                                                uint8_t *out,
+                                                size_t out_len);
 
 /**
  * @brief Send RESET_STREAM frame to terminate a stream.
@@ -418,10 +418,10 @@ extern size_t SocketQUIC_send_connection_close (SocketQUICConnection_T conn,
  *       to RESET_SENT. No further data can be sent on this stream.
  */
 extern size_t SocketQUIC_send_stream_reset (SocketQUICStream_T stream,
-                                             uint64_t code,
-                                             uint64_t final_size,
-                                             uint8_t *out,
-                                             size_t out_len);
+                                            uint64_t code,
+                                            uint64_t final_size,
+                                            uint8_t *out,
+                                            size_t out_len);
 
 /**
  * @brief Send STOP_SENDING frame to request peer stop sending.
@@ -438,9 +438,9 @@ extern size_t SocketQUIC_send_stream_reset (SocketQUICStream_T stream,
  * @return Number of bytes written to out, or 0 on error.
  */
 extern size_t SocketQUIC_send_stop_sending (SocketQUICStream_T stream,
-                                             uint64_t code,
-                                             uint8_t *out,
-                                             size_t out_len);
+                                            uint64_t code,
+                                            uint8_t *out,
+                                            size_t out_len);
 
 /** @} */
 

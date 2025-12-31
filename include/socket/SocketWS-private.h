@@ -351,12 +351,12 @@ typedef struct
   SocketWS_FrameState state; /**< Current parsing state */
 
   /* Parsed header fields */
-  int fin;                /**< FIN bit: final fragment of message */
-  int rsv1;               /**< RSV1: compression flag (permessage-deflate) */
-  int rsv2;               /**< RSV2: reserved, must be 0 */
-  int rsv3;               /**< RSV3: reserved, must be 0 */
-  SocketWS_Opcode opcode; /**< Frame opcode (data/control) */
-  int masked;             /**< MASK bit: payload masked (client->server) */
+  int fin;                   /**< FIN bit: final fragment of message */
+  int rsv1;                  /**< RSV1: compression flag (permessage-deflate) */
+  int rsv2;                  /**< RSV2: reserved, must be 0 */
+  int rsv3;                  /**< RSV3: reserved, must be 0 */
+  SocketWS_Opcode opcode;    /**< Frame opcode (data/control) */
+  int masked;                /**< MASK bit: payload masked (client->server) */
   unsigned char mask_key[4]; /**< 4-byte mask key if masked */
 
   /* Payload tracking */
@@ -478,9 +478,8 @@ typedef struct
                                                         chars) */
 
   /* Expected accept value */
-  char
-      expected_accept[SOCKET_CRYPTO_WEBSOCKET_ACCEPT_SIZE]; /**< SHA1(key +
-                                                               magic) base64 */
+  char expected_accept[SOCKET_CRYPTO_WEBSOCKET_ACCEPT_SIZE]; /**< SHA1(key +
+                                                                magic) base64 */
 
   /* HTTP parser for response */
   SocketHTTP1_Parser_T http_parser; /**< Parser for HTTP response/request */
@@ -635,9 +634,8 @@ typedef struct
 struct SocketWS
 {
   /* Underlying resources */
-  Socket_T
-      socket;    /**< TCP/TLS socket (may be NULL if ownership transferred) */
-  Arena_T arena; /**< Memory arena for all dynamic allocations */
+  Socket_T socket; /**< TCP/TLS socket (may be NULL if ownership transferred) */
+  Arena_T arena;   /**< Memory arena for all dynamic allocations */
   SocketBuf_T recv_buf; /**< Receive circular buffer for incoming data */
   SocketBuf_T send_buf; /**< Send circular buffer for outgoing data */
   SocketWS_Transport_T transport; /**< Transport abstraction (NULL = use socket
@@ -662,9 +660,8 @@ struct SocketWS
 
   /* Compression state (conditional) */
 #ifdef SOCKETWS_HAS_DEFLATE
-  int compression_enabled; /**< Compression negotiated and active? */
-  SocketWS_Compression
-      compression; /**< Deflate/inflate streams and settings */
+  int compression_enabled;          /**< Compression negotiated and active? */
+  SocketWS_Compression compression; /**< Deflate/inflate streams and settings */
 #endif
 
   /* Close state */
@@ -923,8 +920,10 @@ int ws_requires_masking (SocketWS_T ws);
  * @see RFC 6455 Sec. 5.5 (Control Frames), 7.1 (Close), 5.5.2 (Ping), 5.5.3
  * (Pong)
  */
-int ws_send_control_frame (SocketWS_T ws, SocketWS_Opcode opcode,
-                           const unsigned char *payload, size_t len);
+int ws_send_control_frame (SocketWS_T ws,
+                           SocketWS_Opcode opcode,
+                           const unsigned char *payload,
+                           size_t len);
 
 /**
  * @brief Sends a WebSocket data frame (TEXT or BINARY).
@@ -942,8 +941,11 @@ int ws_send_control_frame (SocketWS_T ws, SocketWS_Opcode opcode,
  * @see ws_send_control_frame() for control frames.
  * @see RFC 6455 Section 5.6 for data frame format and masking.
  */
-int ws_send_data_frame (SocketWS_T ws, SocketWS_Opcode opcode,
-                        const unsigned char *data, size_t len, int fin);
+int ws_send_data_frame (SocketWS_T ws,
+                        SocketWS_Opcode opcode,
+                        const unsigned char *data,
+                        size_t len,
+                        int fin);
 
 /* ============================================================================
  * Internal Helper Functions - Frame Processing
@@ -1016,7 +1018,8 @@ void ws_frame_reset (SocketWS_FrameParse *frame);
  * @see RFC 6455 Section 5.2 for frame header format.
  */
 SocketWS_Error ws_frame_parse_header (SocketWS_FrameParse *frame,
-                                      const unsigned char *data, size_t len,
+                                      const unsigned char *data,
+                                      size_t len,
                                       size_t *consumed);
 
 /**
@@ -1052,8 +1055,10 @@ int ws_recv_frame (SocketWS_T ws, SocketWS_FrameParse *frame_out);
  * @see ws_mask_payload() to mask payload after header.
  * @see RFC 6455 Section 5.2 for header encoding details.
  */
-size_t ws_frame_build_header (unsigned char *header, int fin,
-                              SocketWS_Opcode opcode, int masked,
+size_t ws_frame_build_header (unsigned char *header,
+                              int fin,
+                              SocketWS_Opcode opcode,
+                              int masked,
                               const unsigned char *mask_key,
                               uint64_t payload_len);
 
@@ -1070,8 +1075,8 @@ size_t ws_frame_build_header (unsigned char *header, int fin,
  * @see ws_mask_payload_offset() for incremental masking.
  * @see RFC 6455 Section 5.3 for masking algorithm.
  */
-void ws_mask_payload (unsigned char *data, size_t len,
-                      const unsigned char mask[4]);
+void
+ws_mask_payload (unsigned char *data, size_t len, const unsigned char mask[4]);
 
 /**
  * @brief Applies XOR masking to payload starting from a given mask offset.
@@ -1087,8 +1092,10 @@ void ws_mask_payload (unsigned char *data, size_t len,
  * @see ws_mask_payload() for full payload masking.
  * @see RFC 6455 Section 5.3 masking details.
  */
-size_t ws_mask_payload_offset (unsigned char *data, size_t len,
-                               const unsigned char mask[4], size_t offset);
+size_t ws_mask_payload_offset (unsigned char *data,
+                               size_t len,
+                               const unsigned char mask[4],
+                               size_t offset);
 
 /* ============================================================================
  * Internal Helper Functions - Handshake
@@ -1139,8 +1146,7 @@ int ws_handshake_client_process (SocketWS_T ws);
  * @see ws_handshake_server_process() to send response.
  * @see RFC 6455 Section 4.2.2 for server validation.
  */
-int ws_handshake_server_init (SocketWS_T ws,
-                              const SocketHTTP_Request *request);
+int ws_handshake_server_init (SocketWS_T ws, const SocketHTTP_Request *request);
 
 /**
  * @brief Processes server handshake I/O in non-blocking manner.
@@ -1216,8 +1222,10 @@ void ws_compression_free (SocketWS_T ws);
  * @see ws_decompress_message() counterpart.
  * @see RFC 7692 Section 7 for compression format.
  */
-int ws_compress_message (SocketWS_T ws, const unsigned char *input,
-                         size_t input_len, unsigned char **output,
+int ws_compress_message (SocketWS_T ws,
+                         const unsigned char *input,
+                         size_t input_len,
+                         unsigned char **output,
                          size_t *output_len);
 
 /**
@@ -1235,8 +1243,10 @@ int ws_compress_message (SocketWS_T ws, const unsigned char *input,
  * @see ws_compress_message() for compression.
  * @see RFC 7692 Section 7 for decompression rules.
  */
-int ws_decompress_message (SocketWS_T ws, const unsigned char *input,
-                           size_t input_len, unsigned char **output,
+int ws_decompress_message (SocketWS_T ws,
+                           const unsigned char *input,
+                           size_t input_len,
+                           unsigned char **output,
                            size_t *output_len);
 #endif
 
@@ -1308,8 +1318,10 @@ int ws_send_pong (SocketWS_T ws, const unsigned char *payload, size_t len);
  * @see ws_send_close() for CLOSE response.
  * @see RFC 6455 Section 5.5 for control frame processing.
  */
-int ws_handle_control_frame (SocketWS_T ws, SocketWS_Opcode opcode,
-                             const unsigned char *payload, size_t len);
+int ws_handle_control_frame (SocketWS_T ws,
+                             SocketWS_Opcode opcode,
+                             const unsigned char *payload,
+                             size_t len);
 
 /* ============================================================================
  * Internal Helper Functions - Message Handling
@@ -1344,7 +1356,9 @@ void ws_message_reset (SocketWS_MessageAssembly *message);
  * @see SocketWS_MessageAssembly for state.
  * @see RFC 6455 Section 5.4 for message fragmentation.
  */
-int ws_message_append (SocketWS_T ws, const unsigned char *data, size_t len,
+int ws_message_append (SocketWS_T ws,
+                       const unsigned char *data,
+                       size_t len,
                        int is_text);
 
 /**

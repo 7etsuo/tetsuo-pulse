@@ -7,7 +7,8 @@
 /**
  * SocketHTTP-uri.c - URI Parsing (RFC 3986)
  *
- * Single-pass state machine parser for absolute URIs, relative references, IPv6.
+ * Single-pass state machine parser for absolute URIs, relative references,
+ * IPv6.
  */
 
 #include <assert.h>
@@ -52,9 +53,12 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP);
  */
 
 static SocketHTTP_URIResult validate_reg_name (const char *host, size_t len);
-static SocketHTTP_URIResult validate_userinfo (const char *userinfo, size_t len);
-static SocketHTTP_URIResult validate_host (const char *host, size_t len, int *out_is_ipv6);
-static SocketHTTP_URIResult validate_path_query (const char *s, size_t len, int is_path);
+static SocketHTTP_URIResult
+validate_userinfo (const char *userinfo, size_t len);
+static SocketHTTP_URIResult
+validate_host (const char *host, size_t len, int *out_is_ipv6);
+static SocketHTTP_URIResult
+validate_path_query (const char *s, size_t len, int is_path);
 static SocketHTTP_URIResult validate_fragment (const char *s, size_t len);
 
 /* ============================================================================
@@ -111,8 +115,11 @@ scheme_to_lower (char *scheme, size_t len)
 }
 
 static SocketHTTP_URIResult
-uri_alloc_component (Arena_T arena, const char *start, const char *end,
-                     const char **out_str, size_t *out_len)
+uri_alloc_component (Arena_T arena,
+                     const char *start,
+                     const char *end,
+                     const char **out_str,
+                     size_t *out_len)
 {
   if (!start || !end || end <= start)
     return URI_PARSE_OK;
@@ -130,10 +137,15 @@ uri_alloc_component (Arena_T arena, const char *start, const char *end,
 typedef SocketHTTP_URIResult (*ComponentValidator) (const char *s, size_t len);
 
 static SocketHTTP_URIResult
-alloc_and_validate (Arena_T arena, const char *start, const char *end,
-                    size_t max_len, ComponentValidator validator,
+alloc_and_validate (Arena_T arena,
+                    const char *start,
+                    const char *end,
+                    size_t max_len,
+                    ComponentValidator validator,
                     void (*post_process) (char *str, size_t len),
-                    const char **out_str, size_t *out_len, int alloc_empty)
+                    const char **out_str,
+                    size_t *out_len,
+                    int alloc_empty)
 {
   *out_str = NULL;
   *out_len = 0;
@@ -542,10 +554,12 @@ uri_parse_port (const char *start, const char *end, int *port_out)
 }
 
 static SocketHTTP_URIResult
-uri_alloc_scheme (const URIParseContext *ctx, SocketHTTP_URI *result,
+uri_alloc_scheme (const URIParseContext *ctx,
+                  SocketHTTP_URI *result,
                   Arena_T arena)
 {
-  if (!ctx->scheme_start || !ctx->scheme_end || ctx->scheme_end <= ctx->scheme_start)
+  if (!ctx->scheme_start || !ctx->scheme_end
+      || ctx->scheme_end <= ctx->scheme_start)
     return URI_PARSE_OK;
 
   size_t slen = (size_t)(ctx->scheme_end - ctx->scheme_start);
@@ -560,7 +574,8 @@ uri_alloc_scheme (const URIParseContext *ctx, SocketHTTP_URI *result,
 }
 
 static SocketHTTP_URIResult
-uri_alloc_userinfo (const URIParseContext *ctx, SocketHTTP_URI *result,
+uri_alloc_userinfo (const URIParseContext *ctx,
+                    SocketHTTP_URI *result,
                     Arena_T arena)
 {
   SocketHTTP_URIResult r;
@@ -572,8 +587,11 @@ uri_alloc_userinfo (const URIParseContext *ctx, SocketHTTP_URI *result,
         return URI_PARSE_TOO_LONG;
     }
 
-  r = uri_alloc_component (arena, ctx->userinfo_start, ctx->userinfo_end,
-                           &result->userinfo, &result->userinfo_len);
+  r = uri_alloc_component (arena,
+                           ctx->userinfo_start,
+                           ctx->userinfo_end,
+                           &result->userinfo,
+                           &result->userinfo_len);
   if (r != URI_PARSE_OK)
     return r;
 
@@ -588,7 +606,8 @@ uri_alloc_userinfo (const URIParseContext *ctx, SocketHTTP_URI *result,
 }
 
 static SocketHTTP_URIResult
-uri_alloc_host (const URIParseContext *ctx, SocketHTTP_URI *result,
+uri_alloc_host (const URIParseContext *ctx,
+                SocketHTTP_URI *result,
                 Arena_T arena)
 {
   SocketHTTP_URIResult r;
@@ -600,8 +619,8 @@ uri_alloc_host (const URIParseContext *ctx, SocketHTTP_URI *result,
         return URI_PARSE_TOO_LONG;
     }
 
-  r = uri_alloc_component (arena, ctx->host_start, ctx->host_end,
-                           &result->host, &result->host_len);
+  r = uri_alloc_component (
+      arena, ctx->host_start, ctx->host_end, &result->host, &result->host_len);
   if (r != URI_PARSE_OK)
     return r;
 
@@ -617,8 +636,10 @@ uri_alloc_host (const URIParseContext *ctx, SocketHTTP_URI *result,
 }
 
 static SocketHTTP_URIResult
-uri_alloc_path (const URIParseContext *ctx, SocketHTTP_URI *result,
-                Arena_T arena, const char *end)
+uri_alloc_path (const URIParseContext *ctx,
+                SocketHTTP_URI *result,
+                Arena_T arena,
+                const char *end)
 {
   SocketHTTP_URIResult r;
 
@@ -637,8 +658,8 @@ uri_alloc_path (const URIParseContext *ctx, SocketHTTP_URI *result,
   if (path_len_calc > URI_MAX_PATH_LEN)
     return URI_PARSE_TOO_LONG;
 
-  r = uri_alloc_component (arena, ctx->path_start, path_end, &result->path,
-                           &result->path_len);
+  r = uri_alloc_component (
+      arena, ctx->path_start, path_end, &result->path, &result->path_len);
   if (r != URI_PARSE_OK)
     return r;
 
@@ -653,8 +674,10 @@ uri_alloc_path (const URIParseContext *ctx, SocketHTTP_URI *result,
 }
 
 static SocketHTTP_URIResult
-uri_alloc_query (const URIParseContext *ctx, SocketHTTP_URI *result,
-                 Arena_T arena, const char *end)
+uri_alloc_query (const URIParseContext *ctx,
+                 SocketHTTP_URI *result,
+                 Arena_T arena,
+                 const char *end)
 {
   SocketHTTP_URIResult r;
 
@@ -666,8 +689,8 @@ uri_alloc_query (const URIParseContext *ctx, SocketHTTP_URI *result,
   if (query_len_calc > URI_MAX_QUERY_LEN)
     return URI_PARSE_TOO_LONG;
 
-  r = uri_alloc_component (arena, ctx->query_start, query_end,
-                           &result->query, &result->query_len);
+  r = uri_alloc_component (
+      arena, ctx->query_start, query_end, &result->query, &result->query_len);
   if (r != URI_PARSE_OK)
     return r;
 
@@ -682,8 +705,10 @@ uri_alloc_query (const URIParseContext *ctx, SocketHTTP_URI *result,
 }
 
 static SocketHTTP_URIResult
-uri_alloc_fragment (const URIParseContext *ctx, SocketHTTP_URI *result,
-                    Arena_T arena, const char *end)
+uri_alloc_fragment (const URIParseContext *ctx,
+                    SocketHTTP_URI *result,
+                    Arena_T arena,
+                    const char *end)
 {
   SocketHTTP_URIResult r;
 
@@ -695,8 +720,11 @@ uri_alloc_fragment (const URIParseContext *ctx, SocketHTTP_URI *result,
   if (frag_len_calc > URI_MAX_FRAGMENT_LEN)
     return URI_PARSE_TOO_LONG;
 
-  r = uri_alloc_component (arena, ctx->fragment_start, fragment_end,
-                           &result->fragment, &result->fragment_len);
+  r = uri_alloc_component (arena,
+                           ctx->fragment_start,
+                           fragment_end,
+                           &result->fragment,
+                           &result->fragment_len);
   if (r != URI_PARSE_OK)
     return r;
 
@@ -711,8 +739,10 @@ uri_alloc_fragment (const URIParseContext *ctx, SocketHTTP_URI *result,
 }
 
 static SocketHTTP_URIResult
-uri_alloc_all_components (const URIParseContext *ctx, SocketHTTP_URI *result,
-                          Arena_T arena, const char *end)
+uri_alloc_all_components (const URIParseContext *ctx,
+                          SocketHTTP_URI *result,
+                          Arena_T arena,
+                          const char *end)
 {
   SocketHTTP_URIResult r;
 
@@ -776,7 +806,9 @@ SocketHTTP_URI_result_string (SocketHTTP_URIResult result)
 }
 
 SocketHTTP_URIResult
-SocketHTTP_URI_parse (const char *uri, size_t len, SocketHTTP_URI *result,
+SocketHTTP_URI_parse (const char *uri,
+                      size_t len,
+                      SocketHTTP_URI *result,
                       Arena_T arena)
 {
   if (!uri || !result || !arena)
@@ -831,7 +863,9 @@ SocketHTTP_URI_is_secure (const SocketHTTP_URI *uri)
 }
 
 ssize_t
-SocketHTTP_URI_encode (const char *input, size_t len, char *output,
+SocketHTTP_URI_encode (const char *input,
+                       size_t len,
+                       char *output,
                        size_t output_size)
 {
   static const char hex[] = "0123456789ABCDEF";
@@ -869,7 +903,9 @@ SocketHTTP_URI_encode (const char *input, size_t len, char *output,
 }
 
 ssize_t
-SocketHTTP_URI_decode (const char *input, size_t len, char *output,
+SocketHTTP_URI_decode (const char *input,
+                       size_t len,
+                       char *output,
                        size_t output_size)
 {
   if (!input || !output)
@@ -919,27 +955,29 @@ SocketHTTP_URI_decode (const char *input, size_t len, char *output,
   return (ssize_t)out_len;
 }
 
-#define URI_APPEND_STR(out, pos, size, s, l)                                  \
-  do                                                                          \
-    {                                                                         \
-      if ((pos) + (l) >= (size))                                              \
-        return -1;                                                            \
-      memcpy ((out) + (pos), (s), (l));                                       \
-      (pos) += (l);                                                           \
-    }                                                                         \
+#define URI_APPEND_STR(out, pos, size, s, l) \
+  do                                         \
+    {                                        \
+      if ((pos) + (l) >= (size))             \
+        return -1;                           \
+      memcpy ((out) + (pos), (s), (l));      \
+      (pos) += (l);                          \
+    }                                        \
   while (0)
 
-#define URI_APPEND_CHAR(out, pos, size, c)                                    \
-  do                                                                          \
-    {                                                                         \
-      if ((pos) + 1 >= (size))                                                \
-        return -1;                                                            \
-      (out)[(pos)++] = (c);                                                   \
-    }                                                                         \
+#define URI_APPEND_CHAR(out, pos, size, c) \
+  do                                       \
+    {                                      \
+      if ((pos) + 1 >= (size))             \
+        return -1;                         \
+      (out)[(pos)++] = (c);                \
+    }                                      \
   while (0)
 
 ssize_t
-SocketHTTP_URI_build (const SocketHTTP_URI *uri, char *output, size_t output_size)
+SocketHTTP_URI_build (const SocketHTTP_URI *uri,
+                      char *output,
+                      size_t output_size)
 {
   if (!uri || !output || output_size == 0)
     return -1;
@@ -962,7 +1000,8 @@ SocketHTTP_URI_build (const SocketHTTP_URI *uri, char *output, size_t output_siz
     {
       if (uri->userinfo && uri->userinfo_len > 0)
         {
-          URI_APPEND_STR (output, pos, output_size, uri->userinfo, uri->userinfo_len);
+          URI_APPEND_STR (
+              output, pos, output_size, uri->userinfo, uri->userinfo_len);
           URI_APPEND_CHAR (output, pos, output_size, '@');
         }
 
@@ -971,9 +1010,11 @@ SocketHTTP_URI_build (const SocketHTTP_URI *uri, char *output, size_t output_siz
       if (uri->port >= 0)
         {
           char port_buf[URI_PORT_BUFSIZE];
-          int port_len = snprintf (port_buf, sizeof (port_buf), ":%d", uri->port);
+          int port_len
+              = snprintf (port_buf, sizeof (port_buf), ":%d", uri->port);
           if (port_len > 0 && (size_t)port_len < sizeof (port_buf))
-            URI_APPEND_STR (output, pos, output_size, port_buf, (size_t)port_len);
+            URI_APPEND_STR (
+                output, pos, output_size, port_buf, (size_t)port_len);
         }
     }
 
@@ -989,7 +1030,8 @@ SocketHTTP_URI_build (const SocketHTTP_URI *uri, char *output, size_t output_siz
   if (uri->fragment && uri->fragment_len > 0)
     {
       URI_APPEND_CHAR (output, pos, output_size, '#');
-      URI_APPEND_STR (output, pos, output_size, uri->fragment, uri->fragment_len);
+      URI_APPEND_STR (
+          output, pos, output_size, uri->fragment, uri->fragment_len);
     }
 
   output[pos] = '\0';
@@ -1008,7 +1050,8 @@ static inline int
 is_unreserved (unsigned char c)
 {
   return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
-         || (c >= '0' && c <= '9') || c == '-' || c == '.' || c == '_' || c == '~';
+         || (c >= '0' && c <= '9') || c == '-' || c == '.' || c == '_'
+         || c == '~';
 }
 
 static inline int
@@ -1020,11 +1063,13 @@ is_sub_delims (unsigned char c)
 static inline int
 is_pchar_raw (unsigned char c)
 {
-  return SOCKETHTTP_IS_UNRESERVED (c) || is_sub_delims (c) || c == ':' || c == '@';
+  return SOCKETHTTP_IS_UNRESERVED (c) || is_sub_delims (c) || c == ':'
+         || c == '@';
 }
 
 static SocketHTTP_URIResult
-validate_string_chars (const char *start, size_t len,
+validate_string_chars (const char *start,
+                       size_t len,
                        int (*validator) (unsigned char),
                        SocketHTTP_URIResult error_type)
 {
@@ -1075,8 +1120,8 @@ is_userinfo_raw (unsigned char c)
 static SocketHTTP_URIResult
 validate_reg_name (const char *host, size_t len)
 {
-  SocketHTTP_URIResult r = validate_string_chars (host, len, is_reg_name_raw,
-                                                  URI_PARSE_INVALID_HOST);
+  SocketHTTP_URIResult r = validate_string_chars (
+      host, len, is_reg_name_raw, URI_PARSE_INVALID_HOST);
   if (r != URI_PARSE_OK)
     return r;
   return validate_pct_encoded (host, len);
@@ -1085,8 +1130,8 @@ validate_reg_name (const char *host, size_t len)
 static SocketHTTP_URIResult
 validate_userinfo (const char *userinfo, size_t len)
 {
-  SocketHTTP_URIResult r = validate_string_chars (userinfo, len, is_userinfo_raw,
-                                                  URI_PARSE_ERROR);
+  SocketHTTP_URIResult r
+      = validate_string_chars (userinfo, len, is_userinfo_raw, URI_PARSE_ERROR);
   if (r != URI_PARSE_OK)
     return r;
   return validate_pct_encoded (userinfo, len);
@@ -1108,9 +1153,8 @@ validate_ipv6_literal (const char *host, size_t len)
   if (inner_len == 0)
     return URI_PARSE_INVALID_HOST;
 
-  SocketHTTP_URIResult r = validate_string_chars (host + 1, inner_len,
-                                                  is_ipv6_char,
-                                                  URI_PARSE_INVALID_HOST);
+  SocketHTTP_URIResult r = validate_string_chars (
+      host + 1, inner_len, is_ipv6_char, URI_PARSE_INVALID_HOST);
   if (r != URI_PARSE_OK)
     return r;
 
@@ -1161,8 +1205,7 @@ check_path_traversal (const char *path, size_t len)
     {
       if (path[i] == '%' && (path[i + 1] == '2')
           && (path[i + 2] == 'e' || path[i + 2] == 'E') && path[i + 3] == '%'
-          && (path[i + 4] == '2')
-          && (path[i + 5] == 'e' || path[i + 5] == 'E'))
+          && (path[i + 4] == '2') && (path[i + 5] == 'e' || path[i + 5] == 'E'))
         {
           return URI_PARSE_INVALID_PATH;
         }
@@ -1208,7 +1251,8 @@ check_path_traversal (const char *path, size_t len)
 static SocketHTTP_URIResult
 validate_path_query (const char *s, size_t len, int is_path)
 {
-  SocketHTTP_URIResult err = is_path ? URI_PARSE_INVALID_PATH : URI_PARSE_INVALID_QUERY;
+  SocketHTTP_URIResult err
+      = is_path ? URI_PARSE_INVALID_PATH : URI_PARSE_INVALID_QUERY;
   size_t i = 0;
   while (i < len)
     {
@@ -1267,7 +1311,9 @@ find_token_end (const char *p, const char *end, const char *delims)
 }
 
 static const char *
-parse_quoted_value (const char *p, const char *end, const char **value_start,
+parse_quoted_value (const char *p,
+                    const char *end,
+                    const char **value_start,
                     size_t *value_len)
 {
   *value_start = p;
@@ -1305,8 +1351,10 @@ parse_quoted_value (const char *p, const char *end, const char **value_start,
 }
 
 static const char *
-mediatype_parse_type_subtype (const char *p, const char *end,
-                              SocketHTTP_MediaType *result, Arena_T arena)
+mediatype_parse_type_subtype (const char *p,
+                              const char *end,
+                              SocketHTTP_MediaType *result,
+                              Arena_T arena)
 {
   p = skip_ows (p, end);
 
@@ -1348,8 +1396,10 @@ mediatype_parse_type_subtype (const char *p, const char *end,
 }
 
 static const char *
-mediatype_parse_parameter (const char *p, const char *end,
-                           SocketHTTP_MediaType *result, Arena_T arena)
+mediatype_parse_parameter (const char *p,
+                           const char *end,
+                           SocketHTTP_MediaType *result,
+                           Arena_T arena)
 {
   while (p < end && (*p == ' ' || *p == '\t' || *p == ';'))
     p++;
@@ -1404,7 +1454,8 @@ mediatype_parse_parameter (const char *p, const char *end,
         }
     }
   else if (param_len == MEDIATYPE_BOUNDARY_LEN
-           && strncasecmp (param_start, "boundary", MEDIATYPE_BOUNDARY_LEN) == 0)
+           && strncasecmp (param_start, "boundary", MEDIATYPE_BOUNDARY_LEN)
+                  == 0)
     {
       char *bd = arena_strndup (arena, value_start, value_len);
       if (bd)
@@ -1418,8 +1469,10 @@ mediatype_parse_parameter (const char *p, const char *end,
 }
 
 int
-SocketHTTP_MediaType_parse (const char *value, size_t len,
-                            SocketHTTP_MediaType *result, Arena_T arena)
+SocketHTTP_MediaType_parse (const char *value,
+                            size_t len,
+                            SocketHTTP_MediaType *result,
+                            Arena_T arena)
 {
   if (!value || !result || !arena)
     return -1;
@@ -1447,7 +1500,8 @@ SocketHTTP_MediaType_parse (const char *value, size_t len,
 }
 
 int
-SocketHTTP_MediaType_matches (const SocketHTTP_MediaType *type, const char *pattern)
+SocketHTTP_MediaType_matches (const SocketHTTP_MediaType *type,
+                              const char *pattern)
 {
   if (!type || !pattern)
     return 0;
@@ -1530,8 +1584,10 @@ accept_parse_quality (const char *p, const char *end, const char **out_pos)
 }
 
 static const char *
-accept_parse_single (const char *p, const char *end,
-                     SocketHTTP_QualityValue *result, Arena_T arena)
+accept_parse_single (const char *p,
+                     const char *end,
+                     SocketHTTP_QualityValue *result,
+                     Arena_T arena)
 {
   while (p < end && (*p == ' ' || *p == '\t' || *p == ','))
     p++;
@@ -1544,7 +1600,8 @@ accept_parse_single (const char *p, const char *end,
     p++;
 
   const char *value_end = p;
-  while (value_end > value_start && (value_end[-1] == ' ' || value_end[-1] == '\t'))
+  while (value_end > value_start
+         && (value_end[-1] == ' ' || value_end[-1] == '\t'))
     value_end--;
 
   if (value_end == value_start)
@@ -1581,8 +1638,10 @@ accept_parse_single (const char *p, const char *end,
 }
 
 size_t
-SocketHTTP_parse_accept (const char *value, size_t len,
-                         SocketHTTP_QualityValue *results, size_t max_results,
+SocketHTTP_parse_accept (const char *value,
+                         size_t len,
+                         SocketHTTP_QualityValue *results,
+                         size_t max_results,
                          Arena_T arena)
 {
   if (!value || !results || max_results == 0 || !arena)

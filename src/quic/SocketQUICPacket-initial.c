@@ -5,7 +5,8 @@
  */
 
 /**
- * SocketQUICPacket-initial.c - QUIC Initial Packet Format (RFC 9000 Section 17.2.2)
+ * SocketQUICPacket-initial.c - QUIC Initial Packet Format (RFC 9000
+ * Section 17.2.2)
  *
  * Implements Initial packet key derivation, protection, and validation.
  * Initial packets are the first packets exchanged between client and server
@@ -46,20 +47,18 @@
  *
  * 0x38762cf7f55934b34d179ae6a4c80cadccbb7f0a
  */
-static const uint8_t quic_v1_initial_salt[QUIC_V1_INITIAL_SALT_LEN] = {
-  0x38, 0x76, 0x2c, 0xf7, 0xf5, 0x59, 0x34, 0xb3, 0x4d, 0x17,
-  0x9a, 0xe6, 0xa4, 0xc8, 0x0c, 0xad, 0xcc, 0xbb, 0x7f, 0x0a
-};
+static const uint8_t quic_v1_initial_salt[QUIC_V1_INITIAL_SALT_LEN]
+    = { 0x38, 0x76, 0x2c, 0xf7, 0xf5, 0x59, 0x34, 0xb3, 0x4d, 0x17,
+        0x9a, 0xe6, 0xa4, 0xc8, 0x0c, 0xad, 0xcc, 0xbb, 0x7f, 0x0a };
 
 /**
  * @brief QUIC v2 Initial salt (RFC 9369).
  *
  * 0x0dede3def700a6db819381be6e269dcbf9bd2ed9
  */
-static const uint8_t quic_v2_initial_salt[QUIC_V1_INITIAL_SALT_LEN] = {
-  0x0d, 0xed, 0xe3, 0xde, 0xf7, 0x00, 0xa6, 0xdb, 0x81, 0x93,
-  0x81, 0xbe, 0x6e, 0x26, 0x9d, 0xcb, 0xf9, 0xbd, 0x2e, 0xd9
-};
+static const uint8_t quic_v2_initial_salt[QUIC_V1_INITIAL_SALT_LEN]
+    = { 0x0d, 0xed, 0xe3, 0xde, 0xf7, 0x00, 0xa6, 0xdb, 0x81, 0x93,
+        0x81, 0xbe, 0x6e, 0x26, 0x9d, 0xcb, 0xf9, 0xbd, 0x2e, 0xd9 };
 
 /* HKDF-Expand-Label labels (RFC 9001 Section 5.1) */
 static const char label_client_in[] = "client in";
@@ -69,25 +68,24 @@ static const char label_quic_iv[] = "quic iv";
 static const char label_quic_hp[] = "quic hp";
 
 /* Compile-time string length for performance-critical paths */
-#define STRLEN_LIT(s) (sizeof(s) - 1)
+#define STRLEN_LIT(s) (sizeof (s) - 1)
 
 /* ============================================================================
  * Result String Table
  * ============================================================================
  */
 
-static const char *result_strings[] = {
-  [QUIC_INITIAL_OK] = "OK",
-  [QUIC_INITIAL_ERROR_NULL] = "NULL pointer argument",
-  [QUIC_INITIAL_ERROR_CRYPTO] = "Cryptographic operation failed",
-  [QUIC_INITIAL_ERROR_BUFFER] = "Buffer too small",
-  [QUIC_INITIAL_ERROR_TRUNCATED] = "Packet too short",
-  [QUIC_INITIAL_ERROR_INVALID] = "Invalid packet format",
-  [QUIC_INITIAL_ERROR_AUTH] = "AEAD authentication failed",
-  [QUIC_INITIAL_ERROR_SIZE] = "Packet size below minimum",
-  [QUIC_INITIAL_ERROR_TOKEN] = "Server Initial has non-zero token",
-  [QUIC_INITIAL_ERROR_VERSION] = "Unsupported QUIC version"
-};
+static const char *result_strings[]
+    = { [QUIC_INITIAL_OK] = "OK",
+        [QUIC_INITIAL_ERROR_NULL] = "NULL pointer argument",
+        [QUIC_INITIAL_ERROR_CRYPTO] = "Cryptographic operation failed",
+        [QUIC_INITIAL_ERROR_BUFFER] = "Buffer too small",
+        [QUIC_INITIAL_ERROR_TRUNCATED] = "Packet too short",
+        [QUIC_INITIAL_ERROR_INVALID] = "Invalid packet format",
+        [QUIC_INITIAL_ERROR_AUTH] = "AEAD authentication failed",
+        [QUIC_INITIAL_ERROR_SIZE] = "Packet size below minimum",
+        [QUIC_INITIAL_ERROR_TOKEN] = "Server Initial has non-zero token",
+        [QUIC_INITIAL_ERROR_VERSION] = "Unsupported QUIC version" };
 
 DEFINE_RESULT_STRING_FUNC (SocketQUICInitial, QUIC_INITIAL_ERROR_VERSION)
 
@@ -118,7 +116,8 @@ SocketQUICInitialKeys_clear (SocketQUICInitialKeys_T *keys)
  */
 
 SocketQUICInitial_Result
-SocketQUICInitial_get_salt (uint32_t version, const uint8_t **salt,
+SocketQUICInitial_get_salt (uint32_t version,
+                            const uint8_t **salt,
                             size_t *salt_len)
 {
   if (salt == NULL || salt_len == NULL)
@@ -150,7 +149,8 @@ SocketQUICInitial_get_salt (uint32_t version, const uint8_t **salt,
 
 SocketQUICInitial_Result
 SocketQUICInitial_validate (const SocketQUICPacketHeader_T *header,
-                            size_t total_len, int is_client)
+                            size_t total_len,
+                            int is_client)
 {
   if (header == NULL)
     return QUIC_INITIAL_ERROR_NULL;
@@ -189,9 +189,12 @@ SocketQUICInitial_padding_needed (size_t current_len)
  * @brief HKDF-Extract using SHA-256 (OpenSSL 3.x EVP_KDF API).
  */
 static int
-hkdf_extract (const uint8_t *salt, size_t salt_len,
-              const uint8_t *ikm, size_t ikm_len,
-              uint8_t *prk, size_t prk_len)
+hkdf_extract (const uint8_t *salt,
+              size_t salt_len,
+              const uint8_t *ikm,
+              size_t ikm_len,
+              uint8_t *prk,
+              size_t prk_len)
 {
   EVP_KDF *kdf = NULL;
   EVP_KDF_CTX *kctx = NULL;
@@ -207,12 +210,12 @@ hkdf_extract (const uint8_t *salt, size_t salt_len,
   if (kctx == NULL)
     goto cleanup;
 
-  params[0] = OSSL_PARAM_construct_utf8_string (OSSL_KDF_PARAM_DIGEST,
-                                                 "SHA256", 0);
-  params[1] = OSSL_PARAM_construct_octet_string (OSSL_KDF_PARAM_KEY,
-                                                  (void *)ikm, ikm_len);
-  params[2] = OSSL_PARAM_construct_octet_string (OSSL_KDF_PARAM_SALT,
-                                                  (void *)salt, salt_len);
+  params[0]
+      = OSSL_PARAM_construct_utf8_string (OSSL_KDF_PARAM_DIGEST, "SHA256", 0);
+  params[1] = OSSL_PARAM_construct_octet_string (
+      OSSL_KDF_PARAM_KEY, (void *)ikm, ikm_len);
+  params[2] = OSSL_PARAM_construct_octet_string (
+      OSSL_KDF_PARAM_SALT, (void *)salt, salt_len);
   params[3] = OSSL_PARAM_construct_int (OSSL_KDF_PARAM_MODE, &mode);
   params[4] = OSSL_PARAM_construct_end ();
 
@@ -242,15 +245,19 @@ cleanup:
  * @param context Context data (may be NULL if context_len is 0)
  * @param context_len Length of context
  * @param output_len Desired output length for HKDF
- * @param hkdf_label Buffer to store constructed label (must be at least QUIC_HKDF_LABEL_MAX_SIZE bytes)
+ * @param hkdf_label Buffer to store constructed label (must be at least
+ * QUIC_HKDF_LABEL_MAX_SIZE bytes)
  * @param hkdf_label_len Output: actual length of constructed label
  * @return 0 on success, -1 on error
  */
 static int
-build_hkdf_label (const char *label, size_t label_len,
-                  const uint8_t *context, size_t context_len,
+build_hkdf_label (const char *label,
+                  size_t label_len,
+                  const uint8_t *context,
+                  size_t context_len,
                   size_t output_len,
-                  uint8_t *hkdf_label, size_t *hkdf_label_len)
+                  uint8_t *hkdf_label,
+                  size_t *hkdf_label_len)
 {
   *hkdf_label_len = 0;
 
@@ -294,10 +301,14 @@ build_hkdf_label (const char *label, size_t label_len,
  * Implements the TLS 1.3 HKDF-Expand-Label function per RFC 8446 Section 7.1.
  */
 static int
-hkdf_expand_label (const uint8_t *secret, size_t secret_len,
-                   const char *label, size_t label_len,
-                   const uint8_t *context, size_t context_len,
-                   uint8_t *output, size_t output_len)
+hkdf_expand_label (const uint8_t *secret,
+                   size_t secret_len,
+                   const char *label,
+                   size_t label_len,
+                   const uint8_t *context,
+                   size_t context_len,
+                   uint8_t *output,
+                   size_t output_len)
 {
   EVP_KDF *kdf = NULL;
   EVP_KDF_CTX *kctx = NULL;
@@ -308,8 +319,14 @@ hkdf_expand_label (const uint8_t *secret, size_t secret_len,
   int mode = EVP_KDF_HKDF_MODE_EXPAND_ONLY;
 
   /* Build HkdfLabel structure per RFC 8446 */
-  if (build_hkdf_label (label, label_len, context, context_len,
-                        output_len, hkdf_label, &hkdf_label_len) < 0)
+  if (build_hkdf_label (label,
+                        label_len,
+                        context,
+                        context_len,
+                        output_len,
+                        hkdf_label,
+                        &hkdf_label_len)
+      < 0)
     goto cleanup;
 
   kdf = EVP_KDF_fetch (NULL, "HKDF", NULL);
@@ -320,12 +337,12 @@ hkdf_expand_label (const uint8_t *secret, size_t secret_len,
   if (kctx == NULL)
     goto cleanup;
 
-  params[0] = OSSL_PARAM_construct_utf8_string (OSSL_KDF_PARAM_DIGEST,
-                                                 "SHA256", 0);
-  params[1] = OSSL_PARAM_construct_octet_string (OSSL_KDF_PARAM_KEY,
-                                                  (void *)secret, secret_len);
-  params[2] = OSSL_PARAM_construct_octet_string (OSSL_KDF_PARAM_INFO,
-                                                  hkdf_label, hkdf_label_len);
+  params[0]
+      = OSSL_PARAM_construct_utf8_string (OSSL_KDF_PARAM_DIGEST, "SHA256", 0);
+  params[1] = OSSL_PARAM_construct_octet_string (
+      OSSL_KDF_PARAM_KEY, (void *)secret, secret_len);
+  params[2] = OSSL_PARAM_construct_octet_string (
+      OSSL_KDF_PARAM_INFO, hkdf_label, hkdf_label_len);
   params[3] = OSSL_PARAM_construct_int (OSSL_KDF_PARAM_MODE, &mode);
   params[4] = OSSL_PARAM_construct_end ();
 
@@ -345,28 +362,46 @@ cleanup:
  * @brief Derive keys from a secret using HKDF-Expand-Label.
  */
 static int
-derive_traffic_keys (const uint8_t *secret, size_t secret_len,
-                     uint8_t *key, uint8_t *iv, uint8_t *hp_key)
+derive_traffic_keys (const uint8_t *secret,
+                     size_t secret_len,
+                     uint8_t *key,
+                     uint8_t *iv,
+                     uint8_t *hp_key)
 {
   /* Derive key */
-  if (hkdf_expand_label (secret, secret_len,
-                          label_quic_key, STRLEN_LIT (label_quic_key),
-                          NULL, 0,
-                          key, QUIC_INITIAL_KEY_LEN) < 0)
+  if (hkdf_expand_label (secret,
+                         secret_len,
+                         label_quic_key,
+                         STRLEN_LIT (label_quic_key),
+                         NULL,
+                         0,
+                         key,
+                         QUIC_INITIAL_KEY_LEN)
+      < 0)
     return -1;
 
   /* Derive IV */
-  if (hkdf_expand_label (secret, secret_len,
-                          label_quic_iv, STRLEN_LIT (label_quic_iv),
-                          NULL, 0,
-                          iv, QUIC_INITIAL_IV_LEN) < 0)
+  if (hkdf_expand_label (secret,
+                         secret_len,
+                         label_quic_iv,
+                         STRLEN_LIT (label_quic_iv),
+                         NULL,
+                         0,
+                         iv,
+                         QUIC_INITIAL_IV_LEN)
+      < 0)
     return -1;
 
   /* Derive header protection key */
-  if (hkdf_expand_label (secret, secret_len,
-                          label_quic_hp, STRLEN_LIT (label_quic_hp),
-                          NULL, 0,
-                          hp_key, QUIC_INITIAL_HP_KEY_LEN) < 0)
+  if (hkdf_expand_label (secret,
+                         secret_len,
+                         label_quic_hp,
+                         STRLEN_LIT (label_quic_hp),
+                         NULL,
+                         0,
+                         hp_key,
+                         QUIC_INITIAL_HP_KEY_LEN)
+      < 0)
     return -1;
 
   return 0;
@@ -394,12 +429,17 @@ derive_traffic_keys (const uint8_t *secret, size_t secret_len,
  * @return 0 on success, -1 on error
  */
 static int
-derive_initial_secret (const uint8_t *salt, size_t salt_len,
+derive_initial_secret (const uint8_t *salt,
+                       size_t salt_len,
                        const SocketQUICConnectionID_T *dcid,
                        uint8_t initial_secret[SOCKET_CRYPTO_SHA256_SIZE])
 {
-  return hkdf_extract (salt, salt_len, dcid->data, dcid->len,
-                       initial_secret, SOCKET_CRYPTO_SHA256_SIZE);
+  return hkdf_extract (salt,
+                       salt_len,
+                       dcid->data,
+                       dcid->len,
+                       initial_secret,
+                       SOCKET_CRYPTO_SHA256_SIZE);
 }
 
 /**
@@ -409,8 +449,10 @@ derive_initial_secret (const uint8_t *salt, size_t salt_len,
  * client and server secrets from the initial secret.
  *
  * @param initial_secret Initial secret from HKDF-Extract
- * @param client_secret Output buffer for client secret (SOCKET_CRYPTO_SHA256_SIZE bytes)
- * @param server_secret Output buffer for server secret (SOCKET_CRYPTO_SHA256_SIZE bytes)
+ * @param client_secret Output buffer for client secret
+ * (SOCKET_CRYPTO_SHA256_SIZE bytes)
+ * @param server_secret Output buffer for server secret
+ * (SOCKET_CRYPTO_SHA256_SIZE bytes)
  * @return 0 on success, -1 on error
  */
 static int
@@ -419,17 +461,27 @@ derive_endpoint_secrets (const uint8_t *initial_secret,
                          uint8_t server_secret[SOCKET_CRYPTO_SHA256_SIZE])
 {
   /* Derive client secret */
-  if (hkdf_expand_label (initial_secret, SOCKET_CRYPTO_SHA256_SIZE,
-                         label_client_in, STRLEN_LIT (label_client_in),
-                         NULL, 0,
-                         client_secret, SOCKET_CRYPTO_SHA256_SIZE) < 0)
+  if (hkdf_expand_label (initial_secret,
+                         SOCKET_CRYPTO_SHA256_SIZE,
+                         label_client_in,
+                         STRLEN_LIT (label_client_in),
+                         NULL,
+                         0,
+                         client_secret,
+                         SOCKET_CRYPTO_SHA256_SIZE)
+      < 0)
     return -1;
 
   /* Derive server secret */
-  if (hkdf_expand_label (initial_secret, SOCKET_CRYPTO_SHA256_SIZE,
-                         label_server_in, STRLEN_LIT (label_server_in),
-                         NULL, 0,
-                         server_secret, SOCKET_CRYPTO_SHA256_SIZE) < 0)
+  if (hkdf_expand_label (initial_secret,
+                         SOCKET_CRYPTO_SHA256_SIZE,
+                         label_server_in,
+                         STRLEN_LIT (label_server_in),
+                         NULL,
+                         0,
+                         server_secret,
+                         SOCKET_CRYPTO_SHA256_SIZE)
+      < 0)
     return -1;
 
   return 0;
@@ -475,8 +527,8 @@ SocketQUICInitial_derive_keys (const SocketQUICConnectionID_T *dcid,
   initial_secret_valid = 1;
 
   /* Step 2-3: Derive client and server secrets */
-  if (derive_endpoint_secrets (initial_secret, client_secret,
-                                server_secret) < 0)
+  if (derive_endpoint_secrets (initial_secret, client_secret, server_secret)
+      < 0)
     goto cleanup;
 
   client_secret_valid = 1;
@@ -487,17 +539,21 @@ SocketQUICInitial_derive_keys (const SocketQUICConnectionID_T *dcid,
   initial_secret_valid = 0;
 
   /* Step 4: Derive client keys */
-  if (derive_traffic_keys (client_secret, SOCKET_CRYPTO_SHA256_SIZE,
-                            keys->client_key,
-                            keys->client_iv,
-                            keys->client_hp_key) < 0)
+  if (derive_traffic_keys (client_secret,
+                           SOCKET_CRYPTO_SHA256_SIZE,
+                           keys->client_key,
+                           keys->client_iv,
+                           keys->client_hp_key)
+      < 0)
     goto cleanup;
 
   /* Step 5: Derive server keys */
-  if (derive_traffic_keys (server_secret, SOCKET_CRYPTO_SHA256_SIZE,
-                            keys->server_key,
-                            keys->server_iv,
-                            keys->server_hp_key) < 0)
+  if (derive_traffic_keys (server_secret,
+                           SOCKET_CRYPTO_SHA256_SIZE,
+                           keys->server_key,
+                           keys->server_iv,
+                           keys->server_hp_key)
+      < 0)
     {
       SocketQUICInitialKeys_clear (keys);
       goto cleanup;
@@ -537,8 +593,10 @@ cleanup:
  * @brief Apply AES-ECB header protection.
  */
 static int
-apply_header_protection (uint8_t *packet, size_t header_len,
-                         const uint8_t *sample, const uint8_t *hp_key)
+apply_header_protection (uint8_t *packet,
+                         size_t header_len,
+                         const uint8_t *sample,
+                         const uint8_t *hp_key)
 {
   EVP_CIPHER_CTX *ctx = NULL;
   uint8_t mask[QUIC_HP_SAMPLE_LEN];
@@ -596,7 +654,7 @@ construct_nonce (const uint8_t *iv, uint64_t pn, uint8_t *nonce)
   memcpy (nonce, iv, QUIC_INITIAL_IV_LEN);
 
   /* XOR packet number into last bytes of IV (big-endian) */
-  for (int i = 0; i < (int)sizeof(uint64_t); i++)
+  for (int i = 0; i < (int)sizeof (uint64_t); i++)
     nonce[QUIC_INITIAL_IV_LEN - 1 - i] ^= (uint8_t)((pn >> (8 * i)) & 0xFF);
 }
 
@@ -612,9 +670,12 @@ construct_nonce (const uint8_t *iv, uint64_t pn, uint8_t *nonce)
  * @return 0 on success, -1 on error
  */
 static int
-remove_header_protection (uint8_t *packet, size_t pn_offset,
-                          size_t packet_len, const uint8_t *hp_key,
-                          uint8_t *mask, uint8_t *pn_length)
+remove_header_protection (uint8_t *packet,
+                          size_t pn_offset,
+                          size_t packet_len,
+                          const uint8_t *hp_key,
+                          uint8_t *mask,
+                          uint8_t *pn_length)
 {
   EVP_CIPHER_CTX *ctx = NULL;
   const uint8_t *sample;
@@ -674,9 +735,12 @@ cleanup:
  * @return QUIC_INITIAL_OK on success, error code on failure
  */
 static SocketQUICInitial_Result
-encrypt_aead_payload (const uint8_t *packet, size_t header_len,
-                      uint8_t *payload, size_t payload_len,
-                      const uint8_t *key, const uint8_t *nonce)
+encrypt_aead_payload (const uint8_t *packet,
+                      size_t header_len,
+                      uint8_t *payload,
+                      size_t payload_len,
+                      const uint8_t *key,
+                      const uint8_t *nonce)
 {
   EVP_CIPHER_CTX *ctx = NULL;
   int outlen;
@@ -691,8 +755,9 @@ encrypt_aead_payload (const uint8_t *packet, size_t header_len,
   if (EVP_EncryptInit_ex (ctx, EVP_aes_128_gcm (), NULL, NULL, NULL) <= 0)
     goto cleanup;
 
-  if (EVP_CIPHER_CTX_ctrl (ctx, EVP_CTRL_GCM_SET_IVLEN,
-                            QUIC_INITIAL_IV_LEN, NULL) <= 0)
+  if (EVP_CIPHER_CTX_ctrl (
+          ctx, EVP_CTRL_GCM_SET_IVLEN, QUIC_INITIAL_IV_LEN, NULL)
+      <= 0)
     goto cleanup;
 
   if (EVP_EncryptInit_ex (ctx, NULL, NULL, key, nonce) <= 0)
@@ -712,8 +777,11 @@ encrypt_aead_payload (const uint8_t *packet, size_t header_len,
     goto cleanup;
 
   /* Get authentication tag and append to payload */
-  if (EVP_CIPHER_CTX_ctrl (ctx, EVP_CTRL_GCM_GET_TAG,
-                            QUIC_INITIAL_TAG_LEN, payload + payload_len) <= 0)
+  if (EVP_CIPHER_CTX_ctrl (ctx,
+                           EVP_CTRL_GCM_GET_TAG,
+                           QUIC_INITIAL_TAG_LEN,
+                           payload + payload_len)
+      <= 0)
     goto cleanup;
 
   result = QUIC_INITIAL_OK;
@@ -736,9 +804,12 @@ cleanup:
  * @return QUIC_INITIAL_OK on success, error code on failure
  */
 static SocketQUICInitial_Result
-decrypt_aead_payload (const uint8_t *packet, size_t header_len,
-                      uint8_t *payload, size_t payload_len,
-                      const uint8_t *key, const uint8_t *nonce)
+decrypt_aead_payload (const uint8_t *packet,
+                      size_t header_len,
+                      uint8_t *payload,
+                      size_t payload_len,
+                      const uint8_t *key,
+                      const uint8_t *nonce)
 {
   EVP_CIPHER_CTX *ctx = NULL;
   int outlen;
@@ -752,8 +823,9 @@ decrypt_aead_payload (const uint8_t *packet, size_t header_len,
   if (EVP_DecryptInit_ex (ctx, EVP_aes_128_gcm (), NULL, NULL, NULL) <= 0)
     goto cleanup;
 
-  if (EVP_CIPHER_CTX_ctrl (ctx, EVP_CTRL_GCM_SET_IVLEN,
-                            QUIC_INITIAL_IV_LEN, NULL) <= 0)
+  if (EVP_CIPHER_CTX_ctrl (
+          ctx, EVP_CTRL_GCM_SET_IVLEN, QUIC_INITIAL_IV_LEN, NULL)
+      <= 0)
     goto cleanup;
 
   if (EVP_DecryptInit_ex (ctx, NULL, NULL, key, nonce) <= 0)
@@ -768,9 +840,11 @@ decrypt_aead_payload (const uint8_t *packet, size_t header_len,
     goto cleanup;
 
   /* Set expected tag */
-  if (EVP_CIPHER_CTX_ctrl (ctx, EVP_CTRL_GCM_SET_TAG,
-                            QUIC_INITIAL_TAG_LEN,
-                            payload + payload_len) <= 0)
+  if (EVP_CIPHER_CTX_ctrl (ctx,
+                           EVP_CTRL_GCM_SET_TAG,
+                           QUIC_INITIAL_TAG_LEN,
+                           payload + payload_len)
+      <= 0)
     goto cleanup;
 
   /* Verify tag and finalize */
@@ -809,7 +883,8 @@ cleanup:
  */
 static void
 select_protection_keys (const SocketQUICInitialKeys_T *keys,
-                        int is_client, int for_sender,
+                        int is_client,
+                        int for_sender,
                         const uint8_t **out_key,
                         const uint8_t **out_iv,
                         const uint8_t **out_hp_key)
@@ -833,7 +908,8 @@ select_protection_keys (const SocketQUICInitialKeys_T *keys,
 #endif /* SOCKET_HAS_TLS */
 
 SocketQUICInitial_Result
-SocketQUICInitial_protect (uint8_t *packet, size_t *packet_len,
+SocketQUICInitial_protect (uint8_t *packet,
+                           size_t *packet_len,
                            size_t header_len,
                            const SocketQUICInitialKeys_T *keys,
                            int is_client)
@@ -873,8 +949,8 @@ SocketQUICInitial_protect (uint8_t *packet, size_t *packet_len,
   construct_nonce (iv, pn, nonce);
 
   /* Encrypt payload with AEAD */
-  result = encrypt_aead_payload (packet, header_len, payload, payload_len,
-                                 key, nonce);
+  result = encrypt_aead_payload (
+      packet, header_len, payload, payload_len, key, nonce);
   if (result != QUIC_INITIAL_OK)
     {
       SocketCrypto_secure_clear (nonce, sizeof (nonce));
@@ -908,7 +984,8 @@ SocketQUICInitial_protect (uint8_t *packet, size_t *packet_len,
 }
 
 SocketQUICInitial_Result
-SocketQUICInitial_unprotect (uint8_t *packet, size_t packet_len,
+SocketQUICInitial_unprotect (uint8_t *packet,
+                             size_t packet_len,
                              size_t pn_offset,
                              const SocketQUICInitialKeys_T *keys,
                              int is_client,
@@ -936,8 +1013,9 @@ SocketQUICInitial_unprotect (uint8_t *packet, size_t packet_len,
   select_protection_keys (keys, is_client, 0, &key, &iv, &hp_key);
 
   /* Remove header protection and extract packet number length */
-  if (remove_header_protection (packet, pn_offset, packet_len,
-                                 hp_key, mask, pn_length) < 0)
+  if (remove_header_protection (
+          packet, pn_offset, packet_len, hp_key, mask, pn_length)
+      < 0)
     {
       SocketCrypto_secure_clear (mask, sizeof (mask));
       return QUIC_INITIAL_ERROR_TRUNCATED;
@@ -957,8 +1035,8 @@ SocketQUICInitial_unprotect (uint8_t *packet, size_t packet_len,
   construct_nonce (iv, pn, nonce);
 
   /* Decrypt and authenticate payload */
-  result = decrypt_aead_payload (packet, header_len, payload, payload_len,
-                                 key, nonce);
+  result = decrypt_aead_payload (
+      packet, header_len, payload, payload_len, key, nonce);
 
   /* Clear sensitive data */
   SocketCrypto_secure_clear (nonce, sizeof (nonce));

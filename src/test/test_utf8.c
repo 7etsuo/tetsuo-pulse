@@ -661,8 +661,8 @@ TEST (utf8_roundtrip_ascii)
       size_t consumed;
       int len = SocketUTF8_encode (cp, encoded);
       ASSERT_EQ (1, len);
-      ASSERT_EQ (UTF8_VALID, SocketUTF8_decode (encoded, (size_t)len, &decoded,
-                                                &consumed));
+      ASSERT_EQ (UTF8_VALID,
+                 SocketUTF8_decode (encoded, (size_t)len, &decoded, &consumed));
       ASSERT_EQ (cp, decoded);
     }
 }
@@ -686,8 +686,8 @@ TEST (utf8_roundtrip_sample)
     0x10FFFF, /* Last valid */
   };
 
-  for (size_t i = 0;
-       i < sizeof (test_codepoints) / sizeof (test_codepoints[0]); i++)
+  for (size_t i = 0; i < sizeof (test_codepoints) / sizeof (test_codepoints[0]);
+       i++)
     {
       uint32_t cp = test_codepoints[i];
       unsigned char encoded[4];
@@ -696,8 +696,8 @@ TEST (utf8_roundtrip_sample)
 
       int len = SocketUTF8_encode (cp, encoded);
       ASSERT (len > 0);
-      ASSERT_EQ (UTF8_VALID, SocketUTF8_decode (encoded, (size_t)len, &decoded,
-                                                &consumed));
+      ASSERT_EQ (UTF8_VALID,
+                 SocketUTF8_decode (encoded, (size_t)len, &decoded, &consumed));
       ASSERT_EQ (cp, decoded);
       ASSERT_EQ ((size_t)len, consumed);
     }

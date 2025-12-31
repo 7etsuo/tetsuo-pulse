@@ -58,8 +58,8 @@
  * - SPKI pin validation
  * - Connection reuse after idle timeout
  *
- * Build: CC=clang cmake .. -DENABLE_FUZZING=ON -DENABLE_TLS=ON && make fuzz_dns_dot
- * Run:   ./fuzz_dns_dot corpus/dns_dot/ -fork=16 -max_len=8192
+ * Build: CC=clang cmake .. -DENABLE_FUZZING=ON -DENABLE_TLS=ON && make
+ * fuzz_dns_dot Run:   ./fuzz_dns_dot corpus/dns_dot/ -fork=16 -max_len=8192
  */
 
 #if SOCKET_HAS_TLS
@@ -99,8 +99,11 @@ typedef enum
 
 /* Query completion callback for fuzzing */
 static void
-dot_query_callback (SocketDNSoverTLS_Query_T query, const unsigned char *response,
-                   size_t len, int error, void *userdata)
+dot_query_callback (SocketDNSoverTLS_Query_T query,
+                    const unsigned char *response,
+                    size_t len,
+                    int error,
+                    void *userdata)
 {
   /* Validate callback parameters */
   if (!query)
@@ -139,7 +142,9 @@ get_operation (const uint8_t *data, size_t size)
 
 /* Build a simple DNS query from fuzz data */
 static size_t
-build_dns_query (const uint8_t *data, size_t size, unsigned char *query_buf,
+build_dns_query (const uint8_t *data,
+                 size_t size,
+                 unsigned char *query_buf,
                  size_t buf_size)
 {
   if (size < 12)
@@ -160,9 +165,9 @@ build_dns_query (const uint8_t *data, size_t size, unsigned char *query_buf,
   query_buf[offset++] = 0x01;    /* QDCOUNT = 1 */
   query_buf[offset++] = 0x00;    /* ANCOUNT = 0 */
   query_buf[offset++] = 0x00;
-  query_buf[offset++] = 0x00;    /* NSCOUNT = 0 */
+  query_buf[offset++] = 0x00; /* NSCOUNT = 0 */
   query_buf[offset++] = 0x00;
-  query_buf[offset++] = 0x00;    /* ARCOUNT = 0 */
+  query_buf[offset++] = 0x00; /* ARCOUNT = 0 */
   query_buf[offset++] = 0x00;
 
   /* Question section: simple A query for "example.com" */
@@ -202,8 +207,8 @@ extract_ipv4 (const uint8_t *data, size_t size, char *addr_buf, size_t buf_size)
       return;
     }
 
-  snprintf (addr_buf, buf_size, "%u.%u.%u.%u",
-            data[0], data[1], data[2], data[3]);
+  snprintf (
+      addr_buf, buf_size, "%u.%u.%u.%u", data[0], data[1], data[2], data[3]);
 }
 
 /* Extract IPv6 address from fuzz data */
@@ -216,19 +221,34 @@ extract_ipv6 (const uint8_t *data, size_t size, char *addr_buf, size_t buf_size)
       return;
     }
 
-  snprintf (addr_buf, buf_size,
+  snprintf (addr_buf,
+            buf_size,
             "%02x%02x:%02x%02x:%02x%02x:%02x%02x:"
             "%02x%02x:%02x%02x:%02x%02x:%02x%02x",
-            data[0], data[1], data[2], data[3],
-            data[4], data[5], data[6], data[7],
-            data[8], data[9], data[10], data[11],
-            data[12], data[13], data[14], data[15]);
+            data[0],
+            data[1],
+            data[2],
+            data[3],
+            data[4],
+            data[5],
+            data[6],
+            data[7],
+            data[8],
+            data[9],
+            data[10],
+            data[11],
+            data[12],
+            data[13],
+            data[14],
+            data[15]);
 }
 
 /* Extract server name (SNI) from fuzz data */
 static void
-extract_server_name (const uint8_t *data, size_t size, char *name_buf,
-                    size_t buf_size)
+extract_server_name (const uint8_t *data,
+                     size_t size,
+                     char *name_buf,
+                     size_t buf_size)
 {
   if (size < 2)
     {
@@ -285,18 +305,20 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           {
             extract_ipv4 (op_data, op_size, addr_buf, sizeof (addr_buf));
             extract_server_name (op_data + 4,
-                                op_size > 4 ? op_size - 4 : 0,
-                                name_buf, sizeof (name_buf));
+                                 op_size > 4 ? op_size - 4 : 0,
+                                 name_buf,
+                                 sizeof (name_buf));
 
-            SocketDNSoverTLS_Config config = {
-              .server_address = addr_buf,
-              .port = op_size > 5 ? ((op_data[4] << 8) | op_data[5]) : DOT_PORT,
-              .server_name = name_buf,
-              .mode = (op_size > 6 && (op_data[6] & 1)) ? DOT_MODE_STRICT
-                                                         : DOT_MODE_OPPORTUNISTIC,
-              .spki_pin = NULL,
-              .spki_pin_backup = NULL
-            };
+            SocketDNSoverTLS_Config config
+                = { .server_address = addr_buf,
+                    .port
+                    = op_size > 5 ? ((op_data[4] << 8) | op_data[5]) : DOT_PORT,
+                    .server_name = name_buf,
+                    .mode = (op_size > 6 && (op_data[6] & 1))
+                                ? DOT_MODE_STRICT
+                                : DOT_MODE_OPPORTUNISTIC,
+                    .spki_pin = NULL,
+                    .spki_pin_backup = NULL };
 
             result = SocketDNSoverTLS_configure (transport, &config);
             (void)result;
@@ -309,17 +331,16 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           {
             extract_ipv6 (op_data, op_size, addr_buf, sizeof (addr_buf));
             extract_server_name (op_data + 16,
-                                op_size > 16 ? op_size - 16 : 0,
-                                name_buf, sizeof (name_buf));
+                                 op_size > 16 ? op_size - 16 : 0,
+                                 name_buf,
+                                 sizeof (name_buf));
 
-            SocketDNSoverTLS_Config config = {
-              .server_address = addr_buf,
-              .port = DOT_PORT,
-              .server_name = name_buf,
-              .mode = DOT_MODE_OPPORTUNISTIC,
-              .spki_pin = NULL,
-              .spki_pin_backup = NULL
-            };
+            SocketDNSoverTLS_Config config = { .server_address = addr_buf,
+                                               .port = DOT_PORT,
+                                               .server_name = name_buf,
+                                               .mode = DOT_MODE_OPPORTUNISTIC,
+                                               .spki_pin = NULL,
+                                               .spki_pin_backup = NULL };
 
             result = SocketDNSoverTLS_configure (transport, &config);
             (void)result;
@@ -329,14 +350,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       case OP_ADD_WELL_KNOWN:
         /* Test well-known server addition */
         {
-          const char *servers[] = {
-            "google", "google-v6", "cloudflare", "cloudflare-v6",
-            "quad9", "quad9-v6"
-          };
+          const char *servers[] = { "google",        "google-v6", "cloudflare",
+                                    "cloudflare-v6", "quad9",     "quad9-v6" };
           int idx = op_size > 0 ? op_data[0] % 6 : 0;
           SocketDNSoverTLS_Mode mode = (op_size > 1 && (op_data[1] & 1))
-                                         ? DOT_MODE_STRICT
-                                         : DOT_MODE_OPPORTUNISTIC;
+                                           ? DOT_MODE_STRICT
+                                           : DOT_MODE_OPPORTUNISTIC;
 
           result = SocketDNSoverTLS_add_server (transport, servers[idx], mode);
           (void)result;
@@ -353,15 +372,16 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         if (op_size >= 12)
           {
             /* Configure a server first */
-            SocketDNSoverTLS_add_server (transport, "google", DOT_MODE_OPPORTUNISTIC);
+            SocketDNSoverTLS_add_server (
+                transport, "google", DOT_MODE_OPPORTUNISTIC);
 
             /* Build DNS query */
-            query_len = build_dns_query (op_data, op_size, query_buf,
-                                        sizeof (query_buf));
+            query_len = build_dns_query (
+                op_data, op_size, query_buf, sizeof (query_buf));
             if (query_len > 0)
               {
-                query = SocketDNSoverTLS_query (transport, query_buf, query_len,
-                                               dot_query_callback, NULL);
+                query = SocketDNSoverTLS_query (
+                    transport, query_buf, query_len, dot_query_callback, NULL);
 
                 /* Query may fail if no server configured or queue full */
                 if (query)
@@ -383,21 +403,23 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         /* Test multiple pipelined queries */
         if (op_size >= 24)
           {
-            SocketDNSoverTLS_add_server (transport, "cloudflare",
-                                        DOT_MODE_OPPORTUNISTIC);
+            SocketDNSoverTLS_add_server (
+                transport, "cloudflare", DOT_MODE_OPPORTUNISTIC);
 
             /* Submit multiple queries */
             for (size_t i = 0; i < 3 && op_size >= (i + 1) * 12; i++)
               {
                 query_len = build_dns_query (op_data + i * 12,
-                                            op_size - i * 12,
-                                            query_buf, sizeof (query_buf));
+                                             op_size - i * 12,
+                                             query_buf,
+                                             sizeof (query_buf));
                 if (query_len > 0)
                   {
-                    query = SocketDNSoverTLS_query (transport, query_buf,
-                                                   query_len,
-                                                   dot_query_callback,
-                                                   (void *)(intptr_t)i);
+                    query = SocketDNSoverTLS_query (transport,
+                                                    query_buf,
+                                                    query_len,
+                                                    dot_query_callback,
+                                                    (void *)(intptr_t)i);
                   }
               }
 
@@ -410,18 +432,21 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       case OP_PROCESS_EVENT_LOOP:
         /* Test event loop processing */
         {
-          SocketDNSoverTLS_add_server (transport, "quad9", DOT_MODE_OPPORTUNISTIC);
+          SocketDNSoverTLS_add_server (
+              transport, "quad9", DOT_MODE_OPPORTUNISTIC);
 
           /* Submit a query */
           if (op_size >= 12)
             {
-              query_len = build_dns_query (op_data, op_size, query_buf,
-                                          sizeof (query_buf));
+              query_len = build_dns_query (
+                  op_data, op_size, query_buf, sizeof (query_buf));
               if (query_len > 0)
                 {
-                  query = SocketDNSoverTLS_query (transport, query_buf,
-                                                 query_len,
-                                                 dot_query_callback, NULL);
+                  query = SocketDNSoverTLS_query (transport,
+                                                  query_buf,
+                                                  query_len,
+                                                  dot_query_callback,
+                                                  NULL);
                 }
             }
 
@@ -444,14 +469,15 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         /* Test query cancellation */
         if (op_size >= 12)
           {
-            SocketDNSoverTLS_add_server (transport, "google", DOT_MODE_OPPORTUNISTIC);
+            SocketDNSoverTLS_add_server (
+                transport, "google", DOT_MODE_OPPORTUNISTIC);
 
-            query_len = build_dns_query (op_data, op_size, query_buf,
-                                        sizeof (query_buf));
+            query_len = build_dns_query (
+                op_data, op_size, query_buf, sizeof (query_buf));
             if (query_len > 0)
               {
-                query = SocketDNSoverTLS_query (transport, query_buf, query_len,
-                                               dot_query_callback, NULL);
+                query = SocketDNSoverTLS_query (
+                    transport, query_buf, query_len, dot_query_callback, NULL);
                 if (query)
                   {
                     /* Cancel immediately */
@@ -476,7 +502,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           SocketDNSoverTLS_stats (transport, &stats);
 
           /* Verify stats structure is sane */
-          if (stats.queries_sent < stats.queries_completed + stats.queries_failed)
+          if (stats.queries_sent
+              < stats.queries_completed + stats.queries_failed)
             {
               /* Expected: sent >= completed + failed */
             }
@@ -486,7 +513,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       case OP_CLEAR_SERVERS:
         /* Test server list clearing */
         {
-          SocketDNSoverTLS_add_server (transport, "google", DOT_MODE_OPPORTUNISTIC);
+          SocketDNSoverTLS_add_server (
+              transport, "google", DOT_MODE_OPPORTUNISTIC);
           int count = SocketDNSoverTLS_server_count (transport);
           if (count != 1)
             abort ();
@@ -501,19 +529,21 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       case OP_CLOSE_ALL:
         /* Test connection close */
         {
-          SocketDNSoverTLS_add_server (transport, "cloudflare",
-                                      DOT_MODE_OPPORTUNISTIC);
+          SocketDNSoverTLS_add_server (
+              transport, "cloudflare", DOT_MODE_OPPORTUNISTIC);
 
           /* Submit query */
           if (op_size >= 12)
             {
-              query_len = build_dns_query (op_data, op_size, query_buf,
-                                          sizeof (query_buf));
+              query_len = build_dns_query (
+                  op_data, op_size, query_buf, sizeof (query_buf));
               if (query_len > 0)
                 {
-                  query = SocketDNSoverTLS_query (transport, query_buf,
-                                                 query_len,
-                                                 dot_query_callback, NULL);
+                  query = SocketDNSoverTLS_query (transport,
+                                                  query_buf,
+                                                  query_len,
+                                                  dot_query_callback,
+                                                  NULL);
                 }
             }
 
@@ -539,22 +569,33 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             extract_ipv4 (op_data, op_size, addr_buf, sizeof (addr_buf));
 
             /* Convert fuzz data to hex string for SPKI pin */
-            snprintf (pin_buf, sizeof (pin_buf),
-                     "%02x%02x%02x%02x%02x%02x%02x%02x"
-                     "%02x%02x%02x%02x%02x%02x%02x%02x",
-                     op_data[4], op_data[5], op_data[6], op_data[7],
-                     op_data[8], op_data[9], op_data[10], op_data[11],
-                     op_data[12], op_data[13], op_data[14], op_data[15],
-                     op_data[16], op_data[17], op_data[18], op_data[19]);
+            snprintf (pin_buf,
+                      sizeof (pin_buf),
+                      "%02x%02x%02x%02x%02x%02x%02x%02x"
+                      "%02x%02x%02x%02x%02x%02x%02x%02x",
+                      op_data[4],
+                      op_data[5],
+                      op_data[6],
+                      op_data[7],
+                      op_data[8],
+                      op_data[9],
+                      op_data[10],
+                      op_data[11],
+                      op_data[12],
+                      op_data[13],
+                      op_data[14],
+                      op_data[15],
+                      op_data[16],
+                      op_data[17],
+                      op_data[18],
+                      op_data[19]);
 
-            SocketDNSoverTLS_Config config = {
-              .server_address = addr_buf,
-              .port = DOT_PORT,
-              .server_name = "dns.example.com",
-              .mode = DOT_MODE_STRICT,
-              .spki_pin = pin_buf,
-              .spki_pin_backup = NULL
-            };
+            SocketDNSoverTLS_Config config = { .server_address = addr_buf,
+                                               .port = DOT_PORT,
+                                               .server_name = "dns.example.com",
+                                               .mode = DOT_MODE_STRICT,
+                                               .spki_pin = pin_buf,
+                                               .spki_pin_backup = NULL };
 
             result = SocketDNSoverTLS_configure (transport, &config);
             (void)result;
@@ -568,14 +609,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             /* Extract potentially malformed data */
             extract_server_name (op_data, op_size, name_buf, sizeof (name_buf));
 
-            SocketDNSoverTLS_Config config = {
-              .server_address = name_buf,  /* May not be valid IP */
-              .port = op_size > 1 ? ((op_data[0] << 8) | op_data[1]) : 0,
-              .server_name = name_buf,
-              .mode = DOT_MODE_OPPORTUNISTIC,
-              .spki_pin = NULL,
-              .spki_pin_backup = NULL
-            };
+            SocketDNSoverTLS_Config config
+                = { .server_address = name_buf, /* May not be valid IP */
+                    .port = op_size > 1 ? ((op_data[0] << 8) | op_data[1]) : 0,
+                    .server_name = name_buf,
+                    .mode = DOT_MODE_OPPORTUNISTIC,
+                    .spki_pin = NULL,
+                    .spki_pin_backup = NULL };
 
             /* Should fail gracefully for invalid addresses */
             result = SocketDNSoverTLS_configure (transport, &config);
@@ -586,18 +626,21 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       case OP_QUERY_TIMEOUT:
         /* Test query timeout handling */
         {
-          SocketDNSoverTLS_add_server (transport, "quad9", DOT_MODE_OPPORTUNISTIC);
+          SocketDNSoverTLS_add_server (
+              transport, "quad9", DOT_MODE_OPPORTUNISTIC);
 
           /* Submit query */
           if (op_size >= 12)
             {
-              query_len = build_dns_query (op_data, op_size, query_buf,
-                                          sizeof (query_buf));
+              query_len = build_dns_query (
+                  op_data, op_size, query_buf, sizeof (query_buf));
               if (query_len > 0)
                 {
-                  query = SocketDNSoverTLS_query (transport, query_buf,
-                                                 query_len,
-                                                 dot_query_callback, NULL);
+                  query = SocketDNSoverTLS_query (transport,
+                                                  query_buf,
+                                                  query_len,
+                                                  dot_query_callback,
+                                                  NULL);
                 }
             }
 

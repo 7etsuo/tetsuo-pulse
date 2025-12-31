@@ -26,8 +26,8 @@
 struct DeadServerEntry
 {
   char address[DNS_DEAD_SERVER_MAX_ADDR + 1]; /**< Nameserver address */
-  int consecutive_failures;                    /**< Consecutive timeout count */
-  int64_t marked_dead_ms;                      /**< When marked dead (0 if not dead) */
+  int consecutive_failures;                   /**< Consecutive timeout count */
+  int64_t marked_dead_ms; /**< When marked dead (0 if not dead) */
 };
 
 /**
@@ -35,12 +35,12 @@ struct DeadServerEntry
  */
 struct T
 {
-  Arena_T arena;           /**< Memory arena */
-  pthread_mutex_t mutex;   /**< Thread safety */
+  Arena_T arena;         /**< Memory arena */
+  pthread_mutex_t mutex; /**< Thread safety */
 
   struct DeadServerEntry servers[DNS_DEAD_SERVER_MAX_TRACKED];
-  int count;               /**< Current tracked server count */
-  int threshold;           /**< Failures needed to mark dead */
+  int count;     /**< Current tracked server count */
+  int threshold; /**< Failures needed to mark dead */
 
   /* Statistics */
   uint64_t checks;
@@ -99,8 +99,8 @@ entry_expired (const struct DeadServerEntry *entry, int64_t now_ms)
   if (entry->marked_dead_ms == 0)
     return false; /* Not marked dead */
 
-  return socket_util_ttl_expired (entry->marked_dead_ms,
-                                   DNS_DEAD_SERVER_MAX_TTL, now_ms);
+  return socket_util_ttl_expired (
+      entry->marked_dead_ms, DNS_DEAD_SERVER_MAX_TTL, now_ms);
 }
 
 /**
@@ -112,8 +112,8 @@ entry_ttl_remaining (const struct DeadServerEntry *entry, int64_t now_ms)
   if (entry->marked_dead_ms == 0)
     return 0;
 
-  return socket_util_ttl_remaining (entry->marked_dead_ms,
-                                     DNS_DEAD_SERVER_MAX_TTL, now_ms);
+  return socket_util_ttl_remaining (
+      entry->marked_dead_ms, DNS_DEAD_SERVER_MAX_TTL, now_ms);
 }
 
 /* Public API */
@@ -151,8 +151,9 @@ SocketDNSDeadServer_free (T *tracker)
 }
 
 bool
-SocketDNSDeadServer_is_dead (T tracker, const char *address,
-                              SocketDNS_DeadServerEntry *entry)
+SocketDNSDeadServer_is_dead (T tracker,
+                             const char *address,
+                             SocketDNS_DeadServerEntry *entry)
 {
   if (tracker == NULL || address == NULL)
     return false;

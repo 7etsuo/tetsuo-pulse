@@ -66,7 +66,10 @@ thread_arena_operations (void *arg)
         (void)ptr2;
         (void)ptr3;
       }
-      EXCEPT (Arena_Failed) { break; }
+      EXCEPT (Arena_Failed)
+      {
+        break;
+      }
       END_TRY;
     }
 
@@ -100,7 +103,10 @@ thread_arena_clear (void *arg)
         if (i % 10 == 0)
           Arena_clear (arena);
       }
-      EXCEPT (Arena_Failed) { break; }
+      EXCEPT (Arena_Failed)
+      {
+        break;
+      }
       END_TRY;
       usleep (100);
     }
@@ -179,7 +185,10 @@ thread_socket_operations (void *arg)
         Socket_setreuseaddr (socket);
         Socket_settimeout (socket, 5);
       }
-      EXCEPT (Socket_Failed) { (void)0; }
+      EXCEPT (Socket_Failed)
+      {
+        (void)0;
+      }
       FINALLY
       {
         if (socket)
@@ -289,8 +298,14 @@ thread_poll_add_remove (void *arg)
         usleep (100);
         SocketPoll_del (poll, socket);
       }
-      EXCEPT (SocketPoll_Failed) { (void)0; }
-      EXCEPT (Socket_Failed) { (void)0; }
+      EXCEPT (SocketPoll_Failed)
+      {
+        (void)0;
+      }
+      EXCEPT (Socket_Failed)
+      {
+        (void)0;
+      }
       FINALLY
       {
         if (socket)
@@ -337,8 +352,14 @@ thread_pool_add_remove (void *arg)
             SocketPool_remove (pool, socket);
           }
       }
-      EXCEPT (SocketPool_Failed) { (void)0; }
-      EXCEPT (Socket_Failed) { (void)0; }
+      EXCEPT (SocketPool_Failed)
+      {
+        (void)0;
+      }
+      EXCEPT (Socket_Failed)
+      {
+        (void)0;
+      }
       FINALLY
       {
         if (socket)
@@ -388,8 +409,14 @@ thread_pool_get_operations (void *arg)
         SocketPool_remove (pool, socket);
       }
   }
-  EXCEPT (SocketPool_Failed) { (void)0; }
-  EXCEPT (Socket_Failed) { (void)0; }
+  EXCEPT (SocketPool_Failed)
+  {
+    (void)0;
+  }
+  EXCEPT (Socket_Failed)
+  {
+    (void)0;
+  }
   FINALLY
   {
     if (socket)
@@ -458,12 +485,14 @@ thread_dns_resolve (void *arg)
     {
       TRY
       {
-        Request_T req
-            = SocketDNS_resolve (dns, "127.0.0.1", 80, NULL, NULL);
+        Request_T req = SocketDNS_resolve (dns, "127.0.0.1", 80, NULL, NULL);
         (void)req;
         usleep (5000);
       }
-      EXCEPT (SocketDNS_Failed) { break; }
+      EXCEPT (SocketDNS_Failed)
+      {
+        break;
+      }
       END_TRY;
     }
 
@@ -495,12 +524,14 @@ thread_dns_cancel (void *arg)
     {
       TRY
       {
-        Request_T req
-            = SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
+        Request_T req = SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
         usleep (1000);
         SocketDNS_cancel (dns, req);
       }
-      EXCEPT (SocketDNS_Failed) { break; }
+      EXCEPT (SocketDNS_Failed)
+      {
+        break;
+      }
       END_TRY;
     }
 
@@ -545,7 +576,10 @@ TEST (threadsafety_socketdns_concurrent_check)
     for (int i = 0; i < 20; i++)
       SocketDNS_resolve (dns, "127.0.0.1", 80, NULL, NULL);
   }
-  EXCEPT (SocketDNS_Failed) { (void)0; }
+  EXCEPT (SocketDNS_Failed)
+  {
+    (void)0;
+  }
   END_TRY;
 
   for (int i = 0; i < NUM_THREADS; i++)
@@ -593,9 +627,18 @@ thread_mixed_operations (void *arg)
         SocketPoll_del (data->poll, socket);
         SocketPool_remove (data->pool, socket);
       }
-      EXCEPT (SocketPoll_Failed) { (void)0; }
-      EXCEPT (SocketPool_Failed) { (void)0; }
-      EXCEPT (Socket_Failed) { (void)0; }
+      EXCEPT (SocketPoll_Failed)
+      {
+        (void)0;
+      }
+      EXCEPT (SocketPool_Failed)
+      {
+        (void)0;
+      }
+      EXCEPT (Socket_Failed)
+      {
+        (void)0;
+      }
       FINALLY
       {
         if (socket)
@@ -706,7 +749,10 @@ thread_udp_operations (void *arg)
         SocketDgram_setreuseaddr (socket);
         SocketDgram_setttl (socket, 64);
       }
-      EXCEPT (SocketDgram_Failed) { (void)0; }
+      EXCEPT (SocketDgram_Failed)
+      {
+        (void)0;
+      }
       FINALLY
       {
         if (socket)
@@ -737,11 +783,17 @@ TEST (threadsafety_high_load_server_simulation)
   Arena_T arena = Arena_new ();
   SocketPoll_T poll = NULL;
   TRY poll = SocketPoll_new (1000);
-  EXCEPT (SocketPoll_Failed) { return; }
+  EXCEPT (SocketPoll_Failed)
+  {
+    return;
+  }
   END_TRY;
   SocketPool_T pool = NULL;
   TRY pool = SocketPool_new (arena, 500, 4096);
-  EXCEPT (SocketPool_Failed) { return; }
+  EXCEPT (SocketPool_Failed)
+  {
+    return;
+  }
   END_TRY;
   volatile Socket_T server = NULL;
 
@@ -815,8 +867,14 @@ TEST (threadsafety_high_load_server_simulation)
           Socket_free (&clients[i]);
       }
   }
-  EXCEPT (Socket_Failed) { (void)0; }
-  EXCEPT (SocketPoll_Failed) { (void)0; }
+  EXCEPT (Socket_Failed)
+  {
+    (void)0;
+  }
+  EXCEPT (SocketPoll_Failed)
+  {
+    (void)0;
+  }
   FINALLY
   {
     if (server)
@@ -847,7 +905,10 @@ TEST (threadsafety_memory_intensive_operations)
               ALLOC (arenas[i], 1000);
             Arena_clear (arenas[i]);
           }
-          EXCEPT (Arena_Failed) { (void)0; }
+          EXCEPT (Arena_Failed)
+          {
+            (void)0;
+          }
           END_TRY;
         }
     }

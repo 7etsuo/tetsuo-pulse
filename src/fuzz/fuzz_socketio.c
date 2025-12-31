@@ -67,7 +67,9 @@ read_u16 (const uint8_t *p)
  * Returns: Number of iovecs created
  */
 static int
-build_iov_from_fuzz (const uint8_t *data, size_t size, struct iovec *iov,
+build_iov_from_fuzz (const uint8_t *data,
+                     size_t size,
+                     struct iovec *iov,
                      int max_count)
 {
   int count = 0;
@@ -114,8 +116,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   uint16_t advance_bytes = read_u16 (data + 2);
 
   /* Build iovec array from remaining data */
-  iovcnt = build_iov_from_fuzz (data + 4, size - 4, iov,
-                                requested_count > 0 ? requested_count : 1);
+  iovcnt = build_iov_from_fuzz (
+      data + 4, size - 4, iov, requested_count > 0 ? requested_count : 1);
 
   if (iovcnt == 0)
     return 0;

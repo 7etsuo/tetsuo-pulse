@@ -109,14 +109,14 @@ typedef struct
  */
 typedef struct
 {
-  uint64_t hits;           /**< Cache hits (known failing server) */
-  uint64_t misses;         /**< Cache misses */
-  uint64_t insertions;     /**< Total insertions */
-  uint64_t evictions;      /**< LRU evictions */
-  uint64_t expirations;    /**< TTL expirations */
-  size_t current_size;     /**< Current entry count */
-  size_t max_entries;      /**< Maximum capacity */
-  double hit_rate;         /**< Calculated hit rate */
+  uint64_t hits;        /**< Cache hits (known failing server) */
+  uint64_t misses;      /**< Cache misses */
+  uint64_t insertions;  /**< Total insertions */
+  uint64_t evictions;   /**< LRU evictions */
+  uint64_t expirations; /**< TTL expirations */
+  size_t current_size;  /**< Current entry count */
+  size_t max_entries;   /**< Maximum capacity */
+  double hit_rate;      /**< Calculated hit rate */
 } SocketDNS_ServfailCacheStats;
 
 /* Lifecycle functions */
@@ -163,7 +163,8 @@ extern void SocketDNSServfailCache_free (T *cache);
  * @param qname      Query name (case-insensitive lookup).
  * @param qtype      Query type (e.g., DNS_TYPE_A, DNS_TYPE_AAAA).
  * @param qclass     Query class (typically DNS_CLASS_IN = 1).
- * @param nameserver Nameserver address (e.g., "8.8.8.8" or "2001:4860:4860::8888").
+ * @param nameserver Nameserver address (e.g., "8.8.8.8" or
+ * "2001:4860:4860::8888").
  * @param entry      Output entry details (may be NULL if not needed).
  * @return DNS_SERVFAIL_HIT if cached failure, DNS_SERVFAIL_MISS otherwise.
  *
@@ -179,9 +180,13 @@ extern void SocketDNSServfailCache_free (T *cache);
  * }
  * @endcode
  */
-extern SocketDNS_ServfailCacheResult SocketDNSServfailCache_lookup (
-    T cache, const char *qname, uint16_t qtype, uint16_t qclass,
-    const char *nameserver, SocketDNS_ServfailCacheEntry *entry);
+extern SocketDNS_ServfailCacheResult
+SocketDNSServfailCache_lookup (T cache,
+                               const char *qname,
+                               uint16_t qtype,
+                               uint16_t qclass,
+                               const char *nameserver,
+                               SocketDNS_ServfailCacheEntry *entry);
 
 /**
  * @brief Insert a SERVFAIL entry into the cache.
@@ -207,9 +212,12 @@ extern SocketDNS_ServfailCacheResult SocketDNSServfailCache_lookup (
  * // But queries to 8.8.4.4 will miss (try alternate nameserver)
  * @endcode
  */
-extern int SocketDNSServfailCache_insert (T cache, const char *qname,
-                                           uint16_t qtype, uint16_t qclass,
-                                           const char *nameserver, uint32_t ttl);
+extern int SocketDNSServfailCache_insert (T cache,
+                                          const char *qname,
+                                          uint16_t qtype,
+                                          uint16_t qclass,
+                                          const char *nameserver,
+                                          uint32_t ttl);
 
 /**
  * @brief Remove a specific SERVFAIL entry.
@@ -224,9 +232,11 @@ extern int SocketDNSServfailCache_insert (T cache, const char *qname,
  * @param nameserver Nameserver address.
  * @return 1 if entry was found and removed, 0 if not found.
  */
-extern int SocketDNSServfailCache_remove (T cache, const char *qname,
-                                           uint16_t qtype, uint16_t qclass,
-                                           const char *nameserver);
+extern int SocketDNSServfailCache_remove (T cache,
+                                          const char *qname,
+                                          uint16_t qtype,
+                                          uint16_t qclass,
+                                          const char *nameserver);
 
 /**
  * @brief Remove all SERVFAIL entries for a nameserver.
@@ -239,8 +249,8 @@ extern int SocketDNSServfailCache_remove (T cache, const char *qname,
  * @param nameserver Nameserver address to clear.
  * @return Number of entries removed.
  */
-extern int SocketDNSServfailCache_remove_nameserver (T cache,
-                                                      const char *nameserver);
+extern int
+SocketDNSServfailCache_remove_nameserver (T cache, const char *nameserver);
 
 /**
  * @brief Clear all entries from the cache.
@@ -259,7 +269,8 @@ extern void SocketDNSServfailCache_clear (T cache);
  * @param cache       Cache instance.
  * @param max_entries Maximum entries (0 = unlimited).
  */
-extern void SocketDNSServfailCache_set_max_entries (T cache, size_t max_entries);
+extern void
+SocketDNSServfailCache_set_max_entries (T cache, size_t max_entries);
 
 /**
  * @brief Get cache statistics.
@@ -268,8 +279,8 @@ extern void SocketDNSServfailCache_set_max_entries (T cache, size_t max_entries)
  * @param cache Cache instance.
  * @param stats Output statistics structure.
  */
-extern void SocketDNSServfailCache_stats (T cache,
-                                           SocketDNS_ServfailCacheStats *stats);
+extern void
+SocketDNSServfailCache_stats (T cache, SocketDNS_ServfailCacheStats *stats);
 
 /* Utility functions */
 
@@ -280,8 +291,8 @@ extern void SocketDNSServfailCache_stats (T cache,
  * @param result Lookup result.
  * @return "MISS" or "HIT".
  */
-extern const char *SocketDNSServfailCache_result_name (
-    SocketDNS_ServfailCacheResult result);
+extern const char *
+SocketDNSServfailCache_result_name (SocketDNS_ServfailCacheResult result);
 
 /** @} */ /* End of dns_servfail_cache group */
 

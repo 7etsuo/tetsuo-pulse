@@ -32,7 +32,8 @@ TimeWindow_init (T *tw, int64_t duration_ms, int64_t now_ms)
 {
   assert (tw != NULL);
 
-  tw->duration_ms = (duration_ms > 0) ? duration_ms : TIMEWINDOW_MIN_DURATION_MS;
+  tw->duration_ms
+      = (duration_ms > 0) ? duration_ms : TIMEWINDOW_MIN_DURATION_MS;
   tw->window_start_ms = now_ms;
   tw->current_count = 0;
   tw->previous_count = 0;
@@ -77,8 +78,7 @@ TimeWindow_effective_count (const T *tw, int64_t now_ms)
     return tw->current_count;
 
   int64_t elapsed = now_ms - tw->window_start_ms;
-  int64_t clamped_elapsed
-      = timewindow_clamp_to_duration (elapsed, duration_ms);
+  int64_t clamped_elapsed = timewindow_clamp_to_duration (elapsed, duration_ms);
 
   int64_t remaining = duration_ms - clamped_elapsed;
   uint32_t weighted_previous = 0;
@@ -112,8 +112,7 @@ TimeWindow_progress (const T *tw, int64_t now_ms)
     return 1.0f;
 
   int64_t elapsed = now_ms - tw->window_start_ms;
-  int64_t clamped_elapsed
-      = timewindow_clamp_to_duration (elapsed, duration_ms);
+  int64_t clamped_elapsed = timewindow_clamp_to_duration (elapsed, duration_ms);
 
   return (float)clamped_elapsed / (float)duration_ms;
 }

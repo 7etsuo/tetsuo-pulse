@@ -7,8 +7,9 @@
 /**
  * fuzz_http_client.c - Comprehensive HTTP Client fuzzing harness
  *
- * Tests SocketHTTPClient functionality with malformed inputs to find vulnerabilities
- * in request building, response parsing, cookie handling, authentication, and redirects.
+ * Tests SocketHTTPClient functionality with malformed inputs to find
+ * vulnerabilities in request building, response parsing, cookie handling,
+ * authentication, and redirects.
  *
  * Targets:
  * - Custom request header validation and injection
@@ -24,7 +25,8 @@
  * - Response body decompression (if enabled)
  * - Conflicting Content-Length/Transfer-Encoding
  *
- * HTTP clients are critical attack surfaces as they process untrusted server responses.
+ * HTTP clients are critical attack surfaces as they process untrusted server
+ * responses.
  *
  * Build/Run: CC=clang cmake -DENABLE_FUZZING=ON .. && make fuzz_http_client
  * ./fuzz_http_client corpus/http_client/ -fork=16 -max_len=65536
@@ -49,7 +51,8 @@
 
 /**
  * Test malicious server response parsing through HTTP/1.1 parser
- * This is the critical attack surface - a malicious server can send any response
+ * This is the critical attack surface - a malicious server can send any
+ * response
  */
 static void
 test_response_parsing (Arena_T arena, const uint8_t *data, size_t size)
@@ -69,12 +72,13 @@ test_response_parsing (Arena_T arena, const uint8_t *data, size_t size)
       if (!parser)
         continue;
 
-      SocketHTTP1_Result result
-          = SocketHTTP1_Parser_execute (parser, (const char *)data, size, &consumed);
+      SocketHTTP1_Result result = SocketHTTP1_Parser_execute (
+          parser, (const char *)data, size, &consumed);
 
       if (result == HTTP1_OK)
         {
-          const SocketHTTP_Response *resp = SocketHTTP1_Parser_get_response (parser);
+          const SocketHTTP_Response *resp
+              = SocketHTTP1_Parser_get_response (parser);
           if (resp)
             {
               /* Access all response fields */
@@ -112,18 +116,26 @@ test_response_parsing (Arena_T arena, const uint8_t *data, size_t size)
               char body_buf[8192];
               size_t body_consumed, body_written;
 
-              while (consumed < size && !SocketHTTP1_Parser_body_complete (parser))
+              while (consumed < size
+                     && !SocketHTTP1_Parser_body_complete (parser))
                 {
-                  SocketHTTP1_Result body_result = SocketHTTP1_Parser_read_body (
-                      parser, (const char *)data + consumed, size - consumed,
-                      &body_consumed, body_buf, sizeof (body_buf), &body_written);
+                  SocketHTTP1_Result body_result
+                      = SocketHTTP1_Parser_read_body (parser,
+                                                      (const char *)data
+                                                          + consumed,
+                                                      size - consumed,
+                                                      &body_consumed,
+                                                      body_buf,
+                                                      sizeof (body_buf),
+                                                      &body_written);
 
                   if (body_consumed == 0)
                     break;
 
                   consumed += body_consumed;
 
-                  if (body_result != HTTP1_OK && body_result != HTTP1_INCOMPLETE)
+                  if (body_result != HTTP1_OK
+                      && body_result != HTTP1_INCOMPLETE)
                     break;
                 }
             }
@@ -164,7 +176,8 @@ test_setcookie_parsing (Arena_T arena, const uint8_t *data, size_t size)
       /* Allow dangerous chars: ; = \r \n for injection testing */
     }
 
-  int len = snprintf (response_buf, sizeof (response_buf),
+  int len = snprintf (response_buf,
+                      sizeof (response_buf),
                       "HTTP/1.1 200 OK\r\n"
                       "Content-Length: 0\r\n"
                       "Set-Cookie: %s\r\n"
@@ -181,10 +194,12 @@ test_setcookie_parsing (Arena_T arena, const uint8_t *data, size_t size)
 
       if (SocketHTTP1_Parser_state (parser) >= HTTP1_STATE_BODY)
         {
-          const SocketHTTP_Response *resp = SocketHTTP1_Parser_get_response (parser);
+          const SocketHTTP_Response *resp
+              = SocketHTTP1_Parser_get_response (parser);
           if (resp && resp->headers)
             {
-              const char *cookie = SocketHTTP_Headers_get (resp->headers, "Set-Cookie");
+              const char *cookie
+                  = SocketHTTP_Headers_get (resp->headers, "Set-Cookie");
               (void)cookie;
             }
         }
@@ -225,12 +240,14 @@ test_redirect_parsing (Arena_T arena, const uint8_t *data, size_t size)
   int status_codes[] = { 301, 302, 303, 307, 308 };
   int status = status_codes[data[0] % 5];
 
-  int len = snprintf (response_buf, sizeof (response_buf),
+  int len = snprintf (response_buf,
+                      sizeof (response_buf),
                       "HTTP/1.1 %d Redirect\r\n"
                       "Location: %s\r\n"
                       "Content-Length: 0\r\n"
                       "\r\n",
-                      status, fuzzed_location);
+                      status,
+                      fuzzed_location);
 
   if (len <= 0 || (size_t)len >= sizeof (response_buf))
     return;
@@ -242,15 +259,18 @@ test_redirect_parsing (Arena_T arena, const uint8_t *data, size_t size)
 
       if (SocketHTTP1_Parser_state (parser) >= HTTP1_STATE_BODY)
         {
-          const SocketHTTP_Response *resp = SocketHTTP1_Parser_get_response (parser);
+          const SocketHTTP_Response *resp
+              = SocketHTTP1_Parser_get_response (parser);
           if (resp && resp->headers)
             {
-              const char *location = SocketHTTP_Headers_get (resp->headers, "Location");
+              const char *location
+                  = SocketHTTP_Headers_get (resp->headers, "Location");
               if (location)
                 {
                   /* Parse the redirect URL */
                   SocketHTTP_URI uri;
-                  SocketHTTP_URI_parse (location, strlen (location), &uri, arena);
+                  SocketHTTP_URI_parse (
+                      location, strlen (location), &uri, arena);
                 }
             }
         }
@@ -276,7 +296,8 @@ test_chunked_response (Arena_T arena, const uint8_t *data, size_t size)
 
   /* Build chunked response */
   char response_buf[8192];
-  int len = snprintf (response_buf, sizeof (response_buf),
+  int len = snprintf (response_buf,
+                      sizeof (response_buf),
                       "HTTP/1.1 200 OK\r\n"
                       "Transfer-Encoding: chunked\r\n"
                       "\r\n");
@@ -296,7 +317,8 @@ test_chunked_response (Arena_T arena, const uint8_t *data, size_t size)
 
       if (data_offset + 2 <= size)
         {
-          uint16_t raw_size = ((uint16_t)data[data_offset] << 8) | data[data_offset + 1];
+          uint16_t raw_size
+              = ((uint16_t)data[data_offset] << 8) | data[data_offset + 1];
           chunk_len = raw_size % 256; /* Keep chunks small for testing */
           data_offset += 2;
         }
@@ -309,14 +331,16 @@ test_chunked_response (Arena_T arena, const uint8_t *data, size_t size)
         {
           /* Final chunk */
           int added = snprintf (response_buf + resp_offset,
-                                sizeof (response_buf) - resp_offset, "0\r\n\r\n");
+                                sizeof (response_buf) - resp_offset,
+                                "0\r\n\r\n");
           if (added > 0)
             resp_offset += added;
           break;
         }
 
       /* Add chunk header */
-      int header_len = snprintf (chunk_size, sizeof (chunk_size), "%x\r\n", chunk_len);
+      int header_len
+          = snprintf (chunk_size, sizeof (chunk_size), "%x\r\n", chunk_len);
       if (header_len <= 0 || resp_offset + header_len >= sizeof (response_buf))
         break;
 
@@ -338,7 +362,8 @@ test_chunked_response (Arena_T arena, const uint8_t *data, size_t size)
         }
 
       /* Pad with 'x' if chunk_len > to_copy */
-      for (size_t i = to_copy; i < (size_t)chunk_len && resp_offset < sizeof (response_buf) - 1;
+      for (size_t i = to_copy;
+           i < (size_t)chunk_len && resp_offset < sizeof (response_buf) - 1;
            i++)
         {
           response_buf[resp_offset++] = 'x';
@@ -356,8 +381,8 @@ test_chunked_response (Arena_T arena, const uint8_t *data, size_t size)
   parser = SocketHTTP1_Parser_new (HTTP1_PARSE_RESPONSE, &cfg, arena);
   if (parser)
     {
-      SocketHTTP1_Result result
-          = SocketHTTP1_Parser_execute (parser, response_buf, resp_offset, &consumed);
+      SocketHTTP1_Result result = SocketHTTP1_Parser_execute (
+          parser, response_buf, resp_offset, &consumed);
 
       if (result == HTTP1_OK)
         {
@@ -366,11 +391,17 @@ test_chunked_response (Arena_T arena, const uint8_t *data, size_t size)
           size_t body_consumed, body_written;
           size_t offset = consumed;
 
-          while (offset < resp_offset && !SocketHTTP1_Parser_body_complete (parser))
+          while (offset < resp_offset
+                 && !SocketHTTP1_Parser_body_complete (parser))
             {
-              SocketHTTP1_Result body_result = SocketHTTP1_Parser_read_body (
-                  parser, response_buf + offset, resp_offset - offset, &body_consumed,
-                  body_buf, sizeof (body_buf), &body_written);
+              SocketHTTP1_Result body_result
+                  = SocketHTTP1_Parser_read_body (parser,
+                                                  response_buf + offset,
+                                                  resp_offset - offset,
+                                                  &body_consumed,
+                                                  body_buf,
+                                                  sizeof (body_buf),
+                                                  &body_written);
 
               if (body_consumed == 0)
                 break;
@@ -476,14 +507,17 @@ test_response_smuggling (Arena_T arena)
     "\r\n",
   };
 
-  for (size_t i = 0; i < sizeof (smuggling_responses) / sizeof (smuggling_responses[0]);
+  for (size_t i = 0;
+       i < sizeof (smuggling_responses) / sizeof (smuggling_responses[0]);
        i++)
     {
       parser = SocketHTTP1_Parser_new (HTTP1_PARSE_RESPONSE, &cfg, arena);
       if (parser)
         {
-          SocketHTTP1_Parser_execute (parser, smuggling_responses[i],
-                                      strlen (smuggling_responses[i]), &consumed);
+          SocketHTTP1_Parser_execute (parser,
+                                      smuggling_responses[i],
+                                      strlen (smuggling_responses[i]),
+                                      &consumed);
           SocketHTTP1_Parser_free (&parser);
         }
     }
@@ -539,8 +573,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           }
 
         /* Test getting cookies */
-        const SocketHTTPClient_Cookie *retrieved = SocketHTTPClient_CookieJar_get (
-            cookie_jar, "example.com", "/", "test");
+        const SocketHTTPClient_Cookie *retrieved
+            = SocketHTTPClient_CookieJar_get (
+                cookie_jar, "example.com", "/", "test");
         (void)retrieved;
 
         /* Test clearing operations */
@@ -552,7 +587,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     if (client && size > 20)
       {
         /* Create custom request with fuzzed headers */
-        request = SocketHTTPClient_Request_new (client, HTTP_METHOD_GET, "http://example.com/test");
+        request = SocketHTTPClient_Request_new (
+            client, HTTP_METHOD_GET, "http://example.com/test");
         if (request)
           {
             /* Add multiple fuzzed headers */
@@ -561,7 +597,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               {
                 char header_name[256];
                 char header_value[1024];
-                size_t name_len = data[offset] % 32 + 1; /* 1-32 chars */
+                size_t name_len = data[offset] % 32 + 1;       /* 1-32 chars */
                 size_t value_len = data[offset + 1] % 128 + 1; /* 1-128 chars */
 
                 offset += 2;
@@ -578,16 +614,17 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                 offset += value_len;
 
                 /* Try to add the header */
-                SocketHTTPClient_Request_header (request, header_name, header_value);
+                SocketHTTPClient_Request_header (
+                    request, header_name, header_value);
               }
 
             /* Set fuzzed timeout - use unsigned to avoid UB on left shift */
             if (offset + 4 < size)
               {
-                int timeout_ms = (int)(((uint32_t)data[offset] << 24) |
-                                       ((uint32_t)data[offset + 1] << 16) |
-                                       ((uint32_t)data[offset + 2] << 8) |
-                                       (uint32_t)data[offset + 3]);
+                int timeout_ms = (int)(((uint32_t)data[offset] << 24)
+                                       | ((uint32_t)data[offset + 1] << 16)
+                                       | ((uint32_t)data[offset + 2] << 8)
+                                       | (uint32_t)data[offset + 3]);
                 SocketHTTPClient_Request_timeout (request, timeout_ms);
               }
 
@@ -597,7 +634,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                 size_t body_len = size - offset;
                 if (body_len > 1024)
                   body_len = 1024;
-                SocketHTTPClient_Request_body (request, data + offset, body_len);
+                SocketHTTPClient_Request_body (
+                    request, data + offset, body_len);
               }
           }
       }
@@ -677,8 +715,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         config.connect_timeout_ms = (int)(((uint32_t)data[0] << 8) | data[1]);
         config.request_timeout_ms = (int)(((uint32_t)data[2] << 8) | data[3]);
         config.follow_redirects = (int)(data[4] % 20);
-        config.max_response_size = (size_t)(((uint32_t)data[5] << 16) |
-                                            ((uint32_t)data[6] << 8) | data[7]);
+        config.max_response_size
+            = (size_t)(((uint32_t)data[5] << 16) | ((uint32_t)data[6] << 8)
+                       | data[7]);
 
         /* Validate config doesn't crash client creation */
         SocketHTTPClient_T test_client = SocketHTTPClient_new (&config);

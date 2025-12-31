@@ -37,8 +37,9 @@
  * to 255 bytes. This assertion ensures SOCKET_TLS_MAX_ALPN_LEN can be
  * safely cast to unsigned char in alpn_select_cb() and build_wire_format().
  */
-_Static_assert(SOCKET_TLS_MAX_ALPN_LEN <= UCHAR_MAX,
-               "ALPN protocol length must fit in unsigned char (RFC 7301 wire format)");
+_Static_assert (
+    SOCKET_TLS_MAX_ALPN_LEN <= UCHAR_MAX,
+    "ALPN protocol length must fit in unsigned char (RFC 7301 wire format)");
 
 /** Initial capacity for dynamically-grown protocol arrays */
 #define ALPN_INITIAL_CAPACITY 4
@@ -103,9 +104,12 @@ free_client_protos (const char **protos, size_t count)
  * Returns: 1 on success, 0 on error/malformed, -1 on allocation failure
  */
 static int
-parse_single_protocol (const unsigned char *in, unsigned int inlen,
-                       size_t *offset, size_t *total_bytes,
-                       const SocketSecurityLimits *limits, char **proto_out)
+parse_single_protocol (const unsigned char *in,
+                       unsigned int inlen,
+                       size_t *offset,
+                       size_t *total_bytes,
+                       const SocketSecurityLimits *limits,
+                       char **proto_out)
 {
   *proto_out = NULL;
 
@@ -168,8 +172,8 @@ grow_protocol_array (const char **protos, size_t *capacity)
     return NULL;
 
   /* Check for allocation size overflow */
-  if (!SocketSecurity_check_multiply (new_capacity, sizeof (char *),
-                                      &alloc_size))
+  if (!SocketSecurity_check_multiply (
+          new_capacity, sizeof (char *), &alloc_size))
     return NULL;
 
   const char **new_protos = realloc (protos, alloc_size);
@@ -193,7 +197,8 @@ grow_protocol_array (const char **protos, size_t *capacity)
  *          free_client_protos), or NULL on error/empty
  */
 static const char **
-parse_client_protos (const unsigned char *in, unsigned int inlen,
+parse_client_protos (const unsigned char *in,
+                     unsigned int inlen,
                      size_t *count_out)
 {
   *count_out = 0;
@@ -238,9 +243,8 @@ parse_client_protos (const unsigned char *in, unsigned int inlen,
 
       /* Parse one protocol */
       char *proto = NULL;
-      int result
-          = parse_single_protocol (in, inlen, &offset, &total_bytes, &limits,
-                                   &proto);
+      int result = parse_single_protocol (
+          in, inlen, &offset, &total_bytes, &limits, &proto);
       if (result < 0)
         {
           /* Allocation failure */
@@ -277,8 +281,10 @@ parse_client_protos (const unsigned char *in, unsigned int inlen,
  * Returns: Selected protocol string or NULL if no match
  */
 static const char *
-find_matching_proto (const char *const *server_protos, size_t server_count,
-                     const char *const *client_protos, size_t client_count)
+find_matching_proto (const char *const *server_protos,
+                     size_t server_count,
+                     const char *const *client_protos,
+                     size_t client_count)
 {
   for (size_t i = 0; i < server_count; i++)
     {
@@ -300,7 +306,8 @@ find_matching_proto (const char *const *server_protos, size_t server_count,
  * Returns: true if found, false otherwise
  */
 static bool
-find_in_client_list (const char *proto, const char *const *client_protos,
+find_in_client_list (const char *proto,
+                     const char *const *client_protos,
                      size_t client_count)
 {
   for (size_t i = 0; i < client_count; i++)
@@ -328,7 +335,8 @@ find_in_client_list (const char *proto, const char *const *client_protos,
 static bool
 validate_selected_protocol (const char *selected,
                             const char *const *client_protos,
-                            size_t client_count, size_t *validated_len)
+                            size_t client_count,
+                            size_t *validated_len)
 {
   *validated_len = 0;
 
@@ -363,15 +371,17 @@ validate_selected_protocol (const char *selected,
  * Returns: Selected protocol string or NULL if no match
  */
 static const char *
-select_protocol_from_client (T ctx, const char **client_protos,
-                              size_t client_count)
+select_protocol_from_client (T ctx,
+                             const char **client_protos,
+                             size_t client_count)
 {
   if (ctx->alpn.callback)
     {
-      return ctx->alpn.callback (client_protos, client_count,
-                                 ctx->alpn.callback_user_data);
+      return ctx->alpn.callback (
+          client_protos, client_count, ctx->alpn.callback_user_data);
     }
-  return find_matching_proto (ctx->alpn.protocols, ctx->alpn.count,
+  return find_matching_proto (ctx->alpn.protocols,
+                              ctx->alpn.count,
                               (const char *const *)client_protos,
                               client_count);
 }
@@ -401,7 +411,8 @@ allocate_and_store_selected (SSL *ssl, const char *selected, size_t len)
     {
       if (SSL_set_ex_data (ssl, idx, (void *)copy) != 1)
         {
-          SOCKET_LOG_WARN_MSG ("Failed to set SSL ex_data for ALPN selected protocol");
+          SOCKET_LOG_WARN_MSG (
+              "Failed to set SSL ex_data for ALPN selected protocol");
           free (copy);
           return NULL;
         }
@@ -422,8 +433,12 @@ allocate_and_store_selected (SSL *ssl, const char *selected, size_t len)
  * Returns: SSL_TLSEXT_ERR_OK or SSL_TLSEXT_ERR_NOACK
  */
 static int
-alpn_select_cb (SSL *ssl, const unsigned char **out, unsigned char *outlen,
-                const unsigned char *in, unsigned int inlen, void *arg)
+alpn_select_cb (SSL *ssl,
+                const unsigned char **out,
+                unsigned char *outlen,
+                const unsigned char *in,
+                unsigned int inlen,
+                void *arg)
 {
   T ctx = (T)arg;
 
@@ -442,8 +457,10 @@ alpn_select_cb (SSL *ssl, const unsigned char **out, unsigned char *outlen,
 
   /* Validate selected protocol */
   size_t validated_len = 0;
-  if (!validate_selected_protocol (selected, (const char *const *)client_protos,
-                                   client_count, &validated_len))
+  if (!validate_selected_protocol (selected,
+                                   (const char *const *)client_protos,
+                                   client_count,
+                                   &validated_len))
     {
       free_client_protos (client_protos, client_count);
       return SSL_TLSEXT_ERR_NOACK;
@@ -478,7 +495,9 @@ alpn_select_cb (SSL *ssl, const unsigned char **out, unsigned char *outlen,
  * Raises: SocketTLS_Failed on allocation failure or overflow
  */
 static unsigned char *
-build_wire_format (T ctx, const char *const *protos, size_t count,
+build_wire_format (T ctx,
+                   const char *const *protos,
+                   size_t count,
                    size_t *len_out)
 {
   /* Cache protocol lengths to avoid redundant strlen calls */
@@ -487,8 +506,8 @@ build_wire_format (T ctx, const char *const *protos, size_t count,
       || !SocketSecurity_check_size (lengths_size))
     ctx_raise_openssl_error ("ALPN lengths array size overflow or too large");
 
-  size_t *lengths
-      = ctx_arena_alloc (ctx, lengths_size, "Failed to allocate ALPN length cache");
+  size_t *lengths = ctx_arena_alloc (
+      ctx, lengths_size, "Failed to allocate ALPN length cache");
 
   /* Calculate total wire format size with overflow protection */
   size_t total = 0;
@@ -552,7 +571,8 @@ alloc_alpn_array (T ctx, size_t count)
       || !SocketSecurity_check_size (arr_size))
     ctx_raise_openssl_error ("ALPN protocols array size overflow or too large");
 
-  return ctx_arena_alloc (ctx, arr_size, "Failed to allocate ALPN protocols array");
+  return ctx_arena_alloc (
+      ctx, arr_size, "Failed to allocate ALPN protocols array");
 }
 
 /**
@@ -632,7 +652,8 @@ SocketTLSContext_set_alpn_protos (T ctx, const char **protos, size_t count)
 }
 
 void
-SocketTLSContext_set_alpn_callback (T ctx, SocketTLSAlpnCallback callback,
+SocketTLSContext_set_alpn_callback (T ctx,
+                                    SocketTLSAlpnCallback callback,
                                     void *user_data)
 {
   assert (ctx);

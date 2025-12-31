@@ -85,8 +85,8 @@ fuzz_cidr_match_ipv4 (const uint8_t *data, size_t size)
   if (consumed >= size)
     return;
 
-  extract_string (data + consumed, size - consumed, cidr_str,
-                  sizeof (cidr_str));
+  extract_string (
+      data + consumed, size - consumed, cidr_str, sizeof (cidr_str));
 
   /* Call the CIDR matching function */
   (void)SocketCommon_cidr_match (ip_str, cidr_str);
@@ -109,8 +109,8 @@ fuzz_cidr_match_ipv6 (const uint8_t *data, size_t size)
   if (consumed >= size)
     return;
 
-  extract_string (data + consumed, size - consumed, cidr_str,
-                  sizeof (cidr_str));
+  extract_string (
+      data + consumed, size - consumed, cidr_str, sizeof (cidr_str));
 
   /* Test as-is for IPv6 addresses */
   (void)SocketCommon_cidr_match (ip_str, cidr_str);
@@ -141,8 +141,8 @@ fuzz_cidr_match_mixed (const uint8_t *data, size_t size)
   if (consumed >= size)
     return;
 
-  extract_string (data + consumed, size - consumed, cidr_str,
-                  sizeof (cidr_str));
+  extract_string (
+      data + consumed, size - consumed, cidr_str, sizeof (cidr_str));
 
   /* Test original combination */
   (void)SocketCommon_cidr_match (ip_str, cidr_str);

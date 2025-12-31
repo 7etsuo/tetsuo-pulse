@@ -37,9 +37,12 @@
  * @param out Output buffer pointer.
  */
 #define VALIDATE_FRAME_PARAMS(obj, out) \
-    do { \
-        if (!(obj) || !(out)) return 0; \
-    } while(0)
+  do                                    \
+    {                                   \
+      if (!(obj) || !(out))             \
+        return 0;                       \
+    }                                   \
+  while (0)
 
 /* ============================================================================
  * Helper Functions
@@ -112,9 +115,9 @@ SocketQUIC_error_is_connection_fatal (uint64_t code)
  */
 static inline int
 validate_connection_close_params (SocketQUICConnection_T conn,
-                                   const uint8_t *out,
-                                   const char *reason,
-                                   size_t *reason_len)
+                                  const uint8_t *out,
+                                  const char *reason,
+                                  size_t *reason_len)
 {
   if (!conn || !out)
     return 0;
@@ -144,8 +147,9 @@ validate_connection_close_params (SocketQUICConnection_T conn,
 static inline size_t
 calculate_connection_close_size (int is_app_error, size_t reason_len)
 {
-  size_t base_size = is_app_error ? QUIC_FRAME_MIN_SIZE_CONNECTION_CLOSE_APP
-                                  : QUIC_FRAME_MIN_SIZE_CONNECTION_CLOSE_TRANSPORT;
+  size_t base_size = is_app_error
+                         ? QUIC_FRAME_MIN_SIZE_CONNECTION_CLOSE_APP
+                         : QUIC_FRAME_MIN_SIZE_CONNECTION_CLOSE_TRANSPORT;
 
   /* Check for overflow before adding reason_len (CWE-190, CERT INT30-C) */
   if (reason_len > SIZE_MAX - base_size)
@@ -170,9 +174,12 @@ calculate_connection_close_size (int is_app_error, size_t reason_len)
  * @return 1 on success, 0 on error.
  */
 static inline int
-encode_connection_close_header (uint64_t frame_type, uint64_t code,
-                                 int is_app_error, uint8_t *out,
-                                 size_t *offset, size_t out_len)
+encode_connection_close_header (uint64_t frame_type,
+                                uint64_t code,
+                                int is_app_error,
+                                uint8_t *out,
+                                size_t *offset,
+                                size_t out_len)
 {
   /* Encode frame type */
   if (!encode_varint_field (frame_type, out, offset, out_len))
@@ -209,8 +216,11 @@ encode_connection_close_header (uint64_t frame_type, uint64_t code,
  * @return 1 on success, 0 on error.
  */
 static inline int
-encode_reason_phrase (const char *reason, size_t reason_len,
-                      uint8_t *out, size_t *offset, size_t out_len)
+encode_reason_phrase (const char *reason,
+                      size_t reason_len,
+                      uint8_t *out,
+                      size_t *offset,
+                      size_t out_len)
 {
   /* Encode reason phrase length */
   if (!encode_varint_field (reason_len, out, offset, out_len))
@@ -236,9 +246,12 @@ encode_reason_phrase (const char *reason, size_t reason_len,
  */
 
 size_t
-SocketQUIC_send_connection_close (SocketQUICConnection_T conn, uint64_t code,
-                                   const char *reason, size_t reason_len,
-                                   uint8_t *out, size_t out_len)
+SocketQUIC_send_connection_close (SocketQUICConnection_T conn,
+                                  uint64_t code,
+                                  const char *reason,
+                                  size_t reason_len,
+                                  uint8_t *out,
+                                  size_t out_len)
 {
   size_t offset;
   uint64_t frame_type;
@@ -249,9 +262,10 @@ SocketQUIC_send_connection_close (SocketQUICConnection_T conn, uint64_t code,
   if (!validate_connection_close_params (conn, out, reason, &reason_len))
     return 0;
 
-  /* Determine if this is an application error (0x1d) or transport error (0x1c) */
-  is_app_error
-      = (code >= QUIC_APPLICATION_ERROR_BASE) || (code == QUIC_APPLICATION_ERROR);
+  /* Determine if this is an application error (0x1d) or transport error (0x1c)
+   */
+  is_app_error = (code >= QUIC_APPLICATION_ERROR_BASE)
+                 || (code == QUIC_APPLICATION_ERROR);
 
   /* Frame type */
   frame_type = is_app_error ? QUIC_FRAME_CONNECTION_CLOSE_APP
@@ -265,8 +279,8 @@ SocketQUIC_send_connection_close (SocketQUICConnection_T conn, uint64_t code,
   offset = 0;
 
   /* Encode frame header (type, code, optional frame type field) */
-  if (!encode_connection_close_header (frame_type, code, is_app_error,
-                                        out, &offset, out_len))
+  if (!encode_connection_close_header (
+          frame_type, code, is_app_error, out, &offset, out_len))
     return 0;
 
   /* Encode reason phrase (length + data) */
@@ -282,14 +296,16 @@ SocketQUIC_send_connection_close (SocketQUICConnection_T conn, uint64_t code,
  */
 
 size_t
-SocketQUIC_send_stream_reset (SocketQUICStream_T stream, uint64_t code,
-                               uint64_t final_size, uint8_t *out,
-                               size_t out_len)
+SocketQUIC_send_stream_reset (SocketQUICStream_T stream,
+                              uint64_t code,
+                              uint64_t final_size,
+                              uint8_t *out,
+                              size_t out_len)
 {
   size_t offset;
   uint64_t stream_id;
 
-  VALIDATE_FRAME_PARAMS(stream, out);
+  VALIDATE_FRAME_PARAMS (stream, out);
 
   stream_id = SocketQUICStream_get_id (stream);
 
@@ -329,13 +345,15 @@ SocketQUIC_send_stream_reset (SocketQUICStream_T stream, uint64_t code,
  */
 
 size_t
-SocketQUIC_send_stop_sending (SocketQUICStream_T stream, uint64_t code,
-                               uint8_t *out, size_t out_len)
+SocketQUIC_send_stop_sending (SocketQUICStream_T stream,
+                              uint64_t code,
+                              uint8_t *out,
+                              size_t out_len)
 {
   size_t offset;
   uint64_t stream_id;
 
-  VALIDATE_FRAME_PARAMS(stream, out);
+  VALIDATE_FRAME_PARAMS (stream, out);
 
   stream_id = SocketQUICStream_get_id (stream);
 

@@ -240,8 +240,8 @@ TEST (json_escape_realistic_error_message)
 {
   char output[512];
 
-  json_escape_string (output, sizeof (output),
-                      "File not found: /path/to/file.txt");
+  json_escape_string (
+      output, sizeof (output), "File not found: /path/to/file.txt");
   ASSERT (strcmp (output, "File not found: /path/to/file.txt") == 0);
 }
 
@@ -249,8 +249,8 @@ TEST (json_escape_error_with_quotes)
 {
   char output[512];
 
-  json_escape_string (output, sizeof (output),
-                      "Database error: \"connection timeout\"");
+  json_escape_string (
+      output, sizeof (output), "Database error: \"connection timeout\"");
   ASSERT (strstr (output, "\\\"connection timeout\\\"") != NULL);
 }
 
@@ -258,8 +258,8 @@ TEST (json_escape_multiline_stack_trace)
 {
   char output[512];
 
-  json_escape_string (output, sizeof (output),
-                      "Stack trace:\nline 1\nline 2\nline 3");
+  json_escape_string (
+      output, sizeof (output), "Stack trace:\nline 1\nline 2\nline 3");
   ASSERT (strstr (output, "\\n") != NULL);
 }
 

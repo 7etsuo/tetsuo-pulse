@@ -49,19 +49,19 @@ ignore_sigpipe (void)
 /* Operation types per section 4.1 */
 typedef enum
 {
-  OP_ENABLE_BASIC = 0,           /* Basic enable test */
-  OP_ENABLE_OWNERSHIP,           /* Context ownership transfer */
-  OP_SET_PEER_IP,                /* set_peer with IP address */
-  OP_SET_PEER_HOSTNAME,          /* set_peer with hostname */
-  OP_SET_HOSTNAME_VALID,         /* set_hostname with valid name */
-  OP_SET_HOSTNAME_FUZZ,          /* set_hostname with fuzz data */
-  OP_SET_MTU_VALID_MIN,          /* set_mtu at minimum (576) */
-  OP_SET_MTU_VALID_MAX,          /* set_mtu at maximum (9000) */
-  OP_SET_MTU_INVALID_LOW,        /* set_mtu below minimum */
-  OP_SET_MTU_INVALID_HIGH,       /* set_mtu above maximum */
-  OP_GET_MTU,                    /* get_mtu query */
-  OP_ENABLE_DOUBLE,              /* Double enable (should fail) */
-  OP_COMBINED_CONFIG             /* Combined configuration sequence */
+  OP_ENABLE_BASIC = 0,     /* Basic enable test */
+  OP_ENABLE_OWNERSHIP,     /* Context ownership transfer */
+  OP_SET_PEER_IP,          /* set_peer with IP address */
+  OP_SET_PEER_HOSTNAME,    /* set_peer with hostname */
+  OP_SET_HOSTNAME_VALID,   /* set_hostname with valid name */
+  OP_SET_HOSTNAME_FUZZ,    /* set_hostname with fuzz data */
+  OP_SET_MTU_VALID_MIN,    /* set_mtu at minimum (576) */
+  OP_SET_MTU_VALID_MAX,    /* set_mtu at maximum (9000) */
+  OP_SET_MTU_INVALID_LOW,  /* set_mtu below minimum */
+  OP_SET_MTU_INVALID_HIGH, /* set_mtu above maximum */
+  OP_GET_MTU,              /* get_mtu query */
+  OP_ENABLE_DOUBLE,        /* Double enable (should fail) */
+  OP_COMBINED_CONFIG       /* Combined configuration sequence */
 } DTLSEnableConfigOp;
 
 static uint8_t
@@ -81,8 +81,8 @@ get_op (const uint8_t *data, size_t size)
  * Returns: Length of extracted string (excluding null)
  */
 static size_t
-extract_fuzz_string (const uint8_t *data, size_t size, size_t offset,
-                     char *out, size_t max_len)
+extract_fuzz_string (
+    const uint8_t *data, size_t size, size_t offset, char *out, size_t max_len)
 {
   if (offset >= size || max_len == 0)
     {
@@ -105,7 +105,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     return 0;
 
   volatile uint8_t op = get_op (data, size);
-  /* volatile required: modified in TRY, accessed after END_TRY (longjmp safety) */
+  /* volatile required: modified in TRY, accessed after END_TRY (longjmp safety)
+   */
   SocketDgram_T volatile socket = NULL;
   SocketDTLSContext_T volatile ctx = NULL;
   SocketDTLSContext_T volatile ctx2 = NULL;
@@ -142,7 +143,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         socket = SocketDgram_new (AF_INET, 0);
         ctx = SocketDTLSContext_new_client (NULL);
         SocketDTLS_enable (socket, ctx);
-        /* Note: socket takes its own ref, we still need to free ours in cleanup */
+        /* Note: socket takes its own ref, we still need to free ours in cleanup
+         */
 
         /* Set peer with localhost IP - should succeed without DNS */
         SocketDTLS_set_peer (socket, "127.0.0.1", 4433);
@@ -153,7 +155,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         socket = SocketDgram_new (AF_INET, 0);
         ctx = SocketDTLSContext_new_client (NULL);
         SocketDTLS_enable (socket, ctx);
-        /* Note: socket takes its own ref, we still need to free ours in cleanup */
+        /* Note: socket takes its own ref, we still need to free ours in cleanup
+         */
 
         /* set_peer with "localhost" - will do DNS resolution */
         SocketDTLS_set_peer (socket, "localhost", 4433);
@@ -267,15 +270,17 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         /* Second enable should fail */
         ctx2 = SocketDTLSContext_new_client (NULL);
         SocketDTLS_enable (socket, ctx2); /* Should raise */
-        SocketDTLSContext_free ((SocketDTLSContext_T *)&ctx2);   /* Won't reach here */
-        abort (); /* Double enable should fail */
+        SocketDTLSContext_free (
+            (SocketDTLSContext_T *)&ctx2); /* Won't reach here */
+        abort ();                          /* Double enable should fail */
 
       case OP_COMBINED_CONFIG:
         /* Combined configuration sequence */
         socket = SocketDgram_new (AF_INET, 0);
         ctx = SocketDTLSContext_new_client (NULL);
         SocketDTLS_enable (socket, ctx);
-        /* Note: socket takes its own ref, we still need to free ours in cleanup */
+        /* Note: socket takes its own ref, we still need to free ours in cleanup
+         */
 
         /* Set various configurations */
         SocketDTLS_set_mtu (socket, 1400);
@@ -296,13 +301,27 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   {
     /* Expected for invalid MTU, double enable, etc. */
   }
-  EXCEPT (SocketDTLS_HandshakeFailed) {}
-  EXCEPT (SocketDTLS_VerifyFailed) {}
-  EXCEPT (SocketDTLS_CookieFailed) {}
-  EXCEPT (SocketDTLS_TimeoutExpired) {}
-  EXCEPT (SocketDTLS_ShutdownFailed) {}
-  EXCEPT (SocketDgram_Failed) {}
-  EXCEPT (Socket_Closed) {}
+  EXCEPT (SocketDTLS_HandshakeFailed)
+  {
+  }
+  EXCEPT (SocketDTLS_VerifyFailed)
+  {
+  }
+  EXCEPT (SocketDTLS_CookieFailed)
+  {
+  }
+  EXCEPT (SocketDTLS_TimeoutExpired)
+  {
+  }
+  EXCEPT (SocketDTLS_ShutdownFailed)
+  {
+  }
+  EXCEPT (SocketDgram_Failed)
+  {
+  }
+  EXCEPT (Socket_Closed)
+  {
+  }
   ELSE
   {
     /* Catch any other exceptions */

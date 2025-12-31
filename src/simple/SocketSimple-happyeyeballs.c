@@ -40,13 +40,15 @@ Socket_simple_happyeyeballs_config_defaults (
 SocketSimple_Socket_T
 Socket_simple_happyeyeballs_connect (const char *host, int port, int timeout_ms)
 {
-  return Socket_simple_happyeyeballs_connect_config (host, port, timeout_ms,
-                                                      NULL);
+  return Socket_simple_happyeyeballs_connect_config (
+      host, port, timeout_ms, NULL);
 }
 
 SocketSimple_Socket_T
 Socket_simple_happyeyeballs_connect_config (
-    const char *host, int port, int timeout_ms,
+    const char *host,
+    int port,
+    int timeout_ms,
     const SocketSimple_HappyEyeballs_Config *config)
 {
   volatile Socket_T sock = NULL;

@@ -8,7 +8,8 @@
  * test_quic_packet.c - QUIC Packet Header unit tests
  *
  * Tests parsing and serialization of QUIC packet headers (RFC 9000 Section 17).
- * Covers Long Headers (Initial, 0-RTT, Handshake, Retry) and Short Headers (1-RTT).
+ * Covers Long Headers (Initial, 0-RTT, Handshake, Retry) and Short Headers
+ * (1-RTT).
  */
 
 #include <stdint.h>
@@ -41,15 +42,15 @@ TEST (quic_packet_parse_initial_basic)
 {
   /* Initial packet: Long header, type 0x00, QUICv1 */
   uint8_t data[] = {
-    0xC0,                         /* Form=1, Fixed=1, Type=00 (Initial), PN_Len=00 (1 byte) */
-    0x00, 0x00, 0x00, 0x01,       /* Version: QUIC v1 */
-    0x08,                         /* DCID Length: 8 */
+    0xC0, /* Form=1, Fixed=1, Type=00 (Initial), PN_Len=00 (1 byte) */
+    0x00, 0x00, 0x00, 0x01,                         /* Version: QUIC v1 */
+    0x08,                                           /* DCID Length: 8 */
     0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, /* DCID */
-    0x04,                         /* SCID Length: 4 */
-    0x0A, 0x0B, 0x0C, 0x0D,       /* SCID */
-    0x00,                         /* Token Length: 0 */
-    0x10,                         /* Payload Length: 16 (varint 1 byte) */
-    0x00,                         /* Packet Number: 0 (1 byte) */
+    0x04,                                           /* SCID Length: 4 */
+    0x0A, 0x0B, 0x0C, 0x0D,                         /* SCID */
+    0x00,                                           /* Token Length: 0 */
+    0x10, /* Payload Length: 16 (varint 1 byte) */
+    0x00, /* Packet Number: 0 (1 byte) */
   };
 
   SocketQUICPacketHeader_T header;
@@ -75,16 +76,16 @@ TEST (quic_packet_parse_initial_with_token)
 {
   /* Initial packet with token */
   uint8_t data[] = {
-    0xC1,                         /* Form=1, Fixed=1, Type=00 (Initial), PN_Len=01 (2 bytes) */
-    0x00, 0x00, 0x00, 0x01,       /* Version: QUIC v1 */
-    0x08,                         /* DCID Length: 8 */
+    0xC1, /* Form=1, Fixed=1, Type=00 (Initial), PN_Len=01 (2 bytes) */
+    0x00, 0x00, 0x00, 0x01,                         /* Version: QUIC v1 */
+    0x08,                                           /* DCID Length: 8 */
     0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, /* DCID */
-    0x04,                         /* SCID Length: 4 */
-    0x0A, 0x0B, 0x0C, 0x0D,       /* SCID */
-    0x08,                         /* Token Length: 8 */
+    0x04,                                           /* SCID Length: 4 */
+    0x0A, 0x0B, 0x0C, 0x0D,                         /* SCID */
+    0x08,                                           /* Token Length: 8 */
     0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x11, 0x22, /* Token */
-    0x20,                         /* Payload Length: 32 */
-    0x00, 0x01,                   /* Packet Number: 1 (2 bytes) */
+    0x20,                                           /* Payload Length: 32 */
+    0x00, 0x01, /* Packet Number: 1 (2 bytes) */
   };
 
   SocketQUICPacketHeader_T header;
@@ -112,14 +113,14 @@ TEST (quic_packet_parse_handshake)
 {
   /* Handshake packet: Long header, type 0x02 */
   uint8_t data[] = {
-    0xE2,                         /* Form=1, Fixed=1, Type=10 (Handshake), PN_Len=10 (3 bytes) */
-    0x00, 0x00, 0x00, 0x01,       /* Version: QUIC v1 */
-    0x08,                         /* DCID Length: 8 */
+    0xE2, /* Form=1, Fixed=1, Type=10 (Handshake), PN_Len=10 (3 bytes) */
+    0x00, 0x00, 0x00, 0x01,                         /* Version: QUIC v1 */
+    0x08,                                           /* DCID Length: 8 */
     0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, /* DCID */
-    0x04,                         /* SCID Length: 4 */
-    0x0A, 0x0B, 0x0C, 0x0D,       /* SCID */
-    0x40, 0x64,                   /* Payload Length: 100 (2-byte varint) */
-    0x00, 0x00, 0x05,             /* Packet Number: 5 (3 bytes) */
+    0x04,                                           /* SCID Length: 4 */
+    0x0A, 0x0B, 0x0C, 0x0D,                         /* SCID */
+    0x40, 0x64,       /* Payload Length: 100 (2-byte varint) */
+    0x00, 0x00, 0x05, /* Packet Number: 5 (3 bytes) */
   };
 
   SocketQUICPacketHeader_T header;
@@ -145,14 +146,14 @@ TEST (quic_packet_parse_0rtt)
 {
   /* 0-RTT packet: Long header, type 0x01 */
   uint8_t data[] = {
-    0xD3,                         /* Form=1, Fixed=1, Type=01 (0-RTT), PN_Len=11 (4 bytes) */
-    0x00, 0x00, 0x00, 0x01,       /* Version: QUIC v1 */
-    0x04,                         /* DCID Length: 4 */
-    0x01, 0x02, 0x03, 0x04,       /* DCID */
-    0x04,                         /* SCID Length: 4 */
-    0x0A, 0x0B, 0x0C, 0x0D,       /* SCID */
-    0x80, 0x00, 0x04, 0x00,       /* Payload Length: 1024 (4-byte varint) */
-    0x00, 0x01, 0x02, 0x03,       /* Packet Number: 66051 (4 bytes) */
+    0xD3, /* Form=1, Fixed=1, Type=01 (0-RTT), PN_Len=11 (4 bytes) */
+    0x00, 0x00, 0x00, 0x01, /* Version: QUIC v1 */
+    0x04,                   /* DCID Length: 4 */
+    0x01, 0x02, 0x03, 0x04, /* DCID */
+    0x04,                   /* SCID Length: 4 */
+    0x0A, 0x0B, 0x0C, 0x0D, /* SCID */
+    0x80, 0x00, 0x04, 0x00, /* Payload Length: 1024 (4-byte varint) */
+    0x00, 0x01, 0x02, 0x03, /* Packet Number: 66051 (4 bytes) */
   };
 
   SocketQUICPacketHeader_T header;
@@ -177,17 +178,47 @@ TEST (quic_packet_parse_retry)
 {
   /* Retry packet: Long header, type 0x03 */
   uint8_t data[] = {
-    0xF0,                         /* Form=1, Fixed=1, Type=11 (Retry), reserved bits */
-    0x00, 0x00, 0x00, 0x01,       /* Version: QUIC v1 */
-    0x04,                         /* DCID Length: 4 */
-    0x01, 0x02, 0x03, 0x04,       /* DCID */
-    0x04,                         /* SCID Length: 4 */
-    0x0A, 0x0B, 0x0C, 0x0D,       /* SCID */
+    0xF0, /* Form=1, Fixed=1, Type=11 (Retry), reserved bits */
+    0x00,
+    0x00,
+    0x00,
+    0x01, /* Version: QUIC v1 */
+    0x04, /* DCID Length: 4 */
+    0x01,
+    0x02,
+    0x03,
+    0x04, /* DCID */
+    0x04, /* SCID Length: 4 */
+    0x0A,
+    0x0B,
+    0x0C,
+    0x0D, /* SCID */
     /* Retry Token (8 bytes) */
-    0xDE, 0xAD, 0xBE, 0xEF, 0xCA, 0xFE, 0xBA, 0xBE,
+    0xDE,
+    0xAD,
+    0xBE,
+    0xEF,
+    0xCA,
+    0xFE,
+    0xBA,
+    0xBE,
     /* Retry Integrity Tag (16 bytes) */
-    0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-    0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
+    0x00,
+    0x01,
+    0x02,
+    0x03,
+    0x04,
+    0x05,
+    0x06,
+    0x07,
+    0x08,
+    0x09,
+    0x0A,
+    0x0B,
+    0x0C,
+    0x0D,
+    0x0E,
+    0x0F,
   };
 
   SocketQUICPacketHeader_T header;
@@ -214,9 +245,9 @@ TEST (quic_packet_parse_short_header)
 {
   /* Short header: 1-RTT packet */
   uint8_t data[] = {
-    0x40,                         /* Form=0, Fixed=1, Spin=0, Reserved=00, KeyPhase=0, PN_Len=00 */
-    0x01, 0x02, 0x03, 0x04,       /* DCID (known to be 4 bytes from connection) */
-    0x42,                         /* Packet Number: 66 (1 byte) */
+    0x40, /* Form=0, Fixed=1, Spin=0, Reserved=00, KeyPhase=0, PN_Len=00 */
+    0x01, 0x02, 0x03, 0x04, /* DCID (known to be 4 bytes from connection) */
+    0x42,                   /* Packet Number: 66 (1 byte) */
   };
 
   SocketQUICPacketHeader_T header;
@@ -243,9 +274,9 @@ TEST (quic_packet_parse_short_header_spin_keyphase)
 {
   /* Short header with spin and key phase bits set */
   uint8_t data[] = {
-    0x66,                         /* Form=0, Fixed=1, Spin=1, Reserved=00, KeyPhase=1, PN_Len=10 */
-    0x01, 0x02, 0x03, 0x04,       /* DCID */
-    0x00, 0x00, 0xFF,             /* Packet Number: 255 (3 bytes) */
+    0x66, /* Form=0, Fixed=1, Spin=1, Reserved=00, KeyPhase=1, PN_Len=10 */
+    0x01, 0x02, 0x03, 0x04, /* DCID */
+    0x00, 0x00, 0xFF,       /* Packet Number: 255 (3 bytes) */
   };
 
   SocketQUICPacketHeader_T header;
@@ -268,8 +299,9 @@ TEST (quic_packet_parse_short_header_zero_length_dcid)
 {
   /* Short header with zero-length DCID */
   uint8_t data[] = {
-    0x41,                         /* Form=0, Fixed=1, PN_Len=01 (2 bytes) */
-    0x01, 0x00,                   /* Packet Number: 256 (2 bytes) */
+    0x41, /* Form=0, Fixed=1, PN_Len=01 (2 bytes) */
+    0x01,
+    0x00, /* Packet Number: 256 (2 bytes) */
   };
 
   SocketQUICPacketHeader_T header;
@@ -310,7 +342,8 @@ TEST (quic_packet_serialize_initial)
   /* Set length for serialization */
   header.length = 64;
 
-  size_t written = SocketQUICPacketHeader_serialize (&header, output, sizeof (output));
+  size_t written
+      = SocketQUICPacketHeader_serialize (&header, output, sizeof (output));
   ASSERT (written > 0);
 
   /* Verify by parsing back */
@@ -343,7 +376,8 @@ TEST (quic_packet_serialize_handshake)
   ASSERT_EQ (res, QUIC_PACKET_OK);
   header.length = 200;
 
-  size_t written = SocketQUICPacketHeader_serialize (&header, output, sizeof (output));
+  size_t written
+      = SocketQUICPacketHeader_serialize (&header, output, sizeof (output));
   ASSERT (written > 0);
 
   /* Verify round-trip */
@@ -372,7 +406,8 @@ TEST (quic_packet_serialize_0rtt)
   ASSERT_EQ (res, QUIC_PACKET_OK);
   header.length = 512;
 
-  size_t written = SocketQUICPacketHeader_serialize (&header, output, sizeof (output));
+  size_t written
+      = SocketQUICPacketHeader_serialize (&header, output, sizeof (output));
   ASSERT (written > 0);
 
   /* Verify round-trip */
@@ -404,7 +439,8 @@ TEST (quic_packet_serialize_short)
 
   ASSERT_EQ (res, QUIC_PACKET_OK);
 
-  size_t written = SocketQUICPacketHeader_serialize (&header, output, sizeof (output));
+  size_t written
+      = SocketQUICPacketHeader_serialize (&header, output, sizeof (output));
   ASSERT (written > 0);
 
   /* Verify by parsing back */
@@ -434,7 +470,8 @@ TEST (quic_packet_serialize_short_zero_dcid)
 
   ASSERT_EQ (res, QUIC_PACKET_OK);
 
-  size_t written = SocketQUICPacketHeader_serialize (&header, output, sizeof (output));
+  size_t written
+      = SocketQUICPacketHeader_serialize (&header, output, sizeof (output));
   ASSERT_EQ (written, 2); /* 1 byte flags + 1 byte PN */
 
   /* Verify */
@@ -463,8 +500,8 @@ TEST (quic_packet_size_initial)
   setup_test_cid (&dcid, 8);
   setup_test_cid (&scid, 4);
 
-  SocketQUICPacketHeader_build_initial (&header, QUIC_VERSION_1, &dcid, &scid,
-                                         token, sizeof (token), 2, 0);
+  SocketQUICPacketHeader_build_initial (
+      &header, QUIC_VERSION_1, &dcid, &scid, token, sizeof (token), 2, 0);
   header.length = 100;
 
   size_t size = SocketQUICPacketHeader_size (&header);
@@ -588,8 +625,8 @@ TEST (quic_packet_build_invalid_pn_length)
   ASSERT_EQ (res, QUIC_PACKET_ERROR_PNLEN);
 
   /* PN length 5 is invalid */
-  res = SocketQUICPacketHeader_build_handshake (&header, QUIC_VERSION_1, &dcid,
-                                                 &scid, 5, 0);
+  res = SocketQUICPacketHeader_build_handshake (
+      &header, QUIC_VERSION_1, &dcid, &scid, 5, 0);
   ASSERT_EQ (res, QUIC_PACKET_ERROR_PNLEN);
 }
 
@@ -598,7 +635,8 @@ TEST (quic_packet_serialize_null)
   SocketQUICPacketHeader_T header;
   uint8_t output[64];
 
-  size_t written = SocketQUICPacketHeader_serialize (NULL, output, sizeof (output));
+  size_t written
+      = SocketQUICPacketHeader_serialize (NULL, output, sizeof (output));
   ASSERT_EQ (written, 0);
 
   SocketQUICPacketHeader_init (&header);
@@ -615,7 +653,8 @@ TEST (quic_packet_serialize_buffer_too_small)
   setup_test_cid (&dcid, 8);
   SocketQUICPacketHeader_build_short (&header, &dcid, 0, 0, 1, 0);
 
-  size_t written = SocketQUICPacketHeader_serialize (&header, output, sizeof (output));
+  size_t written
+      = SocketQUICPacketHeader_serialize (&header, output, sizeof (output));
   ASSERT_EQ (written, 0);
 }
 
@@ -670,7 +709,8 @@ TEST (quic_packet_pn_roundtrip)
   uint64_t largest_ack = 0x12345600;
 
   uint32_t truncated = SocketQUICPacket_encode_pn (original_pn, pn_length);
-  uint64_t decoded = SocketQUICPacket_decode_pn (truncated, pn_length, largest_ack);
+  uint64_t decoded
+      = SocketQUICPacket_decode_pn (truncated, pn_length, largest_ack);
 
   ASSERT_EQ (decoded, original_pn);
 }
@@ -709,7 +749,8 @@ TEST (quic_packet_is_long_header)
   ASSERT_EQ (SocketQUICPacket_is_long_header (0xE0), 1); /* Handshake */
   ASSERT_EQ (SocketQUICPacket_is_long_header (0xF0), 1); /* Retry */
   ASSERT_EQ (SocketQUICPacket_is_long_header (0x40), 0); /* Short */
-  ASSERT_EQ (SocketQUICPacket_is_long_header (0x00), 0); /* Short (no fixed bit) */
+  ASSERT_EQ (SocketQUICPacket_is_long_header (0x00),
+             0); /* Short (no fixed bit) */
 }
 
 TEST (quic_packet_has_fixed_bit)
@@ -734,11 +775,14 @@ TEST (quic_packet_result_string)
 {
   ASSERT_NOT_NULL (SocketQUICPacket_result_string (QUIC_PACKET_OK));
   ASSERT_NOT_NULL (SocketQUICPacket_result_string (QUIC_PACKET_ERROR_NULL));
-  ASSERT_NOT_NULL (SocketQUICPacket_result_string (QUIC_PACKET_ERROR_TRUNCATED));
+  ASSERT_NOT_NULL (
+      SocketQUICPacket_result_string (QUIC_PACKET_ERROR_TRUNCATED));
   ASSERT_NOT_NULL (SocketQUICPacket_result_string (QUIC_PACKET_ERROR_BUFFER));
   ASSERT_NOT_NULL (SocketQUICPacket_result_string (QUIC_PACKET_ERROR_INVALID));
-  ASSERT_NOT_NULL (SocketQUICPacket_result_string (QUIC_PACKET_ERROR_FIXED_BIT));
-  ASSERT_NOT_NULL (SocketQUICPacket_result_string ((SocketQUICPacket_Result)99));
+  ASSERT_NOT_NULL (
+      SocketQUICPacket_result_string (QUIC_PACKET_ERROR_FIXED_BIT));
+  ASSERT_NOT_NULL (
+      SocketQUICPacket_result_string ((SocketQUICPacket_Result)99));
 }
 
 TEST (quic_packet_header_init)
@@ -770,16 +814,25 @@ TEST (quic_packet_parse_version_negotiation)
 {
   /* Version Negotiation uses version 0 */
   uint8_t data[] = {
-    0xC0,                         /* Form=1, Fixed=1 */
-    0x00, 0x00, 0x00, 0x00,       /* Version: 0 (negotiation) */
-    0x04,                         /* DCID Length: 4 */
-    0x01, 0x02, 0x03, 0x04,       /* DCID */
-    0x04,                         /* SCID Length: 4 */
-    0x0A, 0x0B, 0x0C, 0x0D,       /* SCID */
+    0xC0, /* Form=1, Fixed=1 */
+    0x00,
+    0x00,
+    0x00,
+    0x00, /* Version: 0 (negotiation) */
+    0x04, /* DCID Length: 4 */
+    0x01,
+    0x02,
+    0x03,
+    0x04, /* DCID */
+    0x04, /* SCID Length: 4 */
+    0x0A,
+    0x0B,
+    0x0C,
+    0x0D, /* SCID */
     /* Token length varint and length for Initial type */
-    0x00,                         /* Token length: 0 */
-    0x10,                         /* Payload length */
-    0x00,                         /* PN */
+    0x00, /* Token length: 0 */
+    0x10, /* Payload length */
+    0x00, /* PN */
   };
 
   SocketQUICPacketHeader_T header;

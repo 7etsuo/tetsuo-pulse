@@ -150,7 +150,10 @@ TEST (dns_mutex_int_getter_exception_safe)
       /* Raise exception after getting value but inside the TRY block */
       RAISE (TestException);
     }
-    EXCEPT (TestException) { exception_caught = 1; }
+    EXCEPT (TestException)
+    {
+      exception_caught = 1;
+    }
     END_TRY;
 
     /* Verify we caught the exception */
@@ -193,7 +196,10 @@ TEST (dns_mutex_size_getter_exception_safe)
 
       RAISE (TestException);
     }
-    EXCEPT (TestException) { exception_caught = 1; }
+    EXCEPT (TestException)
+    {
+      exception_caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (exception_caught, 1);
@@ -234,7 +240,10 @@ TEST (dns_mutex_int_setter_exception_safe)
       /* Raise exception after setter */
       RAISE (TestException);
     }
-    EXCEPT (TestException) { exception_caught = 1; }
+    EXCEPT (TestException)
+    {
+      exception_caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (exception_caught, 1);

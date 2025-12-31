@@ -32,17 +32,18 @@
  */
 
 static const char *result_strings[] = {
-    [QUIC_CONNID_POOL_OK] = "OK",
-    [QUIC_CONNID_POOL_ERROR_NULL] = "NULL pointer argument",
-    [QUIC_CONNID_POOL_ERROR_FULL] = "Pool at peer's active_connection_id_limit",
-    [QUIC_CONNID_POOL_ERROR_DUP] = "Duplicate connection ID",
-    [QUIC_CONNID_POOL_ERROR_SEQ] = "Invalid sequence number",
-    [QUIC_CONNID_POOL_ERROR_LIMIT] = "Limit exceeded",
-    [QUIC_CONNID_POOL_ERROR_CHAIN] = "Hash chain too long (potential DoS)",
-    [QUIC_CONNID_POOL_NOT_FOUND] = "Connection ID not found",
+  [QUIC_CONNID_POOL_OK] = "OK",
+  [QUIC_CONNID_POOL_ERROR_NULL] = "NULL pointer argument",
+  [QUIC_CONNID_POOL_ERROR_FULL] = "Pool at peer's active_connection_id_limit",
+  [QUIC_CONNID_POOL_ERROR_DUP] = "Duplicate connection ID",
+  [QUIC_CONNID_POOL_ERROR_SEQ] = "Invalid sequence number",
+  [QUIC_CONNID_POOL_ERROR_LIMIT] = "Limit exceeded",
+  [QUIC_CONNID_POOL_ERROR_CHAIN] = "Hash chain too long (potential DoS)",
+  [QUIC_CONNID_POOL_NOT_FOUND] = "Connection ID not found",
 };
 
-DEFINE_RESULT_STRING_FUNC (SocketQUICConnectionIDPool, QUIC_CONNID_POOL_NOT_FOUND)
+DEFINE_RESULT_STRING_FUNC (SocketQUICConnectionIDPool,
+                           QUIC_CONNID_POOL_NOT_FOUND)
 
 /* ============================================================================
  * Internal Hash Functions
@@ -117,8 +118,10 @@ SocketQUICConnectionIDPool_new (Arena_T arena, size_t peer_limit)
   pool->total_count = 0;
 
   /* Generate cryptographically secure random hash seed for collision resistance
-   * Fail initialization rather than using a weak seed (defense against hash collision DoS) */
-  if (SocketCrypto_random_bytes (&pool->hash_seed, sizeof (pool->hash_seed)) != 0)
+   * Fail initialization rather than using a weak seed (defense against hash
+   * collision DoS) */
+  if (SocketCrypto_random_bytes (&pool->hash_seed, sizeof (pool->hash_seed))
+      != 0)
     {
       SOCKET_LOG_ERROR_MSG ("Failed to generate secure hash seed");
       return NULL;
@@ -128,7 +131,8 @@ SocketQUICConnectionIDPool_new (Arena_T arena, size_t peer_limit)
 }
 
 size_t
-SocketQUICConnectionIDPool_active_count (const SocketQUICConnectionIDPool_T pool)
+SocketQUICConnectionIDPool_active_count (
+    const SocketQUICConnectionIDPool_T pool)
 {
   if (pool == NULL)
     return 0;
@@ -302,19 +306,20 @@ create_pool_entry (SocketQUICConnectionIDPool_T pool,
 
 SocketQUICConnectionIDPool_Result
 SocketQUICConnectionIDPool_add (SocketQUICConnectionIDPool_T pool,
-                                 const SocketQUICConnectionID_T *cid)
+                                const SocketQUICConnectionID_T *cid)
 {
   if (pool == NULL || cid == NULL)
     return QUIC_CONNID_POOL_ERROR_NULL;
 
-  return SocketQUICConnectionIDPool_add_with_sequence (pool, cid,
-                                                        pool->next_sequence);
+  return SocketQUICConnectionIDPool_add_with_sequence (
+      pool, cid, pool->next_sequence);
 }
 
 SocketQUICConnectionIDPool_Result
-SocketQUICConnectionIDPool_add_with_sequence (SocketQUICConnectionIDPool_T pool,
-                                               const SocketQUICConnectionID_T *cid,
-                                               uint64_t sequence)
+SocketQUICConnectionIDPool_add_with_sequence (
+    SocketQUICConnectionIDPool_T pool,
+    const SocketQUICConnectionID_T *cid,
+    uint64_t sequence)
 {
   SocketQUICConnectionIDEntry_T *entry;
   SocketQUICConnectionIDPool_Result result;
@@ -371,14 +376,17 @@ SocketQUICConnectionIDPool_add_with_sequence (SocketQUICConnectionIDPool_T pool,
     pool->next_sequence = sequence + 1;
 
   SOCKET_LOG_DEBUG_MSG ("Added CID with sequence %" PRIu64 " (active: %zu/%zu)",
-                        sequence, pool->active_count, pool->peer_limit);
+                        sequence,
+                        pool->active_count,
+                        pool->peer_limit);
 
   return QUIC_CONNID_POOL_OK;
 }
 
 SocketQUICConnectionIDEntry_T *
 SocketQUICConnectionIDPool_lookup (const SocketQUICConnectionIDPool_T pool,
-                                    const uint8_t *id, size_t len)
+                                   const uint8_t *id,
+                                   size_t len)
 {
   SocketQUICConnectionIDEntry_T *entry;
   unsigned idx;
@@ -396,8 +404,8 @@ SocketQUICConnectionIDPool_lookup (const SocketQUICConnectionIDPool_T pool,
       chain_len++;
       if (chain_len > QUIC_CONNID_POOL_MAX_CHAIN_LEN)
         {
-          SOCKET_LOG_WARN_MSG (
-              "SECURITY: Hash chain too long in lookup (%d)", chain_len);
+          SOCKET_LOG_WARN_MSG ("SECURITY: Hash chain too long in lookup (%d)",
+                               chain_len);
           return NULL;
         }
 
@@ -411,8 +419,8 @@ SocketQUICConnectionIDPool_lookup (const SocketQUICConnectionIDPool_T pool,
 }
 
 SocketQUICConnectionIDEntry_T *
-SocketQUICConnectionIDPool_lookup_sequence (const SocketQUICConnectionIDPool_T pool,
-                                             uint64_t sequence)
+SocketQUICConnectionIDPool_lookup_sequence (
+    const SocketQUICConnectionIDPool_T pool, uint64_t sequence)
 {
   SocketQUICConnectionIDEntry_T *entry;
   unsigned idx;
@@ -432,7 +440,8 @@ SocketQUICConnectionIDPool_lookup_sequence (const SocketQUICConnectionIDPool_T p
       if (chain_len > QUIC_CONNID_POOL_MAX_CHAIN_LEN)
         {
           SOCKET_LOG_WARN_MSG (
-              "SECURITY: Sequence hash chain too long in lookup (%d)", chain_len);
+              "SECURITY: Sequence hash chain too long in lookup (%d)",
+              chain_len);
           return NULL;
         }
 
@@ -447,7 +456,8 @@ SocketQUICConnectionIDPool_lookup_sequence (const SocketQUICConnectionIDPool_T p
 
 SocketQUICConnectionIDPool_Result
 SocketQUICConnectionIDPool_remove (SocketQUICConnectionIDPool_T pool,
-                                    const uint8_t *id, size_t len)
+                                   const uint8_t *id,
+                                   size_t len)
 {
   SocketQUICConnectionIDEntry_T *entry;
 
@@ -481,8 +491,8 @@ SocketQUICConnectionIDPool_remove (SocketQUICConnectionIDPool_T pool,
 
 SocketQUICConnectionIDPool_Result
 SocketQUICConnectionIDPool_retire_prior_to (SocketQUICConnectionIDPool_T pool,
-                                             uint64_t retire_prior_to,
-                                             size_t *retired_count)
+                                            uint64_t retire_prior_to,
+                                            size_t *retired_count)
 {
   SocketQUICConnectionIDEntry_T *entry;
   size_t count = 0;
@@ -495,7 +505,8 @@ SocketQUICConnectionIDPool_retire_prior_to (SocketQUICConnectionIDPool_T pool,
     {
       SOCKET_LOG_WARN_MSG ("Invalid retire_prior_to: %" PRIu64
                            " < current %" PRIu64,
-                           retire_prior_to, pool->retire_prior_to);
+                           retire_prior_to,
+                           pool->retire_prior_to);
       return QUIC_CONNID_POOL_ERROR_SEQ;
     }
 
@@ -526,14 +537,16 @@ SocketQUICConnectionIDPool_retire_prior_to (SocketQUICConnectionIDPool_T pool,
 
   SOCKET_LOG_DEBUG_MSG ("Retired %zu CIDs with sequence < %" PRIu64
                         " (active: %zu)",
-                        count, retire_prior_to, pool->active_count);
+                        count,
+                        retire_prior_to,
+                        pool->active_count);
 
   return QUIC_CONNID_POOL_OK;
 }
 
 SocketQUICConnectionIDPool_Result
 SocketQUICConnectionIDPool_retire_sequence (SocketQUICConnectionIDPool_T pool,
-                                             uint64_t sequence)
+                                            uint64_t sequence)
 {
   SocketQUICConnectionIDEntry_T *entry;
 
@@ -556,7 +569,7 @@ SocketQUICConnectionIDPool_retire_sequence (SocketQUICConnectionIDPool_T pool,
 
 SocketQUICConnectionIDPool_Result
 SocketQUICConnectionIDPool_purge_retired (SocketQUICConnectionIDPool_T pool,
-                                           size_t *removed_count)
+                                          size_t *removed_count)
 {
   SocketQUICConnectionIDEntry_T *entry;
   SocketQUICConnectionIDEntry_T *next;
@@ -586,14 +599,15 @@ SocketQUICConnectionIDPool_purge_retired (SocketQUICConnectionIDPool_T pool,
   if (removed_count)
     *removed_count = count;
 
-  SOCKET_LOG_DEBUG_MSG ("Purged %zu retired CIDs (total: %zu)", count,
-                        pool->total_count);
+  SOCKET_LOG_DEBUG_MSG (
+      "Purged %zu retired CIDs (total: %zu)", count, pool->total_count);
 
   return QUIC_CONNID_POOL_OK;
 }
 
 uint64_t
-SocketQUICConnectionIDPool_get_retire_prior_to (const SocketQUICConnectionIDPool_T pool)
+SocketQUICConnectionIDPool_get_retire_prior_to (
+    const SocketQUICConnectionIDPool_T pool)
 {
   if (pool == NULL)
     return 0;
@@ -606,9 +620,10 @@ SocketQUICConnectionIDPool_get_retire_prior_to (const SocketQUICConnectionIDPool
  */
 
 int
-SocketQUICConnectionIDPool_foreach (SocketQUICConnectionIDPool_T pool,
-                                     SocketQUICConnectionIDPool_Iterator callback,
-                                     void *context)
+SocketQUICConnectionIDPool_foreach (
+    SocketQUICConnectionIDPool_T pool,
+    SocketQUICConnectionIDPool_Iterator callback,
+    void *context)
 {
   SocketQUICConnectionIDEntry_T *entry;
   int count = 0;
@@ -661,7 +676,7 @@ SocketQUICConnectionIDPool_get_available (SocketQUICConnectionIDPool_T pool)
 
 int
 SocketQUICConnectionIDPool_needs_more (const SocketQUICConnectionIDPool_T pool,
-                                        size_t min_for_migrate)
+                                       size_t min_for_migrate)
 {
   if (pool == NULL)
     return 0;

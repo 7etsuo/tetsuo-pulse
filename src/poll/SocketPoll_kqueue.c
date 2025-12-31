@@ -26,7 +26,7 @@
 /* Platform guard: kqueue is only available on BSD/macOS.
  * On other platforms, this file compiles as an empty translation unit.
  * CMake selects the appropriate backend file for each platform. */
-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)         \
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) \
     || defined(__OpenBSD__) || defined(__DragonFly__)
 
 #include <assert.h>
@@ -67,14 +67,12 @@ struct T
  * @note Fixed-size array; extend by adding entries before terminator {0,0}.
  * Supports future event types without code duplication.
  */
-static const struct {
-    unsigned poll_event;
-    int filter;
-} kqueue_event_map[] = {
-    { POLL_READ,  EVFILT_READ },
-    { POLL_WRITE, EVFILT_WRITE },
-    { 0, 0 }
-};
+static const struct
+{
+  unsigned poll_event;
+  int filter;
+} kqueue_event_map[]
+    = { { POLL_READ, EVFILT_READ }, { POLL_WRITE, EVFILT_WRITE }, { 0, 0 } };
 
 /**
  * backend_new - Create a new kqueue backend instance
@@ -152,7 +150,9 @@ backend_free (PollBackend_T backend)
  * efficiency when both read and write events are requested.
  */
 static int
-setup_event_filters (PollBackend_T backend, int fd, unsigned events,
+setup_event_filters (PollBackend_T backend,
+                     int fd,
+                     unsigned events,
                      unsigned short action)
 {
   struct kevent ev[2];
@@ -166,8 +166,10 @@ setup_event_filters (PollBackend_T backend, int fd, unsigned events,
         {
           EV_SET (&ev[nev], fd, kqueue_event_map[i].filter, flags, 0, 0, NULL);
           ++nev;
-          /* kqueue supports multiple filters per fd; limit to array size for safety */
-          if (nev >= (int)(sizeof(ev) / sizeof(ev[0]))) break;
+          /* kqueue supports multiple filters per fd; limit to array size for
+           * safety */
+          if (nev >= (int)(sizeof (ev) / sizeof (ev[0])))
+            break;
         }
     }
 
@@ -279,8 +281,8 @@ backend_wait (PollBackend_T backend, int timeout_ms)
     }
   /* If timeout_ms is -1, timeout_ptr stays NULL (infinite wait) */
 
-  nev = kevent (backend->kq, NULL, 0, backend->events, backend->maxevents,
-                timeout_ptr);
+  nev = kevent (
+      backend->kq, NULL, 0, backend->events, backend->maxevents, timeout_ptr);
 
   if (nev < 0)
     return HANDLE_POLL_ERROR (backend);
@@ -309,7 +311,9 @@ backend_wait (PollBackend_T backend, int timeout_ms)
  * Thread-safe: No
  */
 int
-backend_get_event (const PollBackend_T backend, int index, int *fd_out,
+backend_get_event (const PollBackend_T backend,
+                   int index,
+                   int *fd_out,
                    unsigned *events_out)
 {
   struct kevent *kev;
@@ -332,7 +336,8 @@ backend_get_event (const PollBackend_T backend, int index, int *fd_out,
     return -1;
   *fd_out = (int)kev->ident;
 
-  /* Translate kqueue filter to portable event flags using centralized mapping */
+  /* Translate kqueue filter to portable event flags using centralized mapping
+   */
   for (size_t i = 0; kqueue_event_map[i].poll_event != 0; ++i)
     {
       if (kqueue_event_map[i].filter == (int)kev->filter)

@@ -68,9 +68,8 @@ TEST (quic_version_grease_all_nibbles)
   /* Test all 16 possible GREASE versions */
   for (uint32_t nibble = 0; nibble < 16; nibble++)
     {
-      uint32_t version
-          = (nibble << 28) | (nibble << 20) | (nibble << 12) | (nibble << 4)
-            | 0x0a0a0a0a;
+      uint32_t version = (nibble << 28) | (nibble << 20) | (nibble << 12)
+                         | (nibble << 4) | 0x0a0a0a0a;
       ASSERT (QUIC_VERSION_IS_GREASE (version));
     }
 }
@@ -382,8 +381,8 @@ TEST (quic_version_neg_create_basic)
 
   /* Create negotiation packet with 2 versions */
   uint32_t versions[] = { QUIC_VERSION_1, QUIC_VERSION_2 };
-  int result = SocketQUICVersion_create_negotiation (&dcid, &scid, versions, 2,
-                                                      output, sizeof (output));
+  int result = SocketQUICVersion_create_negotiation (
+      &dcid, &scid, versions, 2, output, sizeof (output));
 
   /* Expected size: 1 (header) + 4 (version) + 1 (dcid len) + 8 (dcid) +
    *                1 (scid len) + 8 (scid) + 8 (2 versions) = 31 */
@@ -429,8 +428,8 @@ TEST (quic_version_neg_create_zero_length_cids)
   SocketQUICConnectionID_init (&scid);
 
   uint32_t versions[] = { QUIC_VERSION_1 };
-  int result = SocketQUICVersion_create_negotiation (&dcid, &scid, versions, 1,
-                                                      output, sizeof (output));
+  int result = SocketQUICVersion_create_negotiation (
+      &dcid, &scid, versions, 1, output, sizeof (output));
 
   /* Expected: 1 + 4 + 1 + 0 + 1 + 0 + 4 = 11 bytes */
   ASSERT_EQ (result, 11);
@@ -452,24 +451,23 @@ TEST (quic_version_neg_create_null_inputs)
   SocketQUICConnectionID_init (&scid);
 
   /* NULL dcid */
-  int result = SocketQUICVersion_create_negotiation (NULL, &scid, versions, 1,
-                                                      output, sizeof (output));
+  int result = SocketQUICVersion_create_negotiation (
+      NULL, &scid, versions, 1, output, sizeof (output));
   ASSERT (result < 0);
 
   /* NULL scid */
-  result = SocketQUICVersion_create_negotiation (&dcid, NULL, versions, 1,
-                                                  output, sizeof (output));
+  result = SocketQUICVersion_create_negotiation (
+      &dcid, NULL, versions, 1, output, sizeof (output));
   ASSERT (result < 0);
 
   /* NULL versions */
-  result = SocketQUICVersion_create_negotiation (&dcid, &scid, NULL, 1, output,
-                                                  sizeof (output));
+  result = SocketQUICVersion_create_negotiation (
+      &dcid, &scid, NULL, 1, output, sizeof (output));
   ASSERT (result < 0);
 
   /* NULL output */
-  result
-      = SocketQUICVersion_create_negotiation (&dcid, &scid, versions, 1, NULL,
-                                               sizeof (output));
+  result = SocketQUICVersion_create_negotiation (
+      &dcid, &scid, versions, 1, NULL, sizeof (output));
   ASSERT (result < 0);
 }
 
@@ -484,8 +482,8 @@ TEST (quic_version_neg_create_buffer_too_small)
   scid.len = 8;
 
   uint32_t versions[] = { QUIC_VERSION_1, QUIC_VERSION_2 };
-  int result = SocketQUICVersion_create_negotiation (&dcid, &scid, versions, 2,
-                                                      output, sizeof (output));
+  int result = SocketQUICVersion_create_negotiation (
+      &dcid, &scid, versions, 2, output, sizeof (output));
 
   ASSERT (result < 0);
 }
@@ -500,8 +498,8 @@ TEST (quic_version_neg_create_zero_versions)
   SocketQUICConnectionID_init (&scid);
 
   /* Zero version count */
-  int result = SocketQUICVersion_create_negotiation (&dcid, &scid, versions, 0,
-                                                      output, sizeof (output));
+  int result = SocketQUICVersion_create_negotiation (
+      &dcid, &scid, versions, 0, output, sizeof (output));
   ASSERT (result < 0);
 }
 
@@ -516,9 +514,8 @@ TEST (quic_version_neg_create_overflow_count)
 
   /* Count that would overflow when multiplied by 4 (issue #778) */
   size_t overflow_count = SIZE_MAX / 4 + 1;
-  int result = SocketQUICVersion_create_negotiation (&dcid, &scid, versions,
-                                                      overflow_count, output,
-                                                      sizeof (output));
+  int result = SocketQUICVersion_create_negotiation (
+      &dcid, &scid, versions, overflow_count, output, sizeof (output));
 
   /* Should reject with length error, not overflow silently */
   ASSERT (result < 0);
@@ -537,9 +534,8 @@ TEST (quic_version_neg_create_max_safe_count)
   size_t max_safe_count = SIZE_MAX / 4;
 
   /* Should fail due to buffer size, not overflow */
-  int result = SocketQUICVersion_create_negotiation (&dcid, &scid, versions,
-                                                      max_safe_count, output,
-                                                      sizeof (output));
+  int result = SocketQUICVersion_create_negotiation (
+      &dcid, &scid, versions, max_safe_count, output, sizeof (output));
 
   /* Expected to fail with buffer size error, proving overflow check passed */
   ASSERT (result < 0);
@@ -630,23 +626,23 @@ TEST (quic_version_neg_parse_null_inputs)
   ASSERT_EQ (result, QUIC_VERSION_NEG_ERROR_NULL);
 
   /* NULL dcid */
-  result = SocketQUICVersion_parse_negotiation (packet, sizeof (packet), NULL,
-                                                 &scid, versions, 10, &count);
+  result = SocketQUICVersion_parse_negotiation (
+      packet, sizeof (packet), NULL, &scid, versions, 10, &count);
   ASSERT_EQ (result, QUIC_VERSION_NEG_ERROR_NULL);
 
   /* NULL scid */
-  result = SocketQUICVersion_parse_negotiation (packet, sizeof (packet), &dcid,
-                                                 NULL, versions, 10, &count);
+  result = SocketQUICVersion_parse_negotiation (
+      packet, sizeof (packet), &dcid, NULL, versions, 10, &count);
   ASSERT_EQ (result, QUIC_VERSION_NEG_ERROR_NULL);
 
   /* NULL versions_out */
-  result = SocketQUICVersion_parse_negotiation (packet, sizeof (packet), &dcid,
-                                                 &scid, NULL, 10, &count);
+  result = SocketQUICVersion_parse_negotiation (
+      packet, sizeof (packet), &dcid, &scid, NULL, 10, &count);
   ASSERT_EQ (result, QUIC_VERSION_NEG_ERROR_NULL);
 
   /* NULL count_out */
-  result = SocketQUICVersion_parse_negotiation (packet, sizeof (packet), &dcid,
-                                                 &scid, versions, 10, NULL);
+  result = SocketQUICVersion_parse_negotiation (
+      packet, sizeof (packet), &dcid, &scid, versions, 10, NULL);
   ASSERT_EQ (result, QUIC_VERSION_NEG_ERROR_NULL);
 }
 
@@ -654,7 +650,8 @@ TEST (quic_version_neg_parse_truncated_packet)
 {
   uint8_t packet[] = {
     0x80, /* Long header */
-    0x00, 0x00
+    0x00,
+    0x00
     /* Incomplete */
   };
 
@@ -741,10 +738,8 @@ TEST (quic_version_neg_roundtrip)
   memset (scid_orig.data, 0x22, 8);
 
   uint32_t versions_orig[] = { QUIC_VERSION_1, QUIC_VERSION_2 };
-  int create_result
-      = SocketQUICVersion_create_negotiation (&dcid_orig, &scid_orig,
-                                               versions_orig, 2, output,
-                                               sizeof (output));
+  int create_result = SocketQUICVersion_create_negotiation (
+      &dcid_orig, &scid_orig, versions_orig, 2, output, sizeof (output));
   ASSERT (create_result > 0);
 
   /* Parse it back */
@@ -753,10 +748,13 @@ TEST (quic_version_neg_roundtrip)
   size_t count_parsed;
 
   SocketQUICVersion_NegResult parse_result
-      = SocketQUICVersion_parse_negotiation (output, create_result,
-                                              &dcid_parsed, &scid_parsed,
-                                              versions_parsed, 10,
-                                              &count_parsed);
+      = SocketQUICVersion_parse_negotiation (output,
+                                             create_result,
+                                             &dcid_parsed,
+                                             &scid_parsed,
+                                             versions_parsed,
+                                             10,
+                                             &count_parsed);
 
   ASSERT_EQ (parse_result, QUIC_VERSION_NEG_OK);
   ASSERT_EQ (count_parsed, 2);

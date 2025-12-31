@@ -134,8 +134,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
               if (count > 0 && elem_size > 0)
                 {
-                  void *ptr = Arena_calloc (arena, count, elem_size, __FILE__,
-                                            __LINE__);
+                  void *ptr = Arena_calloc (
+                      arena, count, elem_size, __FILE__, __LINE__);
                   if (ptr)
                     {
                       /* Verify memory is zeroed */
@@ -206,8 +206,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           for (int round = 0; round < 3; round++)
             {
               size_t total = 0;
-              for (size_t i = 0;
-                   i < payload_size && total < FUZZ_MAX_TOTAL / 4; i++)
+              for (size_t i = 0; i < payload_size && total < FUZZ_MAX_TOTAL / 4;
+                   i++)
                 {
                   size_t alloc_size = (payload[i] % 512) + 1;
                   void *ptr
@@ -239,12 +239,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           };
 
           for (size_t i = 0;
-               i < sizeof (dangerous_sizes) / sizeof (dangerous_sizes[0]); i++)
+               i < sizeof (dangerous_sizes) / sizeof (dangerous_sizes[0]);
+               i++)
             {
               TRY
               {
-                void *ptr = Arena_alloc (arena, dangerous_sizes[i], __FILE__,
-                                         __LINE__);
+                void *ptr = Arena_alloc (
+                    arena, dangerous_sizes[i], __FILE__, __LINE__);
                 (void)ptr; /* May succeed for 0, should fail for large */
               }
               EXCEPT (Arena_Failed)
@@ -257,7 +258,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         break;
       }
   }
-  EXCEPT (Arena_Failed) { /* Expected for overflow/large allocations */ }
+  EXCEPT (Arena_Failed)
+  { /* Expected for overflow/large allocations */
+  }
   FINALLY
   {
     if (arena)

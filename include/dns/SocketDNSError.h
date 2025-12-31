@@ -229,7 +229,8 @@ extern void SocketDNS_ede_init (SocketDNS_ExtendedError *ede);
  * }
  * @endcode
  */
-extern int SocketDNS_ede_parse (const unsigned char *data, size_t len,
+extern int SocketDNS_ede_parse (const unsigned char *data,
+                                size_t len,
                                 SocketDNS_ExtendedError *ede);
 
 /**
@@ -258,7 +259,8 @@ extern int SocketDNS_ede_parse (const unsigned char *data, size_t len,
  * @endcode
  */
 extern int SocketDNS_ede_encode (const SocketDNS_ExtendedError *ede,
-                                 unsigned char *buf, size_t buflen);
+                                 unsigned char *buf,
+                                 size_t buflen);
 
 /**
  * @brief Get human-readable name for an EDE INFO-CODE.
@@ -290,7 +292,8 @@ extern const char *SocketDNS_ede_code_name (uint16_t code);
  * @code{.c}
  * printf("Description: %s\n",
  *        SocketDNS_ede_code_description(DNS_EDE_DNSSEC_BOGUS));
- * // Output: "Description: DNSSEC validation failed (signature invalid, chain broken, etc.)"
+ * // Output: "Description: DNSSEC validation failed (signature invalid, chain
+ * broken, etc.)"
  * @endcode
  */
 extern const char *SocketDNS_ede_code_description (uint16_t code);
@@ -394,7 +397,8 @@ extern bool SocketDNS_ede_is_retriable (uint16_t code);
  * // Output: "DNS Error: DNSSEC Bogus (6): Signature verification failed"
  * @endcode
  */
-extern int SocketDNS_ede_format (const SocketDNS_ExtendedError *ede, char *buf,
+extern int SocketDNS_ede_format (const SocketDNS_ExtendedError *ede,
+                                 char *buf,
                                  size_t buflen);
 
 /**
@@ -418,7 +422,8 @@ extern int SocketDNS_ede_format (const SocketDNS_ExtendedError *ede, char *buf,
  * }
  * @endcode
  */
-extern int SocketDNS_ede_parse_all (const unsigned char *rdata, size_t rdlen,
+extern int SocketDNS_ede_parse_all (const unsigned char *rdata,
+                                    size_t rdlen,
                                     SocketDNS_ExtendedError *ede_array,
                                     size_t max_count);
 
@@ -436,7 +441,8 @@ extern int SocketDNS_ede_parse_all (const unsigned char *rdata, size_t rdlen,
  * @return 0 on success, -1 on error.
  */
 extern int SocketDNS_ede_to_edns_option (const SocketDNS_ExtendedError *ede,
-                                         void *opt, unsigned char *opt_data,
+                                         void *opt,
+                                         unsigned char *opt_data,
                                          size_t data_len);
 
 /** @} */ /* End of dns_ede group */

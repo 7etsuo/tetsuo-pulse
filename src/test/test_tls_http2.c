@@ -48,10 +48,12 @@ generate_test_certs (const char *cert_file, const char *key_file)
 {
   char cmd[1024];
 
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s "
             "-days 1 -nodes -subj '/CN=localhost' -batch 2>/dev/null",
-            key_file, cert_file);
+            key_file,
+            cert_file);
   if (system (cmd) != 0)
     return -1;
 
@@ -103,7 +105,7 @@ TEST (alpn_set_h2_protocol)
     ctx = SocketTLSContext_new_client (NULL);
     ASSERT_NOT_NULL (ctx);
 
-    const char *protos[] = {"h2"};
+    const char *protos[] = { "h2" };
     SocketTLSContext_set_alpn_protos (ctx, protos, 1);
   }
   FINALLY
@@ -124,7 +126,7 @@ TEST (alpn_set_multiple_protocols)
     ASSERT_NOT_NULL (ctx);
 
     /* Offer h2 and http/1.1 */
-    const char *protos[] = {"h2", "http/1.1"};
+    const char *protos[] = { "h2", "http/1.1" };
     SocketTLSContext_set_alpn_protos (ctx, protos, 2);
   }
   FINALLY
@@ -156,12 +158,12 @@ TEST (alpn_negotiation_h2)
     /* Client offers h2 and http/1.1 */
     client_ctx = SocketTLSContext_new_client (NULL);
     SocketTLSContext_set_verify_mode (client_ctx, TLS_VERIFY_NONE);
-    const char *client_protos[] = {"h2", "http/1.1"};
+    const char *client_protos[] = { "h2", "http/1.1" };
     SocketTLSContext_set_alpn_protos (client_ctx, client_protos, 2);
 
     /* Server accepts h2 */
     server_ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
-    const char *server_protos[] = {"h2"};
+    const char *server_protos[] = { "h2" };
     SocketTLSContext_set_alpn_protos (server_ctx, server_protos, 1);
 
     SocketTLS_enable (client, client_ctx);
@@ -210,12 +212,12 @@ TEST (alpn_negotiation_http11_fallback)
     /* Client offers h2 and http/1.1 */
     client_ctx = SocketTLSContext_new_client (NULL);
     SocketTLSContext_set_verify_mode (client_ctx, TLS_VERIFY_NONE);
-    const char *client_protos[] = {"h2", "http/1.1"};
+    const char *client_protos[] = { "h2", "http/1.1" };
     SocketTLSContext_set_alpn_protos (client_ctx, client_protos, 2);
 
     /* Server only accepts http/1.1 */
     server_ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
-    const char *server_protos[] = {"http/1.1"};
+    const char *server_protos[] = { "http/1.1" };
     SocketTLSContext_set_alpn_protos (server_ctx, server_protos, 1);
 
     SocketTLS_enable (client, client_ctx);
@@ -263,12 +265,12 @@ TEST (alpn_no_common_protocol)
     /* Client offers only h2 */
     client_ctx = SocketTLSContext_new_client (NULL);
     SocketTLSContext_set_verify_mode (client_ctx, TLS_VERIFY_NONE);
-    const char *client_protos[] = {"h2"};
+    const char *client_protos[] = { "h2" };
     SocketTLSContext_set_alpn_protos (client_ctx, client_protos, 1);
 
     /* Server offers only spdy */
     server_ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
-    const char *server_protos[] = {"spdy/3.1"};
+    const char *server_protos[] = { "spdy/3.1" };
     SocketTLSContext_set_alpn_protos (server_ctx, server_protos, 1);
 
     SocketTLS_enable (client, client_ctx);
@@ -311,7 +313,7 @@ TEST (alpn_empty_list)
     ASSERT_NOT_NULL (ctx);
 
     /* Empty protocol list - should be safe */
-    const char *protos[] = {NULL};
+    const char *protos[] = { NULL };
     /* Some implementations may allow NULL/empty, others may fail */
     (void)protos;
   }
@@ -333,7 +335,7 @@ TEST (alpn_query_before_handshake)
     socket = Socket_new (AF_INET, SOCK_STREAM, 0);
     ctx = SocketTLSContext_new_client (NULL);
 
-    const char *protos[] = {"h2"};
+    const char *protos[] = { "h2" };
     SocketTLSContext_set_alpn_protos (ctx, protos, 1);
 
     SocketTLS_enable (socket, ctx);

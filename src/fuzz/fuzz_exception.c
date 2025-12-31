@@ -77,7 +77,10 @@ test_simple_try (void)
 {
   volatile int executed = 0;
 
-  TRY { executed = 1; }
+  TRY
+  {
+    executed = 1;
+  }
   END_TRY;
 
   assert (executed == 1);
@@ -93,8 +96,14 @@ test_try_finally (void)
   volatile int try_executed = 0;
   volatile int finally_executed = 0;
 
-  TRY { try_executed = 1; }
-  FINALLY { finally_executed = 1; }
+  TRY
+  {
+    try_executed = 1;
+  }
+  FINALLY
+  {
+    finally_executed = 1;
+  }
   END_TRY;
 
   assert (try_executed == 1);
@@ -113,10 +122,22 @@ test_raise_catch (uint8_t exc_idx)
   volatile int caught = 0;
   const Except_T *exc = get_exception_by_index (exc_idx);
 
-  TRY { RAISE (*exc); }
-  EXCEPT (Test_Exception1) { caught = 1; }
-  EXCEPT (Test_Exception2) { caught = 2; }
-  EXCEPT (Test_Exception3) { caught = 3; }
+  TRY
+  {
+    RAISE (*exc);
+  }
+  EXCEPT (Test_Exception1)
+  {
+    caught = 1;
+  }
+  EXCEPT (Test_Exception2)
+  {
+    caught = 2;
+  }
+  EXCEPT (Test_Exception3)
+  {
+    caught = 3;
+  }
   END_TRY;
 
   /* Verify correct exception was caught */
@@ -134,11 +155,23 @@ test_raise_finally (uint8_t exc_idx)
   volatile int finally_ran = 0;
   const Except_T *exc = get_exception_by_index (exc_idx);
 
-  TRY { RAISE (*exc); }
-  EXCEPT (Test_Exception1) { /* caught */ }
-  EXCEPT (Test_Exception2) { /* caught */ }
-  EXCEPT (Test_Exception3) { /* caught */ }
-  FINALLY { finally_ran = 1; }
+  TRY
+  {
+    RAISE (*exc);
+  }
+  EXCEPT (Test_Exception1)
+  { /* caught */
+  }
+  EXCEPT (Test_Exception2)
+  { /* caught */
+  }
+  EXCEPT (Test_Exception3)
+  { /* caught */
+  }
+  FINALLY
+  {
+    finally_ran = 1;
+  }
   END_TRY;
 
   assert (finally_ran == 1);
@@ -195,23 +228,43 @@ test_nested_try (int depth, int raise_at)
                       if (raise_at == 4)
                         RAISE (Test_Exception1);
                     }
-                    EXCEPT (Test_Exception1) { /* caught at 4 */ }
-                    FINALLY { finally_count++; }
+                    EXCEPT (Test_Exception1)
+                    { /* caught at 4 */
+                    }
+                    FINALLY
+                    {
+                      finally_count++;
+                    }
                     END_TRY;
                   }
               }
-              EXCEPT (Test_Exception1) { /* caught at 3 */ }
-              FINALLY { finally_count++; }
+              EXCEPT (Test_Exception1)
+              { /* caught at 3 */
+              }
+              FINALLY
+              {
+                finally_count++;
+              }
               END_TRY;
             }
         }
-        EXCEPT (Test_Exception1) { /* caught at 2 */ }
-        FINALLY { finally_count++; }
+        EXCEPT (Test_Exception1)
+        { /* caught at 2 */
+        }
+        FINALLY
+        {
+          finally_count++;
+        }
         END_TRY;
       }
   }
-  EXCEPT (Test_Exception1) { /* caught at 1 */ }
-  FINALLY { finally_count++; }
+  EXCEPT (Test_Exception1)
+  { /* caught at 1 */
+  }
+  FINALLY
+  {
+    finally_count++;
+  }
   END_TRY;
 
   /* Verify FINALLY blocks ran correctly */
@@ -228,9 +281,18 @@ test_else_handler (uint8_t exc_idx)
   volatile int caught = 0;
   const Except_T *exc = get_exception_by_index (exc_idx);
 
-  TRY { RAISE (*exc); }
-  EXCEPT (Test_Exception1) { caught = 1; }
-  ELSE { caught = 99; /* Catch-all */ }
+  TRY
+  {
+    RAISE (*exc);
+  }
+  EXCEPT (Test_Exception1)
+  {
+    caught = 1;
+  }
+  ELSE
+  {
+    caught = 99; /* Catch-all */
+  }
   END_TRY;
 
   assert (caught > 0);
@@ -248,7 +310,10 @@ test_reraise (void)
 
   TRY
   {
-    TRY { RAISE (Test_Exception1); }
+    TRY
+    {
+      RAISE (Test_Exception1);
+    }
     EXCEPT (Test_Exception1)
     {
       inner_caught = 1;
@@ -256,7 +321,10 @@ test_reraise (void)
     }
     END_TRY;
   }
-  EXCEPT (Test_Exception1) { outer_caught = 1; }
+  EXCEPT (Test_Exception1)
+  {
+    outer_caught = 1;
+  }
   END_TRY;
 
   assert (inner_caught == 1);
@@ -278,7 +346,10 @@ test_early_return_helper (int should_return)
     if (should_return)
       RETURN 42;
   }
-  FINALLY { finally_ran = 1; }
+  FINALLY
+  {
+    finally_ran = 1;
+  }
   END_TRY;
 
   (void)finally_ran;
@@ -360,7 +431,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   /* Note: We can't directly assert Except_stack == NULL because
    * the fuzzer itself might have exception frames on the stack.
    * Instead, verify we can still use exception handling. */
-  TRY { /* Empty TRY - just verify stack integrity */ }
+  TRY
+  { /* Empty TRY - just verify stack integrity */
+  }
   END_TRY;
 
   return 0;

@@ -49,8 +49,8 @@ TEST (client_cookie_generation)
   inet_pton (AF_INET, "8.8.8.8", &server.sin_addr);
 
   SocketDNSCookie_Cookie cookie;
-  int ret = SocketDNSCookie_generate (cache, (struct sockaddr *)&server,
-                                      sizeof (server), NULL, 0, &cookie);
+  int ret = SocketDNSCookie_generate (
+      cache, (struct sockaddr *)&server, sizeof (server), NULL, 0, &cookie);
 
   ASSERT (ret == 0);
 
@@ -85,13 +85,14 @@ TEST (client_cookie_deterministic)
   inet_pton (AF_INET, "8.8.8.8", &server.sin_addr);
 
   SocketDNSCookie_Cookie cookie1, cookie2;
-  SocketDNSCookie_generate (cache, (struct sockaddr *)&server, sizeof (server),
-                            NULL, 0, &cookie1);
-  SocketDNSCookie_generate (cache, (struct sockaddr *)&server, sizeof (server),
-                            NULL, 0, &cookie2);
+  SocketDNSCookie_generate (
+      cache, (struct sockaddr *)&server, sizeof (server), NULL, 0, &cookie1);
+  SocketDNSCookie_generate (
+      cache, (struct sockaddr *)&server, sizeof (server), NULL, 0, &cookie2);
 
   /* Same server should get same cookie */
-  ASSERT (memcmp (cookie1.client_cookie, cookie2.client_cookie,
+  ASSERT (memcmp (cookie1.client_cookie,
+                  cookie2.client_cookie,
                   DNS_CLIENT_COOKIE_SIZE)
           == 0);
 
@@ -120,13 +121,14 @@ TEST (client_cookie_per_server)
   inet_pton (AF_INET, "1.1.1.1", &server2.sin_addr);
 
   SocketDNSCookie_Cookie cookie1, cookie2;
-  SocketDNSCookie_generate (cache, (struct sockaddr *)&server1, sizeof (server1),
-                            NULL, 0, &cookie1);
-  SocketDNSCookie_generate (cache, (struct sockaddr *)&server2, sizeof (server2),
-                            NULL, 0, &cookie2);
+  SocketDNSCookie_generate (
+      cache, (struct sockaddr *)&server1, sizeof (server1), NULL, 0, &cookie1);
+  SocketDNSCookie_generate (
+      cache, (struct sockaddr *)&server2, sizeof (server2), NULL, 0, &cookie2);
 
   /* Different servers should get different cookies */
-  ASSERT (memcmp (cookie1.client_cookie, cookie2.client_cookie,
+  ASSERT (memcmp (cookie1.client_cookie,
+                  cookie2.client_cookie,
                   DNS_CLIENT_COOKIE_SIZE)
           != 0);
 
@@ -149,8 +151,8 @@ TEST (client_cookie_ipv6)
   inet_pton (AF_INET6, "2001:4860:4860::8888", &server.sin6_addr);
 
   SocketDNSCookie_Cookie cookie;
-  int ret = SocketDNSCookie_generate (cache, (struct sockaddr *)&server,
-                                      sizeof (server), NULL, 0, &cookie);
+  int ret = SocketDNSCookie_generate (
+      cache, (struct sockaddr *)&server, sizeof (server), NULL, 0, &cookie);
 
   ASSERT (ret == 0);
 
@@ -172,7 +174,7 @@ TEST (client_cookie_ipv6)
  */
 TEST (cookie_parse_client_only)
 {
-  unsigned char data[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
+  unsigned char data[] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
 
   SocketDNSCookie_Cookie cookie;
   int ret = SocketDNSCookie_parse (data, sizeof (data), &cookie);
@@ -187,8 +189,9 @@ TEST (cookie_parse_client_only)
  */
 TEST (cookie_parse_with_server)
 {
-  unsigned char data[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, /* client */
-                          0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88}; /* server */
+  unsigned char data[]
+      = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,   /* client */
+          0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88 }; /* server */
 
   SocketDNSCookie_Cookie cookie;
   int ret = SocketDNSCookie_parse (data, sizeof (data), &cookie);
@@ -220,14 +223,16 @@ TEST (cookie_parse_max_server)
  */
 TEST (cookie_parse_invalid_length)
 {
-  unsigned char short_data[] = {0x01, 0x02, 0x03}; /* Too short */
-  unsigned char gap_data[] = {0x01, 0x02, 0x03, 0x04, 0x05,
-                              0x06, 0x07, 0x08, 0x09, 0x0a}; /* 10 bytes - gap */
+  unsigned char short_data[] = { 0x01, 0x02, 0x03 }; /* Too short */
+  unsigned char gap_data[] = {
+    0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a
+  }; /* 10 bytes - gap */
 
   SocketDNSCookie_Cookie cookie;
 
   /* Too short */
-  ASSERT (SocketDNSCookie_parse (short_data, sizeof (short_data), &cookie) == -1);
+  ASSERT (SocketDNSCookie_parse (short_data, sizeof (short_data), &cookie)
+          == -1);
 
   /* Invalid gap (9-15 bytes not allowed) */
   ASSERT (SocketDNSCookie_parse (gap_data, sizeof (gap_data), &cookie) == -1);
@@ -287,19 +292,23 @@ TEST (cookie_cache_store_lookup)
   server.sin_port = htons (53);
   inet_pton (AF_INET, "8.8.8.8", &server.sin_addr);
 
-  uint8_t client_cookie[8] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
-  uint8_t server_cookie[16] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88,
-                               0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x00};
+  uint8_t client_cookie[8] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
+  uint8_t server_cookie[16]
+      = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88,
+          0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x00 };
 
-  int ret = SocketDNSCookie_cache_store (cache, (struct sockaddr *)&server,
-                                         sizeof (server), client_cookie,
-                                         server_cookie, 16);
+  int ret = SocketDNSCookie_cache_store (cache,
+                                         (struct sockaddr *)&server,
+                                         sizeof (server),
+                                         client_cookie,
+                                         server_cookie,
+                                         16);
   ASSERT (ret == 0);
 
   /* Look up the cached cookie */
   SocketDNSCookie_Entry entry;
-  ret = SocketDNSCookie_cache_lookup (cache, (struct sockaddr *)&server,
-                                      sizeof (server), &entry);
+  ret = SocketDNSCookie_cache_lookup (
+      cache, (struct sockaddr *)&server, sizeof (server), &entry);
   ASSERT (ret == 1);
   ASSERT (entry.server_cookie_len == 16);
   ASSERT (memcmp (entry.server_cookie, server_cookie, 16) == 0);
@@ -324,8 +333,8 @@ TEST (cookie_cache_miss)
 
   /* Look up without storing first */
   SocketDNSCookie_Entry entry;
-  int ret = SocketDNSCookie_cache_lookup (cache, (struct sockaddr *)&server,
-                                          sizeof (server), &entry);
+  int ret = SocketDNSCookie_cache_lookup (
+      cache, (struct sockaddr *)&server, sizeof (server), &entry);
   ASSERT (ret == 0); /* Miss */
 
   SocketDNSCookie_free (&cache);
@@ -346,20 +355,24 @@ TEST (cookie_cache_invalidate)
   server.sin_port = htons (53);
   inet_pton (AF_INET, "8.8.8.8", &server.sin_addr);
 
-  uint8_t client_cookie[8] = {0};
-  uint8_t server_cookie[8] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88};
+  uint8_t client_cookie[8] = { 0 };
+  uint8_t server_cookie[8] = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88 };
 
-  SocketDNSCookie_cache_store (cache, (struct sockaddr *)&server, sizeof (server),
-                               client_cookie, server_cookie, 8);
+  SocketDNSCookie_cache_store (cache,
+                               (struct sockaddr *)&server,
+                               sizeof (server),
+                               client_cookie,
+                               server_cookie,
+                               8);
 
   /* Invalidate */
-  int ret = SocketDNSCookie_cache_invalidate (cache, (struct sockaddr *)&server,
-                                              sizeof (server));
+  int ret = SocketDNSCookie_cache_invalidate (
+      cache, (struct sockaddr *)&server, sizeof (server));
   ASSERT (ret == 1);
 
   /* Should be gone */
-  ret = SocketDNSCookie_cache_lookup (cache, (struct sockaddr *)&server,
-                                      sizeof (server), NULL);
+  ret = SocketDNSCookie_cache_lookup (
+      cache, (struct sockaddr *)&server, sizeof (server), NULL);
   ASSERT (ret == 0);
 
   SocketDNSCookie_free (&cache);
@@ -371,19 +384,18 @@ TEST (cookie_cache_invalidate)
  */
 TEST (cookie_validate)
 {
-  SocketDNSCookie_Cookie sent = {{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08},
-                                 {0},
-                                 0};
+  SocketDNSCookie_Cookie sent
+      = { { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 }, { 0 }, 0 };
 
   SocketDNSCookie_Cookie response_good
-      = {{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08},
-         {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88},
-         8};
+      = { { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 },
+          { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88 },
+          8 };
 
   SocketDNSCookie_Cookie response_bad
-      = {{0xFF, 0xFE, 0xFD, 0xFC, 0xFB, 0xFA, 0xF9, 0xF8},
-         {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88},
-         8};
+      = { { 0xFF, 0xFE, 0xFD, 0xFC, 0xFB, 0xFA, 0xF9, 0xF8 },
+          { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88 },
+          8 };
 
   ASSERT (SocketDNSCookie_validate (&sent, &response_good) == 1);
   ASSERT (SocketDNSCookie_validate (&sent, &response_bad) == 0);
@@ -417,8 +429,8 @@ TEST (secret_rotation)
 
   /* Get cookie before rotation */
   SocketDNSCookie_Cookie cookie1;
-  SocketDNSCookie_generate (cache, (struct sockaddr *)&server, sizeof (server),
-                            NULL, 0, &cookie1);
+  SocketDNSCookie_generate (
+      cache, (struct sockaddr *)&server, sizeof (server), NULL, 0, &cookie1);
 
   /* Rotate secret */
   int ret = SocketDNSCookie_rotate_secret (cache);
@@ -426,11 +438,12 @@ TEST (secret_rotation)
 
   /* Get cookie after rotation */
   SocketDNSCookie_Cookie cookie2;
-  SocketDNSCookie_generate (cache, (struct sockaddr *)&server, sizeof (server),
-                            NULL, 0, &cookie2);
+  SocketDNSCookie_generate (
+      cache, (struct sockaddr *)&server, sizeof (server), NULL, 0, &cookie2);
 
   /* Cookies should be different after rotation */
-  ASSERT (memcmp (cookie1.client_cookie, cookie2.client_cookie,
+  ASSERT (memcmp (cookie1.client_cookie,
+                  cookie2.client_cookie,
                   DNS_CLIENT_COOKIE_SIZE)
           != 0);
 
@@ -522,8 +535,8 @@ TEST (cookie_stats)
 
   /* Generate some cookies */
   SocketDNSCookie_Cookie cookie;
-  SocketDNSCookie_generate (cache, (struct sockaddr *)&server, sizeof (server),
-                            NULL, 0, &cookie);
+  SocketDNSCookie_generate (
+      cache, (struct sockaddr *)&server, sizeof (server), NULL, 0, &cookie);
 
   SocketDNSCookie_Stats stats;
   SocketDNSCookie_stats (cache, &stats);
@@ -555,11 +568,14 @@ TEST (cookie_cache_lru_eviction)
       server.sin_port = htons (53);
       server.sin_addr.s_addr = htonl (0x08080800 + i);
 
-      uint8_t client_cookie[8] = {0};
-      uint8_t server_cookie[8] = {0};
+      uint8_t client_cookie[8] = { 0 };
+      uint8_t server_cookie[8] = { 0 };
 
-      SocketDNSCookie_cache_store (cache, (struct sockaddr *)&server,
-                                   sizeof (server), client_cookie, server_cookie,
+      SocketDNSCookie_cache_store (cache,
+                                   (struct sockaddr *)&server,
+                                   sizeof (server),
+                                   client_cookie,
+                                   server_cookie,
                                    8);
     }
 
@@ -570,8 +586,8 @@ TEST (cookie_cache_lru_eviction)
   first.sin_port = htons (53);
   first.sin_addr.s_addr = htonl (0x08080800);
 
-  int ret = SocketDNSCookie_cache_lookup (cache, (struct sockaddr *)&first,
-                                          sizeof (first), NULL);
+  int ret = SocketDNSCookie_cache_lookup (
+      cache, (struct sockaddr *)&first, sizeof (first), NULL);
   ASSERT (ret == 0); /* Should be evicted */
 
   /* Last entry should still be there */
@@ -581,8 +597,8 @@ TEST (cookie_cache_lru_eviction)
   last.sin_port = htons (53);
   last.sin_addr.s_addr = htonl (0x08080803);
 
-  ret = SocketDNSCookie_cache_lookup (cache, (struct sockaddr *)&last,
-                                      sizeof (last), NULL);
+  ret = SocketDNSCookie_cache_lookup (
+      cache, (struct sockaddr *)&last, sizeof (last), NULL);
   ASSERT (ret == 1); /* Should still be there */
 
   SocketDNSCookie_free (&cache);
@@ -603,15 +619,19 @@ TEST (cookie_cache_store_oversized_addr)
   server.sin_port = htons (53);
   inet_pton (AF_INET, "8.8.8.8", &server.sin_addr);
 
-  uint8_t client_cookie[8] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
-  uint8_t server_cookie[16] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88,
-                               0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x00};
+  uint8_t client_cookie[8] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
+  uint8_t server_cookie[16]
+      = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88,
+          0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x00 };
 
   /* Attempt to store with oversized addr_len (larger than sockaddr_storage) */
   socklen_t oversized_len = sizeof (struct sockaddr_storage) + 1;
-  int ret = SocketDNSCookie_cache_store (cache, (struct sockaddr *)&server,
-                                         oversized_len, client_cookie,
-                                         server_cookie, 16);
+  int ret = SocketDNSCookie_cache_store (cache,
+                                         (struct sockaddr *)&server,
+                                         oversized_len,
+                                         client_cookie,
+                                         server_cookie,
+                                         16);
 
   /* Should reject the oversized address length */
   ASSERT (ret == -1);

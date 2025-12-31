@@ -103,7 +103,8 @@ Socket_simple_connect_tls (const char *host, int port)
 }
 
 SocketSimple_Socket_T
-Socket_simple_connect_tls_ex (const char *host, int port,
+Socket_simple_connect_tls_ex (const char *host,
+                              int port,
                               const SocketSimple_TLSOptions *opts_param)
 {
   volatile Socket_T sock = NULL;
@@ -223,7 +224,8 @@ Socket_simple_enable_tls (SocketSimple_Socket_T sock, const char *hostname)
 }
 
 int
-Socket_simple_enable_tls_ex (SocketSimple_Socket_T sock, const char *hostname,
+Socket_simple_enable_tls_ex (SocketSimple_Socket_T sock,
+                             const char *hostname,
                              const SocketSimple_TLSOptions *opts_param)
 {
   volatile SocketTLSContext_T ctx = NULL;
@@ -340,8 +342,12 @@ Socket_simple_get_cert_info (SocketSimple_Socket_T sock, char *buf, size_t len)
   int ret = SocketTLS_get_peer_cert_info (sock->socket, &info);
   if (ret == 1)
     {
-      snprintf (buf, len, "Subject: %s\nIssuer: %s\nFingerprint: %s",
-                info.subject, info.issuer, info.fingerprint);
+      snprintf (buf,
+                len,
+                "Subject: %s\nIssuer: %s\nFingerprint: %s",
+                info.subject,
+                info.issuer,
+                info.fingerprint);
       return 0;
     }
   else if (ret == 0)
@@ -371,8 +377,7 @@ Socket_simple_get_cert_cn (SocketSimple_Socket_T sock, char *buf, size_t len)
       simple_set_error (SOCKET_SIMPLE_ERR_TLS, "No peer certificate");
       return -1;
     }
-  simple_set_error (SOCKET_SIMPLE_ERR_TLS,
-                    "Failed to get certificate subject");
+  simple_set_error (SOCKET_SIMPLE_ERR_TLS, "Failed to get certificate subject");
   return -1;
 }
 
@@ -407,7 +412,8 @@ Socket_simple_is_session_reused (SocketSimple_Socket_T sock)
 }
 
 int
-Socket_simple_session_save (SocketSimple_Socket_T sock, unsigned char *buf,
+Socket_simple_session_save (SocketSimple_Socket_T sock,
+                            unsigned char *buf,
                             size_t *len)
 {
   Socket_simple_clear_error ();
@@ -435,7 +441,8 @@ Socket_simple_session_save (SocketSimple_Socket_T sock, unsigned char *buf,
 
 int
 Socket_simple_session_restore (SocketSimple_Socket_T sock,
-                               const unsigned char *buf, size_t len)
+                               const unsigned char *buf,
+                               size_t len)
 {
   Socket_simple_clear_error ();
 
@@ -470,8 +477,11 @@ Socket_simple_session_restore (SocketSimple_Socket_T sock,
  */
 
 SocketSimple_Socket_T
-Socket_simple_listen_tls (const char *host, int port, int backlog,
-                          const char *cert_file, const char *key_file)
+Socket_simple_listen_tls (const char *host,
+                          int port,
+                          int backlog,
+                          const char *cert_file,
+                          const char *key_file)
 {
   volatile Socket_T sock = NULL;
   volatile SocketTLSContext_T ctx = NULL;
@@ -497,7 +507,8 @@ Socket_simple_listen_tls (const char *host, int port, int backlog,
   {
     /* Use library convenience function - handles address family automatically
      */
-    sock = Socket_listen_tcp (host ? host : "0.0.0.0", port,
+    sock = Socket_listen_tcp (host ? host : "0.0.0.0",
+                              port,
                               backlog > 0 ? backlog
                                           : SOCKET_DEFAULT_LISTEN_BACKLOG);
 
@@ -652,7 +663,8 @@ Socket_simple_connect_tls (const char *host, int port)
 }
 
 SocketSimple_Socket_T
-Socket_simple_connect_tls_ex (const char *host, int port,
+Socket_simple_connect_tls_ex (const char *host,
+                              int port,
                               const SocketSimple_TLSOptions *opts)
 {
   (void)host;
@@ -672,7 +684,8 @@ Socket_simple_enable_tls (SocketSimple_Socket_T sock, const char *hostname)
 }
 
 int
-Socket_simple_enable_tls_ex (SocketSimple_Socket_T sock, const char *hostname,
+Socket_simple_enable_tls_ex (SocketSimple_Socket_T sock,
+                             const char *hostname,
                              const SocketSimple_TLSOptions *opts)
 {
   (void)sock;
@@ -738,7 +751,8 @@ Socket_simple_is_session_reused (SocketSimple_Socket_T sock)
 }
 
 int
-Socket_simple_session_save (SocketSimple_Socket_T sock, unsigned char *buf,
+Socket_simple_session_save (SocketSimple_Socket_T sock,
+                            unsigned char *buf,
                             size_t *len)
 {
   (void)sock;
@@ -750,7 +764,8 @@ Socket_simple_session_save (SocketSimple_Socket_T sock, unsigned char *buf,
 
 int
 Socket_simple_session_restore (SocketSimple_Socket_T sock,
-                               const unsigned char *buf, size_t len)
+                               const unsigned char *buf,
+                               size_t len)
 {
   (void)sock;
   (void)buf;
@@ -760,8 +775,11 @@ Socket_simple_session_restore (SocketSimple_Socket_T sock,
 }
 
 SocketSimple_Socket_T
-Socket_simple_listen_tls (const char *host, int port, int backlog,
-                          const char *cert_file, const char *key_file)
+Socket_simple_listen_tls (const char *host,
+                          int port,
+                          int backlog,
+                          const char *cert_file,
+                          const char *key_file)
 {
   (void)host;
   (void)port;

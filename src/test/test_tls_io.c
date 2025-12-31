@@ -51,10 +51,12 @@ generate_test_certs (const char *cert_file, const char *key_file)
 {
   char cmd[1024];
 
-  snprintf (cmd, sizeof (cmd),
+  snprintf (cmd,
+            sizeof (cmd),
             "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s "
             "-days 1 -nodes -subj '/CN=localhost' -batch 2>/dev/null",
-            key_file, cert_file);
+            key_file,
+            cert_file);
   if (system (cmd) != 0)
     return -1;
 
@@ -131,7 +133,7 @@ TEST (tls_io_basic_send_recv)
     ASSERT (sent > 0);
 
     /* Receive data on server */
-    char recv_buf[256] = {0};
+    char recv_buf[256] = { 0 };
     ssize_t received = 0;
     int retries = 0;
 
@@ -197,7 +199,7 @@ TEST (tls_io_bidirectional)
     ssize_t sent = SocketTLS_send (client, client_msg, strlen (client_msg));
     ASSERT (sent > 0);
 
-    char server_recv[256] = {0};
+    char server_recv[256] = { 0 };
     ssize_t received = 0;
     int retries = 0;
     while (received <= 0 && retries < 100)
@@ -214,7 +216,7 @@ TEST (tls_io_bidirectional)
     sent = SocketTLS_send (server, server_msg, strlen (server_msg));
     ASSERT (sent > 0);
 
-    char client_recv[256] = {0};
+    char client_recv[256] = { 0 };
     received = 0;
     retries = 0;
     while (received <= 0 && retries < 100)
@@ -270,7 +272,7 @@ TEST (tls_io_zero_length_send)
     ASSERT_EQ (complete_handshake (client, server), 0);
 
     /* Zero-length send should return 0 immediately */
-    char buf[1] = {0};
+    char buf[1] = { 0 };
     ssize_t sent = SocketTLS_send (client, buf, 0);
     ASSERT_EQ (sent, 0);
   }
@@ -316,7 +318,7 @@ TEST (tls_io_zero_length_recv)
     ASSERT_EQ (complete_handshake (client, server), 0);
 
     /* Zero-length recv should return 0 immediately */
-    char buf[1] = {0};
+    char buf[1] = { 0 };
     ssize_t received = SocketTLS_recv (client, buf, 0);
     ASSERT_EQ (received, 0);
   }
@@ -376,8 +378,8 @@ TEST (tls_io_large_message)
     size_t total_sent = 0;
     while (total_sent < msg_size)
       {
-        ssize_t sent = SocketTLS_send (client, send_buf + total_sent,
-                                       msg_size - total_sent);
+        ssize_t sent = SocketTLS_send (
+            client, send_buf + total_sent, msg_size - total_sent);
         if (sent > 0)
           total_sent += (size_t)sent;
         else if (errno == EAGAIN)
@@ -394,8 +396,8 @@ TEST (tls_io_large_message)
     int retries = 0;
     while (total_received < msg_size && retries < 1000)
       {
-        ssize_t received = SocketTLS_recv (server, recv_buf + total_received,
-                                           msg_size - total_received);
+        ssize_t received = SocketTLS_recv (
+            server, recv_buf + total_received, msg_size - total_received);
         if (received > 0)
           {
             total_received += (size_t)received;
@@ -451,9 +453,18 @@ TEST (tls_io_send_before_handshake_fails)
 
     /* Send before handshake should fail */
     char buf[] = "test";
-    TRY { SocketTLS_send (socket, buf, sizeof (buf)); }
-    EXCEPT (SocketTLS_Failed) { caught = 1; }
-    EXCEPT (SocketTLS_HandshakeFailed) { caught = 1; }
+    TRY
+    {
+      SocketTLS_send (socket, buf, sizeof (buf));
+    }
+    EXCEPT (SocketTLS_Failed)
+    {
+      caught = 1;
+    }
+    EXCEPT (SocketTLS_HandshakeFailed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught, 1);
@@ -486,9 +497,18 @@ TEST (tls_io_recv_before_handshake_fails)
 
     /* Recv before handshake should fail */
     char buf[64];
-    TRY { SocketTLS_recv (socket, buf, sizeof (buf)); }
-    EXCEPT (SocketTLS_Failed) { caught = 1; }
-    EXCEPT (SocketTLS_HandshakeFailed) { caught = 1; }
+    TRY
+    {
+      SocketTLS_recv (socket, buf, sizeof (buf));
+    }
+    EXCEPT (SocketTLS_Failed)
+    {
+      caught = 1;
+    }
+    EXCEPT (SocketTLS_HandshakeFailed)
+    {
+      caught = 1;
+    }
     END_TRY;
 
     ASSERT_EQ (caught, 1);
@@ -540,7 +560,7 @@ TEST (tls_io_multiple_send_recv_cycles)
         ssize_t sent = SocketTLS_send (client, request, strlen (request));
         ASSERT (sent > 0);
 
-        char response[64] = {0};
+        char response[64] = { 0 };
         ssize_t received = 0;
         int retries = 0;
         while (received <= 0 && retries < 100)
@@ -556,7 +576,7 @@ TEST (tls_io_multiple_send_recv_cycles)
         sent = SocketTLS_send (server, response, (size_t)received);
         ASSERT (sent > 0);
 
-        char echo[64] = {0};
+        char echo[64] = { 0 };
         received = 0;
         retries = 0;
         while (received <= 0 && retries < 100)

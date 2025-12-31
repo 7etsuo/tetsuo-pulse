@@ -233,22 +233,27 @@ ws_message_check_limits (SocketWS_T ws, size_t additional_len)
   size_t new_len;
   if (!SocketSecurity_check_add (msg->len, additional_len, &new_len))
     {
-      ws_set_error (ws, WS_ERROR_MESSAGE_TOO_LARGE,
+      ws_set_error (ws,
+                    WS_ERROR_MESSAGE_TOO_LARGE,
                     "Message size addition overflow in check_limits");
       return -1;
     }
 
   if (msg->fragment_count >= ws->config.max_fragments)
     {
-      ws_set_error (ws, WS_ERROR_MESSAGE_TOO_LARGE,
-                    "Too many message fragments: %zu", msg->fragment_count);
+      ws_set_error (ws,
+                    WS_ERROR_MESSAGE_TOO_LARGE,
+                    "Too many message fragments: %zu",
+                    msg->fragment_count);
       return -1;
     }
 
   if (new_len > ws->config.max_message_size)
     {
-      ws_set_error (ws, WS_ERROR_MESSAGE_TOO_LARGE,
-                    "Message too large: %zu > %zu", new_len,
+      ws_set_error (ws,
+                    WS_ERROR_MESSAGE_TOO_LARGE,
+                    "Message too large: %zu > %zu",
+                    new_len,
                     ws->config.max_message_size);
       return -1;
     }
@@ -269,7 +274,8 @@ ws_message_grow_buffer (SocketWS_T ws, size_t required_len)
   new_capacity
       = msg->capacity ? msg->capacity : SOCKET_INITIAL_MESSAGE_CAPACITY;
   size_t iterations = 0;
-  while (new_capacity < required_len && iterations < SOCKETWS_MAX_GROWTH_ITERATIONS)
+  while (new_capacity < required_len
+         && iterations < SOCKETWS_MAX_GROWTH_ITERATIONS)
     { /* Prevent potential loop on overflow */
       size_t temp;
       if (!SocketSecurity_check_multiply (
@@ -315,7 +321,8 @@ ws_message_validate_utf8 (SocketWS_T ws, const unsigned char *data, size_t len)
   result = SocketUTF8_update (&msg->utf8_state, data, len);
   if (result != UTF8_VALID && result != UTF8_INCOMPLETE)
     {
-      ws_set_error (ws, WS_ERROR_INVALID_UTF8,
+      ws_set_error (ws,
+                    WS_ERROR_INVALID_UTF8,
                     "Invalid UTF-8 in text message: %s",
                     SocketUTF8_result_string (result));
       return -1;
@@ -325,7 +332,9 @@ ws_message_validate_utf8 (SocketWS_T ws, const unsigned char *data, size_t len)
 }
 
 int
-ws_message_append (SocketWS_T ws, const unsigned char *data, size_t len,
+ws_message_append (SocketWS_T ws,
+                   const unsigned char *data,
+                   size_t len,
                    int is_text)
 {
   SocketWS_MessageAssembly *msg;
@@ -335,7 +344,8 @@ ws_message_append (SocketWS_T ws, const unsigned char *data, size_t len,
   msg = &ws->message;
   if (!SocketSecurity_check_add (msg->len, len, &new_len))
     {
-      ws_set_error (ws, WS_ERROR_MESSAGE_TOO_LARGE,
+      ws_set_error (ws,
+                    WS_ERROR_MESSAGE_TOO_LARGE,
                     "Message size addition overflow in append");
       return -1;
     }
@@ -378,7 +388,8 @@ ws_message_finalize (SocketWS_T ws)
       SocketUTF8_Result result = SocketUTF8_finish (&msg->utf8_state);
       if (result != UTF8_VALID)
         {
-          ws_set_error (ws, WS_ERROR_INVALID_UTF8,
+          ws_set_error (ws,
+                        WS_ERROR_INVALID_UTF8,
                         "Incomplete UTF-8 sequence at end of message");
           return -1;
         }
@@ -402,8 +413,11 @@ ws_finalize_assembled_message (SocketWS_T ws)
       unsigned char *decompressed = NULL;
       size_t decompressed_len = 0;
 
-      if (ws_decompress_message (ws, ws->message.data, ws->message.len,
-                                 &decompressed, &decompressed_len)
+      if (ws_decompress_message (ws,
+                                 ws->message.data,
+                                 ws->message.len,
+                                 &decompressed,
+                                 &decompressed_len)
           < 0)
         return -1;
 
@@ -412,7 +426,8 @@ ws_finalize_assembled_message (SocketWS_T ws)
       ws->message.compressed = 0;
 #else
       ws_set_error (
-          ws, WS_ERROR_COMPRESSION,
+          ws,
+          WS_ERROR_COMPRESSION,
           "Compressed message received but permessage-deflate not enabled");
       return -1;
 #endif
@@ -470,7 +485,10 @@ ws_send_contiguous (SocketWS_T ws, const void *ptr, size_t available)
   else
     {
       /* Fallback to direct socket I/O for backward compatibility */
-      TRY { sent = Socket_send (ws->socket, ptr, available); }
+      TRY
+      {
+        sent = Socket_send (ws->socket, ptr, available);
+      }
       EXCEPT (Socket_Closed)
       {
         /* Normal/expected close path: don't spam error logs. */
@@ -552,7 +570,10 @@ ws_recv_contiguous (SocketWS_T ws, void *ptr, size_t space)
   else
     {
       /* Fallback to direct socket I/O for backward compatibility */
-      TRY { received = Socket_recv (ws->socket, ptr, space); }
+      TRY
+      {
+        received = Socket_recv (ws->socket, ptr, space);
+      }
       EXCEPT (Socket_Closed)
       {
         /* EOF / connection closed */
@@ -618,8 +639,10 @@ ws_store_close_reason (SocketWS_T ws, const char *reason, size_t reason_len)
 }
 
 static int
-ws_build_close_payload (unsigned char *payload, size_t *payload_len,
-                        SocketWS_CloseCode code, const char *reason)
+ws_build_close_payload (unsigned char *payload,
+                        size_t *payload_len,
+                        SocketWS_CloseCode code,
+                        const char *reason)
 {
   size_t reason_len = 0;
 
@@ -649,8 +672,10 @@ ws_build_close_payload (unsigned char *payload, size_t *payload_len,
 }
 
 static int
-ws_prepare_close_state (SocketWS_T ws, SocketWS_CloseCode code,
-                        const char *reason, unsigned char *payload,
+ws_prepare_close_state (SocketWS_T ws,
+                        SocketWS_CloseCode code,
+                        const char *reason,
+                        unsigned char *payload,
                         size_t *payload_len)
 {
   if (ws->state == WS_STATE_CLOSED || ws->close_sent)
@@ -701,8 +726,11 @@ ws_send_ping (SocketWS_T ws, const unsigned char *payload, size_t len)
 
   if (len > SOCKETWS_MAX_CONTROL_PAYLOAD)
     {
-      ws_set_error (ws, WS_ERROR_PROTOCOL, "Ping payload too large: %zu > %d",
-                    len, SOCKETWS_MAX_CONTROL_PAYLOAD);
+      ws_set_error (ws,
+                    WS_ERROR_PROTOCOL,
+                    "Ping payload too large: %zu > %d",
+                    len,
+                    SOCKETWS_MAX_CONTROL_PAYLOAD);
       return -1;
     }
 
@@ -737,8 +765,10 @@ ws_send_pong (SocketWS_T ws, const unsigned char *payload, size_t len)
 }
 
 static int
-ws_parse_close_payload (const unsigned char *payload, size_t len,
-                        SocketWS_CloseCode *code_out, const char **reason_out,
+ws_parse_close_payload (const unsigned char *payload,
+                        size_t len,
+                        SocketWS_CloseCode *code_out,
+                        const char **reason_out,
                         size_t *reason_len_out)
 {
   *code_out = WS_CLOSE_NO_STATUS;
@@ -759,7 +789,8 @@ ws_parse_close_payload (const unsigned char *payload, size_t len,
 }
 
 static int
-ws_validate_and_store_close_reason (SocketWS_T ws, const char *reason,
+ws_validate_and_store_close_reason (SocketWS_T ws,
+                                    const char *reason,
                                     size_t reason_len)
 {
   if (reason_len > SOCKETWS_MAX_CLOSE_REASON)
@@ -772,8 +803,8 @@ ws_validate_and_store_close_reason (SocketWS_T ws, const char *reason,
           = SocketUTF8_validate ((const unsigned char *)reason, reason_len);
       if (result != UTF8_VALID)
         {
-          ws_set_error (ws, WS_ERROR_INVALID_UTF8,
-                        "Invalid UTF-8 in close reason");
+          ws_set_error (
+              ws, WS_ERROR_INVALID_UTF8, "Invalid UTF-8 in close reason");
           return -1;
         }
     }
@@ -807,8 +838,8 @@ ws_handle_close_frame (SocketWS_T ws, const unsigned char *payload, size_t len)
   if (ws_validate_and_store_close_reason (ws, reason, reason_len) < 0)
     {
       /* Send protocol error close */
-      ws_send_close (ws, WS_CLOSE_INVALID_PAYLOAD,
-                     "Invalid UTF-8 in close reason");
+      ws_send_close (
+          ws, WS_CLOSE_INVALID_PAYLOAD, "Invalid UTF-8 in close reason");
       ws->state = WS_STATE_CLOSED;
       return -1;
     }
@@ -823,8 +854,10 @@ ws_handle_close_frame (SocketWS_T ws, const unsigned char *payload, size_t len)
 }
 
 int
-ws_handle_control_frame (SocketWS_T ws, SocketWS_Opcode opcode,
-                         const unsigned char *payload, size_t len)
+ws_handle_control_frame (SocketWS_T ws,
+                         SocketWS_Opcode opcode,
+                         const unsigned char *payload,
+                         size_t len)
 {
   assert (ws);
 
@@ -845,7 +878,8 @@ ws_handle_control_frame (SocketWS_T ws, SocketWS_Opcode opcode,
       if (ws->pending_ping_len > 0
           && (len != (size_t)ws->pending_ping_len
               || SocketCrypto_secure_compare (
-                     payload, (const unsigned char *)ws->pending_ping_payload,
+                     payload,
+                     (const unsigned char *)ws->pending_ping_payload,
                      len)
                      != 0))
         {
@@ -858,8 +892,8 @@ ws_handle_control_frame (SocketWS_T ws, SocketWS_Opcode opcode,
       return 0;
 
     default:
-      ws_set_error (ws, WS_ERROR_PROTOCOL, "Unknown control opcode: 0x%02X",
-                    opcode);
+      ws_set_error (
+          ws, WS_ERROR_PROTOCOL, "Unknown control opcode: 0x%02X", opcode);
       return -1;
     }
 }
@@ -882,8 +916,10 @@ ws_auto_ping_callback (void *userdata)
       elapsed = now - ws->last_ping_sent_time;
       if (elapsed > ws->config.ping_timeout_ms)
         {
-          SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-                           "Ping timeout after %lld ms", (long long)elapsed);
+          SocketLog_emitf (SOCKET_LOG_WARN,
+                           SOCKET_LOG_COMPONENT,
+                           "Ping timeout after %lld ms",
+                           (long long)elapsed);
           ws_send_close (ws, WS_CLOSE_GOING_AWAY, "Ping timeout");
           return;
         }
@@ -933,7 +969,8 @@ ws_auto_ping_stop (SocketWS_T ws)
 }
 
 static void
-ws_prepare_config (SocketWS_Config *cfg, const SocketWS_Config *config,
+ws_prepare_config (SocketWS_Config *cfg,
+                   const SocketWS_Config *config,
                    SocketWS_Role role)
 {
   if (config)
@@ -960,15 +997,17 @@ ws_create_context (const SocketWS_Config *config)
   if (!ws)
     {
       Arena_dispose (&arena);
-      SOCKET_RAISE_MSG (SocketWS, SocketWS_Failed,
-                        "Failed to allocate WebSocket context");
+      SOCKET_RAISE_MSG (
+          SocketWS, SocketWS_Failed, "Failed to allocate WebSocket context");
     }
 
   return ws;
 }
 
 SocketWS_T
-SocketWS_client_new (Socket_T socket, const char *host, const char *path,
+SocketWS_client_new (Socket_T socket,
+                     const char *host,
+                     const char *path,
                      const SocketWS_Config *config)
 {
   SocketWS_Config cfg;
@@ -990,13 +1029,14 @@ SocketWS_client_new (Socket_T socket, const char *host, const char *path,
 
     if (ws_handshake_client_init (ws) < 0)
       {
-        SOCKET_RAISE_MSG (SocketWS, SocketWS_Failed,
-                          "Failed to initialize handshake");
+        SOCKET_RAISE_MSG (
+            SocketWS, SocketWS_Failed, "Failed to initialize handshake");
       }
   }
   EXCEPT (Socket_Failed)
   {
-    SOCKET_RAISE_MSG (SocketWS, SocketWS_Failed,
+    SOCKET_RAISE_MSG (SocketWS,
+                      SocketWS_Failed,
                       "Failed to set WebSocket socket to non-blocking mode");
   }
   EXCEPT (SocketWS_Failed)
@@ -1011,7 +1051,8 @@ SocketWS_client_new (Socket_T socket, const char *host, const char *path,
 }
 
 SocketWS_T
-SocketWS_server_accept (Socket_T socket, const SocketHTTP_Request *request,
+SocketWS_server_accept (Socket_T socket,
+                        const SocketHTTP_Request *request,
                         const SocketWS_Config *config)
 {
   SocketWS_Config cfg;
@@ -1031,13 +1072,14 @@ SocketWS_server_accept (Socket_T socket, const SocketHTTP_Request *request,
 
     if (ws_handshake_server_init (ws, request) < 0)
       {
-        SOCKET_RAISE_MSG (SocketWS, SocketWS_Failed,
-                          "Failed to initialize server handshake");
+        SOCKET_RAISE_MSG (
+            SocketWS, SocketWS_Failed, "Failed to initialize server handshake");
       }
   }
   EXCEPT (Socket_Failed)
   {
-    SOCKET_RAISE_MSG (SocketWS, SocketWS_Failed,
+    SOCKET_RAISE_MSG (SocketWS,
+                      SocketWS_Failed,
                       "Failed to set WebSocket socket to non-blocking mode");
   }
   EXCEPT (SocketWS_Failed)
@@ -1316,15 +1358,16 @@ SocketWS_send_text (SocketWS_T ws, const char *data, size_t len)
           = SocketUTF8_validate ((const unsigned char *)data, len);
       if (result != UTF8_VALID)
         {
-          ws_set_error (ws, WS_ERROR_INVALID_UTF8,
+          ws_set_error (ws,
+                        WS_ERROR_INVALID_UTF8,
                         "Invalid UTF-8 in outgoing text: %s",
                         SocketUTF8_result_string (result));
           return -1;
         }
     }
 
-  return ws_send_data_frame (ws, WS_OPCODE_TEXT, (const unsigned char *)data,
-                             len, 1);
+  return ws_send_data_frame (
+      ws, WS_OPCODE_TEXT, (const unsigned char *)data, len, 1);
 }
 
 int
@@ -1412,8 +1455,10 @@ ws_parse_url_scheme (const char **url, int *use_tls, int *port)
  * @param[out] host Buffer for hostname (size NI_MAXHOST)
  */
 static void
-ws_extract_host (const char *url, const char *port_start,
-                 const char *path_start, char *host)
+ws_extract_host (const char *url,
+                 const char *port_start,
+                 const char *path_start,
+                 char *host)
 {
   size_t host_len;
 
@@ -1581,7 +1626,8 @@ ws_complete_handshake (SocketWS_T ws, Socket_T sock)
 
   while ((result = SocketWS_handshake (ws)) > 0)
     {
-      struct pollfd pfd = { .fd = Socket_fd (sock), .events = POLLIN | POLLOUT };
+      struct pollfd pfd
+          = { .fd = Socket_fd (sock), .events = POLLIN | POLLOUT };
       poll (&pfd, 1, SOCKETWS_HANDSHAKE_TIMEOUT_MS);
       SocketWS_process (ws, ws_translate_poll_revents (pfd.revents));
     }
@@ -1600,7 +1646,8 @@ ws_complete_handshake (SocketWS_T ws, Socket_T sock)
  * @param[out] proto_array Storage for subprotocols array
  */
 static void
-ws_setup_websocket_config (SocketWS_Config *config, const char *protocols,
+ws_setup_websocket_config (SocketWS_Config *config,
+                           const char *protocols,
                            const char **proto_array)
 {
   assert (config);
@@ -1627,7 +1674,9 @@ ws_setup_websocket_config (SocketWS_Config *config, const char *protocols,
  * @return WebSocket context on success, NULL on error
  */
 static SocketWS_T
-ws_create_and_handshake (Socket_T sock, const char *host, const char *path,
+ws_create_and_handshake (Socket_T sock,
+                         const char *host,
+                         const char *path,
                          const SocketWS_Config *config)
 {
   SocketWS_T ws;
@@ -1796,8 +1845,12 @@ SocketWS_recv_available (SocketWS_T ws)
   /* Check if we have a complete message assembled */
   if (ws->message.len > 0 && ws->message.fragment_count > 0)
     {
-      /* Only return data messages to user - control frames are handled internally */
-      return (ws->message.type == WS_OPCODE_TEXT || ws->message.type == WS_OPCODE_BINARY) ? 1 : 0;
+      /* Only return data messages to user - control frames are handled
+       * internally */
+      return (ws->message.type == WS_OPCODE_TEXT
+              || ws->message.type == WS_OPCODE_BINARY)
+                 ? 1
+                 : 0;
     }
 
   return 0;
@@ -1864,7 +1917,8 @@ ws_validate_message_type (SocketWS_T ws)
       && ws->message.type != WS_OPCODE_BINARY)
     {
       ws_message_reset (&ws->message);
-      ws_set_error (ws, WS_ERROR_PROTOCOL,
+      ws_set_error (ws,
+                    WS_ERROR_PROTOCOL,
                     "Control frame received but not returned to user");
       return -1;
     }
@@ -1959,15 +2013,16 @@ SocketWS_enable_compression (SocketWS_T ws,
   if (options)
     {
       /* Store compression parameters for handshake */
-      /* Note: compression level is not stored in config, used during handshake */
+      /* Note: compression level is not stored in config, used during handshake
+       */
       (void)options; /* Compression options handled during handshake */
     }
 
   return 0;
 #else
   (void)options;
-  ws_set_error (ws, WS_ERROR,
-                "Compression not available (compile with zlib support)");
+  ws_set_error (
+      ws, WS_ERROR, "Compression not available (compile with zlib support)");
   return -1;
 #endif
 }

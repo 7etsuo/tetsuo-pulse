@@ -28,7 +28,7 @@
 
 /* HTTP/2 header validation constants */
 #define HTTP2_TE_HEADER_LEN 2
-#define DECIMAL_BASE        10
+#define DECIMAL_BASE 10
 
 /*
  * RFC 9113 §8.2.2: Connection-Specific Header Fields
@@ -40,16 +40,15 @@ static const struct
 {
   const char *name;
   size_t len;
-} http2_forbidden_headers[] = {
-  { "connection", STRLEN_LIT ("connection") },          /* Alphabetically sorted */
-  { "keep-alive", STRLEN_LIT ("keep-alive") },
-  { "proxy-authenticate", STRLEN_LIT ("proxy-authenticate") },
-  { "proxy-authorization", STRLEN_LIT ("proxy-authorization") },
-  { "te", STRLEN_LIT ("te") },
-  { "trailers", STRLEN_LIT ("trailers") },
-  { "transfer-encoding", STRLEN_LIT ("transfer-encoding") },
-  { "upgrade", STRLEN_LIT ("upgrade") }
-};
+} http2_forbidden_headers[]
+    = { { "connection", STRLEN_LIT ("connection") }, /* Alphabetically sorted */
+        { "keep-alive", STRLEN_LIT ("keep-alive") },
+        { "proxy-authenticate", STRLEN_LIT ("proxy-authenticate") },
+        { "proxy-authorization", STRLEN_LIT ("proxy-authorization") },
+        { "te", STRLEN_LIT ("te") },
+        { "trailers", STRLEN_LIT ("trailers") },
+        { "transfer-encoding", STRLEN_LIT ("transfer-encoding") },
+        { "upgrade", STRLEN_LIT ("upgrade") } };
 
 #define HTTP2_FORBIDDEN_HEADER_COUNT \
   (sizeof (http2_forbidden_headers) / sizeof (http2_forbidden_headers[0]))
@@ -180,9 +179,11 @@ http2_is_connection_header_forbidden (const SocketHPACK_Header *header)
     return 0;
 
   /* Binary search in sorted forbidden headers array */
-  const void *found
-      = bsearch (header, http2_forbidden_headers, HTTP2_FORBIDDEN_HEADER_COUNT,
-                 sizeof (http2_forbidden_headers[0]), compare_forbidden_header);
+  const void *found = bsearch (header,
+                               http2_forbidden_headers,
+                               HTTP2_FORBIDDEN_HEADER_COUNT,
+                               sizeof (http2_forbidden_headers[0]),
+                               compare_forbidden_header);
 
   if (found == NULL)
     return 0; /* Not forbidden */
@@ -304,16 +305,16 @@ static const struct
   const char *pattern;
   int (*matcher) (const char *cipher, const char *pattern);
 } forbidden_cipher_patterns[] = {
-  { "NULL", pattern_contains },              /* NULL ciphers - no encryption */
-  { "EXPORT", pattern_contains },            /* Export ciphers - weak */
-  { "RC4", pattern_contains },               /* RC4 ciphers - broken */
-  { "3DES", pattern_contains },              /* 3DES ciphers - weak (Sweet32) */
-  { "DES-CBC3", pattern_contains },          /* 3DES variant */
-  { "ADH", pattern_contains },               /* Anonymous DH - no auth */
-  { "AECDH", pattern_contains },             /* Anonymous ECDH - no auth */
-  { "aNULL", pattern_starts_with },          /* Anonymous NULL - no auth */
+  { "NULL", pattern_contains },     /* NULL ciphers - no encryption */
+  { "EXPORT", pattern_contains },   /* Export ciphers - weak */
+  { "RC4", pattern_contains },      /* RC4 ciphers - broken */
+  { "3DES", pattern_contains },     /* 3DES ciphers - weak (Sweet32) */
+  { "DES-CBC3", pattern_contains }, /* 3DES variant */
+  { "ADH", pattern_contains },      /* Anonymous DH - no auth */
+  { "AECDH", pattern_contains },    /* Anonymous ECDH - no auth */
+  { "aNULL", pattern_starts_with }, /* Anonymous NULL - no auth */
   { "-DES-", pattern_contains_excluding_3des }, /* Single DES - very weak */
-  { "MD5", pattern_contains }                /* MD5 MAC - weak hash */
+  { "MD5", pattern_contains }                   /* MD5 MAC - weak hash */
 };
 
 #define FORBIDDEN_CIPHER_COUNT \
@@ -327,9 +328,8 @@ http2_is_cipher_forbidden (const char *cipher)
 
   for (size_t i = 0; i < FORBIDDEN_CIPHER_COUNT; i++)
     {
-      if (forbidden_cipher_patterns[i].matcher (cipher,
-                                                 forbidden_cipher_patterns[i]
-                                                     .pattern))
+      if (forbidden_cipher_patterns[i].matcher (
+              cipher, forbidden_cipher_patterns[i].pattern))
         return 1;
     }
 
@@ -422,7 +422,9 @@ SocketHTTP2_tls_result_string (SocketHTTP2_TLSResult result)
  * validation across all numeric header parsing.
  */
 static int
-parse_decimal_uint64 (const char *value, size_t len, uint64_t *result,
+parse_decimal_uint64 (const char *value,
+                      size_t len,
+                      uint64_t *result,
                       uint64_t max_value)
 {
   if (value == NULL || result == NULL || len == 0)
@@ -493,8 +495,9 @@ http2_parse_content_length (const char *value, size_t len, int64_t *cl)
  */
 
 int
-http2_validate_method_header (const SocketHPACK_Header *h, int is_request,
-                               HTTP2_PseudoHeaderState *state)
+http2_validate_method_header (const SocketHPACK_Header *h,
+                              int is_request,
+                              HTTP2_PseudoHeaderState *state)
 {
   if (h == NULL || state == NULL)
     return -1;
@@ -517,7 +520,7 @@ http2_validate_method_header (const SocketHPACK_Header *h, int is_request,
 
 int
 http2_validate_scheme_header (const SocketHPACK_Header *h,
-                               HTTP2_PseudoHeaderState *state)
+                              HTTP2_PseudoHeaderState *state)
 {
   if (h == NULL || state == NULL)
     return -1;
@@ -528,7 +531,7 @@ http2_validate_scheme_header (const SocketHPACK_Header *h,
 
 int
 http2_validate_authority_header (const SocketHPACK_Header *h,
-                                  HTTP2_PseudoHeaderState *state)
+                                 HTTP2_PseudoHeaderState *state)
 {
   if (h == NULL || state == NULL)
     return -1;
@@ -539,7 +542,7 @@ http2_validate_authority_header (const SocketHPACK_Header *h,
 
 int
 http2_validate_path_header (const SocketHPACK_Header *h,
-                             HTTP2_PseudoHeaderState *state)
+                            HTTP2_PseudoHeaderState *state)
 {
   if (h == NULL || state == NULL)
     return -1;
@@ -549,8 +552,9 @@ http2_validate_path_header (const SocketHPACK_Header *h,
 }
 
 int
-http2_validate_status_header (const SocketHPACK_Header *h, int is_request,
-                               HTTP2_PseudoHeaderState *state)
+http2_validate_status_header (const SocketHPACK_Header *h,
+                              int is_request,
+                              HTTP2_PseudoHeaderState *state)
 {
   if (h == NULL || state == NULL)
     return -1;
@@ -570,9 +574,9 @@ http2_validate_status_header (const SocketHPACK_Header *h, int is_request,
 
 int
 http2_validate_protocol_header (SocketHTTP2_Conn_T conn,
-                                 SocketHTTP2_Stream_T stream,
-                                 const SocketHPACK_Header *h,
-                                 HTTP2_PseudoHeaderState *state)
+                                SocketHTTP2_Stream_T stream,
+                                const SocketHPACK_Header *h,
+                                HTTP2_PseudoHeaderState *state)
 {
   if (conn == NULL || stream == NULL || h == NULL || state == NULL)
     return -1;

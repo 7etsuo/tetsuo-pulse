@@ -180,7 +180,8 @@ exponential_backoff (const SocketRetry_Policy *policy, int attempt)
 }
 
 static double
-apply_jitter_to_delay (double base_delay, const SocketRetry_Policy *policy,
+apply_jitter_to_delay (double base_delay,
+                       const SocketRetry_Policy *policy,
                        unsigned int *random_state)
 {
   double jittered_delay = base_delay;
@@ -213,7 +214,8 @@ clamp_final_delay (double delay)
 }
 
 static int
-calculate_backoff_delay (const SocketRetry_Policy *policy, int attempt,
+calculate_backoff_delay (const SocketRetry_Policy *policy,
+                         int attempt,
                          unsigned int *random_state)
 {
   double delay;
@@ -234,7 +236,8 @@ SocketRetry_calculate_delay (const SocketRetry_Policy *policy, int attempt)
     {
       SOCKET_LOG_WARN_MSG ("Invalid parameters for calculate_delay "
                            "(policy=%p, attempt=%d), returning 0",
-                           (const void *)policy, attempt);
+                           (const void *)policy,
+                           attempt);
       return 0;
     }
 
@@ -280,15 +283,16 @@ SocketRetry_new (const SocketRetry_Policy *policy)
 
   retry = calloc (1, sizeof (*retry));
   if (retry == NULL)
-    SOCKET_RAISE_MSG (SocketRetry, SocketRetry_Failed,
-                      "Failed to allocate retry context");
+    SOCKET_RAISE_MSG (
+        SocketRetry, SocketRetry_Failed, "Failed to allocate retry context");
 
   if (policy != NULL)
     {
       if (!validate_policy (policy))
         {
           free (retry);
-          SOCKET_RAISE_MSG (SocketRetry, SocketRetry_Failed,
+          SOCKET_RAISE_MSG (SocketRetry,
+                            SocketRetry_Failed,
                             "Invalid retry policy parameters");
         }
       retry->policy = *policy;
@@ -320,8 +324,11 @@ reset_retry_stats (T retry)
 }
 
 static int
-should_continue_retry (const T retry, int result, int attempt,
-                       SocketRetry_ShouldRetry should_retry, void *context)
+should_continue_retry (const T retry,
+                       int result,
+                       int attempt,
+                       SocketRetry_ShouldRetry should_retry,
+                       void *context)
 {
   if (should_retry != NULL && !should_retry (result, attempt, context))
     {
@@ -344,19 +351,21 @@ apply_backoff_delay (T retry, int attempt)
 {
   int delay_ms;
 
-  delay_ms = calculate_backoff_delay (&retry->policy, attempt,
-                                      &retry->random_state);
+  delay_ms
+      = calculate_backoff_delay (&retry->policy, attempt, &retry->random_state);
   retry->stats.total_delay_ms += delay_ms;
 
-  SOCKET_LOG_DEBUG_MSG ("Sleeping %d ms before attempt %d", delay_ms,
-                        attempt + 1);
+  SOCKET_LOG_DEBUG_MSG (
+      "Sleeping %d ms before attempt %d", delay_ms, attempt + 1);
 
   retry_sleep_ms (delay_ms);
 }
 
 static int
-perform_single_attempt (T retry, SocketRetry_Operation operation,
-                        void *context, int attempt_num,
+perform_single_attempt (T retry,
+                        SocketRetry_Operation operation,
+                        void *context,
+                        int attempt_num,
                         const int64_t start_time)
 {
   int result;
@@ -372,15 +381,16 @@ perform_single_attempt (T retry, SocketRetry_Operation operation,
     }
 
   retry->stats.last_error = result;
-  SOCKET_LOG_DEBUG_MSG ("Attempt %d failed with error %d", attempt_num,
-                        result);
+  SOCKET_LOG_DEBUG_MSG ("Attempt %d failed with error %d", attempt_num, result);
 
   return result;
 }
 
 int
-SocketRetry_execute (T retry, SocketRetry_Operation operation,
-                     SocketRetry_ShouldRetry should_retry, void *context)
+SocketRetry_execute (T retry,
+                     SocketRetry_Operation operation,
+                     SocketRetry_ShouldRetry should_retry,
+                     void *context)
 {
   int64_t start_time;
   int attempt;
@@ -394,14 +404,14 @@ SocketRetry_execute (T retry, SocketRetry_Operation operation,
 
   for (attempt = 1; attempt <= retry->policy.max_attempts; ++attempt)
     {
-      result = perform_single_attempt (retry, operation, context, attempt,
-                                       start_time);
+      result = perform_single_attempt (
+          retry, operation, context, attempt, start_time);
 
       if (result == 0)
         return 0;
 
-      if (!should_continue_retry (retry, result, attempt, should_retry,
-                                  context))
+      if (!should_continue_retry (
+              retry, result, attempt, should_retry, context))
         break;
 
       apply_backoff_delay (retry, attempt);
@@ -412,7 +422,8 @@ SocketRetry_execute (T retry, SocketRetry_Operation operation,
 }
 
 int
-SocketRetry_execute_simple (T retry, SocketRetry_Operation operation,
+SocketRetry_execute_simple (T retry,
+                            SocketRetry_Operation operation,
                             void *context)
 {
   return SocketRetry_execute (retry, operation, NULL, context);
@@ -449,12 +460,12 @@ void
 SocketRetry_set_policy (T retry, const SocketRetry_Policy *policy)
 {
   if (retry == NULL || policy == NULL)
-    SOCKET_RAISE_MSG (SocketRetry, SocketRetry_Failed,
-                      "Invalid arguments to set_policy");
+    SOCKET_RAISE_MSG (
+        SocketRetry, SocketRetry_Failed, "Invalid arguments to set_policy");
 
   if (!validate_policy (policy))
-    SOCKET_RAISE_MSG (SocketRetry, SocketRetry_Failed,
-                      "Invalid retry policy parameters");
+    SOCKET_RAISE_MSG (
+        SocketRetry, SocketRetry_Failed, "Invalid retry policy parameters");
 
   retry->policy = *policy;
 }

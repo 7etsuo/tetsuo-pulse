@@ -8,10 +8,10 @@
  * @file SocketUTF8.h
  * @brief Strict UTF-8 validation and encoding utilities.
  *
- * Implements secure UTF-8 validation compliant with Unicode Standard and RFC 3629,
- * optimized for streaming data (e.g., WebSocket text frames per RFC 6455 §8.1).
- * Features DFA-based algorithm for O(n) time, O(1) space validation with rejection
- * of security-critical malformed sequences.
+ * Implements secure UTF-8 validation compliant with Unicode Standard and RFC
+ * 3629, optimized for streaming data (e.g., WebSocket text frames per RFC 6455
+ * §8.1). Features DFA-based algorithm for O(n) time, O(1) space validation with
+ * rejection of security-critical malformed sequences.
  *
  * Key capabilities:
  * - Complete buffer validation (one-shot)
@@ -21,7 +21,8 @@
  * - No heap allocation; suitable for real-time and embedded systems
  *
  * Security emphasis:
- * - Rejects overlong encodings, surrogates (U+D800–U+DFFF), and out-of-range code points
+ * - Rejects overlong encodings, surrogates (U+D800–U+DFFF), and out-of-range
+ * code points
  * - Prevents canonical equivalence attacks and decoding bombs
  * - Thread-safe pure functions (no globals)
  *
@@ -30,8 +31,8 @@
  * SocketUTF8_Result res = SocketUTF8_validate_str(text);
  * if (res == UTF8_VALID) {
  *     size_t count;
- *     SocketUTF8_count_codepoints((const unsigned char*)text, strlen(text), &count);
- *     printf("Valid, %zu code points\n", count);
+ *     SocketUTF8_count_codepoints((const unsigned char*)text, strlen(text),
+ * &count); printf("Valid, %zu code points\n", count);
  * }
  * @endcode
  */
@@ -88,7 +89,8 @@
 /**
  * Exception for UTF-8 validation and encoding failures.
  *
- * Thrown for invalid UTF-8 sequences, invalid code points, or null pointer errors.
+ * Thrown for invalid UTF-8 sequences, invalid code points, or null pointer
+ * errors.
  */
 extern const Except_T SocketUTF8_Failed;
 
@@ -110,19 +112,21 @@ typedef enum
  * @param data Input byte buffer to validate (may be NULL if len==0).
  * @param len Number of bytes in the input buffer.
  *
- * Strictly validates the entire buffer as well-formed UTF-8 per Unicode Standard (RFC 3629).
- * Uses a deterministic finite automaton (DFA) for O(n) time and O(1) space.
+ * Strictly validates the entire buffer as well-formed UTF-8 per Unicode
+ * Standard (RFC 3629). Uses a deterministic finite automaton (DFA) for O(n)
+ * time and O(1) space.
  *
  * Security: Rejects overlong encodings, UTF-16 surrogates (U+D800–U+DFFF),
  * code points beyond U+10FFFF, and truncated sequences.
  *
- * @return UTF8_VALID if buffer contains only valid UTF-8; otherwise a specific error code.
+ * @return UTF8_VALID if buffer contains only valid UTF-8; otherwise a specific
+ * error code.
  * @throws SocketUTF8_Failed if data is NULL when len > 0.
  * @threadsafe Yes - pure function with no global or shared state.
  * @see SocketUTF8_update() for incremental/streaming validation.
  */
-extern SocketUTF8_Result SocketUTF8_validate (const unsigned char *data,
-                                              size_t len);
+extern SocketUTF8_Result
+SocketUTF8_validate (const unsigned char *data, size_t len);
 
 /**
  * Validate a null-terminated C string as UTF-8.
@@ -153,7 +157,8 @@ typedef struct SocketUTF8_State
 
 /**
  * Initialize UTF-8 incremental validation state.
- * @param state Pointer to SocketUTF8_State structure to initialize (must not be NULL).
+ * @param state Pointer to SocketUTF8_State structure to initialize (must not be
+ * NULL).
  *
  * Resets the state machine to initial conditions. Required before first call to
  * SocketUTF8_update().
@@ -193,7 +198,8 @@ extern SocketUTF8_Result SocketUTF8_update (SocketUTF8_State *state,
  * pending multi-byte sequence. Essential after processing all chunks to detect
  * truncation.
  *
- * @return UTF8_VALID if stream completed successfully; UTF8_INCOMPLETE or error otherwise.
+ * @return UTF8_VALID if stream completed successfully; UTF8_INCOMPLETE or error
+ * otherwise.
  * @throws SocketUTF8_Failed if state is NULL.
  * @threadsafe Yes - read-only operation on state.
  */
@@ -203,8 +209,8 @@ extern SocketUTF8_Result SocketUTF8_finish (const SocketUTF8_State *state);
  * Reset incremental validator state for reuse.
  * @param state Pointer to SocketUTF8_State to reset (must not be NULL).
  *
- * Equivalent to SocketUTF8_init(); clears all internal state for a fresh validation
- * session.
+ * Equivalent to SocketUTF8_init(); clears all internal state for a fresh
+ * validation session.
  *
  * @throws SocketUTF8_Failed if state is NULL.
  * @threadsafe Conditional - safe if not shared across threads.
@@ -243,12 +249,14 @@ extern int SocketUTF8_sequence_len (unsigned char first_byte);
 /**
  * Encode a single Unicode code point into UTF-8 bytes.
  * @param codepoint Valid Unicode scalar (0 to U+10FFFF, excluding surrogates).
- * @param output Output buffer for encoded bytes (must have space for at least 4 bytes).
+ * @param output Output buffer for encoded bytes (must have space for at least 4
+ * bytes).
  *
- * Writes canonical (shortest) UTF-8 encoding to output buffer. Caller must ensure
- * sufficient space using SocketUTF8_codepoint_len().
+ * Writes canonical (shortest) UTF-8 encoding to output buffer. Caller must
+ * ensure sufficient space using SocketUTF8_codepoint_len().
  *
- * @return Number of bytes written (1-4) on success; 0 if codepoint invalid or output is NULL.
+ * @return Number of bytes written (1-4) on success; 0 if codepoint invalid or
+ * output is NULL.
  * @threadsafe Yes - pure function.
  * @note Does not null-terminate output.
  */
@@ -256,7 +264,8 @@ extern int SocketUTF8_encode (uint32_t codepoint, unsigned char *output);
 
 /**
  * Decode the next complete UTF-8 sequence to a Unicode code point.
- * @param data Input buffer containing UTF-8 sequence start (may be NULL if len == 0).
+ * @param data Input buffer containing UTF-8 sequence start (may be NULL if len
+ * == 0).
  * @param len Available bytes in input buffer (may be 0).
  * @param codepoint Output for decoded Unicode scalar (may be NULL to skip).
  * @param consumed Output for number of bytes consumed (may be NULL to skip).
@@ -274,25 +283,28 @@ extern int SocketUTF8_encode (uint32_t codepoint, unsigned char *output);
  * @note Does not modify input buffer.
  */
 extern SocketUTF8_Result SocketUTF8_decode (const unsigned char *data,
-                                            size_t len, uint32_t *codepoint,
+                                            size_t len,
+                                            uint32_t *codepoint,
                                             size_t *consumed);
 
 /**
  * Count the number of Unicode code points in a UTF-8 buffer while validating.
  * @param data Input UTF-8 buffer (may be NULL if len==0).
  * @param len Length of buffer in bytes.
- * @param count Output pointer for code point count (must not be NULL; set on success).
+ * @param count Output pointer for code point count (must not be NULL; set on
+ * success).
  *
  * Iterates through buffer, decoding each code point and incrementing count.
  * Performs full validation; aborts on first error without setting count.
  *
- * @return UTF8_VALID if buffer valid and count set; error code on failure (count unchanged).
+ * @return UTF8_VALID if buffer valid and count set; error code on failure
+ * (count unchanged).
  * @throws SocketUTF8_Failed if count is NULL or data is NULL when len > 0.
  * @threadsafe Yes - pure function.
  */
-extern SocketUTF8_Result
-SocketUTF8_count_codepoints (const unsigned char *data, size_t len,
-                             size_t *count);
+extern SocketUTF8_Result SocketUTF8_count_codepoints (const unsigned char *data,
+                                                      size_t len,
+                                                      size_t *count);
 
 /**
  * Retrieve descriptive string for a UTF-8 validation result code.

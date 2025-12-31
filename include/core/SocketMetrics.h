@@ -549,8 +549,8 @@ extern void SocketMetrics_counter_inc (SocketCounterMetric metric);
  * @param value Value to add (must be positive)
  * @threadsafe Yes (atomic operation)
  */
-extern void SocketMetrics_counter_add (SocketCounterMetric metric,
-                                       uint64_t value);
+extern void
+SocketMetrics_counter_add (SocketCounterMetric metric, uint64_t value);
 
 /**
  * Get current counter value
@@ -611,8 +611,8 @@ extern int64_t SocketMetrics_gauge_get (SocketGaugeMetric metric);
  * @param value Observed value
  * @threadsafe Yes (mutex protected)
  */
-extern void SocketMetrics_histogram_observe (SocketHistogramMetric metric,
-                                             double value);
+extern void
+SocketMetrics_histogram_observe (SocketHistogramMetric metric, double value);
 
 /**
  * Get percentile from histogram
@@ -711,8 +711,8 @@ extern void SocketMetrics_reset_histograms (void);
  *   # TYPE socket_pool_connections_created counter
  *   socket_pool_connections_created 1234
  */
-extern size_t SocketMetrics_export_prometheus (char *buffer,
-                                               size_t buffer_size);
+extern size_t
+SocketMetrics_export_prometheus (char *buffer, size_t buffer_size);
 
 /**
  * Export metrics in StatsD format
@@ -732,7 +732,8 @@ extern size_t SocketMetrics_export_prometheus (char *buffer,
  *   myapp.socket.pool.connections_created:1234|c
  *   myapp.socket.pool.active_connections:42|g
  */
-extern size_t SocketMetrics_export_statsd (char *buffer, size_t buffer_size,
+extern size_t SocketMetrics_export_statsd (char *buffer,
+                                           size_t buffer_size,
                                            const char *prefix);
 
 /**
@@ -931,7 +932,7 @@ extern void SocketMetrics_update_peak_if_needed (int current_count);
  * SOCKET_METRICS_TIME_START - Start timing an operation
  * @ingroup utilities
  */
-#define SOCKET_METRICS_TIME_START()                                           \
+#define SOCKET_METRICS_TIME_START() \
   int64_t _socket_metrics_start_time = Socket_get_monotonic_ms ()
 
 /**
@@ -939,13 +940,13 @@ extern void SocketMetrics_update_peak_if_needed (int current_count);
  * @ingroup utilities
  * @param metric Histogram metric to record to
  */
-#define SOCKET_METRICS_TIME_OBSERVE(metric)                                   \
-  do                                                                          \
-    {                                                                         \
-      int64_t _elapsed                                                        \
-          = Socket_get_monotonic_ms () - _socket_metrics_start_time;          \
-      SocketMetrics_histogram_observe ((metric), (double)_elapsed);           \
-    }                                                                         \
+#define SOCKET_METRICS_TIME_OBSERVE(metric)                          \
+  do                                                                 \
+    {                                                                \
+      int64_t _elapsed                                               \
+          = Socket_get_monotonic_ms () - _socket_metrics_start_time; \
+      SocketMetrics_histogram_observe ((metric), (double)_elapsed);  \
+    }                                                                \
   while (0)
 
 /**
@@ -953,29 +954,29 @@ extern void SocketMetrics_update_peak_if_needed (int current_count);
  * @ingroup utilities
  * @param status HTTP status code (100-599)
  */
-#define SOCKET_METRICS_HTTP_RESPONSE_CLASS(status)                            \
-  do                                                                          \
-    {                                                                         \
-      int _class = (status) / 100;                                            \
-      switch (_class)                                                         \
-        {                                                                     \
-        case 1:                                                               \
-          SocketMetrics_counter_inc (SOCKET_CTR_HTTP_RESPONSES_1XX);          \
-          break;                                                              \
-        case 2:                                                               \
-          SocketMetrics_counter_inc (SOCKET_CTR_HTTP_RESPONSES_2XX);          \
-          break;                                                              \
-        case 3:                                                               \
-          SocketMetrics_counter_inc (SOCKET_CTR_HTTP_RESPONSES_3XX);          \
-          break;                                                              \
-        case 4:                                                               \
-          SocketMetrics_counter_inc (SOCKET_CTR_HTTP_RESPONSES_4XX);          \
-          break;                                                              \
-        case 5:                                                               \
-          SocketMetrics_counter_inc (SOCKET_CTR_HTTP_RESPONSES_5XX);          \
-          break;                                                              \
-        }                                                                     \
-    }                                                                         \
+#define SOCKET_METRICS_HTTP_RESPONSE_CLASS(status)                   \
+  do                                                                 \
+    {                                                                \
+      int _class = (status) / 100;                                   \
+      switch (_class)                                                \
+        {                                                            \
+        case 1:                                                      \
+          SocketMetrics_counter_inc (SOCKET_CTR_HTTP_RESPONSES_1XX); \
+          break;                                                     \
+        case 2:                                                      \
+          SocketMetrics_counter_inc (SOCKET_CTR_HTTP_RESPONSES_2XX); \
+          break;                                                     \
+        case 3:                                                      \
+          SocketMetrics_counter_inc (SOCKET_CTR_HTTP_RESPONSES_3XX); \
+          break;                                                     \
+        case 4:                                                      \
+          SocketMetrics_counter_inc (SOCKET_CTR_HTTP_RESPONSES_4XX); \
+          break;                                                     \
+        case 5:                                                      \
+          SocketMetrics_counter_inc (SOCKET_CTR_HTTP_RESPONSES_5XX); \
+          break;                                                     \
+        }                                                            \
+    }                                                                \
   while (0)
 
 /** @} */

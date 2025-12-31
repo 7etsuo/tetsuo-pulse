@@ -362,8 +362,7 @@ struct SocketReconnect_T
   /* Timing - Monotonic timestamps (ms) for scheduling and delays */
   int64_t state_start_time_ms; /**< Timestamp when current state entered */
 
-  int64_t
-      last_attempt_time_ms; /**< Timestamp of most recent connect attempt */
+  int64_t last_attempt_time_ms; /**< Timestamp of most recent connect attempt */
 
   int64_t last_success_time_ms; /**< Timestamp of last successful connection */
 

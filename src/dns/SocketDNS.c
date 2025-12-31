@@ -71,7 +71,8 @@ allocate_dns_resolver (void)
   dns = calloc (1, sizeof (*dns));
   if (!dns)
     {
-      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+      SOCKET_RAISE_MSG (SocketDNS,
+                        SocketDNS_Failed,
                         SOCKET_ENOMEM ": Cannot allocate DNS resolver");
     }
 
@@ -99,21 +100,26 @@ initialize_dns_fields (struct SocketDNS_T *dns)
 static void
 initialize_mutex (struct SocketDNS_T *dns)
 {
-  INIT_PTHREAD_PRIMITIVE (dns, pthread_mutex_init, &dns->mutex, DNS_CLEAN_NONE,
+  INIT_PTHREAD_PRIMITIVE (dns,
+                          pthread_mutex_init,
+                          &dns->mutex,
+                          DNS_CLEAN_NONE,
                           "Failed to initialize DNS resolver mutex");
 }
 
 static void
 initialize_queue_condition (struct SocketDNS_T *dns)
 {
-  /* TODO(Phase 2.x): Removed - no queue condition needed without worker threads */
+  /* TODO(Phase 2.x): Removed - no queue condition needed without worker threads
+   */
   (void)dns;
 }
 
 static void
 initialize_result_condition (struct SocketDNS_T *dns)
 {
-  /* TODO(Phase 2.x): Removed - no result condition needed without worker threads */
+  /* TODO(Phase 2.x): Removed - no result condition needed without worker
+   * threads */
   (void)dns;
 }
 
@@ -131,8 +137,8 @@ create_completion_pipe (struct SocketDNS_T *dns)
   if (pipe (dns->pipefd) < 0)
     {
       cleanup_on_init_failure (dns, DNS_CLEAN_MUTEX);
-      SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,
-                        "Failed to create completion pipe");
+      SOCKET_RAISE_FMT (
+          SocketDNS, SocketDNS_Failed, "Failed to create completion pipe");
     }
 
   if (SocketCommon_setcloexec (dns->pipefd[0], 1) < 0
@@ -142,7 +148,8 @@ create_completion_pipe (struct SocketDNS_T *dns)
       cleanup_pipe (dns);
       cleanup_on_init_failure (dns, DNS_CLEAN_MUTEX);
       errno = saved_errno;
-      SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,
+      SOCKET_RAISE_FMT (SocketDNS,
+                        SocketDNS_Failed,
                         "Failed to set close-on-exec flag on pipe");
     }
 }
@@ -154,15 +161,15 @@ set_pipe_nonblocking (struct SocketDNS_T *dns)
   if (flags < 0)
     {
       cleanup_on_init_failure (dns, DNS_CLEAN_ARENA);
-      SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,
-                        "Failed to get pipe flags");
+      SOCKET_RAISE_FMT (
+          SocketDNS, SocketDNS_Failed, "Failed to get pipe flags");
     }
 
   if (fcntl (dns->pipefd[0], F_SETFL, flags | O_NONBLOCK) < 0)
     {
       cleanup_on_init_failure (dns, DNS_CLEAN_ARENA);
-      SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,
-                        "Failed to set pipe to non-blocking");
+      SOCKET_RAISE_FMT (
+          SocketDNS, SocketDNS_Failed, "Failed to set pipe to non-blocking");
     }
 }
 
@@ -180,7 +187,8 @@ initialize_dns_components (struct SocketDNS_T *dns)
   if (!dns->arena)
     {
       free (dns);
-      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+      SOCKET_RAISE_MSG (SocketDNS,
+                        SocketDNS_Failed,
                         SOCKET_ENOMEM ": Cannot allocate DNS resolver arena");
     }
 
@@ -192,22 +200,22 @@ initialize_dns_components (struct SocketDNS_T *dns)
   if (!dns->resolver_arena)
     {
       cleanup_on_init_failure (dns, DNS_CLEAN_PIPE);
-      SOCKET_RAISE_MSG (
-          SocketDNS, SocketDNS_Failed,
-          SOCKET_ENOMEM ": Cannot allocate resolver arena");
+      SOCKET_RAISE_MSG (SocketDNS,
+                        SocketDNS_Failed,
+                        SOCKET_ENOMEM ": Cannot allocate resolver arena");
     }
 
   TRY
-    {
-      dns->resolver = SocketDNSResolver_new (dns->resolver_arena);
-      SocketDNSResolver_load_resolv_conf (dns->resolver);
-    }
+  {
+    dns->resolver = SocketDNSResolver_new (dns->resolver_arena);
+    SocketDNSResolver_load_resolv_conf (dns->resolver);
+  }
   EXCEPT (SocketDNSResolver_Failed)
-    {
-      Arena_dispose (&dns->resolver_arena);
-      cleanup_on_init_failure (dns, DNS_CLEAN_PIPE);
-      RERAISE;
-    }
+  {
+    Arena_dispose (&dns->resolver_arena);
+    cleanup_on_init_failure (dns, DNS_CLEAN_PIPE);
+    RERAISE;
+  }
   END_TRY;
 }
 
@@ -353,7 +361,8 @@ allocate_request_structure (struct SocketDNS_T *dns)
   req = ALLOC (dns->arena, sizeof (*req));
   if (!req)
     {
-      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+      SOCKET_RAISE_MSG (SocketDNS,
+                        SocketDNS_Failed,
                         SOCKET_ENOMEM ": Cannot allocate DNS request");
     }
 
@@ -362,7 +371,8 @@ allocate_request_structure (struct SocketDNS_T *dns)
 
 void
 allocate_request_hostname (struct SocketDNS_T *dns,
-                           struct SocketDNS_Request_T *req, const char *host,
+                           struct SocketDNS_Request_T *req,
+                           const char *host,
                            size_t host_len)
 {
   if (host == NULL)
@@ -371,17 +381,21 @@ allocate_request_hostname (struct SocketDNS_T *dns,
       return;
     }
 
-  /* Check for overflow: host_len == SIZE_MAX would cause host_len + 1 to wrap to 0 */
+  /* Check for overflow: host_len == SIZE_MAX would cause host_len + 1 to wrap
+   * to 0 */
   if (host_len >= SIZE_MAX || host_len > SOCKET_DNS_MAX_HOSTNAME_LEN)
     {
-      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
-                        "Hostname length overflow or exceeds DNS maximum (255)");
+      SOCKET_RAISE_MSG (
+          SocketDNS,
+          SocketDNS_Failed,
+          "Hostname length overflow or exceeds DNS maximum (255)");
     }
 
   req->host = ALLOC (dns->arena, host_len + 1);
   if (!req->host)
     {
-      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+      SOCKET_RAISE_MSG (SocketDNS,
+                        SocketDNS_Failed,
                         SOCKET_ENOMEM ": Cannot allocate hostname");
     }
 
@@ -390,8 +404,10 @@ allocate_request_hostname (struct SocketDNS_T *dns,
 }
 
 void
-initialize_request_fields (struct SocketDNS_Request_T *req, int port,
-                           SocketDNS_Callback callback, void *data)
+initialize_request_fields (struct SocketDNS_Request_T *req,
+                           int port,
+                           SocketDNS_Callback callback,
+                           void *data)
 {
   req->port = port;
   req->callback = callback;
@@ -406,8 +422,12 @@ initialize_request_fields (struct SocketDNS_Request_T *req, int port,
 }
 
 Request_T
-allocate_request (struct SocketDNS_T *dns, const char *host, size_t host_len,
-                  int port, SocketDNS_Callback callback, void *data)
+allocate_request (struct SocketDNS_T *dns,
+                  const char *host,
+                  size_t host_len,
+                  int port,
+                  SocketDNS_Callback callback,
+                  void *data)
 {
   Request_T req = allocate_request_structure (dns);
   allocate_request_hostname (dns, req, host, host_len);
@@ -423,12 +443,14 @@ cache_lookup_l1_only (struct SocketDNS_T *dns, const char *hostname);
 static struct SocketDNS_CacheEntry *
 cache_lookup_coherent (struct SocketDNS_T *dns, const char *hostname);
 static struct SocketDNS_CacheEntry *
-cache_validate_ttl_coherent (struct SocketDNS_T *dns, const char *hostname,
-                              struct SocketDNS_CacheEntry *l1_entry);
+cache_validate_ttl_coherent (struct SocketDNS_T *dns,
+                             const char *hostname,
+                             struct SocketDNS_CacheEntry *l1_entry);
 static void cache_update_both_tiers (struct SocketDNS_T *dns,
                                      const char *hostname,
                                      const SocketDNSResolver_Address *addresses,
-                                     size_t count, uint32_t min_ttl);
+                                     size_t count,
+                                     uint32_t min_ttl);
 static int cache_promote_l2_to_l1 (struct SocketDNS_T *dns,
                                    const char *hostname,
                                    const SocketDNSResolver_Result *l2_result);
@@ -519,8 +541,10 @@ signal_completion (struct SocketDNS_T *dns)
  * @note Mutex is unlocked on exit
  */
 static void
-invoke_user_callback (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req,
-                      struct addrinfo *result, int error)
+invoke_user_callback (struct SocketDNS_T *dns,
+                      struct SocketDNS_Request_T *req,
+                      struct addrinfo *result,
+                      int error)
 {
   SocketDNS_Callback user_cb = req->callback;
   void *user_data = req->callback_data;
@@ -567,15 +591,15 @@ validate_request_ownership_locked (const struct SocketDNS_T *dns,
   return req->dns_resolver == dns;
 }
 
-#define VALIDATE_OWNERSHIP_OR_RETURN(dns, req, retval)                        \
-  do                                                                          \
-    {                                                                         \
-      if (!validate_request_ownership_locked ((dns), (req)))                  \
-        {                                                                     \
-          pthread_mutex_unlock (&(dns)->mutex);                               \
-          return retval;                                                      \
-        }                                                                     \
-    }                                                                         \
+#define VALIDATE_OWNERSHIP_OR_RETURN(dns, req, retval)       \
+  do                                                         \
+    {                                                        \
+      if (!validate_request_ownership_locked ((dns), (req))) \
+        {                                                    \
+          pthread_mutex_unlock (&(dns)->mutex);              \
+          return retval;                                     \
+        }                                                    \
+    }                                                        \
   while (0)
 
 static void
@@ -607,7 +631,8 @@ cancel_complete_state (struct SocketDNS_Request_T *req)
 
 static void
 handle_cancel_by_state (struct SocketDNS_T *dns,
-                        struct SocketDNS_Request_T *req, int *send_signal,
+                        struct SocketDNS_Request_T *req,
+                        int *send_signal,
                         int *cancelled)
 {
   switch (req->state)
@@ -657,7 +682,8 @@ transfer_result_ownership (struct SocketDNS_Request_T *req)
 static void
 init_completed_request_fields (struct SocketDNS_Request_T *req,
                                struct SocketDNS_T *dns,
-                               struct addrinfo *result, int port)
+                               struct addrinfo *result,
+                               int port)
 {
   req->dns_resolver = dns;
   req->host = NULL;
@@ -668,8 +694,8 @@ init_completed_request_fields (struct SocketDNS_Request_T *req,
   req->result = SocketCommon_copy_addrinfo (result);
   if (!req->result)
     {
-      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
-                        "Failed to copy address info");
+      SOCKET_RAISE_MSG (
+          SocketDNS, SocketDNS_Failed, "Failed to copy address info");
     }
   SocketCommon_free_addrinfo (result);
   req->error = 0;
@@ -685,10 +711,12 @@ static int wait_for_completion (struct SocketDNS_T *dns,
 
 static void handle_sync_timeout (struct SocketDNS_T *dns,
                                  struct SocketDNS_Request_T *req,
-                                 int timeout_ms, const char *host);
+                                 int timeout_ms,
+                                 const char *host);
 
 static void handle_sync_error (struct SocketDNS_T *dns,
-                               struct SocketDNS_Request_T *req, int error,
+                               struct SocketDNS_Request_T *req,
+                               int error,
                                const char *host);
 
 static struct addrinfo *
@@ -697,8 +725,8 @@ dns_sync_fast_path (const char *host, int port, const struct addrinfo *hints)
   struct addrinfo *tmp_res;
   int family = hints ? hints->ai_family : AF_UNSPEC;
 
-  SocketCommon_resolve_address (host, port, hints, &tmp_res, SocketDNS_Failed,
-                                family, 1);
+  SocketCommon_resolve_address (
+      host, port, hints, &tmp_res, SocketDNS_Failed, family, 1);
 
   struct addrinfo *result = SocketCommon_copy_addrinfo (tmp_res);
   SocketCommon_free_addrinfo (tmp_res);
@@ -708,7 +736,8 @@ dns_sync_fast_path (const char *host, int port, const struct addrinfo *hints)
 
 static struct addrinfo *
 wait_and_retrieve_result (struct SocketDNS_T *dns,
-                          struct SocketDNS_Request_T *req, int timeout_ms,
+                          struct SocketDNS_Request_T *req,
+                          int timeout_ms,
                           const char *host)
 {
   int error;
@@ -763,8 +792,8 @@ validate_dns_instance (const struct SocketDNS_T *dns)
 {
   if (!dns)
     {
-      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
-                        "Invalid NULL dns resolver");
+      SOCKET_RAISE_MSG (
+          SocketDNS, SocketDNS_Failed, "Invalid NULL dns resolver");
     }
 }
 
@@ -801,15 +830,20 @@ check_queue_capacity (struct SocketDNS_T *dns)
 
   if (pending >= dns->max_pending)
     {
-      SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,
+      SOCKET_RAISE_FMT (SocketDNS,
+                        SocketDNS_Failed,
                         "DNS queue full: %zu pending requests (max %zu)",
-                        pending, dns->max_pending);
+                        pending,
+                        dns->max_pending);
     }
 }
 
 static Request_T
-prepare_resolve_request (struct SocketDNS_T *dns, const char *host, int port,
-                         SocketDNS_Callback callback, void *data)
+prepare_resolve_request (struct SocketDNS_T *dns,
+                         const char *host,
+                         int port,
+                         SocketDNS_Callback callback,
+                         void *data)
 {
   size_t host_len = host ? strlen (host) : 0;
   validate_resolve_params (host, port);
@@ -940,8 +974,9 @@ resolver_error_to_gai (int resolver_error)
  */
 static void
 socketdns_resolver_callback (SocketDNSResolver_Query_T query,
-                              const SocketDNSResolver_Result *result,
-                              int error, void *userdata)
+                             const SocketDNSResolver_Result *result,
+                             int error,
+                             void *userdata)
 {
   struct SocketDNS_ResolverContext *ctx
       = (struct SocketDNS_ResolverContext *)userdata;
@@ -1085,33 +1120,36 @@ submit_to_resolver (struct SocketDNS_T *dns, Request_T req)
 
   /* Submit to resolver backend */
   TRY
-    {
-      SocketDNSResolver_resolve (dns->resolver, req->host, flags,
-                                 socketdns_resolver_callback, ctx);
-    }
+  {
+    SocketDNSResolver_resolve (
+        dns->resolver, req->host, flags, socketdns_resolver_callback, ctx);
+  }
   EXCEPT (SocketDNSResolver_Failed)
-    {
-      /* Resolver submission failed */
-      pthread_mutex_lock (&dns->mutex);
-      req->error = EAI_FAIL;
-      req->state = REQ_COMPLETE;
-      SIGNAL_DNS_COMPLETION (dns);
+  {
+    /* Resolver submission failed */
+    pthread_mutex_lock (&dns->mutex);
+    req->error = EAI_FAIL;
+    req->state = REQ_COMPLETE;
+    SIGNAL_DNS_COMPLETION (dns);
 
-      if (req->callback)
-        {
-          invoke_user_callback (dns, req, NULL, EAI_FAIL);
-        }
-      else
-        {
-          pthread_mutex_unlock (&dns->mutex);
-        }
-    }
+    if (req->callback)
+      {
+        invoke_user_callback (dns, req, NULL, EAI_FAIL);
+      }
+    else
+      {
+        pthread_mutex_unlock (&dns->mutex);
+      }
+  }
   END_TRY;
 }
 
 Request_T
-SocketDNS_resolve (struct SocketDNS_T *dns, const char *host, int port,
-                   SocketDNS_Callback callback, void *data)
+SocketDNS_resolve (struct SocketDNS_T *dns,
+                   const char *host,
+                   int port,
+                   SocketDNS_Callback callback,
+                   void *data)
 {
   Request_T req;
 
@@ -1186,8 +1224,8 @@ SocketDNS_setmaxpending (struct SocketDNS_T *dns, size_t max_pending)
 {
   if (!dns)
     {
-      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
-                        "Invalid NULL dns resolver");
+      SOCKET_RAISE_MSG (
+          SocketDNS, SocketDNS_Failed, "Invalid NULL dns resolver");
     }
 
   pthread_mutex_lock (&dns->mutex);
@@ -1197,9 +1235,12 @@ SocketDNS_setmaxpending (struct SocketDNS_T *dns, size_t max_pending)
     {
       size_t current_pending = dns->pending_count;
       pthread_mutex_unlock (&dns->mutex);
-      SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,
-                        "Cannot set max_pending (%zu) below current pending count (%zu)",
-                        max_pending, current_pending);
+      SOCKET_RAISE_FMT (
+          SocketDNS,
+          SocketDNS_Failed,
+          "Cannot set max_pending (%zu) below current pending count (%zu)",
+          max_pending,
+          current_pending);
     }
 
   dns->max_pending = max_pending;
@@ -1221,8 +1262,8 @@ SocketDNS_settimeout (struct SocketDNS_T *dns, int timeout_ms)
   if (!dns)
     return;
 
-  DNS_LOCKED_INT_SETTER (dns, request_timeout_ms,
-                         SANITIZE_TIMEOUT_MS (timeout_ms));
+  DNS_LOCKED_INT_SETTER (
+      dns, request_timeout_ms, SANITIZE_TIMEOUT_MS (timeout_ms));
 }
 
 int
@@ -1280,8 +1321,7 @@ SocketDNS_getresult (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 }
 
 int
-SocketDNS_geterror (struct SocketDNS_T *dns,
-                    struct SocketDNS_Request_T *req)
+SocketDNS_geterror (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 {
   int error = 0;
 
@@ -1300,12 +1340,14 @@ SocketDNS_geterror (struct SocketDNS_T *dns,
 
 Request_T
 SocketDNS_create_completed_request (struct SocketDNS_T *dns,
-                                    struct addrinfo *result, int port)
+                                    struct addrinfo *result,
+                                    int port)
 {
   if (!dns || !result)
     {
       SOCKET_RAISE_MSG (
-          SocketDNS, SocketDNS_Failed,
+          SocketDNS,
+          SocketDNS_Failed,
           "Invalid NULL dns or result in create_completed_request");
     }
 
@@ -1323,7 +1365,8 @@ SocketDNS_create_completed_request (struct SocketDNS_T *dns,
 
 void
 SocketDNS_request_settimeout (struct SocketDNS_T *dns,
-                              struct SocketDNS_Request_T *req, int timeout_ms)
+                              struct SocketDNS_Request_T *req,
+                              int timeout_ms)
 {
   if (!dns || !req)
     return;
@@ -1354,7 +1397,8 @@ compute_deadline (int timeout_ms, struct timespec *deadline)
 
 static int
 wait_for_completion (struct SocketDNS_T *dns,
-                     const struct SocketDNS_Request_T *req, int timeout_ms)
+                     const struct SocketDNS_Request_T *req,
+                     int timeout_ms)
 {
   struct timespec deadline;
   struct pollfd pfd;
@@ -1383,9 +1427,10 @@ wait_for_completion (struct SocketDNS_T *dns,
         {
           clock_gettime (CLOCK_MONOTONIC, &now);
           elapsed_ms
-              = (int)((now.tv_sec - (deadline.tv_sec - timeout_ms / 1000)) * 1000
-                      + (now.tv_nsec - (deadline.tv_nsec - (timeout_ms % 1000)
-                                                                * 1000000))
+              = (int)((now.tv_sec - (deadline.tv_sec - timeout_ms / 1000))
+                          * 1000
+                      + (now.tv_nsec
+                         - (deadline.tv_nsec - (timeout_ms % 1000) * 1000000))
                             / 1000000);
 
           if (elapsed_ms >= timeout_ms)
@@ -1406,9 +1451,11 @@ wait_for_completion (struct SocketDNS_T *dns,
         SocketDNSResolver_process (dns->resolver, 0);
 
       /* Wait for completion signal on pipe */
-      poll_ret = poll (&pfd, 1, poll_timeout < SOCKET_DNS_POLL_INTERVAL_MS
-                                    ? poll_timeout
-                                    : SOCKET_DNS_POLL_INTERVAL_MS);
+      poll_ret = poll (&pfd,
+                       1,
+                       poll_timeout < SOCKET_DNS_POLL_INTERVAL_MS
+                           ? poll_timeout
+                           : SOCKET_DNS_POLL_INTERVAL_MS);
 
       /* Reacquire mutex */
       pthread_mutex_lock (&dns->mutex);
@@ -1433,33 +1480,43 @@ wait_for_completion (struct SocketDNS_T *dns,
 }
 
 static void
-handle_sync_timeout (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req,
-                     int timeout_ms, const char *host)
+handle_sync_timeout (struct SocketDNS_T *dns,
+                     struct SocketDNS_Request_T *req,
+                     int timeout_ms,
+                     const char *host)
 {
   req->state = REQ_CANCELLED;
   req->error = EAI_AGAIN;
   hash_table_remove (dns, req);
   pthread_mutex_unlock (&dns->mutex);
 
-  SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
-                    "DNS resolution timed out after %d ms: %s", timeout_ms,
+  SOCKET_RAISE_MSG (SocketDNS,
+                    SocketDNS_Failed,
+                    "DNS resolution timed out after %d ms: %s",
+                    timeout_ms,
                     host ? host : "(wildcard)");
 }
 
 static void
-handle_sync_error (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req,
-                   int error, const char *host)
+handle_sync_error (struct SocketDNS_T *dns,
+                   struct SocketDNS_Request_T *req,
+                   int error,
+                   const char *host)
 {
   hash_table_remove (dns, req);
   pthread_mutex_unlock (&dns->mutex);
 
-  SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,
+  SOCKET_RAISE_FMT (SocketDNS,
+                    SocketDNS_Failed,
                     "DNS resolution failed: %s (%s)",
-                    host ? host : "(wildcard)", gai_strerror (error));
+                    host ? host : "(wildcard)",
+                    gai_strerror (error));
 }
 
 static struct addrinfo *
-resolve_async_with_wait (struct SocketDNS_T *dns, const char *host, int port,
+resolve_async_with_wait (struct SocketDNS_T *dns,
+                         const char *host,
+                         int port,
                          int timeout_ms)
 {
   Request_T req;
@@ -1473,8 +1530,11 @@ resolve_async_with_wait (struct SocketDNS_T *dns, const char *host, int port,
 }
 
 static struct addrinfo *
-resolve_via_backend (struct SocketDNS_T *dns, const char *host, int port,
-                     const struct addrinfo *hints, int timeout_ms)
+resolve_via_backend (struct SocketDNS_T *dns,
+                     const char *host,
+                     int port,
+                     const struct addrinfo *hints,
+                     int timeout_ms)
 {
   SocketDNSResolver_Result result = { 0 };
   struct addrinfo *addrinfo_result;
@@ -1485,16 +1545,18 @@ resolve_via_backend (struct SocketDNS_T *dns, const char *host, int port,
 
   if (!dns->resolver)
     {
-      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+      SOCKET_RAISE_MSG (SocketDNS,
+                        SocketDNS_Failed,
                         "SocketDNSResolver backend not initialized");
     }
 
-  err = SocketDNSResolver_resolve_sync (dns->resolver, host, flags, timeout_ms,
-                                        &result);
+  err = SocketDNSResolver_resolve_sync (
+      dns->resolver, host, flags, timeout_ms, &result);
 
   if (err != RESOLVER_OK)
     {
-      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+      SOCKET_RAISE_MSG (SocketDNS,
+                        SocketDNS_Failed,
                         "Backend resolution failed: %s",
                         SocketDNSResolver_strerror (err));
     }
@@ -1504,7 +1566,8 @@ resolve_via_backend (struct SocketDNS_T *dns, const char *host, int port,
 
   if (!addrinfo_result)
     {
-      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+      SOCKET_RAISE_MSG (SocketDNS,
+                        SocketDNS_Failed,
                         "Failed to convert resolver result to addrinfo");
     }
 
@@ -1512,8 +1575,11 @@ resolve_via_backend (struct SocketDNS_T *dns, const char *host, int port,
 }
 
 struct addrinfo *
-SocketDNS_resolve_sync (struct SocketDNS_T *dns, const char *host, int port,
-                        const struct addrinfo *hints, int timeout_ms)
+SocketDNS_resolve_sync (struct SocketDNS_T *dns,
+                        const char *host,
+                        int port,
+                        const struct addrinfo *hints,
+                        int timeout_ms)
 {
   struct SocketDNS_CacheEntry *cache_entry;
   struct addrinfo *result;
@@ -1522,7 +1588,8 @@ SocketDNS_resolve_sync (struct SocketDNS_T *dns, const char *host, int port,
   if (!dns)
     {
       SOCKET_RAISE_MSG (
-          SocketDNS, SocketDNS_Failed,
+          SocketDNS,
+          SocketDNS_Failed,
           "SocketDNS_resolve_sync requires non-NULL dns resolver");
     }
 
@@ -1636,8 +1703,7 @@ cache_hash_remove (struct SocketDNS_T *dns, struct SocketDNS_CacheEntry *entry)
 }
 
 static void
-cache_remove_entry (struct SocketDNS_T *dns,
-                    struct SocketDNS_CacheEntry *entry)
+cache_remove_entry (struct SocketDNS_T *dns, struct SocketDNS_CacheEntry *entry)
 {
   cache_lru_remove (dns, entry);
   cache_hash_remove (dns, entry);
@@ -1667,7 +1733,8 @@ cache_evict_oldest (struct SocketDNS_T *dns)
  * @return 1 if promotion succeeded, 0 if promotion failed
  */
 static int
-cache_promote_l2_to_l1 (struct SocketDNS_T *dns, const char *hostname,
+cache_promote_l2_to_l1 (struct SocketDNS_T *dns,
+                        const char *hostname,
                         const SocketDNSResolver_Result *l2_result)
 {
   struct addrinfo *ai_result;
@@ -1745,8 +1812,9 @@ cache_lookup_coherent (struct SocketDNS_T *dns, const char *hostname)
  * @return Valid cache entry (L1 refreshed if needed), or NULL if both expired
  */
 static struct SocketDNS_CacheEntry *
-cache_validate_ttl_coherent (struct SocketDNS_T *dns, const char *hostname,
-                              struct SocketDNS_CacheEntry *l1_entry)
+cache_validate_ttl_coherent (struct SocketDNS_T *dns,
+                             const char *hostname,
+                             struct SocketDNS_CacheEntry *l1_entry)
 {
   SocketDNSResolver_Result l2_result = { 0 };
   int l2_err;
@@ -1796,9 +1864,11 @@ cache_validate_ttl_coherent (struct SocketDNS_T *dns, const char *hostname,
  * @param min_ttl Minimum TTL from DNS response
  */
 static void
-cache_update_both_tiers (struct SocketDNS_T *dns, const char *hostname,
+cache_update_both_tiers (struct SocketDNS_T *dns,
+                         const char *hostname,
                          const SocketDNSResolver_Address *addresses,
-                         size_t count, uint32_t min_ttl)
+                         size_t count,
+                         uint32_t min_ttl)
 {
   struct addrinfo *ai_result;
   SocketDNSResolver_Result l2_result = { 0 };
@@ -1877,7 +1947,8 @@ cache_lookup (struct SocketDNS_T *dns, const char *hostname)
 }
 
 static struct SocketDNS_CacheEntry *
-cache_allocate_entry (struct SocketDNS_T *dns, const char *hostname,
+cache_allocate_entry (struct SocketDNS_T *dns,
+                      const char *hostname,
                       struct addrinfo *result)
 {
   struct SocketDNS_CacheEntry *entry;
@@ -1906,7 +1977,8 @@ cache_allocate_entry (struct SocketDNS_T *dns, const char *hostname,
 }
 
 void
-cache_insert (struct SocketDNS_T *dns, const char *hostname,
+cache_insert (struct SocketDNS_T *dns,
+              const char *hostname,
               struct addrinfo *result)
 {
   struct SocketDNS_CacheEntry *entry;
@@ -2088,8 +2160,10 @@ validate_ip_address (const char *ip)
 }
 
 static int
-copy_string_array_to_arena (struct SocketDNS_T *dns, const char **src,
-                            size_t count, char ***dest_array,
+copy_string_array_to_arena (struct SocketDNS_T *dns,
+                            const char **src,
+                            size_t count,
+                            char ***dest_array,
                             size_t *dest_count)
 {
   size_t i;

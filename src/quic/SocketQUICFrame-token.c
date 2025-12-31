@@ -71,8 +71,10 @@
  */
 
 size_t
-SocketQUICFrame_encode_new_token (const uint8_t *token, size_t token_len,
-                                   uint8_t *out, size_t out_len)
+SocketQUICFrame_encode_new_token (const uint8_t *token,
+                                  size_t token_len,
+                                  uint8_t *out,
+                                  size_t out_len)
 {
   size_t pos;
 
@@ -157,8 +159,10 @@ SocketQUICFrame_encode_new_token (const uint8_t *token, size_t token_len,
  */
 
 int
-SocketQUICFrame_decode_new_token (const uint8_t *data, size_t len,
-                                   uint8_t *token_out, size_t *token_len)
+SocketQUICFrame_decode_new_token (const uint8_t *data,
+                                  size_t len,
+                                  uint8_t *token_out,
+                                  size_t *token_len)
 {
   SocketQUICFrame_T frame;
   size_t consumed;

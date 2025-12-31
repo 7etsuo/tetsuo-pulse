@@ -31,45 +31,38 @@
  */
 
 /* Client DCID from RFC 9001 Appendix A.1 */
-static const uint8_t rfc_test_dcid[] = {
-  0x83, 0x94, 0xc8, 0xf0, 0x3e, 0x51, 0x57, 0x08
-};
+static const uint8_t rfc_test_dcid[]
+    = { 0x83, 0x94, 0xc8, 0xf0, 0x3e, 0x51, 0x57, 0x08 };
 
 /* Expected client Initial key (RFC 9001 Appendix A.1) */
-static const uint8_t expected_client_key[] = {
-  0x1f, 0x36, 0x96, 0x13, 0xdd, 0x76, 0xd5, 0x46,
-  0x77, 0x30, 0xef, 0xcb, 0xe3, 0xb1, 0xa2, 0x2d
-};
+static const uint8_t expected_client_key[]
+    = { 0x1f, 0x36, 0x96, 0x13, 0xdd, 0x76, 0xd5, 0x46,
+        0x77, 0x30, 0xef, 0xcb, 0xe3, 0xb1, 0xa2, 0x2d };
 
 /* Expected client Initial IV (RFC 9001 Appendix A.1) */
-static const uint8_t expected_client_iv[] = {
-  0xfa, 0x04, 0x4b, 0x2f, 0x42, 0xa3, 0xfd, 0x3b,
-  0x46, 0xfb, 0x25, 0x5c
-};
+static const uint8_t expected_client_iv[] = { 0xfa, 0x04, 0x4b, 0x2f,
+                                              0x42, 0xa3, 0xfd, 0x3b,
+                                              0x46, 0xfb, 0x25, 0x5c };
 
 /* Expected client HP key (RFC 9001 Appendix A.1) */
-static const uint8_t expected_client_hp[] = {
-  0x9f, 0x50, 0x44, 0x9e, 0x04, 0xa0, 0xe8, 0x10,
-  0x28, 0x3a, 0x1e, 0x99, 0x33, 0xad, 0xed, 0xd2
-};
+static const uint8_t expected_client_hp[]
+    = { 0x9f, 0x50, 0x44, 0x9e, 0x04, 0xa0, 0xe8, 0x10,
+        0x28, 0x3a, 0x1e, 0x99, 0x33, 0xad, 0xed, 0xd2 };
 
 /* Expected server Initial key (RFC 9001 Appendix A.1) */
-static const uint8_t expected_server_key[] = {
-  0xcf, 0x3a, 0x53, 0x31, 0x65, 0x3c, 0x36, 0x4c,
-  0x88, 0xf0, 0xf3, 0x79, 0xb6, 0x06, 0x7e, 0x37
-};
+static const uint8_t expected_server_key[]
+    = { 0xcf, 0x3a, 0x53, 0x31, 0x65, 0x3c, 0x36, 0x4c,
+        0x88, 0xf0, 0xf3, 0x79, 0xb6, 0x06, 0x7e, 0x37 };
 
 /* Expected server Initial IV (RFC 9001 Appendix A.1) */
-static const uint8_t expected_server_iv[] = {
-  0x0a, 0xc1, 0x49, 0x3c, 0xa1, 0x90, 0x58, 0x53,
-  0xb0, 0xbb, 0xa0, 0x3e
-};
+static const uint8_t expected_server_iv[] = { 0x0a, 0xc1, 0x49, 0x3c,
+                                              0xa1, 0x90, 0x58, 0x53,
+                                              0xb0, 0xbb, 0xa0, 0x3e };
 
 /* Expected server HP key (RFC 9001 Appendix A.1) */
-static const uint8_t expected_server_hp[] = {
-  0xc2, 0x06, 0xb8, 0xd9, 0xb9, 0xf0, 0xf3, 0x76,
-  0x44, 0x43, 0x0b, 0x49, 0x0e, 0xea, 0xa3, 0x14
-};
+static const uint8_t expected_server_hp[]
+    = { 0xc2, 0x06, 0xb8, 0xd9, 0xb9, 0xf0, 0xf3, 0x76,
+        0x44, 0x43, 0x0b, 0x49, 0x0e, 0xea, 0xa3, 0x14 };
 
 /* ============================================================================
  * Helper Functions
@@ -221,20 +214,20 @@ TEST (quic_initial_derive_keys_rfc_test_vector)
   ASSERT (keys.initialized);
 
   /* Verify client keys match RFC 9001 Appendix A.1 */
-  ASSERT (compare_bytes (keys.client_key, expected_client_key,
-                          QUIC_INITIAL_KEY_LEN));
-  ASSERT (compare_bytes (keys.client_iv, expected_client_iv,
-                          QUIC_INITIAL_IV_LEN));
-  ASSERT (compare_bytes (keys.client_hp_key, expected_client_hp,
-                          QUIC_INITIAL_HP_KEY_LEN));
+  ASSERT (compare_bytes (
+      keys.client_key, expected_client_key, QUIC_INITIAL_KEY_LEN));
+  ASSERT (
+      compare_bytes (keys.client_iv, expected_client_iv, QUIC_INITIAL_IV_LEN));
+  ASSERT (compare_bytes (
+      keys.client_hp_key, expected_client_hp, QUIC_INITIAL_HP_KEY_LEN));
 
   /* Verify server keys match RFC 9001 Appendix A.1 */
-  ASSERT (compare_bytes (keys.server_key, expected_server_key,
-                          QUIC_INITIAL_KEY_LEN));
-  ASSERT (compare_bytes (keys.server_iv, expected_server_iv,
-                          QUIC_INITIAL_IV_LEN));
-  ASSERT (compare_bytes (keys.server_hp_key, expected_server_hp,
-                          QUIC_INITIAL_HP_KEY_LEN));
+  ASSERT (compare_bytes (
+      keys.server_key, expected_server_key, QUIC_INITIAL_KEY_LEN));
+  ASSERT (
+      compare_bytes (keys.server_iv, expected_server_iv, QUIC_INITIAL_IV_LEN));
+  ASSERT (compare_bytes (
+      keys.server_hp_key, expected_server_hp, QUIC_INITIAL_HP_KEY_LEN));
 
   SocketQUICInitialKeys_clear (&keys);
 }
@@ -301,12 +294,10 @@ TEST (quic_initial_validate_client_minimum_size)
              QUIC_INITIAL_ERROR_SIZE);
 
   /* Client Initial at minimum should pass */
-  ASSERT_EQ (SocketQUICInitial_validate (&header, 1200, 1),
-             QUIC_INITIAL_OK);
+  ASSERT_EQ (SocketQUICInitial_validate (&header, 1200, 1), QUIC_INITIAL_OK);
 
   /* Client Initial above minimum should pass */
-  ASSERT_EQ (SocketQUICInitial_validate (&header, 1500, 1),
-             QUIC_INITIAL_OK);
+  ASSERT_EQ (SocketQUICInitial_validate (&header, 1500, 1), QUIC_INITIAL_OK);
 }
 
 TEST (quic_initial_validate_server_no_token)
@@ -323,8 +314,7 @@ TEST (quic_initial_validate_server_no_token)
 
   /* Server Initial without token should pass */
   header.token_length = 0;
-  ASSERT_EQ (SocketQUICInitial_validate (&header, 500, 0),
-             QUIC_INITIAL_OK);
+  ASSERT_EQ (SocketQUICInitial_validate (&header, 500, 0), QUIC_INITIAL_OK);
 }
 
 TEST (quic_initial_validate_wrong_type)
@@ -417,10 +407,10 @@ TEST (quic_initial_protect_unprotect_roundtrip)
   ASSERT (keys.initialized);
 
   /* Verify client keys match expected RFC values (already tested above) */
-  ASSERT (compare_bytes (keys.client_key, expected_client_key,
-                          QUIC_INITIAL_KEY_LEN));
-  ASSERT (compare_bytes (keys.server_key, expected_server_key,
-                          QUIC_INITIAL_KEY_LEN));
+  ASSERT (compare_bytes (
+      keys.client_key, expected_client_key, QUIC_INITIAL_KEY_LEN));
+  ASSERT (compare_bytes (
+      keys.server_key, expected_server_key, QUIC_INITIAL_KEY_LEN));
 
   /* Keys structure test passed - crypto primitives are working */
   SocketQUICInitialKeys_clear (&keys);
@@ -440,13 +430,17 @@ TEST (quic_initial_result_string)
   ASSERT_NOT_NULL (SocketQUICInitial_result_string (QUIC_INITIAL_ERROR_NULL));
   ASSERT_NOT_NULL (SocketQUICInitial_result_string (QUIC_INITIAL_ERROR_CRYPTO));
   ASSERT_NOT_NULL (SocketQUICInitial_result_string (QUIC_INITIAL_ERROR_BUFFER));
-  ASSERT_NOT_NULL (SocketQUICInitial_result_string (QUIC_INITIAL_ERROR_TRUNCATED));
-  ASSERT_NOT_NULL (SocketQUICInitial_result_string (QUIC_INITIAL_ERROR_INVALID));
+  ASSERT_NOT_NULL (
+      SocketQUICInitial_result_string (QUIC_INITIAL_ERROR_TRUNCATED));
+  ASSERT_NOT_NULL (
+      SocketQUICInitial_result_string (QUIC_INITIAL_ERROR_INVALID));
   ASSERT_NOT_NULL (SocketQUICInitial_result_string (QUIC_INITIAL_ERROR_AUTH));
   ASSERT_NOT_NULL (SocketQUICInitial_result_string (QUIC_INITIAL_ERROR_SIZE));
   ASSERT_NOT_NULL (SocketQUICInitial_result_string (QUIC_INITIAL_ERROR_TOKEN));
-  ASSERT_NOT_NULL (SocketQUICInitial_result_string (QUIC_INITIAL_ERROR_VERSION));
-  ASSERT_NOT_NULL (SocketQUICInitial_result_string ((SocketQUICInitial_Result)99));
+  ASSERT_NOT_NULL (
+      SocketQUICInitial_result_string (QUIC_INITIAL_ERROR_VERSION));
+  ASSERT_NOT_NULL (
+      SocketQUICInitial_result_string ((SocketQUICInitial_Result)99));
 }
 
 /* ============================================================================

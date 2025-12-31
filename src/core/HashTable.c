@@ -45,12 +45,11 @@ validate_config (const HashTable_Config *config)
     SOCKET_RAISE_MSG (HashTable, HashTable_Failed, "hash function required");
 
   if (config->compare == NULL)
-    SOCKET_RAISE_MSG (HashTable, HashTable_Failed,
-                      "compare function required");
+    SOCKET_RAISE_MSG (HashTable, HashTable_Failed, "compare function required");
 
   if (config->next_ptr == NULL)
-    SOCKET_RAISE_MSG (HashTable, HashTable_Failed,
-                      "next_ptr function required");
+    SOCKET_RAISE_MSG (
+        HashTable, HashTable_Failed, "next_ptr function required");
 }
 
 static void **
@@ -135,8 +134,10 @@ HashTable_new (Arena_T arena, const HashTable_Config *config)
 
   /* Prevent integer overflow in compute_bucket() cast */
   if (config->bucket_count > UINT_MAX)
-    SOCKET_RAISE_MSG (HashTable, HashTable_Failed,
-                      "bucket_count exceeds maximum of %u", UINT_MAX);
+    SOCKET_RAISE_MSG (HashTable,
+                      HashTable_Failed,
+                      "bucket_count exceeds maximum of %u",
+                      UINT_MAX);
 
   if (arena != NULL)
     table = Arena_alloc (arena, sizeof (*table), __FILE__, __LINE__);
@@ -144,8 +145,8 @@ HashTable_new (Arena_T arena, const HashTable_Config *config)
     table = malloc (sizeof (*table));
 
   if (table == NULL)
-    SOCKET_RAISE_MSG (HashTable, HashTable_Failed,
-                      "Failed to allocate hash table");
+    SOCKET_RAISE_MSG (
+        HashTable, HashTable_Failed, "Failed to allocate hash table");
 
   table->bucket_count = config->bucket_count;
   table->hash_seed = config->hash_seed;
@@ -159,8 +160,8 @@ HashTable_new (Arena_T arena, const HashTable_Config *config)
     {
       if (arena == NULL)
         free (table);
-      SOCKET_RAISE_MSG (HashTable, HashTable_Failed,
-                        "Failed to allocate bucket array");
+      SOCKET_RAISE_MSG (
+          HashTable, HashTable_Failed, "Failed to allocate bucket array");
     }
 
   return table;
@@ -209,8 +210,7 @@ HashTable_insert (T table, void *entry, const void *key)
 
   bucket = compute_bucket (table, key);
 
-  set_next (table, entry,
-            table->buckets[bucket]); /* Insert at head for O(1) */
+  set_next (table, entry, table->buckets[bucket]); /* Insert at head for O(1) */
   table->buckets[bucket] = entry;
 }
 

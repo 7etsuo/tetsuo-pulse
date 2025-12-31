@@ -49,22 +49,20 @@ static void
 test_error_strings (const uint8_t *data, size_t size)
 {
   /* Test all defined error codes */
-  SocketHTTP2_ErrorCode codes[] = {
-    HTTP2_NO_ERROR,
-    HTTP2_PROTOCOL_ERROR,
-    HTTP2_INTERNAL_ERROR,
-    HTTP2_FLOW_CONTROL_ERROR,
-    HTTP2_SETTINGS_TIMEOUT,
-    HTTP2_STREAM_CLOSED,
-    HTTP2_FRAME_SIZE_ERROR,
-    HTTP2_REFUSED_STREAM,
-    HTTP2_CANCEL,
-    HTTP2_COMPRESSION_ERROR,
-    HTTP2_CONNECT_ERROR,
-    HTTP2_ENHANCE_YOUR_CALM,
-    HTTP2_INADEQUATE_SECURITY,
-    HTTP2_HTTP_1_1_REQUIRED
-  };
+  SocketHTTP2_ErrorCode codes[] = { HTTP2_NO_ERROR,
+                                    HTTP2_PROTOCOL_ERROR,
+                                    HTTP2_INTERNAL_ERROR,
+                                    HTTP2_FLOW_CONTROL_ERROR,
+                                    HTTP2_SETTINGS_TIMEOUT,
+                                    HTTP2_STREAM_CLOSED,
+                                    HTTP2_FRAME_SIZE_ERROR,
+                                    HTTP2_REFUSED_STREAM,
+                                    HTTP2_CANCEL,
+                                    HTTP2_COMPRESSION_ERROR,
+                                    HTTP2_CONNECT_ERROR,
+                                    HTTP2_ENHANCE_YOUR_CALM,
+                                    HTTP2_INADEQUATE_SECURITY,
+                                    HTTP2_HTTP_1_1_REQUIRED };
 
   for (size_t i = 0; i < sizeof (codes) / sizeof (codes[0]); i++)
     {
@@ -94,9 +92,9 @@ test_frame_type_strings (const uint8_t *data, size_t size)
 {
   /* Test all defined frame types */
   SocketHTTP2_FrameType types[] = {
-    HTTP2_FRAME_DATA,         HTTP2_FRAME_HEADERS,    HTTP2_FRAME_PRIORITY,
-    HTTP2_FRAME_RST_STREAM,   HTTP2_FRAME_SETTINGS,   HTTP2_FRAME_PUSH_PROMISE,
-    HTTP2_FRAME_PING,         HTTP2_FRAME_GOAWAY,     HTTP2_FRAME_WINDOW_UPDATE,
+    HTTP2_FRAME_DATA,         HTTP2_FRAME_HEADERS,  HTTP2_FRAME_PRIORITY,
+    HTTP2_FRAME_RST_STREAM,   HTTP2_FRAME_SETTINGS, HTTP2_FRAME_PUSH_PROMISE,
+    HTTP2_FRAME_PING,         HTTP2_FRAME_GOAWAY,   HTTP2_FRAME_WINDOW_UPDATE,
     HTTP2_FRAME_CONTINUATION,
   };
 
@@ -189,11 +187,16 @@ test_all_frame_types (void)
 
   /* Frame types to test */
   uint8_t frame_types[] = {
-    HTTP2_FRAME_DATA,          HTTP2_FRAME_HEADERS,
-    HTTP2_FRAME_PRIORITY,      HTTP2_FRAME_RST_STREAM,
-    HTTP2_FRAME_SETTINGS,      HTTP2_FRAME_PUSH_PROMISE,
-    HTTP2_FRAME_PING,          HTTP2_FRAME_GOAWAY,
-    HTTP2_FRAME_WINDOW_UPDATE, HTTP2_FRAME_CONTINUATION,
+    HTTP2_FRAME_DATA,
+    HTTP2_FRAME_HEADERS,
+    HTTP2_FRAME_PRIORITY,
+    HTTP2_FRAME_RST_STREAM,
+    HTTP2_FRAME_SETTINGS,
+    HTTP2_FRAME_PUSH_PROMISE,
+    HTTP2_FRAME_PING,
+    HTTP2_FRAME_GOAWAY,
+    HTTP2_FRAME_WINDOW_UPDATE,
+    HTTP2_FRAME_CONTINUATION,
     0xFF, /* Unknown type */
   };
 
@@ -220,13 +223,13 @@ test_all_frame_types (void)
 
   /* Frame lengths to test */
   uint32_t lengths[] = {
-    0,                                 /* Empty payload */
-    1,                                 /* Minimum payload */
-    8,                                 /* PING frame */
-    9,                                 /* Frame header size */
+    0,                                  /* Empty payload */
+    1,                                  /* Minimum payload */
+    8,                                  /* PING frame */
+    9,                                  /* Frame header size */
     SOCKETHTTP2_DEFAULT_MAX_FRAME_SIZE, /* Default max */
     SOCKETHTTP2_MAX_MAX_FRAME_SIZE,     /* Maximum allowed */
-    0x00FFFFFF,                        /* 24-bit maximum */
+    0x00FFFFFF,                         /* 24-bit maximum */
   };
 
   for (size_t t = 0; t < sizeof (frame_types) / sizeof (frame_types[0]); t++)
@@ -390,11 +393,12 @@ test_stream_id_constraints (void)
   unsigned char buffer[HTTP2_FRAME_HEADER_SIZE];
 
   /* Frames that must have stream_id = 0 */
-  uint8_t connection_frames[] = { HTTP2_FRAME_SETTINGS, HTTP2_FRAME_PING,
-                                  HTTP2_FRAME_GOAWAY };
+  uint8_t connection_frames[]
+      = { HTTP2_FRAME_SETTINGS, HTTP2_FRAME_PING, HTTP2_FRAME_GOAWAY };
 
   for (size_t i = 0;
-       i < sizeof (connection_frames) / sizeof (connection_frames[0]); i++)
+       i < sizeof (connection_frames) / sizeof (connection_frames[0]);
+       i++)
     {
       /* Valid: stream_id = 0 */
       header.length = 8;
@@ -416,9 +420,10 @@ test_stream_id_constraints (void)
     }
 
   /* Frames that must have stream_id != 0 */
-  uint8_t stream_frames[] = { HTTP2_FRAME_DATA,        HTTP2_FRAME_HEADERS,
-                              HTTP2_FRAME_PRIORITY,    HTTP2_FRAME_RST_STREAM,
-                              HTTP2_FRAME_PUSH_PROMISE, HTTP2_FRAME_CONTINUATION };
+  uint8_t stream_frames[]
+      = { HTTP2_FRAME_DATA,         HTTP2_FRAME_HEADERS,
+          HTTP2_FRAME_PRIORITY,     HTTP2_FRAME_RST_STREAM,
+          HTTP2_FRAME_PUSH_PROMISE, HTTP2_FRAME_CONTINUATION };
 
   for (size_t i = 0; i < sizeof (stream_frames) / sizeof (stream_frames[0]);
        i++)
@@ -464,16 +469,15 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
    * ==================================================================== */
   if (size >= HTTP2_FRAME_HEADER_SIZE)
     {
-      int result
-          = SocketHTTP2_frame_header_parse (data, size, &header);
+      int result = SocketHTTP2_frame_header_parse (data, size, &header);
 
       if (result == 0)
         {
           /* Roundtrip: serialize and re-parse */
           SocketHTTP2_frame_header_serialize (&header, output);
           SocketHTTP2_FrameHeader verify;
-          SocketHTTP2_frame_header_parse (output, HTTP2_FRAME_HEADER_SIZE,
-                                          &verify);
+          SocketHTTP2_frame_header_parse (
+              output, HTTP2_FRAME_HEADER_SIZE, &verify);
         }
     }
 
@@ -551,8 +555,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   if (size >= 9)
     {
       /* Use fuzz data to construct frame header */
-      header.length = ((uint32_t)data[0] << 16) | ((uint32_t)data[1] << 8)
-                      | data[2];
+      header.length
+          = ((uint32_t)data[0] << 16) | ((uint32_t)data[1] << 8) | data[2];
       header.type = data[3];
       header.flags = data[4];
       header.stream_id = ((uint32_t)data[5] << 24) | ((uint32_t)data[6] << 16)
@@ -564,9 +568,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       /* Serialize and verify */
       SocketHTTP2_frame_header_serialize (&header, output);
       SocketHTTP2_FrameHeader parsed;
-      int result
-          = SocketHTTP2_frame_header_parse (output, HTTP2_FRAME_HEADER_SIZE,
-                                            &parsed);
+      int result = SocketHTTP2_frame_header_parse (
+          output, HTTP2_FRAME_HEADER_SIZE, &parsed);
       (void)result;
     }
 

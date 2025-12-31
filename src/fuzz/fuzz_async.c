@@ -143,9 +143,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           if (len > sizeof (send_buf))
             len = sizeof (send_buf);
 
-          unsigned req_id
-              = SocketAsync_send (async, socket, send_buf, len, test_callback,
-                                  NULL, ASYNC_FLAG_NONE);
+          unsigned req_id = SocketAsync_send (async,
+                                              socket,
+                                              send_buf,
+                                              len,
+                                              test_callback,
+                                              NULL,
+                                              ASYNC_FLAG_NONE);
 
           /* Cancel if we got a request ID */
           if (req_id > 0)
@@ -167,9 +171,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           if (len > sizeof (recv_buf))
             len = sizeof (recv_buf);
 
-          unsigned req_id
-              = SocketAsync_recv (async, socket, recv_buf, len, test_callback,
-                                  NULL, ASYNC_FLAG_NONE);
+          unsigned req_id = SocketAsync_recv (async,
+                                              socket,
+                                              recv_buf,
+                                              len,
+                                              test_callback,
+                                              NULL,
+                                              ASYNC_FLAG_NONE);
 
           if (req_id > 0)
             SocketAsync_cancel (async, req_id);
@@ -186,9 +194,13 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           socket = Socket_new (AF_INET, SOCK_STREAM, 0);
 
           /* Submit a request */
-          unsigned req_id
-              = SocketAsync_send (async, socket, send_buf, 64, test_callback,
-                                  NULL, ASYNC_FLAG_NONE);
+          unsigned req_id = SocketAsync_send (async,
+                                              socket,
+                                              send_buf,
+                                              64,
+                                              test_callback,
+                                              NULL,
+                                              ASYNC_FLAG_NONE);
 
           /* Cancel with valid ID */
           if (req_id > 0)
@@ -234,15 +246,23 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               unsigned req_id;
               if (i % 2 == 0)
                 {
-                  req_id = SocketAsync_send (async, socket, send_buf,
-                                             64 + (i * 10), test_callback,
-                                             NULL, ASYNC_FLAG_NONE);
+                  req_id = SocketAsync_send (async,
+                                             socket,
+                                             send_buf,
+                                             64 + (i * 10),
+                                             test_callback,
+                                             NULL,
+                                             ASYNC_FLAG_NONE);
                 }
               else
                 {
-                  req_id = SocketAsync_recv (async, socket, recv_buf,
-                                             64 + (i * 10), test_callback,
-                                             NULL, ASYNC_FLAG_NONE);
+                  req_id = SocketAsync_recv (async,
+                                             socket,
+                                             recv_buf,
+                                             64 + (i * 10),
+                                             test_callback,
+                                             NULL,
+                                             ASYNC_FLAG_NONE);
                 }
               if (req_id > 0)
                 request_ids[num_requests++] = req_id;
@@ -289,10 +309,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
           for (int i = 0; i < count && num_requests < 32; i++)
             {
-              unsigned req_id = SocketAsync_send (
-                  async, socket, send_buf, 16 + (i % 100), test_callback,
-                  (void *)(uintptr_t)i,
-                  (i % 2) ? ASYNC_FLAG_URGENT : ASYNC_FLAG_NONE);
+              unsigned req_id = SocketAsync_send (async,
+                                                  socket,
+                                                  send_buf,
+                                                  16 + (i % 100),
+                                                  test_callback,
+                                                  (void *)(uintptr_t)i,
+                                                  (i % 2) ? ASYNC_FLAG_URGENT
+                                                          : ASYNC_FLAG_NONE);
               if (req_id > 0 && num_requests < 32)
                 request_ids[num_requests++] = req_id;
             }
@@ -324,9 +348,15 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         break;
       }
   }
-  EXCEPT (SocketAsync_Failed) { /* Expected for some operations */ }
-  EXCEPT (Socket_Failed) { /* Expected for socket operations */ }
-  ELSE { /* Other exceptions - also OK for fuzzing */ }
+  EXCEPT (SocketAsync_Failed)
+  { /* Expected for some operations */
+  }
+  EXCEPT (Socket_Failed)
+  { /* Expected for socket operations */
+  }
+  ELSE
+  { /* Other exceptions - also OK for fuzzing */
+  }
   END_TRY;
 
   /* Cleanup */

@@ -209,8 +209,7 @@ TEST (socketdns_sequential_resolutions)
   TRY volatile int i;
   for (i = 0; i < 10; i++)
     {
-      Request_T req
-          = SocketDNS_resolve (dns, "127.0.0.1", 80, NULL, NULL);
+      Request_T req = SocketDNS_resolve (dns, "127.0.0.1", 80, NULL, NULL);
       ASSERT_NOT_NULL (req);
       usleep (50000);
       SocketDNS_check (dns);
@@ -227,8 +226,10 @@ TEST (socketdns_sequential_resolutions)
 /* ==================== Callback Tests ==================== */
 
 static void
-slow_queue_callback (Request_T req, struct addrinfo *result,
-                     int error, void *data)
+slow_queue_callback (Request_T req,
+                     struct addrinfo *result,
+                     int error,
+                     void *data)
 {
   (void)req;
   (void)error;
@@ -241,8 +242,7 @@ slow_queue_callback (Request_T req, struct addrinfo *result,
 
 static atomic_int callback_invoked;
 static void
-test_callback (Request_T req, struct addrinfo *result, int error,
-               void *data)
+test_callback (Request_T req, struct addrinfo *result, int error, void *data)
 {
   (void)req;
   (void)error;
@@ -274,8 +274,7 @@ TEST (socketdns_callback_invoked)
 static atomic_int test_received_data;
 
 static void
-callback_check_data (Request_T r, struct addrinfo *res, int err,
-                     void *d)
+callback_check_data (Request_T r, struct addrinfo *res, int err, void *d)
 {
   (void)r;
   (void)err;
@@ -292,8 +291,8 @@ TEST (socketdns_callback_with_user_data)
   int user_data = 12345;
 
   TRY test_received_data = 0;
-  req = SocketDNS_resolve (dns, "localhost", 80, callback_check_data,
-                           &user_data);
+  req = SocketDNS_resolve (
+      dns, "localhost", 80, callback_check_data, &user_data);
   ASSERT_NOT_NULL (req);
 
   usleep (200000);
@@ -366,8 +365,14 @@ TEST (socketdns_check_returns_completion_count)
     if (result)
       SocketCommon_free_addrinfo (result);
   }
-  EXCEPT (SocketDNS_Failed) { (void)0; }
-  FINALLY { SocketDNS_free (&dns); }
+  EXCEPT (SocketDNS_Failed)
+  {
+    (void)0;
+  }
+  FINALLY
+  {
+    SocketDNS_free (&dns);
+  }
   END_TRY;
 }
 
@@ -391,8 +396,14 @@ TEST (socketdns_check_before_completion)
     if (result)
       SocketCommon_free_addrinfo (result);
   }
-  EXCEPT (SocketDNS_Failed) { (void)0; }
-  FINALLY { SocketDNS_free (&dns); }
+  EXCEPT (SocketDNS_Failed)
+  {
+    (void)0;
+  }
+  FINALLY
+  {
+    SocketDNS_free (&dns);
+  }
   END_TRY;
 }
 
@@ -521,8 +532,14 @@ TEST (socketdns_rapid_resolution_requests)
           SocketCommon_free_addrinfo (result);
       }
   }
-  EXCEPT (SocketDNS_Failed) { ASSERT (0); }
-  FINALLY { SocketDNS_free (&dns); }
+  EXCEPT (SocketDNS_Failed)
+  {
+    ASSERT (0);
+  }
+  FINALLY
+  {
+    SocketDNS_free (&dns);
+  }
   END_TRY;
 }
 
@@ -533,8 +550,7 @@ TEST (socketdns_resolve_cancel_cycle)
   TRY volatile int i;
   for (i = 0; i < 20; i++)
     {
-      Request_T req
-          = SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
+      Request_T req = SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
       SocketDNS_cancel (dns, req);
     }
   EXCEPT (SocketDNS_Failed) (void) 0;
@@ -578,7 +594,10 @@ thread_resolve_requests (void *arg)
         SocketCommon_free_addrinfo (result);
         result = NULL;
       }
-      EXCEPT (SocketDNS_Failed) { stop = 1; }
+      EXCEPT (SocketDNS_Failed)
+      {
+        stop = 1;
+      }
       FINALLY
       {
         if (result)
@@ -610,7 +629,7 @@ TEST (socketdns_concurrent_resolutions)
   SocketDNS_free (&dns);
 }
 
-#if 0 /* KNOWN_ISSUE: Exception frame handling segfault in DNS worker threads.
+#if 0 /* KNOWN_ISSUE: Exception frame handling segfault in DNS worker threads. \
        * See KNOWN_ISSUES.md for details and tracking. */
 static void *thread_check_completions(void *arg)
 {
@@ -656,8 +675,7 @@ thread_cancel_requests (void *arg)
   for (volatile int i = 0; i < 10; i++)
     {
       int stop = 0;
-      TRY Request_T req
-          = SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
+      TRY Request_T req = SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
       usleep (5000);
       SocketDNS_cancel (dns, req);
       EXCEPT (SocketDNS_Failed)
@@ -688,7 +706,7 @@ TEST (socketdns_concurrent_cancel)
 
 /* ==================== Thread Pool Tests ==================== */
 
-#if 0 /* KNOWN_ISSUE: Exception frame handling segfault in DNS worker threads.
+#if 0 /* KNOWN_ISSUE: Exception frame handling segfault in DNS worker threads. \
        * See KNOWN_ISSUES.md for details and tracking. */
 TEST(socketdns_thread_pool_processes_requests)
 {
@@ -748,7 +766,10 @@ TEST (socketdns_resolve_empty_hostname)
       req = SocketDNS_resolve (dns, "", 80, NULL, NULL);
       ASSERT_NULL (req); /* Should not reach here */
     }
-    EXCEPT (Test_Failed) { RERAISE; }
+    EXCEPT (Test_Failed)
+    {
+      RERAISE;
+    }
     ELSE
     {
       ASSERT_NOT_NULL (Except_frame.exception);
@@ -758,7 +779,10 @@ TEST (socketdns_resolve_empty_hostname)
     }
     END_TRY;
   }
-  FINALLY { SocketDNS_free (&dns); }
+  FINALLY
+  {
+    SocketDNS_free (&dns);
+  }
   END_TRY;
 
   ASSERT (caught);
@@ -777,7 +801,10 @@ TEST (socketdns_resolve_invalid_port_negative)
       req = SocketDNS_resolve (dns, "localhost", -1, NULL, NULL);
       ASSERT_NULL (req); /* Should not reach here */
     }
-    EXCEPT (Test_Failed) { RERAISE; }
+    EXCEPT (Test_Failed)
+    {
+      RERAISE;
+    }
     ELSE
     {
       ASSERT_NOT_NULL (Except_frame.exception);
@@ -787,7 +814,10 @@ TEST (socketdns_resolve_invalid_port_negative)
     }
     END_TRY;
   }
-  FINALLY { SocketDNS_free (&dns); }
+  FINALLY
+  {
+    SocketDNS_free (&dns);
+  }
   END_TRY;
 
   ASSERT (caught);
@@ -806,7 +836,10 @@ TEST (socketdns_resolve_invalid_port_too_large)
       req = SocketDNS_resolve (dns, "localhost", 65536, NULL, NULL);
       ASSERT_NULL (req); /* Should not reach here */
     }
-    EXCEPT (Test_Failed) { RERAISE; }
+    EXCEPT (Test_Failed)
+    {
+      RERAISE;
+    }
     ELSE
     {
       ASSERT_NOT_NULL (Except_frame.exception);
@@ -816,7 +849,10 @@ TEST (socketdns_resolve_invalid_port_too_large)
     }
     END_TRY;
   }
-  FINALLY { SocketDNS_free (&dns); }
+  FINALLY
+  {
+    SocketDNS_free (&dns);
+  }
   END_TRY;
 
   ASSERT (caught);
@@ -840,7 +876,10 @@ TEST (socketdns_resolve_valid_port_zero)
       SocketCommon_free_addrinfo (result);
     result = NULL;
   }
-  EXCEPT (SocketDNS_Failed) { ASSERT (0); /* Port 0 should be valid */ }
+  EXCEPT (SocketDNS_Failed)
+  {
+    ASSERT (0); /* Port 0 should be valid */
+  }
   FINALLY
   {
     if (result)
@@ -868,7 +907,10 @@ TEST (socketdns_resolve_valid_port_max)
       SocketCommon_free_addrinfo (result);
     result = NULL;
   }
-  EXCEPT (SocketDNS_Failed) { ASSERT (0); /* Maximum port should be valid */ }
+  EXCEPT (SocketDNS_Failed)
+  {
+    ASSERT (0); /* Maximum port should be valid */
+  }
   FINALLY
   {
     if (result)
@@ -958,8 +1000,9 @@ TEST (socketdns_queue_full_handling)
   volatile int exception_raised = 0;
 
   /* Note: With the new pending count tracking (issue #1531), max_pending=0
-   * prevents ALL requests, including IP literals, since all requests are tracked.
-   * This test now verifies that max_pending limits are properly enforced. */
+   * prevents ALL requests, including IP literals, since all requests are
+   * tracked. This test now verifies that max_pending limits are properly
+   * enforced. */
   TRY
   {
     original_limit = SocketDNS_getmaxpending (dns);
@@ -1099,7 +1142,9 @@ TEST (socketdns_timeout_affects_requests)
       SocketCommon_free_addrinfo (result);
     result = NULL;
   }
-  EXCEPT (SocketDNS_Failed) { /* May fail */ }
+  EXCEPT (SocketDNS_Failed)
+  { /* May fail */
+  }
   FINALLY
   {
     if (result)
@@ -1128,8 +1173,8 @@ TEST (socketdns_request_timeout_in_worker)
   TRY
   {
     /* Use a hostname that will be slow to resolve or fail */
-    req = SocketDNS_resolve (dns, "this.host.does.not.exist.invalid", 80, NULL,
-                             NULL);
+    req = SocketDNS_resolve (
+        dns, "this.host.does.not.exist.invalid", 80, NULL, NULL);
     ASSERT_NOT_NULL (req);
 
     /* Sleep to ensure the timeout elapses before worker processes it */
@@ -1159,7 +1204,10 @@ TEST (socketdns_request_timeout_in_worker)
   {
     /* DNS failure is acceptable - we're testing the timeout path */
   }
-  FINALLY { SocketDNS_free (&dns); }
+  FINALLY
+  {
+    SocketDNS_free (&dns);
+  }
   END_TRY;
 }
 
@@ -1240,7 +1288,8 @@ TEST (socketdns_resolve_sync_with_timeout_protection)
   END_TRY;
 }
 
-/* ==================== Resolver Sync Tests (Issue #1067) ==================== */
+/* ==================== Resolver Sync Tests (Issue #1067) ====================
+ */
 
 /* Test: SocketDNSResolver_resolve_sync with localhost hostname */
 TEST (test_socketdnsresolver_resolve_sync_hostname)
@@ -1260,8 +1309,8 @@ TEST (test_socketdnsresolver_resolve_sync_hostname)
     ASSERT_NE (ns_count, -1);
 
     /* Resolve localhost - should succeed */
-    int err = SocketDNSResolver_resolve_sync (resolver, "localhost",
-                                               RESOLVER_FLAG_BOTH, 5000, &result);
+    int err = SocketDNSResolver_resolve_sync (
+        resolver, "localhost", RESOLVER_FLAG_BOTH, 5000, &result);
     ASSERT_EQ (err, RESOLVER_OK);
     ASSERT_NOT_NULL (result.addresses);
     ASSERT_NE (result.count, 0);
@@ -1317,8 +1366,8 @@ TEST (test_socketdnsresolver_resolve_sync_ipv4_literal)
     ASSERT_NE (ns_count, -1);
 
     /* Resolve IPv4 literal - should succeed */
-    int err = SocketDNSResolver_resolve_sync (resolver, "127.0.0.1",
-                                               RESOLVER_FLAG_IPV4, 5000, &result);
+    int err = SocketDNSResolver_resolve_sync (
+        resolver, "127.0.0.1", RESOLVER_FLAG_IPV4, 5000, &result);
     ASSERT_EQ (err, RESOLVER_OK);
     ASSERT_NOT_NULL (result.addresses);
     ASSERT_NE (result.count, 0);
@@ -1364,8 +1413,8 @@ TEST (test_socketdnsresolver_resolve_sync_ipv6_literal)
     ASSERT_NE (ns_count, -1);
 
     /* Resolve IPv6 literal - should succeed */
-    int err = SocketDNSResolver_resolve_sync (resolver, "::1",
-                                               RESOLVER_FLAG_IPV6, 5000, &result);
+    int err = SocketDNSResolver_resolve_sync (
+        resolver, "::1", RESOLVER_FLAG_IPV6, 5000, &result);
     ASSERT_EQ (err, RESOLVER_OK);
     ASSERT_NOT_NULL (result.addresses);
     ASSERT_NE (result.count, 0);
@@ -1411,9 +1460,12 @@ TEST (test_socketdnsresolver_resolve_sync_timeout)
     ASSERT_NE (ns_count, -1);
 
     /* Set very short timeout (1ms) and try non-existent domain */
-    int err = SocketDNSResolver_resolve_sync (
-        resolver, "this.host.does.not.exist.invalid", RESOLVER_FLAG_BOTH, 1,
-        &result);
+    int err
+        = SocketDNSResolver_resolve_sync (resolver,
+                                          "this.host.does.not.exist.invalid",
+                                          RESOLVER_FLAG_BOTH,
+                                          1,
+                                          &result);
 
     /* Should timeout or fail (NXDOMAIN) */
     ASSERT_NE (err, RESOLVER_OK);
@@ -1455,9 +1507,12 @@ TEST (test_socketdnsresolver_resolve_sync_nxdomain)
     ASSERT_NE (ns_count, -1);
 
     /* Use invalid domain - should fail with NXDOMAIN or timeout */
-    int err = SocketDNSResolver_resolve_sync (
-        resolver, "this.host.does.not.exist.invalid", RESOLVER_FLAG_BOTH, 5000,
-        &result);
+    int err
+        = SocketDNSResolver_resolve_sync (resolver,
+                                          "this.host.does.not.exist.invalid",
+                                          RESOLVER_FLAG_BOTH,
+                                          5000,
+                                          &result);
 
     /* Should fail (NXDOMAIN, timeout, or other error) */
     ASSERT_NE (err, RESOLVER_OK);
@@ -1504,8 +1559,8 @@ TEST (test_socketdnsresolver_resolve_sync_cache_paths)
     SocketDNSResolver_cache_stats (resolver, &stats_before);
 
     /* First resolve - should be cache miss or direct IP parsing */
-    int err1 = SocketDNSResolver_resolve_sync (resolver, "localhost",
-                                                RESOLVER_FLAG_BOTH, 5000, &result1);
+    int err1 = SocketDNSResolver_resolve_sync (
+        resolver, "localhost", RESOLVER_FLAG_BOTH, 5000, &result1);
     ASSERT_EQ (err1, RESOLVER_OK);
     ASSERT_NOT_NULL (result1.addresses);
 
@@ -1514,8 +1569,8 @@ TEST (test_socketdnsresolver_resolve_sync_cache_paths)
     SocketDNSResolver_cache_stats (resolver, &stats_after_first);
 
     /* Second resolve - should be cache hit if caching occurred */
-    int err2 = SocketDNSResolver_resolve_sync (resolver, "localhost",
-                                                RESOLVER_FLAG_BOTH, 5000, &result2);
+    int err2 = SocketDNSResolver_resolve_sync (
+        resolver, "localhost", RESOLVER_FLAG_BOTH, 5000, &result2);
     ASSERT_EQ (err2, RESOLVER_OK);
     ASSERT_NOT_NULL (result2.addresses);
 

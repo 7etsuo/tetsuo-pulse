@@ -114,7 +114,8 @@ fuzz_validate_path (const char *path, size_t path_len)
  * Replicates unix_setup_abstract_socket() from Socket.c
  */
 static void
-fuzz_setup_abstract_socket (struct sockaddr_un *addr, const char *path,
+fuzz_setup_abstract_socket (struct sockaddr_un *addr,
+                            const char *path,
                             size_t path_len)
 {
   size_t name_len = path_len > 0 ? path_len - 1 : 0;
@@ -138,7 +139,8 @@ fuzz_setup_abstract_socket (struct sockaddr_un *addr, const char *path,
  * Replicates unix_setup_regular_socket() from Socket.c
  */
 static void
-fuzz_setup_regular_socket (struct sockaddr_un *addr, const char *path,
+fuzz_setup_regular_socket (struct sockaddr_un *addr,
+                           const char *path,
                            size_t path_len)
 {
   size_t max_path_len = sizeof (addr->sun_path) - 1;
@@ -160,7 +162,8 @@ fuzz_setup_regular_socket (struct sockaddr_un *addr, const char *path,
  * Replicates unix_setup_sockaddr() from Socket.c
  */
 static void
-fuzz_setup_sockaddr (struct sockaddr_un *addr, const char *path,
+fuzz_setup_sockaddr (struct sockaddr_un *addr,
+                     const char *path,
                      size_t path_len)
 {
   memset (addr, 0, sizeof (*addr));

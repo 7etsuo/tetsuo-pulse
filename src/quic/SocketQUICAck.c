@@ -28,12 +28,14 @@
 _Static_assert (QUIC_ACK_MAX_RANGES <= SIZE_MAX / sizeof (SocketQUICAckRange_T),
                 "QUIC_ACK_MAX_RANGES too large for safe allocation");
 
-/* Compile-time check that QUIC_ACK_MAX_RANGES won't overflow during capacity doubling.
- * The grow_ranges() function doubles capacity with: new_capacity = state->range_capacity * 2
- * This assertion ensures that even if range_capacity reaches QUIC_ACK_MAX_RANGES,
- * doubling it won't overflow size_t before being clamped to the limit.
+/* Compile-time check that QUIC_ACK_MAX_RANGES won't overflow during capacity
+ * doubling. The grow_ranges() function doubles capacity with: new_capacity =
+ * state->range_capacity * 2 This assertion ensures that even if range_capacity
+ * reaches QUIC_ACK_MAX_RANGES, doubling it won't overflow size_t before being
+ * clamped to the limit.
  *
- * Defense-in-depth: Prevents theoretical overflow in capacity growth calculation.
+ * Defense-in-depth: Prevents theoretical overflow in capacity growth
+ * calculation.
  *
  * CWE-190: Integer Overflow or Wraparound
  * CERT C: INT30-C
@@ -50,13 +52,13 @@ _Static_assert (QUIC_ACK_MAX_RANGES <= SIZE_MAX / 2,
  */
 
 static const char *result_strings[] = {
-    [QUIC_ACK_OK] = "OK",
-    [QUIC_ACK_ERROR_NULL] = "NULL pointer argument",
-    [QUIC_ACK_ERROR_DUPLICATE] = "Duplicate packet number",
-    [QUIC_ACK_ERROR_OLD] = "Packet number too old",
-    [QUIC_ACK_ERROR_RANGE] = "Range limit exceeded",
-    [QUIC_ACK_ERROR_ENCODE] = "ACK frame encoding failed",
-    [QUIC_ACK_ERROR_BUFFER] = "Output buffer too small",
+  [QUIC_ACK_OK] = "OK",
+  [QUIC_ACK_ERROR_NULL] = "NULL pointer argument",
+  [QUIC_ACK_ERROR_DUPLICATE] = "Duplicate packet number",
+  [QUIC_ACK_ERROR_OLD] = "Packet number too old",
+  [QUIC_ACK_ERROR_RANGE] = "Range limit exceeded",
+  [QUIC_ACK_ERROR_ENCODE] = "ACK frame encoding failed",
+  [QUIC_ACK_ERROR_BUFFER] = "Output buffer too small",
 };
 
 DEFINE_RESULT_STRING_FUNC (SocketQUICAck, QUIC_ACK_ERROR_BUFFER)
@@ -80,13 +82,15 @@ SocketQUICAck_new (Arena_T arena, int is_handshake, uint64_t max_ack_delay_us)
 
   state->arena = arena;
   state->is_handshake_space = is_handshake;
-  state->max_ack_delay_us
-      = (max_ack_delay_us > 0) ? max_ack_delay_us : QUIC_ACK_DEFAULT_MAX_DELAY_US;
+  state->max_ack_delay_us = (max_ack_delay_us > 0)
+                                ? max_ack_delay_us
+                                : QUIC_ACK_DEFAULT_MAX_DELAY_US;
 
   /* Pre-allocate some range capacity.
    * Overflow check: Verify capacity * sizeof won't overflow before allocation.
-   * While Arena_calloc() has internal overflow checks via SocketSecurity_check_multiply(),
-   * this explicit check provides defense-in-depth and clear intent.
+   * While Arena_calloc() has internal overflow checks via
+   * SocketSecurity_check_multiply(), this explicit check provides
+   * defense-in-depth and clear intent.
    */
   state->range_capacity = QUIC_ACK_INITIAL_RANGE_CAPACITY;
   if (state->range_capacity > SIZE_MAX / sizeof (*state->ranges))
@@ -94,7 +98,8 @@ SocketQUICAck_new (Arena_T arena, int is_handshake, uint64_t max_ack_delay_us)
       SOCKET_LOG_ERROR_MSG ("ACK initial range allocation would overflow");
       return NULL;
     }
-  state->ranges = CALLOC (arena, state->range_capacity, sizeof (*state->ranges));
+  state->ranges
+      = CALLOC (arena, state->range_capacity, sizeof (*state->ranges));
   if (state->ranges == NULL)
     return NULL;
 
@@ -143,8 +148,9 @@ grow_ranges (SocketQUICAckState_T state)
     new_capacity = QUIC_ACK_MAX_RANGES;
 
   /* Overflow check: Verify new_capacity * sizeof won't overflow.
-   * Defense-in-depth: Arena_calloc() already checks via SocketSecurity_check_multiply(),
-   * but explicit check guards against future changes and documents intent.
+   * Defense-in-depth: Arena_calloc() already checks via
+   * SocketSecurity_check_multiply(), but explicit check guards against future
+   * changes and documents intent.
    */
   if (new_capacity > SIZE_MAX / sizeof (*new_ranges))
     {
@@ -156,8 +162,8 @@ grow_ranges (SocketQUICAckState_T state)
   if (new_ranges == NULL)
     return 0;
 
-  memcpy (new_ranges, state->ranges,
-          state->range_count * sizeof (*state->ranges));
+  memcpy (
+      new_ranges, state->ranges, state->range_count * sizeof (*state->ranges));
   state->ranges = new_ranges;
   state->range_capacity = new_capacity;
 
@@ -189,11 +195,11 @@ static void
 merge_ranges (SocketQUICAckState_T state, size_t idx)
 {
   /* Merge with previous range if adjacent */
-  while (idx > 0
-         && state->ranges[idx - 1].start == state->ranges[idx].end + 1)
+  while (idx > 0 && state->ranges[idx - 1].start == state->ranges[idx].end + 1)
     {
       state->ranges[idx].end = state->ranges[idx - 1].end;
-      memmove (&state->ranges[idx - 1], &state->ranges[idx],
+      memmove (&state->ranges[idx - 1],
+               &state->ranges[idx],
                (state->range_count - idx) * sizeof (*state->ranges));
       state->range_count--;
       idx--;
@@ -204,7 +210,8 @@ merge_ranges (SocketQUICAckState_T state, size_t idx)
          && state->ranges[idx + 1].end + 1 == state->ranges[idx].start)
     {
       state->ranges[idx].start = state->ranges[idx + 1].start;
-      memmove (&state->ranges[idx + 1], &state->ranges[idx + 2],
+      memmove (&state->ranges[idx + 1],
+               &state->ranges[idx + 2],
                (state->range_count - idx - 2) * sizeof (*state->ranges));
       state->range_count--;
     }
@@ -216,8 +223,10 @@ merge_ranges (SocketQUICAckState_T state, size_t idx)
  */
 
 SocketQUICAck_Result
-SocketQUICAck_record_packet (SocketQUICAckState_T state, uint64_t packet_number,
-                              uint64_t recv_time_us, int ack_eliciting)
+SocketQUICAck_record_packet (SocketQUICAckState_T state,
+                             uint64_t packet_number,
+                             uint64_t recv_time_us,
+                             int ack_eliciting)
 {
   size_t idx;
   int found;
@@ -267,7 +276,8 @@ SocketQUICAck_record_packet (SocketQUICAckState_T state, uint64_t packet_number,
         }
 
       /* Insert at idx */
-      memmove (&state->ranges[idx + 1], &state->ranges[idx],
+      memmove (&state->ranges[idx + 1],
+               &state->ranges[idx],
                (state->range_count - idx) * sizeof (*state->ranges));
       state->ranges[idx].start = packet_number;
       state->ranges[idx].end = packet_number;
@@ -314,7 +324,7 @@ SocketQUICAck_record_ecn (SocketQUICAckState_T state, int ecn_type)
 
 int
 SocketQUICAck_should_send (const SocketQUICAckState_T state,
-                            uint64_t current_time)
+                           uint64_t current_time)
 {
   uint64_t elapsed;
 
@@ -361,8 +371,12 @@ SocketQUICAck_should_send (const SocketQUICAckState_T state,
  * @return QUIC_ACK_OK on success, error code otherwise.
  */
 static SocketQUICAck_Result
-encode_ack_header (uint8_t **out, size_t *remaining, uint64_t largest,
-                   uint64_t ack_delay, uint64_t range_count, int has_ecn)
+encode_ack_header (uint8_t **out,
+                   size_t *remaining,
+                   uint64_t largest,
+                   uint64_t ack_delay,
+                   uint64_t range_count,
+                   int has_ecn)
 {
   size_t n;
 
@@ -407,7 +421,8 @@ encode_ack_header (uint8_t **out, size_t *remaining, uint64_t largest,
  * @return QUIC_ACK_OK on success, error code otherwise.
  */
 static SocketQUICAck_Result
-encode_additional_ranges (uint8_t **out, size_t *remaining,
+encode_additional_ranges (uint8_t **out,
+                          size_t *remaining,
                           const SocketQUICAckRange_T *ranges,
                           size_t range_count)
 {
@@ -422,14 +437,18 @@ encode_additional_ranges (uint8_t **out, size_t *remaining,
       /* Gap = prev_start - current_end - 2 */
       /* Validate range ordering to prevent integer underflow.
        * Ranges must be in descending order with proper spacing.
-       * For this to be valid (non-negative), we need: prev_start >= current_end + 2
+       * For this to be valid (non-negative), we need: prev_start >= current_end
+       * + 2
        */
       if (ranges[i - 1].start < ranges[i].end + 2)
         {
           SOCKET_LOG_ERROR_MSG (
               "Invalid ACK range ordering: ranges[%zu].start=%" PRIu64
               " < ranges[%zu].end=%" PRIu64 " + 2",
-              i - 1, ranges[i - 1].start, i, ranges[i].end);
+              i - 1,
+              ranges[i - 1].start,
+              i,
+              ranges[i].end);
           return QUIC_ACK_ERROR_RANGE;
         }
       gap = ranges[i - 1].start - ranges[i].end - 2;
@@ -461,7 +480,8 @@ encode_additional_ranges (uint8_t **out, size_t *remaining,
  * @return QUIC_ACK_OK on success, error code otherwise.
  */
 static SocketQUICAck_Result
-encode_ecn_counts (uint8_t **out, size_t *remaining,
+encode_ecn_counts (uint8_t **out,
+                   size_t *remaining,
                    const SocketQUICAckECN_T *ecn)
 {
   size_t n;
@@ -491,8 +511,11 @@ encode_ecn_counts (uint8_t **out, size_t *remaining,
 }
 
 SocketQUICAck_Result
-SocketQUICAck_encode (SocketQUICAckState_T state, uint64_t current_time,
-                       uint8_t *out, size_t out_size, size_t *out_len)
+SocketQUICAck_encode (SocketQUICAckState_T state,
+                      uint64_t current_time,
+                      uint8_t *out,
+                      size_t out_size,
+                      size_t *out_len)
 {
   uint8_t *p;
   size_t remaining;
@@ -517,21 +540,21 @@ SocketQUICAck_encode (SocketQUICAckState_T state, uint64_t current_time,
    * Default exponent is 3, so divide by 8 (2^3).
    */
   ack_delay = (current_time > state->largest_recv_time)
-              ? (current_time - state->largest_recv_time)
-                    >> QUIC_ACK_DELAY_EXPONENT_DEFAULT
-              : 0;
+                  ? (current_time - state->largest_recv_time)
+                        >> QUIC_ACK_DELAY_EXPONENT_DEFAULT
+                  : 0;
 
   /* Include ECN counts if validated and any counters are non-zero */
-  has_ecn = state->ecn_validated
-            && (state->ecn_counts.ect0_count > 0
-                || state->ecn_counts.ect1_count > 0
-                || state->ecn_counts.ce_count > 0);
+  has_ecn
+      = state->ecn_validated
+        && (state->ecn_counts.ect0_count > 0 || state->ecn_counts.ect1_count > 0
+            || state->ecn_counts.ce_count > 0);
 
   range_count = state->range_count > 0 ? state->range_count - 1 : 0;
 
   /* Encode ACK frame header */
-  res = encode_ack_header (&p, &remaining, state->largest_received, ack_delay,
-                           range_count, has_ecn);
+  res = encode_ack_header (
+      &p, &remaining, state->largest_received, ack_delay, range_count, has_ecn);
   if (res != QUIC_ACK_OK)
     return res;
 
@@ -548,8 +571,8 @@ SocketQUICAck_encode (SocketQUICAckState_T state, uint64_t current_time,
   /* Encode additional ACK ranges (if any) */
   if (state->range_count > 1)
     {
-      res = encode_additional_ranges (&p, &remaining, state->ranges,
-                                      state->range_count);
+      res = encode_additional_ranges (
+          &p, &remaining, state->ranges, state->range_count);
       if (res != QUIC_ACK_OK)
         return res;
     }
@@ -591,7 +614,8 @@ SocketQUICAck_get_largest (const SocketQUICAckState_T state)
 }
 
 int
-SocketQUICAck_contains (const SocketQUICAckState_T state, uint64_t packet_number)
+SocketQUICAck_contains (const SocketQUICAckState_T state,
+                        uint64_t packet_number)
 {
   size_t idx;
 
@@ -615,8 +639,9 @@ SocketQUICAck_range_count (const SocketQUICAckState_T state)
  */
 
 void
-SocketQUICAck_prune (SocketQUICAckState_T state, uint64_t oldest_to_keep,
-                      size_t *removed_count)
+SocketQUICAck_prune (SocketQUICAckState_T state,
+                     uint64_t oldest_to_keep,
+                     size_t *removed_count)
 {
   size_t kept;
   size_t removed;

@@ -59,7 +59,9 @@ read_u16 (const uint8_t *p)
  * make_address_string - Create null-terminated address from fuzz data
  */
 static void
-make_address_string (char *buf, size_t bufsize, const uint8_t *data,
+make_address_string (char *buf,
+                     size_t bufsize,
+                     const uint8_t *data,
                      size_t size)
 {
   if (size == 0 || bufsize < 2)
@@ -110,9 +112,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         {
           /* TCP address resolution */
           SocketCommon_setup_hints (&hints, SOCK_STREAM, 0);
-          int result = SocketCommon_resolve_address (
-              addr_str[0] ? addr_str : NULL, port, &hints, &res,
-              SocketCommon_Failed, AF_UNSPEC, 0);
+          int result
+              = SocketCommon_resolve_address (addr_str[0] ? addr_str : NULL,
+                                              port,
+                                              &hints,
+                                              &res,
+                                              SocketCommon_Failed,
+                                              AF_UNSPEC,
+                                              0);
           (void)result;
           if (res)
             SocketCommon_free_addrinfo (res);
@@ -124,9 +131,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         {
           /* UDP address resolution */
           SocketCommon_setup_hints (&hints, SOCK_DGRAM, 0);
-          int result = SocketCommon_resolve_address (
-              addr_str[0] ? addr_str : NULL, port, &hints, &res,
-              SocketCommon_Failed, AF_UNSPEC, 0);
+          int result
+              = SocketCommon_resolve_address (addr_str[0] ? addr_str : NULL,
+                                              port,
+                                              &hints,
+                                              &res,
+                                              SocketCommon_Failed,
+                                              AF_UNSPEC,
+                                              0);
           (void)result;
           if (res)
             SocketCommon_free_addrinfo (res);
@@ -152,9 +164,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           /* IPv4-only resolution */
           SocketCommon_setup_hints (&hints, SOCK_STREAM, 0);
           hints.ai_family = AF_INET;
-          int result = SocketCommon_resolve_address (
-              addr_str[0] ? addr_str : NULL, port, &hints, &res,
-              SocketCommon_Failed, AF_INET, 0);
+          int result
+              = SocketCommon_resolve_address (addr_str[0] ? addr_str : NULL,
+                                              port,
+                                              &hints,
+                                              &res,
+                                              SocketCommon_Failed,
+                                              AF_INET,
+                                              0);
           (void)result;
           if (res)
             SocketCommon_free_addrinfo (res);
@@ -167,9 +184,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           /* IPv6-only resolution */
           SocketCommon_setup_hints (&hints, SOCK_STREAM, 0);
           hints.ai_family = AF_INET6;
-          int result = SocketCommon_resolve_address (
-              addr_str[0] ? addr_str : NULL, port, &hints, &res,
-              SocketCommon_Failed, AF_INET6, 0);
+          int result
+              = SocketCommon_resolve_address (addr_str[0] ? addr_str : NULL,
+                                              port,
+                                              &hints,
+                                              &res,
+                                              SocketCommon_Failed,
+                                              AF_INET6,
+                                              0);
           (void)result;
           if (res)
             SocketCommon_free_addrinfo (res);
@@ -192,8 +214,12 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         break;
       }
   }
-  EXCEPT (SocketCommon_Failed) { /* Expected for invalid addresses/ports */ }
-  EXCEPT (Socket_Failed) { /* Expected for resolution failures */ }
+  EXCEPT (SocketCommon_Failed)
+  { /* Expected for invalid addresses/ports */
+  }
+  EXCEPT (Socket_Failed)
+  { /* Expected for resolution failures */
+  }
   FINALLY
   {
     if (res)

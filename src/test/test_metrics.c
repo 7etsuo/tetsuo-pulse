@@ -85,7 +85,8 @@ TEST (metrics_counter_add)
 
   SocketMetrics_counter_add (SOCKET_CTR_HTTP_CLIENT_BYTES_SENT, 1000);
 
-  uint64_t value = SocketMetrics_counter_get (SOCKET_CTR_HTTP_CLIENT_BYTES_SENT);
+  uint64_t value
+      = SocketMetrics_counter_get (SOCKET_CTR_HTTP_CLIENT_BYTES_SENT);
 
   ASSERT_EQ (1000, value);
 }
@@ -96,7 +97,8 @@ TEST (metrics_counter_get)
   SocketMetrics_reset ();
 
   /* Initial value should be 0 after reset */
-  uint64_t value = SocketMetrics_counter_get (SOCKET_CTR_POOL_CONNECTIONS_CREATED);
+  uint64_t value
+      = SocketMetrics_counter_get (SOCKET_CTR_POOL_CONNECTIONS_CREATED);
   ASSERT_EQ (0, value);
 
   /* Add some value */
@@ -159,13 +161,16 @@ TEST (metrics_gauge_inc_dec)
   SocketMetrics_gauge_set (SOCKET_GAU_HTTP_CLIENT_ACTIVE_REQUESTS, 10);
 
   SocketMetrics_gauge_inc (SOCKET_GAU_HTTP_CLIENT_ACTIVE_REQUESTS);
-  ASSERT_EQ (11, SocketMetrics_gauge_get (SOCKET_GAU_HTTP_CLIENT_ACTIVE_REQUESTS));
+  ASSERT_EQ (11,
+             SocketMetrics_gauge_get (SOCKET_GAU_HTTP_CLIENT_ACTIVE_REQUESTS));
 
   SocketMetrics_gauge_dec (SOCKET_GAU_HTTP_CLIENT_ACTIVE_REQUESTS);
-  ASSERT_EQ (10, SocketMetrics_gauge_get (SOCKET_GAU_HTTP_CLIENT_ACTIVE_REQUESTS));
+  ASSERT_EQ (10,
+             SocketMetrics_gauge_get (SOCKET_GAU_HTTP_CLIENT_ACTIVE_REQUESTS));
 
   SocketMetrics_gauge_dec (SOCKET_GAU_HTTP_CLIENT_ACTIVE_REQUESTS);
-  ASSERT_EQ (9, SocketMetrics_gauge_get (SOCKET_GAU_HTTP_CLIENT_ACTIVE_REQUESTS));
+  ASSERT_EQ (9,
+             SocketMetrics_gauge_get (SOCKET_GAU_HTTP_CLIENT_ACTIVE_REQUESTS));
 }
 
 TEST (metrics_gauge_add)
@@ -217,11 +222,15 @@ TEST (metrics_histogram_observe)
   SocketMetrics_init ();
   SocketMetrics_reset_histograms ();
 
-  SocketMetrics_histogram_observe (SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS, 100.0);
-  SocketMetrics_histogram_observe (SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS, 200.0);
-  SocketMetrics_histogram_observe (SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS, 150.0);
+  SocketMetrics_histogram_observe (SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS,
+                                   100.0);
+  SocketMetrics_histogram_observe (SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS,
+                                   200.0);
+  SocketMetrics_histogram_observe (SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS,
+                                   150.0);
 
-  uint64_t count = SocketMetrics_histogram_count (SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS);
+  uint64_t count = SocketMetrics_histogram_count (
+      SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS);
   ASSERT_EQ (3, count);
 }
 
@@ -234,7 +243,8 @@ TEST (metrics_histogram_count_sum)
   SocketMetrics_histogram_observe (SOCKET_HIST_SOCKET_CONNECT_TIME_MS, 20.0);
   SocketMetrics_histogram_observe (SOCKET_HIST_SOCKET_CONNECT_TIME_MS, 30.0);
 
-  uint64_t count = SocketMetrics_histogram_count (SOCKET_HIST_SOCKET_CONNECT_TIME_MS);
+  uint64_t count
+      = SocketMetrics_histogram_count (SOCKET_HIST_SOCKET_CONNECT_TIME_MS);
   double sum = SocketMetrics_histogram_sum (SOCKET_HIST_SOCKET_CONNECT_TIME_MS);
 
   ASSERT_EQ (3, count);
@@ -250,12 +260,16 @@ TEST (metrics_histogram_percentile)
   /* Add values 1-100 */
   for (int i = 1; i <= 100; i++)
     {
-      SocketMetrics_histogram_observe (SOCKET_HIST_DNS_QUERY_TIME_MS, (double)i);
+      SocketMetrics_histogram_observe (SOCKET_HIST_DNS_QUERY_TIME_MS,
+                                       (double)i);
     }
 
-  double p50 = SocketMetrics_histogram_percentile (SOCKET_HIST_DNS_QUERY_TIME_MS, 50.0);
-  double p90 = SocketMetrics_histogram_percentile (SOCKET_HIST_DNS_QUERY_TIME_MS, 90.0);
-  double p99 = SocketMetrics_histogram_percentile (SOCKET_HIST_DNS_QUERY_TIME_MS, 99.0);
+  double p50 = SocketMetrics_histogram_percentile (
+      SOCKET_HIST_DNS_QUERY_TIME_MS, 50.0);
+  double p90 = SocketMetrics_histogram_percentile (
+      SOCKET_HIST_DNS_QUERY_TIME_MS, 90.0);
+  double p99 = SocketMetrics_histogram_percentile (
+      SOCKET_HIST_DNS_QUERY_TIME_MS, 99.0);
 
   /* p50 should be around 50 */
   ASSERT (p50 >= 45 && p50 <= 55);
@@ -279,7 +293,8 @@ TEST (metrics_histogram_snapshot)
   SocketMetrics_histogram_observe (SOCKET_HIST_POOL_ACQUIRE_TIME_MS, 50.0);
 
   SocketMetrics_HistogramSnapshot snapshot;
-  SocketMetrics_histogram_snapshot (SOCKET_HIST_POOL_ACQUIRE_TIME_MS, &snapshot);
+  SocketMetrics_histogram_snapshot (SOCKET_HIST_POOL_ACQUIRE_TIME_MS,
+                                    &snapshot);
 
   ASSERT_EQ (5, snapshot.count);
   ASSERT (fabs (snapshot.sum - 150.0) < 0.001);
@@ -294,10 +309,12 @@ TEST (metrics_histogram_empty)
   SocketMetrics_reset_histograms ();
 
   /* Empty histogram should return 0 */
-  uint64_t count = SocketMetrics_histogram_count (SOCKET_HIST_TLS_HANDSHAKE_TIME_MS);
+  uint64_t count
+      = SocketMetrics_histogram_count (SOCKET_HIST_TLS_HANDSHAKE_TIME_MS);
   ASSERT_EQ (0, count);
 
-  double p50 = SocketMetrics_histogram_percentile (SOCKET_HIST_TLS_HANDSHAKE_TIME_MS, 50.0);
+  double p50 = SocketMetrics_histogram_percentile (
+      SOCKET_HIST_TLS_HANDSHAKE_TIME_MS, 50.0);
   ASSERT (p50 == 0.0);
 }
 
@@ -335,7 +352,8 @@ TEST (metrics_reset_all)
   /* Set some values */
   SocketMetrics_counter_add (SOCKET_CTR_SOCKET_CREATED, 100);
   SocketMetrics_gauge_set (SOCKET_GAU_POOL_ACTIVE_CONNECTIONS, 50);
-  SocketMetrics_histogram_observe (SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS, 100.0);
+  SocketMetrics_histogram_observe (SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS,
+                                   100.0);
 
   /* Reset all */
   SocketMetrics_reset ();
@@ -343,7 +361,9 @@ TEST (metrics_reset_all)
   /* All should be 0 */
   ASSERT_EQ (0, SocketMetrics_counter_get (SOCKET_CTR_SOCKET_CREATED));
   ASSERT_EQ (0, SocketMetrics_gauge_get (SOCKET_GAU_POOL_ACTIVE_CONNECTIONS));
-  ASSERT_EQ (0, SocketMetrics_histogram_count (SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS));
+  ASSERT_EQ (0,
+             SocketMetrics_histogram_count (
+                 SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS));
 }
 
 TEST (metrics_reset_counters_only)
@@ -370,14 +390,17 @@ TEST (metrics_reset_histograms_only)
 
   /* Set values */
   SocketMetrics_counter_add (SOCKET_CTR_SOCKET_CREATED, 100);
-  SocketMetrics_histogram_observe (SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS, 100.0);
+  SocketMetrics_histogram_observe (SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS,
+                                   100.0);
 
   /* Reset only histograms */
   SocketMetrics_reset_histograms ();
 
   /* Counter should remain, histogram should be 0 */
   ASSERT_EQ (100, SocketMetrics_counter_get (SOCKET_CTR_SOCKET_CREATED));
-  ASSERT_EQ (0, SocketMetrics_histogram_count (SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS));
+  ASSERT_EQ (0,
+             SocketMetrics_histogram_count (
+                 SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS));
 }
 
 /* ============================================================================
@@ -453,7 +476,8 @@ TEST (metrics_export_buffer_sizing)
 
   /* Test with small buffer */
   char small_buffer[10];
-  size_t len = SocketMetrics_export_prometheus (small_buffer, sizeof (small_buffer));
+  size_t len
+      = SocketMetrics_export_prometheus (small_buffer, sizeof (small_buffer));
 
   /* Should return required size when buffer too small */
   ASSERT (len >= sizeof (small_buffer));
@@ -543,14 +567,16 @@ TEST (metrics_counter_name)
 
 TEST (metrics_gauge_name)
 {
-  const char *name = SocketMetrics_gauge_name (SOCKET_GAU_POOL_ACTIVE_CONNECTIONS);
+  const char *name
+      = SocketMetrics_gauge_name (SOCKET_GAU_POOL_ACTIVE_CONNECTIONS);
   ASSERT_NOT_NULL (name);
   ASSERT (strlen (name) > 0);
 }
 
 TEST (metrics_histogram_name)
 {
-  const char *name = SocketMetrics_histogram_name (SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS);
+  const char *name = SocketMetrics_histogram_name (
+      SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS);
   ASSERT_NOT_NULL (name);
   ASSERT (strlen (name) > 0);
 }
@@ -564,14 +590,16 @@ TEST (metrics_counter_help)
 
 TEST (metrics_gauge_help)
 {
-  const char *help = SocketMetrics_gauge_help (SOCKET_GAU_POOL_ACTIVE_CONNECTIONS);
+  const char *help
+      = SocketMetrics_gauge_help (SOCKET_GAU_POOL_ACTIVE_CONNECTIONS);
   ASSERT_NOT_NULL (help);
   ASSERT (strlen (help) > 0);
 }
 
 TEST (metrics_histogram_help)
 {
-  const char *help = SocketMetrics_histogram_help (SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS);
+  const char *help = SocketMetrics_histogram_help (
+      SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS);
   ASSERT_NOT_NULL (help);
   ASSERT (strlen (help) > 0);
 }
@@ -598,4 +626,3 @@ main (void)
   Test_run_all ();
   return Test_get_failures ();
 }
-

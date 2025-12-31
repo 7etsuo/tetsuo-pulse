@@ -28,13 +28,14 @@
 
 /* Exception definition */
 const Except_T SocketDNSCookie_Failed
-    = {&SocketDNSCookie_Failed, "DNS Cookie operation failed"};
+    = { &SocketDNSCookie_Failed, "DNS Cookie operation failed" };
 
 /* Client secret size (HMAC-SHA256 key size) */
 #define SECRET_SIZE SOCKET_CRYPTO_SHA256_SIZE
 
-/* Maximum HMAC input buffer size: IPv6 server (16) + IPv6 client (16) = 32 bytes */
-#define HMAC_INPUT_MAX_SIZE (sizeof(struct in6_addr) * 2)
+/* Maximum HMAC input buffer size: IPv6 server (16) + IPv6 client (16) = 32
+ * bytes */
+#define HMAC_INPUT_MAX_SIZE (sizeof (struct in6_addr) * 2)
 
 /* Minimum TTL/lifetime for all time-based settings (1 minute) */
 #define DNS_COOKIE_MIN_TTL_SECONDS 60
@@ -47,7 +48,7 @@ const Except_T SocketDNSCookie_Failed
 
 /* FNV-1a 64-bit constants (RFC 7873 Appendix A.1) */
 #define FNV1A_64_OFFSET_BASIS 14695981039346656037ULL
-#define FNV1A_64_PRIME        1099511628211ULL
+#define FNV1A_64_PRIME 1099511628211ULL
 
 /* Internal cache entry with LRU tracking */
 typedef struct CacheNode
@@ -90,36 +91,46 @@ struct T
 static int generate_client_cookie_hmac (T cache,
                                         const struct sockaddr *server_addr,
                                         const struct sockaddr *client_addr,
-                                        socklen_t client_len, uint8_t *cookie);
+                                        socklen_t client_len,
+                                        uint8_t *cookie);
 #else
 static int generate_client_cookie_fnv (T cache,
                                        const struct sockaddr *server_addr,
                                        socklen_t addr_len,
                                        const struct sockaddr *client_addr,
-                                       socklen_t client_len, uint8_t *cookie);
+                                       socklen_t client_len,
+                                       uint8_t *cookie);
 #endif
-static int generate_client_cookie (T cache, const struct sockaddr *server_addr,
+static int generate_client_cookie (T cache,
+                                   const struct sockaddr *server_addr,
                                    socklen_t addr_len,
                                    const struct sockaddr *client_addr,
-                                   socklen_t client_len, uint8_t *cookie);
+                                   socklen_t client_len,
+                                   uint8_t *cookie);
 static int get_entropy (uint8_t *buf, size_t len);
-static int constant_time_compare (const uint8_t *a, const uint8_t *b,
-                                  size_t len);
-static CacheNode *find_node (T cache, const struct sockaddr *addr,
-                             socklen_t len);
+static int
+constant_time_compare (const uint8_t *a, const uint8_t *b, size_t len);
+static CacheNode *
+find_node (T cache, const struct sockaddr *addr, socklen_t len);
 static void move_to_front (T cache, CacheNode *node);
 static void evict_lru (T cache);
-static int addr_equal (const struct sockaddr *a, socklen_t alen,
-                       const struct sockaddr *b, socklen_t blen);
-static void update_cache_entry (CacheNode *node, const uint8_t *client_cookie,
-                                const uint8_t *server_cookie, size_t server_len,
-                                time_t now, int ttl);
+static int addr_equal (const struct sockaddr *a,
+                       socklen_t alen,
+                       const struct sockaddr *b,
+                       socklen_t blen);
+static void update_cache_entry (CacheNode *node,
+                                const uint8_t *client_cookie,
+                                const uint8_t *server_cookie,
+                                size_t server_len,
+                                time_t now,
+                                int ttl);
 static CacheNode *create_cache_entry (T cache,
                                       const struct sockaddr *server_addr,
                                       socklen_t addr_len,
                                       const uint8_t *client_cookie,
                                       const uint8_t *server_cookie,
-                                      size_t server_len, time_t now);
+                                      size_t server_len,
+                                      time_t now);
 
 /*
  * Create a new DNS Cookie cache
@@ -269,10 +280,12 @@ check_secret_rotation (T cache)
  * Generate a client cookie for a server
  */
 int
-SocketDNSCookie_generate (T cache, const struct sockaddr *server_addr,
+SocketDNSCookie_generate (T cache,
+                          const struct sockaddr *server_addr,
                           socklen_t addr_len,
                           const struct sockaddr *client_addr,
-                          socklen_t client_len, SocketDNSCookie_Cookie *cookie)
+                          socklen_t client_len,
+                          SocketDNSCookie_Cookie *cookie)
 {
   if (cache == NULL || server_addr == NULL || cookie == NULL)
     return -1;
@@ -282,8 +295,12 @@ SocketDNSCookie_generate (T cache, const struct sockaddr *server_addr,
   memset (cookie, 0, sizeof (*cookie));
 
   /* Generate client cookie */
-  if (generate_client_cookie (cache, server_addr, addr_len, client_addr,
-                              client_len, cookie->client_cookie)
+  if (generate_client_cookie (cache,
+                              server_addr,
+                              addr_len,
+                              client_addr,
+                              client_len,
+                              cookie->client_cookie)
       != 0)
     return -1;
 
@@ -293,8 +310,8 @@ SocketDNSCookie_generate (T cache, const struct sockaddr *server_addr,
   SocketDNSCookie_Entry entry;
   if (SocketDNSCookie_cache_lookup (cache, server_addr, addr_len, &entry))
     {
-      memcpy (cookie->server_cookie, entry.server_cookie,
-              entry.server_cookie_len);
+      memcpy (
+          cookie->server_cookie, entry.server_cookie, entry.server_cookie_len);
       cookie->server_cookie_len = entry.server_cookie_len;
     }
 
@@ -305,7 +322,8 @@ SocketDNSCookie_generate (T cache, const struct sockaddr *server_addr,
  * Parse cookie from EDNS0 option data
  */
 int
-SocketDNSCookie_parse (const unsigned char *data, size_t len,
+SocketDNSCookie_parse (const unsigned char *data,
+                       size_t len,
                        SocketDNSCookie_Cookie *cookie)
 {
   if (data == NULL || cookie == NULL)
@@ -332,7 +350,8 @@ SocketDNSCookie_parse (const unsigned char *data, size_t len,
   if (len > DNS_CLIENT_COOKIE_SIZE)
     {
       cookie->server_cookie_len = len - DNS_CLIENT_COOKIE_SIZE;
-      memcpy (cookie->server_cookie, data + DNS_CLIENT_COOKIE_SIZE,
+      memcpy (cookie->server_cookie,
+              data + DNS_CLIENT_COOKIE_SIZE,
               cookie->server_cookie_len);
     }
 
@@ -343,7 +362,8 @@ SocketDNSCookie_parse (const unsigned char *data, size_t len,
  * Encode cookie to EDNS0 option format
  */
 int
-SocketDNSCookie_encode (const SocketDNSCookie_Cookie *cookie, unsigned char *buf,
+SocketDNSCookie_encode (const SocketDNSCookie_Cookie *cookie,
+                        unsigned char *buf,
                         size_t buflen)
 {
   if (cookie == NULL || buf == NULL)
@@ -358,7 +378,8 @@ SocketDNSCookie_encode (const SocketDNSCookie_Cookie *cookie, unsigned char *buf
 
   /* Copy server cookie if present */
   if (cookie->server_cookie_len > 0)
-    memcpy (buf + DNS_CLIENT_COOKIE_SIZE, cookie->server_cookie,
+    memcpy (buf + DNS_CLIENT_COOKIE_SIZE,
+            cookie->server_cookie,
             cookie->server_cookie_len);
 
   return (int)total;
@@ -368,9 +389,12 @@ SocketDNSCookie_encode (const SocketDNSCookie_Cookie *cookie, unsigned char *buf
  * Store a server cookie in the cache
  */
 int
-SocketDNSCookie_cache_store (T cache, const struct sockaddr *server_addr,
-                             socklen_t addr_len, const uint8_t *client_cookie,
-                             const uint8_t *server_cookie, size_t server_len)
+SocketDNSCookie_cache_store (T cache,
+                             const struct sockaddr *server_addr,
+                             socklen_t addr_len,
+                             const uint8_t *client_cookie,
+                             const uint8_t *server_cookie,
+                             size_t server_len)
 {
   if (cache == NULL || server_addr == NULL || client_cookie == NULL
       || server_cookie == NULL)
@@ -390,7 +414,11 @@ SocketDNSCookie_cache_store (T cache, const struct sockaddr *server_addr,
 
   if (node)
     {
-      update_cache_entry (node, client_cookie, server_cookie, server_len, now,
+      update_cache_entry (node,
+                          client_cookie,
+                          server_cookie,
+                          server_len,
+                          now,
                           cache->server_ttl);
       move_to_front (cache, node);
     }
@@ -399,8 +427,13 @@ SocketDNSCookie_cache_store (T cache, const struct sockaddr *server_addr,
       if (cache->count >= cache->max_entries)
         evict_lru (cache);
 
-      node = create_cache_entry (cache, server_addr, addr_len, client_cookie,
-                                 server_cookie, server_len, now);
+      node = create_cache_entry (cache,
+                                 server_addr,
+                                 addr_len,
+                                 client_cookie,
+                                 server_cookie,
+                                 server_len,
+                                 now);
 
       /* Add to front of list */
       node->next = cache->head;
@@ -423,8 +456,10 @@ SocketDNSCookie_cache_store (T cache, const struct sockaddr *server_addr,
  * Look up a cached server cookie
  */
 int
-SocketDNSCookie_cache_lookup (T cache, const struct sockaddr *server_addr,
-                              socklen_t addr_len, SocketDNSCookie_Entry *entry)
+SocketDNSCookie_cache_lookup (T cache,
+                              const struct sockaddr *server_addr,
+                              socklen_t addr_len,
+                              SocketDNSCookie_Entry *entry)
 {
   if (cache == NULL || server_addr == NULL)
     return 0;
@@ -462,7 +497,8 @@ SocketDNSCookie_cache_lookup (T cache, const struct sockaddr *server_addr,
  * Invalidate cached cookie for a server
  */
 int
-SocketDNSCookie_cache_invalidate (T cache, const struct sockaddr *server_addr,
+SocketDNSCookie_cache_invalidate (T cache,
+                                  const struct sockaddr *server_addr,
                                   socklen_t addr_len)
 {
   if (cache == NULL || server_addr == NULL)
@@ -536,7 +572,8 @@ SocketDNSCookie_cache_expire (T cache)
       if (now >= node->entry.expires_at)
         {
           if (SocketDNSCookie_cache_invalidate (
-                  cache, (struct sockaddr *)&node->entry.server_addr,
+                  cache,
+                  (struct sockaddr *)&node->entry.server_addr,
                   node->entry.addr_len))
             removed++;
         }
@@ -608,8 +645,8 @@ SocketDNSCookie_equal (const SocketDNSCookie_Cookie *a,
   if (a == NULL || b == NULL)
     return 0;
 
-  if (SocketCrypto_secure_compare (a->client_cookie, b->client_cookie,
-                                   DNS_CLIENT_COOKIE_SIZE)
+  if (SocketCrypto_secure_compare (
+          a->client_cookie, b->client_cookie, DNS_CLIENT_COOKIE_SIZE)
       != 0)
     return 0;
 
@@ -618,8 +655,8 @@ SocketDNSCookie_equal (const SocketDNSCookie_Cookie *a,
 
   if (a->server_cookie_len > 0)
     {
-      if (SocketCrypto_secure_compare (a->server_cookie, b->server_cookie,
-                                       a->server_cookie_len)
+      if (SocketCrypto_secure_compare (
+              a->server_cookie, b->server_cookie, a->server_cookie_len)
           != 0)
         return 0;
     }
@@ -631,7 +668,8 @@ SocketDNSCookie_equal (const SocketDNSCookie_Cookie *a,
  * Format cookie as hex string
  */
 int
-SocketDNSCookie_to_hex (const SocketDNSCookie_Cookie *cookie, char *buf,
+SocketDNSCookie_to_hex (const SocketDNSCookie_Cookie *cookie,
+                        char *buf,
                         size_t buflen)
 {
   if (cookie == NULL || buf == NULL)
@@ -648,16 +686,15 @@ SocketDNSCookie_to_hex (const SocketDNSCookie_Cookie *cookie, char *buf,
   char *p = buf;
 
   /* Format client cookie using SocketCrypto_hex_encode */
-  SocketCrypto_hex_encode (cookie->client_cookie, DNS_CLIENT_COOKIE_SIZE, p,
-                           1);
+  SocketCrypto_hex_encode (cookie->client_cookie, DNS_CLIENT_COOKIE_SIZE, p, 1);
   p += DNS_CLIENT_COOKIE_SIZE * 2;
 
   /* Format server cookie if present */
   if (cookie->server_cookie_len > 0)
     {
       *p++ = ':';
-      SocketCrypto_hex_encode (cookie->server_cookie, cookie->server_cookie_len,
-                               p, 1);
+      SocketCrypto_hex_encode (
+          cookie->server_cookie, cookie->server_cookie_len, p, 1);
       p += cookie->server_cookie_len * 2;
     }
 
@@ -700,8 +737,10 @@ get_entropy (uint8_t *buf, size_t len)
  * Returns 0 on success, -1 on failure
  */
 static int
-serialize_address (const struct sockaddr *addr, unsigned char *buf,
-                   size_t *offset, size_t bufsize)
+serialize_address (const struct sockaddr *addr,
+                   unsigned char *buf,
+                   size_t *offset,
+                   size_t bufsize)
 {
   if (addr->sa_family == AF_INET)
     {
@@ -732,9 +771,11 @@ serialize_address (const struct sockaddr *addr, unsigned char *buf,
  */
 #ifdef SOCKET_HAS_TLS
 static int
-generate_client_cookie_hmac (T cache, const struct sockaddr *server_addr,
+generate_client_cookie_hmac (T cache,
+                             const struct sockaddr *server_addr,
                              const struct sockaddr *client_addr,
-                             socklen_t client_len, uint8_t *cookie)
+                             socklen_t client_len,
+                             uint8_t *cookie)
 {
   unsigned char data[HMAC_INPUT_MAX_SIZE];
   size_t data_len = 0;
@@ -753,7 +794,12 @@ generate_client_cookie_hmac (T cache, const struct sockaddr *server_addr,
   unsigned char hmac_out[SOCKET_CRYPTO_SHA256_SIZE];
   unsigned int hmac_len = 0;
 
-  HMAC (EVP_sha256 (), cache->secret, SECRET_SIZE, data, data_len, hmac_out,
+  HMAC (EVP_sha256 (),
+        cache->secret,
+        SECRET_SIZE,
+        data,
+        data_len,
+        hmac_out,
         &hmac_len);
 
   /* Verify HMAC succeeded and produced expected length */
@@ -770,10 +816,12 @@ generate_client_cookie_hmac (T cache, const struct sockaddr *server_addr,
  */
 #ifndef SOCKET_HAS_TLS
 static int
-generate_client_cookie_fnv (T cache, const struct sockaddr *server_addr,
+generate_client_cookie_fnv (T cache,
+                            const struct sockaddr *server_addr,
                             socklen_t addr_len,
                             const struct sockaddr *client_addr,
-                            socklen_t client_len, uint8_t *cookie)
+                            socklen_t client_len,
+                            uint8_t *cookie)
 {
   /* Fallback: FNV-1a 64-bit (RFC 7873 Appendix A.1) */
   uint64_t hash = FNV1A_64_OFFSET_BASIS;
@@ -816,18 +864,20 @@ generate_client_cookie_fnv (T cache, const struct sockaddr *server_addr,
  * Generate client cookie (RFC 7873 §4.1) - dispatcher
  */
 static int
-generate_client_cookie (T cache, const struct sockaddr *server_addr,
+generate_client_cookie (T cache,
+                        const struct sockaddr *server_addr,
                         socklen_t addr_len,
                         const struct sockaddr *client_addr,
-                        socklen_t client_len, uint8_t *cookie)
+                        socklen_t client_len,
+                        uint8_t *cookie)
 {
 #ifdef SOCKET_HAS_TLS
   (void)addr_len; /* Unused in HMAC path */
-  return generate_client_cookie_hmac (cache, server_addr, client_addr,
-                                      client_len, cookie);
+  return generate_client_cookie_hmac (
+      cache, server_addr, client_addr, client_len, cookie);
 #else
-  return generate_client_cookie_fnv (cache, server_addr, addr_len, client_addr,
-                                     client_len, cookie);
+  return generate_client_cookie_fnv (
+      cache, server_addr, addr_len, client_addr, client_len, cookie);
 #endif
 }
 
@@ -835,9 +885,12 @@ generate_client_cookie (T cache, const struct sockaddr *server_addr,
  * Update an existing cache entry with new cookie data
  */
 static void
-update_cache_entry (CacheNode *node, const uint8_t *client_cookie,
-                    const uint8_t *server_cookie, size_t server_len,
-                    time_t now, int ttl)
+update_cache_entry (CacheNode *node,
+                    const uint8_t *client_cookie,
+                    const uint8_t *server_cookie,
+                    size_t server_len,
+                    time_t now,
+                    int ttl)
 {
   memcpy (node->entry.client_cookie, client_cookie, DNS_CLIENT_COOKIE_SIZE);
   memcpy (node->entry.server_cookie, server_cookie, server_len);
@@ -851,19 +904,22 @@ update_cache_entry (CacheNode *node, const uint8_t *client_cookie,
  * Create a new cache entry node
  */
 static CacheNode *
-create_cache_entry (T cache, const struct sockaddr *server_addr,
-                    socklen_t addr_len, const uint8_t *client_cookie,
-                    const uint8_t *server_cookie, size_t server_len,
+create_cache_entry (T cache,
+                    const struct sockaddr *server_addr,
+                    socklen_t addr_len,
+                    const uint8_t *client_cookie,
+                    const uint8_t *server_cookie,
+                    size_t server_len,
                     time_t now)
 {
-  CacheNode *node = Arena_alloc (cache->arena, sizeof (*node), __FILE__,
-                                 __LINE__);
+  CacheNode *node
+      = Arena_alloc (cache->arena, sizeof (*node), __FILE__, __LINE__);
   memset (node, 0, sizeof (*node));
 
   memcpy (&node->entry.server_addr, server_addr, addr_len);
   node->entry.addr_len = addr_len;
-  update_cache_entry (node, client_cookie, server_cookie, server_len, now,
-                      cache->server_ttl);
+  update_cache_entry (
+      node, client_cookie, server_cookie, server_len, now, cache->server_ttl);
 
   return node;
 }
@@ -878,7 +934,9 @@ find_node (T cache, const struct sockaddr *addr, socklen_t len)
   while (node)
     {
       if (addr_equal ((struct sockaddr *)&node->entry.server_addr,
-                      node->entry.addr_len, addr, len))
+                      node->entry.addr_len,
+                      addr,
+                      len))
         return node;
       node = node->next;
     }
@@ -942,7 +1000,9 @@ evict_lru (T cache)
  * Compare socket addresses
  */
 static int
-addr_equal (const struct sockaddr *a, socklen_t alen, const struct sockaddr *b,
+addr_equal (const struct sockaddr *a,
+            socklen_t alen,
+            const struct sockaddr *b,
             socklen_t blen)
 {
   if (a->sa_family != b->sa_family)

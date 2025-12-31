@@ -49,16 +49,15 @@ struct T
  * @note Fixed-size array; extend by adding entries before terminator {0,0}.
  * Supports future event types without code duplication.
  */
-static const struct {
+static const struct
+{
   unsigned epoll_flag;
   unsigned poll_flag;
-} epoll_event_map[] = {
-  { EPOLLIN,  POLL_READ },
-  { EPOLLOUT, POLL_WRITE },
-  { EPOLLERR, POLL_ERROR },
-  { EPOLLHUP, POLL_HANGUP },
-  { 0, 0 }
-};
+} epoll_event_map[] = { { EPOLLIN, POLL_READ },
+                        { EPOLLOUT, POLL_WRITE },
+                        { EPOLLERR, POLL_ERROR },
+                        { EPOLLHUP, POLL_HANGUP },
+                        { 0, 0 } };
 
 /**
  * @brief Mapping between portable poll events and epoll events.
@@ -66,14 +65,12 @@ static const struct {
  * Used for translate_to_epoll() to avoid duplicated if-conditions.
  * Only includes input events (READ/WRITE); errors/hangup not settable by user.
  */
-static const struct {
+static const struct
+{
   unsigned poll_event;
   unsigned epoll_flag;
-} poll_to_epoll_map[] = {
-  { POLL_READ,  EPOLLIN },
-  { POLL_WRITE, EPOLLOUT },
-  { 0, 0 }
-};
+} poll_to_epoll_map[]
+    = { { POLL_READ, EPOLLIN }, { POLL_WRITE, EPOLLOUT }, { 0, 0 } };
 
 /**
  * translate_to_epoll - Convert abstract poll events to epoll events
@@ -90,13 +87,15 @@ static const struct {
 static unsigned
 translate_to_epoll (unsigned events)
 {
-  unsigned epoll_events = EPOLLET;  /* Always edge-triggered */
+  unsigned epoll_events = EPOLLET; /* Always edge-triggered */
 
-  for (size_t i = 0; poll_to_epoll_map[i].poll_event != 0; ++i) {
-    if (events & poll_to_epoll_map[i].poll_event) {
-      epoll_events |= poll_to_epoll_map[i].epoll_flag;
+  for (size_t i = 0; poll_to_epoll_map[i].poll_event != 0; ++i)
+    {
+      if (events & poll_to_epoll_map[i].poll_event)
+        {
+          epoll_events |= poll_to_epoll_map[i].epoll_flag;
+        }
     }
-  }
 
   return epoll_events;
 }
@@ -118,11 +117,13 @@ translate_from_epoll (unsigned epoll_events)
 {
   unsigned events = 0;
 
-  for (size_t i = 0; epoll_event_map[i].epoll_flag != 0; ++i) {
-    if (epoll_events & epoll_event_map[i].epoll_flag) {
-      events |= epoll_event_map[i].poll_flag;
+  for (size_t i = 0; epoll_event_map[i].epoll_flag != 0; ++i)
+    {
+      if (epoll_events & epoll_event_map[i].epoll_flag)
+        {
+          events |= epoll_event_map[i].poll_flag;
+        }
     }
-  }
 
   return events;
 }
@@ -309,8 +310,8 @@ backend_wait (PollBackend_T backend, int timeout_ms)
 
   while (1)
     {
-      nev = epoll_wait (backend->epfd, backend->events, backend->maxevents,
-                        remaining_ms);
+      nev = epoll_wait (
+          backend->epfd, backend->events, backend->maxevents, remaining_ms);
 
       if (nev >= 0)
         {
@@ -365,7 +366,9 @@ backend_wait (PollBackend_T backend, int timeout_ms)
  * Thread-safe: No
  */
 int
-backend_get_event (const PollBackend_T backend, int index, int *fd_out,
+backend_get_event (const PollBackend_T backend,
+                   int index,
+                   int *fd_out,
                    unsigned *events_out)
 {
   assert (backend);

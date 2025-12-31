@@ -73,12 +73,14 @@
  * These constants define secure defaults for TLS operations and can be
  * overridden before including this header. Supports TLS 1.2 and TLS 1.3,
  * with modern AEAD ciphers and protection against common attacks (DoS,
- * overflows). Provides stubs when TLS support is disabled (@ref SOCKET_HAS_TLS).
+ * overflows). Provides stubs when TLS support is disabled (@ref
+ * SOCKET_HAS_TLS).
  *
  * ## Key Categories
  *
  * ### Protocol Control
- * - TLS 1.2 minimum for broad compatibility, TLS 1.3 maximum for latest security
+ * - TLS 1.2 minimum for broad compatibility, TLS 1.3 maximum for latest
+ * security
  * - ECDHE key exchange enforced for perfect forward secrecy
  *
  * ### Cipher Security
@@ -137,13 +139,18 @@
  *
  * ## Fields
  *
- * | Field                  | Type | Description                                      | Default                                      |
+ * | Field                  | Type | Description | Default |
  * |------------------------|------|--------------------------------------------------|----------------------------------------------|
- * | min_version            | int  | Minimum supported TLS protocol version (OpenSSL constant like TLS1_2_VERSION) | SOCKET_TLS_MIN_VERSION (TLS1_2_VERSION)      |
- * | max_version            | int  | Maximum supported TLS protocol version           | SOCKET_TLS_MAX_VERSION (TLS1_3_VERSION)      |
- * | handshake_timeout_ms   | int  | Default handshake timeout in ms                  | SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS (30s)|
- * | shutdown_timeout_ms    | int  | Default shutdown timeout in ms                   | SOCKET_TLS_DEFAULT_SHUTDOWN_TIMEOUT_MS (5s)  |
- * | poll_interval_ms       | int  | Default poll interval for non-blocking ops in ms | SOCKET_TLS_POLL_INTERVAL_MS (100ms)          |
+ * | min_version            | int  | Minimum supported TLS protocol version
+ * (OpenSSL constant like TLS1_2_VERSION) | SOCKET_TLS_MIN_VERSION
+ * (TLS1_2_VERSION)      | | max_version            | int  | Maximum supported
+ * TLS protocol version           | SOCKET_TLS_MAX_VERSION (TLS1_3_VERSION) | |
+ * handshake_timeout_ms   | int  | Default handshake timeout in ms |
+ * SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS (30s)| | shutdown_timeout_ms    | int
+ * | Default shutdown timeout in ms                   |
+ * SOCKET_TLS_DEFAULT_SHUTDOWN_TIMEOUT_MS (5s)  | | poll_interval_ms       | int
+ * | Default poll interval for non-blocking ops in ms |
+ * SOCKET_TLS_POLL_INTERVAL_MS (100ms)          |
  *
  * ## Usage Example
  *
@@ -210,7 +217,8 @@ struct SocketTLSConfig_T
    * @see SOCKET_TLS_POLL_INTERVAL_MS
    */
   int poll_interval_ms;
-  /* Future expansion: add ciphersuites string, verify modes, session cache params, OCSP/CRL settings, etc. */
+  /* Future expansion: add ciphersuites string, verify modes, session cache
+   * params, OCSP/CRL settings, etc. */
 };
 
 typedef struct SocketTLSConfig_T SocketTLSConfig_T;
@@ -220,9 +228,9 @@ typedef struct SocketTLSConfig_T SocketTLSConfig_T;
  *
  * Populates the structure with safe defaults: sets protocol versions to support
  * TLS 1.2 and TLS 1.3 (minimum TLS 1.2 for compatibility, maximum TLS 1.3 for
- * security), timeouts to secure values (30s handshake, 5s shutdown, 100ms poll),
- * and zero-initializes other fields. Both TLS 1.2 and TLS 1.3 use ECDHE key
- * exchange for perfect forward secrecy and AEAD ciphers for authenticated
+ * security), timeouts to secure values (30s handshake, 5s shutdown, 100ms
+ * poll), and zero-initializes other fields. Both TLS 1.2 and TLS 1.3 use ECDHE
+ * key exchange for perfect forward secrecy and AEAD ciphers for authenticated
  * encryption.
  *
  * No-op if config is NULL (no exception raised).
@@ -403,7 +411,8 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
  * @see SOCKET_TLS_MAX_VERSION for maximum version pairing.
  * @see SocketTLSConfig_T::min_version for runtime configuration field.
  * @see SocketTLSContext_set_min_protocol() for context-specific setting.
- * @see https://owasp.org/www-project-cheat-sheets/cheat_sheets/TLS_Cipher_String_Cheat_Sheet
+ * @see
+ * https://owasp.org/www-project-cheat-sheets/cheat_sheets/TLS_Cipher_String_Cheat_Sheet
  * for cipher guidance.
  */
 #ifndef SOCKET_TLS_MIN_VERSION
@@ -499,11 +508,14 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
  *
  * ## Security Properties Table
  *
- * | Suite                      | Key Exchange | Encryption  | Integrity | Notes                                    |
+ * | Suite                      | Key Exchange | Encryption  | Integrity | Notes
+ * |
  * |----------------------------|--------------|-------------|-----------|------------------------------------------|
- * | TLS_AES_256_GCM_SHA384     | ECDHE        | AES-256-GCM | GCM       | Highest security, AES-NI accelerated     |
- * | TLS_CHACHA20_POLY1305_SHA256| ECDHE       | ChaCha20    | Poly1305  | Software-friendly, timing-attack resistant|
- * | TLS_AES_128_GCM_SHA256     | ECDHE        | AES-128-GCM | GCM       | Good balance, widely supported           |
+ * | TLS_AES_256_GCM_SHA384     | ECDHE        | AES-256-GCM | GCM       |
+ * Highest security, AES-NI accelerated     | | TLS_CHACHA20_POLY1305_SHA256|
+ * ECDHE       | ChaCha20    | Poly1305  | Software-friendly, timing-attack
+ * resistant| | TLS_AES_128_GCM_SHA256     | ECDHE        | AES-128-GCM | GCM |
+ * Good balance, widely supported           |
  *
  * ## Excluded Ciphers (Legacy/Insecure)
  *
@@ -519,12 +531,13 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
  * @complexity Compile-time string constant - zero runtime overhead
  *
  * @see SocketTLSContext_set_ciphersuites() for runtime override on contexts.
- * @see https://wiki.mozilla.org/Security/Server_Side_TLS for Mozilla guidelines.
+ * @see https://wiki.mozilla.org/Security/Server_Side_TLS for Mozilla
+ * guidelines.
  * @see https://www.ssllabs.com/ssltest/ for server configuration testing.
  * @see docs/SECURITY.md#ciphersuites for library-specific recommendations.
  */
-#define SOCKET_TLS13_CIPHERSUITES                                             \
-  "TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_"      \
+#define SOCKET_TLS13_CIPHERSUITES                                        \
+  "TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_" \
   "SHA256"
 
 /* ============================================================================
@@ -575,11 +588,13 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
  * @brief Default TLS shutdown timeout in milliseconds
  * @ingroup tls_config
  *
- * Maximum time to wait for graceful TLS connection shutdown: 5 seconds (5000ms).
+ * Maximum time to wait for graceful TLS connection shutdown: 5 seconds
+ * (5000ms).
  *
  * ## Rationale for 5 Seconds
  *
- * - **Quick teardown**: Shutdown is simpler than handshake (single close_notify)
+ * - **Quick teardown**: Shutdown is simpler than handshake (single
+ * close_notify)
  * - **Resource release**: Allows timely connection slot recycling
  * - **Peer responsiveness**: Unresponsive peers shouldn't block cleanup
  * - **Protocol compliance**: Enough time for close_notify exchange
@@ -612,7 +627,8 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
  *
  * ## Rationale for 1000ms (1 second)
  *
- * - **Protocol compliance**: Allows time for bidirectional close_notify exchange
+ * - **Protocol compliance**: Allows time for bidirectional close_notify
+ * exchange
  * - **Network variance**: Accommodates typical RTT + processing time
  * - **Graceful degradation**: Prevents premature connection termination
  * - **Resource cleanup**: Ensures peer has reasonable time to acknowledge
@@ -688,7 +704,8 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
  * - **Fragmentation**: Avoids TLS record fragmentation overhead
  * - **Compatibility**: Matches OpenSSL default record size
  *
- * @note This is the maximum *plaintext* size; ciphertext adds ~40 bytes overhead.
+ * @note This is the maximum *plaintext* size; ciphertext adds ~40 bytes
+ * overhead.
  * @see RFC 8446 Section 5.1 "Record Layer" for TLS 1.3 limits.
  */
 #ifndef SOCKET_TLS_BUFFER_SIZE
@@ -815,7 +832,8 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
  *
  * ## Rationale for 512 Bytes
  *
- * - **Error detail**: Accommodates OpenSSL error strings (~120 chars) plus context
+ * - **Error detail**: Accommodates OpenSSL error strings (~120 chars) plus
+ * context
  * - **Stack allocation**: Safe for stack-allocated buffers
  * - **Formatting room**: Space for errno, file paths, and custom messages
  * - **Truncation safe**: Errors truncated gracefully if exceeded
@@ -1233,7 +1251,7 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
  * @warning CRL refresh intervals exceeding 30 days may miss revocations.
  */
 #ifndef SOCKET_TLS_CRL_MAX_REFRESH_INTERVAL
-#define SOCKET_TLS_CRL_MAX_REFRESH_INTERVAL                                   \
+#define SOCKET_TLS_CRL_MAX_REFRESH_INTERVAL \
   (365LL * 24 * 3600) /* 1 year in seconds */
 #endif
 

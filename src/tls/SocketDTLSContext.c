@@ -35,11 +35,13 @@
 
 #define T SocketDTLSContext_T
 
-/* Module exceptions declared via macro below; general DTLS exceptions defined in SocketDTLS.c */
+/* Module exceptions declared via macro below; general DTLS exceptions defined
+ * in SocketDTLS.c */
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketDTLSContext);
 
-/* Thread-local error handling via centralized SocketUtil infrastructure (socket_error_buf) */
+/* Thread-local error handling via centralized SocketUtil infrastructure
+ * (socket_error_buf) */
 
 /* Global ex_data index for storing context pointer in SSL_CTX */
 static int dtls_context_exdata_idx = -1;
@@ -107,7 +109,8 @@ apply_dtls_defaults (SSL_CTX *ssl_ctx)
   /* Set verification depth */
   SSL_CTX_set_verify_depth (ssl_ctx, SOCKET_DTLS_MAX_CERT_CHAIN_DEPTH);
 
-  /* Note: Session cache mode is configured via SocketDTLSContext_enable_session_cache() */
+  /* Note: Session cache mode is configured via
+   * SocketDTLSContext_enable_session_cache() */
 }
 
 /**
@@ -128,7 +131,8 @@ alloc_context (SSL_CTX *ssl_ctx, int is_server)
                                 "Failed to allocate DTLS context");
     }
 
-  ctx->arena = Arena_new(); /* Raises Arena_Failed on failure; no NULL check needed */
+  ctx->arena
+      = Arena_new (); /* Raises Arena_Failed on failure; no NULL check needed */
 
   atomic_init (&ctx->refcount, 1); /* Initialize refcount to 1 */
   ctx->ssl_ctx = ssl_ctx;
@@ -165,7 +169,8 @@ alloc_context (SSL_CTX *ssl_ctx, int is_server)
     {
       if (SSL_CTX_set_ex_data (ssl_ctx, dtls_context_exdata_idx, ctx) != 1)
         {
-          SOCKET_LOG_WARN_MSG ("Failed to set SSL_CTX ex_data for DTLS context");
+          SOCKET_LOG_WARN_MSG (
+              "Failed to set SSL_CTX ex_data for DTLS context");
         }
     }
 
@@ -173,7 +178,8 @@ alloc_context (SSL_CTX *ssl_ctx, int is_server)
 }
 
 T
-SocketDTLSContext_new_server (const char *cert_file, const char *key_file,
+SocketDTLSContext_new_server (const char *cert_file,
+                              const char *key_file,
                               const char *ca_file)
 {
   assert (cert_file);
@@ -233,7 +239,10 @@ SocketDTLSContext_new_client (const char *ca_file)
   /* Load CA if provided */
   if (ca_file && ca_file[0])
     {
-      TRY { SocketDTLSContext_load_ca (ctx, ca_file); }
+      TRY
+      {
+        SocketDTLSContext_load_ca (ctx, ca_file);
+      }
       EXCEPT (SocketDTLS_Failed)
       {
         SocketDTLSContext_free (&ctx);
@@ -320,8 +329,8 @@ open_and_stat_file (const char *path, const char *desc, struct stat *st)
   if (fd == -1)
     {
       int saved_errno = errno;
-      DTLS_ERROR_FMT ("Cannot safely open %s '%s': %s", desc, path,
-                      strerror (saved_errno));
+      DTLS_ERROR_FMT (
+          "Cannot safely open %s '%s': %s", desc, path, strerror (saved_errno));
       RAISE_DTLS_CTX_ERROR (SocketDTLS_Failed);
     }
 
@@ -329,8 +338,8 @@ open_and_stat_file (const char *path, const char *desc, struct stat *st)
     {
       int saved_errno = errno;
       close (fd);
-      DTLS_ERROR_FMT ("fstat failed for %s '%s': %s", desc, path,
-                      strerror (saved_errno));
+      DTLS_ERROR_FMT (
+          "fstat failed for %s '%s': %s", desc, path, strerror (saved_errno));
       RAISE_DTLS_CTX_ERROR (SocketDTLS_Failed);
     }
 
@@ -350,8 +359,11 @@ open_and_stat_file (const char *path, const char *desc, struct stat *st)
  * Returns allocated buffer that caller must free with OPENSSL_free.
  */
 static void
-dtls_read_file_contents (const char *path, size_t max_size, const char *desc,
-                         unsigned char **out_data, size_t *out_size)
+dtls_read_file_contents (const char *path,
+                         size_t max_size,
+                         const char *desc,
+                         unsigned char **out_data,
+                         size_t *out_size)
 {
   struct stat st;
   int fd = open_and_stat_file (path, desc, &st);
@@ -361,16 +373,18 @@ dtls_read_file_contents (const char *path, size_t max_size, const char *desc,
   {
     if (!S_ISREG (st.st_mode))
       {
-        RAISE_DTLS_CTX_ERROR_FMT (SocketDTLS_Failed,
-                                  "%s '%s' must be a regular file", desc, path);
+        RAISE_DTLS_CTX_ERROR_FMT (
+            SocketDTLS_Failed, "%s '%s' must be a regular file", desc, path);
       }
 
     size_t file_size = (size_t)st.st_size;
     if (file_size <= 0 || file_size > max_size)
       {
         RAISE_DTLS_CTX_ERROR_FMT (SocketDTLS_Failed,
-                                  "%s '%s' size invalid (max %zu bytes)", desc,
-                                  path, max_size);
+                                  "%s '%s' size invalid (max %zu bytes)",
+                                  desc,
+                                  path,
+                                  max_size);
       }
 
     /* Allocate buffer for file contents using OpenSSL allocator */
@@ -385,20 +399,23 @@ dtls_read_file_contents (const char *path, size_t max_size, const char *desc,
     size_t bytes_read = 0;
     while (bytes_read < file_size)
       {
-        ssize_t ret = read (fd, (unsigned char *)data + bytes_read,
-                            file_size - bytes_read);
+        ssize_t ret = read (
+            fd, (unsigned char *)data + bytes_read, file_size - bytes_read);
         if (ret <= 0)
           {
             if (ret == 0)
               {
-                RAISE_DTLS_CTX_ERROR_FMT (
-                    SocketDTLS_Failed, "Unexpected EOF reading %s '%s'", desc,
-                    path);
+                RAISE_DTLS_CTX_ERROR_FMT (SocketDTLS_Failed,
+                                          "Unexpected EOF reading %s '%s'",
+                                          desc,
+                                          path);
               }
             else if (errno != EINTR)
               {
                 int saved_errno = errno;
-                DTLS_ERROR_FMT ("Failed to read %s '%s': %s", desc, path,
+                DTLS_ERROR_FMT ("Failed to read %s '%s': %s",
+                                desc,
+                                path,
                                 strerror (saved_errno));
                 RAISE_DTLS_CTX_ERROR (SocketDTLS_Failed);
               }
@@ -489,7 +506,8 @@ load_private_key_from_bio (SSL_CTX *ssl_ctx, BIO *key_bio)
 }
 
 void
-SocketDTLSContext_load_certificate (T ctx, const char *cert_file,
+SocketDTLSContext_load_certificate (T ctx,
+                                    const char *cert_file,
                                     const char *key_file)
 {
   assert (ctx);
@@ -514,14 +532,18 @@ SocketDTLSContext_load_certificate (T ctx, const char *cert_file,
   TRY
   {
     /* Read certificate file contents */
-    dtls_read_file_contents (cert_file, SOCKET_DTLS_MAX_FILE_SIZE,
+    dtls_read_file_contents (cert_file,
+                             SOCKET_DTLS_MAX_FILE_SIZE,
                              "certificate file",
-                             (unsigned char **)&cert_data, (size_t *)&cert_size);
+                             (unsigned char **)&cert_data,
+                             (size_t *)&cert_size);
 
     /* Read private key file contents */
-    dtls_read_file_contents (key_file, SOCKET_DTLS_MAX_FILE_SIZE,
+    dtls_read_file_contents (key_file,
+                             SOCKET_DTLS_MAX_FILE_SIZE,
                              "private key file",
-                             (unsigned char **)&key_data, (size_t *)&key_size);
+                             (unsigned char **)&key_data,
+                             (size_t *)&key_size);
 
     /* Create BIO from certificate data */
     cert_bio = BIO_new_mem_buf ((void *)cert_data, (int)cert_size);
@@ -583,7 +605,8 @@ SocketDTLSContext_load_ca (T ctx, const char *ca_file)
       close (fd);
       RAISE_DTLS_CTX_ERROR_FMT (
           SocketDTLS_Failed,
-          "CA path '%s' must be a regular file or directory", ca_file);
+          "CA path '%s' must be a regular file or directory",
+          ca_file);
     }
 
   /* Validate size for regular files */
@@ -595,16 +618,18 @@ SocketDTLSContext_load_ca (T ctx, const char *ca_file)
           close (fd);
           RAISE_DTLS_CTX_ERROR_FMT (SocketDTLS_Failed,
                                     "CA file '%s' too large (max %zu bytes)",
-                                    ca_file, SOCKET_DTLS_MAX_FILE_SIZE);
+                                    ca_file,
+                                    SOCKET_DTLS_MAX_FILE_SIZE);
         }
     }
 
   close (fd);
 
   /* Load based on validated type */
-  int result = S_ISDIR (st.st_mode)
-                   ? SSL_CTX_load_verify_locations (ctx->ssl_ctx, NULL, ca_file)
-                   : SSL_CTX_load_verify_locations (ctx->ssl_ctx, ca_file, NULL);
+  int result
+      = S_ISDIR (st.st_mode)
+            ? SSL_CTX_load_verify_locations (ctx->ssl_ctx, NULL, ca_file)
+            : SSL_CTX_load_verify_locations (ctx->ssl_ctx, ca_file, NULL);
 
   if (result != 1)
     raise_openssl_error ("Failed to load CA certificates");
@@ -657,21 +682,24 @@ SocketDTLSContext_enable_cookie_exchange (T ctx)
 }
 
 void
-SocketDTLSContext_set_cookie_secret (T ctx, const unsigned char *secret,
+SocketDTLSContext_set_cookie_secret (T ctx,
+                                     const unsigned char *secret,
                                      size_t len)
 {
   assert (ctx);
 
   if (!secret)
     {
-      RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed, "Cookie secret cannot be NULL");
+      RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
+                                "Cookie secret cannot be NULL");
     }
 
   if (len != SOCKET_DTLS_COOKIE_SECRET_LEN)
     {
       RAISE_DTLS_CTX_ERROR_FMT (SocketDTLS_Failed,
                                 "Cookie secret must be %d bytes (got %zu)",
-                                SOCKET_DTLS_COOKIE_SECRET_LEN, len);
+                                SOCKET_DTLS_COOKIE_SECRET_LEN,
+                                len);
     }
 
   if (!ctx->is_server)
@@ -717,7 +745,8 @@ SocketDTLSContext_rotate_cookie_secret (T ctx)
 
 
   /* Move current to previous */
-  memcpy (ctx->cookie.prev_secret, ctx->cookie.secret,
+  memcpy (ctx->cookie.prev_secret,
+          ctx->cookie.secret,
           SOCKET_DTLS_COOKIE_SECRET_LEN);
 
   /* Generate new secret using SocketCrypto */
@@ -750,8 +779,10 @@ SocketDTLSContext_set_mtu (T ctx, size_t mtu)
   if (!SOCKET_DTLS_VALID_MTU (mtu))
     {
       RAISE_DTLS_CTX_ERROR_FMT (SocketDTLS_Failed,
-                                "Invalid MTU: %zu (must be %d-%d)", mtu,
-                                SOCKET_DTLS_MIN_MTU, SOCKET_DTLS_MAX_MTU);
+                                "Invalid MTU: %zu (must be %d-%d)",
+                                mtu,
+                                SOCKET_DTLS_MIN_MTU,
+                                SOCKET_DTLS_MAX_MTU);
     }
 
   ctx->mtu = mtu;
@@ -793,7 +824,8 @@ SocketDTLSContext_set_cipher_list (T ctx, const char *ciphers)
 }
 
 /**
- * alpn_match_protocol - Check if client protocol matches any configured protocol
+ * alpn_match_protocol - Check if client protocol matches any configured
+ * protocol
  * @ctx: DTLS context with ALPN configuration
  * @client_proto: Client protocol string
  * @client_len: Length of client protocol string
@@ -806,8 +838,10 @@ SocketDTLSContext_set_cipher_list (T ctx, const char *ciphers)
  * @return 1 if match found (with out/outlen populated), 0 otherwise
  */
 static int
-alpn_match_protocol (T ctx, const unsigned char *client_proto,
-                     unsigned int client_len, const unsigned char **out,
+alpn_match_protocol (T ctx,
+                     const unsigned char *client_proto,
+                     unsigned int client_len,
+                     const unsigned char **out,
                      unsigned char *outlen)
 {
   for (size_t i = 0; i < ctx->alpn.count; i++)
@@ -830,8 +864,12 @@ alpn_match_protocol (T ctx, const unsigned char *client_proto,
  * alpn_select_cb - ALPN selection callback for server
  */
 static int
-alpn_select_cb (SSL *ssl, const unsigned char **out, unsigned char *outlen,
-                const unsigned char *in, unsigned int inlen, void *arg)
+alpn_select_cb (SSL *ssl,
+                const unsigned char **out,
+                unsigned char *outlen,
+                const unsigned char *in,
+                unsigned int inlen,
+                void *arg)
 {
   (void)ssl; /* Unused but required by OpenSSL callback signature */
   T ctx = (T)arg;
@@ -878,12 +916,14 @@ SocketDTLSContext_set_alpn_protos (T ctx, const char **protos, size_t count)
   if (count > SOCKET_DTLS_MAX_ALPN_PROTOCOLS)
     {
       RAISE_DTLS_CTX_ERROR_FMT (SocketDTLS_Failed,
-                                "Too many ALPN protocols: %zu (max %d)", count,
+                                "Too many ALPN protocols: %zu (max %d)",
+                                count,
                                 SOCKET_DTLS_MAX_ALPN_PROTOCOLS);
     }
 
   /* Allocate lens array first */
-  ctx->alpn.lens = Arena_alloc (ctx->arena, count * sizeof (size_t), __FILE__, __LINE__);
+  ctx->alpn.lens
+      = Arena_alloc (ctx->arena, count * sizeof (size_t), __FILE__, __LINE__);
   if (!ctx->alpn.lens)
     RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
                               "Failed to allocate ALPN lens array");
@@ -895,30 +935,35 @@ SocketDTLSContext_set_alpn_protos (T ctx, const char **protos, size_t count)
       size_t len = strlen (protos[i]);
       if (len == 0 || len > SOCKET_DTLS_MAX_ALPN_LEN)
         {
-          RAISE_DTLS_CTX_ERROR_FMT (SocketDTLS_Failed,
-                                    "Invalid ALPN protocol length: %zu", len);
+          RAISE_DTLS_CTX_ERROR_FMT (
+              SocketDTLS_Failed, "Invalid ALPN protocol length: %zu", len);
         }
       ctx->alpn.lens[i] = len;
 
       /* Security check for string allocation size */
       size_t ts;
-      if (!SocketSecurity_check_add (len, 1, &ts) || !SocketSecurity_check_size (ts))
+      if (!SocketSecurity_check_add (len, 1, &ts)
+          || !SocketSecurity_check_size (ts))
         {
-          RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
-                                    "ALPN protocol string too long for allocation");
+          RAISE_DTLS_CTX_ERROR_MSG (
+              SocketDTLS_Failed,
+              "ALPN protocol string too long for allocation");
         }
 
       /* Compute wire_len for client case */
       size_t new_wl;
-      if (!SocketSecurity_check_add (wire_len, 1 + len, &new_wl) || !SocketSecurity_check_size (new_wl))
+      if (!SocketSecurity_check_add (wire_len, 1 + len, &new_wl)
+          || !SocketSecurity_check_size (new_wl))
         {
-          RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed, "ALPN wire format too large");
+          RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
+                                    "ALPN wire format too large");
         }
       wire_len = new_wl;
     }
 
   /* Allocate protocols array */
-  ctx->alpn.protocols = Arena_alloc (ctx->arena, count * sizeof (char *), __FILE__, __LINE__);
+  ctx->alpn.protocols
+      = Arena_alloc (ctx->arena, count * sizeof (char *), __FILE__, __LINE__);
   if (!ctx->alpn.protocols)
     RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
                               "Failed to allocate ALPN protocol array");
@@ -948,7 +993,8 @@ SocketDTLSContext_set_alpn_protos (T ctx, const char **protos, size_t count)
     {
       if (wire_len == 0)
         return;
-      unsigned char *wire = Arena_alloc (ctx->arena, wire_len, __FILE__, __LINE__);
+      unsigned char *wire
+          = Arena_alloc (ctx->arena, wire_len, __FILE__, __LINE__);
       if (!wire)
         RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
                                   "Failed to allocate ALPN wire format");
@@ -956,17 +1002,19 @@ SocketDTLSContext_set_alpn_protos (T ctx, const char **protos, size_t count)
       for (size_t i = 0; i < count; ++i)
         {
           size_t len = ctx->alpn.lens[i];
-          *p++ = (unsigned char) len;
+          *p++ = (unsigned char)len;
           memcpy (p, protos[i], len);
           p += len;
         }
-      if (SSL_CTX_set_alpn_protos (ctx->ssl_ctx, wire, (unsigned int) wire_len) != 0)
+      if (SSL_CTX_set_alpn_protos (ctx->ssl_ctx, wire, (unsigned int)wire_len)
+          != 0)
         raise_openssl_error ("Failed to set ALPN protocols");
     }
 }
 
 void
-SocketDTLSContext_enable_session_cache (T ctx, size_t max_sessions,
+SocketDTLSContext_enable_session_cache (T ctx,
+                                        size_t max_sessions,
                                         long timeout_seconds)
 {
   assert (ctx);
@@ -998,7 +1046,9 @@ SocketDTLSContext_enable_session_cache (T ctx, size_t max_sessions,
 }
 
 void
-SocketDTLSContext_get_cache_stats (T ctx, size_t *hits, size_t *misses,
+SocketDTLSContext_get_cache_stats (T ctx,
+                                   size_t *hits,
+                                   size_t *misses,
                                    size_t *stores)
 {
   if (!ctx)
@@ -1025,14 +1075,14 @@ SocketDTLSContext_set_timeout (T ctx, int initial_ms, int max_ms)
 
   if (!SOCKET_DTLS_VALID_TIMEOUT (initial_ms))
     {
-      RAISE_DTLS_CTX_ERROR_FMT (SocketDTLS_Failed,
-                                "Invalid initial timeout: %d", initial_ms);
+      RAISE_DTLS_CTX_ERROR_FMT (
+          SocketDTLS_Failed, "Invalid initial timeout: %d", initial_ms);
     }
 
   if (!SOCKET_DTLS_VALID_TIMEOUT (max_ms))
     {
-      RAISE_DTLS_CTX_ERROR_FMT (SocketDTLS_Failed, "Invalid max timeout: %d",
-                                max_ms);
+      RAISE_DTLS_CTX_ERROR_FMT (
+          SocketDTLS_Failed, "Invalid max timeout: %d", max_ms);
     }
 
   ctx->initial_timeout_ms = initial_ms;

@@ -79,7 +79,8 @@ load_test_server_thread (void *arg)
   while (server->running)
     {
       SocketEvent_T *events = NULL;
-      int nfds = SocketPoll_wait (poll, &events, 50); /* Short timeout for responsiveness */
+      int nfds = SocketPoll_wait (
+          poll, &events, 50); /* Short timeout for responsiveness */
 
       for (int i = 0; i < nfds; i++)
         {
@@ -139,7 +140,9 @@ load_test_server_thread (void *arg)
 }
 
 static void
-load_test_server_start (LoadTestServer *server, int max_connections, int timeout_ms)
+load_test_server_start (LoadTestServer *server,
+                        int max_connections,
+                        int timeout_ms)
 {
   int port = get_load_test_port ();
 
@@ -152,11 +155,14 @@ load_test_server_start (LoadTestServer *server, int max_connections, int timeout
   server->connection_timeout_ms = timeout_ms;
 
   /* Create listening socket */
-  server->listen_socket = Socket_listen_tcp ("127.0.0.1", port, max_connections);
+  server->listen_socket
+      = Socket_listen_tcp ("127.0.0.1", port, max_connections);
   ASSERT_NOT_NULL (server->listen_socket);
 
   /* Start server thread */
-  ASSERT_EQ (pthread_create (&server->thread, NULL, load_test_server_thread, server), 0);
+  ASSERT_EQ (
+      pthread_create (&server->thread, NULL, load_test_server_thread, server),
+      0);
 
   /* Give server time to start */
   usleep (100000);
@@ -239,7 +245,10 @@ load_test_client_thread (void *arg)
 }
 
 static void
-load_test_client_start (LoadTestClient *client, int port, int iterations, int delay_us)
+load_test_client_start (LoadTestClient *client,
+                        int port,
+                        int iterations,
+                        int delay_us)
 {
   client->running = 1;
   client->connections_made = 0;
@@ -249,7 +258,9 @@ load_test_client_start (LoadTestClient *client, int port, int iterations, int de
   client->iterations = iterations;
   client->delay_us = delay_us;
 
-  ASSERT_EQ (pthread_create (&client->thread, NULL, load_test_client_thread, client), 0);
+  ASSERT_EQ (
+      pthread_create (&client->thread, NULL, load_test_client_thread, client),
+      0);
 }
 
 static void
@@ -298,7 +309,7 @@ TEST (integration_load_connection_churn)
                   total_messages++;
 
                   /* Receive and echo */
-                  char buf[1024] = {0};
+                  char buf[1024] = { 0 };
                   ssize_t received = Socket_recv (accepted, buf, sizeof (buf));
                   if (received > 0)
                     {
@@ -307,7 +318,7 @@ TEST (integration_load_connection_churn)
                 }
 
               /* Receive echo */
-              char client_buf[1024] = {0};
+              char client_buf[1024] = { 0 };
               Socket_recv (client, client_buf, sizeof (client_buf));
 
               Socket_free (&accepted);
@@ -320,7 +331,9 @@ TEST (integration_load_connection_churn)
         }
     }
 
-  printf ("  Total connections: %d, messages: %d\n", total_connections, total_messages);
+  printf ("  Total connections: %d, messages: %d\n",
+          total_connections,
+          total_messages);
 
   /* Verify basic functionality */
   ASSERT (total_connections > 0);
@@ -362,7 +375,7 @@ TEST (integration_load_resource_exhaustion)
               if (sent > 0)
                 {
                   /* Receive and echo */
-                  char buf[1024] = {0};
+                  char buf[1024] = { 0 };
                   ssize_t received = Socket_recv (accepted, buf, sizeof (buf));
                   if (received > 0)
                     {
@@ -371,7 +384,7 @@ TEST (integration_load_resource_exhaustion)
                 }
 
               /* Receive echo */
-              char client_buf[1024] = {0};
+              char client_buf[1024] = { 0 };
               Socket_recv (client, client_buf, sizeof (client_buf));
 
               Socket_free (&accepted);
@@ -381,7 +394,8 @@ TEST (integration_load_resource_exhaustion)
         }
     }
 
-  printf ("  Successful connections: %d/%d\n", successful_connections, num_clients);
+  printf (
+      "  Successful connections: %d/%d\n", successful_connections, num_clients);
 
   /* Should have some connections */
   ASSERT (successful_connections > 0);
@@ -430,7 +444,7 @@ TEST (integration_load_long_running_stability)
                   messages_sent++;
 
                   /* Receive and echo */
-                  char buf[1024] = {0};
+                  char buf[1024] = { 0 };
                   ssize_t received = Socket_recv (accepted, buf, sizeof (buf));
                   if (received > 0)
                     {
@@ -439,7 +453,7 @@ TEST (integration_load_long_running_stability)
                 }
 
               /* Receive echo */
-              char client_buf[1024] = {0};
+              char client_buf[1024] = { 0 };
               Socket_recv (client, client_buf, sizeof (client_buf));
 
               Socket_free (&accepted);
@@ -457,9 +471,11 @@ TEST (integration_load_long_running_stability)
   final_live_count = Socket_debug_live_count ();
 
   printf ("  Initial sockets: %d, Final sockets: %d\n",
-          initial_live_count, final_live_count);
+          initial_live_count,
+          final_live_count);
   printf ("  Made %d connections, sent %d messages\n",
-          connections_made, messages_sent);
+          connections_made,
+          messages_sent);
 
   /* Verify basic functionality */
   ASSERT (connections_made > 0);

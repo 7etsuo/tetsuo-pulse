@@ -80,7 +80,8 @@ internal_handler_wrapper (SocketHTTPServer_Request_T core_req, void *userdata)
 
 static int
 internal_validator_wrapper (SocketHTTPServer_Request_T core_req,
-                            int *reject_status, void *userdata)
+                            int *reject_status,
+                            void *userdata)
 {
   struct SocketSimple_HTTPServer *server = userdata;
   if (!server || !server->user_validator)
@@ -92,12 +93,13 @@ internal_validator_wrapper (SocketHTTPServer_Request_T core_req,
   struct SocketSimple_HTTPServerRequest req_wrapper;
   req_wrapper.core_req = core_req;
 
-  return server->user_validator (&req_wrapper, reject_status,
-                                 server->user_validator_data);
+  return server->user_validator (
+      &req_wrapper, reject_status, server->user_validator_data);
 }
 
 static void
-internal_drain_callback_wrapper (SocketHTTPServer_T core_server, int timed_out,
+internal_drain_callback_wrapper (SocketHTTPServer_T core_server,
+                                 int timed_out,
                                  void *userdata)
 {
   struct SocketSimple_HTTPServer *server = userdata;
@@ -200,8 +202,8 @@ Socket_simple_http_server_new_ex (const SocketSimple_HTTPServerConfig *config)
       volatile SocketTLSContext_T tls_ctx = NULL;
       TRY
       {
-        tls_ctx = SocketTLSContext_new_server (config->tls_cert_file,
-                                               config->tls_key_file, NULL);
+        tls_ctx = SocketTLSContext_new_server (
+            config->tls_cert_file, config->tls_key_file, NULL);
       }
       EXCEPT (SocketTLS_Failed)
       {
@@ -225,7 +227,10 @@ Socket_simple_http_server_new_ex (const SocketSimple_HTTPServerConfig *config)
 #endif
 
   /* Create core server */
-  TRY { core_server = SocketHTTPServer_new (&core_config); }
+  TRY
+  {
+    core_server = SocketHTTPServer_new (&core_config);
+  }
   EXCEPT (SocketHTTPServer_Failed)
   {
 #ifdef SOCKET_HAS_TLS
@@ -235,8 +240,7 @@ Socket_simple_http_server_new_ex (const SocketSimple_HTTPServerConfig *config)
       }
 #endif
     free (server);
-    simple_set_error (SOCKET_SIMPLE_ERR_SERVER,
-                      "Failed to create HTTP server");
+    simple_set_error (SOCKET_SIMPLE_ERR_SERVER, "Failed to create HTTP server");
     return NULL;
   }
   END_TRY;
@@ -250,8 +254,8 @@ Socket_simple_http_server_new_ex (const SocketSimple_HTTPServerConfig *config)
   server->user_drain_data = NULL;
 
   /* Set internal handler wrapper */
-  SocketHTTPServer_set_handler (server->server, internal_handler_wrapper,
-                                server);
+  SocketHTTPServer_set_handler (
+      server->server, internal_handler_wrapper, server);
 
   return server;
 }
@@ -282,12 +286,14 @@ Socket_simple_http_server_start (SocketSimple_HTTPServer_T server)
 
   if (!server)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Invalid server handle");
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid server handle");
       return -1;
     }
 
-  TRY { result = SocketHTTPServer_start (server->server); }
+  TRY
+  {
+    result = SocketHTTPServer_start (server->server);
+  }
   EXCEPT (SocketHTTPServer_BindFailed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_BIND, "Failed to bind server socket");
@@ -332,7 +338,8 @@ Socket_simple_http_server_set_handler (SocketSimple_HTTPServer_T server,
 void
 Socket_simple_http_server_set_validator (
     SocketSimple_HTTPServer_T server,
-    SocketSimple_HTTPServerValidator validator, void *userdata)
+    SocketSimple_HTTPServerValidator validator,
+    void *userdata)
 {
   if (!server)
     return;
@@ -342,8 +349,8 @@ Socket_simple_http_server_set_validator (
 
   if (validator)
     {
-      SocketHTTPServer_set_validator (server->server,
-                                      internal_validator_wrapper, server);
+      SocketHTTPServer_set_validator (
+          server->server, internal_validator_wrapper, server);
     }
   else
     {
@@ -366,12 +373,14 @@ Socket_simple_http_server_poll (SocketSimple_HTTPServer_T server,
 
   if (!server)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Invalid server handle");
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid server handle");
       return -1;
     }
 
-  TRY { result = SocketHTTPServer_process (server->server, timeout_ms); }
+  TRY
+  {
+    result = SocketHTTPServer_process (server->server, timeout_ms);
+  }
   EXCEPT (SocketHTTPServer_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_SERVER, "Server processing failed");
@@ -485,8 +494,8 @@ Socket_simple_http_server_request_is_http2 (
  */
 
 void
-Socket_simple_http_server_response_status (
-    SocketSimple_HTTPServerRequest_T req, int code)
+Socket_simple_http_server_response_status (SocketSimple_HTTPServerRequest_T req,
+                                           int code)
 {
   if (!req || !req->core_req)
     return;
@@ -495,8 +504,9 @@ Socket_simple_http_server_response_status (
 }
 
 void
-Socket_simple_http_server_response_header (
-    SocketSimple_HTTPServerRequest_T req, const char *name, const char *value)
+Socket_simple_http_server_response_header (SocketSimple_HTTPServerRequest_T req,
+                                           const char *name,
+                                           const char *value)
 {
   if (!req || !req->core_req || !name || !value)
     return;
@@ -506,7 +516,8 @@ Socket_simple_http_server_response_header (
 
 void
 Socket_simple_http_server_response_body (SocketSimple_HTTPServerRequest_T req,
-                                         const void *data, size_t len)
+                                         const void *data,
+                                         size_t len)
 {
   if (!req || !req->core_req)
     return;
@@ -525,8 +536,7 @@ Socket_simple_http_server_response_body_string (
 }
 
 void
-Socket_simple_http_server_response_finish (
-    SocketSimple_HTTPServerRequest_T req)
+Socket_simple_http_server_response_finish (SocketSimple_HTTPServerRequest_T req)
 {
   if (!req || !req->core_req)
     return;
@@ -635,14 +645,15 @@ json_escape_string (char *dest, size_t dest_size, const char *src)
 
 void
 Socket_simple_http_server_response_json (SocketSimple_HTTPServerRequest_T req,
-                                         int status, const char *json)
+                                         int status,
+                                         const char *json)
 {
   if (!req || !req->core_req)
     return;
 
   SocketHTTPServer_Request_status (req->core_req, status);
-  SocketHTTPServer_Request_header (req->core_req, "Content-Type",
-                                   "application/json");
+  SocketHTTPServer_Request_header (
+      req->core_req, "Content-Type", "application/json");
   if (json)
     {
       SocketHTTPServer_Request_body_string (req->core_req, json);
@@ -652,7 +663,8 @@ Socket_simple_http_server_response_json (SocketSimple_HTTPServerRequest_T req,
 
 void
 Socket_simple_http_server_response_error (SocketSimple_HTTPServerRequest_T req,
-                                          int status, const char *message)
+                                          int status,
+                                          const char *message)
 {
   char json[SOCKET_SIMPLE_ERROR_JSON_BUFFER_SIZE];
   char escaped[256];
@@ -726,8 +738,7 @@ Socket_simple_http_server_drain (SocketSimple_HTTPServer_T server,
 
   if (!server)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Invalid server handle");
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid server handle");
       return -1;
     }
 
@@ -739,8 +750,7 @@ Socket_simple_http_server_drain_poll (SocketSimple_HTTPServer_T server)
 {
   if (!server)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Invalid server handle");
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid server handle");
       return -1;
     }
 
@@ -755,8 +765,7 @@ Socket_simple_http_server_drain_wait (SocketSimple_HTTPServer_T server,
 
   if (!server)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Invalid server handle");
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid server handle");
       return -1;
     }
 
@@ -766,7 +775,8 @@ Socket_simple_http_server_drain_wait (SocketSimple_HTTPServer_T server,
 void
 Socket_simple_http_server_set_drain_callback (
     SocketSimple_HTTPServer_T server,
-    SocketSimple_HTTPServerDrainCallback callback, void *userdata)
+    SocketSimple_HTTPServerDrainCallback callback,
+    void *userdata)
 {
   if (!server)
     return;
@@ -847,8 +857,7 @@ Socket_simple_http_server_connection_count (SocketSimple_HTTPServer_T server)
 {
   if (!server)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Invalid server handle");
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid server handle");
       return -1;
     }
 

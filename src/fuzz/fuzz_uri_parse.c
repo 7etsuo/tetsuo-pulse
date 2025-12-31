@@ -66,14 +66,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   if (size < 1024)
     {
       char encoded[4096];
-      ssize_t enc_len = SocketHTTP_URI_encode ((const char *)data, size,
-                                               encoded, sizeof (encoded));
+      ssize_t enc_len = SocketHTTP_URI_encode (
+          (const char *)data, size, encoded, sizeof (encoded));
 
       if (enc_len > 0)
         {
           char decoded[1024];
-          (void)SocketHTTP_URI_decode (encoded, (size_t)enc_len, decoded,
-                                       sizeof (decoded));
+          (void)SocketHTTP_URI_decode (
+              encoded, (size_t)enc_len, decoded, sizeof (decoded));
         }
     }
 

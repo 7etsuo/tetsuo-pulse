@@ -5,7 +5,8 @@
  */
 
 /*
- * test_dns_servfailcache.c - Unit tests for DNS SERVFAIL Cache (RFC 2308 Section 7.1)
+ * test_dns_servfailcache.c - Unit tests for DNS SERVFAIL Cache (RFC 2308
+ * Section 7.1)
  *
  * Tests RFC 2308 Section 7.1 compliant SERVFAIL caching with:
  * - 4-tuple cache key: <QNAME, QTYPE, QCLASS, nameserver>
@@ -51,8 +52,8 @@ TEST (servfailcache_insert_lookup)
   SocketDNSServfailCache_T cache = SocketDNSServfailCache_new (arena);
 
   /* Insert SERVFAIL for example.com A query to 8.8.8.8 */
-  int ret = SocketDNSServfailCache_insert (cache, "example.com", DNS_TYPE_A,
-                                            DNS_CLASS_IN, "8.8.8.8", 300);
+  int ret = SocketDNSServfailCache_insert (
+      cache, "example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", 300);
   ASSERT_EQ (ret, 0);
 
   SocketDNS_ServfailCacheStats stats;
@@ -64,8 +65,8 @@ TEST (servfailcache_insert_lookup)
   SocketDNS_ServfailCacheEntry entry;
   SocketDNS_ServfailCacheResult result;
 
-  result = SocketDNSServfailCache_lookup (cache, "example.com", DNS_TYPE_A,
-                                           DNS_CLASS_IN, "8.8.8.8", &entry);
+  result = SocketDNSServfailCache_lookup (
+      cache, "example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", &entry);
   ASSERT_EQ (result, DNS_SERVFAIL_HIT);
   ASSERT (entry.ttl_remaining > 0);
   ASSERT (entry.ttl_remaining <= 300);
@@ -84,24 +85,27 @@ TEST (servfailcache_server_specific)
   SocketDNSServfailCache_T cache = SocketDNSServfailCache_new (arena);
 
   /* Insert SERVFAIL for 8.8.8.8 */
-  SocketDNSServfailCache_insert (cache, "example.com", DNS_TYPE_A, DNS_CLASS_IN,
-                                  "8.8.8.8", 300);
+  SocketDNSServfailCache_insert (
+      cache, "example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", 300);
 
   /* Lookup with same nameserver should hit */
   SocketDNS_ServfailCacheResult result;
-  result = SocketDNSServfailCache_lookup (cache, "example.com", DNS_TYPE_A,
-                                           DNS_CLASS_IN, "8.8.8.8", NULL);
+  result = SocketDNSServfailCache_lookup (
+      cache, "example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", NULL);
   ASSERT_EQ (result, DNS_SERVFAIL_HIT);
 
   /* Lookup with different nameserver should MISS */
-  result = SocketDNSServfailCache_lookup (cache, "example.com", DNS_TYPE_A,
-                                           DNS_CLASS_IN, "8.8.4.4", NULL);
+  result = SocketDNSServfailCache_lookup (
+      cache, "example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.4.4", NULL);
   ASSERT_EQ (result, DNS_SERVFAIL_MISS);
 
   /* Lookup with IPv6 nameserver should MISS */
-  result = SocketDNSServfailCache_lookup (cache, "example.com", DNS_TYPE_A,
-                                           DNS_CLASS_IN, "2001:4860:4860::8888",
-                                           NULL);
+  result = SocketDNSServfailCache_lookup (cache,
+                                          "example.com",
+                                          DNS_TYPE_A,
+                                          DNS_CLASS_IN,
+                                          "2001:4860:4860::8888",
+                                          NULL);
   ASSERT_EQ (result, DNS_SERVFAIL_MISS);
 
   SocketDNS_ServfailCacheStats stats;
@@ -120,23 +124,23 @@ TEST (servfailcache_type_specific)
   SocketDNSServfailCache_T cache = SocketDNSServfailCache_new (arena);
 
   /* Insert SERVFAIL for A query */
-  SocketDNSServfailCache_insert (cache, "example.com", DNS_TYPE_A, DNS_CLASS_IN,
-                                  "8.8.8.8", 300);
+  SocketDNSServfailCache_insert (
+      cache, "example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", 300);
 
   /* Lookup A should hit */
   SocketDNS_ServfailCacheResult result;
-  result = SocketDNSServfailCache_lookup (cache, "example.com", DNS_TYPE_A,
-                                           DNS_CLASS_IN, "8.8.8.8", NULL);
+  result = SocketDNSServfailCache_lookup (
+      cache, "example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", NULL);
   ASSERT_EQ (result, DNS_SERVFAIL_HIT);
 
   /* Lookup AAAA should MISS (type-specific) */
-  result = SocketDNSServfailCache_lookup (cache, "example.com", DNS_TYPE_AAAA,
-                                           DNS_CLASS_IN, "8.8.8.8", NULL);
+  result = SocketDNSServfailCache_lookup (
+      cache, "example.com", DNS_TYPE_AAAA, DNS_CLASS_IN, "8.8.8.8", NULL);
   ASSERT_EQ (result, DNS_SERVFAIL_MISS);
 
   /* Lookup MX should also MISS */
-  result = SocketDNSServfailCache_lookup (cache, "example.com", DNS_TYPE_MX,
-                                           DNS_CLASS_IN, "8.8.8.8", NULL);
+  result = SocketDNSServfailCache_lookup (
+      cache, "example.com", DNS_TYPE_MX, DNS_CLASS_IN, "8.8.8.8", NULL);
   ASSERT_EQ (result, DNS_SERVFAIL_MISS);
 
   SocketDNSServfailCache_free (&cache);
@@ -150,22 +154,22 @@ TEST (servfailcache_case_insensitive)
   SocketDNSServfailCache_T cache = SocketDNSServfailCache_new (arena);
 
   /* Insert with lowercase */
-  SocketDNSServfailCache_insert (cache, "test.example.com", DNS_TYPE_A,
-                                  DNS_CLASS_IN, "8.8.8.8", 300);
+  SocketDNSServfailCache_insert (
+      cache, "test.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", 300);
 
   /* Lookup with different cases should all hit */
   SocketDNS_ServfailCacheResult result;
 
-  result = SocketDNSServfailCache_lookup (cache, "TEST.EXAMPLE.COM", DNS_TYPE_A,
-                                           DNS_CLASS_IN, "8.8.8.8", NULL);
+  result = SocketDNSServfailCache_lookup (
+      cache, "TEST.EXAMPLE.COM", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", NULL);
   ASSERT_EQ (result, DNS_SERVFAIL_HIT);
 
-  result = SocketDNSServfailCache_lookup (cache, "Test.Example.Com", DNS_TYPE_A,
-                                           DNS_CLASS_IN, "8.8.8.8", NULL);
+  result = SocketDNSServfailCache_lookup (
+      cache, "Test.Example.Com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", NULL);
   ASSERT_EQ (result, DNS_SERVFAIL_HIT);
 
-  result = SocketDNSServfailCache_lookup (cache, "tEsT.eXaMpLe.CoM", DNS_TYPE_A,
-                                           DNS_CLASS_IN, "8.8.8.8", NULL);
+  result = SocketDNSServfailCache_lookup (
+      cache, "tEsT.eXaMpLe.CoM", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", NULL);
   ASSERT_EQ (result, DNS_SERVFAIL_HIT);
 
   SocketDNSServfailCache_free (&cache);
@@ -179,22 +183,26 @@ TEST (servfailcache_max_ttl_5min)
   SocketDNSServfailCache_T cache = SocketDNSServfailCache_new (arena);
 
   /* Insert with TTL higher than 5 minutes - should be capped */
-  SocketDNSServfailCache_insert (cache, "clamped.example.com", DNS_TYPE_A,
-                                  DNS_CLASS_IN, "8.8.8.8", 3600);
+  SocketDNSServfailCache_insert (
+      cache, "clamped.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", 3600);
 
   /* Lookup and verify TTL was capped at 300 seconds */
   SocketDNS_ServfailCacheEntry entry;
-  SocketDNSServfailCache_lookup (cache, "clamped.example.com", DNS_TYPE_A,
-                                  DNS_CLASS_IN, "8.8.8.8", &entry);
+  SocketDNSServfailCache_lookup (cache,
+                                 "clamped.example.com",
+                                 DNS_TYPE_A,
+                                 DNS_CLASS_IN,
+                                 "8.8.8.8",
+                                 &entry);
   ASSERT (entry.original_ttl <= DNS_SERVFAIL_MAX_TTL);
   ASSERT_EQ (entry.original_ttl, 300);
 
   /* Insert with TTL less than 5 minutes - should be kept as-is */
-  SocketDNSServfailCache_insert (cache, "short.example.com", DNS_TYPE_A,
-                                  DNS_CLASS_IN, "8.8.8.8", 60);
+  SocketDNSServfailCache_insert (
+      cache, "short.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", 60);
 
-  SocketDNSServfailCache_lookup (cache, "short.example.com", DNS_TYPE_A,
-                                  DNS_CLASS_IN, "8.8.8.8", &entry);
+  SocketDNSServfailCache_lookup (
+      cache, "short.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", &entry);
   ASSERT_EQ (entry.original_ttl, 60);
 
   SocketDNSServfailCache_free (&cache);
@@ -208,23 +216,21 @@ TEST (servfailcache_ttl_expiration)
   SocketDNSServfailCache_T cache = SocketDNSServfailCache_new (arena);
 
   /* Insert with 1 second TTL */
-  SocketDNSServfailCache_insert (cache, "expiring.example.com", DNS_TYPE_A,
-                                  DNS_CLASS_IN, "8.8.8.8", 1);
+  SocketDNSServfailCache_insert (
+      cache, "expiring.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", 1);
 
   /* Should hit immediately */
   SocketDNS_ServfailCacheResult result;
-  result = SocketDNSServfailCache_lookup (cache, "expiring.example.com",
-                                           DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8",
-                                           NULL);
+  result = SocketDNSServfailCache_lookup (
+      cache, "expiring.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", NULL);
   ASSERT_EQ (result, DNS_SERVFAIL_HIT);
 
   /* Wait for TTL to expire */
   sleep (2);
 
   /* Should now miss due to expiration */
-  result = SocketDNSServfailCache_lookup (cache, "expiring.example.com",
-                                           DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8",
-                                           NULL);
+  result = SocketDNSServfailCache_lookup (
+      cache, "expiring.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", NULL);
   ASSERT_EQ (result, DNS_SERVFAIL_MISS);
 
   SocketDNS_ServfailCacheStats stats;
@@ -245,24 +251,24 @@ TEST (servfailcache_lru_eviction)
   SocketDNSServfailCache_set_max_entries (cache, 3);
 
   /* Insert 3 entries */
-  SocketDNSServfailCache_insert (cache, "first.example.com", DNS_TYPE_A,
-                                  DNS_CLASS_IN, "8.8.8.8", 300);
-  SocketDNSServfailCache_insert (cache, "second.example.com", DNS_TYPE_A,
-                                  DNS_CLASS_IN, "8.8.8.8", 300);
-  SocketDNSServfailCache_insert (cache, "third.example.com", DNS_TYPE_A,
-                                  DNS_CLASS_IN, "8.8.8.8", 300);
+  SocketDNSServfailCache_insert (
+      cache, "first.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", 300);
+  SocketDNSServfailCache_insert (
+      cache, "second.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", 300);
+  SocketDNSServfailCache_insert (
+      cache, "third.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", 300);
 
   SocketDNS_ServfailCacheStats stats;
   SocketDNSServfailCache_stats (cache, &stats);
   ASSERT_EQ (stats.current_size, 3);
 
   /* Access first entry to make it recently used */
-  SocketDNSServfailCache_lookup (cache, "first.example.com", DNS_TYPE_A,
-                                  DNS_CLASS_IN, "8.8.8.8", NULL);
+  SocketDNSServfailCache_lookup (
+      cache, "first.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", NULL);
 
   /* Insert 4th entry - should evict LRU (second) */
-  SocketDNSServfailCache_insert (cache, "fourth.example.com", DNS_TYPE_A,
-                                  DNS_CLASS_IN, "8.8.8.8", 300);
+  SocketDNSServfailCache_insert (
+      cache, "fourth.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", 300);
 
   SocketDNSServfailCache_stats (cache, &stats);
   ASSERT_EQ (stats.current_size, 3);
@@ -270,15 +276,13 @@ TEST (servfailcache_lru_eviction)
 
   /* First should still be present (was accessed) */
   SocketDNS_ServfailCacheResult result;
-  result = SocketDNSServfailCache_lookup (cache, "first.example.com",
-                                           DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8",
-                                           NULL);
+  result = SocketDNSServfailCache_lookup (
+      cache, "first.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", NULL);
   ASSERT_EQ (result, DNS_SERVFAIL_HIT);
 
   /* Second should have been evicted */
-  result = SocketDNSServfailCache_lookup (cache, "second.example.com",
-                                           DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8",
-                                           NULL);
+  result = SocketDNSServfailCache_lookup (
+      cache, "second.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", NULL);
   ASSERT_EQ (result, DNS_SERVFAIL_MISS);
 
   SocketDNSServfailCache_free (&cache);
@@ -292,19 +296,18 @@ TEST (servfailcache_remove)
   SocketDNSServfailCache_T cache = SocketDNSServfailCache_new (arena);
 
   /* Insert two entries */
-  SocketDNSServfailCache_insert (cache, "remove.example.com", DNS_TYPE_A,
-                                  DNS_CLASS_IN, "8.8.8.8", 300);
-  SocketDNSServfailCache_insert (cache, "keep.example.com", DNS_TYPE_A,
-                                  DNS_CLASS_IN, "8.8.8.8", 300);
+  SocketDNSServfailCache_insert (
+      cache, "remove.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", 300);
+  SocketDNSServfailCache_insert (
+      cache, "keep.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", 300);
 
   SocketDNS_ServfailCacheStats stats;
   SocketDNSServfailCache_stats (cache, &stats);
   ASSERT_EQ (stats.current_size, 2);
 
   /* Remove one entry */
-  int removed = SocketDNSServfailCache_remove (cache, "remove.example.com",
-                                                DNS_TYPE_A, DNS_CLASS_IN,
-                                                "8.8.8.8");
+  int removed = SocketDNSServfailCache_remove (
+      cache, "remove.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8");
   ASSERT_EQ (removed, 1);
 
   SocketDNSServfailCache_stats (cache, &stats);
@@ -312,14 +315,13 @@ TEST (servfailcache_remove)
 
   /* Removed entry should miss */
   SocketDNS_ServfailCacheResult result;
-  result = SocketDNSServfailCache_lookup (cache, "remove.example.com",
-                                           DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8",
-                                           NULL);
+  result = SocketDNSServfailCache_lookup (
+      cache, "remove.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", NULL);
   ASSERT_EQ (result, DNS_SERVFAIL_MISS);
 
   /* Other entry should still hit */
-  result = SocketDNSServfailCache_lookup (cache, "keep.example.com", DNS_TYPE_A,
-                                           DNS_CLASS_IN, "8.8.8.8", NULL);
+  result = SocketDNSServfailCache_lookup (
+      cache, "keep.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", NULL);
   ASSERT_EQ (result, DNS_SERVFAIL_HIT);
 
   SocketDNSServfailCache_free (&cache);
@@ -333,12 +335,12 @@ TEST (servfailcache_remove_nameserver)
   SocketDNSServfailCache_T cache = SocketDNSServfailCache_new (arena);
 
   /* Insert entries for two different nameservers */
-  SocketDNSServfailCache_insert (cache, "a.example.com", DNS_TYPE_A,
-                                  DNS_CLASS_IN, "8.8.8.8", 300);
-  SocketDNSServfailCache_insert (cache, "b.example.com", DNS_TYPE_A,
-                                  DNS_CLASS_IN, "8.8.8.8", 300);
-  SocketDNSServfailCache_insert (cache, "c.example.com", DNS_TYPE_A,
-                                  DNS_CLASS_IN, "8.8.4.4", 300);
+  SocketDNSServfailCache_insert (
+      cache, "a.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", 300);
+  SocketDNSServfailCache_insert (
+      cache, "b.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", 300);
+  SocketDNSServfailCache_insert (
+      cache, "c.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.4.4", 300);
 
   SocketDNS_ServfailCacheStats stats;
   SocketDNSServfailCache_stats (cache, &stats);
@@ -353,13 +355,13 @@ TEST (servfailcache_remove_nameserver)
 
   /* 8.8.8.8 entries should miss */
   SocketDNS_ServfailCacheResult result;
-  result = SocketDNSServfailCache_lookup (cache, "a.example.com", DNS_TYPE_A,
-                                           DNS_CLASS_IN, "8.8.8.8", NULL);
+  result = SocketDNSServfailCache_lookup (
+      cache, "a.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", NULL);
   ASSERT_EQ (result, DNS_SERVFAIL_MISS);
 
   /* 8.8.4.4 entry should still hit */
-  result = SocketDNSServfailCache_lookup (cache, "c.example.com", DNS_TYPE_A,
-                                           DNS_CLASS_IN, "8.8.4.4", NULL);
+  result = SocketDNSServfailCache_lookup (
+      cache, "c.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.4.4", NULL);
   ASSERT_EQ (result, DNS_SERVFAIL_HIT);
 
   SocketDNSServfailCache_free (&cache);
@@ -373,12 +375,12 @@ TEST (servfailcache_clear)
   SocketDNSServfailCache_T cache = SocketDNSServfailCache_new (arena);
 
   /* Insert several entries */
-  SocketDNSServfailCache_insert (cache, "a.example.com", DNS_TYPE_A,
-                                  DNS_CLASS_IN, "8.8.8.8", 300);
-  SocketDNSServfailCache_insert (cache, "b.example.com", DNS_TYPE_AAAA,
-                                  DNS_CLASS_IN, "8.8.8.8", 300);
-  SocketDNSServfailCache_insert (cache, "c.example.com", DNS_TYPE_A,
-                                  DNS_CLASS_IN, "8.8.4.4", 300);
+  SocketDNSServfailCache_insert (
+      cache, "a.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", 300);
+  SocketDNSServfailCache_insert (
+      cache, "b.example.com", DNS_TYPE_AAAA, DNS_CLASS_IN, "8.8.8.8", 300);
+  SocketDNSServfailCache_insert (
+      cache, "c.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.4.4", 300);
 
   SocketDNS_ServfailCacheStats stats;
   SocketDNSServfailCache_stats (cache, &stats);
@@ -392,8 +394,8 @@ TEST (servfailcache_clear)
 
   /* All lookups should miss */
   SocketDNS_ServfailCacheResult result;
-  result = SocketDNSServfailCache_lookup (cache, "a.example.com", DNS_TYPE_A,
-                                           DNS_CLASS_IN, "8.8.8.8", NULL);
+  result = SocketDNSServfailCache_lookup (
+      cache, "a.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", NULL);
   ASSERT_EQ (result, DNS_SERVFAIL_MISS);
 
   SocketDNSServfailCache_free (&cache);
@@ -415,15 +417,15 @@ TEST (servfailcache_stats_accuracy)
   ASSERT_EQ (stats.insertions, 0);
 
   /* Insert and lookup */
-  SocketDNSServfailCache_insert (cache, "stat.example.com", DNS_TYPE_A,
-                                  DNS_CLASS_IN, "8.8.8.8", 300);
+  SocketDNSServfailCache_insert (
+      cache, "stat.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", 300);
 
-  SocketDNSServfailCache_lookup (cache, "stat.example.com", DNS_TYPE_A,
-                                  DNS_CLASS_IN, "8.8.8.8", NULL);
-  SocketDNSServfailCache_lookup (cache, "stat.example.com", DNS_TYPE_A,
-                                  DNS_CLASS_IN, "8.8.8.8", NULL);
-  SocketDNSServfailCache_lookup (cache, "miss.example.com", DNS_TYPE_A,
-                                  DNS_CLASS_IN, "8.8.8.8", NULL);
+  SocketDNSServfailCache_lookup (
+      cache, "stat.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", NULL);
+  SocketDNSServfailCache_lookup (
+      cache, "stat.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", NULL);
+  SocketDNSServfailCache_lookup (
+      cache, "miss.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", NULL);
 
   SocketDNSServfailCache_stats (cache, &stats);
 
@@ -464,14 +466,14 @@ TEST (servfailcache_length_limits)
   long_name[255] = '\0';
 
   /* Should succeed */
-  int ret = SocketDNSServfailCache_insert (cache, long_name, DNS_TYPE_A,
-                                            DNS_CLASS_IN, "8.8.8.8", 300);
+  int ret = SocketDNSServfailCache_insert (
+      cache, long_name, DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", 300);
   ASSERT_EQ (ret, 0);
 
   /* Lookup should work */
   SocketDNS_ServfailCacheResult result;
-  result = SocketDNSServfailCache_lookup (cache, long_name, DNS_TYPE_A,
-                                           DNS_CLASS_IN, "8.8.8.8", NULL);
+  result = SocketDNSServfailCache_lookup (
+      cache, long_name, DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", NULL);
   ASSERT_EQ (result, DNS_SERVFAIL_HIT);
 
   /* Create a name exceeding max length (256 characters) */
@@ -480,8 +482,8 @@ TEST (servfailcache_length_limits)
   too_long_name[256] = '\0';
 
   /* Should fail */
-  ret = SocketDNSServfailCache_insert (cache, too_long_name, DNS_TYPE_A,
-                                        DNS_CLASS_IN, "8.8.8.8", 300);
+  ret = SocketDNSServfailCache_insert (
+      cache, too_long_name, DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", 300);
   ASSERT_EQ (ret, -1);
 
   /* Create a nameserver at max length (64 characters) */
@@ -489,8 +491,8 @@ TEST (servfailcache_length_limits)
   memset (long_ns, '1', 64);
   long_ns[64] = '\0';
 
-  ret = SocketDNSServfailCache_insert (cache, "test.example.com", DNS_TYPE_A,
-                                        DNS_CLASS_IN, long_ns, 300);
+  ret = SocketDNSServfailCache_insert (
+      cache, "test.example.com", DNS_TYPE_A, DNS_CLASS_IN, long_ns, 300);
   ASSERT_EQ (ret, 0);
 
   /* Create a nameserver exceeding max length (65 characters) */
@@ -498,8 +500,8 @@ TEST (servfailcache_length_limits)
   memset (too_long_ns, '2', 65);
   too_long_ns[65] = '\0';
 
-  ret = SocketDNSServfailCache_insert (cache, "test2.example.com", DNS_TYPE_A,
-                                        DNS_CLASS_IN, too_long_ns, 300);
+  ret = SocketDNSServfailCache_insert (
+      cache, "test2.example.com", DNS_TYPE_A, DNS_CLASS_IN, too_long_ns, 300);
   ASSERT_EQ (ret, -1);
 
   SocketDNSServfailCache_free (&cache);
@@ -516,9 +518,8 @@ TEST (servfailcache_disabled)
   SocketDNSServfailCache_set_max_entries (cache, 0);
 
   /* Insertions should fail */
-  int ret = SocketDNSServfailCache_insert (cache, "disabled.example.com",
-                                            DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8",
-                                            300);
+  int ret = SocketDNSServfailCache_insert (
+      cache, "disabled.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", 300);
   ASSERT_EQ (ret, -1);
 
   SocketDNS_ServfailCacheStats stats;
@@ -536,13 +537,13 @@ TEST (servfailcache_null_entry)
   Arena_T arena = Arena_new ();
   SocketDNSServfailCache_T cache = SocketDNSServfailCache_new (arena);
 
-  SocketDNSServfailCache_insert (cache, "null.example.com", DNS_TYPE_A,
-                                  DNS_CLASS_IN, "8.8.8.8", 300);
+  SocketDNSServfailCache_insert (
+      cache, "null.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", 300);
 
   /* Lookup with NULL entry should still work */
   SocketDNS_ServfailCacheResult result;
-  result = SocketDNSServfailCache_lookup (cache, "null.example.com", DNS_TYPE_A,
-                                           DNS_CLASS_IN, "8.8.8.8", NULL);
+  result = SocketDNSServfailCache_lookup (
+      cache, "null.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", NULL);
   ASSERT_EQ (result, DNS_SERVFAIL_HIT);
 
   SocketDNSServfailCache_free (&cache);
@@ -556,20 +557,20 @@ TEST (servfailcache_update_existing)
   SocketDNSServfailCache_T cache = SocketDNSServfailCache_new (arena);
 
   /* Insert entry with short TTL */
-  SocketDNSServfailCache_insert (cache, "update.example.com", DNS_TYPE_A,
-                                  DNS_CLASS_IN, "8.8.8.8", 60);
+  SocketDNSServfailCache_insert (
+      cache, "update.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", 60);
 
   SocketDNS_ServfailCacheEntry entry;
-  SocketDNSServfailCache_lookup (cache, "update.example.com", DNS_TYPE_A,
-                                  DNS_CLASS_IN, "8.8.8.8", &entry);
+  SocketDNSServfailCache_lookup (
+      cache, "update.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", &entry);
   ASSERT_EQ (entry.original_ttl, 60);
 
   /* Update with longer TTL (capped at 300) */
-  SocketDNSServfailCache_insert (cache, "update.example.com", DNS_TYPE_A,
-                                  DNS_CLASS_IN, "8.8.8.8", 300);
+  SocketDNSServfailCache_insert (
+      cache, "update.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", 300);
 
-  SocketDNSServfailCache_lookup (cache, "update.example.com", DNS_TYPE_A,
-                                  DNS_CLASS_IN, "8.8.8.8", &entry);
+  SocketDNSServfailCache_lookup (
+      cache, "update.example.com", DNS_TYPE_A, DNS_CLASS_IN, "8.8.8.8", &entry);
   ASSERT_EQ (entry.original_ttl, 300);
 
   /* Size should still be 1 */
@@ -588,20 +589,30 @@ TEST (servfailcache_ipv6_nameserver)
   SocketDNSServfailCache_T cache = SocketDNSServfailCache_new (arena);
 
   /* Insert with IPv6 nameserver */
-  SocketDNSServfailCache_insert (cache, "ipv6.example.com", DNS_TYPE_A,
-                                  DNS_CLASS_IN, "2001:4860:4860::8888", 300);
+  SocketDNSServfailCache_insert (cache,
+                                 "ipv6.example.com",
+                                 DNS_TYPE_A,
+                                 DNS_CLASS_IN,
+                                 "2001:4860:4860::8888",
+                                 300);
 
   /* Lookup should hit */
   SocketDNS_ServfailCacheResult result;
-  result = SocketDNSServfailCache_lookup (cache, "ipv6.example.com", DNS_TYPE_A,
-                                           DNS_CLASS_IN, "2001:4860:4860::8888",
-                                           NULL);
+  result = SocketDNSServfailCache_lookup (cache,
+                                          "ipv6.example.com",
+                                          DNS_TYPE_A,
+                                          DNS_CLASS_IN,
+                                          "2001:4860:4860::8888",
+                                          NULL);
   ASSERT_EQ (result, DNS_SERVFAIL_HIT);
 
   /* Different IPv6 should miss */
-  result = SocketDNSServfailCache_lookup (cache, "ipv6.example.com", DNS_TYPE_A,
-                                           DNS_CLASS_IN, "2001:4860:4860::8844",
-                                           NULL);
+  result = SocketDNSServfailCache_lookup (cache,
+                                          "ipv6.example.com",
+                                          DNS_TYPE_A,
+                                          DNS_CLASS_IN,
+                                          "2001:4860:4860::8844",
+                                          NULL);
   ASSERT_EQ (result, DNS_SERVFAIL_MISS);
 
   SocketDNSServfailCache_free (&cache);

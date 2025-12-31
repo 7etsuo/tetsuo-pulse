@@ -47,7 +47,8 @@ SocketSimple_Socket_T
 Socket_simple_connect (const char *host, int port)
 {
   /* Use timeout version with default timeout */
-  return Socket_simple_connect_timeout (host, port, SOCKET_SIMPLE_DEFAULT_TIMEOUT_MS);
+  return Socket_simple_connect_timeout (
+      host, port, SOCKET_SIMPLE_DEFAULT_TIMEOUT_MS);
 }
 
 SocketSimple_Socket_T
@@ -78,8 +79,7 @@ Socket_simple_connect_timeout (const char *host, int port, int timeout_ms)
       }
     else
       {
-        simple_set_error_errno (SOCKET_SIMPLE_ERR_CONNECT,
-                                "Connection failed");
+        simple_set_error_errno (SOCKET_SIMPLE_ERR_CONNECT, "Connection failed");
       }
     if (sock)
       Socket_free ((Socket_T *)&sock);
@@ -117,8 +117,10 @@ Socket_simple_listen (const char *host, int port, int backlog)
   {
     /* Use library convenience function - handles address family automatically
      */
-    sock = Socket_listen_tcp (host ? host : "0.0.0.0", port,
-                              backlog > 0 ? backlog : SOCKET_SIMPLE_DEFAULT_BACKLOG);
+    sock = Socket_listen_tcp (host ? host : "0.0.0.0",
+                              port,
+                              backlog > 0 ? backlog
+                                          : SOCKET_SIMPLE_DEFAULT_BACKLOG);
   }
   EXCEPT (Socket_Failed)
   {
@@ -154,12 +156,14 @@ Socket_simple_accept (SocketSimple_Socket_T server)
 
   if (!server || !server->socket)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Invalid server socket");
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid server socket");
       return NULL;
     }
 
-  TRY { client = Socket_accept (server->socket); }
+  TRY
+  {
+    client = Socket_accept (server->socket);
+  }
   EXCEPT (Socket_Failed)
   {
     simple_set_error_errno (SOCKET_SIMPLE_ERR_ACCEPT, "Accept failed");
@@ -184,12 +188,14 @@ Socket_simple_accept_timeout (SocketSimple_Socket_T server, int timeout_ms)
 
   if (!server || !server->socket)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "Invalid server socket");
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid server socket");
       return NULL;
     }
 
-  TRY { client = Socket_accept_timeout (server->socket, timeout_ms); }
+  TRY
+  {
+    client = Socket_accept_timeout (server->socket, timeout_ms);
+  }
   EXCEPT (Socket_Failed)
   {
     int err = Socket_geterrno ();
@@ -229,7 +235,10 @@ Socket_simple_send (SocketSimple_Socket_T sock, const void *data, size_t len)
       return -1;
     }
 
-  TRY { Socket_sendall (sock->socket, data, len); }
+  TRY
+  {
+    Socket_sendall (sock->socket, data, len);
+  }
   EXCEPT (Socket_Failed)
   {
     simple_set_error_errno (SOCKET_SIMPLE_ERR_SEND, "Send failed");
@@ -259,7 +268,10 @@ Socket_simple_recv (SocketSimple_Socket_T sock, void *buf, size_t len)
       return -1;
     }
 
-  TRY { n = Socket_recv (sock->socket, buf, len); }
+  TRY
+  {
+    n = Socket_recv (sock->socket, buf, len);
+  }
   EXCEPT (Socket_Failed)
   {
     simple_set_error_errno (SOCKET_SIMPLE_ERR_RECV, "Receive failed");
@@ -280,7 +292,9 @@ Socket_simple_recv (SocketSimple_Socket_T sock, void *buf, size_t len)
 }
 
 ssize_t
-Socket_simple_recv_timeout (SocketSimple_Socket_T sock, void *buf, size_t len,
+Socket_simple_recv_timeout (SocketSimple_Socket_T sock,
+                            void *buf,
+                            size_t len,
                             int timeout_ms)
 {
   volatile ssize_t n = 0;
@@ -350,7 +364,10 @@ Socket_simple_recv_all (SocketSimple_Socket_T sock, void *buf, size_t len)
       return -1;
     }
 
-  TRY { Socket_recvall (sock->socket, buf, len); }
+  TRY
+  {
+    Socket_recvall (sock->socket, buf, len);
+  }
   EXCEPT (Socket_Failed)
   {
     simple_set_error_errno (SOCKET_SIMPLE_ERR_RECV, "Receive failed");
@@ -400,8 +417,8 @@ Socket_simple_recv_line (SocketSimple_Socket_T sock, char *buf, size_t maxlen)
       /* Refill buffer if empty */
       if (buffer_pos >= (size_t)buffer_len)
         {
-          buffer_len
-              = Socket_simple_recv (sock, internal_buffer, sizeof (internal_buffer));
+          buffer_len = Socket_simple_recv (
+              sock, internal_buffer, sizeof (internal_buffer));
           if (buffer_len < 0)
             return -1;
           if (buffer_len == 0)
@@ -426,8 +443,7 @@ Socket_simple_recv_line (SocketSimple_Socket_T sock, char *buf, size_t maxlen)
  */
 
 int
-Socket_simple_set_timeout (SocketSimple_Socket_T sock, int send_ms,
-                           int recv_ms)
+Socket_simple_set_timeout (SocketSimple_Socket_T sock, int send_ms, int recv_ms)
 {
   int timeout_sec;
 
@@ -445,7 +461,10 @@ Socket_simple_set_timeout (SocketSimple_Socket_T sock, int send_ms,
       timeout_sec = 1;
     }
 
-  TRY { Socket_settimeout (sock->socket, timeout_sec); }
+  TRY
+  {
+    Socket_settimeout (sock->socket, timeout_sec);
+  }
   EXCEPT (Socket_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_SOCKET, "Failed to set timeout");
@@ -558,7 +577,10 @@ Socket_simple_udp_new (void)
 
   Socket_simple_clear_error ();
 
-  TRY { dgram = SocketDgram_new (AF_INET, 0); }
+  TRY
+  {
+    dgram = SocketDgram_new (AF_INET, 0);
+  }
   EXCEPT (SocketDgram_Failed)
   {
     simple_set_error (SOCKET_SIMPLE_ERR_SOCKET, "Failed to create UDP socket");
@@ -575,8 +597,11 @@ Socket_simple_udp_new (void)
 }
 
 int
-Socket_simple_udp_sendto (SocketSimple_Socket_T sock, const void *data,
-                          size_t len, const char *host, int port)
+Socket_simple_udp_sendto (SocketSimple_Socket_T sock,
+                          const void *data,
+                          size_t len,
+                          const char *host,
+                          int port)
 {
   volatile ssize_t sent = 0;
 
@@ -594,7 +619,10 @@ Socket_simple_udp_sendto (SocketSimple_Socket_T sock, const void *data,
       return -1;
     }
 
-  TRY { sent = SocketDgram_sendto (sock->dgram, data, len, host, port); }
+  TRY
+  {
+    sent = SocketDgram_sendto (sock->dgram, data, len, host, port);
+  }
   EXCEPT (SocketDgram_Failed)
   {
     simple_set_error_errno (SOCKET_SIMPLE_ERR_SEND, "UDP send failed");
@@ -606,8 +634,12 @@ Socket_simple_udp_sendto (SocketSimple_Socket_T sock, const void *data,
 }
 
 ssize_t
-Socket_simple_udp_recvfrom (SocketSimple_Socket_T sock, void *buf, size_t len,
-                            char *from_host, size_t host_len, int *from_port)
+Socket_simple_udp_recvfrom (SocketSimple_Socket_T sock,
+                            void *buf,
+                            size_t len,
+                            char *from_host,
+                            size_t host_len,
+                            int *from_port)
 {
   volatile ssize_t received = 0;
 
@@ -621,8 +653,8 @@ Socket_simple_udp_recvfrom (SocketSimple_Socket_T sock, void *buf, size_t len,
 
   TRY
   {
-    received = SocketDgram_recvfrom (sock->dgram, buf, len, from_host,
-                                     host_len, from_port);
+    received = SocketDgram_recvfrom (
+        sock->dgram, buf, len, from_host, host_len, from_port);
   }
   EXCEPT (SocketDgram_Failed)
   {
@@ -643,8 +675,9 @@ Socket_simple_udp_recvfrom (SocketSimple_Socket_T sock, void *buf, size_t len,
 #include <arpa/inet.h>
 
 int
-Socket_simple_udp_join_multicast (SocketSimple_Socket_T sock, const char *group,
-                                   const char *iface)
+Socket_simple_udp_join_multicast (SocketSimple_Socket_T sock,
+                                  const char *group,
+                                  const char *iface)
 {
   Socket_simple_clear_error ();
 
@@ -654,7 +687,10 @@ Socket_simple_udp_join_multicast (SocketSimple_Socket_T sock, const char *group,
       return -1;
     }
 
-  TRY { SocketDgram_joinmulticast (sock->dgram, group, iface); }
+  TRY
+  {
+    SocketDgram_joinmulticast (sock->dgram, group, iface);
+  }
   EXCEPT (SocketDgram_Failed)
   {
     simple_set_error_errno (SOCKET_SIMPLE_ERR_SOCKET,
@@ -668,7 +704,8 @@ Socket_simple_udp_join_multicast (SocketSimple_Socket_T sock, const char *group,
 
 int
 Socket_simple_udp_leave_multicast (SocketSimple_Socket_T sock,
-                                    const char *group, const char *iface)
+                                   const char *group,
+                                   const char *iface)
 {
   Socket_simple_clear_error ();
 
@@ -678,7 +715,10 @@ Socket_simple_udp_leave_multicast (SocketSimple_Socket_T sock,
       return -1;
     }
 
-  TRY { SocketDgram_leavemulticast (sock->dgram, group, iface); }
+  TRY
+  {
+    SocketDgram_leavemulticast (sock->dgram, group, iface);
+  }
   EXCEPT (SocketDgram_Failed)
   {
     simple_set_error_errno (SOCKET_SIMPLE_ERR_SOCKET,
@@ -703,8 +743,7 @@ Socket_simple_udp_set_multicast_ttl (SocketSimple_Socket_T sock, int ttl)
 
   if (ttl < 0 || ttl > 255)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "TTL must be 0-255");
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "TTL must be 0-255");
       return -1;
     }
 
@@ -724,7 +763,7 @@ Socket_simple_udp_set_multicast_ttl (SocketSimple_Socket_T sock, int ttl)
 
 int
 Socket_simple_udp_set_multicast_loopback (SocketSimple_Socket_T sock,
-                                           int enable)
+                                          int enable)
 {
   Socket_simple_clear_error ();
 
@@ -749,7 +788,7 @@ Socket_simple_udp_set_multicast_loopback (SocketSimple_Socket_T sock,
 
 int
 Socket_simple_udp_set_multicast_interface (SocketSimple_Socket_T sock,
-                                            const char *iface)
+                                           const char *iface)
 {
   Socket_simple_clear_error ();
 
@@ -823,8 +862,7 @@ Socket_simple_udp_set_ttl (SocketSimple_Socket_T sock, int ttl)
 
   if (ttl < 0 || ttl > 255)
     {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG,
-                        "TTL must be 0-255");
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "TTL must be 0-255");
       return -1;
     }
 
@@ -840,8 +878,9 @@ Socket_simple_udp_set_ttl (SocketSimple_Socket_T sock, int ttl)
 }
 
 int
-Socket_simple_udp_connect (SocketSimple_Socket_T sock, const char *host,
-                            int port)
+Socket_simple_udp_connect (SocketSimple_Socket_T sock,
+                           const char *host,
+                           int port)
 {
   Socket_simple_clear_error ();
 
@@ -857,7 +896,10 @@ Socket_simple_udp_connect (SocketSimple_Socket_T sock, const char *host,
       return -1;
     }
 
-  TRY { SocketDgram_connect (sock->dgram, host, port); }
+  TRY
+  {
+    SocketDgram_connect (sock->dgram, host, port);
+  }
   EXCEPT (SocketDgram_Failed)
   {
     simple_set_error_errno (SOCKET_SIMPLE_ERR_CONNECT, "UDP connect failed");
@@ -869,8 +911,9 @@ Socket_simple_udp_connect (SocketSimple_Socket_T sock, const char *host,
 }
 
 ssize_t
-Socket_simple_udp_send (SocketSimple_Socket_T sock, const void *data,
-                         size_t len)
+Socket_simple_udp_send (SocketSimple_Socket_T sock,
+                        const void *data,
+                        size_t len)
 {
   volatile ssize_t sent = 0;
 
@@ -882,7 +925,10 @@ Socket_simple_udp_send (SocketSimple_Socket_T sock, const void *data,
       return -1;
     }
 
-  TRY { sent = SocketDgram_send (sock->dgram, data, len); }
+  TRY
+  {
+    sent = SocketDgram_send (sock->dgram, data, len);
+  }
   EXCEPT (SocketDgram_Failed)
   {
     simple_set_error_errno (SOCKET_SIMPLE_ERR_SEND, "UDP send failed");
@@ -906,7 +952,10 @@ Socket_simple_udp_recv (SocketSimple_Socket_T sock, void *buf, size_t len)
       return -1;
     }
 
-  TRY { received = SocketDgram_recv (sock->dgram, buf, len); }
+  TRY
+  {
+    received = SocketDgram_recv (sock->dgram, buf, len);
+  }
   EXCEPT (SocketDgram_Failed)
   {
     simple_set_error_errno (SOCKET_SIMPLE_ERR_RECV, "UDP receive failed");
@@ -1020,7 +1069,10 @@ Socket_simple_set_nodelay (SocketSimple_Socket_T sock, int enable)
       return -1;
     }
 
-  TRY { Socket_setnodelay (sock->socket, enable); }
+  TRY
+  {
+    Socket_setnodelay (sock->socket, enable);
+  }
   EXCEPT (Socket_Failed)
   {
     simple_set_error_errno (SOCKET_SIMPLE_ERR_SOCKET,
@@ -1069,8 +1121,7 @@ set_keepalive_idle (int fd, int idle_secs)
   if (idle_secs <= 0)
     return 0;
 
-  if (setsockopt (fd, IPPROTO_TCP, TCP_KEEPIDLE, &idle_secs,
-                  sizeof (idle_secs))
+  if (setsockopt (fd, IPPROTO_TCP, TCP_KEEPIDLE, &idle_secs, sizeof (idle_secs))
       < 0)
     {
       simple_set_error_errno (SOCKET_SIMPLE_ERR_SOCKET,
@@ -1091,7 +1142,10 @@ set_keepalive_interval (int fd, int interval_secs)
   if (interval_secs <= 0)
     return 0;
 
-  if (setsockopt (fd, IPPROTO_TCP, TCP_KEEPINTVL, &interval_secs,
+  if (setsockopt (fd,
+                  IPPROTO_TCP,
+                  TCP_KEEPINTVL,
+                  &interval_secs,
                   sizeof (interval_secs))
       < 0)
     {
@@ -1132,8 +1186,11 @@ set_keepalive_count (int fd, int count)
  */
 
 int
-Socket_simple_set_keepalive (SocketSimple_Socket_T sock, int enable,
-                              int idle_secs, int interval_secs, int count)
+Socket_simple_set_keepalive (SocketSimple_Socket_T sock,
+                             int enable,
+                             int idle_secs,
+                             int interval_secs,
+                             int count)
 {
   Socket_simple_clear_error ();
 
@@ -1167,8 +1224,11 @@ Socket_simple_set_keepalive (SocketSimple_Socket_T sock, int enable,
 }
 
 int
-Socket_simple_get_keepalive (SocketSimple_Socket_T sock, int *enabled,
-                              int *idle_secs, int *interval_secs, int *count)
+Socket_simple_get_keepalive (SocketSimple_Socket_T sock,
+                             int *enabled,
+                             int *idle_secs,
+                             int *interval_secs,
+                             int *count)
 {
   Socket_simple_clear_error ();
 
@@ -1450,8 +1510,10 @@ Socket_simple_set_reuseport (SocketSimple_Socket_T sock, int enable)
 #include <netinet/in.h>
 
 int
-Socket_simple_get_local_addr (SocketSimple_Socket_T sock, char *host,
-                               size_t host_len, int *port)
+Socket_simple_get_local_addr (SocketSimple_Socket_T sock,
+                              char *host,
+                              size_t host_len,
+                              int *port)
 {
   Socket_simple_clear_error ();
 
@@ -1475,8 +1537,10 @@ Socket_simple_get_local_addr (SocketSimple_Socket_T sock, char *host,
 }
 
 int
-Socket_simple_get_peer_addr (SocketSimple_Socket_T sock, char *host,
-                              size_t host_len, int *port)
+Socket_simple_get_peer_addr (SocketSimple_Socket_T sock,
+                             char *host,
+                             size_t host_len,
+                             int *port)
 {
   Socket_simple_clear_error ();
 
@@ -1500,8 +1564,10 @@ Socket_simple_get_peer_addr (SocketSimple_Socket_T sock, char *host,
 }
 
 int
-Socket_simple_get_peer_creds (SocketSimple_Socket_T sock, int *pid, int *uid,
-                               int *gid)
+Socket_simple_get_peer_creds (SocketSimple_Socket_T sock,
+                              int *pid,
+                              int *uid,
+                              int *gid)
 {
   Socket_simple_clear_error ();
 
@@ -1566,8 +1632,9 @@ Socket_simple_get_peer_creds (SocketSimple_Socket_T sock, int *pid, int *uid,
 #include <sys/uio.h>
 
 ssize_t
-Socket_simple_sendv (SocketSimple_Socket_T sock, const struct iovec *iov,
-                      int iovcnt)
+Socket_simple_sendv (SocketSimple_Socket_T sock,
+                     const struct iovec *iov,
+                     int iovcnt)
 {
   volatile ssize_t n = 0;
 
@@ -1585,7 +1652,10 @@ Socket_simple_sendv (SocketSimple_Socket_T sock, const struct iovec *iov,
       return -1;
     }
 
-  TRY { n = Socket_sendv (sock->socket, iov, iovcnt); }
+  TRY
+  {
+    n = Socket_sendv (sock->socket, iov, iovcnt);
+  }
   EXCEPT (Socket_Failed)
   {
     simple_set_error_errno (SOCKET_SIMPLE_ERR_SEND, "Send failed");
@@ -1621,7 +1691,10 @@ Socket_simple_recvv (SocketSimple_Socket_T sock, struct iovec *iov, int iovcnt)
       return -1;
     }
 
-  TRY { n = Socket_recvv (sock->socket, iov, iovcnt); }
+  TRY
+  {
+    n = Socket_recvv (sock->socket, iov, iovcnt);
+  }
   EXCEPT (Socket_Failed)
   {
     simple_set_error_errno (SOCKET_SIMPLE_ERR_RECV, "Receive failed");

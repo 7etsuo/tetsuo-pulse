@@ -35,12 +35,14 @@
 #include "tls/SocketTLS-private.h"
 #include "tls/SocketTLSConfig.h"
 
-/* Thread-local exception for this translation unit - declared early for inline helpers */
-#include "core/Except.h"  /* For Except_T and module exception macros */
+/* Thread-local exception for this translation unit - declared early for inline
+ * helpers */
+#include "core/Except.h" /* For Except_T and module exception macros */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLS);
 
 /**
- * TLS_CHECK_WRITE_ERROR - Check and raise appropriate exception for SSL write errors
+ * TLS_CHECK_WRITE_ERROR - Check and raise appropriate exception for SSL write
+ * errors
  * @result: Return value from tls_handle_ssl_write_result()
  *
  * Interprets the encoded error result and raises the appropriate exception:
@@ -50,18 +52,20 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLS);
  *
  * Thread-safe: Yes (uses thread-local exception handling)
  */
-#define TLS_CHECK_WRITE_ERROR(result) \
-  do { \
-    if ((result) < -1) \
-      RAISE (Socket_Closed); \
-    else if ((result) < 0) \
-      RAISE_TLS_ERROR (SocketTLS_Failed); \
-  } while (0)
+#define TLS_CHECK_WRITE_ERROR(result)       \
+  do                                        \
+    {                                       \
+      if ((result) < -1)                    \
+        RAISE (Socket_Closed);              \
+      else if ((result) < 0)                \
+        RAISE_TLS_ERROR (SocketTLS_Failed); \
+    }                                       \
+  while (0)
 
 /* Linux kTLS headers - only available on Linux with kTLS support */
 #ifdef __linux__
 #include <linux/version.h>
-#if LINUX_VERSION_CODE >= KERNEL_VERSION (4, 13, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 13, 0)
 #define SOCKET_HAS_KERNEL_TLS 1
 #else
 #define SOCKET_HAS_KERNEL_TLS 0
@@ -271,7 +275,8 @@ SocketTLS_is_ktls_rx_active (Socket_T socket)
 }
 
 /**
- * tls_sendfile_fallback - Software fallback for sendfile when kTLS is unavailable
+ * tls_sendfile_fallback - Software fallback for sendfile when kTLS is
+ * unavailable
  * @ssl: SSL connection handle
  * @file_fd: File descriptor to read from
  * @offset: Starting offset in file
@@ -325,14 +330,14 @@ tls_sendfile_fallback (SSL *ssl, int file_fd, off_t offset, size_t size)
             to_send = (int)remaining;
 
           int ret_raw = SSL_write (ssl, buf + sent_chunk, to_send);
-          ssize_t ret
-              = tls_handle_ssl_write_result (ssl, ret_raw,
-                                             "SSL_write in sendfile fallback");
+          ssize_t ret = tls_handle_ssl_write_result (
+              ssl, ret_raw, "SSL_write in sendfile fallback");
           TLS_CHECK_WRITE_ERROR (ret);
           sent_chunk += (size_t)ret;
           if (ret == 0)
             {
-              /* Would block - return partial progress including this chunk's sent */
+              /* Would block - return partial progress including this chunk's
+               * sent */
               return total_sent + (ssize_t)sent_chunk;
             }
         }
@@ -370,7 +375,8 @@ SocketTLS_sendfile (Socket_T socket, int file_fd, off_t offset, size_t size)
   if (socket->tls_ktls_tx_active)
     {
       ossl_ssize_t sent_raw = SSL_sendfile (ssl, file_fd, offset, size, 0);
-      ssize_t sent = tls_handle_ssl_write_result (ssl, sent_raw, "SSL_sendfile");
+      ssize_t sent
+          = tls_handle_ssl_write_result (ssl, sent_raw, "SSL_sendfile");
       TLS_CHECK_WRITE_ERROR (sent);
       return sent;
     }

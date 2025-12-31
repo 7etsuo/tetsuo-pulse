@@ -36,13 +36,13 @@
 /* Operation codes */
 enum KeyUpdateOp
 {
-  OP_KEY_UPDATE_NON_TLS = 0,       /* KeyUpdate on non-TLS socket */
-  OP_KEY_UPDATE_BEFORE_HANDSHAKE,  /* KeyUpdate before handshake */
-  OP_KEY_UPDATE_GET_COUNT,         /* Get update count */
-  OP_KEY_UPDATE_REQUEST_PEER,      /* Request with peer update */
-  OP_KEY_UPDATE_LOCAL_ONLY,        /* Request local-only update */
-  OP_KEY_UPDATE_MULTIPLE,          /* Multiple updates in sequence */
-  OP_KEY_UPDATE_AFTER_DISABLE,     /* KeyUpdate after TLS disable */
+  OP_KEY_UPDATE_NON_TLS = 0,      /* KeyUpdate on non-TLS socket */
+  OP_KEY_UPDATE_BEFORE_HANDSHAKE, /* KeyUpdate before handshake */
+  OP_KEY_UPDATE_GET_COUNT,        /* Get update count */
+  OP_KEY_UPDATE_REQUEST_PEER,     /* Request with peer update */
+  OP_KEY_UPDATE_LOCAL_ONLY,       /* Request local-only update */
+  OP_KEY_UPDATE_MULTIPLE,         /* Multiple updates in sequence */
+  OP_KEY_UPDATE_AFTER_DISABLE,    /* KeyUpdate after TLS disable */
   OP_COUNT
 };
 

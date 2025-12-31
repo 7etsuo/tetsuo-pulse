@@ -56,8 +56,7 @@ read_u32 (const uint8_t *p)
  * fuzz_policy - Create fuzzed reconnection policy
  */
 static void
-fuzz_policy (SocketReconnect_Policy_T *policy, const uint8_t *data,
-             size_t size)
+fuzz_policy (SocketReconnect_Policy_T *policy, const uint8_t *data, size_t size)
 {
   /* Initialize with zeros */
   memset (policy, 0, sizeof (*policy));
@@ -149,8 +148,10 @@ make_hostname (char *buf, size_t bufsize, const uint8_t *data, size_t size)
  * state_callback - Reconnection state change callback
  */
 static void
-state_callback (SocketReconnect_T conn, SocketReconnect_State old_state,
-                SocketReconnect_State new_state, void *userdata)
+state_callback (SocketReconnect_T conn,
+                SocketReconnect_State old_state,
+                SocketReconnect_State new_state,
+                void *userdata)
 {
   (void)conn;
   (void)old_state;
@@ -222,7 +223,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
          */
       }
   }
-  EXCEPT (SocketReconnect_Failed) { /* Expected for invalid configurations */ }
+  EXCEPT (SocketReconnect_Failed)
+  { /* Expected for invalid configurations */
+  }
   FINALLY
   {
     if (conn)

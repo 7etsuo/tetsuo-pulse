@@ -25,12 +25,12 @@
  */
 
 static const char *result_strings[] = {
-    [QUIC_LOSS_OK] = "OK",
-    [QUIC_LOSS_ERROR_NULL] = "NULL pointer argument",
-    [QUIC_LOSS_ERROR_DUPLICATE] = "Duplicate packet number",
-    [QUIC_LOSS_ERROR_NOT_FOUND] = "Packet number not found",
-    [QUIC_LOSS_ERROR_FULL] = "Too many sent packets tracked",
-    [QUIC_LOSS_ERROR_INVALID] = "Invalid packet number or state",
+  [QUIC_LOSS_OK] = "OK",
+  [QUIC_LOSS_ERROR_NULL] = "NULL pointer argument",
+  [QUIC_LOSS_ERROR_DUPLICATE] = "Duplicate packet number",
+  [QUIC_LOSS_ERROR_NOT_FOUND] = "Packet number not found",
+  [QUIC_LOSS_ERROR_FULL] = "Too many sent packets tracked",
+  [QUIC_LOSS_ERROR_INVALID] = "Invalid packet number or state",
 };
 
 DEFINE_RESULT_STRING_FUNC (SocketQUICLoss, QUIC_LOSS_ERROR_INVALID)
@@ -214,8 +214,10 @@ SocketQUICLoss_init_rtt (SocketQUICLossRTT_T *rtt)
 }
 
 void
-SocketQUICLoss_update_rtt (SocketQUICLossRTT_T *rtt, uint64_t latest_rtt_us,
-                            uint64_t ack_delay_us, int is_handshake)
+SocketQUICLoss_update_rtt (SocketQUICLossRTT_T *rtt,
+                           uint64_t latest_rtt_us,
+                           uint64_t ack_delay_us,
+                           int is_handshake)
 {
   uint64_t adjusted_rtt;
   uint64_t rtt_sample;
@@ -258,7 +260,7 @@ SocketQUICLoss_update_rtt (SocketQUICLossRTT_T *rtt, uint64_t latest_rtt_us,
    * rttvar = (1 - 1/4) * rttvar + 1/4 * |smoothed_rtt - rtt_sample|
    * smoothed_rtt = (1 - 1/8) * smoothed_rtt + 1/8 * rtt_sample
    */
-  diff = llabs((int64_t)rtt->smoothed_rtt - (int64_t)rtt_sample);
+  diff = llabs ((int64_t)rtt->smoothed_rtt - (int64_t)rtt_sample);
 
   rtt->rtt_var = (QUIC_RTT_VAR_WEIGHT * rtt->rtt_var + (uint64_t)diff)
                  / QUIC_RTT_VAR_DENOM;
@@ -267,8 +269,9 @@ SocketQUICLoss_update_rtt (SocketQUICLossRTT_T *rtt, uint64_t latest_rtt_us,
 }
 
 uint64_t
-SocketQUICLoss_get_pto (const SocketQUICLossRTT_T *rtt, uint64_t max_ack_delay,
-                         int pto_count)
+SocketQUICLoss_get_pto (const SocketQUICLossRTT_T *rtt,
+                        uint64_t max_ack_delay,
+                        int pto_count)
 {
   uint64_t pto;
   uint64_t timeout;
@@ -301,9 +304,12 @@ SocketQUICLoss_get_pto (const SocketQUICLossRTT_T *rtt, uint64_t max_ack_delay,
 
 SocketQUICLoss_Result
 SocketQUICLoss_on_packet_sent (SocketQUICLossState_T state,
-                                uint64_t packet_number, uint64_t sent_time_us,
-                                size_t sent_bytes, int ack_eliciting,
-                                int in_flight, int is_crypto)
+                               uint64_t packet_number,
+                               uint64_t sent_time_us,
+                               size_t sent_bytes,
+                               int ack_eliciting,
+                               int in_flight,
+                               int is_crypto)
 {
   SocketQUICLossSentPacket_T *packet;
 
@@ -368,7 +374,8 @@ get_loss_time_threshold (const SocketQUICLossRTT_T *rtt)
     max_rtt = rtt->latest_rtt;
 
   /* threshold = kTimeThreshold * max_rtt = 9/8 * max_rtt */
-  threshold = (max_rtt * QUIC_LOSS_TIME_THRESHOLD_NUM) / QUIC_LOSS_TIME_THRESHOLD_DEN;
+  threshold
+      = (max_rtt * QUIC_LOSS_TIME_THRESHOLD_NUM) / QUIC_LOSS_TIME_THRESHOLD_DEN;
 
   /* At least granularity */
   if (threshold < QUIC_LOSS_GRANULARITY_US)
@@ -388,7 +395,8 @@ get_loss_time_threshold (const SocketQUICLossRTT_T *rtt)
 static void
 handle_lost_packet (SocketQUICLossState_T state,
                     SocketQUICLossSentPacket_T *packet,
-                    SocketQUICLoss_LostCallback lost_callback, void *context)
+                    SocketQUICLoss_LostCallback lost_callback,
+                    void *context)
 {
   if (packet->in_flight)
     {
@@ -397,7 +405,8 @@ handle_lost_packet (SocketQUICLossState_T state,
         {
           SOCKET_LOG_ERROR_MSG (
               "bytes_in_flight underflow: sent_bytes=%zu, in_flight=%zu",
-              packet->sent_bytes, state->bytes_in_flight);
+              packet->sent_bytes,
+              state->bytes_in_flight);
           state->bytes_in_flight = 0;
         }
       else
@@ -413,9 +422,11 @@ handle_lost_packet (SocketQUICLossState_T state,
 }
 
 static void
-detect_lost_packets (SocketQUICLossState_T state, const SocketQUICLossRTT_T *rtt,
+detect_lost_packets (SocketQUICLossState_T state,
+                     const SocketQUICLossRTT_T *rtt,
                      uint64_t current_time,
-                     SocketQUICLoss_LostCallback lost_callback, void *context,
+                     SocketQUICLoss_LostCallback lost_callback,
+                     void *context,
                      size_t *lost_count)
 {
   uint64_t loss_delay;
@@ -432,10 +443,9 @@ detect_lost_packets (SocketQUICLossState_T state, const SocketQUICLossRTT_T *rtt
   loss_delay = get_loss_time_threshold (rtt);
 
   /* Packet threshold: packets more than 3 behind largest_acked */
-  pn_threshold
-      = state->largest_acked >= QUIC_LOSS_PACKET_THRESHOLD
-            ? state->largest_acked - QUIC_LOSS_PACKET_THRESHOLD
-            : 0;
+  pn_threshold = state->largest_acked >= QUIC_LOSS_PACKET_THRESHOLD
+                     ? state->largest_acked - QUIC_LOSS_PACKET_THRESHOLD
+                     : 0;
 
   state->loss_time = 0;
 
@@ -498,11 +508,13 @@ detect_lost_packets (SocketQUICLossState_T state, const SocketQUICLossRTT_T *rtt
 
 SocketQUICLoss_Result
 SocketQUICLoss_on_ack_received (SocketQUICLossState_T state,
-                                 SocketQUICLossRTT_T *rtt,
-                                 uint64_t largest_acked, uint64_t ack_delay_us,
-                                 uint64_t recv_time_us,
-                                 SocketQUICLoss_LostCallback lost_callback,
-                                 void *context, size_t *lost_count)
+                                SocketQUICLossRTT_T *rtt,
+                                uint64_t largest_acked,
+                                uint64_t ack_delay_us,
+                                uint64_t recv_time_us,
+                                SocketQUICLoss_LostCallback lost_callback,
+                                void *context,
+                                size_t *lost_count)
 {
   SocketQUICLossSentPacket_T *largest_pkt;
   uint64_t latest_rtt;
@@ -521,8 +533,8 @@ SocketQUICLoss_on_ack_received (SocketQUICLossState_T state,
       /* Only update RTT if this is a new largest_acked */
       if (largest_acked > state->largest_acked)
         {
-          SocketQUICLoss_update_rtt (rtt, latest_rtt, ack_delay_us,
-                                      state->is_handshake_space);
+          SocketQUICLoss_update_rtt (
+              rtt, latest_rtt, ack_delay_us, state->is_handshake_space);
         }
     }
 
@@ -547,7 +559,8 @@ SocketQUICLoss_on_ack_received (SocketQUICLossState_T state,
         {
           SOCKET_LOG_ERROR_MSG (
               "bytes_in_flight underflow: sent_bytes=%zu, in_flight=%zu",
-              largest_pkt->sent_bytes, state->bytes_in_flight);
+              largest_pkt->sent_bytes,
+              state->bytes_in_flight);
           state->bytes_in_flight = 0;
         }
       else
@@ -560,8 +573,8 @@ SocketQUICLoss_on_ack_received (SocketQUICLossState_T state,
 
 detect_lost:
   /* Detect lost packets */
-  detect_lost_packets (state, rtt, recv_time_us, lost_callback, context,
-                       lost_count);
+  detect_lost_packets (
+      state, rtt, recv_time_us, lost_callback, context, lost_count);
 
   return QUIC_LOSS_OK;
 }
@@ -573,8 +586,9 @@ detect_lost:
 
 uint64_t
 SocketQUICLoss_get_loss_time (const SocketQUICLossState_T state,
-                               const SocketQUICLossRTT_T *rtt, int pto_count,
-                               uint64_t current_time)
+                              const SocketQUICLossRTT_T *rtt,
+                              int pto_count,
+                              uint64_t current_time)
 {
   uint64_t pto_time;
 
@@ -594,9 +608,9 @@ SocketQUICLoss_get_loss_time (const SocketQUICLossState_T state,
   /* Calculate PTO timeout */
   if (state->time_of_last_ack_eliciting > 0)
     {
-      pto_time = state->time_of_last_ack_eliciting
-                 + SocketQUICLoss_get_pto (rtt, state->max_ack_delay_us,
-                                            pto_count);
+      pto_time
+          = state->time_of_last_ack_eliciting
+            + SocketQUICLoss_get_pto (rtt, state->max_ack_delay_us, pto_count);
       return pto_time;
     }
 
@@ -605,9 +619,11 @@ SocketQUICLoss_get_loss_time (const SocketQUICLossState_T state,
 
 SocketQUICLoss_Result
 SocketQUICLoss_on_loss_timeout (SocketQUICLossState_T state,
-                                 SocketQUICLossRTT_T *rtt, uint64_t current_time,
-                                 SocketQUICLoss_LostCallback lost_callback,
-                                 void *context, size_t *lost_count)
+                                SocketQUICLossRTT_T *rtt,
+                                uint64_t current_time,
+                                SocketQUICLoss_LostCallback lost_callback,
+                                void *context,
+                                size_t *lost_count)
 {
   if (state == NULL)
     return QUIC_LOSS_ERROR_NULL;
@@ -615,8 +631,8 @@ SocketQUICLoss_on_loss_timeout (SocketQUICLossState_T state,
   /* Time-based loss detection */
   if (state->loss_time > 0 && current_time >= state->loss_time)
     {
-      detect_lost_packets (state, rtt, current_time, lost_callback, context,
-                           lost_count);
+      detect_lost_packets (
+          state, rtt, current_time, lost_callback, context, lost_count);
       return QUIC_LOSS_OK;
     }
 

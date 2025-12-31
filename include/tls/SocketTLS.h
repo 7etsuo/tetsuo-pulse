@@ -559,8 +559,8 @@ typedef enum
 {
   TLS_HANDSHAKE_NOT_STARTED = 0, /**< Initial state: handshake not initiated */
   TLS_HANDSHAKE_IN_PROGRESS = 1, /**< Active exchange of handshake messages */
-  TLS_HANDSHAKE_WANT_READ = 2,  /**< Blocked waiting for inbound TLS records */
-  TLS_HANDSHAKE_WANT_WRITE = 3, /**< Blocked waiting to send TLS records */
+  TLS_HANDSHAKE_WANT_READ = 2,   /**< Blocked waiting for inbound TLS records */
+  TLS_HANDSHAKE_WANT_WRITE = 3,  /**< Blocked waiting to send TLS records */
   TLS_HANDSHAKE_COMPLETE = 4, /**< Successful completion; ready for app data */
   TLS_HANDSHAKE_ERROR = 5     /**< Fatal error; abort connection */
 } TLSHandshakeState;
@@ -815,7 +815,8 @@ extern TLSHandshakeState SocketTLS_handshake (Socket_T socket);
  *
  * Convenience function to run the handshake loop until complete or timeout.
  * Uses SocketPoll internally for non-blocking operation if timeout > 0.
- * Uses the default poll interval (SOCKET_TLS_POLL_INTERVAL_MS, typically 100ms).
+ * Uses the default poll interval (SOCKET_TLS_POLL_INTERVAL_MS, typically
+ * 100ms).
  *
  * @return TLSHandshakeState (COMPLETE on success, ERROR on failure/timeout)
  * @throws SocketTLS_HandshakeFailed on error or timeout (includes elapsed time
@@ -832,8 +833,8 @@ extern TLSHandshakeState SocketTLS_handshake (Socket_T socket);
  *
  * @see SocketTLS_handshake_loop_ex() for configurable poll interval
  */
-extern TLSHandshakeState SocketTLS_handshake_loop (Socket_T socket,
-                                                   int timeout_ms);
+extern TLSHandshakeState
+SocketTLS_handshake_loop (Socket_T socket, int timeout_ms);
 
 /**
  * @brief Complete handshake with timeout and configurable poll interval
@@ -1186,8 +1187,8 @@ extern long SocketTLS_get_verify_result (Socket_T socket);
  *
  * Requires: tls_handshake_done
  */
-extern const char *SocketTLS_get_verify_error_string (Socket_T socket,
-                                                      char *buf, size_t size);
+extern const char *
+SocketTLS_get_verify_error_string (Socket_T socket, char *buf, size_t size);
 
 /**
  * @brief Check if TLS session was resumed
@@ -1329,8 +1330,8 @@ extern const char *SocketTLS_get_alpn_selected (Socket_T socket);
  * @see SocketTLS_is_session_reused() to verify resumption worked
  * @see SocketTLSContext_enable_session_cache() for server-side caching
  */
-extern int SocketTLS_session_save (Socket_T socket, unsigned char *buffer,
-                                   size_t *len);
+extern int
+SocketTLS_session_save (Socket_T socket, unsigned char *buffer, size_t *len);
 
 /**
  * @brief Import previously saved TLS session for resumption
@@ -1401,7 +1402,8 @@ extern int SocketTLS_session_save (Socket_T socket, unsigned char *buffer,
  * @see SocketTLS_is_session_reused() to verify resumption
  */
 extern int SocketTLS_session_restore (Socket_T socket,
-                                      const unsigned char *buffer, size_t len);
+                                      const unsigned char *buffer,
+                                      size_t len);
 
 /* ============================================================================
  * TLS Renegotiation Control
@@ -1507,12 +1509,12 @@ extern int SocketTLS_get_renegotiation_count (Socket_T socket);
  */
 typedef struct SocketTLS_CertInfo
 {
-  char subject[256];   /**< Certificate subject (CN, O, etc) */
-  char issuer[256];    /**< Issuer DN string */
-  time_t not_before;   /**< Certificate validity start (UTC) */
-  time_t not_after;    /**< Certificate validity end (UTC) */
-  int version;         /**< X.509 version (typically 3) */
-  char serial[64];     /**< Serial number (hex string) */
+  char subject[256];    /**< Certificate subject (CN, O, etc) */
+  char issuer[256];     /**< Issuer DN string */
+  time_t not_before;    /**< Certificate validity start (UTC) */
+  time_t not_after;     /**< Certificate validity end (UTC) */
+  int version;          /**< X.509 version (typically 3) */
+  char serial[64];      /**< Serial number (hex string) */
   char fingerprint[65]; /**< SHA256 fingerprint (hex string) */
 } SocketTLS_CertInfo;
 
@@ -1545,8 +1547,8 @@ typedef struct SocketTLS_CertInfo
  * @see SocketTLS_get_cert_expiry() for just expiration time
  * @see SocketTLS_get_cert_subject() for just subject
  */
-extern int SocketTLS_get_peer_cert_info (Socket_T socket,
-                                         SocketTLS_CertInfo *info);
+extern int
+SocketTLS_get_peer_cert_info (Socket_T socket, SocketTLS_CertInfo *info);
 
 /**
  * @brief Get peer certificate expiration time
@@ -1660,7 +1662,8 @@ extern int SocketTLS_get_cert_subject (Socket_T socket, char *buf, size_t len);
  * @see SocketTLS_get_peer_cert_info() for peer certificate details
  * @see SocketTLS_get_cert_subject() for peer subject string
  */
-extern int SocketTLS_get_peer_cert_chain (Socket_T socket, X509 ***chain_out,
+extern int SocketTLS_get_peer_cert_chain (Socket_T socket,
+                                          X509 ***chain_out,
                                           int *chain_len);
 
 /* ============================================================================
@@ -1756,7 +1759,8 @@ extern int SocketTLS_get_ocsp_response_status (Socket_T socket);
  *
  * @see SocketTLS_get_ocsp_response_status() for certificate revocation check
  */
-extern int SocketTLS_get_ocsp_next_update (Socket_T socket, time_t *next_update);
+extern int
+SocketTLS_get_ocsp_next_update (Socket_T socket, time_t *next_update);
 
 /* ============================================================================
  * Kernel TLS (kTLS) Offload Support
@@ -2057,8 +2061,8 @@ extern int SocketTLS_is_ktls_rx_active (Socket_T socket);
  * @see SocketTLS_is_ktls_tx_active() to check if zero-copy is available
  * @see SocketTLS_send() for sending buffer data
  */
-extern ssize_t SocketTLS_sendfile (Socket_T socket, int file_fd, off_t offset,
-                                   size_t size);
+extern ssize_t
+SocketTLS_sendfile (Socket_T socket, int file_fd, off_t offset, size_t size);
 
 /* ============================================================================
  * TLS Performance Optimizations
@@ -2157,7 +2161,8 @@ typedef enum
 {
   SOCKET_EARLY_DATA_NOT_SENT = 0, /**< No early data was sent */
   SOCKET_EARLY_DATA_ACCEPTED = 1, /**< Server accepted early data */
-  SOCKET_EARLY_DATA_REJECTED = 2  /**< Server rejected early data (resend needed) */
+  SOCKET_EARLY_DATA_REJECTED
+  = 2 /**< Server rejected early data (resend needed) */
 } SocketTLS_EarlyDataStatus;
 
 /**
@@ -2239,8 +2244,10 @@ extern void SocketTLSContext_disable_early_data (SocketTLSContext_T ctx);
  *
  * @warning Early data is NOT replay-protected. Only send idempotent operations.
  */
-extern int SocketTLS_write_early_data (Socket_T socket, const void *buf,
-                                       size_t len, size_t *written);
+extern int SocketTLS_write_early_data (Socket_T socket,
+                                       const void *buf,
+                                       size_t len,
+                                       size_t *written);
 
 /**
  * @brief Receive early data during TLS 1.3 handshake (server)
@@ -2266,7 +2273,9 @@ extern int SocketTLS_write_early_data (Socket_T socket, const void *buf,
  * @warning Early data is NOT replay-protected. Server MUST implement
  *          application-level replay protection.
  */
-extern int SocketTLS_read_early_data (Socket_T socket, void *buf, size_t len,
+extern int SocketTLS_read_early_data (Socket_T socket,
+                                      void *buf,
+                                      size_t len,
                                       size_t *readbytes);
 
 /**
@@ -2286,7 +2295,8 @@ extern int SocketTLS_read_early_data (Socket_T socket, void *buf, size_t len,
  *
  * @see SocketTLS_EarlyDataStatus for status values
  */
-extern SocketTLS_EarlyDataStatus SocketTLS_get_early_data_status (Socket_T socket);
+extern SocketTLS_EarlyDataStatus
+SocketTLS_get_early_data_status (Socket_T socket);
 
 /* ============================================================================
  * TLS 1.3 KeyUpdate Support
@@ -2359,7 +2369,8 @@ extern SocketTLS_EarlyDataStatus SocketTLS_get_early_data_status (Socket_T socke
  * @see SocketTLS_get_key_update_count() for monitoring
  * @see SocketTLS_check_renegotiation() for TLS 1.2 key changes
  */
-extern int SocketTLS_request_key_update (Socket_T socket, int request_peer_update);
+extern int
+SocketTLS_request_key_update (Socket_T socket, int request_peer_update);
 
 /**
  * @brief Get number of KeyUpdate operations performed
@@ -2444,17 +2455,17 @@ typedef struct TLSBufferPool *TLSBufferPool_T;
  * allocation overhead.
  *
  * Arena ownership:
- * - If @p arena is NULL, pool creates and owns its own arena; TLSBufferPool_free()
- *   will dispose it.
- * - If @p arena is provided, caller retains ownership; TLSBufferPool_free() will
- *   NOT dispose it, and caller must ensure arena outlives the pool.
+ * - If @p arena is NULL, pool creates and owns its own arena;
+ * TLSBufferPool_free() will dispose it.
+ * - If @p arena is provided, caller retains ownership; TLSBufferPool_free()
+ * will NOT dispose it, and caller must ensure arena outlives the pool.
  *
  * @return New buffer pool, or NULL on error
  *
  * @threadsafe Yes - fully thread-safe once created
  */
-extern TLSBufferPool_T TLSBufferPool_new (size_t buffer_size, size_t num_buffers,
-                                          Arena_T arena);
+extern TLSBufferPool_T
+TLSBufferPool_new (size_t buffer_size, size_t num_buffers, Arena_T arena);
 
 /**
  * @brief Acquire a buffer from the pool
@@ -2490,8 +2501,10 @@ extern void TLSBufferPool_release (TLSBufferPool_T pool, void *buffer);
  *
  * @threadsafe Yes
  */
-extern void TLSBufferPool_stats (TLSBufferPool_T pool, size_t *total,
-                                 size_t *in_use, size_t *available);
+extern void TLSBufferPool_stats (TLSBufferPool_T pool,
+                                 size_t *total,
+                                 size_t *in_use,
+                                 size_t *available);
 
 /**
  * @brief Destroy a buffer pool

@@ -19,7 +19,8 @@
  * ## RFC References
  *
  * - RFC 1035 Section 4.2.1: UDP usage (port 53, 512 byte limit)
- * - RFC 1035 Section 4.2.2: TCP usage (2-byte length prefix, for truncated responses)
+ * - RFC 1035 Section 4.2.2: TCP usage (2-byte length prefix, for truncated
+ * responses)
  * - RFC 6891: EDNS0 (larger UDP payload, up to 4096 bytes)
  *
  * ## Features
@@ -79,7 +80,8 @@
 /** TCP connection timeout in milliseconds. */
 #define DNS_TCP_CONNECT_TIMEOUT_MS 5000
 
-/** TCP idle timeout before closing connection (RFC 1035 recommends ~2 minutes). */
+/** TCP idle timeout before closing connection (RFC 1035 recommends ~2 minutes).
+ */
 #define DNS_TCP_IDLE_TIMEOUT_MS 120000
 
 /* Error codes for callback */
@@ -132,7 +134,8 @@ typedef struct SocketDNSQuery *SocketDNSQuery_T;
  */
 typedef void (*SocketDNSTransport_Callback) (SocketDNSQuery_T query,
                                              const unsigned char *response,
-                                             size_t len, int error,
+                                             size_t len,
+                                             int error,
                                              void *userdata);
 
 /**
@@ -143,7 +146,7 @@ typedef struct
 {
   char address[DNS_ADDR_STR_MAX]; /**< IPv4 or IPv6 address string */
   int port;                       /**< Port number (default: 53) */
-  int family;                     /**< AF_INET or AF_INET6 (0 for auto-detect) */
+  int family; /**< AF_INET or AF_INET6 (0 for auto-detect) */
 } SocketDNS_Nameserver;
 
 /**
@@ -155,7 +158,8 @@ typedef struct
   int initial_timeout_ms; /**< Initial retry timeout (default: 2000ms) */
   int max_timeout_ms;     /**< Maximum retry timeout (default: 5000ms) */
   int max_retries;        /**< Maximum retry attempts (default: 3) */
-  int rotate_nameservers; /**< Rotate through nameservers on retry (default: 1) */
+  int rotate_nameservers; /**< Rotate through nameservers on retry (default: 1)
+                           */
 } SocketDNSTransport_Config;
 
 /**
@@ -202,11 +206,12 @@ extern void SocketDNSTransport_free (T *transport);
  * @code{.c}
  * SocketDNSTransport_add_nameserver(transport, "8.8.8.8", DNS_PORT);
  * SocketDNSTransport_add_nameserver(transport, "8.8.4.4", DNS_PORT);
- * SocketDNSTransport_add_nameserver(transport, "2001:4860:4860::8888", DNS_PORT);
+ * SocketDNSTransport_add_nameserver(transport, "2001:4860:4860::8888",
+ * DNS_PORT);
  * @endcode
  */
-extern int SocketDNSTransport_add_nameserver (T transport, const char *address,
-                                              int port);
+extern int
+SocketDNSTransport_add_nameserver (T transport, const char *address, int port);
 
 /**
  * @brief Remove all configured nameservers.
@@ -232,8 +237,9 @@ extern int SocketDNSTransport_nameserver_count (T transport);
  * @param transport Transport instance.
  * @param config    Configuration options (NULL members use defaults).
  */
-extern void SocketDNSTransport_configure (T transport,
-                                          const SocketDNSTransport_Config *config);
+extern void
+SocketDNSTransport_configure (T transport,
+                              const SocketDNSTransport_Config *config);
 
 /**
  * @brief Set the dead server tracker for this transport.
@@ -251,8 +257,9 @@ extern void SocketDNSTransport_configure (T transport,
  * SocketDNSTransport_set_dead_server_tracker(transport, tracker);
  * @endcode
  */
-extern void SocketDNSTransport_set_dead_server_tracker (
-    T transport, SocketDNSDeadServer_T tracker);
+extern void
+SocketDNSTransport_set_dead_server_tracker (T transport,
+                                            SocketDNSDeadServer_T tracker);
 
 /**
  * @brief Get the dead server tracker for this transport.
@@ -261,8 +268,8 @@ extern void SocketDNSTransport_set_dead_server_tracker (
  * @param transport Transport instance.
  * @return Dead server tracker, or NULL if not set.
  */
-extern SocketDNSDeadServer_T SocketDNSTransport_get_dead_server_tracker (
-    T transport);
+extern SocketDNSDeadServer_T
+SocketDNSTransport_get_dead_server_tracker (T transport);
 
 /**
  * @brief Send a DNS query asynchronously via UDP.
@@ -277,7 +284,8 @@ extern SocketDNSDeadServer_T SocketDNSTransport_get_dead_server_tracker (
  * @param callback  Completion callback (required).
  * @param userdata  User data passed to callback.
  * @return Query handle on success, NULL on error.
- * @throws SocketDNSTransport_Failed on invalid parameters or resource exhaustion.
+ * @throws SocketDNSTransport_Failed on invalid parameters or resource
+ * exhaustion.
  *
  * @note If response TC (truncation) bit is set, callback receives
  *       DNS_ERROR_TRUNCATED. Caller should retry via TCP (issue #135).
@@ -294,9 +302,12 @@ extern SocketDNSDeadServer_T SocketDNSTransport_get_dead_server_tracker (
  *                                                   my_callback, my_data);
  * @endcode
  */
-extern SocketDNSQuery_T SocketDNSTransport_query_udp (
-    T transport, const unsigned char *query, size_t len,
-    SocketDNSTransport_Callback callback, void *userdata);
+extern SocketDNSQuery_T
+SocketDNSTransport_query_udp (T transport,
+                              const unsigned char *query,
+                              size_t len,
+                              SocketDNSTransport_Callback callback,
+                              void *userdata);
 
 /**
  * @brief Send a DNS query asynchronously via TCP.
@@ -317,8 +328,10 @@ extern SocketDNSQuery_T SocketDNSTransport_query_udp (
  * @param userdata  User data passed to callback.
  * @return Query handle on success, NULL on error.
  *
- * @note TCP connections may be reused for subsequent queries to same nameserver.
- * @note Use SocketDNSTransport_tcp_close() to explicitly close idle connections.
+ * @note TCP connections may be reused for subsequent queries to same
+ * nameserver.
+ * @note Use SocketDNSTransport_tcp_close() to explicitly close idle
+ * connections.
  *
  * @code{.c}
  * // Retry truncated query via TCP
@@ -332,9 +345,12 @@ extern SocketDNSQuery_T SocketDNSTransport_query_udp (
  * }
  * @endcode
  */
-extern SocketDNSQuery_T SocketDNSTransport_query_tcp (
-    T transport, const unsigned char *query, size_t len,
-    SocketDNSTransport_Callback callback, void *userdata);
+extern SocketDNSQuery_T
+SocketDNSTransport_query_tcp (T transport,
+                              const unsigned char *query,
+                              size_t len,
+                              SocketDNSTransport_Callback callback,
+                              void *userdata);
 
 /**
  * @brief Close all idle TCP connections.

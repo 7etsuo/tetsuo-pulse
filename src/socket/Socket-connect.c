@@ -64,8 +64,10 @@ socket_wait_for_connect (T socket, int timeout_ms)
 
 
 static int
-socket_connect_with_poll_wait (T socket, const struct sockaddr *addr,
-                               socklen_t addrlen, int timeout_ms)
+socket_connect_with_poll_wait (T socket,
+                               const struct sockaddr *addr,
+                               socklen_t addrlen,
+                               int timeout_ms)
 {
   if (connect (SocketBase_fd (socket->base), addr, addrlen) == 0
       || errno == EISCONN)
@@ -110,8 +112,11 @@ static void
 socket_handle_connect_error (const char *host, int port)
 {
   SocketMetrics_increment (SOCKET_METRIC_SOCKET_CONNECT_FAILURE, 1);
-  SOCKET_ERROR_FMT ("%s: %.*s:%d", socket_get_connect_error_msg (errno),
-                    SOCKET_ERROR_MAX_HOSTNAME, host, port);
+  SOCKET_ERROR_FMT ("%s: %.*s:%d",
+                    socket_get_connect_error_msg (errno),
+                    SOCKET_ERROR_MAX_HOSTNAME,
+                    host,
+                    port);
 }
 
 static void
@@ -120,7 +125,8 @@ socket_cache_remote_endpoint (T socket)
   if (SocketCommon_cache_endpoint (
           SocketBase_arena (socket->base),
           (struct sockaddr *)&socket->base->remote_addr,
-          socket->base->remote_addrlen, &socket->base->remoteaddr,
+          socket->base->remote_addrlen,
+          &socket->base->remoteaddr,
           &socket->base->remoteport)
       != 0)
     {
@@ -149,7 +155,8 @@ socket_handle_successful_connect (T socket)
 }
 
 static int
-connect_attempt_immediate (T socket, const struct sockaddr *addr,
+connect_attempt_immediate (T socket,
+                           const struct sockaddr *addr,
                            socklen_t addrlen)
 {
   if (connect (SocketBase_fd (socket->base), addr, addrlen) == 0
@@ -178,23 +185,28 @@ connect_setup_nonblock (T socket, int *original_flags)
 }
 
 static int
-connect_wait_completion (T socket, const struct sockaddr *addr,
-                         socklen_t addrlen, int timeout_ms, int original_flags)
+connect_wait_completion (T socket,
+                         const struct sockaddr *addr,
+                         socklen_t addrlen,
+                         int timeout_ms,
+                         int original_flags)
 {
   int restore_blocking = (original_flags & O_NONBLOCK) == 0;
   int result
       = socket_connect_with_poll_wait (socket, addr, addrlen, timeout_ms);
 
   if (restore_blocking)
-    socket_common_restore_blocking_mode (SocketBase_fd (socket->base),
-                                         original_flags, "SocketConnect");
+    socket_common_restore_blocking_mode (
+        SocketBase_fd (socket->base), original_flags, "SocketConnect");
 
   return result;
 }
 
 static int
-try_connect_address (T socket, const struct sockaddr *addr,
-                     socklen_t addrlen, int timeout_ms)
+try_connect_address (T socket,
+                     const struct sockaddr *addr,
+                     socklen_t addrlen,
+                     int timeout_ms)
 {
   int original_flags;
 
@@ -207,13 +219,15 @@ try_connect_address (T socket, const struct sockaddr *addr,
   if (connect_setup_nonblock (socket, &original_flags) < 0)
     return -1;
 
-  return connect_wait_completion (socket, addr, addrlen, timeout_ms,
-                                  original_flags);
+  return connect_wait_completion (
+      socket, addr, addrlen, timeout_ms, original_flags);
 }
 
 static int
-try_connect_resolved_addresses (T socket, struct addrinfo *res,
-                                int socket_family, int timeout_ms)
+try_connect_resolved_addresses (T socket,
+                                struct addrinfo *res,
+                                int socket_family,
+                                int timeout_ms)
 {
   struct addrinfo *rp;
   int saved_errno = 0;
@@ -234,17 +248,21 @@ try_connect_resolved_addresses (T socket, struct addrinfo *res,
 }
 
 static void
-connect_resolve_address (const char *host, int port, int socket_family,
+connect_resolve_address (const char *host,
+                         int port,
+                         int socket_family,
                          struct addrinfo **res)
 {
-  if (SocketCommon_resolve_address (host, port, NULL, res, Socket_Failed,
-                                    socket_family, 0)
+  if (SocketCommon_resolve_address (
+          host, port, NULL, res, Socket_Failed, socket_family, 0)
       != 0)
     errno = EAI_FAIL;
 }
 
 static void
-connect_try_addresses (T sock, struct addrinfo *res, int socket_family,
+connect_try_addresses (T sock,
+                       struct addrinfo *res,
+                       int socket_family,
                        int timeout_ms)
 {
   int saved_errno;
@@ -257,7 +275,7 @@ connect_try_addresses (T sock, struct addrinfo *res, int socket_family,
     }
 
   saved_errno = errno;
-  if (SocketError_is_retryable_errno(saved_errno))
+  if (SocketError_is_retryable_errno (saved_errno))
     {
       errno = saved_errno;
       return;
@@ -311,11 +329,17 @@ he_attempt_connect (const char *host, int port, SocketHE_Config_T *config)
 {
   Socket_T he_socket = NULL;
 
-  TRY { he_socket = SocketHappyEyeballs_connect (host, port, config); }
+  TRY
+  {
+    he_socket = SocketHappyEyeballs_connect (host, port, config);
+  }
   EXCEPT (SocketHE_Failed)
   {
-    SOCKET_RAISE_MSG (SocketConnect, Socket_Failed,
-                      "Happy Eyeballs connection failed to %s:%d", host, port);
+    SOCKET_RAISE_MSG (SocketConnect,
+                      Socket_Failed,
+                      "Happy Eyeballs connection failed to %s:%d",
+                      host,
+                      port);
   }
   END_TRY;
 
@@ -398,7 +422,7 @@ Socket_connect (T socket, const char *host, int port)
   {
     int saved_errno = errno;
     SocketCommon_free_addrinfo (res);
-    if (SocketError_is_retryable_errno(saved_errno))
+    if (SocketError_is_retryable_errno (saved_errno))
       {
         errno = saved_errno;
         RETURN;
@@ -420,8 +444,7 @@ Socket_connect_with_addrinfo (T socket, struct addrinfo *res)
   socket_family = SocketCommon_get_socket_family (socket->base);
 
   if (try_connect_resolved_addresses (
-          socket, res, socket_family,
-          socket->base->timeouts.connect_timeout_ms)
+          socket, res, socket_family, socket->base->timeouts.connect_timeout_ms)
       == 0)
     {
       socket_handle_successful_connect (socket);
@@ -445,8 +468,8 @@ Socket_connect_async (SocketDNS_T dns, T socket, const char *host, int port)
 
   req = SocketDNS_resolve (dns, host, port, NULL, NULL);
   if (socket->base->timeouts.dns_timeout_ms > 0)
-    SocketDNS_request_settimeout (dns, req,
-                                  socket->base->timeouts.dns_timeout_ms);
+    SocketDNS_request_settimeout (
+        dns, req, socket->base->timeouts.dns_timeout_ms);
   return req;
 }
 
