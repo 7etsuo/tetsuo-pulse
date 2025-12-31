@@ -249,6 +249,103 @@
  */
 #define RINGBUF_WRAP(index, capacity) ((index) & ((capacity) - 1))
 
+/**
+ * @brief ASCII_CASE_OFFSET - Offset between uppercase and lowercase ASCII
+ * @ingroup foundation
+ *
+ * The difference between 'a' and 'A' in ASCII (32).
+ * Used for efficient case-insensitive operations.
+ */
+#define ASCII_CASE_OFFSET 32
+
+/**
+ * @brief ASCII_TOLOWER - Convert ASCII uppercase letter to lowercase
+ * @param c Character to convert (evaluated once)
+ * @return Lowercase version of c if uppercase letter, otherwise unchanged
+ * @ingroup foundation
+ *
+ * Efficient single-character case conversion for ASCII letters A-Z.
+ * Non-letter characters pass through unchanged.
+ *
+ * Example:
+ *   char lower = ASCII_TOLOWER('H');  // Returns 'h'
+ *   char same = ASCII_TOLOWER('5');   // Returns '5'
+ */
+#define ASCII_TOLOWER(c) \
+  (((c) >= 'A' && (c) <= 'Z') ? ((c) + ASCII_CASE_OFFSET) : (c))
+
+/**
+ * @brief DJB2_STEP - One step of DJB2 hash algorithm (addition variant)
+ * @param hash Current hash value
+ * @param c Character/byte to hash
+ * @return Updated hash value
+ * @ingroup foundation
+ *
+ * Implements the core DJB2 hash step: hash = hash * 33 + c
+ * Optimized as (hash << 5) + hash + c which avoids multiplication.
+ *
+ * Example:
+ *   unsigned hash = SOCKET_UTIL_DJB2_SEED;
+ *   while ((c = *str++) != '\0')
+ *     hash = DJB2_STEP(hash, c);
+ *
+ * @see DJB2_STEP_XOR for XOR variant
+ * @see SOCKET_UTIL_DJB2_SEED for initial hash value
+ */
+#define DJB2_STEP(hash, c) (((hash) << 5) + (hash) + (c))
+
+/**
+ * @brief DJB2_STEP_XOR - One step of DJB2 hash algorithm (XOR variant)
+ * @param hash Current hash value
+ * @param c Character/byte to hash
+ * @return Updated hash value
+ * @ingroup foundation
+ *
+ * Implements the XOR variant of DJB2: hash = hash * 33 ^ c
+ * Provides better avalanche for security-sensitive hashing.
+ * Used for seeded hash functions with DoS protection.
+ *
+ * Example:
+ *   hash = DJB2_STEP_XOR(hash, seed);  // Mix in random seed
+ *   for (const char *p = str; *p; p++)
+ *     hash = DJB2_STEP_XOR(hash, *p);
+ *
+ * @see DJB2_STEP for addition variant
+ */
+#define DJB2_STEP_XOR(hash, c) ((((hash) << 5) + (hash)) ^ (c))
+
+/**
+ * @brief HEX_NIBBLES_TO_BYTE - Combine two hex nibbles into a byte
+ * @param hi High nibble (0-15)
+ * @param lo Low nibble (0-15)
+ * @return Combined byte value
+ * @ingroup foundation
+ *
+ * Combines two 4-bit hex digit values into a single byte.
+ * Used in URL decoding, hex string parsing, and protocol parsing.
+ *
+ * Example:
+ *   int hi = socket_util_hex_digit('4');  // 4
+ *   int lo = socket_util_hex_digit('A');  // 10
+ *   char byte = HEX_NIBBLES_TO_BYTE(hi, lo);  // 0x4A = 'J'
+ *
+ * @warning Assumes hi and lo are valid nibbles (0-15)
+ * @see socket_util_hex_digit() for converting hex chars to nibbles
+ */
+#define HEX_NIBBLES_TO_BYTE(hi, lo) (((hi) << 4) | (lo))
+
+/**
+ * @brief HASH_PRIME_31 - Prime multiplier for byte sequence hashing
+ * @ingroup foundation
+ *
+ * Prime 31 is optimized for random byte sequences (vs DJB2's 33 for ASCII).
+ * Compiler optimizes 31*x as (x << 5) - x.
+ * Matches Java's hashCode() convention for byte arrays.
+ *
+ * @see socket_util_hash_bytes_prime31() for usage
+ */
+#define HASH_PRIME_31 31
+
 /* ============================================================================
  * ERROR HANDLING MACROS (Combine Error + Log)
  * ============================================================================
@@ -634,7 +731,7 @@ socket_util_hash_djb2 (const char *str, unsigned table_size)
   int c;
 
   while ((c = *str++) != '\0')
-    hash = ((hash << 5) + hash) + (unsigned)c;
+    hash = DJB2_STEP (hash, (unsigned)c);
 
   return hash % table_size;
 }
@@ -658,7 +755,7 @@ socket_util_hash_djb2_len (const char *str, size_t len, unsigned table_size)
   size_t i;
 
   for (i = 0; i < len; i++)
-    hash = ((hash << 5) + hash) + (unsigned char)str[i];
+    hash = DJB2_STEP (hash, (unsigned char)str[i]);
 
   return hash % table_size;
 }
@@ -682,10 +779,8 @@ socket_util_hash_djb2_ci (const char *str, unsigned table_size)
 
   while ((c = *str++) != '\0')
     {
-      /* Convert ASCII uppercase to lowercase */
-      if (c >= 'A' && c <= 'Z')
-        c += 32;
-      hash = ((hash << 5) + hash) + (unsigned)c;
+      c = ASCII_TOLOWER (c);
+      hash = DJB2_STEP (hash, (unsigned)c);
     }
 
   return hash % table_size;
@@ -711,11 +806,8 @@ socket_util_hash_djb2_ci_len (const char *str, size_t len, unsigned table_size)
 
   for (i = 0; i < len; i++)
     {
-      unsigned char c = (unsigned char)str[i];
-      /* Convert ASCII uppercase to lowercase */
-      if (c >= 'A' && c <= 'Z')
-        c += 32;
-      hash = ((hash << 5) + hash) + c;
+      unsigned char c = ASCII_TOLOWER ((unsigned char)str[i]);
+      hash = DJB2_STEP (hash, c);
     }
 
   return hash % table_size;
@@ -756,7 +848,7 @@ socket_util_hash_bytes_prime31 (const unsigned char *data,
   size_t limit = (len < max_len) ? len : max_len;
 
   for (size_t i = 0; i < limit; i++)
-    hash = hash * 31 + data[i]; /* Optimized as (hash << 5) - hash + data[i] */
+    hash = hash * HASH_PRIME_31 + data[i];
 
   return hash;
 }
@@ -1312,7 +1404,7 @@ socket_util_normalize_hostname (char *dest, const char *src, size_t max_len)
 {
   size_t i;
   for (i = 0; src[i] && i < max_len - 1; i++)
-    dest[i] = (char)((src[i] >= 'A' && src[i] <= 'Z') ? src[i] + 32 : src[i]);
+    dest[i] = (char)ASCII_TOLOWER ((unsigned char)src[i]);
   dest[i] = '\0';
 }
 
@@ -1337,11 +1429,11 @@ socket_util_hash_djb2_seeded (const char *str,
   unsigned hash = SOCKET_UTIL_DJB2_SEED;
 
   /* Mix in random seed for DoS protection */
-  hash = ((hash << 5) + hash) ^ seed;
+  hash = DJB2_STEP_XOR (hash, seed);
 
   /* Hash the string */
   for (const char *p = str; *p; p++)
-    hash = ((hash << 5) + hash) ^ (unsigned char)*p;
+    hash = DJB2_STEP_XOR (hash, (unsigned char)*p);
 
   return hash % table_size;
 }
@@ -1366,15 +1458,13 @@ socket_util_hash_djb2_seeded_ci (const char *str,
   unsigned hash = SOCKET_UTIL_DJB2_SEED;
 
   /* Mix in random seed for DoS protection */
-  hash = ((hash << 5) + hash) ^ seed;
+  hash = DJB2_STEP_XOR (hash, seed);
 
   /* Hash the string with case folding */
   for (const char *p = str; *p; p++)
     {
-      unsigned char c = (unsigned char)*p;
-      if (c >= 'A' && c <= 'Z')
-        c += 32;
-      hash = ((hash << 5) + hash) ^ c;
+      unsigned char c = ASCII_TOLOWER ((unsigned char)*p);
+      hash = DJB2_STEP_XOR (hash, c);
     }
 
   return hash % table_size;
@@ -1413,10 +1503,8 @@ socket_util_hash_djb2_seeded_ci_len (const char *str,
   /* Hash the string with case folding */
   for (size_t i = 0; i < len; i++)
     {
-      unsigned char c = (unsigned char)str[i];
-      if (c >= 'A' && c <= 'Z')
-        c += 32;
-      hash = ((hash << 5) + hash) ^ c;
+      unsigned char c = ASCII_TOLOWER ((unsigned char)str[i]);
+      hash = DJB2_STEP_XOR (hash, c);
     }
 
   return hash % table_size;
@@ -1922,10 +2010,10 @@ socket_util_timespec_add (struct timespec ts1, struct timespec ts2)
   struct timespec result;
   result.tv_sec = ts1.tv_sec + ts2.tv_sec;
   result.tv_nsec = ts1.tv_nsec + ts2.tv_nsec;
-  if (result.tv_nsec >= 1000000000)
+  if (result.tv_nsec >= SOCKET_NS_PER_SECOND)
     {
       result.tv_sec++;
-      result.tv_nsec -= 1000000000;
+      result.tv_nsec -= SOCKET_NS_PER_SECOND;
     }
   return result;
 }
@@ -2248,6 +2336,42 @@ socket_util_hex_digit (char c)
 }
 
 /**
+ * @brief Decode a single URL-encoded character or percent sequence.
+ * @ingroup foundation
+ * @param src Pointer to current position in source string.
+ * @param remaining Bytes remaining in source string.
+ * @param out Output pointer for decoded character.
+ * @return Number of source bytes consumed (1 for literal, 3 for %XX).
+ * @threadsafe Yes (pure function, no shared state)
+ *
+ * Decodes one character from a percent-encoded string:
+ * - %XX with valid hex -> decoded byte, consumes 3
+ * - %XX with invalid hex -> literal '%', consumes 1
+ * - Any other char -> literal, consumes 1
+ */
+static inline size_t
+url_decode_char (const char *src, size_t remaining, char *out)
+{
+  if (remaining < 3 || src[0] != '%')
+    {
+      *out = src[0];
+      return 1;
+    }
+
+  int hi = socket_util_hex_digit (src[1]);
+  int lo = socket_util_hex_digit (src[2]);
+
+  if (hi < 0 || lo < 0)
+    {
+      *out = src[0];
+      return 1;
+    }
+
+  *out = (char)HEX_NIBBLES_TO_BYTE (hi, lo);
+  return 3;
+}
+
+/**
  * @brief URL-decode percent-encoded string.
  * @ingroup foundation
  * @param src Source string with %XX encoding.
@@ -2280,6 +2404,7 @@ socket_util_hex_digit (char c)
  *   }
  *
  * @note Requires dst_size > 0 for null terminator
+ * @see url_decode_char() for single-character decoding
  * @see socket_util_hex_digit() for hex decoding
  * @see RFC 3986 Section 2.1 (Percent-Encoding)
  */
@@ -2291,24 +2416,23 @@ socket_util_url_decode (const char *src,
                         size_t *out_len)
 {
   size_t di = 0;
+  size_t si = 0;
+  int truncated = 0;
 
   if (dst_size == 0)
     return -1;
 
-  for (size_t si = 0; si < src_len && di < dst_size - 1; si++)
+  while (si < src_len)
     {
-      if (src[si] == '%' && si + 2 < src_len)
-        {
-          int hi = socket_util_hex_digit (src[si + 1]);
-          int lo = socket_util_hex_digit (src[si + 2]);
-          if (hi >= 0 && lo >= 0)
-            {
-              dst[di++] = (char)((hi << 4) | lo);
-              si += 2;
-              continue;
-            }
-        }
-      dst[di++] = src[si];
+      char decoded;
+      size_t advance = url_decode_char (src + si, src_len - si, &decoded);
+
+      if (di < dst_size - 1)
+        dst[di++] = decoded;
+      else
+        truncated = 1;
+
+      si += advance;
     }
 
   dst[di] = '\0';
@@ -2316,28 +2440,7 @@ socket_util_url_decode (const char *src,
   if (out_len != NULL)
     *out_len = di;
 
-  /* Check for truncation: did we process all input? */
-  /* We need to account for percent sequences that might remain */
-  size_t si = 0;
-  size_t chars_needed = 0;
-  while (si < src_len)
-    {
-      if (src[si] == '%' && si + 2 < src_len)
-        {
-          int hi = socket_util_hex_digit (src[si + 1]);
-          int lo = socket_util_hex_digit (src[si + 2]);
-          if (hi >= 0 && lo >= 0)
-            {
-              chars_needed++;
-              si += 3;
-              continue;
-            }
-        }
-      chars_needed++;
-      si++;
-    }
-
-  return (chars_needed >= dst_size) ? -1 : 0;
+  return truncated ? -1 : 0;
 }
 
 #endif /* SOCKETUTIL_INCLUDED */
