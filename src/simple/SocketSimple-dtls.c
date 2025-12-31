@@ -192,6 +192,60 @@ perform_dtls_handshake (SocketDgram_T dgram, int timeout_ms)
 }
 
 /*============================================================================
+ * DTLS Client Helpers
+ *============================================================================*/
+
+/**
+ * @brief Validate connection parameters (host and port).
+ *
+ * @param host Hostname or IP address
+ * @param port Port number
+ * @return 0 on success, -1 on validation failure (error set)
+ */
+static int
+validate_dtls_connect_params (const char *host, int port)
+{
+  if (!host || host[0] == '\0')
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid host");
+      return -1;
+    }
+
+  if (port <= 0 || port > SOCKET_MAX_PORT)
+    {
+      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid port");
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Create Simple API handle from connected DTLS socket.
+ *
+ * @param dgram Connected datagram socket with DTLS enabled
+ * @return Handle on success, NULL on failure (error set)
+ */
+static SocketSimple_Socket_T
+create_dtls_client_handle (SocketDgram_T dgram)
+{
+  SocketSimple_Socket_T handle = simple_create_udp_handle (dgram);
+  if (!handle)
+    {
+      SocketDgram_T temp_dgram = dgram;
+      SocketDgram_free (&temp_dgram);
+      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Failed to create handle");
+      return NULL;
+    }
+
+  handle->is_tls = 1;
+  handle->is_connected = 1;
+
+  return handle;
+}
+
+
+/*============================================================================
  * DTLS Client Functions
  *============================================================================*/
 
@@ -222,18 +276,11 @@ Socket_simple_dtls_connect_ex (const char *host, int port,
 
   Socket_simple_clear_error ();
 
-  if (!host || host[0] == '\0')
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid host");
-      return NULL;
-    }
+  /* Validate parameters */
+  if (validate_dtls_connect_params (host, port) != 0)
+    return NULL;
 
-  if (port <= 0 || port > SOCKET_MAX_PORT)
-    {
-      simple_set_error (SOCKET_SIMPLE_ERR_INVALID_ARG, "Invalid port");
-      return NULL;
-    }
-
+  /* Apply defaults if no options provided */
   if (!opts_param)
     {
       Socket_simple_dtls_options_defaults (&opts_local);
@@ -265,9 +312,7 @@ Socket_simple_dtls_connect_ex (const char *host, int port,
 
     /* Perform blocking handshake */
     if (perform_dtls_handshake (dgram, timeout_ms) != 0)
-      {
-        exception_occurred = 1;
-      }
+      exception_occurred = 1;
   }
   EXCEPT (SocketDTLS_VerifyFailed)
   {
@@ -305,20 +350,7 @@ Socket_simple_dtls_connect_ex (const char *host, int port,
   if (exception_occurred)
     return NULL;
 
-  /* Create simple handle */
-  SocketSimple_Socket_T handle = simple_create_udp_handle (dgram);
-  if (!handle)
-    {
-      SocketDgram_T temp_dgram = (SocketDgram_T)dgram;
-      SocketDgram_free (&temp_dgram);
-      simple_set_error (SOCKET_SIMPLE_ERR_MEMORY, "Failed to create handle");
-      return NULL;
-    }
-
-  handle->is_tls = 1;
-  handle->is_connected = 1;
-
-  return handle;
+  return create_dtls_client_handle ((SocketDgram_T)dgram);
 }
 
 int
