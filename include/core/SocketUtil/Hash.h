@@ -354,23 +354,25 @@ socket_util_normalize_hostname (char *dest, const char *src, size_t max_len)
  *
  * Useful for hash table sizing and circular buffer capacities
  * where power-of-2 sizes allow efficient modulo via bitwise AND.
+ *
+ * Uses NEXT_POW2_32/64 macros from Core.h when available (GCC/Clang),
+ * falls back to bit-smearing for other compilers.
  */
 static inline size_t
 socket_util_round_up_pow2 (size_t n)
 {
-  if (n <= 1)
-    return 1;
-
 #if defined(__GNUC__) || defined(__clang__)
-    /* Use CLZ intrinsic for single-instruction implementation */
+  /* Use optimized CLZ-based macros from Core.h */
 #if SIZE_MAX > 0xFFFFFFFF
-  return (size_t)1 << (64 - __builtin_clzll ((unsigned long long)(n - 1)));
+  return (size_t)NEXT_POW2_64 (n);
 #else
-  return (size_t)1 << (32 - __builtin_clz ((unsigned)(n - 1)));
+  return (size_t)NEXT_POW2_32 (n);
 #endif
 
 #else
-  /* Fallback: bit-smearing approach */
+  /* Fallback: bit-smearing approach for non-GCC/Clang */
+  if (n <= 1)
+    return 1;
   n--;
   n |= n >> 1;
   n |= n >> 2;
