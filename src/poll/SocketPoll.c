@@ -32,6 +32,7 @@
 #include <string.h>
 #include <unistd.h> /* for getpid in hash seed fallback */
 
+#include "core/SocketMetrics.h"
 #include "poll/SocketPoll-private.h"
 #include "poll/SocketPoll_backend.h"
 /* Arena.h, Except.h, Socket.h, SocketAsync.h, SocketUtil.h included via
@@ -1148,7 +1149,7 @@ static int
 wait_for_backend_events (T poll, int timeout)
 {
   int nfds = backend_wait (poll->backend, timeout);
-  SocketMetrics_increment (SOCKET_METRIC_POLL_WAKEUPS, 1);
+  SocketMetrics_counter_inc (SOCKET_CTR_POLL_WAKEUPS);
   return nfds;
 }
 
@@ -1190,8 +1191,8 @@ static void
 emit_event_metrics (const int nfds, const int timeout)
 {
   if (nfds > 0)
-    SocketMetrics_increment (SOCKET_METRIC_POLL_EVENTS_DISPATCHED,
-                             (unsigned long)nfds);
+    SocketMetrics_counter_add (SOCKET_CTR_POLL_EVENTS_DISPATCHED,
+                               (uint64_t)nfds);
 
   SocketEvent_emit_poll_wakeup (nfds, timeout);
 }

@@ -28,6 +28,7 @@
 #include <unistd.h>
 
 #include "core/Arena.h"
+#include "core/SocketMetrics.h"
 #include "dns/SocketDNS-private.h"
 #include "dns/SocketDNS.h"
 #include "dns/SocketDNSResolver.h"
@@ -1027,7 +1028,7 @@ socketdns_resolver_callback (SocketDNSResolver_Query_T query,
   else
     {
       /* Polling mode - leave result for user to retrieve */
-      SocketMetrics_increment (SOCKET_METRIC_DNS_REQUEST_COMPLETED, 1);
+      SocketMetrics_counter_inc (SOCKET_CTR_DNS_QUERIES_COMPLETED);
       pthread_mutex_unlock (&dns->mutex);
     }
 }
@@ -1067,7 +1068,7 @@ check_l1_cache_and_complete (struct SocketDNS_T *dns, Request_T req)
         }
       else
         {
-          SocketMetrics_increment (SOCKET_METRIC_DNS_REQUEST_COMPLETED, 1);
+          SocketMetrics_counter_inc (SOCKET_CTR_DNS_QUERIES_COMPLETED);
           pthread_mutex_unlock (&dns->mutex);
         }
 
@@ -1115,7 +1116,7 @@ submit_to_resolver (struct SocketDNS_T *dns, Request_T req)
   pthread_mutex_lock (&dns->mutex);
   hash_table_insert (dns, req);
   req->state = REQ_PROCESSING;
-  SocketMetrics_increment (SOCKET_METRIC_DNS_REQUEST_SUBMITTED, 1);
+  SocketMetrics_counter_inc (SOCKET_CTR_DNS_QUERIES_TOTAL);
   pthread_mutex_unlock (&dns->mutex);
 
   /* Submit to resolver backend */
@@ -1196,7 +1197,7 @@ SocketDNS_cancel (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
   hash_table_remove (dns, req);
 
   if (cancelled)
-    SocketMetrics_increment (SOCKET_METRIC_DNS_REQUEST_CANCELLED, 1);
+    SocketMetrics_counter_inc (SOCKET_CTR_DNS_QUERIES_CANCELLED);
 
   pthread_mutex_unlock (&dns->mutex);
 }
@@ -1356,7 +1357,7 @@ SocketDNS_create_completed_request (struct SocketDNS_T *dns,
 
   pthread_mutex_lock (&dns->mutex);
   hash_table_insert (dns, req);
-  SocketMetrics_increment (SOCKET_METRIC_DNS_REQUEST_COMPLETED, 1);
+  SocketMetrics_counter_inc (SOCKET_CTR_DNS_QUERIES_COMPLETED);
   SIGNAL_DNS_COMPLETION (dns);
   pthread_mutex_unlock (&dns->mutex);
 

@@ -16,6 +16,7 @@
 #include <unistd.h>
 
 #include "core/SocketConfig.h"
+#include "core/SocketMetrics.h"
 #include "core/SocketUtil.h"
 #include "dns/SocketDNS.h"
 #include "socket/Socket-private.h"
@@ -111,7 +112,7 @@ socket_get_connect_error_msg (int saved_errno)
 static void
 socket_handle_connect_error (const char *host, int port)
 {
-  SocketMetrics_increment (SOCKET_METRIC_SOCKET_CONNECT_FAILURE, 1);
+  SocketMetrics_counter_inc (SOCKET_CTR_SOCKET_CONNECT_FAILED);
   SOCKET_ERROR_FMT ("%s: %.*s:%d",
                     socket_get_connect_error_msg (errno),
                     SOCKET_ERROR_MAX_HOSTNAME,
@@ -148,7 +149,7 @@ socket_emit_connect_event (T socket)
 static void
 socket_handle_successful_connect (T socket)
 {
-  SocketMetrics_increment (SOCKET_METRIC_SOCKET_CONNECT_SUCCESS, 1);
+  SocketMetrics_counter_inc (SOCKET_CTR_SOCKET_CONNECT_SUCCESS);
   SocketCommon_update_local_endpoint (socket->base);
   socket_cache_remote_endpoint (socket);
   socket_emit_connect_event (socket);

@@ -172,8 +172,6 @@ struct SocketBase_T
 
   SocketTimeouts_T timeouts; /**< Timeout configuration */
 
-  SocketMetricsSnapshot metrics; /**< Per-socket metrics snapshot (legacy) */
-
   /* Per-socket statistics tracking */
   SocketStats_T stats; /**< Cumulative I/O statistics for this socket */
 };
