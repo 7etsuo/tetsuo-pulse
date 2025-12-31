@@ -2536,6 +2536,25 @@ union align
 #endif
 
 /**
+ * @brief Default TCP defer accept timeout for SYN flood protection (seconds).
+ *
+ * Default value for TCP_DEFER_ACCEPT when applying SYN challenge protection.
+ * This causes accept() to wait until data arrives, preventing resource
+ * exhaustion from incomplete connections during SYN flood attacks.
+ *
+ * Value of 5 seconds provides balanced protection: aggressive enough to
+ * mitigate attacks while tolerating legitimate clients with moderate latency.
+ *
+ * Common values:
+ * - 3 seconds: Aggressive protection, may timeout slow clients
+ * - 5 seconds: Balanced (recommended)
+ * - 10 seconds: Conservative, tolerant of slow networks
+ */
+#ifndef SOCKET_SYN_DEFAULT_DEFER_SEC
+#define SOCKET_SYN_DEFAULT_DEFER_SEC 5
+#endif
+
+/**
  * @brief Maximum congestion control algorithm name length.
  *
  * Maximum length of TCP_CONGESTION algorithm name string (excluding null).
