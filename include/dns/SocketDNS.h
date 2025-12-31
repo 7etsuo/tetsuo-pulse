@@ -153,7 +153,8 @@ extern const Except_T SocketDNS_Failed;
  * the getaddrinfo() error code.
  *
  * OWNERSHIP: The callback receives ownership of the result addrinfo structure
- * and MUST call freeaddrinfo() when done with it.
+ * and MUST call SocketCommon_free_addrinfo() when done with it.
+ * Do NOT use freeaddrinfo() - it will cause memory leaks.
  *
  * THREAD SAFETY WARNING: Callbacks are invoked from DNS WORKER THREADS,
  * NOT from the application thread. The callback implementation MUST:
@@ -342,10 +343,16 @@ extern int SocketDNS_check (T dns);
  *
  * @param[in] dns Resolver owning the request.
  * @param[in] req Request handle.
- * @return addrinfo chain (caller must freeaddrinfo()) or NULL if pending/failed.
+ * @return addrinfo chain or NULL if pending/failed. Caller must free with
+ *         SocketCommon_free_addrinfo() (NOT freeaddrinfo()).
  * @threadsafe Yes.
  *
+ * @warning Do NOT use freeaddrinfo() on the returned result. The library
+ *          allocates ai_addr separately, requiring SocketCommon_free_addrinfo()
+ *          for proper cleanup. Using freeaddrinfo() will cause memory leaks.
+ *
  * @see SocketDNS_geterror() for error code on failure.
+ * @see SocketCommon_free_addrinfo() for freeing the result.
  */
 extern struct addrinfo *SocketDNS_getresult (T dns, Request_T req);
 

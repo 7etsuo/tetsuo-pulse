@@ -10,6 +10,7 @@
  */
 
 #include "dns/SocketDNS.h"
+#include "socket/SocketCommon.h"
 #include "test/Test.h"
 
 #include <stdio.h>
@@ -94,21 +95,23 @@ TEST (dns_queue_limit_excludes_completed)
     req3 = SocketDNS_resolve (dns, "127.0.0.3", 80, NULL, NULL);
     ASSERT_NOT_NULL (req3);
 
-    /* Retrieve all results to clean up */
+    /* Retrieve all results to clean up.
+     * Must use SocketCommon_free_addrinfo, not freeaddrinfo, because
+     * the library allocates ai_addr separately with calloc. */
     result = SocketDNS_getresult (dns, req1);
     if (result)
       {
-        freeaddrinfo (result);
+        SocketCommon_free_addrinfo (result);
       }
     result = SocketDNS_getresult (dns, req2);
     if (result)
       {
-        freeaddrinfo (result);
+        SocketCommon_free_addrinfo (result);
       }
     result = SocketDNS_getresult (dns, req3);
     if (result)
       {
-        freeaddrinfo (result);
+        SocketCommon_free_addrinfo (result);
       }
   }
   FINALLY
