@@ -92,6 +92,163 @@
  */
 #define ARRAY_LENGTH(arr) (sizeof (arr) / sizeof ((arr)[0]))
 
+/**
+ * @brief BITMASK32 - Create a 32-bit mask with N lowest bits set
+ * @param n Number of bits to set (0-32)
+ * @ingroup foundation
+ *
+ * Creates a bitmask with the lowest N bits set to 1.
+ * For n=0 returns 0, for n=8 returns 0xFF, for n=32 returns 0xFFFFFFFF.
+ *
+ * Common uses:
+ * - Extracting N bits from a value: `value & BITMASK32(n)`
+ * - Checking padding bits: `pad_mask = BITMASK32(pad_bits)`
+ * - Isolating bit fields in protocol parsing
+ *
+ * Example:
+ *   uint32_t low_8_bits = value & BITMASK32(8);  // Extract lower byte
+ *   uint32_t pad = BITMASK32(7);                 // 0x7F for 7-bit padding
+ *
+ * @warning n must be in range 0-32; undefined behavior for n > 32
+ * @see BITMASK64 for 64-bit version
+ */
+#define BITMASK32(n) ((1U << (n)) - 1U)
+
+/**
+ * @brief BITMASK64 - Create a 64-bit mask with N lowest bits set
+ * @param n Number of bits to set (0-64)
+ * @ingroup foundation
+ *
+ * Creates a 64-bit bitmask with the lowest N bits set to 1.
+ * For n=0 returns 0, for n=30 returns 0x3FFFFFFF.
+ *
+ * Common uses:
+ * - Huffman code extraction: `code = (bits >> shift) & BITMASK64(code_len)`
+ * - Clearing consumed bits: `bits &= BITMASK64(bits_remaining)`
+ * - Working with 64-bit accumulators in bit-stream processing
+ *
+ * Example:
+ *   uint64_t code = (accumulator >> shift) & BITMASK64(30);
+ *   accumulator &= BITMASK64(bits_avail);  // Keep only valid bits
+ *
+ * @warning n must be in range 0-64; undefined behavior for n > 64
+ * @see BITMASK32 for 32-bit version
+ */
+#define BITMASK64(n) ((1ULL << (n)) - 1ULL)
+
+/**
+ * @brief BITS_APPEND - Append N bits to a bit accumulator
+ * @param acc Bit accumulator (modified in place)
+ * @param value Value containing bits to append
+ * @param n Number of bits to append
+ * @ingroup foundation
+ *
+ * Shifts accumulator left by N bits and ORs in the new value.
+ * Common pattern in Huffman encoding and bit-stream packing.
+ *
+ * Example:
+ *   uint64_t bits = 0;
+ *   BITS_APPEND(bits, 0x1F, 5);  // Append 5-bit code
+ *   BITS_APPEND(bits, byte, 8);  // Append full byte
+ *
+ * @see BITS_EXTRACT_TOP for reading bits back
+ */
+#define BITS_APPEND(acc, value, n) ((acc) = ((acc) << (n)) | (value))
+
+/**
+ * @brief BITS_EXTRACT_TOP - Extract top N bits from accumulator
+ * @param bits Bit accumulator
+ * @param bits_avail Number of valid bits in accumulator
+ * @param n Number of bits to extract
+ * @return Top N bits, right-aligned
+ * @ingroup foundation
+ *
+ * Extracts the topmost N bits from a bit accumulator without masking.
+ * Caller should apply mask if needed: `BITS_EXTRACT_TOP(...) & BITMASK32(n)`
+ *
+ * Example:
+ *   uint32_t code = BITS_EXTRACT_TOP(bits, bits_avail, 5) & BITMASK32(5);
+ *
+ * @see BITS_APPEND for the inverse operation
+ */
+#define BITS_EXTRACT_TOP(bits, bits_avail, n) ((bits) >> ((bits_avail) - (n)))
+
+/**
+ * @brief BITS_TOP_BYTE - Extract top byte from bit accumulator
+ * @param bits Bit accumulator
+ * @param bits_avail Number of valid bits (must be >= 8)
+ * @return Top 8 bits as unsigned char
+ * @ingroup foundation
+ *
+ * Convenience macro for extracting a complete byte from the top
+ * of a bit accumulator. Used in Huffman encoding output.
+ *
+ * Example:
+ *   output[pos++] = BITS_TOP_BYTE(state->bits, state->bits_avail);
+ *   state->bits_avail -= 8;
+ */
+#define BITS_TOP_BYTE(bits, bits_avail) \
+  ((unsigned char)((bits) >> (bits_avail)))
+
+/**
+ * @brief BITS_PAD_EOS - Pad remaining bits with 1s (EOS pattern)
+ * @param bits Bit accumulator with partial byte
+ * @param pad_bits Number of padding bits needed (1-7)
+ * @return Padded byte value
+ * @ingroup foundation
+ *
+ * Per RFC 7541 §5.2, Huffman-encoded data must be padded with the
+ * most-significant bits of the EOS symbol (all 1s). This macro
+ * shifts remaining bits and fills the rest with 1s.
+ *
+ * Example:
+ *   if (bits_avail > 0) {
+ *     int pad = 8 - bits_avail;
+ *     output[pos++] = (unsigned char)BITS_PAD_EOS(bits, pad);
+ *   }
+ */
+#define BITS_PAD_EOS(bits, pad_bits) \
+  (((bits) << (pad_bits)) | BITMASK32 (pad_bits))
+
+/**
+ * @brief HASH_KEY64 - Combine two 32-bit values into 64-bit hash key
+ * @param hi High 32 bits
+ * @param lo Low 32 bits
+ * @return Combined 64-bit key
+ * @ingroup foundation
+ *
+ * Creates a unique 64-bit key from two values for hash table lookups.
+ * Used when hashing composite keys (e.g., bitlen + code in Huffman).
+ *
+ * Example:
+ *   uint64_t key = HASH_KEY64(bitlen, code);
+ *   uint32_t hash = (key * GOLDEN_RATIO) % TABLE_SIZE;
+ */
+#define HASH_KEY64(hi, lo) (((uint64_t)(hi) << 32) | (uint64_t)(lo))
+
+/**
+ * @brief RINGBUF_WRAP - Wrap index for power-of-2 circular buffer
+ * @param index Index value (may exceed capacity)
+ * @param capacity Buffer capacity (MUST be power of 2)
+ * @return Wrapped index in range [0, capacity-1]
+ * @ingroup foundation
+ *
+ * Efficiently wraps an index for circular buffer operations using
+ * bitwise AND instead of modulo. Only works when capacity is a power of 2.
+ *
+ * Common uses:
+ * - Advancing head/tail in ring buffers
+ * - Converting logical index to physical slot
+ * - Implementing circular queues (HPACK dynamic table, etc.)
+ *
+ * Example:
+ *   table->head = RINGBUF_WRAP(table->head + 1, table->capacity);
+ *   size_t slot = RINGBUF_WRAP(tail - offset, capacity);
+ *
+ * @warning capacity MUST be a power of 2, otherwise results are undefined
+ */
+#define RINGBUF_WRAP(index, capacity) ((index) & ((capacity) - 1))
+
 /* ============================================================================
  * ERROR HANDLING MACROS (Combine Error + Log)
  * ============================================================================

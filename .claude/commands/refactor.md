@@ -36,7 +36,13 @@ This codebase follows **C Interfaces and Implementations** patterns with:
 
 7. **Optimize Performance**: Profile the code mentally for inefficiencies. Replace slow algorithms with optimized alternatives. Use efficient data structures, minimize allocations.
 
-8. **Keep Functions Reasonably Scoped**: Prefer single-purpose functions and extract helpers when it improves clarity/testing. Do not force arbitrary line-count limits; prioritize readability, correctness, and minimal diffs.
+8. **Keep Functions Reasonably Scoped**: Apply these criteria when writing or extracting functions:
+   1. Does it do ONE cohesive thing?
+   2. Can you name it clearly without "and" or "or"?
+   3. Is it at a consistent abstraction level?
+   4. Would extracting improve readability, or just move code?
+
+   Use function length as a smell detector, not a target. A 20-line function doing one thing is better than 4 tiny functions you bounce between.
 
 ## Refactoring Categories
 
@@ -47,7 +53,7 @@ This codebase follows **C Interfaces and Implementations** patterns with:
 - Helper functions that would improve readability
 - Error handling patterns that could be centralized (use `TRY/EXCEPT/FINALLY`)
 
-**Rule**: Split when it improves clarity and keeps the change safe/reviewable; don't split purely to satisfy a line-count goal.
+**Rule**: Extract when it passes the 4 criteria above; don't split purely to satisfy a line-count goal.
 
 ### 2. Code Duplication Detection
 - Identical or near-identical code blocks across multiple functions
