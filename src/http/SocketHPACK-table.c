@@ -238,7 +238,8 @@ static inline size_t
 hpack_table_index_to_slot (const SocketHPACK_Table_T table, size_t index)
 {
   size_t offset = index - 1;
-  return (table->tail + table->capacity - 1 - offset) & (table->capacity - 1);
+  return RINGBUF_WRAP (table->tail + table->capacity - 1 - offset,
+                       table->capacity);
 }
 
 static void
@@ -429,7 +430,7 @@ hpack_table_evict (SocketHPACK_Table_T table, size_t required_space)
         }
 
       table->size -= entry_size;
-      table->head = (table->head + 1) & (table->capacity - 1);
+      table->head = RINGBUF_WRAP (table->head + 1, table->capacity);
       table->count--;
       evicted++;
     }
@@ -661,7 +662,7 @@ SocketHPACK_Table_add (SocketHPACK_Table_T table,
   if (res != HPACK_OK)
     return res;
 
-  table->tail = (table->tail + 1) & (table->capacity - 1);
+  table->tail = RINGBUF_WRAP (table->tail + 1, table->capacity);
   table->count++;
   table->size += entry_size;
 

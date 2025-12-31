@@ -206,6 +206,18 @@ HTTP modules require Foundation + Core I/O + Security (optional)
 - Use `do { } while(0)` for multi-statement macros
 - Include guards use `_INCLUDED` suffix: `#ifndef SOCKET_INCLUDED`
 - Doxygen-style comments for public APIs
+- **Run `clang-format -i` on all modified C/H files before committing**
+
+## Function Design
+
+When writing or extracting functions, apply these criteria:
+
+1. **Does it do ONE cohesive thing?** A function should have a single, clear purpose
+2. **Can you name it clearly without "and" or "or"?** If the name requires conjunctions, it's doing too much
+3. **Is it at a consistent abstraction level?** Don't mix high-level logic with low-level bit manipulation
+4. **Would extracting improve readability, or just move code?** Extract when it adds clarity, not to hit arbitrary line counts
+
+Use function length as a smell detector ("this is long, is it doing too much?"), not as a target. A well-written 20-line function that does one cohesive thing is better than 4 tiny functions where you bounce around to follow the logic.
 
 ## C Anti-Patterns and Fixes
 
@@ -790,6 +802,49 @@ int is_close = SocketHTTP_Headers_contains_n(headers, "Connection",
 Available `_n` variants: `get_n`, `get_all_n`, `has_n`, `contains_n`
 
 For dynamic header names (user input), use the standard functions which handle `strlen()` internally.
+
+### Bit Manipulation Macros
+
+Use the centralized bit macros from `SocketUtil.h` instead of inline bit operations:
+
+```c
+#include "core/SocketUtil.h"
+
+/* Bitmasks - create mask with N lowest bits set */
+uint32_t mask8 = BITMASK32(8);   /* 0xFF */
+uint64_t mask30 = BITMASK64(30); /* 0x3FFFFFFF */
+
+/* Bit accumulator operations */
+BITS_APPEND(acc, value, n);                   /* Append N bits to accumulator */
+code = BITS_EXTRACT_TOP(bits, avail, n);      /* Extract top N bits */
+byte = BITS_TOP_BYTE(bits, bits_avail);       /* Extract top byte */
+padded = BITS_PAD_EOS(bits, pad_bits);        /* Pad with EOS 1s (RFC 7541) */
+
+/* Hash key combination */
+uint64_t key = HASH_KEY64(bitlen, code);      /* Combine into 64-bit key */
+```
+
+**Available macros:**
+
+| Macro | Usage |
+|-------|-------|
+| `BITMASK32(n)` | Create 32-bit mask with N bits set |
+| `BITMASK64(n)` | Create 64-bit mask with N bits set |
+| `BITS_APPEND(acc, val, n)` | Append N bits to accumulator |
+| `BITS_EXTRACT_TOP(bits, avail, n)` | Extract top N bits |
+| `BITS_TOP_BYTE(bits, avail)` | Extract top byte |
+| `BITS_PAD_EOS(bits, pad)` | Pad with EOS 1s |
+| `HASH_KEY64(hi, lo)` | Combine into 64-bit hash key |
+| `RINGBUF_WRAP(idx, cap)` | Wrap index for power-of-2 ring buffer |
+
+**Anti-pattern:**
+```c
+/* Don't write inline - harder to read and verify */
+bits = (bits << n) | value;                   /* Use BITS_APPEND */
+code = bits >> (bits_avail - n);              /* Use BITS_EXTRACT_TOP */
+padded = (bits << pad) | ((1U << pad) - 1);   /* Use BITS_PAD_EOS */
+head = (head + 1) & (capacity - 1);           /* Use RINGBUF_WRAP */
+```
 
 ## Automated Hooks
 
